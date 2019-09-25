@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Encoding=UTF-8
+Name=Elektroid
+Comment=Sample transfer application for Elektron devices
+Exec=elektroid
+Icon=elektroid
+Terminal=false
