@@ -20,9 +20,9 @@
 
 #define LABEL_MAX 128
 
-#define debug_print(...) if (debug) fprintf(stderr, __VA_ARGS__)
+#define debug_print(...) if (debug_level) fprintf(stderr, __VA_ARGS__)
 
-int debug;
+int debug_level;
 
 void print_ascii_msg (const GByteArray *);
 

@@ -22,10 +22,38 @@
 #include <stdio.h>
 #include "utils.h"
 
+#define DEBUG_LEVEL1_LEN 16
+
 static char
 connector_get_printable_char (char c)
 {
   return c >= 0x20 && c < 0x80 ? c : '.';
+}
+
+static guint
+get_max_message_length (guint msg_len)
+{
+  guint len;
+
+  if (debug_level > 1)
+    {
+      len = msg_len;
+    }
+  else
+    {
+      len = msg_len > DEBUG_LEVEL1_LEN ? DEBUG_LEVEL1_LEN : msg_len;
+    }
+
+  return len;
+}
+
+static void
+print_dots_if_needed (guint msg_len)
+{
+  if (debug_level == 1 && msg_len > DEBUG_LEVEL1_LEN)
+    {
+      debug_print ("...");
+    }
 }
 
 void
@@ -34,12 +62,13 @@ debug_print_ascii_msg (const GByteArray * msg)
   int i = 0;
   guint8 *data = msg->data;
 
-  while (i < msg->len)
+  while (i < get_max_message_length (msg->len))
     {
       debug_print ("%c", connector_get_printable_char (*data));
       data++;
       i++;
     }
+  print_dots_if_needed (msg->len);
   debug_print ("\n");
 }
 
@@ -49,16 +78,18 @@ debug_print_hex_msg (const GByteArray * msg)
   int i = 0;
   guint8 *data = msg->data;
 
-  while (i < msg->len - 1)
+  while (i < get_max_message_length (msg->len))
     {
-      if (debug)
+      if (i > 0)
 	{
-	  debug_print ("0x%02x, ", *data);
+	  debug_print (", ");
 	}
+      debug_print ("0x%02x", *data);
       data++;
       i++;
     }
-  debug_print ("0x%02x\n", *data);
+  print_dots_if_needed (msg->len);
+  debug_print ("\n");
 }
 
 char *

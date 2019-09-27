@@ -1188,7 +1188,7 @@ main (int argc, char *argv[])
       switch (c)
 	{
 	case 'v':
-	  vflg = 1;
+	  vflg++;
 	  break;
 	case '?':
 	  fprintf (stderr, "Unrecognized option: -%c\n", optopt);
@@ -1198,7 +1198,7 @@ main (int argc, char *argv[])
 
   if (vflg)
     {
-      debug = 1;
+      debug_level = vflg;
     }
 
   if (errflg > 0)
