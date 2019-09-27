@@ -86,14 +86,14 @@ static GtkListStore *devices_list_store;
 static GtkComboBox *devices_combo;
 
 static void
-elektroid_load_devices (GtkWidget * object, gpointer user_data)
+elektroid_load_devices (int auto_select)
 {
   int i;
   GtkTreeIter iter;
   GArray *devices = connector_get_elektron_devices ();
   struct connector_device device;
 
-  debug_print ("Refreshing devices...\n");
+  debug_print ("Loading devices...\n");
 
   gtk_list_store_clear (devices_list_store);
 
@@ -107,14 +107,21 @@ elektroid_load_devices (GtkWidget * object, gpointer user_data)
 
   g_array_free (devices, TRUE);
 
-  if (i == 1)
+  if (auto_select && i == 1)
     {
+      debug_print ("Selecting device 0...\n");
       gtk_combo_box_set_active (devices_combo, 0);
     }
   else
     {
       gtk_combo_box_set_active (devices_combo, -1);
     }
+}
+
+static void
+elektroid_refresh_devices (GtkWidget * object, gpointer user_data)
+{
+  elektroid_load_devices (0);
 }
 
 static void
@@ -135,7 +142,7 @@ elektroid_check_connector ()
       gtk_widget_set_sensitive (remote_box, FALSE);
       gtk_widget_set_sensitive (download_button, FALSE);
 
-      elektroid_load_devices (NULL, NULL);
+      elektroid_load_devices (0);
     }
 }
 
@@ -326,9 +333,9 @@ elektroid_update_ui_after_load (gpointer data)
 	  gtk_widget_set_sensitive (play_button, TRUE);
 	}
       if (connector_check (&connector))
-        {
-          gtk_widget_set_sensitive (upload_button, TRUE);
-        }
+	{
+	  gtk_widget_set_sensitive (upload_button, TRUE);
+	}
     }
   gtk_widget_queue_draw (waveform_draw_area);
   return FALSE;
@@ -1144,9 +1151,9 @@ elektroid (int argc, char *argv[])
   g_signal_connect (devices_combo, "changed",
 		    G_CALLBACK (elektroid_set_device), NULL);
   g_signal_connect (refresh_devices_button, "clicked",
-		    G_CALLBACK (elektroid_load_devices), NULL);
+		    G_CALLBACK (elektroid_refresh_devices), NULL);
 
-  elektroid_load_devices (NULL, NULL);
+  elektroid_load_devices (1);
 
   gtk_widget_show (main_window);
   gtk_main ();
