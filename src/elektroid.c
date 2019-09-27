@@ -125,11 +125,32 @@ elektroid_refresh_devices (GtkWidget * object, gpointer user_data)
 }
 
 static void
+elektroid_update_statusbar ()
+{
+  char *status;
+
+  gtk_statusbar_pop (status_bar, 0);
+
+  if (connector_check (&connector))
+    {
+      status = malloc (LABEL_MAX);
+      snprintf (status, LABEL_MAX, "Connected to %s", connector.device_name);
+      gtk_statusbar_push (status_bar, 0, status);
+      free (status);
+    }
+  else
+    {
+      gtk_statusbar_push (status_bar, 0, "Not connected");
+    }
+}
+
+static int
 elektroid_check_connector ()
 {
   GtkListStore *list_store;
+  int status = connector_check (&connector);
 
-  if (connector_check (&connector))
+  if (status)
     {
       gtk_widget_set_sensitive (remote_box, TRUE);
     }
@@ -144,6 +165,10 @@ elektroid_check_connector ()
 
       elektroid_load_devices (0);
     }
+
+  elektroid_update_statusbar ();
+
+  return status;
 }
 
 static void
@@ -915,38 +940,6 @@ elektroid_go_up (GtkWidget * object, gpointer user_data)
 }
 
 static void
-elektroid_connect (guint card)
-{
-  int err;
-  char *status;
-
-  g_mutex_lock (&connector_mutex);
-  if ((err = connector_init (&connector, card)) < 0)
-    {
-      fprintf (stderr, __FILE__ ": Error while connecing.\n");
-    }
-  elektroid_check_connector ();
-  g_mutex_unlock (&connector_mutex);
-
-  gtk_statusbar_pop (status_bar, 0);
-
-  if (err < 0)
-    {
-      gtk_statusbar_push (status_bar, 0, "Not connected");
-    }
-  else
-    {
-      status = malloc (LABEL_MAX);
-      snprintf (status, LABEL_MAX, "Connected to %s", connector.device_name);
-      gtk_statusbar_push (status_bar, 0, status);
-      free (status);
-
-      strcpy (remote_browser.dir, "/");
-      g_idle_add (remote_browser.load_dir, NULL);
-    }
-}
-
-static void
 elektroid_set_device (GtkWidget * object, gpointer user_data)
 {
   GtkTreeIter iter;
@@ -959,7 +952,21 @@ elektroid_set_device (GtkWidget * object, gpointer user_data)
 				&iter, 0, &cardv);
 
       card = g_value_get_uint (&cardv);
-      elektroid_connect (card);
+
+      g_mutex_lock (&connector_mutex);
+
+      if (connector_init (&connector, card) < 0)
+	{
+	  fprintf (stderr, __FILE__ ": Error while connecing.\n");
+	}
+
+      if (elektroid_check_connector ())
+	{
+	  strcpy (remote_browser.dir, "/");
+	  g_idle_add (remote_browser.load_dir, NULL);
+	}
+
+      g_mutex_unlock (&connector_mutex);
     }
 }
 
@@ -1152,6 +1159,8 @@ elektroid (int argc, char *argv[])
 		    G_CALLBACK (elektroid_set_device), NULL);
   g_signal_connect (refresh_devices_button, "clicked",
 		    G_CALLBACK (elektroid_refresh_devices), NULL);
+
+  gtk_statusbar_push (status_bar, 0, "Not connected");
 
   elektroid_load_devices (1);
 
