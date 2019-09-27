@@ -427,6 +427,7 @@ elektroid_local_file_selected (gpointer data)
       g_thread_join (load_thread);
       g_thread_unref (load_thread);
     }
+  load_thread = NULL;
   gtk_widget_set_sensitive (play_button, FALSE);
   gtk_widget_set_sensitive (upload_button, FALSE);
   load_thread =
@@ -770,6 +771,7 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
       //TODO: show error
     }
   g_thread_unref (progress_thread);
+  progress_thread = NULL;
 
   free (path);
 
@@ -857,6 +859,7 @@ elektroid_download (GtkWidget * object, gpointer user_data)
 
   g_thread_join (progress_thread);
   g_thread_unref (progress_thread);
+  progress_thread = NULL;
 
   free (path);
 
