@@ -325,7 +325,10 @@ elektroid_update_ui_after_load (gpointer data)
 	{
 	  gtk_widget_set_sensitive (play_button, TRUE);
 	}
-      gtk_widget_set_sensitive (upload_button, TRUE);
+      if (connector_check (&connector))
+        {
+          gtk_widget_set_sensitive (upload_button, TRUE);
+        }
     }
   gtk_widget_queue_draw (waveform_draw_area);
   return FALSE;
