@@ -1170,7 +1170,10 @@ elektroid (int argc, char *argv[])
   free (remote_browser.dir);
   free (local_browser.dir);
 
-  connector_destroy (&connector);
+  if (connector_check (&connector))
+    {
+      connector_destroy (&connector);
+    }
 
 free_audio:
   audio_destroy (&audio);
