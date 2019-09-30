@@ -119,12 +119,6 @@ elektroid_load_devices (int auto_select)
 }
 
 static void
-elektroid_refresh_devices (GtkWidget * object, gpointer user_data)
-{
-  elektroid_load_devices (0);
-}
-
-static void
 elektroid_update_statusbar ()
 {
   char *status;
@@ -169,6 +163,17 @@ elektroid_check_connector ()
   elektroid_update_statusbar ();
 
   return status;
+}
+
+static void
+elektroid_refresh_devices (GtkWidget * object, gpointer user_data)
+{
+  if (connector_check (&connector))
+    {
+      connector_destroy (&connector);
+      elektroid_check_connector ();
+    }
+  elektroid_load_devices (0);
 }
 
 static void
