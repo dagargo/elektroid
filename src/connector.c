@@ -483,6 +483,7 @@ connector_upload (struct connector *connector, GArray * sample,
 	{
 	  return -1;
 	}
+      //TODO: check message
       g_byte_array_free (rx_msg, TRUE);
       i++;
     }
@@ -734,9 +735,6 @@ connector_init (struct connector *connector, gint card)
     {
       fprintf (stderr, __FILE__ ": Error while stopping device.\n");
     }
-
-  debug_print ("Waiting for stop command to be processed...\n");
-  sleep (1);
 
   connector->seq = 0;
   connector->device_name = malloc (LABEL_MAX);
