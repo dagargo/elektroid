@@ -43,6 +43,11 @@ audio_play (struct audio *audio)
   int buffer_len;
   int len;
 
+  if (!audio->pa_s)
+    {
+      return;
+    }
+
   audio->playing = 1;
   buffer = (short *) audio->sample->data;
   remaining = audio->sample->len;
@@ -65,6 +70,11 @@ void
 audio_stop (struct audio *audio)
 {
   int err;
+
+  if (!audio->pa_s)
+    {
+      return;
+    }
 
   audio->playing = 0;
 
