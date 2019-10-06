@@ -31,6 +31,7 @@
 #include "utils.h"
 
 #define PA_BUFFER_LEN 4800
+#define PROGRESS_PERIOD 48000
 
 extern int debug;
 
@@ -111,14 +112,18 @@ audio_load_sample_in_mono (SNDFILE * sndfile, int channels, sf_count_t frames,
 	      sum += frame[j];
 	    }
 	  buffer[i] = sum / (float) channels;
-	  if (progress && k == PA_BUFFER_LEN)
+	  if (progress && k == PROGRESS_PERIOD)
 	    {
-	      progress (i * 1.0 / frames);
+	      progress (i * 0.5 / frames);
 	      k = 0;
 	    }
 	}
 
-      progress (i * 1.0 / frames);
+      if (progress)
+	{
+	  progress (i * 0.5 / frames);
+	}
+
       free (frame);
     }
 
@@ -166,11 +171,14 @@ audio_load (struct audio *audio, char *path, gint * running,
   SF_INFO sf_info;
   SNDFILE *sndfile;
   SRC_DATA src_data;
+  SRC_STATE *src_state;
   int frames;
   short *buffer_s;
-  int err;
   float *buffer_f;
+  short *sample;
+  int err;
   int resampled_buffer_len;
+  int i;
 
   g_array_set_size (audio->sample, 0);
 
@@ -193,7 +201,7 @@ audio_load (struct audio *audio, char *path, gint * running,
 
   //TODO: check for too long samples before loading
 
-  buffer_s =
+  sample =
     audio_load_sample_in_mono (sndfile, sf_info.channels, frames, running,
 			       progress);
 
@@ -205,35 +213,72 @@ audio_load (struct audio *audio, char *path, gint * running,
 
   if (sf_info.samplerate != 48000)
     {
-      buffer_f = malloc (frames * sizeof (float));
-      src_short_to_float_array (buffer_s, buffer_f, frames);
-
+      buffer_f = malloc (PROGRESS_PERIOD * sizeof (float));
       src_data.data_in = buffer_f;
-      src_data.input_frames = frames;
       src_data.src_ratio = 48000.0 / sf_info.samplerate;
-      resampled_buffer_len = frames * src_data.src_ratio;
+      resampled_buffer_len = PROGRESS_PERIOD * src_data.src_ratio;
       src_data.data_out = malloc (resampled_buffer_len * sizeof (float));
-      src_data.output_frames = resampled_buffer_len;
-      err = src_simple (&src_data, SRC_SINC_BEST_QUALITY, 1);
+      src_data.end_of_input = 0;
+      buffer_s = malloc (resampled_buffer_len * sizeof (short));
+      i = 0;
+      src_state = src_new (SRC_SINC_BEST_QUALITY, 1, &err);
+      while (!err && i < frames && *running)
+	{
+	  if (frames - i > PROGRESS_PERIOD)
+	    {
+	      src_data.input_frames = PROGRESS_PERIOD;
+	    }
+	  else
+	    {
+	      src_data.input_frames = frames - i;
+	      src_data.end_of_input = SF_TRUE;
+	    }
+	  src_short_to_float_array (&sample[i], buffer_f,
+				    src_data.input_frames);
+	  src_data.output_frames = src_data.input_frames * src_data.src_ratio;
+	  err = src_process (src_state, &src_data);
+
+	  src_float_to_short_array (src_data.data_out, buffer_s,
+				    src_data.output_frames_gen);
+	  g_array_append_vals (audio->sample, buffer_s,
+			       src_data.output_frames_gen);
+	  i += src_data.input_frames_used;
+
+	  if (progress)
+	    {
+	      progress (0.5 + (i * 1.0 / frames));
+	    }
+	}
+
+      src_delete (src_state);
+
       if (err)
 	{
-	  fprintf (stderr, __FILE__ ": src_simple() failed: %s\n",
+	  *running = 0;
+	  fprintf (stderr, __FILE__ ": src_process() failed: %s\n",
 		   src_strerror (err));
+	}
+
+      if (!*running)
+	{
+	  g_array_set_size (audio->sample, 0);
 	}
 
       free (buffer_s);
       free (buffer_f);
-      frames = src_data.output_frames_gen;
-      buffer_s = malloc (frames * sizeof (short));
-      src_float_to_short_array (src_data.data_out, buffer_s, frames);
 
-      free (src_data.data_out);
+      if (progress && *running)
+	{
+	  progress (1.0);
+	}
+    }
+  else
+    {
+      g_array_append_vals (audio->sample, sample, frames);
     }
 
-  g_array_append_vals (audio->sample, buffer_s, frames);
-
 cleanup:
-  free (buffer_s);
+  free (sample);
   sf_close (sndfile);
   return audio->sample->len;
 }
