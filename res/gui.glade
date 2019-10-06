@@ -40,6 +40,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <!-- column-name name -->
       <column type="gchararray"/>
       <!-- column-name size -->
+      <column type="gint"/>
+      <!-- column-name human_size -->
       <column type="gchararray"/>
     </columns>
   </object>
@@ -50,6 +52,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <!-- column-name name -->
       <column type="gchararray"/>
       <!-- column-name size -->
+      <column type="gint"/>
+      <!-- column-name human_size -->
       <column type="gchararray"/>
     </columns>
   </object>
@@ -298,7 +302,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <child>
                               <object class="GtkCellRendererText"/>
                               <attributes>
-                                <attribute name="text">2</attribute>
+                                <attribute name="text">3</attribute>
                               </attributes>
                             </child>
                           </object>
@@ -528,7 +532,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <child>
                               <object class="GtkCellRendererText"/>
                               <attributes>
-                                <attribute name="text">2</attribute>
+                                <attribute name="text">3</attribute>
                               </attributes>
                             </child>
                           </object>

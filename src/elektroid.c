@@ -262,7 +262,7 @@ electra_browser_sort (GtkTreeModel * model,
 
 static void
 elektroid_get_browser_selected_info (struct elektroid_browser *ebrowser,
-				     char **type, char **name)
+				     char **type, char **name, gint * size)
 {
   GtkTreeIter iter;
   GtkTreeSelection *selection = gtk_tree_view_get_selection (ebrowser->view);
@@ -281,6 +281,10 @@ elektroid_get_browser_selected_info (struct elektroid_browser *ebrowser,
 	{
 	  *name = NULL;
 	}
+      if (size)
+	{
+	  size = NULL;
+	}
       return;
     }
 
@@ -294,6 +298,10 @@ elektroid_get_browser_selected_info (struct elektroid_browser *ebrowser,
     {
       gtk_tree_model_get (model, &iter, 1, name, -1);
     }
+  if (size)
+    {
+      gtk_tree_model_get (model, &iter, 2, size, -1);
+    }
 }
 
 static char *
@@ -302,7 +310,7 @@ elektroid_get_browser_selected_path (struct elektroid_browser *ebrowser)
   char *name;
   char *path;
 
-  elektroid_get_browser_selected_info (ebrowser, NULL, &name);
+  elektroid_get_browser_selected_info (ebrowser, NULL, &name, NULL);
   if (name)
     {
       path = chain_path (ebrowser->dir, name);
@@ -449,11 +457,37 @@ elektroid_local_file_unselected (gpointer data)
   return FALSE;
 }
 
+static const char *
+elektroid_get_ext (const char *name)
+{
+  int namelen = strlen (name) - 1;
+  int i = namelen;
+  const char *ext = &name[namelen];
+
+  while (*(ext - 1) != '.' && i > 0)
+    {
+      ext--;
+      i--;
+    }
+
+  if (i == 0 && name[0] != '.')
+    {
+      return NULL;
+    }
+  else
+    {
+      return ext;
+    }
+}
+
 static gboolean
 elektroid_local_file_selected (gpointer data)
 {
   gint result;
   char *label;
+  const char *ext;
+  gint size;
+  int uncompressed;
   char *path = elektroid_get_browser_selected_path (&local_browser);
   if (!path)
     {
@@ -482,11 +516,20 @@ elektroid_local_file_selected (gpointer data)
   load_thread =
     g_thread_new ("elektroid_load_sample", elektroid_load_sample, path);
 
-  result = gtk_dialog_run (elektroid_progress.dialog);
+  elektroid_get_browser_selected_info (&local_browser, NULL, NULL, &size);
 
-  if (result == GTK_RESPONSE_CANCEL || result == GTK_RESPONSE_DELETE_EVENT)
+  //Not show loading progress dialog when samples for small samples to prevent flickering
+  ext = elektroid_get_ext (path);
+  uncompressed = (!strcmp (ext, "wav") || !strcmp (ext, "aiff"));
+  if ((uncompressed && size > 2000000) || (!uncompressed && size > 200000))
     {
-      elektroid_progress.running = 0;
+      result = gtk_dialog_run (elektroid_progress.dialog);
+
+      if (result == GTK_RESPONSE_CANCEL
+	  || result == GTK_RESPONSE_DELETE_EVENT)
+	{
+	  elektroid_progress.running = 0;
+	}
     }
 
   if (g_thread_join (load_thread) != NULL)
@@ -554,7 +597,7 @@ static void
 elektroid_add_dentry_item (struct elektroid_browser *ebrowser,
 			   const gchar type, const gchar * name, ssize_t size)
 {
-  char size_label[SIZE_LABEL_LEN];
+  char human_size[SIZE_LABEL_LEN];
   gchar *type_icon;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (ebrowser->view));
@@ -570,16 +613,16 @@ elektroid_add_dentry_item (struct elektroid_browser *ebrowser,
 
   if (size > 0)
     {
-      snprintf (size_label, SIZE_LABEL_LEN, "%.2fMB",
+      snprintf (human_size, SIZE_LABEL_LEN, "%.2fMB",
 		size / (1024.0 * 1024.0));
     }
   else
     {
-      size_label[0] = 0;
+      human_size[0] = 0;
     }
 
   gtk_list_store_insert_with_values (list_store, NULL, -1, 0, type_icon, 1,
-				     name, 2, size_label, -1);
+				     name, 2, size, 3, human_size, -1);
 }
 
 static gboolean
@@ -634,15 +677,11 @@ cleanup:
 static gint
 elektroid_valid_file (const char *name)
 {
-  const char *ext = &name[strlen (name)];
+  const char *ext = elektroid_get_ext (name);
 
-  while (*(ext - 1) != '.')
-    {
-      ext--;
-    }
-
-  return (!strcasecmp (ext, "wav") || !strcasecmp (ext, "ogg")
-	  || !strcasecmp (ext, "aiff") || !strcasecmp (ext, "flac"));
+  return (ext != NULL && (!strcasecmp (ext, "wav") || !strcasecmp (ext, "ogg")
+			  || !strcasecmp (ext, "aiff")
+			  || !strcasecmp (ext, "flac")));
 }
 
 static gboolean
@@ -996,7 +1035,7 @@ elektroid_row_selected (GtkTreeSelection * treeselection, gpointer user_data)
   gchar *icon;
   struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
 
-  elektroid_get_browser_selected_info (ebrowser, &icon, NULL);
+  elektroid_get_browser_selected_info (ebrowser, &icon, NULL, NULL);
 
   if (icon)
     {
@@ -1021,7 +1060,7 @@ elektroid_row_activated (GtkTreeView * view,
   gchar *name;
   struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
 
-  elektroid_get_browser_selected_info (ebrowser, &icon, &name);
+  elektroid_get_browser_selected_info (ebrowser, &icon, &name, NULL);
   if (icon)
     {
       if (strcmp (icon, DIR_TYPE) == 0)
