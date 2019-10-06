@@ -37,7 +37,7 @@ int audio_check (struct audio *);
 
 size_t audio_save_file (char *, GArray * data);
 
-size_t audio_load (struct audio *, char *);
+size_t audio_load (struct audio *, char *, gint *, void (*)(gdouble));
 
 int audio_init (struct audio *);
 

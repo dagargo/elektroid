@@ -88,11 +88,12 @@ audio_stop (struct audio *audio)
 }
 
 short *
-audio_load_sample_in_mono (SNDFILE * sndfile, int channels, sf_count_t frames)
+audio_load_sample_in_mono (SNDFILE * sndfile, int channels, sf_count_t frames,
+			   gint * running, void (*progress) (gdouble))
 {
   short *frame;
   float sum;
-  int i, j;
+  int i, j, k;
   short *buffer = malloc (sizeof (short) * frames);
 
   if (channels == 1)
@@ -101,15 +102,23 @@ audio_load_sample_in_mono (SNDFILE * sndfile, int channels, sf_count_t frames)
     {
       frame = malloc (sizeof (short) * channels);
 
-      for (i = 0; i < frames; i++)
+      for (i = 0, k = 0; i < frames; i++, k++)
 	{
 	  sf_readf_short (sndfile, frame, 1);
 	  sum = 0;
 	  for (j = 0; j < channels; j++)
-	    sum += frame[j];
+	    {
+	      sum += frame[j];
+	    }
 	  buffer[i] = sum / (float) channels;
+	  if (progress && k == PA_BUFFER_LEN)
+	    {
+	      progress (i * 1.0 / frames);
+	      k = 0;
+	    }
 	}
 
+      progress (i * 1.0 / frames);
       free (frame);
     }
 
@@ -150,7 +159,8 @@ audio_save_file (char *path, GArray * sample)
 }
 
 size_t
-audio_load (struct audio *audio, char *path)
+audio_load (struct audio *audio, char *path, gint * running,
+	    void (*progress) (gdouble))
 {
   struct stat path_stat;
   SF_INFO sf_info;
@@ -181,7 +191,17 @@ audio_load (struct audio *audio, char *path)
 
   frames = sf_info.frames;
 
-  buffer_s = audio_load_sample_in_mono (sndfile, sf_info.channels, frames);
+  //TODO: check for too long samples before loading
+
+  buffer_s =
+    audio_load_sample_in_mono (sndfile, sf_info.channels, frames, running,
+			       progress);
+
+  if (!*running)
+    {
+      g_array_set_size (audio->sample, 0);
+      goto cleanup;
+    }
 
   if (sf_info.samplerate != 48000)
     {
@@ -211,10 +231,10 @@ audio_load (struct audio *audio, char *path)
     }
 
   g_array_append_vals (audio->sample, buffer_s, frames);
+
+cleanup:
   free (buffer_s);
-
   sf_close (sndfile);
-
   return audio->sample->len;
 }
 

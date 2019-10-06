@@ -53,10 +53,11 @@ struct elektroid_browser
 
 struct elektroid_progress
 {
-  int running;
+  gint running;
   GtkDialog *dialog;
   GtkLabel *label;
   GtkProgressBar *progress;
+  gdouble percent;
 };
 
 //TODO: add signal handler
@@ -314,6 +315,13 @@ elektroid_get_browser_selected_path (struct elektroid_browser *ebrowser)
     }
 }
 
+static gpointer
+elektroid_play (gpointer data)
+{
+  audio_play (&audio);
+  return NULL;
+}
+
 static void
 elektroid_audio_stop ()
 {
@@ -324,6 +332,16 @@ elektroid_audio_stop ()
       g_thread_unref (audio_thread);
     }
   audio_thread = NULL;
+}
+
+static void
+elektroid_audio_start ()
+{
+  elektroid_audio_stop ();
+  if (audio_check (&audio))
+    {
+      audio_thread = g_thread_new ("elektroid_play", elektroid_play, NULL);
+    }
 }
 
 static gboolean
@@ -348,13 +366,6 @@ elektroid_close_and_exit (GtkWidget * widget, GdkEvent * event,
   return FALSE;
 }
 
-static gpointer
-elektroid_play (gpointer data)
-{
-  audio_play (&audio);
-  return NULL;
-}
-
 static gboolean
 elektroid_update_ui_after_load (gpointer data)
 {
@@ -373,20 +384,38 @@ elektroid_update_ui_after_load (gpointer data)
   return FALSE;
 }
 
+static gboolean
+elektroid_update_progress_value (gpointer data)
+{
+  gtk_progress_bar_set_fraction (elektroid_progress.progress,
+				 elektroid_progress.percent);
+
+  return FALSE;
+}
+
+static void
+elektroid_update_progress (gdouble percent)
+{
+  elektroid_progress.percent = percent;
+  g_idle_add (elektroid_update_progress_value, NULL);
+}
+
+static gboolean
+elektroid_progress_dialog_end ()
+{
+  gtk_dialog_response (elektroid_progress.dialog, GTK_RESPONSE_NONE);
+
+  return FALSE;
+}
+
 static gpointer
-elektroid_load_and_play (gpointer data)
+elektroid_load_sample (gpointer data)
 {
   elektroid_audio_stop ();
-  if (audio_load (&audio, data) > 0)
-    {
-      g_idle_add (elektroid_update_ui_after_load, NULL);
-      if (audio_check (&audio))
-	{
-	  audio_thread =
-	    g_thread_new ("elektroid_play", elektroid_play, NULL);
-	}
-    }
-  free (data);
+  audio_load (&audio, data, &elektroid_progress.running,
+	      elektroid_update_progress);
+  g_idle_add (elektroid_progress_dialog_end, NULL);
+
   return NULL;
 }
 
@@ -423,6 +452,8 @@ elektroid_local_file_unselected (gpointer data)
 static gboolean
 elektroid_local_file_selected (gpointer data)
 {
+  gint result;
+  char *label;
   char *path = elektroid_get_browser_selected_path (&local_browser);
   if (!path)
     {
@@ -434,11 +465,43 @@ elektroid_local_file_selected (gpointer data)
       g_thread_join (load_thread);
       g_thread_unref (load_thread);
     }
-  load_thread = NULL;
+
   gtk_widget_set_sensitive (play_button, FALSE);
   gtk_widget_set_sensitive (upload_button, FALSE);
+
+  gtk_window_set_title (GTK_WINDOW (elektroid_progress.dialog),
+			"Loading file");
+
+  label = malloc (LABEL_MAX + PATH_MAX);
+  snprintf (label, LABEL_MAX + PATH_MAX, "Loading %s...", path);
+  gtk_label_set_text (elektroid_progress.label, label);
+  free (label);
+
+  elektroid_progress.running = 1;
+
   load_thread =
-    g_thread_new ("elektroid_load_and_play", elektroid_load_and_play, path);
+    g_thread_new ("elektroid_load_sample", elektroid_load_sample, path);
+
+  result = gtk_dialog_run (elektroid_progress.dialog);
+
+  if (result == GTK_RESPONSE_CANCEL || result == GTK_RESPONSE_DELETE_EVENT)
+    {
+      elektroid_progress.running = 0;
+    }
+
+  if (g_thread_join (load_thread) != NULL)
+    {
+      //TODO: show error
+    }
+  g_thread_unref (load_thread);
+  load_thread = NULL;
+
+  free (path);
+
+  gtk_widget_hide (GTK_WIDGET (elektroid_progress.dialog));
+  g_idle_add (elektroid_update_ui_after_load, NULL);
+
+  elektroid_audio_start ();
 
   return FALSE;
 }
@@ -484,8 +547,7 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer user_data)
 static void
 elektroid_play_clicked (GtkWidget * object, gpointer user_data)
 {
-  elektroid_audio_stop (&audio);
-  audio_thread = g_thread_new ("elektroid_play", elektroid_play, NULL);
+  elektroid_audio_start ();
 }
 
 static void
@@ -513,7 +575,7 @@ elektroid_add_dentry_item (struct elektroid_browser *ebrowser,
     }
   else
     {
-      size_label[0] = '\0';
+      size_label[0] = 0;
     }
 
   gtk_list_store_insert_with_values (list_store, NULL, -1, 0, type_icon, 1,
@@ -572,9 +634,15 @@ cleanup:
 static gint
 elektroid_valid_file (const char *name)
 {
-  const char *ext = &name[strlen (name) - 4];
+  const char *ext = &name[strlen (name)];
 
-  return (strcasecmp (ext, ".wav") == 0);
+  while (*(ext - 1) != '.')
+    {
+      ext--;
+    }
+
+  return (!strcasecmp (ext, "wav") || !strcasecmp (ext, "ogg")
+	  || !strcasecmp (ext, "aiff") || !strcasecmp (ext, "flac"));
 }
 
 static gboolean
@@ -730,18 +798,24 @@ elektroid_cancel_progress (GtkWidget * object, gpointer user_data)
 }
 
 static void
-elektroid_update_progress (gdouble percent)
+elektroid_remove_ext (char *name)
 {
-  gtk_progress_bar_set_fraction (elektroid_progress.progress, percent);
+  int namelen = strlen (name);
+  char *dot = &name[namelen];
+
+  while (*dot != '.')
+    {
+      dot--;
+    }
+  *dot = 0;
 }
 
-gpointer
+static gpointer
 elektroid_upload_process (gpointer user_data)
 {
   char *basec;
   char *bname;
   char *remote_path;
-  int bnamelen;
   char *path = (char *) user_data;
   ssize_t len;
   gint id;
@@ -750,9 +824,7 @@ elektroid_upload_process (gpointer user_data)
 
   basec = strdup (path);
   bname = basename (basec);
-  bnamelen = strlen (bname);
-  //TODO: what happens if filename is '.wav'
-  bname[bnamelen - 4] = 0;
+  elektroid_remove_ext (bname);
   remote_path = chain_path (remote_browser.dir, bname);
   free (basec);
 
@@ -781,7 +853,7 @@ elektroid_upload_process (gpointer user_data)
       g_idle_add (remote_browser.load_dir, NULL);
     }
 
-  gtk_dialog_response (elektroid_progress.dialog, GTK_RESPONSE_NONE);
+  g_idle_add (elektroid_progress_dialog_end, NULL);
 
   return NULL;
 }
@@ -789,7 +861,7 @@ elektroid_upload_process (gpointer user_data)
 static void
 elektroid_upload (GtkWidget * object, gpointer user_data)
 {
-  int result;
+  gint result;
   char *label;
   char *path = elektroid_get_browser_selected_path (&local_browser);
 
@@ -802,7 +874,7 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
 			"Uploading file");
 
   label = malloc (LABEL_MAX + PATH_MAX);
-  snprintf (label, LABEL_MAX + PATH_MAX, "%s %s", "Uploading", path);
+  snprintf (label, LABEL_MAX + PATH_MAX, "Uploading %s...", path);
   gtk_label_set_text (elektroid_progress.label, label);
   free (label);
 
@@ -871,7 +943,7 @@ elektroid_download_process (gpointer user_data)
       g_idle_add (local_browser.load_dir, NULL);
     }
 
-  gtk_dialog_response (elektroid_progress.dialog, GTK_RESPONSE_NONE);
+  g_idle_add (elektroid_progress_dialog_end, NULL);
 
   return NULL;
 }
@@ -879,7 +951,7 @@ elektroid_download_process (gpointer user_data)
 static void
 elektroid_download (GtkWidget * object, gpointer user_data)
 {
-  int result;
+  gint result;
   char *label;
   char *path = elektroid_get_browser_selected_path (&remote_browser);
 
@@ -892,7 +964,7 @@ elektroid_download (GtkWidget * object, gpointer user_data)
 			"Downloading file");
 
   label = malloc (LABEL_MAX);
-  snprintf (label, LABEL_MAX, "%s %s.wav...", "Downloading", path);
+  snprintf (label, LABEL_MAX, "Downloading %s.wav...", path);
   gtk_label_set_text (elektroid_progress.label, label);
   free (label);
 
