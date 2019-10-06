@@ -34,8 +34,8 @@ struct connector_dir_iterator
   gchar *dentry;
   gchar type;
   guint size;
-  const GByteArray *dir_payload;
-  guint position;
+  const GByteArray *msg;
+  guint pos;
 };
 
 typedef struct connector_device
@@ -67,11 +67,11 @@ GByteArray *connector_new_msg_new_dir (const gchar *);
 
 GByteArray *connector_new_msg_new_upload (const gchar *, guint);
 
-GArray *connector_download (struct connector *, const char *, int *,
+GArray *connector_download (struct connector *, const char *, gint *,
 			    void (*)(gdouble));
 
 ssize_t
-connector_upload (struct connector *, GArray *, guint, int *,
+connector_upload (struct connector *, GArray *, guint, gint *,
 		  void (*)(gdouble));
 
 void connector_get_sample_info_from_msg (GByteArray *, guint *, guint *);

@@ -51,14 +51,14 @@ static const guint8 INQ_UPL_TEMPLATE_NTH[] =
 static const guint8 INQ_UPL_TEMPLATE_END[] = { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 struct connector_dir_iterator *
-connector_new_dir_iterator (const GByteArray * dir_payload)
+connector_new_dir_iterator (const GByteArray * msg)
 {
   struct connector_dir_iterator *dir_iterator =
     malloc (sizeof (struct connector_dir_iterator));
 
   dir_iterator->dentry = NULL;
-  dir_iterator->dir_payload = dir_payload;
-  dir_iterator->position = 5;
+  dir_iterator->msg = msg;
+  dir_iterator->pos = 5;
 
   return dir_iterator;
 }
@@ -66,27 +66,35 @@ connector_new_dir_iterator (const GByteArray * dir_payload)
 guint
 connector_get_next_dentry (struct connector_dir_iterator *dir_iterator)
 {
-  if (dir_iterator->position + 9 >= dir_iterator->dir_payload->len)
+  uint32_t size;
+
+  if (dir_iterator->pos + 1 >= dir_iterator->msg->len)
     {
       dir_iterator->dentry = NULL;
       return -ENOENT;
     }
   else
     {
-      dir_iterator->size =
-	ntohl (*
-	       ((uint32_t *) & dir_iterator->
-		dir_payload->data[dir_iterator->position + 4]));
-      dir_iterator->position += 9;
-      dir_iterator->type =
-	dir_iterator->dir_payload->data[dir_iterator->position];
-      dir_iterator->position++;
-      dir_iterator->dentry = (gchar *)
-	& dir_iterator->dir_payload->data[dir_iterator->position];
-      while (dir_iterator->position < dir_iterator->dir_payload->len
-	     && dir_iterator->dir_payload->data[dir_iterator->position] != 0)
-	dir_iterator->position++;
-      dir_iterator->position++;
+      dir_iterator->pos += 4;
+      size = (uint32_t) dir_iterator->msg->data[dir_iterator->pos];
+      dir_iterator->size = ntohl (size);
+
+      dir_iterator->pos += 5;
+      dir_iterator->type = dir_iterator->msg->data[dir_iterator->pos];
+
+      dir_iterator->pos++;
+      dir_iterator->dentry =
+	(gchar *) & dir_iterator->msg->data[dir_iterator->pos];
+
+      while (dir_iterator->pos < dir_iterator->msg->len
+	     && dir_iterator->msg->data[dir_iterator->pos] != 0)
+	{
+
+	  dir_iterator->pos++;
+	}
+
+      dir_iterator->pos++;
+
       return 0;
     }
 }
@@ -453,7 +461,7 @@ cleanup:
 
 ssize_t
 connector_upload (struct connector *connector, GArray * sample,
-		  guint id, int *running, void (*progress) (gdouble))
+		  guint id, gint * running, void (*progress) (gdouble))
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -521,7 +529,7 @@ connector_upload (struct connector *connector, GArray * sample,
 
 GArray *
 connector_download (struct connector *connector, const char *path,
-		    int *running, void (*progress) (gdouble))
+		    gint * running, void (*progress) (gdouble))
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
