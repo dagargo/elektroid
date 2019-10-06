@@ -33,14 +33,15 @@ struct connector_dir_iterator
 {
   gchar *dentry;
   gchar type;
+  guint size;
   const GByteArray *dir_payload;
-  int position;
+  guint position;
 };
 
 typedef struct connector_device
 {
-  char *name;
-  int card;
+  gchar *name;
+  guint card;
 } ConnectorDevice;
 
 int connector_init (struct connector *, gint);

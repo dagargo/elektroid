@@ -30,9 +30,11 @@
 #include "audio.h"
 #include "utils.h"
 
+
 #define DIR_TYPE "gtk-directory"
 #define REG_TYPE "gtk-file"
 #define MAX_DRAW_X 10000
+#define SIZE_LABEL_LEN 16
 
 struct elektroid_browser
 {
@@ -488,8 +490,9 @@ elektroid_play_clicked (GtkWidget * object, gpointer user_data)
 
 static void
 elektroid_add_dentry_item (struct elektroid_browser *ebrowser,
-			   const gchar type, const gchar * name)
+			   const gchar type, const gchar * name, ssize_t size)
 {
+  char size_label[SIZE_LABEL_LEN];
   gchar *type_icon;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (ebrowser->view));
@@ -503,8 +506,18 @@ elektroid_add_dentry_item (struct elektroid_browser *ebrowser,
       type_icon = REG_TYPE;
     }
 
+  if (size > 0)
+    {
+      snprintf (size_label, SIZE_LABEL_LEN, "%.2fMB",
+		size / (1024.0 * 1024.0));
+    }
+  else
+    {
+      size_label[0] = '\0';
+    }
+
   gtk_list_store_insert_with_values (list_store, NULL, -1, 0, type_icon, 1,
-				     name, -1);
+				     name, 2, size_label, -1);
 }
 
 static gboolean
@@ -522,6 +535,7 @@ elektroid_load_remote_dir (gpointer data)
   gtk_widget_set_sensitive (download_button, FALSE);
 
   gtk_list_store_clear (list_store);
+  gtk_tree_view_columns_autosize (remote_browser.view);
 
   g_mutex_lock (&connector_mutex);
 
@@ -543,7 +557,7 @@ elektroid_load_remote_dir (gpointer data)
   while (!connector_get_next_dentry (d_iter))
     {
       elektroid_add_dentry_item (&remote_browser, d_iter->type,
-				 d_iter->dentry);
+				 d_iter->dentry, d_iter->size);
     }
   free (d_iter);
 
@@ -555,12 +569,23 @@ cleanup:
   return FALSE;
 }
 
+static gint
+elektroid_valid_file (const char *name)
+{
+  const char *ext = &name[strlen (name) - 4];
+
+  return (strcasecmp (ext, ".wav") == 0);
+}
+
 static gboolean
 elektroid_load_local_dir (gpointer data)
 {
   DIR *dir;
   struct dirent *dirent;
   char type;
+  struct stat st;
+  ssize_t size;
+  char *path;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (local_browser.view));
 
@@ -569,25 +594,47 @@ elektroid_load_local_dir (gpointer data)
   gtk_entry_set_text (local_browser.dir_entry, local_browser.dir);
 
   gtk_list_store_clear (list_store);
+  gtk_tree_view_columns_autosize (local_browser.view);
 
   if ((dir = opendir (local_browser.dir)) != NULL)
     {
+      path = malloc (PATH_MAX);
       while ((dirent = readdir (dir)) != NULL)
 	{
 	  if (dirent->d_name[0] != '.')
 	    {
 	      if (dirent->d_type == DT_DIR
-		  || strcasecmp (&dirent->d_name[strlen (dirent->d_name) - 4],
-				 ".wav") == 0)
+		  || (dirent->d_type == DT_REG
+		      && elektroid_valid_file (dirent->d_name)))
 		{
-		  type = dirent->d_type == DT_DIR ? 'D' : 'F';
+		  if (dirent->d_type == DT_DIR)
+		    {
+		      type = 'D';
+		      size = -1;
+		    }
+		  else
+		    {
+		      type = 'F';
+		      snprintf (path, PATH_MAX, "%s/%s", local_browser.dir,
+				dirent->d_name);
+		      if (stat (path, &st) == 0)
+			{
+			  size = st.st_size;
+			}
+		      else
+			{
+			  size = -1;
+			}
+		    }
 		  elektroid_add_dentry_item (&local_browser, type,
-					     dirent->d_name);
+					     dirent->d_name, size);
 		}
 	    }
 	}
       closedir (dir);
+      free (path);
     }
+
   else
     {
       fprintf (stderr, __FILE__ ": Error while opening dir.\n");

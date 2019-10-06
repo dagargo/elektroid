@@ -66,15 +66,18 @@ connector_new_dir_iterator (const GByteArray * dir_payload)
 guint
 connector_get_next_dentry (struct connector_dir_iterator *dir_iterator)
 {
-  dir_iterator->position += 9;
-
-  if (dir_iterator->position >= dir_iterator->dir_payload->len)
+  if (dir_iterator->position + 9 >= dir_iterator->dir_payload->len)
     {
       dir_iterator->dentry = NULL;
       return -ENOENT;
     }
   else
     {
+      dir_iterator->size =
+	ntohl (*
+	       ((uint32_t *) & dir_iterator->
+		dir_payload->data[dir_iterator->position + 4]));
+      dir_iterator->position += 9;
       dir_iterator->type =
 	dir_iterator->dir_payload->data[dir_iterator->position];
       dir_iterator->position++;

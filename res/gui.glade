@@ -39,6 +39,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
       <!-- column-name name -->
       <column type="gchararray"/>
+      <!-- column-name size -->
+      <column type="gchararray"/>
     </columns>
   </object>
   <object class="GtkListStore" id="remote_list_store">
@@ -46,6 +48,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <!-- column-name type -->
       <column type="gchararray"/>
       <!-- column-name name -->
+      <column type="gchararray"/>
+      <!-- column-name size -->
       <column type="gchararray"/>
     </columns>
   </object>
@@ -177,6 +181,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
+                            <property name="tooltip_text" translatable="yes">Go to parent directory</property>
                             <child>
                               <object class="GtkImage">
                                 <property name="visible">True</property>
@@ -196,6 +201,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
+                            <property name="tooltip_text" translatable="yes">Create directory</property>
                             <child>
                               <object class="GtkImage">
                                 <property name="visible">True</property>
@@ -215,6 +221,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
+                            <property name="tooltip_text" translatable="yes">Refresh list</property>
                             <child>
                               <object class="GtkImage">
                                 <property name="visible">True</property>
@@ -276,10 +283,22 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <child>
                           <object class="GtkTreeViewColumn">
                             <property name="title" translatable="yes">Name</property>
+                            <property name="expand">True</property>
                             <child>
                               <object class="GtkCellRendererText"/>
                               <attributes>
                                 <attribute name="text">1</attribute>
+                              </attributes>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkTreeViewColumn">
+                            <property name="title" translatable="yes">Size</property>
+                            <child>
+                              <object class="GtkCellRendererText"/>
+                              <attributes>
+                                <attribute name="text">2</attribute>
                               </attributes>
                             </child>
                           </object>
@@ -392,6 +411,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
+                            <property name="tooltip_text" translatable="yes">Go to parent directory</property>
                             <child>
                               <object class="GtkImage">
                                 <property name="visible">True</property>
@@ -411,6 +431,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
+                            <property name="tooltip_text" translatable="yes">Create directory</property>
                             <child>
                               <object class="GtkImage">
                                 <property name="visible">True</property>
@@ -430,6 +451,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
+                            <property name="tooltip_text" translatable="yes">Refresh list</property>
                             <child>
                               <object class="GtkImage">
                                 <property name="visible">True</property>
@@ -491,10 +513,22 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <child>
                           <object class="GtkTreeViewColumn">
                             <property name="title" translatable="yes">Name</property>
+                            <property name="expand">True</property>
                             <child>
                               <object class="GtkCellRendererText"/>
                               <attributes>
                                 <attribute name="text">1</attribute>
+                              </attributes>
+                            </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkTreeViewColumn">
+                            <property name="title" translatable="yes">Size</property>
+                            <child>
+                              <object class="GtkCellRendererText"/>
+                              <attributes>
+                                <attribute name="text">2</attribute>
                               </attributes>
                             </child>
                           </object>
@@ -555,6 +589,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Refresh devices</property>
                     <child>
                       <object class="GtkImage">
                         <property name="visible">True</property>
