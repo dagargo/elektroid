@@ -74,7 +74,7 @@ connector_new_dir_iterator (GByteArray * msg)
 guint
 connector_get_next_dentry (struct connector_dir_iterator *dir_iterator)
 {
-  uint32_t size;
+  uint32_t *size;
 
   if (dir_iterator->pos + 1 >= dir_iterator->msg->len)
     {
@@ -84,8 +84,8 @@ connector_get_next_dentry (struct connector_dir_iterator *dir_iterator)
   else
     {
       dir_iterator->pos += 4;
-      size = (uint32_t) dir_iterator->msg->data[dir_iterator->pos];
-      dir_iterator->size = ntohl (size);
+      size = (uint32_t *) & dir_iterator->msg->data[dir_iterator->pos];
+      dir_iterator->size = ntohl (*size);
 
       dir_iterator->pos += 5;
       dir_iterator->type = dir_iterator->msg->data[dir_iterator->pos];
@@ -730,7 +730,6 @@ connector_create_upload (struct connector *connector, const char *path,
 gint
 connector_create_dir (struct connector *connector, const char *path)
 {
-  gint res;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   ssize_t len;
