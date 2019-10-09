@@ -34,7 +34,7 @@ struct connector_dir_iterator
   gchar *dentry;
   gchar type;
   guint size;
-  const GByteArray *msg;
+  GByteArray *msg;
   guint pos;
 };
 
@@ -50,22 +50,12 @@ void connector_destroy (struct connector *);
 
 int connector_check (struct connector *);
 
-struct connector_dir_iterator *connector_new_dir_iterator (const GByteArray
-							   *);
+struct connector_dir_iterator *connector_read_dir (struct connector *,
+						   gchar *);
+
+void connector_free_dir_iterator (struct connector_dir_iterator *);
 
 guint connector_get_next_dentry (struct connector_dir_iterator *);
-
-ssize_t connector_tx (struct connector *, const GByteArray *);
-
-GByteArray *connector_rx (struct connector *);
-
-GByteArray *connector_new_msg_dir_list (const gchar *);
-
-GByteArray *connector_new_msg_info_file (const gchar *);
-
-GByteArray *connector_new_msg_new_dir (const gchar *);
-
-GByteArray *connector_new_msg_new_upload (const gchar *, guint);
 
 GArray *connector_download (struct connector *, const char *, gint *,
 			    void (*)(gdouble));

@@ -628,9 +628,6 @@ elektroid_add_dentry_item (struct elektroid_browser *ebrowser,
 static gboolean
 elektroid_load_remote_dir (gpointer data)
 {
-  ssize_t len;
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
   struct connector_dir_iterator *d_iter;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (remote_browser.view));
@@ -644,29 +641,18 @@ elektroid_load_remote_dir (gpointer data)
 
   g_mutex_lock (&connector_mutex);
 
-  tx_msg = connector_new_msg_dir_list (remote_browser.dir);
-  len = connector_tx (&connector, tx_msg);
-  g_byte_array_free (tx_msg, TRUE);
-  if (len < 0)
+  d_iter = connector_read_dir (&connector, remote_browser.dir);
+  if (d_iter == NULL)
     {
       goto cleanup;
     }
 
-  rx_msg = connector_rx (&connector);
-  if (!rx_msg)
-    {
-      goto cleanup;
-    }
-
-  d_iter = connector_new_dir_iterator (rx_msg);
   while (!connector_get_next_dentry (d_iter))
     {
       elektroid_add_dentry_item (&remote_browser, d_iter->type,
 				 d_iter->dentry, d_iter->size);
     }
-  free (d_iter);
-
-  g_byte_array_free (rx_msg, TRUE);
+  connector_free_dir_iterator (d_iter);
 
 cleanup:
   elektroid_check_connector ();

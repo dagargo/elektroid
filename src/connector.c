@@ -50,8 +50,15 @@ static const guint8 INQ_UPL_TEMPLATE_NTH[] =
   { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 INQ_UPL_TEMPLATE_END[] = { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
 
+void
+connector_free_dir_iterator (struct connector_dir_iterator *d_iter)
+{
+  g_byte_array_free (d_iter->msg, TRUE);
+  free (d_iter);
+}
+
 struct connector_dir_iterator *
-connector_new_dir_iterator (const GByteArray * msg)
+connector_new_dir_iterator (GByteArray * msg)
 {
   struct connector_dir_iterator *dir_iterator =
     malloc (sizeof (struct connector_dir_iterator));
@@ -192,28 +199,28 @@ connector_new_x_payload (const guint8 * data, guint len, const gchar * path)
   return msg;
 }
 
-GByteArray *
+static GByteArray *
 connector_new_msg_dir_list (const gchar * path)
 {
   return connector_new_x_payload (INQ_LS_DIR_TEMPLATE,
 				  sizeof (INQ_LS_DIR_TEMPLATE), path);
 }
 
-GByteArray *
+static GByteArray *
 connector_new_msg_info_file (const gchar * path)
 {
   return connector_new_x_payload (INQ_INFO_FILE_TEMPLATE,
 				  sizeof (INQ_INFO_FILE_TEMPLATE), path);
 }
 
-GByteArray *
+static GByteArray *
 connector_new_msg_new_dir (const gchar * path)
 {
   return connector_new_x_payload (INQ_NEW_DIR_TEMPLATE,
 				  sizeof (INQ_NEW_DIR_TEMPLATE), path);
 }
 
-GByteArray *
+static GByteArray *
 connector_new_msg_new_upload (const gchar * path, guint frames)
 {
   uint32_t aux32;
@@ -349,7 +356,7 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
   return tx_len;
 }
 
-ssize_t
+static ssize_t
 connector_tx (struct connector *connector, const GByteArray * msg)
 {
   ssize_t ret;
@@ -417,7 +424,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len)
   return rx_len;
 }
 
-GByteArray *
+static GByteArray *
 connector_rx (struct connector *connector)
 {
   ssize_t rx_len;
@@ -457,6 +464,30 @@ cleanup:
   free (buffer);
   g_byte_array_free (sysex, TRUE);
   return msg;
+}
+
+struct connector_dir_iterator *
+connector_read_dir (struct connector *connector, gchar * dir)
+{
+  ssize_t len;
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+
+  tx_msg = connector_new_msg_dir_list (dir);
+  len = connector_tx (connector, tx_msg);
+  g_byte_array_free (tx_msg, TRUE);
+  if (len < 0)
+    {
+      return NULL;
+    }
+
+  rx_msg = connector_rx (connector);
+  if (!rx_msg)
+    {
+      return NULL;
+    }
+
+  return connector_new_dir_iterator (rx_msg);
 }
 
 ssize_t
