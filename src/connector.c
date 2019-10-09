@@ -34,6 +34,7 @@ static const guint8 INQ_DEVICE[] = { 0x1 };
 static const guint8 INQ_VERSION[] = { 0x2 };
 static const guint8 INQ_LS_DIR_TEMPLATE[] = { 0x10 };
 static const guint8 INQ_INFO_FILE_TEMPLATE[] = { 0x30 };
+static const guint8 INQ_RENAME_TEMPLATE[] = { 0x21 };
 static const guint8 INQ_NEW_DIR_TEMPLATE[] = { 0x11 };
 static const guint8 INQ_DWL_TEMPLATE[] =
   { 0x32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -490,6 +491,50 @@ connector_read_dir (struct connector *connector, gchar * dir)
   return connector_new_dir_iterator (rx_msg);
 }
 
+gint
+connector_rename (struct connector *connector, const char *old,
+		  const char *new)
+{
+  gint res;
+  ssize_t len;
+  GByteArray *rx_msg;
+  GByteArray *tx_msg = connector_new_msg_data (INQ_RENAME_TEMPLATE,
+					       sizeof (INQ_RENAME_TEMPLATE));
+
+  g_byte_array_append (tx_msg, (guchar *) old, strlen (old));
+  g_byte_array_append (tx_msg, (guchar *) "\0", 1);
+  g_byte_array_append (tx_msg, (guchar *) new, strlen (new));
+  g_byte_array_append (tx_msg, (guchar *) "\0", 1);
+
+  len = connector_tx (connector, tx_msg);
+  g_byte_array_free (tx_msg, TRUE);
+  if (len < 0)
+    {
+      errno = EIO;
+      return -1;
+    }
+
+  rx_msg = connector_rx (connector);
+  if (!rx_msg)
+    {
+      errno = EIO;
+      return -1;
+    }
+  //Response: x, x, x, x, 0xa1, [0 (error), 1 (success)]
+  if (rx_msg->data[5] == 1)
+    {
+      res = 0;
+    }
+  else
+    {
+      res = -1;
+      errno = EEXIST;
+    }
+  g_byte_array_free (rx_msg, TRUE);
+
+  return res;
+}
+
 ssize_t
 connector_upload (struct connector *connector, GArray * sample,
 		  guint id, gint * running, void (*progress) (gdouble))
@@ -654,7 +699,8 @@ cleanup:
 }
 
 gint
-connector_create_upload (struct connector *connector, char *path, guint fsize)
+connector_create_upload (struct connector *connector, const char *path,
+			 guint fsize)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -674,7 +720,7 @@ connector_create_upload (struct connector *connector, char *path, guint fsize)
     {
       return -1;
     }
-  //Response is always ok: x, x, x, x, 0xc0, 0x01, 0x00, 0x00, 0x00, 0x04
+  //Response is always ok: x, x, x, x, 0xc0, 1, 0x00, 0x00, 0x00, 0x04
   connector_get_sample_info_from_msg (rx_msg, &id, NULL);
   g_byte_array_free (rx_msg, TRUE);
 
@@ -682,8 +728,9 @@ connector_create_upload (struct connector *connector, char *path, guint fsize)
 }
 
 gint
-connector_create_dir (struct connector *connector, char *path)
+connector_create_dir (struct connector *connector, const char *path)
 {
+  gint res;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   ssize_t len;
@@ -693,15 +740,17 @@ connector_create_dir (struct connector *connector, char *path)
   g_byte_array_free (tx_msg, TRUE);
   if (len < 0)
     {
+      errno = EIO;
       return -1;
     }
 
   rx_msg = connector_rx (connector);
   if (!rx_msg)
     {
+      errno = EIO;
       return -1;
     }
-  //Response is always ok: x, x, x, x, 0x91, 0x01
+  //Response is always ok: x, x, x, x, 0x91, 1
   g_byte_array_free (rx_msg, TRUE);
 
   return 0;

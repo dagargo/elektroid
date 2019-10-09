@@ -30,7 +30,6 @@
 #include "audio.h"
 #include "utils.h"
 
-
 #define DIR_TYPE "gtk-directory"
 #define REG_TYPE "gtk-file"
 #define MAX_DRAW_X 10000
@@ -41,7 +40,8 @@ struct elektroid_browser
   gboolean (*load_dir) (gpointer);
   gboolean (*file_selected) (gpointer);
   gboolean (*file_unselected) (gpointer);
-  gboolean (*mkdir) (gpointer);
+  gint (*mkdir) (gchar *);
+  gint (*rename_file) (gchar *, gchar *);
   GtkTreeView *view;
   GtkWidget *up_button;
   GtkWidget *new_dir_button;
@@ -74,6 +74,7 @@ static GMutex connector_mutex;
 static GThread *audio_thread = NULL;
 static GThread *load_thread = NULL;
 static GThread *progress_thread = NULL;
+static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
 static GtkDialog *name_dialog;
 static GtkEntry *name_dialog_entry;
@@ -736,38 +737,26 @@ elektroid_load_local_dir (gpointer data)
   return FALSE;
 }
 
-static gboolean
-elektroid_remote_mkdir (gpointer data)
+static gint
+elektroid_remote_mkdir (gchar * name)
 {
-  gint res;
-
-  //TODO: check if the dir already exists? (Device makes no difference between creating a new directory and creating an already existent directory.)
-
-  res = connector_create_dir (&connector, (char *) data);
-  if (res < 0)
-    {
-      //TODO: show error
-    }
-
-  return FALSE;
+  return connector_create_dir (&connector, name);
 }
 
-static gboolean
-elektroid_local_mkdir (gpointer data)
+static gint
+elektroid_local_mkdir (gchar * name)
 {
-  const char *pathname = data;
-  //TODO: Check response
-  mkdir (pathname, 0755);
-
-  return FALSE;
+  return mkdir (name, 0755);
 }
 
 static void
 elektroid_new_dir (GtkWidget * object, gpointer user_data)
 {
   char *pathname;
-  struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
   int result;
+  gint err;
+  GtkWidget *dialog;
+  struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
 
   gtk_entry_set_text (name_dialog_entry, "");
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
@@ -775,17 +764,41 @@ elektroid_new_dir (GtkWidget * object, gpointer user_data)
 
   gtk_window_set_title (GTK_WINDOW (name_dialog), "New directory");
 
-  result = gtk_dialog_run (GTK_DIALOG (name_dialog));
+  result = GTK_RESPONSE_ACCEPT;
 
-  if (result == GTK_RESPONSE_ACCEPT)
+  err = -1;
+  while (err < 0 && result == GTK_RESPONSE_ACCEPT)
     {
-      pathname =
-	chain_path (ebrowser->dir, gtk_entry_get_text (name_dialog_entry));
+      result = gtk_dialog_run (GTK_DIALOG (name_dialog));
 
-      ebrowser->mkdir (pathname);
-      free (pathname);
+      if (result == GTK_RESPONSE_ACCEPT)
+	{
+	  pathname =
+	    chain_path (ebrowser->dir,
+			gtk_entry_get_text (name_dialog_entry));
 
-      g_idle_add (ebrowser->load_dir, NULL);
+	  err = ebrowser->mkdir (pathname);
+
+	  if (err < 0)
+	    {
+	      dialog =
+		gtk_message_dialog_new (GTK_WINDOW (name_dialog),
+					GTK_DIALOG_DESTROY_WITH_PARENT |
+					GTK_DIALOG_MODAL,
+					GTK_MESSAGE_ERROR,
+					GTK_BUTTONS_CLOSE,
+					"Error while creating dir “%s”: %s",
+					pathname, g_strerror (errno));
+	      gtk_dialog_run (GTK_DIALOG (dialog));
+	      gtk_widget_destroy (dialog);
+	    }
+	  else
+	    {
+	      g_idle_add (ebrowser->load_dir, NULL);
+	    }
+
+	  free (pathname);
+	}
     }
 
   gtk_widget_hide (GTK_WIDGET (name_dialog));
@@ -814,6 +827,58 @@ elektroid_name_dialog_entry_changed (GtkWidget * object, gpointer user_data)
     {
       gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
     }
+}
+
+static gint
+elektroid_remote_rename (gchar * old, gchar * new)
+{
+  return connector_rename (&connector, old, new);
+}
+
+static gint
+elektroid_local_rename (gchar * old, gchar * new)
+{
+  return rename (old, new);
+}
+
+static void
+elektroid_rename_file (GtkCellRendererText * renderer,
+		       gchar * path, gchar * new_name, gpointer user_data)
+{
+  gint res;
+  char *old_name;
+  char *old_path;
+  char *new_path;
+  GtkWidget *dialog;
+  struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
+
+  elektroid_get_browser_selected_info (ebrowser, NULL, &old_name, NULL);
+  old_path = chain_path (ebrowser->dir, old_name);
+
+  new_path = chain_path (ebrowser->dir, new_name);
+
+  res = ebrowser->rename_file (old_path, new_path);
+
+  if (res < 0)
+    {
+      dialog =
+	gtk_message_dialog_new (GTK_WINDOW (main_window),
+				GTK_DIALOG_DESTROY_WITH_PARENT |
+				GTK_DIALOG_MODAL,
+				GTK_MESSAGE_ERROR,
+				GTK_BUTTONS_CLOSE,
+				"Error while renaming to “%s”: %s",
+				new_path, g_strerror (errno));
+      gtk_dialog_run (GTK_DIALOG (dialog));
+      gtk_widget_destroy (dialog);
+    }
+  else
+    {
+      g_idle_add (ebrowser->load_dir, NULL);
+    }
+
+  free (old_path);
+  free (new_path);
 }
 
 static void
@@ -1126,11 +1191,12 @@ static int
 elektroid (int argc, char *argv[])
 {
   GtkBuilder *builder;
-  GtkWidget *main_window;
   GtkTreeSortable *sortable;
   GtkWidget *progress_dialog_cancel_button;
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
+  GtkCellRendererText *local_name_cell_renderer_text;
+  GtkCellRendererText *remote_name_cell_renderer_text;
   wordexp_t exp_result;
   int err = 0;
   char *glade_file = malloc (PATH_MAX);
@@ -1184,6 +1250,13 @@ elektroid (int argc, char *argv[])
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "progress_dialog_cancel_button"));
 
+  local_name_cell_renderer_text =
+    GTK_CELL_RENDERER_TEXT (gtk_builder_get_object
+			    (builder, "local_name_cell_renderer_text"));
+  remote_name_cell_renderer_text =
+    GTK_CELL_RENDERER_TEXT (gtk_builder_get_object
+			    (builder, "remote_name_cell_renderer_text"));
+
   g_signal_connect (main_window, "delete-event",
 		    G_CALLBACK (elektroid_close_and_exit), NULL);
 
@@ -1209,6 +1282,11 @@ elektroid (int argc, char *argv[])
 
   g_signal_connect (progress_dialog_cancel_button, "clicked",
 		    G_CALLBACK (elektroid_cancel_progress), NULL);
+
+  g_signal_connect (local_name_cell_renderer_text, "edited",
+		    G_CALLBACK (elektroid_rename_file), &local_browser);
+  g_signal_connect (remote_name_cell_renderer_text, "edited",
+		    G_CALLBACK (elektroid_rename_file), &remote_browser);
 
   elektroid_progress = (struct elektroid_progress)
   {
@@ -1238,6 +1316,7 @@ elektroid (int argc, char *argv[])
     .load_dir = elektroid_load_remote_dir,
     .file_selected = elektroid_remote_file_selected,
     .file_unselected = elektroid_remote_file_unselected,
+    .rename_file = elektroid_remote_rename,
     .mkdir = elektroid_remote_mkdir
   };
   g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
@@ -1268,6 +1347,7 @@ elektroid (int argc, char *argv[])
     .load_dir = elektroid_load_local_dir,
     .file_selected = elektroid_local_file_selected,
     .file_unselected = elektroid_local_file_unselected,
+    .rename_file = elektroid_local_rename,
     .mkdir = elektroid_local_mkdir
   };
 

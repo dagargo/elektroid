@@ -57,6 +57,8 @@ void connector_free_dir_iterator (struct connector_dir_iterator *);
 
 guint connector_get_next_dentry (struct connector_dir_iterator *);
 
+gint connector_rename (struct connector *, const char *, const char *);
+
 GArray *connector_download (struct connector *, const char *, gint *,
 			    void (*)(gdouble));
 
@@ -66,8 +68,8 @@ connector_upload (struct connector *, GArray *, guint, gint *,
 
 void connector_get_sample_info_from_msg (GByteArray *, guint *, guint *);
 
-gint connector_create_upload (struct connector *, char *, guint);
+gint connector_create_upload (struct connector *, const char *, guint);
 
-gint connector_create_dir (struct connector *, char *);
+gint connector_create_dir (struct connector *, const char *);
 
 GArray *connector_get_elektron_devices ();
