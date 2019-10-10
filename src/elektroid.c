@@ -70,7 +70,6 @@ static struct elektroid_progress elektroid_progress;
 static struct audio audio;
 static struct connector connector;
 
-static GMutex connector_mutex;
 static GThread *audio_thread = NULL;
 static GThread *load_thread = NULL;
 static GThread *progress_thread = NULL;
@@ -640,12 +639,11 @@ elektroid_load_remote_dir (gpointer data)
   gtk_list_store_clear (list_store);
   gtk_tree_view_columns_autosize (remote_browser.view);
 
-  g_mutex_lock (&connector_mutex);
-
   d_iter = connector_read_dir (&connector, remote_browser.dir);
+  elektroid_check_connector ();
   if (d_iter == NULL)
     {
-      goto cleanup;
+      return FALSE;
     }
 
   while (!connector_get_next_dentry (d_iter))
@@ -655,9 +653,6 @@ elektroid_load_remote_dir (gpointer data)
     }
   connector_free_dir_iterator (d_iter);
 
-cleanup:
-  elektroid_check_connector ();
-  g_mutex_unlock (&connector_mutex);
   return FALSE;
 }
 
@@ -920,8 +915,6 @@ elektroid_upload_process (gpointer user_data)
 
   debug_print ("Remote path: %s\n", remote_path);
 
-  g_mutex_lock (&connector_mutex);
-
   //TODO: check if the fle already exists? (Device makes no difference between creating a new file and creating an already existent file. The new file would be deleted if an upload is not sent, though.)
 
   id = connector_create_upload (&connector, remote_path, audio.sample->len);
@@ -934,7 +927,6 @@ elektroid_upload_process (gpointer user_data)
     }
 
   elektroid_check_connector ();
-  g_mutex_unlock (&connector_mutex);
 
   free (remote_path);
 
@@ -1003,12 +995,10 @@ elektroid_download_process (gpointer user_data)
   char *new_filename;
   char *path = (char *) user_data;
 
-  g_mutex_lock (&connector_mutex);
   data =
     connector_download (&connector, path, &elektroid_progress.running,
 			elektroid_update_progress);
   elektroid_check_connector ();
-  g_mutex_unlock (&connector_mutex);
 
   if (data != NULL)
     {
@@ -1170,8 +1160,6 @@ elektroid_set_device (GtkWidget * object, gpointer user_data)
 
       card = g_value_get_uint (&cardv);
 
-      g_mutex_lock (&connector_mutex);
-
       if (connector_init (&connector, card) < 0)
 	{
 	  fprintf (stderr, __FILE__ ": Error while connecing.\n");
@@ -1182,8 +1170,6 @@ elektroid_set_device (GtkWidget * object, gpointer user_data)
 	  strcpy (remote_browser.dir, "/");
 	  g_idle_add (remote_browser.load_dir, NULL);
 	}
-
-      g_mutex_unlock (&connector_mutex);
     }
 }
 

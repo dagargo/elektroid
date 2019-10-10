@@ -27,6 +27,7 @@ struct connector
   snd_rawmidi_t *outputp;
   gchar *device_name;
   gushort seq;
+  GMutex mutex;
 };
 
 struct connector_dir_iterator
