@@ -830,26 +830,26 @@ connector_init (struct connector *connector, gint card)
        snd_rawmidi_open (&connector->inputp, &connector->outputp,
 			 name, SND_RAWMIDI_NONBLOCK)) < 0)
     {
-      fprintf (stderr, "Error while opening MIDI port.\n");
+      fprintf (stderr, "Error while opening MIDI port\n");
       goto cleanup;
     }
 
   debug_print ("Setting blocking mode...\n");
   if ((err = snd_rawmidi_nonblock (connector->outputp, 0)) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while setting blocking mode.\n");
+      fprintf (stderr, __FILE__ ": Error while setting blocking mode\n");
       goto cleanup;
     }
   if ((err = snd_rawmidi_nonblock (connector->inputp, 0)) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while setting blocking mode.\n");
+      fprintf (stderr, __FILE__ ": Error while setting blocking mode\n");
       goto cleanup;
     }
 
   debug_print ("Stopping device...\n");
   if (snd_rawmidi_write (connector->outputp, "\xfc", 1) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while stopping device.\n");
+      fprintf (stderr, __FILE__ ": Error while stopping device\n");
     }
 
   connector->seq = 0;
