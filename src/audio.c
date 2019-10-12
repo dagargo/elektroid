@@ -31,9 +31,7 @@
 #include "utils.h"
 
 #define PA_BUFFER_LEN 4800
-#define PROGRESS_PERIOD 48000
-
-extern int debug;
+#define LOAD_BUFFER_LEN 10000
 
 void
 audio_play (struct audio *audio)
@@ -86,48 +84,7 @@ audio_stop (struct audio *audio)
   if (pa_simple_drain (audio->pa_s, &err) < 0)
     fprintf (stderr, __FILE__ ": pa_simple_drain() failed: %s\n",
 	     pa_strerror (err));
-}
 
-short *
-audio_load_sample_in_mono (SNDFILE * sndfile, int channels, sf_count_t frames,
-			   gint * running, void (*progress) (gdouble))
-{
-  short *frame;
-  float sum;
-  int i, j, k;
-  short *buffer = malloc (sizeof (short) * frames);
-
-  if (channels == 1)
-    sf_readf_short (sndfile, buffer, frames);
-  else
-    {
-      frame = malloc (sizeof (short) * channels);
-
-      for (i = 0, k = 0; i < frames; i++, k++)
-	{
-	  sf_readf_short (sndfile, frame, 1);
-	  sum = 0;
-	  for (j = 0; j < channels; j++)
-	    {
-	      sum += frame[j];
-	    }
-	  buffer[i] = sum / (float) channels;
-	  if (progress && k == PROGRESS_PERIOD)
-	    {
-	      progress (i * 0.5 / frames);
-	      k = 0;
-	    }
-	}
-
-      if (progress)
-	{
-	  progress (i * 0.5 / frames);
-	}
-
-      free (frame);
-    }
-
-  return buffer;
 }
 
 size_t
@@ -163,6 +120,26 @@ audio_save_file (char *path, GArray * sample)
   return total;
 }
 
+static void
+audio_multichannel_to_mono (short *input, short *output, int size,
+			    int channels)
+{
+  int i, j, v;
+
+  debug_print ("Converting to mono...\n");
+
+  for (i = 0; i < size; i++)
+    {
+      v = 0;
+      for (j = 0; j < channels; j++)
+	{
+	  v += input[i * channels + j];
+	}
+      v /= channels;
+      output[i] = v;
+    }
+}
+
 size_t
 audio_load (struct audio *audio, char *path, gint * running,
 	    void (*progress) (gdouble))
@@ -172,13 +149,14 @@ audio_load (struct audio *audio, char *path, gint * running,
   SNDFILE *sndfile;
   SRC_DATA src_data;
   SRC_STATE *src_state;
-  int frames;
+  short *buffer_input;
+  short *buffer_input_multi;
+  short *buffer_input_mono;
   short *buffer_s;
   float *buffer_f;
-  short *sample;
   int err;
   int resampled_buffer_len;
-  int i;
+  int f, frames_read;
 
   g_array_set_size (audio->sample, 0);
 
@@ -187,6 +165,8 @@ audio_load (struct audio *audio, char *path, gint * running,
     {
       return 0;
     }
+
+  debug_print ("Loading file %s...\n", path);
 
   sf_info.format = 0;
   sndfile = sf_open (path, SFM_READ, &sf_info);
@@ -197,89 +177,129 @@ audio_load (struct audio *audio, char *path, gint * running,
       return 0;
     }
 
-  frames = sf_info.frames;
+  //TODO: limit sample length or upload
 
-  //TODO: check for too long samples before loading
+  buffer_input_multi =
+    malloc (LOAD_BUFFER_LEN * sf_info.channels * sizeof (short));
+  buffer_input_mono = malloc (LOAD_BUFFER_LEN * sizeof (short));
 
-  sample =
-    audio_load_sample_in_mono (sndfile, sf_info.channels, frames, running,
-			       progress);
+  buffer_f = malloc (LOAD_BUFFER_LEN * sizeof (float));
+  src_data.data_in = buffer_f;
+  src_data.src_ratio = 48000.0 / sf_info.samplerate;
 
-  if (!*running)
+  resampled_buffer_len = LOAD_BUFFER_LEN * src_data.src_ratio;
+  buffer_s = malloc (resampled_buffer_len * sizeof (short));
+  src_data.data_out = malloc (resampled_buffer_len * sizeof (float));
+
+  src_state = src_new (SRC_SINC_BEST_QUALITY, 1, &err);
+  if (err)
     {
+      g_mutex_lock (&audio->load_mutex);
       g_array_set_size (audio->sample, 0);
+      g_mutex_unlock (&audio->load_mutex);
       goto cleanup;
     }
 
-  if (sf_info.samplerate != 48000)
+  audio->len = sf_info.frames * src_data.src_ratio;
+
+  debug_print ("Loading sample (%ld)...\n", sf_info.frames);
+
+  f = 0;
+  while (f < sf_info.frames && (!running || *running))
     {
-      buffer_f = malloc (PROGRESS_PERIOD * sizeof (float));
-      src_data.data_in = buffer_f;
-      src_data.src_ratio = 48000.0 / sf_info.samplerate;
-      resampled_buffer_len = PROGRESS_PERIOD * src_data.src_ratio;
-      src_data.data_out = malloc (resampled_buffer_len * sizeof (float));
-      src_data.end_of_input = 0;
-      buffer_s = malloc (resampled_buffer_len * sizeof (short));
-      i = 0;
-      src_state = src_new (SRC_SINC_BEST_QUALITY, 1, &err);
-      while (!err && i < frames && *running)
+      debug_print ("Loading buffer...\n");
+
+      frames_read =
+	sf_readf_short (sndfile, buffer_input_multi, LOAD_BUFFER_LEN);
+
+      if (frames_read < LOAD_BUFFER_LEN)
 	{
-	  if (frames - i > PROGRESS_PERIOD)
-	    {
-	      src_data.input_frames = PROGRESS_PERIOD;
-	    }
-	  else
-	    {
-	      src_data.input_frames = frames - i;
-	      src_data.end_of_input = SF_TRUE;
-	    }
-	  src_short_to_float_array (&sample[i], buffer_f,
-				    src_data.input_frames);
+	  src_data.end_of_input = SF_TRUE;
+	}
+      else
+	{
+	  src_data.end_of_input = 0;
+	}
+      src_data.input_frames = frames_read;
+      f += frames_read;
+
+      if (sf_info.channels == 1)
+	{
+	  buffer_input = buffer_input_multi;
+	}
+      else
+	{
+	  audio_multichannel_to_mono (buffer_input_multi, buffer_input_mono,
+				      frames_read, sf_info.channels);
+	  buffer_input = buffer_input_mono;
+	}
+
+      if (sf_info.samplerate == 48000)
+	{
+	  g_mutex_lock (&audio->load_mutex);
+	  g_array_append_vals (audio->sample, buffer_input, frames_read);
+	  g_mutex_unlock (&audio->load_mutex);
+	}
+      else
+	{
+	  src_short_to_float_array (buffer_input, buffer_f, frames_read);
 	  src_data.output_frames = src_data.input_frames * src_data.src_ratio;
 	  err = src_process (src_state, &src_data);
-
+	  debug_print ("Resampling...\n");
+	  if (err)
+	    {
+	      debug_print ("Error %s\n", src_strerror (err));
+	      break;
+	    }
 	  src_float_to_short_array (src_data.data_out, buffer_s,
 				    src_data.output_frames_gen);
+	  g_mutex_lock (&audio->load_mutex);
 	  g_array_append_vals (audio->sample, buffer_s,
 			       src_data.output_frames_gen);
-	  i += src_data.input_frames_used;
-
-	  if (progress)
-	    {
-	      progress (0.5 + (i * 1.0 / frames));
-	    }
+	  g_mutex_unlock (&audio->load_mutex);
 	}
 
-      src_delete (src_state);
-
-      if (err)
+      if (progress)
 	{
-	  *running = 0;
-	  fprintf (stderr, __FILE__ ": src_process() failed: %s\n",
-		   src_strerror (err));
+	  progress (f * 1.0 / sf_info.frames);
 	}
 
-      if (!*running)
-	{
-	  g_array_set_size (audio->sample, 0);
-	}
-
-      free (buffer_s);
-      free (buffer_f);
-
-      if (progress && *running)
-	{
-	  progress (1.0);
-	}
     }
-  else
+
+  src_delete (src_state);
+
+  if (err)
     {
-      g_array_append_vals (audio->sample, sample, frames);
+      fprintf (stderr, __FILE__ ": src_process() failed: %s\n",
+	       src_strerror (err));
+    }
+
+  if (running && !*running)
+    {
+      g_mutex_lock (&audio->load_mutex);
+      g_array_set_size (audio->sample, 0);
+      g_mutex_unlock (&audio->load_mutex);
+    }
+
+  if (running && *running && progress)
+    {
+      progress (1.0);
     }
 
 cleanup:
-  free (sample);
+  free (buffer_input_multi);
+  free (buffer_input_mono);
+  free (buffer_s);
+  free (buffer_f);
+  free (src_data.data_out);
+
   sf_close (sndfile);
+
+  if (running)
+    {
+      *running = 0;
+    }
+
   return audio->sample->len;
 }
 
@@ -315,6 +335,8 @@ audio_init (struct audio *audio)
 void
 audio_destroy (struct audio *audio)
 {
+  audio_stop (audio);
+
   g_array_free (audio->sample, TRUE);
 
   if (audio->pa_s)

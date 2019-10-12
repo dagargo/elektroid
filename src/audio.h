@@ -24,9 +24,11 @@
 
 struct audio
 {
-  GArray *sample;
-  int playing;
   pa_simple *pa_s;
+  GArray *sample;
+  gint len;
+  gint playing;
+  GMutex load_mutex;
 };
 
 void audio_play (struct audio *);

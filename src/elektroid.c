@@ -73,6 +73,9 @@ static struct connector connector;
 static GThread *audio_thread = NULL;
 static GThread *load_thread = NULL;
 static GThread *progress_thread = NULL;
+
+static int load_thread_running;
+
 static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
 static GtkDialog *name_dialog;
@@ -364,6 +367,7 @@ elektroid_close_and_exit (GtkWidget * widget, GdkEvent * event,
       g_thread_unref (progress_thread);
     }
 
+  load_thread_running = 0;
   if (load_thread)
     {
       g_thread_join (load_thread);
@@ -388,7 +392,6 @@ elektroid_update_ui_after_load (gpointer data)
 	  gtk_widget_set_sensitive (upload_button, TRUE);
 	}
     }
-  gtk_widget_queue_draw (waveform_draw_area);
   return FALSE;
 }
 
@@ -416,13 +419,23 @@ elektroid_progress_dialog_end ()
   return FALSE;
 }
 
+static void
+elektroid_update_progress_redraw (gdouble percent)
+{
+  gtk_widget_queue_draw (waveform_draw_area);
+}
+
 static gpointer
 elektroid_load_sample (gpointer data)
 {
   elektroid_audio_stop ();
-  audio_load (&audio, data, &elektroid_progress.running,
-	      elektroid_update_progress);
-  g_idle_add (elektroid_progress_dialog_end, NULL);
+  load_thread_running = 1;
+  audio_load (&audio, data, &load_thread_running,
+	      elektroid_update_progress_redraw);
+  gtk_widget_queue_draw (waveform_draw_area);
+  g_idle_add (elektroid_update_ui_after_load, NULL);
+  elektroid_audio_start ();
+  free (data);
 
   return NULL;
 }
@@ -483,17 +496,14 @@ elektroid_get_ext (const char *name)
 static gboolean
 elektroid_local_file_selected (gpointer data)
 {
-  gint result;
   char *label;
-  const char *ext;
-  gint size;
-  int uncompressed;
   char *path = elektroid_get_browser_selected_path (&local_browser);
   if (!path)
     {
       return FALSE;
     }
 
+  load_thread_running = 0;
   if (load_thread)
     {
       g_thread_join (load_thread);
@@ -511,40 +521,8 @@ elektroid_local_file_selected (gpointer data)
   gtk_label_set_text (elektroid_progress.label, label);
   free (label);
 
-  elektroid_progress.running = 1;
-
   load_thread =
     g_thread_new ("elektroid_load_sample", elektroid_load_sample, path);
-
-  elektroid_get_browser_selected_info (&local_browser, NULL, NULL, &size);
-
-  //Not show loading progress dialog when samples for small samples to prevent flickering
-  ext = elektroid_get_ext (path);
-  uncompressed = (!strcmp (ext, "wav") || !strcmp (ext, "aiff"));
-  if ((uncompressed && size > 2000000) || (!uncompressed && size > 200000))
-    {
-      result = gtk_dialog_run (elektroid_progress.dialog);
-
-      if (result == GTK_RESPONSE_CANCEL
-	  || result == GTK_RESPONSE_DELETE_EVENT)
-	{
-	  elektroid_progress.running = 0;
-	}
-    }
-
-  if (g_thread_join (load_thread) != NULL)
-    {
-      //TODO: show error
-    }
-  g_thread_unref (load_thread);
-  load_thread = NULL;
-
-  free (path);
-
-  gtk_widget_hide (GTK_WIDGET (elektroid_progress.dialog));
-  g_idle_add (elektroid_update_ui_after_load, NULL);
-
-  elektroid_audio_start ();
 
   return FALSE;
 }
@@ -573,16 +551,21 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer user_data)
 			       &color);
   gdk_cairo_set_source_rgba (cr, &color);
 
-  x_ratio = audio.sample->len / (double) MAX_DRAW_X;
+  g_mutex_lock (&audio.load_mutex);
+  x_ratio = audio.len / (double) MAX_DRAW_X;
   for (i = 0; i < MAX_DRAW_X; i++)
     {
       x_data = i * x_ratio;
-      x_widget = i * ((double) width) / MAX_DRAW_X;
-      cairo_move_to (cr, x_widget, mid_y);
-      cairo_line_to (cr, x_widget,
-		     mid_y - mid_y * (data[x_data] / (float) SHRT_MIN));
-      cairo_stroke (cr);
+      if (x_data <= audio.sample->len)
+	{
+	  x_widget = i * ((double) width) / MAX_DRAW_X;
+	  cairo_move_to (cr, x_widget, mid_y);
+	  cairo_line_to (cr, x_widget,
+			 mid_y - mid_y * (data[x_data] / (float) SHRT_MIN));
+	  cairo_stroke (cr);
+	}
     }
+  g_mutex_unlock (&audio.load_mutex);
 
   return FALSE;
 }
@@ -922,7 +905,7 @@ elektroid_upload_process (gpointer user_data)
   if (id >= 0)
     {
       len = connector_upload (&connector, audio.sample, id,
-			      &elektroid_progress.running,
+			      &load_thread_running,
 			      elektroid_update_progress);
     }
 
@@ -930,7 +913,7 @@ elektroid_upload_process (gpointer user_data)
 
   free (remote_path);
 
-  if (id >= 0 && len == audio.sample->len && elektroid_progress.running)
+  if (id >= 0 && len == audio.sample->len && load_thread_running)
     {
       g_idle_add (remote_browser.load_dir, NULL);
     }
@@ -960,7 +943,7 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
   gtk_label_set_text (elektroid_progress.label, label);
   free (label);
 
-  elektroid_progress.running = 1;
+  load_thread_running = 1;
 
   progress_thread =
     g_thread_new ("elektroid_upload_process", elektroid_upload_process, path);
@@ -996,13 +979,13 @@ elektroid_download_process (gpointer user_data)
   char *path = (char *) user_data;
 
   data =
-    connector_download (&connector, path, &elektroid_progress.running,
+    connector_download (&connector, path, &load_thread_running,
 			elektroid_update_progress);
   elektroid_check_connector ();
 
   if (data != NULL)
     {
-      if (elektroid_progress.running)
+      if (load_thread_running)
 	{
 	  basec = strdup (path);
 	  bname = basename (basec);
@@ -1048,7 +1031,7 @@ elektroid_download (GtkWidget * object, gpointer user_data)
   gtk_label_set_text (elektroid_progress.label, label);
   free (label);
 
-  elektroid_progress.running = 1;
+  load_thread_running = 1;
 
   progress_thread =
     g_thread_new ("elektroid_download_process", elektroid_download_process,
@@ -1058,7 +1041,7 @@ elektroid_download (GtkWidget * object, gpointer user_data)
 
   if (result == GTK_RESPONSE_CANCEL || result == GTK_RESPONSE_DELETE_EVENT)
     {
-      elektroid_progress.running = 0;
+      load_thread_running = 0;
     }
 
   g_thread_join (progress_thread);
