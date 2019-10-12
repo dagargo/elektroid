@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include "audio.h"
+#include "sample.h"
 #include "utils.h"
 
 #define DIR_TYPE "gtk-directory"
@@ -430,8 +431,8 @@ elektroid_load_sample (gpointer data)
 {
   elektroid_audio_stop ();
   load_thread_running = 1;
-  audio_load (&audio, data, &load_thread_running,
-	      elektroid_update_progress_redraw);
+  sample_load (audio.sample, &audio.load_mutex, &audio.frames, data,
+	       &load_thread_running, elektroid_update_progress_redraw);
   gtk_widget_queue_draw (waveform_draw_area);
   g_idle_add (elektroid_update_ui_after_load, NULL);
   elektroid_audio_start ();
@@ -552,7 +553,7 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer user_data)
   gdk_cairo_set_source_rgba (cr, &color);
 
   g_mutex_lock (&audio.load_mutex);
-  x_ratio = audio.len / (double) MAX_DRAW_X;
+  x_ratio = audio.frames / (double) MAX_DRAW_X;
   for (i = 0; i < MAX_DRAW_X; i++)
     {
       x_data = i * x_ratio;
@@ -865,19 +866,6 @@ elektroid_cancel_progress (GtkWidget * object, gpointer user_data)
   gtk_dialog_response (elektroid_progress.dialog, GTK_RESPONSE_CANCEL);
 }
 
-static void
-elektroid_remove_ext (char *name)
-{
-  int namelen = strlen (name);
-  char *dot = &name[namelen];
-
-  while (*dot != '.')
-    {
-      dot--;
-    }
-  *dot = 0;
-}
-
 static gpointer
 elektroid_upload_process (gpointer user_data)
 {
@@ -885,14 +873,14 @@ elektroid_upload_process (gpointer user_data)
   char *bname;
   char *remote_path;
   char *path = (char *) user_data;
-  ssize_t len;
+  ssize_t frames;
   gint id;
 
   debug_print ("Local path: %s\n", path);
 
   basec = strdup (path);
   bname = basename (basec);
-  elektroid_remove_ext (bname);
+  remove_ext (bname);
   remote_path = chain_path (remote_browser.dir, bname);
   free (basec);
 
@@ -904,16 +892,18 @@ elektroid_upload_process (gpointer user_data)
 
   if (id >= 0)
     {
-      len = connector_upload (&connector, audio.sample, id,
-			      &load_thread_running,
-			      elektroid_update_progress);
+      frames = connector_upload (&connector, audio.sample, id,
+				 &load_thread_running,
+				 elektroid_update_progress);
+
+      debug_print ("%ld frames sent\n", frames);
     }
 
   elektroid_check_connector ();
 
   free (remote_path);
 
-  if (id >= 0 && len == audio.sample->len && load_thread_running)
+  if (id >= 0 && frames == audio.sample->len && load_thread_running)
     {
       g_idle_add (remote_browser.load_dir, NULL);
     }
@@ -971,7 +961,7 @@ static gpointer
 elektroid_download_process (gpointer user_data)
 {
   GArray *data;
-  size_t file_size;
+  size_t frames;
   char *output_file_path;
   char *basec;
   char *bname;
@@ -998,8 +988,8 @@ elektroid_download_process (gpointer user_data)
 	  free (new_filename);
 
 	  debug_print ("Writing to file '%s'...\n", output_file_path);
-	  file_size = audio_save_file (output_file_path, data);
-	  debug_print ("%lu frames written\n", file_size);
+	  frames = sample_save (data, output_file_path);
+	  debug_print ("%lu frames written\n", frames);
 	  free (output_file_path);
 	}
       g_array_free (data, TRUE);
@@ -1409,7 +1399,7 @@ main (int argc, char *argv[])
     {
       fprintf (stderr, "%s\n", PACKAGE_STRING);
       char *exec_name = basename (argv[0]);
-      fprintf (stderr, "Usage: %s [OPTIONS].\n", exec_name);
+      fprintf (stderr, "Usage: %s [-v]\n", exec_name);
       exit (EXIT_FAILURE);
     }
 

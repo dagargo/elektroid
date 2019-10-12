@@ -1,5 +1,5 @@
 /*
- *   audio.h
+ *   sample.h
  *   Copyright (C) 2019 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
@@ -19,24 +19,10 @@
  */
 
 #include <glib.h>
-#include <pulse/simple.h>
-#include <pulse/error.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
-struct audio
-{
-  pa_simple *pa_s;
-  GArray *sample;
-  gint frames;
-  gint playing;
-  GMutex load_mutex;
-};
+size_t sample_save (GArray *, char *);
 
-void audio_play (struct audio *);
-
-void audio_stop (struct audio *);
-
-int audio_check (struct audio *);
-
-int audio_init (struct audio *);
-
-void audio_destroy (struct audio *);
+size_t sample_load (GArray *, GMutex *, gint *, char *, gint *,
+		    void (*)(gdouble));

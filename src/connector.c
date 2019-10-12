@@ -165,16 +165,26 @@ connector_msg_to_sysex (const GByteArray * src)
 }
 
 void
-connector_get_sample_info_from_msg (GByteArray * info_msg, guint * id,
+connector_get_sample_info_from_msg (GByteArray * info_msg, gint * id,
 				    guint * size)
 {
-  if (id)
+  if (info_msg->data[5] == 0)
     {
-      *id = ntohl (*((uint32_t *) & info_msg->data[6]));
+      if (id)
+	{
+	  *id = -1;
+	}
     }
-  if (size)
+  else
     {
-      *size = ntohl (*((uint32_t *) & info_msg->data[10]));
+      if (id)
+	{
+	  *id = ntohl (*((uint32_t *) & info_msg->data[6]));
+	}
+      if (size)
+	{
+	  *size = ntohl (*((uint32_t *) & info_msg->data[10]));
+	}
     }
 }
 
@@ -538,6 +548,7 @@ connector_rename (struct connector *connector, const char *old,
     {
       res = -1;
       errno = EEXIST;
+      fprintf (stderr, "%s\n", g_strerror (errno));
     }
   g_byte_array_free (rx_msg, TRUE);
 
@@ -560,7 +571,7 @@ connector_upload (struct connector *connector, GArray * sample,
   data = (gshort *) sample->data;
   transferred = 0;
   i = 0;
-  while (transferred < sample->len && *running)
+  while (transferred < sample->len && (!running || *running))
     {
       if (progress)
 	{
@@ -595,7 +606,7 @@ connector_upload (struct connector *connector, GArray * sample,
 
   debug_print ("%lu frames sent\n", transferred);
 
-  if (*running)
+  if (!running || *running)
     {
       tx_msg = connector_new_msg_upl_end (id, transferred);
       sent = connector_tx (connector, tx_msg);
@@ -628,14 +639,14 @@ connector_download (struct connector *connector, const char *path,
   GByteArray *rx_msg;
   GByteArray *data;
   GArray *result;
-  guint len;
-  guint id;
+  gint id;
+  guint frames;
   guint next_block_start;
   guint req_size;
   int offset;
   ssize_t sent;
   int16_t v;
-  gshort *frames;
+  int16_t *frame;
   int i;
 
   g_mutex_lock (&connector->mutex);
@@ -655,25 +666,31 @@ connector_download (struct connector *connector, const char *path,
       result = NULL;
       goto end;
     }
-  connector_get_sample_info_from_msg (rx_msg, &id, &len);
+  connector_get_sample_info_from_msg (rx_msg, &id, &frames);
   g_byte_array_free (rx_msg, TRUE);
+  if (id < 0)
+    {
+      fprintf (stderr, "File %s not found\n", path);
+      result = NULL;
+      goto end;
+    }
 
-  debug_print ("len %d\n", len);
+  debug_print ("frames %d\n", frames);
 
   data = g_byte_array_new ();
 
   next_block_start = 0;
   offset = 64;
-  while (next_block_start < len && *running)
+  while (next_block_start < frames && (!running || *running))
     {
       if (progress)
 	{
-	  progress (next_block_start / (double) len);
+	  progress (next_block_start / (double) frames);
 	}
 
       req_size =
-	len - next_block_start >
-	TRANSF_BLOCK_SIZE ? TRANSF_BLOCK_SIZE : len - next_block_start;
+	frames - next_block_start >
+	TRANSF_BLOCK_SIZE ? TRANSF_BLOCK_SIZE : frames - next_block_start;
       tx_msg = connector_new_msg_dwnl_blck (id, next_block_start, req_size);
       sent = connector_tx (connector, tx_msg);
       g_byte_array_free (tx_msg, TRUE);
@@ -699,19 +716,19 @@ connector_download (struct connector *connector, const char *path,
 
   if (progress)
     {
-      progress (next_block_start / (double) len);
+      progress (next_block_start / (double) frames);
     }
 
   debug_print ("%d bytes received\n", next_block_start);
 
   result = g_array_new (FALSE, FALSE, sizeof (short));
 
-  frames = (gshort *) data->data;
+  frame = (gshort *) data->data;
   for (i = 0; i < data->len; i += 2)
     {
-      v = __bswap_16 (*frames);
+      v = ntohs (*frame);
       g_array_append_val (result, v);
-      frames++;
+      frame++;
     }
 
 cleanup:
@@ -728,23 +745,30 @@ connector_create_upload (struct connector *connector, const char *path,
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   ssize_t len;
-  guint id;
+  gint id;
 
   tx_msg = connector_new_msg_new_upload (path, fsize);
   len = connector_tx (connector, tx_msg);
   g_byte_array_free (tx_msg, TRUE);
   if (len < 0)
     {
+      errno = EIO;
       return -1;
     }
 
   rx_msg = connector_rx (connector);
   if (!rx_msg)
     {
+      errno = EIO;
       return -1;
     }
-  //Response is always ok: x, x, x, x, 0xc0, 1, 0x00, 0x00, 0x00, 0x04
+  //Response: x, x, x, x, 0xc0, [0 (error), 1 (success)], 0x00, 0x00, 0x00, 0x04
   connector_get_sample_info_from_msg (rx_msg, &id, NULL);
+  if (id < 0)
+    {
+      errno = EEXIST;
+      fprintf (stderr, "%s\n", g_strerror (errno));
+    }
   g_byte_array_free (rx_msg, TRUE);
 
   return id;
@@ -756,6 +780,7 @@ connector_create_dir (struct connector *connector, const char *path)
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   ssize_t len;
+  gint res;
 
   tx_msg = connector_new_msg_new_dir (path);
   len = connector_tx (connector, tx_msg);
@@ -772,10 +797,20 @@ connector_create_dir (struct connector *connector, const char *path)
       errno = EIO;
       return -1;
     }
-  //Response is always ok: x, x, x, x, 0x91, 1
+  //Response: x, x, x, x, 0x91, [0 (error), 1 (success)]...
+  if (rx_msg->data[5] == 1)
+    {
+      res = 0;
+    }
+  else
+    {
+      res = -1;
+      errno = EEXIST;
+      fprintf (stderr, "%s\n", g_strerror (errno));
+    }
   g_byte_array_free (rx_msg, TRUE);
 
-  return 0;
+  return res;
 }
 
 void

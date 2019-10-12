@@ -32,6 +32,7 @@ stamp-h1
 *.gcno
 *.gcda
 src/elektroid
+src/elektroid-cli
 src/*~
 test/*.log
 test/*.trs

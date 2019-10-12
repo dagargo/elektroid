@@ -67,7 +67,7 @@ ssize_t
 connector_upload (struct connector *, GArray *, guint, gint *,
 		  void (*)(gdouble));
 
-void connector_get_sample_info_from_msg (GByteArray *, guint *, guint *);
+void connector_get_sample_info_from_msg (GByteArray *, gint *, guint *);
 
 gint connector_create_upload (struct connector *, const char *, guint);
 
