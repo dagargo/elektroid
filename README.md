@@ -26,30 +26,54 @@ You can easily install them by running `sudo apt-get install automake libasound2
 ## CLI
 
 `elektroid-cli` provides the same funcionality than `elektroid`. Provided paths must always be prepended with the card id and a colon (':') , e.g. `0:/samples`.
-Here are some usage examples.
+Here are the available commands.
 
-### List compatible devices
+### ld, list compatible devices
 
 ```
 $ elektroid-cli ld
 0 Elektron Digitakt MIDI 1
 ```
 
-### List a directory
+### mkdir
+
+```
+$ elektroid-cli mkdir 0:/samples
+```
+
+### rmdir
+
+```
+$ elektroid-cli rmdir 0:/samples
+```
+
+### upload
+
+```
+$ elektroid-cli upload square.wav 0:/
+```
+
+### download
+
+```
+$ elektroid-cli download 0:/square
+```
+
+### ls
 
 ```
 $ elektroid-cli ls 0:/
-0.00MB samples
+F 0.09MB 3d71644d square
 ```
 
-### Create a directory
+### mv
 
 ```
-$ elektroid-cli mkdir 0:/samples/new
+$ elektroid-cli mv 0:/square 0:/Square
 ```
 
-### Rename a file
+### rm
 
 ```
-$ elektroid-cli mv 0:/samples/new 0:/samples/old
+$ elektroid-cli rm 0:/Square
 ```

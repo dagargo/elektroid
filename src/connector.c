@@ -33,9 +33,11 @@ static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 static const guint8 INQ_DEVICE[] = { 0x1 };
 static const guint8 INQ_VERSION[] = { 0x2 };
 static const guint8 INQ_LS_DIR_TEMPLATE[] = { 0x10 };
-static const guint8 INQ_INFO_FILE_TEMPLATE[] = { 0x30 };
-static const guint8 INQ_RENAME_TEMPLATE[] = { 0x21 };
 static const guint8 INQ_NEW_DIR_TEMPLATE[] = { 0x11 };
+static const guint8 INQ_DELETE_DIR_TEMPLATE[] = { 0x12 };
+static const guint8 INQ_DELETE_FILE_TEMPLATE[] = { 0x20 };
+static const guint8 INQ_RENAME_TEMPLATE[] = { 0x21 };
+static const guint8 INQ_INFO_FILE_TEMPLATE[] = { 0x30 };
 static const guint8 INQ_DWL_TEMPLATE[] =
   { 0x32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 INQ_NEW_TEMPLATE[] = { 0x40, 0, 0, 0, 0 };
@@ -50,6 +52,12 @@ static const guint8 INQ_UPL_TEMPLATE_1ST[] =
 static const guint8 INQ_UPL_TEMPLATE_NTH[] =
   { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 INQ_UPL_TEMPLATE_END[] = { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+static gint
+connector_get_msg_status (const GByteArray * msg)
+{
+  return msg->data[5];
+}
 
 void
 connector_free_dir_iterator (struct connector_dir_iterator *d_iter)
@@ -74,18 +82,21 @@ connector_new_dir_iterator (GByteArray * msg)
 guint
 connector_get_next_dentry (struct connector_dir_iterator *dir_iterator)
 {
-  uint32_t *size;
+  uint32_t *data;
 
-  if (dir_iterator->pos + 1 >= dir_iterator->msg->len)
+  if (dir_iterator->pos == dir_iterator->msg->len)
     {
       dir_iterator->dentry = NULL;
       return -ENOENT;
     }
   else
     {
+      data = (uint32_t *) & dir_iterator->msg->data[dir_iterator->pos];
+      dir_iterator->cksum = ntohl (*data);
+
       dir_iterator->pos += 4;
-      size = (uint32_t *) & dir_iterator->msg->data[dir_iterator->pos];
-      dir_iterator->size = ntohl (*size);
+      data = (uint32_t *) & dir_iterator->msg->data[dir_iterator->pos];
+      dir_iterator->size = ntohl (*data);
 
       dir_iterator->pos += 5;
       dir_iterator->type = dir_iterator->msg->data[dir_iterator->pos];
@@ -168,7 +179,7 @@ void
 connector_get_sample_info_from_msg (GByteArray * info_msg, gint * id,
 				    guint * size)
 {
-  if (info_msg->data[5] == 0)
+  if (!connector_get_msg_status (info_msg))
     {
       if (id)
 	{
@@ -200,7 +211,7 @@ connector_new_msg_data (const guint8 * data, guint len)
 }
 
 static GByteArray *
-connector_new_x_payload (const guint8 * data, guint len, const gchar * path)
+connector_new_msg_path (const guint8 * data, guint len, const gchar * path)
 {
   GByteArray *msg = connector_new_msg_data (data, len);
 
@@ -213,21 +224,21 @@ connector_new_x_payload (const guint8 * data, guint len, const gchar * path)
 static GByteArray *
 connector_new_msg_dir_list (const gchar * path)
 {
-  return connector_new_x_payload (INQ_LS_DIR_TEMPLATE,
+  return connector_new_msg_path (INQ_LS_DIR_TEMPLATE,
 				  sizeof (INQ_LS_DIR_TEMPLATE), path);
 }
 
 static GByteArray *
 connector_new_msg_info_file (const gchar * path)
 {
-  return connector_new_x_payload (INQ_INFO_FILE_TEMPLATE,
+  return connector_new_msg_path (INQ_INFO_FILE_TEMPLATE,
 				  sizeof (INQ_INFO_FILE_TEMPLATE), path);
 }
 
 static GByteArray *
 connector_new_msg_new_dir (const gchar * path)
 {
-  return connector_new_x_payload (INQ_NEW_DIR_TEMPLATE,
+  return connector_new_msg_path (INQ_NEW_DIR_TEMPLATE,
 				  sizeof (INQ_NEW_DIR_TEMPLATE), path);
 }
 
@@ -235,7 +246,7 @@ static GByteArray *
 connector_new_msg_new_upload (const gchar * path, guint frames)
 {
   uint32_t aux32;
-  GByteArray *msg = connector_new_x_payload (INQ_NEW_TEMPLATE,
+  GByteArray *msg = connector_new_msg_path (INQ_NEW_TEMPLATE,
 					     sizeof (INQ_NEW_TEMPLATE), path);
 
   aux32 = htonl ((frames + 32) * 2);
@@ -511,8 +522,8 @@ cleanup:
 }
 
 gint
-connector_rename (struct connector *connector, const char *old,
-		  const char *new)
+connector_rename (struct connector *connector, const gchar * old,
+		  const gchar * new)
 {
   gint res;
   ssize_t len;
@@ -539,20 +550,73 @@ connector_rename (struct connector *connector, const char *old,
       errno = EIO;
       return -1;
     }
-  //Response: x, x, x, x, 0xa1, [0 (error), 1 (success)]
-  if (rx_msg->data[5] == 1)
+  //Response: x, x, x, x, 0xa1, [0 (error), 1 (success)]...
+  if (connector_get_msg_status (rx_msg))
     {
       res = 0;
     }
   else
     {
       res = -1;
-      errno = EEXIST;
+      errno = EPERM;
       fprintf (stderr, "%s\n", g_strerror (errno));
     }
   g_byte_array_free (rx_msg, TRUE);
 
   return res;
+}
+
+static gint
+connector_delete (struct connector *connector, const gchar * path,
+		  const guint8 * template, gint size)
+{
+  gint res;
+  ssize_t len;
+  GByteArray *rx_msg;
+  GByteArray *tx_msg = connector_new_msg_path (template, size, path);
+
+  len = connector_tx (connector, tx_msg);
+  g_byte_array_free (tx_msg, TRUE);
+  if (len < 0)
+    {
+      errno = EIO;
+      return -1;
+    }
+
+  rx_msg = connector_rx (connector);
+  if (!rx_msg)
+    {
+      errno = EIO;
+      return -1;
+    }
+  //Response: x, x, x, x, 0x20, [0 (error), 1 (success)]...
+  if (connector_get_msg_status (rx_msg))
+    {
+      res = 0;
+    }
+  else
+    {
+      res = -1;
+      errno = EPERM;
+      fprintf (stderr, "%s\n", g_strerror (errno));
+    }
+  g_byte_array_free (rx_msg, TRUE);
+
+  return res;
+}
+
+gint
+connector_delete_file (struct connector *connector, const gchar * path)
+{
+  return connector_delete (connector, path, INQ_DELETE_FILE_TEMPLATE,
+			   sizeof (INQ_DELETE_FILE_TEMPLATE));
+}
+
+gint
+connector_delete_dir (struct connector *connector, const gchar * path)
+{
+  return connector_delete (connector, path, INQ_DELETE_DIR_TEMPLATE,
+			   sizeof (INQ_DELETE_DIR_TEMPLATE));
 }
 
 ssize_t
@@ -594,7 +658,11 @@ connector_upload (struct connector *connector, GArray * sample,
 	  transferred = -1;
 	  goto end;
 	}
-      //TODO: check message
+      //Response: x, x, x, x, 0xc2, [0 (error), 1 (success)]...
+      if (!connector_get_msg_status (rx_msg))
+	{
+	  fprintf (stderr, "Unexpected status\n");
+	}
       g_byte_array_free (rx_msg, TRUE);
       i++;
     }
@@ -623,6 +691,11 @@ connector_upload (struct connector *connector, GArray * sample,
 	  transferred = -1;
 	  goto end;
 	}
+      //Response: x, x, x, x, 0xc1, [0 (error), 1 (success)]...
+      if (!connector_get_msg_status (rx_msg))
+	{
+	  fprintf (stderr, "Unexpected status\n");
+	}
       g_byte_array_free (rx_msg, TRUE);
     }
 
@@ -632,7 +705,7 @@ end:
 }
 
 GArray *
-connector_download (struct connector *connector, const char *path,
+connector_download (struct connector *connector, const gchar * path,
 		    gint * running, void (*progress) (gdouble))
 {
   GByteArray *tx_msg;
@@ -739,7 +812,7 @@ end:
 }
 
 gint
-connector_create_upload (struct connector *connector, const char *path,
+connector_create_upload (struct connector *connector, const gchar * path,
 			 guint fsize)
 {
   GByteArray *tx_msg;
@@ -762,7 +835,7 @@ connector_create_upload (struct connector *connector, const char *path,
       errno = EIO;
       return -1;
     }
-  //Response: x, x, x, x, 0xc0, [0 (error), 1 (success)], 0x00, 0x00, 0x00, 0x04
+  //Response: x, x, x, x, 0xc0, [0 (error), 1 (success)], id, frames
   connector_get_sample_info_from_msg (rx_msg, &id, NULL);
   if (id < 0)
     {
@@ -775,7 +848,7 @@ connector_create_upload (struct connector *connector, const char *path,
 }
 
 gint
-connector_create_dir (struct connector *connector, const char *path)
+connector_create_dir (struct connector *connector, const gchar * path)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -798,7 +871,7 @@ connector_create_dir (struct connector *connector, const char *path)
       return -1;
     }
   //Response: x, x, x, x, 0x91, [0 (error), 1 (success)]...
-  if (rx_msg->data[5] == 1)
+  if (connector_get_msg_status (rx_msg))
     {
       res = 0;
     }
@@ -836,14 +909,14 @@ connector_destroy (struct connector *connector)
     }
 }
 
-int
+gint
 connector_init (struct connector *connector, gint card)
 {
   int err;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   GByteArray *rx_msg_fw_ver;
-  char name[32];
+  gchar name[32];
   sprintf (name, "hw:%d", card);
 
   g_mutex_lock (&connector->mutex);
@@ -925,8 +998,8 @@ static struct connector_device *
 connector_get_elektron_device (snd_ctl_t * ctl, int card, int device)
 {
   snd_rawmidi_info_t *info;
-  const char *name;
-  const char *sub_name;
+  const gchar *name;
+  const gchar *sub_name;
   int subs, subs_in, subs_out;
   int sub;
   int err;
@@ -986,7 +1059,7 @@ connector_get_elektron_device (snd_ctl_t * ctl, int card, int device)
   sub_name = snd_rawmidi_info_get_subdevice_name (info);
   if (strncmp (sub_name, "Elektron", 8) == 0)
     {
-      debug_print ("Adding hw:%d (%s) %s...\n", sub, name, sub_name);
+      debug_print ("Adding hw:%d (%s) %s...\n", card, name, sub_name);
       connector_device = malloc (sizeof (struct connector_device));
       connector_device->card = card;
       connector_device->name = strdup (sub_name);
@@ -999,12 +1072,12 @@ connector_get_elektron_device (snd_ctl_t * ctl, int card, int device)
 }
 
 static void
-connector_fill_card_devices (int card, GArray * devices)
+connector_fill_card_elektron_devices (gint card, GArray * devices)
 {
   snd_ctl_t *ctl;
-  char name[32];
-  int device;
-  int err;
+  gchar name[32];
+  gint device;
+  gint err;
   struct connector_device *connector_device;
 
   sprintf (name, "hw:%d", card);
@@ -1035,14 +1108,14 @@ connector_fill_card_devices (int card, GArray * devices)
 GArray *
 connector_get_elektron_devices ()
 {
-  int card, err;
+  gint card, err;
   GArray *devices =
     g_array_new (FALSE, FALSE, sizeof (struct connector_device));
 
   card = -1;
   while (((err = snd_card_next (&card)) == 0) && (card >= 0))
     {
-      connector_fill_card_devices (card, devices);
+      connector_fill_card_elektron_devices (card, devices);
     }
   if (err < 0)
     {

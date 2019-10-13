@@ -82,9 +82,9 @@ debug_print_hex_msg (const GByteArray * msg)
     {
       if (i > 0)
 	{
-	  debug_print (", ");
+	  debug_print (" ");
 	}
-      debug_print ("0x%02x", *data);
+      debug_print ("%02x", *data);
       data++;
       i++;
     }

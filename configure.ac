@@ -36,5 +36,5 @@ AC_CHECK_HEADERS([unistd.h limits.h])
 # Checks for library functions.
 AC_FUNC_MALLOC
 
-AC_CONFIG_FILES([Makefile src/Makefile res/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile res/Makefile test/Makefile])
 AC_OUTPUT

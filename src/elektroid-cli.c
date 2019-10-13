@@ -71,7 +71,7 @@ cli_connect (const char *device_path)
   gint res;
   gint card = atoi (device_path);
 
-  debug_print ("Using card %d...\n", card);
+  debug_print ("Connecting to card %d...\n", card);
 
   res = connector_init (&connector, card);
 
@@ -112,8 +112,8 @@ cli_ls (int argc, char *argv[], int optind)
 
   while (!connector_get_next_dentry (d_iter))
     {
-      printf ("%c %.2fMB %s\n", d_iter->type,
-	      d_iter->size / (1024.0 * 1024.0), d_iter->dentry);
+      printf ("%c %.2fMB %08x %s\n", d_iter->type,
+	      d_iter->size / (1024.0 * 1024.0), d_iter->cksum, d_iter->dentry);
     }
 
   connector_free_dir_iterator (d_iter);
@@ -195,6 +195,47 @@ cli_mv (int argc, char *argv[], int optind)
   path_dst = cli_get_path (device_path_dst);
 
   return connector_rename (&connector, path_src, path_dst);
+}
+
+static int
+cli_delete (int argc, char *argv[], int optind, char type)
+{
+  gchar *device_path, *path;
+  gint res;
+
+  if (optind == argc)
+    {
+      fprintf (stderr, "Remote path missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      device_path = argv[optind];
+    }
+
+  res = cli_connect (device_path);
+
+  if (res < 0)
+    {
+      return EXIT_FAILURE;
+    }
+
+  path = cli_get_path (device_path);
+
+  if (type == 'F')
+    {
+      res = connector_delete_file (&connector, path);
+    }
+  else if (type == 'D')
+    {
+      res = connector_delete_dir (&connector, path);
+    }
+  else
+    {
+      res = -1;
+    }
+
+  return res;
 }
 
 static int
@@ -305,7 +346,9 @@ cli_upload (int argc, char *argv[], int optind)
 
   frames = connector_upload (&connector, sample, id, NULL, NULL);
 
-  res = frames > 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+  connector_read_dir (&connector, device_path_dst);
+
+  res = frames < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
 cleanup:
   free (basec);
@@ -373,6 +416,14 @@ main (int argc, char *argv[])
   else if (strcmp (command, "mv") == 0)
     {
       res = cli_mv (argc, argv, optind);
+    }
+  else if (strcmp (command, "rm") == 0)
+    {
+      res = cli_delete (argc, argv, optind, 'F');
+    }
+  else if (strcmp (command, "rmdir") == 0)
+    {
+      res = cli_delete (argc, argv, optind, 'D');
     }
   else if (strcmp (command, "download") == 0)
     {
