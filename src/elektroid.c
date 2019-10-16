@@ -54,7 +54,6 @@ struct elektroid_browser
 
 struct elektroid_progress
 {
-  gint running;
   GtkDialog *dialog;
   GtkLabel *label;
   GtkProgressBar *progress;
@@ -430,9 +429,8 @@ static gpointer
 elektroid_load_sample (gpointer data)
 {
   elektroid_audio_stop ();
-  load_thread_running = 1;
   sample_load (audio.sample, &audio.load_mutex, &audio.frames, data,
-	       &load_thread_running, elektroid_update_progress_redraw);
+	       NULL, elektroid_update_progress_redraw);
   gtk_widget_queue_draw (waveform_draw_area);
   g_idle_add (elektroid_update_ui_after_load, NULL);
   elektroid_audio_start ();
@@ -938,13 +936,10 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
 
   if (result == GTK_RESPONSE_CANCEL || result == GTK_RESPONSE_DELETE_EVENT)
     {
-      elektroid_progress.running = 0;
+      load_thread_running = 0;
     }
 
-  if (g_thread_join (progress_thread) != NULL)
-    {
-      //TODO: show error
-    }
+  g_thread_join (progress_thread);
   g_thread_unref (progress_thread);
   progress_thread = NULL;
 
