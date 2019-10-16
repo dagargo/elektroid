@@ -72,12 +72,10 @@ GArray *connector_download (struct connector *, const gchar *, gint *,
 			    void (*)(gdouble));
 
 ssize_t
-connector_upload (struct connector *, GArray *, guint, gint *,
+connector_upload (struct connector *, GArray *, gchar *, gint *,
 		  void (*)(gdouble));
 
 void connector_get_sample_info_from_msg (GByteArray *, gint *, guint *);
-
-gint connector_create_upload (struct connector *, const gchar *, guint);
 
 gint connector_create_dir (struct connector *, const gchar *);
 

@@ -113,7 +113,8 @@ cli_ls (int argc, char *argv[], int optind)
   while (!connector_get_next_dentry (d_iter))
     {
       printf ("%c %.2fMB %08x %s\n", d_iter->type,
-	      d_iter->size / (1024.0 * 1024.0), d_iter->cksum, d_iter->dentry);
+	      d_iter->size / (1024.0 * 1024.0), d_iter->cksum,
+	      d_iter->dentry);
     }
 
   connector_free_dir_iterator (d_iter);
@@ -290,7 +291,7 @@ static int
 cli_upload (int argc, char *argv[], int optind)
 {
   gchar *path_src, *device_path_dst, *path_dst;
-  gint res, id;
+  gint res;
   ssize_t frames;
   gchar *basec, *bname;
   GArray *sample;
@@ -337,14 +338,7 @@ cli_upload (int argc, char *argv[], int optind)
       goto cleanup;
     }
 
-  id = connector_create_upload (&connector, path_dst, sample->len);
-  if (id < 0)
-    {
-      res = EXIT_FAILURE;
-      goto cleanup;
-    }
-
-  frames = connector_upload (&connector, sample, id, NULL, NULL);
+  frames = connector_upload (&connector, sample, path_dst, NULL, NULL);
 
   connector_read_dir (&connector, device_path_dst);
 

@@ -874,7 +874,6 @@ elektroid_upload_process (gpointer user_data)
   char *remote_path;
   char *path = (char *) user_data;
   ssize_t frames;
-  gint id;
 
   debug_print ("Local path: %s\n", path);
 
@@ -886,24 +885,21 @@ elektroid_upload_process (gpointer user_data)
 
   debug_print ("Remote path: %s\n", remote_path);
 
-  //TODO: check if the fle already exists? (Device makes no difference between creating a new file and creating an already existent file. The new file would be deleted if an upload is not sent, though.)
 
-  id = connector_create_upload (&connector, remote_path, audio.sample->len);
+  frames = connector_upload (&connector, audio.sample, remote_path,
+			     &load_thread_running, elektroid_update_progress);
+  debug_print ("%ld frames sent\n", frames);
 
-  if (id >= 0)
+  if (frames < 0)
     {
-      frames = connector_upload (&connector, audio.sample, id,
-				 &load_thread_running,
-				 elektroid_update_progress);
-
-      debug_print ("%ld frames sent\n", frames);
+      fprintf (stderr, __FILE__ ": Error while uploading.\n");
     }
 
   elektroid_check_connector ();
 
   free (remote_path);
 
-  if (id >= 0 && frames == audio.sample->len && load_thread_running)
+  if (frames == audio.sample->len && load_thread_running)
     {
       g_idle_add (remote_browser.load_dir, NULL);
     }

@@ -752,15 +752,51 @@ connector_delete_dir (struct connector *connector, const gchar * path)
 			   sizeof (INQ_DELETE_DIR_TEMPLATE));
 }
 
+static gint
+connector_create_upload (struct connector *connector, const gchar * path,
+			 guint fsize)
+{
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+  gint id;
+
+  tx_msg = connector_new_msg_new_upload (path, fsize);
+  rx_msg = connector_send_and_receive (connector, tx_msg);
+  if (!rx_msg)
+    {
+      errno = EIO;
+      return -1;
+    }
+  //Response: x, x, x, x, 0xc0, [0 (error), 1 (success)], id, frames
+  connector_get_sample_info_from_msg (rx_msg, &id, NULL);
+  if (id < 0)
+    {
+      errno = EEXIST;
+      fprintf (stderr, "%s\n", g_strerror (errno));
+    }
+  free_msg (rx_msg);
+
+  return id;
+}
+
 ssize_t
 connector_upload (struct connector *connector, GArray * sample,
-		  guint id, gint * running, void (*progress) (gdouble))
+		  gchar * path, gint * running, void (*progress) (gdouble))
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   ssize_t transferred;
   gshort *data;
+  gint id;
   int i;
+
+  //TODO: check if the fle already exists? (Device makes no difference between creating a new file and creating an already existent file. The new file would be deleted if an upload is not sent, though.)
+
+  id = connector_create_upload (connector, path, sample->len);
+  if (id < 0)
+    {
+      return -1;
+    }
 
   data = (gshort *) sample->data;
   transferred = 0;
@@ -898,33 +934,6 @@ cleanup:
   free_msg (data);
 end:
   return result;
-}
-
-gint
-connector_create_upload (struct connector *connector, const gchar * path,
-			 guint fsize)
-{
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
-  gint id;
-
-  tx_msg = connector_new_msg_new_upload (path, fsize);
-  rx_msg = connector_send_and_receive (connector, tx_msg);
-  if (!rx_msg)
-    {
-      errno = EIO;
-      return -1;
-    }
-  //Response: x, x, x, x, 0xc0, [0 (error), 1 (success)], id, frames
-  connector_get_sample_info_from_msg (rx_msg, &id, NULL);
-  if (id < 0)
-    {
-      errno = EEXIST;
-      fprintf (stderr, "%s\n", g_strerror (errno));
-    }
-  free_msg (rx_msg);
-
-  return id;
 }
 
 gint
