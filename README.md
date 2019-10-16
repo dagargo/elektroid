@@ -20,5 +20,6 @@ The package dependencies for Debian based distributions are:
 - libpulse-dev
 - libsndfile1-dev
 - libsamplerate0-dev
+- libtool
 
-You can easily install them by running `sudo apt-get install automake libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev`.
+You can easily install them by running `sudo apt install automake libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev libtool`.
