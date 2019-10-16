@@ -340,8 +340,6 @@ cli_upload (int argc, char *argv[], int optind)
 
   frames = connector_upload (&connector, sample, path_dst, NULL, NULL);
 
-  connector_read_dir (&connector, device_path_dst);
-
   res = frames < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
 cleanup:
