@@ -7,7 +7,7 @@ ecli="$srcdir/../src/elektroid-cli"
 echo "Getting devices..."
 DEVICE=$($ecli ld | head -n 1 | awk '{print $1}')
 [ -z "$DEVICE" ] && echo "No device found" && exit 1
-echo "Using devices $DEVICE..."
+echo "Using device $DEVICE..."
 
 echo "Testing ls..."
 $ecli ls $DEVICE:/
@@ -16,8 +16,6 @@ $ecli ls $DEVICE:/
 echo "Testing mkdir..."
 $ecli mkdir $DEVICE:/$TEST_NAME
 [ $? -ne 0 ] && exit 1
-
-echo "Testing ls..."
 $ecli ls $DEVICE:/$TEST_NAME
 [ $? -ne 0 ] && exit 1
 
