@@ -28,6 +28,9 @@ struct connector
   gchar *device_name;
   gushort seq;
   GMutex mutex;
+  GCond cond;
+  GThread *reader_thread;
+  GSList *queue;
 };
 
 struct connector_dir_iterator
