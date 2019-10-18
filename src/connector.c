@@ -40,6 +40,7 @@ static const guint8 INQ_RENAME_TEMPLATE[] = { 0x21 };
 static const guint8 INQ_INFO_FILE_TEMPLATE[] = { 0x30 };
 static const guint8 INQ_DWL_TEMPLATE[] =
   { 0x32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const guint8 INQ_DWL_TEMPLATE_END[] = { 0x31 };
 static const guint8 INQ_NEW_TEMPLATE[] = { 0x40, 0, 0, 0, 0 };
 
 static const guint8 INQ_UPL_TEMPLATE_1ST[] =
@@ -265,6 +266,18 @@ connector_new_msg_new_dir (const gchar * path)
 {
   return connector_new_msg_path (INQ_NEW_DIR_TEMPLATE,
 				 sizeof (INQ_NEW_DIR_TEMPLATE), path);
+}
+
+static GByteArray *
+connector_new_msg_end_download (gint id)
+{
+  uint32_t aux32;
+  GByteArray *msg = connector_new_msg_data (INQ_DWL_TEMPLATE_END,
+					    sizeof (INQ_DWL_TEMPLATE_END));
+
+  aux32 = htonl (id);
+  g_byte_array_append (msg, (guchar *) & aux32, sizeof (uint32_t));
+  return msg;
 }
 
 static GByteArray *
@@ -722,7 +735,7 @@ connector_delete (struct connector *connector, const gchar * path,
       errno = EIO;
       return -1;
     }
-  //Response: x, x, x, x, 0x20, [0 (error), 1 (success)]...
+  //Response: x, x, x, x, 0xX0, [0 (error), 1 (success)]...
   if (connector_get_msg_status (rx_msg))
     {
       res = 0;
@@ -929,6 +942,20 @@ connector_download (struct connector *connector, const gchar * path,
       g_array_append_val (result, v);
       frame++;
     }
+
+  tx_msg = connector_new_msg_end_download (id);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
+  if (!rx_msg)
+    {
+      result = NULL;
+      goto cleanup;
+    }
+  //Response: x, x, x, x, 0xb1, [0 (error), 1 (success)]...
+  if (!connector_get_msg_status (rx_msg))
+    {
+      fprintf (stderr, "Unexpected status\n");
+    }
+  free_msg (rx_msg);
 
 cleanup:
   free_msg (data);
