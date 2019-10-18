@@ -663,7 +663,7 @@ connector_read_dir (struct connector *connector, gchar * dir)
   GByteArray *rx_msg;
 
   tx_msg = connector_new_msg_dir_list (dir);
-  rx_msg = connector_send_and_receive (connector, tx_msg);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
   if (!rx_msg)
     {
       return NULL;
@@ -686,7 +686,7 @@ connector_rename (struct connector *connector, const gchar * old,
   g_byte_array_append (tx_msg, (guchar *) new, strlen (new));
   g_byte_array_append (tx_msg, (guchar *) "\0", 1);
 
-  rx_msg = connector_send_and_receive (connector, tx_msg);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
   if (!rx_msg)
     {
       errno = EIO;
@@ -716,7 +716,7 @@ connector_delete (struct connector *connector, const gchar * path,
   GByteArray *rx_msg;
   GByteArray *tx_msg = connector_new_msg_path (template, size, path);
 
-  rx_msg = connector_send_and_receive (connector, tx_msg);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
   if (!rx_msg)
     {
       errno = EIO;
@@ -761,7 +761,7 @@ connector_create_upload (struct connector *connector, const gchar * path,
   gint id;
 
   tx_msg = connector_new_msg_new_upload (path, fsize);
-  rx_msg = connector_send_and_receive (connector, tx_msg);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
   if (!rx_msg)
     {
       errno = EIO;
@@ -810,7 +810,7 @@ connector_upload (struct connector *connector, GArray * sample,
 
       tx_msg =
 	connector_new_msg_upl_blck (id, &data, sample->len, &transferred, i);
-      rx_msg = connector_send_and_receive (connector, tx_msg);
+      rx_msg = connector->send_and_receive (connector, tx_msg);
       if (!rx_msg)
 	{
 	  return -1;
@@ -834,7 +834,7 @@ connector_upload (struct connector *connector, GArray * sample,
   if (!running || *running)
     {
       tx_msg = connector_new_msg_upl_end (id, transferred);
-      rx_msg = connector_send_and_receive (connector, tx_msg);
+      rx_msg = connector->send_and_receive (connector, tx_msg);
       if (!rx_msg)
 	{
 	  return -1;
@@ -868,7 +868,7 @@ connector_download (struct connector *connector, const gchar * path,
   int i;
 
   tx_msg = connector_new_msg_info_file (path);
-  rx_msg = connector_send_and_receive (connector, tx_msg);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
   if (!rx_msg)
     {
       return NULL;
@@ -899,7 +899,7 @@ connector_download (struct connector *connector, const gchar * path,
 	frames - next_block_start >
 	TRANSF_BLOCK_SIZE ? TRANSF_BLOCK_SIZE : frames - next_block_start;
       tx_msg = connector_new_msg_dwnl_blck (id, next_block_start, req_size);
-      rx_msg = connector_send_and_receive (connector, tx_msg);
+      rx_msg = connector->send_and_receive (connector, tx_msg);
       if (!rx_msg)
 	{
 	  result = NULL;
@@ -944,7 +944,7 @@ connector_create_dir (struct connector *connector, const gchar * path)
   gint res;
 
   tx_msg = connector_new_msg_new_dir (path);
-  rx_msg = connector_send_and_receive (connector, tx_msg);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
   if (!rx_msg)
     {
       errno = EIO;
@@ -1011,7 +1011,8 @@ connector_destroy (struct connector *connector)
 }
 
 gint
-connector_init (struct connector *connector, gint card)
+connector_init (struct connector *connector, gint card,
+		enum connector_mode mode)
 {
   int err;
   GByteArray *tx_msg;
@@ -1077,8 +1078,17 @@ connector_init (struct connector *connector, gint card)
   free_msg (rx_msg_fw_ver);
   debug_print ("Connected to %s\n", connector->device_name);
 
-  connector->reader_thread =
-    g_thread_new ("connector_reader", connector_reader, connector);
+  if (mode == SINGLE_THREAD)
+    {
+      connector->send_and_receive = connector_tx_and_rx;
+    }
+  else if (mode == MULTI_THREAD)
+    {
+      connector->send_and_receive = connector_send_and_receive;
+      connector->reader_thread =
+	g_thread_new ("connector_reader", connector_reader, connector);
+    }
+
   return err;
 
 cleanup:

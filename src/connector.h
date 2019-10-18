@@ -31,6 +31,8 @@ struct connector
   GCond cond;
   GThread *reader_thread;
   GSList *queue;
+  GByteArray *(*send_and_receive) (struct connector * connector,
+				   GByteArray * tx_msg);
 };
 
 struct connector_dir_iterator
@@ -49,7 +51,13 @@ typedef struct connector_device
   guint card;
 } ConnectorDevice;
 
-gint connector_init (struct connector *, gint);
+enum connector_mode
+{
+  SINGLE_THREAD,
+  MULTI_THREAD
+};
+
+gint connector_init (struct connector *, gint, enum connector_mode);
 
 void connector_destroy (struct connector *);
 

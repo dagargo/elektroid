@@ -73,7 +73,7 @@ cli_connect (const char *device_path)
 
   debug_print ("Connecting to card %d...\n", card);
 
-  res = connector_init (&connector, card);
+  res = connector_init (&connector, card, SINGLE_THREAD);
 
   return res;
 }
