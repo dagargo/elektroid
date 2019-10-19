@@ -33,11 +33,14 @@ static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 static const guint8 INQ_DEVICE[] = { 0x1 };
 static const guint8 INQ_VERSION[] = { 0x2 };
 static const guint8 INQ_LS_DIR_TEMPLATE[] = { 0x10 };
-static const guint8 INQ_INFO_FILE_TEMPLATE[] = { 0x30 };
-static const guint8 INQ_RENAME_TEMPLATE[] = { 0x21 };
 static const guint8 INQ_NEW_DIR_TEMPLATE[] = { 0x11 };
+static const guint8 INQ_DELETE_DIR_TEMPLATE[] = { 0x12 };
+static const guint8 INQ_DELETE_FILE_TEMPLATE[] = { 0x20 };
+static const guint8 INQ_RENAME_TEMPLATE[] = { 0x21 };
+static const guint8 INQ_INFO_FILE_TEMPLATE[] = { 0x30 };
 static const guint8 INQ_DWL_TEMPLATE[] =
   { 0x32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const guint8 INQ_DWL_TEMPLATE_END[] = { 0x31 };
 static const guint8 INQ_NEW_TEMPLATE[] = { 0x40, 0, 0, 0, 0 };
 
 static const guint8 INQ_UPL_TEMPLATE_1ST[] =
@@ -51,10 +54,41 @@ static const guint8 INQ_UPL_TEMPLATE_NTH[] =
   { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 INQ_UPL_TEMPLATE_END[] = { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
 
+static gint
+connector_get_msg_status (const GByteArray * msg)
+{
+  return msg->data[5];
+}
+
+static gushort
+get_message_seq (GByteArray * msg, gint offset)
+{
+  uint16_t *seq = (uint16_t *) & msg->data[offset];
+  return ntohs (*seq);
+}
+
+static gushort
+get_rx_message_seq (GByteArray * rx_msg)
+{
+  return get_message_seq (rx_msg, 2);
+}
+
+static gushort
+get_tx_message_seq (GByteArray * tx_msg)
+{
+  return get_message_seq (tx_msg, 0);
+}
+
+static void
+free_msg (gpointer msg)
+{
+  g_byte_array_free ((GByteArray *) msg, TRUE);
+}
+
 void
 connector_free_dir_iterator (struct connector_dir_iterator *d_iter)
 {
-  g_byte_array_free (d_iter->msg, TRUE);
+  free_msg (d_iter->msg);
   free (d_iter);
 }
 
@@ -74,18 +108,21 @@ connector_new_dir_iterator (GByteArray * msg)
 guint
 connector_get_next_dentry (struct connector_dir_iterator *dir_iterator)
 {
-  uint32_t *size;
+  uint32_t *data;
 
-  if (dir_iterator->pos + 1 >= dir_iterator->msg->len)
+  if (dir_iterator->pos == dir_iterator->msg->len)
     {
       dir_iterator->dentry = NULL;
       return -ENOENT;
     }
   else
     {
+      data = (uint32_t *) & dir_iterator->msg->data[dir_iterator->pos];
+      dir_iterator->cksum = ntohl (*data);
+
       dir_iterator->pos += 4;
-      size = (uint32_t *) & dir_iterator->msg->data[dir_iterator->pos];
-      dir_iterator->size = ntohl (*size);
+      data = (uint32_t *) & dir_iterator->msg->data[dir_iterator->pos];
+      dir_iterator->size = ntohl (*data);
 
       dir_iterator->pos += 5;
       dir_iterator->type = dir_iterator->msg->data[dir_iterator->pos];
@@ -165,16 +202,26 @@ connector_msg_to_sysex (const GByteArray * src)
 }
 
 void
-connector_get_sample_info_from_msg (GByteArray * info_msg, guint * id,
+connector_get_sample_info_from_msg (GByteArray * info_msg, gint * id,
 				    guint * size)
 {
-  if (id)
+  if (!connector_get_msg_status (info_msg))
     {
-      *id = ntohl (*((uint32_t *) & info_msg->data[6]));
+      if (id)
+	{
+	  *id = -1;
+	}
     }
-  if (size)
+  else
     {
-      *size = ntohl (*((uint32_t *) & info_msg->data[10]));
+      if (id)
+	{
+	  *id = ntohl (*((uint32_t *) & info_msg->data[6]));
+	}
+      if (size)
+	{
+	  *size = ntohl (*((uint32_t *) & info_msg->data[10]));
+	}
     }
 }
 
@@ -190,7 +237,7 @@ connector_new_msg_data (const guint8 * data, guint len)
 }
 
 static GByteArray *
-connector_new_x_payload (const guint8 * data, guint len, const gchar * path)
+connector_new_msg_path (const guint8 * data, guint len, const gchar * path)
 {
   GByteArray *msg = connector_new_msg_data (data, len);
 
@@ -203,30 +250,42 @@ connector_new_x_payload (const guint8 * data, guint len, const gchar * path)
 static GByteArray *
 connector_new_msg_dir_list (const gchar * path)
 {
-  return connector_new_x_payload (INQ_LS_DIR_TEMPLATE,
-				  sizeof (INQ_LS_DIR_TEMPLATE), path);
+  return connector_new_msg_path (INQ_LS_DIR_TEMPLATE,
+				 sizeof (INQ_LS_DIR_TEMPLATE), path);
 }
 
 static GByteArray *
 connector_new_msg_info_file (const gchar * path)
 {
-  return connector_new_x_payload (INQ_INFO_FILE_TEMPLATE,
-				  sizeof (INQ_INFO_FILE_TEMPLATE), path);
+  return connector_new_msg_path (INQ_INFO_FILE_TEMPLATE,
+				 sizeof (INQ_INFO_FILE_TEMPLATE), path);
 }
 
 static GByteArray *
 connector_new_msg_new_dir (const gchar * path)
 {
-  return connector_new_x_payload (INQ_NEW_DIR_TEMPLATE,
-				  sizeof (INQ_NEW_DIR_TEMPLATE), path);
+  return connector_new_msg_path (INQ_NEW_DIR_TEMPLATE,
+				 sizeof (INQ_NEW_DIR_TEMPLATE), path);
+}
+
+static GByteArray *
+connector_new_msg_end_download (gint id)
+{
+  uint32_t aux32;
+  GByteArray *msg = connector_new_msg_data (INQ_DWL_TEMPLATE_END,
+					    sizeof (INQ_DWL_TEMPLATE_END));
+
+  aux32 = htonl (id);
+  g_byte_array_append (msg, (guchar *) & aux32, sizeof (uint32_t));
+  return msg;
 }
 
 static GByteArray *
 connector_new_msg_new_upload (const gchar * path, guint frames)
 {
   uint32_t aux32;
-  GByteArray *msg = connector_new_x_payload (INQ_NEW_TEMPLATE,
-					     sizeof (INQ_NEW_TEMPLATE), path);
+  GByteArray *msg = connector_new_msg_path (INQ_NEW_TEMPLATE,
+					    sizeof (INQ_NEW_TEMPLATE), path);
 
   aux32 = htonl ((frames + 32) * 2);
   memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
@@ -332,7 +391,7 @@ connector_get_msg_payload (GByteArray * msg)
 
   g_byte_array_append (payload, &msg->data[sizeof (MSG_HEADER)], len);
   transformed = connector_sysex_to_msg (payload);
-  g_byte_array_free (payload, TRUE);
+  free_msg (payload);
 
   return transformed;
 }
@@ -369,15 +428,24 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   GByteArray *sysex;
   GByteArray *full_msg;
 
+  g_mutex_lock (&connector->mutex);
+
   aux = htons (connector->seq);
   memcpy (msg->data, &aux, sizeof (uint16_t));
-  connector->seq++;
+  if (connector->seq == USHRT_MAX)
+    {
+      connector->seq = 0;
+    }
+  else
+    {
+      connector->seq++;
+    }
 
   full_msg = g_byte_array_new ();
   g_byte_array_append (full_msg, MSG_HEADER, sizeof (MSG_HEADER));
   sysex = connector_msg_to_sysex (msg);
   g_byte_array_append (full_msg, sysex->data, sysex->len);
-  g_byte_array_free (sysex, TRUE);
+  free_msg (sysex);
   g_byte_array_append (full_msg, (guint8 *) "\xf7", 1);
 
   ret = full_msg->len;
@@ -401,7 +469,8 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   debug_print_hex_msg (msg);
 
 cleanup:
-  g_byte_array_free (full_msg, TRUE);
+  free_msg (full_msg);
+  g_mutex_unlock (&connector->mutex);
   return ret;
 }
 
@@ -422,6 +491,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len)
       connector_destroy (connector);
       return rx_len;
     }
+
   return rx_len;
 }
 
@@ -430,82 +500,196 @@ connector_rx (struct connector *connector)
 {
   ssize_t rx_len;
   GByteArray *msg;
-  guint8 *buffer = malloc (BUFF_SIZE);
+  guint8 buffer;
   GByteArray *sysex = g_byte_array_new ();
 
   //TODO: Skip everything until a SysEx start is found and is from the expected device (start with the same 6 bytes)
   do
     {
-      if ((rx_len = connector_rx_raw (connector, buffer, 1)) < 0)
+      if ((rx_len = connector_rx_raw (connector, &buffer, 1)) < 0)
 	{
 	  msg = NULL;
 	  goto cleanup;
 	}
     }
-  while (rx_len == 0 || (rx_len == 1 && buffer[0] != 0xf0));
+  while (rx_len == 0 || (rx_len == 1 && buffer != 0xf0));
 
-  g_byte_array_append (sysex, buffer, 1);
+  g_byte_array_append (sysex, &buffer, rx_len);
 
   do
     {
-      if ((rx_len = connector_rx_raw (connector, buffer, BUFF_SIZE)) < 0)
+      if ((rx_len = connector_rx_raw (connector, &buffer, 1)) < 0)
 	{
 	  msg = NULL;
 	  goto cleanup;
 	}
-      g_byte_array_append (sysex, buffer, rx_len);
+      g_byte_array_append (sysex, &buffer, rx_len);
     }
-  while (rx_len == 0 || (rx_len > 0 && buffer[rx_len - 1] != 0xf7));
+  while (rx_len == 0 || (rx_len > 0 && buffer != 0xf7));
 
   msg = connector_get_msg_payload (sysex);
   debug_print ("Message received: ");
   debug_print_hex_msg (msg);
 
 cleanup:
-  free (buffer);
-  g_byte_array_free (sysex, TRUE);
+  free_msg (sysex);
   return msg;
+}
+
+static GByteArray *
+connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
+{
+  ssize_t len;
+  GByteArray *rx_msg;
+
+  len = connector_tx (connector, tx_msg);
+  if (len < 0)
+    {
+      rx_msg = NULL;
+      goto cleanup;
+    }
+  rx_msg = connector_rx (connector);
+
+cleanup:
+  free_msg (tx_msg);
+  return rx_msg;
+}
+
+static gint
+compare_seq (gconstpointer rx_msg_, gconstpointer seq_)
+{
+  GByteArray *rx_msg = (GByteArray *) rx_msg_;
+  gushort seq = *((gushort *) seq_);
+  gushort msg_seq = get_rx_message_seq (rx_msg);
+
+  return (seq != msg_seq);
+}
+
+static void *
+connector_reader (void *data)
+{
+  GByteArray *rx_msg;
+  int err;
+  unsigned short revents;
+  struct connector *connector = (struct connector *) data;
+  int npfds = snd_rawmidi_poll_descriptors_count (connector->inputp);
+  struct pollfd *pfds = alloca (npfds * sizeof (struct pollfd));
+
+  snd_rawmidi_poll_descriptors (connector->inputp, pfds, npfds);
+
+  while (connector->inputp)
+    {
+      err = poll (pfds, npfds, 200);
+      if (err < 0)
+	{
+	  if (errno != EINTR)
+	    {
+	      fprintf (stderr, __FILE__ ": Poll failed: %s",
+		       strerror (errno));
+	    }
+	  break;
+	}
+      if (!connector->inputp)
+	{
+	  break;
+	}
+      if (snd_rawmidi_poll_descriptors_revents
+	  (connector->inputp, pfds, npfds, &revents) < 0)
+	{
+	  fprintf (stderr, __FILE__ ": Cannot get poll events: %s",
+		   snd_strerror (errno));
+	  break;
+	}
+      if (revents & (POLLERR | POLLHUP))
+	{
+	  break;
+	}
+      if (!(revents & POLLIN))
+	{
+	  continue;
+	}
+
+      rx_msg = connector_rx (connector);
+      if (rx_msg)
+	{
+	  g_mutex_lock (&connector->mutex);
+	  debug_print ("Queuing incoming message...\n");
+	  connector->queue = g_slist_append (connector->queue, rx_msg);
+	  g_cond_signal (&connector->cond);
+	  g_mutex_unlock (&connector->mutex);
+	}
+    }
+
+  debug_print ("Quitting connector reader...\n");
+
+  return NULL;
+}
+
+static GByteArray *
+connector_get_response (struct connector *connector, GByteArray * tx_msg)
+{
+  GByteArray *rx_msg;
+  GSList *item;
+  gushort seq = get_tx_message_seq (tx_msg);
+
+  debug_print ("Getting response for seq %d...\n", seq);
+
+  g_mutex_lock (&connector->mutex);
+  debug_print ("Locking...\n");
+  while (!(item = g_slist_find_custom (connector->queue, &seq, compare_seq)))
+    {
+      g_cond_wait (&connector->cond, &connector->mutex);
+    }
+  rx_msg = (GByteArray *) item->data;
+  connector->queue = g_slist_remove_link (connector->queue, item);
+  g_mutex_unlock (&connector->mutex);
+
+  debug_print ("Message found: ");
+  debug_print_hex_msg (rx_msg);
+
+  return rx_msg;
+}
+
+static GByteArray *
+connector_send_and_receive (struct connector *connector, GByteArray * tx_msg)
+{
+  ssize_t len;
+  GByteArray *rx_msg;
+
+  len = connector_tx (connector, tx_msg);
+  if (len < 0)
+    {
+      rx_msg = NULL;
+      goto cleanup;
+    }
+  rx_msg = connector_get_response (connector, tx_msg);
+
+cleanup:
+  free_msg (tx_msg);
+  return rx_msg;
 }
 
 struct connector_dir_iterator *
 connector_read_dir (struct connector *connector, gchar * dir)
 {
-  ssize_t len;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
-  struct connector_dir_iterator *d_iter;
-
-  g_mutex_lock (&connector->mutex);
 
   tx_msg = connector_new_msg_dir_list (dir);
-  len = connector_tx (connector, tx_msg);
-  g_byte_array_free (tx_msg, TRUE);
-  if (len < 0)
-    {
-      d_iter = NULL;
-      goto cleanup;
-    }
-
-  rx_msg = connector_rx (connector);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
   if (!rx_msg)
     {
-      d_iter = NULL;
-      goto cleanup;
+      return NULL;
     }
 
-  d_iter = connector_new_dir_iterator (rx_msg);
-
-cleanup:
-  g_mutex_unlock (&connector->mutex);
-  return d_iter;
+  return connector_new_dir_iterator (rx_msg);
 }
 
 gint
-connector_rename (struct connector *connector, const char *old,
-		  const char *new)
+connector_rename (struct connector *connector, const gchar * old,
+		  const gchar * new)
 {
   gint res;
-  ssize_t len;
   GByteArray *rx_msg;
   GByteArray *tx_msg = connector_new_msg_data (INQ_RENAME_TEMPLATE,
 					       sizeof (INQ_RENAME_TEMPLATE));
@@ -515,52 +699,122 @@ connector_rename (struct connector *connector, const char *old,
   g_byte_array_append (tx_msg, (guchar *) new, strlen (new));
   g_byte_array_append (tx_msg, (guchar *) "\0", 1);
 
-  len = connector_tx (connector, tx_msg);
-  g_byte_array_free (tx_msg, TRUE);
-  if (len < 0)
-    {
-      errno = EIO;
-      return -1;
-    }
-
-  rx_msg = connector_rx (connector);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
   if (!rx_msg)
     {
       errno = EIO;
       return -1;
     }
-  //Response: x, x, x, x, 0xa1, [0 (error), 1 (success)]
-  if (rx_msg->data[5] == 1)
+  //Response: x, x, x, x, 0xa1, [0 (error), 1 (success)]...
+  if (connector_get_msg_status (rx_msg))
     {
       res = 0;
     }
   else
     {
       res = -1;
-      errno = EEXIST;
+      errno = EPERM;
+      fprintf (stderr, "%s\n", g_strerror (errno));
     }
-  g_byte_array_free (rx_msg, TRUE);
+  free_msg (rx_msg);
 
   return res;
 }
 
+static gint
+connector_delete (struct connector *connector, const gchar * path,
+		  const guint8 * template, gint size)
+{
+  gint res;
+  GByteArray *rx_msg;
+  GByteArray *tx_msg = connector_new_msg_path (template, size, path);
+
+  rx_msg = connector->send_and_receive (connector, tx_msg);
+  if (!rx_msg)
+    {
+      errno = EIO;
+      return -1;
+    }
+  //Response: x, x, x, x, 0xX0, [0 (error), 1 (success)]...
+  if (connector_get_msg_status (rx_msg))
+    {
+      res = 0;
+    }
+  else
+    {
+      res = -1;
+      errno = EPERM;
+      fprintf (stderr, "%s\n", g_strerror (errno));
+    }
+  free_msg (rx_msg);
+
+  return res;
+}
+
+gint
+connector_delete_file (struct connector *connector, const gchar * path)
+{
+  return connector_delete (connector, path, INQ_DELETE_FILE_TEMPLATE,
+			   sizeof (INQ_DELETE_FILE_TEMPLATE));
+}
+
+gint
+connector_delete_dir (struct connector *connector, const gchar * path)
+{
+  return connector_delete (connector, path, INQ_DELETE_DIR_TEMPLATE,
+			   sizeof (INQ_DELETE_DIR_TEMPLATE));
+}
+
+static gint
+connector_create_upload (struct connector *connector, const gchar * path,
+			 guint fsize)
+{
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+  gint id;
+
+  tx_msg = connector_new_msg_new_upload (path, fsize);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
+  if (!rx_msg)
+    {
+      errno = EIO;
+      return -1;
+    }
+  //Response: x, x, x, x, 0xc0, [0 (error), 1 (success)], id, frames
+  connector_get_sample_info_from_msg (rx_msg, &id, NULL);
+  if (id < 0)
+    {
+      errno = EEXIST;
+      fprintf (stderr, "%s\n", g_strerror (errno));
+    }
+  free_msg (rx_msg);
+
+  return id;
+}
+
 ssize_t
 connector_upload (struct connector *connector, GArray * sample,
-		  guint id, gint * running, void (*progress) (gdouble))
+		  gchar * path, gint * running, void (*progress) (gdouble))
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   ssize_t transferred;
   gshort *data;
+  gint id;
   int i;
-  ssize_t sent;
 
-  g_mutex_lock (&connector->mutex);
+  //TODO: check if the file already exists? (Device makes no difference between creating a new file and creating an already existent file. The new file would be deleted if an upload is not sent, though.)
+
+  id = connector_create_upload (connector, path, sample->len);
+  if (id < 0)
+    {
+      return -1;
+    }
 
   data = (gshort *) sample->data;
   transferred = 0;
   i = 0;
-  while (transferred < sample->len && *running)
+  while (transferred < sample->len && (!running || *running))
     {
       if (progress)
 	{
@@ -569,22 +823,17 @@ connector_upload (struct connector *connector, GArray * sample,
 
       tx_msg =
 	connector_new_msg_upl_blck (id, &data, sample->len, &transferred, i);
-      sent = connector_tx (connector, tx_msg);
-      g_byte_array_free (tx_msg, TRUE);
-      if (sent < 0)
-	{
-	  transferred = -1;
-	  goto end;
-	}
-
-      rx_msg = connector_rx (connector);
+      rx_msg = connector->send_and_receive (connector, tx_msg);
       if (!rx_msg)
 	{
-	  transferred = -1;
-	  goto end;
+	  return -1;
 	}
-      //TODO: check message
-      g_byte_array_free (rx_msg, TRUE);
+      //Response: x, x, x, x, 0xc2, [0 (error), 1 (success)]...
+      if (!connector_get_msg_status (rx_msg))
+	{
+	  fprintf (stderr, "Unexpected status\n");
+	}
+      free_msg (rx_msg);
       i++;
     }
 
@@ -595,95 +844,75 @@ connector_upload (struct connector *connector, GArray * sample,
 
   debug_print ("%lu frames sent\n", transferred);
 
-  if (*running)
+  if (!running || *running)
     {
       tx_msg = connector_new_msg_upl_end (id, transferred);
-      sent = connector_tx (connector, tx_msg);
-      g_byte_array_free (tx_msg, TRUE);
-      if (sent < 0)
-	{
-	  transferred = -1;
-	  goto end;
-	}
-
-      rx_msg = connector_rx (connector);
+      rx_msg = connector->send_and_receive (connector, tx_msg);
       if (!rx_msg)
 	{
-	  transferred = -1;
-	  goto end;
+	  return -1;
 	}
-      g_byte_array_free (rx_msg, TRUE);
+      //Response: x, x, x, x, 0xc1, [0 (error), 1 (success)]...
+      if (!connector_get_msg_status (rx_msg))
+	{
+	  fprintf (stderr, "Unexpected status\n");
+	}
+      free_msg (rx_msg);
     }
 
-end:
-  g_mutex_unlock (&connector->mutex);
   return transferred;
 }
 
 GArray *
-connector_download (struct connector *connector, const char *path,
+connector_download (struct connector *connector, const gchar * path,
 		    gint * running, void (*progress) (gdouble))
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   GByteArray *data;
   GArray *result;
-  guint len;
-  guint id;
+  gint id;
+  guint frames;
   guint next_block_start;
   guint req_size;
   int offset;
-  ssize_t sent;
   int16_t v;
-  gshort *frames;
+  int16_t *frame;
   int i;
 
-  g_mutex_lock (&connector->mutex);
-
   tx_msg = connector_new_msg_info_file (path);
-  sent = connector_tx (connector, tx_msg);
-  g_byte_array_free (tx_msg, TRUE);
-  if (sent < 0)
-    {
-      result = NULL;
-      goto end;
-    }
-
-  rx_msg = connector_rx (connector);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
   if (!rx_msg)
     {
+      return NULL;
+    }
+  connector_get_sample_info_from_msg (rx_msg, &id, &frames);
+  free_msg (rx_msg);
+  if (id < 0)
+    {
+      fprintf (stderr, "File %s not found\n", path);
       result = NULL;
       goto end;
     }
-  connector_get_sample_info_from_msg (rx_msg, &id, &len);
-  g_byte_array_free (rx_msg, TRUE);
 
-  debug_print ("len %d\n", len);
+  debug_print ("frames %d\n", frames);
 
   data = g_byte_array_new ();
 
   next_block_start = 0;
   offset = 64;
-  while (next_block_start < len && *running)
+  while (next_block_start < frames && (!running || *running))
     {
       if (progress)
 	{
-	  progress (next_block_start / (double) len);
+	  progress (next_block_start / (double) frames);
 	}
 
       req_size =
-	len - next_block_start >
-	TRANSF_BLOCK_SIZE ? TRANSF_BLOCK_SIZE : len - next_block_start;
+	frames - next_block_start >
+	TRANSF_BLOCK_SIZE ? TRANSF_BLOCK_SIZE : frames - next_block_start;
       tx_msg = connector_new_msg_dwnl_blck (id, next_block_start, req_size);
-      sent = connector_tx (connector, tx_msg);
-      g_byte_array_free (tx_msg, TRUE);
-      if (sent < 0)
-	{
-	  result = NULL;
-	  goto cleanup;
-	}
-
-      rx_msg = connector_rx (connector);
+      rx_msg = connector->send_and_receive (connector, tx_msg);
       if (!rx_msg)
 	{
 	  result = NULL;
@@ -691,7 +920,7 @@ connector_download (struct connector *connector, const char *path,
 	}
       g_byte_array_append (data, &rx_msg->data[22 + offset],
 			   req_size - offset);
-      g_byte_array_free (rx_msg, TRUE);
+      free_msg (rx_msg);
 
       next_block_start += req_size;
       offset = 0;
@@ -699,123 +928,132 @@ connector_download (struct connector *connector, const char *path,
 
   if (progress)
     {
-      progress (next_block_start / (double) len);
+      progress (next_block_start / (double) frames);
     }
 
   debug_print ("%d bytes received\n", next_block_start);
 
   result = g_array_new (FALSE, FALSE, sizeof (short));
 
-  frames = (gshort *) data->data;
+  frame = (gshort *) data->data;
   for (i = 0; i < data->len; i += 2)
     {
-      v = __bswap_16 (*frames);
+      v = ntohs (*frame);
       g_array_append_val (result, v);
-      frames++;
+      frame++;
     }
 
+  tx_msg = connector_new_msg_end_download (id);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
+  if (!rx_msg)
+    {
+      result = NULL;
+      goto cleanup;
+    }
+  //Response: x, x, x, x, 0xb1, [0 (error), 1 (success)]...
+  if (!connector_get_msg_status (rx_msg))
+    {
+      fprintf (stderr, "Unexpected status\n");
+    }
+  free_msg (rx_msg);
+
 cleanup:
-  g_byte_array_free (data, TRUE);
+  free_msg (data);
 end:
-  g_mutex_unlock (&connector->mutex);
   return result;
 }
 
 gint
-connector_create_upload (struct connector *connector, const char *path,
-			 guint fsize)
+connector_create_dir (struct connector *connector, const gchar * path)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
-  ssize_t len;
-  guint id;
-
-  tx_msg = connector_new_msg_new_upload (path, fsize);
-  len = connector_tx (connector, tx_msg);
-  g_byte_array_free (tx_msg, TRUE);
-  if (len < 0)
-    {
-      return -1;
-    }
-
-  rx_msg = connector_rx (connector);
-  if (!rx_msg)
-    {
-      return -1;
-    }
-  //Response is always ok: x, x, x, x, 0xc0, 1, 0x00, 0x00, 0x00, 0x04
-  connector_get_sample_info_from_msg (rx_msg, &id, NULL);
-  g_byte_array_free (rx_msg, TRUE);
-
-  return id;
-}
-
-gint
-connector_create_dir (struct connector *connector, const char *path)
-{
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
-  ssize_t len;
+  gint res;
 
   tx_msg = connector_new_msg_new_dir (path);
-  len = connector_tx (connector, tx_msg);
-  g_byte_array_free (tx_msg, TRUE);
-  if (len < 0)
-    {
-      errno = EIO;
-      return -1;
-    }
-
-  rx_msg = connector_rx (connector);
+  rx_msg = connector->send_and_receive (connector, tx_msg);
   if (!rx_msg)
     {
       errno = EIO;
       return -1;
     }
-  //Response is always ok: x, x, x, x, 0x91, 1
-  g_byte_array_free (rx_msg, TRUE);
+  //Response: x, x, x, x, 0x91, [0 (error), 1 (success)]...
+  if (connector_get_msg_status (rx_msg))
+    {
+      res = 0;
+    }
+  else
+    {
+      res = -1;
+      errno = EEXIST;
+      fprintf (stderr, "%s\n", g_strerror (errno));
+    }
+  free_msg (rx_msg);
 
-  return 0;
+  return res;
 }
 
 void
 connector_destroy (struct connector *connector)
 {
+  int err;
+
   debug_print ("Destroying connector...\n");
 
+  snd_rawmidi_drain (connector->inputp);
   if (connector->inputp)
     {
-      snd_rawmidi_close (connector->inputp);
+      err = snd_rawmidi_close (connector->inputp);
+      if (err)
+	{
+	  fprintf (stderr, __FILE__ ": Error while closing MIDI port: %s\n",
+		   g_strerror (errno));
+	}
       connector->inputp = NULL;
     }
 
+  snd_rawmidi_drain (connector->outputp);
   if (connector->outputp)
     {
-      snd_rawmidi_close (connector->outputp);
+      err = snd_rawmidi_close (connector->outputp);
+      if (err)
+	{
+	  fprintf (stderr, __FILE__ ": Error while closing MIDI port: %s\n",
+		   g_strerror (errno));
+	}
       connector->outputp = NULL;
     }
 
-  if (connector->device_name)
+  if (connector->reader_thread)
     {
-      free (connector->device_name);
+      g_thread_join (connector->reader_thread);
+      g_thread_unref (connector->reader_thread);
     }
+  connector->reader_thread = NULL;
+
+  free (connector->device_name);
+
+  g_slist_free_full (connector->queue, free_msg);
+  connector->queue = NULL;
 }
 
-int
-connector_init (struct connector *connector, gint card)
+gint
+connector_init (struct connector *connector, gint card,
+		enum connector_mode mode)
 {
   int err;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   GByteArray *rx_msg_fw_ver;
-  char name[32];
+  gchar name[32];
   sprintf (name, "hw:%d", card);
-
-  g_mutex_lock (&connector->mutex);
 
   connector->inputp = NULL;
   connector->outputp = NULL;
   connector->device_name = NULL;
+
+  connector->queue = NULL;
+  connector->reader_thread = NULL;
 
   if (card < 0)
     {
@@ -830,53 +1068,58 @@ connector_init (struct connector *connector, gint card)
        snd_rawmidi_open (&connector->inputp, &connector->outputp,
 			 name, SND_RAWMIDI_NONBLOCK)) < 0)
     {
-      fprintf (stderr, "Error while opening MIDI port.\n");
+      fprintf (stderr, __FILE__ ": Error while opening MIDI port.\n");
       goto cleanup;
     }
 
   debug_print ("Setting blocking mode...\n");
   if ((err = snd_rawmidi_nonblock (connector->outputp, 0)) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while setting blocking mode.\n");
+      fprintf (stderr, __FILE__ ": Error while setting blocking mode\n");
       goto cleanup;
     }
   if ((err = snd_rawmidi_nonblock (connector->inputp, 0)) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while setting blocking mode.\n");
+      fprintf (stderr, __FILE__ ": Error while setting blocking mode\n");
       goto cleanup;
     }
 
   debug_print ("Stopping device...\n");
   if (snd_rawmidi_write (connector->outputp, "\xfc", 1) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while stopping device.\n");
+      fprintf (stderr, __FILE__ ": Error while stopping device\n");
     }
 
   connector->seq = 0;
   connector->device_name = malloc (LABEL_MAX);
 
   tx_msg = connector_new_msg_data (INQ_DEVICE, sizeof (INQ_DEVICE));
-  connector_tx (connector, tx_msg);
-  g_byte_array_free (tx_msg, TRUE);
-  rx_msg = connector_rx (connector);
+  rx_msg = connector_tx_and_rx (connector, tx_msg);
 
   tx_msg = connector_new_msg_data (INQ_VERSION, sizeof (INQ_VERSION));
-  connector_tx (connector, tx_msg);
-  g_byte_array_free (tx_msg, TRUE);
-  rx_msg_fw_ver = connector_rx (connector);
+  rx_msg_fw_ver = connector_tx_and_rx (connector, tx_msg);
 
   snprintf (connector->device_name, LABEL_MAX, "%s %s", &rx_msg->data[23],
 	    &rx_msg_fw_ver->data[10]);
-  g_byte_array_free (rx_msg, TRUE);
-  g_byte_array_free (rx_msg_fw_ver, TRUE);
+  free_msg (rx_msg);
+  free_msg (rx_msg_fw_ver);
   debug_print ("Connected to %s\n", connector->device_name);
 
-  goto end;
+  if (mode == SINGLE_THREAD)
+    {
+      connector->send_and_receive = connector_tx_and_rx;
+    }
+  else if (mode == MULTI_THREAD)
+    {
+      connector->send_and_receive = connector_send_and_receive;
+      connector->reader_thread =
+	g_thread_new ("connector_reader", connector_reader, connector);
+    }
+
+  return err;
 
 cleanup:
   connector_destroy (connector);
-end:
-  g_mutex_unlock (&connector->mutex);
   return err;
 }
 
@@ -890,8 +1133,8 @@ static struct connector_device *
 connector_get_elektron_device (snd_ctl_t * ctl, int card, int device)
 {
   snd_rawmidi_info_t *info;
-  const char *name;
-  const char *sub_name;
+  const gchar *name;
+  const gchar *sub_name;
   int subs, subs_in, subs_out;
   int sub;
   int err;
@@ -951,7 +1194,7 @@ connector_get_elektron_device (snd_ctl_t * ctl, int card, int device)
   sub_name = snd_rawmidi_info_get_subdevice_name (info);
   if (strncmp (sub_name, "Elektron", 8) == 0)
     {
-      debug_print ("Adding hw:%d (%s) %s...\n", sub, name, sub_name);
+      debug_print ("Adding hw:%d (%s) %s...\n", card, name, sub_name);
       connector_device = malloc (sizeof (struct connector_device));
       connector_device->card = card;
       connector_device->name = strdup (sub_name);
@@ -964,12 +1207,12 @@ connector_get_elektron_device (snd_ctl_t * ctl, int card, int device)
 }
 
 static void
-connector_fill_card_devices (int card, GArray * devices)
+connector_fill_card_elektron_devices (gint card, GArray * devices)
 {
   snd_ctl_t *ctl;
-  char name[32];
-  int device;
-  int err;
+  gchar name[32];
+  gint device;
+  gint err;
   struct connector_device *connector_device;
 
   sprintf (name, "hw:%d", card);
@@ -1000,14 +1243,14 @@ connector_fill_card_devices (int card, GArray * devices)
 GArray *
 connector_get_elektron_devices ()
 {
-  int card, err;
+  gint card, err;
   GArray *devices =
     g_array_new (FALSE, FALSE, sizeof (struct connector_device));
 
   card = -1;
   while (((err = snd_card_next (&card)) == 0) && (card >= 0))
     {
-      connector_fill_card_devices (card, devices);
+      connector_fill_card_elektron_devices (card, devices);
     }
   if (err < 0)
     {

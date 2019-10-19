@@ -28,6 +28,11 @@ struct connector
   gchar *device_name;
   gushort seq;
   GMutex mutex;
+  GCond cond;
+  GThread *reader_thread;
+  GSList *queue;
+  GByteArray *(*send_and_receive) (struct connector * connector,
+				   GByteArray * tx_msg);
 };
 
 struct connector_dir_iterator
@@ -35,6 +40,7 @@ struct connector_dir_iterator
   gchar *dentry;
   gchar type;
   guint size;
+  guint32 cksum;
   GByteArray *msg;
   guint pos;
 };
@@ -45,11 +51,17 @@ typedef struct connector_device
   guint card;
 } ConnectorDevice;
 
-int connector_init (struct connector *, gint);
+enum connector_mode
+{
+  SINGLE_THREAD,
+  MULTI_THREAD
+};
+
+gint connector_init (struct connector *, gint, enum connector_mode);
 
 void connector_destroy (struct connector *);
 
-int connector_check (struct connector *);
+gint connector_check (struct connector *);
 
 struct connector_dir_iterator *connector_read_dir (struct connector *,
 						   gchar *);
@@ -58,19 +70,21 @@ void connector_free_dir_iterator (struct connector_dir_iterator *);
 
 guint connector_get_next_dentry (struct connector_dir_iterator *);
 
-gint connector_rename (struct connector *, const char *, const char *);
+gint connector_rename (struct connector *, const gchar *, const gchar *);
 
-GArray *connector_download (struct connector *, const char *, gint *,
+gint connector_delete_file (struct connector *, const gchar *);
+
+gint connector_delete_dir (struct connector *, const gchar *);
+
+GArray *connector_download (struct connector *, const gchar *, gint *,
 			    void (*)(gdouble));
 
 ssize_t
-connector_upload (struct connector *, GArray *, guint, gint *,
+connector_upload (struct connector *, GArray *, gchar *, gint *,
 		  void (*)(gdouble));
 
-void connector_get_sample_info_from_msg (GByteArray *, guint *, guint *);
+void connector_get_sample_info_from_msg (GByteArray *, gint *, guint *);
 
-gint connector_create_upload (struct connector *, const char *, guint);
-
-gint connector_create_dir (struct connector *, const char *);
+gint connector_create_dir (struct connector *, const gchar *);
 
 GArray *connector_get_elektron_devices ();
