@@ -1,0 +1,26 @@
+Source: elektroid
+Section: sound
+Priority: optional
+Maintainer: DNS <debian@88it.de>
+Standards-Version: 4.1.2
+Build-Depends: autotools-dev,
+               debhelper (>= 11),
+               dh-autoreconf,
+               dpkg-dev (>= 1.16.1~),
+               libasound2-dev (>= 1.1.8),
+               libgtk-3-dev,
+               libpulse-dev,
+               libsndfile1-dev (>= 1.0.2),
+               libsamplerate0-dev (>= 0.1.9),
+	       libtool,
+               pkg-config
+Homepage: https://github.com/dagargo/elektroid
+Vcs-Browser: https://github.com/dagargo/elektroid
+Vcs-Git: https://github.com/dagargo/elektroid.git
+
+Package: elektroid
+Architecture: any
+Depends: ${misc:Depends},
+         ${shlibs:Depends}
+Description: Elektroid
+ Elektroid is a GNU/Linux sample transfer GTK3 application for Elektron devices.
