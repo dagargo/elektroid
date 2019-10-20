@@ -1223,7 +1223,7 @@ connector_fill_card_elektron_devices (gint card, GArray * devices)
 	 && (device >= 0))
     {
       connector_device = connector_get_elektron_device (ctl, card, device);
-      if (card >= 0)
+      if (connector_device)
 	{
 	  g_array_append_vals (devices, connector_device, 1);
 	}
