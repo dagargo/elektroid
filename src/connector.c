@@ -386,12 +386,20 @@ static GByteArray *
 connector_get_msg_payload (GByteArray * msg)
 {
   GByteArray *transformed;
-  GByteArray *payload = g_byte_array_new ();
-  guint len = msg->len - sizeof (MSG_HEADER) - 1;
+  GByteArray *payload;
+  gint len = msg->len - sizeof (MSG_HEADER) - 1;
 
-  g_byte_array_append (payload, &msg->data[sizeof (MSG_HEADER)], len);
-  transformed = connector_sysex_to_msg (payload);
-  free_msg (payload);
+  if (len > 0)
+    {
+      payload = g_byte_array_new ();
+      g_byte_array_append (payload, &msg->data[sizeof (MSG_HEADER)], len);
+      transformed = connector_sysex_to_msg (payload);
+      free_msg (payload);
+    }
+  else
+    {
+      transformed = NULL;
+    }
 
   return transformed;
 }
@@ -528,8 +536,11 @@ connector_rx (struct connector *connector)
   while (rx_len == 0 || (rx_len > 0 && buffer != 0xf7));
 
   msg = connector_get_msg_payload (sysex);
-  debug_print ("Message received: ");
-  debug_print_hex_msg (msg);
+  if (msg)
+    {
+      debug_print ("Message received: ");
+      debug_print_hex_msg (msg);
+    }
 
 cleanup:
   free_msg (sysex);
@@ -1039,7 +1050,7 @@ connector_init (struct connector *connector, gint card,
 {
   int err;
   GByteArray *tx_msg;
-  GByteArray *rx_msg;
+  GByteArray *rx_msg_device;
   GByteArray *rx_msg_fw_ver;
   gchar name[32];
   sprintf (name, "hw:%d", card);
@@ -1090,14 +1101,23 @@ connector_init (struct connector *connector, gint card,
   connector->device_name = malloc (LABEL_MAX);
 
   tx_msg = connector_new_msg_data (INQ_DEVICE, sizeof (INQ_DEVICE));
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg_device = connector_tx_and_rx (connector, tx_msg);
+  if (!rx_msg_device)
+    {
+      goto cleanup;
+    }
 
   tx_msg = connector_new_msg_data (INQ_VERSION, sizeof (INQ_VERSION));
   rx_msg_fw_ver = connector_tx_and_rx (connector, tx_msg);
+  if (!rx_msg_fw_ver)
+    {
+      free_msg (rx_msg_device);
+      goto cleanup;
+    }
 
-  snprintf (connector->device_name, LABEL_MAX, "%s %s", &rx_msg->data[23],
-	    &rx_msg_fw_ver->data[10]);
-  free_msg (rx_msg);
+  snprintf (connector->device_name, LABEL_MAX, "%s %s",
+	    &rx_msg_device->data[23], &rx_msg_fw_ver->data[10]);
+  free_msg (rx_msg_device);
   free_msg (rx_msg_fw_ver);
   debug_print ("Connected to %s\n", connector->device_name);
 
