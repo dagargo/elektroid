@@ -65,7 +65,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     <property name="transient_for">main_window</property>
     <property name="program_name">Elektroid</property>
     <property name="copyright" translatable="yes">Copyright © 2019 David García Goñi</property>
-    <property name="comments" translatable="yes">Sample transfer application for Elektron devices</property>
+    <property name="comments" translatable="yes">GNU/Linux sample transfer application for Elektron devices</property>
     <property name="website">https://github.com/dagargo/elektroid</property>
     <property name="authors">David García Goñi&lt;dagargo@gmail.com&gt;</property>
     <property name="logo_icon_name">elektroid</property>
