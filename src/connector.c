@@ -950,11 +950,7 @@ connector_download (struct connector *connector, const gchar * path,
       result = NULL;
       goto cleanup;
     }
-  //Response: x, x, x, x, 0xb1, [0 (error), 1 (success)]...
-  if (!connector_get_msg_status (rx_msg))
-    {
-      fprintf (stderr, "Unexpected status\n");
-    }
+  //Response: x, x, x, x, 0xb1, 00 00 00 0a 00 01 65 de (sample id and received bytes)
   free_msg (rx_msg);
 
 cleanup:
