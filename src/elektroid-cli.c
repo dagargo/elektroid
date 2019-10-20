@@ -68,14 +68,10 @@ cli_ld ()
 static gint
 cli_connect (const char *device_path)
 {
-  gint res;
   gint card = atoi (device_path);
 
   debug_print ("Connecting to card %d...\n", card);
-
-  res = connector_init (&connector, card, SINGLE_THREAD);
-
-  return res;
+  return connector_init (&connector, card, SINGLE_THREAD);
 }
 
 static int

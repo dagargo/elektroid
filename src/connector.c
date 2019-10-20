@@ -1132,7 +1132,7 @@ connector_init (struct connector *connector, gint card,
 	g_thread_new ("connector_reader", connector_reader, connector);
     }
 
-  return err;
+  return 0;
 
 cleanup:
   connector_destroy (connector);
