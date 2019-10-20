@@ -7,7 +7,7 @@ Elektroid is a Linux sample transfer application for Elektron devices. It includ
 As with other autotools project, you need to run the following commands.
 
 ```
-automake --add-missing
+autoreconf --install
 ./configure
 make
 sudo make install
@@ -26,55 +26,56 @@ You can easily install them by running `sudo apt install automake libasound2-dev
 
 ## CLI
 
-`elektroid-cli` provides the same funcionality than `elektroid`. Provided paths must always be prepended with the card id and a colon (':') , e.g. `0:/samples`.
+`elektroid-cli` provides the same funcionality than `elektroid`. Provided paths must always be prepended with the device id and a colon (':'), e.g. `0:/samples`.
 Here are the available commands.
 
-### ld, list compatible devices
+* ld, list compatible devices
 
 ```
 $ elektroid-cli ld
 0 Elektron Digitakt MIDI 1
 ```
 
-### mkdir
+* mkdir
 
 ```
 $ elektroid-cli mkdir 0:/samples
 ```
 
-### rmdir
+* rmdir
 
 ```
 $ elektroid-cli rmdir 0:/samples
 ```
 
-### upload
+* upload
 
 ```
 $ elektroid-cli upload square.wav 0:/
 ```
 
-### download
+* download
 
 ```
 $ elektroid-cli download 0:/square
 ```
 
-### ls
+* ls
 
 ```
 $ elektroid-cli ls 0:/
+D 0.00MB 00000000 incoming
 F 0.09MB 3d71644d square
 ```
 
-### mv
+* mv
 
 ```
-$ elektroid-cli mv 0:/square 0:/Square
+$ elektroid-cli mv 0:/square 0:/sample
 ```
 
-### rm
+* rm
 
 ```
-$ elektroid-cli rm 0:/Square
+$ elektroid-cli rm 0:/sample
 ```
