@@ -996,9 +996,9 @@ connector_destroy (struct connector *connector)
 
   debug_print ("Destroying connector...\n");
 
-  snd_rawmidi_drain (connector->inputp);
   if (connector->inputp)
     {
+      snd_rawmidi_drain (connector->inputp);
       err = snd_rawmidi_close (connector->inputp);
       if (err)
 	{
@@ -1008,9 +1008,9 @@ connector_destroy (struct connector *connector)
       connector->inputp = NULL;
     }
 
-  snd_rawmidi_drain (connector->outputp);
   if (connector->outputp)
     {
+      snd_rawmidi_drain (connector->outputp);
       err = snd_rawmidi_close (connector->outputp);
       if (err)
 	{
