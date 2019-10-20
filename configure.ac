@@ -6,6 +6,7 @@ AC_INIT([elektroid],[0.1],[dagargo@gmail.com])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 AM_PROG_LIBTOOL
+AC_CONFIG_MACRO_DIRS([m4])
 AM_INIT_AUTOMAKE
 
 # Checks for programs.
