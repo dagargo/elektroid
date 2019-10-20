@@ -37,4 +37,7 @@ src/elektroid-cli
 src/*~
 test/*.log
 test/*.trs
+config.guess
+config.sub
+ltmain.sh
 
