@@ -56,7 +56,7 @@ cli_ld ()
 
   for (i = 0; i < devices->len; i++)
     {
-      device = g_array_index (devices, ConnectorDevice, i);
+      device = g_array_index (devices, struct connector_device, i);
       printf ("%d %s\n", device.card, device.name);
     }
 

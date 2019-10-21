@@ -105,7 +105,7 @@ elektroid_load_devices (int auto_select)
 
   for (i = 0; i < devices->len; i++)
     {
-      device = g_array_index (devices, ConnectorDevice, i);
+      device = g_array_index (devices, struct connector_device, i);
       gtk_list_store_append (devices_list_store, &iter);
       gtk_list_store_set (devices_list_store, &iter,
 			  0, device.card, 1, device.name, -1);

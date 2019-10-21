@@ -45,11 +45,11 @@ struct connector_dir_iterator
   guint pos;
 };
 
-typedef struct connector_device
+struct connector_device
 {
   gchar *name;
   guint card;
-} ConnectorDevice;
+};
 
 enum connector_mode
 {
