@@ -73,6 +73,7 @@ static struct connector connector;
 static GThread *audio_thread = NULL;
 static GThread *load_thread = NULL;
 static GThread *progress_thread = NULL;
+static gint progress_thread_running;
 static gint load_thread_running;
 static GMutex load_mutex;
 
@@ -361,6 +362,7 @@ elektroid_close_and_exit (GtkWidget * widget, GdkEvent * event,
 {
   elektroid_audio_stop ();
 
+  progress_thread_running = 0;
   if (progress_thread)
     {
       g_thread_join (progress_thread);
@@ -886,7 +888,8 @@ elektroid_upload_process (gpointer user_data)
 
 
   frames = connector_upload (&connector, audio.sample, remote_path,
-			     &load_thread_running, elektroid_update_progress);
+			     &progress_thread_running,
+			     elektroid_update_progress);
   debug_print ("%ld frames sent\n", frames);
 
   if (frames < 0)
@@ -898,7 +901,7 @@ elektroid_upload_process (gpointer user_data)
 
   free (remote_path);
 
-  if (frames == audio.sample->len && load_thread_running)
+  if (frames == audio.sample->len && progress_thread_running)
     {
       g_idle_add (remote_browser.load_dir, NULL);
     }
@@ -928,7 +931,7 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
   gtk_label_set_text (elektroid_progress.label, label);
   free (label);
 
-  load_thread_running = 1;
+  progress_thread_running = 1;
 
   progress_thread =
     g_thread_new ("elektroid_upload_process", elektroid_upload_process, path);
@@ -937,7 +940,7 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
 
   if (result == GTK_RESPONSE_CANCEL || result == GTK_RESPONSE_DELETE_EVENT)
     {
-      load_thread_running = 0;
+      progress_thread_running = 0;
     }
 
   g_thread_join (progress_thread);
@@ -961,13 +964,13 @@ elektroid_download_process (gpointer user_data)
   char *path = (char *) user_data;
 
   data =
-    connector_download (&connector, path, &load_thread_running,
+    connector_download (&connector, path, &progress_thread_running,
 			elektroid_update_progress);
   elektroid_check_connector ();
 
   if (data != NULL)
     {
-      if (load_thread_running)
+      if (progress_thread_running)
 	{
 	  basec = strdup (path);
 	  bname = basename (basec);
@@ -1013,7 +1016,7 @@ elektroid_download (GtkWidget * object, gpointer user_data)
   gtk_label_set_text (elektroid_progress.label, label);
   free (label);
 
-  load_thread_running = 1;
+  progress_thread_running = 1;
 
   progress_thread =
     g_thread_new ("elektroid_download_process", elektroid_download_process,
@@ -1023,7 +1026,7 @@ elektroid_download (GtkWidget * object, gpointer user_data)
 
   if (result == GTK_RESPONSE_CANCEL || result == GTK_RESPONSE_DELETE_EVENT)
     {
-      load_thread_running = 0;
+      progress_thread_running = 0;
     }
 
   g_thread_join (progress_thread);
