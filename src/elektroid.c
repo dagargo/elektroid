@@ -430,7 +430,7 @@ elektroid_load_sample (gpointer data)
 {
   elektroid_audio_stop ();
   sample_load (audio.sample, &load_mutex, &audio.frames, data,
-	       NULL, elektroid_update_progress_redraw);
+	       &load_thread_running, elektroid_update_progress_redraw);
   gtk_widget_queue_draw (waveform_draw_area);
   g_idle_add (elektroid_update_ui_after_load, NULL);
   elektroid_audio_start ();
@@ -520,6 +520,7 @@ elektroid_local_file_selected (gpointer data)
   gtk_label_set_text (elektroid_progress.label, label);
   free (label);
 
+  load_thread_running = 1;
   load_thread =
     g_thread_new ("elektroid_load_sample", elektroid_load_sample, path);
 
