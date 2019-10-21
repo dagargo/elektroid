@@ -327,30 +327,6 @@ elektroid_get_browser_selected_path (struct elektroid_browser *ebrowser)
 }
 
 static gboolean
-elektroid_close_and_exit (GtkWidget * widget, GdkEvent * event,
-			  gpointer user_data)
-{
-  audio_stop (&audio);
-
-  progress_thread_running = 0;
-  if (progress_thread)
-    {
-      g_thread_join (progress_thread);
-      g_thread_unref (progress_thread);
-    }
-
-  load_thread_running = 0;
-  if (load_thread)
-    {
-      g_thread_join (load_thread);
-      g_thread_unref (load_thread);
-    }
-
-  gtk_main_quit ();
-  return FALSE;
-}
-
-static gboolean
 elektroid_update_ui_after_load (gpointer data)
 {
   if (audio.sample->len > 0)
@@ -372,7 +348,6 @@ elektroid_update_progress_value (gpointer data)
 {
   gtk_progress_bar_set_fraction (elektroid_progress.progress,
 				 elektroid_progress.percent);
-
   return FALSE;
 }
 
@@ -387,14 +362,20 @@ static gboolean
 elektroid_progress_dialog_end ()
 {
   gtk_dialog_response (elektroid_progress.dialog, GTK_RESPONSE_NONE);
+  return FALSE;
+}
 
+static gboolean
+elektroid_queue_draw_waveform ()
+{
+  gtk_widget_queue_draw (waveform_draw_area);
   return FALSE;
 }
 
 static void
 elektroid_update_progress_redraw (gdouble percent)
 {
-  gtk_widget_queue_draw (waveform_draw_area);
+  g_idle_add (elektroid_queue_draw_waveform, NULL);
 }
 
 static gpointer
@@ -403,40 +384,56 @@ elektroid_load_sample (gpointer data)
   audio_stop (&audio);
   sample_load (audio.sample, &load_mutex, &audio.frames, data,
 	       &load_thread_running, elektroid_update_progress_redraw);
-  gtk_widget_queue_draw (waveform_draw_area);
+  free (data);
   g_idle_add (elektroid_update_ui_after_load, NULL);
   audio_play (&audio);
-  free (data);
-
   return NULL;
+}
+
+static void
+elektroid_start_load_thread (char *path)
+{
+  load_thread_running = 1;
+  load_thread =
+    g_thread_new ("elektroid_load_sample", elektroid_load_sample, path);
+}
+
+static void
+elektroid_stop_load_thread ()
+{
+  audio_stop (&audio);
+
+  load_thread_running = 0;
+  if (load_thread)
+    {
+      g_thread_join (load_thread);
+      g_thread_unref (load_thread);
+    }
+  load_thread = NULL;
 }
 
 static gboolean
 elektroid_remote_file_unselected (gpointer data)
 {
   gtk_widget_set_sensitive (download_button, FALSE);
-
   return FALSE;
 }
-
 
 static gboolean
 elektroid_remote_file_selected (gpointer data)
 {
   gtk_widget_set_sensitive (download_button, TRUE);
-
   return FALSE;
 }
 
 static gboolean
 elektroid_local_file_unselected (gpointer data)
 {
-  audio_stop (&audio);
+  elektroid_stop_load_thread ();
   g_array_set_size (audio.sample, 0);
   gtk_widget_queue_draw (waveform_draw_area);
   gtk_widget_set_sensitive (upload_button, FALSE);
   gtk_widget_set_sensitive (play_button, FALSE);
-
   return FALSE;
 }
 
@@ -450,12 +447,7 @@ elektroid_local_file_selected (gpointer data)
       return FALSE;
     }
 
-  load_thread_running = 0;
-  if (load_thread)
-    {
-      g_thread_join (load_thread);
-      g_thread_unref (load_thread);
-    }
+  elektroid_stop_load_thread ();
 
   gtk_widget_set_sensitive (play_button, FALSE);
   gtk_widget_set_sensitive (upload_button, FALSE);
@@ -468,9 +460,7 @@ elektroid_local_file_selected (gpointer data)
   gtk_label_set_text (elektroid_progress.label, label);
   free (label);
 
-  load_thread_running = 1;
-  load_thread =
-    g_thread_new ("elektroid_load_sample", elektroid_load_sample, path);
+  elektroid_start_load_thread (path);
 
   return FALSE;
 }
@@ -483,11 +473,13 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer user_data)
   GtkStyleContext *context;
   int i, x_widget, x_data;
   double x_ratio, mid_y;
-  short *data = (short *) audio.sample->data;
+  short *data;
+
+  g_mutex_lock (&load_mutex);
 
   if (audio.sample->len <= 0)
     {
-      return FALSE;
+      goto cleanup;
     }
 
   context = gtk_widget_get_style_context (widget);
@@ -499,12 +491,12 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer user_data)
 			       &color);
   gdk_cairo_set_source_rgba (cr, &color);
 
-  g_mutex_lock (&load_mutex);
+  data = (short *) audio.sample->data;
   x_ratio = audio.frames / (double) MAX_DRAW_X;
   for (i = 0; i < MAX_DRAW_X; i++)
     {
       x_data = i * x_ratio;
-      if (x_data <= audio.sample->len)
+      if (x_data < audio.sample->len)
 	{
 	  x_widget = i * ((double) width) / MAX_DRAW_X;
 	  cairo_move_to (cr, x_widget, mid_y);
@@ -513,8 +505,9 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer user_data)
 	  cairo_stroke (cr);
 	}
     }
-  g_mutex_unlock (&load_mutex);
 
+cleanup:
+  g_mutex_unlock (&load_mutex);
   return FALSE;
 }
 
@@ -608,8 +601,6 @@ elektroid_load_local_dir (gpointer data)
   char *path;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (local_browser.view));
-
-  elektroid_local_file_unselected (NULL);
 
   gtk_entry_set_text (local_browser.dir_entry, local_browser.dir);
 
@@ -888,8 +879,11 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
       progress_thread_running = 0;
     }
 
-  g_thread_join (progress_thread);
-  g_thread_unref (progress_thread);
+  if (progress_thread)
+    {
+      g_thread_join (progress_thread);
+      g_thread_unref (progress_thread);
+    }
   progress_thread = NULL;
 
   free (path);
@@ -974,8 +968,11 @@ elektroid_download (GtkWidget * object, gpointer user_data)
       progress_thread_running = 0;
     }
 
-  g_thread_join (progress_thread);
-  g_thread_unref (progress_thread);
+  if (progress_thread)
+    {
+      g_thread_join (progress_thread);
+      g_thread_unref (progress_thread);
+    }
   progress_thread = NULL;
 
   free (path);
@@ -1086,8 +1083,28 @@ elektroid_set_device (GtkWidget * object, gpointer user_data)
     }
 }
 
+
+static gboolean
+elektroid_close_and_exit (GtkWidget * widget, GdkEvent * event,
+			  gpointer user_data)
+{
+  audio_stop (&audio);
+
+  progress_thread_running = 0;
+  if (progress_thread)
+    {
+      g_thread_join (progress_thread);
+      g_thread_unref (progress_thread);
+    }
+
+  elektroid_stop_load_thread ();
+
+  gtk_main_quit ();
+  return FALSE;
+}
+
 static int
-elektroid (int argc, char *argv[])
+elektroid_run (int argc, char *argv[])
 {
   GtkBuilder *builder;
   GtkTreeSortable *sortable;
@@ -1343,5 +1360,5 @@ main (int argc, char *argv[])
       exit (EXIT_FAILURE);
     }
 
-  return elektroid (argc, argv);
+  return elektroid_run (argc, argv);
 }

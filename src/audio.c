@@ -77,6 +77,8 @@ audio_stop (struct audio *audio)
       return;
     }
 
+  g_mutex_lock (&audio->mutex);
+
   audio->playing = 0;
 
   if (pa_simple_flush (audio->pa_s, &err) < 0)
@@ -93,6 +95,8 @@ audio_stop (struct audio *audio)
       g_thread_unref (audio->play_thread);
     }
   audio->play_thread = NULL;
+
+  g_mutex_unlock (&audio->mutex);
 }
 
 void
@@ -101,8 +105,13 @@ audio_play (struct audio *audio)
   if (audio_check (audio))
     {
       audio_stop (audio);
+
+      g_mutex_lock (&audio->mutex);
+
       audio->play_thread =
 	g_thread_new ("audio_play_task", audio_play_task, audio);
+
+      g_mutex_unlock (&audio->mutex);
     }
 }
 

@@ -88,9 +88,17 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, char *path,
   int resampled_buffer_len;
   int f, frames_read;
 
-  g_array_set_size (sample, 0);
-
   debug_print (2, "Loading file %s...\n", path);
+
+  if (mutex)
+    {
+      g_mutex_lock (mutex);
+    }
+  g_array_set_size (sample, 0);
+  if (mutex)
+    {
+      g_mutex_unlock (mutex);
+    }
 
   sf_info.format = 0;
   sndfile = sf_open (path, SFM_READ, &sf_info);
@@ -117,15 +125,6 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, char *path,
   src_state = src_new (SRC_SINC_BEST_QUALITY, 1, &err);
   if (err)
     {
-      if (mutex)
-	{
-	  g_mutex_lock (mutex);
-	}
-      g_array_set_size (sample, 0);
-      if (mutex)
-	{
-	  g_mutex_unlock (mutex);
-	}
       goto cleanup;
     }
 
