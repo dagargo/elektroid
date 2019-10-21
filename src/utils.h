@@ -31,3 +31,5 @@ void debug_print_hex_msg (const GByteArray *);
 char *chain_path (const char *, const char *);
 
 void remove_ext (char *);
+
+const char *get_ext (const char *);

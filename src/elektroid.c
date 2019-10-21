@@ -428,7 +428,6 @@ elektroid_remote_file_selected (gpointer data)
   return FALSE;
 }
 
-
 static gboolean
 elektroid_local_file_unselected (gpointer data)
 {
@@ -439,29 +438,6 @@ elektroid_local_file_unselected (gpointer data)
   gtk_widget_set_sensitive (play_button, FALSE);
 
   return FALSE;
-}
-
-static const char *
-elektroid_get_ext (const char *name)
-{
-  int namelen = strlen (name) - 1;
-  int i = namelen;
-  const char *ext = &name[namelen];
-
-  while (*(ext - 1) != '.' && i > 0)
-    {
-      ext--;
-      i--;
-    }
-
-  if (i == 0 && name[0] != '.')
-    {
-      return NULL;
-    }
-  else
-    {
-      return ext;
-    }
 }
 
 static gboolean
@@ -614,7 +590,7 @@ elektroid_load_remote_dir (gpointer data)
 static gint
 elektroid_valid_file (const char *name)
 {
-  const char *ext = elektroid_get_ext (name);
+  const char *ext = get_ext (name);
 
   return (ext != NULL && (!strcasecmp (ext, "wav") || !strcasecmp (ext, "ogg")
 			  || !strcasecmp (ext, "aiff")

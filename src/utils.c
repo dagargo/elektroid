@@ -122,3 +122,26 @@ remove_ext (char *name)
     }
   *dot = 0;
 }
+
+const char *
+get_ext (const char *name)
+{
+  int namelen = strlen (name) - 1;
+  int i = namelen;
+  const char *ext = &name[namelen];
+
+  while (*(ext - 1) != '.' && i > 0)
+    {
+      ext--;
+      i--;
+    }
+
+  if (i == 0 && name[0] != '.')
+    {
+      return NULL;
+    }
+  else
+    {
+      return ext;
+    }
+}
