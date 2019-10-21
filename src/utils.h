@@ -20,7 +20,7 @@
 
 #define LABEL_MAX 128
 
-#define debug_print(...) if (debug_level) fprintf(stderr, __VA_ARGS__)
+#define debug_print(level, ...) if (level <= debug_level) fprintf(stderr, __VA_ARGS__)
 
 int debug_level;
 

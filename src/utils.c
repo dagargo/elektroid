@@ -52,7 +52,7 @@ print_dots_if_needed (guint msg_len)
 {
   if (debug_level == 1 && msg_len > DEBUG_LEVEL1_LEN)
     {
-      debug_print ("...");
+      debug_print (1, "...");
     }
 }
 
@@ -64,12 +64,12 @@ debug_print_ascii_msg (const GByteArray * msg)
 
   while (i < get_max_message_length (msg->len))
     {
-      debug_print ("%c", connector_get_printable_char (*data));
+      debug_print (1, "%c", connector_get_printable_char (*data));
       data++;
       i++;
     }
   print_dots_if_needed (msg->len);
-  debug_print ("\n");
+  debug_print (1, "\n");
 }
 
 void
@@ -82,14 +82,14 @@ debug_print_hex_msg (const GByteArray * msg)
     {
       if (i > 0)
 	{
-	  debug_print (" ");
+	  debug_print (1, " ");
 	}
-      debug_print ("%02x", *data);
+      debug_print (1, "%02x", *data);
       data++;
       i++;
     }
   print_dots_if_needed (msg->len);
-  debug_print ("\n");
+  debug_print (1, "\n");
 }
 
 gchar *

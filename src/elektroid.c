@@ -99,7 +99,7 @@ elektroid_load_devices (int auto_select)
   GArray *devices = connector_get_elektron_devices ();
   struct connector_device device;
 
-  debug_print ("Loading devices...\n");
+  debug_print (1, "Loading devices...\n");
 
   gtk_list_store_clear (devices_list_store);
 
@@ -115,7 +115,7 @@ elektroid_load_devices (int auto_select)
 
   if (auto_select && i == 1)
     {
-      debug_print ("Selecting device 0...\n");
+      debug_print (1, "Selecting device 0...\n");
       gtk_combo_box_set_active (devices_combo, 0);
     }
   else
@@ -846,7 +846,7 @@ elektroid_upload_process (gpointer user_data)
   char *path = (char *) user_data;
   ssize_t frames;
 
-  debug_print ("Local path: %s\n", path);
+  debug_print (1, "Local path: %s\n", path);
 
   basec = strdup (path);
   bname = basename (basec);
@@ -854,13 +854,12 @@ elektroid_upload_process (gpointer user_data)
   remote_path = chain_path (remote_browser.dir, bname);
   free (basec);
 
-  debug_print ("Remote path: %s\n", remote_path);
+  debug_print (1, "Remote path: %s\n", remote_path);
 
 
   frames = connector_upload (&connector, audio.sample, remote_path,
 			     &progress_thread_running,
 			     elektroid_update_progress);
-  debug_print ("%ld frames sent\n", frames);
 
   if (frames < 0)
     {
@@ -952,9 +951,9 @@ elektroid_download_process (gpointer user_data)
 	  output_file_path = chain_path (local_browser.dir, new_filename);
 	  free (new_filename);
 
-	  debug_print ("Writing to file '%s'...\n", output_file_path);
+	  debug_print (1, "Writing to file '%s'...\n", output_file_path);
 	  frames = sample_save (data, output_file_path);
-	  debug_print ("%lu frames written\n", frames);
+	  debug_print (1, "%lu frames written\n", frames);
 	  free (output_file_path);
 	}
       g_array_free (data, TRUE);

@@ -57,7 +57,7 @@ audio_multichannel_to_mono (short *input, short *output, int size,
 {
   int i, j, v;
 
-  debug_print ("Converting to mono...\n");
+  debug_print (2, "Converting to mono...\n");
 
   for (i = 0; i < size; i++)
     {
@@ -90,7 +90,7 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, char *path,
 
   g_array_set_size (sample, 0);
 
-  debug_print ("Loading file %s...\n", path);
+  debug_print (2, "Loading file %s...\n", path);
 
   sf_info.format = 0;
   sndfile = sf_open (path, SFM_READ, &sf_info);
@@ -134,12 +134,12 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, char *path,
       *frames = sf_info.frames * src_data.src_ratio;
     }
 
-  debug_print ("Loading sample (%ld)...\n", sf_info.frames);
+  debug_print (2, "Loading sample (%ld)...\n", sf_info.frames);
 
   f = 0;
   while (f < sf_info.frames && (!running || *running))
     {
-      debug_print ("Loading buffer...\n");
+      debug_print (2, "Loading buffer...\n");
 
       frames_read =
 	sf_readf_short (sndfile, buffer_input_multi, LOAD_BUFFER_LEN);
@@ -183,10 +183,10 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, char *path,
 	  src_short_to_float_array (buffer_input, buffer_f, frames_read);
 	  src_data.output_frames = src_data.input_frames * src_data.src_ratio;
 	  err = src_process (src_state, &src_data);
-	  debug_print ("Resampling...\n");
+	  debug_print (2, "Resampling...\n");
 	  if (err)
 	    {
-	      debug_print ("Error %s\n", src_strerror (err));
+	      debug_print (2, "Error %s\n", src_strerror (err));
 	      break;
 	    }
 	  src_float_to_short_array (src_data.data_out, buffer_s,

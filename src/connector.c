@@ -473,7 +473,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
       total += len;
     }
 
-  debug_print ("Message sent: ");
+  debug_print (1, "Message sent: ");
   debug_print_hex_msg (msg);
 
 cleanup:
@@ -538,7 +538,7 @@ connector_rx (struct connector *connector)
   msg = connector_get_msg_payload (sysex);
   if (msg)
     {
-      debug_print ("Message received: ");
+      debug_print (1, "Message received: ");
       debug_print_hex_msg (msg);
     }
 
@@ -624,14 +624,14 @@ connector_reader (void *data)
       if (rx_msg)
 	{
 	  g_mutex_lock (&connector->mutex);
-	  debug_print ("Queuing incoming message...\n");
+	  debug_print (2, "Queuing incoming message...\n");
 	  connector->queue = g_slist_append (connector->queue, rx_msg);
 	  g_cond_signal (&connector->cond);
 	  g_mutex_unlock (&connector->mutex);
 	}
     }
 
-  debug_print ("Quitting connector reader...\n");
+  debug_print (2, "Quitting connector reader...\n");
 
   return NULL;
 }
@@ -643,10 +643,10 @@ connector_get_response (struct connector *connector, GByteArray * tx_msg)
   GSList *item;
   gushort seq = get_tx_message_seq (tx_msg);
 
-  debug_print ("Getting response for seq %d...\n", seq);
+  debug_print (2, "Getting response for seq %d...\n", seq);
 
   g_mutex_lock (&connector->mutex);
-  debug_print ("Locking...\n");
+  debug_print (2, "Locking...\n");
   while (!(item = g_slist_find_custom (connector->queue, &seq, compare_seq)))
     {
       g_cond_wait (&connector->cond, &connector->mutex);
@@ -655,7 +655,7 @@ connector_get_response (struct connector *connector, GByteArray * tx_msg)
   connector->queue = g_slist_remove_link (connector->queue, item);
   g_mutex_unlock (&connector->mutex);
 
-  debug_print ("Message found: ");
+  debug_print (1, "Message found: ");
   debug_print_hex_msg (rx_msg);
 
   return rx_msg;
@@ -853,7 +853,7 @@ connector_upload (struct connector *connector, GArray * sample,
       progress (transferred / (double) sample->len);
     }
 
-  debug_print ("%lu frames sent\n", transferred);
+  debug_print (2, "%lu frames sent\n", transferred);
 
   if (!running || *running)
     {
@@ -906,7 +906,7 @@ connector_download (struct connector *connector, const gchar * path,
       goto end;
     }
 
-  debug_print ("frames %d\n", frames);
+  debug_print (2, "%d frames to download\n", frames);
 
   data = g_byte_array_new ();
 
@@ -942,7 +942,7 @@ connector_download (struct connector *connector, const gchar * path,
       progress (next_block_start / (double) frames);
     }
 
-  debug_print ("%d bytes received\n", next_block_start);
+  debug_print (2, "%d bytes received\n", next_block_start);
 
   result = g_array_new (FALSE, FALSE, sizeof (short));
 
@@ -1005,7 +1005,7 @@ connector_destroy (struct connector *connector)
 {
   int err;
 
-  debug_print ("Destroying connector...\n");
+  debug_print (1, "Destroying connector...\n");
 
   if (connector->inputp)
     {
@@ -1064,12 +1064,12 @@ connector_init (struct connector *connector, gint card,
 
   if (card < 0)
     {
-      debug_print ("Invalid card.\n");
+      debug_print (1, "Invalid card.\n");
       err = -1;
       goto cleanup;
     }
 
-  debug_print ("Initializing connector to '%s'...\n", name);
+  debug_print (1, "Initializing connector to '%s'...\n", name);
 
   if ((err =
        snd_rawmidi_open (&connector->inputp, &connector->outputp,
@@ -1079,7 +1079,7 @@ connector_init (struct connector *connector, gint card,
       goto cleanup;
     }
 
-  debug_print ("Setting blocking mode...\n");
+  debug_print (1, "Setting blocking mode...\n");
   if ((err = snd_rawmidi_nonblock (connector->outputp, 0)) < 0)
     {
       fprintf (stderr, __FILE__ ": Error while setting blocking mode\n");
@@ -1091,7 +1091,7 @@ connector_init (struct connector *connector, gint card,
       goto cleanup;
     }
 
-  debug_print ("Stopping device...\n");
+  debug_print (1, "Stopping device...\n");
   if (snd_rawmidi_write (connector->outputp, "\xfc", 1) < 0)
     {
       fprintf (stderr, __FILE__ ": Error while stopping device\n");
@@ -1119,7 +1119,7 @@ connector_init (struct connector *connector, gint card,
 	    &rx_msg_device->data[23], &rx_msg_fw_ver->data[10]);
   free_msg (rx_msg_device);
   free_msg (rx_msg_fw_ver);
-  debug_print ("Connected to %s\n", connector->device_name);
+  debug_print (1, "Connected to %s\n", connector->device_name);
 
   if (mode == SINGLE_THREAD)
     {
@@ -1210,7 +1210,7 @@ connector_get_elektron_device (snd_ctl_t * ctl, int card, int device)
   sub_name = snd_rawmidi_info_get_subdevice_name (info);
   if (strncmp (sub_name, "Elektron", 8) == 0)
     {
-      debug_print ("Adding hw:%d (%s) %s...\n", card, name, sub_name);
+      debug_print (1, "Adding hw:%d (%s) %s...\n", card, name, sub_name);
       connector_device = malloc (sizeof (struct connector_device));
       connector_device->card = card;
       connector_device->name = strdup (sub_name);

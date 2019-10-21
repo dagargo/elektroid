@@ -52,8 +52,6 @@ cli_ld ()
   struct connector_device device;
   GArray *devices = connector_get_elektron_devices ();
 
-  debug_print ("Listing devices...\n");
-
   for (i = 0; i < devices->len; i++)
     {
       device = g_array_index (devices, struct connector_device, i);
@@ -69,8 +67,6 @@ static gint
 cli_connect (const char *device_path)
 {
   gint card = atoi (device_path);
-
-  debug_print ("Connecting to card %d...\n", card);
   return connector_init (&connector, card, SINGLE_THREAD);
 }
 
