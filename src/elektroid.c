@@ -49,7 +49,7 @@ struct elektroid_browser
   GtkWidget *refresh_button;
   GtkWidget *copy_button;
   GtkEntry *dir_entry;
-  char *dir;
+  gchar *dir;
 };
 
 struct elektroid_progress
@@ -73,8 +73,8 @@ static struct connector connector;
 static GThread *audio_thread = NULL;
 static GThread *load_thread = NULL;
 static GThread *progress_thread = NULL;
-
-static int load_thread_running;
+static gint load_thread_running;
+static GMutex load_mutex;
 
 static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
@@ -429,7 +429,7 @@ static gpointer
 elektroid_load_sample (gpointer data)
 {
   elektroid_audio_stop ();
-  sample_load (audio.sample, &audio.load_mutex, &audio.frames, data,
+  sample_load (audio.sample, &load_mutex, &audio.frames, data,
 	       NULL, elektroid_update_progress_redraw);
   gtk_widget_queue_draw (waveform_draw_area);
   g_idle_add (elektroid_update_ui_after_load, NULL);
@@ -550,7 +550,7 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer user_data)
 			       &color);
   gdk_cairo_set_source_rgba (cr, &color);
 
-  g_mutex_lock (&audio.load_mutex);
+  g_mutex_lock (&load_mutex);
   x_ratio = audio.frames / (double) MAX_DRAW_X;
   for (i = 0; i < MAX_DRAW_X; i++)
     {
@@ -564,7 +564,7 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer user_data)
 	  cairo_stroke (cr);
 	}
     }
-  g_mutex_unlock (&audio.load_mutex);
+  g_mutex_unlock (&load_mutex);
 
   return FALSE;
 }

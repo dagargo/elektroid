@@ -28,7 +28,6 @@ struct audio
   GArray *sample;
   gint frames;
   gint playing;
-  GMutex load_mutex;
 };
 
 void audio_play (struct audio *);
