@@ -32,18 +32,19 @@
 
 #define PA_BUFFER_LEN 4800
 
-void
-audio_play (struct audio *audio)
+gpointer
+audio_play_task (gpointer data)
 {
   int err;
   int remaining;
   short *buffer;
   int buffer_len;
   int len;
+  struct audio *audio = data;
 
   if (!audio->pa_s)
     {
-      return;
+      return NULL;
     }
 
   audio->playing = 1;
@@ -62,6 +63,8 @@ audio_play (struct audio *audio)
       remaining -= buffer_len;
       buffer += buffer_len;
     }
+
+  return NULL;
 }
 
 void
@@ -83,6 +86,24 @@ audio_stop (struct audio *audio)
   if (pa_simple_drain (audio->pa_s, &err) < 0)
     fprintf (stderr, __FILE__ ": pa_simple_drain() failed: %s\n",
 	     pa_strerror (err));
+
+  if (audio->play_thread)
+    {
+      g_thread_join (audio->play_thread);
+      g_thread_unref (audio->play_thread);
+    }
+  audio->play_thread = NULL;
+}
+
+void
+audio_play (struct audio *audio)
+{
+  if (audio_check (audio))
+    {
+      audio_stop (audio);
+      audio->play_thread =
+	g_thread_new ("audio_play_task", audio_play_task, audio);
+    }
 }
 
 int

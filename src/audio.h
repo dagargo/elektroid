@@ -27,6 +27,7 @@ struct audio
   pa_simple *pa_s;
   GArray *sample;
   gint frames;
+  GThread *play_thread;
   gint playing;
 };
 

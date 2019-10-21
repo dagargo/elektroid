@@ -70,7 +70,6 @@ static struct elektroid_progress elektroid_progress;
 static struct audio audio;
 static struct connector connector;
 
-static GThread *audio_thread = NULL;
 static GThread *load_thread = NULL;
 static GThread *progress_thread = NULL;
 static gint progress_thread_running;
@@ -327,40 +326,11 @@ elektroid_get_browser_selected_path (struct elektroid_browser *ebrowser)
     }
 }
 
-static gpointer
-elektroid_play (gpointer data)
-{
-  audio_play (&audio);
-  return NULL;
-}
-
-static void
-elektroid_audio_stop ()
-{
-  audio_stop (&audio);
-  if (audio_thread)
-    {
-      g_thread_join (audio_thread);
-      g_thread_unref (audio_thread);
-    }
-  audio_thread = NULL;
-}
-
-static void
-elektroid_audio_start ()
-{
-  elektroid_audio_stop ();
-  if (audio_check (&audio))
-    {
-      audio_thread = g_thread_new ("elektroid_play", elektroid_play, NULL);
-    }
-}
-
 static gboolean
 elektroid_close_and_exit (GtkWidget * widget, GdkEvent * event,
 			  gpointer user_data)
 {
-  elektroid_audio_stop ();
+  audio_stop (&audio);
 
   progress_thread_running = 0;
   if (progress_thread)
@@ -430,12 +400,12 @@ elektroid_update_progress_redraw (gdouble percent)
 static gpointer
 elektroid_load_sample (gpointer data)
 {
-  elektroid_audio_stop ();
+  audio_stop (&audio);
   sample_load (audio.sample, &load_mutex, &audio.frames, data,
 	       &load_thread_running, elektroid_update_progress_redraw);
   gtk_widget_queue_draw (waveform_draw_area);
   g_idle_add (elektroid_update_ui_after_load, NULL);
-  elektroid_audio_start ();
+  audio_play (&audio);
   free (data);
 
   return NULL;
@@ -462,7 +432,7 @@ elektroid_remote_file_selected (gpointer data)
 static gboolean
 elektroid_local_file_unselected (gpointer data)
 {
-  elektroid_audio_stop ();
+  audio_stop (&audio);
   g_array_set_size (audio.sample, 0);
   gtk_widget_queue_draw (waveform_draw_area);
   gtk_widget_set_sensitive (upload_button, FALSE);
@@ -575,7 +545,7 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer user_data)
 static void
 elektroid_play_clicked (GtkWidget * object, gpointer user_data)
 {
-  elektroid_audio_start ();
+  audio_play (&audio);
 }
 
 static void
