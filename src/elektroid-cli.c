@@ -23,11 +23,13 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <libgen.h>
+#include <signal.h>
 #include "connector.h"
 #include "sample.h"
 #include "utils.h"
 
 static struct connector connector;
+static int running;
 
 static gchar *
 cli_get_path (gchar * device_path)
@@ -146,6 +148,8 @@ static int
 cli_mv (int argc, char *argv[], int optind)
 {
   gchar *device_path_src, *device_path_dst, *path_src, *path_dst;
+  gint card_src;
+  gint card_dst;
   gint res;
 
   if (optind == argc)
@@ -169,8 +173,8 @@ cli_mv (int argc, char *argv[], int optind)
       device_path_dst = argv[optind];
     }
 
-  gint card_src = atoi (device_path_src);
-  gint card_dst = atoi (device_path_dst);
+  card_src = atoi (device_path_src);
+  card_dst = atoi (device_path_dst);
   if (card_src != card_dst)
     {
       fprintf (stderr, "Source and destination device must be the same\n");
@@ -259,7 +263,8 @@ cli_download (int argc, char *argv[], int optind)
 
   path_src = cli_get_path (device_path_src);
 
-  data = connector_download (&connector, path_src, NULL, NULL);
+  running = 1;
+  data = connector_download (&connector, path_src, &running, NULL);
   if (data == NULL)
     {
       return EXIT_FAILURE;
@@ -330,7 +335,8 @@ cli_upload (int argc, char *argv[], int optind)
       goto cleanup;
     }
 
-  frames = connector_upload (&connector, sample, path_dst, NULL, NULL);
+  running = 1;
+  frames = connector_upload (&connector, sample, path_dst, &running, NULL);
 
   res = frames < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
@@ -341,6 +347,12 @@ cleanup:
   return res;
 }
 
+static void
+cli_end (int sig)
+{
+  running = 0;
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -348,6 +360,11 @@ main (int argc, char *argv[])
   int res;
   char *command;
   int vflg = 0, errflg = 0;
+
+  signal (SIGTERM, cli_end);
+  signal (SIGQUIT, cli_end);
+  signal (SIGINT, cli_end);
+  signal (SIGHUP, cli_end);
 
   while ((c = getopt (argc, argv, "v")) != -1)
     {
