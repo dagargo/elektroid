@@ -888,6 +888,7 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
   progress_thread =
     g_thread_new ("elektroid_upload_process", elektroid_upload_process, path);
 
+  elektroid_update_progress (0.0);
   result = gtk_dialog_run (elektroid_progress.dialog);
 
   if (result == GTK_RESPONSE_CANCEL || result == GTK_RESPONSE_DELETE_EVENT)
@@ -973,6 +974,7 @@ elektroid_download (GtkWidget * object, gpointer user_data)
     g_thread_new ("elektroid_download_process", elektroid_download_process,
 		  path);
 
+  elektroid_update_progress (0.0);
   result = gtk_dialog_run (elektroid_progress.dialog);
 
   if (result == GTK_RESPONSE_CANCEL || result == GTK_RESPONSE_DELETE_EVENT)
