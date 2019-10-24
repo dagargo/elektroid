@@ -47,7 +47,6 @@ audio_play_task (gpointer data)
       return NULL;
     }
 
-  audio->playing = 1;
   buffer = (short *) audio->sample->data;
   remaining = audio->sample->len;
   buffer_len =
@@ -79,7 +78,20 @@ audio_stop (struct audio *audio)
 
   g_mutex_lock (&audio->mutex);
 
+  if (audio->playing == 0)
+    {
+      goto end;
+    }
+
+  debug_print (1, "Stopping audio...\n");
+
   audio->playing = 0;
+  if (audio->play_thread)
+    {
+      g_thread_join (audio->play_thread);
+      g_thread_unref (audio->play_thread);
+    }
+  audio->play_thread = NULL;
 
   if (pa_simple_flush (audio->pa_s, &err) < 0)
     fprintf (stderr, __FILE__ ": pa_simple_flush() failed: %s\n",
@@ -89,13 +101,7 @@ audio_stop (struct audio *audio)
     fprintf (stderr, __FILE__ ": pa_simple_drain() failed: %s\n",
 	     pa_strerror (err));
 
-  if (audio->play_thread)
-    {
-      g_thread_join (audio->play_thread);
-      g_thread_unref (audio->play_thread);
-    }
-  audio->play_thread = NULL;
-
+end:
   g_mutex_unlock (&audio->mutex);
 }
 
@@ -108,6 +114,9 @@ audio_play (struct audio *audio)
 
       g_mutex_lock (&audio->mutex);
 
+      debug_print (1, "Playing audio...\n");
+
+      audio->playing = 1;
       audio->play_thread =
 	g_thread_new ("audio_play_task", audio_play_task, audio);
 
@@ -148,6 +157,8 @@ void
 audio_destroy (struct audio *audio)
 {
   audio_stop (audio);
+
+  debug_print (1, "Destroying audio...\n");
 
   g_array_free (audio->sample, TRUE);
 

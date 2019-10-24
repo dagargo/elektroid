@@ -27,6 +27,7 @@
 #include "connector.h"
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <glib-unix.h>
 #include "audio.h"
 #include "sample.h"
 #include "utils.h"
@@ -59,8 +60,6 @@ struct elektroid_progress
   GtkProgressBar *progress;
   gdouble percent;
 };
-
-//TODO: add signal handler
 
 static struct elektroid_browser remote_browser;
 static struct elektroid_browser local_browser;
@@ -393,16 +392,36 @@ elektroid_load_sample (gpointer data)
 static void
 elektroid_start_load_thread (char *path)
 {
+  debug_print (1, "Creating load thread...\n");
   load_thread_running = 1;
   load_thread =
     g_thread_new ("elektroid_load_sample", elektroid_load_sample, path);
 }
 
 static void
+elektroid_join_progress_thread ()
+{
+  debug_print (2, "Joining progress thread...\n");
+  if (progress_thread)
+    {
+      g_thread_join (progress_thread);
+      g_thread_unref (progress_thread);
+    }
+  progress_thread = NULL;
+}
+
+static void
+elektroid_stop_progress_thread ()
+{
+  debug_print (1, "Stopping progress thread...\n");
+  progress_thread_running = 0;
+  elektroid_join_progress_thread ();
+}
+
+static void
 elektroid_stop_load_thread ()
 {
-  audio_stop (&audio);
-
+  debug_print (1, "Stopping load thread...\n");
   load_thread_running = 0;
   if (load_thread)
     {
@@ -429,6 +448,7 @@ elektroid_remote_file_selected (gpointer data)
 static gboolean
 elektroid_local_file_unselected (gpointer data)
 {
+  audio_stop (&audio);
   elektroid_stop_load_thread ();
   g_array_set_size (audio.sample, 0);
   gtk_widget_queue_draw (waveform_draw_area);
@@ -447,6 +467,7 @@ elektroid_local_file_selected (gpointer data)
       return FALSE;
     }
 
+  audio_stop (&audio);
   elektroid_stop_load_thread ();
 
   gtk_widget_set_sensitive (play_button, FALSE);
@@ -837,11 +858,7 @@ elektroid_upload_process (gpointer user_data)
 
   free (remote_path);
 
-  if (frames == audio.sample->len && progress_thread_running)
-    {
-      g_idle_add (remote_browser.load_dir, NULL);
-    }
-
+  g_idle_add (remote_browser.load_dir, NULL);
   g_idle_add (elektroid_progress_dialog_end, NULL);
 
   return NULL;
@@ -867,8 +884,9 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
   gtk_label_set_text (elektroid_progress.label, label);
   free (label);
 
-  progress_thread_running = 1;
 
+  debug_print (1, "Creating progress thread...\n");
+  progress_thread_running = 1;
   progress_thread =
     g_thread_new ("elektroid_upload_process", elektroid_upload_process, path);
 
@@ -876,15 +894,11 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
 
   if (result == GTK_RESPONSE_CANCEL || result == GTK_RESPONSE_DELETE_EVENT)
     {
+      debug_print (1, "Stopping progress thread...\n");
       progress_thread_running = 0;
     }
 
-  if (progress_thread)
-    {
-      g_thread_join (progress_thread);
-      g_thread_unref (progress_thread);
-    }
-  progress_thread = NULL;
+  elektroid_join_progress_thread ();
 
   free (path);
 
@@ -955,8 +969,8 @@ elektroid_download (GtkWidget * object, gpointer user_data)
   gtk_label_set_text (elektroid_progress.label, label);
   free (label);
 
+  debug_print (1, "Creating progress thread...\n");
   progress_thread_running = 1;
-
   progress_thread =
     g_thread_new ("elektroid_download_process", elektroid_download_process,
 		  path);
@@ -965,15 +979,11 @@ elektroid_download (GtkWidget * object, gpointer user_data)
 
   if (result == GTK_RESPONSE_CANCEL || result == GTK_RESPONSE_DELETE_EVENT)
     {
+      debug_print (1, "Stopping progress thread...\n");
       progress_thread_running = 0;
     }
 
-  if (progress_thread)
-    {
-      g_thread_join (progress_thread);
-      g_thread_unref (progress_thread);
-    }
-  progress_thread = NULL;
+  elektroid_join_progress_thread ();
 
   free (path);
 
@@ -981,7 +991,8 @@ elektroid_download (GtkWidget * object, gpointer user_data)
 }
 
 static void
-elektroid_row_selected (GtkTreeSelection * treeselection, gpointer user_data)
+elektroid_tree_view_sel_changed (GtkTreeSelection * treeselection,
+				 gpointer user_data)
 {
   gchar *icon;
   struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
@@ -1083,23 +1094,19 @@ elektroid_set_device (GtkWidget * object, gpointer user_data)
     }
 }
 
+static void
+elektroid_quit ()
+{
+  elektroid_stop_progress_thread ();
+  elektroid_stop_load_thread ();
+  debug_print (1, "Quitting GTK+...\n");
+  gtk_main_quit ();
+}
 
 static gboolean
-elektroid_close_and_exit (GtkWidget * widget, GdkEvent * event,
-			  gpointer user_data)
+elektroid_delete (GtkWidget * widget, GdkEvent * event, gpointer user_data)
 {
-  audio_stop (&audio);
-
-  progress_thread_running = 0;
-  if (progress_thread)
-    {
-      g_thread_join (progress_thread);
-      g_thread_unref (progress_thread);
-    }
-
-  elektroid_stop_load_thread ();
-
-  gtk_main_quit ();
+  elektroid_quit ();
   return FALSE;
 }
 
@@ -1174,7 +1181,7 @@ elektroid_run (int argc, char *argv[])
 			    (builder, "remote_name_cell_renderer_text"));
 
   g_signal_connect (main_window, "delete-event",
-		    G_CALLBACK (elektroid_close_and_exit), NULL);
+		    G_CALLBACK (elektroid_delete), NULL);
 
   g_signal_connect (about_button, "clicked",
 		    G_CALLBACK (elektroid_show_about), NULL);
@@ -1236,7 +1243,7 @@ elektroid_run (int argc, char *argv[])
     .mkdir = elektroid_remote_mkdir
   };
   g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
-		    "changed", G_CALLBACK (elektroid_row_selected),
+		    "changed", G_CALLBACK (elektroid_tree_view_sel_changed),
 		    &remote_browser);
   g_signal_connect (remote_browser.view, "row-activated",
 		    G_CALLBACK (elektroid_row_activated), &remote_browser);
@@ -1268,7 +1275,7 @@ elektroid_run (int argc, char *argv[])
   };
 
   g_signal_connect (gtk_tree_view_get_selection (local_browser.view),
-		    "changed", G_CALLBACK (elektroid_row_selected),
+		    "changed", G_CALLBACK (elektroid_tree_view_sel_changed),
 		    &local_browser);
   g_signal_connect (local_browser.view, "row-activated",
 		    G_CALLBACK (elektroid_row_activated), &local_browser);
@@ -1328,11 +1335,22 @@ free_audio:
   return err;
 }
 
+static gboolean
+elektroid_end (gpointer user_data)
+{
+  elektroid_quit ();
+  return FALSE;
+}
+
 int
 main (int argc, char *argv[])
 {
   char c;
   int vflg = 0, errflg = 0;
+
+  g_unix_signal_add (SIGHUP, elektroid_end, NULL);
+  g_unix_signal_add (SIGINT, elektroid_end, NULL);
+  g_unix_signal_add (SIGTERM, elektroid_end, NULL);
 
   while ((c = getopt (argc, argv, "v")) != -1)
     {

@@ -881,7 +881,6 @@ connector_download (struct connector *connector, const gchar * path,
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   GByteArray *data;
-  GArray *result;
   gint id;
   guint frames;
   guint next_block_start;
@@ -890,6 +889,7 @@ connector_download (struct connector *connector, const gchar * path,
   int16_t v;
   int16_t *frame;
   int i;
+  GArray *result = NULL;
 
   tx_msg = connector_new_msg_info_file (path);
   rx_msg = connector->send_and_receive (connector, tx_msg);
@@ -902,8 +902,7 @@ connector_download (struct connector *connector, const gchar * path,
   if (id < 0)
     {
       fprintf (stderr, "File %s not found\n", path);
-      result = NULL;
-      goto end;
+      return NULL;
     }
 
   debug_print (2, "%d frames to download\n", frames);
@@ -944,21 +943,31 @@ connector_download (struct connector *connector, const gchar * path,
 
   debug_print (2, "%d bytes received\n", next_block_start);
 
-  result = g_array_new (FALSE, FALSE, sizeof (short));
-
-  frame = (gshort *) data->data;
-  for (i = 0; i < data->len; i += 2)
+  if (!running || *running)
     {
-      v = ntohs (*frame);
-      g_array_append_val (result, v);
-      frame++;
+      result = g_array_new (FALSE, FALSE, sizeof (short));
+      frame = (gshort *) data->data;
+      for (i = 0; i < data->len; i += 2)
+	{
+	  v = ntohs (*frame);
+	  g_array_append_val (result, v);
+	  frame++;
+	}
+    }
+  else
+    {
+      result = NULL;
     }
 
   tx_msg = connector_new_msg_end_download (id);
   rx_msg = connector->send_and_receive (connector, tx_msg);
   if (!rx_msg)
     {
-      result = NULL;
+      if (result)
+	{
+	  g_array_free (result, TRUE);
+	  result = NULL;
+	}
       goto cleanup;
     }
   //Response: x, x, x, x, 0xb1, 00 00 00 0a 00 01 65 de (sample id and received bytes)
@@ -966,7 +975,6 @@ connector_download (struct connector *connector, const gchar * path,
 
 cleanup:
   free_msg (data);
-end:
   return result;
 }
 
