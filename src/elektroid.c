@@ -844,7 +844,6 @@ elektroid_upload_process (gpointer user_data)
 
   debug_print (1, "Remote path: %s\n", remote_path);
 
-
   frames = connector_upload (&connector, audio.sample, remote_path,
 			     &progress_thread_running,
 			     elektroid_update_progress);
@@ -883,7 +882,6 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
   snprintf (label, LABEL_MAX + PATH_MAX, "Uploading %s...", path);
   gtk_label_set_text (elektroid_progress.label, label);
   free (label);
-
 
   debug_print (1, "Creating progress thread...\n");
   progress_thread_running = 1;
@@ -1118,11 +1116,13 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *progress_dialog_cancel_button;
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
+  GtkWidget *hostname_label;
   GtkCellRendererText *local_name_cell_renderer_text;
   GtkCellRendererText *remote_name_cell_renderer_text;
   wordexp_t exp_result;
   int err = 0;
   char *glade_file = malloc (PATH_MAX);
+  char hostname[LABEL_MAX];
 
   audio_init (&audio);
 
@@ -1158,6 +1158,9 @@ elektroid_run (int argc, char *argv[])
 
   about_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "about_button"));
+
+  hostname_label =
+    GTK_WIDGET (gtk_builder_get_object (builder, "hostname_label"));
 
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
   waveform_draw_area =
@@ -1318,6 +1321,9 @@ elektroid_run (int argc, char *argv[])
   gtk_statusbar_push (status_bar, 0, "Not connected");
 
   elektroid_load_devices (1);
+
+  gethostname (hostname, LABEL_MAX);
+  gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
 
   gtk_widget_show (main_window);
   gtk_main ();

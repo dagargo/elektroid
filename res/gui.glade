@@ -23,7 +23,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
   <requires lib="gtk+" version="3.20"/>
   <!-- interface-license-type gplv3 -->
   <!-- interface-name Elektroid -->
-  <!-- interface-description Sample transfer application for Elektron devices -->
+  <!-- interface-description GNU/Linux sample transfer application for Elektron devices -->
   <!-- interface-copyright David Garc\303\255a Go\303\261i -->
   <object class="GtkListStore" id="devices_list_store">
     <columns>
@@ -558,12 +558,11 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
               </packing>
             </child>
             <child>
-              <object class="GtkLabel">
+              <object class="GtkLabel" id="hostname_label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="halign">start</property>
                 <property name="hexpand">True</property>
-                <property name="label" translatable="yes">Computer</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
