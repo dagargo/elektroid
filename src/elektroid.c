@@ -780,46 +780,6 @@ elektroid_local_rename (gchar * old, gchar * new)
 }
 
 static void
-elektroid_rename_file (GtkCellRendererText * renderer,
-		       gchar * path, gchar * new_name, gpointer user_data)
-{
-  gint res;
-  char *old_name;
-  char *old_path;
-  char *new_path;
-  GtkWidget *dialog;
-  struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
-
-  elektroid_get_browser_selected_info (ebrowser, NULL, &old_name, NULL);
-  old_path = chain_path (ebrowser->dir, old_name);
-
-  new_path = chain_path (ebrowser->dir, new_name);
-
-  res = ebrowser->rename_file (old_path, new_path);
-
-  if (res < 0)
-    {
-      dialog =
-	gtk_message_dialog_new (GTK_WINDOW (main_window),
-				GTK_DIALOG_DESTROY_WITH_PARENT |
-				GTK_DIALOG_MODAL,
-				GTK_MESSAGE_ERROR,
-				GTK_BUTTONS_CLOSE,
-				"Error while renaming to “%s”: %s",
-				new_path, g_strerror (errno));
-      gtk_dialog_run (GTK_DIALOG (dialog));
-      gtk_widget_destroy (dialog);
-    }
-  else
-    {
-      g_idle_add (ebrowser->load_dir, NULL);
-    }
-
-  free (old_path);
-  free (new_path);
-}
-
-static void
 elektroid_cancel_progress (GtkWidget * object, gpointer user_data)
 {
   gtk_dialog_response (elektroid_progress.dialog, GTK_RESPONSE_CANCEL);
@@ -1119,8 +1079,6 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
   GtkWidget *hostname_label;
-  GtkCellRendererText *local_name_cell_renderer_text;
-  GtkCellRendererText *remote_name_cell_renderer_text;
   wordexp_t exp_result;
   int err = 0;
   char *glade_file = malloc (PATH_MAX);
@@ -1178,13 +1136,6 @@ elektroid_run (int argc, char *argv[])
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "progress_dialog_cancel_button"));
 
-  local_name_cell_renderer_text =
-    GTK_CELL_RENDERER_TEXT (gtk_builder_get_object
-			    (builder, "local_name_cell_renderer_text"));
-  remote_name_cell_renderer_text =
-    GTK_CELL_RENDERER_TEXT (gtk_builder_get_object
-			    (builder, "remote_name_cell_renderer_text"));
-
   g_signal_connect (main_window, "delete-event",
 		    G_CALLBACK (elektroid_delete), NULL);
 
@@ -1210,11 +1161,6 @@ elektroid_run (int argc, char *argv[])
 
   g_signal_connect (progress_dialog_cancel_button, "clicked",
 		    G_CALLBACK (elektroid_cancel_progress), NULL);
-
-  g_signal_connect (local_name_cell_renderer_text, "edited",
-		    G_CALLBACK (elektroid_rename_file), &local_browser);
-  g_signal_connect (remote_name_cell_renderer_text, "edited",
-		    G_CALLBACK (elektroid_rename_file), &remote_browser);
 
   elektroid_progress = (struct elektroid_progress)
   {

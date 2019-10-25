@@ -290,9 +290,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="title" translatable="yes">Name</property>
                             <property name="expand">True</property>
                             <child>
-                              <object class="GtkCellRendererText" id="local_name_cell_renderer_text">
-                                <property name="editable">True</property>
-                              </object>
+                              <object class="GtkCellRendererText" id="local_name_cell_renderer_text"/>
                               <attributes>
                                 <attribute name="text">1</attribute>
                               </attributes>
@@ -522,9 +520,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="title" translatable="yes">Name</property>
                             <property name="expand">True</property>
                             <child>
-                              <object class="GtkCellRendererText" id="remote_name_cell_renderer_text">
-                                <property name="editable">True</property>
-                              </object>
+                              <object class="GtkCellRendererText" id="remote_name_cell_renderer_text"/>
                               <attributes>
                                 <attribute name="text">1</attribute>
                               </attributes>
