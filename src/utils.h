@@ -33,3 +33,7 @@ char *chain_path (const char *, const char *);
 void remove_ext (char *);
 
 const char *get_ext (const char *);
+
+char get_type_from_inventory_icon (const char *);
+
+const char *get_inventory_icon_from_type (char);

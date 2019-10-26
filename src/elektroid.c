@@ -32,8 +32,6 @@
 #include "sample.h"
 #include "utils.h"
 
-#define DIR_TYPE "gtk-directory"
-#define REG_TYPE "gtk-file"
 #define MAX_DRAW_X 10000
 #define SIZE_LABEL_LEN 16
 
@@ -359,14 +357,7 @@ elektroid_delete_item (GtkWidget * object, gpointer user_data)
   elektroid_get_browser_selected_info (popup_elektroid_browser, &icon, &name,
 				       NULL);
 
-  if (strcmp (icon, DIR_TYPE) == 0)
-    {
-      type = 'D';
-    }
-  else
-    {
-      type = 'F';
-    }
+  type = get_type_from_inventory_icon (icon);
 
   path = chain_path (popup_elektroid_browser->dir, name);
   err = popup_elektroid_browser->delete (path, type);
@@ -680,19 +671,12 @@ static void
 elektroid_add_dentry_item (struct elektroid_browser *ebrowser,
 			   const gchar type, const gchar * name, ssize_t size)
 {
+  const gchar *type_icon;
   char human_size[SIZE_LABEL_LEN];
-  gchar *type_icon;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (ebrowser->view));
 
-  if (type == 'D')
-    {
-      type_icon = DIR_TYPE;
-    }
-  else
-    {
-      type_icon = REG_TYPE;
-    }
+  type_icon = get_inventory_icon_from_type (type);
 
   if (size > 0)
     {
@@ -924,11 +908,10 @@ elektroid_remote_delete (const gchar * path, const char type)
     {
       return connector_delete_file (&connector, path);
     }
-  else if (type == 'D')
+  else
     {
       return connector_delete_dir (&connector, path);
     }
-  return -1;
 }
 
 static gint
@@ -938,11 +921,10 @@ elektroid_local_delete (const gchar * path, const char type)
     {
       return unlink (path);
     }
-  else if (type == 'D')
+  else
     {
       return rmdir (path);
     }
-  return -1;
 }
 
 static void
@@ -1127,7 +1109,7 @@ elektroid_tree_view_sel_changed (GtkTreeSelection * treeselection,
 
   if (icon)
     {
-      if (strcmp (icon, REG_TYPE) == 0)
+      if (get_type_from_inventory_icon (icon) == 'F')
 	{
 	  g_idle_add (ebrowser->file_selected, NULL);
 	}
@@ -1151,7 +1133,7 @@ elektroid_row_activated (GtkTreeView * view,
   elektroid_get_browser_selected_info (ebrowser, &icon, &name, NULL);
   if (icon)
     {
-      if (strcmp (icon, DIR_TYPE) == 0)
+      if (get_type_from_inventory_icon (icon) == 'D')
 	{
 	  if (strcmp (ebrowser->dir, "/") != 0)
 	    {

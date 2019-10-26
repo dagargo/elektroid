@@ -24,6 +24,9 @@
 
 #define DEBUG_LEVEL1_LEN 16
 
+#define REG_TYPE "gtk-file"
+#define DIR_TYPE "gtk-directory"
+
 static gchar
 connector_get_printable_char (gchar c)
 {
@@ -144,4 +147,36 @@ get_ext (const char *name)
     {
       return ext;
     }
+}
+
+char
+get_type_from_inventory_icon (const char *icon)
+{
+  char type;
+
+  if (strcmp (icon, REG_TYPE) == 0)
+    {
+      type = 'F';
+    }
+  else
+    {
+      type = 'D';
+    }
+  return type;
+}
+
+const char *
+get_inventory_icon_from_type (char type)
+{
+  const char *icon;
+
+  if (type == 'F')
+    {
+      icon = REG_TYPE;
+    }
+  else
+    {
+      icon = DIR_TYPE;
+    }
+  return icon;
 }
