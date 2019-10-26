@@ -108,8 +108,6 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, char *path,
       return -1;
     }
 
-  //TODO: limit sample length or upload
-
   buffer_input_multi =
     malloc (LOAD_BUFFER_LEN * sf_info.channels * sizeof (short));
   buffer_input_mono = malloc (LOAD_BUFFER_LEN * sizeof (short));

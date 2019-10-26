@@ -30,6 +30,7 @@ struct audio
   GThread *play_thread;
   GMutex mutex;
   gint playing;
+  gint loop;
 };
 
 void audio_play (struct audio *);

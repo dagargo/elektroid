@@ -674,6 +674,12 @@ elektroid_stop_clicked (GtkWidget * object, gpointer user_data)
 }
 
 static void
+elektroid_loop_clicked (GtkWidget * object, gpointer user_data)
+{
+  audio.loop = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (object));
+}
+
+static void
 elektroid_add_dentry_item (struct elektroid_browser *ebrowser,
 			   const gchar type, const gchar * name, ssize_t size)
 {
@@ -1236,6 +1242,7 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *hostname_label;
   GtkWidget *play_button;
   GtkWidget *stop_button;
+  GtkWidget *loop_button;
   wordexp_t exp_result;
   int err = 0;
   char *glade_file = malloc (PATH_MAX);
@@ -1286,6 +1293,7 @@ elektroid_run (int argc, char *argv[])
     GTK_WIDGET (gtk_builder_get_object (builder, "play_controls_box"));
   play_button = GTK_WIDGET (gtk_builder_get_object (builder, "play_button"));
   stop_button = GTK_WIDGET (gtk_builder_get_object (builder, "stop_button"));
+  loop_button = GTK_WIDGET (gtk_builder_get_object (builder, "loop_button"));
   upload_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "upload_button"));
   download_button =
@@ -1323,6 +1331,8 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_play_clicked), NULL);
   g_signal_connect (stop_button, "clicked",
 		    G_CALLBACK (elektroid_stop_clicked), NULL);
+  g_signal_connect (loop_button, "clicked",
+		    G_CALLBACK (elektroid_loop_clicked), NULL);
   g_signal_connect (download_button, "clicked",
 		    G_CALLBACK (elektroid_download), NULL);
   g_signal_connect (upload_button, "clicked", G_CALLBACK (elektroid_upload),
@@ -1448,6 +1458,7 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_refresh_devices), NULL);
 
   gtk_statusbar_push (status_bar, 0, "Not connected");
+  elektroid_loop_clicked (loop_button, NULL);
 
   elektroid_load_devices (1);
 

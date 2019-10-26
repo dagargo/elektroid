@@ -815,6 +815,7 @@ connector_upload (struct connector *connector, GArray * sample,
   int i;
 
   //TODO: check if the file already exists? (Device makes no difference between creating a new file and creating an already existent file. The new file would be deleted if an upload is not sent, though.)
+  //TODO: limit sample upload?
 
   id = connector_create_upload (connector, path, sample->len);
   if (id < 0)

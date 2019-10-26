@@ -61,6 +61,12 @@ audio_play_task (gpointer data)
 		 pa_strerror (err));
       remaining -= buffer_len;
       buffer += buffer_len;
+
+      if (remaining <= 0 && audio->loop)
+	{
+	  buffer = (short *) audio->sample->data;
+	  remaining = audio->sample->len;
+	}
     }
 
   return NULL;
@@ -130,6 +136,7 @@ audio_init (struct audio *audio)
   int err = 0;
 
   audio->sample = g_array_new (FALSE, FALSE, sizeof (short));
+  audio->loop = FALSE;
 
   pa_sample_spec pa_ss;
   pa_ss.format = PA_SAMPLE_S16LE;
