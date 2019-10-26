@@ -83,7 +83,7 @@ static GtkWidget *name_dialog_accept_button;
 static GtkWidget *about_button;
 static GtkWidget *remote_box;
 static GtkWidget *waveform_draw_area;
-static GtkWidget *play_button;
+static GtkWidget *play_controls_box;
 static GtkWidget *upload_button;
 static GtkWidget *download_button;
 static GtkStatusbar *status_bar;
@@ -334,7 +334,7 @@ elektroid_update_ui_after_load (gpointer data)
     {
       if (audio_check (&audio))
 	{
-	  gtk_widget_set_sensitive (play_button, TRUE);
+	  gtk_widget_set_sensitive (play_controls_box, TRUE);
 	}
       if (connector_check (&connector))
 	{
@@ -582,7 +582,7 @@ elektroid_local_file_unselected (gpointer data)
   g_array_set_size (audio.sample, 0);
   gtk_widget_queue_draw (waveform_draw_area);
   gtk_widget_set_sensitive (upload_button, FALSE);
-  gtk_widget_set_sensitive (play_button, FALSE);
+  gtk_widget_set_sensitive (play_controls_box, FALSE);
   return FALSE;
 }
 
@@ -599,7 +599,7 @@ elektroid_local_file_selected (gpointer data)
   audio_stop (&audio);
   elektroid_stop_load_thread ();
 
-  gtk_widget_set_sensitive (play_button, FALSE);
+  gtk_widget_set_sensitive (play_controls_box, FALSE);
   gtk_widget_set_sensitive (upload_button, FALSE);
 
   gtk_window_set_title (GTK_WINDOW (elektroid_progress.dialog),
@@ -665,6 +665,12 @@ static void
 elektroid_play_clicked (GtkWidget * object, gpointer user_data)
 {
   audio_play (&audio);
+}
+
+static void
+elektroid_stop_clicked (GtkWidget * object, gpointer user_data)
+{
+  audio_stop (&audio);
 }
 
 static void
@@ -1228,6 +1234,8 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
   GtkWidget *hostname_label;
+  GtkWidget *play_button;
+  GtkWidget *stop_button;
   wordexp_t exp_result;
   int err = 0;
   char *glade_file = malloc (PATH_MAX);
@@ -1274,7 +1282,10 @@ elektroid_run (int argc, char *argv[])
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
   waveform_draw_area =
     GTK_WIDGET (gtk_builder_get_object (builder, "waveform_draw_area"));
+  play_controls_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "play_controls_box"));
   play_button = GTK_WIDGET (gtk_builder_get_object (builder, "play_button"));
+  stop_button = GTK_WIDGET (gtk_builder_get_object (builder, "stop_button"));
   upload_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "upload_button"));
   download_button =
@@ -1310,6 +1321,8 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_draw_waveform), NULL);
   g_signal_connect (play_button, "clicked",
 		    G_CALLBACK (elektroid_play_clicked), NULL);
+  g_signal_connect (stop_button, "clicked",
+		    G_CALLBACK (elektroid_stop_clicked), NULL);
   g_signal_connect (download_button, "clicked",
 		    G_CALLBACK (elektroid_download), NULL);
   g_signal_connect (upload_button, "clicked", G_CALLBACK (elektroid_upload),
