@@ -768,6 +768,8 @@ elektroid_load_local_dir (gpointer data)
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (local_browser.view));
 
+  elektroid_local_file_unselected (NULL);
+
   gtk_entry_set_text (local_browser.dir_entry, local_browser.dir);
 
   gtk_list_store_clear (list_store);
