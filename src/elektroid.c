@@ -68,6 +68,7 @@ static struct elektroid_progress elektroid_progress;
 
 static struct audio audio;
 static struct connector connector;
+static gboolean autoplay;
 
 static GThread *load_thread = NULL;
 static GThread *progress_thread = NULL;
@@ -75,7 +76,6 @@ static gint progress_thread_running;
 static gint load_thread_running;
 static GMutex load_mutex;
 
-static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
 static GtkDialog *name_dialog;
 static GtkEntry *name_dialog_entry;
@@ -514,7 +514,10 @@ elektroid_load_sample (gpointer data)
 	       &load_thread_running, elektroid_update_progress_redraw);
   free (data);
   g_idle_add (elektroid_update_ui_after_load, NULL);
-  audio_play (&audio);
+  if (autoplay)
+    {
+      audio_play (&audio);
+    }
   return NULL;
 }
 
@@ -677,6 +680,14 @@ static void
 elektroid_loop_clicked (GtkWidget * object, gpointer user_data)
 {
   audio.loop = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (object));
+}
+
+static gboolean
+elektroid_autoplay_clicked (GtkWidget * object, gboolean state,
+			    gpointer user_data)
+{
+  autoplay = state;
+  return FALSE;
 }
 
 static void
@@ -1236,6 +1247,7 @@ elektroid_run (int argc, char *argv[])
 {
   GtkBuilder *builder;
   GtkTreeSortable *sortable;
+  GtkWidget *main_window;
   GtkWidget *progress_dialog_cancel_button;
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
@@ -1243,6 +1255,7 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *play_button;
   GtkWidget *stop_button;
   GtkWidget *loop_button;
+  GtkWidget *autoplay_switch;
   wordexp_t exp_result;
   int err = 0;
   char *glade_file = malloc (PATH_MAX);
@@ -1294,6 +1307,8 @@ elektroid_run (int argc, char *argv[])
   play_button = GTK_WIDGET (gtk_builder_get_object (builder, "play_button"));
   stop_button = GTK_WIDGET (gtk_builder_get_object (builder, "stop_button"));
   loop_button = GTK_WIDGET (gtk_builder_get_object (builder, "loop_button"));
+  autoplay_switch =
+    GTK_WIDGET (gtk_builder_get_object (builder, "autoplay_switch"));
   upload_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "upload_button"));
   download_button =
@@ -1333,6 +1348,8 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_stop_clicked), NULL);
   g_signal_connect (loop_button, "clicked",
 		    G_CALLBACK (elektroid_loop_clicked), NULL);
+  g_signal_connect (autoplay_switch, "state-set",
+		    G_CALLBACK (elektroid_autoplay_clicked), NULL);
   g_signal_connect (download_button, "clicked",
 		    G_CALLBACK (elektroid_download), NULL);
   g_signal_connect (upload_button, "clicked", G_CALLBACK (elektroid_upload),
@@ -1459,6 +1476,7 @@ elektroid_run (int argc, char *argv[])
 
   gtk_statusbar_push (status_bar, 0, "Not connected");
   elektroid_loop_clicked (loop_button, NULL);
+  autoplay = gtk_switch_get_active (GTK_SWITCH (autoplay_switch));
 
   elektroid_load_devices (1);
 
