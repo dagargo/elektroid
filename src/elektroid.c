@@ -76,6 +76,7 @@ static gint progress_thread_running;
 static gint load_thread_running;
 static GMutex load_mutex;
 
+static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
 static GtkDialog *name_dialog;
 static GtkEntry *name_dialog_entry;
@@ -365,7 +366,7 @@ elektroid_delete_item (GtkWidget * object, gpointer user_data)
   if (err < 0)
     {
       dialog =
-	gtk_message_dialog_new (GTK_WINDOW (name_dialog),
+	gtk_message_dialog_new (GTK_WINDOW (main_window),
 				GTK_DIALOG_DESTROY_WITH_PARENT |
 				GTK_DIALOG_MODAL,
 				GTK_MESSAGE_ERROR,
@@ -1249,7 +1250,6 @@ elektroid_run (int argc, char *argv[])
 {
   GtkBuilder *builder;
   GtkTreeSortable *sortable;
-  GtkWidget *main_window;
   GtkWidget *progress_dialog_cancel_button;
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
