@@ -461,7 +461,7 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
       gtk_tree_view_get_path_at_pos (ebrowser->view,
 				     event->x,
 				     event->y, &path, NULL, NULL, NULL);
-      gtk_tree_view_get_cell_area (ebrowser->view, path, NULL, &rect);
+      gtk_tree_view_get_background_area (ebrowser->view, path, NULL, &rect);
       gtk_tree_path_free (path);
       rect.x = event->x;
       rect.y = rect.y + rect.height;
