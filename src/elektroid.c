@@ -593,29 +593,14 @@ elektroid_local_file_unselected (gpointer data)
 static gboolean
 elektroid_local_file_selected (gpointer data)
 {
-  char *label;
   char *path = elektroid_get_browser_selected_path (&local_browser);
   if (!path)
     {
       return FALSE;
     }
 
-  audio_stop (&audio);
-  elektroid_stop_load_thread ();
-
-  gtk_widget_set_sensitive (play_controls_box, FALSE);
-  gtk_widget_set_sensitive (upload_button, FALSE);
-
-  gtk_window_set_title (GTK_WINDOW (elektroid_progress.dialog),
-			"Loading file");
-
-  label = malloc (LABEL_MAX + PATH_MAX);
-  snprintf (label, LABEL_MAX + PATH_MAX, "Loading %s...", path);
-  gtk_label_set_text (elektroid_progress.label, label);
-  free (label);
-
+  elektroid_local_file_unselected (NULL);
   elektroid_start_load_thread (path);
-
   return FALSE;
 }
 
