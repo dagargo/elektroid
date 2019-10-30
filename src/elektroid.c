@@ -45,7 +45,7 @@ struct elektroid_browser
   gint (*delete) (const gchar *, const gchar);
   GtkTreeView *view;
   GtkWidget *up_button;
-  GtkWidget *new_dir_button;
+  GtkWidget *add_dir_button;
   GtkWidget *refresh_button;
   GtkWidget *copy_button;
   GtkEntry *dir_entry;
@@ -836,7 +836,7 @@ elektroid_local_mkdir (const gchar * name)
 }
 
 static void
-elektroid_new_dir (GtkWidget * object, gpointer user_data)
+elektroid_add_dir (GtkWidget * object, gpointer user_data)
 {
   char *pathname;
   int result;
@@ -848,7 +848,7 @@ elektroid_new_dir (GtkWidget * object, gpointer user_data)
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
   gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
 
-  gtk_window_set_title (GTK_WINDOW (name_dialog), "New directory");
+  gtk_window_set_title (GTK_WINDOW (name_dialog), "Add directory");
 
   result = GTK_RESPONSE_ACCEPT;
 
@@ -1381,8 +1381,8 @@ elektroid_run (int argc, char *argv[])
       GTK_TREE_VIEW (gtk_builder_get_object (builder, "remote_tree_view")),
     .up_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_up_button")),
-    .new_dir_button =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_new_dir_button")),
+    .add_dir_button =
+      GTK_WIDGET (gtk_builder_get_object (builder, "remote_add_dir_button")),
     .refresh_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_refresh_button")),
     .copy_button = download_button,
@@ -1403,8 +1403,8 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_row_activated), &remote_browser);
   g_signal_connect (remote_browser.up_button, "clicked",
 		    G_CALLBACK (elektroid_go_up), &remote_browser);
-  g_signal_connect (remote_browser.new_dir_button, "clicked",
-		    G_CALLBACK (elektroid_new_dir), &remote_browser);
+  g_signal_connect (remote_browser.add_dir_button, "clicked",
+		    G_CALLBACK (elektroid_add_dir), &remote_browser);
   g_signal_connect (remote_browser.refresh_button, "clicked",
 		    G_CALLBACK (elektroid_refresh), &remote_browser);
   g_signal_connect (remote_browser.view, "button-press-event",
@@ -1416,8 +1416,8 @@ elektroid_run (int argc, char *argv[])
       GTK_TREE_VIEW (gtk_builder_get_object (builder, "local_tree_view")),
     .up_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "local_up_button")),
-    .new_dir_button =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_new_dir_button")),
+    .add_dir_button =
+      GTK_WIDGET (gtk_builder_get_object (builder, "local_add_dir_button")),
     .refresh_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "local_refresh_button")),
     .copy_button = upload_button,
@@ -1439,8 +1439,8 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_row_activated), &local_browser);
   g_signal_connect (local_browser.up_button, "clicked",
 		    G_CALLBACK (elektroid_go_up), &local_browser);
-  g_signal_connect (local_browser.new_dir_button, "clicked",
-		    G_CALLBACK (elektroid_new_dir), &local_browser);
+  g_signal_connect (local_browser.add_dir_button, "clicked",
+		    G_CALLBACK (elektroid_add_dir), &local_browser);
   g_signal_connect (local_browser.refresh_button, "clicked",
 		    G_CALLBACK (elektroid_refresh), &local_browser);
   g_signal_connect (local_browser.view, "button-press-event",
