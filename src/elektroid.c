@@ -960,7 +960,7 @@ elektroid_cancel_progress (GtkWidget * object, gpointer user_data)
 }
 
 static gpointer
-elektroid_upload_process (gpointer user_data)
+elektroid_upload_task (gpointer user_data)
 {
   char *basec;
   char *bname;
@@ -1020,7 +1020,7 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
   debug_print (1, "Creating progress thread...\n");
   progress_thread_running = 1;
   progress_thread =
-    g_thread_new ("elektroid_upload_process", elektroid_upload_process, path);
+    g_thread_new ("elektroid_upload_task", elektroid_upload_task, path);
 
   elektroid_update_progress (0.0);
   result = gtk_dialog_run (elektroid_progress.dialog);
@@ -1039,7 +1039,7 @@ elektroid_upload (GtkWidget * object, gpointer user_data)
 }
 
 static gpointer
-elektroid_download_process (gpointer user_data)
+elektroid_download_task (gpointer user_data)
 {
   GArray *data;
   size_t frames;
@@ -1105,8 +1105,7 @@ elektroid_download (GtkWidget * object, gpointer user_data)
   debug_print (1, "Creating progress thread...\n");
   progress_thread_running = 1;
   progress_thread =
-    g_thread_new ("elektroid_download_process", elektroid_download_process,
-		  path);
+    g_thread_new ("elektroid_download_task", elektroid_download_task, path);
 
   elektroid_update_progress (0.0);
   result = gtk_dialog_run (elektroid_progress.dialog);

@@ -32,7 +32,7 @@
 
 #define PA_BUFFER_LEN 4800
 
-gpointer
+static gpointer
 audio_play_task (gpointer data)
 {
   int err;
