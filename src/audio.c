@@ -19,14 +19,6 @@
  */
 
 #include "../config.h"
-#include <sndfile.h>
-#include <samplerate.h>
-#include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <glib.h>
-#include <netinet/in.h>
 #include "audio.h"
 #include "utils.h"
 

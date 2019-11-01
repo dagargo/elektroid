@@ -19,6 +19,7 @@
  */
 
 #include <glib.h>
+#include <stdio.h>
 #include <pulse/simple.h>
 #include <pulse/error.h>
 
