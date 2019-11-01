@@ -84,7 +84,6 @@ static GtkWidget *name_dialog_accept_button;
 static GtkWidget *about_button;
 static GtkWidget *remote_box;
 static GtkWidget *waveform_draw_area;
-static GtkWidget *play_controls_box;
 static GtkWidget *upload_button;
 static GtkWidget *download_button;
 static GtkStatusbar *status_bar;
@@ -93,6 +92,8 @@ static GtkComboBox *devices_combo;
 static GtkWidget *item_popmenu;
 static GtkWidget *rename_button;
 static GtkWidget *delete_button;
+static GtkWidget *play_button;
+static GtkWidget *stop_button;
 
 static void
 elektroid_load_devices (int auto_select)
@@ -327,6 +328,13 @@ elektroid_get_browser_selected_path (struct elektroid_browser *ebrowser)
     }
 }
 
+static void
+elektroid_controls_set_sensitive (gboolean sensitive)
+{
+ gtk_widget_set_sensitive(play_button, sensitive);
+ gtk_widget_set_sensitive(stop_button, sensitive);
+}
+
 static gboolean
 elektroid_update_ui_after_load (gpointer data)
 {
@@ -334,7 +342,7 @@ elektroid_update_ui_after_load (gpointer data)
     {
       if (audio_check (&audio))
 	{
-	  gtk_widget_set_sensitive (play_controls_box, TRUE);
+	  elektroid_controls_set_sensitive (TRUE);
 	}
       if (connector_check (&connector))
 	{
@@ -585,7 +593,7 @@ elektroid_local_file_unselected (gpointer data)
   g_array_set_size (audio.sample, 0);
   gtk_widget_queue_draw (waveform_draw_area);
   gtk_widget_set_sensitive (upload_button, FALSE);
-  gtk_widget_set_sensitive (play_controls_box, FALSE);
+  elektroid_controls_set_sensitive (FALSE);
   return FALSE;
 }
 
@@ -1237,8 +1245,6 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
   GtkWidget *hostname_label;
-  GtkWidget *play_button;
-  GtkWidget *stop_button;
   GtkWidget *loop_button;
   GtkWidget *autoplay_switch;
   wordexp_t exp_result;
@@ -1287,8 +1293,6 @@ elektroid_run (int argc, char *argv[])
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
   waveform_draw_area =
     GTK_WIDGET (gtk_builder_get_object (builder, "waveform_draw_area"));
-  play_controls_box =
-    GTK_WIDGET (gtk_builder_get_object (builder, "play_controls_box"));
   play_button = GTK_WIDGET (gtk_builder_get_object (builder, "play_button"));
   stop_button = GTK_WIDGET (gtk_builder_get_object (builder, "stop_button"));
   loop_button = GTK_WIDGET (gtk_builder_get_object (builder, "loop_button"));
