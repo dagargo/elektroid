@@ -196,7 +196,6 @@ static gint
 electra_browser_sort (GtkTreeModel * model,
 		      GtkTreeIter * a, GtkTreeIter * b, gpointer userdata)
 {
-
   gint ret = 0;
   gchar *type1, *type2;
   gchar *name1, *name2;
@@ -453,7 +452,7 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
 {
   GdkRectangle rect;
   GtkTreePath *path;
-  struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
+  struct elektroid_browser *ebrowser = user_data;
   popup_elektroid_browser = ebrowser;
 
   if (event->type == GDK_BUTTON_PRESS && event->button == 3)
@@ -827,7 +826,7 @@ elektroid_add_dir (GtkWidget * object, gpointer user_data)
   int result;
   gint err;
   GtkWidget *dialog;
-  struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
+  struct elektroid_browser *ebrowser = user_data;
 
   gtk_entry_set_text (name_dialog_entry, "");
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
@@ -1113,7 +1112,7 @@ elektroid_tree_view_sel_changed (GtkTreeSelection * treeselection,
 				 gpointer user_data)
 {
   gchar *icon;
-  struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
+  struct elektroid_browser *ebrowser = user_data;
 
   elektroid_get_browser_selected_info (ebrowser, &icon, NULL, NULL);
 
@@ -1138,7 +1137,7 @@ elektroid_row_activated (GtkTreeView * view,
 {
   gchar *icon;
   gchar *name;
-  struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
+  struct elektroid_browser *ebrowser = user_data;
 
   elektroid_get_browser_selected_info (ebrowser, &icon, &name, NULL);
   if (icon)
@@ -1160,7 +1159,7 @@ elektroid_row_activated (GtkTreeView * view,
 static void
 elektroid_refresh (GtkWidget * object, gpointer user_data)
 {
-  struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
+  struct elektroid_browser *ebrowser = user_data;
 
   g_idle_add (ebrowser->load_dir, NULL);
 }
@@ -1170,7 +1169,7 @@ elektroid_go_up (GtkWidget * object, gpointer user_data)
 {
   char *dup;
   char *new_path;
-  struct elektroid_browser *ebrowser = (struct elektroid_browser *) user_data;
+  struct elektroid_browser *ebrowser = user_data;
 
   if (strcmp (ebrowser->dir, "/") != 0)
     {
