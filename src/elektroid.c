@@ -331,8 +331,8 @@ elektroid_get_browser_selected_path (struct elektroid_browser *ebrowser)
 static void
 elektroid_controls_set_sensitive (gboolean sensitive)
 {
- gtk_widget_set_sensitive(play_button, sensitive);
- gtk_widget_set_sensitive(stop_button, sensitive);
+  gtk_widget_set_sensitive (play_button, sensitive);
+  gtk_widget_set_sensitive (stop_button, sensitive);
 }
 
 static gboolean
@@ -680,6 +680,13 @@ elektroid_autoplay_clicked (GtkWidget * object, gboolean state,
 {
   autoplay = state;
   return FALSE;
+}
+
+static void
+elektroid_set_volume (GtkScaleButton * button,
+		      gdouble value, gpointer user_data)
+{
+  audio_set_volume (&audio, value);
 }
 
 static void
@@ -1246,6 +1253,7 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *hostname_label;
   GtkWidget *loop_button;
   GtkWidget *autoplay_switch;
+  GtkWidget *volume_button;
   wordexp_t exp_result;
   int err = 0;
   char *glade_file = malloc (PATH_MAX);
@@ -1297,6 +1305,8 @@ elektroid_run (int argc, char *argv[])
   loop_button = GTK_WIDGET (gtk_builder_get_object (builder, "loop_button"));
   autoplay_switch =
     GTK_WIDGET (gtk_builder_get_object (builder, "autoplay_switch"));
+  volume_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "volume_button"));
   upload_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "upload_button"));
   download_button =
@@ -1338,6 +1348,8 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_loop_clicked), NULL);
   g_signal_connect (autoplay_switch, "state-set",
 		    G_CALLBACK (elektroid_autoplay_clicked), NULL);
+  g_signal_connect (volume_button, "value_changed",
+		    G_CALLBACK (elektroid_set_volume), NULL);
   g_signal_connect (download_button, "clicked",
 		    G_CALLBACK (elektroid_download), NULL);
   g_signal_connect (upload_button, "clicked", G_CALLBACK (elektroid_upload),
@@ -1464,6 +1476,9 @@ elektroid_run (int argc, char *argv[])
 
   gtk_statusbar_push (status_bar, 0, "Not connected");
   elektroid_loop_clicked (loop_button, NULL);
+  elektroid_set_volume (NULL,
+			gtk_scale_button_get_value (GTK_SCALE_BUTTON
+						    (volume_button)), NULL);
   autoplay = gtk_switch_get_active (GTK_SWITCH (autoplay_switch));
 
   elektroid_load_devices (1);

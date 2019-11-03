@@ -23,6 +23,7 @@
 #include "utils.h"
 
 #define PA_BUFFER_LEN 4800
+#define CHANNELS 1
 
 static const pa_buffer_attr buffer_attributes = {
   .maxlength = -1,
@@ -33,7 +34,7 @@ static const pa_buffer_attr buffer_attributes = {
 
 static const pa_sample_spec sample_spec = {
   .format = PA_SAMPLE_S16LE,
-  .channels = 1,
+  .channels = CHANNELS,
   .rate = 48000
 };
 
@@ -223,4 +224,22 @@ audio_reset_sample (struct audio *audio)
 {
   g_array_set_size (audio->sample, 0);
   audio->pos = 0;
+}
+
+void
+audio_set_volume (struct audio *audio, gdouble volume)
+{
+  pa_operation *operation;
+
+  debug_print (1, "Setting volume to %f...\n", volume);
+  pa_volume_t v = pa_sw_volume_from_linear (volume);
+  pa_cvolume_set (&audio->volume, CHANNELS, v);
+
+  operation =
+    pa_context_set_sink_volume_by_index (audio->context, 0, &audio->volume,
+					 NULL, NULL);
+  if (operation != NULL)
+    {
+      pa_operation_unref (operation);
+    }
 }
