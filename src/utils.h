@@ -18,6 +18,8 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+
 #define LABEL_MAX 128
 
 #define debug_print(level, ...) if (level <= debug_level) fprintf(stderr, __VA_ARGS__)

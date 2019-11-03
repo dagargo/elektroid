@@ -1,5 +1,5 @@
-AM_CFLAGS = -I$(top_srcdir)/src `pkg-config --cflags alsa gtk+-3.0 libpulse libpulse-simple` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS)
-elektroid_LDFLAGS = `pkg-config --libs alsa gtk+-3.0 libpulse libpulse-simple` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS)
+AM_CFLAGS = -I$(top_srcdir)/src `pkg-config --cflags alsa gtk+-3.0 libpulse libpulse-mainloop-glib` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS)
+elektroid_LDFLAGS = `pkg-config --libs alsa gtk+-3.0 libpulse libpulse-mainloop-glib` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS)
 elektroid_cli_LDFLAGS = `pkg-config --libs alsa glib-2.0` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS)
 
 bin_PROGRAMS = elektroid elektroid-cli

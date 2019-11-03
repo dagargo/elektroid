@@ -24,130 +24,169 @@
 
 #define PA_BUFFER_LEN 4800
 
-static gpointer
-audio_play_task (gpointer data)
+static const pa_buffer_attr buffer_attributes = {
+  .maxlength = -1,
+  .tlength = PA_BUFFER_LEN * 2,
+  .prebuf = 0,
+  .minreq = -1
+};
+
+static const pa_sample_spec sample_spec = {
+  .format = PA_SAMPLE_S16LE,
+  .channels = 1,
+  .rate = 48000
+};
+
+static void
+write_callback (pa_stream * stream, size_t size, void *data)
 {
-  int err;
-  int remaining;
-  short *buffer;
-  int buffer_len;
-  int len;
+  guint req_frames;
+  guint frames_to_copy;
+  guint max_frames;
   struct audio *audio = data;
 
-  if (!audio->pa_s)
+  if (!audio->sample->len)
     {
-      return NULL;
+      return;
     }
 
-  buffer = (short *) audio->sample->data;
-  remaining = audio->sample->len;
-  buffer_len =
-    (audio->sample->len < PA_BUFFER_LEN ? audio->sample->len : PA_BUFFER_LEN);
-  while (remaining > 0 && audio->playing)
+  if (audio->pos == audio->sample->len)
     {
-      len = remaining > buffer_len ? buffer_len : remaining;
-      //PulseAudio API uses bytes instead of samples
-      if (pa_simple_write (audio->pa_s, buffer, len * sizeof (short), &err) <
-	  0)
-	fprintf (stderr, __FILE__ ": pa_simple_write() failed: %s\n",
-		 pa_strerror (err));
-      remaining -= buffer_len;
-      buffer += buffer_len;
-
-      if (remaining <= 0 && audio->loop)
+      if (audio->loop)
 	{
-	  buffer = (short *) audio->sample->data;
-	  remaining = audio->sample->len;
+	  audio->pos = 0;
+	}
+      else
+	{
+	  audio_stop (audio);
+	  return;
 	}
     }
 
-  return NULL;
+  req_frames = size / 2;
+  max_frames = req_frames > PA_BUFFER_LEN ? PA_BUFFER_LEN : req_frames;
+
+  if (audio->pos + max_frames <= audio->sample->len)
+    {
+      frames_to_copy = max_frames;
+    }
+  else
+    {
+      frames_to_copy = audio->sample->len - audio->pos;
+    }
+
+  debug_print (2, "Writing %2d frames...\n", frames_to_copy);
+  pa_stream_write (stream, &audio->sample->data[audio->pos * 2],
+		   frames_to_copy * 2, NULL, 0, PA_SEEK_RELATIVE);
+
+  audio->pos += frames_to_copy;
 }
 
 void
 audio_stop (struct audio *audio)
 {
-  int err;
+  pa_operation *operation;
 
-  if (!audio->pa_s)
+  if (!audio->stream)
     {
       return;
     }
 
-  g_mutex_lock (&audio->mutex);
-
-  if (audio->playing == 0)
-    {
-      goto end;
-    }
-
   debug_print (1, "Stopping audio...\n");
 
-  audio->playing = 0;
-  if (audio->play_thread)
+  operation = pa_stream_flush (audio->stream, NULL, NULL);
+  if (operation != NULL)
     {
-      g_thread_join (audio->play_thread);
-      g_thread_unref (audio->play_thread);
+      pa_operation_unref (operation);
     }
-  audio->play_thread = NULL;
 
-  if (pa_simple_flush (audio->pa_s, &err) < 0)
-    fprintf (stderr, __FILE__ ": pa_simple_flush() failed: %s\n",
-	     pa_strerror (err));
+  operation = pa_stream_drain (audio->stream, NULL, NULL);
+  if (operation != NULL)
+    {
+      pa_operation_unref (operation);
+    }
 
-  if (pa_simple_drain (audio->pa_s, &err) < 0)
-    fprintf (stderr, __FILE__ ": pa_simple_drain() failed: %s\n",
-	     pa_strerror (err));
-
-end:
-  g_mutex_unlock (&audio->mutex);
+  operation = pa_stream_cork (audio->stream, 1, NULL, NULL);
+  if (operation != NULL)
+    {
+      pa_operation_unref (operation);
+    }
 }
 
 void
 audio_play (struct audio *audio)
 {
-  if (audio_check (audio))
+  pa_operation *operation;
+
+  if (!audio->stream)
     {
-      audio_stop (audio);
+      return;
+    }
 
-      g_mutex_lock (&audio->mutex);
+  audio_stop (audio);
+  debug_print (1, "Playing audio...\n");
+  audio->pos = 0;
 
-      debug_print (1, "Playing audio...\n");
+  operation = pa_stream_cork (audio->stream, 0, NULL, NULL);
+  if (operation != NULL)
+    {
+      pa_operation_unref (operation);
+    }
+}
 
-      audio->playing = 1;
-      audio->play_thread =
-	g_thread_new ("audio_play_task", audio_play_task, audio);
+static void
+connect_callback (pa_stream * stream, void *data)
+{
+  struct audio *audio = data;
 
-      g_mutex_unlock (&audio->mutex);
+  if (pa_stream_get_state (stream) == PA_STREAM_READY)
+    {
+      pa_stream_set_write_callback (stream, write_callback, audio);
+    }
+}
+
+static void
+context_callback (pa_context * context, void *data)
+{
+  struct audio *audio = data;
+  pa_stream_flags_t stream_flags =
+    PA_STREAM_START_CORKED | PA_STREAM_INTERPOLATE_TIMING |
+    PA_STREAM_NOT_MONOTONIC | PA_STREAM_AUTO_TIMING_UPDATE |
+    PA_STREAM_ADJUST_LATENCY;
+
+  if (pa_context_get_state (context) == PA_CONTEXT_READY)
+    {
+      audio->stream = pa_stream_new (context, PACKAGE, &sample_spec, NULL);
+      pa_stream_set_state_callback (audio->stream, connect_callback, audio);
+      pa_stream_connect_playback (audio->stream, NULL, &buffer_attributes,
+				  stream_flags, NULL, NULL);
     }
 }
 
 int
 audio_init (struct audio *audio)
 {
+  pa_mainloop_api *api;
   int err = 0;
 
-  audio->sample = g_array_new (FALSE, FALSE, sizeof (short));
+  debug_print (1, "Initializing audio...\n");
+
+  audio->sample = g_array_new (FALSE, FALSE, sizeof (gshort));
   audio->loop = FALSE;
+  audio->mainloop = pa_glib_mainloop_new (NULL);
+  api = pa_glib_mainloop_get_api (audio->mainloop);
+  audio->context = pa_context_new (api, PACKAGE);
+  audio->stream = NULL;
 
-  pa_sample_spec pa_ss;
-  pa_ss.format = PA_SAMPLE_S16LE;
-  pa_ss.channels = 1;
-  pa_ss.rate = 48000;
-  audio->pa_s = pa_simple_new (NULL,	// Use the default server.
-			       PACKAGE,	// Our application's name.
-			       PA_STREAM_PLAYBACK, NULL,	// Use the default device.
-			       PACKAGE,	// Description of our stream.
-			       &pa_ss,	// Our sample format.
-			       NULL,	// Use default channel map
-			       NULL,	// Use default buffering attributes.
-			       NULL	// Ignore error code.
-    );
-
-  if (!audio->pa_s)
+  if (pa_context_connect (audio->context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
     {
-      fprintf (stderr, __FILE__ ": No pulseaudio.\n");
+      pa_context_unref (audio->context);
+      pa_glib_mainloop_free (audio->mainloop);
+      audio->mainloop = NULL;
+      err = -1;
     }
+
+  pa_context_set_state_callback (audio->context, context_callback, audio);
 
   return err;
 }
@@ -155,20 +194,33 @@ audio_init (struct audio *audio)
 void
 audio_destroy (struct audio *audio)
 {
-  audio_stop (audio);
-
   debug_print (1, "Destroying audio...\n");
 
+  audio_stop (audio);
   g_array_free (audio->sample, TRUE);
-
-  if (audio->pa_s)
+  if (audio->stream)
     {
-      pa_simple_free (audio->pa_s);
+      pa_stream_unref (audio->stream);
+      audio->stream = NULL;
+    }
+
+  if (audio->mainloop)
+    {
+      pa_context_unref (audio->context);
+      pa_glib_mainloop_free (audio->mainloop);
+      audio->mainloop = NULL;
     }
 }
 
 int
 audio_check (struct audio *audio)
 {
-  return audio->pa_s ? 1 : 0;
+  return audio->mainloop ? 1 : 0;
+}
+
+void
+audio_reset_sample (struct audio *audio)
+{
+  g_array_set_size (audio->sample, 0);
+  audio->pos = 0;
 }

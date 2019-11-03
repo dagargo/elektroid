@@ -348,6 +348,10 @@ elektroid_update_ui_after_load (gpointer data)
 	{
 	  gtk_widget_set_sensitive (upload_button, TRUE);
 	}
+      if (autoplay)
+	{
+	  audio_play (&audio);
+	}
     }
   return FALSE;
 }
@@ -517,15 +521,10 @@ elektroid_update_progress_redraw (gdouble percent)
 static gpointer
 elektroid_load_sample (gpointer data)
 {
-  audio_stop (&audio);
   sample_load (audio.sample, &load_mutex, &audio.frames, data,
 	       &load_thread_running, elektroid_update_progress_redraw);
   free (data);
   g_idle_add (elektroid_update_ui_after_load, NULL);
-  if (autoplay)
-    {
-      audio_play (&audio);
-    }
   return NULL;
 }
 
@@ -590,7 +589,7 @@ elektroid_local_file_unselected (gpointer data)
 {
   audio_stop (&audio);
   elektroid_stop_load_thread ();
-  g_array_set_size (audio.sample, 0);
+  audio_reset_sample (&audio);
   gtk_widget_queue_draw (waveform_draw_area);
   gtk_widget_set_sensitive (upload_button, FALSE);
   elektroid_controls_set_sensitive (FALSE);

@@ -19,19 +19,18 @@
  */
 
 #include <glib.h>
-#include <stdio.h>
-#include <pulse/simple.h>
-#include <pulse/error.h>
+#include <pulse/pulseaudio.h>
+#include <pulse/glib-mainloop.h>
 
 struct audio
 {
-  pa_simple *pa_s;
   GArray *sample;
   gint frames;
-  GThread *play_thread;
-  GMutex mutex;
-  gint playing;
-  gint loop;
+  gboolean loop;
+  pa_glib_mainloop *mainloop;
+  pa_context *context;
+  pa_stream *stream;
+  gint pos;
 };
 
 void audio_play (struct audio *);
@@ -43,3 +42,5 @@ int audio_check (struct audio *);
 int audio_init (struct audio *);
 
 void audio_destroy (struct audio *);
+
+void audio_reset_sample (struct audio *);
