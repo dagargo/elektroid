@@ -150,6 +150,7 @@ static void
 context_callback (pa_context * context, void *data)
 {
   struct audio *audio = data;
+  pa_proplist *props = pa_proplist_new ();
   pa_stream_flags_t stream_flags =
     PA_STREAM_START_CORKED | PA_STREAM_INTERPOLATE_TIMING |
     PA_STREAM_NOT_MONOTONIC | PA_STREAM_AUTO_TIMING_UPDATE |
@@ -157,7 +158,13 @@ context_callback (pa_context * context, void *data)
 
   if (pa_context_get_state (context) == PA_CONTEXT_READY)
     {
-      audio->stream = pa_stream_new (context, PACKAGE, &sample_spec, NULL);
+      pa_proplist_set (props,
+		       PA_PROP_APPLICATION_ICON_NAME,
+		       PACKAGE, sizeof (PACKAGE));
+      audio->stream =
+	pa_stream_new_with_proplist (context, PACKAGE, &sample_spec, NULL,
+				     props);
+      pa_proplist_free (props);
       pa_stream_set_state_callback (audio->stream, connect_callback, audio);
       pa_stream_connect_playback (audio->stream, NULL, &buffer_attributes,
 				  stream_flags, NULL, NULL);
