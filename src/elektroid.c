@@ -94,6 +94,7 @@ static GtkWidget *rename_button;
 static GtkWidget *delete_button;
 static GtkWidget *play_button;
 static GtkWidget *stop_button;
+static GtkWidget *volume_button;
 
 static void
 elektroid_load_devices (int auto_select)
@@ -690,6 +691,12 @@ elektroid_set_volume (GtkScaleButton * button,
 }
 
 static void
+elektroid_set_volume_callback (gdouble value)
+{
+  gtk_scale_button_set_value (GTK_SCALE_BUTTON (volume_button), value);
+}
+
+static void
 elektroid_add_dentry_item (struct elektroid_browser *ebrowser,
 			   const gchar type, const gchar * name, ssize_t size)
 {
@@ -1253,20 +1260,15 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *hostname_label;
   GtkWidget *loop_button;
   GtkWidget *autoplay_switch;
-  GtkWidget *volume_button;
   wordexp_t exp_result;
-  int err = 0;
   char *glade_file = malloc (PATH_MAX);
   char hostname[LABEL_MAX];
-
-  audio_init (&audio);
 
   if (snprintf (glade_file, PATH_MAX, "%s/%s/res/gui.glade", DATADIR, PACKAGE)
       >= PATH_MAX)
     {
       fprintf (stderr, __FILE__ ": Path too long.\n");
-      err = -1;
-      goto free_audio;
+      return -1;
     }
 
   gtk_init (&argc, &argv);
@@ -1458,6 +1460,8 @@ elektroid_run (int argc, char *argv[])
   gtk_tree_sortable_set_sort_column_id (sortable, 1,
 					GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
 
+  audio_init (&audio, elektroid_set_volume_callback);
+
   wordexp ("~", &exp_result, 0);
   strcpy (local_browser.dir, exp_result.we_wordv[0]);
   wordfree (&exp_result);
@@ -1476,9 +1480,6 @@ elektroid_run (int argc, char *argv[])
 
   gtk_statusbar_push (status_bar, 0, "Not connected");
   elektroid_loop_clicked (loop_button, NULL);
-  elektroid_set_volume (NULL,
-			gtk_scale_button_get_value (GTK_SCALE_BUTTON
-						    (volume_button)), NULL);
   autoplay = gtk_switch_get_active (GTK_SWITCH (autoplay_switch));
 
   elektroid_load_devices (1);
@@ -1497,9 +1498,8 @@ elektroid_run (int argc, char *argv[])
       connector_destroy (&connector);
     }
 
-free_audio:
   audio_destroy (&audio);
-  return err;
+  return 0;
 }
 
 static gboolean

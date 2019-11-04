@@ -32,6 +32,8 @@ struct audio
   pa_stream *stream;
   gint pos;
   pa_cvolume volume;
+  uint32_t index;
+  void (*set_volume_gui_callback) (gdouble);
 };
 
 void audio_play (struct audio *);
@@ -40,7 +42,7 @@ void audio_stop (struct audio *);
 
 int audio_check (struct audio *);
 
-int audio_init (struct audio *);
+int audio_init (struct audio *, void (*)(gdouble));
 
 void audio_destroy (struct audio *);
 
