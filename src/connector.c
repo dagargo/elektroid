@@ -854,7 +854,7 @@ connector_upload (struct connector *connector, GArray * sample,
       progress (transferred / (double) sample->len);
     }
 
-  debug_print (2, "%lu frames sent\n", transferred);
+  debug_print (2, "%zu frames sent\n", transferred);
 
   if (!running || *running)
     {

@@ -21,6 +21,7 @@
 #include "../config.h"
 #include <sndfile.h>
 #include <samplerate.h>
+#include <inttypes.h>
 #include "sample.h"
 #include "utils.h"
 
@@ -131,7 +132,7 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, char *path,
       *frames = sf_info.frames * src_data.src_ratio;
     }
 
-  debug_print (2, "Loading sample (%ld)...\n", sf_info.frames);
+  debug_print (2, "Loading sample (%"PRId64")...\n", sf_info.frames);
 
   f = 0;
   while (f < sf_info.frames && (!running || *running))

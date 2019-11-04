@@ -1075,7 +1075,7 @@ elektroid_download_task (gpointer user_data)
 
 	  debug_print (1, "Writing to file '%s'...\n", output_file_path);
 	  frames = sample_save (data, output_file_path);
-	  debug_print (1, "%lu frames written\n", frames);
+	  debug_print (1, "%zu frames written\n", frames);
 	  free (output_file_path);
 	}
       g_array_free (data, TRUE);
