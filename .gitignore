@@ -40,4 +40,18 @@ test/*.trs
 config.guess
 config.sub
 ltmain.sh
+ABOUT-NLS
+config.rpath
+po/Makefile.in.in
+po/Makevars.template
+po/POTFILES
+po/Rules-quot
+po/boldquot.sed
+po/en@boldquot.header
+po/en@quot.header
+po/*.gmo
+po/insert-header.sin
+po/quot.sed
+po/remove-potcdate.sin
+po/stamp-po
 

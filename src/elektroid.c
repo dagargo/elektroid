@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <glib-unix.h>
+#include <glib/gi18n.h>
 #include "audio.h"
 #include "sample.h"
 #include "utils.h"
@@ -139,13 +140,14 @@ elektroid_update_statusbar ()
   if (connector_check (&connector))
     {
       status = malloc (LABEL_MAX);
-      snprintf (status, LABEL_MAX, "Connected to %s", connector.device_name);
+      snprintf (status, LABEL_MAX, _("Connected to %s"),
+		connector.device_name);
       gtk_statusbar_push (status_bar, 0, status);
       free (status);
     }
   else
     {
-      gtk_statusbar_push (status_bar, 0, "Not connected");
+      gtk_statusbar_push (status_bar, 0, _("Not connected"));
     }
 }
 
@@ -1478,7 +1480,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (refresh_devices_button, "clicked",
 		    G_CALLBACK (elektroid_refresh_devices), NULL);
 
-  gtk_statusbar_push (status_bar, 0, "Not connected");
+  gtk_statusbar_push (status_bar, 0, _("Not connected"));
   elektroid_loop_clicked (loop_button, NULL);
   autoplay = gtk_switch_get_active (GTK_SWITCH (autoplay_switch));
 
@@ -1518,6 +1520,10 @@ main (int argc, char *argv[])
   g_unix_signal_add (SIGHUP, elektroid_end, NULL);
   g_unix_signal_add (SIGINT, elektroid_end, NULL);
   g_unix_signal_add (SIGTERM, elektroid_end, NULL);
+
+  setlocale (LC_ALL, "");
+  bindtextdomain (PACKAGE, LOCALEDIR);
+  textdomain (PACKAGE);
 
   while ((c = getopt (argc, argv, "v")) != -1)
     {

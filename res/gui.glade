@@ -109,7 +109,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     <property name="type_hint">dialog</property>
     <property name="transient_for">main_window</property>
     <property name="program_name">Elektroid</property>
-    <property name="copyright" translatable="yes">Copyright © 2019 David García Goñi</property>
+    <property name="copyright">Copyright © 2019 David García Goñi</property>
     <property name="comments" translatable="yes">GNU/Linux sample transfer application for Elektron devices</property>
     <property name="website">https://github.com/dagargo/elektroid</property>
     <property name="authors">David García Goñi&lt;dagargo@gmail.com&gt;</property>
@@ -187,7 +187,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <object class="GtkHeaderBar" id="headerbar">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="title" translatable="yes">Elektroid</property>
+        <property name="title">Elektroid</property>
         <property name="has_subtitle">False</property>
         <property name="show_close_button">True</property>
         <child>
@@ -310,7 +310,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
-                                <property name="tooltip_text" translatable="yes">Refresh list</property>
+                                <property name="tooltip_text" translatable="yes">Refresh directory</property>
                                 <child>
                                   <object class="GtkImage">
                                     <property name="visible">True</property>
@@ -542,7 +542,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
-                                <property name="tooltip_text" translatable="yes">Refresh list</property>
+                                <property name="tooltip_text" translatable="yes">Refresh directory</property>
                                 <child>
                                   <object class="GtkImage">
                                     <property name="visible">True</property>
@@ -712,7 +712,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
             </child>
             <child>
               <object class="GtkBox">
-                <property name="height_request">100</property>
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="hexpand">True</property>
@@ -751,6 +750,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="can_focus">False</property>
                             <property name="valign">center</property>
                             <property name="label" translatable="yes">Auto play</property>
+                            <property name="wrap">True</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -769,6 +769,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                       <object class="GtkBox">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="halign">center</property>
                         <property name="spacing">6</property>
                         <child>
                           <object class="GtkBox">

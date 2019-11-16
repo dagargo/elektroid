@@ -1,0 +1,82 @@
+# Spanish translations for elektroid package.
+# Copyright (C) 2019 David García Goñi
+# This file is distributed under the same license as the elektroid package.
+# David García Goñi <dagargo@gmail.com>, 2019.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: elektroid 0.3\n"
+"Report-Msgid-Bugs-To: dagargo@gmail.com\n"
+"POT-Creation-Date: 2019-11-09 12:48+0100\n"
+"PO-Revision-Date: 2019-11-09 11:40+0100\n"
+"Last-Translator: David García Goñi <dagargo@gmail.com>\n"
+"Language-Team: Spanish\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/elektroid.c:143
+#, c-format
+msgid "Connected to %s"
+msgstr "Conectado a %s"
+
+#: src/elektroid.c:149 src/elektroid.c:1482
+msgid "Not connected"
+msgstr "No conectado"
+
+#: res/gui.glade:53
+msgid "Rename"
+msgstr "Renombrar"
+
+#: res/gui.glade:66
+msgid "Delete"
+msgstr "Borrar"
+
+#: res/gui.glade:113
+msgid "GNU/Linux sample transfer application for Elektron devices"
+msgstr ""
+"Aplicación GNU/Linux de transferencia de muestras para dispositivos Elektron"
+
+#: res/gui.glade:166
+msgid "About"
+msgstr "Acerca de"
+
+#: res/gui.glade:273 res/gui.glade:505
+msgid "Go to parent directory"
+msgstr "Ir al directorio padre"
+
+#: res/gui.glade:293 res/gui.glade:525
+msgid "Add directory"
+msgstr "Añadir directorio"
+
+#: res/gui.glade:313 res/gui.glade:545
+msgid "Refresh directory"
+msgstr "Refrescar directorio"
+
+#: res/gui.glade:374 res/gui.glade:606 res/gui.glade:1035
+msgid "Name"
+msgstr "Nombre"
+
+#: res/gui.glade:386 res/gui.glade:618
+msgid "Size"
+msgstr "Tamaño"
+
+#: res/gui.glade:423
+msgid "Upload sample"
+msgstr "Cargar muestra"
+
+#: res/gui.glade:444
+msgid "Download sample"
+msgstr "Descargar muestra"
+
+#: res/gui.glade:682
+msgid "Refresh devices"
+msgstr "Refrescar dispositivos"
+
+#: res/gui.glade:753
+msgid "Auto play"
+msgstr ""
+"Reproducción\n"
+"automática"

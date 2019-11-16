@@ -30,6 +30,9 @@ PKG_CHECK_MODULES([PULSEAUDIO], [libpulse >= 5.0])
 AC_SUBST(PULSEAUDIO_CFLAGS)
 AC_SUBST(PULSEAUDIO_LIBS)
 
+AM_GNU_GETTEXT([external])
+AM_GNU_GETTEXT_VERSION([0.19.8])
+
 # Checks for header files.
 AC_CHECK_HEADERS([unistd.h limits.h])
 
@@ -38,5 +41,5 @@ AC_CHECK_HEADERS([unistd.h limits.h])
 # Checks for library functions.
 AC_FUNC_MALLOC
 
-AC_CONFIG_FILES([Makefile src/Makefile res/Makefile test/Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile res/Makefile test/Makefile po/Makefile.in po/Makefile])
 AC_OUTPUT

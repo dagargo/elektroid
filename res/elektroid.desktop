@@ -3,6 +3,7 @@ Type=Application
 Encoding=UTF-8
 Name=Elektroid
 Comment=Sample transfer application for Elektron devices
+Comment[es]=Aplicación de transferencia de muestras para dispositivos Elektron
 Exec=elektroid
 Icon=elektroid
 Terminal=false
