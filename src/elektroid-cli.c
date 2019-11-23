@@ -69,7 +69,7 @@ static gint
 cli_connect (const char *device_path)
 {
   gint card = atoi (device_path);
-  return connector_init (&connector, card, SINGLE_THREAD);
+  return connector_init (&connector, card);
 }
 
 static int

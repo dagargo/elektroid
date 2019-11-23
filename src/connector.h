@@ -28,11 +28,6 @@ struct connector
   gchar *device_name;
   gushort seq;
   GMutex mutex;
-  GCond cond;
-  GThread *reader_thread;
-  GSList *queue;
-  GByteArray *(*send_and_receive) (struct connector * connector,
-				   GByteArray * tx_msg);
 };
 
 struct connector_dir_iterator
@@ -51,13 +46,7 @@ struct connector_device
   guint card;
 };
 
-enum connector_mode
-{
-  SINGLE_THREAD,
-  MULTI_THREAD
-};
-
-gint connector_init (struct connector *, gint, enum connector_mode);
+gint connector_init (struct connector *, gint);
 
 void connector_destroy (struct connector *);
 
