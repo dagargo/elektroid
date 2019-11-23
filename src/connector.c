@@ -417,8 +417,6 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   GByteArray *sysex;
   GByteArray *full_msg;
 
-  g_mutex_lock (&connector->mutex);
-
   aux = htons (connector->seq);
   memcpy (msg->data, &aux, sizeof (uint16_t));
   if (connector->seq == USHRT_MAX)
@@ -459,7 +457,6 @@ connector_tx (struct connector *connector, const GByteArray * msg)
 
 cleanup:
   free_msg (full_msg);
-  g_mutex_unlock (&connector->mutex);
   return ret;
 }
 
@@ -534,6 +531,8 @@ connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
   ssize_t len;
   GByteArray *rx_msg;
 
+  g_mutex_lock (&connector->mutex);
+
   len = connector_tx (connector, tx_msg);
   if (len < 0)
     {
@@ -544,6 +543,7 @@ connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
 
 cleanup:
   free_msg (tx_msg);
+  g_mutex_unlock (&connector->mutex);
   return rx_msg;
 }
 
