@@ -102,6 +102,20 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
     </columns>
   </object>
+  <object class="GtkListStore" id="task_list_store">
+    <columns>
+      <!-- column-name status -->
+      <column type="gint"/>
+      <!-- column-name type -->
+      <column type="gint"/>
+      <!-- column-name src -->
+      <column type="gchararray"/>
+      <!-- column-name dst -->
+      <column type="gchararray"/>
+      <!-- column-name progress -->
+      <column type="gdouble"/>
+    </columns>
+  </object>
   <object class="GtkAboutDialog" id="about_dialog">
     <property name="can_focus">False</property>
     <property name="resizable">False</property>
@@ -179,8 +193,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     </child>
   </object>
   <object class="GtkWindow" id="main_window">
-    <property name="width_request">800</property>
-    <property name="height_request">500</property>
+    <property name="width_request">900</property>
+    <property name="height_request">600</property>
     <property name="can_focus">False</property>
     <property name="icon_name">elektroid</property>
     <child type="titlebar">
@@ -707,14 +721,13 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">0</property>
               </packing>
             </child>
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="hexpand">True</property>
                 <property name="spacing">6</property>
                 <property name="baseline_position">bottom</property>
                 <child>
@@ -937,6 +950,91 @@ audio-volume-medium-symbolic</property>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkScrolledWindow">
+                <property name="height_request">120</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="shadow_type">in</property>
+                <child>
+                  <object class="GtkTreeView">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="model">task_list_store</property>
+                    <child internal-child="selection">
+                      <object class="GtkTreeSelection"/>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn">
+                        <property name="title" translatable="yes">Status</property>
+                        <child>
+                          <object class="GtkCellRendererText"/>
+                          <attributes>
+                            <attribute name="text">0</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn">
+                        <property name="title" translatable="yes">Type</property>
+                        <child>
+                          <object class="GtkCellRendererText"/>
+                          <attributes>
+                            <attribute name="text">1</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn">
+                        <property name="title" translatable="yes">Source</property>
+                        <property name="expand">True</property>
+                        <child>
+                          <object class="GtkCellRendererText">
+                            <property name="ellipsize">middle</property>
+                          </object>
+                          <attributes>
+                            <attribute name="text">2</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn">
+                        <property name="title" translatable="yes">Destiny</property>
+                        <property name="expand">True</property>
+                        <child>
+                          <object class="GtkCellRendererText">
+                            <property name="ellipsize">middle</property>
+                          </object>
+                          <attributes>
+                            <attribute name="text">3</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn">
+                        <property name="fixed_width">120</property>
+                        <property name="title" translatable="yes">Progress</property>
+                        <child>
+                          <object class="GtkCellRendererProgress"/>
+                          <attributes>
+                            <attribute name="value">4</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
                 <property name="position">2</property>
               </packing>
             </child>
@@ -1048,90 +1146,6 @@ audio-volume-medium-symbolic</property>
                 <property name="max_length">32</property>
                 <property name="activates_default">True</property>
                 <property name="input_purpose">alpha</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">1</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-      </object>
-    </child>
-  </object>
-  <object class="GtkDialog" id="progress_dialog">
-    <property name="can_focus">False</property>
-    <property name="resizable">False</property>
-    <property name="modal">True</property>
-    <property name="type_hint">dialog</property>
-    <property name="transient_for">main_window</property>
-    <child>
-      <placeholder/>
-    </child>
-    <child internal-child="vbox">
-      <object class="GtkBox">
-        <property name="can_focus">False</property>
-        <property name="margin_left">4</property>
-        <property name="margin_right">4</property>
-        <property name="margin_top">4</property>
-        <property name="margin_bottom">4</property>
-        <property name="orientation">vertical</property>
-        <property name="spacing">6</property>
-        <child internal-child="action_area">
-          <object class="GtkButtonBox">
-            <property name="can_focus">False</property>
-            <property name="layout_style">end</property>
-            <child>
-              <object class="GtkButton" id="progress_dialog_cancel_button">
-                <property name="label">gtk-cancel</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">False</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkBox">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="margin_bottom">6</property>
-            <property name="orientation">vertical</property>
-            <property name="spacing">6</property>
-            <child>
-              <object class="GtkLabel" id="progress_dialog_label">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="halign">start</property>
-                <property name="ellipsize">end</property>
-              </object>
-              <packing>
-                <property name="expand">False</property>
-                <property name="fill">True</property>
-                <property name="position">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkProgressBar" id="progress_dialog_progress">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
               </object>
               <packing>
                 <property name="expand">False</property>

@@ -36,6 +36,10 @@
 #define MAX_DRAW_X 10000
 #define SIZE_LABEL_LEN 16
 
+static gpointer elektroid_upload_task (gpointer);
+static gpointer elektroid_download_task (gpointer);
+static void elektroid_update_progress (gdouble);
+
 struct elektroid_browser
 {
   gboolean (*load_dir) (gpointer);
@@ -53,19 +57,32 @@ struct elektroid_browser
   gchar *dir;
 };
 
-struct elektroid_progress
+enum elektroid_task_type
 {
-  GtkDialog *dialog;
-  GtkLabel *label;
-  GtkProgressBar *progress;
-  gdouble percent;
+  UPLOAD,
+  DOWNLOAD
+};
+
+enum elektroid_task_status
+{
+  QUEUED,
+  RUNNING,
+  COMPLETED_OK,
+  COMPLETED_ERROR,
+  CANCELED
+};
+
+struct elektroid_active_task
+{
+  gint running;
+  gchar *src;			//Contains a path to a file
+  gchar *dst;			//Contains a path to a dir
+  enum elektroid_task_status status;	//Contains the final status
 };
 
 static struct elektroid_browser remote_browser;
 static struct elektroid_browser local_browser;
 static struct elektroid_browser *popup_elektroid_browser;
-
-static struct elektroid_progress elektroid_progress;
 
 static struct audio audio;
 static struct connector connector;
@@ -73,9 +90,9 @@ static gboolean autoplay;
 
 static GThread *load_thread = NULL;
 static GThread *progress_thread = NULL;
-static gint progress_thread_running;
 static gint load_thread_running;
 static GMutex load_mutex;
+static struct elektroid_active_task active_task;
 
 static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
@@ -96,12 +113,12 @@ static GtkWidget *delete_button;
 static GtkWidget *play_button;
 static GtkWidget *stop_button;
 static GtkWidget *volume_button;
+static GtkListStore *task_list_store;
 
 static void
 elektroid_load_devices (int auto_select)
 {
   int i;
-  GtkTreeIter iter;
   GArray *devices = connector_get_elektron_devices ();
   struct connector_device device;
 
@@ -112,9 +129,8 @@ elektroid_load_devices (int auto_select)
   for (i = 0; i < devices->len; i++)
     {
       device = g_array_index (devices, struct connector_device, i);
-      gtk_list_store_append (devices_list_store, &iter);
-      gtk_list_store_set (devices_list_store, &iter,
-			  0, device.card, 1, device.name, -1);
+      gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
+					 0, device.card, 1, device.name, -1);
     }
 
   g_array_free (devices, TRUE);
@@ -487,28 +503,6 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
 }
 
 static gboolean
-elektroid_update_progress_value (gpointer data)
-{
-  gtk_progress_bar_set_fraction (elektroid_progress.progress,
-				 elektroid_progress.percent);
-  return FALSE;
-}
-
-static void
-elektroid_update_progress (gdouble percent)
-{
-  elektroid_progress.percent = percent;
-  g_idle_add (elektroid_update_progress_value, NULL);
-}
-
-static gboolean
-elektroid_progress_dialog_end ()
-{
-  gtk_dialog_response (elektroid_progress.dialog, GTK_RESPONSE_NONE);
-  return FALSE;
-}
-
-static gboolean
 elektroid_queue_draw_waveform ()
 {
   gtk_widget_queue_draw (waveform_draw_area);
@@ -556,7 +550,7 @@ static void
 elektroid_stop_progress_thread ()
 {
   debug_print (1, "Stopping progress thread...\n");
-  progress_thread_running = 0;
+  active_task.running = 0;
   elektroid_join_progress_thread ();
 }
 
@@ -960,10 +954,107 @@ elektroid_local_delete (const gchar * path, const char type)
     }
 }
 
-static void
-elektroid_cancel_progress (GtkWidget * object, gpointer user_data)
+static gboolean
+elektroid_get_running_task (GtkTreeIter * iter)
 {
-  gtk_dialog_response (elektroid_progress.dialog, GTK_RESPONSE_CANCEL);
+  enum elektroid_task_status status;
+  gboolean found = FALSE;
+  gboolean valid =
+    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), iter);
+
+  while (valid)
+    {
+      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), iter, 0, &status,
+			  -1);
+
+      if (status == RUNNING)
+	{
+	  found = TRUE;
+	  break;
+	}
+
+      valid =
+	gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store), iter);
+    }
+
+  return found;
+}
+
+static gboolean
+elektroid_complete_running_task (gpointer data)
+{
+  GtkTreeIter iter;
+
+  if (elektroid_get_running_task (&iter))
+    {
+      gtk_list_store_set (task_list_store, &iter, 0, active_task.status, -1);
+      active_task.running = 0;
+      free (active_task.src);
+      free (active_task.dst);
+    }
+  else
+    {
+      debug_print (1, "No task running. Skipping...\n");
+    }
+
+  return FALSE;
+}
+
+static gboolean
+elektroid_run_next_task (gpointer data)
+{
+  enum elektroid_task_status status;
+  enum elektroid_task_type type;
+  gchar *src;
+  gchar *dst;
+  gboolean found;
+  GtkTreeIter iter;
+  gboolean valid =
+    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), &iter);
+
+  found = FALSE;
+  while (valid)
+    {
+      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter, 0,
+			  &status, 1, &type, 2, &src, 3, &dst, -1);
+
+      if (status == RUNNING)
+	{
+	  debug_print (1, "Task running. Skipping...\n");
+	  break;
+	}
+      else if (status == QUEUED)
+	{
+	  found = TRUE;
+	  break;
+	}
+      valid =
+	gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store), &iter);
+    }
+
+  if (found)
+    {
+      gtk_list_store_set (task_list_store, &iter, 0, RUNNING, -1);
+      active_task.running = 1;
+      active_task.src = src;
+      active_task.dst = dst;
+      debug_print (1, "Launching task type %d from %s to %s...\n", type,
+		   active_task.src, active_task.dst);
+      if (type == UPLOAD)
+	{
+	  progress_thread =
+	    g_thread_new ("elektroid_upload_task", elektroid_upload_task,
+			  NULL);
+	}
+      else if (type == DOWNLOAD)
+	{
+	  progress_thread =
+	    g_thread_new ("elektroid_download_task",
+			  elektroid_download_task, NULL);
+	}
+    }
+
+  return FALSE;
 }
 
 static gpointer
@@ -972,77 +1063,59 @@ elektroid_upload_task (gpointer user_data)
   char *basec;
   char *bname;
   char *remote_path;
-  char *path = (char *) user_data;
   ssize_t frames;
 
-  debug_print (1, "Local path: %s\n", path);
+  debug_print (1, "Local path: %s\n", active_task.src);
 
-  basec = strdup (path);
+  basec = strdup (active_task.src);
   bname = basename (basec);
   remove_ext (bname);
-  remote_path = chain_path (remote_browser.dir, bname);
+  remote_path = chain_path (active_task.dst, bname);
   free (basec);
 
   debug_print (1, "Remote path: %s\n", remote_path);
 
   frames = connector_upload (&connector, audio.sample, remote_path,
-			     &progress_thread_running,
-			     elektroid_update_progress);
+			     &active_task.running, elektroid_update_progress);
+  free (remote_path);
 
   if (frames < 0)
     {
       fprintf (stderr, __FILE__ ": Error while uploading.\n");
+      active_task.status = COMPLETED_ERROR;
+    }
+  else
+    {
+      if (active_task.running)
+	{
+	  active_task.status = COMPLETED_OK;
+	}
+      else
+	{
+	  active_task.status = CANCELED;
+	}
     }
 
   elektroid_check_connector ();
 
-  free (remote_path);
-
   g_idle_add (remote_browser.load_dir, NULL);
-  g_idle_add (elektroid_progress_dialog_end, NULL);
+
+  g_idle_add (elektroid_complete_running_task, NULL);
+  g_idle_add (elektroid_run_next_task, NULL);
 
   return NULL;
 }
 
 static void
-elektroid_upload (GtkWidget * object, gpointer user_data)
+elektroid_add_upload_task (GtkWidget * object, gpointer user_data)
 {
-  gint result;
-  char *label;
-  char *path = elektroid_get_browser_selected_path (&local_browser);
+  gchar *src = elektroid_get_browser_selected_path (&local_browser);
+  gchar *dst = strdup (remote_browser.dir);
 
-  if (!path)
-    {
-      return;
-    }
-
-  gtk_window_set_title (GTK_WINDOW (elektroid_progress.dialog),
-			"Uploading file");
-
-  label = malloc (LABEL_MAX + PATH_MAX);
-  snprintf (label, LABEL_MAX + PATH_MAX, "Uploading %s...", path);
-  gtk_label_set_text (elektroid_progress.label, label);
-  free (label);
-
-  debug_print (1, "Creating progress thread...\n");
-  progress_thread_running = 1;
-  progress_thread =
-    g_thread_new ("elektroid_upload_task", elektroid_upload_task, path);
-
-  elektroid_update_progress (0.0);
-  result = gtk_dialog_run (elektroid_progress.dialog);
-
-  if (result == GTK_RESPONSE_CANCEL || result == GTK_RESPONSE_DELETE_EVENT)
-    {
-      debug_print (1, "Stopping progress thread...\n");
-      progress_thread_running = 0;
-    }
-
-  elektroid_join_progress_thread ();
-
-  free (path);
-
-  gtk_widget_hide (GTK_WIDGET (elektroid_progress.dialog));
+  gtk_list_store_insert_with_values (task_list_store, NULL, -1, 0,
+				     QUEUED, 1, UPLOAD, 2, src, 3, dst, 4,
+				     0.0, -1);
+  g_idle_add (elektroid_run_next_task, NULL);
 }
 
 static gpointer
@@ -1050,84 +1123,79 @@ elektroid_download_task (gpointer user_data)
 {
   GArray *data;
   size_t frames;
-  char *output_file_path;
-  char *basec;
-  char *bname;
-  char *new_filename;
-  char *path = (char *) user_data;
+  gchar *output_file_path;
+  gchar *basec;
+  gchar *bname;
+  gchar *new_filename;
 
   data =
-    connector_download (&connector, path, &progress_thread_running,
+    connector_download (&connector, active_task.src, &active_task.running,
 			elektroid_update_progress);
   elektroid_check_connector ();
 
-  if (data != NULL)
+  if (data == NULL)
     {
-      if (progress_thread_running)
+      fprintf (stderr, __FILE__ ": Error while downloading.\n");
+      active_task.status = COMPLETED_ERROR;
+    }
+  else
+    {
+      if (active_task.running)
 	{
-	  basec = strdup (path);
+	  basec = strdup (active_task.src);
 	  bname = basename (basec);
 
 	  new_filename = malloc (PATH_MAX);
 	  snprintf (new_filename, PATH_MAX, "%s.wav", bname);
 	  free (basec);
 
-	  output_file_path = chain_path (local_browser.dir, new_filename);
+	  output_file_path = chain_path (active_task.dst, new_filename);
 	  free (new_filename);
 
 	  debug_print (1, "Writing to file '%s'...\n", output_file_path);
 	  frames = sample_save (data, output_file_path);
 	  debug_print (1, "%zu frames written\n", frames);
 	  free (output_file_path);
+
+	  active_task.status = COMPLETED_OK;
+	}
+      else
+	{
+	  active_task.status = CANCELED;
 	}
       g_array_free (data, TRUE);
-      g_idle_add (local_browser.load_dir, NULL);
+      if (strcmp (active_task.dst, local_browser.dir) == 0)
+	{
+	  g_idle_add (local_browser.load_dir, NULL);
+	}
     }
 
-  g_idle_add (elektroid_progress_dialog_end, NULL);
+  g_idle_add (elektroid_complete_running_task, NULL);
+  g_idle_add (elektroid_run_next_task, NULL);
 
   return NULL;
 }
 
 static void
-elektroid_download (GtkWidget * object, gpointer user_data)
+elektroid_add_download_task (GtkWidget * object, gpointer user_data)
 {
-  gint result;
-  char *label;
-  char *path = elektroid_get_browser_selected_path (&remote_browser);
+  gchar *src = elektroid_get_browser_selected_path (&remote_browser);
+  gchar *dst = strdup (local_browser.dir);
 
-  if (!path)
+  gtk_list_store_insert_with_values (task_list_store, NULL, -1, 0, QUEUED, 1,
+				     DOWNLOAD, 2, src, 3, dst, 4, 0.0, -1);
+  g_idle_add (elektroid_run_next_task, NULL);
+}
+
+static void
+elektroid_update_progress (gdouble progress)
+{
+  GtkTreeIter iter;
+
+  if (elektroid_get_running_task (&iter))
     {
-      return;
+      gtk_list_store_set (task_list_store, &iter, 4, progress * 100, -1);
     }
-
-  gtk_window_set_title (GTK_WINDOW (elektroid_progress.dialog),
-			"Downloading file");
-
-  label = malloc (LABEL_MAX);
-  snprintf (label, LABEL_MAX, "Downloading %s.wav...", path);
-  gtk_label_set_text (elektroid_progress.label, label);
-  free (label);
-
-  debug_print (1, "Creating progress thread...\n");
-  progress_thread_running = 1;
-  progress_thread =
-    g_thread_new ("elektroid_download_task", elektroid_download_task, path);
-
-  elektroid_update_progress (0.0);
-  result = gtk_dialog_run (elektroid_progress.dialog);
-
-  if (result == GTK_RESPONSE_CANCEL || result == GTK_RESPONSE_DELETE_EVENT)
-    {
-      debug_print (1, "Stopping progress thread...\n");
-      progress_thread_running = 0;
-    }
-
-  elektroid_join_progress_thread ();
-
-  free (path);
-
-  gtk_widget_hide (GTK_WIDGET (elektroid_progress.dialog));
 }
 
 static void
@@ -1256,7 +1324,6 @@ elektroid_run (int argc, char *argv[])
 {
   GtkBuilder *builder;
   GtkTreeSortable *sortable;
-  GtkWidget *progress_dialog_cancel_button;
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
   GtkWidget *hostname_label;
@@ -1266,8 +1333,9 @@ elektroid_run (int argc, char *argv[])
   char *glade_file = malloc (PATH_MAX);
   char hostname[LABEL_MAX];
 
-  if (snprintf (glade_file, PATH_MAX, "%s/%s/res/gui.glade", DATADIR, PACKAGE)
-      >= PATH_MAX)
+  if (snprintf
+      (glade_file, PATH_MAX, "%s/%s/res/gui.glade", DATADIR,
+       PACKAGE) >= PATH_MAX)
     {
       fprintf (stderr, __FILE__ ": Path too long.\n");
       return -1;
@@ -1317,10 +1385,6 @@ elektroid_run (int argc, char *argv[])
     GTK_WIDGET (gtk_builder_get_object (builder, "download_button"));
   status_bar = GTK_STATUSBAR (gtk_builder_get_object (builder, "status_bar"));
 
-  progress_dialog_cancel_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "progress_dialog_cancel_button"));
-
   item_popmenu =
     GTK_WIDGET (gtk_builder_get_object (builder, "item_popmenu"));
   rename_button =
@@ -1355,28 +1419,14 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (volume_button, "value_changed",
 		    G_CALLBACK (elektroid_set_volume), NULL);
   g_signal_connect (download_button, "clicked",
-		    G_CALLBACK (elektroid_download), NULL);
-  g_signal_connect (upload_button, "clicked", G_CALLBACK (elektroid_upload),
-		    NULL);
-
-  g_signal_connect (progress_dialog_cancel_button, "clicked",
-		    G_CALLBACK (elektroid_cancel_progress), NULL);
+		    G_CALLBACK (elektroid_add_download_task), NULL);
+  g_signal_connect (upload_button, "clicked",
+		    G_CALLBACK (elektroid_add_upload_task), NULL);
 
   g_signal_connect (rename_button, "clicked",
 		    G_CALLBACK (elektroid_rename_item), NULL);
   g_signal_connect (delete_button, "clicked",
 		    G_CALLBACK (elektroid_delete_item), NULL);
-
-  elektroid_progress = (struct elektroid_progress)
-  {
-    .dialog =
-      GTK_DIALOG (gtk_builder_get_object (builder, "progress_dialog")),
-    .progress =
-      GTK_PROGRESS_BAR (gtk_builder_get_object
-			(builder, "progress_dialog_progress")),
-    .label =
-      GTK_LABEL (gtk_builder_get_object (builder, "progress_dialog_label")),
-  };
 
   remote_browser = (struct elektroid_browser)
   {
@@ -1479,6 +1529,9 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_set_device), NULL);
   g_signal_connect (refresh_devices_button, "clicked",
 		    G_CALLBACK (elektroid_refresh_devices), NULL);
+
+  task_list_store =
+    GTK_LIST_STORE (gtk_builder_get_object (builder, "task_list_store"));
 
   gtk_statusbar_push (status_bar, 0, _("Not connected"));
   elektroid_loop_clicked (loop_button, NULL);
