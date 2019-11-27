@@ -39,6 +39,11 @@
 #define DEVICES_LIST_STORE_CARD_FIELD 0
 #define DEVICES_LIST_STORE_NAME_FIELD 1
 
+#define BROWSER_LIST_STORE_ICON_TYPE_FIELD 0
+#define BROWSER_LIST_STORE_NAME_FIELD 1
+#define BROWSER_LIST_STORE_SIZE_FIELD 2
+#define BROWSER_LIST_STORE_HUMAN_SIZE_FIELD 3
+
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (gdouble);
@@ -322,15 +327,18 @@ elektroid_get_browser_selected_info (struct elektroid_browser *ebrowser,
 
   if (type)
     {
-      gtk_tree_model_get (model, &iter, 0, type, -1);
+      gtk_tree_model_get (model, &iter, BROWSER_LIST_STORE_ICON_TYPE_FIELD,
+			  type, -1);
     }
   if (name)
     {
-      gtk_tree_model_get (model, &iter, 1, name, -1);
+      gtk_tree_model_get (model, &iter, BROWSER_LIST_STORE_NAME_FIELD, name,
+			  -1);
     }
   if (size)
     {
-      gtk_tree_model_get (model, &iter, 2, size, -1);
+      gtk_tree_model_get (model, &iter, BROWSER_LIST_STORE_SIZE_FIELD, size,
+			  -1);
     }
 }
 
@@ -719,8 +727,13 @@ elektroid_add_dentry_item (struct elektroid_browser *ebrowser,
       human_size[0] = 0;
     }
 
-  gtk_list_store_insert_with_values (list_store, NULL, -1, 0, type_icon, 1,
-				     name, 2, size, 3, human_size, -1);
+  gtk_list_store_insert_with_values (list_store, NULL, -1,
+				     BROWSER_LIST_STORE_ICON_TYPE_FIELD,
+				     type_icon, BROWSER_LIST_STORE_NAME_FIELD,
+				     name, BROWSER_LIST_STORE_SIZE_FIELD,
+				     size,
+				     BROWSER_LIST_STORE_HUMAN_SIZE_FIELD,
+				     human_size, -1);
 }
 
 static gboolean
