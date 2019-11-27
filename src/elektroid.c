@@ -36,6 +36,9 @@
 #define MAX_DRAW_X 10000
 #define SIZE_LABEL_LEN 16
 
+#define DEVICES_LIST_STORE_CARD_FIELD 0
+#define DEVICES_LIST_STORE_NAME_FIELD 1
+
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (gdouble);
@@ -130,7 +133,10 @@ elektroid_load_devices (int auto_select)
     {
       device = g_array_index (devices, struct connector_device, i);
       gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
-					 0, device.card, 1, device.name, -1);
+					 DEVICES_LIST_STORE_CARD_FIELD,
+					 device.card,
+					 DEVICES_LIST_STORE_NAME_FIELD,
+					 device.name, -1);
     }
 
   g_array_free (devices, TRUE);
