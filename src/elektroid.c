@@ -727,7 +727,7 @@ elektroid_add_dentry_item (struct elektroid_browser *ebrowser,
 
   if (size > 0)
     {
-      snprintf (human_size, SIZE_LABEL_LEN, "%.2fMB",
+      snprintf (human_size, SIZE_LABEL_LEN, "%.2f MiB",
 		size / (1024.0 * 1024.0));
     }
   else

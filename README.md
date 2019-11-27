@@ -63,10 +63,12 @@ $ elektroid-cli download 0:/square
 
 * ls
 
+Notice that the first column is the file type, the second is the size in MiB (it is the same unit used in the devices although it is showed there as MB), the third is an internal cksum and the fourth is the sample name.
+
 ```
 $ elektroid-cli ls 0:/
-D 0.00MB 00000000 incoming
-F 0.09MB 3d71644d square
+D 0.00 00000000 incoming
+F 0.09 3d71644d square
 ```
 
 * mv

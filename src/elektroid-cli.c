@@ -106,7 +106,7 @@ cli_ls (int argc, char *argv[], int optind)
 
   while (!connector_get_next_dentry (d_iter))
     {
-      printf ("%c %.2fMB %08x %s\n", d_iter->type,
+      printf ("%c %.2f %08x %s\n", d_iter->type,
 	      d_iter->size / (1024.0 * 1024.0), d_iter->cksum,
 	      d_iter->dentry);
     }
