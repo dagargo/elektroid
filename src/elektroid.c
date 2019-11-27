@@ -49,6 +49,8 @@
 #define TASK_LIST_STORE_SRC_FIELD 2
 #define TASK_LIST_STORE_DST_FIELD 3
 #define TASK_LIST_STORE_PROGRESS_FIELD 4
+#define TASK_LIST_STORE_STATUS_HUMAN_FIELD 5
+#define TASK_LIST_STORE_TYPE_HUMAN_FIELD 6
 
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
@@ -1005,16 +1007,37 @@ elektroid_get_running_task (GtkTreeIter * iter)
   return found;
 }
 
+static const gchar *
+elektroid_get_human_task_status (enum elektroid_task_status status)
+{
+  switch (status)
+    {
+    case QUEUED:
+      return _("Queued");
+    case RUNNING:
+      return _("Running");
+    case COMPLETED_OK:
+      return _("Completed");
+    case COMPLETED_ERROR:
+      return _("Completed with errors");
+    case CANCELED:
+      return _("Canceled");
+    default:
+      return _("Undefined");
+    }
+}
+
 static gboolean
 elektroid_complete_running_task (gpointer data)
 {
   GtkTreeIter iter;
+  const gchar *status = elektroid_get_human_task_status (active_task.status);
 
   if (elektroid_get_running_task (&iter))
     {
       gtk_list_store_set (task_list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, active_task.status,
-			  -1);
+			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status, -1);
       active_task.running = 0;
       free (active_task.src);
       free (active_task.dst);
@@ -1142,13 +1165,18 @@ elektroid_add_upload_task (GtkWidget * object, gpointer user_data)
 {
   gchar *src = elektroid_get_browser_selected_path (&local_browser);
   gchar *dst = strdup (remote_browser.dir);
+  const gchar *status = elektroid_get_human_task_status (active_task.status);
 
   gtk_list_store_insert_with_values (task_list_store, NULL, -1,
 				     TASK_LIST_STORE_STATUS_FIELD, QUEUED,
 				     TASK_LIST_STORE_TYPE_FIELD, UPLOAD,
 				     TASK_LIST_STORE_SRC_FIELD, src,
 				     TASK_LIST_STORE_DST_FIELD, dst,
-				     TASK_LIST_STORE_PROGRESS_FIELD, 0.0, -1);
+				     TASK_LIST_STORE_PROGRESS_FIELD, 0.0,
+				     TASK_LIST_STORE_STATUS_HUMAN_FIELD,
+				     status,
+				     TASK_LIST_STORE_TYPE_HUMAN_FIELD,
+				     _("Upload"), -1);
 
   g_idle_add (elektroid_run_next_task, NULL);
 }
@@ -1216,13 +1244,18 @@ elektroid_add_download_task (GtkWidget * object, gpointer user_data)
 {
   gchar *src = elektroid_get_browser_selected_path (&remote_browser);
   gchar *dst = strdup (local_browser.dir);
+  const gchar *status = elektroid_get_human_task_status (active_task.status);
 
   gtk_list_store_insert_with_values (task_list_store, NULL, -1,
 				     TASK_LIST_STORE_STATUS_FIELD, QUEUED,
 				     TASK_LIST_STORE_TYPE_FIELD, DOWNLOAD,
 				     TASK_LIST_STORE_SRC_FIELD, src,
 				     TASK_LIST_STORE_DST_FIELD, dst,
-				     TASK_LIST_STORE_PROGRESS_FIELD, 0.0, -1);
+				     TASK_LIST_STORE_PROGRESS_FIELD, 0.0,
+				     TASK_LIST_STORE_STATUS_HUMAN_FIELD,
+				     status,
+				     TASK_LIST_STORE_TYPE_HUMAN_FIELD,
+				     _("Download"), -1);
 
   g_idle_add (elektroid_run_next_task, NULL);
 }

@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: elektroid 0.3\n"
+"Project-Id-Version: elektroid 0.4\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2019-11-09 12:48+0100\n"
+"POT-Creation-Date: 2019-11-27 17:16+0100\n"
 "PO-Revision-Date: 2019-11-18 18:55+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: English\n"
@@ -17,14 +17,46 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/elektroid.c:143
+#: src/elektroid.c:178
 #, c-format
 msgid "Connected to %s"
 msgstr "Connected to %s"
 
-#: src/elektroid.c:149 src/elektroid.c:1482
+#: src/elektroid.c:185 src/elektroid.c:1610
 msgid "Not connected"
 msgstr "Not connected"
+
+#: src/elektroid.c:1016
+msgid "Queued"
+msgstr "Queued"
+
+#: src/elektroid.c:1018
+msgid "Running"
+msgstr "Running"
+
+#: src/elektroid.c:1020
+msgid "Completed"
+msgstr "Completed"
+
+#: src/elektroid.c:1022
+msgid "Completed with errors"
+msgstr "Completed with errors"
+
+#: src/elektroid.c:1024
+msgid "Canceled"
+msgstr "Canceled"
+
+#: src/elektroid.c:1026
+msgid "Undefined"
+msgstr "Undefined"
+
+#: src/elektroid.c:1179
+msgid "Upload"
+msgstr "Upload"
+
+#: src/elektroid.c:1258
+msgid "Download"
+msgstr "Download"
 
 #: res/gui.glade:53
 msgid "Rename"
@@ -34,46 +66,66 @@ msgstr "Rename"
 msgid "Delete"
 msgstr "Delete"
 
-#: res/gui.glade:113
+#: res/gui.glade:131
 msgid "GNU/Linux sample transfer application for Elektron devices"
 msgstr "GNU/Linux sample transfer application for Elektron devices"
 
-#: res/gui.glade:166
+#: res/gui.glade:184
 msgid "About"
 msgstr "About"
 
-#: res/gui.glade:273 res/gui.glade:505
+#: res/gui.glade:291 res/gui.glade:523
 msgid "Go to parent directory"
 msgstr "Go to parent directory"
 
-#: res/gui.glade:293 res/gui.glade:525
+#: res/gui.glade:311 res/gui.glade:543
 msgid "Add directory"
 msgstr "Add directory"
 
-#: res/gui.glade:313 res/gui.glade:545
+#: res/gui.glade:331 res/gui.glade:563
 msgid "Refresh directory"
 msgstr "Refresh directory"
 
-#: res/gui.glade:374 res/gui.glade:606 res/gui.glade:1035
+#: res/gui.glade:392 res/gui.glade:624 res/gui.glade:1136
 msgid "Name"
 msgstr "Name"
 
-#: res/gui.glade:386 res/gui.glade:618
+#: res/gui.glade:404 res/gui.glade:636
 msgid "Size"
 msgstr "Size"
 
-#: res/gui.glade:423
+#: res/gui.glade:441
 msgid "Upload sample"
 msgstr "Upload sample"
 
-#: res/gui.glade:444
+#: res/gui.glade:462
 msgid "Download sample"
 msgstr "Download sample"
 
-#: res/gui.glade:682
+#: res/gui.glade:700
 msgid "Refresh devices"
 msgstr "Refresh devices"
 
-#: res/gui.glade:753
+#: res/gui.glade:769
 msgid "Auto play"
 msgstr "Auto play"
+
+#: res/gui.glade:976
+msgid "Status"
+msgstr "Status"
+
+#: res/gui.glade:987
+msgid "Type"
+msgstr "Type"
+
+#: res/gui.glade:998
+msgid "Source"
+msgstr "Source"
+
+#: res/gui.glade:1012
+msgid "Destiny"
+msgstr "Destiny"
+
+#: res/gui.glade:1027
+msgid "Progress"
+msgstr "Progress"

@@ -86,7 +86,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
       <!-- column-name size -->
       <column type="gint"/>
-      <!-- column-name human_size -->
+      <!-- column-name size_human -->
       <column type="gchararray"/>
     </columns>
   </object>
@@ -114,6 +114,10 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
       <!-- column-name progress -->
       <column type="gdouble"/>
+      <!-- column-name status_human -->
+      <column type="gchararray"/>
+      <!-- column-name type_human -->
+      <column type="gchararray"/>
     </columns>
   </object>
   <object class="GtkAboutDialog" id="about_dialog">
@@ -973,7 +977,7 @@ audio-volume-medium-symbolic</property>
                         <child>
                           <object class="GtkCellRendererText"/>
                           <attributes>
-                            <attribute name="text">0</attribute>
+                            <attribute name="text">5</attribute>
                           </attributes>
                         </child>
                       </object>
@@ -984,7 +988,7 @@ audio-volume-medium-symbolic</property>
                         <child>
                           <object class="GtkCellRendererText"/>
                           <attributes>
-                            <attribute name="text">1</attribute>
+                            <attribute name="text">6</attribute>
                           </attributes>
                         </child>
                       </object>
