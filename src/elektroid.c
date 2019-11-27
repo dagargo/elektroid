@@ -44,6 +44,12 @@
 #define BROWSER_LIST_STORE_SIZE_FIELD 2
 #define BROWSER_LIST_STORE_HUMAN_SIZE_FIELD 3
 
+#define TASK_LIST_STORE_STATUS_FIELD 0
+#define TASK_LIST_STORE_TYPE_FIELD 1
+#define TASK_LIST_STORE_SRC_FIELD 2
+#define TASK_LIST_STORE_DST_FIELD 3
+#define TASK_LIST_STORE_PROGRESS_FIELD 4
+
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (gdouble);
@@ -983,8 +989,8 @@ elektroid_get_running_task (GtkTreeIter * iter)
 
   while (valid)
     {
-      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), iter, 0, &status,
-			  -1);
+      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), iter,
+			  TASK_LIST_STORE_STATUS_FIELD, &status, -1);
 
       if (status == RUNNING)
 	{
@@ -1006,7 +1012,9 @@ elektroid_complete_running_task (gpointer data)
 
   if (elektroid_get_running_task (&iter))
     {
-      gtk_list_store_set (task_list_store, &iter, 0, active_task.status, -1);
+      gtk_list_store_set (task_list_store, &iter,
+			  TASK_LIST_STORE_STATUS_FIELD, active_task.status,
+			  -1);
       active_task.running = 0;
       free (active_task.src);
       free (active_task.dst);
@@ -1034,8 +1042,11 @@ elektroid_run_next_task (gpointer data)
   found = FALSE;
   while (valid)
     {
-      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter, 0,
-			  &status, 1, &type, 2, &src, 3, &dst, -1);
+      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter,
+			  TASK_LIST_STORE_STATUS_FIELD, &status,
+			  TASK_LIST_STORE_TYPE_FIELD, &type,
+			  TASK_LIST_STORE_SRC_FIELD, &src,
+			  TASK_LIST_STORE_DST_FIELD, &dst, -1);
 
       if (status == RUNNING)
 	{
@@ -1053,7 +1064,8 @@ elektroid_run_next_task (gpointer data)
 
   if (found)
     {
-      gtk_list_store_set (task_list_store, &iter, 0, RUNNING, -1);
+      gtk_list_store_set (task_list_store, &iter,
+			  TASK_LIST_STORE_STATUS_FIELD, RUNNING, -1);
       active_task.running = 1;
       active_task.src = src;
       active_task.dst = dst;
@@ -1131,9 +1143,13 @@ elektroid_add_upload_task (GtkWidget * object, gpointer user_data)
   gchar *src = elektroid_get_browser_selected_path (&local_browser);
   gchar *dst = strdup (remote_browser.dir);
 
-  gtk_list_store_insert_with_values (task_list_store, NULL, -1, 0,
-				     QUEUED, 1, UPLOAD, 2, src, 3, dst, 4,
-				     0.0, -1);
+  gtk_list_store_insert_with_values (task_list_store, NULL, -1,
+				     TASK_LIST_STORE_STATUS_FIELD, QUEUED,
+				     TASK_LIST_STORE_TYPE_FIELD, UPLOAD,
+				     TASK_LIST_STORE_SRC_FIELD, src,
+				     TASK_LIST_STORE_DST_FIELD, dst,
+				     TASK_LIST_STORE_PROGRESS_FIELD, 0.0, -1);
+
   g_idle_add (elektroid_run_next_task, NULL);
 }
 
@@ -1201,8 +1217,13 @@ elektroid_add_download_task (GtkWidget * object, gpointer user_data)
   gchar *src = elektroid_get_browser_selected_path (&remote_browser);
   gchar *dst = strdup (local_browser.dir);
 
-  gtk_list_store_insert_with_values (task_list_store, NULL, -1, 0, QUEUED, 1,
-				     DOWNLOAD, 2, src, 3, dst, 4, 0.0, -1);
+  gtk_list_store_insert_with_values (task_list_store, NULL, -1,
+				     TASK_LIST_STORE_STATUS_FIELD, QUEUED,
+				     TASK_LIST_STORE_TYPE_FIELD, DOWNLOAD,
+				     TASK_LIST_STORE_SRC_FIELD, src,
+				     TASK_LIST_STORE_DST_FIELD, dst,
+				     TASK_LIST_STORE_PROGRESS_FIELD, 0.0, -1);
+
   g_idle_add (elektroid_run_next_task, NULL);
 }
 
@@ -1213,7 +1234,8 @@ elektroid_update_progress (gdouble progress)
 
   if (elektroid_get_running_task (&iter))
     {
-      gtk_list_store_set (task_list_store, &iter, 4, progress * 100, -1);
+      gtk_list_store_set (task_list_store, &iter,
+			  TASK_LIST_STORE_PROGRESS_FIELD, progress * 100, -1);
     }
 }
 
