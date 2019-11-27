@@ -1574,16 +1574,18 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_show_item_popup), &local_browser);
 
   sortable = GTK_TREE_SORTABLE (gtk_tree_view_get_model (local_browser.view));
-  gtk_tree_sortable_set_sort_func (sortable, 1, electra_browser_sort, NULL,
-				   NULL);
-  gtk_tree_sortable_set_sort_column_id (sortable, 1,
+  gtk_tree_sortable_set_sort_func (sortable, BROWSER_LIST_STORE_NAME_FIELD,
+				   electra_browser_sort, NULL, NULL);
+  gtk_tree_sortable_set_sort_column_id (sortable,
+					BROWSER_LIST_STORE_NAME_FIELD,
 					GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
 
   sortable =
     GTK_TREE_SORTABLE (gtk_tree_view_get_model (remote_browser.view));
-  gtk_tree_sortable_set_sort_func (sortable, 1, electra_browser_sort, NULL,
-				   NULL);
-  gtk_tree_sortable_set_sort_column_id (sortable, 1,
+  gtk_tree_sortable_set_sort_func (sortable, BROWSER_LIST_STORE_NAME_FIELD,
+				   electra_browser_sort, NULL, NULL);
+  gtk_tree_sortable_set_sort_column_id (sortable,
+					BROWSER_LIST_STORE_NAME_FIELD,
 					GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
 
   audio_init (&audio, elektroid_set_volume_callback);
