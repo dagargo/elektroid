@@ -423,7 +423,7 @@ elektroid_delete_item (GtkWidget * object, gpointer user_data)
 				GTK_DIALOG_MODAL,
 				GTK_MESSAGE_ERROR,
 				GTK_BUTTONS_CLOSE,
-				"Error while deleting “%s”: %s",
+				_("Error while deleting %s: %s"),
 				path, g_strerror (errno));
       gtk_dialog_run (GTK_DIALOG (dialog));
       gtk_widget_destroy (dialog);
@@ -455,7 +455,7 @@ elektroid_rename_item (GtkWidget * object, gpointer user_data)
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
   gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
 
-  gtk_window_set_title (GTK_WINDOW (name_dialog), "Rename");
+  gtk_window_set_title (GTK_WINDOW (name_dialog), _("Rename"));
 
   result = GTK_RESPONSE_ACCEPT;
 
@@ -480,7 +480,7 @@ elektroid_rename_item (GtkWidget * object, gpointer user_data)
 					GTK_DIALOG_MODAL,
 					GTK_MESSAGE_ERROR,
 					GTK_BUTTONS_CLOSE,
-					"Error while renaming to “%s”: %s",
+					_("Error while renaming to %s: %s"),
 					new_path, g_strerror (errno));
 	      gtk_dialog_run (GTK_DIALOG (dialog));
 	      gtk_widget_destroy (dialog);
@@ -876,7 +876,7 @@ elektroid_add_dir (GtkWidget * object, gpointer user_data)
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
   gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
 
-  gtk_window_set_title (GTK_WINDOW (name_dialog), "Add directory");
+  gtk_window_set_title (GTK_WINDOW (name_dialog), _("Add directory"));
 
   result = GTK_RESPONSE_ACCEPT;
 
@@ -901,7 +901,7 @@ elektroid_add_dir (GtkWidget * object, gpointer user_data)
 					GTK_DIALOG_MODAL,
 					GTK_MESSAGE_ERROR,
 					GTK_BUTTONS_CLOSE,
-					"Error while creating dir “%s”: %s",
+					_("Error while creating dir %s: %s"),
 					pathname, g_strerror (errno));
 	      gtk_dialog_run (GTK_DIALOG (dialog));
 	      gtk_widget_destroy (dialog);

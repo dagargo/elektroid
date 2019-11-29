@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 0.4\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2019-11-27 17:16+0100\n"
+"POT-Creation-Date: 2019-11-29 17:04+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,8 +22,31 @@ msgstr ""
 msgid "Connected to %s"
 msgstr ""
 
-#: src/elektroid.c:185 src/elektroid.c:1610
+#: src/elektroid.c:185 src/elektroid.c:1612
 msgid "Not connected"
+msgstr ""
+
+#: src/elektroid.c:426
+#, c-format
+msgid "Error while deleting %s: %s"
+msgstr ""
+
+#: src/elektroid.c:458 res/gui.glade:53
+msgid "Rename"
+msgstr ""
+
+#: src/elektroid.c:483
+#, c-format
+msgid "Error while renaming to %s: %s"
+msgstr ""
+
+#: src/elektroid.c:879 res/gui.glade:311 res/gui.glade:543
+msgid "Add directory"
+msgstr ""
+
+#: src/elektroid.c:904
+#, c-format
+msgid "Error while creating dir %s: %s"
 msgstr ""
 
 #: src/elektroid.c:1016
@@ -58,10 +81,6 @@ msgstr ""
 msgid "Download"
 msgstr ""
 
-#: res/gui.glade:53
-msgid "Rename"
-msgstr ""
-
 #: res/gui.glade:66
 msgid "Delete"
 msgstr ""
@@ -76,10 +95,6 @@ msgstr ""
 
 #: res/gui.glade:291 res/gui.glade:523
 msgid "Go to parent directory"
-msgstr ""
-
-#: res/gui.glade:311 res/gui.glade:543
-msgid "Add directory"
 msgstr ""
 
 #: res/gui.glade:331 res/gui.glade:563
