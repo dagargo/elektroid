@@ -60,7 +60,6 @@ struct elektroid_browser
 {
   gboolean (*load_dir) (gpointer);
   gboolean (*file_selected) (gpointer);
-  gboolean (*file_unselected) (gpointer);
   gint (*mkdir) (const gchar *);
   gint (*rename) (const gchar *, const gchar *);
   gint (*delete) (const gchar *, const gchar);
@@ -94,6 +93,7 @@ struct elektroid_active_task
   gchar *src;			//Contains a path to a file
   gchar *dst;			//Contains a path to a dir
   enum elektroid_task_status status;	//Contains the final status
+  gdouble progress;
 };
 
 static struct elektroid_browser remote_browser;
@@ -105,7 +105,7 @@ static struct connector connector;
 static gboolean autoplay;
 
 static GThread *load_thread = NULL;
-static GThread *progress_thread = NULL;
+static GThread *task_thread = NULL;
 static gint load_thread_running;
 static GMutex load_mutex;
 static struct elektroid_active_task active_task;
@@ -304,59 +304,78 @@ electra_browser_sort (GtkTreeModel * model,
 }
 
 static void
-elektroid_get_browser_selected_info (struct elektroid_browser *ebrowser,
-				     char **type, char **name, gint * size)
+elektroid_get_model_selected_sample_info (GtkTreeModel * model,
+					  GtkTreeIter * iter,
+					  gchar ** type, gchar ** name,
+					  gint * size)
 {
-  GtkTreeIter iter;
-  GtkTreeSelection *selection = gtk_tree_view_get_selection (ebrowser->view);
-  GtkTreeModel *model = gtk_tree_view_get_model (ebrowser->view);
-  GList *paths = gtk_tree_selection_get_selected_rows (selection, &model);
-
-  if (!paths
-      || !gtk_tree_model_get_iter (model, &iter, g_list_nth_data (paths, 0)))
-    {
-      g_list_free_full (paths, (GDestroyNotify) gtk_tree_path_free);
-      if (type)
-	{
-	  *type = NULL;
-	}
-      if (name)
-	{
-	  *name = NULL;
-	}
-      if (size)
-	{
-	  size = NULL;
-	}
-      return;
-    }
-
-  g_list_free_full (paths, (GDestroyNotify) gtk_tree_path_free);
-
   if (type)
     {
-      gtk_tree_model_get (model, &iter, BROWSER_LIST_STORE_ICON_TYPE_FIELD,
+      gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_ICON_TYPE_FIELD,
 			  type, -1);
     }
   if (name)
     {
-      gtk_tree_model_get (model, &iter, BROWSER_LIST_STORE_NAME_FIELD, name,
+      gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_NAME_FIELD, name,
 			  -1);
     }
   if (size)
     {
-      gtk_tree_model_get (model, &iter, BROWSER_LIST_STORE_SIZE_FIELD, size,
+      gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_SIZE_FIELD, size,
 			  -1);
     }
 }
 
-static char *
-elektroid_get_browser_selected_path (struct elektroid_browser *ebrowser)
+static void
+elektroid_get_browser_count_selected_rows_helper (GtkTreeModel * model,
+						  GtkTreePath * path,
+						  GtkTreeIter * iter,
+						  gpointer userdata)
 {
-  char *name;
-  char *path;
+  gchar *icon;
+  gint *count = (gint *) userdata;
 
-  elektroid_get_browser_selected_info (ebrowser, NULL, &name, NULL);
+  elektroid_get_model_selected_sample_info (model, iter, &icon, NULL, NULL);
+
+  if (get_type_from_inventory_icon (icon) == 'D')
+    {
+      g_free (icon);
+      *count = -1;
+    }
+
+  if (*count == -1)
+    {
+      return;
+    }
+
+  *count = *count + 1;
+}
+
+//Returns -1 if a directory is selected; otherwise, returns the number of selected samples
+static gint
+elektroid_get_browser_count_selected_rows (struct elektroid_browser *ebrowser)
+{
+  gint count = 0;
+  GtkTreeSelection *selection = gtk_tree_view_get_selection (ebrowser->view);
+
+  gtk_tree_selection_selected_foreach (selection,
+				       elektroid_get_browser_count_selected_rows_helper,
+				       &count);
+  return count;
+}
+
+static gchar *
+elektroid_get_browser_iter_path (struct elektroid_browser *ebrowser,
+				 GtkTreeIter * iter)
+{
+  gchar *name;
+  gchar *path;
+
+  elektroid_get_model_selected_sample_info (GTK_TREE_MODEL
+					    (gtk_tree_view_get_model
+					     (ebrowser->view)), iter, NULL,
+					    &name, NULL);
+
   if (name)
     {
       path = chain_path (ebrowser->dir, name);
@@ -398,6 +417,20 @@ elektroid_update_ui_after_load (gpointer data)
 }
 
 static void
+elektroid_set_selected_row_iter (struct elektroid_browser *browser,
+				 GtkTreeIter * iter)
+{
+  GtkTreeSelection *selection =
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+  GtkTreeModel *model =
+    GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
+  GList *paths = gtk_tree_selection_get_selected_rows (selection, &model);
+
+  gtk_tree_model_get_iter (model, iter, g_list_nth_data (paths, 0));
+  g_list_free_full (paths, (GDestroyNotify) gtk_tree_path_free);
+}
+
+static void
 elektroid_delete_item (GtkWidget * object, gpointer user_data)
 {
   char *path;
@@ -406,9 +439,12 @@ elektroid_delete_item (GtkWidget * object, gpointer user_data)
   gint err;
   GtkWidget *dialog;
   char type;
+  GtkTreeIter iter;
+  GtkTreeModel *model = GTK_TREE_MODEL
+    (gtk_tree_view_get_model (popup_elektroid_browser->view));
 
-  elektroid_get_browser_selected_info (popup_elektroid_browser, &icon, &name,
-				       NULL);
+  elektroid_set_selected_row_iter (popup_elektroid_browser, &iter);
+  elektroid_get_model_selected_sample_info (model, &iter, &icon, &name, NULL);
 
   type = get_type_from_inventory_icon (icon);
 
@@ -434,6 +470,7 @@ elektroid_delete_item (GtkWidget * object, gpointer user_data)
     }
 
   g_free (icon);
+  g_free (name);
   g_free (path);
 }
 
@@ -446,9 +483,14 @@ elektroid_rename_item (GtkWidget * object, gpointer user_data)
   int result;
   gint err;
   GtkWidget *dialog;
+  GtkTreeIter iter;
+  GtkTreeModel *model = GTK_TREE_MODEL
+    (gtk_tree_view_get_model (popup_elektroid_browser->view));
 
-  elektroid_get_browser_selected_info (popup_elektroid_browser, NULL,
-				       &old_name, NULL);
+  elektroid_set_selected_row_iter (popup_elektroid_browser, &iter);
+  elektroid_get_model_selected_sample_info (model,
+					    &iter, NULL, &old_name, NULL);
+
   old_path = chain_path (popup_elektroid_browser->dir, old_name);
 
   gtk_entry_set_text (name_dialog_entry, old_name);
@@ -506,20 +548,28 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
   GdkRectangle rect;
   GtkTreePath *path;
   struct elektroid_browser *ebrowser = user_data;
-  popup_elektroid_browser = ebrowser;
+  gint selected_rows = elektroid_get_browser_count_selected_rows (ebrowser);
 
-  if (event->type == GDK_BUTTON_PRESS && event->button == 3)
+  if (selected_rows == 1)
     {
-      gtk_tree_view_get_path_at_pos (ebrowser->view,
-				     event->x,
-				     event->y, &path, NULL, NULL, NULL);
-      gtk_tree_view_get_background_area (ebrowser->view, path, NULL, &rect);
-      gtk_tree_path_free (path);
-      rect.x = event->x;
-      rect.y = rect.y + rect.height;
-      gtk_popover_set_pointing_to (GTK_POPOVER (item_popmenu), &rect);
-      gtk_popover_set_relative_to (GTK_POPOVER (item_popmenu), treeview);
-      gtk_popover_popup (GTK_POPOVER (item_popmenu));
+
+      popup_elektroid_browser = ebrowser;
+
+      if (event->type == GDK_BUTTON_PRESS && event->button == 3)
+	{
+	  gtk_tree_view_get_path_at_pos (ebrowser->view,
+					 event->x,
+					 event->y, &path, NULL, NULL, NULL);
+	  gtk_tree_view_get_background_area (ebrowser->view, path, NULL,
+					     &rect);
+	  gtk_tree_path_free (path);
+	  rect.x = event->x;
+	  rect.y = rect.y + rect.height;
+	  gtk_popover_set_pointing_to (GTK_POPOVER (item_popmenu), &rect);
+	  gtk_popover_set_relative_to (GTK_POPOVER (item_popmenu), treeview);
+	  gtk_popover_popup (GTK_POPOVER (item_popmenu));
+	}
+
     }
   return FALSE;
 }
@@ -532,7 +582,7 @@ elektroid_queue_draw_waveform ()
 }
 
 static void
-elektroid_update_progress_redraw (gdouble percent)
+elektroid_redraw_sample (gdouble percent)
 {
   g_idle_add (elektroid_queue_draw_waveform, NULL);
 }
@@ -541,39 +591,18 @@ static gpointer
 elektroid_load_sample (gpointer data)
 {
   sample_load (audio.sample, &load_mutex, &audio.frames, data,
-	       &load_thread_running, elektroid_update_progress_redraw);
+	       &load_thread_running, elektroid_redraw_sample);
   free (data);
   g_idle_add (elektroid_update_ui_after_load, NULL);
   return NULL;
 }
 
 static void
-elektroid_start_load_thread (char *path)
+elektroid_start_load_thread (gchar * path)
 {
   debug_print (1, "Creating load thread...\n");
   load_thread_running = 1;
-  load_thread =
-    g_thread_new ("elektroid_load_sample", elektroid_load_sample, path);
-}
-
-static void
-elektroid_join_progress_thread ()
-{
-  debug_print (2, "Joining progress thread...\n");
-  if (progress_thread)
-    {
-      g_thread_join (progress_thread);
-      g_thread_unref (progress_thread);
-    }
-  progress_thread = NULL;
-}
-
-static void
-elektroid_stop_progress_thread ()
-{
-  debug_print (1, "Stopping progress thread...\n");
-  active_task.running = 0;
-  elektroid_join_progress_thread ();
+  load_thread = g_thread_new ("load_sample", elektroid_load_sample, path);
 }
 
 static void
@@ -589,6 +618,26 @@ elektroid_stop_load_thread ()
   load_thread = NULL;
 }
 
+static void
+elektroid_join_task_thread ()
+{
+  debug_print (2, "Joining task thread...\n");
+  if (task_thread)
+    {
+      g_thread_join (task_thread);
+      g_thread_unref (task_thread);
+    }
+  task_thread = NULL;
+}
+
+static void
+elektroid_stop_task_thread ()
+{
+  debug_print (1, "Stopping task thread...\n");
+  active_task.running = 0;
+  elektroid_join_task_thread ();
+}
+
 static gboolean
 elektroid_remote_file_unselected (gpointer data)
 {
@@ -599,7 +648,14 @@ elektroid_remote_file_unselected (gpointer data)
 static gboolean
 elektroid_remote_file_selected (gpointer data)
 {
-  gtk_widget_set_sensitive (download_button, TRUE);
+  gint selected_rows =
+    elektroid_get_browser_count_selected_rows (&remote_browser);
+
+  if (selected_rows > 0)
+    {
+      gtk_widget_set_sensitive (download_button, TRUE);
+    }
+
   return FALSE;
 }
 
@@ -610,22 +666,33 @@ elektroid_local_file_unselected (gpointer data)
   elektroid_stop_load_thread ();
   audio_reset_sample (&audio);
   gtk_widget_queue_draw (waveform_draw_area);
-  gtk_widget_set_sensitive (upload_button, FALSE);
   elektroid_controls_set_sensitive (FALSE);
+  gtk_widget_set_sensitive (upload_button, FALSE);
   return FALSE;
 }
 
 static gboolean
 elektroid_local_file_selected (gpointer data)
 {
-  char *path = elektroid_get_browser_selected_path (&local_browser);
-  if (!path)
-    {
-      return FALSE;
-    }
+  GtkTreeIter iter;
+  gchar *sample_path;
+  gint selected_rows =
+    elektroid_get_browser_count_selected_rows (&local_browser);
 
   elektroid_local_file_unselected (NULL);
-  elektroid_start_load_thread (path);
+
+  if (selected_rows == 1)
+    {
+      elektroid_set_selected_row_iter (&local_browser, &iter);
+      sample_path = elektroid_get_browser_iter_path (&local_browser, &iter);
+      elektroid_start_load_thread (sample_path);
+    }
+
+  if (selected_rows > 1)
+    {
+      gtk_widget_set_sensitive (upload_button, TRUE);
+    }
+
   return FALSE;
 }
 
@@ -715,13 +782,11 @@ elektroid_set_volume_callback (gdouble value)
 }
 
 static void
-elektroid_add_dentry_item (struct elektroid_browser *ebrowser,
+elektroid_add_dentry_item (GtkListStore * list_store,
 			   const gchar type, const gchar * name, ssize_t size)
 {
   const gchar *type_icon;
   char human_size[SIZE_LABEL_LEN];
-  GtkListStore *list_store =
-    GTK_LIST_STORE (gtk_tree_view_get_model (ebrowser->view));
 
   type_icon = get_inventory_icon_from_type (type);
 
@@ -751,10 +816,8 @@ elektroid_load_remote_dir (gpointer data)
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (remote_browser.view));
 
+  elektroid_remote_file_unselected (NULL);
   gtk_entry_set_text (remote_browser.dir_entry, remote_browser.dir);
-
-  gtk_widget_set_sensitive (download_button, FALSE);
-
   gtk_list_store_clear (list_store);
   gtk_tree_view_columns_autosize (remote_browser.view);
 
@@ -767,7 +830,7 @@ elektroid_load_remote_dir (gpointer data)
 
   while (!connector_get_next_dentry (d_iter))
     {
-      elektroid_add_dentry_item (&remote_browser, d_iter->type,
+      elektroid_add_dentry_item (list_store, d_iter->type,
 				 d_iter->dentry, d_iter->size);
     }
   connector_free_dir_iterator (d_iter);
@@ -798,9 +861,7 @@ elektroid_load_local_dir (gpointer data)
     GTK_LIST_STORE (gtk_tree_view_get_model (local_browser.view));
 
   elektroid_local_file_unselected (NULL);
-
   gtk_entry_set_text (local_browser.dir_entry, local_browser.dir);
-
   gtk_list_store_clear (list_store);
   gtk_tree_view_columns_autosize (local_browser.view);
 
@@ -834,7 +895,7 @@ elektroid_load_local_dir (gpointer data)
 			  size = -1;
 			}
 		    }
-		  elektroid_add_dentry_item (&local_browser, type,
+		  elektroid_add_dentry_item (list_store, type,
 					     dirent->d_name, size);
 		}
 	    }
@@ -842,7 +903,6 @@ elektroid_load_local_dir (gpointer data)
       closedir (dir);
       free (path);
     }
-
   else
     {
       fprintf (stderr, __FILE__ ": Error while opening dir.\n");
@@ -1027,6 +1087,20 @@ elektroid_get_human_task_status (enum elektroid_task_status status)
     }
 }
 
+static const gchar *
+elektroid_get_human_task_type (enum elektroid_task_type type)
+{
+  switch (type)
+    {
+    case UPLOAD:
+      return _("Upload");
+    case DOWNLOAD:
+      return _("Download");
+    default:
+      return _("Undefined");
+    }
+}
+
 static gboolean
 elektroid_complete_running_task (gpointer data)
 {
@@ -1057,12 +1131,11 @@ elektroid_run_next_task (gpointer data)
   enum elektroid_task_type type;
   gchar *src;
   gchar *dst;
-  gboolean found;
   GtkTreeIter iter;
+  gboolean found = FALSE;
   gboolean valid =
     gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), &iter);
 
-  found = FALSE;
   while (valid)
     {
       gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter,
@@ -1092,19 +1165,18 @@ elektroid_run_next_task (gpointer data)
       active_task.running = 1;
       active_task.src = src;
       active_task.dst = dst;
-      debug_print (1, "Launching task type %d from %s to %s...\n", type,
+      active_task.progress = 0.0;
+      debug_print (1, "Running task type %d from %s to %s...\n", type,
 		   active_task.src, active_task.dst);
       if (type == UPLOAD)
 	{
-	  progress_thread =
-	    g_thread_new ("elektroid_upload_task", elektroid_upload_task,
-			  NULL);
+	  task_thread =
+	    g_thread_new ("upload_task", elektroid_upload_task, NULL);
 	}
       else if (type == DOWNLOAD)
 	{
-	  progress_thread =
-	    g_thread_new ("elektroid_download_task",
-			  elektroid_download_task, NULL);
+	  task_thread =
+	    g_thread_new ("download_task", elektroid_download_task, NULL);
 	}
     }
 
@@ -1118,6 +1190,7 @@ elektroid_upload_task (gpointer user_data)
   char *bname;
   char *remote_path;
   ssize_t frames;
+  GArray *sample;
 
   debug_print (1, "Local path: %s\n", active_task.src);
 
@@ -1129,9 +1202,14 @@ elektroid_upload_task (gpointer user_data)
 
   debug_print (1, "Remote path: %s\n", remote_path);
 
-  frames = connector_upload (&connector, audio.sample, remote_path,
+  sample = g_array_new (FALSE, FALSE, sizeof (gshort));
+
+  sample_load (sample, NULL, NULL, active_task.src, &active_task.running, NULL);
+
+  frames = connector_upload (&connector, sample, remote_path,
 			     &active_task.running, elektroid_update_progress);
   free (remote_path);
+  elektroid_check_connector ();
 
   if (frames < 0)
     {
@@ -1150,7 +1228,7 @@ elektroid_upload_task (gpointer user_data)
 	}
     }
 
-  elektroid_check_connector ();
+  g_array_free (sample, TRUE);
 
   g_idle_add (remote_browser.load_dir, NULL);
 
@@ -1161,24 +1239,46 @@ elektroid_upload_task (gpointer user_data)
 }
 
 static void
-elektroid_add_upload_task (GtkWidget * object, gpointer user_data)
+elektroid_add_task (enum elektroid_task_type type, const char *src,
+		    const char *dst)
 {
-  gchar *src = elektroid_get_browser_selected_path (&local_browser);
-  gchar *dst = strdup (remote_browser.dir);
-  const gchar *status = elektroid_get_human_task_status (active_task.status);
+  const gchar *status_human = elektroid_get_human_task_status (QUEUED);
+  const gchar *type_human = elektroid_get_human_task_type (type);
 
   gtk_list_store_insert_with_values (task_list_store, NULL, -1,
 				     TASK_LIST_STORE_STATUS_FIELD, QUEUED,
-				     TASK_LIST_STORE_TYPE_FIELD, UPLOAD,
+				     TASK_LIST_STORE_TYPE_FIELD, type,
 				     TASK_LIST_STORE_SRC_FIELD, src,
 				     TASK_LIST_STORE_DST_FIELD, dst,
 				     TASK_LIST_STORE_PROGRESS_FIELD, 0.0,
 				     TASK_LIST_STORE_STATUS_HUMAN_FIELD,
-				     status,
+				     status_human,
 				     TASK_LIST_STORE_TYPE_HUMAN_FIELD,
-				     _("Upload"), -1);
+				     type_human, -1);
+}
 
-  g_idle_add (elektroid_run_next_task, NULL);
+static void
+elektroid_add_upload_task (GtkTreeModel * model,
+			   GtkTreePath * path,
+			   GtkTreeIter * iter, gpointer userdata)
+{
+  gchar *src = elektroid_get_browser_iter_path (&local_browser, iter);
+  gchar *dst = strdup (remote_browser.dir);
+  elektroid_add_task (UPLOAD, src, dst);
+  free (src);
+  free (dst);
+}
+
+static void
+elektroid_add_upload_tasks (GtkWidget * object, gpointer user_data)
+{
+  GtkTreeSelection *selection =
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.view));
+
+  gtk_tree_selection_selected_foreach (selection,
+				       elektroid_add_upload_task, NULL);
+
+  elektroid_run_next_task (NULL);
 }
 
 static gpointer
@@ -1186,10 +1286,22 @@ elektroid_download_task (gpointer user_data)
 {
   GArray *data;
   size_t frames;
-  gchar *output_file_path;
+  gchar *local_path;
   gchar *basec;
   gchar *bname;
   gchar *new_filename;
+
+  debug_print (1, "Remote path: %s\n", active_task.src);
+
+  basec = strdup (active_task.src);
+  bname = basename (basec);
+  new_filename = malloc (PATH_MAX);
+  snprintf (new_filename, PATH_MAX, "%s.wav", bname);
+  free (basec);
+  local_path = chain_path (active_task.dst, new_filename);
+  free (new_filename);
+
+  debug_print (1, "Local path: %s\n", local_path);
 
   data =
     connector_download (&connector, active_task.src, &active_task.running,
@@ -1205,20 +1317,10 @@ elektroid_download_task (gpointer user_data)
     {
       if (active_task.running)
 	{
-	  basec = strdup (active_task.src);
-	  bname = basename (basec);
-
-	  new_filename = malloc (PATH_MAX);
-	  snprintf (new_filename, PATH_MAX, "%s.wav", bname);
-	  free (basec);
-
-	  output_file_path = chain_path (active_task.dst, new_filename);
-	  free (new_filename);
-
-	  debug_print (1, "Writing to file '%s'...\n", output_file_path);
-	  frames = sample_save (data, output_file_path);
+	  debug_print (1, "Writing to file '%s'...\n", local_path);
+	  frames = sample_save (data, local_path);
 	  debug_print (1, "%zu frames written\n", frames);
-	  free (output_file_path);
+	  free (local_path);
 
 	  active_task.status = COMPLETED_OK;
 	}
@@ -1240,58 +1342,65 @@ elektroid_download_task (gpointer user_data)
 }
 
 static void
-elektroid_add_download_task (GtkWidget * object, gpointer user_data)
+elektroid_add_download_task (GtkTreeModel * model,
+			     GtkTreePath * path,
+			     GtkTreeIter * iter, gpointer userdata)
 {
-  gchar *src = elektroid_get_browser_selected_path (&remote_browser);
+  gchar *src = elektroid_get_browser_iter_path (&remote_browser, iter);
   gchar *dst = strdup (local_browser.dir);
-  const gchar *status = elektroid_get_human_task_status (active_task.status);
-
-  gtk_list_store_insert_with_values (task_list_store, NULL, -1,
-				     TASK_LIST_STORE_STATUS_FIELD, QUEUED,
-				     TASK_LIST_STORE_TYPE_FIELD, DOWNLOAD,
-				     TASK_LIST_STORE_SRC_FIELD, src,
-				     TASK_LIST_STORE_DST_FIELD, dst,
-				     TASK_LIST_STORE_PROGRESS_FIELD, 0.0,
-				     TASK_LIST_STORE_STATUS_HUMAN_FIELD,
-				     status,
-				     TASK_LIST_STORE_TYPE_HUMAN_FIELD,
-				     _("Download"), -1);
-
-  g_idle_add (elektroid_run_next_task, NULL);
+  elektroid_add_task (DOWNLOAD, src, dst);
+  free (src);
+  free (dst);
 }
 
 static void
-elektroid_update_progress (gdouble progress)
+elektroid_add_download_tasks (GtkWidget * object, gpointer user_data)
+{
+  GtkTreeSelection *selection =
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
+
+  gtk_tree_selection_selected_foreach (selection,
+				       elektroid_add_download_task, NULL);
+
+  elektroid_run_next_task (NULL);
+}
+
+static gboolean
+elektroid_set_progress_value (gpointer data)
 {
   GtkTreeIter iter;
 
   if (elektroid_get_running_task (&iter))
     {
       gtk_list_store_set (task_list_store, &iter,
-			  TASK_LIST_STORE_PROGRESS_FIELD, progress * 100, -1);
+			  TASK_LIST_STORE_PROGRESS_FIELD,
+			  100.0 * active_task.progress, -1);
     }
+
+  return FALSE;
 }
 
 static void
-elektroid_tree_view_sel_changed (GtkTreeSelection * treeselection,
+elektroid_update_progress (gdouble progress)
+{
+  active_task.progress = progress;
+  g_idle_add (elektroid_set_progress_value, NULL);
+}
+
+static void
+elektroid_tree_view_sel_changed (GtkTreeSelection * selection,
 				 gpointer user_data)
 {
-  gchar *icon;
   struct elektroid_browser *ebrowser = user_data;
+  gint count = elektroid_get_browser_count_selected_rows (ebrowser);
 
-  elektroid_get_browser_selected_info (ebrowser, &icon, NULL, NULL);
-
-  if (icon)
+  if (count > 0)
     {
-      if (get_type_from_inventory_icon (icon) == 'F')
-	{
-	  g_idle_add (ebrowser->file_selected, NULL);
-	}
-      else
-	{
-	  g_idle_add (ebrowser->file_unselected, NULL);
-	}
-      g_free (icon);
+      ebrowser->file_selected (NULL);
+    }
+  else
+    {
+      gtk_widget_set_sensitive (ebrowser->copy_button, FALSE);
     }
 }
 
@@ -1302,23 +1411,27 @@ elektroid_row_activated (GtkTreeView * view,
 {
   gchar *icon;
   gchar *name;
+  GtkTreeIter iter;
   struct elektroid_browser *ebrowser = user_data;
+  GtkTreeModel *model = GTK_TREE_MODEL (gtk_tree_view_get_model
+					(ebrowser->view));
 
-  elektroid_get_browser_selected_info (ebrowser, &icon, &name, NULL);
-  if (icon)
+  gtk_tree_model_get_iter (model, &iter, path);
+
+  elektroid_get_model_selected_sample_info (model, &iter, &icon, &name, NULL);
+
+  if (get_type_from_inventory_icon (icon) == 'D')
     {
-      if (get_type_from_inventory_icon (icon) == 'D')
+      if (strcmp (ebrowser->dir, "/") != 0)
 	{
-	  if (strcmp (ebrowser->dir, "/") != 0)
-	    {
-	      strcat (ebrowser->dir, "/");
-	    }
-	  strcat (ebrowser->dir, name);
-	  g_idle_add (ebrowser->load_dir, NULL);
+	  strcat (ebrowser->dir, "/");
 	}
-      g_free (icon);
-      g_free (name);
+      strcat (ebrowser->dir, name);
+      g_idle_add (ebrowser->load_dir, NULL);
     }
+
+  g_free (icon);
+  g_free (name);
 }
 
 static void
@@ -1343,8 +1456,6 @@ elektroid_go_up (GtkWidget * object, gpointer user_data)
       strcpy (ebrowser->dir, new_path);
       free (dup);
     }
-
-  gtk_widget_set_sensitive (ebrowser->copy_button, FALSE);
 
   g_idle_add (ebrowser->load_dir, NULL);
 }
@@ -1379,7 +1490,7 @@ elektroid_set_device (GtkWidget * object, gpointer user_data)
 static void
 elektroid_quit ()
 {
-  elektroid_stop_progress_thread ();
+  elektroid_stop_task_thread ();
   elektroid_stop_load_thread ();
   debug_print (1, "Quitting GTK+...\n");
   gtk_main_quit ();
@@ -1493,9 +1604,9 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (volume_button, "value_changed",
 		    G_CALLBACK (elektroid_set_volume), NULL);
   g_signal_connect (download_button, "clicked",
-		    G_CALLBACK (elektroid_add_download_task), NULL);
+		    G_CALLBACK (elektroid_add_download_tasks), NULL);
   g_signal_connect (upload_button, "clicked",
-		    G_CALLBACK (elektroid_add_upload_task), NULL);
+		    G_CALLBACK (elektroid_add_upload_tasks), NULL);
 
   g_signal_connect (rename_button, "clicked",
 		    G_CALLBACK (elektroid_rename_item), NULL);
@@ -1518,7 +1629,6 @@ elektroid_run (int argc, char *argv[])
     .dir = malloc (PATH_MAX),
     .load_dir = elektroid_load_remote_dir,
     .file_selected = elektroid_remote_file_selected,
-    .file_unselected = elektroid_remote_file_unselected,
     .rename = elektroid_remote_rename,
     .delete = elektroid_remote_delete,
     .mkdir = elektroid_remote_mkdir
@@ -1553,7 +1663,6 @@ elektroid_run (int argc, char *argv[])
     .dir = malloc (PATH_MAX),
     .load_dir = elektroid_load_local_dir,
     .file_selected = elektroid_local_file_selected,
-    .file_unselected = elektroid_local_file_unselected,
     .rename = elektroid_local_rename,
     .delete = elektroid_local_delete,
     .mkdir = elektroid_local_mkdir

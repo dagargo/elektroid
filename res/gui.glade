@@ -371,10 +371,10 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="hexpand">True</property>
                             <property name="vexpand">True</property>
                             <property name="model">local_list_store</property>
-                            <property name="search_column">0</property>
+                            <property name="search_column">1</property>
                             <child internal-child="selection">
                               <object class="GtkTreeSelection">
-                                <property name="mode">browse</property>
+                                <property name="mode">multiple</property>
                               </object>
                             </child>
                             <child>
@@ -392,7 +392,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                 <property name="title" translatable="yes">Name</property>
                                 <property name="expand">True</property>
                                 <child>
-                                  <object class="GtkCellRendererText" id="local_name_cell_renderer_text"/>
+                                  <object class="GtkCellRendererText" id="local_name_cell_renderer_text">
+                                    <property name="ellipsize">middle</property>
+                                  </object>
                                   <attributes>
                                     <attribute name="text">1</attribute>
                                   </attributes>
@@ -603,10 +605,10 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="hexpand">True</property>
                             <property name="vexpand">True</property>
                             <property name="model">remote_list_store</property>
-                            <property name="search_column">0</property>
+                            <property name="search_column">1</property>
                             <child internal-child="selection">
                               <object class="GtkTreeSelection">
-                                <property name="mode">browse</property>
+                                <property name="mode">multiple</property>
                               </object>
                             </child>
                             <child>
@@ -624,7 +626,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                 <property name="title" translatable="yes">Name</property>
                                 <property name="expand">True</property>
                                 <child>
-                                  <object class="GtkCellRendererText" id="remote_name_cell_renderer_text"/>
+                                  <object class="GtkCellRendererText" id="remote_name_cell_renderer_text">
+                                    <property name="ellipsize">middle</property>
+                                  </object>
                                   <attributes>
                                     <attribute name="text">1</attribute>
                                   </attributes>
@@ -969,7 +973,9 @@ audio-volume-medium-symbolic</property>
                     <property name="can_focus">True</property>
                     <property name="model">task_list_store</property>
                     <child internal-child="selection">
-                      <object class="GtkTreeSelection"/>
+                      <object class="GtkTreeSelection">
+                        <property name="mode">none</property>
+                      </object>
                     </child>
                     <child>
                       <object class="GtkTreeViewColumn">
