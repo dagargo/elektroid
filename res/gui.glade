@@ -968,7 +968,7 @@ audio-volume-medium-symbolic</property>
                 <property name="can_focus">True</property>
                 <property name="shadow_type">in</property>
                 <child>
-                  <object class="GtkTreeView">
+                  <object class="GtkTreeView" id="task_tree_view">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="model">task_list_store</property>

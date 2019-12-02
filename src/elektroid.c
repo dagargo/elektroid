@@ -130,6 +130,7 @@ static GtkWidget *play_button;
 static GtkWidget *stop_button;
 static GtkWidget *volume_button;
 static GtkListStore *task_list_store;
+static GtkWidget *task_tree_view;
 
 static void
 elektroid_load_devices (int auto_select)
@@ -1132,6 +1133,7 @@ elektroid_run_next_task (gpointer data)
   gchar *src;
   gchar *dst;
   GtkTreeIter iter;
+  GtkTreePath *path;
   gboolean found = FALSE;
   gboolean valid =
     gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), &iter);
@@ -1162,6 +1164,11 @@ elektroid_run_next_task (gpointer data)
     {
       gtk_list_store_set (task_list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, RUNNING, -1);
+      path =
+	gtk_tree_model_get_path (GTK_TREE_MODEL (task_list_store), &iter);
+      gtk_tree_view_set_cursor (GTK_TREE_VIEW (task_tree_view), path, NULL,
+				FALSE);
+      gtk_tree_path_free (path);
       active_task.running = 1;
       active_task.src = src;
       active_task.dst = dst;
@@ -1204,7 +1211,8 @@ elektroid_upload_task (gpointer user_data)
 
   sample = g_array_new (FALSE, FALSE, sizeof (gshort));
 
-  sample_load (sample, NULL, NULL, active_task.src, &active_task.running, NULL);
+  sample_load (sample, NULL, NULL, active_task.src, &active_task.running,
+	       NULL);
 
   frames = connector_upload (&connector, sample, remote_path,
 			     &active_task.running, elektroid_update_progress);
@@ -1717,6 +1725,8 @@ elektroid_run (int argc, char *argv[])
 
   task_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "task_list_store"));
+  task_tree_view =
+    GTK_WIDGET (gtk_builder_get_object (builder, "task_tree_view"));
 
   gtk_statusbar_push (status_bar, 0, _("Not connected"));
   elektroid_loop_clicked (loop_button, NULL);
