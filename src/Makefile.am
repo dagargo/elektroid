@@ -3,7 +3,7 @@ elektroid_LDFLAGS = `pkg-config --libs alsa gtk+-3.0 libpulse libpulse-mainloop-
 elektroid_cli_LDFLAGS = `pkg-config --libs alsa glib-2.0` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS)
 
 bin_PROGRAMS = elektroid elektroid-cli
-elektroid_SOURCES = elektroid.c connector.c audio.c utils.c sample.c
+elektroid_SOURCES = elektroid.c browser.c connector.c audio.c utils.c sample.c
 elektroid_cli_SOURCES = elektroid-cli.c connector.c utils.c sample.c
 
 SNDFILE_CFLAGS = @SNDFILE_CFLAGS@
