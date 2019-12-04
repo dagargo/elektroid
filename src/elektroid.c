@@ -356,7 +356,7 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
   GdkRectangle rect;
   GtkTreePath *path;
   struct browser *browser = data;
-  gint count = browser_get_selected_files_count (browser);
+  gint count = browser_get_selected_items_count (browser);
 
   if (count == 1)
     {
@@ -446,42 +446,21 @@ elektroid_stop_task_thread ()
   elektroid_join_task_thread ();
 }
 
-static void
-elektroid_remote_clear_selection ()
-{
-  GtkTreeSelection *selection =
-    gtk_tree_view_get_selection (remote_browser.view);
-
-  gtk_tree_selection_unselect_all (selection);
-  gtk_widget_set_sensitive (download_button, FALSE);
-}
-
 static gboolean
 elektroid_remote_check_selection (gpointer data)
 {
-  gint count = browser_get_selected_files_count (&remote_browser);
+  gint count = browser_get_selected_items_count (&remote_browser);
 
   if (count > 0)
     {
       gtk_widget_set_sensitive (download_button, TRUE);
     }
+  else
+    {
+      gtk_widget_set_sensitive (download_button, FALSE);
+    }
 
   return FALSE;
-}
-
-static void
-elektroid_local_clear_selection ()
-{
-  GtkTreeSelection *selection =
-    gtk_tree_view_get_selection (local_browser.view);
-
-  gtk_tree_selection_unselect_all (selection);
-  audio_stop (&audio);
-  elektroid_stop_load_thread ();
-  audio_reset_sample (&audio);
-  gtk_widget_queue_draw (waveform_draw_area);
-  elektroid_controls_set_sensitive (FALSE);
-  gtk_widget_set_sensitive (upload_button, FALSE);
 }
 
 static gboolean
@@ -489,7 +468,13 @@ elektroid_local_check_selection (gpointer data)
 {
   GtkTreeIter iter;
   gchar *sample_path;
-  gint count = browser_get_selected_files_count (&local_browser);
+  gint count = browser_get_selected_items_count (&local_browser);
+
+  audio_stop (&audio);
+  elektroid_stop_load_thread ();
+  audio_reset_sample (&audio);
+  gtk_widget_queue_draw (waveform_draw_area);
+  elektroid_controls_set_sensitive (FALSE);
 
   if (count == 1)
     {
@@ -497,10 +482,16 @@ elektroid_local_check_selection (gpointer data)
       sample_path = browser_get_iter_path (&local_browser, &iter);
       elektroid_start_load_thread (sample_path);
     }
-
-  if (count > 0 && connector_check (&connector))
+  else if (count > 1)
     {
-      gtk_widget_set_sensitive (upload_button, TRUE);
+      if (connector_check (&connector))
+	{
+	  gtk_widget_set_sensitive (upload_button, TRUE);
+	}
+    }
+  else
+    {
+      gtk_widget_set_sensitive (upload_button, FALSE);
     }
 
   return FALSE;
@@ -1367,7 +1358,6 @@ elektroid_run (int argc, char *argv[])
     .dir = malloc (PATH_MAX),
     .load_dir = elektroid_load_remote_dir,
     .check_selection = elektroid_remote_check_selection,
-    .clear_selection = elektroid_remote_clear_selection,
     .rename = elektroid_remote_rename,
     .delete = elektroid_remote_delete,
     .mkdir = elektroid_remote_mkdir
@@ -1403,7 +1393,6 @@ elektroid_run (int argc, char *argv[])
     .dir = malloc (PATH_MAX),
     .load_dir = elektroid_load_local_dir,
     .check_selection = elektroid_local_check_selection,
-    .clear_selection = elektroid_local_clear_selection,
     .rename = elektroid_local_rename,
     .delete = elektroid_local_delete,
     .mkdir = elektroid_local_mkdir

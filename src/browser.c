@@ -115,7 +115,7 @@ browser_get_item_info (GtkTreeModel * model, GtkTreeIter * iter,
 }
 
 static void
-browser_get_selected_files_count_helper (GtkTreeModel * model,
+browser_get_selected_items_count_helper (GtkTreeModel * model,
 					 GtkTreePath * path,
 					 GtkTreeIter * iter, gpointer data)
 {
@@ -123,7 +123,7 @@ browser_get_selected_files_count_helper (GtkTreeModel * model,
   gint *count = data;
 
   browser_get_item_info (model, iter, &icon, NULL, NULL);
-  if (get_type_from_inventory_icon (icon) == 'D')
+  if (*count == -1 || get_type_from_inventory_icon (icon) == 'D')
     {
       *count = -1;
     }
@@ -135,12 +135,12 @@ browser_get_selected_files_count_helper (GtkTreeModel * model,
 }
 
 gint
-browser_get_selected_files_count (struct browser *browser)
+browser_get_selected_items_count (struct browser *browser)
 {
   gint count = 0;
   GtkTreeSelection *selection = gtk_tree_view_get_selection (browser->view);
   gtk_tree_selection_selected_foreach (selection,
-				       browser_get_selected_files_count_helper,
+				       browser_get_selected_items_count_helper,
 				       &count);
   return count;
 }
@@ -188,20 +188,15 @@ browser_reset (gpointer data)
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
 
   gtk_entry_set_text (browser->dir_entry, browser->dir);
-  browser->clear_selection ();
   gtk_list_store_clear (list_store);
+  browser->check_selection (NULL);
 }
 
 void
 browser_selection_changed (GtkTreeSelection * selection, gpointer data)
 {
   struct browser *browser = data;
-  gint count = browser_get_selected_files_count (browser);
-
-  if (count > 0)
-    {
-      g_idle_add (browser->check_selection, NULL);
-    }
+  g_idle_add (browser->check_selection, NULL);
 }
 
 void

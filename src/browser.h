@@ -33,7 +33,6 @@ struct browser
   gint (*delete) (const gchar *, const gchar);
   gboolean (*load_dir) (gpointer);
   gboolean (*check_selection) (gpointer);
-  void (*clear_selection) ();
   GtkTreeView *view;
   GtkWidget *up_button;
   GtkWidget *add_dir_button;
@@ -49,7 +48,7 @@ void browser_get_item_info (GtkTreeModel *, GtkTreeIter *, gchar **, gchar **,
 			    gint *);
 
 //Returns -1 if a directory is selected; otherwise, returns the number of selected samples
-gint browser_get_selected_files_count (struct browser *);
+gint browser_get_selected_items_count (struct browser *);
 
 gchar *browser_get_iter_path (struct browser *, GtkTreeIter *);
 
