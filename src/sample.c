@@ -34,6 +34,8 @@ sample_save (GArray * sample, char *path)
   SNDFILE *sndfile;
   int total;
 
+  debug_print (1, "Saving file %s...\n", path);
+
   sf_info.format = 0;
   sf_info.samplerate = 48000;
   sf_info.channels = 1;
@@ -89,7 +91,7 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, char *path,
   int resampled_buffer_len;
   int f, frames_read;
 
-  debug_print (2, "Loading file %s...\n", path);
+  debug_print (1, "Loading file %s...\n", path);
 
   if (mutex)
     {
