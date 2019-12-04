@@ -456,13 +456,17 @@ elektroid_remote_clear_selection ()
   gtk_widget_set_sensitive (download_button, FALSE);
 }
 
-static void
-elektroid_remote_check_selection (gint count)
+static gboolean
+elektroid_remote_check_selection (gpointer data)
 {
+  gint count = browser_get_selected_files_count (&remote_browser);
+
   if (count > 0)
     {
       gtk_widget_set_sensitive (download_button, TRUE);
     }
+
+  return FALSE;
 }
 
 static void
@@ -480,11 +484,12 @@ elektroid_local_clear_selection ()
   gtk_widget_set_sensitive (upload_button, FALSE);
 }
 
-static void
-elektroid_local_check_selection (gint count)
+static gboolean
+elektroid_local_check_selection (gpointer data)
 {
   GtkTreeIter iter;
   gchar *sample_path;
+  gint count = browser_get_selected_files_count (&local_browser);
 
   if (count == 1)
     {
@@ -497,6 +502,8 @@ elektroid_local_check_selection (gint count)
     {
       gtk_widget_set_sensitive (upload_button, TRUE);
     }
+
+  return FALSE;
 }
 
 static gboolean

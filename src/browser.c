@@ -197,9 +197,10 @@ browser_selection_changed (GtkTreeSelection * selection, gpointer data)
 {
   struct browser *browser = data;
   gint count = browser_get_selected_files_count (browser);
+
   if (count > 0)
     {
-      browser->check_selection (count);
+      g_idle_add (browser->check_selection, NULL);
     }
 }
 
@@ -249,7 +250,7 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 	  strcat (browser->dir, "/");
 	}
       strcat (browser->dir, name);
-      g_idle_add (browser->load_dir, NULL);
+      browser->load_dir (NULL);
     }
 
   g_free (icon);

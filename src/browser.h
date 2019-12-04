@@ -32,7 +32,7 @@ struct browser
   gint (*rename) (const gchar *, const gchar *);
   gint (*delete) (const gchar *, const gchar);
   gboolean (*load_dir) (gpointer);
-  void (*check_selection) (gint);
+  gboolean (*check_selection) (gpointer);
   void (*clear_selection) ();
   GtkTreeView *view;
   GtkWidget *up_button;
