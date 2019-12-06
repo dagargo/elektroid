@@ -110,6 +110,9 @@ static GtkWidget *stop_button;
 static GtkWidget *volume_button;
 static GtkListStore *task_list_store;
 static GtkWidget *task_tree_view;
+static GtkWidget *cancel_task_button;
+static GtkWidget *remove_tasks_button;
+static GtkWidget *clear_tasks_button;
 
 static void
 elektroid_load_devices (int auto_select)
@@ -897,6 +900,103 @@ elektroid_get_human_task_type (enum elektroid_task_type type)
     }
 }
 
+static void
+elektroid_cancel_running_task (GtkWidget * object, gpointer data)
+{
+  active_task.running = 0;
+}
+
+static gboolean
+elektroid_select_queued_task (enum elektroid_task_status status)
+{
+  return (status == QUEUED);
+}
+
+static gboolean
+elektroid_select_finished_task (enum elektroid_task_status status)
+{
+  return (status == COMPLETED_OK ||
+	  status == COMPLETED_ERROR || status == CANCELED);
+}
+
+static gboolean
+elektroid_check_task_buttons (gpointer data)
+{
+  enum elektroid_task_status status;
+  gboolean queued = FALSE;
+  gboolean finished = FALSE;
+  GtkTreeIter iter;
+  gboolean valid =
+    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), &iter);
+
+  while (valid)
+    {
+      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter,
+			  TASK_LIST_STORE_STATUS_FIELD, &status, -1);
+
+      if (elektroid_select_queued_task (status))
+	{
+	  queued = TRUE;
+	}
+
+      if (elektroid_select_finished_task (status))
+	{
+	  finished = TRUE;
+	}
+
+      valid =
+	gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store), &iter);
+    }
+
+  gtk_widget_set_sensitive (remove_tasks_button, queued);
+  gtk_widget_set_sensitive (clear_tasks_button, finished);
+
+  return FALSE;
+}
+
+static void
+elektroid_remove_tasks_on_cond (gboolean (*selector)
+				(enum elektroid_task_status))
+{
+  enum elektroid_task_status status;
+  GtkTreeIter iter;
+  gboolean valid =
+    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), &iter);
+
+  while (valid)
+    {
+      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter,
+			  TASK_LIST_STORE_STATUS_FIELD, &status, -1);
+
+      if (selector (status))
+	{
+	  gtk_list_store_remove (task_list_store, &iter);
+	  valid = gtk_list_store_iter_is_valid (task_list_store, &iter);
+	}
+      else
+	{
+	  valid =
+	    gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store),
+				      &iter);
+	}
+    }
+
+  elektroid_check_task_buttons (NULL);
+}
+
+static void
+elektroid_remove_queued_tasks (GtkWidget * object, gpointer data)
+{
+  elektroid_remove_tasks_on_cond (elektroid_select_queued_task);
+}
+
+static void
+elektroid_clear_finished_tasks (GtkWidget * object, gpointer data)
+{
+  elektroid_remove_tasks_on_cond (elektroid_select_finished_task);
+}
+
+
 static gboolean
 elektroid_complete_running_task (gpointer data)
 {
@@ -980,6 +1080,12 @@ elektroid_run_next_task (gpointer data)
 	  task_thread =
 	    g_thread_new ("download_task", elektroid_download_task, NULL);
 	}
+
+      gtk_widget_set_sensitive (cancel_task_button, TRUE);
+    }
+  else
+    {
+      gtk_widget_set_sensitive (cancel_task_button, FALSE);
     }
 
   return FALSE;
@@ -1037,6 +1143,7 @@ elektroid_upload_task (gpointer data)
 
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
+  g_idle_add (elektroid_check_task_buttons, NULL);
 
   return NULL;
 }
@@ -1058,6 +1165,9 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
 				     status_human,
 				     TASK_LIST_STORE_TYPE_HUMAN_FIELD,
 				     type_human, -1);
+
+  gtk_widget_set_sensitive (remove_tasks_button, TRUE);
+  gtk_widget_set_sensitive (clear_tasks_button, TRUE);
 }
 
 static void
@@ -1140,6 +1250,7 @@ elektroid_download_task (gpointer data)
 
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
+  g_idle_add (elektroid_check_task_buttons, NULL);
 
   return NULL;
 }
@@ -1449,6 +1560,19 @@ elektroid_run (int argc, char *argv[])
     GTK_LIST_STORE (gtk_builder_get_object (builder, "task_list_store"));
   task_tree_view =
     GTK_WIDGET (gtk_builder_get_object (builder, "task_tree_view"));
+
+  cancel_task_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "cancel_task_button")),
+    remove_tasks_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remove_tasks_button")),
+    clear_tasks_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "clear_tasks_button")),
+    g_signal_connect (cancel_task_button, "clicked",
+		      G_CALLBACK (elektroid_cancel_running_task), NULL);
+  g_signal_connect (remove_tasks_button, "clicked",
+		    G_CALLBACK (elektroid_remove_queued_tasks), NULL);
+  g_signal_connect (clear_tasks_button, "clicked",
+		    G_CALLBACK (elektroid_clear_finished_tasks), NULL);
 
   gtk_statusbar_push (status_bar, 0, _("Not connected"));
   elektroid_loop_clicked (loop_button, NULL);
