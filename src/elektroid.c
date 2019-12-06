@@ -187,6 +187,7 @@ elektroid_check_connector ()
       gtk_list_store_clear (list_store);
       gtk_widget_set_sensitive (remote_box, FALSE);
       gtk_widget_set_sensitive (download_button, FALSE);
+      gtk_widget_set_sensitive (upload_button, FALSE);
 
       elektroid_load_devices (0);
     }
