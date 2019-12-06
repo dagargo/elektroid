@@ -54,7 +54,7 @@ browser_sort (GtkTreeModel * model,
     }
   else
     {
-      ret = g_utf8_collate (type1, type2);
+      ret = -g_utf8_collate (type1, type2);
       g_free (type1);
       g_free (type2);
       if (ret == 0)

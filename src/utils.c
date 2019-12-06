@@ -24,8 +24,8 @@
 
 #define DEBUG_LEVEL1_LEN 16
 
-#define REG_TYPE "gtk-file"
-#define DIR_TYPE "gtk-directory"
+#define REG_TYPE "emblem-music-symbolic"
+#define DIR_TYPE "folder-visiting-symbolic"
 
 static gchar
 connector_get_printable_char (gchar c)

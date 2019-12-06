@@ -293,7 +293,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                   <object class="GtkImage">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="stock">gtk-go-up</property>
+                                    <property name="icon_name">go-up-symbolic</property>
                                   </object>
                                 </child>
                               </object>
@@ -313,7 +313,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                   <object class="GtkImage">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="icon_name">folder-new</property>
+                                    <property name="icon_name">folder-new-symbolic</property>
                                   </object>
                                 </child>
                               </object>
@@ -333,7 +333,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                   <object class="GtkImage">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="stock">gtk-refresh</property>
+                                    <property name="icon_name">view-refresh-symbolic</property>
                                   </object>
                                 </child>
                               </object>
@@ -382,7 +382,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                 <child>
                                   <object class="GtkCellRendererPixbuf"/>
                                   <attributes>
-                                    <attribute name="stock-id">0</attribute>
+                                    <attribute name="icon-name">0</attribute>
                                   </attributes>
                                 </child>
                               </object>
@@ -445,7 +445,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkImage">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="stock">gtk-go-forward</property>
+                            <property name="icon_name">go-next-symbolic</property>
                           </object>
                         </child>
                       </object>
@@ -467,7 +467,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkImage">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="stock">gtk-go-back</property>
+                            <property name="icon_name">go-previous-symbolic</property>
                           </object>
                         </child>
                       </object>
@@ -527,7 +527,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                   <object class="GtkImage">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="stock">gtk-go-up</property>
+                                    <property name="icon_name">go-up-symbolic</property>
                                   </object>
                                 </child>
                               </object>
@@ -547,7 +547,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                   <object class="GtkImage">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="icon_name">folder-new</property>
+                                    <property name="icon_name">folder-new-symbolic</property>
                                   </object>
                                 </child>
                               </object>
@@ -567,7 +567,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                   <object class="GtkImage">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="stock">gtk-refresh</property>
+                                    <property name="icon_name">view-refresh-symbolic</property>
                                   </object>
                                 </child>
                               </object>
@@ -616,7 +616,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                 <child>
                                   <object class="GtkCellRendererPixbuf"/>
                                   <attributes>
-                                    <attribute name="stock-id">0</attribute>
+                                    <attribute name="icon-name">0</attribute>
                                   </attributes>
                                 </child>
                               </object>
@@ -706,7 +706,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkImage">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="stock">gtk-refresh</property>
+                            <property name="icon_name">view-refresh-symbolic</property>
                           </object>
                         </child>
                       </object>
@@ -1071,7 +1071,7 @@ audio-volume-medium-symbolic</property>
                           <object class="GtkImage">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="stock">gtk-cancel</property>
+                            <property name="icon_name">edit-delete-symbolic</property>
                           </object>
                         </child>
                       </object>
@@ -1092,7 +1092,7 @@ audio-volume-medium-symbolic</property>
                           <object class="GtkImage">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="stock">gtk-remove</property>
+                            <property name="icon_name">list-remove-all-symbolic</property>
                           </object>
                         </child>
                       </object>
@@ -1113,7 +1113,7 @@ audio-volume-medium-symbolic</property>
                           <object class="GtkImage">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="stock">gtk-clear</property>
+                            <property name="icon_name">edit-clear-all-symbolic</property>
                           </object>
                         </child>
                       </object>
