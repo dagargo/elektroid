@@ -1348,6 +1348,7 @@ static int
 elektroid_run (int argc, char *argv[])
 {
   GtkBuilder *builder;
+  GtkCssProvider *css_provider;
   GtkTreeSortable *sortable;
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
@@ -1356,6 +1357,7 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *autoplay_switch;
   wordexp_t exp_result;
   char *glade_file = malloc (PATH_MAX);
+  char *css_file = malloc (PATH_MAX);
   char hostname[LABEL_MAX];
 
   if (snprintf
@@ -1366,10 +1368,25 @@ elektroid_run (int argc, char *argv[])
       return -1;
     }
 
+  if (snprintf
+      (css_file, PATH_MAX, "%s/%s/res/gui.css", DATADIR, PACKAGE) >= PATH_MAX)
+    {
+      fprintf (stderr, __FILE__ ": Path too long.\n");
+      return -1;
+    }
+
   gtk_init (&argc, &argv);
   builder = gtk_builder_new ();
   gtk_builder_add_from_file (builder, glade_file, NULL);
   free (glade_file);
+
+  css_provider = gtk_css_provider_new ();
+  gtk_css_provider_load_from_path (css_provider, css_file, NULL);
+  gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
+                                           GTK_STYLE_PROVIDER
+                                           (css_provider),
+                                           GTK_STYLE_PROVIDER_PRIORITY_USER);
+  free (css_file);
 
   main_window = GTK_WIDGET (gtk_builder_get_object (builder, "main_window"));
 

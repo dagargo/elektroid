@@ -285,6 +285,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="spacing">6</property>
                             <child>
                               <object class="GtkButton" id="local_up_button">
+                                <property name="name">local_up_button</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
@@ -305,6 +306,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             </child>
                             <child>
                               <object class="GtkButton" id="local_add_dir_button">
+                                <property name="name">local_add_dir_button</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
@@ -325,6 +327,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             </child>
                             <child>
                               <object class="GtkButton" id="local_refresh_button">
+                                <property name="name">local_refresh_button</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
@@ -366,6 +369,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <property name="shadow_type">in</property>
                         <child>
                           <object class="GtkTreeView" id="local_tree_view">
+                            <property name="name">local_tree_view</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="hexpand">True</property>
@@ -436,6 +440,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                     <property name="spacing">6</property>
                     <child>
                       <object class="GtkButton" id="upload_button">
+                        <property name="name">upload_button</property>
                         <property name="visible">True</property>
                         <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
@@ -457,6 +462,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                     </child>
                     <child>
                       <object class="GtkButton" id="download_button">
+                        <property name="name">download_button</property>
                         <property name="visible">True</property>
                         <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
@@ -519,6 +525,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="spacing">6</property>
                             <child>
                               <object class="GtkButton" id="remote_up_button">
+                                <property name="name">remote_up_button</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
@@ -539,6 +546,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             </child>
                             <child>
                               <object class="GtkButton" id="remote_add_dir_button">
+                                <property name="name">remote_add_dir_button</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
@@ -559,6 +567,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             </child>
                             <child>
                               <object class="GtkButton" id="remote_refresh_button">
+                                <property name="name">remote_refresh_button</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
@@ -600,6 +609,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <property name="shadow_type">in</property>
                         <child>
                           <object class="GtkTreeView" id="remote_tree_view">
+                            <property name="name">remote_tree_view</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="hexpand">True</property>
@@ -698,6 +708,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                     </child>
                     <child>
                       <object class="GtkButton" id="refresh_devices_button">
+                        <property name="name">refresh_devices_button</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
@@ -753,6 +764,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <property name="spacing">6</property>
                         <child>
                           <object class="GtkSwitch" id="autoplay_switch">
+                            <property name="name">autoplay_switch</property>
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="halign">start</property>
@@ -799,6 +811,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="halign">center</property>
                             <child>
                               <object class="GtkButton" id="play_button">
+                                <property name="name">play_button</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
@@ -820,6 +833,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             </child>
                             <child>
                               <object class="GtkButton" id="stop_button">
+                                <property name="name">stop_button</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
@@ -841,6 +855,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             </child>
                             <child>
                               <object class="GtkToggleButton" id="loop_button">
+                                <property name="name">loop_button</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">True</property>
@@ -900,6 +915,9 @@ audio-volume-medium-symbolic</property>
                                 <property name="relief">none</property>
                               </object>
                             </child>
+                            <style>
+                              <class name="local"/>
+                            </style>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -938,6 +956,9 @@ audio-volume-medium-symbolic</property>
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="hexpand">True</property>
+                            <style>
+                              <class name="local"/>
+                            </style>
                           </object>
                         </child>
                       </object>

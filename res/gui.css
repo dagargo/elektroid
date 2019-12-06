@@ -1,0 +1,32 @@
+@define-color local_color #df4040;
+@define-color local_color_dark #3f1717;
+@define-color remote_color #4040df;
+@define-color disabled_color #7f7f7f;
+
+.local {
+	color: @local_color;
+}
+
+#local_up_button, #local_add_dir_button, #local_refresh_button, #play_button, #stop_button, #loop_button, #upload_button {
+	color: @local_color;
+}
+
+#remote_up_button, #remote_add_dir_button, #remote_refresh_button, #refresh_devices_button, #download_button {
+	color: @remote_color
+}
+
+*:disabled {
+	color: @disabled_color;
+}
+
+#autoplay_switch:checked, #autoplay_switch:checked slider {
+	border-color: @local_color_dark;
+}
+
+#local_tree_view:selected, #autoplay_switch:checked {
+	background-color: @local_color;
+}
+
+#remote_tree_view:selected {
+	background-color: @remote_color;
+}
