@@ -1,5 +1,5 @@
 resdir = $(datadir)/elektroid/res
-res_DATA = gui.glade
+res_DATA = gui.glade gui.css
 
 desktopdir = $(datadir)/applications
 desktop_DATA = elektroid.desktop
