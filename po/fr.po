@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: elektroid 0.4\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2019-12-07 09:24+0100\n"
-"PO-Revision-Date: 2019-12-06 16:14+0200\n"
+"PO-Revision-Date: 2019-12-07 14:21+0200\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: \n"
 "Language: fr\n"
@@ -150,12 +150,12 @@ msgstr "Progrès"
 
 #: res/gui.glade:1090
 msgid "Cancel running task"
-msgstr ""
+msgstr "Annulation de la tâche en cours"
 
 #: res/gui.glade:1111
 msgid "Remove queued tasks"
-msgstr ""
+msgstr "Suppression des tâches dans la file d'attente"
 
 #: res/gui.glade:1132
 msgid "Clear finished tasks"
-msgstr ""
+msgstr "Nettoyer les tâches terminées"
