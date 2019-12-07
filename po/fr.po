@@ -1,0 +1,145 @@
+# French GUI translation for elektroid.
+# Copyright (C) 2019 Olivier Humbert
+# This file is distributed under the same license as the elektroid package.
+# Olivier Humbert <trebmuh@tuxfamily.org>, 2019.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: elektroid 0.4\n"
+"Report-Msgid-Bugs-To: dagargo@gmail.com\n"
+"POT-Creation-Date: 2019-11-29 17:04+0100\n"
+"PO-Revision-Date: 2019-12-06 16:14+0200\n"
+"Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
+"Language-Team: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: src/elektroid.c:178
+#, c-format
+msgid "Connected to %s"
+msgstr "Connecté à %s"
+
+#: src/elektroid.c:185 src/elektroid.c:1612
+msgid "Not connected"
+msgstr "Non connecté"
+
+#: src/elektroid.c:426
+#, c-format
+msgid "Error while deleting %s: %s"
+msgstr "Erreur lors de la délation de %s : %s"
+
+#: src/elektroid.c:458 res/gui.glade:53
+msgid "Rename"
+msgstr "Renommer"
+
+#: src/elektroid.c:483
+#, c-format
+msgid "Error while renaming to %s: %s"
+msgstr "Erreur lors du renommage de %s : %s"
+
+#: src/elektroid.c:879 res/gui.glade:311 res/gui.glade:543
+msgid "Add directory"
+msgstr "Ajout d'un répertoire"
+
+#: src/elektroid.c:904
+#, c-format
+msgid "Error while creating dir %s: %s"
+msgstr "Erreur lors de la création du répertoire %s : %s"
+
+#: src/elektroid.c:1016
+msgid "Queued"
+msgstr "Mise en fil d'attente"
+
+#: src/elektroid.c:1018
+msgid "Running"
+msgstr "En cours"
+
+#: src/elektroid.c:1020
+msgid "Completed"
+msgstr "Terminé"
+
+#: src/elektroid.c:1022
+msgid "Completed with errors"
+msgstr "Terminé avec des erreurs"
+
+#: src/elektroid.c:1024
+msgid "Canceled"
+msgstr "Annulé"
+
+#: src/elektroid.c:1026
+msgid "Undefined"
+msgstr "Indéfini"
+
+#: src/elektroid.c:1179
+msgid "Upload"
+msgstr "Téléversement"
+
+#: src/elektroid.c:1258
+msgid "Download"
+msgstr "Téléchargement"
+
+#: res/gui.glade:66
+msgid "Delete"
+msgstr "Effacer"
+
+#: res/gui.glade:131
+msgid "GNU/Linux sample transfer application for Elektron devices"
+msgstr "Application GNU/Linux de transfert d'échantillon pour les périphériques Elektron"
+
+#: res/gui.glade:184
+msgid "About"
+msgstr "À propos"
+
+#: res/gui.glade:291 res/gui.glade:523
+msgid "Go to parent directory"
+msgstr "Aller au répertoire parent"
+
+#: res/gui.glade:331 res/gui.glade:563
+msgid "Refresh directory"
+msgstr "Rafraîchir le répertoire"
+
+#: res/gui.glade:392 res/gui.glade:624 res/gui.glade:1136
+msgid "Name"
+msgstr "Nom"
+
+#: res/gui.glade:404 res/gui.glade:636
+msgid "Size"
+msgstr "Taille"
+
+#: res/gui.glade:441
+msgid "Upload sample"
+msgstr "Téléversement d'un échantillon"
+
+#: res/gui.glade:462
+msgid "Download sample"
+msgstr "Téléchargement d'un échantillon"
+
+#: res/gui.glade:700
+msgid "Refresh devices"
+msgstr "Rafraîchir les périphériques"
+
+#: res/gui.glade:769
+msgid "Auto play"
+msgstr "Lecture automatique"
+
+#: res/gui.glade:976
+msgid "Status"
+msgstr "Statut"
+
+#: res/gui.glade:987
+msgid "Type"
+msgstr "Type"
+
+#: res/gui.glade:998
+msgid "Source"
+msgstr "Source"
+
+#: res/gui.glade:1012
+msgid "Destiny"
+msgstr "Destination"
+
+#: res/gui.glade:1027
+msgid "Progress"
+msgstr "Progrès"
