@@ -42,45 +42,47 @@ static void
 audio_write_callback (pa_stream * stream, size_t size, void *data)
 {
   guint req_frames;
-  guint frames_to_copy;
-  guint max_frames;
   struct audio *audio = data;
+  void *buffer;
+  gshort *v;
+  gint i;
+  gboolean stop = FALSE;
 
   if (!audio->sample->len)
     {
       return;
     }
 
-  if (audio->pos == audio->sample->len)
-    {
-      if (audio->loop)
-	{
-	  audio->pos = 0;
-	}
-      else
-	{
-	  audio_stop (audio);
-	  return;
-	}
-    }
-
   req_frames = size / 2;
-  max_frames = req_frames > PA_BUFFER_LEN ? PA_BUFFER_LEN : req_frames;
 
-  if (audio->pos + max_frames <= audio->sample->len)
+  debug_print (2, "Writing %2d frames...\n", req_frames);
+  pa_stream_begin_write (stream, &buffer, &size);
+  v = buffer;
+  for (i = 0; i < req_frames; i++)
     {
-      frames_to_copy = max_frames;
+      *v = ((short *) audio->sample->data)[audio->pos];
+      v++;
+      audio->pos++;
+      if (audio->pos == audio->sample->len)
+	{
+	  if (audio->loop)
+	    {
+	      audio->pos = 0;
+	    }
+	  else
+	    {
+	      stop = TRUE;
+	      i++;
+	      break;
+	    }
+	}
     }
-  else
+  pa_stream_write (stream, buffer, i * 2, NULL, 0, PA_SEEK_RELATIVE);
+
+  if (stop)
     {
-      frames_to_copy = audio->sample->len - audio->pos;
+      audio_stop (audio);
     }
-
-  debug_print (2, "Writing %2d frames...\n", frames_to_copy);
-  pa_stream_write (stream, &audio->sample->data[audio->pos * 2],
-		   frames_to_copy * 2, NULL, 0, PA_SEEK_RELATIVE);
-
-  audio->pos += frames_to_copy;
 }
 
 void
