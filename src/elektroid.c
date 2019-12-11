@@ -22,7 +22,6 @@
 #include <limits.h>
 #include <gtk/gtk.h>
 #include <unistd.h>
-#include <wordexp.h>
 #include "connector.h"
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -1346,7 +1345,7 @@ elektroid_delete_window (GtkWidget * widget, GdkEvent * event, gpointer data)
 }
 
 static int
-elektroid_run (int argc, char *argv[])
+elektroid_run (int argc, char *argv[], gchar * local_dir)
 {
   GtkBuilder *builder;
   GtkCssProvider *css_provider;
@@ -1356,7 +1355,6 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *hostname_label;
   GtkWidget *loop_button;
   GtkWidget *autoplay_switch;
-  wordexp_t exp_result;
   char *glade_file = malloc (PATH_MAX);
   char *css_file = malloc (PATH_MAX);
   char hostname[LABEL_MAX];
@@ -1384,9 +1382,9 @@ elektroid_run (int argc, char *argv[])
   css_provider = gtk_css_provider_new ();
   gtk_css_provider_load_from_path (css_provider, css_file, NULL);
   gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
-                                           GTK_STYLE_PROVIDER
-                                           (css_provider),
-                                           GTK_STYLE_PROVIDER_PRIORITY_USER);
+					     GTK_STYLE_PROVIDER
+					     (css_provider),
+					     GTK_STYLE_PROVIDER_PRIORITY_USER);
   free (css_file);
 
   main_window = GTK_WIDGET (gtk_builder_get_object (builder, "main_window"));
@@ -1484,7 +1482,7 @@ elektroid_run (int argc, char *argv[])
     .copy_button = download_button,
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry")),
-    .dir = malloc (PATH_MAX),
+    .dir = NULL,
     .load_dir = elektroid_load_remote_dir,
     .check_selection = elektroid_remote_check_selection,
     .rename = elektroid_remote_rename,
@@ -1519,7 +1517,7 @@ elektroid_run (int argc, char *argv[])
     .copy_button = upload_button,
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry")),
-    .dir = malloc (PATH_MAX),
+    .dir = NULL,
     .load_dir = elektroid_load_local_dir,
     .check_selection = elektroid_local_check_selection,
     .rename = elektroid_local_rename,
@@ -1557,11 +1555,6 @@ elektroid_run (int argc, char *argv[])
 					GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
 
   audio_init (&audio, elektroid_set_volume_callback);
-
-  wordexp ("~", &exp_result, 0);
-  strcpy (local_browser.dir, exp_result.we_wordv[0]);
-  wordfree (&exp_result);
-  local_browser.load_dir (NULL);
 
   devices_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "devices_list_store"));
@@ -1601,6 +1594,9 @@ elektroid_run (int argc, char *argv[])
   gethostname (hostname, LABEL_MAX);
   gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
 
+  local_browser.dir = local_dir;
+  local_browser.load_dir (NULL);
+
   gtk_widget_show (main_window);
   gtk_main ();
 
@@ -1626,8 +1622,10 @@ elektroid_end (gpointer data)
 int
 main (int argc, char *argv[])
 {
-  char c;
-  int vflg = 0, errflg = 0;
+  gchar c;
+  gchar *exec_name;
+  gchar *local_dir = NULL;
+  int vflg = 0, dflg = 0, errflg = 0;
 
   g_unix_signal_add (SIGHUP, elektroid_end, NULL);
   g_unix_signal_add (SIGINT, elektroid_end, NULL);
@@ -1637,10 +1635,14 @@ main (int argc, char *argv[])
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
 
-  while ((c = getopt (argc, argv, "v")) != -1)
+  while ((c = getopt (argc, argv, "l:v")) != -1)
     {
       switch (c)
 	{
+	case 'l':
+	  local_dir = optarg;
+	  dflg++;
+	  break;
 	case 'v':
 	  vflg++;
 	  break;
@@ -1648,6 +1650,11 @@ main (int argc, char *argv[])
 	  fprintf (stderr, "Unrecognized option: -%c\n", optopt);
 	  errflg++;
 	}
+    }
+
+  if (dflg > 1)
+    {
+      errflg++;
     }
 
   if (vflg)
@@ -1658,10 +1665,11 @@ main (int argc, char *argv[])
   if (errflg > 0)
     {
       fprintf (stderr, "%s\n", PACKAGE_STRING);
-      char *exec_name = basename (argv[0]);
-      fprintf (stderr, "Usage: %s [-v]\n", exec_name);
+      exec_name = basename (argv[0]);
+      fprintf (stderr, "Usage: %s [-l local-dir] [-v]\n", exec_name);
       exit (EXIT_FAILURE);
     }
 
-  return elektroid_run (argc, argv);
+  local_dir = get_local_startup_path (local_dir);
+  return elektroid_run (argc, argv, local_dir);
 }

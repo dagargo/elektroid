@@ -39,3 +39,5 @@ const char *get_ext (const char *);
 char get_type_from_inventory_icon (const char *);
 
 const char *get_inventory_icon_from_type (char);
+
+char *get_local_startup_path (const char *);

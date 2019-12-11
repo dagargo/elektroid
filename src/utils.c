@@ -20,6 +20,7 @@
 
 #include <glib.h>
 #include <stdio.h>
+#include <wordexp.h>
 #include "utils.h"
 
 #define DEBUG_LEVEL1_LEN 16
@@ -179,4 +180,39 @@ get_inventory_icon_from_type (char type)
       icon = DIR_TYPE;
     }
   return icon;
+}
+
+char *
+get_local_startup_path (const char *local_dir)
+{
+  DIR *dir;
+  char *startup_path = NULL;
+  wordexp_t exp_result;
+
+  if (local_dir)
+    {
+      dir = opendir (local_dir);
+      if (dir)
+	{
+	  startup_path = malloc (PATH_MAX);
+	  realpath (local_dir, startup_path);
+	}
+      else
+	{
+	  fprintf (stderr, __FILE__ ": Unable to open dir %s\n", local_dir);
+	}
+      closedir (dir);
+    }
+
+  if (!startup_path)
+    {
+      wordexp ("~", &exp_result, 0);
+      startup_path = malloc (PATH_MAX);
+      strcpy (startup_path, exp_result.we_wordv[0]);
+      wordfree (&exp_result);
+    }
+
+  debug_print (1, "Using %s as local dir...\n", startup_path);
+
+  return startup_path;
 }
