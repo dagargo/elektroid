@@ -1482,7 +1482,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .copy_button = download_button,
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry")),
-    .dir = NULL,
+    .dir = malloc (PATH_MAX),
     .load_dir = elektroid_load_remote_dir,
     .check_selection = elektroid_remote_check_selection,
     .rename = elektroid_remote_rename,
@@ -1517,7 +1517,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .copy_button = upload_button,
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry")),
-    .dir = NULL,
+    .dir = malloc (PATH_MAX),
     .load_dir = elektroid_load_local_dir,
     .check_selection = elektroid_local_check_selection,
     .rename = elektroid_local_rename,
@@ -1573,13 +1573,13 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     GTK_WIDGET (gtk_builder_get_object (builder, "task_tree_view"));
 
   cancel_task_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "cancel_task_button")),
-    remove_tasks_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remove_tasks_button")),
-    clear_tasks_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "clear_tasks_button")),
-    g_signal_connect (cancel_task_button, "clicked",
-		      G_CALLBACK (elektroid_cancel_running_task), NULL);
+    GTK_WIDGET (gtk_builder_get_object (builder, "cancel_task_button"));
+  remove_tasks_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remove_tasks_button"));
+  clear_tasks_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "clear_tasks_button"));
+  g_signal_connect (cancel_task_button, "clicked",
+		    G_CALLBACK (elektroid_cancel_running_task), NULL);
   g_signal_connect (remove_tasks_button, "clicked",
 		    G_CALLBACK (elektroid_remove_queued_tasks), NULL);
   g_signal_connect (clear_tasks_button, "clicked",
@@ -1594,7 +1594,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   gethostname (hostname, LABEL_MAX);
   gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
 
-  local_browser.dir = local_dir;
+  strcpy (local_browser.dir, local_dir);
+  free (local_dir);
   local_browser.load_dir (NULL);
 
   gtk_widget_show (main_window);
