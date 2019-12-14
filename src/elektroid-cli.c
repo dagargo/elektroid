@@ -347,6 +347,34 @@ cleanup:
   return res;
 }
 
+static int
+cli_info (int argc, char *argv[], int optind)
+{
+  gchar *device_path;
+  gint res;
+
+  if (optind == argc)
+    {
+      fprintf (stderr, "Device missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      device_path = argv[optind];
+    }
+
+  res = cli_connect (device_path);
+
+  if (res < 0)
+    {
+      return EXIT_FAILURE;
+    }
+
+  printf ("%s\n", connector.device_name);
+
+  return EXIT_SUCCESS;
+}
+
 static void
 cli_end (int sig)
 {
@@ -433,6 +461,10 @@ main (int argc, char *argv[])
   else if (strcmp (command, "upload") == 0)
     {
       res = cli_upload (argc, argv, optind);
+    }
+  else if (strcmp (command, "info") == 0)
+    {
+      res = cli_info (argc, argv, optind);
     }
   else
     {

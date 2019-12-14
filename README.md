@@ -37,6 +37,23 @@ $ elektroid-cli ld
 0 Elektron Digitakt MIDI 1
 ```
 
+* info, show device info
+
+```
+$ elektroid-cli info 0
+Digitakt 1.11
+```
+
+* ls
+
+Notice that the first column is the file type, the second is the size in MiB (it is the same unit used in the devices although it is showed there as MB), the third is an internal cksum and the fourth is the sample name.
+
+```
+$ elektroid-cli ls 0:/
+D 0.00 00000000 incoming
+F 0.09 3d71644d square
+```
+
 * mkdir
 
 ```
@@ -59,16 +76,6 @@ $ elektroid-cli upload square.wav 0:/
 
 ```
 $ elektroid-cli download 0:/square
-```
-
-* ls
-
-Notice that the first column is the file type, the second is the size in MiB (it is the same unit used in the devices although it is showed there as MB), the third is an internal cksum and the fourth is the sample name.
-
-```
-$ elektroid-cli ls 0:/
-D 0.00 00000000 incoming
-F 0.09 3d71644d square
 ```
 
 * mv
