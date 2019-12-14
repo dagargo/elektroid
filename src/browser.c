@@ -115,7 +115,7 @@ browser_get_item_info (GtkTreeModel * model, GtkTreeIter * iter,
 }
 
 static void
-browser_get_selected_items_count_helper (GtkTreeModel * model,
+browser_get_selected_files_count_helper (GtkTreeModel * model,
 					 GtkTreePath * path,
 					 GtkTreeIter * iter, gpointer data)
 {
@@ -135,12 +135,12 @@ browser_get_selected_items_count_helper (GtkTreeModel * model,
 }
 
 gint
-browser_get_selected_items_count (struct browser *browser)
+browser_get_selected_files_count (struct browser *browser)
 {
   gint count = 0;
   GtkTreeSelection *selection = gtk_tree_view_get_selection (browser->view);
   gtk_tree_selection_selected_foreach (selection,
-				       browser_get_selected_items_count_helper,
+				       browser_get_selected_files_count_helper,
 				       &count);
   return count;
 }
@@ -250,4 +250,12 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 
   g_free (icon);
   g_free (name);
+}
+
+gint
+browser_get_selected_items_count (struct browser *browser)
+{
+  GtkTreeSelection *selection =
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+  return gtk_tree_selection_count_selected_rows (selection);
 }

@@ -363,7 +363,6 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
 
   if (count == 1)
     {
-
       popup_browser = browser;
 
       if (event->type == GDK_BUTTON_PRESS && event->button == 3)
@@ -452,7 +451,7 @@ elektroid_stop_task_thread ()
 static gboolean
 elektroid_remote_check_selection (gpointer data)
 {
-  gint count = browser_get_selected_items_count (&remote_browser);
+  gint count = browser_get_selected_files_count (&remote_browser);
 
   if (count > 0)
     {
@@ -471,7 +470,7 @@ elektroid_local_check_selection (gpointer data)
 {
   GtkTreeIter iter;
   gchar *sample_path;
-  gint count = browser_get_selected_items_count (&local_browser);
+  gint count = browser_get_selected_files_count (&local_browser);
 
   audio_stop (&audio);
   elektroid_stop_load_thread ();
