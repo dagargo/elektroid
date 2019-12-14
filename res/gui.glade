@@ -73,7 +73,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         </child>
       </object>
       <packing>
-        <property name="submenu">main</property>
         <property name="position">1</property>
       </packing>
     </child>
@@ -191,7 +190,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         </child>
       </object>
       <packing>
-        <property name="submenu">submenu1</property>
         <property name="position">1</property>
       </packing>
     </child>
