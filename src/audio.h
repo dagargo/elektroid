@@ -34,6 +34,7 @@ struct audio
   pa_cvolume volume;
   uint32_t index;
   void (*set_volume_gui_callback) (gdouble);
+  gint release_frames;
 };
 
 void audio_play (struct audio *);

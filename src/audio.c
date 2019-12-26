@@ -46,43 +46,60 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
   void *buffer;
   gshort *v;
   gint i;
-  gboolean stop = FALSE;
 
   if (!audio->sample->len)
     {
       return;
     }
 
-  req_frames = size / 2;
+  //XXX: Until a better solution is found this corks the stream without using neither drain nor empty buffers (CPU)
+  if (audio->release_frames > PA_BUFFER_LEN)
+    {
+      audio_stop (audio);
+      return;
+    }
 
+  req_frames = size / 2;
   debug_print (2, "Writing %2d frames...\n", req_frames);
   pa_stream_begin_write (stream, &buffer, &size);
+
+  if (audio->pos == audio->sample->len)
+    {
+      v = buffer;
+      for (i = 0; i < req_frames; i++)
+	{
+	  *v = 0;
+	  v++;
+	}
+      pa_stream_write (stream, buffer, size, NULL, 0, PA_SEEK_RELATIVE);
+      audio->release_frames += req_frames;
+      return;
+    }
+
   v = buffer;
   for (i = 0; i < req_frames; i++)
     {
-      *v = ((short *) audio->sample->data)[audio->pos];
-      v++;
-      audio->pos++;
-      if (audio->pos == audio->sample->len)
+      if (audio->pos < audio->sample->len)
+	{
+	  *v = ((short *) audio->sample->data)[audio->pos];
+	  audio->pos++;
+	}
+      else
 	{
 	  if (audio->loop)
 	    {
 	      audio->pos = 0;
+	      *v = ((short *) audio->sample->data)[0];
 	    }
 	  else
 	    {
-	      stop = TRUE;
-	      i++;
 	      break;
 	    }
 	}
+      v++;
     }
-  pa_stream_write (stream, buffer, i * 2, NULL, 0, PA_SEEK_RELATIVE);
 
-  if (stop)
-    {
-      audio_stop (audio);
-    }
+  pa_stream_write (stream, buffer, i * 2, NULL, 0, PA_SEEK_RELATIVE);
 }
 
 void
@@ -98,12 +115,6 @@ audio_stop (struct audio *audio)
   debug_print (1, "Stopping audio...\n");
 
   operation = pa_stream_flush (audio->stream, NULL, NULL);
-  if (operation != NULL)
-    {
-      pa_operation_unref (operation);
-    }
-
-  operation = pa_stream_drain (audio->stream, NULL, NULL);
   if (operation != NULL)
     {
       pa_operation_unref (operation);
@@ -129,6 +140,7 @@ audio_play (struct audio *audio)
   audio_stop (audio);
   debug_print (1, "Playing audio...\n");
   audio->pos = 0;
+  audio->release_frames = 0;
 
   operation = pa_stream_cork (audio->stream, 0, NULL, NULL);
   if (operation != NULL)
