@@ -472,7 +472,7 @@ elektroid_local_check_selection (gpointer data)
   gchar *sample_path;
   gint count = browser_get_selected_files_count (&local_browser);
 
-  audio_stop (&audio);
+  audio_stop (&audio, TRUE);
   elektroid_stop_load_thread ();
   audio_reset_sample (&audio);
   gtk_widget_queue_draw (waveform_draw_area);
@@ -554,7 +554,7 @@ elektroid_play_clicked (GtkWidget * object, gpointer data)
 static void
 elektroid_stop_clicked (GtkWidget * object, gpointer data)
 {
-  audio_stop (&audio);
+  audio_stop (&audio, TRUE);
 }
 
 static void

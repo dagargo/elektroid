@@ -41,8 +41,8 @@ static const pa_sample_spec sample_spec = {
 static void
 audio_write_callback (pa_stream * stream, size_t size, void *data)
 {
-  guint req_frames;
   struct audio *audio = data;
+  guint req_frames;
   void *buffer;
   gshort *v;
   gint i;
@@ -55,7 +55,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
   //XXX: Until a better solution is found this corks the stream without using neither drain nor empty buffers (CPU)
   if (audio->release_frames > PA_BUFFER_LEN)
     {
-      audio_stop (audio);
+      audio_stop (audio, FALSE);
       return;
     }
 
@@ -103,7 +103,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
 }
 
 void
-audio_stop (struct audio *audio)
+audio_stop (struct audio *audio, gboolean flush)
 {
   pa_operation *operation;
 
@@ -114,10 +114,13 @@ audio_stop (struct audio *audio)
 
   debug_print (1, "Stopping audio...\n");
 
-  operation = pa_stream_flush (audio->stream, NULL, NULL);
-  if (operation != NULL)
+  if (flush)
     {
-      pa_operation_unref (operation);
+      operation = pa_stream_flush (audio->stream, NULL, NULL);
+      if (operation != NULL)
+	{
+	  pa_operation_unref (operation);
+	}
     }
 
   operation = pa_stream_cork (audio->stream, 1, NULL, NULL);
@@ -137,7 +140,7 @@ audio_play (struct audio *audio)
       return;
     }
 
-  audio_stop (audio);
+  audio_stop (audio, TRUE);
   debug_print (1, "Playing audio...\n");
   audio->pos = 0;
   audio->release_frames = 0;
@@ -211,6 +214,7 @@ audio_context_callback (pa_context * context, void *data)
     PA_STREAM_NOT_MONOTONIC | PA_STREAM_AUTO_TIMING_UPDATE |
     PA_STREAM_ADJUST_LATENCY;
 
+
   if (pa_context_get_state (context) == PA_CONTEXT_READY)
     {
       pa_proplist_set (props,
@@ -273,7 +277,7 @@ audio_destroy (struct audio *audio)
 {
   debug_print (1, "Destroying audio...\n");
 
-  audio_stop (audio);
+  audio_stop (audio, TRUE);
   g_array_free (audio->sample, TRUE);
   if (audio->stream)
     {

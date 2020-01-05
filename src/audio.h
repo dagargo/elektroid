@@ -39,7 +39,7 @@ struct audio
 
 void audio_play (struct audio *);
 
-void audio_stop (struct audio *);
+void audio_stop (struct audio *, gboolean);
 
 int audio_check (struct audio *);
 
