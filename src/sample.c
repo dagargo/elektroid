@@ -111,6 +111,15 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, char *path,
       return -1;
     }
 
+  //Set scale factor. See http://www.mega-nerd.com/libsndfile/api.html#note2
+  if ((sf_info.format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||
+      (sf_info.format & SF_FORMAT_DOUBLE) == SF_FORMAT_DOUBLE)
+    {
+      debug_print (2,
+		   "Setting scale factor to ensure correct integer readings...\n");
+      sf_command (sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
+    }
+
   buffer_input_multi =
     malloc (LOAD_BUFFER_LEN * sf_info.channels * sizeof (short));
   buffer_input_mono = malloc (LOAD_BUFFER_LEN * sizeof (short));
