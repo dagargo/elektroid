@@ -40,10 +40,10 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <object class="GtkBox">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="margin_left">6</property>
-        <property name="margin_right">6</property>
-        <property name="margin_top">6</property>
-        <property name="margin_bottom">6</property>
+        <property name="margin_left">9</property>
+        <property name="margin_right">9</property>
+        <property name="margin_top">9</property>
+        <property name="margin_bottom">9</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkModelButton" id="rename_button">
@@ -165,15 +165,15 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
   </object>
   <object class="GtkPopoverMenu" id="elektroid_popmenu">
     <property name="can_focus">False</property>
-    <property name="relative_to">menubutton</property>
+    <property name="relative_to">menu_button</property>
     <child>
       <object class="GtkBox">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="margin_left">6</property>
-        <property name="margin_right">6</property>
-        <property name="margin_top">6</property>
-        <property name="margin_bottom">6</property>
+        <property name="margin_left">9</property>
+        <property name="margin_right">9</property>
+        <property name="margin_top">9</property>
+        <property name="margin_bottom">9</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkModelButton" id="about_button">
@@ -200,14 +200,14 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     <property name="can_focus">False</property>
     <property name="icon_name">elektroid</property>
     <child type="titlebar">
-      <object class="GtkHeaderBar" id="headerbar">
+      <object class="GtkHeaderBar">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="title">Elektroid</property>
         <property name="has_subtitle">False</property>
         <property name="show_close_button">True</property>
         <child>
-          <object class="GtkMenuButton" id="menubutton">
+          <object class="GtkMenuButton" id="menu_button">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
