@@ -1,7 +1,7 @@
 # Elektroid
 
 Elektroid is a GNU/Linux sample transfer application for Elektron devices. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.
-It has been reported to work with Model:Samples, Digitakt and Analog Rytm mk1 and mk2.
+Elektroid has been reported to work with Model:Samples, Digitakt and Analog Rytm mk1 and mk2.
 
 ## Installation
 
@@ -23,8 +23,9 @@ The package dependencies for Debian based distributions are:
 - libsamplerate0-dev
 - libtool
 - autopoint
+- gettext
 
-You can easily install them by running `sudo apt install automake libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev libtool autopoint`.
+You can easily install them by running `sudo apt install automake libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev libtool autopoint gettext`.
 
 ## CLI
 
