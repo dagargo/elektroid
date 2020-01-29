@@ -1387,6 +1387,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   free (css_file);
 
   main_window = GTK_WIDGET (gtk_builder_get_object (builder, "main_window"));
+  gtk_window_resize (GTK_WINDOW(main_window), 1, 1); //Compact window
 
   about_dialog =
     GTK_ABOUT_DIALOG (gtk_builder_get_object (builder, "about_dialog"));
