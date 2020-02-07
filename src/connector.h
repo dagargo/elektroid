@@ -50,7 +50,7 @@ gint connector_init (struct connector *, gint);
 
 void connector_destroy (struct connector *);
 
-gint connector_check (struct connector *);
+gboolean connector_check (struct connector *);
 
 struct connector_dir_iterator *connector_read_dir (struct connector *,
 						   gchar *);

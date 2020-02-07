@@ -990,7 +990,7 @@ cleanup:
   return err;
 }
 
-int
+gboolean
 connector_check (struct connector *connector)
 {
   return (connector->inputp && connector->outputp);
