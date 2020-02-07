@@ -114,59 +114,6 @@ browser_get_item_info (GtkTreeModel * model, GtkTreeIter * iter,
     }
 }
 
-static void
-browser_get_selected_files_count_helper (GtkTreeModel * model,
-					 GtkTreePath * path,
-					 GtkTreeIter * iter, gpointer data)
-{
-  gchar *icon;
-  gint *count = data;
-
-  browser_get_item_info (model, iter, &icon, NULL, NULL);
-  if (*count == -1 || get_type_from_inventory_icon (icon) == 'D')
-    {
-      *count = -1;
-    }
-  else
-    {
-      *count = *count + 1;
-    }
-  g_free (icon);
-}
-
-gint
-browser_get_selected_files_count (struct browser *browser)
-{
-  gint count = 0;
-  GtkTreeSelection *selection = gtk_tree_view_get_selection (browser->view);
-  gtk_tree_selection_selected_foreach (selection,
-				       browser_get_selected_files_count_helper,
-				       &count);
-  return count;
-}
-
-gchar *
-browser_get_iter_path (struct browser *browser, GtkTreeIter * iter)
-{
-  gchar *name;
-  gchar *path;
-
-  browser_get_item_info (GTK_TREE_MODEL
-			 (gtk_tree_view_get_model
-			  (browser->view)), iter, NULL, &name, NULL);
-
-  if (name)
-    {
-      path = chain_path (browser->dir, name);
-      g_free (name);
-      return path;
-    }
-  else
-    {
-      return NULL;
-    }
-}
-
 void
 browser_set_selected_row_iter (struct browser *browser, GtkTreeIter * iter)
 {

@@ -47,12 +47,7 @@ gint browser_sort (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *, gpointer);
 void browser_get_item_info (GtkTreeModel *, GtkTreeIter *, gchar **, gchar **,
 			    gint *);
 
-//Returns -1 if a directory is selected; otherwise, returns the number of selected files
-gint browser_get_selected_files_count (struct browser *);
-
 gint browser_get_selected_items_count (struct browser *);
-
-gchar *browser_get_iter_path (struct browser *, GtkTreeIter *);
 
 void browser_set_selected_row_iter (struct browser *, GtkTreeIter *);
 

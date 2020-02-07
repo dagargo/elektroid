@@ -230,10 +230,6 @@ elektroid_update_ui_after_load (gpointer data)
 	{
 	  elektroid_controls_set_sensitive (TRUE);
 	}
-      if (connector_check (&connector))
-	{
-	  gtk_widget_set_sensitive (upload_button, TRUE);
-	}
       if (autoplay)
 	{
 	  audio_play (&audio);
@@ -497,17 +493,8 @@ elektroid_stop_task_thread ()
 static gboolean
 elektroid_remote_check_selection (gpointer data)
 {
-  gint count = browser_get_selected_files_count (&remote_browser);
-
-  if (count > 0)
-    {
-      gtk_widget_set_sensitive (download_button, TRUE);
-    }
-  else
-    {
-      gtk_widget_set_sensitive (download_button, FALSE);
-    }
-
+  gint count = browser_get_selected_items_count (&remote_browser);
+  gtk_widget_set_sensitive (download_button, count > 0);
   return FALSE;
 }
 
@@ -516,30 +503,33 @@ elektroid_local_check_selection (gpointer data)
 {
   GtkTreeIter iter;
   gchar *sample_path;
-  gint count = browser_get_selected_files_count (&local_browser);
+  gchar *name;
+  gchar *icon;
+  gchar type;
+  GtkTreeModel *model;
+  gint count = browser_get_selected_items_count (&local_browser);
 
   audio_stop (&audio, TRUE);
   elektroid_stop_load_thread ();
   audio_reset_sample (&audio);
   gtk_widget_queue_draw (waveform_draw_area);
   elektroid_controls_set_sensitive (FALSE);
+  gtk_widget_set_sensitive (upload_button, count > 0
+			    && connector_check (&connector));
 
   if (count == 1)
     {
       browser_set_selected_row_iter (&local_browser, &iter);
-      sample_path = browser_get_iter_path (&local_browser, &iter);
-      elektroid_start_load_thread (sample_path);
-    }
-  else if (count > 1)
-    {
-      if (connector_check (&connector))
+      model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
+      browser_get_item_info (model, &iter, &icon, &name, NULL);
+      type = get_type_from_inventory_icon (icon);
+      if (type == 'F')
 	{
-	  gtk_widget_set_sensitive (upload_button, TRUE);
+	  sample_path = chain_path (local_browser.dir, name);
+	  elektroid_start_load_thread (sample_path);
 	}
-    }
-  else
-    {
-      gtk_widget_set_sensitive (upload_button, FALSE);
+      free (icon);
+      free (name);
     }
 
   return FALSE;
@@ -669,7 +659,9 @@ elektroid_load_remote_dir (gpointer data)
   elektroid_check_connector ();
   if (d_iter == NULL)
     {
-      return FALSE;
+      fprintf (stderr, __FILE__ ": Error while opening remote %s dir.\n",
+	       local_browser.dir);
+      goto end;
     }
 
   while (!connector_get_next_dentry (d_iter))
@@ -679,8 +671,8 @@ elektroid_load_remote_dir (gpointer data)
     }
   connector_free_dir_iterator (d_iter);
 
+end:
   gtk_tree_view_columns_autosize (remote_browser.view);
-
   return FALSE;
 }
 
@@ -708,51 +700,50 @@ elektroid_load_local_dir (gpointer data)
 
   browser_reset (&local_browser);
 
-  if ((dir = opendir (local_browser.dir)) != NULL)
+  if (!(dir = opendir (local_browser.dir)))
     {
-      path = malloc (PATH_MAX);
-      while ((dirent = readdir (dir)) != NULL)
+      fprintf (stderr, __FILE__ ": Error while opening local %s dir.\n",
+	       local_browser.dir);
+      goto end;
+    }
+
+  while ((dirent = readdir (dir)) != NULL)
+    {
+      if (dirent->d_name[0] == '.')
 	{
-	  if (dirent->d_name[0] != '.')
-	    {
-	      if (dirent->d_type == DT_DIR
-		  || (dirent->d_type == DT_REG
-		      && elektroid_valid_file (dirent->d_name)))
-		{
-		  if (dirent->d_type == DT_DIR)
-		    {
-		      type = 'D';
-		      size = -1;
-		    }
-		  else
-		    {
-		      type = 'F';
-		      snprintf (path, PATH_MAX, "%s/%s", local_browser.dir,
-				dirent->d_name);
-		      if (stat (path, &st) == 0)
-			{
-			  size = st.st_size;
-			}
-		      else
-			{
-			  size = -1;
-			}
-		    }
-		  elektroid_add_dentry_item (list_store, type,
-					     dirent->d_name, size);
-		}
-	    }
+	  continue;
 	}
-      closedir (dir);
-      free (path);
-    }
-  else
-    {
-      fprintf (stderr, __FILE__ ": Error while opening dir.\n");
-    }
 
+      if (dirent->d_type == DT_DIR
+	  || (dirent->d_type == DT_REG
+	      && elektroid_valid_file (dirent->d_name)))
+	{
+	  if (dirent->d_type == DT_DIR)
+	    {
+	      type = 'D';
+	      size = -1;
+	    }
+	  else
+	    {
+	      type = 'F';
+	      path = chain_path (local_browser.dir, dirent->d_name);
+	      if (stat (path, &st) == 0)
+		{
+		  size = st.st_size;
+		}
+	      else
+		{
+		  size = -1;
+		}
+	      free (path);
+	    }
+	  elektroid_add_dentry_item (list_store, type, dirent->d_name, size);
+	}
+    }
+  closedir (dir);
+
+end:
   gtk_tree_view_columns_autosize (local_browser.view);
-
   return FALSE;
 }
 
@@ -1216,15 +1207,95 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
 }
 
 static void
+elektroid_add_upload_task_dir (gchar * rel_dir)
+{
+  gchar *path;
+  struct dirent *dirent;
+  gchar *remote_abs_dir;
+  gchar *local_abs_dir = chain_path (local_browser.dir, rel_dir);
+  DIR *dir = opendir (local_abs_dir);
+
+  if (!dir)
+    {
+      fprintf (stderr, __FILE__ ": Error while opening local %s dir.\n",
+	       local_abs_dir);
+      goto cleanup_not_dir;
+    }
+
+  remote_abs_dir = chain_path (remote_browser.dir, rel_dir);
+  if (elektroid_remote_mkdir (remote_abs_dir))
+    {
+      fprintf (stderr, __FILE__ ": Error while creating remote %s dir.\n",
+	       remote_abs_dir);
+      goto cleanup;
+    }
+
+  if (!strchr (rel_dir, '/'))
+    {				//first call
+      remote_browser.load_dir (NULL);
+    }
+
+  while ((dirent = readdir (dir)) != NULL)
+    {
+      if (dirent->d_name[0] == '.')
+	{
+	  continue;
+	}
+
+      if (dirent->d_type == DT_DIR
+	  || (dirent->d_type == DT_REG
+	      && elektroid_valid_file (dirent->d_name)))
+	{
+	  if (dirent->d_type == DT_DIR)
+	    {
+	      path = chain_path (rel_dir, dirent->d_name);
+	      elektroid_add_upload_task_dir (path);
+	      free (path);
+	    }
+	  else
+	    {
+	      path = chain_path (local_abs_dir, dirent->d_name);
+	      elektroid_add_task (UPLOAD, path, remote_abs_dir);
+	      free (path);
+	    }
+	}
+    }
+
+cleanup:
+  free (remote_abs_dir);
+  closedir (dir);
+cleanup_not_dir:
+  free (local_abs_dir);
+}
+
+static void
 elektroid_add_upload_task (GtkTreeModel * model,
 			   GtkTreePath * path,
 			   GtkTreeIter * iter, gpointer userdata)
 {
-  gchar *src = browser_get_iter_path (&local_browser, iter);
-  gchar *dst = strdup (remote_browser.dir);
-  elektroid_add_task (UPLOAD, src, dst);
-  free (src);
-  free (dst);
+  gchar *dst;
+  gchar *name;
+  gchar *icon;
+  gchar type;
+  gchar *src;
+
+  browser_get_item_info (model, iter, &icon, &name, NULL);
+  type = get_type_from_inventory_icon (icon);
+
+  if (type == 'D')
+    {
+      elektroid_add_upload_task_dir (name);
+    }
+  else
+    {
+      src = chain_path (local_browser.dir, name);
+      dst = strdup (remote_browser.dir);
+      elektroid_add_task (UPLOAD, src, dst);
+      free (dst);
+      free (src);
+    }
+  free (name);
+  free (icon);
 }
 
 static void
@@ -1301,15 +1372,86 @@ elektroid_download_task (gpointer data)
 }
 
 static void
+elektroid_add_download_task_dir (gchar * rel_dir)
+{
+  gchar *path;
+  gchar *local_abs_dir;
+  struct connector_dir_iterator *d_iter;
+  gchar *remote_abs_dir = chain_path (remote_browser.dir, rel_dir);
+
+  d_iter = connector_read_dir (&connector, remote_abs_dir);
+  elektroid_check_connector ();
+  if (d_iter == NULL)
+    {
+      fprintf (stderr, __FILE__ ": Error while opening remote %s dir.\n",
+	       remote_abs_dir);
+      goto cleanup_not_dir;
+    }
+
+  local_abs_dir = chain_path (local_browser.dir, rel_dir);
+  if (elektroid_local_mkdir (local_abs_dir))
+    {
+      fprintf (stderr, __FILE__ ": Error while creating local %s dir.\n",
+	       local_abs_dir);
+      goto cleanup;
+    }
+
+  if (!strchr (rel_dir, '/'))
+    {				//first call
+      local_browser.load_dir (NULL);
+    }
+
+  while (!connector_get_next_dentry (d_iter))
+    {
+      if (d_iter->type == 'D')
+	{
+	  path = chain_path (rel_dir, d_iter->dentry);
+	  elektroid_add_download_task_dir (path);
+	  free (path);
+	}
+      else
+	{
+	  path = chain_path (remote_abs_dir, d_iter->dentry);
+	  elektroid_add_task (DOWNLOAD, path, local_abs_dir);
+	  free (path);
+	}
+    }
+
+cleanup:
+  free (local_abs_dir);
+  connector_free_dir_iterator (d_iter);
+cleanup_not_dir:
+  free (remote_abs_dir);
+}
+
+static void
 elektroid_add_download_task (GtkTreeModel * model,
 			     GtkTreePath * path,
 			     GtkTreeIter * iter, gpointer data)
 {
-  gchar *src = browser_get_iter_path (&remote_browser, iter);
-  gchar *dst = strdup (local_browser.dir);
-  elektroid_add_task (DOWNLOAD, src, dst);
-  free (src);
-  free (dst);
+  gchar *dst;
+  gchar *name;
+  gchar *icon;
+  gchar type;
+  gchar *src;
+
+  browser_get_item_info (model, iter, &icon, &name, NULL);
+  type = get_type_from_inventory_icon (icon);
+
+  if (type == 'D')
+    {
+      elektroid_add_download_task_dir (name);
+    }
+  else
+    {
+      src = chain_path (remote_browser.dir, name);
+      dst = strdup (local_browser.dir);
+      elektroid_add_task (DOWNLOAD, src, dst);
+      free (dst);
+      free (src);
+    }
+  free (name);
+  free (icon);
 }
 
 static void
