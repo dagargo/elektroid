@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: elektroid 0.4\n"
+"Project-Id-Version: elektroid 1.1\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2019-12-07 09:24+0100\n"
-"PO-Revision-Date: 2019-11-18 18:55+0100\n"
+"POT-Creation-Date: 2020-02-08 15:44+0100\n"
+"PO-Revision-Date: 2020-02-08 16:22+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -17,67 +17,67 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/elektroid.c:161
+#: src/elektroid.c:160
 #, c-format
 msgid "Connected to %s"
 msgstr "Connected to %s"
 
-#: src/elektroid.c:168 src/elektroid.c:1595
+#: src/elektroid.c:167 src/elektroid.c:1766
 msgid "Not connected"
 msgstr "Not connected"
 
-#: src/elektroid.c:275
+#: src/elektroid.c:268
 #, c-format
 msgid "Error while deleting %s: %s"
 msgstr "Error while deleting %s: %s"
 
-#: src/elektroid.c:312 res/gui.glade:53
+#: src/elektroid.c:336 res/gui.glade:53
 msgid "Rename"
 msgstr "Rename"
 
-#: src/elektroid.c:337
+#: src/elektroid.c:361
 #, c-format
 msgid "Error while renaming to %s: %s"
 msgstr "Error while renaming to %s: %s"
 
-#: src/elektroid.c:740 res/gui.glade:313 res/gui.glade:553
+#: src/elektroid.c:775 res/gui.glade:318 res/gui.glade:560
 msgid "Add directory"
 msgstr "Add directory"
 
-#: src/elektroid.c:764
+#: src/elektroid.c:799
 #, c-format
 msgid "Error while creating dir %s: %s"
 msgstr "Error while creating dir %s: %s"
 
-#: src/elektroid.c:876
+#: src/elektroid.c:911
 msgid "Queued"
 msgstr "Queued"
 
-#: src/elektroid.c:878
+#: src/elektroid.c:913
 msgid "Running"
 msgstr "Running"
 
-#: src/elektroid.c:880
+#: src/elektroid.c:915
 msgid "Completed"
 msgstr "Completed"
 
-#: src/elektroid.c:882
+#: src/elektroid.c:917
 msgid "Completed with errors"
 msgstr "Completed with errors"
 
-#: src/elektroid.c:884
+#: src/elektroid.c:919
 msgid "Canceled"
 msgstr "Canceled"
 
-#: src/elektroid.c:886 src/elektroid.c:900
+#: src/elektroid.c:921 src/elektroid.c:935
 msgid "Undefined"
 msgstr "Undefined"
 
-#: src/elektroid.c:896
+#: src/elektroid.c:931
 msgid "Upload"
 msgstr "Upload"
 
-#: src/elektroid.c:898
+#: src/elektroid.c:933
 msgid "Download"
 msgstr "Download"
 
@@ -93,66 +93,66 @@ msgstr "GNU/Linux sample transfer application for Elektron devices"
 msgid "About"
 msgstr "About"
 
-#: res/gui.glade:292 res/gui.glade:532
+#: res/gui.glade:297 res/gui.glade:539
 msgid "Go to parent directory"
 msgstr "Go to parent directory"
 
-#: res/gui.glade:334 res/gui.glade:574
+#: res/gui.glade:339 res/gui.glade:581
 msgid "Refresh directory"
 msgstr "Refresh directory"
 
-#: res/gui.glade:396 res/gui.glade:636 res/gui.glade:1252
+#: res/gui.glade:403 res/gui.glade:645 res/gui.glade:1271
 msgid "Name"
 msgstr "Name"
 
-#: res/gui.glade:410 res/gui.glade:650
+#: res/gui.glade:417 res/gui.glade:659
 msgid "Size"
 msgstr "Size"
 
-#: res/gui.glade:448
-msgid "Upload sample"
-msgstr "Upload sample"
+#: res/gui.glade:455
+msgid "Upload selection"
+msgstr "Upload selection"
 
-#: res/gui.glade:470
-msgid "Download sample"
-msgstr "Download sample"
+#: res/gui.glade:477
+msgid "Download selection"
+msgstr "Download selection"
 
-#: res/gui.glade:715
+#: res/gui.glade:712
 msgid "Refresh devices"
 msgstr "Refresh devices"
 
-#: res/gui.glade:785
+#: res/gui.glade:795
 msgid "Auto play"
 msgstr "Auto play"
 
-#: res/gui.glade:1009
+#: res/gui.glade:1027
 msgid "Status"
 msgstr "Status"
 
-#: res/gui.glade:1020
+#: res/gui.glade:1038
 msgid "Type"
 msgstr "Type"
 
-#: res/gui.glade:1031
+#: res/gui.glade:1049
 msgid "Source"
 msgstr "Source"
 
-#: res/gui.glade:1045
+#: res/gui.glade:1063
 msgid "Destiny"
 msgstr "Destiny"
 
-#: res/gui.glade:1060
+#: res/gui.glade:1078
 msgid "Progress"
 msgstr "Progress"
 
-#: res/gui.glade:1090
+#: res/gui.glade:1110
 msgid "Cancel running task"
 msgstr "Cancel running task"
 
-#: res/gui.glade:1111
+#: res/gui.glade:1131
 msgid "Remove queued tasks"
 msgstr "Remove queued tasks"
 
-#: res/gui.glade:1132
+#: res/gui.glade:1152
 msgid "Clear finished tasks"
 msgstr "Clear finished tasks"

@@ -452,7 +452,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="sensitive">False</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <property name="tooltip_text" translatable="yes">Upload sample</property>
+                            <property name="tooltip_text" translatable="yes">Upload selection</property>
                             <child>
                               <object class="GtkImage">
                                 <property name="visible">True</property>
@@ -474,7 +474,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="sensitive">False</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <property name="tooltip_text" translatable="yes">Download sample</property>
+                            <property name="tooltip_text" translatable="yes">Download selection</property>
                             <property name="always_show_image">True</property>
                             <child>
                               <object class="GtkImage">
