@@ -1175,8 +1175,10 @@ elektroid_upload_task (gpointer data)
 
   g_array_free (sample, TRUE);
 
-  g_idle_add (remote_browser.load_dir, NULL);
-
+  if (strcmp (active_task.dst, remote_browser.dir) == 0)
+    {
+      g_idle_add (remote_browser.load_dir, NULL);
+    }
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
   g_idle_add (elektroid_check_task_buttons, NULL);
