@@ -29,7 +29,7 @@ msgstr "Non connecté"
 #: src/elektroid.c:268
 #, c-format
 msgid "Error while deleting %s: %s"
-msgstr "Erreur lors de la délation de %s : %s"
+msgstr "Erreur lors de la suppression de %s : %s"
 
 #: src/elektroid.c:300
 msgid "Are you sure you want to delete the selected items?"
@@ -41,7 +41,7 @@ msgstr "Annuler"
 
 #: src/elektroid.c:302 res/gui.glade:66
 msgid "Delete"
-msgstr "Effacer"
+msgstr "Supprimer"
 
 #: src/elektroid.c:357 res/gui.glade:53
 msgid "Rename"
@@ -159,11 +159,11 @@ msgstr "Progrès"
 
 #: res/gui.glade:1110
 msgid "Cancel running task"
-msgstr "Annulation de la tâche en cours"
+msgstr "Annuler de la tâche en cours"
 
 #: res/gui.glade:1131
 msgid "Remove queued tasks"
-msgstr "Suppression des tâches dans la file d'attente"
+msgstr "Supprimer des tâches dans la file d'attente"
 
 #: res/gui.glade:1152
 msgid "Clear finished tasks"

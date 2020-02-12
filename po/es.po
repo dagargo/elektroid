@@ -29,7 +29,7 @@ msgstr "No conectado"
 #: src/elektroid.c:268
 #, c-format
 msgid "Error while deleting %s: %s"
-msgstr "Error al borrar %s: %s"
+msgstr "Error al eliminar %s: %s"
 
 #: src/elektroid.c:300
 msgid "Are you sure you want to delete the selected items?"
@@ -41,7 +41,7 @@ msgstr "Cancelar"
 
 #: src/elektroid.c:302 res/gui.glade:66
 msgid "Delete"
-msgstr "Borrar"
+msgstr "Eliminar"
 
 #: src/elektroid.c:357 res/gui.glade:53
 msgid "Rename"
