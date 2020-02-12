@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.1\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2020-02-08 15:44+0100\n"
+"POT-Creation-Date: 2020-02-12 18:04+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,7 +22,7 @@ msgstr ""
 msgid "Connected to %s"
 msgstr ""
 
-#: src/elektroid.c:167 src/elektroid.c:1766
+#: src/elektroid.c:167 src/elektroid.c:1799
 msgid "Not connected"
 msgstr ""
 
@@ -31,58 +31,66 @@ msgstr ""
 msgid "Error while deleting %s: %s"
 msgstr ""
 
-#: src/elektroid.c:336 res/gui.glade:53
+#: src/elektroid.c:300
+msgid "Are you sure you want to delete the selected items?"
+msgstr ""
+
+#: src/elektroid.c:301
+msgid "Cancel"
+msgstr ""
+
+#: src/elektroid.c:302 res/gui.glade:66
+msgid "Delete"
+msgstr ""
+
+#: src/elektroid.c:357 res/gui.glade:53
 msgid "Rename"
 msgstr ""
 
-#: src/elektroid.c:361
+#: src/elektroid.c:382
 #, c-format
 msgid "Error while renaming to %s: %s"
 msgstr ""
 
-#: src/elektroid.c:775 res/gui.glade:318 res/gui.glade:560
+#: src/elektroid.c:796 res/gui.glade:318 res/gui.glade:560
 msgid "Add directory"
 msgstr ""
 
-#: src/elektroid.c:799
+#: src/elektroid.c:820
 #, c-format
 msgid "Error while creating dir %s: %s"
 msgstr ""
 
-#: src/elektroid.c:911
+#: src/elektroid.c:932
 msgid "Queued"
 msgstr ""
 
-#: src/elektroid.c:913
+#: src/elektroid.c:934
 msgid "Running"
 msgstr ""
 
-#: src/elektroid.c:915
+#: src/elektroid.c:936
 msgid "Completed"
 msgstr ""
 
-#: src/elektroid.c:917
+#: src/elektroid.c:938
 msgid "Completed with errors"
 msgstr ""
 
-#: src/elektroid.c:919
+#: src/elektroid.c:940
 msgid "Canceled"
 msgstr ""
 
-#: src/elektroid.c:921 src/elektroid.c:935
+#: src/elektroid.c:942 src/elektroid.c:956
 msgid "Undefined"
 msgstr ""
 
-#: src/elektroid.c:931
+#: src/elektroid.c:952
 msgid "Upload"
 msgstr ""
 
-#: src/elektroid.c:933
+#: src/elektroid.c:954
 msgid "Download"
-msgstr ""
-
-#: res/gui.glade:66
-msgid "Delete"
 msgstr ""
 
 #: res/gui.glade:131

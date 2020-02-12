@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.1\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2020-02-08 15:44+0100\n"
-"PO-Revision-Date: 2020-02-08 16:22+0100\n"
+"POT-Creation-Date: 2020-02-12 18:04+0100\n"
+"PO-Revision-Date: 2020-02-12 18:10+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -22,7 +22,7 @@ msgstr ""
 msgid "Connected to %s"
 msgstr "Connected to %s"
 
-#: src/elektroid.c:167 src/elektroid.c:1766
+#: src/elektroid.c:167 src/elektroid.c:1799
 msgid "Not connected"
 msgstr "Not connected"
 
@@ -31,59 +31,67 @@ msgstr "Not connected"
 msgid "Error while deleting %s: %s"
 msgstr "Error while deleting %s: %s"
 
-#: src/elektroid.c:336 res/gui.glade:53
+#: src/elektroid.c:300
+msgid "Are you sure you want to delete the selected items?"
+msgstr "Are you sure you want to delete the selected items?"
+
+#: src/elektroid.c:301
+msgid "Cancel"
+msgstr "Cancel"
+
+#: src/elektroid.c:302 res/gui.glade:66
+msgid "Delete"
+msgstr "Delete"
+
+#: src/elektroid.c:357 res/gui.glade:53
 msgid "Rename"
 msgstr "Rename"
 
-#: src/elektroid.c:361
+#: src/elektroid.c:382
 #, c-format
 msgid "Error while renaming to %s: %s"
 msgstr "Error while renaming to %s: %s"
 
-#: src/elektroid.c:775 res/gui.glade:318 res/gui.glade:560
+#: src/elektroid.c:796 res/gui.glade:318 res/gui.glade:560
 msgid "Add directory"
 msgstr "Add directory"
 
-#: src/elektroid.c:799
+#: src/elektroid.c:820
 #, c-format
 msgid "Error while creating dir %s: %s"
 msgstr "Error while creating dir %s: %s"
 
-#: src/elektroid.c:911
+#: src/elektroid.c:932
 msgid "Queued"
 msgstr "Queued"
 
-#: src/elektroid.c:913
+#: src/elektroid.c:934
 msgid "Running"
 msgstr "Running"
 
-#: src/elektroid.c:915
+#: src/elektroid.c:936
 msgid "Completed"
 msgstr "Completed"
 
-#: src/elektroid.c:917
+#: src/elektroid.c:938
 msgid "Completed with errors"
 msgstr "Completed with errors"
 
-#: src/elektroid.c:919
+#: src/elektroid.c:940
 msgid "Canceled"
 msgstr "Canceled"
 
-#: src/elektroid.c:921 src/elektroid.c:935
+#: src/elektroid.c:942 src/elektroid.c:956
 msgid "Undefined"
 msgstr "Undefined"
 
-#: src/elektroid.c:931
+#: src/elektroid.c:952
 msgid "Upload"
 msgstr "Upload"
 
-#: src/elektroid.c:933
+#: src/elektroid.c:954
 msgid "Download"
 msgstr "Download"
-
-#: res/gui.glade:66
-msgid "Delete"
-msgstr "Delete"
 
 #: res/gui.glade:131
 msgid "GNU/Linux sample transfer application for Elektron devices"

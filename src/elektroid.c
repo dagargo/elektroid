@@ -286,13 +286,34 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
   GtkTreeRowReference *reference;
   GList *item;
   GtkTreePath *tree_path;
-  GtkTreeSelection *selection =
+  GtkTreeSelection *selection;
+  GtkTreeModel *model;
+  GtkWidget *dialog;
+  GList *tree_path_list;
+  GList *ref_list;
+  gint confirmation;
+
+  dialog =
+    gtk_message_dialog_new (GTK_WINDOW (main_window),
+			    GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
+			    GTK_MESSAGE_ERROR, GTK_BUTTONS_NONE,
+			    _("Are you sure you want to delete the selected items?"));
+  gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("Cancel"),
+			  GTK_RESPONSE_CANCEL, _("Delete"),
+			  GTK_RESPONSE_ACCEPT, NULL);
+  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
+  confirmation = gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_widget_destroy (dialog);
+  if (confirmation != GTK_RESPONSE_ACCEPT)
+    {
+      return;
+    }
+
+  selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (popup_browser->view));
-  GtkTreeModel *model = GTK_TREE_MODEL
-    (gtk_tree_view_get_model (popup_browser->view));
-  GList *tree_path_list =
-    gtk_tree_selection_get_selected_rows (selection, &model);
-  GList *ref_list = NULL;
+  model = GTK_TREE_MODEL (gtk_tree_view_get_model (popup_browser->view));
+  tree_path_list = gtk_tree_selection_get_selected_rows (selection, &model);
+  ref_list = NULL;
 
   for (item = tree_path_list; item != NULL; item = g_list_next (item))
     {
