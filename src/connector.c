@@ -392,13 +392,13 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
 
   if (!connector->outputp)
     {
-      fprintf (stderr, __FILE__ ": Output port is NULL.\n");
+      fprintf (stderr, __FILE__ ": Output port is NULL\n");
       return -1;
     }
 
   if ((tx_len = snd_rawmidi_write (connector->outputp, data, len)) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while sending message.\n");
+      fprintf (stderr, __FILE__ ": Error while sending message\n");
       connector_destroy (connector);
       return tx_len;
     }
@@ -467,13 +467,13 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len)
 
   if (!connector->inputp)
     {
-      fprintf (stderr, __FILE__ ": Input port is NULL.\n");
+      fprintf (stderr, __FILE__ ": Input port is NULL\n");
       return -1;
     }
 
   if ((rx_len = snd_rawmidi_read (connector->inputp, data, len)) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while receiving message.\n");
+      fprintf (stderr, __FILE__ ": Error while receiving message\n");
       connector_destroy (connector);
       return rx_len;
     }
@@ -926,7 +926,7 @@ connector_init (struct connector *connector, gint card)
 
   if (card < 0)
     {
-      debug_print (1, "Invalid card.\n");
+      debug_print (1, "Invalid card\n");
       err = -1;
       goto cleanup;
     }
@@ -937,7 +937,8 @@ connector_init (struct connector *connector, gint card)
        snd_rawmidi_open (&connector->inputp, &connector->outputp,
 			 name, SND_RAWMIDI_NONBLOCK)) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while opening MIDI port.\n");
+      fprintf (stderr, __FILE__ ": Error while opening MIDI port: %s\n",
+	       g_strerror (errno));
       goto cleanup;
     }
 
