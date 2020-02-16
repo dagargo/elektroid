@@ -297,7 +297,8 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
     gtk_message_dialog_new (GTK_WINDOW (main_window),
 			    GTK_DIALOG_DESTROY_WITH_PARENT | GTK_DIALOG_MODAL,
 			    GTK_MESSAGE_ERROR, GTK_BUTTONS_NONE,
-			    _("Are you sure you want to delete the selected items?"));
+			    _
+			    ("Are you sure you want to delete the selected items?"));
   gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("Cancel"),
 			  GTK_RESPONSE_CANCEL, _("Delete"),
 			  GTK_RESPONSE_ACCEPT, NULL);
@@ -874,26 +875,78 @@ elektroid_local_rename (const gchar * old, const gchar * new)
 static gint
 elektroid_remote_delete (const gchar * path, const char type)
 {
-  if (type == ELEKTROID_FILE)
+  struct connector_dir_iterator *d_iter;
+  gchar *new_path;
+
+  if (type == ELEKTROID_DIR)
     {
-      return connector_delete_file (&connector, path);
+      debug_print (1, "Deleting remote %s dir...\n", path);
+      d_iter = connector_read_dir (&connector, path);
+      elektroid_check_connector ();
+      if (d_iter)
+	{
+	  while (!connector_get_next_dentry (d_iter))
+	    {
+	      new_path = chain_path (path, d_iter->dentry);
+	      elektroid_remote_delete (new_path, d_iter->type);
+	      free (new_path);
+	    }
+	  connector_free_dir_iterator (d_iter);
+	}
+      else
+	{
+	  fprintf (stderr, __FILE__ ": Error while opening remote %s dir.\n",
+		   path);
+	}
+      return connector_delete_dir (&connector, path);
     }
   else
     {
-      return connector_delete_dir (&connector, path);
+      debug_print (1, "Deleting remote %s file...\n", path);
+      return connector_delete_file (&connector, path);
     }
 }
 
 static gint
 elektroid_local_delete (const gchar * path, const char type)
 {
-  if (type == ELEKTROID_FILE)
+  DIR *dir;
+  struct dirent *dirent;
+  gchar *new_path;
+  gchar new_type;
+
+  if (type == ELEKTROID_DIR)
     {
-      return unlink (path);
+      debug_print (1, "Deleting local %s dir...\n", path);
+      dir = opendir (path);
+      if (dir)
+	{
+	  while ((dirent = readdir (dir)) != NULL)
+	    {
+	      if (strcmp (dirent->d_name, ".") == 0 ||
+		  strcmp (dirent->d_name, "..") == 0)
+		{
+		  continue;
+		}
+	      new_path = chain_path (path, dirent->d_name);
+	      new_type =
+		dirent->d_type == DT_DIR ? ELEKTROID_DIR : ELEKTROID_FILE;
+	      elektroid_local_delete (new_path, new_type);
+	      free (new_path);
+	    }
+	  closedir (dir);
+	}
+      else
+	{
+	  fprintf (stderr, __FILE__ ": Error while opening local %s dir.\n",
+		   path);
+	}
+      return rmdir (path);
     }
   else
     {
-      return rmdir (path);
+      debug_print (1, "Deleting local %s file...\n", path);
+      return unlink (path);
     }
 }
 

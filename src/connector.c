@@ -548,7 +548,7 @@ cleanup:
 }
 
 struct connector_dir_iterator *
-connector_read_dir (struct connector *connector, gchar * dir)
+connector_read_dir (struct connector *connector, const gchar * dir)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
