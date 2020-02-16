@@ -219,11 +219,11 @@ cli_delete (int argc, char *argv[], int optind, char type)
 
   path = cli_get_path (device_path);
 
-  if (type == 'F')
+  if (type == ELEKTROID_FILE)
     {
       res = connector_delete_file (&connector, path);
     }
-  else if (type == 'D')
+  else if (type == ELEKTROID_DIR)
     {
       res = connector_delete_dir (&connector, path);
     }
@@ -448,11 +448,11 @@ main (int argc, char *argv[])
     }
   else if (strcmp (command, "rm") == 0)
     {
-      res = cli_delete (argc, argv, optind, 'F');
+      res = cli_delete (argc, argv, optind, ELEKTROID_FILE);
     }
   else if (strcmp (command, "rmdir") == 0)
     {
-      res = cli_delete (argc, argv, optind, 'D');
+      res = cli_delete (argc, argv, optind, ELEKTROID_DIR);
     }
   else if (strcmp (command, "download") == 0)
     {

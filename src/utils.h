@@ -22,6 +22,9 @@
 
 #define LABEL_MAX 128
 
+#define ELEKTROID_FILE 'F'
+#define ELEKTROID_DIR 'D'
+
 #define debug_print(level, ...) if (level <= debug_level) fprintf(stderr, __VA_ARGS__)
 
 int debug_level;

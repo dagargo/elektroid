@@ -544,7 +544,7 @@ elektroid_local_check_selection (gpointer data)
       model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
       browser_get_item_info (model, &iter, &icon, &name, NULL);
       type = get_type_from_inventory_icon (icon);
-      if (type == 'F')
+      if (type == ELEKTROID_FILE)
 	{
 	  sample_path = chain_path (local_browser.dir, name);
 	  elektroid_start_load_thread (sample_path);
@@ -741,12 +741,12 @@ elektroid_load_local_dir (gpointer data)
 	{
 	  if (dirent->d_type == DT_DIR)
 	    {
-	      type = 'D';
+	      type = ELEKTROID_DIR;
 	      size = -1;
 	    }
 	  else
 	    {
-	      type = 'F';
+	      type = ELEKTROID_FILE;
 	      path = chain_path (local_browser.dir, dirent->d_name);
 	      if (stat (path, &st) == 0)
 		{
@@ -874,7 +874,7 @@ elektroid_local_rename (const gchar * old, const gchar * new)
 static gint
 elektroid_remote_delete (const gchar * path, const char type)
 {
-  if (type == 'F')
+  if (type == ELEKTROID_FILE)
     {
       return connector_delete_file (&connector, path);
     }
@@ -887,7 +887,7 @@ elektroid_remote_delete (const gchar * path, const char type)
 static gint
 elektroid_local_delete (const gchar * path, const char type)
 {
-  if (type == 'F')
+  if (type == ELEKTROID_FILE)
     {
       return unlink (path);
     }
@@ -1305,7 +1305,7 @@ elektroid_add_upload_task (GtkTreeModel * model,
   browser_get_item_info (model, iter, &icon, &name, NULL);
   type = get_type_from_inventory_icon (icon);
 
-  if (type == 'D')
+  if (type == ELEKTROID_DIR)
     {
       elektroid_add_upload_task_dir (name);
     }
@@ -1426,7 +1426,7 @@ elektroid_add_download_task_dir (gchar * rel_dir)
 
   while (!connector_get_next_dentry (d_iter))
     {
-      if (d_iter->type == 'D')
+      if (d_iter->type == ELEKTROID_DIR)
 	{
 	  path = chain_path (rel_dir, d_iter->dentry);
 	  elektroid_add_download_task_dir (path);
@@ -1461,7 +1461,7 @@ elektroid_add_download_task (GtkTreeModel * model,
   browser_get_item_info (model, iter, &icon, &name, NULL);
   type = get_type_from_inventory_icon (icon);
 
-  if (type == 'D')
+  if (type == ELEKTROID_DIR)
     {
       elektroid_add_download_task_dir (name);
     }

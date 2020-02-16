@@ -157,11 +157,11 @@ get_type_from_inventory_icon (const char *icon)
 
   if (strcmp (icon, REG_TYPE) == 0)
     {
-      type = 'F';
+      type = ELEKTROID_FILE;
     }
   else
     {
-      type = 'D';
+      type = ELEKTROID_DIR;
     }
   return type;
 }
@@ -171,7 +171,7 @@ get_inventory_icon_from_type (char type)
 {
   const char *icon;
 
-  if (type == 'F')
+  if (type == ELEKTROID_FILE)
     {
       icon = REG_TYPE;
     }
