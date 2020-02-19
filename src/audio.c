@@ -63,7 +63,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
   debug_print (2, "Writing %2d frames...\n", req_frames);
   pa_stream_begin_write (stream, &buffer, &size);
 
-  if (audio->pos == audio->sample->len)
+  if (audio->pos == audio->sample->len && !audio->loop)
     {
       v = buffer;
       for (i = 0; i < req_frames; i++)
