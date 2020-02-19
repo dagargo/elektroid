@@ -146,7 +146,7 @@ msgid "Source"
 msgstr "Quelle"
 
 #: res/gui.glade:1063
-msgid "Destiny"
+msgid "Destination"
 msgstr "Ziel"
 
 #: res/gui.glade:1078
