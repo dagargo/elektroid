@@ -1060,7 +1060,7 @@ audio-volume-medium-symbolic</property>
                         </child>
                         <child>
                           <object class="GtkTreeViewColumn">
-                            <property name="title" translatable="yes">Destiny</property>
+                            <property name="title" translatable="yes">Destination</property>
                             <property name="expand">True</property>
                             <child>
                               <object class="GtkCellRendererText">
