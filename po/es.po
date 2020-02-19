@@ -149,7 +149,7 @@ msgid "Source"
 msgstr "Origen"
 
 #: res/gui.glade:1063
-msgid "Destiny"
+msgid "Destination"
 msgstr "Destino"
 
 #: res/gui.glade:1078
