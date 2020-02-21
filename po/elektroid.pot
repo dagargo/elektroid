@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.1\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2020-02-12 18:04+0100\n"
+"POT-Creation-Date: 2020-02-21 11:35+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -22,74 +22,74 @@ msgstr ""
 msgid "Connected to %s"
 msgstr ""
 
-#: src/elektroid.c:167 src/elektroid.c:1799
+#: src/elektroid.c:167 src/elektroid.c:1852
 msgid "Not connected"
 msgstr ""
 
 #: src/elektroid.c:268
 #, c-format
-msgid "Error while deleting %s: %s"
-msgstr ""
-
-#: src/elektroid.c:300
-msgid "Are you sure you want to delete the selected items?"
+msgid "Error while deleting “%s”: %s."
 msgstr ""
 
 #: src/elektroid.c:301
+msgid "Are you sure you want to delete the selected items?"
+msgstr ""
+
+#: src/elektroid.c:302
 msgid "Cancel"
 msgstr ""
 
-#: src/elektroid.c:302 res/gui.glade:66
+#: src/elektroid.c:303 res/gui.glade:66
 msgid "Delete"
 msgstr ""
 
-#: src/elektroid.c:357 res/gui.glade:53
+#: src/elektroid.c:358 res/gui.glade:53
 msgid "Rename"
 msgstr ""
 
-#: src/elektroid.c:382
+#: src/elektroid.c:383
 #, c-format
-msgid "Error while renaming to %s: %s"
+msgid "Error while renaming to “%s”: %s."
 msgstr ""
 
-#: src/elektroid.c:796 res/gui.glade:318 res/gui.glade:560
+#: src/elektroid.c:797 res/gui.glade:318 res/gui.glade:560
 msgid "Add directory"
 msgstr ""
 
-#: src/elektroid.c:820
+#: src/elektroid.c:821
 #, c-format
-msgid "Error while creating dir %s: %s"
+msgid "Error while creating dir “%s”: %s."
 msgstr ""
 
-#: src/elektroid.c:932
+#: src/elektroid.c:985
 msgid "Queued"
 msgstr ""
 
-#: src/elektroid.c:934
+#: src/elektroid.c:987
 msgid "Running"
 msgstr ""
 
-#: src/elektroid.c:936
+#: src/elektroid.c:989
 msgid "Completed"
 msgstr ""
 
-#: src/elektroid.c:938
+#: src/elektroid.c:991
 msgid "Completed with errors"
 msgstr ""
 
-#: src/elektroid.c:940
+#: src/elektroid.c:993
 msgid "Canceled"
 msgstr ""
 
-#: src/elektroid.c:942 src/elektroid.c:956
+#: src/elektroid.c:995 src/elektroid.c:1009
 msgid "Undefined"
 msgstr ""
 
-#: src/elektroid.c:952
+#: src/elektroid.c:1005
 msgid "Upload"
 msgstr ""
 
-#: src/elektroid.c:954
+#: src/elektroid.c:1007
 msgid "Download"
 msgstr ""
 
@@ -146,7 +146,7 @@ msgid "Source"
 msgstr ""
 
 #: res/gui.glade:1063
-msgid "Destiny"
+msgid "Destination"
 msgstr ""
 
 #: res/gui.glade:1078

@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.1\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2020-02-19 21:00+0100\n"
-"PO-Revision-Date: 2020-02-19 21:00+0100\n"
+"POT-Creation-Date: 2020-02-21 11:35+0100\n"
+"PO-Revision-Date: 2020-02-21 11:45+0100\n"
 "Last-Translator: Dennis Braun <d_braun@kabelmail.de>\n"
 "Language-Team: German\n"
 "Language: de\n"
@@ -22,74 +22,74 @@ msgstr ""
 msgid "Connected to %s"
 msgstr "Verbunden mit %s"
 
-#: src/elektroid.c:167 src/elektroid.c:1799
+#: src/elektroid.c:167 src/elektroid.c:1852
 msgid "Not connected"
 msgstr "Nicht verbunden"
 
 #: src/elektroid.c:268
 #, c-format
-msgid "Error while deleting %s: %s"
-msgstr "Fehler beim Löschen %s: %s"
+msgid "Error while deleting “%s”: %s."
+msgstr "Fehler beim Löschen »%s«: %s."
 
-#: src/elektroid.c:300
+#: src/elektroid.c:301
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Bist du sicher das du die ausgewählten Elemente löschen möchtest?"
 
-#: src/elektroid.c:301
+#: src/elektroid.c:302
 msgid "Cancel"
 msgstr "Abbrechen"
 
-#: src/elektroid.c:302 res/gui.glade:66
+#: src/elektroid.c:303 res/gui.glade:66
 msgid "Delete"
 msgstr "Löschen"
 
-#: src/elektroid.c:357 res/gui.glade:53
+#: src/elektroid.c:358 res/gui.glade:53
 msgid "Rename"
 msgstr "Umbenennen"
 
-#: src/elektroid.c:382
+#: src/elektroid.c:383
 #, c-format
-msgid "Error while renaming to %s: %s"
-msgstr "Fehler beim Umbenennen von %s: %s"
+msgid "Error while renaming to “%s”: %s."
+msgstr "Fehler beim Umbenennen von »%s«: %s."
 
-#: src/elektroid.c:796 res/gui.glade:318 res/gui.glade:560
+#: src/elektroid.c:797 res/gui.glade:318 res/gui.glade:560
 msgid "Add directory"
 msgstr "Verzeichnis hinzufügen"
 
-#: src/elektroid.c:820
+#: src/elektroid.c:821
 #, c-format
-msgid "Error while creating dir %s: %s"
-msgstr "Fehler beim Erstellen des Verzeichnisses %s: %s"
+msgid "Error while creating dir “%s”: %s."
+msgstr "Fehler beim Erstellen des Verzeichnisses »%s«: %s."
 
-#: src/elektroid.c:932
+#: src/elektroid.c:985
 msgid "Queued"
 msgstr "In der Warteschlange"
 
-#: src/elektroid.c:934
+#: src/elektroid.c:987
 msgid "Running"
 msgstr "Arbeitet"
 
-#: src/elektroid.c:936
+#: src/elektroid.c:989
 msgid "Completed"
 msgstr "Fertig"
 
-#: src/elektroid.c:938
+#: src/elektroid.c:991
 msgid "Completed with errors"
 msgstr "Abgeschlossen mit Fehlern"
 
-#: src/elektroid.c:940
+#: src/elektroid.c:993
 msgid "Canceled"
 msgstr "Abgebrochen"
 
-#: src/elektroid.c:942 src/elektroid.c:956
+#: src/elektroid.c:995 src/elektroid.c:1009
 msgid "Undefined"
 msgstr "Undefiniert"
 
-#: src/elektroid.c:952
+#: src/elektroid.c:1005
 msgid "Upload"
 msgstr "Hochladen"
 
-#: src/elektroid.c:954
+#: src/elektroid.c:1007
 msgid "Download"
 msgstr "Herunterladen"
 

@@ -265,7 +265,7 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path)
 				GTK_DIALOG_MODAL,
 				GTK_MESSAGE_ERROR,
 				GTK_BUTTONS_CLOSE,
-				_("Error while deleting %s: %s"),
+				_("Error while deleting “%s”: %s."),
 				path, g_strerror (errno));
       gtk_dialog_run (GTK_DIALOG (dialog));
       gtk_widget_destroy (dialog);
@@ -380,7 +380,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 					GTK_DIALOG_MODAL,
 					GTK_MESSAGE_ERROR,
 					GTK_BUTTONS_CLOSE,
-					_("Error while renaming to %s: %s"),
+					_("Error while renaming to “%s”: %s."),
 					new_path, g_strerror (errno));
 	      gtk_dialog_run (GTK_DIALOG (dialog));
 	      gtk_widget_destroy (dialog);
@@ -818,7 +818,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 					GTK_DIALOG_MODAL,
 					GTK_MESSAGE_ERROR,
 					GTK_BUTTONS_CLOSE,
-					_("Error while creating dir %s: %s"),
+					_("Error while creating dir “%s”: %s."),
 					pathname, g_strerror (errno));
 	      gtk_dialog_run (GTK_DIALOG (dialog));
 	      gtk_widget_destroy (dialog);
