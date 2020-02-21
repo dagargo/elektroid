@@ -5,7 +5,7 @@ elektroid-cli \- sample transfer cli application for Elektron devices
 .B elektroid-cli
 .RI [ options ]
 .SH DESCRIPTION
-Elektroid-cli provides the same funcionality than elektroid. See man elektroid.1 for the GUI application.
+Elektroid-cli provides the same funcionality than elektroid. See man elektroid for the GUI application.
 .PP
 Provided paths must always be prepended with the device id and a colon (':'), e.g. 0:/samples. Here are the available commands.
 .SH OPTIONS
@@ -16,13 +16,13 @@ List compatible devices
 .B info [device number]
 Show device info
 .TP
-.B ls [device number]:/ 
+.B ls [device number]:/
 List directory contents
 .TP
-.B mkdir [device number]:/[directory] 
+.B mkdir [device number]:/[directory]
 Create a directory
 .TP
-.B rmdir [device number]:/[directory] 
+.B rmdir [device number]:/[directory]
 Delete a directory
 .TP
 .B upload [file] [device number]:/

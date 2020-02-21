@@ -5,7 +5,7 @@ elektroid \- sample transfer application for Elektron devices
 .B elektroid
 .RI [ options ]
 .SH DESCRIPTION
-Elektroid is a GNU/Linux sample transfer application for Elektron devices. This is the elektroid GUI application. See man elektroid-cli.1 for the CLI application.
+Elektroid is a GNU/Linux sample transfer application for Elektron devices. This is the elektroid GUI application. See man elektroid-cli for the CLI application.
 .PP
 Elektroid has been reported to work with Model:Samples, Digitakt and Analog Rytm mk1 and mk2.
 .SH OPTIONS
