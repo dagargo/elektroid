@@ -1,1 +1,1 @@
-man1_MANS = elektroid.man elektroid-cli.man
+man1_MANS = elektroid.1 elektroid-cli.1
