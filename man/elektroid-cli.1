@@ -1,13 +1,14 @@
 .TH ELEKTROID-CLI "1" "Feb 2020"
 .SH NAME
-elektroid-cli \- sample transfer cli application for Elektron devices
+elektroid-cli \- sample transfer CLI application for Elektron devices
 .SH SYNOPSIS
 .B elektroid-cli
 .RI [ options ]
 .SH DESCRIPTION
-Elektroid-cli provides the same funcionality than elektroid. See man elektroid for the GUI application.
+.B elektroid-cli
+provides the same funcionality than elektroid. See man elektroid for the GUI application.
 .PP
-Provided paths must always be prepended with the device id and a colon (':'), e.g. 0:/samples. Here are the available commands.
+Provided paths must always be prepended with the device id and a colon (':'), e.g. 0:/samples.
 .SH OPTIONS
 .TP
 .B ld
@@ -16,29 +17,29 @@ List compatible devices
 .B info [device number]
 Show device info
 .TP
-.B ls [device number]:/
+.B ls [device number]:[path to directory]
 List directory contents
 .TP
-.B mkdir [device number]:/[directory]
+.B mkdir [device number]:[path to directory]
 Create a directory
 .TP
-.B rmdir [device number]:/[directory]
-Delete a directory
+.B rmdir [device number]:[path to directory]
+Delete a directory. The directory must be empty.
 .TP
-.B upload [file] [device number]:/
-Upload a file
+.B upload [sample] [device number]:[path to directory or sample]
+Upload a sample. If the path does not exist it will be created.
 .TP
-.B download [device number]:/[file]
-Download a file
+.B download [device number]:[path to sample]
+Download a sample
 .TP
-.B mv [device number]:/[file0] [device number]:/[file1]
-Move a file
+.B mv [device number]:[path to origin sample] [device number]:[path to destination directory or sample]
+Move a sample. If the destination path does not exist it will be created.
 .TP
-.B rm [device number]:/[file]
-Delete a file
+.B rm [device number]:[path to sample]
+Delete a sample
 .PP
 .SH "SEE ALSO"
-The github page provides some examples: <https://github.com/dagargo/elektroid>
+The GitHub page provides some examples: <https://github.com/dagargo/elektroid>
 .SH "AUTHOR"
 elektroid-cli was written by David García Goñi <dagargo@gmail.com>.
 .PP
