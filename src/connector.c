@@ -405,15 +405,38 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
   return tx_len;
 }
 
+ssize_t
+connector_tx_sysex (struct connector *connector, const GByteArray * msg)
+{
+  ssize_t tx_len;
+  guint total;
+  guint len;
+  guchar *data;
+  ssize_t ret = msg->len;
+
+  data = msg->data;
+  total = 0;
+  while (total < msg->len)
+    {
+      len = msg->len - total > BUFF_SIZE ? BUFF_SIZE : msg->len - total;
+      if ((tx_len = connector_tx_raw (connector, data, len)) < 0)
+	{
+	  ret = tx_len;
+	  goto cleanup;
+	}
+      data += len;
+      total += len;
+    }
+
+cleanup:
+  return ret;
+}
+
 static ssize_t
 connector_tx (struct connector *connector, const GByteArray * msg)
 {
   ssize_t ret;
-  ssize_t tx_len;
   uint16_t aux;
-  guint total;
-  guint len;
-  guchar *data;
   GByteArray *sysex;
   GByteArray *full_msg;
 
@@ -435,27 +458,11 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   free_msg (sysex);
   g_byte_array_append (full_msg, (guint8 *) "\xf7", 1);
 
-  ret = full_msg->len;
-
-  data = full_msg->data;
-  total = 0;
-  while (total < full_msg->len)
-    {
-      len =
-	full_msg->len - total > BUFF_SIZE ? BUFF_SIZE : full_msg->len - total;
-      if ((tx_len = connector_tx_raw (connector, data, len)) < 0)
-	{
-	  ret = tx_len;
-	  goto cleanup;
-	}
-      data += len;
-      total += len;
-    }
+  ret = connector_tx_sysex (connector, full_msg);
 
   debug_print (1, "Message sent: ");
   debug_print_hex_msg (msg);
 
-cleanup:
   free_msg (full_msg);
   return ret;
 }
@@ -481,11 +488,10 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len)
   return rx_len;
 }
 
-static GByteArray *
-connector_rx (struct connector *connector)
+GByteArray *
+connector_rx_sysex (struct connector *connector)
 {
   ssize_t rx_len;
-  GByteArray *msg;
   guint8 buffer;
   GByteArray *sysex = g_byte_array_new ();
 
@@ -494,8 +500,7 @@ connector_rx (struct connector *connector)
     {
       if ((rx_len = connector_rx_raw (connector, &buffer, 1)) < 0)
 	{
-	  msg = NULL;
-	  goto cleanup;
+	  goto error;
 	}
     }
   while (rx_len == 0 || (rx_len == 1 && buffer != 0xf0));
@@ -506,12 +511,31 @@ connector_rx (struct connector *connector)
     {
       if ((rx_len = connector_rx_raw (connector, &buffer, 1)) < 0)
 	{
-	  msg = NULL;
-	  goto cleanup;
+	  goto error;
 	}
       g_byte_array_append (sysex, &buffer, rx_len);
     }
   while (rx_len == 0 || (rx_len > 0 && buffer != 0xf7));
+
+  goto end;
+
+error:
+  free_msg (sysex);
+  sysex = NULL;
+end:
+  return sysex;
+}
+
+static GByteArray *
+connector_rx (struct connector *connector)
+{
+  GByteArray *msg;
+  GByteArray *sysex = connector_rx_sysex (connector);
+
+  if (!sysex)
+    {
+      return NULL;
+    }
 
   msg = connector_get_msg_payload (sysex);
   if (msg)
@@ -520,7 +544,6 @@ connector_rx (struct connector *connector)
       debug_print_hex_msg (msg);
     }
 
-cleanup:
   free_msg (sysex);
   return msg;
 }

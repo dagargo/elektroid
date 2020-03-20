@@ -77,3 +77,7 @@ void connector_get_sample_info_from_msg (GByteArray *, gint *, guint *);
 gint connector_create_dir (struct connector *, const gchar *);
 
 GArray *connector_get_elektron_devices ();
+
+ssize_t connector_tx_sysex (struct connector *, const GByteArray *);
+
+GByteArray * connector_rx_sysex (struct connector *);
