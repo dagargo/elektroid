@@ -1,15 +1,15 @@
 # French GUI translation for elektroid.
 # Copyright (C) 2019 Olivier Humbert
 # This file is distributed under the same license as the elektroid package.
-# Olivier Humbert <trebmuh@tuxfamily.org>, 2019.
+# Olivier Humbert <trebmuh@tuxfamily.org>, 2019-2020.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.1\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2020-02-21 11:35+0100\n"
-"PO-Revision-Date: 2020-02-21 11:45+0100\n"
-"Last-Translator: David García Goñi <dagargo@gmail.com>\n"
+"PO-Revision-Date: 2020-03-20 11:26+0100\n"
+"Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
 "Language: fr\n"
 "MIME-Version: 1.0\n"
@@ -159,7 +159,7 @@ msgstr "Progrès"
 
 #: res/gui.glade:1110
 msgid "Cancel running task"
-msgstr "Annuler de la tâche en cours"
+msgstr "Annuler la tâche en cours"
 
 #: res/gui.glade:1131
 msgid "Remove queued tasks"
