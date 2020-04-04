@@ -46,6 +46,21 @@ struct connector_device
   guint card;
 };
 
+enum connector_sysex_transfer_status
+{
+  WAITING,
+  SENDING,
+  RECEIVING,
+  FINISHED
+};
+
+struct connector_sysex_transfer
+{
+  gboolean active;
+  enum connector_sysex_transfer_status status;
+  GByteArray *data;
+};
+
 gint connector_init (struct connector *, gint);
 
 void connector_destroy (struct connector *);
@@ -78,8 +93,10 @@ gint connector_create_dir (struct connector *, const gchar *);
 
 GArray *connector_get_elektron_devices ();
 
-ssize_t connector_tx_sysex (struct connector *, const GByteArray *);
+ssize_t connector_tx_sysex (struct connector *,
+			    struct connector_sysex_transfer *);
 
-GByteArray *connector_rx_sysex (struct connector *, gint *);
+GByteArray *connector_rx_sysex (struct connector *,
+				struct connector_sysex_transfer *);
 
 void free_msg (gpointer);

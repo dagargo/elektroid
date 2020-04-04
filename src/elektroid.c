@@ -84,15 +84,23 @@ static gboolean autoplay;
 
 static GThread *load_thread = NULL;
 static GThread *task_thread = NULL;
+static GThread *sysex_thread = NULL;
 static gint load_thread_running;
 static GMutex load_mutex;
 static struct elektroid_active_task active_task;
+static struct connector_sysex_transfer transfer;
 
 static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
 static GtkDialog *name_dialog;
 static GtkEntry *name_dialog_entry;
 static GtkWidget *name_dialog_accept_button;
+static GtkDialog *progress_dialog;
+static GtkWidget *progress_dialog_cancel_button;
+static GtkWidget *progress_bar;
+static GtkWidget *progress_label;
+static GtkWidget *rx_sysex_button;
+static GtkWidget *tx_sysex_button;
 static GtkWidget *about_button;
 static GtkWidget *remote_box;
 static GtkWidget *waveform_draw_area;
@@ -177,6 +185,8 @@ elektroid_check_connector ()
   if (status)
     {
       gtk_widget_set_sensitive (remote_box, TRUE);
+      gtk_widget_set_sensitive (rx_sysex_button, TRUE);
+      gtk_widget_set_sensitive (tx_sysex_button, TRUE);
     }
   else
     {
@@ -187,6 +197,8 @@ elektroid_check_connector ()
       gtk_widget_set_sensitive (remote_box, FALSE);
       gtk_widget_set_sensitive (download_button, FALSE);
       gtk_widget_set_sensitive (upload_button, FALSE);
+      gtk_widget_set_sensitive (rx_sysex_button, FALSE);
+      gtk_widget_set_sensitive (tx_sysex_button, FALSE);
 
       elektroid_load_devices (0);
     }
@@ -205,6 +217,220 @@ browser_refresh_devices (GtkWidget * object, gpointer data)
       elektroid_check_connector ();
     }
   elektroid_load_devices (0);
+}
+
+static gpointer
+elektroid_join_sysex_thread ()
+{
+  gpointer output = NULL;
+
+  debug_print (1, "Stopping SysEx thread...\n");
+  if (sysex_thread)
+    {
+      output = g_thread_join (sysex_thread);
+      g_thread_unref (sysex_thread);
+    }
+  sysex_thread = NULL;
+
+  return output;
+}
+
+static void
+elektroid_stop_sysex_thread ()
+{
+  transfer.active = FALSE;
+  elektroid_join_sysex_thread ();
+}
+
+static void
+elektroid_progress_dialog_end (gpointer data)
+{
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
+}
+
+static gboolean
+elektroid_update_sysex_progress (gpointer data)
+{
+  gchar *text;
+  struct connector_sysex_transfer *transfer =
+    (struct connector_sysex_transfer *) data;
+
+  switch (transfer->status)
+    {
+    case WAITING:
+      text = _("Waiting...");
+      break;
+    case SENDING:
+      text = _("Sending...");
+      gtk_progress_bar_pulse (GTK_PROGRESS_BAR (progress_bar));
+      break;
+    case RECEIVING:
+      text = _("Receiving...");
+      gtk_progress_bar_pulse (GTK_PROGRESS_BAR (progress_bar));
+      break;
+    default:
+      text = "";
+    }
+  gtk_label_set_text (GTK_LABEL (progress_label), text);
+  return transfer->active;
+}
+
+static gpointer
+elektroid_rx_sysex_thread (gpointer data)
+{
+  gpointer value = connector_rx_sysex (&connector, &transfer);
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+  return value;
+}
+
+static void
+elektroid_rx_sysex (GtkWidget * object, gpointer data)
+{
+  GtkWidget *dialog;
+  GtkFileChooser *chooser;
+  GtkFileFilter *filter;
+  gint res;
+  char *filename;
+  FILE *file;
+  GByteArray *sysex_data;
+  GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
+
+  debug_print (1, "Creating rx SysEx thread...\n");
+  transfer.status = WAITING;
+  transfer.active = TRUE;
+  g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
+  sysex_thread =
+    g_thread_new ("sysex_thread", elektroid_rx_sysex_thread, &transfer);
+  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
+
+  res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
+  transfer.active = FALSE;
+  gtk_widget_hide (GTK_WIDGET (progress_dialog));
+
+  sysex_data = elektroid_join_sysex_thread ();
+
+  if (res != GTK_RESPONSE_ACCEPT)
+    {
+      if (sysex_data)
+	{
+	  g_byte_array_free (sysex_data, TRUE);
+	}
+      return;
+    }
+
+  if (!sysex_data)
+    {
+      elektroid_check_connector ();
+      return;
+    }
+
+  dialog = gtk_file_chooser_dialog_new (_("Save SysEx"),
+					GTK_WINDOW (main_window),
+					action,
+					_("_Cancel"),
+					GTK_RESPONSE_CANCEL,
+					_("_Save"),
+					GTK_RESPONSE_ACCEPT, NULL);
+  chooser = GTK_FILE_CHOOSER (dialog);
+  gtk_file_chooser_set_do_overwrite_confirmation (chooser, TRUE);
+  gtk_file_chooser_set_current_name (chooser, _("Received SysEx"));
+
+  filter = gtk_file_filter_new ();
+  gtk_file_filter_set_name (filter, _("SysEx Files"));
+  gtk_file_filter_add_pattern (filter, "*.syx");
+  gtk_file_chooser_add_filter (chooser, filter);
+
+  res = gtk_dialog_run (GTK_DIALOG (dialog));
+
+  if (res == GTK_RESPONSE_ACCEPT)
+    {
+      filename = gtk_file_chooser_get_filename (chooser);
+      debug_print (1, "Saving SysEx file...\n");
+      file = fopen (filename, "w");
+      fwrite (sysex_data->data, sysex_data->len, 1, file);
+      g_byte_array_free (sysex_data, TRUE);
+      fclose (file);
+      g_free (filename);
+    }
+
+  gtk_widget_destroy (dialog);
+}
+
+static gpointer
+elektroid_tx_sysex_thread (gpointer data)
+{
+  gint *v = malloc (sizeof (gint));
+  *v = connector_tx_sysex (&connector, &transfer);
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
+  return v;
+}
+
+static void
+elektroid_tx_sysex (GtkWidget * object, gpointer data)
+{
+  GtkWidget *dialog;
+  GtkFileChooser *chooser;
+  GtkFileFilter *filter;
+  gint res;
+  char *filename;
+  FILE *file;
+  long size;
+  gint *copied;
+  GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
+
+  dialog = gtk_file_chooser_dialog_new (_("Open SysEx"),
+					GTK_WINDOW (main_window),
+					action,
+					_("_Cancel"),
+					GTK_RESPONSE_CANCEL,
+					_("_Open"),
+					GTK_RESPONSE_ACCEPT, NULL);
+  chooser = GTK_FILE_CHOOSER (dialog);
+  filter = gtk_file_filter_new ();
+  gtk_file_filter_set_name (filter, _("SysEx Files"));
+  gtk_file_filter_add_pattern (filter, "*.syx");
+  gtk_file_chooser_add_filter (chooser, filter);
+
+  res = gtk_dialog_run (GTK_DIALOG (dialog));
+
+  if (res == GTK_RESPONSE_ACCEPT)
+    {
+      filename = gtk_file_chooser_get_filename (chooser);
+      debug_print (1, "Opening SysEx file...\n");
+      file = fopen (filename, "rb");
+      g_free (filename);
+      fseek (file, 0, SEEK_END);
+      size = ftell (file);
+      rewind (file);
+
+      transfer.data = g_byte_array_new ();
+      g_byte_array_set_size (transfer.data, size);
+      fread (transfer.data->data, size, 1, file);
+      fclose (file);
+
+      transfer.status = SENDING;
+      transfer.active = TRUE;
+      debug_print (1, "Creating tx SysEx thread...\n");
+      sysex_thread =
+	g_thread_new ("sysex_thread", elektroid_tx_sysex_thread, &transfer);
+
+      gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Send SysEx"));
+      res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
+      gtk_widget_hide (GTK_WIDGET (progress_dialog));
+
+      transfer.active = FALSE;
+      copied = elektroid_join_sysex_thread ();
+      g_byte_array_free (transfer.data, TRUE);
+
+      if (*copied < 0)
+	{
+	  elektroid_check_connector ();
+	}
+
+      free (copied);
+    }
+
+  gtk_widget_destroy (dialog);
 }
 
 static void
@@ -380,7 +606,8 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 					GTK_DIALOG_MODAL,
 					GTK_MESSAGE_ERROR,
 					GTK_BUTTONS_CLOSE,
-					_("Error while renaming to “%s”: %s."),
+					_
+					("Error while renaming to “%s”: %s."),
 					new_path, g_strerror (errno));
 	      gtk_dialog_run (GTK_DIALOG (dialog));
 	      gtk_widget_destroy (dialog);
@@ -703,9 +930,9 @@ elektroid_valid_file (const char *name)
 {
   const char *ext = get_ext (name);
 
-  return (ext != NULL && (!strcasecmp (ext, "wav") || !strcasecmp (ext, "ogg")
-			  || !strcasecmp (ext, "aiff")
-			  || !strcasecmp (ext, "flac")));
+  return (ext != NULL
+	  && (!strcasecmp (ext, "wav") || !strcasecmp (ext, "ogg")
+	      || !strcasecmp (ext, "aiff") || !strcasecmp (ext, "flac")));
 }
 
 static gboolean
@@ -818,7 +1045,8 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 					GTK_DIALOG_MODAL,
 					GTK_MESSAGE_ERROR,
 					GTK_BUTTONS_CLOSE,
-					_("Error while creating dir “%s”: %s."),
+					_
+					("Error while creating dir “%s”: %s."),
 					pathname, g_strerror (errno));
 	      gtk_dialog_run (GTK_DIALOG (dialog));
 	      gtk_widget_destroy (dialog);
@@ -1192,10 +1420,14 @@ elektroid_run_next_task (gpointer data)
 	}
 
       gtk_widget_set_sensitive (cancel_task_button, TRUE);
+      gtk_widget_set_sensitive (rx_sysex_button, FALSE);
+      gtk_widget_set_sensitive (tx_sysex_button, FALSE);
     }
   else
     {
       gtk_widget_set_sensitive (cancel_task_button, FALSE);
+      gtk_widget_set_sensitive (rx_sysex_button, TRUE);
+      gtk_widget_set_sensitive (tx_sysex_button, TRUE);
     }
 
   return FALSE;
@@ -1228,7 +1460,6 @@ elektroid_upload_task (gpointer data)
   frames = connector_upload (&connector, sample, remote_path,
 			     &active_task.running, elektroid_update_progress);
   free (remote_path);
-  elektroid_check_connector ();
 
   if (frames < 0)
     {
@@ -1247,6 +1478,8 @@ elektroid_upload_task (gpointer data)
 	}
     }
 
+  elektroid_check_connector ();
+
   g_array_free (sample, TRUE);
 
   if (strcmp (active_task.dst, remote_browser.dir) == 0)
@@ -1254,8 +1487,16 @@ elektroid_upload_task (gpointer data)
       g_idle_add (remote_browser.load_dir, NULL);
     }
   g_idle_add (elektroid_complete_running_task, NULL);
-  g_idle_add (elektroid_run_next_task, NULL);
-  g_idle_add (elektroid_check_task_buttons, NULL);
+
+  if (frames >= 0)
+    {
+      g_idle_add (elektroid_run_next_task, NULL);
+      g_idle_add (elektroid_check_task_buttons, NULL);
+    }
+  else
+    {
+      gtk_widget_set_sensitive (cancel_task_button, FALSE);
+    }
 
   return NULL;
 }
@@ -1594,6 +1835,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 static void
 elektroid_quit ()
 {
+  elektroid_stop_sysex_thread ();
   elektroid_stop_task_thread ();
   elektroid_stop_load_thread ();
   debug_print (1, "Quitting GTK+...\n");
@@ -1658,7 +1900,6 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   gtk_about_dialog_set_version (about_dialog, PACKAGE_VERSION);
 
   name_dialog = GTK_DIALOG (gtk_builder_get_object (builder, "name_dialog"));
-
   name_dialog_accept_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "name_dialog_accept_button"));
@@ -1668,6 +1909,20 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   name_dialog_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "name_dialog_entry"));
 
+  progress_dialog =
+    GTK_DIALOG (gtk_builder_get_object (builder, "progress_dialog"));
+  progress_dialog_cancel_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "progress_dialog_cancel_button"));
+  progress_bar =
+    GTK_WIDGET (gtk_builder_get_object (builder, "progress_bar"));
+  progress_label =
+    GTK_WIDGET (gtk_builder_get_object (builder, "progress_label"));
+
+  rx_sysex_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "rx_sysex_button"));
+  tx_sysex_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "tx_sysex_button"));
   about_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "about_button"));
 
@@ -1700,6 +1955,13 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (main_window, "delete-event",
 		    G_CALLBACK (elektroid_delete_window), NULL);
 
+  g_signal_connect (progress_dialog_cancel_button, "clicked",
+		    G_CALLBACK (elektroid_progress_dialog_end), NULL);
+
+  g_signal_connect (rx_sysex_button, "clicked",
+		    G_CALLBACK (elektroid_rx_sysex), NULL);
+  g_signal_connect (tx_sysex_button, "clicked",
+		    G_CALLBACK (elektroid_tx_sysex), NULL);
   g_signal_connect (about_button, "clicked",
 		    G_CALLBACK (elektroid_show_about), NULL);
 

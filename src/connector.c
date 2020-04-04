@@ -398,7 +398,8 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
 
   if ((tx_len = snd_rawmidi_write (connector->outputp, data, len)) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while sending message\n");
+      fprintf (stderr, __FILE__ ": Error while sending message. %s.\n",
+	       g_strerror (errno));
       connector_destroy (connector);
       return tx_len;
     }
@@ -406,19 +407,22 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
 }
 
 ssize_t
-connector_tx_sysex (struct connector *connector, const GByteArray * msg)
+connector_tx_sysex (struct connector *connector,
+		    struct connector_sysex_transfer *transfer)
 {
   ssize_t tx_len;
   guint total;
   guint len;
   guchar *data;
-  ssize_t ret = msg->len;
+  ssize_t ret = transfer->data->len;
 
-  data = msg->data;
+  data = transfer->data->data;
   total = 0;
-  while (total < msg->len)
+  while (total < transfer->data->len && transfer->active)
     {
-      len = msg->len - total > BUFF_SIZE ? BUFF_SIZE : msg->len - total;
+      len =
+	transfer->data->len - total >
+	BUFF_SIZE ? BUFF_SIZE : transfer->data->len - total;
       if ((tx_len = connector_tx_raw (connector, data, len)) < 0)
 	{
 	  ret = tx_len;
@@ -429,6 +433,7 @@ connector_tx_sysex (struct connector *connector, const GByteArray * msg)
     }
 
 cleanup:
+  transfer->status = FINISHED;
   return ret;
 }
 
@@ -438,7 +443,8 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   ssize_t ret;
   uint16_t aux;
   GByteArray *sysex;
-  GByteArray *full_msg;
+  struct connector_sysex_transfer transfer;
+  transfer.active = TRUE;
 
   aux = htons (connector->seq);
   memcpy (msg->data, &aux, sizeof (uint16_t));
@@ -451,19 +457,22 @@ connector_tx (struct connector *connector, const GByteArray * msg)
       connector->seq++;
     }
 
-  full_msg = g_byte_array_new ();
-  g_byte_array_append (full_msg, MSG_HEADER, sizeof (MSG_HEADER));
+  transfer.data = g_byte_array_new ();
+  g_byte_array_append (transfer.data, MSG_HEADER, sizeof (MSG_HEADER));
   sysex = connector_msg_to_sysex (msg);
-  g_byte_array_append (full_msg, sysex->data, sysex->len);
+  g_byte_array_append (transfer.data, sysex->data, sysex->len);
   free_msg (sysex);
-  g_byte_array_append (full_msg, (guint8 *) "\xf7", 1);
+  g_byte_array_append (transfer.data, (guint8 *) "\xf7", 1);
 
-  ret = connector_tx_sysex (connector, full_msg);
+  ret = connector_tx_sysex (connector, &transfer);
 
-  debug_print (1, "Message sent: ");
-  debug_print_hex_msg (msg);
+  if (ret >= 0)
+    {
+      debug_print (1, "Message sent: ");
+      debug_print_hex_msg (msg);
+    }
 
-  free_msg (full_msg);
+  free_msg (transfer.data);
   return ret;
 }
 
@@ -492,25 +501,30 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 	      break;
 	    }
 	}
-      fprintf (stderr, __FILE__ ": Error while receiving message\n");
+      fprintf (stderr, __FILE__ ": Error while receiving message. %s.\n",
+	       g_strerror (errno));
       connector_destroy (connector);
-      return rx_len;
+      break;
     }
 
   return rx_len;
 }
 
 GByteArray *
-connector_rx_sysex (struct connector *connector, gint * running)
+connector_rx_sysex (struct connector *connector,
+		    struct connector_sysex_transfer *transfer)
 {
   ssize_t rx_len;
   guint8 buffer;
   GByteArray *sysex = g_byte_array_new ();
+  gboolean *active = &transfer->active;
+
+  transfer->status = WAITING;
 
   //TODO: Skip everything until a SysEx start is found and is from the expected device (start with the same 6 bytes)
   do
     {
-      if ((rx_len = connector_rx_raw (connector, &buffer, 1, running)) < 0)
+      if ((rx_len = connector_rx_raw (connector, &buffer, 1, active)) < 0)
 	{
 	  goto error;
 	}
@@ -518,10 +532,11 @@ connector_rx_sysex (struct connector *connector, gint * running)
   while (rx_len == 0 || (rx_len == 1 && buffer != 0xf0));
 
   g_byte_array_append (sysex, &buffer, rx_len);
+  transfer->status = RECEIVING;
 
   do
     {
-      if ((rx_len = connector_rx_raw (connector, &buffer, 1, running)) < 0)
+      if ((rx_len = connector_rx_raw (connector, &buffer, 1, active)) < 0)
 	{
 	  goto error;
 	}
@@ -537,6 +552,7 @@ error:
   free_msg (sysex);
   sysex = NULL;
 end:
+  transfer->status = FINISHED;
   return sysex;
 }
 
@@ -544,7 +560,11 @@ static GByteArray *
 connector_rx (struct connector *connector)
 {
   GByteArray *msg;
-  GByteArray *sysex = connector_rx_sysex (connector, NULL);
+  GByteArray *sysex;
+  struct connector_sysex_transfer transfer;
+
+  transfer.active = TRUE;
+  sysex = connector_rx_sysex (connector, &transfer);
 
   if (!sysex)
     {
@@ -922,7 +942,6 @@ connector_destroy (struct connector *connector)
 
   if (connector->inputp)
     {
-      snd_rawmidi_drain (connector->inputp);
       err = snd_rawmidi_close (connector->inputp);
       if (err)
 	{
@@ -934,7 +953,6 @@ connector_destroy (struct connector *connector)
 
   if (connector->outputp)
     {
-      snd_rawmidi_drain (connector->outputp);
       err = snd_rawmidi_close (connector->outputp);
       if (err)
 	{
@@ -972,7 +990,7 @@ connector_init (struct connector *connector, gint card)
 
   if ((err =
        snd_rawmidi_open (&connector->inputp, &connector->outputp,
-			 name, SND_RAWMIDI_NONBLOCK)) < 0)
+			 name, SND_RAWMIDI_NONBLOCK | SND_RAWMIDI_SYNC)) < 0)
     {
       fprintf (stderr, __FILE__ ": Error while opening MIDI port: %s\n",
 	       g_strerror (errno));
