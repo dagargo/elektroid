@@ -80,4 +80,6 @@ GArray *connector_get_elektron_devices ();
 
 ssize_t connector_tx_sysex (struct connector *, const GByteArray *);
 
-GByteArray * connector_rx_sysex (struct connector *);
+GByteArray *connector_rx_sysex (struct connector *, gint *);
+
+void free_msg (gpointer);

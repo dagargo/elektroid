@@ -60,7 +60,7 @@ connector_get_msg_status (const GByteArray * msg)
   return msg->data[5];
 }
 
-static void
+void
 free_msg (gpointer msg)
 {
   g_byte_array_free ((GByteArray *) msg, TRUE);
@@ -468,7 +468,8 @@ connector_tx (struct connector *connector, const GByteArray * msg)
 }
 
 static ssize_t
-connector_rx_raw (struct connector *connector, guint8 * data, guint len)
+connector_rx_raw (struct connector *connector, guint8 * data, guint len,
+		  gint * running)
 {
   ssize_t rx_len;
 
@@ -478,8 +479,19 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len)
       return -1;
     }
 
-  if ((rx_len = snd_rawmidi_read (connector->inputp, data, len)) < 0)
+  while ((rx_len = snd_rawmidi_read (connector->inputp, data, len)) < 0)
     {
+      if (rx_len == -EAGAIN)
+	{
+	  if (running == NULL || *running > 0)
+	    {
+	      continue;
+	    }
+	  else
+	    {
+	      break;
+	    }
+	}
       fprintf (stderr, __FILE__ ": Error while receiving message\n");
       connector_destroy (connector);
       return rx_len;
@@ -489,7 +501,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len)
 }
 
 GByteArray *
-connector_rx_sysex (struct connector *connector)
+connector_rx_sysex (struct connector *connector, gint * running)
 {
   ssize_t rx_len;
   guint8 buffer;
@@ -498,7 +510,7 @@ connector_rx_sysex (struct connector *connector)
   //TODO: Skip everything until a SysEx start is found and is from the expected device (start with the same 6 bytes)
   do
     {
-      if ((rx_len = connector_rx_raw (connector, &buffer, 1)) < 0)
+      if ((rx_len = connector_rx_raw (connector, &buffer, 1, running)) < 0)
 	{
 	  goto error;
 	}
@@ -509,7 +521,7 @@ connector_rx_sysex (struct connector *connector)
 
   do
     {
-      if ((rx_len = connector_rx_raw (connector, &buffer, 1)) < 0)
+      if ((rx_len = connector_rx_raw (connector, &buffer, 1, running)) < 0)
 	{
 	  goto error;
 	}
@@ -517,6 +529,8 @@ connector_rx_sysex (struct connector *connector)
     }
   while (rx_len == 0 || (rx_len > 0 && buffer != 0xf7));
 
+  debug_print (1, "Raw message received: ");
+  debug_print_hex_msg (sysex);
   goto end;
 
 error:
@@ -530,7 +544,7 @@ static GByteArray *
 connector_rx (struct connector *connector)
 {
   GByteArray *msg;
-  GByteArray *sysex = connector_rx_sysex (connector);
+  GByteArray *sysex = connector_rx_sysex (connector, NULL);
 
   if (!sysex)
     {
@@ -971,7 +985,7 @@ connector_init (struct connector *connector, gint card)
       fprintf (stderr, __FILE__ ": Error while setting blocking mode\n");
       goto cleanup;
     }
-  if ((err = snd_rawmidi_nonblock (connector->inputp, 0)) < 0)
+  if ((err = snd_rawmidi_nonblock (connector->inputp, 1)) < 0)
     {
       fprintf (stderr, __FILE__ ": Error while setting blocking mode\n");
       goto cleanup;
