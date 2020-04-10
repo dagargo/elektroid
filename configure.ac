@@ -6,6 +6,7 @@ AC_INIT([elektroid],[1.1],[dagargo@gmail.com])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 AM_PROG_LIBTOOL
+AC_SEARCH_LIBS([sqrt], [m])
 AC_CONFIG_MACRO_DIRS([m4])
 AM_INIT_AUTOMAKE
 
@@ -39,7 +40,6 @@ AC_CHECK_HEADERS([unistd.h limits.h])
 # Checks for typedefs, structures, and compiler characteristics.
 
 # Checks for library functions.
-AC_FUNC_MALLOC
 
 AC_CONFIG_FILES([Makefile src/Makefile res/Makefile test/Makefile po/Makefile.in po/Makefile man/Makefile])
 AC_OUTPUT
