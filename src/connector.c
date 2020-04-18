@@ -21,9 +21,10 @@
 #include <stdio.h>
 #include <math.h>
 #include <netinet/in.h>
+#include <byteswap.h>
+#include <time.h>
 #include "connector.h"
 #include "utils.h"
-#include <byteswap.h>
 
 #define BUFF_SIZE 512
 #define TRANSF_BLOCK_SIZE 0x2000
@@ -433,6 +434,8 @@ connector_tx_sysex (struct connector *connector,
     }
 
 cleanup:
+  debug_print (1, "Raw message sent: ");
+  debug_print_hex_msg (transfer->data);
   transfer->status = FINISHED;
   return ret;
 }
@@ -481,6 +484,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 		  gint * running)
 {
   ssize_t rx_len;
+  time_t start;
 
   if (!connector->inputp)
     {
@@ -488,10 +492,16 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
       return -1;
     }
 
+  start = time (NULL);
+
   while ((rx_len = snd_rawmidi_read (connector->inputp, data, len)) < 0)
     {
       if (rx_len == -EAGAIN)
 	{
+	  if (time (NULL) - start > 5)
+	    {
+	      return -ENODATA;
+	    }
 	  if (running == NULL || *running > 0)
 	    {
 	      continue;
@@ -521,7 +531,6 @@ connector_rx_sysex (struct connector *connector,
 
   transfer->status = WAITING;
 
-  //TODO: Skip everything until a SysEx start is found and is from the expected device (start with the same 6 bytes)
   do
     {
       if ((rx_len = connector_rx_raw (connector, &buffer, 1, active)) < 0)
@@ -565,10 +574,28 @@ connector_rx (struct connector *connector)
 
   transfer.active = TRUE;
   sysex = connector_rx_sysex (connector, &transfer);
-
   if (!sysex)
     {
       return NULL;
+    }
+  while (sysex->data[0] != MSG_HEADER[0]
+	 || sysex->data[1] != MSG_HEADER[1]
+	 || sysex->data[2] != MSG_HEADER[2]
+	 || sysex->data[3] != MSG_HEADER[3]
+	 || sysex->data[4] != MSG_HEADER[4]
+	 || sysex->data[5] != MSG_HEADER[5])
+    {
+      debug_print (1, "Skipping message...\n");
+      debug_print (1, "Message skipped: ");
+      debug_print_hex_msg (sysex);
+      free_msg (sysex);
+
+      transfer.active = TRUE;
+      sysex = connector_rx_sysex (connector, &transfer);
+      if (!sysex)
+	{
+	  return NULL;
+	}
     }
 
   msg = connector_get_msg_payload (sysex);
@@ -596,6 +623,7 @@ connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
       rx_msg = NULL;
       goto cleanup;
     }
+
   rx_msg = connector_rx (connector);
 
 cleanup:
