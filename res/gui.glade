@@ -486,7 +486,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkButton" id="upload_button">
                             <property name="name">upload_button</property>
                             <property name="visible">True</property>
-                            <property name="sensitive">False</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="tooltip_text" translatable="yes">Upload selection</property>
@@ -508,7 +507,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkButton" id="download_button">
                             <property name="name">download_button</property>
                             <property name="visible">True</property>
-                            <property name="sensitive">False</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
                             <property name="tooltip_text" translatable="yes">Download selection</property>
@@ -536,7 +534,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                     <child>
                       <object class="GtkBox" id="remote_box">
                         <property name="visible">True</property>
-                        <property name="sensitive">False</property>
                         <property name="can_focus">False</property>
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>

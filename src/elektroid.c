@@ -2115,6 +2115,12 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   elektroid_loop_clicked (loop_button, NULL);
   autoplay = gtk_switch_get_active (GTK_SWITCH (autoplay_switch));
 
+  gtk_widget_set_sensitive (remote_box, FALSE);
+  gtk_widget_set_sensitive (download_button, FALSE);
+  gtk_widget_set_sensitive (upload_button, FALSE);
+  gtk_widget_set_sensitive (rx_sysex_button, FALSE);
+  gtk_widget_set_sensitive (tx_sysex_button, FALSE);
+
   elektroid_load_devices (1);
 
   gethostname (hostname, LABEL_MAX);
