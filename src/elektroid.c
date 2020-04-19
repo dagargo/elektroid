@@ -909,7 +909,7 @@ elektroid_load_remote_dir (gpointer data)
   if (d_iter == NULL)
     {
       fprintf (stderr, __FILE__ ": Error while opening remote %s dir\n",
-	       local_browser.dir);
+	       remote_browser.dir);
       goto end;
     }
 
