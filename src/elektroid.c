@@ -245,6 +245,7 @@ elektroid_stop_sysex_thread ()
 static void
 elektroid_progress_dialog_end (gpointer data)
 {
+  transfer.active = FALSE;
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
 }
 
@@ -272,6 +273,7 @@ elektroid_update_sysex_progress (gpointer data)
       text = "";
     }
   gtk_label_set_text (GTK_LABEL (progress_label), text);
+
   return transfer->active;
 }
 
@@ -418,9 +420,9 @@ elektroid_tx_sysex (GtkWidget * object, gpointer data)
 
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Send SysEx"));
       res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
+      transfer.active = FALSE;
       gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
-      transfer.active = FALSE;
       copied = elektroid_join_sysex_thread ();
       g_byte_array_free (transfer.data, TRUE);
 

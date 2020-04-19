@@ -447,7 +447,6 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   uint16_t aux;
   GByteArray *sysex;
   struct connector_sysex_transfer transfer;
-  transfer.active = TRUE;
 
   aux = htons (connector->seq);
   memcpy (msg->data, &aux, sizeof (uint16_t));
@@ -474,6 +473,8 @@ connector_tx (struct connector *connector, const GByteArray * msg)
       debug_print (1, "Message sent: ");
       debug_print_hex_msg (msg);
     }
+
+  transfer.active = FALSE;
 
   free_msg (transfer.data);
   return ret;
@@ -560,6 +561,7 @@ error:
   free_msg (sysex);
   sysex = NULL;
 end:
+  transfer->active = FALSE;
   transfer->status = FINISHED;
   return sysex;
 }
