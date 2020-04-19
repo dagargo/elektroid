@@ -298,6 +298,7 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   debug_print (1, "Creating rx SysEx thread...\n");
   transfer.status = WAITING;
   transfer.active = TRUE;
+  transfer.timeout = FALSE;
   g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
   sysex_thread =
     g_thread_new ("sysex_thread", elektroid_rx_sysex_thread, &transfer);
@@ -410,6 +411,7 @@ elektroid_tx_sysex (GtkWidget * object, gpointer data)
 
       transfer.status = SENDING;
       transfer.active = TRUE;
+      transfer.timeout = FALSE;
       debug_print (1, "Creating tx SysEx thread...\n");
       sysex_thread =
 	g_thread_new ("sysex_thread", elektroid_tx_sysex_thread, &transfer);

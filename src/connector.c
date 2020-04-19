@@ -481,7 +481,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
 
 static ssize_t
 connector_rx_raw (struct connector *connector, guint8 * data, guint len,
-		  gint * running)
+		  struct connector_sysex_transfer *transfer)
 {
   ssize_t rx_len;
   time_t start;
@@ -498,12 +498,12 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
     {
       if (rx_len == -EAGAIN)
 	{
-	  if (time (NULL) - start > 5)
+	  if (transfer->active)
 	    {
-	      return -ENODATA;
-	    }
-	  if (running == NULL || *running > 0)
-	    {
+	      if (transfer->timeout && (time (NULL) - start > 5))
+		{
+		  return -ENODATA;
+		}
 	      continue;
 	    }
 	  else
@@ -527,13 +527,12 @@ connector_rx_sysex (struct connector *connector,
   ssize_t rx_len;
   guint8 buffer;
   GByteArray *sysex = g_byte_array_new ();
-  gboolean *active = &transfer->active;
 
   transfer->status = WAITING;
 
   do
     {
-      if ((rx_len = connector_rx_raw (connector, &buffer, 1, active)) < 0)
+      if ((rx_len = connector_rx_raw (connector, &buffer, 1, transfer)) < 0)
 	{
 	  goto error;
 	}
@@ -545,7 +544,7 @@ connector_rx_sysex (struct connector *connector,
 
   do
     {
-      if ((rx_len = connector_rx_raw (connector, &buffer, 1, active)) < 0)
+      if ((rx_len = connector_rx_raw (connector, &buffer, 1, transfer)) < 0)
 	{
 	  goto error;
 	}
@@ -573,6 +572,7 @@ connector_rx (struct connector *connector)
   struct connector_sysex_transfer transfer;
 
   transfer.active = TRUE;
+  transfer.timeout = TRUE;
   sysex = connector_rx_sysex (connector, &transfer);
   if (!sysex)
     {
