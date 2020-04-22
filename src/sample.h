@@ -22,7 +22,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-size_t sample_save (GArray *, char *);
+size_t sample_save (GArray *, gchar *);
 
-size_t sample_load (GArray *, GMutex *, gint *, char *, gint *,
+size_t sample_load (GArray *, GMutex *, gboolean *, gchar *, gint *,
 		    void (*)(gdouble));

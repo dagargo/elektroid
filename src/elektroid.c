@@ -85,7 +85,7 @@ static gboolean autoplay;
 static GThread *load_thread = NULL;
 static GThread *task_thread = NULL;
 static GThread *sysex_thread = NULL;
-static gint load_thread_running;
+static gboolean load_thread_running;
 static GMutex load_mutex;
 static struct elektroid_active_task active_task;
 static struct connector_sysex_transfer transfer;
@@ -706,7 +706,7 @@ static void
 elektroid_start_load_thread (gchar * path)
 {
   debug_print (1, "Creating load thread...\n");
-  load_thread_running = 1;
+  load_thread_running = TRUE;
   load_thread = g_thread_new ("load_sample", elektroid_load_sample, path);
 }
 
@@ -714,7 +714,7 @@ static void
 elektroid_stop_load_thread ()
 {
   debug_print (1, "Stopping load thread...\n");
-  load_thread_running = 0;
+  load_thread_running = FALSE;
   if (load_thread)
     {
       g_thread_join (load_thread);

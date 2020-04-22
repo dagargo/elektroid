@@ -28,7 +28,7 @@
 #define LOAD_BUFFER_LEN 10000
 
 size_t
-sample_save (GArray * sample, char *path)
+sample_save (GArray * sample, gchar * path)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -55,8 +55,8 @@ sample_save (GArray * sample, char *path)
 }
 
 static void
-audio_multichannel_to_mono (short *input, short *output, int size,
-			    int channels)
+audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
+			    gint channels)
 {
   int i, j, v;
 
@@ -75,8 +75,8 @@ audio_multichannel_to_mono (short *input, short *output, int size,
 }
 
 size_t
-sample_load (GArray * sample, GMutex * mutex, gint * frames, char *path,
-	     gint * running, void (*progress) (gdouble))
+sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
+	     gboolean * running, void (*progress) (gdouble))
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
