@@ -402,7 +402,6 @@ main (int argc, char *argv[])
 	  vflg++;
 	  break;
 	case '?':
-	  fprintf (stderr, "Unrecognized option: -%c\n", optopt);
 	  errflg++;
 	}
     }
