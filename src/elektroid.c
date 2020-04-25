@@ -202,12 +202,7 @@ elektroid_get_next_queued_task (GtkTreeIter * iter,
 			      TASK_LIST_STORE_STATUS_FIELD, &status, -1);
 	}
 
-      if (status == RUNNING)
-	{
-	  debug_print (1, "Task running. Skipping...\n");
-	  break;
-	}
-      else if (status == QUEUED)
+      if (status == QUEUED)
 	{
 	  found = TRUE;
 	  break;
