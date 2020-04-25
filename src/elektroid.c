@@ -176,36 +176,77 @@ elektroid_update_statusbar ()
     }
 }
 
-static int
+static gboolean
+elektroid_get_next_queued_task (GtkTreeIter * iter,
+				enum elektroid_task_type *type,
+				gchar ** src, gchar ** dst)
+{
+  enum elektroid_task_status status;
+  gboolean found = FALSE;
+  gboolean valid =
+    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), iter);
+
+  while (valid)
+    {
+      if (type)
+	{
+	  gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), iter,
+			      TASK_LIST_STORE_STATUS_FIELD, &status,
+			      TASK_LIST_STORE_TYPE_FIELD, type,
+			      TASK_LIST_STORE_SRC_FIELD, src,
+			      TASK_LIST_STORE_DST_FIELD, dst, -1);
+	}
+      else
+	{
+	  gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), iter,
+			      TASK_LIST_STORE_STATUS_FIELD, &status, -1);
+	}
+
+      if (status == RUNNING)
+	{
+	  debug_print (1, "Task running. Skipping...\n");
+	  break;
+	}
+      else if (status == QUEUED)
+	{
+	  found = TRUE;
+	  break;
+	}
+      valid =
+	gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store), iter);
+    }
+
+  return found;
+}
+
+
+static gint
 elektroid_check_connector ()
 {
   GtkListStore *list_store;
-  int status = connector_check (&connector);
+  GtkTreeIter iter;
+  gboolean connected = connector_check (&connector);
+  gboolean queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL);
 
-  if (status)
-    {
-      gtk_widget_set_sensitive (remote_box, TRUE);
-      gtk_widget_set_sensitive (rx_sysex_button, TRUE);
-      gtk_widget_set_sensitive (tx_sysex_button, TRUE);
-    }
-  else
+  gtk_widget_set_sensitive (remote_box, connected);
+  gtk_widget_set_sensitive (rx_sysex_button, connected && !queued);
+  gtk_widget_set_sensitive (tx_sysex_button, connected && !queued);
+
+  if (!connected)
     {
       list_store =
 	GTK_LIST_STORE (gtk_tree_view_get_model (remote_browser.view));
       gtk_entry_set_text (remote_browser.dir_entry, "");
       gtk_list_store_clear (list_store);
-      gtk_widget_set_sensitive (remote_box, FALSE);
       gtk_widget_set_sensitive (download_button, FALSE);
       gtk_widget_set_sensitive (upload_button, FALSE);
-      gtk_widget_set_sensitive (rx_sysex_button, FALSE);
-      gtk_widget_set_sensitive (tx_sysex_button, FALSE);
 
       elektroid_load_devices (0);
     }
 
   elektroid_update_statusbar ();
 
-  return status;
+  return connected;
 }
 
 static void
@@ -1365,37 +1406,12 @@ elektroid_complete_running_task (gpointer data)
 static gboolean
 elektroid_run_next_task (gpointer data)
 {
-  enum elektroid_task_status status;
+  GtkTreeIter iter;
   enum elektroid_task_type type;
   gchar *src;
   gchar *dst;
-  GtkTreeIter iter;
   GtkTreePath *path;
-  gboolean found = FALSE;
-  gboolean valid =
-    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), &iter);
-
-  while (valid)
-    {
-      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter,
-			  TASK_LIST_STORE_STATUS_FIELD, &status,
-			  TASK_LIST_STORE_TYPE_FIELD, &type,
-			  TASK_LIST_STORE_SRC_FIELD, &src,
-			  TASK_LIST_STORE_DST_FIELD, &dst, -1);
-
-      if (status == RUNNING)
-	{
-	  debug_print (1, "Task running. Skipping...\n");
-	  break;
-	}
-      else if (status == QUEUED)
-	{
-	  found = TRUE;
-	  break;
-	}
-      valid =
-	gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store), &iter);
-    }
+  gboolean found = elektroid_get_next_queued_task (&iter, &type, &src, &dst);
 
   if (found)
     {
@@ -1424,8 +1440,6 @@ elektroid_run_next_task (gpointer data)
 	}
 
       gtk_widget_set_sensitive (cancel_task_button, TRUE);
-      gtk_widget_set_sensitive (rx_sysex_button, FALSE);
-      gtk_widget_set_sensitive (tx_sysex_button, FALSE);
     }
   else
     {
@@ -1467,7 +1481,7 @@ elektroid_upload_task (gpointer data)
 
   if (frames < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while uploading.\n");
+      fprintf (stderr, __FILE__ ": Error while uploading\n");
       active_task.status = COMPLETED_ERROR;
     }
   else
@@ -1628,6 +1642,8 @@ elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
   gtk_tree_selection_selected_foreach (selection,
 				       elektroid_add_upload_task, NULL);
 
+  gtk_widget_set_sensitive (rx_sysex_button, FALSE);
+  gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   elektroid_run_next_task (NULL);
 }
 
@@ -1784,6 +1800,8 @@ elektroid_add_download_tasks (GtkWidget * object, gpointer data)
   gtk_tree_selection_selected_foreach (selection,
 				       elektroid_add_download_task, NULL);
 
+  gtk_widget_set_sensitive (rx_sysex_button, FALSE);
+  gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   elektroid_run_next_task (NULL);
 }
 
