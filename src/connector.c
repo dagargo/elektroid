@@ -417,6 +417,8 @@ connector_tx_sysex (struct connector *connector,
   guchar *data;
   ssize_t ret = transfer->data->len;
 
+  transfer->status = SENDING;
+
   data = transfer->data->data;
   total = 0;
   while (total < transfer->data->len && transfer->active)
@@ -436,6 +438,7 @@ connector_tx_sysex (struct connector *connector,
 cleanup:
   debug_print (1, "Raw message sent: ");
   debug_print_hex_msg (transfer->data);
+  transfer->active = FALSE;
   transfer->status = FINISHED;
   return ret;
 }
@@ -473,8 +476,6 @@ connector_tx (struct connector *connector, const GByteArray * msg)
       debug_print (1, "Message sent: ");
       debug_print_hex_msg (msg);
     }
-
-  transfer.active = FALSE;
 
   free_msg (transfer.data);
   return ret;

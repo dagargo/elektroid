@@ -285,6 +285,13 @@ elektroid_progress_dialog_end (gpointer data)
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
 }
 
+static void
+elektroid_progress_dialog_response (GtkDialog * dialog, gint response_id,
+				    gpointer data)
+{
+  transfer.active = FALSE;
+}
+
 static gboolean
 elektroid_update_sysex_progress (gpointer data)
 {
@@ -316,7 +323,12 @@ elektroid_update_sysex_progress (gpointer data)
 static gpointer
 elektroid_rx_sysex_thread (gpointer data)
 {
-  gpointer value = connector_rx_sysex (&connector, &transfer);
+  gpointer value;
+  g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
+  transfer.status = WAITING;
+  transfer.active = TRUE;
+  transfer.timeout = FALSE;
+  value = connector_rx_sysex (&connector, &transfer);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
   return value;
 }
@@ -334,10 +346,6 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
   debug_print (1, "Creating rx SysEx thread...\n");
-  transfer.status = WAITING;
-  transfer.active = TRUE;
-  transfer.timeout = FALSE;
-  g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
   sysex_thread =
     g_thread_new ("sysex_thread", elektroid_rx_sysex_thread, &transfer);
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
@@ -399,6 +407,10 @@ static gpointer
 elektroid_tx_sysex_thread (gpointer data)
 {
   gint *v = malloc (sizeof (gint));
+  g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
+  transfer.status = SENDING;
+  transfer.active = TRUE;
+  transfer.timeout = FALSE;
   *v = connector_tx_sysex (&connector, &transfer);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
   return v;
@@ -447,9 +459,6 @@ elektroid_tx_sysex (GtkWidget * object, gpointer data)
       fread (transfer.data->data, size, 1, file);
       fclose (file);
 
-      transfer.status = SENDING;
-      transfer.active = TRUE;
-      transfer.timeout = FALSE;
       debug_print (1, "Creating tx SysEx thread...\n");
       sysex_thread =
 	g_thread_new ("sysex_thread", elektroid_tx_sysex_thread, &transfer);
@@ -1974,6 +1983,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 
   g_signal_connect (progress_dialog_cancel_button, "clicked",
 		    G_CALLBACK (elektroid_progress_dialog_end), NULL);
+  g_signal_connect (progress_dialog, "response",
+		    G_CALLBACK (elektroid_progress_dialog_response), NULL);
 
   g_signal_connect (rx_sysex_button, "clicked",
 		    G_CALLBACK (elektroid_rx_sysex), NULL);
