@@ -37,7 +37,6 @@ struct browser
   GtkWidget *up_button;
   GtkWidget *add_dir_button;
   GtkWidget *refresh_button;
-  GtkWidget *copy_button;
   GtkEntry *dir_entry;
   gchar *dir;
 };

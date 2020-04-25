@@ -2009,7 +2009,6 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_add_dir_button")),
     .refresh_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_refresh_button")),
-    .copy_button = download_button,
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry")),
     .dir = malloc (PATH_MAX),
@@ -2044,7 +2043,6 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
       GTK_WIDGET (gtk_builder_get_object (builder, "local_add_dir_button")),
     .refresh_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "local_refresh_button")),
-    .copy_button = upload_button,
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry")),
     .dir = malloc (PATH_MAX),
