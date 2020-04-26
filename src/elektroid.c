@@ -574,8 +574,8 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
 			    GTK_MESSAGE_ERROR, GTK_BUTTONS_NONE,
 			    _
 			    ("Are you sure you want to delete the selected items?"));
-  gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("Cancel"),
-			  GTK_RESPONSE_CANCEL, _("Delete"),
+  gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
+			  GTK_RESPONSE_CANCEL, _("_Delete"),
 			  GTK_RESPONSE_ACCEPT, NULL);
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
   confirmation = gtk_dialog_run (GTK_DIALOG (dialog));

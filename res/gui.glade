@@ -50,7 +50,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="text" translatable="yes">Rename</property>
+            <property name="text" translatable="yes">_Rename</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -63,7 +63,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="text" translatable="yes">Delete</property>
+            <property name="text" translatable="yes">_Delete</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -181,7 +181,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="text" translatable="yes">Receive SysEx</property>
+            <property name="text" translatable="yes">_Receive SysEx</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -194,7 +194,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="text" translatable="yes">Send SysEx</property>
+            <property name="text" translatable="yes">_Send SysEx</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -218,7 +218,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="text" translatable="yes">About</property>
+            <property name="text" translatable="yes">_About</property>
           </object>
           <packing>
             <property name="expand">False</property>

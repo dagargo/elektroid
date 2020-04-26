@@ -1,13 +1,13 @@
-# German translations for elektroid package.
+# German translations for Elektroid package.
 # Copyright (C) 2020 Dennis Braun
-# This file is distributed under the same license as the elektroid package.
+# This file is distributed under the same license as the Elektroid package.
 # Dennis Braun <d_braun@kabelmail.de>, 2020.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.1\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2020-02-21 11:35+0100\n"
+"POT-Creation-Date: 2020-04-26 12:54+0200\n"
 "PO-Revision-Date: 2020-02-21 11:45+0100\n"
 "Last-Translator: Dennis Braun <d_braun@kabelmail.de>\n"
 "Language-Team: German\n"
@@ -17,150 +17,206 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:160
+#: src/elektroid.c:168
 #, c-format
 msgid "Connected to %s"
 msgstr "Verbunden mit %s"
 
-#: src/elektroid.c:167 src/elektroid.c:1852
+#: src/elektroid.c:175 src/elektroid.c:2140
 msgid "Not connected"
 msgstr "Nicht verbunden"
 
-#: src/elektroid.c:268
+#: src/elektroid.c:305
+msgid "Waiting..."
+msgstr ""
+
+#: src/elektroid.c:308
+msgid "Sending..."
+msgstr ""
+
+#: src/elektroid.c:312
+msgid "Receiving..."
+msgstr ""
+
+#: src/elektroid.c:351
+msgid "Receive SysEx"
+msgstr ""
+
+#: src/elektroid.c:374
+msgid "Save SysEx"
+msgstr ""
+
+#: src/elektroid.c:377 src/elektroid.c:435 src/elektroid.c:577
+msgid "_Cancel"
+msgstr "_Abbrechen"
+
+#: src/elektroid.c:379
+msgid "_Save"
+msgstr ""
+
+#: src/elektroid.c:383
+msgid "Received SysEx"
+msgstr ""
+
+#: src/elektroid.c:386 src/elektroid.c:441
+msgid "SysEx Files"
+msgstr ""
+
+#: src/elektroid.c:432
+msgid "Open SysEx"
+msgstr ""
+
+#: src/elektroid.c:437
+msgid "_Open"
+msgstr ""
+
+#: src/elektroid.c:466
+msgid "Send SysEx"
+msgstr ""
+
+#: src/elektroid.c:543
 #, c-format
 msgid "Error while deleting “%s”: %s."
 msgstr "Fehler beim Löschen »%s«: %s."
 
-#: src/elektroid.c:301
+#: src/elektroid.c:576
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Bist du sicher das du die ausgewählten Elemente löschen möchtest?"
 
-#: src/elektroid.c:302
-msgid "Cancel"
-msgstr "Abbrechen"
+#: src/elektroid.c:578 res/gui.glade:66
+msgid "_Delete"
+msgstr "_Löschen"
 
-#: src/elektroid.c:303 res/gui.glade:66
-msgid "Delete"
-msgstr "Löschen"
-
-#: src/elektroid.c:358 res/gui.glade:53
+#: src/elektroid.c:633
 msgid "Rename"
 msgstr "Umbenennen"
 
-#: src/elektroid.c:383
+#: src/elektroid.c:659
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Fehler beim Umbenennen von »%s«: %s."
 
-#: src/elektroid.c:797 res/gui.glade:318 res/gui.glade:560
+#: src/elektroid.c:1073 res/gui.glade:355 res/gui.glade:594
 msgid "Add directory"
 msgstr "Verzeichnis hinzufügen"
 
-#: src/elektroid.c:821
+#: src/elektroid.c:1098
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Fehler beim Erstellen des Verzeichnisses »%s«: %s."
 
-#: src/elektroid.c:985
+#: src/elektroid.c:1262
 msgid "Queued"
 msgstr "In der Warteschlange"
 
-#: src/elektroid.c:987
+#: src/elektroid.c:1264
 msgid "Running"
 msgstr "Arbeitet"
 
-#: src/elektroid.c:989
+#: src/elektroid.c:1266
 msgid "Completed"
 msgstr "Fertig"
 
-#: src/elektroid.c:991
+#: src/elektroid.c:1268
 msgid "Completed with errors"
 msgstr "Abgeschlossen mit Fehlern"
 
-#: src/elektroid.c:993
+#: src/elektroid.c:1270
 msgid "Canceled"
 msgstr "Abgebrochen"
 
-#: src/elektroid.c:995 src/elektroid.c:1009
+#: src/elektroid.c:1272 src/elektroid.c:1286
 msgid "Undefined"
 msgstr "Undefiniert"
 
-#: src/elektroid.c:1005
+#: src/elektroid.c:1282
 msgid "Upload"
 msgstr "Hochladen"
 
-#: src/elektroid.c:1007
+#: src/elektroid.c:1284
 msgid "Download"
 msgstr "Herunterladen"
+
+#: res/gui.glade:53
+msgid "_Rename"
+msgstr "_Umbenennen"
 
 #: res/gui.glade:131
 msgid "GNU/Linux sample transfer application for Elektron devices"
 msgstr "GNU/Linux Sample Transfer Anwendung für Elektron Instrumente"
 
 #: res/gui.glade:184
-msgid "About"
-msgstr "Über"
+msgid "_Receive SysEx"
+msgstr ""
 
-#: res/gui.glade:297 res/gui.glade:539
+#: res/gui.glade:197
+msgid "_Send SysEx"
+msgstr ""
+
+#: res/gui.glade:221
+msgid "_About"
+msgstr "_Info"
+
+#: res/gui.glade:334 res/gui.glade:573
 msgid "Go to parent directory"
 msgstr "Gehe zum Überverzeichnis"
 
-#: res/gui.glade:339 res/gui.glade:581
+#: res/gui.glade:376 res/gui.glade:615
 msgid "Refresh directory"
 msgstr "Aktualisiere Verzeichnis"
 
-#: res/gui.glade:403 res/gui.glade:645 res/gui.glade:1271
+#: res/gui.glade:440 res/gui.glade:679 res/gui.glade:1305
 msgid "Name"
 msgstr "Name"
 
-#: res/gui.glade:417 res/gui.glade:659
+#: res/gui.glade:454 res/gui.glade:693
 msgid "Size"
 msgstr "Größe"
 
-#: res/gui.glade:455
+#: res/gui.glade:491
 msgid "Upload selection"
 msgstr "Upload Auswahl"
 
-#: res/gui.glade:477
+#: res/gui.glade:512
 msgid "Download selection"
 msgstr "Download Auswahl"
 
-#: res/gui.glade:712
+#: res/gui.glade:746
 msgid "Refresh devices"
 msgstr "Aktualisiere Geräte"
 
-#: res/gui.glade:795
+#: res/gui.glade:829
 msgid "Auto play"
 msgstr "Auto Play"
 
-#: res/gui.glade:1027
+#: res/gui.glade:1061
 msgid "Status"
 msgstr "Status"
 
-#: res/gui.glade:1038
+#: res/gui.glade:1072
 msgid "Type"
 msgstr "Typ"
 
-#: res/gui.glade:1049
+#: res/gui.glade:1083
 msgid "Source"
 msgstr "Quelle"
 
-#: res/gui.glade:1063
+#: res/gui.glade:1097
 msgid "Destination"
 msgstr "Ziel"
 
-#: res/gui.glade:1078
+#: res/gui.glade:1112
 msgid "Progress"
 msgstr "Fortschritt"
 
-#: res/gui.glade:1110
+#: res/gui.glade:1144
 msgid "Cancel running task"
 msgstr "Vorgang abbrechen"
 
-#: res/gui.glade:1131
+#: res/gui.glade:1165
 msgid "Remove queued tasks"
 msgstr "Lösche Aufgaben in der Warteschlange"
 
-#: res/gui.glade:1152
+#: res/gui.glade:1186
 msgid "Clear finished tasks"
 msgstr "Abgeschlossene Aufgaben aufräumen"

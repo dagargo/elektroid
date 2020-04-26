@@ -1,14 +1,14 @@
-# English translations for elektroid package.
+# English translations for Elektroid package.
 # Copyright (C) 2019 David García Goñi
-# This file is distributed under the same license as the elektroid package.
+# This file is distributed under the same license as the Elektroid package.
 # David García Goñi <dagargo@gmail.com>, 2019.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: elektroid 1.1\n"
+"Project-Id-Version: elektroid 1.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2020-02-21 11:35+0100\n"
-"PO-Revision-Date: 2020-02-21 11:45+0100\n"
+"POT-Creation-Date: 2020-04-26 12:54+0200\n"
+"PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: English\n"
 "Language: en\n"
@@ -17,150 +17,206 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/elektroid.c:160
+#: src/elektroid.c:168
 #, c-format
 msgid "Connected to %s"
 msgstr "Connected to %s"
 
-#: src/elektroid.c:167 src/elektroid.c:1852
+#: src/elektroid.c:175 src/elektroid.c:2140
 msgid "Not connected"
 msgstr "Not connected"
 
-#: src/elektroid.c:268
+#: src/elektroid.c:305
+msgid "Waiting..."
+msgstr "Waiting..."
+
+#: src/elektroid.c:308
+msgid "Sending..."
+msgstr "Sending..."
+
+#: src/elektroid.c:312
+msgid "Receiving..."
+msgstr "Receiving..."
+
+#: src/elektroid.c:351
+msgid "Receive SysEx"
+msgstr "Receive SysEx"
+
+#: src/elektroid.c:374
+msgid "Save SysEx"
+msgstr "Save SysEx"
+
+#: src/elektroid.c:377 src/elektroid.c:435 src/elektroid.c:577
+msgid "_Cancel"
+msgstr "_Cancel"
+
+#: src/elektroid.c:379
+msgid "_Save"
+msgstr "_Save"
+
+#: src/elektroid.c:383
+msgid "Received SysEx"
+msgstr "Received SysEx"
+
+#: src/elektroid.c:386 src/elektroid.c:441
+msgid "SysEx Files"
+msgstr "SysEx Files"
+
+#: src/elektroid.c:432
+msgid "Open SysEx"
+msgstr "Open SysEx"
+
+#: src/elektroid.c:437
+msgid "_Open"
+msgstr "_Open"
+
+#: src/elektroid.c:466
+msgid "Send SysEx"
+msgstr "Send SysEx"
+
+#: src/elektroid.c:543
 #, c-format
 msgid "Error while deleting “%s”: %s."
 msgstr "Error while deleting “%s”: %s."
 
-#: src/elektroid.c:301
+#: src/elektroid.c:576
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Are you sure you want to delete the selected items?"
 
-#: src/elektroid.c:302
-msgid "Cancel"
-msgstr "Cancel"
+#: src/elektroid.c:578 res/gui.glade:66
+msgid "_Delete"
+msgstr "_Delete"
 
-#: src/elektroid.c:303 res/gui.glade:66
-msgid "Delete"
-msgstr "Delete"
-
-#: src/elektroid.c:358 res/gui.glade:53
+#: src/elektroid.c:633
 msgid "Rename"
 msgstr "Rename"
 
-#: src/elektroid.c:383
+#: src/elektroid.c:659
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Error while renaming to “%s”: %s."
 
-#: src/elektroid.c:797 res/gui.glade:318 res/gui.glade:560
+#: src/elektroid.c:1073 res/gui.glade:355 res/gui.glade:594
 msgid "Add directory"
 msgstr "Add directory"
 
-#: src/elektroid.c:821
+#: src/elektroid.c:1098
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Error while creating dir “%s”: %s."
 
-#: src/elektroid.c:985
+#: src/elektroid.c:1262
 msgid "Queued"
 msgstr "Queued"
 
-#: src/elektroid.c:987
+#: src/elektroid.c:1264
 msgid "Running"
 msgstr "Running"
 
-#: src/elektroid.c:989
+#: src/elektroid.c:1266
 msgid "Completed"
 msgstr "Completed"
 
-#: src/elektroid.c:991
+#: src/elektroid.c:1268
 msgid "Completed with errors"
 msgstr "Completed with errors"
 
-#: src/elektroid.c:993
+#: src/elektroid.c:1270
 msgid "Canceled"
 msgstr "Canceled"
 
-#: src/elektroid.c:995 src/elektroid.c:1009
+#: src/elektroid.c:1272 src/elektroid.c:1286
 msgid "Undefined"
 msgstr "Undefined"
 
-#: src/elektroid.c:1005
+#: src/elektroid.c:1282
 msgid "Upload"
 msgstr "Upload"
 
-#: src/elektroid.c:1007
+#: src/elektroid.c:1284
 msgid "Download"
 msgstr "Download"
+
+#: res/gui.glade:53
+msgid "_Rename"
+msgstr "_Rename"
 
 #: res/gui.glade:131
 msgid "GNU/Linux sample transfer application for Elektron devices"
 msgstr "GNU/Linux sample transfer application for Elektron devices"
 
 #: res/gui.glade:184
-msgid "About"
-msgstr "About"
+msgid "_Receive SysEx"
+msgstr "_Receive SysEx"
 
-#: res/gui.glade:297 res/gui.glade:539
+#: res/gui.glade:197
+msgid "_Send SysEx"
+msgstr "_Send SysEx"
+
+#: res/gui.glade:221
+msgid "_About"
+msgstr "_About"
+
+#: res/gui.glade:334 res/gui.glade:573
 msgid "Go to parent directory"
 msgstr "Go to parent directory"
 
-#: res/gui.glade:339 res/gui.glade:581
+#: res/gui.glade:376 res/gui.glade:615
 msgid "Refresh directory"
 msgstr "Refresh directory"
 
-#: res/gui.glade:403 res/gui.glade:645 res/gui.glade:1271
+#: res/gui.glade:440 res/gui.glade:679 res/gui.glade:1305
 msgid "Name"
 msgstr "Name"
 
-#: res/gui.glade:417 res/gui.glade:659
+#: res/gui.glade:454 res/gui.glade:693
 msgid "Size"
 msgstr "Size"
 
-#: res/gui.glade:455
+#: res/gui.glade:491
 msgid "Upload selection"
 msgstr "Upload selection"
 
-#: res/gui.glade:477
+#: res/gui.glade:512
 msgid "Download selection"
 msgstr "Download selection"
 
-#: res/gui.glade:712
+#: res/gui.glade:746
 msgid "Refresh devices"
 msgstr "Refresh devices"
 
-#: res/gui.glade:795
+#: res/gui.glade:829
 msgid "Auto play"
 msgstr "Auto play"
 
-#: res/gui.glade:1027
+#: res/gui.glade:1061
 msgid "Status"
 msgstr "Status"
 
-#: res/gui.glade:1038
+#: res/gui.glade:1072
 msgid "Type"
 msgstr "Type"
 
-#: res/gui.glade:1049
+#: res/gui.glade:1083
 msgid "Source"
 msgstr "Source"
 
-#: res/gui.glade:1063
+#: res/gui.glade:1097
 msgid "Destination"
 msgstr "Destination"
 
-#: res/gui.glade:1078
+#: res/gui.glade:1112
 msgid "Progress"
 msgstr "Progress"
 
-#: res/gui.glade:1110
+#: res/gui.glade:1144
 msgid "Cancel running task"
 msgstr "Cancel running task"
 
-#: res/gui.glade:1131
+#: res/gui.glade:1165
 msgid "Remove queued tasks"
 msgstr "Remove queued tasks"
 
-#: res/gui.glade:1152
+#: res/gui.glade:1186
 msgid "Clear finished tasks"
 msgstr "Clear finished tasks"
