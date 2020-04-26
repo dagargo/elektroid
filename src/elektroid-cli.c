@@ -388,11 +388,35 @@ main (int argc, char *argv[])
   int res;
   char *command;
   int vflg = 0, errflg = 0;
+  struct sigaction action, old_action;
 
-  signal (SIGTERM, cli_end);
-  signal (SIGQUIT, cli_end);
-  signal (SIGINT, cli_end);
-  signal (SIGHUP, cli_end);
+  action.sa_handler = cli_end;
+  sigemptyset (&action.sa_mask);
+  action.sa_flags = 0;
+
+  sigaction (SIGTERM, NULL, &old_action);
+  if (old_action.sa_handler != SIG_IGN)
+    {
+      sigaction (SIGTERM, &action, NULL);
+    }
+
+  sigaction (SIGQUIT, NULL, &old_action);
+  if (old_action.sa_handler != SIG_IGN)
+    {
+      sigaction (SIGQUIT, &action, NULL);
+    }
+
+  sigaction (SIGINT, NULL, &old_action);
+  if (old_action.sa_handler != SIG_IGN)
+    {
+      sigaction (SIGINT, &action, NULL);
+    }
+
+  sigaction (SIGHUP, NULL, &old_action);
+  if (old_action.sa_handler != SIG_IGN)
+    {
+      sigaction (SIGHUP, &action, NULL);
+    }
 
   while ((c = getopt (argc, argv, "v")) != -1)
     {
