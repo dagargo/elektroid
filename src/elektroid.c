@@ -1054,7 +1054,35 @@ elektroid_remote_mkdir (const gchar * name)
 static gint
 elektroid_local_mkdir (const gchar * name)
 {
-  return mkdir (name, 0755);
+  DIR *dir;
+  gint error = 0;
+
+  if (mkdir (name, 0755) == 0)
+    {
+      return 0;
+    }
+
+  if (errno == EEXIST)
+    {
+      dir = opendir (name);
+      if (dir)
+	{
+	  error = 0;
+	  closedir (dir);
+	}
+      else
+	{
+	  fprintf (stderr,
+		   __FILE__ ": Error while opening local %s dir\n", name);
+	  error = errno;
+	}
+    }
+  else
+    {
+      error = errno;
+    }
+
+  return error;
 }
 
 static void
