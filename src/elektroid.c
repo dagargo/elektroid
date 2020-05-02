@@ -1668,15 +1668,23 @@ elektroid_add_upload_task (GtkTreeModel * model,
 static void
 elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
 {
+  gboolean queued;
+  GtkTreeIter iter;
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.view));
+
+  queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL);
 
   gtk_tree_selection_selected_foreach (selection,
 				       elektroid_add_upload_task, NULL);
 
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
-  elektroid_run_next_task (NULL);
+
+  if (!queued)
+    {
+      elektroid_run_next_task (NULL);
+    }
 }
 
 static gpointer
@@ -1826,15 +1834,23 @@ elektroid_add_download_task (GtkTreeModel * model,
 static void
 elektroid_add_download_tasks (GtkWidget * object, gpointer data)
 {
+  gboolean queued;
+  GtkTreeIter iter;
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
+
+  queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL);
 
   gtk_tree_selection_selected_foreach (selection,
 				       elektroid_add_download_task, NULL);
 
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
-  elektroid_run_next_task (NULL);
+
+  if (!queued)
+    {
+      elektroid_run_next_task (NULL);
+    }
 }
 
 static gboolean
