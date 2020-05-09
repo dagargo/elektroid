@@ -384,10 +384,10 @@ cli_end (int sig)
 int
 main (int argc, char *argv[])
 {
-  char c;
-  int res;
-  char *command;
-  int vflg = 0, errflg = 0;
+  gint c;
+  gint res;
+  gchar *command;
+  gint vflg = 0, errflg = 0;
   struct sigaction action, old_action;
 
   action.sa_handler = cli_end;

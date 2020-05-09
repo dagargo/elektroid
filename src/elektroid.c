@@ -2225,10 +2225,10 @@ elektroid_end (gpointer data)
 int
 main (int argc, char *argv[])
 {
-  gchar c;
+  gint c;
   gchar *exec_name;
   gchar *local_dir = NULL;
-  int vflg = 0, dflg = 0, errflg = 0;
+  gint vflg = 0, dflg = 0, errflg = 0;
 
   g_unix_signal_add (SIGHUP, elektroid_end, NULL);
   g_unix_signal_add (SIGINT, elektroid_end, NULL);
