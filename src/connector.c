@@ -1172,8 +1172,8 @@ connector_fill_card_elektron_devices (gint card, GArray * devices)
   sprintf (name, "hw:%d", card);
   if ((err = snd_ctl_open (&ctl, name, 0)) < 0)
     {
-      fprintf (stderr, __FILE__ ": cannot open control for card %d: %s", card,
-	       snd_strerror (err));
+      fprintf (stderr, __FILE__ ": cannot open control for card %d: %s\n",
+	       card, snd_strerror (err));
       return;
     }
   device = -1;
@@ -1188,7 +1188,7 @@ connector_fill_card_elektron_devices (gint card, GArray * devices)
     }
   if (err < 0)
     {
-      fprintf (stderr, __FILE__ ": cannot determine card number: %s",
+      fprintf (stderr, __FILE__ ": cannot determine card number: %s\n",
 	       snd_strerror (err));
     }
   snd_ctl_close (ctl);
@@ -1208,7 +1208,7 @@ connector_get_elektron_devices ()
     }
   if (err < 0)
     {
-      fprintf (stderr, __FILE__ ": cannot determine card number: %s",
+      fprintf (stderr, __FILE__ ": cannot determine card number: %s\n",
 	       snd_strerror (err));
     }
 
