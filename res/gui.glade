@@ -131,6 +131,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     <property name="comments" translatable="yes">GNU/Linux sample transfer application for Elektron devices</property>
     <property name="website">https://github.com/dagargo/elektroid</property>
     <property name="authors">David García Goñi&lt;dagargo@gmail.com&gt;</property>
+    <property name="translator_credits" translatable="yes">David García Goñi&lt;dagargo@gmail.com&gt;
+Dennis Braun &lt;d_braun@kabelmail.de&gt;
+Olivier Humbert &lt;trebmuh@tuxfamily.org&gt;</property>
     <property name="logo_icon_name">elektroid</property>
     <property name="license_type">gpl-3-0</property>
     <child>
