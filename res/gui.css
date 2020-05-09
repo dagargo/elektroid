@@ -1,6 +1,6 @@
-@define-color local_color #df4040;
-@define-color local_color_dark #3f1717;
-@define-color remote_color #4040df;
+@define-color local_color #0079c0;
+@define-color local_color_dark #004673;
+@define-color remote_color #ee3a2b;
 @define-color disabled_color #7f7f7f;
 
 .local {
