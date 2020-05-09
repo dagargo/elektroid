@@ -1,5 +1,5 @@
 # French GUI translation for Elektroid.
-# Copyright (C) 2019 Olivier Humbert
+# Copyright (C) 2019-2020 Olivier Humbert
 # This file is distributed under the same license as the Elektroid package.
 # Olivier Humbert <trebmuh@tuxfamily.org>, 2019-2020.
 #
@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: elektroid 1.1\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2020-04-26 12:54+0200\n"
-"PO-Revision-Date: 2020-03-20 11:26+0100\n"
+"PO-Revision-Date: 2020-05-09 20:36+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
 "Language: fr\n"
@@ -28,23 +28,23 @@ msgstr "Non connecté"
 
 #: src/elektroid.c:305
 msgid "Waiting..."
-msgstr ""
+msgstr "En attente..."
 
 #: src/elektroid.c:308
 msgid "Sending..."
-msgstr ""
+msgstr "Envoi en cours..."
 
 #: src/elektroid.c:312
 msgid "Receiving..."
-msgstr ""
+msgstr "Réception en cours..."
 
 #: src/elektroid.c:351
 msgid "Receive SysEx"
-msgstr ""
+msgstr "Réception de SysEx"
 
 #: src/elektroid.c:374
 msgid "Save SysEx"
-msgstr ""
+msgstr "Sauvegarde de SysEx"
 
 #: src/elektroid.c:377 src/elektroid.c:435 src/elektroid.c:577
 msgid "_Cancel"
@@ -52,27 +52,27 @@ msgstr "_Annuler"
 
 #: src/elektroid.c:379
 msgid "_Save"
-msgstr ""
+msgstr "_Sauvegarder"
 
 #: src/elektroid.c:383
 msgid "Received SysEx"
-msgstr ""
+msgstr "SysEx reçu"
 
 #: src/elektroid.c:386 src/elektroid.c:441
 msgid "SysEx Files"
-msgstr ""
+msgstr "Fichiers SysEx"
 
 #: src/elektroid.c:432
 msgid "Open SysEx"
-msgstr ""
+msgstr "Ouvrir SysEx"
 
 #: src/elektroid.c:437
 msgid "_Open"
-msgstr ""
+msgstr "_Ouvrir"
 
 #: src/elektroid.c:466
 msgid "Send SysEx"
-msgstr ""
+msgstr "Envoyer SysEx"
 
 #: src/elektroid.c:543
 #, c-format
@@ -149,11 +149,11 @@ msgstr ""
 
 #: res/gui.glade:184
 msgid "_Receive SysEx"
-msgstr ""
+msgstr "_Réception de SysEx"
 
 #: res/gui.glade:197
 msgid "_Send SysEx"
-msgstr ""
+msgstr "Envoi de _Sysex"
 
 #: res/gui.glade:221
 msgid "_About"
@@ -189,9 +189,7 @@ msgstr "Rafraîchir les périphériques"
 
 #: res/gui.glade:829
 msgid "Auto play"
-msgstr ""
-"Lecture\n"
-"automatique"
+msgstr "Lecture automatique"
 
 #: res/gui.glade:1061
 msgid "Status"
