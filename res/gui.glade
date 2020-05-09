@@ -829,7 +829,7 @@ Olivier Humbert &lt;trebmuh@tuxfamily.org&gt;</property>
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="valign">center</property>
-                                <property name="label" translatable="yes">Auto play</property>
+                                <property name="label" translatable="yes" comments="It is recommended split the text in two lines if it is too long">Auto play</property>
                                 <property name="wrap">True</property>
                               </object>
                               <packing>

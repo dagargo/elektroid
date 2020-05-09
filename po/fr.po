@@ -5,7 +5,7 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: elektroid 1.1\n"
+"Project-Id-Version: elektroid 1.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2020-04-26 12:54+0200\n"
 "PO-Revision-Date: 2020-05-09 20:36+0100\n"
@@ -189,7 +189,8 @@ msgstr "Rafraîchir les périphériques"
 
 #: res/gui.glade:829
 msgid "Auto play"
-msgstr "Lecture automatique"
+msgstr "Lecture\n"
+"automatique"
 
 #: res/gui.glade:1061
 msgid "Status"
