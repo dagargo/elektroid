@@ -1188,7 +1188,7 @@ connector_fill_card_elektron_devices (gint card, GArray * devices)
     }
   if (err < 0)
     {
-      fprintf (stderr, __FILE__ ": cannot determine card number: %s\n",
+      fprintf (stderr, __FILE__ ": cannot determine device number: %s\n",
 	       snd_strerror (err));
     }
   snd_ctl_close (ctl);
