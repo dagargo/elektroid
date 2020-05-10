@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: elektroid 1.1\n"
+"Project-Id-Version: elektroid 1.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2020-04-26 12:54+0200\n"
+"POT-Creation-Date: 2020-05-10 12:40+0200\n"
 "PO-Revision-Date: 2020-02-21 11:45+0100\n"
 "Last-Translator: Dennis Braun <d_braun@kabelmail.de>\n"
 "Language-Team: German\n"
@@ -22,7 +22,7 @@ msgstr ""
 msgid "Connected to %s"
 msgstr "Verbunden mit %s"
 
-#: src/elektroid.c:175 src/elektroid.c:2140
+#: src/elektroid.c:175 src/elektroid.c:2184
 msgid "Not connected"
 msgstr "Nicht verbunden"
 
@@ -96,44 +96,44 @@ msgstr "Umbenennen"
 msgid "Error while renaming to “%s”: %s."
 msgstr "Fehler beim Umbenennen von »%s«: %s."
 
-#: src/elektroid.c:1073 res/gui.glade:355 res/gui.glade:594
+#: src/elektroid.c:1101 res/gui.glade:356 res/gui.glade:595
 msgid "Add directory"
 msgstr "Verzeichnis hinzufügen"
 
-#: src/elektroid.c:1098
+#: src/elektroid.c:1126
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Fehler beim Erstellen des Verzeichnisses »%s«: %s."
 
-#: src/elektroid.c:1262
+#: src/elektroid.c:1290
 msgid "Queued"
 msgstr "In der Warteschlange"
 
-#: src/elektroid.c:1264
+#: src/elektroid.c:1292
 msgid "Running"
 msgstr "Arbeitet"
 
-#: src/elektroid.c:1266
+#: src/elektroid.c:1294
 msgid "Completed"
 msgstr "Fertig"
 
-#: src/elektroid.c:1268
+#: src/elektroid.c:1296
 msgid "Completed with errors"
 msgstr "Abgeschlossen mit Fehlern"
 
-#: src/elektroid.c:1270
+#: src/elektroid.c:1298
 msgid "Canceled"
 msgstr "Abgebrochen"
 
-#: src/elektroid.c:1272 src/elektroid.c:1286
+#: src/elektroid.c:1300 src/elektroid.c:1314
 msgid "Undefined"
 msgstr "Undefiniert"
 
-#: src/elektroid.c:1282
+#: src/elektroid.c:1310
 msgid "Upload"
 msgstr "Hochladen"
 
-#: src/elektroid.c:1284
+#: src/elektroid.c:1312
 msgid "Download"
 msgstr "Herunterladen"
 
@@ -145,78 +145,83 @@ msgstr "_Umbenennen"
 msgid "GNU/Linux sample transfer application for Elektron devices"
 msgstr "GNU/Linux Sample Transfer Anwendung für Elektron Instrumente"
 
-#: res/gui.glade:184
+#: res/gui.glade:134
+msgid "translator-credits"
+msgstr "Dennis Braun <d_braun@kabelmail.de>"
+
+#: res/gui.glade:185
 msgid "_Receive SysEx"
 msgstr ""
 
-#: res/gui.glade:197
+#: res/gui.glade:198
 msgid "_Send SysEx"
 msgstr ""
 
-#: res/gui.glade:221
+#: res/gui.glade:222
 msgid "_About"
 msgstr "_Info"
 
-#: res/gui.glade:334 res/gui.glade:573
+#: res/gui.glade:335 res/gui.glade:574
 msgid "Go to parent directory"
 msgstr "Gehe zum Überverzeichnis"
 
-#: res/gui.glade:376 res/gui.glade:615
+#: res/gui.glade:377 res/gui.glade:616
 msgid "Refresh directory"
 msgstr "Aktualisiere Verzeichnis"
 
-#: res/gui.glade:440 res/gui.glade:679 res/gui.glade:1305
+#: res/gui.glade:441 res/gui.glade:680 res/gui.glade:1306
 msgid "Name"
 msgstr "Name"
 
-#: res/gui.glade:454 res/gui.glade:693
+#: res/gui.glade:455 res/gui.glade:694
 msgid "Size"
 msgstr "Größe"
 
-#: res/gui.glade:491
+#: res/gui.glade:492
 msgid "Upload selection"
 msgstr "Upload Auswahl"
 
-#: res/gui.glade:512
+#: res/gui.glade:513
 msgid "Download selection"
 msgstr "Download Auswahl"
 
-#: res/gui.glade:746
+#: res/gui.glade:747
 msgid "Refresh devices"
 msgstr "Aktualisiere Geräte"
 
-#: res/gui.glade:829
+#. It is recommended split the text in two lines if it is too long
+#: res/gui.glade:830
 msgid "Auto play"
 msgstr "Auto Play"
 
-#: res/gui.glade:1061
+#: res/gui.glade:1062
 msgid "Status"
 msgstr "Status"
 
-#: res/gui.glade:1072
+#: res/gui.glade:1073
 msgid "Type"
 msgstr "Typ"
 
-#: res/gui.glade:1083
+#: res/gui.glade:1084
 msgid "Source"
 msgstr "Quelle"
 
-#: res/gui.glade:1097
+#: res/gui.glade:1098
 msgid "Destination"
 msgstr "Ziel"
 
-#: res/gui.glade:1112
+#: res/gui.glade:1113
 msgid "Progress"
 msgstr "Fortschritt"
 
-#: res/gui.glade:1144
+#: res/gui.glade:1145
 msgid "Cancel running task"
 msgstr "Vorgang abbrechen"
 
-#: res/gui.glade:1165
+#: res/gui.glade:1166
 msgid "Remove queued tasks"
 msgstr "Lösche Aufgaben in der Warteschlange"
 
-#: res/gui.glade:1186
+#: res/gui.glade:1187
 msgid "Clear finished tasks"
 msgstr "Abgeschlossene Aufgaben aufräumen"
