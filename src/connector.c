@@ -1053,6 +1053,7 @@ connector_init (struct connector *connector, gint card)
   rx_msg_device = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg_device)
     {
+      err = -1;
       goto cleanup;
     }
 
@@ -1061,6 +1062,7 @@ connector_init (struct connector *connector, gint card)
   if (!rx_msg_fw_ver)
     {
       free_msg (rx_msg_device);
+      err = -1;
       goto cleanup;
     }
 
