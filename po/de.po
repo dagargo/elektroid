@@ -28,23 +28,23 @@ msgstr "Nicht verbunden"
 
 #: src/elektroid.c:305
 msgid "Waiting..."
-msgstr ""
+msgstr "Warte..."
 
 #: src/elektroid.c:308
 msgid "Sending..."
-msgstr ""
+msgstr "Sende..."
 
 #: src/elektroid.c:312
 msgid "Receiving..."
-msgstr ""
+msgstr "Empfange..."
 
 #: src/elektroid.c:351
 msgid "Receive SysEx"
-msgstr ""
+msgstr "Empfange SysEx"
 
 #: src/elektroid.c:374
 msgid "Save SysEx"
-msgstr ""
+msgstr "Speichere SysEx"
 
 #: src/elektroid.c:377 src/elektroid.c:435 src/elektroid.c:577
 msgid "_Cancel"
@@ -52,27 +52,27 @@ msgstr "_Abbrechen"
 
 #: src/elektroid.c:379
 msgid "_Save"
-msgstr ""
+msgstr "Speichern"
 
 #: src/elektroid.c:383
 msgid "Received SysEx"
-msgstr ""
+msgstr "SysEx empfangen"
 
 #: src/elektroid.c:386 src/elektroid.c:441
 msgid "SysEx Files"
-msgstr ""
+msgstr "SysEx Dateien"
 
 #: src/elektroid.c:432
 msgid "Open SysEx"
-msgstr ""
+msgstr "Öffne SysEx"
 
 #: src/elektroid.c:437
 msgid "_Open"
-msgstr ""
+msgstr "_Öffnen"
 
 #: src/elektroid.c:466
 msgid "Send SysEx"
-msgstr ""
+msgstr "Sende SysEx"
 
 #: src/elektroid.c:543
 #, c-format
@@ -151,11 +151,11 @@ msgstr "Dennis Braun <d_braun@kabelmail.de>"
 
 #: res/gui.glade:185
 msgid "_Receive SysEx"
-msgstr ""
+msgstr "_Empfange SysEx"
 
 #: res/gui.glade:198
 msgid "_Send SysEx"
-msgstr ""
+msgstr "_Sende SysEx"
 
 #: res/gui.glade:222
 msgid "_About"
