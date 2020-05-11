@@ -52,7 +52,7 @@ msgstr "_Abbrechen"
 
 #: src/elektroid.c:379
 msgid "_Save"
-msgstr "Speichern"
+msgstr "_Speichern"
 
 #: src/elektroid.c:383
 msgid "Received SysEx"
