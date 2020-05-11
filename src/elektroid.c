@@ -340,7 +340,9 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
   gint res;
-  char *filename;
+  gchar *filename;
+  gchar *filename_w_ext;
+  const gchar *ext;
   FILE *file;
   GByteArray *sysex_data;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
@@ -382,16 +384,40 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   gtk_file_chooser_set_do_overwrite_confirmation (chooser, TRUE);
   gtk_file_chooser_set_current_name (chooser, _("Received SysEx"));
 
+  gtk_file_chooser_set_create_folders (chooser, TRUE);
+
   filter = gtk_file_filter_new ();
   gtk_file_filter_set_name (filter, _("SysEx Files"));
   gtk_file_filter_add_pattern (filter, "*.syx");
   gtk_file_chooser_add_filter (chooser, filter);
 
-  res = gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (dialog), filter);
 
-  if (res == GTK_RESPONSE_ACCEPT)
+  while (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
     {
       filename = gtk_file_chooser_get_filename (chooser);
+      ext = get_ext (filename);
+
+      if (ext == NULL || strcmp (ext, "syx") != 0)
+	{
+	  filename_w_ext = g_strconcat (filename, ".syx", NULL);
+	  g_free (filename);
+	  filename = filename_w_ext;
+
+	  if (g_file_test (filename, G_FILE_TEST_EXISTS))
+	    {
+	      gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (chooser),
+					     filename);
+	      g_free (filename);
+	      filename = NULL;
+	      continue;
+	    }
+	}
+      break;
+    }
+
+  if (filename != NULL)
+    {
       debug_print (1, "Saving SysEx file...\n");
       file = fopen (filename, "w");
       fwrite (sysex_data->data, sysex_data->len, 1, file);
