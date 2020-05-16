@@ -27,10 +27,10 @@ Create a directory
 Delete a directory. The directory must be empty.
 .TP
 .B upload [sample] [device number]:[path to directory or sample]
-Upload a sample. If the path does not exist it will be created.
+Upload a sample. If the path does not exist it will be created. The supported audio file formats are aiff, flac, ogg and wav.
 .TP
 .B download [device number]:[path to sample]
-Download a sample
+Download a sample. Samples will be stored locally as 16-bit, 48kHz wav files.
 .TP
 .B mv [device number]:[path to origin sample] [device number]:[path to destination directory or sample]
 Move a sample. If the destination path does not exist it will be created.
