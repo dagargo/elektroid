@@ -1,9 +1,0 @@
---- a/res/elektroid.desktop
-+++ b/res/elektroid.desktop
-@@ -4,5 +4,5 @@
- Name=Elektroid
- Comment=Sample transfer application for Elektron devices
- Exec=elektroid
--Icon=elektroid
-+Icon=/usr/share/icons/hicolor/scalable/apps/elektroid.svg
- Terminal=false
