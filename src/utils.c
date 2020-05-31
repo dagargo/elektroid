@@ -28,6 +28,8 @@
 #define REG_TYPE "emblem-music-symbolic"
 #define DIR_TYPE "folder-visiting-symbolic"
 
+int debug_level;
+
 static gchar
 connector_get_printable_char (gchar c)
 {
