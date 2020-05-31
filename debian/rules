@@ -1,7 +1,17 @@
 #!/usr/bin/make -f
 
-%:
-	dh $@ --parallel --with autoreconf
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
-override_dh_auto_install:
-	dh_auto_install
+include /usr/share/dpkg/architecture.mk
+
+# Fix cross building
+ifneq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
+    export ac_cv_func_malloc_0_nonnull=yes
+endif
+
+%:
+	dh $@ --with autoreconf
+
+override_dh_auto_test:
+	# Don't enable tests, if no elektron device is connected
+	@echo "Tests disabled"

@@ -1,5 +1,16 @@
-elektroid (0.1-0) unstable; urgency=medium
+elektroid (1.2-1) unstable; urgency=medium
 
-  * Initial upstream release.
+  * New upstream version 1.2
+  * Fix cross building
+  * Bump dh-compat to 13
+  * Drop patches, applied by upstream
+  * Drop obsolete --as-needed build-flag
+  * d/upstream/metadata: Add archive and remove obsolete name field
 
- -- DNS <debian@88it.de>  Mon, 14 Oct 2019 21:33:00 +0100
+ -- Dennis Braun <d_braun@kabelmail.de>  Mon, 25 May 2020 17:09:24 +0200
+
+elektroid (1.1-1) unstable; urgency=medium
+
+  * Initial release (Closes: #953332)
+
+ -- Dennis Braun <d_braun@kabelmail.de>  Wed, 08 Apr 2020 21:46:46 +0200
