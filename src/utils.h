@@ -27,7 +27,7 @@
 
 #define debug_print(level, ...) if (level <= debug_level) fprintf(stderr, __VA_ARGS__)
 
-int debug_level;
+extern int debug_level;
 
 void print_ascii_msg (const GByteArray *);
 
