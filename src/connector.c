@@ -92,6 +92,12 @@ guint
 connector_get_next_dentry (struct connector_dir_iterator *dir_iterator)
 {
   uint32_t *data;
+  gchar *dentry_cp1252;
+
+  if (dir_iterator->dentry != NULL)
+    {
+      g_free (dir_iterator->dentry);
+    }
 
   if (dir_iterator->pos == dir_iterator->msg->len)
     {
@@ -111,8 +117,9 @@ connector_get_next_dentry (struct connector_dir_iterator *dir_iterator)
       dir_iterator->type = dir_iterator->msg->data[dir_iterator->pos];
 
       dir_iterator->pos++;
+      dentry_cp1252 = (gchar *) & dir_iterator->msg->data[dir_iterator->pos];
       dir_iterator->dentry =
-	(gchar *) & dir_iterator->msg->data[dir_iterator->pos];
+	g_convert (dentry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
 
       while (dir_iterator->pos < dir_iterator->msg->len
 	     && dir_iterator->msg->data[dir_iterator->pos] != 0)
@@ -641,8 +648,11 @@ connector_read_dir (struct connector *connector, const gchar * dir)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
+  gchar *dir_cp1252 = g_convert (dir, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
-  tx_msg = connector_new_msg_dir_list (dir);
+  tx_msg = connector_new_msg_dir_list (dir_cp1252);
+  g_free (dir_cp1252);
+
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
@@ -660,11 +670,22 @@ connector_rename (struct connector *connector, const gchar * old,
   GByteArray *rx_msg;
   GByteArray *tx_msg = connector_new_msg_data (INQ_RENAME_TEMPLATE,
 					       sizeof (INQ_RENAME_TEMPLATE));
+  gchar *new_cp1252 = g_convert (new, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+  if (!new_cp1252)
+    {
+      return -1;
+      errno = EINVAL;
+    }
 
-  g_byte_array_append (tx_msg, (guchar *) old, strlen (old));
+  gchar *old_cp1252 = g_convert (old, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+
+  g_byte_array_append (tx_msg, (guchar *) old_cp1252, strlen (old_cp1252));
   g_byte_array_append (tx_msg, (guchar *) "\0", 1);
-  g_byte_array_append (tx_msg, (guchar *) new, strlen (new));
+  g_byte_array_append (tx_msg, (guchar *) new_cp1252, strlen (new_cp1252));
   g_byte_array_append (tx_msg, (guchar *) "\0", 1);
+
+  g_free (old_cp1252);
+  g_free (new_cp1252);
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
@@ -694,7 +715,12 @@ connector_delete (struct connector *connector, const gchar * path,
 {
   gint res;
   GByteArray *rx_msg;
-  GByteArray *tx_msg = connector_new_msg_path (template, size, path);
+  GByteArray *tx_msg;
+  gchar *path_cp1252 =
+    g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+
+  tx_msg = connector_new_msg_path (template, size, path_cp1252);
+  g_free (path_cp1252);
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
@@ -739,8 +765,11 @@ connector_create_upload (struct connector *connector, const gchar * path,
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   gint id;
+  gchar *path_cp1252 =
+    g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
-  tx_msg = connector_new_msg_new_upload (path, fsize);
+  tx_msg = connector_new_msg_new_upload (path_cp1252, fsize);
+  g_free (path_cp1252);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
@@ -847,8 +876,11 @@ connector_download (struct connector *connector, const gchar * path,
   int16_t *frame;
   int i;
   GArray *result = NULL;
+  gchar *path_cp1252 =
+    g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
-  tx_msg = connector_new_msg_info_file (path);
+  tx_msg = connector_new_msg_info_file (path_cp1252);
+  g_free (path_cp1252);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
@@ -941,8 +973,11 @@ connector_create_dir (struct connector *connector, const gchar * path)
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   gint res;
+  gchar *path_cp1252 =
+    g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
-  tx_msg = connector_new_msg_new_dir (path);
+  tx_msg = connector_new_msg_new_dir (path_cp1252);
+  g_free (path_cp1252);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
