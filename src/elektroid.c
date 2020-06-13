@@ -214,8 +214,7 @@ elektroid_get_next_queued_task (GtkTreeIter * iter,
   return found;
 }
 
-
-static gint
+static gboolean
 elektroid_check_connector ()
 {
   GtkListStore *list_store;
@@ -242,6 +241,14 @@ elektroid_check_connector ()
   elektroid_update_statusbar ();
 
   return connected;
+}
+
+static gboolean
+elektroid_check_connector_bg (gpointer data)
+{
+  elektroid_check_connector ();
+
+  return FALSE;
 }
 
 static void
@@ -577,8 +584,8 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path)
     }
 
   free (path);
-  free (icon);
-  free (name);
+  g_free (icon);
+  g_free (name);
 }
 
 static void
@@ -852,8 +859,8 @@ elektroid_local_check_selection (gpointer data)
 	  sample_path = chain_path (local_browser.dir, name);
 	  elektroid_start_load_thread (sample_path);
 	}
-      free (icon);
-      free (name);
+      g_free (icon);
+      g_free (name);
     }
 
   return FALSE;
@@ -1348,13 +1355,13 @@ elektroid_cancel_running_task (GtkWidget * object, gpointer data)
 }
 
 static gboolean
-elektroid_select_queued_task (enum elektroid_task_status status)
+elektroid_task_is_queued (enum elektroid_task_status status)
 {
   return (status == QUEUED);
 }
 
 static gboolean
-elektroid_select_finished_task (enum elektroid_task_status status)
+elektroid_task_is_finished (enum elektroid_task_status status)
 {
   return (status == COMPLETED_OK ||
 	  status == COMPLETED_ERROR || status == CANCELED);
@@ -1375,12 +1382,12 @@ elektroid_check_task_buttons (gpointer data)
       gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, &status, -1);
 
-      if (elektroid_select_queued_task (status))
+      if (elektroid_task_is_queued (status))
 	{
 	  queued = TRUE;
 	}
 
-      if (elektroid_select_finished_task (status))
+      if (elektroid_task_is_finished (status))
 	{
 	  finished = TRUE;
 	}
@@ -1428,13 +1435,13 @@ elektroid_remove_tasks_on_cond (gboolean (*selector)
 static void
 elektroid_remove_queued_tasks (GtkWidget * object, gpointer data)
 {
-  elektroid_remove_tasks_on_cond (elektroid_select_queued_task);
+  elektroid_remove_tasks_on_cond (elektroid_task_is_queued);
 }
 
 static void
 elektroid_clear_finished_tasks (GtkWidget * object, gpointer data)
 {
-  elektroid_remove_tasks_on_cond (elektroid_select_finished_task);
+  elektroid_remove_tasks_on_cond (elektroid_task_is_finished);
 }
 
 
@@ -1450,8 +1457,8 @@ elektroid_complete_running_task (gpointer data)
 			  TASK_LIST_STORE_STATUS_FIELD, active_task.status,
 			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status, -1);
       active_task.running = 0;
-      free (active_task.src);
-      free (active_task.dst);
+      g_free (active_task.src);
+      g_free (active_task.dst);
     }
   else
     {
@@ -1554,7 +1561,7 @@ elektroid_upload_task (gpointer data)
 	}
     }
 
-  elektroid_check_connector ();
+  g_idle_add (elektroid_check_connector_bg, NULL);
 
   g_array_free (sample, TRUE);
 
@@ -1562,17 +1569,10 @@ elektroid_upload_task (gpointer data)
     {
       g_idle_add (remote_browser.load_dir, NULL);
     }
-  g_idle_add (elektroid_complete_running_task, NULL);
 
-  if (frames >= 0)
-    {
-      g_idle_add (elektroid_run_next_task, NULL);
-      g_idle_add (elektroid_check_task_buttons, NULL);
-    }
-  else
-    {
-      gtk_widget_set_sensitive (cancel_task_button, FALSE);
-    }
+  g_idle_add (elektroid_complete_running_task, NULL);
+  g_idle_add (elektroid_run_next_task, NULL);
+  g_idle_add (elektroid_check_task_buttons, NULL);
 
   return NULL;
 }
@@ -1687,8 +1687,8 @@ elektroid_add_upload_task (GtkTreeModel * model,
       free (dst);
       free (src);
     }
-  free (name);
-  free (icon);
+  g_free (name);
+  g_free (icon);
 }
 
 static void
@@ -1738,7 +1738,7 @@ elektroid_download_task (gpointer data)
   sample =
     connector_download (&connector, active_task.src, &active_task.running,
 			elektroid_update_progress);
-  elektroid_check_connector ();
+  g_idle_add (elektroid_check_connector_bg, NULL);
 
   if (sample == NULL)
     {
@@ -1853,8 +1853,8 @@ elektroid_add_download_task (GtkTreeModel * model,
       free (dst);
       free (src);
     }
-  free (name);
-  free (icon);
+  g_free (name);
+  g_free (icon);
 }
 
 static void
