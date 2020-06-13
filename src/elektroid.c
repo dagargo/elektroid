@@ -1471,7 +1471,7 @@ elektroid_run_next_task (gpointer data)
   GtkTreePath *path;
   gboolean found = elektroid_get_next_queued_task (&iter, &type, &src, &dst);
 
-  if (found)
+  if (!active_task.running && found)
     {
       gtk_list_store_set (task_list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, RUNNING, -1);
