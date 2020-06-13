@@ -728,6 +728,12 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
 				     event->x, event->y, &path, NULL, NULL,
 				     NULL);
 
+      if (!path)
+	{
+	  gtk_tree_selection_unselect_all (selection);
+	  return FALSE;
+	}
+
       selected = gtk_tree_selection_path_is_selected (selection, path);
       if (!selected)
 	{
@@ -736,6 +742,7 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
 	    {
 	      gtk_tree_selection_unselect_all (selection);
 	    }
+
 	  gtk_tree_selection_select_path (selection, path);
 	}
 
