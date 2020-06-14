@@ -1032,6 +1032,24 @@ connector_destroy (struct connector *connector)
   free (connector->device_name);
 }
 
+static const gchar *
+connector_get_device_name (gint device_id)
+{
+  switch (device_id)
+    {
+    case 0x8:
+      return "Analog Rytm";
+    case 0xc:
+      return "Digitakt";
+    case 0x10:
+      return "Analog Rytm MKII";
+    case 0x19:
+      return "Model:Samples";
+    default:
+      return "-";
+    }
+}
+
 gint
 connector_init (struct connector *connector, gint card)
 {
@@ -1102,8 +1120,10 @@ connector_init (struct connector *connector, gint card)
       goto cleanup;
     }
 
-  snprintf (connector->device_name, LABEL_MAX, "%s %s",
-	    &rx_msg_device->data[23], &rx_msg_fw_ver->data[10]);
+  snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
+	    connector_get_device_name (rx_msg_device->data[5]),
+	    &rx_msg_fw_ver->data[10],
+	    &rx_msg_device->data[7 + rx_msg_device->data[6]]);
   free_msg (rx_msg_device);
   free_msg (rx_msg_fw_ver);
   debug_print (1, "Connected to %s\n", connector->device_name);
