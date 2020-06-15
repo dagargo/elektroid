@@ -34,6 +34,7 @@ static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
 static const guint8 INQ_DEVICE[] = { 0x1 };
 static const guint8 INQ_VERSION[] = { 0x2 };
+static const guint8 INQ_UID[] = { 0x3 };
 static const guint8 INQ_LS_DIR_TEMPLATE[] = { 0x10 };
 static const guint8 INQ_NEW_DIR_TEMPLATE[] = { 0x11 };
 static const guint8 INQ_DELETE_DIR_TEMPLATE[] = { 0x12 };
@@ -1057,6 +1058,7 @@ connector_init (struct connector *connector, gint card)
   GByteArray *tx_msg;
   GByteArray *rx_msg_device;
   GByteArray *rx_msg_fw_ver;
+  GByteArray *rx_msg_uid;
   gchar name[32];
   sprintf (name, "hw:%d", card);
 
@@ -1115,23 +1117,37 @@ connector_init (struct connector *connector, gint card)
   rx_msg_fw_ver = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg_fw_ver)
     {
-      free_msg (rx_msg_device);
       err = -1;
-      goto cleanup;
+      goto cleanup_device;
     }
+
+  tx_msg = connector_new_msg_data (INQ_UID, sizeof (INQ_UID));
+  rx_msg_uid = connector_tx_and_rx (connector, tx_msg);
+  if (!rx_msg_uid)
+    {
+      err = -1;
+      goto cleanup_fw_ver;
+    }
+  debug_print (2, "UID: %x\n", *((guint32 *) & rx_msg_uid->data[5]));
 
   snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
 	    connector_get_device_name (rx_msg_device->data[5]),
 	    &rx_msg_fw_ver->data[10],
 	    &rx_msg_device->data[7 + rx_msg_device->data[6]]);
-  free_msg (rx_msg_device);
-  free_msg (rx_msg_fw_ver);
   debug_print (1, "Connected to %s\n", connector->device_name);
 
-  return 0;
+  err = 0;
 
+  free_msg (rx_msg_uid);
+cleanup_fw_ver:
+  free_msg (rx_msg_fw_ver);
+cleanup_device:
+  free_msg (rx_msg_device);
 cleanup:
-  connector_destroy (connector);
+  if (err)
+    {
+      connector_destroy (connector);
+    }
   return err;
 }
 
