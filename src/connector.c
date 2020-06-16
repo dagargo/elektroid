@@ -545,7 +545,15 @@ connector_rx_sysex (struct connector *connector,
     {
       if ((rx_len = connector_rx_raw (connector, &buffer, 1, transfer)) < 0)
 	{
-	  goto error;
+	  if (rx_len == -ENODATA)
+	    {
+	      rx_len = 0;
+	      continue;
+	    }
+	  else
+	    {
+	      goto error;
+	    }
 	}
     }
   while (rx_len == 0 || (rx_len == 1 && buffer != 0xf0));
@@ -557,11 +565,18 @@ connector_rx_sysex (struct connector *connector,
     {
       if ((rx_len = connector_rx_raw (connector, &buffer, 1, transfer)) < 0)
 	{
-	  goto error;
+	  if (rx_len == -ENODATA && transfer->batch)
+	    {
+	      break;
+	    }
+	  else
+	    {
+	      goto error;
+	    }
 	}
       g_byte_array_append (sysex, &buffer, rx_len);
     }
-  while (rx_len == 0 || (rx_len > 0 && buffer != 0xf7));
+  while (rx_len == 0 || (rx_len > 0 && (buffer != 0xf7 || transfer->batch)));
 
   debug_print (1, "Raw message received: ");
   debug_print_hex_msg (sysex);
@@ -585,6 +600,8 @@ connector_rx (struct connector *connector)
 
   transfer.active = TRUE;
   transfer.timeout = TRUE;
+  transfer.batch = FALSE;
+
   sysex = connector_rx_sysex (connector, &transfer);
   if (!sysex)
     {

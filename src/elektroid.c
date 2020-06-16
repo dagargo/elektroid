@@ -334,7 +334,8 @@ elektroid_rx_sysex_thread (gpointer data)
   g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
   transfer.status = WAITING;
   transfer.active = TRUE;
-  transfer.timeout = FALSE;
+  transfer.timeout = TRUE;
+  transfer.batch = TRUE;
   value = connector_rx_sysex (&connector, &transfer);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
   return value;

@@ -60,6 +60,7 @@ struct connector_sysex_transfer
   enum connector_sysex_transfer_status status;
   GByteArray *data;
   gboolean timeout;
+  gboolean batch;
 };
 
 gint connector_init (struct connector *, gint);
