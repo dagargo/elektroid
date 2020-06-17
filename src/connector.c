@@ -668,6 +668,11 @@ connector_read_dir (struct connector *connector, const gchar * dir)
   GByteArray *rx_msg;
   gchar *dir_cp1252 = g_convert (dir, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
+  if (!dir_cp1252)
+    {
+      return NULL;
+    }
+
   tx_msg = connector_new_msg_dir_list (dir_cp1252);
   g_free (dir_cp1252);
 
@@ -691,11 +696,17 @@ connector_rename (struct connector *connector, const gchar * old,
   gchar *new_cp1252 = g_convert (new, -1, "CP1252", "UTF8", NULL, NULL, NULL);
   if (!new_cp1252)
     {
-      return -1;
       errno = EINVAL;
+      return -1;
     }
 
   gchar *old_cp1252 = g_convert (old, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+  if (!old_cp1252)
+    {
+      g_free (new_cp1252);
+      errno = EINVAL;
+      return -1;
+    }
 
   g_byte_array_append (tx_msg, (guchar *) old_cp1252, strlen (old_cp1252));
   g_byte_array_append (tx_msg, (guchar *) "\0", 1);
@@ -736,6 +747,12 @@ connector_delete (struct connector *connector, const gchar * path,
   GByteArray *tx_msg;
   gchar *path_cp1252 =
     g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+
+  if (!path_cp1252)
+    {
+      errno = EINVAL;
+      return -1;
+    }
 
   tx_msg = connector_new_msg_path (template, size, path_cp1252);
   g_free (path_cp1252);
@@ -785,6 +802,12 @@ connector_create_upload (struct connector *connector, const gchar * path,
   gint id;
   gchar *path_cp1252 =
     g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+
+  if (!path_cp1252)
+    {
+      errno = EINVAL;
+      return -1;
+    }
 
   tx_msg = connector_new_msg_new_upload (path_cp1252, fsize);
   g_free (path_cp1252);
@@ -897,6 +920,11 @@ connector_download (struct connector *connector, const gchar * path,
   gchar *path_cp1252 =
     g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
+  if (!path_cp1252)
+    {
+      return NULL;
+    }
+
   tx_msg = connector_new_msg_info_file (path_cp1252);
   g_free (path_cp1252);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
@@ -993,6 +1021,12 @@ connector_create_dir (struct connector *connector, const gchar * path)
   gint res;
   gchar *path_cp1252 =
     g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+
+  if (!path_cp1252)
+    {
+      errno = EINVAL;
+      return -1;
+    }
 
   tx_msg = connector_new_msg_new_dir (path_cp1252);
   g_free (path_cp1252);
