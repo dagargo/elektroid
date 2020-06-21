@@ -15,3 +15,5 @@ SAMPLERATE_CFLAGS = @SAMPLERATE_CFLAGS@
 SAMPLERATE_LIBS = @SAMPLERATE_LIBS@
 
 AM_CPPFLAGS = -Wall -O3 -DDATADIR='"$(datadir)"' -DLOCALEDIR=\""$(localedir)"\"
+
+include_HEADERS = audio.h browser.h connector.h sample.h utils.h

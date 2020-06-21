@@ -21,6 +21,8 @@ update-icon-cache:
 		echo "*** Icon cache not updated.  After (un)install, run this:"; \
 		echo "***   $(gtk_update_icon_cache)"; \
 	fi
+
 EXTRA_DIST = \
-        $(icon_DATA) \
+        $(res_DATA) \
+        $(desktop_DATA) \
         $(svgicon_DATA)
