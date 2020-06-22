@@ -29,6 +29,7 @@
 #define BUFF_SIZE 512
 #define TRANSF_BLOCK_SIZE 0x2000
 #define READ_TIMEOUT 5
+#define SLEEP_ENODATA 50
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -515,6 +516,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 		{
 		  return -ENODATA;
 		}
+	      usleep (SLEEP_ENODATA);
 	      continue;
 	    }
 	  else
