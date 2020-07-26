@@ -9,6 +9,7 @@ Build-Depends: debhelper-compat (= 13),
                libpulse-dev,
                libsndfile1-dev (>= 1.0.2),
                libsamplerate0-dev (>= 0.1.9),
+               zlib1g-dev,
                pkg-config
 Homepage: https://github.com/dagargo/elektroid
 Vcs-Browser: https://salsa.debian.org/multimedia-team/elektroid

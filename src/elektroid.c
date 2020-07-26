@@ -101,6 +101,7 @@ static GtkWidget *progress_bar;
 static GtkWidget *progress_label;
 static GtkWidget *rx_sysex_button;
 static GtkWidget *tx_sysex_button;
+static GtkWidget *os_upgrade_button;
 static GtkWidget *about_button;
 static GtkWidget *remote_box;
 static GtkWidget *waveform_draw_area;
@@ -225,6 +226,7 @@ elektroid_check_connector ()
   gtk_widget_set_sensitive (remote_box, connected);
   gtk_widget_set_sensitive (rx_sysex_button, connected && !queued);
   gtk_widget_set_sensitive (tx_sysex_button, connected && !queued);
+  gtk_widget_set_sensitive (os_upgrade_button, connected && !queued);
 
   if (!connected)
     {
@@ -441,18 +443,17 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
 static gpointer
 elektroid_tx_sysex_thread (gpointer data)
 {
-  gint *v = malloc (sizeof (gint));
+  gint *response = malloc (sizeof (gint));
   g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
-  transfer.status = SENDING;
   transfer.active = TRUE;
   transfer.timeout = FALSE;
-  *v = connector_tx_sysex (&connector, &transfer);
+  *response = connector_tx_sysex (&connector, &transfer);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
-  return v;
+  return response;
 }
 
 static void
-elektroid_tx_sysex (GtkWidget * object, gpointer data)
+elektroid_tx_sysex_common (GThreadFunc tx_function)
 {
   GtkWidget *dialog;
   GtkFileChooser *chooser;
@@ -461,7 +462,7 @@ elektroid_tx_sysex (GtkWidget * object, gpointer data)
   char *filename;
   FILE *file;
   long size;
-  gint *copied;
+  gint *response;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
 
   dialog = gtk_file_chooser_dialog_new (_("Open SysEx"),
@@ -495,26 +496,51 @@ elektroid_tx_sysex (GtkWidget * object, gpointer data)
       fclose (file);
 
       debug_print (1, "Creating tx SysEx thread...\n");
-      sysex_thread =
-	g_thread_new ("sysex_thread", elektroid_tx_sysex_thread, &transfer);
+      sysex_thread = g_thread_new ("sysex_thread", tx_function, &transfer);
 
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Send SysEx"));
       res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
       transfer.active = FALSE;
       gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
-      copied = elektroid_join_sysex_thread ();
+      response = elektroid_join_sysex_thread ();
       g_byte_array_free (transfer.data, TRUE);
 
-      if (*copied < 0)
+      if (*response < 0)
 	{
 	  elektroid_check_connector ();
 	}
 
-      free (copied);
+      free (response);
     }
 
   gtk_widget_destroy (dialog);
+}
+
+static void
+elektroid_tx_sysex (GtkWidget * object, gpointer data)
+{
+  elektroid_tx_sysex_common (elektroid_tx_sysex_thread);
+}
+
+static gpointer
+elektroid_os_upgrade_thread (gpointer data)
+{
+  gint *response = malloc (sizeof (gint));
+  g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
+  transfer.active = TRUE;
+  transfer.timeout = FALSE;
+  *response = connector_upgrade_os (&connector, &transfer);
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
+  return response;
+}
+
+static void
+elektroid_upgrade_os (GtkWidget * object, gpointer data)
+{
+  elektroid_tx_sysex_common (elektroid_os_upgrade_thread);
+  connector_destroy (&connector);
+  elektroid_check_connector ();
 }
 
 static void
@@ -1521,6 +1547,7 @@ elektroid_run_next_task (gpointer data)
       gtk_widget_set_sensitive (cancel_task_button, FALSE);
       gtk_widget_set_sensitive (rx_sysex_button, TRUE);
       gtk_widget_set_sensitive (tx_sysex_button, TRUE);
+      gtk_widget_set_sensitive (os_upgrade_button, TRUE);
     }
 
   return FALSE;
@@ -1716,6 +1743,7 @@ elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
 
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
+  gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
   if (!queued)
     {
@@ -1882,6 +1910,7 @@ elektroid_add_download_tasks (GtkWidget * object, gpointer data)
 
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
+  gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
   if (!queued)
     {
@@ -2029,6 +2058,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     GTK_WIDGET (gtk_builder_get_object (builder, "rx_sysex_button"));
   tx_sysex_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "tx_sysex_button"));
+  os_upgrade_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "os_upgrade_button"));
   about_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "about_button"));
 
@@ -2070,6 +2101,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 		    G_CALLBACK (elektroid_rx_sysex), NULL);
   g_signal_connect (tx_sysex_button, "clicked",
 		    G_CALLBACK (elektroid_tx_sysex), NULL);
+  g_signal_connect (os_upgrade_button, "clicked",
+		    G_CALLBACK (elektroid_upgrade_os), NULL);
   g_signal_connect (about_button, "clicked",
 		    G_CALLBACK (elektroid_show_about), NULL);
 
@@ -2226,6 +2259,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   gtk_widget_set_sensitive (upload_button, FALSE);
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
+  gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
   elektroid_load_devices (1);
 

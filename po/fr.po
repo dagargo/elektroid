@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2020-05-10 12:40+0200\n"
+"POT-Creation-Date: 2020-09-11 18:28+0200\n"
 "PO-Revision-Date: 2020-05-09 20:36+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
@@ -17,123 +17,123 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:168
+#: src/elektroid.c:169
 #, c-format
 msgid "Connected to %s"
 msgstr "Connecté à %s"
 
-#: src/elektroid.c:175 src/elektroid.c:2184
+#: src/elektroid.c:176 src/elektroid.c:2251
 msgid "Not connected"
 msgstr "Non connecté"
 
-#: src/elektroid.c:305
+#: src/elektroid.c:314
 msgid "Waiting..."
 msgstr "En attente..."
 
-#: src/elektroid.c:308
+#: src/elektroid.c:317
 msgid "Sending..."
 msgstr "Envoi en cours..."
 
-#: src/elektroid.c:312
+#: src/elektroid.c:321
 msgid "Receiving..."
 msgstr "Réception en cours..."
 
-#: src/elektroid.c:351
+#: src/elektroid.c:364
 msgid "Receive SysEx"
 msgstr "Réception de SysEx"
 
-#: src/elektroid.c:374
+#: src/elektroid.c:387
 msgid "Save SysEx"
 msgstr "Sauvegarde de SysEx"
 
-#: src/elektroid.c:377 src/elektroid.c:435 src/elektroid.c:577
+#: src/elektroid.c:390 src/elektroid.c:471 src/elektroid.c:636
 msgid "_Cancel"
 msgstr "_Annuler"
 
-#: src/elektroid.c:379
+#: src/elektroid.c:392
 msgid "_Save"
 msgstr "_Sauvegarder"
 
-#: src/elektroid.c:383
+#: src/elektroid.c:396
 msgid "Received SysEx"
 msgstr "SysEx reçu"
 
-#: src/elektroid.c:386 src/elektroid.c:441
+#: src/elektroid.c:401 src/elektroid.c:477
 msgid "SysEx Files"
 msgstr "Fichiers SysEx"
 
-#: src/elektroid.c:432
+#: src/elektroid.c:468
 msgid "Open SysEx"
 msgstr "Ouvrir SysEx"
 
-#: src/elektroid.c:437
+#: src/elektroid.c:473
 msgid "_Open"
 msgstr "_Ouvrir"
 
-#: src/elektroid.c:466
+#: src/elektroid.c:501
 msgid "Send SysEx"
 msgstr "Envoyer SysEx"
 
-#: src/elektroid.c:543
+#: src/elektroid.c:602
 #, c-format
 msgid "Error while deleting “%s”: %s."
 msgstr "Erreur lors de la suppression de « %s » : %s."
 
-#: src/elektroid.c:576
+#: src/elektroid.c:635
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Souhaitez-vous vraiment supprimer les éléments sélectionnés ?"
 
-#: src/elektroid.c:578 res/gui.glade:66
+#: src/elektroid.c:637 res/gui.glade:66
 msgid "_Delete"
 msgstr "_Supprimer"
 
-#: src/elektroid.c:633
+#: src/elektroid.c:692
 msgid "Rename"
 msgstr "Renommer"
 
-#: src/elektroid.c:659
+#: src/elektroid.c:718
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Erreur lors du renommage de « %s » : %s."
 
-#: src/elektroid.c:1101 res/gui.glade:356 res/gui.glade:595
+#: src/elektroid.c:1168 res/gui.glade:380 res/gui.glade:619
 msgid "Add directory"
 msgstr "Ajout d'un répertoire"
 
-#: src/elektroid.c:1126
+#: src/elektroid.c:1193
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Erreur lors de la création du répertoire « %s » : %s."
 
-#: src/elektroid.c:1290
+#: src/elektroid.c:1357
 msgid "Queued"
 msgstr "Mise en fil d'attente"
 
-#: src/elektroid.c:1292
+#: src/elektroid.c:1359
 msgid "Running"
 msgstr "En cours"
 
-#: src/elektroid.c:1294
+#: src/elektroid.c:1361
 msgid "Completed"
 msgstr "Terminé"
 
-#: src/elektroid.c:1296
+#: src/elektroid.c:1363
 msgid "Completed with errors"
 msgstr "Terminé avec des erreurs"
 
-#: src/elektroid.c:1298
+#: src/elektroid.c:1365
 msgid "Canceled"
 msgstr "Annulé"
 
-#: src/elektroid.c:1300 src/elektroid.c:1314
+#: src/elektroid.c:1367 src/elektroid.c:1381
 msgid "Undefined"
 msgstr "Indéfini"
 
-#: src/elektroid.c:1310
+#: src/elektroid.c:1377
 msgid "Upload"
 msgstr "Téléversement"
 
-#: src/elektroid.c:1312
+#: src/elektroid.c:1379
 msgid "Download"
 msgstr "Téléchargement"
 
@@ -160,72 +160,76 @@ msgid "_Send SysEx"
 msgstr "Envoi de _Sysex"
 
 #: res/gui.glade:222
+msgid "OS upgrade"
+msgstr ""
+
+#: res/gui.glade:246
 msgid "_About"
 msgstr "À _propos"
 
-#: res/gui.glade:335 res/gui.glade:574
+#: res/gui.glade:359 res/gui.glade:598
 msgid "Go to parent directory"
 msgstr "Aller au répertoire parent"
 
-#: res/gui.glade:377 res/gui.glade:616
+#: res/gui.glade:401 res/gui.glade:640
 msgid "Refresh directory"
 msgstr "Rafraîchir le répertoire"
 
-#: res/gui.glade:441 res/gui.glade:680 res/gui.glade:1306
+#: res/gui.glade:465 res/gui.glade:704 res/gui.glade:1330
 msgid "Name"
 msgstr "Nom"
 
-#: res/gui.glade:455 res/gui.glade:694
+#: res/gui.glade:479 res/gui.glade:718
 msgid "Size"
 msgstr "Taille"
 
-#: res/gui.glade:492
+#: res/gui.glade:516
 msgid "Upload selection"
 msgstr "Téléversement de la sélection"
 
-#: res/gui.glade:513
+#: res/gui.glade:537
 msgid "Download selection"
 msgstr "Téléchargement de la sélection"
 
-#: res/gui.glade:747
+#: res/gui.glade:771
 msgid "Refresh devices"
 msgstr "Rafraîchir les périphériques"
 
 #. It is recommended split the text in two lines if it is too long
-#: res/gui.glade:830
+#: res/gui.glade:854
 msgid "Auto play"
 msgstr ""
 "Lecture\n"
 "automatique"
 
-#: res/gui.glade:1062
+#: res/gui.glade:1086
 msgid "Status"
 msgstr "Statut"
 
-#: res/gui.glade:1073
+#: res/gui.glade:1097
 msgid "Type"
 msgstr "Type"
 
-#: res/gui.glade:1084
+#: res/gui.glade:1108
 msgid "Source"
 msgstr "Source"
 
-#: res/gui.glade:1098
+#: res/gui.glade:1122
 msgid "Destination"
 msgstr "Destination"
 
-#: res/gui.glade:1113
+#: res/gui.glade:1137
 msgid "Progress"
 msgstr "Progrès"
 
-#: res/gui.glade:1145
+#: res/gui.glade:1169
 msgid "Cancel running task"
 msgstr "Annuler la tâche en cours"
 
-#: res/gui.glade:1166
+#: res/gui.glade:1190
 msgid "Remove queued tasks"
 msgstr "Supprimer des tâches dans la file d'attente"
 
-#: res/gui.glade:1187
+#: res/gui.glade:1211
 msgid "Clear finished tasks"
 msgstr "Nettoyer les tâches terminées"

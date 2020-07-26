@@ -23,11 +23,13 @@
 #include <netinet/in.h>
 #include <byteswap.h>
 #include <time.h>
+#include <zlib.h>
 #include "connector.h"
 #include "utils.h"
 
 #define BUFF_SIZE 512
-#define TRANSF_BLOCK_SIZE 0x2000
+#define TRANSF_BLOCK_SIZE_SAMPLE 0x2000
+#define TRANSF_BLOCK_SIZE_OS 0x800
 #define READ_TIMEOUT 2
 #define SLEEP_ENODATA 50
 
@@ -58,10 +60,21 @@ static const guint8 INQ_UPL_TEMPLATE_NTH[] =
   { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 INQ_UPL_TEMPLATE_END[] = { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
 
+static const guint8 INQ_OS_UPGRADE_START[] =
+  { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
+static const guint8 INQ_OS_UPGRADE_WRITE[] =
+  { 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
 static gint
 connector_get_msg_status (const GByteArray * msg)
 {
   return msg->data[5];
+}
+
+static gchar *
+connector_get_msg_string (const GByteArray * msg)
+{
+  return (gchar *) & msg->data[6];
 }
 
 void
@@ -967,7 +980,8 @@ connector_download (struct connector *connector, const gchar * path,
 
       req_size =
 	frames - next_block_start >
-	TRANSF_BLOCK_SIZE ? TRANSF_BLOCK_SIZE : frames - next_block_start;
+	TRANSF_BLOCK_SIZE_SAMPLE ? TRANSF_BLOCK_SIZE_SAMPLE : frames -
+	next_block_start;
       tx_msg = connector_new_msg_dwnl_blck (id, next_block_start, req_size);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
@@ -1061,6 +1075,125 @@ connector_create_dir (struct connector *connector, const gchar * path)
     }
   free_msg (rx_msg);
 
+  return res;
+}
+
+static GByteArray *
+connector_new_msg_upgrade_os_start (guint size)
+{
+  GByteArray *msg = connector_new_msg_data (INQ_OS_UPGRADE_START,
+					    sizeof (INQ_OS_UPGRADE_START));
+
+  memcpy (&msg->data[5], &size, sizeof (uint32_t));
+
+  return msg;
+}
+
+static GByteArray *
+connector_new_msg_upgrade_os_write (GByteArray * os_data, gint * offset)
+{
+  GByteArray *msg = connector_new_msg_data (INQ_OS_UPGRADE_WRITE,
+					    sizeof (INQ_OS_UPGRADE_WRITE));
+  guint len;
+  uint32_t crc;
+  uint32_t aux32;
+
+  if (*offset + TRANSF_BLOCK_SIZE_OS < os_data->len)
+    {
+      len = TRANSF_BLOCK_SIZE_OS;
+    }
+  else
+    {
+      len = os_data->len - *offset;
+    }
+
+  crc = crc32 (0xffffffff, &os_data->data[*offset], len);
+
+  printf ("%0x\n", crc);
+
+  aux32 = htonl (crc);
+  memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
+  aux32 = htonl (len);
+  memcpy (&msg->data[9], &aux32, sizeof (uint32_t));
+  aux32 = htonl (*offset);
+  memcpy (&msg->data[13], &aux32, sizeof (uint32_t));
+
+  g_byte_array_append (msg, &os_data->data[*offset], len);
+
+  *offset = *offset + len;
+
+  return msg;
+}
+
+gint
+connector_upgrade_os (struct connector *connector,
+		      struct connector_sysex_transfer *transfer)
+{
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+  gint8 op;
+  gint offset;
+  gint res = 0;
+
+  transfer->status = SENDING;
+
+  tx_msg = connector_new_msg_upgrade_os_start (transfer->data->len);
+  rx_msg = connector_tx_and_rx (connector, tx_msg);
+
+  if (!rx_msg)
+    {
+      errno = EIO;
+      res = -1;
+      goto end;
+    }
+  //Response: x, x, x, x, 0xd1, [0 (ok), 1 (error)]...
+  op = connector_get_msg_status (rx_msg);
+  if (op)
+    {
+      res = -1;
+      errno = EIO;
+      fprintf (stderr, "%s (%s)\n", g_strerror (errno),
+	       connector_get_msg_string (rx_msg));
+      goto cleanup;
+    }
+
+  free_msg (rx_msg);
+
+  offset = 0;
+  while (offset < transfer->data->len)
+    {
+      tx_msg = connector_new_msg_upgrade_os_write (transfer->data, &offset);
+      rx_msg = connector_tx_and_rx (connector, tx_msg);
+
+      if (!rx_msg)
+	{
+	  errno = EIO;
+	  res = -1;
+	  goto end;
+	}
+      //Response: x, x, x, x, 0xd1, int32, [0..3]...
+      op = rx_msg->data[9];
+      if (op == 1)
+	{
+	  break;
+	}
+      else if (op > 1)
+	{
+	  res = -1;
+	  errno = EIO;
+	  fprintf (stderr, "%s (%s)\n", g_strerror (errno),
+		   connector_get_msg_string (rx_msg));
+	  goto cleanup;
+	}
+
+      free_msg (rx_msg);
+    }
+
+cleanup:
+  free_msg (rx_msg);
+end:
+  transfer->active = FALSE;
+  transfer->status = FINISHED;
   return res;
 }
 
@@ -1167,6 +1300,7 @@ connector_init (struct connector *connector, gint card)
 
   connector->seq = 0;
   connector->device_name = malloc (LABEL_MAX);
+  tx_msg = connector_new_msg_data (INQ_DEVICE, sizeof (INQ_DEVICE));
 
   tx_msg = connector_new_msg_data (INQ_DEVICE, sizeof (INQ_DEVICE));
   rx_msg_device = connector_tx_and_rx (connector, tx_msg);

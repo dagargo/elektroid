@@ -35,7 +35,7 @@ AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.19.8])
 
 # Checks for header files.
-AC_CHECK_HEADERS([unistd.h limits.h])
+AC_CHECK_HEADERS([unistd.h limits.h zlib.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 
