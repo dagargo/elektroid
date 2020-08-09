@@ -4,6 +4,9 @@ res_DATA = gui.glade gui.css
 desktopdir = $(datadir)/applications
 desktop_DATA = elektroid.desktop
 
+metainfodir= $(datadir)/metainfo
+metainfo_DATA = elektroid.appdata.xml
+
 svgicondir = $(datarootdir)/icons/hicolor/scalable/apps
 svgicon_DATA = elektroid.svg
 
@@ -25,4 +28,5 @@ update-icon-cache:
 EXTRA_DIST = \
         $(res_DATA) \
         $(desktop_DATA) \
+        $(metainfo_DATA) \
         $(svgicon_DATA)
