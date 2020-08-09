@@ -11,6 +11,7 @@
   <p>With elektroid you can easily load audio files like flac or wav into your
   elektron sampler. You can also transfer audio samples from your elektroid
   device to your local hard disk.</p>
+ </description>
  <launchable type="desktop-id">elektroid.desktop</launchable>
  <provides>
 ​  <binary>elektroid</binary>
