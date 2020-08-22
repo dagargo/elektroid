@@ -516,7 +516,10 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 		{
 		  return -ENODATA;
 		}
-	      usleep (SLEEP_ENODATA);
+	      if (usleep (SLEEP_ENODATA) == -1 && errno == EINTR)
+		{
+		  return -EINTR;
+		}
 	      continue;
 	    }
 	  else
