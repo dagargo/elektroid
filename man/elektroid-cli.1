@@ -4,12 +4,13 @@ elektroid-cli \- sample transfer CLI application for Elektron devices
 .SH SYNOPSIS
 .B elektroid-cli
 .RI [ options ]
+.RI command
 .SH DESCRIPTION
 .B elektroid-cli
 provides the same funcionality than elektroid. See man elektroid for the GUI application.
 .PP
 Provided paths must always be prepended with the device id and a colon (':'), e.g. 0:/samples.
-.SH OPTIONS
+.SH COMMANDS
 .TP
 .B ld
 List compatible devices
@@ -37,6 +38,10 @@ Move a sample. If the destination path does not exist it will be created.
 .TP
 .B rm [device number]:[path to sample]
 Delete a sample
+.SH OPTIONS
+.TP
+\fB\-v\fR
+Show verbose output. Use it twice for more verbosity.
 .PP
 .SH "SEE ALSO"
 The GitHub page provides some examples: <https://github.com/dagargo/elektroid>
