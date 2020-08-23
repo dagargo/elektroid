@@ -472,6 +472,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
       connector->seq++;
     }
 
+  transfer.active = TRUE;
   transfer.data = g_byte_array_new ();
   g_byte_array_append (transfer.data, MSG_HEADER, sizeof (MSG_HEADER));
   sysex = connector_msg_to_sysex (msg);
