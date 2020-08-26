@@ -531,9 +531,9 @@ elektroid_controls_set_sensitive (gboolean sensitive)
 }
 
 static gboolean
-elektroid_update_ui_after_load (gpointer data)
+elektroid_update_ui_on_load (gpointer data)
 {
-  if (audio.sample->len > 0)
+  if (audio.sample->len >= LOAD_BUFFER_LEN || !load_thread_running)
     {
       if (audio_check (&audio))
 	{
@@ -784,7 +784,6 @@ elektroid_load_sample (gpointer path)
   sample_load (audio.sample, &load_mutex, &audio.frames, path,
 	       &load_thread_running, elektroid_redraw_sample);
   free (path);
-  g_idle_add (elektroid_update_ui_after_load, NULL);
   return NULL;
 }
 
@@ -793,6 +792,7 @@ elektroid_start_load_thread (gchar * path)
 {
   debug_print (1, "Creating load thread...\n");
   load_thread_running = TRUE;
+  g_timeout_add (100, elektroid_update_ui_on_load, NULL);
   load_thread = g_thread_new ("load_sample", elektroid_load_sample, path);
 }
 

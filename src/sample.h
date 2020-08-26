@@ -22,6 +22,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#define LOAD_BUFFER_LEN 4800
+
 size_t sample_save (GArray *, gchar *);
 
 size_t sample_load (GArray *, GMutex *, gboolean *, gchar *, gint *,

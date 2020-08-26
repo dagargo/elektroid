@@ -25,8 +25,6 @@
 #include "sample.h"
 #include "utils.h"
 
-#define LOAD_BUFFER_LEN 10000
-
 size_t
 sample_save (GArray * sample, gchar * path)
 {
@@ -252,6 +250,8 @@ cleanup:
   free (src_data.data_out);
 
   sf_close (sndfile);
+
+  *running = FALSE;
 
   return sample->len;
 }
