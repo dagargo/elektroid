@@ -783,6 +783,7 @@ elektroid_load_sample (gpointer path)
 {
   sample_load (audio.sample, &load_mutex, &audio.frames, path,
 	       &load_thread_running, elektroid_redraw_sample);
+  load_thread_running = FALSE;
   free (path);
   return NULL;
 }

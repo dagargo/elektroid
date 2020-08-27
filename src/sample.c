@@ -251,7 +251,5 @@ cleanup:
 
   sf_close (sndfile);
 
-  *running = FALSE;
-
   return sample->len;
 }
