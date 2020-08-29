@@ -101,4 +101,6 @@ ssize_t connector_tx_sysex (struct connector *,
 GByteArray *connector_rx_sysex (struct connector *,
 				struct connector_sysex_transfer *);
 
+void connector_rx_drain (struct connector *);
+
 void free_msg (gpointer);

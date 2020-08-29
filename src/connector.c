@@ -492,6 +492,12 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   return ret;
 }
 
+void
+connector_rx_drain (struct connector *connector)
+{
+  snd_rawmidi_drain (connector->inputp);
+}
+
 static ssize_t
 connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 		  struct connector_sysex_transfer *transfer)
