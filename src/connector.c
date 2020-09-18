@@ -452,13 +452,12 @@ connector_tx_sysex (struct connector *connector,
       if ((tx_len = connector_tx_raw (connector, data, len)) < 0)
 	{
 	  ret = tx_len;
-	  goto cleanup;
+	  break;
 	}
       data += len;
       total += len;
     }
 
-cleanup:
   debug_print (1, "Raw message sent: ");
   debug_print_hex_msg (transfer->data);
   transfer->active = FALSE;
