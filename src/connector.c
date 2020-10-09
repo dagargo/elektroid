@@ -569,15 +569,7 @@ connector_rx_sysex (struct connector *connector,
     {
       if ((rx_len = connector_rx_raw (connector, &buffer, 1, transfer)) < 0)
 	{
-	  if (rx_len == -ENODATA)
-	    {
-	      rx_len = 0;
-	      continue;
-	    }
-	  else
-	    {
-	      goto error;
-	    }
+	  goto error;
 	}
     }
   while (rx_len == 0 || (rx_len == 1 && buffer != 0xf0));
