@@ -1310,23 +1310,21 @@ connector_init (struct connector *connector, gint card)
 
   tx_msg = connector_new_msg_data (INQ_UID, sizeof (INQ_UID));
   rx_msg_uid = connector_tx_and_rx (connector, tx_msg);
-  if (!rx_msg_uid)
+  if (rx_msg_uid)
     {
-      err = -1;
-      goto cleanup_fw_ver;
+      debug_print (2, "UID: %x\n", *((guint32 *) & rx_msg_uid->data[5]));
+      free_msg (rx_msg_uid);
     }
-  debug_print (2, "UID: %x\n", *((guint32 *) & rx_msg_uid->data[5]));
 
   snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
 	    connector_get_device_name (rx_msg_device->data[5]),
 	    &rx_msg_fw_ver->data[10],
 	    &rx_msg_device->data[7 + rx_msg_device->data[6]]);
+
   debug_print (1, "Connected to %s\n", connector->device_name);
 
   err = 0;
 
-  free_msg (rx_msg_uid);
-cleanup_fw_ver:
   free_msg (rx_msg_fw_ver);
 cleanup_device:
   free_msg (rx_msg_device);
