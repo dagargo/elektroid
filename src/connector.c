@@ -1308,12 +1308,15 @@ connector_init (struct connector *connector, gint card)
       goto cleanup_device;
     }
 
-  tx_msg = connector_new_msg_data (INQ_UID, sizeof (INQ_UID));
-  rx_msg_uid = connector_tx_and_rx (connector, tx_msg);
-  if (rx_msg_uid)
+  if (debug_level)
     {
-      debug_print (2, "UID: %x\n", *((guint32 *) & rx_msg_uid->data[5]));
-      free_msg (rx_msg_uid);
+      tx_msg = connector_new_msg_data (INQ_UID, sizeof (INQ_UID));
+      rx_msg_uid = connector_tx_and_rx (connector, tx_msg);
+      if (rx_msg_uid)
+	{
+	  fprintf (stderr, "UID: %x\n", *((guint32 *) & rx_msg_uid->data[5]));
+	  free_msg (rx_msg_uid);
+	}
     }
 
   snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
