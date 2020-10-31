@@ -109,10 +109,8 @@ static GtkWidget *download_button;
 static GtkStatusbar *status_bar;
 static GtkListStore *devices_list_store;
 static GtkComboBox *devices_combo;
-static GtkWidget *local_popmenu;
 static GtkWidget *local_rename_button;
 static GtkWidget *local_delete_button;
-static GtkWidget *remote_popmenu;
 static GtkWidget *remote_rename_button;
 static GtkWidget *remote_delete_button;
 static GtkWidget *play_button;
@@ -739,6 +737,18 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
   gtk_widget_hide (GTK_WIDGET (name_dialog));
 }
 
+void
+elektroid_local_popover_set_up (gint count)
+{
+  gtk_widget_set_sensitive (local_rename_button, count == 1 ? TRUE : FALSE);
+}
+
+void
+elektroid_remote_popover_set_up (gint count)
+{
+  gtk_widget_set_sensitive (remote_rename_button, count == 1 ? TRUE : FALSE);
+}
+
 static gboolean
 elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
 			   gpointer data)
@@ -748,8 +758,6 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
   gint count;
   gboolean selected;
   GtkTreeSelection *selection;
-  GtkPopover *popover;
-  GtkWidget *rename_button;
   struct browser *browser = data;
 
   if (event->type == GDK_BUTTON_PRESS && event->button == 3)
@@ -777,19 +785,8 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
 	  gtk_tree_selection_select_path (selection, path);
 	}
 
-      if (browser == &local_browser)
-	{
-	  popover = GTK_POPOVER (local_popmenu);
-	  rename_button = local_rename_button;
-	}
-      else
-	{
-	  popover = GTK_POPOVER (remote_popmenu);
-	  rename_button = remote_rename_button;
-	}
-
       count = browser_get_selected_items_count (browser);
-      gtk_widget_set_sensitive (rename_button, count == 1 ? TRUE : FALSE);
+      browser->set_up_popover (count);
 
       gtk_tree_view_get_background_area (browser->view, path, NULL, &rect);
       gtk_tree_path_free (path);
@@ -797,8 +794,8 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
       rect.x = event->x;
       rect.y = rect.y + rect.height;
 
-      gtk_popover_set_pointing_to (popover, &rect);
-      gtk_popover_popup (popover);
+      gtk_popover_set_pointing_to (browser->popover, &rect);
+      gtk_popover_popup (browser->popover);
 
       return TRUE;
     }
@@ -2191,8 +2188,6 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (upload_button, "clicked",
 		    G_CALLBACK (elektroid_add_upload_tasks), NULL);
 
-  remote_popmenu =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_popmenu"));
   remote_rename_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_rename_button"));
   remote_delete_button =
@@ -2202,8 +2197,6 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (remote_delete_button, "clicked",
 		    G_CALLBACK (elektroid_delete_files), &remote_browser);
 
-  local_popmenu =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_popmenu"));
   local_rename_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_rename_button"));
   local_delete_button =
@@ -2225,12 +2218,15 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_refresh_button")),
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry")),
+    .popover =
+      GTK_POPOVER (gtk_builder_get_object (builder, "remote_popover")),
     .dir = malloc (PATH_MAX),
     .load_dir = elektroid_load_remote_dir,
     .check_selection = elektroid_remote_check_selection,
     .rename = elektroid_remote_rename,
     .delete = elektroid_remote_delete,
-    .mkdir = elektroid_remote_mkdir
+    .mkdir = elektroid_remote_mkdir,
+    .set_up_popover = elektroid_remote_popover_set_up
   };
 
   g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
@@ -2261,12 +2257,15 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
       GTK_WIDGET (gtk_builder_get_object (builder, "local_refresh_button")),
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry")),
+    .popover =
+      GTK_POPOVER (gtk_builder_get_object (builder, "local_popover")),
     .dir = malloc (PATH_MAX),
     .load_dir = elektroid_load_local_dir,
     .check_selection = elektroid_local_check_selection,
     .rename = elektroid_local_rename,
     .delete = elektroid_local_delete,
-    .mkdir = elektroid_local_mkdir
+    .mkdir = elektroid_local_mkdir,
+    .set_up_popover = elektroid_local_popover_set_up
   };
 
   g_signal_connect (gtk_tree_view_get_selection (local_browser.view),

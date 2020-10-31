@@ -213,7 +213,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       </packing>
     </child>
   </object>
-  <object class="GtkPopoverMenu" id="local_popmenu">
+  <object class="GtkPopoverMenu" id="local_popover">
     <property name="can_focus">False</property>
     <property name="relative_to">local_tree_view</property>
     <property name="position">bottom</property>
@@ -255,7 +255,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       </object>
       <packing>
         <property name="submenu">main</property>
-        <property name="position">1</property>
       </packing>
     </child>
   </object>
@@ -1445,7 +1444,7 @@ audio-volume-medium-symbolic</property>
       </object>
     </child>
   </object>
-  <object class="GtkPopoverMenu" id="remote_popmenu">
+  <object class="GtkPopoverMenu" id="remote_popover">
     <property name="can_focus">False</property>
     <property name="relative_to">remote_tree_view</property>
     <property name="position">bottom</property>
