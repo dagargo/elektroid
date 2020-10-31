@@ -76,7 +76,6 @@ struct elektroid_active_task
 
 static struct browser remote_browser;
 static struct browser local_browser;
-static struct browser *popup_browser;
 
 static struct audio audio;
 static struct connector connector;
@@ -110,9 +109,12 @@ static GtkWidget *download_button;
 static GtkStatusbar *status_bar;
 static GtkListStore *devices_list_store;
 static GtkComboBox *devices_combo;
-static GtkWidget *item_popmenu;
-static GtkWidget *rename_button;
-static GtkWidget *delete_button;
+static GtkWidget *local_popmenu;
+static GtkWidget *local_rename_button;
+static GtkWidget *local_delete_button;
+static GtkWidget *remote_popmenu;
+static GtkWidget *remote_rename_button;
+static GtkWidget *remote_delete_button;
 static GtkWidget *play_button;
 static GtkWidget *stop_button;
 static GtkWidget *volume_button;
@@ -575,7 +577,8 @@ elektroid_update_ui_on_load (gpointer data)
 }
 
 static void
-elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path)
+elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path,
+		       struct browser *browser)
 {
   GtkTreeIter iter;
   gchar *name;
@@ -589,10 +592,10 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path)
   browser_get_item_info (model, &iter, &icon, &name, NULL);
   type = get_type_from_inventory_icon (icon);
 
-  path = chain_path (popup_browser->dir, name);
+  path = chain_path (browser->dir, name);
   debug_print (1, "Deleting %s...\n", path);
 
-  err = popup_browser->delete (path, type);
+  err = browser->delete (path, type);
   if (err < 0)
     {
       dialog =
@@ -628,6 +631,7 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
   GList *tree_path_list;
   GList *ref_list;
   gint confirmation;
+  struct browser *browser = data;
 
   dialog =
     gtk_message_dialog_new (GTK_WINDOW (main_window),
@@ -646,9 +650,8 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
       return;
     }
 
-  selection =
-    gtk_tree_view_get_selection (GTK_TREE_VIEW (popup_browser->view));
-  model = GTK_TREE_MODEL (gtk_tree_view_get_model (popup_browser->view));
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+  model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
   tree_path_list = gtk_tree_selection_get_selected_rows (selection, &model);
   ref_list = NULL;
 
@@ -662,11 +665,11 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
   for (item = ref_list; item != NULL; item = g_list_next (item))
     {
       tree_path = gtk_tree_row_reference_get_path (item->data);
-      elektroid_delete_file (model, tree_path);
+      elektroid_delete_file (model, tree_path, browser);
     }
   g_list_free_full (ref_list, (GDestroyNotify) gtk_tree_row_reference_free);
 
-  popup_browser->load_dir (NULL);
+  browser->load_dir (NULL);
 }
 
 static void
@@ -679,13 +682,14 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
   gint err;
   GtkWidget *dialog;
   GtkTreeIter iter;
-  GtkTreeModel *model = GTK_TREE_MODEL
-    (gtk_tree_view_get_model (popup_browser->view));
+  struct browser *browser = data;
+  GtkTreeModel *model =
+    GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
 
-  browser_set_selected_row_iter (popup_browser, &iter);
+  browser_set_selected_row_iter (browser, &iter);
   browser_get_item_info (model, &iter, NULL, &old_name, NULL);
 
-  old_path = chain_path (popup_browser->dir, old_name);
+  old_path = chain_path (browser->dir, old_name);
 
   gtk_entry_set_text (name_dialog_entry, old_name);
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
@@ -703,10 +707,9 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
       if (result == GTK_RESPONSE_ACCEPT)
 	{
 	  new_path =
-	    chain_path (popup_browser->dir,
-			gtk_entry_get_text (name_dialog_entry));
+	    chain_path (browser->dir, gtk_entry_get_text (name_dialog_entry));
 
-	  err = popup_browser->rename (old_path, new_path);
+	  err = browser->rename (old_path, new_path);
 
 	  if (err < 0)
 	    {
@@ -724,7 +727,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	    }
 	  else
 	    {
-	      popup_browser->load_dir (NULL);
+	      browser->load_dir (NULL);
 	    }
 
 	  free (new_path);
@@ -745,9 +748,9 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
   gint count;
   gboolean selected;
   GtkTreeSelection *selection;
+  GtkPopover *popover;
+  GtkWidget *rename_button;
   struct browser *browser = data;
-
-  popup_browser = browser;
 
   if (event->type == GDK_BUTTON_PRESS && event->button == 3)
     {
@@ -774,6 +777,17 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
 	  gtk_tree_selection_select_path (selection, path);
 	}
 
+      if (browser == &local_browser)
+	{
+	  popover = GTK_POPOVER (local_popmenu);
+	  rename_button = local_rename_button;
+	}
+      else
+	{
+	  popover = GTK_POPOVER (remote_popmenu);
+	  rename_button = remote_rename_button;
+	}
+
       count = browser_get_selected_items_count (browser);
       gtk_widget_set_sensitive (rename_button, count == 1 ? TRUE : FALSE);
 
@@ -782,9 +796,9 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
 
       rect.x = event->x;
       rect.y = rect.y + rect.height;
-      gtk_popover_set_pointing_to (GTK_POPOVER (item_popmenu), &rect);
-      gtk_popover_set_relative_to (GTK_POPOVER (item_popmenu), treeview);
-      gtk_popover_popup (GTK_POPOVER (item_popmenu));
+
+      gtk_popover_set_pointing_to (popover, &rect);
+      gtk_popover_popup (popover);
 
       return TRUE;
     }
@@ -1944,28 +1958,28 @@ static gboolean
 elektroid_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
 {
   gint count;
-  popup_browser = data;
+  struct browser *browser = data;
 
   if (event->type == GDK_KEY_PRESS)
     {
       if (event->keyval == GDK_KEY_Delete)
 	{
-	  count = browser_get_selected_items_count (popup_browser);
+	  count = browser_get_selected_items_count (browser);
 	  if (count)
 	    {
-	      elektroid_delete_files (NULL, NULL);
+	      elektroid_delete_files (NULL, browser);
 	    }
 	  return TRUE;
 	}
       else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_r)
 	{
-	  popup_browser->load_dir (NULL);
+	  browser->load_dir (NULL);
 	  return TRUE;
 	}
       else if (event->state & GDK_CONTROL_MASK
 	       && (event->keyval == GDK_KEY_U || event->keyval == GDK_KEY_u))
 	{
-	  browser_go_up (NULL, popup_browser);
+	  browser_go_up (NULL, browser);
 	  return TRUE;
 	}
       else if (event->state & GDK_CONTROL_MASK
@@ -1973,7 +1987,7 @@ elektroid_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
 						    || event->keyval ==
 						    GDK_KEY_n))
 	{
-	  elektroid_add_dir (NULL, popup_browser);
+	  elektroid_add_dir (NULL, browser);
 	  return TRUE;
 	}
       else if (event->state & GDK_CONTROL_MASK
@@ -1981,10 +1995,10 @@ elektroid_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
 						    || event->keyval ==
 						    GDK_KEY_r))
 	{
-	  count = browser_get_selected_items_count (popup_browser);
+	  count = browser_get_selected_items_count (browser);
 	  if (count == 1)
 	    {
-	      elektroid_rename_item (NULL, NULL);
+	      elektroid_rename_item (NULL, browser);
 	    }
 	  return TRUE;
 	}
@@ -2135,13 +2149,6 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     GTK_WIDGET (gtk_builder_get_object (builder, "download_button"));
   status_bar = GTK_STATUSBAR (gtk_builder_get_object (builder, "status_bar"));
 
-  item_popmenu =
-    GTK_WIDGET (gtk_builder_get_object (builder, "item_popmenu"));
-  rename_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "rename_button"));
-  delete_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "delete_button"));
-
   g_signal_connect (main_window, "delete-event",
 		    G_CALLBACK (elektroid_delete_window), NULL);
 
@@ -2184,10 +2191,27 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (upload_button, "clicked",
 		    G_CALLBACK (elektroid_add_upload_tasks), NULL);
 
-  g_signal_connect (rename_button, "clicked",
-		    G_CALLBACK (elektroid_rename_item), NULL);
-  g_signal_connect (delete_button, "clicked",
-		    G_CALLBACK (elektroid_delete_files), NULL);
+  remote_popmenu =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_popmenu"));
+  remote_rename_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_rename_button"));
+  remote_delete_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_delete_button"));
+  g_signal_connect (remote_rename_button, "clicked",
+		    G_CALLBACK (elektroid_rename_item), &remote_browser);
+  g_signal_connect (remote_delete_button, "clicked",
+		    G_CALLBACK (elektroid_delete_files), &remote_browser);
+
+  local_popmenu =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_popmenu"));
+  local_rename_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_rename_button"));
+  local_delete_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_delete_button"));
+  g_signal_connect (local_rename_button, "clicked",
+		    G_CALLBACK (elektroid_rename_item), &local_browser);
+  g_signal_connect (local_delete_button, "clicked",
+		    G_CALLBACK (elektroid_delete_files), &local_browser);
 
   remote_browser = (struct browser)
   {
