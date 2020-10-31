@@ -1940,6 +1940,59 @@ elektroid_update_progress (gdouble progress)
   g_idle_add (elektroid_set_progress_value, NULL);
 }
 
+static gboolean
+elektroid_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
+{
+  gint count;
+  popup_browser = data;
+
+  if (event->type == GDK_KEY_PRESS)
+    {
+      if (event->keyval == GDK_KEY_Delete)
+	{
+	  count = browser_get_selected_items_count (popup_browser);
+	  if (count)
+	    {
+	      elektroid_delete_files (NULL, NULL);
+	    }
+	  return TRUE;
+	}
+      else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_r)
+	{
+	  popup_browser->load_dir (NULL);
+	  return TRUE;
+	}
+      else if (event->state & GDK_CONTROL_MASK
+	       && (event->keyval == GDK_KEY_U || event->keyval == GDK_KEY_u))
+	{
+	  browser_go_up (NULL, popup_browser);
+	  return TRUE;
+	}
+      else if (event->state & GDK_CONTROL_MASK
+	       && event->state & GDK_SHIFT_MASK && (event->keyval == GDK_KEY_N
+						    || event->keyval ==
+						    GDK_KEY_n))
+	{
+	  elektroid_add_dir (NULL, popup_browser);
+	  return TRUE;
+	}
+      else if (event->state & GDK_CONTROL_MASK
+	       && event->state & GDK_SHIFT_MASK && (event->keyval == GDK_KEY_R
+						    || event->keyval ==
+						    GDK_KEY_r))
+	{
+	  count = browser_get_selected_items_count (popup_browser);
+	  if (count == 1)
+	    {
+	      elektroid_rename_item (NULL, NULL);
+	    }
+	  return TRUE;
+	}
+    }
+
+  return FALSE;
+}
+
 static void
 elektroid_set_device (GtkWidget * object, gpointer data)
 {
@@ -2169,6 +2222,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 		    G_CALLBACK (browser_refresh), &remote_browser);
   g_signal_connect (remote_browser.view, "button-press-event",
 		    G_CALLBACK (elektroid_show_item_popup), &remote_browser);
+  g_signal_connect (remote_browser.view, "key_press_event",
+		    G_CALLBACK (elektroid_key_press), &remote_browser);
 
   local_browser = (struct browser)
   {
@@ -2203,6 +2258,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 		    G_CALLBACK (browser_refresh), &local_browser);
   g_signal_connect (local_browser.view, "button-press-event",
 		    G_CALLBACK (elektroid_show_item_popup), &local_browser);
+  g_signal_connect (local_browser.view, "key_press_event",
+		    G_CALLBACK (elektroid_key_press), &local_browser);
 
   sortable = GTK_TREE_SORTABLE (gtk_tree_view_get_model (local_browser.view));
   gtk_tree_sortable_set_sort_func (sortable, BROWSER_LIST_STORE_NAME_FIELD,
