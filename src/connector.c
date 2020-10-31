@@ -525,31 +525,39 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
   start = time (NULL);
 
-  while ((rx_len = snd_rawmidi_read (connector->inputp, data, len)) < 0)
+  while (1)
     {
-      if (rx_len == -EAGAIN)
+      rx_len = snd_rawmidi_read (connector->inputp, data, len);
+
+      if ((rx_len == 1 && *data == 0xf8) || rx_len == -EAGAIN)	//MIDI clock or no data
 	{
-	  if (transfer->active)
-	    {
-	      if (transfer->timeout && (time (NULL) - start > READ_TIMEOUT))
-		{
-		  return -ENODATA;
-		}
-	      if (usleep (SLEEP_ENODATA) == -1 && errno == EINTR)
-		{
-		  return -EINTR;
-		}
-	      continue;
-	    }
-	  else
+	  if (!transfer->active)
 	    {
 	      break;
 	    }
+	  if (transfer->timeout && (time (NULL) - start > READ_TIMEOUT))
+	    {
+	      return -ENODATA;
+	    }
+	  if (usleep (SLEEP_ENODATA) == -1 && errno == EINTR)
+	    {
+	      return -EINTR;
+	    }
+	  continue;
 	}
-      fprintf (stderr, __FILE__ ": Error while receiving message. %s.\n",
-	       g_strerror (errno));
-      connector_destroy (connector);
-      break;
+
+      if (rx_len > 0)
+	{
+	  break;
+	}
+
+      if (rx_len < 0)
+	{
+	  fprintf (stderr, __FILE__ ": Error while receiving message. %s.\n",
+		   g_strerror (errno));
+	  connector_destroy (connector);
+	  break;
+	}
     }
 
   return rx_len;
