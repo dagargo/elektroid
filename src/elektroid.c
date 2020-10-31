@@ -741,21 +741,32 @@ void
 elektroid_local_popover_set_up (gint count)
 {
   gtk_widget_set_sensitive (local_rename_button, count == 1 ? TRUE : FALSE);
+  gtk_widget_set_sensitive (local_delete_button, count > 0 ? TRUE : FALSE);
 }
 
 void
 elektroid_remote_popover_set_up (gint count)
 {
   gtk_widget_set_sensitive (remote_rename_button, count == 1 ? TRUE : FALSE);
+  gtk_widget_set_sensitive (remote_delete_button, count > 0 ? TRUE : FALSE);
+}
+
+static void
+elektroid_show_popover (struct browser *browser)
+{
+  gint count;
+
+  count = browser_get_selected_items_count (browser);
+  browser->set_up_popover (count);
+  gtk_popover_popup (browser->popover);
 }
 
 static gboolean
-elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
-			   gpointer data)
+elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
+			gpointer data)
 {
   GdkRectangle rect;
   GtkTreePath *path;
-  gint count;
   gboolean selected;
   GtkTreeSelection *selection;
   struct browser *browser = data;
@@ -774,6 +785,7 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
 	}
 
       selected = gtk_tree_selection_path_is_selected (selection, path);
+
       if (!selected)
 	{
 	  if ((event->state & GDK_SHIFT_MASK) != GDK_SHIFT_MASK
@@ -785,9 +797,6 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
 	  gtk_tree_selection_select_path (selection, path);
 	}
 
-      count = browser_get_selected_items_count (browser);
-      browser->set_up_popover (count);
-
       gtk_tree_view_get_background_area (browser->view, path, NULL, &rect);
       gtk_tree_path_free (path);
 
@@ -795,7 +804,8 @@ elektroid_show_item_popup (GtkWidget * treeview, GdkEventButton * event,
       rect.y = rect.y + rect.height;
 
       gtk_popover_set_pointing_to (browser->popover, &rect);
-      gtk_popover_popup (browser->popover);
+
+      elektroid_show_popover (browser);
 
       return TRUE;
     }
@@ -1999,6 +2009,11 @@ elektroid_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
 	    }
 	  return TRUE;
 	}
+      else if (event->keyval == GDK_KEY_Menu)
+	{
+	  elektroid_show_popover (browser);
+	  return TRUE;
+	}
     }
 
   return FALSE;
@@ -2241,7 +2256,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (remote_browser.refresh_button, "clicked",
 		    G_CALLBACK (browser_refresh), &remote_browser);
   g_signal_connect (remote_browser.view, "button-press-event",
-		    G_CALLBACK (elektroid_show_item_popup), &remote_browser);
+		    G_CALLBACK (elektroid_button_press), &remote_browser);
   g_signal_connect (remote_browser.view, "key_press_event",
 		    G_CALLBACK (elektroid_key_press), &remote_browser);
 
@@ -2280,7 +2295,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (local_browser.refresh_button, "clicked",
 		    G_CALLBACK (browser_refresh), &local_browser);
   g_signal_connect (local_browser.view, "button-press-event",
-		    G_CALLBACK (elektroid_show_item_popup), &local_browser);
+		    G_CALLBACK (elektroid_button_press), &local_browser);
   g_signal_connect (local_browser.view, "key_press_event",
 		    G_CALLBACK (elektroid_key_press), &local_browser);
 
