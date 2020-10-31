@@ -535,7 +535,8 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 	    {
 	      break;
 	    }
-	  if (transfer->timeout && (time (NULL) - start > READ_TIMEOUT))
+	  if (transfer->status == RECEIVING && transfer->timeout
+	      && (time (NULL) - start > READ_TIMEOUT))
 	    {
 	      return -ENODATA;
 	    }
