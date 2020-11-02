@@ -172,7 +172,7 @@ msgstr "Ir al directorio padre"
 
 #: res/gui.glade:401 res/gui.glade:640
 msgid "Refresh directory"
-msgstr "Refrescar directorio"
+msgstr "Actualizar directorio"
 
 #: res/gui.glade:465 res/gui.glade:704 res/gui.glade:1330
 msgid "Name"
@@ -192,7 +192,7 @@ msgstr "Descargar selección"
 
 #: res/gui.glade:771
 msgid "Refresh devices"
-msgstr "Refrescar dispositivos"
+msgstr "Actualizar dispositivos"
 
 #. It is recommended split the text in two lines if it is too long
 #: res/gui.glade:854
