@@ -174,7 +174,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="text" translatable="yes">OS upgrade</property>
+            <property name="text" translatable="yes">OS _upgrade</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -255,6 +255,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       </object>
       <packing>
         <property name="submenu">main</property>
+        <property name="position">1</property>
       </packing>
     </child>
   </object>
@@ -1486,6 +1487,7 @@ audio-volume-medium-symbolic</property>
       </object>
       <packing>
         <property name="submenu">main</property>
+        <property name="position">1</property>
       </packing>
     </child>
   </object>

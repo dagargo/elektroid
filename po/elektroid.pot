@@ -158,7 +158,7 @@ msgid "_Send SysEx"
 msgstr ""
 
 #: res/gui.glade:222
-msgid "OS upgrade"
+msgid "OS _upgrade"
 msgstr ""
 
 #: res/gui.glade:246
