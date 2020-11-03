@@ -109,6 +109,7 @@ static GtkWidget *download_button;
 static GtkStatusbar *status_bar;
 static GtkListStore *devices_list_store;
 static GtkComboBox *devices_combo;
+static GtkWidget *local_play_button;
 static GtkWidget *local_rename_button;
 static GtkWidget *local_delete_button;
 static GtkWidget *remote_rename_button;
@@ -553,6 +554,7 @@ elektroid_show_about (GtkWidget * object, gpointer data)
 static void
 elektroid_controls_set_sensitive (gboolean sensitive)
 {
+  gtk_widget_set_sensitive (local_play_button, sensitive);
   gtk_widget_set_sensitive (play_button, sensitive);
   gtk_widget_set_sensitive (stop_button, sensitive);
 }
@@ -2212,10 +2214,14 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (remote_delete_button, "clicked",
 		    G_CALLBACK (elektroid_delete_files), &remote_browser);
 
+  local_play_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_play_button"));
   local_rename_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_rename_button"));
   local_delete_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_delete_button"));
+  g_signal_connect (local_play_button, "clicked",
+		    G_CALLBACK (elektroid_play_clicked), NULL);
   g_signal_connect (local_rename_button, "clicked",
 		    G_CALLBACK (elektroid_rename_item), &local_browser);
   g_signal_connect (local_delete_button, "clicked",
