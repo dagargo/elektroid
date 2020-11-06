@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2020-11-02 14:11+0100\n"
+"POT-Creation-Date: 2020-11-03 11:00+0100\n"
 "PO-Revision-Date: 2020-02-21 11:45+0100\n"
 "Last-Translator: Dennis Braun <d_braun@kabelmail.de>\n"
 "Language-Team: German\n"
@@ -17,123 +17,123 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:169
+#: src/elektroid.c:171
 #, c-format
 msgid "Connected to %s"
 msgstr "Verbunden mit %s"
 
-#: src/elektroid.c:176 src/elektroid.c:2349
+#: src/elektroid.c:178 src/elektroid.c:2356
 msgid "Not connected"
 msgstr "Nicht verbunden"
 
-#: src/elektroid.c:314
+#: src/elektroid.c:316
 msgid "Waiting..."
 msgstr "Warte..."
 
-#: src/elektroid.c:317
+#: src/elektroid.c:319
 msgid "Sending..."
 msgstr "Sende..."
 
-#: src/elektroid.c:321
+#: src/elektroid.c:323
 msgid "Receiving..."
 msgstr "Empfange..."
 
-#: src/elektroid.c:364
+#: src/elektroid.c:366
 msgid "Receive SysEx"
 msgstr "Empfange SysEx"
 
-#: src/elektroid.c:387
+#: src/elektroid.c:389
 msgid "Save SysEx"
 msgstr "Speichere SysEx"
 
-#: src/elektroid.c:390 src/elektroid.c:471 src/elektroid.c:640
+#: src/elektroid.c:392 src/elektroid.c:473 src/elektroid.c:643
 msgid "_Cancel"
 msgstr "_Abbrechen"
 
-#: src/elektroid.c:392
+#: src/elektroid.c:394
 msgid "_Save"
 msgstr "_Speichern"
 
-#: src/elektroid.c:396
+#: src/elektroid.c:398
 msgid "Received SysEx"
 msgstr "SysEx empfangen"
 
-#: src/elektroid.c:401 src/elektroid.c:477
+#: src/elektroid.c:403 src/elektroid.c:479
 msgid "SysEx Files"
 msgstr "SysEx Dateien"
 
-#: src/elektroid.c:468
+#: src/elektroid.c:470
 msgid "Open SysEx"
 msgstr "Öffne SysEx"
 
-#: src/elektroid.c:473
+#: src/elektroid.c:475
 msgid "_Open"
 msgstr "_Öffnen"
 
-#: src/elektroid.c:501
+#: src/elektroid.c:503
 msgid "Send SysEx"
 msgstr "Sende SysEx"
 
-#: src/elektroid.c:605
+#: src/elektroid.c:608
 #, c-format
 msgid "Error while deleting “%s”: %s."
 msgstr "Fehler beim Löschen »%s«: %s."
 
-#: src/elektroid.c:639
+#: src/elektroid.c:642
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Bist du sicher das du die ausgewählten Elemente löschen möchtest?"
 
-#: src/elektroid.c:641 res/gui.glade:167 res/gui.glade:1492
+#: src/elektroid.c:644 res/gui.glade:180 res/gui.glade:1505
 msgid "_Delete"
 msgstr "_Löschen"
 
-#: src/elektroid.c:696
+#: src/elektroid.c:699
 msgid "Rename"
 msgstr "Umbenennen"
 
-#: src/elektroid.c:721
+#: src/elektroid.c:724
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Fehler beim Umbenennen von »%s«: %s."
 
-#: src/elektroid.c:1192 res/gui.glade:394 res/gui.glade:633
+#: src/elektroid.c:1195 res/gui.glade:407 res/gui.glade:646
 msgid "Add directory"
 msgstr "Verzeichnis hinzufügen"
 
-#: src/elektroid.c:1217
+#: src/elektroid.c:1220
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Fehler beim Erstellen des Verzeichnisses »%s«: %s."
 
-#: src/elektroid.c:1381
+#: src/elektroid.c:1384
 msgid "Queued"
 msgstr "In der Warteschlange"
 
-#: src/elektroid.c:1383
+#: src/elektroid.c:1386
 msgid "Running"
 msgstr "Arbeitet"
 
-#: src/elektroid.c:1385
+#: src/elektroid.c:1388
 msgid "Completed"
 msgstr "Fertig"
 
-#: src/elektroid.c:1387
+#: src/elektroid.c:1390
 msgid "Completed with errors"
 msgstr "Abgeschlossen mit Fehlern"
 
-#: src/elektroid.c:1389
+#: src/elektroid.c:1392
 msgid "Canceled"
 msgstr "Abgebrochen"
 
-#: src/elektroid.c:1391 src/elektroid.c:1405
+#: src/elektroid.c:1394 src/elektroid.c:1408
 msgid "Undefined"
 msgstr "Undefiniert"
 
-#: src/elektroid.c:1401
+#: src/elektroid.c:1404
 msgid "Upload"
 msgstr "Hochladen"
 
-#: src/elektroid.c:1403
+#: src/elektroid.c:1406
 msgid "Download"
 msgstr "Herunterladen"
 
@@ -149,87 +149,91 @@ msgstr "Dennis Braun <d_braun@kabelmail.de>"
 msgid "_Play"
 msgstr ""
 
-#: res/gui.glade:154 res/gui.glade:1479
+#: res/gui.glade:154
+msgid "_Show in file manager"
+msgstr ""
+
+#: res/gui.glade:167 res/gui.glade:1492
 msgid "_Rename"
 msgstr "_Umbenennen"
 
-#: res/gui.glade:199
+#: res/gui.glade:212
 msgid "_Receive SysEx"
 msgstr "_Empfange SysEx"
 
-#: res/gui.glade:212
+#: res/gui.glade:225
 msgid "_Send SysEx"
 msgstr "_Sende SysEx"
 
-#: res/gui.glade:236
+#: res/gui.glade:249
 msgid "OS _upgrade"
 msgstr ""
 
-#: res/gui.glade:260
+#: res/gui.glade:273
 msgid "_About"
 msgstr "_Info"
 
-#: res/gui.glade:373 res/gui.glade:612
+#: res/gui.glade:386 res/gui.glade:625
 msgid "Go to parent directory"
 msgstr "Gehe zum Überverzeichnis"
 
-#: res/gui.glade:415 res/gui.glade:654
+#: res/gui.glade:428 res/gui.glade:667
 msgid "Refresh directory"
 msgstr "Aktualisiere Verzeichnis"
 
-#: res/gui.glade:479 res/gui.glade:718 res/gui.glade:1344
+#: res/gui.glade:492 res/gui.glade:731 res/gui.glade:1357
 msgid "Name"
 msgstr "Name"
 
-#: res/gui.glade:493 res/gui.glade:732
+#: res/gui.glade:506 res/gui.glade:745
 msgid "Size"
 msgstr "Größe"
 
-#: res/gui.glade:530
+#: res/gui.glade:543
 msgid "Upload selection"
 msgstr "Upload Auswahl"
 
-#: res/gui.glade:551
+#: res/gui.glade:564
 msgid "Download selection"
 msgstr "Download Auswahl"
 
-#: res/gui.glade:785
+#: res/gui.glade:798
 msgid "Refresh devices"
 msgstr "Aktualisiere Geräte"
 
 #. It is recommended to split the text in two lines if it is too long
-#: res/gui.glade:868
+#: res/gui.glade:881
 msgid "Auto play"
 msgstr "Auto Play"
 
-#: res/gui.glade:1100
+#: res/gui.glade:1113
 msgid "Status"
 msgstr "Status"
 
-#: res/gui.glade:1111
+#: res/gui.glade:1124
 msgid "Type"
 msgstr "Typ"
 
-#: res/gui.glade:1122
+#: res/gui.glade:1135
 msgid "Source"
 msgstr "Quelle"
 
-#: res/gui.glade:1136
+#: res/gui.glade:1149
 msgid "Destination"
 msgstr "Ziel"
 
-#: res/gui.glade:1151
+#: res/gui.glade:1164
 msgid "Progress"
 msgstr "Fortschritt"
 
-#: res/gui.glade:1183
+#: res/gui.glade:1196
 msgid "Cancel running task"
 msgstr "Vorgang abbrechen"
 
-#: res/gui.glade:1204
+#: res/gui.glade:1217
 msgid "Remove queued tasks"
 msgstr "Lösche Aufgaben in der Warteschlange"
 
-#: res/gui.glade:1225
+#: res/gui.glade:1238
 msgid "Clear finished tasks"
 msgstr "Abgeschlossene Aufgaben aufräumen"

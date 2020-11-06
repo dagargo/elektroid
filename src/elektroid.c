@@ -110,6 +110,7 @@ static GtkStatusbar *status_bar;
 static GtkListStore *devices_list_store;
 static GtkComboBox *devices_combo;
 static GtkWidget *local_play_button;
+static GtkWidget *local_show_button;
 static GtkWidget *local_rename_button;
 static GtkWidget *local_delete_button;
 static GtkWidget *remote_rename_button;
@@ -742,6 +743,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 void
 elektroid_local_popover_set_up (gint count)
 {
+  gtk_widget_set_sensitive (local_show_button, count <= 1 ? TRUE : FALSE);
   gtk_widget_set_sensitive (local_rename_button, count == 1 ? TRUE : FALSE);
   gtk_widget_set_sensitive (local_delete_button, count > 0 ? TRUE : FALSE);
 }
@@ -969,6 +971,81 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 cleanup:
   g_mutex_unlock (&load_mutex);
   return FALSE;
+}
+
+static void
+elektroid_show_clicked (GtkWidget * object, gpointer data)
+{
+  GtkTreeIter iter;
+  GtkTreeModel *model;
+  gchar *name;
+  gchar *uri;
+  GVariant *params, *result;
+  GVariantBuilder builder;
+  GFile *file;
+  GDBusProxy *proxy;
+  gchar *path = NULL;
+  gboolean done = FALSE;
+  gint count = browser_get_selected_items_count (&local_browser);
+
+
+  if (count == 0)
+    {
+      path = chain_path (local_browser.dir, NULL);
+    }
+  else if (count == 1)
+    {
+      browser_set_selected_row_iter (&local_browser, &iter);
+      model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
+      browser_get_item_info (model, &iter, NULL, &name, NULL);
+      path = chain_path (local_browser.dir, name);
+      g_free (name);
+    }
+  else
+    {
+      return;
+    }
+
+  file = g_file_new_for_path (path);
+  g_free (path);
+  uri = g_file_get_uri (file);
+  g_object_unref (file);
+
+  proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
+                                                     G_DBUS_PROXY_FLAGS_DO_NOT_CONNECT_SIGNALS
+                                                     |
+                                                     G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+                                                     NULL,
+                                                     "org.freedesktop.FileManager1",
+                                                     "/org/freedesktop/FileManager1",
+                                                     "org.freedesktop.FileManager1",
+                                                     NULL, NULL);
+  if (proxy)
+    {
+      g_variant_builder_init (&builder, G_VARIANT_TYPE ("as"));
+      g_variant_builder_add (&builder, "s", uri);
+
+      params = g_variant_new ("(ass)", &builder, "");
+
+      result = g_dbus_proxy_call_sync (proxy, "ShowItems",
+				       params, G_DBUS_CALL_FLAGS_NONE,
+				       -1, NULL, NULL);
+
+      if (result != NULL)
+	{
+	  done = TRUE;
+	  g_variant_unref (result);
+	}
+
+      g_object_unref (proxy);
+    }
+
+  if (!done)
+    {
+      g_app_info_launch_default_for_uri (uri, NULL, NULL);
+    }
+
+  g_free (uri);
 }
 
 static void
@@ -2216,12 +2293,16 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 
   local_play_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_play_button"));
+  local_show_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_show_button"));
   local_rename_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_rename_button"));
   local_delete_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_delete_button"));
   g_signal_connect (local_play_button, "clicked",
 		    G_CALLBACK (elektroid_play_clicked), NULL);
+  g_signal_connect (local_show_button, "clicked",
+		    G_CALLBACK (elektroid_show_clicked), NULL);
   g_signal_connect (local_rename_button, "clicked",
 		    G_CALLBACK (elektroid_rename_item), &local_browser);
   g_signal_connect (local_delete_button, "clicked",
