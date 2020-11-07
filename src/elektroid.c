@@ -775,7 +775,8 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
   GtkTreeSelection *selection;
   struct browser *browser = data;
 
-  if (event->type == GDK_BUTTON_PRESS && event->button == 3)
+  if (event->type == GDK_BUTTON_PRESS
+      && event->button == GDK_BUTTON_SECONDARY)
     {
       selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
       gtk_tree_view_get_path_at_pos (browser->view,
@@ -1012,14 +1013,14 @@ elektroid_show_clicked (GtkWidget * object, gpointer data)
   g_object_unref (file);
 
   proxy = g_dbus_proxy_new_for_bus_sync (G_BUS_TYPE_SESSION,
-                                                     G_DBUS_PROXY_FLAGS_DO_NOT_CONNECT_SIGNALS
-                                                     |
-                                                     G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
-                                                     NULL,
-                                                     "org.freedesktop.FileManager1",
-                                                     "/org/freedesktop/FileManager1",
-                                                     "org.freedesktop.FileManager1",
-                                                     NULL, NULL);
+					 G_DBUS_PROXY_FLAGS_DO_NOT_CONNECT_SIGNALS
+					 |
+					 G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+					 NULL,
+					 "org.freedesktop.FileManager1",
+					 "/org/freedesktop/FileManager1",
+					 "org.freedesktop.FileManager1",
+					 NULL, NULL);
   if (proxy)
     {
       g_variant_builder_init (&builder, G_VARIANT_TYPE ("as"));
