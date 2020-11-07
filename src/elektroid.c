@@ -110,6 +110,7 @@ static GtkStatusbar *status_bar;
 static GtkListStore *devices_list_store;
 static GtkComboBox *devices_combo;
 static GtkWidget *local_play_button;
+static GtkWidget *local_open_button;
 static GtkWidget *local_show_button;
 static GtkWidget *local_rename_button;
 static GtkWidget *local_delete_button;
@@ -556,6 +557,7 @@ static void
 elektroid_controls_set_sensitive (gboolean sensitive)
 {
   gtk_widget_set_sensitive (local_play_button, sensitive);
+  gtk_widget_set_sensitive (local_open_button, sensitive);
   gtk_widget_set_sensitive (play_button, sensitive);
   gtk_widget_set_sensitive (stop_button, sensitive);
 }
@@ -1047,6 +1049,31 @@ elektroid_show_clicked (GtkWidget * object, gpointer data)
     }
 
   g_free (uri);
+}
+
+static void
+elektroid_open_clicked (GtkWidget * object, gpointer data)
+{
+  GtkTreeIter iter;
+  GtkTreeModel *model;
+  gchar *name;
+  gchar *path;
+  gchar *uri;
+  GFile *file;
+
+  browser_set_selected_row_iter (&local_browser, &iter);
+  model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
+  browser_get_item_info (model, &iter, NULL, &name, NULL);
+  path = chain_path (local_browser.dir, name);
+  g_free (name);
+
+  file = g_file_new_for_path (path);
+  g_free (path);
+  uri = g_file_get_uri (file);
+  g_object_unref (file);
+
+  g_app_info_launch_default_for_uri (uri, NULL, NULL);
+  free (uri);
 }
 
 static void
@@ -2294,6 +2321,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 
   local_play_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_play_button"));
+  local_open_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_open_button"));
   local_show_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_show_button"));
   local_rename_button =
@@ -2302,6 +2331,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     GTK_WIDGET (gtk_builder_get_object (builder, "local_delete_button"));
   g_signal_connect (local_play_button, "clicked",
 		    G_CALLBACK (elektroid_play_clicked), NULL);
+  g_signal_connect (local_open_button, "clicked",
+		    G_CALLBACK (elektroid_open_clicked), NULL);
   g_signal_connect (local_show_button, "clicked",
 		    G_CALLBACK (elektroid_show_clicked), NULL);
   g_signal_connect (local_rename_button, "clicked",
