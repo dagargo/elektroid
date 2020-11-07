@@ -1295,7 +1295,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
   gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
 
-  gtk_window_set_title (GTK_WINDOW (name_dialog), _("Add directory"));
+  gtk_window_set_title (GTK_WINDOW (name_dialog), _("Add Directory"));
 
   result = GTK_RESPONSE_ACCEPT;
 

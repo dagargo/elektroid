@@ -175,7 +175,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="text" translatable="yes">_Show in file manager</property>
+            <property name="text" translatable="yes">_Show in File Manager</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -280,7 +280,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="text" translatable="yes">OS _upgrade</property>
+            <property name="text" translatable="yes">OS _Upgrade</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -417,7 +417,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
-                                    <property name="tooltip_text" translatable="yes">Go to parent directory</property>
+                                    <property name="tooltip_text" translatable="yes">Go to Parent Directory</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
@@ -438,7 +438,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
-                                    <property name="tooltip_text" translatable="yes">Add directory</property>
+                                    <property name="tooltip_text" translatable="yes">Add Directory</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
@@ -459,7 +459,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
-                                    <property name="tooltip_text" translatable="yes">Refresh directory</property>
+                                    <property name="tooltip_text" translatable="yes">Refresh Directory</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
@@ -574,7 +574,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <property name="tooltip_text" translatable="yes">Upload selection</property>
+                            <property name="tooltip_text" translatable="yes">Upload Selection</property>
                             <child>
                               <object class="GtkImage">
                                 <property name="visible">True</property>
@@ -595,7 +595,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <property name="tooltip_text" translatable="yes">Download selection</property>
+                            <property name="tooltip_text" translatable="yes">Download Selection</property>
                             <property name="always_show_image">True</property>
                             <child>
                               <object class="GtkImage">
@@ -656,7 +656,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
-                                    <property name="tooltip_text" translatable="yes">Go to parent directory</property>
+                                    <property name="tooltip_text" translatable="yes">Go to Parent Directory</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
@@ -677,7 +677,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
-                                    <property name="tooltip_text" translatable="yes">Add directory</property>
+                                    <property name="tooltip_text" translatable="yes">Add Directory</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
@@ -698,7 +698,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
-                                    <property name="tooltip_text" translatable="yes">Refresh directory</property>
+                                    <property name="tooltip_text" translatable="yes">Refresh Directory</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
@@ -829,7 +829,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="visible">True</property>
                             <property name="can_focus">True</property>
                             <property name="receives_default">True</property>
-                            <property name="tooltip_text" translatable="yes">Refresh devices</property>
+                            <property name="tooltip_text" translatable="yes">Refresh Devices</property>
                             <child>
                               <object class="GtkImage">
                                 <property name="visible">True</property>
@@ -1227,7 +1227,7 @@ audio-volume-medium-symbolic</property>
                         <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
-                        <property name="tooltip_text" translatable="yes">Cancel running task</property>
+                        <property name="tooltip_text" translatable="yes">Cancel Running Task</property>
                         <child>
                           <object class="GtkImage">
                             <property name="visible">True</property>
@@ -1248,7 +1248,7 @@ audio-volume-medium-symbolic</property>
                         <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
-                        <property name="tooltip_text" translatable="yes">Remove queued tasks</property>
+                        <property name="tooltip_text" translatable="yes">Remove Queued Tasks</property>
                         <child>
                           <object class="GtkImage">
                             <property name="visible">True</property>
@@ -1269,7 +1269,7 @@ audio-volume-medium-symbolic</property>
                         <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
-                        <property name="tooltip_text" translatable="yes">Clear finished tasks</property>
+                        <property name="tooltip_text" translatable="yes">Clear Finished Tasks</property>
                         <child>
                           <object class="GtkImage">
                             <property name="visible">True</property>

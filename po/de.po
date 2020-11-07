@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: elektroid 1.2\n"
+"Project-Id-Version: elektroid 1.3\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2020-11-07 12:15+0100\n"
+"POT-Creation-Date: 2020-11-07 12:31+0100\n"
 "PO-Revision-Date: 2020-02-21 11:45+0100\n"
 "Last-Translator: Dennis Braun <d_braun@kabelmail.de>\n"
 "Language-Team: German\n"
@@ -97,7 +97,7 @@ msgid "Error while renaming to “%s”: %s."
 msgstr "Fehler beim Umbenennen von »%s«: %s."
 
 #: src/elektroid.c:1298 res/gui.glade:441 res/gui.glade:680
-msgid "Add directory"
+msgid "Add Directory"
 msgstr "Verzeichnis hinzufügen"
 
 #: src/elektroid.c:1323
@@ -154,7 +154,7 @@ msgid "_Open With External Editor"
 msgstr ""
 
 #: res/gui.glade:178
-msgid "_Show in file manager"
+msgid "_Show in File Manager"
 msgstr ""
 
 #: res/gui.glade:202 res/gui.glade:1526
@@ -170,7 +170,7 @@ msgid "_Send SysEx"
 msgstr "_Sende SysEx"
 
 #: res/gui.glade:283
-msgid "OS _upgrade"
+msgid "OS _Upgrade"
 msgstr ""
 
 #: res/gui.glade:307
@@ -178,11 +178,11 @@ msgid "_About"
 msgstr "_Info"
 
 #: res/gui.glade:420 res/gui.glade:659
-msgid "Go to parent directory"
+msgid "Go to Parent Directory"
 msgstr "Gehe zum Überverzeichnis"
 
 #: res/gui.glade:462 res/gui.glade:701
-msgid "Refresh directory"
+msgid "Refresh Directory"
 msgstr "Aktualisiere Verzeichnis"
 
 #: res/gui.glade:526 res/gui.glade:765 res/gui.glade:1391
@@ -194,15 +194,15 @@ msgid "Size"
 msgstr "Größe"
 
 #: res/gui.glade:577
-msgid "Upload selection"
+msgid "Upload Selection"
 msgstr "Upload Auswahl"
 
 #: res/gui.glade:598
-msgid "Download selection"
+msgid "Download Selection"
 msgstr "Download Auswahl"
 
 #: res/gui.glade:832
-msgid "Refresh devices"
+msgid "Refresh Devices"
 msgstr "Aktualisiere Geräte"
 
 #. It is recommended to split the text in two lines if it is too long
@@ -231,13 +231,13 @@ msgid "Progress"
 msgstr "Fortschritt"
 
 #: res/gui.glade:1230
-msgid "Cancel running task"
+msgid "Cancel Running Task"
 msgstr "Vorgang abbrechen"
 
 #: res/gui.glade:1251
-msgid "Remove queued tasks"
+msgid "Remove Queued Tasks"
 msgstr "Lösche Aufgaben in der Warteschlange"
 
 #: res/gui.glade:1272
-msgid "Clear finished tasks"
+msgid "Clear Finished Tasks"
 msgstr "Abgeschlossene Aufgaben aufräumen"

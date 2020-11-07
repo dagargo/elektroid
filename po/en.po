@@ -5,9 +5,9 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: elektroid 1.2\n"
+"Project-Id-Version: elektroid 1.3\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2020-11-07 12:15+0100\n"
+"POT-Creation-Date: 2020-11-07 12:31+0100\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: English\n"
@@ -97,8 +97,8 @@ msgid "Error while renaming to “%s”: %s."
 msgstr "Error while renaming to “%s”: %s."
 
 #: src/elektroid.c:1298 res/gui.glade:441 res/gui.glade:680
-msgid "Add directory"
-msgstr "Add directory"
+msgid "Add Directory"
+msgstr "Add Directory"
 
 #: src/elektroid.c:1323
 #, c-format
@@ -154,8 +154,8 @@ msgid "_Open With External Editor"
 msgstr ""
 
 #: res/gui.glade:178
-msgid "_Show in file manager"
-msgstr "_Show in file manager"
+msgid "_Show in File Manager"
+msgstr "_Show in File Manager"
 
 #: res/gui.glade:202 res/gui.glade:1526
 msgid "_Rename"
@@ -170,20 +170,20 @@ msgid "_Send SysEx"
 msgstr "_Send SysEx"
 
 #: res/gui.glade:283
-msgid "OS _upgrade"
-msgstr "OS _upgrade"
+msgid "OS _Upgrade"
+msgstr "OS _Upgrade"
 
 #: res/gui.glade:307
 msgid "_About"
 msgstr "_About"
 
 #: res/gui.glade:420 res/gui.glade:659
-msgid "Go to parent directory"
-msgstr "Go to parent directory"
+msgid "Go to Parent Directory"
+msgstr "Go to Parent Directory"
 
 #: res/gui.glade:462 res/gui.glade:701
-msgid "Refresh directory"
-msgstr "Refresh directory"
+msgid "Refresh Directory"
+msgstr "Refresh Directory"
 
 #: res/gui.glade:526 res/gui.glade:765 res/gui.glade:1391
 msgid "Name"
@@ -194,16 +194,16 @@ msgid "Size"
 msgstr "Size"
 
 #: res/gui.glade:577
-msgid "Upload selection"
-msgstr "Upload selection"
+msgid "Upload Selection"
+msgstr "Upload Selection"
 
 #: res/gui.glade:598
-msgid "Download selection"
+msgid "Download Selection"
 msgstr "Download selection"
 
 #: res/gui.glade:832
-msgid "Refresh devices"
-msgstr "Refresh devices"
+msgid "Refresh Devices"
+msgstr "Refresh Devices"
 
 #. It is recommended to split the text in two lines if it is too long
 #: res/gui.glade:915
@@ -231,13 +231,13 @@ msgid "Progress"
 msgstr "Progress"
 
 #: res/gui.glade:1230
-msgid "Cancel running task"
-msgstr "Cancel running task"
+msgid "Cancel Running Task"
+msgstr "Cancel Running Task"
 
 #: res/gui.glade:1251
-msgid "Remove queued tasks"
-msgstr "Remove queued tasks"
+msgid "Remove Queued Tasks"
+msgstr "Remove Queued Tasks"
 
 #: res/gui.glade:1272
-msgid "Clear finished tasks"
-msgstr "Clear finished tasks"
+msgid "Clear Finished Tasks"
+msgstr "Clear Finished Tasks"
