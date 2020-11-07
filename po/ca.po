@@ -1,0 +1,246 @@
+# Catalan translations for Elektroid package.
+# Copyright (C) 2019 David García Goñi
+# This file is distributed under the same license as the Elektroid package.
+# David García Goñi <dagargo@gmail.com>, 2020.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: elektroid 1.3\n"
+"Report-Msgid-Bugs-To: dagargo@gmail.com\n"
+"POT-Creation-Date: 2020-11-07 12:31+0100\n"
+"PO-Revision-Date: 2020-04-26 13:00+0100\n"
+"Last-Translator: David García Goñi <dagargo@gmail.com>\n"
+"Language-Team: Catalan\n"
+"Language: ca\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/elektroid.c:172
+#, c-format
+msgid "Connected to %s"
+msgstr "Connectat a %s"
+
+#: src/elektroid.c:179 src/elektroid.c:2467
+msgid "Not connected"
+msgstr "No connectat"
+
+#: src/elektroid.c:317
+msgid "Waiting..."
+msgstr "Esperant..."
+
+#: src/elektroid.c:320
+msgid "Sending..."
+msgstr "Enviant..."
+
+#: src/elektroid.c:324
+msgid "Receiving..."
+msgstr "Rebent..."
+
+#: src/elektroid.c:367
+msgid "Receive SysEx"
+msgstr "Rep SysEx"
+
+#: src/elektroid.c:390
+msgid "Save SysEx"
+msgstr "Alça SysEx"
+
+#: src/elektroid.c:393 src/elektroid.c:474 src/elektroid.c:645
+msgid "_Cancel"
+msgstr "_Cancel·la"
+
+#: src/elektroid.c:395
+msgid "_Save"
+msgstr "_Alça"
+
+#: src/elektroid.c:399
+msgid "Received SysEx"
+msgstr "SysEx rebut"
+
+#: src/elektroid.c:404 src/elektroid.c:480
+msgid "SysEx Files"
+msgstr "Fitxers SysEx"
+
+#: src/elektroid.c:471
+msgid "Open SysEx"
+msgstr "Obri SysEx"
+
+#: src/elektroid.c:476
+msgid "_Open"
+msgstr "_Obri"
+
+#: src/elektroid.c:504
+msgid "Send SysEx"
+msgstr "Envia SysEx"
+
+#: src/elektroid.c:610
+#, c-format
+msgid "Error while deleting “%s”: %s."
+msgstr "Error al eliminar «%s»: %s."
+
+#: src/elektroid.c:644
+msgid "Are you sure you want to delete the selected items?"
+msgstr "Està segur de que vol eliminar els elements seleccionats?"
+
+#: src/elektroid.c:646 res/gui.glade:215 res/gui.glade:1539
+msgid "_Delete"
+msgstr "_Elimina"
+
+#: src/elektroid.c:701
+msgid "Rename"
+msgstr "Reanomena"
+
+#: src/elektroid.c:726
+#, c-format
+msgid "Error while renaming to “%s”: %s."
+msgstr "Error al reanomenar a «%s»: %s."
+
+#: src/elektroid.c:1298 res/gui.glade:441 res/gui.glade:680
+msgid "Add Directory"
+msgstr "Afig directori"
+
+#: src/elektroid.c:1323
+#, c-format
+msgid "Error while creating dir “%s”: %s."
+msgstr "Error al crear el directori «%s»: %s."
+
+#: src/elektroid.c:1487
+msgid "Queued"
+msgstr "A la cua"
+
+#: src/elektroid.c:1489
+msgid "Running"
+msgstr "Executant"
+
+#: src/elektroid.c:1491
+msgid "Completed"
+msgstr "Completada"
+
+#: src/elektroid.c:1493
+msgid "Completed with errors"
+msgstr "Completada amb errors"
+
+#: src/elektroid.c:1495
+msgid "Canceled"
+msgstr "Cancel·lada"
+
+#: src/elektroid.c:1497 src/elektroid.c:1511
+msgid "Undefined"
+msgstr "Indefinit"
+
+#: src/elektroid.c:1507
+msgid "Upload"
+msgstr "Càrrega"
+
+#: src/elektroid.c:1509
+msgid "Download"
+msgstr "Descàrrega"
+
+#: res/gui.glade:86
+msgid "GNU/Linux sample transfer application for Elektron devices"
+msgstr ""
+"Aplicació GNU/Linux de transferència de mostres per a dispositius Elektron"
+
+#: res/gui.glade:89
+msgid "translator-credits"
+msgstr "David García Goñi <dagargo@gmail.com>"
+
+#: res/gui.glade:141
+msgid "_Play"
+msgstr "_Reproduïx"
+
+#: res/gui.glade:165
+msgid "_Open With External Editor"
+msgstr "_Obri amb editor extern"
+
+#: res/gui.glade:178
+msgid "_Show in File Manager"
+msgstr "_Mostra al navegador de fitxers"
+
+#: res/gui.glade:202 res/gui.glade:1526
+msgid "_Rename"
+msgstr "Rea_nomena"
+
+#: res/gui.glade:246
+msgid "_Receive SysEx"
+msgstr "_Rep SysEx"
+
+#: res/gui.glade:259
+msgid "_Send SysEx"
+msgstr "_Envia SysEx"
+
+#: res/gui.glade:283
+msgid "OS _Upgrade"
+msgstr "_Actualitza SO"
+
+#: res/gui.glade:307
+msgid "_About"
+msgstr "_Quant a"
+
+#: res/gui.glade:420 res/gui.glade:659
+msgid "Go to Parent Directory"
+msgstr "Ves al directori pare"
+
+#: res/gui.glade:462 res/gui.glade:701
+msgid "Refresh Directory"
+msgstr "Actualitza directori"
+
+#: res/gui.glade:526 res/gui.glade:765 res/gui.glade:1391
+msgid "Name"
+msgstr "Nom"
+
+#: res/gui.glade:540 res/gui.glade:779
+msgid "Size"
+msgstr "Tamany"
+
+#: res/gui.glade:577
+msgid "Upload Selection"
+msgstr "Càrrega selecció"
+
+#: res/gui.glade:598
+msgid "Download Selection"
+msgstr "Descàrrega selecció"
+
+#: res/gui.glade:832
+msgid "Refresh Devices"
+msgstr "Actualitza dispositius"
+
+#. It is recommended to split the text in two lines if it is too long
+#: res/gui.glade:915
+msgid "Auto play"
+msgstr ""
+"Reproducció\n"
+"automàtica"
+
+#: res/gui.glade:1147
+msgid "Status"
+msgstr "Estat"
+
+#: res/gui.glade:1158
+msgid "Type"
+msgstr "Tipus"
+
+#: res/gui.glade:1169
+msgid "Source"
+msgstr "Origen"
+
+#: res/gui.glade:1183
+msgid "Destination"
+msgstr "Destinació"
+
+#: res/gui.glade:1198
+msgid "Progress"
+msgstr "Progrés"
+
+#: res/gui.glade:1230
+msgid "Cancel Running Task"
+msgstr "Cancel·la tasca en execució"
+
+#: res/gui.glade:1251
+msgid "Remove Queued Tasks"
+msgstr "Elimina tasques de la cua"
+
+#: res/gui.glade:1272
+msgid "Clear Finished Tasks"
+msgstr "Neteja tasques terminadas"
