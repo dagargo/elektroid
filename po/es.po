@@ -172,7 +172,7 @@ msgstr "_Enviar SysEx"
 
 #: res/gui.glade:283
 msgid "OS _Upgrade"
-msgstr "_Actualizar SO"
+msgstr "Actualizar _SO"
 
 #: res/gui.glade:307
 msgid "_About"
