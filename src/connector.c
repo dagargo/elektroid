@@ -510,6 +510,23 @@ connector_rx_drain (struct connector *connector)
   snd_rawmidi_drain (connector->inputp);
 }
 
+static gboolean
+connector_is_rt_msg (guint8 * data, guint len)
+{
+  guint i;
+  guint8 *b;
+
+  for (i = 0, b = data; i < len; i++, b++)
+    {
+      if (*b < 0xf8)		//Not System Real-Time Messages
+	{
+	  return FALSE;
+	}
+    }
+
+  return TRUE;
+}
+
 static ssize_t
 connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 		  struct connector_sysex_transfer *transfer)
@@ -529,7 +546,12 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
     {
       rx_len = snd_rawmidi_read (connector->inputp, data, len);
 
-      if ((rx_len == 1 && *data == 0xf8) || rx_len == -EAGAIN)	//MIDI clock or no data
+      if (rx_len > 0 && connector_is_rt_msg (data, rx_len))
+	{
+	  rx_len = -EAGAIN;
+	}
+
+      if (rx_len == -EAGAIN)
 	{
 	  if (!transfer->active)
 	    {
@@ -568,40 +590,87 @@ GByteArray *
 connector_rx_sysex (struct connector *connector,
 		    struct connector_sysex_transfer *transfer)
 {
+  gint i;
   ssize_t rx_len;
-  guint8 buffer;
+  guint8 *b;
+  guint8 buffer[BUFF_SIZE];
   GByteArray *sysex = g_byte_array_new ();
 
   transfer->status = WAITING;
 
-  do
+  while (1)
     {
-      if ((rx_len = connector_rx_raw (connector, &buffer, 1, transfer)) < 0)
+      rx_len = connector_rx_raw (connector, buffer, BUFF_SIZE, transfer);
+
+      if (rx_len < 0)
 	{
 	  goto error;
 	}
-    }
-  while (rx_len == 0 || (rx_len == 1 && buffer != 0xf0));
+      else if (rx_len == 0)
+	{
+	  continue;
+	}
 
-  g_byte_array_append (sysex, &buffer, rx_len);
+      b = buffer;
+      i = 0;
+      while (*b != 0xf0 && i < rx_len)
+	{
+	  b++;
+	  i++;
+	}
+
+      if (i < rx_len)
+	{
+	  break;
+	}
+    }
+
+  g_byte_array_append (sysex, b, 1);
+  b++;
+  i++;
   transfer->status = RECEIVING;
 
-  do
+  while (1)
     {
-      if ((rx_len = connector_rx_raw (connector, &buffer, 1, transfer)) < 0)
+      if (i == rx_len)
 	{
+	  rx_len = connector_rx_raw (connector, buffer, BUFF_SIZE, transfer);
+
 	  if (rx_len == -ENODATA && transfer->batch)
 	    {
 	      break;
 	    }
-	  else
+
+	  if (rx_len < 0)
 	    {
 	      goto error;
 	    }
+
+	  b = buffer;
+	  i = 0;
 	}
-      g_byte_array_append (sysex, &buffer, rx_len);
+
+      while ((*b != 0xf7 || transfer->batch) && i < rx_len)
+	{
+	  if (!connector_is_rt_msg (b, 1))
+	    {
+	      g_byte_array_append (sysex, b, 1);
+	    }
+	  b++;
+	  i++;
+	}
+
+      if (i < rx_len)
+	{
+	  g_byte_array_append (sysex, b, 1);
+	  b++;
+	  i++;
+	  if (!transfer->batch)
+	    {
+	      break;
+	    }
+	}
     }
-  while (rx_len == 0 || (rx_len > 0 && (buffer != 0xf7 || transfer->batch)));
 
   debug_print (1, "Raw message received: ");
   debug_print_hex_msg (sysex);
