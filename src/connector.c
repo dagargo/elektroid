@@ -741,6 +741,8 @@ connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
 
   g_mutex_lock (&connector->mutex);
 
+  snd_rawmidi_read (connector->inputp, NULL, 0);	// trigger reading
+
   len = connector_tx (connector, tx_msg);
   if (len < 0)
     {
