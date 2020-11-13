@@ -239,11 +239,11 @@ audio_context_callback (pa_context * context, void *data)
     }
 }
 
-int
+gint
 audio_init (struct audio *audio, void (*set_volume_gui_callback) (gdouble))
 {
   pa_mainloop_api *api;
-  int err = 0;
+  gint err = 0;
 
   debug_print (1, "Initializing audio...\n");
 
@@ -293,10 +293,10 @@ audio_destroy (struct audio *audio)
     }
 }
 
-int
+gboolean
 audio_check (struct audio *audio)
 {
-  return audio->mainloop ? 1 : 0;
+  return audio->mainloop ? TRUE : FALSE;
 }
 
 void
