@@ -575,8 +575,9 @@ elektroid_update_ui_on_load (gpointer data)
 	{
 	  audio_play (&audio);
 	}
+      return FALSE;
     }
-  return FALSE;
+  return TRUE;
 }
 
 static void
