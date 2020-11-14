@@ -607,10 +607,6 @@ connector_rx_sysex (struct connector *connector,
 	{
 	  goto error;
 	}
-      else if (rx_len == 0)
-	{
-	  continue;
-	}
 
       b = buffer;
       i = 0;
