@@ -973,15 +973,15 @@ connector_upload (struct connector *connector, GArray * sample,
       i++;
     }
 
-  if (progress)
-    {
-      progress (transferred / (double) sample->len);
-    }
-
   debug_print (2, "%zu frames sent\n", transferred);
 
   if (!running || *running)
     {
+      if (progress)
+	{
+	  progress (transferred / (double) sample->len);
+	}
+
       tx_msg = connector_new_msg_upl_end (id, transferred);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
@@ -1070,15 +1070,15 @@ connector_download (struct connector *connector, const gchar * path,
       offset = 0;
     }
 
-  if (progress)
-    {
-      progress (next_block_start / (double) frames);
-    }
-
   debug_print (2, "%d bytes received\n", next_block_start);
 
   if (!running || *running)
     {
+      if (progress)
+	{
+	  progress (next_block_start / (double) frames);
+	}
+
       result = g_array_new (FALSE, FALSE, sizeof (short));
       frame = (gshort *) data->data;
       for (i = 0; i < data->len; i += 2)
