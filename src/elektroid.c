@@ -2133,6 +2133,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
   GtkTreeIter iter;
   GValue cardv = G_VALUE_INIT;
   guint card;
+  gint count;
 
   if (gtk_combo_box_get_active_iter (devices_combo, &iter) == TRUE)
     {
@@ -2150,6 +2151,9 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 	{
 	  strcpy (remote_browser.dir, "/");
 	  remote_browser.load_dir (NULL);
+
+	  count = browser_get_selected_items_count (&local_browser);
+	  gtk_widget_set_sensitive (upload_button, count > 0);
 	}
     }
 }
