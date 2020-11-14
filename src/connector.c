@@ -420,7 +420,8 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
       return -1;
     }
 
-  if ((tx_len = snd_rawmidi_write (connector->outputp, data, len)) < 0)
+  tx_len = snd_rawmidi_write (connector->outputp, data, len);
+  if (tx_len < 0)
     {
       fprintf (stderr, __FILE__ ": Error while sending message. %s.\n",
 	       g_strerror (errno));
@@ -446,10 +447,14 @@ connector_tx_sysex (struct connector *connector,
   total = 0;
   while (total < transfer->data->len && transfer->active)
     {
-      len =
-	transfer->data->len - total >
-	BUFF_SIZE ? BUFF_SIZE : transfer->data->len - total;
-      if ((tx_len = connector_tx_raw (connector, data, len)) < 0)
+      len = transfer->data->len - total;
+      if (len > BUFF_SIZE)
+	{
+	  len = BUFF_SIZE;
+	}
+
+      tx_len = connector_tx_raw (connector, data, len);
+      if (tx_len < 0)
 	{
 	  ret = tx_len;
 	  break;

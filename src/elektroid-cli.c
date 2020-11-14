@@ -449,8 +449,7 @@ main (int argc, char *argv[])
     {
       fprintf (stderr, "%s\n", PACKAGE_STRING);
       char *exec_name = basename (argv[0]);
-      fprintf (stderr, "Usage: %s [options] command\n",
-	       exec_name);
+      fprintf (stderr, "Usage: %s [options] command\n", exec_name);
       exit (EXIT_FAILURE);
     }
 
