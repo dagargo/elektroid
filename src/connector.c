@@ -597,31 +597,47 @@ connector_rx_sysex (struct connector *connector,
 		    struct connector_sysex_transfer *transfer)
 {
   gint i;
-  ssize_t rx_len;
   guint8 *b;
-  guint8 buffer[BUFF_SIZE];
   GByteArray *sysex = g_byte_array_new ();
 
   transfer->status = WAITING;
 
+  i = 0;
+  if (connector->rx_len < 0)
+    {
+      connector->rx_len = 0;
+    }
+  b = connector->buffer;
+
   while (1)
     {
-      rx_len = connector_rx_raw (connector, buffer, BUFF_SIZE, transfer);
-
-      if (rx_len < 0)
+      if (i == connector->rx_len)
 	{
-	  goto error;
+	  connector->rx_len =
+	    connector_rx_raw (connector, connector->buffer, BUFF_SIZE,
+			      transfer);
+
+	  if (connector->rx_len == -ENODATA)
+	    {
+	      goto error;
+	    }
+
+	  if (connector->rx_len < 0)
+	    {
+	      goto error;
+	    }
+
+	  b = connector->buffer;
+	  i = 0;
 	}
 
-      b = buffer;
-      i = 0;
-      while (*b != 0xf0 && i < rx_len)
+      while (*b != 0xf0 && i < connector->rx_len)
 	{
 	  b++;
 	  i++;
 	}
 
-      if (i < rx_len)
+      if (i < connector->rx_len)
 	{
 	  break;
 	}
@@ -634,25 +650,27 @@ connector_rx_sysex (struct connector *connector,
 
   while (1)
     {
-      if (i == rx_len)
+      if (i == connector->rx_len)
 	{
-	  rx_len = connector_rx_raw (connector, buffer, BUFF_SIZE, transfer);
+	  connector->rx_len =
+	    connector_rx_raw (connector, connector->buffer, BUFF_SIZE,
+			      transfer);
 
-	  if (rx_len == -ENODATA && transfer->batch)
+	  if (connector->rx_len == -ENODATA && transfer->batch)
 	    {
 	      break;
 	    }
 
-	  if (rx_len < 0)
+	  if (connector->rx_len < 0)
 	    {
 	      goto error;
 	    }
 
-	  b = buffer;
+	  b = connector->buffer;
 	  i = 0;
 	}
 
-      while ((*b != 0xf7 || transfer->batch) && i < rx_len)
+      while ((*b != 0xf7 || transfer->batch) && i < connector->rx_len)
 	{
 	  if (!connector_is_rt_msg (b, 1))
 	    {
@@ -662,16 +680,18 @@ connector_rx_sysex (struct connector *connector,
 	  i++;
 	}
 
-      if (i < rx_len)
+      if (i < connector->rx_len)
 	{
 	  g_byte_array_append (sysex, b, 1);
-	  b++;
-	  i++;
-	  if (!transfer->batch)
+	  connector->rx_len = connector->rx_len - i - 1;
+	  if (connector->rx_len > 0)
 	    {
-	      break;
+	      memmove (connector->buffer, &connector->buffer[i + 1],
+		       connector->rx_len);
 	    }
+	  break;
 	}
+
     }
 
   debug_print (1, "Raw message received: (%d): ", sysex->len);
@@ -1302,6 +1322,7 @@ connector_destroy (struct connector *connector)
     }
 
   free (connector->device_name);
+  free (connector->buffer);
 }
 
 static const gchar *
@@ -1336,6 +1357,8 @@ connector_init (struct connector *connector, gint card)
   connector->inputp = NULL;
   connector->outputp = NULL;
   connector->device_name = NULL;
+  connector->buffer = NULL;
+  connector->rx_len = 0;
 
   if (card < 0)
     {
@@ -1376,6 +1399,12 @@ connector_init (struct connector *connector, gint card)
   connector->seq = 0;
   connector->device_name = malloc (LABEL_MAX);
   if (!connector->device_name)
+    {
+      goto cleanup;
+    }
+
+  connector->buffer = malloc (sizeof (guint8) * BUFF_SIZE);
+  if (!connector->buffer)
     {
       goto cleanup;
     }

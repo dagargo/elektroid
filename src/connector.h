@@ -28,6 +28,8 @@ struct connector
   gchar *device_name;
   gushort seq;
   GMutex mutex;
+  ssize_t rx_len;
+  guint8 *buffer;
 };
 
 struct connector_dir_iterator
