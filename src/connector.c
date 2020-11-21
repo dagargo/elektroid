@@ -28,6 +28,7 @@
 #include "utils.h"
 
 #define BUFF_SIZE 512
+#define RING_BUFF_SIZE 8192
 #define TRANSF_BLOCK_SIZE_SAMPLE 0x2000
 #define TRANSF_BLOCK_SIZE_OS 0x800
 #define READ_TIMEOUT 2000
@@ -1404,6 +1405,7 @@ connector_init (struct connector *connector, gint card)
   GByteArray *rx_msg_device;
   GByteArray *rx_msg_fw_ver;
   GByteArray *rx_msg_uid;
+  snd_rawmidi_params_t *params;
   gchar name[32];
   sprintf (name, "hw:%d", card);
 
@@ -1472,6 +1474,32 @@ connector_init (struct connector *connector, gint card)
   snd_rawmidi_poll_descriptors (connector->inputp, connector->pfds,
 				connector->npfds);
 
+  err = snd_rawmidi_params_malloc (&params);
+  if (err)
+    {
+      goto cleanup;
+    }
+
+  err = snd_rawmidi_params_current (connector->inputp, params);
+  if (err)
+    {
+      goto cleanup_params;
+    }
+
+  err =
+    snd_rawmidi_params_set_buffer_size (connector->inputp, params,
+					RING_BUFF_SIZE);
+  if (err)
+    {
+      goto cleanup_params;
+    }
+
+  err = snd_rawmidi_params (connector->inputp, params);
+  if (err)
+    {
+      goto cleanup_params;
+    }
+
   tx_msg = connector_new_msg_data (INQ_DEVICE, sizeof (INQ_DEVICE));
   rx_msg_device = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg_device)
@@ -1511,6 +1539,8 @@ connector_init (struct connector *connector, gint card)
   free_msg (rx_msg_fw_ver);
 cleanup_device:
   free_msg (rx_msg_device);
+cleanup_params:
+  snd_rawmidi_params_free (params);
 cleanup:
   if (err)
     {
