@@ -703,12 +703,14 @@ connector_rx (struct connector *connector)
     {
       return NULL;
     }
-  while (sysex->data[0] != MSG_HEADER[0]
-	 || sysex->data[1] != MSG_HEADER[1]
-	 || sysex->data[2] != MSG_HEADER[2]
-	 || sysex->data[3] != MSG_HEADER[3]
-	 || sysex->data[4] != MSG_HEADER[4]
-	 || sysex->data[5] != MSG_HEADER[5])
+  while (sysex->len < 12
+	 || (sysex->len >= 12
+	     && (sysex->data[0] != MSG_HEADER[0]
+		 || sysex->data[1] != MSG_HEADER[1]
+		 || sysex->data[2] != MSG_HEADER[2]
+		 || sysex->data[3] != MSG_HEADER[3]
+		 || sysex->data[4] != MSG_HEADER[4]
+		 || sysex->data[5] != MSG_HEADER[5])))
     {
       debug_print (1, "Skipping message...\n");
       debug_print (1, "Message skipped (%d): ", sysex->len);
