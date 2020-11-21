@@ -30,6 +30,8 @@ struct connector
   GMutex mutex;
   ssize_t rx_len;
   guint8 *buffer;
+  gint npfds;
+  struct pollfd *pfds;
 };
 
 struct connector_dir_iterator

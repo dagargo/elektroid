@@ -22,7 +22,7 @@
 #include <math.h>
 #include <netinet/in.h>
 #include <byteswap.h>
-#include <time.h>
+#include <sys/poll.h>
 #include <zlib.h>
 #include "connector.h"
 #include "utils.h"
@@ -30,8 +30,8 @@
 #define BUFF_SIZE 512
 #define TRANSF_BLOCK_SIZE_SAMPLE 0x2000
 #define TRANSF_BLOCK_SIZE_OS 0x800
-#define READ_TIMEOUT 2
-#define SLEEP_ENODATA 50
+#define READ_TIMEOUT 2000
+#define POLL_TIMEOUT 50
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -532,12 +532,24 @@ connector_is_rt_msg (guint8 * data, guint len)
   return TRUE;
 }
 
+static gboolean
+connector_rx_raw_check_timeout (struct connector_sysex_transfer *transfer,
+				guint * total_time)
+{
+  *total_time += POLL_TIMEOUT;
+  return (((transfer->batch && transfer->status == RECEIVING)
+	   || !transfer->batch) && transfer->timeout
+	  && *total_time >= READ_TIMEOUT);
+}
+
 static ssize_t
 connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 		  struct connector_sysex_transfer *transfer)
 {
   ssize_t rx_len;
-  time_t start;
+  guint total_time;
+  unsigned short revents;
+  gint err;
 
   if (!connector->inputp)
     {
@@ -545,38 +557,77 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
       return -1;
     }
 
-  start = time (NULL);
+  total_time = 0;
 
   while (1)
     {
-      rx_len = snd_rawmidi_read (connector->inputp, data, len);
+      err = poll (connector->pfds, connector->npfds, POLL_TIMEOUT);
 
-      if (rx_len > 0 && connector_is_rt_msg (data, rx_len))
+      if (!transfer->active)
 	{
-	  rx_len = -EAGAIN;
+	  return -ENODATA;
 	}
 
-      if (rx_len == -EAGAIN)
+      if (err == 0)
 	{
-	  if (!transfer->active)
-	    {
-	      break;
-	    }
-	  if (((transfer->batch && transfer->status == RECEIVING)
-	       || !transfer->batch) && transfer->timeout
-	      && (time (NULL) - start > READ_TIMEOUT))
+	  if (connector_rx_raw_check_timeout (transfer, &total_time))
 	    {
 	      return -ENODATA;
 	    }
-	  if (usleep (SLEEP_ENODATA) == -1 && errno == EINTR)
+	  continue;
+	}
+
+      if (err < 0)
+	{
+	  fprintf (stderr, __FILE__ ": Error while polling. %s.\n",
+		   g_strerror (errno));
+	  connector_destroy (connector);
+	  return err;
+	}
+
+      if ((err =
+	   snd_rawmidi_poll_descriptors_revents (connector->inputp,
+						 connector->pfds,
+						 connector->npfds,
+						 &revents)) < 0)
+	{
+	  fprintf (stderr, __FILE__ ": No poll events. %s.\n",
+		   g_strerror (errno));
+	  connector_destroy (connector);
+	  return err;
+	}
+
+      if (revents & (POLLERR | POLLHUP))
+	{
+	  return -ENODATA;
+	}
+
+      if (!(revents & POLLIN))
+	{
+	  if (connector_rx_raw_check_timeout (transfer, &total_time))
 	    {
-	      return -EINTR;
+	      return -ENODATA;
 	    }
+	}
+
+      rx_len = snd_rawmidi_read (connector->inputp, data, len);
+
+      if (rx_len == -EAGAIN || rx_len == 0)
+	{
+	  connector_rx_raw_check_timeout (transfer, &total_time);
 	  continue;
 	}
 
       if (rx_len > 0)
 	{
+	  if (connector_is_rt_msg (data, rx_len))
+	    {
+	      if (connector_rx_raw_check_timeout (transfer, &total_time))
+		{
+		  return 0;
+		}
+	      continue;
+	    }
 	  break;
 	}
 
@@ -587,6 +638,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 	  connector_destroy (connector);
 	  break;
 	}
+
     }
 
   return rx_len;
@@ -1323,6 +1375,7 @@ connector_destroy (struct connector *connector)
 
   free (connector->device_name);
   free (connector->buffer);
+  free (connector->pfds);
 }
 
 static const gchar *
@@ -1359,6 +1412,7 @@ connector_init (struct connector *connector, gint card)
   connector->device_name = NULL;
   connector->buffer = NULL;
   connector->rx_len = 0;
+  connector->pfds = NULL;
 
   if (card < 0)
     {
@@ -1408,6 +1462,15 @@ connector_init (struct connector *connector, gint card)
     {
       goto cleanup;
     }
+
+  connector->npfds = snd_rawmidi_poll_descriptors_count (connector->inputp);
+  connector->pfds = malloc (connector->npfds * sizeof (struct pollfd));
+  if (!connector->buffer)
+    {
+      goto cleanup;
+    }
+  snd_rawmidi_poll_descriptors (connector->inputp, connector->pfds,
+				connector->npfds);
 
   tx_msg = connector_new_msg_data (INQ_DEVICE, sizeof (INQ_DEVICE));
   rx_msg_device = connector_tx_and_rx (connector, tx_msg);
