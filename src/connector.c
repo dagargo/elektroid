@@ -463,7 +463,7 @@ connector_tx_sysex (struct connector *connector,
       total += len;
     }
 
-  debug_print (1, "Raw message sent: ");
+  debug_print (1, "Raw message sent (%d): ", transfer->data->len);
   debug_print_hex_msg (transfer->data);
   transfer->active = FALSE;
   transfer->status = FINISHED;
@@ -501,7 +501,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
 
   if (ret >= 0)
     {
-      debug_print (1, "Message sent: ");
+      debug_print (1, "Message sent (%d): ", msg->len);
       debug_print_hex_msg (msg);
     }
 
@@ -674,7 +674,7 @@ connector_rx_sysex (struct connector *connector,
 	}
     }
 
-  debug_print (1, "Raw message received: ");
+  debug_print (1, "Raw message received: (%d): ", sysex->len);
   debug_print_hex_msg (sysex);
   goto end;
 
@@ -711,7 +711,7 @@ connector_rx (struct connector *connector)
 	 || sysex->data[5] != MSG_HEADER[5])
     {
       debug_print (1, "Skipping message...\n");
-      debug_print (1, "Message skipped: ");
+      debug_print (1, "Message skipped (%d): ", sysex->len);
       debug_print_hex_msg (sysex);
       free_msg (sysex);
 
@@ -726,7 +726,7 @@ connector_rx (struct connector *connector)
   msg = connector_get_msg_payload (sysex);
   if (msg)
     {
-      debug_print (1, "Message received: ");
+      debug_print (1, "Message received (%d): ", msg->len);
       debug_print_hex_msg (msg);
     }
 
