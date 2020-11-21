@@ -1375,6 +1375,10 @@ connector_init (struct connector *connector, gint card)
 
   connector->seq = 0;
   connector->device_name = malloc (LABEL_MAX);
+  if (!connector->device_name)
+    {
+      goto cleanup;
+    }
 
   tx_msg = connector_new_msg_data (INQ_DEVICE, sizeof (INQ_DEVICE));
   rx_msg_device = connector_tx_and_rx (connector, tx_msg);
