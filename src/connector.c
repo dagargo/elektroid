@@ -27,12 +27,12 @@
 #include "connector.h"
 #include "utils.h"
 
-#define BUFF_SIZE 512
-#define RING_BUFF_SIZE 8192
+#define BUFF_SIZE 1024
+#define RING_BUFF_SIZE (16 * BUFF_SIZE)
 #define TRANSF_BLOCK_SIZE_SAMPLE 0x2000
 #define TRANSF_BLOCK_SIZE_OS 0x800
 #define READ_TIMEOUT 2000
-#define POLL_TIMEOUT 50
+#define POLL_TIMEOUT 2
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
