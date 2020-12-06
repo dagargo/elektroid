@@ -1611,7 +1611,6 @@ elektroid_clear_finished_tasks (GtkWidget * object, gpointer data)
   elektroid_remove_tasks_on_cond (elektroid_task_is_finished);
 }
 
-
 static gboolean
 elektroid_complete_running_task (gpointer data)
 {
@@ -1646,11 +1645,14 @@ elektroid_run_next_task (gpointer data)
   gchar *dst;
   GtkTreePath *path;
   gboolean found = elektroid_get_next_queued_task (&iter, &type, &src, &dst);
+  const gchar *status_human = elektroid_get_human_task_status (RUNNING);
 
   if (!active_task.running && found)
     {
       gtk_list_store_set (task_list_store, &iter,
-			  TASK_LIST_STORE_STATUS_FIELD, RUNNING, -1);
+			  TASK_LIST_STORE_STATUS_FIELD, RUNNING,
+			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status_human,
+			  -1);
       path =
 	gtk_tree_model_get_path (GTK_TREE_MODEL (task_list_store), &iter);
       gtk_tree_view_set_cursor (GTK_TREE_VIEW (task_tree_view), path, NULL,
