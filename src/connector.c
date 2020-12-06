@@ -1004,7 +1004,8 @@ connector_create_upload (struct connector *connector, const gchar * path,
 
 ssize_t
 connector_upload (struct connector *connector, GArray * sample,
-		  gchar * path, gint * running, void (*progress) (gdouble))
+		  gchar * path, gboolean * running,
+		  void (*progress) (gdouble))
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -1076,7 +1077,7 @@ connector_upload (struct connector *connector, GArray * sample,
 
 GArray *
 connector_download (struct connector *connector, const gchar * path,
-		    gint * running, void (*progress) (gdouble))
+		    gboolean * running, void (*progress) (gdouble))
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;

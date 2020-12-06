@@ -67,7 +67,7 @@ enum elektroid_task_status
 
 struct elektroid_active_task
 {
-  gint running;
+  gboolean running;
   gchar *src;			//Contains a path to a file
   gchar *dst;			//Contains a path to a dir
   enum elektroid_task_status status;	//Contains the final status
@@ -882,7 +882,7 @@ static void
 elektroid_stop_task_thread ()
 {
   debug_print (1, "Stopping task thread...\n");
-  active_task.running = 0;
+  active_task.running = FALSE;
   elektroid_join_task_thread ();
 }
 
@@ -1516,7 +1516,7 @@ elektroid_get_human_task_type (enum elektroid_task_type type)
 static void
 elektroid_cancel_running_task (GtkWidget * object, gpointer data)
 {
-  active_task.running = 0;
+  active_task.running = FALSE;
 }
 
 static gboolean
@@ -1621,7 +1621,7 @@ elektroid_complete_running_task (gpointer data)
       gtk_list_store_set (task_list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, active_task.status,
 			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status, -1);
-      active_task.running = 0;
+      active_task.running = FALSE;
       g_free (active_task.src);
       g_free (active_task.dst);
     }
@@ -1652,7 +1652,7 @@ elektroid_run_next_task (gpointer data)
       gtk_tree_view_set_cursor (GTK_TREE_VIEW (task_tree_view), path, NULL,
 				FALSE);
       gtk_tree_path_free (path);
-      active_task.running = 1;
+      active_task.running = TRUE;
       active_task.src = src;
       active_task.dst = dst;
       active_task.progress = 0.0;
