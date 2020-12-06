@@ -46,6 +46,8 @@
 #define TASK_LIST_STORE_STATUS_HUMAN_FIELD 5
 #define TASK_LIST_STORE_TYPE_HUMAN_FIELD 6
 
+#define DUMP_TIMEOUT 2000
+
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (gdouble);
@@ -339,7 +341,7 @@ elektroid_rx_sysex_thread (gpointer data)
   g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
   transfer.status = WAITING;
   transfer.active = TRUE;
-  transfer.timeout = TRUE;
+  transfer.timeout = DUMP_TIMEOUT;
   transfer.batch = TRUE;
   connector_rx_drain (&connector);
   value = connector_rx_sysex (&connector, &transfer);
@@ -449,7 +451,7 @@ elektroid_tx_sysex_thread (gpointer data)
   gint *response = malloc (sizeof (gint));
   g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
   transfer.active = TRUE;
-  transfer.timeout = FALSE;
+  transfer.timeout = SYSEX_TIMEOUT;
   *response = connector_tx_sysex (&connector, &transfer);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
   return response;
@@ -532,7 +534,7 @@ elektroid_os_upgrade_thread (gpointer data)
   gint *response = malloc (sizeof (gint));
   g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
   transfer.active = TRUE;
-  transfer.timeout = FALSE;
+  transfer.timeout = SYSEX_TIMEOUT;
   *response = connector_upgrade_os (&connector, &transfer);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
   return response;

@@ -31,7 +31,6 @@
 #define RING_BUFF_SIZE (16 * BUFF_SIZE)
 #define TRANSF_BLOCK_SIZE_SAMPLE 0x2000
 #define TRANSF_BLOCK_SIZE_OS 0x800
-#define READ_TIMEOUT 2000
 #define POLL_TIMEOUT 2
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
@@ -539,8 +538,8 @@ connector_rx_raw_check_timeout (struct connector_sysex_transfer *transfer,
 {
   *total_time += POLL_TIMEOUT;
   return (((transfer->batch && transfer->status == RECEIVING)
-	   || !transfer->batch) && transfer->timeout
-	  && *total_time >= READ_TIMEOUT);
+	   || !transfer->batch) && transfer->timeout > -1
+	  && *total_time >= transfer->timeout);
 }
 
 static ssize_t
@@ -768,7 +767,7 @@ connector_rx (struct connector *connector)
   struct connector_sysex_transfer transfer;
 
   transfer.active = TRUE;
-  transfer.timeout = TRUE;
+  transfer.timeout = SYSEX_TIMEOUT;
   transfer.batch = FALSE;
 
   sysex = connector_rx_sysex (connector, &transfer);
@@ -990,6 +989,7 @@ connector_create_upload (struct connector *connector, const gchar * path,
       errno = EIO;
       return -1;
     }
+
   //Response: x, x, x, x, 0xc0, [0 (error), 1 (success)], id, frames
   connector_get_sample_info_from_msg (rx_msg, &id, NULL);
   if (id < 0)

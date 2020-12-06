@@ -21,6 +21,8 @@
 #include <glib.h>
 #include <alsa/asoundlib.h>
 
+#define SYSEX_TIMEOUT 5000
+
 struct connector
 {
   snd_rawmidi_t *inputp;
@@ -63,7 +65,7 @@ struct connector_sysex_transfer
   gboolean active;
   enum connector_sysex_transfer_status status;
   GByteArray *data;
-  gboolean timeout;
+  gint timeout;			//Measured in ms. -1 is infinite.
   gboolean batch;
 };
 
