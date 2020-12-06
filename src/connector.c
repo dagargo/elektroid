@@ -830,6 +830,10 @@ connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
 cleanup:
   free_msg (tx_msg);
   g_mutex_unlock (&connector->mutex);
+  if (!rx_msg)
+    {
+      connector_destroy (connector);
+    }
   return rx_msg;
 }
 
