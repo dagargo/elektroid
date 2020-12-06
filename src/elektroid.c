@@ -1684,6 +1684,8 @@ elektroid_run_next_task (gpointer data)
       gtk_widget_set_sensitive (os_upgrade_button, TRUE);
     }
 
+  elektroid_check_task_buttons (NULL);
+
   return FALSE;
 }
 
@@ -1743,7 +1745,6 @@ elektroid_upload_task (gpointer data)
 
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
-  g_idle_add (elektroid_check_task_buttons, NULL);
 
   return NULL;
 }
@@ -1767,7 +1768,6 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
 				     type_human, -1);
 
   gtk_widget_set_sensitive (remove_tasks_button, TRUE);
-  gtk_widget_set_sensitive (clear_tasks_button, TRUE);
 }
 
 static void
@@ -1941,7 +1941,6 @@ elektroid_download_task (gpointer data)
 
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
-  g_idle_add (elektroid_check_task_buttons, NULL);
 
   return NULL;
 }
