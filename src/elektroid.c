@@ -1626,6 +1626,8 @@ elektroid_complete_running_task (gpointer data)
       active_task.running = FALSE;
       g_free (active_task.src);
       g_free (active_task.dst);
+
+      gtk_widget_set_sensitive (cancel_task_button, FALSE);
     }
   else
     {
@@ -1675,7 +1677,6 @@ elektroid_run_next_task (gpointer data)
     }
   else
     {
-      gtk_widget_set_sensitive (cancel_task_button, FALSE);
       gtk_widget_set_sensitive (rx_sysex_button, TRUE);
       gtk_widget_set_sensitive (tx_sysex_button, TRUE);
       gtk_widget_set_sensitive (os_upgrade_button, TRUE);
