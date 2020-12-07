@@ -35,6 +35,7 @@ struct audio
   uint32_t index;
   void (*set_volume_gui_callback) (gdouble);
   gint release_frames;
+  GMutex mutex;
 };
 
 void audio_play (struct audio *);

@@ -87,7 +87,6 @@ static GThread *load_thread = NULL;
 static GThread *task_thread = NULL;
 static GThread *sysex_thread = NULL;
 static gboolean load_thread_running;
-static GMutex load_mutex;
 static struct elektroid_active_task active_task;
 static struct connector_sysex_transfer transfer;
 
@@ -839,7 +838,7 @@ elektroid_redraw_sample (gdouble percent)
 static gpointer
 elektroid_load_sample (gpointer path)
 {
-  sample_load (audio.sample, &load_mutex, &audio.frames, path,
+  sample_load (audio.sample, &audio.mutex, &audio.frames, path,
 	       &load_thread_running, elektroid_redraw_sample);
   load_thread_running = FALSE;
   free (path);
@@ -943,12 +942,12 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
   double x_ratio, mid_y, value;
   short *sample;
 
-  g_mutex_lock (&load_mutex);
-
   if (audio.sample->len <= 0)
     {
-      goto cleanup;
+      return FALSE;
     }
+
+  g_mutex_lock (&audio.mutex);
 
   context = gtk_widget_get_style_context (widget);
   width = gtk_widget_get_allocated_width (widget);
@@ -974,8 +973,8 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 	}
     }
 
-cleanup:
-  g_mutex_unlock (&load_mutex);
+  g_mutex_unlock (&audio.mutex);
+
   return FALSE;
 }
 

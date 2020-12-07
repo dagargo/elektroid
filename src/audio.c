@@ -47,11 +47,6 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
   gshort *v;
   gint i;
 
-  if (!audio->sample->len)
-    {
-      return;
-    }
-
   //XXX: Until a better solution is found this corks the stream without using neither drain nor empty buffers (CPU)
   if (audio->release_frames > PA_BUFFER_LEN)
     {
@@ -63,14 +58,20 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
   debug_print (2, "Writing %2d frames...\n", req_frames);
   pa_stream_begin_write (stream, &buffer, &size);
 
+  g_mutex_lock (&audio->mutex);
+
+  if (!audio->sample->len)
+    {
+      g_mutex_unlock (&audio->mutex);
+      pa_stream_cancel_write (stream);
+      debug_print (2, "Canceled\n");
+      return;
+    }
+
   if (audio->pos == audio->sample->len && !audio->loop)
     {
-      v = buffer;
-      for (i = 0; i < req_frames; i++)
-	{
-	  *v = 0;
-	  v++;
-	}
+      g_mutex_unlock (&audio->mutex);
+      memset (buffer, 0, size);
       pa_stream_write (stream, buffer, size, NULL, 0, PA_SEEK_RELATIVE);
       audio->release_frames += req_frames;
       return;
@@ -98,6 +99,8 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
 	}
       v++;
     }
+
+  g_mutex_unlock (&audio->mutex);
 
   pa_stream_write (stream, buffer, i * 2, NULL, 0, PA_SEEK_RELATIVE);
 }
