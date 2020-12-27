@@ -27,8 +27,9 @@
 #include "connector.h"
 #include "utils.h"
 
-#define BUFF_SIZE 1024
-#define RING_BUFF_SIZE (16 * BUFF_SIZE)
+#define KB 1024
+#define BUFF_SIZE (4 * KB)
+#define RING_BUFF_SIZE (256 * KB)
 #define TRANSF_BLOCK_SIZE_SAMPLE 0x2000
 #define TRANSF_BLOCK_SIZE_OS 0x800
 #define POLL_TIMEOUT 2
