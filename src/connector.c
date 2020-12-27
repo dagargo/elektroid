@@ -1396,9 +1396,23 @@ connector_destroy (struct connector *connector)
       connector->outputp = NULL;
     }
 
-  free (connector->device_name);
-  free (connector->buffer);
-  free (connector->pfds);
+  if (connector->device_name)
+    {
+      free (connector->device_name);
+      connector->device_name = NULL;
+    }
+
+  if (connector->buffer)
+    {
+      free (connector->buffer);
+      connector->buffer = NULL;
+    }
+
+  if (connector->pfds)
+    {
+      free (connector->pfds);
+      connector->pfds = NULL;
+    }
 }
 
 static const gchar *
