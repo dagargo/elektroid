@@ -152,7 +152,7 @@ msgstr "_Reproduïx"
 
 #: res/gui.glade:165
 msgid "_Open With External Editor"
-msgstr "_Obri amb editor extern"
+msgstr "_Obri amb l'editor extern"
 
 #: res/gui.glade:178
 msgid "_Show in File Manager"
@@ -172,7 +172,7 @@ msgstr "_Envia SysEx"
 
 #: res/gui.glade:283
 msgid "OS _Upgrade"
-msgstr "_Actualitza SO"
+msgstr "_Actualitza el SO"
 
 #: res/gui.glade:307
 msgid "_About"
@@ -184,7 +184,7 @@ msgstr "Ves al directori pare"
 
 #: res/gui.glade:462 res/gui.glade:701
 msgid "Refresh Directory"
-msgstr "Actualitza directori"
+msgstr "Actualitza el directori"
 
 #: res/gui.glade:526 res/gui.glade:765 res/gui.glade:1391
 msgid "Name"
@@ -192,19 +192,19 @@ msgstr "Nom"
 
 #: res/gui.glade:540 res/gui.glade:779
 msgid "Size"
-msgstr "Tamany"
+msgstr "Mida"
 
 #: res/gui.glade:577
 msgid "Upload Selection"
-msgstr "Càrrega selecció"
+msgstr "Carrega la selecció"
 
 #: res/gui.glade:598
 msgid "Download Selection"
-msgstr "Descàrrega selecció"
+msgstr "Descarrega la selecció"
 
 #: res/gui.glade:832
 msgid "Refresh Devices"
-msgstr "Actualitza dispositius"
+msgstr "Actualitza els dispositius"
 
 #. It is recommended to split the text in two lines if it is too long
 #: res/gui.glade:915
@@ -235,12 +235,12 @@ msgstr "Progrés"
 
 #: res/gui.glade:1230
 msgid "Cancel Running Task"
-msgstr "Cancel·la tasca en execució"
+msgstr "Cancel·la la tasca en execució"
 
 #: res/gui.glade:1251
 msgid "Remove Queued Tasks"
-msgstr "Elimina tasques de la cua"
+msgstr "Elimina les tasques de la cua"
 
 #: res/gui.glade:1272
 msgid "Clear Finished Tasks"
-msgstr "Neteja tasques terminadas"
+msgstr "Neteja les tasques terminadas"
