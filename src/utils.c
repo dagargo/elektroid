@@ -23,7 +23,7 @@
 #include <wordexp.h>
 #include "utils.h"
 
-#define DEBUG_LEVEL1_LEN 16
+#define DEBUG_SHORT_HEX_LEN 16
 
 #define REG_TYPE "emblem-music-symbolic"
 #define DIR_TYPE "folder-visiting-symbolic"
@@ -41,7 +41,7 @@ get_max_message_length (guint msg_len)
     }
   else
     {
-      len = msg_len > DEBUG_LEVEL1_LEN ? DEBUG_LEVEL1_LEN : msg_len;
+      len = msg_len > DEBUG_SHORT_HEX_LEN ? DEBUG_SHORT_HEX_LEN : msg_len;
     }
 
   return len;
@@ -50,7 +50,7 @@ get_max_message_length (guint msg_len)
 static void
 print_dots_if_needed (guint msg_len)
 {
-  if (debug_level == 1 && msg_len > DEBUG_LEVEL1_LEN)
+  if (debug_level == 1 && msg_len > DEBUG_SHORT_HEX_LEN)
     {
       debug_print (1, "...");
     }
