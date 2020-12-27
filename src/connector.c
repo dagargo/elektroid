@@ -440,7 +440,6 @@ connector_tx_sysex (struct connector *connector,
   guint total;
   guint len;
   guchar *data;
-  gchar *text;
   ssize_t ret = transfer->data->len;
 
   transfer->status = SENDING;
@@ -463,13 +462,6 @@ connector_tx_sysex (struct connector *connector,
 	}
       data += len;
       total += len;
-    }
-
-  if (tx_len >= 0)
-    {
-      text = debug_get_hex_msg (transfer->data);
-      debug_print (1, "Raw message sent (%d): %s", transfer->data->len, text);
-      free (text);
     }
 
   transfer->active = FALSE;
@@ -509,6 +501,10 @@ connector_tx (struct connector *connector, const GByteArray * msg)
 
   if (ret >= 0)
     {
+      text = debug_get_hex_msg (transfer.data);
+      debug_print (1, "Raw message sent (%d): %s", transfer.data->len, text);
+      free (text);
+
       text = debug_get_hex_msg (msg);
       debug_print (1, "Message sent (%d): %s", msg->len, text);
       free (text);
@@ -659,7 +655,6 @@ connector_rx_sysex (struct connector *connector,
 {
   gint i;
   guint8 *b;
-  gchar *text;
   GByteArray *sysex = g_byte_array_new ();
 
   transfer->status = WAITING;
@@ -756,13 +751,6 @@ connector_rx_sysex (struct connector *connector,
 
     }
 
-  if (connector->rx_len >= 0)
-    {
-      text = debug_get_hex_msg (sysex);
-      debug_print (1, "Raw message received (%d): %s", sysex->len, text);
-      free (text);
-    }
-
   goto end;
 
 error:
@@ -813,6 +801,10 @@ connector_rx (struct connector *connector)
 	  return NULL;
 	}
     }
+
+  text = debug_get_hex_msg (sysex);
+  debug_print (1, "Raw message received (%d): %s", sysex->len, text);
+  free (text);
 
   msg = connector_get_msg_payload (sysex);
   if (msg)

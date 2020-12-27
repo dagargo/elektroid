@@ -336,16 +336,28 @@ elektroid_update_sysex_progress (gpointer data)
 static gpointer
 elektroid_rx_sysex_thread (gpointer data)
 {
-  gpointer value;
+  gchar *text;
+  GByteArray *msg;
+
   g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
+
   transfer.status = WAITING;
   transfer.active = TRUE;
   transfer.timeout = DUMP_TIMEOUT;
   transfer.batch = TRUE;
+
   connector_rx_drain (&connector);
-  value = connector_rx_sysex (&connector, &transfer);
+  msg = connector_rx_sysex (&connector, &transfer);
+  if (msg)
+    {
+      text = debug_get_hex_msg (msg);
+      debug_print (1, "SysEx message received (%d): %s", msg->len, text);
+      free (text);
+    }
+
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
-  return value;
+
+  return msg;
 }
 
 static void
@@ -447,12 +459,25 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
 static gpointer
 elektroid_tx_sysex_thread (gpointer data)
 {
+  gchar *text;
   gint *response = malloc (sizeof (gint));
+
   g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
+
   transfer.active = TRUE;
   transfer.timeout = SYSEX_TIMEOUT;
+
   *response = connector_tx_sysex (&connector, &transfer);
+  if (*response >= 0)
+    {
+      text = debug_get_hex_msg (transfer.data);
+      debug_print (1, "SysEx message sent (%d): %s", transfer.data->len,
+		   text);
+      free (text);
+    }
+
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
+
   return response;
 }
 
