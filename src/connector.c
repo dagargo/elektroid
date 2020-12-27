@@ -439,6 +439,7 @@ connector_tx_sysex (struct connector *connector,
   guint total;
   guint len;
   guchar *data;
+  gchar *text;
   ssize_t ret = transfer->data->len;
 
   transfer->status = SENDING;
@@ -463,8 +464,13 @@ connector_tx_sysex (struct connector *connector,
       total += len;
     }
 
-  debug_print (1, "Raw message sent (%d): ", transfer->data->len);
-  debug_print_hex_msg (transfer->data);
+  if (tx_len >= 0)
+    {
+      text = debug_get_hex_msg (transfer->data);
+      debug_print (1, "Raw message sent (%d): %s", transfer->data->len, text);
+      free (text);
+    }
+
   transfer->active = FALSE;
   transfer->status = FINISHED;
   return ret;
@@ -477,6 +483,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   uint16_t aux;
   GByteArray *sysex;
   struct connector_sysex_transfer transfer;
+  gchar *text;
 
   aux = htons (connector->seq);
   memcpy (msg->data, &aux, sizeof (uint16_t));
@@ -501,8 +508,9 @@ connector_tx (struct connector *connector, const GByteArray * msg)
 
   if (ret >= 0)
     {
-      debug_print (1, "Message sent (%d): ", msg->len);
-      debug_print_hex_msg (msg);
+      text = debug_get_hex_msg (msg);
+      debug_print (1, "Message sent (%d): %s", msg->len, text);
+      free (text);
     }
 
   free_msg (transfer.data);
@@ -650,6 +658,7 @@ connector_rx_sysex (struct connector *connector,
 {
   gint i;
   guint8 *b;
+  gchar *text;
   GByteArray *sysex = g_byte_array_new ();
 
   transfer->status = WAITING;
@@ -746,8 +755,13 @@ connector_rx_sysex (struct connector *connector,
 
     }
 
-  debug_print (1, "Raw message received: (%d): ", sysex->len);
-  debug_print_hex_msg (sysex);
+  if (connector->rx_len >= 0)
+    {
+      text = debug_get_hex_msg (sysex);
+      debug_print (1, "Raw message received (%d): %s", sysex->len, text);
+      free (text);
+    }
+
   goto end;
 
 error:
@@ -765,6 +779,7 @@ connector_rx (struct connector *connector)
   GByteArray *msg;
   GByteArray *sysex;
   struct connector_sysex_transfer transfer;
+  gchar *text;
 
   transfer.active = TRUE;
   transfer.timeout = SYSEX_TIMEOUT;
@@ -785,8 +800,9 @@ connector_rx (struct connector *connector)
 		 || sysex->data[5] != MSG_HEADER[5])))
     {
       debug_print (1, "Skipping message...\n");
-      debug_print (1, "Message skipped (%d): ", sysex->len);
-      debug_print_hex_msg (sysex);
+      text = debug_get_hex_msg (sysex);
+      debug_print (1, "Message skipped (%d): %s", sysex->len, text);
+      free (text);
       free_msg (sysex);
 
       transfer.active = TRUE;
@@ -800,8 +816,9 @@ connector_rx (struct connector *connector)
   msg = connector_get_msg_payload (sysex);
   if (msg)
     {
-      debug_print (1, "Message received (%d): ", msg->len);
-      debug_print_hex_msg (msg);
+      text = debug_get_hex_msg (msg);
+      debug_print (1, "Message received (%d): %s", msg->len, text);
+      free (text);
     }
 
   free_msg (sysex);

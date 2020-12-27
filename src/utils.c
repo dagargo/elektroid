@@ -48,33 +48,63 @@ get_max_message_length (guint msg_len)
   return len;
 }
 
-static void
-print_dots_if_needed (guint msg_len)
+gchar *
+debug_get_hex_msg (const GByteArray * msg)
 {
-  if (debug_level < DEBUG_FULL_HEX_THRES && msg_len > DEBUG_SHORT_HEX_LEN)
+  gint i;
+  guint8 *data;
+  guint size;
+  guint bytes_shown;
+  guint extra;
+  gchar *str;
+  gchar *next;
+
+  if (debug_level >= DEBUG_FULL_HEX_THRES)
     {
-      debug_print (1, "...");
+      bytes_shown = msg->len;
+      extra = 0;
     }
-}
+  else
+    {
+      if (msg->len > DEBUG_SHORT_HEX_LEN)
+	{
+	  bytes_shown = DEBUG_SHORT_HEX_LEN;
+	  extra = 3;
+	}
+      else
+	{
+	  bytes_shown = msg->len;
+	  extra = 0;
+	}
+    }
+  size = 2 + (bytes_shown - 1) * 3 + extra + 1;
+  str = malloc (sizeof (char) * size);
 
-void
-debug_print_hex_msg (const GByteArray * msg)
-{
-  gint i = 0;
-  guint8 *data = msg->data;
+  data = msg->data;
+  next = str;
 
+  sprintf (next, "%02x", *data);
+  next += 2;
+  data++;
+
+  i = 1;
   while (i < get_max_message_length (msg->len))
     {
-      if (i > 0)
-	{
-	  debug_print (1, " ");
-	}
-      debug_print (1, "%02x", *data);
+      sprintf (next, " %02x", *data);
+      next += 3;
       data++;
       i++;
     }
-  print_dots_if_needed (msg->len);
-  debug_print (1, "\n");
+
+  if (debug_level < DEBUG_FULL_HEX_THRES && msg->len > DEBUG_SHORT_HEX_LEN)
+    {
+      sprintf (next, "...");
+      next += 3;
+    }
+
+  sprintf (next, "\n");
+
+  return str;
 }
 
 gchar *

@@ -29,7 +29,7 @@
 
 extern int debug_level;
 
-void debug_print_hex_msg (const GByteArray *);
+char *debug_get_hex_msg (const GByteArray *);
 
 char *chain_path (const char *, const char *);
 
