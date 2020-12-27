@@ -24,6 +24,7 @@
 #include "utils.h"
 
 #define DEBUG_SHORT_HEX_LEN 16
+#define DEBUG_FULL_HEX_THRES 1
 
 #define REG_TYPE "emblem-music-symbolic"
 #define DIR_TYPE "folder-visiting-symbolic"
@@ -35,7 +36,7 @@ get_max_message_length (guint msg_len)
 {
   guint len;
 
-  if (debug_level > 1)
+  if (debug_level > DEBUG_FULL_HEX_THRES)
     {
       len = msg_len;
     }
@@ -50,7 +51,7 @@ get_max_message_length (guint msg_len)
 static void
 print_dots_if_needed (guint msg_len)
 {
-  if (debug_level == 1 && msg_len > DEBUG_SHORT_HEX_LEN)
+  if (debug_level == DEBUG_FULL_HEX_THRES && msg_len > DEBUG_SHORT_HEX_LEN)
     {
       debug_print (1, "...");
     }
