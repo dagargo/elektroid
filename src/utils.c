@@ -30,12 +30,6 @@
 
 int debug_level;
 
-static gchar
-connector_get_printable_char (gchar c)
-{
-  return c >= 0x20 && c < 0x80 ? c : '.';
-}
-
 static guint
 get_max_message_length (guint msg_len)
 {
@@ -60,22 +54,6 @@ print_dots_if_needed (guint msg_len)
     {
       debug_print (1, "...");
     }
-}
-
-void
-debug_print_ascii_msg (const GByteArray * msg)
-{
-  gint i = 0;
-  guint8 *data = msg->data;
-
-  while (i < get_max_message_length (msg->len))
-    {
-      debug_print (1, "%c", connector_get_printable_char (*data));
-      data++;
-      i++;
-    }
-  print_dots_if_needed (msg->len);
-  debug_print (1, "\n");
 }
 
 void

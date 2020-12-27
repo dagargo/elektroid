@@ -29,8 +29,6 @@
 
 extern int debug_level;
 
-void print_ascii_msg (const GByteArray *);
-
 void debug_print_hex_msg (const GByteArray *);
 
 char *chain_path (const char *, const char *);
