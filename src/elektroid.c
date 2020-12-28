@@ -358,6 +358,16 @@ elektroid_rx_sysex_thread (gpointer data)
   return msg;
 }
 
+static gboolean
+elektroid_start_rx_thread (gpointer data)
+{
+  debug_print (1, "Creating rx SysEx thread...\n");
+  sysex_thread =
+    g_thread_new ("sysex_thread", elektroid_rx_sysex_thread, NULL);
+
+  return FALSE;
+}
+
 static void
 elektroid_rx_sysex (GtkWidget * object, gpointer data)
 {
@@ -372,11 +382,9 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   GByteArray *sysex_data;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
-  debug_print (1, "Creating rx SysEx thread...\n");
-  sysex_thread =
-    g_thread_new ("sysex_thread", elektroid_rx_sysex_thread, NULL);
-  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
+  g_idle_add (elektroid_start_rx_thread, NULL);
 
+  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
   res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
   transfer.active = FALSE;
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
@@ -479,6 +487,15 @@ elektroid_tx_sysex_thread (gpointer data)
   return response;
 }
 
+static gboolean
+elektroid_start_tx_thread (gpointer data)
+{
+  debug_print (1, "Creating tx SysEx thread...\n");
+  sysex_thread = g_thread_new ("sysex_thread", data, NULL);
+
+  return FALSE;
+}
+
 static void
 elektroid_tx_sysex_common (GThreadFunc tx_function)
 {
@@ -522,8 +539,7 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
       fread (transfer.data->data, size, 1, file);
       fclose (file);
 
-      debug_print (1, "Creating tx SysEx thread...\n");
-      sysex_thread = g_thread_new ("sysex_thread", tx_function, NULL);
+      g_idle_add (elektroid_start_tx_thread, tx_function);
 
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Send SysEx"));
       res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
