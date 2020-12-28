@@ -309,10 +309,8 @@ static gboolean
 elektroid_update_sysex_progress (gpointer data)
 {
   gchar *text;
-  struct connector_sysex_transfer *transfer =
-    (struct connector_sysex_transfer *) data;
 
-  switch (transfer->status)
+  switch (transfer.status)
     {
     case WAITING:
       text = _("Waiting...");
@@ -330,7 +328,7 @@ elektroid_update_sysex_progress (gpointer data)
     }
   gtk_label_set_text (GTK_LABEL (progress_label), text);
 
-  return transfer->active;
+  return transfer.active;
 }
 
 static gpointer
@@ -339,7 +337,7 @@ elektroid_rx_sysex_thread (gpointer data)
   gchar *text;
   GByteArray *msg;
 
-  g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
+  g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
   transfer.status = WAITING;
   transfer.active = TRUE;
@@ -376,7 +374,7 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
 
   debug_print (1, "Creating rx SysEx thread...\n");
   sysex_thread =
-    g_thread_new ("sysex_thread", elektroid_rx_sysex_thread, &transfer);
+    g_thread_new ("sysex_thread", elektroid_rx_sysex_thread, NULL);
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
 
   res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
@@ -462,7 +460,7 @@ elektroid_tx_sysex_thread (gpointer data)
   gchar *text;
   gint *response = malloc (sizeof (gint));
 
-  g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
+  g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
   transfer.active = TRUE;
   transfer.timeout = SYSEX_TIMEOUT;
@@ -525,7 +523,7 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
       fclose (file);
 
       debug_print (1, "Creating tx SysEx thread...\n");
-      sysex_thread = g_thread_new ("sysex_thread", tx_function, &transfer);
+      sysex_thread = g_thread_new ("sysex_thread", tx_function, NULL);
 
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Send SysEx"));
       res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
@@ -556,11 +554,16 @@ static gpointer
 elektroid_os_upgrade_thread (gpointer data)
 {
   gint *response = malloc (sizeof (gint));
-  g_timeout_add (100, elektroid_update_sysex_progress, &transfer);
+
+  g_timeout_add (100, elektroid_update_sysex_progress, NULL);
+
   transfer.active = TRUE;
   transfer.timeout = SYSEX_TIMEOUT;
+
   *response = connector_upgrade_os (&connector, &transfer);
+
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
+
   return response;
 }
 
