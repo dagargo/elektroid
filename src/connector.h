@@ -68,6 +68,11 @@ struct connector_sysex_transfer
   gboolean batch;
 };
 
+struct connector_sample_transfer
+{
+  gboolean active;
+};
+
 gint connector_init (struct connector *, gint);
 
 void connector_destroy (struct connector *);
@@ -87,12 +92,13 @@ gint connector_delete_file (struct connector *, const gchar *);
 
 gint connector_delete_dir (struct connector *, const gchar *);
 
-GArray *connector_download (struct connector *, const gchar *, gint *,
+GArray *connector_download (struct connector *, const gchar *,
+			    struct connector_sample_transfer *,
 			    void (*)(gdouble));
 
 ssize_t
-connector_upload (struct connector *, GArray *, gchar *, gboolean *,
-		  void (*)(gdouble));
+connector_upload (struct connector *, GArray *, gchar *,
+		  struct connector_sample_transfer *, void (*)(gdouble));
 
 void connector_get_sample_info_from_msg (GByteArray *, gint *, guint *);
 

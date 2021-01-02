@@ -29,7 +29,7 @@
 #include "utils.h"
 
 static struct connector connector;
-static int running;
+static struct connector_sample_transfer sample_transfer;
 
 static gchar *
 cli_get_path (gchar * device_path)
@@ -263,8 +263,8 @@ cli_download (int argc, char *argv[], int optind)
 
   path_src = cli_get_path (device_path_src);
 
-  running = 1;
-  data = connector_download (&connector, path_src, &running, NULL);
+  sample_transfer.active = TRUE;
+  data = connector_download (&connector, path_src, &sample_transfer, NULL);
   if (data == NULL)
     {
       return EXIT_FAILURE;
@@ -335,8 +335,9 @@ cli_upload (int argc, char *argv[], int optind)
       goto cleanup;
     }
 
-  running = 1;
-  frames = connector_upload (&connector, sample, path_dst, &running, NULL);
+  sample_transfer.active = TRUE;
+  frames =
+    connector_upload (&connector, sample, path_dst, &sample_transfer, NULL);
 
   res = frames < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
@@ -378,7 +379,7 @@ cli_info (int argc, char *argv[], int optind)
 static void
 cli_end (int sig)
 {
-  running = 0;
+  sample_transfer.active = FALSE;
 }
 
 int

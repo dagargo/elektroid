@@ -69,7 +69,7 @@ enum elektroid_task_status
 
 struct elektroid_sample_transfer
 {
-  gboolean active;
+  struct connector_sample_transfer transfer;
   gchar *src;			//Contains a path to a file
   gchar *dst;			//Contains a path to a dir
   enum elektroid_task_status status;	//Contains the final status
@@ -936,7 +936,7 @@ static void
 elektroid_stop_task_thread ()
 {
   debug_print (1, "Stopping task thread...\n");
-  sample_transfer.active = FALSE;
+  sample_transfer.transfer.active = FALSE;
   elektroid_join_task_thread ();
 }
 
@@ -1570,7 +1570,7 @@ elektroid_get_human_task_type (enum elektroid_task_type type)
 static void
 elektroid_cancel_running_task (GtkWidget * object, gpointer data)
 {
-  sample_transfer.active = FALSE;
+  sample_transfer.transfer.active = FALSE;
 }
 
 static gboolean
@@ -1676,7 +1676,7 @@ elektroid_complete_running_task (gpointer data)
 			  TASK_LIST_STORE_STATUS_FIELD,
 			  sample_transfer.status,
 			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status, -1);
-      sample_transfer.active = FALSE;
+      sample_transfer.transfer.active = FALSE;
       g_free (sample_transfer.src);
       g_free (sample_transfer.dst);
 
@@ -1701,7 +1701,7 @@ elektroid_run_next_task (gpointer data)
   gboolean found = elektroid_get_next_queued_task (&iter, &type, &src, &dst);
   const gchar *status_human = elektroid_get_human_task_status (RUNNING);
 
-  if (!sample_transfer.active && found)
+  if (!sample_transfer.transfer.active && found)
     {
       gtk_list_store_set (task_list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, RUNNING,
@@ -1712,7 +1712,7 @@ elektroid_run_next_task (gpointer data)
       gtk_tree_view_set_cursor (GTK_TREE_VIEW (task_tree_view), path, NULL,
 				FALSE);
       gtk_tree_path_free (path);
-      sample_transfer.active = TRUE;
+      sample_transfer.transfer.active = TRUE;
       sample_transfer.src = src;
       sample_transfer.dst = dst;
       debug_print (1, "Running task type %d from %s to %s...\n", type,
@@ -1764,10 +1764,10 @@ elektroid_upload_task (gpointer data)
   sample = g_array_new (FALSE, FALSE, sizeof (gshort));
 
   sample_load (sample, NULL, NULL, sample_transfer.src,
-	       &sample_transfer.active, NULL);
+	       &sample_transfer.transfer.active, NULL);
 
   frames = connector_upload (&connector, sample, remote_path,
-			     &sample_transfer.active,
+			     &sample_transfer.transfer,
 			     elektroid_update_progress);
   free (remote_path);
 
@@ -1778,7 +1778,7 @@ elektroid_upload_task (gpointer data)
     }
   else
     {
-      if (sample_transfer.active)
+      if (sample_transfer.transfer.active)
 	{
 	  sample_transfer.status = COMPLETED_OK;
 	}
@@ -1963,7 +1963,7 @@ elektroid_download_task (gpointer data)
 
   sample =
     connector_download (&connector, sample_transfer.src,
-			&sample_transfer.active, elektroid_update_progress);
+			&sample_transfer.transfer, elektroid_update_progress);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
   if (sample == NULL)
@@ -1973,7 +1973,7 @@ elektroid_download_task (gpointer data)
     }
   else
     {
-      if (sample_transfer.active)
+      if (sample_transfer.transfer.active)
 	{
 	  debug_print (1, "Writing to file '%s'...\n", local_path);
 	  frames = sample_save (sample, local_path);

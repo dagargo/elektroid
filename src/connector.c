@@ -1015,7 +1015,7 @@ connector_create_upload (struct connector *connector, const gchar * path,
 
 ssize_t
 connector_upload (struct connector *connector, GArray * sample,
-		  gchar * path, gboolean * running,
+		  gchar * path, struct connector_sample_transfer *transfer,
 		  void (*progress) (gdouble))
 {
   GByteArray *tx_msg;
@@ -1024,6 +1024,7 @@ connector_upload (struct connector *connector, GArray * sample,
   gshort *data;
   gint id;
   int i;
+  gboolean active;
 
   //TODO: check if the file already exists? (Device makes no difference between creating a new file and creating an already existent file. The new file would be deleted if an upload is not sent, though.)
   //TODO: limit sample upload?
@@ -1037,7 +1038,8 @@ connector_upload (struct connector *connector, GArray * sample,
   data = (gshort *) sample->data;
   transferred = 0;
   i = 0;
-  while (transferred < sample->len && (!running || *running))
+  active = (!transfer || transfer->active);
+  while (transferred < sample->len && active)
     {
       if (progress)
 	{
@@ -1058,11 +1060,12 @@ connector_upload (struct connector *connector, GArray * sample,
 	}
       free_msg (rx_msg);
       i++;
+      active = (!transfer || transfer->active);
     }
 
   debug_print (2, "%zu frames sent\n", transferred);
 
-  if (!running || *running)
+  if (active)
     {
       if (progress)
 	{
@@ -1088,7 +1091,8 @@ connector_upload (struct connector *connector, GArray * sample,
 
 GArray *
 connector_download (struct connector *connector, const gchar * path,
-		    gboolean * running, void (*progress) (gdouble))
+		    struct connector_sample_transfer *transfer,
+		    void (*progress) (gdouble))
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -1101,6 +1105,7 @@ connector_download (struct connector *connector, const gchar * path,
   int16_t v;
   int16_t *frame;
   int i;
+  gboolean active;
   GArray *result = NULL;
   gchar *path_cp1252 =
     g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
@@ -1131,7 +1136,8 @@ connector_download (struct connector *connector, const gchar * path,
 
   next_block_start = 0;
   offset = 64;
-  while (next_block_start < frames && (!running || *running))
+  active = (!transfer || transfer->active);
+  while (next_block_start < frames && active)
     {
       if (progress)
 	{
@@ -1155,11 +1161,12 @@ connector_download (struct connector *connector, const gchar * path,
 
       next_block_start += req_size;
       offset = 0;
+      active = (!transfer || transfer->active);
     }
 
   debug_print (2, "%d bytes received\n", next_block_start);
 
-  if (!running || *running)
+  if (active)
     {
       if (progress)
 	{
