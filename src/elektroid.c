@@ -67,9 +67,9 @@ enum elektroid_task_status
   CANCELED
 };
 
-struct elektroid_active_task
+struct elektroid_sample_transfer
 {
-  gboolean running;
+  gboolean active;
   gchar *src;			//Contains a path to a file
   gchar *dst;			//Contains a path to a dir
   enum elektroid_task_status status;	//Contains the final status
@@ -86,9 +86,9 @@ static gboolean autoplay;
 static GThread *load_thread = NULL;
 static GThread *task_thread = NULL;
 static GThread *sysex_thread = NULL;
-static gboolean load_thread_running;
-static struct elektroid_active_task active_task;
-static struct connector_sysex_transfer transfer;
+static gboolean load_thread_active;
+static struct elektroid_sample_transfer sample_transfer;
+static struct connector_sysex_transfer sysex_transfer;
 
 static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
@@ -287,14 +287,14 @@ elektroid_join_sysex_thread ()
 static void
 elektroid_stop_sysex_thread ()
 {
-  transfer.active = FALSE;
+  sysex_transfer.active = FALSE;
   elektroid_join_sysex_thread ();
 }
 
 static void
 elektroid_progress_dialog_end (gpointer data)
 {
-  transfer.active = FALSE;
+  sysex_transfer.active = FALSE;
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
 }
 
@@ -302,7 +302,7 @@ static void
 elektroid_progress_dialog_response (GtkDialog * dialog, gint response_id,
 				    gpointer data)
 {
-  transfer.active = FALSE;
+  sysex_transfer.active = FALSE;
 }
 
 static gboolean
@@ -310,7 +310,7 @@ elektroid_update_sysex_progress (gpointer data)
 {
   gchar *text;
 
-  switch (transfer.status)
+  switch (sysex_transfer.status)
     {
     case WAITING:
       text = _("Waiting...");
@@ -328,7 +328,7 @@ elektroid_update_sysex_progress (gpointer data)
     }
   gtk_label_set_text (GTK_LABEL (progress_label), text);
 
-  return transfer.active;
+  return sysex_transfer.active;
 }
 
 static gpointer
@@ -339,13 +339,13 @@ elektroid_rx_sysex_thread (gpointer data)
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
-  transfer.status = WAITING;
-  transfer.active = TRUE;
-  transfer.timeout = DUMP_TIMEOUT;
-  transfer.batch = TRUE;
+  sysex_transfer.status = WAITING;
+  sysex_transfer.active = TRUE;
+  sysex_transfer.timeout = DUMP_TIMEOUT;
+  sysex_transfer.batch = TRUE;
 
   connector_rx_drain (&connector);
-  msg = connector_rx_sysex (&connector, &transfer);
+  msg = connector_rx_sysex (&connector, &sysex_transfer);
   if (msg)
     {
       text = debug_get_hex_msg (msg);
@@ -386,7 +386,7 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
 
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
   res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
-  transfer.active = FALSE;
+  sysex_transfer.active = FALSE;
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
   sysex_data = elektroid_join_sysex_thread ();
@@ -470,14 +470,14 @@ elektroid_tx_sysex_thread (gpointer data)
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
-  transfer.active = TRUE;
-  transfer.timeout = SYSEX_TIMEOUT;
+  sysex_transfer.active = TRUE;
+  sysex_transfer.timeout = SYSEX_TIMEOUT;
 
-  *response = connector_tx_sysex (&connector, &transfer);
+  *response = connector_tx_sysex (&connector, &sysex_transfer);
   if (*response >= 0)
     {
-      text = debug_get_hex_msg (transfer.data);
-      debug_print (1, "SysEx message sent (%d): %s", transfer.data->len,
+      text = debug_get_hex_msg (sysex_transfer.data);
+      debug_print (1, "SysEx message sent (%d): %s", sysex_transfer.data->len,
 		   text);
       free (text);
     }
@@ -534,20 +534,20 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
       size = ftell (file);
       rewind (file);
 
-      transfer.data = g_byte_array_new ();
-      g_byte_array_set_size (transfer.data, size);
-      fread (transfer.data->data, size, 1, file);
+      sysex_transfer.data = g_byte_array_new ();
+      g_byte_array_set_size (sysex_transfer.data, size);
+      fread (sysex_transfer.data->data, size, 1, file);
       fclose (file);
 
       g_idle_add (elektroid_start_tx_thread, tx_function);
 
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Send SysEx"));
       res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
-      transfer.active = FALSE;
+      sysex_transfer.active = FALSE;
       gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
       response = elektroid_join_sysex_thread ();
-      g_byte_array_free (transfer.data, TRUE);
+      g_byte_array_free (sysex_transfer.data, TRUE);
 
       if (*response < 0)
 	{
@@ -573,10 +573,10 @@ elektroid_os_upgrade_thread (gpointer data)
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
-  transfer.active = TRUE;
-  transfer.timeout = SYSEX_TIMEOUT;
+  sysex_transfer.active = TRUE;
+  sysex_transfer.timeout = SYSEX_TIMEOUT;
 
-  *response = connector_upgrade_os (&connector, &transfer);
+  *response = connector_upgrade_os (&connector, &sysex_transfer);
 
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
 
@@ -610,7 +610,7 @@ elektroid_controls_set_sensitive (gboolean sensitive)
 static gboolean
 elektroid_update_ui_on_load (gpointer data)
 {
-  if (audio.sample->len >= LOAD_BUFFER_LEN || !load_thread_running)
+  if (audio.sample->len >= LOAD_BUFFER_LEN || !load_thread_active)
     {
       if (audio_check (&audio))
 	{
@@ -883,8 +883,8 @@ static gpointer
 elektroid_load_sample (gpointer path)
 {
   sample_load (audio.sample, &audio.mutex, &audio.frames, path,
-	       &load_thread_running, elektroid_redraw_sample);
-  load_thread_running = FALSE;
+	       &load_thread_active, elektroid_redraw_sample);
+  load_thread_active = FALSE;
   free (path);
   return NULL;
 }
@@ -893,7 +893,7 @@ static void
 elektroid_start_load_thread (gchar * path)
 {
   debug_print (1, "Creating load thread...\n");
-  load_thread_running = TRUE;
+  load_thread_active = TRUE;
   g_timeout_add (100, elektroid_update_ui_on_load, NULL);
   load_thread = g_thread_new ("load_sample", elektroid_load_sample, path);
 }
@@ -902,7 +902,7 @@ static void
 elektroid_stop_load_thread ()
 {
   debug_print (1, "Stopping load thread...\n");
-  load_thread_running = FALSE;
+  load_thread_active = FALSE;
   if (load_thread)
     {
       g_thread_join (load_thread);
@@ -927,7 +927,7 @@ static void
 elektroid_stop_task_thread ()
 {
   debug_print (1, "Stopping task thread...\n");
-  active_task.running = FALSE;
+  sample_transfer.active = FALSE;
   elektroid_join_task_thread ();
 }
 
@@ -1561,7 +1561,7 @@ elektroid_get_human_task_type (enum elektroid_task_type type)
 static void
 elektroid_cancel_running_task (GtkWidget * object, gpointer data)
 {
-  active_task.running = FALSE;
+  sample_transfer.active = FALSE;
 }
 
 static gboolean
@@ -1658,16 +1658,18 @@ static gboolean
 elektroid_complete_running_task (gpointer data)
 {
   GtkTreeIter iter;
-  const gchar *status = elektroid_get_human_task_status (active_task.status);
+  const gchar *status =
+    elektroid_get_human_task_status (sample_transfer.status);
 
   if (elektroid_get_running_task (&iter))
     {
       gtk_list_store_set (task_list_store, &iter,
-			  TASK_LIST_STORE_STATUS_FIELD, active_task.status,
+			  TASK_LIST_STORE_STATUS_FIELD,
+			  sample_transfer.status,
 			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status, -1);
-      active_task.running = FALSE;
-      g_free (active_task.src);
-      g_free (active_task.dst);
+      sample_transfer.active = FALSE;
+      g_free (sample_transfer.src);
+      g_free (sample_transfer.dst);
 
       gtk_widget_set_sensitive (cancel_task_button, FALSE);
     }
@@ -1690,7 +1692,7 @@ elektroid_run_next_task (gpointer data)
   gboolean found = elektroid_get_next_queued_task (&iter, &type, &src, &dst);
   const gchar *status_human = elektroid_get_human_task_status (RUNNING);
 
-  if (!active_task.running && found)
+  if (!sample_transfer.active && found)
     {
       gtk_list_store_set (task_list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, RUNNING,
@@ -1701,12 +1703,12 @@ elektroid_run_next_task (gpointer data)
       gtk_tree_view_set_cursor (GTK_TREE_VIEW (task_tree_view), path, NULL,
 				FALSE);
       gtk_tree_path_free (path);
-      active_task.running = TRUE;
-      active_task.src = src;
-      active_task.dst = dst;
-      active_task.progress = 0.0;
+      sample_transfer.active = TRUE;
+      sample_transfer.src = src;
+      sample_transfer.dst = dst;
+      sample_transfer.progress = 0.0;
       debug_print (1, "Running task type %d from %s to %s...\n", type,
-		   active_task.src, active_task.dst);
+		   sample_transfer.src, sample_transfer.dst);
       if (type == UPLOAD)
 	{
 	  task_thread =
@@ -1741,39 +1743,40 @@ elektroid_upload_task (gpointer data)
   ssize_t frames;
   GArray *sample;
 
-  debug_print (1, "Local path: %s\n", active_task.src);
+  debug_print (1, "Local path: %s\n", sample_transfer.src);
 
-  basec = strdup (active_task.src);
+  basec = strdup (sample_transfer.src);
   bname = basename (basec);
   remove_ext (bname);
-  remote_path = chain_path (active_task.dst, bname);
+  remote_path = chain_path (sample_transfer.dst, bname);
   free (basec);
 
   debug_print (1, "Remote path: %s\n", remote_path);
 
   sample = g_array_new (FALSE, FALSE, sizeof (gshort));
 
-  sample_load (sample, NULL, NULL, active_task.src, &active_task.running,
-	       NULL);
+  sample_load (sample, NULL, NULL, sample_transfer.src,
+	       &sample_transfer.active, NULL);
 
   frames = connector_upload (&connector, sample, remote_path,
-			     &active_task.running, elektroid_update_progress);
+			     &sample_transfer.active,
+			     elektroid_update_progress);
   free (remote_path);
 
   if (frames < 0)
     {
       fprintf (stderr, __FILE__ ": Error while uploading\n");
-      active_task.status = COMPLETED_ERROR;
+      sample_transfer.status = COMPLETED_ERROR;
     }
   else
     {
-      if (active_task.running)
+      if (sample_transfer.active)
 	{
-	  active_task.status = COMPLETED_OK;
+	  sample_transfer.status = COMPLETED_OK;
 	}
       else
 	{
-	  active_task.status = CANCELED;
+	  sample_transfer.status = CANCELED;
 	}
     }
 
@@ -1781,7 +1784,7 @@ elektroid_upload_task (gpointer data)
 
   g_array_free (sample, TRUE);
 
-  if (strcmp (active_task.dst, remote_browser.dir) == 0)
+  if (strcmp (sample_transfer.dst, remote_browser.dir) == 0)
     {
       g_idle_add (remote_browser.load_dir, NULL);
     }
@@ -1938,45 +1941,45 @@ elektroid_download_task (gpointer data)
   gchar *bname;
   gchar *new_filename;
 
-  debug_print (1, "Remote path: %s\n", active_task.src);
+  debug_print (1, "Remote path: %s\n", sample_transfer.src);
 
-  basec = strdup (active_task.src);
+  basec = strdup (sample_transfer.src);
   bname = basename (basec);
   new_filename = malloc (PATH_MAX);
   snprintf (new_filename, PATH_MAX, "%s.wav", bname);
   free (basec);
-  local_path = chain_path (active_task.dst, new_filename);
+  local_path = chain_path (sample_transfer.dst, new_filename);
   free (new_filename);
 
   debug_print (1, "Local path: %s\n", local_path);
 
   sample =
-    connector_download (&connector, active_task.src, &active_task.running,
-			elektroid_update_progress);
+    connector_download (&connector, sample_transfer.src,
+			&sample_transfer.active, elektroid_update_progress);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
   if (sample == NULL)
     {
       fprintf (stderr, __FILE__ ": Error while downloading\n");
-      active_task.status = COMPLETED_ERROR;
+      sample_transfer.status = COMPLETED_ERROR;
     }
   else
     {
-      if (active_task.running)
+      if (sample_transfer.active)
 	{
 	  debug_print (1, "Writing to file '%s'...\n", local_path);
 	  frames = sample_save (sample, local_path);
 	  debug_print (1, "%zu frames written\n", frames);
 	  free (local_path);
 
-	  active_task.status = COMPLETED_OK;
+	  sample_transfer.status = COMPLETED_OK;
 	}
       else
 	{
-	  active_task.status = CANCELED;
+	  sample_transfer.status = CANCELED;
 	}
       g_array_free (sample, TRUE);
-      if (strcmp (active_task.dst, local_browser.dir) == 0)
+      if (strcmp (sample_transfer.dst, local_browser.dir) == 0)
 	{
 	  g_idle_add (local_browser.load_dir, NULL);
 	}
@@ -2103,7 +2106,7 @@ elektroid_set_progress_value (gpointer data)
     {
       gtk_list_store_set (task_list_store, &iter,
 			  TASK_LIST_STORE_PROGRESS_FIELD,
-			  100.0 * active_task.progress, -1);
+			  100.0 * sample_transfer.progress, -1);
     }
 
   return FALSE;
@@ -2112,7 +2115,7 @@ elektroid_set_progress_value (gpointer data)
 static void
 elektroid_update_progress (gdouble progress)
 {
-  active_task.progress = progress;
+  sample_transfer.progress = progress;
   g_idle_add (elektroid_set_progress_value, NULL);
 }
 

@@ -74,7 +74,7 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
 
 size_t
 sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
-	     gboolean * running, void (*progress) (gdouble))
+	     gboolean * active, void (*progress) (gdouble))
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -144,7 +144,7 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
   debug_print (2, "Loading sample (%" PRId64 ")...\n", sf_info.frames);
 
   f = 0;
-  while (f < sf_info.frames && (!running || *running))
+  while (f < sf_info.frames && (!active || *active))
     {
       debug_print (2, "Loading buffer...\n");
 
@@ -224,7 +224,7 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
 	       src_strerror (err));
     }
 
-  if (running && !*running)
+  if (active && !*active)
     {
       if (mutex)
 	{
@@ -237,7 +237,7 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
 	}
     }
 
-  if (running && *running && progress)
+  if (active && *active && progress)
     {
       progress (1.0);
     }
