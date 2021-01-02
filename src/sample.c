@@ -88,6 +88,7 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
   int err;
   int resampled_buffer_len;
   int f, frames_read;
+  gboolean load_active;
 
   debug_print (1, "Loading file %s...\n", path);
 
@@ -144,7 +145,16 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
   debug_print (2, "Loading sample (%" PRId64 ")...\n", sf_info.frames);
 
   f = 0;
-  while (f < sf_info.frames && (!active || *active))
+  if (mutex)
+    {
+      g_mutex_lock (mutex);
+    }
+  load_active = (!active || *active);
+  if (mutex)
+    {
+      g_mutex_unlock (mutex);
+    }
+  while (f < sf_info.frames && load_active)
     {
       debug_print (2, "Loading buffer...\n");
 
@@ -214,6 +224,15 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
 	  progress (f * 1.0 / sf_info.frames);
 	}
 
+      if (mutex)
+	{
+	  g_mutex_lock (mutex);
+	}
+      load_active = (!active || *active);
+      if (mutex)
+	{
+	  g_mutex_unlock (mutex);
+	}
     }
 
   src_delete (src_state);
@@ -224,22 +243,24 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
 	       src_strerror (err));
     }
 
-  if (active && !*active)
+  if (mutex)
     {
-      if (mutex)
+      g_mutex_lock (mutex);
+    }
+  if (!active || *active)
+    {
+      if (progress)
 	{
-	  g_mutex_lock (mutex);
-	}
-      g_array_set_size (sample, 0);
-      if (mutex)
-	{
-	  g_mutex_unlock (mutex);
+	  progress (1.0);
 	}
     }
-
-  if (active && *active && progress)
+  else
     {
-      progress (1.0);
+      g_array_set_size (sample, 0);
+    }
+  if (mutex)
+    {
+      g_mutex_unlock (mutex);
     }
 
 cleanup:

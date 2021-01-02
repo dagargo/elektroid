@@ -1038,7 +1038,9 @@ connector_upload (struct connector *connector, GArray * sample,
   data = (gshort *) sample->data;
   transferred = 0;
   i = 0;
+  g_mutex_lock (&transfer->mutex);
   active = (!transfer || transfer->active);
+  g_mutex_unlock (&transfer->mutex);
   while (transferred < sample->len && active)
     {
       if (progress)
@@ -1060,7 +1062,9 @@ connector_upload (struct connector *connector, GArray * sample,
 	}
       free_msg (rx_msg);
       i++;
+      g_mutex_lock (&transfer->mutex);
       active = (!transfer || transfer->active);
+      g_mutex_unlock (&transfer->mutex);
     }
 
   debug_print (2, "%zu frames sent\n", transferred);
@@ -1136,7 +1140,9 @@ connector_download (struct connector *connector, const gchar * path,
 
   next_block_start = 0;
   offset = 64;
+  g_mutex_lock (&transfer->mutex);
   active = (!transfer || transfer->active);
+  g_mutex_unlock (&transfer->mutex);
   while (next_block_start < frames && active)
     {
       if (progress)
@@ -1161,7 +1167,9 @@ connector_download (struct connector *connector, const gchar * path,
 
       next_block_start += req_size;
       offset = 0;
+      g_mutex_lock (&transfer->mutex);
       active = (!transfer || transfer->active);
+      g_mutex_unlock (&transfer->mutex);
     }
 
   debug_print (2, "%d bytes received\n", next_block_start);

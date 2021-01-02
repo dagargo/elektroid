@@ -71,6 +71,7 @@ struct connector_sysex_transfer
 struct connector_sample_transfer
 {
   gboolean active;
+  GMutex mutex;
 };
 
 gint connector_init (struct connector *, gint);
