@@ -289,32 +289,40 @@ elektroid_join_sysex_thread ()
 }
 
 static void
+elektroid_cancel_running_sysex (GtkDialog * dialog, gint response_id,
+				gpointer data)
+{
+  g_mutex_lock (&sysex_transfer.transfer.mutex);
+  sysex_transfer.transfer.active = FALSE;
+  g_mutex_unlock (&sysex_transfer.transfer.mutex);
+}
+
+static void
 elektroid_stop_sysex_thread ()
 {
-  sysex_transfer.transfer.active = FALSE;
+  elektroid_cancel_running_sysex (NULL, 0, NULL);
   elektroid_join_sysex_thread ();
 }
 
 static void
 elektroid_progress_dialog_end (gpointer data)
 {
-  sysex_transfer.transfer.active = FALSE;
+  elektroid_cancel_running_sysex (NULL, 0, NULL);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
-}
-
-static void
-elektroid_progress_dialog_response (GtkDialog * dialog, gint response_id,
-				    gpointer data)
-{
-  sysex_transfer.transfer.active = FALSE;
 }
 
 static gboolean
 elektroid_update_sysex_progress (gpointer data)
 {
   gchar *text;
+  gboolean active;
+  enum connector_sysex_transfer_status status;
 
-  switch (sysex_transfer.transfer.status)
+  g_mutex_lock (&sysex_transfer.transfer.mutex);
+  status = sysex_transfer.transfer.status;
+  g_mutex_unlock (&sysex_transfer.transfer.mutex);
+
+  switch (status)
     {
     case WAITING:
       text = _("Waiting...");
@@ -332,7 +340,11 @@ elektroid_update_sysex_progress (gpointer data)
     }
   gtk_label_set_text (GTK_LABEL (progress_label), text);
 
-  return sysex_transfer.transfer.active;
+  g_mutex_lock (&sysex_transfer.transfer.mutex);
+  active = sysex_transfer.transfer.active;
+  g_mutex_unlock (&sysex_transfer.transfer.mutex);
+
+  return active;
 }
 
 static gpointer
@@ -341,12 +353,12 @@ elektroid_rx_sysex_thread (gpointer data)
   gchar *text;
   GByteArray *msg;
 
-  g_timeout_add (100, elektroid_update_sysex_progress, NULL);
-
   sysex_transfer.transfer.status = WAITING;
   sysex_transfer.transfer.active = TRUE;
   sysex_transfer.transfer.timeout = DUMP_TIMEOUT;
   sysex_transfer.transfer.batch = TRUE;
+
+  g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
   connector_rx_drain (&connector);
   msg = connector_rx_sysex (&connector, &sysex_transfer.transfer);
@@ -472,10 +484,10 @@ elektroid_tx_sysex_thread (gpointer data)
   gchar *text;
   gint *response = malloc (sizeof (gint));
 
-  g_timeout_add (100, elektroid_update_sysex_progress, NULL);
-
   sysex_transfer.transfer.active = TRUE;
   sysex_transfer.transfer.timeout = SYSEX_TIMEOUT;
+
+  g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
   *response =
     connector_tx_sysex (&connector, sysex_transfer.data,
@@ -549,7 +561,11 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
 
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Send SysEx"));
       res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
+
+      g_mutex_lock (&sysex_transfer.transfer.mutex);
       sysex_transfer.transfer.active = FALSE;
+      g_mutex_unlock (&sysex_transfer.transfer.mutex);
+
       gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
       response = elektroid_join_sysex_thread ();
@@ -577,10 +593,10 @@ elektroid_os_upgrade_thread (gpointer data)
 {
   gint *response = malloc (sizeof (gint));
 
-  g_timeout_add (100, elektroid_update_sysex_progress, NULL);
-
   sysex_transfer.transfer.active = TRUE;
   sysex_transfer.transfer.timeout = SYSEX_TIMEOUT;
+
+  g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
   *response =
     connector_upgrade_os (&connector, sysex_transfer.data,
@@ -2377,7 +2393,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (progress_dialog_cancel_button, "clicked",
 		    G_CALLBACK (elektroid_progress_dialog_end), NULL);
   g_signal_connect (progress_dialog, "response",
-		    G_CALLBACK (elektroid_progress_dialog_response), NULL);
+		    G_CALLBACK (elektroid_cancel_running_sysex), NULL);
 
   g_signal_connect (rx_sysex_button, "clicked",
 		    G_CALLBACK (elektroid_rx_sysex), NULL);

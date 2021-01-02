@@ -66,6 +66,7 @@ struct connector_sysex_transfer
   enum connector_sysex_transfer_status status;
   gint timeout;			//Measured in ms. -1 is infinite.
   gboolean batch;
+  GMutex mutex;
 };
 
 struct connector_sample_transfer
