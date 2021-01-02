@@ -73,7 +73,6 @@ struct elektroid_sample_transfer
   gchar *src;			//Contains a path to a file
   gchar *dst;			//Contains a path to a dir
   enum elektroid_task_status status;	//Contains the final status
-  gdouble progress;
 };
 
 static struct browser remote_browser;
@@ -1706,7 +1705,6 @@ elektroid_run_next_task (gpointer data)
       sample_transfer.active = TRUE;
       sample_transfer.src = src;
       sample_transfer.dst = dst;
-      sample_transfer.progress = 0.0;
       debug_print (1, "Running task type %d from %s to %s...\n", type,
 		   sample_transfer.src, sample_transfer.dst);
       if (type == UPLOAD)
@@ -2101,13 +2099,16 @@ static gboolean
 elektroid_set_progress_value (gpointer data)
 {
   GtkTreeIter iter;
+  gdouble *value = data;
 
   if (elektroid_get_running_task (&iter))
     {
       gtk_list_store_set (task_list_store, &iter,
 			  TASK_LIST_STORE_PROGRESS_FIELD,
-			  100.0 * sample_transfer.progress, -1);
+			  100.0 * (*value), -1);
     }
+
+  free (data);
 
   return FALSE;
 }
@@ -2115,8 +2116,9 @@ elektroid_set_progress_value (gpointer data)
 static void
 elektroid_update_progress (gdouble progress)
 {
-  sample_transfer.progress = progress;
-  g_idle_add (elektroid_set_progress_value, NULL);
+  gdouble *value = malloc (sizeof (gdouble));
+  *value = progress;
+  g_idle_add (elektroid_set_progress_value, value);
 }
 
 static gboolean
