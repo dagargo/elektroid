@@ -75,6 +75,12 @@ struct elektroid_sample_transfer
   enum elektroid_task_status status;	//Contains the final status
 };
 
+struct elektroid_sysex_transfer
+{
+  struct connector_sysex_transfer transfer;
+  GByteArray *data;
+};
+
 static struct browser remote_browser;
 static struct browser local_browser;
 
@@ -87,7 +93,7 @@ static GThread *task_thread = NULL;
 static GThread *sysex_thread = NULL;
 static gboolean load_thread_active;
 static struct elektroid_sample_transfer sample_transfer;
-static struct connector_sysex_transfer sysex_transfer;
+static struct elektroid_sysex_transfer sysex_transfer;
 
 static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
@@ -286,14 +292,14 @@ elektroid_join_sysex_thread ()
 static void
 elektroid_stop_sysex_thread ()
 {
-  sysex_transfer.active = FALSE;
+  sysex_transfer.transfer.active = FALSE;
   elektroid_join_sysex_thread ();
 }
 
 static void
 elektroid_progress_dialog_end (gpointer data)
 {
-  sysex_transfer.active = FALSE;
+  sysex_transfer.transfer.active = FALSE;
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
 }
 
@@ -301,7 +307,7 @@ static void
 elektroid_progress_dialog_response (GtkDialog * dialog, gint response_id,
 				    gpointer data)
 {
-  sysex_transfer.active = FALSE;
+  sysex_transfer.transfer.active = FALSE;
 }
 
 static gboolean
@@ -309,7 +315,7 @@ elektroid_update_sysex_progress (gpointer data)
 {
   gchar *text;
 
-  switch (sysex_transfer.status)
+  switch (sysex_transfer.transfer.status)
     {
     case WAITING:
       text = _("Waiting...");
@@ -327,7 +333,7 @@ elektroid_update_sysex_progress (gpointer data)
     }
   gtk_label_set_text (GTK_LABEL (progress_label), text);
 
-  return sysex_transfer.active;
+  return sysex_transfer.transfer.active;
 }
 
 static gpointer
@@ -338,13 +344,13 @@ elektroid_rx_sysex_thread (gpointer data)
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
-  sysex_transfer.status = WAITING;
-  sysex_transfer.active = TRUE;
-  sysex_transfer.timeout = DUMP_TIMEOUT;
-  sysex_transfer.batch = TRUE;
+  sysex_transfer.transfer.status = WAITING;
+  sysex_transfer.transfer.active = TRUE;
+  sysex_transfer.transfer.timeout = DUMP_TIMEOUT;
+  sysex_transfer.transfer.batch = TRUE;
 
   connector_rx_drain (&connector);
-  msg = connector_rx_sysex (&connector, &sysex_transfer);
+  msg = connector_rx_sysex (&connector, &sysex_transfer.transfer);
   if (msg)
     {
       text = debug_get_hex_msg (msg);
@@ -385,7 +391,7 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
 
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
   res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
-  sysex_transfer.active = FALSE;
+  sysex_transfer.transfer.active = FALSE;
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
   sysex_data = elektroid_join_sysex_thread ();
@@ -469,10 +475,12 @@ elektroid_tx_sysex_thread (gpointer data)
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
-  sysex_transfer.active = TRUE;
-  sysex_transfer.timeout = SYSEX_TIMEOUT;
+  sysex_transfer.transfer.active = TRUE;
+  sysex_transfer.transfer.timeout = SYSEX_TIMEOUT;
 
-  *response = connector_tx_sysex (&connector, &sysex_transfer);
+  *response =
+    connector_tx_sysex (&connector, sysex_transfer.data,
+			&sysex_transfer.transfer);
   if (*response >= 0)
     {
       text = debug_get_hex_msg (sysex_transfer.data);
@@ -542,7 +550,7 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
 
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Send SysEx"));
       res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
-      sysex_transfer.active = FALSE;
+      sysex_transfer.transfer.active = FALSE;
       gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
       response = elektroid_join_sysex_thread ();
@@ -572,10 +580,12 @@ elektroid_os_upgrade_thread (gpointer data)
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
-  sysex_transfer.active = TRUE;
-  sysex_transfer.timeout = SYSEX_TIMEOUT;
+  sysex_transfer.transfer.active = TRUE;
+  sysex_transfer.transfer.timeout = SYSEX_TIMEOUT;
 
-  *response = connector_upgrade_os (&connector, &sysex_transfer);
+  *response =
+    connector_upgrade_os (&connector, sysex_transfer.data,
+			  &sysex_transfer.transfer);
 
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
 

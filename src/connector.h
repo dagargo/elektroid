@@ -64,7 +64,6 @@ struct connector_sysex_transfer
 {
   gboolean active;
   enum connector_sysex_transfer_status status;
-  GByteArray *data;
   gint timeout;			//Measured in ms. -1 is infinite.
   gboolean batch;
 };
@@ -101,7 +100,7 @@ gint connector_create_dir (struct connector *, const gchar *);
 
 GArray *connector_get_elektron_devices ();
 
-ssize_t connector_tx_sysex (struct connector *,
+ssize_t connector_tx_sysex (struct connector *, GByteArray *,
 			    struct connector_sysex_transfer *);
 
 GByteArray *connector_rx_sysex (struct connector *,
@@ -110,7 +109,7 @@ GByteArray *connector_rx_sysex (struct connector *,
 
 void connector_rx_drain (struct connector *);
 
-gint connector_upgrade_os (struct connector *,
+gint connector_upgrade_os (struct connector *, GByteArray *,
 			   struct connector_sysex_transfer *);
 
 void free_msg (gpointer);

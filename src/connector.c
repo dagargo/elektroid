@@ -433,34 +433,34 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
 }
 
 ssize_t
-connector_tx_sysex (struct connector *connector,
+connector_tx_sysex (struct connector *connector, GByteArray * data,
 		    struct connector_sysex_transfer *transfer)
 {
   ssize_t tx_len;
   guint total;
   guint len;
-  guchar *data;
-  ssize_t ret = transfer->data->len;
+  guchar *b;
+  ssize_t ret = data->len;
 
   transfer->status = SENDING;
 
-  data = transfer->data->data;
+  b = data->data;
   total = 0;
-  while (total < transfer->data->len && transfer->active)
+  while (total < data->len && transfer->active)
     {
-      len = transfer->data->len - total;
+      len = data->len - total;
       if (len > BUFF_SIZE)
 	{
 	  len = BUFF_SIZE;
 	}
 
-      tx_len = connector_tx_raw (connector, data, len);
+      tx_len = connector_tx_raw (connector, b, len);
       if (tx_len < 0)
 	{
 	  ret = tx_len;
 	  break;
 	}
-      data += len;
+      b += len;
       total += len;
     }
 
@@ -475,6 +475,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   ssize_t ret;
   uint16_t aux;
   GByteArray *sysex;
+  GByteArray *data;
   struct connector_sysex_transfer transfer;
   gchar *text;
 
@@ -490,19 +491,19 @@ connector_tx (struct connector *connector, const GByteArray * msg)
     }
 
   transfer.active = TRUE;
-  transfer.data = g_byte_array_new ();
-  g_byte_array_append (transfer.data, MSG_HEADER, sizeof (MSG_HEADER));
+  data = g_byte_array_new ();
+  g_byte_array_append (data, MSG_HEADER, sizeof (MSG_HEADER));
   sysex = connector_msg_to_sysex (msg);
-  g_byte_array_append (transfer.data, sysex->data, sysex->len);
+  g_byte_array_append (data, sysex->data, sysex->len);
   free_msg (sysex);
-  g_byte_array_append (transfer.data, (guint8 *) "\xf7", 1);
+  g_byte_array_append (data, (guint8 *) "\xf7", 1);
 
-  ret = connector_tx_sysex (connector, &transfer);
+  ret = connector_tx_sysex (connector, data, &transfer);
 
   if (ret >= 0)
     {
-      text = debug_get_hex_msg (transfer.data);
-      debug_print (1, "Raw message sent (%d): %s", transfer.data->len, text);
+      text = debug_get_hex_msg (data);
+      debug_print (1, "Raw message sent (%d): %s", data->len, text);
       free (text);
 
       text = debug_get_hex_msg (msg);
@@ -510,7 +511,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
       free (text);
     }
 
-  free_msg (transfer.data);
+  free_msg (data);
   return ret;
 }
 
@@ -1285,7 +1286,7 @@ connector_new_msg_upgrade_os_write (GByteArray * os_data, gint * offset)
 }
 
 gint
-connector_upgrade_os (struct connector *connector,
+connector_upgrade_os (struct connector *connector, GByteArray * data,
 		      struct connector_sysex_transfer *transfer)
 {
   GByteArray *tx_msg;
@@ -1296,7 +1297,7 @@ connector_upgrade_os (struct connector *connector,
 
   transfer->status = SENDING;
 
-  tx_msg = connector_new_msg_upgrade_os_start (transfer->data->len);
+  tx_msg = connector_new_msg_upgrade_os_start (data->len);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
 
   if (!rx_msg)
@@ -1319,9 +1320,9 @@ connector_upgrade_os (struct connector *connector,
   free_msg (rx_msg);
 
   offset = 0;
-  while (offset < transfer->data->len)
+  while (offset < data->len)
     {
-      tx_msg = connector_new_msg_upgrade_os_write (transfer->data, &offset);
+      tx_msg = connector_new_msg_upgrade_os_write (data, &offset);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
 
       if (!rx_msg)
