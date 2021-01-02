@@ -91,7 +91,6 @@ static gboolean autoplay;
 static GThread *load_thread = NULL;
 static GThread *task_thread = NULL;
 static GThread *sysex_thread = NULL;
-static gboolean load_thread_active;
 static struct elektroid_sample_transfer sample_transfer;
 static struct elektroid_sysex_transfer sysex_transfer;
 
@@ -619,7 +618,13 @@ elektroid_controls_set_sensitive (gboolean sensitive)
 static gboolean
 elektroid_update_ui_on_load (gpointer data)
 {
-  if (audio.sample->len >= LOAD_BUFFER_LEN || !load_thread_active)
+  gboolean load_active;
+
+  g_mutex_lock (&audio.mutex);
+  load_active = audio.load_active;
+  g_mutex_unlock (&audio.mutex);
+
+  if (audio.sample->len >= LOAD_BUFFER_LEN || !load_active)
     {
       if (audio_check (&audio))
 	{
@@ -892,9 +897,14 @@ static gpointer
 elektroid_load_sample (gpointer path)
 {
   sample_load (audio.sample, &audio.mutex, &audio.frames, path,
-	       &load_thread_active, elektroid_redraw_sample);
-  load_thread_active = FALSE;
+	       &audio.load_active, elektroid_redraw_sample);
+
+  g_mutex_lock (&audio.mutex);
+  audio.load_active = FALSE;
+  g_mutex_unlock (&audio.mutex);
+
   free (path);
+
   return NULL;
 }
 
@@ -902,8 +912,13 @@ static void
 elektroid_start_load_thread (gchar * path)
 {
   debug_print (1, "Creating load thread...\n");
-  load_thread_active = TRUE;
+
+  g_mutex_lock (&audio.mutex);
+  audio.load_active = TRUE;
+  g_mutex_unlock (&audio.mutex);
+
   g_timeout_add (100, elektroid_update_ui_on_load, NULL);
+
   load_thread = g_thread_new ("load_sample", elektroid_load_sample, path);
 }
 
@@ -911,12 +926,17 @@ static void
 elektroid_stop_load_thread ()
 {
   debug_print (1, "Stopping load thread...\n");
-  load_thread_active = FALSE;
+
+  g_mutex_lock (&audio.mutex);
+  audio.load_active = FALSE;
+  g_mutex_unlock (&audio.mutex);
+
   if (load_thread)
     {
       g_thread_join (load_thread);
       g_thread_unref (load_thread);
     }
+
   load_thread = NULL;
 }
 

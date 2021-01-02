@@ -36,6 +36,7 @@ struct audio
   void (*set_volume_gui_callback) (gdouble);
   gint release_frames;
   GMutex mutex;
+  gboolean load_active;
 };
 
 void audio_play (struct audio *);
