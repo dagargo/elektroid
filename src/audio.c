@@ -144,9 +144,13 @@ audio_play (struct audio *audio)
     }
 
   audio_stop (audio, TRUE);
+
   debug_print (1, "Playing audio...\n");
+
+  g_mutex_lock (&audio->mutex);
   audio->pos = 0;
   audio->release_frames = 0;
+  g_mutex_unlock (&audio->mutex);
 
   operation = pa_stream_cork (audio->stream, 0, NULL, NULL);
   if (operation != NULL)
@@ -305,8 +309,10 @@ audio_check (struct audio *audio)
 void
 audio_reset_sample (struct audio *audio)
 {
+  g_mutex_lock (&audio->mutex);
   g_array_set_size (audio->sample, 0);
   audio->pos = 0;
+  g_mutex_unlock (&audio->mutex);
 }
 
 void
