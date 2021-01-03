@@ -652,6 +652,7 @@ elektroid_update_ui_on_load (gpointer data)
 	}
       return FALSE;
     }
+
   return TRUE;
 }
 
@@ -912,6 +913,10 @@ elektroid_redraw_sample (gdouble percent)
 static gpointer
 elektroid_load_sample (gpointer path)
 {
+  g_mutex_lock (&audio.mutex);
+  audio.load_active = TRUE;
+  g_mutex_unlock (&audio.mutex);
+
   sample_load (audio.sample, &audio.mutex, &audio.frames, path,
 	       &audio.load_active, elektroid_redraw_sample);
 
@@ -929,13 +934,9 @@ elektroid_start_load_thread (gchar * path)
 {
   debug_print (1, "Creating load thread...\n");
 
-  g_mutex_lock (&audio.mutex);
-  audio.load_active = TRUE;
-  g_mutex_unlock (&audio.mutex);
+  load_thread = g_thread_new ("load_sample", elektroid_load_sample, path);
 
   g_timeout_add (100, elektroid_update_ui_on_load, NULL);
-
-  load_thread = g_thread_new ("load_sample", elektroid_load_sample, path);
 }
 
 static void
@@ -1035,12 +1036,13 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
   double x_ratio, mid_y, value;
   short *sample;
 
+  g_mutex_lock (&audio.mutex);
+
   if (audio.sample->len <= 0)
     {
+      g_mutex_unlock (&audio.mutex);
       return FALSE;
     }
-
-  g_mutex_lock (&audio.mutex);
 
   context = gtk_widget_get_style_context (widget);
   width = gtk_widget_get_allocated_width (widget);
