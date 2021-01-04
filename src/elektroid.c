@@ -1169,7 +1169,7 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
   uri = g_file_get_uri (file);
   g_object_unref (file);
 
-  g_app_info_launch_default_for_uri (uri, NULL, NULL);
+  g_app_info_launch_default_for_uri_async (uri, NULL, NULL, NULL, NULL);
   free (uri);
 }
 
