@@ -365,7 +365,7 @@ elektroid_rx_sysex_thread (gpointer data)
   if (msg)
     {
       text = debug_get_hex_msg (msg);
-      debug_print (1, "SysEx message received (%d): %s", msg->len, text);
+      debug_print (1, "SysEx message received (%d): %s\n", msg->len, text);
       free (text);
     }
 
@@ -495,8 +495,8 @@ elektroid_tx_sysex_thread (gpointer data)
   if (*response >= 0)
     {
       text = debug_get_hex_msg (sysex_transfer.data);
-      debug_print (1, "SysEx message sent (%d): %s", sysex_transfer.data->len,
-		   text);
+      debug_print (1, "SysEx message sent (%d): %s\n",
+		   sysex_transfer.data->len, text);
       free (text);
     }
 

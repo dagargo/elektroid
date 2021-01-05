@@ -502,11 +502,11 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   if (ret >= 0)
     {
       text = debug_get_hex_msg (data);
-      debug_print (1, "Raw message sent (%d): %s", data->len, text);
+      debug_print (1, "Raw message sent (%d): %s\n", data->len, text);
       free (text);
 
       text = debug_get_hex_msg (msg);
-      debug_print (1, "Message sent (%d): %s", msg->len, text);
+      debug_print (1, "Message sent (%d): %s\n", msg->len, text);
       free (text);
     }
 
@@ -788,7 +788,7 @@ connector_rx (struct connector *connector)
     {
       debug_print (1, "Skipping message...\n");
       text = debug_get_hex_msg (sysex);
-      debug_print (1, "Message skipped (%d): %s", sysex->len, text);
+      debug_print (1, "Message skipped (%d): %s\n", sysex->len, text);
       free (text);
       free_msg (sysex);
 
@@ -801,14 +801,14 @@ connector_rx (struct connector *connector)
     }
 
   text = debug_get_hex_msg (sysex);
-  debug_print (1, "Raw message received (%d): %s", sysex->len, text);
+  debug_print (1, "Raw message received (%d): %s\n", sysex->len, text);
   free (text);
 
   msg = connector_get_msg_payload (sysex);
   if (msg)
     {
       text = debug_get_hex_msg (msg);
-      debug_print (1, "Message received (%d): %s", msg->len, text);
+      debug_print (1, "Message received (%d): %s\n", msg->len, text);
       free (text);
     }
 

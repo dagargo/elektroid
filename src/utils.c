@@ -77,7 +77,7 @@ debug_get_hex_msg (const GByteArray * msg)
 	  extra = 0;
 	}
     }
-  size = 2 + (bytes_shown - 1) * 3 + extra + 1;
+  size = bytes_shown * 3 + extra;
   str = malloc (sizeof (char) * size);
 
   data = msg->data;
@@ -101,8 +101,6 @@ debug_get_hex_msg (const GByteArray * msg)
       sprintf (next, "...");
       next += 3;
     }
-
-  sprintf (next, "\n");
 
   return str;
 }
