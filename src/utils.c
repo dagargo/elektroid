@@ -23,7 +23,7 @@
 #include <wordexp.h>
 #include "utils.h"
 
-#define DEBUG_SHORT_HEX_LEN 16
+#define DEBUG_SHORT_HEX_LEN 64
 #define DEBUG_FULL_HEX_THRES 3
 
 #define REG_TYPE "emblem-music-symbolic"
