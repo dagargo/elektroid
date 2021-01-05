@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: elektroid 1.3\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2021-01-05 17:33+0100\n"
-"PO-Revision-Date: 2020-05-09 20:36+0100\n"
+"PO-Revision-Date: 2021-01-05 17:59+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
 "Language: fr\n"
@@ -149,15 +149,15 @@ msgstr "Olivier Humbert <trebmuh@tuxfamily.org>"
 
 #: res/gui.glade:141
 msgid "_Play"
-msgstr ""
+msgstr "_Lecture"
 
 #: res/gui.glade:165
 msgid "_Open With External Editor"
-msgstr ""
+msgstr "_Ouvrir avec un éditeur externe"
 
 #: res/gui.glade:178
 msgid "_Show in File Manager"
-msgstr ""
+msgstr "Afficher dans un ge_stionnaire de fichier"
 
 #: res/gui.glade:202 res/gui.glade:1526
 msgid "_Rename"
@@ -173,7 +173,7 @@ msgstr "Envoi de _Sysex"
 
 #: res/gui.glade:283
 msgid "OS _Upgrade"
-msgstr ""
+msgstr "Mise à jo_ur SE"
 
 #: res/gui.glade:307
 msgid "_About"
