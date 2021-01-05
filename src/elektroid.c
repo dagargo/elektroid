@@ -281,7 +281,6 @@ elektroid_join_sysex_thread ()
   if (sysex_thread)
     {
       output = g_thread_join (sysex_thread);
-      g_thread_unref (sysex_thread);
     }
   sysex_thread = NULL;
 
@@ -951,7 +950,6 @@ elektroid_stop_load_thread ()
   if (load_thread)
     {
       g_thread_join (load_thread);
-      g_thread_unref (load_thread);
     }
 
   load_thread = NULL;
@@ -964,7 +962,6 @@ elektroid_join_task_thread ()
   if (task_thread)
     {
       g_thread_join (task_thread);
-      g_thread_unref (task_thread);
     }
   task_thread = NULL;
 }
