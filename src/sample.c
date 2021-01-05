@@ -41,7 +41,7 @@ sample_save (GArray * sample, gchar * path)
   sndfile = sf_open (path, SFM_WRITE, &sf_info);
   if (!sndfile)
     {
-      fprintf (stderr, "%s\n", sf_strerror (sndfile));
+      error_print ("%s\n", sf_strerror (sndfile));
       return -1;
     }
 
@@ -106,7 +106,7 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
   sndfile = sf_open (path, SFM_READ, &sf_info);
   if (!sndfile)
     {
-      fprintf (stderr, "%s\n", sf_strerror (sndfile));
+      error_print ("%s\n", sf_strerror (sndfile));
       return -1;
     }
 
@@ -239,8 +239,8 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
 
   if (err)
     {
-      fprintf (stderr, __FILE__ ": src_process() failed: %s\n",
-	       src_strerror (err));
+      error_print ("Error while preparing resampling: %s\n",
+		   src_strerror (err));
     }
 
   if (mutex)

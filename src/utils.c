@@ -210,7 +210,7 @@ get_local_startup_path (const char *local_dir)
 	}
       else
 	{
-	  fprintf (stderr, __FILE__ ": Unable to open dir %s\n", local_dir);
+	  error_print ("Unable to open dir %s\n", local_dir);
 	}
       closedir (dir);
     }

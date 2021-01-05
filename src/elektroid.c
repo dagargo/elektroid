@@ -1251,8 +1251,7 @@ elektroid_load_remote_dir (gpointer data)
   elektroid_check_connector ();
   if (d_iter == NULL)
     {
-      fprintf (stderr, __FILE__ ": Error while opening remote %s dir\n",
-	       remote_browser.dir);
+      error_print ("Error while opening remote %s dir\n", remote_browser.dir);
       goto end;
     }
 
@@ -1294,8 +1293,7 @@ elektroid_load_local_dir (gpointer data)
 
   if (!(dir = opendir (local_browser.dir)))
     {
-      fprintf (stderr, __FILE__ ": Error while opening local %s dir\n",
-	       local_browser.dir);
+      error_print ("Error while opening local %s dir\n", local_browser.dir);
       goto end;
     }
 
@@ -1366,8 +1364,7 @@ elektroid_local_mkdir (const gchar * name)
 	}
       else
 	{
-	  fprintf (stderr,
-		   __FILE__ ": Error while opening local %s dir\n", name);
+	  error_print ("Error while opening local %s dir\n", name);
 	  error = errno;
 	}
     }
@@ -1494,8 +1491,7 @@ elektroid_remote_delete (const gchar * path, const char type)
 	}
       else
 	{
-	  fprintf (stderr, __FILE__ ": Error while opening remote %s dir\n",
-		   path);
+	  error_print ("Error while opening remote %s dir\n", path);
 	}
       return connector_delete_dir (&connector, path);
     }
@@ -1537,8 +1533,7 @@ elektroid_local_delete (const gchar * path, const char type)
 	}
       else
 	{
-	  fprintf (stderr, __FILE__ ": Error while opening local %s dir\n",
-		   path);
+	  error_print ("Error while opening local %s dir\n", path);
 	}
       return rmdir (path);
     }
@@ -1822,7 +1817,7 @@ elektroid_upload_task (gpointer data)
 
   if (frames < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while uploading\n");
+      error_print ("Error while uploading\n");
       sample_transfer.status = COMPLETED_ERROR;
     }
   else
@@ -1886,16 +1881,14 @@ elektroid_add_upload_task_dir (gchar * rel_dir)
 
   if (!dir)
     {
-      fprintf (stderr, __FILE__ ": Error while opening local %s dir\n",
-	       local_abs_dir);
+      error_print ("Error while opening local %s dir\n", local_abs_dir);
       goto cleanup_not_dir;
     }
 
   remote_abs_dir = chain_path (remote_browser.dir, rel_dir);
   if (elektroid_remote_mkdir (remote_abs_dir))
     {
-      fprintf (stderr, __FILE__ ": Error while creating remote %s dir\n",
-	       remote_abs_dir);
+      error_print ("Error while creating remote %s dir\n", remote_abs_dir);
       goto cleanup;
     }
 
@@ -2019,7 +2012,7 @@ elektroid_download_task (gpointer data)
 
   if (sample == NULL)
     {
-      fprintf (stderr, __FILE__ ": Error while downloading\n");
+      error_print ("Error while downloading\n");
       sample_transfer.status = COMPLETED_ERROR;
     }
   else
@@ -2065,16 +2058,14 @@ elektroid_add_download_task_dir (gchar * rel_dir)
   elektroid_check_connector ();
   if (d_iter == NULL)
     {
-      fprintf (stderr, __FILE__ ": Error while opening remote %s dir\n",
-	       remote_abs_dir);
+      error_print ("Error while opening remote %s dir\n", remote_abs_dir);
       goto cleanup_not_dir;
     }
 
   local_abs_dir = chain_path (local_browser.dir, rel_dir);
   if (elektroid_local_mkdir (local_abs_dir))
     {
-      fprintf (stderr, __FILE__ ": Error while creating local %s dir\n",
-	       local_abs_dir);
+      error_print ("Error while creating local %s dir\n", local_abs_dir);
       goto cleanup;
     }
 
@@ -2260,7 +2251,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 
       if (connector_init (&connector, card) < 0)
 	{
-	  fprintf (stderr, __FILE__ ": Error while connecting\n");
+	  error_print ("Error while connecting\n");
 	}
 
       if (elektroid_check_connector ())
@@ -2310,14 +2301,14 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
       (glade_file, PATH_MAX, "%s/%s/res/gui.glade", DATADIR,
        PACKAGE) >= PATH_MAX)
     {
-      fprintf (stderr, __FILE__ ": Path too long\n");
+      error_print ("Path too long\n");
       return -1;
     }
 
   if (snprintf
       (css_file, PATH_MAX, "%s/%s/res/gui.css", DATADIR, PACKAGE) >= PATH_MAX)
     {
-      fprintf (stderr, __FILE__ ": Path too long\n");
+      error_print ("Path too long\n");
       return -1;
     }
 

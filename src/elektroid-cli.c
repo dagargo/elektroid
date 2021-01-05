@@ -81,7 +81,7 @@ cli_ls (int argc, char *argv[], int optind)
 
   if (optind == argc)
     {
-      fprintf (stderr, "Remote path missing\n");
+      error_print ("Remote path missing\n");
       return EXIT_FAILURE;
     }
   else
@@ -124,7 +124,7 @@ cli_mkdir (int argc, char *argv[], int optind)
 
   if (optind == argc)
     {
-      fprintf (stderr, "Remote path missing\n");
+      error_print ("Remote path missing\n");
       return EXIT_FAILURE;
     }
   else
@@ -154,7 +154,7 @@ cli_mv (int argc, char *argv[], int optind)
 
   if (optind == argc)
     {
-      fprintf (stderr, "Remote path source missing\n");
+      error_print ("Remote path source missing\n");
       return EXIT_FAILURE;
     }
   else
@@ -165,7 +165,7 @@ cli_mv (int argc, char *argv[], int optind)
 
   if (optind == argc)
     {
-      fprintf (stderr, "Remote path destination missing\n");
+      error_print ("Remote path destination missing\n");
       return EXIT_FAILURE;
     }
   else
@@ -177,7 +177,7 @@ cli_mv (int argc, char *argv[], int optind)
   card_dst = atoi (device_path_dst);
   if (card_src != card_dst)
     {
-      fprintf (stderr, "Source and destination device must be the same\n");
+      error_print ("Source and destination device must be the same\n");
       return EXIT_FAILURE;
     }
 
@@ -202,7 +202,7 @@ cli_delete (int argc, char *argv[], int optind, char type)
 
   if (optind == argc)
     {
-      fprintf (stderr, "Remote path missing\n");
+      error_print ("Remote path missing\n");
       return EXIT_FAILURE;
     }
   else
@@ -246,7 +246,7 @@ cli_download (int argc, char *argv[], int optind)
 
   if (optind == argc)
     {
-      fprintf (stderr, "Remote path missing\n");
+      error_print ("Remote path missing\n");
       return EXIT_FAILURE;
     }
   else
@@ -295,7 +295,7 @@ cli_upload (int argc, char *argv[], int optind)
 
   if (optind == argc)
     {
-      fprintf (stderr, "Local path missing\n");
+      error_print ("Local path missing\n");
       return EXIT_FAILURE;
     }
   else
@@ -306,7 +306,7 @@ cli_upload (int argc, char *argv[], int optind)
 
   if (optind == argc)
     {
-      fprintf (stderr, "Remote path missing\n");
+      error_print ("Remote path missing\n");
       return EXIT_FAILURE;
     }
   else
@@ -356,7 +356,7 @@ cli_info (int argc, char *argv[], int optind)
 
   if (optind == argc)
     {
-      fprintf (stderr, "Device missing\n");
+      error_print ("Device missing\n");
       return EXIT_FAILURE;
     }
   else
@@ -492,7 +492,7 @@ main (int argc, char *argv[])
     }
   else
     {
-      fprintf (stderr, "Command %s not recognized\n", command);
+      error_print ("Command %s not recognized\n", command);
       res = EXIT_FAILURE;
     }
 

@@ -417,15 +417,14 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
 
   if (!connector->outputp)
     {
-      fprintf (stderr, __FILE__ ": Output port is NULL\n");
+      error_print ("Output port is NULL\n");
       return -1;
     }
 
   tx_len = snd_rawmidi_write (connector->outputp, data, len);
   if (tx_len < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while sending message. %s.\n",
-	       g_strerror (errno));
+      error_print ("Error while sending message. %s.\n", g_strerror (errno));
       connector_destroy (connector);
       return tx_len;
     }
@@ -559,7 +558,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
   if (!connector->inputp)
     {
-      fprintf (stderr, __FILE__ ": Input port is NULL\n");
+      error_print ("Input port is NULL\n");
       return -1;
     }
 
@@ -585,8 +584,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
       if (err < 0)
 	{
-	  fprintf (stderr, __FILE__ ": Error while polling. %s.\n",
-		   g_strerror (errno));
+	  error_print ("Error while polling. %s.\n", g_strerror (errno));
 	  connector_destroy (connector);
 	  return err;
 	}
@@ -597,8 +595,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 						 connector->npfds,
 						 &revents)) < 0)
 	{
-	  fprintf (stderr, __FILE__ ": No poll events. %s.\n",
-		   g_strerror (errno));
+	  error_print ("No poll events. %s.\n", g_strerror (errno));
 	  connector_destroy (connector);
 	  return err;
 	}
@@ -639,8 +636,8 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
       if (rx_len < 0)
 	{
-	  fprintf (stderr, __FILE__ ": Error while receiving message. %s.\n",
-		   g_strerror (errno));
+	  error_print ("Error while receiving message. %s.\n",
+		       g_strerror (errno));
 	  connector_destroy (connector);
 	  break;
 	}
@@ -914,7 +911,7 @@ connector_rename (struct connector *connector, const gchar * old,
     {
       res = -1;
       errno = EPERM;
-      fprintf (stderr, "%s\n", g_strerror (errno));
+      error_print ("%s\n", g_strerror (errno));
     }
   free_msg (rx_msg);
 
@@ -955,7 +952,7 @@ connector_delete (struct connector *connector, const gchar * path,
     {
       res = -1;
       errno = EPERM;
-      fprintf (stderr, "%s\n", g_strerror (errno));
+      error_print ("%s\n", g_strerror (errno));
     }
   free_msg (rx_msg);
 
@@ -1006,7 +1003,7 @@ connector_create_upload (struct connector *connector, const gchar * path,
   if (id < 0)
     {
       errno = EEXIST;
-      fprintf (stderr, "%s\n", g_strerror (errno));
+      error_print ("%s\n", g_strerror (errno));
     }
   free_msg (rx_msg);
 
@@ -1058,7 +1055,7 @@ connector_upload (struct connector *connector, GArray * sample,
       //Response: x, x, x, x, 0xc2, [0 (error), 1 (success)]...
       if (!connector_get_msg_status (rx_msg))
 	{
-	  fprintf (stderr, "Unexpected status\n");
+	  error_print ("Unexpected status\n");
 	}
       free_msg (rx_msg);
       i++;
@@ -1085,7 +1082,7 @@ connector_upload (struct connector *connector, GArray * sample,
       //Response: x, x, x, x, 0xc1, [0 (error), 1 (success)]...
       if (!connector_get_msg_status (rx_msg))
 	{
-	  fprintf (stderr, "Unexpected status\n");
+	  error_print ("Unexpected status\n");
 	}
       free_msg (rx_msg);
     }
@@ -1130,7 +1127,7 @@ connector_download (struct connector *connector, const gchar * path,
   free_msg (rx_msg);
   if (id < 0)
     {
-      fprintf (stderr, "File %s not found\n", path);
+      error_print ("File %s not found\n", path);
       return NULL;
     }
 
@@ -1246,7 +1243,7 @@ connector_create_dir (struct connector *connector, const gchar * path)
     {
       res = -1;
       errno = EEXIST;
-      fprintf (stderr, "%s\n", g_strerror (errno));
+      error_print ("%s\n", g_strerror (errno));
     }
   free_msg (rx_msg);
 
@@ -1327,8 +1324,8 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
     {
       res = -1;
       errno = EIO;
-      fprintf (stderr, "%s (%s)\n", g_strerror (errno),
-	       connector_get_msg_string (rx_msg));
+      error_print ("%s (%s)\n", g_strerror (errno),
+		   connector_get_msg_string (rx_msg));
       goto cleanup;
     }
 
@@ -1356,8 +1353,8 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
 	{
 	  res = -1;
 	  errno = EIO;
-	  fprintf (stderr, "%s (%s)\n", g_strerror (errno),
-		   connector_get_msg_string (rx_msg));
+	  error_print ("%s (%s)\n", g_strerror (errno),
+		       connector_get_msg_string (rx_msg));
 	  goto cleanup;
 	}
 
@@ -1384,8 +1381,8 @@ connector_destroy (struct connector *connector)
       err = snd_rawmidi_close (connector->inputp);
       if (err)
 	{
-	  fprintf (stderr, __FILE__ ": Error while closing MIDI port: %s\n",
-		   g_strerror (errno));
+	  error_print ("Error while closing MIDI port: %s\n",
+		       g_strerror (errno));
 	}
       connector->inputp = NULL;
     }
@@ -1395,8 +1392,8 @@ connector_destroy (struct connector *connector)
       err = snd_rawmidi_close (connector->outputp);
       if (err)
 	{
-	  fprintf (stderr, __FILE__ ": Error while closing MIDI port: %s\n",
-		   g_strerror (errno));
+	  error_print ("Error while closing MIDI port: %s\n",
+		       g_strerror (errno));
 	}
       connector->outputp = NULL;
     }
@@ -1470,27 +1467,26 @@ connector_init (struct connector *connector, gint card)
        snd_rawmidi_open (&connector->inputp, &connector->outputp,
 			 name, SND_RAWMIDI_NONBLOCK | SND_RAWMIDI_SYNC)) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while opening MIDI port: %s\n",
-	       g_strerror (errno));
+      error_print ("Error while opening MIDI port: %s\n", g_strerror (errno));
       goto cleanup;
     }
 
   debug_print (1, "Setting blocking mode...\n");
   if ((err = snd_rawmidi_nonblock (connector->outputp, 0)) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while setting blocking mode\n");
+      error_print ("Error while setting blocking mode\n");
       goto cleanup;
     }
   if ((err = snd_rawmidi_nonblock (connector->inputp, 1)) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while setting blocking mode\n");
+      error_print ("Error while setting blocking mode\n");
       goto cleanup;
     }
 
   debug_print (1, "Stopping device...\n");
   if (snd_rawmidi_write (connector->outputp, "\xfc", 1) < 0)
     {
-      fprintf (stderr, __FILE__ ": Error while stopping device\n");
+      error_print ("Error while stopping device\n");
     }
 
   connector->seq = 0;
@@ -1563,7 +1559,7 @@ connector_init (struct connector *connector, gint card)
       rx_msg_uid = connector_tx_and_rx (connector, tx_msg);
       if (rx_msg_uid)
 	{
-	  fprintf (stderr, "UID: %x\n", *((guint32 *) & rx_msg_uid->data[5]));
+	  error_print ("UID: %x\n", *((guint32 *) & rx_msg_uid->data[5]));
 	  free_msg (rx_msg_uid);
 	}
     }
@@ -1651,9 +1647,8 @@ connector_get_elektron_device (snd_ctl_t * ctl, int card, int device)
   err = snd_ctl_rawmidi_info (ctl, info);
   if (err < 0)
     {
-      fprintf (stderr,
-	       __FILE__ ": cannot get rawmidi information %d:%d:%d: %s\n",
-	       card, device, sub, snd_strerror (err));
+      error_print ("Cannot get rawmidi information %d:%d:%d: %s\n",
+		   card, device, sub, snd_strerror (err));
       return NULL;
     }
 
@@ -1685,8 +1680,8 @@ connector_fill_card_elektron_devices (gint card, GArray * devices)
   sprintf (name, "hw:%d", card);
   if ((err = snd_ctl_open (&ctl, name, 0)) < 0)
     {
-      fprintf (stderr, __FILE__ ": cannot open control for card %d: %s\n",
-	       card, snd_strerror (err));
+      error_print ("Cannot open control for card %d: %s\n",
+		   card, snd_strerror (err));
       return;
     }
   device = -1;
@@ -1701,8 +1696,8 @@ connector_fill_card_elektron_devices (gint card, GArray * devices)
     }
   if (err < 0)
     {
-      fprintf (stderr, __FILE__ ": cannot determine device number: %s\n",
-	       snd_strerror (err));
+      error_print ("Cannot determine device number: %s\n",
+		   snd_strerror (err));
     }
   snd_ctl_close (ctl);
 }
@@ -1721,8 +1716,7 @@ connector_get_elektron_devices ()
     }
   if (err < 0)
     {
-      fprintf (stderr, __FILE__ ": cannot determine card number: %s\n",
-	       snd_strerror (err));
+      error_print ("Cannot determine card number: %s\n", snd_strerror (err));
     }
 
   return devices;
