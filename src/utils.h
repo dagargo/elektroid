@@ -25,7 +25,7 @@
 #define ELEKTROID_FILE 'F'
 #define ELEKTROID_DIR 'D'
 
-#define debug_print(level, ...) if (level <= debug_level) fprintf(stderr, __VA_ARGS__)
+#define debug_print(level, format, ...) if (level <= debug_level) fprintf(stderr, __FILE__ ":%d:(%s):" format, __LINE__, __FUNCTION__, ## __VA_ARGS__)
 
 extern int debug_level;
 
