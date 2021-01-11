@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: elektroid 1.3\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2021-01-05 17:33+0100\n"
-"PO-Revision-Date: 2020-02-21 11:45+0100\n"
+"PO-Revision-Date: 2021-01-11 22:00+0100\n"
 "Last-Translator: Dennis Braun <d_braun@kabelmail.de>\n"
 "Language-Team: German\n"
 "Language: de\n"
@@ -111,7 +111,7 @@ msgstr "In der Warteschlange"
 
 #: src/elektroid.c:1578
 msgid "Running"
-msgstr "Arbeitet"
+msgstr "Wird ausgeführt"
 
 #: src/elektroid.c:1580
 msgid "Completed"
@@ -147,15 +147,15 @@ msgstr "Dennis Braun <d_braun@kabelmail.de>"
 
 #: res/gui.glade:141
 msgid "_Play"
-msgstr ""
+msgstr "_Abspielen"
 
 #: res/gui.glade:165
 msgid "_Open With External Editor"
-msgstr ""
+msgstr "_Öffnen mit externen Editor"
 
 #: res/gui.glade:178
 msgid "_Show in File Manager"
-msgstr ""
+msgstr "_Im Dateimanager anzeigen"
 
 #: res/gui.glade:202 res/gui.glade:1526
 msgid "_Rename"
@@ -171,7 +171,7 @@ msgstr "_Sende SysEx"
 
 #: res/gui.glade:283
 msgid "OS _Upgrade"
-msgstr ""
+msgstr "OS _Aktualisierung"
 
 #: res/gui.glade:307
 msgid "_About"
