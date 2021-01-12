@@ -155,7 +155,7 @@ msgstr "_Öffnen mit externen Editor"
 
 #: res/gui.glade:178
 msgid "_Show in File Manager"
-msgstr "_Im Dateimanager anzeigen"
+msgstr "Im Dateimanager _Anzeigen"
 
 #: res/gui.glade:202 res/gui.glade:1526
 msgid "_Rename"
