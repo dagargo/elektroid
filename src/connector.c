@@ -611,6 +611,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 	    {
 	      return -ENODATA;
 	    }
+	  continue;
 	}
 
       rx_len = snd_rawmidi_read (connector->inputp, data, len);
