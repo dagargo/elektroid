@@ -1085,7 +1085,6 @@ elektroid_show_clicked (GtkWidget * object, gpointer data)
   gboolean done = FALSE;
   gint count = browser_get_selected_items_count (&local_browser);
 
-
   if (count == 0)
     {
       path = chain_path (local_browser.dir, NULL);
@@ -1804,8 +1803,16 @@ elektroid_upload_task (gpointer data)
 
   sample = g_array_new (FALSE, FALSE, sizeof (gshort));
 
-  sample_load (sample, &sample_transfer.transfer.mutex, NULL,
-	       sample_transfer.src, &sample_transfer.transfer.active, NULL);
+  frames = sample_load (sample, &sample_transfer.transfer.mutex, NULL,
+			sample_transfer.src, &sample_transfer.transfer.active,
+			NULL);
+
+  if (frames < 0)
+    {
+      error_print ("Error while reading sample\n");
+      sample_transfer.status = COMPLETED_ERROR;
+      goto complete_task;
+    }
 
   frames = connector_upload (&connector, sample, remote_path,
 			     &sample_transfer.transfer,
@@ -1840,6 +1847,7 @@ elektroid_upload_task (gpointer data)
       g_idle_add (remote_browser.load_dir, NULL);
     }
 
+complete_task:
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
 
