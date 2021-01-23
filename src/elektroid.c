@@ -625,7 +625,6 @@ static void
 elektroid_controls_set_sensitive (gboolean sensitive)
 {
   gtk_widget_set_sensitive (local_play_button, sensitive);
-  gtk_widget_set_sensitive (local_open_button, sensitive);
   gtk_widget_set_sensitive (play_button, sensitive);
   gtk_widget_set_sensitive (stop_button, sensitive);
 }
@@ -1013,8 +1012,13 @@ elektroid_local_check_selection (gpointer data)
       type = get_type_from_inventory_icon (icon);
       if (type == ELEKTROID_FILE)
 	{
+	  gtk_widget_set_sensitive (local_open_button, TRUE);
 	  sample_path = chain_path (local_browser.dir, name);
 	  elektroid_start_load_thread (sample_path);
+	}
+      else
+	{
+	  gtk_widget_set_sensitive (local_open_button, FALSE);
 	}
       g_free (icon);
       g_free (name);
