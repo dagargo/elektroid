@@ -690,7 +690,7 @@ connector_rx_sysex (struct connector *connector,
 	  i = 0;
 	}
 
-      while (*b != 0xf0 && i < connector->rx_len)
+      while (i < connector->rx_len && *b != 0xf0)
 	{
 	  b++;
 	  i++;
