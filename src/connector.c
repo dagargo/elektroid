@@ -618,7 +618,10 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
       if (rx_len == -EAGAIN || rx_len == 0)
 	{
-	  connector_rx_raw_check_timeout (transfer, &total_time);
+	  if (connector_rx_raw_check_timeout (transfer, &total_time))
+	    {
+	      return -ENODATA;
+	    }
 	  continue;
 	}
 
