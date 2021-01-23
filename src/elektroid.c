@@ -638,7 +638,8 @@ elektroid_update_ui_on_load (gpointer data)
   load_active = audio.load_active;
   g_mutex_unlock (&audio.mutex);
 
-  if (audio.sample->len >= LOAD_BUFFER_LEN || !load_active)
+  if (audio.sample->len >= LOAD_BUFFER_LEN
+      || (!load_active && audio.sample->len > 0))
     {
       if (audio_check (&audio))
 	{
