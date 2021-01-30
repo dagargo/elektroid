@@ -24,6 +24,7 @@ The package dependencies for Debian based distributions are:
 - libtool
 - autopoint
 - gettext
+- zlib1g-dev
 
 You can easily install them by running `sudo apt install automake libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev libtool autopoint gettext zlib1g-dev`.
 
