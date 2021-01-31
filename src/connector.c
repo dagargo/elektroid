@@ -1563,7 +1563,7 @@ connector_init (struct connector *connector, gint card)
       rx_msg_uid = connector_tx_and_rx (connector, tx_msg);
       if (rx_msg_uid)
 	{
-	  error_print ("UID: %x\n", *((guint32 *) & rx_msg_uid->data[5]));
+	  debug_print (1, "UID: %x\n", *((guint32 *) & rx_msg_uid->data[5]));
 	  free_msg (rx_msg_uid);
 	}
     }
