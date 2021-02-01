@@ -880,7 +880,7 @@ connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
 	}
       else
 	{
-	  error_print ("Unexpected response. Skipping message...");
+	  error_print ("Unexpected response. Skipping message...\n");
 	}
     }
 
