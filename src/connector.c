@@ -66,7 +66,7 @@ static const guint8 INQ_OS_UPGRADE_START[] =
 static const guint8 INQ_OS_UPGRADE_WRITE[] =
   { 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-static gint
+static guchar
 connector_get_msg_status (const GByteArray * msg)
 {
   return msg->data[5];
@@ -76,6 +76,27 @@ static gchar *
 connector_get_msg_string (const GByteArray * msg)
 {
   return (gchar *) & msg->data[6];
+}
+
+static guchar
+connector_get_msg_opcode (const GByteArray * msg)
+{
+  return msg->data[4];
+}
+
+static gushort
+connector_get_msg_id (const GByteArray * msg)
+{
+  gushort id = (msg->data[0] << 8) | msg->data[1];
+  return id;
+
+}
+
+static gushort
+connector_get_msg_paired_id (const GByteArray * msg)
+{
+  gushort id = (msg->data[2] << 8) | msg->data[3];
+  return id;
 }
 
 void
@@ -825,19 +846,43 @@ connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
 {
   ssize_t len;
   GByteArray *rx_msg;
+  guchar tx_op;
+  guchar rx_op;
+  gushort tx_id;
+  gushort rx_id;
 
   g_mutex_lock (&connector->mutex);
 
   snd_rawmidi_read (connector->inputp, NULL, 0);	// trigger reading
 
   len = connector_tx (connector, tx_msg);
+  tx_op = connector_get_msg_opcode (tx_msg);
+  tx_id = connector_get_msg_id (tx_msg);
   if (len < 0)
     {
       rx_msg = NULL;
       goto cleanup;
     }
 
-  rx_msg = connector_rx (connector);
+  // Safety check. Skip all the messages until the expected one is found.
+  while (1)
+    {
+      rx_msg = connector_rx (connector);
+      if (!rx_msg)
+	{
+	  break;
+	}
+      rx_op = connector_get_msg_opcode (rx_msg);
+      rx_id = connector_get_msg_paired_id (rx_msg);
+      if ((tx_op | 0x80) == rx_op && rx_id == tx_id)
+	{
+	  break;
+	}
+      else
+	{
+	  error_print ("Unexpected response. Skipping message...");
+	}
+    }
 
 cleanup:
   free_msg (tx_msg);
