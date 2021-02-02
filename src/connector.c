@@ -628,10 +628,6 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
       if (!(revents & POLLIN))
 	{
-	  if (connector_rx_raw_check_timeout (transfer, &total_time))
-	    {
-	      return -ENODATA;
-	    }
 	  continue;
 	}
 
@@ -639,10 +635,6 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
       if (rx_len == -EAGAIN || rx_len == 0)
 	{
-	  if (connector_rx_raw_check_timeout (transfer, &total_time))
-	    {
-	      return -ENODATA;
-	    }
 	  continue;
 	}
 
@@ -650,10 +642,6 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 	{
 	  if (connector_is_rt_msg (data, rx_len))
 	    {
-	      if (connector_rx_raw_check_timeout (transfer, &total_time))
-		{
-		  return -ENODATA;
-		}
 	      continue;
 	    }
 	  break;
