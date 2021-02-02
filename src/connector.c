@@ -558,16 +558,6 @@ connector_is_rt_msg (guint8 * data, guint len)
   return TRUE;
 }
 
-static gboolean
-connector_rx_raw_check_timeout (struct connector_sysex_transfer *transfer,
-				guint * total_time)
-{
-  *total_time += POLL_TIMEOUT;
-  return (((transfer->batch && transfer->status == RECEIVING)
-	   || !transfer->batch) && transfer->timeout > -1
-	  && *total_time >= transfer->timeout);
-}
-
 static ssize_t
 connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 		  struct connector_sysex_transfer *transfer)
@@ -596,7 +586,10 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
       if (err == 0)
 	{
-	  if (connector_rx_raw_check_timeout (transfer, &total_time))
+	  total_time += POLL_TIMEOUT;
+	  if (((transfer->batch && transfer->status == RECEIVING)
+	       || !transfer->batch) && transfer->timeout > -1
+	      && total_time >= transfer->timeout)
 	    {
 	      return -ENODATA;
 	    }
