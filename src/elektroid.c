@@ -632,14 +632,14 @@ elektroid_controls_set_sensitive (gboolean sensitive)
 static gboolean
 elektroid_update_ui_on_load (gpointer data)
 {
-  gboolean load_active;
+  gboolean ready_to_play;
 
   g_mutex_lock (&audio.mutex);
-  load_active = audio.load_active;
+  ready_to_play = audio.sample->len >= LOAD_BUFFER_LEN
+    || (!audio.load_active && audio.sample->len > 0);
   g_mutex_unlock (&audio.mutex);
 
-  if (audio.sample->len >= LOAD_BUFFER_LEN
-      || (!load_active && audio.sample->len > 0))
+  if (ready_to_play)
     {
       if (audio_check (&audio))
 	{
