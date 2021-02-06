@@ -33,6 +33,7 @@
 #define TRANSF_BLOCK_SIZE_SAMPLE 0x2000
 #define TRANSF_BLOCK_SIZE_OS 0x800
 #define POLL_TIMEOUT 2
+#define REST_TIME 20000
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -76,27 +77,6 @@ static gchar *
 connector_get_msg_string (const GByteArray * msg)
 {
   return (gchar *) & msg->data[6];
-}
-
-static guchar
-connector_get_msg_opcode (const GByteArray * msg)
-{
-  return msg->data[4];
-}
-
-static gushort
-connector_get_msg_id (const GByteArray * msg)
-{
-  gushort id = (msg->data[0] << 8) | msg->data[1];
-  return id;
-
-}
-
-static gushort
-connector_get_msg_paired_id (const GByteArray * msg)
-{
-  gushort id = (msg->data[2] << 8) | msg->data[3];
-  return id;
 }
 
 void
@@ -1082,6 +1062,8 @@ connector_upload (struct connector *connector, GArray * sample,
       g_mutex_lock (&transfer->mutex);
       active = (!transfer || transfer->active);
       g_mutex_unlock (&transfer->mutex);
+
+      usleep (REST_TIME);
     }
 
   debug_print (2, "%zu frames sent\n", transferred);
@@ -1187,6 +1169,8 @@ connector_download (struct connector *connector, const gchar * path,
       g_mutex_lock (&transfer->mutex);
       active = (!transfer || transfer->active);
       g_mutex_unlock (&transfer->mutex);
+
+      usleep (REST_TIME);
     }
 
   debug_print (2, "%d bytes received\n", next_block_start);
@@ -1379,6 +1363,8 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
 	}
 
       free_msg (rx_msg);
+
+      usleep (REST_TIME);
     }
 
 cleanup:
