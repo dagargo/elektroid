@@ -442,6 +442,8 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
       return -1;
     }
 
+  snd_rawmidi_read (connector->inputp, NULL, 0);	// trigger reading
+
   tx_len = snd_rawmidi_write (connector->outputp, data, len);
   if (tx_len < 0)
     {
@@ -539,6 +541,7 @@ void
 connector_rx_drain (struct connector *connector)
 {
   debug_print (2, "Draining buffer...\n");
+  connector->rx_len = 0;
   snd_rawmidi_drain (connector->inputp);
 }
 
@@ -838,43 +841,19 @@ connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
 {
   ssize_t len;
   GByteArray *rx_msg;
-  guchar tx_op;
-  guchar rx_op;
-  gushort tx_id;
-  gushort rx_id;
 
   g_mutex_lock (&connector->mutex);
 
-  snd_rawmidi_read (connector->inputp, NULL, 0);	// trigger reading
+  connector_rx_drain (connector);
 
   len = connector_tx (connector, tx_msg);
-  tx_op = connector_get_msg_opcode (tx_msg);
-  tx_id = connector_get_msg_id (tx_msg);
   if (len < 0)
     {
       rx_msg = NULL;
       goto cleanup;
     }
 
-  // Safety check. Skip all the messages until the expected one is found.
-  while (1)
-    {
-      rx_msg = connector_rx (connector);
-      if (!rx_msg)
-	{
-	  break;
-	}
-      rx_op = connector_get_msg_opcode (rx_msg);
-      rx_id = connector_get_msg_paired_id (rx_msg);
-      if ((tx_op | 0x80) == rx_op && rx_id == tx_id)
-	{
-	  break;
-	}
-      else
-	{
-	  error_print ("Unexpected response. Skipping message...\n");
-	}
-    }
+  rx_msg = connector_rx (connector);
 
 cleanup:
   free_msg (tx_msg);
