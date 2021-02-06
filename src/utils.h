@@ -30,16 +30,18 @@
 
 extern int debug_level;
 
-char *debug_get_hex_msg (const GByteArray *);
+gchar *debug_get_hex_data (gint, guint8 *, guint);
 
-char *chain_path (const char *, const char *);
+gchar *debug_get_hex_msg (const GByteArray *);
 
-void remove_ext (char *);
+gchar *chain_path (const gchar *, const gchar *);
 
-const char *get_ext (const char *);
+void remove_ext (gchar *);
 
-char get_type_from_inventory_icon (const char *);
+const gchar *get_ext (const gchar *);
 
-const char *get_inventory_icon_from_type (char);
+gchar get_type_from_inventory_icon (const gchar *);
 
-char *get_local_startup_path (const char *);
+const gchar *get_inventory_icon_from_type (gchar);
+
+gchar *get_local_startup_path (const gchar *);

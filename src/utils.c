@@ -29,7 +29,7 @@
 #define REG_TYPE "emblem-music-symbolic"
 #define DIR_TYPE "folder-visiting-symbolic"
 
-int debug_level;
+gint debug_level;
 
 static guint
 get_max_message_length (guint msg_len)
@@ -49,60 +49,66 @@ get_max_message_length (guint msg_len)
 }
 
 gchar *
-debug_get_hex_msg (const GByteArray * msg)
+debug_get_hex_data (gint level, guint8 * data, guint len)
 {
   gint i;
-  guint8 *data;
+  guint8 *b;
   guint size;
   guint bytes_shown;
   guint extra;
   gchar *str;
   gchar *next;
 
-  if (debug_level >= DEBUG_FULL_HEX_THRES)
+  if (level >= DEBUG_FULL_HEX_THRES)
     {
-      bytes_shown = msg->len;
+      bytes_shown = len;
       extra = 0;
     }
   else
     {
-      if (msg->len > DEBUG_SHORT_HEX_LEN)
+      if (len > DEBUG_SHORT_HEX_LEN)
 	{
 	  bytes_shown = DEBUG_SHORT_HEX_LEN;
 	  extra = 3;
 	}
       else
 	{
-	  bytes_shown = msg->len;
+	  bytes_shown = len;
 	  extra = 0;
 	}
     }
   size = bytes_shown * 3 + extra;
   str = malloc (sizeof (char) * size);
 
-  data = msg->data;
+  b = data;
   next = str;
 
-  sprintf (next, "%02x", *data);
+  sprintf (next, "%02x", *b);
   next += 2;
-  data++;
+  b++;
 
   i = 1;
-  while (i < get_max_message_length (msg->len))
+  while (i < get_max_message_length (len))
     {
-      sprintf (next, " %02x", *data);
+      sprintf (next, " %02x", *b);
       next += 3;
-      data++;
+      b++;
       i++;
     }
 
-  if (debug_level < DEBUG_FULL_HEX_THRES && msg->len > DEBUG_SHORT_HEX_LEN)
+  if (level < DEBUG_FULL_HEX_THRES && len > DEBUG_SHORT_HEX_LEN)
     {
       sprintf (next, "...");
       next += 3;
     }
 
   return str;
+}
+
+gchar *
+debug_get_hex_msg (const GByteArray * msg)
+{
+  return debug_get_hex_data (debug_level, msg->data, msg->len);
 }
 
 gchar *
@@ -136,12 +142,12 @@ remove_ext (char *name)
   *dot = 0;
 }
 
-const char *
-get_ext (const char *name)
+const gchar *
+get_ext (const gchar * name)
 {
   int namelen = strlen (name) - 1;
   int i = namelen;
-  const char *ext = &name[namelen];
+  const gchar *ext = &name[namelen];
 
   while (*(ext - 1) != '.' && i > 0)
     {
@@ -160,9 +166,9 @@ get_ext (const char *name)
 }
 
 char
-get_type_from_inventory_icon (const char *icon)
+get_type_from_inventory_icon (const gchar * icon)
 {
-  char type;
+  gchar type;
 
   if (strcmp (icon, REG_TYPE) == 0)
     {
@@ -175,10 +181,10 @@ get_type_from_inventory_icon (const char *icon)
   return type;
 }
 
-const char *
+const gchar *
 get_inventory_icon_from_type (char type)
 {
-  const char *icon;
+  const gchar *icon;
 
   if (type == ELEKTROID_FILE)
     {
@@ -192,10 +198,10 @@ get_inventory_icon_from_type (char type)
 }
 
 char *
-get_local_startup_path (const char *local_dir)
+get_local_startup_path (const gchar * local_dir)
 {
   DIR *dir;
-  char *startup_path = NULL;
+  gchar *startup_path = NULL;
   wordexp_t exp_result;
 
   if (local_dir)
