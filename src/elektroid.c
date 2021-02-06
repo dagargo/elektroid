@@ -1823,7 +1823,7 @@ elektroid_upload_task (gpointer data)
 			     elektroid_update_progress);
   free (remote_path);
 
-  if (frames < 0)
+  if (frames < 0 && sample_transfer.transfer.active)
     {
       error_print ("Error while uploading\n");
       sample_transfer.status = COMPLETED_ERROR;
@@ -2019,7 +2019,7 @@ elektroid_download_task (gpointer data)
 			&sample_transfer.transfer, elektroid_update_progress);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
-  if (sample == NULL)
+  if (sample == NULL && sample_transfer.transfer.active)
     {
       error_print ("Error while downloading\n");
       sample_transfer.status = COMPLETED_ERROR;

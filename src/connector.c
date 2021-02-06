@@ -1089,7 +1089,7 @@ connector_upload (struct connector *connector, GArray * sample,
       free_msg (rx_msg);
     }
 
-  return transferred;
+  return active ? transferred : -1;
 }
 
 GArray *
