@@ -950,9 +950,8 @@ elektroid_stop_load_thread ()
   if (load_thread)
     {
       g_thread_join (load_thread);
+      load_thread = NULL;
     }
-
-  load_thread = NULL;
 }
 
 static void
@@ -962,8 +961,8 @@ elektroid_join_task_thread ()
   if (task_thread)
     {
       g_thread_join (task_thread);
+      task_thread = NULL;
     }
-  task_thread = NULL;
 }
 
 static void
