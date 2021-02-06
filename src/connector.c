@@ -538,6 +538,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
 void
 connector_rx_drain (struct connector *connector)
 {
+  debug_print (2, "Draining buffer...\n");
   snd_rawmidi_drain (connector->inputp);
 }
 
@@ -566,6 +567,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
   guint total_time;
   unsigned short revents;
   gint err;
+  gchar *text;
 
   if (!connector->inputp)
     {
@@ -591,6 +593,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 	       || !transfer->batch) && transfer->timeout > -1
 	      && total_time >= transfer->timeout)
 	    {
+	      debug_print (1, "Timeout!\n");
 	      return -ENODATA;
 	    }
 	  continue;
@@ -609,7 +612,8 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 						 connector->npfds,
 						 &revents)) < 0)
 	{
-	  error_print ("No poll events. %s.\n", g_strerror (errno));
+	  error_print ("Error while getting poll events. %s.\n",
+		       g_strerror (errno));
 	  connector_destroy (connector);
 	  return err;
 	}
@@ -648,6 +652,13 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 	  break;
 	}
 
+    }
+
+  if (debug_level > 1)
+    {
+      text = debug_get_hex_data (3, data, rx_len);
+      debug_print (1, "Buffer content (%lu): %s\n", rx_len, text);
+      free (text);
     }
 
   return rx_len;
