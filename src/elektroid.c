@@ -2253,6 +2253,11 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 
   if (gtk_combo_box_get_active_iter (devices_combo, &iter) == TRUE)
     {
+      if (connector_check (&connector))
+	{
+	  connector_destroy (&connector);
+	}
+
       gtk_tree_model_get_value (GTK_TREE_MODEL (devices_list_store),
 				&iter, 0, &cardv);
 
