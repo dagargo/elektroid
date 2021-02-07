@@ -131,7 +131,7 @@ static GtkWidget *remove_tasks_button;
 static GtkWidget *clear_tasks_button;
 
 static void
-elektroid_load_devices (int auto_select)
+elektroid_load_devices (gboolean auto_select)
 {
   int i;
   GArray *devices = connector_get_elektron_devices ();
@@ -245,7 +245,7 @@ elektroid_check_connector ()
       gtk_widget_set_sensitive (download_button, FALSE);
       gtk_widget_set_sensitive (upload_button, FALSE);
 
-      elektroid_load_devices (0);
+      elektroid_load_devices (FALSE);
     }
 
   elektroid_update_statusbar ();
@@ -269,7 +269,7 @@ browser_refresh_devices (GtkWidget * object, gpointer data)
       connector_destroy (&connector);
       elektroid_check_connector ();
     }
-  elektroid_load_devices (0);
+  elektroid_load_devices (FALSE);
 }
 
 static gpointer
@@ -2606,7 +2606,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
-  elektroid_load_devices (1);
+  elektroid_load_devices (TRUE);
 
   gethostname (hostname, LABEL_MAX);
   gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
