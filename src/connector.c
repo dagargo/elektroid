@@ -789,10 +789,12 @@ connector_rx (struct connector *connector)
 		 || sysex->data[4] != MSG_HEADER[4]
 		 || sysex->data[5] != MSG_HEADER[5])))
     {
-      debug_print (1, "Skipping message...\n");
-      text = debug_get_hex_msg (sysex);
-      debug_print (1, "Message skipped (%d): %s\n", sysex->len, text);
-      free (text);
+      if (debug_level > 1)
+	{
+	  text = debug_get_hex_msg (sysex);
+	  debug_print (2, "Message skipped (%d): %s\n", sysex->len, text);
+	  free (text);
+	}
       free_msg (sysex);
 
       transfer.active = TRUE;
