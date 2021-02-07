@@ -1117,7 +1117,7 @@ connector_download (struct connector *connector, const gchar * path,
   int16_t *frame;
   int i;
   gboolean active;
-  GArray *result = NULL;
+  GArray *result;
   gchar *path_cp1252 =
     g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 

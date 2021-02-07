@@ -1821,6 +1821,7 @@ elektroid_upload_task (gpointer data)
   frames = connector_upload (&connector, sample, remote_path,
 			     &sample_transfer.transfer,
 			     elektroid_update_progress);
+  g_idle_add (elektroid_check_connector_bg, NULL);
   free (remote_path);
 
   if (frames < 0 && sample_transfer.transfer.active)
@@ -1842,13 +1843,14 @@ elektroid_upload_task (gpointer data)
       g_mutex_unlock (&sample_transfer.transfer.mutex);
     }
 
-  g_idle_add (elektroid_check_connector_bg, NULL);
-
   g_array_free (sample, TRUE);
 
-  if (strcmp (sample_transfer.dst, remote_browser.dir) == 0)
+  if (frames > 0)
     {
-      g_idle_add (remote_browser.load_dir, NULL);
+      if (strcmp (sample_transfer.dst, remote_browser.dir) == 0)
+	{
+	  g_idle_add (remote_browser.load_dir, NULL);
+	}
     }
 
 complete_task:
@@ -2041,7 +2043,10 @@ elektroid_download_task (gpointer data)
 	  sample_transfer.status = CANCELED;
 	}
       g_mutex_unlock (&sample_transfer.transfer.mutex);
+    }
 
+  if (sample)
+    {
       g_array_free (sample, TRUE);
       if (strcmp (sample_transfer.dst, local_browser.dir) == 0)
 	{
