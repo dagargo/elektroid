@@ -134,11 +134,11 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         <property name="margin_bottom">9</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkModelButton" id="local_play_button">
+          <object class="GtkModelButton" id="upload_button">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">True</property>
-            <property name="text" translatable="yes">_Play</property>
+            <property name="text" translatable="yes">Upload Selection</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -158,6 +158,30 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           </packing>
         </child>
         <child>
+          <object class="GtkModelButton" id="local_play_button">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="text" translatable="yes">_Play</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkModelButton" id="local_open_button">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -167,7 +191,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">2</property>
+            <property name="position">4</property>
           </packing>
         </child>
         <child>
@@ -180,7 +204,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">3</property>
+            <property name="position">5</property>
           </packing>
         </child>
         <child>
@@ -191,7 +215,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">4</property>
+            <property name="position">6</property>
           </packing>
         </child>
         <child>
@@ -204,7 +228,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">5</property>
+            <property name="position">7</property>
           </packing>
         </child>
         <child>
@@ -217,12 +241,13 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">6</property>
+            <property name="position">8</property>
           </packing>
         </child>
       </object>
       <packing>
         <property name="submenu">main</property>
+        <property name="position">1</property>
       </packing>
     </child>
   </object>
@@ -562,62 +587,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkBox">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="valign">center</property>
-                        <property name="orientation">vertical</property>
-                        <property name="spacing">6</property>
-                        <child>
-                          <object class="GtkButton" id="upload_button">
-                            <property name="name">upload_button</property>
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="receives_default">True</property>
-                            <property name="tooltip_text" translatable="yes">Upload Selection</property>
-                            <child>
-                              <object class="GtkImage">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="icon_name">go-next-symbolic</property>
-                              </object>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkButton" id="download_button">
-                            <property name="name">download_button</property>
-                            <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="receives_default">True</property>
-                            <property name="tooltip_text" translatable="yes">Download Selection</property>
-                            <property name="always_show_image">True</property>
-                            <child>
-                              <object class="GtkImage">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="icon_name">go-previous-symbolic</property>
-                              </object>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
                       <object class="GtkBox" id="remote_box">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -796,7 +765,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         </child>
                       </object>
                       <packing>
-                        <property name="left_attach">2</property>
+                        <property name="left_attach">1</property>
                         <property name="top_attach">1</property>
                       </packing>
                     </child>
@@ -846,7 +815,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         </child>
                       </object>
                       <packing>
-                        <property name="left_attach">2</property>
+                        <property name="left_attach">1</property>
                         <property name="top_attach">0</property>
                       </packing>
                     </child>
@@ -861,9 +830,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <property name="left_attach">0</property>
                         <property name="top_attach">0</property>
                       </packing>
-                    </child>
-                    <child>
-                      <placeholder/>
                     </child>
                   </object>
                   <packing>
@@ -1519,6 +1485,30 @@ audio-volume-medium-symbolic</property>
         <property name="margin_bottom">9</property>
         <property name="orientation">vertical</property>
         <child>
+          <object class="GtkModelButton" id="download_button">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="text" translatable="yes">Download Selection</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkModelButton" id="remote_rename_button">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -1528,7 +1518,7 @@ audio-volume-medium-symbolic</property>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">0</property>
+            <property name="position">2</property>
           </packing>
         </child>
         <child>
@@ -1541,7 +1531,7 @@ audio-volume-medium-symbolic</property>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">1</property>
+            <property name="position">3</property>
           </packing>
         </child>
       </object>
