@@ -133,7 +133,8 @@ static GtkWidget *clear_tasks_button;
 static void
 elektroid_load_devices (gboolean auto_select)
 {
-  int i;
+  gint i;
+  gint device_index;
   GArray *devices = connector_get_elektron_devices ();
   struct connector_device device;
 
@@ -153,15 +154,9 @@ elektroid_load_devices (gboolean auto_select)
 
   g_array_free (devices, TRUE);
 
-  if (auto_select && i == 1)
-    {
-      debug_print (1, "Selecting device 0...\n");
-      gtk_combo_box_set_active (devices_combo, 0);
-    }
-  else
-    {
-      gtk_combo_box_set_active (devices_combo, -1);
-    }
+  device_index = auto_select && i == 1 ? 0 : -1;
+  debug_print (1, "Selecting device %d...\n", device_index);
+  gtk_combo_box_set_active (devices_combo, device_index);
 }
 
 static void
