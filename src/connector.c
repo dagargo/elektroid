@@ -33,7 +33,7 @@
 #define TRANSF_BLOCK_SIZE_SAMPLE 0x2000
 #define TRANSF_BLOCK_SIZE_OS 0x800
 #define POLL_TIMEOUT 20
-#define REST_TIME 20000
+#define REST_TIME 50000
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
