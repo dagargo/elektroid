@@ -2,8 +2,6 @@
 
 TEST_NAME=auto-test
 
-ecli="$srcdir/../src/elektroid-cli"
-
 echo "Getting devices..."
 DEVICE=$($ecli ld | head -n 1 | awk '{print $1}')
 [ -z "$DEVICE" ] && echo "No device found" && exit 1
@@ -46,8 +44,8 @@ sleep 1
 echo "Testing download..."
 $ecli download $DEVICE:/$TEST_NAME/square
 [ $? -ne 0 ] && exit 1
-actual_cksum="$(cksum $srcdir/square.wav | awk '{print $1}')"
-rm $srcdir/square.wav
+actual_cksum="$(cksum square.wav | awk '{print $1}')"
+rm square.wav
 [ "$actual_cksum" != "$(cksum $srcdir/res/square.wav | awk '{print $1}')" ] && exit 1
 
 sleep 1
