@@ -1567,7 +1567,7 @@ connector_init (struct connector *connector, gint card)
       goto cleanup_device;
     }
 
-  if (debug_level)
+  if (debug_level > 1)
     {
       tx_msg = connector_new_msg_data (INQ_UID, sizeof (INQ_UID));
       rx_msg_uid = connector_tx_and_rx (connector, tx_msg);
