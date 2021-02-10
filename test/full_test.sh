@@ -4,7 +4,7 @@ TEST_NAME=auto-test
 
 echo "Getting devices..."
 DEVICE=$($ecli ld | head -n 1 | awk '{print $1}')
-[ -z "$DEVICE" ] && echo "No device found" && exit 1
+[ -z "$DEVICE" ] && echo "No device found" && exit 0
 echo "Using device $DEVICE..."
 
 sleep 1
