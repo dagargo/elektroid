@@ -152,7 +152,7 @@ connector_get_next_dentry (struct connector_dir_iterator *dir_iterator)
 }
 
 static GByteArray *
-connector_sysex_to_msg (const GByteArray * src)
+connector_decode_payload (const GByteArray * src)
 {
   GByteArray *dst;
   int i, j, k, dst_len;
@@ -177,7 +177,7 @@ connector_sysex_to_msg (const GByteArray * src)
 }
 
 static GByteArray *
-connector_msg_to_sysex (const GByteArray * src)
+connector_encode_payload (const GByteArray * src)
 {
   GByteArray *dst;
   int i, j, k, dst_len;
@@ -206,6 +206,21 @@ connector_msg_to_sysex (const GByteArray * src)
     }
 
   return dst;
+}
+
+static GByteArray *
+connector_msg_to_sysex (const GByteArray * msg)
+{
+  GByteArray *encoded;
+  GByteArray *sysex = g_byte_array_new ();
+
+  g_byte_array_append (sysex, MSG_HEADER, sizeof (MSG_HEADER));
+  encoded = connector_encode_payload (msg);
+  g_byte_array_append (sysex, encoded->data, encoded->len);
+  free_msg (encoded);
+  g_byte_array_append (sysex, (guint8 *) "\xf7", 1);
+
+  return sysex;
 }
 
 void
@@ -390,25 +405,25 @@ connector_new_msg_dwnl_blck (guint id, guint start, guint size)
 }
 
 static GByteArray *
-connector_get_msg_payload (GByteArray * msg)
+connector_sysex_to_msg (GByteArray * sysex)
 {
-  GByteArray *transformed;
+  GByteArray *msg;
   GByteArray *payload;
-  gint len = msg->len - sizeof (MSG_HEADER) - 1;
+  gint len = sysex->len - sizeof (MSG_HEADER) - 1;
 
   if (len > 0)
     {
       payload = g_byte_array_new ();
-      g_byte_array_append (payload, &msg->data[sizeof (MSG_HEADER)], len);
-      transformed = connector_sysex_to_msg (payload);
+      g_byte_array_append (payload, &sysex->data[sizeof (MSG_HEADER)], len);
+      msg = connector_decode_payload (payload);
       free_msg (payload);
     }
   else
     {
-      transformed = NULL;
+      msg = NULL;
     }
 
-  return transformed;
+  return msg;
 }
 
 static ssize_t
@@ -477,7 +492,6 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   ssize_t ret;
   uint16_t aux;
   GByteArray *sysex;
-  GByteArray *data;
   struct connector_sysex_transfer transfer;
   gchar *text;
 
@@ -493,21 +507,16 @@ connector_tx (struct connector *connector, const GByteArray * msg)
     }
 
   transfer.active = TRUE;
-  data = g_byte_array_new ();
-  g_byte_array_append (data, MSG_HEADER, sizeof (MSG_HEADER));
   sysex = connector_msg_to_sysex (msg);
-  g_byte_array_append (data, sysex->data, sysex->len);
-  free_msg (sysex);
-  g_byte_array_append (data, (guint8 *) "\xf7", 1);
 
-  ret = connector_tx_sysex (connector, data, &transfer);
+  ret = connector_tx_sysex (connector, sysex, &transfer);
 
   if (ret >= 0)
     {
       if (debug_level > 1)
 	{
-	  text = debug_get_hex_msg (data);
-	  debug_print (2, "Raw message sent (%d): %s\n", data->len, text);
+	  text = debug_get_hex_msg (sysex);
+	  debug_print (2, "Raw message sent (%d): %s\n", sysex->len, text);
 	  free (text);
 	}
 
@@ -516,7 +525,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
       free (text);
     }
 
-  free_msg (data);
+  free_msg (sysex);
   return ret;
 }
 
@@ -812,7 +821,7 @@ connector_rx (struct connector *connector)
       free (text);
     }
 
-  msg = connector_get_msg_payload (sysex);
+  msg = connector_sysex_to_msg (sysex);
   if (msg)
     {
       text = debug_get_hex_msg (msg);
