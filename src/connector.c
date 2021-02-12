@@ -643,7 +643,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
   if (debug_level > 1)
     {
       text = debug_get_hex_data (3, data, rx_len);
-      debug_print (1, "Buffer content (%zu): %s\n", rx_len, text);
+      debug_print (2, "Buffer content (%zu): %s\n", rx_len, text);
       free (text);
     }
 
