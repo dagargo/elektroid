@@ -1969,6 +1969,11 @@ elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.view));
 
+  if (!gtk_tree_selection_count_selected_rows (selection))
+    {
+      return;
+    }
+
   queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL);
 
   gtk_tree_selection_selected_foreach (selection,
@@ -2139,6 +2144,11 @@ elektroid_add_download_tasks (GtkWidget * object, gpointer data)
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
 
+  if (!gtk_tree_selection_count_selected_rows (selection))
+    {
+      return;
+    }
+
   queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL);
 
   gtk_tree_selection_selected_foreach (selection,
@@ -2231,6 +2241,18 @@ elektroid_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
       else if (event->keyval == GDK_KEY_Menu)
 	{
 	  elektroid_show_popover (browser);
+	  return TRUE;
+	}
+      else if (event->state & GDK_CONTROL_MASK
+	       && event->keyval == GDK_KEY_Right)
+	{
+	  elektroid_add_upload_tasks (NULL, NULL);
+	  return TRUE;
+	}
+      else if (event->state & GDK_CONTROL_MASK
+	       && event->keyval == GDK_KEY_Left)
+	{
+	  elektroid_add_download_tasks (NULL, NULL);
 	  return TRUE;
 	}
     }
