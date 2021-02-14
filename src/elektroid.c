@@ -237,8 +237,6 @@ elektroid_check_connector ()
 	GTK_LIST_STORE (gtk_tree_view_get_model (remote_browser.view));
       gtk_entry_set_text (remote_browser.dir_entry, "");
       gtk_list_store_clear (list_store);
-      gtk_widget_set_sensitive (download_button, FALSE);
-      gtk_widget_set_sensitive (upload_button, FALSE);
 
       elektroid_load_devices (FALSE);
     }
@@ -819,6 +817,7 @@ elektroid_local_popover_set_up (gint count)
   gtk_widget_set_sensitive (local_show_button, count <= 1 ? TRUE : FALSE);
   gtk_widget_set_sensitive (local_rename_button, count == 1 ? TRUE : FALSE);
   gtk_widget_set_sensitive (local_delete_button, count > 0 ? TRUE : FALSE);
+  gtk_widget_set_sensitive (upload_button, connector_check (&connector));
 }
 
 void
@@ -975,8 +974,6 @@ elektroid_stop_task_thread ()
 static gboolean
 elektroid_remote_check_selection (gpointer data)
 {
-  gint count = browser_get_selected_items_count (&remote_browser);
-  gtk_widget_set_sensitive (download_button, count > 0);
   return FALSE;
 }
 
@@ -996,8 +993,6 @@ elektroid_local_check_selection (gpointer data)
   audio_reset_sample (&audio);
   gtk_widget_queue_draw (waveform_draw_area);
   elektroid_controls_set_sensitive (FALSE);
-  gtk_widget_set_sensitive (upload_button, count > 0
-			    && connector_check (&connector));
 
   if (count == 1)
     {
@@ -2249,7 +2244,6 @@ elektroid_set_device (GtkWidget * object, gpointer data)
   GtkTreeIter iter;
   GValue cardv = G_VALUE_INIT;
   guint card;
-  gint count;
 
   if (gtk_combo_box_get_active_iter (devices_combo, &iter) == TRUE)
     {
@@ -2272,9 +2266,6 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 	{
 	  strcpy (remote_browser.dir, "/");
 	  remote_browser.load_dir (NULL);
-
-	  count = browser_get_selected_items_count (&local_browser);
-	  gtk_widget_set_sensitive (upload_button, count > 0);
 	}
     }
 }
@@ -2595,8 +2586,6 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   autoplay = gtk_switch_get_active (GTK_SWITCH (autoplay_switch));
 
   gtk_widget_set_sensitive (remote_box, FALSE);
-  gtk_widget_set_sensitive (download_button, FALSE);
-  gtk_widget_set_sensitive (upload_button, FALSE);
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   gtk_widget_set_sensitive (os_upgrade_button, FALSE);
