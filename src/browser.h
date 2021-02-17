@@ -33,14 +33,14 @@ struct browser
   gint (*delete) (const gchar *, const gchar);
   gboolean (*load_dir) (gpointer);
   gboolean (*check_selection) (gpointer);
-  void (*set_up_popover) (gint);
+  void (*set_up_menu) (gint);
   GtkTreeView *view;
   GtkWidget *up_button;
   GtkWidget *add_dir_button;
   GtkWidget *refresh_button;
   GtkEntry *dir_entry;
   gchar *dir;
-  GtkPopover *popover;
+  GtkMenu *menu;
 };
 
 gint browser_sort (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *, gpointer);

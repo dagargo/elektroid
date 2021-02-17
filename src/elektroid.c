@@ -109,18 +109,18 @@ static GtkWidget *os_upgrade_button;
 static GtkWidget *about_button;
 static GtkWidget *remote_box;
 static GtkWidget *waveform_draw_area;
-static GtkWidget *upload_button;
-static GtkWidget *download_button;
 static GtkStatusbar *status_bar;
 static GtkListStore *devices_list_store;
 static GtkComboBox *devices_combo;
-static GtkWidget *local_play_button;
-static GtkWidget *local_open_button;
-static GtkWidget *local_show_button;
-static GtkWidget *local_rename_button;
-static GtkWidget *local_delete_button;
-static GtkWidget *remote_rename_button;
-static GtkWidget *remote_delete_button;
+static GtkWidget *upload_menuitem;
+static GtkWidget *local_play_menuitem;
+static GtkWidget *local_open_menuitem;
+static GtkWidget *local_show_menuitem;
+static GtkWidget *local_rename_menuitem;
+static GtkWidget *local_delete_menuitem;
+static GtkWidget *download_menuitem;
+static GtkWidget *remote_rename_menuitem;
+static GtkWidget *remote_delete_menuitem;
 static GtkWidget *play_button;
 static GtkWidget *stop_button;
 static GtkWidget *volume_button;
@@ -617,7 +617,7 @@ elektroid_show_about (GtkWidget * object, gpointer data)
 static void
 elektroid_controls_set_sensitive (gboolean sensitive)
 {
-  gtk_widget_set_sensitive (local_play_button, sensitive);
+  gtk_widget_set_sensitive (local_play_menuitem, sensitive);
   gtk_widget_set_sensitive (play_button, sensitive);
   gtk_widget_set_sensitive (stop_button, sensitive);
 }
@@ -812,43 +812,42 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 }
 
 void
-elektroid_local_popover_set_up (gint count)
+elektroid_local_menu_set_up (gint count)
 {
-  gtk_widget_set_sensitive (local_show_button, count <= 1 ? TRUE : FALSE);
-  gtk_widget_set_sensitive (local_rename_button, count == 1 ? TRUE : FALSE);
-  gtk_widget_set_sensitive (local_delete_button, count > 0 ? TRUE : FALSE);
-  gtk_widget_set_sensitive (upload_button, connector_check (&connector));
+  gtk_widget_set_sensitive (local_show_menuitem, count <= 1 ? TRUE : FALSE);
+  gtk_widget_set_sensitive (local_rename_menuitem, count == 1 ? TRUE : FALSE);
+  gtk_widget_set_sensitive (local_delete_menuitem, count > 0 ? TRUE : FALSE);
+  gtk_widget_set_sensitive (upload_menuitem, connector_check (&connector));
 }
 
 void
-elektroid_remote_popover_set_up (gint count)
+elektroid_remote_menu_set_up (gint count)
 {
-  gtk_widget_set_sensitive (remote_rename_button, count == 1 ? TRUE : FALSE);
-  gtk_widget_set_sensitive (remote_delete_button, count > 0 ? TRUE : FALSE);
+  gtk_widget_set_sensitive (remote_rename_menuitem,
+			    count == 1 ? TRUE : FALSE);
+  gtk_widget_set_sensitive (remote_delete_menuitem, count > 0 ? TRUE : FALSE);
 }
 
 static void
-elektroid_show_popover (struct browser *browser)
+elektroid_show_menu (struct browser *browser, GdkEvent * event)
 {
   gint count;
 
   count = browser_get_selected_items_count (browser);
-  browser->set_up_popover (count);
-  gtk_popover_popup (browser->popover);
+  browser->set_up_menu (count);
+  gtk_menu_popup_at_pointer (browser->menu, event);
 }
 
 static gboolean
 elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
 			gpointer data)
 {
-  GdkRectangle rect;
   GtkTreePath *path;
   gboolean selected;
   GtkTreeSelection *selection;
   struct browser *browser = data;
 
-  if (event->type == GDK_BUTTON_PRESS
-      && event->button == GDK_BUTTON_SECONDARY)
+  if (event->button == GDK_BUTTON_SECONDARY)
     {
       selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
       gtk_tree_view_get_path_at_pos (browser->view,
@@ -874,15 +873,9 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
 	  gtk_tree_selection_select_path (selection, path);
 	}
 
-      gtk_tree_view_get_background_area (browser->view, path, NULL, &rect);
       gtk_tree_path_free (path);
 
-      rect.x = event->x;
-      rect.y = rect.y + rect.height;
-
-      gtk_popover_set_pointing_to (browser->popover, &rect);
-
-      elektroid_show_popover (browser);
+      elektroid_show_menu (browser, (GdkEvent *) event);
 
       return TRUE;
     }
@@ -1002,13 +995,13 @@ elektroid_local_check_selection (gpointer data)
       type = get_type_from_inventory_icon (icon);
       if (type == ELEKTROID_FILE)
 	{
-	  gtk_widget_set_sensitive (local_open_button, TRUE);
+	  gtk_widget_set_sensitive (local_open_menuitem, TRUE);
 	  sample_path = chain_path (local_browser.dir, name);
 	  elektroid_start_load_thread (sample_path);
 	}
       else
 	{
-	  gtk_widget_set_sensitive (local_open_button, FALSE);
+	  gtk_widget_set_sensitive (local_open_menuitem, FALSE);
 	}
       g_free (icon);
       g_free (name);
@@ -2191,69 +2184,94 @@ elektroid_update_progress (gdouble progress)
 }
 
 static gboolean
-elektroid_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
+elektroid_common_key_press (GtkWidget * widget, GdkEventKey * event,
+			    gpointer data)
 {
   gint count;
   struct browser *browser = data;
 
+  if (event->keyval == GDK_KEY_Menu)
+    {
+      elektroid_show_menu (browser, (GdkEvent *) event);
+      return TRUE;
+    }
+  else if (event->keyval == GDK_KEY_F2)
+    {
+      count = browser_get_selected_items_count (browser);
+      if (count == 1)
+	{
+	  elektroid_rename_item (NULL, browser);
+	}
+      return TRUE;
+    }
+  else if (event->keyval == GDK_KEY_Delete)
+    {
+      count = browser_get_selected_items_count (browser);
+      if (count)
+	{
+	  elektroid_delete_files (NULL, browser);
+	}
+      return TRUE;
+    }
+  else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_r)
+    {
+      browser->load_dir (NULL);
+      return TRUE;
+    }
+  else if (event->state & GDK_CONTROL_MASK
+	   && (event->keyval == GDK_KEY_U || event->keyval == GDK_KEY_u))
+    {
+      browser_go_up (NULL, browser);
+      return TRUE;
+    }
+  else if (event->state & GDK_CONTROL_MASK
+	   && event->state & GDK_SHIFT_MASK && (event->keyval == GDK_KEY_N
+						|| event->keyval ==
+						GDK_KEY_n))
+    {
+      elektroid_add_dir (NULL, browser);
+      return TRUE;
+    }
+  else
+    {
+      return FALSE;
+    }
+}
+
+static gboolean
+elektroid_remote_key_press (GtkWidget * widget, GdkEventKey * event,
+			    gpointer data)
+{
   if (event->type == GDK_KEY_PRESS)
     {
-      if (event->keyval == GDK_KEY_Delete)
+      if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_Left)
 	{
-	  count = browser_get_selected_items_count (browser);
-	  if (count)
-	    {
-	      elektroid_delete_files (NULL, browser);
-	    }
+	  elektroid_add_download_tasks (NULL, NULL);
 	  return TRUE;
 	}
-      else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_r)
+      else
 	{
-	  browser->load_dir (NULL);
-	  return TRUE;
+	  return elektroid_common_key_press (widget, event, data);
 	}
-      else if (event->state & GDK_CONTROL_MASK
-	       && (event->keyval == GDK_KEY_U || event->keyval == GDK_KEY_u))
-	{
-	  browser_go_up (NULL, browser);
-	  return TRUE;
-	}
-      else if (event->state & GDK_CONTROL_MASK
-	       && event->state & GDK_SHIFT_MASK && (event->keyval == GDK_KEY_N
-						    || event->keyval ==
-						    GDK_KEY_n))
-	{
-	  elektroid_add_dir (NULL, browser);
-	  return TRUE;
-	}
-      else if (event->state & GDK_CONTROL_MASK
-	       && event->state & GDK_SHIFT_MASK && (event->keyval == GDK_KEY_R
-						    || event->keyval ==
-						    GDK_KEY_r))
-	{
-	  count = browser_get_selected_items_count (browser);
-	  if (count == 1)
-	    {
-	      elektroid_rename_item (NULL, browser);
-	    }
-	  return TRUE;
-	}
-      else if (event->keyval == GDK_KEY_Menu)
-	{
-	  elektroid_show_popover (browser);
-	  return TRUE;
-	}
-      else if (event->state & GDK_CONTROL_MASK
-	       && event->keyval == GDK_KEY_Right)
+    }
+
+  return FALSE;
+}
+
+static gboolean
+elektroid_local_key_press (GtkWidget * widget, GdkEventKey * event,
+			   gpointer data)
+{
+  if (event->type == GDK_KEY_PRESS)
+    {
+      if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_Right)
 	{
 	  elektroid_add_upload_tasks (NULL, NULL);
 	  return TRUE;
 	}
-      else if (event->state & GDK_CONTROL_MASK
-	       && event->keyval == GDK_KEY_Left)
+      else
 	{
-	  elektroid_add_download_tasks (NULL, NULL);
-	  return TRUE;
+	  return elektroid_common_key_press (widget, event, data);
 	}
     }
 
@@ -2401,10 +2419,6 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     GTK_WIDGET (gtk_builder_get_object (builder, "autoplay_switch"));
   volume_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "volume_button"));
-  upload_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "upload_button"));
-  download_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "download_button"));
   status_bar = GTK_STATUSBAR (gtk_builder_get_object (builder, "status_bar"));
 
   g_signal_connect (main_window, "delete-event",
@@ -2444,39 +2458,43 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 		    G_CALLBACK (elektroid_autoplay_clicked), NULL);
   g_signal_connect (volume_button, "value_changed",
 		    G_CALLBACK (elektroid_set_volume), NULL);
-  g_signal_connect (download_button, "clicked",
-		    G_CALLBACK (elektroid_add_download_tasks), NULL);
-  g_signal_connect (upload_button, "clicked",
-		    G_CALLBACK (elektroid_add_upload_tasks), NULL);
 
-  remote_rename_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_rename_button"));
-  remote_delete_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_delete_button"));
-  g_signal_connect (remote_rename_button, "clicked",
+  download_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "download_menuitem"));
+  remote_rename_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_rename_menuitem"));
+  remote_delete_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_delete_menuitem"));
+  g_signal_connect (download_menuitem, "activate",
+		    G_CALLBACK (elektroid_add_download_tasks), NULL);
+  g_signal_connect (remote_rename_menuitem, "activate",
 		    G_CALLBACK (elektroid_rename_item), &remote_browser);
-  g_signal_connect (remote_delete_button, "clicked",
+  g_signal_connect (remote_delete_menuitem, "activate",
 		    G_CALLBACK (elektroid_delete_files), &remote_browser);
 
-  local_play_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_play_button"));
-  local_open_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_open_button"));
-  local_show_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_show_button"));
-  local_rename_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_rename_button"));
-  local_delete_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_delete_button"));
-  g_signal_connect (local_play_button, "clicked",
+  upload_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "upload_menuitem"));
+  local_play_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_play_menuitem"));
+  local_open_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_open_menuitem"));
+  local_show_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_show_menuitem"));
+  local_rename_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_rename_menuitem"));
+  local_delete_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_delete_menuitem"));
+  g_signal_connect (upload_menuitem, "activate",
+		    G_CALLBACK (elektroid_add_upload_tasks), NULL);
+  g_signal_connect (local_play_menuitem, "activate",
 		    G_CALLBACK (elektroid_play_clicked), NULL);
-  g_signal_connect (local_open_button, "clicked",
+  g_signal_connect (local_open_menuitem, "activate",
 		    G_CALLBACK (elektroid_open_clicked), NULL);
-  g_signal_connect (local_show_button, "clicked",
+  g_signal_connect (local_show_menuitem, "activate",
 		    G_CALLBACK (elektroid_show_clicked), NULL);
-  g_signal_connect (local_rename_button, "clicked",
+  g_signal_connect (local_rename_menuitem, "activate",
 		    G_CALLBACK (elektroid_rename_item), &local_browser);
-  g_signal_connect (local_delete_button, "clicked",
+  g_signal_connect (local_delete_menuitem, "activate",
 		    G_CALLBACK (elektroid_delete_files), &local_browser);
 
   remote_browser = (struct browser)
@@ -2491,15 +2509,14 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_refresh_button")),
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry")),
-    .popover =
-      GTK_POPOVER (gtk_builder_get_object (builder, "remote_popover")),
+    .menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu")),
     .dir = malloc (PATH_MAX),
     .load_dir = elektroid_load_remote_dir,
     .check_selection = elektroid_remote_check_selection,
     .rename = elektroid_remote_rename,
     .delete = elektroid_remote_delete,
     .mkdir = elektroid_remote_mkdir,
-    .set_up_popover = elektroid_remote_popover_set_up
+    .set_up_menu = elektroid_remote_menu_set_up
   };
 
   g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
@@ -2516,7 +2533,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (remote_browser.view, "button-press-event",
 		    G_CALLBACK (elektroid_button_press), &remote_browser);
   g_signal_connect (remote_browser.view, "key_press_event",
-		    G_CALLBACK (elektroid_key_press), &remote_browser);
+		    G_CALLBACK (elektroid_remote_key_press), &remote_browser);
 
   local_browser = (struct browser)
   {
@@ -2530,15 +2547,14 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
       GTK_WIDGET (gtk_builder_get_object (builder, "local_refresh_button")),
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry")),
-    .popover =
-      GTK_POPOVER (gtk_builder_get_object (builder, "local_popover")),
+    .menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu")),
     .dir = malloc (PATH_MAX),
     .load_dir = elektroid_load_local_dir,
     .check_selection = elektroid_local_check_selection,
     .rename = elektroid_local_rename,
     .delete = elektroid_local_delete,
     .mkdir = elektroid_local_mkdir,
-    .set_up_popover = elektroid_local_popover_set_up
+    .set_up_menu = elektroid_local_menu_set_up
   };
 
   g_signal_connect (gtk_tree_view_get_selection (local_browser.view),
@@ -2555,7 +2571,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (local_browser.view, "button-press-event",
 		    G_CALLBACK (elektroid_button_press), &local_browser);
   g_signal_connect (local_browser.view, "key_press_event",
-		    G_CALLBACK (elektroid_key_press), &local_browser);
+		    G_CALLBACK (elektroid_local_key_press), &local_browser);
 
   sortable = GTK_TREE_SORTABLE (gtk_tree_view_get_model (local_browser.view));
   gtk_tree_sortable_set_sort_func (sortable, BROWSER_LIST_STORE_NAME_FIELD,
