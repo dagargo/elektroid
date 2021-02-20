@@ -41,6 +41,7 @@ struct browser
   GtkEntry *dir_entry;
   gchar *dir;
   GtkMenu *menu;
+  gboolean dnd;
 };
 
 gint browser_sort (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *, gpointer);
