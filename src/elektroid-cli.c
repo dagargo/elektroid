@@ -99,7 +99,7 @@ cli_ls (int argc, char *argv[], int optind)
   path = cli_get_path (device_path);
 
   d_iter = connector_read_dir (&connector, path);
-  if (d_iter == NULL)
+  if (!d_iter)
     {
       return EXIT_FAILURE;
     }

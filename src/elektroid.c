@@ -1232,7 +1232,7 @@ elektroid_load_remote_dir (gpointer data)
 
   d_iter = connector_read_dir (&connector, remote_browser.dir);
   elektroid_check_connector ();
-  if (d_iter == NULL)
+  if (!d_iter)
     {
       error_print ("Error while opening remote %s dir\n", remote_browser.dir);
       goto end;
@@ -2058,7 +2058,7 @@ elektroid_add_download_task_dir (gchar * rel_dir)
 
   d_iter = connector_read_dir (&connector, remote_abs_dir);
   elektroid_check_connector ();
-  if (d_iter == NULL)
+  if (!d_iter)
     {
       error_print ("Error while opening remote %s dir\n", remote_abs_dir);
       goto cleanup_not_dir;

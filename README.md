@@ -49,7 +49,7 @@ Digitakt 1.11
 
 * ls
 
-Notice that the first column is the file type, the second is the size in MiB (it is the same unit used in the devices although it is showed there as MB), the third is an internal cksum and the fourth is the sample name.
+It only works for directories. Notice that the first column is the file type, the second is the size in MiB (it is the same unit used in the devices although it is showed there as MB), the third is an internal cksum and the fourth is the sample name.
 
 ```
 $ elektroid-cli ls 0:/

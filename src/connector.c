@@ -24,6 +24,7 @@
 #include <byteswap.h>
 #include <sys/poll.h>
 #include <zlib.h>
+#include <libgen.h>
 #include "connector.h"
 #include "utils.h"
 
@@ -67,6 +68,8 @@ static const guint8 INQ_OS_UPGRADE_START[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
 static const guint8 INQ_OS_UPGRADE_WRITE[] =
   { 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+static gchar connector_get_path_type (struct connector *, const gchar *);
 
 static guchar
 connector_get_msg_status (const GByteArray * msg)
@@ -890,7 +893,60 @@ connector_read_dir (struct connector *connector, const gchar * dir)
       return NULL;
     }
 
+  if (rx_msg->len == 5
+      && connector_get_path_type (connector, dir) != ELEKTROID_DIR)
+    {
+      free_msg (rx_msg);
+      errno = ENOTDIR;
+      return NULL;
+    }
+
   return connector_new_dir_iterator (rx_msg);
+}
+
+static gchar
+connector_get_path_type (struct connector *connector, const gchar * path)
+{
+  gchar *name_copy;
+  gchar *parent_copy;
+  gchar *name;
+  gchar *parent;
+  gchar res;
+  struct connector_dir_iterator *d_iter;
+
+  if (strcmp (path, "/") == 0)
+    {
+      return ELEKTROID_DIR;
+    }
+
+  name_copy = strdup (path);
+  parent_copy = strdup (path);
+  name = basename (name_copy);
+  parent = dirname (parent_copy);
+  d_iter = connector_read_dir (connector, parent);
+  if (!d_iter)
+    {
+      res = ELEKTROID_NONE;
+      goto cleanup;
+    }
+  else
+    {
+      res = ELEKTROID_NONE;
+      while (!connector_get_next_dentry (d_iter))
+	{
+	  if (strcmp (name, d_iter->dentry) == 0)
+	    {
+	      res = d_iter->type;
+	      break;
+	    }
+	}
+      connector_free_dir_iterator (d_iter);
+    }
+
+cleanup:
+  g_free (name_copy);
+  g_free (parent_copy);
+  return res;
 }
 
 gint
