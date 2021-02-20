@@ -1366,9 +1366,9 @@ end:
 }
 
 static gint
-elektroid_valid_file (const char *name)
+elektroid_valid_file (const gchar *name)
 {
-  const char *ext = get_ext (name);
+  const gchar *ext = get_ext (name);
 
   return (ext != NULL
 	  && (!strcasecmp (ext, "wav") || !strcasecmp (ext, "ogg")
@@ -1380,10 +1380,10 @@ elektroid_load_local_dir (gpointer data)
 {
   DIR *dir;
   struct dirent *dirent;
-  char type;
+  gchar type;
   struct stat st;
   ssize_t size;
-  char *path;
+  gchar *path;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (local_browser.view));
 
@@ -1980,26 +1980,26 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
 }
 
 static void
-elektroid_add_upload_task_path (gchar * rel_path, gchar * local_dir,
-				gchar * remote_dir)
+elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
+				gchar * dst_dir)
 {
   gchar *path;
   struct dirent *dirent;
-  gchar *remote_dirname;
-  gchar *local_abs_dir = chain_path (local_dir, rel_path);
-  gchar *remote_abs_dir = chain_path (remote_dir, rel_path);
-  DIR *dir = opendir (local_abs_dir);
+  gchar *dst_abs_dir;
+  gchar *src_abs_path = chain_path (src_dir, rel_path);
+  gchar *dst_abs_path = chain_path (dst_dir, rel_path);
+  DIR *dir = opendir (src_abs_path);
 
   if (!dir)
     {
-      remote_dirname = dirname (remote_abs_dir);
-      elektroid_add_task (UPLOAD, local_abs_dir, remote_dirname);
+      dst_abs_dir = dirname (dst_abs_path);
+      elektroid_add_task (UPLOAD, src_abs_path, dst_abs_dir);
       goto cleanup_not_dir;
     }
 
-  if (elektroid_remote_mkdir (remote_abs_dir))
+  if (elektroid_remote_mkdir (dst_abs_path))
     {
-      error_print ("Error while creating remote %s dir\n", remote_abs_dir);
+      error_print ("Error while creating remote %s dir\n", dst_abs_path);
       goto cleanup;
     }
 
@@ -2022,13 +2022,13 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * local_dir,
 	  if (dirent->d_type == DT_DIR)
 	    {
 	      path = chain_path (rel_path, dirent->d_name);
-	      elektroid_add_upload_task_path (path, local_dir, remote_dir);
+	      elektroid_add_upload_task_path (path, src_dir, dst_dir);
 	      free (path);
 	    }
 	  else
 	    {
-	      path = chain_path (local_abs_dir, dirent->d_name);
-	      elektroid_add_task (UPLOAD, path, remote_abs_dir);
+	      path = chain_path (src_abs_path, dirent->d_name);
+	      elektroid_add_task (UPLOAD, path, dst_abs_path);
 	      free (path);
 	    }
 	}
@@ -2037,8 +2037,8 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * local_dir,
 cleanup:
   closedir (dir);
 cleanup_not_dir:
-  free (remote_abs_dir);
-  free (local_abs_dir);
+  free (dst_abs_path);
+  free (src_abs_path);
 }
 
 static void
@@ -2149,27 +2149,27 @@ elektroid_download_task (gpointer data)
 }
 
 static void
-elektroid_add_download_task_path (gchar * rel_path, gchar * remote_dir,
-				  gchar * local_dir)
+elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
+				  gchar * dst_dir)
 {
   gchar *path;
-  gchar *local_dirname;
+  gchar *dst_abs_dir;
   struct connector_dir_iterator *d_iter;
-  gchar *local_abs_dir = chain_path (local_dir, rel_path);
-  gchar *remote_abs_dir = chain_path (remote_dir, rel_path);
+  gchar *src_abs_path = chain_path (src_dir, rel_path);
+  gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  d_iter = connector_read_dir (&connector, remote_abs_dir);
+  d_iter = connector_read_dir (&connector, src_abs_path);
   elektroid_check_connector ();
   if (!d_iter)
     {
-      local_dirname = dirname (local_abs_dir);
-      elektroid_add_task (DOWNLOAD, remote_abs_dir, local_dirname);
+      dst_abs_dir = dirname (dst_abs_path);
+      elektroid_add_task (DOWNLOAD, src_abs_path, dst_abs_dir);
       goto cleanup_not_dir;
     }
 
-  if (elektroid_local_mkdir (local_abs_dir))
+  if (elektroid_local_mkdir (dst_abs_path))
     {
-      error_print ("Error while creating local %s dir\n", local_abs_dir);
+      error_print ("Error while creating local %s dir\n", dst_abs_path);
       goto cleanup;
     }
 
@@ -2183,13 +2183,13 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * remote_dir,
       if (d_iter->type == ELEKTROID_DIR)
 	{
 	  path = chain_path (rel_path, d_iter->dentry);
-	  elektroid_add_download_task_path (path, remote_dir, local_dir);
+	  elektroid_add_download_task_path (path, src_dir, dst_dir);
 	  free (path);
 	}
       else
 	{
-	  path = chain_path (remote_abs_dir, d_iter->dentry);
-	  elektroid_add_task (DOWNLOAD, path, local_abs_dir);
+	  path = chain_path (src_abs_path, d_iter->dentry);
+	  elektroid_add_task (DOWNLOAD, path, dst_abs_path);
 	  free (path);
 	}
     }
@@ -2197,8 +2197,8 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * remote_dir,
 cleanup:
   connector_free_dir_iterator (d_iter);
 cleanup_not_dir:
-  free (local_abs_dir);
-  free (remote_abs_dir);
+  free (dst_abs_path);
+  free (src_abs_path);
 }
 
 static void
