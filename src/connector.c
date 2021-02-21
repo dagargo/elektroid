@@ -45,22 +45,23 @@ static const guint8 INQ_NEW_DIR_TEMPLATE[] = { 0x11 };
 static const guint8 INQ_DELETE_DIR_TEMPLATE[] = { 0x12 };
 static const guint8 INQ_DELETE_FILE_TEMPLATE[] = { 0x20 };
 static const guint8 INQ_RENAME_TEMPLATE[] = { 0x21 };
-static const guint8 INQ_INFO_FILE_TEMPLATE[] = { 0x30 };
-static const guint8 INQ_DWL_TEMPLATE[] =
+static const guint8 INQ_OPEN_FILE_READ_TEMPLATE[] = { 0x30 };
+static const guint8 INQ_FILE_READ_BLK_TEMPLATE[] =
   { 0x32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-static const guint8 INQ_DWL_TEMPLATE_END[] = { 0x31 };
-static const guint8 INQ_NEW_TEMPLATE[] = { 0x40, 0, 0, 0, 0 };
+static const guint8 INQ_CLOSE_FILE_READ_TEMPLATE[] = { 0x31 };
+static const guint8 INQ_OPEN_FILE_WRITE_TEMPLATE[] = { 0x40, 0, 0, 0, 0 };
 
-static const guint8 INQ_UPL_TEMPLATE_1ST[] =
+static const guint8 INQ_FILE_WRITE_BLK_TEMPLATE_1ST[] =
   { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0xbb, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0x7f,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0
 };
-static const guint8 INQ_UPL_TEMPLATE_NTH[] =
+static const guint8 INQ_FILE_WRITE_BLK_TEMPLATE_NTH[] =
   { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-static const guint8 INQ_UPL_TEMPLATE_END[] = { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const guint8 INQ_CLOSE_FILE_WRITE_TEMPLATE[] =
+  { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static const guint8 INQ_OS_UPGRADE_START[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
@@ -277,10 +278,10 @@ connector_new_msg_dir_list (const gchar * path)
 }
 
 static GByteArray *
-connector_new_msg_info_file (const gchar * path)
+connector_new_msg_open_file_read (const gchar * path)
 {
-  return connector_new_msg_path (INQ_INFO_FILE_TEMPLATE,
-				 sizeof (INQ_INFO_FILE_TEMPLATE), path);
+  return connector_new_msg_path (INQ_OPEN_FILE_READ_TEMPLATE,
+				 sizeof (INQ_OPEN_FILE_READ_TEMPLATE), path);
 }
 
 static GByteArray *
@@ -291,11 +292,12 @@ connector_new_msg_new_dir (const gchar * path)
 }
 
 static GByteArray *
-connector_new_msg_end_download (gint id)
+connector_new_msg_close_file_read (gint id)
 {
   uint32_t aux32;
-  GByteArray *msg = connector_new_msg_data (INQ_DWL_TEMPLATE_END,
-					    sizeof (INQ_DWL_TEMPLATE_END));
+  GByteArray *msg = connector_new_msg_data (INQ_CLOSE_FILE_READ_TEMPLATE,
+					    sizeof
+					    (INQ_CLOSE_FILE_READ_TEMPLATE));
 
   aux32 = htonl (id);
   g_byte_array_append (msg, (guchar *) & aux32, sizeof (uint32_t));
@@ -303,11 +305,13 @@ connector_new_msg_end_download (gint id)
 }
 
 static GByteArray *
-connector_new_msg_new_upload (const gchar * path, guint frames)
+connector_new_msg_open_file_write (const gchar * path, guint frames)
 {
   uint32_t aux32;
-  GByteArray *msg = connector_new_msg_path (INQ_NEW_TEMPLATE,
-					    sizeof (INQ_NEW_TEMPLATE), path);
+  GByteArray *msg = connector_new_msg_path (INQ_OPEN_FILE_WRITE_TEMPLATE,
+					    sizeof
+					    (INQ_OPEN_FILE_WRITE_TEMPLATE),
+					    path);
 
   aux32 = htonl ((frames + 32) * 2);
   memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
@@ -316,8 +320,8 @@ connector_new_msg_new_upload (const gchar * path, guint frames)
 }
 
 static GByteArray *
-connector_new_msg_upl_blck (guint id, gshort ** data, guint frames,
-			    ssize_t * total, guint seq)
+connector_new_msg_write_file_blk (guint id, gshort ** data, guint frames,
+				  ssize_t * total, guint seq)
 {
   uint32_t aux32;
   uint16_t aux16;
@@ -326,14 +330,14 @@ connector_new_msg_upl_blck (guint id, gshort ** data, guint frames,
 
   if (seq == 0)
     {
-      msg = connector_new_msg_data (INQ_UPL_TEMPLATE_1ST,
-				    sizeof (INQ_UPL_TEMPLATE_1ST));
+      msg = connector_new_msg_data (INQ_FILE_WRITE_BLK_TEMPLATE_1ST,
+				    sizeof (INQ_FILE_WRITE_BLK_TEMPLATE_1ST));
       frames_blck = 4064;
     }
   else
     {
-      msg = connector_new_msg_data (INQ_UPL_TEMPLATE_NTH,
-				    sizeof (INQ_UPL_TEMPLATE_NTH));
+      msg = connector_new_msg_data (INQ_FILE_WRITE_BLK_TEMPLATE_NTH,
+				    sizeof (INQ_FILE_WRITE_BLK_TEMPLATE_NTH));
       frames_blck = 4096;
     }
 
@@ -373,11 +377,12 @@ connector_new_msg_upl_blck (guint id, gshort ** data, guint frames,
 }
 
 static GByteArray *
-connector_new_msg_upl_end (guint id, guint frames)
+connector_new_msg_close_file_write (guint id, guint frames)
 {
   uint32_t aux32;
-  GByteArray *msg = connector_new_msg_data (INQ_UPL_TEMPLATE_END,
-					    sizeof (INQ_UPL_TEMPLATE_END));
+  GByteArray *msg = connector_new_msg_data (INQ_CLOSE_FILE_WRITE_TEMPLATE,
+					    sizeof
+					    (INQ_CLOSE_FILE_WRITE_TEMPLATE));
 
   aux32 = htonl (id);
   memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
@@ -388,11 +393,12 @@ connector_new_msg_upl_end (guint id, guint frames)
 }
 
 static GByteArray *
-connector_new_msg_dwnl_blck (guint id, guint start, guint size)
+connector_new_msg_read_file_blk (guint id, guint start, guint size)
 {
   uint32_t aux;
-  GByteArray *msg =
-    connector_new_msg_data (INQ_DWL_TEMPLATE, sizeof (INQ_DWL_TEMPLATE));
+  GByteArray *msg = connector_new_msg_data (INQ_FILE_READ_BLK_TEMPLATE,
+					    sizeof
+					    (INQ_FILE_READ_BLK_TEMPLATE));
 
   aux = htonl (id);
   memcpy (&msg->data[5], &aux, sizeof (uint32_t));
@@ -990,43 +996,6 @@ connector_delete_dir (struct connector *connector, const gchar * path)
 			   sizeof (INQ_DELETE_DIR_TEMPLATE));
 }
 
-static gint
-connector_create_upload (struct connector *connector, const gchar * path,
-			 guint fsize)
-{
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
-  gint id;
-  gchar *path_cp1252 =
-    g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
-
-  if (!path_cp1252)
-    {
-      errno = EINVAL;
-      return -1;
-    }
-
-  tx_msg = connector_new_msg_new_upload (path_cp1252, fsize);
-  g_free (path_cp1252);
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
-  if (!rx_msg)
-    {
-      errno = EIO;
-      return -1;
-    }
-
-  //Response: x, x, x, x, 0xc0, [0 (error), 1 (success)], id, frames
-  connector_get_sample_info_from_msg (rx_msg, &id, NULL);
-  if (id < 0)
-    {
-      errno = EEXIST;
-      error_print ("%s\n", g_strerror (errno));
-    }
-  free_msg (rx_msg);
-
-  return id;
-}
-
 ssize_t
 connector_upload (struct connector *connector, GArray * sample,
 		  gchar * path, struct connector_sample_transfer *transfer,
@@ -1039,14 +1008,34 @@ connector_upload (struct connector *connector, GArray * sample,
   gint id;
   int i;
   gboolean active;
+  gchar *path_cp1252 =
+    g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+
+  if (!path_cp1252)
+    {
+      errno = EINVAL;
+      return -1;
+    }
 
   //TODO: check if the file already exists? (Device makes no difference between creating a new file and creating an already existent file. The new file would be deleted if an upload is not sent, though.)
   //TODO: limit sample upload?
 
-  id = connector_create_upload (connector, path, sample->len);
+  tx_msg = connector_new_msg_open_file_write (path_cp1252, sample->len);
+  g_free (path_cp1252);
+  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  if (!rx_msg)
+    {
+      errno = EIO;
+      return -1;
+    }
+
+  //Response: x, x, x, x, 0xc0, [0 (error), 1 (success)], id, frames
+  connector_get_sample_info_from_msg (rx_msg, &id, NULL);
+  free_msg (rx_msg);
   if (id < 0)
     {
-      return -1;
+      errno = EEXIST;
+      error_print ("%s\n", g_strerror (errno));
     }
 
   data = (gshort *) sample->data;
@@ -1063,7 +1052,8 @@ connector_upload (struct connector *connector, GArray * sample,
 	}
 
       tx_msg =
-	connector_new_msg_upl_blck (id, &data, sample->len, &transferred, i);
+	connector_new_msg_write_file_blk (id, &data, sample->len,
+					  &transferred, i);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
@@ -1092,7 +1082,7 @@ connector_upload (struct connector *connector, GArray * sample,
 	  progress (transferred / (double) sample->len);
 	}
 
-      tx_msg = connector_new_msg_upl_end (id, transferred);
+      tx_msg = connector_new_msg_close_file_write (id, transferred);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
@@ -1135,7 +1125,7 @@ connector_download (struct connector *connector, const gchar * path,
       return NULL;
     }
 
-  tx_msg = connector_new_msg_info_file (path_cp1252);
+  tx_msg = connector_new_msg_open_file_read (path_cp1252);
   g_free (path_cp1252);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
@@ -1170,7 +1160,8 @@ connector_download (struct connector *connector, const gchar * path,
 	frames - next_block_start >
 	TRANSF_BLOCK_SIZE_SAMPLE ? TRANSF_BLOCK_SIZE_SAMPLE : frames -
 	next_block_start;
-      tx_msg = connector_new_msg_dwnl_blck (id, next_block_start, req_size);
+      tx_msg =
+	connector_new_msg_read_file_blk (id, next_block_start, req_size);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
@@ -1213,7 +1204,7 @@ connector_download (struct connector *connector, const gchar * path,
       result = NULL;
     }
 
-  tx_msg = connector_new_msg_end_download (id);
+  tx_msg = connector_new_msg_close_file_read (id);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
