@@ -481,6 +481,7 @@ connector_tx_sysex (struct connector *connector, GByteArray * data,
       if (tx_len < 0)
 	{
 	  ret = tx_len;
+	  errno = EIO;
 	  break;
 	}
       b += len;
@@ -692,11 +693,13 @@ connector_rx_sysex (struct connector *connector,
 
 	  if (connector->rx_len == -ENODATA)
 	    {
+	      errno = ENODATA;
 	      goto error;
 	    }
 
 	  if (connector->rx_len < 0)
 	    {
+	      errno = EIO;
 	      goto error;
 	    }
 
@@ -736,6 +739,7 @@ connector_rx_sysex (struct connector *connector,
 
 	  if (connector->rx_len < 0)
 	    {
+	      errno = EIO;
 	      goto error;
 	    }
 
@@ -873,6 +877,7 @@ connector_read_dir (struct connector *connector, const gchar * dir)
 
   if (!dir_cp1252)
     {
+      errno = EINVAL;
       return NULL;
     }
 
@@ -922,7 +927,6 @@ connector_rename (struct connector *connector, const gchar * old,
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
       return -1;
     }
   //Response: x, x, x, x, 0xa1, [0 (error), 1 (success)]...
@@ -963,7 +967,6 @@ connector_delete (struct connector *connector, const gchar * path,
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
       return -1;
     }
   //Response: x, x, x, x, 0xX0, [0 (error), 1 (success)]...
@@ -1025,7 +1028,6 @@ connector_upload (struct connector *connector, GArray * sample,
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
       return -1;
     }
 
@@ -1243,7 +1245,6 @@ connector_create_dir (struct connector *connector, const gchar * path)
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
       return -1;
     }
   //Response: x, x, x, x, 0x91, [0 (error), 1 (success)]...
@@ -1326,7 +1327,6 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
 
   if (!rx_msg)
     {
-      errno = EIO;
       res = -1;
       goto end;
     }
@@ -1351,7 +1351,6 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
 
       if (!rx_msg)
 	{
-	  errno = EIO;
 	  res = -1;
 	  goto end;
 	}
@@ -1471,7 +1470,7 @@ connector_init (struct connector *connector, gint card)
   if (card < 0)
     {
       debug_print (1, "Invalid card\n");
-      err = -1;
+      err = -EINVAL;
       goto cleanup;
     }
 
@@ -1555,7 +1554,7 @@ connector_init (struct connector *connector, gint card)
   rx_msg_device = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg_device)
     {
-      err = -1;
+      err = -errno;
       goto cleanup;
     }
 
@@ -1563,7 +1562,7 @@ connector_init (struct connector *connector, gint card)
   rx_msg_fw_ver = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg_fw_ver)
     {
-      err = -1;
+      err = -errno;
       goto cleanup_device;
     }
 
