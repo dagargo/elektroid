@@ -2432,7 +2432,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
     }
   else
     {
-      debug_print (1, "Dragging from remote to local widget...\n");
+      debug_print (1, "Dragging from one GtkTreeView to the other...\n");
 
       data = (gchar *) gtk_selection_data_get_data (selection_data);
       uris = g_uri_list_extract_uris (data);
@@ -2516,7 +2516,10 @@ elektroid_dnd_get (GtkWidget * widget,
 	  filename = g_string_new ("");
 	  gtk_tree_model_get_iter (model, &iter, item->data);
 	  g_string_append (filename, browser->dir);
-	  g_string_append (filename, "/");
+	  if (strcmp (browser->dir, "/"))
+	    {
+	      g_string_append (filename, "/");
+	    }
 	  browser_get_item_info (model, &iter, NULL, &item_name, NULL);
 	  g_string_append (filename, item_name);
 	  free (item_name);
