@@ -924,14 +924,9 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   name = basename (name_copy);
   parent = dirname (parent_copy);
   d_iter = connector_read_dir (connector, parent);
-  if (!d_iter)
+  res = ELEKTROID_NONE;
+  if (d_iter)
     {
-      res = ELEKTROID_NONE;
-      goto cleanup;
-    }
-  else
-    {
-      res = ELEKTROID_NONE;
       while (!connector_get_next_dentry (d_iter))
 	{
 	  if (strcmp (name, d_iter->dentry) == 0)
@@ -943,7 +938,6 @@ connector_get_path_type (struct connector *connector, const gchar * path)
       connector_free_dir_iterator (d_iter);
     }
 
-cleanup:
   g_free (name_copy);
   g_free (parent_copy);
   return res;
