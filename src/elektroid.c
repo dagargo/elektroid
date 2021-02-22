@@ -898,8 +898,8 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
 
   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
   gtk_tree_selection_set_select_function (selection,
-          elektroid_selection_function_true,
-          NULL, NULL);
+					  elektroid_selection_function_true,
+					  NULL, NULL);
 
   if (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
     {
@@ -943,6 +943,7 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
       selected = gtk_tree_selection_path_is_selected (selection, path);
       if (!selected)
 	{
+	  gtk_tree_selection_unselect_all (selection);
 	  gtk_tree_selection_select_path (selection, path);
 	}
       gtk_tree_path_free (path);
@@ -1366,7 +1367,7 @@ end:
 }
 
 static gint
-elektroid_valid_file (const gchar *name)
+elektroid_valid_file (const gchar * name)
 {
   const gchar *ext = get_ext (name);
 
