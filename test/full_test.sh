@@ -41,6 +41,12 @@ name=$(echo $output | awk '{print $4}')
 
 sleep 1
 
+echo "Testing upload (nonexistent source)..."
+$ecli upload $srcdir/res/foo $DEVICE:/$TEST_NAME
+[ $? -eq 0 ] && exit 1
+
+sleep 1
+
 echo "Testing download..."
 $ecli download $DEVICE:/$TEST_NAME/square
 [ $? -ne 0 ] && exit 1
@@ -50,9 +56,21 @@ rm square.wav
 
 sleep 1
 
+echo "Testing download (nonexistent source)..."
+$ecli download $DEVICE:/$TEST_NAME/foo
+[ $? -eq 0 ] && exit 1
+
+sleep 1
+
 echo "Testing mv..."
 $ecli mv $DEVICE:/$TEST_NAME/square $DEVICE:/$TEST_NAME/sample
 [ $? -ne 0 ] && exit 1
+
+sleep 1
+
+echo "Testing mv..."
+$ecli mv $DEVICE:/$TEST_NAME/foo $DEVICE:/$TEST_NAME/sample
+[ $? -eq 0 ] && exit 1
 
 sleep 1
 
@@ -62,8 +80,32 @@ $ecli rm $DEVICE:/$TEST_NAME/sample
 
 sleep 1
 
+echo "Testing rm (nonexistent file)..."
+$ecli rm $DEVICE:/$TEST_NAME/sample
+[ $? -eq 0 ] && exit 1
+
+sleep 1
+
 echo "Testing rmdir..."
 $ecli rmdir $DEVICE:/$TEST_NAME
 [ $? -ne 0 ] && exit 1
+
+sleep 1
+
+echo "Testing rmdir (nonexistent dir)..."
+$ecli rmdir $DEVICE:/$TEST_NAME
+[ $? -eq 0 ] && exit 1
+
+sleep 1
+
+echo "Testing ls (nonexistent dir)..."
+$ecli ls $DEVICE:/$TEST_NAME
+[ $? -eq 0 ] && exit 1
+
+sleep 1
+
+echo "Testing ls (nonexistent dir inside nonexistent dir)..."
+$ecli ls $DEVICE:/$TEST_NAME/foo
+[ $? -eq 0 ] && exit 1
 
 exit 0
