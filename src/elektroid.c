@@ -892,7 +892,6 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
 			gpointer data)
 {
   GtkTreePath *path;
-  gboolean selected;
   GtkTreeSelection *selection;
   struct browser *browser = data;
 
@@ -940,8 +939,7 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
 	  return FALSE;
 	}
 
-      selected = gtk_tree_selection_path_is_selected (selection, path);
-      if (!selected)
+      if (!gtk_tree_selection_path_is_selected (selection, path))
 	{
 	  gtk_tree_selection_unselect_all (selection);
 	  gtk_tree_selection_select_path (selection, path);
