@@ -1,5 +1,5 @@
 /*
- *   etls.c
+ *   elektroid-cli.c
  *   Copyright (C) 2019 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
