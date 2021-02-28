@@ -82,18 +82,45 @@ struct elektroid_sysex_transfer
   GByteArray *data;
 };
 
+#define TEXT_URI_LIST_STD "text/uri-list"
+#define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
+
 enum
 {
   TARGET_STRING,
 };
 
-static GtkTargetEntry TARGET_ENTRIES[] = {
-  {"text/uri-list", GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
+static GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING},
-  {"text/uri-list", GTK_TARGET_OTHER_APP, TARGET_STRING}
+  {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
 };
 
-static guint TARGET_ENTRIES_N = G_N_ELEMENTS (TARGET_ENTRIES);
+static GtkTargetEntry TARGET_ENTRIES_LOCAL_SRC[] = {
+  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
+   TARGET_STRING},
+  {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
+};
+
+static GtkTargetEntry TARGET_ENTRIES_REMOTE_DST[] = {
+  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
+   TARGET_STRING},
+  {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
+};
+
+static GtkTargetEntry TARGET_ENTRIES_REMOTE_SRC[] = {
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
+   TARGET_STRING}
+};
+
+static guint TARGET_ENTRIES_LOCAL_DST_N =
+G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_DST);
+static guint TARGET_ENTRIES_LOCAL_SRC_N =
+G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_SRC);
+static guint TARGET_ENTRIES_REMOTE_DST_N =
+G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST);
+static guint TARGET_ENTRIES_REMOTE_SRC_N =
+G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC);
 
 static struct browser remote_browser;
 static struct browser local_browser;
@@ -2424,47 +2451,33 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   gchar *dest_path;
   GtkTreeIter iter;
   gboolean queued;
-  gboolean dnd_success = FALSE;
+  GdkAtom type;
+  gchar *type_name;
 
-  if ((selection_data == NULL)
-      || (gtk_selection_data_get_length (selection_data) == 0))
+  if (selection_data != NULL && gtk_selection_data_get_length (selection_data)
+      && info == TARGET_STRING)
     {
-      goto cleanup;
-    }
-
-  if (info != TARGET_STRING)
-    {
-      goto cleanup;
-    }
-
-  if (gtk_drag_get_source_widget (context) == widget)
-    {
-      debug_print (1,
-		   "Dragging from widget to itself. Skipping for now...\n");
-    }
-  else
-    {
-      debug_print (1, "Dragging from one GtkTreeView to the other...\n");
+      type = gtk_selection_data_get_data_type (selection_data);
+      type_name = gdk_atom_name (type);
 
       data = (gchar *) gtk_selection_data_get_data (selection_data);
-      debug_print (1, "DND received data:\n%s\n", data);
+      debug_print (1, "DND received data (%s):\n%s\n", type_name, data);
 
       uris = g_uri_list_extract_uris (data);
       queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL);
 
       for (int i = 0; uris[i] != NULL; i++)
 	{
+	  filename = g_filename_from_uri (uris[i], NULL, NULL);
+	  path_basename = strdup (filename);
+	  path_dirname = strdup (filename);
+	  name = basename (path_basename);
+	  dir = dirname (path_dirname);
 
 	  if (widget == GTK_WIDGET (local_browser.view))
 	    {
-	      if (strncmp ("file://", uris[i], 7) == 0)
+	      if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
 		{
-		  filename = g_filename_from_uri (uris[i], NULL, NULL);
-		  path_basename = strdup (filename);
-		  path_dirname = strdup (filename);
-		  name = basename (path_basename);
-		  dir = dirname (path_dirname);
-
 		  if (strcmp (dir, local_browser.dir))
 		    {
 		      dest_path = chain_path (local_browser.dir, name);
@@ -2477,51 +2490,21 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		      debug_print (1,
 				   "Same source and destination path. Skipping...\n");
 		    }
-
-		  g_free (path_basename);
-		  g_free (path_dirname);
-		  g_free (filename);
 		}
-	      else if (strncmp ("http://localhost:56789", uris[i], 22) == 0)
+	      else if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
 		{
-		  filename = &uris[i][22];
-		  path_basename = strdup (filename);
-		  path_dirname = strdup (filename);
-		  name = basename (path_basename);
-		  dir = dirname (path_dirname);
-
 		  elektroid_add_download_task_path (name, dir,
 						    local_browser.dir);
-
-		  g_free (path_basename);
-		  g_free (path_dirname);
-		}
-	      else
-		{
-		  error_print ("Invalid scheme\n");
 		}
 	    }
 	  else if (widget == GTK_WIDGET (remote_browser.view))
 	    {
-	      if (strncmp ("file://", uris[i], 7) == 0)
-		{
-		  filename = g_filename_from_uri (uris[i], NULL, NULL);
-		  path_basename = strdup (filename);
-		  path_dirname = strdup (filename);
-		  name = basename (path_basename);
-		  dir = dirname (path_dirname);
-
-		  elektroid_add_upload_task_path (name, dir,
-						  remote_browser.dir);
-
-		  g_free (path_basename);
-		  g_free (path_dirname);
-		}
-	      else
-		{
-		  error_print ("Invalid scheme\n");
-		}
+	      elektroid_add_upload_task_path (name, dir, remote_browser.dir);
 	    }
+
+	  g_free (path_basename);
+	  g_free (path_dirname);
+	  g_free (filename);
 	}
 
       if (!queued)
@@ -2530,16 +2513,9 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 	}
 
       g_strfreev (uris);
-      dnd_success = TRUE;
     }
 
-  if (dnd_success == FALSE)
-    {
-      debug_print (1, "DND failed\n");
-    }
-
-cleanup:
-  gtk_drag_finish (context, dnd_success, TRUE, time);
+  gtk_drag_finish (context, TRUE, TRUE, time);
 }
 
 static void
@@ -2583,7 +2559,7 @@ elektroid_dnd_get (GtkWidget * widget,
 	    }
 	  else if (widget == GTK_WIDGET (remote_browser.view))
 	    {
-	      uri = chain_path ("http://localhost:56789", &full_path[1]);
+	      uri = chain_path ("file://", &full_path[1]);
 	    }
 	  else
 	    {
@@ -2853,9 +2829,10 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 					GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
 
   gtk_drag_source_set ((GtkWidget *) remote_browser.view, GDK_BUTTON1_MASK,
-		       TARGET_ENTRIES, TARGET_ENTRIES_N, GDK_ACTION_COPY);
-  gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
-		     GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES, TARGET_ENTRIES_N,
+		       TARGET_ENTRIES_REMOTE_SRC, TARGET_ENTRIES_REMOTE_SRC_N,
+		       GDK_ACTION_COPY);
+  gtk_drag_dest_set ((GtkWidget *) remote_browser.view, GTK_DEST_DEFAULT_ALL,
+		     TARGET_ENTRIES_REMOTE_DST, TARGET_ENTRIES_REMOTE_DST_N,
 		     GDK_ACTION_COPY);
 
   local_browser = (struct browser)
@@ -2914,9 +2891,11 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 					GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
 
   gtk_drag_source_set ((GtkWidget *) local_browser.view, GDK_BUTTON1_MASK,
-		       TARGET_ENTRIES, TARGET_ENTRIES_N, GDK_ACTION_MOVE);
+		       TARGET_ENTRIES_LOCAL_SRC, TARGET_ENTRIES_LOCAL_SRC_N,
+		       GDK_ACTION_MOVE);
   gtk_drag_dest_set ((GtkWidget *) local_browser.view, GTK_DEST_DEFAULT_ALL,
-		     TARGET_ENTRIES, TARGET_ENTRIES_N, GDK_ACTION_COPY);
+		     TARGET_ENTRIES_LOCAL_DST, TARGET_ENTRIES_LOCAL_DST_N,
+		     GDK_ACTION_COPY);
 
   audio_init (&audio, elektroid_set_volume_callback);
 
