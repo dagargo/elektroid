@@ -17,7 +17,7 @@
    inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
    sodipodi:docname="elektroid.svg">
   <title
-     id="title948">Elektroid</title>
+     id="title948">elektroid</title>
   <defs
      id="defs2" />
   <sodipodi:namedview
@@ -27,11 +27,11 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.9899495"
-     inkscape:cx="403.02325"
-     inkscape:cy="396.88866"
+     inkscape:zoom="0.7"
+     inkscape:cx="35.913995"
+     inkscape:cy="318.97152"
      inkscape:document-units="px"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="svg8"
      showgrid="true"
      units="px"
      inkscape:window-width="1680"
@@ -51,7 +51,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title>Elektroid</dc:title>
+        <dc:title>elektroid</dc:title>
         <cc:license
            rdf:resource="http://creativecommons.org/licenses/by-sa/4.0/" />
         <dc:creator>
@@ -77,20 +77,32 @@
       </cc:License>
     </rdf:RDF>
   </metadata>
+  <path
+     style="fill:#9d1319;fill-opacity:1;stroke:#9d1319;stroke-width:12.55461884;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+     d="m 71.940006,142.90273 c 42.685504,0 85.371214,0 128.057104,0 l 0.12969,25.23195 h -32.77162 v 31.98034 L 72.01249,151.75114 Z"
+     id="path838-7-5-7-3-7"
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="ccccccc" />
+  <path
+     style="fill:#e01b24;fill-opacity:1;stroke:#e01b24;stroke-width:12.55461884;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+     d="m 167.28196,190.07108 v -31.98331 h 32.77173 V 125.32349 H 167.28196 V 93.343002 L 71.939267,141.70696 Z"
+     id="path838-7-3-6-5"
+     inkscape:connector-curvature="0" />
+  <path
+     style="fill:#255c9f;fill-opacity:1;stroke:#255c9f;stroke-width:12.55461884;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+     d="m 139.75608,61.052431 c -42.685822,0 -85.371453,0 -128.057094,0 l -0.130014,25.231513 h 32.771979 v 31.980636 l 95.342689,-48.3641 z"
+     id="path838-7-5-7-3"
+     inkscape:connector-curvature="0"
+     sodipodi:nodetypes="ccccccc" />
+  <path
+     style="fill:#3584e4;fill-opacity:1;stroke:#3584e4;stroke-width:12.55461884;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+     d="M 44.340952,11.492573 V 43.47605 h -32.77198 v 32.764199 h 32.77198 V 108.22079 L 139.68357,59.856874 Z"
+     id="path838-7-5-7"
+     inkscape:connector-curvature="0" />
   <g
      inkscape:label="Capa 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(0,-85.333317)">
-    <path
-       style="fill:#0079c0;fill-opacity:1;stroke:#0067a6;stroke-width:13.22916698;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
-       d="m 49.716567,100.51655 v 33.70198 H 15.183734 v 34.52461 h 34.532833 v 33.69862 L 150.18187,151.47948 Z"
-       id="path838-7-5-7"
-       inkscape:connector-curvature="0" />
-    <path
-       style="fill:#ee3a2b;fill-opacity:1;stroke:#d43128;stroke-width:13.22916698;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
-       d="M 161.95012,281.81678 V 248.1148 h 34.53284 V 213.59016 H 161.95012 V 179.89153 L 61.484783,230.85382 Z"
-       id="path838-7-3-6-5"
-       inkscape:connector-curvature="0" />
-  </g>
+     transform="translate(0,-85.333317)"
+     style="display:inline" />
 </svg>

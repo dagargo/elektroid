@@ -26,7 +26,7 @@
 #define DEBUG_SHORT_HEX_LEN 64
 #define DEBUG_FULL_HEX_THRES 3
 
-#define REG_TYPE "emblem-music-symbolic"
+#define REG_TYPE "elektroid-wave-symbolic"
 #define DIR_TYPE "folder-visiting-symbolic"
 
 gint debug_level;
