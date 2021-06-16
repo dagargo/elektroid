@@ -1344,7 +1344,7 @@ connector_new_msg_upgrade_os_write (GByteArray * os_data, gint * offset)
 
   crc = crc32 (0xffffffff, &os_data->data[*offset], len);
 
-  printf ("%0x\n", crc);
+  debug_print (2, "CRC: %0x\n", crc);
 
   aux32 = htonl (crc);
   memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
@@ -1388,13 +1388,14 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
       errno = EIO;
       error_print ("%s (%s)\n", g_strerror (errno),
 		   connector_get_msg_string (rx_msg));
-      goto cleanup;
+      free_msg (rx_msg);
+      goto end;
     }
 
   free_msg (rx_msg);
 
   offset = 0;
-  while (offset < data->len)
+  while (offset < data->len && transfer->active)
     {
       tx_msg = connector_new_msg_upgrade_os_write (data, &offset);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
@@ -1402,7 +1403,7 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
       if (!rx_msg)
 	{
 	  res = -1;
-	  goto end;
+	  break;
 	}
       //Response: x, x, x, x, 0xd1, int32, [0..3]...
       op = rx_msg->data[9];
@@ -1416,7 +1417,8 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
 	  errno = EIO;
 	  error_print ("%s (%s)\n", g_strerror (errno),
 		       connector_get_msg_string (rx_msg));
-	  goto cleanup;
+	  free_msg (rx_msg);
+	  break;
 	}
 
       free_msg (rx_msg);
@@ -1424,8 +1426,6 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
       usleep (REST_TIME);
     }
 
-cleanup:
-  free_msg (rx_msg);
 end:
   transfer->active = FALSE;
   transfer->status = FINISHED;
