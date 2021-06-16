@@ -578,6 +578,7 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
   if (res == GTK_RESPONSE_ACCEPT)
     {
       filename = gtk_file_chooser_get_filename (chooser);
+      gtk_widget_destroy (dialog);
       debug_print (1, "Opening SysEx file...\n");
       file = fopen (filename, "rb");
       g_free (filename);
@@ -611,8 +612,10 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
 
       free (response);
     }
-
-  gtk_widget_destroy (dialog);
+  else
+    {
+      gtk_widget_destroy (dialog);
+    }
 }
 
 static void
