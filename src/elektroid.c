@@ -872,16 +872,6 @@ elektroid_remote_menu_set_up (gint count)
   gtk_widget_set_sensitive (remote_delete_menuitem, count > 0 ? TRUE : FALSE);
 }
 
-static void
-elektroid_show_menu (struct browser *browser, GdkEvent * event)
-{
-  gint count;
-
-  count = browser_get_selected_items_count (browser);
-  browser->set_up_menu (count);
-  gtk_menu_popup_at_pointer (browser->menu, event);
-}
-
 static gboolean
 elektroid_drag_begin (GtkWidget * widget,
 		      GdkDragContext * context, gpointer data)
@@ -980,7 +970,7 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
 	  gtk_tree_selection_select_path (selection, path);
 	}
       gtk_tree_path_free (path);
-      elektroid_show_menu (browser, (GdkEvent *) event);
+      gtk_menu_popup_at_pointer (browser->menu, (GdkEvent *) event);
 
       return TRUE;
     }
@@ -2316,11 +2306,19 @@ elektroid_common_key_press (GtkWidget * widget, GdkEventKey * event,
 			    gpointer data)
 {
   gint count;
+  GtkAllocation allocation;
+  GdkWindow *gdk_window;
   struct browser *browser = data;
 
   if (event->keyval == GDK_KEY_Menu)
     {
-      elektroid_show_menu (browser, (GdkEvent *) event);
+      count = browser_get_selected_items_count (browser);
+      browser->set_up_menu (count);
+      gtk_widget_get_allocation (GTK_WIDGET (browser->view), &allocation);
+      gdk_window = gtk_widget_get_window (GTK_WIDGET (browser->view));
+      gtk_menu_popup_at_rect (browser->menu, gdk_window, &allocation,
+			      GDK_GRAVITY_CENTER, GDK_GRAVITY_NORTH_WEST,
+			      NULL);
       return TRUE;
     }
   else if (event->keyval == GDK_KEY_F2)
