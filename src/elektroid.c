@@ -887,8 +887,6 @@ elektroid_drag_end (GtkWidget * widget,
 {
   struct browser *browser = data;
   browser->dnd = FALSE;
-  //TODO: This should be done by other means and it is NOT guaranteed to work
-  g_timeout_add (1000, elektroid_load_local_dir, NULL);
   return FALSE;
 }
 
