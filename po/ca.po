@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.3\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2021-01-05 17:33+0100\n"
+"POT-Creation-Date: 2021-06-17 20:52+0200\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: Catalan\n"
@@ -17,230 +17,230 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/elektroid.c:177
+#: src/elektroid.c:226
 #, c-format
 msgid "Connected to %s"
 msgstr "Connectat a %s"
 
-#: src/elektroid.c:184 src/elektroid.c:2576
+#: src/elektroid.c:233 src/elektroid.c:3038
 msgid "Not connected"
 msgstr "No connectat"
 
-#: src/elektroid.c:327
+#: src/elektroid.c:374
 msgid "Waiting..."
 msgstr "Esperant..."
 
-#: src/elektroid.c:330
+#: src/elektroid.c:377
 msgid "Sending..."
 msgstr "Enviant..."
 
-#: src/elektroid.c:334
+#: src/elektroid.c:381
 msgid "Receiving..."
 msgstr "Rebent..."
 
-#: src/elektroid.c:402
+#: src/elektroid.c:449
 msgid "Receive SysEx"
 msgstr "Rep SysEx"
 
-#: src/elektroid.c:424
+#: src/elektroid.c:471
 msgid "Save SysEx"
 msgstr "Alça SysEx"
 
-#: src/elektroid.c:427 src/elektroid.c:532 src/elektroid.c:721
+#: src/elektroid.c:474 src/elektroid.c:579 src/elektroid.c:771
 msgid "_Cancel"
 msgstr "_Cancel·la"
 
-#: src/elektroid.c:429
+#: src/elektroid.c:476
 msgid "_Save"
 msgstr "_Alça"
 
-#: src/elektroid.c:433
+#: src/elektroid.c:480
 msgid "Received SysEx"
 msgstr "SysEx rebut"
 
-#: src/elektroid.c:438 src/elektroid.c:538
+#: src/elektroid.c:485 src/elektroid.c:585
 msgid "SysEx Files"
 msgstr "Fitxers SysEx"
 
-#: src/elektroid.c:529
+#: src/elektroid.c:576
 msgid "Open SysEx"
 msgstr "Obri SysEx"
 
-#: src/elektroid.c:534
+#: src/elektroid.c:581
 msgid "_Open"
 msgstr "_Obri"
 
-#: src/elektroid.c:561
+#: src/elektroid.c:609
 msgid "Send SysEx"
 msgstr "Envia SysEx"
 
-#: src/elektroid.c:686
+#: src/elektroid.c:736
 #, c-format
 msgid "Error while deleting “%s”: %s."
 msgstr "Error al eliminar «%s»: %s."
 
-#: src/elektroid.c:720
+#: src/elektroid.c:770
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Està segur de que vol eliminar els elements seleccionats?"
 
-#: src/elektroid.c:722 res/gui.glade:215 res/gui.glade:1539
+#: src/elektroid.c:772
 msgid "_Delete"
 msgstr "_Elimina"
 
-#: src/elektroid.c:777
+#: src/elektroid.c:827 res/gui.glade:106 res/gui.glade:155
 msgid "Rename"
 msgstr "Canvia el nom"
 
-#: src/elektroid.c:802
+#: src/elektroid.c:852
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Error al canviar el nom a «%s»: %s."
 
-#: src/elektroid.c:1389 res/gui.glade:441 res/gui.glade:680
+#: src/elektroid.c:1578 res/gui.glade:445 res/gui.glade:628
 msgid "Add Directory"
 msgstr "Afig directori"
 
-#: src/elektroid.c:1414
+#: src/elektroid.c:1603
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Error al crear el directori «%s»: %s."
 
-#: src/elektroid.c:1576
+#: src/elektroid.c:1767
 msgid "Queued"
 msgstr "A la cua"
 
-#: src/elektroid.c:1578
+#: src/elektroid.c:1769
 msgid "Running"
 msgstr "Executant"
 
-#: src/elektroid.c:1580
+#: src/elektroid.c:1771
 msgid "Completed"
 msgstr "Completada"
 
-#: src/elektroid.c:1582
+#: src/elektroid.c:1773
 msgid "Completed with errors"
 msgstr "Completada amb errors"
 
-#: src/elektroid.c:1584
+#: src/elektroid.c:1775
 msgid "Canceled"
 msgstr "Cancel·lada"
 
-#: src/elektroid.c:1586 src/elektroid.c:1600
+#: src/elektroid.c:1777 src/elektroid.c:1791
 msgid "Undefined"
 msgstr "Indefinit"
 
-#: src/elektroid.c:1596
+#: src/elektroid.c:1787
 msgid "Upload"
 msgstr "Càrrega"
 
-#: src/elektroid.c:1598
+#: src/elektroid.c:1789
 msgid "Download"
 msgstr "Descàrrega"
 
-#: res/gui.glade:86
+#: res/gui.glade:55
+msgid "Upload Selection"
+msgstr "Carrega la selecció"
+
+#: res/gui.glade:70
+msgid "Play"
+msgstr "Reproduïx"
+
+#: res/gui.glade:84
+msgid "Open With External Editor"
+msgstr "Obri amb l'editor extern"
+
+#: res/gui.glade:92
+msgid "Show in File Manager"
+msgstr "Mostra al navegador de fitxers"
+
+#: res/gui.glade:115 res/gui.glade:164
+msgid "Delete"
+msgstr "Elimina"
+
+#: res/gui.glade:140
+msgid "Download Selection"
+msgstr "Descarrega la selecció"
+
+#: res/gui.glade:196
 msgid "GNU/Linux sample transfer application for Elektron devices"
 msgstr ""
 "Aplicació GNU/Linux de transferència de mostres per a dispositius Elektron"
 
-#: res/gui.glade:89
+#: res/gui.glade:199
 msgid "translator-credits"
 msgstr "David García Goñi <dagargo@gmail.com>"
 
-#: res/gui.glade:141
-msgid "_Play"
-msgstr "_Reproduïx"
-
-#: res/gui.glade:165
-msgid "_Open With External Editor"
-msgstr "_Obri amb l'editor extern"
-
-#: res/gui.glade:178
-msgid "_Show in File Manager"
-msgstr "_Mostra al navegador de fitxers"
-
-#: res/gui.glade:202 res/gui.glade:1526
-msgid "_Rename"
-msgstr "Rea_nomena"
-
-#: res/gui.glade:246
+#: res/gui.glade:250
 msgid "_Receive SysEx"
 msgstr "_Rep SysEx"
 
-#: res/gui.glade:259
+#: res/gui.glade:263
 msgid "_Send SysEx"
 msgstr "_Envia SysEx"
 
-#: res/gui.glade:283
+#: res/gui.glade:287
 msgid "OS _Upgrade"
 msgstr "_Actualitza el SO"
 
-#: res/gui.glade:307
+#: res/gui.glade:311
 msgid "_About"
 msgstr "_Quant a"
 
-#: res/gui.glade:420 res/gui.glade:659
+#: res/gui.glade:424 res/gui.glade:607
 msgid "Go to Parent Directory"
 msgstr "Ves al directori pare"
 
-#: res/gui.glade:462 res/gui.glade:701
+#: res/gui.glade:466 res/gui.glade:649
 msgid "Refresh Directory"
 msgstr "Actualitza el directori"
 
-#: res/gui.glade:526 res/gui.glade:765 res/gui.glade:1391
+#: res/gui.glade:530 res/gui.glade:713 res/gui.glade:1336
 msgid "Name"
 msgstr "Nom"
 
-#: res/gui.glade:540 res/gui.glade:779
+#: res/gui.glade:544 res/gui.glade:727
 msgid "Size"
 msgstr "Mida"
 
-#: res/gui.glade:577
-msgid "Upload Selection"
-msgstr "Carrega la selecció"
-
-#: res/gui.glade:598
-msgid "Download Selection"
-msgstr "Descarrega la selecció"
-
-#: res/gui.glade:832
+#: res/gui.glade:780
 msgid "Refresh Devices"
 msgstr "Actualitza els dispositius"
 
 #. It is recommended to split the text in two lines if it is too long
-#: res/gui.glade:915
+#: res/gui.glade:860
 msgid "Auto play"
 msgstr ""
 "Reproducció\n"
 "automàtica"
 
-#: res/gui.glade:1147
+#: res/gui.glade:1092
 msgid "Status"
 msgstr "Estat"
 
-#: res/gui.glade:1158
+#: res/gui.glade:1103
 msgid "Type"
 msgstr "Tipus"
 
-#: res/gui.glade:1169
+#: res/gui.glade:1114
 msgid "Source"
 msgstr "Origen"
 
-#: res/gui.glade:1183
+#: res/gui.glade:1128
 msgid "Destination"
 msgstr "Destinació"
 
-#: res/gui.glade:1198
+#: res/gui.glade:1143
 msgid "Progress"
 msgstr "Progrés"
 
-#: res/gui.glade:1230
+#: res/gui.glade:1175
 msgid "Cancel Running Task"
 msgstr "Cancel·la la tasca en execució"
 
-#: res/gui.glade:1251
+#: res/gui.glade:1196
 msgid "Remove Queued Tasks"
 msgstr "Elimina les tasques de la cua"
 
-#: res/gui.glade:1272
+#: res/gui.glade:1217
 msgid "Clear Finished Tasks"
 msgstr "Neteja les tasques terminadas"
