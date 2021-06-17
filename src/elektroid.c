@@ -27,6 +27,8 @@
 #include <sys/types.h>
 #include <glib-unix.h>
 #include <glib/gi18n.h>
+#define _GNU_SOURCE
+#include <getopt.h>
 #include "browser.h"
 #include "audio.h"
 #include "sample.h"
@@ -52,6 +54,13 @@ static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (gdouble);
 static gboolean elektroid_load_local_dir (gpointer);
+
+static struct option options[] = {
+  {"local-directory", 1, NULL, 'l'},
+  {"verbose", 0, NULL, 'v'},
+  {"help", 0, NULL, 'h'},
+  {NULL, 0, NULL, 0}
+};
 
 enum elektroid_task_type
 {
@@ -2967,13 +2976,36 @@ elektroid_end (gpointer data)
   return FALSE;
 }
 
+static void
+elektroid_print_help (gchar * executable_path)
+{
+  gchar *exec_name;
+  struct option *option;
+
+  fprintf (stderr, "%s\n", PACKAGE_STRING);
+  exec_name = basename (executable_path);
+  fprintf (stderr, "Usage: %s [options]\n", exec_name);
+  fprintf (stderr, "Options:\n");
+  option = options;
+  while (option->name)
+    {
+      fprintf (stderr, "  --%s, -%c", option->name, option->val);
+      if (option->has_arg)
+	{
+	  fprintf (stderr, " value");
+	}
+      fprintf (stderr, "\n");
+      option++;
+    }
+}
+
 int
 main (int argc, char *argv[])
 {
-  gint c;
-  gchar *exec_name;
+  gint opt;
   gchar *local_dir = NULL;
   gint vflg = 0, dflg = 0, errflg = 0;
+  int long_index = 0;
 
   g_unix_signal_add (SIGHUP, elektroid_end, NULL);
   g_unix_signal_add (SIGINT, elektroid_end, NULL);
@@ -2983,9 +3015,9 @@ main (int argc, char *argv[])
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
 
-  while ((c = getopt (argc, argv, "l:v")) != -1)
+  while ((opt = getopt_long (argc, argv, "l:vh", options, &long_index)) != -1)
     {
-      switch (c)
+      switch (opt)
 	{
 	case 'l':
 	  local_dir = optarg;
@@ -2994,6 +3026,9 @@ main (int argc, char *argv[])
 	case 'v':
 	  vflg++;
 	  break;
+	case 'h':
+	  elektroid_print_help (argv[0]);
+	  exit (EXIT_SUCCESS);
 	case '?':
 	  errflg++;
 	}
@@ -3011,9 +3046,7 @@ main (int argc, char *argv[])
 
   if (errflg > 0)
     {
-      fprintf (stderr, "%s\n", PACKAGE_STRING);
-      exec_name = basename (argv[0]);
-      fprintf (stderr, "Usage: %s [options]\n", exec_name);
+      elektroid_print_help (argv[0]);
       exit (EXIT_FAILURE);
     }
 
