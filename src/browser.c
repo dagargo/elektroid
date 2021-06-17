@@ -185,7 +185,7 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
   gtk_tree_model_get_iter (model, &iter, path);
   browser_get_item_info (model, &iter, &icon, &name, NULL);
 
-  if (get_type_from_inventory_icon (icon) == 'D')
+  if (get_type_from_inventory_icon (icon) == ELEKTROID_DIR)
     {
       if (strcmp (browser->dir, "/") != 0)
 	{
