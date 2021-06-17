@@ -102,11 +102,15 @@ enum
 static GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING},
+  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
+   TARGET_STRING},
   {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
 };
 
 static GtkTargetEntry TARGET_ENTRIES_LOCAL_SRC[] = {
   {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
+   TARGET_STRING},
+  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
    TARGET_STRING},
   {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
 };
@@ -114,11 +118,15 @@ static GtkTargetEntry TARGET_ENTRIES_LOCAL_SRC[] = {
 static GtkTargetEntry TARGET_ENTRIES_REMOTE_DST[] = {
   {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING},
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
+   TARGET_STRING},
   {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
 };
 
 static GtkTargetEntry TARGET_ENTRIES_REMOTE_SRC[] = {
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
+   TARGET_STRING},
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
    TARGET_STRING}
 };
 
@@ -885,8 +893,49 @@ static gboolean
 elektroid_drag_begin (GtkWidget * widget,
 		      GdkDragContext * context, gpointer data)
 {
+  GtkTreeIter iter;
+  GtkTreeSelection *selection;
+  GtkTreeModel *model;
+  GList *tree_path_list;
+  GList *item;
+  gchar *uri;
+  gchar *item_name;
+  gchar *full_path;
   struct browser *browser = data;
+
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (widget));
+  model = GTK_TREE_MODEL (gtk_tree_view_get_model (GTK_TREE_VIEW (widget)));
+  tree_path_list = gtk_tree_selection_get_selected_rows (selection, &model);
+
+  browser->dnd_data = g_string_new ("");
+  for (item = tree_path_list; item != NULL; item = g_list_next (item))
+    {
+      gtk_tree_model_get_iter (model, &iter, item->data);
+      browser_get_item_info (model, &iter, NULL, &item_name, NULL);
+      full_path = chain_path (browser->dir, item_name);
+      free (item_name);
+      if (widget == GTK_WIDGET (local_browser.view))
+	{
+	  uri = g_filename_to_uri (full_path, NULL, NULL);
+	}
+      else if (widget == GTK_WIDGET (remote_browser.view))
+	{
+	  uri = chain_path ("file://", &full_path[1]);
+	}
+      else
+	{
+	  continue;
+	}
+      g_free (full_path);
+      g_string_append (browser->dnd_data, uri);
+      g_free (uri);
+      g_string_append (browser->dnd_data, "\n");
+    }
+  g_list_free_full (tree_path_list, (GDestroyNotify) gtk_tree_path_free);
   browser->dnd = TRUE;
+
+  debug_print (1, "Drag begin data:\n%s\n", browser->dnd_data->str);
+
   return FALSE;
 }
 
@@ -895,7 +944,12 @@ elektroid_drag_end (GtkWidget * widget,
 		    GdkDragContext * context, gpointer data)
 {
   struct browser *browser = data;
+
+  debug_print (1, "Drag end\n");
+
+  g_string_free (browser->dnd_data, TRUE);
   browser->dnd = FALSE;
+
   return FALSE;
 }
 
@@ -1595,7 +1649,7 @@ elektroid_name_dialog_entry_changed (GtkWidget * object, gpointer data)
 static gint
 elektroid_remote_rename (const gchar * old, const gchar * new)
 {
-  debug_print (1, "Renaming remotelly from %s to %s...\n", old, new);
+  debug_print (1, "Renaming remotely from %s to %s...\n", old, new);
   return connector_rename (&connector, old, new);
 }
 
@@ -2444,6 +2498,21 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 }
 
 static void
+elektroid_dnd_received_move_error (const char *src, const char *dst)
+{
+  GtkWidget *dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
+					      GTK_DIALOG_DESTROY_WITH_PARENT |
+					      GTK_DIALOG_MODAL,
+					      GTK_MESSAGE_ERROR,
+					      GTK_BUTTONS_CLOSE,
+					      _
+					      ("Error while moving from “%s” to “%s”: %s."),
+					      src, dst, g_strerror (errno));
+  gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_widget_destroy (dialog);
+}
+
+static void
 elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 			gint x, gint y,
 			GtkSelectionData * selection_data,
@@ -2461,6 +2530,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   gboolean queued;
   GdkAtom type;
   gchar *type_name;
+  gint res;
 
   if (selection_data != NULL && gtk_selection_data_get_length (selection_data)
       && info == TARGET_STRING)
@@ -2489,7 +2559,12 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		  if (strcmp (dir, local_browser.dir))
 		    {
 		      dest_path = chain_path (local_browser.dir, name);
-		      elektroid_local_rename (filename, dest_path);
+		      res = elektroid_local_rename (filename, dest_path);
+		      if (res)
+			{
+			  elektroid_dnd_received_move_error (filename,
+							     dest_path);
+			}
 		      g_free (dest_path);
 		      elektroid_load_local_dir (NULL);
 		    }
@@ -2507,7 +2582,31 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 	    }
 	  else if (widget == GTK_WIDGET (remote_browser.view))
 	    {
-	      elektroid_add_upload_task_path (name, dir, remote_browser.dir);
+	      if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+		{
+		  if (strcmp (dir, remote_browser.dir))
+		    {
+		      dest_path = chain_path (remote_browser.dir, name);
+		      res = elektroid_remote_rename (filename, dest_path);
+		      if (res)
+			{
+			  elektroid_dnd_received_move_error (filename,
+							     dest_path);
+			}
+		      g_free (dest_path);
+		      elektroid_load_remote_dir (NULL);
+		    }
+		  else
+		    {
+		      debug_print (1,
+				   "Same source and destination path. Skipping...\n");
+		    }
+		}
+	      else if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
+		{
+		  elektroid_add_upload_task_path (name, dir,
+						  remote_browser.dir);
+		}
 	    }
 
 	  g_free (path_basename);
@@ -2532,15 +2631,6 @@ elektroid_dnd_get (GtkWidget * widget,
 		   GtkSelectionData * selection_data,
 		   guint info, guint time, gpointer user_data)
 {
-  GtkTreeIter iter;
-  GtkTreeSelection *selection;
-  GtkTreeModel *model;
-  GList *tree_path_list;
-  GList *item;
-  gchar *uri;
-  GString *data;
-  gchar *item_name;
-  gchar *full_path;
   struct browser *browser = user_data;
 
   switch (info)
@@ -2548,48 +2638,127 @@ elektroid_dnd_get (GtkWidget * widget,
     case TARGET_STRING:
       debug_print (1, "Creating DND data...\n");
 
-      selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (widget));
-      model =
-	GTK_TREE_MODEL (gtk_tree_view_get_model (GTK_TREE_VIEW (widget)));
-      tree_path_list =
-	gtk_tree_selection_get_selected_rows (selection, &model);
-
-      data = g_string_new ("");
-      for (item = tree_path_list; item != NULL; item = g_list_next (item))
-	{
-	  gtk_tree_model_get_iter (model, &iter, item->data);
-	  browser_get_item_info (model, &iter, NULL, &item_name, NULL);
-	  full_path = chain_path (browser->dir, item_name);
-	  free (item_name);
-	  if (widget == GTK_WIDGET (local_browser.view))
-	    {
-	      uri = g_filename_to_uri (full_path, NULL, NULL);
-	    }
-	  else if (widget == GTK_WIDGET (remote_browser.view))
-	    {
-	      uri = chain_path ("file://", &full_path[1]);
-	    }
-	  else
-	    {
-	      continue;
-	    }
-	  g_free (full_path);
-	  g_string_append (data, uri);
-	  g_free (uri);
-	  g_string_append (data, "\n");
-	}
-      g_list_free_full (tree_path_list, (GDestroyNotify) gtk_tree_path_free);
-
       gtk_selection_data_set (selection_data,
 			      gtk_selection_data_get_target
-			      (selection_data), 8, (guchar *) data->str,
-			      data->len);
+			      (selection_data), 8,
+			      (guchar *) browser->dnd_data->str,
+			      browser->dnd_data->len);
 
-      debug_print (1, "DND sent data:\n%s\n", data->str);
-      g_string_free (data, TRUE);
+      debug_print (1, "DND sent data:\n%s\n", browser->dnd_data->str);
       break;
     default:
       error_print ("DND type not supported\n");
+    }
+}
+
+static gboolean
+elektroid_drag_in_timeout (gpointer user_data)
+{
+  struct browser *browser = user_data;
+  gchar *spath;
+
+  spath = gtk_tree_path_to_string (browser->dnd_motion_path);
+  debug_print (2, "Getting into path: %s...\n", spath);
+  g_free (spath);
+
+  browser_item_activated (browser->view, browser->dnd_motion_path, NULL,
+			  browser);
+
+  browser->dnd_timeout_function_id = 0;
+  gtk_tree_path_free (browser->dnd_motion_path);
+  browser->dnd_motion_path = NULL;
+  return FALSE;
+}
+
+static gboolean
+elektroid_drag_motion (GtkWidget * widget,
+		       GdkDragContext * context,
+		       gint wx, gint wy, guint time, gpointer user_data)
+{
+  GtkTreePath *path;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  gchar type;
+  gchar *icon;
+  gchar *spath;
+  gint tx;
+  gint ty;
+  GtkTreeSelection *selection;
+  struct browser *browser = user_data;
+
+  gtk_tree_view_convert_widget_to_bin_window_coords
+    (GTK_TREE_VIEW (widget), wx, wy, &tx, &ty);
+
+  if (gtk_tree_view_get_path_at_pos
+      (GTK_TREE_VIEW (widget), tx, ty, &path, NULL, NULL, NULL))
+    {
+      spath = gtk_tree_path_to_string (path);
+      debug_print (2, "Drag motion path: %s\n", spath);
+      g_free (spath);
+
+      selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+      if (gtk_tree_selection_path_is_selected (selection, path))
+	{
+	  if (browser->dnd_timeout_function_id)
+	    {
+	      g_source_remove (browser->dnd_timeout_function_id);
+	      browser->dnd_timeout_function_id = 0;
+	    }
+	  return TRUE;
+	}
+
+      model =
+	GTK_TREE_MODEL (gtk_tree_view_get_model (GTK_TREE_VIEW (widget)));
+      gtk_tree_model_get_iter (model, &iter, path);
+      browser_get_item_info (model, &iter, &icon, NULL, NULL);
+      type = get_type_from_inventory_icon (icon);
+
+      if (type == ELEKTROID_DIR && (!browser->dnd_motion_path
+				    || (browser->dnd_motion_path
+					&&
+					gtk_tree_path_compare
+					(browser->dnd_motion_path, path))))
+	{
+	  if (browser->dnd_timeout_function_id)
+	    {
+	      g_source_remove (browser->dnd_timeout_function_id);
+	      browser->dnd_timeout_function_id = 0;
+	    }
+
+	  browser->dnd_timeout_function_id =
+	    g_timeout_add (1000, elektroid_drag_in_timeout, browser);
+	}
+    }
+  else
+    {
+      if (browser->dnd_timeout_function_id)
+	{
+	  g_source_remove (browser->dnd_timeout_function_id);
+	  browser->dnd_timeout_function_id = 0;
+	}
+    }
+
+  if (browser->dnd_motion_path)
+    {
+      gtk_tree_path_free (browser->dnd_motion_path);
+      browser->dnd_motion_path = NULL;
+    }
+
+  browser->dnd_motion_path = path;
+
+  return TRUE;
+}
+
+void
+elektroid_drag_leave (GtkWidget * widget,
+		      GdkDragContext * context,
+		      guint time, gpointer user_data)
+{
+  struct browser *browser = user_data;
+  if (browser->dnd_timeout_function_id)
+    {
+      g_source_remove (browser->dnd_timeout_function_id);
+      browser->dnd_timeout_function_id = 0;
     }
 }
 
@@ -2827,6 +2996,10 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 		    G_CALLBACK (elektroid_dnd_get), &remote_browser);
   g_signal_connect (remote_browser.view, "drag-data-received",
 		    G_CALLBACK (elektroid_dnd_received), NULL);
+  g_signal_connect (remote_browser.view, "drag-motion",
+		    G_CALLBACK (elektroid_drag_motion), &remote_browser);
+  g_signal_connect (remote_browser.view, "drag-leave",
+		    G_CALLBACK (elektroid_drag_leave), &remote_browser);
 
   sortable =
     GTK_TREE_SORTABLE (gtk_tree_view_get_model (remote_browser.view));
@@ -2890,6 +3063,10 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 		    G_CALLBACK (elektroid_dnd_get), &local_browser);
   g_signal_connect (local_browser.view, "drag-data-received",
 		    G_CALLBACK (elektroid_dnd_received), NULL);
+  g_signal_connect (local_browser.view, "drag-motion",
+		    G_CALLBACK (elektroid_drag_motion), &local_browser);
+  g_signal_connect (local_browser.view, "drag-leave",
+		    G_CALLBACK (elektroid_drag_leave), &local_browser);
 
   sortable = GTK_TREE_SORTABLE (gtk_tree_view_get_model (local_browser.view));
   gtk_tree_sortable_set_sort_func (sortable, BROWSER_LIST_STORE_NAME_FIELD,

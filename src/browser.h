@@ -42,6 +42,9 @@ struct browser
   gchar *dir;
   GtkMenu *menu;
   gboolean dnd;
+  GtkTreePath *dnd_motion_path;
+  gint dnd_timeout_function_id;
+  GString *dnd_data;
 };
 
 gint browser_sort (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *, gpointer);

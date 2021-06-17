@@ -943,9 +943,9 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   return res;
 }
 
-gint
-connector_rename (struct connector *connector, const gchar * old,
-		  const gchar * new)
+static gint
+connector_rename_file (struct connector *connector, const gchar * old,
+		       const gchar * new)
 {
   gint res;
   GByteArray *rx_msg;
@@ -993,6 +993,56 @@ connector_rename (struct connector *connector, const gchar * old,
   free_msg (rx_msg);
 
   return res;
+}
+
+gint
+connector_rename (struct connector *connector, const gchar * old,
+		  const gchar * new)
+{
+  gchar type;
+  gint res;
+  gchar *old_plus;
+  gchar *new_plus;
+  struct connector_dir_iterator *d_iter;
+
+  //Renaming is not implemented for directories so we need to implement it.
+  type = connector_get_path_type (connector, old);
+
+  if (type == ELEKTROID_FILE)
+    {
+      return connector_rename_file (connector, old, new);
+    }
+  else if (type == ELEKTROID_DIR)
+    {
+      res = connector_create_dir (connector, new);
+      if (res)
+	{
+	  return res;
+	}
+      d_iter = connector_read_dir (connector, old);
+      if (d_iter)
+	{
+	  while (!connector_get_next_dentry (d_iter) && !res)
+	    {
+	      old_plus = chain_path (old, d_iter->dentry);
+	      new_plus = chain_path (new, d_iter->dentry);
+	      res = connector_rename (connector, old_plus, new_plus);
+	      free (old_plus);
+	      free (new_plus);
+	    }
+	  connector_free_dir_iterator (d_iter);
+	}
+      if (!res)
+	{
+	  res = connector_delete_dir (connector, old);
+	}
+      return res;
+    }
+  else
+    {
+      errno = EBADF;
+      return -1;
+    }
 }
 
 static gint
