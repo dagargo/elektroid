@@ -89,12 +89,12 @@ msgstr "_Elimina"
 
 #: src/elektroid.c:777
 msgid "Rename"
-msgstr "Reanomena"
+msgstr "Canvia el nom"
 
 #: src/elektroid.c:802
 #, c-format
 msgid "Error while renaming to “%s”: %s."
-msgstr "Error al reanomenar a «%s»: %s."
+msgstr "Error al canviar el nom a «%s»: %s."
 
 #: src/elektroid.c:1389 res/gui.glade:441 res/gui.glade:680
 msgid "Add Directory"
