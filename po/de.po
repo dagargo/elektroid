@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.3\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2021-06-17 20:52+0200\n"
+"POT-Creation-Date: 2021-06-19 14:44+0200\n"
 "PO-Revision-Date: 2021-01-11 22:00+0100\n"
 "Last-Translator: Dennis Braun <d_braun@kabelmail.de>\n"
 "Language-Team: German\n"
@@ -17,125 +17,130 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:226
+#: src/elektroid.c:249
 #, c-format
 msgid "Connected to %s"
 msgstr "Verbunden mit %s"
 
-#: src/elektroid.c:233 src/elektroid.c:3038
+#: src/elektroid.c:256 src/elektroid.c:3093
 msgid "Not connected"
 msgstr "Nicht verbunden"
 
-#: src/elektroid.c:374
+#: src/elektroid.c:397
 msgid "Waiting..."
 msgstr "Warte..."
 
-#: src/elektroid.c:377
+#: src/elektroid.c:400
 msgid "Sending..."
 msgstr "Sende..."
 
-#: src/elektroid.c:381
+#: src/elektroid.c:404
 msgid "Receiving..."
 msgstr "Empfange..."
 
-#: src/elektroid.c:449
+#: src/elektroid.c:472
 msgid "Receive SysEx"
 msgstr "Empfange SysEx"
 
-#: src/elektroid.c:471
+#: src/elektroid.c:494
 msgid "Save SysEx"
 msgstr "Speichere SysEx"
 
-#: src/elektroid.c:474 src/elektroid.c:579 src/elektroid.c:771
+#: src/elektroid.c:497 src/elektroid.c:602 src/elektroid.c:785
 msgid "_Cancel"
 msgstr "_Abbrechen"
 
-#: src/elektroid.c:476
+#: src/elektroid.c:499
 msgid "_Save"
 msgstr "_Speichern"
 
-#: src/elektroid.c:480
+#: src/elektroid.c:503
 msgid "Received SysEx"
 msgstr "SysEx empfangen"
 
-#: src/elektroid.c:485 src/elektroid.c:585
+#: src/elektroid.c:508 src/elektroid.c:608
 msgid "SysEx Files"
 msgstr "SysEx Dateien"
 
-#: src/elektroid.c:576
+#: src/elektroid.c:599
 msgid "Open SysEx"
 msgstr "Öffne SysEx"
 
-#: src/elektroid.c:581
+#: src/elektroid.c:604
 msgid "_Open"
 msgstr "_Öffnen"
 
-#: src/elektroid.c:609
+#: src/elektroid.c:632
 msgid "Send SysEx"
 msgstr "Sende SysEx"
 
-#: src/elektroid.c:736
+#: src/elektroid.c:752
 #, c-format
 msgid "Error while deleting “%s”: %s."
 msgstr "Fehler beim Löschen »%s«: %s."
 
-#: src/elektroid.c:770
+#: src/elektroid.c:784
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Bist du sicher das du die ausgewählten Elemente löschen möchtest?"
 
-#: src/elektroid.c:772
+#: src/elektroid.c:786
 msgid "_Delete"
 msgstr "_Löschen"
 
-#: src/elektroid.c:827 res/gui.glade:106 res/gui.glade:155
+#: src/elektroid.c:840 res/gui.glade:106 res/gui.glade:155
 msgid "Rename"
 msgstr "Umbenennen"
 
-#: src/elektroid.c:852
+#: src/elektroid.c:858
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Fehler beim Umbenennen von »%s«: %s."
 
-#: src/elektroid.c:1578 res/gui.glade:445 res/gui.glade:628
+#: src/elektroid.c:1581 res/gui.glade:445 res/gui.glade:628
 msgid "Add Directory"
 msgstr "Verzeichnis hinzufügen"
 
-#: src/elektroid.c:1603
+#: src/elektroid.c:1599
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Fehler beim Erstellen des Verzeichnisses »%s«: %s."
 
-#: src/elektroid.c:1767
+#: src/elektroid.c:1761
 msgid "Queued"
 msgstr "In der Warteschlange"
 
-#: src/elektroid.c:1769
+#: src/elektroid.c:1763
 msgid "Running"
 msgstr "Wird ausgeführt"
 
-#: src/elektroid.c:1771
+#: src/elektroid.c:1765
 msgid "Completed"
 msgstr "Fertig"
 
-#: src/elektroid.c:1773
+#: src/elektroid.c:1767
 msgid "Completed with errors"
 msgstr "Abgeschlossen mit Fehlern"
 
-#: src/elektroid.c:1775
+#: src/elektroid.c:1769
 msgid "Canceled"
 msgstr "Abgebrochen"
 
-#: src/elektroid.c:1777 src/elektroid.c:1791
+#: src/elektroid.c:1771 src/elektroid.c:1785
 msgid "Undefined"
 msgstr "Undefiniert"
 
-#: src/elektroid.c:1787
+#: src/elektroid.c:1781
 msgid "Upload"
 msgstr "Hochladen"
 
-#: src/elektroid.c:1789
+#: src/elektroid.c:1783
 msgid "Download"
 msgstr "Herunterladen"
+
+#: src/elektroid.c:2541 src/elektroid.c:2570
+#, c-format
+msgid "Error while moving from “%s” to “%s”: %s."
+msgstr "Fehler beim Verschieben von »%s« nach »%s«: %s."
 
 #: res/gui.glade:55
 msgid "Upload Selection"
