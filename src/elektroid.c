@@ -27,6 +27,7 @@
 #include <sys/types.h>
 #include <glib-unix.h>
 #include <glib/gi18n.h>
+#include <glib/gprintf.h>
 #define _GNU_SOURCE
 #include <getopt.h>
 #include "browser.h"
@@ -187,6 +188,24 @@ static GtkWidget *task_tree_view;
 static GtkWidget *cancel_task_button;
 static GtkWidget *remove_tasks_button;
 static GtkWidget *clear_tasks_button;
+
+static void
+show_error_msg (const char *format, ...)
+{
+  GtkWidget *dialog;
+  gchar *msg;
+  va_list args;
+
+  va_start(args, format);
+  g_vasprintf (&msg, format, args);
+  dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
+				   GTK_DIALOG_DESTROY_WITH_PARENT |
+				   GTK_DIALOG_MODAL,
+				   GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE, msg);
+  gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_widget_destroy (dialog);
+  g_free (msg);
+}
 
 static void
 elektroid_load_devices (gboolean auto_select)
@@ -719,7 +738,6 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path,
   gchar *path;
   gchar type;
   gint err;
-  GtkWidget *dialog;
 
   gtk_tree_model_get_iter (model, &iter, tree_path);
   browser_get_item_info (model, &iter, &icon, &name, NULL);
@@ -731,16 +749,8 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path,
   err = browser->delete (path, type);
   if (err < 0)
     {
-      dialog =
-	gtk_message_dialog_new (GTK_WINDOW (main_window),
-				GTK_DIALOG_DESTROY_WITH_PARENT |
-				GTK_DIALOG_MODAL,
-				GTK_MESSAGE_ERROR,
-				GTK_BUTTONS_CLOSE,
-				_("Error while deleting “%s”: %s."),
-				path, g_strerror (errno));
-      gtk_dialog_run (GTK_DIALOG (dialog));
-      gtk_widget_destroy (dialog);
+      show_error_msg (_("Error while deleting “%s”: %s."),
+		      path, g_strerror (errno));
     }
   else
     {
@@ -813,7 +823,6 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
   char *new_path;
   int result;
   gint err;
-  GtkWidget *dialog;
   GtkTreeIter iter;
   struct browser *browser = data;
   GtkTreeModel *model =
@@ -846,17 +855,8 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 
 	  if (err < 0)
 	    {
-	      dialog =
-		gtk_message_dialog_new (GTK_WINDOW (name_dialog),
-					GTK_DIALOG_DESTROY_WITH_PARENT |
-					GTK_DIALOG_MODAL,
-					GTK_MESSAGE_ERROR,
-					GTK_BUTTONS_CLOSE,
-					_
-					("Error while renaming to “%s”: %s."),
-					new_path, g_strerror (errno));
-	      gtk_dialog_run (GTK_DIALOG (dialog));
-	      gtk_widget_destroy (dialog);
+	      show_error_msg (_("Error while renaming to “%s”: %s."),
+			      new_path, g_strerror (errno));
 	    }
 	  else
 	    {
@@ -1572,7 +1572,6 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
   char *pathname;
   int result;
   gint err;
-  GtkWidget *dialog;
   struct browser *browser = data;
 
   gtk_entry_set_text (name_dialog_entry, "");
@@ -1597,17 +1596,8 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 
 	  if (err < 0)
 	    {
-	      dialog =
-		gtk_message_dialog_new (GTK_WINDOW (name_dialog),
-					GTK_DIALOG_DESTROY_WITH_PARENT |
-					GTK_DIALOG_MODAL,
-					GTK_MESSAGE_ERROR,
-					GTK_BUTTONS_CLOSE,
-					_
-					("Error while creating dir “%s”: %s."),
-					pathname, g_strerror (errno));
-	      gtk_dialog_run (GTK_DIALOG (dialog));
-	      gtk_widget_destroy (dialog);
+	      show_error_msg (_("Error while creating dir “%s”: %s."),
+			      pathname, g_strerror (errno));
 	    }
 	  else
 	    {
@@ -2498,21 +2488,6 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 }
 
 static void
-elektroid_dnd_received_move_error (const char *src, const char *dst)
-{
-  GtkWidget *dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
-					      GTK_DIALOG_DESTROY_WITH_PARENT |
-					      GTK_DIALOG_MODAL,
-					      GTK_MESSAGE_ERROR,
-					      GTK_BUTTONS_CLOSE,
-					      _
-					      ("Error while moving from “%s” to “%s”: %s."),
-					      src, dst, g_strerror (errno));
-  gtk_dialog_run (GTK_DIALOG (dialog));
-  gtk_widget_destroy (dialog);
-}
-
-static void
 elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 			gint x, gint y,
 			GtkSelectionData * selection_data,
@@ -2562,8 +2537,9 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		      res = elektroid_local_rename (filename, dest_path);
 		      if (res)
 			{
-			  elektroid_dnd_received_move_error (filename,
-							     dest_path);
+			  show_error_msg
+			    (_("Error while moving from “%s” to “%s”: %s."),
+			     filename, dest_path, g_strerror (errno));
 			}
 		      g_free (dest_path);
 		      elektroid_load_local_dir (NULL);
@@ -2590,8 +2566,9 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		      res = elektroid_remote_rename (filename, dest_path);
 		      if (res)
 			{
-			  elektroid_dnd_received_move_error (filename,
-							     dest_path);
+			  show_error_msg
+			    (_("Error while moving from “%s” to “%s”: %s."),
+			     filename, dest_path, g_strerror (errno));
 			}
 		      g_free (dest_path);
 		      elektroid_load_remote_dir (NULL);
