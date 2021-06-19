@@ -34,6 +34,7 @@
 #include "audio.h"
 #include "sample.h"
 #include "utils.h"
+#include "notifier.h"
 
 #define MAX_DRAW_X 10000
 #define SIZE_LABEL_LEN 16
@@ -153,6 +154,9 @@ static GThread *sysex_thread = NULL;
 static struct elektroid_sample_transfer sample_transfer;
 static struct elektroid_sysex_transfer sysex_transfer;
 
+static GThread *notifier_thread = NULL;
+struct notifier notifier;
+
 static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
 static GtkDialog *name_dialog;
@@ -196,7 +200,7 @@ show_error_msg (const char *format, ...)
   gchar *msg;
   va_list args;
 
-  va_start(args, format);
+  va_start (args, format);
   g_vasprintf (&msg, format, args);
   dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
 				   GTK_DIALOG_DESTROY_WITH_PARENT |
@@ -1461,6 +1465,13 @@ elektroid_valid_file (const gchar * name)
 }
 
 static gboolean
+elektroid_go_up_local_dir (gpointer data)
+{
+  browser_go_up (NULL, &local_browser);
+  return FALSE;
+}
+
+static gboolean
 elektroid_load_local_dir (gpointer data)
 {
   DIR *dir;
@@ -1479,6 +1490,8 @@ elektroid_load_local_dir (gpointer data)
       error_print ("Error while opening local %s dir\n", local_browser.dir);
       goto end;
     }
+
+  notifier_set_dir (&notifier, local_browser.dir);
 
   while ((dirent = readdir (dir)) != NULL)
     {
@@ -2538,7 +2551,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		      if (res)
 			{
 			  show_error_msg
-			    (_("Error while moving from “%s” to “%s”: %s."),
+			    (_
+			     ("Error while moving from “%s” to “%s”: %s."),
 			     filename, dest_path, g_strerror (errno));
 			}
 		      g_free (dest_path);
@@ -2567,7 +2581,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		      if (res)
 			{
 			  show_error_msg
-			    (_("Error while moving from “%s” to “%s”: %s."),
+			    (_
+			     ("Error while moving from “%s” to “%s”: %s."),
 			     filename, dest_path, g_strerror (errno));
 			}
 		      g_free (dest_path);
@@ -2745,6 +2760,12 @@ elektroid_quit ()
   elektroid_stop_sysex_thread ();
   elektroid_stop_task_thread ();
   elektroid_stop_load_thread ();
+
+  notifier.running = 0;
+  notifier_close (&notifier);
+  g_thread_join (notifier_thread);
+  notifier_free (&notifier);
+
   debug_print (1, "Quitting GTK+...\n");
   gtk_main_quit ();
 }
@@ -3105,8 +3126,13 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
 
   strcpy (local_browser.dir, local_dir);
-  free (local_dir);
   local_browser.load_dir (NULL);
+  debug_print (1, "Creating notifier thread...\n");
+  notifier_init (&notifier, elektroid_load_local_dir,
+		 elektroid_go_up_local_dir);
+  notifier_set_dir (&notifier, local_dir);
+  notifier_thread = g_thread_new ("notifier_thread", notifier_run, &notifier);
+  free (local_dir);
 
   gtk_widget_show (main_window);
   gtk_main ();
