@@ -31,8 +31,8 @@ struct browser
   gint (*mkdir) (const gchar *);
   gint (*rename) (const gchar *, const gchar *);
   gint (*delete) (const gchar *, const gchar);
-  gboolean (*load_dir) (gpointer);
-  gboolean (*check_selection) (gpointer);
+  GSourceFunc load_dir;
+  GSourceFunc check_selection;
   void (*set_up_menu) (gint);
   GtkTreeView *view;
   GtkWidget *up_button;

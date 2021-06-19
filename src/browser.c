@@ -150,7 +150,7 @@ void
 browser_refresh (GtkWidget * object, gpointer data)
 {
   struct browser *browser = data;
-  browser->load_dir (NULL);
+  g_idle_add (browser->load_dir, NULL);
 }
 
 void
@@ -168,7 +168,7 @@ browser_go_up (GtkWidget * object, gpointer data)
       free (dup);
     }
 
-  browser->load_dir (NULL);
+  g_idle_add (browser->load_dir, NULL);
 }
 
 void
