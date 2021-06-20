@@ -1172,7 +1172,7 @@ audio-volume-medium-symbolic</property>
                         <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
-                        <property name="tooltip_text" translatable="yes">Cancel Running Task</property>
+                        <property name="tooltip_text" translatable="yes">Cancel Tasks</property>
                         <child>
                           <object class="GtkImage">
                             <property name="visible">True</property>

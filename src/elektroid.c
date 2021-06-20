@@ -1823,7 +1823,7 @@ elektroid_get_human_task_type (enum elektroid_task_type type)
 }
 
 static void
-elektroid_cancel_running_task (GtkWidget * object, gpointer data)
+elektroid_stop_running_task (GtkWidget * object, gpointer data)
 {
   g_mutex_lock (&sample_transfer.transfer.mutex);
   sample_transfer.transfer.active = FALSE;
@@ -1876,6 +1876,41 @@ elektroid_check_task_buttons (gpointer data)
   gtk_widget_set_sensitive (clear_tasks_button, finished);
 
   return FALSE;
+}
+
+static void
+elektroid_cancel_all_tasks (GtkWidget * object, gpointer data)
+{
+  enum elektroid_task_status status;
+  GtkTreeIter iter;
+  gboolean valid =
+    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), &iter);
+  const gchar *canceled = elektroid_get_human_task_status (CANCELED);
+
+  while (valid)
+    {
+      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter,
+			  TASK_LIST_STORE_STATUS_FIELD, &status, -1);
+
+      if (status == QUEUED)
+	{
+	  gtk_list_store_set (task_list_store, &iter,
+			      TASK_LIST_STORE_STATUS_FIELD,
+			      CANCELED,
+			      TASK_LIST_STORE_STATUS_HUMAN_FIELD, canceled,
+			      -1);
+	  valid = gtk_list_store_iter_is_valid (task_list_store, &iter);
+	}
+      else
+	{
+	  valid =
+	    gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store),
+				      &iter);
+	}
+    }
+
+  elektroid_stop_running_task (NULL, NULL);
+  elektroid_check_task_buttons (NULL);
 }
 
 static void
@@ -1933,7 +1968,7 @@ elektroid_complete_running_task (gpointer data)
 			  TASK_LIST_STORE_STATUS_FIELD,
 			  sample_transfer.status,
 			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status, -1);
-      elektroid_cancel_running_task (NULL, NULL);
+      elektroid_stop_running_task (NULL, NULL);
       g_free (sample_transfer.src);
       g_free (sample_transfer.dst);
 
@@ -3128,7 +3163,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   clear_tasks_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "clear_tasks_button"));
   g_signal_connect (cancel_task_button, "clicked",
-		    G_CALLBACK (elektroid_cancel_running_task), NULL);
+		    G_CALLBACK (elektroid_cancel_all_tasks), NULL);
   g_signal_connect (remove_tasks_button, "clicked",
 		    G_CALLBACK (elektroid_remove_queued_tasks), NULL);
   g_signal_connect (clear_tasks_button, "clicked",
