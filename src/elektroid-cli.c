@@ -24,6 +24,8 @@
 #include <unistd.h>
 #include <libgen.h>
 #include <signal.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include "connector.h"
 #include "sample.h"
 #include "utils.h"
@@ -376,6 +378,45 @@ cli_info (int argc, char *argv[], int optind)
   return EXIT_SUCCESS;
 }
 
+static int
+cli_df (int argc, char *argv[], int optind)
+{
+  gchar *device_path;
+  gint res;
+  struct connector_statfs statfs;
+  enum connector_fs_type fs;
+
+  if (optind == argc)
+    {
+      error_print ("Device missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      device_path = argv[optind];
+    }
+
+  res = cli_connect (device_path);
+
+  if (res < 0)
+    {
+      return EXIT_FAILURE;
+    }
+
+  printf ("%-10.10s%16.16s%16.16s%16.16s%11.10s\n", "Filesystem", "Size",
+	  "Used", "Available", "Use%");
+
+  for (fs = FS_PLUS_DRIVE; fs <= FS_RAM; fs++)
+    {
+      res = connector_statfs (&connector, fs, &statfs);
+      printf ("%-10.10s%16" PRId64 "%16" PRId64 "%16" PRId64 "%10.2f%%\n",
+	      statfs.name, statfs.bsize, statfs.bsize - statfs.bfree,
+	      statfs.bfree, connector_statfs_use_percent (&statfs));
+    }
+
+  return EXIT_SUCCESS;
+}
+
 static void
 cli_end (int sig)
 {
@@ -489,6 +530,10 @@ main (int argc, char *argv[])
   else if (strcmp (command, "info") == 0)
     {
       res = cli_info (argc, argv, optind);
+    }
+  else if (strcmp (command, "df") == 0)
+    {
+      res = cli_df (argc, argv, optind);
     }
   else
     {

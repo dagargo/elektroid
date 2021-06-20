@@ -15,6 +15,12 @@ $ecli info $DEVICE:/
 
 sleep 1
 
+echo "Testing df..."
+$ecli df $DEVICE:/
+[ $? -ne 0 ] && exit 1
+
+sleep 1
+
 echo "Testing ls..."
 $ecli ls $DEVICE:/
 [ $? -ne 0 ] && exit 1

@@ -47,6 +47,15 @@ $ elektroid-cli info 0
 Digitakt 1.11
 ```
 
+* info, show device info
+
+```
+$ elektroid-cli df 0
+Filesystem            Size            Used       Available       Use%
++Drive          1006108672       215891968       790216704     21.46%
+RAM               67108944        15037872        52071072     22.41%
+```
+
 * ls
 
 It only works for directories. Notice that the first column is the file type, the second is the size in MiB (it is the same unit used in the devices although it is showed there as MB), the third is an internal cksum and the fourth is the sample name.

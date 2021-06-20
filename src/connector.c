@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <netinet/in.h>
+#include <endian.h>
 #include <byteswap.h>
 #include <sys/poll.h>
 #include <zlib.h>
@@ -41,6 +42,7 @@ static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 static const guint8 INQ_DEVICE[] = { 0x1 };
 static const guint8 INQ_VERSION[] = { 0x2 };
 static const guint8 INQ_UID[] = { 0x3 };
+static const guint8 INQ_STORAGE_INFO[] = { 0x5 };
 static const guint8 INQ_LS_DIR_TEMPLATE[] = { 0x10 };
 static const guint8 INQ_NEW_DIR_TEMPLATE[] = { 0x11 };
 static const guint8 INQ_DELETE_DIR_TEMPLATE[] = { 0x12 };
@@ -68,6 +70,8 @@ static const guint8 INQ_OS_UPGRADE_START[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
 static const guint8 INQ_OS_UPGRADE_WRITE[] =
   { 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+static const gchar *FS_TYPE_NAMES[] = { "None", "+Drive", "RAM" };
 
 static gchar connector_get_path_type (struct connector *, const gchar *);
 
@@ -258,6 +262,16 @@ connector_new_msg_data (const guint8 * data, guint len)
 
   g_byte_array_append (msg, (guchar *) "\0\0\0\0", 4);
   g_byte_array_append (msg, data, len);
+
+  return msg;
+}
+
+static GByteArray *
+connector_new_msg_uint8 (const guint8 * data, guint len, guint8 type)
+{
+  GByteArray *msg = connector_new_msg_data (data, len);
+
+  g_byte_array_append (msg, &type, 1);
 
   return msg;
 }
@@ -1528,6 +1542,52 @@ connector_destroy (struct connector *connector)
       free (connector->pfds);
       connector->pfds = NULL;
     }
+}
+
+gint
+connector_statfs (struct connector *connector, enum connector_fs_type type,
+		  struct connector_statfs *statfs)
+{
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+  gint8 op;
+  uint64_t *data;
+  gint res = 0;
+
+  tx_msg = connector_new_msg_uint8 (INQ_STORAGE_INFO,
+				    sizeof (INQ_STORAGE_INFO), type);
+  rx_msg = connector_tx_and_rx (connector, tx_msg);
+
+  if (!rx_msg)
+    {
+      return -1;
+    }
+
+  op = connector_get_msg_status (rx_msg);
+  if (!op)
+    {
+      errno = EIO;
+      error_print ("%s (%s)\n", g_strerror (errno),
+		   connector_get_msg_string (rx_msg));
+      free_msg (rx_msg);
+      return -1;
+    }
+
+  statfs->name = FS_TYPE_NAMES[type];
+  data = (uint64_t *) & rx_msg->data[6];
+  statfs->bfree = be64toh (*data);
+  data = (uint64_t *) & rx_msg->data[14];
+  statfs->bsize = be64toh (*data);
+
+  free_msg (rx_msg);
+
+  return res;
+}
+
+float
+connector_statfs_use_percent (struct connector_statfs *statfs)
+{
+  return (statfs->bsize - statfs->bfree) * 100.0 / statfs->bsize;
 }
 
 static const gchar *

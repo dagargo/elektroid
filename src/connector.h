@@ -75,6 +75,20 @@ struct connector_sample_transfer
   GMutex mutex;
 };
 
+enum connector_fs_type
+{
+  FS_NONE,
+  FS_PLUS_DRIVE,
+  FS_RAM
+};
+
+struct connector_statfs
+{
+  const gchar *name;
+  guint64 bsize;
+  guint64 bfree;
+};
+
 gint connector_init (struct connector *, gint);
 
 void connector_destroy (struct connector *);
@@ -121,3 +135,8 @@ gint connector_upgrade_os (struct connector *, GByteArray *,
 			   struct connector_sysex_transfer *);
 
 void free_msg (gpointer);
+
+gint connector_statfs (struct connector *, enum connector_fs_type,
+		       struct connector_statfs *);
+
+float connector_statfs_use_percent (struct connector_statfs *);
