@@ -9,6 +9,12 @@ echo "Using device $DEVICE..."
 
 sleep 1
 
+echo "Testing info..."
+$ecli info $DEVICE:/
+[ $? -ne 0 ] && exit 1
+
+sleep 1
+
 echo "Testing ls..."
 $ecli ls $DEVICE:/
 [ $? -ne 0 ] && exit 1
