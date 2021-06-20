@@ -1763,8 +1763,8 @@ connector_check (struct connector *connector)
   return (connector->inputp && connector->outputp);
 }
 
-static struct connector_device *
-connector_get_elektron_device (snd_ctl_t * ctl, int card, int device)
+static struct connector_system_device *
+connector_get_system_device (snd_ctl_t * ctl, int card, int device)
 {
   snd_rawmidi_info_t *info;
   const gchar *name;
@@ -1772,7 +1772,7 @@ connector_get_elektron_device (snd_ctl_t * ctl, int card, int device)
   int subs, subs_in, subs_out;
   int sub;
   int err;
-  struct connector_device *connector_device;
+  struct connector_system_device *connector_system_device;
 
   snd_rawmidi_info_alloca (&info);
   snd_rawmidi_info_set_device (info, device);
@@ -1828,10 +1828,11 @@ connector_get_elektron_device (snd_ctl_t * ctl, int card, int device)
   if (strncmp (sub_name, "Elektron", 8) == 0)
     {
       debug_print (1, "Adding hw:%d (%s) %s...\n", card, name, sub_name);
-      connector_device = malloc (sizeof (struct connector_device));
-      connector_device->card = card;
-      connector_device->name = strdup (sub_name);
-      return connector_device;
+      connector_system_device =
+	malloc (sizeof (struct connector_system_device));
+      connector_system_device->card = card;
+      connector_system_device->name = strdup (sub_name);
+      return connector_system_device;
     }
   else
     {
@@ -1846,7 +1847,7 @@ connector_fill_card_elektron_devices (gint card, GArray * devices)
   gchar name[32];
   gint device;
   gint err;
-  struct connector_device *connector_device;
+  struct connector_system_device *connector_system_device;
 
   sprintf (name, "hw:%d", card);
   if ((err = snd_ctl_open (&ctl, name, 0)) < 0)
@@ -1859,10 +1860,11 @@ connector_fill_card_elektron_devices (gint card, GArray * devices)
   while (((err = snd_ctl_rawmidi_next_device (ctl, &device)) == 0)
 	 && (device >= 0))
     {
-      connector_device = connector_get_elektron_device (ctl, card, device);
-      if (connector_device)
+      connector_system_device =
+	connector_get_system_device (ctl, card, device);
+      if (connector_system_device)
 	{
-	  g_array_append_vals (devices, connector_device, 1);
+	  g_array_append_vals (devices, connector_system_device, 1);
 	}
     }
   if (err < 0)
@@ -1874,11 +1876,11 @@ connector_fill_card_elektron_devices (gint card, GArray * devices)
 }
 
 GArray *
-connector_get_elektron_devices ()
+connector_get_system_devices ()
 {
   gint card, err;
   GArray *devices =
-    g_array_new (FALSE, FALSE, sizeof (struct connector_device));
+    g_array_new (FALSE, FALSE, sizeof (struct connector_system_device));
 
   card = -1;
   while (((err = snd_card_next (&card)) == 0) && (card >= 0))

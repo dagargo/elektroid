@@ -216,8 +216,8 @@ elektroid_load_devices (gboolean auto_select)
 {
   gint i;
   gint device_index;
-  GArray *devices = connector_get_elektron_devices ();
-  struct connector_device device;
+  GArray *devices = connector_get_system_devices ();
+  struct connector_system_device device;
 
   debug_print (1, "Loading devices...\n");
 
@@ -225,7 +225,7 @@ elektroid_load_devices (gboolean auto_select)
 
   for (i = 0; i < devices->len; i++)
     {
-      device = g_array_index (devices, struct connector_device, i);
+      device = g_array_index (devices, struct connector_system_device, i);
       gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
 					 DEVICES_LIST_STORE_CARD_FIELD,
 					 device.card,

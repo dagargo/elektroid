@@ -53,12 +53,12 @@ static gint
 cli_ld ()
 {
   gint i;
-  struct connector_device device;
-  GArray *devices = connector_get_elektron_devices ();
+  struct connector_system_device device;
+  GArray *devices = connector_get_system_devices ();
 
   for (i = 0; i < devices->len; i++)
     {
-      device = g_array_index (devices, struct connector_device, i);
+      device = g_array_index (devices, struct connector_system_device, i);
       printf ("%d %s\n", device.card, device.name);
     }
 

@@ -46,7 +46,7 @@ struct connector_dir_iterator
   guint pos;
 };
 
-struct connector_device
+struct connector_system_device
 {
   gchar *name;
   guint card;
@@ -120,7 +120,7 @@ void connector_get_sample_info_from_msg (GByteArray *, gint *, guint *);
 
 gint connector_create_dir (struct connector *, const gchar *);
 
-GArray *connector_get_elektron_devices ();
+GArray *connector_get_system_devices ();
 
 ssize_t connector_tx_sysex (struct connector *, GByteArray *,
 			    struct connector_sysex_transfer *);
