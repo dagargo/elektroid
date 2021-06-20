@@ -243,17 +243,40 @@ elektroid_load_devices (gboolean auto_select)
 static void
 elektroid_update_statusbar ()
 {
-  char *status;
+  gchar *status;
+  gchar *statfss_str;
+  gint res;
+  enum connector_fs_type fs;
+  struct connector_statfs statfs;
+  GString *statfss;
 
   gtk_statusbar_pop (status_bar, 0);
 
   if (connector_check (&connector))
     {
+      statfss = g_string_new (NULL);
+
+      if (connector.device_desc->capabilities & CAP_SAMPLE)
+	{
+	  for (fs = FS_PLUS_DRIVE; fs <= FS_RAM; fs++)
+	    {
+	      res = connector_statfs (&connector, fs, &statfs);
+	      if (!res)
+		{
+		  g_string_append_printf (statfss, " %s %.2f%%",
+					  statfs.name,
+					  connector_statfs_use_percent
+					  (&statfs));
+		}
+	    }
+	}
+      statfss_str = g_string_free (statfss, FALSE);
       status = malloc (LABEL_MAX);
-      snprintf (status, LABEL_MAX, _("Connected to %s"),
-		connector.device_name);
+      snprintf (status, LABEL_MAX, _("Connected to %s%s"),
+		connector.device_name, statfss_str);
       gtk_statusbar_push (status_bar, 0, status);
       free (status);
+      g_free (statfss_str);
     }
   else
     {
