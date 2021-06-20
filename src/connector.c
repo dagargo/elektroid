@@ -69,10 +69,50 @@ static const guint8 INQ_OS_UPGRADE_START[] =
 static const guint8 INQ_OS_UPGRADE_WRITE[] =
   { 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
+
 static const gchar *FS_TYPE_NAMES[] = { "None", "+Drive", "RAM" };
 
-static gchar connector_get_path_type (struct connector *, const gchar *);
+static const struct connector_device_desc ANALOG_RYTM_DESC = {
+  .id = 0x8,
+  .model = "Analog Rytm",
+  .capabilities = CAP_SAMPLE,
+  .startup_mode = CAP_SAMPLE
+};
 
+static const struct connector_device_desc DIGITAKT_DESC = {
+  .id = 0xc,
+  .model = "Digitakt",
+  .capabilities = CAP_SAMPLE,
+  .startup_mode = CAP_SAMPLE
+};
+
+static const struct connector_device_desc ANALOG_RYTM_MKII_DESC = {
+  .id = 0x10,
+  .model = "Analog Rytm MKII",
+  .capabilities = CAP_SAMPLE,
+  .startup_mode = CAP_SAMPLE,
+};
+
+static const struct connector_device_desc MODEL_SAMPLES_DESC = {
+  .id = 0x19,
+  .model = "Model:Samples",
+  .capabilities = CAP_SAMPLE,
+  .startup_mode = CAP_SAMPLE
+};
+
+static const struct connector_device_desc NULL_DEVICE_DESC = {
+  .id = 0,
+  .model = "-",
+  .capabilities = 0,
+  .startup_mode = 0
+};
+
+static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
+  &ANALOG_RYTM_DESC, &DIGITAKT_DESC, &ANALOG_RYTM_MKII_DESC,
+  &MODEL_SAMPLES_DESC
+};
+
+static gchar connector_get_path_type (struct connector *, const gchar *);
 static guchar
 connector_get_msg_status (const GByteArray * msg)
 {
@@ -1588,22 +1628,21 @@ connector_statfs_use_percent (struct connector_statfs *statfs)
   return (statfs->bsize - statfs->bfree) * 100.0 / statfs->bsize;
 }
 
-static const gchar *
-connector_get_device_name (gint device_id)
+static const struct connector_device_desc *
+connector_get_device_desc (guint8 id)
 {
-  switch (device_id)
+  guint total =
+    sizeof (CONNECTOR_DEVICE_DESCS) / sizeof (struct connector_device_desc *);
+  guint i;
+
+  for (i = 0; i < total; i++)
     {
-    case 0x8:
-      return "Analog Rytm";
-    case 0xc:
-      return "Digitakt";
-    case 0x10:
-      return "Analog Rytm MKII";
-    case 0x19:
-      return "Model:Samples";
-    default:
-      return "-";
+      if (id == CONNECTOR_DEVICE_DESCS[i]->id)
+	{
+	  return CONNECTOR_DEVICE_DESCS[i];
+	}
     }
+  return &NULL_DEVICE_DESC;
 }
 
 gint
@@ -1617,14 +1656,12 @@ connector_init (struct connector *connector, gint card)
   snd_rawmidi_params_t *params;
   gchar name[32];
   sprintf (name, "hw:%d", card);
-
   connector->inputp = NULL;
   connector->outputp = NULL;
   connector->device_name = NULL;
   connector->buffer = NULL;
   connector->rx_len = 0;
   connector->pfds = NULL;
-
   if (card < 0)
     {
       debug_print (1, "Invalid card\n");
@@ -1633,7 +1670,6 @@ connector_init (struct connector *connector, gint card)
     }
 
   debug_print (1, "Initializing connector to '%s'...\n", name);
-
   if ((err =
        snd_rawmidi_open (&connector->inputp, &connector->outputp,
 			 name, SND_RAWMIDI_NONBLOCK | SND_RAWMIDI_SYNC)) < 0)
@@ -1681,7 +1717,6 @@ connector_init (struct connector *connector, gint card)
     }
   snd_rawmidi_poll_descriptors (connector->inputp, connector->pfds,
 				connector->npfds);
-
   err = snd_rawmidi_params_malloc (&params);
   if (err)
     {
@@ -1735,15 +1770,14 @@ connector_init (struct connector *connector, gint card)
 	}
     }
 
+  connector->device_desc = connector_get_device_desc (rx_msg_device->data[5]);
+
   snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
-	    connector_get_device_name (rx_msg_device->data[5]),
+	    connector->device_desc->model,
 	    &rx_msg_fw_ver->data[10],
 	    &rx_msg_device->data[7 + rx_msg_device->data[6]]);
-
   debug_print (1, "Connected to %s\n", connector->device_name);
-
   err = 0;
-
   free_msg (rx_msg_fw_ver);
 cleanup_device:
   free_msg (rx_msg_device);
@@ -1776,7 +1810,6 @@ connector_get_system_device (snd_ctl_t * ctl, int card, int device)
 
   snd_rawmidi_info_alloca (&info);
   snd_rawmidi_info_set_device (info, device);
-
   snd_rawmidi_info_set_stream (info, SND_RAWMIDI_STREAM_INPUT);
   err = snd_ctl_rawmidi_info (ctl, info);
   if (err >= 0)

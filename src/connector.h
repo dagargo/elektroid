@@ -23,8 +23,19 @@
 
 #define SYSEX_TIMEOUT 5000
 
+#define CAP_SAMPLE  0b00000001
+
+struct connector_device_desc
+{
+  guint8 id;
+  gchar *model;
+  guint8 capabilities;
+  guint8 startup_mode;
+};
+
 struct connector
 {
+  const struct connector_device_desc *device_desc;
   snd_rawmidi_t *inputp;
   snd_rawmidi_t *outputp;
   gchar *device_name;
