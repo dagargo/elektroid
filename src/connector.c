@@ -20,9 +20,7 @@
 
 #include <stdio.h>
 #include <math.h>
-#include <netinet/in.h>
 #include <endian.h>
-#include <byteswap.h>
 #include <sys/poll.h>
 #include <zlib.h>
 #include <libgen.h>
@@ -132,11 +130,11 @@ connector_get_next_dentry (struct connector_dir_iterator *dir_iterator)
   else
     {
       data = (uint32_t *) & dir_iterator->msg->data[dir_iterator->pos];
-      dir_iterator->cksum = ntohl (*data);
+      dir_iterator->cksum = be32toh (*data);
 
       dir_iterator->pos += 4;
       data = (uint32_t *) & dir_iterator->msg->data[dir_iterator->pos];
-      dir_iterator->size = ntohl (*data);
+      dir_iterator->size = be32toh (*data);
 
       dir_iterator->pos += 5;
       dir_iterator->type = dir_iterator->msg->data[dir_iterator->pos];
@@ -246,11 +244,11 @@ connector_get_sample_info_from_msg (GByteArray * info_msg, gint * id,
     {
       if (id)
 	{
-	  *id = ntohl (*((uint32_t *) & info_msg->data[6]));
+	  *id = be32toh (*((uint32_t *) & info_msg->data[6]));
 	}
       if (size)
 	{
-	  *size = ntohl (*((uint32_t *) & info_msg->data[10]));
+	  *size = be32toh (*((uint32_t *) & info_msg->data[10]));
 	}
     }
 }
@@ -316,7 +314,7 @@ connector_new_msg_close_file_read (gint id)
 					    sizeof
 					    (INQ_CLOSE_FILE_READ_TEMPLATE));
 
-  aux32 = htonl (id);
+  aux32 = htobe32 (id);
   g_byte_array_append (msg, (guchar *) & aux32, sizeof (uint32_t));
   return msg;
 }
@@ -330,7 +328,7 @@ connector_new_msg_open_file_write (const gchar * path, guint frames)
 					    (INQ_OPEN_FILE_WRITE_TEMPLATE),
 					    path);
 
-  aux32 = htonl ((frames + 32) * 2);
+  aux32 = htobe32 ((frames + 32) * 2);
   memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
 
   return msg;
@@ -362,7 +360,7 @@ connector_new_msg_write_file_blk (guint id, gshort ** data, guint frames,
   consumed = 0;
   while (i < frames_blck && *total < frames)
     {
-      aux16 = htons (**data);
+      aux16 = htobe16 (**data);
       g_byte_array_append (msg, (guchar *) & aux16, sizeof (uint16_t));
       (*data)++;
       (*total)++;
@@ -370,23 +368,23 @@ connector_new_msg_write_file_blk (guint id, gshort ** data, guint frames,
       i++;
     }
 
-  aux32 = htonl (id);
+  aux32 = htobe32 (id);
   memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
 
   if (seq == 0)
     {
-      aux32 = htonl ((consumed + 32) * 2);
+      aux32 = htobe32 ((consumed + 32) * 2);
       memcpy (&msg->data[9], &aux32, sizeof (uint32_t));
-      aux32 = htonl (frames * sizeof (gshort));
+      aux32 = htobe32 (frames * sizeof (gshort));
       memcpy (&msg->data[21], &aux32, sizeof (uint32_t));
-      aux32 = htonl (frames - 1);
+      aux32 = htobe32 (frames - 1);
       memcpy (&msg->data[33], &aux32, sizeof (uint32_t));
     }
   else
     {
-      aux32 = htonl (consumed * 2);
+      aux32 = htobe32 (consumed * 2);
       memcpy (&msg->data[9], &aux32, sizeof (uint32_t));
-      aux32 = htonl (0x2000 * seq);
+      aux32 = htobe32 (0x2000 * seq);
       memcpy (&msg->data[13], &aux32, sizeof (uint32_t));
     }
 
@@ -401,9 +399,9 @@ connector_new_msg_close_file_write (guint id, guint frames)
 					    sizeof
 					    (INQ_CLOSE_FILE_WRITE_TEMPLATE));
 
-  aux32 = htonl (id);
+  aux32 = htobe32 (id);
   memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
-  aux32 = htonl ((frames + 32) * 2);
+  aux32 = htobe32 ((frames + 32) * 2);
   memcpy (&msg->data[9], &aux32, sizeof (uint32_t));
 
   return msg;
@@ -417,11 +415,11 @@ connector_new_msg_read_file_blk (guint id, guint start, guint size)
 					    sizeof
 					    (INQ_FILE_READ_BLK_TEMPLATE));
 
-  aux = htonl (id);
+  aux = htobe32 (id);
   memcpy (&msg->data[5], &aux, sizeof (uint32_t));
-  aux = htonl (size);
+  aux = htobe32 (size);
   memcpy (&msg->data[9], &aux, sizeof (uint32_t));
-  aux = htonl (start);
+  aux = htobe32 (start);
   memcpy (&msg->data[13], &aux, sizeof (uint32_t));
 
   return msg;
@@ -519,7 +517,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   struct connector_sysex_transfer transfer;
   gchar *text;
 
-  aux = htons (connector->seq);
+  aux = htobe16 (connector->seq);
   memcpy (msg->data, &aux, sizeof (uint16_t));
   if (connector->seq == USHRT_MAX)
     {
@@ -1310,7 +1308,7 @@ connector_download (struct connector *connector, const gchar * path,
       frame = (gshort *) data->data;
       for (i = 0; i < data->len; i += 2)
 	{
-	  v = ntohs (*frame);
+	  v = be16toh (*frame);
 	  g_array_append_val (result, v);
 	  frame++;
 	}
@@ -1410,11 +1408,11 @@ connector_new_msg_upgrade_os_write (GByteArray * os_data, gint * offset)
 
   debug_print (2, "CRC: %0x\n", crc);
 
-  aux32 = htonl (crc);
+  aux32 = htobe32 (crc);
   memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
-  aux32 = htonl (len);
+  aux32 = htobe32 (len);
   memcpy (&msg->data[9], &aux32, sizeof (uint32_t));
-  aux32 = htonl (*offset);
+  aux32 = htobe32 (*offset);
   memcpy (&msg->data[13], &aux32, sizeof (uint32_t));
 
   g_byte_array_append (msg, &os_data->data[*offset], len);
