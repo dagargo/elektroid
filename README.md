@@ -47,7 +47,7 @@ $ elektroid-cli info 0
 Digitakt 1.11
 ```
 
-* info, show device info
+* df, show size and use of +Drive and RAM
 
 ```
 $ elektroid-cli df 0
