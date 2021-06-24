@@ -52,6 +52,8 @@
 
 #define DUMP_TIMEOUT 2000
 
+#define UP_BUTTON_DND_TIMEOUT 1000
+
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (gdouble);
@@ -132,6 +134,15 @@ static GtkTargetEntry TARGET_ENTRIES_REMOTE_SRC[] = {
    TARGET_STRING}
 };
 
+static GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
+  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP,
+   TARGET_STRING},
+  {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP,
+   TARGET_STRING},
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP,
+   TARGET_STRING}
+};
+
 static guint TARGET_ENTRIES_LOCAL_DST_N =
 G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_DST);
 static guint TARGET_ENTRIES_LOCAL_SRC_N =
@@ -140,6 +151,8 @@ static guint TARGET_ENTRIES_REMOTE_DST_N =
 G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST);
 static guint TARGET_ENTRIES_REMOTE_SRC_N =
 G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC);
+static guint TARGET_ENTRIES_UP_BUTTON_DST_N =
+G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST);
 
 static struct browser remote_browser;
 static struct browser local_browser;
@@ -2702,7 +2715,7 @@ elektroid_dnd_get (GtkWidget * widget,
 }
 
 static gboolean
-elektroid_drag_in_timeout (gpointer user_data)
+elektroid_drag_list_timeout (gpointer user_data)
 {
   struct browser *browser = user_data;
   gchar *spath;
@@ -2714,16 +2727,16 @@ elektroid_drag_in_timeout (gpointer user_data)
   browser_item_activated (browser->view, browser->dnd_motion_path, NULL,
 			  browser);
 
-  browser->dnd_timeout_function_id = 0;
   gtk_tree_path_free (browser->dnd_motion_path);
+  browser->dnd_timeout_function_id = 0;
   browser->dnd_motion_path = NULL;
   return FALSE;
 }
 
 static gboolean
-elektroid_drag_motion (GtkWidget * widget,
-		       GdkDragContext * context,
-		       gint wx, gint wy, guint time, gpointer user_data)
+elektroid_drag_motion_list (GtkWidget * widget,
+			    GdkDragContext * context,
+			    gint wx, gint wy, guint time, gpointer user_data)
 {
   GtkTreePath *path;
   GtkTreeModel *model;
@@ -2774,9 +2787,9 @@ elektroid_drag_motion (GtkWidget * widget,
 	      g_source_remove (browser->dnd_timeout_function_id);
 	      browser->dnd_timeout_function_id = 0;
 	    }
-
 	  browser->dnd_timeout_function_id =
-	    g_timeout_add (1000, elektroid_drag_in_timeout, browser);
+	    g_timeout_add (UP_BUTTON_DND_TIMEOUT, elektroid_drag_list_timeout,
+			   browser);
 	}
     }
   else
@@ -2786,6 +2799,7 @@ elektroid_drag_motion (GtkWidget * widget,
 	  g_source_remove (browser->dnd_timeout_function_id);
 	  browser->dnd_timeout_function_id = 0;
 	}
+
     }
 
   if (browser->dnd_motion_path)
@@ -2799,10 +2813,51 @@ elektroid_drag_motion (GtkWidget * widget,
   return TRUE;
 }
 
-void
-elektroid_drag_leave (GtkWidget * widget,
-		      GdkDragContext * context,
-		      guint time, gpointer user_data)
+static void
+elektroid_drag_leave_list (GtkWidget * widget,
+			   GdkDragContext * context,
+			   guint time, gpointer user_data)
+{
+  struct browser *browser = user_data;
+  if (browser->dnd_timeout_function_id)
+    {
+      g_source_remove (browser->dnd_timeout_function_id);
+      browser->dnd_timeout_function_id = 0;
+    }
+}
+
+static gboolean
+elektroid_drag_up_timeout (gpointer user_data)
+{
+  struct browser *browser = user_data;
+
+  browser_go_up (NULL, browser);
+
+  return TRUE;
+}
+
+static gboolean
+elektroid_drag_motion_up (GtkWidget * widget,
+			  GdkDragContext * context,
+			  gint wx, gint wy, guint time, gpointer user_data)
+{
+  struct browser *browser = user_data;
+
+  if (browser->dnd_timeout_function_id)
+    {
+      g_source_remove (browser->dnd_timeout_function_id);
+      browser->dnd_timeout_function_id = 0;
+    }
+  browser->dnd_timeout_function_id =
+    g_timeout_add (UP_BUTTON_DND_TIMEOUT, elektroid_drag_up_timeout, browser);
+
+  return TRUE;
+}
+
+static void
+elektroid_drag_leave_up (GtkWidget * widget,
+			 GdkDragContext * context,
+			 guint time, gpointer user_data)
 {
   struct browser *browser = user_data;
   if (browser->dnd_timeout_function_id)
@@ -3053,9 +3108,13 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (remote_browser.view, "drag-data-received",
 		    G_CALLBACK (elektroid_dnd_received), NULL);
   g_signal_connect (remote_browser.view, "drag-motion",
-		    G_CALLBACK (elektroid_drag_motion), &remote_browser);
+		    G_CALLBACK (elektroid_drag_motion_list), &remote_browser);
   g_signal_connect (remote_browser.view, "drag-leave",
-		    G_CALLBACK (elektroid_drag_leave), &remote_browser);
+		    G_CALLBACK (elektroid_drag_leave_list), &remote_browser);
+  g_signal_connect (remote_browser.up_button, "drag-motion",
+		    G_CALLBACK (elektroid_drag_motion_up), &remote_browser);
+  g_signal_connect (remote_browser.up_button, "drag-leave",
+		    G_CALLBACK (elektroid_drag_leave_up), &remote_browser);
 
   sortable =
     GTK_TREE_SORTABLE (gtk_tree_view_get_model (remote_browser.view));
@@ -3071,6 +3130,10 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   gtk_drag_dest_set ((GtkWidget *) remote_browser.view, GTK_DEST_DEFAULT_ALL,
 		     TARGET_ENTRIES_REMOTE_DST, TARGET_ENTRIES_REMOTE_DST_N,
 		     GDK_ACTION_COPY);
+  gtk_drag_dest_set ((GtkWidget *) remote_browser.up_button,
+		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
+		     TARGET_ENTRIES_UP_BUTTON_DST,
+		     TARGET_ENTRIES_UP_BUTTON_DST_N, GDK_ACTION_COPY);
 
   local_browser = (struct browser)
   {
@@ -3120,9 +3183,13 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (local_browser.view, "drag-data-received",
 		    G_CALLBACK (elektroid_dnd_received), NULL);
   g_signal_connect (local_browser.view, "drag-motion",
-		    G_CALLBACK (elektroid_drag_motion), &local_browser);
+		    G_CALLBACK (elektroid_drag_motion_list), &local_browser);
   g_signal_connect (local_browser.view, "drag-leave",
-		    G_CALLBACK (elektroid_drag_leave), &local_browser);
+		    G_CALLBACK (elektroid_drag_leave_list), &local_browser);
+  g_signal_connect (local_browser.up_button, "drag-motion",
+		    G_CALLBACK (elektroid_drag_motion_up), &local_browser);
+  g_signal_connect (local_browser.up_button, "drag-leave",
+		    G_CALLBACK (elektroid_drag_leave_up), &local_browser);
 
   sortable = GTK_TREE_SORTABLE (gtk_tree_view_get_model (local_browser.view));
   gtk_tree_sortable_set_sort_func (sortable, BROWSER_LIST_STORE_NAME_FIELD,
@@ -3137,6 +3204,10 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   gtk_drag_dest_set ((GtkWidget *) local_browser.view, GTK_DEST_DEFAULT_ALL,
 		     TARGET_ENTRIES_LOCAL_DST, TARGET_ENTRIES_LOCAL_DST_N,
 		     GDK_ACTION_COPY);
+  gtk_drag_dest_set ((GtkWidget *) local_browser.up_button,
+		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
+		     TARGET_ENTRIES_UP_BUTTON_DST,
+		     TARGET_ENTRIES_UP_BUTTON_DST_N, GDK_ACTION_COPY);
 
   audio_init (&audio, elektroid_set_volume_callback);
 
