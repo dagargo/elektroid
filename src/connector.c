@@ -30,8 +30,9 @@
 #define KB 1024
 #define BUFF_SIZE (4 * KB)
 #define RING_BUFF_SIZE (256 * KB)
-#define TRANSF_BLOCK_SIZE_SAMPLE 0x2000
-#define TRANSF_BLOCK_SIZE_OS 0x800
+#define SAMPLE_TRANSF_BLOCK_BYTES 0x2000
+#define SAMPLE_TRANSF_BLOCK_SHORTS  (SAMPLE_TRANSF_BLOCK_BYTES / 2)
+#define OS_TRANSF_BLOCK_BYTES 0x800
 #define POLL_TIMEOUT 20
 #define REST_TIME 50000
 
@@ -66,15 +67,14 @@ static const guint8 FS_SAMPLE_OPEN_FILE_WRITER_REQUEST[] =
   { 0x40, 0, 0, 0, 0 };
 static const guint8 FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST[] =
   { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
-static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST_1ST[] =
-  { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0xbb, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0x7f,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0
-};
-static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST_NTH[] =
+static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST[] =
   { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST_PAD_1ST[] = {
+  0, 0, 0, 0, 0, 0, 0xbb, 0x80, 0, 0, 0, 0, 0, 0, 0, 0,
+  0x7f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
 static const guint8 OS_UPGRADE_START_REQUEST[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
 static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
@@ -394,23 +394,34 @@ connector_new_msg_write_file_blk (guint id, gshort ** data, guint frames,
   int i, consumed, frames_blck;
   GByteArray *msg;
 
+  msg = connector_new_msg_data (FS_SAMPLE_WRITE_FILE_REQUEST,
+				sizeof (FS_SAMPLE_WRITE_FILE_REQUEST));
+
+  aux32 = htobe32 (id);
+  memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
+  aux32 = htobe32 (SAMPLE_TRANSF_BLOCK_BYTES * seq);
+  memcpy (&msg->data[13], &aux32, sizeof (uint32_t));
+
+  frames_blck = SAMPLE_TRANSF_BLOCK_SHORTS;
+  consumed = 0;
+
   if (seq == 0)
     {
-      msg = connector_new_msg_data (FS_SAMPLE_WRITE_FILE_REQUEST_1ST,
-				    sizeof
-				    (FS_SAMPLE_WRITE_FILE_REQUEST_1ST));
-      frames_blck = 4064;
-    }
-  else
-    {
-      msg = connector_new_msg_data (FS_SAMPLE_WRITE_FILE_REQUEST_NTH,
-				    sizeof
-				    (FS_SAMPLE_WRITE_FILE_REQUEST_NTH));
-      frames_blck = 4096;
+      g_byte_array_append (msg,
+			   (guchar *) FS_SAMPLE_WRITE_FILE_REQUEST_PAD_1ST,
+			   sizeof (FS_SAMPLE_WRITE_FILE_REQUEST_PAD_1ST));
+
+      aux32 = htobe32 (frames * sizeof (gshort));
+      memcpy (&msg->data[21], &aux32, sizeof (uint32_t));
+      aux32 = htobe32 (frames - 1);
+      memcpy (&msg->data[33], &aux32, sizeof (uint32_t));
+
+      consumed = sizeof (FS_SAMPLE_WRITE_FILE_REQUEST_PAD_1ST) / 2;	//consumed is measured in shorts
     }
 
+  frames_blck -= consumed;
+
   i = 0;
-  consumed = 0;
   while (i < frames_blck && *total < frames)
     {
       aux16 = htobe16 (**data);
@@ -421,25 +432,8 @@ connector_new_msg_write_file_blk (guint id, gshort ** data, guint frames,
       i++;
     }
 
-  aux32 = htobe32 (id);
-  memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
-
-  if (seq == 0)
-    {
-      aux32 = htobe32 ((consumed + 32) * 2);
-      memcpy (&msg->data[9], &aux32, sizeof (uint32_t));
-      aux32 = htobe32 (frames * sizeof (gshort));
-      memcpy (&msg->data[21], &aux32, sizeof (uint32_t));
-      aux32 = htobe32 (frames - 1);
-      memcpy (&msg->data[33], &aux32, sizeof (uint32_t));
-    }
-  else
-    {
-      aux32 = htobe32 (consumed * 2);
-      memcpy (&msg->data[9], &aux32, sizeof (uint32_t));
-      aux32 = htobe32 (0x2000 * seq);
-      memcpy (&msg->data[13], &aux32, sizeof (uint32_t));
-    }
+  aux32 = htobe32 (consumed * 2);
+  memcpy (&msg->data[9], &aux32, sizeof (uint32_t));
 
   return msg;
 }
@@ -1326,7 +1320,7 @@ connector_download (struct connector *connector, const gchar * path,
 
       req_size =
 	frames - next_block_start >
-	TRANSF_BLOCK_SIZE_SAMPLE ? TRANSF_BLOCK_SIZE_SAMPLE : frames -
+	SAMPLE_TRANSF_BLOCK_BYTES ? SAMPLE_TRANSF_BLOCK_BYTES : frames -
 	next_block_start;
       tx_msg =
 	connector_new_msg_read_file_blk (id, next_block_start, req_size);
@@ -1451,9 +1445,9 @@ connector_new_msg_upgrade_os_write (GByteArray * os_data, gint * offset)
   uint32_t crc;
   uint32_t aux32;
 
-  if (*offset + TRANSF_BLOCK_SIZE_OS < os_data->len)
+  if (*offset + OS_TRANSF_BLOCK_BYTES < os_data->len)
     {
-      len = TRANSF_BLOCK_SIZE_OS;
+      len = OS_TRANSF_BLOCK_BYTES;
     }
   else
     {
