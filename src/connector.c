@@ -75,6 +75,7 @@ static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST_PAD_1ST[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
+static const guint8 DATA_LIST_REQUEST[] = { 0x53 };
 static const guint8 OS_UPGRADE_START_REQUEST[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
 static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
@@ -123,6 +124,7 @@ static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
 };
 
 static gchar connector_get_path_type (struct connector *, const gchar *);
+
 static guchar
 connector_get_msg_status (const GByteArray * msg)
 {
@@ -148,7 +150,7 @@ connector_free_dir_iterator (struct connector_dir_iterator *iterator)
   free (iterator);
 }
 
-struct connector_dir_iterator *
+static struct connector_dir_iterator *
 connector_new_dir_iterator (GByteArray * msg)
 {
   struct connector_dir_iterator *iterator =
@@ -386,8 +388,29 @@ connector_new_msg_open_file_write (const gchar * path, guint frames)
 }
 
 static GByteArray *
-connector_new_msg_write_file_blk (guint id, gshort ** data, guint frames,
-				  ssize_t * total, guint seq)
+connector_new_msg_data_list (const gchar * path, int32_t start_index,
+			     int32_t end_index, gboolean all)
+{
+  uint32_t aux32;
+  uint8_t aux8;
+  GByteArray *msg = connector_new_msg_path (DATA_LIST_REQUEST,
+					    sizeof (DATA_LIST_REQUEST),
+					    path);
+
+  aux32 = htobe32 (start_index);
+  g_byte_array_append (msg, (guchar *) & aux32, sizeof (uint32_t));
+  aux32 = htobe32 (end_index);
+  g_byte_array_append (msg, (guchar *) & aux32, sizeof (uint32_t));
+  aux8 = all;
+  g_byte_array_append (msg, (guchar *) & aux8, sizeof (uint8_t));
+
+  return msg;
+}
+
+static GByteArray *
+connector_new_msg_write_file_blk (guint id,
+				  gshort ** data,
+				  guint frames, ssize_t * total, guint seq)
 {
   uint32_t aux32;
   uint16_t aux16;
@@ -1940,4 +1963,124 @@ connector_get_system_devices ()
     }
 
   return devices;
+}
+
+static struct connector_data_iterator *
+connector_new_data_iterator (GByteArray * msg)
+{
+  guint32 *entries;
+  struct connector_data_iterator *iterator =
+    malloc (sizeof (struct connector_data_iterator));
+
+  iterator->entry = NULL;
+  iterator->msg = msg;
+  entries = (guint32 *) & msg->data[14];
+  iterator->entries = be32toh (*entries);
+  iterator->pos = 18;
+
+  return iterator;
+}
+
+struct connector_data_iterator *
+connector_read_data (struct connector *connector, const gchar * path)
+{
+  int res;
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+
+  tx_msg = connector_new_msg_data_list (path, 0, 0, 1);
+  rx_msg = connector_tx_and_rx (connector, tx_msg);
+
+  if (!rx_msg)
+    {
+      return NULL;
+    }
+
+  res = connector_get_msg_status (rx_msg);
+  if (!res)
+    {
+      error_print ("Cannot get data list: %s\n",
+		   connector_get_msg_string (rx_msg));
+      free_msg (rx_msg);
+      return NULL;
+    }
+
+  return connector_new_data_iterator (rx_msg);
+}
+
+void
+connector_free_data_iterator (struct connector_data_iterator *iterator)
+{
+  free_msg (iterator->msg);
+  free (iterator);
+}
+
+guint
+connector_next_data_entry (struct connector_data_iterator *iterator)
+{
+  gchar *entry_cp1252;
+  guint32 *data32;
+  guint16 *data16;
+  guint8 type;
+
+  if (iterator->entry != NULL)
+    {
+      g_free (iterator->entry);
+    }
+
+  if (iterator->pos == iterator->msg->len)
+    {
+      iterator->entry = NULL;
+      return -ENOENT;
+    }
+
+  entry_cp1252 = (gchar *) & iterator->msg->data[iterator->pos];
+  iterator->entry =
+    g_convert (entry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
+  iterator->pos += strlen (entry_cp1252) + 1;
+  iterator->has_children = iterator->msg->data[iterator->pos];
+  iterator->pos++;
+  type = iterator->msg->data[iterator->pos];
+  iterator->pos++;
+
+  switch (type)
+    {
+    case 1:
+      iterator->type = ELEKTROID_DIR;
+
+      data32 = (guint32 *) & iterator->msg->data[iterator->pos];
+      iterator->child_entries = be32toh (*data32);
+      iterator->pos += sizeof (guint32);
+
+      iterator->size = 0;
+
+      break;
+    case 2:
+      iterator->type = ELEKTROID_FILE;
+
+      data32 = (guint32 *) & iterator->msg->data[iterator->pos];
+      iterator->index = be32toh (*data32);
+      iterator->pos += sizeof (guint32);
+
+      data32 = (guint32 *) & iterator->msg->data[iterator->pos];
+      iterator->size = be32toh (*data32);
+      iterator->pos += sizeof (guint32);
+
+      data16 = (guint16 *) & iterator->msg->data[iterator->pos];
+      iterator->operations = be16toh (*data16);
+      iterator->pos += sizeof (guint16);
+
+      iterator->index = iterator->msg->data[iterator->pos];
+      iterator->pos++;
+
+      iterator->index = iterator->msg->data[iterator->pos];
+      iterator->pos++;
+
+      break;
+    default:
+      error_print ("Unrecognized data entry: %d\n", iterator->type);
+      break;
+    }
+
+  return 0;
 }

@@ -100,6 +100,22 @@ struct connector_statfs
   guint64 bfree;
 };
 
+struct connector_data_iterator
+{
+  gchar *entry;
+  guint8 has_children;
+  gchar type;
+  guint32 child_entries;
+  guint32 index;
+  guint32 size;
+  guint16 operations;
+  guint8 has_valid_data;
+  guint8 has_metadata;
+  GByteArray *msg;
+  guint32 entries;
+  guint pos;
+};
+
 gint connector_init (struct connector *, gint);
 
 void connector_destroy (struct connector *);
@@ -151,3 +167,10 @@ gint connector_statfs (struct connector *, enum connector_fs_type,
 		       struct connector_statfs *);
 
 float connector_statfs_use_percent (struct connector_statfs *);
+
+struct connector_data_iterator *connector_read_data (struct connector *,
+						     const gchar *);
+
+void connector_free_data_iterator (struct connector_data_iterator *);
+
+guint connector_next_data_entry (struct connector_data_iterator *);

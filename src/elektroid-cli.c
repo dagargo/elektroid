@@ -30,6 +30,9 @@
 #include "sample.h"
 #include "utils.h"
 
+#define KIB_FLOAT 1024.0
+#define MIB_FLOAT (KIB_FLOAT * KIB_FLOAT)
+
 static struct connector connector;
 static struct connector_sample_transfer sample_transfer;
 
@@ -109,8 +112,7 @@ cli_ls (int argc, char *argv[], int optind)
   while (!connector_next_dir_entry (iterator))
     {
       printf ("%c %.2f %08x %s\n", iterator->type,
-	      iterator->size / (1024.0 * 1024.0), iterator->cksum,
-	      iterator->entry);
+	      iterator->size / MIB_FLOAT, iterator->cksum, iterator->entry);
     }
 
   connector_free_dir_iterator (iterator);
@@ -353,6 +355,8 @@ cleanup:
 static int
 cli_info (int argc, char *argv[], int optind)
 {
+  struct connector_data_iterator *connector_read_data (struct connector *,
+						       const gchar *);
   gchar *device_path;
   gint res;
 
@@ -413,6 +417,49 @@ cli_df (int argc, char *argv[], int optind)
 	      statfs.name, statfs.bsize, statfs.bsize - statfs.bfree,
 	      statfs.bfree, connector_statfs_use_percent (&statfs));
     }
+
+  return EXIT_SUCCESS;
+}
+
+static int
+cli_dl (int argc, char *argv[], int optind)
+{
+  gchar *device_path_src;
+  gchar *path_src;
+  gint res;
+  struct connector_data_iterator *iterator;
+
+  if (optind == argc)
+    {
+      error_print ("Device missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      device_path_src = argv[optind];
+    }
+
+  res = cli_connect (device_path_src);
+  if (res < 0)
+    {
+      return EXIT_FAILURE;
+    }
+
+  path_src = cli_get_path (device_path_src);
+
+  iterator = connector_read_data (&connector, path_src);
+  if (!iterator)
+    {
+      return EXIT_FAILURE;
+    }
+
+  while (!connector_next_data_entry (iterator))
+    {
+      printf ("%c %.2f %s\n", iterator->type,
+	      iterator->size / MIB_FLOAT, iterator->entry);
+    }
+
+  connector_free_data_iterator (iterator);
 
   return EXIT_SUCCESS;
 }
@@ -534,6 +581,10 @@ main (int argc, char *argv[])
   else if (strcmp (command, "df") == 0)
     {
       res = cli_df (argc, argv, optind);
+    }
+  else if (strcmp (command, "dl") == 0)
+    {
+      res = cli_dl (argc, argv, optind);
     }
   else
     {
