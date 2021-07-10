@@ -35,6 +35,18 @@
 #define POLL_TIMEOUT 20
 #define REST_TIME 50000
 
+#define AFMK1_ID 0x04
+#define AKEYS_ID 0x06
+#define ARMK1_ID 0x08
+#define AHMK1_ID 0x0a
+#define DTAKT_ID 0x0c
+#define AFMK2_ID 0x0e
+#define ARMK2_ID 0x10
+#define DTONE_ID 0x14
+#define AHMK2_ID 0x16
+#define DKEYS_ID 0x1c
+#define MOD_S_ID 0x19
+
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
 static const guint8 PING_REQUEST[] = { 0x1 };
@@ -71,28 +83,28 @@ static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
 static const gchar *FS_TYPE_NAMES[] = { "None", "+Drive", "RAM" };
 
 static const struct connector_device_desc ANALOG_RYTM_DESC = {
-  .id = 0x8,
+  .id = ARMK1_ID,
   .model = "Analog Rytm",
   .capabilities = CAP_SAMPLE,
   .startup_mode = CAP_SAMPLE
 };
 
 static const struct connector_device_desc DIGITAKT_DESC = {
-  .id = 0xc,
+  .id = DTAKT_ID,
   .model = "Digitakt",
   .capabilities = CAP_SAMPLE,
   .startup_mode = CAP_SAMPLE
 };
 
 static const struct connector_device_desc ANALOG_RYTM_MKII_DESC = {
-  .id = 0x10,
+  .id = ARMK2_ID,
   .model = "Analog Rytm MKII",
   .capabilities = CAP_SAMPLE,
   .startup_mode = CAP_SAMPLE,
 };
 
 static const struct connector_device_desc MODEL_SAMPLES_DESC = {
-  .id = 0x19,
+  .id = MOD_S_ID,
   .model = "Model:Samples",
   .capabilities = CAP_SAMPLE,
   .startup_mode = CAP_SAMPLE
