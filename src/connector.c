@@ -142,66 +142,66 @@ free_msg (gpointer msg)
 }
 
 void
-connector_free_dir_iterator (struct connector_dir_iterator *d_iter)
+connector_free_dir_iterator (struct connector_dir_iterator *iterator)
 {
-  free_msg (d_iter->msg);
-  free (d_iter);
+  free_msg (iterator->msg);
+  free (iterator);
 }
 
 struct connector_dir_iterator *
 connector_new_dir_iterator (GByteArray * msg)
 {
-  struct connector_dir_iterator *dir_iterator =
+  struct connector_dir_iterator *iterator =
     malloc (sizeof (struct connector_dir_iterator));
 
-  dir_iterator->entry = NULL;
-  dir_iterator->msg = msg;
-  dir_iterator->pos = 5;
+  iterator->entry = NULL;
+  iterator->msg = msg;
+  iterator->pos = 5;
 
-  return dir_iterator;
+  return iterator;
 }
 
 guint
-connector_next_dir_entry (struct connector_dir_iterator *dir_iterator)
+connector_next_dir_entry (struct connector_dir_iterator *iterator)
 {
   uint32_t *data;
   gchar *entry_cp1252;
 
-  if (dir_iterator->entry != NULL)
+  if (iterator->entry != NULL)
     {
-      g_free (dir_iterator->entry);
+      g_free (iterator->entry);
     }
 
-  if (dir_iterator->pos == dir_iterator->msg->len)
+  if (iterator->pos == iterator->msg->len)
     {
-      dir_iterator->entry = NULL;
+      iterator->entry = NULL;
       return -ENOENT;
     }
   else
     {
-      data = (uint32_t *) & dir_iterator->msg->data[dir_iterator->pos];
-      dir_iterator->cksum = be32toh (*data);
+      data = (uint32_t *) & iterator->msg->data[iterator->pos];
+      iterator->cksum = be32toh (*data);
 
-      dir_iterator->pos += 4;
-      data = (uint32_t *) & dir_iterator->msg->data[dir_iterator->pos];
-      dir_iterator->size = be32toh (*data);
+      iterator->pos += 4;
+      data = (uint32_t *) & iterator->msg->data[iterator->pos];
+      iterator->size = be32toh (*data);
 
-      dir_iterator->pos += 5;
-      dir_iterator->type = dir_iterator->msg->data[dir_iterator->pos];
+      iterator->pos += 5;
+      iterator->type = iterator->msg->data[iterator->pos];
 
-      dir_iterator->pos++;
-      entry_cp1252 = (gchar *) & dir_iterator->msg->data[dir_iterator->pos];
-      dir_iterator->entry =
+      iterator->pos++;
+      entry_cp1252 = (gchar *) & iterator->msg->data[iterator->pos];
+      iterator->entry =
 	g_convert (entry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
 
-      while (dir_iterator->pos < dir_iterator->msg->len
-	     && dir_iterator->msg->data[dir_iterator->pos] != 0)
+      while (iterator->pos < iterator->msg->len
+	     && iterator->msg->data[iterator->pos] != 0)
 	{
 
-	  dir_iterator->pos++;
+	  iterator->pos++;
 	}
 
-      dir_iterator->pos++;
+      iterator->pos++;
 
       return 0;
     }
@@ -971,7 +971,7 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   gchar *name;
   gchar *parent;
   gchar res;
-  struct connector_dir_iterator *d_iter;
+  struct connector_dir_iterator *iterator;
 
   if (strcmp (path, "/") == 0)
     {
@@ -982,19 +982,19 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   parent_copy = strdup (path);
   name = basename (name_copy);
   parent = dirname (parent_copy);
-  d_iter = connector_read_dir (connector, parent);
+  iterator = connector_read_dir (connector, parent);
   res = ELEKTROID_NONE;
-  if (d_iter)
+  if (iterator)
     {
-      while (!connector_next_dir_entry (d_iter))
+      while (!connector_next_dir_entry (iterator))
 	{
-	  if (strcmp (name, d_iter->entry) == 0)
+	  if (strcmp (name, iterator->entry) == 0)
 	    {
-	      res = d_iter->type;
+	      res = iterator->type;
 	      break;
 	    }
 	}
-      connector_free_dir_iterator (d_iter);
+      connector_free_dir_iterator (iterator);
     }
 
   g_free (name_copy);
@@ -1063,7 +1063,7 @@ connector_rename (struct connector *connector, const gchar * old,
   gint res;
   gchar *old_plus;
   gchar *new_plus;
-  struct connector_dir_iterator *d_iter;
+  struct connector_dir_iterator *iterator;
 
   //Renaming is not implemented for directories so we need to implement it.
   type = connector_get_path_type (connector, old);
@@ -1079,18 +1079,18 @@ connector_rename (struct connector *connector, const gchar * old,
 	{
 	  return res;
 	}
-      d_iter = connector_read_dir (connector, old);
-      if (d_iter)
+      iterator = connector_read_dir (connector, old);
+      if (iterator)
 	{
-	  while (!connector_next_dir_entry (d_iter) && !res)
+	  while (!connector_next_dir_entry (iterator) && !res)
 	    {
-	      old_plus = chain_path (old, d_iter->entry);
-	      new_plus = chain_path (new, d_iter->entry);
+	      old_plus = chain_path (old, iterator->entry);
+	      new_plus = chain_path (new, iterator->entry);
 	      res = connector_rename (connector, old_plus, new_plus);
 	      free (old_plus);
 	      free (new_plus);
 	    }
-	  connector_free_dir_iterator (d_iter);
+	  connector_free_dir_iterator (iterator);
 	}
       if (!res)
 	{

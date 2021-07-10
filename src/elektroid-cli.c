@@ -77,7 +77,7 @@ cli_connect (const char *device_path)
 static int
 cli_ls (int argc, char *argv[], int optind)
 {
-  struct connector_dir_iterator *d_iter;
+  struct connector_dir_iterator *iterator;
   gchar *device_path, *path;
   gint res;
 
@@ -100,20 +100,20 @@ cli_ls (int argc, char *argv[], int optind)
 
   path = cli_get_path (device_path);
 
-  d_iter = connector_read_dir (&connector, path);
-  if (!d_iter)
+  iterator = connector_read_dir (&connector, path);
+  if (!iterator)
     {
       return EXIT_FAILURE;
     }
 
-  while (!connector_next_dir_entry (d_iter))
+  while (!connector_next_dir_entry (iterator))
     {
-      printf ("%c %.2f %08x %s\n", d_iter->type,
-	      d_iter->size / (1024.0 * 1024.0), d_iter->cksum,
-	      d_iter->entry);
+      printf ("%c %.2f %08x %s\n", iterator->type,
+	      iterator->size / (1024.0 * 1024.0), iterator->cksum,
+	      iterator->entry);
     }
 
-  connector_free_dir_iterator (d_iter);
+  connector_free_dir_iterator (iterator);
 
   return EXIT_SUCCESS;
 }
