@@ -37,38 +37,36 @@
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
-static const guint8 INQ_DEVICE[] = { 0x1 };
-static const guint8 INQ_VERSION[] = { 0x2 };
-static const guint8 INQ_UID[] = { 0x3 };
-static const guint8 INQ_STORAGE_INFO[] = { 0x5 };
-static const guint8 INQ_LS_DIR_TEMPLATE[] = { 0x10 };
-static const guint8 INQ_NEW_DIR_TEMPLATE[] = { 0x11 };
-static const guint8 INQ_DELETE_DIR_TEMPLATE[] = { 0x12 };
-static const guint8 INQ_DELETE_FILE_TEMPLATE[] = { 0x20 };
-static const guint8 INQ_RENAME_TEMPLATE[] = { 0x21 };
-static const guint8 INQ_OPEN_FILE_READ_TEMPLATE[] = { 0x30 };
-static const guint8 INQ_FILE_READ_BLK_TEMPLATE[] =
+static const guint8 PING_REQUEST[] = { 0x1 };
+static const guint8 SOFTWARE_VERSION_REQUEST[] = { 0x2 };
+static const guint8 DEVICEUID_REQUEST[] = { 0x3 };
+static const guint8 STORAGEINFO_REQUEST[] = { 0x5 };
+static const guint8 FS_SAMPLE_READ_DIR_REQUEST[] = { 0x10 };
+static const guint8 FS_SAMPLE_CREATE_DIR_REQUEST[] = { 0x11 };
+static const guint8 FS_SAMPLE_DELETE_DIR_REQUEST[] = { 0x12 };
+static const guint8 FS_SAMPLE_DELETE_FILE_REQUEST[] = { 0x20 };
+static const guint8 FS_SAMPLE_RENAME_FILE_REQUEST[] = { 0x21 };
+static const guint8 FS_SAMPLE_OPEN_FILE_READER_REQUEST[] = { 0x30 };
+static const guint8 FS_SAMPLE_CLOSE_FILE_READER_REQUEST[] = { 0x31 };
+static const guint8 FS_SAMPLE_READ_FILE_REQUEST[] =
   { 0x32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-static const guint8 INQ_CLOSE_FILE_READ_TEMPLATE[] = { 0x31 };
-static const guint8 INQ_OPEN_FILE_WRITE_TEMPLATE[] = { 0x40, 0, 0, 0, 0 };
-
-static const guint8 INQ_FILE_WRITE_BLK_TEMPLATE_1ST[] =
+static const guint8 FS_SAMPLE_OPEN_FILE_WRITER_REQUEST[] =
+  { 0x40, 0, 0, 0, 0 };
+static const guint8 FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST[] =
+  { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST_1ST[] =
   { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0xbb, 0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0x7f,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0
 };
-static const guint8 INQ_FILE_WRITE_BLK_TEMPLATE_NTH[] =
+static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST_NTH[] =
   { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-static const guint8 INQ_CLOSE_FILE_WRITE_TEMPLATE[] =
-  { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-static const guint8 INQ_OS_UPGRADE_START[] =
+static const guint8 OS_UPGRADE_START_REQUEST[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
-static const guint8 INQ_OS_UPGRADE_WRITE[] =
+static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
   { 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
 
 static const gchar *FS_TYPE_NAMES[] = { "None", "+Drive", "RAM" };
 
@@ -328,31 +326,32 @@ connector_new_msg_path (const guint8 * data, guint len, const gchar * path)
 static GByteArray *
 connector_new_msg_dir_list (const gchar * path)
 {
-  return connector_new_msg_path (INQ_LS_DIR_TEMPLATE,
-				 sizeof (INQ_LS_DIR_TEMPLATE), path);
+  return connector_new_msg_path (FS_SAMPLE_READ_DIR_REQUEST,
+				 sizeof (FS_SAMPLE_READ_DIR_REQUEST), path);
 }
 
 static GByteArray *
 connector_new_msg_open_file_read (const gchar * path)
 {
-  return connector_new_msg_path (INQ_OPEN_FILE_READ_TEMPLATE,
-				 sizeof (INQ_OPEN_FILE_READ_TEMPLATE), path);
+  return connector_new_msg_path (FS_SAMPLE_OPEN_FILE_READER_REQUEST,
+				 sizeof (FS_SAMPLE_OPEN_FILE_READER_REQUEST),
+				 path);
 }
 
 static GByteArray *
 connector_new_msg_new_dir (const gchar * path)
 {
-  return connector_new_msg_path (INQ_NEW_DIR_TEMPLATE,
-				 sizeof (INQ_NEW_DIR_TEMPLATE), path);
+  return connector_new_msg_path (FS_SAMPLE_CREATE_DIR_REQUEST,
+				 sizeof (FS_SAMPLE_CREATE_DIR_REQUEST), path);
 }
 
 static GByteArray *
 connector_new_msg_close_file_read (gint id)
 {
   uint32_t aux32;
-  GByteArray *msg = connector_new_msg_data (INQ_CLOSE_FILE_READ_TEMPLATE,
-					    sizeof
-					    (INQ_CLOSE_FILE_READ_TEMPLATE));
+  GByteArray *msg =
+    connector_new_msg_data (FS_SAMPLE_CLOSE_FILE_READER_REQUEST,
+			    sizeof (FS_SAMPLE_CLOSE_FILE_READER_REQUEST));
 
   aux32 = htobe32 (id);
   g_byte_array_append (msg, (guchar *) & aux32, sizeof (uint32_t));
@@ -363,10 +362,10 @@ static GByteArray *
 connector_new_msg_open_file_write (const gchar * path, guint frames)
 {
   uint32_t aux32;
-  GByteArray *msg = connector_new_msg_path (INQ_OPEN_FILE_WRITE_TEMPLATE,
-					    sizeof
-					    (INQ_OPEN_FILE_WRITE_TEMPLATE),
-					    path);
+  GByteArray *msg =
+    connector_new_msg_path (FS_SAMPLE_OPEN_FILE_WRITER_REQUEST,
+			    sizeof (FS_SAMPLE_OPEN_FILE_WRITER_REQUEST),
+			    path);
 
   aux32 = htobe32 ((frames + 32) * 2);
   memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
@@ -385,14 +384,16 @@ connector_new_msg_write_file_blk (guint id, gshort ** data, guint frames,
 
   if (seq == 0)
     {
-      msg = connector_new_msg_data (INQ_FILE_WRITE_BLK_TEMPLATE_1ST,
-				    sizeof (INQ_FILE_WRITE_BLK_TEMPLATE_1ST));
+      msg = connector_new_msg_data (FS_SAMPLE_WRITE_FILE_REQUEST_1ST,
+				    sizeof
+				    (FS_SAMPLE_WRITE_FILE_REQUEST_1ST));
       frames_blck = 4064;
     }
   else
     {
-      msg = connector_new_msg_data (INQ_FILE_WRITE_BLK_TEMPLATE_NTH,
-				    sizeof (INQ_FILE_WRITE_BLK_TEMPLATE_NTH));
+      msg = connector_new_msg_data (FS_SAMPLE_WRITE_FILE_REQUEST_NTH,
+				    sizeof
+				    (FS_SAMPLE_WRITE_FILE_REQUEST_NTH));
       frames_blck = 4096;
     }
 
@@ -435,9 +436,9 @@ static GByteArray *
 connector_new_msg_close_file_write (guint id, guint frames)
 {
   uint32_t aux32;
-  GByteArray *msg = connector_new_msg_data (INQ_CLOSE_FILE_WRITE_TEMPLATE,
-					    sizeof
-					    (INQ_CLOSE_FILE_WRITE_TEMPLATE));
+  GByteArray *msg =
+    connector_new_msg_data (FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST,
+			    sizeof (FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST));
 
   aux32 = htobe32 (id);
   memcpy (&msg->data[5], &aux32, sizeof (uint32_t));
@@ -451,9 +452,9 @@ static GByteArray *
 connector_new_msg_read_file_blk (guint id, guint start, guint size)
 {
   uint32_t aux;
-  GByteArray *msg = connector_new_msg_data (INQ_FILE_READ_BLK_TEMPLATE,
+  GByteArray *msg = connector_new_msg_data (FS_SAMPLE_READ_FILE_REQUEST,
 					    sizeof
-					    (INQ_FILE_READ_BLK_TEMPLATE));
+					    (FS_SAMPLE_READ_FILE_REQUEST));
 
   aux = htobe32 (id);
   memcpy (&msg->data[5], &aux, sizeof (uint32_t));
@@ -1001,8 +1002,9 @@ connector_rename_file (struct connector *connector, const gchar * old,
 {
   gint res;
   GByteArray *rx_msg;
-  GByteArray *tx_msg = connector_new_msg_data (INQ_RENAME_TEMPLATE,
-					       sizeof (INQ_RENAME_TEMPLATE));
+  GByteArray *tx_msg = connector_new_msg_data (FS_SAMPLE_RENAME_FILE_REQUEST,
+					       sizeof
+					       (FS_SAMPLE_RENAME_FILE_REQUEST));
   gchar *new_cp1252 = g_convert (new, -1, "CP1252", "UTF8", NULL, NULL, NULL);
   if (!new_cp1252)
     {
@@ -1140,15 +1142,15 @@ connector_delete (struct connector *connector, const gchar * path,
 gint
 connector_delete_file (struct connector *connector, const gchar * path)
 {
-  return connector_delete (connector, path, INQ_DELETE_FILE_TEMPLATE,
-			   sizeof (INQ_DELETE_FILE_TEMPLATE));
+  return connector_delete (connector, path, FS_SAMPLE_DELETE_FILE_REQUEST,
+			   sizeof (FS_SAMPLE_DELETE_FILE_REQUEST));
 }
 
 gint
 connector_delete_dir (struct connector *connector, const gchar * path)
 {
-  return connector_delete (connector, path, INQ_DELETE_DIR_TEMPLATE,
-			   sizeof (INQ_DELETE_DIR_TEMPLATE));
+  return connector_delete (connector, path, FS_SAMPLE_DELETE_DIR_REQUEST,
+			   sizeof (FS_SAMPLE_DELETE_DIR_REQUEST));
 }
 
 ssize_t
@@ -1418,8 +1420,9 @@ connector_create_dir (struct connector *connector, const gchar * path)
 static GByteArray *
 connector_new_msg_upgrade_os_start (guint size)
 {
-  GByteArray *msg = connector_new_msg_data (INQ_OS_UPGRADE_START,
-					    sizeof (INQ_OS_UPGRADE_START));
+  GByteArray *msg = connector_new_msg_data (OS_UPGRADE_START_REQUEST,
+					    sizeof
+					    (OS_UPGRADE_START_REQUEST));
 
   memcpy (&msg->data[5], &size, sizeof (uint32_t));
 
@@ -1429,8 +1432,9 @@ connector_new_msg_upgrade_os_start (guint size)
 static GByteArray *
 connector_new_msg_upgrade_os_write (GByteArray * os_data, gint * offset)
 {
-  GByteArray *msg = connector_new_msg_data (INQ_OS_UPGRADE_WRITE,
-					    sizeof (INQ_OS_UPGRADE_WRITE));
+  GByteArray *msg = connector_new_msg_data (OS_UPGRADE_WRITE_RESPONSE,
+					    sizeof
+					    (OS_UPGRADE_WRITE_RESPONSE));
   guint len;
   uint32_t crc;
   uint32_t aux32;
@@ -1592,8 +1596,8 @@ connector_statfs (struct connector *connector, enum connector_fs_type type,
   uint64_t *data;
   gint res = 0;
 
-  tx_msg = connector_new_msg_uint8 (INQ_STORAGE_INFO,
-				    sizeof (INQ_STORAGE_INFO), type);
+  tx_msg = connector_new_msg_uint8 (STORAGEINFO_REQUEST,
+				    sizeof (STORAGEINFO_REQUEST), type);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
 
   if (!rx_msg)
@@ -1743,7 +1747,7 @@ connector_init (struct connector *connector, gint card)
       goto cleanup_params;
     }
 
-  tx_msg = connector_new_msg_data (INQ_DEVICE, sizeof (INQ_DEVICE));
+  tx_msg = connector_new_msg_data (PING_REQUEST, sizeof (PING_REQUEST));
   rx_msg_device = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg_device)
     {
@@ -1751,7 +1755,9 @@ connector_init (struct connector *connector, gint card)
       goto cleanup;
     }
 
-  tx_msg = connector_new_msg_data (INQ_VERSION, sizeof (INQ_VERSION));
+  tx_msg =
+    connector_new_msg_data (SOFTWARE_VERSION_REQUEST,
+			    sizeof (SOFTWARE_VERSION_REQUEST));
   rx_msg_fw_ver = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg_fw_ver)
     {
@@ -1761,7 +1767,9 @@ connector_init (struct connector *connector, gint card)
 
   if (debug_level > 1)
     {
-      tx_msg = connector_new_msg_data (INQ_UID, sizeof (INQ_UID));
+      tx_msg =
+	connector_new_msg_data (DEVICEUID_REQUEST,
+				sizeof (DEVICEUID_REQUEST));
       rx_msg_uid = connector_tx_and_rx (connector, tx_msg);
       if (rx_msg_uid)
 	{
