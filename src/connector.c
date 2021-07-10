@@ -162,7 +162,7 @@ connector_new_dir_iterator (GByteArray * msg)
 }
 
 guint
-connector_get_next_dentry (struct connector_dir_iterator *dir_iterator)
+connector_next_dir_entry (struct connector_dir_iterator *dir_iterator)
 {
   uint32_t *data;
   gchar *dentry_cp1252;
@@ -986,7 +986,7 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   res = ELEKTROID_NONE;
   if (d_iter)
     {
-      while (!connector_get_next_dentry (d_iter))
+      while (!connector_next_dir_entry (d_iter))
 	{
 	  if (strcmp (name, d_iter->dentry) == 0)
 	    {
@@ -1082,7 +1082,7 @@ connector_rename (struct connector *connector, const gchar * old,
       d_iter = connector_read_dir (connector, old);
       if (d_iter)
 	{
-	  while (!connector_get_next_dentry (d_iter) && !res)
+	  while (!connector_next_dir_entry (d_iter) && !res)
 	    {
 	      old_plus = chain_path (old, d_iter->dentry);
 	      new_plus = chain_path (new, d_iter->dentry);

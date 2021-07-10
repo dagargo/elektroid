@@ -106,7 +106,7 @@ cli_ls (int argc, char *argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  while (!connector_get_next_dentry (d_iter))
+  while (!connector_next_dir_entry (d_iter))
     {
       printf ("%c %.2f %08x %s\n", d_iter->type,
 	      d_iter->size / (1024.0 * 1024.0), d_iter->cksum,

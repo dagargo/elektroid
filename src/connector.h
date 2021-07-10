@@ -111,7 +111,7 @@ struct connector_dir_iterator *connector_read_dir (struct connector *,
 
 void connector_free_dir_iterator (struct connector_dir_iterator *);
 
-guint connector_get_next_dentry (struct connector_dir_iterator *);
+guint connector_next_dir_entry (struct connector_dir_iterator *);
 
 gint connector_rename (struct connector *, const gchar *, const gchar *);
 
