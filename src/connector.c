@@ -154,7 +154,7 @@ connector_new_dir_iterator (GByteArray * msg)
   struct connector_dir_iterator *dir_iterator =
     malloc (sizeof (struct connector_dir_iterator));
 
-  dir_iterator->dentry = NULL;
+  dir_iterator->entry = NULL;
   dir_iterator->msg = msg;
   dir_iterator->pos = 5;
 
@@ -165,16 +165,16 @@ guint
 connector_next_dir_entry (struct connector_dir_iterator *dir_iterator)
 {
   uint32_t *data;
-  gchar *dentry_cp1252;
+  gchar *entry_cp1252;
 
-  if (dir_iterator->dentry != NULL)
+  if (dir_iterator->entry != NULL)
     {
-      g_free (dir_iterator->dentry);
+      g_free (dir_iterator->entry);
     }
 
   if (dir_iterator->pos == dir_iterator->msg->len)
     {
-      dir_iterator->dentry = NULL;
+      dir_iterator->entry = NULL;
       return -ENOENT;
     }
   else
@@ -190,9 +190,9 @@ connector_next_dir_entry (struct connector_dir_iterator *dir_iterator)
       dir_iterator->type = dir_iterator->msg->data[dir_iterator->pos];
 
       dir_iterator->pos++;
-      dentry_cp1252 = (gchar *) & dir_iterator->msg->data[dir_iterator->pos];
-      dir_iterator->dentry =
-	g_convert (dentry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
+      entry_cp1252 = (gchar *) & dir_iterator->msg->data[dir_iterator->pos];
+      dir_iterator->entry =
+	g_convert (entry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
 
       while (dir_iterator->pos < dir_iterator->msg->len
 	     && dir_iterator->msg->data[dir_iterator->pos] != 0)
@@ -988,7 +988,7 @@ connector_get_path_type (struct connector *connector, const gchar * path)
     {
       while (!connector_next_dir_entry (d_iter))
 	{
-	  if (strcmp (name, d_iter->dentry) == 0)
+	  if (strcmp (name, d_iter->entry) == 0)
 	    {
 	      res = d_iter->type;
 	      break;
@@ -1084,8 +1084,8 @@ connector_rename (struct connector *connector, const gchar * old,
 	{
 	  while (!connector_next_dir_entry (d_iter) && !res)
 	    {
-	      old_plus = chain_path (old, d_iter->dentry);
-	      new_plus = chain_path (new, d_iter->dentry);
+	      old_plus = chain_path (old, d_iter->entry);
+	      new_plus = chain_path (new, d_iter->entry);
 	      res = connector_rename (connector, old_plus, new_plus);
 	      free (old_plus);
 	      free (new_plus);

@@ -1476,7 +1476,7 @@ elektroid_load_remote_dir (gpointer data)
   while (!connector_next_dir_entry (d_iter))
     {
       elektroid_add_dentry_item (list_store, d_iter->type,
-				 d_iter->dentry, d_iter->size);
+				 d_iter->entry, d_iter->size);
     }
   connector_free_dir_iterator (d_iter);
 
@@ -1709,7 +1709,7 @@ elektroid_remote_delete (const gchar * path, const char type)
 	{
 	  while (!connector_next_dir_entry (d_iter))
 	    {
-	      new_path = chain_path (path, d_iter->dentry);
+	      new_path = chain_path (path, d_iter->entry);
 	      elektroid_remote_delete (new_path, d_iter->type);
 	      free (new_path);
 	    }
@@ -2345,13 +2345,13 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
     {
       if (d_iter->type == ELEKTROID_DIR)
 	{
-	  path = chain_path (rel_path, d_iter->dentry);
+	  path = chain_path (rel_path, d_iter->entry);
 	  elektroid_add_download_task_path (path, src_dir, dst_dir);
 	  free (path);
 	}
       else
 	{
-	  path = chain_path (src_abs_path, d_iter->dentry);
+	  path = chain_path (src_abs_path, d_iter->entry);
 	  elektroid_add_task (DOWNLOAD, path, dst_abs_path);
 	  free (path);
 	}

@@ -49,7 +49,7 @@ struct connector
 
 struct connector_dir_iterator
 {
-  gchar *dentry;
+  gchar *entry;
   gchar type;
   guint size;
   guint32 cksum;

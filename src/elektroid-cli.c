@@ -110,7 +110,7 @@ cli_ls (int argc, char *argv[], int optind)
     {
       printf ("%c %.2f %08x %s\n", d_iter->type,
 	      d_iter->size / (1024.0 * 1024.0), d_iter->cksum,
-	      d_iter->dentry);
+	      d_iter->entry);
     }
 
   connector_free_dir_iterator (d_iter);
