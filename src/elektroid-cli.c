@@ -542,47 +542,54 @@ main (int argc, char *argv[])
       exit (EXIT_FAILURE);
     }
 
-  if (strcmp (command, "ld") == 0)
+  if (strcmp (command, "ld") == 0 || strcmp (command, "list-devices") == 0)
     {
       res = cli_ld ();
     }
-  else if (strcmp (command, "ls") == 0)
+  else if (strcmp (command, "ls") == 0
+	   || strcmp (command, "list-samples") == 0)
     {
       res = cli_ls (argc, argv, optind);
     }
-  else if (strcmp (command, "mkdir") == 0)
+  else if (strcmp (command, "mkdir") == 0
+	   || strcmp (command, "mkdir-samples") == 0)
     {
       res = cli_mkdir (argc, argv, optind);
     }
-  else if (strcmp (command, "mv") == 0)
+  else if (strcmp (command, "mv") == 0 || strcmp (command, "mv-sample") == 0)
     {
       res = cli_mv (argc, argv, optind);
     }
-  else if (strcmp (command, "rm") == 0)
+  else if (strcmp (command, "rm") == 0 || strcmp (command, "rm-sample") == 0)
     {
       res = cli_delete (argc, argv, optind, ELEKTROID_FILE);
     }
-  else if (strcmp (command, "rmdir") == 0)
+  else if (strcmp (command, "rmdir") == 0
+	   || strcmp (command, "rmdir-samples") == 0)
     {
       res = cli_delete (argc, argv, optind, ELEKTROID_DIR);
     }
-  else if (strcmp (command, "download") == 0)
+  else if (strcmp (command, "download") == 0
+	   || strcmp (command, "download-sample") == 0)
     {
       res = cli_download (argc, argv, optind);
     }
-  else if (strcmp (command, "upload") == 0)
+  else if (strcmp (command, "upload") == 0
+	   || strcmp (command, "upload-sample") == 0)
     {
       res = cli_upload (argc, argv, optind);
     }
-  else if (strcmp (command, "info") == 0)
+  else if (strcmp (command, "info") == 0
+	   || strcmp (command, "info-device") == 0)
     {
       res = cli_info (argc, argv, optind);
     }
-  else if (strcmp (command, "df") == 0)
+  else if (strcmp (command, "df") == 0
+	   || strcmp (command, "info-storage") == 0)
     {
       res = cli_df (argc, argv, optind);
     }
-  else if (strcmp (command, "dl") == 0)
+  else if (strcmp (command, "list-data") == 0)
     {
       res = cli_dl (argc, argv, optind);
     }

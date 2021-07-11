@@ -33,21 +33,21 @@ You can easily install them by running `sudo apt install automake libasound2-dev
 `elektroid-cli` provides the same funcionality than `elektroid`. Provided paths must always be prepended with the device id and a colon (':'), e.g. `0:/samples`.
 Here are the available commands.
 
-* ld, list compatible devices
+* `ld` or `list-devices`, list compatible devices
 
 ```
 $ elektroid-cli ld
 0 Elektron Digitakt MIDI 1
 ```
 
-* info, show device info
+* `info` or `info-device`, show device info
 
 ```
 $ elektroid-cli info 0
 Digitakt 1.11
 ```
 
-* df, show size and use of +Drive and RAM
+* `df` or `info-storage`, show size and use of +Drive and RAM
 
 ```
 $ elektroid-cli df 0
@@ -56,7 +56,7 @@ Filesystem            Size            Used       Available       Use%
 RAM               67108944        15037872        52071072     22.41%
 ```
 
-* ls
+* `ls` or `list-samples`
 
 It only works for directories. Notice that the first column is the file type, the second is the size in MiB (it is the same unit used in the devices although it is showed there as MB), the third is an internal cksum and the fourth is the sample name.
 
@@ -66,37 +66,37 @@ D 0.00 00000000 incoming
 F 0.09 3d71644d square
 ```
 
-* mkdir
+* `mkdir` or `mkdir-samples`
 
 ```
 $ elektroid-cli mkdir 0:/samples
 ```
 
-* rmdir
+* `rmdir` or `rmdir-samples`
 
 ```
 $ elektroid-cli rmdir 0:/samples
 ```
 
-* upload
+* `upload` or `upload-sample`
 
 ```
 $ elektroid-cli upload square.wav 0:/
 ```
 
-* download
+* `download` or `download-sample`
 
 ```
 $ elektroid-cli download 0:/square
 ```
 
-* mv
+* `mv` or `mv-sample`
 
 ```
 $ elektroid-cli mv 0:/square 0:/sample
 ```
 
-* rm
+* `rm` or `rm-sample`
 
 ```
 $ elektroid-cli rm 0:/sample
