@@ -1684,7 +1684,7 @@ static gint
 elektroid_remote_rename (const gchar * old, const gchar * new)
 {
   debug_print (1, "Renaming remotely from %s to %s...\n", old, new);
-  return connector_rename_sample (&connector, old, new);
+  return connector_rename_samples_item (&connector, old, new);
 }
 
 static gint

@@ -1075,8 +1075,8 @@ connector_rename_sample_file (struct connector *connector, const gchar * old,
 }
 
 gint
-connector_rename_sample (struct connector *connector, const gchar * old,
-			 const gchar * new)
+connector_rename_samples_item (struct connector *connector, const gchar * old,
+			       const gchar * new)
 {
   gchar type;
   gint res;
@@ -1105,7 +1105,8 @@ connector_rename_sample (struct connector *connector, const gchar * old,
 	    {
 	      old_plus = chain_path (old, iterator->entry);
 	      new_plus = chain_path (new, iterator->entry);
-	      res = connector_rename_sample (connector, old_plus, new_plus);
+	      res =
+		connector_rename_samples_item (connector, old_plus, new_plus);
 	      free (old_plus);
 	      free (new_plus);
 	    }
