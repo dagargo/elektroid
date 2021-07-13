@@ -144,29 +144,22 @@ free_msg (gpointer msg)
 }
 
 void
-connector_free_dir_iterator (struct connector_dir_iterator *iterator)
+connector_free_iterator (struct connector_entry_iterator *iterator)
 {
   free_msg (iterator->msg);
   free (iterator);
 }
 
-static struct connector_dir_iterator *
-connector_new_dir_iterator (GByteArray * msg)
+guint
+connector_next_entry (struct connector_entry_iterator *iterator)
 {
-  struct connector_dir_iterator *iterator =
-    malloc (sizeof (struct connector_dir_iterator));
-
-  iterator->entry = NULL;
-  iterator->msg = msg;
-  iterator->pos = 5;
-
-  return iterator;
+  return iterator->iterator (iterator);
 }
 
-guint
-connector_next_dir_entry (struct connector_dir_iterator *iterator)
+static guint
+connector_next_sample_entry (struct connector_entry_iterator *iterator)
 {
-  uint32_t *data;
+  guint32 *data;
   gchar *entry_cp1252;
 
   if (iterator->entry != NULL)
@@ -181,32 +174,41 @@ connector_next_dir_entry (struct connector_dir_iterator *iterator)
     }
   else
     {
-      data = (uint32_t *) & iterator->msg->data[iterator->pos];
+      data = (guint32 *) & iterator->msg->data[iterator->pos];
       iterator->cksum = be32toh (*data);
+      iterator->pos += sizeof (guint32);
 
-      iterator->pos += 4;
-      data = (uint32_t *) & iterator->msg->data[iterator->pos];
+      data = (guint32 *) & iterator->msg->data[iterator->pos];
       iterator->size = be32toh (*data);
+      iterator->pos += sizeof (guint32);
 
-      iterator->pos += 5;
+      iterator->pos += 1;	//write_protected
+
       iterator->type = iterator->msg->data[iterator->pos];
-
       iterator->pos++;
+
       entry_cp1252 = (gchar *) & iterator->msg->data[iterator->pos];
       iterator->entry =
 	g_convert (entry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
-
-      while (iterator->pos < iterator->msg->len
-	     && iterator->msg->data[iterator->pos] != 0)
-	{
-
-	  iterator->pos++;
-	}
-
-      iterator->pos++;
+      iterator->pos += strlen (entry_cp1252) + 1;
 
       return 0;
     }
+}
+
+static struct connector_entry_iterator *
+connector_new_sample_iterator (GByteArray * msg)
+{
+  struct connector_entry_iterator *iterator =
+    malloc (sizeof (struct connector_entry_iterator));
+
+  iterator->entry = NULL;
+  iterator->msg = msg;
+  iterator->pos = 5;
+  iterator->iterator = connector_next_sample_entry;
+  iterator->has_metadata = 0;
+
+  return iterator;
 }
 
 static GByteArray *
@@ -953,8 +955,8 @@ cleanup:
   return rx_msg;
 }
 
-struct connector_dir_iterator *
-connector_read_dir (struct connector *connector, const gchar * dir)
+struct connector_entry_iterator *
+connector_read_samples (struct connector *connector, const gchar * dir)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -983,7 +985,7 @@ connector_read_dir (struct connector *connector, const gchar * dir)
       return NULL;
     }
 
-  return connector_new_dir_iterator (rx_msg);
+  return connector_new_sample_iterator (rx_msg);
 }
 
 static gchar
@@ -994,7 +996,7 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   gchar *name;
   gchar *parent;
   gchar res;
-  struct connector_dir_iterator *iterator;
+  struct connector_entry_iterator *iterator;
 
   if (strcmp (path, "/") == 0)
     {
@@ -1005,11 +1007,11 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   parent_copy = strdup (path);
   name = basename (name_copy);
   parent = dirname (parent_copy);
-  iterator = connector_read_dir (connector, parent);
+  iterator = connector_read_samples (connector, parent);
   res = ELEKTROID_NONE;
   if (iterator)
     {
-      while (!connector_next_dir_entry (iterator))
+      while (!connector_next_entry (iterator))
 	{
 	  if (strcmp (name, iterator->entry) == 0)
 	    {
@@ -1017,7 +1019,7 @@ connector_get_path_type (struct connector *connector, const gchar * path)
 	      break;
 	    }
 	}
-      connector_free_dir_iterator (iterator);
+      connector_free_iterator (iterator);
     }
 
   g_free (name_copy);
@@ -1086,7 +1088,7 @@ connector_rename (struct connector *connector, const gchar * old,
   gint res;
   gchar *old_plus;
   gchar *new_plus;
-  struct connector_dir_iterator *iterator;
+  struct connector_entry_iterator *iterator;
 
   //Renaming is not implemented for directories so we need to implement it.
   type = connector_get_path_type (connector, old);
@@ -1102,10 +1104,10 @@ connector_rename (struct connector *connector, const gchar * old,
 	{
 	  return res;
 	}
-      iterator = connector_read_dir (connector, old);
+      iterator = connector_read_samples (connector, old);
       if (iterator)
 	{
-	  while (!connector_next_dir_entry (iterator) && !res)
+	  while (!connector_next_entry (iterator) && !res)
 	    {
 	      old_plus = chain_path (old, iterator->entry);
 	      new_plus = chain_path (new, iterator->entry);
@@ -1113,7 +1115,7 @@ connector_rename (struct connector *connector, const gchar * old,
 	      free (old_plus);
 	      free (new_plus);
 	    }
-	  connector_free_dir_iterator (iterator);
+	  connector_free_iterator (iterator);
 	}
       if (!res)
 	{
@@ -1965,23 +1967,85 @@ connector_get_system_devices ()
   return devices;
 }
 
-static struct connector_data_iterator *
+static guint
+connector_next_data_entry (struct connector_entry_iterator *iterator)
+{
+  gchar *entry_cp1252;
+  guint32 *data32;
+  guint16 *data16;
+  guint8 type;
+  guint8 has_children;
+
+  if (iterator->entry != NULL)
+    {
+      g_free (iterator->entry);
+    }
+
+  if (iterator->pos == iterator->msg->len)
+    {
+      iterator->entry = NULL;
+      return -ENOENT;
+    }
+
+  entry_cp1252 = (gchar *) & iterator->msg->data[iterator->pos];
+  iterator->entry =
+    g_convert (entry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
+  iterator->pos += strlen (entry_cp1252) + 1;
+  has_children = iterator->msg->data[iterator->pos];
+  iterator->pos++;
+  type = iterator->msg->data[iterator->pos];
+  iterator->pos++;
+
+  switch (type)
+    {
+    case 1:
+      iterator->type = ELEKTROID_DIR;
+      iterator->pos += sizeof (guint32);
+      iterator->size = 0;
+      break;
+    case 2:
+      iterator->type = has_children ? ELEKTROID_DIR : ELEKTROID_FILE;
+
+      iterator->pos += sizeof (guint32);	//index
+
+      data32 = (guint32 *) & iterator->msg->data[iterator->pos];
+      iterator->size = be32toh (*data32);
+      iterator->pos += sizeof (guint32);
+
+      data16 = (guint16 *) & iterator->msg->data[iterator->pos];
+      iterator->operations = be32toh (*data16);
+      iterator->pos += sizeof (guint16);
+
+      iterator->pos++;		//has_valid data
+
+      iterator->has_metadata = iterator->msg->data[iterator->pos];
+      iterator->pos++;
+
+      break;
+    default:
+      error_print ("Unrecognized data entry: %d\n", iterator->type);
+      break;
+    }
+
+  return 0;
+}
+
+static struct connector_entry_iterator *
 connector_new_data_iterator (GByteArray * msg)
 {
-  guint32 *entries;
-  struct connector_data_iterator *iterator =
-    malloc (sizeof (struct connector_data_iterator));
+  struct connector_entry_iterator *iterator =
+    malloc (sizeof (struct connector_entry_iterator));
 
   iterator->entry = NULL;
   iterator->msg = msg;
-  entries = (guint32 *) & msg->data[14];
-  iterator->entries = be32toh (*entries);
   iterator->pos = 18;
+  iterator->cksum = 0;
+  iterator->iterator = connector_next_data_entry;
 
   return iterator;
 }
 
-struct connector_data_iterator *
+struct connector_entry_iterator *
 connector_read_data (struct connector *connector, const gchar * path)
 {
   int res;
@@ -2006,81 +2070,4 @@ connector_read_data (struct connector *connector, const gchar * path)
     }
 
   return connector_new_data_iterator (rx_msg);
-}
-
-void
-connector_free_data_iterator (struct connector_data_iterator *iterator)
-{
-  free_msg (iterator->msg);
-  free (iterator);
-}
-
-guint
-connector_next_data_entry (struct connector_data_iterator *iterator)
-{
-  gchar *entry_cp1252;
-  guint32 *data32;
-  guint16 *data16;
-  guint8 type;
-
-  if (iterator->entry != NULL)
-    {
-      g_free (iterator->entry);
-    }
-
-  if (iterator->pos == iterator->msg->len)
-    {
-      iterator->entry = NULL;
-      return -ENOENT;
-    }
-
-  entry_cp1252 = (gchar *) & iterator->msg->data[iterator->pos];
-  iterator->entry =
-    g_convert (entry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
-  iterator->pos += strlen (entry_cp1252) + 1;
-  iterator->has_children = iterator->msg->data[iterator->pos];
-  iterator->pos++;
-  type = iterator->msg->data[iterator->pos];
-  iterator->pos++;
-
-  switch (type)
-    {
-    case 1:
-      iterator->type = ELEKTROID_DIR;
-
-      data32 = (guint32 *) & iterator->msg->data[iterator->pos];
-      iterator->child_entries = be32toh (*data32);
-      iterator->pos += sizeof (guint32);
-
-      iterator->size = 0;
-
-      break;
-    case 2:
-      iterator->type = ELEKTROID_FILE;
-
-      data32 = (guint32 *) & iterator->msg->data[iterator->pos];
-      iterator->index = be32toh (*data32);
-      iterator->pos += sizeof (guint32);
-
-      data32 = (guint32 *) & iterator->msg->data[iterator->pos];
-      iterator->size = be32toh (*data32);
-      iterator->pos += sizeof (guint32);
-
-      data16 = (guint16 *) & iterator->msg->data[iterator->pos];
-      iterator->operations = be16toh (*data16);
-      iterator->pos += sizeof (guint16);
-
-      iterator->index = iterator->msg->data[iterator->pos];
-      iterator->pos++;
-
-      iterator->index = iterator->msg->data[iterator->pos];
-      iterator->pos++;
-
-      break;
-    default:
-      error_print ("Unrecognized data entry: %d\n", iterator->type);
-      break;
-    }
-
-  return 0;
 }

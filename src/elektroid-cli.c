@@ -80,7 +80,7 @@ cli_connect (const char *device_path)
 static int
 cli_ls (int argc, char *argv[], int optind)
 {
-  struct connector_dir_iterator *iterator;
+  struct connector_entry_iterator *iterator;
   gchar *device_path, *path;
   gint res;
 
@@ -103,19 +103,19 @@ cli_ls (int argc, char *argv[], int optind)
 
   path = cli_get_path (device_path);
 
-  iterator = connector_read_dir (&connector, path);
+  iterator = connector_read_samples (&connector, path);
   if (!iterator)
     {
       return EXIT_FAILURE;
     }
 
-  while (!connector_next_dir_entry (iterator))
+  while (!connector_next_entry (iterator))
     {
       printf ("%c %.2f %08x %s\n", iterator->type,
 	      iterator->size / MIB_FLOAT, iterator->cksum, iterator->entry);
     }
 
-  connector_free_dir_iterator (iterator);
+  connector_free_iterator (iterator);
 
   return EXIT_SUCCESS;
 }
@@ -355,8 +355,6 @@ cleanup:
 static int
 cli_info (int argc, char *argv[], int optind)
 {
-  struct connector_data_iterator *connector_read_data (struct connector *,
-						       const gchar *);
   gchar *device_path;
   gint res;
 
@@ -427,7 +425,7 @@ cli_dl (int argc, char *argv[], int optind)
   gchar *device_path_src;
   gchar *path_src;
   gint res;
-  struct connector_data_iterator *iterator;
+  struct connector_entry_iterator *iterator;
 
   if (optind == argc)
     {
@@ -453,13 +451,13 @@ cli_dl (int argc, char *argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  while (!connector_next_data_entry (iterator))
+  while (!connector_next_entry (iterator))
     {
       printf ("%c %.2f %s\n", iterator->type,
 	      iterator->size / MIB_FLOAT, iterator->entry);
     }
 
-  connector_free_data_iterator (iterator);
+  connector_free_iterator (iterator);
 
   return EXIT_SUCCESS;
 }
