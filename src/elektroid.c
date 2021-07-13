@@ -1567,7 +1567,7 @@ end:
 static gint
 elektroid_remote_mkdir (const gchar * name)
 {
-  return connector_create_dir (&connector, name);
+  return connector_create_samples_dir (&connector, name);
 }
 
 static gint
@@ -1684,7 +1684,7 @@ static gint
 elektroid_remote_rename (const gchar * old, const gchar * new)
 {
   debug_print (1, "Renaming remotely from %s to %s...\n", old, new);
-  return connector_rename (&connector, old, new);
+  return connector_rename_sample (&connector, old, new);
 }
 
 static gint
@@ -1719,12 +1719,12 @@ elektroid_remote_delete (const gchar * path, const char type)
 	{
 	  error_print ("Error while opening remote %s dir\n", path);
 	}
-      return connector_delete_dir (&connector, path);
+      return connector_delete_samples_dir (&connector, path);
     }
   else
     {
       debug_print (1, "Deleting remote %s file...\n", path);
-      return connector_delete_file (&connector, path);
+      return connector_delete_sample (&connector, path);
     }
 }
 
@@ -2079,9 +2079,9 @@ elektroid_upload_task (gpointer data)
       goto complete_task;
     }
 
-  frames = connector_upload (&connector, sample, remote_path,
-			     &sample_transfer.transfer,
-			     elektroid_update_progress);
+  frames = connector_upload_sample (&connector, sample, remote_path,
+				    &sample_transfer.transfer,
+				    elektroid_update_progress);
   g_idle_add (elektroid_check_connector_bg, NULL);
   free (remote_path);
 
@@ -2268,8 +2268,9 @@ elektroid_download_task (gpointer data)
   debug_print (1, "Local path: %s\n", dst_path);
 
   sample =
-    connector_download (&connector, sample_transfer.src,
-			&sample_transfer.transfer, elektroid_update_progress);
+    connector_download_sample (&connector, sample_transfer.src,
+			       &sample_transfer.transfer,
+			       elektroid_update_progress);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
   if (sample == NULL && sample_transfer.transfer.active)

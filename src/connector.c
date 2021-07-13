@@ -1022,8 +1022,8 @@ connector_get_path_type (struct connector *connector, const gchar * path)
 }
 
 static gint
-connector_rename_file (struct connector *connector, const gchar * old,
-		       const gchar * new)
+connector_rename_sample_file (struct connector *connector, const gchar * old,
+			      const gchar * new)
 {
   gint res;
   GByteArray *rx_msg;
@@ -1075,8 +1075,8 @@ connector_rename_file (struct connector *connector, const gchar * old,
 }
 
 gint
-connector_rename (struct connector *connector, const gchar * old,
-		  const gchar * new)
+connector_rename_sample (struct connector *connector, const gchar * old,
+			 const gchar * new)
 {
   gchar type;
   gint res;
@@ -1089,11 +1089,11 @@ connector_rename (struct connector *connector, const gchar * old,
 
   if (type == ELEKTROID_FILE)
     {
-      return connector_rename_file (connector, old, new);
+      return connector_rename_sample_file (connector, old, new);
     }
   else if (type == ELEKTROID_DIR)
     {
-      res = connector_create_dir (connector, new);
+      res = connector_create_samples_dir (connector, new);
       if (res)
 	{
 	  return res;
@@ -1105,7 +1105,7 @@ connector_rename (struct connector *connector, const gchar * old,
 	    {
 	      old_plus = chain_path (old, iterator->entry);
 	      new_plus = chain_path (new, iterator->entry);
-	      res = connector_rename (connector, old_plus, new_plus);
+	      res = connector_rename_sample (connector, old_plus, new_plus);
 	      free (old_plus);
 	      free (new_plus);
 	    }
@@ -1113,7 +1113,7 @@ connector_rename (struct connector *connector, const gchar * old,
 	}
       if (!res)
 	{
-	  res = connector_delete_dir (connector, old);
+	  res = connector_delete_samples_dir (connector, old);
 	}
       return res;
     }
@@ -1165,23 +1165,24 @@ connector_delete (struct connector *connector, const gchar * path,
 }
 
 gint
-connector_delete_file (struct connector *connector, const gchar * path)
+connector_delete_sample (struct connector *connector, const gchar * path)
 {
   return connector_delete (connector, path, FS_SAMPLE_DELETE_FILE_REQUEST,
 			   sizeof (FS_SAMPLE_DELETE_FILE_REQUEST));
 }
 
 gint
-connector_delete_dir (struct connector *connector, const gchar * path)
+connector_delete_samples_dir (struct connector *connector, const gchar * path)
 {
   return connector_delete (connector, path, FS_SAMPLE_DELETE_DIR_REQUEST,
 			   sizeof (FS_SAMPLE_DELETE_DIR_REQUEST));
 }
 
 ssize_t
-connector_upload (struct connector *connector, GArray * sample,
-		  gchar * path, struct connector_sample_transfer *transfer,
-		  void (*progress) (gdouble))
+connector_upload_sample (struct connector *connector, GArray * sample,
+			 gchar * path,
+			 struct connector_sample_transfer *transfer,
+			 void (*progress) (gdouble))
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -1281,9 +1282,9 @@ connector_upload (struct connector *connector, GArray * sample,
 }
 
 GArray *
-connector_download (struct connector *connector, const gchar * path,
-		    struct connector_sample_transfer *transfer,
-		    void (*progress) (gdouble))
+connector_download_sample (struct connector *connector, const gchar * path,
+			   struct connector_sample_transfer *transfer,
+			   void (*progress) (gdouble))
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -1405,7 +1406,7 @@ cleanup:
 }
 
 gint
-connector_create_dir (struct connector *connector, const gchar * path)
+connector_create_samples_dir (struct connector *connector, const gchar * path)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;

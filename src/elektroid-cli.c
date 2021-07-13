@@ -145,7 +145,7 @@ cli_mkdir (int argc, char *argv[], int optind)
 
   path = cli_get_path (device_path);
 
-  return connector_create_dir (&connector, path);
+  return connector_create_samples_dir (&connector, path);
 }
 
 static int
@@ -195,7 +195,7 @@ cli_mv (int argc, char *argv[], int optind)
   path_src = cli_get_path (device_path_src);
   path_dst = cli_get_path (device_path_dst);
 
-  return connector_rename (&connector, path_src, path_dst);
+  return connector_rename_sample (&connector, path_src, path_dst);
 }
 
 static int
@@ -225,11 +225,11 @@ cli_delete (int argc, char *argv[], int optind, char type)
 
   if (type == ELEKTROID_FILE)
     {
-      res = connector_delete_file (&connector, path);
+      res = connector_delete_sample (&connector, path);
     }
   else if (type == ELEKTROID_DIR)
     {
-      res = connector_delete_dir (&connector, path);
+      res = connector_delete_samples_dir (&connector, path);
     }
   else
     {
@@ -268,7 +268,8 @@ cli_download (int argc, char *argv[], int optind)
   path_src = cli_get_path (device_path_src);
 
   sample_transfer.active = TRUE;
-  data = connector_download (&connector, path_src, &sample_transfer, NULL);
+  data =
+    connector_download_sample (&connector, path_src, &sample_transfer, NULL);
   if (data == NULL)
     {
       return EXIT_FAILURE;
@@ -341,7 +342,8 @@ cli_upload (int argc, char *argv[], int optind)
 
   sample_transfer.active = TRUE;
   frames =
-    connector_upload (&connector, sample, path_dst, &sample_transfer, NULL);
+    connector_upload_sample (&connector, sample, path_dst, &sample_transfer,
+			     NULL);
 
   res = frames < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 

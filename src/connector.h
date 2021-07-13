@@ -107,6 +107,30 @@ struct connector_statfs
   guint64 bfree;
 };
 
+typedef guint (*connector_read_items) (struct connector *, const gchar *);
+typedef gint (*connector_create_dir) (struct connector *, const gchar *);
+typedef gint (*connector_delete_file) (struct connector *, const gchar *);
+typedef gint (*connector_delete_dir) (struct connector *, const gchar *);
+typedef gint (*connector_rename) (struct connector *, const gchar *,
+				  const gchar *);
+typedef GArray *(*connector_download) (struct connector *, const gchar *,
+				       struct connector_sample_transfer *,
+				       void (*)(gdouble));
+typedef ssize_t (*connector_upload) (struct connector *, GArray *, gchar *,
+				     struct connector_sample_transfer *,
+				     void (*)(gdouble));
+
+struct connector_type_operations
+{
+  connector_read_items read_items;
+  connector_create_dir create_dir;
+  connector_delete_dir delete_dir;
+  connector_delete_file delete_file;
+  connector_rename rename;
+  connector_download download;
+  connector_upload upload;
+};
+
 gint connector_init (struct connector *, gint);
 
 void connector_destroy (struct connector *);
@@ -139,21 +163,23 @@ guint connector_next_entry (struct connector_entry_iterator *);
 struct connector_entry_iterator *connector_read_samples (struct connector *,
 							 const gchar *);
 
-gint connector_rename (struct connector *, const gchar *, const gchar *);
+gint connector_rename_sample (struct connector *, const gchar *,
+			      const gchar *);
 
-gint connector_delete_file (struct connector *, const gchar *);
+gint connector_delete_sample (struct connector *, const gchar *);
 
-gint connector_delete_dir (struct connector *, const gchar *);
+gint connector_delete_samples_dir (struct connector *, const gchar *);
 
-GArray *connector_download (struct connector *, const gchar *,
-			    struct connector_sample_transfer *,
-			    void (*)(gdouble));
+GArray *connector_download_sample (struct connector *, const gchar *,
+				   struct connector_sample_transfer *,
+				   void (*)(gdouble));
 
 ssize_t
-connector_upload (struct connector *, GArray *, gchar *,
-		  struct connector_sample_transfer *, void (*)(gdouble));
+connector_upload_sample (struct connector *, GArray *, gchar *,
+			 struct connector_sample_transfer *,
+			 void (*)(gdouble));
 
-gint connector_create_dir (struct connector *, const gchar *);
+gint connector_create_samples_dir (struct connector *, const gchar *);
 
 struct connector_entry_iterator *connector_read_data (struct connector *,
 						      const gchar *);
