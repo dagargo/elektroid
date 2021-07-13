@@ -163,12 +163,14 @@ guint connector_next_entry (struct connector_entry_iterator *);
 struct connector_entry_iterator *connector_read_samples (struct connector *,
 							 const gchar *);
 
-gint connector_rename_sample (struct connector *, const gchar *,
-			      const gchar *);
+gint connector_create_samples_dir (struct connector *, const gchar *);
+
+gint connector_delete_samples_dir (struct connector *, const gchar *);
 
 gint connector_delete_sample (struct connector *, const gchar *);
 
-gint connector_delete_samples_dir (struct connector *, const gchar *);
+gint connector_rename_sample (struct connector *, const gchar *,
+			      const gchar *);
 
 GArray *connector_download_sample (struct connector *, const gchar *,
 				   struct connector_sample_transfer *,
@@ -178,8 +180,6 @@ ssize_t
 connector_upload_sample (struct connector *, GArray *, gchar *,
 			 struct connector_sample_transfer *,
 			 void (*)(gdouble));
-
-gint connector_create_samples_dir (struct connector *, const gchar *);
 
 struct connector_entry_iterator *connector_read_data (struct connector *,
 						      const gchar *);
