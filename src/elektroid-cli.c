@@ -388,7 +388,7 @@ cli_df (int argc, char *argv[], int optind)
   gchar *device_path;
   gint res;
   struct connector_statfs statfs;
-  enum connector_fs_type fs;
+  enum connector_storage_type fs;
 
   if (optind == argc)
     {
@@ -410,7 +410,7 @@ cli_df (int argc, char *argv[], int optind)
   printf ("%-10.10s%16.16s%16.16s%16.16s%11.10s\n", "Filesystem", "Size",
 	  "Used", "Available", "Use%");
 
-  for (fs = FS_PLUS_DRIVE; fs <= FS_RAM; fs++)
+  for (fs = STORAGE_PLUS_DRIVE; fs <= STORAGE_RAM; fs++)
     {
       res = connector_statfs (&connector, fs, &statfs);
       printf ("%-10.10s%16" PRId64 "%16" PRId64 "%16" PRId64 "%10.2f%%\n",

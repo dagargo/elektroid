@@ -93,11 +93,11 @@ struct connector_sample_transfer
   GMutex mutex;
 };
 
-enum connector_fs_type
+enum connector_storage_type
 {
-  FS_NONE,
-  FS_PLUS_DRIVE,
-  FS_RAM
+  STORAGE_NONE,
+  STORAGE_PLUS_DRIVE,
+  STORAGE_RAM
 };
 
 struct connector_statfs
@@ -151,7 +151,7 @@ void connector_rx_drain (struct connector *);
 gint connector_upgrade_os (struct connector *, GByteArray *,
 			   struct connector_sysex_transfer *);
 
-gint connector_statfs (struct connector *, enum connector_fs_type,
+gint connector_statfs (struct connector *, enum connector_storage_type,
 		       struct connector_statfs *);
 
 float connector_statfs_use_percent (struct connector_statfs *);

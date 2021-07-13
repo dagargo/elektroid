@@ -1613,7 +1613,8 @@ connector_destroy (struct connector *connector)
 }
 
 gint
-connector_statfs (struct connector *connector, enum connector_fs_type type,
+connector_statfs (struct connector *connector,
+		  enum connector_storage_type type,
 		  struct connector_statfs *statfs)
 {
   GByteArray *tx_msg;

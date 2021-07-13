@@ -260,7 +260,7 @@ elektroid_update_statusbar ()
   gchar *status;
   gchar *statfss_str;
   gint res;
-  enum connector_fs_type fs;
+  enum connector_storage_type fs;
   struct connector_statfs statfs;
   GString *statfss;
 
@@ -272,7 +272,7 @@ elektroid_update_statusbar ()
 
       if (connector.device_desc->capabilities & CAP_SAMPLE)
 	{
-	  for (fs = FS_PLUS_DRIVE; fs <= FS_RAM; fs++)
+	  for (fs = STORAGE_PLUS_DRIVE; fs <= STORAGE_RAM; fs++)
 	    {
 	      res = connector_statfs (&connector, fs, &statfs);
 	      if (!res)
