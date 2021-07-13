@@ -23,14 +23,12 @@
 
 #define SYSEX_TIMEOUT 5000
 
-#define CAP_SAMPLE  0b00000001
-
 struct connector_device_desc
 {
   guint8 id;
   gchar *model;
-  guint8 capabilities;
-  guint8 startup_mode;
+  guint8 fs_types;
+  guint8 startup_fs_type;
 };
 
 struct connector
@@ -107,7 +105,16 @@ struct connector_statfs
   guint64 bfree;
 };
 
-typedef guint (*connector_read_items) (struct connector *, const gchar *);
+enum connector_fs_type
+{
+  FS_SAMPLES = 0x1,
+  FS_DATA = 0x2
+};
+
+typedef struct connector_entry_iterator *(*connector_read_dir) (struct
+								connector *,
+								const gchar
+								*);
 typedef gint (*connector_create_dir) (struct connector *, const gchar *);
 typedef gint (*connector_delete_file) (struct connector *, const gchar *);
 typedef gint (*connector_delete_dir) (struct connector *, const gchar *);
@@ -120,9 +127,10 @@ typedef ssize_t (*connector_upload) (struct connector *, GArray *, gchar *,
 				     struct connector_sample_transfer *,
 				     void (*)(gdouble));
 
-struct connector_type_operations
+struct connector_fs_operations
 {
-  connector_read_items read_items;
+  enum connector_fs_type fs_type;
+  connector_read_dir read_dir;
   connector_create_dir create_dir;
   connector_delete_dir delete_dir;
   connector_delete_file delete_file;
@@ -130,6 +138,10 @@ struct connector_type_operations
   connector_download download;
   connector_upload upload;
 };
+
+const struct connector_fs_operations *connector_get_fs_operations (enum
+								   connector_fs_type
+								   fs_type);
 
 gint connector_init (struct connector *, gint);
 

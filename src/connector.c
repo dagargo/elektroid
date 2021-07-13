@@ -86,36 +86,36 @@ static const gchar *FS_TYPE_NAMES[] = { "None", "+Drive", "RAM" };
 static const struct connector_device_desc ANALOG_RYTM_DESC = {
   .id = ARMK1_ID,
   .model = "Analog Rytm",
-  .capabilities = CAP_SAMPLE,
-  .startup_mode = CAP_SAMPLE
+  .fs_types = FS_SAMPLES,
+  .startup_fs_type = FS_SAMPLES
 };
 
 static const struct connector_device_desc DIGITAKT_DESC = {
   .id = DTAKT_ID,
   .model = "Digitakt",
-  .capabilities = CAP_SAMPLE,
-  .startup_mode = CAP_SAMPLE
+  .fs_types = FS_SAMPLES,
+  .startup_fs_type = FS_SAMPLES
 };
 
 static const struct connector_device_desc ANALOG_RYTM_MKII_DESC = {
   .id = ARMK2_ID,
   .model = "Analog Rytm MKII",
-  .capabilities = CAP_SAMPLE,
-  .startup_mode = CAP_SAMPLE,
+  .fs_types = FS_SAMPLES,
+  .startup_fs_type = FS_SAMPLES,
 };
 
 static const struct connector_device_desc MODEL_SAMPLES_DESC = {
   .id = MOD_S_ID,
   .model = "Model:Samples",
-  .capabilities = CAP_SAMPLE,
-  .startup_mode = CAP_SAMPLE
+  .fs_types = FS_SAMPLES | FS_DATA,
+  .startup_fs_type = FS_SAMPLES
 };
 
 static const struct connector_device_desc NULL_DEVICE_DESC = {
   .id = 0,
   .model = "-",
-  .capabilities = 0,
-  .startup_mode = 0
+  .fs_types = 0,
+  .startup_fs_type = 0
 };
 
 static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
@@ -123,7 +123,61 @@ static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
   &MODEL_SAMPLES_DESC
 };
 
+static struct connector_fs_operations FS_SAMPLES_OPERATIONS = {
+  .fs_type = FS_SAMPLES,
+  .read_dir = connector_read_samples,
+  .create_dir = connector_create_samples_dir,
+  .delete_dir = connector_delete_samples_dir,
+  .delete_file = connector_delete_sample,
+  .rename = connector_rename_samples_item,
+  .download = connector_download_sample,
+  .upload = connector_upload_sample
+};
+
+static struct connector_fs_operations FS_DATA_OPERATIONS = {
+  .fs_type = FS_DATA,
+  .read_dir = connector_read_data,
+  .create_dir = NULL,
+  .delete_dir = NULL,
+  .delete_file = NULL,
+  .rename = NULL,
+  .download = NULL,
+  .upload = NULL
+};
+
+static struct connector_fs_operations FS_NONE_OPERATIONS = {
+  .fs_type = 0,
+  .read_dir = NULL,
+  .create_dir = NULL,
+  .delete_dir = NULL,
+  .delete_file = NULL,
+  .rename = NULL,
+  .download = NULL,
+  .upload = NULL
+};
+
+static const struct connector_fs_operations *FS_OPERATIONS[] = {
+  &FS_SAMPLES_OPERATIONS, &FS_DATA_OPERATIONS
+};
+
+static const int FS_OPERATIONS_N =
+  sizeof (FS_OPERATIONS) / sizeof (struct connector_fs_operations *);
+
 static gchar connector_get_path_type (struct connector *, const gchar *);
+
+const struct connector_fs_operations *
+connector_get_fs_operations (enum connector_fs_type fs_type)
+{
+  const struct connector_fs_operations *fs_operations = &FS_NONE_OPERATIONS;
+  for (int i = 0; i < FS_OPERATIONS_N; i++)
+    {
+      if (FS_OPERATIONS[i]->fs_type == fs_type)
+	{
+	  fs_operations = FS_OPERATIONS[i];
+	}
+    }
+  return fs_operations;
+}
 
 static guchar
 connector_get_msg_status (const GByteArray * msg)

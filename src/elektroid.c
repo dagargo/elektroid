@@ -155,6 +155,8 @@ G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC);
 static guint TARGET_ENTRIES_UP_BUTTON_DST_N =
 G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST);
 
+static const struct connector_fs_operations *fs_operations;
+
 static struct browser remote_browser;
 static struct browser local_browser;
 
@@ -270,7 +272,7 @@ elektroid_update_statusbar ()
     {
       statfss = g_string_new (NULL);
 
-      if (connector.device_desc->capabilities & CAP_SAMPLE)
+      if (connector.device_desc->fs_types & FS_SAMPLES)
 	{
 	  for (fs = STORAGE_PLUS_DRIVE; fs <= STORAGE_RAM; fs++)
 	    {
@@ -1465,7 +1467,7 @@ elektroid_load_remote_dir (gpointer data)
 
   browser_reset (&remote_browser);
 
-  iterator = connector_read_samples (&connector, remote_browser.dir);
+  iterator = fs_operations->read_dir (&connector, remote_browser.dir);
   elektroid_check_connector ();
   if (!iterator)
     {
@@ -1567,7 +1569,7 @@ end:
 static gint
 elektroid_remote_mkdir (const gchar * name)
 {
-  return connector_create_samples_dir (&connector, name);
+  return fs_operations->create_dir (&connector, name);
 }
 
 static gint
@@ -1684,7 +1686,7 @@ static gint
 elektroid_remote_rename (const gchar * old, const gchar * new)
 {
   debug_print (1, "Renaming remotely from %s to %s...\n", old, new);
-  return connector_rename_samples_item (&connector, old, new);
+  return fs_operations->rename (&connector, old, new);
 }
 
 static gint
@@ -1703,7 +1705,7 @@ elektroid_remote_delete (const gchar * path, const char type)
   if (type == ELEKTROID_DIR)
     {
       debug_print (1, "Deleting remote %s dir...\n", path);
-      iterator = connector_read_samples (&connector, path);
+      iterator = fs_operations->read_dir (&connector, path);
       elektroid_check_connector ();
       if (iterator)
 	{
@@ -1719,12 +1721,12 @@ elektroid_remote_delete (const gchar * path, const char type)
 	{
 	  error_print ("Error while opening remote %s dir\n", path);
 	}
-      return connector_delete_samples_dir (&connector, path);
+      return fs_operations->delete_dir (&connector, path);
     }
   else
     {
       debug_print (1, "Deleting remote %s file...\n", path);
-      return connector_delete_sample (&connector, path);
+      return fs_operations->delete_file (&connector, path);
     }
 }
 
@@ -2079,9 +2081,9 @@ elektroid_upload_task (gpointer data)
       goto complete_task;
     }
 
-  frames = connector_upload_sample (&connector, sample, remote_path,
-				    &sample_transfer.transfer,
-				    elektroid_update_progress);
+  frames = fs_operations->upload (&connector, sample, remote_path,
+				  &sample_transfer.transfer,
+				  elektroid_update_progress);
   g_idle_add (elektroid_check_connector_bg, NULL);
   free (remote_path);
 
@@ -2268,9 +2270,9 @@ elektroid_download_task (gpointer data)
   debug_print (1, "Local path: %s\n", dst_path);
 
   sample =
-    connector_download_sample (&connector, sample_transfer.src,
-			       &sample_transfer.transfer,
-			       elektroid_update_progress);
+    fs_operations->download (&connector, sample_transfer.src,
+			     &sample_transfer.transfer,
+			     elektroid_update_progress);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
   if (sample == NULL && sample_transfer.transfer.active)
@@ -2322,7 +2324,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  iterator = connector_read_samples (&connector, src_abs_path);
+  iterator = fs_operations->read_dir (&connector, src_abs_path);
   elektroid_check_connector ();
   if (!iterator)
     {
@@ -3241,6 +3243,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   gtk_widget_set_sensitive (os_upgrade_button, FALSE);
+
+  fs_operations = connector_get_fs_operations (FS_SAMPLES);
 
   elektroid_load_devices (TRUE);
 
