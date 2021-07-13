@@ -113,31 +113,6 @@ void connector_destroy (struct connector *);
 
 gboolean connector_check (struct connector *);
 
-struct connector_entry_iterator *connector_read_samples (struct connector *,
-							 const gchar *);
-
-void connector_free_iterator (struct connector_entry_iterator *);
-
-guint connector_next_entry (struct connector_entry_iterator *);
-
-gint connector_rename (struct connector *, const gchar *, const gchar *);
-
-gint connector_delete_file (struct connector *, const gchar *);
-
-gint connector_delete_dir (struct connector *, const gchar *);
-
-GArray *connector_download (struct connector *, const gchar *,
-			    struct connector_sample_transfer *,
-			    void (*)(gdouble));
-
-ssize_t
-connector_upload (struct connector *, GArray *, gchar *,
-		  struct connector_sample_transfer *, void (*)(gdouble));
-
-void connector_get_sample_info_from_msg (GByteArray *, gint *, guint *);
-
-gint connector_create_dir (struct connector *, const gchar *);
-
 GArray *connector_get_system_devices ();
 
 ssize_t connector_tx_sysex (struct connector *, GByteArray *,
@@ -156,6 +131,29 @@ gint connector_statfs (struct connector *, enum connector_fs_type,
 		       struct connector_statfs *);
 
 float connector_statfs_use_percent (struct connector_statfs *);
+
+void connector_free_iterator (struct connector_entry_iterator *);
+
+guint connector_next_entry (struct connector_entry_iterator *);
+
+struct connector_entry_iterator *connector_read_samples (struct connector *,
+							 const gchar *);
+
+gint connector_rename (struct connector *, const gchar *, const gchar *);
+
+gint connector_delete_file (struct connector *, const gchar *);
+
+gint connector_delete_dir (struct connector *, const gchar *);
+
+GArray *connector_download (struct connector *, const gchar *,
+			    struct connector_sample_transfer *,
+			    void (*)(gdouble));
+
+ssize_t
+connector_upload (struct connector *, GArray *, gchar *,
+		  struct connector_sample_transfer *, void (*)(gdouble));
+
+gint connector_create_dir (struct connector *, const gchar *);
 
 struct connector_entry_iterator *connector_read_data (struct connector *,
 						      const gchar *);

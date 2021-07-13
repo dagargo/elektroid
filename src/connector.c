@@ -277,7 +277,7 @@ connector_msg_to_sysex (const GByteArray * msg)
   return sysex;
 }
 
-void
+static void
 connector_get_sample_info_from_msg (GByteArray * info_msg, gint * id,
 				    guint * size)
 {
