@@ -231,3 +231,9 @@ get_local_startup_path (const gchar * local_dir)
 
   return startup_path;
 }
+
+void
+free_msg (gpointer msg)
+{
+  g_byte_array_free ((GByteArray *) msg, TRUE);
+}

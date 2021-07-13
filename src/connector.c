@@ -138,12 +138,6 @@ connector_get_msg_string (const GByteArray * msg)
 }
 
 void
-free_msg (gpointer msg)
-{
-  g_byte_array_free ((GByteArray *) msg, TRUE);
-}
-
-void
 connector_free_iterator (struct connector_entry_iterator *iterator)
 {
   free_msg (iterator->msg);

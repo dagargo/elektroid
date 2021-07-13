@@ -152,8 +152,6 @@ void connector_rx_drain (struct connector *);
 gint connector_upgrade_os (struct connector *, GByteArray *,
 			   struct connector_sysex_transfer *);
 
-void free_msg (gpointer);
-
 gint connector_statfs (struct connector *, enum connector_fs_type,
 		       struct connector_statfs *);
 

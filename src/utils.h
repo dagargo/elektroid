@@ -46,3 +46,5 @@ gchar get_type_from_inventory_icon (const gchar *);
 const gchar *get_inventory_icon_from_type (gchar);
 
 gchar *get_local_startup_path (const gchar *);
+
+void free_msg (gpointer);
