@@ -262,8 +262,8 @@ elektroid_update_statusbar ()
   gchar *status;
   gchar *statfss_str;
   gint res;
-  enum connector_storage_type fs;
-  struct connector_statfs statfs;
+  enum connector_storage fs;
+  struct connector_storage_stats statfs;
   GString *statfss;
 
   gtk_statusbar_pop (status_bar, 0);
@@ -276,12 +276,12 @@ elektroid_update_statusbar ()
 	{
 	  for (fs = STORAGE_PLUS_DRIVE; fs <= STORAGE_RAM; fs++)
 	    {
-	      res = connector_statfs (&connector, fs, &statfs);
+	      res = connector_get_storage_stats (&connector, fs, &statfs);
 	      if (!res)
 		{
 		  g_string_append_printf (statfss, " %s %.2f%%",
 					  statfs.name,
-					  connector_statfs_use_percent
+					  connector_get_storage_stats_percent
 					  (&statfs));
 		}
 	    }

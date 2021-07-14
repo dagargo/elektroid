@@ -1668,9 +1668,9 @@ connector_destroy (struct connector *connector)
 }
 
 gint
-connector_statfs (struct connector *connector,
-		  enum connector_storage_type type,
-		  struct connector_statfs *statfs)
+connector_get_storage_stats (struct connector *connector,
+			     enum connector_storage type,
+			     struct connector_storage_stats *statfs)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -1709,7 +1709,7 @@ connector_statfs (struct connector *connector,
 }
 
 float
-connector_statfs_use_percent (struct connector_statfs *statfs)
+connector_get_storage_stats_percent (struct connector_storage_stats *statfs)
 {
   return (statfs->bsize - statfs->bfree) * 100.0 / statfs->bsize;
 }
