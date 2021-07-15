@@ -33,7 +33,6 @@ struct browser
   gint (*delete) (const gchar *, const gchar);
   GSourceFunc load_dir;
   GSourceFunc check_selection;
-  void (*set_up_menu) (gint);
   GtkTreeView *view;
   GtkWidget *up_button;
   GtkWidget *add_dir_button;

@@ -912,23 +912,6 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
   gtk_widget_hide (GTK_WIDGET (name_dialog));
 }
 
-void
-elektroid_local_menu_set_up (gint count)
-{
-  gtk_widget_set_sensitive (local_show_menuitem, count <= 1 ? TRUE : FALSE);
-  gtk_widget_set_sensitive (local_rename_menuitem, count == 1 ? TRUE : FALSE);
-  gtk_widget_set_sensitive (local_delete_menuitem, count > 0 ? TRUE : FALSE);
-  gtk_widget_set_sensitive (upload_menuitem, connector_check (&connector));
-}
-
-void
-elektroid_remote_menu_set_up (gint count)
-{
-  gtk_widget_set_sensitive (remote_rename_menuitem,
-			    count == 1 ? TRUE : FALSE);
-  gtk_widget_set_sensitive (remote_delete_menuitem, count > 0 ? TRUE : FALSE);
-}
-
 static gboolean
 elektroid_drag_begin (GtkWidget * widget,
 		      GdkDragContext * context, gpointer data)
@@ -1207,6 +1190,12 @@ elektroid_stop_task_thread ()
 static gboolean
 elektroid_remote_check_selection (gpointer data)
 {
+  gint count = browser_get_selected_items_count (&remote_browser);
+
+  gtk_widget_set_sensitive (remote_rename_menuitem, count == 1);
+  gtk_widget_set_sensitive (remote_delete_menuitem, count > 0 ? TRUE : FALSE);
+  gtk_widget_set_sensitive (download_menuitem, count > 0);
+
   return FALSE;
 }
 
@@ -1246,6 +1235,11 @@ elektroid_local_check_selection (gpointer data)
       g_free (icon);
       g_free (name);
     }
+
+  gtk_widget_set_sensitive (local_show_menuitem, count <= 1);
+  gtk_widget_set_sensitive (local_rename_menuitem, count == 1);
+  gtk_widget_set_sensitive (local_delete_menuitem, count > 0);
+  gtk_widget_set_sensitive (upload_menuitem, count > 0);
 
   return FALSE;
 }
@@ -2448,7 +2442,6 @@ elektroid_common_key_press (GtkWidget * widget, GdkEventKey * event,
   if (event->keyval == GDK_KEY_Menu)
     {
       count = browser_get_selected_items_count (browser);
-      browser->set_up_menu (count);
       gtk_widget_get_allocation (GTK_WIDGET (browser->view), &allocation);
       gdk_window = gtk_widget_get_window (GTK_WIDGET (browser->view));
       gtk_menu_popup_at_rect (browser->menu, gdk_window, &allocation,
@@ -3078,8 +3071,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .check_selection = elektroid_remote_check_selection,
     .rename = elektroid_remote_rename,
     .delete = elektroid_remote_delete,
-    .mkdir = elektroid_remote_mkdir,
-    .set_up_menu = elektroid_remote_menu_set_up
+    .mkdir = elektroid_remote_mkdir
   };
 
   g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
@@ -3153,8 +3145,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .check_selection = elektroid_local_check_selection,
     .rename = elektroid_local_rename,
     .delete = elektroid_local_delete,
-    .mkdir = elektroid_local_mkdir,
-    .set_up_menu = elektroid_local_menu_set_up
+    .mkdir = elektroid_local_mkdir
   };
 
   g_signal_connect (gtk_tree_view_get_selection (local_browser.view),
