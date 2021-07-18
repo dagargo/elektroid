@@ -41,8 +41,10 @@
 #define SIZE_LABEL_LEN 16
 
 #define DUMP_TIMEOUT 2000
-
 #define UP_BUTTON_DND_TIMEOUT 1000
+
+#define TEXT_URI_LIST_STD "text/uri-list"
+#define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
 
 enum device_list_store_columns
 {
@@ -61,16 +63,16 @@ enum task_list_store_columns
   TASK_LIST_STORE_TYPE_HUMAN_FIELD
 };
 
-static gpointer elektroid_upload_task (gpointer);
-static gpointer elektroid_download_task (gpointer);
-static void elektroid_update_progress (gdouble);
-static gboolean elektroid_load_local_dir (gpointer);
+enum fs_list_store_columns
+{
+  FS_LIST_STORE_ID_FIELD,
+  FS_LIST_STORE_ICON_FIELD,
+  FS_LIST_STORE_NAME_FIELD
+};
 
-static struct option options[] = {
-  {"local-directory", 1, NULL, 'l'},
-  {"verbose", 0, NULL, 'v'},
-  {"help", 0, NULL, 'h'},
-  {NULL, 0, NULL, 0}
+enum
+{
+  TARGET_STRING,
 };
 
 enum elektroid_task_type
@@ -102,12 +104,24 @@ struct elektroid_sysex_transfer
   GByteArray *data;
 };
 
-#define TEXT_URI_LIST_STD "text/uri-list"
-#define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
+static gpointer elektroid_upload_task (gpointer);
+static gpointer elektroid_download_task (gpointer);
+static void elektroid_update_progress (gdouble);
+static gboolean elektroid_load_local_dir (gpointer);
 
-enum
-{
-  TARGET_STRING,
+static const struct option options[] = {
+  {"local-directory", 1, NULL, 'l'},
+  {"verbose", 0, NULL, 'v'},
+  {"help", 0, NULL, 'h'},
+  {NULL, 0, NULL, 0}
+};
+
+static const gchar *fs_names[] = {
+  "Samples", "Data"
+};
+
+static const gchar *fs_icons[] = {
+  "elektroid-wave-symbolic", "elektroid-pattern-symbolic"
 };
 
 static GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
@@ -216,6 +230,8 @@ static GtkWidget *task_tree_view;
 static GtkWidget *cancel_task_button;
 static GtkWidget *remove_tasks_button;
 static GtkWidget *clear_tasks_button;
+static GtkListStore *fs_list_store;
+static GtkComboBox *fs_combo;
 
 static void
 show_error_msg (const char *format, ...)
@@ -245,6 +261,7 @@ elektroid_load_devices (gboolean auto_select)
 
   debug_print (1, "Loading devices...\n");
 
+  gtk_list_store_clear (fs_list_store);
   gtk_list_store_clear (devices_list_store);
 
   for (i = 0; i < devices->len; i++)
@@ -280,7 +297,7 @@ elektroid_update_statusbar ()
     {
       statfss = g_string_new (NULL);
 
-      if (connector.device_desc->fs_types & FS_SAMPLES)
+      if (connector.device_desc->fss & FS_SAMPLES)
 	{
 	  for (fs = STORAGE_PLUS_DRIVE; fs <= STORAGE_RAM; fs++)
 	    {
@@ -1204,9 +1221,14 @@ elektroid_remote_check_selection (gpointer data)
 {
   gint count = browser_get_selected_items_count (&remote_browser);
 
-  gtk_widget_set_sensitive (remote_rename_menuitem, count == 1);
-  gtk_widget_set_sensitive (remote_delete_menuitem, count > 0 ? TRUE : FALSE);
-  gtk_widget_set_sensitive (download_menuitem, count > 0);
+  gtk_widget_set_sensitive (download_menuitem, count > 0
+			    && fs_operations->download);
+  gtk_widget_set_sensitive (remote_rename_menuitem,
+			    count == 1
+			    && fs_operations->rename != NULL ? TRUE : FALSE);
+  gtk_widget_set_sensitive (remote_delete_menuitem,
+			    count == 1
+			    && fs_operations->delete != NULL ? TRUE : FALSE);
 
   return FALSE;
 }
@@ -1251,7 +1273,8 @@ elektroid_local_check_selection (gpointer data)
   gtk_widget_set_sensitive (local_show_menuitem, count <= 1);
   gtk_widget_set_sensitive (local_rename_menuitem, count == 1);
   gtk_widget_set_sensitive (local_delete_menuitem, count > 0);
-  gtk_widget_set_sensitive (upload_menuitem, count > 0);
+  gtk_widget_set_sensitive (upload_menuitem, count > 0
+			    && fs_operations->upload);
 
   return FALSE;
 }
@@ -1476,7 +1499,7 @@ elektroid_load_remote_dir (gpointer data)
 
   browser_reset (&remote_browser);
 
-  iterator = fs_operations->read_dir (&connector, remote_browser.dir);
+  iterator = fs_operations->readdir (&connector, remote_browser.dir);
   elektroid_check_connector ();
   if (!iterator)
     {
@@ -1578,7 +1601,7 @@ end:
 static gint
 elektroid_remote_mkdir (const gchar * name)
 {
-  return fs_operations->create_dir (&connector, name);
+  return fs_operations->mkdir (&connector, name);
 }
 
 static gint
@@ -1711,10 +1734,11 @@ elektroid_remote_delete (const gchar * path, const char type)
   struct connector_entry_iterator *iterator;
   gchar *new_path;
 
+  debug_print (1, "Deleting remote %s item...\n", path);
+
   if (type == ELEKTROID_DIR)
     {
-      debug_print (1, "Deleting remote %s dir...\n", path);
-      iterator = fs_operations->read_dir (&connector, path);
+      iterator = fs_operations->readdir (&connector, path);
       elektroid_check_connector ();
       if (iterator)
 	{
@@ -1730,13 +1754,9 @@ elektroid_remote_delete (const gchar * path, const char type)
 	{
 	  error_print ("Error while opening remote %s dir\n", path);
 	}
-      return fs_operations->delete_dir (&connector, path);
+
     }
-  else
-    {
-      debug_print (1, "Deleting remote %s file...\n", path);
-      return fs_operations->delete_file (&connector, path);
-    }
+  return fs_operations->delete (&connector, path);
 }
 
 static gint
@@ -2333,7 +2353,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  iterator = fs_operations->read_dir (&connector, src_abs_path);
+  iterator = fs_operations->readdir (&connector, src_abs_path);
   elektroid_check_connector ();
   if (!iterator)
     {
@@ -2473,8 +2493,8 @@ elektroid_common_key_press (GtkWidget * widget, GdkEventKey * event,
     }
   else if (event->keyval == GDK_KEY_Delete)
     {
-      count = browser_get_selected_items_count (browser);
-      if (count)
+      if (browser_get_selected_items_count (browser) > 0
+	  && fs_operations->delete)
 	{
 	  elektroid_delete_files (NULL, browser);
 	}
@@ -2513,7 +2533,10 @@ elektroid_remote_key_press (GtkWidget * widget, GdkEventKey * event,
     {
       if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_Left)
 	{
-	  elektroid_add_download_tasks (NULL, NULL);
+	  if (fs_operations->download)
+	    {
+	      elektroid_add_download_tasks (NULL, NULL);
+	    }
 	  return TRUE;
 	}
       else
@@ -2533,7 +2556,10 @@ elektroid_local_key_press (GtkWidget * widget, GdkEventKey * event,
     {
       if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_Right)
 	{
-	  elektroid_add_upload_tasks (NULL, NULL);
+	  if (fs_operations->upload)
+	    {
+	      elektroid_add_upload_tasks (NULL, NULL);
+	    }
 	  return TRUE;
 	}
       else
@@ -2543,6 +2569,58 @@ elektroid_local_key_press (GtkWidget * widget, GdkEventKey * event,
     }
 
   return FALSE;
+}
+
+static void
+elektroid_set_fs (GtkWidget * object, gpointer data)
+{
+  GtkTreeIter iter;
+  GValue fsv = G_VALUE_INIT;
+  enum connector_fs fs;
+
+  if (gtk_combo_box_get_active_iter (fs_combo, &iter) == TRUE)
+    {
+      gtk_tree_model_get_value (GTK_TREE_MODEL (fs_list_store),
+				&iter, FS_LIST_STORE_ID_FIELD, &fsv);
+      fs = g_value_get_uint (&fsv);
+
+      fs_operations = connector_get_fs_operations (fs);
+      strcpy (remote_browser.dir, "/");
+      remote_browser.load_dir (NULL);
+
+      gtk_widget_set_sensitive (remote_browser.up_button,
+				fs_operations->readdir != NULL);
+      gtk_widget_set_sensitive (remote_browser.refresh_button,
+				fs_operations->readdir != NULL);
+
+      gtk_widget_set_visible (remote_add_dir_menuitem,
+			      fs_operations->mkdir != NULL);
+      gtk_widget_set_visible (remote_rename_menuitem,
+			      fs_operations->readdir != NULL);
+      gtk_widget_set_visible (remote_delete_menuitem,
+			      fs_operations->readdir != NULL);
+    }
+}
+
+static void
+elektroid_fill_fs_combo ()
+{
+  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA; fs = fs << 1, i++)
+    {
+      if (connector.device_desc->fss & fs)
+	{
+	  gtk_list_store_insert_with_values (fs_list_store, NULL, -1,
+					     FS_LIST_STORE_ID_FIELD,
+					     fs,
+					     FS_LIST_STORE_ICON_FIELD,
+					     fs_icons[i],
+					     FS_LIST_STORE_NAME_FIELD,
+					     fs_names[i], -1);
+	}
+    }
+
+  debug_print (1, "Selecting first filesystem...\n");
+  gtk_combo_box_set_active (fs_combo, 0);
 }
 
 static void
@@ -2560,7 +2638,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 	}
 
       gtk_tree_model_get_value (GTK_TREE_MODEL (devices_list_store),
-				&iter, 0, &cardv);
+				&iter, DEVICES_LIST_STORE_CARD_FIELD, &cardv);
 
       card = g_value_get_uint (&cardv);
 
@@ -2571,8 +2649,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 
       if (elektroid_check_connector ())
 	{
-	  strcpy (remote_browser.dir, "/");
-	  remote_browser.load_dir (NULL);
+	  elektroid_fill_fs_combo ();
 	}
     }
 }
@@ -3248,13 +3325,17 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   elektroid_loop_clicked (loop_button, NULL);
   autoplay = gtk_switch_get_active (GTK_SWITCH (autoplay_switch));
 
+  fs_list_store =
+    GTK_LIST_STORE (gtk_builder_get_object (builder, "fs_list_store"));
+  fs_combo = GTK_COMBO_BOX (gtk_builder_get_object (builder, "fs_combo"));
+  g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
+
   gtk_widget_set_sensitive (remote_box, FALSE);
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
-  fs_operations = connector_get_fs_operations (FS_SAMPLES);
-
+  fs_operations = connector_get_fs_operations (-1);
   elektroid_load_devices (TRUE);
 
   gethostname (hostname, LABEL_MAX);
@@ -3295,7 +3376,7 @@ static void
 elektroid_print_help (gchar * executable_path)
 {
   gchar *exec_name;
-  struct option *option;
+  const struct option *option;
 
   fprintf (stderr, "%s\n", PACKAGE_STRING);
   exec_name = basename (executable_path);

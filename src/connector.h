@@ -27,7 +27,7 @@ struct connector_device_desc
 {
   guint8 id;
   gchar *model;
-  guint8 fs_types;
+  guint8 fss;
   guint8 startup_fs_type;
 };
 
@@ -105,7 +105,7 @@ struct connector_storage_stats
   guint64 bfree;
 };
 
-enum connector_fs_type
+enum connector_fs
 {
   FS_SAMPLES = 0x1,
   FS_DATA = 0x2
@@ -129,19 +129,17 @@ typedef ssize_t (*connector_upload) (struct connector *, GArray *, gchar *,
 
 struct connector_fs_operations
 {
-  enum connector_fs_type fs_type;
-  connector_read_dir read_dir;
-  connector_create_dir create_dir;
-  connector_delete_dir delete_dir;
-  connector_delete_file delete_file;
+  enum connector_fs fs;
+  connector_read_dir readdir;
+  connector_create_dir mkdir;
+  connector_delete_file delete;
   connector_rename rename;
   connector_download download;
   connector_upload upload;
 };
 
 const struct connector_fs_operations *connector_get_fs_operations (enum
-								   connector_fs_type
-								   fs_type);
+								   connector_fs);
 
 gint connector_init (struct connector *, gint);
 
@@ -181,6 +179,8 @@ gint connector_create_samples_dir (struct connector *, const gchar *);
 gint connector_delete_samples_dir (struct connector *, const gchar *);
 
 gint connector_delete_sample (struct connector *, const gchar *);
+
+gint connector_delete_samples_item (struct connector *, const gchar *);
 
 gint connector_rename_samples_item (struct connector *, const gchar *,
 				    const gchar *);
