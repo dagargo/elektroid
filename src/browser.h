@@ -35,7 +35,6 @@ struct browser
   GSourceFunc check_selection;
   GtkTreeView *view;
   GtkWidget *up_button;
-  GtkWidget *add_dir_button;
   GtkWidget *refresh_button;
   GtkEntry *dir_entry;
   gchar *dir;
