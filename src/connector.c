@@ -76,6 +76,7 @@ static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST_PAD_1ST[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 static const guint8 DATA_LIST_REQUEST[] = { 0x53 };
+static const guint8 DATA_MOVE_REQUEST[] = { 0x5a };
 static const guint8 OS_UPGRADE_START_REQUEST[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
 static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
@@ -138,7 +139,7 @@ static struct connector_fs_operations FS_DATA_OPERATIONS = {
   .readdir = connector_read_data,
   .mkdir = NULL,
   .delete = NULL,
-  .rename = NULL,
+  .rename = connector_rename_data_item,
   .download = NULL,
   .upload = NULL
 };
@@ -378,8 +379,7 @@ connector_new_msg_path (const guint8 * data, guint len, const gchar * path)
 {
   GByteArray *msg = connector_new_msg_data (data, len);
 
-  g_byte_array_append (msg, (guchar *) path, strlen (path));
-  g_byte_array_append (msg, (guchar *) "\0", 1);
+  g_byte_array_append (msg, (guchar *) path, strlen (path) + 1);
 
   return msg;
 }
@@ -1073,14 +1073,14 @@ connector_get_path_type (struct connector *connector, const gchar * path)
 }
 
 static gint
-connector_rename_sample_file (struct connector *connector, const gchar * old,
-			      const gchar * new)
+connector_rename_common (struct connector *connector,
+			 const gchar * old, const gchar * new,
+			 const guint8 * data, guint len)
 {
   gint res;
   GByteArray *rx_msg;
-  GByteArray *tx_msg = connector_new_msg_data (FS_SAMPLE_RENAME_FILE_REQUEST,
-					       sizeof
-					       (FS_SAMPLE_RENAME_FILE_REQUEST));
+  GByteArray *tx_msg = connector_new_msg_data (data, len);
+
   gchar *new_cp1252 = g_convert (new, -1, "CP1252", "UTF8", NULL, NULL, NULL);
   if (!new_cp1252)
     {
@@ -1096,10 +1096,10 @@ connector_rename_sample_file (struct connector *connector, const gchar * old,
       return -1;
     }
 
-  g_byte_array_append (tx_msg, (guchar *) old_cp1252, strlen (old_cp1252));
-  g_byte_array_append (tx_msg, (guchar *) "\0", 1);
-  g_byte_array_append (tx_msg, (guchar *) new_cp1252, strlen (new_cp1252));
-  g_byte_array_append (tx_msg, (guchar *) "\0", 1);
+  g_byte_array_append (tx_msg, (guchar *) old_cp1252,
+		       strlen (old_cp1252) + 1);
+  g_byte_array_append (tx_msg, (guchar *) new_cp1252,
+		       strlen (new_cp1252) + 1);
 
   g_free (old_cp1252);
   g_free (new_cp1252);
@@ -1118,11 +1118,21 @@ connector_rename_sample_file (struct connector *connector, const gchar * old,
     {
       res = -1;
       errno = EPERM;
-      error_print ("%s\n", g_strerror (errno));
+      error_print ("%s (%s)\n", g_strerror (errno),
+		   connector_get_msg_string (rx_msg));
     }
   free_msg (rx_msg);
 
   return res;
+}
+
+static gint
+connector_rename_sample_file (struct connector *connector, const gchar * old,
+			      const gchar * new)
+{
+  return connector_rename_common (connector, old, new,
+				  FS_SAMPLE_RENAME_FILE_REQUEST,
+				  sizeof (FS_SAMPLE_RENAME_FILE_REQUEST));
 }
 
 gint
@@ -2132,4 +2142,12 @@ connector_read_data (struct connector *connector, const gchar * path)
     }
 
   return connector_new_data_iterator (rx_msg);
+}
+
+gint
+connector_rename_data_item (struct connector *connector, const gchar * old,
+			    const gchar * new)
+{
+  return connector_rename_common (connector, old, new, DATA_MOVE_REQUEST,
+				  sizeof (DATA_MOVE_REQUEST));
 }

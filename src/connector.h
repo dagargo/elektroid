@@ -196,3 +196,6 @@ connector_upload_sample (struct connector *, GArray *, gchar *,
 
 struct connector_entry_iterator *connector_read_data (struct connector *,
 						      const gchar *);
+
+gint connector_rename_data_item (struct connector *, const gchar *,
+				 const gchar *);
