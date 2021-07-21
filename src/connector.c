@@ -1073,36 +1073,36 @@ connector_get_path_type (struct connector *connector, const gchar * path)
 }
 
 static gint
-connector_rename_common (struct connector *connector,
-			 const gchar * old, const gchar * new,
-			 const guint8 * data, guint len)
+connector_src_dst_common (struct connector *connector,
+			  const gchar * src, const gchar * dst,
+			  const guint8 * data, guint len)
 {
   gint res;
   GByteArray *rx_msg;
   GByteArray *tx_msg = connector_new_msg_data (data, len);
 
-  gchar *new_cp1252 = g_convert (new, -1, "CP1252", "UTF8", NULL, NULL, NULL);
-  if (!new_cp1252)
+  gchar *dst_cp1252 = g_convert (dst, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+  if (!dst_cp1252)
     {
       errno = EINVAL;
       return -1;
     }
 
-  gchar *old_cp1252 = g_convert (old, -1, "CP1252", "UTF8", NULL, NULL, NULL);
-  if (!old_cp1252)
+  gchar *src_cp1252 = g_convert (src, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+  if (!src_cp1252)
     {
-      g_free (new_cp1252);
+      g_free (dst_cp1252);
       errno = EINVAL;
       return -1;
     }
 
-  g_byte_array_append (tx_msg, (guchar *) old_cp1252,
-		       strlen (old_cp1252) + 1);
-  g_byte_array_append (tx_msg, (guchar *) new_cp1252,
-		       strlen (new_cp1252) + 1);
+  g_byte_array_append (tx_msg, (guchar *) src_cp1252,
+		       strlen (src_cp1252) + 1);
+  g_byte_array_append (tx_msg, (guchar *) dst_cp1252,
+		       strlen (dst_cp1252) + 1);
 
-  g_free (old_cp1252);
-  g_free (new_cp1252);
+  g_free (src_cp1252);
+  g_free (dst_cp1252);
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
@@ -1127,55 +1127,55 @@ connector_rename_common (struct connector *connector,
 }
 
 static gint
-connector_rename_sample_file (struct connector *connector, const gchar * old,
-			      const gchar * new)
+connector_rename_sample_file (struct connector *connector, const gchar * src,
+			      const gchar * dst)
 {
-  return connector_rename_common (connector, old, new,
-				  FS_SAMPLE_RENAME_FILE_REQUEST,
-				  sizeof (FS_SAMPLE_RENAME_FILE_REQUEST));
+  return connector_src_dst_common (connector, src, dst,
+				   FS_SAMPLE_RENAME_FILE_REQUEST,
+				   sizeof (FS_SAMPLE_RENAME_FILE_REQUEST));
 }
 
 gint
-connector_rename_samples_item (struct connector *connector, const gchar * old,
-			       const gchar * new)
+connector_rename_samples_item (struct connector *connector, const gchar * src,
+			       const gchar * dst)
 {
   gchar type;
   gint res;
-  gchar *old_plus;
-  gchar *new_plus;
+  gchar *src_plus;
+  gchar *dst_plus;
   struct connector_entry_iterator *iterator;
 
   //Renaming is not implemented for directories so we need to implement it.
-  type = connector_get_path_type (connector, old);
+  type = connector_get_path_type (connector, src);
 
   if (type == ELEKTROID_FILE)
     {
-      return connector_rename_sample_file (connector, old, new);
+      return connector_rename_sample_file (connector, src, dst);
     }
   else if (type == ELEKTROID_DIR)
     {
-      res = connector_create_samples_dir (connector, new);
+      res = connector_create_samples_dir (connector, dst);
       if (res)
 	{
 	  return res;
 	}
-      iterator = connector_read_samples (connector, old);
+      iterator = connector_read_samples (connector, src);
       if (iterator)
 	{
 	  while (!connector_next_entry (iterator) && !res)
 	    {
-	      old_plus = chain_path (old, iterator->entry);
-	      new_plus = chain_path (new, iterator->entry);
+	      src_plus = chain_path (src, iterator->entry);
+	      dst_plus = chain_path (dst, iterator->entry);
 	      res =
-		connector_rename_samples_item (connector, old_plus, new_plus);
-	      free (old_plus);
-	      free (new_plus);
+		connector_rename_samples_item (connector, src_plus, dst_plus);
+	      free (src_plus);
+	      free (dst_plus);
 	    }
 	  connector_free_iterator (iterator);
 	}
       if (!res)
 	{
-	  res = connector_delete_samples_dir (connector, old);
+	  res = connector_delete_samples_dir (connector, src);
 	}
       return res;
     }
@@ -2145,9 +2145,17 @@ connector_read_data (struct connector *connector, const gchar * path)
 }
 
 gint
-connector_rename_data_item (struct connector *connector, const gchar * old,
-			    const gchar * new)
+connector_rename_data_item (struct connector *connector, const gchar * src,
+			    const gchar * dst)
 {
-  return connector_rename_common (connector, old, new, DATA_MOVE_REQUEST,
-				  sizeof (DATA_MOVE_REQUEST));
+  return connector_src_dst_common (connector, src, dst, DATA_MOVE_REQUEST,
+				   sizeof (DATA_MOVE_REQUEST));
+}
+
+gint
+connector_copy_data_item (struct connector *connector, const gchar * src,
+			  const gchar * dst)
+{
+  return connector_src_dst_common (connector, src, dst, DATA_MOVE_REQUEST,
+				   sizeof (DATA_MOVE_REQUEST));
 }
