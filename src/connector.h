@@ -28,6 +28,7 @@ struct connector_device_desc
   guint8 id;
   gchar *model;
   guint8 fss;
+  guint8 storages;
   guint8 startup_fs_type;
 };
 
@@ -93,9 +94,8 @@ struct connector_sample_transfer
 
 enum connector_storage
 {
-  STORAGE_NONE,
-  STORAGE_PLUS_DRIVE,
-  STORAGE_RAM
+  STORAGE_PLUS_DRIVE = 0x1,
+  STORAGE_RAM = 0x2
 };
 
 struct connector_storage_stats

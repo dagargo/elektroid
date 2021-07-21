@@ -287,7 +287,7 @@ elektroid_update_statusbar ()
   gchar *status;
   gchar *statfss_str;
   gint res;
-  enum connector_storage fs;
+  enum connector_storage storage;
   struct connector_storage_stats statfs;
   GString *statfss;
 
@@ -299,15 +299,21 @@ elektroid_update_statusbar ()
 
       if (connector.device_desc->fss & FS_SAMPLES)
 	{
-	  for (fs = STORAGE_PLUS_DRIVE; fs <= STORAGE_RAM; fs++)
+	  for (storage = STORAGE_PLUS_DRIVE; storage <= STORAGE_RAM;
+	       storage <<= 1)
 	    {
-	      res = connector_get_storage_stats (&connector, fs, &statfs);
-	      if (!res)
+	      if (connector.device_desc->storages & storage)
 		{
-		  g_string_append_printf (statfss, " %s %.2f%%",
-					  statfs.name,
-					  connector_get_storage_stats_percent
-					  (&statfs));
+		  res =
+		    connector_get_storage_stats (&connector, storage,
+						 &statfs);
+		  if (!res)
+		    {
+		      g_string_append_printf (statfss, " %s %.2f%%",
+					      statfs.name,
+					      connector_get_storage_stats_percent
+					      (&statfs));
+		    }
 		}
 	    }
 	}

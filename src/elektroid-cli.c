@@ -388,7 +388,7 @@ cli_df (int argc, char *argv[], int optind)
   gchar *device_path;
   gint res;
   struct connector_storage_stats statfs;
-  enum connector_storage fs;
+  enum connector_storage storage;
 
   if (optind == argc)
     {
@@ -410,12 +410,16 @@ cli_df (int argc, char *argv[], int optind)
   printf ("%-10.10s%16.16s%16.16s%16.16s%11.10s\n", "Filesystem", "Size",
 	  "Used", "Available", "Use%");
 
-  for (fs = STORAGE_PLUS_DRIVE; fs <= STORAGE_RAM; fs++)
+  for (storage = STORAGE_PLUS_DRIVE; storage <= STORAGE_RAM; storage <<= 1)
     {
-      res = connector_get_storage_stats (&connector, fs, &statfs);
-      printf ("%-10.10s%16" PRId64 "%16" PRId64 "%16" PRId64 "%10.2f%%\n",
-	      statfs.name, statfs.bsize, statfs.bsize - statfs.bfree,
-	      statfs.bfree, connector_get_storage_stats_percent (&statfs));
+      if (connector.device_desc->storages & storage)
+	{
+	  res = connector_get_storage_stats (&connector, storage, &statfs);
+	  printf ("%-10.10s%16" PRId64 "%16" PRId64 "%16" PRId64 "%10.2f%%\n",
+		  statfs.name, statfs.bsize, statfs.bsize - statfs.bfree,
+		  statfs.bfree,
+		  connector_get_storage_stats_percent (&statfs));
+	}
     }
 
   return EXIT_SUCCESS;

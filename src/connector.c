@@ -82,12 +82,13 @@ static const guint8 OS_UPGRADE_START_REQUEST[] =
 static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
   { 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-static const gchar *FS_TYPE_NAMES[] = { "None", "+Drive", "RAM" };
+static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 
 static const struct connector_device_desc ANALOG_RYTM_DESC = {
   .id = ARMK1_ID,
   .model = "Analog Rytm",
   .fss = FS_SAMPLES,
+  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM,
   .startup_fs_type = FS_SAMPLES
 };
 
@@ -95,6 +96,7 @@ static const struct connector_device_desc DIGITAKT_DESC = {
   .id = DTAKT_ID,
   .model = "Digitakt",
   .fss = FS_SAMPLES | FS_DATA,
+  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM,
   .startup_fs_type = FS_SAMPLES
 };
 
@@ -102,6 +104,7 @@ static const struct connector_device_desc ANALOG_RYTM_MKII_DESC = {
   .id = ARMK2_ID,
   .model = "Analog Rytm MKII",
   .fss = FS_SAMPLES,
+  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM,
   .startup_fs_type = FS_SAMPLES,
 };
 
@@ -109,6 +112,7 @@ static const struct connector_device_desc MODEL_SAMPLES_DESC = {
   .id = MOD_S_ID,
   .model = "Model:Samples",
   .fss = FS_SAMPLES,
+  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM,
   .startup_fs_type = FS_SAMPLES
 };
 
@@ -116,6 +120,7 @@ static const struct connector_device_desc NULL_DEVICE_DESC = {
   .id = 0,
   .model = "-",
   .fss = 0,
+  .storages = 0,
   .startup_fs_type = 0
 };
 
@@ -1697,6 +1702,7 @@ connector_get_storage_stats (struct connector *connector,
   GByteArray *rx_msg;
   gint8 op;
   uint64_t *data;
+  int index;
   gint res = 0;
 
   tx_msg = connector_new_msg_uint8 (STORAGEINFO_REQUEST,
@@ -1718,7 +1724,17 @@ connector_get_storage_stats (struct connector *connector,
       return -1;
     }
 
-  statfs->name = FS_TYPE_NAMES[type];
+  index = 0;
+  for (int i = 0, storage = STORAGE_PLUS_DRIVE; storage <= STORAGE_RAM;
+       i++, storage <<= 1)
+    {
+      if (storage == type)
+	{
+	  index = i;
+	}
+    }
+
+  statfs->name = FS_TYPE_NAMES[index];
   data = (uint64_t *) & rx_msg->data[6];
   statfs->bfree = be64toh (*data);
   data = (uint64_t *) & rx_msg->data[14];
@@ -2147,14 +2163,6 @@ connector_read_data (struct connector *connector, const gchar * path)
 gint
 connector_rename_data_item (struct connector *connector, const gchar * src,
 			    const gchar * dst)
-{
-  return connector_src_dst_common (connector, src, dst, DATA_MOVE_REQUEST,
-				   sizeof (DATA_MOVE_REQUEST));
-}
-
-gint
-connector_copy_data_item (struct connector *connector, const gchar * src,
-			  const gchar * dst)
 {
   return connector_src_dst_common (connector, src, dst, DATA_MOVE_REQUEST,
 				   sizeof (DATA_MOVE_REQUEST));
