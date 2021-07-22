@@ -20,6 +20,7 @@
 
 #include "../config.h"
 #include <limits.h>
+#include <locale.h>
 #include <gtk/gtk.h>
 #include <unistd.h>
 #include "connector.h"
