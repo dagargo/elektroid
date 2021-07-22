@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <endian.h>
-#include <sys/poll.h>
+#include <poll.h>
 #include <zlib.h>
 #include <libgen.h>
 #include "connector.h"
