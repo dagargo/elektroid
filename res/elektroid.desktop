@@ -5,6 +5,7 @@ Comment=Sample transfer application for Elektron devices
 Comment[de]=Sample Transfer Anwendung für Elektron Instrumente
 Comment[es]=Aplicación de transferencia de muestras para dispositivos Elektron
 Comment[fr]=Application de transfert d'échantillon pour les périphériques Elektron
+Comment[pt_BR]=Aplicativo de transferência de sample para dispositivos Elektron
 Categories=Music;AudioVideo;X-Sound;Audio;X-Alsa
 Keywords=music;alsa;realtime;standalone;
 Exec=elektroid
