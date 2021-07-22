@@ -77,6 +77,7 @@ static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST_PAD_1ST[] = {
 };
 static const guint8 DATA_LIST_REQUEST[] = { 0x53 };
 static const guint8 DATA_MOVE_REQUEST[] = { 0x5a };
+static const guint8 DATA_COPY_REQUEST[] = { 0x5b };
 static const guint8 OS_UPGRADE_START_REQUEST[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
 static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
@@ -135,6 +136,7 @@ static struct connector_fs_operations FS_SAMPLES_OPERATIONS = {
   .mkdir = connector_create_samples_dir,
   .delete = connector_delete_samples_item,
   .move = connector_move_samples_item,
+  .copy = NULL,
   .download = connector_download_sample,
   .upload = connector_upload_sample
 };
@@ -145,6 +147,7 @@ static struct connector_fs_operations FS_DATA_OPERATIONS = {
   .mkdir = NULL,
   .delete = NULL,
   .move = connector_move_data_item,
+  .copy = connector_copy_data_item,
   .download = NULL,
   .upload = NULL
 };
@@ -155,6 +158,7 @@ static struct connector_fs_operations FS_NONE_OPERATIONS = {
   .mkdir = NULL,
   .delete = NULL,
   .move = NULL,
+  .copy = NULL,
   .download = NULL,
   .upload = NULL
 };
@@ -1142,7 +1146,7 @@ connector_rename_sample_file (struct connector *connector, const gchar * src,
 
 gint
 connector_move_samples_item (struct connector *connector, const gchar * src,
-			       const gchar * dst)
+			     const gchar * dst)
 {
   gchar type;
   gint res;
@@ -2162,8 +2166,16 @@ connector_read_data (struct connector *connector, const gchar * path)
 
 gint
 connector_move_data_item (struct connector *connector, const gchar * src,
-			    const gchar * dst)
+			  const gchar * dst)
 {
   return connector_src_dst_common (connector, src, dst, DATA_MOVE_REQUEST,
 				   sizeof (DATA_MOVE_REQUEST));
+}
+
+gint
+connector_copy_data_item (struct connector *connector, const gchar * src,
+			  const gchar * dst)
+{
+  return connector_src_dst_common (connector, src, dst, DATA_COPY_REQUEST,
+				   sizeof (DATA_COPY_REQUEST));
 }

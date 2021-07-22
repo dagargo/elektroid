@@ -118,8 +118,8 @@ typedef struct connector_entry_iterator *(*connector_read_dir) (struct
 typedef gint (*connector_create_dir) (struct connector *, const gchar *);
 typedef gint (*connector_delete_file) (struct connector *, const gchar *);
 typedef gint (*connector_delete_dir) (struct connector *, const gchar *);
-typedef gint (*connector_rename) (struct connector *, const gchar *,
-				  const gchar *);
+typedef gint (*connector_src_dst) (struct connector *, const gchar *,
+				   const gchar *);
 typedef GArray *(*connector_download) (struct connector *, const gchar *,
 				       struct connector_sample_transfer *,
 				       void (*)(gdouble));
@@ -133,7 +133,8 @@ struct connector_fs_operations
   connector_read_dir readdir;
   connector_create_dir mkdir;
   connector_delete_file delete;
-  connector_rename move;
+  connector_src_dst move;
+  connector_src_dst copy;
   connector_download download;
   connector_upload upload;
 };
@@ -183,7 +184,7 @@ gint connector_delete_sample (struct connector *, const gchar *);
 gint connector_delete_samples_item (struct connector *, const gchar *);
 
 gint connector_move_samples_item (struct connector *, const gchar *,
-				    const gchar *);
+				  const gchar *);
 
 GArray *connector_download_sample (struct connector *, const gchar *,
 				   struct connector_sample_transfer *,
@@ -198,4 +199,7 @@ struct connector_entry_iterator *connector_read_data (struct connector *,
 						      const gchar *);
 
 gint connector_move_data_item (struct connector *, const gchar *,
-				 const gchar *);
+			       const gchar *);
+
+gint connector_copy_data_item (struct connector *, const gchar *,
+			       const gchar *);
