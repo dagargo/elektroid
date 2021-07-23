@@ -2058,23 +2058,26 @@ connector_next_data_entry (struct connector_entry_iterator *iterator)
     {
     case 1:
       iterator->type = ELEKTROID_DIR;
-      iterator->pos += sizeof (guint32);
+      iterator->pos += sizeof (guint32);	// child entries
       iterator->size = 0;
       break;
     case 2:
       iterator->type = has_children ? ELEKTROID_DIR : ELEKTROID_FILE;
 
-      iterator->pos += sizeof (guint32);	//index
+      data32 = (guint32 *) & iterator->msg->data[iterator->pos];
+      iterator->index = be32toh (*data32);
+      iterator->pos += sizeof (gint32);
 
       data32 = (guint32 *) & iterator->msg->data[iterator->pos];
       iterator->size = be32toh (*data32);
       iterator->pos += sizeof (guint32);
 
       data16 = (guint16 *) & iterator->msg->data[iterator->pos];
-      iterator->operations = be32toh (*data16);
+      iterator->operations = be16toh (*data16);
       iterator->pos += sizeof (guint16);
 
-      iterator->pos++;		//has_valid data
+      iterator->has_valid_data = iterator->msg->data[iterator->pos];
+      iterator->pos++;
 
       iterator->has_metadata = iterator->msg->data[iterator->pos];
       iterator->pos++;

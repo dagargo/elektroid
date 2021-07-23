@@ -459,8 +459,10 @@ cli_dl (int argc, char *argv[], int optind)
 
   while (!connector_next_entry (iterator))
     {
-      printf ("%c %.2f %s\n", iterator->type,
-	      iterator->size / MIB_FLOAT, iterator->entry);
+      printf ("%c %3d %04x %d %d %.2f %s\n", iterator->type, iterator->index,
+	      iterator->operations, iterator->has_valid_data,
+	      iterator->has_metadata, iterator->size / MIB_FLOAT,
+	      iterator->entry);
     }
 
   connector_free_iterator (iterator);

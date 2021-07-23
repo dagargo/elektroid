@@ -51,15 +51,17 @@ typedef guint (*connector_entry_iterator) (struct connector_entry_iterator *);
 
 struct connector_entry_iterator
 {
+  GByteArray *msg;
+  guint32 pos;
+  connector_entry_iterator iterator;
   gchar *entry;
   gchar type;
   guint32 size;
   guint32 cksum;
-  GByteArray *msg;
-  guint32 pos;
+  gint32 index;
   guint16 operations;
+  guint8 has_valid_data;
   guint8 has_metadata;
-  connector_entry_iterator iterator;
 };
 
 struct connector_system_device
