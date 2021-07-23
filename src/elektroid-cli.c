@@ -195,7 +195,7 @@ cli_mv (int argc, char *argv[], int optind)
   path_src = cli_get_path (device_path_src);
   path_dst = cli_get_path (device_path_dst);
 
-  return connector_rename_samples_item (&connector, path_src, path_dst);
+  return connector_move_samples_item (&connector, path_src, path_dst);
 }
 
 static int

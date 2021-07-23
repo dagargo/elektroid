@@ -134,7 +134,7 @@ static struct connector_fs_operations FS_SAMPLES_OPERATIONS = {
   .readdir = connector_read_samples,
   .mkdir = connector_create_samples_dir,
   .delete = connector_delete_samples_item,
-  .rename = connector_rename_samples_item,
+  .move = connector_move_samples_item,
   .download = connector_download_sample,
   .upload = connector_upload_sample
 };
@@ -144,7 +144,7 @@ static struct connector_fs_operations FS_DATA_OPERATIONS = {
   .readdir = connector_read_data,
   .mkdir = NULL,
   .delete = NULL,
-  .rename = connector_rename_data_item,
+  .move = connector_move_data_item,
   .download = NULL,
   .upload = NULL
 };
@@ -154,7 +154,7 @@ static struct connector_fs_operations FS_NONE_OPERATIONS = {
   .readdir = NULL,
   .mkdir = NULL,
   .delete = NULL,
-  .rename = NULL,
+  .move = NULL,
   .download = NULL,
   .upload = NULL
 };
@@ -1141,7 +1141,7 @@ connector_rename_sample_file (struct connector *connector, const gchar * src,
 }
 
 gint
-connector_rename_samples_item (struct connector *connector, const gchar * src,
+connector_move_samples_item (struct connector *connector, const gchar * src,
 			       const gchar * dst)
 {
   gchar type;
@@ -1172,7 +1172,7 @@ connector_rename_samples_item (struct connector *connector, const gchar * src,
 	      src_plus = chain_path (src, iterator->entry);
 	      dst_plus = chain_path (dst, iterator->entry);
 	      res =
-		connector_rename_samples_item (connector, src_plus, dst_plus);
+		connector_move_samples_item (connector, src_plus, dst_plus);
 	      free (src_plus);
 	      free (dst_plus);
 	    }
@@ -2161,7 +2161,7 @@ connector_read_data (struct connector *connector, const gchar * path)
 }
 
 gint
-connector_rename_data_item (struct connector *connector, const gchar * src,
+connector_move_data_item (struct connector *connector, const gchar * src,
 			    const gchar * dst)
 {
   return connector_src_dst_common (connector, src, dst, DATA_MOVE_REQUEST,

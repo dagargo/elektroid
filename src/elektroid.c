@@ -1231,7 +1231,7 @@ elektroid_remote_check_selection (gpointer data)
 			    && fs_operations->download);
   gtk_widget_set_sensitive (remote_rename_menuitem,
 			    count == 1
-			    && fs_operations->rename != NULL ? TRUE : FALSE);
+			    && fs_operations->move != NULL ? TRUE : FALSE);
   gtk_widget_set_sensitive (remote_delete_menuitem,
 			    count == 1
 			    && fs_operations->delete != NULL ? TRUE : FALSE);
@@ -1724,7 +1724,7 @@ static gint
 elektroid_remote_rename (const gchar * old, const gchar * new)
 {
   debug_print (1, "Renaming remotely from %s to %s...\n", old, new);
-  return fs_operations->rename (&connector, old, new);
+  return fs_operations->move (&connector, old, new);
 }
 
 static gint

@@ -133,7 +133,7 @@ struct connector_fs_operations
   connector_read_dir readdir;
   connector_create_dir mkdir;
   connector_delete_file delete;
-  connector_rename rename;
+  connector_rename move;
   connector_download download;
   connector_upload upload;
 };
@@ -182,7 +182,7 @@ gint connector_delete_sample (struct connector *, const gchar *);
 
 gint connector_delete_samples_item (struct connector *, const gchar *);
 
-gint connector_rename_samples_item (struct connector *, const gchar *,
+gint connector_move_samples_item (struct connector *, const gchar *,
 				    const gchar *);
 
 GArray *connector_download_sample (struct connector *, const gchar *,
@@ -197,5 +197,5 @@ connector_upload_sample (struct connector *, GArray *, gchar *,
 struct connector_entry_iterator *connector_read_data (struct connector *,
 						      const gchar *);
 
-gint connector_rename_data_item (struct connector *, const gchar *,
+gint connector_move_data_item (struct connector *, const gchar *,
 				 const gchar *);
