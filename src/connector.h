@@ -134,6 +134,7 @@ struct connector_fs_operations
   connector_src_dst move;
   connector_src_dst copy;
   connector_path clear;
+  connector_src_dst swap;
   connector_download download;
   connector_upload upload;
 };
@@ -204,3 +205,6 @@ gint connector_copy_data_item (struct connector *, const gchar *,
 			       const gchar *);
 
 gint connector_clear_data_item (struct connector *, const gchar *);
+
+gint connector_swap_data_item (struct connector *, const gchar *,
+			       const gchar *);

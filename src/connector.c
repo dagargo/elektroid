@@ -79,6 +79,7 @@ static const guint8 DATA_LIST_REQUEST[] = { 0x53 };
 static const guint8 DATA_MOVE_REQUEST[] = { 0x5a };
 static const guint8 DATA_COPY_REQUEST[] = { 0x5b };
 static const guint8 DATA_CLEAR_REQUEST[] = { 0x5c };
+static const guint8 DATA_SWAP_REQUEST[] = { 0x5d };
 static const guint8 OS_UPGRADE_START_REQUEST[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
 static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
@@ -139,6 +140,7 @@ static struct connector_fs_operations FS_SAMPLES_OPERATIONS = {
   .move = connector_move_samples_item,
   .copy = NULL,
   .clear = NULL,
+  .swap = NULL,
   .download = connector_download_sample,
   .upload = connector_upload_sample
 };
@@ -151,6 +153,7 @@ static struct connector_fs_operations FS_DATA_OPERATIONS = {
   .move = connector_move_data_item,
   .copy = connector_copy_data_item,
   .clear = connector_clear_data_item,
+  .swap = connector_swap_data_item,
   .download = NULL,
   .upload = NULL
 };
@@ -163,6 +166,7 @@ static struct connector_fs_operations FS_NONE_OPERATIONS = {
   .move = NULL,
   .copy = NULL,
   .clear = NULL,
+  .swap = NULL,
   .download = NULL,
   .upload = NULL
 };
@@ -2152,4 +2156,12 @@ connector_clear_data_item (struct connector *connector, const gchar * path)
 {
   return connector_path_common (connector, path, DATA_CLEAR_REQUEST,
 				sizeof (DATA_CLEAR_REQUEST));
+}
+
+gint
+connector_swap_data_item (struct connector *connector, const gchar * src,
+			  const gchar * dst)
+{
+  return connector_src_dst_common (connector, src, dst, DATA_SWAP_REQUEST,
+				   sizeof (DATA_SWAP_REQUEST));
 }
