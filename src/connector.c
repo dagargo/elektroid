@@ -409,13 +409,6 @@ connector_new_msg_open_file_read (const gchar * path)
 }
 
 static GByteArray *
-connector_new_msg_new_dir (const gchar * path)
-{
-  return connector_new_msg_path (FS_SAMPLE_CREATE_DIR_REQUEST,
-				 sizeof (FS_SAMPLE_CREATE_DIR_REQUEST), path);
-}
-
-static GByteArray *
 connector_new_msg_close_file_read (gint id)
 {
   uint32_t aux32;
@@ -1196,8 +1189,8 @@ connector_move_samples_item (struct connector *connector, const gchar * src,
 }
 
 static gint
-connector_delete (struct connector *connector, const gchar * path,
-		  const guint8 * template, gint size)
+connector_path_common (struct connector *connector, const gchar * path,
+		       const guint8 * template, gint size)
 {
   gint res;
   GByteArray *rx_msg;
@@ -1238,15 +1231,16 @@ connector_delete (struct connector *connector, const gchar * path,
 gint
 connector_delete_sample (struct connector *connector, const gchar * path)
 {
-  return connector_delete (connector, path, FS_SAMPLE_DELETE_FILE_REQUEST,
-			   sizeof (FS_SAMPLE_DELETE_FILE_REQUEST));
+  return connector_path_common (connector, path,
+				FS_SAMPLE_DELETE_FILE_REQUEST,
+				sizeof (FS_SAMPLE_DELETE_FILE_REQUEST));
 }
 
 gint
 connector_delete_samples_dir (struct connector *connector, const gchar * path)
 {
-  return connector_delete (connector, path, FS_SAMPLE_DELETE_DIR_REQUEST,
-			   sizeof (FS_SAMPLE_DELETE_DIR_REQUEST));
+  return connector_path_common (connector, path, FS_SAMPLE_DELETE_DIR_REQUEST,
+				sizeof (FS_SAMPLE_DELETE_DIR_REQUEST));
 }
 
 gint
@@ -1493,39 +1487,8 @@ cleanup:
 gint
 connector_create_samples_dir (struct connector *connector, const gchar * path)
 {
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
-  gint res;
-  gchar *path_cp1252 =
-    g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
-
-  if (!path_cp1252)
-    {
-      errno = EINVAL;
-      return -1;
-    }
-
-  tx_msg = connector_new_msg_new_dir (path_cp1252);
-  g_free (path_cp1252);
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
-  if (!rx_msg)
-    {
-      return -1;
-    }
-  //Response: x, x, x, x, 0x91, [0 (error), 1 (success)]...
-  if (connector_get_msg_status (rx_msg))
-    {
-      res = 0;
-    }
-  else
-    {
-      res = -1;
-      errno = EEXIST;
-      error_print ("%s\n", g_strerror (errno));
-    }
-  free_msg (rx_msg);
-
-  return res;
+  return connector_path_common (connector, path, FS_SAMPLE_CREATE_DIR_REQUEST,
+				sizeof (FS_SAMPLE_CREATE_DIR_REQUEST));
 }
 
 static GByteArray *
