@@ -115,9 +115,7 @@ typedef struct connector_entry_iterator *(*connector_read_dir) (struct
 								connector *,
 								const gchar
 								*);
-typedef gint (*connector_create_dir) (struct connector *, const gchar *);
-typedef gint (*connector_delete_file) (struct connector *, const gchar *);
-typedef gint (*connector_delete_dir) (struct connector *, const gchar *);
+typedef gint (*connector_path) (struct connector *, const gchar *);
 typedef gint (*connector_src_dst) (struct connector *, const gchar *,
 				   const gchar *);
 typedef GArray *(*connector_download) (struct connector *, const gchar *,
@@ -131,10 +129,11 @@ struct connector_fs_operations
 {
   enum connector_fs fs;
   connector_read_dir readdir;
-  connector_create_dir mkdir;
-  connector_delete_file delete;
+  connector_path mkdir;
+  connector_path delete;
   connector_src_dst move;
   connector_src_dst copy;
+  connector_path clear;
   connector_download download;
   connector_upload upload;
 };
@@ -203,3 +202,5 @@ gint connector_move_data_item (struct connector *, const gchar *,
 
 gint connector_copy_data_item (struct connector *, const gchar *,
 			       const gchar *);
+
+gint connector_clear_data_item (struct connector *, const gchar *);
