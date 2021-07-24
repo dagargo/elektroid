@@ -121,7 +121,7 @@ cli_ls (int argc, char *argv[], int optind)
 }
 
 static int
-cli_mkdir (int argc, char *argv[], int optind)
+cli_command_path (int argc, char *argv[], int optind, connector_path_func f)
 {
   gchar *device_path, *path;
   gint res;
@@ -145,11 +145,12 @@ cli_mkdir (int argc, char *argv[], int optind)
 
   path = cli_get_path (device_path);
 
-  return connector_create_samples_dir (&connector, path);
+  return f (&connector, path);
 }
 
 static int
-cli_mv (int argc, char *argv[], int optind)
+cli_command_src_dst (int argc, char *argv[], int optind,
+		     connector_src_dst_func f)
 {
   gchar *device_path_src, *device_path_dst, *path_src, *path_dst;
   gint card_src;
@@ -195,32 +196,7 @@ cli_mv (int argc, char *argv[], int optind)
   path_src = cli_get_path (device_path_src);
   path_dst = cli_get_path (device_path_dst);
 
-  return connector_move_samples_item (&connector, path_src, path_dst);
-}
-
-static int
-cli_delete (int argc, char *argv[], int optind)
-{
-  gchar *device_path, *path;
-
-  if (optind == argc)
-    {
-      error_print ("Remote path missing\n");
-      return EXIT_FAILURE;
-    }
-  else
-    {
-      device_path = argv[optind];
-    }
-
-  if (cli_connect (device_path) < 0)
-    {
-      return EXIT_FAILURE;
-    }
-
-  path = cli_get_path (device_path);
-
-  return connector_delete_samples_item (&connector, path);
+  return f (&connector, path_src, path_dst);
 }
 
 static int
@@ -544,17 +520,20 @@ main (int argc, char *argv[])
   else if (strcmp (command, "mkdir") == 0
 	   || strcmp (command, "mkdir-samples") == 0)
     {
-      res = cli_mkdir (argc, argv, optind);
+      res =
+	cli_command_path (argc, argv, optind, connector_create_samples_dir);
     }
   else if (strcmp (command, "mv") == 0 || strcmp (command, "mv-sample") == 0)
     {
-      res = cli_mv (argc, argv, optind);
+      res =
+	cli_command_src_dst (argc, argv, optind, connector_move_samples_item);
     }
   else if (strcmp (command, "rm") == 0 || strcmp (command, "rm-sample") == 0
 	   || strcmp (command, "rmdir") == 0
 	   || strcmp (command, "rmdir-samples") == 0)
     {
-      res = cli_delete (argc, argv, optind);
+      res =
+	cli_command_path (argc, argv, optind, connector_delete_samples_item);
     }
   else if (strcmp (command, "download") == 0
 	   || strcmp (command, "download-sample") == 0)
