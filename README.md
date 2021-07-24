@@ -106,3 +106,56 @@ $ elektroid-cli mv 0:/square 0:/sample
 ```
 $ elektroid-cli rm 0:/sample
 ```
+
+### Data commands
+
+Notice that all data commands that use paths to items and not directories use the item index instead the item name.
+
+* `list-data`
+
+It only works for directories. Notice that the first column is the file type, the second is the index, the third is the permissons in hexadecimal, the fourth indicates if the data in valid, the fifth indicates if it has metadatam, the sixth is the size in MiB and the last one is the item name.
+
+Permissions are 16 bits values but only 6 are used from bit 2 to bit 7 both included. From LSB to MSB, this permissions are read, write, clear, copy, swap, and move.
+
+```
+$ elektroid-cli list-data 0:/soundbanks/D
+F   1 007e 1 1 0.00 KICK
+F   2 007e 1 1 0.00 SNARE
+```
+
+* `copy-data`
+
+```
+$ elektroid-cli -vvv copy-data 0:/soundbanks/D/1 0:/soundbanks/D/3
+$ elektroid-cli list-data 0:/soundbanks/D
+F   1 007e 1 1 0.00 KICK
+F   2 007e 1 1 0.00 SNARE
+F   3 007e 1 1 0.00 KICK
+```
+
+* `swap-data`
+
+```
+$ elektroid-cli -vvv swap-data 0:/soundbanks/D/2 0:/soundbanks/D/3
+$ elektroid-cli list-data 0:/soundbanks/D
+F   1 007e 1 1 0.00 KICK
+F   2 007e 1 1 0.00 KICK
+F   3 007e 1 1 0.00 SNARE
+```
+
+* `move-data`
+
+```
+$ elektroid-cli -vvv move-data 0:/soundbanks/D/3 0:/soundbanks/D/1
+$ elektroid-cli list-data 0:/soundbanks/D
+F   1 007e 1 1 0.00 SNARE
+F   2 007e 1 1 0.00 KICK
+```
+
+* `clear-data`
+
+```
+$ elektroid-cli -vvv clear-data 0:/soundbanks/D/1
+$ elektroid-cli list-data 0:/soundbanks/D
+F   2 007e 1 1 0.00 KICK
+```

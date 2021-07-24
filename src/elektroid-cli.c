@@ -559,6 +559,25 @@ main (int argc, char *argv[])
     {
       res = cli_dl (argc, argv, optind);
     }
+  else if (strcmp (command, "clear-data") == 0)
+    {
+      res = cli_command_path (argc, argv, optind, connector_clear_data_item);
+    }
+  else if (strcmp (command, "copy-data") == 0)
+    {
+      res =
+	cli_command_src_dst (argc, argv, optind, connector_copy_data_item);
+    }
+  else if (strcmp (command, "swap-data") == 0)
+    {
+      res =
+	cli_command_src_dst (argc, argv, optind, connector_swap_data_item);
+    }
+  else if (strcmp (command, "move-data") == 0)
+    {
+      res =
+	cli_command_src_dst (argc, argv, optind, connector_move_data_item);
+    }
   else
     {
       error_print ("Command %s not recognized\n", command);
