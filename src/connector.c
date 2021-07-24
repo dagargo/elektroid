@@ -1224,7 +1224,8 @@ connector_path_common (struct connector *connector, const gchar * path,
     {
       res = -1;
       errno = EPERM;
-      error_print ("%s\n", g_strerror (errno));
+      error_print ("%s (%s)\n", g_strerror (errno),
+		   connector_get_msg_string (rx_msg));
     }
   free_msg (rx_msg);
 
@@ -1295,12 +1296,13 @@ connector_upload_sample (struct connector *connector, GArray * sample,
 
   //Response: x, x, x, x, 0xc0, [0 (error), 1 (success)], id, frames
   connector_get_sample_info_from_msg (rx_msg, &id, NULL);
-  free_msg (rx_msg);
   if (id < 0)
     {
       errno = EEXIST;
-      error_print ("%s\n", g_strerror (errno));
+      error_print ("%s (%s)\n", g_strerror (errno),
+		   connector_get_msg_string (rx_msg));
     }
+  free_msg (rx_msg);
 
   data = (gshort *) sample->data;
   transferred = 0;
