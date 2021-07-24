@@ -29,7 +29,6 @@ struct connector_device_desc
   gchar *model;
   guint8 fss;
   guint8 storages;
-  guint8 startup_fs_type;
 };
 
 struct connector

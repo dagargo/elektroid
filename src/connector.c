@@ -91,40 +91,35 @@ static const struct connector_device_desc ANALOG_RYTM_DESC = {
   .id = ARMK1_ID,
   .model = "Analog Rytm",
   .fss = FS_SAMPLES,
-  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM,
-  .startup_fs_type = FS_SAMPLES
+  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
 static const struct connector_device_desc DIGITAKT_DESC = {
   .id = DTAKT_ID,
   .model = "Digitakt",
   .fss = FS_SAMPLES | FS_DATA,
-  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM,
-  .startup_fs_type = FS_SAMPLES
+  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
 static const struct connector_device_desc ANALOG_RYTM_MKII_DESC = {
   .id = ARMK2_ID,
   .model = "Analog Rytm MKII",
   .fss = FS_SAMPLES,
-  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM,
-  .startup_fs_type = FS_SAMPLES,
+  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
 static const struct connector_device_desc MODEL_SAMPLES_DESC = {
   .id = MOD_S_ID,
   .model = "Model:Samples",
   .fss = FS_SAMPLES,
-  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM,
-  .startup_fs_type = FS_SAMPLES
+  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
 static const struct connector_device_desc NULL_DEVICE_DESC = {
   .id = 0,
   .model = "-",
   .fss = 0,
-  .storages = 0,
-  .startup_fs_type = 0
+  .storages = 0
 };
 
 static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
