@@ -46,6 +46,9 @@
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
 
+#define MSG_ERROR_MOVING "Error while moving from “%s” to “%s”: %s."
+#define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping...\n"
+
 enum device_list_store_columns
 {
   DEVICES_LIST_STORE_CARD_FIELD,
@@ -2710,18 +2713,15 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		      res = elektroid_local_rename (filename, dest_path);
 		      if (res)
 			{
-			  show_error_msg
-			    (_
-			     ("Error while moving from “%s” to “%s”: %s."),
-			     filename, dest_path, g_strerror (errno));
+			  show_error_msg (_(MSG_ERROR_MOVING), filename,
+					  dest_path, g_strerror (errno));
 			}
 		      g_free (dest_path);
 		      elektroid_load_local_dir (NULL);
 		    }
 		  else
 		    {
-		      debug_print (1,
-				   "Same source and destination path. Skipping...\n");
+		      debug_print (1, MSG_WARN_SAME_SRC_DST);
 		    }
 		}
 	      else if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
@@ -2740,18 +2740,15 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		      res = elektroid_remote_rename (filename, dest_path);
 		      if (res)
 			{
-			  show_error_msg
-			    (_
-			     ("Error while moving from “%s” to “%s”: %s."),
-			     filename, dest_path, g_strerror (errno));
+			  show_error_msg (_(MSG_ERROR_MOVING), filename,
+					  dest_path, g_strerror (errno));
 			}
 		      g_free (dest_path);
 		      elektroid_load_remote_dir (NULL);
 		    }
 		  else
 		    {
-		      debug_print (1,
-				   "Same source and destination path. Skipping...\n");
+		      debug_print (1, MSG_WARN_SAME_SRC_DST);
 		    }
 		}
 	      else if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
