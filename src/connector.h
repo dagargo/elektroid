@@ -112,32 +112,34 @@ enum connector_fs
   FS_DATA = 0x2
 };
 
-typedef struct connector_entry_iterator *(*connector_read_dir) (struct
-								connector *,
-								const gchar
-								*);
-typedef gint (*connector_path) (struct connector *, const gchar *);
-typedef gint (*connector_src_dst) (struct connector *, const gchar *,
-				   const gchar *);
-typedef GArray *(*connector_download) (struct connector *, const gchar *,
-				       struct connector_sample_transfer *,
-				       void (*)(gdouble));
-typedef ssize_t (*connector_upload) (struct connector *, GArray *, gchar *,
-				     struct connector_sample_transfer *,
-				     void (*)(gdouble));
+typedef struct connector_entry_iterator *(*connector_read_dir_func) (struct
+								     connector
+								     *,
+								     const
+								     gchar *);
+typedef gint (*connector_path_func) (struct connector *, const gchar *);
+typedef gint (*connector_src_dst_func) (struct connector *, const gchar *,
+					const gchar *);
+typedef GArray *(*connector_download_func) (struct connector *, const gchar *,
+					    struct connector_sample_transfer
+					    *, void (*)(gdouble));
+typedef ssize_t (*connector_upload_func) (struct connector *, GArray *,
+					  gchar *,
+					  struct connector_sample_transfer *,
+					  void (*)(gdouble));
 
 struct connector_fs_operations
 {
   enum connector_fs fs;
-  connector_read_dir readdir;
-  connector_path mkdir;
-  connector_path delete;
-  connector_src_dst move;
-  connector_src_dst copy;
-  connector_path clear;
-  connector_src_dst swap;
-  connector_download download;
-  connector_upload upload;
+  connector_read_dir_func readdir;
+  connector_path_func mkdir;
+  connector_path_func delete;
+  connector_src_dst_func move;
+  connector_src_dst_func copy;
+  connector_path_func clear;
+  connector_src_dst_func swap;
+  connector_download_func download;
+  connector_upload_func upload;
 };
 
 const struct connector_fs_operations *connector_get_fs_operations (enum
