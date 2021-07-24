@@ -199,10 +199,9 @@ cli_mv (int argc, char *argv[], int optind)
 }
 
 static int
-cli_delete (int argc, char *argv[], int optind, char type)
+cli_delete (int argc, char *argv[], int optind)
 {
   gchar *device_path, *path;
-  gint res;
 
   if (optind == argc)
     {
@@ -214,29 +213,14 @@ cli_delete (int argc, char *argv[], int optind, char type)
       device_path = argv[optind];
     }
 
-  res = cli_connect (device_path);
-
-  if (res < 0)
+  if (cli_connect (device_path) < 0)
     {
       return EXIT_FAILURE;
     }
 
   path = cli_get_path (device_path);
 
-  if (type == ELEKTROID_FILE)
-    {
-      res = connector_delete_sample (&connector, path);
-    }
-  else if (type == ELEKTROID_DIR)
-    {
-      res = connector_delete_samples_dir (&connector, path);
-    }
-  else
-    {
-      res = -1;
-    }
-
-  return res;
+  return connector_delete_samples_item (&connector, path);
 }
 
 static int
@@ -566,14 +550,11 @@ main (int argc, char *argv[])
     {
       res = cli_mv (argc, argv, optind);
     }
-  else if (strcmp (command, "rm") == 0 || strcmp (command, "rm-sample") == 0)
-    {
-      res = cli_delete (argc, argv, optind, ELEKTROID_FILE);
-    }
-  else if (strcmp (command, "rmdir") == 0
+  else if (strcmp (command, "rm") == 0 || strcmp (command, "rm-sample") == 0
+	   || strcmp (command, "rmdir") == 0
 	   || strcmp (command, "rmdir-samples") == 0)
     {
-      res = cli_delete (argc, argv, optind, ELEKTROID_DIR);
+      res = cli_delete (argc, argv, optind);
     }
   else if (strcmp (command, "download") == 0
 	   || strcmp (command, "download-sample") == 0)
