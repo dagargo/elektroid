@@ -37,14 +37,12 @@ enum item_type
 
 struct item
 {
-  gchar *icon;
   gchar *name;
   gint size;
+  enum item_type type;
 };
 
 extern int debug_level;
-
-void free_item_content ();
 
 gchar *debug_get_hex_data (gint, guint8 *, guint);
 

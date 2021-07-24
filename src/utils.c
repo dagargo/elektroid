@@ -31,13 +31,6 @@
 
 gint debug_level;
 
-void
-free_item_content (struct item *item)
-{
-  g_free (item->name);
-  g_free (item->icon);
-}
-
 static guint
 get_max_message_length (guint msg_len)
 {
@@ -170,22 +163,6 @@ get_ext (const gchar * name)
     {
       return ext;
     }
-}
-
-char
-get_type_from_inventory_icon (const gchar * icon)
-{
-  gchar type;
-
-  if (strcmp (icon, REG_TYPE) == 0)
-    {
-      type = ELEKTROID_FILE;
-    }
-  else
-    {
-      type = ELEKTROID_DIR;
-    }
-  return type;
 }
 
 const gchar *

@@ -96,8 +96,8 @@ void
 browser_get_item_info (GtkTreeModel * model, GtkTreeIter * iter,
 		       struct item *item)
 {
-  gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_ICON_FIELD,
-		      &item->icon, -1);
+  gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_TYPE_FIELD,
+		      &item->type, -1);
   gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_NAME_FIELD, &item->name,
 		      -1);
   gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_SIZE_FIELD, &item->size,
@@ -174,7 +174,7 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
   gtk_tree_model_get_iter (model, &iter, path);
   browser_get_item_info (model, &iter, &item);
 
-  if (get_type_from_inventory_icon (item.icon) == ELEKTROID_DIR)
+  if (item.type == ELEKTROID_DIR)
     {
       if (strcmp (browser->dir, "/") != 0)
 	{
@@ -184,7 +184,7 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
       browser->load_dir (NULL);
     }
 
-  free_item_content (item);
+  g_free (item.name);
 }
 
 gint

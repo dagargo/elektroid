@@ -51,8 +51,10 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
       <!-- column-name size -->
       <column type="gint"/>
-      <!-- column-name size_human -->
+      <!-- column-name size_str -->
       <column type="gchararray"/>
+      <!-- column-name type -->
+      <column type="gint"/>
     </columns>
   </object>
   <object class="GtkMenu" id="local_menu">
@@ -145,8 +147,10 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
       <!-- column-name size -->
       <column type="gint"/>
-      <!-- column-name human_size -->
+      <!-- column-name size_str -->
       <column type="gchararray"/>
+      <!-- column-name type -->
+      <column type="gint"/>
     </columns>
   </object>
   <object class="GtkMenu" id="remote_menu">
