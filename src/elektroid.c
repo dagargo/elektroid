@@ -46,6 +46,10 @@
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
 
+#define DIR_ICON "folder-visiting-symbolic"
+#define FILE_ICON_WAVE "elektroid-wave-symbolic"
+#define FILE_ICON_PATTERN "elektroid-pattern-symbolic"
+
 #define MSG_ERROR_MOVING "Error while moving from “%s” to “%s”: %s."
 #define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping...\n"
 
@@ -124,7 +128,7 @@ static const gchar *fs_names[] = {
 };
 
 static const gchar *fs_icons[] = {
-  "elektroid-wave-symbolic", "elektroid-pattern-symbolic"
+  FILE_ICON_WAVE, FILE_ICON_PATTERN
 };
 
 static GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
@@ -235,6 +239,37 @@ static GtkWidget *remove_tasks_button;
 static GtkWidget *clear_tasks_button;
 static GtkListStore *fs_list_store;
 static GtkComboBox *fs_combo;
+
+const gchar *
+get_inventory_icon_for_fs (enum connector_fs active_fs)
+{
+  const gchar *icon = FILE_ICON_WAVE;
+
+  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA; fs <<= 1, i++)
+    {
+      if (active_fs == fs)
+	{
+	  icon = fs_icons[i];
+	}
+    }
+  return icon;
+}
+
+const gchar *
+get_inventory_icon_for_type (enum item_type type)
+{
+  const gchar *icon;
+
+  if (type == ELEKTROID_FILE)
+    {
+      icon = get_inventory_icon_for_fs (fs_operations->fs);
+    }
+  else
+    {
+      icon = DIR_ICON;
+    }
+  return icon;
+}
 
 static void
 show_error_msg (const char *format, ...)
@@ -1464,21 +1499,22 @@ elektroid_set_volume_callback (gdouble value)
 
 static void
 elektroid_add_dentry_item (GtkListStore * list_store,
-			   const gchar type, const gchar * name, ssize_t size)
+			   enum item_type type, const gchar * name,
+			   ssize_t size)
 {
   const gchar *type_icon;
-  char human_size[SIZE_LABEL_LEN];
+  gchar size_str[SIZE_LABEL_LEN];
 
-  type_icon = get_inventory_icon_from_type (type);
+  type_icon = get_inventory_icon_for_type (type);
 
   if (size > 0)
     {
-      snprintf (human_size, SIZE_LABEL_LEN, "%.2f MiB",
+      snprintf (size_str, SIZE_LABEL_LEN, "%.2f MiB",
 		size / (1024.0 * 1024.0));
     }
   else
     {
-      human_size[0] = 0;
+      size_str[0] = 0;
     }
 
   gtk_list_store_insert_with_values (list_store, NULL, -1,
@@ -1487,7 +1523,8 @@ elektroid_add_dentry_item (GtkListStore * list_store,
 				     name, BROWSER_LIST_STORE_SIZE_FIELD,
 				     size,
 				     BROWSER_LIST_STORE_SIZE_STR_FIELD,
-				     human_size, -1);
+				     size_str,
+				     BROWSER_LIST_STORE_TYPE_FIELD, type, -1);
 }
 
 static gboolean

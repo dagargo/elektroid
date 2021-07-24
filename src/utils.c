@@ -26,9 +26,6 @@
 #define DEBUG_SHORT_HEX_LEN 64
 #define DEBUG_FULL_HEX_THRES 3
 
-#define REG_TYPE "elektroid-wave-symbolic"
-#define DIR_TYPE "folder-visiting-symbolic"
-
 gint debug_level;
 
 static guint
@@ -163,22 +160,6 @@ get_ext (const gchar * name)
     {
       return ext;
     }
-}
-
-const gchar *
-get_inventory_icon_from_type (char type)
-{
-  const gchar *icon;
-
-  if (type == ELEKTROID_FILE)
-    {
-      icon = REG_TYPE;
-    }
-  else
-    {
-      icon = DIR_TYPE;
-    }
-  return icon;
 }
 
 char *
