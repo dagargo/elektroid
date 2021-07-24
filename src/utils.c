@@ -31,6 +31,13 @@
 
 gint debug_level;
 
+void
+free_item_content (struct item *item)
+{
+  g_free (item->name);
+  g_free (item->icon);
+}
+
 static guint
 get_max_message_length (guint msg_len)
 {

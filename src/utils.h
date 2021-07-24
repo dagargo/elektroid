@@ -20,6 +20,9 @@
 
 #include <stdio.h>
 
+#ifndef UTILS_H
+#define UTILS_H
+
 #define LABEL_MAX 128
 
 #define ELEKTROID_FILE 'F'
@@ -29,7 +32,16 @@
 #define debug_print(level, format, ...) if (level <= debug_level) fprintf(stderr, "DEBUG:" __FILE__ ":%d:(%s): " format, __LINE__, __FUNCTION__, ## __VA_ARGS__)
 #define error_print(format, ...) fprintf(stderr, "\x1b[31mERROR:" __FILE__ ":%d:(%s): " format "\x1b[m", __LINE__, __FUNCTION__, ## __VA_ARGS__)
 
+struct item
+{
+  gchar *icon;
+  gchar *name;
+  gint size;
+};
+
 extern int debug_level;
+
+void free_item_content ();
 
 gchar *debug_get_hex_data (gint, guint8 *, guint);
 
@@ -48,3 +60,5 @@ const gchar *get_inventory_icon_from_type (gchar);
 gchar *get_local_startup_path (const gchar *);
 
 void free_msg (gpointer);
+
+#endif

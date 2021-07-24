@@ -20,6 +20,7 @@
 
 #include <gtk/gtk.h>
 #include <libgen.h>
+#include "utils.h"
 
 #define BROWSER_LIST_STORE_ICON_TYPE_FIELD 0
 #define BROWSER_LIST_STORE_NAME_FIELD 1
@@ -47,8 +48,7 @@ struct browser
 
 gint browser_sort (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *, gpointer);
 
-void browser_get_item_info (GtkTreeModel *, GtkTreeIter *, gchar **, gchar **,
-			    gint *);
+void browser_get_item_info (GtkTreeModel *, GtkTreeIter *, struct item *);
 
 gint browser_get_selected_items_count (struct browser *);
 

@@ -19,7 +19,6 @@
  */
 
 #include "browser.h"
-#include "utils.h"
 
 gint
 browser_sort (GtkTreeModel * model,
@@ -95,23 +94,14 @@ browser_sort (GtkTreeModel * model,
 
 void
 browser_get_item_info (GtkTreeModel * model, GtkTreeIter * iter,
-		       gchar ** type, gchar ** name, gint * size)
+		       struct item *item)
 {
-  if (type)
-    {
-      gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_ICON_TYPE_FIELD,
-			  type, -1);
-    }
-  if (name)
-    {
-      gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_NAME_FIELD, name,
-			  -1);
-    }
-  if (size)
-    {
-      gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_SIZE_FIELD, size,
-			  -1);
-    }
+  gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_ICON_TYPE_FIELD,
+		      &item->icon, -1);
+  gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_NAME_FIELD, &item->name,
+		      -1);
+  gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_SIZE_FIELD, &item->size,
+		      -1);
 }
 
 void
@@ -175,28 +165,26 @@ void
 browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 			GtkTreeViewColumn * column, gpointer data)
 {
-  gchar *icon;
-  gchar *name;
   GtkTreeIter iter;
+  struct item item;
   struct browser *browser = data;
   GtkTreeModel *model = GTK_TREE_MODEL (gtk_tree_view_get_model
 					(browser->view));
 
   gtk_tree_model_get_iter (model, &iter, path);
-  browser_get_item_info (model, &iter, &icon, &name, NULL);
+  browser_get_item_info (model, &iter, &item);
 
-  if (get_type_from_inventory_icon (icon) == ELEKTROID_DIR)
+  if (get_type_from_inventory_icon (item.icon) == ELEKTROID_DIR)
     {
       if (strcmp (browser->dir, "/") != 0)
 	{
 	  strcat (browser->dir, "/");
 	}
-      strcat (browser->dir, name);
+      strcat (browser->dir, item.name);
       browser->load_dir (NULL);
     }
 
-  g_free (icon);
-  g_free (name);
+  free_item_content (item);
 }
 
 gint
