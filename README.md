@@ -31,7 +31,10 @@ You can easily install them by running `sudo apt install automake libasound2-dev
 ## CLI
 
 `elektroid-cli` provides the same funcionality than `elektroid`. Provided paths must always be prepended with the device id and a colon (':'), e.g. `0:/samples`.
+
 Here are the available commands.
+
+### Global commands
 
 * `ld` or `list-devices`, list compatible devices
 
@@ -56,9 +59,11 @@ Filesystem            Size            Used       Available       Use%
 RAM               67108944        15037872        52071072     22.41%
 ```
 
+### Sample commands
+
 * `ls` or `list-samples`
 
-It only works for directories. Notice that the first column is the file type, the second is the size in MiB (it is the same unit used in the devices although it is showed there as MB), the third is an internal cksum and the fourth is the sample name.
+It only works for directories. Notice that the first column is the file type, the second is the size in MiB (it is the same unit used in the devices although it is showed there as MB), the third is an internal cksum and the last one is the sample name.
 
 ```
 $ elektroid-cli ls 0:/
