@@ -1486,11 +1486,11 @@ elektroid_add_dentry_item (GtkListStore * list_store,
     }
 
   gtk_list_store_insert_with_values (list_store, NULL, -1,
-				     BROWSER_LIST_STORE_ICON_TYPE_FIELD,
+				     BROWSER_LIST_STORE_ICON_FIELD,
 				     type_icon, BROWSER_LIST_STORE_NAME_FIELD,
 				     name, BROWSER_LIST_STORE_SIZE_FIELD,
 				     size,
-				     BROWSER_LIST_STORE_HUMAN_SIZE_FIELD,
+				     BROWSER_LIST_STORE_SIZE_STR_FIELD,
 				     human_size, -1);
 }
 

@@ -45,7 +45,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
   </object>
   <object class="GtkListStore" id="local_list_store">
     <columns>
-      <!-- column-name type -->
+      <!-- column-name icon -->
       <column type="gchararray"/>
       <!-- column-name name -->
       <column type="gchararray"/>
@@ -139,7 +139,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
   </object>
   <object class="GtkListStore" id="remote_list_store">
     <columns>
-      <!-- column-name type -->
+      <!-- column-name icon -->
       <column type="gchararray"/>
       <!-- column-name name -->
       <column type="gchararray"/>

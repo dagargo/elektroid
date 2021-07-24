@@ -96,7 +96,7 @@ void
 browser_get_item_info (GtkTreeModel * model, GtkTreeIter * iter,
 		       struct item *item)
 {
-  gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_ICON_TYPE_FIELD,
+  gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_ICON_FIELD,
 		      &item->icon, -1);
   gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_NAME_FIELD, &item->name,
 		      -1);
