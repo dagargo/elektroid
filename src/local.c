@@ -114,3 +114,101 @@ local_rename (const gchar * old, const gchar * new)
   debug_print (1, "Renaming locally from %s to %s...\n", old, new);
   return rename (old, new);
 }
+
+static void
+local_free_iterator_data (void *iter_data)
+{
+  struct local_iterator_data *data = iter_data;
+  closedir (data->dir);
+  g_free (data->path);
+  g_free (data);
+}
+
+static gboolean
+local_valid_file (const gchar * name)
+{
+  const gchar *ext = get_ext (name);
+
+  return (ext != NULL
+	  && (!strcasecmp (ext, "wav") || !strcasecmp (ext, "ogg")
+	      || !strcasecmp (ext, "aiff") || !strcasecmp (ext, "flac")));
+}
+
+static guint
+local_next_dentry (struct item_iterator *iter)
+{
+  gchar *full_path;
+  struct dirent *dirent;
+  struct stat st;
+  struct local_iterator_data *data = iter->data;
+  guint ret = -ENOENT;
+
+  if (iter->entry != NULL)
+    {
+      g_free (iter->entry);
+    }
+
+  while ((dirent = readdir (data->dir)) != NULL)
+    {
+      if (dirent->d_name[0] == '.')
+	{
+	  continue;
+	}
+
+      if (dirent->d_type == DT_DIR
+	  || (dirent->d_type == DT_REG && local_valid_file (dirent->d_name)))
+	{
+	  iter->entry = strdup (dirent->d_name);
+
+	  if (dirent->d_type == DT_DIR)
+	    {
+	      iter->type = ELEKTROID_DIR;
+	      iter->size = 0;
+	    }
+	  else
+	    {
+	      iter->type = ELEKTROID_FILE;
+	      full_path = chain_path (data->path, dirent->d_name);
+	      if (stat (full_path, &st) == 0)
+		{
+		  iter->size = st.st_size;
+		}
+	      else
+		{
+		  iter->size = 0;
+		}
+	      free (full_path);
+	    }
+	  ret = 0;
+	  break;
+	}
+    }
+
+  return ret;
+}
+
+struct item_iterator *
+local_read_dir (const gchar * path)
+{
+  DIR *dir;
+  struct item_iterator *iter;
+  struct local_iterator_data *data;
+
+  if (!(dir = opendir (path)))
+    {
+      error_print ("Error while opening local %s dir\n", path);
+      return NULL;
+    }
+
+  data = malloc (sizeof (struct local_iterator_data));
+  data->dir = dir;
+  data->path = strdup (path);
+
+  iter = malloc (sizeof (struct item_iterator));
+  iter->data = data;
+  iter->entry = NULL;
+  iter->next = local_next_dentry;
+  iter->free = local_free_iterator_data;
+
+  return iter;
+}

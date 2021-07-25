@@ -1580,62 +1580,20 @@ elektroid_go_up_local_dir (gpointer data)
 static gboolean
 elektroid_load_local_dir (gpointer data)
 {
-  DIR *dir;
-  struct dirent *dirent;
-  gchar type;
-  struct stat st;
-  ssize_t size;
-  gchar *path;
+  struct item_iterator *iter;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (local_browser.view));
 
   browser_reset (&local_browser);
 
-  if (!(dir = opendir (local_browser.dir)))
+  iter = local_read_dir (local_browser.dir);
+  while (!next_item_iterator (iter))
     {
-      error_print ("Error while opening local %s dir\n", local_browser.dir);
-      goto end;
+      elektroid_add_dentry_item (list_store, iter->type,
+				 iter->entry, iter->size, iter->id);
     }
+  free_item_iterator (iter);
 
-  notifier_set_dir (&notifier, local_browser.dir);
-
-  while ((dirent = readdir (dir)) != NULL)
-    {
-      if (dirent->d_name[0] == '.')
-	{
-	  continue;
-	}
-
-      if (dirent->d_type == DT_DIR
-	  || (dirent->d_type == DT_REG
-	      && elektroid_valid_file (dirent->d_name)))
-	{
-	  if (dirent->d_type == DT_DIR)
-	    {
-	      type = ELEKTROID_DIR;
-	      size = -1;
-	    }
-	  else
-	    {
-	      type = ELEKTROID_FILE;
-	      path = chain_path (local_browser.dir, dirent->d_name);
-	      if (stat (path, &st) == 0)
-		{
-		  size = st.st_size;
-		}
-	      else
-		{
-		  size = -1;
-		}
-	      free (path);
-	    }
-	  elektroid_add_dentry_item (list_store, type, dirent->d_name, size,
-				     -1);
-	}
-    }
-  closedir (dir);
-
-end:
   gtk_tree_view_columns_autosize (local_browser.view);
   return FALSE;
 }

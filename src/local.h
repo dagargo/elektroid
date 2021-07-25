@@ -21,8 +21,16 @@
 #include <glib.h>
 #include "utils.h"
 
+struct local_iterator_data
+{
+  DIR *dir;
+  gchar *path;
+};
+
 gint local_mkdir (const gchar *);
 
 gint local_delete (const gchar *, enum item_type);
 
 gint local_rename (const gchar *, const gchar *);
+
+struct item_iterator *local_read_dir (const gchar *);
