@@ -220,6 +220,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
       <!-- column-name type_human -->
       <column type="gchararray"/>
+      <!-- column-name remote_fs_id -->
+      <column type="gint"/>
     </columns>
   </object>
   <object class="GtkAboutDialog" id="about_dialog">

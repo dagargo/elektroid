@@ -49,6 +49,7 @@ struct browser
   GtkTreePath *dnd_motion_path;
   gint dnd_timeout_function_id;
   GString *dnd_data;
+  const struct fs_operations *fs_operations;
 };
 
 gint browser_sort (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *, gpointer);
@@ -72,5 +73,4 @@ void browser_go_up (GtkWidget *, gpointer);
 void browser_item_activated (GtkTreeView *, GtkTreePath *,
 			     GtkTreeViewColumn *, gpointer);
 
-gchar *browser_get_item_path (struct browser *, struct item *,
-			      fs_get_item_id);
+gchar *browser_get_item_path (struct browser *, struct item *);

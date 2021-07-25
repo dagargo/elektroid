@@ -204,13 +204,12 @@ browser_free_item (struct item *item)
 }
 
 gchar *
-browser_get_item_path (struct browser *browser, struct item *item,
-		       fs_get_item_id f)
+browser_get_item_path (struct browser *browser, struct item *item)
 {
   gchar *id;
   gchar *path;
 
-  id = f (item);
+  id = browser->fs_operations->getid (item);
   path = chain_path (browser->dir, id);
   g_free (id);
   debug_print (1, "Using %s path for item %s...\n", path, item->name);
