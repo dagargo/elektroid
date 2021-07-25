@@ -92,14 +92,17 @@ browser_sort (GtkTreeModel * model,
   return ret;
 }
 
-void
-browser_get_item_info (GtkTreeModel * model, GtkTreeIter * iter,
-		       struct item *item)
+struct item *
+browser_get_item (GtkTreeModel * model, GtkTreeIter * iter)
 {
+  struct item *item = malloc (sizeof (item));
+
   gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_TYPE_FIELD, &item->type,
 		      BROWSER_LIST_STORE_NAME_FIELD, &item->name,
 		      BROWSER_LIST_STORE_SIZE_FIELD, &item->size,
 		      BROWSER_LIST_STORE_INDEX_FIELD, &item->index, -1);
+
+  return item;
 }
 
 void
@@ -164,25 +167,25 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 			GtkTreeViewColumn * column, gpointer data)
 {
   GtkTreeIter iter;
-  struct item item;
+  struct item *item;
   struct browser *browser = data;
   GtkTreeModel *model = GTK_TREE_MODEL (gtk_tree_view_get_model
 					(browser->view));
 
   gtk_tree_model_get_iter (model, &iter, path);
-  browser_get_item_info (model, &iter, &item);
+  item = browser_get_item (model, &iter);
 
-  if (item.type == ELEKTROID_DIR)
+  if (item->type == ELEKTROID_DIR)
     {
       if (strcmp (browser->dir, "/") != 0)
 	{
 	  strcat (browser->dir, "/");
 	}
-      strcat (browser->dir, item.name);
+      strcat (browser->dir, item->name);
       browser->load_dir (NULL);
     }
 
-  g_free (item.name);
+  browser_free_item (item);
 }
 
 gint
@@ -191,4 +194,26 @@ browser_get_selected_items_count (struct browser *browser)
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
   return gtk_tree_selection_count_selected_rows (selection);
+}
+
+void
+browser_free_item (struct item *item)
+{
+  g_free (item->name);
+  g_free (item);
+}
+
+gchar *
+browser_get_item_path (struct browser *browser, struct item *item,
+		       get_item_id f)
+{
+  gchar *id;
+  gchar *path;
+
+  id = f (item);
+  path = chain_path (browser->dir, id);
+  g_free (id);
+  debug_print (1, "Using %s path for item %s...\n", path, item->name);
+
+  return path;
 }

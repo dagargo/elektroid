@@ -53,7 +53,9 @@ struct browser
 
 gint browser_sort (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *, gpointer);
 
-void browser_get_item_info (GtkTreeModel *, GtkTreeIter *, struct item *);
+struct item *browser_get_item (GtkTreeModel *, GtkTreeIter *);
+
+void browser_free_item (struct item *);
 
 gint browser_get_selected_items_count (struct browser *);
 
@@ -69,3 +71,5 @@ void browser_go_up (GtkWidget *, gpointer);
 
 void browser_item_activated (GtkTreeView *, GtkTreePath *,
 			     GtkTreeViewColumn *, gpointer);
+
+gchar *browser_get_item_path (struct browser *, struct item *, get_item_id);

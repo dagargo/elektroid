@@ -137,7 +137,8 @@ static struct connector_fs_operations FS_SAMPLES_OPERATIONS = {
   .clear = NULL,
   .swap = NULL,
   .download = connector_download_sample,
-  .upload = connector_upload_sample
+  .upload = connector_upload_sample,
+  .getid = get_item_name
 };
 
 static struct connector_fs_operations FS_DATA_OPERATIONS = {
@@ -150,7 +151,8 @@ static struct connector_fs_operations FS_DATA_OPERATIONS = {
   .clear = connector_clear_data_item,
   .swap = connector_swap_data_item,
   .download = NULL,
-  .upload = NULL
+  .upload = NULL,
+  .getid = get_item_index
 };
 
 static struct connector_fs_operations FS_NONE_OPERATIONS = {
@@ -163,7 +165,8 @@ static struct connector_fs_operations FS_NONE_OPERATIONS = {
   .clear = NULL,
   .swap = NULL,
   .download = NULL,
-  .upload = NULL
+  .upload = NULL,
+  .getid = NULL
 };
 
 static const struct connector_fs_operations *FS_OPERATIONS[] = {

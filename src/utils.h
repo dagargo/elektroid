@@ -45,6 +45,8 @@ struct item
 
 extern int debug_level;
 
+typedef gchar *(*get_item_id) (struct item *);
+
 gchar *debug_get_hex_data (gint, guint8 *, guint);
 
 gchar *debug_get_hex_msg (const GByteArray *);
@@ -60,5 +62,9 @@ gchar get_type_from_inventory_icon (const gchar *);
 gchar *get_local_startup_path (const gchar *);
 
 void free_msg (gpointer);
+
+gchar *get_item_name (struct item *);
+
+gchar *get_item_index (struct item *);
 
 #endif

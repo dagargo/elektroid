@@ -20,6 +20,7 @@
 
 #include <glib.h>
 #include <alsa/asoundlib.h>
+#include "utils.h"
 
 #define SYSEX_TIMEOUT 5000
 
@@ -140,6 +141,7 @@ struct connector_fs_operations
   connector_src_dst_func swap;
   connector_download_func download;
   connector_upload_func upload;
+  get_item_id getid;
 };
 
 const struct connector_fs_operations *connector_get_fs_operations (enum

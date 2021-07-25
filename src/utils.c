@@ -202,3 +202,17 @@ free_msg (gpointer msg)
 {
   g_byte_array_free ((GByteArray *) msg, TRUE);
 }
+
+gchar *
+get_item_name (struct item *item)
+{
+  return strdup (item->name);
+}
+
+gchar *
+get_item_index (struct item *item)
+{
+  gchar *id = malloc (LABEL_MAX);
+  snprintf (id, LABEL_MAX, "%d", item->index);
+  return id;
+}
