@@ -36,6 +36,36 @@
 static struct connector connector;
 static struct connector_sample_transfer sample_transfer;
 
+typedef struct item_iterator *(*read_fs_iterator) (const gchar *);
+typedef void (*print_item) (struct item_iterator *);
+
+struct item_iterator *
+cli_read_samples_fs_iterator (const gchar * path)
+{
+  return connector_read_samples (&connector, path);
+}
+
+static void
+print_sample (struct item_iterator *iter)
+{
+  printf ("%c %.2f %08x %s\n", iter->type,
+	  iter->size / MIB_FLOAT, iter->cksum, iter->entry);
+}
+
+struct item_iterator *
+cli_read_data_fs_iterator (const gchar * path)
+{
+  return connector_read_data (&connector, path);
+}
+
+static void
+print_datum (struct item_iterator *iter)
+{
+  printf ("%c %3d %04x %d %d %.2f %s\n", iter->type, iter->index,
+	  iter->operations, iter->has_valid_data,
+	  iter->has_metadata, iter->size / MIB_FLOAT, iter->entry);
+}
+
 static gchar *
 cli_get_path (gchar * device_path)
 {
@@ -78,7 +108,8 @@ cli_connect (const char *device_path)
 }
 
 static int
-cli_ls (int argc, char *argv[], int optind)
+cli_list (int argc, char *argv[], int optind, read_fs_iterator read_fs,
+	  print_item print)
 {
   struct item_iterator *iter;
   gchar *device_path, *path;
@@ -103,7 +134,7 @@ cli_ls (int argc, char *argv[], int optind)
 
   path = cli_get_path (device_path);
 
-  iter = connector_read_samples (&connector, path);
+  iter = read_fs (path);
   if (!iter)
     {
       return EXIT_FAILURE;
@@ -111,8 +142,7 @@ cli_ls (int argc, char *argv[], int optind)
 
   while (!next_item_iterator (iter))
     {
-      printf ("%c %.2f %08x %s\n", iter->type,
-	      iter->size / MIB_FLOAT, iter->cksum, iter->entry);
+      print (iter);
     }
 
   free_item_iterator (iter);
@@ -385,50 +415,6 @@ cli_df (int argc, char *argv[], int optind)
   return EXIT_SUCCESS;
 }
 
-static int
-cli_dl (int argc, char *argv[], int optind)
-{
-  gchar *device_path_src;
-  gchar *path_src;
-  gint res;
-  struct item_iterator *iter;
-
-  if (optind == argc)
-    {
-      error_print ("Device missing\n");
-      return EXIT_FAILURE;
-    }
-  else
-    {
-      device_path_src = argv[optind];
-    }
-
-  res = cli_connect (device_path_src);
-  if (res < 0)
-    {
-      return EXIT_FAILURE;
-    }
-
-  path_src = cli_get_path (device_path_src);
-
-  iter = connector_read_data (&connector, path_src);
-  if (!iter)
-    {
-      return EXIT_FAILURE;
-    }
-
-  while (!next_item_iterator (iter))
-    {
-      printf ("%c %3d %04x %d %d %.2f %s\n", iter->type, iter->index,
-	      iter->operations, iter->has_valid_data,
-	      iter->has_metadata, iter->size / MIB_FLOAT, iter->entry);
-    }
-
-  free_item_iterator (iter);
-
-  return EXIT_SUCCESS;
-}
-
 static void
 cli_end (int sig)
 {
@@ -514,7 +500,9 @@ main (int argc, char *argv[])
   else if (strcmp (command, "ls") == 0
 	   || strcmp (command, "list-samples") == 0)
     {
-      res = cli_ls (argc, argv, optind);
+      res =
+	cli_list (argc, argv, optind, cli_read_samples_fs_iterator,
+		  print_sample);
     }
   else if (strcmp (command, "mkdir") == 0
 	   || strcmp (command, "mkdir-samples") == 0)
@@ -556,7 +544,8 @@ main (int argc, char *argv[])
     }
   else if (strcmp (command, "list-data") == 0)
     {
-      res = cli_dl (argc, argv, optind);
+      res =
+	cli_list (argc, argv, optind, cli_read_data_fs_iterator, print_datum);
     }
   else if (strcmp (command, "clear-data") == 0)
     {
