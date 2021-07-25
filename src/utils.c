@@ -215,3 +215,19 @@ get_item_index (struct item *item)
   snprintf (id, LABEL_MAX, "%d", item->index);
   return id;
 }
+
+guint
+next_item_iterator (struct item_iterator *iter)
+{
+  return iter->next (iter);
+}
+
+void
+free_item_iterator (struct item_iterator *iter)
+{
+  if (iter->free)
+    {
+      iter->free (iter->data);
+    }
+  g_free (iter);
+}

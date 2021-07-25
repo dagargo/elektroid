@@ -80,7 +80,7 @@ cli_connect (const char *device_path)
 static int
 cli_ls (int argc, char *argv[], int optind)
 {
-  struct connector_entry_iterator *iterator;
+  struct item_iterator *iter;
   gchar *device_path, *path;
   gint res;
 
@@ -103,19 +103,19 @@ cli_ls (int argc, char *argv[], int optind)
 
   path = cli_get_path (device_path);
 
-  iterator = connector_read_samples (&connector, path);
-  if (!iterator)
+  iter = connector_read_samples (&connector, path);
+  if (!iter)
     {
       return EXIT_FAILURE;
     }
 
-  while (!connector_next_entry (iterator))
+  while (!next_item_iterator (iter))
     {
-      printf ("%c %.2f %08x %s\n", iterator->type,
-	      iterator->size / MIB_FLOAT, iterator->cksum, iterator->entry);
+      printf ("%c %.2f %08x %s\n", iter->type,
+	      iter->size / MIB_FLOAT, iter->cksum, iter->entry);
     }
 
-  connector_free_iterator (iterator);
+  free_item_iterator (iter);
 
   return EXIT_SUCCESS;
 }
@@ -391,7 +391,7 @@ cli_dl (int argc, char *argv[], int optind)
   gchar *device_path_src;
   gchar *path_src;
   gint res;
-  struct connector_entry_iterator *iterator;
+  struct item_iterator *iter;
 
   if (optind == argc)
     {
@@ -411,21 +411,20 @@ cli_dl (int argc, char *argv[], int optind)
 
   path_src = cli_get_path (device_path_src);
 
-  iterator = connector_read_data (&connector, path_src);
-  if (!iterator)
+  iter = connector_read_data (&connector, path_src);
+  if (!iter)
     {
       return EXIT_FAILURE;
     }
 
-  while (!connector_next_entry (iterator))
+  while (!next_item_iterator (iter))
     {
-      printf ("%c %3d %04x %d %d %.2f %s\n", iterator->type, iterator->index,
-	      iterator->operations, iterator->has_valid_data,
-	      iterator->has_metadata, iterator->size / MIB_FLOAT,
-	      iterator->entry);
+      printf ("%c %3d %04x %d %d %.2f %s\n", iter->type, iter->index,
+	      iter->operations, iter->has_valid_data,
+	      iter->has_metadata, iter->size / MIB_FLOAT, iter->entry);
     }
 
-  connector_free_iterator (iterator);
+  free_item_iterator (iter);
 
   return EXIT_SUCCESS;
 }

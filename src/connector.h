@@ -46,20 +46,11 @@ struct connector
   struct pollfd *pfds;
 };
 
-struct connector_entry_iterator;
-
-typedef guint (*connector_entry_iterator) (struct connector_entry_iterator *);
-
-struct connector_entry_iterator
+struct connector_iterator_data
 {
   GByteArray *msg;
   guint32 pos;
-  connector_entry_iterator iterator;
-  gchar *entry;
-  gchar type;
-  guint32 size;
   guint32 cksum;
-  gint32 index;
   guint16 operations;
   guint8 has_valid_data;
   guint8 has_metadata;
@@ -113,11 +104,9 @@ enum connector_fs
   FS_DATA = 0x2
 };
 
-typedef struct connector_entry_iterator *(*connector_read_dir_func) (struct
-								     connector
-								     *,
-								     const
-								     gchar *);
+typedef struct item_iterator *(*connector_read_dir_func) (struct
+							  connector
+							  *, const gchar *);
 typedef gint (*connector_path_func) (struct connector *, const gchar *);
 typedef gint (*connector_src_dst_func) (struct connector *, const gchar *,
 					const gchar *);
@@ -173,12 +162,8 @@ gint connector_get_storage_stats (struct connector *,
 
 float connector_get_storage_stats_percent (struct connector_storage_stats *);
 
-void connector_free_iterator (struct connector_entry_iterator *);
-
-guint connector_next_entry (struct connector_entry_iterator *);
-
-struct connector_entry_iterator *connector_read_samples (struct connector *,
-							 const gchar *);
+struct item_iterator *connector_read_samples (struct connector *,
+					      const gchar *);
 
 gint connector_create_samples_dir (struct connector *, const gchar *);
 
@@ -200,8 +185,7 @@ connector_upload_sample (struct connector *, GArray *, gchar *,
 			 struct connector_sample_transfer *,
 			 void (*)(gdouble));
 
-struct connector_entry_iterator *connector_read_data (struct connector *,
-						      const gchar *);
+struct item_iterator *connector_read_data (struct connector *, const gchar *);
 
 gint connector_move_data_item (struct connector *, const gchar *,
 			       const gchar *);

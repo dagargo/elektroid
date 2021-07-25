@@ -1534,27 +1534,26 @@ elektroid_add_dentry_item (GtkListStore * list_store,
 static gboolean
 elektroid_load_remote_dir (gpointer data)
 {
-  struct connector_entry_iterator *iterator;
+  struct item_iterator *iter;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (remote_browser.view));
 
   browser_reset (&remote_browser);
 
-  iterator = fs_operations->readdir (&connector, remote_browser.dir);
+  iter = fs_operations->readdir (&connector, remote_browser.dir);
   elektroid_check_connector ();
-  if (!iterator)
+  if (!iter)
     {
       error_print ("Error while opening remote %s dir\n", remote_browser.dir);
       goto end;
     }
 
-  while (!connector_next_entry (iterator))
+  while (!next_item_iterator (iter))
     {
-      elektroid_add_dentry_item (list_store, iterator->type,
-				 iterator->entry, iterator->size,
-				 iterator->index);
+      elektroid_add_dentry_item (list_store, iter->type,
+				 iter->entry, iter->size, iter->id);
     }
-  connector_free_iterator (iterator);
+  free_item_iterator (iter);
 
 end:
   gtk_tree_view_columns_autosize (remote_browser.view);
@@ -1726,24 +1725,24 @@ elektroid_remote_rename (const gchar * old, const gchar * new)
 static gint
 elektroid_remote_delete (const gchar * path, enum item_type type)
 {
-  struct connector_entry_iterator *iterator;
+  struct item_iterator *iter;
   gchar *new_path;
 
   debug_print (1, "Deleting remote %s item...\n", path);
 
   if (type == ELEKTROID_DIR)
     {
-      iterator = fs_operations->readdir (&connector, path);
+      iter = fs_operations->readdir (&connector, path);
       elektroid_check_connector ();
-      if (iterator)
+      if (iter)
 	{
-	  while (!connector_next_entry (iterator))
+	  while (!next_item_iterator (iter))
 	    {
-	      new_path = chain_path (path, iterator->entry);
-	      elektroid_remote_delete (new_path, iterator->type);
+	      new_path = chain_path (path, iter->entry);
+	      elektroid_remote_delete (new_path, iter->type);
 	      free (new_path);
 	    }
-	  connector_free_iterator (iterator);
+	  free_item_iterator (iter);
 	}
       else
 	{
@@ -2300,13 +2299,13 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
 {
   gchar *path;
   gchar *dst_abs_dir;
-  struct connector_entry_iterator *iterator;
+  struct item_iterator *iter;
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  iterator = fs_operations->readdir (&connector, src_abs_path);
+  iter = fs_operations->readdir (&connector, src_abs_path);
   elektroid_check_connector ();
-  if (!iterator)
+  if (!iter)
     {
       dst_abs_dir = dirname (dst_abs_path);
       elektroid_add_task (DOWNLOAD, src_abs_path, dst_abs_dir);
@@ -2324,24 +2323,24 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
       local_browser.load_dir (NULL);
     }
 
-  while (!connector_next_entry (iterator))
+  while (!next_item_iterator (iter))
     {
-      if (iterator->type == ELEKTROID_DIR)
+      if (iter->type == ELEKTROID_DIR)
 	{
-	  path = chain_path (rel_path, iterator->entry);
+	  path = chain_path (rel_path, iter->entry);
 	  elektroid_add_download_task_path (path, src_dir, dst_dir);
 	  free (path);
 	}
       else
 	{
-	  path = chain_path (src_abs_path, iterator->entry);
+	  path = chain_path (src_abs_path, iter->entry);
 	  elektroid_add_task (DOWNLOAD, path, dst_abs_path);
 	  free (path);
 	}
     }
 
 cleanup:
-  connector_free_iterator (iterator);
+  free_item_iterator (iter);
 cleanup_not_dir:
   free (dst_abs_path);
   free (src_abs_path);
