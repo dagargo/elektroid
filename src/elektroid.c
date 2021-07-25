@@ -22,20 +22,18 @@
 #include <limits.h>
 #include <locale.h>
 #include <gtk/gtk.h>
-#include <unistd.h>
-#include "connector.h"
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <glib-unix.h>
 #include <glib/gi18n.h>
 #include <glib/gprintf.h>
 #define _GNU_SOURCE
 #include <getopt.h>
+#include "connector.h"
 #include "browser.h"
 #include "audio.h"
 #include "sample.h"
 #include "utils.h"
 #include "notifier.h"
+#include "local.h"
 
 #define MAX_DRAW_X 10000
 #define SIZE_LABEL_LEN 16
@@ -1649,46 +1647,6 @@ elektroid_remote_mkdir (const gchar * name)
   return fs_operations->mkdir (&connector, name);
 }
 
-static gint
-elektroid_local_mkdir (const gchar * name)
-{
-  DIR *dir;
-  gint error = 0;
-  gchar *dup;
-  gchar *parent;
-
-  dup = strdup (name);
-  parent = dirname (dup);
-
-  dir = opendir (parent);
-  if (dir)
-    {
-      closedir (dir);
-    }
-  else
-    {
-      error = elektroid_local_mkdir (parent);
-      if (error)
-	{
-	  goto cleanup;
-	}
-    }
-
-  if (mkdir (name, 0755) == 0 || errno == EEXIST)
-    {
-      error = 0;
-    }
-  else
-    {
-      error_print ("Error while creating dir %s\n", name);
-      error = errno;
-    }
-
-cleanup:
-  g_free (dup);
-  return error;
-}
-
 static void
 elektroid_add_dir (GtkWidget * object, gpointer data)
 {
@@ -1762,19 +1720,11 @@ elektroid_name_dialog_entry_changed (GtkWidget * object, gpointer data)
 static gint
 elektroid_remote_rename (const gchar * old, const gchar * new)
 {
-  debug_print (1, "Renaming remotely from %s to %s...\n", old, new);
   return fs_operations->move (&connector, old, new);
 }
 
 static gint
-elektroid_local_rename (const gchar * old, const gchar * new)
-{
-  debug_print (1, "Renaming locally from %s to %s...\n", old, new);
-  return rename (old, new);
-}
-
-static gint
-elektroid_remote_delete (const gchar * path, const char type)
+elektroid_remote_delete (const gchar * path, enum item_type type)
 {
   struct connector_entry_iterator *iterator;
   gchar *new_path;
@@ -1802,48 +1752,6 @@ elektroid_remote_delete (const gchar * path, const char type)
 
     }
   return fs_operations->delete (&connector, path);
-}
-
-static gint
-elektroid_local_delete (const gchar * path, const char type)
-{
-  DIR *dir;
-  struct dirent *dirent;
-  gchar *new_path;
-  gchar new_type;
-
-  if (type == ELEKTROID_DIR)
-    {
-      debug_print (1, "Deleting local %s dir...\n", path);
-      dir = opendir (path);
-      if (dir)
-	{
-	  while ((dirent = readdir (dir)) != NULL)
-	    {
-	      if (strcmp (dirent->d_name, ".") == 0 ||
-		  strcmp (dirent->d_name, "..") == 0)
-		{
-		  continue;
-		}
-	      new_path = chain_path (path, dirent->d_name);
-	      new_type =
-		dirent->d_type == DT_DIR ? ELEKTROID_DIR : ELEKTROID_FILE;
-	      elektroid_local_delete (new_path, new_type);
-	      free (new_path);
-	    }
-	  closedir (dir);
-	}
-      else
-	{
-	  error_print ("Error while opening local %s dir\n", path);
-	}
-      return rmdir (path);
-    }
-  else
-    {
-      debug_print (1, "Deleting local %s file...\n", path);
-      return unlink (path);
-    }
 }
 
 static gboolean
@@ -2357,7 +2265,7 @@ elektroid_download_task (gpointer data)
       g_mutex_lock (&sample_transfer.transfer.mutex);
       if (sample_transfer.transfer.active)
 	{
-	  elektroid_local_mkdir (sample_transfer.dst);
+	  local_mkdir (sample_transfer.dst);
 	  debug_print (1, "Writing to file %s...\n", dst_path);
 	  frames = sample_save (sample, dst_path);
 	  debug_print (1, "%zu frames written\n", frames);
@@ -2405,7 +2313,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
       goto cleanup_not_dir;
     }
 
-  if (elektroid_local_mkdir (dst_abs_path))
+  if (local_mkdir (dst_abs_path))
     {
       error_print ("Error while creating local %s dir\n", dst_abs_path);
       goto cleanup;
@@ -2742,7 +2650,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		  if (strcmp (dir, local_browser.dir))
 		    {
 		      dest_path = chain_path (local_browser.dir, name);
-		      res = elektroid_local_rename (filename, dest_path);
+		      res = local_rename (filename, dest_path);
 		      if (res)
 			{
 			  show_error_msg (_(MSG_ERROR_MOVING), filename,
@@ -3269,9 +3177,9 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .dir = malloc (PATH_MAX),
     .load_dir = elektroid_load_local_dir,
     .check_selection = elektroid_local_check_selection,
-    .rename = elektroid_local_rename,
-    .delete = elektroid_local_delete,
-    .mkdir = elektroid_local_mkdir
+    .rename = local_rename,
+    .delete = local_delete,
+    .mkdir = local_mkdir
   };
 
   g_signal_connect (gtk_tree_view_get_selection (local_browser.view),

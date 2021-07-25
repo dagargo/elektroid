@@ -1155,6 +1155,8 @@ connector_move_samples_item (struct connector *connector, const gchar * src,
   gchar *dst_plus;
   struct connector_entry_iterator *iterator;
 
+  debug_print (1, "Renaming remotely from %s to %s...\n", src, dst);
+
   //Renaming is not implemented for directories so we need to implement it.
   type = connector_get_path_type (connector, src);
 

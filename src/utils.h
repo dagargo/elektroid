@@ -19,6 +19,7 @@
  */
 
 #include <stdio.h>
+#include <glib.h>
 
 #ifndef UTILS_H
 #define UTILS_H

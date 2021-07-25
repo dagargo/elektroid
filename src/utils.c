@@ -18,7 +18,6 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <glib.h>
 #include <stdio.h>
 #include <wordexp.h>
 #include "utils.h"

@@ -36,7 +36,7 @@ struct browser
 {
   gint (*mkdir) (const gchar *);
   gint (*rename) (const gchar *, const gchar *);
-  gint (*delete) (const gchar *, const gchar);
+  gint (*delete) (const gchar *, enum item_type);
   GSourceFunc load_dir;
   GSourceFunc check_selection;
   GtkTreeView *view;
