@@ -2746,7 +2746,6 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 					  dest_path, g_strerror (errno));
 			}
 		      g_free (dest_path);
-		      elektroid_load_local_dir (NULL);
 		    }
 		  else
 		    {
