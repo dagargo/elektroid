@@ -2071,6 +2071,10 @@ connector_next_data_entry (struct item_iterator *iter)
       iter->type = ELEKTROID_DIR;
       data->pos += sizeof (guint32);	// child entries
       iter->size = 0;
+      iter->id = -1;
+      data->operations = 0;
+      data->has_valid_data = 0;
+      data->has_metadata = 0;
       break;
     case 2:
       iter->type = has_children ? ELEKTROID_DIR : ELEKTROID_FILE;

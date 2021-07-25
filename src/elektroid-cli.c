@@ -48,8 +48,10 @@ cli_read_samples_fs_iterator (const gchar * path)
 static void
 print_sample (struct item_iterator *iter)
 {
+  struct connector_iterator_data *data = iter->data;
+
   printf ("%c %.2f %08x %s\n", iter->type,
-	  iter->size / MIB_FLOAT, iter->cksum, iter->entry);
+	  iter->size / MIB_FLOAT, data->cksum, iter->entry);
 }
 
 struct item_iterator *
@@ -61,9 +63,11 @@ cli_read_data_fs_iterator (const gchar * path)
 static void
 print_datum (struct item_iterator *iter)
 {
-  printf ("%c %3d %04x %d %d %.2f %s\n", iter->type, iter->index,
-	  iter->operations, iter->has_valid_data,
-	  iter->has_metadata, iter->size / MIB_FLOAT, iter->entry);
+  struct connector_iterator_data *data = iter->data;
+
+  printf ("%c %3d %04x %d %d %.2f %s\n", iter->type, iter->id,
+	  data->operations, data->has_valid_data,
+	  data->has_metadata, iter->size / MIB_FLOAT, iter->entry);
 }
 
 static gchar *
