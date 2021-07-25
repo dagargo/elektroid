@@ -46,13 +46,14 @@ struct item
 
 struct item_iterator;
 
-typedef guint (*fs_iterator_next) (struct item_iterator *);
-typedef void (*fs_iterator_free) (void *);
+typedef guint (*iterator_next) (struct item_iterator *);
+
+typedef void (*iterator_free) (void *);
 
 struct item_iterator
 {
-  fs_iterator_next next;
-  fs_iterator_free free;
+  iterator_next next;
+  iterator_free free;
   void *data;
   gchar *entry;
   gchar type;
