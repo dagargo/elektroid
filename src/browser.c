@@ -96,12 +96,10 @@ void
 browser_get_item_info (GtkTreeModel * model, GtkTreeIter * iter,
 		       struct item *item)
 {
-  gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_TYPE_FIELD,
-		      &item->type, -1);
-  gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_NAME_FIELD, &item->name,
-		      -1);
-  gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_SIZE_FIELD, &item->size,
-		      -1);
+  gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_TYPE_FIELD, &item->type,
+		      BROWSER_LIST_STORE_NAME_FIELD, &item->name,
+		      BROWSER_LIST_STORE_SIZE_FIELD, &item->size,
+		      BROWSER_LIST_STORE_INDEX_FIELD, &item->index, -1);
 }
 
 void

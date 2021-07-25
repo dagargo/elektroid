@@ -39,6 +39,7 @@ struct item
 {
   gchar *name;
   gint size;
+  gint index;
   enum item_type type;
 };
 

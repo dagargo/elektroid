@@ -1500,31 +1500,30 @@ elektroid_set_volume_callback (gdouble value)
 static void
 elektroid_add_dentry_item (GtkListStore * list_store,
 			   enum item_type type, const gchar * name,
-			   ssize_t size)
+			   ssize_t size, gint index)
 {
-  const gchar *type_icon;
-  gchar size_str[SIZE_LABEL_LEN];
+  const gchar *icon;
+  gchar sizes[SIZE_LABEL_LEN];
 
-  type_icon = get_inventory_icon_for_type (type);
+  icon = get_inventory_icon_for_type (type);
 
   if (size > 0)
     {
-      snprintf (size_str, SIZE_LABEL_LEN, "%.2f MiB",
-		size / (1024.0 * 1024.0));
+      snprintf (sizes, SIZE_LABEL_LEN, "%.2f MiB", size / (1024.0 * 1024.0));
     }
   else
     {
-      size_str[0] = 0;
+      sizes[0] = 0;
     }
 
   gtk_list_store_insert_with_values (list_store, NULL, -1,
-				     BROWSER_LIST_STORE_ICON_FIELD,
-				     type_icon, BROWSER_LIST_STORE_NAME_FIELD,
-				     name, BROWSER_LIST_STORE_SIZE_FIELD,
-				     size,
-				     BROWSER_LIST_STORE_SIZE_STR_FIELD,
-				     size_str,
-				     BROWSER_LIST_STORE_TYPE_FIELD, type, -1);
+				     BROWSER_LIST_STORE_ICON_FIELD, icon,
+				     BROWSER_LIST_STORE_NAME_FIELD, name,
+				     BROWSER_LIST_STORE_SIZE_FIELD, size,
+				     BROWSER_LIST_STORE_SIZE_STR_FIELD, sizes,
+				     BROWSER_LIST_STORE_TYPE_FIELD, type,
+				     BROWSER_LIST_STORE_INDEX_FIELD, index,
+				     -1);
 }
 
 static gboolean
@@ -1547,7 +1546,8 @@ elektroid_load_remote_dir (gpointer data)
   while (!connector_next_entry (iterator))
     {
       elektroid_add_dentry_item (list_store, iterator->type,
-				 iterator->entry, iterator->size);
+				 iterator->entry, iterator->size,
+				 iterator->index);
     }
   connector_free_iterator (iterator);
 
@@ -1625,7 +1625,8 @@ elektroid_load_local_dir (gpointer data)
 		}
 	      free (path);
 	    }
-	  elektroid_add_dentry_item (list_store, type, dirent->d_name, size);
+	  elektroid_add_dentry_item (list_store, type, dirent->d_name, size,
+				     -1);
 	}
     }
   closedir (dir);

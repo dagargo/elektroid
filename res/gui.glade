@@ -55,6 +55,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
       <!-- column-name type -->
       <column type="gint"/>
+      <!-- column-name index -->
+      <column type="gint"/>
     </columns>
   </object>
   <object class="GtkMenu" id="local_menu">
@@ -150,6 +152,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <!-- column-name size_str -->
       <column type="gchararray"/>
       <!-- column-name type -->
+      <column type="gint"/>
+      <!-- column-name index -->
       <column type="gint"/>
     </columns>
   </object>

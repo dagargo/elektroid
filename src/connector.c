@@ -250,6 +250,8 @@ connector_next_sample_entry (struct connector_entry_iterator *iterator)
 	g_convert (entry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
       iterator->pos += strlen (entry_cp1252) + 1;
 
+      iterator->index = -1;
+
       return 0;
     }
 }
