@@ -41,7 +41,7 @@
 #define SIZE_LABEL_LEN 16
 
 #define DUMP_TIMEOUT 2000
-#define UP_BUTTON_DND_TIMEOUT 1000
+#define DND_TIMEOUT 1000
 
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
@@ -2903,7 +2903,7 @@ elektroid_drag_motion_list (GtkWidget * widget,
 	      browser->dnd_timeout_function_id = 0;
 	    }
 	  browser->dnd_timeout_function_id =
-	    g_timeout_add (UP_BUTTON_DND_TIMEOUT, elektroid_drag_list_timeout,
+	    g_timeout_add (DND_TIMEOUT, elektroid_drag_list_timeout,
 			   browser);
 	}
     }
@@ -2964,7 +2964,7 @@ elektroid_drag_motion_up (GtkWidget * widget,
       browser->dnd_timeout_function_id = 0;
     }
   browser->dnd_timeout_function_id =
-    g_timeout_add (UP_BUTTON_DND_TIMEOUT, elektroid_drag_up_timeout, browser);
+    g_timeout_add (DND_TIMEOUT, elektroid_drag_up_timeout, browser);
 
   return TRUE;
 }
