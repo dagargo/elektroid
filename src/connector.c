@@ -127,7 +127,7 @@ static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
   &MODEL_SAMPLES_DESC
 };
 
-static struct connector_fs_operations FS_SAMPLES_OPERATIONS = {
+static struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
   .readdir = connector_read_samples,
   .mkdir = connector_create_samples_dir,
@@ -141,7 +141,7 @@ static struct connector_fs_operations FS_SAMPLES_OPERATIONS = {
   .getid = get_item_name
 };
 
-static struct connector_fs_operations FS_DATA_OPERATIONS = {
+static struct fs_operations FS_DATA_OPERATIONS = {
   .fs = FS_DATA,
   .readdir = connector_read_data,
   .mkdir = NULL,
@@ -155,7 +155,7 @@ static struct connector_fs_operations FS_DATA_OPERATIONS = {
   .getid = get_item_index
 };
 
-static struct connector_fs_operations FS_NONE_OPERATIONS = {
+static struct fs_operations FS_NONE_OPERATIONS = {
   .fs = 0,
   .readdir = NULL,
   .mkdir = NULL,
@@ -169,15 +169,18 @@ static struct connector_fs_operations FS_NONE_OPERATIONS = {
   .getid = NULL
 };
 
-static const struct connector_fs_operations *FS_OPERATIONS[] = {
+static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_OPERATIONS, &FS_DATA_OPERATIONS
 };
 
 static const int FS_OPERATIONS_N =
-  sizeof (FS_OPERATIONS) / sizeof (struct connector_fs_operations *);
+  sizeof (FS_OPERATIONS) / sizeof (struct fs_operations *);
 
 static enum item_type connector_get_path_type (struct connector *,
 					       const gchar *);
+
+static gint connector_delete_samples_dir (struct connector *, const gchar *);
+
 
 static void
 connector_free_iterator_data (void *iter_data)
@@ -188,10 +191,10 @@ connector_free_iterator_data (void *iter_data)
   g_free (data);
 }
 
-const struct connector_fs_operations *
+const struct fs_operations *
 connector_get_fs_operations (enum connector_fs fs)
 {
-  const struct connector_fs_operations *fs_operations = &FS_NONE_OPERATIONS;
+  const struct fs_operations *fs_operations = &FS_NONE_OPERATIONS;
   for (int i = 0; i < FS_OPERATIONS_N; i++)
     {
       if (FS_OPERATIONS[i]->fs == fs)
@@ -1012,10 +1015,11 @@ cleanup:
 }
 
 struct item_iterator *
-connector_read_samples (struct connector *connector, const gchar * dir)
+connector_read_samples (const gchar * dir, void *data)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
+  struct connector *connector = data;
   gchar *dir_cp1252 = g_convert (dir, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
   if (!dir_cp1252)
@@ -1063,7 +1067,7 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   parent_copy = strdup (path);
   name = basename (name_copy);
   parent = dirname (parent_copy);
-  iterator = connector_read_samples (connector, parent);
+  iterator = connector_read_samples (parent, connector);
   res = ELEKTROID_NONE;
   if (iterator)
     {
@@ -1147,14 +1151,14 @@ connector_rename_sample_file (struct connector *connector, const gchar * src,
 }
 
 gint
-connector_move_samples_item (struct connector *connector, const gchar * src,
-			     const gchar * dst)
+connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
 {
   enum item_type type;
   gint res;
   gchar *src_plus;
   gchar *dst_plus;
   struct item_iterator *iterator;
+  struct connector *connector = data;
 
   debug_print (1, "Renaming remotely from %s to %s...\n", src, dst);
 
@@ -1167,12 +1171,12 @@ connector_move_samples_item (struct connector *connector, const gchar * src,
     }
   else if (type == ELEKTROID_DIR)
     {
-      res = connector_create_samples_dir (connector, dst);
+      res = connector_create_samples_dir (dst, connector);
       if (res)
 	{
 	  return res;
 	}
-      iterator = connector_read_samples (connector, src);
+      iterator = connector_read_samples (src, connector);
       if (iterator)
 	{
 	  while (!next_item_iterator (iterator) && !res)
@@ -1180,7 +1184,7 @@ connector_move_samples_item (struct connector *connector, const gchar * src,
 	      src_plus = chain_path (src, iterator->entry);
 	      dst_plus = chain_path (dst, iterator->entry);
 	      res =
-		connector_move_samples_item (connector, src_plus, dst_plus);
+		connector_move_samples_item (src_plus, dst_plus, connector);
 	      free (src_plus);
 	      free (dst_plus);
 	    }
@@ -1241,14 +1245,16 @@ connector_path_common (struct connector *connector, const gchar * path,
 }
 
 gint
-connector_delete_sample (struct connector *connector, const gchar * path)
+connector_delete_sample (const gchar * path, void *data)
 {
+  struct connector *connector = data;
+
   return connector_path_common (connector, path,
 				FS_SAMPLE_DELETE_FILE_REQUEST,
 				sizeof (FS_SAMPLE_DELETE_FILE_REQUEST));
 }
 
-gint
+static gint
 connector_delete_samples_dir (struct connector *connector, const gchar * path)
 {
   return connector_path_common (connector, path, FS_SAMPLE_DELETE_DIR_REQUEST,
@@ -1256,29 +1262,31 @@ connector_delete_samples_dir (struct connector *connector, const gchar * path)
 }
 
 gint
-connector_delete_samples_item (struct connector *connector,
-			       const gchar * path)
+connector_delete_samples_item (const gchar * path, void *data)
 {
+  struct connector *connector = data;
+
   if (connector_get_path_type (connector, path) == ELEKTROID_DIR)
     {
       return connector_delete_samples_dir (connector, path);
     }
   else
     {
-      return connector_delete_sample (connector, path);
+      return connector_delete_sample (path, connector);
     }
 }
 
 ssize_t
-connector_upload_sample (struct connector *connector, GArray * sample,
+connector_upload_sample (GArray * sample,
 			 gchar * path,
 			 struct connector_sample_transfer *transfer,
-			 void (*progress) (gdouble))
+			 void (*progress) (gdouble), void *data)
 {
+  struct connector *connector = data;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   ssize_t transferred;
-  gshort *data;
+  gshort *data16;
   gint id;
   int i;
   gboolean active;
@@ -1312,7 +1320,7 @@ connector_upload_sample (struct connector *connector, GArray * sample,
     }
   free_msg (rx_msg);
 
-  data = (gshort *) sample->data;
+  data16 = (gshort *) sample->data;
   transferred = 0;
   i = 0;
   g_mutex_lock (&transfer->mutex);
@@ -1326,7 +1334,7 @@ connector_upload_sample (struct connector *connector, GArray * sample,
 	}
 
       tx_msg =
-	connector_new_msg_write_file_blk (id, &data, sample->len,
+	connector_new_msg_write_file_blk (id, &data16, sample->len,
 					  &transferred, i);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
@@ -1374,13 +1382,14 @@ connector_upload_sample (struct connector *connector, GArray * sample,
 }
 
 GArray *
-connector_download_sample (struct connector *connector, const gchar * path,
+connector_download_sample (const gchar * path,
 			   struct connector_sample_transfer *transfer,
-			   void (*progress) (gdouble))
+			   void (*progress) (gdouble), void *data)
 {
+  struct connector *connector = data;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
-  GByteArray *data;
+  GByteArray *array;
   gint id;
   guint frames;
   guint next_block_start;
@@ -1416,7 +1425,7 @@ connector_download_sample (struct connector *connector, const gchar * path,
 
   debug_print (2, "%d frames to download\n", frames);
 
-  data = g_byte_array_new ();
+  array = g_byte_array_new ();
 
   next_block_start = 0;
   offset = 64;
@@ -1442,7 +1451,7 @@ connector_download_sample (struct connector *connector, const gchar * path,
 	  result = NULL;
 	  goto cleanup;
 	}
-      g_byte_array_append (data, &rx_msg->data[22 + offset],
+      g_byte_array_append (array, &rx_msg->data[22 + offset],
 			   req_size - offset);
       free_msg (rx_msg);
 
@@ -1465,8 +1474,8 @@ connector_download_sample (struct connector *connector, const gchar * path,
 	}
 
       result = g_array_new (FALSE, FALSE, sizeof (short));
-      frame = (gshort *) data->data;
-      for (i = 0; i < data->len; i += 2)
+      frame = (gshort *) array->data;
+      for (i = 0; i < array->len; i += 2)
 	{
 	  v = be16toh (*frame);
 	  g_array_append_val (result, v);
@@ -1493,13 +1502,14 @@ connector_download_sample (struct connector *connector, const gchar * path,
   free_msg (rx_msg);
 
 cleanup:
-  free_msg (data);
+  free_msg (array);
   return result;
 }
 
 gint
-connector_create_samples_dir (struct connector *connector, const gchar * path)
+connector_create_samples_dir (const gchar * path, void *data)
 {
+  struct connector *connector = data;
   return connector_path_common (connector, path, FS_SAMPLE_CREATE_DIR_REQUEST,
 				sizeof (FS_SAMPLE_CREATE_DIR_REQUEST));
 }
@@ -2125,11 +2135,12 @@ connector_new_data_iterator (GByteArray * msg)
 }
 
 struct item_iterator *
-connector_read_data (struct connector *connector, const gchar * path)
+connector_read_data (const gchar * path, void *data)
 {
   int res;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
+  struct connector *connector = data;
 
   tx_msg = connector_new_msg_data_list (path, 0, 0, 1);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
@@ -2152,32 +2163,33 @@ connector_read_data (struct connector *connector, const gchar * path)
 }
 
 gint
-connector_move_data_item (struct connector *connector, const gchar * src,
-			  const gchar * dst)
+connector_move_data_item (const gchar * src, const gchar * dst, void *data)
 {
+  struct connector *connector = data;
   return connector_src_dst_common (connector, src, dst, DATA_MOVE_REQUEST,
 				   sizeof (DATA_MOVE_REQUEST));
 }
 
 gint
-connector_copy_data_item (struct connector *connector, const gchar * src,
-			  const gchar * dst)
+connector_copy_data_item (const gchar * src, const gchar * dst, void *data)
 {
+  struct connector *connector = data;
   return connector_src_dst_common (connector, src, dst, DATA_COPY_REQUEST,
 				   sizeof (DATA_COPY_REQUEST));
 }
 
 gint
-connector_clear_data_item (struct connector *connector, const gchar * path)
+connector_clear_data_item (const gchar * path, void *data)
 {
+  struct connector *connector = data;
   return connector_path_common (connector, path, DATA_CLEAR_REQUEST,
 				sizeof (DATA_CLEAR_REQUEST));
 }
 
 gint
-connector_swap_data_item (struct connector *connector, const gchar * src,
-			  const gchar * dst)
+connector_swap_data_item (const gchar * src, const gchar * dst, void *data)
 {
+  struct connector *connector = data;
   return connector_src_dst_common (connector, src, dst, DATA_SWAP_REQUEST,
 				   sizeof (DATA_SWAP_REQUEST));
 }

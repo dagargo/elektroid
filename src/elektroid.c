@@ -180,7 +180,7 @@ G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC);
 static guint TARGET_ENTRIES_UP_BUTTON_DST_N =
 G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST);
 
-static const struct connector_fs_operations *fs_operations;
+static const struct fs_operations *fs_operations;
 
 static struct browser remote_browser;
 static struct browser local_browser;
@@ -238,7 +238,7 @@ static GtkWidget *clear_tasks_button;
 static GtkListStore *fs_list_store;
 static GtkComboBox *fs_combo;
 
-inline static get_item_id
+static fs_get_item_id
 get_id_function (struct browser *browser)
 {
   return browser == &local_browser ? get_item_name : fs_operations->getid;
@@ -1540,7 +1540,7 @@ elektroid_load_remote_dir (gpointer data)
 
   browser_reset (&remote_browser);
 
-  iter = fs_operations->readdir (&connector, remote_browser.dir);
+  iter = fs_operations->readdir (remote_browser.dir, &connector);
   elektroid_check_connector ();
   if (!iter)
     {
@@ -1601,7 +1601,7 @@ elektroid_load_local_dir (gpointer data)
 static gint
 elektroid_remote_mkdir (const gchar * name)
 {
-  return fs_operations->mkdir (&connector, name);
+  return fs_operations->mkdir (name, &connector);
 }
 
 static void
@@ -1677,7 +1677,7 @@ elektroid_name_dialog_entry_changed (GtkWidget * object, gpointer data)
 static gint
 elektroid_remote_rename (const gchar * old, const gchar * new)
 {
-  return fs_operations->move (&connector, old, new);
+  return fs_operations->move (old, new, &connector);
 }
 
 static gint
@@ -1690,7 +1690,7 @@ elektroid_remote_delete (const gchar * path, enum item_type type)
 
   if (type == ELEKTROID_DIR)
     {
-      iter = fs_operations->readdir (&connector, path);
+      iter = fs_operations->readdir (path, &connector);
       elektroid_check_connector ();
       if (iter)
 	{
@@ -1708,7 +1708,7 @@ elektroid_remote_delete (const gchar * path, enum item_type type)
 	}
 
     }
-  return fs_operations->delete (&connector, path);
+  return fs_operations->delete (path, &connector);
 }
 
 static gboolean
@@ -2020,9 +2020,9 @@ elektroid_upload_task (gpointer data)
       goto complete_task;
     }
 
-  frames = fs_operations->upload (&connector, sample, remote_path,
+  frames = fs_operations->upload (sample, remote_path,
 				  &sample_transfer.transfer,
-				  elektroid_update_progress);
+				  elektroid_update_progress, &connector);
   g_idle_add (elektroid_check_connector_bg, NULL);
   free (remote_path);
 
@@ -2207,9 +2207,9 @@ elektroid_download_task (gpointer data)
   debug_print (1, "Local path: %s\n", dst_path);
 
   sample =
-    fs_operations->download (&connector, sample_transfer.src,
+    fs_operations->download (sample_transfer.src,
 			     &sample_transfer.transfer,
-			     elektroid_update_progress);
+			     elektroid_update_progress, &connector);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
   if (sample == NULL && sample_transfer.transfer.active)
@@ -2261,7 +2261,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  iter = fs_operations->readdir (&connector, src_abs_path);
+  iter = fs_operations->readdir (src_abs_path, &connector);
   elektroid_check_connector ();
   if (!iter)
     {

@@ -205,7 +205,7 @@ browser_free_item (struct item *item)
 
 gchar *
 browser_get_item_path (struct browser *browser, struct item *item,
-		       get_item_id f)
+		       fs_get_item_id f)
 {
   gchar *id;
   gchar *path;

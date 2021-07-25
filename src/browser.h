@@ -72,4 +72,5 @@ void browser_go_up (GtkWidget *, gpointer);
 void browser_item_activated (GtkTreeView *, GtkTreePath *,
 			     GtkTreeViewColumn *, gpointer);
 
-gchar *browser_get_item_path (struct browser *, struct item *, get_item_id);
+gchar *browser_get_item_path (struct browser *, struct item *,
+			      fs_get_item_id);

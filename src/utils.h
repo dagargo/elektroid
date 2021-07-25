@@ -61,9 +61,45 @@ struct item_iterator
   gint32 id;
 };
 
-extern int debug_level;
+struct connector_sample_transfer
+{
+  gboolean active;
+  GMutex mutex;
+};
 
-typedef gchar *(*get_item_id) (struct item *);
+typedef struct item_iterator *(*fs_read_dir_func) (const gchar *, void *);
+
+typedef gint (*fs_path_func) (const gchar *, void *);
+
+typedef gint (*fs_src_dst_func) (const gchar *, const gchar *, void *);
+
+typedef GArray *(*fs_download_func) (const gchar *,
+				     struct connector_sample_transfer *,
+				     void (*)(gdouble), void *);
+
+typedef ssize_t (*fs_upload_func) (GArray *,
+				   gchar *,
+				   struct connector_sample_transfer *,
+				   void (*)(gdouble), void *);
+
+typedef gchar *(*fs_get_item_id) (struct item *);
+
+struct fs_operations
+{
+  gint fs;
+  fs_read_dir_func readdir;
+  fs_path_func mkdir;
+  fs_path_func delete;
+  fs_src_dst_func move;
+  fs_src_dst_func copy;
+  fs_path_func clear;
+  fs_src_dst_func swap;
+  fs_download_func download;
+  fs_upload_func upload;
+  fs_get_item_id getid;
+};
+
+extern int debug_level;
 
 gchar *debug_get_hex_data (gint, guint8 *, guint);
 

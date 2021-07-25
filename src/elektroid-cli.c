@@ -36,14 +36,7 @@
 static struct connector connector;
 static struct connector_sample_transfer sample_transfer;
 
-typedef struct item_iterator *(*read_fs_iterator) (const gchar *);
 typedef void (*print_item) (struct item_iterator *);
-
-struct item_iterator *
-cli_read_samples_fs_iterator (const gchar * path)
-{
-  return connector_read_samples (&connector, path);
-}
 
 static void
 print_sample (struct item_iterator *iter)
@@ -52,12 +45,6 @@ print_sample (struct item_iterator *iter)
 
   printf ("%c %.2f %08x %s\n", iter->type,
 	  iter->size / MIB_FLOAT, data->cksum, iter->entry);
-}
-
-struct item_iterator *
-cli_read_data_fs_iterator (const gchar * path)
-{
-  return connector_read_data (&connector, path);
 }
 
 static void
@@ -112,7 +99,7 @@ cli_connect (const char *device_path)
 }
 
 static int
-cli_list (int argc, char *argv[], int optind, read_fs_iterator read_fs,
+cli_list (int argc, char *argv[], int optind, fs_read_dir_func readdir,
 	  print_item print)
 {
   struct item_iterator *iter;
@@ -138,7 +125,7 @@ cli_list (int argc, char *argv[], int optind, read_fs_iterator read_fs,
 
   path = cli_get_path (device_path);
 
-  iter = read_fs (path);
+  iter = readdir (path, &connector);
   if (!iter)
     {
       return EXIT_FAILURE;
@@ -155,7 +142,7 @@ cli_list (int argc, char *argv[], int optind, read_fs_iterator read_fs,
 }
 
 static int
-cli_command_path (int argc, char *argv[], int optind, connector_path_func f)
+cli_command_path (int argc, char *argv[], int optind, fs_path_func f)
 {
   gchar *device_path, *path;
   gint res;
@@ -179,12 +166,11 @@ cli_command_path (int argc, char *argv[], int optind, connector_path_func f)
 
   path = cli_get_path (device_path);
 
-  return f (&connector, path);
+  return f (path, &connector);
 }
 
 static int
-cli_command_src_dst (int argc, char *argv[], int optind,
-		     connector_src_dst_func f)
+cli_command_src_dst (int argc, char *argv[], int optind, fs_src_dst_func f)
 {
   gchar *device_path_src, *device_path_dst, *path_src, *path_dst;
   gint card_src;
@@ -230,7 +216,7 @@ cli_command_src_dst (int argc, char *argv[], int optind,
   path_src = cli_get_path (device_path_src);
   path_dst = cli_get_path (device_path_dst);
 
-  return f (&connector, path_src, path_dst);
+  return f (path_src, path_dst, &connector);
 }
 
 static int
@@ -263,7 +249,7 @@ cli_download (int argc, char *argv[], int optind)
 
   sample_transfer.active = TRUE;
   data =
-    connector_download_sample (&connector, path_src, &sample_transfer, NULL);
+    connector_download_sample (path_src, &sample_transfer, NULL, &connector);
   if (data == NULL)
     {
       return EXIT_FAILURE;
@@ -336,8 +322,8 @@ cli_upload (int argc, char *argv[], int optind)
 
   sample_transfer.active = TRUE;
   frames =
-    connector_upload_sample (&connector, sample, path_dst, &sample_transfer,
-			     NULL);
+    connector_upload_sample (sample, path_dst, &sample_transfer,
+			     NULL, &connector);
 
   res = frames < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
@@ -431,6 +417,7 @@ main (int argc, char *argv[])
   gint c;
   gint res;
   gchar *command;
+  const struct fs_operations *fs_operations;
   gint vflg = 0, errflg = 0;
   struct sigaction action, old_action;
 
@@ -504,9 +491,9 @@ main (int argc, char *argv[])
   else if (strcmp (command, "ls") == 0
 	   || strcmp (command, "list-samples") == 0)
     {
+      fs_operations = connector_get_fs_operations (FS_SAMPLES);
       res =
-	cli_list (argc, argv, optind, cli_read_samples_fs_iterator,
-		  print_sample);
+	cli_list (argc, argv, optind, fs_operations->readdir, print_sample);
     }
   else if (strcmp (command, "mkdir") == 0
 	   || strcmp (command, "mkdir-samples") == 0)
@@ -548,8 +535,9 @@ main (int argc, char *argv[])
     }
   else if (strcmp (command, "list-data") == 0)
     {
+      fs_operations = connector_get_fs_operations (FS_DATA);
       res =
-	cli_list (argc, argv, optind, cli_read_data_fs_iterator, print_datum);
+	cli_list (argc, argv, optind, fs_operations->readdir, print_datum);
     }
   else if (strcmp (command, "clear-data") == 0)
     {

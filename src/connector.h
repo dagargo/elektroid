@@ -79,12 +79,6 @@ struct connector_sysex_transfer
   GMutex mutex;
 };
 
-struct connector_sample_transfer
-{
-  gboolean active;
-  GMutex mutex;
-};
-
 enum connector_storage
 {
   STORAGE_PLUS_DRIVE = 0x1,
@@ -104,37 +98,7 @@ enum connector_fs
   FS_DATA = 0x2
 };
 
-typedef struct item_iterator *(*connector_read_dir_func) (struct
-							  connector
-							  *, const gchar *);
-typedef gint (*connector_path_func) (struct connector *, const gchar *);
-typedef gint (*connector_src_dst_func) (struct connector *, const gchar *,
-					const gchar *);
-typedef GArray *(*connector_download_func) (struct connector *, const gchar *,
-					    struct connector_sample_transfer
-					    *, void (*)(gdouble));
-typedef ssize_t (*connector_upload_func) (struct connector *, GArray *,
-					  gchar *,
-					  struct connector_sample_transfer *,
-					  void (*)(gdouble));
-
-struct connector_fs_operations
-{
-  enum connector_fs fs;
-  connector_read_dir_func readdir;
-  connector_path_func mkdir;
-  connector_path_func delete;
-  connector_src_dst_func move;
-  connector_src_dst_func copy;
-  connector_path_func clear;
-  connector_src_dst_func swap;
-  connector_download_func download;
-  connector_upload_func upload;
-  get_item_id getid;
-};
-
-const struct connector_fs_operations *connector_get_fs_operations (enum
-								   connector_fs);
+const struct fs_operations *connector_get_fs_operations (enum connector_fs);
 
 gint connector_init (struct connector *, gint);
 
@@ -162,38 +126,29 @@ gint connector_get_storage_stats (struct connector *,
 
 float connector_get_storage_stats_percent (struct connector_storage_stats *);
 
-struct item_iterator *connector_read_samples (struct connector *,
-					      const gchar *);
+struct item_iterator *connector_read_samples (const gchar *, void *);
 
-gint connector_create_samples_dir (struct connector *, const gchar *);
+gint connector_create_samples_dir (const gchar *, void *);
 
-gint connector_delete_samples_dir (struct connector *, const gchar *);
+gint connector_delete_samples_item (const gchar *, void *);
 
-gint connector_delete_sample (struct connector *, const gchar *);
+gint connector_move_samples_item (const gchar *, const gchar *, void *);
 
-gint connector_delete_samples_item (struct connector *, const gchar *);
-
-gint connector_move_samples_item (struct connector *, const gchar *,
-				  const gchar *);
-
-GArray *connector_download_sample (struct connector *, const gchar *,
+GArray *connector_download_sample (const gchar *,
 				   struct connector_sample_transfer *,
-				   void (*)(gdouble));
+				   void (*)(gdouble), void *);
 
 ssize_t
-connector_upload_sample (struct connector *, GArray *, gchar *,
+connector_upload_sample (GArray *, gchar *,
 			 struct connector_sample_transfer *,
-			 void (*)(gdouble));
+			 void (*)(gdouble), void *);
 
-struct item_iterator *connector_read_data (struct connector *, const gchar *);
+struct item_iterator *connector_read_data (const gchar *, void *);
 
-gint connector_move_data_item (struct connector *, const gchar *,
-			       const gchar *);
+gint connector_move_data_item (const gchar *, const gchar *, void *);
 
-gint connector_copy_data_item (struct connector *, const gchar *,
-			       const gchar *);
+gint connector_copy_data_item (const gchar *, const gchar *, void *);
 
-gint connector_clear_data_item (struct connector *, const gchar *);
+gint connector_clear_data_item (const gchar *, void *);
 
-gint connector_swap_data_item (struct connector *, const gchar *,
-			       const gchar *);
+gint connector_swap_data_item (const gchar *, const gchar *, void *);
