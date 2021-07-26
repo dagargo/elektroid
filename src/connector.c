@@ -1056,7 +1056,7 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   gchar *name;
   gchar *parent;
   enum item_type res;
-  struct item_iterator *iterator;
+  struct item_iterator *iter;
 
   if (strcmp (path, "/") == 0)
     {
@@ -1067,19 +1067,19 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   parent_copy = strdup (path);
   name = basename (name_copy);
   parent = dirname (parent_copy);
-  iterator = connector_read_samples (parent, connector);
+  iter = connector_read_samples (parent, connector);
   res = ELEKTROID_NONE;
-  if (iterator)
+  if (iter)
     {
-      while (!next_item_iterator (iterator))
+      while (!next_item_iterator (iter))
 	{
-	  if (strcmp (name, iterator->entry) == 0)
+	  if (strcmp (name, iter->entry) == 0)
 	    {
-	      res = iterator->type;
+	      res = iter->type;
 	      break;
 	    }
 	}
-      free_item_iterator (iterator);
+      free_item_iterator (iter);
     }
 
   g_free (name_copy);
@@ -1157,7 +1157,7 @@ connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
   gint res;
   gchar *src_plus;
   gchar *dst_plus;
-  struct item_iterator *iterator;
+  struct item_iterator *iter;
   struct connector *connector = data;
 
   debug_print (1, "Renaming remotely from %s to %s...\n", src, dst);
@@ -1176,19 +1176,19 @@ connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
 	{
 	  return res;
 	}
-      iterator = connector_read_samples (src, connector);
-      if (iterator)
+      iter = connector_read_samples (src, connector);
+      if (iter)
 	{
-	  while (!next_item_iterator (iterator) && !res)
+	  while (!next_item_iterator (iter) && !res)
 	    {
-	      src_plus = chain_path (src, iterator->entry);
-	      dst_plus = chain_path (dst, iterator->entry);
+	      src_plus = chain_path (src, iter->entry);
+	      dst_plus = chain_path (dst, iter->entry);
 	      res =
 		connector_move_samples_item (src_plus, dst_plus, connector);
 	      free (src_plus);
 	      free (dst_plus);
 	    }
-	  free_item_iterator (iterator);
+	  free_item_iterator (iter);
 	}
       if (!res)
 	{
