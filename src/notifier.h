@@ -20,6 +20,7 @@
 
 #include <sys/inotify.h>
 #include <gtk/gtk.h>
+#include "browser.h"
 
 struct notifier
 {
@@ -28,11 +29,10 @@ struct notifier
   size_t event_size;
   struct inotify_event *event;
   gint running;
-  GSourceFunc refresh_dir;
-  GSourceFunc up_dir;
+  struct browser *browser;
 };
 
-void notifier_init (struct notifier *, GSourceFunc, GSourceFunc);
+void notifier_init (struct notifier *, struct browser *);
 
 void notifier_set_dir (struct notifier *, gchar *);
 

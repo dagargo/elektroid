@@ -22,6 +22,11 @@
 #include <libgen.h>
 #include "utils.h"
 
+#ifndef BROWSER_H
+#define BROWSER_H
+
+#define SIZE_LABEL_LEN 16
+
 enum browser_list_field
 {
   BROWSER_LIST_STORE_ICON_FIELD = 0,
@@ -34,10 +39,6 @@ enum browser_list_field
 
 struct browser
 {
-  gint (*mkdir) (const gchar *);
-  gint (*rename) (const gchar *, const gchar *);
-  gint (*delete) (const gchar *, enum item_type);
-  GSourceFunc load_dir;
   GSourceFunc check_selection;
   GtkTreeView *view;
   GtkWidget *up_button;
@@ -49,7 +50,10 @@ struct browser
   GtkTreePath *dnd_motion_path;
   gint dnd_timeout_function_id;
   GString *dnd_data;
+  void (*notify_dir_change) (struct browser *);
+  const gchar *(*get_icon) (struct browser *, enum item_type);
   const struct fs_operations *fs_operations;
+  void *data;
 };
 
 gint browser_sort (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *, gpointer);
@@ -74,3 +78,7 @@ void browser_item_activated (GtkTreeView *, GtkTreePath *,
 			     GtkTreeViewColumn *, gpointer);
 
 gchar *browser_get_item_path (struct browser *, struct item *);
+
+gboolean browser_load_dir (gpointer);
+
+#endif

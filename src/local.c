@@ -26,8 +26,22 @@
 #include <unistd.h>
 #include "local.h"
 
+const struct fs_operations FS_LOCAL_OPERATIONS = {
+  .fs = 0,
+  .readdir = local_read_dir,
+  .mkdir = local_mkdir,
+  .delete = local_delete,
+  .move = local_rename,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = NULL,
+  .upload = NULL,
+  .getid = get_item_name
+};
+
 gint
-local_mkdir (const gchar * name)
+local_mkdir (const gchar * name, void *data)
 {
   DIR *dir;
   gint error = 0;
@@ -44,7 +58,7 @@ local_mkdir (const gchar * name)
     }
   else
     {
-      error = local_mkdir (parent);
+      error = local_mkdir (parent, data);
       if (error)
 	{
 	  goto cleanup;
@@ -67,38 +81,30 @@ cleanup:
 }
 
 gint
-local_delete (const gchar * path, enum item_type type)
+local_delete (const gchar * path, void *data)
 {
   DIR *dir;
-  struct dirent *dirent;
   gchar *new_path;
-  gchar new_type;
+  struct dirent *dirent;
 
-  if (type == ELEKTROID_DIR)
+  if ((dir = opendir (path)))
     {
       debug_print (1, "Deleting local %s dir...\n", path);
-      dir = opendir (path);
-      if (dir)
+
+      while ((dirent = readdir (dir)) != NULL)
 	{
-	  while ((dirent = readdir (dir)) != NULL)
+	  if (strcmp (dirent->d_name, ".") == 0 ||
+	      strcmp (dirent->d_name, "..") == 0)
 	    {
-	      if (strcmp (dirent->d_name, ".") == 0 ||
-		  strcmp (dirent->d_name, "..") == 0)
-		{
-		  continue;
-		}
-	      new_path = chain_path (path, dirent->d_name);
-	      new_type =
-		dirent->d_type == DT_DIR ? ELEKTROID_DIR : ELEKTROID_FILE;
-	      local_delete (new_path, new_type);
-	      free (new_path);
+	      continue;
 	    }
-	  closedir (dir);
+	  new_path = chain_path (path, dirent->d_name);
+	  local_delete (new_path, data);
+	  free (new_path);
 	}
-      else
-	{
-	  error_print ("Error while opening local %s dir\n", path);
-	}
+
+      closedir (dir);
+
       return rmdir (path);
     }
   else
@@ -109,7 +115,7 @@ local_delete (const gchar * path, enum item_type type)
 }
 
 gint
-local_rename (const gchar * old, const gchar * new)
+local_rename (const gchar * old, const gchar * new, void *data)
 {
   debug_print (1, "Renaming locally from %s to %s...\n", old, new);
   return rename (old, new);
@@ -188,7 +194,7 @@ local_next_dentry (struct item_iterator *iter)
 }
 
 struct item_iterator *
-local_read_dir (const gchar * path)
+local_read_dir (const gchar * path, void *data_)
 {
   DIR *dir;
   struct item_iterator *iter;

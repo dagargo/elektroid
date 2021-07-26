@@ -27,10 +27,12 @@ struct local_iterator_data
   gchar *path;
 };
 
-gint local_mkdir (const gchar *);
+extern const struct fs_operations FS_LOCAL_OPERATIONS;
 
-gint local_delete (const gchar *, enum item_type);
+gint local_mkdir (const gchar *, void *);
 
-gint local_rename (const gchar *, const gchar *);
+gint local_delete (const gchar *, void *);
 
-struct item_iterator *local_read_dir (const gchar *);
+gint local_rename (const gchar *, const gchar *, void *);
+
+struct item_iterator *local_read_dir (const gchar *, void *);

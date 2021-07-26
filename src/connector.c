@@ -127,7 +127,7 @@ static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
   &MODEL_SAMPLES_DESC
 };
 
-static struct fs_operations FS_SAMPLES_OPERATIONS = {
+static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
   .readdir = connector_read_samples,
   .mkdir = connector_create_samples_dir,
@@ -141,7 +141,7 @@ static struct fs_operations FS_SAMPLES_OPERATIONS = {
   .getid = get_item_name
 };
 
-static struct fs_operations FS_DATA_OPERATIONS = {
+static const struct fs_operations FS_DATA_OPERATIONS = {
   .fs = FS_DATA,
   .readdir = connector_read_data,
   .mkdir = NULL,
@@ -155,7 +155,7 @@ static struct fs_operations FS_DATA_OPERATIONS = {
   .getid = get_item_index
 };
 
-static struct fs_operations FS_NONE_OPERATIONS = {
+static const struct fs_operations FS_NONE_OPERATIONS = {
   .fs = 0,
   .readdir = NULL,
   .mkdir = NULL,
@@ -1264,10 +1264,28 @@ connector_delete_samples_dir (struct connector *connector, const gchar * path)
 gint
 connector_delete_samples_item (const gchar * path, void *data)
 {
+  gchar *new_path;
+  struct item_iterator *iter;
   struct connector *connector = data;
 
   if (connector_get_path_type (connector, path) == ELEKTROID_DIR)
     {
+      debug_print (1, "Deleting %s samples dir...\n", path);
+      iter = connector_read_samples (path, connector);
+      if (iter)
+	{
+	  while (!next_item_iterator (iter))
+	    {
+	      new_path = chain_path (path, iter->entry);
+	      connector_delete_samples_item (new_path, connector);
+	      free (new_path);
+	    }
+	  free_item_iterator (iter);
+	}
+      else
+	{
+	  error_print ("Error while opening samples dir %s dir\n", path);
+	}
       return connector_delete_samples_dir (connector, path);
     }
   else

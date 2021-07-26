@@ -36,7 +36,6 @@
 #include "local.h"
 
 #define MAX_DRAW_X 10000
-#define SIZE_LABEL_LEN 16
 
 #define DUMP_TIMEOUT 2000
 #define DND_TIMEOUT 1000
@@ -114,7 +113,6 @@ struct elektroid_sysex_transfer
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (gdouble);
-static gboolean elektroid_load_local_dir (gpointer);
 
 static const struct option options[] = {
   {"local-directory", 1, NULL, 'l'},
@@ -238,8 +236,8 @@ static GtkWidget *clear_tasks_button;
 static GtkListStore *fs_list_store;
 static GtkComboBox *fs_combo;
 
-const gchar *
-get_inventory_icon_for_fs (enum connector_fs active_fs)
+static const gchar *
+elektroid_get_inventory_icon_for_fs (enum connector_fs active_fs)
 {
   const gchar *icon = FILE_ICON_WAVE;
 
@@ -253,14 +251,15 @@ get_inventory_icon_for_fs (enum connector_fs active_fs)
   return icon;
 }
 
-const gchar *
-get_inventory_icon_for_type (enum item_type type)
+static const gchar *
+elektroid_get_inventory_icon_for_type (struct browser *browser,
+				       enum item_type type)
 {
   const gchar *icon;
 
   if (type == ELEKTROID_FILE)
     {
-      icon = get_inventory_icon_for_fs (remote_browser.fs_operations->fs);
+      icon = elektroid_get_inventory_icon_for_fs (browser->fs_operations->fs);
     }
   else
     {
@@ -341,8 +340,8 @@ elektroid_update_statusbar ()
 	      if (connector.device_desc->storages & storage)
 		{
 		  res =
-		    connector_get_storage_stats (&connector, storage,
-						 &statfs);
+		    connector_get_storage_stats (&connector,
+						 storage, &statfs);
 		  if (!res)
 		    {
 		      g_string_append_printf (statfss, " %s %.2f%%",
@@ -854,7 +853,7 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path,
   path = browser_get_item_path (browser, item);
 
   debug_print (1, "Deleting %s...\n", path);
-  err = browser->delete (path, item->type);
+  err = browser->fs_operations->delete (path, browser->data);
   if (err < 0)
     {
       show_error_msg (_("Error while deleting “%s”: %s."),
@@ -919,7 +918,7 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
     }
   g_list_free_full (ref_list, (GDestroyNotify) gtk_tree_row_reference_free);
 
-  browser->load_dir (NULL);
+  browser_load_dir (browser);
 }
 
 static void
@@ -957,7 +956,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	  new_path =
 	    chain_path (browser->dir, gtk_entry_get_text (name_dialog_entry));
 
-	  err = browser->rename (old_path, new_path);
+	  err = browser->fs_operations->move (old_path, new_path, &connector);
 
 	  if (err < 0)
 	    {
@@ -966,7 +965,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	    }
 	  else
 	    {
-	      browser->load_dir (NULL);
+	      browser_load_dir (browser);
 	    }
 
 	  free (new_path);
@@ -1497,66 +1496,6 @@ elektroid_set_volume_callback (gdouble value)
   gtk_scale_button_set_value (GTK_SCALE_BUTTON (volume_button), value);
 }
 
-static void
-elektroid_add_dentry_item (GtkListStore * list_store,
-			   enum item_type type, const gchar * name,
-			   ssize_t size, gint index)
-{
-  const gchar *icon;
-  gchar sizes[SIZE_LABEL_LEN];
-
-
-  icon = get_inventory_icon_for_type (type);
-
-  if (size > 0)
-    {
-      snprintf (sizes, SIZE_LABEL_LEN, "%.2f MiB", size / (1024.0 * 1024.0));
-    }
-  else
-    {
-      sizes[0] = 0;
-    }
-
-  gtk_list_store_insert_with_values (list_store, NULL, -1,
-				     BROWSER_LIST_STORE_ICON_FIELD, icon,
-				     BROWSER_LIST_STORE_NAME_FIELD, name,
-				     BROWSER_LIST_STORE_SIZE_FIELD, size,
-				     BROWSER_LIST_STORE_SIZE_STR_FIELD, sizes,
-				     BROWSER_LIST_STORE_TYPE_FIELD, type,
-				     BROWSER_LIST_STORE_INDEX_FIELD, index,
-				     -1);
-}
-
-static gboolean
-elektroid_load_remote_dir (gpointer data)
-{
-  struct item_iterator *iter;
-  GtkListStore *list_store =
-    GTK_LIST_STORE (gtk_tree_view_get_model (remote_browser.view));
-
-  browser_reset (&remote_browser);
-
-  iter =
-    remote_browser.fs_operations->readdir (remote_browser.dir, &connector);
-  elektroid_check_connector ();
-  if (!iter)
-    {
-      error_print ("Error while opening remote %s dir\n", remote_browser.dir);
-      goto end;
-    }
-
-  while (!next_item_iterator (iter))
-    {
-      elektroid_add_dentry_item (list_store, iter->type,
-				 iter->entry, iter->size, iter->id);
-    }
-  free_item_iterator (iter);
-
-end:
-  gtk_tree_view_columns_autosize (remote_browser.view);
-  return FALSE;
-}
-
 static gint
 elektroid_valid_file (const gchar * name)
 {
@@ -1565,40 +1504,6 @@ elektroid_valid_file (const gchar * name)
   return (ext != NULL
 	  && (!strcasecmp (ext, "wav") || !strcasecmp (ext, "ogg")
 	      || !strcasecmp (ext, "aiff") || !strcasecmp (ext, "flac")));
-}
-
-static gboolean
-elektroid_go_up_local_dir (gpointer data)
-{
-  browser_go_up (NULL, &local_browser);
-  return FALSE;
-}
-
-static gboolean
-elektroid_load_local_dir (gpointer data)
-{
-  struct item_iterator *iter;
-  GtkListStore *list_store =
-    GTK_LIST_STORE (gtk_tree_view_get_model (local_browser.view));
-
-  browser_reset (&local_browser);
-
-  iter = local_read_dir (local_browser.dir);
-  while (!next_item_iterator (iter))
-    {
-      elektroid_add_dentry_item (list_store, iter->type,
-				 iter->entry, iter->size, iter->id);
-    }
-  free_item_iterator (iter);
-
-  gtk_tree_view_columns_autosize (local_browser.view);
-  return FALSE;
-}
-
-static gint
-elektroid_remote_mkdir (const gchar * name)
-{
-  return remote_browser.fs_operations->mkdir (name, &connector);
 }
 
 static void
@@ -1627,7 +1532,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 	  pathname =
 	    chain_path (browser->dir, gtk_entry_get_text (name_dialog_entry));
 
-	  err = browser->mkdir (pathname);
+	  err = browser->fs_operations->mkdir (pathname, &connector);
 
 	  if (err < 0)
 	    {
@@ -1636,7 +1541,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 	    }
 	  else
 	    {
-	      browser->load_dir (NULL);
+	      browser_load_dir (browser);
 	    }
 
 	  free (pathname);
@@ -1669,43 +1574,6 @@ elektroid_name_dialog_entry_changed (GtkWidget * object, gpointer data)
     {
       gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
     }
-}
-
-static gint
-elektroid_remote_rename (const gchar * old, const gchar * new)
-{
-  return remote_browser.fs_operations->move (old, new, &connector);
-}
-
-static gint
-elektroid_remote_delete (const gchar * path, enum item_type type)
-{
-  struct item_iterator *iter;
-  gchar *new_path;
-
-  debug_print (1, "Deleting remote %s item...\n", path);
-
-  if (type == ELEKTROID_DIR)
-    {
-      iter = remote_browser.fs_operations->readdir (path, &connector);
-      elektroid_check_connector ();
-      if (iter)
-	{
-	  while (!next_item_iterator (iter))
-	    {
-	      new_path = chain_path (path, iter->entry);
-	      elektroid_remote_delete (new_path, iter->type);
-	      free (new_path);
-	    }
-	  free_item_iterator (iter);
-	}
-      else
-	{
-	  error_print ("Error while opening remote %s dir\n", path);
-	}
-
-    }
-  return remote_browser.fs_operations->delete (path, &connector);
 }
 
 static gboolean
@@ -2059,7 +1927,7 @@ elektroid_upload_task (gpointer data)
     {
       if (strcmp (sample_transfer.dst, remote_browser.dir) == 0)
 	{
-	  g_idle_add (remote_browser.load_dir, NULL);
+	  g_idle_add (browser_load_dir, &remote_browser);
 	}
     }
 
@@ -2112,7 +1980,7 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
       goto cleanup_not_dir;
     }
 
-  if (elektroid_remote_mkdir (dst_abs_path))
+  if (remote_browser.fs_operations->mkdir (dst_abs_path, remote_browser.data))
     {
       error_print ("Error while creating remote %s dir\n", dst_abs_path);
       goto cleanup;
@@ -2120,7 +1988,7 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
 
   if (!strchr (rel_path, '/'))
     {
-      remote_browser.load_dir (NULL);
+      browser_load_dir (&remote_browser);
     }
 
   while ((dirent = readdir (dir)) != NULL)
@@ -2229,7 +2097,7 @@ elektroid_download_task (gpointer data)
     remote_browser.fs_operations->download (sample_transfer.src,
 					    &sample_transfer.transfer,
 					    elektroid_update_progress,
-					    &connector);
+					    remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
   if (sample == NULL && sample_transfer.transfer.active)
@@ -2242,7 +2110,7 @@ elektroid_download_task (gpointer data)
       g_mutex_lock (&sample_transfer.transfer.mutex);
       if (sample_transfer.transfer.active)
 	{
-	  local_mkdir (sample_transfer.dst);
+	  local_mkdir (sample_transfer.dst, NULL);
 	  debug_print (1, "Writing to file %s...\n", dst_path);
 	  frames = sample_save (sample, dst_path);
 	  debug_print (1, "%zu frames written\n", frames);
@@ -2261,7 +2129,7 @@ elektroid_download_task (gpointer data)
       g_array_free (sample, TRUE);
       if (strcmp (sample_transfer.dst, local_browser.dir) == 0)
 	{
-	  g_idle_add (local_browser.load_dir, NULL);
+	  g_idle_add (browser_load_dir, &local_browser);
 	}
     }
 
@@ -2282,7 +2150,8 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  iter = remote_browser.fs_operations->readdir (src_abs_path, &connector);
+  iter =
+    remote_browser.fs_operations->readdir (src_abs_path, remote_browser.data);
   elektroid_check_connector ();
   if (!iter)
     {
@@ -2292,7 +2161,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
       goto cleanup_not_dir;
     }
 
-  if (local_mkdir (dst_abs_path))
+  if (local_mkdir (dst_abs_path, NULL))
     {
       error_print ("Error while creating local %s dir\n", dst_abs_path);
       goto cleanup;
@@ -2300,7 +2169,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
 
   if (!strchr (rel_path, '/'))
     {
-      local_browser.load_dir (NULL);
+      browser_load_dir (&local_browser);
     }
 
   while (!next_item_iterator (iter))
@@ -2431,7 +2300,7 @@ elektroid_common_key_press (GtkWidget * widget, GdkEventKey * event,
     }
   else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_r)
     {
-      browser->load_dir (NULL);
+      browser_load_dir (browser);
       return TRUE;
     }
   else if (event->state & GDK_CONTROL_MASK
@@ -2515,7 +2384,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
       remote_browser.fs_operations = connector_get_fs_operations (fs);
       strcpy (remote_browser.dir, "/");
-      remote_browser.load_dir (NULL);
+      browser_load_dir (&remote_browser);
 
       gtk_widget_set_sensitive (remote_browser.up_button,
 				remote_browser.fs_operations->readdir !=
@@ -2604,6 +2473,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   GdkAtom type;
   gchar *type_name;
   gint res;
+  struct browser *browser = userdata;
 
   if (selection_data != NULL && gtk_selection_data_get_length (selection_data)
       && info == TARGET_STRING)
@@ -2632,7 +2502,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		  if (strcmp (dir, local_browser.dir))
 		    {
 		      dest_path = chain_path (local_browser.dir, name);
-		      res = local_rename (filename, dest_path);
+		      res = local_rename (filename, dest_path, NULL);
 		      if (res)
 			{
 			  show_error_msg (_(MSG_ERROR_MOVING), filename,
@@ -2658,14 +2528,18 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		  if (strcmp (dir, remote_browser.dir))
 		    {
 		      dest_path = chain_path (remote_browser.dir, name);
-		      res = elektroid_remote_rename (filename, dest_path);
+		      res =
+			remote_browser.fs_operations->move (filename,
+							    dest_path,
+							    remote_browser.
+							    data);
 		      if (res)
 			{
 			  show_error_msg (_(MSG_ERROR_MOVING), filename,
 					  dest_path, g_strerror (errno));
 			}
 		      g_free (dest_path);
-		      elektroid_load_remote_dir (NULL);
+		      browser_load_dir (browser);
 		    }
 		  else
 		    {
@@ -2872,6 +2746,12 @@ elektroid_drag_leave_up (GtkWidget * widget,
       g_source_remove (browser->dnd_timeout_function_id);
       browser->dnd_timeout_function_id = 0;
     }
+}
+
+static void
+elektroid_notify_local_dir_change (struct browser *browser)
+{
+  notifier_set_dir (&notifier, browser->dir);
 }
 
 static void
@@ -3087,11 +2967,11 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
       GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry")),
     .menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu")),
     .dir = malloc (PATH_MAX),
-    .load_dir = elektroid_load_remote_dir,
     .check_selection = elektroid_remote_check_selection,
-    .rename = elektroid_remote_rename,
-    .delete = elektroid_remote_delete,
-    .mkdir = elektroid_remote_mkdir
+    .get_icon = elektroid_get_inventory_icon_for_type,
+    .fs_operations = connector_get_fs_operations (-1),
+    .data = &connector,
+    .notify_dir_change = NULL
   };
 
   g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
@@ -3116,7 +2996,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (remote_browser.view, "drag-data-get",
 		    G_CALLBACK (elektroid_dnd_get), &remote_browser);
   g_signal_connect (remote_browser.view, "drag-data-received",
-		    G_CALLBACK (elektroid_dnd_received), NULL);
+		    G_CALLBACK (elektroid_dnd_received), &remote_browser);
   g_signal_connect (remote_browser.view, "drag-motion",
 		    G_CALLBACK (elektroid_drag_motion_list), &remote_browser);
   g_signal_connect (remote_browser.view, "drag-leave",
@@ -3157,11 +3037,11 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
       GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry")),
     .menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu")),
     .dir = malloc (PATH_MAX),
-    .load_dir = elektroid_load_local_dir,
     .check_selection = elektroid_local_check_selection,
-    .rename = local_rename,
-    .delete = local_delete,
-    .mkdir = local_mkdir
+    .get_icon = elektroid_get_inventory_icon_for_type,
+    .fs_operations = &FS_LOCAL_OPERATIONS,
+    .data = NULL,
+    .notify_dir_change = elektroid_notify_local_dir_change
   };
 
   g_signal_connect (gtk_tree_view_get_selection (local_browser.view),
@@ -3186,7 +3066,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   g_signal_connect (local_browser.view, "drag-data-get",
 		    G_CALLBACK (elektroid_dnd_get), &local_browser);
   g_signal_connect (local_browser.view, "drag-data-received",
-		    G_CALLBACK (elektroid_dnd_received), NULL);
+		    G_CALLBACK (elektroid_dnd_received), &local_browser);
   g_signal_connect (local_browser.view, "drag-motion",
 		    G_CALLBACK (elektroid_drag_motion_list), &local_browser);
   g_signal_connect (local_browser.view, "drag-leave",
@@ -3259,17 +3139,15 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
-  remote_browser.fs_operations = connector_get_fs_operations (-1);
   elektroid_load_devices (TRUE);
 
   gethostname (hostname, LABEL_MAX);
   gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
 
   strcpy (local_browser.dir, local_dir);
-  local_browser.load_dir (NULL);
+  browser_load_dir (&local_browser);
   debug_print (1, "Creating notifier thread...\n");
-  notifier_init (&notifier, elektroid_load_local_dir,
-		 elektroid_go_up_local_dir);
+  notifier_init (&notifier, &local_browser);
   notifier_set_dir (&notifier, local_dir);
   notifier_thread = g_thread_new ("notifier_thread", notifier_run, &notifier);
   free (local_dir);

@@ -141,7 +141,7 @@ void
 browser_refresh (GtkWidget * object, gpointer data)
 {
   struct browser *browser = data;
-  g_idle_add (browser->load_dir, NULL);
+  g_idle_add (browser_load_dir, browser);
 }
 
 void
@@ -157,9 +157,13 @@ browser_go_up (GtkWidget * object, gpointer data)
       new_path = dirname (dup);
       strcpy (browser->dir, new_path);
       free (dup);
+      if (browser->notify_dir_change)
+	{
+	  browser->notify_dir_change (browser);
+	}
     }
 
-  g_idle_add (browser->load_dir, NULL);
+  g_idle_add (browser_load_dir, browser);
 }
 
 void
@@ -182,7 +186,11 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 	  strcat (browser->dir, "/");
 	}
       strcat (browser->dir, item->name);
-      browser->load_dir (NULL);
+      browser_load_dir (browser);
+      if (browser->notify_dir_change)
+	{
+	  browser->notify_dir_change (browser);
+	}
     }
 
   browser_free_item (item);
@@ -215,4 +223,64 @@ browser_get_item_path (struct browser *browser, struct item *item)
   debug_print (1, "Using %s path for item %s...\n", path, item->name);
 
   return path;
+}
+
+static void
+local_add_dentry_item (struct browser *browser, struct item_iterator *iter)
+{
+  const gchar *icon;
+  gchar sizes[SIZE_LABEL_LEN];
+  GtkListStore *list_store =
+    GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
+
+
+  icon = browser->get_icon (browser, iter->type);
+
+  if (iter->size > 0)
+    {
+      snprintf (sizes, SIZE_LABEL_LEN, "%.2f MiB",
+		iter->size / (1024.0 * 1024.0));
+    }
+  else
+    {
+      sizes[0] = 0;
+    }
+
+  gtk_list_store_insert_with_values (list_store, NULL, -1,
+				     BROWSER_LIST_STORE_ICON_FIELD, icon,
+				     BROWSER_LIST_STORE_NAME_FIELD,
+				     iter->entry,
+				     BROWSER_LIST_STORE_SIZE_FIELD,
+				     iter->size,
+				     BROWSER_LIST_STORE_SIZE_STR_FIELD, sizes,
+				     BROWSER_LIST_STORE_TYPE_FIELD,
+				     iter->type,
+				     BROWSER_LIST_STORE_INDEX_FIELD, iter->id,
+				     -1);
+}
+
+gboolean
+browser_load_dir (gpointer data)
+{
+  struct item_iterator *iter;
+  struct browser *browser = data;
+
+  browser_reset (browser);
+
+  iter = browser->fs_operations->readdir (browser->dir, browser->data);
+  if (!iter)
+    {
+      error_print ("Error while opening %s dir\n", browser->dir);
+      goto end;
+    }
+
+  while (!next_item_iterator (iter))
+    {
+      local_add_dentry_item (browser, iter);
+    }
+  free_item_iterator (iter);
+
+end:
+  gtk_tree_view_columns_autosize (browser->view);
+  return FALSE;
 }

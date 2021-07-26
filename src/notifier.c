@@ -26,16 +26,14 @@
 #include "utils.h"
 
 void
-notifier_init (struct notifier *notifier, GSourceFunc refresh_dir,
-	       GSourceFunc up_dir)
+notifier_init (struct notifier *notifier, struct browser *browser)
 {
   notifier->fd = inotify_init ();
   notifier->wd = -1;
   notifier->event_size = sizeof (struct inotify_event) + PATH_MAX;
   notifier->event = malloc (notifier->event_size);
   notifier->running = 1;
-  notifier->refresh_dir = refresh_dir;
-  notifier->up_dir = up_dir;
+  notifier->browser = browser;
 }
 
 void
@@ -75,6 +73,14 @@ notifier_free (struct notifier *notifier)
   free (notifier->event);
 }
 
+static gboolean
+notifier_go_up (gpointer data)
+{
+  struct browser *browser = data;
+  browser_go_up (NULL, browser);
+  return FALSE;
+}
+
 gpointer
 notifier_run (gpointer data)
 {
@@ -102,13 +108,14 @@ notifier_run (gpointer data)
 	  || notifier->event->mask & IN_MOVED_FROM)
 	{
 	  debug_print (1, "Reloading local dir...\n");
-	  g_idle_add (notifier->refresh_dir, NULL);
+	  g_idle_add (browser_load_dir, notifier->browser);
 	}
       else if (notifier->event->mask & IN_DELETE_SELF
-	       || notifier->event->mask & IN_MOVE_SELF)
+	       || notifier->event->mask & IN_MOVE_SELF ||
+	       notifier->event->mask & IN_MOVED_TO)
 	{
 	  debug_print (1, "Loading local parent dir...\n");
-	  g_idle_add (notifier->up_dir, NULL);
+	  g_idle_add (notifier_go_up, notifier->browser);
 	}
       else
 	{
