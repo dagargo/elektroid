@@ -110,6 +110,13 @@ $ecli rmdir $DEVICE:/$TEST_NAME
 
 sleep 1
 
+echo "Testing recursive mkdir and rmdir..."
+$ecli mkdir $DEVICE:/$TEST_NAME/foo
+$ecli rmdir $DEVICE:/$TEST_NAME
+[ $? -ne 0 ] && exit 1
+
+sleep 1
+
 echo "Testing ls (nonexistent dir)..."
 $ecli ls $DEVICE:/$TEST_NAME
 [ $? -eq 0 ] && exit 1
