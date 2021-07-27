@@ -1965,14 +1965,15 @@ static void
 elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
 				gchar * dst_dir)
 {
+  struct item_iterator *iter;
   gchar *path;
-  struct dirent *dirent;
   gchar *dst_abs_dir;
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
-  DIR *dir = opendir (src_abs_path);
 
-  if (!dir)
+  iter =
+    local_browser.fs_operations->readdir (src_abs_path, local_browser.data);
+  if (!iter)
     {
       dst_abs_dir = dirname (dst_abs_path);
       elektroid_add_task (UPLOAD, src_abs_path, dst_abs_dir,
@@ -1991,35 +1992,25 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
       browser_load_dir (&remote_browser);
     }
 
-  while ((dirent = readdir (dir)) != NULL)
+  while (!next_item_iterator (iter))
     {
-      if (dirent->d_name[0] == '.')
+      if (iter->type == ELEKTROID_DIR)
 	{
-	  continue;
+	  path = chain_path (rel_path, iter->entry);
+	  elektroid_add_upload_task_path (path, src_dir, dst_dir);
+	  free (path);
 	}
-
-      if (dirent->d_type == DT_DIR
-	  || (dirent->d_type == DT_REG
-	      && elektroid_valid_file (dirent->d_name)))
+      else
 	{
-	  if (dirent->d_type == DT_DIR)
-	    {
-	      path = chain_path (rel_path, dirent->d_name);
-	      elektroid_add_upload_task_path (path, src_dir, dst_dir);
-	      free (path);
-	    }
-	  else
-	    {
-	      path = chain_path (src_abs_path, dirent->d_name);
-	      elektroid_add_task (UPLOAD, path, dst_abs_path,
-				  remote_browser.fs_operations->fs);
-	      free (path);
-	    }
+	  path = chain_path (src_abs_path, iter->entry);
+	  elektroid_add_task (UPLOAD, path, dst_abs_path,
+			      remote_browser.fs_operations->fs);
+	  free (path);
 	}
     }
 
 cleanup:
-  closedir (dir);
+  free_item_iterator (iter);
 cleanup_not_dir:
   free (dst_abs_path);
   free (src_abs_path);
@@ -2144,15 +2135,14 @@ static void
 elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
 				  gchar * dst_dir)
 {
+  struct item_iterator *iter;
   gchar *path;
   gchar *dst_abs_dir;
-  struct item_iterator *iter;
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
   iter =
     remote_browser.fs_operations->readdir (src_abs_path, remote_browser.data);
-  elektroid_check_connector ();
   if (!iter)
     {
       dst_abs_dir = dirname (dst_abs_path);
