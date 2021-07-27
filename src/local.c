@@ -130,16 +130,6 @@ local_free_iterator_data (void *iter_data)
   g_free (data);
 }
 
-static gboolean
-local_valid_file (const gchar * name)
-{
-  const gchar *ext = get_ext (name);
-
-  return (ext != NULL
-	  && (!strcasecmp (ext, "wav") || !strcasecmp (ext, "ogg")
-	      || !strcasecmp (ext, "aiff") || !strcasecmp (ext, "flac")));
-}
-
 static guint
 local_next_dentry (struct item_iterator *iter)
 {
@@ -161,8 +151,7 @@ local_next_dentry (struct item_iterator *iter)
 	  continue;
 	}
 
-      if (dirent->d_type == DT_DIR
-	  || (dirent->d_type == DT_REG && local_valid_file (dirent->d_name)))
+      if (dirent->d_type == DT_DIR || dirent->d_type == DT_REG)
 	{
 	  iter->entry = strdup (dirent->d_name);
 

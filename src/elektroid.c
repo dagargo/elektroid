@@ -43,10 +43,6 @@
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
 
-#define DIR_ICON "folder-visiting-symbolic"
-#define FILE_ICON_WAVE "elektroid-wave-symbolic"
-#define FILE_ICON_PATTERN "elektroid-pattern-symbolic"
-
 #define MSG_ERROR_MOVING "Error while moving from “%s” to “%s”: %s."
 #define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping...\n"
 
@@ -114,19 +110,24 @@ static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (gdouble);
 
-static const struct option options[] = {
+static const struct option ELEKTROID_OPTIONS[] = {
   {"local-directory", 1, NULL, 'l'},
   {"verbose", 0, NULL, 'v'},
   {"help", 0, NULL, 'h'},
   {NULL, 0, NULL, 0}
 };
 
-static const gchar *fs_names[] = {
+static const gchar *ELEKTROID_FS_NAMES[] = {
   "Samples", "Data"
 };
 
-static const gchar *fs_icons[] = {
+static const gchar *ELEKTROID_FS_ICONS[] = {
   FILE_ICON_WAVE, FILE_ICON_PATTERN
+};
+
+static const gchar **ELEKTROID_FS_LOCAL_EXTS[] = {
+  ((const gchar *[])
+   {"wav", "ogg", "aiff", "flac", NULL}), NULL
 };
 
 static GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
@@ -236,34 +237,33 @@ static GtkWidget *clear_tasks_button;
 static GtkListStore *fs_list_store;
 static GtkComboBox *fs_combo;
 
-static const gchar *
-elektroid_get_inventory_icon_for_fs (enum connector_fs active_fs)
+static const gchar **
+elektroid_get_file_extensions_for_fs (enum connector_fs sel_fs)
 {
-  const gchar *icon = FILE_ICON_WAVE;
-
+  const gchar **exts = ELEKTROID_FS_LOCAL_EXTS[0];
   for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA; fs <<= 1, i++)
     {
-      if (active_fs == fs)
+      if (sel_fs == fs)
 	{
-	  icon = fs_icons[i];
+	  exts = ELEKTROID_FS_LOCAL_EXTS[i];
+	  break;
 	}
     }
-  return icon;
+  return exts;
 }
 
 static const gchar *
-elektroid_get_inventory_icon_for_type (struct browser *browser,
-				       enum item_type type)
+elektroid_get_inventory_icon_for_fs (enum connector_fs sel_fs)
 {
-  const gchar *icon;
+  const gchar *icon = ELEKTROID_FS_ICONS[0];
 
-  if (type == ELEKTROID_FILE)
+  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA; fs <<= 1, i++)
     {
-      icon = elektroid_get_inventory_icon_for_fs (browser->fs_operations->fs);
-    }
-  else
-    {
-      icon = DIR_ICON;
+      if (sel_fs == fs)
+	{
+	  icon = ELEKTROID_FS_ICONS[i];
+	  break;
+	}
     }
   return icon;
 }
@@ -314,6 +314,13 @@ elektroid_load_devices (gboolean auto_select)
   device_index = auto_select && i == 1 ? 0 : -1;
   debug_print (1, "Selecting device %d...\n", device_index);
   gtk_combo_box_set_active (devices_combo, device_index);
+
+  if (device_index == -1)
+    {
+      local_browser.file_icon = elektroid_get_inventory_icon_for_fs (-1);
+      local_browser.extensions = elektroid_get_file_extensions_for_fs (-1);
+      browser_load_dir (&local_browser);
+    }
 }
 
 static void
@@ -1496,16 +1503,6 @@ elektroid_set_volume_callback (gdouble value)
   gtk_scale_button_set_value (GTK_SCALE_BUTTON (volume_button), value);
 }
 
-static gint
-elektroid_valid_file (const gchar * name)
-{
-  const gchar *ext = get_ext (name);
-
-  return (ext != NULL
-	  && (!strcasecmp (ext, "wav") || !strcasecmp (ext, "ogg")
-	      || !strcasecmp (ext, "aiff") || !strcasecmp (ext, "flac")));
-}
-
 static void
 elektroid_add_dir (GtkWidget * object, gpointer data)
 {
@@ -2376,6 +2373,11 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       strcpy (remote_browser.dir, "/");
       browser_load_dir (&remote_browser);
 
+      remote_browser.file_icon = elektroid_get_inventory_icon_for_fs (fs);
+      local_browser.file_icon = elektroid_get_inventory_icon_for_fs (fs);
+      local_browser.extensions = elektroid_get_file_extensions_for_fs (fs);
+      browser_load_dir (&local_browser);
+
       gtk_widget_set_sensitive (remote_browser.up_button,
 				remote_browser.fs_operations->readdir !=
 				NULL);
@@ -2403,9 +2405,9 @@ elektroid_fill_fs_combo ()
 					     FS_LIST_STORE_ID_FIELD,
 					     fs,
 					     FS_LIST_STORE_ICON_FIELD,
-					     fs_icons[i],
+					     ELEKTROID_FS_ICONS[i],
 					     FS_LIST_STORE_NAME_FIELD,
-					     fs_names[i], -1);
+					     ELEKTROID_FS_NAMES[i], -1);
 	}
     }
 
@@ -2958,7 +2960,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu")),
     .dir = malloc (PATH_MAX),
     .check_selection = elektroid_remote_check_selection,
-    .get_icon = elektroid_get_inventory_icon_for_type,
+    .file_icon = NULL,
     .fs_operations = connector_get_fs_operations (-1),
     .data = &connector,
     .notify_dir_change = NULL
@@ -3028,7 +3030,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu")),
     .dir = malloc (PATH_MAX),
     .check_selection = elektroid_local_check_selection,
-    .get_icon = elektroid_get_inventory_icon_for_type,
+    .file_icon = elektroid_get_inventory_icon_for_fs (FS_SAMPLES),
+    .extensions = elektroid_get_file_extensions_for_fs (FS_SAMPLES),
     .fs_operations = &FS_LOCAL_OPERATIONS,
     .data = NULL,
     .notify_dir_change = elektroid_notify_local_dir_change
@@ -3129,13 +3132,12 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
-  elektroid_load_devices (TRUE);
+  strcpy (local_browser.dir, local_dir);
+  elektroid_load_devices (TRUE);	//This triggers a local browser reload due to the extensions and icons selected for the fs
 
   gethostname (hostname, LABEL_MAX);
   gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
 
-  strcpy (local_browser.dir, local_dir);
-  browser_load_dir (&local_browser);
   debug_print (1, "Creating notifier thread...\n");
   notifier_init (&notifier, &local_browser);
   notifier_set_dir (&notifier, local_dir);
@@ -3174,7 +3176,7 @@ elektroid_print_help (gchar * executable_path)
   exec_name = basename (executable_path);
   fprintf (stderr, "Usage: %s [options]\n", exec_name);
   fprintf (stderr, "Options:\n");
-  option = options;
+  option = ELEKTROID_OPTIONS;
   while (option->name)
     {
       fprintf (stderr, "  --%s, -%c", option->name, option->val);
@@ -3203,7 +3205,9 @@ main (int argc, char *argv[])
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
 
-  while ((opt = getopt_long (argc, argv, "l:vh", options, &long_index)) != -1)
+  while ((opt =
+	  getopt_long (argc, argv, "l:vh", ELEKTROID_OPTIONS,
+		       &long_index)) != -1)
     {
       switch (opt)
 	{

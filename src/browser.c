@@ -228,13 +228,9 @@ browser_get_item_path (struct browser *browser, struct item *item)
 static void
 local_add_dentry_item (struct browser *browser, struct item_iterator *iter)
 {
-  const gchar *icon;
   gchar sizes[SIZE_LABEL_LEN];
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
-
-
-  icon = browser->get_icon (browser, iter->type);
 
   if (iter->size > 0)
     {
@@ -247,7 +243,10 @@ local_add_dentry_item (struct browser *browser, struct item_iterator *iter)
     }
 
   gtk_list_store_insert_with_values (list_store, NULL, -1,
-				     BROWSER_LIST_STORE_ICON_FIELD, icon,
+				     BROWSER_LIST_STORE_ICON_FIELD,
+				     iter->type ==
+				     ELEKTROID_DIR ? DIR_ICON :
+				     browser->file_icon,
 				     BROWSER_LIST_STORE_NAME_FIELD,
 				     iter->entry,
 				     BROWSER_LIST_STORE_SIZE_FIELD,
@@ -257,6 +256,41 @@ local_add_dentry_item (struct browser *browser, struct item_iterator *iter)
 				     iter->type,
 				     BROWSER_LIST_STORE_INDEX_FIELD, iter->id,
 				     -1);
+}
+
+static gboolean
+browser_file_match_extensions (struct browser *browser,
+			       struct item_iterator *iter)
+{
+  gboolean match;
+  const gchar *entry_ext;
+  const gchar **ext = browser->extensions;
+
+  if (iter->type == ELEKTROID_DIR)
+    {
+      return TRUE;
+    }
+
+  if (!ext)
+    {
+      return TRUE;
+    }
+
+  entry_ext = get_ext (iter->entry);
+
+  if (!entry_ext)
+    {
+      return FALSE;
+    }
+
+  match = FALSE;
+  while (*ext != NULL && !match)
+    {
+      match = !strcasecmp (entry_ext, *ext);
+      ext++;
+    }
+
+  return match;
 }
 
 gboolean
@@ -276,7 +310,10 @@ browser_load_dir (gpointer data)
 
   while (!next_item_iterator (iter))
     {
-      local_add_dentry_item (browser, iter);
+      if (browser_file_match_extensions (browser, iter))
+	{
+	  local_add_dentry_item (browser, iter);
+	}
     }
   free_item_iterator (iter);
 

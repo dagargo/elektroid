@@ -27,6 +27,10 @@
 
 #define SIZE_LABEL_LEN 16
 
+#define DIR_ICON "folder-visiting-symbolic"
+#define FILE_ICON_WAVE "elektroid-wave-symbolic"
+#define FILE_ICON_PATTERN "elektroid-pattern-symbolic"
+
 enum browser_list_field
 {
   BROWSER_LIST_STORE_ICON_FIELD = 0,
@@ -51,7 +55,8 @@ struct browser
   gint dnd_timeout_function_id;
   GString *dnd_data;
   void (*notify_dir_change) (struct browser *);
-  const gchar *(*get_icon) (struct browser *, enum item_type);
+  const gchar *file_icon;
+  const gchar **extensions;
   const struct fs_operations *fs_operations;
   void *data;
 };
