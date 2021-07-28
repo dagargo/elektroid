@@ -48,6 +48,36 @@
 #define DKEYS_ID 0x1c
 #define MOD_S_ID 0x19
 
+static gint connector_delete_samples_dir (struct connector *, const gchar *);
+
+static struct item_iterator *connector_read_samples (const gchar *, void *);
+
+static gint connector_create_samples_dir (const gchar *, void *);
+
+static gint connector_delete_samples_item (const gchar *, void *);
+
+static gint connector_move_samples_item (const gchar *, const gchar *,
+					 void *);
+
+static GArray *connector_download_sample (const gchar *,
+					  struct connector_sample_transfer *,
+					  void (*)(gdouble), void *);
+
+static ssize_t
+connector_upload_sample (GArray *, gchar *,
+			 struct connector_sample_transfer *,
+			 void (*)(gdouble), void *);
+
+static struct item_iterator *connector_read_data (const gchar *, void *);
+
+static gint connector_move_data_item (const gchar *, const gchar *, void *);
+
+static gint connector_copy_data_item (const gchar *, const gchar *, void *);
+
+static gint connector_clear_data_item (const gchar *, void *);
+
+static gint connector_swap_data_item (const gchar *, const gchar *, void *);
+
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
 static const guint8 PING_REQUEST[] = { 0x1 };
@@ -178,9 +208,6 @@ static const int FS_OPERATIONS_N =
 
 static enum item_type connector_get_path_type (struct connector *,
 					       const gchar *);
-
-static gint connector_delete_samples_dir (struct connector *, const gchar *);
-
 
 static void
 connector_free_iterator_data (void *iter_data)
@@ -2152,7 +2179,7 @@ connector_new_data_iterator (GByteArray * msg)
   return iter;
 }
 
-struct item_iterator *
+static struct item_iterator *
 connector_read_data (const gchar * path, void *data)
 {
   int res;
@@ -2180,7 +2207,7 @@ connector_read_data (const gchar * path, void *data)
   return connector_new_data_iterator (rx_msg);
 }
 
-gint
+static gint
 connector_move_data_item (const gchar * src, const gchar * dst, void *data)
 {
   struct connector *connector = data;
@@ -2188,7 +2215,7 @@ connector_move_data_item (const gchar * src, const gchar * dst, void *data)
 				   sizeof (DATA_MOVE_REQUEST));
 }
 
-gint
+static gint
 connector_copy_data_item (const gchar * src, const gchar * dst, void *data)
 {
   struct connector *connector = data;
@@ -2196,7 +2223,7 @@ connector_copy_data_item (const gchar * src, const gchar * dst, void *data)
 				   sizeof (DATA_COPY_REQUEST));
 }
 
-gint
+static gint
 connector_clear_data_item (const gchar * path, void *data)
 {
   struct connector *connector = data;
@@ -2204,7 +2231,7 @@ connector_clear_data_item (const gchar * path, void *data)
 				sizeof (DATA_CLEAR_REQUEST));
 }
 
-gint
+static gint
 connector_swap_data_item (const gchar * src, const gchar * dst, void *data)
 {
   struct connector *connector = data;

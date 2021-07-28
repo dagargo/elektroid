@@ -26,6 +26,14 @@
 #include <unistd.h>
 #include "local.h"
 
+static gint local_mkdir (const gchar *, void *);
+
+static gint local_delete (const gchar *, void *);
+
+static gint local_rename (const gchar *, const gchar *, void *);
+
+static struct item_iterator *local_read_dir (const gchar *, void *);
+
 const struct fs_operations FS_LOCAL_OPERATIONS = {
   .fs = 0,
   .readdir = local_read_dir,
@@ -80,7 +88,7 @@ cleanup:
   return error;
 }
 
-gint
+static gint
 local_delete (const gchar * path, void *data)
 {
   DIR *dir;
@@ -114,7 +122,7 @@ local_delete (const gchar * path, void *data)
     }
 }
 
-gint
+static gint
 local_rename (const gchar * old, const gchar * new, void *data)
 {
   debug_print (1, "Renaming locally from %s to %s...\n", old, new);
@@ -182,7 +190,7 @@ local_next_dentry (struct item_iterator *iter)
   return ret;
 }
 
-struct item_iterator *
+static struct item_iterator *
 local_read_dir (const gchar * path, void *data_)
 {
   DIR *dir;

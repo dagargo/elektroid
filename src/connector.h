@@ -125,30 +125,3 @@ gint connector_get_storage_stats (struct connector *,
 				  struct connector_storage_stats *);
 
 float connector_get_storage_stats_percent (struct connector_storage_stats *);
-
-struct item_iterator *connector_read_samples (const gchar *, void *);
-
-gint connector_create_samples_dir (const gchar *, void *);
-
-gint connector_delete_samples_item (const gchar *, void *);
-
-gint connector_move_samples_item (const gchar *, const gchar *, void *);
-
-GArray *connector_download_sample (const gchar *,
-				   struct connector_sample_transfer *,
-				   void (*)(gdouble), void *);
-
-ssize_t
-connector_upload_sample (GArray *, gchar *,
-			 struct connector_sample_transfer *,
-			 void (*)(gdouble), void *);
-
-struct item_iterator *connector_read_data (const gchar *, void *);
-
-gint connector_move_data_item (const gchar *, const gchar *, void *);
-
-gint connector_copy_data_item (const gchar *, const gchar *, void *);
-
-gint connector_clear_data_item (const gchar *, void *);
-
-gint connector_swap_data_item (const gchar *, const gchar *, void *);

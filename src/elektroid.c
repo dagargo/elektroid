@@ -2098,7 +2098,7 @@ elektroid_download_task (gpointer data)
       g_mutex_lock (&sample_transfer.transfer.mutex);
       if (sample_transfer.transfer.active)
 	{
-	  local_mkdir (sample_transfer.dst, NULL);
+	  local_browser.fs_operations->mkdir (sample_transfer.dst, NULL);
 	  debug_print (1, "Writing to file %s...\n", dst_path);
 	  frames = sample_save (sample, dst_path);
 	  debug_print (1, "%zu frames written\n", frames);
@@ -2148,7 +2148,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
       goto cleanup_not_dir;
     }
 
-  if (local_mkdir (dst_abs_path, NULL))
+  if (local_browser.fs_operations->mkdir (dst_abs_path, NULL))
     {
       error_print ("Error while creating local %s dir\n", dst_abs_path);
       goto cleanup;
@@ -2494,7 +2494,9 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		  if (strcmp (dir, local_browser.dir))
 		    {
 		      dest_path = chain_path (local_browser.dir, name);
-		      res = local_rename (filename, dest_path, NULL);
+		      res = local_browser.fs_operations->move (filename,
+							       dest_path,
+							       NULL);
 		      if (res)
 			{
 			  show_error_msg (_(MSG_ERROR_MOVING), filename,
@@ -2523,8 +2525,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		      res =
 			remote_browser.fs_operations->move (filename,
 							    dest_path,
-							    remote_browser.
-							    data);
+							    remote_browser.data);
 		      if (res)
 			{
 			  show_error_msg (_(MSG_ERROR_MOVING), filename,

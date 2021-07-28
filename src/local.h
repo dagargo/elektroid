@@ -28,11 +28,3 @@ struct local_iterator_data
 };
 
 extern const struct fs_operations FS_LOCAL_OPERATIONS;
-
-gint local_mkdir (const gchar *, void *);
-
-gint local_delete (const gchar *, void *);
-
-gint local_rename (const gchar *, const gchar *, void *);
-
-struct item_iterator *local_read_dir (const gchar *, void *);

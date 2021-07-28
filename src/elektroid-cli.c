@@ -35,6 +35,8 @@
 
 static struct connector connector;
 static struct connector_sample_transfer sample_transfer;
+static const struct fs_operations *fs_ops_samples;
+static const struct fs_operations *fs_ops_data;
 
 typedef void (*print_item) (struct item_iterator *);
 
@@ -248,8 +250,9 @@ cli_download (int argc, char *argv[], int optind)
   path_src = cli_get_path (device_path_src);
 
   sample_transfer.active = TRUE;
-  data =
-    connector_download_sample (path_src, &sample_transfer, NULL, &connector);
+  data = fs_ops_samples->download (path_src, &sample_transfer, NULL,
+				   &connector);
+
   if (data == NULL)
     {
       return EXIT_FAILURE;
@@ -321,9 +324,8 @@ cli_upload (int argc, char *argv[], int optind)
     }
 
   sample_transfer.active = TRUE;
-  frames =
-    connector_upload_sample (sample, path_dst, &sample_transfer,
-			     NULL, &connector);
+  frames = fs_ops_samples->upload (sample, path_dst, &sample_transfer,
+				   NULL, &connector);
 
   res = frames < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
@@ -417,7 +419,6 @@ main (int argc, char *argv[])
   gint c;
   gint res;
   gchar *command;
-  const struct fs_operations *fs_operations;
   gint vflg = 0, errflg = 0;
   struct sigaction action, old_action;
 
@@ -484,6 +485,9 @@ main (int argc, char *argv[])
       exit (EXIT_FAILURE);
     }
 
+  fs_ops_samples = connector_get_fs_operations (FS_SAMPLES);
+  fs_ops_data = connector_get_fs_operations (FS_DATA);
+
   if (strcmp (command, "ld") == 0 || strcmp (command, "list-devices") == 0)
     {
       res = cli_ld ();
@@ -491,27 +495,23 @@ main (int argc, char *argv[])
   else if (strcmp (command, "ls") == 0
 	   || strcmp (command, "list-samples") == 0)
     {
-      fs_operations = connector_get_fs_operations (FS_SAMPLES);
       res =
-	cli_list (argc, argv, optind, fs_operations->readdir, print_sample);
+	cli_list (argc, argv, optind, fs_ops_samples->readdir, print_sample);
     }
   else if (strcmp (command, "mkdir") == 0
 	   || strcmp (command, "mkdir-samples") == 0)
     {
-      res =
-	cli_command_path (argc, argv, optind, connector_create_samples_dir);
+      res = cli_command_path (argc, argv, optind, fs_ops_samples->mkdir);
     }
   else if (strcmp (command, "mv") == 0 || strcmp (command, "mv-sample") == 0)
     {
-      res =
-	cli_command_src_dst (argc, argv, optind, connector_move_samples_item);
+      res = cli_command_src_dst (argc, argv, optind, fs_ops_samples->move);
     }
   else if (strcmp (command, "rm") == 0 || strcmp (command, "rm-sample") == 0
 	   || strcmp (command, "rmdir") == 0
 	   || strcmp (command, "rmdir-samples") == 0)
     {
-      res =
-	cli_command_path (argc, argv, optind, connector_delete_samples_item);
+      res = cli_command_path (argc, argv, optind, fs_ops_samples->delete);
     }
   else if (strcmp (command, "download") == 0
 	   || strcmp (command, "download-sample") == 0)
@@ -535,28 +535,23 @@ main (int argc, char *argv[])
     }
   else if (strcmp (command, "list-data") == 0)
     {
-      fs_operations = connector_get_fs_operations (FS_DATA);
-      res =
-	cli_list (argc, argv, optind, fs_operations->readdir, print_datum);
+      res = cli_list (argc, argv, optind, fs_ops_data->readdir, print_datum);
     }
   else if (strcmp (command, "clear-data") == 0)
     {
-      res = cli_command_path (argc, argv, optind, connector_clear_data_item);
+      res = cli_command_path (argc, argv, optind, fs_ops_data->clear);
     }
   else if (strcmp (command, "copy-data") == 0)
     {
-      res =
-	cli_command_src_dst (argc, argv, optind, connector_copy_data_item);
+      res = cli_command_src_dst (argc, argv, optind, fs_ops_data->copy);
     }
   else if (strcmp (command, "swap-data") == 0)
     {
-      res =
-	cli_command_src_dst (argc, argv, optind, connector_swap_data_item);
+      res = cli_command_src_dst (argc, argv, optind, fs_ops_data->swap);
     }
   else if (strcmp (command, "move-data") == 0)
     {
-      res =
-	cli_command_src_dst (argc, argv, optind, connector_move_data_item);
+      res = cli_command_src_dst (argc, argv, optind, fs_ops_data->move);
     }
   else
     {
