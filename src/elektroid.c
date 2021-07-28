@@ -1856,9 +1856,7 @@ elektroid_run_next_task (gpointer data)
 static gpointer
 elektroid_upload_task (gpointer data)
 {
-  char *basec;
-  char *bname;
-  char *remote_path;
+  gchar *dst_dir;
   ssize_t frames;
   GArray *sample;
 
@@ -1870,14 +1868,7 @@ elektroid_upload_task (gpointer data)
     }
 
   debug_print (1, "Local path: %s\n", sample_transfer.src);
-
-  basec = strdup (sample_transfer.src);
-  bname = basename (basec);
-  remove_ext (bname);
-  remote_path = chain_path (sample_transfer.dst, bname);
-  free (basec);
-
-  debug_print (1, "Remote path: %s\n", remote_path);
+  debug_print (1, "Remote path: %s\n", sample_transfer.dst);
 
   sample = g_array_new (FALSE, FALSE, sizeof (gshort));
 
@@ -1892,12 +1883,11 @@ elektroid_upload_task (gpointer data)
       goto end;
     }
 
-  frames = sample_transfer.fs_operations->upload (sample, remote_path,
+  frames = sample_transfer.fs_operations->upload (sample, sample_transfer.dst,
 						  &sample_transfer.transfer,
 						  elektroid_update_progress,
 						  remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
-  free (remote_path);
 
   if (frames < 0 && sample_transfer.transfer.active)
     {
@@ -1922,10 +1912,13 @@ elektroid_upload_task (gpointer data)
 
   if (frames > 0)
     {
-      if (strcmp (sample_transfer.dst, remote_browser.dir) == 0)
+      dst_dir = strdup (sample_transfer.dst);
+      dirname (dst_dir);
+      if (strcmp (dst_dir, remote_browser.dir) == 0)
 	{
 	  g_idle_add (browser_load_dir, &remote_browser);
 	}
+      g_free (dst_dir);
     }
 
 end:
@@ -1964,16 +1957,15 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
 {
   struct item_iterator *iter;
   gchar *path;
-  gchar *dst_abs_dir;
-  gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
+  gchar *src_abs_path = chain_path (src_dir, rel_path);
 
   iter =
     local_browser.fs_operations->readdir (src_abs_path, local_browser.data);
   if (!iter)
     {
-      dst_abs_dir = dirname (dst_abs_path);
-      elektroid_add_task (UPLOAD, src_abs_path, dst_abs_dir,
+      remove_ext (dst_abs_path);
+      elektroid_add_task (UPLOAD, src_abs_path, dst_abs_path,
 			  remote_browser.fs_operations->fs);
       goto cleanup_not_dir;
     }
@@ -1991,19 +1983,9 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
 
   while (!next_item_iterator (iter))
     {
-      if (iter->type == ELEKTROID_DIR)
-	{
-	  path = chain_path (rel_path, iter->entry);
-	  elektroid_add_upload_task_path (path, src_dir, dst_dir);
-	  free (path);
-	}
-      else
-	{
-	  path = chain_path (src_abs_path, iter->entry);
-	  elektroid_add_task (UPLOAD, path, dst_abs_path,
-			      remote_browser.fs_operations->fs);
-	  free (path);
-	}
+      path = chain_path (rel_path, iter->entry);
+      elektroid_add_upload_task_path (path, src_dir, dst_dir);
+      free (path);
     }
 
 cleanup:
@@ -2057,10 +2039,7 @@ elektroid_download_task (gpointer data)
 {
   GArray *sample;
   size_t frames;
-  gchar *dst_path;
-  gchar *basec;
-  gchar *bname;
-  gchar *new_filename;
+  gchar *dst_dir;
 
   if (!sample_transfer.fs_operations->download)
     {
@@ -2070,16 +2049,7 @@ elektroid_download_task (gpointer data)
     }
 
   debug_print (1, "Remote path: %s\n", sample_transfer.src);
-
-  basec = strdup (sample_transfer.src);
-  bname = basename (basec);
-  new_filename = malloc (PATH_MAX);
-  snprintf (new_filename, PATH_MAX, "%s.wav", bname);
-  free (basec);
-  dst_path = chain_path (sample_transfer.dst, new_filename);
-  free (new_filename);
-
-  debug_print (1, "Local path: %s\n", dst_path);
+  debug_print (1, "Local path: %s\n", sample_transfer.dst);
 
   sample =
     remote_browser.fs_operations->download (sample_transfer.src,
@@ -2098,11 +2068,13 @@ elektroid_download_task (gpointer data)
       g_mutex_lock (&sample_transfer.transfer.mutex);
       if (sample_transfer.transfer.active)
 	{
-	  local_browser.fs_operations->mkdir (sample_transfer.dst, NULL);
-	  debug_print (1, "Writing to file %s...\n", dst_path);
-	  frames = sample_save (sample, dst_path);
+	  dst_dir = strdup (sample_transfer.dst);
+	  dirname (dst_dir);
+	  local_browser.fs_operations->mkdir (dst_dir, NULL);
+	  debug_print (1, "Writing to file %s...\n", sample_transfer.dst);
+	  frames = sample_save (sample, sample_transfer.dst);
 	  debug_print (1, "%zu frames written\n", frames);
-	  free (dst_path);
+	  free (dst_dir);
 	  sample_transfer.status = COMPLETED_OK;
 	}
       else
@@ -2134,7 +2106,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
 {
   struct item_iterator *iter;
   gchar *path;
-  gchar *dst_abs_dir;
+  gchar dst_abs_path_ext[PATH_MAX];
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
@@ -2142,8 +2114,8 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
     remote_browser.fs_operations->readdir (src_abs_path, remote_browser.data);
   if (!iter)
     {
-      dst_abs_dir = dirname (dst_abs_path);
-      elektroid_add_task (DOWNLOAD, src_abs_path, dst_abs_dir,
+      snprintf (dst_abs_path_ext, PATH_MAX, "%s.wav", dst_abs_path);
+      elektroid_add_task (DOWNLOAD, src_abs_path, dst_abs_path_ext,
 			  remote_browser.fs_operations->fs);
       goto cleanup_not_dir;
     }
@@ -2161,19 +2133,9 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
 
   while (!next_item_iterator (iter))
     {
-      if (iter->type == ELEKTROID_DIR)
-	{
-	  path = chain_path (rel_path, iter->entry);
-	  elektroid_add_download_task_path (path, src_dir, dst_dir);
-	  free (path);
-	}
-      else
-	{
-	  path = chain_path (src_abs_path, iter->entry);
-	  elektroid_add_task (DOWNLOAD, path, dst_abs_path,
-			      remote_browser.fs_operations->fs);
-	  free (path);
-	}
+      path = chain_path (rel_path, iter->entry);
+      elektroid_add_download_task_path (path, src_dir, dst_dir);
+      free (path);
     }
 
 cleanup:
@@ -2525,7 +2487,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		      res =
 			remote_browser.fs_operations->move (filename,
 							    dest_path,
-							    remote_browser.data);
+							    remote_browser.
+							    data);
 		      if (res)
 			{
 			  show_error_msg (_(MSG_ERROR_MOVING), filename,
