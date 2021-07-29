@@ -1061,6 +1061,7 @@ connector_read_samples (const gchar * dir, void *data)
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
+      errno = EIO;
       return NULL;
     }
 
@@ -2180,27 +2181,35 @@ connector_new_data_iterator (GByteArray * msg)
 }
 
 static struct item_iterator *
-connector_read_data (const gchar * path, void *data)
+connector_read_data (const gchar * dir, void *data)
 {
   int res;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   struct connector *connector = data;
+  gchar *dir_cp1252 = g_convert (dir, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
-  tx_msg = connector_new_msg_data_list (path, 0, 0, 1);
+  if (!dir_cp1252)
+      {
+        errno = EINVAL;
+        return NULL;
+      }
+
+  tx_msg = connector_new_msg_data_list (dir_cp1252, 0, 0, 1);
+  g_free (dir_cp1252);
+
   rx_msg = connector_tx_and_rx (connector, tx_msg);
-
   if (!rx_msg)
     {
+      errno = EIO;
       return NULL;
     }
 
   res = connector_get_msg_status (rx_msg);
   if (!res)
     {
-      error_print ("Cannot get data list: %s\n",
-		   connector_get_msg_string (rx_msg));
       free_msg (rx_msg);
+      errno = ENOTDIR;
       return NULL;
     }
 
