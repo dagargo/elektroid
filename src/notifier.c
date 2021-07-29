@@ -39,6 +39,7 @@ notifier_init (struct notifier *notifier, struct browser *browser)
 void
 notifier_set_dir (struct notifier *notifier, gchar * path)
 {
+  debug_print (1, "Changing notifier path to %s...\n", path);
   if (notifier->fd < 0)
     {
       return;
@@ -50,7 +51,7 @@ notifier_set_dir (struct notifier *notifier, gchar * path)
   notifier->wd =
     inotify_add_watch (notifier->fd, path,
 		       IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_DELETE_SELF
-		       | IN_MOVE_SELF);
+		       | IN_MOVE_SELF | IN_MOVED_TO);
 }
 
 void
@@ -105,7 +106,8 @@ notifier_run (gpointer data)
 
       if (notifier->event->mask & IN_CREATE
 	  || notifier->event->mask & IN_DELETE
-	  || notifier->event->mask & IN_MOVED_FROM)
+	  || notifier->event->mask & IN_MOVED_FROM
+	  || notifier->event->mask & IN_MOVED_TO)
 	{
 	  debug_print (1, "Reloading local dir...\n");
 	  g_idle_add (browser_load_dir, notifier->browser);
