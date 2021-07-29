@@ -237,6 +237,19 @@ static GtkWidget *clear_tasks_button;
 static GtkListStore *fs_list_store;
 static GtkComboBox *fs_combo;
 
+static const gchar *
+elektroid_get_fs_name (enum connector_fs selected)
+{
+  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA; fs = fs << 1, i++)
+    {
+      if (fs == selected)
+	{
+	  return ELEKTROID_FS_NAMES[i];
+	}
+    }
+  return NULL;
+}
+
 static const gchar **
 elektroid_get_file_extensions_for_fs (enum connector_fs sel_fs)
 {
@@ -1826,8 +1839,10 @@ elektroid_run_next_task (gpointer data)
       sample_transfer.src = src;
       sample_transfer.dst = dst;
       sample_transfer.fs_operations = connector_get_fs_operations (fs);
-      debug_print (1, "Running task type %d from %s to %s...\n", type,
-		   sample_transfer.src, sample_transfer.dst);
+      debug_print (1, "Running task type %d from %s to %s (%s)...\n", type,
+		   sample_transfer.src, sample_transfer.dst,
+		   elektroid_get_fs_name (fs));
+
       if (type == UPLOAD)
 	{
 	  task_thread =
