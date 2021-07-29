@@ -1871,6 +1871,7 @@ elektroid_run_next_task (gpointer data)
 static gpointer
 elektroid_upload_task (gpointer data)
 {
+  gchar *dst_path;
   gchar *dst_dir;
   ssize_t frames;
   GArray *sample;
@@ -1927,13 +1928,13 @@ elektroid_upload_task (gpointer data)
 
   if (frames > 0)
     {
-      dst_dir = strdup (sample_transfer.dst);
-      dirname (dst_dir);
+      dst_path = strdup (sample_transfer.dst);
+      dst_dir = dirname (dst_path);
       if (strcmp (dst_dir, remote_browser.dir) == 0)
 	{
 	  g_idle_add (browser_load_dir, &remote_browser);
 	}
-      g_free (dst_dir);
+      g_free (dst_path);
     }
 
 end:
@@ -2052,9 +2053,10 @@ elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
 static gpointer
 elektroid_download_task (gpointer data)
 {
+  gchar *dst_path;
+  gchar *dst_dir;
   GArray *sample;
   size_t frames;
-  gchar *dst_dir;
 
   if (!sample_transfer.fs_operations->download)
     {
@@ -2083,13 +2085,13 @@ elektroid_download_task (gpointer data)
       g_mutex_lock (&sample_transfer.transfer.mutex);
       if (sample_transfer.transfer.active)
 	{
-	  dst_dir = strdup (sample_transfer.dst);
-	  dirname (dst_dir);
+	  dst_path = strdup (sample_transfer.dst);
+	  dst_dir = dirname (dst_path);
 	  local_browser.fs_operations->mkdir (dst_dir, NULL);
 	  debug_print (1, "Writing to file %s...\n", sample_transfer.dst);
 	  frames = sample_save (sample, sample_transfer.dst);
 	  debug_print (1, "%zu frames written\n", frames);
-	  free (dst_dir);
+	  free (dst_path);
 	  sample_transfer.status = COMPLETED_OK;
 	}
       else
