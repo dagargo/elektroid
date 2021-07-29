@@ -203,16 +203,16 @@ free_msg (gpointer msg)
 }
 
 gchar *
-get_item_name (struct item *item)
+get_item_name (struct item_iterator *iter)
 {
-  return strdup (item->name);
+  return strdup (iter->entry);
 }
 
 gchar *
-get_item_index (struct item *item)
+get_item_index (struct item_iterator *iter)
 {
   gchar *id = malloc (LABEL_MAX);
-  snprintf (id, LABEL_MAX, "%d", item->index);
+  snprintf (id, LABEL_MAX, "%d", iter->id);
   return id;
 }
 

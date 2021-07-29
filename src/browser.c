@@ -92,10 +92,10 @@ browser_sort (GtkTreeModel * model,
   return ret;
 }
 
-struct item *
+struct browser_item *
 browser_get_item (GtkTreeModel * model, GtkTreeIter * iter)
 {
-  struct item *item = malloc (sizeof (item));
+  struct browser_item *item = malloc (sizeof (struct browser_item));
 
   gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_TYPE_FIELD, &item->type,
 		      BROWSER_LIST_STORE_NAME_FIELD, &item->name,
@@ -171,7 +171,7 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 			GtkTreeViewColumn * column, gpointer data)
 {
   GtkTreeIter iter;
-  struct item *item;
+  struct browser_item *item;
   struct browser *browser = data;
   GtkTreeModel *model = GTK_TREE_MODEL (gtk_tree_view_get_model
 					(browser->view));
@@ -205,23 +205,17 @@ browser_get_selected_items_count (struct browser *browser)
 }
 
 void
-browser_free_item (struct item *item)
+browser_free_item (struct browser_item *item)
 {
   g_free (item->name);
   g_free (item);
 }
 
 gchar *
-browser_get_item_path (struct browser *browser, struct item *item)
+browser_get_item_path (struct browser *browser, struct browser_item *item)
 {
-  gchar *id;
-  gchar *path;
-
-  id = browser->fs_operations->getid (item);
-  path = chain_path (browser->dir, id);
-  g_free (id);
+  gchar *path = path = chain_path (browser->dir, item->name);
   debug_print (1, "Using %s path for item %s...\n", path, item->name);
-
   return path;
 }
 

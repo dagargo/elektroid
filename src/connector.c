@@ -168,7 +168,8 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .swap = NULL,
   .download = connector_download_sample,
   .upload = connector_upload_sample,
-  .getid = get_item_name
+  .getid = get_item_name,
+  .download_ext = "wav"
 };
 
 static const struct fs_operations FS_DATA_OPERATIONS = {
@@ -182,7 +183,8 @@ static const struct fs_operations FS_DATA_OPERATIONS = {
   .swap = connector_swap_data_item,
   .download = NULL,
   .upload = NULL,
-  .getid = get_item_index
+  .getid = get_item_index,
+  .download_ext = "data"
 };
 
 static const struct fs_operations FS_NONE_OPERATIONS = {
@@ -196,7 +198,8 @@ static const struct fs_operations FS_NONE_OPERATIONS = {
   .swap = NULL,
   .download = NULL,
   .upload = NULL,
-  .getid = NULL
+  .getid = NULL,
+  .download_ext = NULL
 };
 
 static const struct fs_operations *FS_OPERATIONS[] = {
@@ -2190,10 +2193,10 @@ connector_read_data (const gchar * dir, void *data)
   gchar *dir_cp1252 = g_convert (dir, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
   if (!dir_cp1252)
-      {
-        errno = EINVAL;
-        return NULL;
-      }
+    {
+      errno = EINVAL;
+      return NULL;
+    }
 
   tx_msg = connector_new_msg_data_list (dir_cp1252, 0, 0, 1);
   g_free (dir_cp1252);

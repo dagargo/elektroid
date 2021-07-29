@@ -36,14 +36,6 @@ enum item_type
   ELEKTROID_DIR = 'D'
 };
 
-struct item
-{
-  gchar *name;
-  gint size;
-  gint index;
-  enum item_type type;
-};
-
 struct item_iterator;
 
 typedef guint (*iterator_next) (struct item_iterator *);
@@ -82,7 +74,7 @@ typedef ssize_t (*fs_upload_func) (GArray *,
 				   struct connector_sample_transfer *,
 				   void (*)(gdouble), void *);
 
-typedef gchar *(*fs_get_item_id) (struct item *);
+typedef gchar *(*fs_get_item_id) (struct item_iterator *);
 
 struct fs_operations
 {
@@ -97,6 +89,7 @@ struct fs_operations
   fs_download_func download;
   fs_upload_func upload;
   fs_get_item_id getid;
+  const gchar *download_ext;
 };
 
 extern int debug_level;
@@ -117,9 +110,9 @@ gchar *get_local_startup_path (const gchar *);
 
 void free_msg (gpointer);
 
-gchar *get_item_name (struct item *);
+gchar *get_item_name (struct item_iterator *);
 
-gchar *get_item_index (struct item *);
+gchar *get_item_index (struct item_iterator *);
 
 guint next_item_iterator (struct item_iterator *);
 

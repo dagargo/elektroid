@@ -45,7 +45,7 @@ const struct fs_operations FS_LOCAL_OPERATIONS = {
   .swap = NULL,
   .download = NULL,
   .upload = NULL,
-  .getid = get_item_name
+  .download_ext = NULL
 };
 
 gint
@@ -199,7 +199,6 @@ local_read_dir (const gchar * path, void *data_)
 
   if (!(dir = opendir (path)))
     {
-      error_print ("Error while opening local %s dir\n", path);
       return NULL;
     }
 

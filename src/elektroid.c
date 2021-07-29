@@ -237,6 +237,47 @@ static GtkWidget *clear_tasks_button;
 static GtkListStore *fs_list_store;
 static GtkComboBox *fs_combo;
 
+static gchar *
+elektroid_get_id_path (gchar * path)
+{
+  gchar *id;
+  gchar *dir;
+  gchar *dirc;
+  gchar *name;
+  gchar *namec;
+  gchar *src_abs_path_id;
+  struct item_iterator *iter;
+
+  dirc = strdup (path);
+  dir = dirname (dirc);
+  iter = remote_browser.fs_operations->readdir (dir, remote_browser.data);
+  if (!iter)
+    {
+      return NULL;
+    }
+
+  namec = strdup (path);
+  name = basename (namec);
+
+  src_abs_path_id = NULL;
+  while (!next_item_iterator (iter))
+    {
+      if (strcmp (iter->entry, name) == 0)
+	{
+	  id = remote_browser.fs_operations->getid (iter);
+	  src_abs_path_id = chain_path (dir, id);
+	  g_free (id);
+	  break;
+	}
+    }
+
+  free_item_iterator (iter);
+  g_free (namec);
+  g_free (dirc);
+
+  return src_abs_path_id;
+}
+
 static const gchar *
 elektroid_get_fs_name (enum connector_fs selected)
 {
@@ -330,8 +371,10 @@ elektroid_load_devices (gboolean auto_select)
 
   if (device_index == -1)
     {
-      local_browser.file_icon = elektroid_get_inventory_icon_for_fs (-1);
-      local_browser.extensions = elektroid_get_file_extensions_for_fs (-1);
+      local_browser.file_icon =
+	elektroid_get_inventory_icon_for_fs (FS_SAMPLES);
+      local_browser.extensions =
+	elektroid_get_file_extensions_for_fs (FS_SAMPLES);
       browser_load_dir (&local_browser);
     }
 }
@@ -866,7 +909,7 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path,
   GtkTreeIter iter;
   gchar *path;
   gint err;
-  struct item *item;
+  struct browser_item *item;
 
   gtk_tree_model_get_iter (model, &iter, tree_path);
   item = browser_get_item (model, &iter);
@@ -949,7 +992,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
   int result;
   gint err;
   GtkTreeIter iter;
-  struct item *item;
+  struct browser_item *item;
   struct browser *browser = data;
   GtkTreeModel *model =
     GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
@@ -1008,7 +1051,7 @@ elektroid_drag_begin (GtkWidget * widget,
   GList *list;
   gchar *uri;
   gchar *full_path;
-  struct item *item;
+  struct browser_item *item;
   struct browser *browser = data;
 
   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (widget));
@@ -1297,7 +1340,7 @@ elektroid_local_check_selection (gpointer data)
   GtkTreeIter iter;
   gchar *sample_path;
   GtkTreeModel *model;
-  struct item *item;
+  struct browser_item *item;
   gint count = browser_get_selected_items_count (&local_browser);
 
   audio_stop (&audio, TRUE);
@@ -1390,7 +1433,7 @@ elektroid_show_clicked (GtkWidget * object, gpointer data)
   GVariantBuilder builder;
   GFile *file;
   GDBusProxy *proxy;
-  struct item *item;
+  struct browser_item *item;
   gchar *path = NULL;
   gboolean done = FALSE;
   gint count = browser_get_selected_items_count (&local_browser);
@@ -1462,7 +1505,7 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
   gchar *path;
   gchar *uri;
   GFile *file;
-  struct item *item;
+  struct browser_item *item;
 
   browser_set_selected_row_iter (&local_browser, &iter);
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
@@ -2016,7 +2059,7 @@ elektroid_add_upload_task (GtkTreeModel * model,
 			   GtkTreePath * path,
 			   GtkTreeIter * iter, gpointer userdata)
 {
-  struct item *item = browser_get_item (model, iter);
+  struct browser_item *item = browser_get_item (model, iter);
   elektroid_add_upload_task_path (item->name, local_browser.dir,
 				  remote_browser.dir);
   browser_free_item (item);
@@ -2069,10 +2112,10 @@ elektroid_download_task (gpointer data)
   debug_print (1, "Local path: %s\n", sample_transfer.dst);
 
   sample =
-    remote_browser.fs_operations->download (sample_transfer.src,
-					    &sample_transfer.transfer,
-					    elektroid_update_progress,
-					    remote_browser.data);
+    sample_transfer.fs_operations->download (sample_transfer.src,
+					     &sample_transfer.transfer,
+					     elektroid_update_progress,
+					     remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
   if (sample == NULL && sample_transfer.transfer.active)
@@ -2131,9 +2174,12 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
     remote_browser.fs_operations->readdir (src_abs_path, remote_browser.data);
   if (!iter)
     {
-      snprintf (dst_abs_path_ext, PATH_MAX, "%s.wav", dst_abs_path);
-      elektroid_add_task (DOWNLOAD, src_abs_path, dst_abs_path_ext,
+      path = elektroid_get_id_path (src_abs_path);
+      snprintf (dst_abs_path_ext, PATH_MAX, "%s.%s", dst_abs_path,
+		remote_browser.fs_operations->download_ext);
+      elektroid_add_task (DOWNLOAD, path, dst_abs_path_ext,
 			  remote_browser.fs_operations->fs);
+      g_free (path);
       goto cleanup_not_dir;
     }
 
@@ -2167,7 +2213,7 @@ elektroid_add_download_task (GtkTreeModel * model,
 			     GtkTreePath * path,
 			     GtkTreeIter * iter, gpointer data)
 {
-  struct item *item = browser_get_item (model, iter);
+  struct browser_item *item = browser_get_item (model, iter);
   elektroid_add_download_task_path (item->name, remote_browser.dir,
 				    local_browser.dir);
   browser_free_item (item);
@@ -2504,8 +2550,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		      res =
 			remote_browser.fs_operations->move (filename,
 							    dest_path,
-							    remote_browser.
-							    data);
+							    remote_browser.data);
 		      if (res)
 			{
 			  show_error_msg (_(MSG_ERROR_MOVING), filename,
@@ -2599,7 +2644,7 @@ elektroid_drag_motion_list (GtkWidget * widget,
   gint tx;
   gint ty;
   GtkTreeSelection *selection;
-  struct item *item;
+  struct browser_item *item;
   struct browser *browser = user_data;
 
   gtk_tree_view_convert_widget_to_bin_window_coords
