@@ -21,73 +21,46 @@
 #include "browser.h"
 
 gint
-browser_sort (GtkTreeModel * model,
-	      GtkTreeIter * a, GtkTreeIter * b, gpointer data)
+browser_sort_samples (GtkTreeModel * model,
+		      GtkTreeIter * a, GtkTreeIter * b, gpointer data)
 {
+  struct browser_item *itema;
+  struct browser_item *itemb;
   gint ret = 0;
-  gchar *type1, *type2;
-  gchar *name1, *name2;
 
-  gtk_tree_model_get (model, a, 0, &type1, -1);
-  gtk_tree_model_get (model, b, 0, &type2, -1);
+  itema = browser_get_item (model, a);
+  itemb = browser_get_item (model, b);
 
-  if (type1 == NULL || type2 == NULL)
+  if (itema->type == itemb->type)
     {
-      if (type1 == NULL && type2 == NULL)
-	{
-	  ret = 0;
-	}
-      else
-	{
-	  if (type1 == NULL)
-	    {
-	      ret = -1;
-	      g_free (type2);
-	    }
-	  else
-	    {
-	      ret = 1;
-	      g_free (type1);
-	    }
-	}
+      ret = g_utf8_collate (itema->name, itemb->name);
     }
   else
     {
-      ret = -g_utf8_collate (type1, type2);
-      g_free (type1);
-      g_free (type2);
-      if (ret == 0)
-	{
-	  gtk_tree_model_get (model, a, 1, &name1, -1);
-	  gtk_tree_model_get (model, b, 1, &name2, -1);
-	  if (name1 == NULL || name2 == NULL)
-	    {
-	      if (name1 == NULL && name2 == NULL)
-		{
-		  ret = 0;
-		}
-	      else
-		{
-		  if (name1 == NULL)
-		    {
-		      ret = -1;
-		      g_free (name2);
-		    }
-		  else
-		    {
-		      ret = 1;
-		      g_free (name1);
-		    }
-		}
-	    }
-	  else
-	    {
-	      ret = g_utf8_collate (name1, name2);
-	      g_free (name1);
-	      g_free (name2);
-	    }
-	}
+      ret = itema->type > itemb->type;
     }
+
+  browser_free_item (itema);
+  browser_free_item (itemb);
+
+  return ret;
+}
+
+gint
+browser_sort_data (GtkTreeModel * model,
+		   GtkTreeIter * a, GtkTreeIter * b, gpointer data)
+{
+  struct browser_item *itema;
+  struct browser_item *itemb;
+  gint ret = 0;
+
+  itema = browser_get_item (model, a);
+  itemb = browser_get_item (model, b);
+
+  ret = itema->index > itemb->index;
+
+  browser_free_item (itema);
+  browser_free_item (itemb);
 
   return ret;
 }

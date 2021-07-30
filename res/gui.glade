@@ -705,6 +705,16 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                   </object>
                                 </child>
                                 <child>
+                                  <object class="GtkTreeViewColumn" id="remote_tree_view_index_column">
+                                    <child>
+                                      <object class="GtkCellRendererText"/>
+                                      <attributes>
+                                        <attribute name="text">5</attribute>
+                                      </attributes>
+                                    </child>
+                                  </object>
+                                </child>
+                                <child>
                                   <object class="GtkTreeViewColumn">
                                     <property name="title" translatable="yes">Name</property>
                                     <property name="expand">True</property>
@@ -850,7 +860,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox">
+                  <object class="GtkBox" id="local_audio_box">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="hexpand">True</property>

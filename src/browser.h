@@ -69,7 +69,11 @@ struct browser_item
   enum item_type type;
 };
 
-gint browser_sort (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *, gpointer);
+gint browser_sort_samples (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
+			   gpointer);
+
+gint browser_sort_data (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
+			gpointer);
 
 struct browser_item *browser_get_item (GtkTreeModel *, GtkTreeIter *);
 

@@ -216,6 +216,7 @@ static GtkStatusbar *status_bar;
 static GtkListStore *devices_list_store;
 static GtkComboBox *devices_combo;
 static GtkWidget *upload_menuitem;
+static GtkWidget *local_audio_box;
 static GtkWidget *local_play_menuitem;
 static GtkWidget *local_open_menuitem;
 static GtkWidget *local_show_menuitem;
@@ -236,6 +237,7 @@ static GtkWidget *remove_tasks_button;
 static GtkWidget *clear_tasks_button;
 static GtkListStore *fs_list_store;
 static GtkComboBox *fs_combo;
+static GtkTreeViewColumn *remote_tree_view_index_column;
 
 static gchar *
 elektroid_get_id_path (gchar * path)
@@ -375,6 +377,10 @@ elektroid_load_devices (gboolean auto_select)
 	elektroid_get_inventory_icon_for_fs (FS_SAMPLES);
       local_browser.extensions =
 	elektroid_get_file_extensions_for_fs (FS_SAMPLES);
+
+      gtk_widget_set_visible (local_audio_box, TRUE);
+      gtk_tree_view_column_set_visible (remote_tree_view_index_column, FALSE);
+
       browser_load_dir (&local_browser);
     }
 }
@@ -1343,28 +1349,32 @@ elektroid_local_check_selection (gpointer data)
   struct browser_item *item;
   gint count = browser_get_selected_items_count (&local_browser);
 
-  audio_stop (&audio, TRUE);
-  elektroid_stop_load_thread ();
-  audio_reset_sample (&audio);
-  gtk_widget_queue_draw (waveform_draw_area);
-  elektroid_controls_set_sensitive (FALSE);
-
-  if (count == 1)
+  if (remote_browser.fs_operations->fs == FS_SAMPLES)
     {
-      browser_set_selected_row_iter (&local_browser, &iter);
-      model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
-      item = browser_get_item (model, &iter);
-      if (item->type == ELEKTROID_FILE)
+      audio_stop (&audio, TRUE);
+      elektroid_stop_load_thread ();
+      audio_reset_sample (&audio);
+      gtk_widget_queue_draw (waveform_draw_area);
+      elektroid_controls_set_sensitive (FALSE);
+
+      if (count == 1)
 	{
-	  gtk_widget_set_sensitive (local_open_menuitem, TRUE);
-	  sample_path = chain_path (local_browser.dir, item->name);
-	  elektroid_start_load_thread (sample_path);
+	  browser_set_selected_row_iter (&local_browser, &iter);
+	  model =
+	    GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
+	  item = browser_get_item (model, &iter);
+	  if (item->type == ELEKTROID_FILE)
+	    {
+	      gtk_widget_set_sensitive (local_open_menuitem, TRUE);
+	      sample_path = chain_path (local_browser.dir, item->name);
+	      elektroid_start_load_thread (sample_path);
+	    }
+	  else
+	    {
+	      gtk_widget_set_sensitive (local_open_menuitem, FALSE);
+	    }
+	  browser_free_item (item);
 	}
-      else
-	{
-	  gtk_widget_set_sensitive (local_open_menuitem, FALSE);
-	}
-      browser_free_item (item);
     }
 
   gtk_widget_set_sensitive (local_show_menuitem, count <= 1);
@@ -2385,6 +2395,7 @@ static void
 elektroid_set_fs (GtkWidget * object, gpointer data)
 {
   GtkTreeIter iter;
+  GtkTreeSortable *sortable;
   GValue fsv = G_VALUE_INIT;
   enum connector_fs fs;
 
@@ -2416,6 +2427,35 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			      remote_browser.fs_operations->readdir != NULL);
       gtk_widget_set_visible (remote_delete_menuitem,
 			      remote_browser.fs_operations->readdir != NULL);
+      gtk_widget_set_visible (local_audio_box, fs == FS_SAMPLES);
+      gtk_tree_view_column_set_visible (remote_tree_view_index_column,
+					fs == FS_DATA);
+      if (fs == FS_DATA)
+	{
+	  audio_stop (&audio, TRUE);
+	}
+
+      sortable =
+	GTK_TREE_SORTABLE (gtk_tree_view_get_model (remote_browser.view));
+
+      if (fs == FS_SAMPLES)
+	{
+	  gtk_tree_sortable_set_sort_func (sortable,
+					   BROWSER_LIST_STORE_NAME_FIELD,
+					   browser_sort_samples, NULL, NULL);
+	  gtk_tree_sortable_set_sort_column_id (sortable,
+						BROWSER_LIST_STORE_NAME_FIELD,
+						GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+	}
+      else if (fs == FS_DATA)
+	{
+	  gtk_tree_sortable_set_sort_func (sortable,
+					   BROWSER_LIST_STORE_INDEX_FIELD,
+					   browser_sort_data, NULL, NULL);
+	  gtk_tree_sortable_set_sort_column_id (sortable,
+						BROWSER_LIST_STORE_INDEX_FIELD,
+						GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+	}
     }
 }
 
@@ -2878,6 +2918,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     GTK_WIDGET (gtk_builder_get_object (builder, "hostname_label"));
 
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
+  local_audio_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_audio_box"));
   waveform_draw_area =
     GTK_WIDGET (gtk_builder_get_object (builder, "waveform_draw_area"));
   play_button = GTK_WIDGET (gtk_builder_get_object (builder, "play_button"));
@@ -2991,6 +3033,9 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .data = &connector,
     .notify_dir_change = NULL
   };
+  remote_tree_view_index_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "remote_tree_view_index_column"));
 
   g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
 		    "changed", G_CALLBACK (browser_selection_changed),
@@ -3023,14 +3068,6 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 		    G_CALLBACK (elektroid_drag_motion_up), &remote_browser);
   g_signal_connect (remote_browser.up_button, "drag-leave",
 		    G_CALLBACK (elektroid_drag_leave_up), &remote_browser);
-
-  sortable =
-    GTK_TREE_SORTABLE (gtk_tree_view_get_model (remote_browser.view));
-  gtk_tree_sortable_set_sort_func (sortable, BROWSER_LIST_STORE_NAME_FIELD,
-				   browser_sort, NULL, NULL);
-  gtk_tree_sortable_set_sort_column_id (sortable,
-					BROWSER_LIST_STORE_NAME_FIELD,
-					GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
 
   gtk_drag_source_set ((GtkWidget *) remote_browser.view, GDK_BUTTON1_MASK,
 		       TARGET_ENTRIES_REMOTE_SRC, TARGET_ENTRIES_REMOTE_SRC_N,
@@ -3097,7 +3134,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 
   sortable = GTK_TREE_SORTABLE (gtk_tree_view_get_model (local_browser.view));
   gtk_tree_sortable_set_sort_func (sortable, BROWSER_LIST_STORE_NAME_FIELD,
-				   browser_sort, NULL, NULL);
+				   browser_sort_samples, NULL, NULL);
   gtk_tree_sortable_set_sort_column_id (sortable,
 					BROWSER_LIST_STORE_NAME_FIELD,
 					GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
