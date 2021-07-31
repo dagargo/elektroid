@@ -2154,15 +2154,6 @@ elektroid_download_task (gpointer data)
       g_mutex_unlock (&sample_transfer.transfer.mutex);
     }
 
-  if (sample)
-    {
-      g_array_free (sample, TRUE);
-      if (strcmp (sample_transfer.dst, local_browser.dir) == 0)
-	{
-	  g_idle_add (browser_load_dir, &local_browser);
-	}
-    }
-
 end:
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
@@ -2197,11 +2188,6 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
     {
       error_print ("Error while creating local %s dir\n", dst_abs_path);
       goto cleanup;
-    }
-
-  if (!strchr (rel_path, '/'))
-    {
-      browser_load_dir (&local_browser);
     }
 
   while (!next_item_iterator (iter))
