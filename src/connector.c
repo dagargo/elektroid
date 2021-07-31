@@ -429,26 +429,20 @@ connector_new_msg_uint8 (const guint8 * data, guint len, guint8 type)
 static GByteArray *
 connector_new_msg_path (const guint8 * data, guint len, const gchar * path)
 {
-  GByteArray *msg = connector_new_msg_data (data, len);
+  GByteArray *msg;
+  gchar *path_cp1252 =
+    g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
-  g_byte_array_append (msg, (guchar *) path, strlen (path) + 1);
+  if (!path_cp1252)
+    {
+      return NULL;
+    }
+
+  msg = connector_new_msg_data (data, len);
+  g_byte_array_append (msg, (guchar *) path_cp1252, strlen (path) + 1);
+  g_free (path_cp1252);
 
   return msg;
-}
-
-static GByteArray *
-connector_new_msg_dir_list (const gchar * path)
-{
-  return connector_new_msg_path (FS_SAMPLE_READ_DIR_REQUEST,
-				 sizeof (FS_SAMPLE_READ_DIR_REQUEST), path);
-}
-
-static GByteArray *
-connector_new_msg_open_file_read (const gchar * path)
-{
-  return connector_new_msg_path (FS_SAMPLE_OPEN_FILE_READER_REQUEST,
-				 sizeof (FS_SAMPLE_OPEN_FILE_READER_REQUEST),
-				 path);
 }
 
 static GByteArray *
@@ -1051,16 +1045,14 @@ connector_read_samples_dir (const gchar * dir, void *data)
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   struct connector *connector = data;
-  gchar *dir_cp1252 = g_convert (dir, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
-  if (!dir_cp1252)
+  tx_msg = connector_new_msg_path (FS_SAMPLE_READ_DIR_REQUEST,
+				   sizeof (FS_SAMPLE_READ_DIR_REQUEST), dir);
+  if (!tx_msg)
     {
       errno = EINVAL;
       return NULL;
     }
-
-  tx_msg = connector_new_msg_dir_list (dir_cp1252);
-  g_free (dir_cp1252);
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
@@ -1154,6 +1146,7 @@ connector_src_dst_common (struct connector *connector,
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
+      errno = EIO;
       return -1;
     }
   //Response: x, x, x, x, 0xa1, [0 (error), 1 (success)]...
@@ -1242,21 +1235,18 @@ connector_path_common (struct connector *connector, const gchar * path,
   gint res;
   GByteArray *rx_msg;
   GByteArray *tx_msg;
-  gchar *path_cp1252 =
-    g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
-  if (!path_cp1252)
+  tx_msg = connector_new_msg_path (template, size, path);
+  if (!tx_msg)
     {
       errno = EINVAL;
       return -1;
     }
 
-  tx_msg = connector_new_msg_path (template, size, path_cp1252);
-  g_free (path_cp1252);
-
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
+      errno = EIO;
       return -1;
     }
   //Response: x, x, x, x, 0xX0, [0 (error), 1 (success)]...
@@ -1340,23 +1330,21 @@ connector_upload_sample (GArray * sample,
   gint id;
   int i;
   gboolean active;
-  gchar *path_cp1252 =
-    g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
-  if (!path_cp1252)
+  //TODO: check if the file already exists? (Device makes no difference between creating a new file and creating an already existent file. The new file would be deleted if an upload is not sent, though.)
+  //TODO: limit sample upload?
+
+  tx_msg = connector_new_msg_open_file_write (path, sample->len);
+  if (!tx_msg)
     {
       errno = EINVAL;
       return -1;
     }
 
-  //TODO: check if the file already exists? (Device makes no difference between creating a new file and creating an already existent file. The new file would be deleted if an upload is not sent, though.)
-  //TODO: limit sample upload?
-
-  tx_msg = connector_new_msg_open_file_write (path_cp1252, sample->len);
-  g_free (path_cp1252);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
+      errno = EIO;
       return -1;
     }
 
@@ -1389,6 +1377,7 @@ connector_upload_sample (GArray * sample,
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
+	  errno = EIO;
 	  return -1;
 	}
       //Response: x, x, x, x, 0xc2, [0 (error), 1 (success)]...
@@ -1418,6 +1407,7 @@ connector_upload_sample (GArray * sample,
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
+	  errno = EIO;
 	  return -1;
 	}
       //Response: x, x, x, x, 0xc1, [0 (error), 1 (success)]...
@@ -1450,19 +1440,21 @@ connector_download_sample (const gchar * path,
   int i;
   gboolean active;
   GArray *result;
-  gchar *path_cp1252 =
-    g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
-  if (!path_cp1252)
+  tx_msg = connector_new_msg_path (FS_SAMPLE_OPEN_FILE_READER_REQUEST,
+				   sizeof
+				   (FS_SAMPLE_OPEN_FILE_READER_REQUEST),
+				   path);
+  if (!tx_msg)
     {
+      errno = EINVAL;
       return NULL;
     }
 
-  tx_msg = connector_new_msg_open_file_read (path_cp1252);
-  g_free (path_cp1252);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
+      errno = EIO;
       return NULL;
     }
   connector_get_sample_info_from_msg (rx_msg, &id, &frames);
@@ -1498,6 +1490,7 @@ connector_download_sample (const gchar * path,
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
+	  errno = EIO;
 	  result = NULL;
 	  goto cleanup;
 	}
@@ -1541,6 +1534,7 @@ connector_download_sample (const gchar * path,
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
+      errno = EIO;
       if (result)
 	{
 	  g_array_free (result, TRUE);
@@ -1631,6 +1625,7 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
   if (!rx_msg)
     {
       res = -1;
+      errno = EIO;
       goto end;
     }
   //Response: x, x, x, x, 0xd1, [0 (ok), 1 (error)]...
@@ -1655,6 +1650,7 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
 
       if (!rx_msg)
 	{
+	  errno = EIO;
 	  res = -1;
 	  break;
 	}
@@ -1748,9 +1744,9 @@ connector_get_storage_stats (struct connector *connector,
   tx_msg = connector_new_msg_uint8 (STORAGEINFO_REQUEST,
 				    sizeof (STORAGEINFO_REQUEST), type);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
-
   if (!rx_msg)
     {
+      errno = EIO;
       return -1;
     }
 
@@ -2191,16 +2187,13 @@ connector_read_data_dir (const gchar * dir, void *data)
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   struct connector *connector = data;
-  gchar *dir_cp1252 = g_convert (dir, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 
-  if (!dir_cp1252)
+  tx_msg = connector_new_msg_data_list (dir, 0, 0, 1);
+  if (!tx_msg)
     {
       errno = EINVAL;
       return NULL;
     }
-
-  tx_msg = connector_new_msg_data_list (dir_cp1252, 0, 0, 1);
-  g_free (dir_cp1252);
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
