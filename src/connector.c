@@ -50,7 +50,8 @@
 
 static gint connector_delete_samples_dir (struct connector *, const gchar *);
 
-static struct item_iterator *connector_read_samples (const gchar *, void *);
+static struct item_iterator *connector_read_samples_dir (const gchar *,
+							 void *);
 
 static gint connector_create_samples_dir (const gchar *, void *);
 
@@ -68,7 +69,7 @@ connector_upload_sample (GArray *, gchar *,
 			 struct connector_sample_transfer *,
 			 void (*)(gdouble), void *);
 
-static struct item_iterator *connector_read_data (const gchar *, void *);
+static struct item_iterator *connector_read_data_dir (const gchar *, void *);
 
 static gint connector_move_data_item (const gchar *, const gchar *, void *);
 
@@ -159,7 +160,7 @@ static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
-  .readdir = connector_read_samples,
+  .readdir = connector_read_samples_dir,
   .mkdir = connector_create_samples_dir,
   .delete = connector_delete_samples_item,
   .move = connector_move_samples_item,
@@ -174,7 +175,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_OPERATIONS = {
   .fs = FS_DATA,
-  .readdir = connector_read_data,
+  .readdir = connector_read_data_dir,
   .mkdir = NULL,
   .delete = NULL,
   .move = connector_move_data_item,
@@ -1045,7 +1046,7 @@ cleanup:
 }
 
 struct item_iterator *
-connector_read_samples (const gchar * dir, void *data)
+connector_read_samples_dir (const gchar * dir, void *data)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -1098,7 +1099,7 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   parent_copy = strdup (path);
   name = basename (name_copy);
   parent = dirname (parent_copy);
-  iter = connector_read_samples (parent, connector);
+  iter = connector_read_samples_dir (parent, connector);
   res = ELEKTROID_NONE;
   if (iter)
     {
@@ -1207,7 +1208,7 @@ connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
 	{
 	  return res;
 	}
-      iter = connector_read_samples (src, connector);
+      iter = connector_read_samples_dir (src, connector);
       if (iter)
 	{
 	  while (!next_item_iterator (iter) && !res)
@@ -1302,7 +1303,7 @@ connector_delete_samples_item (const gchar * path, void *data)
   if (connector_get_path_type (connector, path) == ELEKTROID_DIR)
     {
       debug_print (1, "Deleting %s samples dir...\n", path);
-      iter = connector_read_samples (path, connector);
+      iter = connector_read_samples_dir (path, connector);
       if (iter)
 	{
 	  while (!next_item_iterator (iter))
@@ -2184,7 +2185,7 @@ connector_new_data_iterator (GByteArray * msg)
 }
 
 static struct item_iterator *
-connector_read_data (const gchar * dir, void *data)
+connector_read_data_dir (const gchar * dir, void *data)
 {
   int res;
   GByteArray *tx_msg;
