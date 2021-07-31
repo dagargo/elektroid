@@ -406,7 +406,7 @@ connector_get_sample_info_from_msg (GByteArray * info_msg, gint * id,
 }
 
 static GByteArray *
-connector_new_msg_data (const guint8 * data, guint len)
+connector_new_msg (const guint8 * data, guint len)
 {
   GByteArray *msg = g_byte_array_new ();
 
@@ -419,7 +419,7 @@ connector_new_msg_data (const guint8 * data, guint len)
 static GByteArray *
 connector_new_msg_uint8 (const guint8 * data, guint len, guint8 type)
 {
-  GByteArray *msg = connector_new_msg_data (data, len);
+  GByteArray *msg = connector_new_msg (data, len);
 
   g_byte_array_append (msg, &type, 1);
 
@@ -438,7 +438,7 @@ connector_new_msg_path (const guint8 * data, guint len, const gchar * path)
       return NULL;
     }
 
-  msg = connector_new_msg_data (data, len);
+  msg = connector_new_msg (data, len);
   g_byte_array_append (msg, (guchar *) path_cp1252, strlen (path) + 1);
   g_free (path_cp1252);
 
@@ -449,9 +449,9 @@ static GByteArray *
 connector_new_msg_close_file_read (gint id)
 {
   guint32 aux32;
-  GByteArray *msg =
-    connector_new_msg_data (FS_SAMPLE_CLOSE_FILE_READER_REQUEST,
-			    sizeof (FS_SAMPLE_CLOSE_FILE_READER_REQUEST));
+  GByteArray *msg = connector_new_msg (FS_SAMPLE_CLOSE_FILE_READER_REQUEST,
+				       sizeof
+				       (FS_SAMPLE_CLOSE_FILE_READER_REQUEST));
 
   aux32 = htobe32 (id);
   g_byte_array_append (msg, (guchar *) & aux32, sizeof (guint32));
@@ -474,8 +474,8 @@ connector_new_msg_open_file_write (const gchar * path, guint frames)
 }
 
 static GByteArray *
-connector_new_msg_data_list (const gchar * path, int32_t start_index,
-			     int32_t end_index, gboolean all)
+connector_new_msg_list (const gchar * path, int32_t start_index,
+			int32_t end_index, gboolean all)
 {
   guint32 aux32;
   guint8 aux8;
@@ -503,8 +503,8 @@ connector_new_msg_write_file_blk (guint id,
   int i, consumed, frames_blck;
   GByteArray *msg;
 
-  msg = connector_new_msg_data (FS_SAMPLE_WRITE_FILE_REQUEST,
-				sizeof (FS_SAMPLE_WRITE_FILE_REQUEST));
+  msg = connector_new_msg (FS_SAMPLE_WRITE_FILE_REQUEST,
+			   sizeof (FS_SAMPLE_WRITE_FILE_REQUEST));
 
   aux32 = htobe32 (id);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
@@ -551,9 +551,9 @@ static GByteArray *
 connector_new_msg_close_file_write (guint id, guint frames)
 {
   guint32 aux32;
-  GByteArray *msg =
-    connector_new_msg_data (FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST,
-			    sizeof (FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST));
+  GByteArray *msg = connector_new_msg (FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST,
+				       sizeof
+				       (FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST));
 
   aux32 = htobe32 (id);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
@@ -567,9 +567,8 @@ static GByteArray *
 connector_new_msg_read_file_blk (guint id, guint start, guint size)
 {
   guint32 aux;
-  GByteArray *msg = connector_new_msg_data (FS_SAMPLE_READ_FILE_REQUEST,
-					    sizeof
-					    (FS_SAMPLE_READ_FILE_REQUEST));
+  GByteArray *msg = connector_new_msg (FS_SAMPLE_READ_FILE_REQUEST,
+				       sizeof (FS_SAMPLE_READ_FILE_REQUEST));
 
   aux = htobe32 (id);
   memcpy (&msg->data[5], &aux, sizeof (guint32));
@@ -1118,7 +1117,7 @@ connector_src_dst_common (struct connector *connector,
 {
   gint res;
   GByteArray *rx_msg;
-  GByteArray *tx_msg = connector_new_msg_data (data, len);
+  GByteArray *tx_msg = connector_new_msg (data, len);
 
   gchar *dst_cp1252 = g_convert (dst, -1, "CP1252", "UTF8", NULL, NULL, NULL);
   if (!dst_cp1252)
@@ -1561,9 +1560,8 @@ connector_create_samples_dir (const gchar * path, void *data)
 static GByteArray *
 connector_new_msg_upgrade_os_start (guint size)
 {
-  GByteArray *msg = connector_new_msg_data (OS_UPGRADE_START_REQUEST,
-					    sizeof
-					    (OS_UPGRADE_START_REQUEST));
+  GByteArray *msg = connector_new_msg (OS_UPGRADE_START_REQUEST,
+				       sizeof (OS_UPGRADE_START_REQUEST));
 
   memcpy (&msg->data[5], &size, sizeof (guint32));
 
@@ -1573,9 +1571,8 @@ connector_new_msg_upgrade_os_start (guint size)
 static GByteArray *
 connector_new_msg_upgrade_os_write (GByteArray * os_data, gint * offset)
 {
-  GByteArray *msg = connector_new_msg_data (OS_UPGRADE_WRITE_RESPONSE,
-					    sizeof
-					    (OS_UPGRADE_WRITE_RESPONSE));
+  GByteArray *msg = connector_new_msg (OS_UPGRADE_WRITE_RESPONSE,
+				       sizeof (OS_UPGRADE_WRITE_RESPONSE));
   guint len;
   guint32 crc;
   guint32 aux32;
@@ -1902,7 +1899,7 @@ connector_init (struct connector *connector, gint card)
       goto cleanup_params;
     }
 
-  tx_msg = connector_new_msg_data (PING_REQUEST, sizeof (PING_REQUEST));
+  tx_msg = connector_new_msg (PING_REQUEST, sizeof (PING_REQUEST));
   rx_msg_device = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg_device)
     {
@@ -1911,8 +1908,8 @@ connector_init (struct connector *connector, gint card)
     }
 
   tx_msg =
-    connector_new_msg_data (SOFTWARE_VERSION_REQUEST,
-			    sizeof (SOFTWARE_VERSION_REQUEST));
+    connector_new_msg (SOFTWARE_VERSION_REQUEST,
+		       sizeof (SOFTWARE_VERSION_REQUEST));
   rx_msg_fw_ver = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg_fw_ver)
     {
@@ -1923,8 +1920,7 @@ connector_init (struct connector *connector, gint card)
   if (debug_level > 1)
     {
       tx_msg =
-	connector_new_msg_data (DEVICEUID_REQUEST,
-				sizeof (DEVICEUID_REQUEST));
+	connector_new_msg (DEVICEUID_REQUEST, sizeof (DEVICEUID_REQUEST));
       rx_msg_uid = connector_tx_and_rx (connector, tx_msg);
       if (rx_msg_uid)
 	{
@@ -2188,7 +2184,7 @@ connector_read_data_dir (const gchar * dir, void *data)
   GByteArray *rx_msg;
   struct connector *connector = data;
 
-  tx_msg = connector_new_msg_data_list (dir, 0, 0, 1);
+  tx_msg = connector_new_msg_list (dir, 0, 0, 1);
   if (!tx_msg)
     {
       errno = EINVAL;
