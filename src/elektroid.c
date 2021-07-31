@@ -1056,7 +1056,7 @@ elektroid_drag_begin (GtkWidget * widget,
   GList *tree_path_list;
   GList *list;
   gchar *uri;
-  gchar *full_path;
+  gchar *path;
   struct browser_item *item;
   struct browser *browser = data;
 
@@ -1069,21 +1069,21 @@ elektroid_drag_begin (GtkWidget * widget,
     {
       gtk_tree_model_get_iter (model, &iter, list->data);
       item = browser_get_item (model, &iter);
-      full_path = browser_get_item_path (browser, item);
+      path = browser_get_item_path (browser, item);
       browser_free_item (item);
       if (widget == GTK_WIDGET (local_browser.view))
 	{
-	  uri = g_filename_to_uri (full_path, NULL, NULL);
+	  uri = g_filename_to_uri (path, NULL, NULL);
 	}
       else if (widget == GTK_WIDGET (remote_browser.view))
 	{
-	  uri = chain_path ("file://", &full_path[1]);
+	  uri = chain_path ("file://", &path[1]);
 	}
       else
 	{
 	  continue;
 	}
-      g_free (full_path);
+      g_free (path);
       g_string_append (browser->dnd_data, uri);
       g_free (uri);
       g_string_append (browser->dnd_data, "\n");
