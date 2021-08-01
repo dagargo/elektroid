@@ -31,7 +31,6 @@
 #define BUFF_SIZE (4 * KB)
 #define RING_BUFF_SIZE (256 * KB)
 #define SAMPLE_TRANSF_BLOCK_BYTES 0x2000
-#define SAMPLE_TRANSF_BLOCK_SHORTS  (SAMPLE_TRANSF_BLOCK_BYTES / 2)
 #define OS_TRANSF_BLOCK_BYTES 0x800
 #define POLL_TIMEOUT 20
 #define REST_TIME 50000
@@ -60,10 +59,11 @@ static gint connector_delete_samples_item (const gchar *, void *);
 static gint connector_move_samples_item (const gchar *, const gchar *,
 					 void *);
 
-static GArray *connector_download_sample (const gchar *,
-					  struct transfer_control *, void *);
+static GByteArray *connector_download_sample (const gchar *,
+					      struct transfer_control *,
+					      void *);
 
-static ssize_t connector_upload_sample (GArray *, const gchar *,
+static ssize_t connector_upload_sample (GByteArray *, const gchar *,
 					struct transfer_control *, void *);
 
 static struct item_iterator *connector_read_data_dir (const gchar *, void *);
@@ -97,7 +97,7 @@ static const guint8 FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST[] =
   { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST[] =
   { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST_PAD_1ST[] = {
+static const guint8 FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST[] = {
   0, 0, 0, 0, 0, 0, 0xbb, 0x80, 0, 0, 0, 0, 0, 0, 0, 0,
   0x7f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -456,7 +456,7 @@ connector_new_msg_close_file_read (gint id)
 }
 
 static GByteArray *
-connector_new_msg_open_file_write (const gchar * path, guint frames)
+connector_new_msg_open_file_write (const gchar * path, guint bytes)
 {
   guint32 aux32;
   GByteArray *msg =
@@ -464,7 +464,7 @@ connector_new_msg_open_file_write (const gchar * path, guint frames)
 			    sizeof (FS_SAMPLE_OPEN_FILE_WRITER_REQUEST),
 			    path);
 
-  aux32 = htobe32 ((frames + 32) * 2);
+  aux32 = htobe32 (bytes + sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
 
   return msg;
@@ -492,12 +492,12 @@ connector_new_msg_list (const gchar * path, int32_t start_index,
 
 static GByteArray *
 connector_new_msg_write_file_blk (guint id,
-				  gshort ** data,
-				  guint frames, ssize_t * total, guint seq)
+				  gint16 ** data,
+				  guint bytes, ssize_t * total, guint seq)
 {
   guint32 aux32;
   guint16 aux16;
-  int i, consumed, frames_blck;
+  int i, consumed, bytes_blk;
   GByteArray *msg;
 
   msg = connector_new_msg (FS_SAMPLE_WRITE_FILE_REQUEST,
@@ -508,44 +508,43 @@ connector_new_msg_write_file_blk (guint id,
   aux32 = htobe32 (SAMPLE_TRANSF_BLOCK_BYTES * seq);
   memcpy (&msg->data[13], &aux32, sizeof (guint32));
 
-  frames_blck = SAMPLE_TRANSF_BLOCK_SHORTS;
+  bytes_blk = SAMPLE_TRANSF_BLOCK_BYTES;
   consumed = 0;
 
   if (seq == 0)
     {
       g_byte_array_append (msg,
-			   (guchar *) FS_SAMPLE_WRITE_FILE_REQUEST_PAD_1ST,
-			   sizeof (FS_SAMPLE_WRITE_FILE_REQUEST_PAD_1ST));
+			   (guchar *) FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST,
+			   sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
 
-      aux32 = htobe32 (frames * sizeof (gshort));
+      aux32 = htobe32 (bytes);
       memcpy (&msg->data[21], &aux32, sizeof (guint32));
-      aux32 = htobe32 (frames - 1);
+      aux32 = htobe32 ((bytes >> 1) - 1);
       memcpy (&msg->data[33], &aux32, sizeof (guint32));
 
-      consumed = sizeof (FS_SAMPLE_WRITE_FILE_REQUEST_PAD_1ST) / 2;	//consumed is measured in shorts
+      consumed = sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST);
+      bytes_blk -= consumed;
     }
-
-  frames_blck -= consumed;
 
   i = 0;
-  while (i < frames_blck && *total < frames)
+  while (i < bytes_blk && *total < bytes)
     {
       aux16 = htobe16 (**data);
-      g_byte_array_append (msg, (guchar *) & aux16, sizeof (guint16));
+      g_byte_array_append (msg, (guint8 *) & aux16, sizeof (guint16));
       (*data)++;
-      (*total)++;
-      consumed++;
-      i++;
+      (*total) += sizeof (guint16);
+      consumed += sizeof (guint16);
+      i += sizeof (guint16);
     }
 
-  aux32 = htobe32 (consumed * 2);
+  aux32 = htobe32 (consumed);
   memcpy (&msg->data[9], &aux32, sizeof (guint32));
 
   return msg;
 }
 
 static GByteArray *
-connector_new_msg_close_file_write (guint id, guint frames)
+connector_new_msg_close_file_write (guint id, guint bytes)
 {
   guint32 aux32;
   GByteArray *msg = connector_new_msg (FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST,
@@ -554,7 +553,7 @@ connector_new_msg_close_file_write (guint id, guint frames)
 
   aux32 = htobe32 (id);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
-  aux32 = htobe32 ((frames + 32) * 2);
+  aux32 = htobe32 (bytes + sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
   memcpy (&msg->data[9], &aux32, sizeof (guint32));
 
   return msg;
@@ -1313,7 +1312,7 @@ connector_delete_samples_item (const gchar * path, void *data)
 }
 
 ssize_t
-connector_upload_sample (GArray * sample,
+connector_upload_sample (GByteArray * sample,
 			 const gchar * path,
 			 struct transfer_control *control, void *data)
 {
@@ -1416,7 +1415,7 @@ connector_upload_sample (GArray * sample,
   return active ? transferred : -1;
 }
 
-GArray *
+GByteArray *
 connector_download_sample (const gchar * path,
 			   struct transfer_control *control, void *data)
 {
@@ -1429,11 +1428,11 @@ connector_download_sample (const gchar * path,
   guint next_block_start;
   guint req_size;
   int offset;
-  int16_t v;
-  int16_t *frame;
+  gint16 v;
+  gint16 *frame;
   int i;
   gboolean active;
-  GArray *result;
+  GByteArray *result;
 
   tx_msg = connector_new_msg_path (FS_SAMPLE_OPEN_FILE_READER_REQUEST,
 				   sizeof
@@ -1464,7 +1463,7 @@ connector_download_sample (const gchar * path,
   array = g_byte_array_new ();
 
   next_block_start = 0;
-  offset = 64;
+  offset = sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST);
   g_mutex_lock (&control->mutex);
   active = (!control || control->active);
   g_mutex_unlock (&control->mutex);
@@ -1493,7 +1492,7 @@ connector_download_sample (const gchar * path,
       free_msg (rx_msg);
 
       next_block_start += req_size;
-      offset = 0;
+      offset = 0;		//Only the first iteration
       g_mutex_lock (&control->mutex);
       active = (!control || control->active);
       g_mutex_unlock (&control->mutex);
@@ -1510,12 +1509,12 @@ connector_download_sample (const gchar * path,
 	  control->progress (next_block_start / (double) frames);
 	}
 
-      result = g_array_new (FALSE, FALSE, sizeof (short));
-      frame = (gshort *) array->data;
-      for (i = 0; i < array->len; i += 2)
+      result = g_byte_array_new ();
+      frame = (gint16 *) array->data;
+      for (i = 0; i < array->len; i += sizeof (gint16))
 	{
 	  v = be16toh (*frame);
-	  g_array_append_val (result, v);
+	  g_byte_array_append (result, (guint8 *) & v, sizeof (gint16));
 	  frame++;
 	}
     }
@@ -1531,7 +1530,7 @@ connector_download_sample (const gchar * path,
       errno = EIO;
       if (result)
 	{
-	  g_array_free (result, TRUE);
+	  g_byte_array_free (result, TRUE);
 	  result = NULL;
 	}
       goto cleanup;

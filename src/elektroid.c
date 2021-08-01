@@ -888,7 +888,7 @@ elektroid_update_ui_on_load (gpointer data)
   gboolean ready_to_play;
 
   g_mutex_lock (&audio.mutex);
-  ready_to_play = audio.sample->len >= LOAD_BUFFER_LEN
+  ready_to_play = audio.sample->len >> 1 >= LOAD_BUFFER_LEN
     || (!audio.load_active && audio.sample->len > 0);
   g_mutex_unlock (&audio.mutex);
 
@@ -1928,7 +1928,7 @@ elektroid_upload_task (gpointer data)
   gchar *dst_path;
   gchar *dst_dir;
   ssize_t frames;
-  GArray *sample;
+  GByteArray *sample;
 
   if (!sample_transfer.fs_operations->upload)
     {
@@ -1940,7 +1940,7 @@ elektroid_upload_task (gpointer data)
   debug_print (1, "Local path: %s\n", sample_transfer.src);
   debug_print (1, "Remote path: %s\n", sample_transfer.dst);
 
-  sample = g_array_new (FALSE, FALSE, sizeof (gshort));
+  sample = g_byte_array_new ();
 
   frames = sample_load (sample, &sample_transfer.control.mutex, NULL,
 			sample_transfer.src, &sample_transfer.control.active,
@@ -1950,6 +1950,7 @@ elektroid_upload_task (gpointer data)
     {
       error_print ("Error while reading sample\n");
       sample_transfer.status = COMPLETED_ERROR;
+      g_byte_array_free (sample, TRUE);
       goto end;
     }
 
@@ -1977,7 +1978,7 @@ elektroid_upload_task (gpointer data)
       g_mutex_unlock (&sample_transfer.control.mutex);
     }
 
-  g_array_free (sample, TRUE);
+  g_byte_array_free (sample, TRUE);
 
   if (frames > 0)
     {
@@ -2108,8 +2109,8 @@ elektroid_download_task (gpointer data)
 {
   gchar *dst_path;
   gchar *dst_dir;
-  GArray *sample;
-  size_t frames;
+  GByteArray *sample;
+  size_t bytes;
 
   if (!sample_transfer.fs_operations->download)
     {
@@ -2141,8 +2142,8 @@ elektroid_download_task (gpointer data)
 	  dst_dir = dirname (dst_path);
 	  local_browser.fs_operations->mkdir (dst_dir, NULL);
 	  debug_print (1, "Writing to file %s...\n", sample_transfer.dst);
-	  frames = sample_save (sample, sample_transfer.dst);
-	  debug_print (1, "%zu frames written\n", frames);
+	  bytes = sample_save (sample, sample_transfer.dst);
+	  debug_print (1, "%zu frames written\n", bytes >> 1);
 	  free (dst_path);
 	  sample_transfer.status = COMPLETED_OK;
 	}

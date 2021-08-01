@@ -22,9 +22,9 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#define LOAD_BUFFER_LEN 4800
+#define LOAD_BUFFER_LEN 4800	// In guint16 frames; 9600 B; 0.1 ms
 
-size_t sample_save (GArray *, gchar *);
+size_t sample_save (GByteArray *, gchar *);
 
-size_t sample_load (GArray *, GMutex *, gboolean *, gchar *, gint *,
+size_t sample_load (GByteArray *, GMutex *, gboolean *, gchar *, gint *,
 		    void (*)(gdouble));

@@ -226,8 +226,8 @@ cli_download (int argc, char *argv[], int optind)
 {
   gchar *device_path_src, *path_src, *local_path;
   gint res;
-  GArray *data;
-  ssize_t frames;
+  GByteArray *data;
+  ssize_t bytes;
   gchar *basec, *bname;
 
   if (optind == argc)
@@ -263,13 +263,13 @@ cli_download (int argc, char *argv[], int optind)
   local_path = malloc (PATH_MAX);
   snprintf (local_path, PATH_MAX, "./%s.wav", bname);
 
-  frames = sample_save (data, local_path);
+  bytes = sample_save (data, local_path);
 
   free (basec);
   free (local_path);
-  g_array_free (data, TRUE);
+  g_byte_array_free (data, TRUE);
 
-  return frames > 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+  return bytes > 0 ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 static int
@@ -277,9 +277,9 @@ cli_upload (int argc, char *argv[], int optind)
 {
   gchar *path_src, *device_path_dst, *path_dst;
   gint res;
-  ssize_t frames;
+  ssize_t bytes;
   gchar *basec, *bname;
-  GArray *sample;
+  GByteArray *sample;
 
   if (optind == argc)
     {
@@ -315,9 +315,9 @@ cli_upload (int argc, char *argv[], int optind)
   path_dst = cli_get_path (device_path_dst);
   path_dst = chain_path (path_dst, bname);
 
-  sample = g_array_new (FALSE, FALSE, sizeof (short));
-  frames = sample_load (sample, NULL, NULL, path_src, NULL, NULL);
-  if (frames < 0)
+  sample = g_byte_array_new ();
+  bytes = sample_load (sample, NULL, NULL, path_src, NULL, NULL);
+  if (bytes < 0)
     {
       res = EXIT_FAILURE;
       goto cleanup;
@@ -325,14 +325,14 @@ cli_upload (int argc, char *argv[], int optind)
 
   control.active = TRUE;
   control.progress = NULL;
-  frames = fs_ops_samples->upload (sample, path_dst, &control, &connector);
+  bytes = fs_ops_samples->upload (sample, path_dst, &control, &connector);
 
-  res = frames < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
+  res = bytes < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
 cleanup:
   free (basec);
   free (path_dst);
-  g_array_free (sample, TRUE);
+  g_byte_array_free (sample, TRUE);
   return res;
 }
 

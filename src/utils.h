@@ -66,10 +66,10 @@ typedef gint (*fs_path_func) (const gchar *, void *);
 
 typedef gint (*fs_src_dst_func) (const gchar *, const gchar *, void *);
 
-typedef GArray *(*fs_download_func) (const gchar *,
-				     struct transfer_control *, void *);
+typedef GByteArray *(*fs_download_func) (const gchar *,
+					 struct transfer_control *, void *);
 
-typedef ssize_t (*fs_upload_func) (GArray *,
+typedef ssize_t (*fs_upload_func) (GByteArray *,
 				   const gchar *,
 				   struct transfer_control *, void *);
 

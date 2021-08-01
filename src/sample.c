@@ -26,7 +26,7 @@
 #include "utils.h"
 
 size_t
-sample_save (GArray * sample, gchar * path)
+sample_save (GByteArray * sample, gchar * path)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -45,11 +45,11 @@ sample_save (GArray * sample, gchar * path)
       return -1;
     }
 
-  total = sf_write_short (sndfile, (short *) sample->data, sample->len);
+  total = sf_write_short (sndfile, (gint16 *) sample->data, sample->len >> 1);
 
   sf_close (sndfile);
 
-  return total;
+  return total << 1;
 }
 
 static void
@@ -73,21 +73,21 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
 }
 
 size_t
-sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
+sample_load (GByteArray * sample, GMutex * mutex, gint * frames, gchar * path,
 	     gboolean * active, void (*progress) (gdouble))
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
   SRC_DATA src_data;
   SRC_STATE *src_state;
-  short *buffer_input;
-  short *buffer_input_multi;
-  short *buffer_input_mono;
-  short *buffer_s;
-  float *buffer_f;
-  int err;
-  int resampled_buffer_len;
-  int f, frames_read;
+  gint16 *buffer_input;
+  gint16 *buffer_input_multi;
+  gint16 *buffer_input_mono;
+  gint16 *buffer_s;
+  gfloat *buffer_f;
+  gint err;
+  gint resampled_buffer_len;
+  gint f, frames_read;
   gboolean load_active;
 
   debug_print (1, "Loading file %s...\n", path);
@@ -96,7 +96,7 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
     {
       g_mutex_lock (mutex);
     }
-  g_array_set_size (sample, 0);
+  g_byte_array_set_size (sample, 0);
   if (mutex)
     {
       g_mutex_unlock (mutex);
@@ -120,16 +120,16 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
     }
 
   buffer_input_multi =
-    malloc (LOAD_BUFFER_LEN * sf_info.channels * sizeof (short));
-  buffer_input_mono = malloc (LOAD_BUFFER_LEN * sizeof (short));
+    malloc (LOAD_BUFFER_LEN * sf_info.channels * sizeof (gint16));
+  buffer_input_mono = malloc (LOAD_BUFFER_LEN * sizeof (gint16));
 
-  buffer_f = malloc (LOAD_BUFFER_LEN * sizeof (float));
+  buffer_f = malloc (LOAD_BUFFER_LEN * sizeof (gfloat));
   src_data.data_in = buffer_f;
   src_data.src_ratio = 48000.0 / sf_info.samplerate;
 
   resampled_buffer_len = LOAD_BUFFER_LEN * src_data.src_ratio;
-  buffer_s = malloc (resampled_buffer_len * sizeof (short));
-  src_data.data_out = malloc (resampled_buffer_len * sizeof (float));
+  buffer_s = malloc (resampled_buffer_len * sizeof (gint16));
+  src_data.data_out = malloc (resampled_buffer_len * sizeof (gfloat));
 
   src_state = src_new (SRC_SINC_BEST_QUALITY, 1, &err);
   if (err)
@@ -189,7 +189,8 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
 	    {
 	      g_mutex_lock (mutex);
 	    }
-	  g_array_append_vals (sample, buffer_input, frames_read);
+	  g_byte_array_append (sample, (guint8 *) buffer_input,
+			       frames_read << 1);
 	  if (mutex)
 	    {
 	      g_mutex_unlock (mutex);
@@ -212,7 +213,8 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
 	    {
 	      g_mutex_lock (mutex);
 	    }
-	  g_array_append_vals (sample, buffer_s, src_data.output_frames_gen);
+	  g_byte_array_append (sample, (guint8 *) buffer_s,
+			       src_data.output_frames_gen << 1);
 	  if (mutex)
 	    {
 	      g_mutex_unlock (mutex);
@@ -256,7 +258,7 @@ sample_load (GArray * sample, GMutex * mutex, gint * frames, gchar * path,
     }
   else
     {
-      g_array_set_size (sample, 0);
+      g_byte_array_set_size (sample, 0);
     }
   if (mutex)
     {
