@@ -1889,6 +1889,7 @@ elektroid_run_next_task (gpointer data)
 				FALSE);
       gtk_tree_path_free (path);
       sample_transfer.control.active = TRUE;
+      sample_transfer.control.progress = elektroid_update_progress;
       sample_transfer.src = src;
       sample_transfer.dst = dst;
       sample_transfer.fs_operations = connector_get_fs_operations (fs);
@@ -1954,7 +1955,6 @@ elektroid_upload_task (gpointer data)
 
   frames = sample_transfer.fs_operations->upload (sample, sample_transfer.dst,
 						  &sample_transfer.control,
-						  elektroid_update_progress,
 						  remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
@@ -2124,7 +2124,6 @@ elektroid_download_task (gpointer data)
   sample =
     sample_transfer.fs_operations->download (sample_transfer.src,
 					     &sample_transfer.control,
-					     elektroid_update_progress,
 					     remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
@@ -2576,7 +2575,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		      res =
 			remote_browser.fs_operations->move (filename,
 							    dest_path,
-							    remote_browser.data);
+							    remote_browser.
+							    data);
 		      if (res)
 			{
 			  show_error_msg (_(MSG_ERROR_MOVING), filename,

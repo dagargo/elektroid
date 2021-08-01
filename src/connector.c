@@ -61,13 +61,10 @@ static gint connector_move_samples_item (const gchar *, const gchar *,
 					 void *);
 
 static GArray *connector_download_sample (const gchar *,
-					  struct transfer_control *,
-					  void (*)(gdouble), void *);
+					  struct transfer_control *, void *);
 
-static ssize_t
-connector_upload_sample (GArray *, gchar *,
-			 struct transfer_control *,
-			 void (*)(gdouble), void *);
+static ssize_t connector_upload_sample (GArray *, const gchar *,
+					struct transfer_control *, void *);
 
 static struct item_iterator *connector_read_data_dir (const gchar *, void *);
 
@@ -1317,9 +1314,8 @@ connector_delete_samples_item (const gchar * path, void *data)
 
 ssize_t
 connector_upload_sample (GArray * sample,
-			 gchar * path,
-			 struct transfer_control *control,
-			 void (*progress) (gdouble), void *data)
+			 const gchar * path,
+			 struct transfer_control *control, void *data)
 {
   struct connector *connector = data;
   GByteArray *tx_msg;
@@ -1365,9 +1361,9 @@ connector_upload_sample (GArray * sample,
   g_mutex_unlock (&control->mutex);
   while (transferred < sample->len && active)
     {
-      if (progress)
+      if (control->progress)
 	{
-	  progress (transferred / (double) sample->len);
+	  control->progress (transferred / (double) sample->len);
 	}
 
       tx_msg =
@@ -1397,9 +1393,9 @@ connector_upload_sample (GArray * sample,
 
   if (active)
     {
-      if (progress)
+      if (control->progress)
 	{
-	  progress (transferred / (double) sample->len);
+	  control->progress (transferred / (double) sample->len);
 	}
 
       tx_msg = connector_new_msg_close_file_write (id, transferred);
@@ -1422,8 +1418,7 @@ connector_upload_sample (GArray * sample,
 
 GArray *
 connector_download_sample (const gchar * path,
-			   struct transfer_control *control,
-			   void (*progress) (gdouble), void *data)
+			   struct transfer_control *control, void *data)
 {
   struct connector *connector = data;
   GByteArray *tx_msg;
@@ -1475,9 +1470,9 @@ connector_download_sample (const gchar * path,
   g_mutex_unlock (&control->mutex);
   while (next_block_start < frames && active)
     {
-      if (progress)
+      if (control->progress)
 	{
-	  progress (next_block_start / (double) frames);
+	  control->progress (next_block_start / (double) frames);
 	}
 
       req_size =
@@ -1510,9 +1505,9 @@ connector_download_sample (const gchar * path,
 
   if (active)
     {
-      if (progress)
+      if (control->progress)
 	{
-	  progress (next_block_start / (double) frames);
+	  control->progress (next_block_start / (double) frames);
 	}
 
       result = g_array_new (FALSE, FALSE, sizeof (short));

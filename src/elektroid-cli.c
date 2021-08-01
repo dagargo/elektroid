@@ -250,7 +250,8 @@ cli_download (int argc, char *argv[], int optind)
   path_src = cli_get_path (device_path_src);
 
   control.active = TRUE;
-  data = fs_ops_samples->download (path_src, &control, NULL, &connector);
+  control.progress = NULL;
+  data = fs_ops_samples->download (path_src, &control, &connector);
 
   if (data == NULL)
     {
@@ -323,8 +324,8 @@ cli_upload (int argc, char *argv[], int optind)
     }
 
   control.active = TRUE;
-  frames = fs_ops_samples->upload (sample, path_dst, &control,
-				   NULL, &connector);
+  control.progress = NULL;
+  frames = fs_ops_samples->upload (sample, path_dst, &control, &connector);
 
   res = frames < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 

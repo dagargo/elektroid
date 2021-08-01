@@ -57,6 +57,7 @@ struct transfer_control
 {
   gboolean active;
   GMutex mutex;
+  void (*progress) (gdouble);
 };
 
 typedef struct item_iterator *(*fs_read_dir_func) (const gchar *, void *);
@@ -66,13 +67,11 @@ typedef gint (*fs_path_func) (const gchar *, void *);
 typedef gint (*fs_src_dst_func) (const gchar *, const gchar *, void *);
 
 typedef GArray *(*fs_download_func) (const gchar *,
-				     struct transfer_control *,
-				     void (*)(gdouble), void *);
+				     struct transfer_control *, void *);
 
 typedef ssize_t (*fs_upload_func) (GArray *,
-				   gchar *,
-				   struct transfer_control *,
-				   void (*)(gdouble), void *);
+				   const gchar *,
+				   struct transfer_control *, void *);
 
 typedef gchar *(*fs_get_item_id) (struct item_iterator *);
 
