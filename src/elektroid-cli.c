@@ -34,7 +34,7 @@
 #define MIB_FLOAT (KIB_FLOAT * KIB_FLOAT)
 
 static struct connector connector;
-static struct connector_sample_transfer sample_transfer;
+static struct transfer_control control;
 static const struct fs_operations *fs_ops_samples;
 static const struct fs_operations *fs_ops_data;
 
@@ -249,9 +249,8 @@ cli_download (int argc, char *argv[], int optind)
 
   path_src = cli_get_path (device_path_src);
 
-  sample_transfer.active = TRUE;
-  data = fs_ops_samples->download (path_src, &sample_transfer, NULL,
-				   &connector);
+  control.active = TRUE;
+  data = fs_ops_samples->download (path_src, &control, NULL, &connector);
 
   if (data == NULL)
     {
@@ -323,8 +322,8 @@ cli_upload (int argc, char *argv[], int optind)
       goto cleanup;
     }
 
-  sample_transfer.active = TRUE;
-  frames = fs_ops_samples->upload (sample, path_dst, &sample_transfer,
+  control.active = TRUE;
+  frames = fs_ops_samples->upload (sample, path_dst, &control,
 				   NULL, &connector);
 
   res = frames < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
@@ -410,7 +409,7 @@ cli_df (int argc, char *argv[], int optind)
 static void
 cli_end (int sig)
 {
-  sample_transfer.active = FALSE;
+  control.active = FALSE;
 }
 
 int

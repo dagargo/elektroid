@@ -61,12 +61,12 @@ static gint connector_move_samples_item (const gchar *, const gchar *,
 					 void *);
 
 static GArray *connector_download_sample (const gchar *,
-					  struct connector_sample_transfer *,
+					  struct transfer_control *,
 					  void (*)(gdouble), void *);
 
 static ssize_t
 connector_upload_sample (GArray *, gchar *,
-			 struct connector_sample_transfer *,
+			 struct transfer_control *,
 			 void (*)(gdouble), void *);
 
 static struct item_iterator *connector_read_data_dir (const gchar *, void *);
@@ -1318,7 +1318,7 @@ connector_delete_samples_item (const gchar * path, void *data)
 ssize_t
 connector_upload_sample (GArray * sample,
 			 gchar * path,
-			 struct connector_sample_transfer *transfer,
+			 struct transfer_control *control,
 			 void (*progress) (gdouble), void *data)
 {
   struct connector *connector = data;
@@ -1360,9 +1360,9 @@ connector_upload_sample (GArray * sample,
   data16 = (gshort *) sample->data;
   transferred = 0;
   i = 0;
-  g_mutex_lock (&transfer->mutex);
-  active = (!transfer || transfer->active);
-  g_mutex_unlock (&transfer->mutex);
+  g_mutex_lock (&control->mutex);
+  active = (!control || control->active);
+  g_mutex_unlock (&control->mutex);
   while (transferred < sample->len && active)
     {
       if (progress)
@@ -1386,9 +1386,9 @@ connector_upload_sample (GArray * sample,
 	}
       free_msg (rx_msg);
       i++;
-      g_mutex_lock (&transfer->mutex);
-      active = (!transfer || transfer->active);
-      g_mutex_unlock (&transfer->mutex);
+      g_mutex_lock (&control->mutex);
+      active = (!control || control->active);
+      g_mutex_unlock (&control->mutex);
 
       usleep (REST_TIME);
     }
@@ -1422,7 +1422,7 @@ connector_upload_sample (GArray * sample,
 
 GArray *
 connector_download_sample (const gchar * path,
-			   struct connector_sample_transfer *transfer,
+			   struct transfer_control *control,
 			   void (*progress) (gdouble), void *data)
 {
   struct connector *connector = data;
@@ -1470,9 +1470,9 @@ connector_download_sample (const gchar * path,
 
   next_block_start = 0;
   offset = 64;
-  g_mutex_lock (&transfer->mutex);
-  active = (!transfer || transfer->active);
-  g_mutex_unlock (&transfer->mutex);
+  g_mutex_lock (&control->mutex);
+  active = (!control || control->active);
+  g_mutex_unlock (&control->mutex);
   while (next_block_start < frames && active)
     {
       if (progress)
@@ -1499,9 +1499,9 @@ connector_download_sample (const gchar * path,
 
       next_block_start += req_size;
       offset = 0;
-      g_mutex_lock (&transfer->mutex);
-      active = (!transfer || transfer->active);
-      g_mutex_unlock (&transfer->mutex);
+      g_mutex_lock (&control->mutex);
+      active = (!control || control->active);
+      g_mutex_unlock (&control->mutex);
 
       usleep (REST_TIME);
     }

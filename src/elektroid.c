@@ -93,7 +93,7 @@ enum elektroid_task_status
 
 struct elektroid_sample_transfer
 {
-  struct connector_sample_transfer transfer;
+  struct transfer_control control;
   gchar *src;			//Contains a path to a file
   gchar *dst;			//Contains a path to a dir
   enum elektroid_task_status status;	//Contains the final status
@@ -1315,9 +1315,9 @@ elektroid_stop_task_thread ()
 {
   debug_print (1, "Stopping task thread...\n");
 
-  g_mutex_lock (&sample_transfer.transfer.mutex);
-  sample_transfer.transfer.active = FALSE;
-  g_mutex_unlock (&sample_transfer.transfer.mutex);
+  g_mutex_lock (&sample_transfer.control.mutex);
+  sample_transfer.control.active = FALSE;
+  g_mutex_unlock (&sample_transfer.control.mutex);
 
   elektroid_join_task_thread ();
 }
@@ -1702,9 +1702,9 @@ elektroid_get_human_task_type (enum elektroid_task_type type)
 static void
 elektroid_stop_running_task (GtkWidget * object, gpointer data)
 {
-  g_mutex_lock (&sample_transfer.transfer.mutex);
-  sample_transfer.transfer.active = FALSE;
-  g_mutex_unlock (&sample_transfer.transfer.mutex);
+  g_mutex_lock (&sample_transfer.control.mutex);
+  sample_transfer.control.active = FALSE;
+  g_mutex_unlock (&sample_transfer.control.mutex);
 }
 
 static gboolean
@@ -1873,9 +1873,9 @@ elektroid_run_next_task (gpointer data)
     elektroid_get_next_queued_task (&iter, &type, &src, &dst, &fs);
   const gchar *status_human = elektroid_get_human_task_status (RUNNING);
 
-  g_mutex_lock (&sample_transfer.transfer.mutex);
-  sample_transfer_active = sample_transfer.transfer.active;
-  g_mutex_unlock (&sample_transfer.transfer.mutex);
+  g_mutex_lock (&sample_transfer.control.mutex);
+  sample_transfer_active = sample_transfer.control.active;
+  g_mutex_unlock (&sample_transfer.control.mutex);
 
   if (!sample_transfer_active && found)
     {
@@ -1888,7 +1888,7 @@ elektroid_run_next_task (gpointer data)
       gtk_tree_view_set_cursor (GTK_TREE_VIEW (task_tree_view), path, NULL,
 				FALSE);
       gtk_tree_path_free (path);
-      sample_transfer.transfer.active = TRUE;
+      sample_transfer.control.active = TRUE;
       sample_transfer.src = src;
       sample_transfer.dst = dst;
       sample_transfer.fs_operations = connector_get_fs_operations (fs);
@@ -1941,8 +1941,8 @@ elektroid_upload_task (gpointer data)
 
   sample = g_array_new (FALSE, FALSE, sizeof (gshort));
 
-  frames = sample_load (sample, &sample_transfer.transfer.mutex, NULL,
-			sample_transfer.src, &sample_transfer.transfer.active,
+  frames = sample_load (sample, &sample_transfer.control.mutex, NULL,
+			sample_transfer.src, &sample_transfer.control.active,
 			NULL);
 
   if (frames < 0)
@@ -1953,20 +1953,20 @@ elektroid_upload_task (gpointer data)
     }
 
   frames = sample_transfer.fs_operations->upload (sample, sample_transfer.dst,
-						  &sample_transfer.transfer,
+						  &sample_transfer.control,
 						  elektroid_update_progress,
 						  remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
-  if (frames < 0 && sample_transfer.transfer.active)
+  if (frames < 0 && sample_transfer.control.active)
     {
       error_print ("Error while uploading\n");
       sample_transfer.status = COMPLETED_ERROR;
     }
   else
     {
-      g_mutex_lock (&sample_transfer.transfer.mutex);
-      if (sample_transfer.transfer.active)
+      g_mutex_lock (&sample_transfer.control.mutex);
+      if (sample_transfer.control.active)
 	{
 	  sample_transfer.status = COMPLETED_OK;
 	}
@@ -1974,7 +1974,7 @@ elektroid_upload_task (gpointer data)
 	{
 	  sample_transfer.status = CANCELED;
 	}
-      g_mutex_unlock (&sample_transfer.transfer.mutex);
+      g_mutex_unlock (&sample_transfer.control.mutex);
     }
 
   g_array_free (sample, TRUE);
@@ -2123,20 +2123,20 @@ elektroid_download_task (gpointer data)
 
   sample =
     sample_transfer.fs_operations->download (sample_transfer.src,
-					     &sample_transfer.transfer,
+					     &sample_transfer.control,
 					     elektroid_update_progress,
 					     remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
-  if (sample == NULL && sample_transfer.transfer.active)
+  if (sample == NULL && sample_transfer.control.active)
     {
       error_print ("Error while downloading\n");
       sample_transfer.status = COMPLETED_ERROR;
     }
   else
     {
-      g_mutex_lock (&sample_transfer.transfer.mutex);
-      if (sample_transfer.transfer.active)
+      g_mutex_lock (&sample_transfer.control.mutex);
+      if (sample_transfer.control.active)
 	{
 	  dst_path = strdup (sample_transfer.dst);
 	  dst_dir = dirname (dst_path);
@@ -2151,7 +2151,7 @@ elektroid_download_task (gpointer data)
 	{
 	  sample_transfer.status = CANCELED;
 	}
-      g_mutex_unlock (&sample_transfer.transfer.mutex);
+      g_mutex_unlock (&sample_transfer.control.mutex);
     }
 
 end:
