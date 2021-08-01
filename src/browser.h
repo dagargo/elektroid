@@ -61,23 +61,15 @@ struct browser
   void *data;
 };
 
-struct browser_item
-{
-  gchar *name;
-  gint size;
-  gint index;
-  enum item_type type;
-};
-
 gint browser_sort_samples (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
 			   gpointer);
 
 gint browser_sort_data (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
 			gpointer);
 
-struct browser_item *browser_get_item (GtkTreeModel *, GtkTreeIter *);
+struct item *browser_get_item (GtkTreeModel *, GtkTreeIter *);
 
-void browser_free_item (struct browser_item *);
+void browser_free_item (struct item *);
 
 gint browser_get_selected_items_count (struct browser *);
 
@@ -94,7 +86,9 @@ void browser_go_up (GtkWidget *, gpointer);
 void browser_item_activated (GtkTreeView *, GtkTreePath *,
 			     GtkTreeViewColumn *, gpointer);
 
-gchar *browser_get_item_path (struct browser *, struct browser_item *);
+gchar *browser_get_item_path (struct browser *, struct item *);
+
+gchar *browser_get_item_id_path (struct browser *, struct item *);
 
 gboolean browser_load_dir (gpointer);
 

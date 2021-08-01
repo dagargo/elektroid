@@ -42,15 +42,20 @@ typedef guint (*iterator_next) (struct item_iterator *);
 
 typedef void (*iterator_free) (void *);
 
+struct item
+{
+  gchar *name;
+  guint32 size;
+  gint32 index;
+  enum item_type type;
+};
+
 struct item_iterator
 {
   iterator_next next;
   iterator_free free;
   void *data;
-  gchar *entry;
-  gchar type;
-  guint32 size;
-  gint32 id;
+  struct item item;
 };
 
 struct transfer_control
@@ -73,7 +78,7 @@ typedef ssize_t (*fs_upload_func) (GByteArray *,
 				   const gchar *,
 				   struct transfer_control *, void *);
 
-typedef gchar *(*fs_get_item_id) (struct item_iterator *);
+typedef gchar *(*fs_get_item_id) (struct item *);
 
 struct fs_operations
 {
@@ -81,6 +86,7 @@ struct fs_operations
   fs_read_dir_func readdir;
   fs_path_func mkdir;
   fs_path_func delete;
+  fs_src_dst_func rename;
   fs_src_dst_func move;
   fs_src_dst_func copy;
   fs_path_func clear;
@@ -109,9 +115,9 @@ gchar *get_local_startup_path (const gchar *);
 
 void free_msg (gpointer);
 
-gchar *get_item_name (struct item_iterator *);
+gchar *get_item_name (struct item *);
 
-gchar *get_item_index (struct item_iterator *);
+gchar *get_item_index (struct item *);
 
 guint next_item_iterator (struct item_iterator *);
 

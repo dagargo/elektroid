@@ -24,8 +24,8 @@ gint
 browser_sort_samples (GtkTreeModel * model,
 		      GtkTreeIter * a, GtkTreeIter * b, gpointer data)
 {
-  struct browser_item *itema;
-  struct browser_item *itemb;
+  struct item *itema;
+  struct item *itemb;
   gint ret = 0;
 
   itema = browser_get_item (model, a);
@@ -50,8 +50,8 @@ gint
 browser_sort_data (GtkTreeModel * model,
 		   GtkTreeIter * a, GtkTreeIter * b, gpointer data)
 {
-  struct browser_item *itema;
-  struct browser_item *itemb;
+  struct item *itema;
+  struct item *itemb;
   gint ret = 0;
 
   itema = browser_get_item (model, a);
@@ -65,10 +65,10 @@ browser_sort_data (GtkTreeModel * model,
   return ret;
 }
 
-struct browser_item *
+struct item *
 browser_get_item (GtkTreeModel * model, GtkTreeIter * iter)
 {
-  struct browser_item *item = malloc (sizeof (struct browser_item));
+  struct item *item = malloc (sizeof (struct item));
 
   gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_TYPE_FIELD, &item->type,
 		      BROWSER_LIST_STORE_NAME_FIELD, &item->name,
@@ -144,7 +144,7 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 			GtkTreeViewColumn * column, gpointer data)
 {
   GtkTreeIter iter;
-  struct browser_item *item;
+  struct item *item;
   struct browser *browser = data;
   GtkTreeModel *model = GTK_TREE_MODEL (gtk_tree_view_get_model
 					(browser->view));
@@ -178,17 +178,29 @@ browser_get_selected_items_count (struct browser *browser)
 }
 
 void
-browser_free_item (struct browser_item *item)
+browser_free_item (struct item *item)
 {
   g_free (item->name);
   g_free (item);
 }
 
 gchar *
-browser_get_item_path (struct browser *browser, struct browser_item *item)
+browser_get_item_path (struct browser *browser, struct item *item)
 {
-  gchar *path = path = chain_path (browser->dir, item->name);
-  debug_print (1, "Using %s path for item %s...\n", path, item->name);
+  gchar *path = chain_path (browser->dir, item->name);
+  debug_print (1, "Using %s path for item %s (%d)...\n", path, item->name,
+	       item->index);
+  return path;
+}
+
+gchar *
+browser_get_item_id_path (struct browser *browser, struct item *item)
+{
+  gchar *id = browser->fs_operations->getid (item);
+  gchar *path = chain_path (browser->dir, id);
+  debug_print (1, "Using %s path for item %s (%d)...\n", path, item->name,
+	       item->index);
+  g_free (id);
   return path;
 }
 
@@ -199,10 +211,10 @@ local_add_dentry_item (struct browser *browser, struct item_iterator *iter)
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
 
-  if (iter->size > 0)
+  if (iter->item.size > 0)
     {
       snprintf (sizes, SIZE_LABEL_LEN, "%.2f MiB",
-		iter->size / (1024.0 * 1024.0));
+		iter->item.size / (1024.0 * 1024.0));
     }
   else
     {
@@ -211,18 +223,19 @@ local_add_dentry_item (struct browser *browser, struct item_iterator *iter)
 
   gtk_list_store_insert_with_values (list_store, NULL, -1,
 				     BROWSER_LIST_STORE_ICON_FIELD,
-				     iter->type ==
+				     iter->item.type ==
 				     ELEKTROID_DIR ? DIR_ICON :
 				     browser->file_icon,
 				     BROWSER_LIST_STORE_NAME_FIELD,
-				     iter->entry,
+				     iter->item.name,
 				     BROWSER_LIST_STORE_SIZE_FIELD,
-				     iter->size,
-				     BROWSER_LIST_STORE_SIZE_STR_FIELD, sizes,
+				     iter->item.size,
+				     BROWSER_LIST_STORE_SIZE_STR_FIELD,
+				     sizes,
 				     BROWSER_LIST_STORE_TYPE_FIELD,
-				     iter->type,
-				     BROWSER_LIST_STORE_INDEX_FIELD, iter->id,
-				     -1);
+				     iter->item.type,
+				     BROWSER_LIST_STORE_INDEX_FIELD,
+				     iter->item.index, -1);
 }
 
 static gboolean
@@ -233,7 +246,7 @@ browser_file_match_extensions (struct browser *browser,
   const gchar *entry_ext;
   const gchar **ext = browser->extensions;
 
-  if (iter->type == ELEKTROID_DIR)
+  if (iter->item.type == ELEKTROID_DIR)
     {
       return TRUE;
     }
@@ -243,7 +256,7 @@ browser_file_match_extensions (struct browser *browser,
       return TRUE;
     }
 
-  entry_ext = get_ext (iter->entry);
+  entry_ext = get_ext (iter->item.name);
 
   if (!entry_ext)
     {

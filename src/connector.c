@@ -160,6 +160,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .readdir = connector_read_samples_dir,
   .mkdir = connector_create_samples_dir,
   .delete = connector_delete_samples_item,
+  .rename = connector_move_samples_item,
   .move = connector_move_samples_item,
   .copy = NULL,
   .clear = NULL,
@@ -174,7 +175,8 @@ static const struct fs_operations FS_DATA_OPERATIONS = {
   .fs = FS_DATA,
   .readdir = connector_read_data_dir,
   .mkdir = NULL,
-  .delete = NULL,
+  .delete = connector_clear_data_item,
+  .rename = NULL,
   .move = connector_move_data_item,
   .copy = connector_copy_data_item,
   .clear = connector_clear_data_item,
@@ -252,14 +254,14 @@ connector_next_sample_entry (struct item_iterator *iter)
   gchar *entry_cp1252;
   struct connector_iterator_data *data = iter->data;
 
-  if (iter->entry != NULL)
+  if (iter->item.name != NULL)
     {
-      g_free (iter->entry);
+      g_free (iter->item.name);
     }
 
   if (data->pos == data->msg->len)
     {
-      iter->entry = NULL;
+      iter->item.name = NULL;
       return -ENOENT;
     }
   else
@@ -269,20 +271,20 @@ connector_next_sample_entry (struct item_iterator *iter)
       data->pos += sizeof (guint32);
 
       data32 = (guint32 *) & data->msg->data[data->pos];
-      iter->size = be32toh (*data32);
+      iter->item.size = be32toh (*data32);
       data->pos += sizeof (guint32);
 
       data->pos += 1;		//write_protected
 
-      iter->type = data->msg->data[data->pos];
+      iter->item.type = data->msg->data[data->pos];
       data->pos++;
 
       entry_cp1252 = (gchar *) & data->msg->data[data->pos];
-      iter->entry =
+      iter->item.name =
 	g_convert (entry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
       data->pos += strlen (entry_cp1252) + 1;
 
-      iter->id = -1;
+      iter->item.index = -1;
 
       return 0;
     }
@@ -299,9 +301,9 @@ connector_new_sample_iterator (GByteArray * msg)
   data->pos = 5;
 
   iter->data = data;
-  iter->entry = NULL;
   iter->next = connector_next_sample_entry;
   iter->free = connector_free_iterator_data;
+  iter->item.name = NULL;
 
   return iter;
 }
@@ -1092,9 +1094,9 @@ connector_get_path_type (struct connector *connector, const gchar * path)
     {
       while (!next_item_iterator (iter))
 	{
-	  if (strcmp (name, iter->entry) == 0)
+	  if (strcmp (name, iter->item.name) == 0)
 	    {
-	      res = iter->type;
+	      res = iter->item.type;
 	      break;
 	    }
 	}
@@ -1201,8 +1203,8 @@ connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
 	{
 	  while (!next_item_iterator (iter) && !res)
 	    {
-	      src_plus = chain_path (src, iter->entry);
-	      dst_plus = chain_path (dst, iter->entry);
+	      src_plus = chain_path (src, iter->item.name);
+	      dst_plus = chain_path (dst, iter->item.name);
 	      res =
 		connector_move_samples_item (src_plus, dst_plus, connector);
 	      free (src_plus);
@@ -1293,7 +1295,7 @@ connector_delete_samples_item (const gchar * path, void *data)
 	{
 	  while (!next_item_iterator (iter))
 	    {
-	      new_path = chain_path (path, iter->entry);
+	      new_path = chain_path (path, iter->item.name);
 	      connector_delete_samples_item (new_path, connector);
 	      free (new_path);
 	    }
@@ -2091,19 +2093,19 @@ connector_next_data_entry (struct item_iterator *iter)
   guint8 has_children;
   struct connector_iterator_data *data = iter->data;
 
-  if (iter->entry != NULL)
+  if (iter->item.name != NULL)
     {
-      g_free (iter->entry);
+      g_free (iter->item.name);
     }
 
   if (data->pos == data->msg->len)
     {
-      iter->entry = NULL;
+      iter->item.name = NULL;
       return -ENOENT;
     }
 
   entry_cp1252 = (gchar *) & data->msg->data[data->pos];
-  iter->entry =
+  iter->item.name =
     g_convert (entry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
   data->pos += strlen (entry_cp1252) + 1;
   has_children = data->msg->data[data->pos];
@@ -2114,23 +2116,23 @@ connector_next_data_entry (struct item_iterator *iter)
   switch (type)
     {
     case 1:
-      iter->type = ELEKTROID_DIR;
+      iter->item.type = ELEKTROID_DIR;
       data->pos += sizeof (guint32);	// child entries
-      iter->size = 0;
-      iter->id = -1;
+      iter->item.size = 0;
+      iter->item.index = -1;
       data->operations = 0;
       data->has_valid_data = 0;
       data->has_metadata = 0;
       break;
     case 2:
-      iter->type = has_children ? ELEKTROID_DIR : ELEKTROID_FILE;
+      iter->item.type = has_children ? ELEKTROID_DIR : ELEKTROID_FILE;
 
       data32 = (guint32 *) & data->msg->data[data->pos];
-      iter->id = be32toh (*data32);	//index
+      iter->item.index = be32toh (*data32);	//index
       data->pos += sizeof (gint32);
 
       data32 = (guint32 *) & data->msg->data[data->pos];
-      iter->size = be32toh (*data32);
+      iter->item.size = be32toh (*data32);
       data->pos += sizeof (guint32);
 
       data16 = (guint16 *) & data->msg->data[data->pos];
@@ -2145,7 +2147,7 @@ connector_next_data_entry (struct item_iterator *iter)
 
       break;
     default:
-      error_print ("Unrecognized data entry: %d\n", iter->type);
+      error_print ("Unrecognized data entry: %d\n", iter->item.type);
       break;
     }
 
@@ -2163,9 +2165,9 @@ connector_new_data_iterator (GByteArray * msg)
   data->pos = 18;
 
   iter->data = data;
-  iter->entry = NULL;
   iter->next = connector_next_data_entry;
   iter->free = connector_free_iterator_data;
+  iter->item.name = NULL;
 
   return iter;
 }

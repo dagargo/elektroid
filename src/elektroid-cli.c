@@ -45,8 +45,8 @@ print_sample (struct item_iterator *iter)
 {
   struct connector_iterator_data *data = iter->data;
 
-  printf ("%c %.2f %08x %s\n", iter->type,
-	  iter->size / MIB_FLOAT, data->cksum, iter->entry);
+  printf ("%c %.2f %08x %s\n", iter->item.type,
+	  iter->item.size / MIB_FLOAT, data->cksum, iter->item.name);
 }
 
 static void
@@ -54,9 +54,9 @@ print_datum (struct item_iterator *iter)
 {
   struct connector_iterator_data *data = iter->data;
 
-  printf ("%c %3d %04x %d %d %.2f %s\n", iter->type, iter->id,
+  printf ("%c %3d %04x %d %d %.2f %s\n", iter->item.type, iter->item.index,
 	  data->operations, data->has_valid_data,
-	  data->has_metadata, iter->size / MIB_FLOAT, iter->entry);
+	  data->has_metadata, iter->item.size / MIB_FLOAT, iter->item.name);
 }
 
 static gchar *

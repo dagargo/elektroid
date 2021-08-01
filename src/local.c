@@ -39,12 +39,14 @@ const struct fs_operations FS_LOCAL_OPERATIONS = {
   .readdir = local_read_dir,
   .mkdir = local_mkdir,
   .delete = local_delete,
+  .rename = local_rename,
   .move = local_rename,
   .copy = NULL,
   .clear = NULL,
   .swap = NULL,
   .download = NULL,
   .upload = NULL,
+  .getid = get_item_name,
   .download_ext = NULL
 };
 
@@ -147,9 +149,9 @@ local_next_dentry (struct item_iterator *iter)
   struct local_iterator_data *data = iter->data;
   guint ret = -ENOENT;
 
-  if (iter->entry != NULL)
+  if (iter->item.name != NULL)
     {
-      g_free (iter->entry);
+      g_free (iter->item.name);
     }
 
   while ((dirent = readdir (data->dir)) != NULL)
@@ -161,24 +163,24 @@ local_next_dentry (struct item_iterator *iter)
 
       if (dirent->d_type == DT_DIR || dirent->d_type == DT_REG)
 	{
-	  iter->entry = strdup (dirent->d_name);
+	  iter->item.name = strdup (dirent->d_name);
 
 	  if (dirent->d_type == DT_DIR)
 	    {
-	      iter->type = ELEKTROID_DIR;
-	      iter->size = 0;
+	      iter->item.type = ELEKTROID_DIR;
+	      iter->item.size = 0;
 	    }
 	  else
 	    {
-	      iter->type = ELEKTROID_FILE;
+	      iter->item.type = ELEKTROID_FILE;
 	      full_path = chain_path (data->path, dirent->d_name);
 	      if (stat (full_path, &st) == 0)
 		{
-		  iter->size = st.st_size;
+		  iter->item.size = st.st_size;
 		}
 	      else
 		{
-		  iter->size = 0;
+		  iter->item.size = 0;
 		}
 	      free (full_path);
 	    }
@@ -208,9 +210,9 @@ local_read_dir (const gchar * path, void *data_)
 
   iter = malloc (sizeof (struct item_iterator));
   iter->data = data;
-  iter->entry = NULL;
   iter->next = local_next_dentry;
   iter->free = local_free_iterator_data;
+  iter->item.name = NULL;
 
   return iter;
 }

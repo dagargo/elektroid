@@ -240,17 +240,23 @@ static GtkComboBox *fs_combo;
 static GtkTreeViewColumn *remote_tree_view_index_column;
 
 static gchar *
-elektroid_get_id_path (gchar * path)
+elektroid_get_id_path (gchar * remote_path, gboolean create)
 {
+  gint index;
   gchar *id;
   gchar *dir;
   gchar *dirc;
   gchar *name;
   gchar *namec;
-  gchar *src_abs_path_id;
+  gchar *id_path;
   struct item_iterator *iter;
 
-  dirc = strdup (path);
+  if (remote_browser.fs_operations->fs == FS_SAMPLES)
+    {
+      return strdup (remote_path);
+    }
+
+  dirc = strdup (remote_path);
   dir = dirname (dirc);
   iter = remote_browser.fs_operations->readdir (dir, remote_browser.data);
   if (!iter)
@@ -258,26 +264,34 @@ elektroid_get_id_path (gchar * path)
       return NULL;
     }
 
-  namec = strdup (path);
+  namec = strdup (remote_path);
   name = basename (namec);
 
-  src_abs_path_id = NULL;
+  id_path = NULL;
+  index = 1;
   while (!next_item_iterator (iter))
     {
-      if (strcmp (iter->entry, name) == 0)
+      if (strcmp (iter->item.name, name) == 0)
 	{
-	  id = remote_browser.fs_operations->getid (iter);
-	  src_abs_path_id = chain_path (dir, id);
+	  id = remote_browser.fs_operations->getid (&iter->item);
+	  id_path = chain_path (dir, id);
 	  g_free (id);
 	  break;
 	}
+      index++;
+    }
+
+  if (create && !id_path)	//Return lowest available id
+    {
+      id_path = malloc (PATH_MAX);
+      snprintf (id_path, PATH_MAX, "%s/%d", dir, index);
     }
 
   free_item_iterator (iter);
   g_free (namec);
   g_free (dirc);
 
-  return src_abs_path_id;
+  return id_path;
 }
 
 static const gchar *
@@ -914,15 +928,17 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path,
 {
   GtkTreeIter iter;
   gchar *path;
+  gchar *id_path;
   gint err;
-  struct browser_item *item;
+  struct item *item;
 
   gtk_tree_model_get_iter (model, &iter, tree_path);
   item = browser_get_item (model, &iter);
   path = browser_get_item_path (browser, item);
+  id_path = browser_get_item_id_path (browser, item);
 
-  debug_print (1, "Deleting %s...\n", path);
-  err = browser->fs_operations->delete (path, browser->data);
+  debug_print (1, "Deleting %s...\n", id_path);
+  err = browser->fs_operations->delete (id_path, browser->data);
   if (err < 0)
     {
       show_error_msg (_("Error while deleting “%s”: %s."),
@@ -934,6 +950,7 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path,
     }
 
   g_free (path);
+  g_free (id_path);
   browser_free_item (item);
 }
 
@@ -998,14 +1015,14 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
   int result;
   gint err;
   GtkTreeIter iter;
-  struct browser_item *item;
+  struct item *item;
   struct browser *browser = data;
   GtkTreeModel *model =
     GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
 
   browser_set_selected_row_iter (browser, &iter);
   item = browser_get_item (model, &iter);
-  old_path = browser_get_item_path (browser, item);
+  old_path = browser_get_item_id_path (browser, item);
 
   gtk_entry_set_text (name_dialog_entry, item->name);
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
@@ -1057,7 +1074,7 @@ elektroid_drag_begin (GtkWidget * widget,
   GList *list;
   gchar *uri;
   gchar *path;
-  struct browser_item *item;
+  struct item *item;
   struct browser *browser = data;
 
   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (widget));
@@ -1331,11 +1348,11 @@ elektroid_remote_check_selection (gpointer data)
 			    && remote_browser.fs_operations->download);
   gtk_widget_set_sensitive (remote_rename_menuitem,
 			    count == 1
-			    && remote_browser.fs_operations->move !=
-			    NULL ? TRUE : FALSE);
+			    && remote_browser.fs_operations->
+			    move ? TRUE : FALSE);
   gtk_widget_set_sensitive (remote_delete_menuitem, count == 1
-			    && remote_browser.fs_operations->delete !=
-			    NULL ? TRUE : FALSE);
+			    && remote_browser.fs_operations->
+			    delete ? TRUE : FALSE);
 
   return FALSE;
 }
@@ -1346,7 +1363,7 @@ elektroid_local_check_selection (gpointer data)
   GtkTreeIter iter;
   gchar *sample_path;
   GtkTreeModel *model;
-  struct browser_item *item;
+  struct item *item;
   gint count = browser_get_selected_items_count (&local_browser);
 
   if (remote_browser.fs_operations->fs == FS_SAMPLES)
@@ -1443,7 +1460,7 @@ elektroid_show_clicked (GtkWidget * object, gpointer data)
   GVariantBuilder builder;
   GFile *file;
   GDBusProxy *proxy;
-  struct browser_item *item;
+  struct item *item;
   gchar *path = NULL;
   gboolean done = FALSE;
   gint count = browser_get_selected_items_count (&local_browser);
@@ -1515,7 +1532,7 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
   gchar *path;
   gchar *uri;
   GFile *file;
-  struct browser_item *item;
+  struct item *item;
 
   browser_set_selected_row_iter (&local_browser, &iter);
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
@@ -2037,6 +2054,12 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
       goto cleanup_not_dir;
     }
 
+  if (!remote_browser.fs_operations->mkdir)
+    {
+      debug_print (1, "Creating directories is not implemented\n");
+      goto cleanup;
+    }
+
   if (remote_browser.fs_operations->mkdir (dst_abs_path, remote_browser.data))
     {
       error_print ("Error while creating remote %s dir\n", dst_abs_path);
@@ -2050,7 +2073,7 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
 
   while (!next_item_iterator (iter))
     {
-      path = chain_path (rel_path, iter->entry);
+      path = chain_path (rel_path, iter->item.name);
       elektroid_add_upload_task_path (path, src_dir, dst_dir);
       free (path);
     }
@@ -2067,7 +2090,7 @@ elektroid_add_upload_task (GtkTreeModel * model,
 			   GtkTreePath * path,
 			   GtkTreeIter * iter, gpointer userdata)
 {
-  struct browser_item *item = browser_get_item (model, iter);
+  struct item *item = browser_get_item (model, iter);
   elektroid_add_upload_task_path (item->name, local_browser.dir,
 				  remote_browser.dir);
   browser_free_item (item);
@@ -2163,6 +2186,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
 {
   struct item_iterator *iter;
   gchar *path;
+  gchar *src_abs_path_id;
   gchar dst_abs_path_ext[PATH_MAX];
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
@@ -2171,12 +2195,12 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
     remote_browser.fs_operations->readdir (src_abs_path, remote_browser.data);
   if (!iter)
     {
-      path = elektroid_get_id_path (src_abs_path);
+      src_abs_path_id = elektroid_get_id_path (src_abs_path, FALSE);
       snprintf (dst_abs_path_ext, PATH_MAX, "%s.%s", dst_abs_path,
 		remote_browser.fs_operations->download_ext);
-      elektroid_add_task (DOWNLOAD, path, dst_abs_path_ext,
+      elektroid_add_task (DOWNLOAD, src_abs_path_id, dst_abs_path_ext,
 			  remote_browser.fs_operations->fs);
-      g_free (path);
+      g_free (src_abs_path_id);
       goto cleanup_not_dir;
     }
 
@@ -2188,7 +2212,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
 
   while (!next_item_iterator (iter))
     {
-      path = chain_path (rel_path, iter->entry);
+      path = chain_path (rel_path, iter->item.name);
       elektroid_add_download_task_path (path, src_dir, dst_dir);
       free (path);
     }
@@ -2205,7 +2229,7 @@ elektroid_add_download_task (GtkTreeModel * model,
 			     GtkTreePath * path,
 			     GtkTreeIter * iter, gpointer data)
 {
-  struct browser_item *item = browser_get_item (model, iter);
+  struct item *item = browser_get_item (model, iter);
   elektroid_add_download_task_path (item->name, remote_browser.dir,
 				    local_browser.dir);
   browser_free_item (item);
@@ -2226,8 +2250,8 @@ elektroid_add_download_tasks (GtkWidget * object, gpointer data)
 
   queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
 
-  gtk_tree_selection_selected_foreach (selection,
-				       elektroid_add_download_task, NULL);
+  gtk_tree_selection_selected_foreach (selection, elektroid_add_download_task,
+				       NULL);
 
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
@@ -2287,7 +2311,7 @@ elektroid_common_key_press (GtkWidget * widget, GdkEventKey * event,
   else if (event->keyval == GDK_KEY_F2)
     {
       count = browser_get_selected_items_count (browser);
-      if (count == 1)
+      if (count == 1 && browser->fs_operations->rename)
 	{
 	  elektroid_rename_item (NULL, browser);
 	}
@@ -2406,9 +2430,9 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       gtk_widget_set_visible (remote_add_dir_menuitem,
 			      remote_browser.fs_operations->mkdir != NULL);
       gtk_widget_set_visible (remote_rename_menuitem,
-			      remote_browser.fs_operations->readdir != NULL);
+			      remote_browser.fs_operations->rename != NULL);
       gtk_widget_set_visible (remote_delete_menuitem,
-			      remote_browser.fs_operations->readdir != NULL);
+			      remote_browser.fs_operations->delete != NULL);
       gtk_widget_set_visible (local_audio_box, fs == FS_SAMPLES);
       gtk_tree_view_column_set_visible (remote_tree_view_index_column,
 					fs == FS_DATA);
@@ -2506,7 +2530,9 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   gchar *path_dirname;
   gchar *name;
   gchar *dir;
-  gchar *dest_path;
+  gchar *dst_path;
+  gchar *src_id_path;
+  gchar *dst_id_path;
   GtkTreeIter iter;
   gboolean queued;
   GdkAtom type;
@@ -2540,16 +2566,16 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		{
 		  if (strcmp (dir, local_browser.dir))
 		    {
-		      dest_path = chain_path (local_browser.dir, name);
+		      dst_path = chain_path (local_browser.dir, name);
 		      res = local_browser.fs_operations->move (filename,
-							       dest_path,
+							       dst_path,
 							       NULL);
 		      if (res)
 			{
 			  show_error_msg (_(MSG_ERROR_MOVING), filename,
-					  dest_path, g_strerror (errno));
+					  dst_path, g_strerror (errno));
 			}
-		      g_free (dest_path);
+		      g_free (dst_path);
 		    }
 		  else
 		    {
@@ -2568,17 +2594,21 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		{
 		  if (strcmp (dir, remote_browser.dir))
 		    {
-		      dest_path = chain_path (remote_browser.dir, name);
+		      dst_path = chain_path (remote_browser.dir, name);
+		      dst_id_path = elektroid_get_id_path (dst_path, TRUE);
+		      src_id_path = elektroid_get_id_path (filename, FALSE);
 		      res =
-			remote_browser.fs_operations->move (filename,
-							    dest_path,
+			remote_browser.fs_operations->move (src_id_path,
+							    dst_id_path,
 							    remote_browser.data);
 		      if (res)
 			{
 			  show_error_msg (_(MSG_ERROR_MOVING), filename,
-					  dest_path, g_strerror (errno));
+					  dst_path, g_strerror (errno));
 			}
-		      g_free (dest_path);
+		      g_free (dst_id_path);
+		      g_free (src_id_path);
+		      g_free (dst_path);
 		      browser_load_dir (browser);
 		    }
 		  else
@@ -2615,6 +2645,8 @@ elektroid_dnd_get (GtkWidget * widget,
 		   GtkSelectionData * selection_data,
 		   guint info, guint time, gpointer user_data)
 {
+  GdkAtom type;
+  gchar *type_name;
   struct browser *browser = user_data;
 
   switch (info)
@@ -2628,7 +2660,11 @@ elektroid_dnd_get (GtkWidget * widget,
 			      (guchar *) browser->dnd_data->str,
 			      browser->dnd_data->len);
 
-      debug_print (1, "DND sent data:\n%s\n", browser->dnd_data->str);
+      type = gtk_selection_data_get_data_type (selection_data);
+      type_name = gdk_atom_name (type);
+      debug_print (1, "DND sent data (%s):\n%s\n", type_name,
+		   browser->dnd_data->str);
+
       break;
     default:
       error_print ("DND type not supported\n");
@@ -2666,7 +2702,7 @@ elektroid_drag_motion_list (GtkWidget * widget,
   gint tx;
   gint ty;
   GtkTreeSelection *selection;
-  struct browser_item *item;
+  struct item *item;
   struct browser *browser = user_data;
 
   gtk_tree_view_convert_widget_to_bin_window_coords
