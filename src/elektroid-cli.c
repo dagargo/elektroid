@@ -222,7 +222,7 @@ cli_command_src_dst (int argc, char *argv[], int optind, fs_src_dst_func f)
 }
 
 static int
-cli_download (int argc, char *argv[], int optind)
+cli_download_sample (int argc, char *argv[], int optind)
 {
   gchar *device_path_src, *path_src, *local_path;
   gint res;
@@ -273,7 +273,7 @@ cli_download (int argc, char *argv[], int optind)
 }
 
 static int
-cli_upload (int argc, char *argv[], int optind)
+cli_upload_sample (int argc, char *argv[], int optind)
 {
   gchar *path_src, *device_path_dst, *path_dst;
   gint res;
@@ -407,6 +407,60 @@ cli_df (int argc, char *argv[], int optind)
   return EXIT_SUCCESS;
 }
 
+static int
+cli_download_data (int argc, char *argv[], int optind)
+{
+  gchar *device_path_src, *path_src, *local_path;
+  FILE *file;
+  gint res;
+  GByteArray *data;
+  ssize_t bytes;
+  gchar *basec, *bname;
+
+  if (optind == argc)
+    {
+      error_print ("Remote path missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      device_path_src = argv[optind];
+    }
+
+  res = cli_connect (device_path_src);
+
+  if (res < 0)
+    {
+      return EXIT_FAILURE;
+    }
+
+  path_src = cli_get_path (device_path_src);
+
+  control.active = TRUE;
+  control.progress = NULL;
+  data = fs_ops_data->download (path_src, &control, &connector);
+
+  if (data == NULL)
+    {
+      return EXIT_FAILURE;
+    }
+
+  basec = strdup (path_src);
+  bname = basename (basec);
+  local_path = malloc (PATH_MAX);
+  snprintf (local_path, PATH_MAX, "./%s.data", bname);
+
+  file = fopen (local_path, "w");
+  bytes = fwrite (data->data, 1, data->len, file);
+  fclose (file);
+
+  free (basec);
+  free (local_path);
+  g_byte_array_free (data, TRUE);
+
+  return bytes > 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
 static void
 cli_end (int sig)
 {
@@ -516,12 +570,12 @@ main (int argc, char *argv[])
   else if (strcmp (command, "download") == 0
 	   || strcmp (command, "download-sample") == 0)
     {
-      res = cli_download (argc, argv, optind);
+      res = cli_download_sample (argc, argv, optind);
     }
   else if (strcmp (command, "upload") == 0
 	   || strcmp (command, "upload-sample") == 0)
     {
-      res = cli_upload (argc, argv, optind);
+      res = cli_upload_sample (argc, argv, optind);
     }
   else if (strcmp (command, "info") == 0
 	   || strcmp (command, "info-device") == 0)
@@ -552,6 +606,10 @@ main (int argc, char *argv[])
   else if (strcmp (command, "move-data") == 0)
     {
       res = cli_command_src_dst (argc, argv, optind, fs_ops_data->move);
+    }
+  else if (strcmp (command, "download-data") == 0)
+    {
+      res = cli_download_data (argc, argv, optind);
     }
   else
     {

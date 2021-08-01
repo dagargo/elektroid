@@ -26,7 +26,7 @@
 #include "utils.h"
 
 size_t
-sample_save (GByteArray * sample, gchar * path)
+sample_save (GByteArray * sample, const gchar * path)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -73,8 +73,9 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
 }
 
 size_t
-sample_load (GByteArray * sample, GMutex * mutex, gint * frames, gchar * path,
-	     gboolean * active, void (*progress) (gdouble))
+sample_load (GByteArray * sample, GMutex * mutex, gint * frames,
+	     const gchar * path, gboolean * active,
+	     void (*progress) (gdouble))
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;

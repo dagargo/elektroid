@@ -547,7 +547,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                     <property name="title" translatable="yes">Name</property>
                                     <property name="expand">True</property>
                                     <child>
-                                      <object class="GtkCellRendererText" id="local_name_cell_renderer_text">
+                                      <object class="GtkCellRendererText">
                                         <property name="ellipsize">middle</property>
                                       </object>
                                       <attributes>

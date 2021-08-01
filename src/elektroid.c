@@ -118,7 +118,7 @@ static const struct option ELEKTROID_OPTIONS[] = {
 };
 
 static const gchar *ELEKTROID_FS_NAMES[] = {
-  "Samples", "Data"
+  "samples", "data"
 };
 
 static const gchar *ELEKTROID_FS_ICONS[] = {
@@ -732,7 +732,7 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
     {
       debug_print (1, "Saving SysEx file...\n");
       file = fopen (filename, "w");
-      fwrite (sysex_data->data, sysex_data->len, 1, file);
+      fwrite (sysex_data->data, 1, sysex_data->len, file);
       g_byte_array_free (sysex_data, TRUE);
       fclose (file);
       g_free (filename);
@@ -2124,13 +2124,43 @@ elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
     }
 }
 
-static gpointer
-elektroid_download_task (gpointer data)
+static void
+elektroid_save_download_data (GByteArray * data)
 {
-  gchar *dst_path;
-  gchar *dst_dir;
-  GByteArray *sample;
-  size_t bytes;
+  ssize_t bytes = -1;
+  FILE *file;
+
+  debug_print (1, "Writing %d bytes to file %s (filesystem %s)...\n",
+	       data->len, transfer.dst,
+	       elektroid_get_fs_name (transfer.fs_operations->fs));
+
+  if (transfer.fs_operations->fs == FS_SAMPLES)
+    {
+      bytes = sample_save (data, transfer.dst);
+      debug_print (1, "%zu frames written\n", bytes >> 1);
+    }
+  else if (transfer.fs_operations->fs == FS_DATA)
+    {
+      file = fopen (transfer.dst, "w");
+      bytes = fwrite (data->data, 1, data->len, file);
+      g_byte_array_free (data, TRUE);
+      fclose (file);
+      debug_print (1, "%zu bytes written\n", bytes);
+    }
+  else
+    {
+      debug_print (1, "Function write not implemented\n");
+    }
+  if (bytes >= 0)
+    {
+      transfer.status = COMPLETED_OK;
+    }
+}
+
+static gpointer
+elektroid_download_task (gpointer userdata)
+{
+  GByteArray *data;
 
   if (!transfer.fs_operations->download)
     {
@@ -2142,12 +2172,12 @@ elektroid_download_task (gpointer data)
   debug_print (1, "Remote path: %s\n", transfer.src);
   debug_print (1, "Local path: %s\n", transfer.dst);
 
-  sample =
+  data =
     transfer.fs_operations->download (transfer.src,
 				      &transfer.control, remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
-  if (sample == NULL && transfer.control.active)
+  if (data == NULL && transfer.control.active)
     {
       error_print ("Error while downloading\n");
       transfer.status = COMPLETED_ERROR;
@@ -2157,14 +2187,7 @@ elektroid_download_task (gpointer data)
       g_mutex_lock (&transfer.control.mutex);
       if (transfer.control.active)
 	{
-	  dst_path = strdup (transfer.dst);
-	  dst_dir = dirname (dst_path);
-	  local_browser.fs_operations->mkdir (dst_dir, NULL);
-	  debug_print (1, "Writing to file %s...\n", transfer.dst);
-	  bytes = sample_save (sample, transfer.dst);
-	  debug_print (1, "%zu frames written\n", bytes >> 1);
-	  free (dst_path);
-	  transfer.status = COMPLETED_OK;
+	  elektroid_save_download_data (data);
 	}
       else
 	{

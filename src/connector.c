@@ -30,7 +30,7 @@
 #define KB 1024
 #define BUFF_SIZE (4 * KB)
 #define RING_BUFF_SIZE (256 * KB)
-#define SAMPLE_TRANSF_BLOCK_BYTES 0x2000
+#define DATA_TRANSF_BLOCK_BYTES 0x2000
 #define OS_TRANSF_BLOCK_BYTES 0x800
 #define POLL_TIMEOUT 20
 #define REST_TIME 50000
@@ -76,6 +76,10 @@ static gint connector_clear_data_item (const gchar *, void *);
 
 static gint connector_swap_data_item (const gchar *, const gchar *, void *);
 
+static GByteArray *connector_download_datum (const gchar *,
+					     struct transfer_control *,
+					     void *);
+
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
 static const guint8 PING_REQUEST[] = { 0x1 };
@@ -104,6 +108,12 @@ static const guint8 FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 static const guint8 DATA_LIST_REQUEST[] = { 0x53 };
+static const guint8 DATA_READ_OPEN_REQUEST[] = { 0x54 };
+static const guint8 DATA_READ_PARTIAL_REQUEST[] = { 0x55 };
+static const guint8 DATA_READ_CLOSE_REQUEST[] = { 0x56 };
+static const guint8 DATA_WRITE_OPEN_REQUEST[] = { 0x57 };
+static const guint8 DATA_WRITE_PARTIAL_REQUEST[] = { 0x58 };
+static const guint8 DATA_WRITE_CLOSE_REQUEST[] = { 0x59 };
 static const guint8 DATA_MOVE_REQUEST[] = { 0x5a };
 static const guint8 DATA_COPY_REQUEST[] = { 0x5b };
 static const guint8 DATA_CLEAR_REQUEST[] = { 0x5c };
@@ -181,7 +191,7 @@ static const struct fs_operations FS_DATA_OPERATIONS = {
   .copy = connector_copy_data_item,
   .clear = connector_clear_data_item,
   .swap = connector_swap_data_item,
-  .download = NULL,
+  .download = connector_download_datum,
   .upload = NULL,
   .getid = get_item_index,
   .download_ext = "data"
@@ -507,10 +517,10 @@ connector_new_msg_write_file_blk (guint id,
 
   aux32 = htobe32 (id);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
-  aux32 = htobe32 (SAMPLE_TRANSF_BLOCK_BYTES * seq);
+  aux32 = htobe32 (DATA_TRANSF_BLOCK_BYTES * seq);
   memcpy (&msg->data[13], &aux32, sizeof (guint32));
 
-  bytes_blk = SAMPLE_TRANSF_BLOCK_BYTES;
+  bytes_blk = DATA_TRANSF_BLOCK_BYTES;
   consumed = 0;
 
   if (seq == 0)
@@ -1478,7 +1488,7 @@ connector_download_sample (const gchar * path,
 
       req_size =
 	frames - next_block_start >
-	SAMPLE_TRANSF_BLOCK_BYTES ? SAMPLE_TRANSF_BLOCK_BYTES : frames -
+	DATA_TRANSF_BLOCK_BYTES ? DATA_TRANSF_BLOCK_BYTES : frames -
 	next_block_start;
       tx_msg =
 	connector_new_msg_read_file_blk (id, next_block_start, req_size);
@@ -2235,4 +2245,222 @@ connector_swap_data_item (const gchar * src, const gchar * dst, void *data)
   struct connector *connector = data;
   return connector_src_dst_common (connector, src, dst, DATA_SWAP_REQUEST,
 				   sizeof (DATA_SWAP_REQUEST));
+}
+
+static gint
+connector_open_datum (struct connector *connector, const guint8 * data,
+		      guint len, const gchar * path, guint32 * jid)
+{
+  guint32 *data32;
+  guint32 chunk_size = htobe32 (DATA_TRANSF_BLOCK_BYTES);
+  guint32 r_chunk_size;
+  guint8 compression = 1;
+  guint8 r_compression;
+  GByteArray *rx_msg;
+  GByteArray *tx_msg = connector_new_msg_path (data, len, path);
+  if (!tx_msg)
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  g_byte_array_append (tx_msg, (guchar *) & chunk_size, sizeof (guint32));
+  g_byte_array_append (tx_msg, &compression, sizeof (guint8));
+
+  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  if (!rx_msg)
+    {
+      errno = EIO;
+      return -1;
+    }
+
+  if (!connector_get_msg_status (rx_msg))
+    {
+      errno = EPERM;
+      error_print ("%s (%s)\n", g_strerror (errno),
+		   connector_get_msg_string (rx_msg));
+      free_msg (rx_msg);
+      return -1;
+    }
+
+  data32 = (guint32 *) & rx_msg->data[6];
+  *jid = be32toh (*data32);
+
+  data32 = (guint32 *) & rx_msg->data[10];
+  r_chunk_size = be32toh (*data32);
+
+  r_compression = rx_msg->data[14];
+
+  debug_print (1,
+	       "Open datum info: job id: %d; chunk size: %d; compression: %d\n",
+	       *jid, r_chunk_size, r_compression);
+
+  free_msg (rx_msg);
+
+  return 0;
+}
+
+static gint
+connector_close_datum (struct connector *connector, const guint8 * data,
+		       guint len, guint32 jid)
+{
+  guint32 jidbe;
+  guint32 r_jid;
+  guint32 size;
+  guint32 *data32;
+  GByteArray *rx_msg;
+  GByteArray *tx_msg = connector_new_msg (data, len);
+
+  jidbe = be32toh (jid);
+  g_byte_array_append (tx_msg, (guchar *) & jidbe, sizeof (guint32));
+
+  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  if (!rx_msg)
+    {
+      errno = EIO;
+      return -1;
+    }
+
+  if (!connector_get_msg_status (rx_msg))
+    {
+      errno = EPERM;
+      error_print ("%s (%s)\n", g_strerror (errno),
+		   connector_get_msg_string (rx_msg));
+      free_msg (rx_msg);
+      return -1;
+    }
+
+  data32 = (guint32 *) & rx_msg->data[6];
+  r_jid = be32toh (*data32);
+
+  data32 = (guint32 *) & rx_msg->data[10];
+  size = be32toh (*data32);
+
+  debug_print (1, "Close datum info: job id: %d; size: %d\n", r_jid, size);
+
+  free_msg (rx_msg);
+
+  return 0;
+}
+
+static GByteArray *
+connector_download_datum (const gchar * path,
+			  struct transfer_control *control, void *data)
+{
+  guint32 seq;
+  guint32 seqbe;
+  guint32 jid;
+  guint32 r_jid;
+  guint32 r_seq;
+  guint32 status;
+  guint8 last;
+  guint32 hash;
+  guint32 *data32;
+  guint32 jidbe;
+  guint32 data_size;
+  gboolean active;
+  GByteArray *array;
+  GByteArray *rx_msg;
+  GByteArray *tx_msg;
+  struct connector *connector = data;
+
+  if (connector_open_datum (connector, DATA_READ_OPEN_REQUEST,
+			    sizeof (DATA_READ_OPEN_REQUEST), path, &jid))
+    {
+      errno = EIO;
+      return NULL;
+    }
+
+  usleep (REST_TIME);
+
+  jidbe = htobe32 (jid);
+  array = g_byte_array_new ();
+
+  seq = 0;
+  last = 0;
+  g_mutex_lock (&control->mutex);
+  active = (!control || control->active);
+  g_mutex_unlock (&control->mutex);
+  while (!last && active)
+    {
+      tx_msg =
+	connector_new_msg (DATA_READ_PARTIAL_REQUEST,
+			   sizeof (DATA_READ_PARTIAL_REQUEST));
+      g_byte_array_append (tx_msg, (guint8 *) & jidbe, sizeof (guint32));
+      seqbe = htobe32 (seq);
+      g_byte_array_append (tx_msg, (guint8 *) & seqbe, sizeof (guint32));
+      rx_msg = connector_tx_and_rx (connector, tx_msg);
+      if (!rx_msg)
+	{
+	  errno = EIO;
+	  g_byte_array_free (array, TRUE);
+	  return NULL;
+	}
+
+      if (!connector_get_msg_status (rx_msg))
+	{
+	  errno = EPERM;
+	  error_print ("%s (%s)\n", g_strerror (errno),
+		       connector_get_msg_string (rx_msg));
+	  free_msg (rx_msg);
+	  g_byte_array_free (array, TRUE);
+	  return NULL;
+	}
+
+      data32 = (guint32 *) & rx_msg->data[6];
+      r_jid = be32toh (*data32);
+
+      data32 = (guint32 *) & rx_msg->data[10];
+      r_seq = be32toh (*data32);
+
+      data32 = (guint32 *) & rx_msg->data[14];
+      status = be32toh (*data32);
+
+      last = rx_msg->data[18];
+
+      data32 = (guint32 *) & rx_msg->data[19];
+      hash = be32toh (*data32);
+
+      data32 = (guint32 *) & rx_msg->data[23];
+      data_size = be32toh (*data32);
+
+      if (data_size)
+	{
+	  debug_print (1,
+		       "Read datum info: job id: %d; last: %d; seq: %d; status: %d; hash: 0x%08x\n",
+		       r_jid, last, r_seq, status, hash);
+
+	  g_byte_array_append (array, (guint8 *) & rx_msg->data[27],
+			       data_size);
+
+	  if (control->progress)
+	    {
+	      control->progress (status / 1000.0);
+	    }
+	}
+      else
+	{
+	  debug_print (1,
+		       "Read datum info: job id: %d; last: %d, hash: 0x%08x\n",
+		       r_jid, last, hash);
+	}
+
+      free_msg (rx_msg);
+      seq++;
+
+      g_mutex_lock (&control->mutex);
+      active = (!control || control->active);
+      g_mutex_unlock (&control->mutex);
+
+      usleep (REST_TIME);
+    }
+
+  if (connector_close_datum (connector, DATA_READ_CLOSE_REQUEST,
+			     sizeof (DATA_READ_CLOSE_REQUEST), jid))
+    {
+      errno = EIO;
+      return NULL;
+    }
+
+  return array;
 }
