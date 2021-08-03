@@ -40,42 +40,6 @@ static const struct fs_operations *fs_ops_data;
 
 typedef void (*print_item) (struct item_iterator *);
 
-static gchar *
-get_data_item_name (const gchar * path)
-{
-  gint32 id;
-  gchar *dir, *name;
-  struct item_iterator *iter;
-  gchar *dirc = strdup (path);
-  gchar *namec = strdup (path);
-
-  dir = dirname (dirc);
-  id = atoi (basename (namec));
-
-  iter = fs_ops_data->readdir (dir, &connector);
-  if (!iter)
-    {
-      return NULL;
-    }
-
-  name = NULL;
-  while (!next_item_iterator (iter))
-    {
-      if (iter->item.index == id)
-	{
-	  name = get_item_name (&iter->item);
-	}
-    }
-
-
-  free_item_iterator (iter);
-
-  g_free (dirc);
-  g_free (namec);
-
-  return name;
-}
-
 static void
 print_sample (struct item_iterator *iter)
 {
@@ -264,11 +228,10 @@ static int
 cli_download_sample (int argc, char *argv[], int optind)
 {
   const gchar *path_src;
-  gchar *device_path, *local_path;
+  gchar *device_path, *local_path, *name;
   gint res;
   GByteArray *data;
   ssize_t bytes;
-  gchar *namec, *name;
 
   if (optind == argc)
     {
@@ -298,14 +261,13 @@ cli_download_sample (int argc, char *argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  namec = strdup (path_src);
-  name = basename (namec);
+  name = connector_get_local_name (&connector, fs_ops_samples, path_src);
   local_path = malloc (PATH_MAX);
-  snprintf (local_path, PATH_MAX, "./%s.wav", name);
+  snprintf (local_path, PATH_MAX, "./%s", name);
 
   bytes = sample_save (data, local_path);
 
-  free (namec);
+  free (name);
   free (local_path);
   g_byte_array_free (data, TRUE);
 
@@ -478,15 +440,6 @@ cli_download_data (int argc, char *argv[], int optind)
 
   path = cli_get_path (device_path);
 
-  name = get_data_item_name (path);
-  if (!name)
-    {
-      return EXIT_FAILURE;
-    }
-
-  local_path = malloc (PATH_MAX);
-  snprintf (local_path, PATH_MAX, "./%s.data", name);
-
   control.active = TRUE;
   control.progress = NULL;
   data = fs_ops_data->download (path, &control, &connector);
@@ -495,6 +448,15 @@ cli_download_data (int argc, char *argv[], int optind)
     {
       return EXIT_FAILURE;
     }
+
+  name = connector_get_local_name (&connector, fs_ops_data, path);
+  if (!name)
+    {
+      return EXIT_FAILURE;
+    }
+
+  local_path = malloc (PATH_MAX);
+  snprintf (local_path, PATH_MAX, "./%s", name);
 
   file = fopen (local_path, "w");
   bytes = fwrite (data->data, 1, data->len, file);

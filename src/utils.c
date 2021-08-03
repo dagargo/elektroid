@@ -211,8 +211,18 @@ get_item_name (struct item *item)
 gchar *
 get_item_index (struct item *item)
 {
-  gchar *index = malloc (LABEL_MAX);
-  snprintf (index, LABEL_MAX, "%d", item->index);
+  gchar *index;
+
+  if (item->type == ELEKTROID_DIR)
+    {
+      index = get_item_name (item);
+    }
+  else
+    {
+      index = malloc (LABEL_MAX);
+      snprintf (index, LABEL_MAX, "%d", item->index);
+    }
+
   return index;
 }
 

@@ -2464,3 +2464,92 @@ connector_download_datum (const gchar * path,
 
   return array;
 }
+
+gchar *
+connector_get_remote_name (struct connector *connector,
+			   const struct fs_operations *ops, const gchar * dir,
+			   const gchar * name)
+{
+  gint index;
+  gchar *path;
+  struct item_iterator *iter;
+
+  if (ops->fs == FS_SAMPLES)
+    {
+      path = malloc (PATH_MAX);
+      snprintf (path, PATH_MAX, "%s/%s", dir, name);
+      return path;
+    }
+
+  iter = FS_DATA_OPERATIONS.readdir (dir, connector);
+  if (!iter)
+    {
+      return NULL;
+    }
+
+  index = 1;
+  while (!next_item_iterator (iter))
+    {
+      if (iter->item.index > index)
+	{
+	  break;
+	}
+      index++;
+    }
+
+  free_item_iterator (iter);
+
+  path = malloc (PATH_MAX);
+  snprintf (path, PATH_MAX, "%s/%d", dir, index);
+
+  return path;
+}
+
+gchar *
+connector_get_local_name (struct connector *connector,
+			  const struct fs_operations *ops, const gchar * path)
+{
+  gint32 id;
+  struct item_iterator *iter;
+  gchar *dir, *name, *filename, *file_no, *dirc, *namec;
+
+  namec = strdup (path);
+  name = basename (namec);
+
+  if (ops->fs == FS_SAMPLES)
+    {
+      file_no = strdup (name);
+      goto end;
+    }
+
+  dirc = strdup (path);
+  dir = dirname (dirc);
+  id = atoi (basename (name));
+
+  iter = connector_read_data_dir (dir, connector);
+  if (!iter)
+    {
+      g_free (dirc);
+      return NULL;
+    }
+
+  file_no = NULL;
+  while (!next_item_iterator (iter))
+    {
+      if (iter->item.index == id)
+	{
+	  file_no = get_item_name (&iter->item);
+	  break;
+	}
+    }
+
+  free_item_iterator (iter);
+  g_free (dirc);
+
+end:
+  filename = malloc (PATH_MAX);
+  snprintf (filename, PATH_MAX, "%s.%s", file_no, ops->download_ext);
+  g_free (file_no);
+  g_free (namec);
+  return filename;
+}
