@@ -40,6 +40,42 @@ static const struct fs_operations *fs_ops_data;
 
 typedef void (*print_item) (struct item_iterator *);
 
+static gchar *
+get_data_item_name (const gchar * path)
+{
+  gint32 id;
+  gchar *dir, *name;
+  struct item_iterator *iter;
+  gchar *dirc = strdup (path);
+  gchar *namec = strdup (path);
+
+  dir = dirname (dirc);
+  id = atoi (basename (namec));
+
+  iter = fs_ops_data->readdir (dir, &connector);
+  if (!iter)
+    {
+      return NULL;
+    }
+
+  name = NULL;
+  while (!next_item_iterator (iter))
+    {
+      if (iter->item.index == id)
+	{
+	  name = get_item_name (&iter->item);
+	}
+    }
+
+
+  free_item_iterator (iter);
+
+  g_free (dirc);
+  g_free (namec);
+
+  return name;
+}
+
 static void
 print_sample (struct item_iterator *iter)
 {
@@ -59,7 +95,7 @@ print_datum (struct item_iterator *iter)
 	  data->has_metadata, iter->item.size / MIB_FLOAT, iter->item.name);
 }
 
-static gchar *
+static const gchar *
 cli_get_path (gchar * device_path)
 {
   gint len = strlen (device_path);
@@ -104,8 +140,9 @@ static int
 cli_list (int argc, char *argv[], int optind, fs_read_dir_func readdir,
 	  print_item print)
 {
+  const gchar *path;
   struct item_iterator *iter;
-  gchar *device_path, *path;
+  gchar *device_path;
   gint res;
 
   if (optind == argc)
@@ -146,7 +183,8 @@ cli_list (int argc, char *argv[], int optind, fs_read_dir_func readdir,
 static int
 cli_command_path (int argc, char *argv[], int optind, fs_path_func f)
 {
-  gchar *device_path, *path;
+  const gchar *path;
+  gchar *device_path;
   gint res;
 
   if (optind == argc)
@@ -174,7 +212,8 @@ cli_command_path (int argc, char *argv[], int optind, fs_path_func f)
 static int
 cli_command_src_dst (int argc, char *argv[], int optind, fs_src_dst_func f)
 {
-  gchar *device_path_src, *device_path_dst, *path_src, *path_dst;
+  const gchar *path_src, *path_dst;
+  gchar *device_path_src, *device_path_dst;
   gint card_src;
   gint card_dst;
   gint res;
@@ -224,11 +263,12 @@ cli_command_src_dst (int argc, char *argv[], int optind, fs_src_dst_func f)
 static int
 cli_download_sample (int argc, char *argv[], int optind)
 {
-  gchar *device_path_src, *path_src, *local_path;
+  const gchar *path_src;
+  gchar *device_path, *local_path;
   gint res;
   GByteArray *data;
   ssize_t bytes;
-  gchar *basec, *bname;
+  gchar *namec, *name;
 
   if (optind == argc)
     {
@@ -237,17 +277,17 @@ cli_download_sample (int argc, char *argv[], int optind)
     }
   else
     {
-      device_path_src = argv[optind];
+      device_path = argv[optind];
     }
 
-  res = cli_connect (device_path_src);
+  res = cli_connect (device_path);
 
   if (res < 0)
     {
       return EXIT_FAILURE;
     }
 
-  path_src = cli_get_path (device_path_src);
+  path_src = cli_get_path (device_path);
 
   control.active = TRUE;
   control.progress = NULL;
@@ -258,14 +298,14 @@ cli_download_sample (int argc, char *argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  basec = strdup (path_src);
-  bname = basename (basec);
+  namec = strdup (path_src);
+  name = basename (namec);
   local_path = malloc (PATH_MAX);
-  snprintf (local_path, PATH_MAX, "./%s.wav", bname);
+  snprintf (local_path, PATH_MAX, "./%s.wav", name);
 
   bytes = sample_save (data, local_path);
 
-  free (basec);
+  free (namec);
   free (local_path);
   g_byte_array_free (data, TRUE);
 
@@ -275,10 +315,11 @@ cli_download_sample (int argc, char *argv[], int optind)
 static int
 cli_upload_sample (int argc, char *argv[], int optind)
 {
+  const gchar *device_dir_dst;
   gchar *path_src, *device_path_dst, *path_dst;
   gint res;
   ssize_t bytes;
-  gchar *basec, *bname;
+  gchar *namec, *name;
   GByteArray *sample;
 
   if (optind == argc)
@@ -309,11 +350,11 @@ cli_upload_sample (int argc, char *argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  basec = strdup (path_src);
-  bname = basename (basec);
-  remove_ext (bname);
-  path_dst = cli_get_path (device_path_dst);
-  path_dst = chain_path (path_dst, bname);
+  namec = strdup (path_src);
+  name = basename (namec);
+  remove_ext (name);
+  device_dir_dst = cli_get_path (device_path_dst);
+  path_dst = chain_path (device_dir_dst, name);
 
   sample = g_byte_array_new ();
   bytes = sample_load (sample, NULL, NULL, path_src, NULL, NULL);
@@ -330,7 +371,7 @@ cli_upload_sample (int argc, char *argv[], int optind)
   res = bytes < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
 cleanup:
-  free (basec);
+  free (namec);
   free (path_dst);
   g_byte_array_free (sample, TRUE);
   return res;
@@ -410,12 +451,13 @@ cli_df (int argc, char *argv[], int optind)
 static int
 cli_download_data (int argc, char *argv[], int optind)
 {
-  gchar *device_path_src, *path_src, *local_path;
+  const gchar *path;
+  gchar *device_path, *local_path;
   FILE *file;
   gint res;
   GByteArray *data;
   ssize_t bytes;
-  gchar *basec, *bname;
+  gchar *name;
 
   if (optind == argc)
     {
@@ -424,37 +466,41 @@ cli_download_data (int argc, char *argv[], int optind)
     }
   else
     {
-      device_path_src = argv[optind];
+      device_path = argv[optind];
     }
 
-  res = cli_connect (device_path_src);
+  res = cli_connect (device_path);
 
   if (res < 0)
     {
       return EXIT_FAILURE;
     }
 
-  path_src = cli_get_path (device_path_src);
+  path = cli_get_path (device_path);
+
+  name = get_data_item_name (path);
+  if (!name)
+    {
+      return EXIT_FAILURE;
+    }
+
+  local_path = malloc (PATH_MAX);
+  snprintf (local_path, PATH_MAX, "./%s.data", name);
 
   control.active = TRUE;
   control.progress = NULL;
-  data = fs_ops_data->download (path_src, &control, &connector);
+  data = fs_ops_data->download (path, &control, &connector);
 
   if (data == NULL)
     {
       return EXIT_FAILURE;
     }
 
-  basec = strdup (path_src);
-  bname = basename (basec);
-  local_path = malloc (PATH_MAX);
-  snprintf (local_path, PATH_MAX, "./%s.data", bname);
-
   file = fopen (local_path, "w");
   bytes = fwrite (data->data, 1, data->len, file);
   fclose (file);
 
-  free (basec);
+  g_free (name);
   free (local_path);
   g_byte_array_free (data, TRUE);
 

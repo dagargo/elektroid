@@ -1,4 +1,4 @@
-TESTS=full_test.sh
+TESTS = sample_fs_tests.sh data_fs_tests.sh
 
 EXTRA_DIST = \
         $(TESTS) \

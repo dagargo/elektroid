@@ -159,3 +159,9 @@ $ elektroid-cli -vvv clear-data 0:/soundbanks/D/1
 $ elektroid-cli list-data 0:/soundbanks/D
 F   2 007e 1 1 0.00 KICK
 ```
+
+* `download-data`
+
+```
+$ elektroid-cli download-data 0:/soundbanks/D/1
+```
