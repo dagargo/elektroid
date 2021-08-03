@@ -1343,16 +1343,13 @@ static gboolean
 elektroid_remote_check_selection (gpointer data)
 {
   gint count = browser_get_selected_items_count (&remote_browser);
+  gboolean dl_impl = remote_browser.fs_operations->download ? TRUE : FALSE;
+  gboolean move_impl = remote_browser.fs_operations->move ? TRUE : FALSE;
+  gboolean del_impl = remote_browser.fs_operations->delete ? TRUE : FALSE;
 
-  gtk_widget_set_sensitive (download_menuitem, count > 0
-			    && remote_browser.fs_operations->download);
-  gtk_widget_set_sensitive (remote_rename_menuitem,
-			    count == 1
-			    && remote_browser.fs_operations->
-			    move ? TRUE : FALSE);
-  gtk_widget_set_sensitive (remote_delete_menuitem, count == 1
-			    && remote_browser.fs_operations->
-			    delete ? TRUE : FALSE);
+  gtk_widget_set_sensitive (download_menuitem, count > 0 && dl_impl);
+  gtk_widget_set_sensitive (remote_rename_menuitem, count == 1 && move_impl);
+  gtk_widget_set_sensitive (remote_delete_menuitem, count == 1 && del_impl);
 
   return FALSE;
 }
@@ -2563,102 +2560,103 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   gint res;
   struct browser *browser = userdata;
 
-  if (selection_data != NULL && gtk_selection_data_get_length (selection_data)
-      && info == TARGET_STRING)
+  if (selection_data == NULL
+      || !gtk_selection_data_get_length (selection_data)
+      || info != TARGET_STRING)
     {
-      type = gtk_selection_data_get_data_type (selection_data);
-      type_name = gdk_atom_name (type);
-
-      data = (gchar *) gtk_selection_data_get_data (selection_data);
-      debug_print (1, "DND received data (%s):\n%s\n", type_name, data);
-
-      uris = g_uri_list_extract_uris (data);
-      queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
-
-      for (int i = 0; uris[i] != NULL; i++)
-	{
-	  filename = g_filename_from_uri (uris[i], NULL, NULL);
-	  path_basename = strdup (filename);
-	  path_dirname = strdup (filename);
-	  name = basename (path_basename);
-	  dir = dirname (path_dirname);
-
-	  if (widget == GTK_WIDGET (local_browser.view))
-	    {
-	      if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
-		{
-		  if (strcmp (dir, local_browser.dir))
-		    {
-		      dst_path = chain_path (local_browser.dir, name);
-		      res = local_browser.fs_operations->move (filename,
-							       dst_path,
-							       NULL);
-		      if (res)
-			{
-			  show_error_msg (_(MSG_ERROR_MOVING), filename,
-					  dst_path, g_strerror (errno));
-			}
-		      g_free (dst_path);
-		    }
-		  else
-		    {
-		      debug_print (1, MSG_WARN_SAME_SRC_DST);
-		    }
-		}
-	      else if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
-		{
-		  elektroid_add_download_task_path (name, dir,
-						    local_browser.dir);
-		}
-	    }
-	  else if (widget == GTK_WIDGET (remote_browser.view))
-	    {
-	      if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
-		{
-		  if (strcmp (dir, remote_browser.dir))
-		    {
-		      dst_path = chain_path (remote_browser.dir, name);
-		      dst_id_path = elektroid_get_id_path (dst_path, TRUE);
-		      src_id_path = elektroid_get_id_path (filename, FALSE);
-		      res =
-			remote_browser.fs_operations->move (src_id_path,
-							    dst_id_path,
-							    remote_browser.data);
-		      if (res)
-			{
-			  show_error_msg (_(MSG_ERROR_MOVING), filename,
-					  dst_path, g_strerror (errno));
-			}
-		      g_free (dst_id_path);
-		      g_free (src_id_path);
-		      g_free (dst_path);
-		      browser_load_dir (browser);
-		    }
-		  else
-		    {
-		      debug_print (1, MSG_WARN_SAME_SRC_DST);
-		    }
-		}
-	      else if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
-		{
-		  elektroid_add_upload_task_path (name, dir,
-						  remote_browser.dir);
-		}
-	    }
-
-	  g_free (path_basename);
-	  g_free (path_dirname);
-	  g_free (filename);
-	}
-
-      if (!queued)
-	{
-	  elektroid_run_next_task (NULL);
-	}
-
-      g_strfreev (uris);
+      goto end;
     }
 
+  type = gtk_selection_data_get_data_type (selection_data);
+  type_name = gdk_atom_name (type);
+
+  data = (gchar *) gtk_selection_data_get_data (selection_data);
+  debug_print (1, "DND received data (%s):\n%s\n", type_name, data);
+
+  uris = g_uri_list_extract_uris (data);
+  queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
+
+  for (int i = 0; uris[i] != NULL; i++)
+    {
+      filename = g_filename_from_uri (uris[i], NULL, NULL);
+      path_basename = strdup (filename);
+      path_dirname = strdup (filename);
+      name = basename (path_basename);
+      dir = dirname (path_dirname);
+
+      if (widget == GTK_WIDGET (local_browser.view))
+	{
+	  if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
+	    {
+	      if (strcmp (dir, local_browser.dir))
+		{
+		  dst_path = chain_path (local_browser.dir, name);
+		  res = local_browser.fs_operations->move (filename,
+							   dst_path, NULL);
+		  if (res)
+		    {
+		      show_error_msg (_(MSG_ERROR_MOVING), filename,
+				      dst_path, g_strerror (errno));
+		    }
+		  g_free (dst_path);
+		}
+	      else
+		{
+		  debug_print (1, MSG_WARN_SAME_SRC_DST);
+		}
+	    }
+	  else if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+	    {
+	      elektroid_add_download_task_path (name, dir, local_browser.dir);
+	    }
+	}
+      else if (widget == GTK_WIDGET (remote_browser.view))
+	{
+	  if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+	    {
+	      if (strcmp (dir, remote_browser.dir))
+		{
+		  dst_path = chain_path (remote_browser.dir, name);
+		  dst_id_path = elektroid_get_id_path (dst_path, TRUE);
+		  src_id_path = elektroid_get_id_path (filename, FALSE);
+		  res =
+		    remote_browser.fs_operations->move (src_id_path,
+							dst_id_path,
+							remote_browser.data);
+		  if (res)
+		    {
+		      show_error_msg (_(MSG_ERROR_MOVING), filename,
+				      dst_path, g_strerror (errno));
+		    }
+		  g_free (dst_id_path);
+		  g_free (src_id_path);
+		  g_free (dst_path);
+		  browser_load_dir (browser);
+		}
+	      else
+		{
+		  debug_print (1, MSG_WARN_SAME_SRC_DST);
+		}
+	    }
+	  else if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
+	    {
+	      elektroid_add_upload_task_path (name, dir, remote_browser.dir);
+	    }
+	}
+
+      g_free (path_basename);
+      g_free (path_dirname);
+      g_free (filename);
+    }
+
+  if (!queued)
+    {
+      elektroid_run_next_task (NULL);
+    }
+
+  g_strfreev (uris);
+
+end:
   gtk_drag_finish (context, TRUE, TRUE, time);
 }
 
