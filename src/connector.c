@@ -2257,30 +2257,66 @@ connector_swap_data_item (const gchar * src, const gchar * dst, void *data)
 }
 
 static gint
-connector_open_datum (struct connector *connector, const guint8 * data,
-		      guint len, const gchar * path, guint32 * jid)
+connector_open_datum (struct connector *connector, const gchar * path,
+		      guint32 * jid, gint mode, guint32 size)
 {
   guint32 *data32;
-  guint32 chunk_size = htobe32 (DATA_TRANSF_BLOCK_BYTES);
-  guint32 r_chunk_size;
-  guint8 compression = 1;
-  guint8 r_compression;
+  guint32 sizebe;
+  guint32 chunk_size;
+  guint8 compression;
   GByteArray *rx_msg;
-  GByteArray *tx_msg = connector_new_msg_path (data, len, path);
-  if (!tx_msg)
+  GByteArray *tx_msg;
+  const guint8 *data;
+  guint len;
+  gchar *path_cp1252;
+
+  if (mode == O_RDONLY)
+    {
+      data = DATA_READ_OPEN_REQUEST;
+      len = sizeof (DATA_READ_OPEN_REQUEST);
+    }
+  else if (mode == O_WRONLY)
+    {
+      data = DATA_WRITE_OPEN_REQUEST;
+      len = sizeof (DATA_WRITE_OPEN_REQUEST);
+    }
+  else
     {
       errno = EINVAL;
       return -1;
     }
 
-  g_byte_array_append (tx_msg, (guchar *) & chunk_size, sizeof (guint32));
-  g_byte_array_append (tx_msg, &compression, sizeof (guint8));
+  path_cp1252 = connector_get_cp1252 (path);
+
+  tx_msg = connector_new_msg (data, len);
+  if (!tx_msg)
+    {
+      errno = ENOMEM;
+      goto cleanup;
+    }
+
+  if (mode == O_RDONLY)
+    {
+      g_byte_array_append (tx_msg, (guint8 *) path_cp1252,
+			   strlen (path_cp1252) + 1);
+      chunk_size = htobe32 (DATA_TRANSF_BLOCK_BYTES);
+      g_byte_array_append (tx_msg, (guint8 *) & chunk_size, sizeof (guint32));	//chunk size
+      g_byte_array_append (tx_msg, (guint8 *) "\0x01", sizeof (guint8));	//compression
+    }
+
+  if (mode == O_WRONLY)
+    {
+      sizebe = htobe32 (size);
+      g_byte_array_append (tx_msg, (guint8 *) & sizebe, sizeof (guint32));	//size
+      g_byte_array_append (tx_msg, (guint8 *) path_cp1252,
+			   strlen (path_cp1252) + 1);
+    }
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
       errno = EIO;
-      return -1;
+      goto cleanup;
     }
 
   if (!connector_get_msg_status (rx_msg))
@@ -2289,23 +2325,33 @@ connector_open_datum (struct connector *connector, const guint8 * data,
       error_print ("%s (%s)\n", g_strerror (errno),
 		   connector_get_msg_string (rx_msg));
       free_msg (rx_msg);
-      return -1;
+      goto cleanup;
     }
 
   data32 = (guint32 *) & rx_msg->data[6];
   *jid = be32toh (*data32);
 
-  data32 = (guint32 *) & rx_msg->data[10];
-  r_chunk_size = be32toh (*data32);
+  if (mode == O_RDONLY)
+    {
+      data32 = (guint32 *) & rx_msg->data[10];
+      chunk_size = be32toh (*data32);
 
-  r_compression = rx_msg->data[14];
+      compression = rx_msg->data[14];
 
-  debug_print (1,
-	       "Open datum info: job id: %d; chunk size: %d; compression: %d\n",
-	       *jid, r_chunk_size, r_compression);
+      debug_print (1,
+		   "Open datum info: job id: %d; chunk size: %d; compression: %d\n",
+		   *jid, chunk_size, compression);
+    }
+
+  if (mode == O_WRONLY)
+    {
+      debug_print (1, "Open datum info: job id: %d\n", *jid);
+    }
 
   free_msg (rx_msg);
 
+cleanup:
+  g_free (path_cp1252);
   return 0;
 }
 
@@ -2373,8 +2419,7 @@ connector_download_datum (const gchar * path,
   GByteArray *tx_msg;
   struct connector *connector = data;
 
-  if (connector_open_datum (connector, DATA_READ_OPEN_REQUEST,
-			    sizeof (DATA_READ_OPEN_REQUEST), path, &jid))
+  if (connector_open_datum (connector, path, &jid, O_RDONLY, 0))
     {
       errno = EIO;
       return NULL;
