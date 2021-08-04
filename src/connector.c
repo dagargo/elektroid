@@ -245,13 +245,25 @@ connector_get_fs_operations (enum connector_fs fs)
   return fs_operations;
 }
 
-static guchar
+static inline gchar *
+connector_get_utf8 (const gchar * s)
+{
+  return g_convert (s, -1, "UTF8", "CP1252", NULL, NULL, NULL);
+}
+
+static inline gchar *
+connector_get_cp1252 (const gchar * s)
+{
+  return g_convert (s, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+}
+
+static inline guchar
 connector_get_msg_status (const GByteArray * msg)
 {
   return msg->data[5];
 }
 
-static gchar *
+static inline gchar *
 connector_get_msg_string (const GByteArray * msg)
 {
   return (gchar *) & msg->data[6];
@@ -261,7 +273,7 @@ static guint
 connector_next_sample_entry (struct item_iterator *iter)
 {
   guint32 *data32;
-  gchar *entry_cp1252;
+  gchar *name_cp1252;
   struct connector_iterator_data *data = iter->data;
 
   if (iter->item.name != NULL)
@@ -289,10 +301,9 @@ connector_next_sample_entry (struct item_iterator *iter)
       iter->item.type = data->msg->data[data->pos];
       data->pos++;
 
-      entry_cp1252 = (gchar *) & data->msg->data[data->pos];
-      iter->item.name =
-	g_convert (entry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
-      data->pos += strlen (entry_cp1252) + 1;
+      name_cp1252 = (gchar *) & data->msg->data[data->pos];
+      iter->item.name = connector_get_utf8 (name_cp1252);
+      data->pos += strlen (name_cp1252) + 1;
 
       iter->item.index = -1;
 
@@ -439,8 +450,7 @@ static GByteArray *
 connector_new_msg_path (const guint8 * data, guint len, const gchar * path)
 {
   GByteArray *msg;
-  gchar *path_cp1252 =
-    g_convert (path, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+  gchar *path_cp1252 = connector_get_cp1252 (path);
 
   if (!path_cp1252)
     {
@@ -448,7 +458,7 @@ connector_new_msg_path (const guint8 * data, guint len, const gchar * path)
     }
 
   msg = connector_new_msg (data, len);
-  g_byte_array_append (msg, (guchar *) path_cp1252, strlen (path) + 1);
+  g_byte_array_append (msg, (guchar *) path_cp1252, strlen (path_cp1252) + 1);
   g_free (path_cp1252);
 
   return msg;
@@ -1127,14 +1137,14 @@ connector_src_dst_common (struct connector *connector,
   GByteArray *rx_msg;
   GByteArray *tx_msg = connector_new_msg (data, len);
 
-  gchar *dst_cp1252 = g_convert (dst, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+  gchar *dst_cp1252 = connector_get_cp1252 (dst);
   if (!dst_cp1252)
     {
       errno = EINVAL;
       return -1;
     }
 
-  gchar *src_cp1252 = g_convert (src, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+  gchar *src_cp1252 = connector_get_cp1252 (src);
   if (!src_cp1252)
     {
       g_free (dst_cp1252);
@@ -2096,7 +2106,7 @@ connector_get_system_devices ()
 static guint
 connector_next_data_entry (struct item_iterator *iter)
 {
-  gchar *entry_cp1252;
+  gchar *name_cp1252;
   guint32 *data32;
   guint16 *data16;
   guint8 type;
@@ -2114,10 +2124,9 @@ connector_next_data_entry (struct item_iterator *iter)
       return -ENOENT;
     }
 
-  entry_cp1252 = (gchar *) & data->msg->data[data->pos];
-  iter->item.name =
-    g_convert (entry_cp1252, -1, "UTF8", "CP1252", NULL, NULL, NULL);
-  data->pos += strlen (entry_cp1252) + 1;
+  name_cp1252 = (gchar *) & data->msg->data[data->pos];
+  iter->item.name = connector_get_utf8 (name_cp1252);
+  data->pos += strlen (name_cp1252) + 1;
   has_children = data->msg->data[data->pos];
   data->pos++;
   type = data->msg->data[data->pos];
