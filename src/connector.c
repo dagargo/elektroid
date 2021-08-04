@@ -2356,18 +2356,49 @@ cleanup:
 }
 
 static gint
-connector_close_datum (struct connector *connector, const guint8 * data,
-		       guint len, guint32 jid)
+connector_close_datum (struct connector *connector,
+		       guint32 jid, gint mode, guint32 wsize)
 {
   guint32 jidbe;
+  guint32 wsizebe;
   guint32 r_jid;
-  guint32 size;
   guint32 *data32;
   GByteArray *rx_msg;
-  GByteArray *tx_msg = connector_new_msg (data, len);
+  GByteArray *tx_msg;
+  const guint8 *data;
+  guint len;
+
+  if (mode == O_RDONLY)
+    {
+      data = DATA_READ_CLOSE_REQUEST;
+      len = sizeof (DATA_READ_CLOSE_REQUEST);
+    }
+  else if (mode == O_WRONLY)
+    {
+      data = DATA_WRITE_CLOSE_REQUEST;
+      len = sizeof (DATA_WRITE_CLOSE_REQUEST);
+    }
+  else
+    {
+      errno = EINVAL;
+      return -1;
+    }
+
+  tx_msg = connector_new_msg (data, len);
+  if (!tx_msg)
+    {
+      errno = ENOMEM;
+      return -1;
+    }
 
   jidbe = be32toh (jid);
   g_byte_array_append (tx_msg, (guchar *) & jidbe, sizeof (guint32));
+
+  if (mode == O_WRONLY)
+    {
+      wsizebe = be32toh (wsize);
+      g_byte_array_append (tx_msg, (guchar *) & wsizebe, sizeof (guint32));
+    }
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
@@ -2389,9 +2420,9 @@ connector_close_datum (struct connector *connector, const guint8 * data,
   r_jid = be32toh (*data32);
 
   data32 = (guint32 *) & rx_msg->data[10];
-  size = be32toh (*data32);
+  wsize = be32toh (*data32);
 
-  debug_print (1, "Close datum info: job id: %d; size: %d\n", r_jid, size);
+  debug_print (1, "Close datum info: job id: %d; size: %d\n", r_jid, wsize);
 
   free_msg (rx_msg);
 
@@ -2509,8 +2540,7 @@ connector_download_datum (const gchar * path,
       usleep (REST_TIME);
     }
 
-  if (connector_close_datum (connector, DATA_READ_CLOSE_REQUEST,
-			     sizeof (DATA_READ_CLOSE_REQUEST), jid))
+  if (connector_close_datum (connector, jid, O_RDONLY, 0))
     {
       errno = EIO;
       return NULL;
