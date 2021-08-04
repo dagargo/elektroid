@@ -2150,8 +2150,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
 				  gchar * dst_dir)
 {
   struct item_iterator *iter;
-  gchar *path, *id, *filename, *dst_abs_dirc, *dst_abs_dir;
-  gchar dst_abs_path_ext[PATH_MAX];
+  gchar *path, *id, *dst_abs_path_ext, *dst_abs_dirc, *dst_abs_dir;
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
@@ -2161,14 +2160,14 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
     {
       dst_abs_dirc = strdup (dst_abs_path);
       dst_abs_dir = dirname (dst_abs_dirc);
-      filename =
-	connector_get_local_name (&connector,
-				  remote_browser.fs_operations, src_abs_path);
-      snprintf (dst_abs_path_ext, PATH_MAX, "%s/%s", dst_abs_dir, filename);
+      dst_abs_path_ext =
+	connector_get_local_dst_path (&connector,
+				      remote_browser.fs_operations,
+				      src_abs_path, dst_abs_dir);
       elektroid_add_task (DOWNLOAD, src_abs_path, dst_abs_path_ext,
 			  remote_browser.fs_operations->fs);
       g_free (dst_abs_dirc);
-      g_free (filename);
+      g_free (dst_abs_path_ext);
       goto cleanup_not_dir;
     }
 

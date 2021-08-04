@@ -130,5 +130,6 @@ gchar *connector_get_remote_name (struct connector *,
 				  const struct fs_operations *, const gchar *,
 				  const gchar *);
 
-gchar *connector_get_local_name (struct connector *,
-				 const struct fs_operations *, const gchar *);
+gchar *connector_get_local_dst_path (struct connector *,
+				     const struct fs_operations *,
+				     const gchar *, const gchar *);

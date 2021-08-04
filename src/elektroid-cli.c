@@ -228,7 +228,7 @@ static int
 cli_download_sample (int argc, char *argv[], int optind)
 {
   const gchar *path_src;
-  gchar *device_path, *local_path, *name;
+  gchar *device_path, *local_path;
   gint res;
   GByteArray *data;
   ssize_t bytes;
@@ -261,13 +261,11 @@ cli_download_sample (int argc, char *argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  name = connector_get_local_name (&connector, fs_ops_samples, path_src);
-  local_path = malloc (PATH_MAX);
-  snprintf (local_path, PATH_MAX, "./%s", name);
+  local_path =
+    connector_get_local_dst_path (&connector, fs_ops_samples, path_src, ".");
 
   bytes = sample_save (data, local_path);
 
-  free (name);
   free (local_path);
   g_byte_array_free (data, TRUE);
 
@@ -419,7 +417,6 @@ cli_download_data (int argc, char *argv[], int optind)
   gint res;
   GByteArray *data;
   ssize_t bytes;
-  gchar *name;
 
   if (optind == argc)
     {
@@ -449,20 +446,17 @@ cli_download_data (int argc, char *argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  name = connector_get_local_name (&connector, fs_ops_data, path);
-  if (!name)
+  local_path =
+    connector_get_local_dst_path (&connector, fs_ops_data, path, ".");
+  if (!local_path)
     {
       return EXIT_FAILURE;
     }
-
-  local_path = malloc (PATH_MAX);
-  snprintf (local_path, PATH_MAX, "./%s", name);
 
   file = fopen (local_path, "w");
   bytes = fwrite (data->data, 1, data->len, file);
   fclose (file);
 
-  g_free (name);
   free (local_path);
   g_byte_array_free (data, TRUE);
 

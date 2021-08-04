@@ -2506,14 +2506,15 @@ connector_get_remote_name (struct connector *connector,
 }
 
 gchar *
-connector_get_local_name (struct connector *connector,
-			  const struct fs_operations *ops, const gchar * path)
+connector_get_local_dst_path (struct connector *connector,
+			      const struct fs_operations *ops,
+			      const gchar * src_path, const gchar * dst_dir)
 {
   gint32 id;
   struct item_iterator *iter;
   gchar *dir, *name, *filename, *file_no, *dirc, *namec;
 
-  namec = strdup (path);
+  namec = strdup (src_path);
   name = basename (namec);
 
   if (ops->fs == FS_SAMPLES)
@@ -2522,7 +2523,7 @@ connector_get_local_name (struct connector *connector,
       goto end;
     }
 
-  dirc = strdup (path);
+  dirc = strdup (src_path);
   dir = dirname (dirc);
   id = atoi (basename (name));
 
@@ -2548,7 +2549,8 @@ connector_get_local_name (struct connector *connector,
 
 end:
   filename = malloc (PATH_MAX);
-  snprintf (filename, PATH_MAX, "%s.%s", file_no, ops->download_ext);
+  snprintf (filename, PATH_MAX, "%s/%s.%s", dst_dir, file_no,
+	    ops->download_ext);
   g_free (file_no);
   g_free (namec);
   return filename;
