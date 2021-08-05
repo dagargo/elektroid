@@ -1359,12 +1359,6 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 
   g_mutex_lock (&audio.mutex);
 
-  if (audio.sample->len <= 0)
-    {
-      g_mutex_unlock (&audio.mutex);
-      return FALSE;
-    }
-
   context = gtk_widget_get_style_context (widget);
   width = gtk_widget_get_allocated_width (widget);
   height = gtk_widget_get_allocated_height (widget);
@@ -1379,7 +1373,7 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
   for (i = 0; i < MAX_DRAW_X; i++)
     {
       x_sample = i * x_ratio;
-      if (x_sample < audio.sample->len)
+      if (x_sample < audio.sample->len >> 1)
 	{
 	  x_widget = i * ((double) width) / MAX_DRAW_X;
 	  value = mid_y - mid_y * (sample[x_sample] / (float) SHRT_MIN);

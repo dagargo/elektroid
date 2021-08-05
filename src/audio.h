@@ -25,7 +25,7 @@
 struct audio
 {
   GByteArray *sample;
-  gint frames;
+  guint frames;
   gboolean loop;
   pa_glib_mainloop *mainloop;
   pa_context *context;

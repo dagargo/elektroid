@@ -80,7 +80,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
   v = buffer;
   for (i = 0; i < req_frames; i++)
     {
-      if (audio->pos < audio->sample->len)
+      if (audio->pos < audio->sample->len >> 1)
 	{
 	  *v = ((short *) audio->sample->data)[audio->pos];
 	  audio->pos++;
@@ -255,6 +255,7 @@ audio_init (struct audio *audio, void (*set_volume_gui_callback) (gdouble))
   debug_print (1, "Initializing audio...\n");
 
   audio->sample = g_byte_array_new ();
+  audio->frames = 0;
   audio->loop = FALSE;
   audio->mainloop = pa_glib_mainloop_new (NULL);
   api = pa_glib_mainloop_get_api (audio->mainloop);
@@ -311,6 +312,7 @@ audio_reset_sample (struct audio *audio)
 {
   g_mutex_lock (&audio->mutex);
   g_byte_array_set_size (audio->sample, 0);
+  audio->frames = 0;
   audio->pos = 0;
   g_mutex_unlock (&audio->mutex);
 }
