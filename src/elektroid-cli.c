@@ -231,7 +231,6 @@ cli_download_sample (int argc, char *argv[], int optind)
   gchar *device_path, *local_path;
   gint res;
   GByteArray *data;
-  ssize_t bytes;
 
   if (optind == argc)
     {
@@ -264,12 +263,12 @@ cli_download_sample (int argc, char *argv[], int optind)
   local_path =
     connector_get_local_dst_path (&connector, fs_ops_samples, path_src, ".");
 
-  bytes = sample_save (data, local_path);
+  res = sample_save (data, local_path);
 
   free (local_path);
   g_byte_array_free (data, TRUE);
 
-  return bytes > 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+  return res;
 }
 
 static int
@@ -317,8 +316,7 @@ cli_upload_sample (int argc, char *argv[], int optind)
   path_dst = chain_path (device_dir_dst, name);
 
   sample = g_byte_array_new ();
-  bytes = sample_load (sample, NULL, NULL, path_src, NULL, NULL);
-  if (bytes < 0)
+  if (sample_load (sample, NULL, NULL, path_src, NULL, NULL))
     {
       res = EXIT_FAILURE;
       goto cleanup;
@@ -461,6 +459,67 @@ cli_download_data (int argc, char *argv[], int optind)
   g_byte_array_free (data, TRUE);
 
   return bytes > 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+}
+
+static int
+cli_upload_data (int argc, char *argv[], int optind)
+{
+  const gchar *device_dir_dst;
+  gchar *path_src, *device_path_dst, *path_dst;
+  gint res;
+  ssize_t bytes;
+  GByteArray *datum;
+
+  if (optind == argc)
+    {
+      error_print ("Local path missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      path_src = argv[optind];
+      optind++;
+    }
+
+  if (optind == argc)
+    {
+      error_print ("Remote path missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      device_path_dst = argv[optind];
+    }
+
+  res = cli_connect (device_path_dst);
+
+  if (res < 0)
+    {
+      return EXIT_FAILURE;
+    }
+
+  device_dir_dst = cli_get_path (device_path_dst);
+  path_dst =
+    connector_get_remote_name (&connector, fs_ops_data, device_dir_dst, NULL);
+
+  datum = g_byte_array_new ();
+
+  if (load_file (datum, path_src) < 0)
+    {
+      res = EXIT_FAILURE;
+      goto cleanup;
+    }
+
+  control.active = TRUE;
+  control.progress = NULL;
+  bytes = fs_ops_data->upload (datum, path_dst, &control, &connector);
+
+  res = bytes < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
+
+cleanup:
+  free (path_dst);
+  g_byte_array_free (datum, TRUE);
+  return res;
 }
 
 static void
@@ -612,6 +671,10 @@ main (int argc, char *argv[])
   else if (strcmp (command, "download-data") == 0)
     {
       res = cli_download_data (argc, argv, optind);
+    }
+  else if (strcmp (command, "upload-data") == 0)
+    {
+      res = cli_upload_data (argc, argv, optind);
     }
   else
     {

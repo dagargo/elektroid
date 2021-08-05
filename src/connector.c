@@ -80,6 +80,9 @@ static GByteArray *connector_download_datum (const gchar *,
 					     struct transfer_control *,
 					     void *);
 
+static ssize_t connector_upload_datum (GByteArray *, const gchar *,
+				       struct transfer_control *, void *);
+
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
 static const guint8 PING_REQUEST[] = { 0x1 };
@@ -192,13 +195,13 @@ static const struct fs_operations FS_DATA_OPERATIONS = {
   .clear = connector_clear_data_item,
   .swap = connector_swap_data_item,
   .download = connector_download_datum,
-  .upload = NULL,
+  .upload = connector_upload_datum,
   .getid = get_item_index,
   .download_ext = "data"
 };
 
 static const struct fs_operations FS_NONE_OPERATIONS = {
-  .fs = 0,
+  .fs = FS_NONE,
   .readdir = NULL,
   .mkdir = NULL,
   .delete = NULL,
@@ -240,6 +243,7 @@ connector_get_fs_operations (enum connector_fs fs)
       if (FS_OPERATIONS[i]->fs == fs)
 	{
 	  fs_operations = FS_OPERATIONS[i];
+	  break;
 	}
     }
   return fs_operations;
@@ -257,7 +261,7 @@ connector_get_cp1252 (const gchar * s)
   return g_convert (s, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 }
 
-static inline guchar
+static inline guint8
 connector_get_msg_status (const GByteArray * msg)
 {
   return msg->data[5];
@@ -2286,14 +2290,14 @@ connector_open_datum (struct connector *connector, const gchar * path,
       return -1;
     }
 
-  path_cp1252 = connector_get_cp1252 (path);
-
   tx_msg = connector_new_msg (data, len);
   if (!tx_msg)
     {
       errno = ENOMEM;
-      goto cleanup;
+      return -1;
     }
+
+  path_cp1252 = connector_get_cp1252 (path);
 
   if (mode == O_RDONLY)
     {
@@ -2362,6 +2366,7 @@ connector_close_datum (struct connector *connector,
   guint32 jidbe;
   guint32 wsizebe;
   guint32 r_jid;
+  guint32 asize;
   guint32 *data32;
   GByteArray *rx_msg;
   GByteArray *tx_msg;
@@ -2420,11 +2425,19 @@ connector_close_datum (struct connector *connector,
   r_jid = be32toh (*data32);
 
   data32 = (guint32 *) & rx_msg->data[10];
-  wsize = be32toh (*data32);
+  asize = be32toh (*data32);
 
-  debug_print (1, "Close datum info: job id: %d; size: %d\n", r_jid, wsize);
+  debug_print (1, "Close datum info: job id: %d; size: %d\n", r_jid, asize);
 
   free_msg (rx_msg);
+
+  if (mode == O_WRONLY && asize != wsize)
+    {
+      error_print
+	("Actual download bytes (%d) differs from expected ones (%d)",
+	 asize, wsize);
+      return -1;
+    }
 
   return 0;
 }
@@ -2479,7 +2492,8 @@ connector_download_datum (const gchar * path,
 	{
 	  errno = EIO;
 	  g_byte_array_free (array, TRUE);
-	  return NULL;
+	  array = NULL;
+	  break;
 	}
 
       if (!connector_get_msg_status (rx_msg))
@@ -2489,7 +2503,8 @@ connector_download_datum (const gchar * path,
 		       connector_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
 	  g_byte_array_free (array, TRUE);
-	  return NULL;
+	  array = NULL;
+	  break;
 	}
 
       data32 = (guint32 *) & rx_msg->data[6];
@@ -2555,14 +2570,12 @@ connector_get_remote_name (struct connector *connector,
 			   const gchar * name)
 {
   gint index;
-  gchar *path;
+  gchar *path, *indexs;
   struct item_iterator *iter;
 
   if (ops->fs == FS_SAMPLES)
     {
-      path = malloc (PATH_MAX);
-      snprintf (path, PATH_MAX, "%s/%s", dir, name);
-      return path;
+      return chain_path (dir, name);
     }
 
   iter = FS_DATA_OPERATIONS.readdir (dir, connector);
@@ -2583,8 +2596,10 @@ connector_get_remote_name (struct connector *connector,
 
   free_item_iterator (iter);
 
-  path = malloc (PATH_MAX);
-  snprintf (path, PATH_MAX, "%s/%d", dir, index);
+  indexs = malloc (PATH_MAX);
+  snprintf (indexs, PATH_MAX, "%d", index);
+  path = chain_path (dir, indexs);
+  g_free (indexs);
 
   return path;
 }
@@ -2596,7 +2611,7 @@ connector_get_local_dst_path (struct connector *connector,
 {
   gint32 id;
   struct item_iterator *iter;
-  gchar *dir, *name, *filename, *file_no, *dirc, *namec;
+  gchar *dir, *name, *filename, *file_no, *dirc, *namec, *path;
 
   namec = strdup (src_path);
   name = basename (namec);
@@ -2610,6 +2625,7 @@ connector_get_local_dst_path (struct connector *connector,
   dirc = strdup (src_path);
   dir = dirname (dirc);
   id = atoi (basename (name));
+  g_free (namec);
 
   iter = connector_read_data_dir (dir, connector);
   if (!iter)
@@ -2633,9 +2649,137 @@ connector_get_local_dst_path (struct connector *connector,
 
 end:
   filename = malloc (PATH_MAX);
-  snprintf (filename, PATH_MAX, "%s/%s.%s", dst_dir, file_no,
-	    ops->download_ext);
+  snprintf (filename, PATH_MAX, "%s.%s", file_no, ops->download_ext);
+  path = chain_path (dst_dir, filename);
   g_free (file_no);
-  g_free (namec);
-  return filename;
+  g_free (filename);
+
+  return path;
+}
+
+static ssize_t
+connector_upload_datum (GByteArray * array, const gchar * path,
+			struct transfer_control *control, void *data)
+{
+  guint32 seq;
+  guint32 jid;
+  guint32 crc;
+  guint32 len;
+  guint32 r_jid;
+  guint32 r_seq;
+  guint8 offset;
+  guint32 *data32;
+  guint32 jidbe;
+  guint32 aux32;
+  gboolean active;
+  ssize_t transferred;
+  guint32 total;
+  GByteArray *rx_msg;
+  GByteArray *tx_msg;
+  struct connector *connector = data;
+
+  if (connector_open_datum (connector, path, &jid, O_WRONLY, array->len))
+    {
+      errno = EIO;
+      return -1;
+    }
+
+  usleep (REST_TIME);
+
+  jidbe = htobe32 (jid);
+
+  seq = 0;
+  offset = 0;
+  transferred = 0;
+  g_mutex_lock (&control->mutex);
+  active = (!control || control->active);
+  g_mutex_unlock (&control->mutex);
+  while (offset < array->len && active)
+    {
+      tx_msg =
+	connector_new_msg (DATA_WRITE_PARTIAL_REQUEST,
+			   sizeof (DATA_WRITE_PARTIAL_REQUEST));
+      g_byte_array_append (tx_msg, (guint8 *) & jidbe, sizeof (guint32));
+      aux32 = htobe32 (seq);
+      g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
+
+      if (offset + DATA_TRANSF_BLOCK_BYTES < array->len)
+	{
+	  len = DATA_TRANSF_BLOCK_BYTES;
+	}
+      else
+	{
+	  len = array->len - offset;
+	}
+
+      crc = crc32 (0xffffffff, &array->data[offset], len);
+      aux32 = htobe32 (crc);
+      g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
+
+      aux32 = htobe32 (len);
+      g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
+
+      g_byte_array_append (tx_msg, &array->data[offset], len);
+
+      rx_msg = connector_tx_and_rx (connector, tx_msg);
+      if (!rx_msg)
+	{
+	  errno = EIO;
+	  transferred = -1;
+	}
+
+      usleep (REST_TIME);
+
+      if (!connector_get_msg_status (rx_msg))
+	{
+	  errno = EPERM;
+	  error_print ("%s (%s)\n", g_strerror (errno),
+		       connector_get_msg_string (rx_msg));
+	  free_msg (rx_msg);
+	  transferred = -1;
+	  break;
+	}
+
+      data32 = (guint32 *) & rx_msg->data[6];
+      r_jid = be32toh (*data32);
+
+      data32 = (guint32 *) & rx_msg->data[10];
+      r_seq = be32toh (*data32);
+
+      data32 = (guint32 *) & rx_msg->data[14];
+      total = be32toh (*data32);
+
+      free_msg (rx_msg);
+
+      debug_print (1,
+		   "Read datum info: job id: %d; seq: %d; total: %d\n",
+		   r_jid, r_seq, total);
+
+      if (control->progress)
+	{
+	  control->progress (total / (gdouble) array->len);
+	}
+
+      seq++;
+      offset += len;
+      transferred += len;
+
+      if (total != transferred)
+	{
+	  error_print
+	    ("Actual upload bytes (%d) differs from expected ones (%ld)\n",
+	     total, transferred);
+	}
+
+      g_mutex_lock (&control->mutex);
+      active = (!control || control->active);
+      g_mutex_unlock (&control->mutex);
+    }
+
+  if (connector_close_datum (connector, jid, O_WRONLY, array->len))
+    {
+      return -1;
+    }
+
+  return active ? transferred : -1;
 }

@@ -123,4 +123,6 @@ guint next_item_iterator (struct item_iterator *);
 
 void free_item_iterator (struct item_iterator *);
 
+gint load_file (GByteArray *, const char *);
+
 #endif

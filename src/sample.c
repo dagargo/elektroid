@@ -25,12 +25,12 @@
 #include "sample.h"
 #include "utils.h"
 
-size_t
+gint
 sample_save (GByteArray * sample, const gchar * path)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
-  int total;
+  sf_count_t frames, total;
 
   debug_print (1, "Saving file %s...\n", path);
 
@@ -45,11 +45,18 @@ sample_save (GByteArray * sample, const gchar * path)
       return -1;
     }
 
-  total = sf_write_short (sndfile, (gint16 *) sample->data, sample->len >> 1);
+  frames = sample->len >> 1;
+  total = sf_write_short (sndfile, (gint16 *) sample->data, frames);
 
   sf_close (sndfile);
 
-  return total << 1;
+  if (total != frames)
+    {
+      error_print ("Unexpected frames while writing to sample\n");
+      return -1;
+    }
+
+  return 0;
 }
 
 static void
@@ -72,8 +79,8 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
     }
 }
 
-size_t
-sample_load (GByteArray * sample, GMutex * mutex, gint * frames,
+gint
+sample_load (GByteArray * sample, GMutex * mutex, guint * frames,
 	     const gchar * path, gboolean * active,
 	     void (*progress) (gdouble))
 {
@@ -275,5 +282,5 @@ cleanup:
 
   sf_close (sndfile);
 
-  return sample->len;
+  return sample->len > 0 ? 0 : -1;
 }

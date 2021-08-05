@@ -241,3 +241,42 @@ free_item_iterator (struct item_iterator *iter)
     }
   g_free (iter);
 }
+
+gint
+load_file (GByteArray * array, const char *path)
+{
+  FILE *file;
+  long size;
+  gint res;
+
+  file = fopen (path, "rb");
+
+  if (!file)
+    {
+      return -1;
+    }
+
+  res = 0;
+
+  if (fseek (file, 0, SEEK_END))
+    {
+      error_print ("Unexpected value\n");
+      res = -1;
+      goto end;
+    }
+
+  size = ftell (file);
+  rewind (file);
+
+  g_byte_array_set_size (array, size);
+
+  if (fread (array->data, 1, size, file) != size)
+    {
+      error_print ("Error while reading file %s\n", path);
+      res = -1;
+    }
+
+end:
+  fclose (file);
+  return res;
+}

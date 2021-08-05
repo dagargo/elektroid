@@ -127,7 +127,8 @@ static const gchar *ELEKTROID_FS_ICONS[] = {
 
 static const gchar **ELEKTROID_FS_LOCAL_EXTS[] = {
   ((const gchar *[])
-   {"wav", "ogg", "aiff", "flac", NULL}), NULL
+   {"wav", "ogg", "aiff", "flac", NULL}), ((const gchar *[])
+					   {"data", NULL})
 };
 
 static GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
@@ -763,7 +764,7 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
 
       sysex_transfer.data = g_byte_array_new ();
       g_byte_array_set_size (sysex_transfer.data, size);
-      fread (sysex_transfer.data->data, size, 1, file);
+      fread (sysex_transfer.data->data, 1, size, file);
       fclose (file);
 
       g_idle_add (elektroid_start_tx_thread, tx_function);
@@ -1308,7 +1309,8 @@ elektroid_local_check_selection (gpointer data)
   struct item *item;
   gint count = browser_get_selected_items_count (&local_browser);
 
-  if (remote_browser.fs_operations->fs == FS_SAMPLES)
+  if (remote_browser.fs_operations->fs == FS_SAMPLES
+      || remote_browser.fs_operations->fs == FS_NONE)
     {
       audio_stop (&audio, TRUE);
       elektroid_stop_load_thread ();
@@ -1885,7 +1887,10 @@ elektroid_upload_task (gpointer data)
   gchar *dst_path;
   gchar *dst_dir;
   ssize_t frames;
-  GByteArray *sample;
+  GByteArray *array;
+  gint load_res;
+
+  array = g_byte_array_new ();
 
   if (!transfer.fs_operations->upload)
     {
@@ -1897,20 +1902,24 @@ elektroid_upload_task (gpointer data)
   debug_print (1, "Local path: %s\n", transfer.src);
   debug_print (1, "Remote path: %s\n", transfer.dst);
 
-  sample = g_byte_array_new ();
-
-  frames = sample_load (sample, &transfer.control.mutex, NULL,
-			transfer.src, &transfer.control.active, NULL);
-
-  if (frames < 0)
+  load_res = -1;
+  if (transfer.fs_operations->fs == FS_SAMPLES)
     {
-      error_print ("Error while reading sample\n");
+      load_res = sample_load (array, &transfer.control.mutex, NULL,
+			      transfer.src, &transfer.control.active, NULL);
+    }
+  else if (transfer.fs_operations->fs == FS_DATA)
+    {
+      load_res = load_file (array, transfer.src);
+    }
+
+  if (load_res)
+    {
       transfer.status = COMPLETED_ERROR;
-      g_byte_array_free (sample, TRUE);
       goto end;
     }
 
-  frames = transfer.fs_operations->upload (sample, transfer.dst,
+  frames = transfer.fs_operations->upload (array, transfer.dst,
 					   &transfer.control,
 					   remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
@@ -1934,8 +1943,6 @@ elektroid_upload_task (gpointer data)
       g_mutex_unlock (&transfer.control.mutex);
     }
 
-  g_byte_array_free (sample, TRUE);
-
   if (frames > 0)
     {
       dst_path = strdup (transfer.dst);
@@ -1948,6 +1955,7 @@ elektroid_upload_task (gpointer data)
     }
 
 end:
+  g_byte_array_free (array, TRUE);
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
 
@@ -1983,6 +1991,9 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
 {
   struct item_iterator *iter;
   gchar *path;
+  gchar *namec, *name;
+  gchar *dst_abs_dir;
+  gchar *dst_abs_path_id;
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
   gchar *src_abs_path = chain_path (src_dir, rel_path);
 
@@ -1990,9 +2001,16 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
     local_browser.fs_operations->readdir (src_abs_path, local_browser.data);
   if (!iter)
     {
-      remove_ext (dst_abs_path);
-      elektroid_add_task (UPLOAD, src_abs_path, dst_abs_path,
+      dst_abs_dir = dirname (dst_abs_path);
+      namec = strdup (src_abs_path);
+      name = basename (namec);
+      remove_ext (name);
+      dst_abs_path_id =
+	connector_get_remote_name (&connector, remote_browser.fs_operations,
+				   dst_abs_dir, name);
+      elektroid_add_task (UPLOAD, src_abs_path, dst_abs_path_id,
 			  remote_browser.fs_operations->fs);
+      g_free (namec);
       goto cleanup_not_dir;
     }
 

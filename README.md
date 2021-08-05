@@ -165,3 +165,9 @@ F   2 007e 1 1 0.00 KICK
 ```
 $ elektroid-cli download-data 0:/soundbanks/D/1
 ```
+
+* `upload-data`
+
+```
+$ elektroid-cli download-data sound 0:/soundbanks/D
+```

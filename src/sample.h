@@ -24,7 +24,7 @@
 
 #define LOAD_BUFFER_LEN 4800	// In guint16 frames; 9600 B; 0.1 ms
 
-size_t sample_save (GByteArray *, const gchar *);
+gint sample_save (GByteArray *, const gchar *);
 
-size_t sample_load (GByteArray *, GMutex *, gboolean *, const gchar *, gint *,
-		    void (*)(gdouble));
+gint sample_load (GByteArray *, GMutex *, guint *, const gchar *, gboolean *,
+		  void (*)(gdouble));
