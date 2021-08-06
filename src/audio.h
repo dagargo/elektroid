@@ -36,7 +36,7 @@ struct audio
   uint32_t index;
   void (*volume_change_callback) (gdouble);
   gint release_frames;
-  struct transfer_control control;
+  struct job_control control;
 };
 
 void audio_play (struct audio *);

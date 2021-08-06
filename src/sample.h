@@ -28,11 +28,11 @@
 
 #define LOAD_BUFFER_LEN 4800	// In guint16 frames; 9600 B; 0.1 ms
 
-gint sample_save (GByteArray *, const gchar *, struct transfer_control *);
+gint sample_save (GByteArray *, const gchar *, struct job_control *);
 
-gint sample_load (GByteArray *, const gchar *, struct transfer_control *);
+gint sample_load (GByteArray *, const gchar *, struct job_control *);
 
 gint sample_load_with_frames (GByteArray *, const gchar *,
-			      struct transfer_control *, guint *);
+			      struct job_control *, guint *);
 
 #endif

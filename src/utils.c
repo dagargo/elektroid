@@ -243,8 +243,7 @@ free_item_iterator (struct item_iterator *iter)
 }
 
 gint
-load_file (GByteArray * array, const char *path,
-	   struct transfer_control *control)
+load_file (GByteArray * array, const char *path, struct job_control *control)
 {
   FILE *file;
   long size;
@@ -287,8 +286,7 @@ end:
 }
 
 gint
-save_file (GByteArray * array, const char *path,
-	   struct transfer_control *control)
+save_file (GByteArray * array, const char *path, struct job_control *control)
 {
   gint res;
   long bytes;

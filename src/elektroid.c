@@ -93,7 +93,7 @@ enum elektroid_task_status
 
 struct elektroid_transfer
 {
-  struct transfer_control control;
+  struct job_control control;
   gchar *src;			//Contains a path to a file
   gchar *dst;			//Contains a path to a file
   enum elektroid_task_status status;	//Contains the final status

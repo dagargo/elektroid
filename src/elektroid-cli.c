@@ -34,7 +34,7 @@
 #define MIB_FLOAT (KIB_FLOAT * KIB_FLOAT)
 
 static struct connector connector;
-static struct transfer_control control;
+static struct job_control control;
 static const struct fs_operations *fs_ops_samples;
 static const struct fs_operations *fs_ops_data;
 

@@ -26,7 +26,7 @@
 
 gint
 sample_save (GByteArray * sample, const gchar * path,
-	     struct transfer_control *control)
+	     struct job_control *control)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -81,7 +81,7 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
 
 gint
 sample_load_with_frames (GByteArray * sample, const gchar * path,
-			 struct transfer_control *control, guint * frames)
+			 struct job_control *control, guint * frames)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -277,7 +277,7 @@ cleanup:
 
 gint
 sample_load (GByteArray * array, const gchar * path,
-	     struct transfer_control *control)
+	     struct job_control *control)
 {
   return sample_load_with_frames (array, path, NULL, NULL);
 }

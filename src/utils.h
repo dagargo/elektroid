@@ -58,13 +58,13 @@ struct item_iterator
   struct item item;
 };
 
-typedef void (*control_callback) (gdouble);
+typedef void (*job_control_callback) (gdouble);
 
-struct transfer_control
+struct job_control
 {
   gboolean active;
   GMutex mutex;
-  control_callback callback;
+  job_control_callback callback;
 };
 
 typedef struct item_iterator *(*fs_read_dir_func) (const gchar *, void *);
@@ -74,16 +74,16 @@ typedef gint (*fs_path_func) (const gchar *, void *);
 typedef gint (*fs_src_dst_func) (const gchar *, const gchar *, void *);
 
 typedef GByteArray *(*fs_download_func) (const gchar *,
-					 struct transfer_control *, void *);
+					 struct job_control *, void *);
 
 typedef ssize_t (*fs_upload_func) (GByteArray *,
 				   const gchar *,
-				   struct transfer_control *, void *);
+				   struct job_control *, void *);
 
 typedef gchar *(*fs_get_item_id) (struct item *);
 
 typedef gint (*fs_local_file_op) (GByteArray *, const gchar *,
-				  struct transfer_control *);
+				  struct job_control *);
 
 struct fs_operations
 {
@@ -130,8 +130,8 @@ guint next_item_iterator (struct item_iterator *);
 
 void free_item_iterator (struct item_iterator *);
 
-gint load_file (GByteArray *, const char *, struct transfer_control *);
+gint load_file (GByteArray *, const char *, struct job_control *);
 
-gint save_file (GByteArray *, const char *, struct transfer_control *);
+gint save_file (GByteArray *, const char *, struct job_control *);
 
 #endif

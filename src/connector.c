@@ -61,11 +61,10 @@ static gint connector_move_samples_item (const gchar *, const gchar *,
 					 void *);
 
 static GByteArray *connector_download_sample (const gchar *,
-					      struct transfer_control *,
-					      void *);
+					      struct job_control *, void *);
 
 static ssize_t connector_upload_sample (GByteArray *, const gchar *,
-					struct transfer_control *, void *);
+					struct job_control *, void *);
 
 static struct item_iterator *connector_read_data_dir (const gchar *, void *);
 
@@ -78,11 +77,10 @@ static gint connector_clear_data_item (const gchar *, void *);
 static gint connector_swap_data_item (const gchar *, const gchar *, void *);
 
 static GByteArray *connector_download_datum (const gchar *,
-					     struct transfer_control *,
-					     void *);
+					     struct job_control *, void *);
 
 static ssize_t connector_upload_datum (GByteArray *, const gchar *,
-				       struct transfer_control *, void *);
+				       struct job_control *, void *);
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -1345,7 +1343,7 @@ connector_delete_samples_item (const gchar * path, void *data)
 ssize_t
 connector_upload_sample (GByteArray * sample,
 			 const gchar * path,
-			 struct transfer_control *control, void *data)
+			 struct job_control *control, void *data)
 {
   struct connector *connector = data;
   GByteArray *tx_msg;
@@ -1451,7 +1449,7 @@ connector_upload_sample (GByteArray * sample,
 
 GByteArray *
 connector_download_sample (const gchar * path,
-			   struct transfer_control *control, void *data)
+			   struct job_control *control, void *data)
 {
   struct connector *connector = data;
   GByteArray *tx_msg;
@@ -2455,7 +2453,7 @@ connector_close_datum (struct connector *connector,
 
 static GByteArray *
 connector_download_datum (const gchar * path,
-			  struct transfer_control *control, void *data)
+			  struct job_control *control, void *data)
 {
   guint32 seq;
   guint32 seqbe;
@@ -2683,7 +2681,7 @@ end:
 
 static ssize_t
 connector_upload_datum (GByteArray * array, const gchar * path,
-			struct transfer_control *control, void *data)
+			struct job_control *control, void *data)
 {
   guint32 seq;
   guint32 jid;
