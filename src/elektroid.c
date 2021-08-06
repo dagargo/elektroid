@@ -676,7 +676,7 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   if (filename != NULL)
     {
       debug_print (1, "Saving SysEx file...\n");
-      if (save_file (array, filename, NULL))
+      if (save_file (filename, array, NULL))
 	{
 	  show_error_msg (_("Error while saving “%s”: %s."),
 			  filename, g_strerror (errno));
@@ -757,7 +757,7 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
 
       sysex_transfer.data = g_byte_array_new ();
 
-      if (load_file (sysex_transfer.data, filename, NULL))
+      if (load_file (filename, sysex_transfer.data, NULL))
 	{
 	  show_error_msg (_("Error while loading “%s”: %s."),
 			  filename, g_strerror (errno));
@@ -1226,7 +1226,7 @@ elektroid_load_sample (gpointer path)
   audio.control.active = TRUE;
   g_mutex_unlock (&audio.control.mutex);
 
-  sample_load_with_frames (audio.sample, path, &audio.control, &audio.frames);
+  sample_load_with_frames (path, audio.sample, &audio.control, &audio.frames);
 
   g_mutex_lock (&audio.control.mutex);
   audio.control.active = FALSE;
@@ -1896,7 +1896,7 @@ elektroid_upload_task (gpointer data)
 
   array = g_byte_array_new ();
 
-  res = transfer.fs_ops->load (array, transfer.src, &transfer.control);
+  res = transfer.fs_ops->load (transfer.src, array, &transfer.control);
   if (res)
     {
       error_print ("Error while loading file\n");
@@ -2101,7 +2101,7 @@ elektroid_download_task (gpointer userdata)
 		       data->len, transfer.dst,
 		       elektroid_get_fs_name (transfer.fs_ops->fs));
 
-	  res = transfer.fs_ops->save (data, transfer.dst, &transfer.control);
+	  res = transfer.fs_ops->save (transfer.dst, data, &transfer.control);
 	  if (res >= 0)
 	    {
 	      transfer.status = COMPLETED_OK;

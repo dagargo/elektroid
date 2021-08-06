@@ -82,7 +82,7 @@ typedef ssize_t (*fs_upload_func) (GByteArray *,
 
 typedef gchar *(*fs_get_item_id) (struct item *);
 
-typedef gint (*fs_local_file_op) (GByteArray *, const gchar *,
+typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
 				  struct job_control *);
 
 struct fs_operations
@@ -130,8 +130,8 @@ guint next_item_iterator (struct item_iterator *);
 
 void free_item_iterator (struct item_iterator *);
 
-gint load_file (GByteArray *, const char *, struct job_control *);
+gint load_file (const char *, GByteArray *, struct job_control *);
 
-gint save_file (GByteArray *, const char *, struct job_control *);
+gint save_file (const char *, GByteArray *, struct job_control *);
 
 #endif

@@ -307,7 +307,7 @@ cli_download (int argc, char *argv[], int optind,
   const gchar *path;
   gchar *device_path, *local_path;
   gint res;
-  GByteArray *datum;
+  GByteArray *array;
 
   if (optind == argc)
     {
@@ -330,9 +330,9 @@ cli_download (int argc, char *argv[], int optind,
 
   control.active = TRUE;
   control.callback = null_control_callback;
-  datum = fs_ops->download (path, &control, &connector);
+  array = fs_ops->download (path, &control, &connector);
 
-  if (datum == NULL)
+  if (array == NULL)
     {
       return EXIT_FAILURE;
     }
@@ -343,13 +343,13 @@ cli_download (int argc, char *argv[], int optind,
       return EXIT_FAILURE;
     }
 
-  if (fs_ops->save (datum, local_path, NULL))
+  if (fs_ops->save (local_path, array, NULL))
     {
       res = EXIT_FAILURE;
     }
 
   free (local_path);
-  g_byte_array_free (datum, TRUE);
+  g_byte_array_free (array, TRUE);
 
   return res;
 }
@@ -362,7 +362,7 @@ cli_upload (int argc, char *argv[], int optind,
   gchar *path_src, *device_path_dst, *path_dst;
   gint res;
   ssize_t bytes;
-  GByteArray *datum;
+  GByteArray *array;
 
   if (optind == argc)
     {
@@ -396,9 +396,9 @@ cli_upload (int argc, char *argv[], int optind,
   path_dst =
     connector_get_remote_name (&connector, fs_ops, device_dir_dst, path_src);
 
-  datum = g_byte_array_new ();
+  array = g_byte_array_new ();
 
-  if (fs_ops->load (datum, path_src, NULL))
+  if (fs_ops->load (path_src, array, NULL))
     {
       res = EXIT_FAILURE;
       goto cleanup;
@@ -406,13 +406,13 @@ cli_upload (int argc, char *argv[], int optind,
 
   control.active = TRUE;
   control.callback = null_control_callback;
-  bytes = fs_ops->upload (datum, path_dst, &control, &connector);
+  bytes = fs_ops->upload (array, path_dst, &control, &connector);
 
   res = bytes < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
 cleanup:
   free (path_dst);
-  g_byte_array_free (datum, TRUE);
+  g_byte_array_free (array, TRUE);
   return res;
 }
 

@@ -25,7 +25,7 @@
 #include "sample.h"
 
 gint
-sample_save (GByteArray * sample, const gchar * path,
+sample_save (const gchar * path, GByteArray * sample,
 	     struct job_control *control)
 {
   SF_INFO sf_info;
@@ -80,7 +80,7 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
 }
 
 gint
-sample_load_with_frames (GByteArray * sample, const gchar * path,
+sample_load_with_frames (const gchar * path, GByteArray * sample,
 			 struct job_control *control, guint * frames)
 {
   SF_INFO sf_info;
@@ -276,8 +276,8 @@ cleanup:
 }
 
 gint
-sample_load (GByteArray * array, const gchar * path,
+sample_load (const gchar * path, GByteArray * array,
 	     struct job_control *control)
 {
-  return sample_load_with_frames (array, path, NULL, NULL);
+  return sample_load_with_frames (path, array, NULL, NULL);
 }
