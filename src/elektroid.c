@@ -603,8 +603,7 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   gchar *filename;
   gchar *filename_w_ext;
   const gchar *ext;
-  FILE *file;
-  GByteArray *sysex_data;
+  GByteArray *array;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
   g_idle_add (elektroid_start_rx_thread, NULL);
@@ -614,18 +613,18 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   sysex_transfer.transfer.active = FALSE;
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
-  sysex_data = elektroid_join_sysex_thread ();
+  array = elektroid_join_sysex_thread ();
 
   if (res != GTK_RESPONSE_ACCEPT)
     {
-      if (sysex_data)
+      if (array)
 	{
-	  g_byte_array_free (sysex_data, TRUE);
+	  g_byte_array_free (array, TRUE);
 	}
       return;
     }
 
-  if (!sysex_data)
+  if (!array)
     {
       elektroid_check_connector ();
       return;
@@ -677,10 +676,11 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   if (filename != NULL)
     {
       debug_print (1, "Saving SysEx file...\n");
-      file = fopen (filename, "w");
-      fwrite (sysex_data->data, 1, sysex_data->len, file);
-      g_byte_array_free (sysex_data, TRUE);
-      fclose (file);
+      if (save_file (array, filename))
+	{
+	  show_error_msg (_("Error while saving “%s”: %s."),
+			  filename, g_strerror (errno));
+	}
       g_free (filename);
     }
 
@@ -731,8 +731,6 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
   GtkFileFilter *filter;
   gint res;
   char *filename;
-  FILE *file;
-  long size;
   gint *response;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
 
@@ -756,30 +754,34 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
       filename = gtk_file_chooser_get_filename (chooser);
       gtk_widget_destroy (dialog);
       debug_print (1, "Opening SysEx file...\n");
-      file = fopen (filename, "rb");
-      g_free (filename);
-      fseek (file, 0, SEEK_END);
-      size = ftell (file);
-      rewind (file);
+
 
       sysex_transfer.data = g_byte_array_new ();
-      g_byte_array_set_size (sysex_transfer.data, size);
-      fread (sysex_transfer.data->data, 1, size, file);
-      fclose (file);
+      if (load_file (sysex_transfer.data, filename))
+	{
+	  show_error_msg (_("Error while loading “%s”: %s."),
+			  filename, g_strerror (errno));
+	  response = NULL;
+	}
+      else
+	{
+	  g_idle_add (elektroid_start_tx_thread, tx_function);
 
-      g_idle_add (elektroid_start_tx_thread, tx_function);
+	  gtk_window_set_title (GTK_WINDOW (progress_dialog),
+				_("Send SysEx"));
+	  res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
 
-      gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Send SysEx"));
-      res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
+	  g_mutex_lock (&sysex_transfer.transfer.mutex);
+	  sysex_transfer.transfer.active = FALSE;
+	  g_mutex_unlock (&sysex_transfer.transfer.mutex);
 
-      g_mutex_lock (&sysex_transfer.transfer.mutex);
-      sysex_transfer.transfer.active = FALSE;
-      g_mutex_unlock (&sysex_transfer.transfer.mutex);
+	  gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
-      gtk_widget_hide (GTK_WIDGET (progress_dialog));
+	  response = elektroid_join_sysex_thread ();
+	}
 
-      response = elektroid_join_sysex_thread ();
       g_byte_array_free (sysex_transfer.data, TRUE);
+
 
       if (*response < 0)
 	{
@@ -2078,7 +2080,6 @@ static void
 elektroid_save_download_data (GByteArray * data)
 {
   ssize_t bytes = -1;
-  FILE *file;
 
   debug_print (1, "Writing %d bytes to file %s (filesystem %s)...\n",
 	       data->len, transfer.dst,
@@ -2088,23 +2089,21 @@ elektroid_save_download_data (GByteArray * data)
     {
       bytes = sample_save (data, transfer.dst);
       debug_print (1, "%zu frames written\n", bytes >> 1);
+      if (bytes >= 0)
+	{
+	  transfer.status = COMPLETED_OK;
+	}
     }
   else if (transfer.fs_ops->fs == FS_DATA)
     {
-      file = fopen (transfer.dst, "w");
-      bytes = fwrite (data->data, 1, data->len, file);
-      g_byte_array_free (data, TRUE);
-      fclose (file);
-      debug_print (1, "%zu bytes written\n", bytes);
+      save_file (data, transfer.dst);
+      transfer.status = COMPLETED_OK;
     }
   else
     {
       debug_print (1, "Function write not implemented\n");
     }
-  if (bytes >= 0)
-    {
-      transfer.status = COMPLETED_OK;
-    }
+
 }
 
 static gpointer

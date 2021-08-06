@@ -411,10 +411,8 @@ cli_download_data (int argc, char *argv[], int optind)
 {
   const gchar *path;
   gchar *device_path, *local_path;
-  FILE *file;
   gint res;
   GByteArray *data;
-  ssize_t bytes;
 
   if (optind == argc)
     {
@@ -451,14 +449,12 @@ cli_download_data (int argc, char *argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  file = fopen (local_path, "w");
-  bytes = fwrite (data->data, 1, data->len, file);
-  fclose (file);
+  res = sample_save (data, local_path);
 
   free (local_path);
   g_byte_array_free (data, TRUE);
 
-  return bytes > 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+  return res;
 }
 
 static int

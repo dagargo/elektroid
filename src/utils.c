@@ -270,7 +270,11 @@ load_file (GByteArray * array, const char *path)
 
   g_byte_array_set_size (array, size);
 
-  if (fread (array->data, 1, size, file) != size)
+  if (fread (array->data, 1, size, file) == size)
+    {
+      debug_print (1, "%zu bytes written\n", size);
+    }
+  else
     {
       error_print ("Error while reading file %s\n", path);
       res = -1;
@@ -278,5 +282,37 @@ load_file (GByteArray * array, const char *path)
 
 end:
   fclose (file);
+  return res;
+}
+
+gint
+save_file (GByteArray * array, const char *path)
+{
+  gint res;
+  long bytes;
+  FILE *file;
+
+  file = fopen (path, "w");
+
+  if (!file)
+    {
+      return -1;
+    }
+
+  res = 0;
+
+  bytes = fwrite (array->data, 1, array->len, file);
+  if (bytes == array->len)
+    {
+      debug_print (1, "%zu bytes written\n", bytes);
+    }
+  else
+    {
+      error_print ("Error while writing to file %s\n", path);
+      res = -1;
+    }
+
+  fclose (file);
+
   return res;
 }

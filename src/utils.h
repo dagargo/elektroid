@@ -125,4 +125,6 @@ void free_item_iterator (struct item_iterator *);
 
 gint load_file (GByteArray *, const char *);
 
+gint save_file (GByteArray *, const gchar *);
+
 #endif
