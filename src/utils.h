@@ -73,9 +73,6 @@ typedef gint (*fs_path_func) (const gchar *, void *);
 
 typedef gint (*fs_src_dst_func) (const gchar *, const gchar *, void *);
 
-typedef GByteArray *(*fs_download_func) (const gchar *,
-					 struct job_control *, void *);
-
 typedef gint (*fs_remote_file_op) (const gchar *, GByteArray *,
 				   struct job_control *, void *);
 
@@ -95,7 +92,7 @@ struct fs_operations
   fs_src_dst_func copy;
   fs_path_func clear;
   fs_src_dst_func swap;
-  fs_download_func download;
+  fs_remote_file_op download;
   fs_remote_file_op upload;
   fs_get_item_id getid;
   fs_local_file_op save;

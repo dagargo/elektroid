@@ -60,8 +60,8 @@ static gint connector_delete_samples_item (const gchar *, void *);
 static gint connector_move_samples_item (const gchar *, const gchar *,
 					 void *);
 
-static GByteArray *connector_download_sample (const gchar *,
-					      struct job_control *, void *);
+static gint connector_download_sample (const gchar *, GByteArray *,
+				       struct job_control *, void *);
 
 static gint connector_upload_sample (const gchar *, GByteArray *,
 				     struct job_control *, void *);
@@ -76,8 +76,8 @@ static gint connector_clear_data_item (const gchar *, void *);
 
 static gint connector_swap_data_item (const gchar *, const gchar *, void *);
 
-static GByteArray *connector_download_datum (const gchar *,
-					     struct job_control *, void *);
+static gint connector_download_datum (const gchar *, GByteArray *,
+				      struct job_control *, void *);
 
 static gint connector_upload_datum (const gchar *, GByteArray *,
 				    struct job_control *, void *);
@@ -1446,8 +1446,8 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
   return 0;
 }
 
-GByteArray *
-connector_download_sample (const gchar * path,
+static gint
+connector_download_sample (const gchar * path, GByteArray * output,
 			   struct job_control *control, void *data)
 {
   struct connector *connector = data;
@@ -1463,7 +1463,7 @@ connector_download_sample (const gchar * path,
   gint16 *frame;
   int i;
   gboolean active;
-  GByteArray *result;
+  gint res;
 
   tx_msg = connector_new_msg_path (FS_SAMPLE_OPEN_FILE_READER_REQUEST,
 				   sizeof
@@ -1472,27 +1472,28 @@ connector_download_sample (const gchar * path,
   if (!tx_msg)
     {
       errno = EINVAL;
-      return NULL;
+      return -1;
     }
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
       errno = EIO;
-      return NULL;
+      return -1;
     }
   connector_get_sample_info_from_msg (rx_msg, &id, &frames);
   free_msg (rx_msg);
   if (id < 0)
     {
       error_print ("File %s not found\n", path);
-      return NULL;
+      return -1;
     }
 
   debug_print (2, "%d frames to download\n", frames);
 
   array = g_byte_array_new ();
 
+  res = 0;
   next_block_start = 0;
   offset = sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST);
   if (control)
@@ -1518,7 +1519,7 @@ connector_download_sample (const gchar * path,
       if (!rx_msg)
 	{
 	  errno = EIO;
-	  result = NULL;
+	  res = -1;
 	  goto cleanup;
 	}
       g_byte_array_append (array, &rx_msg->data[22 + offset],
@@ -1543,18 +1544,17 @@ connector_download_sample (const gchar * path,
 
   if (active)
     {
-      result = g_byte_array_new ();
       frame = (gint16 *) array->data;
       for (i = 0; i < array->len; i += sizeof (gint16))
 	{
 	  v = be16toh (*frame);
-	  g_byte_array_append (result, (guint8 *) & v, sizeof (gint16));
+	  g_byte_array_append (output, (guint8 *) & v, sizeof (gint16));
 	  frame++;
 	}
     }
   else
     {
-      result = NULL;
+      res = -1;
     }
 
   tx_msg = connector_new_msg_close_file_read (id);
@@ -1562,11 +1562,7 @@ connector_download_sample (const gchar * path,
   if (!rx_msg)
     {
       errno = EIO;
-      if (result)
-	{
-	  g_byte_array_free (result, TRUE);
-	  result = NULL;
-	}
+      res = -1;
       goto cleanup;
     }
   //Response: x, x, x, x, 0xb1, 00 00 00 0a 00 01 65 de (sample id and received bytes)
@@ -1574,7 +1570,7 @@ connector_download_sample (const gchar * path,
 
 cleanup:
   free_msg (array);
-  return result;
+  return res;
 }
 
 gint
@@ -2450,10 +2446,11 @@ connector_close_datum (struct connector *connector,
   return 0;
 }
 
-static GByteArray *
-connector_download_datum (const gchar * path,
+static gint
+connector_download_datum (const gchar * path, GByteArray * output,
 			  struct job_control *control, void *data)
 {
+  gint res;
   guint32 seq;
   guint32 seqbe;
   guint32 jid;
@@ -2466,7 +2463,6 @@ connector_download_datum (const gchar * path,
   guint32 jidbe;
   guint32 data_size;
   gboolean active;
-  GByteArray *array;
   GByteArray *rx_msg;
   GByteArray *tx_msg;
   struct connector *connector = data;
@@ -2474,14 +2470,14 @@ connector_download_datum (const gchar * path,
   if (connector_open_datum (connector, path, &jid, O_RDONLY, 0))
     {
       errno = EIO;
-      return NULL;
+      return -1;
     }
 
   usleep (REST_TIME);
 
   jidbe = htobe32 (jid);
-  array = g_byte_array_new ();
 
+  res = 0;
   seq = 0;
   last = 0;
   if (control)
@@ -2506,8 +2502,7 @@ connector_download_datum (const gchar * path,
       if (!rx_msg)
 	{
 	  errno = EIO;
-	  g_byte_array_free (array, TRUE);
-	  array = NULL;
+	  res = -1;
 	  break;
 	}
 
@@ -2517,8 +2512,7 @@ connector_download_datum (const gchar * path,
 	  error_print ("%s (%s)\n", g_strerror (errno),
 		       connector_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
-	  g_byte_array_free (array, TRUE);
-	  array = NULL;
+	  res = -1;
 	  break;
 	}
 
@@ -2545,12 +2539,12 @@ connector_download_datum (const gchar * path,
 		       "Read datum info: job id: %d; last: %d; seq: %d; status: %d; hash: 0x%08x\n",
 		       r_jid, last, r_seq, status, hash);
 
-	  g_byte_array_append (array, (guint8 *) & rx_msg->data[27],
+	  g_byte_array_append (output, (guint8 *) & rx_msg->data[27],
 			       data_size);
 	}
       else
 	{
-	  // Sometimes, the first message return 0 data size and the rest of the parameters are not initialized.
+	  // Sometimes, the first message returns 0 data size and the rest of the parameters are not initialized.
 	  debug_print (1,
 		       "Read datum info: job id: %d; last: %d, hash: 0x%08x\n",
 		       r_jid, last, hash);
@@ -2574,10 +2568,10 @@ connector_download_datum (const gchar * path,
   if (connector_close_datum (connector, jid, O_RDONLY, 0))
     {
       errno = EIO;
-      return NULL;
+      res = -1;
     }
 
-  return array;
+  return res;
 }
 
 gchar *

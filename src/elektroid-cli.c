@@ -330,11 +330,12 @@ cli_download (int argc, char *argv[], int optind,
 
   control.active = TRUE;
   control.callback = null_control_callback;
-  array = fs_ops->download (path, &control, &connector);
-
-  if (array == NULL)
+  array = g_byte_array_new ();
+  res = fs_ops->download (path, array, &control, &connector);
+  if (res)
     {
-      return EXIT_FAILURE;
+      res = EXIT_FAILURE;
+      goto end;
     }
 
   local_path = connector_get_local_dst_path (&connector, fs_ops, path, ".");
@@ -349,6 +350,8 @@ cli_download (int argc, char *argv[], int optind,
     }
 
   free (local_path);
+
+end:
   g_byte_array_free (array, TRUE);
 
   return res;

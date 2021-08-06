@@ -2070,7 +2070,7 @@ static gpointer
 elektroid_download_task (gpointer userdata)
 {
   gint res;
-  GByteArray *data;
+  GByteArray *array;
 
   if (!transfer.fs_ops->download)
     {
@@ -2079,30 +2079,33 @@ elektroid_download_task (gpointer userdata)
       goto end;
     }
 
+  array = g_byte_array_new ();
+
   debug_print (1, "Remote path: %s\n", transfer.src);
   debug_print (1, "Local path: %s\n", transfer.dst);
 
-  data =
-    transfer.fs_ops->download (transfer.src,
+  res =
+    transfer.fs_ops->download (transfer.src, array,
 			       &transfer.control, remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
-  if (data == NULL && transfer.control.active)
+  g_mutex_lock (&transfer.control.mutex);
+  if (res && transfer.control.active)
     {
       error_print ("Error while downloading\n");
       transfer.status = COMPLETED_ERROR;
     }
   else
     {
-      g_mutex_lock (&transfer.control.mutex);
       if (transfer.control.active)
 	{
 	  debug_print (1, "Writing %d bytes to file %s (filesystem %s)...\n",
-		       data->len, transfer.dst,
+		       array->len, transfer.dst,
 		       elektroid_get_fs_name (transfer.fs_ops->fs));
 
-	  res = transfer.fs_ops->save (transfer.dst, data, &transfer.control);
-	  if (res >= 0)
+	  res =
+	    transfer.fs_ops->save (transfer.dst, array, &transfer.control);
+	  if (!res)
 	    {
 	      transfer.status = COMPLETED_OK;
 	    }
@@ -2111,6 +2114,9 @@ elektroid_download_task (gpointer userdata)
 	{
 	  transfer.status = CANCELED;
 	}
+
+      g_byte_array_free (array, TRUE);
+
       g_mutex_unlock (&transfer.control.mutex);
     }
 
