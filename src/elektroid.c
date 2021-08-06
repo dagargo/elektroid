@@ -847,10 +847,10 @@ elektroid_update_ui_on_load (gpointer data)
 {
   gboolean ready_to_play;
 
-  g_mutex_lock (&audio.mutex);
+  g_mutex_lock (&audio.control.mutex);
   ready_to_play = audio.sample->len >> 1 >= LOAD_BUFFER_LEN
-    || (!audio.load_active && audio.sample->len > 0);
-  g_mutex_unlock (&audio.mutex);
+    || (!audio.control.active && audio.sample->len > 0);
+  g_mutex_unlock (&audio.control.mutex);
 
   if (ready_to_play)
     {
@@ -1220,16 +1220,16 @@ elektroid_redraw_sample (gdouble percent)
 static gpointer
 elektroid_load_sample (gpointer path)
 {
-  g_mutex_lock (&audio.mutex);
-  audio.load_active = TRUE;
-  g_mutex_unlock (&audio.mutex);
+  g_mutex_lock (&audio.control.mutex);
+  audio.control.active = TRUE;
+  g_mutex_unlock (&audio.control.mutex);
 
-  sample_load (audio.sample, &audio.mutex, &audio.frames, path,
-	       &audio.load_active, elektroid_redraw_sample);
+  sample_load (audio.sample, &audio.control.mutex, &audio.frames, path,
+	       &audio.control.active, audio.control.progress);
 
-  g_mutex_lock (&audio.mutex);
-  audio.load_active = FALSE;
-  g_mutex_unlock (&audio.mutex);
+  g_mutex_lock (&audio.control.mutex);
+  audio.control.active = FALSE;
+  g_mutex_unlock (&audio.control.mutex);
 
   free (path);
 
@@ -1251,9 +1251,9 @@ elektroid_stop_load_thread ()
 {
   debug_print (1, "Stopping load thread...\n");
 
-  g_mutex_lock (&audio.mutex);
-  audio.load_active = FALSE;
-  g_mutex_unlock (&audio.mutex);
+  g_mutex_lock (&audio.control.mutex);
+  audio.control.active = FALSE;
+  g_mutex_unlock (&audio.control.mutex);
 
   if (load_thread)
     {
@@ -1357,7 +1357,7 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
   double x_ratio, mid_y, value;
   short *sample;
 
-  g_mutex_lock (&audio.mutex);
+  g_mutex_lock (&audio.control.mutex);
 
   context = gtk_widget_get_style_context (widget);
   width = gtk_widget_get_allocated_width (widget);
@@ -1383,7 +1383,7 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 	}
     }
 
-  g_mutex_unlock (&audio.mutex);
+  g_mutex_unlock (&audio.control.mutex);
 
   return FALSE;
 }
@@ -3143,7 +3143,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 		     TARGET_ENTRIES_UP_BUTTON_DST,
 		     TARGET_ENTRIES_UP_BUTTON_DST_N, GDK_ACTION_COPY);
 
-  audio_init (&audio, elektroid_set_volume_callback);
+  audio_init (&audio, elektroid_set_volume_callback, elektroid_redraw_sample);
 
   devices_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "devices_list_store"));

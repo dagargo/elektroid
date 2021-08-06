@@ -21,6 +21,7 @@
 #include <glib.h>
 #include <pulse/pulseaudio.h>
 #include <pulse/glib-mainloop.h>
+#include "utils.h"
 
 struct audio
 {
@@ -35,8 +36,7 @@ struct audio
   uint32_t index;
   void (*set_volume_gui_callback) (gdouble);
   gint release_frames;
-  GMutex mutex;
-  gboolean load_active;
+  struct transfer_control control;
 };
 
 void audio_play (struct audio *);
@@ -45,7 +45,7 @@ void audio_stop (struct audio *, gboolean);
 
 gboolean audio_check (struct audio *);
 
-gint audio_init (struct audio *, void (*)(gdouble));
+gint audio_init (struct audio *, void (*)(gdouble), void (*)(gdouble));
 
 void audio_destroy (struct audio *);
 

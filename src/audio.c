@@ -58,11 +58,11 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
   debug_print (2, "Writing %2d frames...\n", req_frames);
   pa_stream_begin_write (stream, &buffer, &size);
 
-  g_mutex_lock (&audio->mutex);
+  g_mutex_lock (&audio->control.mutex);
 
   if (!audio->sample->len)
     {
-      g_mutex_unlock (&audio->mutex);
+      g_mutex_unlock (&audio->control.mutex);
       pa_stream_cancel_write (stream);
       debug_print (2, "Canceled\n");
       return;
@@ -70,7 +70,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
 
   if (audio->pos == audio->sample->len && !audio->loop)
     {
-      g_mutex_unlock (&audio->mutex);
+      g_mutex_unlock (&audio->control.mutex);
       memset (buffer, 0, size);
       pa_stream_write (stream, buffer, size, NULL, 0, PA_SEEK_RELATIVE);
       audio->release_frames += req_frames;
@@ -100,7 +100,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
       v++;
     }
 
-  g_mutex_unlock (&audio->mutex);
+  g_mutex_unlock (&audio->control.mutex);
 
   pa_stream_write (stream, buffer, i * 2, NULL, 0, PA_SEEK_RELATIVE);
 }
@@ -147,10 +147,10 @@ audio_play (struct audio *audio)
 
   debug_print (1, "Playing audio...\n");
 
-  g_mutex_lock (&audio->mutex);
+  g_mutex_lock (&audio->control.mutex);
   audio->pos = 0;
   audio->release_frames = 0;
-  g_mutex_unlock (&audio->mutex);
+  g_mutex_unlock (&audio->control.mutex);
 
   operation = pa_stream_cork (audio->stream, 0, NULL, NULL);
   if (operation != NULL)
@@ -247,7 +247,8 @@ audio_context_callback (pa_context * context, void *data)
 }
 
 gint
-audio_init (struct audio *audio, void (*set_volume_gui_callback) (gdouble))
+audio_init (struct audio *audio, void (*set_volume_gui_callback) (gdouble),
+	    void (*load_progress_callback) (gdouble))
 {
   pa_mainloop_api *api;
   gint err = 0;
@@ -263,6 +264,7 @@ audio_init (struct audio *audio, void (*set_volume_gui_callback) (gdouble))
   audio->stream = NULL;
   audio->index = PA_INVALID_INDEX;
   audio->set_volume_gui_callback = set_volume_gui_callback;
+  audio->control.progress = load_progress_callback;
 
   if (pa_context_connect (audio->context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
     {
@@ -310,11 +312,11 @@ audio_check (struct audio *audio)
 void
 audio_reset_sample (struct audio *audio)
 {
-  g_mutex_lock (&audio->mutex);
+  g_mutex_lock (&audio->control.mutex);
   g_byte_array_set_size (audio->sample, 0);
   audio->frames = 0;
   audio->pos = 0;
-  g_mutex_unlock (&audio->mutex);
+  g_mutex_unlock (&audio->control.mutex);
 }
 
 void
