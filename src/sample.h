@@ -21,10 +21,11 @@
 #include <glib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "utils.h"
 
 #define LOAD_BUFFER_LEN 4800	// In guint16 frames; 9600 B; 0.1 ms
 
 gint sample_save (GByteArray *, const gchar *);
 
-gint sample_load (GByteArray *, GMutex *, guint *, const gchar *, gboolean *,
-		  void (*)(gdouble));
+gint sample_load (GByteArray *, const gchar *, struct transfer_control *,
+		  guint *);

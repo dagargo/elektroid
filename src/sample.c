@@ -23,7 +23,6 @@
 #include <samplerate.h>
 #include <inttypes.h>
 #include "sample.h"
-#include "utils.h"
 
 gint
 sample_save (GByteArray * sample, const gchar * path)
@@ -80,9 +79,8 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
 }
 
 gint
-sample_load (GByteArray * sample, GMutex * mutex, guint * frames,
-	     const gchar * path, gboolean * active,
-	     void (*progress) (gdouble))
+sample_load (GByteArray * sample, const gchar * path,
+	     struct transfer_control *control, guint * frames)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -100,14 +98,14 @@ sample_load (GByteArray * sample, GMutex * mutex, guint * frames,
 
   debug_print (1, "Loading file %s...\n", path);
 
-  if (mutex)
+  if (control)
     {
-      g_mutex_lock (mutex);
+      g_mutex_lock (&control->mutex);
     }
   g_byte_array_set_size (sample, 0);
-  if (mutex)
+  if (control)
     {
-      g_mutex_unlock (mutex);
+      g_mutex_unlock (&control->mutex);
     }
 
   sf_info.format = 0;
@@ -153,15 +151,14 @@ sample_load (GByteArray * sample, GMutex * mutex, guint * frames,
   debug_print (2, "Loading sample (%" PRId64 ")...\n", sf_info.frames);
 
   f = 0;
-  if (mutex)
+  load_active = TRUE;
+  if (control)
     {
-      g_mutex_lock (mutex);
+      g_mutex_lock (&control->mutex);
+      load_active = control->active;
+      g_mutex_unlock (&control->mutex);
     }
-  load_active = (!active || *active);
-  if (mutex)
-    {
-      g_mutex_unlock (mutex);
-    }
+
   while (f < sf_info.frames && load_active)
     {
       debug_print (2, "Loading buffer...\n");
@@ -193,15 +190,15 @@ sample_load (GByteArray * sample, GMutex * mutex, guint * frames,
 
       if (sf_info.samplerate == 48000)
 	{
-	  if (mutex)
+	  if (control)
 	    {
-	      g_mutex_lock (mutex);
+	      g_mutex_lock (&control->mutex);
 	    }
 	  g_byte_array_append (sample, (guint8 *) buffer_input,
 			       frames_read << 1);
-	  if (mutex)
+	  if (control)
 	    {
-	      g_mutex_unlock (mutex);
+	      g_mutex_unlock (&control->mutex);
 	    }
 	}
       else
@@ -217,31 +214,24 @@ sample_load (GByteArray * sample, GMutex * mutex, guint * frames,
 	    }
 	  src_float_to_short_array (src_data.data_out, buffer_s,
 				    src_data.output_frames_gen);
-	  if (mutex)
+	  if (control)
 	    {
-	      g_mutex_lock (mutex);
+	      g_mutex_lock (&control->mutex);
 	    }
 	  g_byte_array_append (sample, (guint8 *) buffer_s,
 			       src_data.output_frames_gen << 1);
-	  if (mutex)
+	  if (control)
 	    {
-	      g_mutex_unlock (mutex);
+	      g_mutex_unlock (&control->mutex);
 	    }
 	}
 
-      if (progress)
+      if (control)
 	{
-	  progress (f * 1.0 / sf_info.frames);
-	}
-
-      if (mutex)
-	{
-	  g_mutex_lock (mutex);
-	}
-      load_active = (!active || *active);
-      if (mutex)
-	{
-	  g_mutex_unlock (mutex);
+	  control->progress (f * 1.0 / sf_info.frames);
+	  g_mutex_lock (&control->mutex);
+	  load_active = control->active;
+	  g_mutex_unlock (&control->mutex);
 	}
     }
 
@@ -253,24 +243,20 @@ sample_load (GByteArray * sample, GMutex * mutex, guint * frames,
 		   src_strerror (err));
     }
 
-  if (mutex)
+  if (control)
     {
-      g_mutex_lock (mutex);
-    }
-  if (!active || *active)
-    {
-      if (progress)
+      g_mutex_lock (&control->mutex);
+
+      if (control->active)
 	{
-	  progress (1.0);
+	  control->progress (1.0);
 	}
-    }
-  else
-    {
-      g_byte_array_set_size (sample, 0);
-    }
-  if (mutex)
-    {
-      g_mutex_unlock (mutex);
+      else
+	{
+	  g_byte_array_set_size (sample, 0);
+	}
+
+      g_mutex_unlock (&control->mutex);
     }
 
 cleanup:

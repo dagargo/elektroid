@@ -316,7 +316,7 @@ cli_upload_sample (int argc, char *argv[], int optind)
   path_dst = chain_path (device_dir_dst, name);
 
   sample = g_byte_array_new ();
-  if (sample_load (sample, NULL, NULL, path_src, NULL, NULL))
+  if (sample_load (sample, path_src, NULL, NULL))
     {
       res = EXIT_FAILURE;
       goto cleanup;

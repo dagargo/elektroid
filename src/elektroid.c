@@ -1224,8 +1224,7 @@ elektroid_load_sample (gpointer path)
   audio.control.active = TRUE;
   g_mutex_unlock (&audio.control.mutex);
 
-  sample_load (audio.sample, &audio.control.mutex, &audio.frames, path,
-	       &audio.control.active, audio.control.progress);
+  sample_load (audio.sample, path, &audio.control, &audio.frames);
 
   g_mutex_lock (&audio.control.mutex);
   audio.control.active = FALSE;
@@ -1899,8 +1898,7 @@ elektroid_upload_task (gpointer data)
   load_res = -1;
   if (transfer.fs_ops->fs == FS_SAMPLES)
     {
-      load_res = sample_load (array, &transfer.control.mutex, NULL,
-			      transfer.src, &transfer.control.active, NULL);
+      load_res = sample_load (array, transfer.src, &transfer.control, NULL);
     }
   else if (transfer.fs_ops->fs == FS_DATA)
     {
