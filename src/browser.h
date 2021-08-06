@@ -57,7 +57,7 @@ struct browser
   void (*notify_dir_change) (struct browser *);
   const gchar *file_icon;
   const gchar **extensions;
-  const struct fs_operations *fs_operations;
+  const struct fs_operations *fs_ops;
   void *data;
 };
 

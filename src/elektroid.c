@@ -97,7 +97,7 @@ struct elektroid_transfer
   gchar *src;			//Contains a path to a file
   gchar *dst;			//Contains a path to a dir
   enum elektroid_task_status status;	//Contains the final status
-  const struct fs_operations *fs_operations;	//Contains the fs_operations to use
+  const struct fs_operations *fs_ops;	//Contains the fs_operations to use in this transfer
 };
 
 struct elektroid_sysex_transfer
@@ -884,7 +884,7 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path,
   id_path = browser_get_item_id_path (browser, item);
 
   debug_print (1, "Deleting %s...\n", id_path);
-  err = browser->fs_operations->delete (id_path, browser->data);
+  err = browser->fs_ops->delete (id_path, browser->data);
   if (err < 0)
     {
       show_error_msg (_("Error while deleting “%s”: %s."),
@@ -988,7 +988,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	  new_path =
 	    chain_path (browser->dir, gtk_entry_get_text (name_dialog_entry));
 
-	  err = browser->fs_operations->move (old_path, new_path, &connector);
+	  err = browser->fs_ops->move (old_path, new_path, &connector);
 
 	  if (err < 0)
 	    {
@@ -1289,9 +1289,9 @@ static gboolean
 elektroid_remote_check_selection (gpointer data)
 {
   gint count = browser_get_selected_items_count (&remote_browser);
-  gboolean dl_impl = remote_browser.fs_operations->download ? TRUE : FALSE;
-  gboolean move_impl = remote_browser.fs_operations->move ? TRUE : FALSE;
-  gboolean del_impl = remote_browser.fs_operations->delete ? TRUE : FALSE;
+  gboolean dl_impl = remote_browser.fs_ops->download ? TRUE : FALSE;
+  gboolean move_impl = remote_browser.fs_ops->move ? TRUE : FALSE;
+  gboolean del_impl = remote_browser.fs_ops->delete ? TRUE : FALSE;
 
   gtk_widget_set_sensitive (download_menuitem, count > 0 && dl_impl);
   gtk_widget_set_sensitive (remote_rename_menuitem, count == 1 && move_impl);
@@ -1309,8 +1309,8 @@ elektroid_local_check_selection (gpointer data)
   struct item *item;
   gint count = browser_get_selected_items_count (&local_browser);
 
-  if (remote_browser.fs_operations->fs == FS_SAMPLES
-      || remote_browser.fs_operations->fs == FS_NONE)
+  if (remote_browser.fs_ops->fs == FS_SAMPLES
+      || remote_browser.fs_ops->fs == FS_NONE)
     {
       audio_stop (&audio, TRUE);
       elektroid_stop_load_thread ();
@@ -1342,7 +1342,7 @@ elektroid_local_check_selection (gpointer data)
   gtk_widget_set_sensitive (local_rename_menuitem, count == 1);
   gtk_widget_set_sensitive (local_delete_menuitem, count > 0);
   gtk_widget_set_sensitive (upload_menuitem, count > 0
-			    && remote_browser.fs_operations->upload);
+			    && remote_browser.fs_ops->upload);
 
   return FALSE;
 }
@@ -1550,7 +1550,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 	  pathname =
 	    chain_path (browser->dir, gtk_entry_get_text (name_dialog_entry));
 
-	  err = browser->fs_operations->mkdir (pathname, &connector);
+	  err = browser->fs_ops->mkdir (pathname, &connector);
 
 	  if (err < 0)
 	    {
@@ -1846,7 +1846,7 @@ elektroid_run_next_task (gpointer data)
       transfer.control.progress = elektroid_update_progress;
       transfer.src = src;
       transfer.dst = dst;
-      transfer.fs_operations = connector_get_fs_operations (fs);
+      transfer.fs_ops = connector_get_fs_operations (fs);
       debug_print (1, "Running task type %d from %s to %s (%s)...\n", type,
 		   transfer.src, transfer.dst, elektroid_get_fs_name (fs));
 
@@ -1886,7 +1886,7 @@ elektroid_upload_task (gpointer data)
 
   array = g_byte_array_new ();
 
-  if (!transfer.fs_operations->upload)
+  if (!transfer.fs_ops->upload)
     {
       transfer.status = COMPLETED_ERROR;
       debug_print (1, "Function upload not implemented\n");
@@ -1897,12 +1897,12 @@ elektroid_upload_task (gpointer data)
   debug_print (1, "Remote path: %s\n", transfer.dst);
 
   load_res = -1;
-  if (transfer.fs_operations->fs == FS_SAMPLES)
+  if (transfer.fs_ops->fs == FS_SAMPLES)
     {
       load_res = sample_load (array, &transfer.control.mutex, NULL,
 			      transfer.src, &transfer.control.active, NULL);
     }
-  else if (transfer.fs_operations->fs == FS_DATA)
+  else if (transfer.fs_ops->fs == FS_DATA)
     {
       load_res = load_file (array, transfer.src);
     }
@@ -1913,9 +1913,8 @@ elektroid_upload_task (gpointer data)
       goto end;
     }
 
-  frames = transfer.fs_operations->upload (array, transfer.dst,
-					   &transfer.control,
-					   remote_browser.data);
+  frames = transfer.fs_ops->upload (array, transfer.dst,
+				    &transfer.control, remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
   if (frames < 0 && transfer.control.active)
@@ -1991,8 +1990,7 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
   gchar *src_abs_path = chain_path (src_dir, rel_path);
 
-  iter =
-    local_browser.fs_operations->readdir (src_abs_path, local_browser.data);
+  iter = local_browser.fs_ops->readdir (src_abs_path, local_browser.data);
   if (!iter)
     {
       dst_abs_dir = dirname (dst_abs_path);
@@ -2000,21 +1998,21 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
       name = basename (namec);
       remove_ext (name);
       dst_abs_path_id =
-	connector_get_remote_name (&connector, remote_browser.fs_operations,
+	connector_get_remote_name (&connector, remote_browser.fs_ops,
 				   dst_abs_dir, name);
       elektroid_add_task (UPLOAD, src_abs_path, dst_abs_path_id,
-			  remote_browser.fs_operations->fs);
+			  remote_browser.fs_ops->fs);
       g_free (namec);
       goto cleanup_not_dir;
     }
 
-  if (!remote_browser.fs_operations->mkdir)
+  if (!remote_browser.fs_ops->mkdir)
     {
       debug_print (1, "Creating directories is not implemented\n");
       goto cleanup;
     }
 
-  if (remote_browser.fs_operations->mkdir (dst_abs_path, remote_browser.data))
+  if (remote_browser.fs_ops->mkdir (dst_abs_path, remote_browser.data))
     {
       error_print ("Error while creating remote %s dir\n", dst_abs_path);
       goto cleanup;
@@ -2086,14 +2084,14 @@ elektroid_save_download_data (GByteArray * data)
 
   debug_print (1, "Writing %d bytes to file %s (filesystem %s)...\n",
 	       data->len, transfer.dst,
-	       elektroid_get_fs_name (transfer.fs_operations->fs));
+	       elektroid_get_fs_name (transfer.fs_ops->fs));
 
-  if (transfer.fs_operations->fs == FS_SAMPLES)
+  if (transfer.fs_ops->fs == FS_SAMPLES)
     {
       bytes = sample_save (data, transfer.dst);
       debug_print (1, "%zu frames written\n", bytes >> 1);
     }
-  else if (transfer.fs_operations->fs == FS_DATA)
+  else if (transfer.fs_ops->fs == FS_DATA)
     {
       file = fopen (transfer.dst, "w");
       bytes = fwrite (data->data, 1, data->len, file);
@@ -2116,7 +2114,7 @@ elektroid_download_task (gpointer userdata)
 {
   GByteArray *data;
 
-  if (!transfer.fs_operations->download)
+  if (!transfer.fs_ops->download)
     {
       transfer.status = COMPLETED_ERROR;
       debug_print (1, "Function download not implemented\n");
@@ -2127,8 +2125,8 @@ elektroid_download_task (gpointer userdata)
   debug_print (1, "Local path: %s\n", transfer.dst);
 
   data =
-    transfer.fs_operations->download (transfer.src,
-				      &transfer.control, remote_browser.data);
+    transfer.fs_ops->download (transfer.src,
+			       &transfer.control, remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
   if (data == NULL && transfer.control.active)
@@ -2166,24 +2164,23 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  iter =
-    remote_browser.fs_operations->readdir (src_abs_path, remote_browser.data);
+  iter = remote_browser.fs_ops->readdir (src_abs_path, remote_browser.data);
   if (!iter)
     {
       dst_abs_dirc = strdup (dst_abs_path);
       dst_abs_dir = dirname (dst_abs_dirc);
       dst_abs_path_ext =
 	connector_get_local_dst_path (&connector,
-				      remote_browser.fs_operations,
+				      remote_browser.fs_ops,
 				      src_abs_path, dst_abs_dir);
       elektroid_add_task (DOWNLOAD, src_abs_path, dst_abs_path_ext,
-			  remote_browser.fs_operations->fs);
+			  remote_browser.fs_ops->fs);
       g_free (dst_abs_dirc);
       g_free (dst_abs_path_ext);
       goto cleanup_not_dir;
     }
 
-  if (local_browser.fs_operations->mkdir (dst_abs_path, NULL))
+  if (local_browser.fs_ops->mkdir (dst_abs_path, NULL))
     {
       error_print ("Error while creating local %s dir\n", dst_abs_path);
       goto cleanup;
@@ -2191,7 +2188,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
 
   while (!next_item_iterator (iter))
     {
-      id = remote_browser.fs_operations->getid (&iter->item);
+      id = remote_browser.fs_ops->getid (&iter->item);
       path = chain_path (rel_path, id);
       elektroid_add_download_task_path (path, src_dir, dst_dir);
       g_free (path);
@@ -2211,7 +2208,7 @@ elektroid_add_download_task (GtkTreeModel * model,
 			     GtkTreeIter * iter, gpointer data)
 {
   struct item *item = browser_get_item (model, iter);
-  char *id = remote_browser.fs_operations->getid (item);
+  char *id = remote_browser.fs_ops->getid (item);
 
   elektroid_add_download_task_path (id, remote_browser.dir,
 				    local_browser.dir);
@@ -2295,7 +2292,7 @@ elektroid_common_key_press (GtkWidget * widget, GdkEventKey * event,
   else if (event->keyval == GDK_KEY_F2)
     {
       count = browser_get_selected_items_count (browser);
-      if (count == 1 && browser->fs_operations->rename)
+      if (count == 1 && browser->fs_ops->rename)
 	{
 	  elektroid_rename_item (NULL, browser);
 	}
@@ -2304,7 +2301,7 @@ elektroid_common_key_press (GtkWidget * widget, GdkEventKey * event,
   else if (event->keyval == GDK_KEY_Delete)
     {
       if (browser_get_selected_items_count (browser) > 0
-	  && browser->fs_operations->delete)
+	  && browser->fs_ops->delete)
 	{
 	  elektroid_delete_files (NULL, browser);
 	}
@@ -2343,7 +2340,7 @@ elektroid_remote_key_press (GtkWidget * widget, GdkEventKey * event,
     {
       if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_Left)
 	{
-	  if (remote_browser.fs_operations->download)
+	  if (remote_browser.fs_ops->download)
 	    {
 	      elektroid_add_download_tasks (NULL, NULL);
 	    }
@@ -2366,7 +2363,7 @@ elektroid_local_key_press (GtkWidget * widget, GdkEventKey * event,
     {
       if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_Right)
 	{
-	  if (remote_browser.fs_operations->upload)
+	  if (remote_browser.fs_ops->upload)
 	    {
 	      elektroid_add_upload_tasks (NULL, NULL);
 	    }
@@ -2395,7 +2392,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 				&iter, FS_LIST_STORE_ID_FIELD, &fsv);
       fs = g_value_get_uint (&fsv);
 
-      remote_browser.fs_operations = connector_get_fs_operations (fs);
+      remote_browser.fs_ops = connector_get_fs_operations (fs);
       strcpy (remote_browser.dir, "/");
       browser_load_dir (&remote_browser);
 
@@ -2405,18 +2402,16 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       browser_load_dir (&local_browser);
 
       gtk_widget_set_sensitive (remote_browser.up_button,
-				remote_browser.fs_operations->readdir !=
-				NULL);
+				remote_browser.fs_ops->readdir != NULL);
       gtk_widget_set_sensitive (remote_browser.refresh_button,
-				remote_browser.fs_operations->readdir !=
-				NULL);
+				remote_browser.fs_ops->readdir != NULL);
 
       gtk_widget_set_visible (remote_add_dir_menuitem,
-			      remote_browser.fs_operations->mkdir != NULL);
+			      remote_browser.fs_ops->mkdir != NULL);
       gtk_widget_set_visible (remote_rename_menuitem,
-			      remote_browser.fs_operations->rename != NULL);
+			      remote_browser.fs_ops->rename != NULL);
       gtk_widget_set_visible (remote_delete_menuitem,
-			      remote_browser.fs_operations->delete != NULL);
+			      remote_browser.fs_ops->delete != NULL);
       gtk_widget_set_visible (local_audio_box, fs == FS_SAMPLES);
       gtk_tree_view_column_set_visible (remote_tree_view_index_column,
 					fs == FS_DATA);
@@ -2553,8 +2548,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 	      if (strcmp (dir, local_browser.dir))
 		{
 		  dst_path = chain_path (local_browser.dir, name);
-		  res = local_browser.fs_operations->move (filename,
-							   dst_path, NULL);
+		  res = local_browser.fs_ops->move (filename, dst_path, NULL);
 		  if (res)
 		    {
 		      show_error_msg (_(MSG_ERROR_MOVING), filename,
@@ -2579,12 +2573,12 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 	      if (strcmp (dir, remote_browser.dir))
 		{
 		  dst_path = connector_get_remote_name (&connector,
-							remote_browser.fs_operations,
+							remote_browser.fs_ops,
 							remote_browser.dir,
 							name);
 		  res =
-		    remote_browser.fs_operations->move (filename, dst_path,
-							remote_browser.data);
+		    remote_browser.fs_ops->move (filename, dst_path,
+						 remote_browser.data);
 		  if (res)
 		    {
 		      show_error_msg (_(MSG_ERROR_MOVING), filename,
@@ -3028,7 +3022,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .dir = malloc (PATH_MAX),
     .check_selection = elektroid_remote_check_selection,
     .file_icon = NULL,
-    .fs_operations = connector_get_fs_operations (-1),
+    .fs_ops = connector_get_fs_operations (-1),
     .data = &connector,
     .notify_dir_change = NULL
   };
@@ -3094,7 +3088,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .check_selection = elektroid_local_check_selection,
     .file_icon = elektroid_get_inventory_icon_for_fs (FS_SAMPLES),
     .extensions = elektroid_get_file_extensions_for_fs (FS_SAMPLES),
-    .fs_operations = &FS_LOCAL_OPERATIONS,
+    .fs_ops = &FS_LOCAL_OPERATIONS,
     .data = NULL,
     .notify_dir_change = elektroid_notify_local_dir_change
   };

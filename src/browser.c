@@ -196,7 +196,7 @@ browser_get_item_path (struct browser *browser, struct item *item)
 gchar *
 browser_get_item_id_path (struct browser *browser, struct item *item)
 {
-  gchar *id = browser->fs_operations->getid (item);
+  gchar *id = browser->fs_ops->getid (item);
   gchar *path = chain_path (browser->dir, id);
   debug_print (1, "Using %s path for item %s (%d)...\n", path, item->name,
 	       item->index);
@@ -281,7 +281,7 @@ browser_load_dir (gpointer data)
 
   browser_reset (browser);
 
-  iter = browser->fs_operations->readdir (browser->dir, browser->data);
+  iter = browser->fs_ops->readdir (browser->dir, browser->data);
   if (!iter)
     {
       error_print ("Error while opening %s dir\n", browser->dir);
