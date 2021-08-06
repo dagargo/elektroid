@@ -25,7 +25,8 @@
 #include "sample.h"
 
 gint
-sample_save (GByteArray * sample, const gchar * path)
+sample_save (GByteArray * sample, const gchar * path,
+	     struct transfer_control *control)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -79,8 +80,8 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
 }
 
 gint
-sample_load (GByteArray * sample, const gchar * path,
-	     struct transfer_control *control, guint * frames)
+sample_load_with_frames (GByteArray * sample, const gchar * path,
+			 struct transfer_control *control, guint * frames)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -94,7 +95,7 @@ sample_load (GByteArray * sample, const gchar * path,
   gint err;
   gint resampled_buffer_len;
   gint f, frames_read;
-  gboolean load_active;
+  gboolean active;
 
   debug_print (1, "Loading file %s...\n", path);
 
@@ -151,15 +152,18 @@ sample_load (GByteArray * sample, const gchar * path,
   debug_print (2, "Loading sample (%" PRId64 ")...\n", sf_info.frames);
 
   f = 0;
-  load_active = TRUE;
   if (control)
     {
       g_mutex_lock (&control->mutex);
-      load_active = control->active;
+      active = control->active;
       g_mutex_unlock (&control->mutex);
     }
+  else
+    {
+      active = TRUE;
+    }
 
-  while (f < sf_info.frames && load_active)
+  while (f < sf_info.frames && active)
     {
       debug_print (2, "Loading buffer...\n");
 
@@ -228,9 +232,9 @@ sample_load (GByteArray * sample, const gchar * path,
 
       if (control)
 	{
-	  control->progress (f * 1.0 / sf_info.frames);
+	  control->callback (f * 1.0 / sf_info.frames);
 	  g_mutex_lock (&control->mutex);
-	  load_active = control->active;
+	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
 	}
     }
@@ -249,7 +253,7 @@ sample_load (GByteArray * sample, const gchar * path,
 
       if (control->active)
 	{
-	  control->progress (1.0);
+	  control->callback (1.0);
 	}
       else
 	{
@@ -269,4 +273,11 @@ cleanup:
   sf_close (sndfile);
 
   return sample->len > 0 ? 0 : -1;
+}
+
+gint
+sample_load (GByteArray * array, const gchar * path,
+	     struct transfer_control *control)
+{
+  return sample_load_with_frames (array, path, NULL, NULL);
 }

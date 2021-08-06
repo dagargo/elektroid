@@ -20,7 +20,6 @@
 
 #include "../config.h"
 #include "audio.h"
-#include "utils.h"
 
 #define PA_BUFFER_LEN 4800
 #define CHANNELS 1
@@ -168,7 +167,7 @@ audio_set_sink_volume (pa_context * context, const pa_sink_input_info * info,
   if (info && pa_cvolume_valid (&info->volume))
     {
       gdouble v = pa_sw_volume_to_linear (pa_cvolume_avg (&info->volume));
-      audio->set_volume_gui_callback (v);
+      audio->volume_change_callback (v);
     }
 }
 
@@ -247,7 +246,7 @@ audio_context_callback (pa_context * context, void *data)
 }
 
 gint
-audio_init (struct audio *audio, void (*set_volume_gui_callback) (gdouble),
+audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
 	    void (*load_progress_callback) (gdouble))
 {
   pa_mainloop_api *api;
@@ -263,8 +262,8 @@ audio_init (struct audio *audio, void (*set_volume_gui_callback) (gdouble),
   audio->context = pa_context_new (api, PACKAGE);
   audio->stream = NULL;
   audio->index = PA_INVALID_INDEX;
-  audio->set_volume_gui_callback = set_volume_gui_callback;
-  audio->control.progress = load_progress_callback;
+  audio->volume_change_callback = volume_change_callback;
+  audio->control.callback = load_progress_callback;
 
   if (pa_context_connect (audio->context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
     {

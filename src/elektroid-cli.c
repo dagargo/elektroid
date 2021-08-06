@@ -59,6 +59,11 @@ print_datum (struct item_iterator *iter)
 	  data->has_metadata, iter->item.size / MIB_FLOAT, iter->item.name);
 }
 
+static void
+null_control_callback (gdouble foo)
+{
+}
+
 static const gchar *
 cli_get_path (gchar * device_path)
 {
@@ -225,117 +230,6 @@ cli_command_src_dst (int argc, char *argv[], int optind, fs_src_dst_func f)
 }
 
 static int
-cli_download_sample (int argc, char *argv[], int optind)
-{
-  const gchar *path_src;
-  gchar *device_path, *local_path;
-  gint res;
-  GByteArray *data;
-
-  if (optind == argc)
-    {
-      error_print ("Remote path missing\n");
-      return EXIT_FAILURE;
-    }
-  else
-    {
-      device_path = argv[optind];
-    }
-
-  res = cli_connect (device_path);
-
-  if (res < 0)
-    {
-      return EXIT_FAILURE;
-    }
-
-  path_src = cli_get_path (device_path);
-
-  control.active = TRUE;
-  control.progress = NULL;
-  data = fs_ops_samples->download (path_src, &control, &connector);
-
-  if (data == NULL)
-    {
-      return EXIT_FAILURE;
-    }
-
-  local_path =
-    connector_get_local_dst_path (&connector, fs_ops_samples, path_src, ".");
-
-  res = sample_save (data, local_path);
-
-  free (local_path);
-  g_byte_array_free (data, TRUE);
-
-  return res;
-}
-
-static int
-cli_upload_sample (int argc, char *argv[], int optind)
-{
-  const gchar *device_dir_dst;
-  gchar *path_src, *device_path_dst, *path_dst;
-  gint res;
-  ssize_t bytes;
-  gchar *namec, *name;
-  GByteArray *sample;
-
-  if (optind == argc)
-    {
-      error_print ("Local path missing\n");
-      return EXIT_FAILURE;
-    }
-  else
-    {
-      path_src = argv[optind];
-      optind++;
-    }
-
-  if (optind == argc)
-    {
-      error_print ("Remote path missing\n");
-      return EXIT_FAILURE;
-    }
-  else
-    {
-      device_path_dst = argv[optind];
-    }
-
-  res = cli_connect (device_path_dst);
-
-  if (res < 0)
-    {
-      return EXIT_FAILURE;
-    }
-
-  namec = strdup (path_src);
-  name = basename (namec);
-  remove_ext (name);
-  device_dir_dst = cli_get_path (device_path_dst);
-  path_dst = chain_path (device_dir_dst, name);
-
-  sample = g_byte_array_new ();
-  if (sample_load (sample, path_src, NULL, NULL))
-    {
-      res = EXIT_FAILURE;
-      goto cleanup;
-    }
-
-  control.active = TRUE;
-  control.progress = NULL;
-  bytes = fs_ops_samples->upload (sample, path_dst, &control, &connector);
-
-  res = bytes < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
-
-cleanup:
-  free (namec);
-  free (path_dst);
-  g_byte_array_free (sample, TRUE);
-  return res;
-}
-
-static int
 cli_info (int argc, char *argv[], int optind)
 {
   gchar *device_path;
@@ -407,12 +301,13 @@ cli_df (int argc, char *argv[], int optind)
 }
 
 static int
-cli_download_data (int argc, char *argv[], int optind)
+cli_download (int argc, char *argv[], int optind,
+	      const struct fs_operations *fs_ops)
 {
   const gchar *path;
   gchar *device_path, *local_path;
   gint res;
-  GByteArray *data;
+  GByteArray *datum;
 
   if (optind == argc)
     {
@@ -434,31 +329,34 @@ cli_download_data (int argc, char *argv[], int optind)
   path = cli_get_path (device_path);
 
   control.active = TRUE;
-  control.progress = NULL;
-  data = fs_ops_data->download (path, &control, &connector);
+  control.callback = null_control_callback;
+  datum = fs_ops->download (path, &control, &connector);
 
-  if (data == NULL)
+  if (datum == NULL)
     {
       return EXIT_FAILURE;
     }
 
-  local_path =
-    connector_get_local_dst_path (&connector, fs_ops_data, path, ".");
+  local_path = connector_get_local_dst_path (&connector, fs_ops, path, ".");
   if (!local_path)
     {
       return EXIT_FAILURE;
     }
 
-  res = sample_save (data, local_path);
+  if (fs_ops->save (datum, local_path, NULL))
+    {
+      res = EXIT_FAILURE;
+    }
 
   free (local_path);
-  g_byte_array_free (data, TRUE);
+  g_byte_array_free (datum, TRUE);
 
   return res;
 }
 
 static int
-cli_upload_data (int argc, char *argv[], int optind)
+cli_upload (int argc, char *argv[], int optind,
+	    const struct fs_operations *fs_ops)
 {
   const gchar *device_dir_dst;
   gchar *path_src, *device_path_dst, *path_dst;
@@ -496,19 +394,19 @@ cli_upload_data (int argc, char *argv[], int optind)
 
   device_dir_dst = cli_get_path (device_path_dst);
   path_dst =
-    connector_get_remote_name (&connector, fs_ops_data, device_dir_dst, NULL);
+    connector_get_remote_name (&connector, fs_ops, device_dir_dst, path_src);
 
   datum = g_byte_array_new ();
 
-  if (load_file (datum, path_src) < 0)
+  if (fs_ops->load (datum, path_src, NULL))
     {
       res = EXIT_FAILURE;
       goto cleanup;
     }
 
   control.active = TRUE;
-  control.progress = NULL;
-  bytes = fs_ops_data->upload (datum, path_dst, &control, &connector);
+  control.callback = null_control_callback;
+  bytes = fs_ops->upload (datum, path_dst, &control, &connector);
 
   res = bytes < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 
@@ -627,12 +525,12 @@ main (int argc, char *argv[])
   else if (strcmp (command, "download") == 0
 	   || strcmp (command, "download-sample") == 0)
     {
-      res = cli_download_sample (argc, argv, optind);
+      res = cli_download (argc, argv, optind, fs_ops_samples);
     }
   else if (strcmp (command, "upload") == 0
 	   || strcmp (command, "upload-sample") == 0)
     {
-      res = cli_upload_sample (argc, argv, optind);
+      res = cli_upload (argc, argv, optind, fs_ops_samples);
     }
   else if (strcmp (command, "info") == 0
 	   || strcmp (command, "info-device") == 0)
@@ -666,11 +564,11 @@ main (int argc, char *argv[])
     }
   else if (strcmp (command, "download-data") == 0)
     {
-      res = cli_download_data (argc, argv, optind);
+      res = cli_download (argc, argv, optind, fs_ops_data);
     }
   else if (strcmp (command, "upload-data") == 0)
     {
-      res = cli_upload_data (argc, argv, optind);
+      res = cli_upload (argc, argv, optind, fs_ops_data);
     }
   else
     {

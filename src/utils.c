@@ -243,7 +243,8 @@ free_item_iterator (struct item_iterator *iter)
 }
 
 gint
-load_file (GByteArray * array, const char *path)
+load_file (GByteArray * array, const char *path,
+	   struct transfer_control *control)
 {
   FILE *file;
   long size;
@@ -276,7 +277,7 @@ load_file (GByteArray * array, const char *path)
     }
   else
     {
-      error_print ("Error while reading file %s\n", path);
+      error_print ("Error while reading from file %s\n", path);
       res = -1;
     }
 
@@ -286,7 +287,8 @@ end:
 }
 
 gint
-save_file (GByteArray * array, const char *path)
+save_file (GByteArray * array, const char *path,
+	   struct transfer_control *control)
 {
   gint res;
   long bytes;

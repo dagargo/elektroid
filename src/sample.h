@@ -23,9 +23,16 @@
 #include <sys/stat.h>
 #include "utils.h"
 
+#ifndef SAMPLE_H
+#define SAMPLE_H
+
 #define LOAD_BUFFER_LEN 4800	// In guint16 frames; 9600 B; 0.1 ms
 
-gint sample_save (GByteArray *, const gchar *);
+gint sample_save (GByteArray *, const gchar *, struct transfer_control *);
 
-gint sample_load (GByteArray *, const gchar *, struct transfer_control *,
-		  guint *);
+gint sample_load (GByteArray *, const gchar *, struct transfer_control *);
+
+gint sample_load_with_frames (GByteArray *, const gchar *,
+			      struct transfer_control *, guint *);
+
+#endif

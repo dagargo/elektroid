@@ -58,11 +58,13 @@ struct item_iterator
   struct item item;
 };
 
+typedef void (*control_callback) (gdouble);
+
 struct transfer_control
 {
   gboolean active;
   GMutex mutex;
-  void (*progress) (gdouble);
+  control_callback callback;
 };
 
 typedef struct item_iterator *(*fs_read_dir_func) (const gchar *, void *);
@@ -80,6 +82,9 @@ typedef ssize_t (*fs_upload_func) (GByteArray *,
 
 typedef gchar *(*fs_get_item_id) (struct item *);
 
+typedef gint (*fs_local_file_op) (GByteArray *, const gchar *,
+				  struct transfer_control *);
+
 struct fs_operations
 {
   gint fs;
@@ -94,6 +99,8 @@ struct fs_operations
   fs_download_func download;
   fs_upload_func upload;
   fs_get_item_id getid;
+  fs_local_file_op save;
+  fs_local_file_op load;
   const gchar *download_ext;
 };
 
@@ -123,8 +130,8 @@ guint next_item_iterator (struct item_iterator *);
 
 void free_item_iterator (struct item_iterator *);
 
-gint load_file (GByteArray *, const char *);
+gint load_file (GByteArray *, const char *, struct transfer_control *);
 
-gint save_file (GByteArray *, const gchar *);
+gint save_file (GByteArray *, const char *, struct transfer_control *);
 
 #endif

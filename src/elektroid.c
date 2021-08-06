@@ -95,7 +95,7 @@ struct elektroid_transfer
 {
   struct transfer_control control;
   gchar *src;			//Contains a path to a file
-  gchar *dst;			//Contains a path to a dir
+  gchar *dst;			//Contains a path to a file
   enum elektroid_task_status status;	//Contains the final status
   const struct fs_operations *fs_ops;	//Contains the fs_operations to use in this transfer
 };
@@ -676,7 +676,7 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   if (filename != NULL)
     {
       debug_print (1, "Saving SysEx file...\n");
-      if (save_file (array, filename))
+      if (save_file (array, filename, NULL))
 	{
 	  show_error_msg (_("Error while saving “%s”: %s."),
 			  filename, g_strerror (errno));
@@ -755,9 +755,9 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
       gtk_widget_destroy (dialog);
       debug_print (1, "Opening SysEx file...\n");
 
-
       sysex_transfer.data = g_byte_array_new ();
-      if (load_file (sysex_transfer.data, filename))
+
+      if (load_file (sysex_transfer.data, filename, NULL))
 	{
 	  show_error_msg (_("Error while loading “%s”: %s."),
 			  filename, g_strerror (errno));
@@ -1226,7 +1226,7 @@ elektroid_load_sample (gpointer path)
   audio.control.active = TRUE;
   g_mutex_unlock (&audio.control.mutex);
 
-  sample_load (audio.sample, path, &audio.control, &audio.frames);
+  sample_load_with_frames (audio.sample, path, &audio.control, &audio.frames);
 
   g_mutex_lock (&audio.control.mutex);
   audio.control.active = FALSE;
@@ -1844,7 +1844,7 @@ elektroid_run_next_task (gpointer data)
 				FALSE);
       gtk_tree_path_free (path);
       transfer.control.active = TRUE;
-      transfer.control.progress = elektroid_update_progress;
+      transfer.control.callback = elektroid_update_progress;
       transfer.src = src;
       transfer.dst = dst;
       transfer.fs_ops = connector_get_fs_operations (fs);
@@ -1881,11 +1881,8 @@ elektroid_upload_task (gpointer data)
 {
   gchar *dst_path;
   gchar *dst_dir;
-  ssize_t frames;
+  gint res;
   GByteArray *array;
-  gint load_res;
-
-  array = g_byte_array_new ();
 
   if (!transfer.fs_ops->upload)
     {
@@ -1897,27 +1894,24 @@ elektroid_upload_task (gpointer data)
   debug_print (1, "Local path: %s\n", transfer.src);
   debug_print (1, "Remote path: %s\n", transfer.dst);
 
-  load_res = -1;
-  if (transfer.fs_ops->fs == FS_SAMPLES)
-    {
-      load_res = sample_load (array, transfer.src, &transfer.control, NULL);
-    }
-  else if (transfer.fs_ops->fs == FS_DATA)
-    {
-      load_res = load_file (array, transfer.src);
-    }
+  array = g_byte_array_new ();
 
-  if (load_res)
+  res = transfer.fs_ops->load (array, transfer.src, &transfer.control);
+  if (res)
     {
+      error_print ("Error while loading file\n");
       transfer.status = COMPLETED_ERROR;
-      goto end;
+      goto end_cleanup;
     }
 
-  frames = transfer.fs_ops->upload (array, transfer.dst,
-				    &transfer.control, remote_browser.data);
+  debug_print (1, "Writing from file %s (filesystem %s)...\n", transfer.src,
+	       elektroid_get_fs_name (transfer.fs_ops->fs));
+
+  res = transfer.fs_ops->upload (array, transfer.dst,
+				 &transfer.control, remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
-  if (frames < 0 && transfer.control.active)
+  if (res < 0 && transfer.control.active)
     {
       error_print ("Error while uploading\n");
       transfer.status = COMPLETED_ERROR;
@@ -1936,7 +1930,7 @@ elektroid_upload_task (gpointer data)
       g_mutex_unlock (&transfer.control.mutex);
     }
 
-  if (frames > 0)
+  if (res >= 0 && transfer.fs_ops == remote_browser.fs_ops)	//There is no need to refresh the local browser
     {
       dst_path = strdup (transfer.dst);
       dst_dir = dirname (dst_path);
@@ -1947,8 +1941,9 @@ elektroid_upload_task (gpointer data)
       g_free (dst_path);
     }
 
-end:
+end_cleanup:
   g_byte_array_free (array, TRUE);
+end:
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
 
@@ -1984,7 +1979,6 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
 {
   struct item_iterator *iter;
   gchar *path;
-  gchar *namec, *name;
   gchar *dst_abs_dir;
   gchar *dst_abs_path_id;
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
@@ -1994,15 +1988,11 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
   if (!iter)
     {
       dst_abs_dir = dirname (dst_abs_path);
-      namec = strdup (src_abs_path);
-      name = basename (namec);
-      remove_ext (name);
       dst_abs_path_id =
 	connector_get_remote_name (&connector, remote_browser.fs_ops,
-				   dst_abs_dir, name);
+				   dst_abs_dir, src_abs_path);
       elektroid_add_task (UPLOAD, src_abs_path, dst_abs_path_id,
 			  remote_browser.fs_ops->fs);
-      g_free (namec);
       goto cleanup_not_dir;
     }
 
@@ -2076,39 +2066,10 @@ elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
     }
 }
 
-static void
-elektroid_save_download_data (GByteArray * data)
-{
-  ssize_t bytes = -1;
-
-  debug_print (1, "Writing %d bytes to file %s (filesystem %s)...\n",
-	       data->len, transfer.dst,
-	       elektroid_get_fs_name (transfer.fs_ops->fs));
-
-  if (transfer.fs_ops->fs == FS_SAMPLES)
-    {
-      bytes = sample_save (data, transfer.dst);
-      debug_print (1, "%zu frames written\n", bytes >> 1);
-      if (bytes >= 0)
-	{
-	  transfer.status = COMPLETED_OK;
-	}
-    }
-  else if (transfer.fs_ops->fs == FS_DATA)
-    {
-      save_file (data, transfer.dst);
-      transfer.status = COMPLETED_OK;
-    }
-  else
-    {
-      debug_print (1, "Function write not implemented\n");
-    }
-
-}
-
 static gpointer
 elektroid_download_task (gpointer userdata)
 {
+  gint res;
   GByteArray *data;
 
   if (!transfer.fs_ops->download)
@@ -2136,7 +2097,15 @@ elektroid_download_task (gpointer userdata)
       g_mutex_lock (&transfer.control.mutex);
       if (transfer.control.active)
 	{
-	  elektroid_save_download_data (data);
+	  debug_print (1, "Writing %d bytes to file %s (filesystem %s)...\n",
+		       data->len, transfer.dst,
+		       elektroid_get_fs_name (transfer.fs_ops->fs));
+
+	  res = transfer.fs_ops->save (data, transfer.dst, &transfer.control);
+	  if (res >= 0)
+	    {
+	      transfer.status = COMPLETED_OK;
+	    }
 	}
       else
 	{

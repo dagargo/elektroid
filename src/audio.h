@@ -34,7 +34,7 @@ struct audio
   gint pos;
   pa_cvolume volume;
   uint32_t index;
-  void (*set_volume_gui_callback) (gdouble);
+  void (*volume_change_callback) (gdouble);
   gint release_frames;
   struct transfer_control control;
 };

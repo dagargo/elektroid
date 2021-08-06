@@ -26,6 +26,7 @@
 #include <libgen.h>
 #include "connector.h"
 #include "utils.h"
+#include "sample.h"
 
 #define KB 1024
 #define BUFF_SIZE (4 * KB)
@@ -181,6 +182,8 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .download = connector_download_sample,
   .upload = connector_upload_sample,
   .getid = get_item_name,
+  .load = sample_load,
+  .save = sample_save,
   .download_ext = "wav"
 };
 
@@ -197,6 +200,8 @@ static const struct fs_operations FS_DATA_OPERATIONS = {
   .download = connector_download_datum,
   .upload = connector_upload_datum,
   .getid = get_item_index,
+  .load = load_file,
+  .save = save_file,
   .download_ext = "data"
 };
 
@@ -1381,16 +1386,19 @@ connector_upload_sample (GByteArray * sample,
   data16 = (gshort *) sample->data;
   transferred = 0;
   i = 0;
-  g_mutex_lock (&control->mutex);
-  active = (!control || control->active);
-  g_mutex_unlock (&control->mutex);
+  if (control)
+    {
+      g_mutex_lock (&control->mutex);
+      active = (!control || control->active);
+      g_mutex_unlock (&control->mutex);
+    }
+  else
+    {
+      active = TRUE;
+    }
+
   while (transferred < sample->len && active)
     {
-      if (control->progress)
-	{
-	  control->progress (transferred / (double) sample->len);
-	}
-
       tx_msg =
 	connector_new_msg_write_file_blk (id, &data16, sample->len,
 					  &transferred, i);
@@ -1407,9 +1415,14 @@ connector_upload_sample (GByteArray * sample,
 	}
       free_msg (rx_msg);
       i++;
-      g_mutex_lock (&control->mutex);
-      active = (!control || control->active);
-      g_mutex_unlock (&control->mutex);
+
+      if (control)
+	{
+	  control->callback (transferred / (double) sample->len);
+	  g_mutex_lock (&control->mutex);
+	  active = (!control || control->active);
+	  g_mutex_unlock (&control->mutex);
+	}
 
       usleep (REST_TIME);
     }
@@ -1418,11 +1431,6 @@ connector_upload_sample (GByteArray * sample,
 
   if (active)
     {
-      if (control->progress)
-	{
-	  control->progress (transferred / (double) sample->len);
-	}
-
       tx_msg = connector_new_msg_close_file_write (id, transferred);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
@@ -1490,16 +1498,19 @@ connector_download_sample (const gchar * path,
 
   next_block_start = 0;
   offset = sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST);
-  g_mutex_lock (&control->mutex);
-  active = (!control || control->active);
-  g_mutex_unlock (&control->mutex);
+  if (control)
+    {
+      g_mutex_lock (&control->mutex);
+      active = (!control || control->active);
+      g_mutex_unlock (&control->mutex);
+    }
+  else
+    {
+      active = TRUE;
+    }
+
   while (next_block_start < frames && active)
     {
-      if (control->progress)
-	{
-	  control->progress (next_block_start / (double) frames);
-	}
-
       req_size =
 	frames - next_block_start >
 	DATA_TRANSF_BLOCK_BYTES ? DATA_TRANSF_BLOCK_BYTES : frames -
@@ -1519,9 +1530,14 @@ connector_download_sample (const gchar * path,
 
       next_block_start += req_size;
       offset = 0;		//Only the first iteration
-      g_mutex_lock (&control->mutex);
-      active = (!control || control->active);
-      g_mutex_unlock (&control->mutex);
+
+      if (control)
+	{
+	  control->callback (next_block_start / (double) frames);
+	  g_mutex_lock (&control->mutex);
+	  active = (!control || control->active);
+	  g_mutex_unlock (&control->mutex);
+	}
 
       usleep (REST_TIME);
     }
@@ -1530,11 +1546,6 @@ connector_download_sample (const gchar * path,
 
   if (active)
     {
-      if (control->progress)
-	{
-	  control->progress (next_block_start / (double) frames);
-	}
-
       result = g_byte_array_new ();
       frame = (gint16 *) array->data;
       for (i = 0; i < array->len; i += sizeof (gint16))
@@ -2476,9 +2487,16 @@ connector_download_datum (const gchar * path,
 
   seq = 0;
   last = 0;
-  g_mutex_lock (&control->mutex);
-  active = (!control || control->active);
-  g_mutex_unlock (&control->mutex);
+  if (control)
+    {
+      g_mutex_lock (&control->mutex);
+      active = (!control || control->active);
+      g_mutex_unlock (&control->mutex);
+    }
+  else
+    {
+      active = TRUE;
+    }
   while (!last && active)
     {
       tx_msg =
@@ -2532,25 +2550,26 @@ connector_download_datum (const gchar * path,
 
 	  g_byte_array_append (array, (guint8 *) & rx_msg->data[27],
 			       data_size);
-
-	  if (control->progress)
-	    {
-	      control->progress (status / 1000.0);
-	    }
 	}
       else
 	{
+	  // Sometimes, the first message return 0 data size and the rest of the parameters are not initialized.
 	  debug_print (1,
 		       "Read datum info: job id: %d; last: %d, hash: 0x%08x\n",
 		       r_jid, last, hash);
+	  status = 0;
 	}
 
       free_msg (rx_msg);
       seq++;
 
-      g_mutex_lock (&control->mutex);
-      active = (!control || control->active);
-      g_mutex_unlock (&control->mutex);
+      if (control)
+	{
+	  control->callback (status / 1000.0);
+	  g_mutex_lock (&control->mutex);
+	  active = (!control || control->active);
+	  g_mutex_unlock (&control->mutex);
+	}
 
       usleep (REST_TIME);
     }
@@ -2567,15 +2586,20 @@ connector_download_datum (const gchar * path,
 gchar *
 connector_get_remote_name (struct connector *connector,
 			   const struct fs_operations *ops, const gchar * dir,
-			   const gchar * name)
+			   const gchar * src_abs_path)
 {
   gint index;
-  gchar *path, *indexs;
+  gchar *path, *indexs, *namec, *name;
   struct item_iterator *iter;
 
   if (ops->fs == FS_SAMPLES)
     {
-      return chain_path (dir, name);
+      namec = strdup (src_abs_path);
+      name = basename (namec);
+      remove_ext (name);
+      path = chain_path (dir, name);
+      g_free (namec);
+      return path;
     }
 
   iter = FS_DATA_OPERATIONS.readdir (dir, connector);
@@ -2691,9 +2715,17 @@ connector_upload_datum (GByteArray * array, const gchar * path,
   seq = 0;
   offset = 0;
   transferred = 0;
-  g_mutex_lock (&control->mutex);
-  active = (!control || control->active);
-  g_mutex_unlock (&control->mutex);
+  if (control)
+    {
+      g_mutex_lock (&control->mutex);
+      active = (!control || control->active);
+      g_mutex_unlock (&control->mutex);
+    }
+  else
+    {
+      active = TRUE;
+    }
+
   while (offset < array->len && active)
     {
       tx_msg =
@@ -2755,11 +2787,6 @@ connector_upload_datum (GByteArray * array, const gchar * path,
 		   "Read datum info: job id: %d; seq: %d; total: %d\n",
 		   r_jid, r_seq, total);
 
-      if (control->progress)
-	{
-	  control->progress (total / (gdouble) array->len);
-	}
-
       seq++;
       offset += len;
       transferred += len;
@@ -2771,9 +2798,13 @@ connector_upload_datum (GByteArray * array, const gchar * path,
 	     total, transferred);
 	}
 
-      g_mutex_lock (&control->mutex);
-      active = (!control || control->active);
-      g_mutex_unlock (&control->mutex);
+      if (control)
+	{
+	  control->callback (total / (gdouble) array->len);
+	  g_mutex_lock (&control->mutex);
+	  active = (!control || control->active);
+	  g_mutex_unlock (&control->mutex);
+	}
     }
 
   if (connector_close_datum (connector, jid, O_WRONLY, array->len))
