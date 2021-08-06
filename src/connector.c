@@ -63,8 +63,8 @@ static gint connector_move_samples_item (const gchar *, const gchar *,
 static GByteArray *connector_download_sample (const gchar *,
 					      struct job_control *, void *);
 
-static ssize_t connector_upload_sample (const gchar *, GByteArray *,
-					struct job_control *, void *);
+static gint connector_upload_sample (const gchar *, GByteArray *,
+				     struct job_control *, void *);
 
 static struct item_iterator *connector_read_data_dir (const gchar *, void *);
 
@@ -79,8 +79,8 @@ static gint connector_swap_data_item (const gchar *, const gchar *, void *);
 static GByteArray *connector_download_datum (const gchar *,
 					     struct job_control *, void *);
 
-static ssize_t connector_upload_datum (const gchar *, GByteArray *,
-				       struct job_control *, void *);
+static gint connector_upload_datum (const gchar *, GByteArray *,
+				    struct job_control *, void *);
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -522,7 +522,7 @@ connector_new_msg_list (const gchar * path, int32_t start_index,
 static GByteArray *
 connector_new_msg_write_file_blk (guint id,
 				  gint16 ** data,
-				  guint bytes, ssize_t * total, guint seq)
+				  guint bytes, guint * total, guint seq)
 {
   guint32 aux32;
   guint16 aux16;
@@ -1340,14 +1340,14 @@ connector_delete_samples_item (const gchar * path, void *data)
     }
 }
 
-ssize_t
+gint
 connector_upload_sample (const gchar * path, GByteArray * sample,
 			 struct job_control *control, void *data)
 {
   struct connector *connector = data;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
-  ssize_t transferred;
+  guint transferred;
   gshort *data16;
   gint id;
   int i;
@@ -1424,7 +1424,7 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
       usleep (REST_TIME);
     }
 
-  debug_print (2, "%zu frames sent\n", transferred);
+  debug_print (2, "%d frames sent\n", transferred);
 
   if (active)
     {
@@ -1443,7 +1443,7 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
       free_msg (rx_msg);
     }
 
-  return active ? transferred : -1;
+  return 0;
 }
 
 GByteArray *
@@ -2678,7 +2678,7 @@ end:
   return path;
 }
 
-static ssize_t
+static gint
 connector_upload_datum (const gchar * path, GByteArray * array,
 			struct job_control *control, void *data)
 {
@@ -2809,5 +2809,5 @@ connector_upload_datum (const gchar * path, GByteArray * array,
       return -1;
     }
 
-  return active ? transferred : -1;
+  return 0;
 }

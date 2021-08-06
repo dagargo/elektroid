@@ -361,7 +361,6 @@ cli_upload (int argc, char *argv[], int optind,
   const gchar *device_dir_dst;
   gchar *path_src, *device_path_dst, *path_dst;
   gint res;
-  ssize_t bytes;
   GByteArray *array;
 
   if (optind == argc)
@@ -406,9 +405,7 @@ cli_upload (int argc, char *argv[], int optind,
 
   control.active = TRUE;
   control.callback = null_control_callback;
-  bytes = fs_ops->upload (array, path_dst, &control, &connector);
-
-  res = bytes < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
+  res = fs_ops->upload (path_dst, array, &control, &connector);
 
 cleanup:
   free (path_dst);

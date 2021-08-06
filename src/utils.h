@@ -76,8 +76,8 @@ typedef gint (*fs_src_dst_func) (const gchar *, const gchar *, void *);
 typedef GByteArray *(*fs_download_func) (const gchar *,
 					 struct job_control *, void *);
 
-typedef ssize_t (*fs_remote_file_op) (const gchar *, GByteArray *,
-				      struct job_control *, void *);
+typedef gint (*fs_remote_file_op) (const gchar *, GByteArray *,
+				   struct job_control *, void *);
 
 typedef gchar *(*fs_get_item_id) (struct item *);
 

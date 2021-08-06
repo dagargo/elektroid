@@ -1907,11 +1907,11 @@ elektroid_upload_task (gpointer data)
   debug_print (1, "Writing from file %s (filesystem %s)...\n", transfer.src,
 	       elektroid_get_fs_name (transfer.fs_ops->fs));
 
-  res = transfer.fs_ops->upload (array, transfer.dst,
-				 &transfer.control, remote_browser.data);
+  res = transfer.fs_ops->upload (transfer.dst, array, &transfer.control,
+				 remote_browser.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
-  if (res < 0 && transfer.control.active)
+  if (res && transfer.control.active)
     {
       error_print ("Error while uploading\n");
       transfer.status = COMPLETED_ERROR;
@@ -1930,7 +1930,7 @@ elektroid_upload_task (gpointer data)
       g_mutex_unlock (&transfer.control.mutex);
     }
 
-  if (res >= 0 && transfer.fs_ops == remote_browser.fs_ops)	//There is no need to refresh the local browser
+  if (!res && transfer.fs_ops == remote_browser.fs_ops)	//There is no need to refresh the local browser
     {
       dst_path = strdup (transfer.dst);
       dst_dir = dirname (dst_path);
