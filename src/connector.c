@@ -1063,7 +1063,7 @@ cleanup:
   return rx_msg;
 }
 
-struct item_iterator *
+static struct item_iterator *
 connector_read_samples_dir (const gchar * dir, void *data)
 {
   GByteArray *tx_msg;
@@ -1199,7 +1199,7 @@ connector_rename_sample_file (struct connector *connector, const gchar * src,
 				   sizeof (FS_SAMPLE_RENAME_FILE_REQUEST));
 }
 
-gint
+static gint
 connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
 {
   enum item_type type;
@@ -1290,7 +1290,7 @@ connector_path_common (struct connector *connector, const gchar * path,
   return res;
 }
 
-gint
+static gint
 connector_delete_sample (const gchar * path, void *data)
 {
   struct connector *connector = data;
@@ -1307,7 +1307,7 @@ connector_delete_samples_dir (struct connector *connector, const gchar * path)
 				sizeof (FS_SAMPLE_DELETE_DIR_REQUEST));
 }
 
-gint
+static gint
 connector_delete_samples_item (const gchar * path, void *data)
 {
   gchar *new_path;
@@ -1573,7 +1573,7 @@ cleanup:
   return res;
 }
 
-gint
+static gint
 connector_create_samples_dir (const gchar * path, void *data)
 {
   struct connector *connector = data;
@@ -1802,7 +1802,7 @@ connector_get_storage_stats (struct connector *connector,
   return res;
 }
 
-float
+gdouble
 connector_get_storage_stats_percent (struct connector_storage_stats *statfs)
 {
   return (statfs->bsize - statfs->bfree) * 100.0 / statfs->bsize;

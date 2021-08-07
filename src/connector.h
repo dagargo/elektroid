@@ -125,7 +125,8 @@ gint connector_get_storage_stats (struct connector *,
 				  enum connector_storage,
 				  struct connector_storage_stats *);
 
-float connector_get_storage_stats_percent (struct connector_storage_stats *);
+gdouble connector_get_storage_stats_percent (struct connector_storage_stats
+					     *);
 
 gchar *connector_get_remote_name (struct connector *,
 				  const struct fs_operations *, const gchar *,
