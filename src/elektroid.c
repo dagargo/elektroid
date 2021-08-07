@@ -3184,7 +3184,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     }
 
   audio_destroy (&audio);
-  return 0;
+  return EXIT_SUCCESS;
 }
 
 static gboolean

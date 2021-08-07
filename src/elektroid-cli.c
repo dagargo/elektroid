@@ -112,7 +112,6 @@ cli_list (int argc, char *argv[], int optind, fs_read_dir_func readdir,
   const gchar *path;
   struct item_iterator *iter;
   gchar *device_path;
-  gint res;
 
   if (optind == argc)
     {
@@ -124,9 +123,7 @@ cli_list (int argc, char *argv[], int optind, fs_read_dir_func readdir,
       device_path = argv[optind];
     }
 
-  res = cli_connect (device_path);
-
-  if (res < 0)
+  if (cli_connect (device_path))
     {
       return EXIT_FAILURE;
     }
@@ -154,7 +151,6 @@ cli_command_path (int argc, char *argv[], int optind, fs_path_func f)
 {
   const gchar *path;
   gchar *device_path;
-  gint res;
 
   if (optind == argc)
     {
@@ -166,16 +162,14 @@ cli_command_path (int argc, char *argv[], int optind, fs_path_func f)
       device_path = argv[optind];
     }
 
-  res = cli_connect (device_path);
-
-  if (res < 0)
+  if (cli_connect (device_path))
     {
       return EXIT_FAILURE;
     }
 
   path = cli_get_path (device_path);
 
-  return f (path, &connector);
+  return f (path, &connector) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 static int
@@ -185,7 +179,6 @@ cli_command_src_dst (int argc, char *argv[], int optind, fs_src_dst_func f)
   gchar *device_path_src, *device_path_dst;
   gint card_src;
   gint card_dst;
-  gint res;
 
   if (optind == argc)
     {
@@ -216,9 +209,7 @@ cli_command_src_dst (int argc, char *argv[], int optind, fs_src_dst_func f)
       return EXIT_FAILURE;
     }
 
-  res = cli_connect (device_path_src);
-
-  if (res < 0)
+  if (cli_connect (device_path_src))
     {
       return EXIT_FAILURE;
     }
@@ -226,14 +217,13 @@ cli_command_src_dst (int argc, char *argv[], int optind, fs_src_dst_func f)
   path_src = cli_get_path (device_path_src);
   path_dst = cli_get_path (device_path_dst);
 
-  return f (path_src, path_dst, &connector);
+  return f (path_src, path_dst, &connector) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 static int
 cli_info (int argc, char *argv[], int optind)
 {
   gchar *device_path;
-  gint res;
 
   if (optind == argc)
     {
@@ -245,9 +235,7 @@ cli_info (int argc, char *argv[], int optind)
       device_path = argv[optind];
     }
 
-  res = cli_connect (device_path);
-
-  if (res < 0)
+  if (cli_connect (device_path))
     {
       return EXIT_FAILURE;
     }
@@ -275,9 +263,7 @@ cli_df (int argc, char *argv[], int optind)
       device_path = argv[optind];
     }
 
-  res = cli_connect (device_path);
-
-  if (res < 0)
+  if (cli_connect (device_path))
     {
       return EXIT_FAILURE;
     }
@@ -285,11 +271,12 @@ cli_df (int argc, char *argv[], int optind)
   printf ("%-10.10s%16.16s%16.16s%16.16s%11.10s\n", "Filesystem", "Size",
 	  "Used", "Available", "Use%");
 
+  res = 0;
   for (storage = STORAGE_PLUS_DRIVE; storage <= STORAGE_RAM; storage <<= 1)
     {
       if (connector.device_desc->storages & storage)
 	{
-	  res = connector_get_storage_stats (&connector, storage, &statfs);
+	  res |= connector_get_storage_stats (&connector, storage, &statfs);
 	  printf ("%-10.10s%16" PRId64 "%16" PRId64 "%16" PRId64 "%10.2f%%\n",
 		  statfs.name, statfs.bsize, statfs.bsize - statfs.bfree,
 		  statfs.bfree,
@@ -297,7 +284,7 @@ cli_df (int argc, char *argv[], int optind)
 	}
     }
 
-  return EXIT_SUCCESS;
+  return res ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 static int
@@ -319,9 +306,7 @@ cli_download (int argc, char *argv[], int optind,
       device_path = argv[optind];
     }
 
-  res = cli_connect (device_path);
-
-  if (res < 0)
+  if (cli_connect (device_path))
     {
       return EXIT_FAILURE;
     }
@@ -334,27 +319,22 @@ cli_download (int argc, char *argv[], int optind,
   res = fs_ops->download (path, array, &control, &connector);
   if (res)
     {
-      res = EXIT_FAILURE;
       goto end;
     }
 
   local_path = connector_get_local_dst_path (&connector, fs_ops, path, ".");
   if (!local_path)
     {
-      return EXIT_FAILURE;
+      goto end;
     }
 
-  if (fs_ops->save (local_path, array, NULL))
-    {
-      res = EXIT_FAILURE;
-    }
-
+  res = fs_ops->save (local_path, array, NULL);
   free (local_path);
 
 end:
   g_byte_array_free (array, TRUE);
 
-  return res;
+  return res ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 static int
@@ -387,9 +367,7 @@ cli_upload (int argc, char *argv[], int optind,
       device_path_dst = argv[optind];
     }
 
-  res = cli_connect (device_path_dst);
-
-  if (res < 0)
+  if (cli_connect (device_path_dst))
     {
       return EXIT_FAILURE;
     }
@@ -400,9 +378,9 @@ cli_upload (int argc, char *argv[], int optind,
 
   array = g_byte_array_new ();
 
-  if (fs_ops->load (path_src, array, NULL))
+  res = fs_ops->load (path_src, array, NULL);
+  if (res)
     {
-      res = EXIT_FAILURE;
       goto cleanup;
     }
 
@@ -413,7 +391,7 @@ cli_upload (int argc, char *argv[], int optind,
 cleanup:
   free (path_dst);
   g_byte_array_free (array, TRUE);
-  return res;
+  return res ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 static void

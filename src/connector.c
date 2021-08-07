@@ -1960,6 +1960,7 @@ connector_init (struct connector *connector, gint card)
 	    &rx_msg_fw_ver->data[10],
 	    &rx_msg_device->data[7 + rx_msg_device->data[6]]);
   debug_print (1, "Connected to %s\n", connector->device_name);
+
   err = 0;
   free_msg (rx_msg_fw_ver);
 cleanup_device:
