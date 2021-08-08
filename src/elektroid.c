@@ -3037,7 +3037,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .file_icon = NULL,
     .fs_ops = connector_get_fs_operations (-1),
     .data = &connector,
-    .notify_dir_change = NULL
+    .notify_dir_change = NULL,
+    .check_callback = elektroid_check_connector
   };
   remote_tree_view_index_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
@@ -3103,7 +3104,8 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .extensions = elektroid_get_file_extensions_for_fs (FS_SAMPLES),
     .fs_ops = &FS_LOCAL_OPERATIONS,
     .data = NULL,
-    .notify_dir_change = elektroid_notify_local_dir_change
+    .notify_dir_change = elektroid_notify_local_dir_change,
+    .check_callback = NULL
   };
 
   g_signal_connect (gtk_tree_view_get_selection (local_browser.view),

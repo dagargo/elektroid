@@ -294,6 +294,10 @@ browser_load_dir (gpointer data)
   free_item_iterator (iter);
 
 end:
+  if (browser->check_callback)
+    {
+      browser->check_callback ();
+    }
   gtk_tree_view_columns_autosize (browser->view);
   return FALSE;
 }

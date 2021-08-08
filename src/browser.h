@@ -59,6 +59,7 @@ struct browser
   const gchar **extensions;
   const struct fs_operations *fs_ops;
   void *data;
+    gboolean (*check_callback) ();
 };
 
 gint browser_sort_samples (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
