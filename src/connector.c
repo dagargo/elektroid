@@ -2621,9 +2621,9 @@ connector_get_upload_path (struct connector *connector,
 }
 
 gchar *
-connector_get_local_dst_path (struct connector *connector,
-			      const struct fs_operations *ops,
-			      const gchar * dst_dir, const gchar * src_path)
+connector_get_download_path (struct connector *connector,
+			     const struct fs_operations *ops,
+			     const gchar * dst_dir, const gchar * src_path)
 {
   gint32 id;
   struct item_iterator *iter;

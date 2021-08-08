@@ -322,7 +322,7 @@ cli_download (int argc, char *argv[], int optind,
       goto end;
     }
 
-  local_path = connector_get_local_dst_path (&connector, fs_ops, ".", path);
+  local_path = connector_get_download_path (&connector, fs_ops, ".", path);
   if (!local_path)
     {
       goto end;

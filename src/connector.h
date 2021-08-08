@@ -132,6 +132,6 @@ gchar *connector_get_upload_path (struct connector *,
 				  const struct fs_operations *, const gchar *,
 				  const gchar *);
 
-gchar *connector_get_local_dst_path (struct connector *,
-				     const struct fs_operations *,
-				     const gchar *, const gchar *);
+gchar *connector_get_download_path (struct connector *,
+				    const struct fs_operations *,
+				    const gchar *, const gchar *);
