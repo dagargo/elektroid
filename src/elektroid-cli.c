@@ -43,7 +43,7 @@ print_sample (struct item_iterator *iter)
   gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct connector_iterator_data *data = iter->data;
 
-  printf ("%c %15s %08x %s\n", iter->item.type,
+  printf ("%c %10s %08x %s\n", iter->item.type,
 	  hsize, data->cksum, iter->item.name);
   g_free (hsize);
 }
@@ -54,7 +54,7 @@ print_datum (struct item_iterator *iter)
   gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct connector_iterator_data *data = iter->data;
 
-  printf ("%c %3d %04x %d %d %15s %s\n", iter->item.type,
+  printf ("%c %3d %04x %d %d %10s %s\n", iter->item.type,
 	  iter->item.index, data->operations, data->has_valid_data,
 	  data->has_metadata, hsize, iter->item.name);
   g_free (hsize);

@@ -55,20 +55,21 @@ Digitakt 1.11
 ```
 $ elektroid-cli df 0
 Filesystem            Size            Used       Available       Use%
-+Drive          1006108672       215891968       790216704     21.46%
-RAM               67108944        15037872        52071072     22.41%
++Drive           959.50MiB       198.20MiB       761.30MiB     20.66%
+RAM               64.00MiB        13.43MiB        50.57MiB     20.98%
 ```
 
 ### Sample commands
 
 * `ls` or `list-samples`
 
-It only works for directories. Notice that the first column is the file type, the second is the size in MiB (it is the same unit used in the devices although it is showed there as MB), the third is an internal cksum and the last one is the sample name.
+It only works for directories. Notice that the first column is the file type, the second is the size, the third is an internal cksum and the last one is the sample name.
 
 ```
 $ elektroid-cli ls 0:/
-D 0.00 00000000 incoming
-F 0.09 3d71644d square
+D              0B 00000000 drum machines
+F       630.34KiB f8711cd9 saw
+F         1.29MiB 0bbc22bd square
 ```
 
 * `mkdir` or `mkdir-samples`
@@ -113,51 +114,51 @@ Notice that all data commands that use paths to items and not directories use th
 
 * `list-data`
 
-It only works for directories. Notice that the first column is the file type, the second is the index, the third is the permissons in hexadecimal, the fourth indicates if the data in valid, the fifth indicates if it has metadatam, the sixth is the size in MiB and the last one is the item name.
+It only works for directories. Notice that the first column is the file type, the second is the index, the third is the permissons in hexadecimal, the fourth indicates if the data in valid, the fifth indicates if it has metadatam, the sixth is the size and the last one is the item name.
 
 Permissions are 16 bits values but only 6 are used from bit 2 to bit 7 both included. From LSB to MSB, this permissions are read, write, clear, copy, swap, and move.
 
 ```
 $ elektroid-cli list-data 0:/soundbanks/D
-F   1 007e 1 1 0.00 KICK
-F   2 007e 1 1 0.00 SNARE
+F   1 0012 1 1       160B KICK
+F   2 0012 1 1       160B SNARE
 ```
 
 * `copy-data`
 
 ```
-$ elektroid-cli -vvv copy-data 0:/soundbanks/D/1 0:/soundbanks/D/3
+$ elektroid-cli copy-data 0:/soundbanks/D/1 0:/soundbanks/D/3
 $ elektroid-cli list-data 0:/soundbanks/D
-F   1 007e 1 1 0.00 KICK
-F   2 007e 1 1 0.00 SNARE
-F   3 007e 1 1 0.00 KICK
+F   1 0012 1 1       160B KICK
+F   2 0012 1 1       160B SNARE
+F   3 0012 1 1       160B KICK
 ```
 
 * `swap-data`
 
 ```
-$ elektroid-cli -vvv swap-data 0:/soundbanks/D/2 0:/soundbanks/D/3
+$ elektroid-cli swap-data 0:/soundbanks/D/2 0:/soundbanks/D/3
 $ elektroid-cli list-data 0:/soundbanks/D
-F   1 007e 1 1 0.00 KICK
-F   2 007e 1 1 0.00 KICK
-F   3 007e 1 1 0.00 SNARE
+F   1 0012 1 1       160B KICK
+F   2 0012 1 1       160B KICK
+F   3 0012 1 1       160B SNARE
 ```
 
 * `move-data`
 
 ```
-$ elektroid-cli -vvv move-data 0:/soundbanks/D/3 0:/soundbanks/D/1
+$ elektroid-cli move-data 0:/soundbanks/D/3 0:/soundbanks/D/1
 $ elektroid-cli list-data 0:/soundbanks/D
-F   1 007e 1 1 0.00 SNARE
-F   2 007e 1 1 0.00 KICK
+F   1 0012 1 1       160B SNARE
+F   2 0012 1 1       160B KICK
 ```
 
 * `clear-data`
 
 ```
-$ elektroid-cli -vvv clear-data 0:/soundbanks/D/1
+$ elektroid-cli clear-data 0:/soundbanks/D/1
 $ elektroid-cli list-data 0:/soundbanks/D
-F   2 007e 1 1 0.00 KICK
+F   2 0012 1 1       160B KICK
 ```
 
 * `download-data`
