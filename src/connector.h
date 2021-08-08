@@ -128,7 +128,7 @@ gint connector_get_storage_stats (struct connector *,
 gdouble connector_get_storage_stats_percent (struct connector_storage_stats
 					     *);
 
-gchar *connector_get_remote_name (struct connector *,
+gchar *connector_get_upload_path (struct connector *,
 				  const struct fs_operations *, const gchar *,
 				  const gchar *);
 

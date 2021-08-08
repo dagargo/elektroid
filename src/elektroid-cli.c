@@ -374,7 +374,7 @@ cli_upload (int argc, char *argv[], int optind,
 
   device_dir_dst = cli_get_path (device_path_dst);
   path_dst =
-    connector_get_remote_name (&connector, fs_ops, device_dir_dst, path_src);
+    connector_get_upload_path (&connector, fs_ops, device_dir_dst, path_src);
 
   array = g_byte_array_new ();
 

@@ -1989,7 +1989,7 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
     {
       dst_abs_dir = dirname (dst_abs_path);
       dst_abs_path_id =
-	connector_get_remote_name (&connector, remote_browser.fs_ops,
+	connector_get_upload_path (&connector, remote_browser.fs_ops,
 				   dst_abs_dir, src_abs_path);
       elektroid_add_task (UPLOAD, src_abs_path, dst_abs_path_id,
 			  remote_browser.fs_ops->fs);
@@ -2544,7 +2544,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 	    {
 	      if (strcmp (dir, remote_browser.dir))
 		{
-		  dst_path = connector_get_remote_name (&connector,
+		  dst_path = connector_get_upload_path (&connector,
 							remote_browser.fs_ops,
 							remote_browser.dir,
 							name);

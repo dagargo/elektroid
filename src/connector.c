@@ -2576,9 +2576,9 @@ connector_download_datum (const gchar * path, GByteArray * output,
 }
 
 gchar *
-connector_get_remote_name (struct connector *connector,
-			   const struct fs_operations *ops, const gchar * dir,
-			   const gchar * src_abs_path)
+connector_get_upload_path (struct connector *connector,
+			   const struct fs_operations *ops,
+			   const gchar * dir, const gchar * src_abs_path)
 {
   gint index;
   gchar *path, *indexs, *namec, *name;
