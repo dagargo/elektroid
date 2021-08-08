@@ -353,10 +353,12 @@ static int
 cli_upload (int argc, char *argv[], int optind,
 	    const struct fs_operations *fs_ops)
 {
-  const gchar *device_dst_dir;
+  const gchar *dst_dir;
   gchar *src_path, *device_dst_path, *upload_path;
   gint res;
   GByteArray *array;
+  struct item_iterator *iter;
+  gint32 index = 1;
 
   if (optind == argc)
     {
@@ -384,9 +386,17 @@ cli_upload (int argc, char *argv[], int optind,
       return EXIT_FAILURE;
     }
 
-  device_dst_dir = cli_get_path (device_dst_path);
+  dst_dir = cli_get_path (device_dst_path);
+  iter = fs_ops->readdir (dst_dir, &connector);
+  if (!iter)
+    {
+      res = -1;
+      goto end;
+    }
+
   upload_path =
-    connector_get_upload_path (&connector, fs_ops, device_dst_dir, src_path);
+    connector_get_upload_path (iter, fs_ops, dst_dir, src_path, &index);
+  free_item_iterator (iter);
 
   array = g_byte_array_new ();
 
@@ -403,6 +413,7 @@ cli_upload (int argc, char *argv[], int optind,
 cleanup:
   free (upload_path);
   g_byte_array_free (array, TRUE);
+end:
   return res ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 

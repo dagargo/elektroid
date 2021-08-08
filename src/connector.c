@@ -2602,13 +2602,14 @@ connector_download_datum (const gchar * path, GByteArray * output,
 }
 
 gchar *
-connector_get_upload_path (struct connector *connector,
+connector_get_upload_path (struct item_iterator *remote_iter,
 			   const struct fs_operations *ops,
-			   const gchar * dst_dir, const gchar * src_path)
+			   const gchar * dst_dir, const gchar * src_path,
+			   gint32 * next_index)
 {
-  gint index;
   gchar *path, *indexs, *namec, *name;
   struct item_iterator *iter;
+  gboolean empty;
 
   if (ops->fs == FS_SAMPLES)
     {
@@ -2620,26 +2621,27 @@ connector_get_upload_path (struct connector *connector,
       return path;
     }
 
-  iter = ops->readdir (dst_dir, connector);
-  if (!iter)
-    {
-      return NULL;
-    }
+  iter = copy_item_iterator (remote_iter);
 
-  index = 1;
+  empty = TRUE;
   while (!next_item_iterator (iter))
     {
-      if (iter->item.index > index)
+      empty = FALSE;
+      if (iter->item.index > *next_index)
 	{
 	  break;
 	}
-      index++;
+      (*next_index)++;
     }
 
   free_item_iterator (iter);
 
   indexs = malloc (PATH_MAX);
-  snprintf (indexs, PATH_MAX, "%d", index);
+  snprintf (indexs, PATH_MAX, "%d", *next_index);
+  if (empty)
+    {
+      (*next_index)++;
+    }
   path = chain_path (dst_dir, indexs);
   g_free (indexs);
 
@@ -2647,7 +2649,7 @@ connector_get_upload_path (struct connector *connector,
 }
 
 gchar *
-connector_get_download_path (struct item_iterator *parent_iter,
+connector_get_download_path (struct item_iterator *remote_iter,
 			     const struct fs_operations *ops,
 			     const gchar * dst_dir, const gchar * src_path)
 {
@@ -2666,7 +2668,7 @@ connector_get_download_path (struct item_iterator *parent_iter,
 
   id = atoi (name);
   name = NULL;
-  iter = copy_item_iterator (parent_iter);
+  iter = copy_item_iterator (remote_iter);
 
   while (!next_item_iterator (iter))
     {
