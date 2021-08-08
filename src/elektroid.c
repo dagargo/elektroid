@@ -1980,7 +1980,7 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
   struct item_iterator *iter;
   gchar *path;
   gchar *dst_abs_dir;
-  gchar *dst_abs_path_id;
+  gchar *upload_path;
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
   gchar *src_abs_path = chain_path (src_dir, rel_path);
 
@@ -1988,10 +1988,10 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
   if (!iter)
     {
       dst_abs_dir = dirname (dst_abs_path);
-      dst_abs_path_id =
+      upload_path =
 	connector_get_upload_path (&connector, remote_browser.fs_ops,
 				   dst_abs_dir, src_abs_path);
-      elektroid_add_task (UPLOAD, src_abs_path, dst_abs_path_id,
+      elektroid_add_task (UPLOAD, src_abs_path, upload_path,
 			  remote_browser.fs_ops->fs);
       goto cleanup_not_dir;
     }
@@ -2132,7 +2132,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
 				  gchar * dst_dir)
 {
   struct item_iterator *iter;
-  gchar *path, *id, *dst_abs_path_ext, *dst_abs_dirc, *dst_abs_dir;
+  gchar *path, *id, *download_path, *dst_abs_dirc, *dst_abs_dir;
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
@@ -2141,14 +2141,14 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
     {
       dst_abs_dirc = strdup (dst_abs_path);
       dst_abs_dir = dirname (dst_abs_dirc);
-      dst_abs_path_ext =
+      download_path =
 	connector_get_download_path (&connector,
 				     remote_browser.fs_ops,
 				     dst_abs_dir, src_abs_path);
-      elektroid_add_task (DOWNLOAD, src_abs_path, dst_abs_path_ext,
+      elektroid_add_task (DOWNLOAD, src_abs_path, download_path,
 			  remote_browser.fs_ops->fs);
       g_free (dst_abs_dirc);
-      g_free (dst_abs_path_ext);
+      g_free (download_path);
       goto cleanup_not_dir;
     }
 
