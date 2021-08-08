@@ -175,10 +175,10 @@ cli_command_path (int argc, char *argv[], int optind, fs_path_func f)
 static int
 cli_command_src_dst (int argc, char *argv[], int optind, fs_src_dst_func f)
 {
-  const gchar *path_src, *path_dst;
-  gchar *device_path_src, *device_path_dst;
-  gint card_src;
-  gint card_dst;
+  const gchar *src_path, *dst_path;
+  gchar *device_src_path, *device_dst_path;
+  gint src_card;
+  gint dst_card;
 
   if (optind == argc)
     {
@@ -187,7 +187,7 @@ cli_command_src_dst (int argc, char *argv[], int optind, fs_src_dst_func f)
     }
   else
     {
-      device_path_src = argv[optind];
+      device_src_path = argv[optind];
       optind++;
     }
 
@@ -198,26 +198,26 @@ cli_command_src_dst (int argc, char *argv[], int optind, fs_src_dst_func f)
     }
   else
     {
-      device_path_dst = argv[optind];
+      device_dst_path = argv[optind];
     }
 
-  card_src = atoi (device_path_src);
-  card_dst = atoi (device_path_dst);
-  if (card_src != card_dst)
+  src_card = atoi (device_src_path);
+  dst_card = atoi (device_dst_path);
+  if (src_card != dst_card)
     {
       error_print ("Source and destination device must be the same\n");
       return EXIT_FAILURE;
     }
 
-  if (cli_connect (device_path_src))
+  if (cli_connect (device_src_path))
     {
       return EXIT_FAILURE;
     }
 
-  path_src = cli_get_path (device_path_src);
-  path_dst = cli_get_path (device_path_dst);
+  src_path = cli_get_path (device_src_path);
+  dst_path = cli_get_path (device_dst_path);
 
-  return f (path_src, path_dst, &connector) ? EXIT_FAILURE : EXIT_SUCCESS;
+  return f (src_path, dst_path, &connector) ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 static int
@@ -291,8 +291,8 @@ static int
 cli_download (int argc, char *argv[], int optind,
 	      const struct fs_operations *fs_ops)
 {
-  const gchar *path;
-  gchar *device_path, *local_path;
+  const gchar *src_path;
+  gchar *device_src_path, *download_path;
   gint res;
   GByteArray *array;
 
@@ -303,33 +303,34 @@ cli_download (int argc, char *argv[], int optind,
     }
   else
     {
-      device_path = argv[optind];
+      device_src_path = argv[optind];
     }
 
-  if (cli_connect (device_path))
+  if (cli_connect (device_src_path))
     {
       return EXIT_FAILURE;
     }
 
-  path = cli_get_path (device_path);
+  src_path = cli_get_path (device_src_path);
 
   control.active = TRUE;
   control.callback = null_control_callback;
   array = g_byte_array_new ();
-  res = fs_ops->download (path, array, &control, &connector);
+  res = fs_ops->download (src_path, array, &control, &connector);
   if (res)
     {
       goto end;
     }
 
-  local_path = connector_get_download_path (&connector, fs_ops, ".", path);
-  if (!local_path)
+  download_path =
+    connector_get_download_path (&connector, fs_ops, ".", src_path);
+  if (!download_path)
     {
       goto end;
     }
 
-  res = fs_ops->save (local_path, array, NULL);
-  free (local_path);
+  res = fs_ops->save (download_path, array, NULL);
+  free (download_path);
 
 end:
   g_byte_array_free (array, TRUE);
@@ -341,8 +342,8 @@ static int
 cli_upload (int argc, char *argv[], int optind,
 	    const struct fs_operations *fs_ops)
 {
-  const gchar *device_dir_dst;
-  gchar *path_src, *device_path_dst, *path_dst;
+  const gchar *device_dst_dir;
+  gchar *src_path, *device_dst_path, *upload_path;
   gint res;
   GByteArray *array;
 
@@ -353,7 +354,7 @@ cli_upload (int argc, char *argv[], int optind,
     }
   else
     {
-      path_src = argv[optind];
+      src_path = argv[optind];
       optind++;
     }
 
@@ -364,21 +365,21 @@ cli_upload (int argc, char *argv[], int optind,
     }
   else
     {
-      device_path_dst = argv[optind];
+      device_dst_path = argv[optind];
     }
 
-  if (cli_connect (device_path_dst))
+  if (cli_connect (device_dst_path))
     {
       return EXIT_FAILURE;
     }
 
-  device_dir_dst = cli_get_path (device_path_dst);
-  path_dst =
-    connector_get_upload_path (&connector, fs_ops, device_dir_dst, path_src);
+  device_dst_dir = cli_get_path (device_dst_path);
+  upload_path =
+    connector_get_upload_path (&connector, fs_ops, device_dst_dir, src_path);
 
   array = g_byte_array_new ();
 
-  res = fs_ops->load (path_src, array, NULL);
+  res = fs_ops->load (src_path, array, NULL);
   if (res)
     {
       goto cleanup;
@@ -386,10 +387,10 @@ cli_upload (int argc, char *argv[], int optind,
 
   control.active = TRUE;
   control.callback = null_control_callback;
-  res = fs_ops->upload (path_dst, array, &control, &connector);
+  res = fs_ops->upload (upload_path, array, &control, &connector);
 
 cleanup:
-  free (path_dst);
+  free (upload_path);
   g_byte_array_free (array, TRUE);
   return res ? EXIT_FAILURE : EXIT_SUCCESS;
 }
