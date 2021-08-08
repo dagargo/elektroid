@@ -2594,7 +2594,7 @@ connector_get_upload_path (struct connector *connector,
       return path;
     }
 
-  iter = FS_DATA_OPERATIONS.readdir (dst_dir, connector);
+  iter = ops->readdir (dst_dir, connector);
   if (!iter)
     {
       return NULL;
@@ -2643,7 +2643,7 @@ connector_get_download_path (struct connector *connector,
   id = atoi (basename (name));
   g_free (namec);
 
-  iter = connector_read_data_dir (dir, connector);
+  iter = ops->readdir (dir, connector);
   if (!iter)
     {
       g_free (dirc);
