@@ -67,7 +67,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
       return;
     }
 
-  if (audio->pos == audio->sample->len && !audio->loop)
+  if (audio->pos == audio->sample->len >> 1 && !audio->loop)
     {
       g_mutex_unlock (&audio->control.mutex);
       memset (buffer, 0, size);
