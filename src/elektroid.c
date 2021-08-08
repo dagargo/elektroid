@@ -2144,7 +2144,7 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
       dst_abs_path_ext =
 	connector_get_local_dst_path (&connector,
 				      remote_browser.fs_ops,
-				      src_abs_path, dst_abs_dir);
+				      dst_abs_dir, src_abs_path);
       elektroid_add_task (DOWNLOAD, src_abs_path, dst_abs_path_ext,
 			  remote_browser.fs_ops->fs);
       g_free (dst_abs_dirc);

@@ -2623,7 +2623,7 @@ connector_get_remote_name (struct connector *connector,
 gchar *
 connector_get_local_dst_path (struct connector *connector,
 			      const struct fs_operations *ops,
-			      const gchar * src_path, const gchar * dst_dir)
+			      const gchar * dst_dir, const gchar * src_path)
 {
   gint32 id;
   struct item_iterator *iter;
