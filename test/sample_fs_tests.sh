@@ -49,7 +49,7 @@ echo $output
 type=$(echo $output | awk '{print $1}')
 size=$(echo $output | awk '{print $2}')
 name=$(echo $output | awk '{print $4}')
-[ "$type" != "F" ] || [ "$size" != "0.09" ] || [ "$name" != "square" ] && exit 1
+[ "$type" != "F" ] || [ "$size" != "93.81KiB" ] || [ "$name" != "square" ] && exit 1
 
 sleep 1
 

@@ -30,9 +30,6 @@
 #include "sample.h"
 #include "utils.h"
 
-#define KIB_FLOAT 1024.0
-#define MIB_FLOAT (KIB_FLOAT * KIB_FLOAT)
-
 static struct connector connector;
 static struct job_control control;
 static const struct fs_operations *fs_ops_samples;
@@ -43,20 +40,24 @@ typedef void (*print_item) (struct item_iterator *);
 static void
 print_sample (struct item_iterator *iter)
 {
+  gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct connector_iterator_data *data = iter->data;
 
-  printf ("%c %.2f %08x %s\n", iter->item.type,
-	  iter->item.size / MIB_FLOAT, data->cksum, iter->item.name);
+  printf ("%c %15s %08x %s\n", iter->item.type,
+	  hsize, data->cksum, iter->item.name);
+  g_free (hsize);
 }
 
 static void
 print_datum (struct item_iterator *iter)
 {
+  gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct connector_iterator_data *data = iter->data;
 
-  printf ("%c %3d %04x %d %d %.2f %s\n", iter->item.type, iter->item.index,
-	  data->operations, data->has_valid_data,
-	  data->has_metadata, iter->item.size / MIB_FLOAT, iter->item.name);
+  printf ("%c %3d %04x %d %d %15s %s\n", iter->item.type,
+	  iter->item.index, data->operations, data->has_valid_data,
+	  data->has_metadata, hsize, iter->item.name);
+  g_free (hsize);
 }
 
 static void
@@ -249,6 +250,9 @@ static int
 cli_df (int argc, char *argv[], int optind)
 {
   gchar *device_path;
+  gchar *size;
+  gchar *diff;
+  gchar *free;
   gint res;
   struct connector_storage_stats statfs;
   enum connector_storage storage;
@@ -277,10 +281,15 @@ cli_df (int argc, char *argv[], int optind)
       if (connector.device_desc->storages & storage)
 	{
 	  res |= connector_get_storage_stats (&connector, storage, &statfs);
-	  printf ("%-10.10s%16" PRId64 "%16" PRId64 "%16" PRId64 "%10.2f%%\n",
-		  statfs.name, statfs.bsize, statfs.bsize - statfs.bfree,
-		  statfs.bfree,
+	  size = get_human_size (statfs.bsize, FALSE);
+	  diff = get_human_size (statfs.bsize - statfs.bfree, FALSE);
+	  free = get_human_size (statfs.bfree, FALSE);
+	  printf ("%-10.10s%16s%16s%16s%10.2f%%\n",
+		  statfs.name, size, diff, free,
 		  connector_get_storage_stats_percent (&statfs));
+	  g_free (size);
+	  g_free (diff);
+	  g_free (free);
 	}
     }
 

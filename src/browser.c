@@ -207,19 +207,11 @@ browser_get_item_id_path (struct browser *browser, struct item *item)
 static void
 local_add_dentry_item (struct browser *browser, struct item_iterator *iter)
 {
-  gchar sizes[SIZE_LABEL_LEN];
+  gchar *hsize;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
 
-  if (iter->item.size > 0)
-    {
-      snprintf (sizes, SIZE_LABEL_LEN, "%.2f MiB",
-		iter->item.size / (1024.0 * 1024.0));
-    }
-  else
-    {
-      sizes[0] = 0;
-    }
+  hsize = iter->item.size ? get_human_size (iter->item.size, TRUE) : "";
 
   gtk_list_store_insert_with_values (list_store, NULL, -1,
 				     BROWSER_LIST_STORE_ICON_FIELD,
@@ -231,11 +223,15 @@ local_add_dentry_item (struct browser *browser, struct item_iterator *iter)
 				     BROWSER_LIST_STORE_SIZE_FIELD,
 				     iter->item.size,
 				     BROWSER_LIST_STORE_SIZE_STR_FIELD,
-				     sizes,
+				     hsize,
 				     BROWSER_LIST_STORE_TYPE_FIELD,
 				     iter->item.type,
 				     BROWSER_LIST_STORE_INDEX_FIELD,
 				     iter->item.index, -1);
+  if (strlen (hsize))
+    {
+      g_free (hsize);
+    }
 }
 
 static gboolean

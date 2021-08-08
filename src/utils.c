@@ -25,6 +25,8 @@
 #define DEBUG_SHORT_HEX_LEN 64
 #define DEBUG_FULL_HEX_THRES 3
 
+#define KIB 1024
+
 gint debug_level;
 
 static guint
@@ -321,4 +323,32 @@ save_file (const char *path, GByteArray * array, struct job_control *control)
   fclose (file);
 
   return res;
+}
+
+gchar *
+get_human_size (guint size, gboolean with_space)
+{
+  gchar *label = malloc (LABEL_MAX);
+  gchar *space = with_space ? " " : "";
+
+  if (size < KIB)
+    {
+      snprintf (label, LABEL_MAX, "%d%sB", size, space);
+    }
+  else if (size < KIB * KIB)
+    {
+      snprintf (label, LABEL_MAX, "%.2f%sKiB", size / (double) KIB, space);
+    }
+  else if (size < KIB * KIB * KIB)
+    {
+      snprintf (label, LABEL_MAX, "%.2f%sMiB", size / (double) (KIB * KIB),
+		space);
+    }
+  else
+    {
+      snprintf (label, LABEL_MAX, "%.2f%sGiB",
+		size / (double) (KIB * KIB * KIB), space);
+    }
+
+  return label;
 }

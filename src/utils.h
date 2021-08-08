@@ -135,4 +135,6 @@ gint load_file (const char *, GByteArray *, struct job_control *);
 
 gint save_file (const char *, GByteArray *, struct job_control *);
 
+gchar *get_human_size (guint, gboolean);
+
 #endif
