@@ -2578,7 +2578,7 @@ connector_download_datum (const gchar * path, GByteArray * output,
 gchar *
 connector_get_upload_path (struct connector *connector,
 			   const struct fs_operations *ops,
-			   const gchar * dir, const gchar * src_abs_path)
+			   const gchar * dst_dir, const gchar * src_path)
 {
   gint index;
   gchar *path, *indexs, *namec, *name;
@@ -2586,15 +2586,15 @@ connector_get_upload_path (struct connector *connector,
 
   if (ops->fs == FS_SAMPLES)
     {
-      namec = strdup (src_abs_path);
+      namec = strdup (src_path);
       name = basename (namec);
       remove_ext (name);
-      path = chain_path (dir, name);
+      path = chain_path (dst_dir, name);
       g_free (namec);
       return path;
     }
 
-  iter = FS_DATA_OPERATIONS.readdir (dir, connector);
+  iter = FS_DATA_OPERATIONS.readdir (dst_dir, connector);
   if (!iter)
     {
       return NULL;
@@ -2614,7 +2614,7 @@ connector_get_upload_path (struct connector *connector,
 
   indexs = malloc (PATH_MAX);
   snprintf (indexs, PATH_MAX, "%d", index);
-  path = chain_path (dir, indexs);
+  path = chain_path (dst_dir, indexs);
   g_free (indexs);
 
   return path;
