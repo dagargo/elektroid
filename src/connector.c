@@ -2647,54 +2647,43 @@ connector_get_upload_path (struct connector *connector,
 }
 
 gchar *
-connector_get_download_path (struct connector *connector,
+connector_get_download_path (struct item_iterator *parent_iter,
 			     const struct fs_operations *ops,
 			     const gchar * dst_dir, const gchar * src_path)
 {
   gint32 id;
+  gchar *name, *filename, *namec, *path;
   struct item_iterator *iter;
-  gchar *dir, *name, *filename, *file_no, *dirc, *namec, *path;
 
   namec = strdup (src_path);
   name = basename (namec);
 
   if (ops->fs == FS_SAMPLES)
     {
-      file_no = strdup (name);
+      name = strdup (name);
       goto end;
     }
 
-  dirc = strdup (src_path);
-  dir = dirname (dirc);
-  id = atoi (basename (name));
-  g_free (namec);
+  id = atoi (name);
+  name = NULL;
+  iter = copy_item_iterator (parent_iter);
 
-  iter = ops->readdir (dir, connector);
-  if (!iter)
-    {
-      g_free (dirc);
-      return NULL;
-    }
-
-  file_no = NULL;
   while (!next_item_iterator (iter))
     {
       if (iter->item.index == id)
 	{
-	  file_no = get_item_name (&iter->item);
+	  name = get_item_name (&iter->item);
 	  break;
 	}
     }
 
-  free_item_iterator (iter);
-  g_free (dirc);
-
 end:
   filename = malloc (PATH_MAX);
-  snprintf (filename, PATH_MAX, "%s.%s", file_no, ops->download_ext);
+  snprintf (filename, PATH_MAX, "%s.%s", name, ops->download_ext);
   path = chain_path (dst_dir, filename);
-  g_free (file_no);
+  g_free (name);
   g_free (filename);
+  g_free (namec);
 
   return path;
 }
