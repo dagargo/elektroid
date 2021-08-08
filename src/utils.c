@@ -242,6 +242,12 @@ free_item_iterator (struct item_iterator *iter)
   g_free (iter);
 }
 
+struct item_iterator *
+copy_item_iterator (struct item_iterator *iter)
+{
+  return iter->copy (iter);
+}
+
 gint
 load_file (const char *path, GByteArray * array, struct job_control *control)
 {

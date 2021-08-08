@@ -82,6 +82,12 @@ static gint connector_download_datum (const gchar *, GByteArray *,
 static gint connector_upload_datum (const gchar *, GByteArray *,
 				    struct job_control *, void *);
 
+static struct item_iterator *connector_copy_sample_iterator (struct
+							     item_iterator *);
+
+static struct item_iterator *connector_copy_data_iterator (struct
+							   item_iterator *);
+
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
 static const guint8 PING_REQUEST[] = { 0x1 };
@@ -331,9 +337,19 @@ connector_new_sample_iterator (GByteArray * msg)
   iter->data = data;
   iter->next = connector_next_sample_entry;
   iter->free = connector_free_iterator_data;
+  iter->copy = connector_copy_sample_iterator;
   iter->item.name = NULL;
 
   return iter;
+}
+
+static struct item_iterator *
+connector_copy_sample_iterator (struct item_iterator *iter)
+{
+  struct connector_iterator_data *data = iter->data;
+  GByteArray *copy = g_byte_array_sized_new (data->msg->len);
+  g_byte_array_append (copy, data->msg->data, data->msg->len);
+  return connector_new_sample_iterator (copy);
 }
 
 static GByteArray *
@@ -2195,9 +2211,19 @@ connector_new_data_iterator (GByteArray * msg)
   iter->data = data;
   iter->next = connector_next_data_entry;
   iter->free = connector_free_iterator_data;
+  iter->copy = connector_copy_data_iterator;
   iter->item.name = NULL;
 
   return iter;
+}
+
+static struct item_iterator *
+connector_copy_data_iterator (struct item_iterator *iter)
+{
+  struct connector_iterator_data *data = iter->data;
+  GByteArray *copy = g_byte_array_sized_new (data->msg->len);
+  g_byte_array_append (copy, data->msg->data, data->msg->len);
+  return connector_new_data_iterator (copy);
 }
 
 static struct item_iterator *
