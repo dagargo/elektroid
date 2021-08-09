@@ -2607,7 +2607,8 @@ connector_download_datum (const gchar * path, GByteArray * output,
 }
 
 gchar *
-connector_get_upload_path (struct item_iterator *remote_iter,
+connector_get_upload_path (struct connector *connector,
+			   struct item_iterator *remote_iter,
 			   const struct fs_operations *ops,
 			   const gchar * dst_dir, const gchar * src_path,
 			   gint32 * next_index)
@@ -2626,7 +2627,18 @@ connector_get_upload_path (struct item_iterator *remote_iter,
       return path;
     }
 
-  iter = copy_item_iterator (remote_iter);
+  if (remote_iter)
+    {
+      iter = copy_item_iterator (remote_iter);
+    }
+  else
+    {
+      iter = ops->readdir (dst_dir, connector);
+      if (!iter)
+	{
+	  return NULL;
+	}
+    }
 
   empty = TRUE;
   while (!next_item_iterator (iter))

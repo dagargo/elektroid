@@ -129,7 +129,7 @@ gint connector_get_storage_stats (struct connector *,
 gdouble connector_get_storage_stats_percent (struct connector_storage_stats
 					     *);
 
-gchar *connector_get_upload_path (struct item_iterator *,
+gchar *connector_get_upload_path (struct connector *, struct item_iterator *,
 				  const struct fs_operations *, const gchar *,
 				  const gchar *, gint32 *);
 

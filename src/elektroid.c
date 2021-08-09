@@ -2005,8 +2005,9 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
     {
       dst_abs_dir = dirname (dst_abs_path);
       upload_path =
-	connector_get_upload_path (remote_dir_iter, remote_browser.fs_ops,
-				   dst_abs_dir, src_abs_path, index);
+	connector_get_upload_path (&connector, remote_dir_iter,
+				   remote_browser.fs_ops, dst_abs_dir,
+				   src_abs_path, index);
       elektroid_add_task (UPLOAD, src_abs_path, upload_path,
 			  remote_browser.fs_ops->fs);
       goto cleanup_not_dir;
@@ -2588,10 +2589,12 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 	    {
 	      if (strcmp (dir, remote_browser.dir))
 		{
-		  dst_path = connector_get_upload_path (remote_item_iterator,
-							remote_browser.fs_ops,
-							remote_browser.dir,
-							name, &index);
+		  dst_path =
+		    connector_get_upload_path (&connector,
+					       remote_item_iterator,
+					       remote_browser.fs_ops,
+					       remote_browser.dir, name,
+					       &index);
 		  res =
 		    remote_browser.fs_ops->move (filename, dst_path,
 						 remote_browser.data);
