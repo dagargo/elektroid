@@ -134,36 +134,36 @@ static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
 static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 
 static const struct connector_device_desc ANALOG_RYTM_DESC = {
+  .name = "Analog Rytm",
   .id = ARMK1_ID,
-  .model = "Analog Rytm",
   .fss = FS_SAMPLES,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
 static const struct connector_device_desc DIGITAKT_DESC = {
+  .name = "Digitakt",
   .id = DTAKT_ID,
-  .model = "Digitakt",
   .fss = FS_SAMPLES | FS_DATA,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
 static const struct connector_device_desc ANALOG_RYTM_MKII_DESC = {
+  .name = "Analog Rytm MKII",
   .id = ARMK2_ID,
-  .model = "Analog Rytm MKII",
   .fss = FS_SAMPLES,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
 static const struct connector_device_desc MODEL_SAMPLES_DESC = {
+  .name = "Model:Samples",
   .id = MOD_S_ID,
-  .model = "Model:Samples",
   .fss = FS_SAMPLES,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
 static const struct connector_device_desc NULL_DEVICE_DESC = {
+  .name = "-",
   .id = 0,
-  .model = "-",
   .fss = 0,
   .storages = 0
 };
@@ -1972,7 +1972,7 @@ connector_init (struct connector *connector, gint card)
   connector->device_desc = connector_get_device_desc (rx_msg_device->data[5]);
 
   snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
-	    connector->device_desc->model,
+	    connector->device_desc->name,
 	    &rx_msg_fw_ver->data[10],
 	    &rx_msg_device->data[7 + rx_msg_device->data[6]]);
   debug_print (1, "Connected to %s\n", connector->device_name);

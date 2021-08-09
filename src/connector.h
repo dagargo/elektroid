@@ -26,8 +26,8 @@
 
 struct connector_device_desc
 {
+  const gchar *name;
   guint8 id;
-  gchar *model;
   guint8 fss;
   guint8 storages;
 };
