@@ -27,6 +27,7 @@
 struct connector_device_desc
 {
   const gchar *name;
+  const gchar *alias;
   guint8 id;
   guint8 fss;
   guint8 storages;
@@ -132,6 +133,10 @@ gchar *connector_get_upload_path (struct item_iterator *,
 				  const struct fs_operations *, const gchar *,
 				  const gchar *, gint32 *);
 
-gchar *connector_get_download_path (struct item_iterator *,
+gchar *connector_get_download_path (const struct connector_device_desc *,
+				    struct item_iterator *,
 				    const struct fs_operations *,
 				    const gchar *, const gchar *);
+
+gchar *connector_get_full_ext (const struct connector_device_desc *,
+			       const struct fs_operations *);

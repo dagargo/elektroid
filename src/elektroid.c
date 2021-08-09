@@ -131,11 +131,8 @@ static const gchar *ELEKTROID_FS_ICONS[] = {
   FILE_ICON_WAVE, FILE_ICON_PATTERN
 };
 
-static const gchar **ELEKTROID_FS_LOCAL_EXTS[] = {
-  ((const gchar *[])
-   {"wav", "ogg", "aiff", "flac", NULL}), ((const gchar *[])
-					   {"data", NULL})
-};
+static gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
+  { "wav", "ogg", "aiff", "flac", NULL };
 
 static GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
@@ -259,19 +256,28 @@ elektroid_get_fs_name (enum connector_fs selected)
   return NULL;
 }
 
-static const gchar **
-elektroid_get_file_extensions_for_fs (enum connector_fs sel_fs)
+static void
+elektroid_set_file_extensions_for_fs (gchar ** extensions[],
+				      enum connector_fs sel_fs)
 {
-  const gchar **exts = ELEKTROID_FS_LOCAL_EXTS[0];
-  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA; fs <<= 1, i++)
+  const struct fs_operations *ops;
+
+  if (*extensions != NULL && *extensions != ELEKTROID_AUDIO_LOCAL_EXTS)
     {
-      if (sel_fs == fs)
-	{
-	  exts = ELEKTROID_FS_LOCAL_EXTS[i];
-	  break;
-	}
+      g_free ((*extensions)[0]);
+      g_free (*extensions);
     }
-  return exts;
+  if (sel_fs == FS_SAMPLES)
+    {
+      *extensions = ELEKTROID_AUDIO_LOCAL_EXTS;
+    }
+  else
+    {
+      ops = connector_get_fs_operations (sel_fs);
+      *extensions = malloc (sizeof (gchar *) * 2);
+      (*extensions)[0] = connector_get_full_ext (connector.device_desc, ops);
+      (*extensions)[1] = NULL;
+    }
 }
 
 static const gchar *
@@ -341,8 +347,8 @@ elektroid_load_devices (gboolean auto_select)
     {
       local_browser.file_icon =
 	elektroid_get_inventory_icon_for_fs (FS_SAMPLES);
-      local_browser.extensions =
-	elektroid_get_file_extensions_for_fs (FS_SAMPLES);
+      elektroid_set_file_extensions_for_fs (&local_browser.extensions,
+					    FS_SAMPLES);
 
       gtk_widget_set_visible (local_audio_box, TRUE);
       gtk_tree_view_column_set_visible (remote_tree_view_index_column, FALSE);
@@ -2168,9 +2174,9 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
       dst_abs_dirc = strdup (dst_abs_path);
       dst_abs_dir = dirname (dst_abs_dirc);
       download_path =
-	connector_get_download_path (remote_dir_iter,
-				     remote_browser.fs_ops,
-				     dst_abs_dir, src_abs_path);
+	connector_get_download_path (connector.device_desc, remote_dir_iter,
+				     remote_browser.fs_ops, dst_abs_dir,
+				     src_abs_path);
       elektroid_add_task (DOWNLOAD, src_abs_path, download_path,
 			  remote_browser.fs_ops->fs);
       g_free (dst_abs_dirc);
@@ -2402,7 +2408,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
       remote_browser.file_icon = elektroid_get_inventory_icon_for_fs (fs);
       local_browser.file_icon = elektroid_get_inventory_icon_for_fs (fs);
-      local_browser.extensions = elektroid_get_file_extensions_for_fs (fs);
+      elektroid_set_file_extensions_for_fs (&local_browser.extensions, fs);
       browser_load_dir (&local_browser);
 
       gtk_widget_set_sensitive (remote_browser.up_button,
@@ -3101,7 +3107,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
     .dir = malloc (PATH_MAX),
     .check_selection = elektroid_local_check_selection,
     .file_icon = elektroid_get_inventory_icon_for_fs (FS_SAMPLES),
-    .extensions = elektroid_get_file_extensions_for_fs (FS_SAMPLES),
+    .extensions = NULL,
     .fs_ops = &FS_LOCAL_OPERATIONS,
     .data = NULL,
     .notify_dir_change = elektroid_notify_local_dir_change,

@@ -71,7 +71,7 @@ output=$($ecli list-data $DEVICE:/soundbanks/H)
 [ $(echo "$output" | grep "^F  63" | wc -l) -ne 0 ] && exit 1
 
 echo "Testing upload..."
-$ecli upload-data $srcdir/res/SOUND.data $DEVICE:/soundbanks/H
+$ecli upload-data $srcdir/res/SOUND.dt-data $DEVICE:/soundbanks/H
 [ $? -ne 0 ] && exit 1
 sleep 1
 id=$($ecli list-data $DEVICE:/soundbanks/H | grep 'SOUND$' | awk '{print $2}')
@@ -81,12 +81,12 @@ echo "Testing download..."
 $ecli download-data $DEVICE:/soundbanks/H/$id
 [ $? -ne 0 ] && exit 1
 sleep 1
-ls "SOUND.data"
-cksum SOUND.data
-cksum $srcdir/res/SOUND.data
-actual_cksum="$(cksum SOUND.data | awk '{print $1}')"
-[ "$actual_cksum" != "$(cksum $srcdir/res/SOUND.data | awk '{print $1}')" ] && exit 1
-rm SOUND.data
+ls "SOUND.dt-data"
+cksum SOUND.dt-data
+cksum $srcdir/res/SOUND.dt-data
+actual_cksum="$(cksum SOUND.dt-data | awk '{print $1}')"
+[ "$actual_cksum" != "$(cksum $srcdir/res/SOUND.dt-data | awk '{print $1}')" ] && exit 1
+rm SOUND.dt-data
 [ $? -ne 0 ] && exit 1
 $ecli clear-data $DEVICE:/soundbanks/H/$id
 [ $? -ne 0 ] && exit 1

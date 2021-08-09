@@ -49,7 +49,7 @@ const struct fs_operations FS_LOCAL_OPERATIONS = {
   .download = NULL,
   .upload = NULL,
   .getid = get_item_name,
-  .download_ext = NULL
+  .extension = NULL
 };
 
 gint

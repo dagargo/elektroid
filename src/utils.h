@@ -100,7 +100,7 @@ struct fs_operations
   fs_get_item_id getid;
   fs_local_file_op save;
   fs_local_file_op load;
-  const gchar *download_ext;
+  const gchar *extension;
 };
 
 extern int debug_level;

@@ -342,7 +342,8 @@ cli_download (int argc, char *argv[], int optind,
       goto end;
     }
 
-  download_path = connector_get_download_path (iter, fs_ops, ".", src_path);
+  download_path = connector_get_download_path (connector.device_desc,
+					       iter, fs_ops, ".", src_path);
   if (!download_path)
     {
       res = -1;

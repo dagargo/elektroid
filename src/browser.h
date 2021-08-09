@@ -56,7 +56,7 @@ struct browser
   GString *dnd_data;
   void (*notify_dir_change) (struct browser *);
   const gchar *file_icon;
-  const gchar **extensions;
+  gchar **extensions;
   const struct fs_operations *fs_ops;
   void *data;
     gboolean (*check_callback) ();

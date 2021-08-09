@@ -135,6 +135,7 @@ static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 
 static const struct connector_device_desc ANALOG_RYTM_DESC = {
   .name = "Analog Rytm",
+  .alias = "ar",
   .id = ARMK1_ID,
   .fss = FS_SAMPLES,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
@@ -142,6 +143,7 @@ static const struct connector_device_desc ANALOG_RYTM_DESC = {
 
 static const struct connector_device_desc DIGITAKT_DESC = {
   .name = "Digitakt",
+  .alias = "dt",
   .id = DTAKT_ID,
   .fss = FS_SAMPLES | FS_DATA,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
@@ -149,6 +151,7 @@ static const struct connector_device_desc DIGITAKT_DESC = {
 
 static const struct connector_device_desc ANALOG_RYTM_MKII_DESC = {
   .name = "Analog Rytm MKII",
+  .alias = "ar",
   .id = ARMK2_ID,
   .fss = FS_SAMPLES,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
@@ -156,13 +159,15 @@ static const struct connector_device_desc ANALOG_RYTM_MKII_DESC = {
 
 static const struct connector_device_desc MODEL_SAMPLES_DESC = {
   .name = "Model:Samples",
+  .alias = "ms",
   .id = MOD_S_ID,
   .fss = FS_SAMPLES,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
 static const struct connector_device_desc NULL_DEVICE_DESC = {
-  .name = "-",
+  .name = NULL,
+  .alias = NULL,
   .id = 0,
   .fss = 0,
   .storages = 0
@@ -188,7 +193,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .getid = get_item_name,
   .load = sample_load,
   .save = sample_save,
-  .download_ext = "wav"
+  .extension = "wav"
 };
 
 static const struct fs_operations FS_DATA_OPERATIONS = {
@@ -206,7 +211,7 @@ static const struct fs_operations FS_DATA_OPERATIONS = {
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
-  .download_ext = "data"
+  .extension = "data"
 };
 
 static const struct fs_operations FS_NONE_OPERATIONS = {
@@ -221,7 +226,7 @@ static const struct fs_operations FS_NONE_OPERATIONS = {
   .download = NULL,
   .upload = NULL,
   .getid = NULL,
-  .download_ext = NULL
+  .extension = NULL
 };
 
 static const struct fs_operations *FS_OPERATIONS[] = {
@@ -2649,12 +2654,13 @@ connector_get_upload_path (struct item_iterator *remote_iter,
 }
 
 gchar *
-connector_get_download_path (struct item_iterator *remote_iter,
+connector_get_download_path (const struct connector_device_desc *dev_desc,
+			     struct item_iterator *remote_iter,
 			     const struct fs_operations *ops,
 			     const gchar * dst_dir, const gchar * src_path)
 {
   gint32 id;
-  gchar *name, *filename, *namec, *path;
+  gchar *name, *filename, *namec, *path, *ext;
   struct item_iterator *iter;
 
   namec = strdup (src_path);
@@ -2680,8 +2686,10 @@ connector_get_download_path (struct item_iterator *remote_iter,
     }
 
 end:
+  ext = connector_get_full_ext (dev_desc, ops);
   filename = malloc (PATH_MAX);
-  snprintf (filename, PATH_MAX, "%s.%s", name, ops->download_ext);
+  snprintf (filename, PATH_MAX, "%s.%s", name, ext);
+  g_free (ext);
   path = chain_path (dst_dir, filename);
   g_free (name);
   g_free (filename);
@@ -2822,4 +2830,20 @@ connector_upload_datum (const gchar * path, GByteArray * array,
     }
 
   return 0;
+}
+
+gchar *
+connector_get_full_ext (const struct connector_device_desc *desc,
+			const struct fs_operations *ops)
+{
+  gchar *ext = malloc (LABEL_MAX);
+  if (ops->fs == FS_SAMPLES)
+    {
+      snprintf (ext, LABEL_MAX, "%s", ops->extension);
+    }
+  else
+    {
+      snprintf (ext, LABEL_MAX, "%s-%s", desc->alias, ops->extension);
+    }
+  return ext;
 }

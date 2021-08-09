@@ -240,7 +240,7 @@ browser_file_match_extensions (struct browser *browser,
 {
   gboolean match;
   const gchar *entry_ext;
-  const gchar **ext = browser->extensions;
+  gchar **ext = browser->extensions;
 
   if (iter->item.type == ELEKTROID_DIR)
     {
