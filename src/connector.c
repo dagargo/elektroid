@@ -2654,16 +2654,31 @@ connector_get_upload_path (struct item_iterator *remote_iter,
 }
 
 gchar *
-connector_get_download_path (const struct connector_device_desc *dev_desc,
+connector_get_download_path (struct connector *connector,
 			     struct item_iterator *remote_iter,
 			     const struct fs_operations *ops,
 			     const gchar * dst_dir, const gchar * src_path)
 {
   gint32 id;
-  gchar *name, *filename, *namec, *path, *ext;
+  const gchar *src_fpath, *src_dir;
+  gchar *name, *namec, *filename, *path, *dl_ext, *src_pathc, *src_dirc;
   struct item_iterator *iter;
+  const gchar *md_ext;
+  const gchar *ext = get_ext (src_path);
 
-  namec = strdup (src_path);
+  src_pathc = strdup (src_path);
+  if (ext && strcmp (ext, "metadata") == 0 && ops->fs != FS_SAMPLES)
+    {
+      src_fpath = dirname (src_pathc);
+      md_ext = ".metadata";
+    }
+  else
+    {
+      src_fpath = src_pathc;
+      md_ext = "";
+    }
+
+  namec = strdup (src_fpath);
   name = basename (namec);
 
   if (ops->fs == FS_SAMPLES)
@@ -2672,9 +2687,20 @@ connector_get_download_path (const struct connector_device_desc *dev_desc,
       goto end;
     }
 
+  if (remote_iter)
+    {
+      iter = copy_item_iterator (remote_iter);
+    }
+  else
+    {
+      src_dirc = strdup (src_fpath);
+      src_dir = dirname (src_dirc);
+      iter = ops->readdir (src_dir, connector);
+      g_free (src_dirc);
+    }
+
   id = atoi (name);
   name = NULL;
-  iter = copy_item_iterator (remote_iter);
 
   while (!next_item_iterator (iter))
     {
@@ -2686,14 +2712,15 @@ connector_get_download_path (const struct connector_device_desc *dev_desc,
     }
 
 end:
-  ext = connector_get_full_ext (dev_desc, ops);
+  dl_ext = connector_get_full_ext (connector->device_desc, ops);
   filename = malloc (PATH_MAX);
-  snprintf (filename, PATH_MAX, "%s.%s", name, ext);
-  g_free (ext);
+  snprintf (filename, PATH_MAX, "%s.%s%s", name, dl_ext, md_ext);
+  g_free (dl_ext);
   path = chain_path (dst_dir, filename);
-  g_free (name);
   g_free (filename);
+  g_free (src_pathc);
   g_free (namec);
+  g_free (name);
 
   return path;
 }

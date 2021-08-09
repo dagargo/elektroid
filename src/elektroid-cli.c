@@ -301,10 +301,9 @@ cli_download (int argc, char *argv[], int optind,
 	      const struct fs_operations *fs_ops)
 {
   const gchar *src_path;
-  gchar *device_src_path, *download_path, *src_dirc, *src_dir;
+  gchar *device_src_path, *download_path;
   gint res;
   GByteArray *array;
-  struct item_iterator *iter;
 
   if (optind == argc)
     {
@@ -332,18 +331,8 @@ cli_download (int argc, char *argv[], int optind,
       goto end;
     }
 
-  src_dirc = strdup (src_path);
-  src_dir = dirname (src_dirc);
-  iter = fs_ops->readdir (src_dir, &connector);
-  g_free (src_dirc);
-  if (!iter)
-    {
-      res = -1;
-      goto end;
-    }
-
-  download_path = connector_get_download_path (connector.device_desc,
-					       iter, fs_ops, ".", src_path);
+  download_path = connector_get_download_path (&connector, NULL, fs_ops, ".",
+					       src_path);
   if (!download_path)
     {
       res = -1;

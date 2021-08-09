@@ -133,7 +133,7 @@ gchar *connector_get_upload_path (struct item_iterator *,
 				  const struct fs_operations *, const gchar *,
 				  const gchar *, gint32 *);
 
-gchar *connector_get_download_path (const struct connector_device_desc *,
+gchar *connector_get_download_path (struct connector *,
 				    struct item_iterator *,
 				    const struct fs_operations *,
 				    const gchar *, const gchar *);
