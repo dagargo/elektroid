@@ -95,7 +95,6 @@ struct connector_storage_stats
 
 enum connector_fs
 {
-  FS_NONE = 0,
   FS_SAMPLES = 0x1,
   FS_DATA = 0x2
 };

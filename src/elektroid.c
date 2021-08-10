@@ -1322,8 +1322,7 @@ elektroid_local_check_selection (gpointer data)
   struct item *item;
   gint count = browser_get_selected_items_count (&local_browser);
 
-  if (remote_browser.fs_ops->fs == FS_SAMPLES
-      || remote_browser.fs_ops->fs == FS_NONE)
+  if (!remote_browser.fs_ops || remote_browser.fs_ops->fs == FS_SAMPLES)
     {
       audio_stop (&audio, TRUE);
       elektroid_stop_load_thread ();

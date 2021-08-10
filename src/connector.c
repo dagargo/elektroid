@@ -214,21 +214,6 @@ static const struct fs_operations FS_DATA_OPERATIONS = {
   .extension = "data"
 };
 
-static const struct fs_operations FS_NONE_OPERATIONS = {
-  .fs = FS_NONE,
-  .readdir = NULL,
-  .mkdir = NULL,
-  .delete = NULL,
-  .move = NULL,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
-  .download = NULL,
-  .upload = NULL,
-  .getid = NULL,
-  .extension = NULL
-};
-
 static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_OPERATIONS, &FS_DATA_OPERATIONS
 };
@@ -251,7 +236,7 @@ connector_free_iterator_data (void *iter_data)
 const struct fs_operations *
 connector_get_fs_operations (enum connector_fs fs)
 {
-  const struct fs_operations *fs_operations = &FS_NONE_OPERATIONS;
+  const struct fs_operations *fs_operations = NULL;
   for (int i = 0; i < FS_OPERATIONS_N; i++)
     {
       if (FS_OPERATIONS[i]->fs == fs)
