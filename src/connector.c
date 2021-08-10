@@ -1464,7 +1464,7 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
   if (control)
     {
       g_mutex_lock (&control->mutex);
-      active = (!control || control->active);
+      active = control->active;
       g_mutex_unlock (&control->mutex);
     }
   else
@@ -1495,7 +1495,7 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
 	{
 	  control->callback (transferred / (double) sample->len);
 	  g_mutex_lock (&control->mutex);
-	  active = (!control || control->active);
+	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
 	}
 
@@ -1577,7 +1577,7 @@ connector_download_sample (const gchar * path, GByteArray * output,
   if (control)
     {
       g_mutex_lock (&control->mutex);
-      active = (!control || control->active);
+      active = control->active;
       g_mutex_unlock (&control->mutex);
     }
   else
@@ -1611,7 +1611,7 @@ connector_download_sample (const gchar * path, GByteArray * output,
 	{
 	  control->callback (next_block_start / (double) frames);
 	  g_mutex_lock (&control->mutex);
-	  active = (!control || control->active);
+	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
 	}
 
@@ -2735,7 +2735,7 @@ connector_download_datum_prefix (const gchar * path, GByteArray * output,
   if (control)
     {
       g_mutex_lock (&control->mutex);
-      active = (!control || control->active);
+      active = control->active;
       g_mutex_unlock (&control->mutex);
     }
   else
@@ -2810,7 +2810,7 @@ connector_download_datum_prefix (const gchar * path, GByteArray * output,
 	{
 	  control->callback (status / 1000.0);
 	  g_mutex_lock (&control->mutex);
-	  active = (!control || control->active);
+	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
 	}
 
@@ -3024,7 +3024,7 @@ connector_upload_datum_prefix (const gchar * path, GByteArray * array,
   if (control)
     {
       g_mutex_lock (&control->mutex);
-      active = (!control || control->active);
+      active = control->active;
       g_mutex_unlock (&control->mutex);
     }
   else
@@ -3108,7 +3108,7 @@ connector_upload_datum_prefix (const gchar * path, GByteArray * array,
 	{
 	  control->callback (transferred / (gdouble) array->len);
 	  g_mutex_lock (&control->mutex);
-	  active = (!control || control->active);
+	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
 	}
     }
