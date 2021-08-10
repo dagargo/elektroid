@@ -2147,9 +2147,8 @@ elektroid_download_task (gpointer userdata)
 	}
 
       g_byte_array_free (array, TRUE);
-
-      g_mutex_unlock (&transfer.control.mutex);
     }
+  g_mutex_unlock (&transfer.control.mutex);
 
 end:
   g_idle_add (elektroid_complete_running_task, NULL);
