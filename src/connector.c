@@ -48,6 +48,9 @@
 #define DKEYS_ID 0x1c
 #define MOD_S_ID 0x19
 
+#define FS_DATA_PRJ_PREFIX "/projects"
+#define FS_DATA_SND_PREFIX "/soundbanks"
+
 static gint connector_delete_samples_dir (struct connector *, const gchar *);
 
 static struct item_iterator *connector_read_samples_dir (const gchar *,
@@ -66,21 +69,61 @@ static gint connector_download_sample (const gchar *, GByteArray *,
 static gint connector_upload_sample (const gchar *, GByteArray *,
 				     struct job_control *, void *);
 
-static struct item_iterator *connector_read_data_dir (const gchar *, void *);
+static struct item_iterator *connector_read_data_dir_all (const gchar *,
+							  void *);
+static struct item_iterator *connector_read_data_dir_prj (const gchar *,
+							  void *);
+static struct item_iterator *connector_read_data_dir_snd (const gchar *,
+							  void *);
 
-static gint connector_move_data_item (const gchar *, const gchar *, void *);
+static gint connector_move_data_item_all (const gchar *, const gchar *,
+					  void *);
+static gint connector_move_data_item_prj (const gchar *, const gchar *,
+					  void *);
+static gint connector_move_data_item_snd (const gchar *, const gchar *,
+					  void *);
 
-static gint connector_copy_data_item (const gchar *, const gchar *, void *);
+static gint connector_copy_data_item_all (const gchar *, const gchar *,
+					  void *);
 
-static gint connector_clear_data_item (const gchar *, void *);
+static gint connector_copy_data_item_prj (const gchar *, const gchar *,
+					  void *);
 
-static gint connector_swap_data_item (const gchar *, const gchar *, void *);
+static gint connector_copy_data_item_snd (const gchar *, const gchar *,
+					  void *);
 
-static gint connector_download_datum (const gchar *, GByteArray *,
-				      struct job_control *, void *);
+static gint connector_clear_data_item_all (const gchar *, void *);
 
-static gint connector_upload_datum (const gchar *, GByteArray *,
-				    struct job_control *, void *);
+static gint connector_clear_data_item_prj (const gchar *, void *);
+
+static gint connector_clear_data_item_snd (const gchar *, void *);
+
+static gint connector_swap_data_item_all (const gchar *, const gchar *,
+					  void *);
+
+static gint connector_swap_data_item_prj (const gchar *, const gchar *,
+					  void *);
+
+static gint connector_swap_data_item_snd (const gchar *, const gchar *,
+					  void *);
+
+static gint connector_download_datum_all (const gchar *, GByteArray *,
+					  struct job_control *, void *);
+
+static gint connector_download_datum_prj (const gchar *, GByteArray *,
+					  struct job_control *, void *);
+
+static gint connector_download_datum_snd (const gchar *, GByteArray *,
+					  struct job_control *, void *);
+
+static gint connector_upload_datum_all (const gchar *, GByteArray *,
+					struct job_control *, void *);
+
+static gint connector_upload_datum_prj (const gchar *, GByteArray *,
+					struct job_control *, void *);
+
+static gint connector_upload_datum_snd (const gchar *, GByteArray *,
+					struct job_control *, void *);
 
 static struct item_iterator *connector_copy_sample_iterator (struct
 							     item_iterator *);
@@ -145,7 +188,7 @@ static const struct connector_device_desc DIGITAKT_DESC = {
   .name = "Digitakt",
   .alias = "dt",
   .id = DTAKT_ID,
-  .fss = FS_SAMPLES | FS_DATA,
+  .fss = FS_SAMPLES | FS_DATA_PRJ | FS_DATA_SND,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
@@ -163,14 +206,6 @@ static const struct connector_device_desc MODEL_SAMPLES_DESC = {
   .id = MOD_S_ID,
   .fss = FS_SAMPLES,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
-};
-
-static const struct connector_device_desc NULL_DEVICE_DESC = {
-  .name = NULL,
-  .alias = NULL,
-  .id = 0,
-  .fss = 0,
-  .storages = 0
 };
 
 static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
@@ -196,26 +231,63 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .extension = "wav"
 };
 
-static const struct fs_operations FS_DATA_OPERATIONS = {
-  .fs = FS_DATA,
-  .readdir = connector_read_data_dir,
+static const struct fs_operations FS_DATA_ALL_OPERATIONS = {
+  .fs = FS_DATA_ALL,
+  .readdir = connector_read_data_dir_all,
   .mkdir = NULL,
-  .delete = connector_clear_data_item,
+  .delete = connector_clear_data_item_all,
   .rename = NULL,
-  .move = connector_move_data_item,
-  .copy = connector_copy_data_item,
-  .clear = connector_clear_data_item,
-  .swap = connector_swap_data_item,
-  .download = connector_download_datum,
-  .upload = connector_upload_datum,
+  .move = connector_move_data_item_all,
+  .copy = connector_copy_data_item_all,
+  .clear = connector_clear_data_item_all,
+  .swap = connector_swap_data_item_all,
+  .download = connector_download_datum_all,
+  .upload = connector_upload_datum_all,
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
   .extension = "data"
 };
 
+static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
+  .fs = FS_DATA_PRJ,
+  .readdir = connector_read_data_dir_prj,
+  .mkdir = NULL,
+  .delete = connector_clear_data_item_prj,
+  .rename = NULL,
+  .move = connector_move_data_item_prj,
+  .copy = connector_copy_data_item_prj,
+  .clear = connector_clear_data_item_prj,
+  .swap = connector_swap_data_item_prj,
+  .download = connector_download_datum_prj,
+  .upload = connector_upload_datum_prj,
+  .getid = get_item_index,
+  .load = load_file,
+  .save = save_file,
+  .extension = "prj"
+};
+
+static const struct fs_operations FS_DATA_SND_OPERATIONS = {
+  .fs = FS_DATA_SND,
+  .readdir = connector_read_data_dir_snd,
+  .mkdir = NULL,
+  .delete = connector_clear_data_item_snd,
+  .rename = NULL,
+  .move = connector_move_data_item_snd,
+  .copy = connector_copy_data_item_snd,
+  .clear = connector_clear_data_item_snd,
+  .swap = connector_swap_data_item_snd,
+  .download = connector_download_datum_snd,
+  .upload = connector_upload_datum_snd,
+  .getid = get_item_index,
+  .load = load_file,
+  .save = save_file,
+  .extension = "snd"
+};
+
 static const struct fs_operations *FS_OPERATIONS[] = {
-  &FS_SAMPLES_OPERATIONS, &FS_DATA_OPERATIONS
+  &FS_SAMPLES_OPERATIONS, &FS_DATA_ALL_OPERATIONS,
+  &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS
 };
 
 static const int FS_OPERATIONS_N =
@@ -1828,7 +1900,7 @@ connector_get_device_desc (guint8 id)
 	  return CONNECTOR_DEVICE_DESCS[i];
 	}
     }
-  return &NULL_DEVICE_DESC;
+  return NULL;
 }
 
 gint
@@ -2216,15 +2288,35 @@ connector_copy_data_iterator (struct item_iterator *iter)
   return connector_new_data_iterator (copy);
 }
 
+static gchar *
+connector_add_prefix_to_path (const gchar * dir, const gchar * prefix)
+{
+  gchar *full = malloc (PATH_MAX);
+
+  if (prefix)
+    {
+      snprintf (full, PATH_MAX, "%s%s", prefix, dir);
+    }
+  else
+    {
+      strcpy (full, dir);
+    }
+
+  return full;
+}
+
 static struct item_iterator *
-connector_read_data_dir (const gchar * dir, void *data)
+connector_read_data_dir_prefix (const gchar * dir, void *data,
+				const char *prefix)
 {
   int res;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   struct connector *connector = data;
+  gchar *dir_w_prefix = connector_add_prefix_to_path (dir, prefix);
 
-  tx_msg = connector_new_msg_list (dir, 0, 0, 1);
+  tx_msg = connector_new_msg_list (dir_w_prefix, 0, 0, 1);
+  g_free (dir_w_prefix);
   if (!tx_msg)
     {
       errno = EINVAL;
@@ -2249,36 +2341,172 @@ connector_read_data_dir (const gchar * dir, void *data)
   return connector_new_data_iterator (rx_msg);
 }
 
-static gint
-connector_move_data_item (const gchar * src, const gchar * dst, void *data)
+static struct item_iterator *
+connector_read_data_dir_all (const gchar * dir, void *data)
 {
-  struct connector *connector = data;
-  return connector_src_dst_common (connector, src, dst, DATA_MOVE_REQUEST,
-				   sizeof (DATA_MOVE_REQUEST));
+  return connector_read_data_dir_prefix (dir, data, NULL);
+}
+
+static struct item_iterator *
+connector_read_data_dir_prj (const gchar * dir, void *data)
+{
+  return connector_read_data_dir_prefix (dir, data, FS_DATA_PRJ_PREFIX);
+}
+
+static struct item_iterator *
+connector_read_data_dir_snd (const gchar * dir, void *data)
+{
+  return connector_read_data_dir_prefix (dir, data, FS_DATA_SND_PREFIX);
 }
 
 static gint
-connector_copy_data_item (const gchar * src, const gchar * dst, void *data)
+connector_dst_src_data_prefix_common (const gchar * src, const gchar * dst,
+				      void *data, const char *prefix,
+				      const guint8 * op_data, guint len)
 {
+  gint res;
   struct connector *connector = data;
-  return connector_src_dst_common (connector, src, dst, DATA_COPY_REQUEST,
-				   sizeof (DATA_COPY_REQUEST));
+  char *src_w_prefix = connector_add_prefix_to_path (src, prefix);
+  char *dst_w_prefix = connector_add_prefix_to_path (dst, prefix);
+
+  res = connector_src_dst_common (connector, src_w_prefix, dst_w_prefix,
+				  op_data, len);
+  g_free (src_w_prefix);
+  g_free (dst_w_prefix);
+
+  return res;
 }
 
 static gint
-connector_clear_data_item (const gchar * path, void *data)
+connector_move_data_item_prefix (const gchar * src, const gchar * dst,
+				 void *data, const char *prefix)
 {
-  struct connector *connector = data;
-  return connector_path_common (connector, path, DATA_CLEAR_REQUEST,
-				sizeof (DATA_CLEAR_REQUEST));
+  return connector_dst_src_data_prefix_common (src, dst, data, prefix,
+					       DATA_MOVE_REQUEST,
+					       sizeof (DATA_MOVE_REQUEST));
 }
 
 static gint
-connector_swap_data_item (const gchar * src, const gchar * dst, void *data)
+connector_move_data_item_all (const gchar * src, const gchar * dst,
+			      void *data)
 {
+  return connector_move_data_item_prefix (src, dst, data, NULL);
+}
+
+static gint
+connector_move_data_item_prj (const gchar * src, const gchar * dst,
+			      void *data)
+{
+  return connector_move_data_item_prefix (src, dst, data, FS_DATA_PRJ_PREFIX);
+}
+
+static gint
+connector_move_data_item_snd (const gchar * src, const gchar * dst,
+			      void *data)
+{
+  return connector_move_data_item_prefix (src, dst, data, FS_DATA_SND_PREFIX);
+}
+
+static gint
+connector_copy_data_item_prefix (const gchar * src, const gchar * dst,
+				 void *data, const gchar * prefix)
+{
+  return connector_dst_src_data_prefix_common (src, dst, data, prefix,
+					       DATA_COPY_REQUEST,
+					       sizeof (DATA_COPY_REQUEST));
+}
+
+static gint
+connector_copy_data_item_all (const gchar * src, const gchar * dst,
+			      void *data)
+{
+  return connector_copy_data_item_prefix (src, dst, data, NULL);
+}
+
+static gint
+connector_copy_data_item_prj (const gchar * src, const gchar * dst,
+			      void *data)
+{
+  return connector_copy_data_item_prefix (src, dst, data, FS_DATA_PRJ_PREFIX);
+}
+
+static gint
+connector_copy_data_item_snd (const gchar * src, const gchar * dst,
+			      void *data)
+{
+  return connector_copy_data_item_prefix (src, dst, data, FS_DATA_SND_PREFIX);
+}
+
+static gint
+connector_path_data_prefix_common (const gchar * path,
+				   void *data, const char *prefix,
+				   const guint8 * op_data, guint len)
+{
+  gint res;
   struct connector *connector = data;
-  return connector_src_dst_common (connector, src, dst, DATA_SWAP_REQUEST,
-				   sizeof (DATA_SWAP_REQUEST));
+  char *path_w_prefix = connector_add_prefix_to_path (path, prefix);
+
+  res = connector_path_common (connector, path_w_prefix, op_data, len);
+  g_free (path_w_prefix);
+
+  return res;
+}
+
+static gint
+connector_clear_data_item_prefix (const gchar * path, void *data,
+				  const gchar * prefix)
+{
+  return connector_path_data_prefix_common (path, data, prefix,
+					    DATA_CLEAR_REQUEST,
+					    sizeof (DATA_CLEAR_REQUEST));
+}
+
+static gint
+connector_clear_data_item_all (const gchar * path, void *data)
+{
+  return connector_clear_data_item_prefix (path, data, NULL);
+}
+
+static gint
+connector_clear_data_item_prj (const gchar * path, void *data)
+{
+  return connector_clear_data_item_prefix (path, data, FS_DATA_PRJ_PREFIX);
+}
+
+static gint
+connector_clear_data_item_snd (const gchar * path, void *data)
+{
+  return connector_clear_data_item_prefix (path, data, FS_DATA_SND_PREFIX);
+}
+
+static gint
+connector_swap_data_item_prefix (const gchar * src, const gchar * dst,
+				 void *data, const gchar * prefix)
+{
+  return connector_dst_src_data_prefix_common (src, dst, data, prefix,
+					       DATA_SWAP_REQUEST,
+					       sizeof (DATA_SWAP_REQUEST));
+}
+
+static gint
+connector_swap_data_item_all (const gchar * src, const gchar * dst,
+			      void *data)
+{
+  return connector_swap_data_item_prefix (src, dst, data, NULL);
+}
+
+static gint
+connector_swap_data_item_prj (const gchar * src, const gchar * dst,
+			      void *data)
+{
+  return connector_swap_data_item_prefix (src, dst, data, FS_DATA_PRJ_PREFIX);
+}
+
+static gint
+connector_swap_data_item_snd (const gchar * src, const gchar * dst,
+			      void *data)
+{
+  return connector_swap_data_item_prefix (src, dst, data, FS_DATA_SND_PREFIX);
 }
 
 static gint
@@ -2294,6 +2522,7 @@ connector_open_datum (struct connector *connector, const gchar * path,
   const guint8 *data;
   guint len;
   gchar *path_cp1252;
+  gint res = 0;
 
   if (mode == O_RDONLY)
     {
@@ -2341,6 +2570,7 @@ connector_open_datum (struct connector *connector, const gchar * path,
   if (!rx_msg)
     {
       errno = EIO;
+      res = -1;
       goto cleanup;
     }
 
@@ -2350,6 +2580,7 @@ connector_open_datum (struct connector *connector, const gchar * path,
       error_print ("%s (%s)\n", g_strerror (errno),
 		   connector_get_msg_string (rx_msg));
       free_msg (rx_msg);
+      res = -1;
       goto cleanup;
     }
 
@@ -2377,7 +2608,7 @@ connector_open_datum (struct connector *connector, const gchar * path,
 
 cleanup:
   g_free (path_cp1252);
-  return 0;
+  return res;
 }
 
 static gint
@@ -2464,8 +2695,9 @@ connector_close_datum (struct connector *connector,
 }
 
 static gint
-connector_download_datum (const gchar * path, GByteArray * output,
-			  struct job_control *control, void *data)
+connector_download_datum_prefix (const gchar * path, GByteArray * output,
+				 struct job_control *control, void *data,
+				 const gchar * prefix)
 {
   gint res;
   guint32 seq;
@@ -2482,9 +2714,12 @@ connector_download_datum (const gchar * path, GByteArray * output,
   gboolean active;
   GByteArray *rx_msg;
   GByteArray *tx_msg;
+  gchar *path_w_prefix = connector_add_prefix_to_path (path, prefix);
   struct connector *connector = data;
 
-  if (connector_open_datum (connector, path, &jid, O_RDONLY, 0))
+  res = connector_open_datum (connector, path_w_prefix, &jid, O_RDONLY, 0);
+  g_free (path_w_prefix);
+  if (res)
     {
       errno = EIO;
       return -1;
@@ -2589,6 +2824,29 @@ connector_download_datum (const gchar * path, GByteArray * output,
     }
 
   return res;
+}
+
+static gint
+connector_download_datum_all (const gchar * path, GByteArray * output,
+			      struct job_control *control, void *data)
+{
+  return connector_download_datum_prefix (path, output, control, data, NULL);
+}
+
+static gint
+connector_download_datum_prj (const gchar * path, GByteArray * output,
+			      struct job_control *control, void *data)
+{
+  return connector_download_datum_prefix (path, output, control, data,
+					  FS_DATA_PRJ_PREFIX);
+}
+
+static gint
+connector_download_datum_snd (const gchar * path, GByteArray * output,
+			      struct job_control *control, void *data)
+{
+  return connector_download_datum_prefix (path, output, control, data,
+					  FS_DATA_SND_PREFIX);
 }
 
 gchar *
@@ -2723,9 +2981,11 @@ end:
 }
 
 static gint
-connector_upload_datum (const gchar * path, GByteArray * array,
-			struct job_control *control, void *data)
+connector_upload_datum_prefix (const gchar * path, GByteArray * array,
+			       struct job_control *control, void *data,
+			       const gchar * prefix)
 {
+  gint res;
   guint32 seq;
   guint32 jid;
   guint32 crc;
@@ -2741,9 +3001,14 @@ connector_upload_datum (const gchar * path, GByteArray * array,
   guint32 total;
   GByteArray *rx_msg;
   GByteArray *tx_msg;
+  gchar *path_w_prefix = connector_add_prefix_to_path (path, prefix);
   struct connector *connector = data;
 
-  if (connector_open_datum (connector, path, &jid, O_WRONLY, array->len))
+  res =
+    connector_open_datum (connector, path_w_prefix, &jid, O_WRONLY,
+			  array->len);
+  g_free (path_w_prefix);
+  if (res)
     {
       errno = EIO;
       return -1;
@@ -2825,7 +3090,7 @@ connector_upload_datum (const gchar * path, GByteArray * array,
       free_msg (rx_msg);
 
       debug_print (1,
-		   "Read datum info: job id: %d; seq: %d; total: %d\n",
+		   "Write datum info: job id: %d; seq: %d; total: %d\n",
 		   r_jid, r_seq, total);
 
       seq++;
@@ -2841,7 +3106,7 @@ connector_upload_datum (const gchar * path, GByteArray * array,
 
       if (control)
 	{
-	  control->callback (total / (gdouble) array->len);
+	  control->callback (transferred / (gdouble) array->len);
 	  g_mutex_lock (&control->mutex);
 	  active = (!control || control->active);
 	  g_mutex_unlock (&control->mutex);
@@ -2854,6 +3119,29 @@ connector_upload_datum (const gchar * path, GByteArray * array,
     }
 
   return 0;
+}
+
+static gint
+connector_upload_datum_all (const gchar * path, GByteArray * array,
+			    struct job_control *control, void *data)
+{
+  return connector_upload_datum_prefix (path, array, control, data, NULL);
+}
+
+static gint
+connector_upload_datum_prj (const gchar * path, GByteArray * array,
+			    struct job_control *control, void *data)
+{
+  return connector_upload_datum_prefix (path, array, control, data,
+					FS_DATA_PRJ_PREFIX);
+}
+
+static gint
+connector_upload_datum_snd (const gchar * path, GByteArray * array,
+			    struct job_control *control, void *data)
+{
+  return connector_upload_datum_prefix (path, array, control, data,
+					FS_DATA_SND_PREFIX);
 }
 
 gchar *

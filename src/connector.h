@@ -96,7 +96,9 @@ struct connector_storage_stats
 enum connector_fs
 {
   FS_SAMPLES = 0x1,
-  FS_DATA = 0x2
+  FS_DATA_ALL = 0x2,
+  FS_DATA_PRJ = 0x4,
+  FS_DATA_SND = 0x8,
 };
 
 const struct fs_operations *connector_get_fs_operations (enum connector_fs);

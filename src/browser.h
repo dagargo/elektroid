@@ -29,7 +29,9 @@
 
 #define DIR_ICON "folder-visiting-symbolic"
 #define FILE_ICON_WAVE "elektroid-wave-symbolic"
-#define FILE_ICON_PATTERN "elektroid-pattern-symbolic"
+#define FILE_ICON_DATA "elektroid-data-symbolic"
+#define FILE_ICON_PRJ "elektroid-project-symbolic"
+#define FILE_ICON_SND "elektroid-sound-symbolic"
 
 enum browser_list_field
 {

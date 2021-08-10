@@ -487,7 +487,7 @@ main (int argc, char *argv[])
     }
 
   fs_ops_samples = connector_get_fs_operations (FS_SAMPLES);
-  fs_ops_data = connector_get_fs_operations (FS_DATA);
+  fs_ops_data = connector_get_fs_operations (FS_DATA_ALL);
 
   if (strcmp (command, "ld") == 0 || strcmp (command, "list-devices") == 0)
     {

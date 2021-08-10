@@ -8,7 +8,7 @@ metainfodir= $(datadir)/metainfo
 metainfo_DATA = elektroid.appdata.xml
 
 svgicondir = $(datarootdir)/icons/hicolor/scalable/apps
-svgicon_DATA = elektroid.svg elektroid-symbolic.svg elektroid-wave-symbolic.svg elektroid-pattern-symbolic.svg
+svgicon_DATA = elektroid.svg elektroid-symbolic.svg elektroid-wave-symbolic.svg elektroid-data-symbolic.svg elektroid-project-symbolic.svg elektroid-sound-symbolic.svg
 
 gtk_update_icon_cache = gtk-update-icon-cache -f -t $(datarootdir)/icons/hicolor
 

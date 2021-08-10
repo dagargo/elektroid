@@ -124,11 +124,11 @@ static const struct option ELEKTROID_OPTIONS[] = {
 };
 
 static const gchar *ELEKTROID_FS_NAMES[] = {
-  "samples", "data"
+  "samples", "data", "projects", "sounds"
 };
 
 static const gchar *ELEKTROID_FS_ICONS[] = {
-  FILE_ICON_WAVE, FILE_ICON_PATTERN
+  FILE_ICON_WAVE, FILE_ICON_DATA, FILE_ICON_PRJ, FILE_ICON_SND
 };
 
 static gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
@@ -246,7 +246,7 @@ static GtkTreeViewColumn *remote_tree_view_index_column;
 static const gchar *
 elektroid_get_fs_name (enum connector_fs selected)
 {
-  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA; fs = fs << 1, i++)
+  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs = fs << 1, i++)
     {
       if (fs == selected)
 	{
@@ -283,9 +283,9 @@ elektroid_set_file_extensions_for_fs (gchar ** extensions[],
 static const gchar *
 elektroid_get_inventory_icon_for_fs (enum connector_fs sel_fs)
 {
-  const gchar *icon = ELEKTROID_FS_ICONS[0];
+  const gchar *icon = FILE_ICON_DATA;
 
-  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA; fs <<= 1, i++)
+  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs <<= 1, i++)
     {
       if (sel_fs == fs)
 	{
@@ -2423,8 +2423,10 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			      remote_browser.fs_ops->delete != NULL);
       gtk_widget_set_visible (local_audio_box, fs == FS_SAMPLES);
       gtk_tree_view_column_set_visible (remote_tree_view_index_column,
-					fs == FS_DATA);
-      if (fs == FS_DATA)
+					fs == FS_DATA_ALL || fs == FS_DATA_PRJ
+					|| fs == FS_DATA_SND);
+
+      if (fs == FS_DATA_ALL || fs == FS_DATA_PRJ || fs == FS_DATA_SND)
 	{
 	  audio_stop (&audio, TRUE);
 	}
@@ -2441,7 +2443,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 						BROWSER_LIST_STORE_NAME_FIELD,
 						GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
 	}
-      else if (fs == FS_DATA)
+      else if (fs == FS_DATA_ALL || fs == FS_DATA_PRJ || fs == FS_DATA_SND)
 	{
 	  gtk_tree_sortable_set_sort_func (sortable,
 					   BROWSER_LIST_STORE_INDEX_FIELD,
@@ -2456,7 +2458,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 static void
 elektroid_fill_fs_combo ()
 {
-  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA; fs = fs << 1, i++)
+  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs = fs << 1, i++)
     {
       if (connector.device_desc->fss & fs)
 	{
