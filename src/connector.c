@@ -1502,7 +1502,7 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
       usleep (REST_TIME);
     }
 
-  debug_print (2, "%d frames sent\n", transferred);
+  debug_print (2, "%d bytes sent\n", transferred);
 
   if (active)
     {
@@ -2554,14 +2554,15 @@ connector_open_datum (struct connector *connector, const gchar * path,
       g_byte_array_append (tx_msg, (guint8 *) path_cp1252,
 			   strlen (path_cp1252) + 1);
       chunk_size = htobe32 (DATA_TRANSF_BLOCK_BYTES);
-      g_byte_array_append (tx_msg, (guint8 *) & chunk_size, sizeof (guint32));	//chunk size
-      g_byte_array_append (tx_msg, (guint8 *) "\0x01", sizeof (guint8));	//compression
+      g_byte_array_append (tx_msg, (guint8 *) & chunk_size, sizeof (guint32));
+      compression = 1;
+      g_byte_array_append (tx_msg, &compression, sizeof (guint8));
     }
 
   if (mode == O_WRONLY)
     {
       sizebe = htobe32 (size);
-      g_byte_array_append (tx_msg, (guint8 *) & sizebe, sizeof (guint32));	//size
+      g_byte_array_append (tx_msg, (guint8 *) & sizebe, sizeof (guint32));
       g_byte_array_append (tx_msg, (guint8 *) path_cp1252,
 			   strlen (path_cp1252) + 1);
     }
@@ -2648,12 +2649,12 @@ connector_close_datum (struct connector *connector,
       return -1;
     }
 
-  jidbe = be32toh (jid);
+  jidbe = htobe32 (jid);
   g_byte_array_append (tx_msg, (guchar *) & jidbe, sizeof (guint32));
 
   if (mode == O_WRONLY)
     {
-      wsizebe = be32toh (wsize);
+      wsizebe = htobe32 (4 * 1024 * 1024);
       g_byte_array_append (tx_msg, (guchar *) & wsizebe, sizeof (guint32));
     }
 
@@ -2686,7 +2687,7 @@ connector_close_datum (struct connector *connector,
   if (mode == O_WRONLY && asize != wsize)
     {
       error_print
-	("Actual download bytes (%d) differs from expected ones (%d)",
+	("Actual download bytes (%d) differs from expected ones (%d)\n",
 	 asize, wsize);
       return -1;
     }
@@ -2992,12 +2993,11 @@ connector_upload_datum_prefix (const gchar * path, GByteArray * array,
   guint32 len;
   guint32 r_jid;
   guint32 r_seq;
-  guint8 offset;
+  guint32 offset;
   guint32 *data32;
   guint32 jidbe;
   guint32 aux32;
   gboolean active;
-  ssize_t transferred;
   guint32 total;
   GByteArray *rx_msg;
   GByteArray *tx_msg;
@@ -3011,7 +3011,7 @@ connector_upload_datum_prefix (const gchar * path, GByteArray * array,
   if (res)
     {
       errno = EIO;
-      return -1;
+      goto end;
     }
 
   usleep (REST_TIME);
@@ -3020,7 +3020,6 @@ connector_upload_datum_prefix (const gchar * path, GByteArray * array,
 
   seq = 0;
   offset = 0;
-  transferred = 0;
   if (control)
     {
       g_mutex_lock (&control->mutex);
@@ -3063,7 +3062,8 @@ connector_upload_datum_prefix (const gchar * path, GByteArray * array,
       if (!rx_msg)
 	{
 	  errno = EIO;
-	  transferred = -1;
+	  res = -1;
+	  goto end;
 	}
 
       usleep (REST_TIME);
@@ -3074,7 +3074,7 @@ connector_upload_datum_prefix (const gchar * path, GByteArray * array,
 	  error_print ("%s (%s)\n", g_strerror (errno),
 		       connector_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
-	  transferred = -1;
+	  res = -1;
 	  break;
 	}
 
@@ -3095,30 +3095,32 @@ connector_upload_datum_prefix (const gchar * path, GByteArray * array,
 
       seq++;
       offset += len;
-      transferred += len;
 
-      if (total != transferred)
+      if (total != offset)
 	{
 	  error_print
-	    ("Actual upload bytes (%d) differs from expected ones (%ld)\n",
-	     total, transferred);
+	    ("Actual upload bytes (%d) differs from expected ones (%d)\n",
+	     total, offset);
 	}
 
       if (control)
 	{
-	  control->callback (transferred / (gdouble) array->len);
+	  control->callback (offset / (gdouble) array->len);
 	  g_mutex_lock (&control->mutex);
 	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
 	}
     }
 
+  debug_print (2, "%d bytes sent\n", offset);
+
   if (connector_close_datum (connector, jid, O_WRONLY, array->len))
     {
-      return -1;
+      res = -1;
     }
 
-  return 0;
+end:
+  return res;
 }
 
 static gint
