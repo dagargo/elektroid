@@ -2654,7 +2654,7 @@ connector_close_datum (struct connector *connector,
 
   if (mode == O_WRONLY)
     {
-      wsizebe = htobe32 (4 * 1024 * 1024);
+      wsizebe = htobe32 (wsize);
       g_byte_array_append (tx_msg, (guchar *) & wsizebe, sizeof (guint32));
     }
 
