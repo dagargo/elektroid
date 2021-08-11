@@ -2402,11 +2402,11 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       fs = g_value_get_uint (&fsv);
 
       remote_browser.fs_ops = connector_get_fs_operations (fs);
+      remote_browser.file_icon = elektroid_get_inventory_icon_for_fs (fs);
       strcpy (remote_browser.dir, "/");
       browser_load_dir (&remote_browser);
 
-      remote_browser.file_icon = elektroid_get_inventory_icon_for_fs (fs);
-      local_browser.file_icon = elektroid_get_inventory_icon_for_fs (fs);
+      local_browser.file_icon = remote_browser.file_icon;
       elektroid_set_file_extensions_for_fs (&local_browser.extensions, fs);
       browser_load_dir (&local_browser);
 
