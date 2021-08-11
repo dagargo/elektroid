@@ -1354,6 +1354,7 @@ elektroid_local_check_selection (gpointer data)
   gtk_widget_set_sensitive (local_rename_menuitem, count == 1);
   gtk_widget_set_sensitive (local_delete_menuitem, count > 0);
   gtk_widget_set_sensitive (upload_menuitem, count > 0
+			    && remote_browser.fs_ops
 			    && remote_browser.fs_ops->upload);
 
   return FALSE;
