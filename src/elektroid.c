@@ -61,7 +61,8 @@ enum task_list_store_columns
   TASK_LIST_STORE_PROGRESS_FIELD,
   TASK_LIST_STORE_STATUS_HUMAN_FIELD,
   TASK_LIST_STORE_TYPE_HUMAN_FIELD,
-  TASK_LIST_STORE_REMOTE_FS_ID_FIELD
+  TASK_LIST_STORE_REMOTE_FS_ID_FIELD,
+  TASK_LIST_STORE_REMOTE_FS_ICON_FIELD,
 };
 
 enum fs_list_store_columns
@@ -1970,6 +1971,8 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
 {
   const gchar *status_human = elektroid_get_human_task_status (QUEUED);
   const gchar *type_human = elektroid_get_human_task_type (type);
+  const gchar *icon = elektroid_get_inventory_icon_for_fs (remote_fs_id);
+
 
   gtk_list_store_insert_with_values (task_list_store, NULL, -1,
 				     TASK_LIST_STORE_STATUS_FIELD, QUEUED,
@@ -1982,7 +1985,9 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
 				     TASK_LIST_STORE_TYPE_HUMAN_FIELD,
 				     type_human,
 				     TASK_LIST_STORE_REMOTE_FS_ID_FIELD,
-				     remote_fs_id, -1);
+				     remote_fs_id,
+				     TASK_LIST_STORE_REMOTE_FS_ICON_FIELD,
+				     icon, -1);
 
   gtk_widget_set_sensitive (remove_tasks_button, TRUE);
 }
