@@ -32,7 +32,7 @@ static gint local_delete (const gchar *, void *);
 
 static gint local_rename (const gchar *, const gchar *, void *);
 
-static struct item_iterator *local_read_dir (const gchar *, void *);
+static gint local_read_dir (struct item_iterator *, const gchar *, void *);
 
 static gint local_copy_iterator (struct item_iterator *,
 				 struct item_iterator *);
@@ -211,6 +211,7 @@ local_init_iterator (struct item_iterator *iter, const gchar * path)
     {
       return errno;
     }
+
   data->dir = dir;
   data->path = strdup (path);
 
@@ -223,12 +224,11 @@ local_init_iterator (struct item_iterator *iter, const gchar * path)
   return 0;
 }
 
-static struct item_iterator *
-local_read_dir (const gchar * path, void *userdata)
+static gint
+local_read_dir (struct item_iterator *iter, const gchar * path,
+		void *userdata)
 {
-  struct item_iterator *iter = malloc (sizeof (struct item_iterator));
-  local_init_iterator (iter, path);
-  return iter;
+  return local_init_iterator (iter, path);
 }
 
 static gint

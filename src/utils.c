@@ -243,12 +243,10 @@ free_item_iterator (struct item_iterator *iter)
     }
 }
 
-struct item_iterator *
-copy_item_iterator (struct item_iterator *src)
+gint
+copy_item_iterator (struct item_iterator *dst, struct item_iterator *src)
 {
-  struct item_iterator *dst = malloc (sizeof (struct item_iterator));
-  src->copy (dst, src);
-  return dst;
+  return src->copy (dst, src);
 }
 
 gint

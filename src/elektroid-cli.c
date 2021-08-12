@@ -107,11 +107,11 @@ cli_connect (const char *device_path)
 }
 
 static int
-cli_list (int argc, char *argv[], int optind, fs_read_dir_func readdir,
+cli_list (int argc, char *argv[], int optind, fs_init_iter_func readdir,
 	  print_item print)
 {
   const gchar *path;
-  struct item_iterator *iter;
+  struct item_iterator iter;
   gchar *device_path;
 
   if (optind == argc)
@@ -131,18 +131,17 @@ cli_list (int argc, char *argv[], int optind, fs_read_dir_func readdir,
 
   path = cli_get_path (device_path);
 
-  iter = readdir (path, &connector);
-  if (!iter)
+  if (readdir (&iter, path, &connector))
     {
       return EXIT_FAILURE;
     }
 
-  while (!next_item_iterator (iter))
+  while (!next_item_iterator (&iter))
     {
-      print (iter);
+      print (&iter);
     }
 
-  free_item_iterator (iter);
+  free_item_iterator (&iter);
 
   return EXIT_SUCCESS;
 }

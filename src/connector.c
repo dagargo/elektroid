@@ -56,8 +56,8 @@
 
 static gint connector_delete_samples_dir (struct connector *, const gchar *);
 
-static struct item_iterator *connector_read_samples_dir (const gchar *,
-							 void *);
+static gint connector_read_samples_dir (struct item_iterator *, const gchar *,
+					void *);
 
 static gint connector_create_samples_dir (const gchar *, void *);
 
@@ -72,12 +72,14 @@ static gint connector_download_sample (const gchar *, GByteArray *,
 static gint connector_upload_sample (const gchar *, GByteArray *,
 				     struct job_control *, void *);
 
-static struct item_iterator *connector_read_data_dir_all (const gchar *,
-							  void *);
-static struct item_iterator *connector_read_data_dir_prj (const gchar *,
-							  void *);
-static struct item_iterator *connector_read_data_dir_snd (const gchar *,
-							  void *);
+static gint connector_read_data_dir_all (struct item_iterator *,
+					 const gchar *, void *);
+
+static gint connector_read_data_dir_prj (struct item_iterator *,
+					 const gchar *, void *);
+
+static gint connector_read_data_dir_snd (struct item_iterator *,
+					 const gchar *, void *);
 
 static gint connector_move_data_item_all (const gchar *, const gchar *,
 					  void *);
@@ -1152,8 +1154,9 @@ cleanup:
   return rx_msg;
 }
 
-static struct item_iterator *
-connector_read_samples_dir (const gchar * dir, void *data)
+static gint
+connector_read_samples_dir (struct item_iterator *iter, const gchar * dir,
+			    void *data)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -1163,28 +1166,23 @@ connector_read_samples_dir (const gchar * dir, void *data)
 				   sizeof (FS_SAMPLE_READ_DIR_REQUEST), dir);
   if (!tx_msg)
     {
-      errno = EINVAL;
-      return NULL;
+      return -EINVAL;
     }
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
-      return NULL;
+      return -EIO;
     }
 
   if (rx_msg->len == 5
       && connector_get_path_type (connector, dir) != ELEKTROID_DIR)
     {
       free_msg (rx_msg);
-      errno = ENOTDIR;
-      return NULL;
+      return -ENOTDIR;
     }
 
-  struct item_iterator *iter = malloc (sizeof (struct item_iterator));
-  connector_init_iterator (iter, rx_msg, connector_next_sample_entry);
-  return iter;
+  return connector_init_iterator (iter, rx_msg, connector_next_sample_entry);
 }
 
 static enum item_type
@@ -1195,7 +1193,7 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   gchar *name;
   gchar *parent;
   enum item_type res;
-  struct item_iterator *iter;
+  struct item_iterator iter;
 
   if (strcmp (path, "/") == 0)
     {
@@ -1206,19 +1204,18 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   parent_copy = strdup (path);
   name = basename (name_copy);
   parent = dirname (parent_copy);
-  iter = connector_read_samples_dir (parent, connector);
   res = ELEKTROID_NONE;
-  if (iter)
+  if (!connector_read_samples_dir (&iter, parent, connector))
     {
-      while (!next_item_iterator (iter))
+      while (!next_item_iterator (&iter))
 	{
-	  if (strcmp (name, iter->item.name) == 0)
+	  if (strcmp (name, iter.item.name) == 0)
 	    {
-	      res = iter->item.type;
+	      res = iter.item.type;
 	      break;
 	    }
 	}
-      free_item_iterator (iter);
+      free_item_iterator (&iter);
     }
 
   g_free (name_copy);
@@ -1297,7 +1294,7 @@ connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
   gint res;
   gchar *src_plus;
   gchar *dst_plus;
-  struct item_iterator *iter;
+  struct item_iterator iter;
   struct connector *connector = data;
 
   debug_print (1, "Renaming remotely from %s to %s...\n", src, dst);
@@ -1316,19 +1313,18 @@ connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
 	{
 	  return res;
 	}
-      iter = connector_read_samples_dir (src, connector);
-      if (iter)
+      if (!connector_read_samples_dir (&iter, src, connector))
 	{
-	  while (!next_item_iterator (iter) && !res)
+	  while (!next_item_iterator (&iter) && !res)
 	    {
-	      src_plus = chain_path (src, iter->item.name);
-	      dst_plus = chain_path (dst, iter->item.name);
+	      src_plus = chain_path (src, iter.item.name);
+	      dst_plus = chain_path (dst, iter.item.name);
 	      res =
 		connector_move_samples_item (src_plus, dst_plus, connector);
 	      free (src_plus);
 	      free (dst_plus);
 	    }
-	  free_item_iterator (iter);
+	  free_item_iterator (&iter);
 	}
       if (!res)
 	{
@@ -1402,28 +1398,31 @@ static gint
 connector_delete_samples_item (const gchar * path, void *data)
 {
   gchar *new_path;
-  struct item_iterator *iter;
+  struct item_iterator iter;
   struct connector *connector = data;
+  gint res;
 
   if (connector_get_path_type (connector, path) == ELEKTROID_DIR)
     {
       debug_print (1, "Deleting %s samples dir...\n", path);
-      iter = connector_read_samples_dir (path, connector);
-      if (iter)
-	{
-	  while (!next_item_iterator (iter))
-	    {
-	      new_path = chain_path (path, iter->item.name);
-	      connector_delete_samples_item (new_path, connector);
-	      free (new_path);
-	    }
-	  free_item_iterator (iter);
-	}
-      else
+
+      if (connector_read_samples_dir (&iter, path, connector))
 	{
 	  error_print ("Error while opening samples dir %s dir\n", path);
 	}
-      return connector_delete_samples_dir (connector, path);
+      else
+	{
+	  res = 0;
+	  while (!res && !next_item_iterator (&iter))
+	    {
+	      new_path = chain_path (path, iter.item.name);
+	      res = res
+		|| connector_delete_samples_item (new_path, connector);
+	      free (new_path);
+	    }
+	  free_item_iterator (&iter);
+	}
+      return res || connector_delete_samples_dir (connector, path);
     }
   else
     {
@@ -2290,9 +2289,9 @@ connector_add_prefix_to_path (const gchar * dir, const gchar * prefix)
   return full;
 }
 
-static struct item_iterator *
-connector_read_data_dir_prefix (const gchar * dir, void *data,
-				const char *prefix)
+static gint
+connector_read_data_dir_prefix (struct item_iterator *iter, const gchar * dir,
+				void *data, const char *prefix)
 {
   int res;
   GByteArray *tx_msg;
@@ -2304,46 +2303,44 @@ connector_read_data_dir_prefix (const gchar * dir, void *data,
   g_free (dir_w_prefix);
   if (!tx_msg)
     {
-      errno = EINVAL;
-      return NULL;
+      return -EINVAL;
     }
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
-      return NULL;
+      return -EIO;
     }
 
   res = connector_get_msg_status (rx_msg);
   if (!res)
     {
       free_msg (rx_msg);
-      errno = ENOTDIR;
-      return NULL;
+      return -ENOTDIR;
     }
 
-  struct item_iterator *iter = malloc (sizeof (struct item_iterator));
-  connector_init_iterator (iter, rx_msg, connector_next_data_entry);
-  return iter;
+  return connector_init_iterator (iter, rx_msg, connector_next_data_entry);
 }
 
-static struct item_iterator *
-connector_read_data_dir_all (const gchar * dir, void *data)
+static gint
+connector_read_data_dir_all (struct item_iterator *iter, const gchar * dir,
+			     void *data)
 {
-  return connector_read_data_dir_prefix (dir, data, NULL);
+  return connector_read_data_dir_prefix (iter, dir, data, NULL);
 }
 
-static struct item_iterator *
-connector_read_data_dir_prj (const gchar * dir, void *data)
+static gint
+connector_read_data_dir_prj (struct item_iterator *iter, const gchar * dir,
+			     void *data)
 {
-  return connector_read_data_dir_prefix (dir, data, FS_DATA_PRJ_PREFIX);
+  return connector_read_data_dir_prefix (iter, dir, data, FS_DATA_PRJ_PREFIX);
 }
 
-static struct item_iterator *
-connector_read_data_dir_snd (const gchar * dir, void *data)
+static gint
+connector_read_data_dir_snd (struct item_iterator *iter, const gchar * dir,
+			     void *data)
 {
-  return connector_read_data_dir_prefix (dir, data, FS_DATA_SND_PREFIX);
+  return connector_read_data_dir_prefix (iter, dir, data, FS_DATA_SND_PREFIX);
 }
 
 static gint
@@ -2845,7 +2842,7 @@ connector_get_upload_path (struct connector *connector,
 			   gint32 * next_index)
 {
   gchar *path, *indexs, *namec, *name;
-  struct item_iterator *iter;
+  struct item_iterator iter;
   gboolean empty;
 
   if (ops->fs == FS_SAMPLES)
@@ -2860,29 +2857,31 @@ connector_get_upload_path (struct connector *connector,
 
   if (remote_iter)
     {
-      iter = copy_item_iterator (remote_iter);
+      if (copy_item_iterator (&iter, remote_iter))
+	{
+	  return NULL;
+	}
     }
   else
     {
-      iter = ops->readdir (dst_dir, connector);
-      if (!iter)
+      if (ops->readdir (&iter, dst_dir, connector))
 	{
 	  return NULL;
 	}
     }
 
   empty = TRUE;
-  while (!next_item_iterator (iter))
+  while (!next_item_iterator (&iter))
     {
       empty = FALSE;
-      if (iter->item.index > *next_index)
+      if (iter.item.index > *next_index)
 	{
 	  break;
 	}
       (*next_index)++;
     }
 
-  free_item_iterator (iter);
+  free_item_iterator (&iter);
 
   indexs = malloc (PATH_MAX);
   snprintf (indexs, PATH_MAX, "%d", *next_index);
@@ -2905,9 +2904,10 @@ connector_get_download_path (struct connector *connector,
   gint32 id;
   const gchar *src_fpath, *src_dir;
   gchar *name, *namec, *filename, *path, *dl_ext, *src_pathc, *src_dirc;
-  struct item_iterator *iter;
+  struct item_iterator iter;
   const gchar *md_ext;
   const gchar *ext = get_ext (src_path);
+  gint res;
 
   src_pathc = strdup (src_path);
   if (ext && strcmp (ext, "metadata") == 0 && ops->fs != FS_SAMPLES)
@@ -2932,27 +2932,38 @@ connector_get_download_path (struct connector *connector,
 
   if (remote_iter)
     {
-      iter = copy_item_iterator (remote_iter);
+      if (copy_item_iterator (&iter, remote_iter))
+	{
+	  path = NULL;
+	  goto cleanup;
+	}
     }
   else
     {
       src_dirc = strdup (src_fpath);
       src_dir = dirname (src_dirc);
-      iter = ops->readdir (src_dir, connector);
+      res = ops->readdir (&iter, src_dir, connector);
       g_free (src_dirc);
+      if (res)
+	{
+	  path = NULL;
+	  goto cleanup;
+	}
     }
 
   id = atoi (name);
   name = NULL;
 
-  while (!next_item_iterator (iter))
+  while (!next_item_iterator (&iter))
     {
-      if (iter->item.index == id)
+      if (iter.item.index == id)
 	{
-	  name = get_item_name (&iter->item);
+	  name = get_item_name (&iter.item);
 	  break;
 	}
     }
+
+  free_item_iterator (&iter);
 
 end:
   dl_ext = connector_get_full_ext (connector->device_desc, ops);
@@ -2961,9 +2972,10 @@ end:
   g_free (dl_ext);
   path = chain_path (dst_dir, filename);
   g_free (filename);
+  g_free (name);
+cleanup:
   g_free (src_pathc);
   g_free (namec);
-  g_free (name);
 
   return path;
 }

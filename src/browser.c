@@ -272,26 +272,25 @@ browser_file_match_extensions (struct browser *browser,
 gboolean
 browser_load_dir (gpointer data)
 {
-  struct item_iterator *iter;
+  struct item_iterator iter;
   struct browser *browser = data;
 
   browser_reset (browser);
 
-  iter = browser->fs_ops->readdir (browser->dir, browser->data);
-  if (!iter)
+  if (browser->fs_ops->readdir (&iter, browser->dir, browser->data))
     {
       error_print ("Error while opening %s dir\n", browser->dir);
       goto end;
     }
 
-  while (!next_item_iterator (iter))
+  while (!next_item_iterator (&iter))
     {
-      if (browser_file_match_extensions (browser, iter))
+      if (browser_file_match_extensions (browser, &iter))
 	{
-	  local_add_dentry_item (browser, iter);
+	  local_add_dentry_item (browser, &iter);
 	}
     }
-  free_item_iterator (iter);
+  free_item_iterator (&iter);
 
 end:
   if (browser->check_callback)

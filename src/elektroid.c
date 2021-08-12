@@ -109,7 +109,7 @@ struct elektroid_sysex_transfer
 
 struct elektroid_add_upload_task_data
 {
-  struct item_iterator *iter;
+  struct item_iterator iter;
   gint32 index;
 };
 
@@ -2002,13 +2002,12 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
   gchar *path;
   gchar *dst_abs_dir;
   gchar *upload_path;
-  struct item_iterator *iter;
-  struct item_iterator *children_remote_item_iterator;
+  struct item_iterator iter;
+  struct item_iterator children_remote_item_iterator;
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
   gchar *src_abs_path = chain_path (src_dir, rel_path);
 
-  iter = local_browser.fs_ops->readdir (src_abs_path, local_browser.data);
-  if (!iter)
+  if (local_browser.fs_ops->readdir (&iter, src_abs_path, local_browser.data))
     {
       dst_abs_dir = dirname (dst_abs_path);
       upload_path =
@@ -2034,26 +2033,25 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
 	}
     }
 
-  children_remote_item_iterator =
-    remote_browser.fs_ops->readdir (dst_abs_path, remote_browser.data);
-  if (children_remote_item_iterator)
+  if (!remote_browser.fs_ops->readdir (&children_remote_item_iterator,
+				       dst_abs_path, remote_browser.data))
     {
       children_index = 1;
-      while (!next_item_iterator (iter))
+      while (!next_item_iterator (&iter))
 	{
-	  path = chain_path (rel_path, iter->item.name);
+	  path = chain_path (rel_path, iter.item.name);
 	  elektroid_add_upload_task_path (path, src_dir, dst_dir,
-					  children_remote_item_iterator,
+					  &children_remote_item_iterator,
 					  &children_index);
 	  free (path);
 	}
 
-      free_item_iterator (children_remote_item_iterator);
+      free_item_iterator (&children_remote_item_iterator);
     }
 
 
 cleanup:
-  free_item_iterator (iter);
+  free_item_iterator (&iter);
 cleanup_not_dir:
   g_free (dst_abs_path);
   g_free (src_abs_path);
@@ -2067,7 +2065,7 @@ elektroid_add_upload_task (GtkTreeModel * model,
   struct item *item = browser_get_item (model, iter);
   struct elektroid_add_upload_task_data *data = userdata;
   elektroid_add_upload_task_path (item->name, local_browser.dir,
-				  remote_browser.dir, data->iter,
+				  remote_browser.dir, &data->iter,
 				  &data->index);
   browser_free_item (item);
 }
@@ -2089,11 +2087,11 @@ elektroid_add_upload_tasks (GtkWidget * object, gpointer userdata)
   queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
 
   data.index = 1;
-  data.iter =
-    remote_browser.fs_ops->readdir (remote_browser.dir, remote_browser.data);
-  gtk_tree_selection_selected_foreach (selection,
-				       elektroid_add_upload_task, &data);
-  free_item_iterator (data.iter);
+  remote_browser.fs_ops->readdir (&data.iter, remote_browser.dir,
+				  remote_browser.data);
+  gtk_tree_selection_selected_foreach (selection, elektroid_add_upload_task,
+				       &data);
+  free_item_iterator (&data.iter);
 
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
@@ -2170,13 +2168,13 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
 				  gchar * dst_dir,
 				  struct item_iterator *remote_dir_iter)
 {
-  struct item_iterator *iter, *iter_copy;
+  struct item_iterator iter, iter_copy;
   gchar *path, *id, *download_path, *dst_abs_dirc, *dst_abs_dir;
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  iter = remote_browser.fs_ops->readdir (src_abs_path, remote_browser.data);
-  if (!iter)
+  if (remote_browser.
+      fs_ops->readdir (&iter, src_abs_path, remote_browser.data))
     {
       dst_abs_dirc = strdup (dst_abs_path);
       dst_abs_dir = dirname (dst_abs_dirc);
@@ -2197,19 +2195,19 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
       goto cleanup;
     }
 
-  iter_copy = copy_item_iterator (iter);
-  while (!next_item_iterator (iter))
+  copy_item_iterator (&iter_copy, &iter);
+  while (!next_item_iterator (&iter))
     {
-      id = remote_browser.fs_ops->getid (&iter->item);
+      id = remote_browser.fs_ops->getid (&iter.item);
       path = chain_path (rel_path, id);
-      elektroid_add_download_task_path (path, src_dir, dst_dir, iter_copy);
+      elektroid_add_download_task_path (path, src_dir, dst_dir, &iter_copy);
       g_free (path);
       g_free (id);
     }
-  free_item_iterator (iter_copy);
+  free_item_iterator (&iter_copy);
 
 cleanup:
-  free_item_iterator (iter);
+  free_item_iterator (&iter);
 cleanup_not_dir:
   free (dst_abs_path);
   free (src_abs_path);
@@ -2234,7 +2232,7 @@ elektroid_add_download_tasks (GtkWidget * object, gpointer data)
 {
   gboolean queued;
   GtkTreeIter iter;
-  struct item_iterator *item_iterator;
+  struct item_iterator item_iterator;
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
 
@@ -2245,11 +2243,11 @@ elektroid_add_download_tasks (GtkWidget * object, gpointer data)
 
   queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
 
-  item_iterator =
-    remote_browser.fs_ops->readdir (remote_browser.dir, remote_browser.data);
+  remote_browser.fs_ops->readdir (&item_iterator, remote_browser.dir,
+				  remote_browser.data);
   gtk_tree_selection_selected_foreach (selection, elektroid_add_download_task,
-				       item_iterator);
-  free_item_iterator (item_iterator);
+				       &item_iterator);
+  free_item_iterator (&item_iterator);
 
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
@@ -2535,7 +2533,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   gchar *type_name;
   gint res;
   gint32 index = 1;
-  struct item_iterator *remote_item_iterator;
+  struct item_iterator remote_item_iterator;
   struct browser *browser = userdata;
 
   if (selection_data == NULL
@@ -2554,8 +2552,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   uris = g_uri_list_extract_uris (data);
   queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
 
-  remote_item_iterator =
-    remote_browser.fs_ops->readdir (remote_browser.dir, remote_browser.data);
+  remote_browser.fs_ops->readdir (&remote_item_iterator, remote_browser.dir,
+				  remote_browser.data);
 
   for (int i = 0; uris[i] != NULL; i++)
     {
@@ -2588,7 +2586,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 	  else if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
 	    {
 	      elektroid_add_download_task_path (name, dir, local_browser.dir,
-						remote_item_iterator);
+						&remote_item_iterator);
 	    }
 	}
       else if (widget == GTK_WIDGET (remote_browser.view))
@@ -2599,7 +2597,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		{
 		  dst_path =
 		    connector_get_upload_path (&connector,
-					       remote_item_iterator,
+					       &remote_item_iterator,
 					       remote_browser.fs_ops,
 					       remote_browser.dir, name,
 					       &index);
@@ -2622,7 +2620,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 	  else if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
 	    {
 	      elektroid_add_upload_task_path (name, dir, remote_browser.dir,
-					      remote_item_iterator, &index);
+					      &remote_item_iterator, &index);
 	    }
 	}
 
@@ -2631,7 +2629,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       g_free (filename);
     }
 
-  free_item_iterator (remote_item_iterator);
+  free_item_iterator (&remote_item_iterator);
 
   if (!queued)
     {

@@ -71,7 +71,8 @@ struct job_control
   job_control_callback callback;
 };
 
-typedef struct item_iterator *(*fs_read_dir_func) (const gchar *, void *);
+typedef gint (*fs_init_iter_func) (struct item_iterator *, const gchar *,
+				   void *);
 
 typedef gint (*fs_path_func) (const gchar *, void *);
 
@@ -88,7 +89,7 @@ typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
 struct fs_operations
 {
   gint fs;
-  fs_read_dir_func readdir;
+  fs_init_iter_func readdir;
   fs_path_func mkdir;
   fs_path_func delete;
   fs_src_dst_func rename;
@@ -130,7 +131,7 @@ guint next_item_iterator (struct item_iterator *);
 
 void free_item_iterator (struct item_iterator *);
 
-struct item_iterator *copy_item_iterator (struct item_iterator *);
+gint copy_item_iterator (struct item_iterator *, struct item_iterator *);
 
 gint load_file (const char *, GByteArray *, struct job_control *);
 
