@@ -723,7 +723,6 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
     {
       error_print ("Error while sending message. %s.\n", g_strerror (errno));
       connector_destroy (connector);
-      return tx_len;
     }
   return tx_len;
 }
