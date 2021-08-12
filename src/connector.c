@@ -51,6 +51,9 @@
 #define FS_DATA_PRJ_PREFIX "/projects"
 #define FS_DATA_SND_PREFIX "/soundbanks"
 
+#define FS_SAMPLES_START_POS 5
+#define FS_DATA_START_POS 18
+
 static gint connector_delete_samples_dir (struct connector *, const gchar *);
 
 static struct item_iterator *connector_read_samples_dir (const gchar *,
@@ -125,11 +128,7 @@ static gint connector_upload_datum_prj (const gchar *, GByteArray *,
 static gint connector_upload_datum_snd (const gchar *, GByteArray *,
 					struct job_control *, void *);
 
-static struct item_iterator *connector_copy_sample_iterator (struct
-							     item_iterator *);
-
-static struct item_iterator *connector_copy_data_iterator (struct
-							   item_iterator *);
+static struct item_iterator *connector_copy_iterator (struct item_iterator *);
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -387,31 +386,33 @@ connector_next_sample_entry (struct item_iterator *iter)
 }
 
 static struct item_iterator *
-connector_new_sample_iterator (GByteArray * msg)
+connector_new_iterator (GByteArray * msg, iterator_next next)
 {
   struct item_iterator *iter = malloc (sizeof (struct item_iterator));
   struct connector_iterator_data *data =
     malloc (sizeof (struct connector_iterator_data));
 
   data->msg = msg;
-  data->pos = 5;
+  data->pos =
+    (next ==
+     connector_next_sample_entry) ? FS_SAMPLES_START_POS : FS_DATA_START_POS;
 
   iter->data = data;
-  iter->next = connector_next_sample_entry;
+  iter->next = next;
   iter->free = connector_free_iterator_data;
-  iter->copy = connector_copy_sample_iterator;
+  iter->copy = connector_copy_iterator;
   iter->item.name = NULL;
 
   return iter;
 }
 
 static struct item_iterator *
-connector_copy_sample_iterator (struct item_iterator *iter)
+connector_copy_iterator (struct item_iterator *iter)
 {
   struct connector_iterator_data *data = iter->data;
   GByteArray *copy = g_byte_array_sized_new (data->msg->len);
   g_byte_array_append (copy, data->msg->data, data->msg->len);
-  return connector_new_sample_iterator (copy);
+  return connector_new_iterator (copy, iter->next);
 }
 
 static GByteArray *
@@ -1171,7 +1172,7 @@ connector_read_samples_dir (const gchar * dir, void *data)
       return NULL;
     }
 
-  return connector_new_sample_iterator (rx_msg);
+  return connector_new_iterator (rx_msg, connector_next_sample_entry);
 }
 
 static enum item_type
@@ -2260,34 +2261,6 @@ connector_next_data_entry (struct item_iterator *iter)
   return 0;
 }
 
-static struct item_iterator *
-connector_new_data_iterator (GByteArray * msg)
-{
-  struct item_iterator *iter = malloc (sizeof (struct item_iterator));
-  struct connector_iterator_data *data =
-    malloc (sizeof (struct connector_iterator_data));
-
-  data->msg = msg;
-  data->pos = 18;
-
-  iter->data = data;
-  iter->next = connector_next_data_entry;
-  iter->free = connector_free_iterator_data;
-  iter->copy = connector_copy_data_iterator;
-  iter->item.name = NULL;
-
-  return iter;
-}
-
-static struct item_iterator *
-connector_copy_data_iterator (struct item_iterator *iter)
-{
-  struct connector_iterator_data *data = iter->data;
-  GByteArray *copy = g_byte_array_sized_new (data->msg->len);
-  g_byte_array_append (copy, data->msg->data, data->msg->len);
-  return connector_new_data_iterator (copy);
-}
-
 static gchar *
 connector_add_prefix_to_path (const gchar * dir, const gchar * prefix)
 {
@@ -2338,7 +2311,7 @@ connector_read_data_dir_prefix (const gchar * dir, void *data,
       return NULL;
     }
 
-  return connector_new_data_iterator (rx_msg);
+  return connector_new_iterator (rx_msg, connector_next_data_entry);
 }
 
 static struct item_iterator *
