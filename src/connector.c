@@ -128,7 +128,8 @@ static gint connector_upload_datum_prj (const gchar *, GByteArray *,
 static gint connector_upload_datum_snd (const gchar *, GByteArray *,
 					struct job_control *, void *);
 
-static struct item_iterator *connector_copy_iterator (struct item_iterator *);
+static gint connector_copy_iterator (struct item_iterator *,
+				     struct item_iterator *);
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -385,12 +386,17 @@ connector_next_sample_entry (struct item_iterator *iter)
     }
 }
 
-static struct item_iterator *
-connector_new_iterator (GByteArray * msg, iterator_next next)
+static gint
+connector_init_iterator (struct item_iterator *iter, GByteArray * msg,
+			 iterator_next next)
 {
-  struct item_iterator *iter = malloc (sizeof (struct item_iterator));
   struct connector_iterator_data *data =
     malloc (sizeof (struct connector_iterator_data));
+
+  if (!data)
+    {
+      return errno;
+    }
 
   data->msg = msg;
   data->pos =
@@ -403,16 +409,20 @@ connector_new_iterator (GByteArray * msg, iterator_next next)
   iter->copy = connector_copy_iterator;
   iter->item.name = NULL;
 
-  return iter;
+  return 0;
 }
 
-static struct item_iterator *
-connector_copy_iterator (struct item_iterator *iter)
+static gint
+connector_copy_iterator (struct item_iterator *dst, struct item_iterator *src)
 {
-  struct connector_iterator_data *data = iter->data;
-  GByteArray *copy = g_byte_array_sized_new (data->msg->len);
-  g_byte_array_append (copy, data->msg->data, data->msg->len);
-  return connector_new_iterator (copy, iter->next);
+  struct connector_iterator_data *data = src->data;
+  GByteArray *array = g_byte_array_sized_new (data->msg->len);
+  if (!array)
+    {
+      return errno;
+    }
+  g_byte_array_append (array, data->msg->data, data->msg->len);
+  return connector_init_iterator (dst, array, src->next);
 }
 
 static GByteArray *
@@ -1172,7 +1182,9 @@ connector_read_samples_dir (const gchar * dir, void *data)
       return NULL;
     }
 
-  return connector_new_iterator (rx_msg, connector_next_sample_entry);
+  struct item_iterator *iter = malloc (sizeof (struct item_iterator));
+  connector_init_iterator (iter, rx_msg, connector_next_sample_entry);
+  return iter;
 }
 
 static enum item_type
@@ -2311,7 +2323,9 @@ connector_read_data_dir_prefix (const gchar * dir, void *data,
       return NULL;
     }
 
-  return connector_new_iterator (rx_msg, connector_next_data_entry);
+  struct item_iterator *iter = malloc (sizeof (struct item_iterator));
+  connector_init_iterator (iter, rx_msg, connector_next_data_entry);
+  return iter;
 }
 
 static struct item_iterator *

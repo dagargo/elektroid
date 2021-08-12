@@ -42,7 +42,8 @@ typedef guint (*iterator_next) (struct item_iterator *);
 
 typedef void (*iterator_free) (void *);
 
-typedef struct item_iterator *(*iterator_copy) (struct item_iterator *);
+typedef gint (*iterator_copy) (struct item_iterator *,
+			       struct item_iterator *);
 
 struct item
 {

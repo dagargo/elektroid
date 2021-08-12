@@ -34,7 +34,8 @@ static gint local_rename (const gchar *, const gchar *, void *);
 
 static struct item_iterator *local_read_dir (const gchar *, void *);
 
-static struct item_iterator *local_copy_iterator (struct item_iterator *);
+static gint local_copy_iterator (struct item_iterator *,
+				 struct item_iterator *);
 
 const struct fs_operations FS_LOCAL_OPERATIONS = {
   .fs = 0,
@@ -194,35 +195,45 @@ local_next_dentry (struct item_iterator *iter)
   return ret;
 }
 
-static struct item_iterator *
-local_read_dir (const gchar * path, void *userdata)
+static gint
+local_init_iterator (struct item_iterator *iter, const gchar * path)
 {
   DIR *dir;
-  struct item_iterator *iter;
   struct local_iterator_data *data;
 
   if (!(dir = opendir (path)))
     {
-      return NULL;
+      return errno;
     }
 
   data = malloc (sizeof (struct local_iterator_data));
+  if (!data)
+    {
+      return errno;
+    }
   data->dir = dir;
   data->path = strdup (path);
 
-  iter = malloc (sizeof (struct item_iterator));
   iter->data = data;
   iter->next = local_next_dentry;
   iter->free = local_free_iterator_data;
   iter->copy = local_copy_iterator;
   iter->item.name = NULL;
 
-  return iter;
+  return 0;
 }
 
 static struct item_iterator *
-local_copy_iterator (struct item_iterator *iter)
+local_read_dir (const gchar * path, void *userdata)
 {
-  struct local_iterator_data *data = iter->data;
-  return local_read_dir (data->path, NULL);
+  struct item_iterator *iter = malloc (sizeof (struct item_iterator));
+  local_init_iterator (iter, path);
+  return iter;
+}
+
+static gint
+local_copy_iterator (struct item_iterator *dst, struct item_iterator *src)
+{
+  struct local_iterator_data *data = src->data;
+  return local_init_iterator (dst, data->path);
 }
