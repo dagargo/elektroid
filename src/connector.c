@@ -721,7 +721,8 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
   tx_len = snd_rawmidi_write (connector->outputp, data, len);
   if (tx_len < 0)
     {
-      error_print ("Error while sending message. %s.\n", g_strerror (errno));
+      error_print ("Error while writing to device: %s\n",
+		   snd_strerror (tx_len));
       connector_destroy (connector);
     }
   return tx_len;
@@ -920,8 +921,8 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
       if (rx_len < 0)
 	{
-	  error_print ("Error while receiving message. %s.\n",
-		       g_strerror (errno));
+	  error_print ("Error while reading from device: %s\n",
+		       snd_strerror (rx_len));
 	  connector_destroy (connector);
 	  break;
 	}
