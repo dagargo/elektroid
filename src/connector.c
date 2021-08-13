@@ -395,11 +395,6 @@ connector_init_iterator (struct item_iterator *iter, GByteArray * msg,
   struct connector_iterator_data *data =
     malloc (sizeof (struct connector_iterator_data));
 
-  if (!data)
-    {
-      return errno;
-    }
-
   data->msg = msg;
   data->pos =
     (next ==
@@ -419,10 +414,6 @@ connector_copy_iterator (struct item_iterator *dst, struct item_iterator *src)
 {
   struct connector_iterator_data *data = src->data;
   GByteArray *array = g_byte_array_sized_new (data->msg->len);
-  if (!array)
-    {
-      return errno;
-    }
   g_byte_array_append (array, data->msg->data, data->msg->len);
   return connector_init_iterator (dst, array, src->next);
 }
@@ -499,18 +490,11 @@ connector_msg_to_sysex (const GByteArray * msg)
   return sysex;
 }
 
-static void
-connector_get_sample_info_from_msg (GByteArray * info_msg, gint * id,
+static gint
+connector_get_sample_info_from_msg (GByteArray * info_msg, guint32 * id,
 				    guint * size)
 {
-  if (!connector_get_msg_status (info_msg))
-    {
-      if (id)
-	{
-	  *id = -1;
-	}
-    }
-  else
+  if (connector_get_msg_status (info_msg))
     {
       if (id)
 	{
@@ -521,6 +505,15 @@ connector_get_sample_info_from_msg (GByteArray * info_msg, gint * id,
 	  *size = be32toh (*((guint32 *) & info_msg->data[10]));
 	}
     }
+  else
+    {
+      if (id)
+	{
+	  return -EIO;
+	}
+    }
+
+  return 0;
 }
 
 static GByteArray *
@@ -767,7 +760,6 @@ connector_tx_sysex (struct connector *connector, GByteArray * data,
       if (tx_len < 0)
 	{
 	  ret = tx_len;
-	  errno = EIO;
 	  break;
 	}
       b += len;
@@ -889,7 +881,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
       if (err < 0)
 	{
-	  error_print ("Error while polling. %s.\n", g_strerror (errno));
+	  error_print ("Error while polling. %s.\n", snd_strerror (errno));
 	  connector_destroy (connector);
 	  return err;
 	}
@@ -901,7 +893,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 						 &revents)) < 0)
 	{
 	  error_print ("Error while getting poll events. %s.\n",
-		       g_strerror (errno));
+		       snd_strerror (errno));
 	  connector_destroy (connector);
 	  return err;
 	}
@@ -1235,16 +1227,14 @@ connector_src_dst_common (struct connector *connector,
   gchar *dst_cp1252 = connector_get_cp1252 (dst);
   if (!dst_cp1252)
     {
-      errno = EINVAL;
-      return -1;
+      return -EINVAL;
     }
 
   gchar *src_cp1252 = connector_get_cp1252 (src);
   if (!src_cp1252)
     {
       g_free (dst_cp1252);
-      errno = EINVAL;
-      return -1;
+      return -EINVAL;
     }
 
   g_byte_array_append (tx_msg, (guchar *) src_cp1252,
@@ -1258,8 +1248,7 @@ connector_src_dst_common (struct connector *connector,
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
-      return -1;
+      return -EIO;
     }
   //Response: x, x, x, x, 0xa1, [0 (error), 1 (success)]...
   if (connector_get_msg_status (rx_msg))
@@ -1268,9 +1257,8 @@ connector_src_dst_common (struct connector *connector,
     }
   else
     {
-      res = -1;
-      errno = EPERM;
-      error_print ("%s (%s)\n", g_strerror (errno),
+      res = -EPERM;
+      error_print ("%s (%s)\n", snd_strerror (res),
 		   connector_get_msg_string (rx_msg));
     }
   free_msg (rx_msg);
@@ -1334,8 +1322,7 @@ connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
     }
   else
     {
-      errno = EBADF;
-      return -1;
+      return -EBADF;
     }
 }
 
@@ -1350,15 +1337,13 @@ connector_path_common (struct connector *connector, const gchar * path,
   tx_msg = connector_new_msg_path (template, size, path);
   if (!tx_msg)
     {
-      errno = EINVAL;
-      return -1;
+      return -EINVAL;
     }
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
-      return -1;
+      return -EIO;
     }
   //Response: x, x, x, x, 0xX0, [0 (error), 1 (success)]...
   if (connector_get_msg_status (rx_msg))
@@ -1367,9 +1352,8 @@ connector_path_common (struct connector *connector, const gchar * path,
     }
   else
     {
-      res = -1;
-      errno = EPERM;
-      error_print ("%s (%s)\n", g_strerror (errno),
+      res = -EPERM;
+      error_print ("%s (%s)\n", snd_strerror (res),
 		   connector_get_msg_string (rx_msg));
     }
   free_msg (rx_msg);
@@ -1438,10 +1422,11 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   guint transferred;
-  gshort *data16;
-  gint id;
+  gint16 *data16;
+  guint32 id;
   int i;
   gboolean active;
+  gint res = 0;
 
   //TODO: check if the file already exists? (Device makes no difference between creating a new file and creating an already existent file. The new file would be deleted if an upload is not sent, though.)
   //TODO: limit sample upload?
@@ -1449,24 +1434,23 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
   tx_msg = connector_new_msg_open_file_write (path, sample->len);
   if (!tx_msg)
     {
-      errno = EINVAL;
-      return -1;
+      return -EINVAL;
     }
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
-      return -1;
+      return -EIO;
     }
 
   //Response: x, x, x, x, 0xc0, [0 (error), 1 (success)], id, frames
-  connector_get_sample_info_from_msg (rx_msg, &id, NULL);
-  if (id < 0)
+  res = connector_get_sample_info_from_msg (rx_msg, &id, NULL);
+  if (res)
     {
-      errno = EEXIST;
-      error_print ("%s (%s)\n", g_strerror (errno),
+      error_print ("%s (%s)\n", snd_strerror (res),
 		   connector_get_msg_string (rx_msg));
+      free_msg (rx_msg);
+      return res;
     }
   free_msg (rx_msg);
 
@@ -1492,8 +1476,7 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
-	  errno = EIO;
-	  return -1;
+	  return -EIO;
 	}
       //Response: x, x, x, x, 0xc2, [0 (error), 1 (success)]...
       if (!connector_get_msg_status (rx_msg))
@@ -1522,8 +1505,7 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
-	  errno = EIO;
-	  return -1;
+	  return -EIO;
 	}
       //Response: x, x, x, x, 0xc1, [0 (error), 1 (success)]...
       if (!connector_get_msg_status (rx_msg))
@@ -1533,7 +1515,7 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
       free_msg (rx_msg);
     }
 
-  return 0;
+  return res;
 }
 
 static gint
@@ -1544,7 +1526,7 @@ connector_download_sample (const gchar * path, GByteArray * output,
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   GByteArray *array;
-  gint id;
+  guint32 id;
   guint frames;
   guint next_block_start;
   guint req_size;
@@ -1561,23 +1543,23 @@ connector_download_sample (const gchar * path, GByteArray * output,
 				   path);
   if (!tx_msg)
     {
-      errno = EINVAL;
-      return -1;
+      return -EINVAL;
     }
 
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
-      return -1;
+      return -EIO;
     }
-  connector_get_sample_info_from_msg (rx_msg, &id, &frames);
-  free_msg (rx_msg);
-  if (id < 0)
+  res = connector_get_sample_info_from_msg (rx_msg, &id, &frames);
+  if (res)
     {
-      error_print ("File %s not found\n", path);
-      return -1;
+      error_print ("%s (%s)\n", snd_strerror (res),
+		   connector_get_msg_string (rx_msg));
+      free_msg (rx_msg);
+      return res;
     }
+  free_msg (rx_msg);
 
   debug_print (2, "%d frames to download\n", frames);
 
@@ -1608,8 +1590,7 @@ connector_download_sample (const gchar * path, GByteArray * output,
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
-	  errno = EIO;
-	  res = -1;
+	  res = -EIO;
 	  goto cleanup;
 	}
       g_byte_array_append (array, &rx_msg->data[22 + offset],
@@ -1651,8 +1632,7 @@ connector_download_sample (const gchar * path, GByteArray * output,
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
-      res = -1;
+      res = -EIO;
       goto cleanup;
     }
   //Response: x, x, x, x, 0xb1, 00 00 00 0a 00 01 65 de (sample id and received bytes)
@@ -1735,17 +1715,15 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
 
   if (!rx_msg)
     {
-      res = -1;
-      errno = EIO;
+      res = -EIO;
       goto end;
     }
   //Response: x, x, x, x, 0xd1, [0 (ok), 1 (error)]...
   op = connector_get_msg_status (rx_msg);
   if (op)
     {
-      res = -1;
-      errno = EIO;
-      error_print ("%s (%s)\n", g_strerror (errno),
+      res = -EIO;
+      error_print ("%s (%s)\n", snd_strerror (res),
 		   connector_get_msg_string (rx_msg));
       free_msg (rx_msg);
       goto end;
@@ -1761,8 +1739,7 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
 
       if (!rx_msg)
 	{
-	  errno = EIO;
-	  res = -1;
+	  res = -EIO;
 	  break;
 	}
       //Response: x, x, x, x, 0xd1, int32, [0..3]...
@@ -1773,9 +1750,8 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
 	}
       else if (op > 1)
 	{
-	  res = -1;
-	  errno = EIO;
-	  error_print ("%s (%s)\n", g_strerror (errno),
+	  res = -EIO;
+	  error_print ("%s (%s)\n", snd_strerror (res),
 		       connector_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
 	  break;
@@ -1805,7 +1781,7 @@ connector_destroy (struct connector *connector)
       if (err)
 	{
 	  error_print ("Error while closing MIDI port: %s\n",
-		       g_strerror (errno));
+		       snd_strerror (errno));
 	}
       connector->inputp = NULL;
     }
@@ -1816,7 +1792,7 @@ connector_destroy (struct connector *connector)
       if (err)
 	{
 	  error_print ("Error while closing MIDI port: %s\n",
-		       g_strerror (errno));
+		       snd_strerror (errno));
 	}
       connector->outputp = NULL;
     }
@@ -1857,18 +1833,16 @@ connector_get_storage_stats (struct connector *connector,
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
-      return -1;
+      return -EIO;
     }
 
   op = connector_get_msg_status (rx_msg);
   if (!op)
     {
-      errno = EIO;
-      error_print ("%s (%s)\n", g_strerror (errno),
+      error_print ("%s (%s)\n", snd_strerror (-EIO),
 		   connector_get_msg_string (rx_msg));
       free_msg (rx_msg);
-      return -1;
+      return -EIO;
     }
 
   index = 0;
@@ -1944,7 +1918,8 @@ connector_init (struct connector *connector, gint card)
        snd_rawmidi_open (&connector->inputp, &connector->outputp,
 			 name, SND_RAWMIDI_NONBLOCK | SND_RAWMIDI_SYNC)) < 0)
     {
-      error_print ("Error while opening MIDI port: %s\n", g_strerror (errno));
+      error_print ("Error while opening MIDI port: %s\n",
+		   snd_strerror (errno));
       goto cleanup;
     }
 
@@ -2520,15 +2495,13 @@ connector_open_datum (struct connector *connector, const gchar * path,
     }
   else
     {
-      errno = EINVAL;
-      return -1;
+      return -EINVAL;
     }
 
   tx_msg = connector_new_msg (data, len);
   if (!tx_msg)
     {
-      errno = ENOMEM;
-      return -1;
+      return -ENOMEM;
     }
 
   path_cp1252 = connector_get_cp1252 (path);
@@ -2554,18 +2527,16 @@ connector_open_datum (struct connector *connector, const gchar * path,
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
-      res = -1;
+      res = -EIO;
       goto cleanup;
     }
 
   if (!connector_get_msg_status (rx_msg))
     {
-      errno = EPERM;
-      error_print ("%s (%s)\n", g_strerror (errno),
+      res = -EPERM;
+      error_print ("%s (%s)\n", snd_strerror (res),
 		   connector_get_msg_string (rx_msg));
       free_msg (rx_msg);
-      res = -1;
       goto cleanup;
     }
 
@@ -2622,15 +2593,13 @@ connector_close_datum (struct connector *connector,
     }
   else
     {
-      errno = EINVAL;
-      return -1;
+      return -EINVAL;
     }
 
   tx_msg = connector_new_msg (data, len);
   if (!tx_msg)
     {
-      errno = ENOMEM;
-      return -1;
+      return -ENOMEM;
     }
 
   jidbe = htobe32 (jid);
@@ -2645,17 +2614,15 @@ connector_close_datum (struct connector *connector,
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      errno = EIO;
-      return -1;
+      return -EIO;
     }
 
   if (!connector_get_msg_status (rx_msg))
     {
-      errno = EPERM;
-      error_print ("%s (%s)\n", g_strerror (errno),
+      error_print ("%s (%s)\n", snd_strerror (-EPERM),
 		   connector_get_msg_string (rx_msg));
       free_msg (rx_msg);
-      return -1;
+      return -EPERM;
     }
 
   data32 = (guint32 *) & rx_msg->data[6];
@@ -2673,7 +2640,7 @@ connector_close_datum (struct connector *connector,
       error_print
 	("Actual download bytes (%d) differs from expected ones (%d)\n",
 	 asize, wsize);
-      return -1;
+      return -EINVAL;
     }
 
   return 0;
@@ -2706,8 +2673,7 @@ connector_download_datum_prefix (const gchar * path, GByteArray * output,
   g_free (path_w_prefix);
   if (res)
     {
-      errno = EIO;
-      return -1;
+      return -EIO;
     }
 
   usleep (REST_TIME);
@@ -2738,18 +2704,16 @@ connector_download_datum_prefix (const gchar * path, GByteArray * output,
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
-	  errno = EIO;
-	  res = -1;
+	  res = -EIO;
 	  break;
 	}
 
       if (!connector_get_msg_status (rx_msg))
 	{
-	  errno = EPERM;
-	  error_print ("%s (%s)\n", g_strerror (errno),
+	  res = -EPERM;
+	  error_print ("%s (%s)\n", snd_strerror (res),
 		       connector_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
-	  res = -1;
 	  break;
 	}
 
@@ -2802,13 +2766,7 @@ connector_download_datum_prefix (const gchar * path, GByteArray * output,
       usleep (REST_TIME);
     }
 
-  if (connector_close_datum (connector, jid, O_RDONLY, 0))
-    {
-      errno = EIO;
-      res = -1;
-    }
-
-  return res;
+  return connector_close_datum (connector, jid, O_RDONLY, 0);
 }
 
 static gint
@@ -3009,7 +2967,6 @@ connector_upload_datum_prefix (const gchar * path, GByteArray * array,
   g_free (path_w_prefix);
   if (res)
     {
-      errno = EIO;
       goto end;
     }
 
@@ -3060,8 +3017,7 @@ connector_upload_datum_prefix (const gchar * path, GByteArray * array,
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
-	  errno = EIO;
-	  res = -1;
+	  res = -EIO;
 	  goto end;
 	}
 
@@ -3069,11 +3025,10 @@ connector_upload_datum_prefix (const gchar * path, GByteArray * array,
 
       if (!connector_get_msg_status (rx_msg))
 	{
-	  errno = EPERM;
-	  error_print ("%s (%s)\n", g_strerror (errno),
+	  res = -EPERM;
+	  error_print ("%s (%s)\n", snd_strerror (res),
 		       connector_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
-	  res = -1;
 	  break;
 	}
 
@@ -3113,10 +3068,7 @@ connector_upload_datum_prefix (const gchar * path, GByteArray * array,
 
   debug_print (2, "%d bytes sent\n", offset);
 
-  if (connector_close_datum (connector, jid, O_WRONLY, array->len))
-    {
-      res = -1;
-    }
+  res = connector_close_datum (connector, jid, O_WRONLY, array->len);
 
 end:
   return res;

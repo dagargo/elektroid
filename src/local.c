@@ -57,7 +57,7 @@ gint
 local_mkdir (const gchar * name, void *data)
 {
   DIR *dir;
-  gint error = 0;
+  gint res = 0;
   gchar *dup;
   gchar *parent;
 
@@ -71,8 +71,8 @@ local_mkdir (const gchar * name, void *data)
     }
   else
     {
-      error = local_mkdir (parent, data);
-      if (error)
+      res = local_mkdir (parent, data);
+      if (res)
 	{
 	  goto cleanup;
 	}
@@ -80,17 +80,17 @@ local_mkdir (const gchar * name, void *data)
 
   if (mkdir (name, 0755) == 0 || errno == EEXIST)
     {
-      error = 0;
+      res = 0;
     }
   else
     {
       error_print ("Error while creating dir %s\n", name);
-      error = errno;
+      res = -errno;
     }
 
 cleanup:
   g_free (dup);
-  return error;
+  return res;
 }
 
 static gint
@@ -203,13 +203,13 @@ local_init_iterator (struct item_iterator *iter, const gchar * path)
 
   if (!(dir = opendir (path)))
     {
-      return errno;
+      return -errno;
     }
 
   data = malloc (sizeof (struct local_iterator_data));
   if (!data)
     {
-      return errno;
+      return -errno;
     }
 
   data->dir = dir;

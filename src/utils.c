@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <wordexp.h>
+#include <errno.h>
 #include "utils.h"
 
 #define DEBUG_SHORT_HEX_LEN 64
@@ -260,7 +261,7 @@ load_file (const char *path, GByteArray * array, struct job_control *control)
 
   if (!file)
     {
-      return -1;
+      return -errno;
     }
 
   res = 0;
@@ -268,7 +269,7 @@ load_file (const char *path, GByteArray * array, struct job_control *control)
   if (fseek (file, 0, SEEK_END))
     {
       error_print ("Unexpected value\n");
-      res = -1;
+      res = -errno;
       goto end;
     }
 
@@ -284,7 +285,7 @@ load_file (const char *path, GByteArray * array, struct job_control *control)
   else
     {
       error_print ("Error while reading from file %s\n", path);
-      res = -1;
+      res = -errno;
     }
 
 end:
@@ -303,7 +304,7 @@ save_file (const char *path, GByteArray * array, struct job_control *control)
 
   if (!file)
     {
-      return -1;
+      return -errno;
     }
 
   res = 0;
@@ -316,7 +317,7 @@ save_file (const char *path, GByteArray * array, struct job_control *control)
   else
     {
       error_print ("Error while writing to file %s\n", path);
-      res = -1;
+      res = -EIO;
     }
 
   fclose (file);

@@ -691,10 +691,11 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   if (filename != NULL)
     {
       debug_print (1, "Saving SysEx file...\n");
-      if (save_file (filename, array, NULL))
+      res = save_file (filename, array, NULL);
+      if (res)
 	{
 	  show_error_msg (_("Error while saving “%s”: %s."),
-			  filename, g_strerror (errno));
+			  filename, g_strerror (res));
 	}
       g_free (filename);
     }
@@ -744,7 +745,7 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
   GtkWidget *dialog;
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
-  gint res;
+  gint res, lres;
   char *filename;
   gint *response;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
@@ -772,10 +773,11 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
 
       sysex_transfer.data = g_byte_array_new ();
 
-      if (load_file (filename, sysex_transfer.data, NULL))
+      lres = load_file (filename, sysex_transfer.data, NULL);
+      if (lres)
 	{
 	  show_error_msg (_("Error while loading “%s”: %s."),
-			  filename, g_strerror (errno));
+			  filename, g_strerror (lres));
 	  response = NULL;
 	}
       else
@@ -902,10 +904,10 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path,
 
   debug_print (1, "Deleting %s...\n", id_path);
   err = browser->fs_ops->delete (id_path, browser->data);
-  if (err < 0)
+  if (err)
     {
       show_error_msg (_("Error while deleting “%s”: %s."),
-		      path, g_strerror (errno));
+		      path, g_strerror (err));
     }
   else
     {
@@ -1007,10 +1009,10 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 
 	  err = browser->fs_ops->move (old_path, new_path, &connector);
 
-	  if (err < 0)
+	  if (err)
 	    {
 	      show_error_msg (_("Error while renaming to “%s”: %s."),
-			      new_path, g_strerror (errno));
+			      new_path, g_strerror (err));
 	    }
 	  else
 	    {
@@ -1568,10 +1570,10 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 
 	  err = browser->fs_ops->mkdir (pathname, &connector);
 
-	  if (err < 0)
+	  if (err)
 	    {
 	      show_error_msg (_("Error while creating dir “%s”: %s."),
-			      pathname, g_strerror (errno));
+			      pathname, g_strerror (err));
 	    }
 	  else
 	    {
@@ -2574,7 +2576,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		  if (res)
 		    {
 		      show_error_msg (_(MSG_ERROR_MOVING), filename,
-				      dst_path, g_strerror (errno));
+				      dst_path, g_strerror (res));
 		    }
 		  g_free (dst_path);
 		}
@@ -2607,7 +2609,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		  if (res)
 		    {
 		      show_error_msg (_(MSG_ERROR_MOVING), filename,
-				      dst_path, g_strerror (errno));
+				      dst_path, g_strerror (res));
 		    }
 		  g_free (dst_path);
 		  browser_load_dir (browser);
