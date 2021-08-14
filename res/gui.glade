@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.22.1 
+<!-- Generated with glade 3.38.2 
 
 Copyright (C) David García Goñi
 
@@ -61,82 +61,82 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
   </object>
   <object class="GtkMenu" id="local_menu">
     <property name="visible">True</property>
-    <property name="can_focus">False</property>
+    <property name="can-focus">False</property>
     <child>
       <object class="GtkMenuItem" id="upload_menuitem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
         <property name="label" translatable="yes">Upload Selection</property>
-        <property name="use_underline">True</property>
+        <property name="use-underline">True</property>
         <accelerator key="Right" signal="activate" modifiers="GDK_CONTROL_MASK"/>
       </object>
     </child>
     <child>
       <object class="GtkSeparatorMenuItem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
       </object>
     </child>
     <child>
       <object class="GtkMenuItem" id="local_play_menuitem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
         <property name="label" translatable="yes">Play</property>
-        <property name="use_underline">True</property>
+        <property name="use-underline">True</property>
       </object>
     </child>
     <child>
       <object class="GtkSeparatorMenuItem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
       </object>
     </child>
     <child>
       <object class="GtkMenuItem" id="local_open_menuitem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
         <property name="label" translatable="yes">Open With External Editor</property>
-        <property name="use_underline">True</property>
+        <property name="use-underline">True</property>
       </object>
     </child>
     <child>
       <object class="GtkMenuItem" id="local_show_menuitem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
         <property name="label" translatable="yes">Show in File Manager</property>
-        <property name="use_underline">True</property>
+        <property name="use-underline">True</property>
       </object>
     </child>
     <child>
       <object class="GtkSeparatorMenuItem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
       </object>
     </child>
     <child>
       <object class="GtkMenuItem" id="local_add_dir_menuitem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
         <property name="label" translatable="yes">Add Directory</property>
-        <property name="use_underline">True</property>
+        <property name="use-underline">True</property>
         <accelerator key="n" signal="activate" modifiers="GDK_SHIFT_MASK | GDK_CONTROL_MASK"/>
       </object>
     </child>
     <child>
       <object class="GtkMenuItem" id="local_rename_menuitem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
         <property name="label" translatable="yes">Rename</property>
-        <property name="use_underline">True</property>
+        <property name="use-underline">True</property>
         <accelerator key="F2" signal="activate"/>
       </object>
     </child>
     <child>
       <object class="GtkMenuItem" id="local_delete_menuitem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
         <property name="label" translatable="yes">Delete</property>
-        <property name="use_underline">True</property>
+        <property name="use-underline">True</property>
         <accelerator key="Delete" signal="activate"/>
       </object>
     </child>
@@ -159,47 +159,47 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
   </object>
   <object class="GtkMenu" id="remote_menu">
     <property name="visible">True</property>
-    <property name="can_focus">False</property>
+    <property name="can-focus">False</property>
     <child>
       <object class="GtkMenuItem" id="download_menuitem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
         <property name="label" translatable="yes">Download Selection</property>
-        <property name="use_underline">True</property>
+        <property name="use-underline">True</property>
         <accelerator key="Left" signal="activate" modifiers="GDK_CONTROL_MASK"/>
       </object>
     </child>
     <child>
       <object class="GtkSeparatorMenuItem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
       </object>
     </child>
     <child>
       <object class="GtkMenuItem" id="remote_add_dir_menuitem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="tooltip_text" translatable="yes">Add Directory</property>
+        <property name="can-focus">False</property>
+        <property name="tooltip-text" translatable="yes">Add Directory</property>
         <property name="label" translatable="yes">Add Directory</property>
-        <property name="use_underline">True</property>
+        <property name="use-underline">True</property>
         <accelerator key="n" signal="activate" modifiers="GDK_SHIFT_MASK | GDK_CONTROL_MASK"/>
       </object>
     </child>
     <child>
       <object class="GtkMenuItem" id="remote_rename_menuitem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
         <property name="label" translatable="yes">Rename</property>
-        <property name="use_underline">True</property>
+        <property name="use-underline">True</property>
         <accelerator key="F2" signal="activate"/>
       </object>
     </child>
     <child>
       <object class="GtkMenuItem" id="remote_delete_menuitem">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
         <property name="label" translatable="yes">Delete</property>
-        <property name="use_underline">True</property>
+        <property name="use-underline">True</property>
         <accelerator key="Delete" signal="activate"/>
       </object>
     </child>
@@ -227,31 +227,28 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     </columns>
   </object>
   <object class="GtkAboutDialog" id="about_dialog">
-    <property name="can_focus">False</property>
+    <property name="can-focus">False</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
-    <property name="type_hint">dialog</property>
-    <property name="transient_for">main_window</property>
-    <property name="program_name">Elektroid</property>
+    <property name="type-hint">dialog</property>
+    <property name="transient-for">main_window</property>
+    <property name="program-name">Elektroid</property>
     <property name="copyright">Copyright © 2019 David García Goñi</property>
     <property name="comments" translatable="yes">GNU/Linux sample transfer application for Elektron devices</property>
     <property name="website">https://github.com/dagargo/elektroid</property>
     <property name="authors">David García Goñi&lt;dagargo@gmail.com&gt;</property>
-    <property name="translator_credits" translatable="yes">translator-credits</property>
-    <property name="logo_icon_name">elektroid</property>
-    <property name="license_type">gpl-3-0</property>
-    <child>
-      <placeholder/>
-    </child>
+    <property name="translator-credits" translatable="yes">translator-credits</property>
+    <property name="logo-icon-name">elektroid</property>
+    <property name="license-type">gpl-3-0</property>
     <child internal-child="vbox">
       <object class="GtkBox">
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <property name="spacing">2</property>
         <child internal-child="action_area">
           <object class="GtkButtonBox">
-            <property name="can_focus">False</property>
-            <property name="layout_style">end</property>
+            <property name="can-focus">False</property>
+            <property name="layout-style">end</property>
             <child>
               <placeholder/>
             </child>
@@ -272,22 +269,22 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     </child>
   </object>
   <object class="GtkPopoverMenu" id="main_popover">
-    <property name="can_focus">False</property>
-    <property name="relative_to">menu_button</property>
+    <property name="can-focus">False</property>
+    <property name="relative-to">menu_button</property>
     <child>
       <object class="GtkBox">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="margin_left">9</property>
-        <property name="margin_right">9</property>
-        <property name="margin_top">9</property>
-        <property name="margin_bottom">9</property>
+        <property name="can-focus">False</property>
+        <property name="margin-left">9</property>
+        <property name="margin-right">9</property>
+        <property name="margin-top">9</property>
+        <property name="margin-bottom">9</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkModelButton" id="rx_sysex_button">
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
             <property name="text" translatable="yes">_Receive SysEx</property>
           </object>
           <packing>
@@ -299,8 +296,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         <child>
           <object class="GtkModelButton" id="tx_sysex_button">
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
             <property name="text" translatable="yes">_Send SysEx</property>
           </object>
           <packing>
@@ -312,7 +309,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         <child>
           <object class="GtkSeparator">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
+            <property name="can-focus">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -323,8 +320,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         <child>
           <object class="GtkModelButton" id="os_upgrade_button">
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
             <property name="text" translatable="yes">OS _Upgrade</property>
           </object>
           <packing>
@@ -336,7 +333,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         <child>
           <object class="GtkSeparator">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
+            <property name="can-focus">False</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -347,8 +344,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         <child>
           <object class="GtkModelButton" id="about_button">
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
             <property name="text" translatable="yes">_About</property>
           </object>
           <packing>
@@ -365,67 +362,45 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     </child>
   </object>
   <object class="GtkWindow" id="main_window">
-    <property name="can_focus">False</property>
-    <property name="icon_name">elektroid</property>
-    <child type="titlebar">
-      <object class="GtkHeaderBar">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="title" translatable="yes">Elektroid</property>
-        <property name="show_close_button">True</property>
-        <child>
-          <object class="GtkMenuButton" id="menu_button">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">True</property>
-            <property name="direction">none</property>
-            <property name="popover">main_popover</property>
-            <child>
-              <placeholder/>
-            </child>
-          </object>
-          <packing>
-            <property name="pack_type">end</property>
-          </packing>
-        </child>
-      </object>
-    </child>
+    <property name="can-focus">False</property>
+    <property name="icon-name">elektroid</property>
     <child>
       <object class="GtkBox">
         <property name="visible">True</property>
-        <property name="can_focus">False</property>
+        <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <child>
           <object class="GtkPaned">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="margin_left">6</property>
-            <property name="margin_right">6</property>
-            <property name="margin_top">6</property>
+            <property name="can-focus">False</property>
+            <property name="margin-left">6</property>
+            <property name="margin-right">6</property>
+            <property name="margin-top">6</property>
             <property name="hexpand">True</property>
             <property name="vexpand">True</property>
             <property name="orientation">vertical</property>
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="margin_bottom">6</property>
+                <property name="can-focus">False</property>
+                <property name="margin-bottom">6</property>
                 <property name="hexpand">True</property>
                 <property name="vexpand">True</property>
                 <property name="orientation">vertical</property>
                 <property name="spacing">6</property>
                 <child>
+                  <!-- n-columns=2 n-rows=2 -->
                   <object class="GtkGrid">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="can-focus">False</property>
                     <property name="hexpand">True</property>
                     <property name="vexpand">True</property>
-                    <property name="row_spacing">6</property>
-                    <property name="column_spacing">6</property>
+                    <property name="row-spacing">6</property>
+                    <property name="column-spacing">6</property>
                     <child>
                       <object class="GtkBox">
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
+                        <property name="can-focus">False</property>
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
                         <property name="orientation">vertical</property>
@@ -433,13 +408,13 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <child>
                           <object class="GtkBox">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
+                            <property name="can-focus">False</property>
                             <property name="hexpand">True</property>
                             <property name="spacing">6</property>
                             <child>
                               <object class="GtkEntry" id="local_dir_entry">
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
+                                <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
                                 <property name="editable">False</property>
                               </object>
@@ -452,21 +427,21 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <child>
                               <object class="GtkBox">
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
+                                <property name="can-focus">False</property>
                                 <property name="halign">end</property>
                                 <property name="spacing">6</property>
                                 <child>
                                   <object class="GtkButton" id="local_up_button">
                                     <property name="name">local_up_button</property>
                                     <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="tooltip_text" translatable="yes">Go to Parent Directory</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="tooltip-text" translatable="yes">Go to Parent Directory</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="icon_name">go-up-symbolic</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="icon-name">go-up-symbolic</property>
                                       </object>
                                     </child>
                                   </object>
@@ -480,14 +455,14 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                   <object class="GtkButton" id="local_refresh_button">
                                     <property name="name">local_refresh_button</property>
                                     <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="tooltip_text" translatable="yes">Refresh Directory</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="tooltip-text" translatable="yes">Refresh Directory</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="icon_name">view-refresh-symbolic</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="icon-name">view-refresh-symbolic</property>
                                       </object>
                                     </child>
                                   </object>
@@ -513,22 +488,22 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         </child>
                         <child>
                           <object class="GtkScrolledWindow">
-                            <property name="width_request">400</property>
-                            <property name="height_request">200</property>
+                            <property name="width-request">400</property>
+                            <property name="height-request">200</property>
                             <property name="visible">True</property>
-                            <property name="can_focus">True</property>
+                            <property name="can-focus">True</property>
                             <property name="hexpand">True</property>
                             <property name="vexpand">True</property>
-                            <property name="shadow_type">in</property>
+                            <property name="shadow-type">in</property>
                             <child>
                               <object class="GtkTreeView" id="local_tree_view">
                                 <property name="name">local_tree_view</property>
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
+                                <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
                                 <property name="vexpand">True</property>
                                 <property name="model">local_list_store</property>
-                                <property name="search_column">1</property>
+                                <property name="search-column">1</property>
                                 <child internal-child="selection">
                                   <object class="GtkTreeSelection">
                                     <property name="mode">multiple</property>
@@ -580,14 +555,14 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         </child>
                       </object>
                       <packing>
-                        <property name="left_attach">0</property>
-                        <property name="top_attach">1</property>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">1</property>
                       </packing>
                     </child>
                     <child>
                       <object class="GtkBox" id="remote_box">
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
+                        <property name="can-focus">False</property>
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
                         <property name="orientation">vertical</property>
@@ -595,13 +570,13 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <child>
                           <object class="GtkBox">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
+                            <property name="can-focus">False</property>
                             <property name="hexpand">True</property>
                             <property name="spacing">6</property>
                             <child>
                               <object class="GtkEntry" id="remote_dir_entry">
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
+                                <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
                                 <property name="editable">False</property>
                               </object>
@@ -614,21 +589,21 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <child>
                               <object class="GtkBox">
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
+                                <property name="can-focus">False</property>
                                 <property name="halign">end</property>
                                 <property name="spacing">6</property>
                                 <child>
                                   <object class="GtkButton" id="remote_up_button">
                                     <property name="name">remote_up_button</property>
                                     <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="tooltip_text" translatable="yes">Go to Parent Directory</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="tooltip-text" translatable="yes">Go to Parent Directory</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="icon_name">go-up-symbolic</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="icon-name">go-up-symbolic</property>
                                       </object>
                                     </child>
                                   </object>
@@ -642,14 +617,14 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                   <object class="GtkButton" id="remote_refresh_button">
                                     <property name="name">remote_refresh_button</property>
                                     <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
-                                    <property name="tooltip_text" translatable="yes">Refresh Directory</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="tooltip-text" translatable="yes">Refresh Directory</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="icon_name">view-refresh-symbolic</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="icon-name">view-refresh-symbolic</property>
                                       </object>
                                     </child>
                                   </object>
@@ -675,22 +650,22 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         </child>
                         <child>
                           <object class="GtkScrolledWindow">
-                            <property name="width_request">400</property>
-                            <property name="height_request">200</property>
+                            <property name="width-request">400</property>
+                            <property name="height-request">200</property>
                             <property name="visible">True</property>
-                            <property name="can_focus">True</property>
+                            <property name="can-focus">True</property>
                             <property name="hexpand">True</property>
                             <property name="vexpand">True</property>
-                            <property name="shadow_type">in</property>
+                            <property name="shadow-type">in</property>
                             <child>
                               <object class="GtkTreeView" id="remote_tree_view">
                                 <property name="name">remote_tree_view</property>
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
+                                <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
                                 <property name="vexpand">True</property>
                                 <property name="model">remote_list_store</property>
-                                <property name="search_column">1</property>
+                                <property name="search-column">1</property>
                                 <child internal-child="selection">
                                   <object class="GtkTreeSelection">
                                     <property name="mode">multiple</property>
@@ -752,19 +727,19 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         </child>
                       </object>
                       <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">1</property>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">1</property>
                       </packing>
                     </child>
                     <child>
                       <object class="GtkBox">
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
+                        <property name="can-focus">False</property>
                         <property name="spacing">6</property>
                         <child>
                           <object class="GtkComboBox" id="devices_combo">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
+                            <property name="can-focus">False</property>
                             <property name="model">devices_list_store</property>
                             <child>
                               <object class="GtkCellRendererText"/>
@@ -783,14 +758,14 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkButton" id="refresh_devices_button">
                             <property name="name">refresh_devices_button</property>
                             <property name="visible">True</property>
-                            <property name="can_focus">True</property>
-                            <property name="receives_default">True</property>
-                            <property name="tooltip_text" translatable="yes">Refresh Devices</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">True</property>
+                            <property name="tooltip-text" translatable="yes">Refresh Devices</property>
                             <child>
                               <object class="GtkImage">
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="icon_name">view-refresh-symbolic</property>
+                                <property name="can-focus">False</property>
+                                <property name="icon-name">view-refresh-symbolic</property>
                               </object>
                             </child>
                           </object>
@@ -803,7 +778,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <child>
                           <object class="GtkSeparator">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
+                            <property name="can-focus">False</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -814,11 +789,13 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <child>
                           <object class="GtkComboBox" id="fs_combo">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
+                            <property name="can-focus">False</property>
                             <property name="model">fs_list_store</property>
-                            <property name="entry_text_column">1</property>
+                            <property name="entry-text-column">1</property>
                             <child>
-                              <object class="GtkCellRendererPixbuf"/>
+                              <object class="GtkCellRendererPixbuf">
+                                <property name="xpad">3</property>
+                              </object>
                               <attributes>
                                 <attribute name="icon-name">1</attribute>
                               </attributes>
@@ -838,20 +815,20 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         </child>
                       </object>
                       <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">0</property>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">0</property>
                       </packing>
                     </child>
                     <child>
                       <object class="GtkLabel" id="hostname_label">
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
+                        <property name="can-focus">False</property>
                         <property name="halign">start</property>
                         <property name="hexpand">True</property>
                       </object>
                       <packing>
-                        <property name="left_attach">0</property>
-                        <property name="top_attach">0</property>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">0</property>
                       </packing>
                     </child>
                   </object>
@@ -864,14 +841,14 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                 <child>
                   <object class="GtkBox" id="local_audio_box">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="can-focus">False</property>
                     <property name="hexpand">True</property>
                     <property name="spacing">6</property>
-                    <property name="baseline_position">bottom</property>
+                    <property name="baseline-position">bottom</property>
                     <child>
                       <object class="GtkBox">
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
+                        <property name="can-focus">False</property>
                         <property name="halign">start</property>
                         <property name="valign">center</property>
                         <property name="orientation">vertical</property>
@@ -879,13 +856,13 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <child>
                           <object class="GtkBox">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
+                            <property name="can-focus">False</property>
                             <property name="spacing">6</property>
                             <child>
                               <object class="GtkSwitch" id="autoplay_switch">
                                 <property name="name">autoplay_switch</property>
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
+                                <property name="can-focus">True</property>
                                 <property name="halign">start</property>
                                 <property name="valign">center</property>
                                 <property name="active">True</property>
@@ -899,7 +876,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <child>
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
+                                <property name="can-focus">False</property>
                                 <property name="valign">center</property>
                                 <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Auto play</property>
                                 <property name="wrap">True</property>
@@ -920,27 +897,27 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <child>
                           <object class="GtkBox">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
+                            <property name="can-focus">False</property>
                             <property name="halign">center</property>
                             <property name="spacing">6</property>
                             <child>
                               <object class="GtkBox">
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
+                                <property name="can-focus">False</property>
                                 <property name="halign">center</property>
                                 <child>
                                   <object class="GtkButton" id="play_button">
                                     <property name="name">play_button</property>
                                     <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
                                     <property name="halign">center</property>
                                     <property name="valign">center</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="icon_name">media-playback-start-symbolic</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="icon-name">media-playback-start-symbolic</property>
                                       </object>
                                     </child>
                                   </object>
@@ -954,15 +931,15 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                   <object class="GtkButton" id="stop_button">
                                     <property name="name">stop_button</property>
                                     <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
                                     <property name="halign">center</property>
                                     <property name="valign">center</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="icon_name">media-playback-stop-symbolic</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="icon-name">media-playback-stop-symbolic</property>
                                       </object>
                                     </child>
                                   </object>
@@ -976,14 +953,14 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                   <object class="GtkToggleButton" id="loop_button">
                                     <property name="name">loop_button</property>
                                     <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
                                     <property name="valign">center</property>
                                     <child>
                                       <object class="GtkImage">
                                         <property name="visible">True</property>
-                                        <property name="can_focus">False</property>
-                                        <property name="icon_name">media-playlist-repeat-symbolic</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="icon-name">media-playlist-repeat-symbolic</property>
                                       </object>
                                     </child>
                                   </object>
@@ -1006,9 +983,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <child>
                               <object class="GtkVolumeButton" id="volume_button">
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="focus_on_click">False</property>
-                                <property name="receives_default">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="focus-on-click">False</property>
+                                <property name="receives-default">True</property>
                                 <property name="relief">none</property>
                                 <property name="orientation">vertical</property>
                                 <property name="icons">audio-volume-muted-symbolic
@@ -1017,8 +994,8 @@ audio-volume-low-symbolic
 audio-volume-medium-symbolic</property>
                                 <child internal-child="plus_button">
                                   <object class="GtkButton">
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
                                     <property name="halign">center</property>
                                     <property name="valign">center</property>
                                     <property name="relief">none</property>
@@ -1026,8 +1003,8 @@ audio-volume-medium-symbolic</property>
                                 </child>
                                 <child internal-child="minus_button">
                                   <object class="GtkButton">
-                                    <property name="can_focus">True</property>
-                                    <property name="receives_default">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
                                     <property name="halign">center</property>
                                     <property name="valign">center</property>
                                     <property name="relief">none</property>
@@ -1060,19 +1037,19 @@ audio-volume-medium-symbolic</property>
                     <child>
                       <object class="GtkFrame">
                         <property name="visible">True</property>
-                        <property name="can_focus">False</property>
+                        <property name="can-focus">False</property>
                         <property name="hexpand">True</property>
-                        <property name="label_xalign">0</property>
-                        <property name="label_yalign">0</property>
-                        <property name="shadow_type">in</property>
+                        <property name="label-xalign">0</property>
+                        <property name="label-yalign">0</property>
+                        <property name="shadow-type">in</property>
                         <child>
                           <object class="GtkAlignment">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
+                            <property name="can-focus">False</property>
                             <child>
                               <object class="GtkDrawingArea" id="waveform_draw_area">
                                 <property name="visible">True</property>
-                                <property name="can_focus">False</property>
+                                <property name="can-focus">False</property>
                                 <property name="hexpand">True</property>
                                 <style>
                                   <class name="local"/>
@@ -1083,7 +1060,7 @@ audio-volume-medium-symbolic</property>
                         </child>
                         <child type="label">
                           <object class="GtkLabel">
-                            <property name="can_focus">False</property>
+                            <property name="can-focus">False</property>
                           </object>
                         </child>
                       </object>
@@ -1109,23 +1086,23 @@ audio-volume-medium-symbolic</property>
             <child>
               <object class="GtkBox">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="margin_top">6</property>
+                <property name="can-focus">False</property>
+                <property name="margin-top">6</property>
                 <property name="hexpand">True</property>
                 <property name="spacing">6</property>
                 <child>
                   <object class="GtkScrolledWindow">
                     <property name="visible">True</property>
-                    <property name="can_focus">True</property>
+                    <property name="can-focus">True</property>
                     <property name="hexpand">True</property>
                     <property name="vexpand">True</property>
-                    <property name="shadow_type">in</property>
+                    <property name="shadow-type">in</property>
                     <child>
                       <object class="GtkTreeView" id="task_tree_view">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
+                        <property name="can-focus">True</property>
                         <property name="model">task_list_store</property>
-                        <property name="search_column">0</property>
+                        <property name="search-column">0</property>
                         <child internal-child="selection">
                           <object class="GtkTreeSelection">
                             <property name="mode">none</property>
@@ -1193,7 +1170,7 @@ audio-volume-medium-symbolic</property>
                         </child>
                         <child>
                           <object class="GtkTreeViewColumn">
-                            <property name="fixed_width">120</property>
+                            <property name="fixed-width">120</property>
                             <property name="title" translatable="yes">Progress</property>
                             <child>
                               <object class="GtkCellRendererProgress"/>
@@ -1215,7 +1192,7 @@ audio-volume-medium-symbolic</property>
                 <child>
                   <object class="GtkBox">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="can-focus">False</property>
                     <property name="valign">start</property>
                     <property name="orientation">vertical</property>
                     <property name="spacing">6</property>
@@ -1224,14 +1201,14 @@ audio-volume-medium-symbolic</property>
                       <object class="GtkButton" id="cancel_task_button">
                         <property name="visible">True</property>
                         <property name="sensitive">False</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="tooltip_text" translatable="yes">Cancel Tasks</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">True</property>
+                        <property name="tooltip-text" translatable="yes">Cancel Tasks</property>
                         <child>
                           <object class="GtkImage">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="icon_name">edit-delete-symbolic</property>
+                            <property name="can-focus">False</property>
+                            <property name="icon-name">edit-delete-symbolic</property>
                           </object>
                         </child>
                       </object>
@@ -1245,14 +1222,14 @@ audio-volume-medium-symbolic</property>
                       <object class="GtkButton" id="remove_tasks_button">
                         <property name="visible">True</property>
                         <property name="sensitive">False</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="tooltip_text" translatable="yes">Remove Queued Tasks</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">True</property>
+                        <property name="tooltip-text" translatable="yes">Remove Queued Tasks</property>
                         <child>
                           <object class="GtkImage">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="icon_name">list-remove-all-symbolic</property>
+                            <property name="can-focus">False</property>
+                            <property name="icon-name">list-remove-all-symbolic</property>
                           </object>
                         </child>
                       </object>
@@ -1266,14 +1243,14 @@ audio-volume-medium-symbolic</property>
                       <object class="GtkButton" id="clear_tasks_button">
                         <property name="visible">True</property>
                         <property name="sensitive">False</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">True</property>
-                        <property name="tooltip_text" translatable="yes">Clear Finished Tasks</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">True</property>
+                        <property name="tooltip-text" translatable="yes">Clear Finished Tasks</property>
                         <child>
                           <object class="GtkImage">
                             <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="icon_name">edit-clear-all-symbolic</property>
+                            <property name="can-focus">False</property>
+                            <property name="icon-name">edit-clear-all-symbolic</property>
                           </object>
                         </child>
                       </object>
@@ -1306,7 +1283,7 @@ audio-volume-medium-symbolic</property>
         <child>
           <object class="GtkStatusbar" id="status_bar">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
+            <property name="can-focus">False</property>
             <property name="orientation">vertical</property>
           </object>
           <packing>
@@ -1317,36 +1294,56 @@ audio-volume-medium-symbolic</property>
         </child>
       </object>
     </child>
+    <child type="titlebar">
+      <object class="GtkHeaderBar">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="title" translatable="yes">Elektroid</property>
+        <property name="show-close-button">True</property>
+        <child>
+          <object class="GtkMenuButton" id="menu_button">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="direction">none</property>
+            <property name="popover">main_popover</property>
+            <child>
+              <placeholder/>
+            </child>
+          </object>
+          <packing>
+            <property name="pack-type">end</property>
+          </packing>
+        </child>
+      </object>
+    </child>
   </object>
   <object class="GtkDialog" id="name_dialog">
-    <property name="can_focus">False</property>
+    <property name="can-focus">False</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
-    <property name="type_hint">dialog</property>
-    <property name="transient_for">main_window</property>
-    <child>
-      <placeholder/>
-    </child>
+    <property name="type-hint">dialog</property>
+    <property name="transient-for">main_window</property>
     <child internal-child="vbox">
       <object class="GtkBox">
-        <property name="can_focus">False</property>
-        <property name="margin_left">6</property>
-        <property name="margin_right">6</property>
-        <property name="margin_top">6</property>
-        <property name="margin_bottom">6</property>
+        <property name="can-focus">False</property>
+        <property name="margin-left">6</property>
+        <property name="margin-right">6</property>
+        <property name="margin-top">6</property>
+        <property name="margin-bottom">6</property>
         <property name="orientation">vertical</property>
         <property name="spacing">6</property>
         <child internal-child="action_area">
           <object class="GtkButtonBox">
-            <property name="can_focus">False</property>
-            <property name="layout_style">end</property>
+            <property name="can-focus">False</property>
+            <property name="layout-style">end</property>
             <child>
               <object class="GtkButton" id="name_dialog_cancel_button">
                 <property name="label">gtk-cancel</property>
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="use-stock">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -1358,11 +1355,11 @@ audio-volume-medium-symbolic</property>
               <object class="GtkButton" id="name_dialog_accept_button">
                 <property name="label">gtk-ok</property>
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="can_default">True</property>
-                <property name="has_default">True</property>
-                <property name="receives_default">False</property>
-                <property name="use_stock">True</property>
+                <property name="can-focus">True</property>
+                <property name="can-default">True</property>
+                <property name="has-default">True</property>
+                <property name="receives-default">False</property>
+                <property name="use-stock">True</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -1380,13 +1377,13 @@ audio-volume-medium-symbolic</property>
         <child>
           <object class="GtkBox">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="margin_bottom">6</property>
+            <property name="can-focus">False</property>
+            <property name="margin-bottom">6</property>
             <property name="spacing">6</property>
             <child>
               <object class="GtkLabel">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
+                <property name="can-focus">False</property>
                 <property name="label" translatable="yes">Name</property>
               </object>
               <packing>
@@ -1398,12 +1395,12 @@ audio-volume-medium-symbolic</property>
             <child>
               <object class="GtkEntry" id="name_dialog_entry">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="is_focus">True</property>
+                <property name="can-focus">True</property>
+                <property name="is-focus">True</property>
                 <property name="hexpand">True</property>
-                <property name="max_length">32</property>
-                <property name="activates_default">True</property>
-                <property name="input_purpose">alpha</property>
+                <property name="max-length">32</property>
+                <property name="activates-default">True</property>
+                <property name="input-purpose">alpha</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -1422,34 +1419,31 @@ audio-volume-medium-symbolic</property>
     </child>
   </object>
   <object class="GtkDialog" id="progress_dialog">
-    <property name="can_focus">False</property>
+    <property name="can-focus">False</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
-    <property name="type_hint">dialog</property>
-    <property name="transient_for">main_window</property>
-    <child>
-      <placeholder/>
-    </child>
+    <property name="type-hint">dialog</property>
+    <property name="transient-for">main_window</property>
     <child internal-child="vbox">
       <object class="GtkBox">
-        <property name="can_focus">False</property>
-        <property name="margin_left">6</property>
-        <property name="margin_right">6</property>
-        <property name="margin_top">6</property>
-        <property name="margin_bottom">6</property>
+        <property name="can-focus">False</property>
+        <property name="margin-left">6</property>
+        <property name="margin-right">6</property>
+        <property name="margin-top">6</property>
+        <property name="margin-bottom">6</property>
         <property name="orientation">vertical</property>
         <property name="spacing">6</property>
         <child internal-child="action_area">
           <object class="GtkButtonBox">
-            <property name="can_focus">False</property>
-            <property name="layout_style">end</property>
+            <property name="can-focus">False</property>
+            <property name="layout-style">end</property>
             <child>
               <object class="GtkButton" id="progress_dialog_cancel_button">
                 <property name="label">gtk-cancel</property>
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="use-stock">True</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -1467,14 +1461,14 @@ audio-volume-medium-symbolic</property>
         <child>
           <object class="GtkBox">
             <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="margin_bottom">6</property>
+            <property name="can-focus">False</property>
+            <property name="margin-bottom">6</property>
             <property name="orientation">vertical</property>
             <property name="spacing">6</property>
             <child>
               <object class="GtkLabel" id="progress_label">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
+                <property name="can-focus">False</property>
                 <property name="halign">start</property>
               </object>
               <packing>
@@ -1486,7 +1480,7 @@ audio-volume-medium-symbolic</property>
             <child>
               <object class="GtkProgressBar" id="progress_bar">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
+                <property name="can-focus">False</property>
               </object>
               <packing>
                 <property name="expand">False</property>
