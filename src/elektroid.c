@@ -706,16 +706,15 @@ static gpointer
 elektroid_tx_sysex_thread (gpointer data)
 {
   gchar *text;
-  gint *response = malloc (sizeof (gint));
+  gint *res = malloc (sizeof (gint));
 
   sysex_transfer.active = TRUE;
   sysex_transfer.timeout = SYSEX_TIMEOUT;
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
-  *response =
-    connector_tx_sysex (&connector, sysex_transfer.raw, &sysex_transfer);
-  if (*response >= 0)
+  *res = connector_tx_sysex (&connector, &sysex_transfer);
+  if (!*res)
     {
       text = debug_get_hex_msg (sysex_transfer.raw);
       debug_print (1, "SysEx message sent (%d): %s\n",
@@ -725,7 +724,7 @@ elektroid_tx_sysex_thread (gpointer data)
 
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
 
-  return response;
+  return res;
 }
 
 static gboolean

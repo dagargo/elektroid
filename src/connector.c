@@ -719,7 +719,7 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
   if (!connector->outputp)
     {
       error_print ("Output port is NULL\n");
-      return -1;
+      return -ENOTCONN;
     }
 
   snd_rawmidi_read (connector->inputp, NULL, 0);	// trigger reading
@@ -734,23 +734,23 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
   return tx_len;
 }
 
-ssize_t
-connector_tx_sysex (struct connector *connector, GByteArray * data,
+gint
+connector_tx_sysex (struct connector *connector,
 		    struct connector_sysex_transfer *transfer)
 {
   ssize_t tx_len;
   guint total;
   guint len;
   guchar *b;
-  ssize_t ret = data->len;
+  gint res = 0;
 
   transfer->status = SENDING;
 
-  b = data->data;
+  b = transfer->raw->data;
   total = 0;
-  while (total < data->len && transfer->active)
+  while (total < transfer->raw->len && transfer->active)
     {
-      len = data->len - total;
+      len = transfer->raw->len - total;
       if (len > BUFF_SIZE)
 	{
 	  len = BUFF_SIZE;
@@ -759,7 +759,7 @@ connector_tx_sysex (struct connector *connector, GByteArray * data,
       tx_len = connector_tx_raw (connector, b, len);
       if (tx_len < 0)
 	{
-	  ret = tx_len;
+	  res = tx_len;
 	  break;
 	}
       b += len;
@@ -768,17 +768,16 @@ connector_tx_sysex (struct connector *connector, GByteArray * data,
 
   transfer->active = FALSE;
   transfer->status = FINISHED;
-  return ret;
+  return res;
 }
 
-static ssize_t
+static gint
 connector_tx (struct connector *connector, const GByteArray * msg)
 {
-  ssize_t ret;
+  gint res;
   guint16 aux;
-  GByteArray *sysex;
-  struct connector_sysex_transfer transfer;
   gchar *text;
+  struct connector_sysex_transfer transfer;
 
   aux = htobe16 (connector->seq);
   memcpy (msg->data, &aux, sizeof (guint16));
@@ -792,16 +791,16 @@ connector_tx (struct connector *connector, const GByteArray * msg)
     }
 
   transfer.active = TRUE;
-  sysex = connector_msg_to_raw (msg);
+  transfer.raw = connector_msg_to_raw (msg);
 
-  ret = connector_tx_sysex (connector, sysex, &transfer);
-
-  if (ret >= 0)
+  res = connector_tx_sysex (connector, &transfer);
+  if (!res)
     {
       if (debug_level > 1)
 	{
-	  text = debug_get_hex_msg (sysex);
-	  debug_print (2, "Raw message sent (%d): %s\n", sysex->len, text);
+	  text = debug_get_hex_msg (transfer.raw);
+	  debug_print (2, "Raw message sent (%d): %s\n", transfer.raw->len,
+		       text);
 	  free (text);
 	}
 
@@ -810,8 +809,8 @@ connector_tx (struct connector *connector, const GByteArray * msg)
       free (text);
     }
 
-  free_msg (sysex);
-  return ret;
+  free_msg (transfer.raw);
+  return res;
 }
 
 void
@@ -852,7 +851,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
   if (!connector->inputp)
     {
       error_print ("Input port is NULL\n");
-      return -1;
+      return -ENOTCONN;
     }
 
   total_time = 0;
