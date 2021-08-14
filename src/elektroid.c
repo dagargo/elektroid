@@ -121,10 +121,6 @@ static const struct option ELEKTROID_OPTIONS[] = {
   {NULL, 0, NULL, 0}
 };
 
-static const gchar *ELEKTROID_FS_NAMES[] = {
-  "samples", "data", "projects", "sounds"
-};
-
 static const gchar *ELEKTROID_FS_ICONS[] = {
   FILE_ICON_WAVE, FILE_ICON_DATA, FILE_ICON_PRJ, FILE_ICON_SND
 };
@@ -242,16 +238,21 @@ static GtkComboBox *fs_combo;
 static GtkTreeViewColumn *remote_tree_view_index_column;
 
 static const gchar *
-elektroid_get_fs_name (enum connector_fs selected)
+elektroid_get_fs_name (enum connector_fs fs)
 {
-  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs = fs << 1, i++)
+  switch (fs)
     {
-      if (fs == selected)
-	{
-	  return ELEKTROID_FS_NAMES[i];
-	}
+    case FS_SAMPLES:
+      return _("Samples");
+    case FS_DATA_ALL:
+      return _("Data");
+    case FS_DATA_PRJ:
+      return _("Projects");
+    case FS_DATA_SND:
+      return _("Sounds");
+    default:
+      return _("Undefined");
     }
-  return NULL;
 }
 
 static void
@@ -2450,7 +2451,7 @@ elektroid_fill_fs_combo ()
 					     FS_LIST_STORE_ICON_FIELD,
 					     ELEKTROID_FS_ICONS[i],
 					     FS_LIST_STORE_NAME_FIELD,
-					     ELEKTROID_FS_NAMES[i], -1);
+					     elektroid_get_fs_name (fs), -1);
 	}
     }
 
