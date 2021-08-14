@@ -47,6 +47,7 @@
 #define AHMK2_ID 0x16
 #define DKEYS_ID 0x1c
 #define MOD_S_ID 0x19
+#define MOD_C_ID 0xff		//TODO
 
 #define FS_DATA_PRJ_PREFIX "/projects"
 #define FS_DATA_SND_PREFIX "/soundbanks"
@@ -178,12 +179,36 @@ static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
 
 static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 
+static const struct connector_device_desc ANALOG_FOUR_DESC = {
+  .name = "Analog Four",
+  .alias = "af",
+  .id = AFMK1_ID,
+  .fss = FS_DATA_ALL,
+  .storages = 0
+};
+
+static const struct connector_device_desc ANALOG_KEYS_DESC = {
+  .name = "Analog Keys",
+  .alias = "ak",
+  .id = AKEYS_ID,
+  .fss = FS_DATA_ALL,
+  .storages = 0
+};
+
 static const struct connector_device_desc ANALOG_RYTM_DESC = {
   .name = "Analog Rytm",
   .alias = "ar",
   .id = ARMK1_ID,
-  .fss = FS_SAMPLES,
+  .fss = FS_SAMPLES | FS_DATA_ALL,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
+};
+
+static const struct connector_device_desc ANALOG_HEAT_DESC = {
+  .name = "Analog Heat",
+  .alias = "ah",
+  .id = AHMK1_ID,
+  .fss = FS_DATA_ALL,
+  .storages = 0
 };
 
 static const struct connector_device_desc DIGITAKT_DESC = {
@@ -194,25 +219,67 @@ static const struct connector_device_desc DIGITAKT_DESC = {
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
+static const struct connector_device_desc ANALOG_FOUR_MKII_DESC = {
+  .name = "Analog Four MKII",
+  .alias = "af",
+  .id = AFMK2_ID,
+  .fss = FS_DATA_ALL,
+  .storages = 0
+};
+
 static const struct connector_device_desc ANALOG_RYTM_MKII_DESC = {
   .name = "Analog Rytm MKII",
   .alias = "ar",
   .id = ARMK2_ID,
-  .fss = FS_SAMPLES,
+  .fss = FS_SAMPLES | FS_DATA_ALL,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
+};
+
+static const struct connector_device_desc DIGITONE_DESC = {
+  .name = "Digitone",
+  .alias = "dn",
+  .id = DTONE_ID,
+  .fss = FS_DATA_ALL,
+  .storages = 0
+};
+
+static const struct connector_device_desc ANALOG_HEAT_MKII_DESC = {
+  .name = "Analog Heat MKII",
+  .alias = "ah",
+  .id = AHMK2_ID,
+  .fss = FS_DATA_ALL,
+  .storages = 0
+};
+
+static const struct connector_device_desc DIGITONE_KEYS_DESC = {
+  .name = "Digitone Keys",
+  .alias = "dn",
+  .id = DKEYS_ID,
+  .fss = FS_DATA_ALL,
+  .storages = 0
 };
 
 static const struct connector_device_desc MODEL_SAMPLES_DESC = {
   .name = "Model:Samples",
   .alias = "ms",
   .id = MOD_S_ID,
-  .fss = FS_SAMPLES,
+  .fss = FS_SAMPLES | FS_DATA_ALL,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
+static const struct connector_device_desc MODEL_CYCLES_DESC = {
+  .name = "Model:Cycles",
+  .alias = "mc",
+  .id = MOD_C_ID,
+  .fss = FS_DATA_ALL,
+  .storages = 0
+};
+
 static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
-  &ANALOG_RYTM_DESC, &DIGITAKT_DESC, &ANALOG_RYTM_MKII_DESC,
-  &MODEL_SAMPLES_DESC
+  &ANALOG_FOUR_DESC, &ANALOG_KEYS_DESC, &ANALOG_RYTM_DESC, &ANALOG_HEAT_DESC,
+  &DIGITAKT_DESC, &ANALOG_FOUR_MKII_DESC, &ANALOG_RYTM_MKII_DESC,
+  &DIGITONE_DESC, &ANALOG_HEAT_MKII_DESC, &DIGITONE_KEYS_DESC,
+  &MODEL_SAMPLES_DESC, &MODEL_CYCLES_DESC
 };
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
