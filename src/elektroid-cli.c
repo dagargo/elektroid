@@ -271,7 +271,12 @@ cli_df (int argc, char *argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  printf ("%-10.10s%16.16s%16.16s%16.16s%11.10s\n", "Filesystem", "Size",
+  if (!connector.device_desc->storages)
+    {
+      return EXIT_FAILURE;
+    }
+
+  printf ("%-10.10s%16.16s%16.16s%16.16s%11.10s\n", "Storage", "Size",
 	  "Used", "Available", "Use%");
 
   res = 0;

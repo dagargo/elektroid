@@ -54,7 +54,7 @@ Digitakt 1.11
 
 ```
 $ elektroid-cli df 0
-Filesystem            Size            Used       Available       Use%
+Storage               Size            Used       Available       Use%
 +Drive           959.50MiB       198.20MiB       761.30MiB     20.66%
 RAM               64.00MiB        13.43MiB        50.57MiB     20.98%
 ```
