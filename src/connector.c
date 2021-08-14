@@ -1698,7 +1698,7 @@ connector_new_msg_upgrade_os_write (GByteArray * os_data, gint * offset)
 }
 
 gint
-connector_upgrade_os (struct connector *connector, GByteArray * data,
+connector_upgrade_os (struct connector *connector,
 		      struct connector_sysex_transfer *transfer)
 {
   GByteArray *tx_msg;
@@ -1709,7 +1709,7 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
 
   transfer->status = SENDING;
 
-  tx_msg = connector_new_msg_upgrade_os_start (data->len);
+  tx_msg = connector_new_msg_upgrade_os_start (transfer->raw->len);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
 
   if (!rx_msg)
@@ -1731,9 +1731,9 @@ connector_upgrade_os (struct connector *connector, GByteArray * data,
   free_msg (rx_msg);
 
   offset = 0;
-  while (offset < data->len && transfer->active)
+  while (offset < transfer->raw->len && transfer->active)
     {
-      tx_msg = connector_new_msg_upgrade_os_write (data, &offset);
+      tx_msg = connector_new_msg_upgrade_os_write (transfer->raw, &offset);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
 
       if (!rx_msg)

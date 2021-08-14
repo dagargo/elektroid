@@ -120,7 +120,7 @@ gint connector_rx_sysex (struct connector *,
 
 void connector_rx_drain (struct connector *);
 
-gint connector_upgrade_os (struct connector *, GByteArray *,
+gint connector_upgrade_os (struct connector *,
 			   struct connector_sysex_transfer *);
 
 gint connector_get_storage_stats (struct connector *,

@@ -107,6 +107,9 @@ struct elektroid_add_upload_task_data
   gint32 index;
 };
 
+typedef int (*connector_send_raw) (struct connector *,
+				   struct connector_sysex_transfer *);
+
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (gdouble);
@@ -707,13 +710,14 @@ elektroid_tx_sysex_thread (gpointer data)
 {
   gchar *text;
   gint *res = malloc (sizeof (gint));
+  connector_send_raw f = data;
 
   sysex_transfer.active = TRUE;
   sysex_transfer.timeout = SYSEX_TIMEOUT;
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
-  *res = connector_tx_sysex (&connector, &sysex_transfer);
+  *res = f (&connector, &sysex_transfer);
   if (!*res)
     {
       text = debug_get_hex_msg (sysex_transfer.raw);
@@ -727,17 +731,8 @@ elektroid_tx_sysex_thread (gpointer data)
   return res;
 }
 
-static gboolean
-elektroid_start_tx_thread (gpointer data)
-{
-  debug_print (1, "Creating tx SysEx thread...\n");
-  sysex_thread = g_thread_new ("sysex_thread", data, NULL);
-
-  return FALSE;
-}
-
 static void
-elektroid_tx_sysex_common (GThreadFunc tx_function)
+elektroid_tx_sysex_common (connector_send_raw f)
 {
   GtkWidget *dialog;
   GtkFileChooser *chooser;
@@ -779,7 +774,8 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
 	}
       else
 	{
-	  g_idle_add (elektroid_start_tx_thread, tx_function);
+	  sysex_thread =
+	    g_thread_new ("sysex_thread", elektroid_tx_sysex_thread, f);
 
 	  gtk_window_set_title (GTK_WINDOW (progress_dialog),
 				_("Send SysEx"));
@@ -813,31 +809,13 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
 static void
 elektroid_tx_sysex (GtkWidget * object, gpointer data)
 {
-  elektroid_tx_sysex_common (elektroid_tx_sysex_thread);
-}
-
-static gpointer
-elektroid_os_upgrade_thread (gpointer data)
-{
-  gint *response = malloc (sizeof (gint));
-
-  sysex_transfer.active = TRUE;
-  sysex_transfer.timeout = SYSEX_TIMEOUT;
-
-  g_timeout_add (100, elektroid_update_sysex_progress, NULL);
-
-  *response =
-    connector_upgrade_os (&connector, sysex_transfer.raw, &sysex_transfer);
-
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
-
-  return response;
+  elektroid_tx_sysex_common (connector_tx_sysex);
 }
 
 static void
 elektroid_upgrade_os (GtkWidget * object, gpointer data)
 {
-  elektroid_tx_sysex_common (elektroid_os_upgrade_thread);
+  elektroid_tx_sysex_common (connector_upgrade_os);
   connector_destroy (&connector);
   elektroid_check_connector ();
 }
