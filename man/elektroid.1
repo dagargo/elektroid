@@ -1,23 +1,26 @@
 .TH ELEKTROID "1" "Feb 2020"
 .SH NAME
-elektroid \- sample transfer application for Elektron devices
+elektroid \- transfer application for Elektron devices
 .SH SYNOPSIS
 .B elektroid
 .RI [ options ]
 .SH DESCRIPTION
 .B Elektroid
-is a GNU/Linux sample transfer application for Elektron devices. See man elektroid-cli for the CLI application.
+is a GNU/Linux transfer application for Elektron devices. See man elektroid-cli for the CLI application.
 .PP
-With Elektroid you can easily upload aiff, flac, ogg and wav audio files into your Elektron sampler. Besides, you can download audio samples from your device to your computer. It can also be used to send and receive MIDI SysEx files.
+With Elektroid you can easily upload and download audio files, projects and sounds to and from your Elektron device. It can also be used to send and receive MIDI SysEx files.
 .PP
 Elektroid has been reported to work with Model:Samples, Digitakt and Analog Rytm mk1 and mk2.
 .SH OPTIONS
 .TP
-\fB\-l\fR <local directory>
+\fB\-l\fR, \fB--local-directory\fR <local directory>
 Open the provided local directory
 .TP
-\fB\-v\fR
+\fB\-v\fR, \fB--verbose\fR
 Show verbose output. Use it more than once for more verbosity.
+.TP
+\fB\-h\fR, \fB--help\fR
+Show a little help about the options
 .PP
 .SH "AUTHOR"
 elektroid was written by David García Goñi <dagargo@gmail.com>.

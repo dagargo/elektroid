@@ -1,6 +1,6 @@
 .TH ELEKTROID-CLI "1" "Feb 2020"
 .SH NAME
-elektroid-cli \- sample transfer CLI application for Elektron devices
+elektroid-cli \- transfer CLI application for Elektron devices
 .SH SYNOPSIS
 .B elektroid-cli
 .RI [ options ]
@@ -12,32 +12,56 @@ provides the same funcionality than elektroid. See man elektroid for the GUI app
 Provided paths must always be prepended with the device id and a colon (':'), e.g. 0:/samples.
 .SH COMMANDS
 .TP
-.B ld
+[\fBlist-devices\fR | \fBld\fR]
 List compatible devices
 .TP
-.B info [device number]
+\fBinfo\fR [device number]
 Show device info
 .TP
-.B ls [device number]:[path to directory]
+[\fBinfo-storage\fR | \fBdf\fR] [device number]
+Show size and use of +Drive and RAM where available
+.TP
+[\fBlist-samples\fR | \fBls\fR] [device number]:[path to directory]
 List directory contents
 .TP
-.B mkdir [device number]:[path to directory]
-Create a directory
+[\fBmkdir-samples\fR | \fBmkdir\fR] [device number]:[path to directory]
+Create a directory and its parent directories as needed
 .TP
-.B rmdir [device number]:[path to directory]
-Delete a directory. The directory must be empty.
+[\fBrmdir-samples\fR | \fBrmdir\fR] [device number]:[path to directory]
+Delete a directory recursively
 .TP
-.B upload [sample] [device number]:[path to directory or sample]
+[\fBupload-sample\fR | \fBupload\fR] [sample] [device number]:[path to directory or sample]
 Upload a sample. If the path does not exist it will be created. The supported audio file formats are aiff, flac, ogg and wav.
 .TP
-.B download [device number]:[path to sample]
+[\fBdownload-sample\fR | \fBdownload\fR] [device number]:[path to sample]
 Download a sample. Samples will be stored locally as 16-bit, 48kHz wav files.
 .TP
-.B mv [device number]:[path to origin sample] [device number]:[path to destination directory or sample]
+[\fBmv-sample\fR | \fBmv\fR] [device number]:[path to origin sample] [device number]:[path to destination directory or sample]
 Move a sample. If the destination path does not exist it will be created.
 .TP
-.B rm [device number]:[path to sample]
+[\fBrm-sample\fR | \fBrm\fR] [device number]:[path to sample]
 Delete a sample
+.TP
+\fBlist-data\fR [device number]:[path to directory]
+List directory contents
+.TP
+\fBcopy-data\fR [device number]:[path to index] [device number]:[path to index]
+Copy data element
+.TP
+\fBswap-data\fR [device number]:[path to index] [device number]:[path to index]
+Swap data elements
+.TP
+\fBmove-data\fR [device number]:[path to index] [device number]:[path to index]
+Move data element
+.TP
+\fBclear-data\fR [device number]:[path to index]
+Clear data element
+.TP
+\fBupload-data\fR [data file] [device number]:[path to index]
+Upload data element
+.TP
+\fBdopwnload-data\fR [device number]:[path to index]
+Download data element
 .SH OPTIONS
 .TP
 \fB\-v\fR
