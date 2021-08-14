@@ -880,7 +880,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
       if (err < 0)
 	{
-	  error_print ("Error while polling. %s.\n", snd_strerror (errno));
+	  error_print ("Error while polling. %s.\n", g_strerror (errno));
 	  connector_destroy (connector);
 	  return err;
 	}
@@ -892,7 +892,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 						 &revents)) < 0)
 	{
 	  error_print ("Error while getting poll events. %s.\n",
-		       snd_strerror (errno));
+		       snd_strerror (err));
 	  connector_destroy (connector);
 	  return err;
 	}
@@ -1780,7 +1780,7 @@ connector_destroy (struct connector *connector)
       if (err)
 	{
 	  error_print ("Error while closing MIDI port: %s\n",
-		       snd_strerror (errno));
+		       snd_strerror (err));
 	}
       connector->inputp = NULL;
     }
@@ -1791,7 +1791,7 @@ connector_destroy (struct connector *connector)
       if (err)
 	{
 	  error_print ("Error while closing MIDI port: %s\n",
-		       snd_strerror (errno));
+		       snd_strerror (err));
 	}
       connector->outputp = NULL;
     }
@@ -1917,8 +1917,7 @@ connector_init (struct connector *connector, gint card)
        snd_rawmidi_open (&connector->inputp, &connector->outputp,
 			 name, SND_RAWMIDI_NONBLOCK | SND_RAWMIDI_SYNC)) < 0)
     {
-      error_print ("Error while opening MIDI port: %s\n",
-		   snd_strerror (errno));
+      error_print ("Error while opening MIDI port: %s\n", g_strerror (err));
       goto cleanup;
     }
 
