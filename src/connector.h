@@ -78,6 +78,7 @@ struct connector_sysex_transfer
   gint timeout;			//Measured in ms. -1 is infinite.
   gboolean batch;
   GMutex mutex;
+  GByteArray *raw;
 };
 
 enum connector_storage

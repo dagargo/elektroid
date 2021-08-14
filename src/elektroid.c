@@ -101,12 +101,6 @@ struct elektroid_transfer
   const struct fs_operations *fs_ops;	//Contains the fs_operations to use in this transfer
 };
 
-struct elektroid_sysex_transfer
-{
-  struct connector_sysex_transfer transfer;
-  GByteArray *data;
-};
-
 struct elektroid_add_upload_task_data
 {
   struct item_iterator iter;
@@ -197,7 +191,7 @@ static GThread *load_thread = NULL;
 static GThread *task_thread = NULL;
 static GThread *sysex_thread = NULL;
 static struct elektroid_transfer transfer;
-static struct elektroid_sysex_transfer sysex_transfer;
+static struct connector_sysex_transfer sysex_transfer;
 
 static GThread *notifier_thread = NULL;
 struct notifier notifier;
@@ -516,9 +510,9 @@ static void
 elektroid_cancel_running_sysex (GtkDialog * dialog, gint response_id,
 				gpointer data)
 {
-  g_mutex_lock (&sysex_transfer.transfer.mutex);
-  sysex_transfer.transfer.active = FALSE;
-  g_mutex_unlock (&sysex_transfer.transfer.mutex);
+  g_mutex_lock (&sysex_transfer.mutex);
+  sysex_transfer.active = FALSE;
+  g_mutex_unlock (&sysex_transfer.mutex);
 }
 
 static void
@@ -542,9 +536,9 @@ elektroid_update_sysex_progress (gpointer data)
   gboolean active;
   enum connector_sysex_transfer_status status;
 
-  g_mutex_lock (&sysex_transfer.transfer.mutex);
-  status = sysex_transfer.transfer.status;
-  g_mutex_unlock (&sysex_transfer.transfer.mutex);
+  g_mutex_lock (&sysex_transfer.mutex);
+  status = sysex_transfer.status;
+  g_mutex_unlock (&sysex_transfer.mutex);
 
   switch (status)
     {
@@ -564,9 +558,9 @@ elektroid_update_sysex_progress (gpointer data)
     }
   gtk_label_set_text (GTK_LABEL (progress_label), text);
 
-  g_mutex_lock (&sysex_transfer.transfer.mutex);
-  active = sysex_transfer.transfer.active;
-  g_mutex_unlock (&sysex_transfer.transfer.mutex);
+  g_mutex_lock (&sysex_transfer.mutex);
+  active = sysex_transfer.active;
+  g_mutex_unlock (&sysex_transfer.mutex);
 
   return active;
 }
@@ -577,15 +571,15 @@ elektroid_rx_sysex_thread (gpointer data)
   gchar *text;
   GByteArray *msg;
 
-  sysex_transfer.transfer.status = WAITING;
-  sysex_transfer.transfer.active = TRUE;
-  sysex_transfer.transfer.timeout = DUMP_TIMEOUT;
-  sysex_transfer.transfer.batch = TRUE;
+  sysex_transfer.status = WAITING;
+  sysex_transfer.active = TRUE;
+  sysex_transfer.timeout = DUMP_TIMEOUT;
+  sysex_transfer.batch = TRUE;
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
   connector_rx_drain (&connector);
-  msg = connector_rx_sysex (&connector, &sysex_transfer.transfer);
+  msg = connector_rx_sysex (&connector, &sysex_transfer);
   if (msg)
     {
       text = debug_get_hex_msg (msg);
@@ -625,7 +619,7 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
 
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
   res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
-  sysex_transfer.transfer.active = FALSE;
+  sysex_transfer.active = FALSE;
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
   array = elektroid_join_sysex_thread ();
@@ -709,19 +703,18 @@ elektroid_tx_sysex_thread (gpointer data)
   gchar *text;
   gint *response = malloc (sizeof (gint));
 
-  sysex_transfer.transfer.active = TRUE;
-  sysex_transfer.transfer.timeout = SYSEX_TIMEOUT;
+  sysex_transfer.active = TRUE;
+  sysex_transfer.timeout = SYSEX_TIMEOUT;
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
   *response =
-    connector_tx_sysex (&connector, sysex_transfer.data,
-			&sysex_transfer.transfer);
+    connector_tx_sysex (&connector, sysex_transfer.raw, &sysex_transfer);
   if (*response >= 0)
     {
-      text = debug_get_hex_msg (sysex_transfer.data);
+      text = debug_get_hex_msg (sysex_transfer.raw);
       debug_print (1, "SysEx message sent (%d): %s\n",
-		   sysex_transfer.data->len, text);
+		   sysex_transfer.raw->len, text);
       free (text);
     }
 
@@ -771,9 +764,9 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
       gtk_widget_destroy (dialog);
       debug_print (1, "Opening SysEx file...\n");
 
-      sysex_transfer.data = g_byte_array_new ();
+      sysex_transfer.raw = g_byte_array_new ();
 
-      lres = load_file (filename, sysex_transfer.data, NULL);
+      lres = load_file (filename, sysex_transfer.raw, NULL);
       if (lres)
 	{
 	  show_error_msg (_("Error while loading “%s”: %s."),
@@ -788,16 +781,16 @@ elektroid_tx_sysex_common (GThreadFunc tx_function)
 				_("Send SysEx"));
 	  res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
 
-	  g_mutex_lock (&sysex_transfer.transfer.mutex);
-	  sysex_transfer.transfer.active = FALSE;
-	  g_mutex_unlock (&sysex_transfer.transfer.mutex);
+	  g_mutex_lock (&sysex_transfer.mutex);
+	  sysex_transfer.active = FALSE;
+	  g_mutex_unlock (&sysex_transfer.mutex);
 
 	  gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
 	  response = elektroid_join_sysex_thread ();
 	}
 
-      g_byte_array_free (sysex_transfer.data, TRUE);
+      g_byte_array_free (sysex_transfer.raw, TRUE);
 
 
       if (*response < 0)
@@ -824,14 +817,13 @@ elektroid_os_upgrade_thread (gpointer data)
 {
   gint *response = malloc (sizeof (gint));
 
-  sysex_transfer.transfer.active = TRUE;
-  sysex_transfer.transfer.timeout = SYSEX_TIMEOUT;
+  sysex_transfer.active = TRUE;
+  sysex_transfer.timeout = SYSEX_TIMEOUT;
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
   *response =
-    connector_upgrade_os (&connector, sysex_transfer.data,
-			  &sysex_transfer.transfer);
+    connector_upgrade_os (&connector, sysex_transfer.raw, &sysex_transfer);
 
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
 
