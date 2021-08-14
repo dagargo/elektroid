@@ -43,7 +43,6 @@
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
 
-#define MSG_ERROR_MOVING "Error while moving from “%s” to “%s”: %s."
 #define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping...\n"
 
 enum device_list_store_columns
@@ -2550,8 +2549,9 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 		  res = local_browser.fs_ops->move (filename, dst_path, NULL);
 		  if (res)
 		    {
-		      show_error_msg (_(MSG_ERROR_MOVING), filename,
-				      dst_path, g_strerror (res));
+		      show_error_msg (_
+				      ("Error while moving from “%s” to “%s”: %s."),
+				      filename, dst_path, g_strerror (res));
 		    }
 		  g_free (dst_path);
 		}
@@ -2583,8 +2583,9 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 						 remote_browser.data);
 		  if (res)
 		    {
-		      show_error_msg (_(MSG_ERROR_MOVING), filename,
-				      dst_path, g_strerror (res));
+		      show_error_msg (_
+				      ("Error while moving from “%s” to “%s”: %s."),
+				      filename, dst_path, g_strerror (res));
 		    }
 		  g_free (dst_path);
 		  browser_load_dir (browser);
