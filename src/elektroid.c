@@ -568,8 +568,8 @@ elektroid_update_sysex_progress (gpointer data)
 static gpointer
 elektroid_rx_sysex_thread (gpointer data)
 {
+  gint *res = malloc (sizeof (gint));
   gchar *text;
-  GByteArray *msg;
 
   sysex_transfer.status = WAITING;
   sysex_transfer.active = TRUE;
@@ -579,17 +579,18 @@ elektroid_rx_sysex_thread (gpointer data)
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
   connector_rx_drain (&connector);
-  msg = connector_rx_sysex (&connector, &sysex_transfer);
-  if (msg)
+  *res = connector_rx_sysex (&connector, &sysex_transfer);
+  if (!*res)
     {
-      text = debug_get_hex_msg (msg);
-      debug_print (1, "SysEx message received (%d): %s\n", msg->len, text);
+      text = debug_get_hex_msg (sysex_transfer.raw);
+      debug_print (1, "SysEx message received (%d): %s\n",
+		   sysex_transfer.raw->len, text);
       free (text);
     }
 
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
 
-  return msg;
+  return res;
 }
 
 static gboolean
@@ -608,34 +609,36 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   GtkWidget *dialog;
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
-  gint res;
+  gint dres;
   gchar *filename;
   gchar *filename_w_ext;
   const gchar *ext;
-  GByteArray *array;
+  gint *res;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
   g_idle_add (elektroid_start_rx_thread, NULL);
 
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
-  res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
+  dres = gtk_dialog_run (GTK_DIALOG (progress_dialog));
   sysex_transfer.active = FALSE;
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
-  array = elektroid_join_sysex_thread ();
+  res = elektroid_join_sysex_thread ();
 
-  if (res != GTK_RESPONSE_ACCEPT)
+  if (dres != GTK_RESPONSE_ACCEPT)
     {
-      if (array)
+      if (!*res)
 	{
-	  g_byte_array_free (array, TRUE);
+	  g_byte_array_free (sysex_transfer.raw, TRUE);
 	}
+      g_free (res);
       return;
     }
 
-  if (!array)
+  if (*res)
     {
       elektroid_check_connector ();
+      g_free (res);
       return;
     }
 
@@ -685,12 +688,14 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   if (filename != NULL)
     {
       debug_print (1, "Saving SysEx file...\n");
-      res = save_file (filename, array, NULL);
-      if (res)
+      *res = save_file (filename, sysex_transfer.raw, NULL);
+      if (*res)
 	{
 	  show_error_msg (_("Error while saving “%s”: %s."),
-			  filename, g_strerror (res));
+			  filename, g_strerror (*res));
 	}
+      g_byte_array_free (sysex_transfer.raw, TRUE);
+      g_free (res);
       g_free (filename);
     }
 

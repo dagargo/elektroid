@@ -476,7 +476,7 @@ connector_encode_payload (const GByteArray * src)
 }
 
 static GByteArray *
-connector_msg_to_sysex (const GByteArray * msg)
+connector_msg_to_raw (const GByteArray * msg)
 {
   GByteArray *encoded;
   GByteArray *sysex = g_byte_array_new ();
@@ -690,7 +690,7 @@ connector_new_msg_read_file_blk (guint id, guint start, guint size)
 }
 
 static GByteArray *
-connector_sysex_to_msg (GByteArray * sysex)
+connector_raw_to_msg (GByteArray * sysex)
 {
   GByteArray *msg;
   GByteArray *payload;
@@ -792,7 +792,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
     }
 
   transfer.active = TRUE;
-  sysex = connector_msg_to_sysex (msg);
+  sysex = connector_msg_to_raw (msg);
 
   ret = connector_tx_sysex (connector, sysex, &transfer);
 
@@ -944,15 +944,16 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
   return rx_len;
 }
 
-GByteArray *
+gint
 connector_rx_sysex (struct connector *connector,
 		    struct connector_sysex_transfer *transfer)
 {
   gint i;
   guint8 *b;
-  GByteArray *sysex = g_byte_array_new ();
+  gint res = 0;
 
   transfer->status = WAITING;
+  transfer->raw = g_byte_array_new ();
 
   i = 0;
   if (connector->rx_len < 0)
@@ -971,13 +972,13 @@ connector_rx_sysex (struct connector *connector,
 
 	  if (connector->rx_len == -ENODATA)
 	    {
-	      errno = ENODATA;
+	      res = -ENODATA;
 	      goto error;
 	    }
 
 	  if (connector->rx_len < 0)
 	    {
-	      errno = EIO;
+	      res = -EIO;
 	      goto error;
 	    }
 
@@ -997,7 +998,7 @@ connector_rx_sysex (struct connector *connector,
 	}
     }
 
-  g_byte_array_append (sysex, b, 1);
+  g_byte_array_append (transfer->raw, b, 1);
   b++;
   i++;
   transfer->status = RECEIVING;
@@ -1017,7 +1018,7 @@ connector_rx_sysex (struct connector *connector,
 
 	  if (connector->rx_len < 0)
 	    {
-	      errno = EIO;
+	      res = -EIO;
 	      goto error;
 	    }
 
@@ -1029,7 +1030,7 @@ connector_rx_sysex (struct connector *connector,
 	{
 	  if (!connector_is_rt_msg (b, 1))
 	    {
-	      g_byte_array_append (sysex, b, 1);
+	      g_byte_array_append (transfer->raw, b, 1);
 	    }
 	  b++;
 	  i++;
@@ -1037,7 +1038,7 @@ connector_rx_sysex (struct connector *connector,
 
       if (i < connector->rx_len)
 	{
-	  g_byte_array_append (sysex, b, 1);
+	  g_byte_array_append (transfer->raw, b, 1);
 	  connector->rx_len = connector->rx_len - i - 1;
 	  if (connector->rx_len > 0)
 	    {
@@ -1052,51 +1053,49 @@ connector_rx_sysex (struct connector *connector,
   goto end;
 
 error:
-  free_msg (sysex);
-  sysex = NULL;
+  free_msg (transfer->raw);
+  transfer->raw = NULL;
 end:
   transfer->active = FALSE;
   transfer->status = FINISHED;
-  return sysex;
+  return res;
 }
 
 static GByteArray *
 connector_rx (struct connector *connector)
 {
-  GByteArray *msg;
-  GByteArray *sysex;
-  struct connector_sysex_transfer transfer;
   gchar *text;
+  GByteArray *msg;
+  struct connector_sysex_transfer transfer;
 
   transfer.active = TRUE;
   transfer.timeout = SYSEX_TIMEOUT;
   transfer.batch = FALSE;
 
-  sysex = connector_rx_sysex (connector, &transfer);
-  if (!sysex)
+  if (connector_rx_sysex (connector, &transfer))
     {
       return NULL;
     }
-  while (sysex->len < 12
-	 || (sysex->len >= 12
-	     && (sysex->data[0] != MSG_HEADER[0]
-		 || sysex->data[1] != MSG_HEADER[1]
-		 || sysex->data[2] != MSG_HEADER[2]
-		 || sysex->data[3] != MSG_HEADER[3]
-		 || sysex->data[4] != MSG_HEADER[4]
-		 || sysex->data[5] != MSG_HEADER[5])))
+  while (transfer.raw->len < 12
+	 || (transfer.raw->len >= 12
+	     && (transfer.raw->data[0] != MSG_HEADER[0]
+		 || transfer.raw->data[1] != MSG_HEADER[1]
+		 || transfer.raw->data[2] != MSG_HEADER[2]
+		 || transfer.raw->data[3] != MSG_HEADER[3]
+		 || transfer.raw->data[4] != MSG_HEADER[4]
+		 || transfer.raw->data[5] != MSG_HEADER[5])))
     {
       if (debug_level > 1)
 	{
-	  text = debug_get_hex_msg (sysex);
-	  debug_print (2, "Message skipped (%d): %s\n", sysex->len, text);
+	  text = debug_get_hex_msg (transfer.raw);
+	  debug_print (2, "Message skipped (%d): %s\n", transfer.raw->len,
+		       text);
 	  free (text);
 	}
-      free_msg (sysex);
+      free_msg (transfer.raw);
 
       transfer.active = TRUE;
-      sysex = connector_rx_sysex (connector, &transfer);
-      if (!sysex)
+      if (connector_rx_sysex (connector, &transfer))
 	{
 	  return NULL;
 	}
@@ -1104,12 +1103,13 @@ connector_rx (struct connector *connector)
 
   if (debug_level > 1)
     {
-      text = debug_get_hex_msg (sysex);
-      debug_print (2, "Raw message received (%d): %s\n", sysex->len, text);
+      text = debug_get_hex_msg (transfer.raw);
+      debug_print (2, "Raw message received (%d): %s\n", transfer.raw->len,
+		   text);
       free (text);
     }
 
-  msg = connector_sysex_to_msg (sysex);
+  msg = connector_raw_to_msg (transfer.raw);
   if (msg)
     {
       text = debug_get_hex_msg (msg);
@@ -1117,7 +1117,7 @@ connector_rx (struct connector *connector)
       free (text);
     }
 
-  free_msg (sysex);
+  free_msg (transfer.raw);
   return msg;
 }
 

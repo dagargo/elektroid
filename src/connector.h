@@ -115,9 +115,8 @@ GArray *connector_get_system_devices ();
 ssize_t connector_tx_sysex (struct connector *, GByteArray *,
 			    struct connector_sysex_transfer *);
 
-GByteArray *connector_rx_sysex (struct connector *,
-				struct connector_sysex_transfer *);
-
+gint connector_rx_sysex (struct connector *,
+			 struct connector_sysex_transfer *);
 
 void connector_rx_drain (struct connector *);
 
