@@ -110,13 +110,27 @@ $ elektroid-cli rm 0:/sample
 
 ### Data commands
 
-Notice that all data commands that use paths to items and not directories use the item index instead the item name.
+There are a few things to clarify first.
+
+* All data commands are valid for both projects and sounds although the examples use just sounds.
+
+* All data commands that use paths to items and not directories use the item index instead the item name.
+
+* While `elektroid-cli` offers a single API for both projects and sounds, `elektroid` will treat them as different types of data because they are. The reason behind this difference is that the underlying MIDI API is not only the same but treats them as if they were the same kind of objects, and that is exaclty what `elektroid-cli` provides. `elektroid` just tries to be more user friendly by splitting this layer.
+
+Here are the commands.
 
 * `list-data`
 
 It only works for directories. Notice that the first column is the file type, the second is the index, the third is the permissons in hexadecimal, the fourth indicates if the data in valid, the fifth indicates if it has metadatam, the sixth is the size and the last one is the item name.
 
 Permissions are 16 bits values but only 6 are used from bit 2 to bit 7 both included. From LSB to MSB, this permissions are read, write, clear, copy, swap, and move.
+
+```
+$ elektroid-cli list-data 0:/
+D  -1 0000 0 0         0B projects
+D  -1 0000 0 0         0B soundbanks
+```
 
 ```
 $ elektroid-cli list-data 0:/soundbanks/D
@@ -170,5 +184,5 @@ $ elektroid-cli download-data 0:/soundbanks/D/1
 * `upload-data`
 
 ```
-$ elektroid-cli download-data sound 0:/soundbanks/D
+$ elektroid-cli upload-data sound 0:/soundbanks/D
 ```
