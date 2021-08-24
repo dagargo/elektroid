@@ -841,8 +841,8 @@ elektroid_update_ui_on_load (gpointer data)
   gboolean ready_to_play;
 
   g_mutex_lock (&audio.control.mutex);
-  ready_to_play = audio.sample->len >> 1 >= LOAD_BUFFER_LEN
-    || (!audio.control.active && audio.sample->len > 0);
+  ready_to_play = audio.frames >= LOAD_BUFFER_LEN || (!audio.control.active
+						      && audio.frames > 0);
   g_mutex_unlock (&audio.control.mutex);
 
   if (ready_to_play)
@@ -1298,8 +1298,19 @@ elektroid_local_check_selection (gpointer data)
   GtkTreeIter iter;
   gchar *sample_path;
   GtkTreeModel *model;
-  struct item *item;
+  struct item *item = NULL;
   gint count = browser_get_selected_items_count (&local_browser);
+
+  if (count == 1)
+    {
+      browser_set_selected_row_iter (&local_browser, &iter);
+      model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
+      item = browser_get_item (model, &iter);
+      if (!strcmp (audio.name, item->name))
+	{
+	  goto end;
+	}
+    }
 
   if (!remote_browser.fs_ops || remote_browser.fs_ops->fs == FS_SAMPLES)
     {
@@ -1309,24 +1320,21 @@ elektroid_local_check_selection (gpointer data)
       gtk_widget_queue_draw (waveform_draw_area);
       elektroid_controls_set_sensitive (FALSE);
 
-      if (count == 1)
+      if (item && item->type == ELEKTROID_FILE
+	  && strcmp (item->name, audio.name))
 	{
-	  browser_set_selected_row_iter (&local_browser, &iter);
-	  model =
-	    GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
-	  item = browser_get_item (model, &iter);
-	  if (item->type == ELEKTROID_FILE)
-	    {
-	      gtk_widget_set_sensitive (local_open_menuitem, TRUE);
-	      sample_path = chain_path (local_browser.dir, item->name);
-	      elektroid_start_load_thread (sample_path);
-	    }
-	  else
-	    {
-	      gtk_widget_set_sensitive (local_open_menuitem, FALSE);
-	    }
-	  browser_free_item (item);
+	  sample_path = chain_path (local_browser.dir, item->name);
+	  elektroid_start_load_thread (sample_path);
+	  strcpy (audio.name, item->name);
 	}
+      gtk_widget_set_sensitive (local_open_menuitem, item
+				&& item->type == ELEKTROID_FILE);
+    }
+
+end:
+  if (item)
+    {
+      browser_free_item (item);
     }
 
   gtk_widget_set_sensitive (local_show_menuitem, count <= 1);

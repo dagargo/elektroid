@@ -37,6 +37,7 @@ struct audio
   void (*volume_change_callback) (gdouble);
   gint release_frames;
   struct job_control control;
+  gchar *name;
 };
 
 void audio_play (struct audio *);
