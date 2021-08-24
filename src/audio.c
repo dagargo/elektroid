@@ -302,6 +302,8 @@ audio_destroy (struct audio *audio)
       pa_glib_mainloop_free (audio->mainloop);
       audio->mainloop = NULL;
     }
+
+  g_free (audio->name);
 }
 
 gboolean
