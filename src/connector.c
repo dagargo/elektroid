@@ -2210,8 +2210,7 @@ connector_fill_card_elektron_devices (gint card, GArray * devices)
       return;
     }
   device = -1;
-  while (((err = snd_ctl_rawmidi_next_device (ctl, &device)) == 0)
-	 && (device >= 0))
+  while (!(err = snd_ctl_rawmidi_next_device (ctl, &device)) && device >= 0)
     {
       connector_system_device =
 	connector_get_system_device (ctl, card, device);
@@ -2236,7 +2235,7 @@ connector_get_system_devices ()
     g_array_new (FALSE, FALSE, sizeof (struct connector_system_device));
 
   card = -1;
-  while (((err = snd_card_next (&card)) == 0) && (card >= 0))
+  while (!(err = snd_card_next (&card)) && card >= 0)
     {
       connector_fill_card_elektron_devices (card, devices);
     }
