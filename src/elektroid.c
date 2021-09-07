@@ -1977,12 +1977,12 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
 }
 
 static void
-elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
-				gchar * dst_dir,
+elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
+				const gchar * dst_dir,
 				struct item_iterator *remote_dir_iter,
-				gint32 * index)
+				gint32 * next_idx)
 {
-  gint32 children_index;
+  gint32 children_next_idx;
   gchar *path;
   gchar *dst_abs_dir;
   gchar *upload_path;
@@ -1997,7 +1997,7 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
       upload_path =
 	connector_get_upload_path (&connector, remote_dir_iter,
 				   remote_browser.fs_ops, dst_abs_dir,
-				   src_abs_path, index);
+				   src_abs_path, next_idx);
       elektroid_add_task (UPLOAD, src_abs_path, upload_path,
 			  remote_browser.fs_ops->fs);
       goto cleanup_not_dir;
@@ -2020,13 +2020,13 @@ elektroid_add_upload_task_path (gchar * rel_path, gchar * src_dir,
   if (!remote_browser.fs_ops->readdir (&children_remote_item_iterator,
 				       dst_abs_path, remote_browser.data))
     {
-      children_index = 1;
+      children_next_idx = 1;
       while (!next_item_iterator (&iter))
 	{
 	  path = chain_path (rel_path, iter.item.name);
 	  elektroid_add_upload_task_path (path, src_dir, dst_dir,
 					  &children_remote_item_iterator,
-					  &children_index);
+					  &children_next_idx);
 	  free (path);
 	}
 
@@ -2148,8 +2148,9 @@ end:
 }
 
 static void
-elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
-				  gchar * dst_dir,
+elektroid_add_download_task_path (const gchar * rel_path,
+				  const gchar * src_dir,
+				  const gchar * dst_dir,
 				  struct item_iterator *remote_dir_iter)
 {
   struct item_iterator iter, iter_copy;
@@ -2157,8 +2158,8 @@ elektroid_add_download_task_path (gchar * rel_path, gchar * src_dir,
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  if (remote_browser.
-      fs_ops->readdir (&iter, src_abs_path, remote_browser.data))
+  if (remote_browser.fs_ops->
+      readdir (&iter, src_abs_path, remote_browser.data))
     {
       dst_abs_dirc = strdup (dst_abs_path);
       dst_abs_dir = dirname (dst_abs_dirc);
@@ -2498,6 +2499,82 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 }
 
 static void
+elektroid_dnd_received_local (const gchar * type_name, const gchar * dir,
+			      const gchar * name, const gchar * filename,
+			      struct item_iterator *remote_item_iterator)
+{
+  gchar *dst_path;
+  gint res;
+
+  if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
+    {
+      if (strcmp (dir, local_browser.dir))
+	{
+	  dst_path = chain_path (local_browser.dir, name);
+	  res = local_browser.fs_ops->move (filename, dst_path, NULL);
+	  if (res)
+	    {
+	      show_error_msg (_
+			      ("Error while moving from “%s” to “%s”: %s."),
+			      filename, dst_path, g_strerror (res));
+	    }
+	  g_free (dst_path);
+	}
+      else
+	{
+	  debug_print (1, MSG_WARN_SAME_SRC_DST);
+	}
+    }
+  else if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+    {
+      elektroid_add_download_task_path (name, dir, local_browser.dir,
+					remote_item_iterator);
+    }
+}
+
+static void
+elektroid_dnd_received_remote (const gchar * type_name, const gchar * dir,
+			       const gchar * name, const gchar * filename,
+			       struct item_iterator *remote_item_iterator,
+			       gint32 * next_idx)
+{
+  gchar *dst_path;
+  gint res;
+
+  if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+    {
+      if (strcmp (dir, remote_browser.dir))
+	{
+	  dst_path =
+	    connector_get_upload_path (&connector,
+				       remote_item_iterator,
+				       remote_browser.fs_ops,
+				       remote_browser.dir, name, next_idx);
+	  res =
+	    remote_browser.fs_ops->move (filename, dst_path,
+					 remote_browser.data);
+	  if (res)
+	    {
+	      show_error_msg (_
+			      ("Error while moving from “%s” to “%s”: %s."),
+			      filename, dst_path, g_strerror (res));
+	    }
+	  g_free (dst_path);
+	  browser_load_dir (&remote_browser);
+	}
+      else
+	{
+	  debug_print (1, MSG_WARN_SAME_SRC_DST);
+	}
+    }
+  else if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
+    {
+      elektroid_add_upload_task_path (name, dir, remote_browser.dir,
+				      remote_item_iterator, next_idx);
+    }
+}
+
+static void
 elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 			gint x, gint y,
 			GtkSelectionData * selection_data,
@@ -2510,15 +2587,12 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   gchar *path_dirname;
   gchar *name;
   gchar *dir;
-  gchar *dst_path;
   GtkTreeIter iter;
   gboolean queued;
   GdkAtom type;
   gchar *type_name;
-  gint res;
-  gint32 index = 1;
+  gint32 next_idx = 1;
   struct item_iterator remote_item_iterator;
-  struct browser *browser = userdata;
 
   if (selection_data == NULL
       || !gtk_selection_data_get_length (selection_data)
@@ -2549,65 +2623,13 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 
       if (widget == GTK_WIDGET (local_browser.view))
 	{
-	  if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
-	    {
-	      if (strcmp (dir, local_browser.dir))
-		{
-		  dst_path = chain_path (local_browser.dir, name);
-		  res = local_browser.fs_ops->move (filename, dst_path, NULL);
-		  if (res)
-		    {
-		      show_error_msg (_
-				      ("Error while moving from “%s” to “%s”: %s."),
-				      filename, dst_path, g_strerror (res));
-		    }
-		  g_free (dst_path);
-		}
-	      else
-		{
-		  debug_print (1, MSG_WARN_SAME_SRC_DST);
-		}
-	    }
-	  else if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
-	    {
-	      elektroid_add_download_task_path (name, dir, local_browser.dir,
-						&remote_item_iterator);
-	    }
+	  elektroid_dnd_received_local (type_name, dir, name, filename,
+					&remote_item_iterator);
 	}
       else if (widget == GTK_WIDGET (remote_browser.view))
 	{
-	  if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
-	    {
-	      if (strcmp (dir, remote_browser.dir))
-		{
-		  dst_path =
-		    connector_get_upload_path (&connector,
-					       &remote_item_iterator,
-					       remote_browser.fs_ops,
-					       remote_browser.dir, name,
-					       &index);
-		  res =
-		    remote_browser.fs_ops->move (filename, dst_path,
-						 remote_browser.data);
-		  if (res)
-		    {
-		      show_error_msg (_
-				      ("Error while moving from “%s” to “%s”: %s."),
-				      filename, dst_path, g_strerror (res));
-		    }
-		  g_free (dst_path);
-		  browser_load_dir (browser);
-		}
-	      else
-		{
-		  debug_print (1, MSG_WARN_SAME_SRC_DST);
-		}
-	    }
-	  else if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
-	    {
-	      elektroid_add_upload_task_path (name, dir, remote_browser.dir,
-					      &remote_item_iterator, &index);
-	    }
+	  elektroid_dnd_received_remote (type_name, dir, name, filename,
+					 &remote_item_iterator, &next_idx);
 	}
 
       g_free (path_basename);
