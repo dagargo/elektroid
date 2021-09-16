@@ -3178,7 +3178,7 @@ connector_get_full_ext (const struct connector_device_desc *desc,
     }
   else
     {
-      snprintf (ext, LABEL_MAX, "%s-%s", desc->alias, ops->extension);
+      snprintf (ext, LABEL_MAX, "%s%s", desc->alias, ops->extension);
     }
   return ext;
 }
