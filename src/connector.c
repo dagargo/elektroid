@@ -47,7 +47,7 @@
 #define AHMK2_ID 0x16
 #define DKEYS_ID 0x1c
 #define MOD_S_ID 0x19
-#define MOD_C_ID 0xff		//TODO
+#define MOD_C_ID 0x1b
 
 #define FS_DATA_PRJ_PREFIX "/projects"
 #define FS_DATA_SND_PREFIX "/soundbanks"
