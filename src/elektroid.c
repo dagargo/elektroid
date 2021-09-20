@@ -121,7 +121,8 @@ static const struct option ELEKTROID_OPTIONS[] = {
 };
 
 static const gchar *ELEKTROID_FS_ICONS[] = {
-  FILE_ICON_WAVE, FILE_ICON_SND, FILE_ICON_DATA, FILE_ICON_PRJ, FILE_ICON_SND
+  FILE_ICON_WAVE, FILE_ICON_DATA, FILE_ICON_SND, FILE_ICON_DATA,
+  FILE_ICON_PRJ, FILE_ICON_SND
 };
 
 static gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
@@ -243,6 +244,8 @@ elektroid_get_fs_name (enum connector_fs fs)
     {
     case FS_SAMPLES:
       return _("Samples");
+    case FS_RAW_ALL:
+      return _("Raw");
     case FS_RAW_PRESETS:
       return _("Presets");
     case FS_DATA_ALL:
@@ -2160,8 +2163,8 @@ elektroid_add_download_task_path (const gchar * rel_path,
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  if (remote_browser.
-      fs_ops->readdir (&iter, src_abs_path, remote_browser.data))
+  if (remote_browser.fs_ops->
+      readdir (&iter, src_abs_path, remote_browser.data))
     {
       dst_abs_dirc = strdup (dst_abs_path);
       dst_abs_dir = dirname (dst_abs_dirc);
@@ -2419,7 +2422,8 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 					fs == FS_DATA_ALL || fs == FS_DATA_PRJ
 					|| fs == FS_DATA_SND);
 
-      if (fs == FS_DATA_ALL || fs == FS_DATA_PRJ || fs == FS_DATA_SND)
+      if (fs == FS_RAW_ALL || fs == FS_RAW_PRESETS || fs == FS_DATA_ALL
+	  || fs == FS_DATA_PRJ || fs == FS_DATA_SND)
 	{
 	  audio_stop (&audio, TRUE);
 	}
@@ -2427,7 +2431,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       sortable =
 	GTK_TREE_SORTABLE (gtk_tree_view_get_model (remote_browser.view));
 
-      if (fs == FS_SAMPLES)
+      if (fs == FS_SAMPLES || fs == FS_RAW_ALL || fs == FS_RAW_PRESETS)
 	{
 	  gtk_tree_sortable_set_sort_func (sortable,
 					   BROWSER_LIST_STORE_NAME_FIELD,

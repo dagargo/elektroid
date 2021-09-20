@@ -277,7 +277,7 @@ static const struct connector_device_desc MODEL_CYCLES_DESC = {
   .name = "Model:Cycles",
   .alias = "mc",
   .id = MOD_C_ID,
-  .fss = FS_RAW_PRESETS | FS_DATA_PRJ,
+  .fss = FS_RAW_ALL | FS_DATA_PRJ,
   .storages = 0
 };
 
@@ -304,6 +304,24 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .load = sample_load,
   .save = sample_save,
   .extension = "wav"
+};
+
+static const struct fs_operations FS_RAW_ALL_OPERATIONS = {
+  .fs = FS_RAW_ALL,
+  .readdir = connector_read_raw_dir,
+  .mkdir = NULL,
+  .delete = NULL,
+  .rename = NULL,
+  .move = NULL,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = NULL,
+  .upload = NULL,
+  .getid = get_item_name,
+  .load = NULL,
+  .save = NULL,
+  .extension = "raw"
 };
 
 static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
@@ -379,8 +397,8 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
 };
 
 static const struct fs_operations *FS_OPERATIONS[] = {
-  &FS_SAMPLES_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS, &FS_DATA_ALL_OPERATIONS,
-  &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS
+  &FS_SAMPLES_OPERATIONS, &FS_RAW_ALL_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
+  &FS_DATA_ALL_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS
 };
 
 static const int FS_OPERATIONS_N =
