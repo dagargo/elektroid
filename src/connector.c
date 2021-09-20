@@ -73,6 +73,9 @@ static gint connector_download_sample (const gchar *, GByteArray *,
 static gint connector_upload_sample (const gchar *, GByteArray *,
 				     struct job_control *, void *);
 
+static gint connector_read_raw_dir (struct item_iterator *, const gchar *,
+				    void *);
+
 static gint connector_read_data_dir_all (struct item_iterator *,
 					 const gchar *, void *);
 
@@ -161,6 +164,9 @@ static const guint8 FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
+
+static const guint8 FS_RAW_READ_DIR_REQUEST[] = { 0x14 };
+
 static const guint8 DATA_LIST_REQUEST[] = { 0x53 };
 static const guint8 DATA_READ_OPEN_REQUEST[] = { 0x54 };
 static const guint8 DATA_READ_PARTIAL_REQUEST[] = { 0x55 };
@@ -271,7 +277,7 @@ static const struct connector_device_desc MODEL_CYCLES_DESC = {
   .name = "Model:Cycles",
   .alias = "mc",
   .id = MOD_C_ID,
-  .fss = FS_DATA_PRJ,
+  .fss = FS_RAW_PRESETS | FS_DATA_PRJ,
   .storages = 0
 };
 
@@ -298,6 +304,24 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .load = sample_load,
   .save = sample_save,
   .extension = "wav"
+};
+
+static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
+  .fs = FS_RAW_PRESETS,
+  .readdir = connector_read_raw_dir,
+  .mkdir = NULL,
+  .delete = NULL,
+  .rename = NULL,
+  .move = NULL,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = NULL,
+  .upload = NULL,
+  .getid = get_item_name,
+  .load = NULL,
+  .save = NULL,
+  .extension = "preset"
 };
 
 static const struct fs_operations FS_DATA_ALL_OPERATIONS = {
@@ -355,7 +379,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
 };
 
 static const struct fs_operations *FS_OPERATIONS[] = {
-  &FS_SAMPLES_OPERATIONS, &FS_DATA_ALL_OPERATIONS,
+  &FS_SAMPLES_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS, &FS_DATA_ALL_OPERATIONS,
   &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS
 };
 
@@ -1213,15 +1237,14 @@ cleanup:
 }
 
 static gint
-connector_read_samples_dir (struct item_iterator *iter, const gchar * dir,
-			    void *data)
+connector_read_common_dir (struct item_iterator *iter, const gchar * dir,
+			   void *data, const guint8 msg[], int size)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   struct connector *connector = data;
 
-  tx_msg = connector_new_msg_path (FS_SAMPLE_READ_DIR_REQUEST,
-				   sizeof (FS_SAMPLE_READ_DIR_REQUEST), dir);
+  tx_msg = connector_new_msg_path (msg, size, dir);
   if (!tx_msg)
     {
       return -EINVAL;
@@ -1241,6 +1264,23 @@ connector_read_samples_dir (struct item_iterator *iter, const gchar * dir,
     }
 
   return connector_init_iterator (iter, rx_msg, connector_next_sample_entry);
+}
+
+static gint
+connector_read_samples_dir (struct item_iterator *iter, const gchar * dir,
+			    void *data)
+{
+  return connector_read_common_dir (iter, dir, data,
+				    FS_SAMPLE_READ_DIR_REQUEST,
+				    sizeof (FS_SAMPLE_READ_DIR_REQUEST));
+}
+
+static gint
+connector_read_raw_dir (struct item_iterator *iter, const gchar * dir,
+			void *data)
+{
+  return connector_read_common_dir (iter, dir, data, FS_RAW_READ_DIR_REQUEST,
+				    sizeof (FS_RAW_READ_DIR_REQUEST));
 }
 
 static enum item_type
