@@ -33,6 +33,7 @@
 static struct connector connector;
 static struct job_control control;
 static const struct fs_operations *fs_ops_samples;
+static const struct fs_operations *fs_ops_raw;
 static const struct fs_operations *fs_ops_data;
 
 typedef void (*print_item) (struct item_iterator *);
@@ -491,6 +492,7 @@ main (int argc, char *argv[])
     }
 
   fs_ops_samples = connector_get_fs_operations (FS_SAMPLES);
+  fs_ops_raw = connector_get_fs_operations (FS_RAW_ALL);
   fs_ops_data = connector_get_fs_operations (FS_DATA_ALL);
 
   if (strcmp (command, "ld") == 0 || strcmp (command, "list-devices") == 0)
@@ -565,6 +567,10 @@ main (int argc, char *argv[])
   else if (strcmp (command, "upload-data") == 0)
     {
       res = cli_upload (argc, argv, optind, fs_ops_data);
+    }
+  else if (strcmp (command, "list-raw") == 0)
+    {
+      res = cli_list (argc, argv, optind, fs_ops_raw->readdir, print_sample);
     }
   else
     {
