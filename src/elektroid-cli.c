@@ -576,6 +576,11 @@ main (int argc, char *argv[])
     {
       res = cli_command_path (argc, argv, optind, fs_ops_raw->mkdir);
     }
+  else if (strcmp (command, "rm-raw") == 0
+	   || strcmp (command, "rmdir-raw") == 0)
+    {
+      res = cli_command_path (argc, argv, optind, fs_ops_raw->delete);
+    }
   else
     {
       error_print ("Command %s not recognized\n", command);

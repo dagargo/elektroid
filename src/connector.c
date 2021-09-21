@@ -55,6 +55,8 @@
 #define FS_SAMPLES_START_POS 5
 #define FS_DATA_START_POS 18
 
+typedef gint (*connector_path_func) (struct connector *, const gchar *);
+
 static gint connector_delete_samples_dir (struct connector *, const gchar *);
 
 static gint connector_read_samples_dir (struct item_iterator *, const gchar *,
@@ -73,10 +75,14 @@ static gint connector_download_sample (const gchar *, GByteArray *,
 static gint connector_upload_sample (const gchar *, GByteArray *,
 				     struct job_control *, void *);
 
+static gint connector_delete_raw_dir (struct connector *, const gchar *);
+
 static gint connector_read_raw_dir (struct item_iterator *, const gchar *,
 				    void *);
 
 static gint connector_create_raw_dir (const gchar *, void *);
+
+static gint connector_delete_raw_item (const gchar *, void *);
 
 static gint connector_read_data_dir_all (struct item_iterator *,
 					 const gchar *, void *);
@@ -170,6 +176,8 @@ static const guint8 FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST[] = {
 
 static const guint8 FS_RAW_READ_DIR_REQUEST[] = { 0x14 };
 static const guint8 FS_RAW_CREATE_DIR_REQUEST[] = { 0x15 };
+static const guint8 FS_RAW_DELETE_DIR_REQUEST[] = { 0x16 };
+static const guint8 FS_RAW_DELETE_FILE_REQUEST[] = { 0x24 };
 
 static const guint8 DATA_LIST_REQUEST[] = { 0x53 };
 static const guint8 DATA_READ_OPEN_REQUEST[] = { 0x54 };
@@ -314,7 +322,7 @@ static const struct fs_operations FS_RAW_ALL_OPERATIONS = {
   .fs = FS_RAW_ALL,
   .readdir = connector_read_raw_dir,
   .mkdir = connector_create_raw_dir,
-  .delete = NULL,
+  .delete = connector_delete_raw_item,
   .rename = NULL,
   .move = NULL,
   .copy = NULL,
@@ -332,7 +340,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .fs = FS_RAW_PRESETS,
   .readdir = connector_read_raw_dir,
   .mkdir = connector_create_raw_dir,
-  .delete = NULL,
+  .delete = connector_delete_raw_item,
   .rename = NULL,
   .move = NULL,
   .copy = NULL,
@@ -1490,9 +1498,8 @@ connector_path_common (struct connector *connector, const gchar * path,
 }
 
 static gint
-connector_delete_sample (const gchar * path, void *data)
+connector_delete_sample (struct connector *connector, const gchar * path)
 {
-  struct connector *connector = data;
   return connector_path_common (connector, path,
 				FS_SAMPLE_DELETE_FILE_REQUEST,
 				sizeof (FS_SAMPLE_DELETE_FILE_REQUEST));
@@ -1506,7 +1513,24 @@ connector_delete_samples_dir (struct connector *connector, const gchar * path)
 }
 
 static gint
-connector_delete_samples_item (const gchar * path, void *data)
+connector_delete_raw (struct connector *connector, const gchar * path)
+{
+  return connector_path_common (connector, path,
+				FS_RAW_DELETE_FILE_REQUEST,
+				sizeof (FS_RAW_DELETE_FILE_REQUEST));
+}
+
+static gint
+connector_delete_raw_dir (struct connector *connector, const gchar * path)
+{
+  return connector_path_common (connector, path, FS_RAW_DELETE_DIR_REQUEST,
+				sizeof (FS_RAW_DELETE_DIR_REQUEST));
+}
+
+static gint
+connector_delete_common_item (const gchar * path, void *data,
+			      connector_path_func rmdir,
+			      connector_path_func rm)
 {
   gchar *new_path;
   struct item_iterator iter;
@@ -1528,17 +1552,33 @@ connector_delete_samples_item (const gchar * path, void *data)
 	    {
 	      new_path = chain_path (path, iter.item.name);
 	      res = res
-		|| connector_delete_samples_item (new_path, connector);
+		|| connector_delete_common_item (new_path, connector, rmdir,
+						 rm);
 	      free (new_path);
 	    }
 	  free_item_iterator (&iter);
 	}
-      return res || connector_delete_samples_dir (connector, path);
+      return res || rmdir (connector, path);
     }
   else
     {
-      return connector_delete_sample (path, connector);
+      return rm (connector, path);
     }
+}
+
+static gint
+connector_delete_samples_item (const gchar * path, void *data)
+{
+  return connector_delete_common_item (path, data,
+				       connector_delete_samples_dir,
+				       connector_delete_sample);
+}
+
+static gint
+connector_delete_raw_item (const gchar * path, void *data)
+{
+  return connector_delete_common_item (path, data, connector_delete_raw_dir,
+				       connector_delete_raw);
 }
 
 gint
