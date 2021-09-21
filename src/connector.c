@@ -281,7 +281,7 @@ static const struct connector_device_desc MODEL_CYCLES_DESC = {
   .name = "Model:Cycles",
   .alias = "mc",
   .id = MOD_C_ID,
-  .fss = FS_RAW_ALL | FS_DATA_PRJ,
+  .fss = FS_RAW_PRESETS | FS_DATA_PRJ,
   .storages = 0
 };
 
