@@ -572,6 +572,10 @@ main (int argc, char *argv[])
     {
       res = cli_list (argc, argv, optind, fs_ops_raw->readdir, print_sample);
     }
+  else if (strcmp (command, "mkdir-raw") == 0)
+    {
+      res = cli_command_path (argc, argv, optind, fs_ops_raw->mkdir);
+    }
   else
     {
       error_print ("Command %s not recognized\n", command);

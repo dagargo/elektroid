@@ -76,6 +76,8 @@ static gint connector_upload_sample (const gchar *, GByteArray *,
 static gint connector_read_raw_dir (struct item_iterator *, const gchar *,
 				    void *);
 
+static gint connector_create_raw_dir (const gchar *, void *);
+
 static gint connector_read_data_dir_all (struct item_iterator *,
 					 const gchar *, void *);
 
@@ -143,6 +145,7 @@ static const guint8 PING_REQUEST[] = { 0x1 };
 static const guint8 SOFTWARE_VERSION_REQUEST[] = { 0x2 };
 static const guint8 DEVICEUID_REQUEST[] = { 0x3 };
 static const guint8 STORAGEINFO_REQUEST[] = { 0x5 };
+
 static const guint8 FS_SAMPLE_READ_DIR_REQUEST[] = { 0x10 };
 static const guint8 FS_SAMPLE_CREATE_DIR_REQUEST[] = { 0x11 };
 static const guint8 FS_SAMPLE_DELETE_DIR_REQUEST[] = { 0x12 };
@@ -166,6 +169,7 @@ static const guint8 FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST[] = {
 };
 
 static const guint8 FS_RAW_READ_DIR_REQUEST[] = { 0x14 };
+static const guint8 FS_RAW_CREATE_DIR_REQUEST[] = { 0x15 };
 
 static const guint8 DATA_LIST_REQUEST[] = { 0x53 };
 static const guint8 DATA_READ_OPEN_REQUEST[] = { 0x54 };
@@ -309,7 +313,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
 static const struct fs_operations FS_RAW_ALL_OPERATIONS = {
   .fs = FS_RAW_ALL,
   .readdir = connector_read_raw_dir,
-  .mkdir = NULL,
+  .mkdir = connector_create_raw_dir,
   .delete = NULL,
   .rename = NULL,
   .move = NULL,
@@ -327,7 +331,7 @@ static const struct fs_operations FS_RAW_ALL_OPERATIONS = {
 static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .fs = FS_RAW_PRESETS,
   .readdir = connector_read_raw_dir,
-  .mkdir = NULL,
+  .mkdir = connector_create_raw_dir,
   .delete = NULL,
   .rename = NULL,
   .move = NULL,
@@ -1489,7 +1493,6 @@ static gint
 connector_delete_sample (const gchar * path, void *data)
 {
   struct connector *connector = data;
-
   return connector_path_common (connector, path,
 				FS_SAMPLE_DELETE_FILE_REQUEST,
 				sizeof (FS_SAMPLE_DELETE_FILE_REQUEST));
@@ -1773,6 +1776,14 @@ connector_create_samples_dir (const gchar * path, void *data)
   struct connector *connector = data;
   return connector_path_common (connector, path, FS_SAMPLE_CREATE_DIR_REQUEST,
 				sizeof (FS_SAMPLE_CREATE_DIR_REQUEST));
+}
+
+static gint
+connector_create_raw_dir (const gchar * path, void *data)
+{
+  struct connector *connector = data;
+  return connector_path_common (connector, path, FS_RAW_CREATE_DIR_REQUEST,
+				sizeof (FS_RAW_CREATE_DIR_REQUEST));
 }
 
 static GByteArray *
