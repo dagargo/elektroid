@@ -417,7 +417,8 @@ static const int FS_OPERATIONS_N =
   sizeof (FS_OPERATIONS) / sizeof (struct fs_operations *);
 
 static enum item_type connector_get_path_type (struct connector *,
-					       const gchar *);
+					       const gchar *,
+					       fs_init_iter_func);
 
 static void
 connector_free_iterator_data (void *iter_data)
@@ -1268,7 +1269,8 @@ cleanup:
 
 static gint
 connector_read_common_dir (struct item_iterator *iter, const gchar * dir,
-			   void *data, const guint8 msg[], int size)
+			   void *data, const guint8 msg[], int size,
+			   fs_init_iter_func init_iter)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -1287,7 +1289,7 @@ connector_read_common_dir (struct item_iterator *iter, const gchar * dir,
     }
 
   if (rx_msg->len == 5
-      && connector_get_path_type (connector, dir) != ELEKTROID_DIR)
+      && connector_get_path_type (connector, dir, init_iter) != ELEKTROID_DIR)
     {
       free_msg (rx_msg);
       return -ENOTDIR;
@@ -1302,7 +1304,8 @@ connector_read_samples_dir (struct item_iterator *iter, const gchar * dir,
 {
   return connector_read_common_dir (iter, dir, data,
 				    FS_SAMPLE_READ_DIR_REQUEST,
-				    sizeof (FS_SAMPLE_READ_DIR_REQUEST));
+				    sizeof (FS_SAMPLE_READ_DIR_REQUEST),
+				    connector_read_samples_dir);
 }
 
 static gint
@@ -1310,11 +1313,13 @@ connector_read_raw_dir (struct item_iterator *iter, const gchar * dir,
 			void *data)
 {
   return connector_read_common_dir (iter, dir, data, FS_RAW_READ_DIR_REQUEST,
-				    sizeof (FS_RAW_READ_DIR_REQUEST));
+				    sizeof (FS_RAW_READ_DIR_REQUEST),
+				    connector_read_raw_dir);
 }
 
 static enum item_type
-connector_get_path_type (struct connector *connector, const gchar * path)
+connector_get_path_type (struct connector *connector, const gchar * path,
+			 fs_init_iter_func init_iter)
 {
   gchar *name_copy;
   gchar *parent_copy;
@@ -1333,7 +1338,7 @@ connector_get_path_type (struct connector *connector, const gchar * path)
   name = basename (name_copy);
   parent = dirname (parent_copy);
   res = ELEKTROID_NONE;
-  if (!connector_read_samples_dir (&iter, parent, connector))
+  if (!init_iter (&iter, parent, connector))
     {
       while (!next_item_iterator (&iter))
 	{
@@ -1421,11 +1426,11 @@ connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
   struct item_iterator iter;
   struct connector *connector = data;
 
+  //Renaming is not implemented for directories so we need to implement it.
+
   debug_print (1, "Renaming remotely from %s to %s...\n", src, dst);
 
-  //Renaming is not implemented for directories so we need to implement it.
-  type = connector_get_path_type (connector, src);
-
+  type = connector_get_path_type (connector, src, connector_read_samples_dir);
   if (type == ELEKTROID_FILE)
     {
       return connector_rename_sample_file (connector, src, dst);
@@ -1529,6 +1534,7 @@ connector_delete_raw_dir (struct connector *connector, const gchar * path)
 
 static gint
 connector_delete_common_item (const gchar * path, void *data,
+			      fs_init_iter_func init_iter,
 			      connector_path_func rmdir,
 			      connector_path_func rm)
 {
@@ -1537,11 +1543,11 @@ connector_delete_common_item (const gchar * path, void *data,
   struct connector *connector = data;
   gint res;
 
-  if (connector_get_path_type (connector, path) == ELEKTROID_DIR)
+  if (connector_get_path_type (connector, path, init_iter) == ELEKTROID_DIR)
     {
       debug_print (1, "Deleting %s samples dir...\n", path);
 
-      if (connector_read_samples_dir (&iter, path, connector))
+      if (init_iter (&iter, path, connector))
 	{
 	  error_print ("Error while opening samples dir %s dir\n", path);
 	}
@@ -1552,8 +1558,8 @@ connector_delete_common_item (const gchar * path, void *data,
 	    {
 	      new_path = chain_path (path, iter.item.name);
 	      res = res
-		|| connector_delete_common_item (new_path, connector, rmdir,
-						 rm);
+		|| connector_delete_common_item (new_path, connector,
+						 init_iter, rmdir, rm);
 	      free (new_path);
 	    }
 	  free_item_iterator (&iter);
@@ -1570,6 +1576,7 @@ static gint
 connector_delete_samples_item (const gchar * path, void *data)
 {
   return connector_delete_common_item (path, data,
+				       connector_read_samples_dir,
 				       connector_delete_samples_dir,
 				       connector_delete_sample);
 }
@@ -1577,7 +1584,9 @@ connector_delete_samples_item (const gchar * path, void *data)
 static gint
 connector_delete_raw_item (const gchar * path, void *data)
 {
-  return connector_delete_common_item (path, data, connector_delete_raw_dir,
+  return connector_delete_common_item (path, data,
+				       connector_read_raw_dir,
+				       connector_delete_raw_dir,
 				       connector_delete_raw);
 }
 
