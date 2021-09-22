@@ -57,6 +57,9 @@
 
 typedef gint (*connector_path_func) (struct connector *, const gchar *);
 
+typedef gint (*connector_src_dst_func) (struct connector *, const gchar *,
+					const gchar *);
+
 static gint connector_delete_samples_dir (struct connector *, const gchar *);
 
 static gint connector_read_samples_dir (struct item_iterator *, const gchar *,
@@ -178,6 +181,7 @@ static const guint8 FS_RAW_READ_DIR_REQUEST[] = { 0x14 };
 static const guint8 FS_RAW_CREATE_DIR_REQUEST[] = { 0x15 };
 static const guint8 FS_RAW_DELETE_DIR_REQUEST[] = { 0x16 };
 static const guint8 FS_RAW_DELETE_FILE_REQUEST[] = { 0x24 };
+static const guint8 FS_RAW_RENAME_FILE_REQUEST[] = { 0x25 };
 
 static const guint8 DATA_LIST_REQUEST[] = { 0x53 };
 static const guint8 DATA_READ_OPEN_REQUEST[] = { 0x54 };
@@ -323,8 +327,8 @@ static const struct fs_operations FS_RAW_ALL_OPERATIONS = {
   .readdir = connector_read_raw_dir,
   .mkdir = connector_create_raw_dir,
   .delete = connector_delete_raw_item,
-  .rename = NULL,
-  .move = NULL,
+  .rename = connector_move_raw_item,
+  .move = connector_move_raw_item,
   .copy = NULL,
   .clear = NULL,
   .swap = NULL,
@@ -1417,7 +1421,19 @@ connector_rename_sample_file (struct connector *connector, const gchar * src,
 }
 
 static gint
-connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
+connector_rename_raw_file (struct connector *connector, const gchar * src,
+			   const gchar * dst)
+{
+  return connector_src_dst_common (connector, src, dst,
+				   FS_RAW_RENAME_FILE_REQUEST,
+				   sizeof (FS_RAW_RENAME_FILE_REQUEST));
+}
+
+static gint
+connector_move_common_item (const gchar * src, const gchar * dst, void *data,
+			    fs_init_iter_func init_iter,
+			    connector_src_dst_func mv, fs_path_func mkdir,
+			    connector_path_func rmdir)
 {
   enum item_type type;
   gint res;
@@ -1430,26 +1446,27 @@ connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
 
   debug_print (1, "Renaming remotely from %s to %s...\n", src, dst);
 
-  type = connector_get_path_type (connector, src, connector_read_samples_dir);
+  type = connector_get_path_type (connector, src, init_iter);
   if (type == ELEKTROID_FILE)
     {
-      return connector_rename_sample_file (connector, src, dst);
+      return mv (connector, src, dst);
     }
   else if (type == ELEKTROID_DIR)
     {
-      res = connector_create_samples_dir (dst, connector);
+      res = mkdir (dst, connector);
       if (res)
 	{
 	  return res;
 	}
-      if (!connector_read_samples_dir (&iter, src, connector))
+      if (!init_iter (&iter, src, connector))
 	{
 	  while (!next_item_iterator (&iter) && !res)
 	    {
 	      src_plus = chain_path (src, iter.item.name);
 	      dst_plus = chain_path (dst, iter.item.name);
 	      res =
-		connector_move_samples_item (src_plus, dst_plus, connector);
+		connector_move_common_item (src_plus, dst_plus, connector,
+					    init_iter, mv, mkdir, rmdir);
 	      free (src_plus);
 	      free (dst_plus);
 	    }
@@ -1457,7 +1474,7 @@ connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
 	}
       if (!res)
 	{
-	  res = connector_delete_samples_dir (connector, src);
+	  res = rmdir (connector, src);
 	}
       return res;
     }
@@ -1530,6 +1547,26 @@ connector_delete_raw_dir (struct connector *connector, const gchar * path)
 {
   return connector_path_common (connector, path, FS_RAW_DELETE_DIR_REQUEST,
 				sizeof (FS_RAW_DELETE_DIR_REQUEST));
+}
+
+static gint
+connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
+{
+  return connector_move_common_item (src, dst, data,
+				     connector_read_samples_dir,
+				     connector_rename_sample_file,
+				     connector_create_samples_dir,
+				     connector_delete_samples_dir);
+}
+
+static gint
+connector_move_raw_item (const gchar * src, const gchar * dst, void *data)
+{
+  return connector_move_common_item (src, dst, data,
+				     connector_read_raw_dir,
+				     connector_rename_raw_file,
+				     connector_create_raw_dir,
+				     connector_delete_raw_dir);
 }
 
 static gint
