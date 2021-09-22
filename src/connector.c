@@ -87,6 +87,8 @@ static gint connector_create_raw_dir (const gchar *, void *);
 
 static gint connector_delete_raw_item (const gchar *, void *);
 
+static gint connector_move_raw_item (const gchar *, const gchar *, void *);
+
 static gint connector_read_data_dir_all (struct item_iterator *,
 					 const gchar *, void *);
 
