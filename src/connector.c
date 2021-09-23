@@ -347,16 +347,16 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .readdir = connector_read_raw_dir,
   .mkdir = connector_create_raw_dir,
   .delete = connector_delete_raw_item,
-  .rename = NULL,
-  .move = NULL,
+  .rename = connector_move_raw_item,
+  .move = connector_move_raw_item,
   .copy = NULL,
   .clear = NULL,
   .swap = NULL,
   .download = NULL,
   .upload = NULL,
   .getid = get_item_name,
-  .load = NULL,
-  .save = NULL,
+  .load = load_file,
+  .save = save_file,
   .extension = "preset"
 };
 
