@@ -23,6 +23,7 @@
 #include "utils.h"
 
 #define SYSEX_TIMEOUT 5000
+#define REST_TIME 50000
 
 struct connector_device_desc
 {
