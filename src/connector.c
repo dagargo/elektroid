@@ -54,6 +54,12 @@
 #define FS_SAMPLES_START_POS 5
 #define FS_DATA_START_POS 18
 
+typedef GByteArray *(*connector_msg_id_func) (guint);
+
+typedef GByteArray *(*connector_msg_path_func) (const gchar *);
+
+typedef GByteArray *(*connector_msg_read_blk_func) (guint, guint, guint);
+
 typedef gint (*connector_path_func) (struct connector *, const gchar *);
 
 typedef gint (*connector_src_dst_func) (struct connector *, const gchar *,
@@ -87,6 +93,9 @@ static gint connector_create_raw_dir (const gchar *, void *);
 static gint connector_delete_raw_item (const gchar *, void *);
 
 static gint connector_move_raw_item (const gchar *, const gchar *, void *);
+
+static gint connector_download_raw (const gchar *, GByteArray *,
+				    struct job_control *, void *);
 
 static gint connector_read_data_dir_all (struct item_iterator *,
 					 const gchar *, void *);
@@ -183,6 +192,10 @@ static const guint8 FS_RAW_CREATE_DIR_REQUEST[] = { 0x15 };
 static const guint8 FS_RAW_DELETE_DIR_REQUEST[] = { 0x16 };
 static const guint8 FS_RAW_DELETE_FILE_REQUEST[] = { 0x24 };
 static const guint8 FS_RAW_RENAME_FILE_REQUEST[] = { 0x25 };
+static const guint8 FS_RAW_OPEN_FILE_READER_REQUEST[] = { 0x33 };
+static const guint8 FS_RAW_CLOSE_FILE_READER_REQUEST[] = { 0x34 };
+static const guint8 FS_RAW_READ_FILE_REQUEST[] =
+  { 0x35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static const guint8 DATA_LIST_REQUEST[] = { 0x53 };
 static const guint8 DATA_READ_OPEN_REQUEST[] = { 0x54 };
@@ -333,7 +346,7 @@ static const struct fs_operations FS_RAW_ALL_OPERATIONS = {
   .copy = NULL,
   .clear = NULL,
   .swap = NULL,
-  .download = NULL,
+  .download = connector_download_raw,
   .upload = NULL,
   .getid = get_item_name,
   .load = NULL,
@@ -351,7 +364,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .copy = NULL,
   .clear = NULL,
   .swap = NULL,
-  .download = NULL,
+  .download = connector_download_raw,
   .upload = NULL,
   .getid = get_item_name,
   .load = load_file,
@@ -683,16 +696,34 @@ connector_new_msg_path (const guint8 * data, guint len, const gchar * path)
 }
 
 static GByteArray *
-connector_new_msg_close_file_read (gint id)
+connector_new_msg_close_common_read (const guint8 * data, guint len, guint id)
 {
   guint32 aux32;
-  GByteArray *msg = connector_new_msg (FS_SAMPLE_CLOSE_FILE_READER_REQUEST,
-				       sizeof
-				       (FS_SAMPLE_CLOSE_FILE_READER_REQUEST));
+  GByteArray *msg = connector_new_msg (data, len);
 
   aux32 = htobe32 (id);
   g_byte_array_append (msg, (guchar *) & aux32, sizeof (guint32));
   return msg;
+}
+
+static GByteArray *
+connector_new_msg_close_sample_read (guint id)
+{
+  return
+    connector_new_msg_close_common_read (FS_SAMPLE_CLOSE_FILE_READER_REQUEST,
+					 sizeof
+					 (FS_SAMPLE_CLOSE_FILE_READER_REQUEST),
+					 id);
+}
+
+static GByteArray *
+connector_new_msg_close_raw_read (guint id)
+{
+  return
+    connector_new_msg_close_common_read (FS_RAW_CLOSE_FILE_READER_REQUEST,
+					 sizeof
+					 (FS_RAW_CLOSE_FILE_READER_REQUEST),
+					 id);
 }
 
 static GByteArray *
@@ -800,11 +831,11 @@ connector_new_msg_close_file_write (guint id, guint bytes)
 }
 
 static GByteArray *
-connector_new_msg_read_file_blk (guint id, guint start, guint size)
+connector_new_msg_read_common_blk (const guint8 * data, guint len, guint id,
+				   guint start, guint size)
 {
   guint32 aux;
-  GByteArray *msg = connector_new_msg (FS_SAMPLE_READ_FILE_REQUEST,
-				       sizeof (FS_SAMPLE_READ_FILE_REQUEST));
+  GByteArray *msg = connector_new_msg (data, len);
 
   aux = htobe32 (id);
   memcpy (&msg->data[5], &aux, sizeof (guint32));
@@ -814,6 +845,23 @@ connector_new_msg_read_file_blk (guint id, guint start, guint size)
   memcpy (&msg->data[13], &aux, sizeof (guint32));
 
   return msg;
+}
+
+static GByteArray *
+connector_new_msg_read_sample_blk (guint id, guint start, guint size)
+{
+  return connector_new_msg_read_common_blk (FS_SAMPLE_READ_FILE_REQUEST,
+					    sizeof
+					    (FS_SAMPLE_READ_FILE_REQUEST), id,
+					    start, size);
+}
+
+static GByteArray *
+connector_new_msg_read_raw_blk (guint id, guint start, guint size)
+{
+  return connector_new_msg_read_common_blk (FS_RAW_READ_FILE_REQUEST,
+					    sizeof (FS_RAW_READ_FILE_REQUEST),
+					    id, start, size);
 }
 
 static GByteArray *
@@ -1642,7 +1690,8 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
   gboolean active;
   gint res = 0;
 
-  //TODO: check if the file already exists? (Device makes no difference between creating a new file and creating an already existent file. The new file would be deleted if an upload is not sent, though.)
+  //If the file already exists the device makes no difference between creating a new file and creating an already existent file.
+  //Also, the new file would be discarded if an upload is not completed.
   //TODO: limit sample upload?
 
   tx_msg = connector_new_msg_open_file_write (path, sample->len);
@@ -1732,9 +1781,29 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
   return res;
 }
 
+static GByteArray *
+connector_new_msg_open_sample_read (const gchar * path)
+{
+  return connector_new_msg_path (FS_SAMPLE_OPEN_FILE_READER_REQUEST,
+				 sizeof
+				 (FS_SAMPLE_OPEN_FILE_READER_REQUEST), path);
+}
+
+static GByteArray *
+connector_new_msg_open_raw_read (const gchar * path)
+{
+  return connector_new_msg_path (FS_RAW_OPEN_FILE_READER_REQUEST,
+				 sizeof
+				 (FS_RAW_OPEN_FILE_READER_REQUEST), path);
+}
+
 static gint
-connector_download_sample (const gchar * path, GByteArray * output,
-			   struct job_control *control, void *data)
+connector_download_common (const gchar * path, GByteArray * output,
+			   struct job_control *control, void *data,
+			   connector_msg_path_func new_msg_open_read,
+			   guint read_offset,
+			   connector_msg_read_blk_func new_msg_read_blk,
+			   connector_msg_id_func new_msg_close_read)
 {
   struct connector *connector = data;
   GByteArray *tx_msg;
@@ -1744,17 +1813,14 @@ connector_download_sample (const gchar * path, GByteArray * output,
   guint frames;
   guint next_block_start;
   guint req_size;
-  int offset;
+  guint offset;
   gint16 v;
   gint16 *frame;
-  int i;
+  gint i;
   gboolean active;
   gint res;
 
-  tx_msg = connector_new_msg_path (FS_SAMPLE_OPEN_FILE_READER_REQUEST,
-				   sizeof
-				   (FS_SAMPLE_OPEN_FILE_READER_REQUEST),
-				   path);
+  tx_msg = new_msg_open_read (path);
   if (!tx_msg)
     {
       return -EINVAL;
@@ -1781,7 +1847,7 @@ connector_download_sample (const gchar * path, GByteArray * output,
 
   res = 0;
   next_block_start = 0;
-  offset = sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST);
+  offset = read_offset;
   if (control)
     {
       g_mutex_lock (&control->mutex);
@@ -1799,8 +1865,7 @@ connector_download_sample (const gchar * path, GByteArray * output,
 	frames - next_block_start >
 	DATA_TRANSF_BLOCK_BYTES ? DATA_TRANSF_BLOCK_BYTES : frames -
 	next_block_start;
-      tx_msg =
-	connector_new_msg_read_file_blk (id, next_block_start, req_size);
+      tx_msg = new_msg_read_blk (id, next_block_start, req_size);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
@@ -1842,7 +1907,7 @@ connector_download_sample (const gchar * path, GByteArray * output,
       res = -1;
     }
 
-  tx_msg = connector_new_msg_close_file_read (id);
+  tx_msg = new_msg_close_read (id);
   rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
@@ -1855,6 +1920,29 @@ connector_download_sample (const gchar * path, GByteArray * output,
 cleanup:
   free_msg (array);
   return res;
+}
+
+static gint
+connector_download_sample (const gchar * path, GByteArray * output,
+			   struct job_control *control, void *data)
+{
+  return connector_download_common (path, output, control, data,
+				    connector_new_msg_open_sample_read,
+				    sizeof
+				    (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST),
+				    connector_new_msg_read_sample_blk,
+				    connector_new_msg_close_sample_read);
+}
+
+static gint
+connector_download_raw (const gchar * path, GByteArray * output,
+			struct job_control *control, void *data)
+{
+  return connector_download_common (path, output, control, data,
+				    connector_new_msg_open_raw_read,
+				    0,
+				    connector_new_msg_read_raw_blk,
+				    connector_new_msg_close_raw_read);
 }
 
 static gint
