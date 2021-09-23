@@ -581,6 +581,10 @@ main (int argc, char *argv[])
     {
       res = cli_command_path (argc, argv, optind, fs_ops_raw->delete);
     }
+  else if (strcmp (command, "mv-raw") == 0)
+    {
+      res = cli_command_src_dst (argc, argv, optind, fs_ops_raw->move);
+    }
   else
     {
       error_print ("Command %s not recognized\n", command);
