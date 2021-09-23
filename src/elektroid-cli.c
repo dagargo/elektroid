@@ -585,6 +585,10 @@ main (int argc, char *argv[])
     {
       res = cli_command_src_dst (argc, argv, optind, fs_ops_raw->move);
     }
+  else if (strcmp (command, "download-raw") == 0)
+    {
+      res = cli_download (argc, argv, optind, fs_ops_data);
+    }
   else
     {
       error_print ("Command %s not recognized\n", command);
