@@ -56,9 +56,18 @@
 
 typedef GByteArray *(*connector_msg_id_func) (guint);
 
+typedef GByteArray *(*connector_msg_id_len_func) (guint, guint);
+
 typedef GByteArray *(*connector_msg_path_func) (const gchar *);
 
+typedef GByteArray *(*connector_msg_path_len_func) (const gchar *, guint);
+
 typedef GByteArray *(*connector_msg_read_blk_func) (guint, guint, guint);
+
+typedef GByteArray *(*connector_msg_write_blk_func) (guint, GByteArray *,
+						     guint *, guint);
+
+typedef void (*connector_copy_array) (GByteArray *, GByteArray *);
 
 typedef gint (*connector_path_func) (struct connector *, const gchar *);
 
@@ -96,6 +105,9 @@ static gint connector_move_raw_item (const gchar *, const gchar *, void *);
 
 static gint connector_download_raw (const gchar *, GByteArray *,
 				    struct job_control *, void *);
+
+static gint connector_upload_raw (const gchar *, GByteArray *,
+				  struct job_control *, void *);
 
 static gint connector_read_data_dir_all (struct item_iterator *,
 					 const gchar *, void *);
@@ -196,6 +208,11 @@ static const guint8 FS_RAW_OPEN_FILE_READER_REQUEST[] = { 0x33 };
 static const guint8 FS_RAW_CLOSE_FILE_READER_REQUEST[] = { 0x34 };
 static const guint8 FS_RAW_READ_FILE_REQUEST[] =
   { 0x35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const guint8 FS_RAW_OPEN_FILE_WRITER_REQUEST[] = { 0x43, 0, 0, 0, 0 };
+static const guint8 FS_RAW_CLOSE_FILE_WRITER_REQUEST[] =
+  { 0x44, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const guint8 FS_RAW_WRITE_FILE_REQUEST[] =
+  { 0x45, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static const guint8 DATA_LIST_REQUEST[] = { 0x53 };
 static const guint8 DATA_READ_OPEN_REQUEST[] = { 0x54 };
@@ -347,7 +364,7 @@ static const struct fs_operations FS_RAW_ALL_OPERATIONS = {
   .clear = NULL,
   .swap = NULL,
   .download = connector_download_raw,
-  .upload = NULL,
+  .upload = connector_upload_raw,
   .getid = get_item_name,
   .load = load_file,
   .save = save_file,
@@ -630,6 +647,7 @@ connector_msg_to_raw (const GByteArray * msg)
   return sysex;
 }
 
+//This is used for the raw filesystem too.
 static gint
 connector_get_sample_info_from_msg (GByteArray * info_msg, guint32 * id,
 				    guint * size)
@@ -727,19 +745,40 @@ connector_new_msg_close_raw_read (guint id)
 }
 
 static GByteArray *
-connector_new_msg_open_file_write (const gchar * path, guint bytes)
+connector_new_msg_open_common_write (const guint8 * data, guint len,
+				     const gchar * path, guint bytes)
 {
   guint32 aux32;
-  GByteArray *msg =
-    connector_new_msg_path (FS_SAMPLE_OPEN_FILE_WRITER_REQUEST,
-			    sizeof (FS_SAMPLE_OPEN_FILE_WRITER_REQUEST),
-			    path);
+  GByteArray *msg = connector_new_msg_path (data, len, path);
 
-  aux32 = htobe32 (bytes + sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
+  aux32 = htobe32 (bytes);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
 
   return msg;
 }
+
+static GByteArray *
+connector_new_msg_open_sample_write (const gchar * path, guint bytes)
+{
+  return
+    connector_new_msg_open_common_write (FS_SAMPLE_OPEN_FILE_WRITER_REQUEST,
+					 sizeof
+					 (FS_SAMPLE_OPEN_FILE_WRITER_REQUEST),
+					 path,
+					 bytes +
+					 sizeof
+					 (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
+}
+
+static GByteArray *
+connector_new_msg_open_raw_write (const gchar * path, guint bytes)
+{
+  return connector_new_msg_open_common_write (FS_RAW_OPEN_FILE_WRITER_REQUEST,
+					      sizeof
+					      (FS_RAW_OPEN_FILE_WRITER_REQUEST),
+					      path, bytes);
+}
+
 
 static GByteArray *
 connector_new_msg_list (const gchar * path, int32_t start_index,
@@ -762,17 +801,14 @@ connector_new_msg_list (const gchar * path, int32_t start_index,
 }
 
 static GByteArray *
-connector_new_msg_write_file_blk (guint id,
-				  gint16 ** data,
-				  guint bytes, guint * total, guint seq)
+connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
+				    guint * total, guint seq)
 {
   guint32 aux32;
-  guint16 aux16;
+  guint16 aux16, *aux16p;
   int i, consumed, bytes_blk;
-  GByteArray *msg;
-
-  msg = connector_new_msg (FS_SAMPLE_WRITE_FILE_REQUEST,
-			   sizeof (FS_SAMPLE_WRITE_FILE_REQUEST));
+  GByteArray *msg = connector_new_msg (FS_SAMPLE_WRITE_FILE_REQUEST,
+				       sizeof (FS_SAMPLE_WRITE_FILE_REQUEST));
 
   aux32 = htobe32 (id);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
@@ -788,9 +824,9 @@ connector_new_msg_write_file_blk (guint id,
 			   (guchar *) FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST,
 			   sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
 
-      aux32 = htobe32 (bytes);
+      aux32 = htobe32 (sample->len);
       memcpy (&msg->data[21], &aux32, sizeof (guint32));
-      aux32 = htobe32 ((bytes >> 1) - 1);
+      aux32 = htobe32 ((sample->len >> 1) - 1);
       memcpy (&msg->data[33], &aux32, sizeof (guint32));
 
       consumed = sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST);
@@ -798,11 +834,12 @@ connector_new_msg_write_file_blk (guint id,
     }
 
   i = 0;
-  while (i < bytes_blk && *total < bytes)
+  aux16p = (guint16 *) & sample->data[*total];
+  while (i < bytes_blk && *total < sample->len)
     {
-      aux16 = htobe16 (**data);
+      aux16 = htobe16 (*aux16p);
       g_byte_array_append (msg, (guint8 *) & aux16, sizeof (guint16));
-      (*data)++;
+      aux16p++;
       (*total) += sizeof (guint16);
       consumed += sizeof (guint16);
       i += sizeof (guint16);
@@ -815,19 +852,66 @@ connector_new_msg_write_file_blk (guint id,
 }
 
 static GByteArray *
-connector_new_msg_close_file_write (guint id, guint bytes)
+connector_new_msg_write_raw_blk (guint id, GByteArray * raw,
+				 guint * total, guint seq)
 {
+  gint len;
   guint32 aux32;
-  GByteArray *msg = connector_new_msg (FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST,
-				       sizeof
-				       (FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST));
+  GByteArray *msg = connector_new_msg (FS_RAW_WRITE_FILE_REQUEST,
+				       sizeof (FS_RAW_WRITE_FILE_REQUEST));
 
   aux32 = htobe32 (id);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
-  aux32 = htobe32 (bytes + sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
+  aux32 = htobe32 (DATA_TRANSF_BLOCK_BYTES * seq);
+  memcpy (&msg->data[13], &aux32, sizeof (guint32));
+
+  len = raw->len - *total;
+  len = len > DATA_TRANSF_BLOCK_BYTES ? DATA_TRANSF_BLOCK_BYTES : len;
+  g_byte_array_append (msg, &raw->data[*total], len);
+  (*total) += len;
+
+  aux32 = htobe32 (len);
   memcpy (&msg->data[9], &aux32, sizeof (guint32));
 
   return msg;
+}
+
+static GByteArray *
+connector_new_msg_close_common_write (const guint8 * data, guint len,
+				      guint id, guint bytes)
+{
+  guint32 aux32;
+  GByteArray *msg = connector_new_msg (data, len);
+
+  aux32 = htobe32 (id);
+  memcpy (&msg->data[5], &aux32, sizeof (guint32));
+  aux32 = htobe32 (bytes);
+  memcpy (&msg->data[9], &aux32, sizeof (guint32));
+
+  return msg;
+}
+
+static GByteArray *
+connector_new_msg_close_sample_write (guint id, guint bytes)
+{
+  return
+    connector_new_msg_close_common_write (FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST,
+					  sizeof
+					  (FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST),
+					  id,
+					  bytes +
+					  sizeof
+					  (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
+}
+
+static GByteArray *
+connector_new_msg_close_raw_write (guint id, guint bytes)
+{
+  return
+    connector_new_msg_close_common_write (FS_RAW_CLOSE_FILE_WRITER_REQUEST,
+					  sizeof
+					  (FS_RAW_CLOSE_FILE_WRITER_REQUEST),
+					  id, bytes);
 }
 
 static GByteArray *
@@ -1676,15 +1760,17 @@ connector_delete_raw_item (const gchar * path, void *data)
 				       connector_delete_raw);
 }
 
-gint
-connector_upload_sample (const gchar * path, GByteArray * sample,
-			 struct job_control *control, void *data)
+static gint
+connector_upload_common (const gchar * path, GByteArray * input,
+			 struct job_control *control, void *data,
+			 connector_msg_path_len_func new_msg_open_write,
+			 connector_msg_write_blk_func new_msg_write_blk,
+			 connector_msg_id_len_func new_msg_close_write)
 {
   struct connector *connector = data;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   guint transferred;
-  gint16 *data16;
   guint32 id;
   int i;
   gboolean active;
@@ -1692,9 +1778,8 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
 
   //If the file already exists the device makes no difference between creating a new file and creating an already existent file.
   //Also, the new file would be discarded if an upload is not completed.
-  //TODO: limit sample upload?
 
-  tx_msg = connector_new_msg_open_file_write (path, sample->len);
+  tx_msg = new_msg_open_write (path, input->len);
   if (!tx_msg)
     {
       return -EINVAL;
@@ -1717,7 +1802,6 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
     }
   free_msg (rx_msg);
 
-  data16 = (gshort *) sample->data;
   transferred = 0;
   i = 0;
   if (control)
@@ -1731,11 +1815,9 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
       active = TRUE;
     }
 
-  while (transferred < sample->len && active)
+  while (transferred < input->len && active)
     {
-      tx_msg =
-	connector_new_msg_write_file_blk (id, &data16, sample->len,
-					  &transferred, i);
+      tx_msg = new_msg_write_blk (id, input, &transferred, i);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
@@ -1751,7 +1833,7 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
 
       if (control)
 	{
-	  control->callback (transferred / (double) sample->len);
+	  control->callback (transferred / (double) input->len);
 	  g_mutex_lock (&control->mutex);
 	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
@@ -1764,7 +1846,7 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
 
   if (active)
     {
-      tx_msg = connector_new_msg_close_file_write (id, transferred);
+      tx_msg = new_msg_close_write (id, transferred);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
@@ -1779,6 +1861,26 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
     }
 
   return res;
+}
+
+static gint
+connector_upload_sample (const gchar * path, GByteArray * sample,
+			 struct job_control *control, void *data)
+{
+  return connector_upload_common (path, sample, control, data,
+				  connector_new_msg_open_sample_write,
+				  connector_new_msg_write_sample_blk,
+				  connector_new_msg_close_sample_write);
+}
+
+static gint
+connector_upload_raw (const gchar * path, GByteArray * sample,
+		      struct job_control *control, void *data)
+{
+  return connector_upload_common (path, sample, control, data,
+				  connector_new_msg_open_raw_write,
+				  connector_new_msg_write_raw_blk,
+				  connector_new_msg_close_raw_write);
 }
 
 static GByteArray *
@@ -1797,13 +1899,35 @@ connector_new_msg_open_raw_read (const gchar * path)
 				 (FS_RAW_OPEN_FILE_READER_REQUEST), path);
 }
 
+static void
+connector_copy_sample_data (GByteArray * input, GByteArray * output)
+{
+  gint i;
+  gint16 v;
+  gint16 *frame = (gint16 *) input->data;
+
+  for (i = 0; i < input->len; i += sizeof (gint16))
+    {
+      v = be16toh (*frame);
+      g_byte_array_append (output, (guint8 *) & v, sizeof (gint16));
+      frame++;
+    }
+}
+
+static void
+connector_copy_raw_data (GByteArray * input, GByteArray * output)
+{
+  g_byte_array_append (output, input->data, input->len);
+}
+
 static gint
 connector_download_common (const gchar * path, GByteArray * output,
 			   struct job_control *control, void *data,
 			   connector_msg_path_func new_msg_open_read,
 			   guint read_offset,
 			   connector_msg_read_blk_func new_msg_read_blk,
-			   connector_msg_id_func new_msg_close_read)
+			   connector_msg_id_func new_msg_close_read,
+			   connector_copy_array copy_array)
 {
   struct connector *connector = data;
   GByteArray *tx_msg;
@@ -1814,9 +1938,6 @@ connector_download_common (const gchar * path, GByteArray * output,
   guint next_block_start;
   guint req_size;
   guint offset;
-  gint16 v;
-  gint16 *frame;
-  gint i;
   gboolean active;
   gint res;
 
@@ -1894,13 +2015,7 @@ connector_download_common (const gchar * path, GByteArray * output,
 
   if (active)
     {
-      frame = (gint16 *) array->data;
-      for (i = 0; i < array->len; i += sizeof (gint16))
-	{
-	  v = be16toh (*frame);
-	  g_byte_array_append (output, (guint8 *) & v, sizeof (gint16));
-	  frame++;
-	}
+      copy_array (array, output);
     }
   else
     {
@@ -1931,7 +2046,8 @@ connector_download_sample (const gchar * path, GByteArray * output,
 				    sizeof
 				    (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST),
 				    connector_new_msg_read_sample_blk,
-				    connector_new_msg_close_sample_read);
+				    connector_new_msg_close_sample_read,
+				    connector_copy_sample_data);
 }
 
 static gint
@@ -1942,7 +2058,8 @@ connector_download_raw (const gchar * path, GByteArray * output,
 				    connector_new_msg_open_raw_read,
 				    0,
 				    connector_new_msg_read_raw_blk,
-				    connector_new_msg_close_raw_read);
+				    connector_new_msg_close_raw_read,
+				    connector_copy_raw_data);
 }
 
 static gint
