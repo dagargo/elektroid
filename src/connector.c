@@ -369,7 +369,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .getid = get_item_name,
   .load = load_file,
   .save = save_file,
-  .extension = "preset"
+  .extension = "snd"
 };
 
 static const struct fs_operations FS_DATA_ALL_OPERATIONS = {
