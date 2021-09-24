@@ -3196,7 +3196,8 @@ connector_get_download_path (struct connector *connector,
   namec = strdup (src_fpath);
   name = basename (namec);
 
-  if (ops->fs == FS_SAMPLES)
+  if (ops->fs == FS_SAMPLES || ops->fs == FS_RAW_ALL
+      || ops->fs == FS_RAW_PRESETS)
     {
       name = strdup (name);
       goto end;
