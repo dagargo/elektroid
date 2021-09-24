@@ -587,7 +587,7 @@ main (int argc, char *argv[])
     }
   else if (strcmp (command, "download-raw") == 0)
     {
-      res = cli_download (argc, argv, optind, fs_ops_data);
+      res = cli_download (argc, argv, optind, fs_ops_raw);
     }
   else
     {
