@@ -2422,8 +2422,8 @@ connector_init (struct connector *connector, gint card)
   rx_msg_device = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg_device)
     {
-      err = -errno;
-      goto cleanup;
+      err = -EIO;
+      goto cleanup_params;
     }
 
   tx_msg =
@@ -2432,7 +2432,7 @@ connector_init (struct connector *connector, gint card)
   rx_msg_fw_ver = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg_fw_ver)
     {
-      err = -errno;
+      err = -EIO;
       goto cleanup_device;
     }
 
