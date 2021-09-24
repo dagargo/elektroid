@@ -589,6 +589,10 @@ main (int argc, char *argv[])
     {
       res = cli_download (argc, argv, optind, fs_ops_raw);
     }
+  else if (strcmp (command, "upload-raw") == 0)
+    {
+      res = cli_upload (argc, argv, optind, fs_ops_raw);
+    }
   else
     {
       error_print ("Command %s not recognized\n", command);
