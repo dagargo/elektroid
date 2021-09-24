@@ -349,8 +349,8 @@ static const struct fs_operations FS_RAW_ALL_OPERATIONS = {
   .download = connector_download_raw,
   .upload = NULL,
   .getid = get_item_name,
-  .load = NULL,
-  .save = NULL,
+  .load = load_file,
+  .save = save_file,
   .extension = "raw"
 };
 
