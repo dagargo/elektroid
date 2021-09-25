@@ -3234,7 +3234,8 @@ connector_get_upload_path (struct connector *connector,
   struct item_iterator iter;
   gboolean empty;
 
-  if (ops->fs == FS_SAMPLES)
+  if (ops->fs == FS_SAMPLES || ops->fs == FS_RAW_ALL
+      || ops->fs == FS_RAW_PRESETS)
     {
       namec = strdup (src_path);
       name = basename (namec);
