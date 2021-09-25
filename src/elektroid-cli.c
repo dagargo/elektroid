@@ -604,7 +604,7 @@ main (int argc, char *argv[])
       connector_destroy (&connector);
     }
 
-  usleep (REST_TIME);
+  usleep (REST_TIME * 2);
 
   return res;
 }
