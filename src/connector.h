@@ -48,6 +48,16 @@ struct connector
   struct pollfd *pfds;
 };
 
+enum connector_fs
+{
+  FS_SAMPLES = 0x1,
+  FS_RAW_ALL = 0x2,
+  FS_RAW_PRESETS = 0x4,
+  FS_DATA_ALL = 0x8,
+  FS_DATA_PRJ = 0x10,
+  FS_DATA_SND = 0x20,
+};
+
 struct connector_iterator_data
 {
   GByteArray *msg;
@@ -56,6 +66,7 @@ struct connector_iterator_data
   guint16 operations;
   guint8 has_valid_data;
   guint8 has_metadata;
+  enum connector_fs fs;
 };
 
 struct connector_system_device
@@ -93,16 +104,6 @@ struct connector_storage_stats
   const gchar *name;
   guint64 bsize;
   guint64 bfree;
-};
-
-enum connector_fs
-{
-  FS_SAMPLES = 0x1,
-  FS_RAW_ALL = 0x2,
-  FS_RAW_PRESETS = 0x4,
-  FS_DATA_ALL = 0x8,
-  FS_DATA_PRJ = 0x10,
-  FS_DATA_SND = 0x20,
 };
 
 const struct fs_operations *connector_get_fs_operations (enum connector_fs);

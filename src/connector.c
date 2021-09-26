@@ -504,7 +504,7 @@ connector_get_msg_string (const GByteArray * msg)
 }
 
 static guint
-connector_next_sample_entry (struct item_iterator *iter)
+connector_next_smplrw_entry (struct item_iterator *iter)
 {
   guint32 *data32;
   gchar *name_cp1252;
@@ -537,6 +537,11 @@ connector_next_sample_entry (struct item_iterator *iter)
 
       name_cp1252 = (gchar *) & data->msg->data[data->pos];
       iter->item.name = connector_get_utf8 (name_cp1252);
+      if (data->fs == FS_RAW_ALL)
+	{
+	  //This eliminates the extension ".mc-snd" that the device provides.
+	  iter->item.name[strlen (iter->item.name) - 7] = 0;
+	}
       data->pos += strlen (name_cp1252) + 1;
 
       iter->item.index = -1;
@@ -547,15 +552,14 @@ connector_next_sample_entry (struct item_iterator *iter)
 
 static gint
 connector_init_iterator (struct item_iterator *iter, GByteArray * msg,
-			 iterator_next next)
+			 iterator_next next, enum connector_fs fs)
 {
   struct connector_iterator_data *data =
     malloc (sizeof (struct connector_iterator_data));
 
   data->msg = msg;
-  data->pos =
-    (next ==
-     connector_next_sample_entry) ? FS_SAMPLES_START_POS : FS_DATA_START_POS;
+  data->pos = fs == FS_DATA_ALL ? FS_DATA_START_POS : FS_SAMPLES_START_POS;
+  data->fs = fs;
 
   iter->data = data;
   iter->next = next;
@@ -572,7 +576,7 @@ connector_copy_iterator (struct item_iterator *dst, struct item_iterator *src)
   struct connector_iterator_data *data = src->data;
   GByteArray *array = g_byte_array_sized_new (data->msg->len);
   g_byte_array_append (array, data->msg->data, data->msg->len);
-  return connector_init_iterator (dst, array, src->next);
+  return connector_init_iterator (dst, array, src->next, data->fs);
 }
 
 static GByteArray *
@@ -647,9 +651,8 @@ connector_msg_to_raw (const GByteArray * msg)
   return sysex;
 }
 
-//This is used for the raw filesystem too.
 static gint
-connector_get_sample_info_from_msg (GByteArray * info_msg, guint32 * id,
+connector_get_smplrw_info_from_msg (GByteArray * info_msg, guint32 * id,
 				    guint * size)
 {
   if (connector_get_msg_status (info_msg))
@@ -1407,7 +1410,7 @@ cleanup:
 static gint
 connector_read_common_dir (struct item_iterator *iter, const gchar * dir,
 			   void *data, const guint8 msg[], int size,
-			   fs_init_iter_func init_iter)
+			   fs_init_iter_func init_iter, enum connector_fs fs)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -1432,7 +1435,8 @@ connector_read_common_dir (struct item_iterator *iter, const gchar * dir,
       return -ENOTDIR;
     }
 
-  return connector_init_iterator (iter, rx_msg, connector_next_sample_entry);
+  return connector_init_iterator (iter, rx_msg, connector_next_smplrw_entry,
+				  fs);
 }
 
 static gint
@@ -1442,7 +1446,7 @@ connector_read_samples_dir (struct item_iterator *iter, const gchar * dir,
   return connector_read_common_dir (iter, dir, data,
 				    FS_SAMPLE_READ_DIR_REQUEST,
 				    sizeof (FS_SAMPLE_READ_DIR_REQUEST),
-				    connector_read_samples_dir);
+				    connector_read_samples_dir, FS_SAMPLES);
 }
 
 static gint
@@ -1451,7 +1455,7 @@ connector_read_raw_dir (struct item_iterator *iter, const gchar * dir,
 {
   return connector_read_common_dir (iter, dir, data, FS_RAW_READ_DIR_REQUEST,
 				    sizeof (FS_RAW_READ_DIR_REQUEST),
-				    connector_read_raw_dir);
+				    connector_read_raw_dir, FS_RAW_ALL);
 }
 
 static enum item_type
@@ -1792,7 +1796,7 @@ connector_upload_common (const gchar * path, GByteArray * input,
     }
 
   //Response: x, x, x, x, 0xc0, [0 (error), 1 (success)], id, frames
-  res = connector_get_sample_info_from_msg (rx_msg, &id, NULL);
+  res = connector_get_smplrw_info_from_msg (rx_msg, &id, NULL);
   if (res)
     {
       error_print ("%s (%s)\n", snd_strerror (res),
@@ -1952,7 +1956,7 @@ connector_download_common (const gchar * path, GByteArray * output,
     {
       return -EIO;
     }
-  res = connector_get_sample_info_from_msg (rx_msg, &id, &frames);
+  res = connector_get_smplrw_info_from_msg (rx_msg, &id, &frames);
   if (res)
     {
       error_print ("%s (%s)\n", snd_strerror (res),
@@ -2725,7 +2729,8 @@ connector_read_data_dir_prefix (struct item_iterator *iter, const gchar * dir,
       return -ENOTDIR;
     }
 
-  return connector_init_iterator (iter, rx_msg, connector_next_data_entry);
+  return connector_init_iterator (iter, rx_msg, connector_next_data_entry,
+				  FS_DATA_ALL);
 }
 
 static gint
