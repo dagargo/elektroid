@@ -325,7 +325,7 @@ static const struct connector_device_desc MODEL_CYCLES_DESC = {
   .alias = "mc",
   .id = MOD_C_ID,
   .fss = FS_RAW_PRESETS | FS_DATA_PRJ,
-  .storages = 0
+  .storages = STORAGE_PLUS_DRIVE
 };
 
 static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
