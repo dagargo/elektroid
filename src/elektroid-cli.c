@@ -286,6 +286,10 @@ cli_df (int argc, char *argv[], int optind)
       if (connector.device_desc->storages & storage)
 	{
 	  res |= connector_get_storage_stats (&connector, storage, &statfs);
+	  if (res)
+	    {
+	      continue;
+	    }
 	  size = get_human_size (statfs.bsize, FALSE);
 	  diff = get_human_size (statfs.bsize - statfs.bfree, FALSE);
 	  free = get_human_size (statfs.bfree, FALSE);
