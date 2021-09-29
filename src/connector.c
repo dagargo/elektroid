@@ -537,7 +537,7 @@ connector_next_smplrw_entry (struct item_iterator *iter)
 
       name_cp1252 = (gchar *) & data->msg->data[data->pos];
       iter->item.name = connector_get_utf8 (name_cp1252);
-      if (data->fs == FS_RAW_ALL)
+      if (data->fs == FS_RAW_ALL && iter->item.type == ELEKTROID_FILE)
 	{
 	  //This eliminates the extension ".mc-snd" that the device provides.
 	  iter->item.name[strlen (iter->item.name) - 7] = 0;
@@ -2058,12 +2058,18 @@ static gint
 connector_download_raw (const gchar * path, GByteArray * output,
 			struct job_control *control, void *data)
 {
-  return connector_download_common (path, output, control, data,
-				    connector_new_msg_open_raw_read,
-				    0,
-				    connector_new_msg_read_raw_blk,
-				    connector_new_msg_close_raw_read,
-				    connector_copy_raw_data);
+  gint ret;
+  gchar path_with_ext[PATH_MAX];
+
+  //This adds back the extension ".mc-snd" that the device provides.
+  snprintf (path_with_ext, PATH_MAX, "%s%s", path, "09 A 01");	//.mc-snd");
+  ret = connector_download_common (path_with_ext, output, control, data,
+				   connector_new_msg_open_raw_read,
+				   0,
+				   connector_new_msg_read_raw_blk,
+				   connector_new_msg_close_raw_read,
+				   connector_copy_raw_data);
+  return ret;
 }
 
 static gint
