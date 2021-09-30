@@ -1671,12 +1671,25 @@ connector_delete_samples_dir (struct connector *connector, const gchar * path)
 				sizeof (FS_SAMPLE_DELETE_DIR_REQUEST));
 }
 
+//This adds back the extension ".mc-snd" that the device provides.
+static gchar *
+connector_add_ext_to_mc_snd (const gchar * path)
+{
+  gchar *path_with_ext = malloc (PATH_MAX);
+  snprintf (path_with_ext, PATH_MAX, "%s%s", path, ".mc-snd");
+  return path_with_ext;
+}
+
 static gint
 connector_delete_raw (struct connector *connector, const gchar * path)
 {
-  return connector_path_common (connector, path,
-				FS_RAW_DELETE_FILE_REQUEST,
-				sizeof (FS_RAW_DELETE_FILE_REQUEST));
+  gint ret;
+  gchar *path_with_ext = connector_add_ext_to_mc_snd (path);
+  ret = connector_path_common (connector, path_with_ext,
+			       FS_RAW_DELETE_FILE_REQUEST,
+			       sizeof (FS_RAW_DELETE_FILE_REQUEST));
+  g_free (path_with_ext);
+  return ret;
 }
 
 static gint
@@ -2059,16 +2072,14 @@ connector_download_raw (const gchar * path, GByteArray * output,
 			struct job_control *control, void *data)
 {
   gint ret;
-  gchar path_with_ext[PATH_MAX];
-
-  //This adds back the extension ".mc-snd" that the device provides.
-  snprintf (path_with_ext, PATH_MAX, "%s%s", path, "09 A 01");	//.mc-snd");
+  gchar *path_with_ext = connector_add_ext_to_mc_snd (path);
   ret = connector_download_common (path_with_ext, output, control, data,
 				   connector_new_msg_open_raw_read,
 				   0,
 				   connector_new_msg_read_raw_blk,
 				   connector_new_msg_close_raw_read,
 				   connector_copy_raw_data);
+  g_free (path_with_ext);
   return ret;
 }
 
