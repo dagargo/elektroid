@@ -1713,13 +1713,13 @@ static gint
 connector_move_raw_item (const gchar * src, const gchar * dst, void *data)
 {
   gint ret;
-  gchar *path_with_ext = connector_add_ext_to_mc_snd (path);
-  ret = connector_move_common_item (src, dst, data,
+  gchar *src_with_ext = connector_add_ext_to_mc_snd (src);
+  ret = connector_move_common_item (src_with_ext, dst, data,
 				    connector_read_raw_dir,
 				    connector_rename_raw_file,
 				    connector_create_raw_dir,
 				    connector_delete_raw_dir);
-  g_free (path_with_ext);
+  g_free (src_with_ext);
   return ret;
 }
 
