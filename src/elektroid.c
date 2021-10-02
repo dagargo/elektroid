@@ -34,6 +34,7 @@
 #include "utils.h"
 #include "notifier.h"
 #include "local.h"
+#include "config.h"
 
 #define MAX_DRAW_X 10000
 
@@ -184,7 +185,7 @@ static struct browser local_browser;
 
 static struct audio audio;
 static struct connector connector;
-static gboolean autoplay;
+static struct config config;
 
 static GThread *load_thread = NULL;
 static GThread *task_thread = NULL;
@@ -856,7 +857,7 @@ elektroid_update_ui_on_load (gpointer data)
 	{
 	  elektroid_controls_set_sensitive (TRUE);
 	}
-      if (autoplay)
+      if (config.autoplay)
 	{
 	  audio_play (&audio);
 	}
@@ -1513,7 +1514,7 @@ elektroid_loop_clicked (GtkWidget * object, gpointer data)
 static gboolean
 elektroid_autoplay_clicked (GtkWidget * object, gboolean state, gpointer data)
 {
-  autoplay = state;
+  config.autoplay = state;
   return FALSE;
 }
 
@@ -2871,7 +2872,7 @@ elektroid_delete_window (GtkWidget * widget, GdkEvent * event, gpointer data)
 }
 
 static int
-elektroid_run (int argc, char *argv[], gchar * local_dir)
+elektroid_run (int argc, char *argv[])
 {
   GtkBuilder *builder;
   GtkCssProvider *css_provider;
@@ -3220,7 +3221,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 
   gtk_statusbar_push (status_bar, 0, _("Not connected"));
   elektroid_loop_clicked (loop_button, NULL);
-  autoplay = gtk_switch_get_active (GTK_SWITCH (autoplay_switch));
+  gtk_switch_set_active (GTK_SWITCH (autoplay_switch), config.autoplay);
 
   fs_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "fs_list_store"));
@@ -3232,7 +3233,7 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
-  strcpy (local_browser.dir, local_dir);
+  local_browser.dir = config.local_dir;
   elektroid_load_devices (TRUE);	//This triggers a local browser reload due to the extensions and icons selected for the fs
 
   gethostname (hostname, LABEL_MAX);
@@ -3240,15 +3241,13 @@ elektroid_run (int argc, char *argv[], gchar * local_dir)
 
   debug_print (1, "Creating notifier thread...\n");
   notifier_init (&notifier, &local_browser);
-  notifier_set_dir (&notifier, local_dir);
+  notifier_set_dir (&notifier, config.local_dir);
   notifier_thread = g_thread_new ("notifier_thread", notifier_run, &notifier);
-  free (local_dir);
 
   gtk_widget_show (main_window);
   gtk_main ();
 
   free (remote_browser.dir);
-  free (local_browser.dir);
 
   if (connector_check (&connector))
     {
@@ -3292,7 +3291,7 @@ elektroid_print_help (gchar * executable_path)
 int
 main (int argc, char *argv[])
 {
-  gint opt;
+  gint opt, ret;
   gchar *local_dir = NULL;
   gint vflg = 0, dflg = 0, errflg = 0;
   int long_index = 0;
@@ -3342,6 +3341,17 @@ main (int argc, char *argv[])
       exit (EXIT_FAILURE);
     }
 
-  local_dir = get_local_startup_path (local_dir);
-  return elektroid_run (argc, argv, local_dir);
+  config_load (&config);
+  if (local_dir)
+    {
+      g_free (config.local_dir);
+      config.local_dir = get_local_startup_path (local_dir);
+    }
+
+  ret = elektroid_run (argc, argv);
+
+  config_save (&config);
+  config_free (&config);
+
+  return ret;
 }

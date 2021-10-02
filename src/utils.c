@@ -164,12 +164,27 @@ get_ext (const gchar * name)
     }
 }
 
+gchar *
+get_expanded_dir (const char *exp)
+{
+  wordexp_t exp_result;
+  size_t n;
+  gchar *exp_dir = malloc (PATH_MAX);
+
+  wordexp (exp, &exp_result, 0);
+  n = PATH_MAX - 1;
+  strncpy (exp_dir, exp_result.we_wordv[0], n);
+  exp_dir[PATH_MAX - 1] = 0;
+  wordfree (&exp_result);
+
+  return exp_dir;
+}
+
 char *
 get_local_startup_path (const gchar * local_dir)
 {
   DIR *dir;
   gchar *startup_path = NULL;
-  wordexp_t exp_result;
 
   if (local_dir)
     {
@@ -181,20 +196,17 @@ get_local_startup_path (const gchar * local_dir)
 	}
       else
 	{
-	  error_print ("Unable to open dir %s\n", local_dir);
+	  error_print ("Unable to open dir '%s'\n", local_dir);
 	}
       closedir (dir);
     }
 
   if (!startup_path)
     {
-      wordexp ("~", &exp_result, 0);
-      startup_path = malloc (PATH_MAX);
-      strcpy (startup_path, exp_result.we_wordv[0]);
-      wordfree (&exp_result);
+      startup_path = get_expanded_dir ("~");
     }
 
-  debug_print (1, "Using %s as local dir...\n", startup_path);
+  debug_print (1, "Using '%s' as local dir...\n", startup_path);
 
   return startup_path;
 }
@@ -294,7 +306,7 @@ end:
 }
 
 gint
-save_file (const char *path, GByteArray * array, struct job_control *control)
+save_file_char (const gchar * path, const guint8 * data, ssize_t len)
 {
   gint res;
   long bytes;
@@ -309,8 +321,8 @@ save_file (const char *path, GByteArray * array, struct job_control *control)
 
   res = 0;
 
-  bytes = fwrite (array->data, 1, array->len, file);
-  if (bytes == array->len)
+  bytes = fwrite (data, 1, len, file);
+  if (bytes == len)
     {
       debug_print (1, "%zu bytes written\n", bytes);
     }
@@ -323,6 +335,13 @@ save_file (const char *path, GByteArray * array, struct job_control *control)
   fclose (file);
 
   return res;
+}
+
+gint
+save_file (const gchar * path, GByteArray * array,
+	   struct job_control *control)
+{
+  return save_file_char (path, array->data, array->len);
 }
 
 gchar *

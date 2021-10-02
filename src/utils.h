@@ -119,6 +119,8 @@ const gchar *get_ext (const gchar *);
 
 gchar get_type_from_inventory_icon (const gchar *);
 
+gchar *get_expanded_dir (const char *);
+
 gchar *get_local_startup_path (const gchar *);
 
 void free_msg (gpointer);
@@ -136,6 +138,8 @@ gint copy_item_iterator (struct item_iterator *, struct item_iterator *);
 gint load_file (const char *, GByteArray *, struct job_control *);
 
 gint save_file (const char *, GByteArray *, struct job_control *);
+
+gint save_file_char (const gchar *, const guint8 *, ssize_t);
 
 gchar *get_human_size (guint, gboolean);
 
