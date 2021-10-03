@@ -189,11 +189,8 @@ static const guint8 FS_SAMPLE_OPEN_FILE_WRITER_REQUEST[] =
   { 0x40, 0, 0, 0, 0 };
 static const guint8 FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST[] =
   { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
-//static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST[] =
-//  { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-//At some poin, they added this new upload function which includes a cksum in the last 4 bytes. Everything else stays the same.
-static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST_CRC[] =
-  { 0x46, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST[] =
+  { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xbb, 0x80, 0, 0, 0, 0,
   0, 0, 0, 0, 0x7f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -809,11 +806,11 @@ static GByteArray *
 connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
 				    guint * total, guint seq)
 {
-  guint32 aux32, crc;
+  guint32 aux32;
   guint16 aux16, *aux16p;
   int i, consumed, bytes_blk;
-  GByteArray *msg = connector_new_msg (FS_SAMPLE_WRITE_FILE_REQUEST_CRC,
-				       sizeof (FS_SAMPLE_WRITE_FILE_REQUEST_CRC));
+  GByteArray *msg = connector_new_msg (FS_SAMPLE_WRITE_FILE_REQUEST,
+				       sizeof (FS_SAMPLE_WRITE_FILE_REQUEST));
 
   aux32 = htobe32 (id);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
@@ -830,9 +827,9 @@ connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
 			   sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
 
       aux32 = htobe32 (sample->len);
-      memcpy (&msg->data[25], &aux32, sizeof (guint32));
+      memcpy (&msg->data[21], &aux32, sizeof (guint32));
       aux32 = htobe32 ((sample->len >> 1) - 1);
-      memcpy (&msg->data[37], &aux32, sizeof (guint32));
+      memcpy (&msg->data[33], &aux32, sizeof (guint32));
 
       consumed = sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST);
       bytes_blk -= consumed;
@@ -852,12 +849,6 @@ connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
 
   aux32 = htobe32 (consumed);
   memcpy (&msg->data[9], &aux32, sizeof (guint32));
-
-  crc = crc32 (0xffffffff, &msg->data[21], consumed);
-  debug_print (2, "CRC: %0x\n", crc);
-
-  aux32 = htobe32 (crc);
-  memcpy (&msg->data[17], &aux32, sizeof (guint32));
 
   return msg;
 }
