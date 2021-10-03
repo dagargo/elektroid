@@ -3275,14 +3275,14 @@ connector_get_upload_path (struct connector *connector,
     {
       if (copy_item_iterator (&iter, remote_iter))
 	{
-	  return NULL;
+	  return strdup (dst_dir);
 	}
     }
   else
     {
       if (ops->readdir (&iter, dst_dir, connector))
 	{
-	  return NULL;
+	  return strdup (dst_dir);
 	}
     }
 
