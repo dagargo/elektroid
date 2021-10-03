@@ -45,7 +45,7 @@ print_sample (struct item_iterator *iter)
   struct connector_iterator_data *data = iter->data;
 
   printf ("%c %10s %08x %s\n", iter->item.type,
-	  hsize, data->cksum, iter->item.name);
+	  hsize, data->hash, iter->item.name);
   g_free (hsize);
 }
 

@@ -523,7 +523,7 @@ connector_next_smplrw_entry (struct item_iterator *iter)
   else
     {
       data32 = (guint32 *) & data->msg->data[data->pos];
-      data->cksum = be32toh (*data32);
+      data->hash = be32toh (*data32);
       data->pos += sizeof (guint32);
 
       data32 = (guint32 *) & data->msg->data[data->pos];

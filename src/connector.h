@@ -62,7 +62,7 @@ struct connector_iterator_data
 {
   GByteArray *msg;
   guint32 pos;
-  guint32 cksum;
+  guint32 hash;
   guint16 operations;
   guint8 has_valid_data;
   guint8 has_metadata;
