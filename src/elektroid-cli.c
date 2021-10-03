@@ -348,12 +348,12 @@ cli_download (int argc, char *argv[], int optind,
       goto end;
     }
 
-  res = fs_ops->save (download_path, array, NULL);
-  free (download_path);
+  res = fs_ops->save (download_path, array, &control);
+  g_free (download_path);
+  g_free (control.data);
 
 end:
   g_byte_array_free (array, TRUE);
-
   return res ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
@@ -400,19 +400,19 @@ cli_upload (int argc, char *argv[], int optind,
 			       &index);
 
   array = g_byte_array_new ();
-
-  res = fs_ops->load (src_path, array, NULL);
+  control.active = TRUE;
+  control.callback = null_control_callback;
+  res = fs_ops->load (src_path, array, &control);
   if (res)
     {
       goto cleanup;
     }
 
-  control.active = TRUE;
-  control.callback = null_control_callback;
   res = fs_ops->upload (upload_path, array, &control, &connector);
+  g_free (control.data);
 
 cleanup:
-  free (upload_path);
+  g_free (upload_path);
   g_byte_array_free (array, TRUE);
   return res ? EXIT_FAILURE : EXIT_SUCCESS;
 }

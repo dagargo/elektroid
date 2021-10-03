@@ -24,6 +24,24 @@
 #include <inttypes.h>
 #include "sample.h"
 
+#define JUNK_CHUNK_ID "JUNK"
+#define SMPL_CHUNK_ID "smpl"
+#define SMPL_CHUNK_LAST_FRAME_POS 0x30
+
+static const guint8 JUNK_CHUNK_DATA[] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0
+};
+
+static const guint8 SMPL_CHUNK_DATA[] = {
+  0, 0, 0, 0, 0, 0, 0, 0, 0x61, 0x51, 0, 0, 60, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0x7f, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+};
+
 gint
 sample_save (const gchar * path, GByteArray * sample,
 	     struct job_control *control)
@@ -31,10 +49,12 @@ sample_save (const gchar * path, GByteArray * sample,
   SF_INFO sf_info;
   SNDFILE *sndfile;
   sf_count_t frames, total;
+  struct SF_CHUNK_INFO junk_chunk;
+  struct SF_CHUNK_INFO smpl_chunk;
 
-  debug_print (1, "Saving file %s...\n", path);
+  debug_print (1, "Saving file '%s' (last frame loop %d)...\n", path,
+	       *(guint32 *) control->data);
 
-  sf_info.format = 0;
   sf_info.samplerate = 48000;
   sf_info.channels = 1;
   sf_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
@@ -43,6 +63,28 @@ sample_save (const gchar * path, GByteArray * sample,
     {
       error_print ("%s\n", sf_strerror (sndfile));
       return -1;
+    }
+
+  strcpy (junk_chunk.id, JUNK_CHUNK_ID);
+  junk_chunk.id_size = strlen (JUNK_CHUNK_ID);
+  junk_chunk.datalen = sizeof (JUNK_CHUNK_DATA);
+  junk_chunk.data = (void *) JUNK_CHUNK_DATA;
+  if (sf_set_chunk (sndfile, &junk_chunk) != SF_ERR_NO_ERROR)
+    {
+      error_print ("%s\n", sf_strerror (sndfile));
+    }
+
+  strcpy (smpl_chunk.id, SMPL_CHUNK_ID);
+  smpl_chunk.id_size = strlen (SMPL_CHUNK_ID);
+  smpl_chunk.datalen = sizeof (SMPL_CHUNK_DATA);
+  smpl_chunk.data = malloc (sizeof (SMPL_CHUNK_DATA));
+  memcpy (smpl_chunk.data, (void *) SMPL_CHUNK_DATA,
+	  sizeof (SMPL_CHUNK_DATA));
+  memcpy (&((guint8 *) smpl_chunk.data)[SMPL_CHUNK_LAST_FRAME_POS],
+	  control->data, sizeof (guint32));
+  if (sf_set_chunk (sndfile, &smpl_chunk) != SF_ERR_NO_ERROR)
+    {
+      error_print ("%s\n", sf_strerror (sndfile));
     }
 
   frames = sample->len >> 1;
@@ -87,10 +129,13 @@ sample_load_with_frames (const gchar * path, GByteArray * sample,
   SNDFILE *sndfile;
   SRC_DATA src_data;
   SRC_STATE *src_state;
+  struct SF_CHUNK_INFO chunk_info;
+  SF_CHUNK_ITERATOR *chunk_iter;
   gint16 *buffer_input;
   gint16 *buffer_input_multi;
   gint16 *buffer_input_mono;
   gint16 *buffer_s;
+  guint32 *aux32;
   gfloat *buffer_f;
   gint err;
   gint resampled_buffer_len;
@@ -116,6 +161,26 @@ sample_load_with_frames (const gchar * path, GByteArray * sample,
       error_print ("%s\n", sf_strerror (sndfile));
       return -1;
     }
+
+  strcpy (chunk_info.id, SMPL_CHUNK_ID);
+  chunk_info.id_size = strlen (SMPL_CHUNK_ID);
+  chunk_iter = sf_get_chunk_iterator (sndfile, &chunk_info);
+  control->data = malloc (sizeof (guint32));
+  if (chunk_iter)
+    {
+      chunk_info.datalen = PATH_MAX;
+      chunk_info.data = malloc (PATH_MAX);
+      sf_get_chunk_data (chunk_iter, &chunk_info);
+      aux32 =
+	(guint32 *) & ((guint8 *) chunk_info.data)[SMPL_CHUNK_LAST_FRAME_POS];
+      *(guint32 *) control->data = *aux32;
+      g_free (chunk_info.data);
+    }
+  else
+    {
+      *(guint32 *) control->data = 0;
+    }
+  debug_print (2, "Last frame loop: %d\n", *(guint32 *) control->data);
 
   //Set scale factor. See http://www.mega-nerd.com/libsndfile/api.html#note2
   if ((sf_info.format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||
@@ -272,6 +337,11 @@ cleanup:
 
   sf_close (sndfile);
 
+  if (!sample->len)
+    {
+      g_free (control->data);
+    }
+
   return sample->len > 0 ? 0 : -1;
 }
 
@@ -279,5 +349,5 @@ gint
 sample_load (const gchar * path, GByteArray * array,
 	     struct job_control *control)
 {
-  return sample_load_with_frames (path, array, NULL, NULL);
+  return sample_load_with_frames (path, array, control, NULL);
 }

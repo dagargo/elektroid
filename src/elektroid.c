@@ -1224,6 +1224,7 @@ elektroid_load_sample (gpointer path)
   g_mutex_unlock (&audio.control.mutex);
 
   sample_load_with_frames (path, audio.sample, &audio.control, &audio.frames);
+  g_free (audio.control.data);
 
   g_mutex_lock (&audio.control.mutex);
   audio.control.active = FALSE;
@@ -1889,13 +1890,6 @@ elektroid_upload_task (gpointer data)
   gint res;
   GByteArray *array;
 
-  if (!transfer.fs_ops->upload)
-    {
-      transfer.status = COMPLETED_ERROR;
-      debug_print (1, "Function upload not implemented\n");
-      goto end;
-    }
-
   debug_print (1, "Local path: %s\n", transfer.src);
   debug_print (1, "Remote path: %s\n", transfer.dst);
 
@@ -1914,6 +1908,7 @@ elektroid_upload_task (gpointer data)
 
   res = transfer.fs_ops->upload (transfer.dst, array, &transfer.control,
 				 remote_browser.data);
+  g_free (transfer.control.data);
   g_idle_add (elektroid_check_connector_bg, NULL);
 
   if (res && transfer.control.active)
@@ -1948,7 +1943,6 @@ elektroid_upload_task (gpointer data)
 
 end_cleanup:
   g_byte_array_free (array, TRUE);
-end:
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
 
@@ -2099,13 +2093,6 @@ elektroid_download_task (gpointer userdata)
   gint res;
   GByteArray *array;
 
-  if (!transfer.fs_ops->download)
-    {
-      transfer.status = COMPLETED_ERROR;
-      debug_print (1, "Function download not implemented\n");
-      goto end;
-    }
-
   array = g_byte_array_new ();
 
   debug_print (1, "Remote path: %s\n", transfer.src);
@@ -2143,10 +2130,10 @@ elektroid_download_task (gpointer userdata)
 	}
 
       g_byte_array_free (array, TRUE);
+      g_free (transfer.control.data);
     }
   g_mutex_unlock (&transfer.control.mutex);
 
-end:
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
 

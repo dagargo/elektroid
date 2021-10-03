@@ -52,6 +52,10 @@
 #define FS_DATA_SND_PREFIX "/soundbanks"
 #define FS_SAMPLES_START_POS 5
 #define FS_DATA_START_POS 18
+#define FS_SAMPLES_SIZE_POS_W 21
+#define FS_SAMPLES_LAST_FRAME_POS_W 33
+#define FS_SAMPLES_PAD_R 22
+#define FS_SAMPLES_LAST_FRAME_POS_R (FS_SAMPLES_PAD_R + 16)
 
 typedef GByteArray *(*connector_msg_id_func) (guint);
 
@@ -64,7 +68,7 @@ typedef GByteArray *(*connector_msg_path_len_func) (const gchar *, guint);
 typedef GByteArray *(*connector_msg_read_blk_func) (guint, guint, guint);
 
 typedef GByteArray *(*connector_msg_write_blk_func) (guint, GByteArray *,
-						     guint *, guint);
+						     guint *, guint, guint32 *);
 
 typedef void (*connector_copy_array) (GByteArray *, GByteArray *);
 
@@ -804,7 +808,7 @@ connector_new_msg_list (const gchar * path, int32_t start_index,
 
 static GByteArray *
 connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
-				    guint * total, guint seq)
+				    guint * total, guint seq, guint32 *last_sample)
 {
   guint32 aux32;
   guint16 aux16, *aux16p;
@@ -827,9 +831,10 @@ connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
 			   sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
 
       aux32 = htobe32 (sample->len);
-      memcpy (&msg->data[21], &aux32, sizeof (guint32));
-      aux32 = htobe32 ((sample->len >> 1) - 1);
-      memcpy (&msg->data[33], &aux32, sizeof (guint32));
+      memcpy (&msg->data[FS_SAMPLES_SIZE_POS_W], &aux32, sizeof (guint32));
+      aux32 = htobe32(* last_sample);
+      memcpy (&msg->data[FS_SAMPLES_LAST_FRAME_POS_W], &aux32,
+	      sizeof (guint32));
 
       consumed = sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST);
       bytes_blk -= consumed;
@@ -855,7 +860,7 @@ connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
 
 static GByteArray *
 connector_new_msg_write_raw_blk (guint id, GByteArray * raw, guint * total,
-				 guint seq)
+				 guint seq, guint32 * data)
 {
   gint len;
   guint32 aux32;
@@ -1785,7 +1790,8 @@ connector_upload_common (const gchar * path, GByteArray * input,
 			 struct job_control *control, void *data,
 			 connector_msg_path_len_func new_msg_open_write,
 			 connector_msg_write_blk_func new_msg_write_blk,
-			 connector_msg_id_len_func new_msg_close_write)
+			 connector_msg_id_len_func new_msg_close_write,
+		 	guint32 *last_sample)
 {
   struct connector *connector = data;
   GByteArray *tx_msg;
@@ -1837,7 +1843,7 @@ connector_upload_common (const gchar * path, GByteArray * input,
 
   while (transferred < input->len && active)
     {
-      tx_msg = new_msg_write_blk (id, input, &transferred, i);
+      tx_msg = new_msg_write_blk (id, input, &transferred, i, last_sample);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
@@ -1890,7 +1896,8 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
   return connector_upload_common (path, sample, control, data,
 				  connector_new_msg_open_sample_write,
 				  connector_new_msg_write_sample_blk,
-				  connector_new_msg_close_sample_write);
+				  connector_new_msg_close_sample_write,
+			  	control->data);
 }
 
 static gint
@@ -1900,7 +1907,7 @@ connector_upload_raw (const gchar * path, GByteArray * sample,
   return connector_upload_common (path, sample, control, data,
 				  connector_new_msg_open_raw_write,
 				  connector_new_msg_write_raw_blk,
-				  connector_new_msg_close_raw_write);
+				  connector_new_msg_close_raw_write, NULL);
 }
 
 static GByteArray *
@@ -1953,7 +1960,7 @@ connector_download_common (const gchar * path, GByteArray * output,
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   GByteArray *array;
-  guint32 id;
+  guint32 id, *aux32;
   guint frames;
   guint next_block_start;
   guint req_size;
@@ -1984,11 +1991,6 @@ connector_download_common (const gchar * path, GByteArray * output,
 
   debug_print (2, "%d frames to download\n", frames);
 
-  array = g_byte_array_new ();
-
-  res = 0;
-  next_block_start = 0;
-  offset = read_offset;
   if (control)
     {
       g_mutex_lock (&control->mutex);
@@ -2000,6 +2002,11 @@ connector_download_common (const gchar * path, GByteArray * output,
       active = TRUE;
     }
 
+  array = g_byte_array_new ();
+  res = 0;
+  next_block_start = 0;
+  offset = read_offset;
+  control->data = NULL;
   while (next_block_start < frames && active)
     {
       req_size =
@@ -2013,12 +2020,22 @@ connector_download_common (const gchar * path, GByteArray * output,
 	  res = -EIO;
 	  goto cleanup;
 	}
-      g_byte_array_append (array, &rx_msg->data[22 + offset],
+      g_byte_array_append (array, &rx_msg->data[FS_SAMPLES_PAD_R + offset],
 			   req_size - offset);
-      free_msg (rx_msg);
 
       next_block_start += req_size;
-      offset = 0;		//Only the first iteration
+      //Only in the first iteration. It has no effect for the raw filesystem (M:C) as offset is 0.
+      if (offset)
+	{
+	  offset = 0;
+	  aux32 = (guint32 *) & rx_msg->data[FS_SAMPLES_LAST_FRAME_POS_R];
+	  control->data = malloc (sizeof (guint32));
+	  *(guint32 *) control->data = be32toh (*aux32);
+	  debug_print (2, "Last frame loop: %d\n",
+		       *(guint32 *) control->data);
+	}
+
+      free_msg (rx_msg);
 
       if (control)
 	{
@@ -2054,6 +2071,10 @@ connector_download_common (const gchar * path, GByteArray * output,
 
 cleanup:
   free_msg (array);
+  if (res)
+    {
+      g_free (control->data);
+    }
   return res;
 }
 

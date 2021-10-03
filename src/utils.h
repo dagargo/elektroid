@@ -69,6 +69,7 @@ struct job_control
   gboolean active;
   GMutex mutex;
   job_control_callback callback;
+  void *data;
 };
 
 typedef gint (*fs_init_iter_func) (struct item_iterator *, const gchar *,

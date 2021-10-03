@@ -30,6 +30,10 @@ echo "Testing upload..."
 $ecli upload $srcdir/res/square.wav $DEVICE:/$TEST_NAME
 [ $? -ne 0 ] && exit 1
 
+echo "Testing upload (loop)..."
+$ecli upload $srcdir/res/square_loop.wav $DEVICE:/$TEST_NAME
+[ $? -ne 0 ] && exit 1
+
 output=$($ecli ls $DEVICE:/$TEST_NAME)
 echo $output
 type=$(echo $output | awk '{print $1}')
@@ -42,11 +46,18 @@ $ecli upload $srcdir/res/foo $DEVICE:/$TEST_NAME
 [ $? -eq 0 ] && exit 1
 
 echo "Testing download..."
-$ecli download $DEVICE:/$TEST_NAME/square
+$ecli -v download $DEVICE:/$TEST_NAME/square
 [ $? -ne 0 ] && exit 1
 actual_cksum="$(cksum square.wav | awk '{print $1}')"
 rm square.wav
 [ "$actual_cksum" != "$(cksum $srcdir/res/square.wav | awk '{print $1}')" ] && exit 1
+
+echo "Testing download (loop)..."
+$ecli -v download $DEVICE:/$TEST_NAME/square_loop
+[ $? -ne 0 ] && exit 1
+actual_cksum="$(cksum square_loop.wav | awk '{print $1}')"
+rm square_loop.wav
+[ "$actual_cksum" != "$(cksum $srcdir/res/square_loop.wav | awk '{print $1}')" ] && exit 1
 
 echo "Testing download (nonexistent source)..."
 $ecli download $DEVICE:/$TEST_NAME/foo
