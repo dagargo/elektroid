@@ -2164,8 +2164,8 @@ elektroid_add_download_task_path (const gchar * rel_path,
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  if (remote_browser.fs_ops->
-      readdir (&iter, src_abs_path, remote_browser.data))
+  if (remote_browser.
+      fs_ops->readdir (&iter, src_abs_path, remote_browser.data))
     {
       dst_abs_dirc = strdup (dst_abs_path);
       dst_abs_dir = dirname (dst_abs_dirc);

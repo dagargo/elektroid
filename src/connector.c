@@ -50,7 +50,6 @@
 
 #define FS_DATA_PRJ_PREFIX "/projects"
 #define FS_DATA_SND_PREFIX "/soundbanks"
-
 #define FS_SAMPLES_START_POS 5
 #define FS_DATA_START_POS 18
 
@@ -193,8 +192,8 @@ static const guint8 FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST[] =
 static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST[] =
   { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST[] = {
-  0, 0, 0, 0, 0, 0, 0xbb, 0x80, 0, 0, 0, 0, 0, 0, 0, 0,
-  0x7f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xbb, 0x80, 0, 0, 0, 0,
+  0, 0, 0, 0, 0x7f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
@@ -530,7 +529,7 @@ connector_next_smplrw_entry (struct item_iterator *iter)
       iter->item.size = be32toh (*data32);
       data->pos += sizeof (guint32);
 
-      data->pos += 1;		//write_protected
+      data->pos++;		//write_protected
 
       iter->item.type = data->msg->data[data->pos];
       data->pos++;
@@ -855,8 +854,8 @@ connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
 }
 
 static GByteArray *
-connector_new_msg_write_raw_blk (guint id, GByteArray * raw,
-				 guint * total, guint seq)
+connector_new_msg_write_raw_blk (guint id, GByteArray * raw, guint * total,
+				 guint seq)
 {
   gint len;
   guint32 aux32;
