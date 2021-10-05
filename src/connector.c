@@ -54,8 +54,19 @@
 #define FS_DATA_START_POS 18
 #define FS_SAMPLES_SIZE_POS_W 21
 #define FS_SAMPLES_LAST_FRAME_POS_W 33
-#define FS_SAMPLES_PAD_R 22
-#define FS_SAMPLES_LAST_FRAME_POS_R (FS_SAMPLES_PAD_R + 16)
+#define FS_SAMPLES_PAD_RES 22
+#define ELEKTRON_SAMPLE_INFO_PAD_I32_LEN 10
+
+struct elektron_sample_info
+{
+  guint32 type;
+  guint32 sample_len_bytes;
+  guint32 sample_rate;
+  guint32 loop_start;
+  guint32 loop_end;
+  guint32 loop_type;
+  guint32 padding[ELEKTRON_SAMPLE_INFO_PAD_I32_LEN];
+};
 
 typedef GByteArray *(*connector_msg_id_func) (guint);
 
@@ -68,7 +79,7 @@ typedef GByteArray *(*connector_msg_path_len_func) (const gchar *, guint);
 typedef GByteArray *(*connector_msg_read_blk_func) (guint, guint, guint);
 
 typedef GByteArray *(*connector_msg_write_blk_func) (guint, GByteArray *,
-						     guint *, guint, guint32 *);
+						     guint *, guint, void *);
 
 typedef void (*connector_copy_array) (GByteArray *, GByteArray *);
 
@@ -808,13 +819,16 @@ connector_new_msg_list (const gchar * path, int32_t start_index,
 
 static GByteArray *
 connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
-				    guint * total, guint seq, guint32 *last_sample)
+				    guint * total, guint seq, void *data)
 {
   guint32 aux32;
   guint16 aux16, *aux16p;
   int i, consumed, bytes_blk;
+  struct sample_loop_data *sample_loop_data = data;
+  struct elektron_sample_info elektron_sample_info;
   GByteArray *msg = connector_new_msg (FS_SAMPLE_WRITE_FILE_REQUEST,
 				       sizeof (FS_SAMPLE_WRITE_FILE_REQUEST));
+
 
   aux32 = htobe32 (id);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
@@ -826,17 +840,19 @@ connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
 
   if (seq == 0)
     {
-      g_byte_array_append (msg,
-			   (guchar *) FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST,
-			   sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
+      elektron_sample_info.type = 0;
+      elektron_sample_info.sample_len_bytes = htobe32 (sample->len);
+      elektron_sample_info.sample_rate = htobe32 (ELEKTRON_SAMPLE_RATE);
+      elektron_sample_info.loop_start = htobe32 (sample_loop_data->start);
+      elektron_sample_info.loop_end = htobe32 (sample_loop_data->end);
+      elektron_sample_info.loop_type = htobe32 (ELEKTRON_LOOP_TYPE);
+      memset (&elektron_sample_info.padding, 0,
+	      sizeof (guint32) * ELEKTRON_SAMPLE_INFO_PAD_I32_LEN);
 
-      aux32 = htobe32 (sample->len);
-      memcpy (&msg->data[FS_SAMPLES_SIZE_POS_W], &aux32, sizeof (guint32));
-      aux32 = htobe32(* last_sample);
-      memcpy (&msg->data[FS_SAMPLES_LAST_FRAME_POS_W], &aux32,
-	      sizeof (guint32));
+      g_byte_array_append (msg, (guchar *) & elektron_sample_info,
+			   sizeof (struct elektron_sample_info));
 
-      consumed = sizeof (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST);
+      consumed = sizeof (struct elektron_sample_info);
       bytes_blk -= consumed;
     }
 
@@ -860,7 +876,7 @@ connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
 
 static GByteArray *
 connector_new_msg_write_raw_blk (guint id, GByteArray * raw, guint * total,
-				 guint seq, guint32 * data)
+				 guint seq, void *data)
 {
   gint len;
   guint32 aux32;
@@ -1791,7 +1807,7 @@ connector_upload_common (const gchar * path, GByteArray * input,
 			 connector_msg_path_len_func new_msg_open_write,
 			 connector_msg_write_blk_func new_msg_write_blk,
 			 connector_msg_id_len_func new_msg_close_write,
-		 	guint32 *last_sample)
+			 guint32 * last_sample)
 {
   struct connector *connector = data;
   GByteArray *tx_msg;
@@ -1897,7 +1913,7 @@ connector_upload_sample (const gchar * path, GByteArray * sample,
 				  connector_new_msg_open_sample_write,
 				  connector_new_msg_write_sample_blk,
 				  connector_new_msg_close_sample_write,
-			  	control->data);
+				  control->data);
 }
 
 static gint
@@ -1957,10 +1973,12 @@ connector_download_common (const gchar * path, GByteArray * output,
 			   connector_copy_array copy_array)
 {
   struct connector *connector = data;
+  struct sample_loop_data *sample_loop_data;
+  struct elektron_sample_info *elektron_sample_info;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   GByteArray *array;
-  guint32 id, *aux32;
+  guint32 id;
   guint frames;
   guint next_block_start;
   guint req_size;
@@ -2020,7 +2038,7 @@ connector_download_common (const gchar * path, GByteArray * output,
 	  res = -EIO;
 	  goto cleanup;
 	}
-      g_byte_array_append (array, &rx_msg->data[FS_SAMPLES_PAD_R + offset],
+      g_byte_array_append (array, &rx_msg->data[FS_SAMPLES_PAD_RES + offset],
 			   req_size - offset);
 
       next_block_start += req_size;
@@ -2028,11 +2046,15 @@ connector_download_common (const gchar * path, GByteArray * output,
       if (offset)
 	{
 	  offset = 0;
-	  aux32 = (guint32 *) & rx_msg->data[FS_SAMPLES_LAST_FRAME_POS_R];
-	  control->data = malloc (sizeof (guint32));
-	  *(guint32 *) control->data = be32toh (*aux32);
-	  debug_print (2, "Last frame loop: %d\n",
-		       *(guint32 *) control->data);
+	  elektron_sample_info =
+	    (struct elektron_sample_info *) &rx_msg->data[FS_SAMPLES_PAD_RES];
+	  sample_loop_data = malloc (sizeof (struct elektron_sample_info));
+	  sample_loop_data->start =
+	    be32toh (elektron_sample_info->loop_start);
+	  sample_loop_data->end = be32toh (elektron_sample_info->loop_end);
+	  control->data = sample_loop_data;
+	  debug_print (2, "Loop start at %d, loop end at %d\n",
+		       sample_loop_data->start, sample_loop_data->end);
 	}
 
       free_msg (rx_msg);

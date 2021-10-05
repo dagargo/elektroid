@@ -26,20 +26,34 @@
 
 #define JUNK_CHUNK_ID "JUNK"
 #define SMPL_CHUNK_ID "smpl"
-#define SMPL_CHUNK_LAST_FRAME_POS 0x30
+
+struct smpl_chunk_data
+{
+  guint32 manufacturer;
+  guint32 product;
+  guint32 sample_period;
+  guint32 midi_unity_note;
+  guint32 midi_pitch_fraction;
+  guint32 smpte_format;
+  guint32 smpte_offset;
+  guint32 num_sampler_loops;
+  guint32 sampler_data;
+  struct sample_loop
+  {
+    guint32 cue_point_id;
+    guint32 type;
+    guint32 start;
+    guint32 end;
+    guint32 fraction;
+    guint32 play_count;
+  } sample_loop;
+};
 
 static const guint8 JUNK_CHUNK_DATA[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0
-};
-
-static const guint8 SMPL_CHUNK_DATA[] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 0x61, 0x51, 0, 0, 60, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0x7f, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
 gint
@@ -49,13 +63,15 @@ sample_save (const gchar * path, GByteArray * sample,
   SF_INFO sf_info;
   SNDFILE *sndfile;
   sf_count_t frames, total;
-  struct SF_CHUNK_INFO junk_chunk;
-  struct SF_CHUNK_INFO smpl_chunk;
+  struct SF_CHUNK_INFO junk_chunk_info;
+  struct SF_CHUNK_INFO smpl_chunk_info;
+  struct smpl_chunk_data smpl_chunk_data;
+  struct sample_loop_data *sample_loop_data = control->data;
 
-  debug_print (1, "Saving file '%s' (last frame loop %d)...\n", path,
-	       *(guint32 *) control->data);
+  debug_print (1, "Saving file '%s' (loop start at %d, loop end at %d)...\n",
+	       path, sample_loop_data->start, sample_loop_data->end);
 
-  sf_info.samplerate = 48000;
+  sf_info.samplerate = ELEKTRON_SAMPLE_RATE;
   sf_info.channels = 1;
   sf_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
   sndfile = sf_open (path, SFM_WRITE, &sf_info);
@@ -65,24 +81,36 @@ sample_save (const gchar * path, GByteArray * sample,
       return -1;
     }
 
-  strcpy (junk_chunk.id, JUNK_CHUNK_ID);
-  junk_chunk.id_size = strlen (JUNK_CHUNK_ID);
-  junk_chunk.datalen = sizeof (JUNK_CHUNK_DATA);
-  junk_chunk.data = (void *) JUNK_CHUNK_DATA;
-  if (sf_set_chunk (sndfile, &junk_chunk) != SF_ERR_NO_ERROR)
+  strcpy (junk_chunk_info.id, JUNK_CHUNK_ID);
+  junk_chunk_info.id_size = strlen (JUNK_CHUNK_ID);
+  junk_chunk_info.datalen = sizeof (JUNK_CHUNK_DATA);
+  junk_chunk_info.data = (void *) JUNK_CHUNK_DATA;
+  if (sf_set_chunk (sndfile, &junk_chunk_info) != SF_ERR_NO_ERROR)
     {
       error_print ("%s\n", sf_strerror (sndfile));
     }
 
-  strcpy (smpl_chunk.id, SMPL_CHUNK_ID);
-  smpl_chunk.id_size = strlen (SMPL_CHUNK_ID);
-  smpl_chunk.datalen = sizeof (SMPL_CHUNK_DATA);
-  smpl_chunk.data = malloc (sizeof (SMPL_CHUNK_DATA));
-  memcpy (smpl_chunk.data, (void *) SMPL_CHUNK_DATA,
-	  sizeof (SMPL_CHUNK_DATA));
-  memcpy (&((guint8 *) smpl_chunk.data)[SMPL_CHUNK_LAST_FRAME_POS],
-	  control->data, sizeof (guint32));
-  if (sf_set_chunk (sndfile, &smpl_chunk) != SF_ERR_NO_ERROR)
+  smpl_chunk_data.manufacturer = 0;
+  smpl_chunk_data.product = 0;
+  smpl_chunk_data.sample_period = 1000000000 / ELEKTRON_SAMPLE_RATE;
+  smpl_chunk_data.midi_unity_note = 60;
+  smpl_chunk_data.midi_pitch_fraction = 0;
+  smpl_chunk_data.smpte_format = 0;
+  smpl_chunk_data.smpte_offset = 0;
+  smpl_chunk_data.num_sampler_loops = 1;
+  smpl_chunk_data.sampler_data = 0;
+  smpl_chunk_data.sample_loop.cue_point_id = 0;
+  smpl_chunk_data.sample_loop.type = ELEKTRON_LOOP_TYPE;
+  smpl_chunk_data.sample_loop.start = sample_loop_data->start;
+  smpl_chunk_data.sample_loop.end = sample_loop_data->end;
+  smpl_chunk_data.sample_loop.fraction = 0;
+  smpl_chunk_data.sample_loop.play_count = 0;
+
+  strcpy (smpl_chunk_info.id, SMPL_CHUNK_ID);
+  smpl_chunk_info.id_size = strlen (SMPL_CHUNK_ID);
+  smpl_chunk_info.datalen = sizeof (struct smpl_chunk_data);
+  smpl_chunk_info.data = &smpl_chunk_data;
+  if (sf_set_chunk (sndfile, &smpl_chunk_info) != SF_ERR_NO_ERROR)
     {
       error_print ("%s\n", sf_strerror (sndfile));
     }
@@ -135,12 +163,13 @@ sample_load_with_frames (const gchar * path, GByteArray * sample,
   gint16 *buffer_input_multi;
   gint16 *buffer_input_mono;
   gint16 *buffer_s;
-  guint32 *aux32;
   gfloat *buffer_f;
   gint err;
   gint resampled_buffer_len;
   gint f, frames_read;
   gboolean active;
+  struct sample_loop_data *sample_loop_data;
+  struct smpl_chunk_data smpl_chunk_data;
 
   debug_print (1, "Loading file %s...\n", path);
 
@@ -165,22 +194,25 @@ sample_load_with_frames (const gchar * path, GByteArray * sample,
   strcpy (chunk_info.id, SMPL_CHUNK_ID);
   chunk_info.id_size = strlen (SMPL_CHUNK_ID);
   chunk_iter = sf_get_chunk_iterator (sndfile, &chunk_info);
-  control->data = malloc (sizeof (guint32));
+  sample_loop_data = malloc (sizeof (struct sample_loop_data));
   if (chunk_iter)
     {
-      chunk_info.datalen = PATH_MAX;
-      chunk_info.data = malloc (PATH_MAX);
+      chunk_info.datalen = sizeof (struct smpl_chunk_data);
+      chunk_info.data = &smpl_chunk_data;
       sf_get_chunk_data (chunk_iter, &chunk_info);
-      aux32 =
-	(guint32 *) & ((guint8 *) chunk_info.data)[SMPL_CHUNK_LAST_FRAME_POS];
-      *(guint32 *) control->data = *aux32;
-      g_free (chunk_info.data);
+
+      sample_loop_data->start = le32toh (smpl_chunk_data.sample_loop.start);
+      sample_loop_data->end = le32toh (smpl_chunk_data.sample_loop.end);
     }
   else
     {
-      *(guint32 *) control->data = 0;
+      sample_loop_data->start = 0;
+      sample_loop_data->end = 0;
     }
-  debug_print (2, "Last frame loop: %d\n", *(guint32 *) control->data);
+  debug_print (2, "Loop start at %d, loop end at %d\n",
+	       sample_loop_data->start, sample_loop_data->end);
+
+  control->data = sample_loop_data;
 
   //Set scale factor. See http://www.mega-nerd.com/libsndfile/api.html#note2
   if ((sf_info.format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||
@@ -197,7 +229,7 @@ sample_load_with_frames (const gchar * path, GByteArray * sample,
 
   buffer_f = malloc (LOAD_BUFFER_LEN * sizeof (gfloat));
   src_data.data_in = buffer_f;
-  src_data.src_ratio = 48000.0 / sf_info.samplerate;
+  src_data.src_ratio = ((double) ELEKTRON_SAMPLE_RATE) / sf_info.samplerate;
 
   resampled_buffer_len = LOAD_BUFFER_LEN * src_data.src_ratio;
   buffer_s = malloc (resampled_buffer_len * sizeof (gint16));
@@ -257,7 +289,7 @@ sample_load_with_frames (const gchar * path, GByteArray * sample,
 	  buffer_input = buffer_input_mono;
 	}
 
-      if (sf_info.samplerate == 48000)
+      if (sf_info.samplerate == ELEKTRON_SAMPLE_RATE)
 	{
 	  if (control)
 	    {

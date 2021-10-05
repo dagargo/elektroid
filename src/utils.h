@@ -26,6 +26,9 @@
 
 #define LABEL_MAX 128
 
+#define ELEKTRON_LOOP_TYPE 0x7f
+#define ELEKTRON_SAMPLE_RATE 48000
+
 #define debug_print(level, format, ...) if (level <= debug_level) fprintf(stderr, "DEBUG:" __FILE__ ":%d:(%s): " format, __LINE__, __FUNCTION__, ## __VA_ARGS__)
 #define error_print(format, ...) fprintf(stderr, "\x1b[31mERROR:" __FILE__ ":%d:(%s): " format "\x1b[m", __LINE__, __FUNCTION__, ## __VA_ARGS__)
 
@@ -70,6 +73,12 @@ struct job_control
   GMutex mutex;
   job_control_callback callback;
   void *data;
+};
+
+struct sample_loop_data
+{
+  gint32 start;
+  gint32 end;
 };
 
 typedef gint (*fs_init_iter_func) (struct item_iterator *, const gchar *,
