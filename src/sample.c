@@ -209,8 +209,6 @@ sample_load_with_frames (const gchar * path, GByteArray * sample,
       sample_loop_data->start = 0;
       sample_loop_data->end = 0;
     }
-  debug_print (2, "Loop start at %d, loop end at %d\n",
-	       sample_loop_data->start, sample_loop_data->end);
 
   control->data = sample_loop_data;
 
@@ -246,7 +244,17 @@ sample_load_with_frames (const gchar * path, GByteArray * sample,
       *frames = sf_info.frames * src_data.src_ratio;
     }
 
-  debug_print (2, "Loading sample (%" PRId64 ")...\n", sf_info.frames);
+  if (ELEKTRON_SAMPLE_RATE != sf_info.samplerate)
+    {
+      debug_print (2, "Loop start at %d, loop end at %d before resampling\n",
+		   sample_loop_data->start, sample_loop_data->end);
+      sample_loop_data->start *= src_data.src_ratio;
+      sample_loop_data->end *= src_data.src_ratio;
+      debug_print (2, "Loop start at %d, loop end at %d after resampling\n",
+		   sample_loop_data->start, sample_loop_data->end);
+    }
+
+  debug_print (2, "Loading sample (%" PRId64 " frames)...\n", sf_info.frames);
 
   f = 0;
   if (control)
