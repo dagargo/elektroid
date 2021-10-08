@@ -42,5 +42,7 @@ AC_CHECK_HEADERS([unistd.h limits.h zlib.h])
 # Checks for library functions.
 AC_FUNC_MALLOC
 
+AM_CONDITIONAL([CLI_ONLY], [test "${CLI_ONLY}" == yes])
+
 AC_CONFIG_FILES([Makefile src/Makefile res/Makefile test/Makefile po/Makefile.in po/Makefile man/Makefile])
 AC_OUTPUT
