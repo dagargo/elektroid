@@ -44,11 +44,11 @@ $ elektroid-cli ld
 0 Elektron Digitakt MIDI 1
 ```
 
-* `info` or `info-device`, show device info
+* `info` or `info-device`, show device info including device filesystems
 
 ```
 $ elektroid-cli info 0
-Digitakt 1.11
+Digitakt 1.30 (Digitakt) filesystems=sample,data,project,sound
 ```
 
 * `df` or `info-storage`, show size and use of +Drive and RAM
