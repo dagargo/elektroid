@@ -44,6 +44,8 @@
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
 
+#define GUI_FSS (FS_SAMPLES | FS_RAW_PRESETS | FS_DATA_PRJ | FS_DATA_SND)
+
 #define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping...\n"
 
 enum device_list_store_columns
@@ -245,12 +247,8 @@ elektroid_get_fs_name (enum connector_fs fs)
     {
     case FS_SAMPLES:
       return _("Samples");
-    case FS_RAW_ALL:
-      return _("Raw");
     case FS_RAW_PRESETS:
       return _("Presets");
-    case FS_DATA_ALL:
-      return _("Data");
     case FS_DATA_PRJ:
       return _("Projects");
     case FS_DATA_SND:
@@ -291,7 +289,7 @@ elektroid_get_inventory_icon_for_fs (enum connector_fs sel_fs)
 
   for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs <<= 1, i++)
     {
-      if (sel_fs == fs)
+      if (GUI_FSS & fs && sel_fs == fs)
 	{
 	  icon = ELEKTROID_FS_ICONS[i];
 	  break;
@@ -379,23 +377,19 @@ elektroid_update_statusbar ()
     {
       statfss = g_string_new (NULL);
 
-      if (connector.device_desc->fss & FS_SAMPLES)
+      for (storage = STORAGE_PLUS_DRIVE; storage <= STORAGE_RAM;
+	   storage <<= 1)
 	{
-	  for (storage = STORAGE_PLUS_DRIVE; storage <= STORAGE_RAM;
-	       storage <<= 1)
+	  if (connector.device_desc->storages & storage)
 	    {
-	      if (connector.device_desc->storages & storage)
+	      res =
+		connector_get_storage_stats (&connector, storage, &statfs);
+	      if (!res)
 		{
-		  res =
-		    connector_get_storage_stats (&connector,
-						 storage, &statfs);
-		  if (!res)
-		    {
-		      g_string_append_printf (statfss, " %s %.2f%%",
-					      statfs.name,
-					      connector_get_storage_stats_percent
-					      (&statfs));
-		    }
+		  g_string_append_printf (statfss, " %s %.2f%%",
+					  statfs.name,
+					  connector_get_storage_stats_percent
+					  (&statfs));
 		}
 	    }
 	}
@@ -2411,11 +2405,10 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			      remote_browser.fs_ops->delete != NULL);
       gtk_widget_set_visible (local_audio_box, fs == FS_SAMPLES);
       gtk_tree_view_column_set_visible (remote_tree_view_index_column,
-					fs == FS_DATA_ALL || fs == FS_DATA_PRJ
+					fs == FS_DATA_PRJ
 					|| fs == FS_DATA_SND);
 
-      if (fs == FS_RAW_ALL || fs == FS_RAW_PRESETS || fs == FS_DATA_ALL
-	  || fs == FS_DATA_PRJ || fs == FS_DATA_SND)
+      if (fs != FS_SAMPLES)
 	{
 	  audio_stop (&audio, TRUE);
 	}
@@ -2423,7 +2416,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       sortable =
 	GTK_TREE_SORTABLE (gtk_tree_view_get_model (remote_browser.view));
 
-      if (fs == FS_SAMPLES || fs == FS_RAW_ALL || fs == FS_RAW_PRESETS)
+      if (fs == FS_SAMPLES || fs == FS_RAW_PRESETS)
 	{
 	  gtk_tree_sortable_set_sort_func (sortable,
 					   BROWSER_LIST_STORE_NAME_FIELD,
@@ -2432,7 +2425,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 						BROWSER_LIST_STORE_NAME_FIELD,
 						GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
 	}
-      else if (fs == FS_DATA_ALL || fs == FS_DATA_PRJ || fs == FS_DATA_SND)
+      else if (fs == FS_DATA_PRJ || fs == FS_DATA_SND)
 	{
 	  gtk_tree_sortable_set_sort_func (sortable,
 					   BROWSER_LIST_STORE_INDEX_FIELD,
@@ -2449,7 +2442,7 @@ elektroid_fill_fs_combo ()
 {
   for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs = fs << 1, i++)
     {
-      if (connector.device_desc->fss & fs)
+      if (GUI_FSS & fs && connector.device_desc->fss & fs)
 	{
 	  gtk_list_store_insert_with_values (fs_list_store, NULL, -1,
 					     FS_LIST_STORE_ID_FIELD,

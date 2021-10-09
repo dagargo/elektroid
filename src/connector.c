@@ -163,23 +163,23 @@ static gint connector_swap_data_item_prj (const gchar *, const gchar *,
 static gint connector_swap_data_item_snd (const gchar *, const gchar *,
 					  void *);
 
-static gint connector_download_datum_all (const gchar *, GByteArray *,
-					  struct job_control *, void *);
+static gint connector_download_data_all (const gchar *, GByteArray *,
+					 struct job_control *, void *);
 
-static gint connector_download_datum_prj (const gchar *, GByteArray *,
-					  struct job_control *, void *);
+static gint connector_download_data_prj (const gchar *, GByteArray *,
+					 struct job_control *, void *);
 
-static gint connector_download_datum_snd (const gchar *, GByteArray *,
-					  struct job_control *, void *);
+static gint connector_download_data_snd (const gchar *, GByteArray *,
+					 struct job_control *, void *);
 
-static gint connector_upload_datum_all (const gchar *, GByteArray *,
-					struct job_control *, void *);
+static gint connector_upload_data_all (const gchar *, GByteArray *,
+				       struct job_control *, void *);
 
-static gint connector_upload_datum_prj (const gchar *, GByteArray *,
-					struct job_control *, void *);
+static gint connector_upload_data_prj (const gchar *, GByteArray *,
+				       struct job_control *, void *);
 
-static gint connector_upload_datum_snd (const gchar *, GByteArray *,
-					struct job_control *, void *);
+static gint connector_upload_data_snd (const gchar *, GByteArray *,
+				       struct job_control *, void *);
 
 static gint connector_copy_iterator (struct item_iterator *,
 				     struct item_iterator *);
@@ -250,7 +250,7 @@ static const struct connector_device_desc ANALOG_FOUR_DESC = {
   .name = "Analog Four",
   .alias = "af",
   .id = AFMK1_ID,
-  .fss = FS_DATA_ALL,
+  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
   .storages = 0
 };
 
@@ -258,7 +258,7 @@ static const struct connector_device_desc ANALOG_KEYS_DESC = {
   .name = "Analog Keys",
   .alias = "ak",
   .id = AKEYS_ID,
-  .fss = FS_DATA_ALL,
+  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
   .storages = 0
 };
 
@@ -266,7 +266,7 @@ static const struct connector_device_desc ANALOG_RYTM_DESC = {
   .name = "Analog Rytm",
   .alias = "ar",
   .id = ARMK1_ID,
-  .fss = FS_SAMPLES | FS_DATA_ALL,
+  .fss = FS_SAMPLES | FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
@@ -274,7 +274,7 @@ static const struct connector_device_desc ANALOG_HEAT_DESC = {
   .name = "Analog Heat",
   .alias = "ah",
   .id = AHMK1_ID,
-  .fss = FS_DATA_ALL,
+  .fss = FS_DATA_ALL | FS_DATA_SND,
   .storages = 0
 };
 
@@ -282,7 +282,7 @@ static const struct connector_device_desc DIGITAKT_DESC = {
   .name = "Digitakt",
   .alias = "dt",
   .id = DTAKT_ID,
-  .fss = FS_SAMPLES | FS_DATA_PRJ | FS_DATA_SND,
+  .fss = FS_SAMPLES | FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
@@ -290,7 +290,7 @@ static const struct connector_device_desc ANALOG_FOUR_MKII_DESC = {
   .name = "Analog Four MKII",
   .alias = "af",
   .id = AFMK2_ID,
-  .fss = FS_DATA_ALL,
+  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
   .storages = 0
 };
 
@@ -306,7 +306,7 @@ static const struct connector_device_desc DIGITONE_DESC = {
   .name = "Digitone",
   .alias = "dn",
   .id = DTONE_ID,
-  .fss = FS_DATA_ALL,
+  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
   .storages = 0
 };
 
@@ -314,7 +314,7 @@ static const struct connector_device_desc ANALOG_HEAT_MKII_DESC = {
   .name = "Analog Heat MKII",
   .alias = "ah",
   .id = AHMK2_ID,
-  .fss = FS_DATA_ALL,
+  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
   .storages = 0
 };
 
@@ -322,7 +322,7 @@ static const struct connector_device_desc DIGITONE_KEYS_DESC = {
   .name = "Digitone Keys",
   .alias = "dn",
   .id = DKEYS_ID,
-  .fss = FS_DATA_ALL,
+  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
   .storages = 0
 };
 
@@ -330,7 +330,7 @@ static const struct connector_device_desc MODEL_SAMPLES_DESC = {
   .name = "Model:Samples",
   .alias = "ms",
   .id = MOD_S_ID,
-  .fss = FS_SAMPLES | FS_DATA_ALL,
+  .fss = FS_SAMPLES | FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
@@ -338,7 +338,7 @@ static const struct connector_device_desc MODEL_CYCLES_DESC = {
   .name = "Model:Cycles",
   .alias = "mc",
   .id = MOD_C_ID,
-  .fss = FS_RAW_PRESETS | FS_DATA_PRJ,
+  .fss = FS_RAW_ALL | FS_RAW_PRESETS | FS_DATA_ALL | FS_DATA_PRJ,
   .storages = STORAGE_PLUS_DRIVE
 };
 
@@ -413,8 +413,8 @@ static const struct fs_operations FS_DATA_ALL_OPERATIONS = {
   .copy = connector_copy_data_item_all,
   .clear = connector_clear_data_item_all,
   .swap = connector_swap_data_item_all,
-  .download = connector_download_datum_all,
-  .upload = connector_upload_datum_all,
+  .download = connector_download_data_all,
+  .upload = connector_upload_data_all,
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
@@ -431,8 +431,8 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .copy = connector_copy_data_item_prj,
   .clear = connector_clear_data_item_prj,
   .swap = connector_swap_data_item_prj,
-  .download = connector_download_datum_prj,
-  .upload = connector_upload_datum_prj,
+  .download = connector_download_data_prj,
+  .upload = connector_upload_data_prj,
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
@@ -449,8 +449,8 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .copy = connector_copy_data_item_snd,
   .clear = connector_clear_data_item_snd,
   .swap = connector_swap_data_item_snd,
-  .download = connector_download_datum_snd,
-  .upload = connector_upload_datum_snd,
+  .download = connector_download_data_snd,
+  .upload = connector_upload_data_snd,
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
@@ -3146,9 +3146,9 @@ connector_close_datum (struct connector *connector,
 }
 
 static gint
-connector_download_datum_prefix (const gchar * path, GByteArray * output,
-				 struct job_control *control, void *data,
-				 const gchar * prefix)
+connector_download_data_prefix (const gchar * path, GByteArray * output,
+				struct job_control *control, void *data,
+				const gchar * prefix)
 {
   gint res;
   guint32 seq;
@@ -3269,26 +3269,26 @@ connector_download_datum_prefix (const gchar * path, GByteArray * output,
 }
 
 static gint
-connector_download_datum_all (const gchar * path, GByteArray * output,
-			      struct job_control *control, void *data)
+connector_download_data_all (const gchar * path, GByteArray * output,
+			     struct job_control *control, void *data)
 {
-  return connector_download_datum_prefix (path, output, control, data, NULL);
+  return connector_download_data_prefix (path, output, control, data, NULL);
 }
 
 static gint
-connector_download_datum_prj (const gchar * path, GByteArray * output,
-			      struct job_control *control, void *data)
+connector_download_data_prj (const gchar * path, GByteArray * output,
+			     struct job_control *control, void *data)
 {
-  return connector_download_datum_prefix (path, output, control, data,
-					  FS_DATA_PRJ_PREFIX);
+  return connector_download_data_prefix (path, output, control, data,
+					 FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-connector_download_datum_snd (const gchar * path, GByteArray * output,
-			      struct job_control *control, void *data)
+connector_download_data_snd (const gchar * path, GByteArray * output,
+			     struct job_control *control, void *data)
 {
-  return connector_download_datum_prefix (path, output, control, data,
-					  FS_DATA_SND_PREFIX);
+  return connector_download_data_prefix (path, output, control, data,
+					 FS_DATA_SND_PREFIX);
 }
 
 gchar *
@@ -3440,9 +3440,9 @@ cleanup:
 }
 
 static gint
-connector_upload_datum_prefix (const gchar * path, GByteArray * array,
-			       struct job_control *control, void *data,
-			       const gchar * prefix)
+connector_upload_data_prefix (const gchar * path, GByteArray * array,
+			      struct job_control *control, void *data,
+			      const gchar * prefix)
 {
   gint res;
   guint32 seq;
@@ -3576,26 +3576,26 @@ end:
 }
 
 static gint
-connector_upload_datum_all (const gchar * path, GByteArray * array,
-			    struct job_control *control, void *data)
+connector_upload_data_all (const gchar * path, GByteArray * array,
+			   struct job_control *control, void *data)
 {
-  return connector_upload_datum_prefix (path, array, control, data, NULL);
+  return connector_upload_data_prefix (path, array, control, data, NULL);
 }
 
 static gint
-connector_upload_datum_prj (const gchar * path, GByteArray * array,
-			    struct job_control *control, void *data)
+connector_upload_data_prj (const gchar * path, GByteArray * array,
+			   struct job_control *control, void *data)
 {
-  return connector_upload_datum_prefix (path, array, control, data,
-					FS_DATA_PRJ_PREFIX);
+  return connector_upload_data_prefix (path, array, control, data,
+				       FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-connector_upload_datum_snd (const gchar * path, GByteArray * array,
-			    struct job_control *control, void *data)
+connector_upload_data_snd (const gchar * path, GByteArray * array,
+			   struct job_control *control, void *data)
 {
-  return connector_upload_datum_prefix (path, array, control, data,
-					FS_DATA_SND_PREFIX);
+  return connector_upload_data_prefix (path, array, control, data,
+				       FS_DATA_SND_PREFIX);
 }
 
 gchar *

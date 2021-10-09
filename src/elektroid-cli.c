@@ -33,8 +33,11 @@
 static struct connector connector;
 static struct job_control control;
 static const struct fs_operations *fs_ops_samples;
-static const struct fs_operations *fs_ops_raw;
-static const struct fs_operations *fs_ops_data;
+static const struct fs_operations *fs_ops_raw_all;
+static const struct fs_operations *fs_ops_raw_presets;
+static const struct fs_operations *fs_ops_data_all;
+static const struct fs_operations *fs_ops_data_prj;
+static const struct fs_operations *fs_ops_data_snd;
 
 typedef void (*print_item) (struct item_iterator *);
 
@@ -496,8 +499,11 @@ main (int argc, char *argv[])
     }
 
   fs_ops_samples = connector_get_fs_operations (FS_SAMPLES);
-  fs_ops_raw = connector_get_fs_operations (FS_RAW_ALL);
-  fs_ops_data = connector_get_fs_operations (FS_DATA_ALL);
+  fs_ops_raw_all = connector_get_fs_operations (FS_RAW_ALL);
+  fs_ops_raw_presets = connector_get_fs_operations (FS_RAW_PRESETS);
+  fs_ops_data_all = connector_get_fs_operations (FS_DATA_ALL);
+  fs_ops_data_prj = connector_get_fs_operations (FS_DATA_PRJ);
+  fs_ops_data_snd = connector_get_fs_operations (FS_DATA_SND);
 
   if (strcmp (command, "ld") == 0 || strcmp (command, "list-devices") == 0)
     {
@@ -546,56 +552,58 @@ main (int argc, char *argv[])
     }
   else if (strcmp (command, "list-data") == 0)
     {
-      res = cli_list (argc, argv, optind, fs_ops_data->readdir, print_datum);
+      res =
+	cli_list (argc, argv, optind, fs_ops_data_all->readdir, print_datum);
     }
   else if (strcmp (command, "clear-data") == 0)
     {
-      res = cli_command_path (argc, argv, optind, fs_ops_data->clear);
+      res = cli_command_path (argc, argv, optind, fs_ops_data_all->clear);
     }
   else if (strcmp (command, "copy-data") == 0)
     {
-      res = cli_command_src_dst (argc, argv, optind, fs_ops_data->copy);
+      res = cli_command_src_dst (argc, argv, optind, fs_ops_data_all->copy);
     }
   else if (strcmp (command, "swap-data") == 0)
     {
-      res = cli_command_src_dst (argc, argv, optind, fs_ops_data->swap);
+      res = cli_command_src_dst (argc, argv, optind, fs_ops_data_all->swap);
     }
   else if (strcmp (command, "move-data") == 0)
     {
-      res = cli_command_src_dst (argc, argv, optind, fs_ops_data->move);
+      res = cli_command_src_dst (argc, argv, optind, fs_ops_data_all->move);
     }
   else if (strcmp (command, "download-data") == 0)
     {
-      res = cli_download (argc, argv, optind, fs_ops_data);
+      res = cli_download (argc, argv, optind, fs_ops_data_all);
     }
   else if (strcmp (command, "upload-data") == 0)
     {
-      res = cli_upload (argc, argv, optind, fs_ops_data);
+      res = cli_upload (argc, argv, optind, fs_ops_data_all);
     }
   else if (strcmp (command, "list-raw") == 0)
     {
-      res = cli_list (argc, argv, optind, fs_ops_raw->readdir, print_sample);
+      res =
+	cli_list (argc, argv, optind, fs_ops_raw_all->readdir, print_sample);
     }
   else if (strcmp (command, "mkdir-raw") == 0)
     {
-      res = cli_command_path (argc, argv, optind, fs_ops_raw->mkdir);
+      res = cli_command_path (argc, argv, optind, fs_ops_raw_all->mkdir);
     }
   else if (strcmp (command, "rm-raw") == 0
 	   || strcmp (command, "rmdir-raw") == 0)
     {
-      res = cli_command_path (argc, argv, optind, fs_ops_raw->delete);
+      res = cli_command_path (argc, argv, optind, fs_ops_raw_all->delete);
     }
   else if (strcmp (command, "mv-raw") == 0)
     {
-      res = cli_command_src_dst (argc, argv, optind, fs_ops_raw->move);
+      res = cli_command_src_dst (argc, argv, optind, fs_ops_raw_all->move);
     }
   else if (strcmp (command, "download-raw") == 0)
     {
-      res = cli_download (argc, argv, optind, fs_ops_raw);
+      res = cli_download (argc, argv, optind, fs_ops_raw_all);
     }
   else if (strcmp (command, "upload-raw") == 0)
     {
-      res = cli_upload (argc, argv, optind, fs_ops_raw);
+      res = cli_upload (argc, argv, optind, fs_ops_raw_all);
     }
   else
     {
