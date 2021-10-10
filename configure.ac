@@ -14,7 +14,7 @@ AM_INIT_AUTOMAKE
 AC_PROG_CC
 
 # Checks for libraries.
-PKG_CHECK_MODULES(ALSA, alsa >= 1.1.8)
+PKG_CHECK_MODULES(ALSA, alsa >= 1.1.3)
 PKG_CHECK_MODULES([GTK], [gtk+-3.0])
 
 PKG_CHECK_MODULES(SNDFILE, sndfile >= 1.0.2, ac_cv_sndfile=1, ac_cv_sndfile=0)
