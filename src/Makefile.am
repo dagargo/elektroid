@@ -1,8 +1,12 @@
 PKG_CONFIG ?= pkg-config
 
-AM_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags alsa gtk+-3.0 libpulse libpulse-mainloop-glib zlib json-glib-1.0` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS)
-elektroid_LDFLAGS = `$(PKG_CONFIG) --libs alsa gtk+-3.0 libpulse libpulse-mainloop-glib zlib json-glib-1.0` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS)
-elektroid_cli_LDFLAGS = `$(PKG_CONFIG) --libs alsa glib-2.0 zlib` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS)
+GUI_LIBS = alsa gtk+-3.0 libpulse libpulse-mainloop-glib zlib json-glib-1.0
+CLI_LIBS = alsa glib-2.0 zlib
+
+elektroid_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(GUI_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS)
+elektroid_LDFLAGS = `$(PKG_CONFIG) --libs $(GUI_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS)
+elektroid_cli_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(CLI_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS)
+elektroid_cli_LDFLAGS = `$(PKG_CONFIG) --libs $(CLI_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS)
 
 if CLI_ONLY
 bin_PROGRAMS = elektroid-cli
