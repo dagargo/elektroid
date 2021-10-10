@@ -33,6 +33,7 @@
 
 #define GET_FS_OPS_OFFSET(member) offsetof(struct fs_operations, member)
 #define GET_FS_OPS_FUNC(type,fs,offset) (*(((type *) (((gchar *) connector_get_fs_operations(fs)) + offset))))
+#define CHECK_FS_OPS_FUNC(f) if (!(f)) {error_print ("Operation not implemented\n"); return EXIT_FAILURE;}
 
 static struct connector connector;
 static struct job_control control;
@@ -187,6 +188,7 @@ cli_command_path (int argc, char *argv[], int optind, enum connector_fs fs,
   path = cli_get_path (device_path);
 
   f = GET_FS_OPS_FUNC (fs_path_func, fs, member_offset);
+  CHECK_FS_OPS_FUNC (f);
   ret = f (path, &connector);
   return ret ? EXIT_FAILURE : EXIT_SUCCESS;
 }
@@ -237,6 +239,7 @@ cli_command_src_dst (int argc, char *argv[], int optind, enum connector_fs fs,
     }
 
   f = GET_FS_OPS_FUNC (fs_src_dst_func, fs, member_offset);
+  CHECK_FS_OPS_FUNC (f);
   src_path = cli_get_path (device_src_path);
   dst_path = cli_get_path (device_dst_path);
   ret = f (src_path, dst_path, &connector);
@@ -696,7 +699,7 @@ main (int argc, char *argv[])
     }
   else
     {
-      error_print ("Command '%s' not recognized< ----------\n", command);
+      error_print ("Command '%s' not recognized\n", command);
       res = EXIT_FAILURE;
     }
 
