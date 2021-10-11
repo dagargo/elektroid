@@ -16,6 +16,7 @@ sudo make install
 
 The package dependencies for Debian based distributions are:
 - automake
+- build-essential
 - libasound2-dev
 - libgtk-3-dev
 - libpulse-dev
@@ -27,7 +28,7 @@ The package dependencies for Debian based distributions are:
 - zlib1g-dev
 - libjson-glib-dev
 
-You can easily install them by running `sudo apt install automake libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev libtool autopoint gettext zlib1g-dev libjson-glib-dev`. If you are only compiling the CLI, install the dependencies with `sudo apt install automake libasound2-dev libglib2.0-dev libsndfile1-dev libsamplerate0-dev libtool zlib1g-dev`.
+You can easily install them by running `sudo apt install automake libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev libtool autopoint gettext zlib1g-dev libjson-glib-dev`. If you are only compiling the CLI, install the dependencies with `sudo apt install automake build-essential libasound2-dev libglib2.0-dev libsndfile1-dev libsamplerate0-dev libtool zlib1g-dev`.
 
 ## CLI
 
