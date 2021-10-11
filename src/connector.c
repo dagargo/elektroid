@@ -2318,7 +2318,7 @@ connector_get_storage_stats (struct connector *connector,
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   gint8 op;
-  uint64_t *data;
+  guint64 *data;
   int index;
   gint res = 0;
 
@@ -2350,9 +2350,9 @@ connector_get_storage_stats (struct connector *connector,
     }
 
   statfs->name = FS_TYPE_NAMES[index];
-  data = (uint64_t *) & rx_msg->data[6];
+  data = (guint64 *) & rx_msg->data[6];
   statfs->bfree = be64toh (*data);
-  data = (uint64_t *) & rx_msg->data[14];
+  data = (guint64 *) & rx_msg->data[14];
   statfs->bsize = be64toh (*data);
 
   free_msg (rx_msg);
