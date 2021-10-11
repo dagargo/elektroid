@@ -13,9 +13,12 @@ AM_INIT_AUTOMAKE
 # Checks for programs.
 AC_PROG_CC
 
+# Define conditional prior to package checks
+AM_CONDITIONAL([CLI_ONLY], [test "${CLI_ONLY}" == yes])
+
 # Checks for libraries.
 PKG_CHECK_MODULES(ALSA, alsa >= 1.1.3)
-PKG_CHECK_MODULES([GTK], [gtk+-3.0])
+AS_IF([CLI_ONLY], [PKG_CHECK_MODULES([GTK], [gtk+-3.0])])
 
 PKG_CHECK_MODULES(SNDFILE, sndfile >= 1.0.2, ac_cv_sndfile=1, ac_cv_sndfile=0)
 AC_DEFINE_UNQUOTED([HAVE_SNDFILE],${ac_cv_sndfile}, [Set to 1 if you have libsndfile.])
@@ -42,7 +45,6 @@ AC_CHECK_HEADERS([unistd.h limits.h zlib.h])
 # Checks for library functions.
 AC_FUNC_MALLOC
 
-AM_CONDITIONAL([CLI_ONLY], [test "${CLI_ONLY}" == yes])
 
 AC_CONFIG_FILES([Makefile src/Makefile res/Makefile test/Makefile po/Makefile.in po/Makefile man/Makefile])
 AC_OUTPUT
