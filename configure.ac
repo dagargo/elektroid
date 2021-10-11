@@ -15,10 +15,11 @@ AC_PROG_CC
 
 # Define conditional prior to package checks
 AM_CONDITIONAL([CLI_ONLY], [test "${CLI_ONLY}" == yes])
+AM_CONDITIONAL([GUI], [test "${CLI_ONLY}" != yes])
 
 # Checks for libraries.
 PKG_CHECK_MODULES(ALSA, alsa >= 1.1.3)
-AM_COND_IF([CLI_ONLY], [PKG_CHECK_MODULES([GTK], [gtk+-3.0])])
+AM_COND_IF(GUI, [PKG_CHECK_MODULES([GTK], [gtk+-3.0])])
 
 PKG_CHECK_MODULES(SNDFILE, sndfile >= 1.0.2, ac_cv_sndfile=1, ac_cv_sndfile=0)
 AC_DEFINE_UNQUOTED([HAVE_SNDFILE],${ac_cv_sndfile}, [Set to 1 if you have libsndfile.])
@@ -30,12 +31,12 @@ AC_DEFINE_UNQUOTED([HAVE_SAMPLERATE],${ac_cv_samplerate}, [Set to 1 if you have 
 AC_SUBST(SAMPLERATE_CFLAGS)
 AC_SUBST(SAMPLERATE_LIBS)
 
-AM_COND_IF([CLI_ONLY], [PKG_CHECK_MODULES([PULSEAUDIO], [libpulse >= 5.0])])
+AM_COND_IF(GUI, [PKG_CHECK_MODULES([PULSEAUDIO], [libpulse >= 5.0])])
 AC_SUBST(PULSEAUDIO_CFLAGS)
 AC_SUBST(PULSEAUDIO_LIBS)
 
-AM_COND_IF([CLI_ONLY], [AM_GNU_GETTEXT([external])])
-AM_COND_IF([CLI_ONLY], [AM_GNU_GETTEXT_VERSION([0.19.8])])
+AM_COND_IF(GUI, [AM_GNU_GETTEXT([external])])
+AM_COND_IF(GUI, [AM_GNU_GETTEXT_VERSION([0.19.8])])
 
 # Checks for header files.
 AC_CHECK_HEADERS([unistd.h limits.h zlib.h])
