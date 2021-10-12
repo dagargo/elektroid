@@ -319,8 +319,9 @@ save_file_char (const gchar * path, const guint8 * data, ssize_t len)
       return -errno;
     }
 
-  res = 0;
+  debug_print (1, "Saving file %s...\n", path);
 
+  res = 0;
   bytes = fwrite (data, 1, len, file);
   if (bytes == len)
     {

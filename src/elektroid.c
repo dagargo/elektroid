@@ -690,7 +690,6 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
 
   if (filename != NULL)
     {
-      debug_print (1, "Saving SysEx file...\n");
       *res = save_file (filename, sysex_transfer.raw, NULL);
       if (*res)
 	{

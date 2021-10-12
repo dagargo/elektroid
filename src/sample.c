@@ -56,9 +56,96 @@ static const guint8 JUNK_CHUNK_DATA[] = {
   0, 0, 0, 0
 };
 
-gint
-sample_save (const gchar * path, GByteArray * sample,
-	     struct job_control *control)
+sf_count_t get_filelen_byte_array_io (void *);
+sf_count_t seek_byte_array_io (sf_count_t, int, void *);
+sf_count_t read_byte_array_io (void *, sf_count_t, void *);
+sf_count_t write_byte_array_io (const void *, sf_count_t, void *);
+sf_count_t tell_byte_array_io (void *);
+
+static SF_VIRTUAL_IO G_BYTE_ARRAY_IO = {
+  .get_filelen = get_filelen_byte_array_io,
+  .seek = seek_byte_array_io,
+  .read = read_byte_array_io,
+  .write = write_byte_array_io,
+  .tell = tell_byte_array_io
+};
+
+sf_count_t
+get_filelen_byte_array_io (void *user_data)
+{
+  struct g_byte_array_io_data *data = user_data;
+  return data->array->len;
+}
+
+sf_count_t
+seek_byte_array_io (sf_count_t offset, int whence, void *user_data)
+{
+  struct g_byte_array_io_data *data = user_data;
+  switch (whence)
+    {
+    case SEEK_SET:
+      data->pos = offset;
+      break;
+    case SEEK_CUR:
+      data->pos = data->pos + offset;
+      break;
+    case SEEK_END:
+      data->pos = data->array->len + offset;
+      break;
+    default:
+      break;
+    };
+
+  if (data->pos > data->array->len)
+    {
+      g_byte_array_set_size (data->array, data->pos);
+    }
+  return data->pos;
+}
+
+sf_count_t
+read_byte_array_io (void *ptr, sf_count_t count, void *user_data)
+{
+  struct g_byte_array_io_data *data = user_data;
+  if (data->pos + count > data->array->len)
+    {
+      count = data->array->len - data->pos;
+    }
+  memcpy (ptr, data->array->data + data->pos, count);
+  return count;
+}
+
+sf_count_t
+write_byte_array_io (const void *ptr, sf_count_t count, void *user_data)
+{
+  struct g_byte_array_io_data *data = user_data;
+
+  if (data->pos >= data->array->len)
+    {
+      g_byte_array_set_size (data->array, data->pos);
+    }
+
+  if (data->pos + count > data->array->len)
+    {
+      g_byte_array_set_size (data->array, data->pos + count);
+    }
+
+  memcpy (data->array->data + data->pos, (guint8 *) ptr, count);
+  data->pos += count;
+  return count;
+}
+
+sf_count_t
+tell_byte_array_io (void *user_data)
+{
+  struct g_byte_array_io_data *data = user_data;
+  return data->pos;
+}
+
+static gint
+sample_save_data (GByteArray * sample,
+		  struct job_control *control,
+		  struct g_byte_array_io_data *data)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -68,13 +155,14 @@ sample_save (const gchar * path, GByteArray * sample,
   struct smpl_chunk_data smpl_chunk_data;
   struct sample_loop_data *sample_loop_data = control->data;
 
-  debug_print (1, "Saving file '%s' (loop start at %d, loop end at %d)...\n",
-	       path, sample_loop_data->start, sample_loop_data->end);
+  debug_print (1, "Loop start at %d; loop end at %d\n",
+	       sample_loop_data->start, sample_loop_data->end);
 
+  memset (&sf_info, 0, sizeof (sf_info));
   sf_info.samplerate = ELEKTRON_SAMPLE_RATE;
   sf_info.channels = 1;
   sf_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
-  sndfile = sf_open (path, SFM_WRITE, &sf_info);
+  sndfile = sf_open_virtual (&G_BYTE_ARRAY_IO, SFM_WRITE, &sf_info, data);
   if (!sndfile)
     {
       error_print ("%s\n", sf_strerror (sndfile));
@@ -122,11 +210,29 @@ sample_save (const gchar * path, GByteArray * sample,
 
   if (total != frames)
     {
-      error_print ("Unexpected frames while writing to sample\n");
+      error_print ("Unexpected frames while writing to sample (%ld != %ld)\n",
+		   total, frames);
       return -1;
     }
 
   return 0;
+}
+
+gint
+sample_save (const gchar * path, GByteArray * sample,
+	     struct job_control *control)
+{
+  gint ret;
+  struct g_byte_array_io_data data;
+  data.array = g_byte_array_sized_new (sample->len + 1024);	//We need space for the headers.
+  data.pos = 0;
+  ret = sample_save_data (sample, control, &data);
+  if (!ret)
+    {
+      ret = save_file (path, data.array, control);
+    }
+  g_byte_array_free (data.array, TRUE);
+  return ret;
 }
 
 static void
