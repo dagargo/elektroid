@@ -123,7 +123,7 @@ static gint connector_download_raw (const gchar *, GByteArray *,
 static gint connector_upload_raw (const gchar *, GByteArray *,
 				  struct job_control *, void *);
 
-static gint connector_read_data_dir_all (struct item_iterator *,
+static gint connector_read_data_dir_any (struct item_iterator *,
 					 const gchar *, void *);
 
 static gint connector_read_data_dir_prj (struct item_iterator *,
@@ -132,14 +132,14 @@ static gint connector_read_data_dir_prj (struct item_iterator *,
 static gint connector_read_data_dir_snd (struct item_iterator *,
 					 const gchar *, void *);
 
-static gint connector_move_data_item_all (const gchar *, const gchar *,
+static gint connector_move_data_item_any (const gchar *, const gchar *,
 					  void *);
 static gint connector_move_data_item_prj (const gchar *, const gchar *,
 					  void *);
 static gint connector_move_data_item_snd (const gchar *, const gchar *,
 					  void *);
 
-static gint connector_copy_data_item_all (const gchar *, const gchar *,
+static gint connector_copy_data_item_any (const gchar *, const gchar *,
 					  void *);
 
 static gint connector_copy_data_item_prj (const gchar *, const gchar *,
@@ -148,13 +148,13 @@ static gint connector_copy_data_item_prj (const gchar *, const gchar *,
 static gint connector_copy_data_item_snd (const gchar *, const gchar *,
 					  void *);
 
-static gint connector_clear_data_item_all (const gchar *, void *);
+static gint connector_clear_data_item_any (const gchar *, void *);
 
 static gint connector_clear_data_item_prj (const gchar *, void *);
 
 static gint connector_clear_data_item_snd (const gchar *, void *);
 
-static gint connector_swap_data_item_all (const gchar *, const gchar *,
+static gint connector_swap_data_item_any (const gchar *, const gchar *,
 					  void *);
 
 static gint connector_swap_data_item_prj (const gchar *, const gchar *,
@@ -163,7 +163,7 @@ static gint connector_swap_data_item_prj (const gchar *, const gchar *,
 static gint connector_swap_data_item_snd (const gchar *, const gchar *,
 					  void *);
 
-static gint connector_download_data_all (const gchar *, GByteArray *,
+static gint connector_download_data_any (const gchar *, GByteArray *,
 					 struct job_control *, void *);
 
 static gint connector_download_data_prj (const gchar *, GByteArray *,
@@ -172,7 +172,7 @@ static gint connector_download_data_prj (const gchar *, GByteArray *,
 static gint connector_download_data_snd (const gchar *, GByteArray *,
 					 struct job_control *, void *);
 
-static gint connector_upload_data_all (const gchar *, GByteArray *,
+static gint connector_upload_data_any (const gchar *, GByteArray *,
 				       struct job_control *, void *);
 
 static gint connector_upload_data_prj (const gchar *, GByteArray *,
@@ -367,7 +367,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .extension = "wav"
 };
 
-static const struct fs_operations FS_RAW_ALL_OPERATIONS = {
+static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .fs = FS_RAW_ALL,
   .readdir = connector_read_raw_dir,
   .mkdir = connector_create_raw_dir,
@@ -403,18 +403,18 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .extension = "snd"
 };
 
-static const struct fs_operations FS_DATA_ALL_OPERATIONS = {
+static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .fs = FS_DATA_ALL,
-  .readdir = connector_read_data_dir_all,
+  .readdir = connector_read_data_dir_any,
   .mkdir = NULL,
-  .delete = connector_clear_data_item_all,
+  .delete = connector_clear_data_item_any,
   .rename = NULL,
-  .move = connector_move_data_item_all,
-  .copy = connector_copy_data_item_all,
-  .clear = connector_clear_data_item_all,
-  .swap = connector_swap_data_item_all,
-  .download = connector_download_data_all,
-  .upload = connector_upload_data_all,
+  .move = connector_move_data_item_any,
+  .copy = connector_copy_data_item_any,
+  .clear = connector_clear_data_item_any,
+  .swap = connector_swap_data_item_any,
+  .download = connector_download_data_any,
+  .upload = connector_upload_data_any,
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
@@ -458,8 +458,8 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
 };
 
 static const struct fs_operations *FS_OPERATIONS[] = {
-  &FS_SAMPLES_OPERATIONS, &FS_RAW_ALL_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
-  &FS_DATA_ALL_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS
+  &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
+  &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS
 };
 
 static const int FS_OPERATIONS_N =
@@ -2797,7 +2797,7 @@ connector_read_data_dir_prefix (struct item_iterator *iter, const gchar * dir,
 }
 
 static gint
-connector_read_data_dir_all (struct item_iterator *iter, const gchar * dir,
+connector_read_data_dir_any (struct item_iterator *iter, const gchar * dir,
 			     void *data)
 {
   return connector_read_data_dir_prefix (iter, dir, data, NULL);
@@ -2845,7 +2845,7 @@ connector_move_data_item_prefix (const gchar * src, const gchar * dst,
 }
 
 static gint
-connector_move_data_item_all (const gchar * src, const gchar * dst,
+connector_move_data_item_any (const gchar * src, const gchar * dst,
 			      void *data)
 {
   return connector_move_data_item_prefix (src, dst, data, NULL);
@@ -2875,7 +2875,7 @@ connector_copy_data_item_prefix (const gchar * src, const gchar * dst,
 }
 
 static gint
-connector_copy_data_item_all (const gchar * src, const gchar * dst,
+connector_copy_data_item_any (const gchar * src, const gchar * dst,
 			      void *data)
 {
   return connector_copy_data_item_prefix (src, dst, data, NULL);
@@ -2920,7 +2920,7 @@ connector_clear_data_item_prefix (const gchar * path, void *data,
 }
 
 static gint
-connector_clear_data_item_all (const gchar * path, void *data)
+connector_clear_data_item_any (const gchar * path, void *data)
 {
   return connector_clear_data_item_prefix (path, data, NULL);
 }
@@ -2947,7 +2947,7 @@ connector_swap_data_item_prefix (const gchar * src, const gchar * dst,
 }
 
 static gint
-connector_swap_data_item_all (const gchar * src, const gchar * dst,
+connector_swap_data_item_any (const gchar * src, const gchar * dst,
 			      void *data)
 {
   return connector_swap_data_item_prefix (src, dst, data, NULL);
@@ -3269,7 +3269,7 @@ connector_download_data_prefix (const gchar * path, GByteArray * output,
 }
 
 static gint
-connector_download_data_all (const gchar * path, GByteArray * output,
+connector_download_data_any (const gchar * path, GByteArray * output,
 			     struct job_control *control, void *data)
 {
   return connector_download_data_prefix (path, output, control, data, NULL);
@@ -3586,7 +3586,7 @@ end:
 }
 
 static gint
-connector_upload_data_all (const gchar * path, GByteArray * array,
+connector_upload_data_any (const gchar * path, GByteArray * array,
 			   struct job_control *control, void *data)
 {
   return connector_upload_data_prefix (path, array, control, data, NULL);
