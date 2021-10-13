@@ -32,13 +32,40 @@ You can easily install them by running `sudo apt install automake libasound2-dev
 
 ## CLI
 
-`elektroid-cli` provides the same funcionality than `elektroid`. Provided paths must always be prepended with the device id and a colon (':'), e.g. `0:/samples`.
+`elektroid-cli` brings the same funcionality than `elektroid` to the command line.
 
-Here are the available commands.
+There are global -or machine- commands and data oriented commands. The latter have the form `a-b` where `a` is a command and `b` is a filesystem, (e.g., `ls-project`, `download-sound`, `mkdir-sample`). Notice that the filesystem is always in the singular form and some older commands are deprecated but kept for compatibility reasons although there are not documented here.
+
+These are the available filesystems:
+
+* `sample`
+* `raw`
+* `preset`
+* `data`
+* `project`
+* `sound`
+
+Raw and data are intended to interface directly with the filesystems provided by the devices so the downloaded or uploaded files are **not** compatible with Elektron Transfer formats. Preset is a particular instance of raw and so are project and sound but regarding data. Thus, raw and data filesystems should be used only for testing and are **not** available in the GUI.
+
+These are the available commands:
+
+* `ls` or `list`
+* `mkdir`
+* `rmdir` or `rm` (both behave as `rm -rf`)
+* `mv`
+* `cp`
+* `cl`, clear item
+* `sw`, swap items
+* `ul` or `upload`
+* `dl` or `download`
+
+Keep in mind that not every filesystem implements all the commands. For instance, samples can not be swapped.
+
+Provided paths must always be prepended with the device id and a colon (':') e.g., `0:/incoming`.
 
 ### Global commands
 
-* `ld` or `list-devices`, list compatible devices
+* `ld` or `ls-devices`, list compatible devices
 
 ```
 $ elektroid-cli ld
@@ -61,56 +88,56 @@ Storage               Size            Used       Available       Use%
 RAM               64.00MiB        13.43MiB        50.57MiB     20.98%
 ```
 
-### Sample commands
+### Sample, raw and preset commands
 
-* `ls` or `list-samples`
+* `ls-sample`
 
 It only works for directories. Notice that the first column is the file type, the second is the size, the third is an internal cksum and the last one is the sample name.
 
 ```
-$ elektroid-cli ls 0:/
+$ elektroid-cli ls-sample 0:/
 D              0B 00000000 drum machines
 F       630.34KiB f8711cd9 saw
 F         1.29MiB 0bbc22bd square
 ```
 
-* `mkdir` or `mkdir-samples`
+* `mkdir-sample`
 
 ```
-$ elektroid-cli mkdir 0:/samples
+$ elektroid-cli mkdir-sample 0:/samples
 ```
 
-* `rmdir` or `rmdir-samples`
+* `rmdir-sample`
 
 ```
-$ elektroid-cli rmdir 0:/samples
+$ elektroid-cli rmdir-sample 0:/samples
 ```
 
-* `upload` or `upload-sample`
+* `ul-sample`
 
 ```
-$ elektroid-cli upload square.wav 0:/
+$ elektroid-cli ul-sample square.wav 0:/
 ```
 
-* `download` or `download-sample`
+* `dl-sample`
 
 ```
-$ elektroid-cli download 0:/square
+$ elektroid-cli dl-sample 0:/square
 ```
 
-* `mv` or `mv-sample`
+* `mv-sample`
 
 ```
-$ elektroid-cli mv 0:/square 0:/sample
+$ elektroid-cli mv-sample 0:/square 0:/sample
 ```
 
-* `rm` or `rm-sample`
+* `rm-sample`
 
 ```
-$ elektroid-cli rm 0:/sample
+$ elektroid-cli rm-sample 0:/sample
 ```
 
-### Data commands
+### Data, sound and project commands
 
 There are a few things to clarify first.
 
@@ -118,73 +145,71 @@ There are a few things to clarify first.
 
 * All data commands that use paths to items and not directories use the item index instead the item name.
 
-* While `elektroid-cli` offers a single API for both projects and sounds, `elektroid` will treat them as different types of data because they are. The reason behind this difference is that the underlying MIDI API is not only the same but treats them as if they were the same kind of objects, and that is exaclty what `elektroid-cli` provides. `elektroid` just tries to be more user friendly by splitting this layer.
-
 Here are the commands.
 
-* `list-data`
+* `ls-data`
 
 It only works for directories. Notice that the first column is the file type, the second is the index, the third is the permissons in hexadecimal, the fourth indicates if the data in valid, the fifth indicates if it has metadatam, the sixth is the size and the last one is the item name.
 
 Permissions are 16 bits values but only 6 are used from bit 2 to bit 7 both included. From LSB to MSB, this permissions are read, write, clear, copy, swap, and move.
 
 ```
-$ elektroid-cli list-data 0:/
+$ elektroid-cli ls-data 0:/
 D  -1 0000 0 0         0B projects
 D  -1 0000 0 0         0B soundbanks
 ```
 
 ```
-$ elektroid-cli list-data 0:/soundbanks/D
+$ elektroid-cli ls-data 0:/soundbanks/D
 F   1 0012 1 1       160B KICK
 F   2 0012 1 1       160B SNARE
 ```
 
-* `copy-data`
+* `cp-data`
 
 ```
-$ elektroid-cli copy-data 0:/soundbanks/D/1 0:/soundbanks/D/3
-$ elektroid-cli list-data 0:/soundbanks/D
+$ elektroid-cli cp-data 0:/soundbanks/D/1 0:/soundbanks/D/3
+$ elektroid-cli ls-data 0:/soundbanks/D
 F   1 0012 1 1       160B KICK
 F   2 0012 1 1       160B SNARE
 F   3 0012 1 1       160B KICK
 ```
 
-* `swap-data`
+* `sw-data`
 
 ```
-$ elektroid-cli swap-data 0:/soundbanks/D/2 0:/soundbanks/D/3
-$ elektroid-cli list-data 0:/soundbanks/D
+$ elektroid-cli sw-data 0:/soundbanks/D/2 0:/soundbanks/D/3
+$ elektroid-cli ls-data 0:/soundbanks/D
 F   1 0012 1 1       160B KICK
 F   2 0012 1 1       160B KICK
 F   3 0012 1 1       160B SNARE
 ```
 
-* `move-data`
+* `mv-data`
 
 ```
-$ elektroid-cli move-data 0:/soundbanks/D/3 0:/soundbanks/D/1
-$ elektroid-cli list-data 0:/soundbanks/D
+$ elektroid-cli mv-data 0:/soundbanks/D/3 0:/soundbanks/D/1
+$ elektroid-cli ls-data 0:/soundbanks/D
 F   1 0012 1 1       160B SNARE
 F   2 0012 1 1       160B KICK
 ```
 
-* `clear-data`
+* `cl-data`
 
 ```
-$ elektroid-cli clear-data 0:/soundbanks/D/1
-$ elektroid-cli list-data 0:/soundbanks/D
+$ elektroid-cli cl-data 0:/soundbanks/D/1
+$ elektroid-cli ls-data 0:/soundbanks/D
 F   2 0012 1 1       160B KICK
 ```
 
-* `download-data`
+* `dl-data`
 
 ```
-$ elektroid-cli download-data 0:/soundbanks/D/1
+$ elektroid-cli dl-data 0:/soundbanks/D/1
 ```
 
-* `upload-data`
+* `ul-data`
 
 ```
-$ elektroid-cli upload-data sound 0:/soundbanks/D
+$ elektroid-cli ul-data sound 0:/soundbanks/D
 ```

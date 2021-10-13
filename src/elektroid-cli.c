@@ -589,7 +589,7 @@ main (int argc, char *argv[])
     }
 
   fs = get_op_type_from_command (command, op, type);
-  debug_print (1, "Operation: '%s'; fs: '%s' (%d)\n", op, type, fs);
+  debug_print (1, "Operation: '%s'; filesystem: '%s' (%d)\n", op, type, fs);
   if (fs < 0)
     {
       error_print ("Filesystem '%s' not recognized\n", type);
@@ -636,11 +636,12 @@ main (int argc, char *argv[])
 	    cli_command_path (argc, argv, optind, FS_SAMPLES,
 			      GET_FS_OPS_OFFSET (delete));
 	}
-      else if (strcmp (command, "download") == 0)
+      else if (strcmp (command, "download") == 0
+	       || strcmp (command, "dl") == 0)
 	{
 	  res = cli_download (argc, argv, optind, FS_SAMPLES);
 	}
-      else if (strcmp (command, "upload") == 0)
+      else if (strcmp (command, "upload") == 0 || strcmp (command, "ul") == 0)
 	{
 	  res = cli_upload (argc, argv, optind, FS_SAMPLES);
 	}
@@ -652,7 +653,7 @@ main (int argc, char *argv[])
       goto end;
     }
 
-  if (strcmp (op, "list") == 0)
+  if (strcmp (op, "ls") == 0 || strcmp (op, "list") == 0)
     {
       print_item print = (fs == FS_SAMPLES || fs == FS_RAW_ALL
 			  || fs ==
@@ -669,30 +670,30 @@ main (int argc, char *argv[])
       res =
 	cli_command_path (argc, argv, optind, fs, GET_FS_OPS_OFFSET (delete));
     }
-  else if (strcmp (op, "download") == 0)
+  else if (strcmp (op, "download") == 0 || strcmp (op, "dl") == 0)
     {
       res = cli_download (argc, argv, optind, fs);
     }
-  else if (strcmp (op, "upload") == 0)
+  else if (strcmp (op, "upload") == 0 || strcmp (op, "ul") == 0)
     {
       res = cli_upload (argc, argv, optind, fs);
     }
-  else if (strcmp (op, "clear") == 0)
+  else if (strcmp (op, "cl") == 0)
     {
       res = cli_command_path (argc, argv, optind, fs,
 			      GET_FS_OPS_OFFSET (clear));
     }
-  else if (strcmp (op, "copy") == 0)
+  else if (strcmp (op, "cp") == 0)
     {
       res = cli_command_src_dst (argc, argv, optind, fs,
 				 GET_FS_OPS_OFFSET (copy));
     }
-  else if (strcmp (op, "swap") == 0)
+  else if (strcmp (op, "sw") == 0)
     {
       res = cli_command_src_dst (argc, argv, optind, fs,
 				 GET_FS_OPS_OFFSET (swap));
     }
-  else if (strcmp (op, "move") == 0)
+  else if (strcmp (op, "mv") == 0)
     {
       res = cli_command_src_dst (argc, argv, optind, fs,
 				 GET_FS_OPS_OFFSET (move));
