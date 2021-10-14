@@ -24,9 +24,12 @@
 #include <poll.h>
 #include <zlib.h>
 #include <libgen.h>
+#include <json-glib/json-glib.h>
+#include <zip.h>
 #include "connector.h"
 #include "utils.h"
 #include "sample.h"
+#include "package.h"
 
 #define KB 1024
 #define BUFF_SIZE (4 * KB)
@@ -34,6 +37,7 @@
 #define DATA_TRANSF_BLOCK_BYTES 0x2000
 #define OS_TRANSF_BLOCK_BYTES 0x800
 #define POLL_TIMEOUT 20
+#define MAX_ZIP_SIZE (128 * 1024 * 1024)
 
 #define AFMK1_ID 0x04
 #define AKEYS_ID 0x06
@@ -172,6 +176,12 @@ static gint connector_download_data_prj (const gchar *, GByteArray *,
 static gint connector_download_data_snd (const gchar *, GByteArray *,
 					 struct job_control *, void *);
 
+static gint connector_download_data_snd_pkg (const gchar *, GByteArray *,
+					     struct job_control *, void *);
+
+static gint connector_download_data_prj_pkg (const gchar *, GByteArray *,
+					     struct job_control *, void *);
+
 static gint connector_upload_data_any (const gchar *, GByteArray *,
 				       struct job_control *, void *);
 
@@ -196,6 +206,8 @@ static const guint8 FS_SAMPLE_CREATE_DIR_REQUEST[] = { 0x11 };
 static const guint8 FS_SAMPLE_DELETE_DIR_REQUEST[] = { 0x12 };
 static const guint8 FS_SAMPLE_DELETE_FILE_REQUEST[] = { 0x20 };
 static const guint8 FS_SAMPLE_RENAME_FILE_REQUEST[] = { 0x21 };
+static const guint8 FS_SAMPLE_GET_FILE_INFO_FROM_HASH_AND_SIZE_REQUEST[] =
+  { 0x23, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 FS_SAMPLE_OPEN_FILE_READER_REQUEST[] = { 0x30 };
 static const guint8 FS_SAMPLE_CLOSE_FILE_READER_REQUEST[] = { 0x31 };
 static const guint8 FS_SAMPLE_READ_FILE_REQUEST[] =
@@ -425,7 +437,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .copy = connector_copy_data_item_prj,
   .clear = connector_clear_data_item_prj,
   .swap = connector_swap_data_item_prj,
-  .download = connector_download_data_prj,
+  .download = connector_download_data_prj_pkg,
   .upload = connector_upload_data_prj,
   .getid = get_item_index,
   .load = load_file,
@@ -443,7 +455,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .copy = connector_copy_data_item_snd,
   .clear = connector_clear_data_item_snd,
   .swap = connector_swap_data_item_snd,
-  .download = connector_download_data_snd,
+  .download = connector_download_data_snd_pkg,
   .upload = connector_upload_data_snd,
   .getid = get_item_index,
   .load = load_file,
@@ -2288,6 +2300,8 @@ connector_destroy (struct connector *connector)
   if (connector->device_name)
     {
       free (connector->device_name);
+      free (connector->fw_version);
+      free (connector->alias);
       connector->device_name = NULL;
     }
 
@@ -2382,9 +2396,7 @@ connector_init (struct connector *connector, gint card)
 {
   int err;
   GByteArray *tx_msg;
-  GByteArray *rx_msg_device;
-  GByteArray *rx_msg_fw_ver;
-  GByteArray *rx_msg_uid;
+  GByteArray *rx_msg;
   snd_rawmidi_params_t *params;
   gchar name[32];
   sprintf (name, "hw:%d", card);
@@ -2476,53 +2488,51 @@ connector_init (struct connector *connector, gint card)
     }
 
   tx_msg = connector_new_msg (PING_REQUEST, sizeof (PING_REQUEST));
-  rx_msg_device = connector_tx_and_rx (connector, tx_msg);
-  if (!rx_msg_device)
+  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  if (!rx_msg)
     {
       err = -EIO;
+      goto cleanup_params;
+    }
+  connector->alias = strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
+  connector->device_desc = connector_get_device_desc (rx_msg->data[5]);
+  free_msg (rx_msg);
+  if (!connector->device_desc)
+    {
+      err = -ENODEV;
       goto cleanup_params;
     }
 
   tx_msg =
     connector_new_msg (SOFTWARE_VERSION_REQUEST,
 		       sizeof (SOFTWARE_VERSION_REQUEST));
-  rx_msg_fw_ver = connector_tx_and_rx (connector, tx_msg);
-  if (!rx_msg_fw_ver)
+  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  if (!rx_msg)
     {
       err = -EIO;
-      goto cleanup_device;
+      goto cleanup_params;
     }
+  connector->fw_version = strdup ((gchar *) & rx_msg->data[10]);
+  free_msg (rx_msg);
 
   if (debug_level > 1)
     {
       tx_msg =
 	connector_new_msg (DEVICEUID_REQUEST, sizeof (DEVICEUID_REQUEST));
-      rx_msg_uid = connector_tx_and_rx (connector, tx_msg);
-      if (rx_msg_uid)
+      rx_msg = connector_tx_and_rx (connector, tx_msg);
+      if (rx_msg)
 	{
-	  debug_print (1, "UID: %x\n", *((guint32 *) & rx_msg_uid->data[5]));
-	  free_msg (rx_msg_uid);
+	  debug_print (1, "UID: %x\n", *((guint32 *) & rx_msg->data[5]));
+	  free_msg (rx_msg);
 	}
     }
 
-  connector->device_desc = connector_get_device_desc (rx_msg_device->data[5]);
-  if (connector->device_desc)
-    {
-      snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
-		connector->device_desc->name,
-		&rx_msg_fw_ver->data[10],
-		&rx_msg_device->data[7 + rx_msg_device->data[6]]);
-      debug_print (1, "Connected to %s\n", connector->device_name);
-      err = 0;
-    }
-  else
-    {
-      err = -ENODEV;
-    }
+  snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
+	    connector->device_desc->name,
+	    connector->fw_version, connector->alias);
+  debug_print (1, "Connected to %s\n", connector->device_name);
+  err = 0;
 
-  free_msg (rx_msg_fw_ver);
-cleanup_device:
-  free_msg (rx_msg_device);
 cleanup_params:
   snd_rawmidi_params_free (params);
 cleanup:
@@ -3285,6 +3295,269 @@ connector_download_data_snd (const gchar * path, GByteArray * output,
 					 FS_DATA_SND_PREFIX);
 }
 
+static gchar *
+connector_get_sample_path_from_hash_size (struct connector *connector,
+					  guint32 hash, guint32 size)
+{
+  guint32 aux32;
+  gchar *path;
+  GByteArray *rx_msg, *tx_msg =
+    connector_new_msg (FS_SAMPLE_GET_FILE_INFO_FROM_HASH_AND_SIZE_REQUEST,
+		       sizeof
+		       (FS_SAMPLE_GET_FILE_INFO_FROM_HASH_AND_SIZE_REQUEST));
+
+  aux32 = htobe32 (hash);
+  memcpy (&tx_msg->data[5], &aux32, sizeof (guint32));
+  aux32 = htobe32 (size);
+  memcpy (&tx_msg->data[9], &aux32, sizeof (guint32));
+
+  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  if (!rx_msg)
+    {
+      return NULL;
+    }
+
+  if (connector_get_msg_status (rx_msg))
+    {
+      path = strdup ((gchar *) & rx_msg->data[14]);
+    }
+  else
+    {
+      path = NULL;
+    }
+  g_byte_array_free (rx_msg, TRUE);
+  return path;
+}
+
+static gint
+connector_add_pkg_resources (struct package *pkg, const gchar * path,
+			     struct job_control *control,
+			     struct connector *connector,
+			     fs_remote_file_op download)
+{
+  gint ret, i, elements;
+  gint64 hash, size;
+  GError *error;
+  GByteArray *aux, *wave;
+  JsonParser *parser;
+  JsonReader *reader;
+  gchar *metadata_path, *sample_path;
+  struct package_resource *pkg_resource;
+
+  metadata_path = chain_path (path, ".metadata");
+  debug_print (1, "Getting metadata from %s...\n", metadata_path);
+  aux = g_byte_array_new ();
+  ret = download (metadata_path, aux, control, connector);
+  if (ret)
+    {
+      debug_print (1, "Metadata file not available\n");
+      goto cleanup_aux;
+    }
+
+  parser = json_parser_new ();
+  if (!json_parser_load_from_data
+      (parser, (gchar *) aux->data, aux->len, &error))
+    {
+      error_print ("Unable to parse stream: %s", error->message);
+      g_clear_error (&error);
+      ret = -1;
+      goto cleanup_parser;
+    }
+
+  reader = json_reader_new (json_parser_get_root (parser));
+  if (!reader)
+    {
+      ret = -1;
+      goto cleanup_reader;
+    }
+
+  if (!json_reader_read_member (reader, "sample_references"))
+    {
+      debug_print (1, "No 'sample_references' found\n");
+      ret = 0;
+      goto cleanup_reader;
+    }
+
+  if (!json_reader_is_array (reader))
+    {
+      ret = -1;
+      goto cleanup_reader;
+    }
+
+  if (!json_reader_count_elements (reader))
+    {
+      debug_print (1, "No samples found\n");
+      ret = 0;
+      goto cleanup_reader;
+    }
+
+  ret = 0;
+  elements = json_reader_count_elements (reader);
+  for (i = 0; i < elements; i++)
+    {
+      if (!json_reader_read_element (reader, i))
+	{
+	  ret = -1;
+	  goto cleanup_reader;
+	}
+      if (!json_reader_read_member (reader, "hash"))
+	{
+	  ret = -1;
+	  goto cleanup_reader;
+	}
+      hash = json_reader_get_int_value (reader);
+      json_reader_end_element (reader);
+
+      if (!json_reader_read_member (reader, "size"))
+	{
+	  ret = -1;
+	  goto cleanup_reader;
+	}
+      size = json_reader_get_int_value (reader);
+      json_reader_end_element (reader);
+
+      json_reader_end_element (reader);
+
+      sample_path =
+	connector_get_sample_path_from_hash_size (connector, hash, size);
+      if (!sample_path)
+	{
+	  debug_print (1, "Sample not found. Skipping...\n");
+	  continue;
+	}
+
+      debug_print (1, "Hash: %ld; size: %ld; path: %s\n", hash, size,
+		   sample_path);
+      debug_print (1, "Getting sample %s...\n", sample_path);
+      g_byte_array_set_size (aux, 0);
+      if (connector_download_sample (sample_path, aux, control, connector))
+	{
+	  error_print ("Error while downloading sample\n");
+	  g_free (sample_path);
+	  goto cleanup_reader;
+	}
+
+      wave = g_byte_array_new ();
+      if (sample_wave (aux, wave, control))
+	{
+	  error_print ("Error while converting sample to wave file\n");
+	  g_byte_array_free (wave, TRUE);
+	  g_free (sample_path);
+	  goto cleanup_reader;
+	}
+
+      pkg_resource = g_malloc (sizeof (struct package_resource));
+      pkg_resource->type = PKG_RES_TYPE_SAMPLE;
+      pkg_resource->data = wave;
+      pkg_resource->hash = hash;
+      pkg_resource->size = size;
+      pkg_resource->path = g_malloc (PATH_MAX);
+      snprintf (pkg_resource->path, PATH_MAX, "Samples%s.wav", sample_path);
+      if (package_add_resource (pkg, pkg_resource))
+	{
+	  package_free_package_resource (pkg_resource);
+	  ret = -EIO;
+	  goto cleanup_reader;
+	}
+    }
+
+cleanup_reader:
+  g_object_unref (reader);
+cleanup_parser:
+  g_object_unref (parser);
+cleanup_aux:
+  g_byte_array_free (aux, TRUE);
+  g_free (metadata_path);
+  return ret;
+}
+
+static gint
+connector_download_data_pkg (const gchar * path, GByteArray * output,
+			     struct job_control *control, void *data,
+			     guint8 type, const struct fs_operations *ops,
+			     fs_remote_file_op download)
+{
+  gint ret;
+  gchar *pkg_name;
+  GByteArray *owner;
+  struct package pkg;
+  struct package_resource *pkg_resource;
+  struct connector *connector = data;
+
+  pkg_name = connector_get_download_name (connector, NULL, ops, path);
+  if (!pkg_name)
+    {
+      return -1;
+    }
+
+  if (package_begin
+      (&pkg, pkg_name, connector->fw_version, connector->device_desc->id,
+       type))
+    {
+      g_free (pkg_name);
+      return -1;
+    }
+
+  if (type & PKG_FILE_WITH_SAMPLES)
+    {
+      ret =
+	connector_add_pkg_resources (&pkg, path, control, connector,
+				     download);
+      if (ret)
+	{
+	  goto cleanup_package;
+	}
+    }
+
+  debug_print (1, "Getting the main file from %s...\n", path);
+  owner = g_byte_array_new ();
+  ret = download (path, owner, control, connector);
+  if (ret)
+    {
+      ret = -1;
+      goto cleanup_package;
+    }
+
+  pkg_resource = g_malloc (sizeof (struct package_resource));
+  pkg_resource->type = PKG_RES_TYPE_MAIN;
+  pkg_resource->data = owner;
+  pkg_resource->path = strdup (pkg_name);
+  if (package_add_resource (&pkg, pkg_resource))
+    {
+      package_free_package_resource (pkg_resource);
+      ret = -1;
+      goto cleanup_package;
+    }
+
+  ret = package_end (&pkg, output);
+
+cleanup_package:
+  package_destroy (&pkg);
+  return ret;
+}
+
+gint
+connector_download_data_snd_pkg (const gchar * path, GByteArray * output,
+				 struct job_control *control, void *data)
+{
+  return connector_download_data_pkg (path, output, control, data,
+				      PKG_FILE_TYPE_SOUND |
+				      PKG_FILE_WITH_SAMPLES,
+				      &FS_DATA_SND_OPERATIONS,
+				      connector_download_data_snd);
+}
+
+gint
+connector_download_data_prj_pkg (const gchar * path, GByteArray * output,
+				 struct job_control *control, void *data)
+{
+  return connector_download_data_pkg (path, output, control, data,
+				      PKG_FILE_TYPE_PROJECT |
+				      PKG_FILE_WITH_SAMPLES,
+				      &FS_DATA_PRJ_OPERATIONS,
+				      connector_download_data_prj);
+}
+
 gchar *
 connector_get_upload_path (struct connector *connector,
 			   struct item_iterator *remote_iter,
@@ -3358,32 +3631,18 @@ connector_get_upload_path (struct connector *connector,
 }
 
 gchar *
-connector_get_download_path (struct connector *connector,
+connector_get_download_name (struct connector *connector,
 			     struct item_iterator *remote_iter,
 			     const struct fs_operations *ops,
-			     const gchar * dst_dir, const gchar * src_path)
+			     const gchar * src_path)
 {
   gint32 id;
-  const gchar *src_fpath, *src_dir;
-  gchar *name, *namec, *filename, *path, *dl_ext, *src_pathc, *src_dirc;
   struct item_iterator iter;
-  const gchar *md_ext;
-  const gchar *ext = get_ext (src_path);
-  gint res;
+  const gchar *src_dir;
+  gchar *namec, *name, *src_dirc;
+  gint ret;
 
-  src_pathc = strdup (src_path);
-  if (ext && strcmp (ext, "metadata") == 0 && ops->fs != FS_SAMPLES)
-    {
-      src_fpath = dirname (src_pathc);
-      md_ext = ".metadata";
-    }
-  else
-    {
-      src_fpath = src_pathc;
-      md_ext = "";
-    }
-
-  namec = strdup (src_fpath);
+  namec = strdup (src_path);
   name = basename (namec);
 
   if (ops->fs == FS_SAMPLES || ops->fs == FS_RAW_ALL
@@ -3397,19 +3656,19 @@ connector_get_download_path (struct connector *connector,
     {
       if (copy_item_iterator (&iter, remote_iter))
 	{
-	  path = NULL;
+	  name = NULL;
 	  goto cleanup;
 	}
     }
   else
     {
-      src_dirc = strdup (src_fpath);
+      src_dirc = strdup (src_path);
       src_dir = dirname (src_dirc);
-      res = ops->readdir (&iter, src_dir, connector);
+      ret = ops->readdir (&iter, src_dir, connector);
       g_free (src_dirc);
-      if (res)
+      if (ret)
 	{
-	  path = NULL;
+	  name = NULL;
 	  goto cleanup;
 	}
     }
@@ -3427,19 +3686,50 @@ connector_get_download_path (struct connector *connector,
     }
 
   free_item_iterator (&iter);
-
-end:
-  dl_ext = connector_get_full_ext (connector->device_desc, ops);
-  filename = malloc (PATH_MAX);
-  snprintf (filename, PATH_MAX, "%s.%s%s", name, dl_ext, md_ext);
-  g_free (dl_ext);
-  path = chain_path (dst_dir, filename);
-  g_free (filename);
-  g_free (name);
 cleanup:
-  g_free (src_pathc);
   g_free (namec);
+end:
+  return name;
+}
 
+gchar *
+connector_get_download_path (struct connector *connector,
+			     struct item_iterator *remote_iter,
+			     const struct fs_operations *ops,
+			     const gchar * dst_dir, const gchar * src_path)
+{
+  gchar *path, *src_pathc, *name, *dl_ext, *filename;
+  const gchar *src_fpath, *md_ext, *ext = get_ext (src_path);
+
+  src_pathc = strdup (src_path);
+  if (ext && strcmp (ext, "metadata") == 0 && ops->fs != FS_SAMPLES)
+    {
+      src_fpath = dirname (src_pathc);
+      md_ext = ".metadata";
+    }
+  else
+    {
+      src_fpath = src_pathc;
+      md_ext = "";
+    }
+
+  name = connector_get_download_name (connector, remote_iter, ops, src_fpath);
+  if (name)
+    {
+      dl_ext = connector_get_full_ext (connector->device_desc, ops);
+      filename = malloc (PATH_MAX);
+      snprintf (filename, PATH_MAX, "%s.%s%s", name, dl_ext, md_ext);
+      path = chain_path (dst_dir, filename);
+      g_free (name);
+      g_free (dl_ext);
+      g_free (filename);
+    }
+  else
+    {
+      path = NULL;
+    }
+
+  g_free (src_pathc);
   return path;
 }
 

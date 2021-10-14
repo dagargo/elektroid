@@ -40,6 +40,8 @@ struct connector
   snd_rawmidi_t *inputp;
   snd_rawmidi_t *outputp;
   gchar *device_name;
+  gchar *alias;
+  gchar *fw_version;
   gushort seq;
   GMutex mutex;
   ssize_t rx_len;
@@ -138,10 +140,15 @@ gchar *connector_get_upload_path (struct connector *, struct item_iterator *,
 				  const struct fs_operations *, const gchar *,
 				  const gchar *, gint32 *);
 
+gchar *connector_get_download_name (struct connector *,
+				    struct item_iterator *,
+				    const struct fs_operations *,
+				    const gchar *);
 gchar *connector_get_download_path (struct connector *,
 				    struct item_iterator *,
 				    const struct fs_operations *,
 				    const gchar *, const gchar *);
+
 
 gchar *connector_get_full_ext (const struct connector_device_desc *,
 			       const struct fs_operations *);

@@ -49,6 +49,12 @@ struct smpl_chunk_data
   } sample_loop;
 };
 
+struct g_byte_array_io_data
+{
+  GByteArray *array;
+  guint pos;
+};
+
 static const guint8 JUNK_CHUNK_DATA[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -56,11 +62,11 @@ static const guint8 JUNK_CHUNK_DATA[] = {
   0, 0, 0, 0
 };
 
-sf_count_t get_filelen_byte_array_io (void *);
-sf_count_t seek_byte_array_io (sf_count_t, int, void *);
-sf_count_t read_byte_array_io (void *, sf_count_t, void *);
-sf_count_t write_byte_array_io (const void *, sf_count_t, void *);
-sf_count_t tell_byte_array_io (void *);
+static sf_count_t get_filelen_byte_array_io (void *);
+static sf_count_t seek_byte_array_io (sf_count_t, int, void *);
+static sf_count_t read_byte_array_io (void *, sf_count_t, void *);
+static sf_count_t write_byte_array_io (const void *, sf_count_t, void *);
+static sf_count_t tell_byte_array_io (void *);
 
 static SF_VIRTUAL_IO G_BYTE_ARRAY_IO = {
   .get_filelen = get_filelen_byte_array_io,
@@ -70,14 +76,14 @@ static SF_VIRTUAL_IO G_BYTE_ARRAY_IO = {
   .tell = tell_byte_array_io
 };
 
-sf_count_t
+static sf_count_t
 get_filelen_byte_array_io (void *user_data)
 {
   struct g_byte_array_io_data *data = user_data;
   return data->array->len;
 }
 
-sf_count_t
+static sf_count_t
 seek_byte_array_io (sf_count_t offset, int whence, void *user_data)
 {
   struct g_byte_array_io_data *data = user_data;
@@ -103,7 +109,7 @@ seek_byte_array_io (sf_count_t offset, int whence, void *user_data)
   return data->pos;
 }
 
-sf_count_t
+static sf_count_t
 read_byte_array_io (void *ptr, sf_count_t count, void *user_data)
 {
   struct g_byte_array_io_data *data = user_data;
@@ -115,7 +121,7 @@ read_byte_array_io (void *ptr, sf_count_t count, void *user_data)
   return count;
 }
 
-sf_count_t
+static sf_count_t
 write_byte_array_io (const void *ptr, sf_count_t count, void *user_data)
 {
   struct g_byte_array_io_data *data = user_data;
@@ -135,7 +141,7 @@ write_byte_array_io (const void *ptr, sf_count_t count, void *user_data)
   return count;
 }
 
-sf_count_t
+static sf_count_t
 tell_byte_array_io (void *user_data)
 {
   struct g_byte_array_io_data *data = user_data;
@@ -143,7 +149,7 @@ tell_byte_array_io (void *user_data)
 }
 
 static gint
-sample_save_data (GByteArray * sample,
+sample_wave_data (GByteArray * sample,
 		  struct job_control *control,
 		  struct g_byte_array_io_data *data)
 {
@@ -154,6 +160,9 @@ sample_save_data (GByteArray * sample,
   struct SF_CHUNK_INFO smpl_chunk_info;
   struct smpl_chunk_data smpl_chunk_data;
   struct sample_loop_data *sample_loop_data = control->data;
+
+  g_byte_array_set_size (data->array, sample->len + 1024);	//We need space for the headers.
+  data->array->len = 0;
 
   debug_print (1, "Loop start at %d; loop end at %d\n",
 	       sample_loop_data->start, sample_loop_data->end);
@@ -219,19 +228,26 @@ sample_save_data (GByteArray * sample,
 }
 
 gint
+sample_wave (GByteArray * sample, GByteArray * wave,
+	     struct job_control *control)
+{
+  struct g_byte_array_io_data data;
+  data.pos = 0;
+  data.array = wave;
+  return sample_wave_data (sample, control, &data);
+}
+
+gint
 sample_save (const gchar * path, GByteArray * sample,
 	     struct job_control *control)
 {
-  gint ret;
-  struct g_byte_array_io_data data;
-  data.array = g_byte_array_sized_new (sample->len + 1024);	//We need space for the headers.
-  data.pos = 0;
-  ret = sample_save_data (sample, control, &data);
+  GByteArray *wave = g_byte_array_new ();
+  gint ret = sample_wave (sample, wave, control);
   if (!ret)
     {
-      ret = save_file (path, data.array, control);
+      ret = save_file (path, wave, control);
     }
-  g_byte_array_free (data.array, TRUE);
+  g_byte_array_free (wave, TRUE);
   return ret;
 }
 

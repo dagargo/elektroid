@@ -19,6 +19,8 @@ AM_CONDITIONAL([GUI], [test "${CLI_ONLY}" != yes])
 
 # Checks for libraries.
 PKG_CHECK_MODULES(ALSA, alsa >= 1.1.3)
+PKG_CHECK_MODULES(zlib, zlib >= 1.1.8)
+PKG_CHECK_MODULES(libzip, libzip >= 1.1.2)
 AM_COND_IF(GUI, [PKG_CHECK_MODULES([GTK], [gtk+-3.0])])
 
 PKG_CHECK_MODULES(SNDFILE, sndfile >= 1.0.2, ac_cv_sndfile=1, ac_cv_sndfile=0)
@@ -41,7 +43,7 @@ AM_GNU_GETTEXT_VERSION([0.12.1])
 ])
 
 # Checks for header files.
-AC_CHECK_HEADERS([unistd.h limits.h zlib.h])
+AC_CHECK_HEADERS([unistd.h limits.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 

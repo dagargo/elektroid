@@ -28,11 +28,7 @@
 
 #define LOAD_BUFFER_LEN 4800	// In guint16 frames; 9600 B; 0.1 ms
 
-struct g_byte_array_io_data
-{
-  GByteArray *array;
-  guint pos;
-};
+gint sample_wave (GByteArray *, GByteArray *, struct job_control *);
 
 gint sample_save (const gchar *, GByteArray *, struct job_control *);
 
