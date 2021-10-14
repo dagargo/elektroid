@@ -206,12 +206,6 @@ static const guint8 FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST[] =
   { 0x41, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 FS_SAMPLE_WRITE_FILE_REQUEST[] =
   { 0x42, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-static const guint8 FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST[] = {
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xbb, 0x80, 0, 0, 0, 0,
-  0, 0, 0, 0, 0x7f, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};
 
 static const guint8 FS_RAW_READ_DIR_REQUEST[] = { 0x14 };
 static const guint8 FS_RAW_CREATE_DIR_REQUEST[] = { 0x15 };
@@ -783,8 +777,8 @@ connector_new_msg_open_sample_write (const gchar * path, guint bytes)
 					 (FS_SAMPLE_OPEN_FILE_WRITER_REQUEST),
 					 path,
 					 bytes +
-					 sizeof
-					 (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
+					 sizeof (struct
+						 elektron_sample_info));
 }
 
 static GByteArray *
@@ -923,8 +917,8 @@ connector_new_msg_close_sample_write (guint id, guint bytes)
 					  (FS_SAMPLE_CLOSE_FILE_WRITER_REQUEST),
 					  id,
 					  bytes +
-					  sizeof
-					  (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST));
+					  sizeof (struct
+						  elektron_sample_info));
 }
 
 static GByteArray *
@@ -2107,7 +2101,7 @@ connector_download_sample (const gchar * path, GByteArray * output,
   return connector_download_common (path, output, control, data,
 				    connector_new_msg_open_sample_read,
 				    sizeof
-				    (FS_SAMPLE_WRITE_FILE_EXTRA_DATA_1ST),
+				    (struct elektron_sample_info),
 				    connector_new_msg_read_sample_blk,
 				    connector_new_msg_close_sample_read,
 				    connector_copy_sample_data);
