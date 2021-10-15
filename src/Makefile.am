@@ -1,6 +1,6 @@
 PKG_CONFIG ?= pkg-config
 
-GUI_LIBS = alsa gtk+-3.0 libpulse libpulse-mainloop-glib zlib json-glib-1.0
+GUI_LIBS = alsa gtk+-3.0 libpulse zlib json-glib-1.0
 CLI_LIBS = alsa glib-2.0 zlib
 
 elektroid_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(GUI_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS)

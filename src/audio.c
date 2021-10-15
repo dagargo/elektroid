@@ -46,10 +46,9 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
   gshort *v;
   gint i;
 
-  //XXX: Until a better solution is found this corks the stream without using neither drain nor empty buffers (CPU)
   if (audio->release_frames > PA_BUFFER_LEN)
     {
-      audio_stop (audio, FALSE);
+      pa_stream_cork (audio->stream, 1, NULL, NULL);
       return;
     }
 
@@ -116,6 +115,7 @@ audio_stop (struct audio *audio, gboolean flush)
 
   debug_print (1, "Stopping audio...\n");
 
+  pa_threaded_mainloop_lock (audio->mainloop);
   if (flush)
     {
       operation = pa_stream_flush (audio->stream, NULL, NULL);
@@ -130,6 +130,7 @@ audio_stop (struct audio *audio, gboolean flush)
     {
       pa_operation_unref (operation);
     }
+  pa_threaded_mainloop_unlock (audio->mainloop);
 }
 
 void
@@ -151,11 +152,13 @@ audio_play (struct audio *audio)
   audio->release_frames = 0;
   g_mutex_unlock (&audio->control.mutex);
 
+  pa_threaded_mainloop_lock (audio->mainloop);
   operation = pa_stream_cork (audio->stream, 0, NULL, NULL);
   if (operation != NULL)
     {
       pa_operation_unref (operation);
     }
+  pa_threaded_mainloop_unlock (audio->mainloop);
 }
 
 static void
@@ -257,8 +260,8 @@ audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
   audio->sample = g_byte_array_new ();
   audio->frames = 0;
   audio->loop = FALSE;
-  audio->mainloop = pa_glib_mainloop_new (NULL);
-  api = pa_glib_mainloop_get_api (audio->mainloop);
+  audio->mainloop = pa_threaded_mainloop_new ();
+  api = pa_threaded_mainloop_get_api (audio->mainloop);
   audio->context = pa_context_new (api, PACKAGE);
   audio->stream = NULL;
   audio->index = PA_INVALID_INDEX;
@@ -270,7 +273,7 @@ audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
   if (pa_context_connect (audio->context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
     {
       pa_context_unref (audio->context);
-      pa_glib_mainloop_free (audio->mainloop);
+      pa_threaded_mainloop_free (audio->mainloop);
       audio->mainloop = NULL;
       err = -1;
     }
@@ -279,6 +282,8 @@ audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
       pa_context_set_state_callback (audio->context, audio_context_callback,
 				     audio);
     }
+
+  pa_threaded_mainloop_start (audio->mainloop);
 
   return err;
 }
@@ -289,6 +294,9 @@ audio_destroy (struct audio *audio)
   debug_print (1, "Destroying audio...\n");
 
   audio_stop (audio, TRUE);
+
+  pa_threaded_mainloop_stop (audio->mainloop);
+
   g_byte_array_free (audio->sample, TRUE);
   if (audio->stream)
     {
@@ -299,7 +307,7 @@ audio_destroy (struct audio *audio)
   if (audio->mainloop)
     {
       pa_context_unref (audio->context);
-      pa_glib_mainloop_free (audio->mainloop);
+      pa_threaded_mainloop_free (audio->mainloop);
       audio->mainloop = NULL;
     }
 

@@ -20,7 +20,6 @@
 
 #include <glib.h>
 #include <pulse/pulseaudio.h>
-#include <pulse/glib-mainloop.h>
 #include "utils.h"
 
 struct audio
@@ -28,7 +27,7 @@ struct audio
   GByteArray *sample;
   guint frames;
   gboolean loop;
-  pa_glib_mainloop *mainloop;
+  pa_threaded_mainloop *mainloop;
   pa_context *context;
   pa_stream *stream;
   gint pos;
