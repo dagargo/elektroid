@@ -1218,11 +1218,14 @@ elektroid_load_sample (gpointer path)
   audio.control.active = TRUE;
   g_mutex_unlock (&audio.control.mutex);
 
-  sample_load_with_frames (path, audio.sample, &audio.control, &audio.frames);
-  sample_loop_data = (struct sample_loop_data *) audio.control.data;
-  debug_print (1, "Loop start at %d, loop end at %d\n",
-	       sample_loop_data->start, sample_loop_data->end);
-  g_free (audio.control.data);
+  if (sample_load_with_frames
+      (path, audio.sample, &audio.control, &audio.frames) >= 0)
+    {
+      sample_loop_data = (struct sample_loop_data *) audio.control.data;
+      debug_print (1, "Loop start at %d, loop end at %d\n",
+		   sample_loop_data->start, sample_loop_data->end);
+      g_free (audio.control.data);
+    }
 
   g_mutex_lock (&audio.control.mutex);
   audio.control.active = FALSE;
