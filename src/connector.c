@@ -3298,7 +3298,7 @@ connector_get_upload_path (struct connector *connector,
 			   const gchar * dst_dir, const gchar * src_path,
 			   gint32 * next_index)
 {
-  gchar *path, *indexs, *namec, *name;
+  gchar *path, *indexs, *namec, *name, *aux;
   struct item_iterator iter;
   gboolean empty;
 
@@ -3308,8 +3308,18 @@ connector_get_upload_path (struct connector *connector,
       namec = strdup (src_path);
       name = basename (namec);
       remove_ext (name);
-      path = chain_path (dst_dir, name);
+      aux = chain_path (dst_dir, name);
       g_free (namec);
+
+      if (ops->fs == FS_RAW_ALL || ops->fs == FS_RAW_PRESETS)
+	{
+	  path = connector_add_ext_to_mc_snd (aux);
+	  g_free (aux);
+	}
+      else
+	{
+	  path = aux;
+	}
       return path;
     }
 
