@@ -28,7 +28,6 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include "connector.h"
-#include "sample.h"
 #include "utils.h"
 
 #define GET_FS_OPS_OFFSET(member) offsetof(struct fs_operations, member)
@@ -433,9 +432,8 @@ cli_upload (int argc, char *argv[], int optind, enum connector_fs fs)
   fs_ops = connector_get_fs_operations (fs);
   dst_dir = cli_get_path (device_dst_path);
 
-  upload_path =
-    connector_get_upload_path (&connector, NULL, fs_ops, dst_dir, src_path,
-			       &index);
+  upload_path = connector_get_upload_path (&connector, NULL, fs_ops,
+					   dst_dir, src_path, &index);
 
   array = g_byte_array_new ();
   control.active = TRUE;

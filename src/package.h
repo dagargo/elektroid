@@ -25,7 +25,7 @@
 enum package_resource_type
 {
   PKG_RES_TYPE_NONE,
-  PKG_RES_TYPE_MAIN,
+  PKG_RES_TYPE_PAYLOAD,
   PKG_RES_TYPE_MANIFEST,
   PKG_RES_TYPE_SAMPLE
 };
@@ -41,16 +41,17 @@ struct package_resource
 
 enum package_type
 {
-  PKG_FILE_TYPE_SOUND = 1,
-  PKG_FILE_TYPE_PROJECT = 2
+  PKG_FILE_TYPE_NONE,
+  PKG_FILE_TYPE_SOUND,
+  PKG_FILE_TYPE_PROJECT
 };
 
 struct package
 {
   gchar *name;
-  const gchar *fw_version;
-  const struct connector_device_desc *device_desc;
   enum package_type type;
+  gchar *fw_version;
+  const struct connector_device_desc *device_desc;
   gchar *buff;
   zip_source_t *zip_source;
   zip_t *zip;
@@ -61,10 +62,21 @@ struct package
 gint package_begin (struct package *, gchar *, const gchar *,
 		    const struct connector_device_desc *, enum package_type);
 
-void package_free_package_resource (gpointer);
-
-gint package_add_resource (struct package *, struct package_resource *);
+gint package_receive_pkg_resources (struct package *, const gchar *,
+				    struct job_control *, struct connector *,
+				    fs_remote_file_op, fs_remote_file_op);
 
 gint package_end (struct package *, GByteArray *);
 
 void package_destroy (struct package *);
+
+gint package_open (struct package *, GByteArray *,
+		   const struct connector_device_desc *);
+
+gint package_send_pkg_resources (struct package *,
+				 const gchar *,
+				 struct job_control *,
+				 struct connector *, fs_remote_file_op,
+				 fs_remote_file_op);
+
+void package_close (struct package *);

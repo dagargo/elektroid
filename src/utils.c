@@ -292,7 +292,7 @@ load_file (const char *path, GByteArray * array, struct job_control *control)
 
   if (fread (array->data, 1, size, file) == size)
     {
-      debug_print (1, "%zu bytes written\n", size);
+      debug_print (1, "%zu bytes read\n", size);
     }
   else
     {

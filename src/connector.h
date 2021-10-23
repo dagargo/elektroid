@@ -147,6 +147,7 @@ gchar *connector_get_download_name (struct connector *,
 				    struct item_iterator *,
 				    const struct fs_operations *,
 				    const gchar *);
+
 gchar *connector_get_download_path (struct connector *,
 				    struct item_iterator *,
 				    const struct fs_operations *,
@@ -155,5 +156,8 @@ gchar *connector_get_download_path (struct connector *,
 
 gchar *connector_get_full_ext (const struct connector_device_desc *,
 			       const struct fs_operations *);
+
+gchar *connector_get_sample_path_from_hash_size (struct connector *,
+						 guint32, guint32);
 
 #endif

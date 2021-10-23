@@ -25,7 +25,6 @@
 #include <zlib.h>
 #include <libgen.h>
 #include <json-glib/json-glib.h>
-#include <zip.h>
 #include "connector.h"
 #include "utils.h"
 #include "sample.h"
@@ -179,10 +178,10 @@ static gint connector_download_data_prj_pkg (const gchar *, GByteArray *,
 static gint connector_upload_data_any (const gchar *, GByteArray *,
 				       struct job_control *, void *);
 
-static gint connector_upload_data_prj (const gchar *, GByteArray *,
+static gint connector_upload_data_prj_pkg (const gchar *, GByteArray *,
 					   struct job_control *, void *);
 
-static gint connector_upload_data_snd (const gchar *, GByteArray *,
+static gint connector_upload_data_snd_pkg (const gchar *, GByteArray *,
 					   struct job_control *, void *);
 
 static gint connector_copy_iterator (struct item_iterator *,
@@ -432,7 +431,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .clear = connector_clear_data_item_prj,
   .swap = connector_swap_data_item_prj,
   .download = connector_download_data_prj_pkg,
-  .upload = connector_upload_data_prj,
+  .upload = connector_upload_data_prj_pkg,
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
@@ -450,7 +449,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .clear = connector_clear_data_item_snd,
   .swap = connector_swap_data_item_snd,
   .download = connector_download_data_snd_pkg,
-  .upload = connector_upload_data_snd,
+  .upload = connector_upload_data_snd_pkg,
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
@@ -1906,7 +1905,7 @@ connector_upload_common (const gchar * path, GByteArray * input,
   return res;
 }
 
-static gint
+gint
 connector_upload_sample (const gchar * path, GByteArray * sample,
 			 struct job_control *control, void *data)
 {
@@ -2102,7 +2101,7 @@ cleanup:
   return res;
 }
 
-static gint
+gint
 connector_download_sample (const gchar * path, GByteArray * output,
 			   struct job_control *control, void *data)
 {
@@ -3293,7 +3292,7 @@ connector_download_data_snd (const gchar * path, GByteArray * output,
 					 FS_DATA_SND_PREFIX);
 }
 
-static gchar *
+gchar *
 connector_get_sample_path_from_hash_size (struct connector *connector,
 					  guint32 hash, guint32 size)
 {
@@ -3328,162 +3327,6 @@ connector_get_sample_path_from_hash_size (struct connector *connector,
 }
 
 static gint
-connector_add_pkg_resources (struct package *pkg, const gchar * path,
-			     struct job_control *control,
-			     struct connector *connector,
-			     fs_remote_file_op download)
-{
-  gint ret, i, elements;
-  gint64 hash, size;
-  GError *error;
-  GByteArray *aux, *wave;
-  JsonParser *parser;
-  JsonReader *reader;
-  gchar *metadata_path, *sample_path;
-  struct package_resource *pkg_resource;
-
-  metadata_path = chain_path (path, ".metadata");
-  debug_print (1, "Getting metadata from %s...\n", metadata_path);
-  aux = g_byte_array_new ();
-  control->parts = 130;		// 128 sample slots, metadata and main.
-  control->part = 0;
-  set_job_control_progress (control, 0.0);
-  ret = download (metadata_path, aux, control, connector);
-  if (ret)
-    {
-      debug_print (1, "Metadata file not available\n");
-      control->parts = 2;
-      control->part++;
-      goto cleanup_aux;
-    }
-
-  parser = json_parser_new ();
-  if (!json_parser_load_from_data
-      (parser, (gchar *) aux->data, aux->len, &error))
-    {
-      error_print ("Unable to parse stream: %s", error->message);
-      g_clear_error (&error);
-      ret = -1;
-      goto cleanup_parser;
-    }
-
-  reader = json_reader_new (json_parser_get_root (parser));
-  if (!reader)
-    {
-      ret = -1;
-      goto cleanup_reader;
-    }
-
-  if (!json_reader_read_member (reader, "sample_references"))
-    {
-      debug_print (1, "No 'sample_references' found\n");
-      ret = 0;
-      control->parts = 2;
-      control->part++;
-      goto cleanup_reader;
-    }
-
-  if (!json_reader_is_array (reader))
-    {
-      ret = -1;
-      goto cleanup_reader;
-    }
-
-  if (!json_reader_count_elements (reader))
-    {
-      debug_print (1, "No samples found\n");
-      control->parts = 2;
-      control->part++;
-      ret = 0;
-      goto cleanup_reader;
-    }
-
-  ret = 0;
-  elements = json_reader_count_elements (reader);
-  control->parts = elements + 2;
-  control->part++;
-  for (i = 0; i < elements; i++)
-    {
-      if (!json_reader_read_element (reader, i))
-	{
-	  ret = -1;
-	  goto cleanup_reader;
-	}
-      if (!json_reader_read_member (reader, "hash"))
-	{
-	  ret = -1;
-	  goto cleanup_reader;
-	}
-      hash = json_reader_get_int_value (reader);
-      json_reader_end_element (reader);
-
-      if (!json_reader_read_member (reader, "size"))
-	{
-	  ret = -1;
-	  goto cleanup_reader;
-	}
-      size = json_reader_get_int_value (reader);
-      json_reader_end_element (reader);
-
-      json_reader_end_element (reader);
-
-      sample_path =
-	connector_get_sample_path_from_hash_size (connector, hash, size);
-      if (!sample_path)
-	{
-	  debug_print (1, "Sample not found. Skipping...\n");
-	  control->part++;
-	  continue;
-	}
-
-      debug_print (1, "Hash: %ld; size: %ld; path: %s\n", hash, size,
-		   sample_path);
-      debug_print (1, "Getting sample %s...\n", sample_path);
-      g_byte_array_set_size (aux, 0);
-      if (connector_download_sample (sample_path, aux, control, connector))
-	{
-	  error_print ("Error while downloading sample\n");
-	  g_free (sample_path);
-	  goto cleanup_reader;
-	}
-
-      wave = g_byte_array_new ();
-      if (sample_wave (aux, wave, control))
-	{
-	  error_print ("Error while converting sample to wave file\n");
-	  g_byte_array_free (wave, TRUE);
-	  g_free (sample_path);
-	  goto cleanup_reader;
-	}
-
-      pkg_resource = g_malloc (sizeof (struct package_resource));
-      pkg_resource->type = PKG_RES_TYPE_SAMPLE;
-      pkg_resource->data = wave;
-      pkg_resource->hash = hash;
-      pkg_resource->size = size;
-      pkg_resource->path = g_malloc (PATH_MAX);
-      snprintf (pkg_resource->path, PATH_MAX, "Samples%s.wav", sample_path);
-      if (package_add_resource (pkg, pkg_resource))
-	{
-	  package_free_package_resource (pkg_resource);
-	  ret = -EIO;
-	  goto cleanup_reader;
-	}
-
-      control->part++;
-    }
-
-cleanup_reader:
-  g_object_unref (reader);
-cleanup_parser:
-  g_object_unref (parser);
-cleanup_aux:
-  g_byte_array_free (aux, TRUE);
-  g_free (metadata_path);
-  return ret;
-}
-
-static gint
 connector_download_data_pkg (const gchar * path, GByteArray * output,
 			     struct job_control *control, void *data,
 			     enum package_type type,
@@ -3492,9 +3335,7 @@ connector_download_data_pkg (const gchar * path, GByteArray * output,
 {
   gint ret;
   gchar *pkg_name;
-  GByteArray *owner;
   struct package pkg;
-  struct package_resource *pkg_resource;
   struct connector *connector = data;
 
   pkg_name = connector_get_download_name (connector, NULL, ops, path);
@@ -3511,35 +3352,10 @@ connector_download_data_pkg (const gchar * path, GByteArray * output,
     }
 
   ret =
-    connector_add_pkg_resources (&pkg, path, control, connector, download);
-  if (ret)
-    {
-      goto cleanup_package;
-    }
+    package_receive_pkg_resources (&pkg, path, control, connector, download,
+				   connector_download_sample);
+  ret = ret || package_end (&pkg, output);
 
-  debug_print (1, "Getting the main file from %s...\n", path);
-  owner = g_byte_array_new ();
-  ret = download (path, owner, control, connector);
-  if (ret)
-    {
-      ret = -1;
-      goto cleanup_package;
-    }
-
-  pkg_resource = g_malloc (sizeof (struct package_resource));
-  pkg_resource->type = PKG_RES_TYPE_MAIN;
-  pkg_resource->data = owner;
-  pkg_resource->path = strdup (pkg_name);
-  if (package_add_resource (&pkg, pkg_resource))
-    {
-      package_free_package_resource (pkg_resource);
-      ret = -1;
-      goto cleanup_package;
-    }
-
-  ret = package_end (&pkg, output);
-
-cleanup_package:
   package_destroy (&pkg);
   return ret;
 }
@@ -3898,6 +3714,46 @@ connector_upload_data_snd (const gchar * path, GByteArray * array,
 {
   return connector_upload_data_prefix (path, array, control, data,
 				       FS_DATA_SND_PREFIX);
+}
+
+static gint
+connector_upload_data_pkg (const gchar * path, GByteArray * input,
+			   struct job_control *control, void *data,
+			   guint8 type, const struct fs_operations *ops,
+			   fs_remote_file_op upload)
+{
+  gint ret;
+  struct package pkg;
+  struct connector *connector = data;
+
+  ret = package_open (&pkg, input, connector->device_desc);
+  if (!ret)
+    {
+      ret = package_send_pkg_resources (&pkg, path, control, connector,
+					upload, connector_upload_sample);
+      package_close (&pkg);
+    }
+  return ret;
+}
+
+static gint
+connector_upload_data_snd_pkg (const gchar * path, GByteArray * input,
+			       struct job_control *control, void *data)
+{
+  return connector_upload_data_pkg (path, input, control, data,
+				    PKG_FILE_TYPE_SOUND,
+				    &FS_DATA_SND_OPERATIONS,
+				    connector_upload_data_snd);
+}
+
+static gint
+connector_upload_data_prj_pkg (const gchar * path, GByteArray * input,
+			       struct job_control *control, void *data)
+{
+  return connector_upload_data_pkg (path, input, control, data,
+				    PKG_FILE_TYPE_PROJECT,
+				    &FS_DATA_PRJ_OPERATIONS,
+				    connector_upload_data_prj);
 }
 
 gchar *
