@@ -372,3 +372,10 @@ get_human_size (guint size, gboolean with_space)
 
   return label;
 }
+
+void
+set_job_control_progress (struct job_control *control, gdouble p)
+{
+  gdouble v = (double) control->part / control->parts + p / control->parts;
+  control->callback (v);
+}

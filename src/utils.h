@@ -72,6 +72,8 @@ struct job_control
   gboolean active;
   GMutex mutex;
   job_control_callback callback;
+  gint parts;
+  gint part;
   void *data;
 };
 
@@ -152,5 +154,7 @@ gint save_file (const char *, GByteArray *, struct job_control *);
 gint save_file_char (const gchar *, const guint8 *, ssize_t);
 
 gchar *get_human_size (guint, gboolean);
+
+void set_job_control_progress (struct job_control *, gdouble);
 
 #endif

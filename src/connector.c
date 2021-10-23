@@ -1881,7 +1881,8 @@ connector_upload_common (const gchar * path, GByteArray * input,
 
       if (control)
 	{
-	  control->callback (transferred / (double) input->len);
+	  set_job_control_progress (control,
+				    transferred / (double) input->len);
 	  g_mutex_lock (&control->mutex);
 	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
@@ -2067,7 +2068,8 @@ connector_download_common (const gchar * path, GByteArray * output,
 
       if (control)
 	{
-	  control->callback (next_block_start / (double) frames);
+	  set_job_control_progress (control,
+				    next_block_start / (double) frames);
 	  g_mutex_lock (&control->mutex);
 	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
@@ -3260,7 +3262,7 @@ connector_download_data_prefix (const gchar * path, GByteArray * output,
 
       if (control)
 	{
-	  control->callback (status / 1000.0);
+	  set_job_control_progress (control, status / 1000.0);
 	  g_mutex_lock (&control->mutex);
 	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
@@ -3276,6 +3278,8 @@ static gint
 connector_download_data_any (const gchar * path, GByteArray * output,
 			     struct job_control *control, void *data)
 {
+  control->parts = 1;
+  control->part = 0;
   return connector_download_data_prefix (path, output, control, data, NULL);
 }
 
@@ -3347,6 +3351,8 @@ connector_add_pkg_resources (struct package *pkg, const gchar * path,
   metadata_path = chain_path (path, ".metadata");
   debug_print (1, "Getting metadata from %s...\n", metadata_path);
   aux = g_byte_array_new ();
+  control->parts = 130;		// 128 sample slots, metadata and main.
+  control->part = 0;
   ret = download (metadata_path, aux, control, connector);
   if (ret)
     {
@@ -3391,8 +3397,11 @@ connector_add_pkg_resources (struct package *pkg, const gchar * path,
       goto cleanup_reader;
     }
 
+
   ret = 0;
   elements = json_reader_count_elements (reader);
+  control->parts = elements + 2;
+  control->part++;
   for (i = 0; i < elements; i++)
     {
       if (!json_reader_read_element (reader, i))
@@ -3423,6 +3432,7 @@ connector_add_pkg_resources (struct package *pkg, const gchar * path,
       if (!sample_path)
 	{
 	  debug_print (1, "Sample not found. Skipping...\n");
+	  control->part++;
 	  continue;
 	}
 
@@ -3459,6 +3469,8 @@ connector_add_pkg_resources (struct package *pkg, const gchar * path,
 	  ret = -EIO;
 	  goto cleanup_reader;
 	}
+
+      control->part++;
     }
 
 cleanup_reader:
@@ -3854,7 +3866,7 @@ connector_upload_data_prefix (const gchar * path, GByteArray * array,
 
       if (control)
 	{
-	  control->callback (offset / (gdouble) array->len);
+	  set_job_control_progress (control, offset / (gdouble) array->len);
 	  g_mutex_lock (&control->mutex);
 	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
