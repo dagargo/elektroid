@@ -22,6 +22,9 @@
 #include <alsa/asoundlib.h>
 #include "utils.h"
 
+#ifndef CONNECTOR_H
+#define CONNECTOR_H
+
 #define SYSEX_TIMEOUT 5000
 #define REST_TIME 50000
 
@@ -152,3 +155,5 @@ gchar *connector_get_download_path (struct connector *,
 
 gchar *connector_get_full_ext (const struct connector_device_desc *,
 			       const struct fs_operations *);
+
+#endif

@@ -20,10 +20,7 @@
 
 #include <glib.h>
 #include <zip.h>
-
-#define PKG_FILE_TYPE_SOUND   0x01
-#define PKG_FILE_TYPE_PROJECT 0x02
-#define PKG_FILE_WITH_SAMPLES 0x10
+#include "connector.h"
 
 enum package_resource_type
 {
@@ -42,12 +39,18 @@ struct package_resource
   GByteArray *data;
 };
 
+enum package_type
+{
+  PKG_FILE_TYPE_SOUND = 1,
+  PKG_FILE_TYPE_PROJECT = 2
+};
+
 struct package
 {
   gchar *name;
   const gchar *fw_version;
-  guint8 product;
-  guint8 type;
+  const struct connector_device_desc *device_desc;
+  enum package_type type;
   gchar *buff;
   zip_source_t *zip_source;
   zip_t *zip;
@@ -55,7 +58,8 @@ struct package
   struct package_resource *manifest;
 };
 
-gint package_begin (struct package *, gchar *, const gchar *, guint8, guint8);
+gint package_begin (struct package *, gchar *, const gchar *,
+		    const struct connector_device_desc *, enum package_type);
 
 void package_free_package_resource (gpointer);
 

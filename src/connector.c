@@ -170,12 +170,6 @@ static gint connector_swap_data_item_snd (const gchar *, const gchar *,
 static gint connector_download_data_any (const gchar *, GByteArray *,
 					 struct job_control *, void *);
 
-static gint connector_download_data_prj (const gchar *, GByteArray *,
-					 struct job_control *, void *);
-
-static gint connector_download_data_snd (const gchar *, GByteArray *,
-					 struct job_control *, void *);
-
 static gint connector_download_data_snd_pkg (const gchar *, GByteArray *,
 					     struct job_control *, void *);
 
@@ -186,10 +180,10 @@ static gint connector_upload_data_any (const gchar *, GByteArray *,
 				       struct job_control *, void *);
 
 static gint connector_upload_data_prj (const gchar *, GByteArray *,
-				       struct job_control *, void *);
+					   struct job_control *, void *);
 
 static gint connector_upload_data_snd (const gchar *, GByteArray *,
-				       struct job_control *, void *);
+					   struct job_control *, void *);
 
 static gint connector_copy_iterator (struct item_iterator *,
 				     struct item_iterator *);
@@ -3353,10 +3347,13 @@ connector_add_pkg_resources (struct package *pkg, const gchar * path,
   aux = g_byte_array_new ();
   control->parts = 130;		// 128 sample slots, metadata and main.
   control->part = 0;
+  set_job_control_progress (control, 0.0);
   ret = download (metadata_path, aux, control, connector);
   if (ret)
     {
       debug_print (1, "Metadata file not available\n");
+      control->parts = 2;
+      control->part++;
       goto cleanup_aux;
     }
 
@@ -3381,6 +3378,8 @@ connector_add_pkg_resources (struct package *pkg, const gchar * path,
     {
       debug_print (1, "No 'sample_references' found\n");
       ret = 0;
+      control->parts = 2;
+      control->part++;
       goto cleanup_reader;
     }
 
@@ -3393,10 +3392,11 @@ connector_add_pkg_resources (struct package *pkg, const gchar * path,
   if (!json_reader_count_elements (reader))
     {
       debug_print (1, "No samples found\n");
+      control->parts = 2;
+      control->part++;
       ret = 0;
       goto cleanup_reader;
     }
-
 
   ret = 0;
   elements = json_reader_count_elements (reader);
@@ -3486,7 +3486,8 @@ cleanup_aux:
 static gint
 connector_download_data_pkg (const gchar * path, GByteArray * output,
 			     struct job_control *control, void *data,
-			     guint8 type, const struct fs_operations *ops,
+			     enum package_type type,
+			     const struct fs_operations *ops,
 			     fs_remote_file_op download)
 {
   gint ret;
@@ -3503,22 +3504,17 @@ connector_download_data_pkg (const gchar * path, GByteArray * output,
     }
 
   if (package_begin
-      (&pkg, pkg_name, connector->fw_version, connector->device_desc->id,
-       type))
+      (&pkg, pkg_name, connector->fw_version, connector->device_desc, type))
     {
       g_free (pkg_name);
       return -1;
     }
 
-  if (type & PKG_FILE_WITH_SAMPLES)
+  ret =
+    connector_add_pkg_resources (&pkg, path, control, connector, download);
+  if (ret)
     {
-      ret =
-	connector_add_pkg_resources (&pkg, path, control, connector,
-				     download);
-      if (ret)
-	{
-	  goto cleanup_package;
-	}
+      goto cleanup_package;
     }
 
   debug_print (1, "Getting the main file from %s...\n", path);
@@ -3548,24 +3544,22 @@ cleanup_package:
   return ret;
 }
 
-gint
+static gint
 connector_download_data_snd_pkg (const gchar * path, GByteArray * output,
 				 struct job_control *control, void *data)
 {
   return connector_download_data_pkg (path, output, control, data,
-				      PKG_FILE_TYPE_SOUND |
-				      PKG_FILE_WITH_SAMPLES,
+				      PKG_FILE_TYPE_SOUND,
 				      &FS_DATA_SND_OPERATIONS,
 				      connector_download_data_snd);
 }
 
-gint
+static gint
 connector_download_data_prj_pkg (const gchar * path, GByteArray * output,
 				 struct job_control *control, void *data)
 {
   return connector_download_data_pkg (path, output, control, data,
-				      PKG_FILE_TYPE_PROJECT |
-				      PKG_FILE_WITH_SAMPLES,
+				      PKG_FILE_TYPE_PROJECT,
 				      &FS_DATA_PRJ_OPERATIONS,
 				      connector_download_data_prj);
 }
@@ -3885,6 +3879,8 @@ static gint
 connector_upload_data_any (const gchar * path, GByteArray * array,
 			   struct job_control *control, void *data)
 {
+  control->parts = 1;
+  control->part = 0;
   return connector_upload_data_prefix (path, array, control, data, NULL);
 }
 

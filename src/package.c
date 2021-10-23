@@ -30,14 +30,15 @@
 
 gint
 package_begin (struct package *pkg, gchar * name, const gchar * fw_version,
-	       guint8 product, guint8 type)
+	       const struct connector_device_desc *device_desc,
+	       enum package_type type)
 {
   zip_error_t zerror;
   pkg->resources = NULL;
   pkg->buff = g_malloc (MAX_PACKAGE_LEN);
   pkg->name = name;
   pkg->fw_version = fw_version;
-  pkg->product = product;
+  pkg->device_desc = device_desc;
   pkg->type = type;
 
   debug_print (1, "Creating zip buffer...\n");
@@ -146,7 +147,7 @@ package_add_manifest (struct package *pkg)
 
   json_builder_set_member_name (builder, "ProductType");
   json_builder_begin_array (builder);
-  snprintf (val, LABEL_MAX, "%d", pkg->product);
+  snprintf (val, LABEL_MAX, "%d", pkg->device_desc->id);
   json_builder_add_string_value (builder, val);
   json_builder_end_array (builder);
 
@@ -163,7 +164,7 @@ package_add_manifest (struct package *pkg)
   json_builder_set_member_name (builder, "FirmwareVersion");
   json_builder_add_string_value (builder, pkg->fw_version);
 
-  if (pkg->type & PKG_FILE_WITH_SAMPLES)
+  if (pkg->device_desc->fss & FS_SAMPLES)
     {
       for (resource = pkg->resources; resource; resource = resource->next)
 	{
