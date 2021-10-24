@@ -30,6 +30,8 @@
 
 gint sample_wave (GByteArray *, GByteArray *, struct job_control *);
 
+gint sample_raw (GByteArray *, GByteArray *, struct job_control *);
+
 gint sample_save (const gchar *, GByteArray *, struct job_control *);
 
 gint sample_load (const gchar *, GByteArray *, struct job_control *);

@@ -118,6 +118,7 @@ read_byte_array_io (void *ptr, sf_count_t count, void *user_data)
       count = data->array->len - data->pos;
     }
   memcpy (ptr, data->array->data + data->pos, count);
+  data->pos += count;
   return count;
 }
 
@@ -151,7 +152,7 @@ tell_byte_array_io (void *user_data)
 static gint
 sample_wave_data (GByteArray * sample,
 		  struct job_control *control,
-		  struct g_byte_array_io_data *data)
+		  struct g_byte_array_io_data *wave)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -161,8 +162,8 @@ sample_wave_data (GByteArray * sample,
   struct smpl_chunk_data smpl_chunk_data;
   struct sample_loop_data *sample_loop_data = control->data;
 
-  g_byte_array_set_size (data->array, sample->len + 1024);	//We need space for the headers.
-  data->array->len = 0;
+  g_byte_array_set_size (wave->array, sample->len + 1024);	//We need space for the headers.
+  wave->array->len = 0;
 
   debug_print (1, "Loop start at %d; loop end at %d\n",
 	       sample_loop_data->start, sample_loop_data->end);
@@ -171,7 +172,7 @@ sample_wave_data (GByteArray * sample,
   sf_info.samplerate = ELEKTRON_SAMPLE_RATE;
   sf_info.channels = 1;
   sf_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
-  sndfile = sf_open_virtual (&G_BYTE_ARRAY_IO, SFM_WRITE, &sf_info, data);
+  sndfile = sf_open_virtual (&G_BYTE_ARRAY_IO, SFM_WRITE, &sf_info, wave);
   if (!sndfile)
     {
       error_print ("%s\n", sf_strerror (sndfile));
@@ -271,9 +272,10 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
     }
 }
 
-gint
-sample_load_with_frames (const gchar * path, GByteArray * sample,
-			 struct job_control *control, guint * frames)
+static gint
+sample_raw_data (struct g_byte_array_io_data *wave,
+		 struct job_control *control, GByteArray * sample,
+		 guint * frames)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -293,8 +295,6 @@ sample_load_with_frames (const gchar * path, GByteArray * sample,
   struct sample_loop_data *sample_loop_data;
   struct smpl_chunk_data smpl_chunk_data;
 
-  debug_print (1, "Loading file %s...\n", path);
-
   if (control)
     {
       g_mutex_lock (&control->mutex);
@@ -306,7 +306,7 @@ sample_load_with_frames (const gchar * path, GByteArray * sample,
     }
 
   sf_info.format = 0;
-  sndfile = sf_open (path, SFM_READ, &sf_info);
+  sndfile = sf_open_virtual (&G_BYTE_ARRAY_IO, SFM_READ, &sf_info, wave);
   if (!sndfile)
     {
       error_print ("%s\n", sf_strerror (sndfile));
@@ -507,9 +507,43 @@ cleanup:
   return sample->len > 0 ? 0 : -1;
 }
 
+static gint
+sample_raw_frames (GByteArray * wave, GByteArray * sample,
+		   struct job_control *control, guint * frames)
+{
+  struct g_byte_array_io_data data;
+  data.pos = 0;
+  data.array = wave;
+  return sample_raw_data (&data, control, sample, frames);
+}
+
 gint
-sample_load (const gchar * path, GByteArray * array,
+sample_raw (GByteArray * wave, GByteArray * sample,
+	    struct job_control *control)
+{
+  return sample_raw_frames (wave, sample, control, NULL);
+}
+
+gint
+sample_load_with_frames (const gchar * path, GByteArray * sample,
+			 struct job_control *control, guint * frames)
+{
+  GByteArray *wave = g_byte_array_new ();
+
+  debug_print (1, "Loading file %s...\n", path);
+
+  int ret = load_file (path, wave, control);
+  if (!ret)
+    {
+      ret = sample_raw_frames (wave, sample, control, frames);
+    }
+  g_byte_array_free (wave, TRUE);
+  return ret;
+}
+
+gint
+sample_load (const gchar * path, GByteArray * sample,
 	     struct job_control *control)
 {
-  return sample_load_with_frames (path, array, control, NULL);
+  return sample_load_with_frames (path, sample, control, NULL);
 }
