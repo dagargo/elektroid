@@ -1308,7 +1308,11 @@ elektroid_local_check_selection (gpointer data)
   struct item *item = NULL;
   gint count = browser_get_selected_items_count (&local_browser);
 
-  if (count == 1)
+  if (count == 0)
+    {
+      audio.name[0] = 0;
+    }
+  else if (count == 1)
     {
       browser_set_selected_row_iter (&local_browser, &iter);
       model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
