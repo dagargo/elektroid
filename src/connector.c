@@ -1905,15 +1905,24 @@ connector_upload_common (const gchar * path, GByteArray * input,
   return res;
 }
 
-gint
-connector_upload_sample (const gchar * path, GByteArray * sample,
-			 struct job_control *control, void *data)
+static gint
+connector_upload_sample_part (const gchar * path, GByteArray * sample,
+			      struct job_control *control, void *data)
 {
   return connector_upload_common (path, sample, control, data,
 				  connector_new_msg_open_sample_write,
 				  connector_new_msg_write_sample_blk,
 				  connector_new_msg_close_sample_write,
 				  control->data);
+}
+
+static gint
+connector_upload_sample (const gchar * path, GByteArray * output,
+			 struct job_control *control, void *data)
+{
+  control->parts = 1;
+  control->part = 0;
+  return connector_upload_sample_part (path, output, control, data);
 }
 
 static gint
@@ -2101,9 +2110,9 @@ cleanup:
   return res;
 }
 
-gint
-connector_download_sample (const gchar * path, GByteArray * output,
-			   struct job_control *control, void *data)
+static gint
+connector_download_sample_part (const gchar * path, GByteArray * output,
+				struct job_control *control, void *data)
 {
   return connector_download_common (path, output, control, data,
 				    connector_new_msg_open_sample_read,
@@ -2112,6 +2121,15 @@ connector_download_sample (const gchar * path, GByteArray * output,
 				    connector_new_msg_read_sample_blk,
 				    connector_new_msg_close_sample_read,
 				    connector_copy_sample_data);
+}
+
+static gint
+connector_download_sample (const gchar * path, GByteArray * output,
+			   struct job_control *control, void *data)
+{
+  control->parts = 1;
+  control->part = 0;
+  return connector_download_sample_part (path, output, control, data);
 }
 
 static gint
@@ -3353,7 +3371,7 @@ connector_download_data_pkg (const gchar * path, GByteArray * output,
 
   ret =
     package_receive_pkg_resources (&pkg, path, control, connector, download,
-				   connector_download_sample);
+				   connector_download_sample_part);
   ret = ret || package_end (&pkg, output);
 
   package_destroy (&pkg);
@@ -3730,7 +3748,7 @@ connector_upload_data_pkg (const gchar * path, GByteArray * input,
   if (!ret)
     {
       ret = package_send_pkg_resources (&pkg, path, control, connector,
-					upload, connector_upload_sample);
+					upload, connector_upload_sample_part);
       package_close (&pkg);
     }
   return ret;
