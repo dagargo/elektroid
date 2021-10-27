@@ -1913,6 +1913,7 @@ elektroid_upload_task (gpointer data)
   res = transfer.fs_ops->upload (transfer.dst, array, &transfer.control,
 				 remote_browser.data);
   g_free (transfer.control.data);
+  transfer.control.data = NULL;
   g_idle_add (elektroid_check_connector_bg, NULL);
 
   if (res && transfer.control.active)
@@ -2135,6 +2136,7 @@ elektroid_download_task (gpointer userdata)
 
       g_byte_array_free (array, TRUE);
       g_free (transfer.control.data);
+      transfer.control.data = NULL;
     }
   g_mutex_unlock (&transfer.control.mutex);
 

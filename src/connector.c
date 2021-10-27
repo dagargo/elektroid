@@ -1801,12 +1801,11 @@ connector_delete_raw_item (const gchar * path, void *data)
 }
 
 static gint
-connector_upload_common (const gchar * path, GByteArray * input,
+connector_upload_smplrw (const gchar * path, GByteArray * input,
 			 struct job_control *control, void *data,
 			 connector_msg_path_len_func new_msg_open_write,
 			 connector_msg_write_blk_func new_msg_write_blk,
-			 connector_msg_id_len_func new_msg_close_write,
-			 guint32 * last_sample)
+			 connector_msg_id_len_func new_msg_close_write)
 {
   struct connector *connector = data;
   GByteArray *tx_msg;
@@ -1858,7 +1857,7 @@ connector_upload_common (const gchar * path, GByteArray * input,
 
   while (transferred < input->len && active)
     {
-      tx_msg = new_msg_write_blk (id, input, &transferred, i, last_sample);
+      tx_msg = new_msg_write_blk (id, input, &transferred, i, control->data);
       rx_msg = connector_tx_and_rx (connector, tx_msg);
       if (!rx_msg)
 	{
@@ -1909,11 +1908,10 @@ static gint
 connector_upload_sample_part (const gchar * path, GByteArray * sample,
 			      struct job_control *control, void *data)
 {
-  return connector_upload_common (path, sample, control, data,
+  return connector_upload_smplrw (path, sample, control, data,
 				  connector_new_msg_open_sample_write,
 				  connector_new_msg_write_sample_blk,
-				  connector_new_msg_close_sample_write,
-				  control->data);
+				  connector_new_msg_close_sample_write);
 }
 
 static gint
@@ -1929,10 +1927,10 @@ static gint
 connector_upload_raw (const gchar * path, GByteArray * sample,
 		      struct job_control *control, void *data)
 {
-  return connector_upload_common (path, sample, control, data,
+  return connector_upload_smplrw (path, sample, control, data,
 				  connector_new_msg_open_raw_write,
 				  connector_new_msg_write_raw_blk,
-				  connector_new_msg_close_raw_write, NULL);
+				  connector_new_msg_close_raw_write);
 }
 
 static GByteArray *
@@ -1973,7 +1971,7 @@ connector_copy_raw_data (GByteArray * input, GByteArray * output)
 }
 
 static gint
-connector_download_common (const gchar * path, GByteArray * output,
+connector_download_smplrw (const gchar * path, GByteArray * output,
 			   struct job_control *control, void *data,
 			   connector_msg_path_func new_msg_open_read,
 			   guint read_offset,
@@ -2114,7 +2112,7 @@ static gint
 connector_download_sample_part (const gchar * path, GByteArray * output,
 				struct job_control *control, void *data)
 {
-  return connector_download_common (path, output, control, data,
+  return connector_download_smplrw (path, output, control, data,
 				    connector_new_msg_open_sample_read,
 				    sizeof
 				    (struct elektron_sample_info),
@@ -2138,7 +2136,7 @@ connector_download_raw (const gchar * path, GByteArray * output,
 {
   gint ret;
   gchar *path_with_ext = connector_add_ext_to_mc_snd (path);
-  ret = connector_download_common (path_with_ext, output, control, data,
+  ret = connector_download_smplrw (path_with_ext, output, control, data,
 				   connector_new_msg_open_raw_read,
 				   0,
 				   connector_new_msg_read_raw_blk,
@@ -3199,6 +3197,7 @@ connector_download_data_prefix (const gchar * path, GByteArray * output,
   res = 0;
   seq = 0;
   last = 0;
+  control->data = NULL;
   if (control)
     {
       g_mutex_lock (&control->mutex);
@@ -3611,6 +3610,7 @@ connector_upload_data_prefix (const gchar * path, GByteArray * array,
 
   seq = 0;
   offset = 0;
+  control->data = NULL;
   if (control)
     {
       g_mutex_lock (&control->mutex);

@@ -489,6 +489,8 @@ package_receive_pkg_resources (struct package *pkg,
 	  g_free (sample_path);
 	  goto cleanup_sample;
 	}
+      g_free (control->data);
+      control->data = NULL;
 
       pkg_resource = g_malloc (sizeof (struct package_resource));
       pkg_resource->type = PKG_RES_TYPE_SAMPLE;
@@ -742,6 +744,8 @@ package_send_pkg_resources (struct package *pkg,
       ret =
 	upload_sample (&sample_path[7], pkg_resource->data, control,
 		       connector);
+      g_free (control->data);
+      control->data = NULL;
       if (ret)
 	{
 	  error_print ("Error while uploading sample to '%s'\n",
