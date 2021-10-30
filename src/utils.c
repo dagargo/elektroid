@@ -148,7 +148,7 @@ get_ext (const gchar * name)
   int i = namelen;
   const gchar *ext = &name[namelen];
 
-  while (*(ext - 1) != '.' && i > 0)
+  while (i > 0 && *(ext - 1) != '.')
     {
       ext--;
       i--;
