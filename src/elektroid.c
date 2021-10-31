@@ -34,7 +34,7 @@
 #include "utils.h"
 #include "notifier.h"
 #include "local.h"
-#include "config.h"
+#include "preferences.h"
 
 #define MAX_DRAW_X 10000
 
@@ -187,7 +187,7 @@ static struct browser local_browser;
 
 static struct audio audio;
 static struct connector connector;
-static struct config config;
+static struct preferences preferences;
 
 static GThread *load_thread = NULL;
 static GThread *task_thread = NULL;
@@ -850,7 +850,7 @@ elektroid_update_ui_on_load (gpointer data)
 	{
 	  elektroid_controls_set_sensitive (TRUE);
 	}
-      if (config.autoplay)
+      if (preferences.autoplay)
 	{
 	  audio_play (&audio);
 	}
@@ -1519,7 +1519,7 @@ elektroid_loop_clicked (GtkWidget * object, gpointer data)
 static gboolean
 elektroid_autoplay_clicked (GtkWidget * object, gboolean state, gpointer data)
 {
-  config.autoplay = state;
+  preferences.autoplay = state;
   return FALSE;
 }
 
@@ -3213,7 +3213,7 @@ elektroid_run (int argc, char *argv[])
 
   gtk_statusbar_push (status_bar, 0, _("Not connected"));
   elektroid_loop_clicked (loop_button, NULL);
-  gtk_switch_set_active (GTK_SWITCH (autoplay_switch), config.autoplay);
+  gtk_switch_set_active (GTK_SWITCH (autoplay_switch), preferences.autoplay);
 
   fs_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "fs_list_store"));
@@ -3225,7 +3225,7 @@ elektroid_run (int argc, char *argv[])
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
-  local_browser.dir = config.local_dir;
+  local_browser.dir = preferences.local_dir;
   elektroid_load_devices (TRUE);	//This triggers a local browser reload due to the extensions and icons selected for the fs
 
   gethostname (hostname, LABEL_MAX);
@@ -3233,7 +3233,7 @@ elektroid_run (int argc, char *argv[])
 
   debug_print (1, "Creating notifier thread...\n");
   notifier_init (&notifier, &local_browser);
-  notifier_set_dir (&notifier, config.local_dir);
+  notifier_set_dir (&notifier, preferences.local_dir);
   notifier_thread = g_thread_new ("notifier_thread", notifier_run, &notifier);
 
   gtk_widget_show (main_window);
@@ -3333,17 +3333,17 @@ main (int argc, char *argv[])
       exit (EXIT_FAILURE);
     }
 
-  config_load (&config);
+  preferences_load (&preferences);
   if (local_dir)
     {
-      g_free (config.local_dir);
-      config.local_dir = get_local_startup_path (local_dir);
+      g_free (preferences.local_dir);
+      preferences.local_dir = get_local_startup_path (local_dir);
     }
 
   ret = elektroid_run (argc, argv);
 
-  config_save (&config);
-  config_free (&config);
+  preferences_save (&preferences);
+  preferences_free (&preferences);
 
   return ret;
 }

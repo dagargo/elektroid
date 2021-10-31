@@ -1,5 +1,5 @@
 /*
- *   config.h
+ *   preferences.h
  *   Copyright (C) 2019 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
@@ -20,14 +20,14 @@
 
 #include <glib.h>
 
-struct config
+struct preferences
 {
   gboolean autoplay;
   gchar *local_dir;
 };
 
-gint config_save (struct config *);
+gint preferences_save (struct preferences *);
 
-gint config_load (struct config *);
+gint preferences_load (struct preferences *);
 
-void config_free (struct config *);
+void preferences_free (struct preferences *);
