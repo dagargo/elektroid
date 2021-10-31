@@ -281,9 +281,10 @@ audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
     {
       pa_context_set_state_callback (audio->context, audio_context_callback,
 				     audio);
-    }
+      pa_threaded_mainloop_start (audio->mainloop);
 
-  pa_threaded_mainloop_start (audio->mainloop);
+
+    }
 
   return err;
 }
@@ -295,8 +296,6 @@ audio_destroy (struct audio *audio)
 
   audio_stop (audio, TRUE);
 
-  pa_threaded_mainloop_stop (audio->mainloop);
-
   g_byte_array_free (audio->sample, TRUE);
   if (audio->stream)
     {
@@ -307,6 +306,7 @@ audio_destroy (struct audio *audio)
   if (audio->mainloop)
     {
       pa_context_unref (audio->context);
+      pa_threaded_mainloop_stop (audio->mainloop);
       pa_threaded_mainloop_free (audio->mainloop);
       audio->mainloop = NULL;
     }
