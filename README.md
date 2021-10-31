@@ -29,8 +29,11 @@ The package dependencies for Debian based distributions are:
 - gettext
 - zlib1g-dev
 - libjson-glib-dev
+- libzip-dev
 
-You can easily install them by running `sudo apt install automake libtool build-essential libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev autopoint gettext zlib1g-dev libjson-glib-dev`. If you are only compiling the CLI, install the dependencies with `sudo apt install automake libtool build-essential libasound2-dev libglib2.0-dev libsndfile1-dev libsamplerate0-dev libtool zlib1g-dev libjson-glib-dev`.
+You can easily install them by running `sudo apt install automake libtool build-essential libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev autopoint gettext zlib1g-dev libjson-glib-dev libzip-dev`.
+
+If you are only compiling the CLI, install the dependencies with `sudo apt install automake libtool build-essential libasound2-dev libglib2.0-dev libsndfile1-dev libsamplerate0-dev libtool zlib1g-dev libjson-glib-dev libzip-dev`.
 
 ## CLI
 
