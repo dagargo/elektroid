@@ -1294,7 +1294,7 @@ elektroid_remote_check_selection (gpointer data)
 
   gtk_widget_set_sensitive (download_menuitem, count > 0 && dl_impl);
   gtk_widget_set_sensitive (remote_rename_menuitem, count == 1 && move_impl);
-  gtk_widget_set_sensitive (remote_delete_menuitem, count == 1 && del_impl);
+  gtk_widget_set_sensitive (remote_delete_menuitem, count > 0 && del_impl);
 
   return FALSE;
 }
