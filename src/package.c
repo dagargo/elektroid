@@ -172,8 +172,11 @@ package_add_manifest (struct package *pkg)
 				 PKG_FILE_TYPE_PROJECT ? PKG_VAL_FILE_TYPE_PRJ
 				 : PKG_VAL_FILE_TYPE_UNK);
 
-  json_builder_set_member_name (builder, PKG_TAG_FIRMWARE_VERSION);
-  json_builder_add_string_value (builder, pkg->fw_version);
+  if (pkg->type != PKG_FILE_TYPE_PRESET)
+    {
+      json_builder_set_member_name (builder, PKG_TAG_FIRMWARE_VERSION);
+      json_builder_add_string_value (builder, pkg->fw_version);
+    }
 
   if (pkg->device_desc->fss & FS_SAMPLES)
     {

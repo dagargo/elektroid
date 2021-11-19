@@ -175,6 +175,10 @@ static gint connector_download_data_snd_pkg (const gchar *, GByteArray *,
 static gint connector_download_data_prj_pkg (const gchar *, GByteArray *,
 					     struct job_control *, void *);
 
+static gint connector_download_raw_pst_pkg (const gchar *, GByteArray *,
+					    struct job_control *, void *);
+
+
 static gint connector_upload_data_any (const gchar *, GByteArray *,
 				       struct job_control *, void *);
 
@@ -183,6 +187,9 @@ static gint connector_upload_data_prj_pkg (const gchar *, GByteArray *,
 
 static gint connector_upload_data_snd_pkg (const gchar *, GByteArray *,
 					   struct job_control *, void *);
+
+static gint connector_upload_raw_pst_pkg (const gchar *, GByteArray *,
+					  struct job_control *, void *);
 
 static gint connector_copy_iterator (struct item_iterator *,
 				     struct item_iterator *);
@@ -394,12 +401,12 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .copy = NULL,
   .clear = NULL,
   .swap = NULL,
-  .download = connector_download_raw,
-  .upload = connector_upload_raw,
+  .download = connector_download_raw_pst_pkg,
+  .upload = connector_upload_raw_pst_pkg,
   .getid = get_item_name,
   .load = load_file,
   .save = save_file,
-  .extension = "snd"
+  .extension = "pst"
 };
 
 static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
@@ -3345,11 +3352,11 @@ connector_get_sample_path_from_hash_size (struct connector *connector,
 }
 
 static gint
-connector_download_data_pkg (const gchar * path, GByteArray * output,
-			     struct job_control *control, void *data,
-			     enum package_type type,
-			     const struct fs_operations *ops,
-			     fs_remote_file_op download)
+connector_download_pkg (const gchar * path, GByteArray * output,
+			struct job_control *control, void *data,
+			enum package_type type,
+			const struct fs_operations *ops,
+			fs_remote_file_op download)
 {
   gint ret;
   gchar *pkg_name;
@@ -3382,20 +3389,30 @@ static gint
 connector_download_data_snd_pkg (const gchar * path, GByteArray * output,
 				 struct job_control *control, void *data)
 {
-  return connector_download_data_pkg (path, output, control, data,
-				      PKG_FILE_TYPE_SOUND,
-				      &FS_DATA_SND_OPERATIONS,
-				      connector_download_data_snd);
+  return connector_download_pkg (path, output, control, data,
+				 PKG_FILE_TYPE_SOUND,
+				 &FS_DATA_SND_OPERATIONS,
+				 connector_download_data_snd);
 }
 
 static gint
 connector_download_data_prj_pkg (const gchar * path, GByteArray * output,
 				 struct job_control *control, void *data)
 {
-  return connector_download_data_pkg (path, output, control, data,
-				      PKG_FILE_TYPE_PROJECT,
-				      &FS_DATA_PRJ_OPERATIONS,
-				      connector_download_data_prj);
+  return connector_download_pkg (path, output, control, data,
+				 PKG_FILE_TYPE_PROJECT,
+				 &FS_DATA_PRJ_OPERATIONS,
+				 connector_download_data_prj);
+}
+
+static gint
+connector_download_raw_pst_pkg (const gchar * path, GByteArray * output,
+				struct job_control *control, void *data)
+{
+  return connector_download_pkg (path, output, control, data,
+				 PKG_FILE_TYPE_PRESET,
+				 &FS_RAW_ANY_OPERATIONS,
+				 connector_download_raw);
 }
 
 gchar *
@@ -3734,10 +3751,10 @@ connector_upload_data_snd (const gchar * path, GByteArray * array,
 }
 
 static gint
-connector_upload_data_pkg (const gchar * path, GByteArray * input,
-			   struct job_control *control, void *data,
-			   guint8 type, const struct fs_operations *ops,
-			   fs_remote_file_op upload)
+connector_upload_pkg (const gchar * path, GByteArray * input,
+		      struct job_control *control, void *data,
+		      guint8 type, const struct fs_operations *ops,
+		      fs_remote_file_op upload)
 {
   gint ret;
   struct package pkg;
@@ -3757,20 +3774,29 @@ static gint
 connector_upload_data_snd_pkg (const gchar * path, GByteArray * input,
 			       struct job_control *control, void *data)
 {
-  return connector_upload_data_pkg (path, input, control, data,
-				    PKG_FILE_TYPE_SOUND,
-				    &FS_DATA_SND_OPERATIONS,
-				    connector_upload_data_snd);
+  return connector_upload_pkg (path, input, control, data,
+			       PKG_FILE_TYPE_SOUND,
+			       &FS_DATA_SND_OPERATIONS,
+			       connector_upload_data_snd);
 }
 
 static gint
 connector_upload_data_prj_pkg (const gchar * path, GByteArray * input,
 			       struct job_control *control, void *data)
 {
-  return connector_upload_data_pkg (path, input, control, data,
-				    PKG_FILE_TYPE_PROJECT,
-				    &FS_DATA_PRJ_OPERATIONS,
-				    connector_upload_data_prj);
+  return connector_upload_pkg (path, input, control, data,
+			       PKG_FILE_TYPE_PROJECT,
+			       &FS_DATA_PRJ_OPERATIONS,
+			       connector_upload_data_prj);
+}
+
+static gint
+connector_upload_raw_pst_pkg (const gchar * path, GByteArray * input,
+			      struct job_control *control, void *data)
+{
+  return connector_upload_pkg (path, input, control, data,
+			       PKG_FILE_TYPE_PRESET,
+			       &FS_RAW_ANY_OPERATIONS, connector_upload_raw);
 }
 
 gchar *

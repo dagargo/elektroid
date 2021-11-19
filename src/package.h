@@ -43,7 +43,8 @@ enum package_type
 {
   PKG_FILE_TYPE_NONE,
   PKG_FILE_TYPE_SOUND,
-  PKG_FILE_TYPE_PROJECT
+  PKG_FILE_TYPE_PROJECT,
+  PKG_FILE_TYPE_PRESET,
 };
 
 struct package
