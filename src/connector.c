@@ -297,7 +297,7 @@ static const struct connector_device_desc ANALOG_RYTM_MKII_DESC = {
   .name = "Analog Rytm MKII",
   .alias = "ar",
   .id = ARMK2_ID,
-  .fss = FS_SAMPLES | FS_DATA_ALL,
+  .fss = FS_SAMPLES | FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
   .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
 };
 
@@ -313,7 +313,7 @@ static const struct connector_device_desc ANALOG_HEAT_MKII_DESC = {
   .name = "Analog Heat MKII",
   .alias = "ah",
   .id = AHMK2_ID,
-  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
+  .fss = FS_DATA_ALL | FS_DATA_SND,
   .storages = 0
 };
 
