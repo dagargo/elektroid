@@ -383,41 +383,40 @@ package_receive_pkg_resources (struct package *pkg,
   if (ret)
     {
       debug_print (1, "Metadata file not available\n");
-      control->parts = 2;
-      control->part++;
+      control->parts = 1;
       goto get_payload;
     }
+
+  control->part++;
 
   parser = json_parser_new ();
   if (!json_parser_load_from_data
       (parser, (gchar *) metadata->data, metadata->len, &error))
     {
-      error_print ("Unable to parse stream: %s", error->message);
+      error_print ("Unable to parse stream: %s. Continuing...",
+		   error->message);
       g_clear_error (&error);
-      ret = -1;
       goto get_payload;
     }
 
   reader = json_reader_new (json_parser_get_root (parser));
   if (!reader)
     {
-      ret = -1;
+      error_print ("Unable to read from parser. Continuing...");
       g_object_unref (reader);
       goto get_payload;
     }
 
   if (!json_reader_read_member (reader, MAN_TAG_SAMPLE_REFS))
     {
-      debug_print (1, "No '%s' found\n", MAN_TAG_SAMPLE_REFS);
-      ret = 0;
-      control->parts = 2;
+      debug_print (1, "Member '%s' not found\n", MAN_TAG_SAMPLE_REFS);
       goto get_payload;
     }
 
   if (!json_reader_is_array (reader))
     {
-      error_print ("Member '%s' is not an array\n", MAN_TAG_SAMPLE_REFS);
-      ret = -1;
+      error_print ("Member '%s' is not an array. Continuing...\n",
+		   MAN_TAG_SAMPLE_REFS);
       goto cleanup_reader;
     }
 
@@ -425,36 +424,33 @@ package_receive_pkg_resources (struct package *pkg,
   if (!elements)
     {
       debug_print (1, "No samples found\n");
-      control->parts = 2;
-      control->part = 1;
-      set_job_control_progress (control, 1.0);
-      ret = 0;
       goto cleanup_reader;
     }
 
   sample = g_byte_array_new ();
-  ret = 0;
-  control->parts = elements + 2;
-  control->part++;
-  for (i = 0; i < elements; i++)
+  control->parts = 2 + elements;
+  set_job_control_progress (control, 0.0);
+  for (i = 0; i < elements; i++, control->part++)
     {
       if (!json_reader_read_element (reader, i))
 	{
-	  ret = -1;
-	  goto cleanup_sample;
+	  error_print ("Cannot read element %d. Continuing...\n", i);
+	  continue;
 	}
       if (!json_reader_read_member (reader, MAN_TAG_HASH))
 	{
-	  ret = -1;
-	  goto cleanup_sample;
+	  error_print ("Cannot read member '%s'. Continuing...\n",
+		       MAN_TAG_HASH);
+	  continue;
 	}
       hash = json_reader_get_int_value (reader);
       json_reader_end_element (reader);
 
       if (!json_reader_read_member (reader, MAN_TAG_SIZE))
 	{
-	  ret = -1;
-	  goto cleanup_sample;
+	  error_print ("Cannot read member '%s'. Continuing...\n",
+		       MAN_TAG_SIZE);
+	  continue;
 	}
       size = json_reader_get_int_value (reader);
       json_reader_end_element (reader);
@@ -466,7 +462,6 @@ package_receive_pkg_resources (struct package *pkg,
       if (!sample_path)
 	{
 	  debug_print (1, "Sample not found. Skipping...\n");
-	  control->part++;
 	  continue;
 	}
 
@@ -476,18 +471,19 @@ package_receive_pkg_resources (struct package *pkg,
       g_byte_array_set_size (sample, 0);
       if (download_sample (sample_path, sample, control, connector))
 	{
-	  error_print ("Error while downloading sample\n");
 	  g_free (sample_path);
-	  goto cleanup_sample;
+	  error_print ("Error while downloading sample. Continuing...\n");
+	  continue;
 	}
 
       wave = g_byte_array_new ();
       if (sample_wave (sample, wave, control))
 	{
-	  error_print ("Error while converting sample to wave file\n");
+	  error_print
+	    ("Error while converting sample to wave file. Continuing...\n");
 	  g_byte_array_free (wave, TRUE);
 	  g_free (sample_path);
-	  goto cleanup_sample;
+	  continue;
 	}
       g_free (control->data);
       control->data = NULL;
@@ -503,11 +499,9 @@ package_receive_pkg_resources (struct package *pkg,
       if (package_add_resource (pkg, pkg_resource, TRUE))
 	{
 	  package_free_package_resource (pkg_resource);
-	  ret = -EIO;
-	  goto cleanup_sample;
+	  error_print ("Error while packaging sample\n");
+	  continue;
 	}
-
-      control->part++;
     }
 
 cleanup_sample:
@@ -522,6 +516,7 @@ get_payload:
   ret = download_data (payload_path, payload, control, connector);
   if (ret)
     {
+      error_print ("Error while downloading payload\n");
       ret = -1;
     }
   else
