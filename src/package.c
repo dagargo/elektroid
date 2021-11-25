@@ -396,6 +396,7 @@ package_receive_pkg_resources (struct package *pkg,
       error_print ("Unable to parse stream: %s. Continuing...",
 		   error->message);
       g_clear_error (&error);
+      control->parts = 2;
       goto get_payload;
     }
 
@@ -404,12 +405,14 @@ package_receive_pkg_resources (struct package *pkg,
     {
       error_print ("Unable to read from parser. Continuing...");
       g_object_unref (reader);
+      control->parts = 2;
       goto get_payload;
     }
 
   if (!json_reader_read_member (reader, MAN_TAG_SAMPLE_REFS))
     {
       debug_print (1, "Member '%s' not found\n", MAN_TAG_SAMPLE_REFS);
+      control->parts = 2;
       goto get_payload;
     }
 
@@ -417,6 +420,7 @@ package_receive_pkg_resources (struct package *pkg,
     {
       error_print ("Member '%s' is not an array. Continuing...\n",
 		   MAN_TAG_SAMPLE_REFS);
+      control->parts = 2;
       goto cleanup_reader;
     }
 
@@ -424,6 +428,7 @@ package_receive_pkg_resources (struct package *pkg,
   if (!elements)
     {
       debug_print (1, "No samples found\n");
+      control->parts = 2;
       goto cleanup_reader;
     }
 
@@ -504,7 +509,6 @@ package_receive_pkg_resources (struct package *pkg,
 	}
     }
 
-cleanup_sample:
   g_byte_array_free (sample, TRUE);
 cleanup_reader:
   g_object_unref (reader);
