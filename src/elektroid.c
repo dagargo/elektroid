@@ -2449,7 +2449,7 @@ static void
 elektroid_fill_fs_combo ()
 {
   gtk_list_store_clear (fs_list_store);
-  
+
   for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs = fs << 1, i++)
     {
       if (GUI_FSS & fs && connector.device_desc->fss & fs)

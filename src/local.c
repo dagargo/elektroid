@@ -150,7 +150,6 @@ local_next_dentry (struct item_iterator *iter)
   struct dirent *dirent;
   struct stat st;
   struct local_iterator_data *data = iter->data;
-  guint ret = -ENOENT;
 
   if (iter->item.name != NULL)
     {
@@ -164,35 +163,33 @@ local_next_dentry (struct item_iterator *iter)
 	  continue;
 	}
 
-      if (dirent->d_type == DT_DIR || dirent->d_type == DT_REG)
+      if (dirent->d_type == DT_DIR)
 	{
 	  iter->item.name = strdup (dirent->d_name);
+	  iter->item.type = ELEKTROID_DIR;
+	  iter->item.size = 0;
+	  return 0;
+	}
 
-	  if (dirent->d_type == DT_DIR)
+      if (dirent->d_type == DT_REG)
+	{
+	  iter->item.name = strdup (dirent->d_name);
+	  iter->item.type = ELEKTROID_FILE;
+	  full_path = chain_path (data->path, dirent->d_name);
+	  if (stat (full_path, &st))
 	    {
-	      iter->item.type = ELEKTROID_DIR;
 	      iter->item.size = 0;
 	    }
 	  else
 	    {
-	      iter->item.type = ELEKTROID_FILE;
-	      full_path = chain_path (data->path, dirent->d_name);
-	      if (stat (full_path, &st) == 0)
-		{
-		  iter->item.size = st.st_size;
-		}
-	      else
-		{
-		  iter->item.size = 0;
-		}
-	      free (full_path);
+	      iter->item.size = st.st_size;
 	    }
-	  ret = 0;
-	  break;
+	  free (full_path);
+	  return 0;
 	}
     }
 
-  return ret;
+  return -ENOENT;
 }
 
 static gint
@@ -209,6 +206,7 @@ local_init_iterator (struct item_iterator *iter, const gchar * path)
   data = malloc (sizeof (struct local_iterator_data));
   if (!data)
     {
+      closedir (dir);
       return -errno;
     }
 
