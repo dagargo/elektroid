@@ -76,4 +76,14 @@ rm SOUND.dtdata
 $ecli cl-data $DEVICE:/soundbanks/H/$id
 [ $? -ne 0 ] && exit 1
 
+echo "Testing upload..."
+$ecli ul-data $srcdir/res/SOUND.dtdata $DEVICE:/soundbanks/H
+[ $? -ne 0 ] && exit 1
+id=$($ecli ls-data $DEVICE:/soundbanks/H/256 | grep 'SOUND$' | awk '{print $2}')
+[ $id != 256 ] && exit 1
+
+echo "Testing data clear..."
+$ecli cl-data $DEVICE:/soundbanks/H/256
+[ $? -ne 0 ] && exit 1
+
 exit 0
