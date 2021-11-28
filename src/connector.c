@@ -579,6 +579,7 @@ connector_init_iterator (struct item_iterator *iter, GByteArray * msg,
   iter->free = connector_free_iterator_data;
   iter->copy = connector_copy_iterator;
   iter->item.name = NULL;
+  iter->item.index = -1;
 
   return 0;
 }
@@ -3405,8 +3406,7 @@ connector_get_upload_path (struct connector *connector,
 			   gint32 * next_index)
 {
   gchar *path, *indexs, *namec, *name, *aux;
-  struct item_iterator iter;
-  gboolean empty;
+  gboolean new;
 
   if (ops->fs == FS_SAMPLES || ops->fs == FS_RAW_ALL
       || ops->fs == FS_RAW_PRESETS)
@@ -3429,42 +3429,44 @@ connector_get_upload_path (struct connector *connector,
       return path;
     }
 
-  if (remote_iter)
+  new = FALSE;
+  if (!remote_iter)
     {
-      if (copy_item_iterator (&iter, remote_iter))
+      new = TRUE;
+      remote_iter = malloc (sizeof (struct item_iterator));
+      if (ops->readdir (remote_iter, dst_dir, connector))
 	{
 	  return strdup (dst_dir);
 	}
+    }
+
+  if (remote_iter->item.index == *next_index)
+    {
+      (*next_index)++;
     }
   else
     {
-      if (ops->readdir (&iter, dst_dir, connector))
+      while (!next_item_iterator (remote_iter))
 	{
-	  return strdup (dst_dir);
+	  if (remote_iter->item.index > *next_index)
+	    {
+	      break;
+	    }
+	  (*next_index)++;
 	}
     }
 
-  empty = TRUE;
-  while (!next_item_iterator (&iter))
+  if (new)
     {
-      empty = FALSE;
-      if (iter.item.index > *next_index)
-	{
-	  break;
-	}
-      (*next_index)++;
+      free_item_iterator (remote_iter);
     }
-
-  free_item_iterator (&iter);
 
   indexs = malloc (PATH_MAX);
   snprintf (indexs, PATH_MAX, "%d", *next_index);
-  if (empty)
-    {
-      (*next_index)++;
-    }
   path = chain_path (dst_dir, indexs);
   g_free (indexs);
+
+  (*next_index)++;
 
   return path;
 }
@@ -3476,10 +3478,10 @@ connector_get_download_name (struct connector *connector,
 			     const gchar * src_path)
 {
   gint32 id;
-  struct item_iterator iter;
   const gchar *src_dir;
   gchar *namec, *name, *src_dirc;
   gint ret;
+  gboolean new = FALSE;
 
   namec = strdup (src_path);
   name = basename (namec);
@@ -3491,19 +3493,13 @@ connector_get_download_name (struct connector *connector,
       goto end;
     }
 
-  if (remote_iter)
+  if (!remote_iter)
     {
-      if (copy_item_iterator (&iter, remote_iter))
-	{
-	  name = NULL;
-	  goto cleanup;
-	}
-    }
-  else
-    {
+      new = TRUE;
+      remote_iter = malloc (sizeof (struct item_iterator));
       src_dirc = strdup (src_path);
       src_dir = dirname (src_dirc);
-      ret = ops->readdir (&iter, src_dir, connector);
+      ret = ops->readdir (remote_iter, src_dir, connector);
       g_free (src_dirc);
       if (ret)
 	{
@@ -3515,17 +3511,20 @@ connector_get_download_name (struct connector *connector,
   id = atoi (name);
   name = NULL;
 
-  while (!next_item_iterator (&iter))
+  while (!next_item_iterator (remote_iter))
     {
-      if (iter.item.index == id)
+      if (remote_iter->item.index == id)
 	{
-	  name = get_item_name (&iter.item);
+	  name = get_item_name (&remote_iter->item);
 	  break;
 	}
     }
 
-  free_item_iterator (&iter);
 cleanup:
+  if (new)
+    {
+      free_item_iterator (remote_iter);
+    }
   g_free (namec);
 end:
   return name;

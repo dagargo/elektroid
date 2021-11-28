@@ -2025,7 +2025,6 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
   if (!remote_browser.fs_ops->readdir (&children_remote_item_iterator,
 				       dst_abs_path, remote_browser.data))
     {
-      children_next_idx = 1;
       while (!next_item_iterator (&iter))
 	{
 	  path = chain_path (rel_path, iter.item.name);
