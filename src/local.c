@@ -148,7 +148,10 @@ local_next_dentry (struct item_iterator *iter)
 {
   gchar *full_path;
   struct dirent *dirent;
+  gboolean found;
   struct stat st;
+  mode_t mode;
+
   struct local_iterator_data *data = iter->data;
 
   if (iter->item.name != NULL)
@@ -163,28 +166,33 @@ local_next_dentry (struct item_iterator *iter)
 	  continue;
 	}
 
-      if (dirent->d_type == DT_DIR)
+      full_path = chain_path (data->path, dirent->d_name);
+      if (stat (full_path, &st))
 	{
-	  iter->item.name = strdup (dirent->d_name);
-	  iter->item.type = ELEKTROID_DIR;
-	  iter->item.size = 0;
-	  return 0;
+	  free (full_path);
+	  continue;
 	}
 
-      if (dirent->d_type == DT_REG)
+      mode = st.st_mode & S_IFMT;
+      switch (mode)
 	{
+	case S_IFREG:
+	case S_IFDIR:
 	  iter->item.name = strdup (dirent->d_name);
-	  iter->item.type = ELEKTROID_FILE;
-	  full_path = chain_path (data->path, dirent->d_name);
-	  if (stat (full_path, &st))
-	    {
-	      iter->item.size = 0;
-	    }
-	  else
-	    {
-	      iter->item.size = st.st_size;
-	    }
-	  free (full_path);
+	  iter->item.type = mode == S_IFREG ? ELEKTROID_FILE : ELEKTROID_DIR;
+	  iter->item.size = st.st_size;
+	  found = TRUE;
+	  break;
+	default:
+	  error_print
+	    ("stat mode neither file nor directory for %s\n", full_path);
+	  found = FALSE;
+	}
+
+      free (full_path);
+
+      if (found)
+	{
 	  return 0;
 	}
     }
