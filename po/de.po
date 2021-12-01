@@ -19,19 +19,19 @@ msgstr ""
 
 #: src/elektroid.c:249
 msgid "Samples"
-msgstr ""
+msgstr "Samples"
 
 #: src/elektroid.c:251
 msgid "Presets"
-msgstr ""
+msgstr "Presets"
 
 #: src/elektroid.c:253
 msgid "Projects"
-msgstr ""
+msgstr "Projekte"
 
 #: src/elektroid.c:255
 msgid "Sounds"
-msgstr ""
+msgstr "Sounds"
 
 #: src/elektroid.c:257 src/elektroid.c:1650 src/elektroid.c:1664
 msgid "Undefined"
