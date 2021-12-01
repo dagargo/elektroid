@@ -195,7 +195,7 @@ msgstr "Download Auswahl"
 #: res/gui.glade:238
 #, fuzzy
 msgid "GNU/Linux transfer application for Elektron devices"
-msgstr "GNU/Linux Sample Transfer Anwendung für Elektron Instrumente"
+msgstr "GNU/Linux Transfer Anwendung für Elektron Instrumente"
 
 #: res/gui.glade:241
 msgid "translator-credits"
