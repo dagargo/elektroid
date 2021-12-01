@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: elektroid 1.4\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2021-12-01 18:58+0100\n"
-"PO-Revision-Date: 2021-07-22 14:54-0300\n"
+"PO-Revision-Date: 2021-12-01 17:56-0300\n"
 "Last-Translator: Gustavo Costa <xfgusta@gmail.com>\n"
 "Language-Team: \n"
 "Language: pt_BR\n"
@@ -20,19 +20,19 @@ msgstr ""
 
 #: src/elektroid.c:249
 msgid "Samples"
-msgstr ""
+msgstr "Samples"
 
 #: src/elektroid.c:251
 msgid "Presets"
-msgstr ""
+msgstr "Presets"
 
 #: src/elektroid.c:253
 msgid "Projects"
-msgstr ""
+msgstr "Projects"
 
 #: src/elektroid.c:255
 msgid "Sounds"
-msgstr ""
+msgstr "Sounds"
 
 #: src/elektroid.c:257 src/elektroid.c:1650 src/elektroid.c:1664
 msgid "Undefined"
@@ -84,7 +84,7 @@ msgid "SysEx Files"
 msgstr "Arquivos SysEx"
 
 #: src/elektroid.c:696
-#, fuzzy, c-format
+#, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Erro ao excluir \"%s\": %s."
 
@@ -97,7 +97,7 @@ msgid "_Open"
 msgstr "_Abrir"
 
 #: src/elektroid.c:770
-#, fuzzy, c-format
+#, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Erro ao excluir \"%s\": %s."
 
@@ -194,10 +194,8 @@ msgid "Download Selection"
 msgstr "Seleção de download"
 
 #: res/gui.glade:238
-#, fuzzy
 msgid "GNU/Linux transfer application for Elektron devices"
-msgstr ""
-"Aplicativo GNU/Linux de transferência de sample para dispositivos Elektron"
+msgstr "Aplicativo GNU/Linux de transferência para dispositivos Elektron"
 
 #: res/gui.glade:241
 msgid "translator-credits"
