@@ -1,14 +1,14 @@
 # French GUI translation for Elektroid.
-# Copyright (C) 2019-2020 Olivier Humbert
+# Copyright (C) 2019-2021 Olivier Humbert
 # This file is distributed under the same license as the Elektroid package.
-# Olivier Humbert <trebmuh@tuxfamily.org>, 2019-2020.
+# Olivier Humbert <trebmuh@tuxfamily.org>, 2019-2021.
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: elektroid 1.4\n"
+"Project-Id-Version: elektroid 2.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2021-12-01 18:58+0100\n"
-"PO-Revision-Date: 2021-01-05 17:59+0100\n"
+"PO-Revision-Date: 2021-12-03 17:59+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
 "Language: fr\n"
@@ -19,19 +19,19 @@ msgstr ""
 
 #: src/elektroid.c:249
 msgid "Samples"
-msgstr ""
+msgstr "Échantillons"
 
 #: src/elektroid.c:251
 msgid "Presets"
-msgstr ""
+msgstr "Préréglages"
 
 #: src/elektroid.c:253
 msgid "Projects"
-msgstr ""
+msgstr "Projets"
 
 #: src/elektroid.c:255
 msgid "Sounds"
-msgstr ""
+msgstr "Sons"
 
 #: src/elektroid.c:257 src/elektroid.c:1650 src/elektroid.c:1664
 msgid "Undefined"
@@ -83,9 +83,9 @@ msgid "SysEx Files"
 msgstr "Fichiers SysEx"
 
 #: src/elektroid.c:696
-#, fuzzy, c-format
+#, c-format
 msgid "Error while saving “%s”: %s."
-msgstr "Erreur lors de la suppression de « %s » : %s."
+msgstr "Erreur lors de la sauvegarde de « %s » : %s."
 
 #: src/elektroid.c:744
 msgid "Open SysEx"
@@ -96,9 +96,9 @@ msgid "_Open"
 msgstr "_Ouvrir"
 
 #: src/elektroid.c:770
-#, fuzzy, c-format
+#, c-format
 msgid "Error while loading “%s”: %s."
-msgstr "Erreur lors de la suppression de « %s » : %s."
+msgstr "Erreur lors du chargement de « %s » : %s."
 
 #: src/elektroid.c:780
 msgid "Send SysEx"
@@ -137,7 +137,7 @@ msgstr "Erreur lors de la création du répertoire « %s » : %s."
 
 #: src/elektroid.c:1640
 msgid "Queued"
-msgstr "Mise en fil d'attente"
+msgstr "Mise en file d'attente"
 
 #: src/elektroid.c:1642
 msgid "Running"
@@ -193,11 +193,8 @@ msgid "Download Selection"
 msgstr "Téléchargement de la sélection"
 
 #: res/gui.glade:238
-#, fuzzy
 msgid "GNU/Linux transfer application for Elektron devices"
-msgstr ""
-"Application GNU/Linux de transfert d'échantillon pour les périphériques "
-"Elektron"
+msgstr "Application GNU/Linux de transfert pour les périphériques Elektron"
 
 #: res/gui.glade:241
 msgid "translator-credits"
@@ -272,7 +269,7 @@ msgstr "Annuler les tâches"
 
 #: res/gui.glade:1202
 msgid "Remove Queued Tasks"
-msgstr "Supprimer des tâches dans la file d'attente"
+msgstr "Supprimer les tâches dans la file d'attente"
 
 #: res/gui.glade:1223
 msgid "Clear Finished Tasks"
