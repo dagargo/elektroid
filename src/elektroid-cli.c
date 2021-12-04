@@ -341,6 +341,57 @@ cli_df (int argc, char *argv[], int optind)
 }
 
 static int
+cli_upgrade (int argc, char *argv[], int optind)
+{
+  gint res;
+  const gchar *src_path;
+  const gchar *device_path;
+  struct connector_sysex_transfer sysex_transfer;
+
+  if (optind == argc)
+    {
+      error_print ("Local path missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      src_path = argv[optind];
+      optind++;
+    }
+
+  if (optind == argc)
+    {
+      error_print ("Remote path missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      device_path = argv[optind];
+    }
+
+  if (cli_connect (device_path, 0))
+    {
+      return EXIT_FAILURE;
+    }
+
+  sysex_transfer.raw = g_byte_array_new ();
+  res = load_file (src_path, sysex_transfer.raw, NULL);
+  if (res)
+    {
+      error_print ("Error while loading '%s'.\n", src_path);
+    }
+  else
+    {
+      sysex_transfer.active = TRUE;
+      sysex_transfer.timeout = SYSEX_TIMEOUT;
+      res = connector_upgrade_os (&connector, &sysex_transfer);
+    }
+
+  g_byte_array_free (sysex_transfer.raw, TRUE);
+  return res ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static int
 cli_download (int argc, char *argv[], int optind, enum connector_fs fs)
 {
   const gchar *src_path;
@@ -611,6 +662,10 @@ main (int argc, char *argv[])
 	       || strcmp (command, "info-storage") == 0)
 	{
 	  res = cli_df (argc, argv, optind);
+	}
+      else if (strcmp (command, "upgrade") == 0)
+	{
+	  res = cli_upgrade (argc, argv, optind);
 	}
       else if (strcmp (command, "ls") == 0)
 	{
