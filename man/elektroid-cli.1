@@ -1,74 +1,90 @@
-.TH ELEKTROID-CLI "1" "Feb 2020"
+.TH ELEKTROID-CLI "1" "Dec 2021"
+
 .SH NAME
 elektroid-cli \- transfer CLI application for Elektron devices
+
 .SH SYNOPSIS
 .B elektroid-cli
 .RI [ options ]
 .RI command
+
 .SH DESCRIPTION
 .B elektroid-cli
 provides the same funcionality than elektroid. See man elektroid for the GUI application.
 .PP
-Provided paths must always be prepended with the device id and a colon (':'), e.g. 0:/samples.
-.SH COMMANDS
+Provided paths must always be prepended with the device id and a colon (':'), e.g. 0:/samples. Paths pointing to a data, sound or project file use the index of a file instead of its name.
+
+.SH DEVICE COMMANDS
 .TP
-[\fBlist-devices\fR | \fBld\fR]
+[ \fBld\fR | \fBlist-devices\fR ]
 List compatible devices
 .TP
-\fBinfo\fR [device number]
-Show device info
-.TP
-[\fBinfo-storage\fR | \fBdf\fR] [device number]
+[ \fBdf\fR | \fBinfo-storage\fR ] device_number
 Show size and use of +Drive and RAM where available
 .TP
-[\fBlist-samples\fR | \fBls\fR] [device number]:[path to directory]
+\fBinfo\fR device_number
+Show device info
+.TP
+\fBupgrade\fR firmware device_number
+Upgrade the device
+
+.SH FILESYSTEM COMMANDS
+.PP
+Filesystem commands must be followed by a hyphen ('-') and a filesystem name. The available filesystemas are sample, sound, project, data, preset and raw. Data is an unpackaged form of sound and project and so is raw with regards to preset.
+.TP
+[ \fBls\fR | \fBlist\fR ] device_number:path_to_directory
 List directory contents
 .TP
-[\fBmkdir-samples\fR | \fBmkdir\fR] [device number]:[path to directory]
+\fBmkdir\fR device_number:path_to_directory
 Create a directory and its parent directories as needed
 .TP
-[\fBrmdir-samples\fR | \fBrmdir\fR] [device number]:[path to directory]
+[ \fBrmdir\fR | \fBrm\fR ] device_number:path_to_directory
 Delete a directory recursively
 .TP
-[\fBupload-sample\fR | \fBupload\fR] [sample] [device number]:[path to directory or sample]
-Upload a sample. If the path does not exist it will be created. The supported audio file formats are aiff, flac, ogg and wav.
+[ \fBul\fR | \fBupload\fR ] file device_number:path_to_file_or_directory
+Upload a file. If the path does not exist it will be created. For the sample filesystem, the supported audio file formats are aiff, flac, ogg and wav.
 .TP
-[\fBdownload-sample\fR | \fBdownload\fR] [device number]:[path to sample]
-Download a sample. Samples will be stored locally as 16-bit, 48kHz wav files.
+[ \fBdl\fR | \fBdownload\fR ] device_number:path_to_file_or_directory
+Download a file into the current directory. For the sample filesystem, samples will be stored locally as 16-bit, 48kHz wav files.
 .TP
-[\fBmv-sample\fR | \fBmv\fR] [device number]:[path to origin sample] [device number]:[path to destination directory or sample]
-Move a sample. If the destination path does not exist it will be created.
+\fBmv\fR device_number:path_to_file_or_directory device_number:path_to_file_or_directory
+Move a file. If the destination path does not exist, it will be created.
 .TP
-[\fBrm-sample\fR | \fBrm\fR] [device number]:[path to sample]
-Delete a sample
+\fBrm\fR device_number:path_to_file
+Delete a file
 .TP
-\fBlist-data\fR [device number]:[path to directory]
-List directory contents
+\fBcl\fR device_number:path_to_file
+Clear file
 .TP
-\fBcopy-data\fR [device number]:[path to index] [device number]:[path to index]
-Copy data element
+\fBcp\fR device_number:path_to_file device_number:path_to_file
+Copy a file
 .TP
-\fBswap-data\fR [device number]:[path to index] [device number]:[path to index]
-Swap data elements
-.TP
-\fBmove-data\fR [device number]:[path to index] [device number]:[path to index]
-Move data element
-.TP
-\fBclear-data\fR [device number]:[path to index]
-Clear data element
-.TP
-\fBupload-data\fR [data file] [device number]:[path to index]
-Upload data element
-.TP
-\fBdopwnload-data\fR [device number]:[path to index]
-Download data element
+\fBsw\fR device_number:path_to_file device_number:path_to_file
+Swap files
+
 .SH OPTIONS
 .TP
 \fB\-v\fR
 Show verbose output. Use it more than once for more verbosity.
 .PP
+
+.SH EXAMPLES
+.PP
+Upload a sample.
+.TP
+\tul-sample square.wav 0:/waveforms
+.PP
+Download a preset into the current directory.
+.TP
+\tdl-raw 0:/snare/snare.mc-snd
+.PP
+List projects.
+.TP
+\tls-project 0:/
+
 .SH "SEE ALSO"
 The GitHub page provides some examples: <https://github.com/dagargo/elektroid>
+
 .SH "AUTHOR"
 elektroid-cli was written by David García Goñi <dagargo@gmail.com>.
 .PP

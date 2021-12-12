@@ -1,7 +1,7 @@
 # Elektroid
 
 Elektroid is a GNU/Linux transfer application for Elektron devices. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.
-Elektroid has been reported to work with Model:Samples, Digitakt and Analog Rytm mk1 and mk2.
+Elektroid has been reported to work with Model:Samples, Model:Cycles, Digitakt, Digitone and Analog Rytm MKI and MKII.
 
 To use Elektroid, USB configuration must be set to `USB MIDI` or `USB AUDIO/MIDI` as it won't work in Overbridge mode.
 
@@ -39,7 +39,7 @@ If you are only compiling the CLI, install the dependencies with `sudo apt insta
 
 `elektroid-cli` brings the same funcionality than `elektroid` to the command line.
 
-There are global -or machine- commands and data oriented commands. The latter have the form `a-b` where `a` is a command and `b` is a filesystem, (e.g., `ls-project`, `download-sound`, `mkdir-sample`). Notice that the filesystem is always in the singular form and some older commands are deprecated but kept for compatibility reasons although there are not documented here.
+There are device commands and filesystem commands. The latter have the form `a-b` where `a` is a command and `b` is a filesystem, (e.g., `ls-project`, `download-sound`, `mkdir-sample`). Notice that the filesystem is always in the singular form and some older commands are deprecated but kept for compatibility reasons although there are not documented here.
 
 These are the available filesystems:
 
@@ -68,7 +68,7 @@ Keep in mind that not every filesystem implements all the commands. For instance
 
 Provided paths must always be prepended with the device id and a colon (':') e.g., `0:/incoming`.
 
-### Global commands
+### Device commands
 
 * `ld` or `ls-devices`, list compatible devices
 
@@ -91,6 +91,12 @@ $ elektroid-cli df 0
 Storage               Size            Used       Available       Use%
 +Drive           959.50MiB       198.20MiB       761.30MiB     20.66%
 RAM               64.00MiB        13.43MiB        50.57MiB     20.98%
+```
+
+* `upgrade`, upgrade firmware
+
+```
+$ elektroid-cli upgrade Digitakt_OS1.30.syx 0
 ```
 
 ### Sample, raw and preset commands
