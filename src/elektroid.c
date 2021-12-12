@@ -221,11 +221,9 @@ static GtkWidget *local_audio_box;
 static GtkWidget *local_play_menuitem;
 static GtkWidget *local_open_menuitem;
 static GtkWidget *local_show_menuitem;
-static GtkWidget *local_add_dir_menuitem;
 static GtkWidget *local_rename_menuitem;
 static GtkWidget *local_delete_menuitem;
 static GtkWidget *download_menuitem;
-static GtkWidget *remote_add_dir_menuitem;
 static GtkWidget *remote_rename_menuitem;
 static GtkWidget *remote_delete_menuitem;
 static GtkWidget *play_button;
@@ -2401,11 +2399,11 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
       gtk_widget_set_sensitive (remote_browser.up_button,
 				remote_browser.fs_ops->readdir != NULL);
+                                gtk_widget_set_visible (remote_browser.add_dir_button,
+                                        remote_browser.fs_ops->mkdir != NULL);
       gtk_widget_set_sensitive (remote_browser.refresh_button,
 				remote_browser.fs_ops->readdir != NULL);
 
-      gtk_widget_set_visible (remote_add_dir_menuitem,
-			      remote_browser.fs_ops->mkdir != NULL);
       gtk_widget_set_visible (remote_rename_menuitem,
 			      remote_browser.fs_ops->rename != NULL);
       gtk_widget_set_visible (remote_delete_menuitem,
@@ -3000,16 +2998,12 @@ elektroid_run (int argc, char *argv[])
 
   download_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "download_menuitem"));
-  remote_add_dir_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_add_dir_menuitem"));
   remote_rename_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_rename_menuitem"));
   remote_delete_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_delete_menuitem"));
   g_signal_connect (download_menuitem, "activate",
 		    G_CALLBACK (elektroid_add_download_tasks), NULL);
-  g_signal_connect (remote_add_dir_menuitem, "activate",
-		    G_CALLBACK (elektroid_add_dir), &remote_browser);
   g_signal_connect (remote_rename_menuitem, "activate",
 		    G_CALLBACK (elektroid_rename_item), &remote_browser);
   g_signal_connect (remote_delete_menuitem, "activate",
@@ -3023,8 +3017,6 @@ elektroid_run (int argc, char *argv[])
     GTK_WIDGET (gtk_builder_get_object (builder, "local_open_menuitem"));
   local_show_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_show_menuitem"));
-  local_add_dir_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_add_dir_menuitem"));
   local_rename_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_rename_menuitem"));
   local_delete_menuitem =
@@ -3037,8 +3029,6 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_open_clicked), NULL);
   g_signal_connect (local_show_menuitem, "activate",
 		    G_CALLBACK (elektroid_show_clicked), NULL);
-  g_signal_connect (local_add_dir_menuitem, "activate",
-		    G_CALLBACK (elektroid_add_dir), &local_browser);
   g_signal_connect (local_rename_menuitem, "activate",
 		    G_CALLBACK (elektroid_rename_item), &local_browser);
   g_signal_connect (local_delete_menuitem, "activate",
@@ -3050,6 +3040,8 @@ elektroid_run (int argc, char *argv[])
       GTK_TREE_VIEW (gtk_builder_get_object (builder, "remote_tree_view")),
     .up_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_up_button")),
+    .add_dir_button =
+      GTK_WIDGET (gtk_builder_get_object (builder, "remote_add_dir_button")),
     .refresh_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_refresh_button")),
     .dir_entry =
@@ -3074,6 +3066,8 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (browser_item_activated), &remote_browser);
   g_signal_connect (remote_browser.up_button, "clicked",
 		    G_CALLBACK (browser_go_up), &remote_browser);
+  g_signal_connect (remote_browser.add_dir_button, "clicked",
+		    G_CALLBACK (elektroid_add_dir), &remote_browser);
   g_signal_connect (remote_browser.refresh_button, "clicked",
 		    G_CALLBACK (browser_refresh), &remote_browser);
   g_signal_connect (remote_browser.view, "button-press-event",
@@ -3116,6 +3110,8 @@ elektroid_run (int argc, char *argv[])
       GTK_TREE_VIEW (gtk_builder_get_object (builder, "local_tree_view")),
     .up_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "local_up_button")),
+    .add_dir_button =
+      GTK_WIDGET (gtk_builder_get_object (builder, "local_add_dir_button")),
     .refresh_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "local_refresh_button")),
     .dir_entry =
@@ -3138,6 +3134,8 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (browser_item_activated), &local_browser);
   g_signal_connect (local_browser.up_button, "clicked",
 		    G_CALLBACK (browser_go_up), &local_browser);
+  g_signal_connect (local_browser.add_dir_button, "clicked",
+		    G_CALLBACK (elektroid_add_dir), &local_browser);
   g_signal_connect (local_browser.refresh_button, "clicked",
 		    G_CALLBACK (browser_refresh), &local_browser);
   g_signal_connect (local_browser.view, "button-press-event",
