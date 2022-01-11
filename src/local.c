@@ -35,7 +35,7 @@ static gint local_rename (const gchar *, const gchar *, void *);
 static gint local_read_dir (struct item_iterator *, const gchar *, void *);
 
 static gint local_copy_iterator (struct item_iterator *,
-				 struct item_iterator *);
+				 struct item_iterator *, gboolean);
 
 const struct fs_operations FS_LOCAL_OPERATIONS = {
   .fs = 0,
@@ -201,7 +201,8 @@ local_next_dentry (struct item_iterator *iter)
 }
 
 static gint
-local_init_iterator (struct item_iterator *iter, const gchar * path)
+local_init_iterator (struct item_iterator *iter, const gchar * path,
+		     gboolean cached)
 {
   DIR *dir;
   struct local_iterator_data *data;
@@ -234,12 +235,13 @@ static gint
 local_read_dir (struct item_iterator *iter, const gchar * path,
 		void *userdata)
 {
-  return local_init_iterator (iter, path);
+  return local_init_iterator (iter, path, FALSE);
 }
 
 static gint
-local_copy_iterator (struct item_iterator *dst, struct item_iterator *src)
+local_copy_iterator (struct item_iterator *dst, struct item_iterator *src,
+		     gboolean cached)
 {
   struct local_iterator_data *data = src->data;
-  return local_init_iterator (dst, data->path);
+  return local_init_iterator (dst, data->path, cached);
 }

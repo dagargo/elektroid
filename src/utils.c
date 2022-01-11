@@ -257,9 +257,10 @@ free_item_iterator (struct item_iterator *iter)
 }
 
 gint
-copy_item_iterator (struct item_iterator *dst, struct item_iterator *src)
+copy_item_iterator (struct item_iterator *dst, struct item_iterator *src,
+		    gboolean cached)
 {
-  return src->copy (dst, src);
+  return src->copy (dst, src, cached);
 }
 
 gint

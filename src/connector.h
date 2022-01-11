@@ -72,6 +72,7 @@ struct connector_iterator_data
   guint8 has_valid_data;
   guint8 has_metadata;
   enum connector_fs fs;
+  gboolean cached;
 };
 
 struct connector_system_device

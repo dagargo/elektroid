@@ -2176,7 +2176,7 @@ elektroid_add_download_task_path (const gchar * rel_path,
       goto cleanup;
     }
 
-  copy_item_iterator (&iter_copy, &iter);
+  copy_item_iterator (&iter_copy, &iter, TRUE);
   while (!next_item_iterator (&iter))
     {
       id = remote_browser.fs_ops->getid (&iter.item);
@@ -2399,8 +2399,8 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
       gtk_widget_set_sensitive (remote_browser.up_button,
 				remote_browser.fs_ops->readdir != NULL);
-                                gtk_widget_set_visible (remote_browser.add_dir_button,
-                                        remote_browser.fs_ops->mkdir != NULL);
+      gtk_widget_set_visible (remote_browser.add_dir_button,
+			      remote_browser.fs_ops->mkdir != NULL);
       gtk_widget_set_sensitive (remote_browser.refresh_button,
 				remote_browser.fs_ops->readdir != NULL);
 

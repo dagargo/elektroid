@@ -192,7 +192,7 @@ static gint connector_upload_raw_pst_pkg (const gchar *, GByteArray *,
 					  struct job_control *, void *);
 
 static gint connector_copy_iterator (struct item_iterator *,
-				     struct item_iterator *);
+				     struct item_iterator *, gboolean);
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -480,7 +480,10 @@ connector_free_iterator_data (void *iter_data)
 {
   struct connector_iterator_data *data = iter_data;
 
-  free_msg (data->msg);
+  if (!data->cached)
+    {
+      free_msg (data->msg);
+    }
   g_free (data);
 }
 
@@ -572,7 +575,8 @@ connector_next_smplrw_entry (struct item_iterator *iter)
 
 static gint
 connector_init_iterator (struct item_iterator *iter, GByteArray * msg,
-			 iterator_next next, enum connector_fs fs)
+			 iterator_next next, enum connector_fs fs,
+			 gboolean cached)
 {
   struct connector_iterator_data *data =
     malloc (sizeof (struct connector_iterator_data));
@@ -580,6 +584,7 @@ connector_init_iterator (struct item_iterator *iter, GByteArray * msg,
   data->msg = msg;
   data->pos = fs == FS_DATA_ALL ? FS_DATA_START_POS : FS_SAMPLES_START_POS;
   data->fs = fs;
+  data->cached = cached;
 
   iter->data = data;
   iter->next = next;
@@ -592,12 +597,21 @@ connector_init_iterator (struct item_iterator *iter, GByteArray * msg,
 }
 
 static gint
-connector_copy_iterator (struct item_iterator *dst, struct item_iterator *src)
+connector_copy_iterator (struct item_iterator *dst, struct item_iterator *src,
+			 gboolean cached)
 {
+  GByteArray *array;
   struct connector_iterator_data *data = src->data;
-  GByteArray *array = g_byte_array_sized_new (data->msg->len);
-  g_byte_array_append (array, data->msg->data, data->msg->len);
-  return connector_init_iterator (dst, array, src->next, data->fs);
+  if (cached)
+    {
+      array = data->msg;
+    }
+  else
+    {
+      array = g_byte_array_sized_new (data->msg->len);
+      g_byte_array_append (array, data->msg->data, data->msg->len);
+    }
+  return connector_init_iterator (dst, array, src->next, data->fs, cached);
 }
 
 static GByteArray *
@@ -1463,7 +1477,7 @@ connector_read_common_dir (struct item_iterator *iter, const gchar * dir,
     }
 
   return connector_init_iterator (iter, rx_msg, connector_next_smplrw_entry,
-				  fs);
+				  fs, FALSE);
 }
 
 static gint
@@ -2822,7 +2836,7 @@ connector_read_data_dir_prefix (struct item_iterator *iter, const gchar * dir,
     }
 
   return connector_init_iterator (iter, rx_msg, connector_next_data_entry,
-				  FS_DATA_ALL);
+				  FS_DATA_ALL, FALSE);
 }
 
 static gint

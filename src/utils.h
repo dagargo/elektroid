@@ -46,7 +46,7 @@ typedef guint (*iterator_next) (struct item_iterator *);
 typedef void (*iterator_free) (void *);
 
 typedef gint (*iterator_copy) (struct item_iterator *,
-			       struct item_iterator *);
+			       struct item_iterator *, gboolean);
 
 struct item
 {
@@ -145,7 +145,8 @@ guint next_item_iterator (struct item_iterator *);
 
 void free_item_iterator (struct item_iterator *);
 
-gint copy_item_iterator (struct item_iterator *, struct item_iterator *);
+gint copy_item_iterator (struct item_iterator *, struct item_iterator *,
+			 gboolean);
 
 gint load_file (const char *, GByteArray *, struct job_control *);
 
