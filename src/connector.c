@@ -1453,31 +1453,53 @@ connector_read_common_dir (struct item_iterator *iter, const gchar * dir,
 			   void *data, const guint8 msg[], int size,
 			   fs_init_iter_func init_iter, enum connector_fs fs)
 {
+  gboolean cache;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   struct connector *connector = data;
 
-  tx_msg = connector_new_msg_path (msg, size, dir);
-  if (!tx_msg)
-    {
-      return -EINVAL;
-    }
+  g_mutex_lock (&connector->mutex);
+  cache = connector->dir_cache != NULL;
+  rx_msg = cache ? g_hash_table_lookup (connector->dir_cache, dir) : NULL;
+  g_mutex_unlock (&connector->mutex);
 
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
   if (!rx_msg)
     {
-      return -EIO;
-    }
+      tx_msg = connector_new_msg_path (msg, size, dir);
+      if (!tx_msg)
+	{
+	  return -EINVAL;
+	}
 
-  if (rx_msg->len == 5
-      && connector_get_path_type (connector, dir, init_iter) != ELEKTROID_DIR)
-    {
-      free_msg (rx_msg);
-      return -ENOTDIR;
+      rx_msg = connector_tx_and_rx (connector, tx_msg);
+      if (!rx_msg)
+	{
+	  return -EIO;
+	}
+
+      g_mutex_lock (&connector->mutex);
+      cache = connector->dir_cache != NULL;
+      if (cache)
+	{
+	  gchar *key = g_strdup (dir);
+	  g_hash_table_insert (connector->dir_cache, key, rx_msg);
+	}
+      g_mutex_unlock (&connector->mutex);
+
+      if (rx_msg->len == 5
+	  && connector_get_path_type (connector, dir,
+				      init_iter) != ELEKTROID_DIR)
+	{
+	  if (!cache)
+	    {
+	      free_msg (rx_msg);
+	    }
+	  return -ENOTDIR;
+	}
     }
 
   return connector_init_iterator (iter, rx_msg, connector_next_smplrw_entry,
-				  fs, FALSE);
+				  fs, cache);
 }
 
 static gint
@@ -2355,6 +2377,12 @@ connector_destroy (struct connector *connector)
       free (connector->pfds);
       connector->pfds = NULL;
     }
+
+  if (connector->dir_cache)
+    {
+      g_hash_table_destroy (connector->dir_cache);
+      connector->dir_cache = NULL;
+    }
 }
 
 gint
@@ -2445,6 +2473,7 @@ connector_init (struct connector *connector, gint card)
   connector->buffer = NULL;
   connector->rx_len = 0;
   connector->pfds = NULL;
+  connector->dir_cache = NULL;
   if (card < 0)
     {
       debug_print (1, "Invalid card\n");
@@ -3833,4 +3862,22 @@ connector_get_full_ext (const struct connector_device_desc *desc,
       snprintf (ext, LABEL_MAX, "%s%s", desc->alias, ops->extension);
     }
   return ext;
+}
+
+void
+connector_enable_dir_cache (struct connector *connector)
+{
+  g_mutex_lock (&connector->mutex);
+  connector->dir_cache =
+    g_hash_table_new_full (g_str_hash, g_str_equal, g_free, free_msg);
+  g_mutex_unlock (&connector->mutex);
+}
+
+void
+connector_disable_dir_cache (struct connector *connector)
+{
+  g_mutex_lock (&connector->mutex);
+  g_hash_table_destroy (connector->dir_cache);
+  connector->dir_cache = NULL;
+  g_mutex_unlock (&connector->mutex);
 }

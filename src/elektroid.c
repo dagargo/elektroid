@@ -2154,8 +2154,8 @@ elektroid_add_download_task_path (const gchar * rel_path,
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  if (remote_browser.fs_ops->
-      readdir (&iter, src_abs_path, remote_browser.data))
+  if (remote_browser.
+      fs_ops->readdir (&iter, src_abs_path, remote_browser.data))
     {
       dst_abs_dirc = strdup (dst_abs_path);
       dst_abs_dir = dirname (dst_abs_dirc);
@@ -2338,7 +2338,10 @@ elektroid_remote_key_press (GtkWidget * widget, GdkEventKey * event,
 	{
 	  if (remote_browser.fs_ops->download)
 	    {
+	      struct connector *connector = remote_browser.data;
+	      connector_enable_dir_cache (connector);
 	      elektroid_add_download_tasks (NULL, NULL);
+	      connector_disable_dir_cache (connector);
 	    }
 	  return TRUE;
 	}
@@ -2591,6 +2594,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   gchar *type_name;
   gint32 next_idx = 1;
   struct item_iterator remote_item_iterator;
+  struct connector *connector = remote_browser.data;
 
   if (selection_data == NULL
       || !gtk_selection_data_get_length (selection_data)
@@ -2608,8 +2612,13 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   uris = g_uri_list_extract_uris (data);
   queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
 
+  if (widget == GTK_WIDGET (local_browser.view))
+    {
+      connector_enable_dir_cache (connector);
+    }
+
   remote_browser.fs_ops->readdir (&remote_item_iterator, remote_browser.dir,
-				  remote_browser.data);
+				  connector);
 
   for (int i = 0; uris[i] != NULL; i++)
     {
@@ -2636,6 +2645,11 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
     }
 
   free_item_iterator (&remote_item_iterator);
+
+  if (widget == GTK_WIDGET (local_browser.view))
+    {
+      connector_disable_dir_cache (connector);
+    }
 
   if (!queued)
     {

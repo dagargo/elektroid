@@ -51,6 +51,7 @@ struct connector
   guint8 *buffer;
   gint npfds;
   struct pollfd *pfds;
+  GHashTable *dir_cache;
 };
 
 enum connector_fs
@@ -160,5 +161,9 @@ gchar *connector_get_full_ext (const struct connector_device_desc *,
 
 gchar *connector_get_sample_path_from_hash_size (struct connector *,
 						 guint32, guint32);
+
+void connector_enable_dir_cache (struct connector *);
+
+void connector_disable_dir_cache (struct connector *);
 
 #endif
