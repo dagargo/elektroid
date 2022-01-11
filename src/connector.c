@@ -1756,12 +1756,18 @@ connector_delete_common_item (const gchar * path, void *data,
 			      connector_path_func rmdir,
 			      connector_path_func rm)
 {
+  enum item_type type;
   gchar *new_path;
   struct item_iterator iter;
   struct connector *connector = data;
   gint res;
 
-  if (connector_get_path_type (connector, path, init_iter) == ELEKTROID_DIR)
+  type = connector_get_path_type (connector, path, init_iter);
+  if (type == ELEKTROID_FILE)
+    {
+      return rm (connector, path);
+    }
+  else if (type == ELEKTROID_DIR)
     {
       debug_print (1, "Deleting %s samples dir...\n", path);
 
@@ -1786,7 +1792,7 @@ connector_delete_common_item (const gchar * path, void *data,
     }
   else
     {
-      return rm (connector, path);
+      return -EBADF;
     }
 }
 
