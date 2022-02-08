@@ -1,7 +1,7 @@
 Name:		elektroid
 Version:	2.0
 Release:	1%{?dist}
-Summary:	Sample transfer application for Elektron devices
+Summary:	Transfer application for Elektron devices
 
 License:	GPLv3+
 URL:		https://github.com/dagargo/elektroid
@@ -29,10 +29,12 @@ BuildRequires:	gettext-devel
 BuildRequires:	json-glib-devel
 
 %description
-Elektroid is a GNU/Linux sample transfer application for Elektron devices.
-It includes the elektroid GUI application and the elektroid-cli CLI application.
-Elektroid has been reported to work with Model:Samples, Digitakt and
-Analog Rytm mk1 and mk2.
+Elektroid is an transfer application for Elektron devices.
+With Elektroid you can easily upload and download audio files, projects, sounds
+and presets to and from Elektron devices. It can also be used to send and
+receive MIDI SysEx files.
+Elektroid has been reported to work with Model:Samples, Model:Cycles, Digitakt,
+Digitone and Analog Rytm MKI and MKII.
 
 
 %prep

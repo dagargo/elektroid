@@ -21,14 +21,14 @@ Package: elektroid
 Architecture: any
 Depends: ${misc:Depends},
          ${shlibs:Depends}
-Description: Sample transfer application
- Elektroid is an sample transfer application for Elektron devices.
+Description: Transfer application for Elektron devices
+ Elektroid is an transfer application for Elektron devices.
  .
- With elektroid you can easily load audio files like flac or wav into your
- elektron sampler. You can also transfer audio samples from your elektroid
- device to your local hard disk.
+ With Elektroid you can easily upload and download audio files, projects,
+ sounds and presets to and from Elektron devices. It can also be used to
+ send and receive MIDI SysEx files.
  .
- It has been reported to work with Model:Samples, Digitakt
- and Analog Rytm mk1 and mk2.
+ Elektroid has been reported to work with Model:Samples, Model:Cycles,
+ Digitakt, Digitone and Analog Rytm MKI and MKII.
  .
  This package provides both the GUI and CLI application of elektroid.

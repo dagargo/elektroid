@@ -1,12 +1,12 @@
 [Desktop Entry]
 Type=Application
 Name=Elektroid
-Comment=Sample transfer application for Elektron devices
-Comment[ca]=Aplicació de transferència de mostres per a dispositius Elektron
-Comment[de]=Sample Transfer Anwendung für Elektron Instrumente
-Comment[es]=Aplicación de transferencia de muestras para dispositivos Elektron
-Comment[fr]=Application de transfert d'échantillon pour les périphériques Elektron
-Comment[pt_BR]=Aplicativo de transferência de sample para dispositivos Elektron
+Comment=Transfer application for Elektron devices
+Comment[ca]=Aplicació de transferència per a dispositius Elektron
+Comment[de]=Transfer Anwendung für Elektron Instrumente
+Comment[es]=Aplicación de transferencia para dispositivos Elektron
+Comment[fr]=Application de transfert pour les périphériques Elektron
+Comment[pt_BR]=Aplicativo de transferência para dispositivos Elektron
 Categories=Music;AudioVideo;X-Sound;Audio;X-Alsa
 Keywords=music;alsa;realtime;standalone;
 Exec=elektroid

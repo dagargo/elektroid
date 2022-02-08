@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.38.2 
+<!-- Generated with glade 3.38.2
 
 Copyright (C) David García Goñi
 
@@ -24,7 +24,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
   <!-- interface-css-provider-path gui.css -->
   <!-- interface-license-type gplv3 -->
   <!-- interface-name Elektroid -->
-  <!-- interface-description GNU/Linux sample transfer application for Elektron devices -->
+  <!-- interface-description GNU/Linux transfer application for Elektron devices -->
   <!-- interface-copyright David Garc\303\255a Go\303\261i -->
   <object class="GtkListStore" id="devices_list_store">
     <columns>
