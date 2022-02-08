@@ -16,7 +16,7 @@ make
 sudo make install
 ```
 
-The package dependencies for Debian based distributions are:
+The package dependencies for Debian-based distributions are:
 - automake
 - libtool
 - build-essential
@@ -35,9 +35,11 @@ You can easily install them by running `sudo apt install automake libtool build-
 
 If you are only compiling the CLI, install the dependencies with `sudo apt install automake libtool build-essential libasound2-dev libglib2.0-dev libsndfile1-dev libsamplerate0-dev libtool zlib1g-dev libjson-glib-dev libzip-dev`.
 
+For Fedora, `sudo dnf install autoconf libtool alsa-lib-devel zlib-devel libzip-devel gtk3-devel libsndfile-devel gettext-devel libsamplerate-devel pulseaudio-libs-devel json-glib-devel` will install the build dependencies.
+
 ## CLI
 
-`elektroid-cli` brings the same funcionality than `elektroid` to the command line.
+`elektroid-cli` brings the same functionality as `elektroid` to the command line.
 
 There are device commands and filesystem commands. The latter have the form `a-b` where `a` is a command and `b` is a filesystem, (e.g., `ls-project`, `download-sound`, `mkdir-sample`). Notice that the filesystem is always in the singular form and some older commands are deprecated but kept for compatibility reasons although there are not documented here.
 
