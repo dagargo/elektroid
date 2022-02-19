@@ -191,8 +191,7 @@ get_local_startup_path (const gchar * local_dir)
       dir = opendir (local_dir);
       if (dir)
 	{
-	  startup_path = malloc (PATH_MAX);
-	  realpath (local_dir, startup_path);
+	  startup_path = realpath (local_dir, NULL);
 	}
       else
 	{
