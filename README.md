@@ -33,9 +33,27 @@ The package dependencies for Debian-based distributions are:
 
 You can easily install them by running `sudo apt install automake libtool build-essential libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev autopoint gettext zlib1g-dev libjson-glib-dev libzip-dev`.
 
-If you are only compiling the CLI, install the dependencies with `sudo apt install automake libtool build-essential libasound2-dev libglib2.0-dev libsndfile1-dev libsamplerate0-dev libtool zlib1g-dev libjson-glib-dev libzip-dev`.
+If you are only compiling the CLI, install the dependencies with `sudo apt install automake libtool build-essential libasound2-dev libglib2.0-dev libsndfile1-dev libsamplerate0-dev autopoint libtool zlib1g-dev libjson-glib-dev libzip-dev`.
 
 For Fedora, `sudo dnf install autoconf libtool alsa-lib-devel zlib-devel libzip-devel gtk3-devel libsndfile-devel gettext-devel libsamplerate-devel pulseaudio-libs-devel json-glib-devel` will install the build dependencies.
+
+## Packaging
+
+This is a quick glance at the instructions needed to build some distribution packages.
+
+### Debian
+
+```
+$ dpkg-buildpackage -b -rfakeroot -us -uc
+```
+
+### Fedora
+
+```
+$ rel=35
+$ mock -r fedora-$rel-x86_64 --buildsrpm --spec elektroid.spec --sources .
+$ mock -r fedora-$rel-x86_64 --no-clean --rebuild /var/lib/mock/fedora-$rel-x86_64/result/elektroid-*.src.rpm
+```
 
 ## CLI
 

@@ -55,4 +55,10 @@ po/quot.sed
 po/remove-potcdate.sin
 po/stamp-po
 po/remove-potcdate.sed
-
+debian/.debhelper/
+debian/autoreconf.after
+debian/autoreconf.before
+debian/debhelper-build-stamp
+debian/elektroid.substvars
+debian/elektroid/
+debian/files
