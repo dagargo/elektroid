@@ -39,7 +39,7 @@ AC_SUBST(PULSEAUDIO_LIBS)
 
 AM_COND_IF(GUI, [
 AM_GNU_GETTEXT([external])
-AM_GNU_GETTEXT_VERSION([0.12.1])
+AM_GNU_GETTEXT_VERSION([0.19])
 ])
 
 # Checks for header files.
