@@ -547,3 +547,18 @@ sample_load (const gchar * path, GByteArray * sample,
 {
   return sample_load_with_frames (path, sample, control, NULL);
 }
+
+gboolean
+sample_is_mp3_supported ()
+{
+  static char buffer[LABEL_MAX];
+
+  sf_command (NULL, SFC_GET_LIB_VERSION, buffer, LABEL_MAX);
+  debug_print (1, "libsndfile version: %s...\n", buffer);
+  if (strverscmp (buffer, "libsndfile-1.1.0") >= 0)
+    {
+      return TRUE;
+    }
+
+  return FALSE;
+}

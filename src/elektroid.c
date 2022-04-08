@@ -25,7 +25,6 @@
 #include <glib-unix.h>
 #include <glib/gi18n.h>
 #include <glib/gprintf.h>
-#define _GNU_SOURCE
 #include <getopt.h>
 #include "connector.h"
 #include "browser.h"
@@ -261,15 +260,54 @@ elektroid_set_file_extensions_for_fs (gchar ** extensions[],
 				      enum connector_fs sel_fs)
 {
   const struct fs_operations *ops;
+  gchar *mp3_ext = NULL;
 
-  if (*extensions != NULL && *extensions != ELEKTROID_AUDIO_LOCAL_EXTS)
+  if (*extensions != NULL)
     {
-      g_free ((*extensions)[0]);
+      gchar **ext = *extensions;
+      while (*ext)
+	{
+	  g_free (*ext);
+	  ext++;
+	}
       g_free (*extensions);
     }
+
   if (sel_fs == FS_SAMPLES)
     {
-      *extensions = ELEKTROID_AUDIO_LOCAL_EXTS;
+      gchar **ext = ELEKTROID_AUDIO_LOCAL_EXTS;
+      int known_ext = 0;
+      while (*ext)
+	{
+	  known_ext++;
+	  ext++;
+	}
+      known_ext++;		//NULL included
+
+      int total_ext = known_ext;
+
+      if (sample_is_mp3_supported ())
+	{
+	  mp3_ext = "mp3";
+	  total_ext++;
+	}
+
+      *extensions = malloc (sizeof (gchar *) * total_ext);
+      ext = ELEKTROID_AUDIO_LOCAL_EXTS;
+      int i = 0;
+      while (*ext)
+	{
+	  (*extensions)[i] = strdup (*ext);
+	  ext++;
+	  i++;
+	}
+      if (mp3_ext)
+	{
+	  (*extensions)[i] = strdup (mp3_ext);
+	  i++;
+	}
+      (*extensions)[i] = NULL;
+
     }
   else
     {

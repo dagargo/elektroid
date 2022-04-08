@@ -39,4 +39,6 @@ gint sample_load (const gchar *, GByteArray *, struct job_control *);
 gint sample_load_with_frames (const gchar *, GByteArray *,
 			      struct job_control *, guint *);
 
+gboolean sample_is_mp3_supported ();
+
 #endif

@@ -18,11 +18,11 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
-#include <glib.h>
-
 #ifndef UTILS_H
 #define UTILS_H
+
+#include <stdio.h>
+#include <glib.h>
 
 #define LABEL_MAX 128
 
