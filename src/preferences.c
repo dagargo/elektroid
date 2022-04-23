@@ -46,6 +46,7 @@ preferences_save (struct preferences *preferences)
 			    S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH |
 			    S_IXOTH))
     {
+      error_print ("Error wile creating directory `%s'\n", CONF_DIR);
       return 1;
     }
 
@@ -106,15 +107,30 @@ preferences_load (struct preferences *preferences)
     }
 
   reader = json_reader_new (json_parser_get_root (parser));
-  json_reader_read_member (reader, MEMBER_AUTOPLAY);
-  preferences->autoplay = json_reader_get_boolean_value (reader);
+
+  if (json_reader_read_member (reader, MEMBER_AUTOPLAY))
+    {
+      preferences->autoplay = json_reader_get_boolean_value (reader);
+    }
+    else {
+      preferences->autoplay = TRUE;
+    }
   json_reader_end_member (reader);
-  json_reader_read_member (reader, MEMBER_LOCALDIR);
-  preferences->local_dir = malloc (PATH_MAX);
-  n = PATH_MAX - 1;
-  strncpy (preferences->local_dir, json_reader_get_string_value (reader), n);
-  preferences->local_dir[PATH_MAX - 1] = 0;
+
+  if (json_reader_read_member (reader, MEMBER_LOCALDIR))
+    {
+      preferences->local_dir = malloc (PATH_MAX);
+      n = PATH_MAX - 1;
+      strncpy (preferences->local_dir, json_reader_get_string_value (reader),
+	       n);
+      preferences->local_dir[PATH_MAX - 1] = 0;
+    }
+  else
+    {
+      preferences->local_dir = get_expanded_dir ("~");
+    }
   json_reader_end_member (reader);
+
   g_object_unref (reader);
   g_object_unref (parser);
 
