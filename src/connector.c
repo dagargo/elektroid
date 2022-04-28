@@ -50,6 +50,7 @@
 #define DKEYS_ID 0x1c
 #define MOD_S_ID 0x19
 #define MOD_C_ID 0x1b
+#define STAKT_ID 0x1e
 
 #define FS_DATA_PRJ_PREFIX "/projects"
 #define FS_DATA_SND_PREFIX "/soundbanks"
@@ -348,11 +349,19 @@ static const struct connector_device_desc MODEL_CYCLES_DESC = {
   .storages = STORAGE_PLUS_DRIVE
 };
 
+static const struct connector_device_desc SYNTAKT_DESC = {
+  .name = "Syntakt",
+  .alias = "st",
+  .id = STAKT_ID,
+  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
+  .storages = 0
+};
+
 static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
   &ANALOG_FOUR_DESC, &ANALOG_KEYS_DESC, &ANALOG_RYTM_DESC, &ANALOG_HEAT_DESC,
   &DIGITAKT_DESC, &ANALOG_FOUR_MKII_DESC, &ANALOG_RYTM_MKII_DESC,
   &DIGITONE_DESC, &ANALOG_HEAT_MKII_DESC, &DIGITONE_KEYS_DESC,
-  &MODEL_SAMPLES_DESC, &MODEL_CYCLES_DESC
+  &MODEL_SAMPLES_DESC, &MODEL_CYCLES_DESC, &SYNTAKT_DESC
 };
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
