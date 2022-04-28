@@ -112,7 +112,8 @@ preferences_load (struct preferences *preferences)
     {
       preferences->autoplay = json_reader_get_boolean_value (reader);
     }
-    else {
+  else
+    {
       preferences->autoplay = TRUE;
     }
   json_reader_end_member (reader);

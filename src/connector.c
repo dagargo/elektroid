@@ -361,7 +361,7 @@ static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
   &ANALOG_FOUR_DESC, &ANALOG_KEYS_DESC, &ANALOG_RYTM_DESC, &ANALOG_HEAT_DESC,
   &DIGITAKT_DESC, &ANALOG_FOUR_MKII_DESC, &ANALOG_RYTM_MKII_DESC,
   &DIGITONE_DESC, &ANALOG_HEAT_MKII_DESC, &DIGITONE_KEYS_DESC,
-  &MODEL_SAMPLES_DESC, &MODEL_CYCLES_DESC, &SYNTAKT_DESC
+  &MODEL_SAMPLES_DESC, &MODEL_CYCLES_DESC, &SYNTAKT_DESC, NULL
 };
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
@@ -2453,16 +2453,14 @@ connector_get_storage_stats_percent (struct connector_storage_stats *statfs)
 static const struct connector_device_desc *
 connector_get_device_desc (guint8 id)
 {
-  guint total =
-    sizeof (CONNECTOR_DEVICE_DESCS) / sizeof (struct connector_device_desc *);
-  guint i;
-
-  for (i = 0; i < total; i++)
+  const struct connector_device_desc **device_desc = CONNECTOR_DEVICE_DESCS;
+  while (device_desc)
     {
-      if (id == CONNECTOR_DEVICE_DESCS[i]->id)
+      if (id == (*device_desc)->id)
 	{
-	  return CONNECTOR_DEVICE_DESCS[i];
+	  return *device_desc;
 	}
+      device_desc++;
     }
   return NULL;
 }
