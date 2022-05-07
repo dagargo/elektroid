@@ -313,7 +313,7 @@ elektroid_set_file_extensions_for_fs (gchar ** extensions[],
     {
       ops = connector_get_fs_operations (sel_fs);
       *extensions = malloc (sizeof (gchar *) * 2);
-      (*extensions)[0] = connector_get_full_ext (connector.device_desc, ops);
+      (*extensions)[0] = connector_get_full_ext (&connector.device_desc, ops);
       (*extensions)[1] = NULL;
     }
 }
@@ -416,7 +416,7 @@ elektroid_update_statusbar ()
       for (storage = STORAGE_PLUS_DRIVE; storage <= STORAGE_RAM;
 	   storage <<= 1)
 	{
-	  if (connector.device_desc->storages & storage)
+	  if (connector.device_desc.storage & storage)
 	    {
 	      res =
 		connector_get_storage_stats (&connector, storage, &statfs);
@@ -2490,7 +2490,7 @@ elektroid_fill_fs_combo ()
 
   for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs = fs << 1, i++)
     {
-      if (GUI_FSS & fs && connector.device_desc->fss & fs)
+      if (GUI_FSS & fs && connector.device_desc.filesystems & fs)
 	{
 	  gtk_list_store_insert_with_values (fs_list_store, NULL, -1,
 					     FS_LIST_STORE_ID_FIELD,
@@ -2925,9 +2925,9 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *hostname_label;
   GtkWidget *loop_button;
   GtkWidget *autoplay_switch;
-  char *glade_file = malloc (PATH_MAX);
-  char *css_file = malloc (PATH_MAX);
-  char hostname[LABEL_MAX];
+  gchar *glade_file = malloc (PATH_MAX);
+  gchar *css_file = malloc (PATH_MAX);
+  gchar hostname[LABEL_MAX];
 
   if (snprintf
       (glade_file, PATH_MAX, "%s/%s/res/gui.glade", DATADIR,

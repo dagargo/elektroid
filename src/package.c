@@ -178,7 +178,7 @@ package_add_manifest (struct package *pkg)
       json_builder_add_string_value (builder, pkg->fw_version);
     }
 
-  if (pkg->device_desc->fss & FS_SAMPLES)
+  if (pkg->device_desc->filesystems & FS_SAMPLES)
     {
       for (resource = pkg->resources; resource; resource = resource->next)
 	{
@@ -407,7 +407,6 @@ package_receive_pkg_resources (struct package *pkg,
   if (!reader)
     {
       error_print ("Unable to read from parser. Continuing...");
-      g_object_unref (reader);
       control->parts = 2;
       goto get_payload;
     }
@@ -684,7 +683,7 @@ package_send_pkg_resources (struct package *pkg,
   json_reader_end_element (reader);
   json_reader_end_element (reader);
 
-  if (!(pkg->device_desc->fss & FS_SAMPLES))
+  if (!(pkg->device_desc->filesystems & FS_SAMPLES))
     {
       ret = 0;
       goto cleanup_reader;

@@ -29,6 +29,7 @@
 #include "utils.h"
 #include "sample.h"
 #include "package.h"
+#include "../config.h"
 
 #define KB 1024
 #define BUFF_SIZE (4 * KB)
@@ -37,20 +38,6 @@
 #define OS_TRANSF_BLOCK_BYTES 0x800
 #define POLL_TIMEOUT 20
 #define MAX_ZIP_SIZE (128 * 1024 * 1024)
-
-#define AFMK1_ID 0x04
-#define AKEYS_ID 0x06
-#define ARMK1_ID 0x08
-#define AHMK1_ID 0x0a
-#define DTAKT_ID 0x0c
-#define AFMK2_ID 0x0e
-#define ARMK2_ID 0x10
-#define DTONE_ID 0x14
-#define AHMK2_ID 0x16
-#define DKEYS_ID 0x1c
-#define MOD_S_ID 0x19
-#define MOD_C_ID 0x1b
-#define STAKT_ID 0x1e
 
 #define FS_DATA_PRJ_PREFIX "/projects"
 #define FS_DATA_SND_PREFIX "/soundbanks"
@@ -252,117 +239,6 @@ static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
   { 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
-
-static const struct connector_device_desc ANALOG_FOUR_DESC = {
-  .name = "Analog Four",
-  .alias = "af",
-  .id = AFMK1_ID,
-  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
-  .storages = 0
-};
-
-static const struct connector_device_desc ANALOG_KEYS_DESC = {
-  .name = "Analog Keys",
-  .alias = "ak",
-  .id = AKEYS_ID,
-  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
-  .storages = 0
-};
-
-static const struct connector_device_desc ANALOG_RYTM_DESC = {
-  .name = "Analog Rytm",
-  .alias = "ar",
-  .id = ARMK1_ID,
-  .fss = FS_SAMPLES | FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
-  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
-};
-
-static const struct connector_device_desc ANALOG_HEAT_DESC = {
-  .name = "Analog Heat",
-  .alias = "ah",
-  .id = AHMK1_ID,
-  .fss = FS_DATA_ALL | FS_DATA_SND,
-  .storages = 0
-};
-
-static const struct connector_device_desc DIGITAKT_DESC = {
-  .name = "Digitakt",
-  .alias = "dt",
-  .id = DTAKT_ID,
-  .fss = FS_SAMPLES | FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
-  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
-};
-
-static const struct connector_device_desc ANALOG_FOUR_MKII_DESC = {
-  .name = "Analog Four MKII",
-  .alias = "af",
-  .id = AFMK2_ID,
-  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
-  .storages = 0
-};
-
-static const struct connector_device_desc ANALOG_RYTM_MKII_DESC = {
-  .name = "Analog Rytm MKII",
-  .alias = "ar",
-  .id = ARMK2_ID,
-  .fss = FS_SAMPLES | FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
-  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
-};
-
-static const struct connector_device_desc DIGITONE_DESC = {
-  .name = "Digitone",
-  .alias = "dn",
-  .id = DTONE_ID,
-  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
-  .storages = 0
-};
-
-static const struct connector_device_desc ANALOG_HEAT_MKII_DESC = {
-  .name = "Analog Heat MKII",
-  .alias = "ah",
-  .id = AHMK2_ID,
-  .fss = FS_DATA_ALL | FS_DATA_SND,
-  .storages = 0
-};
-
-static const struct connector_device_desc DIGITONE_KEYS_DESC = {
-  .name = "Digitone Keys",
-  .alias = "dn",
-  .id = DKEYS_ID,
-  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
-  .storages = 0
-};
-
-static const struct connector_device_desc MODEL_SAMPLES_DESC = {
-  .name = "Model:Samples",
-  .alias = "ms",
-  .id = MOD_S_ID,
-  .fss = FS_SAMPLES | FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
-  .storages = STORAGE_PLUS_DRIVE | STORAGE_RAM
-};
-
-static const struct connector_device_desc MODEL_CYCLES_DESC = {
-  .name = "Model:Cycles",
-  .alias = "mc",
-  .id = MOD_C_ID,
-  .fss = FS_RAW_ALL | FS_RAW_PRESETS | FS_DATA_ALL | FS_DATA_PRJ,
-  .storages = STORAGE_PLUS_DRIVE
-};
-
-static const struct connector_device_desc SYNTAKT_DESC = {
-  .name = "Syntakt",
-  .alias = "st",
-  .id = STAKT_ID,
-  .fss = FS_DATA_ALL | FS_DATA_PRJ | FS_DATA_SND,
-  .storages = 0
-};
-
-static const struct connector_device_desc *CONNECTOR_DEVICE_DESCS[] = {
-  &ANALOG_FOUR_DESC, &ANALOG_KEYS_DESC, &ANALOG_RYTM_DESC, &ANALOG_HEAT_DESC,
-  &DIGITAKT_DESC, &ANALOG_FOUR_MKII_DESC, &ANALOG_RYTM_MKII_DESC,
-  &DIGITONE_DESC, &ANALOG_HEAT_MKII_DESC, &DIGITONE_KEYS_DESC,
-  &MODEL_SAMPLES_DESC, &MODEL_CYCLES_DESC, &SYNTAKT_DESC, NULL
-};
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
@@ -2392,6 +2268,19 @@ connector_destroy (struct connector *connector)
       g_hash_table_destroy (connector->dir_cache);
       connector->dir_cache = NULL;
     }
+
+  if (connector->device_desc.name)
+    {
+      g_free (connector->device_desc.name);
+      connector->device_desc.name = NULL;
+    }
+
+  if (connector->device_desc.alias)
+    {
+      g_free (connector->device_desc.alias);
+      connector->device_desc.alias = NULL;
+    }
+
 }
 
 gint
@@ -2450,25 +2339,137 @@ connector_get_storage_stats_percent (struct connector_storage_stats *statfs)
   return (statfs->bsize - statfs->bfree) * 100.0 / statfs->bsize;
 }
 
-static const struct connector_device_desc *
-connector_get_device_desc (guint8 id)
+static gint
+connector_set_device_desc (struct connector *connector, guint8 id)
 {
-  const struct connector_device_desc **device_desc = CONNECTOR_DEVICE_DESCS;
-  while (device_desc)
+  gint err, devices;
+  JsonParser *parser;
+  JsonReader *reader;
+  GError *error;
+  gchar *devices_filename =
+    chain_path (DATADIR, "elektroid/res/devices.json");
+
+  parser = json_parser_new ();
+  if (!json_parser_load_from_file (parser, devices_filename, &error))
     {
-      if (id == (*device_desc)->id)
-	{
-	  return *device_desc;
-	}
-      device_desc++;
+      error_print ("Unable to parse file: %s", error->message);
+      g_clear_error (&error);
+      err = -ENODEV;
+      goto cleanup_parser;
     }
-  return NULL;
+
+  reader = json_reader_new (json_parser_get_root (parser));
+  if (!reader)
+    {
+      error_print ("Unable to read from parser");
+      err = -ENODEV;
+      goto cleanup_parser;
+    }
+
+  if (!json_reader_is_array (reader))
+    {
+      error_print ("Not an array\n");
+      err = -ENODEV;
+      goto cleanup_reader;
+    }
+
+  devices = json_reader_count_elements (reader);
+  if (!devices)
+    {
+      debug_print (1, "No devices found\n");
+      err = -ENODEV;
+      goto cleanup_reader;
+    }
+
+  err = -ENODEV;
+  for (int i = 0; i < devices; i++)
+    {
+      if (!json_reader_read_element (reader, i))
+	{
+	  error_print ("Cannot read element %d. Continuing...\n", i);
+	  continue;
+	}
+
+      if (!json_reader_read_member (reader, DEV_TAG_ID))
+	{
+	  error_print ("Cannot read member '%s'. Continuing...\n",
+		       DEV_TAG_ID);
+	  continue;
+	}
+      connector->device_desc.id = json_reader_get_int_value (reader);
+      json_reader_end_member (reader);
+
+      if (connector->device_desc.id != id)
+	{
+	  json_reader_end_element (reader);
+	  continue;
+	}
+
+      err = 0;
+      debug_print (1, "Device %d found\n", id);
+
+      if (!json_reader_read_member (reader, DEV_TAG_NAME))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_NAME);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      connector->device_desc.name =
+	strdup (json_reader_get_string_value (reader));
+      json_reader_end_member (reader);
+
+      if (!json_reader_read_member (reader, DEV_TAG_ALIAS))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_ALIAS);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      connector->device_desc.alias =
+	strdup (json_reader_get_string_value (reader));
+      json_reader_end_member (reader);
+
+      if (!json_reader_read_member (reader, DEV_TAG_FILESYSTEMS))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_FILESYSTEMS);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      connector->device_desc.filesystems = json_reader_get_int_value (reader);
+      json_reader_end_member (reader);
+
+      if (!json_reader_read_member (reader, DEV_TAG_STORAGE))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_STORAGE);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      connector->device_desc.storage = json_reader_get_int_value (reader);
+      json_reader_end_member (reader);
+
+      break;
+    }
+
+cleanup_reader:
+  g_object_unref (reader);
+cleanup_parser:
+  g_object_unref (parser);
+  g_free (devices_filename);
+  return err;
 }
 
 gint
 connector_init (struct connector *connector, gint card)
 {
-  int err;
+  gint err;
+  guint8 id;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   snd_rawmidi_params_t *params;
@@ -2481,6 +2482,8 @@ connector_init (struct connector *connector, gint card)
   connector->rx_len = 0;
   connector->pfds = NULL;
   connector->dir_cache = NULL;
+  connector->device_desc.name = NULL;
+  connector->device_desc.alias = NULL;
   if (card < 0)
     {
       debug_print (1, "Invalid card\n");
@@ -2570,9 +2573,9 @@ connector_init (struct connector *connector, gint card)
       goto cleanup_params;
     }
   connector->alias = strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
-  connector->device_desc = connector_get_device_desc (rx_msg->data[5]);
+  id = rx_msg->data[5];
   free_msg (rx_msg);
-  if (!connector->device_desc)
+  if (connector_set_device_desc (connector, id))
     {
       err = -ENODEV;
       goto cleanup_params;
@@ -2603,7 +2606,7 @@ connector_init (struct connector *connector, gint card)
     }
 
   snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
-	    connector->device_desc->name,
+	    connector->device_desc.name,
 	    connector->fw_version, connector->alias);
   debug_print (1, "Connected to %s\n", connector->device_name);
   err = 0;
@@ -3426,7 +3429,7 @@ connector_download_pkg (const gchar * path, GByteArray * output,
     }
 
   if (package_begin
-      (&pkg, pkg_name, connector->fw_version, connector->device_desc, type))
+      (&pkg, pkg_name, connector->fw_version, &connector->device_desc, type))
     {
       g_free (pkg_name);
       return -1;
@@ -3627,7 +3630,7 @@ connector_get_download_path (struct connector *connector,
   name = connector_get_download_name (connector, remote_iter, ops, src_fpath);
   if (name)
     {
-      dl_ext = connector_get_full_ext (connector->device_desc, ops);
+      dl_ext = connector_get_full_ext (&connector->device_desc, ops);
       filename = malloc (PATH_MAX);
       snprintf (filename, PATH_MAX, "%s.%s%s", name, dl_ext, md_ext);
       path = chain_path (dst_dir, filename);
@@ -3816,7 +3819,7 @@ connector_upload_pkg (const gchar * path, GByteArray * input,
   struct package pkg;
   struct connector *connector = data;
 
-  ret = package_open (&pkg, input, connector->device_desc);
+  ret = package_open (&pkg, input, &connector->device_desc);
   if (!ret)
     {
       ret = package_send_pkg_resources (&pkg, path, control, connector,

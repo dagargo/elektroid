@@ -28,18 +28,24 @@
 #define SYSEX_TIMEOUT 5000
 #define REST_TIME 50000
 
+#define DEV_TAG_ID "id"
+#define DEV_TAG_NAME "name"
+#define DEV_TAG_ALIAS "alias"
+#define DEV_TAG_FILESYSTEMS "filesystems"
+#define DEV_TAG_STORAGE "storage"
+
 struct connector_device_desc
 {
-  const gchar *name;
-  const gchar *alias;
-  guint8 id;
-  guint8 fss;
-  guint8 storages;
+  guint32 id;
+  gchar *name;
+  gchar *alias;
+  guint8 filesystems;
+  guint8 storage;
 };
 
 struct connector
 {
-  const struct connector_device_desc *device_desc;
+  struct connector_device_desc device_desc;
   snd_rawmidi_t *inputp;
   snd_rawmidi_t *outputp;
   gchar *device_name;

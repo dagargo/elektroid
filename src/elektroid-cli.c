@@ -110,10 +110,10 @@ cli_connect (const char *device_path, enum connector_fs fs)
 {
   gint card = atoi (device_path);
   gint ret = connector_init (&connector, card);
-  if (!ret && fs && !(connector.device_desc->fss & fs))
+  if (!ret && fs && !(connector.device_desc.filesystems & fs))
     {
       error_print ("Filesystem not supported for device '%s'\n",
-		   connector.device_desc->name);
+		   connector.device_desc.name);
       return 1;
     }
   return ret;
@@ -270,7 +270,7 @@ cli_info (int argc, char *argv[], int optind)
   comma = "";
   for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs <<= 1, i++)
     {
-      if (connector.device_desc->fss & fs)
+      if (connector.device_desc.filesystems & fs)
 	{
 	  printf ("%s%s", comma, CLI_FSS[i]);
 	}
@@ -307,7 +307,7 @@ cli_df (int argc, char *argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  if (!connector.device_desc->storages)
+  if (!connector.device_desc.storage)
     {
       return EXIT_FAILURE;
     }
@@ -318,7 +318,7 @@ cli_df (int argc, char *argv[], int optind)
   res = 0;
   for (storage = STORAGE_PLUS_DRIVE; storage <= STORAGE_RAM; storage <<= 1)
     {
-      if (connector.device_desc->storages & storage)
+      if (connector.device_desc.storage & storage)
 	{
 	  res |= connector_get_storage_stats (&connector, storage, &statfs);
 	  if (res)
