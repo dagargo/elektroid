@@ -2925,24 +2925,12 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *hostname_label;
   GtkWidget *loop_button;
   GtkWidget *autoplay_switch;
-  gchar *glade_file = malloc (PATH_MAX);
-  gchar *css_file = malloc (PATH_MAX);
+  gchar *glade_file;
+  gchar *css_file;
   gchar hostname[LABEL_MAX];
 
-  if (snprintf
-      (glade_file, PATH_MAX, "%s/%s/res/gui.glade", DATADIR,
-       PACKAGE) >= PATH_MAX)
-    {
-      error_print ("Path too long\n");
-      return -1;
-    }
-
-  if (snprintf
-      (css_file, PATH_MAX, "%s/%s/res/gui.css", DATADIR, PACKAGE) >= PATH_MAX)
-    {
-      error_print ("Path too long\n");
-      return -1;
-    }
+  glade_file = chain_path(DATADIR, "res/gui.glade");
+  css_file = chain_path(DATADIR, "res/gui.css");
 
   gtk_init (&argc, &argv);
   builder = gtk_builder_new ();
@@ -3298,6 +3286,7 @@ elektroid_run (int argc, char *argv[])
     }
 
   audio_destroy (&audio);
+
   return EXIT_SUCCESS;
 }
 

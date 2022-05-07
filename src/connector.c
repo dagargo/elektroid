@@ -2346,8 +2346,7 @@ connector_set_device_desc (struct connector *connector, guint8 id)
   JsonParser *parser;
   JsonReader *reader;
   GError *error;
-  gchar *devices_filename =
-    chain_path (DATADIR, "elektroid/res/devices.json");
+  gchar *devices_filename = chain_path (DATADIR, "res/devices.json");
 
   parser = json_parser_new ();
   if (!json_parser_load_from_file (parser, devices_filename, &error))
