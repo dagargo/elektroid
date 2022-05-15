@@ -244,3 +244,41 @@ $ elektroid-cli dl-data 0:/soundbanks/D/1
 ```
 $ elektroid-cli ul-data sound 0:/soundbanks/D
 ```
+
+## Adding and reconfiguring devices
+
+Since version 2.1, it is possible to add and reconfigure devices without recompiling as the device definitions are stored in a JSON file. Hopefully, this approach will make it easier for users to modify and add devices and new releases will only be needed if new funcionalities are actually added.
+
+This is a device definition from `res/devices.json`.
+
+```
+}, {
+        "id": 12,
+        "name": "Digitakt",
+        "alias": "dt",
+        "filesystems": 57,
+        "storage": 3
+}, {
+```
+
+Properties `filesystems` and `storage` are based on the definitions found in `src/connector.h` and are the bitwise OR result of all the supported filesystems and storage types.
+
+```
+enum connector_fs
+{
+  FS_SAMPLES = 0x1,
+  FS_RAW_ALL = 0x2,
+  FS_RAW_PRESETS = 0x4,
+  FS_DATA_ALL = 0x8,
+  FS_DATA_PRJ = 0x10,
+  FS_DATA_SND = 0x20,
+};
+```
+
+```
+enum connector_storage
+{
+  STORAGE_PLUS_DRIVE = 0x1,
+  STORAGE_RAM = 0x2
+};
+```
