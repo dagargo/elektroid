@@ -37,6 +37,8 @@ If you are only compiling the CLI, install the dependencies with `sudo apt insta
 
 For Fedora, `sudo dnf install autoconf libtool alsa-lib-devel zlib-devel libzip-devel gtk3-devel libsndfile-devel gettext-devel libsamplerate-devel pulseaudio-libs-devel json-glib-devel` will install the build dependencies.
 
+For Arch Linux, `sudo pacman -S base-devel autoconf libtool alsa-lib zlib libzip gtk3 libsndfile gettext libsamplerate pulseaudio json-glib` will install the build dependencies.
+
 ## Packaging
 
 This is a quick glance at the instructions needed to build some distribution packages.
