@@ -2929,8 +2929,8 @@ elektroid_run (int argc, char *argv[])
   gchar *css_file;
   gchar hostname[LABEL_MAX];
 
-  glade_file = chain_path(DATADIR, "res/gui.glade");
-  css_file = chain_path(DATADIR, "res/gui.css");
+  glade_file = chain_path (DATADIR, "res/gui.glade");
+  css_file = chain_path (DATADIR, "res/gui.css");
 
   gtk_init (&argc, &argv);
   builder = gtk_builder_new ();
