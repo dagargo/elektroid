@@ -49,7 +49,7 @@ struct connector
   snd_rawmidi_t *inputp;
   snd_rawmidi_t *outputp;
   gchar *device_name;
-  gchar *alias;
+  gchar *overbridge_name;
   gchar *fw_version;
   gushort seq;
   GMutex mutex;

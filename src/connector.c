@@ -2247,7 +2247,7 @@ connector_destroy (struct connector *connector)
     {
       free (connector->device_name);
       free (connector->fw_version);
-      free (connector->alias);
+      free (connector->overbridge_name);
       connector->device_name = NULL;
     }
 
@@ -2571,7 +2571,8 @@ connector_init (struct connector *connector, gint card)
       err = -EIO;
       goto cleanup_params;
     }
-  connector->alias = strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
+  connector->overbridge_name =
+    strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
   id = rx_msg->data[5];
   free_msg (rx_msg);
   if (connector_set_device_desc (connector, id))
@@ -2606,7 +2607,7 @@ connector_init (struct connector *connector, gint card)
 
   snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
 	    connector->device_desc.name,
-	    connector->fw_version, connector->alias);
+	    connector->fw_version, connector->overbridge_name);
   debug_print (1, "Connected to %s\n", connector->device_name);
   err = 0;
 
