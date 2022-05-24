@@ -1,75 +1,75 @@
 [{
-        "id": 4,
-        "name": "Analog Four",
-        "alias": "af",
-        "filesystems": 56,
-        "storage": 0
+	"id": 4,
+	"name": "Analog Four",
+	"alias": "af",
+	"filesystems": 56,
+	"storage": 0
 }, {
-        "id": 6,
-        "name": "Analog Keys",
-        "alias": "ak",
-        "filesystems": 56,
-        "storage": 0
+	"id": 6,
+	"name": "Analog Keys",
+	"alias": "ak",
+	"filesystems": 56,
+	"storage": 0
 }, {
-        "id": 8,
-        "name": "Analog Rytm",
-        "alias": "ar",
-        "filesystems": 57,
-        "storage": 3
+	"id": 8,
+	"name": "Analog Rytm",
+	"alias": "ar",
+	"filesystems": 57,
+	"storage": 3
 }, {
-        "id": 10,
-        "name": "Analog Heat",
-        "alias": "ah",
-        "filesystems": 40,
-        "storage": 0
+	"id": 10,
+	"name": "Analog Heat",
+	"alias": "ah",
+	"filesystems": 40,
+	"storage": 0
 }, {
-        "id": 12,
-        "name": "Digitakt",
-        "alias": "dt",
-        "filesystems": 57,
-        "storage": 3
+	"id": 12,
+	"name": "Digitakt",
+	"alias": "dt",
+	"filesystems": 57,
+	"storage": 3
 }, {
-        "id": 14,
-        "name": "Analog Four MKII",
-        "alias": "af",
-        "filesystems": 56,
-        "storage": 0
+	"id": 14,
+	"name": "Analog Four MKII",
+	"alias": "af",
+	"filesystems": 56,
+	"storage": 0
 }, {
-        "id": 16,
-        "name": "Analog Rytm MKII",
-        "alias": "ar",
-        "filesystems": 57,
-        "storage": 3
+	"id": 16,
+	"name": "Analog Rytm MKII",
+	"alias": "ar",
+	"filesystems": 57,
+	"storage": 3
 }, {
-        "id": 20,
-        "name": "Digitone",
-        "alias": "dn",
-        "filesystems": 56,
-        "storage": 0
+	"id": 20,
+	"name": "Digitone",
+	"alias": "dn",
+	"filesystems": 56,
+	"storage": 0
 }, {
-        "id": 22,
-        "name": "Analog Heat MKII",
-        "alias": "ah",
-        "filesystems": 40,
-        "storage": 0
+	"id": 22,
+	"name": "Analog Heat MKII",
+	"alias": "ah",
+	"filesystems": 40,
+	"storage": 0
 }, {
-        "id": 28,
-        "name": "Digitone Keys",
-        "alias": "dn",
-        "filesystems": 56,
-        "storage": 0
+	"id": 28,
+	"name": "Digitone Keys",
+	"alias": "dn",
+	"filesystems": 56,
+	"storage": 0
 }, {
-        "id": 25,
-        "name": "Model:Samples",
-        "alias": "ms",
-        "filesystems": 57,
-        "storage": 3
+	"id": 25,
+	"name": "Model:Samples",
+	"alias": "ms",
+	"filesystems": 57,
+	"storage": 3
 }, {
-        "id": 27,
-        "name": "Model:Cycles",
-        "alias": "mc",
-        "storage": 30,
-        "filesystems": 1
+	"id": 27,
+	"name": "Model:Cycles",
+	"alias": "mc",
+	"storage": 30,
+	"filesystems": 1
 }, {
 	"id": 30,
 	"name": "Syntakt",
