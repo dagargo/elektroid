@@ -70,4 +70,10 @@
         "alias": "mc",
         "storage": 30,
         "filesystems": 1
+}, {
+	"id": 30,
+	"name": "Syntakt",
+	"alias": "st",
+	"storage": 56,
+	"filesystems": 0
 }]
