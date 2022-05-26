@@ -68,12 +68,12 @@
 	"id": 27,
 	"name": "Model:Cycles",
 	"alias": "mc",
-	"storage": 30,
-	"filesystems": 1
+	"filesystems": 30,
+	"storage": 1
 }, {
 	"id": 30,
 	"name": "Syntakt",
 	"alias": "st",
-	"storage": 56,
-	"filesystems": 0
+	"filesystems": 56,
+	"storage": 0
 }]
