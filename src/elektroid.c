@@ -863,7 +863,7 @@ elektroid_show_about (GtkWidget * object, gpointer data)
 }
 
 static void
-elektroid_controls_set_sensitive (gboolean sensitive)
+elektroid_sample_controls_set_sensitive (gboolean sensitive)
 {
   gtk_widget_set_sensitive (local_play_menuitem, sensitive);
   gtk_widget_set_sensitive (play_button, sensitive);
@@ -884,7 +884,7 @@ elektroid_update_ui_on_load (gpointer data)
     {
       if (audio_check (&audio))
 	{
-	  elektroid_controls_set_sensitive (TRUE);
+	  elektroid_sample_controls_set_sensitive (TRUE);
 	}
       if (preferences.autoplay)
 	{
@@ -1341,6 +1341,7 @@ elektroid_local_check_selection (gpointer data)
   GtkTreeIter iter;
   gchar *sample_path;
   GtkTreeModel *model;
+  gboolean audio_controls;
   struct item *item = NULL;
   gint count = browser_get_selected_items_count (&local_browser);
 
@@ -1365,7 +1366,6 @@ elektroid_local_check_selection (gpointer data)
       elektroid_stop_load_thread ();
       audio_reset_sample (&audio);
       gtk_widget_queue_draw (waveform_draw_area);
-      elektroid_controls_set_sensitive (FALSE);
 
       if (item && item->type == ELEKTROID_FILE
 	  && strcmp (item->name, audio.name))
@@ -1374,11 +1374,14 @@ elektroid_local_check_selection (gpointer data)
 	  elektroid_start_load_thread (sample_path);
 	  strcpy (audio.name, item->name);
 	}
-      gtk_widget_set_sensitive (local_open_menuitem, item
-				&& item->type == ELEKTROID_FILE);
+
     }
 
 end:
+  audio_controls = item && item->type == ELEKTROID_FILE && (!remote_browser.fs_ops || remote_browser.fs_ops->fs == FS_SAMPLES);	//1 sample file
+  elektroid_sample_controls_set_sensitive (audio_controls);
+  gtk_widget_set_sensitive (local_open_menuitem, audio_controls);
+
   if (item)
     {
       browser_free_item (item);
