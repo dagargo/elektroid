@@ -683,19 +683,23 @@ package_send_pkg_resources (struct package *pkg,
   json_reader_end_element (reader);
   json_reader_end_element (reader);
 
-  if (!(pkg->device_desc->filesystems & FS_SAMPLES))
+  if (!json_reader_read_member (reader, PKG_TAG_SAMPLES))
     {
-      ret = 0;
-      goto cleanup_reader;
-    }
-
-  if (!json_reader_read_member (reader, PKG_TAG_SAMPLES)
-      || !json_reader_is_array (reader))
-    {
-      debug_print (1, "No samples found\n");
+      if (pkg->device_desc->filesystems & FS_SAMPLES)
+	{
+	  debug_print (1, "No samples found\n");
+	}
       control->parts = 1;	// Only payload and it's done.
       control->part = 0;
       set_job_control_progress (control, 1.0);
+      goto cleanup_reader;
+    }
+
+  if (!json_reader_is_array (reader))
+    {
+      error_print ("Member '%s' is not an array. Skipping samples...\n",
+		   PKG_TAG_SAMPLES);
+      ret = -1;
       goto cleanup_reader;
     }
 
