@@ -1,4 +1,4 @@
-resdir = $(datadir)/elektroid/res
+resdir = $(datadir)/elektroid
 res_DATA = gui.glade gui.css devices.json
 
 desktopdir = $(datadir)/applications

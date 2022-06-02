@@ -395,7 +395,7 @@ load_device_desc (struct connector_device_desc *device_desc, guint8 id)
   JsonParser *parser;
   JsonReader *reader;
   GError *error;
-  gchar *devices_filename = chain_path (DATADIR, "res" DEVICES_FILE);
+  gchar *devices_filename = chain_path (DATADIR, DEVICES_FILE);
 
   parser = json_parser_new ();
   if (!json_parser_load_from_file (parser, devices_filename, &error))
