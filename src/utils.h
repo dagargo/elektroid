@@ -23,6 +23,10 @@
 
 #include <stdio.h>
 #include <glib.h>
+#include <json-glib/json-glib.h>
+#include "../config.h"
+
+#define CONF_DIR "~/.config/" PACKAGE
 
 #define LABEL_MAX 128
 
@@ -117,6 +121,15 @@ struct fs_operations
   const gchar *extension;
 };
 
+struct connector_device_desc
+{
+  guint32 id;
+  gchar *name;
+  gchar *alias;
+  guint8 filesystems;
+  guint8 storage;
+};
+
 extern int debug_level;
 
 gchar *debug_get_hex_data (gint, guint8 *, guint);
@@ -157,5 +170,7 @@ gint save_file_char (const gchar *, const guint8 *, ssize_t);
 gchar *get_human_size (guint, gboolean);
 
 void set_job_control_progress (struct job_control *, gdouble);
+
+gint load_device_desc (struct connector_device_desc *, guint8);
 
 #endif

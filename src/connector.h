@@ -28,21 +28,6 @@
 #define SYSEX_TIMEOUT 5000
 #define REST_TIME 50000
 
-#define DEV_TAG_ID "id"
-#define DEV_TAG_NAME "name"
-#define DEV_TAG_ALIAS "alias"
-#define DEV_TAG_FILESYSTEMS "filesystems"
-#define DEV_TAG_STORAGE "storage"
-
-struct connector_device_desc
-{
-  guint32 id;
-  gchar *name;
-  gchar *alias;
-  guint8 filesystems;
-  guint8 storage;
-};
-
 struct connector
 {
   struct connector_device_desc device_desc;

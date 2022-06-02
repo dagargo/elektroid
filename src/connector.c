@@ -24,7 +24,6 @@
 #include <poll.h>
 #include <zlib.h>
 #include <libgen.h>
-#include <json-glib/json-glib.h>
 #include "connector.h"
 #include "utils.h"
 #include "sample.h"
@@ -2339,131 +2338,6 @@ connector_get_storage_stats_percent (struct connector_storage_stats *statfs)
   return (statfs->bsize - statfs->bfree) * 100.0 / statfs->bsize;
 }
 
-static gint
-connector_set_device_desc (struct connector *connector, guint8 id)
-{
-  gint err, devices;
-  JsonParser *parser;
-  JsonReader *reader;
-  GError *error;
-  gchar *devices_filename = chain_path (DATADIR, "res/devices.json");
-
-  parser = json_parser_new ();
-  if (!json_parser_load_from_file (parser, devices_filename, &error))
-    {
-      error_print ("Unable to parse file: %s", error->message);
-      g_clear_error (&error);
-      err = -ENODEV;
-      goto cleanup_parser;
-    }
-
-  reader = json_reader_new (json_parser_get_root (parser));
-  if (!reader)
-    {
-      error_print ("Unable to read from parser");
-      err = -ENODEV;
-      goto cleanup_parser;
-    }
-
-  if (!json_reader_is_array (reader))
-    {
-      error_print ("Not an array\n");
-      err = -ENODEV;
-      goto cleanup_reader;
-    }
-
-  devices = json_reader_count_elements (reader);
-  if (!devices)
-    {
-      debug_print (1, "No devices found\n");
-      err = -ENODEV;
-      goto cleanup_reader;
-    }
-
-  err = -ENODEV;
-  for (int i = 0; i < devices; i++)
-    {
-      if (!json_reader_read_element (reader, i))
-	{
-	  error_print ("Cannot read element %d. Continuing...\n", i);
-	  continue;
-	}
-
-      if (!json_reader_read_member (reader, DEV_TAG_ID))
-	{
-	  error_print ("Cannot read member '%s'. Continuing...\n",
-		       DEV_TAG_ID);
-	  continue;
-	}
-      connector->device_desc.id = json_reader_get_int_value (reader);
-      json_reader_end_member (reader);
-
-      if (connector->device_desc.id != id)
-	{
-	  json_reader_end_element (reader);
-	  continue;
-	}
-
-      err = 0;
-      debug_print (1, "Device %d found\n", id);
-
-      if (!json_reader_read_member (reader, DEV_TAG_NAME))
-	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
-		       DEV_TAG_NAME);
-	  json_reader_end_element (reader);
-	  err = -ENODEV;
-	  break;
-	}
-      connector->device_desc.name =
-	strdup (json_reader_get_string_value (reader));
-      json_reader_end_member (reader);
-
-      if (!json_reader_read_member (reader, DEV_TAG_ALIAS))
-	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
-		       DEV_TAG_ALIAS);
-	  json_reader_end_element (reader);
-	  err = -ENODEV;
-	  break;
-	}
-      connector->device_desc.alias =
-	strdup (json_reader_get_string_value (reader));
-      json_reader_end_member (reader);
-
-      if (!json_reader_read_member (reader, DEV_TAG_FILESYSTEMS))
-	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
-		       DEV_TAG_FILESYSTEMS);
-	  json_reader_end_element (reader);
-	  err = -ENODEV;
-	  break;
-	}
-      connector->device_desc.filesystems = json_reader_get_int_value (reader);
-      json_reader_end_member (reader);
-
-      if (!json_reader_read_member (reader, DEV_TAG_STORAGE))
-	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
-		       DEV_TAG_STORAGE);
-	  json_reader_end_element (reader);
-	  err = -ENODEV;
-	  break;
-	}
-      connector->device_desc.storage = json_reader_get_int_value (reader);
-      json_reader_end_member (reader);
-
-      break;
-    }
-
-cleanup_reader:
-  g_object_unref (reader);
-cleanup_parser:
-  g_object_unref (parser);
-  g_free (devices_filename);
-  return err;
-}
-
 gint
 connector_init (struct connector *connector, gint card)
 {
@@ -2575,7 +2449,7 @@ connector_init (struct connector *connector, gint card)
     strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
   id = rx_msg->data[5];
   free_msg (rx_msg);
-  if (connector_set_device_desc (connector, id))
+  if (load_device_desc (&connector->device_desc, id))
     {
       err = -ENODEV;
       goto cleanup_params;

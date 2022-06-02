@@ -28,6 +28,14 @@
 
 #define KIB 1024
 
+#define DEVICES_FILE "/devices.json"
+
+#define DEV_TAG_ID "id"
+#define DEV_TAG_NAME "name"
+#define DEV_TAG_ALIAS "alias"
+#define DEV_TAG_FILESYSTEMS "filesystems"
+#define DEV_TAG_STORAGE "storage"
+
 gint debug_level;
 
 static guint
@@ -378,4 +386,127 @@ set_job_control_progress (struct job_control *control, gdouble p)
 {
   gdouble v = (double) control->part / control->parts + p / control->parts;
   control->callback (v);
+}
+
+gint
+load_device_desc (struct connector_device_desc *device_desc, guint8 id)
+{
+  gint err, devices;
+  JsonParser *parser;
+  JsonReader *reader;
+  GError *error;
+  gchar *devices_filename = chain_path (DATADIR, "res" DEVICES_FILE);
+
+  parser = json_parser_new ();
+  if (!json_parser_load_from_file (parser, devices_filename, &error))
+    {
+      error_print ("Unable to parse file: %s", error->message);
+      g_clear_error (&error);
+      err = -ENODEV;
+      goto cleanup_parser;
+    }
+
+  reader = json_reader_new (json_parser_get_root (parser));
+  if (!reader)
+    {
+      error_print ("Unable to read from parser");
+      err = -ENODEV;
+      goto cleanup_parser;
+    }
+
+  if (!json_reader_is_array (reader))
+    {
+      error_print ("Not an array\n");
+      err = -ENODEV;
+      goto cleanup_reader;
+    }
+
+  devices = json_reader_count_elements (reader);
+  if (!devices)
+    {
+      debug_print (1, "No devices found\n");
+      err = -ENODEV;
+      goto cleanup_reader;
+    }
+
+  err = -ENODEV;
+  for (int i = 0; i < devices; i++)
+    {
+      if (!json_reader_read_element (reader, i))
+	{
+	  error_print ("Cannot read element %d. Continuing...\n", i);
+	  continue;
+	}
+
+      if (!json_reader_read_member (reader, DEV_TAG_ID))
+	{
+	  error_print ("Cannot read member '%s'. Continuing...\n",
+		       DEV_TAG_ID);
+	  continue;
+	}
+      device_desc->id = json_reader_get_int_value (reader);
+      json_reader_end_member (reader);
+
+      if (device_desc->id != id)
+	{
+	  json_reader_end_element (reader);
+	  continue;
+	}
+
+      err = 0;
+      debug_print (1, "Device %d found\n", id);
+
+      if (!json_reader_read_member (reader, DEV_TAG_NAME))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_NAME);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      device_desc->name = strdup (json_reader_get_string_value (reader));
+      json_reader_end_member (reader);
+
+      if (!json_reader_read_member (reader, DEV_TAG_ALIAS))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_ALIAS);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      device_desc->alias = strdup (json_reader_get_string_value (reader));
+      json_reader_end_member (reader);
+
+      if (!json_reader_read_member (reader, DEV_TAG_FILESYSTEMS))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_FILESYSTEMS);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      device_desc->filesystems = json_reader_get_int_value (reader);
+      json_reader_end_member (reader);
+
+      if (!json_reader_read_member (reader, DEV_TAG_STORAGE))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_STORAGE);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      device_desc->storage = json_reader_get_int_value (reader);
+      json_reader_end_member (reader);
+
+      break;
+    }
+
+cleanup_reader:
+  g_object_unref (reader);
+cleanup_parser:
+  g_object_unref (parser);
+  g_free (devices_filename);
+  return err;
 }

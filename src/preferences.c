@@ -25,8 +25,7 @@
 #include "preferences.h"
 #include "utils.h"
 
-#define CONF_DIR "~/.config/elektroid"
-#define CONF_FILE "/preferences.json"
+#define PREFERENCES_FILE "/preferences.json"
 
 #define MEMBER_AUTOPLAY "autoplay"
 #define MEMBER_LOCALDIR "localDir"
@@ -51,7 +50,7 @@ preferences_save (struct preferences *preferences)
     }
 
   n = PATH_MAX - strlen (preferences_path) - 1;
-  strncat (preferences_path, CONF_FILE, n);
+  strncat (preferences_path, PREFERENCES_FILE, n);
   preferences_path[PATH_MAX - 1] = 0;
 
   debug_print (1, "Saving preferences to '%s'...\n", preferences_path);
@@ -91,14 +90,14 @@ preferences_load (struct preferences *preferences)
   GError *error;
   JsonReader *reader;
   JsonParser *parser = json_parser_new ();
-  gchar *preferences_file = get_expanded_dir (CONF_DIR CONF_FILE);
+  gchar *preferences_file = get_expanded_dir (CONF_DIR PREFERENCES_FILE);
 
   error = NULL;
   json_parser_load_from_file (parser, preferences_file, &error);
   if (error)
     {
       error_print ("Error wile loading preferences from `%s': %s\n",
-		   CONF_DIR CONF_FILE, error->message);
+		   CONF_DIR PREFERENCES_FILE, error->message);
       g_error_free (error);
       g_object_unref (parser);
       preferences->autoplay = TRUE;
