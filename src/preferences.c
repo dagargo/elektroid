@@ -96,7 +96,7 @@ preferences_load (struct preferences *preferences)
   json_parser_load_from_file (parser, preferences_file, &error);
   if (error)
     {
-      error_print ("Error wile loading preferences from `%s': %s\n",
+      debug_print (1, "Error wile loading preferences from `%s': %s\n",
 		   CONF_DIR PREFERENCES_FILE, error->message);
       g_error_free (error);
       g_object_unref (parser);
