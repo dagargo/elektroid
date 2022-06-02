@@ -394,16 +394,30 @@ load_device_desc (struct connector_device_desc *device_desc, guint8 id)
   gint err, devices;
   JsonParser *parser;
   JsonReader *reader;
-  GError *error;
-  gchar *devices_filename = chain_path (DATADIR, DEVICES_FILE);
+  gchar *devices_filename;
+  GError *error = NULL;
 
   parser = json_parser_new ();
+
+  devices_filename = get_expanded_dir (CONF_DIR DEVICES_FILE);
+
   if (!json_parser_load_from_file (parser, devices_filename, &error))
     {
-      error_print ("Unable to parse file: %s", error->message);
+      debug_print (1, "%s\n", error->message);
       g_clear_error (&error);
-      err = -ENODEV;
-      goto cleanup_parser;
+
+      g_free (devices_filename);
+      devices_filename = strdup (DATADIR DEVICES_FILE);
+
+      debug_print (1, "Falling back to %s...\n", devices_filename);
+
+      if (!json_parser_load_from_file (parser, devices_filename, &error))
+	{
+	  error_print ("%s", error->message);
+	  g_clear_error (&error);
+	  err = -ENODEV;
+	  goto cleanup_parser;
+	}
     }
 
   reader = json_reader_new (json_parser_get_root (parser));
