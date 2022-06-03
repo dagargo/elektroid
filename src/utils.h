@@ -22,6 +22,7 @@
 #define UTILS_H
 
 #include <stdio.h>
+#include <unistd.h>
 #include <glib.h>
 #include <json-glib/json-glib.h>
 #include "../config.h"
