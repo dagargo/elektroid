@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.4\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2022-04-26 19:18+0200\n"
+"POT-Creation-Date: 2022-06-03 08:47+0200\n"
 "PO-Revision-Date: 2021-12-01 17:56-0300\n"
 "Last-Translator: Gustavo Costa <xfgusta@gmail.com>\n"
 "Language-Team: \n"
@@ -34,7 +34,7 @@ msgstr "Projects"
 msgid "Sounds"
 msgstr "Sounds"
 
-#: src/elektroid.c:254 src/elektroid.c:1686 src/elektroid.c:1700
+#: src/elektroid.c:254 src/elektroid.c:1689 src/elektroid.c:1703
 msgid "Undefined"
 msgstr "Indefinido"
 
@@ -43,7 +43,7 @@ msgstr "Indefinido"
 msgid "Connected to %s%s"
 msgstr "Conectado a %s%s"
 
-#: src/elektroid.c:442 src/elektroid.c:3265
+#: src/elektroid.c:442 src/elektroid.c:3256
 msgid "Not connected"
 msgstr "Não conectado"
 
@@ -128,44 +128,44 @@ msgstr "Renomar"
 msgid "Error while renaming to “%s”: %s."
 msgstr "Erro ao renomear para \"%s\": %s."
 
-#: src/elektroid.c:1586 res/gui.glade:436 res/gui.glade:606
+#: src/elektroid.c:1589 res/gui.glade:436 res/gui.glade:606
 msgid "Add Directory"
 msgstr "Adicionar diretório"
 
-#: src/elektroid.c:1604
+#: src/elektroid.c:1607
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Erro ao criar diretório \"%s\": %s."
 
-#: src/elektroid.c:1676
+#: src/elektroid.c:1679
 msgid "Queued"
 msgstr "Na fila"
 
-#: src/elektroid.c:1678
+#: src/elektroid.c:1681
 msgid "Running"
 msgstr "Executando"
 
-#: src/elektroid.c:1680
+#: src/elektroid.c:1683
 msgid "Completed"
 msgstr "Completado"
 
-#: src/elektroid.c:1682
+#: src/elektroid.c:1685
 msgid "Completed with errors"
 msgstr "Completado com erros"
 
-#: src/elektroid.c:1684
+#: src/elektroid.c:1687
 msgid "Canceled"
 msgstr "Cancelado"
 
-#: src/elektroid.c:1696
+#: src/elektroid.c:1699
 msgid "Upload"
 msgstr "Upload"
 
-#: src/elektroid.c:1698
+#: src/elektroid.c:1701
 msgid "Download"
 msgstr "Download"
 
-#: src/elektroid.c:2557 src/elektroid.c:2598
+#: src/elektroid.c:2560 src/elektroid.c:2601
 #, c-format
 msgid "Error while moving from “%s” to “%s”: %s."
 msgstr "Erro ao mover \"%s\" para \"%s\": %s."
