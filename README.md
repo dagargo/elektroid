@@ -1,7 +1,7 @@
 # Elektroid
 
 Elektroid is a GNU/Linux transfer application for Elektron devices. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.
-Elektroid has been reported to work with Model:Samples, Model:Cycles, Digitakt, Digitone and Analog Rytm MKI and MKII.
+Elektroid has been reported to work with Model:Samples, Model:Cycles, Digitakt, Digitone, Syntakt, and Analog Rytm MKI and MKII.
 
 To use Elektroid, USB configuration must be set to `USB MIDI` or `USB AUDIO/MIDI` as it won't work in Overbridge mode.
 
