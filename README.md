@@ -284,3 +284,5 @@ enum connector_storage
   STORAGE_RAM = 0x2
 };
 ```
+
+If the file `~/.config/elektroid/devices.json` is found, it will take precedence over the installed one.
