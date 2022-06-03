@@ -4,21 +4,23 @@ Priority: optional
 Maintainer: Debian Multimedia Maintainers <debian-multimedia@lists.debian.org>
 Uploaders: Dennis Braun <d_braun@kabelmail.de>
 Build-Depends: debhelper-compat (= 13),
-               libasound2-dev (>= 1.1.8),
+               libasound2-dev [linux-any],
+               libjson-glib-dev,
                libgtk-3-dev,
                libpulse-dev,
-               libsndfile1-dev (>= 1.0.2),
-               libsamplerate0-dev (>= 0.1.9),
-               zlib1g-dev,
-               pkg-config
+               libsndfile1-dev,
+               libsamplerate0-dev,
+               libzip-dev,
+               pkg-config,
+               zlib1g-dev
 Homepage: https://github.com/dagargo/elektroid
 Vcs-Browser: https://salsa.debian.org/multimedia-team/elektroid
 Vcs-Git: https://salsa.debian.org/multimedia-team/elektroid.git
-Standards-Version: 4.5.0
+Standards-Version: 4.6.1
 Rules-Requires-Root: no
 
 Package: elektroid
-Architecture: any
+Architecture: linux-any
 Depends: ${misc:Depends},
          ${shlibs:Depends}
 Description: Transfer application for Elektron devices
@@ -29,6 +31,6 @@ Description: Transfer application for Elektron devices
  send and receive MIDI SysEx files.
  .
  Elektroid has been reported to work with Model:Samples, Model:Cycles,
- Digitakt, Digitone and Analog Rytm MKI and MKII.
+ Digitakt, Digitone, Syntakt and Analog Rytm MKI and MKII.
  .
  This package provides both the GUI and CLI application of elektroid.
