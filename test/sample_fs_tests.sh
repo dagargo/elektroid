@@ -35,10 +35,10 @@ $ecli ul-sample $srcdir/res/square_loop.wav $DEVICE:/$TEST_NAME
 [ $? -ne 0 ] && exit 1
 
 output=$($ecli ls $DEVICE:/$TEST_NAME)
-echo $output
-type=$(echo $output | awk '{print $1}')
-size=$(echo $output | awk '{print $2}')
-name=$(echo $output | awk '{print $4}')
+echo "$output"
+type=$(echo "$output" | head -n 1 | awk '{print $1}')
+size=$(echo "$output" | head -n 1 | awk '{print $2}')
+name=$(echo "$output" | head -n 1 | awk '{print $4}')
 [ "$type" != "F" ] || [ "$size" != "93.81KiB" ] || [ "$name" != "square" ] && exit 1
 
 echo "Testing upload (nonexistent source)..."
