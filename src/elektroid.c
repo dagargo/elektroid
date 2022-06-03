@@ -2528,7 +2528,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 
       card = g_value_get_uint (&cardv);
 
-      if (connector_init (&connector, card) < 0)
+      if (connector_init (&connector, card, NULL) < 0)
 	{
 	  error_print ("Error while connecting\n");
 	}

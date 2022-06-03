@@ -2339,7 +2339,8 @@ connector_get_storage_stats_percent (struct connector_storage_stats *statfs)
 }
 
 gint
-connector_init (struct connector *connector, gint card)
+connector_init (struct connector *connector, gint card,
+		const char *device_filename)
 {
   gint err;
   guint8 id;
@@ -2449,7 +2450,7 @@ connector_init (struct connector *connector, gint card)
     strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
   id = rx_msg->data[5];
   free_msg (rx_msg);
-  if (load_device_desc (&connector->device_desc, id))
+  if (load_device_desc (&connector->device_desc, id, device_filename))
     {
       err = -ENODEV;
       goto cleanup_params;

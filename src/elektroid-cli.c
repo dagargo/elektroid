@@ -36,6 +36,7 @@
 
 static struct connector connector;
 static struct job_control control;
+static const char *devices_filename;
 
 typedef void (*print_item) (struct item_iterator *);
 
@@ -109,7 +110,7 @@ static gint
 cli_connect (const char *device_path, enum connector_fs fs)
 {
   gint card = atoi (device_path);
-  gint ret = connector_init (&connector, card);
+  gint ret = connector_init (&connector, card, devices_filename);
   if (!ret && fs && !(connector.device_desc.filesystems & fs))
     {
       error_print ("Filesystem not supported for device '%s'\n",
@@ -602,10 +603,15 @@ main (int argc, char *argv[])
       sigaction (SIGHUP, &action, NULL);
     }
 
-  while ((c = getopt (argc, argv, "v")) != -1)
+  devices_filename = NULL;
+
+  while ((c = getopt (argc, argv, "f:v")) != -1)
     {
       switch (c)
 	{
+	case 'f':
+	  devices_filename = optarg;
+	  break;
 	case 'v':
 	  vflg++;
 	  break;

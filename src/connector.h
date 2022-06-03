@@ -106,7 +106,7 @@ struct connector_storage_stats
 
 const struct fs_operations *connector_get_fs_operations (enum connector_fs);
 
-gint connector_init (struct connector *, gint);
+gint connector_init (struct connector *, gint, const char *);
 
 void connector_destroy (struct connector *);
 

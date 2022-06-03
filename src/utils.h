@@ -172,6 +172,6 @@ gchar *get_human_size (guint, gboolean);
 
 void set_job_control_progress (struct job_control *, gdouble);
 
-gint load_device_desc (struct connector_device_desc *, guint8);
+gint load_device_desc (struct connector_device_desc *, guint8, const char *);
 
 #endif
