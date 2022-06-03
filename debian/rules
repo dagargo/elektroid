@@ -15,3 +15,8 @@ endif
 override_dh_auto_test:
 	# Don't enable tests, if no elektron device is connected
 	@echo "Tests disabled"
+	
+override_dh_auto_install:
+	dh_auto_install
+	# We remove the headers, so far we have no -dev package
+	rm -fr $(CURDIR)/debian/elektroid/usr/include

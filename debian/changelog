@@ -1,3 +1,65 @@
+elektroid (2.1-1) unstable; urgency=medium
+
+  * New upstream version 2.1
+  * d/control:
+    + Bump Standards Version to 4.6.1
+    + Update description from upstream and add Syntakt as supported
+  * Update d/copyright years
+
+ -- Dennis Braun <d_braun@kabelmail.de>  Fri, 03 Jun 2022 17:45:00 +0200
+
+elektroid (2.0-1) unstable; urgency=medium
+
+  * New upstream version 2.0
+  * Drop patch, applied by upstream
+  * Add libjson-glib-dev and libzip-dev to B-Ds
+
+ -- Dennis Braun <d_braun@kabelmail.de>  Sat, 15 Jan 2022 00:04:47 +0100
+
+elektroid (1.4-2) unstable; urgency=medium
+
+  * Change Architecture for the binary package to linux-any (Closes: #1001613)
+
+ -- Dennis Braun <d_braun@kabelmail.de>  Tue, 14 Dec 2021 17:30:00 +0100
+
+elektroid (1.4-1) unstable; urgency=medium
+
+  [ Jenkins ]
+  * Remove constraints unnecessary since buster
+
+  [ Dennis Braun ]
+  * New upstream version 1.4
+  * Fix "format not a string literal and no format arguments"
+  * d/control:
+    + Bump Standards-Version to 4.6.0
+    + Mark ALSA dev library as linux-any
+  * Add salsa-ci config
+
+ -- Dennis Braun <d_braun@kabelmail.de>  Mon, 29 Nov 2021 23:49:22 +0100
+
+elektroid (1.3-2) unstable; urgency=medium
+
+  * Remove the headers, we have no dev package atm (Closes: #982320)
+
+ -- Dennis Braun <d_braun@kabelmail.de>  Mon, 08 Feb 2021 21:12:46 +0100
+
+elektroid (1.3-1) unstable; urgency=medium
+
+  * New upstream version 1.3
+  * Drop GCC10 patch, applied by upstream
+  * d/copyright: Add FSFAP license
+  * d/copyright: Update year
+  * d/control: Add zlib1g-dev to B-Ds
+  * d/control: Bump S-V to 4.5.1, no changes needed
+
+ -- Dennis Braun <d_braun@kabelmail.de>  Sun, 07 Feb 2021 21:00:25 +0100
+
+elektroid (1.2-2) unstable; urgency=medium
+
+  * Fix GCC10 Build issue (Closes: #966880)
+
+ -- Dennis Braun <d_braun@kabelmail.de>  Sun, 30 Aug 2020 18:45:10 +0200
+
 elektroid (1.2-1) unstable; urgency=medium
 
   * New upstream version 1.2
