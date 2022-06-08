@@ -1,11 +1,11 @@
 Name:		elektroid
 Version:	2.0
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	Transfer application for Elektron devices
 
 License:	GPLv3+
 URL:		https://github.com/dagargo/elektroid
-Source0:	https://github.com/dagargo/elektroid/archive/elektroid-%{version}.tar.gz
+Source0:	https://github.com/dagargo/elektroid/releases/download/%{version}/%{name}-%{version}.tar.gz
 
 BuildRequires:	autoconf
 BuildRequires:	libtool
@@ -36,6 +36,12 @@ receive MIDI SysEx files.
 Elektroid has been reported to work with Model:Samples, Model:Cycles, Digitakt,
 Digitone and Analog Rytm MKI and MKII.
 
+%package cli
+Summary: Transfer application for Elektron devices
+
+%description cli
+This is the command-line client for Elektroid.
+
 
 %prep
 %autosetup -p1
@@ -54,7 +60,6 @@ automake
 
 
 %files
-%{_bindir}/elektroid-cli
 %{_bindir}/elektroid
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/%{name}/res/gui.css
@@ -66,12 +71,20 @@ automake
 %{_datadir}/icons/hicolor/scalable/apps/%{name}-sound-symbolic.svg
 %{_datadir}/icons/hicolor/scalable/apps/%{name}-wave-symbolic.svg
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
-%{_mandir}/man1/elektroid-cli.1.gz
 %{_mandir}/man1/elektroid.1.gz
 %{_metainfodir}/%{name}.appdata.xml
 %license COPYING
 
+%files cli
+%{_bindir}/elektroid-cli
+%{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
+%{_mandir}/man1/elektroid-cli.1.gz
+%license COPYING
+
 
 %changelog
+* Wed Jun 08 2022 Jonathan Wakely <jwakely@redhat.com> - 2.0-2
+- Add subpackage for elektroid-cli
+
 * Mon Feb 07 2022 Jonathan Wakely <jwakely@fedoraproject.org> - 2.0-1
 - RPM package for Fedora
