@@ -1,6 +1,6 @@
 Name:		elektroid
-Version:	2.0
-Release:	2%{?dist}
+Version:	2.1
+Release:	1%{?dist}
 Summary:	Transfer application for Elektron devices
 
 License:	GPLv3+
@@ -62,8 +62,9 @@ automake
 %files
 %{_bindir}/elektroid
 %{_datadir}/applications/%{name}.desktop
-%{_datadir}/%{name}/res/gui.css
-%{_datadir}/%{name}/res/gui.glade
+%{_datadir}/%{name}/devices.json
+%{_datadir}/%{name}/gui.css
+%{_datadir}/%{name}/gui.glade
 %{_datadir}/icons/hicolor/scalable/apps/%{name}.svg
 %{_datadir}/icons/hicolor/scalable/apps/%{name}-symbolic.svg
 %{_datadir}/icons/hicolor/scalable/apps/%{name}-data-symbolic.svg
@@ -77,12 +78,16 @@ automake
 
 %files cli
 %{_bindir}/elektroid-cli
+%{_datadir}/%{name}/devices.json
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 %{_mandir}/man1/elektroid-cli.1.gz
 %license COPYING
 
 
 %changelog
+* Wed Jun 08 2022 Jonathan Wakely <jwakely@redhat.com> - 2.1-1
+- Update to 2.1 release
+
 * Wed Jun 08 2022 Jonathan Wakely <jwakely@redhat.com> - 2.0-2
 - Add subpackage for elektroid-cli
 
