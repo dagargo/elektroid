@@ -349,11 +349,9 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
 
 static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
-  &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS
+  &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
+  NULL
 };
-
-static const int FS_OPERATIONS_N =
-  sizeof (FS_OPERATIONS) / sizeof (struct fs_operations *);
 
 static enum item_type connector_get_path_type (struct connector *,
 					       const gchar *,
@@ -374,16 +372,17 @@ connector_free_iterator_data (void *iter_data)
 const struct fs_operations *
 connector_get_fs_operations (enum connector_fs fs)
 {
-  const struct fs_operations *fs_operations = NULL;
-  for (int i = 0; i < FS_OPERATIONS_N; i++)
+  const struct fs_operations **fs_operations = FS_OPERATIONS;
+  while (*fs_operations)
     {
-      if (FS_OPERATIONS[i]->fs == fs)
+      const struct fs_operations *ops = *fs_operations;
+      if (ops->fs == fs)
 	{
-	  fs_operations = FS_OPERATIONS[i];
-	  break;
+	  return ops;
 	}
+      fs_operations++;
     }
-  return fs_operations;
+  return NULL;
 }
 
 static inline gchar *
