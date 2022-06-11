@@ -1311,6 +1311,7 @@ connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
 {
   ssize_t len;
   GByteArray *rx_msg;
+  guint msg_type = tx_msg->data[4] | 0x80;
 
   g_mutex_lock (&connector->mutex);
 
@@ -1324,6 +1325,13 @@ connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
     }
 
   rx_msg = connector_rx (connector);
+  if (rx_msg && rx_msg->data[4] != msg_type)
+    {
+      error_print ("Illegal message type in response\n");
+      free_msg (rx_msg);
+      rx_msg = NULL;
+      goto cleanup;
+    }
 
 cleanup:
   free_msg (tx_msg);
