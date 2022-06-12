@@ -1339,6 +1339,48 @@ cleanup:
   return rx_msg;
 }
 
+static GByteArray *
+connector_tx_and_rx_sysex (struct connector *connector, GByteArray * tx_msg)
+{
+  gint err;
+  gchar *text;
+  struct connector_sysex_transfer transfer;
+
+  transfer.raw = tx_msg;
+
+  text = debug_get_hex_msg (transfer.raw);
+  debug_print (2, "SysEx message sent (%d): %s\n", transfer.raw->len, text);
+  free (text);
+
+  connector_rx_drain (connector);
+
+  transfer.active = TRUE;
+  transfer.timeout = SYSEX_TIMEOUT;
+  transfer.batch = FALSE;
+  err = connector_tx_sysex (connector, &transfer);
+  free_msg (transfer.raw);
+  if (err < 0)
+    {
+      err = -EIO;
+      return NULL;
+    }
+
+  transfer.active = TRUE;
+  err = connector_rx_sysex (connector, &transfer);
+  if (err < 0)
+    {
+      err = -EIO;
+      return NULL;
+    }
+
+  text = debug_get_hex_msg (transfer.raw);
+  debug_print (2, "SysEx message received (%d): %s\n", transfer.raw->len,
+	       text);
+  free (text);
+
+  return transfer.raw;
+}
+
 static gint
 connector_read_common_dir (struct item_iterator *iter, const gchar * dir,
 			   void *data, const guint8 msg[], int size,
@@ -2345,17 +2387,136 @@ connector_get_storage_stats_percent (struct connector_storage_stats *statfs)
   return (statfs->bsize - statfs->bfree) * 100.0 / statfs->bsize;
 }
 
+static gint
+connector_handshake_midi (struct connector *connector)
+{
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+  guint8 *company, *family, *model, *version;
+  gint offset, err = 0;
+
+  tx_msg = g_byte_array_new ();
+  g_byte_array_append (tx_msg, (guchar *) "\xf0\x7e\x7f\x06\x01\xf7", 6);
+  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+  if (rx_msg)
+    {
+      if (rx_msg->data[4] == 2)
+	{
+	  if (rx_msg->len == 15 || rx_msg->len == 17)
+	    {
+	      err = 0;
+	      connector->device_desc.id = 0;
+	      connector->device_desc.filesystems = 0;
+	      connector->device_desc.storage = 0;
+	      connector->device_desc.alias = strdup ("-");
+	      connector->overbridge_name = strdup ("-");
+	      connector->device_desc.name = malloc (LABEL_MAX);
+	      connector->fw_version = malloc (LABEL_MAX);
+
+	      offset = rx_msg->len - 15;
+	      company = &rx_msg->data[5];
+	      family = &rx_msg->data[6 + offset];
+	      model = &rx_msg->data[8 + offset];
+	      version = &rx_msg->data[10 + offset];
+
+	      snprintf (connector->device_desc.name, LABEL_MAX,
+			"%02x-%02x-%02x %02x-%02x %02x-%02x", company[0],
+			offset ? company[1] : 0,
+			offset ? company[2] : 0,
+			family[0], family[1], model[0], model[1]);
+	      snprintf (connector->fw_version, LABEL_MAX,
+			"%d.%d.%d.%d", version[0], version[1], version[2],
+			version[3]);
+
+	      connector->device_name = strdup (connector->device_desc.name);
+	    }
+	  else
+	    {
+	      error_print ("Unexpected Identity Reply length\n");
+	      err = -EIO;
+	    }
+	}
+      else
+	{
+	  error_print ("Illegal SUB-ID2\n");
+	  err = -EIO;
+	}
+      free_msg (rx_msg);
+    }
+  else
+    {
+      err = -EIO;
+    }
+
+  return err;
+}
+
+static gint
+connector_handshake_elektron (struct connector *connector,
+			      const char *device_filename)
+{
+  guint8 id;
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+
+  tx_msg = connector_new_msg (PING_REQUEST, sizeof (PING_REQUEST));
+  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+
+  connector->overbridge_name =
+    strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
+  id = rx_msg->data[5];
+  free_msg (rx_msg);
+
+  if (load_device_desc (&connector->device_desc, id, device_filename))
+    {
+      return -ENODEV;
+    }
+
+  tx_msg =
+    connector_new_msg (SOFTWARE_VERSION_REQUEST,
+		       sizeof (SOFTWARE_VERSION_REQUEST));
+  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+  connector->fw_version = strdup ((gchar *) & rx_msg->data[10]);
+  free_msg (rx_msg);
+
+  if (debug_level > 1)
+    {
+      tx_msg =
+	connector_new_msg (DEVICEUID_REQUEST, sizeof (DEVICEUID_REQUEST));
+      rx_msg = connector_tx_and_rx (connector, tx_msg);
+      if (rx_msg)
+	{
+	  debug_print (1, "UID: %x\n", *((guint32 *) & rx_msg->data[5]));
+	  free_msg (rx_msg);
+	}
+    }
+
+  snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
+	    connector->device_desc.name,
+	    connector->fw_version, connector->overbridge_name);
+  debug_print (1, "Connected to %s\n", connector->device_name);
+
+  return 0;
+}
+
 gint
 connector_init (struct connector *connector, gint card,
 		const char *device_filename)
 {
   gint err;
-  guint8 id;
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
   snd_rawmidi_params_t *params;
   gchar name[32];
+
   sprintf (name, "hw:%d", card);
+
   connector->inputp = NULL;
   connector->outputp = NULL;
   connector->device_name = NULL;
@@ -2365,6 +2526,7 @@ connector_init (struct connector *connector, gint card,
   connector->dir_cache = NULL;
   connector->device_desc.name = NULL;
   connector->device_desc.alias = NULL;
+
   if (card < 0)
     {
       debug_print (1, "Invalid card\n");
@@ -2446,52 +2608,11 @@ connector_init (struct connector *connector, gint card,
       goto cleanup_params;
     }
 
-  tx_msg = connector_new_msg (PING_REQUEST, sizeof (PING_REQUEST));
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
-  if (!rx_msg)
+  err = connector_handshake_elektron (connector, device_filename);
+  if (err)
     {
-      err = -EIO;
-      goto cleanup_params;
+      err = connector_handshake_midi (connector);
     }
-  connector->overbridge_name =
-    strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
-  id = rx_msg->data[5];
-  free_msg (rx_msg);
-  if (load_device_desc (&connector->device_desc, id, device_filename))
-    {
-      err = -ENODEV;
-      goto cleanup_params;
-    }
-
-  tx_msg =
-    connector_new_msg (SOFTWARE_VERSION_REQUEST,
-		       sizeof (SOFTWARE_VERSION_REQUEST));
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
-  if (!rx_msg)
-    {
-      err = -EIO;
-      goto cleanup_params;
-    }
-  connector->fw_version = strdup ((gchar *) & rx_msg->data[10]);
-  free_msg (rx_msg);
-
-  if (debug_level > 1)
-    {
-      tx_msg =
-	connector_new_msg (DEVICEUID_REQUEST, sizeof (DEVICEUID_REQUEST));
-      rx_msg = connector_tx_and_rx (connector, tx_msg);
-      if (rx_msg)
-	{
-	  debug_print (1, "UID: %x\n", *((guint32 *) & rx_msg->data[5]));
-	  free_msg (rx_msg);
-	}
-    }
-
-  snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
-	    connector->device_desc.name,
-	    connector->fw_version, connector->overbridge_name);
-  debug_print (1, "Connected to %s\n", connector->device_name);
-  err = 0;
 
 cleanup_params:
   snd_rawmidi_params_free (params);
