@@ -2541,78 +2541,60 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 }
 
 static void
-elektroid_dnd_received_local (const gchar * type_name, const gchar * dir,
-			      const gchar * name, const gchar * filename,
-			      struct item_iterator *remote_item_iterator)
+elektroid_dnd_received_local (const gchar * dir, const gchar * name,
+			      const gchar * filename)
 {
   gchar *dst_path;
   gint res;
 
-  if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
+  if (strcmp (dir, local_browser.dir))
     {
-      if (strcmp (dir, local_browser.dir))
+      dst_path = chain_path (local_browser.dir, name);
+      res = local_browser.fs_ops->move (filename, dst_path, NULL);
+      if (res)
 	{
-	  dst_path = chain_path (local_browser.dir, name);
-	  res = local_browser.fs_ops->move (filename, dst_path, NULL);
-	  if (res)
-	    {
-	      show_error_msg (_
-			      ("Error while moving from “%s” to “%s”: %s."),
-			      filename, dst_path, g_strerror (res));
-	    }
-	  g_free (dst_path);
+	  show_error_msg (_
+			  ("Error while moving from “%s” to “%s”: %s."),
+			  filename, dst_path, g_strerror (res));
 	}
-      else
-	{
-	  debug_print (1, MSG_WARN_SAME_SRC_DST);
-	}
+      g_free (dst_path);
     }
-  else if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+  else
     {
-      elektroid_add_download_task_path (name, dir, local_browser.dir,
-					remote_item_iterator);
+      debug_print (1, MSG_WARN_SAME_SRC_DST);
     }
 }
 
 static void
-elektroid_dnd_received_remote (const gchar * type_name, const gchar * dir,
-			       const gchar * name, const gchar * filename,
+elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
+			       const gchar * filename,
 			       struct item_iterator *remote_item_iterator,
 			       gint32 * next_idx)
 {
   gchar *dst_path;
   gint res;
 
-  if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+  if (strcmp (dir, remote_browser.dir))
     {
-      if (strcmp (dir, remote_browser.dir))
+      dst_path =
+	connector_get_upload_path (&connector,
+				   remote_item_iterator,
+				   remote_browser.fs_ops,
+				   remote_browser.dir, name, next_idx);
+      res =
+	remote_browser.fs_ops->move (filename, dst_path, remote_browser.data);
+      if (res)
 	{
-	  dst_path =
-	    connector_get_upload_path (&connector,
-				       remote_item_iterator,
-				       remote_browser.fs_ops,
-				       remote_browser.dir, name, next_idx);
-	  res =
-	    remote_browser.fs_ops->move (filename, dst_path,
-					 remote_browser.data);
-	  if (res)
-	    {
-	      show_error_msg (_
-			      ("Error while moving from “%s” to “%s”: %s."),
-			      filename, dst_path, g_strerror (res));
-	    }
-	  g_free (dst_path);
-	  browser_load_dir (&remote_browser);
+	  show_error_msg (_
+			  ("Error while moving from “%s” to “%s”: %s."),
+			  filename, dst_path, g_strerror (res));
 	}
-      else
-	{
-	  debug_print (1, MSG_WARN_SAME_SRC_DST);
-	}
+      g_free (dst_path);
+      browser_load_dir (&remote_browser);
     }
-  else if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
+  else
     {
-      elektroid_add_upload_task_path (name, dir, remote_browser.dir,
-				      remote_item_iterator, next_idx);
+      debug_print (1, MSG_WARN_SAME_SRC_DST);
     }
 }
 
@@ -2630,7 +2612,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   gchar *name;
   gchar *dir;
   GtkTreeIter iter;
-  gboolean queued;
+  gboolean queued, load_remote;
   GdkAtom type;
   gchar *type_name;
   gint32 next_idx = 1;
@@ -2658,8 +2640,14 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       connector_enable_dir_cache (connector);
     }
 
-  remote_browser.fs_ops->readdir (&remote_item_iterator, remote_browser.dir,
-				  connector);
+  load_remote = widget == GTK_WIDGET (remote_browser.view) ||
+    strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0;
+
+  if (load_remote)
+    {
+      remote_browser.fs_ops->readdir (&remote_item_iterator,
+				      remote_browser.dir, connector);
+    }
 
   for (int i = 0; uris[i] != NULL; i++)
     {
@@ -2671,13 +2659,30 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 
       if (widget == GTK_WIDGET (local_browser.view))
 	{
-	  elektroid_dnd_received_local (type_name, dir, name, filename,
-					&remote_item_iterator);
+	  if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
+	    {
+	      elektroid_dnd_received_local (dir, name, filename);
+	    }
+	  else if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+	    {
+	      elektroid_add_download_task_path (name, dir, local_browser.dir,
+						&remote_item_iterator);
+	    }
 	}
       else if (widget == GTK_WIDGET (remote_browser.view))
 	{
-	  elektroid_dnd_received_remote (type_name, dir, name, filename,
-					 &remote_item_iterator, &next_idx);
+	  if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+	    {
+	      elektroid_dnd_received_remote (dir, name, filename,
+					     &remote_item_iterator,
+					     &next_idx);
+	    }
+	  else if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
+	    {
+	      elektroid_add_upload_task_path (name, dir, remote_browser.dir,
+					      &remote_item_iterator,
+					      &next_idx);
+	    }
 	}
 
       g_free (path_basename);
@@ -2685,7 +2690,10 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       g_free (filename);
     }
 
-  free_item_iterator (&remote_item_iterator);
+  if (load_remote)
+    {
+      free_item_iterator (&remote_item_iterator);
+    }
 
   if (widget == GTK_WIDGET (local_browser.view))
     {
