@@ -58,7 +58,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
 
   g_mutex_lock (&audio->control.mutex);
 
-  if (!audio->sample->len)
+  if (!audio->sample || !audio->sample->len)
     {
       g_mutex_unlock (&audio->control.mutex);
       pa_stream_cancel_write (stream);
@@ -282,8 +282,6 @@ audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
       pa_context_set_state_callback (audio->context, audio_context_callback,
 				     audio);
       pa_threaded_mainloop_start (audio->mainloop);
-
-
     }
 
   return err;
@@ -296,7 +294,11 @@ audio_destroy (struct audio *audio)
 
   audio_stop (audio, TRUE);
 
+  g_mutex_lock (&audio->control.mutex);
+
   g_byte_array_free (audio->sample, TRUE);
+  audio->sample = NULL;
+
   if (audio->stream)
     {
       pa_stream_unref (audio->stream);
@@ -312,6 +314,8 @@ audio_destroy (struct audio *audio)
     }
 
   g_free (audio->name);
+
+  g_mutex_unlock (&audio->control.mutex);
 }
 
 gboolean
