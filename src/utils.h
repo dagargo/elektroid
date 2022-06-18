@@ -88,6 +88,17 @@ struct sample_loop_data
   gint32 end;
 };
 
+struct connector_device_desc
+{
+  guint32 id;
+  gchar *name;
+  gchar *alias;
+  guint8 filesystems;
+  guint8 storage;
+};
+
+struct fs_operations;
+
 typedef gint (*fs_init_iter_func) (struct item_iterator *, const gchar *,
 				   void *);
 
@@ -102,6 +113,9 @@ typedef gchar *(*fs_get_item_id) (struct item *);
 
 typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
 				  struct job_control *);
+
+typedef gchar *(*fs_get_device_ext) (const struct connector_device_desc *,
+				   const struct fs_operations *);
 
 struct fs_operations
 {
@@ -119,16 +133,8 @@ struct fs_operations
   fs_get_item_id getid;
   fs_local_file_op save;
   fs_local_file_op load;
-  const gchar *extension;
-};
-
-struct connector_device_desc
-{
-  guint32 id;
-  gchar *name;
-  gchar *alias;
-  guint8 filesystems;
-  guint8 storage;
+  fs_get_device_ext get_device_ext;
+  const gchar *type_ext;
 };
 
 extern int debug_level;

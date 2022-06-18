@@ -181,6 +181,14 @@ static gint connector_upload_raw_pst_pkg (const gchar *, GByteArray *,
 static gint connector_copy_iterator (struct item_iterator *,
 				     struct item_iterator *, gboolean);
 
+static gchar *connector_get_sample_ext (const struct
+					     connector_device_desc *,
+					     const struct fs_operations *);
+
+static gchar *connector_get_device_ext (const struct
+					     connector_device_desc *,
+					     const struct fs_operations *);
+
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
 static const guint8 PING_REQUEST[] = { 0x1 };
@@ -254,7 +262,8 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .getid = get_item_name,
   .load = sample_load,
   .save = sample_save,
-  .extension = "wav"
+  .get_device_ext = connector_get_sample_ext,
+  .type_ext = "wav"
 };
 
 static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
@@ -272,7 +281,8 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .getid = get_item_name,
   .load = load_file,
   .save = save_file,
-  .extension = "raw"
+  .get_device_ext = connector_get_device_ext,
+  .type_ext = "raw"
 };
 
 static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
@@ -290,7 +300,8 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .getid = get_item_name,
   .load = load_file,
   .save = save_file,
-  .extension = "pst"
+  .get_device_ext = connector_get_device_ext,
+  .type_ext = "pst"
 };
 
 static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
@@ -308,7 +319,8 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
-  .extension = "data"
+  .get_device_ext = connector_get_device_ext,
+  .type_ext = "data"
 };
 
 static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
@@ -326,7 +338,8 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
-  .extension = "prj"
+  .get_device_ext = connector_get_device_ext,
+  .type_ext = "prj"
 };
 
 static const struct fs_operations FS_DATA_SND_OPERATIONS = {
@@ -344,7 +357,8 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
-  .extension = "snd"
+  .get_device_ext = connector_get_device_ext,
+  .type_ext = "snd"
 };
 
 static const struct fs_operations *FS_OPERATIONS[] = {
@@ -3635,7 +3649,7 @@ connector_get_download_path (struct connector *connector,
   name = connector_get_download_name (connector, remote_iter, ops, src_fpath);
   if (name)
     {
-      dl_ext = connector_get_full_ext (&connector->device_desc, ops);
+      dl_ext = ops->get_device_ext (&connector->device_desc, ops);
       filename = malloc (PATH_MAX);
       snprintf (filename, PATH_MAX, "%s.%s%s", name, dl_ext, md_ext);
       path = chain_path (dst_dir, filename);
@@ -3863,19 +3877,21 @@ connector_upload_raw_pst_pkg (const gchar * path, GByteArray * input,
 			       &FS_RAW_ANY_OPERATIONS, connector_upload_raw);
 }
 
-gchar *
-connector_get_full_ext (const struct connector_device_desc *desc,
-			const struct fs_operations *ops)
+static gchar *
+connector_get_sample_ext (const struct connector_device_desc *desc,
+			       const struct fs_operations *ops)
 {
   gchar *ext = malloc (LABEL_MAX);
-  if (ops->fs == FS_SAMPLES)
-    {
-      snprintf (ext, LABEL_MAX, "%s", ops->extension);
-    }
-  else
-    {
-      snprintf (ext, LABEL_MAX, "%s%s", desc->alias, ops->extension);
-    }
+  snprintf (ext, LABEL_MAX, "%s", ops->type_ext);
+  return ext;
+}
+
+static gchar *
+connector_get_device_ext (const struct connector_device_desc *desc,
+			       const struct fs_operations *ops)
+{
+  gchar *ext = malloc (LABEL_MAX);
+  snprintf (ext, LABEL_MAX, "%s%s", desc->alias, ops->type_ext);
   return ext;
 }
 

@@ -146,10 +146,6 @@ gchar *connector_get_download_path (struct connector *,
 				    const struct fs_operations *,
 				    const gchar *, const gchar *);
 
-
-gchar *connector_get_full_ext (const struct connector_device_desc *,
-			       const struct fs_operations *);
-
 gchar *connector_get_sample_path_from_hash_size (struct connector *,
 						 guint32, guint32);
 

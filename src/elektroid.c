@@ -313,7 +313,7 @@ elektroid_set_file_extensions_for_fs (gchar ** extensions[],
     {
       ops = connector_get_fs_operations (sel_fs);
       *extensions = malloc (sizeof (gchar *) * 2);
-      (*extensions)[0] = connector_get_full_ext (&connector.device_desc, ops);
+      (*extensions)[0] = ops->get_device_ext (&connector.device_desc, ops);
       (*extensions)[1] = NULL;
     }
 }
