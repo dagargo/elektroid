@@ -354,14 +354,18 @@ save_file (const gchar * path, GByteArray * array,
 }
 
 gchar *
-get_human_size (guint size, gboolean with_space)
+get_human_size (gint64 size, gboolean with_space)
 {
   gchar *label = malloc (LABEL_MAX);
   gchar *space = with_space ? " " : "";
 
-  if (size < KIB)
+  if (size < 0)
     {
-      snprintf (label, LABEL_MAX, "%d%sB", size, space);
+      label = strdup ("");
+    }
+  else if (size < KIB)
+    {
+      snprintf (label, LABEL_MAX, "%ld%sB", size, space);
     }
   else if (size < KIB * KIB)
     {
@@ -389,7 +393,7 @@ set_job_control_progress (struct job_control *control, gdouble p)
 }
 
 gint
-load_device_desc (struct connector_device_desc *device_desc, guint8 id,
+load_device_desc (struct device_desc *device_desc, guint8 id,
 		  const char *devices_filename_)
 {
   gint err, devices;

@@ -65,11 +65,11 @@ struct browser
     gboolean (*check_callback) ();
 };
 
-gint browser_sort_samples (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
+gint browser_sort_by_name (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
 			   gpointer);
 
-gint browser_sort_data (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
-			gpointer);
+gint browser_sort_by_index (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
+			    gpointer);
 
 struct item *browser_get_item (GtkTreeModel *, GtkTreeIter *);
 
@@ -95,5 +95,7 @@ gchar *browser_get_item_path (struct browser *, struct item *);
 gchar *browser_get_item_id_path (struct browser *, struct item *);
 
 gboolean browser_load_dir (gpointer);
+
+void browser_update_fs_options (struct browser *);
 
 #endif

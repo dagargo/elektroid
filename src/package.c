@@ -89,8 +89,7 @@ package_add_resource (struct package *pkg,
 
 gint
 package_begin (struct package *pkg, gchar * name, const gchar * fw_version,
-	       const struct connector_device_desc *device_desc,
-	       enum package_type type)
+	       const struct device_desc *device_desc, enum package_type type)
 {
   zip_error_t zerror;
   pkg->resources = NULL;
@@ -292,7 +291,7 @@ package_destroy (struct package *pkg)
 
 gint
 package_open (struct package *pkg, GByteArray * data,
-	      const struct connector_device_desc *device_desc)
+	      const struct device_desc *device_desc)
 {
   gint ret;
   zip_error_t zerror;

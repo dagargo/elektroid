@@ -25,12 +25,13 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
-#define SYSEX_TIMEOUT 5000
-#define REST_TIME 50000
+#define SYSEX_TIMEOUT_MS 5000
+#define REST_TIME_US 50000
+#define SDS_SAMPLE_ID_NAME_SEPARATOR ":"
 
 struct connector
 {
-  struct connector_device_desc device_desc;
+  struct device_desc device_desc;
   snd_rawmidi_t *inputp;
   snd_rawmidi_t *outputp;
   gchar *device_name;
@@ -43,6 +44,7 @@ struct connector
   gint npfds;
   struct pollfd *pfds;
   GHashTable *dir_cache;
+  t_sysex_transfer upgrade_os;
 };
 
 enum connector_fs
@@ -53,6 +55,7 @@ enum connector_fs
   FS_DATA_ALL = 0x8,
   FS_DATA_PRJ = 0x10,
   FS_DATA_SND = 0x20,
+  FS_SAMPLES_SDS = 0x40
 };
 
 struct connector_iterator_data
@@ -73,24 +76,6 @@ struct connector_system_device
   guint card;
 };
 
-enum connector_sysex_transfer_status
-{
-  WAITING,
-  SENDING,
-  RECEIVING,
-  FINISHED
-};
-
-struct connector_sysex_transfer
-{
-  gboolean active;
-  enum connector_sysex_transfer_status status;
-  gint timeout;			//Measured in ms. -1 is infinite.
-  gboolean batch;
-  GMutex mutex;
-  GByteArray *raw;
-};
-
 enum connector_storage
 {
   STORAGE_PLUS_DRIVE = 0x1,
@@ -104,11 +89,8 @@ struct connector_storage_stats
   guint64 bfree;
 };
 
-const struct fs_operations *connector_get_fs_operations_by_id (enum
-							       connector_fs);
-
-const struct fs_operations *connector_get_fs_operations_by_name (const gchar
-								 *);
+const struct fs_operations *connector_get_fs_operations (enum connector_fs,
+							 const gchar *);
 
 gint connector_init (struct connector *, gint, const gchar *);
 
@@ -118,16 +100,11 @@ gboolean connector_check (struct connector *);
 
 GArray *connector_get_system_devices ();
 
-gint connector_tx_sysex (struct connector *,
-			 struct connector_sysex_transfer *);
+gint connector_tx_sysex (struct sysex_transfer *, void *);
 
-gint connector_rx_sysex (struct connector *,
-			 struct connector_sysex_transfer *);
+gint connector_rx_sysex (struct sysex_transfer *, void *);
 
 void connector_rx_drain (struct connector *);
-
-gint connector_upgrade_os (struct connector *,
-			   struct connector_sysex_transfer *);
 
 gint connector_get_storage_stats (struct connector *,
 				  enum connector_storage,
@@ -139,16 +116,6 @@ gdouble connector_get_storage_stats_percent (struct connector_storage_stats
 gchar *connector_get_upload_path (struct connector *, struct item_iterator *,
 				  const struct fs_operations *, const gchar *,
 				  const gchar *, gint32 *);
-
-gchar *connector_get_download_name (struct connector *,
-				    struct item_iterator *,
-				    const struct fs_operations *,
-				    const gchar *);
-
-gchar *connector_get_download_path (struct connector *,
-				    struct item_iterator *,
-				    const struct fs_operations *,
-				    const gchar *, const gchar *);
 
 gchar *connector_get_sample_path_from_hash_size (struct connector *,
 						 guint32, guint32);

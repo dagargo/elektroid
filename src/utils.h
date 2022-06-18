@@ -56,7 +56,7 @@ typedef gint (*iterator_copy) (struct item_iterator *,
 struct item
 {
   gchar *name;
-  guint32 size;
+  gint64 size;
   gint32 index;
   enum item_type type;
 };
@@ -88,13 +88,31 @@ struct sample_loop_data
   gint32 end;
 };
 
-struct connector_device_desc
+struct device_desc
 {
   guint32 id;
   gchar *name;
   gchar *alias;
   guint8 filesystems;
   guint8 storage;
+};
+
+enum sysex_transfer_status
+{
+  WAITING,
+  SENDING,
+  RECEIVING,
+  FINISHED
+};
+
+struct sysex_transfer
+{
+  gboolean active;
+  enum sysex_transfer_status status;
+  gint timeout;			//Measured in ms. -1 is infinite.
+  gboolean batch;
+  GMutex mutex;
+  GByteArray *raw;
 };
 
 struct fs_operations;
@@ -114,12 +132,23 @@ typedef gchar *(*fs_get_item_id) (struct item *);
 typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
 				  struct job_control *);
 
-typedef gchar *(*fs_get_device_ext) (const struct connector_device_desc *,
-				     const struct fs_operations *);
+typedef gchar *(*fs_get_ext) (const struct device_desc *,
+			      const struct fs_operations *);
+
+typedef gchar *(*t_get_upload_path) (const struct fs_operations *,
+				     const gchar *, const gchar *, gint32 *,
+				     struct item_iterator *, void *);
+
+typedef gchar *(*t_get_download_path) (const struct fs_operations *,
+				       const gchar *, const gchar *,
+				       struct item_iterator *, void *);
+
+typedef gint (*t_sysex_transfer) (struct sysex_transfer *, void *);
 
 struct fs_operations
 {
   gint fs;
+  guint32 options;
   const gchar *name;
   fs_init_iter_func readdir;
   fs_path_func mkdir;
@@ -134,9 +163,21 @@ struct fs_operations
   fs_get_item_id getid;
   fs_local_file_op save;
   fs_local_file_op load;
-  fs_get_device_ext get_device_ext;
+  fs_get_ext get_ext;
+  t_get_upload_path get_upload_path;
+  t_get_download_path get_download_path;
   const gchar *type_ext;
 };
+
+enum fs_options
+{
+  FS_OPTION_SHOW_AUDIO_PLAYER = 0x1,
+  FS_OPTION_SHOW_INDEX_COLUMN = 0x2,
+  FS_OPTION_SINGLE_OP = 0x4,
+  FS_OPTION_SLOT_STORAGE = 0x8,
+  FS_OPTION_SORT_BY_ID = 0x10,
+};
+
 
 extern int debug_level;
 
@@ -175,10 +216,10 @@ gint save_file (const char *, GByteArray *, struct job_control *);
 
 gint save_file_char (const gchar *, const guint8 *, ssize_t);
 
-gchar *get_human_size (guint, gboolean);
+gchar *get_human_size (gint64, gboolean);
 
 void set_job_control_progress (struct job_control *, gdouble);
 
-gint load_device_desc (struct connector_device_desc *, guint8, const char *);
+gint load_device_desc (struct device_desc *, guint8, const char *);
 
 #endif

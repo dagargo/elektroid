@@ -21,10 +21,4 @@
 #include <glib.h>
 #include "utils.h"
 
-struct local_iterator_data
-{
-  DIR *dir;
-  gchar *path;
-};
-
 extern const struct fs_operations FS_LOCAL_OPERATIONS;

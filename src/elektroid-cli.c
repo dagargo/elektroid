@@ -141,6 +141,7 @@ cli_list (int argc, gchar * argv[], int optind,
 
   path = cli_get_path (device_path);
 
+  CHECK_FS_OPS_FUNC (fs_ops->readdir);
   if (fs_ops->readdir (&iter, path, &connector))
     {
       return EXIT_FAILURE;
@@ -271,7 +272,7 @@ cli_info (int argc, gchar * argv[], int optind)
       if (connector.device_desc.filesystems & fs)
 	{
 	  printf ("%s%s", comma,
-		  connector_get_fs_operations_by_id (fs)->name);
+		  connector_get_fs_operations (fs, NULL)->name);
 	  comma = ",";
 	}
       fs <<= 1;
@@ -341,12 +342,12 @@ cli_df (int argc, gchar * argv[], int optind)
 }
 
 static int
-cli_upgrade (int argc, gchar * argv[], int optind)
+cli_upgrade_os (int argc, gchar * argv[], int optind)
 {
   gint res;
   const gchar *src_path;
   const gchar *device_path;
-  struct connector_sysex_transfer sysex_transfer;
+  struct sysex_transfer sysex_transfer;
 
   if (optind == argc)
     {
@@ -383,8 +384,9 @@ cli_upgrade (int argc, gchar * argv[], int optind)
   else
     {
       sysex_transfer.active = TRUE;
-      sysex_transfer.timeout = SYSEX_TIMEOUT;
-      res = connector_upgrade_os (&connector, &sysex_transfer);
+      sysex_transfer.timeout = SYSEX_TIMEOUT_MS;
+      CHECK_FS_OPS_FUNC (connector.upgrade_os);
+      res = connector.upgrade_os (&sysex_transfer, &connector);
     }
 
   g_byte_array_free (sysex_transfer.raw, TRUE);
@@ -426,8 +428,8 @@ cli_download (int argc, gchar * argv[], int optind,
       goto end;
     }
 
-  download_path = connector_get_download_path (&connector, NULL, fs_ops, ".",
-					       src_path);
+  download_path = fs_ops->get_download_path (fs_ops, ".", src_path, NULL,
+					     &connector);
   if (!download_path)
     {
       res = -1;
@@ -481,8 +483,8 @@ cli_upload (int argc, gchar * argv[], int optind,
 
   dst_dir = cli_get_path (device_dst_path);
 
-  upload_path = connector_get_upload_path (&connector, NULL, fs_ops,
-					   dst_dir, src_path, &index);
+  upload_path = fs_ops->get_upload_path (fs_ops, dst_dir, src_path, &index,
+					 NULL, &connector);
 
   array = g_byte_array_new ();
   control.active = TRUE;
@@ -532,13 +534,15 @@ get_op_type_from_command (const gchar * cmd, gchar * op, gchar * type)
       *type = 0;
     }
 
-  return connector_get_fs_operations_by_name (type);
+  return connector_get_fs_operations (-1, type);
 }
 
 static void
 cli_end (int sig)
 {
+  g_mutex_lock (&control.mutex);
   control.active = FALSE;
+  g_mutex_unlock (&control.mutex);
 }
 
 int
@@ -548,7 +552,7 @@ main (int argc, gchar * argv[])
   gint res;
   gchar *command;
   gint vflg = 0, errflg = 0;
-  struct sigaction action, old_action;
+  struct sigaction action;
   const struct fs_operations *fs_ops;
   gchar op[LABEL_MAX];
   gchar type[LABEL_MAX];
@@ -556,30 +560,10 @@ main (int argc, gchar * argv[])
   action.sa_handler = cli_end;
   sigemptyset (&action.sa_mask);
   action.sa_flags = 0;
-
-  sigaction (SIGTERM, NULL, &old_action);
-  if (old_action.sa_handler != SIG_IGN)
-    {
-      sigaction (SIGTERM, &action, NULL);
-    }
-
-  sigaction (SIGQUIT, NULL, &old_action);
-  if (old_action.sa_handler != SIG_IGN)
-    {
-      sigaction (SIGQUIT, &action, NULL);
-    }
-
-  sigaction (SIGINT, NULL, &old_action);
-  if (old_action.sa_handler != SIG_IGN)
-    {
-      sigaction (SIGINT, &action, NULL);
-    }
-
-  sigaction (SIGHUP, NULL, &old_action);
-  if (old_action.sa_handler != SIG_IGN)
-    {
-      sigaction (SIGHUP, &action, NULL);
-    }
+  sigaction (SIGTERM, &action, NULL);
+  sigaction (SIGQUIT, &action, NULL);
+  sigaction (SIGINT, &action, NULL);
+  sigaction (SIGHUP, &action, NULL);
 
   devices_filename = NULL;
 
@@ -643,34 +627,35 @@ main (int argc, gchar * argv[])
 	}
       else if (strcmp (command, "upgrade") == 0)
 	{
-	  res = cli_upgrade (argc, argv, optind);
+	  res = cli_upgrade_os (argc, argv, optind);
 	}
       else if (strcmp (command, "ls") == 0)
 	{
 	  res =
 	    cli_list (argc, argv, optind,
-		      connector_get_fs_operations_by_id (FS_SAMPLES),
+		      connector_get_fs_operations (FS_SAMPLES, NULL),
 		      print_smplrw);
 	}
       else if (strcmp (command, "mkdir") == 0)
 	{
 	  res =
 	    cli_command_path (argc, argv, optind,
-			      connector_get_fs_operations_by_id (FS_SAMPLES),
+			      connector_get_fs_operations (FS_SAMPLES, NULL),
 			      GET_FS_OPS_OFFSET (mkdir));
 	}
       else if (strcmp (command, "mv") == 0)
 	{
 	  res =
 	    cli_command_src_dst (argc, argv, optind,
-				 connector_get_fs_operations_by_id
-				 (FS_SAMPLES), GET_FS_OPS_OFFSET (move));
+				 connector_get_fs_operations (FS_SAMPLES,
+							      NULL),
+				 GET_FS_OPS_OFFSET (move));
 	}
       else if (strcmp (command, "rm") == 0 || strcmp (command, "rmdir") == 0)
 	{
 	  res =
 	    cli_command_path (argc, argv, optind,
-			      connector_get_fs_operations_by_id (FS_SAMPLES),
+			      connector_get_fs_operations (FS_SAMPLES, NULL),
 			      GET_FS_OPS_OFFSET (delete));
 	}
       else if (strcmp (command, "download") == 0
@@ -678,13 +663,13 @@ main (int argc, gchar * argv[])
 	{
 	  res =
 	    cli_download (argc, argv, optind,
-			  connector_get_fs_operations_by_id (FS_SAMPLES));
+			  connector_get_fs_operations (FS_SAMPLES, NULL));
 	}
       else if (strcmp (command, "upload") == 0 || strcmp (command, "ul") == 0)
 	{
 	  res =
 	    cli_upload (argc, argv, optind,
-			connector_get_fs_operations_by_id (FS_SAMPLES));
+			connector_get_fs_operations (FS_SAMPLES, NULL));
 	}
       else
 	{
@@ -753,6 +738,6 @@ end:
       connector_destroy (&connector);
     }
 
-  usleep (REST_TIME * 2);
+  usleep (REST_TIME_US * 2);
   return res;
 }

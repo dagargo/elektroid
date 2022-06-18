@@ -26,6 +26,12 @@
 #include <unistd.h>
 #include "local.h"
 
+struct local_iterator_data
+{
+  DIR *dir;
+  gchar *path;
+};
+
 static gint local_mkdir (const gchar *, void *);
 
 static gint local_delete (const gchar *, void *);
@@ -39,6 +45,7 @@ static gint local_copy_iterator (struct item_iterator *,
 
 const struct fs_operations FS_LOCAL_OPERATIONS = {
   .fs = 0,
+  .options = 0,
   .name = "local",
   .readdir = local_read_dir,
   .mkdir = local_mkdir,
@@ -51,7 +58,11 @@ const struct fs_operations FS_LOCAL_OPERATIONS = {
   .download = NULL,
   .upload = NULL,
   .getid = get_item_name,
-  .get_device_ext = NULL,
+  .load = NULL,
+  .save = NULL,
+  .get_ext = NULL,
+  .get_upload_path = NULL,
+  .get_download_path = NULL,
   .type_ext = NULL
 };
 
@@ -153,7 +164,6 @@ local_next_dentry (struct item_iterator *iter)
   gboolean found;
   struct stat st;
   mode_t mode;
-
   struct local_iterator_data *data = iter->data;
 
   if (iter->item.name != NULL)

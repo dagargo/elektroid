@@ -43,7 +43,7 @@
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
 
-#define GUI_FSS (FS_SAMPLES | FS_RAW_PRESETS | FS_DATA_PRJ | FS_DATA_SND)
+#define GUI_FSS (FS_SAMPLES | FS_RAW_PRESETS | FS_DATA_PRJ | FS_DATA_SND | FS_SAMPLES_SDS)
 
 #define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping...\n"
 
@@ -108,9 +108,6 @@ struct elektroid_add_upload_task_data
   gint32 index;
 };
 
-typedef int (*connector_send_raw) (struct connector *,
-				   struct connector_sysex_transfer *);
-
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (gdouble);
@@ -124,7 +121,7 @@ static const struct option ELEKTROID_OPTIONS[] = {
 
 static const gchar *ELEKTROID_FS_ICONS[] = {
   FILE_ICON_WAVE, FILE_ICON_DATA, FILE_ICON_SND, FILE_ICON_DATA,
-  FILE_ICON_PRJ, FILE_ICON_SND
+  FILE_ICON_PRJ, FILE_ICON_SND, FILE_ICON_WAVE
 };
 
 static gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
@@ -154,6 +151,12 @@ static GtkTargetEntry TARGET_ENTRIES_REMOTE_DST[] = {
   {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
 };
 
+static GtkTargetEntry TARGET_ENTRIES_REMOTE_DST_SDS[] = {
+  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
+   TARGET_STRING},
+  {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
+};
+
 static GtkTargetEntry TARGET_ENTRIES_REMOTE_SRC[] = {
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING},
@@ -176,6 +179,8 @@ static guint TARGET_ENTRIES_LOCAL_SRC_N =
 G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_SRC);
 static guint TARGET_ENTRIES_REMOTE_DST_N =
 G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST);
+static guint TARGET_ENTRIES_REMOTE_DST_SDS_N =
+G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST_SDS);
 static guint TARGET_ENTRIES_REMOTE_SRC_N =
 G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC);
 static guint TARGET_ENTRIES_UP_BUTTON_DST_N =
@@ -192,7 +197,7 @@ static GThread *load_thread = NULL;
 static GThread *task_thread = NULL;
 static GThread *sysex_thread = NULL;
 static struct elektroid_transfer transfer;
-static struct connector_sysex_transfer sysex_transfer;
+static struct sysex_transfer sysex_transfer;
 
 static GThread *notifier_thread = NULL;
 struct notifier notifier;
@@ -243,6 +248,7 @@ elektroid_get_fs_name (enum connector_fs fs)
   switch (fs)
     {
     case FS_SAMPLES:
+    case FS_SAMPLES_SDS:
       return _("Samples");
     case FS_RAW_PRESETS:
       return _("Presets");
@@ -259,7 +265,8 @@ static void
 elektroid_set_file_extensions_for_fs (gchar ** extensions[],
 				      enum connector_fs sel_fs)
 {
-  const struct fs_operations *ops;
+  const struct fs_operations *ops =
+    connector_get_fs_operations (sel_fs, NULL);
   gchar *mp3_ext = NULL;
 
   if (*extensions != NULL)
@@ -273,7 +280,7 @@ elektroid_set_file_extensions_for_fs (gchar ** extensions[],
       g_free (*extensions);
     }
 
-  if (sel_fs == FS_SAMPLES)
+  if (ops->options & FS_OPTION_SHOW_AUDIO_PLAYER)
     {
       gchar **ext = ELEKTROID_AUDIO_LOCAL_EXTS;
       int known_ext = 0;
@@ -311,9 +318,8 @@ elektroid_set_file_extensions_for_fs (gchar ** extensions[],
     }
   else
     {
-      ops = connector_get_fs_operations_by_id (sel_fs);
       *extensions = malloc (sizeof (gchar *) * 2);
-      (*extensions)[0] = ops->get_device_ext (&connector.device_desc, ops);
+      (*extensions)[0] = ops->get_ext (&connector.device_desc, ops);
       (*extensions)[1] = NULL;
     }
 }
@@ -323,7 +329,7 @@ elektroid_get_inventory_icon_for_fs (enum connector_fs sel_fs)
 {
   const gchar *icon = FILE_ICON_DATA;
 
-  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs <<= 1, i++)
+  for (int fs = FS_SAMPLES, i = 0; fs <= FS_SAMPLES_SDS; fs <<= 1, i++)
     {
       if (GUI_FSS & fs && sel_fs == fs)
 	{
@@ -487,14 +493,25 @@ elektroid_check_connector ()
 {
   GtkListStore *list_store;
   GtkTreeIter iter;
+  gboolean remote_box_sensitive;
   gboolean connected = connector_check (&connector);
   gboolean queued =
     elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
 
-  gtk_widget_set_sensitive (remote_box, connected);
+  if (!remote_browser.fs_ops
+      || remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
+    {
+      remote_box_sensitive = connected && !queued;
+    }
+  else
+    {
+      remote_box_sensitive = connected;
+    }
+  gtk_widget_set_sensitive (remote_box, remote_box_sensitive);
   gtk_widget_set_sensitive (rx_sysex_button, connected && !queued);
   gtk_widget_set_sensitive (tx_sysex_button, connected && !queued);
-  gtk_widget_set_sensitive (os_upgrade_button, connected && !queued);
+  gtk_widget_set_sensitive (os_upgrade_button, connected && !queued
+			    && connector.upgrade_os);
 
   if (!connected)
     {
@@ -573,7 +590,7 @@ elektroid_update_sysex_progress (gpointer data)
 {
   gchar *text;
   gboolean active;
-  enum connector_sysex_transfer_status status;
+  enum sysex_transfer_status status;
 
   g_mutex_lock (&sysex_transfer.mutex);
   status = sysex_transfer.status;
@@ -618,7 +635,7 @@ elektroid_rx_sysex_thread (gpointer data)
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
   connector_rx_drain (&connector);
-  *res = connector_rx_sysex (&connector, &sysex_transfer);
+  *res = connector_rx_sysex (&sysex_transfer, &connector);
   if (!*res)
     {
       text = debug_get_hex_msg (sysex_transfer.raw);
@@ -745,14 +762,14 @@ elektroid_tx_sysex_thread (gpointer data)
 {
   gchar *text;
   gint *res = malloc (sizeof (gint));
-  connector_send_raw f = data;
+  t_sysex_transfer f = data;
 
   sysex_transfer.active = TRUE;
-  sysex_transfer.timeout = SYSEX_TIMEOUT;
+  sysex_transfer.timeout = SYSEX_TIMEOUT_MS;
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
-  *res = f (&connector, &sysex_transfer);
+  *res = f (&sysex_transfer, &connector);
   if (!*res)
     {
       text = debug_get_hex_msg (sysex_transfer.raw);
@@ -767,7 +784,7 @@ elektroid_tx_sysex_thread (gpointer data)
 }
 
 static void
-elektroid_tx_sysex_common (connector_send_raw f)
+elektroid_tx_sysex_common (t_sysex_transfer f)
 {
   GtkWidget *dialog;
   GtkFileChooser *chooser;
@@ -850,7 +867,7 @@ elektroid_tx_sysex (GtkWidget * object, gpointer data)
 static void
 elektroid_upgrade_os (GtkWidget * object, gpointer data)
 {
-  elektroid_tx_sysex_common (connector_upgrade_os);
+  elektroid_tx_sysex_common (connector.upgrade_os);
   connector_destroy (&connector);
   elektroid_check_connector ();
 }
@@ -1342,6 +1359,8 @@ elektroid_local_check_selection (gpointer data)
   gchar *sample_path;
   GtkTreeModel *model;
   gboolean audio_controls;
+  gboolean audio_fs = !remote_browser.fs_ops
+    || remote_browser.fs_ops->options & FS_OPTION_SHOW_AUDIO_PLAYER;
   struct item *item = NULL;
   gint count = browser_get_selected_items_count (&local_browser);
 
@@ -1360,7 +1379,7 @@ elektroid_local_check_selection (gpointer data)
 	}
     }
 
-  if (!remote_browser.fs_ops || remote_browser.fs_ops->fs == FS_SAMPLES)
+  if (audio_fs)
     {
       audio_stop (&audio, TRUE);
       elektroid_stop_load_thread ();
@@ -1378,7 +1397,7 @@ elektroid_local_check_selection (gpointer data)
     }
 
 end:
-  audio_controls = item && item->type == ELEKTROID_FILE && (!remote_browser.fs_ops || remote_browser.fs_ops->fs == FS_SAMPLES);	//1 sample file
+  audio_controls = item && (item->type == ELEKTROID_FILE) && audio_fs;
   elektroid_sample_controls_set_sensitive (audio_controls);
   gtk_widget_set_sensitive (local_open_menuitem, audio_controls);
 
@@ -1883,6 +1902,14 @@ elektroid_run_next_task (gpointer data)
 
   if (!transfer_active && found)
     {
+      if (remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
+	{
+	  gtk_widget_set_sensitive (remote_box, FALSE);
+	}
+      gtk_widget_set_sensitive (rx_sysex_button, FALSE);
+      gtk_widget_set_sensitive (tx_sysex_button, FALSE);
+      gtk_widget_set_sensitive (os_upgrade_button, FALSE);
+
       gtk_list_store_set (task_list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, RUNNING,
 			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status_human,
@@ -1896,7 +1923,7 @@ elektroid_run_next_task (gpointer data)
       transfer.control.callback = elektroid_update_progress;
       transfer.src = src;
       transfer.dst = dst;
-      transfer.fs_ops = connector_get_fs_operations_by_id (fs);
+      transfer.fs_ops = connector_get_fs_operations (fs, NULL);
       debug_print (1, "Running task type %d from %s to %s (%s)...\n", type,
 		   transfer.src, transfer.dst, elektroid_get_fs_name (fs));
 
@@ -1915,9 +1942,11 @@ elektroid_run_next_task (gpointer data)
     }
   else
     {
+      gtk_widget_set_sensitive (remote_box, TRUE);
       gtk_widget_set_sensitive (rx_sysex_button, TRUE);
       gtk_widget_set_sensitive (tx_sysex_button, TRUE);
-      gtk_widget_set_sensitive (os_upgrade_button, TRUE);
+      gtk_widget_set_sensitive (os_upgrade_button,
+				connector.upgrade_os != NULL);
     }
 
   elektroid_check_task_buttons (NULL);
@@ -2039,9 +2068,10 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
     {
       dst_abs_dir = dirname (dst_abs_path);
       upload_path =
-	connector_get_upload_path (&connector, remote_dir_iter,
-				   remote_browser.fs_ops, dst_abs_dir,
-				   src_abs_path, next_idx);
+	remote_browser.fs_ops->get_upload_path (remote_browser.fs_ops,
+						dst_abs_dir, src_abs_path,
+						next_idx, remote_dir_iter,
+						&connector);
       elektroid_add_task (UPLOAD, src_abs_path, upload_path,
 			  remote_browser.fs_ops->fs);
       goto cleanup_not_dir;
@@ -2120,10 +2150,6 @@ elektroid_add_upload_tasks (GtkWidget * object, gpointer userdata)
 				       &data);
   free_item_iterator (&data.iter);
 
-  gtk_widget_set_sensitive (rx_sysex_button, FALSE);
-  gtk_widget_set_sensitive (tx_sysex_button, FALSE);
-  gtk_widget_set_sensitive (os_upgrade_button, FALSE);
-
   if (!queued)
     {
       elektroid_run_next_task (NULL);
@@ -2201,9 +2227,10 @@ elektroid_add_download_task_path (const gchar * rel_path,
       dst_abs_dirc = strdup (dst_abs_path);
       dst_abs_dir = dirname (dst_abs_dirc);
       download_path =
-	connector_get_download_path (&connector, remote_dir_iter,
-				     remote_browser.fs_ops, dst_abs_dir,
-				     src_abs_path);
+	remote_browser.fs_ops->get_download_path (remote_browser.fs_ops,
+						  dst_abs_dir, src_abs_path,
+						  remote_dir_iter,
+						  &connector);
       elektroid_add_task (DOWNLOAD, src_abs_path, download_path,
 			  remote_browser.fs_ops->fs);
       g_free (dst_abs_dirc);
@@ -2243,8 +2270,8 @@ elektroid_add_download_task (GtkTreeModel * model,
   struct item *item = browser_get_item (model, iter);
   char *id = remote_browser.fs_ops->getid (item);
 
-  elektroid_add_download_task_path (id, remote_browser.dir,
-				    local_browser.dir, data);
+  elektroid_add_download_task_path (id, remote_browser.dir, local_browser.dir,
+				    data);
   g_free (id);
   browser_free_item (item);
 }
@@ -2270,10 +2297,6 @@ elektroid_add_download_tasks (GtkWidget * object, gpointer data)
   gtk_tree_selection_selected_foreach (selection, elektroid_add_download_task,
 				       &item_iterator);
   free_item_iterator (&item_iterator);
-
-  gtk_widget_set_sensitive (rx_sysex_button, FALSE);
-  gtk_widget_set_sensitive (tx_sysex_button, FALSE);
-  gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
   if (!queued)
     {
@@ -2419,71 +2442,88 @@ elektroid_local_key_press (GtkWidget * widget, GdkEventKey * event,
 }
 
 static void
+elektroid_set_browser_options (struct browser *browser)
+{
+  GtkTreeSortable *sortable =
+    GTK_TREE_SORTABLE (gtk_tree_view_get_model (browser->view));
+
+  if (browser->fs_ops->options & FS_OPTION_SORT_BY_ID)
+    {
+      gtk_tree_sortable_set_sort_func (sortable,
+				       BROWSER_LIST_STORE_INDEX_FIELD,
+				       browser_sort_by_index, NULL, NULL);
+      gtk_tree_sortable_set_sort_column_id (sortable,
+					    BROWSER_LIST_STORE_INDEX_FIELD,
+					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+    }
+  else
+    {
+      gtk_tree_sortable_set_sort_func (sortable,
+				       BROWSER_LIST_STORE_NAME_FIELD,
+				       browser_sort_by_name, NULL, NULL);
+      gtk_tree_sortable_set_sort_column_id (sortable,
+					    BROWSER_LIST_STORE_NAME_FIELD,
+					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+    }
+}
+
+static void
 elektroid_set_fs (GtkWidget * object, gpointer data)
 {
   GtkTreeIter iter;
-  GtkTreeSortable *sortable;
   GValue fsv = G_VALUE_INIT;
   enum connector_fs fs;
 
-  if (gtk_combo_box_get_active_iter (fs_combo, &iter) == TRUE)
+  if (!gtk_combo_box_get_active_iter (fs_combo, &iter))
     {
-      gtk_tree_model_get_value (GTK_TREE_MODEL (fs_list_store),
-				&iter, FS_LIST_STORE_ID_FIELD, &fsv);
-      fs = g_value_get_uint (&fsv);
-
-      remote_browser.fs_ops = connector_get_fs_operations_by_id (fs);
-      remote_browser.file_icon = elektroid_get_inventory_icon_for_fs (fs);
-      strcpy (remote_browser.dir, "/");
-      browser_load_dir (&remote_browser);
-
-      local_browser.file_icon = remote_browser.file_icon;
-      elektroid_set_file_extensions_for_fs (&local_browser.extensions, fs);
-      browser_load_dir (&local_browser);
-
-      gtk_widget_set_sensitive (remote_browser.up_button,
-				remote_browser.fs_ops->readdir != NULL);
-      gtk_widget_set_visible (remote_browser.add_dir_button,
-			      remote_browser.fs_ops->mkdir != NULL);
-      gtk_widget_set_sensitive (remote_browser.refresh_button,
-				remote_browser.fs_ops->readdir != NULL);
-
-      gtk_widget_set_visible (remote_rename_menuitem,
-			      remote_browser.fs_ops->rename != NULL);
-      gtk_widget_set_visible (remote_delete_menuitem,
-			      remote_browser.fs_ops->delete != NULL);
-      gtk_widget_set_visible (local_audio_box, fs == FS_SAMPLES);
-      gtk_tree_view_column_set_visible (remote_tree_view_index_column,
-					fs == FS_DATA_PRJ
-					|| fs == FS_DATA_SND);
-
-      if (fs != FS_SAMPLES)
-	{
-	  audio_stop (&audio, TRUE);
-	}
-
-      sortable =
-	GTK_TREE_SORTABLE (gtk_tree_view_get_model (remote_browser.view));
-
-      if (fs == FS_SAMPLES || fs == FS_RAW_PRESETS)
-	{
-	  gtk_tree_sortable_set_sort_func (sortable,
-					   BROWSER_LIST_STORE_NAME_FIELD,
-					   browser_sort_samples, NULL, NULL);
-	  gtk_tree_sortable_set_sort_column_id (sortable,
-						BROWSER_LIST_STORE_NAME_FIELD,
-						GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
-	}
-      else if (fs == FS_DATA_PRJ || fs == FS_DATA_SND)
-	{
-	  gtk_tree_sortable_set_sort_func (sortable,
-					   BROWSER_LIST_STORE_INDEX_FIELD,
-					   browser_sort_data, NULL, NULL);
-	  gtk_tree_sortable_set_sort_column_id (sortable,
-						BROWSER_LIST_STORE_INDEX_FIELD,
-						GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
-	}
+      return;
     }
+
+  gtk_tree_model_get_value (GTK_TREE_MODEL (fs_list_store),
+			    &iter, FS_LIST_STORE_ID_FIELD, &fsv);
+  fs = g_value_get_uint (&fsv);
+
+  remote_browser.fs_ops = connector_get_fs_operations (fs, NULL);
+  remote_browser.file_icon = elektroid_get_inventory_icon_for_fs (fs);
+  strcpy (remote_browser.dir, "/");
+  browser_load_dir (&remote_browser);
+  browser_update_fs_options (&remote_browser);
+
+  local_browser.file_icon = remote_browser.file_icon;
+  elektroid_set_file_extensions_for_fs (&local_browser.extensions, fs);
+  browser_load_dir (&local_browser);
+
+  gtk_widget_set_visible (remote_rename_menuitem,
+			  remote_browser.fs_ops->rename != NULL);
+  gtk_widget_set_visible (remote_delete_menuitem,
+			  remote_browser.fs_ops->delete != NULL);
+  gtk_widget_set_visible (local_audio_box,
+			  remote_browser.
+			  fs_ops->options & FS_OPTION_SHOW_AUDIO_PLAYER);
+  gtk_tree_view_column_set_visible (remote_tree_view_index_column,
+				    remote_browser.
+				    fs_ops->options &
+				    FS_OPTION_SHOW_INDEX_COLUMN);
+
+  if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+    {
+      gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
+			 GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_REMOTE_DST_SDS,
+			 TARGET_ENTRIES_REMOTE_DST_SDS_N, GDK_ACTION_COPY);
+    }
+  else
+    {
+      gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
+			 GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_REMOTE_DST,
+			 TARGET_ENTRIES_REMOTE_DST_N, GDK_ACTION_COPY);
+    }
+
+  if (remote_browser.fs_ops->options & FS_OPTION_SHOW_AUDIO_PLAYER)
+    {
+      audio_stop (&audio, TRUE);
+    }
+
+  elektroid_set_browser_options (&remote_browser);
 }
 
 static void
@@ -2491,7 +2531,7 @@ elektroid_fill_fs_combo ()
 {
   gtk_list_store_clear (fs_list_store);
 
-  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs = fs << 1, i++)
+  for (int fs = FS_SAMPLES, i = 0; fs <= FS_SAMPLES_SDS; fs = fs << 1, i++)
     {
       if (GUI_FSS & fs && connector.device_desc.filesystems & fs)
 	{
@@ -2577,10 +2617,11 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
   if (strcmp (dir, remote_browser.dir))
     {
       dst_path =
-	connector_get_upload_path (&connector,
-				   remote_item_iterator,
-				   remote_browser.fs_ops,
-				   remote_browser.dir, name, next_idx);
+	remote_browser.fs_ops->get_upload_path (remote_browser.fs_ops,
+						remote_browser.dir, name,
+						next_idx,
+						remote_item_iterator,
+						&connector);
       res =
 	remote_browser.fs_ops->move (filename, dst_path, remote_browser.data);
       if (res)
@@ -2595,6 +2636,35 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
   else
     {
       debug_print (1, MSG_WARN_SAME_SRC_DST);
+    }
+}
+
+static void
+elektroid_add_upload_task_slot (const gchar * name,
+				const gchar * src_file_path)
+{
+  GtkTreeIter iter;
+  GtkTreeModel *model;
+  struct item *item;
+  gchar *dst_file_path, *name_wo_ext;
+
+  model =
+    GTK_TREE_MODEL (gtk_tree_view_get_model
+		    (GTK_TREE_VIEW (remote_browser.view)));
+
+  if (gtk_tree_model_get_iter (model, &iter, remote_browser.dnd_motion_path))
+    {
+      name_wo_ext = strdup (name);
+      remove_ext (name_wo_ext);
+      item = browser_get_item (model, &iter);
+
+      dst_file_path = g_malloc (sizeof (LABEL_MAX));
+      snprintf (dst_file_path, LABEL_MAX, "/%d%s%s", item->index,
+		SDS_SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
+      browser_free_item (item);
+
+      elektroid_add_task (UPLOAD, src_file_path, dst_file_path,
+			  remote_browser.fs_ops->fs);
     }
 }
 
@@ -2679,9 +2749,17 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 	    }
 	  else if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
 	    {
-	      elektroid_add_upload_task_path (name, dir, remote_browser.dir,
-					      &remote_item_iterator,
-					      &next_idx);
+	      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+		{
+		  elektroid_add_upload_task_slot (name, filename);
+		}
+	      else
+		{
+		  elektroid_add_upload_task_path (name, dir,
+						  remote_browser.dir,
+						  &remote_item_iterator,
+						  &next_idx);
+		}
 	    }
 	}
 
@@ -2773,9 +2851,13 @@ elektroid_drag_motion_list (GtkWidget * widget,
   gchar *spath;
   gint tx;
   gint ty;
+  gboolean slot;
   GtkTreeSelection *selection;
   struct item *item;
   struct browser *browser = user_data;
+
+  slot = widget == GTK_WIDGET (remote_browser.view)
+    && remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE;
 
   gtk_tree_view_convert_widget_to_bin_window_coords
     (GTK_TREE_VIEW (widget), wx, wy, &tx, &ty);
@@ -2786,6 +2868,12 @@ elektroid_drag_motion_list (GtkWidget * widget,
       spath = gtk_tree_path_to_string (path);
       debug_print (2, "Drag motion path: %s\n", spath);
       g_free (spath);
+
+      if (slot)
+	{
+	  gtk_tree_view_set_drag_dest_row (remote_browser.view, path,
+					   GTK_TREE_VIEW_DROP_INTO_OR_BEFORE);
+	}
 
       selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
       if (gtk_tree_selection_path_is_selected (selection, path))
@@ -2828,7 +2916,6 @@ elektroid_drag_motion_list (GtkWidget * widget,
 	  g_source_remove (browser->dnd_timeout_function_id);
 	  browser->dnd_timeout_function_id = 0;
 	}
-
     }
 
   if (browser->dnd_motion_path)
@@ -2836,7 +2923,6 @@ elektroid_drag_motion_list (GtkWidget * widget,
       gtk_tree_path_free (browser->dnd_motion_path);
       browser->dnd_motion_path = NULL;
     }
-
   browser->dnd_motion_path = path;
 
   return TRUE;
@@ -2930,7 +3016,6 @@ elektroid_run (int argc, char *argv[])
 {
   GtkBuilder *builder;
   GtkCssProvider *css_provider;
-  GtkTreeSortable *sortable;
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
   GtkWidget *hostname_label;
@@ -3101,7 +3186,7 @@ elektroid_run (int argc, char *argv[])
     .dir = malloc (PATH_MAX),
     .check_selection = elektroid_remote_check_selection,
     .file_icon = NULL,
-    .fs_ops = connector_get_fs_operations_by_id (-1),
+    .fs_ops = connector_get_fs_operations (-1, NULL),
     .data = &connector,
     .notify_dir_change = NULL,
     .check_callback = elektroid_check_connector
@@ -3147,9 +3232,6 @@ elektroid_run (int argc, char *argv[])
   gtk_drag_source_set ((GtkWidget *) remote_browser.view, GDK_BUTTON1_MASK,
 		       TARGET_ENTRIES_REMOTE_SRC, TARGET_ENTRIES_REMOTE_SRC_N,
 		       GDK_ACTION_COPY);
-  gtk_drag_dest_set ((GtkWidget *) remote_browser.view, GTK_DEST_DEFAULT_ALL,
-		     TARGET_ENTRIES_REMOTE_DST, TARGET_ENTRIES_REMOTE_DST_N,
-		     GDK_ACTION_COPY);
   gtk_drag_dest_set ((GtkWidget *) remote_browser.up_button,
 		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
 		     TARGET_ENTRIES_UP_BUTTON_DST,
@@ -3212,12 +3294,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (local_browser.up_button, "drag-leave",
 		    G_CALLBACK (elektroid_drag_leave_up), &local_browser);
 
-  sortable = GTK_TREE_SORTABLE (gtk_tree_view_get_model (local_browser.view));
-  gtk_tree_sortable_set_sort_func (sortable, BROWSER_LIST_STORE_NAME_FIELD,
-				   browser_sort_samples, NULL, NULL);
-  gtk_tree_sortable_set_sort_column_id (sortable,
-					BROWSER_LIST_STORE_NAME_FIELD,
-					GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+  elektroid_set_browser_options (&local_browser);
 
   gtk_drag_source_set ((GtkWidget *) local_browser.view, GDK_BUTTON1_MASK,
 		       TARGET_ENTRIES_LOCAL_SRC, TARGET_ENTRIES_LOCAL_SRC_N,

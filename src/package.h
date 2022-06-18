@@ -52,7 +52,7 @@ struct package
   gchar *name;
   enum package_type type;
   gchar *fw_version;
-  const struct connector_device_desc *device_desc;
+  const struct device_desc *device_desc;
   gchar *buff;
   zip_source_t *zip_source;
   zip_t *zip;
@@ -61,7 +61,7 @@ struct package
 };
 
 gint package_begin (struct package *, gchar *, const gchar *,
-		    const struct connector_device_desc *, enum package_type);
+		    const struct device_desc *, enum package_type);
 
 gint package_receive_pkg_resources (struct package *, const gchar *,
 				    struct job_control *, struct connector *,
@@ -72,7 +72,7 @@ gint package_end (struct package *, GByteArray *);
 void package_destroy (struct package *);
 
 gint package_open (struct package *, GByteArray *,
-		   const struct connector_device_desc *);
+		   const struct device_desc *);
 
 gint package_send_pkg_resources (struct package *,
 				 const gchar *,

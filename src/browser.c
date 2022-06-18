@@ -21,7 +21,7 @@
 #include "browser.h"
 
 gint
-browser_sort_samples (GtkTreeModel * model,
+browser_sort_by_name (GtkTreeModel * model,
 		      GtkTreeIter * a, GtkTreeIter * b, gpointer data)
 {
   struct item *itema;
@@ -47,8 +47,8 @@ browser_sort_samples (GtkTreeModel * model,
 }
 
 gint
-browser_sort_data (GtkTreeModel * model,
-		   GtkTreeIter * a, GtkTreeIter * b, gpointer data)
+browser_sort_by_index (GtkTreeModel * model,
+		       GtkTreeIter * a, GtkTreeIter * b, gpointer data)
 {
   struct item *itema;
   struct item *itemb;
@@ -205,7 +205,7 @@ browser_get_item_id_path (struct browser *browser, struct item *item)
 }
 
 static void
-local_add_dentry_item (struct browser *browser, struct item_iterator *iter)
+browser_add_dentry_item (struct browser *browser, struct item_iterator *iter)
 {
   gchar *hsize;
   GtkListStore *list_store =
@@ -287,7 +287,7 @@ browser_load_dir (gpointer data)
     {
       if (browser_file_match_extensions (browser, &iter))
 	{
-	  local_add_dentry_item (browser, &iter);
+	  browser_add_dentry_item (browser, &iter);
 	}
     }
   free_item_iterator (&iter);
@@ -299,4 +299,14 @@ end:
     }
   gtk_tree_view_columns_autosize (browser->view);
   return FALSE;
+}
+
+void
+browser_update_fs_options (struct browser *browser)
+{
+  gtk_widget_set_visible (browser->up_button, browser->fs_ops->mkdir != NULL);
+  gtk_widget_set_visible (browser->add_dir_button,
+			  browser->fs_ops->mkdir != NULL);
+  gtk_widget_set_sensitive (browser->refresh_button,
+			    browser->fs_ops->readdir != NULL);
 }

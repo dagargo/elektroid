@@ -24,6 +24,7 @@
 #include <poll.h>
 #include <zlib.h>
 #include <libgen.h>
+#include <glib/gi18n.h>
 #include "connector.h"
 #include "utils.h"
 #include "sample.h"
@@ -46,6 +47,15 @@
 #define FS_SAMPLES_LAST_FRAME_POS_W 33
 #define FS_SAMPLES_PAD_RES 22
 #define ELEKTRON_SAMPLE_INFO_PAD_I32_LEN 10
+
+#define SDS_SAMPLE_LIMIT 1000
+#define SDS_DATA_PACKET_LEN 127
+#define SDS_DATA_PACKET_PAYLOAD_LEN 120
+#define SDS_DATA_PACKET_CKSUM_POS 125
+#define SDS_DATA_PACKET_CKSUM_START 1
+#define SDS_BYTES_PER_WORD 3
+#define SDS_ACK_WAIT_TIME_MS 5000
+#define SDS_BITS 16
 
 struct elektron_sample_info
 {
@@ -181,13 +191,51 @@ static gint connector_upload_raw_pst_pkg (const gchar *, GByteArray *,
 static gint connector_copy_iterator (struct item_iterator *,
 				     struct item_iterator *, gboolean);
 
-static gchar *connector_get_sample_ext (const struct
-					connector_device_desc *,
-					const struct fs_operations *);
+static gchar *connector_get_fs_ext (const struct
+				    device_desc *,
+				    const struct fs_operations *);
 
-static gchar *connector_get_device_ext (const struct
-					connector_device_desc *,
-					const struct fs_operations *);
+static gchar *connector_get_dev_and_fs_ext (const struct
+					    device_desc *,
+					    const struct fs_operations *);
+
+static gchar *connector_get_upload_path_smplrw (const struct fs_operations *,
+						const gchar *, const gchar *,
+						gint32 *,
+						struct item_iterator *,
+						void *);
+
+static gchar *connector_get_upload_path_data (const struct fs_operations *,
+					      const gchar *, const gchar *,
+					      gint32 *,
+					      struct item_iterator *, void *);
+
+static gchar *connector_get_download_path (const struct fs_operations *,
+					   const gchar *, const gchar *,
+					   struct item_iterator *, void *);
+
+static gchar *connector_get_download_name (struct connector *,
+					   struct item_iterator *,
+					   const struct fs_operations *,
+					   const gchar *);
+
+static gint connector_upgrade_os (struct sysex_transfer *, void *);
+
+static gchar *sds_get_upload_path (const struct fs_operations *,
+				   const gchar *, const gchar *,
+				   gint32 *, struct item_iterator *, void *);
+
+static gchar *sds_get_download_path (const struct fs_operations *,
+				     const gchar *, const gchar *,
+				     struct item_iterator *, void *);
+
+static gint sds_download (const gchar *, GByteArray *, struct job_control *,
+			  void *);
+
+static gint sds_upload (const gchar *, GByteArray *, struct job_control *,
+			void *);
+
+static gint sds_read_dir (struct item_iterator *, const gchar *, void *);
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -247,8 +295,30 @@ static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
 
 static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 
+static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
+
+static const guint8 SDS_ACK[] = { 0xf0, 0x7e, 0, 0x7f, 0, 0xf7 };
+static const guint8 SDS_NAK[] = { 0xf0, 0x7e, 0, 0x7e, 0, 0xf7 };
+static const guint8 SDS_CANCEL[] = { 0xf0, 0x7e, 0, 0x7d, 0, 0xf7 };
+
+static const guint8 SDS_WAIT[] = { 0xf0, 0x7e, 0, 0x7c, 0, 0xf7 };
+
+static const guint8 SDS_SAMPLE_NAME_REQUEST[] =
+  { 0xf0, 0x7e, 0, 0x5, 0x4, 0, 0, 0xf7 };
+
+static const guint8 SDS_DATA_PACKET_HEADER[] = { 0xf0, 0x7e, 0, 0x2, 0 };
+
+static const guint8 SDS_SAMPLE_NAME_HEADER[] =
+  { 0xf0, 0x7e, 0, 0x5, 0x3, 0, 0, 0 };
+
+static const guint8 SDS_DUMP_HEADER[] =
+  { 0xf0, 0x7e, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xf7 };
+
+static const guint8 IDENTITY_REQUEST[] = { 0xf0, 0x7e, 0x7f, 6, 1, 0xf7 };
+
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
+  .options = FS_OPTION_SHOW_AUDIO_PLAYER,
   .name = "sample",
   .readdir = connector_read_samples_dir,
   .mkdir = connector_create_samples_dir,
@@ -263,12 +333,15 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .getid = get_item_name,
   .load = sample_load,
   .save = sample_save,
-  .get_device_ext = connector_get_sample_ext,
+  .get_ext = connector_get_fs_ext,
+  .get_upload_path = connector_get_upload_path_smplrw,
+  .get_download_path = connector_get_download_path,
   .type_ext = "wav"
 };
 
 static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .fs = FS_RAW_ALL,
+  .options = 0,
   .name = "raw",
   .readdir = connector_read_raw_dir,
   .mkdir = connector_create_raw_dir,
@@ -283,12 +356,15 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .getid = get_item_name,
   .load = load_file,
   .save = save_file,
-  .get_device_ext = connector_get_device_ext,
+  .get_ext = connector_get_dev_and_fs_ext,
+  .get_upload_path = connector_get_upload_path_smplrw,
+  .get_download_path = connector_get_download_path,
   .type_ext = "raw"
 };
 
 static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .fs = FS_RAW_PRESETS,
+  .options = 0,
   .name = "preset",
   .readdir = connector_read_raw_dir,
   .mkdir = connector_create_raw_dir,
@@ -303,12 +379,15 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .getid = get_item_name,
   .load = load_file,
   .save = save_file,
-  .get_device_ext = connector_get_device_ext,
+  .get_ext = connector_get_dev_and_fs_ext,
+  .get_upload_path = connector_get_upload_path_smplrw,
+  .get_download_path = connector_get_download_path,
   .type_ext = "pst"
 };
 
 static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .fs = FS_DATA_ALL,
+  .options = FS_OPTION_SORT_BY_ID,
   .name = "data",
   .readdir = connector_read_data_dir_any,
   .mkdir = NULL,
@@ -323,12 +402,15 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
-  .get_device_ext = connector_get_device_ext,
+  .get_ext = connector_get_dev_and_fs_ext,
+  .get_upload_path = connector_get_upload_path_data,
+  .get_download_path = connector_get_download_path,
   .type_ext = "data"
 };
 
 static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .fs = FS_DATA_PRJ,
+  .options = FS_OPTION_SORT_BY_ID,
   .name = "project",
   .readdir = connector_read_data_dir_prj,
   .mkdir = NULL,
@@ -343,12 +425,15 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
-  .get_device_ext = connector_get_device_ext,
+  .get_ext = connector_get_dev_and_fs_ext,
+  .get_upload_path = connector_get_upload_path_data,
+  .get_download_path = connector_get_download_path,
   .type_ext = "prj"
 };
 
 static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .fs = FS_DATA_SND,
+  .options = FS_OPTION_SORT_BY_ID,
   .name = "sound",
   .readdir = connector_read_data_dir_snd,
   .mkdir = NULL,
@@ -363,14 +448,41 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .getid = get_item_index,
   .load = load_file,
   .save = save_file,
-  .get_device_ext = connector_get_device_ext,
+  .get_ext = connector_get_dev_and_fs_ext,
+  .get_upload_path = connector_get_upload_path_data,
+  .get_download_path = connector_get_download_path,
   .type_ext = "snd"
+};
+
+static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
+  .fs = FS_SAMPLES_SDS,
+  .options =
+    FS_OPTION_SHOW_AUDIO_PLAYER | FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE
+    | FS_OPTION_SORT_BY_ID,
+  .name = "sds",
+  .readdir = sds_read_dir,
+  .mkdir = NULL,
+  .delete = NULL,
+  .rename = NULL,
+  .move = NULL,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = sds_download,
+  .upload = sds_upload,
+  .getid = get_item_index,
+  .load = sample_load,
+  .save = sample_save,
+  .get_ext = connector_get_fs_ext,
+  .get_upload_path = sds_get_upload_path,
+  .get_download_path = sds_get_download_path,
+  .type_ext = "wav"
 };
 
 static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
   &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
-  NULL
+  &FS_SAMPLES_SDS_OPERATIONS, NULL
 };
 
 static enum item_type connector_get_path_type (struct connector *,
@@ -390,29 +502,13 @@ connector_free_iterator_data (void *iter_data)
 }
 
 const struct fs_operations *
-connector_get_fs_operations_by_id (enum connector_fs fs)
+connector_get_fs_operations (enum connector_fs fs, const char *name)
 {
   const struct fs_operations **fs_operations = FS_OPERATIONS;
   while (*fs_operations)
     {
       const struct fs_operations *ops = *fs_operations;
-      if (ops->fs == fs)
-	{
-	  return ops;
-	}
-      fs_operations++;
-    }
-  return NULL;
-}
-
-const struct fs_operations *
-connector_get_fs_operations_by_name (const char *name)
-{
-  const struct fs_operations **fs_operations = FS_OPERATIONS;
-  while (*fs_operations)
-    {
-      const struct fs_operations *ops = *fs_operations;
-      if (strcmp (ops->name, name) == 0)
+      if (ops->fs == fs || (name && strcmp (ops->name, name) == 0))
 	{
 	  return ops;
 	}
@@ -957,14 +1053,14 @@ connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
 }
 
 gint
-connector_tx_sysex (struct connector *connector,
-		    struct connector_sysex_transfer *transfer)
+connector_tx_sysex (struct sysex_transfer *transfer, void *data)
 {
   ssize_t tx_len;
   guint total;
   guint len;
   guchar *b;
   gint res = 0;
+  struct connector *connector = data;
 
   transfer->status = SENDING;
 
@@ -988,6 +1084,15 @@ connector_tx_sysex (struct connector *connector,
       total += len;
     }
 
+  if (debug_level > 1)
+    {
+      gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
+					transfer->raw->len);
+      debug_print (2, "Raw message sent (%d): %s\n", transfer->raw->len,
+		   text);
+      free (text);
+    }
+
   transfer->active = FALSE;
   transfer->status = FINISHED;
   return res;
@@ -999,7 +1104,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   gint res;
   guint16 aux;
   gchar *text;
-  struct connector_sysex_transfer transfer;
+  struct sysex_transfer transfer;
 
   aux = htobe16 (connector->seq);
   memcpy (msg->data, &aux, sizeof (guint16));
@@ -1015,17 +1120,9 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   transfer.active = TRUE;
   transfer.raw = connector_msg_to_raw (msg);
 
-  res = connector_tx_sysex (connector, &transfer);
+  res = connector_tx_sysex (&transfer, connector);
   if (!res)
     {
-      if (debug_level > 1)
-	{
-	  text = debug_get_hex_msg (transfer.raw);
-	  debug_print (2, "Raw message sent (%d): %s\n", transfer.raw->len,
-		       text);
-	  free (text);
-	}
-
       text = debug_get_hex_msg (msg);
       debug_print (1, "Message sent (%d): %s\n", msg->len, text);
       free (text);
@@ -1062,7 +1159,7 @@ connector_is_rt_msg (guint8 * data, guint len)
 
 static ssize_t
 connector_rx_raw (struct connector *connector, guint8 * data, guint len,
-		  struct connector_sysex_transfer *transfer)
+		  struct sysex_transfer *transfer)
 {
   ssize_t rx_len;
   guint total_time;
@@ -1084,7 +1181,7 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
       if (!transfer->active)
 	{
-	  return -ENODATA;
+	  return -ECANCELED;
 	}
 
       if (err == 0)
@@ -1155,10 +1252,10 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 
     }
 
-  if (debug_level > 1)
+  if (debug_level > 2)
     {
-      text = debug_get_hex_data (3, data, rx_len);
-      debug_print (2, "Buffer content (%zu): %s\n", rx_len, text);
+      text = debug_get_hex_data (debug_level, data, rx_len);
+      debug_print (3, "Buffer content (%zu): %s\n", rx_len, text);
       free (text);
     }
 
@@ -1166,15 +1263,15 @@ connector_rx_raw (struct connector *connector, guint8 * data, guint len,
 }
 
 gint
-connector_rx_sysex (struct connector *connector,
-		    struct connector_sysex_transfer *transfer)
+connector_rx_sysex (struct sysex_transfer *transfer, void *data)
 {
   gint i;
   guint8 *b;
   gint res = 0;
+  struct connector *connector = data;
 
   transfer->status = WAITING;
-  transfer->raw = g_byte_array_new ();
+  transfer->raw = g_byte_array_sized_new (BUFF_SIZE);
 
   i = 0;
   if (connector->rx_len < 0)
@@ -1268,7 +1365,15 @@ connector_rx_sysex (struct connector *connector,
 	    }
 	  break;
 	}
+    }
 
+  if (debug_level > 1)
+    {
+      gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
+					transfer->raw->len);
+      debug_print (2, "Raw message received (%d): %s\n", transfer->raw->len,
+		   text);
+      free (text);
     }
 
   goto end;
@@ -1287,13 +1392,13 @@ connector_rx (struct connector *connector)
 {
   gchar *text;
   GByteArray *msg;
-  struct connector_sysex_transfer transfer;
+  struct sysex_transfer transfer;
 
   transfer.active = TRUE;
-  transfer.timeout = SYSEX_TIMEOUT;
+  transfer.timeout = SYSEX_TIMEOUT_MS;
   transfer.batch = FALSE;
 
-  if (connector_rx_sysex (connector, &transfer))
+  if (connector_rx_sysex (&transfer, connector))
     {
       return NULL;
     }
@@ -1316,18 +1421,10 @@ connector_rx (struct connector *connector)
       free_msg (transfer.raw);
 
       transfer.active = TRUE;
-      if (connector_rx_sysex (connector, &transfer))
+      if (connector_rx_sysex (&transfer, connector))
 	{
 	  return NULL;
 	}
-    }
-
-  if (debug_level > 1)
-    {
-      text = debug_get_hex_msg (transfer.raw);
-      debug_print (2, "Raw message received (%d): %s\n", transfer.raw->len,
-		   text);
-      free (text);
     }
 
   msg = connector_raw_to_msg (transfer.raw);
@@ -1342,6 +1439,8 @@ connector_rx (struct connector *connector)
   return msg;
 }
 
+//Synchronized
+
 static GByteArray *
 connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
 {
@@ -1350,7 +1449,6 @@ connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
   guint msg_type = tx_msg->data[4] | 0x80;
 
   g_mutex_lock (&connector->mutex);
-
   connector_rx_drain (connector);
 
   len = connector_tx (connector, tx_msg);
@@ -1375,45 +1473,37 @@ cleanup:
   return rx_msg;
 }
 
+//Synchronized
+
 static GByteArray *
 connector_tx_and_rx_sysex (struct connector *connector, GByteArray * tx_msg)
 {
   gint err;
-  gchar *text;
-  struct connector_sysex_transfer transfer;
+  struct sysex_transfer transfer;
 
+  g_mutex_lock (&connector->mutex);
   transfer.raw = tx_msg;
-
-  text = debug_get_hex_msg (transfer.raw);
-  debug_print (2, "SysEx message sent (%d): %s\n", transfer.raw->len, text);
-  free (text);
-
-  connector_rx_drain (connector);
-
   transfer.active = TRUE;
-  transfer.timeout = SYSEX_TIMEOUT;
+  transfer.timeout = SYSEX_TIMEOUT_MS;
   transfer.batch = FALSE;
-  err = connector_tx_sysex (connector, &transfer);
+  err = connector_tx_sysex (&transfer, connector);
   free_msg (transfer.raw);
   if (err < 0)
     {
       err = -EIO;
-      return NULL;
+      goto cleanup;
     }
 
   transfer.active = TRUE;
-  err = connector_rx_sysex (connector, &transfer);
+  err = connector_rx_sysex (&transfer, connector);
   if (err < 0)
     {
       err = -EIO;
-      return NULL;
+      goto cleanup;
     }
 
-  text = debug_get_hex_msg (transfer.raw);
-  debug_print (2, "SysEx message received (%d): %s\n", transfer.raw->len,
-	       text);
-  free (text);
-
+cleanup:
+  g_mutex_unlock (&connector->mutex);
   return transfer.raw;
 }
 
@@ -1863,16 +1953,10 @@ connector_upload_smplrw (const gchar * path, GByteArray * input,
 
   transferred = 0;
   i = 0;
-  if (control)
-    {
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
-    }
-  else
-    {
-      active = TRUE;
-    }
+
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
 
   while (transferred < input->len && active)
     {
@@ -1890,16 +1974,12 @@ connector_upload_smplrw (const gchar * path, GByteArray * input,
       free_msg (rx_msg);
       i++;
 
-      if (control)
-	{
-	  set_job_control_progress (control,
-				    transferred / (double) input->len);
-	  g_mutex_lock (&control->mutex);
-	  active = control->active;
-	  g_mutex_unlock (&control->mutex);
-	}
+      set_job_control_progress (control, transferred / (double) input->len);
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
 
-      usleep (REST_TIME);
+      usleep (REST_TIME_US);
     }
 
   debug_print (2, "%d bytes sent\n", transferred);
@@ -1934,12 +2014,12 @@ connector_upload_sample_part (const gchar * path, GByteArray * sample,
 }
 
 static gint
-connector_upload_sample (const gchar * path, GByteArray * output,
+connector_upload_sample (const gchar * path, GByteArray * input,
 			 struct job_control *control, void *data)
 {
   control->parts = 1;
   control->part = 0;
-  return connector_upload_sample_part (path, output, control, data);
+  return connector_upload_sample_part (path, input, control, data);
 }
 
 static gint
@@ -2035,16 +2115,9 @@ connector_download_smplrw (const gchar * path, GByteArray * output,
 
   debug_print (2, "%d frames to download\n", frames);
 
-  if (control)
-    {
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
-    }
-  else
-    {
-      active = TRUE;
-    }
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
 
   array = g_byte_array_new ();
   res = 0;
@@ -2085,16 +2158,12 @@ connector_download_smplrw (const gchar * path, GByteArray * output,
 
       free_msg (rx_msg);
 
-      if (control)
-	{
-	  set_job_control_progress (control,
-				    next_block_start / (double) frames);
-	  g_mutex_lock (&control->mutex);
-	  active = control->active;
-	  g_mutex_unlock (&control->mutex);
-	}
+      set_job_control_progress (control, next_block_start / (double) frames);
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
 
-      usleep (REST_TIME);
+      usleep (REST_TIME_US);
     }
 
   debug_print (2, "%d bytes received\n", next_block_start);
@@ -2228,15 +2297,15 @@ connector_new_msg_upgrade_os_write (GByteArray * os_data, gint * offset)
   return msg;
 }
 
-gint
-connector_upgrade_os (struct connector *connector,
-		      struct connector_sysex_transfer *transfer)
+static gint
+connector_upgrade_os (struct sysex_transfer *transfer, void *data)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   gint8 op;
   gint offset;
   gint res = 0;
+  struct connector *connector = data;
 
   transfer->status = SENDING;
 
@@ -2289,7 +2358,7 @@ connector_upgrade_os (struct connector *connector,
 
       free_msg (rx_msg);
 
-      usleep (REST_TIME);
+      usleep (REST_TIME_US);
     }
 
 end:
@@ -2424,6 +2493,53 @@ connector_get_storage_stats_percent (struct connector_storage_stats *statfs)
 }
 
 static gint
+connector_handshake_midi_sds (struct connector *connector)
+{
+  struct sysex_transfer transfer;
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+  gint err = 0;
+
+  tx_msg = g_byte_array_sized_new (sizeof (SDS_SAMPLE_REQUEST));
+  g_byte_array_append (tx_msg, SDS_SAMPLE_REQUEST,
+		       sizeof (SDS_SAMPLE_REQUEST));
+  tx_msg->data[4] = 1;
+  tx_msg->data[5] = 0;
+  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+
+  free_msg (rx_msg);
+
+  transfer.active = TRUE;
+  transfer.raw = g_byte_array_sized_new (sizeof (SDS_CANCEL));
+  g_byte_array_append (transfer.raw, SDS_CANCEL, sizeof (SDS_CANCEL));
+  //packet num is already 0
+  g_mutex_lock (&connector->mutex);
+  err = connector_tx_sysex (&transfer, connector);
+  g_mutex_unlock (&connector->mutex);
+  free_msg (transfer.raw);
+
+  connector->device_desc.id = -1;
+  connector->device_desc.filesystems = FS_SAMPLES_SDS;
+  connector->device_desc.storage = 0;
+  connector->device_desc.alias = strdup (_("MIDI SDS sampler"));
+  connector->overbridge_name = strdup ("-");
+  connector->device_desc.name = malloc (LABEL_MAX);
+  connector->fw_version = malloc (LABEL_MAX);
+  connector->device_desc.name = strdup (_("MIDI SDS sampler"));
+  connector->device_name = strdup (_("MIDI SDS sampler"));
+  connector->fw_version = strdup ("-");
+  connector->upgrade_os = NULL;
+
+  return err;
+}
+
+//Not in use now.
+
+static gint
 connector_handshake_midi (struct connector *connector)
 {
   GByteArray *tx_msg;
@@ -2431,24 +2547,26 @@ connector_handshake_midi (struct connector *connector)
   guint8 *company, *family, *model, *version;
   gint offset, err = 0;
 
-  tx_msg = g_byte_array_new ();
-  g_byte_array_append (tx_msg, (guchar *) "\xf0\x7e\x7f\x06\x01\xf7", 6);
+  tx_msg = g_byte_array_sized_new (sizeof (IDENTITY_REQUEST));
+  //Identity Request Universal Sysex message
+  g_byte_array_append (tx_msg, (guchar *) IDENTITY_REQUEST,
+		       sizeof (IDENTITY_REQUEST));
   rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+
+  connector->device_desc.id = -1;
+  connector->device_desc.filesystems = FS_SAMPLES_SDS;
+  connector->device_desc.storage = 0;
+  connector->device_desc.alias = strdup (_("unknown"));
+  connector->overbridge_name = strdup (_("unknown"));
+  connector->device_desc.name = malloc (LABEL_MAX);
+  connector->fw_version = malloc (LABEL_MAX);
+
   if (rx_msg)
     {
       if (rx_msg->data[4] == 2)
 	{
 	  if (rx_msg->len == 15 || rx_msg->len == 17)
 	    {
-	      err = 0;
-	      connector->device_desc.id = 0;
-	      connector->device_desc.filesystems = 0;
-	      connector->device_desc.storage = 0;
-	      connector->device_desc.alias = strdup ("-");
-	      connector->overbridge_name = strdup ("-");
-	      connector->device_desc.name = malloc (LABEL_MAX);
-	      connector->fw_version = malloc (LABEL_MAX);
-
 	      offset = rx_msg->len - 15;
 	      company = &rx_msg->data[5];
 	      family = &rx_msg->data[6 + offset];
@@ -2460,16 +2578,12 @@ connector_handshake_midi (struct connector *connector)
 			offset ? company[1] : 0,
 			offset ? company[2] : 0,
 			family[0], family[1], model[0], model[1]);
+
 	      snprintf (connector->fw_version, LABEL_MAX,
 			"%d.%d.%d.%d", version[0], version[1], version[2],
 			version[3]);
 
 	      connector->device_name = strdup (connector->device_desc.name);
-	    }
-	  else
-	    {
-	      error_print ("Unexpected Identity Reply length\n");
-	      err = -EIO;
 	    }
 	}
       else
@@ -2481,7 +2595,11 @@ connector_handshake_midi (struct connector *connector)
     }
   else
     {
-      err = -EIO;
+      debug_print (1,
+		   "Unexpected Identity Reply length. Asuming SDS only...\n");
+      connector->device_desc.name = strdup (_("unknown"));
+      connector->device_name = strdup (_("unknown"));
+      connector->fw_version = strdup (_("unknown"));
     }
 
   return err;
@@ -2534,6 +2652,8 @@ connector_handshake_elektron (struct connector *connector,
 	  free_msg (rx_msg);
 	}
     }
+
+  connector->upgrade_os = connector_upgrade_os;
 
   snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
 	    connector->device_desc.name,
@@ -2647,7 +2767,7 @@ connector_init (struct connector *connector, gint card,
   err = connector_handshake_elektron (connector, device_filename);
   if (err)
     {
-      err = connector_handshake_midi (connector);
+      err = connector_handshake_midi_sds (connector);
     }
 
 cleanup_params:
@@ -2727,19 +2847,12 @@ connector_get_system_device (snd_ctl_t * ctl, int card, int device)
 
   name = snd_rawmidi_info_get_name (info);
   sub_name = snd_rawmidi_info_get_subdevice_name (info);
-  if (strncmp (sub_name, "Elektron", 8) == 0)
-    {
-      debug_print (1, "Adding hw:%d (%s) %s...\n", card, name, sub_name);
-      connector_system_device =
-	malloc (sizeof (struct connector_system_device));
-      connector_system_device->card = card;
-      connector_system_device->name = strdup (sub_name);
-      return connector_system_device;
-    }
-  else
-    {
-      return NULL;
-    }
+
+  debug_print (1, "Adding hw:%d (%s) %s...\n", card, name, sub_name);
+  connector_system_device = malloc (sizeof (struct connector_system_device));
+  connector_system_device->card = card;
+  connector_system_device->name = strdup (sub_name);
+  return connector_system_device;
 }
 
 static void
@@ -3296,7 +3409,7 @@ connector_download_data_prefix (const gchar * path, GByteArray * output,
       return -EIO;
     }
 
-  usleep (REST_TIME);
+  usleep (REST_TIME_US);
 
   jidbe = htobe32 (jid);
 
@@ -3304,16 +3417,9 @@ connector_download_data_prefix (const gchar * path, GByteArray * output,
   seq = 0;
   last = 0;
   control->data = NULL;
-  if (control)
-    {
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
-    }
-  else
-    {
-      active = TRUE;
-    }
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
   while (!last && active)
     {
       tx_msg =
@@ -3384,7 +3490,7 @@ connector_download_data_prefix (const gchar * path, GByteArray * output,
 	  g_mutex_unlock (&control->mutex);
 	}
 
-      usleep (REST_TIME);
+      usleep (REST_TIME_US);
     }
 
   return connector_close_datum (connector, jid, O_RDONLY, 0);
@@ -3513,38 +3619,43 @@ connector_download_raw_pst_pkg (const gchar * path, GByteArray * output,
 				 connector_download_raw);
 }
 
-gchar *
-connector_get_upload_path (struct connector *connector,
-			   struct item_iterator *remote_iter,
-			   const struct fs_operations *ops,
-			   const gchar * dst_dir, const gchar * src_path,
-			   gint32 * next_index)
+static gchar *
+connector_get_upload_path_smplrw (const struct fs_operations *ops,
+				  const gchar * dst_dir,
+				  const gchar * src_path, gint32 * next_index,
+				  struct item_iterator *remote_iter,
+				  void *connector)
 {
-  gchar *path, *indexs, *namec, *name, *aux;
-  gboolean new;
+  gchar *path, *namec, *name, *aux;
 
-  if (ops->fs == FS_SAMPLES || ops->fs == FS_RAW_ALL
-      || ops->fs == FS_RAW_PRESETS)
+  namec = strdup (src_path);
+  name = basename (namec);
+  remove_ext (name);
+  aux = chain_path (dst_dir, name);
+  g_free (namec);
+
+  if (ops->fs == FS_RAW_ALL || ops->fs == FS_RAW_PRESETS)
     {
-      namec = strdup (src_path);
-      name = basename (namec);
-      remove_ext (name);
-      aux = chain_path (dst_dir, name);
-      g_free (namec);
-
-      if (ops->fs == FS_RAW_ALL || ops->fs == FS_RAW_PRESETS)
-	{
-	  path = connector_add_ext_to_mc_snd (aux);
-	  g_free (aux);
-	}
-      else
-	{
-	  path = aux;
-	}
-      return path;
+      path = connector_add_ext_to_mc_snd (aux);
+      g_free (aux);
     }
+  else
+    {
+      path = aux;
+    }
+  return path;
+}
 
-  new = FALSE;
+static gchar *
+connector_get_upload_path_data (const struct fs_operations *ops,
+				const gchar * dst_dir, const gchar * src_path,
+				gint32 * next_index,
+				struct item_iterator *remote_iter,
+				void *connector)
+{
+  gchar *indexs, *path;
+  gboolean new = FALSE;
+
   if (!remote_iter)
     {
       new = TRUE;
@@ -3586,7 +3697,7 @@ connector_get_upload_path (struct connector *connector,
   return path;
 }
 
-gchar *
+static gchar *
 connector_get_download_name (struct connector *connector,
 			     struct item_iterator *remote_iter,
 			     const struct fs_operations *ops,
@@ -3645,16 +3756,18 @@ end:
   return name;
 }
 
-gchar *
-connector_get_download_path (struct connector *connector,
-			     struct item_iterator *remote_iter,
-			     const struct fs_operations *ops,
-			     const gchar * dst_dir, const gchar * src_path)
+static gchar *
+connector_get_download_path (const struct fs_operations *ops,
+			     const gchar * dst_dir, const gchar * src_path,
+			     struct item_iterator *remote_iter, void *data)
 {
   gchar *path, *src_pathc, *name, *dl_ext, *filename;
   const gchar *src_fpath, *md_ext, *ext = get_ext (src_path);
+  struct connector *connector = data;
 
-  // Example: 0:/soundbanks/A/1/.metadata
+  // Examples:
+  // 0:/soundbanks/A/1/.metadata
+  // 0:/loops/sample
 
   src_pathc = strdup (src_path);
   if (ext && strcmp (ext, "metadata") == 0)
@@ -3671,7 +3784,7 @@ connector_get_download_path (struct connector *connector,
   name = connector_get_download_name (connector, remote_iter, ops, src_fpath);
   if (name)
     {
-      dl_ext = ops->get_device_ext (&connector->device_desc, ops);
+      dl_ext = ops->get_ext (&connector->device_desc, ops);
       filename = malloc (PATH_MAX);
       snprintf (filename, PATH_MAX, "%s.%s%s", name, dl_ext, md_ext);
       path = chain_path (dst_dir, filename);
@@ -3720,7 +3833,7 @@ connector_upload_data_prefix (const gchar * path, GByteArray * array,
       goto end;
     }
 
-  usleep (REST_TIME);
+  usleep (REST_TIME_US);
 
   jidbe = htobe32 (jid);
 
@@ -3772,7 +3885,7 @@ connector_upload_data_prefix (const gchar * path, GByteArray * array,
 	  goto end;
 	}
 
-      usleep (REST_TIME);
+      usleep (REST_TIME_US);
 
       if (!connector_get_msg_status (rx_msg))
 	{
@@ -3808,13 +3921,10 @@ connector_upload_data_prefix (const gchar * path, GByteArray * array,
 	     total, offset);
 	}
 
-      if (control)
-	{
-	  set_job_control_progress (control, offset / (gdouble) array->len);
-	  g_mutex_lock (&control->mutex);
-	  active = control->active;
-	  g_mutex_unlock (&control->mutex);
-	}
+      set_job_control_progress (control, offset / (gdouble) array->len);
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
     }
 
   debug_print (2, "%d bytes sent\n", offset);
@@ -3900,8 +4010,8 @@ connector_upload_raw_pst_pkg (const gchar * path, GByteArray * input,
 }
 
 static gchar *
-connector_get_sample_ext (const struct connector_device_desc *desc,
-			  const struct fs_operations *ops)
+connector_get_fs_ext (const struct device_desc *desc,
+		      const struct fs_operations *ops)
 {
   gchar *ext = malloc (LABEL_MAX);
   snprintf (ext, LABEL_MAX, "%s", ops->type_ext);
@@ -3909,8 +4019,8 @@ connector_get_sample_ext (const struct connector_device_desc *desc,
 }
 
 static gchar *
-connector_get_device_ext (const struct connector_device_desc *desc,
-			  const struct fs_operations *ops)
+connector_get_dev_and_fs_ext (const struct device_desc *desc,
+			      const struct fs_operations *ops)
 {
   gchar *ext = malloc (LABEL_MAX);
   snprintf (ext, LABEL_MAX, "%s%s", desc->alias, ops->type_ext);
@@ -3933,4 +4043,557 @@ connector_disable_dir_cache (struct connector *connector)
   g_hash_table_destroy (connector->dir_cache);
   connector->dir_cache = NULL;
   g_mutex_unlock (&connector->mutex);
+}
+
+static gchar *
+sds_get_upload_path (const struct fs_operations *ops,
+		     const gchar * dst_dir,
+		     const gchar * src_path, gint32 * next_index,
+		     struct item_iterator *remote_iter, void *connector)
+{
+  //In this case, dst_dir must include the index, ':' and the sample name.
+  return strdup (dst_dir);
+}
+
+static gchar *
+sds_get_download_path (const struct fs_operations *ops,
+		       const gchar * dst_dir,
+		       const gchar * src_path,
+		       struct item_iterator *remote_iter, void *connector)
+{
+  GByteArray *tx_msg, *rx_msg;
+  gchar *name = malloc (LABEL_MAX);
+  gchar *src_path_copy = strdup (src_path);
+  gchar *filename = basename (src_path_copy);
+  gint index = atoi (filename);
+
+  tx_msg = g_byte_array_new ();
+  g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
+		       sizeof (SDS_SAMPLE_NAME_REQUEST));
+  tx_msg->data[5] = index % 128;
+  tx_msg->data[6] = index / 128;
+  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+  if (rx_msg)
+    {
+      snprintf (name, LABEL_MAX, "%s/%s.wav", dst_dir, &rx_msg->data[5]);
+      free_msg (rx_msg);
+    }
+  else
+    {
+      snprintf (name, LABEL_MAX, "%s/%d.wav", dst_dir, index);
+    }
+
+  g_free (src_path_copy);
+  return name;
+}
+
+static guint
+sds_get_bytes_value_right_just (guint8 * data, gint length)
+{
+  gint value = 0;
+  for (gint i = 0, shift = 0; i < length; i++, shift += 7)
+    {
+      value |= data[i] << shift;
+    }
+  return value;
+}
+
+static void
+sds_set_bytes_value_right_just (guint8 * data, gint length, guint value)
+{
+  for (gint i = 0, shift = 0; i < length; i++, shift += 7)
+    {
+      *data = 0x7f & (value >> shift);
+      data++;
+    }
+}
+
+static gint16
+sds_get_gint16_value_left_just (guint8 * data, gint length, guint bits)
+{
+  guint value = 0;
+  gint16 svalue;
+  for (gint i = length - 1, shift = 0; i >= 0; i--, shift += 7)
+    {
+      value |= (((guint) data[i]) << shift);
+    }
+  value >>= length * 7 - bits;
+  svalue = (gint16) (value - 0x8000);
+  return svalue;
+}
+
+static void
+sds_set_gint16_value_left_just (guint8 * data, gint length, guint bits,
+				gint16 svalue)
+{
+  gint value = svalue;
+  value += (guint) 0x8000;
+  value <<= length * 7 - bits;
+  for (gint i = length - 1, shift = 0; i >= 0; i--, shift += 7)
+    {
+      data[i] = (guint8) (0x7f & (value >> shift));
+    }
+}
+
+static guint8
+sds_checksum (guint8 * data)
+{
+  guint8 checksum = 0;
+  for (int i = SDS_DATA_PACKET_CKSUM_START; i < SDS_DATA_PACKET_CKSUM_POS;
+       i++)
+    {
+      checksum ^= data[i];
+    }
+  checksum &= 0x7F;
+  return checksum;
+}
+
+static gint
+sds_download (const gchar * path, GByteArray * output,
+	      struct job_control *control, void *data)
+{
+  guint bits, id, period, words, packet_counter, word_size, read_bytes,
+    bytes_per_word, total_words;
+  gint16 sample;
+  double sample_rate;
+  GByteArray *tx_msg, *rx_msg;
+  gchar *path_copy, *index;
+  guint8 *dataptr;
+  gboolean active, header_resp;
+  struct sample_loop_data *sample_loop_data;
+  struct sysex_transfer transfer;
+  struct connector *connector = data;
+
+  path_copy = strdup (path);
+  index = basename (path_copy);
+  id = atoi (index);
+
+  tx_msg = g_byte_array_new ();
+  g_byte_array_append (tx_msg, SDS_SAMPLE_REQUEST,
+		       sizeof (SDS_SAMPLE_REQUEST));
+  tx_msg->data[4] = id % 128;
+  tx_msg->data[5] = id / 128;
+  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+
+  bits = rx_msg->data[6];
+  word_size = (gint) ceil (bits / 8.0);
+  if (word_size != 2)
+    {
+      error_print ("%d bits resolution not supported\n", bits);
+      return -EINVAL;
+    }
+  if (bits < 15)
+    {
+      bytes_per_word = 2;
+    }
+  else if (bits < 22)
+    {
+      bytes_per_word = 3;
+    }
+  else
+    {
+      bytes_per_word = 4;
+    }
+  debug_print (1,
+	       "Resolution: %d bits (%d bytes per word, word size %d bytes)\n",
+	       bits, bytes_per_word, word_size);
+
+  period =
+    sds_get_bytes_value_right_just (&rx_msg->data[7], SDS_BYTES_PER_WORD);
+  sample_rate = 1.0e9 / period;
+  debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n", sample_rate,
+	       period);
+
+  words =
+    sds_get_bytes_value_right_just (&rx_msg->data[10], SDS_BYTES_PER_WORD);
+  debug_print (1, "Words: %d\n", words);
+
+  sample_loop_data = malloc (sizeof (struct elektron_sample_info));
+  sample_loop_data->start = 0;
+  sample_loop_data->end = words - 1;
+  control->data = sample_loop_data;
+  control->parts = 1;
+  control->part = 0;
+  set_job_control_progress (control, 0.0);
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
+
+  packet_counter = 0;
+  total_words = 0;
+  header_resp = TRUE;
+  while (total_words < words && active)
+    {
+      gboolean ok = TRUE;
+      gint packet_num = header_resp ? 0 : packet_counter;
+      gint next_packet_num = header_resp ? 0 : packet_counter + 1;
+      next_packet_num = next_packet_num == 0x80 ? 0 : next_packet_num;
+      gint errors = 0;
+      while (errors < 10)
+	{
+	  tx_msg = g_byte_array_new ();
+	  if (ok)
+	    {
+	      g_byte_array_append (tx_msg, SDS_ACK, sizeof (SDS_ACK));
+	      tx_msg->data[4] = packet_num;
+	    }
+	  else
+	    {
+	      g_byte_array_append (tx_msg, SDS_NAK, sizeof (SDS_NAK));
+	      tx_msg->data[4] = next_packet_num;
+	    }
+	  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+	  if (!rx_msg)
+	    {
+	      transfer.active = TRUE;
+	      transfer.raw = g_byte_array_new ();
+	      g_byte_array_append (transfer.raw, SDS_CANCEL,
+				   sizeof (SDS_CANCEL));
+	      tx_msg->data[4] = packet_num;
+	      g_mutex_lock (&connector->mutex);
+	      connector_tx_sysex (&transfer, connector);
+	      g_mutex_unlock (&connector->mutex);
+	      free_msg (transfer.raw);
+
+	      return -EIO;
+	    }
+
+	  if (rx_msg->len == SDS_DATA_PACKET_LEN
+	      && rx_msg->data[4] == next_packet_num
+	      && sds_checksum (rx_msg->data) ==
+	      rx_msg->data[SDS_DATA_PACKET_CKSUM_POS])
+	    {
+	      //Add checksum code
+	      if (header_resp)
+		{
+		  header_resp = FALSE;
+		}
+	      else
+		{
+		  packet_counter++;
+		  if (packet_counter == 0x80)
+		    {
+		      packet_counter = 0;
+		    }
+		}
+
+	      break;
+	    }
+
+	  error_print ("Package %d expected. NAK!\n", next_packet_num);
+	  errors++;
+
+	  free_msg (rx_msg);
+	  ok = FALSE;
+
+	  usleep (REST_TIME_US);
+	}
+
+      if (errors == 10)
+	{
+	  g_mutex_lock (&control->mutex);
+	  control->active = FALSE;
+	  g_mutex_unlock (&control->mutex);
+	  active = FALSE;
+	}
+
+      read_bytes = 0;
+      dataptr = &rx_msg->data[5];
+      while (active && read_bytes < SDS_DATA_PACKET_PAYLOAD_LEN
+	     && total_words < words)
+	{
+	  sample =
+	    sds_get_gint16_value_left_just (dataptr, bytes_per_word, bits);
+	  g_byte_array_append (output, (guint8 *) & sample, sizeof (sample));
+
+	  dataptr += bytes_per_word;
+	  read_bytes += bytes_per_word;
+
+	  total_words++;
+
+	  if (control)
+	    {
+	      set_job_control_progress (control,
+					total_words / (double) (words + 1));
+	      g_mutex_lock (&control->mutex);
+	      active = control->active;
+	      g_mutex_unlock (&control->mutex);
+	    }
+	}
+
+      usleep (REST_TIME_US);
+
+      free_msg (rx_msg);
+    }
+
+  transfer.active = TRUE;
+  transfer.raw = g_byte_array_new ();
+  if (active)
+    {
+      g_byte_array_append (transfer.raw, SDS_ACK, sizeof (SDS_ACK));
+    }
+  else
+    {
+      g_byte_array_append (transfer.raw, SDS_CANCEL, sizeof (SDS_CANCEL));
+    }
+  transfer.raw->data[4] = packet_counter;
+  g_mutex_lock (&connector->mutex);
+  connector_tx_sysex (&transfer, connector);
+  g_mutex_unlock (&connector->mutex);
+  free_msg (transfer.raw);
+
+  set_job_control_progress (control, 1.0);
+
+  return 0;
+}
+
+static gint
+sds_upload_wait_ack (GByteArray * rx_msg, void *data, guint packet_num)
+{
+  gint err;
+  struct sysex_transfer transfer;
+  struct connector *connector = data;
+
+  if (!rx_msg)
+    {
+      err = -EIO;
+      goto end;
+    }
+
+  rx_msg->data[4] = 0;
+  if (!memcmp (rx_msg->data, SDS_WAIT, sizeof (SDS_WAIT)))
+    {
+      free_msg (rx_msg);
+      transfer.active = TRUE;
+      transfer.timeout = SDS_ACK_WAIT_TIME_MS;
+      transfer.batch = FALSE;
+      debug_print (2, "Waiting for an ACK...\n");
+      if (connector_rx_sysex (&transfer, connector))
+	{
+	  return -EIO;
+	}
+      rx_msg = transfer.raw;
+    }
+
+  if (rx_msg->len == sizeof (SDS_ACK) && rx_msg->data[4] == packet_num)
+    {
+      rx_msg->data[4] = 0;
+      if (!memcmp (rx_msg->data, SDS_NAK, sizeof (SDS_NAK)))
+	{
+	  err = -EINVAL;
+	}
+      else if (!memcmp (rx_msg->data, SDS_CANCEL, sizeof (SDS_CANCEL)))
+	{
+	  err = -EIO;
+	}
+      else
+	{
+	  err = 0;
+	}
+    }
+  else
+    {
+      err = -EIO;
+    }
+
+  free_msg (rx_msg);
+end:
+  usleep (REST_TIME_US);
+  return err;
+}
+
+static gint
+sds_upload (const gchar * path, GByteArray * input,
+	    struct job_control *control, void *data)
+{
+  GByteArray *tx_msg, *rx_msg;
+  gchar *path_copy, *index_name, *name;
+  gint err = 0;
+  guint8 packet_num;
+  gint16 *frame;
+  gboolean active;
+  struct connector *connector = data;
+  guint name_len, word, words, words_per_packet, id, packets, period =
+    1.0e9 / ELEKTRON_SAMPLE_RATE;
+
+  path_copy = strdup (path);
+  index_name = basename (path_copy);
+  id = (gint) strtol (index_name, &name, 10);
+  name++;			//Skip ':'
+
+  tx_msg = g_byte_array_sized_new (sizeof (SDS_DUMP_HEADER));
+  g_byte_array_append (tx_msg, SDS_DUMP_HEADER, sizeof (SDS_DUMP_HEADER));
+  tx_msg->data[4] = id % 128;
+  tx_msg->data[5] = id / 128;
+  tx_msg->data[6] = 16;
+
+  debug_print (1,
+	       "Resolution: %d bits (%d bytes per word, word size %d bytes)\n",
+	       16, SDS_BYTES_PER_WORD, 2);
+  debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n",
+	       (double) ELEKTRON_SAMPLE_RATE, period);
+
+  words = input->len / 2;	//bytes to words (frames)
+  frame = (gint16 *) input->data;
+  sds_set_bytes_value_right_just (&tx_msg->data[7], 3, period);
+  sds_set_bytes_value_right_just (&tx_msg->data[10], 3, words);
+  tx_msg->data[19] = 0x7f;	//No loop
+
+  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+  err = sds_upload_wait_ack (rx_msg, connector, 0);
+  if (err)
+    {
+      goto end;
+    }
+
+  control->parts = 1;
+  control->part = 0;
+  set_job_control_progress (control, 0.0);
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
+
+  words_per_packet = SDS_DATA_PACKET_PAYLOAD_LEN / SDS_BYTES_PER_WORD;
+  packets = ceil (words / (double) words_per_packet);
+  packet_num = 0;
+  word = 0;
+  debug_print (1, "Words: %d\n", words);
+  debug_print (1, "Packets: %d\n", packets);
+  guint i = 0;
+  while (i < packets && active)
+    {
+      tx_msg = g_byte_array_sized_new (SDS_DATA_PACKET_LEN);
+      g_byte_array_append (tx_msg, SDS_DATA_PACKET_HEADER,
+			   sizeof (SDS_DATA_PACKET_HEADER));
+      g_byte_array_set_size (tx_msg, SDS_DATA_PACKET_LEN);
+      tx_msg->data[4] = packet_num;
+      memset (&tx_msg->data[sizeof (SDS_DATA_PACKET_HEADER)], 0,
+	      SDS_DATA_PACKET_PAYLOAD_LEN);
+      tx_msg->data[SDS_DATA_PACKET_LEN - 1] = 0xf7;
+
+      guint8 *data = &tx_msg->data[sizeof (SDS_DATA_PACKET_HEADER)];
+      gint16 *prev_frame = frame;
+      guint prev_word = word;
+      for (guint j = 0; j < SDS_DATA_PACKET_PAYLOAD_LEN;
+	   j += SDS_BYTES_PER_WORD)
+	{
+	  if (word < words)
+	    {
+	      sds_set_gint16_value_left_just (data, SDS_BYTES_PER_WORD,
+					      SDS_BITS, *frame);
+	      data += SDS_BYTES_PER_WORD;
+	      frame++;
+	      word++;
+	    }
+	}
+      tx_msg->data[SDS_DATA_PACKET_CKSUM_POS] = sds_checksum (tx_msg->data);
+
+      rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+      err = sds_upload_wait_ack (rx_msg, connector, packet_num);
+      if (err == -EINVAL)	//NAK packet
+	{
+	  frame = prev_frame;
+	  word = prev_word;
+	  continue;
+	}
+      else if (err)		//CANCEL packet
+	{
+	  goto end;
+	}
+
+      packet_num++;
+      if (packet_num == 0x80)
+	{
+	  packet_num = 0;
+	}
+
+      i++;
+
+      set_job_control_progress (control, i / (double) (packets + 1));
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
+    }
+
+  if (*name && active)
+    {
+      tx_msg = g_byte_array_new ();
+      g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_HEADER,
+			   sizeof (SDS_SAMPLE_NAME_HEADER));
+      tx_msg->data[5] = id % 128;
+      tx_msg->data[6] = id / 128;
+
+      name_len = strlen (name);
+      name_len = name_len > 127 ? 127 : name_len;
+      g_byte_array_append (tx_msg, (guint8 *) & name_len, 1);
+      g_byte_array_append (tx_msg, (guint8 *) name, name_len);
+
+      g_byte_array_append (tx_msg, (guint8 *) "\xf7", 1);
+      rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+      if (rx_msg)
+	{
+	  free_msg (rx_msg);
+	}
+    }
+
+  set_job_control_progress (control, 1.0);
+
+end:
+  g_free (path_copy);
+  return err;
+}
+
+static void
+sds_free_iterator_data (void *iter_data)
+{
+  g_free (iter_data);
+}
+
+static guint
+sds_next_dentry (struct item_iterator *iter)
+{
+  gint index = *((gint *) iter->data);
+
+  if (iter->item.name != NULL)
+    {
+      g_free (iter->item.name);
+    }
+
+  if (index < SDS_SAMPLE_LIMIT)
+    {
+      iter->item.index = index;
+      iter->item.name = g_malloc (LABEL_MAX);
+      snprintf (iter->item.name, LABEL_MAX, "%d", index);
+      iter->item.type = ELEKTROID_FILE;
+      iter->item.size = -1;
+      (*((gint *) iter->data))++;
+      return 0;
+    }
+  else
+    {
+      return -ENOENT;
+    }
+}
+
+static gint
+sds_read_dir (struct item_iterator *iter, const gchar * path, void *data_)
+{
+  if (strcmp (path, "/"))
+    {
+      return -ENOTDIR;
+    }
+
+  iter->data = g_malloc (sizeof (guint));
+  *((gint *) iter->data) = 0;
+  iter->next = sds_next_dentry;
+  iter->free = sds_free_iterator_data;
+  iter->item.name = NULL;
+  iter->item.type = ELEKTROID_FILE;
+  iter->item.size = -1;
+
+  return 0;
 }
