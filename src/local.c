@@ -39,6 +39,7 @@ static gint local_copy_iterator (struct item_iterator *,
 
 const struct fs_operations FS_LOCAL_OPERATIONS = {
   .fs = 0,
+  .name = "local",
   .readdir = local_read_dir,
   .mkdir = local_mkdir,
   .delete = local_delete,

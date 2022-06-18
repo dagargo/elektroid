@@ -182,12 +182,12 @@ static gint connector_copy_iterator (struct item_iterator *,
 				     struct item_iterator *, gboolean);
 
 static gchar *connector_get_sample_ext (const struct
-					     connector_device_desc *,
-					     const struct fs_operations *);
+					connector_device_desc *,
+					const struct fs_operations *);
 
 static gchar *connector_get_device_ext (const struct
-					     connector_device_desc *,
-					     const struct fs_operations *);
+					connector_device_desc *,
+					const struct fs_operations *);
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -249,6 +249,7 @@ static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
+  .name = "sample",
   .readdir = connector_read_samples_dir,
   .mkdir = connector_create_samples_dir,
   .delete = connector_delete_samples_item,
@@ -268,6 +269,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
 
 static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .fs = FS_RAW_ALL,
+  .name = "raw",
   .readdir = connector_read_raw_dir,
   .mkdir = connector_create_raw_dir,
   .delete = connector_delete_raw_item,
@@ -287,6 +289,7 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
 
 static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .fs = FS_RAW_PRESETS,
+  .name = "preset",
   .readdir = connector_read_raw_dir,
   .mkdir = connector_create_raw_dir,
   .delete = connector_delete_raw_item,
@@ -306,6 +309,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .fs = FS_DATA_ALL,
+  .name = "data",
   .readdir = connector_read_data_dir_any,
   .mkdir = NULL,
   .delete = connector_clear_data_item_any,
@@ -325,6 +329,7 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .fs = FS_DATA_PRJ,
+  .name = "project",
   .readdir = connector_read_data_dir_prj,
   .mkdir = NULL,
   .delete = connector_clear_data_item_prj,
@@ -344,6 +349,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .fs = FS_DATA_SND,
+  .name = "sound",
   .readdir = connector_read_data_dir_snd,
   .mkdir = NULL,
   .delete = connector_clear_data_item_snd,
@@ -384,13 +390,29 @@ connector_free_iterator_data (void *iter_data)
 }
 
 const struct fs_operations *
-connector_get_fs_operations (enum connector_fs fs)
+connector_get_fs_operations_by_id (enum connector_fs fs)
 {
   const struct fs_operations **fs_operations = FS_OPERATIONS;
   while (*fs_operations)
     {
       const struct fs_operations *ops = *fs_operations;
       if (ops->fs == fs)
+	{
+	  return ops;
+	}
+      fs_operations++;
+    }
+  return NULL;
+}
+
+const struct fs_operations *
+connector_get_fs_operations_by_name (const char *name)
+{
+  const struct fs_operations **fs_operations = FS_OPERATIONS;
+  while (*fs_operations)
+    {
+      const struct fs_operations *ops = *fs_operations;
+      if (strcmp (ops->name, name) == 0)
 	{
 	  return ops;
 	}
@@ -2523,7 +2545,7 @@ connector_handshake_elektron (struct connector *connector,
 
 gint
 connector_init (struct connector *connector, gint card,
-		const char *device_filename)
+		const gchar * device_filename)
 {
   gint err;
   snd_rawmidi_params_t *params;
@@ -3879,7 +3901,7 @@ connector_upload_raw_pst_pkg (const gchar * path, GByteArray * input,
 
 static gchar *
 connector_get_sample_ext (const struct connector_device_desc *desc,
-			       const struct fs_operations *ops)
+			  const struct fs_operations *ops)
 {
   gchar *ext = malloc (LABEL_MAX);
   snprintf (ext, LABEL_MAX, "%s", ops->type_ext);
@@ -3888,7 +3910,7 @@ connector_get_sample_ext (const struct connector_device_desc *desc,
 
 static gchar *
 connector_get_device_ext (const struct connector_device_desc *desc,
-			       const struct fs_operations *ops)
+			  const struct fs_operations *ops)
 {
   gchar *ext = malloc (LABEL_MAX);
   snprintf (ext, LABEL_MAX, "%s%s", desc->alias, ops->type_ext);

@@ -31,18 +31,14 @@
 #include "utils.h"
 
 #define GET_FS_OPS_OFFSET(member) offsetof(struct fs_operations, member)
-#define GET_FS_OPS_FUNC(type,fs,offset) (*(((type *) (((gchar *) connector_get_fs_operations(fs)) + offset))))
+#define GET_FS_OPS_FUNC(type,fs,offset) (*(((type *) (((gchar *) fs) + offset))))
 #define CHECK_FS_OPS_FUNC(f) if (!(f)) {error_print ("Operation not implemented\n"); return EXIT_FAILURE;}
 
 static struct connector connector;
 static struct job_control control;
-static const char *devices_filename;
+static const gchar *devices_filename;
 
 typedef void (*print_item) (struct item_iterator *);
-
-static const gchar *CLI_FSS[] = {
-  "sample", "raw", "preset", "data", "project", "sound"
-};
 
 static void
 print_smplrw (struct item_iterator *iter)
@@ -76,7 +72,7 @@ static const gchar *
 cli_get_path (gchar * device_path)
 {
   gint len = strlen (device_path);
-  char *path = device_path;
+  gchar *path = device_path;
   gint i = 0;
 
   while (path[0] != '/' && i < len)
@@ -107,11 +103,11 @@ cli_ld ()
 }
 
 static gint
-cli_connect (const char *device_path, enum connector_fs fs)
+cli_connect (const gchar * device_path, const struct fs_operations *fs_ops)
 {
   gint card = atoi (device_path);
   gint ret = connector_init (&connector, card, devices_filename);
-  if (!ret && fs && !(connector.device_desc.filesystems & fs))
+  if (!ret && fs_ops && !(connector.device_desc.filesystems & fs_ops->fs))
     {
       error_print ("Filesystem not supported for device '%s'\n",
 		   connector.device_desc.name);
@@ -121,13 +117,12 @@ cli_connect (const char *device_path, enum connector_fs fs)
 }
 
 static int
-cli_list (int argc, char *argv[], int optind, enum connector_fs fs,
-	  print_item print)
+cli_list (int argc, gchar * argv[], int optind,
+	  const struct fs_operations *fs_ops, print_item print)
 {
   const gchar *path;
   struct item_iterator iter;
   gchar *device_path;
-  const struct fs_operations *fs_ops = connector_get_fs_operations (fs);
 
   if (optind == argc)
     {
@@ -139,7 +134,7 @@ cli_list (int argc, char *argv[], int optind, enum connector_fs fs,
       device_path = argv[optind];
     }
 
-  if (cli_connect (device_path, fs))
+  if (cli_connect (device_path, fs_ops))
     {
       return EXIT_FAILURE;
     }
@@ -162,8 +157,8 @@ cli_list (int argc, char *argv[], int optind, enum connector_fs fs,
 }
 
 static int
-cli_command_path (int argc, char *argv[], int optind, enum connector_fs fs,
-		  ssize_t member_offset)
+cli_command_path (int argc, gchar * argv[], int optind,
+		  const struct fs_operations *fs_ops, ssize_t member_offset)
 {
   const gchar *path;
   gchar *device_path;
@@ -180,21 +175,22 @@ cli_command_path (int argc, char *argv[], int optind, enum connector_fs fs,
       device_path = argv[optind];
     }
 
-  if (cli_connect (device_path, fs))
+  if (cli_connect (device_path, fs_ops))
     {
       return EXIT_FAILURE;
     }
 
   path = cli_get_path (device_path);
 
-  f = GET_FS_OPS_FUNC (fs_path_func, fs, member_offset);
+  f = GET_FS_OPS_FUNC (fs_path_func, fs_ops, member_offset);
   CHECK_FS_OPS_FUNC (f);
   ret = f (path, &connector);
   return ret ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 static int
-cli_command_src_dst (int argc, char *argv[], int optind, enum connector_fs fs,
+cli_command_src_dst (int argc, gchar * argv[], int optind,
+		     const struct fs_operations *fs_ops,
 		     ssize_t member_offset)
 {
   const gchar *src_path, *dst_path;
@@ -238,7 +234,7 @@ cli_command_src_dst (int argc, char *argv[], int optind, enum connector_fs fs,
       return EXIT_FAILURE;
     }
 
-  f = GET_FS_OPS_FUNC (fs_src_dst_func, fs, member_offset);
+  f = GET_FS_OPS_FUNC (fs_src_dst_func, fs_ops, member_offset);
   CHECK_FS_OPS_FUNC (f);
   src_path = cli_get_path (device_src_path);
   dst_path = cli_get_path (device_dst_path);
@@ -247,7 +243,7 @@ cli_command_src_dst (int argc, char *argv[], int optind, enum connector_fs fs,
 }
 
 static int
-cli_info (int argc, char *argv[], int optind)
+cli_info (int argc, gchar * argv[], int optind)
 {
   gchar *device_path;
   gchar *comma;
@@ -269,13 +265,16 @@ cli_info (int argc, char *argv[], int optind)
 
   printf ("%s filesystems=", connector.device_name);
   comma = "";
-  for (int fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs <<= 1, i++)
+  int fs = 1;
+  while (fs <= sizeof (int) * 8)
     {
       if (connector.device_desc.filesystems & fs)
 	{
-	  printf ("%s%s", comma, CLI_FSS[i]);
+	  printf ("%s%s", comma,
+		  connector_get_fs_operations_by_id (fs)->name);
+	  comma = ",";
 	}
-      comma = ",";
+      fs <<= 1;
     }
   printf ("\n");
 
@@ -283,7 +282,7 @@ cli_info (int argc, char *argv[], int optind)
 }
 
 static int
-cli_df (int argc, char *argv[], int optind)
+cli_df (int argc, gchar * argv[], int optind)
 {
   gchar *device_path;
   gchar *size;
@@ -342,7 +341,7 @@ cli_df (int argc, char *argv[], int optind)
 }
 
 static int
-cli_upgrade (int argc, char *argv[], int optind)
+cli_upgrade (int argc, gchar * argv[], int optind)
 {
   gint res;
   const gchar *src_path;
@@ -393,13 +392,13 @@ cli_upgrade (int argc, char *argv[], int optind)
 }
 
 static int
-cli_download (int argc, char *argv[], int optind, enum connector_fs fs)
+cli_download (int argc, gchar * argv[], int optind,
+	      const struct fs_operations *fs_ops)
 {
   const gchar *src_path;
   gchar *device_src_path, *download_path;
   gint res;
   GByteArray *array;
-  const struct fs_operations *fs_ops;
 
   if (optind == argc)
     {
@@ -411,12 +410,11 @@ cli_download (int argc, char *argv[], int optind, enum connector_fs fs)
       device_src_path = argv[optind];
     }
 
-  if (cli_connect (device_src_path, fs))
+  if (cli_connect (device_src_path, fs_ops))
     {
       return EXIT_FAILURE;
     }
 
-  fs_ops = connector_get_fs_operations (fs);
   src_path = cli_get_path (device_src_path);
 
   control.active = TRUE;
@@ -446,14 +444,14 @@ end:
 }
 
 static int
-cli_upload (int argc, char *argv[], int optind, enum connector_fs fs)
+cli_upload (int argc, gchar * argv[], int optind,
+	    const struct fs_operations *fs_ops)
 {
   const gchar *dst_dir;
   gchar *src_path, *device_dst_path, *upload_path;
   gint res;
   GByteArray *array;
   gint32 index = 1;
-  const struct fs_operations *fs_ops;
 
   if (optind == argc)
     {
@@ -476,12 +474,11 @@ cli_upload (int argc, char *argv[], int optind, enum connector_fs fs)
       device_dst_path = argv[optind];
     }
 
-  if (cli_connect (device_dst_path, fs))
+  if (cli_connect (device_dst_path, fs_ops))
     {
       return EXIT_FAILURE;
     }
 
-  fs_ops = connector_get_fs_operations (fs);
   dst_dir = cli_get_path (device_dst_path);
 
   upload_path = connector_get_upload_path (&connector, NULL, fs_ops,
@@ -505,27 +502,8 @@ cleanup:
   return res ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-static gint
-get_fs_operations_from_type (const gchar * type)
-{
-  if (!strlen (type))
-    {
-      return 0;
-    }
-
-  for (gint fs = FS_SAMPLES, i = 0; fs <= FS_DATA_SND; fs <<= 1, i++)
-    {
-      if (strcmp (type, CLI_FSS[i]) == 0)
-	{
-	  return fs;
-	}
-    }
-
-  return -1;
-}
-
-static gint
-get_op_type_from_command (const gchar * cmd, char *op, char *type)
+static const struct fs_operations *
+get_op_type_from_command (const gchar * cmd, gchar * op, gchar * type)
 {
   gint i;
   gchar *c;
@@ -554,7 +532,7 @@ get_op_type_from_command (const gchar * cmd, char *op, char *type)
       *type = 0;
     }
 
-  return get_fs_operations_from_type (type);
+  return connector_get_fs_operations_by_name (type);
 }
 
 static void
@@ -564,16 +542,16 @@ cli_end (int sig)
 }
 
 int
-main (int argc, char *argv[])
+main (int argc, gchar * argv[])
 {
   gint c;
   gint res;
   gchar *command;
   gint vflg = 0, errflg = 0;
   struct sigaction action, old_action;
-  gint fs;
-  char op[LABEL_MAX];
-  char type[LABEL_MAX];
+  const struct fs_operations *fs_ops;
+  gchar op[LABEL_MAX];
+  gchar type[LABEL_MAX];
 
   action.sa_handler = cli_end;
   sigemptyset (&action.sa_mask);
@@ -638,21 +616,15 @@ main (int argc, char *argv[])
   if (errflg > 0)
     {
       fprintf (stderr, "%s\n", PACKAGE_STRING);
-      char *exec_name = basename (argv[0]);
+      gchar *exec_name = basename (argv[0]);
       fprintf (stderr, "Usage: %s [options] command\n", exec_name);
       exit (EXIT_FAILURE);
     }
 
-  fs = get_op_type_from_command (command, op, type);
-  debug_print (1, "Operation: '%s'; filesystem: '%s' (%d)\n", op, type, fs);
-  if (fs < 0)
-    {
-      error_print ("Filesystem '%s' not recognized\n", type);
-      res = EXIT_FAILURE;
-      goto end;
-    }
+  fs_ops = get_op_type_from_command (command, op, type);
+  debug_print (1, "Operation: '%s'; filesystem: '%s'\n", op, type);
 
-  if (!fs)
+  if (!fs_ops)
     {
       if (strcmp (command, "ld") == 0
 	  || strcmp (command, "list-devices") == 0)
@@ -675,34 +647,44 @@ main (int argc, char *argv[])
 	}
       else if (strcmp (command, "ls") == 0)
 	{
-	  res = cli_list (argc, argv, optind, FS_SAMPLES, print_smplrw);
+	  res =
+	    cli_list (argc, argv, optind,
+		      connector_get_fs_operations_by_id (FS_SAMPLES),
+		      print_smplrw);
 	}
       else if (strcmp (command, "mkdir") == 0)
 	{
 	  res =
-	    cli_command_path (argc, argv, optind, FS_SAMPLES,
+	    cli_command_path (argc, argv, optind,
+			      connector_get_fs_operations_by_id (FS_SAMPLES),
 			      GET_FS_OPS_OFFSET (mkdir));
 	}
       else if (strcmp (command, "mv") == 0)
 	{
 	  res =
-	    cli_command_src_dst (argc, argv, optind, FS_SAMPLES,
-				 GET_FS_OPS_OFFSET (move));
+	    cli_command_src_dst (argc, argv, optind,
+				 connector_get_fs_operations_by_id
+				 (FS_SAMPLES), GET_FS_OPS_OFFSET (move));
 	}
       else if (strcmp (command, "rm") == 0 || strcmp (command, "rmdir") == 0)
 	{
 	  res =
-	    cli_command_path (argc, argv, optind, FS_SAMPLES,
+	    cli_command_path (argc, argv, optind,
+			      connector_get_fs_operations_by_id (FS_SAMPLES),
 			      GET_FS_OPS_OFFSET (delete));
 	}
       else if (strcmp (command, "download") == 0
 	       || strcmp (command, "dl") == 0)
 	{
-	  res = cli_download (argc, argv, optind, FS_SAMPLES);
+	  res =
+	    cli_download (argc, argv, optind,
+			  connector_get_fs_operations_by_id (FS_SAMPLES));
 	}
       else if (strcmp (command, "upload") == 0 || strcmp (command, "ul") == 0)
 	{
-	  res = cli_upload (argc, argv, optind, FS_SAMPLES);
+	  res =
+	    cli_upload (argc, argv, optind,
+			connector_get_fs_operations_by_id (FS_SAMPLES));
 	}
       else
 	{
@@ -714,47 +696,49 @@ main (int argc, char *argv[])
 
   if (strcmp (op, "ls") == 0 || strcmp (op, "list") == 0)
     {
-      print_item print = (fs == FS_SAMPLES || fs == FS_RAW_ALL
-			  || fs ==
+      print_item print = (fs_ops->fs == FS_SAMPLES || fs_ops->fs == FS_RAW_ALL
+			  || fs_ops->fs ==
 			  FS_RAW_PRESETS) ? print_smplrw : print_data;
-      res = cli_list (argc, argv, optind, fs, print);
+      res = cli_list (argc, argv, optind, fs_ops, print);
     }
   else if (strcmp (op, "mkdir") == 0)
     {
       res =
-	cli_command_path (argc, argv, optind, fs, GET_FS_OPS_OFFSET (mkdir));
+	cli_command_path (argc, argv, optind, fs_ops,
+			  GET_FS_OPS_OFFSET (mkdir));
     }
   else if (strcmp (op, "rm") == 0 || strcmp (op, "rmdir") == 0)
     {
       res =
-	cli_command_path (argc, argv, optind, fs, GET_FS_OPS_OFFSET (delete));
+	cli_command_path (argc, argv, optind, fs_ops,
+			  GET_FS_OPS_OFFSET (delete));
     }
   else if (strcmp (op, "download") == 0 || strcmp (op, "dl") == 0)
     {
-      res = cli_download (argc, argv, optind, fs);
+      res = cli_download (argc, argv, optind, fs_ops);
     }
   else if (strcmp (op, "upload") == 0 || strcmp (op, "ul") == 0)
     {
-      res = cli_upload (argc, argv, optind, fs);
+      res = cli_upload (argc, argv, optind, fs_ops);
     }
   else if (strcmp (op, "cl") == 0)
     {
-      res = cli_command_path (argc, argv, optind, fs,
+      res = cli_command_path (argc, argv, optind, fs_ops,
 			      GET_FS_OPS_OFFSET (clear));
     }
   else if (strcmp (op, "cp") == 0)
     {
-      res = cli_command_src_dst (argc, argv, optind, fs,
+      res = cli_command_src_dst (argc, argv, optind, fs_ops,
 				 GET_FS_OPS_OFFSET (copy));
     }
   else if (strcmp (op, "sw") == 0)
     {
-      res = cli_command_src_dst (argc, argv, optind, fs,
+      res = cli_command_src_dst (argc, argv, optind, fs_ops,
 				 GET_FS_OPS_OFFSET (swap));
     }
   else if (strcmp (op, "mv") == 0)
     {
-      res = cli_command_src_dst (argc, argv, optind, fs,
+      res = cli_command_src_dst (argc, argv, optind, fs_ops,
 				 GET_FS_OPS_OFFSET (move));
     }
   else

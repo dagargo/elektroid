@@ -311,7 +311,7 @@ elektroid_set_file_extensions_for_fs (gchar ** extensions[],
     }
   else
     {
-      ops = connector_get_fs_operations (sel_fs);
+      ops = connector_get_fs_operations_by_id (sel_fs);
       *extensions = malloc (sizeof (gchar *) * 2);
       (*extensions)[0] = ops->get_device_ext (&connector.device_desc, ops);
       (*extensions)[1] = NULL;
@@ -1896,7 +1896,7 @@ elektroid_run_next_task (gpointer data)
       transfer.control.callback = elektroid_update_progress;
       transfer.src = src;
       transfer.dst = dst;
-      transfer.fs_ops = connector_get_fs_operations (fs);
+      transfer.fs_ops = connector_get_fs_operations_by_id (fs);
       debug_print (1, "Running task type %d from %s to %s (%s)...\n", type,
 		   transfer.src, transfer.dst, elektroid_get_fs_name (fs));
 
@@ -2432,7 +2432,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 				&iter, FS_LIST_STORE_ID_FIELD, &fsv);
       fs = g_value_get_uint (&fsv);
 
-      remote_browser.fs_ops = connector_get_fs_operations (fs);
+      remote_browser.fs_ops = connector_get_fs_operations_by_id (fs);
       remote_browser.file_icon = elektroid_get_inventory_icon_for_fs (fs);
       strcpy (remote_browser.dir, "/");
       browser_load_dir (&remote_browser);
@@ -3101,7 +3101,7 @@ elektroid_run (int argc, char *argv[])
     .dir = malloc (PATH_MAX),
     .check_selection = elektroid_remote_check_selection,
     .file_icon = NULL,
-    .fs_ops = connector_get_fs_operations (-1),
+    .fs_ops = connector_get_fs_operations_by_id (-1),
     .data = &connector,
     .notify_dir_change = NULL,
     .check_callback = elektroid_check_connector

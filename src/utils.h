@@ -115,11 +115,12 @@ typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
 				  struct job_control *);
 
 typedef gchar *(*fs_get_device_ext) (const struct connector_device_desc *,
-				   const struct fs_operations *);
+				     const struct fs_operations *);
 
 struct fs_operations
 {
   gint fs;
+  const gchar *name;
   fs_init_iter_func readdir;
   fs_path_func mkdir;
   fs_path_func delete;

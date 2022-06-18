@@ -104,9 +104,13 @@ struct connector_storage_stats
   guint64 bfree;
 };
 
-const struct fs_operations *connector_get_fs_operations (enum connector_fs);
+const struct fs_operations *connector_get_fs_operations_by_id (enum
+							       connector_fs);
 
-gint connector_init (struct connector *, gint, const char *);
+const struct fs_operations *connector_get_fs_operations_by_name (const gchar
+								 *);
+
+gint connector_init (struct connector *, gint, const gchar *);
 
 void connector_destroy (struct connector *);
 
