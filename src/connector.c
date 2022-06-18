@@ -3618,8 +3618,10 @@ connector_get_download_path (struct connector *connector,
   gchar *path, *src_pathc, *name, *dl_ext, *filename;
   const gchar *src_fpath, *md_ext, *ext = get_ext (src_path);
 
+  // Example: 0:/soundbanks/A/1/.metadata
+
   src_pathc = strdup (src_path);
-  if (ext && strcmp (ext, "metadata") == 0 && ops->fs != FS_SAMPLES)
+  if (ext && strcmp (ext, "metadata") == 0)
     {
       src_fpath = dirname (src_pathc);
       md_ext = ".metadata";
