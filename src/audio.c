@@ -21,20 +21,21 @@
 #include "../config.h"
 #include "audio.h"
 
-#define PA_BUFFER_LEN 4800
-#define CHANNELS 1
+#define AUDIO_SAMPLERATE 48000
+#define AUDIO_PA_BUFFER_LEN (AUDIO_SAMPLERATE / 10)
+#define AUDIO_CHANNELS 1
 
 static const pa_buffer_attr buffer_attributes = {
   .maxlength = -1,
-  .tlength = PA_BUFFER_LEN * 2,
+  .tlength = AUDIO_PA_BUFFER_LEN * 2,
   .prebuf = 0,
   .minreq = -1
 };
 
 static const pa_sample_spec sample_spec = {
   .format = PA_SAMPLE_S16LE,
-  .channels = CHANNELS,
-  .rate = 48000
+  .channels = AUDIO_CHANNELS,
+  .rate = AUDIO_SAMPLERATE
 };
 
 static void
@@ -46,7 +47,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
   gshort *v;
   gint i;
 
-  if (audio->release_frames > PA_BUFFER_LEN)
+  if (audio->release_frames > AUDIO_PA_BUFFER_LEN)
     {
       pa_stream_cork (audio->stream, 1, NULL, NULL);
       return;
@@ -344,7 +345,7 @@ audio_set_volume (struct audio *audio, gdouble volume)
     {
       debug_print (1, "Setting volume to %f...\n", volume);
       v = pa_sw_volume_from_linear (volume);
-      pa_cvolume_set (&audio->volume, CHANNELS, v);
+      pa_cvolume_set (&audio->volume, AUDIO_CHANNELS, v);
 
       operation =
 	pa_context_set_sink_input_volume (audio->context, audio->index,
