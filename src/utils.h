@@ -31,7 +31,7 @@
 
 #define LABEL_MAX 128
 
-#define ELEKTRON_LOOP_TYPE 0x7f
+#define AUDIO_SAMPLE_RATE 48000
 #define ELEKTRON_SAMPLE_RATE 48000
 
 #define debug_print(level, format, ...) if (level <= debug_level) fprintf(stderr, "DEBUG:" __FILE__ ":%d:(%s): " format, __LINE__, __FUNCTION__, ## __VA_ARGS__)
@@ -82,10 +82,11 @@ struct job_control
   void *data;
 };
 
-struct sample_loop_data
+struct sample_info
 {
   gint32 start;
   gint32 end;
+  gint32 samplerate;
 };
 
 struct device_desc

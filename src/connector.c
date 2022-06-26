@@ -46,6 +46,7 @@
 #define FS_SAMPLES_SIZE_POS_W 21
 #define FS_SAMPLES_LAST_FRAME_POS_W 33
 #define FS_SAMPLES_PAD_RES 22
+
 #define ELEKTRON_SAMPLE_INFO_PAD_I32_LEN 10
 
 #define SDS_SAMPLE_LIMIT 1000
@@ -61,7 +62,7 @@ struct elektron_sample_info
 {
   guint32 type;
   guint32 sample_len_bytes;
-  guint32 sample_rate;
+  guint32 samplerate;
   guint32 loop_start;
   guint32 loop_end;
   guint32 loop_type;
@@ -237,6 +238,12 @@ static gint sds_upload (const gchar *, GByteArray *, struct job_control *,
 
 static gint sds_read_dir (struct item_iterator *, const gchar *, void *);
 
+static gint elektron_sample_load (const gchar *, GByteArray *,
+				  struct job_control *);
+
+static gint sds_sample_load (const gchar *, GByteArray *,
+			     struct job_control *);
+
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
 static const guint8 PING_REQUEST[] = { 0x1 };
@@ -331,7 +338,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .download = connector_download_sample,
   .upload = connector_upload_sample,
   .getid = get_item_name,
-  .load = sample_load,
+  .load = elektron_sample_load,
   .save = sample_save,
   .get_ext = connector_get_fs_ext,
   .get_upload_path = connector_get_upload_path_smplrw,
@@ -471,7 +478,7 @@ static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
   .download = sds_download,
   .upload = sds_upload,
   .getid = get_item_index,
-  .load = sample_load,
+  .load = sds_sample_load,
   .save = sample_save,
   .get_ext = connector_get_fs_ext,
   .get_upload_path = sds_get_upload_path,
@@ -860,7 +867,7 @@ connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
   guint32 aux32;
   guint16 aux16, *aux16p;
   int i, consumed, bytes_blk;
-  struct sample_loop_data *sample_loop_data = data;
+  struct sample_info *sample_info = data;
   struct elektron_sample_info elektron_sample_info;
   GByteArray *msg = connector_new_msg (FS_SAMPLE_WRITE_FILE_REQUEST,
 				       sizeof (FS_SAMPLE_WRITE_FILE_REQUEST));
@@ -878,9 +885,9 @@ connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
     {
       elektron_sample_info.type = 0;
       elektron_sample_info.sample_len_bytes = htobe32 (sample->len);
-      elektron_sample_info.sample_rate = htobe32 (ELEKTRON_SAMPLE_RATE);
-      elektron_sample_info.loop_start = htobe32 (sample_loop_data->start);
-      elektron_sample_info.loop_end = htobe32 (sample_loop_data->end);
+      elektron_sample_info.samplerate = htobe32 (ELEKTRON_SAMPLE_RATE);
+      elektron_sample_info.loop_start = htobe32 (sample_info->start);
+      elektron_sample_info.loop_end = htobe32 (sample_info->end);
       elektron_sample_info.loop_type = htobe32 (ELEKTRON_LOOP_TYPE);
       memset (&elektron_sample_info.padding, 0,
 	      sizeof (guint32) * ELEKTRON_SAMPLE_INFO_PAD_I32_LEN);
@@ -2079,7 +2086,7 @@ connector_download_smplrw (const gchar * path, GByteArray * output,
 			   connector_copy_array copy_array)
 {
   struct connector *connector = data;
-  struct sample_loop_data *sample_loop_data;
+  struct sample_info *sample_info;
   struct elektron_sample_info *elektron_sample_info;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -2147,13 +2154,13 @@ connector_download_smplrw (const gchar * path, GByteArray * output,
 	  offset = 0;
 	  elektron_sample_info =
 	    (struct elektron_sample_info *) &rx_msg->data[FS_SAMPLES_PAD_RES];
-	  sample_loop_data = malloc (sizeof (struct elektron_sample_info));
-	  sample_loop_data->start =
-	    be32toh (elektron_sample_info->loop_start);
-	  sample_loop_data->end = be32toh (elektron_sample_info->loop_end);
-	  control->data = sample_loop_data;
+	  sample_info = malloc (sizeof (struct elektron_sample_info));
+	  sample_info->start = be32toh (elektron_sample_info->loop_start);
+	  sample_info->end = be32toh (elektron_sample_info->loop_end);
+	  sample_info->samplerate = ELEKTRON_SAMPLE_RATE;	//In the case of the RAW filesystem is not used and it is harmless;
+	  control->data = sample_info;
 	  debug_print (2, "Loop start at %d, loop end at %d\n",
-		       sample_loop_data->start, sample_loop_data->end);
+		       sample_info->start, sample_info->end);
 	}
 
       free_msg (rx_msg);
@@ -4155,12 +4162,12 @@ sds_download (const gchar * path, GByteArray * output,
   guint bits, id, period, words, packet_counter, word_size, read_bytes,
     bytes_per_word, total_words;
   gint16 sample;
-  double sample_rate;
+  double samplerate;
   GByteArray *tx_msg, *rx_msg;
   gchar *path_copy, *index;
   guint8 *dataptr;
   gboolean active, header_resp;
-  struct sample_loop_data *sample_loop_data;
+  struct sample_info *sample_info;
   struct sysex_transfer transfer;
   struct connector *connector = data;
 
@@ -4204,18 +4211,19 @@ sds_download (const gchar * path, GByteArray * output,
 
   period =
     sds_get_bytes_value_right_just (&rx_msg->data[7], SDS_BYTES_PER_WORD);
-  sample_rate = 1.0e9 / period;
-  debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n", sample_rate,
+  samplerate = 1.0e9 / period;
+  debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n", samplerate,
 	       period);
 
   words =
     sds_get_bytes_value_right_just (&rx_msg->data[10], SDS_BYTES_PER_WORD);
   debug_print (1, "Words: %d\n", words);
 
-  sample_loop_data = malloc (sizeof (struct elektron_sample_info));
-  sample_loop_data->start = 0;
-  sample_loop_data->end = words - 1;
-  control->data = sample_loop_data;
+  sample_info = malloc (sizeof (struct sample_info));
+  sample_info->start = 0;
+  sample_info->end = words - 1;
+  sample_info->samplerate = samplerate;
+  control->data = sample_info;
   control->parts = 1;
   control->part = 0;
   set_job_control_progress (control, 0.0);
@@ -4339,6 +4347,7 @@ sds_download (const gchar * path, GByteArray * output,
   else
     {
       g_byte_array_append (transfer.raw, SDS_CANCEL, sizeof (SDS_CANCEL));
+      connector_rx_drain (connector);
     }
   transfer.raw->data[4] = packet_counter;
   g_mutex_lock (&connector->mutex);
@@ -4417,8 +4426,13 @@ sds_upload (const gchar * path, GByteArray * input,
   gint16 *frame;
   gboolean active;
   struct connector *connector = data;
+  struct sample_info *sample_info = control->data;
   guint name_len, word, words, words_per_packet, id, packets, period =
-    1.0e9 / ELEKTRON_SAMPLE_RATE;
+    1.0e9 / sample_info->samplerate;
+
+  control->parts = 1;
+  control->part = 0;
+  set_job_control_progress (control, 0.0);
 
   path_copy = strdup (path);
   index_name = basename (path_copy);
@@ -4435,7 +4449,7 @@ sds_upload (const gchar * path, GByteArray * input,
 	       "Resolution: %d bits (%d bytes per word, word size %d bytes)\n",
 	       16, SDS_BYTES_PER_WORD, 2);
   debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n",
-	       (double) ELEKTRON_SAMPLE_RATE, period);
+	       (double) sample_info->samplerate, period);
 
   words = input->len / 2;	//bytes to words (frames)
   frame = (gint16 *) input->data;
@@ -4450,9 +4464,6 @@ sds_upload (const gchar * path, GByteArray * input,
       goto end;
     }
 
-  control->parts = 1;
-  control->part = 0;
-  set_job_control_progress (control, 0.0);
   g_mutex_lock (&control->mutex);
   active = control->active;
   g_mutex_unlock (&control->mutex);
@@ -4596,4 +4607,24 @@ sds_read_dir (struct item_iterator *iter, const gchar * path, void *data_)
   iter->item.size = -1;
 
   return 0;
+}
+
+gint
+sds_sample_load (const gchar * path, GByteArray * sample,
+		 struct job_control *control)
+{
+  struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
+  sample_info->samplerate = -1;
+  control->data = sample_info;
+  return sample_load_with_frames (path, sample, control, NULL);
+}
+
+gint
+elektron_sample_load (const gchar * path, GByteArray * sample,
+		      struct job_control *control)
+{
+  struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
+  sample_info->samplerate = ELEKTRON_SAMPLE_RATE;
+  control->data = sample_info;
+  return sample_load_with_frames (path, sample, control, NULL);
 }

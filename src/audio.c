@@ -21,8 +21,7 @@
 #include "../config.h"
 #include "audio.h"
 
-#define AUDIO_SAMPLERATE 48000
-#define AUDIO_PA_BUFFER_LEN (AUDIO_SAMPLERATE / 10)
+#define AUDIO_PA_BUFFER_LEN (AUDIO_SAMPLE_RATE / 10)
 #define AUDIO_CHANNELS 1
 
 static const pa_buffer_attr buffer_attributes = {
@@ -35,7 +34,7 @@ static const pa_buffer_attr buffer_attributes = {
 static const pa_sample_spec sample_spec = {
   .format = PA_SAMPLE_S16LE,
   .channels = AUDIO_CHANNELS,
-  .rate = AUDIO_SAMPLERATE
+  .rate = AUDIO_SAMPLE_RATE
 };
 
 static void
@@ -270,6 +269,7 @@ audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
   audio->control.callback = load_progress_callback;
   audio->name = malloc (PATH_MAX);
   audio->name[0] = 0;
+  audio->control.data = g_malloc (sizeof (struct sample_info));
 
   if (pa_context_connect (audio->context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
     {
@@ -315,6 +315,8 @@ audio_destroy (struct audio *audio)
     }
 
   g_free (audio->name);
+
+  g_free (audio->control.data);
 
   g_mutex_unlock (&audio->control.mutex);
 }

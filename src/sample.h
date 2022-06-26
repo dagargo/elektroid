@@ -27,10 +27,11 @@
 #define SAMPLE_H
 
 #define LOAD_BUFFER_LEN 4800	// In guint16 frames; 9600 B; 0.1 ms
+#define ELEKTRON_LOOP_TYPE 0x7f
 
-gint sample_wave (GByteArray *, GByteArray *, struct job_control *);
+gint sample_get_wave (GByteArray *, GByteArray *, struct job_control *);
 
-gint sample_raw (GByteArray *, GByteArray *, struct job_control *);
+gint sample_load_raw (GByteArray *, GByteArray *, struct job_control *);
 
 gint sample_save (const gchar *, GByteArray *, struct job_control *);
 

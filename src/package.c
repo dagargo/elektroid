@@ -483,7 +483,14 @@ package_receive_pkg_resources (struct package *pkg,
 	}
 
       wave = g_byte_array_new ();
-      if (sample_wave (sample, wave, control))
+
+      struct sample_info *sample_info =
+	g_malloc (sizeof (struct sample_info));
+      sample_info->samplerate = ELEKTRON_SAMPLE_RATE;
+      control->data = sample_info;
+      ret = sample_get_wave (sample, wave, control);
+      g_free (control->data);
+      if (ret)
 	{
 	  error_print
 	    ("Error while converting sample to wave file. Continuing...\n");
@@ -491,8 +498,6 @@ package_receive_pkg_resources (struct package *pkg,
 	  g_free (sample_path);
 	  continue;
 	}
-      g_free (control->data);
-      control->data = NULL;
 
       pkg_resource = g_malloc (sizeof (struct package_resource));
       pkg_resource->type = PKG_RES_TYPE_SAMPLE;
@@ -730,7 +735,7 @@ package_send_pkg_resources (struct package *pkg,
       zip_fclose (zip_file);
 
       raw->len = 0;
-      if (sample_raw (wave, raw, control))
+      if (sample_load_raw (wave, raw, control))
 	{
 	  continue;
 	}

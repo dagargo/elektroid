@@ -150,9 +150,9 @@ tell_byte_array_io (void *user_data)
 }
 
 static gint
-sample_wave_data (GByteArray * sample,
-		  struct job_control *control,
-		  struct g_byte_array_io_data *wave)
+sample_get_wave_data (GByteArray * sample,
+		      struct job_control *control,
+		      struct g_byte_array_io_data *wave)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -160,16 +160,16 @@ sample_wave_data (GByteArray * sample,
   struct SF_CHUNK_INFO junk_chunk_info;
   struct SF_CHUNK_INFO smpl_chunk_info;
   struct smpl_chunk_data smpl_chunk_data;
-  struct sample_loop_data *sample_loop_data = control->data;
+  struct sample_info *sample_info = control->data;
 
   g_byte_array_set_size (wave->array, sample->len + 1024);	//We need space for the headers.
   wave->array->len = 0;
 
   debug_print (1, "Loop start at %d; loop end at %d\n",
-	       sample_loop_data->start, sample_loop_data->end);
+	       sample_info->start, sample_info->end);
 
   memset (&sf_info, 0, sizeof (sf_info));
-  sf_info.samplerate = ELEKTRON_SAMPLE_RATE;
+  sf_info.samplerate = sample_info->samplerate;
   sf_info.channels = 1;
   sf_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
   sndfile = sf_open_virtual (&G_BYTE_ARRAY_IO, SFM_WRITE, &sf_info, wave);
@@ -190,7 +190,7 @@ sample_wave_data (GByteArray * sample,
 
   smpl_chunk_data.manufacturer = 0;
   smpl_chunk_data.product = 0;
-  smpl_chunk_data.sample_period = 1000000000 / ELEKTRON_SAMPLE_RATE;
+  smpl_chunk_data.sample_period = 1000000000 / sample_info->samplerate;
   smpl_chunk_data.midi_unity_note = 60;
   smpl_chunk_data.midi_pitch_fraction = 0;
   smpl_chunk_data.smpte_format = 0;
@@ -199,8 +199,8 @@ sample_wave_data (GByteArray * sample,
   smpl_chunk_data.sampler_data = 0;
   smpl_chunk_data.sample_loop.cue_point_id = 0;
   smpl_chunk_data.sample_loop.type = ELEKTRON_LOOP_TYPE;
-  smpl_chunk_data.sample_loop.start = sample_loop_data->start;
-  smpl_chunk_data.sample_loop.end = sample_loop_data->end;
+  smpl_chunk_data.sample_loop.start = sample_info->start;
+  smpl_chunk_data.sample_loop.end = sample_info->end;
   smpl_chunk_data.sample_loop.fraction = 0;
   smpl_chunk_data.sample_loop.play_count = 0;
 
@@ -229,13 +229,13 @@ sample_wave_data (GByteArray * sample,
 }
 
 gint
-sample_wave (GByteArray * sample, GByteArray * wave,
-	     struct job_control *control)
+sample_get_wave (GByteArray * sample, GByteArray * wave,
+		 struct job_control *control)
 {
   struct g_byte_array_io_data data;
   data.pos = 0;
   data.array = wave;
-  return sample_wave_data (sample, control, &data);
+  return sample_get_wave_data (sample, control, &data);
 }
 
 gint
@@ -243,7 +243,7 @@ sample_save (const gchar * path, GByteArray * sample,
 	     struct job_control *control)
 {
   GByteArray *wave = g_byte_array_new ();
-  gint ret = sample_wave (sample, wave, control);
+  gint ret = sample_get_wave (sample, wave, control);
   if (!ret)
     {
       ret = save_file (path, wave, control);
@@ -273,9 +273,9 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
 }
 
 static gint
-sample_raw_data (struct g_byte_array_io_data *wave,
-		 struct job_control *control, GByteArray * sample,
-		 guint * frames)
+sample_load_raw_data (struct g_byte_array_io_data *wave,
+		      struct job_control *control, GByteArray * sample,
+		      guint * frames)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -292,7 +292,7 @@ sample_raw_data (struct g_byte_array_io_data *wave,
   gint resampled_buffer_len;
   gint f, frames_read;
   gboolean active;
-  struct sample_loop_data *sample_loop_data;
+  struct sample_info *sample_info;
   struct smpl_chunk_data smpl_chunk_data;
 
   if (control)
@@ -316,23 +316,26 @@ sample_raw_data (struct g_byte_array_io_data *wave,
   strcpy (chunk_info.id, SMPL_CHUNK_ID);
   chunk_info.id_size = strlen (SMPL_CHUNK_ID);
   chunk_iter = sf_get_chunk_iterator (sndfile, &chunk_info);
-  sample_loop_data = malloc (sizeof (struct sample_loop_data));
+  sample_info = control->data;
   if (chunk_iter)
     {
       chunk_info.datalen = sizeof (struct smpl_chunk_data);
       chunk_info.data = &smpl_chunk_data;
       sf_get_chunk_data (chunk_iter, &chunk_info);
 
-      sample_loop_data->start = le32toh (smpl_chunk_data.sample_loop.start);
-      sample_loop_data->end = le32toh (smpl_chunk_data.sample_loop.end);
+      sample_info->start = le32toh (smpl_chunk_data.sample_loop.start);
+      sample_info->end = le32toh (smpl_chunk_data.sample_loop.end);
     }
   else
     {
-      sample_loop_data->start = 0;
-      sample_loop_data->end = 0;
+      sample_info->start = 0;
+      sample_info->end = 0;
     }
 
-  control->data = sample_loop_data;
+  if (sample_info->samplerate < 0)
+    {
+      sample_info->samplerate = sf_info.samplerate;
+    }
 
   //Set scale factor. See http://www.mega-nerd.com/libsndfile/api.html#note2
   if ((sf_info.format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||
@@ -349,7 +352,8 @@ sample_raw_data (struct g_byte_array_io_data *wave,
 
   buffer_f = malloc (LOAD_BUFFER_LEN * sizeof (gfloat));
   src_data.data_in = buffer_f;
-  src_data.src_ratio = ((double) ELEKTRON_SAMPLE_RATE) / sf_info.samplerate;
+  src_data.src_ratio =
+    ((double) sample_info->samplerate) / sf_info.samplerate;
 
   resampled_buffer_len = LOAD_BUFFER_LEN * src_data.src_ratio;
   buffer_s = malloc (resampled_buffer_len * sizeof (gint16));
@@ -366,14 +370,14 @@ sample_raw_data (struct g_byte_array_io_data *wave,
       *frames = sf_info.frames * src_data.src_ratio;
     }
 
-  if (ELEKTRON_SAMPLE_RATE != sf_info.samplerate)
+  if (sample_info->samplerate != sf_info.samplerate)
     {
       debug_print (2, "Loop start at %d, loop end at %d before resampling\n",
-		   sample_loop_data->start, sample_loop_data->end);
-      sample_loop_data->start *= src_data.src_ratio;
-      sample_loop_data->end *= src_data.src_ratio;
+		   sample_info->start, sample_info->end);
+      sample_info->start *= src_data.src_ratio;
+      sample_info->end *= src_data.src_ratio;
       debug_print (2, "Loop start at %d, loop end at %d after resampling\n",
-		   sample_loop_data->start, sample_loop_data->end);
+		   sample_info->start, sample_info->end);
     }
 
   debug_print (2, "Loading sample (%" PRId64 " frames)...\n", sf_info.frames);
@@ -419,7 +423,7 @@ sample_raw_data (struct g_byte_array_io_data *wave,
 	  buffer_input = buffer_input_mono;
 	}
 
-      if (sf_info.samplerate == ELEKTRON_SAMPLE_RATE)
+      if (sample_info->samplerate == sf_info.samplerate)
 	{
 	  if (control)
 	    {
@@ -508,20 +512,20 @@ cleanup:
 }
 
 static gint
-sample_raw_frames (GByteArray * wave, GByteArray * sample,
-		   struct job_control *control, guint * frames)
+sample_load_raw_frames (GByteArray * wave, GByteArray * sample,
+			struct job_control *control, guint * frames)
 {
   struct g_byte_array_io_data data;
   data.pos = 0;
   data.array = wave;
-  return sample_raw_data (&data, control, sample, frames);
+  return sample_load_raw_data (&data, control, sample, frames);
 }
 
 gint
-sample_raw (GByteArray * wave, GByteArray * sample,
-	    struct job_control *control)
+sample_load_raw (GByteArray * wave, GByteArray * sample,
+		 struct job_control *control)
 {
-  return sample_raw_frames (wave, sample, control, NULL);
+  return sample_load_raw_frames (wave, sample, control, NULL);
 }
 
 gint
@@ -535,7 +539,7 @@ sample_load_with_frames (const gchar * path, GByteArray * sample,
   int ret = load_file (path, wave, control);
   if (!ret)
     {
-      ret = sample_raw_frames (wave, sample, control, frames);
+      ret = sample_load_raw_frames (wave, sample, control, frames);
     }
   g_byte_array_free (wave, TRUE);
   return ret;
