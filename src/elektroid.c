@@ -1275,9 +1275,10 @@ elektroid_load_sample (gpointer path)
   if (sample_load_with_frames
       (path, audio.sample, &audio.control, &audio.frames) >= 0)
     {
-      debug_print (1, "Sample rate: %d; loop start at %d; loop end at %d\n",
-		   sample_info->samplerate, sample_info->start,
-		   sample_info->end);
+      debug_print (1,
+		   "Sample length: %d, loop start at %d; loop end at %d; sample rate: %d.\n",
+		   audio.sample->len, sample_info->loopstart,
+		   sample_info->loopend, sample_info->samplerate);
     }
 
   g_mutex_lock (&audio.control.mutex);

@@ -48,6 +48,7 @@
 #define FS_SAMPLES_PAD_RES 22
 
 #define ELEKTRON_SAMPLE_INFO_PAD_I32_LEN 10
+#define ELEKTRON_LOOP_TYPE 0x7f
 
 #define SDS_SAMPLE_LIMIT 1000
 #define SDS_DATA_PACKET_LEN 127
@@ -63,9 +64,9 @@ struct elektron_sample_info
   guint32 type;
   guint32 sample_len_bytes;
   guint32 samplerate;
-  guint32 loop_start;
-  guint32 loop_end;
-  guint32 loop_type;
+  guint32 loopstart;
+  guint32 loopend;
+  guint32 looptype;
   guint32 padding[ELEKTRON_SAMPLE_INFO_PAD_I32_LEN];
 };
 
@@ -886,9 +887,9 @@ connector_new_msg_write_sample_blk (guint id, GByteArray * sample,
       elektron_sample_info.type = 0;
       elektron_sample_info.sample_len_bytes = htobe32 (sample->len);
       elektron_sample_info.samplerate = htobe32 (ELEKTRON_SAMPLE_RATE);
-      elektron_sample_info.loop_start = htobe32 (sample_info->start);
-      elektron_sample_info.loop_end = htobe32 (sample_info->end);
-      elektron_sample_info.loop_type = htobe32 (ELEKTRON_LOOP_TYPE);
+      elektron_sample_info.loopstart = htobe32 (sample_info->loopstart);
+      elektron_sample_info.loopend = htobe32 (sample_info->loopend);
+      elektron_sample_info.looptype = htobe32 (ELEKTRON_LOOP_TYPE);
       memset (&elektron_sample_info.padding, 0,
 	      sizeof (guint32) * ELEKTRON_SAMPLE_INFO_PAD_I32_LEN);
 
@@ -2155,12 +2156,14 @@ connector_download_smplrw (const gchar * path, GByteArray * output,
 	  elektron_sample_info =
 	    (struct elektron_sample_info *) &rx_msg->data[FS_SAMPLES_PAD_RES];
 	  sample_info = malloc (sizeof (struct elektron_sample_info));
-	  sample_info->start = be32toh (elektron_sample_info->loop_start);
-	  sample_info->end = be32toh (elektron_sample_info->loop_end);
+	  sample_info->loopstart = be32toh (elektron_sample_info->loopstart);
+	  sample_info->loopend = be32toh (elektron_sample_info->loopend);
+	  sample_info->looptype = be32toh (elektron_sample_info->looptype);
 	  sample_info->samplerate = ELEKTRON_SAMPLE_RATE;	//In the case of the RAW filesystem is not used and it is harmless;
+	  sample_info->bitdepth = 16;
 	  control->data = sample_info;
 	  debug_print (2, "Loop start at %d, loop end at %d\n",
-		       sample_info->start, sample_info->end);
+		       sample_info->loopstart, sample_info->loopend);
 	}
 
       free_msg (rx_msg);
@@ -4156,10 +4159,33 @@ sds_checksum (guint8 * data)
 }
 
 static gint
+sds_get_bytes_per_word (gint32 bits, guint * word_size,
+			guint * bytes_per_word)
+{
+  *word_size = (guint) ceil (bits / 8.0);
+  if (*word_size != 2)
+    {
+      error_print ("%d bits resolution not supported\n", bits);
+      return -1;
+    }
+
+  if (bits < 15)
+    {
+      *bytes_per_word = 2;
+    }
+  else
+    {
+      *bytes_per_word = 3;
+    }
+
+  return 0;
+}
+
+static gint
 sds_download (const gchar * path, GByteArray * output,
 	      struct job_control *control, void *data)
 {
-  guint bits, id, period, words, packet_counter, word_size, read_bytes,
+  guint id, period, words, packet_counter, word_size, read_bytes,
     bytes_per_word, total_words;
   gint16 sample;
   double samplerate;
@@ -4167,13 +4193,14 @@ sds_download (const gchar * path, GByteArray * output,
   gchar *path_copy, *index;
   guint8 *dataptr;
   gboolean active, header_resp;
-  struct sample_info *sample_info;
   struct sysex_transfer transfer;
+  struct sample_info *sample_info;
   struct connector *connector = data;
 
   path_copy = strdup (path);
   index = basename (path_copy);
   id = atoi (index);
+  g_free (path_copy);
 
   tx_msg = g_byte_array_new ();
   g_byte_array_append (tx_msg, SDS_SAMPLE_REQUEST,
@@ -4186,28 +4213,18 @@ sds_download (const gchar * path, GByteArray * output,
       return -EIO;
     }
 
-  bits = rx_msg->data[6];
-  word_size = (gint) ceil (bits / 8.0);
-  if (word_size != 2)
+  sample_info = malloc (sizeof (struct sample_info));
+  sample_info->bitdepth = rx_msg->data[6];
+  if (sds_get_bytes_per_word
+      (sample_info->bitdepth, &word_size, &bytes_per_word))
     {
-      error_print ("%d bits resolution not supported\n", bits);
+      free_msg (rx_msg);
       return -EINVAL;
     }
-  if (bits < 15)
-    {
-      bytes_per_word = 2;
-    }
-  else if (bits < 22)
-    {
-      bytes_per_word = 3;
-    }
-  else
-    {
-      bytes_per_word = 4;
-    }
+
   debug_print (1,
-	       "Resolution: %d bits (%d bytes per word, word size %d bytes)\n",
-	       bits, bytes_per_word, word_size);
+	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
+	       sample_info->bitdepth, bytes_per_word, word_size);
 
   period =
     sds_get_bytes_value_right_just (&rx_msg->data[7], SDS_BYTES_PER_WORD);
@@ -4219,10 +4236,12 @@ sds_download (const gchar * path, GByteArray * output,
     sds_get_bytes_value_right_just (&rx_msg->data[10], SDS_BYTES_PER_WORD);
   debug_print (1, "Words: %d\n", words);
 
-  sample_info = malloc (sizeof (struct sample_info));
-  sample_info->start = 0;
-  sample_info->end = words - 1;
   sample_info->samplerate = samplerate;
+  sample_info->loopstart =
+    sds_get_bytes_value_right_just (&rx_msg->data[13], SDS_BYTES_PER_WORD);
+  sample_info->loopend =
+    sds_get_bytes_value_right_just (&rx_msg->data[16], SDS_BYTES_PER_WORD);
+  sample_info->looptype = rx_msg->data[19];
   control->data = sample_info;
   control->parts = 1;
   control->part = 0;
@@ -4257,6 +4276,7 @@ sds_download (const gchar * path, GByteArray * output,
 	  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
 	  if (!rx_msg)
 	    {
+	      g_free (path_copy);
 	      transfer.active = TRUE;
 	      transfer.raw = g_byte_array_new ();
 	      g_byte_array_append (transfer.raw, SDS_CANCEL,
@@ -4315,7 +4335,8 @@ sds_download (const gchar * path, GByteArray * output,
 	     && total_words < words)
 	{
 	  sample =
-	    sds_get_gint16_value_left_just (dataptr, bytes_per_word, bits);
+	    sds_get_gint16_value_left_just (dataptr, bytes_per_word,
+					    sample_info->bitdepth);
 	  g_byte_array_append (output, (guint8 *) & sample, sizeof (sample));
 
 	  dataptr += bytes_per_word;
@@ -4443,19 +4464,25 @@ sds_upload (const gchar * path, GByteArray * input,
   g_byte_array_append (tx_msg, SDS_DUMP_HEADER, sizeof (SDS_DUMP_HEADER));
   tx_msg->data[4] = id % 128;
   tx_msg->data[5] = id / 128;
-  tx_msg->data[6] = 16;
+  tx_msg->data[6] = (guint8) sample_info->bitdepth;
 
   debug_print (1,
-	       "Resolution: %d bits (%d bytes per word, word size %d bytes)\n",
-	       16, SDS_BYTES_PER_WORD, 2);
+	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
+	       sample_info->bitdepth, SDS_BYTES_PER_WORD, 2);
   debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n",
 	       (double) sample_info->samplerate, period);
 
-  words = input->len / 2;	//bytes to words (frames)
+  words = input->len >> 1;	//bytes to words (frames)
   frame = (gint16 *) input->data;
-  sds_set_bytes_value_right_just (&tx_msg->data[7], 3, period);
-  sds_set_bytes_value_right_just (&tx_msg->data[10], 3, words);
-  tx_msg->data[19] = 0x7f;	//No loop
+  sds_set_bytes_value_right_just (&tx_msg->data[7], SDS_BYTES_PER_WORD,
+				  period);
+  sds_set_bytes_value_right_just (&tx_msg->data[10], SDS_BYTES_PER_WORD,
+				  words);
+  sds_set_bytes_value_right_just (&tx_msg->data[13], SDS_BYTES_PER_WORD,
+				  sample_info->loopstart);
+  sds_set_bytes_value_right_just (&tx_msg->data[16], SDS_BYTES_PER_WORD,
+				  sample_info->loopend);
+  tx_msg->data[19] = sample_info->looptype;
 
   rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
   err = sds_upload_wait_ack (rx_msg, connector, 0);

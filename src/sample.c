@@ -166,7 +166,7 @@ sample_get_wave_data (GByteArray * sample,
   wave->array->len = 0;
 
   debug_print (1, "Loop start at %d; loop end at %d\n",
-	       sample_info->start, sample_info->end);
+	       sample_info->loopstart, sample_info->loopend);
 
   memset (&sf_info, 0, sizeof (sf_info));
   sf_info.samplerate = sample_info->samplerate;
@@ -198,9 +198,9 @@ sample_get_wave_data (GByteArray * sample,
   smpl_chunk_data.num_sampler_loops = 1;
   smpl_chunk_data.sampler_data = 0;
   smpl_chunk_data.sample_loop.cue_point_id = 0;
-  smpl_chunk_data.sample_loop.type = ELEKTRON_LOOP_TYPE;
-  smpl_chunk_data.sample_loop.start = sample_info->start;
-  smpl_chunk_data.sample_loop.end = sample_info->end;
+  smpl_chunk_data.sample_loop.type = sample_info->looptype;
+  smpl_chunk_data.sample_loop.start = sample_info->loopstart;
+  smpl_chunk_data.sample_loop.end = sample_info->loopend;
   smpl_chunk_data.sample_loop.fraction = 0;
   smpl_chunk_data.sample_loop.play_count = 0;
 
@@ -323,14 +323,17 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
       chunk_info.data = &smpl_chunk_data;
       sf_get_chunk_data (chunk_iter, &chunk_info);
 
-      sample_info->start = le32toh (smpl_chunk_data.sample_loop.start);
-      sample_info->end = le32toh (smpl_chunk_data.sample_loop.end);
+      sample_info->loopstart = le32toh (smpl_chunk_data.sample_loop.start);
+      sample_info->loopend = le32toh (smpl_chunk_data.sample_loop.end);
+      sample_info->looptype = le32toh (smpl_chunk_data.sample_loop.end);
     }
   else
     {
-      sample_info->start = 0;
-      sample_info->end = 0;
+      sample_info->loopstart = sf_info.frames - 1;
+      sample_info->loopend = sample_info->loopstart;
+      sample_info->looptype = 0;
     }
+  sample_info->bitdepth = 16;
 
   if (sample_info->samplerate < 0)
     {
@@ -373,11 +376,11 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
   if (sample_info->samplerate != sf_info.samplerate)
     {
       debug_print (2, "Loop start at %d, loop end at %d before resampling\n",
-		   sample_info->start, sample_info->end);
-      sample_info->start *= src_data.src_ratio;
-      sample_info->end *= src_data.src_ratio;
+		   sample_info->loopstart, sample_info->loopend);
+      sample_info->loopstart *= src_data.src_ratio;
+      sample_info->loopend *= src_data.src_ratio;
       debug_print (2, "Loop start at %d, loop end at %d after resampling\n",
-		   sample_info->start, sample_info->end);
+		   sample_info->loopstart, sample_info->loopend);
     }
 
   debug_print (2, "Loading sample (%" PRId64 " frames)...\n", sf_info.frames);

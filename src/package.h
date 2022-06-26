@@ -22,6 +22,8 @@
 #include <zip.h>
 #include "connector.h"
 
+#define ELEKTRON_SAMPLE_RATE 48000
+
 enum package_resource_type
 {
   PKG_RES_TYPE_NONE,

@@ -32,7 +32,6 @@
 #define LABEL_MAX 128
 
 #define AUDIO_SAMPLE_RATE 48000
-#define ELEKTRON_SAMPLE_RATE 48000
 
 #define debug_print(level, format, ...) if (level <= debug_level) fprintf(stderr, "DEBUG:" __FILE__ ":%d:(%s): " format, __LINE__, __FUNCTION__, ## __VA_ARGS__)
 #define error_print(format, ...) fprintf(stderr, "%sERROR:" __FILE__ ":%d:(%s): " format "%s", isatty(fileno(stderr)) ? "\x1b[31m" : "", __LINE__, __FUNCTION__, ## __VA_ARGS__, isatty(fileno(stderr)) ? "\x1b[m" : "")
@@ -84,9 +83,11 @@ struct job_control
 
 struct sample_info
 {
-  gint32 start;
-  gint32 end;
+  gint32 loopstart;
+  gint32 loopend;
+  gint32 looptype;
   gint32 samplerate;
+  gint32 bitdepth;
 };
 
 struct device_desc
