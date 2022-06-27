@@ -542,5 +542,9 @@ cleanup_reader:
 cleanup_parser:
   g_object_unref (parser);
   g_free (devices_filename);
+  if (err)
+    {
+      device_desc->id = -1;
+    }
   return err;
 }

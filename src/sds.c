@@ -72,7 +72,7 @@ sds_get_download_path (struct backend *backend,
 		       sizeof (SDS_SAMPLE_NAME_REQUEST));
   tx_msg->data[5] = index % 128;
   tx_msg->data[6] = index / 128;
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
   if (rx_msg)
     {
       snprintf (name, LABEL_MAX, "%s/%s.wav", dst_dir, &rx_msg->data[5]);
@@ -196,7 +196,7 @@ sds_download (struct backend *backend, const gchar * path,
 		       sizeof (SDS_SAMPLE_REQUEST));
   tx_msg->data[4] = id % 128;
   tx_msg->data[5] = id / 128;
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -262,7 +262,7 @@ sds_download (struct backend *backend, const gchar * path,
 	      g_byte_array_append (tx_msg, SDS_NAK, sizeof (SDS_NAK));
 	      tx_msg->data[4] = next_packet_num;
 	    }
-	  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+	  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
 	  if (!rx_msg)
 	    {
 	      g_free (path_copy);
@@ -482,7 +482,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 				  sample_info->loopend);
   tx_msg->data[19] = sample_info->looptype;
 
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   err = sds_upload_wait_ack (backend, rx_msg, 0);
   if (err)
     {
@@ -528,7 +528,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	}
       tx_msg->data[SDS_DATA_PACKET_CKSUM_POS] = sds_checksum (tx_msg->data);
 
-      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
       err = sds_upload_wait_ack (backend, rx_msg, packet_num);
       if (err == -EINVAL)	//NAK packet
 	{
@@ -569,7 +569,8 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       g_byte_array_append (tx_msg, (guint8 *) name, name_len);
 
       g_byte_array_append (tx_msg, (guint8 *) "\xf7", 1);
-      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+      rx_msg =
+	backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
       if (rx_msg)
 	{
 	  free_msg (rx_msg);
@@ -651,7 +652,7 @@ sds_handshake (struct backend *backend)
 		       sizeof (SDS_SAMPLE_REQUEST));
   tx_msg->data[4] = 1;
   tx_msg->data[5] = 0;
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
   if (!rx_msg)
     {
       return -EIO;

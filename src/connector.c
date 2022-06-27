@@ -1008,14 +1008,14 @@ connector_tx (struct backend *backend, const GByteArray * msg)
 }
 
 static GByteArray *
-connector_rx (struct backend *backend)
+connector_rx (struct backend *backend, gint timeout)
 {
   gchar *text;
   GByteArray *msg;
   struct sysex_transfer transfer;
 
   transfer.active = TRUE;
-  transfer.timeout = SYSEX_TIMEOUT_MS;
+  transfer.timeout = timeout < 0 ? SYSEX_TIMEOUT_MS : timeout;
   transfer.batch = FALSE;
 
   if (backend_rx_sysex (backend, &transfer))
@@ -1062,7 +1062,8 @@ connector_rx (struct backend *backend)
 //Synchronized
 
 static GByteArray *
-connector_tx_and_rx (struct backend *backend, GByteArray * tx_msg)
+connector_tx_and_rx_timeout (struct backend *backend, GByteArray * tx_msg,
+			     gint timeout)
 {
   ssize_t len;
   GByteArray *rx_msg;
@@ -1078,7 +1079,7 @@ connector_tx_and_rx (struct backend *backend, GByteArray * tx_msg)
       goto cleanup;
     }
 
-  rx_msg = connector_rx (backend);
+  rx_msg = connector_rx (backend, timeout);
   if (rx_msg && rx_msg->data[4] != msg_type)
     {
       error_print ("Illegal message type in response\n");
@@ -1091,6 +1092,12 @@ cleanup:
   free_msg (tx_msg);
   g_mutex_unlock (&backend->mutex);
   return rx_msg;
+}
+
+static GByteArray *
+connector_tx_and_rx (struct backend *backend, GByteArray * tx_msg)
+{
+  return connector_tx_and_rx_timeout (backend, tx_msg, -1);
 }
 
 static enum item_type
@@ -1138,15 +1145,17 @@ connector_read_common_dir (struct backend *backend,
 			   const guint8 msg[], int size,
 			   fs_init_iter_func init_iter, enum connector_fs fs)
 {
-  gboolean cache;
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
+  gboolean cache = FALSE;
+  GByteArray *tx_msg, *rx_msg = NULL;
   struct connector *connector = backend->data;
 
-  g_mutex_lock (&backend->mutex);
-  cache = connector->dir_cache != NULL;
-  rx_msg = cache ? g_hash_table_lookup (connector->dir_cache, dir) : NULL;
-  g_mutex_unlock (&backend->mutex);
+  if (backend->device_desc.filesystems & ~FS_SAMPLES_SDS)
+    {
+      g_mutex_lock (&backend->mutex);
+      cache = connector->dir_cache != NULL;
+      rx_msg = cache ? g_hash_table_lookup (connector->dir_cache, dir) : NULL;
+      g_mutex_unlock (&backend->mutex);
+    }
 
   if (!rx_msg)
     {
@@ -1162,24 +1171,27 @@ connector_read_common_dir (struct backend *backend,
 	  return -EIO;
 	}
 
-      g_mutex_lock (&backend->mutex);
-      cache = connector->dir_cache != NULL;
-      if (cache)
+      if (backend->device_desc.filesystems & ~FS_SAMPLES_SDS)
 	{
-	  gchar *key = g_strdup (dir);
-	  g_hash_table_insert (connector->dir_cache, key, rx_msg);
-	}
-      g_mutex_unlock (&backend->mutex);
-
-      if (rx_msg->len == 5
-	  && connector_get_path_type (backend, dir,
-				      init_iter) != ELEKTROID_DIR)
-	{
-	  if (!cache)
+	  g_mutex_lock (&backend->mutex);
+	  cache = connector->dir_cache != NULL;
+	  if (cache)
 	    {
-	      free_msg (rx_msg);
+	      gchar *key = g_strdup (dir);
+	      g_hash_table_insert (connector->dir_cache, key, rx_msg);
 	    }
-	  return -ENOTDIR;
+	  g_mutex_unlock (&backend->mutex);
+
+	  if (rx_msg->len == 5
+	      && connector_get_path_type (backend, dir,
+					  init_iter) != ELEKTROID_DIR)
+	    {
+	      if (!cache)
+		{
+		  free_msg (rx_msg);
+		}
+	      return -ENOTDIR;
+	    }
 	}
     }
 
@@ -1986,8 +1998,7 @@ connector_get_storage_stats (struct backend *backend,
 			     enum connector_storage type,
 			     struct connector_storage_stats *statfs)
 {
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
+  GByteArray *tx_msg, *rx_msg;
   gint8 op;
   guint64 *data;
   int index;
@@ -2055,45 +2066,42 @@ connector_midi_handshake (struct backend *backend)
   //Identity Request Universal Sysex message
   g_byte_array_append (tx_msg, (guchar *) MIDI_IDENTITY_REQUEST,
 		       sizeof (MIDI_IDENTITY_REQUEST));
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
-
-  if (!rx_msg)
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
+  if (rx_msg)
     {
-      return -EIO;
-    }
-
-  if (rx_msg->data[4] == 2)
-    {
-      if (rx_msg->len == 15 || rx_msg->len == 17)
+      if (rx_msg->data[4] == 2)
 	{
-	  offset = rx_msg->len - 15;
-	  company = &rx_msg->data[5];
-	  family = &rx_msg->data[6 + offset];
-	  model = &rx_msg->data[8 + offset];
-	  version = &rx_msg->data[10 + offset];
+	  if (rx_msg->len == 15 || rx_msg->len == 17)
+	    {
+	      offset = rx_msg->len - 15;
+	      company = &rx_msg->data[5];
+	      family = &rx_msg->data[6 + offset];
+	      model = &rx_msg->data[8 + offset];
+	      version = &rx_msg->data[10 + offset];
 
-	  backend->device_name = malloc (LABEL_MAX);
-	  snprintf (backend->device_name, LABEL_MAX,
-		    "%02x-%02x-%02x %02x-%02x %02x-%02x %d.%d.%d.%d",
-		    company[0], offset ? company[1] : 0,
-		    offset ? company[2] : 0, family[0], family[1],
-		    model[0], model[1], version[0], version[1],
-		    version[2], version[3]);
-	  backend->device_desc.name = strdup (backend->device_name);
+	      backend->device_name = malloc (LABEL_MAX);
+	      snprintf (backend->device_name, LABEL_MAX,
+			"%02x-%02x-%02x %02x-%02x %02x-%02x %d.%d.%d.%d",
+			company[0], offset ? company[1] : 0,
+			offset ? company[2] : 0, family[0], family[1],
+			model[0], model[1], version[0], version[1],
+			version[2], version[3]);
+	      backend->device_desc.name = strdup (backend->device_name);
+	    }
+	  else
+	    {
+	      error_print ("Illegal SUB-ID2\n");
+	      err = -EIO;
+	    }
 	}
       else
 	{
 	  error_print ("Illegal SUB-ID2\n");
 	  err = -EIO;
 	}
-    }
-  else
-    {
-      error_print ("Illegal SUB-ID2\n");
-      err = -EIO;
-    }
 
-  free_msg (rx_msg);
+      free_msg (rx_msg);
+    }
 
   if (!err && !sds_handshake (backend))
     {
@@ -2113,17 +2121,17 @@ connector_elektron_handshake (struct backend *backend,
 			      const char *device_filename)
 {
   guint8 id;
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
   gchar *overbridge_name;
+  GByteArray *tx_msg, *rx_msg;
   struct connector *connector = g_malloc (sizeof (struct connector));
 
   connector->dir_cache = NULL;
-  backend->data = connector;
   connector->seq = 0;
+  backend->data = connector;
 
   tx_msg = connector_new_msg (PING_REQUEST, sizeof (PING_REQUEST));
-  rx_msg = connector_tx_and_rx (backend, tx_msg);
+  rx_msg =
+    connector_tx_and_rx_timeout (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
   if (!rx_msg)
     {
       backend->data = NULL;
@@ -2293,8 +2301,8 @@ connector_add_prefix_to_path (const gchar * dir, const gchar * prefix)
 
 static gint
 connector_read_data_dir_prefix (struct backend *backend,
-				struct item_iterator *iter, const gchar * dir,
-				const char *prefix)
+				struct item_iterator *iter,
+				const gchar * dir, const char *prefix)
 {
   int res;
   GByteArray *tx_msg;
@@ -2445,8 +2453,8 @@ connector_path_data_prefix_common (struct backend *backend,
 }
 
 static gint
-connector_clear_data_item_prefix (struct backend *backend, const gchar * path,
-				  const gchar * prefix)
+connector_clear_data_item_prefix (struct backend *backend,
+				  const gchar * path, const gchar * prefix)
 {
   return connector_path_data_prefix_common (backend, path, prefix,
 					    DATA_CLEAR_REQUEST,
@@ -2952,8 +2960,8 @@ connector_download_pkg (struct backend *backend, const gchar * path,
 }
 
 static gint
-connector_download_data_snd_pkg (struct backend *backend, const gchar * path,
-				 GByteArray * output,
+connector_download_data_snd_pkg (struct backend *backend,
+				 const gchar * path, GByteArray * output,
 				 struct job_control *control)
 {
   return connector_download_pkg (backend, path, output, control,
@@ -2963,8 +2971,8 @@ connector_download_data_snd_pkg (struct backend *backend, const gchar * path,
 }
 
 static gint
-connector_download_data_prj_pkg (struct backend *backend, const gchar * path,
-				 GByteArray * output,
+connector_download_data_prj_pkg (struct backend *backend,
+				 const gchar * path, GByteArray * output,
 				 struct job_control *control)
 {
   return connector_download_pkg (backend, path, output, control,
@@ -2986,9 +2994,10 @@ connector_download_raw_pst_pkg (struct backend *backend, const gchar * path,
 
 static gchar *
 connector_get_upload_path_smplrw (struct backend *backend,
-				  struct item_iterator *remote_iter,
-				  const struct fs_operations *ops,
-				  const gchar * dst_dir,
+				  struct item_iterator
+				  *remote_iter,
+				  const struct fs_operations
+				  *ops, const gchar * dst_dir,
 				  const gchar * src_path, gint32 * next_index)
 {
   gchar *path, *namec, *name, *aux;
@@ -3013,10 +3022,11 @@ connector_get_upload_path_smplrw (struct backend *backend,
 
 static gchar *
 connector_get_upload_path_data (struct backend *backend,
-				struct item_iterator *remote_iter,
+				struct item_iterator
+				*remote_iter,
 				const struct fs_operations *ops,
-				const gchar * dst_dir, const gchar * src_path,
-				gint32 * next_index)
+				const gchar * dst_dir,
+				const gchar * src_path, gint32 * next_index)
 {
   gchar *indexs, *path;
   gboolean new = FALSE;
@@ -3109,7 +3119,8 @@ connector_get_download_path (struct backend *backend,
 
 static gint
 connector_upload_data_prefix (struct backend *backend, const gchar * path,
-			      GByteArray * array, struct job_control *control,
+			      GByteArray * array,
+			      struct job_control *control,
 			      const gchar * prefix)
 {
   gint res;

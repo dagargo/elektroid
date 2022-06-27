@@ -38,6 +38,9 @@ backend_destroy (struct backend *backend)
       backend->device_name = NULL;
     }
 
+  backend->device_desc.id = -1;
+  backend->device_desc.filesystems = 0;
+
   if (backend->device_desc.name)
     {
       g_free (backend->device_desc.name);
@@ -502,7 +505,8 @@ end:
 //Synchronized
 
 GByteArray *
-backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg)
+backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg,
+			 gint timeout)
 {
   gint err;
   struct sysex_transfer transfer;
@@ -510,7 +514,7 @@ backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg)
   g_mutex_lock (&backend->mutex);
   transfer.raw = tx_msg;
   transfer.active = TRUE;
-  transfer.timeout = SYSEX_TIMEOUT_MS;
+  transfer.timeout = timeout < 0 ? SYSEX_TIMEOUT_MS : timeout;
   transfer.batch = FALSE;
   err = backend_tx_sysex (backend, &transfer);
   free_msg (transfer.raw);

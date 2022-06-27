@@ -1342,9 +1342,12 @@ static gboolean
 elektroid_remote_check_selection (gpointer data)
 {
   gint count = browser_get_selected_items_count (&remote_browser);
-  gboolean dl_impl = remote_browser.fs_ops->download ? TRUE : FALSE;
-  gboolean move_impl = remote_browser.fs_ops->move ? TRUE : FALSE;
-  gboolean del_impl = remote_browser.fs_ops->delete ? TRUE : FALSE;
+  gboolean dl_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->download ? TRUE : FALSE;
+  gboolean move_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->move ? TRUE : FALSE;
+  gboolean del_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->delete ? TRUE : FALSE;
 
   gtk_widget_set_sensitive (download_menuitem, count > 0 && dl_impl);
   gtk_widget_set_sensitive (remote_rename_menuitem, count == 1 && move_impl);
@@ -2479,10 +2482,17 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   GValue fsv = G_VALUE_INIT;
   enum connector_fs fs;
 
+  *remote_browser.dir = '\0';
   if (!gtk_combo_box_get_active_iter (fs_combo, &iter))
     {
+      remote_browser.fs_ops = NULL;
+      browser_load_dir (&remote_browser);
+      elektroid_set_file_extensions_for_fs (&local_browser.extensions,
+					    FS_SAMPLES);
+      browser_load_dir (&local_browser);
       return;
     }
+  strcat (remote_browser.dir, "/");
 
   gtk_tree_model_get_value (GTK_TREE_MODEL (fs_list_store),
 			    &iter, FS_LIST_STORE_ID_FIELD, &fsv);
@@ -3191,7 +3201,7 @@ elektroid_run (int argc, char *argv[])
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry")),
     .menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu")),
-    .dir = malloc (PATH_MAX),
+    .dir = g_malloc0 (PATH_MAX),
     .check_selection = elektroid_remote_check_selection,
     .file_icon = NULL,
     .fs_ops = connector_get_fs_operations (-1, NULL),
@@ -3258,7 +3268,7 @@ elektroid_run (int argc, char *argv[])
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry")),
     .menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu")),
-    .dir = malloc (PATH_MAX),
+    .dir = preferences.local_dir,
     .check_selection = elektroid_local_check_selection,
     .file_icon = elektroid_get_inventory_icon_for_fs (FS_SAMPLES),
     .extensions = NULL,
@@ -3360,7 +3370,6 @@ elektroid_run (int argc, char *argv[])
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
-  local_browser.dir = preferences.local_dir;
   elektroid_load_devices (TRUE);	//This triggers a local browser reload due to the extensions and icons selected for the fs
 
   gethostname (hostname, LABEL_MAX);
@@ -3368,7 +3377,7 @@ elektroid_run (int argc, char *argv[])
 
   debug_print (1, "Creating notifier thread...\n");
   notifier_init (&notifier, &local_browser);
-  notifier_set_dir (&notifier, preferences.local_dir);
+  notifier_set_dir (&notifier, local_browser.dir);
   notifier_thread = g_thread_new ("notifier_thread", notifier_run, &notifier);
 
   gtk_widget_show (main_window);

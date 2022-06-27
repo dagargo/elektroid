@@ -26,6 +26,7 @@
 
 #define REST_TIME_US 50000
 #define SYSEX_TIMEOUT_MS 5000
+#define SYSEX_TIMEOUT_GUESS_MS 1000	//If the request might not be implemente, 5 s is too much.
 #define SAMPLE_ID_NAME_SEPARATOR ":"
 
 struct backend
@@ -57,7 +58,7 @@ gint backend_tx_sysex (struct backend *, struct sysex_transfer *);
 
 gint backend_rx_sysex (struct backend *, struct sysex_transfer *);
 
-GByteArray *backend_tx_and_rx_sysex (struct backend *, GByteArray *);
+GByteArray *backend_tx_and_rx_sysex (struct backend *, GByteArray *, gint);
 
 void backend_rx_drain (struct backend *);
 
