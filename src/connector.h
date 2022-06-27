@@ -25,10 +25,6 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
-#define SYSEX_TIMEOUT_MS 5000
-#define REST_TIME_US 50000
-#define SDS_SAMPLE_ID_NAME_SEPARATOR ":"
-
 struct connector
 {
   GHashTable *dir_cache;

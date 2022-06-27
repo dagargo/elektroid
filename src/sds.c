@@ -1,0 +1,682 @@
+/*
+ *   sds.c
+ *   Copyright (C) 2022 David García Goñi <dagargo@gmail.com>
+ *
+ *   This file is part of Elektroid.
+ *
+ *   Elektroid is free software: you can redistribute it and/or modify
+ *   it under the terms of the GNU General Public License as published by
+ *   the Free Software Foundation, either version 3 of the License, or
+ *   (at your option) any later version.
+ *
+ *   Elektroid is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <math.h>
+#include <string.h>
+#include "sample.h"
+#include "sds.h"
+
+#define SDS_SAMPLE_LIMIT 1000
+#define SDS_DATA_PACKET_LEN 127
+#define SDS_DATA_PACKET_PAYLOAD_LEN 120
+#define SDS_DATA_PACKET_CKSUM_POS 125
+#define SDS_DATA_PACKET_CKSUM_START 1
+#define SDS_BYTES_PER_WORD 3
+#define SDS_ACK_WAIT_TIME_MS 5000
+#define SDS_BITS 16
+
+static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
+static const guint8 SDS_ACK[] = { 0xf0, 0x7e, 0, 0x7f, 0, 0xf7 };
+static const guint8 SDS_NAK[] = { 0xf0, 0x7e, 0, 0x7e, 0, 0xf7 };
+static const guint8 SDS_CANCEL[] = { 0xf0, 0x7e, 0, 0x7d, 0, 0xf7 };
+static const guint8 SDS_WAIT[] = { 0xf0, 0x7e, 0, 0x7c, 0, 0xf7 };
+static const guint8 SDS_SAMPLE_NAME_REQUEST[] =
+  { 0xf0, 0x7e, 0, 0x5, 0x4, 0, 0, 0xf7 };
+static const guint8 SDS_DATA_PACKET_HEADER[] = { 0xf0, 0x7e, 0, 0x2, 0 };
+static const guint8 SDS_SAMPLE_NAME_HEADER[] =
+  { 0xf0, 0x7e, 0, 0x5, 0x3, 0, 0, 0 };
+static const guint8 SDS_DUMP_HEADER[] =
+  { 0xf0, 0x7e, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xf7 };
+
+gchar *
+sds_get_upload_path (struct backend *backend,
+		     struct item_iterator *remote_iter,
+		     const struct fs_operations *ops, const gchar * dst_dir,
+		     const gchar * src_path, gint32 * next_index)
+{
+  //In this case, dst_dir must include the index, ':' and the sample name.
+  return strdup (dst_dir);
+}
+
+gchar *
+sds_get_download_path (struct backend *backend,
+		       struct item_iterator *remote_iter,
+		       const struct fs_operations *ops, const gchar * dst_dir,
+		       const gchar * src_path)
+{
+  GByteArray *tx_msg, *rx_msg;
+  gchar *name = malloc (LABEL_MAX);
+  gchar *src_path_copy = strdup (src_path);
+  gchar *filename = basename (src_path_copy);
+  gint index = atoi (filename);
+
+  tx_msg = g_byte_array_new ();
+  g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
+		       sizeof (SDS_SAMPLE_NAME_REQUEST));
+  tx_msg->data[5] = index % 128;
+  tx_msg->data[6] = index / 128;
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+  if (rx_msg)
+    {
+      snprintf (name, LABEL_MAX, "%s/%s.wav", dst_dir, &rx_msg->data[5]);
+      free_msg (rx_msg);
+    }
+  else
+    {
+      snprintf (name, LABEL_MAX, "%s/%d.wav", dst_dir, index);
+    }
+
+  g_free (src_path_copy);
+  return name;
+}
+
+static guint
+sds_get_bytes_value_right_just (guint8 * data, gint length)
+{
+  gint value = 0;
+  for (gint i = 0, shift = 0; i < length; i++, shift += 7)
+    {
+      value |= data[i] << shift;
+    }
+  return value;
+}
+
+static void
+sds_set_bytes_value_right_just (guint8 * data, gint length, guint value)
+{
+  for (gint i = 0, shift = 0; i < length; i++, shift += 7)
+    {
+      *data = 0x7f & (value >> shift);
+      data++;
+    }
+}
+
+static gint16
+sds_get_gint16_value_left_just (guint8 * data, gint length, guint bits)
+{
+  guint value = 0;
+  gint16 svalue;
+  for (gint i = length - 1, shift = 0; i >= 0; i--, shift += 7)
+    {
+      value |= (((guint) data[i]) << shift);
+    }
+  value >>= length * 7 - bits;
+  svalue = (gint16) (value - 0x8000);
+  return svalue;
+}
+
+static void
+sds_set_gint16_value_left_just (guint8 * data, gint length, guint bits,
+				gint16 svalue)
+{
+  gint value = svalue;
+  value += (guint) 0x8000;
+  value <<= length * 7 - bits;
+  for (gint i = length - 1, shift = 0; i >= 0; i--, shift += 7)
+    {
+      data[i] = (guint8) (0x7f & (value >> shift));
+    }
+}
+
+static guint8
+sds_checksum (guint8 * data)
+{
+  guint8 checksum = 0;
+  for (int i = SDS_DATA_PACKET_CKSUM_START; i < SDS_DATA_PACKET_CKSUM_POS;
+       i++)
+    {
+      checksum ^= data[i];
+    }
+  checksum &= 0x7F;
+  return checksum;
+}
+
+static gint
+sds_get_bytes_per_word (gint32 bits, guint * word_size,
+			guint * bytes_per_word)
+{
+  *word_size = (guint) ceil (bits / 8.0);
+  if (*word_size != 2)
+    {
+      error_print ("%d bits resolution not supported\n", bits);
+      return -1;
+    }
+
+  if (bits < 15)
+    {
+      *bytes_per_word = 2;
+    }
+  else
+    {
+      *bytes_per_word = 3;
+    }
+
+  return 0;
+}
+
+gint
+sds_download (struct backend *backend, const gchar * path,
+	      GByteArray * output, struct job_control *control)
+{
+  guint id, period, words, packet_counter, word_size, read_bytes,
+    bytes_per_word, total_words;
+  gint16 sample;
+  double samplerate;
+  GByteArray *tx_msg, *rx_msg;
+  gchar *path_copy, *index;
+  guint8 *dataptr;
+  gboolean active, header_resp;
+  struct sysex_transfer transfer;
+  struct sample_info *sample_info;
+
+  path_copy = strdup (path);
+  index = basename (path_copy);
+  id = atoi (index);
+  g_free (path_copy);
+
+  tx_msg = g_byte_array_new ();
+  g_byte_array_append (tx_msg, SDS_SAMPLE_REQUEST,
+		       sizeof (SDS_SAMPLE_REQUEST));
+  tx_msg->data[4] = id % 128;
+  tx_msg->data[5] = id / 128;
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+
+  sample_info = malloc (sizeof (struct sample_info));
+  sample_info->bitdepth = rx_msg->data[6];
+  if (sds_get_bytes_per_word
+      (sample_info->bitdepth, &word_size, &bytes_per_word))
+    {
+      free_msg (rx_msg);
+      return -EINVAL;
+    }
+
+  debug_print (1,
+	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
+	       sample_info->bitdepth, bytes_per_word, word_size);
+
+  period =
+    sds_get_bytes_value_right_just (&rx_msg->data[7], SDS_BYTES_PER_WORD);
+  samplerate = 1.0e9 / period;
+  debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n", samplerate,
+	       period);
+
+  words =
+    sds_get_bytes_value_right_just (&rx_msg->data[10], SDS_BYTES_PER_WORD);
+  debug_print (1, "Words: %d\n", words);
+
+  sample_info->samplerate = samplerate;
+  sample_info->loopstart =
+    sds_get_bytes_value_right_just (&rx_msg->data[13], SDS_BYTES_PER_WORD);
+  sample_info->loopend =
+    sds_get_bytes_value_right_just (&rx_msg->data[16], SDS_BYTES_PER_WORD);
+  sample_info->looptype = rx_msg->data[19];
+  control->data = sample_info;
+  control->parts = 1;
+  control->part = 0;
+  set_job_control_progress (control, 0.0);
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
+
+  packet_counter = 0;
+  total_words = 0;
+  header_resp = TRUE;
+  while (total_words < words && active)
+    {
+      gboolean ok = TRUE;
+      gint packet_num = header_resp ? 0 : packet_counter;
+      gint next_packet_num = header_resp ? 0 : packet_counter + 1;
+      next_packet_num = next_packet_num == 0x80 ? 0 : next_packet_num;
+      gint errors = 0;
+      while (errors < 10)
+	{
+	  tx_msg = g_byte_array_new ();
+	  if (ok)
+	    {
+	      g_byte_array_append (tx_msg, SDS_ACK, sizeof (SDS_ACK));
+	      tx_msg->data[4] = packet_num;
+	    }
+	  else
+	    {
+	      g_byte_array_append (tx_msg, SDS_NAK, sizeof (SDS_NAK));
+	      tx_msg->data[4] = next_packet_num;
+	    }
+	  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+	  if (!rx_msg)
+	    {
+	      g_free (path_copy);
+	      transfer.active = TRUE;
+	      transfer.raw = g_byte_array_new ();
+	      g_byte_array_append (transfer.raw, SDS_CANCEL,
+				   sizeof (SDS_CANCEL));
+	      tx_msg->data[4] = packet_num;
+	      g_mutex_lock (&backend->mutex);
+	      backend_tx_sysex (backend, &transfer);
+	      g_mutex_unlock (&backend->mutex);
+	      free_msg (transfer.raw);
+
+	      return -EIO;
+	    }
+
+	  if (rx_msg->len == SDS_DATA_PACKET_LEN
+	      && rx_msg->data[4] == next_packet_num
+	      && sds_checksum (rx_msg->data) ==
+	      rx_msg->data[SDS_DATA_PACKET_CKSUM_POS])
+	    {
+	      //Add checksum code
+	      if (header_resp)
+		{
+		  header_resp = FALSE;
+		}
+	      else
+		{
+		  packet_counter++;
+		  if (packet_counter == 0x80)
+		    {
+		      packet_counter = 0;
+		    }
+		}
+
+	      break;
+	    }
+
+	  error_print ("Package %d expected. NAK!\n", next_packet_num);
+	  errors++;
+
+	  free_msg (rx_msg);
+	  ok = FALSE;
+
+	  usleep (REST_TIME_US);
+	}
+
+      if (errors == 10)
+	{
+	  g_mutex_lock (&control->mutex);
+	  control->active = FALSE;
+	  g_mutex_unlock (&control->mutex);
+	  active = FALSE;
+	}
+
+      read_bytes = 0;
+      dataptr = &rx_msg->data[5];
+      while (active && read_bytes < SDS_DATA_PACKET_PAYLOAD_LEN
+	     && total_words < words)
+	{
+	  sample =
+	    sds_get_gint16_value_left_just (dataptr, bytes_per_word,
+					    sample_info->bitdepth);
+	  g_byte_array_append (output, (guint8 *) & sample, sizeof (sample));
+
+	  dataptr += bytes_per_word;
+	  read_bytes += bytes_per_word;
+
+	  total_words++;
+
+	  if (control)
+	    {
+	      set_job_control_progress (control,
+					total_words / (double) (words + 1));
+	      g_mutex_lock (&control->mutex);
+	      active = control->active;
+	      g_mutex_unlock (&control->mutex);
+	    }
+	}
+
+      usleep (REST_TIME_US);
+
+      free_msg (rx_msg);
+    }
+
+  transfer.active = TRUE;
+  transfer.raw = g_byte_array_new ();
+  if (active)
+    {
+      g_byte_array_append (transfer.raw, SDS_ACK, sizeof (SDS_ACK));
+      set_job_control_progress (control, 1.0);
+    }
+  else
+    {
+      g_byte_array_append (transfer.raw, SDS_CANCEL, sizeof (SDS_CANCEL));
+      backend_rx_drain (backend);
+    }
+  transfer.raw->data[4] = packet_counter;
+  g_mutex_lock (&backend->mutex);
+  backend_tx_sysex (backend, &transfer);
+  g_mutex_unlock (&backend->mutex);
+  free_msg (transfer.raw);
+
+  return 0;
+}
+
+static gint
+sds_upload_wait_ack (struct backend *backend, GByteArray * rx_msg,
+		     guint packet_num)
+{
+  gint err;
+  struct sysex_transfer transfer;
+
+  if (!rx_msg)
+    {
+      err = -EIO;
+      goto end;
+    }
+
+  rx_msg->data[4] = 0;
+  if (!memcmp (rx_msg->data, SDS_WAIT, sizeof (SDS_WAIT)))
+    {
+      free_msg (rx_msg);
+      transfer.active = TRUE;
+      transfer.timeout = SDS_ACK_WAIT_TIME_MS;
+      transfer.batch = FALSE;
+      debug_print (2, "Waiting for an ACK...\n");
+      if (backend_rx_sysex (backend, &transfer))
+	{
+	  return -EIO;
+	}
+      rx_msg = transfer.raw;
+    }
+
+  if (rx_msg->len == sizeof (SDS_ACK) && rx_msg->data[4] == packet_num)
+    {
+      rx_msg->data[4] = 0;
+      if (!memcmp (rx_msg->data, SDS_NAK, sizeof (SDS_NAK)))
+	{
+	  err = -EINVAL;
+	}
+      else if (!memcmp (rx_msg->data, SDS_CANCEL, sizeof (SDS_CANCEL)))
+	{
+	  err = -EIO;
+	}
+      else
+	{
+	  err = 0;
+	}
+    }
+  else
+    {
+      err = -EIO;
+    }
+
+  free_msg (rx_msg);
+end:
+  usleep (REST_TIME_US);
+  return err;
+}
+
+gint
+sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
+	    struct job_control *control)
+{
+  GByteArray *tx_msg, *rx_msg;
+  gchar *path_copy, *index_name, *name;
+  gint err = 0;
+  guint8 packet_num;
+  gint16 *frame;
+  gboolean active;
+  struct sample_info *sample_info = control->data;
+  guint name_len, word, words, words_per_packet, id, packets, period =
+    1.0e9 / sample_info->samplerate;
+
+  control->parts = 1;
+  control->part = 0;
+  set_job_control_progress (control, 0.0);
+
+  path_copy = strdup (path);
+  index_name = basename (path_copy);
+  id = (gint) strtol (index_name, &name, 10);
+  if (strncmp
+      (name, SAMPLE_ID_NAME_SEPARATOR,
+       strlen (SAMPLE_ID_NAME_SEPARATOR)) == 0)
+    {
+      name++;			//Skip ':'
+    }
+  else
+    {
+      error_print
+	("Path name not provided properly. Proceeding without renaming...\n");
+      name = NULL;
+    }
+
+  tx_msg = g_byte_array_sized_new (sizeof (SDS_DUMP_HEADER));
+  g_byte_array_append (tx_msg, SDS_DUMP_HEADER, sizeof (SDS_DUMP_HEADER));
+  tx_msg->data[4] = id % 128;
+  tx_msg->data[5] = id / 128;
+  tx_msg->data[6] = (guint8) sample_info->bitdepth;
+
+  debug_print (1,
+	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
+	       sample_info->bitdepth, SDS_BYTES_PER_WORD, 2);
+  debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n",
+	       (double) sample_info->samplerate, period);
+
+  words = input->len >> 1;	//bytes to words (frames)
+  frame = (gint16 *) input->data;
+  sds_set_bytes_value_right_just (&tx_msg->data[7], SDS_BYTES_PER_WORD,
+				  period);
+  sds_set_bytes_value_right_just (&tx_msg->data[10], SDS_BYTES_PER_WORD,
+				  words);
+  sds_set_bytes_value_right_just (&tx_msg->data[13], SDS_BYTES_PER_WORD,
+				  sample_info->loopstart);
+  sds_set_bytes_value_right_just (&tx_msg->data[16], SDS_BYTES_PER_WORD,
+				  sample_info->loopend);
+  tx_msg->data[19] = sample_info->looptype;
+
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+  err = sds_upload_wait_ack (backend, rx_msg, 0);
+  if (err)
+    {
+      goto end;
+    }
+
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
+
+  words_per_packet = SDS_DATA_PACKET_PAYLOAD_LEN / SDS_BYTES_PER_WORD;
+  packets = ceil (words / (double) words_per_packet);
+  packet_num = 0;
+  word = 0;
+  debug_print (1, "Words: %d\n", words);
+  debug_print (1, "Packets: %d\n", packets);
+  guint i = 0;
+  while (i < packets && active)
+    {
+      tx_msg = g_byte_array_sized_new (SDS_DATA_PACKET_LEN);
+      g_byte_array_append (tx_msg, SDS_DATA_PACKET_HEADER,
+			   sizeof (SDS_DATA_PACKET_HEADER));
+      g_byte_array_set_size (tx_msg, SDS_DATA_PACKET_LEN);
+      tx_msg->data[4] = packet_num;
+      memset (&tx_msg->data[sizeof (SDS_DATA_PACKET_HEADER)], 0,
+	      SDS_DATA_PACKET_PAYLOAD_LEN);
+      tx_msg->data[SDS_DATA_PACKET_LEN - 1] = 0xf7;
+
+      guint8 *data = &tx_msg->data[sizeof (SDS_DATA_PACKET_HEADER)];
+      gint16 *prev_frame = frame;
+      guint prev_word = word;
+      for (guint j = 0; j < SDS_DATA_PACKET_PAYLOAD_LEN;
+	   j += SDS_BYTES_PER_WORD)
+	{
+	  if (word < words)
+	    {
+	      sds_set_gint16_value_left_just (data, SDS_BYTES_PER_WORD,
+					      SDS_BITS, *frame);
+	      data += SDS_BYTES_PER_WORD;
+	      frame++;
+	      word++;
+	    }
+	}
+      tx_msg->data[SDS_DATA_PACKET_CKSUM_POS] = sds_checksum (tx_msg->data);
+
+      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+      err = sds_upload_wait_ack (backend, rx_msg, packet_num);
+      if (err == -EINVAL)	//NAK packet
+	{
+	  frame = prev_frame;
+	  word = prev_word;
+	  continue;
+	}
+      else if (err)		//CANCEL packet
+	{
+	  goto end;
+	}
+
+      packet_num++;
+      if (packet_num == 0x80)
+	{
+	  packet_num = 0;
+	}
+
+      i++;
+
+      set_job_control_progress (control, i / (double) (packets + 1));
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
+    }
+
+  if (*name && active)
+    {
+      tx_msg = g_byte_array_new ();
+      g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_HEADER,
+			   sizeof (SDS_SAMPLE_NAME_HEADER));
+      tx_msg->data[5] = id % 128;
+      tx_msg->data[6] = id / 128;
+
+      name_len = strlen (name);
+      name_len = name_len > 127 ? 127 : name_len;
+      g_byte_array_append (tx_msg, (guint8 *) & name_len, 1);
+      g_byte_array_append (tx_msg, (guint8 *) name, name_len);
+
+      g_byte_array_append (tx_msg, (guint8 *) "\xf7", 1);
+      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+      if (rx_msg)
+	{
+	  free_msg (rx_msg);
+	}
+    }
+
+  if (active)
+    {
+      set_job_control_progress (control, 1.0);
+    }
+
+end:
+  g_free (path_copy);
+  return err;
+}
+
+static void
+sds_free_iterator_data (void *iter_data)
+{
+  g_free (iter_data);
+}
+
+static guint
+sds_next_dentry (struct item_iterator *iter)
+{
+  gint index = *((gint *) iter->data);
+
+  if (iter->item.name != NULL)
+    {
+      g_free (iter->item.name);
+    }
+
+  if (index < SDS_SAMPLE_LIMIT)
+    {
+      iter->item.index = index;
+      iter->item.name = g_malloc (LABEL_MAX);
+      snprintf (iter->item.name, LABEL_MAX, "%d", index);
+      iter->item.type = ELEKTROID_FILE;
+      iter->item.size = -1;
+      (*((gint *) iter->data))++;
+      return 0;
+    }
+  else
+    {
+      return -ENOENT;
+    }
+}
+
+gint
+sds_read_dir (struct backend *backend, struct item_iterator *iter,
+	      const gchar * path)
+{
+  if (strcmp (path, "/"))
+    {
+      return -ENOTDIR;
+    }
+
+  iter->data = g_malloc (sizeof (guint));
+  *((gint *) iter->data) = 0;
+  iter->next = sds_next_dentry;
+  iter->free = sds_free_iterator_data;
+  iter->item.name = NULL;
+  iter->item.type = ELEKTROID_FILE;
+  iter->item.size = -1;
+
+  return 0;
+}
+
+gint
+sds_handshake (struct backend *backend)
+{
+  struct sysex_transfer transfer;
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+  gint err = 0;
+
+  tx_msg = g_byte_array_sized_new (sizeof (SDS_SAMPLE_REQUEST));
+  g_byte_array_append (tx_msg, SDS_SAMPLE_REQUEST,
+		       sizeof (SDS_SAMPLE_REQUEST));
+  tx_msg->data[4] = 1;
+  tx_msg->data[5] = 0;
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+
+  free_msg (rx_msg);
+
+  transfer.active = TRUE;
+  transfer.raw = g_byte_array_sized_new (sizeof (SDS_CANCEL));
+  g_byte_array_append (transfer.raw, SDS_CANCEL, sizeof (SDS_CANCEL));
+  //packet num is already 0
+  g_mutex_lock (&backend->mutex);
+  err = backend_tx_sysex (backend, &transfer);
+  g_mutex_unlock (&backend->mutex);
+  free_msg (transfer.raw);
+
+  return err;
+}
+
+gint
+sds_sample_load (const gchar * path, GByteArray * sample,
+		 struct job_control *control)
+{
+  struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
+  sample_info->samplerate = -1;
+  control->data = sample_info;
+  return sample_load_with_frames (path, sample, control, NULL);
+}

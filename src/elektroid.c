@@ -2668,7 +2668,7 @@ elektroid_add_upload_task_slot (const gchar * name,
 
       dst_file_path = g_malloc (sizeof (LABEL_MAX));
       snprintf (dst_file_path, LABEL_MAX, "/%d%s%s", item->index,
-		SDS_SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
+		SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
       browser_free_item (item);
 
       elektroid_add_task (UPLOAD, src_file_path, dst_file_path,

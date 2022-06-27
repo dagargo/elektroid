@@ -24,7 +24,9 @@
 #ifndef BACKEND_H
 #define BACKEND_H
 
+#define REST_TIME_US 50000
 #define SYSEX_TIMEOUT_MS 5000
+#define SAMPLE_ID_NAME_SEPARATOR ":"
 
 struct backend
 {
