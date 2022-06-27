@@ -61,7 +61,7 @@ struct browser
   const gchar *file_icon;
   gchar **extensions;
   const struct fs_operations *fs_ops;
-  void *data;
+  struct backend *backend;
     gboolean (*check_callback) ();
 };
 

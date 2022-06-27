@@ -325,7 +325,7 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
 
       sample_info->loopstart = le32toh (smpl_chunk_data.sample_loop.start);
       sample_info->loopend = le32toh (smpl_chunk_data.sample_loop.end);
-      sample_info->looptype = le32toh (smpl_chunk_data.sample_loop.end);
+      sample_info->looptype = le32toh (smpl_chunk_data.sample_loop.type);
     }
   else
     {

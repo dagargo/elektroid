@@ -24,6 +24,7 @@
 #include "package.h"
 #include "utils.h"
 #include "sample.h"
+#include "connector.h"
 
 #define PKG_TAG_FORMAT_VERSION "FormatVersion"
 #define PKG_TAG_PRODUCT_TYPE "ProductType"
@@ -362,7 +363,7 @@ gint
 package_receive_pkg_resources (struct package *pkg,
 			       const gchar * payload_path,
 			       struct job_control *control,
-			       struct connector *connector,
+			       struct backend *backend,
 			       fs_remote_file_op download_data,
 			       fs_remote_file_op download_sample)
 {
@@ -381,7 +382,7 @@ package_receive_pkg_resources (struct package *pkg,
   control->parts = 130;		// 128 sample slots, metadata and main.
   control->part = 0;
   set_job_control_progress (control, 0.0);
-  ret = download_data (metadata_path, metadata, control, connector);
+  ret = download_data (backend, metadata_path, metadata, control);
   if (ret)
     {
       debug_print (1, "Metadata file not available\n");
@@ -464,7 +465,7 @@ package_receive_pkg_resources (struct package *pkg,
       json_reader_end_element (reader);
 
       sample_path =
-	connector_get_sample_path_from_hash_size (connector, hash, size);
+	connector_get_sample_path_from_hash_size (backend, hash, size);
       if (!sample_path)
 	{
 	  debug_print (1, "Sample not found. Skipping...\n");
@@ -475,7 +476,7 @@ package_receive_pkg_resources (struct package *pkg,
 		   sample_path);
       debug_print (1, "Getting sample %s...\n", sample_path);
       g_byte_array_set_size (sample, 0);
-      if (download_sample (sample_path, sample, control, connector))
+      if (download_sample (backend, sample_path, sample, control))
 	{
 	  g_free (sample_path);
 	  error_print ("Error while downloading sample. Continuing...\n");
@@ -523,7 +524,7 @@ get_payload:
   g_byte_array_free (metadata, TRUE);
   debug_print (1, "Getting payload from %s...\n", payload_path);
   payload = g_byte_array_new ();
-  ret = download_data (payload_path, payload, control, connector);
+  ret = download_data (backend, payload_path, payload, control);
   if (ret)
     {
       error_print ("Error while downloading payload\n");
@@ -548,7 +549,7 @@ gint
 package_send_pkg_resources (struct package *pkg,
 			    const gchar * payload_path,
 			    struct job_control *control,
-			    struct connector *connector,
+			    struct backend *backend,
 			    fs_remote_file_op upload_data,
 			    fs_remote_file_op upload_sample)
 {
@@ -615,7 +616,7 @@ package_send_pkg_resources (struct package *pkg,
 
   control->parts = 129;		// 128 sample slots and main.
   control->part = 0;
-  ret = upload_data (payload_path, pkg_resource->data, control, connector);
+  ret = upload_data (backend, payload_path, pkg_resource->data, control);
   if (ret)
     {
       error_print ("Error while uploading payload to '%s'\n", payload_path);
@@ -750,9 +751,8 @@ package_send_pkg_resources (struct package *pkg,
       pkg->resources = g_list_append (pkg->resources, pkg_resource);
 
       //We remove the "Samples" at the beggining of the full zip path.
-      ret =
-	upload_sample (&sample_path[7], pkg_resource->data, control,
-		       connector);
+      ret = upload_sample (backend, &sample_path[7], pkg_resource->data,
+			   control);
       g_free (control->data);
       control->data = NULL;
       if (ret)

@@ -31,20 +31,9 @@
 
 struct connector
 {
-  struct device_desc device_desc;
-  snd_rawmidi_t *inputp;
-  snd_rawmidi_t *outputp;
-  gchar *device_name;
-  gchar *overbridge_name;
-  gchar *fw_version;
-  gushort seq;
-  GMutex mutex;
-  ssize_t rx_len;
-  guint8 *buffer;
-  gint npfds;
-  struct pollfd *pfds;
   GHashTable *dir_cache;
-  t_sysex_transfer upgrade_os;
+  gushort seq;
+  gchar *fw_version;
 };
 
 enum connector_fs
@@ -70,12 +59,6 @@ struct connector_iterator_data
   gboolean cached;
 };
 
-struct connector_system_device
-{
-  gchar *name;
-  guint card;
-};
-
 enum connector_storage
 {
   STORAGE_PLUS_DRIVE = 0x1,
@@ -92,36 +75,26 @@ struct connector_storage_stats
 const struct fs_operations *connector_get_fs_operations (enum connector_fs,
 							 const gchar *);
 
-gint connector_init (struct connector *, gint, const gchar *);
+gint connector_init (struct backend *, gint, const gchar *);
 
-void connector_destroy (struct connector *);
+void connector_destroy (struct backend *);
 
-gboolean connector_check (struct connector *);
-
-GArray *connector_get_system_devices ();
-
-gint connector_tx_sysex (struct sysex_transfer *, void *);
-
-gint connector_rx_sysex (struct sysex_transfer *, void *);
-
-void connector_rx_drain (struct connector *);
-
-gint connector_get_storage_stats (struct connector *,
+gint connector_get_storage_stats (struct backend *,
 				  enum connector_storage,
 				  struct connector_storage_stats *);
 
 gdouble connector_get_storage_stats_percent (struct connector_storage_stats
 					     *);
 
-gchar *connector_get_upload_path (struct connector *, struct item_iterator *,
+gchar *connector_get_upload_path (struct backend *, struct item_iterator *,
 				  const struct fs_operations *, const gchar *,
 				  const gchar *, gint32 *);
 
-gchar *connector_get_sample_path_from_hash_size (struct connector *,
+gchar *connector_get_sample_path_from_hash_size (struct backend *,
 						 guint32, guint32);
 
-void connector_enable_dir_cache (struct connector *);
+void connector_enable_dir_cache (struct backend *);
 
-void connector_disable_dir_cache (struct connector *);
+void connector_disable_dir_cache (struct backend *);
 
 #endif

@@ -25,18 +25,15 @@
 #include <zlib.h>
 #include <libgen.h>
 #include <glib/gi18n.h>
+#include "backend.h"
 #include "connector.h"
 #include "utils.h"
 #include "sample.h"
 #include "package.h"
 #include "../config.h"
 
-#define KB 1024
-#define BUFF_SIZE (4 * KB)
-#define RING_BUFF_SIZE (256 * KB)
 #define DATA_TRANSF_BLOCK_BYTES 0x2000
 #define OS_TRANSF_BLOCK_BYTES 0x800
-#define POLL_TIMEOUT 20
 #define MAX_ZIP_SIZE (128 * 1024 * 1024)
 
 #define FS_DATA_PRJ_PREFIX "/projects"
@@ -85,159 +82,140 @@ typedef GByteArray *(*connector_msg_write_blk_func) (guint, GByteArray *,
 
 typedef void (*connector_copy_array) (GByteArray *, GByteArray *);
 
-typedef gint (*connector_path_func) (struct connector *, const gchar *);
+typedef gint (*connector_path_func) (struct backend *, const gchar *);
 
-typedef gint (*connector_src_dst_func) (struct connector *, const gchar *,
+typedef gint (*connector_src_dst_func) (struct backend *, const gchar *,
 					const gchar *);
 
-static gint connector_delete_samples_dir (struct connector *, const gchar *);
+static gint connector_delete_samples_dir (struct backend *, const gchar *);
+static gint connector_read_samples_dir (struct backend *,
+					struct item_iterator *,
+					const gchar *);
+static gint connector_create_samples_dir (struct backend *, const gchar *);
+static gint connector_delete_samples_item (struct backend *, const gchar *);
+static gint connector_move_samples_item (struct backend *, const gchar *,
+					 const gchar *);
+static gint connector_download_sample (struct backend *, const gchar *,
+				       GByteArray *, struct job_control *);
+static gint connector_upload_sample (struct backend *, const gchar *,
+				     GByteArray *, struct job_control *);
 
-static gint connector_read_samples_dir (struct item_iterator *, const gchar *,
-					void *);
+static gint connector_delete_raw_dir (struct backend *, const gchar *);
+static gint connector_read_raw_dir (struct backend *, struct item_iterator *,
+				    const gchar *);
+static gint connector_create_raw_dir (struct backend *, const gchar *);
+static gint connector_delete_raw_item (struct backend *, const gchar *);
+static gint connector_move_raw_item (struct backend *, const gchar *,
+				     const gchar *);
+static gint connector_download_raw (struct backend *, const gchar *,
+				    GByteArray *, struct job_control *);
+static gint connector_upload_raw (struct backend *, const gchar *,
+				  GByteArray *, struct job_control *);
 
-static gint connector_create_samples_dir (const gchar *, void *);
+static gint connector_read_data_dir_any (struct backend *,
+					 struct item_iterator *,
+					 const gchar *);
+static gint connector_read_data_dir_prj (struct backend *,
+					 struct item_iterator *,
+					 const gchar *);
+static gint connector_read_data_dir_snd (struct backend *,
+					 struct item_iterator *,
+					 const gchar *);
 
-static gint connector_delete_samples_item (const gchar *, void *);
+static gint connector_move_data_item_any (struct backend *, const gchar *,
+					  const gchar *);
+static gint connector_move_data_item_prj (struct backend *, const gchar *,
+					  const gchar *);
+static gint connector_move_data_item_snd (struct backend *, const gchar *,
+					  const gchar *);
 
-static gint connector_move_samples_item (const gchar *, const gchar *,
-					 void *);
+static gint connector_copy_data_item_any (struct backend *, const gchar *,
+					  const gchar *);
+static gint connector_copy_data_item_prj (struct backend *, const gchar *,
+					  const gchar *);
+static gint connector_copy_data_item_snd (struct backend *, const gchar *,
+					  const gchar *);
 
-static gint connector_download_sample (const gchar *, GByteArray *,
-				       struct job_control *, void *);
+static gint connector_clear_data_item_any (struct backend *, const gchar *);
+static gint connector_clear_data_item_prj (struct backend *, const gchar *);
+static gint connector_clear_data_item_snd (struct backend *, const gchar *);
 
-static gint connector_upload_sample (const gchar *, GByteArray *,
-				     struct job_control *, void *);
+static gint connector_swap_data_item_any (struct backend *, const gchar *,
+					  const gchar *);
+static gint connector_swap_data_item_prj (struct backend *, const gchar *,
+					  const gchar *);
+static gint connector_swap_data_item_snd (struct backend *, const gchar *,
+					  const gchar *);
 
-static gint connector_delete_raw_dir (struct connector *, const gchar *);
+static gint connector_download_data_any (struct backend *, const gchar *,
+					 GByteArray *, struct job_control *);
+static gint connector_download_data_snd_pkg (struct backend *, const gchar *,
+					     GByteArray *,
+					     struct job_control *);
+static gint connector_download_data_prj_pkg (struct backend *, const gchar *,
+					     GByteArray *,
+					     struct job_control *);
+static gint connector_download_raw_pst_pkg (struct backend *, const gchar *,
+					    GByteArray *,
+					    struct job_control *);
 
-static gint connector_read_raw_dir (struct item_iterator *, const gchar *,
-				    void *);
-
-static gint connector_create_raw_dir (const gchar *, void *);
-
-static gint connector_delete_raw_item (const gchar *, void *);
-
-static gint connector_move_raw_item (const gchar *, const gchar *, void *);
-
-static gint connector_download_raw (const gchar *, GByteArray *,
-				    struct job_control *, void *);
-
-static gint connector_upload_raw (const gchar *, GByteArray *,
-				  struct job_control *, void *);
-
-static gint connector_read_data_dir_any (struct item_iterator *,
-					 const gchar *, void *);
-
-static gint connector_read_data_dir_prj (struct item_iterator *,
-					 const gchar *, void *);
-
-static gint connector_read_data_dir_snd (struct item_iterator *,
-					 const gchar *, void *);
-
-static gint connector_move_data_item_any (const gchar *, const gchar *,
-					  void *);
-static gint connector_move_data_item_prj (const gchar *, const gchar *,
-					  void *);
-static gint connector_move_data_item_snd (const gchar *, const gchar *,
-					  void *);
-
-static gint connector_copy_data_item_any (const gchar *, const gchar *,
-					  void *);
-
-static gint connector_copy_data_item_prj (const gchar *, const gchar *,
-					  void *);
-
-static gint connector_copy_data_item_snd (const gchar *, const gchar *,
-					  void *);
-
-static gint connector_clear_data_item_any (const gchar *, void *);
-
-static gint connector_clear_data_item_prj (const gchar *, void *);
-
-static gint connector_clear_data_item_snd (const gchar *, void *);
-
-static gint connector_swap_data_item_any (const gchar *, const gchar *,
-					  void *);
-
-static gint connector_swap_data_item_prj (const gchar *, const gchar *,
-					  void *);
-
-static gint connector_swap_data_item_snd (const gchar *, const gchar *,
-					  void *);
-
-static gint connector_download_data_any (const gchar *, GByteArray *,
-					 struct job_control *, void *);
-
-static gint connector_download_data_snd_pkg (const gchar *, GByteArray *,
-					     struct job_control *, void *);
-
-static gint connector_download_data_prj_pkg (const gchar *, GByteArray *,
-					     struct job_control *, void *);
-
-static gint connector_download_raw_pst_pkg (const gchar *, GByteArray *,
-					    struct job_control *, void *);
-
-
-static gint connector_upload_data_any (const gchar *, GByteArray *,
-				       struct job_control *, void *);
-
-static gint connector_upload_data_prj_pkg (const gchar *, GByteArray *,
-					   struct job_control *, void *);
-
-static gint connector_upload_data_snd_pkg (const gchar *, GByteArray *,
-					   struct job_control *, void *);
-
-static gint connector_upload_raw_pst_pkg (const gchar *, GByteArray *,
-					  struct job_control *, void *);
+static gint connector_upload_data_any (struct backend *, const gchar *,
+				       GByteArray *, struct job_control *);
+static gint connector_upload_data_prj_pkg (struct backend *, const gchar *,
+					   GByteArray *,
+					   struct job_control *);
+static gint connector_upload_data_snd_pkg (struct backend *, const gchar *,
+					   GByteArray *,
+					   struct job_control *);
+static gint connector_upload_raw_pst_pkg (struct backend *, const gchar *,
+					  GByteArray *, struct job_control *);
 
 static gint connector_copy_iterator (struct item_iterator *,
 				     struct item_iterator *, gboolean);
 
-static gchar *connector_get_fs_ext (const struct
-				    device_desc *,
+static gchar *connector_get_fs_ext (const struct device_desc *,
 				    const struct fs_operations *);
 
-static gchar *connector_get_dev_and_fs_ext (const struct
-					    device_desc *,
+static gchar *connector_get_dev_and_fs_ext (const struct device_desc *,
 					    const struct fs_operations *);
 
-static gchar *connector_get_upload_path_smplrw (const struct fs_operations *,
-						const gchar *, const gchar *,
-						gint32 *,
+static gchar *connector_get_upload_path_smplrw (struct backend *,
 						struct item_iterator *,
-						void *);
-
-static gchar *connector_get_upload_path_data (const struct fs_operations *,
+						const struct fs_operations *,
+						const gchar *, const gchar *,
+						gint32 *);
+static gchar *connector_get_upload_path_data (struct backend *,
+					      struct item_iterator *,
+					      const struct fs_operations *,
 					      const gchar *, const gchar *,
-					      gint32 *,
-					      struct item_iterator *, void *);
-
-static gchar *connector_get_download_path (const struct fs_operations *,
-					   const gchar *, const gchar *,
-					   struct item_iterator *, void *);
-
-static gchar *connector_get_download_name (struct connector *,
+					      gint32 *);
+static gchar *connector_get_download_path (struct backend *,
+					   struct item_iterator *,
+					   const struct fs_operations *,
+					   const gchar *, const gchar *);
+static gchar *connector_get_download_name (struct backend *,
 					   struct item_iterator *,
 					   const struct fs_operations *,
 					   const gchar *);
 
-static gint connector_upgrade_os (struct sysex_transfer *, void *);
+static gint connector_upgrade_os (struct backend *, struct sysex_transfer *);
 
-static gchar *sds_get_upload_path (const struct fs_operations *,
-				   const gchar *, const gchar *,
-				   gint32 *, struct item_iterator *, void *);
+static gchar *sds_get_upload_path (struct backend *, struct item_iterator *,
+				   const struct fs_operations *,
+				   const gchar *, const gchar *, gint32 *);
 
-static gchar *sds_get_download_path (const struct fs_operations *,
-				     const gchar *, const gchar *,
-				     struct item_iterator *, void *);
+static gchar *sds_get_download_path (struct backend *, struct item_iterator *,
+				     const struct fs_operations *,
+				     const gchar *, const gchar *);
 
-static gint sds_download (const gchar *, GByteArray *, struct job_control *,
-			  void *);
+static gint sds_download (struct backend *, const gchar *, GByteArray *,
+			  struct job_control *);
 
-static gint sds_upload (const gchar *, GByteArray *, struct job_control *,
-			void *);
+static gint sds_upload (struct backend *, const gchar *, GByteArray *,
+			struct job_control *);
 
-static gint sds_read_dir (struct item_iterator *, const gchar *, void *);
+static gint sds_read_dir (struct backend *, struct item_iterator *,
+			  const gchar *);
 
 static gint elektron_sample_load (const gchar *, GByteArray *,
 				  struct job_control *);
@@ -493,7 +471,7 @@ static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_SDS_OPERATIONS, NULL
 };
 
-static enum item_type connector_get_path_type (struct connector *,
+static enum item_type connector_get_path_type (struct backend *,
 					       const gchar *,
 					       fs_init_iter_func);
 
@@ -595,6 +573,9 @@ connector_next_smplrw_entry (struct item_iterator *iter)
       return 0;
     }
 }
+
+static gint connector_copy_iterator (struct item_iterator *,
+				     struct item_iterator *, gboolean);
 
 static gint
 connector_init_iterator (struct item_iterator *iter, GByteArray * msg,
@@ -1037,82 +1018,14 @@ connector_raw_to_msg (GByteArray * sysex)
   return msg;
 }
 
-static ssize_t
-connector_tx_raw (struct connector *connector, const guint8 * data, guint len)
-{
-  ssize_t tx_len;
-
-  if (!connector->outputp)
-    {
-      error_print ("Output port is NULL\n");
-      return -ENOTCONN;
-    }
-
-  snd_rawmidi_read (connector->inputp, NULL, 0);	// trigger reading
-
-  tx_len = snd_rawmidi_write (connector->outputp, data, len);
-  if (tx_len < 0)
-    {
-      error_print ("Error while writing to device: %s\n",
-		   snd_strerror (tx_len));
-      connector_destroy (connector);
-    }
-  return tx_len;
-}
-
-gint
-connector_tx_sysex (struct sysex_transfer *transfer, void *data)
-{
-  ssize_t tx_len;
-  guint total;
-  guint len;
-  guchar *b;
-  gint res = 0;
-  struct connector *connector = data;
-
-  transfer->status = SENDING;
-
-  b = transfer->raw->data;
-  total = 0;
-  while (total < transfer->raw->len && transfer->active)
-    {
-      len = transfer->raw->len - total;
-      if (len > BUFF_SIZE)
-	{
-	  len = BUFF_SIZE;
-	}
-
-      tx_len = connector_tx_raw (connector, b, len);
-      if (tx_len < 0)
-	{
-	  res = tx_len;
-	  break;
-	}
-      b += len;
-      total += len;
-    }
-
-  if (debug_level > 1)
-    {
-      gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
-					transfer->raw->len);
-      debug_print (2, "Raw message sent (%d): %s\n", transfer->raw->len,
-		   text);
-      free (text);
-    }
-
-  transfer->active = FALSE;
-  transfer->status = FINISHED;
-  return res;
-}
-
 static gint
-connector_tx (struct connector *connector, const GByteArray * msg)
+connector_tx (struct backend *backend, const GByteArray * msg)
 {
   gint res;
   guint16 aux;
   gchar *text;
   struct sysex_transfer transfer;
+  struct connector *connector = backend->data;
 
   aux = htobe16 (connector->seq);
   memcpy (msg->data, &aux, sizeof (guint16));
@@ -1128,7 +1041,7 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   transfer.active = TRUE;
   transfer.raw = connector_msg_to_raw (msg);
 
-  res = connector_tx_sysex (&transfer, connector);
+  res = backend_tx_sysex (backend, &transfer);
   if (!res)
     {
       text = debug_get_hex_msg (msg);
@@ -1140,263 +1053,8 @@ connector_tx (struct connector *connector, const GByteArray * msg)
   return res;
 }
 
-void
-connector_rx_drain (struct connector *connector)
-{
-  debug_print (2, "Draining buffer...\n");
-  connector->rx_len = 0;
-  snd_rawmidi_drain (connector->inputp);
-}
-
-static gboolean
-connector_is_rt_msg (guint8 * data, guint len)
-{
-  guint i;
-  guint8 *b;
-
-  for (i = 0, b = data; i < len; i++, b++)
-    {
-      if (*b < 0xf8)		//Not System Real-Time Messages
-	{
-	  return FALSE;
-	}
-    }
-
-  return TRUE;
-}
-
-static ssize_t
-connector_rx_raw (struct connector *connector, guint8 * data, guint len,
-		  struct sysex_transfer *transfer)
-{
-  ssize_t rx_len;
-  guint total_time;
-  unsigned short revents;
-  gint err;
-  gchar *text;
-
-  if (!connector->inputp)
-    {
-      error_print ("Input port is NULL\n");
-      return -ENOTCONN;
-    }
-
-  total_time = 0;
-
-  while (1)
-    {
-      err = poll (connector->pfds, connector->npfds, POLL_TIMEOUT);
-
-      if (!transfer->active)
-	{
-	  return -ECANCELED;
-	}
-
-      if (err == 0)
-	{
-	  total_time += POLL_TIMEOUT;
-	  if (((transfer->batch && transfer->status == RECEIVING)
-	       || !transfer->batch) && transfer->timeout > -1
-	      && total_time >= transfer->timeout)
-	    {
-	      debug_print (1, "Timeout!\n");
-	      return -ENODATA;
-	    }
-	  continue;
-	}
-
-      if (err < 0)
-	{
-	  error_print ("Error while polling. %s.\n", g_strerror (errno));
-	  connector_destroy (connector);
-	  return err;
-	}
-
-      if ((err =
-	   snd_rawmidi_poll_descriptors_revents (connector->inputp,
-						 connector->pfds,
-						 connector->npfds,
-						 &revents)) < 0)
-	{
-	  error_print ("Error while getting poll events. %s.\n",
-		       snd_strerror (err));
-	  connector_destroy (connector);
-	  return err;
-	}
-
-      if (revents & (POLLERR | POLLHUP))
-	{
-	  return -ENODATA;
-	}
-
-      if (!(revents & POLLIN))
-	{
-	  continue;
-	}
-
-      rx_len = snd_rawmidi_read (connector->inputp, data, len);
-
-      if (rx_len == -EAGAIN || rx_len == 0)
-	{
-	  continue;
-	}
-
-      if (rx_len > 0)
-	{
-	  if (connector_is_rt_msg (data, rx_len))
-	    {
-	      continue;
-	    }
-	  break;
-	}
-
-      if (rx_len < 0)
-	{
-	  error_print ("Error while reading from device: %s\n",
-		       snd_strerror (rx_len));
-	  connector_destroy (connector);
-	  break;
-	}
-
-    }
-
-  if (debug_level > 2)
-    {
-      text = debug_get_hex_data (debug_level, data, rx_len);
-      debug_print (3, "Buffer content (%zu): %s\n", rx_len, text);
-      free (text);
-    }
-
-  return rx_len;
-}
-
-gint
-connector_rx_sysex (struct sysex_transfer *transfer, void *data)
-{
-  gint i;
-  guint8 *b;
-  gint res = 0;
-  struct connector *connector = data;
-
-  transfer->status = WAITING;
-  transfer->raw = g_byte_array_sized_new (BUFF_SIZE);
-
-  i = 0;
-  if (connector->rx_len < 0)
-    {
-      connector->rx_len = 0;
-    }
-  b = connector->buffer;
-
-  while (1)
-    {
-      if (i == connector->rx_len)
-	{
-	  connector->rx_len =
-	    connector_rx_raw (connector, connector->buffer, BUFF_SIZE,
-			      transfer);
-
-	  if (connector->rx_len == -ENODATA)
-	    {
-	      res = -ENODATA;
-	      goto error;
-	    }
-
-	  if (connector->rx_len < 0)
-	    {
-	      res = -EIO;
-	      goto error;
-	    }
-
-	  b = connector->buffer;
-	  i = 0;
-	}
-
-      while (i < connector->rx_len && *b != 0xf0)
-	{
-	  b++;
-	  i++;
-	}
-
-      if (i < connector->rx_len)
-	{
-	  break;
-	}
-    }
-
-  g_byte_array_append (transfer->raw, b, 1);
-  b++;
-  i++;
-  transfer->status = RECEIVING;
-
-  while (1)
-    {
-      if (i == connector->rx_len)
-	{
-	  connector->rx_len =
-	    connector_rx_raw (connector, connector->buffer, BUFF_SIZE,
-			      transfer);
-
-	  if (connector->rx_len == -ENODATA && transfer->batch)
-	    {
-	      break;
-	    }
-
-	  if (connector->rx_len < 0)
-	    {
-	      res = -EIO;
-	      goto error;
-	    }
-
-	  b = connector->buffer;
-	  i = 0;
-	}
-
-      while (i < connector->rx_len && (*b != 0xf7 || transfer->batch))
-	{
-	  if (!connector_is_rt_msg (b, 1))
-	    {
-	      g_byte_array_append (transfer->raw, b, 1);
-	    }
-	  b++;
-	  i++;
-	}
-
-      if (i < connector->rx_len)
-	{
-	  g_byte_array_append (transfer->raw, b, 1);
-	  connector->rx_len = connector->rx_len - i - 1;
-	  if (connector->rx_len > 0)
-	    {
-	      memmove (connector->buffer, &connector->buffer[i + 1],
-		       connector->rx_len);
-	    }
-	  break;
-	}
-    }
-
-  if (debug_level > 1)
-    {
-      gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
-					transfer->raw->len);
-      debug_print (2, "Raw message received (%d): %s\n", transfer->raw->len,
-		   text);
-      free (text);
-    }
-
-  goto end;
-
-error:
-  free_msg (transfer->raw);
-  transfer->raw = NULL;
-end:
-  transfer->active = FALSE;
-  transfer->status = FINISHED;
-  return res;
-}
-
 static GByteArray *
-connector_rx (struct connector *connector)
+connector_rx (struct backend *backend)
 {
   gchar *text;
   GByteArray *msg;
@@ -1406,7 +1064,7 @@ connector_rx (struct connector *connector)
   transfer.timeout = SYSEX_TIMEOUT_MS;
   transfer.batch = FALSE;
 
-  if (connector_rx_sysex (&transfer, connector))
+  if (backend_rx_sysex (backend, &transfer))
     {
       return NULL;
     }
@@ -1429,7 +1087,7 @@ connector_rx (struct connector *connector)
       free_msg (transfer.raw);
 
       transfer.active = TRUE;
-      if (connector_rx_sysex (&transfer, connector))
+      if (backend_rx_sysex (backend, &transfer))
 	{
 	  return NULL;
 	}
@@ -1450,23 +1108,23 @@ connector_rx (struct connector *connector)
 //Synchronized
 
 static GByteArray *
-connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
+connector_tx_and_rx (struct backend *backend, GByteArray * tx_msg)
 {
   ssize_t len;
   GByteArray *rx_msg;
   guint msg_type = tx_msg->data[4] | 0x80;
 
-  g_mutex_lock (&connector->mutex);
-  connector_rx_drain (connector);
+  g_mutex_lock (&backend->mutex);
+  backend_rx_drain (backend);
 
-  len = connector_tx (connector, tx_msg);
+  len = connector_tx (backend, tx_msg);
   if (len < 0)
     {
       rx_msg = NULL;
       goto cleanup;
     }
 
-  rx_msg = connector_rx (connector);
+  rx_msg = connector_rx (backend);
   if (rx_msg && rx_msg->data[4] != msg_type)
     {
       error_print ("Illegal message type in response\n");
@@ -1477,119 +1135,12 @@ connector_tx_and_rx (struct connector *connector, GByteArray * tx_msg)
 
 cleanup:
   free_msg (tx_msg);
-  g_mutex_unlock (&connector->mutex);
+  g_mutex_unlock (&backend->mutex);
   return rx_msg;
 }
 
-//Synchronized
-
-static GByteArray *
-connector_tx_and_rx_sysex (struct connector *connector, GByteArray * tx_msg)
-{
-  gint err;
-  struct sysex_transfer transfer;
-
-  g_mutex_lock (&connector->mutex);
-  transfer.raw = tx_msg;
-  transfer.active = TRUE;
-  transfer.timeout = SYSEX_TIMEOUT_MS;
-  transfer.batch = FALSE;
-  err = connector_tx_sysex (&transfer, connector);
-  free_msg (transfer.raw);
-  if (err < 0)
-    {
-      err = -EIO;
-      goto cleanup;
-    }
-
-  transfer.active = TRUE;
-  err = connector_rx_sysex (&transfer, connector);
-  if (err < 0)
-    {
-      err = -EIO;
-      goto cleanup;
-    }
-
-cleanup:
-  g_mutex_unlock (&connector->mutex);
-  return transfer.raw;
-}
-
-static gint
-connector_read_common_dir (struct item_iterator *iter, const gchar * dir,
-			   void *data, const guint8 msg[], int size,
-			   fs_init_iter_func init_iter, enum connector_fs fs)
-{
-  gboolean cache;
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
-  struct connector *connector = data;
-
-  g_mutex_lock (&connector->mutex);
-  cache = connector->dir_cache != NULL;
-  rx_msg = cache ? g_hash_table_lookup (connector->dir_cache, dir) : NULL;
-  g_mutex_unlock (&connector->mutex);
-
-  if (!rx_msg)
-    {
-      tx_msg = connector_new_msg_path (msg, size, dir);
-      if (!tx_msg)
-	{
-	  return -EINVAL;
-	}
-
-      rx_msg = connector_tx_and_rx (connector, tx_msg);
-      if (!rx_msg)
-	{
-	  return -EIO;
-	}
-
-      g_mutex_lock (&connector->mutex);
-      cache = connector->dir_cache != NULL;
-      if (cache)
-	{
-	  gchar *key = g_strdup (dir);
-	  g_hash_table_insert (connector->dir_cache, key, rx_msg);
-	}
-      g_mutex_unlock (&connector->mutex);
-
-      if (rx_msg->len == 5
-	  && connector_get_path_type (connector, dir,
-				      init_iter) != ELEKTROID_DIR)
-	{
-	  if (!cache)
-	    {
-	      free_msg (rx_msg);
-	    }
-	  return -ENOTDIR;
-	}
-    }
-
-  return connector_init_iterator (iter, rx_msg, connector_next_smplrw_entry,
-				  fs, cache);
-}
-
-static gint
-connector_read_samples_dir (struct item_iterator *iter, const gchar * dir,
-			    void *data)
-{
-  return connector_read_common_dir (iter, dir, data,
-				    FS_SAMPLE_READ_DIR_REQUEST,
-				    sizeof (FS_SAMPLE_READ_DIR_REQUEST),
-				    connector_read_samples_dir, FS_SAMPLES);
-}
-
-static gint
-connector_read_raw_dir (struct item_iterator *iter, const gchar * dir,
-			void *data)
-{
-  return connector_read_common_dir (iter, dir, data, FS_RAW_READ_DIR_REQUEST,
-				    sizeof (FS_RAW_READ_DIR_REQUEST),
-				    connector_read_raw_dir, FS_RAW_ALL);
-}
-
 static enum item_type
-connector_get_path_type (struct connector *connector, const gchar * path,
+connector_get_path_type (struct backend *backend, const gchar * path,
 			 fs_init_iter_func init_iter)
 {
   gchar *name_copy;
@@ -1609,7 +1160,7 @@ connector_get_path_type (struct connector *connector, const gchar * path,
   name = basename (name_copy);
   parent = dirname (parent_copy);
   res = ELEKTROID_NONE;
-  if (!init_iter (&iter, parent, connector))
+  if (!init_iter (backend, &iter, parent))
     {
       while (!next_item_iterator (&iter))
 	{
@@ -1628,7 +1179,82 @@ connector_get_path_type (struct connector *connector, const gchar * path,
 }
 
 static gint
-connector_src_dst_common (struct connector *connector,
+connector_read_common_dir (struct backend *backend,
+			   struct item_iterator *iter, const gchar * dir,
+			   const guint8 msg[], int size,
+			   fs_init_iter_func init_iter, enum connector_fs fs)
+{
+  gboolean cache;
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+  struct connector *connector = backend->data;
+
+  g_mutex_lock (&backend->mutex);
+  cache = connector->dir_cache != NULL;
+  rx_msg = cache ? g_hash_table_lookup (connector->dir_cache, dir) : NULL;
+  g_mutex_unlock (&backend->mutex);
+
+  if (!rx_msg)
+    {
+      tx_msg = connector_new_msg_path (msg, size, dir);
+      if (!tx_msg)
+	{
+	  return -EINVAL;
+	}
+
+      rx_msg = connector_tx_and_rx (backend, tx_msg);
+      if (!rx_msg)
+	{
+	  return -EIO;
+	}
+
+      g_mutex_lock (&backend->mutex);
+      cache = connector->dir_cache != NULL;
+      if (cache)
+	{
+	  gchar *key = g_strdup (dir);
+	  g_hash_table_insert (connector->dir_cache, key, rx_msg);
+	}
+      g_mutex_unlock (&backend->mutex);
+
+      if (rx_msg->len == 5
+	  && connector_get_path_type (backend, dir,
+				      init_iter) != ELEKTROID_DIR)
+	{
+	  if (!cache)
+	    {
+	      free_msg (rx_msg);
+	    }
+	  return -ENOTDIR;
+	}
+    }
+
+  return connector_init_iterator (iter, rx_msg, connector_next_smplrw_entry,
+				  fs, cache);
+}
+
+static gint
+connector_read_samples_dir (struct backend *backend,
+			    struct item_iterator *iter, const gchar * dir)
+{
+  return connector_read_common_dir (backend, iter, dir,
+				    FS_SAMPLE_READ_DIR_REQUEST,
+				    sizeof (FS_SAMPLE_READ_DIR_REQUEST),
+				    connector_read_samples_dir, FS_SAMPLES);
+}
+
+static gint
+connector_read_raw_dir (struct backend *backend, struct item_iterator *iter,
+			const gchar * dir)
+{
+  return connector_read_common_dir (backend, iter, dir,
+				    FS_RAW_READ_DIR_REQUEST,
+				    sizeof (FS_RAW_READ_DIR_REQUEST),
+				    connector_read_raw_dir, FS_RAW_ALL);
+}
+
+static gint
+connector_src_dst_common (struct backend *backend,
 			  const gchar * src, const gchar * dst,
 			  const guint8 * data, guint len)
 {
@@ -1657,7 +1283,7 @@ connector_src_dst_common (struct connector *connector,
   g_free (src_cp1252);
   g_free (dst_cp1252);
 
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
       return -EIO;
@@ -1679,26 +1305,26 @@ connector_src_dst_common (struct connector *connector,
 }
 
 static gint
-connector_rename_sample_file (struct connector *connector, const gchar * src,
+connector_rename_sample_file (struct backend *backend, const gchar * src,
 			      const gchar * dst)
 {
-  return connector_src_dst_common (connector, src, dst,
+  return connector_src_dst_common (backend, src, dst,
 				   FS_SAMPLE_RENAME_FILE_REQUEST,
 				   sizeof (FS_SAMPLE_RENAME_FILE_REQUEST));
 }
 
 static gint
-connector_rename_raw_file (struct connector *connector, const gchar * src,
+connector_rename_raw_file (struct backend *backend, const gchar * src,
 			   const gchar * dst)
 {
-  return connector_src_dst_common (connector, src, dst,
+  return connector_src_dst_common (backend, src, dst,
 				   FS_RAW_RENAME_FILE_REQUEST,
 				   sizeof (FS_RAW_RENAME_FILE_REQUEST));
 }
 
 static gint
-connector_move_common_item (const gchar * src, const gchar * dst, void *data,
-			    fs_init_iter_func init_iter,
+connector_move_common_item (struct backend *backend, const gchar * src,
+			    const gchar * dst, fs_init_iter_func init_iter,
 			    connector_src_dst_func mv, fs_path_func mkdir,
 			    connector_path_func rmdir)
 {
@@ -1707,33 +1333,31 @@ connector_move_common_item (const gchar * src, const gchar * dst, void *data,
   gchar *src_plus;
   gchar *dst_plus;
   struct item_iterator iter;
-  struct connector *connector = data;
 
   //Renaming is not implemented for directories so we need to implement it.
 
   debug_print (1, "Renaming remotely from %s to %s...\n", src, dst);
 
-  type = connector_get_path_type (connector, src, init_iter);
+  type = connector_get_path_type (backend, src, init_iter);
   if (type == ELEKTROID_FILE)
     {
-      return mv (connector, src, dst);
+      return mv (backend, src, dst);
     }
   else if (type == ELEKTROID_DIR)
     {
-      res = mkdir (dst, connector);
+      res = mkdir (backend, dst);
       if (res)
 	{
 	  return res;
 	}
-      if (!init_iter (&iter, src, connector))
+      if (!init_iter (backend, &iter, src))
 	{
 	  while (!next_item_iterator (&iter) && !res)
 	    {
 	      src_plus = chain_path (src, iter.item.name);
 	      dst_plus = chain_path (dst, iter.item.name);
-	      res =
-		connector_move_common_item (src_plus, dst_plus, connector,
-					    init_iter, mv, mkdir, rmdir);
+	      res = connector_move_common_item (backend, src_plus, dst_plus,
+						init_iter, mv, mkdir, rmdir);
 	      free (src_plus);
 	      free (dst_plus);
 	    }
@@ -1741,7 +1365,7 @@ connector_move_common_item (const gchar * src, const gchar * dst, void *data,
 	}
       if (!res)
 	{
-	  res = rmdir (connector, src);
+	  res = rmdir (backend, src);
 	}
       return res;
     }
@@ -1752,7 +1376,7 @@ connector_move_common_item (const gchar * src, const gchar * dst, void *data,
 }
 
 static gint
-connector_path_common (struct connector *connector, const gchar * path,
+connector_path_common (struct backend *backend, const gchar * path,
 		       const guint8 * template, gint size)
 {
   gint res;
@@ -1765,7 +1389,7 @@ connector_path_common (struct connector *connector, const gchar * path,
       return -EINVAL;
     }
 
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
       return -EIO;
@@ -1787,17 +1411,17 @@ connector_path_common (struct connector *connector, const gchar * path,
 }
 
 static gint
-connector_delete_sample (struct connector *connector, const gchar * path)
+connector_delete_sample (struct backend *backend, const gchar * path)
 {
-  return connector_path_common (connector, path,
+  return connector_path_common (backend, path,
 				FS_SAMPLE_DELETE_FILE_REQUEST,
 				sizeof (FS_SAMPLE_DELETE_FILE_REQUEST));
 }
 
 static gint
-connector_delete_samples_dir (struct connector *connector, const gchar * path)
+connector_delete_samples_dir (struct backend *backend, const gchar * path)
 {
-  return connector_path_common (connector, path, FS_SAMPLE_DELETE_DIR_REQUEST,
+  return connector_path_common (backend, path, FS_SAMPLE_DELETE_DIR_REQUEST,
 				sizeof (FS_SAMPLE_DELETE_DIR_REQUEST));
 }
 
@@ -1811,11 +1435,11 @@ connector_add_ext_to_mc_snd (const gchar * path)
 }
 
 static gint
-connector_delete_raw (struct connector *connector, const gchar * path)
+connector_delete_raw (struct backend *backend, const gchar * path)
 {
   gint ret;
   gchar *path_with_ext = connector_add_ext_to_mc_snd (path);
-  ret = connector_path_common (connector, path_with_ext,
+  ret = connector_path_common (backend, path_with_ext,
 			       FS_RAW_DELETE_FILE_REQUEST,
 			       sizeof (FS_RAW_DELETE_FILE_REQUEST));
   g_free (path_with_ext);
@@ -1823,16 +1447,24 @@ connector_delete_raw (struct connector *connector, const gchar * path)
 }
 
 static gint
-connector_delete_raw_dir (struct connector *connector, const gchar * path)
+connector_delete_raw_dir (struct backend *backend, const gchar * path)
 {
-  return connector_path_common (connector, path, FS_RAW_DELETE_DIR_REQUEST,
+  return connector_path_common (backend, path, FS_RAW_DELETE_DIR_REQUEST,
 				sizeof (FS_RAW_DELETE_DIR_REQUEST));
 }
 
 static gint
-connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
+connector_create_samples_dir (struct backend *backend, const gchar * path)
 {
-  return connector_move_common_item (src, dst, data,
+  return connector_path_common (backend, path, FS_SAMPLE_CREATE_DIR_REQUEST,
+				sizeof (FS_SAMPLE_CREATE_DIR_REQUEST));
+}
+
+static gint
+connector_move_samples_item (struct backend *backend, const gchar * src,
+			     const gchar * dst)
+{
+  return connector_move_common_item (backend, src, dst,
 				     connector_read_samples_dir,
 				     connector_rename_sample_file,
 				     connector_create_samples_dir,
@@ -1840,11 +1472,19 @@ connector_move_samples_item (const gchar * src, const gchar * dst, void *data)
 }
 
 static gint
-connector_move_raw_item (const gchar * src, const gchar * dst, void *data)
+connector_create_raw_dir (struct backend *backend, const gchar * path)
+{
+  return connector_path_common (backend, path, FS_RAW_CREATE_DIR_REQUEST,
+				sizeof (FS_RAW_CREATE_DIR_REQUEST));
+}
+
+static gint
+connector_move_raw_item (struct backend *backend, const gchar * src,
+			 const gchar * dst)
 {
   gint ret;
   gchar *src_with_ext = connector_add_ext_to_mc_snd (src);
-  ret = connector_move_common_item (src_with_ext, dst, data,
+  ret = connector_move_common_item (backend, src_with_ext, dst,
 				    connector_read_raw_dir,
 				    connector_rename_raw_file,
 				    connector_create_raw_dir,
@@ -1854,7 +1494,7 @@ connector_move_raw_item (const gchar * src, const gchar * dst, void *data)
 }
 
 static gint
-connector_delete_common_item (const gchar * path, void *data,
+connector_delete_common_item (struct backend *backend, const gchar * path,
 			      fs_init_iter_func init_iter,
 			      connector_path_func rmdir,
 			      connector_path_func rm)
@@ -1862,19 +1502,18 @@ connector_delete_common_item (const gchar * path, void *data,
   enum item_type type;
   gchar *new_path;
   struct item_iterator iter;
-  struct connector *connector = data;
   gint res;
 
-  type = connector_get_path_type (connector, path, init_iter);
+  type = connector_get_path_type (backend, path, init_iter);
   if (type == ELEKTROID_FILE)
     {
-      return rm (connector, path);
+      return rm (backend, path);
     }
   else if (type == ELEKTROID_DIR)
     {
       debug_print (1, "Deleting %s samples dir...\n", path);
 
-      if (init_iter (&iter, path, connector))
+      if (init_iter (backend, &iter, path))
 	{
 	  error_print ("Error while opening samples dir %s dir\n", path);
 	}
@@ -1885,13 +1524,13 @@ connector_delete_common_item (const gchar * path, void *data,
 	    {
 	      new_path = chain_path (path, iter.item.name);
 	      res = res
-		|| connector_delete_common_item (new_path, connector,
+		|| connector_delete_common_item (backend, new_path,
 						 init_iter, rmdir, rm);
 	      free (new_path);
 	    }
 	  free_item_iterator (&iter);
 	}
-      return res || rmdir (connector, path);
+      return res || rmdir (backend, path);
     }
   else
     {
@@ -1900,31 +1539,30 @@ connector_delete_common_item (const gchar * path, void *data,
 }
 
 static gint
-connector_delete_samples_item (const gchar * path, void *data)
+connector_delete_samples_item (struct backend *backend, const gchar * path)
 {
-  return connector_delete_common_item (path, data,
+  return connector_delete_common_item (backend, path,
 				       connector_read_samples_dir,
 				       connector_delete_samples_dir,
 				       connector_delete_sample);
 }
 
 static gint
-connector_delete_raw_item (const gchar * path, void *data)
+connector_delete_raw_item (struct backend *backend, const gchar * path)
 {
-  return connector_delete_common_item (path, data,
+  return connector_delete_common_item (backend, path,
 				       connector_read_raw_dir,
 				       connector_delete_raw_dir,
 				       connector_delete_raw);
 }
 
 static gint
-connector_upload_smplrw (const gchar * path, GByteArray * input,
-			 struct job_control *control, void *data,
+connector_upload_smplrw (struct backend *backend, const gchar * path,
+			 GByteArray * input, struct job_control *control,
 			 connector_msg_path_len_func new_msg_open_write,
 			 connector_msg_write_blk_func new_msg_write_blk,
 			 connector_msg_id_len_func new_msg_close_write)
 {
-  struct connector *connector = data;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   guint transferred;
@@ -1942,7 +1580,7 @@ connector_upload_smplrw (const gchar * path, GByteArray * input,
       return -EINVAL;
     }
 
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
       return -EIO;
@@ -1969,7 +1607,7 @@ connector_upload_smplrw (const gchar * path, GByteArray * input,
   while (transferred < input->len && active)
     {
       tx_msg = new_msg_write_blk (id, input, &transferred, i, control->data);
-      rx_msg = connector_tx_and_rx (connector, tx_msg);
+      rx_msg = connector_tx_and_rx (backend, tx_msg);
       if (!rx_msg)
 	{
 	  return -EIO;
@@ -1995,7 +1633,7 @@ connector_upload_smplrw (const gchar * path, GByteArray * input,
   if (active)
     {
       tx_msg = new_msg_close_write (id, transferred);
-      rx_msg = connector_tx_and_rx (connector, tx_msg);
+      rx_msg = connector_tx_and_rx (backend, tx_msg);
       if (!rx_msg)
 	{
 	  return -EIO;
@@ -2012,29 +1650,30 @@ connector_upload_smplrw (const gchar * path, GByteArray * input,
 }
 
 static gint
-connector_upload_sample_part (const gchar * path, GByteArray * sample,
-			      struct job_control *control, void *data)
+connector_upload_sample_part (struct backend *backend, const gchar * path,
+			      GByteArray * sample,
+			      struct job_control *control)
 {
-  return connector_upload_smplrw (path, sample, control, data,
+  return connector_upload_smplrw (backend, path, sample, control,
 				  connector_new_msg_open_sample_write,
 				  connector_new_msg_write_sample_blk,
 				  connector_new_msg_close_sample_write);
 }
 
 static gint
-connector_upload_sample (const gchar * path, GByteArray * input,
-			 struct job_control *control, void *data)
+connector_upload_sample (struct backend *backend, const gchar * path,
+			 GByteArray * input, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
-  return connector_upload_sample_part (path, input, control, data);
+  return connector_upload_sample_part (backend, path, input, control);
 }
 
 static gint
-connector_upload_raw (const gchar * path, GByteArray * sample,
-		      struct job_control *control, void *data)
+connector_upload_raw (struct backend *backend, const gchar * path,
+		      GByteArray * sample, struct job_control *control)
 {
-  return connector_upload_smplrw (path, sample, control, data,
+  return connector_upload_smplrw (backend, path, sample, control,
 				  connector_new_msg_open_raw_write,
 				  connector_new_msg_write_raw_blk,
 				  connector_new_msg_close_raw_write);
@@ -2078,15 +1717,14 @@ connector_copy_raw_data (GByteArray * input, GByteArray * output)
 }
 
 static gint
-connector_download_smplrw (const gchar * path, GByteArray * output,
-			   struct job_control *control, void *data,
+connector_download_smplrw (struct backend *backend, const gchar * path,
+			   GByteArray * output, struct job_control *control,
 			   connector_msg_path_func new_msg_open_read,
 			   guint read_offset,
 			   connector_msg_read_blk_func new_msg_read_blk,
 			   connector_msg_id_func new_msg_close_read,
 			   connector_copy_array copy_array)
 {
-  struct connector *connector = data;
   struct sample_info *sample_info;
   struct elektron_sample_info *elektron_sample_info;
   GByteArray *tx_msg;
@@ -2106,7 +1744,7 @@ connector_download_smplrw (const gchar * path, GByteArray * output,
       return -EINVAL;
     }
 
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
       return -EIO;
@@ -2139,7 +1777,7 @@ connector_download_smplrw (const gchar * path, GByteArray * output,
 	DATA_TRANSF_BLOCK_BYTES ? DATA_TRANSF_BLOCK_BYTES : frames -
 	next_block_start;
       tx_msg = new_msg_read_blk (id, next_block_start, req_size);
-      rx_msg = connector_tx_and_rx (connector, tx_msg);
+      rx_msg = connector_tx_and_rx (backend, tx_msg);
       if (!rx_msg)
 	{
 	  res = -EIO;
@@ -2188,7 +1826,7 @@ connector_download_smplrw (const gchar * path, GByteArray * output,
     }
 
   tx_msg = new_msg_close_read (id);
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
       res = -EIO;
@@ -2207,57 +1845,40 @@ cleanup:
 }
 
 static gint
-connector_download_sample_part (const gchar * path, GByteArray * output,
-				struct job_control *control, void *data)
+connector_download_sample_part (struct backend *backend, const gchar * path,
+				GByteArray * output,
+				struct job_control *control)
 {
-  return connector_download_smplrw (path, output, control, data,
+  return connector_download_smplrw (backend, path, output, control,
 				    connector_new_msg_open_sample_read,
-				    sizeof
-				    (struct elektron_sample_info),
+				    sizeof (struct elektron_sample_info),
 				    connector_new_msg_read_sample_blk,
 				    connector_new_msg_close_sample_read,
 				    connector_copy_sample_data);
 }
 
 static gint
-connector_download_sample (const gchar * path, GByteArray * output,
-			   struct job_control *control, void *data)
+connector_download_sample (struct backend *backend, const gchar * path,
+			   GByteArray * output, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
-  return connector_download_sample_part (path, output, control, data);
+  return connector_download_sample_part (backend, path, output, control);
 }
 
 static gint
-connector_download_raw (const gchar * path, GByteArray * output,
-			struct job_control *control, void *data)
+connector_download_raw (struct backend *backend, const gchar * path,
+			GByteArray * output, struct job_control *control)
 {
   gint ret;
   gchar *path_with_ext = connector_add_ext_to_mc_snd (path);
-  ret = connector_download_smplrw (path_with_ext, output, control, data,
+  ret = connector_download_smplrw (backend, path_with_ext, output, control,
 				   connector_new_msg_open_raw_read,
-				   0,
-				   connector_new_msg_read_raw_blk,
+				   0, connector_new_msg_read_raw_blk,
 				   connector_new_msg_close_raw_read,
 				   connector_copy_raw_data);
   g_free (path_with_ext);
   return ret;
-}
-
-static gint
-connector_create_samples_dir (const gchar * path, void *data)
-{
-  struct connector *connector = data;
-  return connector_path_common (connector, path, FS_SAMPLE_CREATE_DIR_REQUEST,
-				sizeof (FS_SAMPLE_CREATE_DIR_REQUEST));
-}
-
-static gint
-connector_create_raw_dir (const gchar * path, void *data)
-{
-  struct connector *connector = data;
-  return connector_path_common (connector, path, FS_RAW_CREATE_DIR_REQUEST,
-				sizeof (FS_RAW_CREATE_DIR_REQUEST));
 }
 
 static GByteArray *
@@ -2308,19 +1929,19 @@ connector_new_msg_upgrade_os_write (GByteArray * os_data, gint * offset)
 }
 
 static gint
-connector_upgrade_os (struct sysex_transfer *transfer, void *data)
+connector_upgrade_os (struct backend *backend,
+		      struct sysex_transfer *transfer)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   gint8 op;
   gint offset;
   gint res = 0;
-  struct connector *connector = data;
 
   transfer->status = SENDING;
 
   tx_msg = connector_new_msg_upgrade_os_start (transfer->raw->len);
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
 
   if (!rx_msg)
     {
@@ -2344,7 +1965,7 @@ connector_upgrade_os (struct sysex_transfer *transfer, void *data)
   while (offset < transfer->raw->len && transfer->active)
     {
       tx_msg = connector_new_msg_upgrade_os_write (transfer->raw, &offset);
-      rx_msg = connector_tx_and_rx (connector, tx_msg);
+      rx_msg = connector_tx_and_rx (backend, tx_msg);
 
       if (!rx_msg)
 	{
@@ -2378,76 +1999,34 @@ end:
 }
 
 void
-connector_destroy (struct connector *connector)
+connector_destroy (struct backend *backend)
 {
-  int err;
+  struct connector *connector = backend->data;
 
   debug_print (1, "Destroying connector...\n");
 
-  if (connector->inputp)
+  if (backend->device_desc.filesystems & ~FS_SAMPLES_SDS)
     {
-      err = snd_rawmidi_close (connector->inputp);
-      if (err)
+      if (connector->fw_version)
 	{
-	  error_print ("Error while closing MIDI port: %s\n",
-		       snd_strerror (err));
+	  g_free (connector->fw_version);
+	  connector->fw_version = NULL;
 	}
-      connector->inputp = NULL;
-    }
 
-  if (connector->outputp)
-    {
-      err = snd_rawmidi_close (connector->outputp);
-      if (err)
+      if (connector->dir_cache)
 	{
-	  error_print ("Error while closing MIDI port: %s\n",
-		       snd_strerror (err));
+	  g_hash_table_destroy (connector->dir_cache);
+	  connector->dir_cache = NULL;
 	}
-      connector->outputp = NULL;
+
+      g_free (backend->data);
     }
 
-  if (connector->device_name)
-    {
-      free (connector->device_name);
-      free (connector->fw_version);
-      free (connector->overbridge_name);
-      connector->device_name = NULL;
-    }
-
-  if (connector->buffer)
-    {
-      free (connector->buffer);
-      connector->buffer = NULL;
-    }
-
-  if (connector->pfds)
-    {
-      free (connector->pfds);
-      connector->pfds = NULL;
-    }
-
-  if (connector->dir_cache)
-    {
-      g_hash_table_destroy (connector->dir_cache);
-      connector->dir_cache = NULL;
-    }
-
-  if (connector->device_desc.name)
-    {
-      g_free (connector->device_desc.name);
-      connector->device_desc.name = NULL;
-    }
-
-  if (connector->device_desc.alias)
-    {
-      g_free (connector->device_desc.alias);
-      connector->device_desc.alias = NULL;
-    }
-
+  backend_destroy (backend);
 }
 
 gint
-connector_get_storage_stats (struct connector *connector,
+connector_get_storage_stats (struct backend *backend,
 			     enum connector_storage type,
 			     struct connector_storage_stats *statfs)
 {
@@ -2460,7 +2039,7 @@ connector_get_storage_stats (struct connector *connector,
 
   tx_msg = connector_new_msg_uint8 (STORAGEINFO_REQUEST,
 				    sizeof (STORAGEINFO_REQUEST), type);
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
       return -EIO;
@@ -2503,7 +2082,7 @@ connector_get_storage_stats_percent (struct connector_storage_stats *statfs)
 }
 
 static gint
-connector_handshake_midi_sds (struct connector *connector)
+connector_handshake_midi_sds (struct backend *backend)
 {
   struct sysex_transfer transfer;
   GByteArray *tx_msg;
@@ -2515,7 +2094,7 @@ connector_handshake_midi_sds (struct connector *connector)
 		       sizeof (SDS_SAMPLE_REQUEST));
   tx_msg->data[4] = 1;
   tx_msg->data[5] = 0;
-  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
   if (!rx_msg)
     {
       return -EIO;
@@ -2527,22 +2106,17 @@ connector_handshake_midi_sds (struct connector *connector)
   transfer.raw = g_byte_array_sized_new (sizeof (SDS_CANCEL));
   g_byte_array_append (transfer.raw, SDS_CANCEL, sizeof (SDS_CANCEL));
   //packet num is already 0
-  g_mutex_lock (&connector->mutex);
-  err = connector_tx_sysex (&transfer, connector);
-  g_mutex_unlock (&connector->mutex);
+  g_mutex_lock (&backend->mutex);
+  err = backend_tx_sysex (backend, &transfer);
+  g_mutex_unlock (&backend->mutex);
   free_msg (transfer.raw);
 
-  connector->device_desc.id = -1;
-  connector->device_desc.filesystems = FS_SAMPLES_SDS;
-  connector->device_desc.storage = 0;
-  connector->device_desc.alias = strdup (_("MIDI SDS sampler"));
-  connector->overbridge_name = strdup ("-");
-  connector->device_desc.name = malloc (LABEL_MAX);
-  connector->fw_version = malloc (LABEL_MAX);
-  connector->device_desc.name = strdup (_("MIDI SDS sampler"));
-  connector->device_name = strdup (_("MIDI SDS sampler"));
-  connector->fw_version = strdup ("-");
-  connector->upgrade_os = NULL;
+  backend->device_desc.id = -1;
+  backend->device_desc.filesystems = FS_SAMPLES_SDS;
+  backend->device_desc.storage = 0;
+  backend->device_desc.alias = strdup (_("MIDI SDS sampler"));
+  backend->device_desc.name = strdup (_("MIDI SDS sampler"));
+  backend->device_name = strdup (_("MIDI SDS sampler"));
 
   return err;
 }
@@ -2550,7 +2124,7 @@ connector_handshake_midi_sds (struct connector *connector)
 //Not in use now.
 
 static gint
-connector_handshake_midi (struct connector *connector)
+connector_handshake_midi (struct backend *backend)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -2561,15 +2135,12 @@ connector_handshake_midi (struct connector *connector)
   //Identity Request Universal Sysex message
   g_byte_array_append (tx_msg, (guchar *) IDENTITY_REQUEST,
 		       sizeof (IDENTITY_REQUEST));
-  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
 
-  connector->device_desc.id = -1;
-  connector->device_desc.filesystems = FS_SAMPLES_SDS;
-  connector->device_desc.storage = 0;
-  connector->device_desc.alias = strdup (_("unknown"));
-  connector->overbridge_name = strdup (_("unknown"));
-  connector->device_desc.name = malloc (LABEL_MAX);
-  connector->fw_version = malloc (LABEL_MAX);
+  backend->device_desc.id = -1;
+  backend->device_desc.filesystems = FS_SAMPLES_SDS;
+  backend->device_desc.storage = 0;
+  backend->upgrade_os = NULL;
 
   if (rx_msg)
     {
@@ -2577,23 +2148,28 @@ connector_handshake_midi (struct connector *connector)
 	{
 	  if (rx_msg->len == 15 || rx_msg->len == 17)
 	    {
+	      backend->device_desc.alias = strdup (_("unknown"));
+	      backend->device_desc.name = malloc (LABEL_MAX);
+
 	      offset = rx_msg->len - 15;
 	      company = &rx_msg->data[5];
 	      family = &rx_msg->data[6 + offset];
 	      model = &rx_msg->data[8 + offset];
 	      version = &rx_msg->data[10 + offset];
 
-	      snprintf (connector->device_desc.name, LABEL_MAX,
-			"%02x-%02x-%02x %02x-%02x %02x-%02x", company[0],
-			offset ? company[1] : 0,
-			offset ? company[2] : 0,
-			family[0], family[1], model[0], model[1]);
+	      snprintf (backend->device_desc.name, LABEL_MAX,
+			"%02x-%02x-%02x %02x-%02x %02x-%02x %d.%d.%d.%d",
+			company[0], offset ? company[1] : 0,
+			offset ? company[2] : 0, family[0], family[1],
+			model[0], model[1], version[0], version[1],
+			version[2], version[3]);
 
-	      snprintf (connector->fw_version, LABEL_MAX,
-			"%d.%d.%d.%d", version[0], version[1], version[2],
-			version[3]);
-
-	      connector->device_name = strdup (connector->device_desc.name);
+	      backend->device_name = strdup (backend->device_desc.name);
+	    }
+	  else
+	    {
+	      error_print ("Illegal SUB-ID2\n");
+	      err = -EIO;
 	    }
 	}
       else
@@ -2605,47 +2181,56 @@ connector_handshake_midi (struct connector *connector)
     }
   else
     {
-      debug_print (1,
-		   "Unexpected Identity Reply length. Asuming SDS only...\n");
-      connector->device_desc.name = strdup (_("unknown"));
-      connector->device_name = strdup (_("unknown"));
-      connector->fw_version = strdup (_("unknown"));
+      err = connector_handshake_midi_sds (backend);
     }
 
   return err;
 }
 
 static gint
-connector_handshake_elektron (struct connector *connector,
+connector_handshake_elektron (struct backend *backend,
 			      const char *device_filename)
 {
   guint8 id;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
+  gchar *overbridge_name;
+  struct connector *connector = g_malloc (sizeof (struct connector));
+
+  connector->dir_cache = NULL;
+  backend->data = connector;
+  connector->seq = 0;
 
   tx_msg = connector_new_msg (PING_REQUEST, sizeof (PING_REQUEST));
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
+      backend->data = NULL;
+      g_free (connector);
       return -EIO;
     }
 
-  connector->overbridge_name =
-    strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
+  overbridge_name = strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
   id = rx_msg->data[5];
   free_msg (rx_msg);
 
-  if (load_device_desc (&connector->device_desc, id, device_filename))
+  if (load_device_desc (&backend->device_desc, id, device_filename))
     {
+      backend->data = NULL;
+      g_free (overbridge_name);
+      g_free (connector);
       return -ENODEV;
     }
 
   tx_msg =
     connector_new_msg (SOFTWARE_VERSION_REQUEST,
 		       sizeof (SOFTWARE_VERSION_REQUEST));
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
+      backend->data = NULL;
+      g_free (overbridge_name);
+      g_free (connector);
       return -EIO;
     }
   connector->fw_version = strdup ((gchar *) & rx_msg->data[10]);
@@ -2655,7 +2240,7 @@ connector_handshake_elektron (struct connector *connector,
     {
       tx_msg =
 	connector_new_msg (DEVICEUID_REQUEST, sizeof (DEVICEUID_REQUEST));
-      rx_msg = connector_tx_and_rx (connector, tx_msg);
+      rx_msg = connector_tx_and_rx (backend, tx_msg);
       if (rx_msg)
 	{
 	  debug_print (1, "UID: %x\n", *((guint32 *) & rx_msg->data[5]));
@@ -2663,260 +2248,39 @@ connector_handshake_elektron (struct connector *connector,
 	}
     }
 
-  connector->upgrade_os = connector_upgrade_os;
+  backend->upgrade_os = connector_upgrade_os;
+  backend->device_name = g_malloc (LABEL_MAX);
+  snprintf (backend->device_name, LABEL_MAX, "%s %s (%s)",
+	    backend->device_desc.name,
+	    connector->fw_version, overbridge_name);
+  debug_print (1, "Connected to %s\n", backend->device_name);
 
-  snprintf (connector->device_name, LABEL_MAX, "%s %s (%s)",
-	    connector->device_desc.name,
-	    connector->fw_version, connector->overbridge_name);
-  debug_print (1, "Connected to %s\n", connector->device_name);
+  g_free (overbridge_name);
 
   return 0;
 }
 
 gint
-connector_init (struct connector *connector, gint card,
+connector_init (struct backend *backend, gint card,
 		const gchar * device_filename)
 {
-  gint err;
-  snd_rawmidi_params_t *params;
-  gchar name[32];
-
-  sprintf (name, "hw:%d", card);
-
-  connector->inputp = NULL;
-  connector->outputp = NULL;
-  connector->device_name = NULL;
-  connector->buffer = NULL;
-  connector->rx_len = 0;
-  connector->pfds = NULL;
-  connector->dir_cache = NULL;
-  connector->device_desc.name = NULL;
-  connector->device_desc.alias = NULL;
-
-  if (card < 0)
-    {
-      debug_print (1, "Invalid card\n");
-      err = -EINVAL;
-      goto cleanup;
-    }
-
-  debug_print (1, "Initializing connector to '%s'...\n", name);
-  if ((err =
-       snd_rawmidi_open (&connector->inputp, &connector->outputp,
-			 name, SND_RAWMIDI_NONBLOCK | SND_RAWMIDI_SYNC)) < 0)
-    {
-      error_print ("Error while opening MIDI port: %s\n", g_strerror (err));
-      goto cleanup;
-    }
-
-  debug_print (1, "Setting blocking mode...\n");
-  if ((err = snd_rawmidi_nonblock (connector->outputp, 0)) < 0)
-    {
-      error_print ("Error while setting blocking mode\n");
-      goto cleanup;
-    }
-  if ((err = snd_rawmidi_nonblock (connector->inputp, 1)) < 0)
-    {
-      error_print ("Error while setting blocking mode\n");
-      goto cleanup;
-    }
-
-  debug_print (1, "Stopping device...\n");
-  if (snd_rawmidi_write (connector->outputp, "\xfc", 1) < 0)
-    {
-      error_print ("Error while stopping device\n");
-    }
-
-  connector->seq = 0;
-  connector->device_name = malloc (LABEL_MAX);
-  if (!connector->device_name)
-    {
-      goto cleanup;
-    }
-
-  connector->buffer = malloc (sizeof (guint8) * BUFF_SIZE);
-  if (!connector->buffer)
-    {
-      goto cleanup;
-    }
-
-  connector->npfds = snd_rawmidi_poll_descriptors_count (connector->inputp);
-  connector->pfds = malloc (connector->npfds * sizeof (struct pollfd));
-  if (!connector->buffer)
-    {
-      goto cleanup;
-    }
-  snd_rawmidi_poll_descriptors (connector->inputp, connector->pfds,
-				connector->npfds);
-  err = snd_rawmidi_params_malloc (&params);
+  int err = backend_init (backend, card);
   if (err)
     {
-      goto cleanup;
+      return err;
     }
 
-  err = snd_rawmidi_params_current (connector->inputp, params);
+  err = connector_handshake_elektron (backend, device_filename);
   if (err)
     {
-      goto cleanup_params;
+      err = connector_handshake_midi (backend);
+    }
+  if (err)
+    {
+      connector_destroy (backend);
     }
 
-  err =
-    snd_rawmidi_params_set_buffer_size (connector->inputp, params,
-					RING_BUFF_SIZE);
-  if (err)
-    {
-      goto cleanup_params;
-    }
-
-  err = snd_rawmidi_params (connector->inputp, params);
-  if (err)
-    {
-      goto cleanup_params;
-    }
-
-  err = connector_handshake_elektron (connector, device_filename);
-  if (err)
-    {
-      err = connector_handshake_midi_sds (connector);
-    }
-
-cleanup_params:
-  snd_rawmidi_params_free (params);
-cleanup:
-  if (err)
-    {
-      connector_destroy (connector);
-    }
   return err;
-}
-
-gboolean
-connector_check (struct connector *connector)
-{
-  return (connector->inputp && connector->outputp);
-}
-
-static struct connector_system_device *
-connector_get_system_device (snd_ctl_t * ctl, int card, int device)
-{
-  snd_rawmidi_info_t *info;
-  const gchar *name;
-  const gchar *sub_name;
-  int subs, subs_in, subs_out;
-  int sub;
-  int err;
-  struct connector_system_device *connector_system_device;
-
-  snd_rawmidi_info_alloca (&info);
-  snd_rawmidi_info_set_device (info, device);
-  snd_rawmidi_info_set_stream (info, SND_RAWMIDI_STREAM_INPUT);
-  err = snd_ctl_rawmidi_info (ctl, info);
-  if (err >= 0)
-    {
-      subs_in = snd_rawmidi_info_get_subdevices_count (info);
-    }
-  else
-    {
-      subs_in = 0;
-    }
-
-  snd_rawmidi_info_set_stream (info, SND_RAWMIDI_STREAM_OUTPUT);
-  err = snd_ctl_rawmidi_info (ctl, info);
-  if (err >= 0)
-    {
-      subs_out = snd_rawmidi_info_get_subdevices_count (info);
-    }
-  else
-    {
-      subs_out = 0;
-    }
-
-  subs = subs_in > subs_out ? subs_in : subs_out;
-  if (!subs)
-    {
-      return NULL;
-    }
-
-  if (subs_in <= 0 || subs_out <= 0)
-    {
-      return NULL;
-    }
-
-  sub = 0;
-  snd_rawmidi_info_set_stream (info, sub < subs_in ?
-			       SND_RAWMIDI_STREAM_INPUT :
-			       SND_RAWMIDI_STREAM_OUTPUT);
-  snd_rawmidi_info_set_subdevice (info, sub);
-  err = snd_ctl_rawmidi_info (ctl, info);
-  if (err < 0)
-    {
-      error_print ("Cannot get rawmidi information %d:%d:%d: %s\n",
-		   card, device, sub, snd_strerror (err));
-      return NULL;
-    }
-
-  name = snd_rawmidi_info_get_name (info);
-  sub_name = snd_rawmidi_info_get_subdevice_name (info);
-
-  debug_print (1, "Adding hw:%d (%s) %s...\n", card, name, sub_name);
-  connector_system_device = malloc (sizeof (struct connector_system_device));
-  connector_system_device->card = card;
-  connector_system_device->name = strdup (sub_name);
-  return connector_system_device;
-}
-
-static void
-connector_fill_card_elektron_devices (gint card, GArray * devices)
-{
-  snd_ctl_t *ctl;
-  gchar name[32];
-  gint device;
-  gint err;
-  struct connector_system_device *connector_system_device;
-
-  sprintf (name, "hw:%d", card);
-  if ((err = snd_ctl_open (&ctl, name, 0)) < 0)
-    {
-      error_print ("Cannot open control for card %d: %s\n",
-		   card, snd_strerror (err));
-      return;
-    }
-  device = -1;
-  while (!(err = snd_ctl_rawmidi_next_device (ctl, &device)) && device >= 0)
-    {
-      connector_system_device =
-	connector_get_system_device (ctl, card, device);
-      if (connector_system_device)
-	{
-	  g_array_append_vals (devices, connector_system_device, 1);
-	}
-    }
-  if (err < 0)
-    {
-      error_print ("Cannot determine device number: %s\n",
-		   snd_strerror (err));
-    }
-  snd_ctl_close (ctl);
-}
-
-GArray *
-connector_get_system_devices ()
-{
-  gint card, err;
-  GArray *devices =
-    g_array_new (FALSE, FALSE, sizeof (struct connector_system_device));
-
-  card = -1;
-  while (!(err = snd_card_next (&card)) && card >= 0)
-    {
-      connector_fill_card_elektron_devices (card, devices);
-    }
-  if (err < 0)
-    {
-      error_print ("Cannot determine card number: %s\n", snd_strerror (err));
-    }
-
-  return devices;
 }
 
 static guint
@@ -3007,13 +2371,13 @@ connector_add_prefix_to_path (const gchar * dir, const gchar * prefix)
 }
 
 static gint
-connector_read_data_dir_prefix (struct item_iterator *iter, const gchar * dir,
-				void *data, const char *prefix)
+connector_read_data_dir_prefix (struct backend *backend,
+				struct item_iterator *iter, const gchar * dir,
+				const char *prefix)
 {
   int res;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
-  struct connector *connector = data;
   gchar *dir_w_prefix = connector_add_prefix_to_path (dir, prefix);
 
   tx_msg = connector_new_msg_list (dir_w_prefix, 0, 0, 1);
@@ -3023,7 +2387,7 @@ connector_read_data_dir_prefix (struct item_iterator *iter, const gchar * dir,
       return -EINVAL;
     }
 
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
       return -EIO;
@@ -3041,37 +2405,39 @@ connector_read_data_dir_prefix (struct item_iterator *iter, const gchar * dir,
 }
 
 static gint
-connector_read_data_dir_any (struct item_iterator *iter, const gchar * dir,
-			     void *data)
+connector_read_data_dir_any (struct backend *backend,
+			     struct item_iterator *iter, const gchar * dir)
 {
-  return connector_read_data_dir_prefix (iter, dir, data, NULL);
+  return connector_read_data_dir_prefix (backend, iter, dir, NULL);
 }
 
 static gint
-connector_read_data_dir_prj (struct item_iterator *iter, const gchar * dir,
-			     void *data)
+connector_read_data_dir_prj (struct backend *backend,
+			     struct item_iterator *iter, const gchar * dir)
 {
-  return connector_read_data_dir_prefix (iter, dir, data, FS_DATA_PRJ_PREFIX);
+  return connector_read_data_dir_prefix (backend, iter, dir,
+					 FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-connector_read_data_dir_snd (struct item_iterator *iter, const gchar * dir,
-			     void *data)
+connector_read_data_dir_snd (struct backend *backend,
+			     struct item_iterator *iter, const gchar * dir)
 {
-  return connector_read_data_dir_prefix (iter, dir, data, FS_DATA_SND_PREFIX);
+  return connector_read_data_dir_prefix (backend, iter, dir,
+					 FS_DATA_SND_PREFIX);
 }
 
 static gint
-connector_dst_src_data_prefix_common (const gchar * src, const gchar * dst,
-				      void *data, const char *prefix,
+connector_dst_src_data_prefix_common (struct backend *backend,
+				      const gchar * src, const gchar * dst,
+				      const char *prefix,
 				      const guint8 * op_data, guint len)
 {
   gint res;
-  struct connector *connector = data;
   char *src_w_prefix = connector_add_prefix_to_path (src, prefix);
   char *dst_w_prefix = connector_add_prefix_to_path (dst, prefix);
 
-  res = connector_src_dst_common (connector, src_w_prefix, dst_w_prefix,
+  res = connector_src_dst_common (backend, src_w_prefix, dst_w_prefix,
 				  op_data, len);
   g_free (src_w_prefix);
   g_free (dst_w_prefix);
@@ -3080,139 +2446,144 @@ connector_dst_src_data_prefix_common (const gchar * src, const gchar * dst,
 }
 
 static gint
-connector_move_data_item_prefix (const gchar * src, const gchar * dst,
-				 void *data, const char *prefix)
+connector_move_data_item_prefix (struct backend *backend, const gchar * src,
+				 const gchar * dst, const char *prefix)
 {
-  return connector_dst_src_data_prefix_common (src, dst, data, prefix,
+  return connector_dst_src_data_prefix_common (backend, src, dst, prefix,
 					       DATA_MOVE_REQUEST,
 					       sizeof (DATA_MOVE_REQUEST));
 }
 
 static gint
-connector_move_data_item_any (const gchar * src, const gchar * dst,
-			      void *data)
+connector_move_data_item_any (struct backend *backend, const gchar * src,
+			      const gchar * dst)
 {
-  return connector_move_data_item_prefix (src, dst, data, NULL);
+  return connector_move_data_item_prefix (backend, src, dst, NULL);
 }
 
 static gint
-connector_move_data_item_prj (const gchar * src, const gchar * dst,
-			      void *data)
+connector_move_data_item_prj (struct backend *backend, const gchar * src,
+			      const gchar * dst)
 {
-  return connector_move_data_item_prefix (src, dst, data, FS_DATA_PRJ_PREFIX);
+  return connector_move_data_item_prefix (backend, src, dst,
+					  FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-connector_move_data_item_snd (const gchar * src, const gchar * dst,
-			      void *data)
+connector_move_data_item_snd (struct backend *backend, const gchar * src,
+			      const gchar * dst)
 {
-  return connector_move_data_item_prefix (src, dst, data, FS_DATA_SND_PREFIX);
+  return connector_move_data_item_prefix (backend, src, dst,
+					  FS_DATA_SND_PREFIX);
 }
 
 static gint
-connector_copy_data_item_prefix (const gchar * src, const gchar * dst,
-				 void *data, const gchar * prefix)
+connector_copy_data_item_prefix (struct backend *backend, const gchar * src,
+				 const gchar * dst, const gchar * prefix)
 {
-  return connector_dst_src_data_prefix_common (src, dst, data, prefix,
+  return connector_dst_src_data_prefix_common (backend, src, dst, prefix,
 					       DATA_COPY_REQUEST,
 					       sizeof (DATA_COPY_REQUEST));
 }
 
 static gint
-connector_copy_data_item_any (const gchar * src, const gchar * dst,
-			      void *data)
+connector_copy_data_item_any (struct backend *backend, const gchar * src,
+			      const gchar * dst)
 {
-  return connector_copy_data_item_prefix (src, dst, data, NULL);
+  return connector_copy_data_item_prefix (backend, src, dst, NULL);
 }
 
 static gint
-connector_copy_data_item_prj (const gchar * src, const gchar * dst,
-			      void *data)
+connector_copy_data_item_prj (struct backend *backend, const gchar * src,
+			      const gchar * dst)
 {
-  return connector_copy_data_item_prefix (src, dst, data, FS_DATA_PRJ_PREFIX);
+  return connector_copy_data_item_prefix (backend, src, dst,
+					  FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-connector_copy_data_item_snd (const gchar * src, const gchar * dst,
-			      void *data)
+connector_copy_data_item_snd (struct backend *backend, const gchar * src,
+			      const gchar * dst)
 {
-  return connector_copy_data_item_prefix (src, dst, data, FS_DATA_SND_PREFIX);
+  return connector_copy_data_item_prefix (backend, src, dst,
+					  FS_DATA_SND_PREFIX);
 }
 
 static gint
-connector_path_data_prefix_common (const gchar * path,
-				   void *data, const char *prefix,
+connector_path_data_prefix_common (struct backend *backend,
+				   const gchar * path, const char *prefix,
 				   const guint8 * op_data, guint len)
 {
   gint res;
-  struct connector *connector = data;
   char *path_w_prefix = connector_add_prefix_to_path (path, prefix);
 
-  res = connector_path_common (connector, path_w_prefix, op_data, len);
+  res = connector_path_common (backend, path_w_prefix, op_data, len);
   g_free (path_w_prefix);
 
   return res;
 }
 
 static gint
-connector_clear_data_item_prefix (const gchar * path, void *data,
+connector_clear_data_item_prefix (struct backend *backend, const gchar * path,
 				  const gchar * prefix)
 {
-  return connector_path_data_prefix_common (path, data, prefix,
+  return connector_path_data_prefix_common (backend, path, prefix,
 					    DATA_CLEAR_REQUEST,
 					    sizeof (DATA_CLEAR_REQUEST));
 }
 
 static gint
-connector_clear_data_item_any (const gchar * path, void *data)
+connector_clear_data_item_any (struct backend *backend, const gchar * path)
 {
-  return connector_clear_data_item_prefix (path, data, NULL);
+  return connector_clear_data_item_prefix (backend, path, NULL);
 }
 
 static gint
-connector_clear_data_item_prj (const gchar * path, void *data)
+connector_clear_data_item_prj (struct backend *backend, const gchar * path)
 {
-  return connector_clear_data_item_prefix (path, data, FS_DATA_PRJ_PREFIX);
+  return connector_clear_data_item_prefix (backend, path, FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-connector_clear_data_item_snd (const gchar * path, void *data)
+connector_clear_data_item_snd (struct backend *backend, const gchar * path)
 {
-  return connector_clear_data_item_prefix (path, data, FS_DATA_SND_PREFIX);
+  return connector_clear_data_item_prefix (backend, path, FS_DATA_SND_PREFIX);
 }
 
 static gint
-connector_swap_data_item_prefix (const gchar * src, const gchar * dst,
-				 void *data, const gchar * prefix)
+connector_swap_data_item_prefix (struct backend *backend, const gchar * src,
+				 const gchar * dst, const gchar * prefix)
 {
-  return connector_dst_src_data_prefix_common (src, dst, data, prefix,
+  return connector_dst_src_data_prefix_common (backend, src, dst, prefix,
 					       DATA_SWAP_REQUEST,
 					       sizeof (DATA_SWAP_REQUEST));
 }
 
 static gint
-connector_swap_data_item_any (const gchar * src, const gchar * dst,
-			      void *data)
+connector_swap_data_item_any (struct backend *backend, const gchar * src,
+			      const gchar * dst)
 {
-  return connector_swap_data_item_prefix (src, dst, data, NULL);
+  return connector_swap_data_item_prefix (backend, src, dst, NULL);
 }
 
 static gint
-connector_swap_data_item_prj (const gchar * src, const gchar * dst,
-			      void *data)
+connector_swap_data_item_prj (struct backend *backend, const gchar * src,
+			      const gchar * dst)
 {
-  return connector_swap_data_item_prefix (src, dst, data, FS_DATA_PRJ_PREFIX);
+  return connector_swap_data_item_prefix (backend, src, dst,
+					  FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-connector_swap_data_item_snd (const gchar * src, const gchar * dst,
-			      void *data)
+connector_swap_data_item_snd (struct backend *backend, const gchar * src,
+			      const gchar * dst)
 {
-  return connector_swap_data_item_prefix (src, dst, data, FS_DATA_SND_PREFIX);
+  return connector_swap_data_item_prefix (backend, src, dst,
+					  FS_DATA_SND_PREFIX);
 }
 
 static gint
-connector_open_datum (struct connector *connector, const gchar * path,
+connector_open_datum (struct backend *backend, const gchar * path,
 		      guint32 * jid, gint mode, guint32 size)
 {
   guint32 *data32;
@@ -3267,7 +2638,7 @@ connector_open_datum (struct connector *connector, const gchar * path,
 			   strlen (path_cp1252) + 1);
     }
 
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
       res = -EIO;
@@ -3311,7 +2682,7 @@ cleanup:
 }
 
 static gint
-connector_close_datum (struct connector *connector,
+connector_close_datum (struct backend *backend,
 		       guint32 jid, gint mode, guint32 wsize)
 {
   guint32 jidbe;
@@ -3354,7 +2725,7 @@ connector_close_datum (struct connector *connector,
       g_byte_array_append (tx_msg, (guchar *) & wsizebe, sizeof (guint32));
     }
 
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
       return -EIO;
@@ -3390,8 +2761,9 @@ connector_close_datum (struct connector *connector,
 }
 
 static gint
-connector_download_data_prefix (const gchar * path, GByteArray * output,
-				struct job_control *control, void *data,
+connector_download_data_prefix (struct backend *backend, const gchar * path,
+				GByteArray * output,
+				struct job_control *control,
 				const gchar * prefix)
 {
   gint res;
@@ -3410,9 +2782,8 @@ connector_download_data_prefix (const gchar * path, GByteArray * output,
   GByteArray *rx_msg;
   GByteArray *tx_msg;
   gchar *path_w_prefix = connector_add_prefix_to_path (path, prefix);
-  struct connector *connector = data;
 
-  res = connector_open_datum (connector, path_w_prefix, &jid, O_RDONLY, 0);
+  res = connector_open_datum (backend, path_w_prefix, &jid, O_RDONLY, 0);
   g_free (path_w_prefix);
   if (res)
     {
@@ -3438,7 +2809,7 @@ connector_download_data_prefix (const gchar * path, GByteArray * output,
       g_byte_array_append (tx_msg, (guint8 *) & jidbe, sizeof (guint32));
       seqbe = htobe32 (seq);
       g_byte_array_append (tx_msg, (guint8 *) & seqbe, sizeof (guint32));
-      rx_msg = connector_tx_and_rx (connector, tx_msg);
+      rx_msg = connector_tx_and_rx (backend, tx_msg);
       if (!rx_msg)
 	{
 	  res = -EIO;
@@ -3503,36 +2874,37 @@ connector_download_data_prefix (const gchar * path, GByteArray * output,
       usleep (REST_TIME_US);
     }
 
-  return connector_close_datum (connector, jid, O_RDONLY, 0);
+  return connector_close_datum (backend, jid, O_RDONLY, 0);
 }
 
 static gint
-connector_download_data_any (const gchar * path, GByteArray * output,
-			     struct job_control *control, void *data)
+connector_download_data_any (struct backend *backend, const gchar * path,
+			     GByteArray * output, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
-  return connector_download_data_prefix (path, output, control, data, NULL);
+  return connector_download_data_prefix (backend, path, output, control,
+					 NULL);
 }
 
 static gint
-connector_download_data_prj (const gchar * path, GByteArray * output,
-			     struct job_control *control, void *data)
+connector_download_data_prj (struct backend *backend, const gchar * path,
+			     GByteArray * output, struct job_control *control)
 {
-  return connector_download_data_prefix (path, output, control, data,
+  return connector_download_data_prefix (backend, path, output, control,
 					 FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-connector_download_data_snd (const gchar * path, GByteArray * output,
-			     struct job_control *control, void *data)
+connector_download_data_snd (struct backend *backend, const gchar * path,
+			     GByteArray * output, struct job_control *control)
 {
-  return connector_download_data_prefix (path, output, control, data,
+  return connector_download_data_prefix (backend, path, output, control,
 					 FS_DATA_SND_PREFIX);
 }
 
 gchar *
-connector_get_sample_path_from_hash_size (struct connector *connector,
+connector_get_sample_path_from_hash_size (struct backend *backend,
 					  guint32 hash, guint32 size)
 {
   guint32 aux32;
@@ -3547,7 +2919,7 @@ connector_get_sample_path_from_hash_size (struct connector *connector,
   aux32 = htobe32 (size);
   memcpy (&tx_msg->data[9], &aux32, sizeof (guint32));
 
-  rx_msg = connector_tx_and_rx (connector, tx_msg);
+  rx_msg = connector_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
       return NULL;
@@ -3565,9 +2937,68 @@ connector_get_sample_path_from_hash_size (struct connector *connector,
   return path;
 }
 
+static gchar *
+connector_get_download_name (struct backend *backend,
+			     struct item_iterator *remote_iter,
+			     const struct fs_operations *ops,
+			     const gchar * src_path)
+{
+  gint32 id;
+  const gchar *src_dir;
+  gchar *namec, *name, *src_dirc;
+  gint ret;
+  gboolean new = FALSE;
+
+  namec = strdup (src_path);
+  name = basename (namec);
+
+  if (ops->fs == FS_SAMPLES || ops->fs == FS_RAW_ALL
+      || ops->fs == FS_RAW_PRESETS)
+    {
+      name = strdup (name);
+      goto end;
+    }
+
+  if (!remote_iter)
+    {
+      new = TRUE;
+      remote_iter = malloc (sizeof (struct item_iterator));
+      src_dirc = strdup (src_path);
+      src_dir = dirname (src_dirc);
+      ret = ops->readdir (backend, remote_iter, src_dir);
+      g_free (src_dirc);
+      if (ret)
+	{
+	  name = NULL;
+	  goto cleanup;
+	}
+    }
+
+  id = atoi (name);
+  name = NULL;
+
+  while (!next_item_iterator (remote_iter))
+    {
+      if (remote_iter->item.index == id)
+	{
+	  name = get_item_name (&remote_iter->item);
+	  break;
+	}
+    }
+
+cleanup:
+  if (new)
+    {
+      free_item_iterator (remote_iter);
+    }
+  g_free (namec);
+end:
+  return name;
+}
+
 static gint
-connector_download_pkg (const gchar * path, GByteArray * output,
-			struct job_control *control, void *data,
+connector_download_pkg (struct backend *backend, const gchar * path,
+			GByteArray * output, struct job_control *control,
 			enum package_type type,
 			const struct fs_operations *ops,
 			fs_remote_file_op download)
@@ -3575,23 +3006,23 @@ connector_download_pkg (const gchar * path, GByteArray * output,
   gint ret;
   gchar *pkg_name;
   struct package pkg;
-  struct connector *connector = data;
+  struct connector *connector = backend->data;
 
-  pkg_name = connector_get_download_name (connector, NULL, ops, path);
+  pkg_name = connector_get_download_name (backend, NULL, ops, path);
   if (!pkg_name)
     {
       return -1;
     }
 
   if (package_begin
-      (&pkg, pkg_name, connector->fw_version, &connector->device_desc, type))
+      (&pkg, pkg_name, connector->fw_version, &backend->device_desc, type))
     {
       g_free (pkg_name);
       return -1;
     }
 
   ret =
-    package_receive_pkg_resources (&pkg, path, control, connector, download,
+    package_receive_pkg_resources (&pkg, path, control, backend, download,
 				   connector_download_sample_part);
   ret = ret || package_end (&pkg, output);
 
@@ -3600,41 +3031,44 @@ connector_download_pkg (const gchar * path, GByteArray * output,
 }
 
 static gint
-connector_download_data_snd_pkg (const gchar * path, GByteArray * output,
-				 struct job_control *control, void *data)
+connector_download_data_snd_pkg (struct backend *backend, const gchar * path,
+				 GByteArray * output,
+				 struct job_control *control)
 {
-  return connector_download_pkg (path, output, control, data,
+  return connector_download_pkg (backend, path, output, control,
 				 PKG_FILE_TYPE_SOUND,
 				 &FS_DATA_SND_OPERATIONS,
 				 connector_download_data_snd);
 }
 
 static gint
-connector_download_data_prj_pkg (const gchar * path, GByteArray * output,
-				 struct job_control *control, void *data)
+connector_download_data_prj_pkg (struct backend *backend, const gchar * path,
+				 GByteArray * output,
+				 struct job_control *control)
 {
-  return connector_download_pkg (path, output, control, data,
+  return connector_download_pkg (backend, path, output, control,
 				 PKG_FILE_TYPE_PROJECT,
 				 &FS_DATA_PRJ_OPERATIONS,
 				 connector_download_data_prj);
 }
 
 static gint
-connector_download_raw_pst_pkg (const gchar * path, GByteArray * output,
-				struct job_control *control, void *data)
+connector_download_raw_pst_pkg (struct backend *backend, const gchar * path,
+				GByteArray * output,
+				struct job_control *control)
 {
-  return connector_download_pkg (path, output, control, data,
+  return connector_download_pkg (backend, path, output, control,
 				 PKG_FILE_TYPE_PRESET,
 				 &FS_RAW_ANY_OPERATIONS,
 				 connector_download_raw);
 }
 
 static gchar *
-connector_get_upload_path_smplrw (const struct fs_operations *ops,
-				  const gchar * dst_dir,
-				  const gchar * src_path, gint32 * next_index,
+connector_get_upload_path_smplrw (struct backend *backend,
 				  struct item_iterator *remote_iter,
-				  void *connector)
+				  const struct fs_operations *ops,
+				  const gchar * dst_dir,
+				  const gchar * src_path, gint32 * next_index)
 {
   gchar *path, *namec, *name, *aux;
 
@@ -3657,11 +3091,11 @@ connector_get_upload_path_smplrw (const struct fs_operations *ops,
 }
 
 static gchar *
-connector_get_upload_path_data (const struct fs_operations *ops,
-				const gchar * dst_dir, const gchar * src_path,
-				gint32 * next_index,
+connector_get_upload_path_data (struct backend *backend,
 				struct item_iterator *remote_iter,
-				void *connector)
+				const struct fs_operations *ops,
+				const gchar * dst_dir, const gchar * src_path,
+				gint32 * next_index)
 {
   gchar *indexs, *path;
   gboolean new = FALSE;
@@ -3670,7 +3104,7 @@ connector_get_upload_path_data (const struct fs_operations *ops,
     {
       new = TRUE;
       remote_iter = malloc (sizeof (struct item_iterator));
-      if (ops->readdir (remote_iter, dst_dir, connector))
+      if (ops->readdir (backend, remote_iter, dst_dir))
 	{
 	  return strdup (dst_dir);
 	}
@@ -3708,72 +3142,13 @@ connector_get_upload_path_data (const struct fs_operations *ops,
 }
 
 static gchar *
-connector_get_download_name (struct connector *connector,
+connector_get_download_path (struct backend *backend,
 			     struct item_iterator *remote_iter,
 			     const struct fs_operations *ops,
-			     const gchar * src_path)
-{
-  gint32 id;
-  const gchar *src_dir;
-  gchar *namec, *name, *src_dirc;
-  gint ret;
-  gboolean new = FALSE;
-
-  namec = strdup (src_path);
-  name = basename (namec);
-
-  if (ops->fs == FS_SAMPLES || ops->fs == FS_RAW_ALL
-      || ops->fs == FS_RAW_PRESETS)
-    {
-      name = strdup (name);
-      goto end;
-    }
-
-  if (!remote_iter)
-    {
-      new = TRUE;
-      remote_iter = malloc (sizeof (struct item_iterator));
-      src_dirc = strdup (src_path);
-      src_dir = dirname (src_dirc);
-      ret = ops->readdir (remote_iter, src_dir, connector);
-      g_free (src_dirc);
-      if (ret)
-	{
-	  name = NULL;
-	  goto cleanup;
-	}
-    }
-
-  id = atoi (name);
-  name = NULL;
-
-  while (!next_item_iterator (remote_iter))
-    {
-      if (remote_iter->item.index == id)
-	{
-	  name = get_item_name (&remote_iter->item);
-	  break;
-	}
-    }
-
-cleanup:
-  if (new)
-    {
-      free_item_iterator (remote_iter);
-    }
-  g_free (namec);
-end:
-  return name;
-}
-
-static gchar *
-connector_get_download_path (const struct fs_operations *ops,
-			     const gchar * dst_dir, const gchar * src_path,
-			     struct item_iterator *remote_iter, void *data)
+			     const gchar * dst_dir, const gchar * src_path)
 {
   gchar *path, *src_pathc, *name, *dl_ext, *filename;
   const gchar *src_fpath, *md_ext, *ext = get_ext (src_path);
-  struct connector *connector = data;
 
   // Examples:
   // 0:/soundbanks/A/1/.metadata
@@ -3791,10 +3166,10 @@ connector_get_download_path (const struct fs_operations *ops,
       md_ext = "";
     }
 
-  name = connector_get_download_name (connector, remote_iter, ops, src_fpath);
+  name = connector_get_download_name (backend, remote_iter, ops, src_fpath);
   if (name)
     {
-      dl_ext = ops->get_ext (&connector->device_desc, ops);
+      dl_ext = ops->get_ext (&backend->device_desc, ops);
       filename = malloc (PATH_MAX);
       snprintf (filename, PATH_MAX, "%s.%s%s", name, dl_ext, md_ext);
       path = chain_path (dst_dir, filename);
@@ -3812,8 +3187,8 @@ connector_get_download_path (const struct fs_operations *ops,
 }
 
 static gint
-connector_upload_data_prefix (const gchar * path, GByteArray * array,
-			      struct job_control *control, void *data,
+connector_upload_data_prefix (struct backend *backend, const gchar * path,
+			      GByteArray * array, struct job_control *control,
 			      const gchar * prefix)
 {
   gint res;
@@ -3832,11 +3207,9 @@ connector_upload_data_prefix (const gchar * path, GByteArray * array,
   GByteArray *rx_msg;
   GByteArray *tx_msg;
   gchar *path_w_prefix = connector_add_prefix_to_path (path, prefix);
-  struct connector *connector = data;
 
   res =
-    connector_open_datum (connector, path_w_prefix, &jid, O_WRONLY,
-			  array->len);
+    connector_open_datum (backend, path_w_prefix, &jid, O_WRONLY, array->len);
   g_free (path_w_prefix);
   if (res)
     {
@@ -3888,7 +3261,7 @@ connector_upload_data_prefix (const gchar * path, GByteArray * array,
 
       g_byte_array_append (tx_msg, &array->data[offset], len);
 
-      rx_msg = connector_tx_and_rx (connector, tx_msg);
+      rx_msg = connector_tx_and_rx (backend, tx_msg);
       if (!rx_msg)
 	{
 	  res = -EIO;
@@ -3939,51 +3312,50 @@ connector_upload_data_prefix (const gchar * path, GByteArray * array,
 
   debug_print (2, "%d bytes sent\n", offset);
 
-  res = connector_close_datum (connector, jid, O_WRONLY, array->len);
+  res = connector_close_datum (backend, jid, O_WRONLY, array->len);
 
 end:
   return res;
 }
 
 static gint
-connector_upload_data_any (const gchar * path, GByteArray * array,
-			   struct job_control *control, void *data)
+connector_upload_data_any (struct backend *backend, const gchar * path,
+			   GByteArray * array, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
-  return connector_upload_data_prefix (path, array, control, data, NULL);
+  return connector_upload_data_prefix (backend, path, array, control, NULL);
 }
 
 static gint
-connector_upload_data_prj (const gchar * path, GByteArray * array,
-			   struct job_control *control, void *data)
+connector_upload_data_prj (struct backend *backend, const gchar * path,
+			   GByteArray * array, struct job_control *control)
 {
-  return connector_upload_data_prefix (path, array, control, data,
+  return connector_upload_data_prefix (backend, path, array, control,
 				       FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-connector_upload_data_snd (const gchar * path, GByteArray * array,
-			   struct job_control *control, void *data)
+connector_upload_data_snd (struct backend *backend, const gchar * path,
+			   GByteArray * array, struct job_control *control)
 {
-  return connector_upload_data_prefix (path, array, control, data,
+  return connector_upload_data_prefix (backend, path, array, control,
 				       FS_DATA_SND_PREFIX);
 }
 
 static gint
-connector_upload_pkg (const gchar * path, GByteArray * input,
-		      struct job_control *control, void *data,
+connector_upload_pkg (struct backend *backend, const gchar * path,
+		      GByteArray * input, struct job_control *control,
 		      guint8 type, const struct fs_operations *ops,
 		      fs_remote_file_op upload)
 {
   gint ret;
   struct package pkg;
-  struct connector *connector = data;
 
-  ret = package_open (&pkg, input, &connector->device_desc);
+  ret = package_open (&pkg, input, &backend->device_desc);
   if (!ret)
     {
-      ret = package_send_pkg_resources (&pkg, path, control, connector,
+      ret = package_send_pkg_resources (&pkg, path, control, backend,
 					upload, connector_upload_sample_part);
       package_close (&pkg);
     }
@@ -3991,30 +3363,32 @@ connector_upload_pkg (const gchar * path, GByteArray * input,
 }
 
 static gint
-connector_upload_data_snd_pkg (const gchar * path, GByteArray * input,
-			       struct job_control *control, void *data)
+connector_upload_data_snd_pkg (struct backend *backend, const gchar * path,
+			       GByteArray * input,
+			       struct job_control *control)
 {
-  return connector_upload_pkg (path, input, control, data,
+  return connector_upload_pkg (backend, path, input, control,
 			       PKG_FILE_TYPE_SOUND,
 			       &FS_DATA_SND_OPERATIONS,
 			       connector_upload_data_snd);
 }
 
 static gint
-connector_upload_data_prj_pkg (const gchar * path, GByteArray * input,
-			       struct job_control *control, void *data)
+connector_upload_data_prj_pkg (struct backend *backend, const gchar * path,
+			       GByteArray * input,
+			       struct job_control *control)
 {
-  return connector_upload_pkg (path, input, control, data,
+  return connector_upload_pkg (backend, path, input, control,
 			       PKG_FILE_TYPE_PROJECT,
 			       &FS_DATA_PRJ_OPERATIONS,
 			       connector_upload_data_prj);
 }
 
 static gint
-connector_upload_raw_pst_pkg (const gchar * path, GByteArray * input,
-			      struct job_control *control, void *data)
+connector_upload_raw_pst_pkg (struct backend *backend, const gchar * path,
+			      GByteArray * input, struct job_control *control)
 {
-  return connector_upload_pkg (path, input, control, data,
+  return connector_upload_pkg (backend, path, input, control,
 			       PKG_FILE_TYPE_PRESET,
 			       &FS_RAW_ANY_OPERATIONS, connector_upload_raw);
 }
@@ -4038,38 +3412,46 @@ connector_get_dev_and_fs_ext (const struct device_desc *desc,
 }
 
 void
-connector_enable_dir_cache (struct connector *connector)
+connector_enable_dir_cache (struct backend *backend)
 {
-  g_mutex_lock (&connector->mutex);
-  connector->dir_cache =
-    g_hash_table_new_full (g_str_hash, g_str_equal, g_free, free_msg);
-  g_mutex_unlock (&connector->mutex);
+  if (backend->device_desc.filesystems & ~FS_SAMPLES_SDS)
+    {
+      struct connector *connector = backend->data;
+      g_mutex_lock (&backend->mutex);
+      connector->dir_cache =
+	g_hash_table_new_full (g_str_hash, g_str_equal, g_free, free_msg);
+      g_mutex_unlock (&backend->mutex);
+    }
 }
 
 void
-connector_disable_dir_cache (struct connector *connector)
+connector_disable_dir_cache (struct backend *backend)
 {
-  g_mutex_lock (&connector->mutex);
-  g_hash_table_destroy (connector->dir_cache);
-  connector->dir_cache = NULL;
-  g_mutex_unlock (&connector->mutex);
+  if (backend->device_desc.filesystems & ~FS_SAMPLES_SDS)
+    {
+      struct connector *connector = backend->data;
+      g_mutex_lock (&backend->mutex);
+      g_hash_table_destroy (connector->dir_cache);
+      connector->dir_cache = NULL;
+      g_mutex_unlock (&backend->mutex);
+    }
 }
 
 static gchar *
-sds_get_upload_path (const struct fs_operations *ops,
-		     const gchar * dst_dir,
-		     const gchar * src_path, gint32 * next_index,
-		     struct item_iterator *remote_iter, void *connector)
+sds_get_upload_path (struct backend *backend,
+		     struct item_iterator *remote_iter,
+		     const struct fs_operations *ops, const gchar * dst_dir,
+		     const gchar * src_path, gint32 * next_index)
 {
   //In this case, dst_dir must include the index, ':' and the sample name.
   return strdup (dst_dir);
 }
 
 static gchar *
-sds_get_download_path (const struct fs_operations *ops,
-		       const gchar * dst_dir,
-		       const gchar * src_path,
-		       struct item_iterator *remote_iter, void *connector)
+sds_get_download_path (struct backend *backend,
+		       struct item_iterator *remote_iter,
+		       const struct fs_operations *ops, const gchar * dst_dir,
+		       const gchar * src_path)
 {
   GByteArray *tx_msg, *rx_msg;
   gchar *name = malloc (LABEL_MAX);
@@ -4082,7 +3464,7 @@ sds_get_download_path (const struct fs_operations *ops,
 		       sizeof (SDS_SAMPLE_NAME_REQUEST));
   tx_msg->data[5] = index % 128;
   tx_msg->data[6] = index / 128;
-  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
   if (rx_msg)
     {
       snprintf (name, LABEL_MAX, "%s/%s.wav", dst_dir, &rx_msg->data[5]);
@@ -4182,8 +3564,8 @@ sds_get_bytes_per_word (gint32 bits, guint * word_size,
 }
 
 static gint
-sds_download (const gchar * path, GByteArray * output,
-	      struct job_control *control, void *data)
+sds_download (struct backend *backend, const gchar * path,
+	      GByteArray * output, struct job_control *control)
 {
   guint id, period, words, packet_counter, word_size, read_bytes,
     bytes_per_word, total_words;
@@ -4195,7 +3577,6 @@ sds_download (const gchar * path, GByteArray * output,
   gboolean active, header_resp;
   struct sysex_transfer transfer;
   struct sample_info *sample_info;
-  struct connector *connector = data;
 
   path_copy = strdup (path);
   index = basename (path_copy);
@@ -4207,7 +3588,7 @@ sds_download (const gchar * path, GByteArray * output,
 		       sizeof (SDS_SAMPLE_REQUEST));
   tx_msg->data[4] = id % 128;
   tx_msg->data[5] = id / 128;
-  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
   if (!rx_msg)
     {
       return -EIO;
@@ -4273,7 +3654,7 @@ sds_download (const gchar * path, GByteArray * output,
 	      g_byte_array_append (tx_msg, SDS_NAK, sizeof (SDS_NAK));
 	      tx_msg->data[4] = next_packet_num;
 	    }
-	  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+	  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
 	  if (!rx_msg)
 	    {
 	      g_free (path_copy);
@@ -4282,9 +3663,9 @@ sds_download (const gchar * path, GByteArray * output,
 	      g_byte_array_append (transfer.raw, SDS_CANCEL,
 				   sizeof (SDS_CANCEL));
 	      tx_msg->data[4] = packet_num;
-	      g_mutex_lock (&connector->mutex);
-	      connector_tx_sysex (&transfer, connector);
-	      g_mutex_unlock (&connector->mutex);
+	      g_mutex_lock (&backend->mutex);
+	      backend_tx_sysex (backend, &transfer);
+	      g_mutex_unlock (&backend->mutex);
 	      free_msg (transfer.raw);
 
 	      return -EIO;
@@ -4364,29 +3745,28 @@ sds_download (const gchar * path, GByteArray * output,
   if (active)
     {
       g_byte_array_append (transfer.raw, SDS_ACK, sizeof (SDS_ACK));
+      set_job_control_progress (control, 1.0);
     }
   else
     {
       g_byte_array_append (transfer.raw, SDS_CANCEL, sizeof (SDS_CANCEL));
-      connector_rx_drain (connector);
+      backend_rx_drain (backend);
     }
   transfer.raw->data[4] = packet_counter;
-  g_mutex_lock (&connector->mutex);
-  connector_tx_sysex (&transfer, connector);
-  g_mutex_unlock (&connector->mutex);
+  g_mutex_lock (&backend->mutex);
+  backend_tx_sysex (backend, &transfer);
+  g_mutex_unlock (&backend->mutex);
   free_msg (transfer.raw);
-
-  set_job_control_progress (control, 1.0);
 
   return 0;
 }
 
 static gint
-sds_upload_wait_ack (GByteArray * rx_msg, void *data, guint packet_num)
+sds_upload_wait_ack (struct backend *backend, GByteArray * rx_msg,
+		     guint packet_num)
 {
   gint err;
   struct sysex_transfer transfer;
-  struct connector *connector = data;
 
   if (!rx_msg)
     {
@@ -4402,7 +3782,7 @@ sds_upload_wait_ack (GByteArray * rx_msg, void *data, guint packet_num)
       transfer.timeout = SDS_ACK_WAIT_TIME_MS;
       transfer.batch = FALSE;
       debug_print (2, "Waiting for an ACK...\n");
-      if (connector_rx_sysex (&transfer, connector))
+      if (backend_rx_sysex (backend, &transfer))
 	{
 	  return -EIO;
 	}
@@ -4437,8 +3817,8 @@ end:
 }
 
 static gint
-sds_upload (const gchar * path, GByteArray * input,
-	    struct job_control *control, void *data)
+sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
+	    struct job_control *control)
 {
   GByteArray *tx_msg, *rx_msg;
   gchar *path_copy, *index_name, *name;
@@ -4446,7 +3826,6 @@ sds_upload (const gchar * path, GByteArray * input,
   guint8 packet_num;
   gint16 *frame;
   gboolean active;
-  struct connector *connector = data;
   struct sample_info *sample_info = control->data;
   guint name_len, word, words, words_per_packet, id, packets, period =
     1.0e9 / sample_info->samplerate;
@@ -4484,8 +3863,8 @@ sds_upload (const gchar * path, GByteArray * input,
 				  sample_info->loopend);
   tx_msg->data[19] = sample_info->looptype;
 
-  rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
-  err = sds_upload_wait_ack (rx_msg, connector, 0);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+  err = sds_upload_wait_ack (backend, rx_msg, 0);
   if (err)
     {
       goto end;
@@ -4530,8 +3909,8 @@ sds_upload (const gchar * path, GByteArray * input,
 	}
       tx_msg->data[SDS_DATA_PACKET_CKSUM_POS] = sds_checksum (tx_msg->data);
 
-      rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
-      err = sds_upload_wait_ack (rx_msg, connector, packet_num);
+      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
+      err = sds_upload_wait_ack (backend, rx_msg, packet_num);
       if (err == -EINVAL)	//NAK packet
 	{
 	  frame = prev_frame;
@@ -4571,14 +3950,17 @@ sds_upload (const gchar * path, GByteArray * input,
       g_byte_array_append (tx_msg, (guint8 *) name, name_len);
 
       g_byte_array_append (tx_msg, (guint8 *) "\xf7", 1);
-      rx_msg = connector_tx_and_rx_sysex (connector, tx_msg);
+      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg);
       if (rx_msg)
 	{
 	  free_msg (rx_msg);
 	}
     }
 
-  set_job_control_progress (control, 1.0);
+  if (active)
+    {
+      set_job_control_progress (control, 1.0);
+    }
 
 end:
   g_free (path_copy);
@@ -4618,7 +4000,8 @@ sds_next_dentry (struct item_iterator *iter)
 }
 
 static gint
-sds_read_dir (struct item_iterator *iter, const gchar * path, void *data_)
+sds_read_dir (struct backend *backend, struct item_iterator *iter,
+	      const gchar * path)
 {
   if (strcmp (path, "/"))
     {

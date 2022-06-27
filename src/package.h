@@ -20,7 +20,10 @@
 
 #include <glib.h>
 #include <zip.h>
-#include "connector.h"
+#include "backend.h"
+
+#ifndef PACKAGE_H
+#define PACKAGE_H
 
 #define ELEKTRON_SAMPLE_RATE 48000
 
@@ -66,7 +69,7 @@ gint package_begin (struct package *, gchar *, const gchar *,
 		    const struct device_desc *, enum package_type);
 
 gint package_receive_pkg_resources (struct package *, const gchar *,
-				    struct job_control *, struct connector *,
+				    struct job_control *, struct backend *,
 				    fs_remote_file_op, fs_remote_file_op);
 
 gint package_end (struct package *, GByteArray *);
@@ -79,7 +82,9 @@ gint package_open (struct package *, GByteArray *,
 gint package_send_pkg_resources (struct package *,
 				 const gchar *,
 				 struct job_control *,
-				 struct connector *, fs_remote_file_op,
+				 struct backend *, fs_remote_file_op,
 				 fs_remote_file_op);
 
 void package_close (struct package *);
+
+#endif

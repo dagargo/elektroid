@@ -43,6 +43,8 @@ enum item_type
   ELEKTROID_DIR = 'D'
 };
 
+struct backend;
+
 struct item_iterator;
 
 typedef guint (*iterator_next) (struct item_iterator *);
@@ -119,15 +121,16 @@ struct sysex_transfer
 
 struct fs_operations;
 
-typedef gint (*fs_init_iter_func) (struct item_iterator *, const gchar *,
-				   void *);
+typedef gint (*fs_init_iter_func) (struct backend *, struct item_iterator *,
+				   const gchar *);
 
-typedef gint (*fs_path_func) (const gchar *, void *);
+typedef gint (*fs_path_func) (struct backend *, const gchar *);
 
-typedef gint (*fs_src_dst_func) (const gchar *, const gchar *, void *);
+typedef gint (*fs_src_dst_func) (struct backend *, const gchar *,
+				 const gchar *);
 
-typedef gint (*fs_remote_file_op) (const gchar *, GByteArray *,
-				   struct job_control *, void *);
+typedef gint (*fs_remote_file_op) (struct backend *, const gchar *,
+				   GByteArray *, struct job_control *);
 
 typedef gchar *(*fs_get_item_id) (struct item *);
 
@@ -137,15 +140,16 @@ typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
 typedef gchar *(*fs_get_ext) (const struct device_desc *,
 			      const struct fs_operations *);
 
-typedef gchar *(*t_get_upload_path) (const struct fs_operations *,
-				     const gchar *, const gchar *, gint32 *,
-				     struct item_iterator *, void *);
+typedef gchar *(*t_get_upload_path) (struct backend *, struct item_iterator *,
+				     const struct fs_operations *,
+				     const gchar *, const gchar *, gint32 *);
 
-typedef gchar *(*t_get_download_path) (const struct fs_operations *,
-				       const gchar *, const gchar *,
-				       struct item_iterator *, void *);
+typedef gchar *(*t_get_download_path) (struct backend *,
+				       struct item_iterator *,
+				       const struct fs_operations *,
+				       const gchar *, const gchar *);
 
-typedef gint (*t_sysex_transfer) (struct sysex_transfer *, void *);
+typedef gint (*t_sysex_transfer) (struct backend *, struct sysex_transfer *);
 
 struct fs_operations
 {

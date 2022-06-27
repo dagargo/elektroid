@@ -32,13 +32,14 @@ struct local_iterator_data
   gchar *path;
 };
 
-static gint local_mkdir (const gchar *, void *);
+static gint local_mkdir (struct backend *, const gchar *);
 
-static gint local_delete (const gchar *, void *);
+static gint local_delete (struct backend *, const gchar *);
 
-static gint local_rename (const gchar *, const gchar *, void *);
+static gint local_rename (struct backend *, const gchar *, const gchar *);
 
-static gint local_read_dir (struct item_iterator *, const gchar *, void *);
+static gint local_read_dir (struct backend *, struct item_iterator *,
+			    const gchar *);
 
 static gint local_copy_iterator (struct item_iterator *,
 				 struct item_iterator *, gboolean);
@@ -67,7 +68,7 @@ const struct fs_operations FS_LOCAL_OPERATIONS = {
 };
 
 gint
-local_mkdir (const gchar * name, void *data)
+local_mkdir (struct backend *backend, const gchar * name)
 {
   DIR *dir;
   gint res = 0;
@@ -84,7 +85,7 @@ local_mkdir (const gchar * name, void *data)
     }
   else
     {
-      res = local_mkdir (parent, data);
+      res = local_mkdir (backend, parent);
       if (res)
 	{
 	  goto cleanup;
@@ -107,7 +108,7 @@ cleanup:
 }
 
 static gint
-local_delete (const gchar * path, void *data)
+local_delete (struct backend *backend, const gchar * path)
 {
   DIR *dir;
   gchar *new_path;
@@ -125,7 +126,7 @@ local_delete (const gchar * path, void *data)
 	      continue;
 	    }
 	  new_path = chain_path (path, dirent->d_name);
-	  local_delete (new_path, data);
+	  local_delete (backend, new_path);
 	  free (new_path);
 	}
 
@@ -141,7 +142,7 @@ local_delete (const gchar * path, void *data)
 }
 
 static gint
-local_rename (const gchar * old, const gchar * new, void *data)
+local_rename (struct backend *backend, const gchar * old, const gchar * new)
 {
   debug_print (1, "Renaming locally from %s to %s...\n", old, new);
   return rename (old, new);
@@ -244,8 +245,8 @@ local_init_iterator (struct item_iterator *iter, const gchar * path,
 }
 
 static gint
-local_read_dir (struct item_iterator *iter, const gchar * path,
-		void *userdata)
+local_read_dir (struct backend *backend, struct item_iterator *iter,
+		const gchar * path)
 {
   return local_init_iterator (iter, path, FALSE);
 }

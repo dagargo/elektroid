@@ -27,6 +27,7 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <stddef.h>
+#include "backend.h"
 #include "connector.h"
 #include "utils.h"
 
@@ -34,7 +35,7 @@
 #define GET_FS_OPS_FUNC(type,fs,offset) (*(((type *) (((gchar *) fs) + offset))))
 #define CHECK_FS_OPS_FUNC(f) if (!(f)) {error_print ("Operation not implemented\n"); return EXIT_FAILURE;}
 
-static struct connector connector;
+static struct backend backend;
 static struct job_control control;
 static const gchar *devices_filename;
 
@@ -88,12 +89,12 @@ static gint
 cli_ld ()
 {
   gint i;
-  struct connector_system_device device;
-  GArray *devices = connector_get_system_devices ();
+  struct backend_system_device device;
+  GArray *devices = backend_get_system_devices ();
 
   for (i = 0; i < devices->len; i++)
     {
-      device = g_array_index (devices, struct connector_system_device, i);
+      device = g_array_index (devices, struct backend_system_device, i);
       printf ("%d %s\n", device.card, device.name);
     }
 
@@ -106,11 +107,11 @@ static gint
 cli_connect (const gchar * device_path, const struct fs_operations *fs_ops)
 {
   gint card = atoi (device_path);
-  gint ret = connector_init (&connector, card, devices_filename);
-  if (!ret && fs_ops && !(connector.device_desc.filesystems & fs_ops->fs))
+  gint ret = connector_init (&backend, card, devices_filename);
+  if (!ret && fs_ops && !(backend.device_desc.filesystems & fs_ops->fs))
     {
       error_print ("Filesystem not supported for device '%s'\n",
-		   connector.device_desc.name);
+		   backend.device_desc.name);
       return 1;
     }
   return ret;
@@ -142,7 +143,7 @@ cli_list (int argc, gchar * argv[], int optind,
   path = cli_get_path (device_path);
 
   CHECK_FS_OPS_FUNC (fs_ops->readdir);
-  if (fs_ops->readdir (&iter, path, &connector))
+  if (fs_ops->readdir (&backend, &iter, path))
     {
       return EXIT_FAILURE;
     }
@@ -185,7 +186,7 @@ cli_command_path (int argc, gchar * argv[], int optind,
 
   f = GET_FS_OPS_FUNC (fs_path_func, fs_ops, member_offset);
   CHECK_FS_OPS_FUNC (f);
-  ret = f (path, &connector);
+  ret = f (&backend, path);
   return ret ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
@@ -239,7 +240,7 @@ cli_command_src_dst (int argc, gchar * argv[], int optind,
   CHECK_FS_OPS_FUNC (f);
   src_path = cli_get_path (device_src_path);
   dst_path = cli_get_path (device_dst_path);
-  ret = f (src_path, dst_path, &connector);
+  ret = f (&backend, src_path, dst_path);
   return ret ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
@@ -264,15 +265,15 @@ cli_info (int argc, gchar * argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  printf ("%s filesystems=", connector.device_name);
+  printf ("%s filesystems=", backend.device_name);
   comma = "";
   int fs = 1;
   while (fs <= sizeof (int) * 8)
     {
-      if (connector.device_desc.filesystems & fs)
+      if (backend.device_desc.filesystems & fs)
 	{
-	  printf ("%s%s", comma,
-		  connector_get_fs_operations (fs, NULL)->name);
+	  const gchar *name = connector_get_fs_operations (fs, NULL)->name;
+	  printf ("%s%s", comma, name);
 	  comma = ",";
 	}
       fs <<= 1;
@@ -308,7 +309,7 @@ cli_df (int argc, gchar * argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  if (!connector.device_desc.storage)
+  if (!backend.device_desc.storage)
     {
       return EXIT_FAILURE;
     }
@@ -319,9 +320,9 @@ cli_df (int argc, gchar * argv[], int optind)
   res = 0;
   for (storage = STORAGE_PLUS_DRIVE; storage <= STORAGE_RAM; storage <<= 1)
     {
-      if (connector.device_desc.storage & storage)
+      if (backend.device_desc.storage & storage)
 	{
-	  res |= connector_get_storage_stats (&connector, storage, &statfs);
+	  res |= connector_get_storage_stats (&backend, storage, &statfs);
 	  if (res)
 	    {
 	      continue;
@@ -385,8 +386,8 @@ cli_upgrade_os (int argc, gchar * argv[], int optind)
     {
       sysex_transfer.active = TRUE;
       sysex_transfer.timeout = SYSEX_TIMEOUT_MS;
-      CHECK_FS_OPS_FUNC (connector.upgrade_os);
-      res = connector.upgrade_os (&sysex_transfer, &connector);
+      CHECK_FS_OPS_FUNC (backend.upgrade_os);
+      res = backend.upgrade_os (&backend, &sysex_transfer);
     }
 
   g_byte_array_free (sysex_transfer.raw, TRUE);
@@ -422,14 +423,14 @@ cli_download (int argc, gchar * argv[], int optind,
   control.active = TRUE;
   control.callback = null_control_callback;
   array = g_byte_array_new ();
-  res = fs_ops->download (src_path, array, &control, &connector);
+  res = fs_ops->download (&backend, src_path, array, &control);
   if (res)
     {
       goto end;
     }
 
-  download_path = fs_ops->get_download_path (fs_ops, ".", src_path, NULL,
-					     &connector);
+  download_path = fs_ops->get_download_path (&backend, NULL, fs_ops, ".",
+					     src_path);
   if (!download_path)
     {
       res = -1;
@@ -483,8 +484,8 @@ cli_upload (int argc, gchar * argv[], int optind,
 
   dst_dir = cli_get_path (device_dst_path);
 
-  upload_path = fs_ops->get_upload_path (fs_ops, dst_dir, src_path, &index,
-					 NULL, &connector);
+  upload_path = fs_ops->get_upload_path (&backend, NULL, fs_ops, dst_dir,
+					 src_path, &index);
 
   array = g_byte_array_new ();
   control.active = TRUE;
@@ -495,7 +496,7 @@ cli_upload (int argc, gchar * argv[], int optind,
       goto cleanup;
     }
 
-  res = fs_ops->upload (upload_path, array, &control, &connector);
+  res = fs_ops->upload (&backend, upload_path, array, &control);
   g_free (control.data);
 
 cleanup:
@@ -733,9 +734,9 @@ main (int argc, gchar * argv[])
     }
 
 end:
-  if (connector_check (&connector))
+  if (backend_check (&backend))
     {
-      connector_destroy (&connector);
+      connector_destroy (&backend);
     }
 
   usleep (REST_TIME_US * 2);

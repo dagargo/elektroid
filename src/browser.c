@@ -277,7 +277,7 @@ browser_load_dir (gpointer data)
 
   browser_reset (browser);
 
-  if (browser->fs_ops->readdir (&iter, browser->dir, browser->data))
+  if (browser->fs_ops->readdir (browser->backend, &iter, browser->dir))
     {
       error_print ("Error while opening %s dir\n", browser->dir);
       goto end;
