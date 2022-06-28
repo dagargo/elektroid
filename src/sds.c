@@ -171,6 +171,35 @@ sds_get_bytes_per_word (gint32 bits, guint * word_size,
   return 0;
 }
 
+static GByteArray *
+sds_rx_handshake (struct backend *backend)
+{
+  struct sysex_transfer transfer;
+  transfer.active = TRUE;
+  transfer.timeout = SDS_ACK_WAIT_TIME_MS;
+  transfer.batch = FALSE;
+  g_mutex_lock (&backend->mutex);
+  backend_rx_sysex (backend, &transfer);
+  g_mutex_unlock (&backend->mutex);
+  return transfer.raw;
+}
+
+static void
+sds_tx_handshake (struct backend *backend, const guint8 * msg, guint len,
+		  guint8 packet_num)
+{
+  struct sysex_transfer transfer;
+  transfer.active = TRUE;
+  transfer.timeout = SDS_ACK_WAIT_TIME_MS;
+  transfer.raw = g_byte_array_sized_new (len);
+  g_byte_array_append (transfer.raw, msg, len);
+  transfer.raw->data[4] = packet_num;
+  g_mutex_lock (&backend->mutex);
+  backend_tx_sysex (backend, &transfer);
+  g_mutex_unlock (&backend->mutex);
+  free_msg (transfer.raw);
+}
+
 gint
 sds_download (struct backend *backend, const gchar * path,
 	      GByteArray * output, struct job_control *control)
@@ -183,7 +212,6 @@ sds_download (struct backend *backend, const gchar * path,
   gchar *path_copy, *index;
   guint8 *dataptr;
   gboolean active, header_resp;
-  struct sysex_transfer transfer;
   struct sample_info *sample_info;
 
   path_copy = strdup (path);
@@ -266,16 +294,8 @@ sds_download (struct backend *backend, const gchar * path,
 	  if (!rx_msg)
 	    {
 	      g_free (path_copy);
-	      transfer.active = TRUE;
-	      transfer.raw = g_byte_array_new ();
-	      g_byte_array_append (transfer.raw, SDS_CANCEL,
-				   sizeof (SDS_CANCEL));
-	      tx_msg->data[4] = packet_num;
-	      g_mutex_lock (&backend->mutex);
-	      backend_tx_sysex (backend, &transfer);
-	      g_mutex_unlock (&backend->mutex);
-	      free_msg (transfer.raw);
-
+	      sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL),
+				next_packet_num);
 	      return -EIO;
 	    }
 
@@ -348,23 +368,18 @@ sds_download (struct backend *backend, const gchar * path,
       free_msg (rx_msg);
     }
 
-  transfer.active = TRUE;
-  transfer.raw = g_byte_array_new ();
   if (active)
     {
-      g_byte_array_append (transfer.raw, SDS_ACK, sizeof (SDS_ACK));
+      sds_tx_handshake (backend, SDS_ACK, sizeof (SDS_ACK), packet_counter);
       set_job_control_progress (control, 1.0);
     }
   else
     {
-      g_byte_array_append (transfer.raw, SDS_CANCEL, sizeof (SDS_CANCEL));
+      debug_print (1, "SDS downloading canceled\n");
+      sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL),
+			packet_counter);
       backend_rx_drain (backend);
     }
-  transfer.raw->data[4] = packet_counter;
-  g_mutex_lock (&backend->mutex);
-  backend_tx_sysex (backend, &transfer);
-  g_mutex_unlock (&backend->mutex);
-  free_msg (transfer.raw);
 
   return 0;
 }
@@ -374,7 +389,6 @@ sds_upload_wait_ack (struct backend *backend, GByteArray * rx_msg,
 		     guint packet_num)
 {
   gint err;
-  struct sysex_transfer transfer;
 
   if (!rx_msg)
     {
@@ -385,16 +399,14 @@ sds_upload_wait_ack (struct backend *backend, GByteArray * rx_msg,
   rx_msg->data[4] = 0;
   if (!memcmp (rx_msg->data, SDS_WAIT, sizeof (SDS_WAIT)))
     {
-      free_msg (rx_msg);
-      transfer.active = TRUE;
-      transfer.timeout = SDS_ACK_WAIT_TIME_MS;
-      transfer.batch = FALSE;
       debug_print (2, "Waiting for an ACK...\n");
-      if (backend_rx_sysex (backend, &transfer))
+      rx_msg = sds_rx_handshake (backend);
+      if (!rx_msg)
 	{
-	  return -EIO;
+	  sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL),
+			    packet_num);
+	  return -ETIMEDOUT;
 	}
-      rx_msg = transfer.raw;
     }
 
   if (rx_msg->len == sizeof (SDS_ACK) && rx_msg->data[4] == packet_num)
@@ -581,6 +593,11 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
     {
       set_job_control_progress (control, 1.0);
     }
+  else
+    {
+      debug_print (1, "SDS Uploading canceled\n");
+      sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), packet_num);
+    }
 
 end:
   g_free (path_copy);
@@ -642,7 +659,6 @@ sds_read_dir (struct backend *backend, struct item_iterator *iter,
 gint
 sds_handshake (struct backend *backend)
 {
-  struct sysex_transfer transfer;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   gint err = 0;
@@ -657,17 +673,10 @@ sds_handshake (struct backend *backend)
     {
       return -EIO;
     }
-
   free_msg (rx_msg);
 
-  transfer.active = TRUE;
-  transfer.raw = g_byte_array_sized_new (sizeof (SDS_CANCEL));
-  g_byte_array_append (transfer.raw, SDS_CANCEL, sizeof (SDS_CANCEL));
-  //packet num is already 0
-  g_mutex_lock (&backend->mutex);
-  err = backend_tx_sysex (backend, &transfer);
-  g_mutex_unlock (&backend->mutex);
-  free_msg (transfer.raw);
+  sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), 0);
+  backend_rx_drain (backend);
 
   return err;
 }

@@ -310,7 +310,7 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 	      && total_time >= transfer->timeout)
 	    {
 	      debug_print (1, "Timeout!\n");
-	      return -ENODATA;
+	      return -ETIMEDOUT;
 	    }
 	  continue;
 	}
@@ -404,9 +404,10 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	  backend->rx_len =
 	    backend_rx_raw (backend, backend->buffer, BUFF_SIZE, transfer);
 
-	  if (backend->rx_len == -ENODATA)
+	  if (backend->rx_len == -ENODATA || backend->rx_len == -ETIMEDOUT ||
+	      backend->rx_len == -ECANCELED)
 	    {
-	      res = -ENODATA;
+	      res = -backend->rx_len;
 	      goto error;
 	    }
 
