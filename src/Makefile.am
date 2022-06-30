@@ -14,8 +14,8 @@ else
 bin_PROGRAMS = elektroid elektroid-cli
 endif
 
-elektroid_SOURCES = audio.c audio.h browser.c browser.h connector.c connector.h elektroid.c sample.c sample.h utils.c utils.h notifier.c notifier.h local.c local.h preferences.c preferences.h utils.h package.c package.h backend.c backend.h sds.c sds.h
-elektroid_cli_SOURCES = connector.c connector.h elektroid-cli.c sample.c sample.h utils.c utils.h package.c package.h backend.c backend.h sds.c sds.h
+elektroid_SOURCES = audio.c audio.h browser.c browser.h connector.c connector.h elektroid.c sample.c sample.h utils.c utils.h notifier.c notifier.h local.c local.h preferences.c preferences.h utils.h package.c package.h backend.c backend.h sds.c sds.h transfer.c transfer.h
+elektroid_cli_SOURCES = connector.c connector.h elektroid-cli.c sample.c sample.h utils.c utils.h package.c package.h backend.c backend.h sds.c sds.h transfer.c transfer.h
 
 SNDFILE_CFLAGS = @SNDFILE_CFLAGS@
 SNDFILE_LIBS = @SNDFILE_LIBS@

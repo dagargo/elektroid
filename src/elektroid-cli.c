@@ -28,6 +28,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include "backend.h"
+#include "transfer.h"
 #include "connector.h"
 #include "utils.h"
 
@@ -37,7 +38,6 @@
 
 static struct backend backend;
 static struct job_control control;
-static const gchar *devices_filename;
 
 typedef void (*print_item) (struct item_iterator *);
 
@@ -107,7 +107,7 @@ static gint
 cli_connect (const gchar * device_path, const struct fs_operations *fs_ops)
 {
   gint card = atoi (device_path);
-  gint ret = connector_init (&backend, card, devices_filename);
+  gint ret = connector_init (&backend, card);
   if (!ret && fs_ops && !(backend.device_desc.filesystems & fs_ops->fs))
     {
       error_print ("Filesystem not supported for device '%s'\n",
@@ -566,14 +566,12 @@ main (int argc, gchar * argv[])
   sigaction (SIGINT, &action, NULL);
   sigaction (SIGHUP, &action, NULL);
 
-  devices_filename = NULL;
-
   while ((c = getopt (argc, argv, "f:v")) != -1)
     {
       switch (c)
 	{
 	case 'f':
-	  devices_filename = optarg;
+	  transfer_devices_filename = optarg;
 	  break;
 	case 'v':
 	  vflg++;

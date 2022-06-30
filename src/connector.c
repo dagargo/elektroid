@@ -28,6 +28,7 @@
 #include "backend.h"
 #include "sds.h"
 #include "connector.h"
+#include "transfer.h"
 #include "utils.h"
 #include "sample.h"
 #include "package.h"
@@ -2117,8 +2118,7 @@ connector_midi_handshake (struct backend *backend)
 }
 
 static gint
-connector_elektron_handshake (struct backend *backend,
-			      const char *device_filename)
+connector_elektron_handshake (struct backend *backend)
 {
   guint8 id;
   gchar *overbridge_name;
@@ -2143,7 +2143,7 @@ connector_elektron_handshake (struct backend *backend,
   id = rx_msg->data[5];
   free_msg (rx_msg);
 
-  if (load_device_desc (&backend->device_desc, id, device_filename))
+  if (transfer_load_device_desc (&backend->device_desc, id))
     {
       backend->data = NULL;
       g_free (overbridge_name);
@@ -2190,8 +2190,7 @@ connector_elektron_handshake (struct backend *backend,
 }
 
 gint
-connector_init (struct backend *backend, gint card,
-		const gchar * device_filename)
+connector_init (struct backend *backend, gint card)
 {
   int err = backend_init (backend, card);
   if (err)
@@ -2199,7 +2198,7 @@ connector_init (struct backend *backend, gint card,
       return err;
     }
 
-  err = connector_elektron_handshake (backend, device_filename);
+  err = connector_elektron_handshake (backend);
   if (err)
     {
       err = connector_midi_handshake (backend);
