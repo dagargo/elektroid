@@ -32,6 +32,7 @@ test-driver
 *.lo
 *.gcno
 *.gcda
+.dirstamp
 src/elektroid
 src/elektroid-cli
 src/*~

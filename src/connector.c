@@ -26,9 +26,9 @@
 #include <libgen.h>
 #include <glib/gi18n.h>
 #include "backend.h"
-#include "sds.h"
+#include "backend/sds.h"
+#include "backend/transfer.h"
 #include "connector.h"
-#include "transfer.h"
 #include "utils.h"
 #include "sample.h"
 #include "package.h"

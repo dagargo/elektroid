@@ -8,7 +8,7 @@ AC_CONFIG_HEADERS([config.h])
 AM_PROG_LIBTOOL
 AC_SEARCH_LIBS([sqrt], [m])
 AC_CONFIG_MACRO_DIRS([m4])
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([subdir-objects])
 
 # Checks for programs.
 AC_PROG_CC
