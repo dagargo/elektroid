@@ -1148,15 +1148,14 @@ connector_read_common_dir (struct backend *backend,
 {
   gboolean cache = FALSE;
   GByteArray *tx_msg, *rx_msg = NULL;
-  struct connector *connector = backend->data;
 
-  if (backend->device_desc.filesystems & ~FS_SAMPLES_SDS)
+  g_mutex_lock (&backend->mutex);
+  cache = backend->cache != NULL;
+  if (cache)
     {
-      g_mutex_lock (&backend->mutex);
-      cache = connector->dir_cache != NULL;
-      rx_msg = cache ? g_hash_table_lookup (connector->dir_cache, dir) : NULL;
-      g_mutex_unlock (&backend->mutex);
+      rx_msg = g_hash_table_lookup (backend->cache, dir);
     }
+  g_mutex_unlock (&backend->mutex);
 
   if (!rx_msg)
     {
@@ -1172,27 +1171,23 @@ connector_read_common_dir (struct backend *backend,
 	  return -EIO;
 	}
 
-      if (backend->device_desc.filesystems & ~FS_SAMPLES_SDS)
+      g_mutex_lock (&backend->mutex);
+      if (cache)
 	{
-	  g_mutex_lock (&backend->mutex);
-	  cache = connector->dir_cache != NULL;
-	  if (cache)
-	    {
-	      gchar *key = g_strdup (dir);
-	      g_hash_table_insert (connector->dir_cache, key, rx_msg);
-	    }
-	  g_mutex_unlock (&backend->mutex);
+	  gchar *key = g_strdup (dir);
+	  g_hash_table_insert (backend->cache, key, rx_msg);
+	}
+      g_mutex_unlock (&backend->mutex);
 
-	  if (rx_msg->len == 5
-	      && connector_get_path_type (backend, dir,
-					  init_iter) != ELEKTROID_DIR)
+      if (rx_msg->len == 5
+	  && connector_get_path_type (backend, dir,
+				      init_iter) != ELEKTROID_DIR)
+	{
+	  if (!cache)
 	    {
-	      if (!cache)
-		{
-		  free_msg (rx_msg);
-		}
-	      return -ENOTDIR;
+	      free_msg (rx_msg);
 	    }
+	  return -ENOTDIR;
 	}
     }
 
@@ -1982,12 +1977,6 @@ connector_destroy (struct backend *backend)
 	  connector->fw_version = NULL;
 	}
 
-      if (connector->dir_cache)
-	{
-	  g_hash_table_destroy (connector->dir_cache);
-	  connector->dir_cache = NULL;
-	}
-
       g_free (backend->data);
     }
 
@@ -2125,7 +2114,6 @@ connector_elektron_handshake (struct backend *backend)
   GByteArray *tx_msg, *rx_msg;
   struct connector *connector = g_malloc (sizeof (struct connector));
 
-  connector->dir_cache = NULL;
   connector->seq = 0;
   backend->data = connector;
 
@@ -3340,32 +3328,6 @@ connector_get_dev_and_fs_ext (const struct device_desc *desc,
   gchar *ext = malloc (LABEL_MAX);
   snprintf (ext, LABEL_MAX, "%s%s", desc->alias, ops->type_ext);
   return ext;
-}
-
-void
-connector_enable_dir_cache (struct backend *backend)
-{
-  if (backend->device_desc.filesystems & ~FS_SAMPLES_SDS)
-    {
-      struct connector *connector = backend->data;
-      g_mutex_lock (&backend->mutex);
-      connector->dir_cache =
-	g_hash_table_new_full (g_str_hash, g_str_equal, g_free, free_msg);
-      g_mutex_unlock (&backend->mutex);
-    }
-}
-
-void
-connector_disable_dir_cache (struct backend *backend)
-{
-  if (backend->device_desc.filesystems & ~FS_SAMPLES_SDS)
-    {
-      struct connector *connector = backend->data;
-      g_mutex_lock (&backend->mutex);
-      g_hash_table_destroy (connector->dir_cache);
-      connector->dir_cache = NULL;
-      g_mutex_unlock (&backend->mutex);
-    }
 }
 
 gint

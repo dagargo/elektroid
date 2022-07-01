@@ -26,6 +26,30 @@
 #define RING_BUFF_SIZE (256 * KB)
 
 void
+backend_enable_cache (struct backend *backend)
+{
+  g_mutex_lock (&backend->mutex);
+  if (!backend->cache)
+    {
+      backend->cache =
+	g_hash_table_new_full (g_str_hash, g_str_equal, g_free, free_msg);
+    }
+  g_mutex_unlock (&backend->mutex);
+}
+
+void
+backend_disable_cache (struct backend *backend)
+{
+  g_mutex_lock (&backend->mutex);
+  if (backend->cache)
+    {
+      g_hash_table_destroy (backend->cache);
+      backend->cache = NULL;
+    }
+  g_mutex_unlock (&backend->mutex);
+}
+
+void
 backend_destroy (struct backend *backend)
 {
   gint err;
@@ -86,6 +110,8 @@ backend_destroy (struct backend *backend)
       free (backend->pfds);
       backend->pfds = NULL;
     }
+
+  backend_disable_cache (backend);
 }
 
 gint
@@ -99,6 +125,7 @@ backend_init (struct backend *backend, gint card)
   backend->outputp = NULL;
   backend->pfds = NULL;
   backend->rx_len = 0;
+  backend->cache = NULL;
   backend->buffer = g_malloc (sizeof (guint8) * BUFF_SIZE);
 
   if (card < 0)

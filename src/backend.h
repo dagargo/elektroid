@@ -42,6 +42,7 @@ struct backend
   gchar *device_name;
   t_sysex_transfer upgrade_os;
   void *data;
+  GHashTable *cache;
 };
 
 struct backend_system_device
@@ -63,6 +64,10 @@ GByteArray *backend_tx_and_rx_sysex (struct backend *, GByteArray *, gint);
 void backend_rx_drain (struct backend *);
 
 gboolean backend_check (struct backend *);
+
+void backend_enable_cache (struct backend *);
+
+void backend_disable_cache (struct backend *);
 
 GArray *backend_get_system_devices ();
 

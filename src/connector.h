@@ -27,7 +27,6 @@
 
 struct connector
 {
-  GHashTable *dir_cache;
   gushort seq;
   gchar *fw_version;
 };
@@ -88,9 +87,5 @@ gchar *connector_get_upload_path (struct backend *, struct item_iterator *,
 
 gchar *connector_get_sample_path_from_hash_size (struct backend *,
 						 guint32, guint32);
-
-void connector_enable_dir_cache (struct backend *);
-
-void connector_disable_dir_cache (struct backend *);
 
 #endif

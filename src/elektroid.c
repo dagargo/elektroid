@@ -2411,9 +2411,9 @@ elektroid_remote_key_press (GtkWidget * widget, GdkEventKey * event,
 	  if (remote_browser.fs_ops->download)
 	    {
 	      struct backend *backend = remote_browser.backend;
-	      connector_enable_dir_cache (backend);
+	      backend_enable_cache (backend);
 	      elektroid_add_download_tasks (NULL, NULL);
-	      connector_disable_dir_cache (backend);
+	      backend_disable_cache (backend);
 	    }
 	  return TRUE;
 	}
@@ -2724,7 +2724,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 
   if (widget == GTK_WIDGET (local_browser.view))
     {
-      connector_enable_dir_cache (&backend);
+      backend_enable_cache (&backend);
     }
 
   load_remote = widget == GTK_WIDGET (remote_browser.view) ||
@@ -2793,7 +2793,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 
   if (widget == GTK_WIDGET (local_browser.view))
     {
-      connector_disable_dir_cache (&backend);
+      backend_disable_cache (&backend);
     }
 
   if (!queued)
