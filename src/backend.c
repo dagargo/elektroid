@@ -127,6 +127,11 @@ backend_destroy (struct backend *backend)
       backend->pfds = NULL;
     }
 
+  if (backend->destroy_data)
+    {
+      backend->destroy_data (backend);
+    }
+
   backend_disable_cache (backend);
 }
 
@@ -707,4 +712,13 @@ backend_get_system_devices ()
     }
 
   return devices;
+}
+
+gchar *
+connector_get_fs_ext (const struct device_desc *desc,
+		      const struct fs_operations *ops)
+{
+  gchar *ext = malloc (LABEL_MAX);
+  snprintf (ext, LABEL_MAX, "%s", ops->type_ext);
+  return ext;
 }

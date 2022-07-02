@@ -166,9 +166,6 @@ static gint connector_upload_raw_pst_pkg (struct backend *, const gchar *,
 static gint connector_copy_iterator (struct item_iterator *,
 				     struct item_iterator *, gboolean);
 
-static gchar *connector_get_fs_ext (const struct device_desc *,
-				    const struct fs_operations *);
-
 static gchar *connector_get_dev_and_fs_ext (const struct device_desc *,
 					    const struct fs_operations *);
 
@@ -261,9 +258,6 @@ static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
   { 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
 static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
-
-static const guint8 MIDI_IDENTITY_REQUEST[] =
-  { 0xf0, 0x7e, 0x7f, 6, 1, 0xf7 };
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
@@ -419,33 +413,6 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .get_upload_path = connector_get_upload_path_data,
   .get_download_path = connector_get_download_path,
   .type_ext = "snd"
-};
-
-static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
-  .fs = FS_SAMPLES_SDS,
-  .options =
-    FS_OPTION_SHOW_AUDIO_PLAYER | FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE
-    | FS_OPTION_SORT_BY_ID,
-  .name = "sds",
-  .gui_name = "Samples",
-  .gui_icon = BE_FILE_ICON_WAVE,
-  .readdir = sds_read_dir,
-  .mkdir = NULL,
-  .delete = NULL,
-  .rename = NULL,
-  .move = NULL,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
-  .download = sds_download,
-  .upload = sds_upload,
-  .getid = get_item_index,
-  .load = sds_sample_load,
-  .save = sample_save,
-  .get_ext = connector_get_fs_ext,
-  .get_upload_path = sds_get_upload_path,
-  .get_download_path = sds_get_download_path,
-  .type_ext = "wav"
 };
 
 static const struct fs_operations *FS_OPERATIONS[] = {
@@ -1986,26 +1953,6 @@ end:
   return res;
 }
 
-void
-connector_destroy (struct backend *backend)
-{
-  struct elektron_data *data = backend->data;
-
-  debug_print (1, "Destroying connector...\n");
-
-  if (backend->device_desc.filesystems & ~FS_SAMPLES_SDS)
-    {
-      if (data->fw_version)
-	{
-	  g_free (data->fw_version);
-	}
-      g_free (backend->data);
-      backend->data = NULL;
-    }
-
-  backend_destroy (backend);
-}
-
 gint
 connector_get_storage_stats (struct backend *backend,
 			     enum connector_storage type,
@@ -2061,77 +2008,19 @@ connector_get_storage_stats_percent (struct connector_storage_stats *statfs)
   return (statfs->bsize - statfs->bfree) * 100.0 / statfs->bsize;
 }
 
-static gint
-connector_midi_handshake (struct backend *backend)
+static void
+elektron_destroy_data (struct backend *backend)
 {
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
-  guint8 *company, *family, *model, *version;
-  gint offset, err = 0;
+  struct elektron_data *data = backend->data;
 
-  backend->device_desc.id = -1;
-  backend->device_desc.storage = 0;
-  backend->upgrade_os = NULL;
-  backend->device_desc.alias = NULL;
-  backend->device_name = NULL;
-  backend->fs_ops = NULL;
+  debug_print (1, "Destroying elektron data...\n");
 
-  tx_msg = g_byte_array_sized_new (sizeof (MIDI_IDENTITY_REQUEST));
-  //Identity Request Universal Sysex message
-  g_byte_array_append (tx_msg, (guchar *) MIDI_IDENTITY_REQUEST,
-		       sizeof (MIDI_IDENTITY_REQUEST));
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
-  if (rx_msg)
+  if (data->fw_version)
     {
-      if (rx_msg->data[4] == 2)
-	{
-	  if (rx_msg->len == 15 || rx_msg->len == 17)
-	    {
-	      offset = rx_msg->len - 15;
-	      company = &rx_msg->data[5];
-	      family = &rx_msg->data[6 + offset];
-	      model = &rx_msg->data[8 + offset];
-	      version = &rx_msg->data[10 + offset];
-
-	      backend->device_name = malloc (LABEL_MAX);
-	      snprintf (backend->device_name, LABEL_MAX,
-			"%02x-%02x-%02x %02x-%02x %02x-%02x %d.%d.%d.%d",
-			company[0], offset ? company[1] : 0,
-			offset ? company[2] : 0, family[0], family[1],
-			model[0], model[1], version[0], version[1],
-			version[2], version[3]);
-	      backend->device_desc.name = strdup (backend->device_name);
-	    }
-	  else
-	    {
-	      error_print ("Illegal SUB-ID2\n");
-	      err = -EIO;
-	    }
-	}
-      else
-	{
-	  error_print ("Illegal SUB-ID2\n");
-	  err = -EIO;
-	}
-
-      free_msg (rx_msg);
+      g_free (data->fw_version);
     }
-
-  if (!err && !sds_handshake (backend))
-    {
-      backend->device_desc.filesystems = FS_SAMPLES_SDS;
-
-      backend->fs_ops = FS_SDS_OPERATIONS;
-      backend->upgrade_os = NULL;
-
-      if (!backend->device_name)
-	{
-	  backend->device_name = strdup (_("MIDI SDS sampler"));
-	  backend->device_desc.name = strdup (backend->device_name);
-	}
-    }
-
-  return err;
+  g_free (backend->data);
+  backend->data = NULL;
 }
 
 static gint
@@ -2201,6 +2090,7 @@ connector_elektron_handshake (struct backend *backend)
   g_free (overbridge_name);
 
   backend->fs_ops = FS_OPERATIONS;
+  backend->destroy_data = elektron_destroy_data;
   backend->upgrade_os = connector_upgrade_os;
 
   return 0;
@@ -2218,11 +2108,11 @@ connector_init (struct backend *backend, gint card)
   err = connector_elektron_handshake (backend);
   if (err)
     {
-      err = connector_midi_handshake (backend);
+      err = sds_handshake (backend);
     }
   if (err)
     {
-      connector_destroy (backend);
+      backend_destroy (backend);
     }
 
   return err;
@@ -3339,15 +3229,6 @@ connector_upload_raw_pst_pkg (struct backend *backend, const gchar * path,
   return connector_upload_pkg (backend, path, input, control,
 			       PKG_FILE_TYPE_PRESET,
 			       &FS_RAW_ANY_OPERATIONS, connector_upload_raw);
-}
-
-static gchar *
-connector_get_fs_ext (const struct device_desc *desc,
-		      const struct fs_operations *ops)
-{
-  gchar *ext = malloc (LABEL_MAX);
-  snprintf (ext, LABEL_MAX, "%s", ops->type_ext);
-  return ext;
 }
 
 static gchar *

@@ -709,7 +709,7 @@ main (int argc, gchar * argv[])
 end:
   if (backend_check (&backend))
     {
-      connector_destroy (&backend);
+      backend_destroy (&backend);
     }
 
   usleep (REST_TIME_US * 2);

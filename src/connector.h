@@ -35,11 +35,6 @@ enum elektron_fs
   FS_DATA_SND = 0x20
 };
 
-enum sds_fs
-{
-  FS_SAMPLES_SDS = 1
-};
-
 struct connector_iterator_data
 {
   GByteArray *msg;

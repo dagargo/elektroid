@@ -504,7 +504,7 @@ browser_refresh_devices (GtkWidget * object, gpointer data)
 {
   if (backend_check (&backend))
     {
-      connector_destroy (&backend);
+      backend_destroy (&backend);
       elektroid_check_backend ();
     }
   elektroid_load_devices (FALSE);
@@ -831,7 +831,7 @@ static void
 elektroid_upgrade_os (GtkWidget * object, gpointer data)
 {
   elektroid_tx_sysex_common (backend.upgrade_os);
-  connector_destroy (&backend);
+  backend_destroy (&backend);
   elektroid_check_backend ();
 }
 
@@ -2546,7 +2546,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
     {
       if (backend_check (&backend))
 	{
-	  connector_destroy (&backend);
+	  backend_destroy (&backend);
 	}
 
       gtk_tree_model_get_value (GTK_TREE_MODEL (devices_list_store),
@@ -3358,7 +3358,7 @@ elektroid_run (int argc, char *argv[])
 
   if (backend_check (&backend))
     {
-      connector_destroy (&backend);
+      backend_destroy (&backend);
     }
 
   audio_destroy (&audio);

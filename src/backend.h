@@ -36,6 +36,8 @@
 #define SYSEX_TIMEOUT_GUESS_MS 1000	//If the request might not be implemente, 5 s is too much.
 #define SAMPLE_ID_NAME_SEPARATOR ":"
 
+typedef void (*destroy_data) (struct backend *);
+
 struct backend
 {
   struct device_desc device_desc;
@@ -50,6 +52,7 @@ struct backend
   GHashTable *cache;
   //These must be filled by the concrete backend.
   const struct fs_operations **fs_ops;
+  destroy_data destroy_data;
   t_sysex_transfer upgrade_os;
   void *data;
 };
@@ -84,5 +87,8 @@ const struct fs_operations *backend_get_fs_operations (struct backend *, gint,
 						       const char *);
 
 const gchar *backend_get_fs_name (struct backend *, guint);
+
+gchar *connector_get_fs_ext (const struct device_desc *,
+			     const struct fs_operations *);
 
 #endif
