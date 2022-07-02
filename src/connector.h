@@ -25,12 +25,6 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
-struct connector
-{
-  gushort seq;
-  gchar *fw_version;
-};
-
 enum connector_fs
 {
   FS_SAMPLES = 0x1,

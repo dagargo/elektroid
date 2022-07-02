@@ -980,18 +980,11 @@ connector_tx (struct backend *backend, const GByteArray * msg)
   guint16 aux;
   gchar *text;
   struct sysex_transfer transfer;
-  struct connector *connector = backend->data;
+  struct elektron_data *data = backend->data;
 
-  aux = htobe16 (connector->seq);
+  aux = htobe16 (data->seq);
   memcpy (msg->data, &aux, sizeof (guint16));
-  if (connector->seq == USHRT_MAX)
-    {
-      connector->seq = 0;
-    }
-  else
-    {
-      connector->seq++;
-    }
+  data->seq++;
 
   transfer.active = TRUE;
   transfer.raw = connector_msg_to_raw (msg);
@@ -1965,19 +1958,18 @@ end:
 void
 connector_destroy (struct backend *backend)
 {
-  struct connector *connector = backend->data;
+  struct elektron_data *data = backend->data;
 
   debug_print (1, "Destroying connector...\n");
 
   if (backend->device_desc.filesystems & ~FS_SAMPLES_SDS)
     {
-      if (connector->fw_version)
+      if (data->fw_version)
 	{
-	  g_free (connector->fw_version);
-	  connector->fw_version = NULL;
+	  g_free (data->fw_version);
 	}
-
       g_free (backend->data);
+      backend->data = NULL;
     }
 
   backend_destroy (backend);
@@ -2112,10 +2104,10 @@ connector_elektron_handshake (struct backend *backend)
   guint8 id;
   gchar *overbridge_name;
   GByteArray *tx_msg, *rx_msg;
-  struct connector *connector = g_malloc (sizeof (struct connector));
+  struct elektron_data *data = g_malloc (sizeof (struct elektron_data));
 
-  connector->seq = 0;
-  backend->data = connector;
+  data->seq = 0;
+  backend->data = data;
 
   tx_msg = connector_new_msg (PING_REQUEST, sizeof (PING_REQUEST));
   rx_msg =
@@ -2123,7 +2115,7 @@ connector_elektron_handshake (struct backend *backend)
   if (!rx_msg)
     {
       backend->data = NULL;
-      g_free (connector);
+      g_free (data);
       return -EIO;
     }
 
@@ -2135,7 +2127,7 @@ connector_elektron_handshake (struct backend *backend)
     {
       backend->data = NULL;
       g_free (overbridge_name);
-      g_free (connector);
+      g_free (data);
       return -ENODEV;
     }
 
@@ -2147,10 +2139,10 @@ connector_elektron_handshake (struct backend *backend)
     {
       backend->data = NULL;
       g_free (overbridge_name);
-      g_free (connector);
+      g_free (data);
       return -EIO;
     }
-  connector->fw_version = strdup ((gchar *) & rx_msg->data[10]);
+  data->fw_version = strdup ((gchar *) & rx_msg->data[10]);
   free_msg (rx_msg);
 
   if (debug_level > 1)
@@ -2168,8 +2160,7 @@ connector_elektron_handshake (struct backend *backend)
   backend->upgrade_os = connector_upgrade_os;
   backend->device_name = g_malloc (LABEL_MAX);
   snprintf (backend->device_name, LABEL_MAX, "%s %s (%s)",
-	    backend->device_desc.name,
-	    connector->fw_version, overbridge_name);
+	    backend->device_desc.name, data->fw_version, overbridge_name);
   debug_print (1, "Connected to %s\n", backend->device_name);
 
   g_free (overbridge_name);
@@ -2922,7 +2913,7 @@ connector_download_pkg (struct backend *backend, const gchar * path,
   gint ret;
   gchar *pkg_name;
   struct package pkg;
-  struct connector *connector = backend->data;
+  struct elektron_data *data = backend->data;
 
   pkg_name = connector_get_download_name (backend, NULL, ops, path);
   if (!pkg_name)
@@ -2931,7 +2922,7 @@ connector_download_pkg (struct backend *backend, const gchar * path,
     }
 
   if (package_begin
-      (&pkg, pkg_name, connector->fw_version, &backend->device_desc, type))
+      (&pkg, pkg_name, data->fw_version, &backend->device_desc, type))
     {
       g_free (pkg_name);
       return -1;

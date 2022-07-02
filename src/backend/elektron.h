@@ -26,6 +26,12 @@
 
 extern char *transfer_devices_filename;
 
+struct elektron_data
+{
+  guint16 seq;
+  gchar *fw_version;
+};
+
 gint elektron_load_device_desc (struct device_desc *, guint8);
 
 #endif
