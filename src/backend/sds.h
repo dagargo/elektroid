@@ -25,22 +25,4 @@
 
 gint sds_handshake (struct backend *);
 
-gchar *sds_get_upload_path (struct backend *, struct item_iterator *,
-			    const struct fs_operations *,
-			    const gchar *, const gchar *, gint32 *);
-
-gchar *sds_get_download_path (struct backend *, struct item_iterator *,
-			      const struct fs_operations *,
-			      const gchar *, const gchar *);
-
-gint sds_download (struct backend *, const gchar *, GByteArray *,
-		   struct job_control *);
-
-gint sds_upload (struct backend *, const gchar *, GByteArray *,
-		 struct job_control *);
-
-gint sds_read_dir (struct backend *, struct item_iterator *, const gchar *);
-
-gint sds_sample_load (const gchar *, GByteArray *, struct job_control *);
-
 #endif

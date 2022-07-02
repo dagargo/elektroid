@@ -24,6 +24,13 @@
 #ifndef BACKEND_H
 #define BACKEND_H
 
+#define BE_FILE_ICON_WAVE "elektroid-wave-symbolic"
+#define BE_FILE_ICON_DATA "elektroid-data-symbolic"
+#define BE_FILE_ICON_PRJ "elektroid-project-symbolic"
+#define BE_FILE_ICON_SND "elektroid-sound-symbolic"
+
+#define BE_MAX_BACKEND_FSS (sizeof (int) * 8)
+
 #define REST_TIME_US 50000
 #define SYSEX_TIMEOUT_MS 5000
 #define SYSEX_TIMEOUT_GUESS_MS 1000	//If the request might not be implemente, 5 s is too much.
@@ -40,9 +47,11 @@ struct backend
   gint npfds;
   struct pollfd *pfds;
   gchar *device_name;
+  GHashTable *cache;
+  //These must be filled by the concrete backend.
+  const struct fs_operations **fs_ops;
   t_sysex_transfer upgrade_os;
   void *data;
-  GHashTable *cache;
 };
 
 struct backend_system_device
@@ -70,5 +79,10 @@ void backend_enable_cache (struct backend *);
 void backend_disable_cache (struct backend *);
 
 GArray *backend_get_system_devices ();
+
+const struct fs_operations *backend_get_fs_operations (struct backend *, gint,
+						       const char *);
+
+const gchar *backend_get_fs_name (struct backend *, guint);
 
 #endif

@@ -25,6 +25,22 @@
 #define BUFF_SIZE (4 * KB)
 #define RING_BUFF_SIZE (256 * KB)
 
+const struct fs_operations *
+backend_get_fs_operations (struct backend *backend, gint fs, const char *name)
+{
+  const struct fs_operations **fs_operations = backend->fs_ops;
+  while (*fs_operations)
+    {
+      const struct fs_operations *ops = *fs_operations;
+      if (ops->fs == fs || (name && !strcmp (ops->name, name)))
+	{
+	  return ops;
+	}
+      fs_operations++;
+    }
+  return NULL;
+}
+
 void
 backend_enable_cache (struct backend *backend)
 {
@@ -201,10 +217,10 @@ backend_init (struct backend *backend, gint card)
 
   return 0;
 
-cleanup:
-  backend_destroy (backend);
 cleanup_params:
   snd_rawmidi_params_free (params);
+cleanup:
+  backend_destroy (backend);
   g_free (backend->buffer);
   return -1;
 }

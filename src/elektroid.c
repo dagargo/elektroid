@@ -44,8 +44,6 @@
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
 
-#define GUI_FSS (FS_SAMPLES | FS_RAW_PRESETS | FS_DATA_PRJ | FS_DATA_SND | FS_SAMPLES_SDS)
-
 #define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping...\n"
 
 enum device_list_store_columns
@@ -118,11 +116,6 @@ static const struct option ELEKTROID_OPTIONS[] = {
   {"verbose", 0, NULL, 'v'},
   {"help", 0, NULL, 'h'},
   {NULL, 0, NULL, 0}
-};
-
-static const gchar *ELEKTROID_FS_ICONS[] = {
-  FILE_ICON_WAVE, FILE_ICON_DATA, FILE_ICON_SND, FILE_ICON_DATA,
-  FILE_ICON_PRJ, FILE_ICON_SND, FILE_ICON_WAVE
 };
 
 static gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
@@ -244,30 +237,18 @@ static GtkComboBox *fs_combo;
 static GtkTreeViewColumn *remote_tree_view_index_column;
 
 static const gchar *
-elektroid_get_fs_name (enum connector_fs fs)
+elektroid_get_fs_name (guint fs)
 {
-  switch (fs)
-    {
-    case FS_SAMPLES:
-    case FS_SAMPLES_SDS:
-      return _("Samples");
-    case FS_RAW_PRESETS:
-      return _("Presets");
-    case FS_DATA_PRJ:
-      return _("Projects");
-    case FS_DATA_SND:
-      return _("Sounds");
-    default:
-      return _("Undefined");
-    }
+  const gchar *name =
+    backend_get_fs_operations (&backend, fs, NULL)->gui_name;
+  return name ? _(name) : _("Undefined");
 }
 
 static void
-elektroid_set_file_extensions_for_fs (gchar ** extensions[],
-				      enum connector_fs sel_fs)
+elektroid_set_file_extensions_for_fs (gchar ** extensions[], gint sel_fs)
 {
   const struct fs_operations *ops =
-    connector_get_fs_operations (sel_fs, NULL);
+    backend_get_fs_operations (&backend, sel_fs, NULL);
   gchar *mp3_ext = NULL;
 
   if (*extensions != NULL)
@@ -281,7 +262,7 @@ elektroid_set_file_extensions_for_fs (gchar ** extensions[],
       g_free (*extensions);
     }
 
-  if (ops->options & FS_OPTION_SHOW_AUDIO_PLAYER)
+  if (!ops || ops->options & FS_OPTION_SHOW_AUDIO_PLAYER)
     {
       gchar **ext = ELEKTROID_AUDIO_LOCAL_EXTS;
       int known_ext = 0;
@@ -323,22 +304,6 @@ elektroid_set_file_extensions_for_fs (gchar ** extensions[],
       (*extensions)[0] = ops->get_ext (&backend.device_desc, ops);
       (*extensions)[1] = NULL;
     }
-}
-
-static const gchar *
-elektroid_get_inventory_icon_for_fs (enum connector_fs sel_fs)
-{
-  const gchar *icon = FILE_ICON_DATA;
-
-  for (int fs = FS_SAMPLES, i = 0; fs <= FS_SAMPLES_SDS; fs <<= 1, i++)
-    {
-      if (GUI_FSS & fs && sel_fs == fs)
-	{
-	  icon = ELEKTROID_FS_ICONS[i];
-	  break;
-	}
-    }
-  return icon;
 }
 
 static void
@@ -392,8 +357,7 @@ elektroid_load_devices (gboolean auto_select)
 
   if (device_index == -1)
     {
-      local_browser.file_icon =
-	elektroid_get_inventory_icon_for_fs (FS_SAMPLES);
+      local_browser.file_icon = BE_FILE_ICON_WAVE;
       elektroid_set_file_extensions_for_fs (&local_browser.extensions,
 					    FS_SAMPLES);
 
@@ -1927,7 +1891,7 @@ elektroid_run_next_task (gpointer data)
       transfer.control.callback = elektroid_update_progress;
       transfer.src = src;
       transfer.dst = dst;
-      transfer.fs_ops = connector_get_fs_operations (fs, NULL);
+      transfer.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
       debug_print (1, "Running task type %d from %s to %s (%s)...\n", type,
 		   transfer.src, transfer.dst, elektroid_get_fs_name (fs));
 
@@ -2033,7 +1997,8 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
 {
   const gchar *status_human = elektroid_get_human_task_status (QUEUED);
   const gchar *type_human = elektroid_get_human_task_type (type);
-  const gchar *icon = elektroid_get_inventory_icon_for_fs (remote_fs_id);
+  const gchar *icon =
+    backend_get_fs_operations (&backend, remote_fs_id, NULL)->gui_icon;
 
 
   gtk_list_store_insert_with_values (task_list_store, NULL, -1,
@@ -2480,7 +2445,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 {
   GtkTreeIter iter;
   GValue fsv = G_VALUE_INIT;
-  enum connector_fs fs;
+  gint fs;
 
   *remote_browser.dir = '\0';
   if (!gtk_combo_box_get_active_iter (fs_combo, &iter))
@@ -2498,8 +2463,8 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			    &iter, FS_LIST_STORE_ID_FIELD, &fsv);
   fs = g_value_get_uint (&fsv);
 
-  remote_browser.fs_ops = connector_get_fs_operations (fs, NULL);
-  remote_browser.file_icon = elektroid_get_inventory_icon_for_fs (fs);
+  remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
+  remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
   strcpy (remote_browser.dir, "/");
   browser_load_dir (&remote_browser);
   browser_update_fs_options (&remote_browser);
@@ -2546,17 +2511,23 @@ elektroid_fill_fs_combo ()
 {
   gtk_list_store_clear (fs_list_store);
 
-  for (int fs = FS_SAMPLES, i = 0; fs <= FS_SAMPLES_SDS; fs = fs << 1, i++)
+  for (gint fs = 1, i = 0; fs < BE_MAX_BACKEND_FSS; fs = fs << 1, i++)
     {
-      if (GUI_FSS & fs && backend.device_desc.filesystems & fs)
+      if (backend.device_desc.filesystems & fs)
 	{
-	  gtk_list_store_insert_with_values (fs_list_store, NULL, -1,
-					     FS_LIST_STORE_ID_FIELD,
-					     fs,
-					     FS_LIST_STORE_ICON_FIELD,
-					     ELEKTROID_FS_ICONS[i],
-					     FS_LIST_STORE_NAME_FIELD,
-					     elektroid_get_fs_name (fs), -1);
+	  const struct fs_operations *ops =
+	    backend_get_fs_operations (&backend, fs, NULL);
+	  if (ops->gui_name)
+	    {
+	      gtk_list_store_insert_with_values (fs_list_store, NULL, -1,
+						 FS_LIST_STORE_ID_FIELD,
+						 fs,
+						 FS_LIST_STORE_ICON_FIELD,
+						 ops->gui_icon,
+						 FS_LIST_STORE_NAME_FIELD,
+						 elektroid_get_fs_name (fs),
+						 -1);
+	    }
 	}
     }
 
@@ -3204,7 +3175,7 @@ elektroid_run (int argc, char *argv[])
     .dir = g_malloc0 (PATH_MAX),
     .check_selection = elektroid_remote_check_selection,
     .file_icon = NULL,
-    .fs_ops = connector_get_fs_operations (-1, NULL),
+    .fs_ops = NULL,
     .backend = &backend,
     .notify_dir_change = NULL,
     .check_callback = elektroid_check_backend
@@ -3270,7 +3241,7 @@ elektroid_run (int argc, char *argv[])
     .menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu")),
     .dir = preferences.local_dir,
     .check_selection = elektroid_local_check_selection,
-    .file_icon = elektroid_get_inventory_icon_for_fs (FS_SAMPLES),
+    .file_icon = BE_FILE_ICON_WAVE,
     .extensions = NULL,
     .fs_ops = &FS_LOCAL_OPERATIONS,
     .backend = NULL,

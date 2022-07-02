@@ -25,15 +25,19 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
-enum connector_fs
+enum elektron_fs
 {
   FS_SAMPLES = 0x1,
   FS_RAW_ALL = 0x2,
   FS_RAW_PRESETS = 0x4,
   FS_DATA_ALL = 0x8,
   FS_DATA_PRJ = 0x10,
-  FS_DATA_SND = 0x20,
-  FS_SAMPLES_SDS = 0x40
+  FS_DATA_SND = 0x20
+};
+
+enum sds_fs
+{
+  FS_SAMPLES_SDS = 1
 };
 
 struct connector_iterator_data
@@ -44,7 +48,7 @@ struct connector_iterator_data
   guint16 operations;
   guint8 has_valid_data;
   guint8 has_metadata;
-  enum connector_fs fs;
+  guint32 fs;
   gboolean cached;
 };
 
@@ -61,8 +65,7 @@ struct connector_storage_stats
   guint64 bfree;
 };
 
-const struct fs_operations *connector_get_fs_operations (enum connector_fs,
-							 const gchar *);
+const struct fs_operations *connector_get_fs_operations (gint, const gchar *);
 
 gint connector_init (struct backend *, gint);
 

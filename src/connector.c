@@ -196,6 +196,14 @@ static gint connector_upgrade_os (struct backend *, struct sysex_transfer *);
 static gint elektron_sample_load (const gchar *, GByteArray *,
 				  struct job_control *);
 
+static enum item_type connector_get_path_type (struct backend *,
+					       const gchar *,
+					       fs_init_iter_func);
+
+static void print_smplrw (struct item_iterator *);
+
+static void print_data (struct item_iterator *);
+
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
 static const guint8 PING_REQUEST[] = { 0x1 };
@@ -261,7 +269,10 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
   .options = FS_OPTION_SHOW_AUDIO_PLAYER,
   .name = "sample",
+  .gui_name = "Samples",
+  .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = connector_read_samples_dir,
+  .print_item = print_smplrw,
   .mkdir = connector_create_samples_dir,
   .delete = connector_delete_samples_item,
   .rename = connector_move_samples_item,
@@ -284,7 +295,10 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .fs = FS_RAW_ALL,
   .options = 0,
   .name = "raw",
+  .gui_name = NULL,
+  .gui_icon = NULL,
   .readdir = connector_read_raw_dir,
+  .print_item = print_smplrw,
   .mkdir = connector_create_raw_dir,
   .delete = connector_delete_raw_item,
   .rename = connector_move_raw_item,
@@ -307,7 +321,10 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .fs = FS_RAW_PRESETS,
   .options = 0,
   .name = "preset",
+  .gui_name = "Presets",
+  .gui_icon = BE_FILE_ICON_SND,
   .readdir = connector_read_raw_dir,
+  .print_item = print_smplrw,
   .mkdir = connector_create_raw_dir,
   .delete = connector_delete_raw_item,
   .rename = connector_move_raw_item,
@@ -330,7 +347,10 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .fs = FS_DATA_ALL,
   .options = FS_OPTION_SORT_BY_ID,
   .name = "data",
+  .gui_name = NULL,
+  .gui_icon = NULL,
   .readdir = connector_read_data_dir_any,
+  .print_item = print_data,
   .mkdir = NULL,
   .delete = connector_clear_data_item_any,
   .rename = NULL,
@@ -353,7 +373,10 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .fs = FS_DATA_PRJ,
   .options = FS_OPTION_SORT_BY_ID,
   .name = "project",
+  .gui_name = "Projects",
+  .gui_icon = BE_FILE_ICON_PRJ,
   .readdir = connector_read_data_dir_prj,
+  .print_item = print_data,
   .mkdir = NULL,
   .delete = connector_clear_data_item_prj,
   .rename = NULL,
@@ -376,7 +399,10 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .fs = FS_DATA_SND,
   .options = FS_OPTION_SORT_BY_ID,
   .name = "sound",
+  .gui_name = "Sounds",
+  .gui_icon = BE_FILE_ICON_SND,
   .readdir = connector_read_data_dir_snd,
+  .print_item = print_data,
   .mkdir = NULL,
   .delete = connector_clear_data_item_snd,
   .rename = NULL,
@@ -401,6 +427,8 @@ static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
     FS_OPTION_SHOW_AUDIO_PLAYER | FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE
     | FS_OPTION_SORT_BY_ID,
   .name = "sds",
+  .gui_name = "Samples",
+  .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = sds_read_dir,
   .mkdir = NULL,
   .delete = NULL,
@@ -423,12 +451,31 @@ static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
 static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
   &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
-  &FS_SAMPLES_SDS_OPERATIONS, NULL
+  NULL
 };
 
-static enum item_type connector_get_path_type (struct backend *,
-					       const gchar *,
-					       fs_init_iter_func);
+static void
+print_smplrw (struct item_iterator *iter)
+{
+  gchar *hsize = get_human_size (iter->item.size, FALSE);
+  struct connector_iterator_data *data = iter->data;
+
+  printf ("%c %10s %08x %s\n", iter->item.type,
+	  hsize, data->hash, iter->item.name);
+  g_free (hsize);
+}
+
+static void
+print_data (struct item_iterator *iter)
+{
+  gchar *hsize = get_human_size (iter->item.size, FALSE);
+  struct connector_iterator_data *data = iter->data;
+
+  printf ("%c %3d %04x %d %d %10s %s\n", iter->item.type,
+	  iter->item.index, data->operations, data->has_valid_data,
+	  data->has_metadata, hsize, iter->item.name);
+  g_free (hsize);
+}
 
 static void
 connector_free_iterator_data (void *iter_data)
@@ -440,22 +487,6 @@ connector_free_iterator_data (void *iter_data)
       free_msg (data->msg);
     }
   g_free (data);
-}
-
-const struct fs_operations *
-connector_get_fs_operations (enum connector_fs fs, const char *name)
-{
-  const struct fs_operations **fs_operations = FS_OPERATIONS;
-  while (*fs_operations)
-    {
-      const struct fs_operations *ops = *fs_operations;
-      if (ops->fs == fs || (name && strcmp (ops->name, name) == 0))
-	{
-	  return ops;
-	}
-      fs_operations++;
-    }
-  return NULL;
 }
 
 static inline gchar *
@@ -534,7 +565,7 @@ static gint connector_copy_iterator (struct item_iterator *,
 
 static gint
 connector_init_iterator (struct item_iterator *iter, GByteArray * msg,
-			 iterator_next next, enum connector_fs fs,
+			 iterator_next next, enum elektron_fs fs,
 			 gboolean cached)
 {
   struct connector_iterator_data *data =
@@ -1137,7 +1168,7 @@ static gint
 connector_read_common_dir (struct backend *backend,
 			   struct item_iterator *iter, const gchar * dir,
 			   const guint8 msg[], int size,
-			   fs_init_iter_func init_iter, enum connector_fs fs)
+			   fs_init_iter_func init_iter, enum elektron_fs fs)
 {
   gboolean cache = FALSE;
   GByteArray *tx_msg, *rx_msg = NULL;
@@ -2043,6 +2074,7 @@ connector_midi_handshake (struct backend *backend)
   backend->upgrade_os = NULL;
   backend->device_desc.alias = NULL;
   backend->device_name = NULL;
+  backend->fs_ops = NULL;
 
   tx_msg = g_byte_array_sized_new (sizeof (MIDI_IDENTITY_REQUEST));
   //Identity Request Universal Sysex message
@@ -2088,6 +2120,10 @@ connector_midi_handshake (struct backend *backend)
   if (!err && !sds_handshake (backend))
     {
       backend->device_desc.filesystems = FS_SAMPLES_SDS;
+
+      backend->fs_ops = FS_SDS_OPERATIONS;
+      backend->upgrade_os = NULL;
+
       if (!backend->device_name)
 	{
 	  backend->device_name = strdup (_("MIDI SDS sampler"));
@@ -2157,13 +2193,15 @@ connector_elektron_handshake (struct backend *backend)
 	}
     }
 
-  backend->upgrade_os = connector_upgrade_os;
   backend->device_name = g_malloc (LABEL_MAX);
   snprintf (backend->device_name, LABEL_MAX, "%s %s (%s)",
 	    backend->device_desc.name, data->fw_version, overbridge_name);
   debug_print (1, "Connected to %s\n", backend->device_name);
 
   g_free (overbridge_name);
+
+  backend->fs_ops = FS_OPERATIONS;
+  backend->upgrade_os = connector_upgrade_os;
 
   return 0;
 }

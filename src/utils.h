@@ -71,6 +71,8 @@ struct item_iterator
   struct item item;
 };
 
+typedef void (*fs_print_item) (struct item_iterator *);
+
 typedef void (*job_control_callback) (gdouble);
 
 struct job_control
@@ -156,7 +158,10 @@ struct fs_operations
   gint fs;
   guint32 options;
   const gchar *name;
+  const gchar *gui_name;
+  const gchar *gui_icon;
   fs_init_iter_func readdir;
+  fs_print_item print_item;
   fs_path_func mkdir;
   fs_path_func delete;
   fs_src_dst_func rename;
