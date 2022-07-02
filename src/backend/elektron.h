@@ -1,5 +1,5 @@
 /*
- *   transfer.h
+ *   elektron.h
  *   Copyright (C) 2019 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
@@ -21,11 +21,11 @@
 #include "utils.h"
 #include "backend.h"
 
-#ifndef TRANSFER_H
-#define TRANSFER_H
+#ifndef ELEKTRON_H
+#define ELEKTRON_H
 
 extern char *transfer_devices_filename;
 
-gint transfer_load_device_desc (struct device_desc *, guint8);
+gint elektron_load_device_desc (struct device_desc *, guint8);
 
 #endif

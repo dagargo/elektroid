@@ -27,7 +27,7 @@
 #include <glib/gi18n.h>
 #include "backend.h"
 #include "backend/sds.h"
-#include "backend/transfer.h"
+#include "backend/elektron.h"
 #include "connector.h"
 #include "utils.h"
 #include "sample.h"
@@ -2131,7 +2131,7 @@ connector_elektron_handshake (struct backend *backend)
   id = rx_msg->data[5];
   free_msg (rx_msg);
 
-  if (transfer_load_device_desc (&backend->device_desc, id))
+  if (elektron_load_device_desc (&backend->device_desc, id))
     {
       backend->data = NULL;
       g_free (overbridge_name);

@@ -1,5 +1,5 @@
 /*
- *   transfer.h
+ *   elektron.h
  *   Copyright (C) 2019 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
@@ -18,7 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "transfer.h"
+#include "elektron.h"
 
 #define DEVICES_FILE "/devices.json"
 
@@ -31,7 +31,7 @@
 gchar *transfer_devices_filename = NULL;
 
 gint
-transfer_load_device_desc (struct device_desc *device_desc, guint8 id)
+elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
 {
   gint err, devices;
   JsonParser *parser;

@@ -1,7 +1,7 @@
 PKG_CONFIG ?= pkg-config
 
-GUI_LIBS = alsa gtk+-3.0 libpulse libpulse-mainloop-glib zlib json-glib-1.0 libzip
 CLI_LIBS = alsa glib-2.0 zlib json-glib-1.0 libzip
+GUI_LIBS = $(CLI_LIBS) gtk+-3.0 libpulse libpulse-mainloop-glib
 
 elektroid_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(GUI_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -D_GNU_SOURCE
 elektroid_LDFLAGS = `$(PKG_CONFIG) --libs $(GUI_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS)
@@ -14,15 +14,15 @@ else
 bin_PROGRAMS = elektroid elektroid-cli
 endif
 
-elektroid_SOURCES = audio.c audio.h browser.c browser.h connector.c \
-connector.h elektroid.c sample.c sample.h utils.c utils.h \
-notifier.c notifier.h local.c local.h preferences.c preferences.h \
-utils.h package.c package.h backend.c backend.h backend/sds.c backend/sds.h \
-backend/transfer.c backend/transfer.h
-
-elektroid_cli_SOURCES = connector.c connector.h elektroid-cli.c \
+elektroid_common_sources = connector.c connector.h \
 sample.c sample.h utils.c utils.h package.c package.h backend.c backend.h \
-backend/sds.c backend/sds.h backend/transfer.c backend/transfer.h
+backend/sds.c backend/sds.h backend/elektron.c backend/elektron.h
+
+elektroid_cli_SOURCES = $(elektroid_common_sources) elektroid-cli.c
+
+elektroid_SOURCES = $(elektroid_common_sources) audio.c audio.h \
+browser.c browser.h notifier.c notifier.h local.c local.h \
+preferences.c preferences.h elektroid.c
 
 SNDFILE_CFLAGS = @SNDFILE_CFLAGS@
 SNDFILE_LIBS = @SNDFILE_LIBS@
