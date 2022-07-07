@@ -29,6 +29,10 @@ const struct fs_operations *
 backend_get_fs_operations (struct backend *backend, gint fs, const char *name)
 {
   const struct fs_operations **fs_operations = backend->fs_ops;
+  if (!fs_operations)
+    {
+      return NULL;
+    }
   while (*fs_operations)
     {
       const struct fs_operations *ops = *fs_operations;
@@ -403,6 +407,12 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 	{
 	  if (backend_is_rt_msg (data, rx_len))
 	    {
+	      total_time += POLL_TIMEOUT_MS;
+	      if (transfer->timeout > -1 && total_time >= transfer->timeout)
+		{
+		  debug_print (1, "Timeout!\n");
+		  return -ETIMEDOUT;
+		}
 	      continue;
 	    }
 	  break;
