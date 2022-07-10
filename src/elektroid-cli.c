@@ -279,9 +279,8 @@ cli_df (int argc, gchar * argv[], int optind)
   gchar *size;
   gchar *diff;
   gchar *free;
-  gint res;
-  struct connector_storage_stats statfs;
-  enum connector_storage storage;
+  gint res, storage;
+  struct backend_storage_stats statfs;
 
   if (optind == argc)
     {
@@ -298,7 +297,7 @@ cli_df (int argc, gchar * argv[], int optind)
       return EXIT_FAILURE;
     }
 
-  if (!backend.device_desc.storage)
+  if (!backend.device_desc.storage || !backend.get_storage_stats)
     {
       return EXIT_FAILURE;
     }
@@ -307,11 +306,11 @@ cli_df (int argc, gchar * argv[], int optind)
 	  "Used", "Available", "Use%");
 
   res = 0;
-  for (storage = STORAGE_PLUS_DRIVE; storage <= STORAGE_RAM; storage <<= 1)
+  for (storage = 1; storage < BE_MAX_BACKEND_STORAGE; storage <<= 1)
     {
       if (backend.device_desc.storage & storage)
 	{
-	  res |= connector_get_storage_stats (&backend, storage, &statfs);
+	  res |= backend.get_storage_stats (&backend, storage, &statfs);
 	  if (res)
 	    {
 	      continue;
@@ -321,7 +320,7 @@ cli_df (int argc, gchar * argv[], int optind)
 	  free = get_human_size (statfs.bfree, FALSE);
 	  printf ("%-10.10s%16s%16s%16s%10.2f%%\n",
 		  statfs.name, size, diff, free,
-		  connector_get_storage_stats_percent (&statfs));
+		  backend_get_storage_stats_percent (&statfs));
 	  g_free (size);
 	  g_free (diff);
 	  g_free (free);

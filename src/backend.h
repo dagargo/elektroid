@@ -30,13 +30,24 @@
 #define BE_FILE_ICON_SND "elektroid-sound-symbolic"
 
 #define BE_MAX_BACKEND_FSS (sizeof (int) * 8)
+#define BE_MAX_BACKEND_STORAGE BE_MAX_BACKEND_FSS
 
 #define REST_TIME_US 50000
 #define SYSEX_TIMEOUT_MS 5000
 #define SYSEX_TIMEOUT_GUESS_MS 1000	//If the request might not be implemente, 5 s is too much.
 #define SAMPLE_ID_NAME_SEPARATOR ":"
 
-typedef void (*destroy_data) (struct backend *);
+struct backend_storage_stats
+{
+  const gchar *name;
+  guint64 bsize;
+  guint64 bfree;
+};
+
+typedef void (*t_destroy_data) (struct backend *);
+
+typedef gint (*t_get_storage_stats) (struct backend *, gint,
+				     struct backend_storage_stats *);
 
 struct backend
 {
@@ -52,8 +63,9 @@ struct backend
   GHashTable *cache;
   //These must be filled by the concrete backend.
   const struct fs_operations **fs_ops;
-  destroy_data destroy_data;
+  t_destroy_data destroy_data;
   t_sysex_transfer upgrade_os;
+  t_get_storage_stats get_storage_stats;
   void *data;
 };
 
@@ -88,7 +100,9 @@ const struct fs_operations *backend_get_fs_operations (struct backend *, gint,
 
 const gchar *backend_get_fs_name (struct backend *, guint);
 
-gchar *connector_get_fs_ext (const struct device_desc *,
-			     const struct fs_operations *);
+gchar *backend_get_fs_ext (const struct device_desc *,
+			   const struct fs_operations *);
+
+gdouble backend_get_storage_stats_percent (struct backend_storage_stats *);
 
 #endif

@@ -701,7 +701,7 @@ static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
   .getid = get_item_index,
   .load = sds_sample_load,
   .save = sample_save,
-  .get_ext = connector_get_fs_ext,
+  .get_ext = backend_get_fs_ext,
   .get_upload_path = sds_get_upload_path,
   .get_download_path = sds_get_download_path,
   .type_ext = "wav"
@@ -747,6 +747,7 @@ sds_handshake (struct backend *backend)
   backend->device_desc.id = -1;
   backend->device_desc.storage = 0;
   backend->upgrade_os = NULL;
+  backend->get_storage_stats = NULL;
   backend->device_desc.alias = NULL;
   backend->device_name = NULL;
   backend->fs_ops = NULL;

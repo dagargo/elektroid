@@ -18,66 +18,11 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <glib.h>
-#include <alsa/asoundlib.h>
 #include "utils.h"
 
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
-enum elektron_fs
-{
-  FS_SAMPLES = 0x1,
-  FS_RAW_ALL = 0x2,
-  FS_RAW_PRESETS = 0x4,
-  FS_DATA_ALL = 0x8,
-  FS_DATA_PRJ = 0x10,
-  FS_DATA_SND = 0x20
-};
-
-struct connector_iterator_data
-{
-  GByteArray *msg;
-  guint32 pos;
-  guint32 hash;
-  guint16 operations;
-  guint8 has_valid_data;
-  guint8 has_metadata;
-  guint32 fs;
-  gboolean cached;
-};
-
-enum connector_storage
-{
-  STORAGE_PLUS_DRIVE = 0x1,
-  STORAGE_RAM = 0x2
-};
-
-struct connector_storage_stats
-{
-  const gchar *name;
-  guint64 bsize;
-  guint64 bfree;
-};
-
-const struct fs_operations *connector_get_fs_operations (gint, const gchar *);
-
 gint connector_init (struct backend *, gint);
-
-void connector_destroy (struct backend *);
-
-gint connector_get_storage_stats (struct backend *,
-				  enum connector_storage,
-				  struct connector_storage_stats *);
-
-gdouble connector_get_storage_stats_percent (struct connector_storage_stats
-					     *);
-
-gchar *connector_get_upload_path (struct backend *, struct item_iterator *,
-				  const struct fs_operations *, const gchar *,
-				  const gchar *, gint32 *);
-
-gchar *connector_get_sample_path_from_hash_size (struct backend *,
-						 guint32, guint32);
 
 #endif

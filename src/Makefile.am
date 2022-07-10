@@ -15,8 +15,9 @@ bin_PROGRAMS = elektroid elektroid-cli
 endif
 
 elektroid_common_sources = connector.c connector.h \
-sample.c sample.h utils.c utils.h package.c package.h backend.c backend.h \
-backend/sds.c backend/sds.h backend/elektron.c backend/elektron.h
+sample.c sample.h utils.c utils.h backend.c backend.h \
+backend/sds.c backend/sds.h backend/elektron.c backend/elektron.h \
+backend/package.c backend/package.h
 
 elektroid_cli_SOURCES = $(elektroid_common_sources) elektroid-cli.c
 

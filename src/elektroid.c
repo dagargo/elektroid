@@ -358,8 +358,7 @@ elektroid_load_devices (gboolean auto_select)
   if (device_index == -1)
     {
       local_browser.file_icon = BE_FILE_ICON_WAVE;
-      elektroid_set_file_extensions_for_fs (&local_browser.extensions,
-					    FS_SAMPLES);
+      elektroid_set_file_extensions_for_fs (&local_browser.extensions, 0);
 
       gtk_widget_set_visible (local_audio_box, TRUE);
       gtk_tree_view_column_set_visible (remote_tree_view_index_column, FALSE);
@@ -373,28 +372,26 @@ elektroid_update_statusbar ()
 {
   gchar *status;
   gchar *statfss_str;
-  gint res;
-  enum connector_storage storage;
-  struct connector_storage_stats statfs;
+  gint res, storage;
+  struct backend_storage_stats statfs;
   GString *statfss;
 
   gtk_statusbar_pop (status_bar, 0);
 
-  if (backend_check (&backend))
+  if (backend_check (&backend) && backend.get_storage_stats)
     {
       statfss = g_string_new (NULL);
 
-      for (storage = STORAGE_PLUS_DRIVE; storage <= STORAGE_RAM;
-	   storage <<= 1)
+      for (storage = 1; storage < BE_MAX_BACKEND_STORAGE; storage <<= 1)
 	{
 	  if (backend.device_desc.storage & storage)
 	    {
-	      res = connector_get_storage_stats (&backend, storage, &statfs);
+	      res = backend.get_storage_stats (&backend, storage, &statfs);
 	      if (!res)
 		{
 		  g_string_append_printf (statfss, " %s %.2f%%",
 					  statfs.name,
-					  connector_get_storage_stats_percent
+					  backend_get_storage_stats_percent
 					  (&statfs));
 		}
 	    }
@@ -2452,8 +2449,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
     {
       remote_browser.fs_ops = NULL;
       browser_load_dir (&remote_browser);
-      elektroid_set_file_extensions_for_fs (&local_browser.extensions,
-					    FS_SAMPLES);
+      elektroid_set_file_extensions_for_fs (&local_browser.extensions, 0);
       browser_load_dir (&local_browser);
       return;
     }

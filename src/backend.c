@@ -25,6 +25,12 @@
 #define BUFF_SIZE (4 * KB)
 #define RING_BUFF_SIZE (256 * KB)
 
+gdouble
+backend_get_storage_stats_percent (struct backend_storage_stats *statfs)
+{
+  return (statfs->bsize - statfs->bfree) * 100.0 / statfs->bsize;
+}
+
 const struct fs_operations *
 backend_get_fs_operations (struct backend *backend, gint fs, const char *name)
 {
@@ -725,8 +731,8 @@ backend_get_system_devices ()
 }
 
 gchar *
-connector_get_fs_ext (const struct device_desc *desc,
-		      const struct fs_operations *ops)
+backend_get_fs_ext (const struct device_desc *desc,
+		    const struct fs_operations *ops)
 {
   gchar *ext = malloc (LABEL_MAX);
   snprintf (ext, LABEL_MAX, "%s", ops->type_ext);

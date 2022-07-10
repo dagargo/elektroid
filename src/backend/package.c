@@ -24,7 +24,7 @@
 #include "package.h"
 #include "utils.h"
 #include "sample.h"
-#include "connector.h"
+#include "backend/elektron.h"
 
 #define PKG_TAG_FORMAT_VERSION "FormatVersion"
 #define PKG_TAG_PRODUCT_TYPE "ProductType"
@@ -464,8 +464,8 @@ package_receive_pkg_resources (struct package *pkg,
 
       json_reader_end_element (reader);
 
-      sample_path =
-	connector_get_sample_path_from_hash_size (backend, hash, size);
+      sample_path = elektron_get_sample_path_from_hash_size (backend, hash,
+							     size);
       if (!sample_path)
 	{
 	  debug_print (1, "Sample not found. Skipping...\n");

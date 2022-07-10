@@ -26,12 +26,19 @@
 
 extern char *transfer_devices_filename;
 
-struct elektron_data
+enum elektron_fs
 {
-  guint16 seq;
-  gchar *fw_version;
+  FS_SAMPLES = 0x1,
+  FS_RAW_ALL = 0x2,
+  FS_RAW_PRESETS = 0x4,
+  FS_DATA_ALL = 0x8,
+  FS_DATA_PRJ = 0x10,
+  FS_DATA_SND = 0x20
 };
 
-gint elektron_load_device_desc (struct device_desc *, guint8);
+gchar *elektron_get_sample_path_from_hash_size (struct backend *, guint32,
+						guint32);
+
+gint elektron_handshake (struct backend *);
 
 #endif
