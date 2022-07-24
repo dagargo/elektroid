@@ -378,7 +378,7 @@ sds_download (struct backend *backend, const gchar * path,
     }
   else
     {
-      debug_print (1, "SDS downloading canceled\n");
+      debug_print (1, "Cancelling SDS download...\n");
       sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL),
 			packet_counter);
       backend_rx_drain (backend);
@@ -406,8 +406,7 @@ sds_upload_wait_ack (struct backend *backend, GByteArray * rx_msg,
       rx_msg = sds_rx_handshake (backend);
       if (!rx_msg)
 	{
-	  sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL),
-			    packet_num);
+	  debug_print (2, "No ACK received. Sending next packet...\n");
 	  return -ETIMEDOUT;
 	}
     }
@@ -446,7 +445,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   GByteArray *tx_msg, *rx_msg;
   gchar *path_copy, *index_name, *name;
   gint err = 0;
-  guint8 packet_num;
+  gint packet_num = -1;
   gint16 *frame;
   gboolean active;
   struct sample_info *sample_info = control->data;
@@ -497,16 +496,16 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 				  sample_info->loopend);
   tx_msg->data[19] = sample_info->looptype;
 
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
+
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   err = sds_upload_wait_ack (backend, rx_msg, 0);
   if (err)
     {
       goto end;
     }
-
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
 
   words_per_packet = SDS_DATA_PACKET_PAYLOAD_LEN / SDS_BYTES_PER_WORD;
   packets = ceil (words / (double) words_per_packet);
@@ -551,7 +550,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	  word = prev_word;
 	  continue;
 	}
-      else if (err)		//CANCEL packet
+      else if (err && err != -ETIMEDOUT)	//CANCEL packet
 	{
 	  goto end;
 	}
@@ -592,17 +591,21 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	}
     }
 
+end:
   if (active)
     {
       set_job_control_progress (control, 1.0);
     }
   else
     {
-      debug_print (1, "SDS Uploading canceled\n");
-      sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), packet_num);
+      if (packet_num >= 0)
+	{
+	  debug_print (1, "Cancelling SDS upload...\n");
+	  sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL),
+			    packet_num);
+	}
     }
 
-end:
   g_free (path_copy);
   return err;
 }
