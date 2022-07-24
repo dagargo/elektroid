@@ -29,7 +29,7 @@
 #define SDS_DATA_PACKET_CKSUM_POS 125
 #define SDS_DATA_PACKET_CKSUM_START 1
 #define SDS_BYTES_PER_WORD 3
-#define SDS_ACK_WAIT_TIME_MS 5000
+#define SDS_ACK_WAIT_TIME_MS 1000
 #define SDS_BITS 16
 
 static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
