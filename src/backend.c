@@ -258,7 +258,6 @@ backend_tx_raw (struct backend *backend, const guint8 * data, guint len)
     {
       error_print ("Error while writing to device: %s\n",
 		   snd_strerror (tx_len));
-      backend_destroy (backend);
     }
   return tx_len;
 }
@@ -376,7 +375,6 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
       if (err < 0)
 	{
 	  error_print ("Error while polling. %s.\n", g_strerror (errno));
-	  backend_destroy (backend);
 	  return err;
 	}
 
@@ -388,7 +386,6 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 	{
 	  error_print ("Error while getting poll events. %s.\n",
 		       snd_strerror (err));
-	  backend_destroy (backend);
 	  return err;
 	}
 
@@ -428,7 +425,6 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 	{
 	  error_print ("Error while reading from device: %s\n",
 		       snd_strerror (rx_len));
-	  backend_destroy (backend);
 	  break;
 	}
 
