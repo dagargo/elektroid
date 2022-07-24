@@ -434,7 +434,6 @@ sds_upload_wait_ack (struct backend *backend, GByteArray * rx_msg,
 
   free_msg (rx_msg);
 end:
-  usleep (REST_TIME_US);
   return err;
 }
 
