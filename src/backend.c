@@ -378,11 +378,10 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 	  return err;
 	}
 
-      if ((err =
-	   snd_rawmidi_poll_descriptors_revents (backend->inputp,
-						 backend->pfds,
-						 backend->npfds,
-						 &revents)) < 0)
+      if ((err = snd_rawmidi_poll_descriptors_revents (backend->inputp,
+						       backend->pfds,
+						       backend->npfds,
+						       &revents)) < 0)
 	{
 	  error_print ("Error while getting poll events. %s.\n",
 		       snd_strerror (err));
@@ -461,8 +460,8 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
     {
       if (i == backend->rx_len)
 	{
-	  backend->rx_len =
-	    backend_rx_raw (backend, backend->buffer, BUFF_SIZE, transfer);
+	  backend->rx_len = backend_rx_raw (backend, backend->buffer,
+					    BUFF_SIZE, transfer);
 
 	  if (backend->rx_len == -ENODATA || backend->rx_len == -ETIMEDOUT ||
 	      backend->rx_len == -ECANCELED)
@@ -502,8 +501,8 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
     {
       if (i == backend->rx_len)
 	{
-	  backend->rx_len =
-	    backend_rx_raw (backend, backend->buffer, BUFF_SIZE, transfer);
+	  backend->rx_len = backend_rx_raw (backend, backend->buffer,
+					    BUFF_SIZE, transfer);
 
 	  if (backend->rx_len == -ENODATA && transfer->batch)
 	    {
