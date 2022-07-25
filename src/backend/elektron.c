@@ -41,8 +41,6 @@
 #define DEV_TAG_FILESYSTEMS "filesystems"
 #define DEV_TAG_STORAGE "storage"
 
-gchar *transfer_devices_filename = NULL;
-
 static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 
 #define DATA_TRANSF_BLOCK_BYTES 0x2000
@@ -2054,9 +2052,17 @@ elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
 
   parser = json_parser_new ();
 
-  if (transfer_devices_filename)
+  devices_filename = get_expanded_dir (CONF_DIR DEVICES_FILE);
+
+  if (!json_parser_load_from_file (parser, devices_filename, &error))
     {
-      devices_filename = strdup (transfer_devices_filename);
+      debug_print (1, "%s\n", error->message);
+      g_clear_error (&error);
+
+      g_free (devices_filename);
+      devices_filename = strdup (DATADIR DEVICES_FILE);
+
+      debug_print (1, "Falling back to %s...\n", devices_filename);
 
       if (!json_parser_load_from_file (parser, devices_filename, &error))
 	{
@@ -2064,29 +2070,6 @@ elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
 	  g_clear_error (&error);
 	  err = -ENODEV;
 	  goto cleanup_parser;
-	}
-    }
-  else
-    {
-      devices_filename = get_expanded_dir (CONF_DIR DEVICES_FILE);
-
-      if (!json_parser_load_from_file (parser, devices_filename, &error))
-	{
-	  debug_print (1, "%s\n", error->message);
-	  g_clear_error (&error);
-
-	  g_free (devices_filename);
-	  devices_filename = strdup (DATADIR DEVICES_FILE);
-
-	  debug_print (1, "Falling back to %s...\n", devices_filename);
-
-	  if (!json_parser_load_from_file (parser, devices_filename, &error))
-	    {
-	      error_print ("%s", error->message);
-	      g_clear_error (&error);
-	      err = -ENODEV;
-	      goto cleanup_parser;
-	    }
 	}
     }
 

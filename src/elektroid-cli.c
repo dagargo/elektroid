@@ -28,7 +28,6 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include "backend.h"
-#include "backend/elektron.h"
 #include "connector.h"
 #include "utils.h"
 
@@ -563,13 +562,10 @@ main (int argc, gchar * argv[])
   sigaction (SIGINT, &action, NULL);
   sigaction (SIGHUP, &action, NULL);
 
-  while ((c = getopt (argc, argv, "f:v")) != -1)
+  while ((c = getopt (argc, argv, "v")) != -1)
     {
       switch (c)
 	{
-	case 'f':
-	  transfer_devices_filename = optarg;
-	  break;
 	case 'v':
 	  vflg++;
 	  break;

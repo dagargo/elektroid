@@ -24,8 +24,6 @@
 #ifndef ELEKTRON_H
 #define ELEKTRON_H
 
-extern char *transfer_devices_filename;
-
 enum elektron_fs
 {
   FS_SAMPLES = 0x1,
