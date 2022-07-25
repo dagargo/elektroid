@@ -27,7 +27,7 @@
 #include <glib/gi18n.h>
 #include "elektron.h"
 #include "backend.h"
-#include "backend/elektron.h"
+#include "elektron.h"
 #include "utils.h"
 #include "sample.h"
 #include "package.h"

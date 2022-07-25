@@ -20,8 +20,8 @@
 
 #include "backend.h"
 #include "connector.h"
-#include "backend/elektron.h"
-#include "backend/sds.h"
+#include "connectors/elektron.h"
+#include "connectors/sds.h"
 
 gint
 connector_init (struct backend *backend, gint card)

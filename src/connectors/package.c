@@ -24,7 +24,7 @@
 #include "package.h"
 #include "utils.h"
 #include "sample.h"
-#include "backend/elektron.h"
+#include "elektron.h"
 
 #define PKG_TAG_FORMAT_VERSION "FormatVersion"
 #define PKG_TAG_PRODUCT_TYPE "ProductType"
