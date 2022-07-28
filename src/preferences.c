@@ -100,6 +100,7 @@ preferences_load (struct preferences *preferences)
 		   CONF_DIR PREFERENCES_FILE, error->message);
       g_error_free (error);
       g_object_unref (parser);
+      g_free (preferences_file);
       preferences->autoplay = TRUE;
       preferences->local_dir = get_expanded_dir ("~");
       return 0;
