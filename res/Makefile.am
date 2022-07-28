@@ -1,10 +1,10 @@
 if CLI_ONLY
-res_DATA = devices.json
+res_DATA = elektron-devices.json
 desktop_DATA =
 metainfo_DATA =
 svgicon_DATA =
 else
-res_DATA = gui.glade gui.css devices.json
+res_DATA = gui.glade gui.css elektron-devices.json
 desktop_DATA = elektroid.desktop
 metainfo_DATA = elektroid.appdata.xml
 svgicon_DATA = elektroid.svg elektroid-symbolic.svg elektroid-wave-symbolic.svg elektroid-data-symbolic.svg elektroid-project-symbolic.svg elektroid-sound-symbolic.svg
