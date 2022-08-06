@@ -204,7 +204,7 @@ const gchar *get_ext (const gchar *);
 
 gchar get_type_from_inventory_icon (const gchar *);
 
-gchar *get_expanded_dir (const char *);
+gchar *get_expanded_dir (const gchar *);
 
 gchar *get_local_startup_path (const gchar *);
 

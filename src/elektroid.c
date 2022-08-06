@@ -3006,25 +3006,18 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *hostname_label;
   GtkWidget *loop_button;
   GtkWidget *autoplay_switch;
-  gchar *glade_file;
-  gchar *css_file;
   gchar hostname[LABEL_MAX];
-
-  glade_file = chain_path (DATADIR, "gui.glade");
-  css_file = chain_path (DATADIR, "gui.css");
 
   gtk_init (&argc, &argv);
   builder = gtk_builder_new ();
-  gtk_builder_add_from_file (builder, glade_file, NULL);
-  free (glade_file);
+  gtk_builder_add_from_file (builder, DATADIR "/gui.glade", NULL);
 
   css_provider = gtk_css_provider_new ();
-  gtk_css_provider_load_from_path (css_provider, css_file, NULL);
+  gtk_css_provider_load_from_path (css_provider, DATADIR "/gui.css", NULL);
   gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
 					     GTK_STYLE_PROVIDER
 					     (css_provider),
 					     GTK_STYLE_PROVIDER_PRIORITY_USER);
-  free (css_file);
 
   main_window = GTK_WIDGET (gtk_builder_get_object (builder, "main_window"));
   gtk_window_resize (GTK_WINDOW (main_window), 1, 1);	//Compact window
