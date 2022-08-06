@@ -437,19 +437,99 @@ end:
   return err;
 }
 
+static inline GByteArray *
+sds_get_header_msg (guint id, GByteArray * input,
+		    struct sample_info *sample_info)
+{
+  guint period = 1.0e9 / sample_info->samplerate;
+  GByteArray *tx_msg = g_byte_array_sized_new (sizeof (SDS_DUMP_HEADER));
+
+  g_byte_array_append (tx_msg, SDS_DUMP_HEADER, sizeof (SDS_DUMP_HEADER));
+  tx_msg->data[4] = id % 128;
+  tx_msg->data[5] = id / 128;
+  tx_msg->data[6] = (guint8) sample_info->bitdepth;
+
+  debug_print (1,
+	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
+	       sample_info->bitdepth, SDS_BYTES_PER_WORD, 2);
+  debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n",
+	       (double) sample_info->samplerate, period);
+
+  sds_set_bytes_value_right_just (&tx_msg->data[7], SDS_BYTES_PER_WORD,
+				  period);
+  sds_set_bytes_value_right_just (&tx_msg->data[10], SDS_BYTES_PER_WORD, input->len >> 1);	//bytes to words (frames)
+  sds_set_bytes_value_right_just (&tx_msg->data[13], SDS_BYTES_PER_WORD,
+				  sample_info->loopstart);
+  sds_set_bytes_value_right_just (&tx_msg->data[16], SDS_BYTES_PER_WORD,
+				  sample_info->loopend);
+  tx_msg->data[19] = sample_info->looptype;
+
+  return tx_msg;
+}
+
+static inline GByteArray *
+sds_get_data_packet_msg (gint packet_num, guint words, guint * word,
+			 gint16 ** frame)
+{
+  guint8 *data;
+  GByteArray *tx_msg = g_byte_array_sized_new (SDS_DATA_PACKET_LEN);
+
+  g_byte_array_append (tx_msg, SDS_DATA_PACKET_HEADER,
+		       sizeof (SDS_DATA_PACKET_HEADER));
+  g_byte_array_set_size (tx_msg, SDS_DATA_PACKET_LEN);
+  tx_msg->data[4] = packet_num;
+  memset (&tx_msg->data[sizeof (SDS_DATA_PACKET_HEADER)], 0,
+	  SDS_DATA_PACKET_PAYLOAD_LEN);
+  tx_msg->data[SDS_DATA_PACKET_LEN - 1] = 0xf7;
+
+  data = &tx_msg->data[sizeof (SDS_DATA_PACKET_HEADER)];
+  for (guint i = 0; i < SDS_DATA_PACKET_PAYLOAD_LEN; i += SDS_BYTES_PER_WORD)
+    {
+      if (*word < words)
+	{
+	  sds_set_gint16_value_left_just (data, SDS_BYTES_PER_WORD,
+					  SDS_BITS, **frame);
+	  data += SDS_BYTES_PER_WORD;
+	  (*frame)++;
+	  (*word)++;
+	}
+    }
+  tx_msg->data[SDS_DATA_PACKET_CKSUM_POS] = sds_checksum (tx_msg->data);
+
+  return tx_msg;
+}
+
+static inline GByteArray *
+sds_get_rename_sample_msg (guint id, gchar * name)
+{
+  GByteArray *tx_msg = g_byte_array_new ();
+  guint name_len = strlen (name);
+  name_len = name_len > 127 ? 127 : name_len;
+
+  g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_HEADER,
+		       sizeof (SDS_SAMPLE_NAME_HEADER));
+  tx_msg->data[5] = id % 128;
+  tx_msg->data[6] = id / 128;
+
+  g_byte_array_append (tx_msg, (guint8 *) & name_len, 1);
+  g_byte_array_append (tx_msg, (guint8 *) name, name_len);
+
+  g_byte_array_append (tx_msg, (guint8 *) "\xf7", 1);
+
+  return tx_msg;
+}
+
 static gint
 sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	    struct job_control *control)
 {
   GByteArray *tx_msg, *rx_msg;
   gchar *path_copy, *index_name, *name;
-  gint err = 0;
-  gint packet_num = -1;
   gint16 *frame;
   gboolean active;
+  guint word, words, words_per_packet, id, packets;
+  gint i = 0, err = 0, packet_num = -1;
   struct sample_info *sample_info = control->data;
-  guint name_len, word, words, words_per_packet, id, packets, period =
-    1.0e9 / sample_info->samplerate;
 
   control->parts = 1;
   control->part = 0;
@@ -471,34 +551,11 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       name = NULL;
     }
 
-  tx_msg = g_byte_array_sized_new (sizeof (SDS_DUMP_HEADER));
-  g_byte_array_append (tx_msg, SDS_DUMP_HEADER, sizeof (SDS_DUMP_HEADER));
-  tx_msg->data[4] = id % 128;
-  tx_msg->data[5] = id / 128;
-  tx_msg->data[6] = (guint8) sample_info->bitdepth;
-
-  debug_print (1,
-	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
-	       sample_info->bitdepth, SDS_BYTES_PER_WORD, 2);
-  debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n",
-	       (double) sample_info->samplerate, period);
-
-  words = input->len >> 1;	//bytes to words (frames)
-  frame = (gint16 *) input->data;
-  sds_set_bytes_value_right_just (&tx_msg->data[7], SDS_BYTES_PER_WORD,
-				  period);
-  sds_set_bytes_value_right_just (&tx_msg->data[10], SDS_BYTES_PER_WORD,
-				  words);
-  sds_set_bytes_value_right_just (&tx_msg->data[13], SDS_BYTES_PER_WORD,
-				  sample_info->loopstart);
-  sds_set_bytes_value_right_just (&tx_msg->data[16], SDS_BYTES_PER_WORD,
-				  sample_info->loopend);
-  tx_msg->data[19] = sample_info->looptype;
-
   g_mutex_lock (&control->mutex);
   active = control->active;
   g_mutex_unlock (&control->mutex);
 
+  tx_msg = sds_get_header_msg (id, input, sample_info);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   err = sds_upload_wait_ack (backend, rx_msg, 0);
   if (err)
@@ -506,53 +563,40 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       goto end;
     }
 
+  word = 0;
+  words = input->len >> 1;	//bytes to words (frames)
   words_per_packet = SDS_DATA_PACKET_PAYLOAD_LEN / SDS_BYTES_PER_WORD;
   packets = ceil (words / (double) words_per_packet);
   packet_num = 0;
-  word = 0;
   debug_print (1, "Words: %d\n", words);
   debug_print (1, "Packets: %d\n", packets);
-  guint i = 0;
+  frame = (gint16 *) input->data;
   while (i < packets && active)
     {
-      tx_msg = g_byte_array_sized_new (SDS_DATA_PACKET_LEN);
-      g_byte_array_append (tx_msg, SDS_DATA_PACKET_HEADER,
-			   sizeof (SDS_DATA_PACKET_HEADER));
-      g_byte_array_set_size (tx_msg, SDS_DATA_PACKET_LEN);
-      tx_msg->data[4] = packet_num;
-      memset (&tx_msg->data[sizeof (SDS_DATA_PACKET_HEADER)], 0,
-	      SDS_DATA_PACKET_PAYLOAD_LEN);
-      tx_msg->data[SDS_DATA_PACKET_LEN - 1] = 0xf7;
-
-      guint8 *data = &tx_msg->data[sizeof (SDS_DATA_PACKET_HEADER)];
-      gint16 *prev_frame = frame;
-      guint prev_word = word;
-      for (guint j = 0; j < SDS_DATA_PACKET_PAYLOAD_LEN;
-	   j += SDS_BYTES_PER_WORD)
+      gint16 *f = frame;
+      guint w = word;
+      while (1)
 	{
-	  if (word < words)
+	  tx_msg = sds_get_data_packet_msg (packet_num, words, &w, &f);
+	  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+	  err = sds_upload_wait_ack (backend, rx_msg, packet_num);
+	  if (err == -EINVAL)	//NAK packet
 	    {
-	      sds_set_gint16_value_left_just (data, SDS_BYTES_PER_WORD,
-					      SDS_BITS, *frame);
-	      data += SDS_BYTES_PER_WORD;
-	      frame++;
-	      word++;
+	      continue;
 	    }
-	}
-      tx_msg->data[SDS_DATA_PACKET_CKSUM_POS] = sds_checksum (tx_msg->data);
+	  else if (err == -ETIMEDOUT)	//Assuming everything is OK but the sampler has not send anything.
+	    {
+	      break;
+	    }
+	  else if (err)		//CANCEL packet
+	    {
+	      goto end;
+	    }
 
-      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-      err = sds_upload_wait_ack (backend, rx_msg, packet_num);
-      if (err == -EINVAL)	//NAK packet
-	{
-	  frame = prev_frame;
-	  word = prev_word;
-	  continue;
+	  break;
 	}
-      else if (err && err != -ETIMEDOUT)	//CANCEL packet
-	{
-	  goto end;
-	}
+      word = w;
+      frame = f;
 
       packet_num++;
       if (packet_num == 0x80)
@@ -560,30 +604,22 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	  packet_num = 0;
 	}
 
-      i++;
+      if (control)
+	{
+	  set_job_control_progress (control, i / (double) (packets));
+	  g_mutex_lock (&control->mutex);
+	  active = control->active;
+	  g_mutex_unlock (&control->mutex);
+	}
 
-      set_job_control_progress (control, i / (double) (packets + 1));
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
+      i++;
     }
 
   if (*name && active)
     {
-      tx_msg = g_byte_array_new ();
-      g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_HEADER,
-			   sizeof (SDS_SAMPLE_NAME_HEADER));
-      tx_msg->data[5] = id % 128;
-      tx_msg->data[6] = id / 128;
-
-      name_len = strlen (name);
-      name_len = name_len > 127 ? 127 : name_len;
-      g_byte_array_append (tx_msg, (guint8 *) & name_len, 1);
-      g_byte_array_append (tx_msg, (guint8 *) name, name_len);
-
-      g_byte_array_append (tx_msg, (guint8 *) "\xf7", 1);
-      rx_msg =
-	backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
+      tx_msg = sds_get_rename_sample_msg (id, name);
+      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg,
+					SYSEX_TIMEOUT_GUESS_MS);
       if (rx_msg)
 	{
 	  free_msg (rx_msg);
