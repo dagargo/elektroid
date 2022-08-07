@@ -187,19 +187,19 @@ backend_midi_handshake (struct backend *backend)
 	    }
 	  else
 	    {
-	      error_print ("Illegal SUB-ID2\n");
+	      debug_print (1, "Illegal SUB-ID2\n");
 	    }
 	}
       else
 	{
-	  error_print ("Illegal SUB-ID2\n");
+	  debug_print (1, "Illegal SUB-ID2\n");
 	}
 
       free_msg (rx_msg);
     }
   else
     {
-      error_print ("No MIDI identity reply\n");
+      debug_print (1, "No MIDI identity reply\n");
     }
 }
 
