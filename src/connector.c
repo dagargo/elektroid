@@ -38,21 +38,21 @@ connector_init (struct backend *backend, gint card)
       return 0;
     }
 
-  error_print ("No Elektron device detected\n");
+  debug_print (1, "No Elektron device detected\n");
 
   if (!cz_handshake (backend))
     {
       return 0;
     }
 
-  error_print ("No CZ device detected\n");
+  debug_print (1, "No CZ device detected\n");
 
   if (!sds_handshake (backend))
     {
       return 0;
     }
 
-  error_print ("No MIDI SDS device detected\n");
+  debug_print (1, "No MIDI SDS device detected\n");
 
   backend_destroy (backend);
 
