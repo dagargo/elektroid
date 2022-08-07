@@ -18,10 +18,10 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "backend.h"
-
 #ifndef SDS_H
 #define SDS_H
+
+#include "backend.h"
 
 gint sds_handshake (struct backend *);
 

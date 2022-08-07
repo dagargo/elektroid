@@ -90,7 +90,7 @@ enum elektron_storage
 struct elektron_data
 {
   guint16 seq;
-  gchar *fw_version;
+  gchar fw_version[LABEL_MAX];
 };
 
 typedef GByteArray *(*elektron_msg_id_func) (guint);
@@ -1981,14 +1981,7 @@ end:
 static void
 elektron_destroy_data (struct backend *backend)
 {
-  struct elektron_data *data = backend->data;
-
   debug_print (1, "Destroying elektron data...\n");
-
-  if (data->fw_version)
-    {
-      g_free (data->fw_version);
-    }
   g_free (backend->data);
   backend->data = NULL;
 }
@@ -2131,7 +2124,8 @@ elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
 	  err = -ENODEV;
 	  break;
 	}
-      device_desc->name = strdup (json_reader_get_string_value (reader));
+      snprintf (device_desc->name, LABEL_MAX, "%s",
+		json_reader_get_string_value (reader));
       json_reader_end_member (reader);
 
       if (!json_reader_read_member (reader, DEV_TAG_ALIAS))
@@ -2142,7 +2136,8 @@ elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
 	  err = -ENODEV;
 	  break;
 	}
-      device_desc->alias = strdup (json_reader_get_string_value (reader));
+      snprintf (device_desc->alias, LABEL_MAX, "%s",
+		json_reader_get_string_value (reader));
       json_reader_end_member (reader);
 
       if (!json_reader_read_member (reader, DEV_TAG_FILESYSTEMS))
@@ -2226,7 +2221,11 @@ elektron_handshake (struct backend *backend)
       g_free (data);
       return -EIO;
     }
-  data->fw_version = strdup ((gchar *) & rx_msg->data[10]);
+  if (snprintf (data->fw_version, LABEL_MAX, "%s",
+		(gchar *) & rx_msg->data[10]) >= LABEL_MAX)
+    {
+      error_print ("Firmware version truncated\n");
+    }
   free_msg (rx_msg);
 
   if (debug_level > 1)
@@ -2241,9 +2240,12 @@ elektron_handshake (struct backend *backend)
 	}
     }
 
-  backend->device_name = g_malloc (LABEL_MAX);
-  snprintf (backend->device_name, LABEL_MAX, "%s %s (%s)",
-	    backend->device_desc.name, data->fw_version, overbridge_name);
+  if (snprintf (backend->device_name, LABEL_MAX, "%s %s (%s)",
+		backend->device_desc.name, data->fw_version,
+		overbridge_name) >= LABEL_MAX)
+    {
+      error_print ("Device name truncated\n");
+    }
   debug_print (1, "Connected to %s\n", backend->device_name);
 
   g_free (overbridge_name);

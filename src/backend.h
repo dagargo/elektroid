@@ -34,8 +34,13 @@
 
 #define REST_TIME_US 50000
 #define SYSEX_TIMEOUT_MS 5000
-#define SYSEX_TIMEOUT_GUESS_MS 1000	//If the request might not be implemente, 5 s is too much.
+#define SYSEX_TIMEOUT_GUESS_MS 100	//When the request is not implemented, 5 s is too much.
 #define SAMPLE_ID_NAME_SEPARATOR ":"
+
+#define BE_COMPANY_LEN 3
+#define BE_FAMILY_LEN 2
+#define BE_MODEL_LEN 2
+#define BE_VERSION_LEN 4
 
 struct backend_storage_stats
 {
@@ -49,9 +54,18 @@ typedef void (*t_destroy_data) (struct backend *);
 typedef gint (*t_get_storage_stats) (struct backend *, gint,
 				     struct backend_storage_stats *);
 
+struct backend_midi_info
+{
+  gchar company[BE_COMPANY_LEN];
+  gchar family[BE_FAMILY_LEN];
+  gchar model[BE_MODEL_LEN];
+  gchar version[BE_VERSION_LEN];
+};
+
 struct backend
 {
   struct device_desc device_desc;
+  struct backend_midi_info midi_info;
   snd_rawmidi_t *inputp;
   snd_rawmidi_t *outputp;
   GMutex mutex;
@@ -59,7 +73,7 @@ struct backend
   ssize_t rx_len;
   gint npfds;
   struct pollfd *pfds;
-  gchar *device_name;
+  gchar device_name[LABEL_MAX];
   GHashTable *cache;
   //These must be filled by the concrete backend.
   const struct fs_operations **fs_ops;

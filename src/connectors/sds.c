@@ -45,9 +45,6 @@ static const guint8 SDS_SAMPLE_NAME_HEADER[] =
 static const guint8 SDS_DUMP_HEADER[] =
   { 0xf0, 0x7e, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xf7 };
 
-static const guint8 MIDI_IDENTITY_REQUEST[] =
-  { 0xf0, 0x7e, 0x7f, 6, 1, 0xf7 };
-
 static gchar *
 sds_get_upload_path (struct backend *backend,
 		     struct item_iterator *remote_iter,
@@ -749,12 +746,11 @@ static const struct fs_operations *FS_SDS_OPERATIONS[] = {
   &FS_SAMPLES_SDS_OPERATIONS, NULL
 };
 
-static gint
-sds_handshake_internal (struct backend *backend)
+gint
+sds_handshake (struct backend *backend)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
-  gint err = 0;
 
   tx_msg = g_byte_array_sized_new (sizeof (SDS_SAMPLE_REQUEST));
   g_byte_array_append (tx_msg, SDS_SAMPLE_REQUEST,
@@ -771,80 +767,10 @@ sds_handshake_internal (struct backend *backend)
   sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), 0);
   backend_rx_drain (backend);
 
-  return err;
-}
 
-gint
-sds_handshake (struct backend *backend)
-{
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
-  guint8 *company, *family, *model, *version;
-  gint offset, err = 0;
-
-  backend->device_desc.id = -1;
-  backend->device_desc.storage = 0;
+  backend->device_desc.filesystems = FS_SAMPLES_SDS;
+  backend->fs_ops = FS_SDS_OPERATIONS;
   backend->upgrade_os = NULL;
-  backend->get_storage_stats = NULL;
-  backend->device_desc.alias = NULL;
-  backend->device_name = NULL;
-  backend->fs_ops = NULL;
-  backend->destroy_data = NULL;
 
-  tx_msg = g_byte_array_sized_new (sizeof (MIDI_IDENTITY_REQUEST));
-  //Identity Request Universal Sysex message
-  g_byte_array_append (tx_msg, (guchar *) MIDI_IDENTITY_REQUEST,
-		       sizeof (MIDI_IDENTITY_REQUEST));
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
-  if (rx_msg)
-    {
-      if (rx_msg->data[4] == 2)
-	{
-	  if (rx_msg->len == 15 || rx_msg->len == 17)
-	    {
-	      offset = rx_msg->len - 15;
-	      company = &rx_msg->data[5];
-	      family = &rx_msg->data[6 + offset];
-	      model = &rx_msg->data[8 + offset];
-	      version = &rx_msg->data[10 + offset];
-
-	      backend->device_name = malloc (LABEL_MAX);
-	      snprintf (backend->device_name, LABEL_MAX,
-			"%02x-%02x-%02x %02x-%02x %02x-%02x %d.%d.%d.%d",
-			company[0], offset ? company[1] : 0,
-			offset ? company[2] : 0, family[0], family[1],
-			model[0], model[1], version[0], version[1],
-			version[2], version[3]);
-	      backend->device_desc.name = strdup (backend->device_name);
-	    }
-	  else
-	    {
-	      error_print ("Illegal SUB-ID2\n");
-	      err = -EIO;
-	    }
-	}
-      else
-	{
-	  error_print ("Illegal SUB-ID2\n");
-	  err = -EIO;
-	}
-
-      free_msg (rx_msg);
-    }
-
-  if (!err && !sds_handshake_internal (backend))
-    {
-      backend->device_desc.filesystems = FS_SAMPLES_SDS;
-
-      backend->fs_ops = FS_SDS_OPERATIONS;
-      backend->upgrade_os = NULL;
-
-      if (!backend->device_name)
-	{
-	  backend->device_name = strdup ("MIDI SDS sampler");
-	  backend->device_desc.name = strdup (backend->device_name);
-	}
-    }
-
-  return err;
+  return 0;
 }

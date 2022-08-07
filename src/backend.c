@@ -25,6 +25,10 @@
 #define BUFF_SIZE (4 * KB)
 #define RING_BUFF_SIZE (256 * KB)
 
+//Identity Request Universal Sysex message
+static const guint8 MIDI_IDENTITY_REQUEST[] =
+  { 0xf0, 0x7e, 0x7f, 6, 1, 0xf7 };
+
 gdouble
 backend_get_storage_stats_percent (struct backend_storage_stats *statfs)
 {
@@ -82,26 +86,8 @@ backend_destroy (struct backend *backend)
 
   debug_print (1, "Destroying backend...\n");
 
-  if (backend->device_name)
-    {
-      free (backend->device_name);
-      backend->device_name = NULL;
-    }
-
   backend->device_desc.id = -1;
   backend->device_desc.filesystems = 0;
-
-  if (backend->device_desc.name)
-    {
-      g_free (backend->device_desc.name);
-      backend->device_desc.name = NULL;
-    }
-
-  if (backend->device_desc.alias)
-    {
-      g_free (backend->device_desc.alias);
-      backend->device_desc.alias = NULL;
-    }
 
   if (backend->inputp)
     {
@@ -143,6 +129,77 @@ backend_destroy (struct backend *backend)
     }
 
   backend_disable_cache (backend);
+}
+
+static gint
+backend_midi_handshake (struct backend *backend)
+{
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+  gint offset, err = 0;
+
+  backend->device_desc.id = -1;
+  backend->device_desc.storage = 0;
+  backend->upgrade_os = NULL;
+  backend->get_storage_stats = NULL;
+  backend->device_desc.name[0] = 0;
+  backend->device_desc.alias[0] = 0;
+  backend->device_name[0] = 0;
+  backend->fs_ops = NULL;
+  backend->destroy_data = NULL;
+
+  tx_msg = g_byte_array_sized_new (sizeof (MIDI_IDENTITY_REQUEST));
+  g_byte_array_append (tx_msg, (guchar *) MIDI_IDENTITY_REQUEST,
+		       sizeof (MIDI_IDENTITY_REQUEST));
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
+  if (rx_msg)
+    {
+      if (rx_msg->data[4] == 2)
+	{
+	  if (rx_msg->len == 15 || rx_msg->len == 17)
+	    {
+	      offset = rx_msg->len - 15;
+	      memcpy (backend->midi_info.company, &rx_msg->data[5],
+		      BE_COMPANY_LEN);
+	      memcpy (backend->midi_info.family, &rx_msg->data[6 + offset],
+		      BE_FAMILY_LEN);
+	      memcpy (backend->midi_info.model, &rx_msg->data[8 + offset],
+		      BE_MODEL_LEN);
+	      memcpy (backend->midi_info.version, &rx_msg->data[10 + offset],
+		      BE_VERSION_LEN);
+
+	      snprintf (backend->device_name, LABEL_MAX,
+			"%02x-%02x-%02x %02x-%02x %02x-%02x %d.%d.%d.%d",
+			backend->midi_info.company[0],
+			offset ? backend->midi_info.company[1] : 0,
+			offset ? backend->midi_info.company[2] : 0,
+			backend->midi_info.family[0],
+			backend->midi_info.family[1],
+			backend->midi_info.model[0],
+			backend->midi_info.model[1],
+			backend->midi_info.version[0],
+			backend->midi_info.version[1],
+			backend->midi_info.version[2],
+			backend->midi_info.version[3]);
+	      snprintf (backend->device_desc.name, LABEL_MAX,
+			backend->device_name);
+	    }
+	  else
+	    {
+	      error_print ("Illegal SUB-ID2\n");
+	      err = -EIO;
+	    }
+	}
+      else
+	{
+	  error_print ("Illegal SUB-ID2\n");
+	  err = -EIO;
+	}
+
+      free_msg (rx_msg);
+    }
+
+  return err;
 }
 
 gint
@@ -226,6 +283,11 @@ backend_init (struct backend *backend, gint card)
 
   err = snd_rawmidi_params (backend->inputp, params);
   if (err)
+    {
+      goto cleanup_params;
+    }
+
+  if (backend_midi_handshake (backend))
     {
       goto cleanup_params;
     }

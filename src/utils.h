@@ -51,8 +51,8 @@ typedef guint (*iterator_next) (struct item_iterator *);
 
 typedef void (*iterator_free) (void *);
 
-typedef gint (*iterator_copy) (struct item_iterator *,
-			       struct item_iterator *, gboolean);
+typedef gint (*iterator_copy) (struct item_iterator *, struct item_iterator *,
+                               gboolean);
 
 struct item
 {
@@ -97,8 +97,8 @@ struct sample_info
 struct device_desc
 {
   guint32 id;
-  gchar *name;
-  gchar *alias;
+  gchar name[LABEL_MAX];
+  gchar alias[LABEL_MAX];
   guint8 filesystems;
   guint8 storage;
 };
