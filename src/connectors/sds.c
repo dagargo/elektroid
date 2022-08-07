@@ -219,7 +219,7 @@ sds_download (struct backend *backend, const gchar * path,
   id = atoi (index);
   g_free (path_copy);
 
-  tx_msg = g_byte_array_new ();
+  tx_msg = g_byte_array_sized_new (sizeof (SDS_SAMPLE_REQUEST));
   g_byte_array_append (tx_msg, SDS_SAMPLE_REQUEST,
 		       sizeof (SDS_SAMPLE_REQUEST));
   tx_msg->data[4] = id % 128;
@@ -770,6 +770,8 @@ sds_handshake (struct backend *backend)
   backend->device_desc.filesystems = FS_SAMPLES_SDS;
   backend->fs_ops = FS_SDS_OPERATIONS;
   backend->upgrade_os = NULL;
+
+  snprintf (backend->device_name, LABEL_MAX, "sampler (MIDI SDS)");
 
   return 0;
 }

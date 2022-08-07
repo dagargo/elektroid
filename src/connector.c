@@ -18,7 +18,6 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <glib/gi18n.h>
 #include "backend.h"
 #include "connector.h"
 #include "connectors/elektron.h"
@@ -34,28 +33,28 @@ connector_init (struct backend *backend, gint card)
       return err;
     }
 
-  err = elektron_handshake (backend);
-  if (err)
+  if (!elektron_handshake (backend))
     {
-      err = cz_handshake (backend);
-    }
-  if (err)
-    {
-      err = sds_handshake (backend);
-    }
-  if (err)
-    {
-      backend_destroy (backend);
-    }
-  else
-    {
-      if (!strlen (backend->device_name))
-	{
-	  //Translations must not be used in the connectors
-	  snprintf (backend->device_name, LABEL_MAX, "%s",
-		    _("MIDI SDS sampler"));
-	}
+      return 0;
     }
 
-  return err;
+  error_print ("No Elektron device detected\n");
+
+  if (!cz_handshake (backend))
+    {
+      return 0;
+    }
+
+  error_print ("No CZ device detected\n");
+
+  if (!sds_handshake (backend))
+    {
+      return 0;
+    }
+
+  error_print ("No MIDI SDS device detected\n");
+
+  backend_destroy (backend);
+
+  return -1;
 }

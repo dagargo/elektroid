@@ -183,6 +183,7 @@ backend_midi_handshake (struct backend *backend)
 			backend->midi_info.version[3]);
 	      snprintf (backend->device_desc.name, LABEL_MAX,
 			backend->device_name);
+	      debug_print (1, "Detected device: %s\n", backend->device_name);
 	    }
 	  else
 	    {
@@ -195,6 +196,10 @@ backend_midi_handshake (struct backend *backend)
 	}
 
       free_msg (rx_msg);
+    }
+  else
+    {
+      error_print ("No MIDI identity reply\n");
     }
 }
 
