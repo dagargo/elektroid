@@ -1,6 +1,6 @@
 /*
- *   connector.c
- *   Copyright (C) 2019 David García Goñi <dagargo@gmail.com>
+ *   cz.c
+ *   Copyright (C) 2022 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
  *
@@ -18,34 +18,10 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "backend.h"
-#include "connector.h"
-#include "connectors/elektron.h"
-#include "connectors/sds.h"
-#include "connectors/cz.h"
+#include "cz.h"
 
 gint
-connector_init (struct backend *backend, gint card)
+cz_handshake (struct backend *backend)
 {
-  int err = backend_init (backend, card);
-  if (err)
-    {
-      return err;
-    }
-
-  err = elektron_handshake (backend);
-  if (err)
-    {
-      err = cz_handshake (backend);
-    }
-  if (err)
-    {
-      err = sds_handshake (backend);
-    }
-  if (err)
-    {
-      backend_destroy (backend);
-    }
-
-  return err;
+  return -1;
 }
