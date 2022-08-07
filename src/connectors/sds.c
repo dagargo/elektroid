@@ -651,12 +651,12 @@ sds_free_iterator_data (void *iter_data)
 static guint
 sds_next_dentry (struct item_iterator *iter)
 {
-  gint index = *((gint *) iter->data);
+  gint next = *((gint *) iter->data);
 
-  if (index < SDS_SAMPLE_LIMIT)
+  if (next < SDS_SAMPLE_LIMIT)
     {
-      iter->item.index = index;
-      snprintf (iter->item.name, LABEL_MAX, "%d", index);
+      iter->item.index = next;
+      snprintf (iter->item.name, LABEL_MAX, "%d", next);
       iter->item.type = ELEKTROID_FILE;
       iter->item.size = -1;
       (*((gint *) iter->data))++;

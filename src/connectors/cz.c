@@ -21,6 +21,7 @@
 #include "cz.h"
 
 #define CZ101_PROGRAM_LEN 263
+#define CZ101_MAX_PROGRAMS 16
 
 static const guint8 CZ_PROGRAM_REQUEST[] =
   { 0xf0, 0x44, 0x00, 0x00, 0x70, 0x10, 0x00, 0x70, 0x31 };
@@ -30,6 +31,98 @@ enum cz_fs
   FS_PROGRAM_CZ = 1
 };
 
+struct cz_type_iterator_data
+{
+  guint next;
+  guint offset;
+};
+
+static void
+cz_free_iterator_data (void *iter_data)
+{
+  g_free (iter_data);
+}
+
+static const char *CZ_ROOT_DIRS[] = { "preset", "internal", "cartridge" };
+
+static guint
+cz_next_dentry_root (struct item_iterator *iter)
+{
+  gint next = *((gint *) iter->data);
+
+  if (next < 3)
+    {
+      iter->item.index = next;
+      snprintf (iter->item.name, LABEL_MAX, "%s", CZ_ROOT_DIRS[next]);
+      iter->item.type = ELEKTROID_DIR;
+      iter->item.size = -1;
+      (*((gint *) iter->data))++;
+      return 0;
+    }
+  else
+    {
+      return -ENOENT;
+    }
+}
+
+static guint
+cz_next_dentry (struct item_iterator *iter)
+{
+  struct cz_type_iterator_data *data = iter->data;
+
+  if (data->next < CZ101_MAX_PROGRAMS)
+    {
+      iter->item.index = data->next + data->offset;
+      snprintf (iter->item.name, LABEL_MAX, "%d", data->next + 1);
+      iter->item.type = ELEKTROID_FILE;
+      iter->item.size = CZ101_PROGRAM_LEN;
+      data->next++;
+      return 0;
+    }
+  else
+    {
+      return -ENOENT;
+    }
+}
+
+static gint
+cz_read_dir (struct backend *backend, struct item_iterator *iter,
+	     const gchar * path)
+{
+  gint offset;
+
+  if (!strcmp (path, "/"))
+    {
+      iter->data = g_malloc (sizeof (guint));
+      *((gint *) iter->data) = 0;
+      iter->next = cz_next_dentry_root;
+      iter->free = cz_free_iterator_data;
+      iter->item.type = ELEKTROID_FILE;
+      iter->item.size = -1;
+      return 0;
+    }
+  else if ((strcmp (&path[1], CZ_ROOT_DIRS[0]) && (offset = 0)) ||
+	   (strcmp (&path[1], CZ_ROOT_DIRS[1]) && (offset = 20)) ||
+	   (strcmp (&path[1], CZ_ROOT_DIRS[2]) && (offset = 40)))
+    {
+      struct cz_type_iterator_data *data =
+	g_malloc (sizeof (struct cz_type_iterator_data));
+      data->next = 0;
+      data->offset = offset;
+      iter->data = data;
+      *((gint *) iter->data) = 0;
+      iter->next = cz_next_dentry;
+      iter->free = cz_free_iterator_data;
+      iter->item.type = ELEKTROID_FILE;
+      iter->item.size = -1;
+      return 0;
+    }
+  else
+    {
+      return -ENOTDIR;
+    }
+}
+
 static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .fs = FS_PROGRAM_CZ,
   .options =
@@ -37,7 +130,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .name = "cz",
   .gui_name = "Programs",
   .gui_icon = BE_FILE_ICON_SND,
-  .readdir = NULL,
+  .readdir = cz_read_dir,
   .print_item = NULL,
   .mkdir = NULL,
   .delete = NULL,
@@ -55,6 +148,10 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .get_upload_path = NULL,
   .get_download_path = NULL,
   .type_ext = "syx"
+};
+
+static const struct fs_operations *FS_CZ_OPERATIONS[] = {
+  &FS_PROGRAM_CZ_OPERATIONS, NULL
 };
 
 static GByteArray *
@@ -83,6 +180,9 @@ cz_handshake (struct backend *backend)
   free_msg (rx_msg);
   if (len == CZ101_PROGRAM_LEN)
     {
+      backend->device_desc.filesystems = FS_PROGRAM_CZ;
+      backend->fs_ops = FS_CZ_OPERATIONS;
+      backend->upgrade_os = NULL;
       snprintf (backend->device_name, LABEL_MAX, "Casio CZ-101");
       return 0;
     }
