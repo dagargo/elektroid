@@ -29,7 +29,7 @@
 
 #define CONF_DIR "~/.config/" PACKAGE
 
-#define LABEL_MAX 128
+#define LABEL_MAX 256
 
 #define AUDIO_SAMPLE_RATE 48000
 
@@ -56,7 +56,7 @@ typedef gint (*iterator_copy) (struct item_iterator *, struct item_iterator *,
 
 struct item
 {
-  gchar *name;
+  gchar name[LABEL_MAX];
   gint64 size;
   gint32 index;
   enum item_type type;

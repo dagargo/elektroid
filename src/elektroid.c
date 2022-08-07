@@ -901,7 +901,7 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path,
 
   g_free (path);
   g_free (id_path);
-  browser_free_item (item);
+  g_free (item);
 }
 
 static void
@@ -1008,7 +1008,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	}
     }
 
-  browser_free_item (item);
+  g_free (item);
   g_free (old_path);
   gtk_widget_hide (GTK_WIDGET (name_dialog));
 }
@@ -1037,7 +1037,7 @@ elektroid_drag_begin (GtkWidget * widget,
       gtk_tree_model_get_iter (model, &iter, list->data);
       item = browser_get_item (model, &iter);
       path = browser_get_item_id_path (browser, item);
-      browser_free_item (item);
+      g_free (item);
       if (widget == GTK_WIDGET (local_browser.view))
 	{
 	  uri = g_filename_to_uri (path, NULL, NULL);
@@ -1367,7 +1367,7 @@ end:
 
   if (item)
     {
-      browser_free_item (item);
+      g_free (item);
     }
 
   gtk_widget_set_sensitive (local_show_menuitem, count <= 1);
@@ -1446,7 +1446,7 @@ elektroid_show_clicked (GtkWidget * object, gpointer data)
       model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
       item = browser_get_item (model, &iter);
       path = chain_path (local_browser.dir, item->name);
-      browser_free_item (item);
+      g_free (item);
     }
   else
     {
@@ -1509,7 +1509,7 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
   item = browser_get_item (model, &iter);
   path = chain_path (local_browser.dir, item->name);
-  browser_free_item (item);
+  g_free (item);
 
   file = g_file_new_for_path (path);
   g_free (path);
@@ -2093,7 +2093,7 @@ elektroid_add_upload_task (GtkTreeModel * model,
   elektroid_add_upload_task_path (item->name, local_browser.dir,
 				  remote_browser.dir, &data->iter,
 				  &data->index);
-  browser_free_item (item);
+  g_free (item);
 }
 
 static void
@@ -2242,7 +2242,7 @@ elektroid_add_download_task (GtkTreeModel * model,
   elektroid_add_download_task_path (id, remote_browser.dir, local_browser.dir,
 				    data);
   g_free (id);
-  browser_free_item (item);
+  g_free (item);
 }
 
 static void
@@ -2645,7 +2645,7 @@ elektroid_add_upload_task_slot (const gchar * name,
       dst_file_path = g_malloc (sizeof (LABEL_MAX));
       snprintf (dst_file_path, LABEL_MAX, "/%d%s%s", item->index,
 		SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
-      browser_free_item (item);
+      g_free (item);
 
       elektroid_add_task (UPLOAD, src_file_path, dst_file_path,
 			  remote_browser.fs_ops->fs);
@@ -2891,7 +2891,7 @@ elektroid_drag_motion_list (GtkWidget * widget,
 	    g_timeout_add (DND_TIMEOUT, elektroid_drag_list_timeout, browser);
 	}
 
-      browser_free_item (item);
+      g_free (item);
     }
   else
     {

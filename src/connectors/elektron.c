@@ -484,10 +484,12 @@ elektron_free_iterator_data (void *iter_data)
   g_free (data);
 }
 
-static inline gchar *
-elektron_get_utf8 (const gchar * s)
+static inline void
+elektron_get_utf8 (gchar * dst, const gchar * s)
 {
-  return g_convert (s, -1, "UTF8", "CP1252", NULL, NULL, NULL);
+  gchar *aux = g_convert (s, -1, "UTF8", "CP1252", NULL, NULL, NULL);
+  snprintf (dst, LABEL_MAX, "%s", aux);
+  g_free (aux);
 }
 
 static inline gchar *
@@ -515,14 +517,8 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
   gchar *name_cp1252;
   struct elektron_iterator_data *data = iter->data;
 
-  if (iter->item.name != NULL)
-    {
-      g_free (iter->item.name);
-    }
-
   if (data->pos == data->msg->len)
     {
-      iter->item.name = NULL;
       return -ENOENT;
     }
   else
@@ -541,7 +537,7 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
       data->pos++;
 
       name_cp1252 = (gchar *) & data->msg->data[data->pos];
-      iter->item.name = elektron_get_utf8 (name_cp1252);
+      elektron_get_utf8 (iter->item.name, name_cp1252);
       if (data->fs == FS_RAW_ALL && iter->item.type == ELEKTROID_FILE)
 	{
 	  //This eliminates the extension ".mc-snd" that the device provides.
@@ -575,7 +571,6 @@ elektron_init_iterator (struct item_iterator *iter, GByteArray * msg,
   iter->next = next;
   iter->free = elektron_free_iterator_data;
   iter->copy = elektron_copy_iterator;
-  iter->item.name = NULL;
   iter->item.index = -1;
 
   return 0;
@@ -2268,19 +2263,13 @@ elektron_next_data_entry (struct item_iterator *iter)
   guint8 has_children;
   struct elektron_iterator_data *data = iter->data;
 
-  if (iter->item.name != NULL)
-    {
-      g_free (iter->item.name);
-    }
-
   if (data->pos == data->msg->len)
     {
-      iter->item.name = NULL;
       return -ENOENT;
     }
 
   name_cp1252 = (gchar *) & data->msg->data[data->pos];
-  iter->item.name = elektron_get_utf8 (name_cp1252);
+  elektron_get_utf8 (iter->item.name, name_cp1252);
   data->pos += strlen (name_cp1252) + 1;
   has_children = data->msg->data[data->pos];
   data->pos++;

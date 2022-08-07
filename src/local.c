@@ -167,11 +167,6 @@ local_next_dentry (struct item_iterator *iter)
   mode_t mode;
   struct local_iterator_data *data = iter->data;
 
-  if (iter->item.name != NULL)
-    {
-      g_free (iter->item.name);
-    }
-
   while ((dirent = readdir (data->dir)) != NULL)
     {
       if (dirent->d_name[0] == '.')
@@ -191,7 +186,7 @@ local_next_dentry (struct item_iterator *iter)
 	{
 	case S_IFREG:
 	case S_IFDIR:
-	  iter->item.name = strdup (dirent->d_name);
+	  snprintf (iter->item.name, LABEL_MAX, "%s", dirent->d_name);
 	  iter->item.type = mode == S_IFREG ? ELEKTROID_FILE : ELEKTROID_DIR;
 	  iter->item.size = st.st_size;
 	  found = TRUE;
@@ -239,7 +234,6 @@ local_init_iterator (struct item_iterator *iter, const gchar * path,
   iter->next = local_next_dentry;
   iter->free = local_free_iterator_data;
   iter->copy = local_copy_iterator;
-  iter->item.name = NULL;
 
   return 0;
 }

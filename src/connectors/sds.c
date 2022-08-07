@@ -653,15 +653,9 @@ sds_next_dentry (struct item_iterator *iter)
 {
   gint index = *((gint *) iter->data);
 
-  if (iter->item.name != NULL)
-    {
-      g_free (iter->item.name);
-    }
-
   if (index < SDS_SAMPLE_LIMIT)
     {
       iter->item.index = index;
-      iter->item.name = g_malloc (LABEL_MAX);
       snprintf (iter->item.name, LABEL_MAX, "%d", index);
       iter->item.type = ELEKTROID_FILE;
       iter->item.size = -1;
@@ -687,7 +681,6 @@ sds_read_dir (struct backend *backend, struct item_iterator *iter,
   *((gint *) iter->data) = 0;
   iter->next = sds_next_dentry;
   iter->free = sds_free_iterator_data;
-  iter->item.name = NULL;
   iter->item.type = ELEKTROID_FILE;
   iter->item.size = -1;
 

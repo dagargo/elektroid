@@ -69,8 +69,6 @@ gint browser_sort_by_index (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
 
 struct item *browser_get_item (GtkTreeModel *, GtkTreeIter *);
 
-void browser_free_item (struct item *);
-
 gint browser_get_selected_items_count (struct browser *);
 
 void browser_set_selected_row_iter (struct browser *, GtkTreeIter *);

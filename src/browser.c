@@ -40,8 +40,8 @@ browser_sort_by_name (GtkTreeModel * model,
       ret = itema->type > itemb->type;
     }
 
-  browser_free_item (itema);
-  browser_free_item (itemb);
+  g_free (itema);
+  g_free (itemb);
 
   return ret;
 }
@@ -59,8 +59,8 @@ browser_sort_by_index (GtkTreeModel * model,
 
   ret = itema->index > itemb->index;
 
-  browser_free_item (itema);
-  browser_free_item (itemb);
+  g_free (itema);
+  g_free (itemb);
 
   return ret;
 }
@@ -69,12 +69,13 @@ struct item *
 browser_get_item (GtkTreeModel * model, GtkTreeIter * iter)
 {
   struct item *item = malloc (sizeof (struct item));
-
+  gchar *name;
   gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_TYPE_FIELD, &item->type,
-		      BROWSER_LIST_STORE_NAME_FIELD, &item->name,
+		      BROWSER_LIST_STORE_NAME_FIELD, &name,
 		      BROWSER_LIST_STORE_SIZE_FIELD, &item->size,
 		      BROWSER_LIST_STORE_INDEX_FIELD, &item->index, -1);
-
+  snprintf (item->name, LABEL_MAX, "%s", name);
+  g_free (name);
   return item;
 }
 
@@ -154,7 +155,7 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 
   if (item->type == ELEKTROID_DIR)
     {
-      if (strcmp (browser->dir, "/") != 0)
+      if (strcmp (browser->dir, "/"))
 	{
 	  strcat (browser->dir, "/");
 	}
@@ -166,7 +167,7 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 	}
     }
 
-  browser_free_item (item);
+  g_free (item);
 }
 
 gint
@@ -175,13 +176,6 @@ browser_get_selected_items_count (struct browser *browser)
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
   return gtk_tree_selection_count_selected_rows (selection);
-}
-
-void
-browser_free_item (struct item *item)
-{
-  g_free (item->name);
-  g_free (item);
 }
 
 gchar *
