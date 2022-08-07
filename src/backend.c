@@ -131,12 +131,12 @@ backend_destroy (struct backend *backend)
   backend_disable_cache (backend);
 }
 
-static gint
+static void
 backend_midi_handshake (struct backend *backend)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
-  gint offset, err = 0;
+  gint offset;
 
   backend->device_desc.id = -1;
   backend->device_desc.storage = 0;
@@ -187,19 +187,15 @@ backend_midi_handshake (struct backend *backend)
 	  else
 	    {
 	      error_print ("Illegal SUB-ID2\n");
-	      err = -EIO;
 	    }
 	}
       else
 	{
 	  error_print ("Illegal SUB-ID2\n");
-	  err = -EIO;
 	}
 
       free_msg (rx_msg);
     }
-
-  return err;
 }
 
 gint
@@ -287,10 +283,7 @@ backend_init (struct backend *backend, gint card)
       goto cleanup_params;
     }
 
-  if (backend_midi_handshake (backend))
-    {
-      goto cleanup_params;
-    }
+  backend_midi_handshake (backend);
 
   return 0;
 
