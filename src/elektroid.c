@@ -236,12 +236,10 @@ static GtkListStore *fs_list_store;
 static GtkComboBox *fs_combo;
 static GtkTreeViewColumn *remote_tree_view_index_column;
 
-static const gchar *
+inline static const gchar *
 elektroid_get_fs_name (guint fs)
 {
-  const gchar *name =
-    backend_get_fs_operations (&backend, fs, NULL)->gui_name;
-  return name ? _(name) : _("Undefined");
+  return backend_get_fs_operations (&backend, fs, NULL)->gui_name;
 }
 
 static void

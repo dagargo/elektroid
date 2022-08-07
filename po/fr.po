@@ -17,22 +17,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:246
-msgid "Samples"
-msgstr "Échantillons"
-
-#: src/elektroid.c:248
-msgid "Presets"
-msgstr "Préréglages"
-
-#: src/elektroid.c:250
-msgid "Projects"
-msgstr "Projets"
-
-#: src/elektroid.c:252
-msgid "Sounds"
-msgstr "Sons"
-
 #: src/elektroid.c:254 src/elektroid.c:1689 src/elektroid.c:1703
 msgid "Undefined"
 msgstr "Indéfini"
