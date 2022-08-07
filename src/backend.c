@@ -187,7 +187,7 @@ backend_midi_handshake (struct backend *backend)
 	    }
 	  else
 	    {
-	      debug_print (1, "Illegal SUB-ID2\n");
+	      debug_print (1, "Illegal MIDI identity reply length\n");
 	    }
 	}
       else
