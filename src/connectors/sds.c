@@ -767,7 +767,6 @@ sds_handshake (struct backend *backend)
   sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), 0);
   backend_rx_drain (backend);
 
-
   backend->device_desc.filesystems = FS_SAMPLES_SDS;
   backend->fs_ops = FS_SDS_OPERATIONS;
   backend->upgrade_os = NULL;

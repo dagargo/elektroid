@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <glib/gi18n.h>
 #include "backend.h"
 #include "connector.h"
 #include "connectors/elektron.h"
@@ -45,6 +46,15 @@ connector_init (struct backend *backend, gint card)
   if (err)
     {
       backend_destroy (backend);
+    }
+  else
+    {
+      if (!strlen (backend->device_name))
+	{
+	  //Translations must not be used in the connectors
+	  snprintf (backend->device_name, LABEL_MAX, "%s",
+		    _("MIDI SDS sampler"));
+	}
     }
 
   return err;

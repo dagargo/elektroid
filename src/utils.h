@@ -52,7 +52,7 @@ typedef guint (*iterator_next) (struct item_iterator *);
 typedef void (*iterator_free) (void *);
 
 typedef gint (*iterator_copy) (struct item_iterator *, struct item_iterator *,
-                               gboolean);
+			       gboolean);
 
 struct item
 {

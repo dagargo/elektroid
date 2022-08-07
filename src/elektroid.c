@@ -370,32 +370,34 @@ elektroid_update_statusbar ()
 {
   gchar *status;
   gchar *statfss_str;
-  gint res, storage;
   struct backend_storage_stats statfs;
   GString *statfss;
 
   gtk_statusbar_pop (status_bar, 0);
 
-  if (backend_check (&backend) && backend.get_storage_stats)
+  if (backend_check (&backend))
     {
       statfss = g_string_new (NULL);
-
-      for (storage = 1; storage < BE_MAX_BACKEND_STORAGE; storage <<= 1)
+      if (backend.get_storage_stats)
 	{
-	  if (backend.device_desc.storage & storage)
+	  for (gint i = 0, storage = 1; i < BE_MAX_BACKEND_STORAGE;
+	       i++, storage <<= 1)
 	    {
-	      res = backend.get_storage_stats (&backend, storage, &statfs);
-	      if (!res)
+	      if (backend.device_desc.storage & storage)
 		{
-		  g_string_append_printf (statfss, " %s %.2f%%",
-					  statfs.name,
-					  backend_get_storage_stats_percent
-					  (&statfs));
+		  if (!backend.get_storage_stats (&backend, storage, &statfs))
+		    {
+		      g_string_append_printf (statfss, " %s %.2f%%",
+					      statfs.name,
+					      backend_get_storage_stats_percent
+					      (&statfs));
+		    }
 		}
 	    }
 	}
+
       statfss_str = g_string_free (statfss, FALSE);
-      status = malloc (LABEL_MAX);
+      status = g_malloc (LABEL_MAX);
       snprintf (status, LABEL_MAX, _("Connected to %s%s"),
 		backend.device_name, statfss_str);
       gtk_statusbar_push (status_bar, 0, status);
@@ -454,8 +456,8 @@ elektroid_check_backend ()
   GtkTreeIter iter;
   gboolean remote_box_sensitive;
   gboolean connected = backend_check (&backend);
-  gboolean queued =
-    elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
+  gboolean queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
+						    NULL);
 
   if (!remote_browser.fs_ops
       || remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
@@ -478,7 +480,6 @@ elektroid_check_backend ()
 	GTK_LIST_STORE (gtk_tree_view_get_model (remote_browser.view));
       gtk_entry_set_text (remote_browser.dir_entry, "");
       gtk_list_store_clear (list_store);
-
       elektroid_load_devices (FALSE);
     }
 
