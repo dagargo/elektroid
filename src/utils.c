@@ -234,7 +234,7 @@ get_item_index (struct item *item)
   else
     {
       index = malloc (LABEL_MAX);
-      snprintf (index, LABEL_MAX, "%d", item->index);
+      snprintf (index, LABEL_MAX, "%d", item->id);
     }
 
   return index;

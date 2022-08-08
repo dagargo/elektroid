@@ -64,8 +64,8 @@ struct browser
 gint browser_sort_by_name (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
 			   gpointer);
 
-gint browser_sort_by_index (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
-			    gpointer);
+gint browser_sort_by_id (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
+			 gpointer);
 
 struct item *browser_get_item (GtkTreeModel *, GtkTreeIter *);
 

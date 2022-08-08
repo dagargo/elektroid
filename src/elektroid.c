@@ -2190,8 +2190,8 @@ elektroid_add_download_task_path (const gchar * rel_path,
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
-  if (remote_browser.
-      fs_ops->readdir (remote_browser.backend, &iter, src_abs_path))
+  if (remote_browser.fs_ops->readdir (remote_browser.backend, &iter,
+				      src_abs_path))
     {
       dst_abs_dirc = strdup (dst_abs_path);
       dst_abs_dir = dirname (dst_abs_dirc);
@@ -2420,18 +2420,24 @@ elektroid_set_browser_options (struct browser *browser)
     {
       gtk_tree_sortable_set_sort_func (sortable,
 				       BROWSER_LIST_STORE_INDEX_FIELD,
-				       browser_sort_by_index, NULL, NULL);
+				       browser_sort_by_id, NULL, NULL);
       gtk_tree_sortable_set_sort_column_id (sortable,
 					    BROWSER_LIST_STORE_INDEX_FIELD,
 					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
     }
-  else
+  else if (browser->fs_ops->options & FS_OPTION_SORT_BY_NAME)
     {
       gtk_tree_sortable_set_sort_func (sortable,
 				       BROWSER_LIST_STORE_NAME_FIELD,
 				       browser_sort_by_name, NULL, NULL);
       gtk_tree_sortable_set_sort_column_id (sortable,
 					    BROWSER_LIST_STORE_NAME_FIELD,
+					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+    }
+  else
+    {
+      gtk_tree_sortable_set_sort_column_id (sortable,
+					    GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID,
 					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
     }
 }
@@ -2643,7 +2649,7 @@ elektroid_add_upload_task_slot (const gchar * name,
       item = browser_get_item (model, &iter);
 
       dst_file_path = g_malloc (sizeof (LABEL_MAX));
-      snprintf (dst_file_path, LABEL_MAX, "/%d%s%s", item->index,
+      snprintf (dst_file_path, LABEL_MAX, "/%d%s%s", item->id,
 		SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
       g_free (item);
 

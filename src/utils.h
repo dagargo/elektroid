@@ -56,10 +56,10 @@ typedef gint (*iterator_copy) (struct item_iterator *, struct item_iterator *,
 
 struct item
 {
-  gchar name[LABEL_MAX];
+  gint32 id;
   gint64 size;
-  gint32 index;
   enum item_type type;
+  gchar name[LABEL_MAX];
 };
 
 struct item_iterator
@@ -187,6 +187,7 @@ enum fs_options
   FS_OPTION_SINGLE_OP = 0x4,
   FS_OPTION_SLOT_STORAGE = 0x8,
   FS_OPTION_SORT_BY_ID = 0x10,
+  FS_OPTION_SORT_BY_NAME = 0x20,
 };
 
 

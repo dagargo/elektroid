@@ -47,8 +47,8 @@ browser_sort_by_name (GtkTreeModel * model,
 }
 
 gint
-browser_sort_by_index (GtkTreeModel * model,
-		       GtkTreeIter * a, GtkTreeIter * b, gpointer data)
+browser_sort_by_id (GtkTreeModel * model, GtkTreeIter * a, GtkTreeIter * b,
+		    gpointer data)
 {
   struct item *itema;
   struct item *itemb;
@@ -57,7 +57,7 @@ browser_sort_by_index (GtkTreeModel * model,
   itema = browser_get_item (model, a);
   itemb = browser_get_item (model, b);
 
-  ret = itema->index > itemb->index;
+  ret = itema->id > itemb->id;
 
   g_free (itema);
   g_free (itemb);
@@ -73,7 +73,7 @@ browser_get_item (GtkTreeModel * model, GtkTreeIter * iter)
   gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_TYPE_FIELD, &item->type,
 		      BROWSER_LIST_STORE_NAME_FIELD, &name,
 		      BROWSER_LIST_STORE_SIZE_FIELD, &item->size,
-		      BROWSER_LIST_STORE_INDEX_FIELD, &item->index, -1);
+		      BROWSER_LIST_STORE_INDEX_FIELD, &item->id, -1);
   snprintf (item->name, LABEL_MAX, "%s", name);
   g_free (name);
   return item;
@@ -183,7 +183,7 @@ browser_get_item_path (struct browser *browser, struct item *item)
 {
   gchar *path = chain_path (browser->dir, item->name);
   debug_print (1, "Using %s path for item %s (%d)...\n", path, item->name,
-	       item->index);
+	       item->id);
   return path;
 }
 
@@ -193,7 +193,7 @@ browser_get_item_id_path (struct browser *browser, struct item *item)
   gchar *id = browser->fs_ops->getid (item);
   gchar *path = chain_path (browser->dir, id);
   debug_print (1, "Using %s path for item %s (%d)...\n", path, item->name,
-	       item->index);
+	       item->id);
   g_free (id);
   return path;
 }
@@ -221,7 +221,7 @@ browser_add_dentry_item (struct browser *browser, struct item_iterator *iter)
 				     BROWSER_LIST_STORE_TYPE_FIELD,
 				     iter->item.type,
 				     BROWSER_LIST_STORE_INDEX_FIELD,
-				     iter->item.index, -1);
+				     iter->item.id, -1);
   if (strlen (hsize))
     {
       g_free (hsize);

@@ -289,7 +289,7 @@ static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
-  .options = FS_OPTION_SHOW_AUDIO_PLAYER,
+  .options = FS_OPTION_SHOW_AUDIO_PLAYER | FS_OPTION_SORT_BY_NAME,
   .name = "sample",
   .gui_name = "Samples",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -467,7 +467,7 @@ print_data (struct item_iterator *iter)
   struct elektron_iterator_data *data = iter->data;
 
   printf ("%c %3d %04x %d %d %10s %s\n", iter->item.type,
-	  iter->item.index, data->operations, data->has_valid_data,
+	  iter->item.id, data->operations, data->has_valid_data,
 	  data->has_metadata, hsize, iter->item.name);
   g_free (hsize);
 }
@@ -545,7 +545,7 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
 	}
       data->pos += strlen (name_cp1252) + 1;
 
-      iter->item.index = -1;
+      iter->item.id = -1;
 
       return 0;
     }
@@ -571,7 +571,7 @@ elektron_init_iterator (struct item_iterator *iter, GByteArray * msg,
   iter->next = next;
   iter->free = elektron_free_iterator_data;
   iter->copy = elektron_copy_iterator;
-  iter->item.index = -1;
+  iter->item.id = -1;
 
   return 0;
 }
@@ -2282,7 +2282,7 @@ elektron_next_data_entry (struct item_iterator *iter)
       iter->item.type = ELEKTROID_DIR;
       data->pos += sizeof (guint32);	// child entries
       iter->item.size = 0;
-      iter->item.index = -1;
+      iter->item.id = -1;
       data->operations = 0;
       data->has_valid_data = 0;
       data->has_metadata = 0;
@@ -2291,7 +2291,7 @@ elektron_next_data_entry (struct item_iterator *iter)
       iter->item.type = has_children ? ELEKTROID_DIR : ELEKTROID_FILE;
 
       data32 = (guint32 *) & data->msg->data[data->pos];
-      iter->item.index = be32toh (*data32);	//index
+      iter->item.id = be32toh (*data32);	//index
       data->pos += sizeof (gint32);
 
       data32 = (guint32 *) & data->msg->data[data->pos];
@@ -2908,7 +2908,7 @@ elektron_get_download_name (struct backend *backend,
 
   while (!next_item_iterator (remote_iter))
     {
-      if (remote_iter->item.index == id)
+      if (remote_iter->item.id == id)
 	{
 	  name = get_item_name (&remote_iter->item);
 	  break;
@@ -3041,7 +3041,7 @@ elektron_get_upload_path_data (struct backend *backend,
 	}
     }
 
-  if (remote_iter->item.index == *next_index)
+  if (remote_iter->item.id == *next_index)
     {
       (*next_index)++;
     }
@@ -3049,7 +3049,7 @@ elektron_get_upload_path_data (struct backend *backend,
     {
       while (!next_item_iterator (remote_iter))
 	{
-	  if (remote_iter->item.index > *next_index)
+	  if (remote_iter->item.id > *next_index)
 	    {
 	      break;
 	    }

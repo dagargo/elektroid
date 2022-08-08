@@ -655,7 +655,7 @@ sds_next_dentry (struct item_iterator *iter)
 
   if (next < SDS_SAMPLE_LIMIT)
     {
-      iter->item.index = next;
+      iter->item.id = next;
       snprintf (iter->item.name, LABEL_MAX, "%d", next);
       iter->item.type = ELEKTROID_FILE;
       iter->item.size = -1;

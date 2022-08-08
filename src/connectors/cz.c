@@ -52,7 +52,7 @@ cz_next_dentry_root (struct item_iterator *iter)
 
   if (next < 3)
     {
-      iter->item.index = next;
+      iter->item.id = next;
       snprintf (iter->item.name, LABEL_MAX, "%s", CZ_ROOT_DIRS[next]);
       iter->item.type = ELEKTROID_DIR;
       iter->item.size = -1;
@@ -72,7 +72,7 @@ cz_next_dentry (struct item_iterator *iter)
 
   if (data->next < CZ101_MAX_PROGRAMS)
     {
-      iter->item.index = data->next + data->offset;
+      iter->item.id = data->next + data->offset;
       snprintf (iter->item.name, LABEL_MAX, "%d", data->next + 1);
       iter->item.type = ELEKTROID_FILE;
       iter->item.size = CZ101_PROGRAM_LEN;
@@ -125,8 +125,7 @@ cz_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .fs = FS_PROGRAM_CZ,
-  .options =
-    FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE,
   .name = "cz",
   .gui_name = "Programs",
   .gui_icon = BE_FILE_ICON_SND,
