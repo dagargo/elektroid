@@ -185,7 +185,7 @@ enum fs_options
   FS_OPTION_SHOW_AUDIO_PLAYER = 0x1,
   FS_OPTION_SHOW_INDEX_COLUMN = 0x2,
   FS_OPTION_SINGLE_OP = 0x4,
-  FS_OPTION_SLOT_STORAGE = 0x8,
+  FS_OPTION_SLOT_STORAGE = 0x8,	//In SLOT mode, dst_dir passed to t_get_upload_path includes the index, ':' and the item name.
   FS_OPTION_SORT_BY_ID = 0x10,
   FS_OPTION_SORT_BY_NAME = 0x20,
 };

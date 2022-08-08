@@ -51,7 +51,7 @@ sds_get_upload_path (struct backend *backend,
 		     const struct fs_operations *ops, const gchar * dst_dir,
 		     const gchar * src_path, gint32 * next_index)
 {
-  //In this case, dst_dir must include the index, ':' and the sample name.
+  //In SLOT mode, dst_dir includes the index, ':' and the item name.
   return strdup (dst_dir);
 }
 
