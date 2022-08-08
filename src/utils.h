@@ -66,6 +66,7 @@ struct item_iterator
 {
   iterator_next next;
   iterator_free free;
+  //copy is only needed when the FS supports directories. This does not mean that mkdir is supported, as dirs could be just a way to show the data.
   iterator_copy copy;
   void *data;
   struct item item;

@@ -632,6 +632,9 @@ backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg,
   struct sysex_transfer transfer;
 
   g_mutex_lock (&backend->mutex);
+
+  backend_rx_drain (backend);
+
   transfer.raw = tx_msg;
   transfer.active = TRUE;
   transfer.timeout = timeout < 0 ? SYSEX_TIMEOUT_MS : timeout;

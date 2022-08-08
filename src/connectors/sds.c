@@ -62,7 +62,7 @@ sds_get_download_path (struct backend *backend,
 		       const gchar * src_path)
 {
   GByteArray *tx_msg, *rx_msg;
-  gchar *name = malloc (LABEL_MAX);
+  gchar *name = malloc (PATH_MAX);
   gchar *src_path_copy = strdup (src_path);
   gchar *filename = basename (src_path_copy);
   gint index = atoi (filename);
@@ -75,12 +75,12 @@ sds_get_download_path (struct backend *backend,
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
   if (rx_msg)
     {
-      snprintf (name, LABEL_MAX, "%s/%s.wav", dst_dir, &rx_msg->data[5]);
+      snprintf (name, PATH_MAX, "%s/%s.wav", dst_dir, &rx_msg->data[5]);
       free_msg (rx_msg);
     }
   else
     {
-      snprintf (name, LABEL_MAX, "%s/%d.wav", dst_dir, index);
+      snprintf (name, PATH_MAX, "%s/%d.wav", dst_dir, index);
     }
 
   g_free (src_path_copy);
@@ -675,8 +675,6 @@ sds_read_dir (struct backend *backend, struct item_iterator *iter,
   *((gint *) iter->data) = 0;
   iter->next = sds_next_dentry;
   iter->free = sds_free_iterator_data;
-  iter->item.type = ELEKTROID_FILE;
-  iter->item.size = -1;
 
   return 0;
 }
