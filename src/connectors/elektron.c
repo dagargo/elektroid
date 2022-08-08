@@ -2994,10 +2994,9 @@ elektron_download_raw_pst_pkg (struct backend *backend, const gchar * path,
 
 static gchar *
 elektron_get_upload_path_smplrw (struct backend *backend,
-				 struct item_iterator
-				 *remote_iter,
-				 const struct fs_operations
-				 *ops, const gchar * dst_dir,
+				 struct item_iterator *remote_iter,
+				 const struct fs_operations *ops,
+				 const gchar * dst_dir,
 				 const gchar * src_path, gint32 * next_index)
 {
   gchar *path, *namec, *name, *aux;
@@ -3022,8 +3021,7 @@ elektron_get_upload_path_smplrw (struct backend *backend,
 
 static gchar *
 elektron_get_upload_path_data (struct backend *backend,
-			       struct item_iterator
-			       *remote_iter,
+			       struct item_iterator *remote_iter,
 			       const struct fs_operations *ops,
 			       const gchar * dst_dir,
 			       const gchar * src_path, gint32 * next_index)
