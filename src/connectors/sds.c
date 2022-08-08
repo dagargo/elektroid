@@ -353,14 +353,11 @@ sds_download (struct backend *backend, const gchar * path,
 
 	  total_words++;
 
-	  if (control)
-	    {
-	      set_job_control_progress (control,
-					total_words / (double) (words + 1));
-	      g_mutex_lock (&control->mutex);
-	      active = control->active;
-	      g_mutex_unlock (&control->mutex);
-	    }
+	  set_job_control_progress (control,
+				    total_words / (double) (words + 1));
+	  g_mutex_lock (&control->mutex);
+	  active = control->active;
+	  g_mutex_unlock (&control->mutex);
 	}
 
       usleep (REST_TIME_US);
@@ -601,13 +598,10 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	  packet_num = 0;
 	}
 
-      if (control)
-	{
-	  set_job_control_progress (control, i / (double) (packets));
-	  g_mutex_lock (&control->mutex);
-	  active = control->active;
-	  g_mutex_unlock (&control->mutex);
-	}
+      set_job_control_progress (control, i / (double) (packets));
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
 
       i++;
     }
