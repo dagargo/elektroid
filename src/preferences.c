@@ -86,7 +86,6 @@ preferences_save (struct preferences *preferences)
 gint
 preferences_load (struct preferences *preferences)
 {
-  size_t n;
   GError *error;
   JsonReader *reader;
   JsonParser *parser = json_parser_new ();
@@ -118,13 +117,12 @@ preferences_load (struct preferences *preferences)
     }
   json_reader_end_member (reader);
 
-  if (json_reader_read_member (reader, MEMBER_LOCALDIR))
+  if (json_reader_read_member (reader, MEMBER_LOCALDIR) &&
+      g_file_test (json_reader_get_string_value (reader),
+		   (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
     {
       preferences->local_dir = malloc (PATH_MAX);
-      n = PATH_MAX - 1;
-      strncpy (preferences->local_dir, json_reader_get_string_value (reader),
-	       n);
-      preferences->local_dir[PATH_MAX - 1] = 0;
+      strcpy (preferences->local_dir, json_reader_get_string_value (reader));
     }
   else
     {
