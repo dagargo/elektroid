@@ -2647,11 +2647,17 @@ elektroid_add_upload_task_slot (const gchar * name,
       name_wo_ext = strdup (name);
       remove_ext (name_wo_ext);
       item = browser_get_item (model, &iter);
+      if (item->type == ELEKTROID_DIR)	//Not allowed in slot mode
+	{
+	  g_free (item);
+	  return;
+	}
 
       dst_file_path = g_malloc (sizeof (LABEL_MAX));
       snprintf (dst_file_path, LABEL_MAX, "/%d%s%s", item->id,
 		SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
       g_free (item);
+      g_free (name_wo_ext);
 
       elektroid_add_task (UPLOAD, src_file_path, dst_file_path,
 			  remote_browser.fs_ops->fs);
