@@ -24,35 +24,53 @@
 #include "connectors/sds.h"
 #include "connectors/cz.h"
 
+struct connector
+{
+  gint (*handshake) (struct backend * backend);
+  const gchar *name;
+};
+
+static const struct connector CONNECTOR_ELEKTRON = {
+  .handshake = elektron_handshake,
+  .name = "elektron",
+};
+
+static const struct connector CONNECTOR_SDS = {
+  .handshake = sds_handshake,
+  .name = "sds"
+};
+
+static const struct connector CONNECTOR_CZ = {
+  .handshake = cz_handshake,
+  .name = "cz"
+};
+
+static const struct connector *CONNECTORS[] = {
+  &CONNECTOR_ELEKTRON, &CONNECTOR_SDS, &CONNECTOR_CZ, NULL
+};
+
 gint
 connector_init (struct backend *backend, gint card)
 {
+  const struct connector **connector;
   int err = backend_init (backend, card);
   if (err)
     {
       return err;
     }
 
-  if (!elektron_handshake (backend))
+  connector = CONNECTORS;
+  while (*connector)
     {
-      return 0;
+      if (!(*connector)->handshake (backend))
+	{
+	  debug_print (1, "Using %s connector...\n", (*connector)->name);
+	  return 0;
+	}
+      connector++;
     }
 
-  debug_print (1, "No Elektron device detected\n");
-
-  if (!cz_handshake (backend))
-    {
-      return 0;
-    }
-
-  debug_print (1, "No CZ device detected\n");
-
-  if (!sds_handshake (backend))
-    {
-      return 0;
-    }
-
-  debug_print (1, "No MIDI SDS device detected\n");
+  debug_print (1, "Device not recognized\n");
 
   backend_destroy (backend);
 
