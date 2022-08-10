@@ -2645,11 +2645,6 @@ elektroid_add_upload_task_slot (const gchar * name,
   if (gtk_tree_model_get_iter (model, &iter, remote_browser.dnd_motion_path))
     {
       item = browser_get_item (model, &iter);
-      if (!item || item->type == ELEKTROID_DIR)	//Not allowed in slot mode
-	{
-	  g_free (item);
-	  return;
-	}
 
       name_wo_ext = strdup (name);
       remove_ext (name_wo_ext);
@@ -2661,7 +2656,7 @@ elektroid_add_upload_task_slot (const gchar * name,
       g_free (name_wo_ext);
 
       elektroid_add_task (UPLOAD, src_file_path, dst_file_path,
-                     remote_browser.fs_ops->fs);
+			  remote_browser.fs_ops->fs);
     }
 }
 
@@ -2763,6 +2758,12 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       g_free (path_basename);
       g_free (path_dirname);
       g_free (filename);
+
+      if (widget == GTK_WIDGET (remote_browser.view) &&
+	  remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+	{
+	  break;
+	}
     }
 
   if (load_remote)
