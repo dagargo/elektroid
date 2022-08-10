@@ -130,15 +130,19 @@ void
 remove_ext (char *name)
 {
   gint namelen = strlen (name);
-  gchar *dot = &name[namelen];
-  gint i = namelen;
+  gchar *dot = &name[namelen - 1];
+  gint i = namelen - 1;
 
-  while (*dot != '.' && i > 0)
+  while (i > 0)
     {
+      if (*dot == '.')
+	{
+	  *dot = 0;
+	  break;
+	}
       dot--;
       i--;
     }
-  *dot = 0;
 }
 
 const gchar *
