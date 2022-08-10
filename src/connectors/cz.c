@@ -26,8 +26,9 @@
 #define CZ101_MAX_PROGRAMS 16
 #define CZ101_PRESET_PREFIX "CZ-101"
 #define CZ101_PROGRAM_HEADER_ID 6
-#define CZ101_PROGRAM_HEADER_OFFSET 8
+#define CZ101_PROGRAM_HEADER_OFFSET 6
 #define CZ101_MEM_TYPE_OFFSET 0x20
+#define CZ101_PANEL_ID 0x60
 
 static const char *CZ_MEM_TYPES[] =
   { "preset", "internal", "cartridge", NULL };
@@ -36,7 +37,7 @@ static const guint8 CZ101_PROGRAM_REQUEST[] =
   { 0xf0, 0x44, 0x00, 0x00, 0x70, 0x10, 0x00, 0x70, 0x31, 0xf7 };
 
 static const guint8 CZ101_PROGRAM_HEADER[] =
-  { 0xf0, 0x44, 0x00, 0x00, 0x70, 0x20, 0x00, 0x03, 0x00 };
+  { 0xf0, 0x44, 0x00, 0x00, 0x70, 0x20, 0x00 };
 
 enum cz_fs
 {
@@ -48,6 +49,16 @@ struct cz_type_iterator_data
   guint next;
   gint type;
 };
+
+static gchar *
+cz_get_upload_path (struct backend *backend,
+		    struct item_iterator *remote_iter,
+		    const struct fs_operations *ops, const gchar * dst_dir,
+		    const gchar * src_path, gint32 * next_index)
+{
+  //In the SLOT mode, dst_dir includes the index, ':' and the item name.
+  return strdup (dst_dir);
+}
 
 static gchar *
 cz_get_download_path (struct backend *backend,
@@ -76,12 +87,6 @@ cz_get_download_path (struct backend *backend,
   return name;
 }
 
-static void
-cz_free_iterator_data (void *iter_data)
-{
-  g_free (iter_data);
-}
-
 static guint
 cz_next_dentry_root (struct item_iterator *iter)
 {
@@ -98,8 +103,8 @@ cz_next_dentry_root (struct item_iterator *iter)
     }
   else if (data->next == 3)
     {
-      iter->item.id = 0x60;
-      strncpy (iter->item.name, "panel", LABEL_MAX);
+      iter->item.id = CZ101_PANEL_ID;
+      snprintf (iter->item.name, LABEL_MAX, "panel");
       iter->item.type = ELEKTROID_FILE;
       iter->item.size = CZ101_PROGRAM_LEN_FIXED;
       data->next++;
@@ -132,7 +137,7 @@ cz_next_dentry (struct item_iterator *iter)
 
 static gint
 cz_copy_iterator (struct item_iterator *dst, struct item_iterator *src,
-		  gboolean cached)
+                 gboolean cached)
 {
   struct cz_type_iterator_data *data = src->data;
 
@@ -140,7 +145,7 @@ cz_copy_iterator (struct item_iterator *dst, struct item_iterator *src,
   ((struct cz_type_iterator_data *) (dst->data))->next = 0;
   ((struct cz_type_iterator_data *) (dst->data))->type = data->type;
   dst->next = cz_next_dentry_root;
-  dst->free = cz_free_iterator_data;
+  dst->free = g_free;
   dst->copy = cz_copy_iterator;
 
   return 0;
@@ -174,8 +179,8 @@ cz_read_dir (struct backend *backend, struct item_iterator *iter,
       data->type = -1;
       iter->data = data;
       iter->next = cz_next_dentry_root;
-      iter->free = cz_free_iterator_data;
       iter->copy = cz_copy_iterator;
+      iter->free = g_free;
       return 0;
     }
   else if ((mem_type = get_mem_type (&path[1])) >= 0)
@@ -185,10 +190,9 @@ cz_read_dir (struct backend *backend, struct item_iterator *iter,
       data->next = 0;
       data->type = mem_type;
       iter->data = data;
-      *((gint *) iter->data) = 0;
       iter->next = cz_next_dentry;
-      iter->free = cz_free_iterator_data;
       iter->copy = cz_copy_iterator;
+      iter->free = g_free;
       return 0;
     }
   else
@@ -198,13 +202,13 @@ cz_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static GByteArray *
-cz_get_program_dump_msg (gint program)
+cz_get_program_dump_msg (guint8 id)
 {
   GByteArray *tx_msg =
     g_byte_array_sized_new (sizeof (CZ101_PROGRAM_REQUEST));
   g_byte_array_append (tx_msg, CZ101_PROGRAM_REQUEST,
 		       sizeof (CZ101_PROGRAM_REQUEST));
-  tx_msg->data[6] = (guint8) program;
+  tx_msg->data[CZ101_PROGRAM_HEADER_OFFSET] = id;
   return tx_msg;
 }
 
@@ -212,8 +216,9 @@ static gint
 cz_download (struct backend *backend, const gchar * path,
 	     GByteArray * output, struct job_control *control)
 {
-  gint len, err = 0, id, type;
+  guint8 id;
   gboolean active;
+  gint len, type, err = 0;
   GByteArray *tx_msg, *rx_msg;
   gchar *dirname_copy, *dir, *basename_copy;
 
@@ -239,7 +244,7 @@ cz_download (struct backend *backend, const gchar * path,
     }
   else
     {
-      id = 0x60;
+      id = CZ101_PANEL_ID;
     }
 
   tx_msg = cz_get_program_dump_msg (id);
@@ -259,7 +264,7 @@ cz_download (struct backend *backend, const gchar * path,
 		       sizeof (CZ101_PROGRAM_HEADER));
   g_byte_array_append (output, &rx_msg->data[CZ101_PROGRAM_HEADER_OFFSET],
 		       CZ101_PROGRAM_LEN - CZ101_PROGRAM_HEADER_OFFSET);
-  output->data[CZ101_PROGRAM_HEADER_ID] = (guint8) id;
+  output->data[CZ101_PROGRAM_HEADER_ID] = id;
 
   g_mutex_lock (&control->mutex);
   active = control->active;
@@ -271,12 +276,73 @@ cz_download (struct backend *backend, const gchar * path,
     }
   else
     {
-      err = -EIO;
+      err = -ECANCELED;
     }
 
 cleanup:
   free_msg (rx_msg);
 end:
+  return err;
+}
+
+static gint
+cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
+	   struct job_control *control)
+{
+  guint8 id;
+  gboolean active;
+  struct sysex_transfer transfer;
+  char *name_copy, *dir_copy, *dir;
+  gint mem_type, err = 0;
+
+  dir_copy = strdup (path);
+  dir = dirname (dir_copy);
+  mem_type = get_mem_type (&dir[1]);
+  if (mem_type < 0)
+    {
+      err = -EIO;
+      goto cleanup;
+    }
+
+  name_copy = strdup (path);
+  id = atoi (basename (name_copy)) - 1 + mem_type * CZ101_MEM_TYPE_OFFSET;
+  g_free (name_copy);
+
+  g_mutex_lock (&backend->mutex);
+
+  control->parts = 1;
+  control->part = 0;
+  set_job_control_progress (control, 0.0);
+
+  transfer.raw = g_byte_array_sized_new (input->len);
+  g_byte_array_append (transfer.raw, input->data, input->len);
+  transfer.raw->data[CZ101_PROGRAM_HEADER_ID] = id;
+
+  transfer.active = TRUE;
+  transfer.timeout = SYSEX_TIMEOUT_MS;
+  err = backend_tx_sysex (backend, &transfer);
+  free_msg (transfer.raw);
+  if (err < 0)
+    {
+      goto cleanup;
+    }
+
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
+
+  if (active)
+    {
+      set_job_control_progress (control, 1.0);
+    }
+  else
+    {
+      err = -ECANCELED;
+    }
+
+cleanup:
+  g_mutex_unlock (&backend->mutex);
+  g_free (dir_copy);
   return err;
 }
 
@@ -296,12 +362,12 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .clear = NULL,
   .swap = NULL,
   .download = cz_download,
-  .upload = NULL,
+  .upload = cz_upload,
   .getid = get_item_name,
   .load = load_file,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
-  .get_upload_path = NULL,
+  .get_upload_path = cz_get_upload_path,
   .get_download_path = cz_get_download_path,
   .type_ext = "syx"
 };
@@ -316,8 +382,8 @@ cz_handshake (struct backend *backend)
   gint len, err = 0;
   GByteArray *tx_msg, *rx_msg;
 
-  tx_msg = cz_get_program_dump_msg (0x60);	//Programmer
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
+  tx_msg = cz_get_program_dump_msg (0);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;

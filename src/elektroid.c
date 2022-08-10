@@ -2644,23 +2644,24 @@ elektroid_add_upload_task_slot (const gchar * name,
 
   if (gtk_tree_model_get_iter (model, &iter, remote_browser.dnd_motion_path))
     {
-      name_wo_ext = strdup (name);
-      remove_ext (name_wo_ext);
       item = browser_get_item (model, &iter);
-      if (item->type == ELEKTROID_DIR)	//Not allowed in slot mode
+      if (!item || item->type == ELEKTROID_DIR)	//Not allowed in slot mode
 	{
 	  g_free (item);
 	  return;
 	}
 
-      dst_file_path = g_malloc (sizeof (LABEL_MAX));
-      snprintf (dst_file_path, LABEL_MAX, "/%d%s%s", item->id,
-		SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
+      name_wo_ext = strdup (name);
+      remove_ext (name_wo_ext);
+      dst_file_path = g_malloc (PATH_MAX);
+      snprintf (dst_file_path, PATH_MAX, "%s%s%s%s%s", remote_browser.dir,
+		strcmp (remote_browser.dir, "/") ? "/" : "",
+		item->name, SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
       g_free (item);
       g_free (name_wo_ext);
 
       elektroid_add_task (UPLOAD, src_file_path, dst_file_path,
-			  remote_browser.fs_ops->fs);
+                     remote_browser.fs_ops->fs);
     }
 }
 
