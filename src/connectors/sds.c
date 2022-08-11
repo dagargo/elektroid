@@ -770,28 +770,35 @@ static const struct fs_operations *FS_SDS_OPERATIONS[] = {
 gint
 sds_handshake (struct backend *backend)
 {
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
+  gboolean detected;
+  GByteArray *tx_msg, *rx_msg;
 
   tx_msg = g_byte_array_sized_new (sizeof (SDS_SAMPLE_REQUEST));
+  //If there is no sample loaded, this fails. If it fails, we just assume the user selection is right.
   g_byte_array_append (tx_msg, SDS_SAMPLE_REQUEST,
 		       sizeof (SDS_SAMPLE_REQUEST));
+  //In some devices, sample 0 is the clipboard.
   tx_msg->data[4] = 1;
   tx_msg->data[5] = 0;
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
-  if (!rx_msg)
+  if (rx_msg)
     {
-      return -EIO;
+      free_msg (rx_msg);
+      sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), 1);
+      detected = TRUE;
     }
-  free_msg (rx_msg);
-
-  sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), 1);
+  else
+    {
+      debug_print (1, "No sampler (MIDI SDS) found. Assuming device...\n");
+      detected = FALSE;
+    }
 
   backend->device_desc.filesystems = FS_SAMPLES_SDS;
   backend->fs_ops = FS_SDS_OPERATIONS;
   backend->upgrade_os = NULL;
 
-  snprintf (backend->device_name, LABEL_MAX, "sampler (MIDI SDS)");
+  snprintf (backend->device_name, LABEL_MAX, "sampler (MIDI SDS)%s",
+	    !detected ? " ⚠️" : "");
 
   return 0;
 }
