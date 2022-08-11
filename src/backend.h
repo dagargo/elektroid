@@ -99,6 +99,10 @@ gint backend_rx_sysex (struct backend *, struct sysex_transfer *);
 
 GByteArray *backend_tx_and_rx_sysex (struct backend *, GByteArray *, gint);
 
+GByteArray *backend_tx_and_rx_sysex_with_options (struct backend *,
+						  GByteArray *, gint,
+						  gboolean, gboolean);
+
 void backend_rx_drain (struct backend *);
 
 gboolean backend_check (struct backend *);

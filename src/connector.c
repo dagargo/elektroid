@@ -62,6 +62,7 @@ connector_init (struct backend *backend, gint card)
   connector = CONNECTORS;
   while (*connector)
     {
+      debug_print (1, "Testing %s connector...\n", (*connector)->name);
       if (!(*connector)->handshake (backend))
 	{
 	  debug_print (1, "Using %s connector...\n", (*connector)->name);

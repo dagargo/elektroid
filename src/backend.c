@@ -625,22 +625,31 @@ end:
 //Synchronized
 
 GByteArray *
-backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg,
-			 gint timeout)
+backend_tx_and_rx_sysex_with_options (struct backend *backend,
+				      GByteArray * tx_msg, gint timeout,
+				      gboolean drain, gboolean free)
 {
   gint err;
   struct sysex_transfer transfer;
 
   g_mutex_lock (&backend->mutex);
 
-  backend_rx_drain (backend);
+  if (drain)
+    {
+      backend_rx_drain (backend);
+    }
 
   transfer.raw = tx_msg;
   transfer.active = TRUE;
   transfer.timeout = timeout < 0 ? SYSEX_TIMEOUT_MS : timeout;
   transfer.batch = FALSE;
   err = backend_tx_sysex (backend, &transfer);
-  free_msg (transfer.raw);
+
+  if (free)
+    {
+      free_msg (transfer.raw);
+    }
+
   if (err < 0)
     {
       err = -EIO;
@@ -658,6 +667,14 @@ backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg,
 cleanup:
   g_mutex_unlock (&backend->mutex);
   return transfer.raw;
+}
+
+GByteArray *
+backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg,
+			 gint timeout)
+{
+  return backend_tx_and_rx_sysex_with_options (backend, tx_msg, timeout, TRUE,
+					       TRUE);
 }
 
 gboolean

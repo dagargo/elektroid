@@ -31,6 +31,7 @@
 #define SDS_BYTES_PER_WORD 3
 #define SDS_ACK_WAIT_TIME_MS 1000
 #define SDS_BITS 16
+#define SDS_MAX_RETRIES 10
 
 static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
 static const guint8 SDS_ACK[] = { 0xf0, 0x7e, 0, 0x7f, 0, 0xf7 };
@@ -80,7 +81,7 @@ sds_get_download_path (struct backend *backend,
     }
   else
     {
-      snprintf (name, PATH_MAX, "%s/%d.wav", dst_dir, index);
+      snprintf (name, PATH_MAX, "%s/%03d.wav", dst_dir, index);
     }
 
   g_free (src_path_copy);
@@ -198,6 +199,10 @@ sds_tx_handshake (struct backend *backend, const guint8 * msg, guint len,
   backend_tx_sysex (backend, &transfer);
   g_mutex_unlock (&backend->mutex);
   free_msg (transfer.raw);
+  if (msg == SDS_CANCEL)
+    {
+      backend_rx_drain (backend);
+    }
 }
 
 static gint
@@ -205,7 +210,7 @@ sds_download (struct backend *backend, const gchar * path,
 	      GByteArray * output, struct job_control *control)
 {
   guint id, period, words, packet_counter, word_size, read_bytes,
-    bytes_per_word, total_words;
+    bytes_per_word, total_words, err = 0;
   gint16 sample;
   double samplerate;
   GByteArray *tx_msg, *rx_msg;
@@ -239,6 +244,13 @@ sds_download (struct backend *backend, const gchar * path,
       return -EINVAL;
     }
 
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
+  control->parts = 1;
+  control->part = 0;
+  set_job_control_progress (control, 0.0);
+
   debug_print (1,
 	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
 	       sample_info->bitdepth, bytes_per_word, word_size);
@@ -260,43 +272,51 @@ sds_download (struct backend *backend, const gchar * path,
     sds_get_bytes_value_right_just (&rx_msg->data[16], SDS_BYTES_PER_WORD);
   sample_info->looptype = rx_msg->data[19];
   control->data = sample_info;
-  control->parts = 1;
-  control->part = 0;
-  set_job_control_progress (control, 0.0);
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
 
   packet_counter = 0;
   total_words = 0;
   header_resp = TRUE;
   while (total_words < words && active)
     {
+
       gboolean ok = TRUE;
+      gint errors = 0;
       gint packet_num = header_resp ? 0 : packet_counter;
       gint next_packet_num = header_resp ? 0 : packet_counter + 1;
       next_packet_num = next_packet_num == 0x80 ? 0 : next_packet_num;
-      gint errors = 0;
-      while (errors < 10)
+
+      tx_msg = g_byte_array_new ();
+      while (1)
 	{
-	  tx_msg = g_byte_array_new ();
+	  g_byte_array_set_size (tx_msg, 0);
 	  if (ok)
 	    {
 	      g_byte_array_append (tx_msg, SDS_ACK, sizeof (SDS_ACK));
-	      tx_msg->data[4] = packet_num;
 	    }
 	  else
 	    {
 	      g_byte_array_append (tx_msg, SDS_NAK, sizeof (SDS_NAK));
-	      tx_msg->data[4] = next_packet_num;
 	    }
-	  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+	  tx_msg->data[4] = packet_num;
+	  //The sampler might reach the timeout and send more than one packet.
+	  rx_msg = backend_tx_and_rx_sysex_with_options (backend, tx_msg, -1,
+							 FALSE, FALSE);
 	  if (!rx_msg)
 	    {
-	      g_free (path_copy);
-	      sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL),
-				next_packet_num);
-	      return -EIO;
+	      if (errors < SDS_MAX_RETRIES)
+		{
+		  errors++;
+		  ok = FALSE;
+		  continue;
+		}
+	      else
+		{
+		  debug_print (1, "Too many retries...\n");
+		  sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL),
+				    next_packet_num);
+		  free_msg (tx_msg);
+		  return -EIO;
+		}
 	    }
 
 	  if (rx_msg->len == SDS_DATA_PACKET_LEN
@@ -304,7 +324,8 @@ sds_download (struct backend *backend, const gchar * path,
 	      && sds_checksum (rx_msg->data) ==
 	      rx_msg->data[SDS_DATA_PACKET_CKSUM_POS])
 	    {
-	      //Add checksum code
+	      //TODO: Add checksum code
+
 	      if (header_resp)
 		{
 		  header_resp = FALSE;
@@ -318,24 +339,30 @@ sds_download (struct backend *backend, const gchar * path,
 		    }
 		}
 
+	      errors = 0;
+	      ok = TRUE;
+
 	      break;
 	    }
 
 	  error_print ("Package %d expected. NAK!\n", next_packet_num);
+	  ok = FALSE;
 	  errors++;
 
 	  free_msg (rx_msg);
-	  ok = FALSE;
 
 	  usleep (REST_TIME_US);
 	}
+      free_msg (tx_msg);
 
-      if (errors == 10)
+      if (!ok)
 	{
 	  g_mutex_lock (&control->mutex);
 	  control->active = FALSE;
 	  g_mutex_unlock (&control->mutex);
 	  active = FALSE;
+	  err = -EIO;
+	  goto end;
 	}
 
       read_bytes = 0;
@@ -365,6 +392,7 @@ sds_download (struct backend *backend, const gchar * path,
       free_msg (rx_msg);
     }
 
+end:
   if (active)
     {
       sds_tx_handshake (backend, SDS_ACK, sizeof (SDS_ACK), packet_counter);
@@ -375,10 +403,9 @@ sds_download (struct backend *backend, const gchar * path,
       debug_print (1, "Cancelling SDS download...\n");
       sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL),
 			packet_counter);
-      backend_rx_drain (backend);
     }
 
-  return 0;
+  return err;
 }
 
 static gint
@@ -389,8 +416,7 @@ sds_upload_wait_ack (struct backend *backend, GByteArray * rx_msg,
 
   if (!rx_msg)
     {
-      err = -EIO;
-      goto end;
+      return -EIO;
     }
 
   rx_msg->data[4] = 0;
@@ -400,21 +426,27 @@ sds_upload_wait_ack (struct backend *backend, GByteArray * rx_msg,
       rx_msg = sds_rx_handshake (backend);
       if (!rx_msg)
 	{
-	  debug_print (2, "No ACK received. Sending next packet...\n");
+	  debug_print (2, "No ACK received\n");
 	  return -ETIMEDOUT;
 	}
     }
 
-  if (rx_msg->len == sizeof (SDS_ACK) && rx_msg->data[4] == packet_num)
+  if (rx_msg->len == sizeof (SDS_ACK))
     {
+      if (rx_msg->data[4] != packet_num)
+	{
+	  err = -EINVAL;
+	  goto end;
+	}
+
       rx_msg->data[4] = 0;
       if (!memcmp (rx_msg->data, SDS_NAK, sizeof (SDS_NAK)))
 	{
-	  err = -EINVAL;
+	  err = -EBADMSG;
 	}
       else if (!memcmp (rx_msg->data, SDS_CANCEL, sizeof (SDS_CANCEL)))
 	{
-	  err = -EIO;
+	  err = -ECANCELED;
 	}
       else
 	{
@@ -426,8 +458,8 @@ sds_upload_wait_ack (struct backend *backend, GByteArray * rx_msg,
       err = -EIO;
     }
 
-  free_msg (rx_msg);
 end:
+  free_msg (rx_msg);
   return err;
 }
 
@@ -542,7 +574,6 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
     {
       error_print
 	("Path name not provided properly. Proceeding without renaming...\n");
-      name = NULL;
     }
 
   g_mutex_lock (&control->mutex);
@@ -565,6 +596,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   debug_print (1, "Words: %d\n", words);
   debug_print (1, "Packets: %d\n", packets);
   frame = (gint16 *) input->data;
+
   while (i < packets && active)
     {
       gint16 *f = frame;
@@ -574,16 +606,20 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	  tx_msg = sds_get_data_packet_msg (packet_num, words, &w, &f);
 	  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
 	  err = sds_upload_wait_ack (backend, rx_msg, packet_num);
-	  if (err == -EINVAL)	//NAK packet
+	  if (err == -EBADMSG)
 	    {
+	      debug_print (2, "NAK received. Retrying...\n");
 	      continue;
 	    }
-	  else if (err == -ETIMEDOUT)	//Assuming everything is OK but the sampler has not send anything.
+	  else if (err == -ETIMEDOUT || err == -EINVAL)
 	    {
+	      debug_print (2,
+			   "No packet received or unexpectd packet number. Continuing...\n");
 	      break;
 	    }
-	  else if (err)		//CANCEL packet
+	  else if (err)
 	    {
+	      debug_print (2, "CANCEL received. Cancelling...\n");
 	      goto end;
 	    }
 
@@ -650,7 +686,7 @@ sds_next_dentry (struct item_iterator *iter)
   if (next < SDS_SAMPLE_LIMIT)
     {
       iter->item.id = next;
-      snprintf (iter->item.name, LABEL_MAX, "%d", next);
+      snprintf (iter->item.name, LABEL_MAX, "%03d", next);
       iter->item.type = ELEKTROID_FILE;
       iter->item.size = -1;
       (*((gint *) iter->data))++;
@@ -749,8 +785,7 @@ sds_handshake (struct backend *backend)
     }
   free_msg (rx_msg);
 
-  sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), 0);
-  backend_rx_drain (backend);
+  sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), 1);
 
   backend->device_desc.filesystems = FS_SAMPLES_SDS;
   backend->fs_ops = FS_SDS_OPERATIONS;
