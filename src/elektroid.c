@@ -2631,7 +2631,7 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
 
 static void
 elektroid_add_upload_task_slot (const gchar * name,
-				const gchar * src_file_path)
+				const gchar * src_file_path, gint slot)
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
@@ -2644,6 +2644,11 @@ elektroid_add_upload_task_slot (const gchar * name,
 
   if (gtk_tree_model_get_iter (model, &iter, remote_browser.dnd_motion_path))
     {
+      for (gint i = 0; i < slot; i++)
+	{
+	  gtk_tree_model_iter_next (model, &iter);
+	}
+
       item = browser_get_item (model, &iter);
 
       name_wo_ext = strdup (name);
@@ -2711,7 +2716,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 				      remote_browser.dir);
     }
 
-  for (int i = 0; uris[i] != NULL; i++)
+  for (gint i = 0; uris[i] != NULL; i++)
     {
       filename = g_filename_from_uri (uris[i], NULL, NULL);
       path_basename = strdup (filename);
@@ -2743,7 +2748,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 	    {
 	      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 		{
-		  elektroid_add_upload_task_slot (name, filename);
+		  elektroid_add_upload_task_slot (name, filename, i);
 		}
 	      else
 		{
@@ -2758,12 +2763,6 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       g_free (path_basename);
       g_free (path_dirname);
       g_free (filename);
-
-      if (widget == GTK_WIDGET (remote_browser.view) &&
-	  remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
-	{
-	  break;
-	}
     }
 
   if (load_remote)
