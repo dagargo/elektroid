@@ -25,7 +25,7 @@
 #define BACKEND_H
 
 #define BE_FILE_ICON_WAVE "elektroid-wave-symbolic"
-#define BE_FILE_ICON_DATA "elektroid-data-symbolic"
+#define BE_FILE_ICON_SEQ "elektroid-sequence-symbolic"
 #define BE_FILE_ICON_PRJ "elektroid-project-symbolic"
 #define BE_FILE_ICON_SND "elektroid-sound-symbolic"
 
@@ -122,5 +122,7 @@ gchar *backend_get_fs_ext (const struct device_desc *,
 			   const struct fs_operations *);
 
 gdouble backend_get_storage_stats_percent (struct backend_storage_stats *);
+
+void backend_destroy_data (struct backend *);
 
 #endif

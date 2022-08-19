@@ -7,7 +7,7 @@ else
 res_DATA = gui.glade gui.css elektron-devices.json
 desktop_DATA = elektroid.desktop
 metainfo_DATA = elektroid.appdata.xml
-svgicon_DATA = elektroid.svg elektroid-symbolic.svg elektroid-wave-symbolic.svg elektroid-data-symbolic.svg elektroid-project-symbolic.svg elektroid-sound-symbolic.svg
+svgicon_DATA = elektroid.svg elektroid-symbolic.svg elektroid-wave-symbolic.svg elektroid-sequence-symbolic.svg elektroid-project-symbolic.svg elektroid-sound-symbolic.svg
 endif
 
 resdir = $(datadir)/elektroid
