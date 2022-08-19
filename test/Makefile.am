@@ -8,5 +8,5 @@ EXTRA_DIST = \
 	res/devices.json
 
 AM_TESTS_ENVIRONMENT = \
-	ecli='$(abs_top_builddir)/src/elektroid-cli -f $(srcdir)/res/devices.json'; \
+	ecli='$(abs_top_builddir)/src/elektroid-cli'; \
 	export ecli;
