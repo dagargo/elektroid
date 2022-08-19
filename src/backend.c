@@ -140,13 +140,13 @@ backend_midi_handshake (struct backend *backend)
 
   backend->device_desc.id = -1;
   backend->device_desc.storage = 0;
-  backend->upgrade_os = NULL;
-  backend->get_storage_stats = NULL;
   backend->device_desc.name[0] = 0;
   backend->device_desc.alias[0] = 0;
   backend->device_name[0] = 0;
   backend->fs_ops = NULL;
   backend->destroy_data = NULL;
+  backend->upgrade_os = NULL;
+  backend->get_storage_stats = NULL;
 
   tx_msg = g_byte_array_sized_new (sizeof (MIDI_IDENTITY_REQUEST));
   g_byte_array_append (tx_msg, (guchar *) MIDI_IDENTITY_REQUEST,
@@ -200,6 +200,7 @@ backend_midi_handshake (struct backend *backend)
   else
     {
       debug_print (1, "No MIDI identity reply\n");
+      memset (&backend->midi_info, 0, sizeof (struct backend_midi_info));
     }
 }
 
@@ -812,4 +813,12 @@ backend_get_fs_ext (const struct device_desc *desc,
   gchar *ext = malloc (LABEL_MAX);
   snprintf (ext, LABEL_MAX, "%s", ops->type_ext);
   return ext;
+}
+
+void
+backend_destroy_data (struct backend *backend)
+{
+  debug_print (1, "Destroying backend data...\n");
+  g_free (backend->data);
+  backend->data = NULL;
 }

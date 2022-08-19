@@ -18,11 +18,11 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "utils.h"
-#include "backend.h"
-
 #ifndef ELEKTRON_H
 #define ELEKTRON_H
+
+#include "utils.h"
+#include "backend.h"
 
 enum elektron_fs
 {

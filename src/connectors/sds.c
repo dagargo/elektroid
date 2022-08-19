@@ -723,7 +723,7 @@ sds_sample_load (const gchar * path, GByteArray * sample,
 }
 
 static void
-print_sds (struct item_iterator *iter)
+sds_print (struct item_iterator *iter)
 {
   printf ("%c %s\n", iter->item.type, iter->item.name);
 }
@@ -741,7 +741,7 @@ static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
   .gui_name = "Samples",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = sds_read_dir,
-  .print_item = print_sds,
+  .print_item = sds_print,
   .mkdir = NULL,
   .delete = NULL,
   .rename = sds_rename,
@@ -792,7 +792,6 @@ sds_handshake (struct backend *backend)
 
   backend->device_desc.filesystems = FS_SAMPLES_SDS;
   backend->fs_ops = FS_SDS_OPERATIONS;
-  backend->upgrade_os = NULL;
 
   snprintf (backend->device_name, LABEL_MAX, "sampler (MIDI SDS)%s",
 	    !detected ? " ⚠️" : "");

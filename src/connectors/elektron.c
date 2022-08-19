@@ -26,7 +26,6 @@
 #include <libgen.h>
 #include <glib/gi18n.h>
 #include "elektron.h"
-#include "backend.h"
 #include "elektron.h"
 #include "utils.h"
 #include "sample.h"
@@ -1973,14 +1972,6 @@ end:
   return res;
 }
 
-static void
-elektron_destroy_data (struct backend *backend)
-{
-  debug_print (1, "Destroying elektron data...\n");
-  g_free (backend->data);
-  backend->data = NULL;
-}
-
 static gint
 elektron_get_storage_stats (struct backend *backend, gint type,
 			    struct backend_storage_stats *statfs)
@@ -2251,7 +2242,7 @@ elektron_handshake (struct backend *backend)
   g_free (overbridge_name);
 
   backend->fs_ops = FS_OPERATIONS;
-  backend->destroy_data = elektron_destroy_data;
+  backend->destroy_data = backend_destroy_data;
   backend->upgrade_os = elektron_upgrade_os;
   backend->get_storage_stats = elektron_get_storage_stats;
 
