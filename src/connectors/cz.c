@@ -361,6 +361,12 @@ cleanup:
   return err;
 }
 
+static void
+cz_print (struct item_iterator *iter)
+{
+  printf ("%c %ldB %s\n", iter->item.type, iter->item.size, iter->item.name);
+}
+
 static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .fs = FS_PROGRAM_CZ,
   .options =
@@ -369,7 +375,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .gui_name = "Programs",
   .gui_icon = BE_FILE_ICON_SND,
   .readdir = cz_read_dir,
-  .print_item = NULL,
+  .print_item = cz_print,
   .mkdir = NULL,
   .delete = NULL,
   .rename = NULL,
@@ -413,7 +419,6 @@ cz_handshake (struct backend *backend)
 
   backend->device_desc.filesystems = FS_PROGRAM_CZ;
   backend->fs_ops = FS_CZ_OPERATIONS;
-  backend->upgrade_os = NULL;
   snprintf (backend->device_name, LABEL_MAX, "Casio CZ-101");
 
 end:
