@@ -575,7 +575,10 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
-  common_slot_get_id_name_from_path (path, &id, NULL);
+  if (common_slot_get_id_name_from_path (path, &id, NULL))
+    {
+      return -EBADSLT;
+    }
 
   g_mutex_lock (&control->mutex);
   active = control->active;
@@ -734,7 +737,7 @@ static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
   .fs = FS_SAMPLES_SDS,
   .options = FS_OPTION_SHOW_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
-  .name = "sds",
+  .name = "sample",
   .gui_name = "Samples",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = sds_read_dir,

@@ -2040,11 +2040,12 @@ elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
 
   parser = json_parser_new ();
 
-  devices_filename = getenv("ELEKTROID_ELEKTRON_JSON");
+  devices_filename = getenv ("ELEKTROID_ELEKTRON_JSON");
 
-  if (!devices_filename) {
-    devices_filename = get_expanded_dir (CONF_DIR DEVICES_FILE);
-  }
+  if (!devices_filename)
+    {
+      devices_filename = get_expanded_dir (CONF_DIR DEVICES_FILE);
+    }
 
   if (!json_parser_load_from_file (parser, devices_filename, &error))
     {

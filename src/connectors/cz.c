@@ -365,7 +365,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .fs = FS_PROGRAM_CZ,
   .options =
     FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_NAME,
-  .name = "cz101",
+  .name = "program",
   .gui_name = "Programs",
   .gui_icon = BE_FILE_ICON_SND,
   .readdir = cz_read_dir,
@@ -399,7 +399,7 @@ cz_handshake (struct backend *backend)
   GByteArray *tx_msg, *rx_msg;
 
   tx_msg = cz_get_program_dump_msg (CZ101_PANEL_ID);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
   if (!rx_msg)
     {
       return -EIO;

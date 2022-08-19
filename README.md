@@ -61,18 +61,7 @@ $ mock -r fedora-$rel-x86_64 --no-clean --rebuild /var/lib/mock/fedora-$rel-x86_
 
 `elektroid-cli` brings the same functionality as `elektroid` to the command line.
 
-There are device commands and filesystem commands. The latter have the form `a-b` where `a` is a command and `b` is a filesystem, (e.g., `ls-project`, `download-sound`, `mkdir-sample`). Notice that the filesystem is always in the singular form and some older commands are deprecated but kept for compatibility reasons although there are not documented here.
-
-These are the available filesystems:
-
-* `sample`
-* `raw`
-* `preset`
-* `data`
-* `project`
-* `sound`
-
-Raw and data are intended to interface directly with the filesystems provided by the devices so the downloaded or uploaded files are **not** compatible with Elektron Transfer formats. Preset is a particular instance of raw and so are project and sound but regarding data. Thus, raw and data filesystems should be used only for testing and are **not** available in the GUI.
+There are device commands and filesystem commands. The latter have the form `a-b-c` where `a` is a connector, `b` is a filesystem and `c` is the command, (e.g., `elektron-project-ls`, `cz-program-ls`, `sds-sample-download`). Notice that the filesystem is always in the singular form. As of version 2.2, **older commands have been removed**.
 
 These are the available commands:
 
@@ -86,9 +75,9 @@ These are the available commands:
 * `ul` or `upload`
 * `dl` or `download`
 
-Keep in mind that not every filesystem implements all the commands. For instance, samples can not be swapped.
+Keep in mind that not every filesystem implements all the commands. For instance, Elektron samples can not be swapped.
 
-Provided paths must always be prepended with the device id and a colon (':') e.g., `0:/incoming`.
+Provided paths must always be prepended with the device id and a colon (e.g., `0:/incoming`). In the slot mode filesystems, (these are the most typically used in most devices), items are addressed by number and destination paths take the form `path:name` (e.g., `0:/0:bass`) when uploading.
 
 ### Device commands
 
@@ -121,56 +110,69 @@ RAM               64.00MiB        13.43MiB        50.57MiB     20.98%
 $ elektroid-cli upgrade Digitakt_OS1.30.syx 0
 ```
 
-### Sample, raw and preset commands
+### Elektron conector
 
-* `ls-sample`
+These are the available filesystems for the elektron connector:
+
+* `sample`
+* `raw`
+* `preset`
+* `data`
+* `project`
+* `sound`
+
+Raw and data are intended to interface directly with the filesystems provided by the devices so the downloaded or uploaded files are **not** compatible with Elektron Transfer formats. Preset is a particular instance of raw and so are project and sound but regarding data. Thus, raw and data filesystems should be used only for testing and are **not** available in the GUI.
+
+#### Sample, raw and preset commands
+
+* `elektron-sample-ls`
 
 It only works for directories. Notice that the first column is the file type, the second is the size, the third is an internal cksum and the last one is the sample name.
 
 ```
-$ elektroid-cli ls-sample 0:/
+$ elektroid-cli elektron-sample-ls 0:/
 D              0B 00000000 drum machines
 F       630.34KiB f8711cd9 saw
 F         1.29MiB 0bbc22bd square
 ```
 
-* `mkdir-sample`
+* `elektron-sample-mkdir`
 
 ```
-$ elektroid-cli mkdir-sample 0:/samples
+$ elektroid-cli elektron-sample-mkdir 0:/samples
 ```
 
-* `rmdir-sample`
+* `elektron-sample-rmdir`
 
 ```
-$ elektroid-cli rmdir-sample 0:/samples
+$ elektroid-cli elektron-sample-rmdir 0:/samples
 ```
 
-* `ul-sample`
+* `elektron-sample-ul`
 
 ```
-$ elektroid-cli ul-sample square.wav 0:/
+$ elektroid-cli elektron-sample-ul square.wav 0:/
 ```
 
-* `dl-sample`
+* `elektron-sample-dl`
 
 ```
-$ elektroid-cli dl-sample 0:/square
+$ elektroid-cli elektron-sample-dl 0:/square
 ```
 
-* `mv-sample`
+* `elektron-sample-mv`
 
 ```
-$ elektroid-cli mv-sample 0:/square 0:/sample
+$ elektroid-cli elektron-sample-mv 0:/square 0:/sample
 ```
 
-* `rm-sample`
+* `elektron-sample-rm`
 
 ```
-$ elektroid-cli rm-sample 0:/sample
+$ elektroid-cli elektron-sample-rm 0:/sample
 ```
 
-### Data, sound and project commands
+#### Data, sound and project commands
 
 There are a few things to clarify first.
 
@@ -180,71 +182,71 @@ There are a few things to clarify first.
 
 Here are the commands.
 
-* `ls-data`
+* `elektron-data-ls`
 
 It only works for directories. Notice that the first column is the file type, the second is the index, the third is the permissons in hexadecimal, the fourth indicates if the data in valid, the fifth indicates if it has metadatam, the sixth is the size and the last one is the item name.
 
 Permissions are 16 bits values but only 6 are used from bit 2 to bit 7 both included. From LSB to MSB, this permissions are read, write, clear, copy, swap, and move.
 
 ```
-$ elektroid-cli ls-data 0:/
+$ elektroid-cli elektron-data-ls 0:/
 D  -1 0000 0 0         0B projects
 D  -1 0000 0 0         0B soundbanks
 ```
 
 ```
-$ elektroid-cli ls-data 0:/soundbanks/D
+$ elektroid-cli elektron-data-ls 0:/soundbanks/D
 F   1 0012 1 1       160B KICK
 F   2 0012 1 1       160B SNARE
 ```
 
-* `cp-data`
+* `elektron-data-cp`
 
 ```
-$ elektroid-cli cp-data 0:/soundbanks/D/1 0:/soundbanks/D/3
-$ elektroid-cli ls-data 0:/soundbanks/D
+$ elektroid-cli elektron-data-cp 0:/soundbanks/D/1 0:/soundbanks/D/3
+$ elektroid-cli elektron-data-ls 0:/soundbanks/D
 F   1 0012 1 1       160B KICK
 F   2 0012 1 1       160B SNARE
 F   3 0012 1 1       160B KICK
 ```
 
-* `sw-data`
+* `elektron-data-sw`
 
 ```
-$ elektroid-cli sw-data 0:/soundbanks/D/2 0:/soundbanks/D/3
-$ elektroid-cli ls-data 0:/soundbanks/D
+$ elektroid-cli elektron-data-sw 0:/soundbanks/D/2 0:/soundbanks/D/3
+$ elektroid-cli elektron-data-ls 0:/soundbanks/D
 F   1 0012 1 1       160B KICK
 F   2 0012 1 1       160B KICK
 F   3 0012 1 1       160B SNARE
 ```
 
-* `mv-data`
+* `elektron-data-mv`
 
 ```
-$ elektroid-cli mv-data 0:/soundbanks/D/3 0:/soundbanks/D/1
-$ elektroid-cli ls-data 0:/soundbanks/D
+$ elektroid-cli elektron-data-mv 0:/soundbanks/D/3 0:/soundbanks/D/1
+$ elektroid-cli elektron-data-ls 0:/soundbanks/D
 F   1 0012 1 1       160B SNARE
 F   2 0012 1 1       160B KICK
 ```
 
-* `cl-data`
+* `elektron-data-cl`
 
 ```
-$ elektroid-cli cl-data 0:/soundbanks/D/1
-$ elektroid-cli ls-data 0:/soundbanks/D
+$ elektroid-cli elektron-data-cl 0:/soundbanks/D/1
+$ elektroid-cli elektron-data-ls 0:/soundbanks/D
 F   2 0012 1 1       160B KICK
 ```
 
-* `dl-data`
+* `elektron-data-dl`
 
 ```
-$ elektroid-cli dl-data 0:/soundbanks/D/1
+$ elektroid-cli elektron-data-dl 0:/soundbanks/D/1
 ```
 
-* `ul-data`
+* `elektron-data-ul`
 
 ```
-$ elektroid-cli ul-data sound 0:/soundbanks/D
+$ elektroid-cli elektron-data-ul sound 0:/soundbanks/D
 ```
 
 ## Adding and reconfiguring Elektron devices

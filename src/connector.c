@@ -35,22 +35,22 @@ static const struct connector CONNECTOR_ELEKTRON = {
   .name = "elektron",
 };
 
-static const struct connector CONNECTOR_SDS = {
-  .handshake = sds_handshake,
-  .name = "sds"
-};
-
 static const struct connector CONNECTOR_CZ = {
   .handshake = cz_handshake,
   .name = "cz"
 };
 
+static const struct connector CONNECTOR_SDS = {
+  .handshake = sds_handshake,
+  .name = "sds"
+};
+
 static const struct connector *CONNECTORS[] = {
-  &CONNECTOR_ELEKTRON, &CONNECTOR_SDS, &CONNECTOR_CZ, NULL
+  &CONNECTOR_ELEKTRON, &CONNECTOR_CZ, &CONNECTOR_SDS, NULL
 };
 
 gint
-connector_init (struct backend *backend, gint card)
+connector_init (struct backend *backend, gint card, const gchar * conn_name)
 {
   const struct connector **connector;
   int err = backend_init (backend, card);
@@ -63,12 +63,25 @@ connector_init (struct backend *backend, gint card)
   while (*connector)
     {
       debug_print (1, "Testing %s connector...\n", (*connector)->name);
-      if (!(*connector)->handshake (backend))
+      if ((!conn_name || !strcmp (conn_name, (*connector)->name)))
 	{
-	  debug_print (1, "Using %s connector...\n", (*connector)->name);
-	  return 0;
+	  (*connector)->handshake (backend);
+	  break;
+	}
+      else
+	{
+	  if (!(*connector)->handshake (backend))
+	    {
+	      break;
+	    }
 	}
       connector++;
+    }
+
+  if (backend->fs_ops)
+    {
+      debug_print (1, "Using %s connector...\n", (*connector)->name);
+      return 0;
     }
 
   debug_print (1, "Device not recognized\n");
