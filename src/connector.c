@@ -21,8 +21,9 @@
 #include "backend.h"
 #include "connector.h"
 #include "connectors/elektron.h"
-#include "connectors/sds.h"
+#include "connectors/microbrute.h"
 #include "connectors/cz.h"
+#include "connectors/sds.h"
 
 struct connector
 {
@@ -32,7 +33,12 @@ struct connector
 
 static const struct connector CONNECTOR_ELEKTRON = {
   .handshake = elektron_handshake,
-  .name = "elektron",
+  .name = "elektron"
+};
+
+static const struct connector CONNECTOR_MICROBRUTE = {
+  .handshake = microbrute_handshake,
+  .name = "microbrute"
 };
 
 static const struct connector CONNECTOR_CZ = {
@@ -46,7 +52,8 @@ static const struct connector CONNECTOR_SDS = {
 };
 
 static const struct connector *CONNECTORS[] = {
-  &CONNECTOR_ELEKTRON, &CONNECTOR_CZ, &CONNECTOR_SDS, NULL
+  &CONNECTOR_ELEKTRON, &CONNECTOR_MICROBRUTE, &CONNECTOR_CZ, &CONNECTOR_SDS,
+  NULL
 };
 
 gint
@@ -63,10 +70,13 @@ connector_init (struct backend *backend, gint card, const gchar * conn_name)
   while (*connector)
     {
       debug_print (1, "Testing %s connector...\n", (*connector)->name);
-      if ((!conn_name || !strcmp (conn_name, (*connector)->name)))
+      if (conn_name)
 	{
-	  (*connector)->handshake (backend);
-	  break;
+	  if (!strcmp (conn_name, (*connector)->name))
+	    {
+	      (*connector)->handshake (backend);
+	      break;
+	    }
 	}
       else
 	{
