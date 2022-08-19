@@ -20,6 +20,7 @@
 
 #include <libgen.h>
 #include "cz.h"
+#include "common.h"
 
 #define CZ101_PROGRAM_LEN 263
 #define CZ101_PROGRAM_LEN_FIXED 264
@@ -51,16 +52,6 @@ struct cz_type_iterator_data
   gint type;
   struct backend *backend;
 };
-
-static gchar *
-cz_get_upload_path (struct backend *backend,
-		    struct item_iterator *remote_iter,
-		    const struct fs_operations *ops, const gchar * dst_dir,
-		    const gchar * src_path, gint32 * next_index)
-{
-  //In the SLOT mode, dst_dir includes the index, ':' and the item name.
-  return strdup (dst_dir);
-}
 
 static gchar *
 cz_get_download_path (struct backend *backend,
@@ -392,7 +383,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .load = load_file,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
-  .get_upload_path = cz_get_upload_path,
+  .get_upload_path = common_slot_get_upload_path,
   .get_download_path = cz_get_download_path,
   .type_ext = "syx"
 };

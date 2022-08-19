@@ -17,7 +17,8 @@ endif
 elektroid_common_sources = connector.c connector.h \
 sample.c sample.h utils.c utils.h backend.c backend.h \
 connectors/sds.c connectors/sds.h connectors/elektron.c connectors/elektron.h \
-connectors/cz.c connectors/cz.h connectors/package.c connectors/package.h
+connectors/cz.c connectors/cz.h connectors/package.c connectors/package.h \
+connectors/common.c connectors/common.h
 
 elektroid_cli_SOURCES = $(elektroid_common_sources) elektroid-cli.c
 

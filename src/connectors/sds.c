@@ -22,6 +22,7 @@
 #include <string.h>
 #include "sample.h"
 #include "sds.h"
+#include "common.h"
 
 #define SDS_SAMPLE_LIMIT 1000
 #define SDS_DATA_PACKET_LEN 127
@@ -45,16 +46,6 @@ static const guint8 SDS_SAMPLE_NAME_HEADER[] =
   { 0xf0, 0x7e, 0, 0x5, 0x3, 0, 0, 0 };
 static const guint8 SDS_DUMP_HEADER[] =
   { 0xf0, 0x7e, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xf7 };
-
-static gchar *
-sds_get_upload_path (struct backend *backend,
-		     struct item_iterator *remote_iter,
-		     const struct fs_operations *ops, const gchar * dst_dir,
-		     const gchar * src_path, gint32 * next_index)
-{
-  //In SLOT mode, dst_dir includes the index, ':' and the item name.
-  return strdup (dst_dir);
-}
 
 static gchar *
 sds_get_download_path (struct backend *backend,
@@ -546,11 +537,34 @@ sds_get_rename_sample_msg (guint id, gchar * name)
 }
 
 static gint
+sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
+{
+  GByteArray *tx_msg, *rx_msg;
+  guint id;
+  gint err;
+  gchar *name;
+
+  err = common_slot_get_id_name_from_path (dst, &id, &name);
+  if (err)
+    {
+      return err;
+    }
+
+  tx_msg = sds_get_rename_sample_msg (id, name);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
+  if (rx_msg)
+    {
+      free_msg (rx_msg);
+    }
+
+  return 0;
+}
+
+static gint
 sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	    struct job_control *control)
 {
   GByteArray *tx_msg, *rx_msg;
-  gchar *path_copy, *index_name, *name;
   gint16 *frame;
   gboolean active;
   guint word, words, words_per_packet, id, packets;
@@ -561,20 +575,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
-  path_copy = strdup (path);
-  index_name = basename (path_copy);
-  id = (gint) strtol (index_name, &name, 10);
-  if (strncmp
-      (name, SAMPLE_ID_NAME_SEPARATOR,
-       strlen (SAMPLE_ID_NAME_SEPARATOR)) == 0)
-    {
-      name++;			//Skip ':'
-    }
-  else
-    {
-      error_print
-	("Path name not provided properly. Proceeding without renaming...\n");
-    }
+  common_slot_get_id_name_from_path (path, &id, NULL);
 
   g_mutex_lock (&control->mutex);
   active = control->active;
@@ -642,15 +643,9 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       i++;
     }
 
-  if (*name && active)
+  if (active)
     {
-      tx_msg = sds_get_rename_sample_msg (id, name);
-      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg,
-					SYSEX_TIMEOUT_GUESS_MS);
-      if (rx_msg)
-	{
-	  free_msg (rx_msg);
-	}
+      sds_rename (backend, path, path);
     }
 
 end:
@@ -668,7 +663,6 @@ end:
 	}
     }
 
-  g_free (path_copy);
   return err;
 }
 
@@ -747,7 +741,7 @@ static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
   .print_item = print_sds,
   .mkdir = NULL,
   .delete = NULL,
-  .rename = NULL,
+  .rename = sds_rename,
   .move = NULL,
   .copy = NULL,
   .clear = NULL,
@@ -758,7 +752,7 @@ static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
   .load = sds_sample_load,
   .save = sample_save,
   .get_ext = backend_get_fs_ext,
-  .get_upload_path = sds_get_upload_path,
+  .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path,
   .type_ext = "wav"
 };
