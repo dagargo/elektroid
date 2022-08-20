@@ -234,9 +234,7 @@ static int
 cli_info (int argc, gchar * argv[], int optind)
 {
   gchar *device_path;
-  gchar *comma;
   const gchar *name;
-  gint fs;
 
   if (optind == argc)
     {
@@ -254,17 +252,14 @@ cli_info (int argc, gchar * argv[], int optind)
     }
 
   printf ("%s; filesystems=", backend.device_name);
-  comma = "";
-  fs = 1;
-  while (fs < BE_MAX_BACKEND_FSS)
+
+  for (gint fs = 1; fs <= MAX_BACKEND_FSS; fs <<= 1)
     {
       if (backend.device_desc.filesystems & fs)
 	{
 	  name = backend_get_fs_operations (&backend, fs, NULL)->name;
-	  printf ("%s%s", comma, name);
-	  comma = ",";
+	  printf ("%s%s", fs == 1 ? "" : ",", name);
 	}
-      fs <<= 1;
     }
   printf ("\n");
 
@@ -305,7 +300,7 @@ cli_df (int argc, gchar * argv[], int optind)
 	  "Used", "Available", "Use%");
 
   res = 0;
-  for (storage = 1; storage < BE_MAX_BACKEND_STORAGE; storage <<= 1)
+  for (storage = 1; storage < MAX_BACKEND_STORAGE; storage <<= 1)
     {
       if (backend.device_desc.storage & storage)
 	{

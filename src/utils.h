@@ -33,6 +33,9 @@
 
 #define AUDIO_SAMPLE_RATE 48000
 
+#define MAX_BACKEND_FSS (sizeof (gint32) * 8)
+#define MAX_BACKEND_STORAGE MAX_BACKEND_FSS
+
 #define debug_print(level, format, ...) if (level <= debug_level) fprintf(stderr, "DEBUG:" __FILE__ ":%d:(%s): " format, __LINE__, __FUNCTION__, ## __VA_ARGS__)
 #define error_print(format, ...) fprintf(stderr, "%sERROR:" __FILE__ ":%d:(%s): " format "%s", isatty(fileno(stderr)) ? "\x1b[31m" : "", __LINE__, __FUNCTION__, ## __VA_ARGS__, isatty(fileno(stderr)) ? "\x1b[m" : "")
 
@@ -100,8 +103,8 @@ struct device_desc
   guint32 id;
   gchar name[LABEL_MAX];
   gchar alias[LABEL_MAX];
-  guint8 filesystems;
-  guint8 storage;
+  guint32 filesystems;
+  guint32 storage;
 };
 
 enum sysex_transfer_status
@@ -156,7 +159,7 @@ typedef gint (*t_sysex_transfer) (struct backend *, struct sysex_transfer *);
 
 struct fs_operations
 {
-  gint fs;
+  gint32 fs;
   guint32 options;
   const gchar *name;
   const gchar *gui_name;

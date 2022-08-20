@@ -380,7 +380,7 @@ elektroid_update_statusbar ()
       statfss = g_string_new (NULL);
       if (backend.get_storage_stats)
 	{
-	  for (gint i = 0, storage = 1; i < BE_MAX_BACKEND_STORAGE;
+	  for (gint i = 0, storage = 1; i < MAX_BACKEND_STORAGE;
 	       i++, storage <<= 1)
 	    {
 	      if (backend.device_desc.storage & storage)
@@ -2512,7 +2512,7 @@ elektroid_fill_fs_combo ()
 {
   gtk_list_store_clear (fs_list_store);
 
-  for (gint fs = 1, i = 0; i < BE_MAX_BACKEND_FSS; fs = fs << 1, i++)
+  for (gint fs = 1, i = 0; i < MAX_BACKEND_FSS; fs = fs << 1, i++)
     {
       if (backend.device_desc.filesystems & fs)
 	{

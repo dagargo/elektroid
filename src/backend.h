@@ -29,9 +29,6 @@
 #define BE_FILE_ICON_PRJ "elektroid-project-symbolic"
 #define BE_FILE_ICON_SND "elektroid-sound-symbolic"
 
-#define BE_MAX_BACKEND_FSS (sizeof (int) * 8)
-#define BE_MAX_BACKEND_STORAGE BE_MAX_BACKEND_FSS
-
 #define REST_TIME_US 50000
 #define SYSEX_TIMEOUT_MS 5000
 #define SYSEX_TIMEOUT_GUESS_MS 100	//When the request is not implemented, 5 s is too much.
