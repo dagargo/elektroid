@@ -2028,12 +2028,17 @@ elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
   JsonReader *reader;
   gchar *devices_filename;
   GError *error = NULL;
+  const gchar *elektroid_elektron_json;
 
   parser = json_parser_new ();
 
-  devices_filename = getenv ("ELEKTROID_ELEKTRON_JSON");
+  elektroid_elektron_json = getenv ("ELEKTROID_ELEKTRON_JSON");
 
-  if (!devices_filename)
+  if (elektroid_elektron_json)
+    {
+      devices_filename = strdup (elektroid_elektron_json);
+    }
+  else
     {
       devices_filename = get_expanded_dir (CONF_DIR DEVICES_FILE);
     }
@@ -2201,9 +2206,8 @@ elektron_handshake (struct backend *backend)
       return -ENODEV;
     }
 
-  tx_msg =
-    elektron_new_msg (SOFTWARE_VERSION_REQUEST,
-		      sizeof (SOFTWARE_VERSION_REQUEST));
+  tx_msg = elektron_new_msg (SOFTWARE_VERSION_REQUEST,
+			     sizeof (SOFTWARE_VERSION_REQUEST));
   rx_msg = elektron_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
