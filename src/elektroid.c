@@ -2871,16 +2871,19 @@ elektroid_drag_motion_list (GtkWidget * widget,
 	  gtk_tree_view_set_drag_dest_row (remote_browser.view, path,
 					   GTK_TREE_VIEW_DROP_INTO_OR_BEFORE);
 	}
-
-      selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
-      if (gtk_tree_selection_path_is_selected (selection, path))
+      else
 	{
-	  if (browser->dnd_timeout_function_id)
+	  selection =
+	    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+	  if (gtk_tree_selection_path_is_selected (selection, path))
 	    {
-	      g_source_remove (browser->dnd_timeout_function_id);
-	      browser->dnd_timeout_function_id = 0;
+	      if (browser->dnd_timeout_function_id)
+		{
+		  g_source_remove (browser->dnd_timeout_function_id);
+		  browser->dnd_timeout_function_id = 0;
+		}
+	      return TRUE;
 	    }
-	  return TRUE;
 	}
 
       model =
