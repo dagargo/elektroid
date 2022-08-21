@@ -2636,7 +2636,10 @@ elektroid_add_upload_task_slot (const gchar * name,
     {
       for (gint i = 0; i < slot; i++)
 	{
-	  gtk_tree_model_iter_next (model, &iter);
+	  if (!gtk_tree_model_iter_next (model, &iter))
+	    {
+	      return;
+	    }
 	}
 
       browser_set_item (model, &iter, &item);
