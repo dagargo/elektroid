@@ -24,24 +24,21 @@ gint
 browser_sort_by_name (GtkTreeModel * model,
 		      GtkTreeIter * a, GtkTreeIter * b, gpointer data)
 {
-  struct item *itema;
-  struct item *itemb;
+  struct item itema;
+  struct item itemb;
   gint ret = 0;
 
-  itema = browser_get_item (model, a);
-  itemb = browser_get_item (model, b);
+  browser_set_item (model, a, &itema);
+  browser_set_item (model, b, &itemb);
 
-  if (itema->type == itemb->type)
+  if (itema.type == itemb.type)
     {
-      ret = g_utf8_collate (itema->name, itemb->name);
+      ret = g_utf8_collate (itema.name, itemb.name);
     }
   else
     {
-      ret = itema->type > itemb->type;
+      ret = itema.type > itemb.type;
     }
-
-  g_free (itema);
-  g_free (itemb);
 
   return ret;
 }
@@ -50,25 +47,21 @@ gint
 browser_sort_by_id (GtkTreeModel * model, GtkTreeIter * a, GtkTreeIter * b,
 		    gpointer data)
 {
-  struct item *itema;
-  struct item *itemb;
+  struct item itema;
+  struct item itemb;
   gint ret = 0;
 
-  itema = browser_get_item (model, a);
-  itemb = browser_get_item (model, b);
+  browser_set_item (model, a, &itema);
+  browser_set_item (model, b, &itemb);
 
-  ret = itema->id > itemb->id;
-
-  g_free (itema);
-  g_free (itemb);
+  ret = itema.id > itemb.id;
 
   return ret;
 }
 
-struct item *
-browser_get_item (GtkTreeModel * model, GtkTreeIter * iter)
+void
+browser_set_item (GtkTreeModel * model, GtkTreeIter * iter, struct item *item)
 {
-  struct item *item = malloc (sizeof (struct item));
   gchar *name;
   gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_TYPE_FIELD, &item->type,
 		      BROWSER_LIST_STORE_NAME_FIELD, &name,
@@ -76,7 +69,6 @@ browser_get_item (GtkTreeModel * model, GtkTreeIter * iter)
 		      BROWSER_LIST_STORE_INDEX_FIELD, &item->id, -1);
   snprintf (item->name, LABEL_MAX, "%s", name);
   g_free (name);
-  return item;
 }
 
 void
@@ -145,29 +137,27 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 			GtkTreeViewColumn * column, gpointer data)
 {
   GtkTreeIter iter;
-  struct item *item;
+  struct item item;
   struct browser *browser = data;
   GtkTreeModel *model = GTK_TREE_MODEL (gtk_tree_view_get_model
 					(browser->view));
 
   gtk_tree_model_get_iter (model, &iter, path);
-  item = browser_get_item (model, &iter);
+  browser_set_item (model, &iter, &item);
 
-  if (item->type == ELEKTROID_DIR)
+  if (item.type == ELEKTROID_DIR)
     {
       if (strcmp (browser->dir, "/"))
 	{
 	  strcat (browser->dir, "/");
 	}
-      strcat (browser->dir, item->name);
+      strcat (browser->dir, item.name);
       browser_load_dir (browser);
       if (browser->notify_dir_change)
 	{
 	  browser->notify_dir_change (browser);
 	}
     }
-
-  g_free (item);
 }
 
 gint
