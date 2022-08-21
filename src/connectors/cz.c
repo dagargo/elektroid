@@ -22,23 +22,23 @@
 #include "cz.h"
 #include "common.h"
 
-#define CZ101_PROGRAM_LEN 263
-#define CZ101_PROGRAM_LEN_FIXED 264
-#define CZ101_MAX_PROGRAMS 16
-#define CZ101_PRESET_PREFIX "CZ-101"
-#define CZ101_PROGRAM_HEADER_ID 6
-#define CZ101_PROGRAM_HEADER_OFFSET 6
-#define CZ101_MEM_TYPE_OFFSET 0x20
-#define CZ101_PANEL_ID 0x60
-#define CZ101_FIRST_CARTRIDGE_ID 0x40
+#define CZ_PROGRAM_LEN 263
+#define CZ_PROGRAM_LEN_FIXED 264
+#define CZ_MAX_PROGRAMS 16
+#define CZ_PRESET_PREFIX "CZ-101"
+#define CZ_PROGRAM_HEADER_ID 6
+#define CZ_PROGRAM_HEADER_OFFSET 6
+#define CZ_MEM_TYPE_OFFSET 0x20
+#define CZ_PANEL_ID 0x60
+#define CZ_FIRST_CARTRIDGE_ID 0x40
 
 static const char *CZ_MEM_TYPES[] =
   { "preset", "internal", "cartridge", NULL };
 
-static const guint8 CZ101_PROGRAM_REQUEST[] =
+static const guint8 CZ_PROGRAM_REQUEST[] =
   { 0xf0, 0x44, 0x00, 0x00, 0x70, 0x10, 0x00, 0x70, 0x31, 0xf7 };
 
-static const guint8 CZ101_PROGRAM_HEADER[] =
+static const guint8 CZ_PROGRAM_HEADER[] =
   { 0xf0, 0x44, 0x00, 0x00, 0x70, 0x20, 0x00 };
 
 enum cz_fs
@@ -68,14 +68,13 @@ cz_get_download_path (struct backend *backend,
       gchar *dir = dirname (src_dir_copy);
       gint index = atoi (filename);
       snprintf (name, PATH_MAX, "%s/%s %s %02d.syx", dst_dir,
-		CZ101_PRESET_PREFIX, &dir[1], index);
+		CZ_PRESET_PREFIX, &dir[1], index);
       g_free (src_path_copy);
       g_free (src_dir_copy);
     }
   else
     {
-      snprintf (name, PATH_MAX, "%s/%s panel.syx", dst_dir,
-		CZ101_PRESET_PREFIX);
+      snprintf (name, PATH_MAX, "%s/%s panel.syx", dst_dir, CZ_PRESET_PREFIX);
     }
   return name;
 }
@@ -83,11 +82,10 @@ cz_get_download_path (struct backend *backend,
 static GByteArray *
 cz_get_program_dump_msg (guint8 id)
 {
-  GByteArray *tx_msg =
-    g_byte_array_sized_new (sizeof (CZ101_PROGRAM_REQUEST));
-  g_byte_array_append (tx_msg, CZ101_PROGRAM_REQUEST,
-		       sizeof (CZ101_PROGRAM_REQUEST));
-  tx_msg->data[CZ101_PROGRAM_HEADER_OFFSET] = id;
+  GByteArray *tx_msg = g_byte_array_sized_new (sizeof (CZ_PROGRAM_REQUEST));
+  g_byte_array_append (tx_msg, CZ_PROGRAM_REQUEST,
+		       sizeof (CZ_PROGRAM_REQUEST));
+  tx_msg->data[CZ_PROGRAM_HEADER_OFFSET] = id;
   return tx_msg;
 }
 
@@ -106,7 +104,7 @@ cz_next_dentry_root (struct item_iterator *iter)
       if (data->next == 2)
 	{
 	  GByteArray *tx_msg =
-	    cz_get_program_dump_msg (CZ101_FIRST_CARTRIDGE_ID);
+	    cz_get_program_dump_msg (CZ_FIRST_CARTRIDGE_ID);
 	  GByteArray *rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg,
 							SYSEX_TIMEOUT_GUESS_MS);
 	  data->next++;
@@ -125,10 +123,10 @@ cz_next_dentry_root (struct item_iterator *iter)
 
   if (data->next == 3)
     {
-      iter->item.id = CZ101_PANEL_ID;
+      iter->item.id = CZ_PANEL_ID;
       snprintf (iter->item.name, LABEL_MAX, "panel");
       iter->item.type = ELEKTROID_FILE;
-      iter->item.size = CZ101_PROGRAM_LEN_FIXED;
+      iter->item.size = CZ_PROGRAM_LEN_FIXED;
       data->next++;
       return 0;
     }
@@ -143,15 +141,15 @@ cz_next_dentry (struct item_iterator *iter)
 {
   struct cz_type_iterator_data *data = iter->data;
 
-  if (data->next >= CZ101_MAX_PROGRAMS)
+  if (data->next >= CZ_MAX_PROGRAMS)
     {
       return -ENOENT;
     }
 
-  iter->item.id = data->next + data->type * CZ101_MEM_TYPE_OFFSET;
+  iter->item.id = data->next + data->type * CZ_MEM_TYPE_OFFSET;
   snprintf (iter->item.name, LABEL_MAX, "%02d", data->next + 1);
   iter->item.type = ELEKTROID_FILE;
-  iter->item.size = CZ101_PROGRAM_LEN_FIXED;
+  iter->item.size = CZ_PROGRAM_LEN_FIXED;
   data->next++;
 
   return 0;
@@ -254,12 +252,12 @@ cz_download (struct backend *backend, const gchar * path,
 	}
 
       basename_copy = strdup (path);
-      id = atoi (basename (basename_copy)) - 1 + type * CZ101_MEM_TYPE_OFFSET;
+      id = atoi (basename (basename_copy)) - 1 + type * CZ_MEM_TYPE_OFFSET;
       g_free (basename_copy);
     }
   else
     {
-      id = CZ101_PANEL_ID;
+      id = CZ_PANEL_ID;
     }
 
   tx_msg = cz_get_program_dump_msg (id);
@@ -269,17 +267,16 @@ cz_download (struct backend *backend, const gchar * path,
       return -EIO;
     }
   len = rx_msg->len;
-  if (len != CZ101_PROGRAM_LEN)
+  if (len != CZ_PROGRAM_LEN)
     {
       err = -EINVAL;
       goto cleanup;
     }
 
-  g_byte_array_append (output, CZ101_PROGRAM_HEADER,
-		       sizeof (CZ101_PROGRAM_HEADER));
-  g_byte_array_append (output, &rx_msg->data[CZ101_PROGRAM_HEADER_OFFSET],
-		       CZ101_PROGRAM_LEN - CZ101_PROGRAM_HEADER_OFFSET);
-  output->data[CZ101_PROGRAM_HEADER_ID] = id;
+  g_byte_array_append (output, CZ_PROGRAM_HEADER, sizeof (CZ_PROGRAM_HEADER));
+  g_byte_array_append (output, &rx_msg->data[CZ_PROGRAM_HEADER_OFFSET],
+		       CZ_PROGRAM_LEN - CZ_PROGRAM_HEADER_OFFSET);
+  output->data[CZ_PROGRAM_HEADER_ID] = id;
 
   g_mutex_lock (&control->mutex);
   active = control->active;
@@ -320,7 +317,7 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
     }
 
   name_copy = strdup (path);
-  id = atoi (basename (name_copy)) - 1 + mem_type * CZ101_MEM_TYPE_OFFSET;
+  id = atoi (basename (name_copy)) - 1 + mem_type * CZ_MEM_TYPE_OFFSET;
   g_free (name_copy);
 
   g_mutex_lock (&backend->mutex);
@@ -331,7 +328,7 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
 
   transfer.raw = g_byte_array_sized_new (input->len);
   g_byte_array_append (transfer.raw, input->data, input->len);
-  transfer.raw->data[CZ101_PROGRAM_HEADER_ID] = id;
+  transfer.raw->data[CZ_PROGRAM_HEADER_ID] = id;
 
   transfer.active = TRUE;
   transfer.timeout = SYSEX_TIMEOUT_MS;
@@ -404,14 +401,14 @@ cz_handshake (struct backend *backend)
   gint len, err = 0;
   GByteArray *tx_msg, *rx_msg;
 
-  tx_msg = cz_get_program_dump_msg (CZ101_PANEL_ID);
+  tx_msg = cz_get_program_dump_msg (CZ_PANEL_ID);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
   if (!rx_msg)
     {
       return -EIO;
     }
   len = rx_msg->len;
-  if (len != CZ101_PROGRAM_LEN)
+  if (len != CZ_PROGRAM_LEN)
     {
       err = -EIO;
       goto end;
