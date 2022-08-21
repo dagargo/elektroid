@@ -31,6 +31,7 @@
 #define CZ_MEM_TYPE_OFFSET 0x20
 #define CZ_PANEL_ID 0x60
 #define CZ_FIRST_CARTRIDGE_ID 0x40
+#define CZ_PANEL_PATH "/panel"
 
 static const char *CZ_MEM_TYPES[] =
   { "preset", "internal", "cartridge", NULL };
@@ -239,7 +240,7 @@ cz_download (struct backend *backend, const gchar * path,
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
-  if (strcmp (path, "/panel"))
+  if (strcmp (path, CZ_PANEL_PATH))
     {
       dirname_copy = strdup (path);
       dir = dirname (dirname_copy);
@@ -310,15 +311,24 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
   dir_copy = strdup (path);
   dir = dirname (dir_copy);
   mem_type = get_mem_type (&dir[1]);
-  if (mem_type < 0)
+  if (mem_type >= 0)
     {
-      err = -EIO;
-      goto cleanup;
+      name_copy = strdup (path);
+      id = atoi (basename (name_copy)) - 1 + mem_type * CZ_MEM_TYPE_OFFSET;
+      g_free (name_copy);
     }
-
-  name_copy = strdup (path);
-  id = atoi (basename (name_copy)) - 1 + mem_type * CZ_MEM_TYPE_OFFSET;
-  g_free (name_copy);
+  else
+    {
+      if (strncmp (path, CZ_PANEL_PATH, strlen (CZ_PANEL_PATH)))
+	{
+	  err = -EIO;
+	  goto cleanup;
+	}
+      else
+	{
+	  id = CZ_PANEL_ID;
+	}
+    }
 
   g_mutex_lock (&backend->mutex);
 
@@ -342,7 +352,6 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
   g_mutex_lock (&control->mutex);
   active = control->active;
   g_mutex_unlock (&control->mutex);
-
   if (active)
     {
       set_job_control_progress (control, 1.0);
