@@ -291,7 +291,7 @@ cleanup:
   return -1;
 }
 
-static ssize_t
+ssize_t
 backend_tx_raw (struct backend *backend, const guint8 * data, guint len)
 {
   ssize_t tx_len;
