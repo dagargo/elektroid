@@ -81,11 +81,13 @@ Provided paths must always be prepended with the device id and a colon (e.g., `0
 
 ### Device commands
 
-* `ld` or `ls-devices`, list compatible devices
+* `ld` or `ls-devices`, list all MIDI devices with input and output
 
 ```
 $ elektroid-cli ld
-0 Elektron Digitakt MIDI 1
+0: hw:2,0,0 Elektron Digitakt MIDI 1
+1: hw:4,0,0 padKONTROL MIDI 1
+2: hw:4,0,1 padKONTROL MIDI 2
 ```
 
 * `info` or `info-device`, show device info including device filesystems
