@@ -118,10 +118,10 @@ static const struct option ELEKTROID_OPTIONS[] = {
   {NULL, 0, NULL, 0}
 };
 
-static gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
+static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
   { "wav", "ogg", "aiff", "flac", NULL };
 
-static GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
+static const GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING},
   {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
@@ -129,7 +129,7 @@ static GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
   {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
 };
 
-static GtkTargetEntry TARGET_ENTRIES_LOCAL_SRC[] = {
+static const GtkTargetEntry TARGET_ENTRIES_LOCAL_SRC[] = {
   {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING},
   {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
@@ -137,7 +137,7 @@ static GtkTargetEntry TARGET_ENTRIES_LOCAL_SRC[] = {
   {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
 };
 
-static GtkTargetEntry TARGET_ENTRIES_REMOTE_DST[] = {
+static const GtkTargetEntry TARGET_ENTRIES_REMOTE_DST[] = {
   {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING},
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
@@ -145,40 +145,24 @@ static GtkTargetEntry TARGET_ENTRIES_REMOTE_DST[] = {
   {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
 };
 
-static GtkTargetEntry TARGET_ENTRIES_REMOTE_DST_SDS[] = {
+static const GtkTargetEntry TARGET_ENTRIES_REMOTE_DST_SLOT[] = {
   {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING},
   {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
 };
 
-static GtkTargetEntry TARGET_ENTRIES_REMOTE_SRC[] = {
+static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SRC[] = {
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING},
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
    TARGET_STRING}
 };
 
-static GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
-  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP,
-   TARGET_STRING},
-  {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP,
-   TARGET_STRING},
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP,
-   TARGET_STRING}
+static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
+  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP, TARGET_STRING},
+  {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING},
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING}
 };
-
-static guint TARGET_ENTRIES_LOCAL_DST_N =
-G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_DST);
-static guint TARGET_ENTRIES_LOCAL_SRC_N =
-G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_SRC);
-static guint TARGET_ENTRIES_REMOTE_DST_N =
-G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST);
-static guint TARGET_ENTRIES_REMOTE_DST_SDS_N =
-G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST_SDS);
-static guint TARGET_ENTRIES_REMOTE_SRC_N =
-G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC);
-static guint TARGET_ENTRIES_UP_BUTTON_DST_N =
-G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST);
 
 static struct browser remote_browser;
 static struct browser local_browser;
@@ -262,7 +246,7 @@ elektroid_set_file_extensions_for_fs (gchar ** extensions[], gint sel_fs)
 
   if (!ops || ops->options & FS_OPTION_SHOW_AUDIO_PLAYER)
     {
-      gchar **ext = ELEKTROID_AUDIO_LOCAL_EXTS;
+      const gchar **ext = ELEKTROID_AUDIO_LOCAL_EXTS;
       int known_ext = 0;
       while (*ext)
 	{
@@ -2125,9 +2109,8 @@ elektroid_download_task (gpointer userdata)
   debug_print (1, "Remote path: %s\n", transfer.src);
   debug_print (1, "Local path: %s\n", transfer.dst);
 
-  res =
-    transfer.fs_ops->download (remote_browser.backend, transfer.src, array,
-			       &transfer.control);
+  res = transfer.fs_ops->download (remote_browser.backend,
+				   transfer.src, array, &transfer.control);
   g_idle_add (elektroid_check_backend_bg, NULL);
 
   g_mutex_lock (&transfer.control.mutex);
@@ -2479,14 +2462,16 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
     {
       gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
-			 GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_REMOTE_DST_SDS,
-			 TARGET_ENTRIES_REMOTE_DST_SDS_N, GDK_ACTION_COPY);
+			 GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_REMOTE_DST_SLOT,
+			 G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST_SLOT),
+			 GDK_ACTION_COPY);
     }
   else
     {
       gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
 			 GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_REMOTE_DST,
-			 TARGET_ENTRIES_REMOTE_DST_N, GDK_ACTION_COPY);
+			 G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST),
+			 GDK_ACTION_COPY);
     }
 
   if (remote_browser.fs_ops->options & FS_OPTION_SHOW_AUDIO_PLAYER)
@@ -3213,12 +3198,14 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_drag_leave_up), &remote_browser);
 
   gtk_drag_source_set ((GtkWidget *) remote_browser.view, GDK_BUTTON1_MASK,
-		       TARGET_ENTRIES_REMOTE_SRC, TARGET_ENTRIES_REMOTE_SRC_N,
+		       TARGET_ENTRIES_REMOTE_SRC,
+		       G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC),
 		       GDK_ACTION_COPY);
   gtk_drag_dest_set ((GtkWidget *) remote_browser.up_button,
 		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
 		     TARGET_ENTRIES_UP_BUTTON_DST,
-		     TARGET_ENTRIES_UP_BUTTON_DST_N, GDK_ACTION_COPY);
+		     G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST),
+		     GDK_ACTION_COPY);
 
   local_browser = (struct browser)
   {
@@ -3280,15 +3267,18 @@ elektroid_run (int argc, char *argv[])
   elektroid_set_browser_options (&local_browser);
 
   gtk_drag_source_set ((GtkWidget *) local_browser.view, GDK_BUTTON1_MASK,
-		       TARGET_ENTRIES_LOCAL_SRC, TARGET_ENTRIES_LOCAL_SRC_N,
+		       TARGET_ENTRIES_LOCAL_SRC,
+		       G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_SRC),
 		       GDK_ACTION_MOVE);
   gtk_drag_dest_set ((GtkWidget *) local_browser.view, GTK_DEST_DEFAULT_ALL,
-		     TARGET_ENTRIES_LOCAL_DST, TARGET_ENTRIES_LOCAL_DST_N,
+		     TARGET_ENTRIES_LOCAL_DST,
+		     G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_DST),
 		     GDK_ACTION_COPY);
   gtk_drag_dest_set ((GtkWidget *) local_browser.up_button,
 		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
 		     TARGET_ENTRIES_UP_BUTTON_DST,
-		     TARGET_ENTRIES_UP_BUTTON_DST_N, GDK_ACTION_COPY);
+		     G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST),
+		     GDK_ACTION_COPY);
 
   audio_init (&audio, elektroid_set_volume_callback, elektroid_redraw_sample);
 
