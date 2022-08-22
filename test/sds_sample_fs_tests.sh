@@ -8,9 +8,9 @@ echo "Using device $DEVICE..."
 echo "Testing ls..."
 $ecli sds-sample-ls $DEVICE:/ | head
 echo '[...]'
-files=$($ecli sds-sample-ls $DEVICE:/ | wc -l)
+files=$($ecli sds-sample-ls $DEVICE:/)
 [ $? -ne 0 ] && exit 1
-[ $files -ne 1000 ] && exit 0
+[ $(echo "$files" | wc -l) -ne 1000 ] && exit 1
 
 echo "Testing upload..."
 $ecli sds-sample-ul $srcdir/res/silence.wav $DEVICE:/1
