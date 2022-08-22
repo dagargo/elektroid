@@ -398,14 +398,14 @@ end:
 }
 
 static gint
-sds_upload_wait_ack (struct backend *backend, GByteArray * rx_msg,
-		     guint packet_num)
+sds_upload_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
+			    guint packet_num)
 {
   gint err;
-
+  GByteArray *rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
-      return -EIO;
+      return -ETIMEDOUT;
     }
 
   rx_msg->data[4] = 0;
@@ -562,7 +562,7 @@ static gint
 sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	    struct job_control *control)
 {
-  GByteArray *tx_msg, *rx_msg;
+  GByteArray *tx_msg;
   gint16 *frame;
   gboolean active;
   guint word, words, words_per_packet, id, packets;
@@ -583,8 +583,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   g_mutex_unlock (&control->mutex);
 
   tx_msg = sds_get_header_msg (id, input, sample_info);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-  err = sds_upload_wait_ack (backend, rx_msg, 0);
+  err = sds_upload_tx_and_wait_ack (backend, tx_msg, 0);
   if (err)
     {
       goto end;
@@ -606,8 +605,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       while (1)
 	{
 	  tx_msg = sds_get_data_packet_msg (packet_num, words, &w, &f);
-	  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-	  err = sds_upload_wait_ack (backend, rx_msg, packet_num);
+	  err = sds_upload_tx_and_wait_ack (backend, tx_msg, packet_num);
 	  if (err == -EBADMSG)
 	    {
 	      debug_print (2, "NAK received. Retrying...\n");
@@ -765,34 +763,23 @@ static const struct fs_operations *FS_SDS_OPERATIONS[] = {
 gint
 sds_handshake (struct backend *backend)
 {
-  gboolean detected;
-  GByteArray *tx_msg, *rx_msg;
-
-  tx_msg = g_byte_array_sized_new (sizeof (SDS_SAMPLE_REQUEST));
-  //If there is no sample loaded, this fails. If it fails, we just assume the user selection is right.
-  g_byte_array_append (tx_msg, SDS_SAMPLE_REQUEST,
-		       sizeof (SDS_SAMPLE_REQUEST));
-  //In some devices, sample 0 is the clipboard.
-  tx_msg->data[4] = 1;
-  tx_msg->data[5] = 0;
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
-  if (rx_msg)
+  //We send a dump header for the highest number allowed. Hopefully, this will fail on every device.
+  GByteArray *tx_msg = g_byte_array_sized_new (sizeof (SDS_DUMP_HEADER));
+  g_byte_array_append (tx_msg, SDS_DUMP_HEADER, sizeof (SDS_DUMP_HEADER));
+  tx_msg->data[4] = 0x7f;
+  tx_msg->data[5] = 0x7f;
+  //In case we receive anything, there is a MIDI SDS device listening.
+  if (sds_upload_tx_and_wait_ack (backend, tx_msg, 0) == -ETIMEDOUT)
     {
-      free_msg (rx_msg);
-      sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), 1);
-      detected = TRUE;
+      return -EIO;
     }
-  else
-    {
-      debug_print (1, "No sampler (MIDI SDS) found. Assuming device...\n");
-      detected = FALSE;
-    }
+  //However, we cancel the upload just in case the sampler sent an ACK and is waiting for data.
+  sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), 0);
 
   backend->device_desc.filesystems = FS_SAMPLES_SDS;
   backend->fs_ops = FS_SDS_OPERATIONS;
 
-  snprintf (backend->device_name, LABEL_MAX, "sampler (MIDI SDS)%s",
-	    !detected ? " ⚠️" : "");
+  snprintf (backend->device_name, LABEL_MAX, "sampler (MIDI SDS)");
 
   return 0;
 }
