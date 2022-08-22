@@ -205,11 +205,10 @@ backend_midi_handshake (struct backend *backend)
 }
 
 gint
-backend_init (struct backend *backend, gint card)
+backend_init (struct backend *backend, const gchar * id)
 {
   snd_rawmidi_params_t *params;
   gint err;
-  gchar name[32];
 
   backend->inputp = NULL;
   backend->outputp = NULL;
@@ -218,20 +217,11 @@ backend_init (struct backend *backend, gint card)
   backend->cache = NULL;
   backend->buffer = g_malloc (sizeof (guint8) * BUFF_SIZE);
 
-  if (card < 0)
-    {
-      debug_print (1, "Invalid card\n");
-      err = -EINVAL;
-      goto cleanup;
-    }
-
-  sprintf (name, "hw:%d", card);
-
-  debug_print (1, "Initializing backend to '%s'...\n", name);
+  debug_print (1, "Initializing backend to '%s'...\n", id);
 
   if ((err =
        snd_rawmidi_open (&backend->inputp, &backend->outputp,
-			 name, SND_RAWMIDI_NONBLOCK | SND_RAWMIDI_SYNC)) < 0)
+			 id, SND_RAWMIDI_NONBLOCK | SND_RAWMIDI_SYNC)) < 0)
     {
       error_print ("Error while opening MIDI port: %s\n", g_strerror (err));
       goto cleanup;
@@ -684,8 +674,9 @@ backend_check (struct backend *backend)
   return (backend->inputp && backend->outputp);
 }
 
-static struct backend_system_device *
-backend_get_system_device (snd_ctl_t * ctl, int card, int device)
+static void
+backend_get_system_subdevices (snd_ctl_t * ctl, int card, int device,
+			       GArray * devices)
 {
   snd_rawmidi_info_t *info;
   const gchar *name;
@@ -722,45 +713,58 @@ backend_get_system_device (snd_ctl_t * ctl, int card, int device)
   subs = subs_in > subs_out ? subs_in : subs_out;
   if (!subs)
     {
-      return NULL;
+      return;
     }
 
   if (subs_in <= 0 || subs_out <= 0)
     {
-      return NULL;
+      return;
     }
 
-  sub = 0;
-  snd_rawmidi_info_set_stream (info, sub < subs_in ?
-			       SND_RAWMIDI_STREAM_INPUT :
-			       SND_RAWMIDI_STREAM_OUTPUT);
-  snd_rawmidi_info_set_subdevice (info, sub);
-  err = snd_ctl_rawmidi_info (ctl, info);
-  if (err < 0)
+  for (sub = 0; sub < subs; sub++)
     {
-      error_print ("Cannot get rawmidi information %d:%d:%d: %s\n",
-		   card, device, sub, snd_strerror (err));
-      return NULL;
+      snd_rawmidi_info_set_subdevice (info, sub);
+
+      snd_rawmidi_info_set_stream (info, SND_RAWMIDI_STREAM_INPUT);
+      err = snd_ctl_rawmidi_info (ctl, info);
+      if (err < 0)
+	{
+	  debug_print (1,
+		       "Cannot get rawmidi input information %d:%d:%d: %s\n",
+		       card, device, sub, snd_strerror (err));
+	  continue;
+	}
+
+      snd_rawmidi_info_set_stream (info, SND_RAWMIDI_STREAM_OUTPUT);
+      err = snd_ctl_rawmidi_info (ctl, info);
+      if (err < 0)
+	{
+	  debug_print (1,
+		       "Cannot get rawmidi output information %d:%d:%d: %s\n",
+		       card, device, sub, snd_strerror (err));
+	  continue;
+	}
+
+      name = snd_rawmidi_info_get_name (info);
+      sub_name = snd_rawmidi_info_get_subdevice_name (info);
+
+      debug_print (1, "Adding hw:%d (%s) %s...\n", card, name, sub_name);
+      backend_system_device = malloc (sizeof (struct backend_system_device));
+      snprintf (backend_system_device->id, LABEL_MAX, "hw:%d,%d,%d", card,
+		device, sub);
+      snprintf (backend_system_device->name, LABEL_MAX, "%s", sub_name);
+
+      g_array_append_vals (devices, backend_system_device, 1);
     }
-
-  name = snd_rawmidi_info_get_name (info);
-  sub_name = snd_rawmidi_info_get_subdevice_name (info);
-
-  debug_print (1, "Adding hw:%d (%s) %s...\n", card, name, sub_name);
-  backend_system_device = malloc (sizeof (struct backend_system_device));
-  backend_system_device->card = card;
-  backend_system_device->name = strdup (sub_name);
-  return backend_system_device;
 }
 
 static void
-backend_fill_card_elektron_devices (gint card, GArray * devices)
+backend_fill_card_devices (gint card, GArray * devices)
 {
   snd_ctl_t *ctl;
   gchar name[32];
   gint device;
   gint err;
-  struct backend_system_device *backend_system_device;
 
   sprintf (name, "hw:%d", card);
   if ((err = snd_ctl_open (&ctl, name, 0)) < 0)
@@ -772,11 +776,7 @@ backend_fill_card_elektron_devices (gint card, GArray * devices)
   device = -1;
   while (!(err = snd_ctl_rawmidi_next_device (ctl, &device)) && device >= 0)
     {
-      backend_system_device = backend_get_system_device (ctl, card, device);
-      if (backend_system_device)
-	{
-	  g_array_append_vals (devices, backend_system_device, 1);
-	}
+      backend_get_system_subdevices (ctl, card, device, devices);
     }
   if (err < 0)
     {
@@ -796,7 +796,7 @@ backend_get_system_devices ()
   card = -1;
   while (!(err = snd_card_next (&card)) && card >= 0)
     {
-      backend_fill_card_elektron_devices (card, devices);
+      backend_fill_card_devices (card, devices);
     }
   if (err < 0)
     {

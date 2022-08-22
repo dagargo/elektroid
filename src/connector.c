@@ -57,10 +57,11 @@ static const struct connector *CONNECTORS[] = {
 };
 
 gint
-connector_init (struct backend *backend, gint card, const gchar * conn_name)
+connector_init (struct backend *backend, const gchar * midi_id,
+		const gchar * conn_name)
 {
   const struct connector **connector;
-  int err = backend_init (backend, card);
+  int err = backend_init (backend, midi_id);
   if (err)
     {
       return err;

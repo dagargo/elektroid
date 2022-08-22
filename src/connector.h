@@ -23,6 +23,7 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
-gint connector_init (struct backend *backend, gint card, const gchar * name);
+gint connector_init (struct backend *backend, const gchar * midi_id,
+		     const gchar * name);
 
 #endif

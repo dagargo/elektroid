@@ -28,8 +28,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
   <!-- interface-copyright David Garc\303\255a Go\303\261i -->
   <object class="GtkListStore" id="devices_list_store">
     <columns>
-      <!-- column-name card -->
-      <column type="guint"/>
+      <!-- column-name id -->
+      <column type="gchararray"/>
       <!-- column-name name -->
       <column type="gchararray"/>
     </columns>

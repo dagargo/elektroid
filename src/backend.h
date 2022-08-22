@@ -82,11 +82,11 @@ struct backend
 
 struct backend_system_device
 {
-  gchar *name;
-  guint card;
+  gchar name[LABEL_MAX];
+  gchar id[LABEL_MAX];
 };
 
-gint backend_init (struct backend *, gint);
+gint backend_init (struct backend *, const gchar *);
 
 void backend_destroy (struct backend *);
 

@@ -70,7 +70,7 @@ cli_ld ()
   for (i = 0; i < devices->len; i++)
     {
       device = g_array_index (devices, struct backend_system_device, i);
-      printf ("%d %s\n", device.card, device.name);
+      printf ("%d: %s %s\n", i, device.id, device.name);
     }
 
   g_array_free (devices, TRUE);
@@ -81,8 +81,13 @@ cli_ld ()
 static gint
 cli_connect (const gchar * device_path)
 {
-  gint card = atoi (device_path);
-  return connector_init (&backend, card, connector);
+  gint err, id = (gint) atoi (device_path);
+  struct backend_system_device device;
+  GArray *devices = backend_get_system_devices ();
+  device = g_array_index (devices, struct backend_system_device, id);
+  err = connector_init (&backend, device.id, connector);
+  g_array_free (devices, TRUE);
+  return err;
 }
 
 static int

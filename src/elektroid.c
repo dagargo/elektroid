@@ -48,7 +48,7 @@
 
 enum device_list_store_columns
 {
-  DEVICES_LIST_STORE_CARD_FIELD,
+  DEVICES_LIST_STORE_ID_FIELD,
   DEVICES_LIST_STORE_NAME_FIELD
 };
 
@@ -325,8 +325,8 @@ elektroid_load_devices (gboolean auto_select)
     {
       device = g_array_index (devices, struct backend_system_device, i);
       gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
-					 DEVICES_LIST_STORE_CARD_FIELD,
-					 device.card,
+					 DEVICES_LIST_STORE_ID_FIELD,
+					 device.id,
 					 DEVICES_LIST_STORE_NAME_FIELD,
 					 device.name, -1);
     }
@@ -2515,8 +2515,7 @@ static void
 elektroid_set_device (GtkWidget * object, gpointer data)
 {
   GtkTreeIter iter;
-  GValue cardv = G_VALUE_INIT;
-  guint card;
+  gchar *id;
 
   if (gtk_combo_box_get_active_iter (devices_combo, &iter) == TRUE)
     {
@@ -2525,12 +2524,10 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 	  backend_destroy (&backend);
 	}
 
-      gtk_tree_model_get_value (GTK_TREE_MODEL (devices_list_store),
-				&iter, DEVICES_LIST_STORE_CARD_FIELD, &cardv);
+      gtk_tree_model_get (GTK_TREE_MODEL (devices_list_store), &iter,
+			  DEVICES_LIST_STORE_ID_FIELD, &id, -1);
 
-      card = g_value_get_uint (&cardv);
-
-      if (connector_init (&backend, card, NULL) < 0)
+      if (connector_init (&backend, id, NULL) < 0)
 	{
 	  error_print ("Error while connecting\n");
 	}
@@ -2539,6 +2536,8 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 	{
 	  elektroid_fill_fs_combo ();
 	}
+
+      g_free (id);
     }
 }
 
