@@ -315,8 +315,6 @@ sds_download (struct backend *backend, const gchar * path,
 	      && sds_checksum (rx_msg->data) ==
 	      rx_msg->data[SDS_DATA_PACKET_CKSUM_POS])
 	    {
-	      //TODO: Add checksum code
-
 	      if (header_resp)
 		{
 		  header_resp = FALSE;
