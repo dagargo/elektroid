@@ -26,7 +26,7 @@
 #ifndef SAMPLE_H
 #define SAMPLE_H
 
-#define LOAD_BUFFER_LEN 4800	// In guint16 frames; 9600 B; 0.1 ms
+#define LOAD_BUFFER_LEN 9600	// In guint16 frames; 0.2 ms
 
 gint sample_get_wave (GByteArray *, GByteArray *, struct job_control *);
 
