@@ -506,11 +506,6 @@ cleanup:
 
   sf_close (sndfile);
 
-  if (!sample->len)
-    {
-      g_free (control->data);
-    }
-
   return sample->len > 0 ? 0 : -1;
 }
 
