@@ -1217,7 +1217,7 @@ elektroid_load_sample (gpointer path)
     {
       debug_print (1,
 		   "Sample length: %d, loop start at %d; loop end at %d; sample rate: %d.\n",
-		   audio.sample->len, sample_info->loopstart,
+		   audio.sample->len >> 1, sample_info->loopstart,
 		   sample_info->loopend, sample_info->samplerate);
     }
 
