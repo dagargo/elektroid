@@ -186,6 +186,7 @@ sds_tx_handshake (struct backend *backend, const guint8 * msg, guint len,
   g_mutex_lock (&backend->mutex);
   backend_tx_sysex (backend, &transfer);
   g_mutex_unlock (&backend->mutex);
+  usleep (REST_TIME_US);
   free_msg (transfer.raw);
   if (msg == SDS_CANCEL)
     {
@@ -770,6 +771,7 @@ sds_handshake (struct backend *backend)
     {
       return -EIO;
     }
+  usleep (REST_TIME_US);
   //However, we cancel the upload just in case the sampler sent an ACK and is waiting for data.
   sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), 0);
 
