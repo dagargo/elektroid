@@ -110,6 +110,7 @@ struct elektroid_add_upload_task_data
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (gdouble);
+static void elektroid_cancel_all_tasks (GtkWidget *, gpointer);
 
 static const struct option ELEKTROID_OPTIONS[] = {
   {"local-directory", 1, NULL, 'l'},
@@ -480,10 +481,22 @@ elektroid_check_backend_bg (gpointer data)
 }
 
 static void
+elektroid_cancel_all_tasks_and_wait ()
+{
+  elektroid_cancel_all_tasks (NULL, NULL);
+  //In this case, the active waiting can not be avoided as the user has cancelled the operation.
+  while (transfer.status == RUNNING)
+    {
+      usleep (50000);
+    }
+}
+
+static void
 browser_refresh_devices (GtkWidget * object, gpointer data)
 {
   if (backend_check (&backend))
     {
+      elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (&backend);
       elektroid_check_backend ();
     }
@@ -1856,6 +1869,7 @@ elektroid_run_next_task (gpointer data)
       gtk_tree_view_set_cursor (GTK_TREE_VIEW (task_tree_view), path, NULL,
 				FALSE);
       gtk_tree_path_free (path);
+      transfer.status = RUNNING;
       transfer.control.active = TRUE;
       transfer.control.callback = elektroid_update_progress;
       transfer.src = src;
@@ -2516,6 +2530,8 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 {
   GtkTreeIter iter;
   gchar *id;
+
+  elektroid_cancel_all_tasks_and_wait ();
 
   if (gtk_combo_box_get_active_iter (devices_combo, &iter) == TRUE)
     {
