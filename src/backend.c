@@ -322,6 +322,7 @@ backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
   guchar *b;
   gint res = 0;
 
+  transfer->active = TRUE;
   transfer->status = SENDING;
 
   b = transfer->raw->data;
@@ -497,6 +498,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
   guint8 *b;
   gint res = 0;
 
+  transfer->active = TRUE;
   transfer->status = WAITING;
   transfer->raw = g_byte_array_sized_new (BUFF_SIZE);
 
@@ -631,7 +633,6 @@ backend_tx_and_rx_sysex_with_options (struct backend *backend,
     }
 
   transfer.raw = tx_msg;
-  transfer.active = TRUE;
   transfer.timeout = timeout < 0 ? SYSEX_TIMEOUT_MS : timeout;
   transfer.batch = FALSE;
   err = backend_tx_sysex (backend, &transfer);
@@ -647,7 +648,6 @@ backend_tx_and_rx_sysex_with_options (struct backend *backend,
       goto cleanup;
     }
 
-  transfer.active = TRUE;
   err = backend_rx_sysex (backend, &transfer);
   if (err < 0)
     {

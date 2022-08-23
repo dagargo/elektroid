@@ -340,8 +340,6 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
   g_byte_array_append (transfer.raw, input->data, input->len);
   transfer.raw->data[CZ_PROGRAM_HEADER_ID] = id;
 
-  transfer.active = TRUE;
-  transfer.timeout = SYSEX_TIMEOUT_MS;
   err = backend_tx_sysex (backend, &transfer);
   free_msg (transfer.raw);
   if (err < 0)
@@ -361,8 +359,8 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
       err = -ECANCELED;
     }
 
-  g_mutex_unlock (&backend->mutex);
 cleanup:
+  g_mutex_unlock (&backend->mutex);
   g_free (dir_copy);
   return err;
 }

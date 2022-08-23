@@ -1006,9 +1006,7 @@ elektron_tx (struct backend *backend, const GByteArray * msg)
   memcpy (msg->data, &aux, sizeof (guint16));
   data->seq++;
 
-  transfer.active = TRUE;
   transfer.raw = elektron_msg_to_raw (msg);
-
   res = backend_tx_sysex (backend, &transfer);
   if (!res)
     {
@@ -1028,7 +1026,6 @@ elektron_rx (struct backend *backend, gint timeout)
   GByteArray *msg;
   struct sysex_transfer transfer;
 
-  transfer.active = TRUE;
   transfer.timeout = timeout < 0 ? SYSEX_TIMEOUT_MS : timeout;
   transfer.batch = FALSE;
 
@@ -1054,7 +1051,6 @@ elektron_rx (struct backend *backend, gint timeout)
 	}
       free_msg (transfer.raw);
 
-      transfer.active = TRUE;
       if (backend_rx_sysex (backend, &transfer))
 	{
 	  return NULL;

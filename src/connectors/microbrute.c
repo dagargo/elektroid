@@ -253,7 +253,6 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
   guint8 *step;
 
   transfer.raw = microbrute_set_sequence_request_msg (backend, id, offset);
-  transfer.active = TRUE;
 
   step = &transfer.raw->data[MICROBRUTE_SEQUENCE_RESPONSE_DATA_POS];
   while (steps < 32 && *pos < total)
@@ -306,6 +305,7 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
     }
   transfer.raw->data[MICROBRUTE_SEQUENCE_RESPONSE_LEN_POS] = steps;
 
+  //This doesn't need synchronized access as the caller provices this already.
   err = backend_tx_sysex (backend, &transfer);
   free_msg (transfer.raw);
 

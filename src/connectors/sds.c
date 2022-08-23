@@ -167,7 +167,6 @@ static GByteArray *
 sds_rx_handshake (struct backend *backend)
 {
   struct sysex_transfer transfer;
-  transfer.active = TRUE;
   transfer.timeout = SDS_ACK_WAIT_TIME_MS;
   transfer.batch = FALSE;
   g_mutex_lock (&backend->mutex);
@@ -181,8 +180,6 @@ sds_tx_handshake (struct backend *backend, const guint8 * msg, guint len,
 		  guint8 packet_num)
 {
   struct sysex_transfer transfer;
-  transfer.active = TRUE;
-  transfer.timeout = SDS_ACK_WAIT_TIME_MS;
   transfer.raw = g_byte_array_sized_new (len);
   g_byte_array_append (transfer.raw, msg, len);
   transfer.raw->data[4] = packet_num;
