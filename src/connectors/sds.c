@@ -455,6 +455,7 @@ sds_get_header_msg (guint id, GByteArray * input,
 		    struct sample_info *sample_info)
 {
   guint period = 1.0e9 / sample_info->samplerate;
+  guint frames = input->len >> 1;	//bytes to words (frames)
   GByteArray *tx_msg = g_byte_array_sized_new (sizeof (SDS_DUMP_HEADER));
 
   g_byte_array_append (tx_msg, SDS_DUMP_HEADER, sizeof (SDS_DUMP_HEADER));
@@ -470,12 +471,15 @@ sds_get_header_msg (guint id, GByteArray * input,
 
   sds_set_bytes_value_right_just (&tx_msg->data[7], SDS_BYTES_PER_WORD,
 				  period);
-  sds_set_bytes_value_right_just (&tx_msg->data[10], SDS_BYTES_PER_WORD, input->len >> 1);	//bytes to words (frames)
+  sds_set_bytes_value_right_just (&tx_msg->data[10], SDS_BYTES_PER_WORD,
+				  frames);
   sds_set_bytes_value_right_just (&tx_msg->data[13], SDS_BYTES_PER_WORD,
 				  sample_info->loopstart);
   sds_set_bytes_value_right_just (&tx_msg->data[16], SDS_BYTES_PER_WORD,
 				  sample_info->loopend);
-  tx_msg->data[19] = sample_info->looptype;
+  tx_msg->data[19] = (sample_info->loopstart == sample_info->loopend
+		      && sample_info->loopstart ==
+		      frames - 1) ? 0x7f : sample_info->looptype;
 
   return tx_msg;
 }
