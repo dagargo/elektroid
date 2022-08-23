@@ -1216,7 +1216,7 @@ elektroid_redraw_sample (gdouble percent)
 }
 
 static gpointer
-elektroid_load_sample (gpointer path)
+elektroid_load_sample (gpointer data)
 {
   struct sample_info *sample_info = (struct sample_info *) audio.control.data;
 
@@ -1226,7 +1226,7 @@ elektroid_load_sample (gpointer path)
 
   sample_info->samplerate = AUDIO_SAMPLE_RATE;
   if (sample_load_with_frames
-      (path, audio.sample, &audio.control, &audio.frames) >= 0)
+      (audio.path, audio.sample, &audio.control, &audio.frames) >= 0)
     {
       debug_print (1,
 		   "Sample length: %d, loop start at %d; loop end at %d; sample rate: %d.\n",
@@ -1238,17 +1238,15 @@ elektroid_load_sample (gpointer path)
   audio.control.active = FALSE;
   g_mutex_unlock (&audio.control.mutex);
 
-  free (path);
-
   return NULL;
 }
 
 static void
-elektroid_start_load_thread (gchar * path)
+elektroid_start_load_thread ()
 {
   debug_print (1, "Creating load thread...\n");
 
-  load_thread = g_thread_new ("load_sample", elektroid_load_sample, path);
+  load_thread = g_thread_new ("load_sample", elektroid_load_sample, NULL);
 
   g_timeout_add (100, elektroid_update_ui_on_load, NULL);
 }
@@ -1324,36 +1322,31 @@ elektroid_local_check_selection (gpointer data)
 
   if (count == 0)
     {
-      audio.name[0] = 0;
+      audio.path[0] = 0;
     }
   else if (count == 1)
     {
       browser_set_selected_row_iter (&local_browser, &iter);
       model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
       browser_set_item (model, &iter, &item);
-      if (!strcmp (audio.name, item.name))
+
+      sample_path = chain_path (local_browser.dir, item.name);
+      if (item.type == ELEKTROID_FILE && strcmp (audio.path, sample_path))
 	{
-	  goto end;
+	  strcpy (audio.path, sample_path);
 	}
+      g_free (sample_path);
     }
 
   if (audio_fs)
     {
-      audio_stop (&audio, TRUE);
       elektroid_stop_load_thread ();
-      audio_reset_sample (&audio);
+      audio_stop (&audio, TRUE);
       gtk_widget_queue_draw (waveform_draw_area);
-
-      if (item.type == ELEKTROID_FILE && strcmp (item.name, audio.name))
-	{
-	  sample_path = chain_path (local_browser.dir, item.name);
-	  elektroid_start_load_thread (sample_path);
-	  strcpy (audio.name, item.name);
-	}
-
+      audio_reset_sample (&audio);
+      elektroid_start_load_thread ();
     }
 
-end:
   audio_controls = (item.type == ELEKTROID_FILE) && audio_fs;
   elektroid_sample_controls_set_sensitive (audio_controls);
   gtk_widget_set_sensitive (local_open_menuitem, audio_controls);
@@ -2003,7 +1996,8 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
 }
 
 static void
-elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
+elektroid_add_upload_task_path (const gchar * rel_path,
+				const gchar * src_dir,
 				const gchar * dst_dir,
 				struct item_iterator *remote_dir_iter,
 				gint32 * next_idx)

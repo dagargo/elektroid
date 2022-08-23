@@ -267,8 +267,7 @@ audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
   audio->index = PA_INVALID_INDEX;
   audio->volume_change_callback = volume_change_callback;
   audio->control.callback = load_progress_callback;
-  audio->name = malloc (PATH_MAX);
-  audio->name[0] = 0;
+  audio->path[0] = 0;
   audio->control.data = g_malloc (sizeof (struct sample_info));
 
   if (pa_context_connect (audio->context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
@@ -313,8 +312,6 @@ audio_destroy (struct audio *audio)
       pa_threaded_mainloop_free (audio->mainloop);
       audio->mainloop = NULL;
     }
-
-  g_free (audio->name);
 
   g_free (audio->control.data);
 
