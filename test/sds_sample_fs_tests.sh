@@ -21,7 +21,7 @@ $ecli sds-sample-ul $srcdir/res/silence.wav $DEVICE:/1:silence
 [ $? -ne 0 ] && exit 1
 
 echo "Testing download..."
-$ecli -v sds-sample-download $DEVICE:/1
+$ecli sds-sample-download $DEVICE:/1
 [ $? -ne 0 ] && exit 1
 actual_cksum="$(cksum 001.wav | awk '{print $1}')"
 rm 001.wav

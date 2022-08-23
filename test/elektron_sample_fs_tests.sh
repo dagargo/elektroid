@@ -47,14 +47,14 @@ $ecli elektron-sample-ul-sample $srcdir/res/foo $DEVICE:/$TEST_NAME
 [ $? -eq 0 ] && exit 1
 
 echo "Testing download..."
-$ecli -v elektron-sample-download $DEVICE:/$TEST_NAME/square
+$ecli elektron-sample-download $DEVICE:/$TEST_NAME/square
 [ $? -ne 0 ] && exit 1
 actual_cksum="$(cksum square.wav | awk '{print $1}')"
 rm square.wav
 [ "$actual_cksum" != "$(cksum $srcdir/res/square.wav | awk '{print $1}')" ] && exit 1
 
 echo "Testing download (loop)..."
-$ecli -v elektron-sample-dl $DEVICE:/$TEST_NAME/square_loop
+$ecli elektron-sample-dl $DEVICE:/$TEST_NAME/square_loop
 [ $? -ne 0 ] && exit 1
 actual_cksum="$(cksum square_loop.wav | awk '{print $1}')"
 rm square_loop.wav
