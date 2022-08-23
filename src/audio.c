@@ -328,9 +328,11 @@ void
 audio_reset_sample (struct audio *audio)
 {
   g_mutex_lock (&audio->control.mutex);
+  debug_print (1, "Resetting sample...\n");
   g_byte_array_set_size (audio->sample, 0);
   audio->frames = 0;
   audio->pos = 0;
+  audio->path[0] = 0;
   g_mutex_unlock (&audio->control.mutex);
 }
 

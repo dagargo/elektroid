@@ -1220,6 +1220,8 @@ elektroid_load_sample (gpointer data)
 {
   struct sample_info *sample_info = (struct sample_info *) audio.control.data;
 
+  g_timeout_add (100, elektroid_update_ui_on_load, NULL);
+
   g_mutex_lock (&audio.control.mutex);
   audio.control.active = TRUE;
   g_mutex_unlock (&audio.control.mutex);
@@ -1245,10 +1247,7 @@ static void
 elektroid_start_load_thread ()
 {
   debug_print (1, "Creating load thread...\n");
-
   load_thread = g_thread_new ("load_sample", elektroid_load_sample, NULL);
-
-  g_timeout_add (100, elektroid_update_ui_on_load, NULL);
 }
 
 static void
@@ -1320,37 +1319,46 @@ elektroid_local_check_selection (gpointer data)
   struct item item;
   gint count = browser_get_selected_items_count (&local_browser);
 
-  if (count == 0)
-    {
-      audio.path[0] = 0;
-    }
-  else if (count == 1)
+  if (count == 1)
     {
       browser_set_selected_row_iter (&local_browser, &iter);
       model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
       browser_set_item (model, &iter, &item);
-
-      sample_path = chain_path (local_browser.dir, item.name);
-      if (item.type == ELEKTROID_FILE && strcmp (audio.path, sample_path))
+      if (item.type == ELEKTROID_DIR)
 	{
-	  strcpy (audio.path, sample_path);
+	  audio_stop (&audio, TRUE);
+	  elektroid_stop_load_thread ();
+	  audio_reset_sample (&audio);
+	  gtk_widget_queue_draw (waveform_draw_area);
 	}
-      g_free (sample_path);
+      else
+	{
+	  sample_path = chain_path (local_browser.dir, item.name);
+	  if (strcmp (audio.path, sample_path))
+	    {
+	      if (audio_fs)
+		{
+		  audio_stop (&audio, TRUE);
+		  elektroid_stop_load_thread ();
+		  audio_reset_sample (&audio);
+		  strcpy (audio.path, sample_path);
+		  elektroid_start_load_thread ();
+		}
+	    }
+	  g_free (sample_path);
+	}
     }
-
-  if (audio_fs)
+  else
     {
-      elektroid_stop_load_thread ();
       audio_stop (&audio, TRUE);
-      gtk_widget_queue_draw (waveform_draw_area);
+      elektroid_stop_load_thread ();
       audio_reset_sample (&audio);
-      elektroid_start_load_thread ();
+      gtk_widget_queue_draw (waveform_draw_area);
     }
 
   audio_controls = (item.type == ELEKTROID_FILE) && audio_fs;
   elektroid_sample_controls_set_sensitive (audio_controls);
   gtk_widget_set_sensitive (local_open_menuitem, audio_controls);
-
   gtk_widget_set_sensitive (local_show_menuitem, count <= 1);
   gtk_widget_set_sensitive (local_rename_menuitem, count == 1);
   gtk_widget_set_sensitive (local_delete_menuitem, count > 0);
