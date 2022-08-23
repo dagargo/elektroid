@@ -636,7 +636,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	  packet_num = 0;
 	}
 
-      set_job_control_progress (control, i / (double) (packets));
+      set_job_control_progress (control, i / (gdouble) packets);
       g_mutex_lock (&control->mutex);
       active = control->active;
       g_mutex_unlock (&control->mutex);

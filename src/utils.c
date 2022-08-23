@@ -384,6 +384,7 @@ get_human_size (gint64 size, gboolean with_space)
 void
 set_job_control_progress (struct job_control *control, gdouble p)
 {
-  gdouble v = (double) control->part / control->parts + p / control->parts;
+  gdouble v =
+    (control->part / (double) control->parts) + (p / (double) control->parts);
   control->callback (v);
 }
