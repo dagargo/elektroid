@@ -425,7 +425,7 @@ end:
 }
 
 static gint
-sds_upload_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
+sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
 			    guint packet_num, gint timeout)
 {
   gint err;
@@ -639,8 +639,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 
   tx_msg = sds_get_header_msg (id, input, sample_info);
   //The protocol states that we should wait for at least 2 s to let the receiver time.
-  err = sds_upload_tx_and_wait_ack (backend, tx_msg, 0,
-				    SDS_FIRST_ACK_WAIT_MS);
+  err = sds_tx_and_wait_ack (backend, tx_msg, 0, SDS_FIRST_ACK_WAIT_MS);
   if (err == -ENOMSG)
     {
       debug_print (2, "No packet received after a WAIT. Continuing...\n");
@@ -676,7 +675,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	{
 	  tx_msg = sds_get_data_packet_msg (packet_num, words, &w, &f);
 	  //As stated by the specification, this should be 20 ms but, as it's not enough with some devices, we use the default wait time.
-	  err = sds_upload_tx_and_wait_ack (backend, tx_msg, packet_num,
+	  err = sds_tx_and_wait_ack (backend, tx_msg, packet_num,
 					    SDS_DEF_ACK_WAIT_MS);
 	  if (err == -EBADMSG)
 	    {
@@ -859,8 +858,7 @@ sds_handshake (struct backend *backend)
   tx_msg->data[4] = 0x7f;
   tx_msg->data[5] = 0x7f;
   //In case we receive anything, there is a MIDI SDS device listening.
-  gint err = sds_upload_tx_and_wait_ack (backend, tx_msg, 0,
-					 SDS_FIRST_ACK_WAIT_MS);
+  gint err = sds_tx_and_wait_ack (backend, tx_msg, 0, SDS_FIRST_ACK_WAIT_MS);
   if (err == -EIO || err == -ETIMEDOUT)
     {
       return err;
