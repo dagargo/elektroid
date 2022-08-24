@@ -427,6 +427,10 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
       if (err < 0)
 	{
 	  error_print ("Error while polling. %s.\n", g_strerror (errno));
+	  if (errno == EINTR)
+	    {
+	      return -ECANCELED;
+	    }
 	  return err;
 	}
 
@@ -564,7 +568,10 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 
 	  if (backend->rx_len < 0)
 	    {
-	      res = -EIO;
+	      if (backend->rx_len != -ECANCELED)
+		{
+		  res = -EIO;
+		}
 	      goto error;
 	    }
 
@@ -620,9 +627,9 @@ end:
 GByteArray *
 backend_tx_and_rx_sysex_with_options (struct backend *backend,
 				      GByteArray * tx_msg, gint timeout,
-				      gboolean drain, gboolean free)
+				      gboolean drain, gboolean free,
+				      guint * err)
 {
-  gint err;
   struct sysex_transfer transfer;
 
   g_mutex_lock (&backend->mutex);
@@ -635,23 +642,21 @@ backend_tx_and_rx_sysex_with_options (struct backend *backend,
   transfer.raw = tx_msg;
   transfer.timeout = timeout < 0 ? SYSEX_TIMEOUT_MS : timeout;
   transfer.batch = FALSE;
-  err = backend_tx_sysex (backend, &transfer);
+  *err = backend_tx_sysex (backend, &transfer);
 
   if (free)
     {
       free_msg (transfer.raw);
     }
 
-  if (err < 0)
+  if (*err < 0)
     {
-      err = -EIO;
       goto cleanup;
     }
 
-  err = backend_rx_sysex (backend, &transfer);
-  if (err < 0)
+  *err = backend_rx_sysex (backend, &transfer);
+  if (*err < 0)
     {
-      err = -EIO;
       goto cleanup;
     }
 
@@ -664,8 +669,9 @@ GByteArray *
 backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg,
 			 gint timeout)
 {
+  guint foo;
   return backend_tx_and_rx_sysex_with_options (backend, tx_msg, timeout, TRUE,
-					       TRUE);
+					       TRUE, &foo);
 }
 
 gboolean
