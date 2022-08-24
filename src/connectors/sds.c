@@ -318,7 +318,7 @@ sds_download (struct backend *backend, const gchar * path,
 
       //The sampler might reach the timeout and send more than one packet.
       rx_msg = backend_tx_and_rx_sysex_with_options (backend, tx_msg, -1,
-						     FALSE, FALSE, &err);
+						     FALSE, &err);
       if (err == ECANCELED)
 	{
 	  return -err;
@@ -495,8 +495,6 @@ sds_upload_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
 
 end:
   free_msg (rx_msg);
-  backend_rx_drain (backend);
-
   return err;
 }
 

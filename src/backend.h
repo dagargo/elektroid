@@ -100,8 +100,7 @@ GByteArray *backend_tx_and_rx_sysex (struct backend *, GByteArray *, gint);
 
 GByteArray *backend_tx_and_rx_sysex_with_options (struct backend *,
 						  GByteArray *, gint,
-						  gboolean, gboolean,
-						  guint *);
+						  gboolean, guint *);
 
 void backend_rx_drain (struct backend *);
 

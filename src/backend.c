@@ -628,17 +628,11 @@ end:
 GByteArray *
 backend_tx_and_rx_sysex_with_options (struct backend *backend,
 				      GByteArray * tx_msg, gint timeout,
-				      gboolean drain, gboolean free,
-				      guint * err)
+				      gboolean free, guint * err)
 {
   struct sysex_transfer transfer;
 
   g_mutex_lock (&backend->mutex);
-
-  if (drain)
-    {
-      backend_rx_drain (backend);
-    }
 
   transfer.raw = tx_msg;
   transfer.timeout = timeout < 0 ? SYSEX_TIMEOUT_MS : timeout;
@@ -672,7 +666,7 @@ backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg,
 {
   guint foo;
   return backend_tx_and_rx_sysex_with_options (backend, tx_msg, timeout, TRUE,
-					       TRUE, &foo);
+					       &foo);
 }
 
 gboolean
