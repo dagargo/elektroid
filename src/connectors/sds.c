@@ -34,6 +34,7 @@
 #define SDS_MAX_RETRIES 3
 #define SDS_FIRST_ACK_WAIT_MS 2000
 #define SDS_DEF_ACK_WAIT_MS SDS_FIRST_ACK_WAIT_MS
+#define SDS_SKIP_PACKET_MS 50
 
 static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
 static const guint8 SDS_ACK[] = { 0xf0, 0x7e, 0, 0x7f, 0, 0xf7 };
@@ -165,22 +166,26 @@ sds_get_bytes_per_word (gint32 bits, guint * word_size,
 }
 
 static void
-sds_tx_handshake (struct backend *backend, const guint8 * msg, guint len,
-		  guint8 packet_num)
+sds_tx (struct backend *backend, GByteArray * tx_msg)
 {
   struct sysex_transfer transfer;
-  transfer.raw = g_byte_array_sized_new (len);
-  g_byte_array_append (transfer.raw, msg, len);
-  transfer.raw->data[4] = packet_num;
+  transfer.raw = tx_msg;
   g_mutex_lock (&backend->mutex);
   backend_tx_sysex (backend, &transfer);
   g_mutex_unlock (&backend->mutex);
-  free_msg (transfer.raw);
+  free_msg (tx_msg);
   usleep (REST_TIME_US);
-  if (msg == SDS_CANCEL)
-    {
-      backend_rx_drain (backend);
-    }
+  backend_rx_drain (backend);
+}
+
+static void
+sds_tx_handshake (struct backend *backend, const guint8 * msg, guint len,
+		  guint8 packet_num)
+{
+  GByteArray *tx_msg = g_byte_array_sized_new (len);
+  g_byte_array_append (tx_msg, msg, len);
+  tx_msg->data[4] = packet_num;
+  sds_tx (backend, tx_msg);
 }
 
 static void
@@ -424,14 +429,26 @@ end:
   return err;
 }
 
+static GByteArray *
+sds_skip_rx (struct backend *backend, gint timeout)
+{
+  struct sysex_transfer transfer;
+  transfer.timeout = SDS_SKIP_PACKET_MS;
+  transfer.batch = FALSE;
+  g_mutex_lock (&backend->mutex);
+  backend_rx_sysex (backend, &transfer);
+  g_mutex_unlock (&backend->mutex);
+  return transfer.raw;
+}
+
 static gint
 sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
-			    guint packet_num, gint timeout)
+		     guint packet_num, gint timeout)
 {
   gint err;
   guint rx_packet_num;
   GByteArray *rx_msg;
-  struct sysex_transfer transfer;
+  gboolean skip = FALSE;
 
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, timeout);
   if (!rx_msg)
@@ -439,25 +456,42 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
       return -ETIMEDOUT;	//Nothing was received
     }
 
+  //We try to skip all the packets until we find the expected one.
+  //This is needed because sometimes no packets are received.
+  //With some devices, some packets had not left the device buffer, but are already created and will be received in following iterations.
   rx_packet_num = rx_msg->data[4];
-  rx_msg->data[4] = 0;
-  if (!memcmp (rx_msg->data, SDS_WAIT, sizeof (SDS_WAIT)))
+  while (rx_packet_num != packet_num)
     {
-      if (rx_packet_num != packet_num)
+      debug_print (2, "Unexpected packet number. Skipping...\n");
+      skip = TRUE;
+      GByteArray *rx_next = sds_skip_rx (backend, SDS_SKIP_PACKET_MS);
+      free_msg (rx_msg);
+      rx_msg = rx_next;
+      if (rx_next)
 	{
-	  debug_print (2,
-		       "Unexpected packet number in WAIT. Continuing...\n");
+	  rx_packet_num = rx_msg->data[4];
+	}
+      else
+	{
+	  debug_print (2, "No more packages\n");
+	  return -ENOMSG;
+	}
+    }
+
+  rx_msg->data[4] = 0;
+  if (!memcmp (rx_msg->data, SDS_WAIT, sizeof (SDS_WAIT))
+      && rx_packet_num == packet_num)
+    {
+      if (skip)
+	{
+	  debug_print (2, "Successfully recovered from missing packets\n");
 	}
 
-      debug_print (2, "Waiting for an ACK...\n");
-      // The SDS protocal states that we should wait indefinitely for an ACK but the default
+      debug_print (2, "WAIT received. Waiting for an ACK...\n");
+      // The SDS protocal states that we should wait indefinitely but 5 s is enough.
       free_msg (rx_msg);
-      transfer.timeout = SDS_DEF_ACK_WAIT_MS;
-      transfer.batch = FALSE;
-      g_mutex_lock (&backend->mutex);
-      backend_rx_sysex (backend, &transfer);
-      g_mutex_unlock (&backend->mutex);
-      rx_msg = transfer.raw;
+      rx_msg = sds_skip_rx (backend, SYSEX_TIMEOUT_MS);
+
       if (!rx_msg)
 	{
 	  //The ACK was not received but some other packets were. Perhaps the issue is in the device and we could continue.
@@ -465,10 +499,14 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
 	  debug_print (2, "No ACK received\n");
 	  return -ENOMSG;
 	}
-
-      rx_packet_num = rx_msg->data[4];
-      rx_msg->data[4] = 0;
     }
+  else
+    {
+      debug_print (2, "Unexpected package. Continuing...\n");
+    }
+
+  rx_packet_num = rx_msg->data[4];
+  rx_msg->data[4] = 0;
 
   if (rx_packet_num != packet_num)
     {
@@ -616,7 +654,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 {
   GByteArray *tx_msg;
   gint16 *frame;
-  gboolean active;
+  gboolean active, open_loop = FALSE;
   guint word, words, words_per_packet, id, packets;
   gint i = 0, err = 0;
   guint packet_num = 0;
@@ -647,8 +685,8 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   else if (err == -ETIMEDOUT)
     {
       //In case of no response, we can assume an open loop.
-      debug_print (1, "Assuming open loop but not implemented...");
-      goto end;
+      debug_print (1, "Assuming open loop...\n");
+      open_loop = TRUE;
     }
   else if (err)
     {
@@ -675,8 +713,18 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	{
 	  tx_msg = sds_get_data_packet_msg (packet_num, words, &w, &f);
 	  //As stated by the specification, this should be 20 ms but, as it's not enough with some devices, we use the default wait time.
-	  err = sds_tx_and_wait_ack (backend, tx_msg, packet_num,
-					    SDS_DEF_ACK_WAIT_MS);
+	  if (open_loop)
+	    {
+	      sds_tx (backend, tx_msg);
+	      usleep (REST_TIME_US);
+	      break;
+	    }
+	  else
+	    {
+	      err = sds_tx_and_wait_ack (backend, tx_msg, packet_num,
+					 SDS_DEF_ACK_WAIT_MS);
+	    }
+
 	  if (err == -EBADMSG)
 	    {
 	      debug_print (2, "NAK received. Retrying...\n");
@@ -731,9 +779,12 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       i++;
     }
 
+  usleep (REST_TIME_US);
+
   if (active)
     {
       sds_rename (backend, path, path);
+      usleep (REST_TIME_US);
     }
 
 end:
@@ -750,6 +801,8 @@ end:
 			    packet_num);
 	}
     }
+
+  backend_rx_drain (backend);
 
   return err;
 }
@@ -865,7 +918,7 @@ sds_handshake (struct backend *backend)
     }
 
   //We cancel the upload.
-  usleep (REST_TIME_US * 10);
+  usleep (REST_TIME_US);
   sds_tx_handshake (backend, SDS_CANCEL, sizeof (SDS_CANCEL), 0);
 
   backend->device_desc.filesystems = FS_SAMPLES_SDS;
