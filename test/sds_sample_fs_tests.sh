@@ -6,10 +6,10 @@ DEVICE=$($ecli ld | head -n 1 | awk '{print $1}')
 echo "Using device $DEVICE..."
 
 echo "Testing ls..."
-$ecli sds-sample-ls $DEVICE:/ | head
-echo '[...]'
 files=$($ecli sds-sample-ls $DEVICE:/)
 [ $? -ne 0 ] && exit 1
+echo "$files" | head
+echo '[...]'
 [ $(echo "$files" | wc -l) -ne 1000 ] && exit 1
 
 echo "Testing upload..."
