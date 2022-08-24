@@ -24,6 +24,7 @@
 #define KB 1024
 #define BUFF_SIZE (4 * KB)
 #define RING_BUFF_SIZE (256 * KB)
+#define BE_DEVICE_NAME "hw:%d,%d,%d"
 
 //Identity Request Universal Sysex message
 static const guint8 MIDI_IDENTITY_REQUEST[] =
@@ -754,11 +755,14 @@ backend_get_system_subdevices (snd_ctl_t * ctl, int card, int device,
       name = snd_rawmidi_info_get_name (info);
       sub_name = snd_rawmidi_info_get_subdevice_name (info);
 
-      debug_print (1, "Adding hw:%d (%s) %s...\n", card, name, sub_name);
+      debug_print (1, "Adding hw:%d (name '%s', subname '%s')...\n", card,
+		   name, sub_name);
       backend_system_device = malloc (sizeof (struct backend_system_device));
-      snprintf (backend_system_device->id, LABEL_MAX, "hw:%d,%d,%d", card,
+      snprintf (backend_system_device->id, LABEL_MAX, BE_DEVICE_NAME, card,
 		device, sub);
-      snprintf (backend_system_device->name, LABEL_MAX, "%s", sub_name);
+      snprintf (backend_system_device->name, LABEL_MAX,
+		BE_DEVICE_NAME ": %s%s%s", card, device, sub, name,
+		strlen (sub_name) ? ", " : "", sub_name);
 
       g_array_append_vals (devices, backend_system_device, 1);
     }
