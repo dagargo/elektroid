@@ -20,10 +20,10 @@
 
 #include "backend.h"
 
-#define POLL_TIMEOUT_MS 20
-#define KB 1024
-#define BUFF_SIZE (4 * KB)
-#define RING_BUFF_SIZE (256 * KB)
+#define BE_POLL_TIMEOUT_MS 20
+#define BE_KB 1024
+#define BE_BUFF_SIZE (4 * BE_KB)
+#define BE_RING_BE_BUFF_SIZE (256 * BE_KB)
 #define BE_DEVICE_NAME "hw:%d,%d,%d"
 
 //Identity Request Universal Sysex message
@@ -216,7 +216,7 @@ backend_init (struct backend *backend, const gchar * id)
   backend->pfds = NULL;
   backend->rx_len = 0;
   backend->cache = NULL;
-  backend->buffer = g_malloc (sizeof (guint8) * BUFF_SIZE);
+  backend->buffer = g_malloc (sizeof (guint8) * BE_BUFF_SIZE);
 
   debug_print (1, "Initializing backend to '%s'...\n", id);
 
@@ -268,7 +268,7 @@ backend_init (struct backend *backend, const gchar * id)
 
   err =
     snd_rawmidi_params_set_buffer_size (backend->inputp, params,
-					RING_BUFF_SIZE);
+					BE_RING_BE_BUFF_SIZE);
   if (err)
     {
       goto cleanup_params;
@@ -331,9 +331,9 @@ backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
   while (total < transfer->raw->len && transfer->active)
     {
       len = transfer->raw->len - total;
-      if (len > BUFF_SIZE)
+      if (len > BE_BUFF_SIZE)
 	{
-	  len = BUFF_SIZE;
+	  len = BE_BUFF_SIZE;
 	}
 
       tx_len = backend_tx_raw (backend, b, len);
@@ -405,7 +405,7 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 
   while (1)
     {
-      err = poll (backend->pfds, backend->npfds, POLL_TIMEOUT_MS);
+      err = poll (backend->pfds, backend->npfds, BE_POLL_TIMEOUT_MS);
 
       if (!transfer->active)
 	{
@@ -414,7 +414,7 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 
       if (err == 0)
 	{
-	  total_time += POLL_TIMEOUT_MS;
+	  total_time += BE_POLL_TIMEOUT_MS;
 	  if (((transfer->batch && transfer->status == RECEIVING)
 	       || !transfer->batch) && transfer->timeout > -1
 	      && total_time >= transfer->timeout)
@@ -466,7 +466,7 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 	{
 	  if (backend_is_rt_msg (data, rx_len))
 	    {
-	      total_time += POLL_TIMEOUT_MS;
+	      total_time += BE_POLL_TIMEOUT_MS;
 	      if (transfer->timeout > -1 && total_time >= transfer->timeout)
 		{
 		  debug_print (1, "Timeout!\n");
@@ -505,7 +505,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 
   transfer->active = TRUE;
   transfer->status = WAITING;
-  transfer->raw = g_byte_array_sized_new (BUFF_SIZE);
+  transfer->raw = g_byte_array_sized_new (BE_BUFF_SIZE);
 
   i = 0;
   if (backend->rx_len < 0)
@@ -519,7 +519,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
       if (i == backend->rx_len)
 	{
 	  backend->rx_len = backend_rx_raw (backend, backend->buffer,
-					    BUFF_SIZE, transfer);
+					    BE_BUFF_SIZE, transfer);
 
 	  if (backend->rx_len == -ENODATA || backend->rx_len == -ETIMEDOUT ||
 	      backend->rx_len == -ECANCELED)
@@ -560,7 +560,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
       if (i == backend->rx_len)
 	{
 	  backend->rx_len = backend_rx_raw (backend, backend->buffer,
-					    BUFF_SIZE, transfer);
+					    BE_BUFF_SIZE, transfer);
 
 	  if (backend->rx_len == -ENODATA && transfer->batch)
 	    {
