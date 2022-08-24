@@ -193,14 +193,37 @@ sds_inc_packet (guint * packet_num)
     }
 }
 
+static guint
+sds_get_download_info (GByteArray * header, struct sample_info *sample_info,
+		       guint * words, guint * word_size,
+		       guint * bytes_per_word)
+{
+  sample_info->bitdepth = header->data[6];
+  if (sds_get_bytes_per_word (sample_info->bitdepth, word_size,
+			      bytes_per_word))
+    {
+      return -1;
+    }
+  sample_info->samplerate =
+    1.0e9 / sds_get_bytes_value_right_just (&header->data[7],
+					    SDS_BYTES_PER_WORD);
+  *words =
+    sds_get_bytes_value_right_just (&header->data[10], SDS_BYTES_PER_WORD);
+  sample_info->loopstart =
+    sds_get_bytes_value_right_just (&header->data[13], SDS_BYTES_PER_WORD);
+  sample_info->loopend =
+    sds_get_bytes_value_right_just (&header->data[16], SDS_BYTES_PER_WORD);
+  sample_info->looptype = header->data[19];
+  return 0;
+}
+
 static gint
 sds_download (struct backend *backend, const gchar * path,
 	      GByteArray * output, struct job_control *control)
 {
-  guint id, period, words, packet_num, next_packet_num, word_size, read_bytes,
+  guint id, words, packet_num, next_packet_num, word_size, read_bytes,
     bytes_per_word, total_words, err, retries;
   gint16 sample;
-  double samplerate;
   GByteArray *tx_msg, *rx_msg;
   gchar *path_copy, *index;
   guint8 *dataptr;
@@ -238,13 +261,19 @@ sds_download (struct backend *backend, const gchar * path,
     }
 
   sample_info = malloc (sizeof (struct sample_info));
-  sample_info->bitdepth = rx_msg->data[6];
-  if (sds_get_bytes_per_word (sample_info->bitdepth, &word_size,
-			      &bytes_per_word))
+  if (sds_get_download_info (rx_msg, sample_info, &words, &word_size,
+			     &bytes_per_word))
     {
       free_msg (rx_msg);
+      g_free (sample_info);
       return -EINVAL;
     }
+
+  debug_print (1, "Words: %d\n", words);
+  debug_print (1,
+	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
+	       sample_info->bitdepth, bytes_per_word, word_size);
+  debug_print (1, "Sample rate: %d Hz\n", sample_info->samplerate);
 
   g_mutex_lock (&control->mutex);
   active = control->active;
@@ -252,27 +281,6 @@ sds_download (struct backend *backend, const gchar * path,
   control->parts = 1;
   control->part = 0;
   set_job_control_progress (control, 0.0);
-
-  debug_print (1,
-	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
-	       sample_info->bitdepth, bytes_per_word, word_size);
-
-  period =
-    sds_get_bytes_value_right_just (&rx_msg->data[7], SDS_BYTES_PER_WORD);
-  samplerate = 1.0e9 / period;
-  debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n", samplerate,
-	       period);
-
-  words =
-    sds_get_bytes_value_right_just (&rx_msg->data[10], SDS_BYTES_PER_WORD);
-  debug_print (1, "Words: %d\n", words);
-
-  sample_info->samplerate = samplerate;
-  sample_info->loopstart =
-    sds_get_bytes_value_right_just (&rx_msg->data[13], SDS_BYTES_PER_WORD);
-  sample_info->loopend =
-    sds_get_bytes_value_right_just (&rx_msg->data[16], SDS_BYTES_PER_WORD);
-  sample_info->looptype = rx_msg->data[19];
   control->data = sample_info;
 
   debug_print (1, "Receiving dump data...\n");
