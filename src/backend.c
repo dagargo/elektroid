@@ -321,8 +321,8 @@ backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
   guint total;
   guint len;
   guchar *b;
-  gint res = 0;
 
+  transfer->err = 0;
   transfer->active = TRUE;
   transfer->status = SENDING;
 
@@ -339,7 +339,7 @@ backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
       tx_len = backend_tx_raw (backend, b, len);
       if (tx_len < 0)
 	{
-	  res = tx_len;
+	  transfer->err = tx_len;
 	  break;
 	}
       b += len;
@@ -357,7 +357,7 @@ backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 
   transfer->active = FALSE;
   transfer->status = FINISHED;
-  return res;
+  return transfer->err;
 }
 
 void
@@ -464,6 +464,7 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 
       if (rx_len > 0)
 	{
+	  //This filters out RT messages such as active sensing or start.
 	  if (backend_is_rt_msg (data, rx_len))
 	    {
 	      total_time += BE_POLL_TIMEOUT_MS;
@@ -501,8 +502,8 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 {
   gint i;
   guint8 *b;
-  gint res = 0;
 
+  transfer->err = 0;
   transfer->active = TRUE;
   transfer->status = WAITING;
   transfer->raw = g_byte_array_sized_new (BE_BUFF_SIZE);
@@ -524,13 +525,13 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	  if (backend->rx_len == -ENODATA || backend->rx_len == -ETIMEDOUT ||
 	      backend->rx_len == -ECANCELED)
 	    {
-	      res = -backend->rx_len;
+	      transfer->err = backend->rx_len;
 	      goto error;
 	    }
 
 	  if (backend->rx_len < 0)
 	    {
-	      res = -EIO;
+	      transfer->err = -EIO;
 	      goto error;
 	    }
 
@@ -571,7 +572,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	    {
 	      if (backend->rx_len != -ECANCELED)
 		{
-		  res = -EIO;
+		  transfer->err = -EIO;
 		}
 	      goto error;
 	    }
@@ -620,53 +621,48 @@ error:
 end:
   transfer->active = FALSE;
   transfer->status = FINISHED;
-  return res;
+  return transfer->err;
+}
+
+//Synchronized
+
+gint
+backend_tx_and_rx_sysex_transfer (struct backend *backend,
+				  struct sysex_transfer *transfer,
+				  gboolean free)
+{
+  transfer->batch = FALSE;
+
+  g_mutex_lock (&backend->mutex);
+
+  backend_tx_sysex (backend, transfer);
+  if (free)
+    {
+      free_msg (transfer->raw);
+    }
+  if (transfer->err < 0)
+    {
+      goto cleanup;
+    }
+
+  backend_rx_sysex (backend, transfer);
+
+cleanup:
+  g_mutex_unlock (&backend->mutex);
+  return transfer->err;
 }
 
 //Synchronized
 
 GByteArray *
-backend_tx_and_rx_sysex_with_options (struct backend *backend,
-				      GByteArray * tx_msg, gint timeout,
-				      gboolean free, guint * err)
-{
-  struct sysex_transfer transfer;
-
-  g_mutex_lock (&backend->mutex);
-
-  transfer.raw = tx_msg;
-  transfer.timeout = timeout < 0 ? SYSEX_TIMEOUT_MS : timeout;
-  transfer.batch = FALSE;
-  *err = backend_tx_sysex (backend, &transfer);
-
-  if (free)
-    {
-      free_msg (transfer.raw);
-    }
-
-  if (*err < 0)
-    {
-      goto cleanup;
-    }
-
-  *err = backend_rx_sysex (backend, &transfer);
-  if (*err < 0)
-    {
-      goto cleanup;
-    }
-
-cleanup:
-  g_mutex_unlock (&backend->mutex);
-  return transfer.raw;
-}
-
-GByteArray *
 backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg,
 			 gint timeout)
 {
-  guint foo;
-  return backend_tx_and_rx_sysex_with_options (backend, tx_msg, timeout, TRUE,
-					       &foo);
+  struct sysex_transfer transfer;
+  transfer.raw = tx_msg;
+  transfer.timeout = timeout < 0 ? SYSEX_TIMEOUT_MS : timeout;
+  backend_tx_and_rx_sysex_transfer (backend, &transfer, TRUE);
+  return transfer.raw;
 }
 
 gboolean

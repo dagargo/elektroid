@@ -96,11 +96,10 @@ gint backend_tx_sysex (struct backend *, struct sysex_transfer *);
 
 gint backend_rx_sysex (struct backend *, struct sysex_transfer *);
 
-GByteArray *backend_tx_and_rx_sysex (struct backend *, GByteArray *, gint);
+gint backend_tx_and_rx_sysex_transfer (struct backend *,
+				       struct sysex_transfer *, gboolean);
 
-GByteArray *backend_tx_and_rx_sysex_with_options (struct backend *,
-						  GByteArray *, gint,
-						  gboolean, guint *);
+GByteArray *backend_tx_and_rx_sysex (struct backend *, GByteArray *, gint);
 
 void backend_rx_drain (struct backend *);
 

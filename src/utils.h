@@ -123,6 +123,7 @@ struct sysex_transfer
   gboolean batch;
   GMutex mutex;
   GByteArray *raw;
+  gint err;
 };
 
 struct fs_operations;
