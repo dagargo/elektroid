@@ -32,9 +32,10 @@
 #define SDS_BYTES_PER_WORD 3
 #define SDS_MAX_RETRIES 10
 #define SDS_FIRST_ACK_WAIT_MS 2000
-#define SDS_DEF_ACK_WAIT_MS SDS_FIRST_ACK_WAIT_MS
+#define SDS_DEF_ACK_WAIT_MS 200
 #define SDS_WAIT_MS 20
-#define SDS_REST_TIME_US 50000
+#define SDS_REST_TIME_US (SDS_WAIT_MS * 1000)
+#define SDS_REST_TIME_LOOP_US 1000
 
 static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
 static const guint8 SDS_ACK[] = { 0xf0, 0x7e, 0, 0x7f, 0, 0xf7 };
@@ -242,13 +243,6 @@ sds_get_dump_msg (guint id, guint frames, struct sample_info *sample_info,
     {
       tx_msg->data[6] = (guint8) bits;
       period = 1.0e9 / sample_info->samplerate;
-
-      debug_print (1,
-		   "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
-		   bits, SDS_BYTES_PER_WORD, 2);
-      debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n",
-		   (double) sample_info->samplerate, period);
-
       sds_set_bytes_value_right_just (&tx_msg->data[7], SDS_BYTES_PER_WORD,
 				      period);
       sds_set_bytes_value_right_just (&tx_msg->data[10], SDS_BYTES_PER_WORD,
@@ -295,6 +289,19 @@ sds_download_inc_packet (gboolean * first, guint * packet)
     {
       (*packet)++;
     }
+}
+
+static void
+sds_debug_print_sample_data (guint bitdepth, guint bytes_per_word,
+			     guint word_size, guint sample_rate, guint words,
+			     guint packets)
+{
+  debug_print (1,
+	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
+	       bitdepth, bytes_per_word, word_size);
+  debug_print (1, "Sample rate: %d Hz\n", sample_rate);
+  debug_print (1, "Words: %d\n", words);
+  debug_print (1, "Packets: %d\n", packets);
 }
 
 enum sds_last_packet_status
@@ -355,13 +362,11 @@ sds_download (struct backend *backend, const gchar * path,
       return -EINVAL;
     }
 
-  debug_print (1,
-	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
-	       sample_info->bitdepth, bytes_per_word, word_size);
-  debug_print (1, "Sample rate: %d Hz\n", sample_info->samplerate);
   packets =
     ceil (words / (double) (SDS_DATA_PACKET_PAYLOAD_LEN / bytes_per_word));
-  debug_print (1, "Words: %d; packets: %d\n", words, packets);
+  sds_debug_print_sample_data (sample_info->bitdepth, bytes_per_word,
+			       word_size, sample_info->samplerate, words,
+			       packets);
 
   g_mutex_lock (&control->mutex);
   active = control->active;
@@ -384,18 +389,10 @@ sds_download (struct backend *backend, const gchar * path,
   rx_packets = 0;
   while (active && rx_packets < packets && packet_num < packets)
     {
-      usleep (SDS_REST_TIME_US);
-
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
-
       if (retries == SDS_MAX_RETRIES)
 	{
 	  error_print ("Too many retries\n");
-	  sds_tx_handshake (backend, SDS_CANCEL, packet_num);
-	  free_msg (tx_msg);
-	  return -EIO;
+	  break;
 	}
 
       g_byte_array_set_size (tx_msg, 0);
@@ -509,7 +506,13 @@ sds_download (struct backend *backend, const gchar * path,
 
       set_job_control_progress (control, rx_packets / (double) packets);
 
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
+
       free_msg (rx_msg);
+
+      usleep (SDS_REST_TIME_US);
     }
 
   free_msg (tx_msg);
@@ -557,20 +560,20 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
 	}
       else
 	{
-	  debug_print (2, "No more packages\n");
+	  debug_print (2, "No more packets\n");
 	  return -ENOMSG;
 	}
-    }
-
-  if (rx_packet_num != packet_num)
-    {
-      debug_print (2, "Unexpected package. Continuing...\n");
     }
 
   while (1)
     {
       // The SDS protocal states that we should wait indefinitely but 5 s is enough.
       rx_msg = sds_rx (backend, SYSEX_TIMEOUT_MS);
+      if (!rx_msg)
+	{
+	  return -ENOMSG;
+	}
+
       rx_packet_num = rx_msg->data[4];
       rx_msg->data[4] = 0;
 
@@ -686,7 +689,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   gboolean active, open_loop = FALSE;
   guint word, words, words_per_packet, id, packet = 0, packets, retries =
     0, w;
-  gint err = 0;
+  gint err = 0, word_size;
   struct sample_info *sample_info = control->data;
 
   control->parts = 1;
@@ -719,7 +722,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
     }
   else if (err)
     {
-      goto end;
+      return err;
     }
 
   debug_print (1, "Sending dump data...\n");
@@ -728,16 +731,16 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   words = input->len >> 1;	//bytes to words (frames)
   words_per_packet = SDS_DATA_PACKET_PAYLOAD_LEN / SDS_BYTES_PER_WORD;
   packets = ceil (words / (double) words_per_packet);
-  debug_print (1,
-	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
-	       bits, bytes_per_word, (gint) ceil (bits / 8.0));
-  debug_print (1, "Words: %d\n", words);
-  debug_print (1, "Packets: %d\n", packets);
+  word_size = (gint) ceil (bits / 8.0);
+  sds_debug_print_sample_data (bits, bytes_per_word,
+			       word_size, sample_info->samplerate, words,
+			       packets);
   frame = (gint16 *) input->data;
   while (packet < packets && active)
     {
       if (retries == SDS_MAX_RETRIES)
 	{
+	  error_print ("Too many retries\n");
 	  break;
 	}
 
@@ -748,13 +751,12 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       if (open_loop)
 	{
 	  sds_tx (backend, tx_msg);
-	  break;
 	}
       else
 	{
-	  //As stated by the specification, this should be 20 ms.
+	  //As stated by the specification, this should be 20 ms but it's not enough for some devices.
 	  err = sds_tx_and_wait_ack (backend, tx_msg, packet % 128,
-				     SDS_WAIT_MS);
+				     SDS_DEF_ACK_WAIT_MS);
 	}
 
       if (err == -EBADMSG)
@@ -763,8 +765,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	  retries++;
 	  continue;
 	}
-
-      if (err == -ENOMSG)
+      else if (err == -ENOMSG)
 	{
 	  debug_print (2, "No packet received after a WAIT. Continuing...\n");
 	}
@@ -797,9 +798,9 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       frame = f;
       packet++;
       retries = 0;
-    }
 
-  usleep (SDS_REST_TIME_US);
+      usleep (SDS_REST_TIME_LOOP_US);
+    }
 
   if (active)
     {
@@ -808,20 +809,15 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
     }
 
 end:
-  if (active)
+  if (active && packet == packets)
     {
       set_job_control_progress (control, 1.0);
     }
   else
     {
-      if (packet >= 0)
-	{
-	  debug_print (2, "Cancelling SDS upload...\n");
-	  sds_tx_handshake (backend, SDS_CANCEL, packet % 128);
-	}
+      debug_print (2, "Cancelling SDS upload...\n");
+      sds_tx_handshake (backend, SDS_CANCEL, packet % 128);
     }
-
-  backend_rx_drain (backend);
 
   return err;
 }
