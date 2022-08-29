@@ -272,6 +272,13 @@ sds_rx (struct backend *backend, gint timeout)
   transfer.batch = FALSE;
   g_mutex_lock (&backend->mutex);
   backend_rx_sysex (backend, &transfer);
+
+  while (transfer.raw && transfer.raw->len == 2
+	 && !memcmp (transfer.raw->data, "\xf0\xf7", 2))
+    {
+      free_msg (transfer.raw);
+      backend_rx_sysex (backend, &transfer);
+    }
   g_mutex_unlock (&backend->mutex);
   return transfer.raw;
 }
