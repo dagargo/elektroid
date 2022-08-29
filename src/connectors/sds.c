@@ -33,7 +33,7 @@
 #define SDS_MAX_RETRIES 10
 #define SDS_FIRST_ACK_WAIT_MS 2000
 #define SDS_DEF_ACK_WAIT_MS SDS_FIRST_ACK_WAIT_MS
-#define SDS_SKIP_PACKET_MS 50
+#define SDS_WAIT_MS 20
 #define SDS_REST_TIME_US 50000
 
 static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
@@ -174,6 +174,7 @@ sds_tx (struct backend *backend, GByteArray * tx_msg)
   backend_tx_sysex (backend, &transfer);
   g_mutex_unlock (&backend->mutex);
   free_msg (tx_msg);
+  //As stated by the specification, this should be 20 ms.
   usleep (SDS_REST_TIME_US);
 }
 
@@ -335,7 +336,7 @@ sds_download (struct backend *backend, const gchar * path,
     {
       debug_print (1, "Bad dump header. Skipping...\n");
       free_msg (rx_msg);
-      rx_msg = sds_rx (backend, SDS_SKIP_PACKET_MS);
+      rx_msg = sds_rx (backend, SDS_WAIT_MS);
     }
   free_msg (expected);
 
@@ -418,7 +419,7 @@ sds_download (struct backend *backend, const gchar * path,
 	{
 	  //The sampler might reach the timeout and send no packet but it's in its queue.
 	  transfer.raw = tx_msg;
-	  transfer.timeout = SDS_SKIP_PACKET_MS;
+	  transfer.timeout = SDS_WAIT_MS;
 	  err = backend_tx_and_rx_sysex_transfer (backend, &transfer, FALSE);
 	  if (err == -ECANCELED)
 	    {
@@ -427,7 +428,7 @@ sds_download (struct backend *backend, const gchar * path,
 	  rx_msg = transfer.raw;
 	  if (last_packet_status == SDS_LAST_PACKET_STATUS_TIMEOUT && rx_msg)
 	    {
-	      while (sds_rx (backend, SDS_SKIP_PACKET_MS));
+	      while (sds_rx (backend, SDS_WAIT_MS));
 	    }
 	}
 
@@ -547,7 +548,7 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
   while (rx_packet_num != packet_num)
     {
       debug_print (2, "Unexpected packet number. Skipping...\n");
-      GByteArray *rx_next = sds_rx (backend, SDS_SKIP_PACKET_MS);
+      GByteArray *rx_next = sds_rx (backend, SDS_WAIT_MS);
       free_msg (rx_msg);
       rx_msg = rx_next;
       if (rx_next)
@@ -681,9 +682,10 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	    struct job_control *control, guint bits, guint bytes_per_word)
 {
   GByteArray *tx_msg;
-  gint16 *frame;
+  gint16 *frame, *f;
   gboolean active, open_loop = FALSE;
-  guint word, words, words_per_packet, id, packet = 0, packets;
+  guint word, words, words_per_packet, id, packet = 0, packets, retries =
+    0, w;
   gint err = 0;
   struct sample_info *sample_info = control->data;
 
@@ -734,77 +736,67 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   frame = (gint16 *) input->data;
   while (packet < packets && active)
     {
-      gint16 *f = frame;
-      guint w = word;
-      guint retries = 0;
-      while (1)
+      if (retries == SDS_MAX_RETRIES)
 	{
-	  tx_msg =
-	    sds_get_data_packet_msg (packet % 128, words, &w, &f, bits,
-				     bytes_per_word);
-	  //As stated by the specification, this should be 20 ms but, as it's not enough with some devices, we use the default wait time.
-	  if (open_loop)
-	    {
-	      sds_tx (backend, tx_msg);
-	      usleep (SDS_REST_TIME_US);
-	      break;
-	    }
-	  else
-	    {
-	      err = sds_tx_and_wait_ack (backend, tx_msg, packet % 128,
-					 SDS_DEF_ACK_WAIT_MS);
-	    }
-
-	  if (err == -EBADMSG)
-	    {
-	      debug_print (2, "NAK received. Retrying...\n");
-	      retries++;
-	      if (retries == SDS_MAX_RETRIES)
-		{
-		  break;
-		}
-	      continue;
-	    }
-	  else if (err == -ENOMSG)
-	    {
-	      debug_print (2,
-			   "No packet received after a WAIT. Continuing...\n");
-	      break;
-	    }
-	  else if (err == -EINVAL)
-	    {
-	      debug_print (2, "Unexpectd packet number. Continuing...\n");
-	      break;
-	    }
-	  else if (err == -ETIMEDOUT)
-	    {
-	      debug_print (2,
-			   "No response. Assuming open loop for this iteration...\n");
-	      break;
-	    }
-	  else if (err == -ECANCELED)
-	    {
-	      debug_print (2, "Cancelled by device. Stopping...\n");
-	      goto end;
-	    }
-	  else if (err)
-	    {
-	      error_print ("Unhandled error");
-	      goto end;
-	    }
-
 	  break;
 	}
 
-      word = w;
-      frame = f;
+      f = frame;
+      w = word;
+      tx_msg = sds_get_data_packet_msg (packet % 128, words, &w, &f, bits,
+					bytes_per_word);
+      if (open_loop)
+	{
+	  sds_tx (backend, tx_msg);
+	  break;
+	}
+      else
+	{
+	  //As stated by the specification, this should be 20 ms.
+	  err = sds_tx_and_wait_ack (backend, tx_msg, packet % 128,
+				     SDS_WAIT_MS);
+	}
+
+      if (err == -EBADMSG)
+	{
+	  debug_print (2, "NAK received. Retrying...\n");
+	  retries++;
+	  continue;
+	}
+
+      if (err == -ENOMSG)
+	{
+	  debug_print (2, "No packet received after a WAIT. Continuing...\n");
+	}
+      else if (err == -EINVAL)
+	{
+	  debug_print (2, "Unexpectd packet number. Continuing...\n");
+	}
+      else if (err == -ETIMEDOUT)
+	{
+	  debug_print (2, "No response. Continuing in open loop...\n");
+	  open_loop = TRUE;
+	}
+      else if (err == -ECANCELED)
+	{
+	  debug_print (2, "Cancelled by device. Stopping...\n");
+	  goto end;
+	}
+      else if (err)
+	{
+	  error_print ("Unhandled error");
+	  goto end;
+	}
 
       set_job_control_progress (control, packet / (gdouble) packets);
       g_mutex_lock (&control->mutex);
       active = control->active;
       g_mutex_unlock (&control->mutex);
 
+      word = w;
+      frame = f;
       packet++;
+      retries = 0;
     }
 
   usleep (SDS_REST_TIME_US);
