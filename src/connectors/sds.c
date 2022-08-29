@@ -34,7 +34,7 @@
 #define SDS_FIRST_ACK_WAIT_MS 2000
 #define SDS_DEF_ACK_WAIT_MS SDS_FIRST_ACK_WAIT_MS
 #define SDS_SKIP_PACKET_MS 50
-#define SDS_REST_TIME_US 20000
+#define SDS_REST_TIME_US 50000
 
 static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
 static const guint8 SDS_ACK[] = { 0xf0, 0x7e, 0, 0x7f, 0, 0xf7 };
@@ -572,21 +572,16 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
       rx_msg = sds_rx (backend, SYSEX_TIMEOUT_MS);
       rx_packet_num = rx_msg->data[4];
       rx_msg->data[4] = 0;
-      if (rx_packet_num != packet_num)
-	{
-	  err = -EINVAL;	//Unexpected package number
-	  break;
-	}
 
-      if (!memcmp (rx_msg->data, SDS_ACK, sizeof (SDS_ACK)))
-	{
-	  err = 0;
-	}
-      else if (!memcmp (rx_msg->data, SDS_WAIT, sizeof (SDS_WAIT)))
+      if (!memcmp (rx_msg->data, SDS_WAIT, sizeof (SDS_WAIT)))
 	{
 	  debug_print (2, "WAIT received. Waiting for an ACK...\n");
 	  free_msg (rx_msg);
 	  continue;
+	}
+      else if (!memcmp (rx_msg->data, SDS_ACK, sizeof (SDS_ACK)))
+	{
+	  err = 0;
 	}
       else if (!memcmp (rx_msg->data, SDS_NAK, sizeof (SDS_NAK)))
 	{
@@ -595,6 +590,10 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
       else if (!memcmp (rx_msg->data, SDS_CANCEL, sizeof (SDS_CANCEL)))
 	{
 	  err = -ECANCELED;
+	}
+      else if (rx_packet_num != packet_num)
+	{
+	  err = -EINVAL;	//Unexpected package number
 	}
       else
 	{
