@@ -30,7 +30,6 @@
 #define SDS_DATA_PACKET_CKSUM_POS 125
 #define SDS_DATA_PACKET_CKSUM_START 1
 #define SDS_BYTES_PER_WORD 3
-#define SDS_BITS 16
 #define SDS_MAX_RETRIES 10
 #define SDS_FIRST_ACK_WAIT_MS 2000
 #define SDS_DEF_ACK_WAIT_MS SDS_FIRST_ACK_WAIT_MS
@@ -230,7 +229,8 @@ sds_get_request_msg (guint id)
 }
 
 static GByteArray *
-sds_get_dump_msg (guint id, guint frames, struct sample_info *sample_info)
+sds_get_dump_msg (guint id, guint frames, struct sample_info *sample_info,
+		  guint bits)
 {
   guint period;
   GByteArray *tx_msg = g_byte_array_sized_new (sizeof (SDS_DUMP_HEADER));
@@ -239,12 +239,12 @@ sds_get_dump_msg (guint id, guint frames, struct sample_info *sample_info)
 
   if (sample_info)
     {
-      tx_msg->data[6] = (guint8) sample_info->bitdepth;
+      tx_msg->data[6] = (guint8) bits;
       period = 1.0e9 / sample_info->samplerate;
 
       debug_print (1,
 		   "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
-		   sample_info->bitdepth, SDS_BYTES_PER_WORD, 2);
+		   bits, SDS_BYTES_PER_WORD, 2);
       debug_print (1, "Sample rate: %.1f Hz (period %d ns)\n",
 		   (double) sample_info->samplerate, period);
 
@@ -322,7 +322,7 @@ sds_download (struct backend *backend, const gchar * path,
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);	//Default wait time
 
   //We skip the packets until we found a dump header.
-  expected = sds_get_dump_msg (id, 0, NULL);
+  expected = sds_get_dump_msg (id, 0, NULL, 0);	//Any value here is valid
   while (!rx_msg || rx_msg->len != sizeof (SDS_DUMP_HEADER)
 	 || strncmp ((char *) rx_msg->data, (char *) expected->data, 6))
     {
@@ -499,7 +499,7 @@ sds_download (struct backend *backend, const gchar * path,
 	  total_words++;
 	}
 
-      set_job_control_progress (control, total_words / (double) words);
+      set_job_control_progress (control, rx_packets / (double) packets);
 
       free_msg (rx_msg);
     }
@@ -617,7 +617,7 @@ end:
 
 static inline GByteArray *
 sds_get_data_packet_msg (gint packet_num, guint words, guint * word,
-			 gint16 ** frame)
+			 gint16 ** frame, guint bits, guint bytes_per_word)
 {
   guint8 *data;
   GByteArray *tx_msg = g_byte_array_sized_new (SDS_DATA_PACKET_LEN);
@@ -629,13 +629,13 @@ sds_get_data_packet_msg (gint packet_num, guint words, guint * word,
 	  SDS_DATA_PACKET_PAYLOAD_LEN);
   tx_msg->data[SDS_DATA_PACKET_LEN - 1] = 0xf7;
   data = &tx_msg->data[sizeof (SDS_DATA_PACKET_HEADER)];
-  for (guint i = 0; i < SDS_DATA_PACKET_PAYLOAD_LEN; i += SDS_BYTES_PER_WORD)
+  for (guint i = 0; i < SDS_DATA_PACKET_PAYLOAD_LEN; i += bytes_per_word)
     {
       if (*word < words)
 	{
-	  sds_set_gint16_value_left_just (data, SDS_BYTES_PER_WORD, SDS_BITS,
+	  sds_set_gint16_value_left_just (data, bytes_per_word, bits,
 					  **frame);
-	  data += SDS_BYTES_PER_WORD;
+	  data += bytes_per_word;
 	  (*frame)++;
 	  (*word)++;
 	}
@@ -686,7 +686,7 @@ sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
 
 static gint
 sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
-	    struct job_control *control)
+	    struct job_control *control, guint bits, guint bytes_per_word)
 {
   GByteArray *tx_msg;
   gint16 *frame;
@@ -710,7 +710,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 
   debug_print (1, "Sending dump header...\n");
 
-  tx_msg = sds_get_dump_msg (id, input->len >> 1, sample_info);
+  tx_msg = sds_get_dump_msg (id, input->len >> 1, sample_info, bits);
   //The protocol states that we should wait for at least 2 s to let the receiver time.
   err = sds_tx_and_wait_ack (backend, tx_msg, 0, SDS_FIRST_ACK_WAIT_MS);
   if (err == -ENOMSG)
@@ -734,6 +734,9 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   words = input->len >> 1;	//bytes to words (frames)
   words_per_packet = SDS_DATA_PACKET_PAYLOAD_LEN / SDS_BYTES_PER_WORD;
   packets = ceil (words / (double) words_per_packet);
+  debug_print (1,
+	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
+	       bits, bytes_per_word, (gint) ceil (bits / 8.0));
   debug_print (1, "Words: %d\n", words);
   debug_print (1, "Packets: %d\n", packets);
   frame = (gint16 *) input->data;
@@ -744,7 +747,9 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       guint retries = 0;
       while (1)
 	{
-	  tx_msg = sds_get_data_packet_msg (packet % 128, words, &w, &f);
+	  tx_msg =
+	    sds_get_data_packet_msg (packet % 128, words, &w, &f, bits,
+				     bytes_per_word);
 	  //As stated by the specification, this should be 20 ms but, as it's not enough with some devices, we use the default wait time.
 	  if (open_loop)
 	    {
@@ -837,6 +842,27 @@ end:
   return err;
 }
 
+static gint
+sds_upload_8b (struct backend *backend, const gchar * path,
+	       GByteArray * input, struct job_control *control)
+{
+  return sds_upload (backend, path, input, control, 8, 2);
+}
+
+static gint
+sds_upload_12b (struct backend *backend, const gchar * path,
+		GByteArray * input, struct job_control *control)
+{
+  return sds_upload (backend, path, input, control, 12, 2);
+}
+
+static gint
+sds_upload_16b (struct backend *backend, const gchar * path,
+		GByteArray * input, struct job_control *control)
+{
+  return sds_upload (backend, path, input, control, 16, 3);
+}
+
 static void
 sds_free_iterator_data (void *iter_data)
 {
@@ -896,15 +922,17 @@ sds_print (struct item_iterator *iter)
 
 enum sds_fs
 {
-  FS_SAMPLES_SDS = 1
+  FS_SAMPLES_SDS_8_B = 0x1,
+  FS_SAMPLES_SDS_12_B = 0x2,
+  FS_SAMPLES_SDS_16_B = 0x4
 };
 
-static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
-  .fs = FS_SAMPLES_SDS,
+static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
+  .fs = FS_SAMPLES_SDS_8_B,
   .options = FS_OPTION_SHOW_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
-  .name = "sample",
-  .gui_name = "Samples",
+  .name = "sample8",
+  .gui_name = "Samples (8 bits)",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = sds_read_dir,
   .print_item = sds_print,
@@ -916,7 +944,7 @@ static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
   .clear = NULL,
   .swap = NULL,
   .download = sds_download,
-  .upload = sds_upload,
+  .upload = sds_upload_8b,
   .getid = get_item_index,
   .load = sds_sample_load,
   .save = sample_save,
@@ -926,15 +954,78 @@ static const struct fs_operations FS_SAMPLES_SDS_OPERATIONS = {
   .type_ext = "wav"
 };
 
-static const struct fs_operations *FS_SDS_OPERATIONS[] = {
-  &FS_SAMPLES_SDS_OPERATIONS, NULL
+static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
+  .fs = FS_SAMPLES_SDS_12_B,
+  .options = FS_OPTION_SHOW_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .name = "sample12",
+  .gui_name = "Samples (12 bits)",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = sds_read_dir,
+  .print_item = sds_print,
+  .mkdir = NULL,
+  .delete = NULL,
+  .rename = sds_rename,
+  .move = NULL,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = sds_download,
+  .upload = sds_upload_12b,
+  .getid = get_item_index,
+  .load = sds_sample_load,
+  .save = sample_save,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = sds_get_download_path,
+  .type_ext = "wav"
+};
+
+static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
+  .fs = FS_SAMPLES_SDS_16_B,
+  .options = FS_OPTION_SHOW_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .name = "sample16",
+  .gui_name = "Samples (16 bits)",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = sds_read_dir,
+  .print_item = sds_print,
+  .mkdir = NULL,
+  .delete = NULL,
+  .rename = sds_rename,
+  .move = NULL,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = sds_download,
+  .upload = sds_upload_16b,
+  .getid = get_item_index,
+  .load = sds_sample_load,
+  .save = sample_save,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = sds_get_download_path,
+  .type_ext = "wav"
+};
+
+static const struct fs_operations *FS_SDS_16B_OPERATIONS[] = {
+  &FS_SAMPLES_SDS_16B_OPERATIONS, NULL
+};
+
+static const struct fs_operations *FS_SDS_12B_OPERATIONS[] = {
+  &FS_SAMPLES_SDS_12B_OPERATIONS, NULL
+};
+
+static const struct fs_operations *FS_SDS_ALL_OPERATIONS[] = {
+  &FS_SAMPLES_SDS_8B_OPERATIONS, &FS_SAMPLES_SDS_12B_OPERATIONS,
+  &FS_SAMPLES_SDS_16B_OPERATIONS, NULL
 };
 
 gint
 sds_handshake (struct backend *backend)
 {
   //We send a dump header for the highest number allowed. Hopefully, this will fail on every device.
-  GByteArray *tx_msg = sds_get_dump_msg (0x3fff, 0, NULL);
+  GByteArray *tx_msg = sds_get_dump_msg (0x3fff, 0, NULL, 16);
   //In case we receive anything, there is a MIDI SDS device listening.
   gint err = sds_tx_and_wait_ack (backend, tx_msg, 0, SDS_FIRST_ACK_WAIT_MS);
   if (err == -EIO || err == -ETIMEDOUT)
@@ -946,8 +1037,9 @@ sds_handshake (struct backend *backend)
   usleep (SDS_REST_TIME_US);
   sds_tx_handshake (backend, SDS_CANCEL, 0);
 
-  backend->device_desc.filesystems = FS_SAMPLES_SDS;
-  backend->fs_ops = FS_SDS_OPERATIONS;
+  backend->device_desc.filesystems =
+    FS_SAMPLES_SDS_8_B | FS_SAMPLES_SDS_12_B | FS_SAMPLES_SDS_16_B;
+  backend->fs_ops = FS_SDS_ALL_OPERATIONS;
 
   snprintf (backend->device_name, LABEL_MAX, "sampler (MIDI SDS)");
 
