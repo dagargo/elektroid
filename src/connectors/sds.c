@@ -530,21 +530,16 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
   gint err;
   guint rx_packet_num;
   GByteArray *rx_msg;
-  gboolean skip = FALSE;
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, timeout);
   if (!rx_msg)
     {
       return -ETIMEDOUT;	//Nothing was received
     }
 
-  //We try to skip all the packets until we find the expected one.
-  //This is needed because sometimes no packets are received.
-  //With some devices, some packets had not left the device buffer, but are already created and will be received in following iterations.
   rx_packet_num = rx_msg->data[4];
   while (rx_packet_num != packet_num)
     {
       debug_print (2, "Unexpected packet number. Skipping...\n");
-      skip = TRUE;
       GByteArray *rx_next = sds_rx (backend, SDS_SKIP_PACKET_MS);
       free_msg (rx_msg);
       rx_msg = rx_next;
@@ -559,58 +554,49 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
 	}
     }
 
-  rx_msg->data[4] = 0;
-  if (!memcmp (rx_msg->data, SDS_WAIT, sizeof (SDS_WAIT))
-      && rx_packet_num == packet_num)
-    {
-      if (skip)
-	{
-	  debug_print (2, "Successfully recovered from missing packets\n");
-	}
-
-      debug_print (2, "WAIT received. Waiting for an ACK...\n");
-      // The SDS protocal states that we should wait indefinitely but 5 s is enough.
-      free_msg (rx_msg);
-      rx_msg = sds_rx (backend, SYSEX_TIMEOUT_MS);
-      if (!rx_msg)
-	{
-	  //The ACK was not received but some other packets were. Perhaps the issue is in the device and we could continue.
-	  //In some cases, an incomplete packet is received (no message received).
-	  debug_print (2, "No ACK received\n");
-	  return -ENOMSG;
-	}
-    }
-  else
+  if (rx_packet_num != packet_num)
     {
       debug_print (2, "Unexpected package. Continuing...\n");
     }
 
-  rx_packet_num = rx_msg->data[4];
-  rx_msg->data[4] = 0;
-  if (rx_packet_num != packet_num)
+  while (1)
     {
-      err = -EINVAL;		//Unexpected package number
-      goto end;
+      // The SDS protocal states that we should wait indefinitely but 5 s is enough.
+      rx_msg = sds_rx (backend, SYSEX_TIMEOUT_MS);
+      rx_packet_num = rx_msg->data[4];
+      rx_msg->data[4] = 0;
+      if (rx_packet_num != packet_num)
+	{
+	  err = -EINVAL;	//Unexpected package number
+	  break;
+	}
+
+      if (!memcmp (rx_msg->data, SDS_ACK, sizeof (SDS_ACK)))
+	{
+	  err = 0;
+	}
+      else if (!memcmp (rx_msg->data, SDS_WAIT, sizeof (SDS_WAIT)))
+	{
+	  debug_print (2, "WAIT received. Waiting for an ACK...\n");
+	  free_msg (rx_msg);
+	  continue;
+	}
+      else if (!memcmp (rx_msg->data, SDS_NAK, sizeof (SDS_NAK)))
+	{
+	  err = -EBADMSG;
+	}
+      else if (!memcmp (rx_msg->data, SDS_CANCEL, sizeof (SDS_CANCEL)))
+	{
+	  err = -ECANCELED;
+	}
+      else
+	{
+	  err = -EIO;		//Message received but unrecognized
+	}
+
+      break;
     }
 
-  if (!memcmp (rx_msg->data, SDS_ACK, sizeof (SDS_ACK)))
-    {
-      err = 0;
-    }
-  else if (!memcmp (rx_msg->data, SDS_NAK, sizeof (SDS_NAK)))
-    {
-      err = -EBADMSG;
-    }
-  else if (!memcmp (rx_msg->data, SDS_CANCEL, sizeof (SDS_CANCEL)))
-    {
-      err = -ECANCELED;
-    }
-  else
-    {
-      err = -EIO;		//Message received but unrecognized
-    }
-
-end:
   free_msg (rx_msg);
   return err;
 }
