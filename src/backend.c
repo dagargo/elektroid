@@ -368,21 +368,10 @@ backend_rx_drain (struct backend *backend)
   snd_rawmidi_drain (backend->inputp);
 }
 
-static gboolean
-backend_is_rt_msg (guint8 * data, guint len)
+static inline gboolean
+backend_is_byte_rt_msg (guint8 b)
 {
-  guint i;
-  guint8 *b;
-
-  for (i = 0, b = data; i < len; i++, b++)
-    {
-      if (*b < 0xf8)		//Not System Real-Time Messages
-	{
-	  return FALSE;
-	}
-    }
-
-  return TRUE;
+  return (b >= 0xf1 && b <= 0xf6) || (b >= 0xf8 && b <= 0xff);
 }
 
 static ssize_t
@@ -390,7 +379,6 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 		struct sysex_transfer *transfer)
 {
   ssize_t rx_len;
-  guint total_time;
   unsigned short revents;
   gint err;
   gchar *text;
@@ -400,8 +388,6 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
       error_print ("Input port is NULL\n");
       return -ENOTCONN;
     }
-
-  total_time = 0;
 
   while (1)
     {
@@ -414,10 +400,10 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 
       if (err == 0)
 	{
-	  total_time += BE_POLL_TIMEOUT_MS;
+	  transfer->time += BE_POLL_TIMEOUT_MS;
 	  if (((transfer->batch && transfer->status == RECEIVING)
 	       || !transfer->batch) && transfer->timeout > -1
-	      && total_time >= transfer->timeout)
+	      && transfer->time >= transfer->timeout)
 	    {
 	      debug_print (1, "Timeout!\n");
 	      return -ETIMEDOUT;
@@ -464,17 +450,6 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 
       if (rx_len > 0)
 	{
-	  //This filters out RT messages such as active sensing or start.
-	  if (backend_is_rt_msg (data, rx_len))
-	    {
-	      total_time += BE_POLL_TIMEOUT_MS;
-	      if (transfer->timeout > -1 && total_time >= transfer->timeout)
-		{
-		  debug_print (1, "Timeout!\n");
-		  return -ETIMEDOUT;
-		}
-	      continue;
-	    }
 	  break;
 	}
 
@@ -484,7 +459,6 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 		       snd_strerror (rx_len));
 	  break;
 	}
-
     }
 
   if (debug_level > 2)
@@ -497,111 +471,123 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
   return rx_len;
 }
 
+//Access to this method must be synchronized.
+
 gint
 backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 {
-  gint i;
-  guint8 *b;
+  gint last_check, buf_len, len, i;
+  guint8 *b, *buffer;
+  ssize_t rx_len;
 
   transfer->err = 0;
+  transfer->time = 0;
   transfer->active = TRUE;
   transfer->status = WAITING;
   transfer->raw = g_byte_array_sized_new (BE_BUFF_SIZE);
 
-  i = 0;
   if (backend->rx_len < 0)
     {
       backend->rx_len = 0;
     }
-  b = backend->buffer;
 
+  last_check = 0;
+  transfer->status = RECEIVING;
   while (1)
     {
-      if (i == backend->rx_len)
-	{
-	  backend->rx_len = backend_rx_raw (backend, backend->buffer,
-					    BE_BUFF_SIZE, transfer);
+      buffer = backend->buffer + backend->rx_len;
+      buf_len = BE_BUFF_SIZE - backend->rx_len;
 
-	  if (backend->rx_len == -ENODATA || backend->rx_len == -ETIMEDOUT ||
-	      backend->rx_len == -ECANCELED)
+      if (!backend->rx_len || backend->rx_len == last_check)
+	{
+	  debug_print (4, "Reading from MIDI device...\n");
+	  rx_len = backend_rx_raw (backend, buffer, buf_len, transfer);
+
+	  if (rx_len == -ENODATA && transfer->batch)
 	    {
-	      transfer->err = backend->rx_len;
+	      break;
+	    }
+
+	  if (rx_len == -ENODATA || rx_len == -ETIMEDOUT
+	      || rx_len == -ECANCELED)
+	    {
+	      transfer->err = rx_len;
 	      goto error;
 	    }
 
-	  if (backend->rx_len < 0)
+	  if (rx_len < 0)
 	    {
 	      transfer->err = -EIO;
 	      goto error;
 	    }
 
-	  b = backend->buffer;
-	  i = 0;
+	  backend->rx_len += rx_len;
 	}
-
-      while (i < backend->rx_len && *b != 0xf0)
+      else
 	{
-	  b++;
-	  i++;
+	  debug_print (4, "Reading from internal buffer...\n");
 	}
 
-      if (i < backend->rx_len)
+      b = buffer;
+      len = -1;
+      for (; last_check < backend->rx_len; last_check++, b++)
+	{
+	  if (*b == 0xf7)
+	    {
+	      last_check++;
+	      len = last_check;
+	      break;
+	    }
+	}
+
+      //We filter out whatever SysEx message not suitable for Elektroid.
+
+      if (len >= 0)
+	{
+	  debug_print (3, "Copying %d bytes...\n", len);
+
+	  //Filter out RT messages
+	  b = backend->buffer;
+	  for (i = 0; i < len; i++, b++)
+	    {
+	      if (!backend_is_byte_rt_msg (*b))
+		{
+		  g_byte_array_append (transfer->raw, b, 1);
+		}
+	    }
+
+	  backend->rx_len -= len;
+	  memmove (backend->buffer, backend->buffer + len, buf_len);
+	  transfer->err = 0;
+	  last_check = 0;
+
+	  //Filter out everything before the first f0.
+	  b = transfer->raw->data;
+	  for (i = 0; i < transfer->raw->len && *b != 0xf0; i++, b++);
+	  if (i > 0)
+	    {
+	      g_byte_array_remove_range (transfer->raw, 0, i);
+	    }
+
+	  //Filter empty message
+	  if (transfer->raw->len == 2
+	      && !memcmp (transfer->raw->data, "\xf0\xf7", 2))
+	    {
+	      g_byte_array_remove_range (transfer->raw, 0, 2);
+	      continue;
+	    }
+	}
+
+      if (transfer->raw->len)
 	{
 	  break;
 	}
     }
 
-  g_byte_array_append (transfer->raw, b, 1);
-  b++;
-  i++;
-  transfer->status = RECEIVING;
-
-  while (1)
+  if (!transfer->raw->len)
     {
-      if (i == backend->rx_len)
-	{
-	  backend->rx_len = backend_rx_raw (backend, backend->buffer,
-					    BE_BUFF_SIZE, transfer);
-
-	  if (backend->rx_len == -ENODATA && transfer->batch)
-	    {
-	      break;
-	    }
-
-	  if (backend->rx_len < 0)
-	    {
-	      if (backend->rx_len != -ECANCELED)
-		{
-		  transfer->err = -EIO;
-		}
-	      goto error;
-	    }
-
-	  b = backend->buffer;
-	  i = 0;
-	}
-
-      while (i < backend->rx_len && (*b != 0xf7 || transfer->batch))
-	{
-	  if (!backend_is_rt_msg (b, 1))
-	    {
-	      g_byte_array_append (transfer->raw, b, 1);
-	    }
-	  b++;
-	  i++;
-	}
-
-      if (i < backend->rx_len)
-	{
-	  g_byte_array_append (transfer->raw, b, 1);
-	  backend->rx_len = backend->rx_len - i - 1;
-	  if (backend->rx_len > 0)
-	    {
-	      memmove (backend->buffer, &backend->buffer[i + 1],
-		       backend->rx_len);
-	    }
-	  break;
-	}
+      transfer->err = -ETIMEDOUT;
+      goto error;
     }
 
   if (debug_level > 1)
@@ -655,8 +641,8 @@ cleanup:
 //Synchronized
 
 GByteArray *
-backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg,
-			 gint timeout)
+backend_tx_and_rx_sysex (struct backend *backend,
+			 GByteArray * tx_msg, gint timeout)
 {
   struct sysex_transfer transfer;
   transfer.raw = tx_msg;
