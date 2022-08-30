@@ -38,6 +38,7 @@
 static struct backend backend;
 static struct job_control control;
 static gchar *connector, *fs, *op;
+const struct fs_operations *fs_ops;
 
 static void
 null_control_callback (gdouble foo)
@@ -87,6 +88,17 @@ cli_connect (const gchar * device_path)
   device = g_array_index (devices, struct backend_system_device, id);
   err = connector_init (&backend, device.id, connector);
   g_array_free (devices, TRUE);
+
+  if (!err && fs)
+    {
+      fs_ops = backend_get_fs_operations (&backend, 0, fs);
+      if (!fs_ops)
+	{
+	  error_print ("Unrecognized '%s' filesystem\n", fs);
+	  return -1;
+	}
+    }
+
   return err;
 }
 
@@ -96,7 +108,6 @@ cli_list (int argc, gchar * argv[], int optind)
   const gchar *path;
   struct item_iterator iter;
   gchar *device_path;
-  const struct fs_operations *fs_ops;
 
   if (optind == argc)
     {
@@ -109,12 +120,6 @@ cli_list (int argc, gchar * argv[], int optind)
     }
 
   if (cli_connect (device_path))
-    {
-      return EXIT_FAILURE;
-    }
-
-  fs_ops = backend_get_fs_operations (&backend, 0, fs);
-  if (!fs_ops)
     {
       return EXIT_FAILURE;
     }
@@ -144,7 +149,6 @@ cli_command_path (int argc, gchar * argv[], int optind, ssize_t member_offset)
   gchar *device_path;
   gint ret;
   fs_path_func f;
-  const struct fs_operations *fs_ops;
 
   if (optind == argc)
     {
@@ -157,12 +161,6 @@ cli_command_path (int argc, gchar * argv[], int optind, ssize_t member_offset)
     }
 
   if (cli_connect (device_path))
-    {
-      return EXIT_FAILURE;
-    }
-
-  fs_ops = backend_get_fs_operations (&backend, 0, fs);
-  if (!fs_ops)
     {
       return EXIT_FAILURE;
     }
@@ -185,7 +183,6 @@ cli_command_src_dst (int argc, gchar * argv[], int optind,
   gint dst_card;
   int ret;
   fs_src_dst_func f;
-  const struct fs_operations *fs_ops;
 
   if (optind == argc)
     {
@@ -217,12 +214,6 @@ cli_command_src_dst (int argc, gchar * argv[], int optind,
     }
 
   if (cli_connect (device_src_path))
-    {
-      return EXIT_FAILURE;
-    }
-
-  fs_ops = backend_get_fs_operations (&backend, 0, fs);
-  if (!fs_ops)
     {
       return EXIT_FAILURE;
     }
@@ -388,7 +379,6 @@ cli_download (int argc, gchar * argv[], int optind)
   gchar *device_src_path, *download_path;
   gint res;
   GByteArray *array;
-  const struct fs_operations *fs_ops;
 
   if (optind == argc)
     {
@@ -401,12 +391,6 @@ cli_download (int argc, gchar * argv[], int optind)
     }
 
   if (cli_connect (device_src_path))
-    {
-      return EXIT_FAILURE;
-    }
-
-  fs_ops = backend_get_fs_operations (&backend, 0, fs);
-  if (!fs_ops)
     {
       return EXIT_FAILURE;
     }
@@ -447,7 +431,6 @@ cli_upload (int argc, gchar * argv[], int optind)
   gint res;
   GByteArray *array;
   gint32 index = 1;
-  const struct fs_operations *fs_ops;
 
   if (optind == argc)
     {
@@ -471,12 +454,6 @@ cli_upload (int argc, gchar * argv[], int optind)
     }
 
   if (cli_connect (device_dst_path))
-    {
-      return EXIT_FAILURE;
-    }
-
-  fs_ops = backend_get_fs_operations (&backend, 0, fs);
-  if (!fs_ops)
     {
       return EXIT_FAILURE;
     }
