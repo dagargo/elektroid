@@ -337,13 +337,19 @@ sds_download (struct backend *backend, const gchar * path,
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);	//Default wait time
 
   //We skip the packets until we found a dump header.
+  retries = 0;
   expected = sds_get_dump_msg (id, 0, NULL, 0);	//Any value here is valid
-  while (!rx_msg || rx_msg->len != sizeof (SDS_DUMP_HEADER)
-	 || strncmp ((char *) rx_msg->data, (char *) expected->data, 6))
+  while ((!rx_msg || rx_msg->len != sizeof (SDS_DUMP_HEADER)
+	  || strncmp ((char *) rx_msg->data, (char *) expected->data, 6))
+	 && retries < SDS_MAX_RETRIES)
     {
       debug_print (1, "Bad dump header. Skipping...\n");
-      free_msg (rx_msg);
+      if (rx_msg)
+	{
+	  free_msg (rx_msg);
+	}
       rx_msg = sds_rx (backend, SDS_WAIT_MS);
+      retries++;
     }
   free_msg (expected);
 
