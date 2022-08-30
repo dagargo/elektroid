@@ -33,6 +33,7 @@
 #define SDS_MAX_RETRIES 10
 #define SDS_FIRST_ACK_WAIT_MS 2000
 #define SDS_DEF_ACK_WAIT_MS 200
+#define SDS_DEF_NAK_WAIT_MS 500
 #define SDS_WAIT_MS 20
 #define SDS_REST_TIME_US (SDS_WAIT_MS * 1000)
 #define SDS_REST_TIME_LOOP_US 1000
@@ -166,7 +167,7 @@ sds_get_bytes_per_word (gint32 bits, guint * word_size,
   return 0;
 }
 
-static void
+static gint
 sds_tx (struct backend *backend, GByteArray * tx_msg)
 {
   struct sysex_transfer transfer;
@@ -177,16 +178,17 @@ sds_tx (struct backend *backend, GByteArray * tx_msg)
   free_msg (tx_msg);
   //As stated by the specification, this should be 20 ms.
   usleep (SDS_REST_TIME_US);
+  return transfer.err;
 }
 
-static void
+static gint
 sds_tx_handshake (struct backend *backend, const guint8 * msg,
 		  guint8 packet_num)
 {
   GByteArray *tx_msg = g_byte_array_sized_new (sizeof (SDS_ACK));
   g_byte_array_append (tx_msg, msg, sizeof (SDS_ACK));
   tx_msg->data[4] = packet_num;
-  sds_tx (backend, tx_msg);
+  return sds_tx (backend, tx_msg);
 }
 
 static guint
@@ -386,7 +388,7 @@ sds_download (struct backend *backend, const gchar * path,
   exp_packet_num = 0;
   first = TRUE;
   rx_packets = 0;
-  while (active && rx_packets < packets && packet_num < packets)
+  while (active && rx_packets <= packets)
     {
       if (retries == SDS_MAX_RETRIES)
 	{
@@ -405,15 +407,13 @@ sds_download (struct backend *backend, const gchar * path,
 	}
       tx_msg->data[4] = packet_num % 128;
 
-      if (packet_num == packets - 1
-	  && last_packet_status == SDS_LAST_PACKET_STATUS_ACK)
+      if (rx_packets == packets)
 	{
-	  sds_tx (backend, tx_msg);
-	  tx_msg = NULL;	//The message is already freed
+	  err = sds_tx (backend, tx_msg);	//tx_msg is freed inside.
+	  goto end;
 	}
       else
 	{
-	  //The sampler might reach the timeout and send no packet but it's in its queue.
 	  transfer.raw = tx_msg;
 	  transfer.timeout = SDS_WAIT_MS;
 	  err = backend_tx_and_rx_sysex_transfer (backend, &transfer, FALSE);
@@ -421,101 +421,115 @@ sds_download (struct backend *backend, const gchar * path,
 	    {
 	      break;
 	    }
-	  rx_msg = transfer.raw;
-	  if (last_packet_status == SDS_LAST_PACKET_STATUS_TIMEOUT && rx_msg)
+	  if (last_packet_status == SDS_LAST_PACKET_STATUS_TIMEOUT
+	      && transfer.raw)
 	    {
-	      while (sds_rx (backend, SDS_WAIT_MS));
+	      debug_print (2, "Skipping packet...\n");
+	      free_msg (transfer.raw);
+	      rx_msg = sds_rx (backend, SDS_WAIT_MS);
+	    }
+	  else
+	    {
+	      rx_msg = transfer.raw;
 	    }
 	}
 
-      if (last_packet_status == SDS_LAST_PACKET_STATUS_ACK)
+      while (1)
 	{
-	  sds_tx_handshake (backend, SDS_WAIT, (packet_num + 1) % 128);
-	}
+	  if (!rx_msg)
+	    {
+	      if (last_packet_status == SDS_LAST_PACKET_STATUS_ACK)
+		{
+		  sds_download_inc_packet (&first, &packet_num);
+		}
+	      last_packet_status = SDS_LAST_PACKET_STATUS_TIMEOUT;
+	      //Give time to the device to send the previous missing packet.
+	      //Probably, this is due to synchronization issues and the packet was send in open loop mode.
+	      sds_tx_handshake (backend, SDS_WAIT, packet_num % 128);
+	      debug_print (2,
+			   "Packet not received yet. Waiting for the device to send the packet...\n");
+	      usleep (SDS_FIRST_ACK_WAIT_MS);
+	      retries++;
+	      break;
+	    }
 
-      if (!rx_msg || rx_msg->len < SDS_DATA_PACKET_LEN)
-	{
+	  if (rx_msg->len != SDS_DATA_PACKET_LEN)
+	    {
+	      debug_print (2, "Invalid packet length. Stopping...\n");
+	      free_msg (rx_msg);
+	      err = -EINVAL;
+	      goto cleanup;
+	    }
+
+	  guint exp_packet_num_id = exp_packet_num % 128;
+	  if (rx_msg->data[4] != exp_packet_num_id)
+	    {
+	      debug_print (2,
+			   "Unexpected packet number (%d != %d). Stopping...\n",
+			   rx_msg->data[4], exp_packet_num_id);
+	      free_msg (rx_msg);
+	      err = -EINVAL;
+	      goto cleanup;
+	    }
+
 	  if (last_packet_status == SDS_LAST_PACKET_STATUS_ACK)
 	    {
 	      sds_download_inc_packet (&first, &packet_num);
 	    }
-	  last_packet_status = SDS_LAST_PACKET_STATUS_TIMEOUT;
-	  retries++;
-	  continue;
-	}
 
-      if (rx_msg->len > SDS_DATA_PACKET_LEN)
-	{
-	  debug_print (2, "Invalid packet length. Stopping...\n");
-	  err = -EINVAL;
+	  if (last_packet_status == SDS_LAST_PACKET_STATUS_ACK)
+	    {
+	      sds_tx_handshake (backend, SDS_WAIT, packet_num % 128);
+	    }
+
+	  if (sds_checksum (rx_msg->data) !=
+	      rx_msg->data[SDS_DATA_PACKET_CKSUM_POS])
+	    {
+	      debug_print (2, "Invalid cksum. Retrying...\n");
+	      free_msg (rx_msg);
+	      last_packet_status = SDS_LAST_PACKET_STATUS_NAK;
+	      retries++;
+	      break;
+	    }
+
+	  exp_packet_num++;
+	  rx_packets++;
+
+	  last_packet_status = SDS_LAST_PACKET_STATUS_ACK;
+	  retries = 0;
+
+	  read_bytes = 0;
+	  dataptr = &rx_msg->data[5];
+	  while (read_bytes < SDS_DATA_PACKET_PAYLOAD_LEN)
+	    {
+	      sample = sds_get_gint16_value_left_just (dataptr,
+						       bytes_per_word,
+						       sample_info->bitdepth);
+	      g_byte_array_append (output, (guint8 *) & sample,
+				   sizeof (sample));
+	      dataptr += bytes_per_word;
+	      read_bytes += bytes_per_word;
+	      total_words++;
+	    }
+
+	  set_job_control_progress (control, rx_packets / (double) packets);
+
+	  g_mutex_lock (&control->mutex);
+	  active = control->active;
+	  g_mutex_unlock (&control->mutex);
+
 	  free_msg (rx_msg);
+
+	  usleep (SDS_REST_TIME_US);
+
 	  break;
 	}
-
-      if (sds_checksum (rx_msg->data) !=
-	  rx_msg->data[SDS_DATA_PACKET_CKSUM_POS])
-	{
-	  debug_print (2, "Invalid cksum. Retrying...\n");
-	  free_msg (rx_msg);
-	  last_packet_status = SDS_LAST_PACKET_STATUS_NAK;
-	  retries++;
-	  continue;
-	}
-
-      guint exp_packet_num_id = exp_packet_num % 128;
-      if (rx_msg->data[4] != exp_packet_num_id)
-	{
-	  //Sometimes the device skips a packet number but sends the right amount of packets.
-	  debug_print (2,
-		       "Unexpected packet number (%d != %d). Continuing...\n",
-		       rx_msg->data[4], exp_packet_num_id);
-	  free_msg (rx_msg);
-	  if (last_packet_status == SDS_LAST_PACKET_STATUS_ACK)
-	    {
-	      sds_download_inc_packet (&first, &packet_num);
-	    }
-	  last_packet_status = SDS_LAST_PACKET_STATUS_NAK;
-	  retries++;
-	  continue;
-	}
-
-      if (last_packet_status == SDS_LAST_PACKET_STATUS_ACK)
-	{
-	  sds_download_inc_packet (&first, &packet_num);
-	}
-
-      exp_packet_num++;
-      rx_packets++;
-
-      last_packet_status = SDS_LAST_PACKET_STATUS_ACK;
-      retries = 0;
-
-      read_bytes = 0;
-      dataptr = &rx_msg->data[5];
-      while (read_bytes < SDS_DATA_PACKET_PAYLOAD_LEN)
-	{
-	  sample = sds_get_gint16_value_left_just (dataptr,
-						   bytes_per_word,
-						   sample_info->bitdepth);
-	  g_byte_array_append (output, (guint8 *) & sample, sizeof (sample));
-	  dataptr += bytes_per_word;
-	  read_bytes += bytes_per_word;
-	  total_words++;
-	}
-
-      set_job_control_progress (control, rx_packets / (double) packets);
-
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
-
-      free_msg (rx_msg);
-
-      usleep (SDS_REST_TIME_US);
     }
 
+cleanup:
   free_msg (tx_msg);
 
+end:
   usleep (SDS_REST_TIME_US);
 
   if (active && !err && rx_packets == packets)
@@ -527,8 +541,6 @@ sds_download (struct backend *backend, const gchar * path,
       debug_print (1, "Cancelling SDS download...\n");
       sds_tx_handshake (backend, SDS_CANCEL, packet_num);
     }
-
-  backend_rx_drain (backend);
 
   return err;
 }
@@ -749,7 +761,8 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 					bytes_per_word);
       if (open_loop)
 	{
-	  sds_tx (backend, tx_msg);
+	  err = sds_tx (backend, tx_msg);
+	  usleep (SDS_WAIT_MS);
 	}
       else
 	{
@@ -797,6 +810,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       frame = f;
       packet++;
       retries = 0;
+      err = 0;
 
       usleep (SDS_REST_TIME_LOOP_US);
     }
