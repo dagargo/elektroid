@@ -1026,22 +1026,22 @@ elektron_rx (struct backend *backend, gint timeout)
   GByteArray *msg;
   struct sysex_transfer transfer;
 
-  transfer.timeout = timeout < 0 ? SYSEX_TIMEOUT_MS : timeout;
+  transfer.timeout = timeout;
   transfer.batch = FALSE;
 
-  if (backend_rx_sysex (backend, &transfer))
+  while (1)
     {
-      return NULL;
-    }
-  while (transfer.raw->len < 12
-	 || (transfer.raw->len >= 12
-	     && (transfer.raw->data[0] != MSG_HEADER[0]
-		 || transfer.raw->data[1] != MSG_HEADER[1]
-		 || transfer.raw->data[2] != MSG_HEADER[2]
-		 || transfer.raw->data[3] != MSG_HEADER[3]
-		 || transfer.raw->data[4] != MSG_HEADER[4]
-		 || transfer.raw->data[5] != MSG_HEADER[5])))
-    {
+      if (backend_rx_sysex (backend, &transfer))
+	{
+	  return NULL;
+	}
+
+      if (transfer.raw->len >= 12
+	  && !memcmp (transfer.raw->data, MSG_HEADER, 6))
+	{
+	  break;
+	}
+
       if (debug_level > 1)
 	{
 	  text = debug_get_hex_msg (transfer.raw);
@@ -1050,11 +1050,6 @@ elektron_rx (struct backend *backend, gint timeout)
 	  free (text);
 	}
       free_msg (transfer.raw);
-
-      if (backend_rx_sysex (backend, &transfer))
-	{
-	  return NULL;
-	}
     }
 
   msg = elektron_raw_to_msg (transfer.raw);
@@ -1080,7 +1075,6 @@ elektron_tx_and_rx_timeout (struct backend *backend, GByteArray * tx_msg,
   guint msg_type = tx_msg->data[4] | 0x80;
 
   g_mutex_lock (&backend->mutex);
-  backend_rx_drain (backend);
 
   len = elektron_tx (backend, tx_msg);
   if (len < 0)
@@ -1089,7 +1083,7 @@ elektron_tx_and_rx_timeout (struct backend *backend, GByteArray * tx_msg,
       goto cleanup;
     }
 
-  rx_msg = elektron_rx (backend, timeout);
+  rx_msg = elektron_rx (backend, timeout < 0 ? SYSEX_TIMEOUT_MS : timeout);
   if (rx_msg && rx_msg->data[4] != msg_type)
     {
       error_print ("Illegal message type in response\n");
