@@ -85,6 +85,13 @@ cli_connect (const gchar * device_path)
   gint err, id = (gint) atoi (device_path);
   struct backend_system_device device;
   GArray *devices = backend_get_system_devices ();
+
+  if (!devices->len)
+    {
+      error_print ("Invalid device %d\n", id);
+      return -ENODEV;
+    }
+
   device = g_array_index (devices, struct backend_system_device, id);
   err = connector_init (&backend, device.id, connector);
   g_array_free (devices, TRUE);
@@ -94,8 +101,8 @@ cli_connect (const gchar * device_path)
       fs_ops = backend_get_fs_operations (&backend, 0, fs);
       if (!fs_ops)
 	{
-	  error_print ("Unrecognized '%s' filesystem\n", fs);
-	  return -1;
+	  error_print ("Invalid filesystem '%s'\n", fs);
+	  return -EINVAL;
 	}
     }
 
