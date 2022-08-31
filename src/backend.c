@@ -25,6 +25,7 @@
 #define BE_BUFF_SIZE (4 * BE_KB)
 #define BE_RING_BE_BUFF_SIZE (256 * BE_KB)
 #define BE_DEVICE_NAME "hw:%d,%d,%d"
+#define BE_TMP_BUFF_LEN 256
 
 //Identity Request Universal Sysex message
 static const guint8 MIDI_IDENTITY_REQUEST[] =
@@ -346,7 +347,7 @@ backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
       total += len;
     }
 
-  if (debug_level > 1)
+  if (debug_level >= 2)
     {
       gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
 					transfer->raw->len);
@@ -359,6 +360,8 @@ backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
   transfer->status = FINISHED;
   return transfer->err;
 }
+
+//Access to this function must be synchronized.
 
 void
 backend_rx_drain (struct backend *backend)
@@ -375,13 +378,14 @@ backend_is_byte_rt_msg (guint8 b)
 }
 
 static ssize_t
-backend_rx_raw (struct backend *backend, guint8 * data, guint len,
-		struct sysex_transfer *transfer)
+backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 {
   ssize_t rx_len;
   unsigned short revents;
   gint err;
   gchar *text;
+  guint8 *data = backend->buffer + backend->rx_len;
+  gint len = BE_BUFF_SIZE - backend->rx_len;
 
   if (!backend->inputp)
     {
@@ -391,23 +395,28 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 
   while (1)
     {
-      err = poll (backend->pfds, backend->npfds, BE_POLL_TIMEOUT_MS);
-
       if (!transfer->active)
 	{
 	  return -ECANCELED;
 	}
 
+      debug_print (4, "Checking timeout (%d ms, %d ms, %s mode)...\n",
+		   transfer->time, transfer->timeout,
+		   transfer->batch ? "batch" : "single");
+      if (((transfer->batch && transfer->status == RECEIVING)
+	   || !transfer->batch) && transfer->timeout > -1
+	  && transfer->time >= transfer->timeout)
+	{
+	  debug_print (1, "Timeout\n");
+	  return -ETIMEDOUT;
+	}
+
+      debug_print (4, "Polling...\n");
+      err = poll (backend->pfds, backend->npfds, BE_POLL_TIMEOUT_MS);
+
       if (err == 0)
 	{
 	  transfer->time += BE_POLL_TIMEOUT_MS;
-	  if (((transfer->batch && transfer->status == RECEIVING)
-	       || !transfer->batch) && transfer->timeout > -1
-	      && transfer->time >= transfer->timeout)
-	    {
-	      debug_print (1, "Timeout!\n");
-	      return -ETIMEDOUT;
-	    }
 	  continue;
 	}
 
@@ -441,6 +450,7 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 	  continue;
 	}
 
+      debug_print (4, "Reading up to %d B of data...\n", len);
       rx_len = snd_rawmidi_read (backend->inputp, data, len);
 
       if (rx_len == -EAGAIN || rx_len == 0)
@@ -461,23 +471,24 @@ backend_rx_raw (struct backend *backend, guint8 * data, guint len,
 	}
     }
 
-  if (debug_level > 2)
+  if (debug_level >= 3)
     {
       text = debug_get_hex_data (debug_level, data, rx_len);
-      debug_print (3, "Buffer content (%zu): %s\n", rx_len, text);
+      debug_print (3, "Queued data (%zu): %s\n", rx_len, text);
       free (text);
     }
 
+  backend->rx_len += rx_len;
   return rx_len;
 }
 
-//Access to this method must be synchronized.
+//Access to this function must be synchronized.
 
 gint
 backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 {
-  gint last_check, buf_len, len, i;
-  guint8 *b, *buffer;
+  gint last_check, len, i;
+  guint8 *b;
   ssize_t rx_len;
 
   transfer->err = 0;
@@ -486,22 +497,15 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
   transfer->status = WAITING;
   transfer->raw = g_byte_array_sized_new (BE_BUFF_SIZE);
 
-  if (backend->rx_len < 0)
-    {
-      backend->rx_len = 0;
-    }
-
   last_check = 0;
-  transfer->status = RECEIVING;
   while (1)
     {
-      buffer = backend->buffer + backend->rx_len;
-      buf_len = BE_BUFF_SIZE - backend->rx_len;
+      b = backend->buffer + backend->rx_len;
 
       if (!backend->rx_len || backend->rx_len == last_check)
 	{
 	  debug_print (4, "Reading from MIDI device...\n");
-	  rx_len = backend_rx_raw (backend, buffer, buf_len, transfer);
+	  rx_len = backend_rx_raw (backend, transfer);
 
 	  if (rx_len == -ENODATA && transfer->batch)
 	    {
@@ -521,14 +525,13 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	      goto error;
 	    }
 
-	  backend->rx_len += rx_len;
+	  transfer->status = RECEIVING;
 	}
       else
 	{
 	  debug_print (4, "Reading from internal buffer...\n");
 	}
 
-      b = buffer;
       len = -1;
       for (; last_check < backend->rx_len; last_check++, b++)
 	{
@@ -557,7 +560,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	    }
 
 	  backend->rx_len -= len;
-	  memmove (backend->buffer, backend->buffer + len, buf_len);
+	  memmove (backend->buffer, backend->buffer + len, len);
 	  transfer->err = 0;
 	  last_check = 0;
 
@@ -566,6 +569,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	  for (i = 0; i < transfer->raw->len && *b != 0xf0; i++, b++);
 	  if (i > 0)
 	    {
+	      debug_print (4, "Removing leading useless data...\n");
 	      g_byte_array_remove_range (transfer->raw, 0, i);
 	    }
 
@@ -573,9 +577,24 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	  if (transfer->raw->len == 2
 	      && !memcmp (transfer->raw->data, "\xf0\xf7", 2))
 	    {
+	      debug_print (4, "Removing empty message...\n");
 	      g_byte_array_remove_range (transfer->raw, 0, 2);
 	      continue;
 	    }
+
+	  if (debug_level >= 4)
+	    {
+	      gchar *text =
+		debug_get_hex_data (debug_level, transfer->raw->data,
+				    transfer->raw->len);
+	      debug_print (4, "Queued data (%d): %s\n",
+			   transfer->raw->len, text);
+	      free (text);
+	    }
+	}
+      else
+	{
+	  debug_print (4, "No message in the queue. Continuing...\n");
 	}
 
       if (transfer->raw->len)
@@ -590,7 +609,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
       goto error;
     }
 
-  if (debug_level > 1)
+  if (debug_level >= 2)
     {
       gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
 					transfer->raw->len);

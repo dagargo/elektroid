@@ -578,8 +578,8 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
 
   while (1)
     {
-      // The SDS protocal states that we should wait indefinitely but 5 s is enough.
-      rx_msg = sds_rx (backend, SYSEX_TIMEOUT_MS);
+      // The SDS protocal states that we should wait indefinitely but 2 s is enough.
+      rx_msg = sds_rx (backend, SDS_FIRST_ACK_WAIT_MS);
       if (!rx_msg)
 	{
 	  return -ENOMSG;
@@ -789,6 +789,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	{
 	  debug_print (2, "No response. Continuing in open loop...\n");
 	  open_loop = TRUE;
+	  err = 0;
 	}
       else if (err == -ECANCELED)
 	{

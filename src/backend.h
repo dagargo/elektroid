@@ -66,11 +66,14 @@ struct backend
   snd_rawmidi_t *inputp;
   snd_rawmidi_t *outputp;
   GMutex mutex;
+  //Internal buffer
   guint8 *buffer;
   ssize_t rx_len;
+  //Linux
   gint npfds;
   struct pollfd *pfds;
   gchar device_name[LABEL_MAX];
+  //Message cache
   GHashTable *cache;
   //These must be filled by the concrete backend.
   const struct fs_operations **fs_ops;
