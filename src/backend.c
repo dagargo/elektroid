@@ -22,8 +22,9 @@
 
 #define BE_POLL_TIMEOUT_MS 20
 #define BE_KB 1024
-#define BE_BUFF_SIZE (4 * BE_KB)
-#define BE_RING_BE_BUFF_SIZE (256 * BE_KB)
+#define BE_MAX_TX_LEN (4 * BE_KB)
+#define BE_INT_BUF_LEN (32 * BE_KB)	//Max length of a SysEx message for Elektroid
+#define BE_DEV_RING_BUF_LEN (256 * BE_KB)
 #define BE_DEVICE_NAME "hw:%d,%d,%d"
 #define BE_TMP_BUFF_LEN 256
 
@@ -217,7 +218,7 @@ backend_init (struct backend *backend, const gchar * id)
   backend->pfds = NULL;
   backend->rx_len = 0;
   backend->cache = NULL;
-  backend->buffer = g_malloc (sizeof (guint8) * BE_BUFF_SIZE);
+  backend->buffer = g_malloc (sizeof (guint8) * BE_INT_BUF_LEN);
 
   debug_print (1, "Initializing backend to '%s'...\n", id);
 
@@ -269,7 +270,7 @@ backend_init (struct backend *backend, const gchar * id)
 
   err =
     snd_rawmidi_params_set_buffer_size (backend->inputp, params,
-					BE_RING_BE_BUFF_SIZE);
+					BE_DEV_RING_BUF_LEN);
   if (err)
     {
       goto cleanup_params;
@@ -332,9 +333,9 @@ backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
   while (total < transfer->raw->len && transfer->active)
     {
       len = transfer->raw->len - total;
-      if (len > BE_BUFF_SIZE)
+      if (len > BE_MAX_TX_LEN)
 	{
-	  len = BE_BUFF_SIZE;
+	  len = BE_MAX_TX_LEN;
 	}
 
       tx_len = backend_tx_raw (backend, b, len);
@@ -384,8 +385,8 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
   unsigned short revents;
   gint err;
   gchar *text;
+  guint8 tmp[BE_TMP_BUFF_LEN];
   guint8 *data = backend->buffer + backend->rx_len;
-  gint len = BE_BUFF_SIZE - backend->rx_len;
 
   if (!backend->inputp)
     {
@@ -450,8 +451,8 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 	  continue;
 	}
 
-      debug_print (4, "Reading up to %d B of data...\n", len);
-      rx_len = snd_rawmidi_read (backend->inputp, data, len);
+      debug_print (4, "Reading data...\n");
+      rx_len = snd_rawmidi_read (backend->inputp, tmp, BE_TMP_BUFF_LEN);
 
       if (rx_len == -EAGAIN || rx_len == 0)
 	{
@@ -460,6 +461,8 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 
       if (rx_len > 0)
 	{
+	  memcpy (backend->buffer + backend->rx_len, tmp, rx_len);
+	  backend->rx_len += rx_len;
 	  break;
 	}
 
@@ -478,7 +481,6 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
       free (text);
     }
 
-  backend->rx_len += rx_len;
   return rx_len;
 }
 
@@ -487,7 +489,7 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 gint
 backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 {
-  gint last_check, len, i;
+  gint next_check, len, i;
   guint8 *b;
   ssize_t rx_len;
 
@@ -495,14 +497,12 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
   transfer->time = 0;
   transfer->active = TRUE;
   transfer->status = WAITING;
-  transfer->raw = g_byte_array_sized_new (BE_BUFF_SIZE);
+  transfer->raw = g_byte_array_sized_new (BE_INT_BUF_LEN);
 
-  last_check = 0;
+  next_check = 0;
   while (1)
     {
-      b = backend->buffer + backend->rx_len;
-
-      if (!backend->rx_len || backend->rx_len == last_check)
+      if (backend->rx_len == next_check)
 	{
 	  debug_print (4, "Reading from MIDI device...\n");
 	  rx_len = backend_rx_raw (backend, transfer);
@@ -533,19 +533,20 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	}
 
       len = -1;
-      for (; last_check < backend->rx_len; last_check++, b++)
+      b = backend->buffer + next_check;
+      for (; next_check < backend->rx_len; next_check++, b++)
 	{
 	  if (*b == 0xf7)
 	    {
-	      last_check++;
-	      len = last_check;
+	      next_check++;
+	      len = next_check;
 	      break;
 	    }
 	}
 
       //We filter out whatever SysEx message not suitable for Elektroid.
 
-      if (len >= 0)
+      if (len > 0)
 	{
 	  debug_print (3, "Copying %d bytes...\n", len);
 
@@ -560,9 +561,10 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	    }
 
 	  backend->rx_len -= len;
-	  memmove (backend->buffer, backend->buffer + len, len);
+	  memmove (backend->buffer, backend->buffer + next_check,
+		   backend->rx_len);
 	  transfer->err = 0;
-	  last_check = 0;
+	  next_check = 0;
 
 	  //Filter empty message
 	  if (transfer->raw->len == 2
