@@ -564,15 +564,6 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	  transfer->err = 0;
 	  last_check = 0;
 
-	  //Filter out everything before the first f0.
-	  b = transfer->raw->data;
-	  for (i = 0; i < transfer->raw->len && *b != 0xf0; i++, b++);
-	  if (i > 0)
-	    {
-	      debug_print (4, "Removing leading useless data...\n");
-	      g_byte_array_remove_range (transfer->raw, 0, i);
-	    }
-
 	  //Filter empty message
 	  if (transfer->raw->len == 2
 	      && !memcmp (transfer->raw->data, "\xf0\xf7", 2))
