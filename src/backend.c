@@ -390,12 +390,12 @@ backend_is_byte_rt_msg (guint8 b)
 static ssize_t
 backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 {
-  ssize_t rx_len;
+  ssize_t rx_len, rx_len_msg;
   unsigned short revents;
   gint err;
   gchar *text;
   guint8 tmp[BE_TMP_BUFF_LEN];
-  guint8 *data = backend->buffer + backend->rx_len;
+  guint8 *tmp_msg, *data = backend->buffer + backend->rx_len;
 
   if (!backend->inputp)
     {
@@ -468,9 +468,30 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 	  continue;
 	}
 
+      tmp_msg = tmp;
+      if (!backend->rx_len && tmp[0] != 0xf0)
+	{
+	  debug_print (4, "Skipping partial message...\n");
+	  tmp_msg++;
+	  rx_len_msg = 1;
+	  for (gint i = 1; i < rx_len; i++, tmp_msg++, rx_len_msg++)
+	    {
+	      if (*tmp_msg == 0xf0)
+		{
+		  break;
+		}
+	    }
+	  rx_len -= rx_len_msg;
+	}
+
+      if (rx_len == 0)
+	{
+	  continue;
+	}
+
       if (rx_len > 0)
 	{
-	  memcpy (backend->buffer + backend->rx_len, tmp, rx_len);
+	  memcpy (backend->buffer + backend->rx_len, tmp_msg, rx_len);
 	  backend->rx_len += rx_len;
 	  break;
 	}
