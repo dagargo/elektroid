@@ -151,6 +151,10 @@ backend_midi_handshake (struct backend *backend)
   backend->upgrade_os = NULL;
   backend->get_storage_stats = NULL;
 
+  g_mutex_lock (&backend->mutex);
+  backend_rx_drain (backend);
+  g_mutex_unlock (&backend->mutex);
+
   tx_msg = g_byte_array_sized_new (sizeof (MIDI_IDENTITY_REQUEST));
   g_byte_array_append (tx_msg, (guchar *) MIDI_IDENTITY_REQUEST,
 		       sizeof (MIDI_IDENTITY_REQUEST));
@@ -367,9 +371,14 @@ backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 void
 backend_rx_drain (struct backend *backend)
 {
-  debug_print (2, "Draining buffer...\n");
+  struct sysex_transfer transfer;
+  transfer.timeout = 1000;
+  transfer.batch = FALSE;
+
+  debug_print (2, "Draining buffers...\n");
   backend->rx_len = 0;
   snd_rawmidi_drain (backend->inputp);
+  while (!backend_rx_sysex (backend, &transfer));
 }
 
 static inline gboolean

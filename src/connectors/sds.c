@@ -33,9 +33,11 @@
 #define SDS_MAX_RETRIES 3
 #define SDS_SPEC_TIMEOUT 20	//Timeout in the specs to consider no response when transmission is going on.
 #define SDS_SPEC_TIMEOUT_HANDSHAKE 2000	//Timeout in the specs to consider no response during the handshake.
-#define SDS_NO_SPEC_TIMEOUT 60000	//Timeout used when the specs indicate to wait indefinitely.
-#define SDS_NO_SPEC_TIMEOUT_TRY 2000	//Timeout for SDS extensions that might not be implemented.
-#define SDS_REST_TIME_DEFAULT 100000	//Rest time to not overwhelm the devices whn sending consecutive packets. Lower values cause data corruption with an E-Mu ESI-2000.
+#define SDS_NO_SPEC_TIMEOUT 5000	//Timeout used when the specs indicate to wait indefinitely.
+#define SDS_NO_SPEC_TIMEOUT_TRY 1500	//Timeout for SDS extensions that might not be implemented.
+#define SDS_REST_TIME_DEFAULT 18000	//Rest time to not overwhelm the devices whn sending consecutive packets. Lower values cause an an E-Mu ESI-2000 to send corrupted packets.
+
+#define SDS_GET_REST_TIME(backend) (*(gint *) backend->data)
 
 static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
 static const guint8 SDS_ACK[] = { 0xf0, 0x7e, 0, 0x7f, 0, 0xf7 };
@@ -61,6 +63,10 @@ sds_get_download_path (struct backend *backend,
   gchar *src_path_copy = strdup (src_path);
   gchar *filename = basename (src_path_copy);
   gint index = atoi (filename);
+
+  g_mutex_lock (&backend->mutex);
+  backend_rx_drain (backend);
+  g_mutex_unlock (&backend->mutex);
 
   tx_msg = g_byte_array_new ();
   g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
@@ -308,13 +314,11 @@ sds_download_get_header (struct backend *backend, guint id)
 
   tx_msg = sds_get_request_msg (id);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
-  sds_tx_handshake (backend, SDS_WAIT, 0);
 
   if (rx_msg && rx_msg->len == sizeof (SDS_DUMP_HEADER)
       && !memcmp (rx_msg->data, SDS_DUMP_HEADER, 4)
       && sds_check_message_id (rx_msg, id))
     {
-      usleep (*(gint *) backend->data);
       return rx_msg;
     }
 
@@ -346,12 +350,18 @@ sds_download (struct backend *backend, const gchar * path,
   debug_print (1, "Sending dump request...\n");
   packet = 0;
 
+  g_mutex_lock (&backend->mutex);
+  backend_rx_drain (backend);
+  g_mutex_unlock (&backend->mutex);
+
   rx_msg = sds_download_get_header (backend, id);
   if (!rx_msg)
     {
       err = -EIO;
       goto end;
     }
+
+  usleep (SDS_GET_REST_TIME (backend));
 
   sample_info = malloc (sizeof (struct sample_info));
   if (sds_get_download_info (rx_msg, sample_info, &words, &word_size,
@@ -451,7 +461,6 @@ sds_download (struct backend *backend, const gchar * path,
       if (last_packet_ack)
 	{
 	  sds_download_inc_packet (&first, &packet);
-	  sds_tx_handshake (backend, SDS_WAIT, packet % 0x80);
 	}
 
       if (sds_checksum (rx_msg->data) !=
@@ -460,7 +469,7 @@ sds_download (struct backend *backend, const gchar * path,
 	  debug_print (2, "Invalid cksum. Retrying...\n");
 	  free_msg (rx_msg);
 	  last_packet_ack = FALSE;
-	  usleep (*(gint *) backend->data);
+	  usleep (SDS_GET_REST_TIME (backend));
 	  retries++;
 	  continue;
 	}
@@ -492,13 +501,13 @@ sds_download (struct backend *backend, const gchar * path,
 
       free_msg (rx_msg);
 
-      usleep (*(gint *) backend->data);
+      usleep (SDS_GET_REST_TIME (backend));
     }
 
   free_msg (tx_msg);
 
 end:
-  usleep (*(gint *) backend->data);
+  usleep (SDS_GET_REST_TIME (backend));
 
   if (active && !err && rx_packets == packets)
     {
@@ -520,71 +529,60 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
 		     guint packet, gint timeout, gint timeout2)
 {
   gint err;
+  gint t;
   guint rx_packet;
   GByteArray *rx_msg;
+  gboolean waiting = FALSE;
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, timeout);
   if (!rx_msg)
     {
       return -ETIMEDOUT;	//Nothing was received
     }
 
-  rx_packet = rx_msg->data[4];
-  while (rx_packet != packet)
-    {
-      debug_print (2, "Unexpected packet number. Skipping...\n");
-      GByteArray *rx_next = sds_rx (backend, timeout2);
-      free_msg (rx_msg);
-      rx_msg = rx_next;
-      if (rx_next)
-	{
-	  rx_packet = rx_msg->data[4];
-	}
-      else
-	{
-	  debug_print (2, "No more packets\n");
-	  return -ENOMSG;
-	}
-    }
-
+  t = timeout2;
   while (1)
     {
-      rx_msg = sds_rx (backend, timeout2);
-      if (!rx_msg)
-	{
-	  return -ENOMSG;
-	}
-
       rx_packet = rx_msg->data[4];
       rx_msg->data[4] = 0;
 
-      if (!memcmp (rx_msg->data, SDS_WAIT, sizeof (SDS_WAIT)))
+      if (!memcmp (rx_msg->data, SDS_WAIT, sizeof (SDS_WAIT)) && !waiting)
 	{
 	  debug_print (2, "WAIT received. Waiting for an ACK...\n");
-	  free_msg (rx_msg);
-	  continue;
+	  t = SDS_NO_SPEC_TIMEOUT;
+	  waiting = TRUE;
 	}
       else if (!memcmp (rx_msg->data, SDS_ACK, sizeof (SDS_ACK)))
 	{
 	  err = 0;
+	  break;
 	}
       else if (!memcmp (rx_msg->data, SDS_NAK, sizeof (SDS_NAK)))
 	{
 	  err = -EBADMSG;
+	  break;
 	}
       else if (!memcmp (rx_msg->data, SDS_CANCEL, sizeof (SDS_CANCEL)))
 	{
 	  err = -ECANCELED;
+	  break;
 	}
       else if (rx_packet != packet)
 	{
 	  err = -EINVAL;	//Unexpected package number
+	  break;
 	}
       else
 	{
 	  err = -EIO;		//Message received but unrecognized
+	  break;
 	}
 
-      break;
+      free_msg (rx_msg);
+      rx_msg = sds_rx (backend, t);
+      if (!rx_msg)
+	{
+	  return -ENOMSG;
+	}
     }
 
   free_msg (rx_msg);
@@ -650,6 +648,10 @@ sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
       return err;
     }
 
+  g_mutex_lock (&backend->mutex);
+  backend_rx_drain (backend);
+  g_mutex_unlock (&backend->mutex);
+
   tx_msg = sds_get_rename_sample_msg (id, name);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT_TRY);
   if (rx_msg)
@@ -662,13 +664,13 @@ sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
 
 static gint
 sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
-	    struct job_control *control, guint bits, guint bytes_per_word)
+	    struct job_control *control, guint bits)
 {
   GByteArray *tx_msg;
   gint16 *frame, *f;
   gboolean active, open_loop = FALSE;
   guint word, words, words_per_packet, id, packet = 0, packets, retries =
-    0, w;
+    0, w, bytes_per_word;
   gint err = 0, word_size;
   struct sample_info *sample_info = control->data;
 
@@ -681,6 +683,10 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       return -EBADSLT;
     }
 
+  g_mutex_lock (&backend->mutex);
+  backend_rx_drain (backend);
+  g_mutex_unlock (&backend->mutex);
+
   g_mutex_lock (&control->mutex);
   active = control->active;
   g_mutex_unlock (&control->mutex);
@@ -688,8 +694,9 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   debug_print (1, "Sending dump header...\n");
 
   tx_msg = sds_get_dump_msg (id, input->len >> 1, sample_info, bits);
-  err = sds_tx_and_wait_ack (backend, tx_msg, 0, SDS_SPEC_TIMEOUT_HANDSHAKE,
-			     SDS_SPEC_TIMEOUT_HANDSHAKE);
+  //The first timeout should be SDS_SPEC_TIMEOUT_HANDSHAKE (2 s) buit it is not enough sometimes.
+  err = sds_tx_and_wait_ack (backend, tx_msg, 0, SDS_NO_SPEC_TIMEOUT,
+			     SDS_NO_SPEC_TIMEOUT);
   if (err == -ENOMSG)
     {
       debug_print (2, "No packet received after a WAIT. Continuing...\n");
@@ -712,6 +719,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   words_per_packet = SDS_DATA_PACKET_PAYLOAD_LEN / SDS_BYTES_PER_WORD;
   packets = ceil (words / (double) words_per_packet);
   word_size = (gint) ceil (bits / 8.0);
+  bytes_per_word = (gint) ceil (bits / 7.0);
   sds_debug_print_sample_data (bits, bytes_per_word,
 			       word_size, sample_info->samplerate, words,
 			       packets);
@@ -735,8 +743,10 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	}
       else
 	{
+	  //SDS_SPEC_TIMEOUT is too low to be used here.
 	  err = sds_tx_and_wait_ack (backend, tx_msg, packet % 0x80,
-				     SDS_SPEC_TIMEOUT, SDS_NO_SPEC_TIMEOUT);
+				     SDS_NO_SPEC_TIMEOUT,
+				     SDS_NO_SPEC_TIMEOUT);
 	}
 
       if (err == -EBADMSG)
@@ -748,10 +758,14 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       else if (err == -ENOMSG)
 	{
 	  debug_print (2, "No packet received after a WAIT. Continuing...\n");
+	  g_mutex_lock (&backend->mutex);
+	  backend_rx_drain (backend);
+	  g_mutex_unlock (&backend->mutex);
 	}
       else if (err == -EINVAL)
 	{
 	  debug_print (2, "Unexpectd packet number. Continuing...\n");
+	  goto end;
 	}
       else if (err == -ETIMEDOUT)
 	{
@@ -766,7 +780,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	}
       else if (err)
 	{
-	  error_print ("Unhandled error");
+	  error_print ("Unhandled error\n");
 	  goto end;
 	}
 
@@ -781,7 +795,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       retries = 0;
       err = 0;
 
-      usleep (*(gint *) backend->data);
+      usleep (SDS_GET_REST_TIME (backend));
     }
 
   if (active)
@@ -808,21 +822,28 @@ static gint
 sds_upload_8b (struct backend *backend, const gchar * path,
 	       GByteArray * input, struct job_control *control)
 {
-  return sds_upload (backend, path, input, control, 8, 2);
+  return sds_upload (backend, path, input, control, 8);
 }
 
 static gint
 sds_upload_12b (struct backend *backend, const gchar * path,
 		GByteArray * input, struct job_control *control)
 {
-  return sds_upload (backend, path, input, control, 12, 2);
+  return sds_upload (backend, path, input, control, 12);
+}
+
+static gint
+sds_upload_14b (struct backend *backend, const gchar * path,
+		GByteArray * input, struct job_control *control)
+{
+  return sds_upload (backend, path, input, control, 14);
 }
 
 static gint
 sds_upload_16b (struct backend *backend, const gchar * path,
 		GByteArray * input, struct job_control *control)
 {
-  return sds_upload (backend, path, input, control, 16, 3);
+  return sds_upload (backend, path, input, control, 16);
 }
 
 static void
@@ -884,9 +905,10 @@ sds_print (struct item_iterator *iter)
 
 enum sds_fs
 {
-  FS_SAMPLES_SDS_8_B = 0x1,
-  FS_SAMPLES_SDS_12_B = 0x2,
-  FS_SAMPLES_SDS_16_B = 0x4
+  FS_SAMPLES_SDS_16_B = 0x1,
+  FS_SAMPLES_SDS_14_B = 0x2,
+  FS_SAMPLES_SDS_12_B = 0x4,
+  FS_SAMPLES_SDS_8_B = 0x8
 };
 
 static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
@@ -943,6 +965,33 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .type_ext = "wav"
 };
 
+static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
+  .fs = FS_SAMPLES_SDS_14_B,
+  .options = FS_OPTION_SHOW_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .name = "sample14",
+  .gui_name = "Samples (14 bits)",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = sds_read_dir,
+  .print_item = sds_print,
+  .mkdir = NULL,
+  .delete = NULL,
+  .rename = sds_rename,
+  .move = NULL,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = sds_download,
+  .upload = sds_upload_14b,
+  .getid = get_item_index,
+  .load = sds_sample_load,
+  .save = sample_save,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = sds_get_download_path,
+  .type_ext = "wav"
+};
+
 static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_16_B,
   .options = FS_OPTION_SHOW_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
@@ -970,17 +1019,9 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .type_ext = "wav"
 };
 
-static const struct fs_operations *FS_SDS_16B_OPERATIONS[] = {
-  &FS_SAMPLES_SDS_16B_OPERATIONS, NULL
-};
-
-static const struct fs_operations *FS_SDS_12B_OPERATIONS[] = {
-  &FS_SAMPLES_SDS_12B_OPERATIONS, NULL
-};
-
 static const struct fs_operations *FS_SDS_ALL_OPERATIONS[] = {
   &FS_SAMPLES_SDS_8B_OPERATIONS, &FS_SAMPLES_SDS_12B_OPERATIONS,
-  &FS_SAMPLES_SDS_16B_OPERATIONS, NULL
+  &FS_SAMPLES_SDS_14B_OPERATIONS, &FS_SAMPLES_SDS_16B_OPERATIONS, NULL
 };
 
 gint
@@ -990,15 +1031,15 @@ sds_handshake (struct backend *backend)
   GByteArray *tx_msg;
   gint *rest_time = g_malloc (sizeof (gint));
 
-  //We cancel anything that might have been going on.
-  sds_tx_handshake (backend, SDS_CANCEL, 0);
-  usleep (SDS_REST_TIME_DEFAULT);
+  g_mutex_lock (&backend->mutex);
+  backend_rx_drain (backend);
+  g_mutex_unlock (&backend->mutex);
 
   tx_msg = sds_get_dump_msg (0x3fff, 0, NULL, 16);
   //In case we receive anything, there is a MIDI SDS device listening.
-  gint err =
-    sds_tx_and_wait_ack (backend, tx_msg, 0, SDS_SPEC_TIMEOUT_HANDSHAKE,
-			 SDS_NO_SPEC_TIMEOUT_TRY);
+  gint err = sds_tx_and_wait_ack (backend, tx_msg, 0,
+				  SDS_SPEC_TIMEOUT_HANDSHAKE,
+				  SDS_NO_SPEC_TIMEOUT_TRY);
   if (err == -EIO || err == -ETIMEDOUT)
     {
       return err;
@@ -1007,13 +1048,15 @@ sds_handshake (struct backend *backend)
   //We cancel the upload.
   usleep (SDS_REST_TIME_DEFAULT);
   sds_tx_handshake (backend, SDS_CANCEL, 0);
+  usleep (SDS_REST_TIME_DEFAULT);
 
   //The remaining code is meant to set up different devices. These are the default values.
 
   *rest_time = SDS_REST_TIME_DEFAULT;
 
   backend->device_desc.filesystems =
-    FS_SAMPLES_SDS_8_B | FS_SAMPLES_SDS_12_B | FS_SAMPLES_SDS_16_B;
+    FS_SAMPLES_SDS_8_B | FS_SAMPLES_SDS_12_B | FS_SAMPLES_SDS_14_B |
+    FS_SAMPLES_SDS_16_B;
   backend->fs_ops = FS_SDS_ALL_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
   backend->data = rest_time;
