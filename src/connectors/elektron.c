@@ -1480,6 +1480,7 @@ elektron_delete_common_item (struct backend *backend, const gchar * path,
       if (init_iter (backend, &iter, path))
 	{
 	  error_print ("Error while opening samples dir %s dir\n", path);
+	  res = -EINVAL;
 	}
       else
 	{
