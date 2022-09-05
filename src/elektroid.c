@@ -2673,7 +2673,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   gchar *name;
   gchar *dir;
   GtkTreeIter iter;
-  gboolean queued, load_remote;
+  gboolean queued_before, queued_after, load_remote;
   GdkAtom type;
   gchar *type_name;
   gint32 next_idx = 1;
@@ -2693,7 +2693,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   debug_print (1, "DND received data (%s):\n%s\n", type_name, data);
 
   uris = g_uri_list_extract_uris (data);
-  queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
+  queued_before =
+    elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
 
   if (widget == GTK_WIDGET (local_browser.view))
     {
@@ -2769,7 +2770,9 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       backend_disable_cache (&backend);
     }
 
-  if (!queued)
+  queued_after =
+    elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
+  if (!queued_before && queued_after)
     {
       elektroid_run_next_task (NULL);
     }
