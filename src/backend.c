@@ -378,7 +378,10 @@ backend_rx_drain (struct backend *backend)
   debug_print (2, "Draining buffers...\n");
   backend->rx_len = 0;
   snd_rawmidi_drain (backend->inputp);
-  while (!backend_rx_sysex (backend, &transfer));
+  while (!backend_rx_sysex (backend, &transfer))
+    {
+      free_msg (transfer.raw);
+    }
 }
 
 static inline gboolean
