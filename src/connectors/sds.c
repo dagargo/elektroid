@@ -1027,7 +1027,6 @@ static const struct fs_operations *FS_SDS_ALL_OPERATIONS[] = {
 gint
 sds_handshake (struct backend *backend)
 {
-  //We send a dump header for the highest number allowed. Hopefully, this will fail on every device.
   GByteArray *tx_msg;
   gint *rest_time = g_malloc (sizeof (gint));
 
@@ -1035,7 +1034,9 @@ sds_handshake (struct backend *backend)
   backend_rx_drain (backend);
   g_mutex_unlock (&backend->mutex);
 
-  tx_msg = sds_get_dump_msg (0x3fff, 0, NULL, 16);
+  //We send a dump header for an highest number allowed. Hopefully, this will fail on every device.
+  //Numbers higher than 1500 make an E-Mu ESI-2000 crash when entering into the 'MIDI SAMPLE DUMP' menu but the actual limit is unknown.
+  tx_msg = sds_get_dump_msg (1000, 0, NULL, 16);
   //In case we receive anything, there is a MIDI SDS device listening.
   gint err = sds_tx_and_wait_ack (backend, tx_msg, 0,
 				  SDS_SPEC_TIMEOUT_HANDSHAKE,
