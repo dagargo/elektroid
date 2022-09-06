@@ -36,6 +36,7 @@
 #define SDS_NO_SPEC_TIMEOUT 5000	//Timeout used when the specs indicate to wait indefinitely.
 #define SDS_NO_SPEC_TIMEOUT_TRY 1500	//Timeout for SDS extensions that might not be implemented.
 #define SDS_REST_TIME_DEFAULT 18000	//Rest time to not overwhelm the devices whn sending consecutive packets. Lower values cause an an E-Mu ESI-2000 to send corrupted packets.
+#define SDS_NO_SPEC_OPEN_LOOP_REST_TIME 200000
 
 #define SDS_GET_REST_TIME(backend) (*(gint *) backend->data)
 
@@ -739,7 +740,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       if (open_loop)
 	{
 	  err = sds_tx (backend, tx_msg);
-	  usleep (SDS_SPEC_TIMEOUT * 1000);
+	  usleep (SDS_NO_SPEC_OPEN_LOOP_REST_TIME);
 	}
       else
 	{
