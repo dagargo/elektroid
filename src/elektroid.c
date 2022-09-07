@@ -638,6 +638,12 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
 
   res = elektroid_join_sysex_thread ();
 
+  if (!res)			//Signal captured while running the dialog.
+    {
+      g_byte_array_free (sysex_transfer.raw, TRUE);
+      return;
+    }
+
   if (dres != GTK_RESPONSE_ACCEPT)
     {
       if (!*res)
@@ -801,6 +807,10 @@ elektroid_tx_sysex_common (t_sysex_transfer f)
 
       g_byte_array_free (sysex_transfer.raw, TRUE);
 
+      if (!response)		//Signal captured while running the dialog.
+	{
+	  return;
+	}
 
       if (*response < 0)
 	{
