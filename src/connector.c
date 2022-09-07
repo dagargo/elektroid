@@ -25,6 +25,19 @@
 #include "connectors/cz.h"
 #include "connectors/sds.h"
 
+gint
+default_handshake (struct backend *backend)
+{
+  backend->device_desc.filesystems = 0;
+  backend->fs_ops = NULL;
+  backend->destroy_data = backend_destroy_data;
+  if (!strlen (backend->device_name))
+    {
+      snprintf (backend->device_name, LABEL_MAX, "MIDI");
+    }
+  return 0;
+}
+
 struct connector
 {
   gint (*handshake) (struct backend * backend);
@@ -51,9 +64,14 @@ static const struct connector CONNECTOR_SDS = {
   .name = "sds"
 };
 
+static const struct connector CONNECTOR_DEFAULT = {
+  .handshake = default_handshake,
+  .name = "default"
+};
+
 static const struct connector *CONNECTORS[] = {
   &CONNECTOR_ELEKTRON, &CONNECTOR_MICROBRUTE, &CONNECTOR_CZ, &CONNECTOR_SDS,
-  NULL
+  &CONNECTOR_DEFAULT, NULL
 };
 
 gint
@@ -77,7 +95,8 @@ connector_init (struct backend *backend, const gchar * midi_id,
 	      debug_print (1, "Testing %s connector...\n",
 			   (*connector)->name);
 	      (*connector)->handshake (backend);
-	      break;
+	      debug_print (1, "Using %s connector...\n", (*connector)->name);
+	      return 0;
 	    }
 	}
       else
@@ -85,16 +104,11 @@ connector_init (struct backend *backend, const gchar * midi_id,
 	  debug_print (1, "Testing %s connector...\n", (*connector)->name);
 	  if (!(*connector)->handshake (backend))
 	    {
-	      break;
+	      debug_print (1, "Using %s connector...\n", (*connector)->name);
+	      return 0;
 	    }
 	}
       connector++;
-    }
-
-  if (backend->fs_ops)
-    {
-      debug_print (1, "Using %s connector...\n", (*connector)->name);
-      return 0;
     }
 
   error_print ("Device not recognized\n");

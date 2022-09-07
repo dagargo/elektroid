@@ -294,7 +294,10 @@ void
 browser_update_fs_options (struct browser *browser)
 {
   gtk_widget_set_visible (browser->add_dir_button,
-			  browser->fs_ops->mkdir != NULL);
+			  browser->fs_ops && browser->fs_ops->mkdir != NULL);
   gtk_widget_set_sensitive (browser->refresh_button,
-			    browser->fs_ops->readdir != NULL);
+			    browser->fs_ops
+			    && browser->fs_ops->readdir != NULL);
+  gtk_widget_set_sensitive (browser->up_button, browser->fs_ops
+			    && browser->fs_ops->readdir != NULL);
 }

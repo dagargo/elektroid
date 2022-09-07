@@ -2444,6 +2444,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       remote_browser.fs_ops = NULL;
       browser_load_dir (&remote_browser);
       elektroid_set_file_extensions_for_fs (&local_browser.extensions, 0);
+      browser_update_fs_options (&remote_browser);
       browser_load_dir (&local_browser);
       return;
     }
@@ -2502,6 +2503,12 @@ static void
 elektroid_fill_fs_combo ()
 {
   gtk_list_store_clear (fs_list_store);
+
+  if (!backend.device_desc.filesystems)
+    {
+      elektroid_set_fs (NULL, NULL);
+      return;
+    }
 
   for (gint fs = 1, i = 0; i < MAX_BACKEND_FSS; fs = fs << 1, i++)
     {
