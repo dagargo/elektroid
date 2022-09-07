@@ -38,7 +38,7 @@
 
 #define MAX_DRAW_X 10000
 
-#define DUMP_TIMEOUT 2000
+#define DUMP_TIMEOUT 5000	//With and E-Mu ESI-2000 it takes this more than 3 seconds to receive to receive some packets after the process has started.
 #define DND_TIMEOUT 1000
 
 #define TEXT_URI_LIST_STD "text/uri-list"
@@ -591,6 +591,7 @@ elektroid_rx_sysex_thread (gpointer data)
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
   backend_rx_drain (&backend);
+  //This doesn't need to be synchronized because the GUI doesn't allow concurrent access when receiving SysEx in batch mode.
   *res = backend_rx_sysex (&backend, &sysex_transfer);
   if (!*res)
     {

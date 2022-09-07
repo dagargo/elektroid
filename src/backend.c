@@ -429,7 +429,11 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 
       if (err == 0)
 	{
-	  transfer->time += BE_POLL_TIMEOUT_MS;
+	  if ((transfer->batch && transfer->status == RECEIVING)
+	      || !transfer->batch)
+	    {
+	      transfer->time += BE_POLL_TIMEOUT_MS;
+	    }
 	  continue;
 	}
 
@@ -538,18 +542,24 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
       if (backend->rx_len == next_check)
 	{
 	  debug_print (4, "Reading from MIDI device...\n");
-	  rx_len = backend_rx_raw (backend, transfer);
-
-	  if (rx_len == -ENODATA && transfer->batch)
+	  if (transfer->batch)
 	    {
-	      break;
+	      transfer->time = 0;
 	    }
+	  rx_len = backend_rx_raw (backend, transfer);
 
 	  if (rx_len == -ENODATA || rx_len == -ETIMEDOUT
 	      || rx_len == -ECANCELED)
 	    {
-	      transfer->err = rx_len;
-	      goto error;
+	      if (transfer->batch)
+		{
+		  break;
+		}
+	      else
+		{
+		  transfer->err = rx_len;
+		  goto error;
+		}
 	    }
 
 	  if (rx_len < 0)
@@ -557,14 +567,13 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	      transfer->err = -EIO;
 	      goto error;
 	    }
-
-	  transfer->status = RECEIVING;
 	}
       else
 	{
 	  debug_print (4, "Reading from internal buffer...\n");
 	}
 
+      transfer->status = RECEIVING;
       len = -1;
       b = backend->buffer + next_check;
       for (; next_check < backend->rx_len; next_check++, b++)
@@ -623,7 +632,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	  debug_print (4, "No message in the queue. Continuing...\n");
 	}
 
-      if (transfer->raw->len)
+      if (transfer->raw->len && !transfer->batch)
 	{
 	  break;
 	}
