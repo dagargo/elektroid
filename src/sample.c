@@ -272,6 +272,9 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
     }
 }
 
+//If control->data is NULL, then a new struct sample_info * is created and control->data points to it.
+//In case of failure, if control->data is NULL is freed.
+
 static gint
 sample_load_raw_data (struct g_byte_array_io_data *wave,
 		      struct job_control *control, GByteArray * sample,
@@ -294,6 +297,7 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
   gboolean active;
   struct sample_info *sample_info;
   struct smpl_chunk_data smpl_chunk_data;
+  gboolean disable_loop = FALSE;
 
   if (control)
     {
@@ -317,17 +321,37 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
   chunk_info.id_size = strlen (SMPL_CHUNK_ID);
   chunk_iter = sf_get_chunk_iterator (sndfile, &chunk_info);
   sample_info = control->data;
+  if (!control->data)
+    {
+      sample_info = g_malloc (sizeof (struct sample_info));
+      sample_info->samplerate = -1;
+    }
   if (chunk_iter)
     {
       chunk_info.datalen = sizeof (struct smpl_chunk_data);
+      memset (&smpl_chunk_data, 0, chunk_info.datalen);
       chunk_info.data = &smpl_chunk_data;
       sf_get_chunk_data (chunk_iter, &chunk_info);
 
       sample_info->loopstart = le32toh (smpl_chunk_data.sample_loop.start);
       sample_info->loopend = le32toh (smpl_chunk_data.sample_loop.end);
       sample_info->looptype = le32toh (smpl_chunk_data.sample_loop.type);
+      if (sample_info->loopstart >= sf_info.frames)
+	{
+	  debug_print (2, "Bad loop start\n");
+	  disable_loop = TRUE;
+	}
+      if (sample_info->loopend >= sf_info.frames)
+	{
+	  debug_print (2, "Bad loop end\n");
+	  disable_loop = TRUE;
+	}
     }
   else
+    {
+      disable_loop = TRUE;
+    }
+  if (disable_loop)
     {
       sample_info->loopstart = sf_info.frames - 1;
       sample_info->loopend = sample_info->loopstart;
@@ -477,6 +501,7 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
 
   if (err)
     {
+      g_byte_array_set_size (sample, 0);
       error_print ("Error while preparing resampling: %s\n",
 		   src_strerror (err));
     }
@@ -506,7 +531,22 @@ cleanup:
 
   sf_close (sndfile);
 
-  return sample->len > 0 ? 0 : -1;
+  if (sample->len)
+    {
+      if (!control->data)
+	{
+	  control->data = sample_info;
+	}
+      return 0;
+    }
+  else
+    {
+      if (!control->data)
+	{
+	  g_free (sample_info);
+	}
+      return -1;
+    }
 }
 
 static gint

@@ -1229,7 +1229,7 @@ elektroid_redraw_sample (gdouble percent)
 static gpointer
 elektroid_load_sample (gpointer data)
 {
-  struct sample_info *sample_info = (struct sample_info *) audio.control.data;
+  struct sample_info *sample_info = audio.control.data;
 
   g_timeout_add (100, elektroid_update_ui_on_load, NULL);
 
@@ -1275,6 +1275,8 @@ elektroid_stop_load_thread ()
       g_thread_join (load_thread);
       load_thread = NULL;
     }
+
+
 }
 
 static void
@@ -1941,9 +1943,8 @@ elektroid_upload_task (gpointer data)
   debug_print (1, "Writing from file %s (filesystem %s)...\n", transfer.src,
 	       elektroid_get_fs_name (transfer.fs_ops->fs));
 
-  res =
-    transfer.fs_ops->upload (remote_browser.backend, transfer.dst, array,
-			     &transfer.control);
+  res = transfer.fs_ops->upload (remote_browser.backend, transfer.dst, array,
+				 &transfer.control);
   g_free (transfer.control.data);
   transfer.control.data = NULL;
   g_idle_add (elektroid_check_backend_bg, NULL);

@@ -712,7 +712,8 @@ package_send_pkg_resources (struct package *pkg,
   raw = g_byte_array_sized_new (MAX_PACKAGE_LEN);
   elements = json_reader_count_elements (reader);
   control->parts = elements + 1;
-  for (i = 0; i < elements; i++, control->parts++)
+  control->part = 1;
+  for (i = 0; i < elements; i++, control->part++)
     {
       json_reader_read_element (reader, i);
       json_reader_read_member (reader, PKG_TAG_FILE_NAME);
@@ -738,6 +739,8 @@ package_send_pkg_resources (struct package *pkg,
       raw->len = 0;
       if (sample_load_raw (wave, raw, control))
 	{
+	  error_print ("Error while loading '%s': %s\n",
+		       sample_path, zip_error_strerror (&zerror));
 	  continue;
 	}
 
