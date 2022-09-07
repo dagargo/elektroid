@@ -45,7 +45,7 @@ void audio_stop (struct audio *, gboolean);
 
 gboolean audio_check (struct audio *);
 
-gint audio_init (struct audio *, void (*)(gdouble), void (*)(gdouble));
+gint audio_init (struct audio *, void (*)(gdouble), job_control_callback);
 
 void audio_destroy (struct audio *);
 

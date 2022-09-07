@@ -77,7 +77,9 @@ struct item_iterator
 
 typedef void (*fs_print_item) (struct item_iterator *);
 
-typedef void (*job_control_callback) (gdouble);
+struct job_control;
+
+typedef void (*job_control_callback) (struct job_control *);
 
 struct job_control
 {
@@ -86,6 +88,7 @@ struct job_control
   job_control_callback callback;
   gint parts;
   gint part;
+  gdouble progress;
   void *data;
 };
 
@@ -237,5 +240,7 @@ gint save_file_char (const gchar *, const guint8 *, ssize_t);
 gchar *get_human_size (gint64, gboolean);
 
 void set_job_control_progress (struct job_control *, gdouble);
+
+void set_job_control_progress_no_sync (struct job_control *, gdouble);
 
 #endif

@@ -490,8 +490,9 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
 
       if (control)
 	{
-	  control->callback (f * 1.0 / sf_info.frames);
 	  g_mutex_lock (&control->mutex);
+	  set_job_control_progress_no_sync (control,
+					    f * 1.0 / sf_info.frames);
 	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
 	}
@@ -512,7 +513,7 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
 
       if (control->active)
 	{
-	  control->callback (1.0);
+	  set_job_control_progress_no_sync (control, 1.0);
 	}
       else
 	{

@@ -40,11 +40,6 @@ static struct job_control control;
 static gchar *connector, *fs, *op;
 const struct fs_operations *fs_ops;
 
-static void
-null_control_callback (gdouble foo)
-{
-}
-
 static const gchar *
 cli_get_path (gchar * device_path)
 {
@@ -405,7 +400,6 @@ cli_download (int argc, gchar * argv[], int optind)
   src_path = cli_get_path (device_src_path);
 
   control.active = TRUE;
-  control.callback = null_control_callback;
   array = g_byte_array_new ();
   res = fs_ops->download (&backend, src_path, array, &control);
   if (res)
@@ -472,7 +466,6 @@ cli_upload (int argc, gchar * argv[], int optind)
 
   array = g_byte_array_new ();
   control.active = TRUE;
-  control.callback = null_control_callback;
   res = fs_ops->load (src_path, array, &control);
   if (res)
     {

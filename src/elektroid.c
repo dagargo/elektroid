@@ -109,7 +109,7 @@ struct elektroid_add_upload_task_data
 
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
-static void elektroid_update_progress (gdouble);
+static void elektroid_update_progress (struct job_control *);
 static void elektroid_cancel_all_tasks (GtkWidget *, gpointer);
 
 static const struct option ELEKTROID_OPTIONS[] = {
@@ -1221,7 +1221,7 @@ elektroid_queue_draw_waveform ()
 }
 
 static void
-elektroid_redraw_sample (gdouble percent)
+elektroid_redraw_sample (struct job_control *control)
 {
   g_idle_add (elektroid_queue_draw_waveform, NULL);
 }
@@ -2278,13 +2278,17 @@ static gboolean
 elektroid_set_progress_value (gpointer data)
 {
   GtkTreeIter iter;
-  gdouble *value = data;
+  gdouble progress;
 
   if (elektroid_get_running_task (&iter))
     {
+      g_mutex_lock (&transfer.control.mutex);
+      progress = transfer.control.progress;
+      g_mutex_unlock (&transfer.control.mutex);
+
       gtk_list_store_set (task_list_store, &iter,
 			  TASK_LIST_STORE_PROGRESS_FIELD,
-			  100.0 * (*value), -1);
+			  100.0 * progress, -1);
     }
 
   free (data);
@@ -2293,11 +2297,9 @@ elektroid_set_progress_value (gpointer data)
 }
 
 static void
-elektroid_update_progress (gdouble progress)
+elektroid_update_progress (struct job_control *control)
 {
-  gdouble *value = malloc (sizeof (gdouble));
-  *value = progress;
-  g_idle_add (elektroid_set_progress_value, value);
+  g_idle_add (elektroid_set_progress_value, NULL);
 }
 
 static gboolean

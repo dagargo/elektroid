@@ -250,7 +250,7 @@ audio_context_callback (pa_context * context, void *data)
 
 gint
 audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
-	    void (*load_progress_callback) (gdouble))
+	    job_control_callback load_progress_callback)
 {
   pa_mainloop_api *api;
   gint err = 0;
