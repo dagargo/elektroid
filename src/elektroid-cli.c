@@ -105,20 +105,21 @@ cli_connect (const gchar * device_path)
 }
 
 static int
-cli_list (int argc, gchar * argv[], int optind)
+cli_list (int argc, gchar * argv[], int *optind)
 {
   const gchar *path;
   struct item_iterator iter;
   gchar *device_path;
 
-  if (optind == argc)
+  if (*optind == argc)
     {
       error_print ("Remote path missing\n");
       return EXIT_FAILURE;
     }
   else
     {
-      device_path = argv[optind];
+      device_path = argv[*optind];
+      (*optind)++;
     }
 
   if (cli_connect (device_path))
@@ -145,21 +146,23 @@ cli_list (int argc, gchar * argv[], int optind)
 }
 
 static int
-cli_command_path (int argc, gchar * argv[], int optind, ssize_t member_offset)
+cli_command_path (int argc, gchar * argv[], int *optind,
+		  ssize_t member_offset)
 {
   const gchar *path;
   gchar *device_path;
   gint ret;
   fs_path_func f;
 
-  if (optind == argc)
+  if (*optind == argc)
     {
       error_print ("Remote path missing\n");
       return EXIT_FAILURE;
     }
   else
     {
-      device_path = argv[optind];
+      device_path = argv[*optind];
+      (*optind)++;
     }
 
   if (cli_connect (device_path))
@@ -176,7 +179,7 @@ cli_command_path (int argc, gchar * argv[], int optind, ssize_t member_offset)
 }
 
 static int
-cli_command_src_dst (int argc, gchar * argv[], int optind,
+cli_command_src_dst (int argc, gchar * argv[], int *optind,
 		     ssize_t member_offset)
 {
   const gchar *src_path, *dst_path;
@@ -186,25 +189,26 @@ cli_command_src_dst (int argc, gchar * argv[], int optind,
   int ret;
   fs_src_dst_func f;
 
-  if (optind == argc)
+  if (*optind == argc)
     {
       error_print ("Remote path source missing\n");
       return EXIT_FAILURE;
     }
   else
     {
-      device_src_path = argv[optind];
-      optind++;
+      device_src_path = argv[*optind];
+      (*optind)++;
     }
 
-  if (optind == argc)
+  if (*optind == argc)
     {
       error_print ("Remote path destination missing\n");
       return EXIT_FAILURE;
     }
   else
     {
-      device_dst_path = argv[optind];
+      device_dst_path = argv[*optind];
+      (*optind)++;
     }
 
   src_card = atoi (device_src_path);
@@ -229,19 +233,20 @@ cli_command_src_dst (int argc, gchar * argv[], int optind,
 }
 
 static int
-cli_info (int argc, gchar * argv[], int optind)
+cli_info (int argc, gchar * argv[], int *optind)
 {
   gchar *device_path;
   const gchar *name;
 
-  if (optind == argc)
+  if (*optind == argc)
     {
       error_print ("Device missing\n");
       return EXIT_FAILURE;
     }
   else
     {
-      device_path = argv[optind];
+      device_path = argv[*optind];
+      (*optind)++;
     }
 
   if (cli_connect (device_path))
@@ -265,7 +270,7 @@ cli_info (int argc, gchar * argv[], int optind)
 }
 
 static int
-cli_df (int argc, gchar * argv[], int optind)
+cli_df (int argc, gchar * argv[], int *optind)
 {
   gchar *device_path;
   gchar *size;
@@ -274,14 +279,15 @@ cli_df (int argc, gchar * argv[], int optind)
   gint res, storage;
   struct backend_storage_stats statfs;
 
-  if (optind == argc)
+  if (*optind == argc)
     {
       error_print ("Device missing\n");
       return EXIT_FAILURE;
     }
   else
     {
-      device_path = argv[optind];
+      device_path = argv[*optind];
+      (*optind)++;
     }
 
   if (cli_connect (device_path))
@@ -323,32 +329,33 @@ cli_df (int argc, gchar * argv[], int optind)
 }
 
 static int
-cli_upgrade_os (int argc, gchar * argv[], int optind)
+cli_upgrade_os (int argc, gchar * argv[], int *optind)
 {
   gint res;
   const gchar *src_path;
   const gchar *device_path;
   struct sysex_transfer sysex_transfer;
 
-  if (optind == argc)
+  if (*optind == argc)
     {
       error_print ("Local path missing\n");
       return EXIT_FAILURE;
     }
   else
     {
-      src_path = argv[optind];
-      optind++;
+      src_path = argv[*optind];
+      (*optind)++;
     }
 
-  if (optind == argc)
+  if (*optind == argc)
     {
       error_print ("Remote path missing\n");
       return EXIT_FAILURE;
     }
   else
     {
-      device_path = argv[optind];
+      device_path = argv[*optind];
+      (*optind)++;
     }
 
   if (cli_connect (device_path))
@@ -375,21 +382,22 @@ cli_upgrade_os (int argc, gchar * argv[], int optind)
 }
 
 static int
-cli_download (int argc, gchar * argv[], int optind)
+cli_download (int argc, gchar * argv[], int *optind)
 {
   const gchar *src_path;
   gchar *device_src_path, *download_path;
   gint res;
   GByteArray *array;
 
-  if (optind == argc)
+  if (*optind == argc)
     {
       error_print ("Remote path missing\n");
       return EXIT_FAILURE;
     }
   else
     {
-      device_src_path = argv[optind];
+      device_src_path = argv[*optind];
+      (*optind)++;
     }
 
   if (cli_connect (device_src_path))
@@ -425,7 +433,7 @@ end:
 }
 
 static int
-cli_upload (int argc, gchar * argv[], int optind)
+cli_upload (int argc, gchar * argv[], int *optind)
 {
   const gchar *dst_dir;
   gchar *src_path, *device_dst_path, *upload_path;
@@ -433,25 +441,26 @@ cli_upload (int argc, gchar * argv[], int optind)
   GByteArray *array;
   gint32 index = 1;
 
-  if (optind == argc)
+  if (*optind == argc)
     {
       error_print ("Local path missing\n");
       return EXIT_FAILURE;
     }
   else
     {
-      src_path = argv[optind];
-      optind++;
+      src_path = argv[*optind];
+      (*optind)++;
     }
 
-  if (optind == argc)
+  if (*optind == argc)
     {
       error_print ("Remote path missing\n");
       return EXIT_FAILURE;
     }
   else
     {
-      device_dst_path = argv[optind];
+      device_dst_path = argv[*optind];
+      (*optind)++;
     }
 
   if (cli_connect (device_dst_path))
@@ -479,6 +488,108 @@ cleanup:
   g_free (upload_path);
   g_byte_array_free (array, TRUE);
   return res ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static int
+cli_send (int argc, gchar * argv[], int *optind)
+{
+  gint err;
+  const gchar *device_dst_path, *src_file;
+  struct sysex_transfer sysex_transfer;
+
+  if (*optind == argc)
+    {
+      error_print ("Source file missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      src_file = argv[*optind];
+      (*optind)++;
+    }
+
+  if (*optind == argc)
+    {
+      error_print ("Remote device missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      device_dst_path = argv[*optind];
+      (*optind)++;
+    }
+
+  connector = "default";
+  if (cli_connect (device_dst_path))
+    {
+      return EXIT_FAILURE;
+    }
+
+  sysex_transfer.active = TRUE;
+  sysex_transfer.timeout = DUMP_TIMEOUT;
+  sysex_transfer.raw = g_byte_array_new ();
+
+  err = load_file (src_file, sysex_transfer.raw, NULL);
+
+  if (!err)
+    {
+      err = backend_tx_sysex (&backend, &sysex_transfer);
+    }
+
+  free_msg (sysex_transfer.raw);
+
+  return err;
+}
+
+static int
+cli_receive (int argc, gchar * argv[], int *optind)
+{
+  gint err;
+  const gchar *device_src_path, *dst_file;
+  struct sysex_transfer sysex_transfer;
+
+  if (*optind == argc)
+    {
+      error_print ("Remote device missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      device_src_path = argv[*optind];
+      (*optind)++;
+    }
+
+  if (*optind == argc)
+    {
+      error_print ("Destination file missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      dst_file = argv[*optind];
+      (*optind)++;
+    }
+
+  connector = "default";
+  if (cli_connect (device_src_path))
+    {
+      return EXIT_FAILURE;
+    }
+
+  sysex_transfer.timeout = DUMP_TIMEOUT;
+  sysex_transfer.batch = TRUE;
+
+  backend_rx_drain (&backend);
+  //This doesn't need to be synchronized because the CLI is not multithreaded.
+  err = backend_rx_sysex (&backend, &sysex_transfer);
+  if (!err)
+    {
+      err = save_file (dst_file, sysex_transfer.raw, NULL);
+    }
+
+  free_msg (sysex_transfer.raw);
+
+  return err;
 }
 
 gint
@@ -579,15 +690,23 @@ main (int argc, gchar * argv[])
     }
   else if (!strcmp (command, "info") || !strcmp (command, "info-device"))
     {
-      res = cli_info (argc, argv, optind);
+      res = cli_info (argc, argv, &optind);
     }
   else if (!strcmp (command, "df") || !strcmp (command, "info-storage"))
     {
-      res = cli_df (argc, argv, optind);
+      res = cli_df (argc, argv, &optind);
+    }
+  else if (!strcmp (command, "send"))
+    {
+      res = cli_send (argc, argv, &optind);
+    }
+  else if (!strcmp (command, "receive"))
+    {
+      res = cli_receive (argc, argv, &optind);
     }
   else if (!strcmp (command, "upgrade"))
     {
-      res = cli_upgrade_os (argc, argv, optind);
+      res = cli_upgrade_os (argc, argv, &optind);
     }
   else
     {
@@ -602,44 +721,44 @@ main (int argc, gchar * argv[])
 
       if (!strcmp (op, "ls") || !strcmp (op, "list"))
 	{
-	  res = cli_list (argc, argv, optind);
+	  res = cli_list (argc, argv, &optind);
 	}
       else if (!strcmp (op, "mkdir"))
 	{
-	  res = cli_command_path (argc, argv, optind,
+	  res = cli_command_path (argc, argv, &optind,
 				  GET_FS_OPS_OFFSET (mkdir));
 	}
       else if (!strcmp (op, "rm") || !strcmp (op, "rmdir"))
 	{
-	  res = cli_command_path (argc, argv, optind,
+	  res = cli_command_path (argc, argv, &optind,
 				  GET_FS_OPS_OFFSET (delete));
 	}
       else if (!strcmp (op, "download") || !strcmp (op, "dl"))
 	{
-	  res = cli_download (argc, argv, optind);
+	  res = cli_download (argc, argv, &optind);
 	}
       else if (!strcmp (op, "upload") || !strcmp (op, "ul"))
 	{
-	  res = cli_upload (argc, argv, optind);
+	  res = cli_upload (argc, argv, &optind);
 	}
       else if (!strcmp (op, "cl"))
 	{
-	  res = cli_command_path (argc, argv, optind,
+	  res = cli_command_path (argc, argv, &optind,
 				  GET_FS_OPS_OFFSET (clear));
 	}
       else if (!strcmp (op, "cp"))
 	{
-	  res = cli_command_src_dst (argc, argv, optind,
+	  res = cli_command_src_dst (argc, argv, &optind,
 				     GET_FS_OPS_OFFSET (copy));
 	}
       else if (!strcmp (op, "sw"))
 	{
-	  res = cli_command_src_dst (argc, argv, optind,
+	  res = cli_command_src_dst (argc, argv, &optind,
 				     GET_FS_OPS_OFFSET (swap));
 	}
       else if (!strcmp (op, "mv"))
 	{
-	  res = cli_command_src_dst (argc, argv, optind,
+	  res = cli_command_src_dst (argc, argv, &optind,
 				     GET_FS_OPS_OFFSET (move));
 	}
       else

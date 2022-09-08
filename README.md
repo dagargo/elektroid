@@ -106,6 +106,13 @@ Storage               Size            Used       Available       Use%
 RAM               64.00MiB        13.43MiB        50.57MiB     20.98%
 ```
 
+* `send` and `receive` work with a batch of SysEx messages. These are useful when working with generic devices, which have no filesystems implemented buf offer options to receive or send data.
+
+```
+$ elektroid-cli send file.syx 0:/
+$ elektroid-cli receive 0:/
+```
+
 * `upgrade`, upgrade firmware
 
 ```

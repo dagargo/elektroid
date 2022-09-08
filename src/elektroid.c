@@ -38,7 +38,6 @@
 
 #define MAX_DRAW_X 10000
 
-#define DUMP_TIMEOUT 5000	//With and E-Mu ESI-2000 it takes this more than 3 seconds to receive to receive some packets after the process has started.
 #define DND_TIMEOUT 1000
 
 #define TEXT_URI_LIST_STD "text/uri-list"

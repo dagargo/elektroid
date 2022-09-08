@@ -29,6 +29,7 @@
 #define BE_FILE_ICON_PRJ "elektroid-project-symbolic"
 #define BE_FILE_ICON_SND "elektroid-sound-symbolic"
 
+#define DUMP_TIMEOUT 5000	//With and E-Mu ESI-2000 it takes this more than 3 seconds to receive to receive some packets after the process has started.
 #define REST_TIME_US 50000
 #define SYSEX_TIMEOUT_MS 5000
 #define SYSEX_TIMEOUT_GUESS_MS 100	//When the request is not implemented, 5 s is too much.
