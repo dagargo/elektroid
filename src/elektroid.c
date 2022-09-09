@@ -833,7 +833,6 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
     }
 
 cleanup:
-  //TODO: free FileFilter
   gtk_widget_destroy (dialog);
 }
 
