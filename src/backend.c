@@ -22,7 +22,7 @@
 
 #define BE_POLL_TIMEOUT_MS 20
 #define BE_KB 1024
-#define BE_MAX_TX_LEN (4 * BE_KB)
+#define BE_MAX_TX_LEN BE_KB	//With a higher value than 4 KB, functions behave erratically.
 #define BE_INT_BUF_LEN (32 * BE_KB)	//Max length of a SysEx message for Elektroid
 #define BE_DEV_RING_BUF_LEN (256 * BE_KB)
 #define BE_DEVICE_NAME "hw:%d,%d,%d"
@@ -352,7 +352,12 @@ backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
       total += len;
     }
 
-  if (debug_level >= 2)
+  if (!transfer->active)
+    {
+      transfer->err = -ECANCELED;
+    }
+
+  if (!transfer->err && debug_level >= 2)
     {
       gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
 					transfer->raw->len);

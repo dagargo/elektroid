@@ -719,46 +719,75 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   gtk_widget_destroy (dialog);
 }
 
-static gpointer
-elektroid_tx_sysex_thread (gpointer data)
+static gint
+elektroid_send_sysex_file (const gchar * filename, t_sysex_transfer f)
 {
-  gchar *text;
-  gint *res = malloc (sizeof (gint));
-  t_sysex_transfer f = data;
+  gint err = load_file (filename, sysex_transfer.raw, NULL);
+  if (!err)
+    {
+      err = f (&backend, &sysex_transfer);
+    }
+  if (err && err != -ECANCELED)
+    {
+      show_error_msg (_("Error while loading “%s”: %s."),
+		      filename, g_strerror (err));
+    }
+  return err;
+}
 
-  sysex_transfer.active = TRUE;
+static gpointer
+elektroid_tx_sysex_files_thread (gpointer data)
+{
+  GSList *filenames = data;
+  gint *err = malloc (sizeof (gint));
+  sysex_transfer.raw = g_byte_array_new ();
   sysex_transfer.timeout = SYSEX_TIMEOUT_MS;
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
-  *res = f (&backend, &sysex_transfer);
-  if (!*res)
+  *err = 0;
+  while (*err != -ECANCELED && filenames)
     {
-      text = debug_get_hex_msg (sysex_transfer.raw);
-      debug_print (1, "SysEx message sent (%d): %s\n",
-		   sysex_transfer.raw->len, text);
-      free (text);
+      g_byte_array_set_size (sysex_transfer.raw, 0);
+      *err = elektroid_send_sysex_file (filenames->data, backend_tx_sysex);
+      filenames = filenames->next;
+      usleep (REST_TIME_US);
     }
-
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
 
-  return res;
+  free_msg (sysex_transfer.raw);
+  return err;
+}
+
+static gpointer
+elektroid_tx_upgrade_os_thread (gpointer data)
+{
+  GSList *filenames = data;
+  gint *err = malloc (sizeof (gint));
+  sysex_transfer.raw = g_byte_array_new ();
+  sysex_transfer.timeout = SYSEX_TIMEOUT_MS;
+
+  g_timeout_add (100, elektroid_update_sysex_progress, NULL);
+
+  *err = elektroid_send_sysex_file (filenames->data, backend.upgrade_os);
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
+
+  free_msg (sysex_transfer.raw);
+  return err;
 }
 
 static void
-elektroid_tx_sysex_common (t_sysex_transfer f)
+elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
 {
   GtkWidget *dialog;
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
-  gint res, lres;
-  char *filename;
-  gint *response;
-  GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_OPEN;
+  gint res, *err;
+  GSList *filenames;
 
   dialog = gtk_file_chooser_dialog_new (_("Open SysEx"),
 					GTK_WINDOW (main_window),
-					action,
+					GTK_FILE_CHOOSER_ACTION_OPEN,
 					_("_Cancel"),
 					GTK_RESPONSE_CANCEL,
 					_("_Open"),
@@ -768,72 +797,56 @@ elektroid_tx_sysex_common (t_sysex_transfer f)
   gtk_file_filter_set_name (filter, _("SysEx Files"));
   gtk_file_filter_add_pattern (filter, "*.syx");
   gtk_file_chooser_add_filter (chooser, filter);
+  gtk_file_chooser_set_current_folder (chooser, preferences.local_dir);
+  gtk_file_chooser_set_select_multiple (chooser, multiple);
 
   res = gtk_dialog_run (GTK_DIALOG (dialog));
-
   if (res == GTK_RESPONSE_ACCEPT)
     {
-      filename = gtk_file_chooser_get_filename (chooser);
-      gtk_widget_destroy (dialog);
-      debug_print (1, "Opening SysEx file...\n");
+      gtk_widget_hide (GTK_WIDGET (dialog));
+      filenames = gtk_file_chooser_get_filenames (chooser);
+      sysex_thread = g_thread_new ("sysex_thread", func, filenames);
+      gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Send SysEx"));
+      gtk_dialog_run (GTK_DIALOG (progress_dialog));
 
-      sysex_transfer.raw = g_byte_array_new ();
+      //If the progress_dialog is closed, we end the transfer.
+      g_mutex_lock (&sysex_transfer.mutex);
+      sysex_transfer.active = FALSE;
+      g_mutex_unlock (&sysex_transfer.mutex);
 
-      lres = load_file (filename, sysex_transfer.raw, NULL);
-      if (lres)
+      gtk_widget_hide (GTK_WIDGET (progress_dialog));
+      err = elektroid_join_sysex_thread ();
+
+      g_slist_free_full (g_steal_pointer (&filenames), g_free);
+
+      if (!err)			//Signal captured while running the dialog.
 	{
-	  show_error_msg (_("Error while loading “%s”: %s."),
-			  filename, g_strerror (lres));
-	  response = NULL;
-	}
-      else
-	{
-	  sysex_thread =
-	    g_thread_new ("sysex_thread", elektroid_tx_sysex_thread, f);
-
-	  gtk_window_set_title (GTK_WINDOW (progress_dialog),
-				_("Send SysEx"));
-	  res = gtk_dialog_run (GTK_DIALOG (progress_dialog));
-
-	  g_mutex_lock (&sysex_transfer.mutex);
-	  sysex_transfer.active = FALSE;
-	  g_mutex_unlock (&sysex_transfer.mutex);
-
-	  gtk_widget_hide (GTK_WIDGET (progress_dialog));
-
-	  response = elektroid_join_sysex_thread ();
+	  goto cleanup;
 	}
 
-      g_byte_array_free (sysex_transfer.raw, TRUE);
-
-      if (!response)		//Signal captured while running the dialog.
-	{
-	  return;
-	}
-
-      if (*response < 0)
+      if (*err < 0)
 	{
 	  elektroid_check_backend ();
 	}
 
-      free (response);
+      g_free (err);
     }
-  else
-    {
-      gtk_widget_destroy (dialog);
-    }
+
+cleanup:
+  //TODO: free FileFilter
+  gtk_widget_destroy (dialog);
 }
 
 static void
 elektroid_tx_sysex (GtkWidget * object, gpointer data)
 {
-  elektroid_tx_sysex_common (backend_tx_sysex);
+  elektroid_tx_sysex_common (elektroid_tx_sysex_files_thread, TRUE);
 }
 
 static void
 elektroid_upgrade_os (GtkWidget * object, gpointer data)
 {
-  elektroid_tx_sysex_common (backend.upgrade_os);
+  elektroid_tx_sysex_common (elektroid_tx_upgrade_os_thread, FALSE);
   backend_destroy (&backend);
   elektroid_check_backend ();
 }
@@ -1019,8 +1032,8 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 }
 
 static gboolean
-elektroid_drag_begin (GtkWidget * widget,
-		      GdkDragContext * context, gpointer data)
+elektroid_drag_begin (GtkWidget * widget, GdkDragContext * context,
+		      gpointer data)
 {
   GtkTreeIter iter;
   GtkTreeSelection *selection;
