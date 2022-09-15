@@ -85,6 +85,7 @@ connector_init (struct backend *backend, const gchar * midi_id,
       return err;
     }
 
+  err = -ENODEV;
   connector = CONNECTORS;
   while (*connector)
     {
@@ -94,9 +95,17 @@ connector_init (struct backend *backend, const gchar * midi_id,
 	    {
 	      debug_print (1, "Testing %s connector...\n",
 			   (*connector)->name);
-	      (*connector)->handshake (backend);
-	      debug_print (1, "Using %s connector...\n", (*connector)->name);
-	      return 0;
+	      if ((*connector)->handshake (backend))
+		{
+		  err = -EIO;
+		  goto end;
+		}
+	      else
+		{
+		  debug_print (1, "Using %s connector...\n",
+			       (*connector)->name);
+		  return 0;
+		}
 	    }
 	}
       else
@@ -111,9 +120,8 @@ connector_init (struct backend *backend, const gchar * midi_id,
       connector++;
     }
 
+end:
   error_print ("Device not recognized\n");
-
   backend_destroy (backend);
-
-  return -1;
+  return err;
 }
