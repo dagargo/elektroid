@@ -697,7 +697,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   words = input->len >> 1;	//bytes to words (frames)
   word_size = (gint) ceil (bits / 8.0);
   bytes_per_word = (gint) ceil (bits / 7.0);
-  words_per_packet = SDS_DATA_PACKET_PAYLOAD_LEN / SDS_BYTES_PER_WORD;
+  words_per_packet = SDS_DATA_PACKET_PAYLOAD_LEN / bytes_per_word;
   packets = ceil (words / (double) words_per_packet);
 
   //This is a hack to fix a downloading error with an E-Mu ESI-2000 because it doesn't send the last packet.
