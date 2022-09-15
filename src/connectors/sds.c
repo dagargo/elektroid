@@ -671,7 +671,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   gint16 *frame, *f;
   gboolean active, open_loop = FALSE;
   guint word, words, words_per_packet, id, packet = 0, packets, retries =
-    0, w, bytes_per_word;
+    0, w, bytes_per_word, fixed_words;
   gint err = 0, word_size;
   struct sample_info *sample_info = control->data;
 
@@ -694,7 +694,17 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 
   debug_print (1, "Sending dump header...\n");
 
-  tx_msg = sds_get_dump_msg (id, input->len >> 1, sample_info, bits);
+  words = input->len >> 1;	//bytes to words (frames)
+  word_size = (gint) ceil (bits / 8.0);
+  bytes_per_word = (gint) ceil (bits / 7.0);
+  words_per_packet = SDS_DATA_PACKET_PAYLOAD_LEN / SDS_BYTES_PER_WORD;
+  packets = ceil (words / (double) words_per_packet);
+
+  //This is a hack to fix a downloading error with an E-Mu ESI-2000 because it doesn't send the last packet.
+  //We just add 1 sample when uploading in this case, which is not much, and then downloading just works.
+  fixed_words = words % words_per_packet == 1 ? words + 1 : words;
+
+  tx_msg = sds_get_dump_msg (id, fixed_words, sample_info, bits);
   //The first timeout should be SDS_SPEC_TIMEOUT_HANDSHAKE (2 s) buit it is not enough sometimes.
   err = sds_tx_and_wait_ack (backend, tx_msg, 0, SDS_NO_SPEC_TIMEOUT,
 			     SDS_NO_SPEC_TIMEOUT);
@@ -716,11 +726,6 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   debug_print (1, "Sending dump data...\n");
 
   word = 0;
-  words = input->len >> 1;	//bytes to words (frames)
-  words_per_packet = SDS_DATA_PACKET_PAYLOAD_LEN / SDS_BYTES_PER_WORD;
-  packets = ceil (words / (double) words_per_packet);
-  word_size = (gint) ceil (bits / 8.0);
-  bytes_per_word = (gint) ceil (bits / 7.0);
   sds_debug_print_sample_data (bits, bytes_per_word,
 			       word_size, sample_info->samplerate, words,
 			       packets);
