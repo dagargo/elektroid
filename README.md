@@ -1,9 +1,21 @@
 # Elektroid
 
-Elektroid is a GNU/Linux transfer application for Elektron devices. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.
-Elektroid has been reported to work with Model:Samples, Model:Cycles, Digitakt, Digitone, Syntakt, and Analog Rytm MKI and MKII.
+Elektroid is a GNU/Linux management application for MIDI devices. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.
 
-To use Elektroid, USB configuration must be set to `USB MIDI` or `USB AUDIO/MIDI` as it won't work in Overbridge mode.
+Supported devices:
+
+* Elektron Model:Samples
+* Elektron Model:Cycles
+* Elektron Digitakt
+* Elektron Digitone and Digitone Keys
+* Elektron Syntakt
+* Elektron Analog Rytm MKI and MKII
+* Elektron Analog Four MKI and MKII
+* All samplers implementing MIDI SDS
+* Casio CZ-101
+* Arturia MicroBrute
+
+To use with Elektron devices, USB configuration must be set to `USB MIDI` or `USB AUDIO/MIDI` as it won't work in Overbridge mode.
 
 ## Installation
 
@@ -61,7 +73,7 @@ $ mock -r fedora-$rel-x86_64 --no-clean --rebuild /var/lib/mock/fedora-$rel-x86_
 
 `elektroid-cli` brings the same functionality as `elektroid` to the command line.
 
-There are device commands and filesystem commands. The latter have the form `a-b-c` where `a` is a connector, `b` is a filesystem and `c` is the command, (e.g., `elektron-project-ls`, `cz-program-ls`, `sds-sample-download`). Notice that the filesystem is always in the singular form. As of version 2.2, **older commands have been removed**.
+There are device commands and filesystem commands. The latter have the form `a-b-c` where `a` is a connector, `b` is a filesystem and `c` is the command, (e.g., `elektron-project-ls`, `cz-program-upload`, `sds-sample-download`). Notice that the filesystem is always in the singular form. As of version 2.2, **older command forms have been removed**.
 
 These are the available commands:
 
@@ -77,7 +89,7 @@ These are the available commands:
 
 Keep in mind that not every filesystem implements all the commands. For instance, Elektron samples can not be swapped.
 
-Provided paths must always be prepended with the device id and a colon (e.g., `0:/incoming`). In the slot mode filesystems, (these are the most typically used in most devices), items are addressed by number and destination paths take the form `path:name` (e.g., `0:/0:bass`) when uploading.
+Provided paths must always be prepended with the device id and a colon (e.g., `0:/incoming`). In slot mode filesystems, (these are the most typically used), items are addressed by number and destination paths take the form `path:name` (e.g., `0:/0:bass`) when uploading.
 
 ### Device commands
 
