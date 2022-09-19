@@ -22,7 +22,7 @@
 #include "audio.h"
 
 #define AUDIO_PA_BUFFER_LEN (AUDIO_SAMPLE_RATE / 10)
-#define AUDIO_CHANNELS 1
+#define AUDIO_CHANNELS 2
 
 static const pa_buffer_attr buffer_attributes = {
   .maxlength = -1,
@@ -41,10 +41,10 @@ static void
 audio_write_callback (pa_stream * stream, size_t size, void *data)
 {
   struct audio *audio = data;
-  guint req_frames;
+  struct sample_info *sample_info;
+  guint32 req_frames;
   void *buffer;
-  gshort *v;
-  gint i;
+  gint16 *dst, *src;
 
   if (audio->release_frames > AUDIO_PA_BUFFER_LEN)
     {
@@ -52,8 +52,11 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
       return;
     }
 
-  req_frames = size >> 1;
-  debug_print (2, "Writing %2d frames...\n", req_frames);
+  sample_info = audio->control.data;
+  req_frames = size >> AUDIO_CHANNELS;
+
+  debug_print (2, "Writing %d frames to %d channels...\n", req_frames,
+	       sample_info->achannels);
   pa_stream_begin_write (stream, &buffer, &size);
 
   g_mutex_lock (&audio->control.mutex);
@@ -62,45 +65,49 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
     {
       g_mutex_unlock (&audio->control.mutex);
       pa_stream_cancel_write (stream);
-      debug_print (2, "Canceled\n");
+      debug_print (2, "Cancelled\n");
       return;
     }
 
-  if (audio->pos == audio->sample->len >> 1 && !audio->loop)
+  memset (buffer, 0, size);
+
+  if (audio->pos == audio->frames && !audio->loop)
     {
       g_mutex_unlock (&audio->control.mutex);
-      memset (buffer, 0, size);
       pa_stream_write (stream, buffer, size, NULL, 0, PA_SEEK_RELATIVE);
       audio->release_frames += req_frames;
       return;
     }
 
-  v = buffer;
-  for (i = 0; i < req_frames; i++)
+  dst = buffer;
+  src =
+    (gint16 *) & audio->sample->data[audio->pos << sample_info->achannels];
+  for (gint i = 0; i < req_frames; i++)
     {
-      if (audio->pos < audio->sample->len >> 1)
+      if (audio->pos == audio->frames)
 	{
-	  *v = ((short *) audio->sample->data)[audio->pos];
-	  audio->pos++;
-	}
-      else
-	{
-	  if (audio->loop)
-	    {
-	      audio->pos = 0;
-	      *v = ((short *) audio->sample->data)[0];
-	    }
-	  else
+	  if (!audio->loop)
 	    {
 	      break;
 	    }
+	  audio->pos = 0;
 	}
-      v++;
+
+      *dst = *src;
+      dst++;
+      if (sample_info->achannels == 2)
+	{
+	  src++;
+	}
+      *dst = *src;
+      src++;
+      dst++;
+      audio->pos++;
     }
 
   g_mutex_unlock (&audio->control.mutex);
 
-  pa_stream_write (stream, buffer, i * 2, NULL, 0, PA_SEEK_RELATIVE);
+  pa_stream_write (stream, buffer, size, NULL, 0, PA_SEEK_RELATIVE);
 }
 
 void
@@ -229,18 +236,17 @@ audio_context_callback (pa_context * context, void *data)
       pa_proplist_set (props,
 		       PA_PROP_APPLICATION_ICON_NAME,
 		       PACKAGE, sizeof (PACKAGE));
-      audio->stream =
-	pa_stream_new_with_proplist (context, PACKAGE, &sample_spec, NULL,
-				     props);
+      audio->stream = pa_stream_new_with_proplist (context, PACKAGE,
+						   &sample_spec, NULL, props);
       pa_proplist_free (props);
       pa_stream_set_state_callback (audio->stream, audio_connect_callback,
 				    audio);
       pa_stream_connect_playback (audio->stream, NULL, &buffer_attributes,
 				  stream_flags, NULL, NULL);
       pa_context_set_subscribe_callback (audio->context, audio_notify, audio);
-      operation =
-	pa_context_subscribe (audio->context,
-			      PA_SUBSCRIPTION_MASK_SINK_INPUT, NULL, NULL);
+      operation = pa_context_subscribe (audio->context,
+					PA_SUBSCRIPTION_MASK_SINK_INPUT, NULL,
+					NULL);
       if (operation != NULL)
 	{
 	  pa_operation_unref (operation);
@@ -333,6 +339,7 @@ audio_reset_sample (struct audio *audio)
   audio->frames = 0;
   audio->pos = 0;
   audio->path[0] = 0;
+  memset (audio->control.data, 0, sizeof (struct sample_info));
   g_mutex_unlock (&audio->control.mutex);
 }
 

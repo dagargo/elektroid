@@ -92,13 +92,20 @@ struct job_control
   void *data;
 };
 
+// This contains information taken from from the sample file.
+// It's possible that this information does NOT represent the actual data loaded.
+// For instance, only 2 channels samples are loaded as a stereo sample. In the
+// rest of the cases the loaded audio is single channe sum.
 struct sample_info
 {
-  gint32 loopstart;
-  gint32 loopend;
-  gint32 looptype;
-  gint32 samplerate;
-  gint32 bitdepth;
+  guint32 loopstart;
+  guint32 loopend;
+  guint32 looptype;
+  guint32 samplerate;
+  guint32 bitdepth;
+  guint32 channels;		//file channels
+  guint32 frames;
+  guint32 achannels;		//loaded channels
 };
 
 struct device_desc
@@ -191,14 +198,14 @@ struct fs_operations
 
 enum fs_options
 {
-  FS_OPTION_SHOW_AUDIO_PLAYER = 0x1,
-  FS_OPTION_SHOW_INDEX_COLUMN = 0x2,
-  FS_OPTION_SINGLE_OP = 0x4,
-  FS_OPTION_SLOT_STORAGE = 0x8,	//In SLOT mode, dst_dir passed to t_get_upload_path includes the index, ':' and the item name.
-  FS_OPTION_SORT_BY_ID = 0x10,
-  FS_OPTION_SORT_BY_NAME = 0x20,
+  FS_OPTION_MONO_AUDIO_PLAYER = 0x1,
+  FS_OPTION_STEREO_AUDIO_PLAYER = 0x2,
+  FS_OPTION_SHOW_INDEX_COLUMN = 0x4,
+  FS_OPTION_SINGLE_OP = 0x8,
+  FS_OPTION_SLOT_STORAGE = 0x10,	//In SLOT mode, dst_dir passed to t_get_upload_path includes the index, ':' and the item name.
+  FS_OPTION_SORT_BY_ID = 0x20,
+  FS_OPTION_SORT_BY_NAME = 0x40
 };
-
 
 extern int debug_level;
 

@@ -288,7 +288,7 @@ static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
-  .options = FS_OPTION_SHOW_AUDIO_PLAYER | FS_OPTION_SORT_BY_NAME,
+  .options = FS_OPTION_MONO_AUDIO_PLAYER | FS_OPTION_SORT_BY_NAME,
   .name = "sample",
   .gui_name = "Samples",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -3323,6 +3323,7 @@ elektron_sample_load (const gchar * path, GByteArray * sample,
 {
   struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
   sample_info->samplerate = ELEKTRON_SAMPLE_RATE;
+  sample_info->channels = ELEKTRON_SAMPLE_CHANNELS;
   control->data = sample_info;
   return sample_load_with_frames (path, sample, control, NULL);
 }

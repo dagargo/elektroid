@@ -22,6 +22,7 @@
 #include <sndfile.h>
 #include <samplerate.h>
 #include <inttypes.h>
+#include <math.h>
 #include "sample.h"
 
 #define JUNK_CHUNK_ID "JUNK"
@@ -190,7 +191,7 @@ sample_get_wave_data (GByteArray * sample,
 
   smpl_chunk_data.manufacturer = 0;
   smpl_chunk_data.product = 0;
-  smpl_chunk_data.sample_period = 1000000000 / sample_info->samplerate;
+  smpl_chunk_data.sample_period = 1e9 / sample_info->samplerate;
   smpl_chunk_data.midi_unity_note = 60;
   smpl_chunk_data.midi_pitch_fraction = 0;
   smpl_chunk_data.smpte_format = 0;
@@ -272,9 +273,10 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
     }
 }
 
-//If control->data is NULL, then a new struct sample_info * is created and control->data points to it.
-//In case of failure, if control->data is NULL is freed.
-
+// If control->data is NULL, then a new struct sample_info * is created and control->data points to it.
+// In case of failure, if control->data is NULL is freed.
+// Franes is the amount of frames after resampling. This value is set before the loading has terminated.
+//
 static gint
 sample_load_raw_data (struct g_byte_array_io_data *wave,
 		      struct job_control *control, GByteArray * sample,
@@ -291,10 +293,9 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
   gint16 *buffer_input_mono;
   gint16 *buffer_s;
   gfloat *buffer_f;
-  gint err;
-  gint resampled_buffer_len;
-  gint f, frames_read;
+  gint err, resampled_buffer_len, f, frames_read, channels, samplerate;
   gboolean active;
+  gdouble ratio;
   struct sample_info *sample_info;
   struct smpl_chunk_data smpl_chunk_data;
   gboolean disable_loop = FALSE;
@@ -324,8 +325,20 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
   if (!control->data)
     {
       sample_info = g_malloc (sizeof (struct sample_info));
-      sample_info->samplerate = -1;
+      sample_info->samplerate = 0;
+      sample_info->channels = 0;
     }
+
+  channels = (sf_info.channels == 2 && (sample_info->channels == 2
+					|| !sample_info->channels)) ? 2 : 1;
+  sample_info->achannels = channels;
+  samplerate =
+    sample_info->samplerate ? sample_info->samplerate : sf_info.samplerate;
+
+  sample_info->channels = sf_info.channels;
+  sample_info->samplerate = sf_info.samplerate;
+  sample_info->frames = sf_info.frames;
+
   if (chunk_iter)
     {
       chunk_info.datalen = sizeof (struct smpl_chunk_data);
@@ -333,6 +346,30 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
       chunk_info.data = &smpl_chunk_data;
       sf_get_chunk_data (chunk_iter, &chunk_info);
 
+      if ((sf_info.format & SF_FORMAT_TYPEMASK) == SF_FORMAT_WAV)
+	{
+	  switch (sf_info.format & SF_FORMAT_SUBMASK)
+	    {
+	    case SF_FORMAT_PCM_S8:
+	      sample_info->bitdepth = 8;
+	      break;
+	    case SF_FORMAT_PCM_16:
+	      sample_info->bitdepth = 16;
+	      break;
+	    case SF_FORMAT_PCM_24:
+	      sample_info->bitdepth = 24;
+	      break;
+	    case SF_FORMAT_PCM_32:
+	      sample_info->bitdepth = 32;
+	      break;
+	    default:
+	      sample_info->bitdepth = 0;
+	    }
+	}
+      else
+	{
+	  sample_info->bitdepth = 0;
+	}
       sample_info->loopstart = le32toh (smpl_chunk_data.sample_loop.start);
       sample_info->loopend = le32toh (smpl_chunk_data.sample_loop.end);
       sample_info->looptype = le32toh (smpl_chunk_data.sample_loop.type);
@@ -359,11 +396,6 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
     }
   sample_info->bitdepth = 16;
 
-  if (sample_info->samplerate < 0)
-    {
-      sample_info->samplerate = sf_info.samplerate;
-    }
-
   //Set scale factor. See http://www.mega-nerd.com/libsndfile/api.html#note2
   if ((sf_info.format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||
       (sf_info.format & SF_FORMAT_DOUBLE) == SF_FORMAT_DOUBLE)
@@ -377,16 +409,18 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
     malloc (LOAD_BUFFER_LEN * sf_info.channels * sizeof (gint16));
   buffer_input_mono = malloc (LOAD_BUFFER_LEN * sizeof (gint16));
 
-  buffer_f = malloc (LOAD_BUFFER_LEN * sizeof (gfloat));
+  buffer_f = malloc (LOAD_BUFFER_LEN * channels * sizeof (gfloat));
   src_data.data_in = buffer_f;
-  src_data.src_ratio =
-    ((double) sample_info->samplerate) / sf_info.samplerate;
+  ratio = samplerate / (double) sf_info.samplerate;
+  src_data.src_ratio = ratio;
 
-  resampled_buffer_len = LOAD_BUFFER_LEN * src_data.src_ratio;
+  resampled_buffer_len =
+    round (LOAD_BUFFER_LEN * channels * src_data.src_ratio);
   buffer_s = malloc (resampled_buffer_len * sizeof (gint16));
   src_data.data_out = malloc (resampled_buffer_len * sizeof (gfloat));
+  src_data.output_frames = resampled_buffer_len;
 
-  src_state = src_new (SRC_SINC_BEST_QUALITY, 1, &err);
+  src_state = src_new (SRC_SINC_BEST_QUALITY, channels, &err);
   if (err)
     {
       goto cleanup;
@@ -397,19 +431,18 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
       *frames = sf_info.frames * src_data.src_ratio;
     }
 
-  if (sample_info->samplerate != sf_info.samplerate)
+  if (samplerate != sf_info.samplerate)
     {
       debug_print (2, "Loop start at %d, loop end at %d before resampling\n",
 		   sample_info->loopstart, sample_info->loopend);
-      sample_info->loopstart *= src_data.src_ratio;
-      sample_info->loopend *= src_data.src_ratio;
+      sample_info->loopstart = round (sample_info->loopstart * ratio);
+      sample_info->loopend = round (sample_info->loopend * ratio);
       debug_print (2, "Loop start at %d, loop end at %d after resampling\n",
 		   sample_info->loopstart, sample_info->loopend);
     }
 
   debug_print (2, "Loading sample (%" PRId64 " frames)...\n", sf_info.frames);
 
-  f = 0;
   if (control)
     {
       g_mutex_lock (&control->mutex);
@@ -421,25 +454,15 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
       active = TRUE;
     }
 
+  f = 0;
   while (f < sf_info.frames && active)
     {
-      debug_print (2, "Loading buffer...\n");
-
-      frames_read =
-	sf_readf_short (sndfile, buffer_input_multi, LOAD_BUFFER_LEN);
-
-      if (frames_read < LOAD_BUFFER_LEN)
-	{
-	  src_data.end_of_input = SF_TRUE;
-	}
-      else
-	{
-	  src_data.end_of_input = 0;
-	}
-      src_data.input_frames = frames_read;
+      debug_print (2, "Loading %d channels buffer...\n", channels);
+      frames_read = sf_readf_short (sndfile, buffer_input_multi,
+				    LOAD_BUFFER_LEN);
       f += frames_read;
 
-      if (sf_info.channels == 1)
+      if (channels == sf_info.channels)	// 1 <= channels <= 2
 	{
 	  buffer_input = buffer_input_multi;
 	}
@@ -450,14 +473,14 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
 	  buffer_input = buffer_input_mono;
 	}
 
-      if (sample_info->samplerate == sf_info.samplerate)
+      if (samplerate == sf_info.samplerate)
 	{
 	  if (control)
 	    {
 	      g_mutex_lock (&control->mutex);
 	    }
 	  g_byte_array_append (sample, (guint8 *) buffer_input,
-			       frames_read << 1);
+			       frames_read << channels);
 	  if (control)
 	    {
 	      g_mutex_unlock (&control->mutex);
@@ -465,23 +488,29 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
 	}
       else
 	{
-	  src_short_to_float_array (buffer_input, buffer_f, frames_read);
-	  src_data.output_frames = src_data.input_frames * src_data.src_ratio;
+	  src_data.end_of_input = frames_read < LOAD_BUFFER_LEN ? SF_TRUE : 0;
+	  src_data.input_frames = frames_read;
+
+	  src_short_to_float_array (buffer_input, buffer_f,
+				    frames_read * channels);
+	  debug_print (2, "Resampling %d channels with ratio %f...\n",
+		       channels, src_data.src_ratio);
 	  err = src_process (src_state, &src_data);
-	  debug_print (2, "Resampling...\n");
 	  if (err)
 	    {
-	      debug_print (2, "Error %s\n", src_strerror (err));
+	      g_byte_array_set_size (sample, 0);
+	      error_print ("Error while resampling: %s\n",
+			   src_strerror (err));
 	      break;
 	    }
 	  src_float_to_short_array (src_data.data_out, buffer_s,
-				    src_data.output_frames_gen);
+				    src_data.output_frames_gen * channels);
 	  if (control)
 	    {
 	      g_mutex_lock (&control->mutex);
 	    }
 	  g_byte_array_append (sample, (guint8 *) buffer_s,
-			       src_data.output_frames_gen << 1);
+			       src_data.output_frames_gen << channels);
 	  if (control)
 	    {
 	      g_mutex_unlock (&control->mutex);
@@ -499,13 +528,6 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
     }
 
   src_delete (src_state);
-
-  if (err)
-    {
-      g_byte_array_set_size (sample, 0);
-      error_print ("Error while preparing resampling: %s\n",
-		   src_strerror (err));
-    }
 
   if (control)
     {
@@ -538,6 +560,8 @@ cleanup:
 	{
 	  control->data = sample_info;
 	}
+      // This removes the additional samples added by the resampler due to rounding.
+      g_byte_array_set_size (sample, *frames << channels);
       return 0;
     }
   else

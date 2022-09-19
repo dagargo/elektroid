@@ -36,6 +36,8 @@
 #include "local.h"
 #include "preferences.h"
 
+#define SHOW_AUDIO_PLAYER(ops) ((ops->options & FS_OPTION_MONO_AUDIO_PLAYER) || (ops->options & FS_OPTION_STEREO_AUDIO_PLAYER))
+
 #define MAX_DRAW_X 10000
 
 #define DND_TIMEOUT 1000
@@ -219,6 +221,11 @@ static GtkWidget *clear_tasks_button;
 static GtkListStore *fs_list_store;
 static GtkComboBox *fs_combo;
 static GtkTreeViewColumn *remote_tree_view_index_column;
+static GtkWidget *sample_info_box;
+static GtkWidget *sample_length;
+static GtkWidget *sample_channels;
+static GtkWidget *sample_samplerate;
+static GtkWidget *sample_bitdepth;
 
 inline static const gchar *
 elektroid_get_fs_name (guint fs)
@@ -229,9 +236,9 @@ elektroid_get_fs_name (guint fs)
 static void
 elektroid_set_file_extensions_for_fs (gchar ** extensions[], gint sel_fs)
 {
-  const struct fs_operations *ops =
-    backend_get_fs_operations (&backend, sel_fs, NULL);
   gchar *mp3_ext = NULL;
+  const struct fs_operations *ops = backend_get_fs_operations (&backend,
+							       sel_fs, NULL);
 
   if (*extensions != NULL)
     {
@@ -244,7 +251,7 @@ elektroid_set_file_extensions_for_fs (gchar ** extensions[], gint sel_fs)
       g_free (*extensions);
     }
 
-  if (!ops || ops->options & FS_OPTION_SHOW_AUDIO_PLAYER)
+  if (!ops || SHOW_AUDIO_PLAYER (ops))
     {
       const gchar **ext = ELEKTROID_AUDIO_LOCAL_EXTS;
       int known_ext = 0;
@@ -859,11 +866,60 @@ elektroid_show_about (GtkWidget * object, gpointer data)
 }
 
 static void
-elektroid_sample_controls_set_sensitive (gboolean sensitive)
+elektroid_set_sample_on_load (gboolean sensitive)
 {
+  gchar label[LABEL_MAX];
+  struct sample_info *sample_info = audio.control.data;
+
   gtk_widget_set_sensitive (local_play_menuitem, sensitive);
   gtk_widget_set_sensitive (play_button, sensitive);
   gtk_widget_set_sensitive (stop_button, sensitive);
+
+  if (sample_info->frames)
+    {
+      double time = sample_info->frames / (double) sample_info->samplerate;
+
+      gtk_widget_set_visible (sample_info_box, TRUE);
+
+      if (time >= 60)
+	{
+	  snprintf (label, LABEL_MAX, "%d; %.0f %s", sample_info->frames,
+		    time, _("min."));
+	}
+      else if (time >= 10)
+	{
+	  snprintf (label, LABEL_MAX, "%d; %.0f s", sample_info->frames,
+		    time);
+	}
+      else if (time >= 1)
+	{
+	  snprintf (label, LABEL_MAX, "%d; %.1f s", sample_info->frames,
+		    time);
+	}
+      else
+	{
+	  snprintf (label, LABEL_MAX, "%d; %.2f s", sample_info->frames,
+		    time);
+	}
+      gtk_label_set_text (GTK_LABEL (sample_length), label);
+
+      snprintf (label, LABEL_MAX, "%.2f kHz",
+		sample_info->samplerate / 1000.f);
+      gtk_label_set_text (GTK_LABEL (sample_samplerate), label);
+
+      snprintf (label, LABEL_MAX, "%d", sample_info->channels);
+      gtk_label_set_text (GTK_LABEL (sample_channels), label);
+
+      if (sample_info->bitdepth)
+	{
+	  snprintf (label, LABEL_MAX, "%d", sample_info->bitdepth);
+	  gtk_label_set_text (GTK_LABEL (sample_bitdepth), label);
+	}
+    }
+  else
+    {
+      gtk_widget_set_visible (sample_info_box, FALSE);
+    }
 }
 
 static gboolean
@@ -880,7 +936,7 @@ elektroid_update_ui_on_load (gpointer data)
     {
       if (audio_check (&audio))
 	{
-	  elektroid_sample_controls_set_sensitive (TRUE);
+	  elektroid_set_sample_on_load (TRUE);
 	}
       if (preferences.autoplay)
 	{
@@ -1250,13 +1306,18 @@ elektroid_load_sample (gpointer data)
   g_mutex_unlock (&audio.control.mutex);
 
   sample_info->samplerate = AUDIO_SAMPLE_RATE;
+  sample_info->channels =
+    !remote_browser.fs_ops
+    || (remote_browser.
+	fs_ops->options & FS_OPTION_STEREO_AUDIO_PLAYER) ? 2 : 1;
   if (sample_load_with_frames
       (audio.path, audio.sample, &audio.control, &audio.frames) >= 0)
     {
       debug_print (1,
-		   "Sample length: %d, loop start at %d; loop end at %d; sample rate: %d.\n",
-		   audio.sample->len >> 1, sample_info->loopstart,
-		   sample_info->loopend, sample_info->samplerate);
+		   "Samples: %d (%d B); channels: %d; loop start at %d; loop end at %d; sample rate: %d; bit depth: %d\n",
+		   audio.frames, audio.sample->len, sample_info->channels,
+		   sample_info->loopstart, sample_info->loopend,
+		   sample_info->samplerate, sample_info->bitdepth);
     }
 
   g_mutex_lock (&audio.control.mutex);
@@ -1287,8 +1348,6 @@ elektroid_stop_load_thread ()
       g_thread_join (load_thread);
       load_thread = NULL;
     }
-
-
 }
 
 static void
@@ -1339,9 +1398,9 @@ elektroid_local_check_selection (gpointer data)
   gchar *sample_path;
   GtkTreeModel *model;
   gboolean audio_controls;
-  gboolean audio_fs = !remote_browser.fs_ops
-    || remote_browser.fs_ops->options & FS_OPTION_SHOW_AUDIO_PLAYER;
   struct item item;
+  gboolean audio_fs = !remote_browser.fs_ops
+    || SHOW_AUDIO_PLAYER (remote_browser.fs_ops);
   gint count = browser_get_selected_items_count (&local_browser);
 
   if (count == 1)
@@ -1382,7 +1441,7 @@ elektroid_local_check_selection (gpointer data)
     }
 
   audio_controls = (item.type == ELEKTROID_FILE) && audio_fs;
-  elektroid_sample_controls_set_sensitive (audio_controls);
+  elektroid_set_sample_on_load (audio_controls);
   gtk_widget_set_sensitive (local_open_menuitem, audio_controls);
   gtk_widget_set_sensitive (local_show_menuitem, count <= 1);
   gtk_widget_set_sensitive (local_rename_menuitem, count == 1);
@@ -1402,16 +1461,34 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
   guint width, height;
   GdkRGBA color;
   GtkStyleContext *context;
-  int i, x_widget, x_sample;
-  double x_ratio, mid_y, value;
+  gint x_widget, x_sample;
+  double x_ratio, mid_y1, mid_y2, value;
   short *sample;
+  double y_scale = 1.0 / (double) SHRT_MIN;
+  double x_scale = 1.0 / (double) MAX_DRAW_X;
+  struct sample_info *sample_info = audio.control.data;
+  gboolean stereo = ((!remote_browser.fs_ops
+		      || (remote_browser.
+			  fs_ops->options & FS_OPTION_STEREO_AUDIO_PLAYER))
+		     && (sample_info->channels == 2));
 
   g_mutex_lock (&audio.control.mutex);
 
   context = gtk_widget_get_style_context (widget);
-  width = gtk_widget_get_allocated_width (widget);
-  height = gtk_widget_get_allocated_height (widget);
-  mid_y = height / 2.0;
+  width = gtk_widget_get_allocated_width (widget) - 2;
+  height = gtk_widget_get_allocated_height (widget) - 2;
+  y_scale *= height;
+  if (stereo)
+    {
+      mid_y1 = height * 0.25;
+      mid_y2 = height * 0.75;
+      y_scale *= 0.25;
+    }
+  else
+    {
+      mid_y1 = height * 0.50;
+      y_scale *= 0.5;
+    }
   gtk_render_background (context, cr, 0, 0, width, height);
   gtk_style_context_get_color (context, gtk_style_context_get_state (context),
 			       &color);
@@ -1419,16 +1496,23 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 
   sample = (short *) audio.sample->data;
   x_ratio = audio.frames / (double) MAX_DRAW_X;
-  for (i = 0; i < MAX_DRAW_X; i++)
+  for (gint i = 0; i < MAX_DRAW_X; i++)
     {
-      x_sample = i * x_ratio;
+      x_sample = i * x_ratio * (stereo ? 2 : 1);
+      x_widget = i * width * x_scale;
       if (x_sample < audio.sample->len >> 1)
 	{
-	  x_widget = i * ((double) width) / MAX_DRAW_X;
-	  value = mid_y - mid_y * (sample[x_sample] / (float) SHRT_MIN);
-	  cairo_move_to (cr, x_widget, mid_y);
+	  value = mid_y1 - sample[x_sample] * y_scale;
+	  cairo_move_to (cr, x_widget, mid_y1);
 	  cairo_line_to (cr, x_widget, value);
 	  cairo_stroke (cr);
+	  if (stereo)
+	    {
+	      value = mid_y2 - sample[x_sample + 1] * y_scale;
+	      cairo_move_to (cr, x_widget, mid_y2);
+	      cairo_line_to (cr, x_widget, value);
+	      cairo_stroke (cr);
+	    }
 	}
     }
 
@@ -2012,7 +2096,6 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
   const gchar *icon =
     backend_get_fs_operations (&backend, remote_fs_id, NULL)->gui_icon;
 
-
   gtk_list_store_insert_with_values (task_list_store, NULL, -1,
 				     TASK_LIST_STORE_STATUS_FIELD, QUEUED,
 				     TASK_LIST_STORE_TYPE_FIELD, type,
@@ -2499,11 +2582,9 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   gtk_widget_set_visible (remote_delete_menuitem,
 			  remote_browser.fs_ops->delete != NULL);
   gtk_widget_set_visible (local_audio_box,
-			  remote_browser.
-			  fs_ops->options & FS_OPTION_SHOW_AUDIO_PLAYER);
+			  SHOW_AUDIO_PLAYER (remote_browser.fs_ops));
   gtk_tree_view_column_set_visible (remote_tree_view_index_column,
-				    remote_browser.
-				    fs_ops->options &
+				    remote_browser.fs_ops->options &
 				    FS_OPTION_SHOW_INDEX_COLUMN);
 
   if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
@@ -2521,7 +2602,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			 GDK_ACTION_COPY);
     }
 
-  if (remote_browser.fs_ops->options & FS_OPTION_SHOW_AUDIO_PLAYER)
+  if (SHOW_AUDIO_PLAYER (remote_browser.fs_ops))
     {
       audio_stop (&audio, TRUE);
     }
@@ -2532,6 +2613,8 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 static void
 elektroid_fill_fs_combo ()
 {
+  const struct fs_operations *ops;
+
   gtk_list_store_clear (fs_list_store);
 
   if (!backend.device_desc.filesystems)
@@ -2544,8 +2627,7 @@ elektroid_fill_fs_combo ()
     {
       if (backend.device_desc.filesystems & fs)
 	{
-	  const struct fs_operations *ops =
-	    backend_get_fs_operations (&backend, fs, NULL);
+	  ops = backend_get_fs_operations (&backend, fs, NULL);
 	  if (ops->gui_name)
 	    {
 	      gtk_list_store_insert_with_values (fs_list_store, NULL, -1,
@@ -3376,6 +3458,17 @@ elektroid_run (int argc, char *argv[])
     GTK_LIST_STORE (gtk_builder_get_object (builder, "fs_list_store"));
   fs_combo = GTK_COMBO_BOX (gtk_builder_get_object (builder, "fs_combo"));
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
+
+  sample_info_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_info_box"));
+  sample_length =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_length"));
+  sample_channels =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_channels"));
+  sample_samplerate =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_samplerate"));
+  sample_bitdepth =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_bitdepth"));
 
   gtk_widget_set_sensitive (remote_box, FALSE);
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);

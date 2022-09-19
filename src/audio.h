@@ -25,16 +25,16 @@
 struct audio
 {
   GByteArray *sample;
-  guint frames;
+  guint32 frames;
   gboolean loop;
   pa_threaded_mainloop *mainloop;
   pa_context *context;
   pa_stream *stream;
-  gint pos;
+  guint32 pos;
   pa_cvolume volume;
-  uint32_t index;
+  guint32 index;
   void (*volume_change_callback) (gdouble);
-  gint release_frames;
+  guint32 release_frames;
   struct job_control control;
   gchar path[PATH_MAX];
 };

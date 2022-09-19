@@ -488,6 +488,7 @@ package_receive_pkg_resources (struct package *pkg,
       struct sample_info *sample_info =
 	g_malloc (sizeof (struct sample_info));
       sample_info->samplerate = ELEKTRON_SAMPLE_RATE;
+      sample_info->samplerate = ELEKTRON_SAMPLE_CHANNELS;
       control->data = sample_info;
       ret = sample_get_wave (sample, wave, control);
       g_free (control->data);
