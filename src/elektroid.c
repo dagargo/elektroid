@@ -438,7 +438,7 @@ elektroid_check_backend ()
 {
   GtkListStore *list_store;
   GtkTreeIter iter;
-  gboolean remote_box_sensitive;
+  gboolean remote_sensitive;
   gboolean connected = backend_check (&backend);
   gboolean queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
 						    NULL);
@@ -446,13 +446,14 @@ elektroid_check_backend ()
   if (!remote_browser.fs_ops
       || remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
     {
-      remote_box_sensitive = connected && !queued;
+      remote_sensitive = connected && !queued;
     }
   else
     {
-      remote_box_sensitive = connected;
+      remote_sensitive = connected;
     }
-  gtk_widget_set_sensitive (remote_box, remote_box_sensitive);
+  gtk_widget_set_sensitive (remote_box, remote_sensitive);
+  gtk_widget_set_sensitive (upload_menuitem, remote_sensitive);
   gtk_widget_set_sensitive (rx_sysex_button, connected && !queued);
   gtk_widget_set_sensitive (tx_sysex_button, connected && !queued);
   gtk_widget_set_sensitive (os_upgrade_button, connected && !queued
@@ -1388,7 +1389,9 @@ elektroid_local_check_selection (gpointer data)
   gtk_widget_set_sensitive (local_delete_menuitem, count > 0);
   gtk_widget_set_sensitive (upload_menuitem, count > 0
 			    && remote_browser.fs_ops
-			    && remote_browser.fs_ops->upload);
+			    && remote_browser.fs_ops->upload
+			    && !(remote_browser.
+				 fs_ops->options & FS_OPTION_SINGLE_OP));
 
   return FALSE;
 }
@@ -1880,6 +1883,7 @@ elektroid_run_next_task (gpointer data)
       if (remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
 	{
 	  gtk_widget_set_sensitive (remote_box, FALSE);
+	  gtk_widget_set_sensitive (upload_menuitem, FALSE);
 	}
       gtk_widget_set_sensitive (rx_sysex_button, FALSE);
       gtk_widget_set_sensitive (tx_sysex_button, FALSE);
@@ -1919,6 +1923,7 @@ elektroid_run_next_task (gpointer data)
   else
     {
       gtk_widget_set_sensitive (remote_box, TRUE);
+      gtk_widget_set_sensitive (upload_menuitem, TRUE);
       gtk_widget_set_sensitive (rx_sysex_button, TRUE);
       gtk_widget_set_sensitive (tx_sysex_button, TRUE);
       gtk_widget_set_sensitive (os_upgrade_button,
