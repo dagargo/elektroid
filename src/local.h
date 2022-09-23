@@ -18,7 +18,15 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef LOCAL_H
+#define LOCAL_H
+
 #include <glib.h>
+#include "backend.h"
 #include "utils.h"
 
 extern const struct fs_operations FS_LOCAL_OPERATIONS;
+
+gint system_handshake (struct backend *);
+
+#endif

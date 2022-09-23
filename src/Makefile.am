@@ -14,7 +14,7 @@ else
 bin_PROGRAMS = elektroid elektroid-cli
 endif
 
-elektroid_common_sources = connector.c connector.h \
+elektroid_common_sources = local.c local.h connector.c connector.h \
 sample.c sample.h utils.c utils.h backend.c backend.h \
 connectors/common.c connectors/common.h \
 connectors/elektron.c connectors/elektron.h connectors/package.c connectors/package.h \
@@ -25,7 +25,7 @@ connectors/sds.c connectors/sds.h
 elektroid_cli_SOURCES = $(elektroid_common_sources) elektroid-cli.c
 
 elektroid_SOURCES = $(elektroid_common_sources) audio.c audio.h \
-browser.c browser.h notifier.c notifier.h local.c local.h \
+browser.c browser.h notifier.c notifier.h \
 preferences.c preferences.h elektroid.c
 
 SNDFILE_CFLAGS = @SNDFILE_CFLAGS@

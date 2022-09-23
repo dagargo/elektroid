@@ -120,9 +120,6 @@ static const struct option ELEKTROID_OPTIONS[] = {
   {NULL, 0, NULL, 0}
 };
 
-static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
-  { "wav", "ogg", "aiff", "flac", NULL };
-
 static const GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING},
@@ -234,64 +231,80 @@ elektroid_get_fs_name (guint fs)
 }
 
 static void
-elektroid_set_file_extensions_for_fs (gchar ** extensions[], gint sel_fs)
+elektroid_clear_file_extensions (gchar *** extensions)
 {
-  gchar *mp3_ext = NULL;
-  const struct fs_operations *ops = backend_get_fs_operations (&backend,
-							       sel_fs, NULL);
-
-  if (*extensions != NULL)
+  if (*extensions == NULL)
     {
-      gchar **ext = *extensions;
-      while (*ext)
-	{
-	  g_free (*ext);
-	  ext++;
-	}
-      g_free (*extensions);
+      return;
     }
+
+  gchar **ext = *extensions;
+  while (*ext)
+    {
+      g_free (*ext);
+      ext++;
+    }
+  g_free (*extensions);
+
+  *extensions = NULL;
+}
+
+static void
+elektroid_set_sample_file_extensions (gchar *** extensions)
+{
+  const gchar **exts = sample_get_sample_extensions ();
+  const gchar **ext = exts;
+  int ext_count = 0;
+  while (*ext)
+    {
+      ext_count++;
+      ext++;
+    }
+  ext_count++;			//NULL included
+
+  *extensions = malloc (sizeof (gchar *) * ext_count);
+  ext = exts;
+  int i = 0;
+  while (*ext)
+    {
+      (*extensions)[i] = strdup (*ext);
+      ext++;
+      i++;
+    }
+  (*extensions)[i] = NULL;
+}
+
+static void
+elektroid_set_local_file_extensions (gchar *** extensions, gint sel_fs)
+{
+  const struct fs_operations *ops =
+    backend_get_fs_operations (&backend, sel_fs, NULL);
+
+  elektroid_clear_file_extensions (extensions);
 
   if (!ops || SHOW_AUDIO_PLAYER (ops))
     {
-      const gchar **ext = ELEKTROID_AUDIO_LOCAL_EXTS;
-      int known_ext = 0;
-      while (*ext)
-	{
-	  known_ext++;
-	  ext++;
-	}
-      known_ext++;		//NULL included
-
-      int total_ext = known_ext;
-
-      if (sample_is_mp3_supported ())
-	{
-	  mp3_ext = "mp3";
-	  total_ext++;
-	}
-
-      *extensions = malloc (sizeof (gchar *) * total_ext);
-      ext = ELEKTROID_AUDIO_LOCAL_EXTS;
-      int i = 0;
-      while (*ext)
-	{
-	  (*extensions)[i] = strdup (*ext);
-	  ext++;
-	  i++;
-	}
-      if (mp3_ext)
-	{
-	  (*extensions)[i] = strdup (mp3_ext);
-	  i++;
-	}
-      (*extensions)[i] = NULL;
-
+      elektroid_set_sample_file_extensions (extensions);
     }
   else
     {
       *extensions = malloc (sizeof (gchar *) * 2);
       (*extensions)[0] = ops->get_ext (&backend.device_desc, ops);
       (*extensions)[1] = NULL;
+    }
+}
+
+static void
+elektroid_set_remote_file_extensions (gchar *** extensions, gint sel_fs)
+{
+  const struct fs_operations *ops =
+    backend_get_fs_operations (&backend, sel_fs, NULL);
+
+  elektroid_clear_file_extensions (extensions);
+
+  if (ops && backend.type == BE_TYPE_SYSTEM)
+    {
+      elektroid_set_sample_file_extensions (extensions);
     }
 }
 
@@ -318,8 +331,7 @@ show_error_msg (const char *format, ...)
 static void
 elektroid_load_devices (gboolean auto_select)
 {
-  gint i;
-  gint device_index;
+  gchar hostname[LABEL_MAX];
   GArray *devices = backend_get_system_devices ();
   struct backend_system_device device;
 
@@ -328,7 +340,14 @@ elektroid_load_devices (gboolean auto_select)
   gtk_list_store_clear (fs_list_store);
   gtk_list_store_clear (devices_list_store);
 
-  for (i = 0; i < devices->len; i++)
+  gethostname (hostname, LABEL_MAX);
+  gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
+				     DEVICES_LIST_STORE_ID_FIELD,
+				     BE_SYSTEM_ID,
+				     DEVICES_LIST_STORE_NAME_FIELD,
+				     hostname, -1);
+
+  for (gint i = 0; i < devices->len; i++)
     {
       device = g_array_index (devices, struct backend_system_device, i);
       gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
@@ -340,18 +359,10 @@ elektroid_load_devices (gboolean auto_select)
 
   g_array_free (devices, TRUE);
 
-  device_index = auto_select && i == 1 ? 0 : -1;
-  debug_print (1, "Selecting device %d...\n", device_index);
-  gtk_combo_box_set_active (devices_combo, device_index);
-
-  if (device_index == -1)
+  if (auto_select)
     {
-      local_browser.file_icon = BE_FILE_ICON_WAVE;
-      elektroid_set_file_extensions_for_fs (&local_browser.extensions, 0);
-
-      gtk_widget_set_visible (local_audio_box, TRUE);
-      gtk_tree_view_column_set_visible (remote_tree_view_index_column, FALSE);
-
+      debug_print (1, "Selecting first device (localhost)...\n");
+      gtk_combo_box_set_active (devices_combo, 0);
       browser_load_dir (&local_browser);
     }
 }
@@ -389,8 +400,15 @@ elektroid_update_statusbar ()
 
       statfss_str = g_string_free (statfss, FALSE);
       status = g_malloc (LABEL_MAX);
-      snprintf (status, LABEL_MAX, _("Connected to %s%s"),
-		backend.device_name, statfss_str);
+      if (strlen (backend.device_name))
+	{
+	  snprintf (status, LABEL_MAX, _("Connected to %s%s"),
+		    backend.device_name, statfss_str);
+	}
+      else
+	{
+	  status[0] = 0;
+	}
       gtk_statusbar_push (status_bar, 0, status);
       free (status);
       g_free (statfss_str);
@@ -2551,17 +2569,16 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   GValue fsv = G_VALUE_INIT;
   gint fs;
 
-  *remote_browser.dir = '\0';
+  *remote_browser.dir = 0;
   if (!gtk_combo_box_get_active_iter (fs_combo, &iter))
     {
       remote_browser.fs_ops = NULL;
       browser_load_dir (&remote_browser);
-      elektroid_set_file_extensions_for_fs (&local_browser.extensions, 0);
+      elektroid_set_local_file_extensions (&local_browser.extensions, 0);
       browser_update_fs_options (&remote_browser);
       browser_load_dir (&local_browser);
       return;
     }
-  strcat (remote_browser.dir, "/");
 
   gtk_tree_model_get_value (GTK_TREE_MODEL (fs_list_store),
 			    &iter, FS_LIST_STORE_ID_FIELD, &fsv);
@@ -2569,12 +2586,21 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
   remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
-  strcpy (remote_browser.dir, "/");
+  if (backend.type == BE_TYPE_SYSTEM)
+    {
+      g_free (remote_browser.dir);
+      remote_browser.dir = get_expanded_dir ("~");
+    }
+  else
+    {
+      strcpy (remote_browser.dir, "/");
+    }
   browser_load_dir (&remote_browser);
   browser_update_fs_options (&remote_browser);
 
   local_browser.file_icon = remote_browser.file_icon;
-  elektroid_set_file_extensions_for_fs (&local_browser.extensions, fs);
+  elektroid_set_local_file_extensions (&local_browser.extensions, fs);
+  elektroid_set_remote_file_extensions (&remote_browser.extensions, fs);
   browser_load_dir (&local_browser);
 
   gtk_widget_set_visible (remote_rename_menuitem,

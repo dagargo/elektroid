@@ -19,15 +19,17 @@
  */
 
 #include "backend.h"
+#include "local.h"
 #include "connector.h"
 #include "connectors/elektron.h"
 #include "connectors/microbrute.h"
 #include "connectors/cz.h"
 #include "connectors/sds.h"
 
-gint
+static gint
 default_handshake (struct backend *backend)
 {
+  backend->type = BE_TYPE_MIDI;
   backend->device_desc.filesystems = 0;
   backend->fs_ops = NULL;
   backend->destroy_data = backend_destroy_data;
@@ -42,6 +44,11 @@ struct connector
 {
   gint (*handshake) (struct backend * backend);
   const gchar *name;
+};
+
+static const struct connector CONNECTOR_SYSTEM = {
+  .handshake = system_handshake,
+  .name = "system"
 };
 
 static const struct connector CONNECTOR_ELEKTRON = {
@@ -70,16 +77,17 @@ static const struct connector CONNECTOR_DEFAULT = {
 };
 
 static const struct connector *CONNECTORS[] = {
-  &CONNECTOR_ELEKTRON, &CONNECTOR_MICROBRUTE, &CONNECTOR_CZ, &CONNECTOR_SDS,
-  &CONNECTOR_DEFAULT, NULL
+  &CONNECTOR_SYSTEM, &CONNECTOR_ELEKTRON, &CONNECTOR_MICROBRUTE,
+  &CONNECTOR_CZ,
+  &CONNECTOR_SDS, &CONNECTOR_DEFAULT, NULL
 };
 
 gint
-connector_init (struct backend *backend, const gchar * midi_id,
+connector_init (struct backend *backend, const gchar * id,
 		const gchar * conn_name)
 {
   const struct connector **connector;
-  int err = backend_init (backend, midi_id);
+  int err = backend_init (backend, id);
   if (err)
     {
       return err;

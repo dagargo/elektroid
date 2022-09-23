@@ -40,6 +40,8 @@
 #define BE_MODEL_LEN 2
 #define BE_VERSION_LEN 4
 
+#define BE_SYSTEM_ID "SYSTEM_ID"
+
 struct backend_storage_stats
 {
   const gchar *name;
@@ -60,8 +62,15 @@ struct backend_midi_info
   gchar version[BE_VERSION_LEN];
 };
 
+enum backend_type
+{
+  BE_TYPE_SYSTEM,
+  BE_TYPE_MIDI
+};
+
 struct backend
 {
+  enum backend_type type;
   struct device_desc device_desc;
   struct backend_midi_info midi_info;
   snd_rawmidi_t *inputp;

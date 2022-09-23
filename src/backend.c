@@ -19,6 +19,7 @@
  */
 
 #include "backend.h"
+#include "local.h"
 
 #define BE_POLL_TIMEOUT_MS 20
 #define BE_KB 1024
@@ -222,6 +223,15 @@ backend_init (struct backend *backend, const gchar * id)
   backend->pfds = NULL;
   backend->rx_len = 0;
   backend->cache = NULL;
+  backend->buffer = NULL;
+
+  if (!strcmp (id, BE_SYSTEM_ID))
+    {
+      backend->type = BE_TYPE_SYSTEM;
+      return 0;
+    }
+
+  backend->type = BE_TYPE_MIDI;
   backend->buffer = g_malloc (sizeof (guint8) * BE_INT_BUF_LEN);
 
   debug_print (1, "Initializing backend to '%s'...\n", id);
@@ -254,10 +264,7 @@ backend_init (struct backend *backend, const gchar * id)
 
   backend->npfds = snd_rawmidi_poll_descriptors_count (backend->inputp);
   backend->pfds = malloc (backend->npfds * sizeof (struct pollfd));
-  if (!backend->buffer)
-    {
-      goto cleanup;
-    }
+
   snd_rawmidi_poll_descriptors (backend->inputp, backend->pfds,
 				backend->npfds);
   err = snd_rawmidi_params_malloc (&params);
@@ -713,7 +720,9 @@ backend_tx_and_rx_sysex (struct backend *backend,
 gboolean
 backend_check (struct backend *backend)
 {
-  return (backend->inputp && backend->outputp);
+  return backend->type == BE_TYPE_SYSTEM || (backend->type == BE_TYPE_MIDI
+					     && backend->inputp
+					     && backend->outputp);
 }
 
 static void

@@ -28,6 +28,12 @@
 #define JUNK_CHUNK_ID "JUNK"
 #define SMPL_CHUNK_ID "smpl"
 
+static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
+  { "wav", "ogg", "aiff", "flac", NULL };
+
+static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS_MP3[] =
+  { "wav", "ogg", "aiff", "flac", "mp3", NULL };
+
 struct smpl_chunk_data
 {
   guint32 manufacturer;
@@ -615,7 +621,7 @@ sample_load (const gchar * path, GByteArray * sample,
   return sample_load_with_frames (path, sample, control, NULL);
 }
 
-gboolean
+static gboolean
 sample_is_mp3_supported ()
 {
   static char buffer[LABEL_MAX];
@@ -628,4 +634,14 @@ sample_is_mp3_supported ()
     }
 
   return FALSE;
+}
+
+const gchar **
+sample_get_sample_extensions ()
+{
+  if (sample_is_mp3_supported ())
+    {
+      return ELEKTROID_AUDIO_LOCAL_EXTS_MP3;
+    }
+  return ELEKTROID_AUDIO_LOCAL_EXTS;
 }
