@@ -38,7 +38,11 @@
 #define SDS_REST_TIME_DEFAULT 18000	//Rest time to not overwhelm the devices whn sending consecutive packets. Lower values cause an an E-Mu ESI-2000 to send corrupted packets.
 #define SDS_NO_SPEC_OPEN_LOOP_REST_TIME 200000
 
-#define SDS_GET_REST_TIME(backend) (*(gint *) backend->data)
+struct sds_data
+{
+  gint rest_time;
+  gboolean name_extension;
+};
 
 static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
 static const guint8 SDS_ACK[] = { 0xf0, 0x7e, 0, 0x7f, 0, 0xf7 };
@@ -64,23 +68,30 @@ sds_get_download_path (struct backend *backend,
   gchar *src_path_copy = strdup (src_path);
   gchar *filename = basename (src_path_copy);
   gint index = atoi (filename);
+  gboolean use_id = TRUE;
+  struct sds_data *sds_data = backend->data;
 
-  g_mutex_lock (&backend->mutex);
-  backend_rx_drain (backend);
-  g_mutex_unlock (&backend->mutex);
-
-  tx_msg = g_byte_array_new ();
-  g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
-		       sizeof (SDS_SAMPLE_NAME_REQUEST));
-  tx_msg->data[5] = index % 0x80;
-  tx_msg->data[6] = index / 0x80;
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT_TRY);
-  if (rx_msg)
+  if (sds_data->name_extension)
     {
-      snprintf (name, PATH_MAX, "%s/%s.wav", dst_dir, &rx_msg->data[5]);
-      free_msg (rx_msg);
+      g_mutex_lock (&backend->mutex);
+      backend_rx_drain (backend);
+      g_mutex_unlock (&backend->mutex);
+
+      tx_msg = g_byte_array_new ();
+      g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
+			   sizeof (SDS_SAMPLE_NAME_REQUEST));
+      tx_msg->data[5] = index % 0x80;
+      tx_msg->data[6] = index / 0x80;
+      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
+      if (rx_msg)
+	{
+	  snprintf (name, PATH_MAX, "%s/%s.wav", dst_dir, &rx_msg->data[5]);
+	  free_msg (rx_msg);
+	  use_id = FALSE;
+	}
     }
-  else
+
+  if (use_id)
     {
       snprintf (name, PATH_MAX, "%s/%03d.wav", dst_dir, index);
     }
@@ -342,6 +353,7 @@ sds_download (struct backend *backend, const gchar * path,
   gboolean last_packet_ack;
   struct sample_info *sample_info;
   struct sysex_transfer transfer;
+  struct sds_data *sds_data = backend->data;
 
   path_copy = strdup (path);
   index = basename (path_copy);
@@ -362,7 +374,7 @@ sds_download (struct backend *backend, const gchar * path,
       goto end;
     }
 
-  usleep (SDS_GET_REST_TIME (backend));
+  usleep (sds_data->rest_time);
 
   sample_info = malloc (sizeof (struct sample_info));
   if (sds_get_download_info (rx_msg, sample_info, &words, &word_size,
@@ -481,7 +493,7 @@ sds_download (struct backend *backend, const gchar * path,
 	  debug_print (2, "Invalid cksum. Retrying...\n");
 	  free_msg (rx_msg);
 	  last_packet_ack = FALSE;
-	  usleep (SDS_GET_REST_TIME (backend));
+	  usleep (sds_data->rest_time);
 	  retries++;
 	  continue;
 	}
@@ -513,13 +525,13 @@ sds_download (struct backend *backend, const gchar * path,
 
       free_msg (rx_msg);
 
-      usleep (SDS_GET_REST_TIME (backend));
+      usleep (sds_data->rest_time);
     }
 
   free_msg (tx_msg);
 
 end:
-  usleep (SDS_GET_REST_TIME (backend));
+  usleep (sds_data->rest_time);
 
   if (active && !err && rx_packets == packets)
     {
@@ -665,7 +677,7 @@ sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
   g_mutex_unlock (&backend->mutex);
 
   tx_msg = sds_get_rename_sample_msg (id, name);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT_TRY);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
   if (rx_msg)
     {
       free_msg (rx_msg);
@@ -684,6 +696,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   guint word, words, words_per_packet, id, packet = 0, packets, retries =
     0, w, bytes_per_word;
   gint err = 0, word_size;
+  struct sds_data *sds_data = backend->data;
   struct sample_info *sample_info = control->data;
 
   control->parts = 1;
@@ -808,10 +821,10 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
       retries = 0;
       err = 0;
 
-      usleep (SDS_GET_REST_TIME (backend));
+      usleep (sds_data->rest_time);
     }
 
-  if (active)
+  if (active && sds_data->name_extension)
     {
       sds_rename (backend, path, path);
     }
@@ -862,6 +875,7 @@ sds_upload_16b (struct backend *backend, const gchar * path,
 static void
 sds_free_iterator_data (void *iter_data)
 {
+  debug_print (2, "No packet received after a WAIT. Continuing...\n");
   g_free (iter_data);
 }
 
@@ -1040,8 +1054,9 @@ static const struct fs_operations *FS_SDS_ALL_OPERATIONS[] = {
 gint
 sds_handshake (struct backend *backend)
 {
-  GByteArray *tx_msg;
-  gint *rest_time = g_malloc (sizeof (gint));
+  gint err;
+  GByteArray *tx_msg, *rx_msg;
+  struct sds_data *sds_data = g_malloc (sizeof (struct sds_data));
 
   g_mutex_lock (&backend->mutex);
   backend_rx_drain (backend);
@@ -1051,9 +1066,9 @@ sds_handshake (struct backend *backend)
   //Numbers higher than 1500 make an E-Mu ESI-2000 crash when entering into the 'MIDI SAMPLE DUMP' menu but the actual limit is unknown.
   tx_msg = sds_get_dump_msg (1000, 0, NULL, 16);
   //In case we receive anything, there is a MIDI SDS device listening.
-  gint err = sds_tx_and_wait_ack (backend, tx_msg, 0,
-				  SDS_SPEC_TIMEOUT_HANDSHAKE,
-				  SDS_NO_SPEC_TIMEOUT_TRY);
+  err = sds_tx_and_wait_ack (backend, tx_msg, 0,
+			     SDS_SPEC_TIMEOUT_HANDSHAKE,
+			     SDS_NO_SPEC_TIMEOUT_TRY);
   if (err == -EIO || err == -ETIMEDOUT)
     {
       return err;
@@ -1064,16 +1079,34 @@ sds_handshake (struct backend *backend)
   sds_tx_handshake (backend, SDS_CANCEL, 0);
   usleep (SDS_REST_TIME_DEFAULT);
 
+  tx_msg = g_byte_array_new ();
+  g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
+		       sizeof (SDS_SAMPLE_NAME_REQUEST));
+  tx_msg->data[5] = 1;
+  tx_msg->data[6] = 0;
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT_TRY);
+  if (rx_msg)
+    {
+      sds_data->name_extension = TRUE;
+      free_msg (rx_msg);
+    }
+  else
+    {
+      sds_data->name_extension = FALSE;
+    }
+  debug_print (1, "Name extension: %s\n",
+	       sds_data->name_extension ? "yes" : "no");
+
   //The remaining code is meant to set up different devices. These are the default values.
 
-  *rest_time = SDS_REST_TIME_DEFAULT;
+  sds_data->rest_time = SDS_REST_TIME_DEFAULT;
 
   backend->device_desc.filesystems =
     FS_SAMPLES_SDS_8_B | FS_SAMPLES_SDS_12_B | FS_SAMPLES_SDS_14_B |
     FS_SAMPLES_SDS_16_B;
   backend->fs_ops = FS_SDS_ALL_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
-  backend->data = rest_time;
+  backend->data = sds_data;
 
   snprintf (backend->device_name, LABEL_MAX, "sampler (MIDI SDS)");
 
