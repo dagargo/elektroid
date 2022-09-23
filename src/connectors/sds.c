@@ -436,7 +436,18 @@ sds_download (struct backend *backend, const gchar * path,
 
       if (!rx_msg)
 	{
-	  debug_print (2, "Packet not received. Exiting...\n");
+	  debug_print (2,
+		       "Packet not received. Remaining packets: %d; remaining samples: %d\n",
+		       packets - rx_packets, words - total_words);
+	  //This is a hack to fix a downloading error with an E-Mu ESI-2000 as it doesn't send the last packet when there is only 1 sample.
+	  if ((rx_packets == packets - 1) && (total_words == words - 1))
+	    {
+	      debug_print (2,
+			   "Skipping last packet as it has only one sample...\n");
+	      rx_packets++;
+	      err = 0;
+	      goto end;
+	    }
 	  sds_download_inc_packet (&first, &packet);
 	  err = -EINVAL;
 	  break;
@@ -671,7 +682,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   gint16 *frame, *f;
   gboolean active, open_loop = FALSE;
   guint word, words, words_per_packet, id, packet = 0, packets, retries =
-    0, w, bytes_per_word, fixed_words;
+    0, w, bytes_per_word;
   gint err = 0, word_size;
   struct sample_info *sample_info = control->data;
 
@@ -700,11 +711,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   words_per_packet = SDS_DATA_PACKET_PAYLOAD_LEN / bytes_per_word;
   packets = ceil (words / (double) words_per_packet);
 
-  //This is a hack to fix a downloading error with an E-Mu ESI-2000 because it doesn't send the last packet.
-  //We just add 1 sample when uploading in this case, which is not much, and then downloading just works.
-  fixed_words = words % words_per_packet == 1 ? words + 1 : words;
-
-  tx_msg = sds_get_dump_msg (id, fixed_words, sample_info, bits);
+  tx_msg = sds_get_dump_msg (id, words, sample_info, bits);
   //The first timeout should be SDS_SPEC_TIMEOUT_HANDSHAKE (2 s) buit it is not enough sometimes.
   err = sds_tx_and_wait_ack (backend, tx_msg, 0, SDS_NO_SPEC_TIMEOUT,
 			     SDS_NO_SPEC_TIMEOUT);
