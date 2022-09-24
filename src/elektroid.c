@@ -209,6 +209,8 @@ static GtkWidget *remote_rename_menuitem;
 static GtkWidget *remote_delete_menuitem;
 static GtkWidget *play_button;
 static GtkWidget *stop_button;
+static GtkWidget *loop_button;
+static GtkWidget *autoplay_switch;
 static GtkWidget *volume_button;
 static GtkListStore *task_list_store;
 static GtkWidget *task_tree_view;
@@ -331,6 +333,8 @@ show_error_msg (const char *format, ...)
 static void
 elektroid_load_devices (gboolean auto_select)
 {
+  gint i;
+  gint device_index;
   gchar hostname[LABEL_MAX];
   GArray *devices = backend_get_system_devices ();
   struct backend_system_device device;
@@ -347,7 +351,7 @@ elektroid_load_devices (gboolean auto_select)
 				     DEVICES_LIST_STORE_NAME_FIELD,
 				     hostname, -1);
 
-  for (gint i = 0; i < devices->len; i++)
+  for (i = 0; i < devices->len; i++)
     {
       device = g_array_index (devices, struct backend_system_device, i);
       gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
@@ -359,10 +363,18 @@ elektroid_load_devices (gboolean auto_select)
 
   g_array_free (devices, TRUE);
 
-  if (auto_select)
+  device_index = auto_select && i == 1 ? 0 : -1;
+  debug_print (1, "Selecting device %d...\n", device_index);
+  gtk_combo_box_set_active (devices_combo, device_index);
+
+  if (device_index == -1)
     {
-      debug_print (1, "Selecting first device (localhost)...\n");
-      gtk_combo_box_set_active (devices_combo, 0);
+      local_browser.file_icon = BE_FILE_ICON_WAVE;
+      elektroid_set_local_file_extensions (&local_browser.extensions, 0);
+
+      gtk_widget_set_visible (local_audio_box, TRUE);
+      gtk_tree_view_column_set_visible (remote_tree_view_index_column, FALSE);
+
       browser_load_dir (&local_browser);
     }
 }
@@ -902,7 +914,7 @@ elektroid_set_sample_on_load (gboolean sensitive)
       if (time >= 60)
 	{
 	  snprintf (label, LABEL_MAX, "%d; %.0f %s", sample_info->frames,
-		    time, _("min."));
+		    time / 60, _("min."));
 	}
       else if (time >= 10)
 	{
@@ -1391,40 +1403,56 @@ elektroid_stop_task_thread ()
   elektroid_join_task_thread ();
 }
 
-static gboolean
-elektroid_remote_check_selection (gpointer data)
+static void
+elektroid_set_css_local_class (GtkWidget * widget, gboolean local)
 {
-  gint count = browser_get_selected_items_count (&remote_browser);
-  gboolean dl_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->download ? TRUE : FALSE;
-  gboolean move_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->move ? TRUE : FALSE;
-  gboolean del_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->delete ? TRUE : FALSE;
-
-  gtk_widget_set_sensitive (download_menuitem, count > 0 && dl_impl);
-  gtk_widget_set_sensitive (remote_rename_menuitem, count == 1 && move_impl);
-  gtk_widget_set_sensitive (remote_delete_menuitem, count > 0 && del_impl);
-
-  return FALSE;
+  GtkStyleContext *context = gtk_widget_get_style_context (widget);
+  if (widget == autoplay_switch)
+    {
+      gtk_style_context_remove_class (context,
+				      local ? "remote_switch" :
+				      "local_switch");
+      gtk_style_context_add_class (context,
+				   local ? "local_switch" : "remote_switch");
+    }
+  else
+    {
+      gtk_style_context_remove_class (context, local ? "remote" : "local");
+      gtk_style_context_add_class (context, local ? "local" : "remote");
+    }
 }
 
 static gboolean
-elektroid_local_check_selection (gpointer data)
+elektroid_check_and_load_sample (struct browser *browser, gint count)
 {
+  struct item item;
   GtkTreeIter iter;
   gchar *sample_path;
   GtkTreeModel *model;
-  gboolean audio_controls;
-  struct item item;
+  gboolean loaded = FALSE;
   gboolean audio_fs = !remote_browser.fs_ops
     || SHOW_AUDIO_PLAYER (remote_browser.fs_ops);
-  gint count = browser_get_selected_items_count (&local_browser);
+
+  //If remote type is also the system, we clear the selection of the other browser.
+  if (backend.type == BE_TYPE_SYSTEM)
+    {
+      struct browser *disabled_browser =
+	browser == &local_browser ? &remote_browser : &local_browser;
+      GtkTreeSelection *selection =
+	gtk_tree_view_get_selection (GTK_TREE_VIEW (disabled_browser->view));
+      g_signal_handler_block (gtk_tree_view_get_selection
+			      (disabled_browser->view),
+			      disabled_browser->selection_changed_handler_id);
+      gtk_tree_selection_unselect_all (selection);
+      g_signal_handler_unblock (gtk_tree_view_get_selection
+				(disabled_browser->view),
+				disabled_browser->selection_changed_handler_id);
+    }
 
   if (count == 1)
     {
-      browser_set_selected_row_iter (&local_browser, &iter);
-      model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
+      browser_set_selected_row_iter (browser, &iter);
+      model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
       browser_set_item (model, &iter, &item);
       if (item.type == ELEKTROID_DIR)
 	{
@@ -1435,16 +1463,25 @@ elektroid_local_check_selection (gpointer data)
 	}
       else
 	{
-	  sample_path = chain_path (local_browser.dir, item.name);
+	  sample_path = chain_path (browser->dir, item.name);
 	  if (strcmp (audio.path, sample_path))
 	    {
 	      if (audio_fs)
 		{
+		  loaded = TRUE;
 		  audio_stop (&audio, TRUE);
 		  elektroid_stop_load_thread ();
 		  audio_reset_sample (&audio);
 		  strcpy (audio.path, sample_path);
 		  elektroid_start_load_thread ();
+
+		  gboolean local = browser == &local_browser;
+		  elektroid_set_css_local_class (autoplay_switch, local);
+		  elektroid_set_css_local_class (play_button, local);
+		  elektroid_set_css_local_class (stop_button, local);
+		  elektroid_set_css_local_class (loop_button, local);
+		  elektroid_set_css_local_class (volume_button, local);
+		  elektroid_set_css_local_class (waveform_draw_area, local);
 		}
 	    }
 	  g_free (sample_path);
@@ -1458,9 +1495,40 @@ elektroid_local_check_selection (gpointer data)
       gtk_widget_queue_draw (waveform_draw_area);
     }
 
-  audio_controls = (item.type == ELEKTROID_FILE) && audio_fs;
-  elektroid_set_sample_on_load (audio_controls);
-  gtk_widget_set_sensitive (local_open_menuitem, audio_controls);
+  return loaded;
+}
+
+static gboolean
+elektroid_remote_check_selection (gpointer data)
+{
+  gint count = browser_get_selected_items_count (&remote_browser);
+  gboolean dl_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->download ? TRUE : FALSE;
+  gboolean move_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->move ? TRUE : FALSE;
+  gboolean del_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->delete ? TRUE : FALSE;
+
+  if (backend.type == BE_TYPE_SYSTEM)
+    {
+      elektroid_check_and_load_sample (&remote_browser, count);
+    }
+
+  gtk_widget_set_sensitive (download_menuitem, count > 0 && dl_impl);
+  gtk_widget_set_sensitive (remote_rename_menuitem, count == 1 && move_impl);
+  gtk_widget_set_sensitive (remote_delete_menuitem, count > 0 && del_impl);
+
+  return FALSE;
+}
+
+static gboolean
+elektroid_local_check_selection (gpointer data)
+{
+  gint count = browser_get_selected_items_count (&local_browser);
+  gboolean loaded = elektroid_check_and_load_sample (&local_browser, count);
+
+  elektroid_set_sample_on_load (loaded);
+  gtk_widget_set_sensitive (local_open_menuitem, loaded);
   gtk_widget_set_sensitive (local_show_menuitem, count <= 1);
   gtk_widget_set_sensitive (local_rename_menuitem, count == 1);
   gtk_widget_set_sensitive (local_delete_menuitem, count > 0);
@@ -3159,8 +3227,6 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
   GtkWidget *hostname_label;
-  GtkWidget *loop_button;
-  GtkWidget *autoplay_switch;
   gchar hostname[LABEL_MAX];
 
   gtk_init (&argc, &argv);
@@ -3328,9 +3394,10 @@ elektroid_run (int argc, char *argv[])
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_index_column"));
 
-  g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
-		    "changed", G_CALLBACK (browser_selection_changed),
-		    &remote_browser);
+  remote_browser.selection_changed_handler_id =
+    g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
+		      "changed", G_CALLBACK (browser_selection_changed),
+		      &remote_browser);
   g_signal_connect (remote_browser.view, "row-activated",
 		    G_CALLBACK (browser_item_activated), &remote_browser);
   g_signal_connect (remote_browser.up_button, "clicked",
@@ -3395,9 +3462,10 @@ elektroid_run (int argc, char *argv[])
     .check_callback = NULL
   };
 
-  g_signal_connect (gtk_tree_view_get_selection (local_browser.view),
-		    "changed", G_CALLBACK (browser_selection_changed),
-		    &local_browser);
+  local_browser.selection_changed_handler_id =
+    g_signal_connect (gtk_tree_view_get_selection (local_browser.view),
+		      "changed", G_CALLBACK (browser_selection_changed),
+		      &local_browser);
   g_signal_connect (local_browser.view, "row-activated",
 		    G_CALLBACK (browser_item_activated), &local_browser);
   g_signal_connect (local_browser.up_button, "clicked",

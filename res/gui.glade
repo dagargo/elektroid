@@ -1008,9 +1008,6 @@ audio-volume-medium-symbolic</property>
                                     <property name="relief">none</property>
                                   </object>
                                 </child>
-                                <style>
-                                  <class name="local"/>
-                                </style>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -1043,10 +1040,6 @@ audio-volume-medium-symbolic</property>
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <property name="hexpand">True</property>
-                            <style>
-                              <class name="local"/>
-                              <class name="waveform"/>
-                            </style>
                           </object>
                         </child>
                         <child type="label_item">

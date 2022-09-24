@@ -1,17 +1,40 @@
 @define-color local_color #3584e4;
 @define-color local_color_dark #255c9f;
 @define-color remote_color #e01b24;
+@define-color remote_color_dark #9d1319;
 @define-color disabled_color #7f7f7f;
 
 .local {
 	color: @local_color;
 }
 
-#local_up_button, #local_add_dir_button, #local_refresh_button, #play_button, #stop_button, #loop_button, #upload_button {
+.remote {
+	color: @remote_color;
+}
+
+.local_switch {
+	background-color: @local_color_dark;
+}
+
+.local_switch:checked, .local_switch:checked slider {
+	border-color: @local_color_dark;
+	background-color: @local_color;
+}
+
+.remote_switch {
+	background-color: @remote_color_dark;
+}
+
+.remote_switch:checked, .remote_switch:checked slider {
+	border-color: @remote_color_dark;
+	background-color: @remote_color;
+}
+
+#local_up_button, #local_add_dir_button, #local_refresh_button, #upload_button {
 	color: @local_color;
 }
 
-#remote_up_button, #remote_add_dir_button, #remote_refresh_button, #refresh_devices_button, #download_button {
+#remote_up_button, #remote_add_dir_button, #remote_refresh_button, #download_button, #refresh_devices_button {
 	color: @remote_color
 }
 
@@ -19,11 +42,7 @@
 	color: @disabled_color;
 }
 
-#autoplay_switch:checked, #autoplay_switch:checked slider {
-	border-color: @local_color_dark;
-}
-
-#local_tree_view:selected, #autoplay_switch:checked {
+#local_tree_view:selected {
 	background-color: @local_color;
 }
 

@@ -24,6 +24,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <glib/gi18n.h>
 #include "local.h"
 
 struct local_iterator_data
@@ -296,6 +297,6 @@ system_handshake (struct backend *backend)
   backend->device_desc.filesystems = 1;
   backend->fs_ops = FS_SYSTEM_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
-  backend->device_name[0] = 0;
+  snprintf (backend->device_name, LABEL_MAX, _("system"));
   return 0;
 }

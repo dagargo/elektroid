@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <glib/gi18n.h>
 #include "sample.h"
 #include "sds.h"
 #include "common.h"
@@ -1129,8 +1130,7 @@ sds_handshake (struct backend *backend)
   backend->fs_ops = FS_SDS_ALL_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
   backend->data = sds_data;
-
-  snprintf (backend->device_name, LABEL_MAX, "sampler (MIDI SDS)");
+  snprintf (backend->device_name, LABEL_MAX, _("generic SDS sampler"));
 
   return 0;
 }

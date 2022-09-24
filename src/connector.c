@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <glib/gi18n.h>
 #include "backend.h"
 #include "local.h"
 #include "connector.h"
@@ -35,7 +36,7 @@ default_handshake (struct backend *backend)
   backend->destroy_data = backend_destroy_data;
   if (!strlen (backend->device_name))
     {
-      snprintf (backend->device_name, LABEL_MAX, "MIDI");
+      snprintf (backend->device_name, LABEL_MAX, _("generic MIDI device"));
     }
   return 0;
 }
@@ -78,8 +79,7 @@ static const struct connector CONNECTOR_DEFAULT = {
 
 static const struct connector *CONNECTORS[] = {
   &CONNECTOR_SYSTEM, &CONNECTOR_ELEKTRON, &CONNECTOR_MICROBRUTE,
-  &CONNECTOR_CZ,
-  &CONNECTOR_SDS, &CONNECTOR_DEFAULT, NULL
+  &CONNECTOR_CZ, &CONNECTOR_SDS, &CONNECTOR_DEFAULT, NULL
 };
 
 gint
