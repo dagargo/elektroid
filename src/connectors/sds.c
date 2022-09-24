@@ -340,8 +340,8 @@ sds_download_get_header (struct backend *backend, guint id)
 }
 
 static gint
-sds_download (struct backend *backend, const gchar * path,
-	      GByteArray * output, struct job_control *control)
+sds_download_try (struct backend *backend, const gchar * path,
+		  GByteArray * output, struct job_control *control)
 {
   guint id, words, word_size, read_bytes, bytes_per_word, total_words, err,
     retries, packets, packet, exp_packet, rx_packets;
@@ -451,7 +451,7 @@ sds_download (struct backend *backend, const gchar * path,
 	  debug_print (2,
 		       "Packet not received. Remaining packets: %d; remaining samples: %d\n",
 		       packets - rx_packets, words - total_words);
-	  //This is a hack to fix a downloading error with an E-Mu ESI-2000 as it doesn't send the last packet when there is only 1 sample.
+	  //This is a hack to fix a downloading error with an E-Mu ESI-2000 as it never sends the last packet when there is only 1 sample.
 	  if ((rx_packets == packets - 1) && (total_words == words - 1))
 	    {
 	      debug_print (2,
@@ -460,8 +460,8 @@ sds_download (struct backend *backend, const gchar * path,
 	      err = 0;
 	      goto end;
 	    }
+	  err = (rx_packets == packets - 1) ? -EBADMSG : -EINVAL;
 	  sds_download_inc_packet (&first, &packet);
-	  err = -EINVAL;
 	  break;
 	}
 
@@ -469,7 +469,7 @@ sds_download (struct backend *backend, const gchar * path,
 	{
 	  debug_print (2, "Invalid length. Stopping...\n");
 	  free_msg (rx_msg);
-	  err = -EINVAL;
+	  err = -EBADMSG;
 	  break;
 	}
 
@@ -531,8 +531,6 @@ sds_download (struct backend *backend, const gchar * path,
   free_msg (tx_msg);
 
 end:
-  usleep (sds_data->rest_time);
-
   if (active && !err && rx_packets == packets)
     {
       debug_print (1, "%d frames received\n", total_words);
@@ -541,10 +539,32 @@ end:
   else
     {
       debug_print (1, "Cancelling SDS download...\n");
+      usleep (sds_data->rest_time);
       sds_tx_handshake (backend, SDS_CANCEL, packet % 0x80);
-      err = -ECANCELED;
     }
 
+  return err;
+}
+
+static gint
+sds_download (struct backend *backend, const gchar * path,
+	      GByteArray * output, struct job_control *control)
+{
+  gint err;
+  for (gint i = 0; i < SDS_MAX_RETRIES; i++)
+    {
+      err = sds_download_try (backend, path, output, control);
+      if (err == -EBADMSG)
+	{
+	  //We retry the whole download to fix a downloading error with an E-Mu ESI-2000 as it occasionally doesn't send the last packet.
+	  debug_print (2, "Bug detected. Retrying download...\n");
+	  g_byte_array_set_size (output, 0);
+	}
+      else
+	{
+	  break;
+	}
+    }
   return err;
 }
 
