@@ -33,73 +33,33 @@ struct local_iterator_data
   gchar *path;
 };
 
-static gint local_mkdir (struct backend *, const gchar *);
-
-static gint local_delete (struct backend *, const gchar *);
-
-static gint local_rename (struct backend *, const gchar *, const gchar *);
-
-static gint local_read_dir (struct backend *, struct item_iterator *,
-			    const gchar *);
-
 static gint local_copy_iterator (struct item_iterator *,
 				 struct item_iterator *, gboolean);
 
-const struct fs_operations FS_LOCAL_OPERATIONS = {
-  .fs = 0,
-  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_STEREO_AUDIO_PLAYER,
-  .name = "local",
-  .gui_name = "localhost",
-  .gui_icon = BE_FILE_ICON_WAVE,
-  .readdir = local_read_dir,
-  .print_item = NULL,
-  .mkdir = local_mkdir,
-  .delete = local_delete,
-  .rename = local_rename,
-  .move = local_rename,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
-  .download = NULL,
-  .upload = NULL,
-  .getid = get_item_name,
-  .load = NULL,
-  .save = NULL,
-  .get_ext = backend_get_fs_ext,
-  .get_upload_path = NULL,
-  .get_download_path = NULL,
-  .type_ext = "wav"
-};
+static gint
+local_download (struct backend *backend, const gchar * path,
+		GByteArray * output, struct job_control *control)
+{
+  gint err = load_file (path, output, control);
+  control->parts = 1;
+  control->part = 0;
+  set_job_control_progress (control, 1.0);
+  return err;
+}
 
-const struct fs_operations FS_SYSTEM_SAMPLES_OPERATIONS = {
-  .fs = 1,
-  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_STEREO_AUDIO_PLAYER,
-  .name = "sample",
-  .gui_name = "Samples",
-  .gui_icon = BE_FILE_ICON_WAVE,
-  .readdir = local_read_dir,
-  .print_item = NULL,
-  .mkdir = local_mkdir,
-  .delete = local_delete,
-  .rename = local_rename,
-  .move = local_rename,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
-  .download = NULL,
-  .upload = NULL,
-  .getid = get_item_name,
-  .load = NULL,
-  .save = NULL,
-  .get_ext = backend_get_fs_ext,
-  .get_upload_path = NULL,
-  .get_download_path = NULL,
-  .type_ext = "wav"
-};
-
-static const struct fs_operations *FS_SYSTEM_OPERATIONS[] = {
-  &FS_SYSTEM_SAMPLES_OPERATIONS, NULL
-};
+static gchar *
+local_get_download_path (struct backend *backend,
+			 struct item_iterator *remote_iter,
+			 const struct fs_operations *ops,
+			 const gchar * dst_dir, const gchar * src_path)
+{
+  gchar *src_pathc = strdup (src_path);
+  gchar *path = malloc (PATH_MAX);
+  gchar *filename = basename (src_pathc);
+  snprintf (path, PATH_MAX, "%s/%s", dst_dir, filename);
+  g_free (src_pathc);
+  return path;
+}
 
 gint
 local_mkdir (struct backend *backend, const gchar * name)
@@ -287,6 +247,97 @@ local_copy_iterator (struct item_iterator *dst, struct item_iterator *src,
   return local_init_iterator (dst, data->path, cached);
 }
 
+const struct fs_operations FS_LOCAL_OPERATIONS = {
+  .fs = 0,
+  .options =
+    FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER | FS_OPTION_STEREO,
+  .name = "local",
+  .gui_name = "localhost",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = local_read_dir,
+  .print_item = NULL,
+  .mkdir = local_mkdir,
+  .delete = local_delete,
+  .rename = local_rename,
+  .move = local_rename,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = NULL,
+  .upload = NULL,
+  .getid = get_item_name,
+  .load = NULL,
+  .save = NULL,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = NULL,
+  .get_download_path = NULL,
+  .type_ext = "wav"
+};
+
+enum sds_fs
+{
+  FS_SAMPLES_LOCAL_48000_STEREO = 0x1,
+  FS_SAMPLES_LOCAL_40000_MONO = 0x2
+};
+
+const struct fs_operations FS_SYSTEM_SAMPLES_STEREO_OPERATIONS = {
+  .fs = FS_SAMPLES_LOCAL_48000_STEREO,
+  .options =
+    FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER | FS_OPTION_STEREO,
+  .name = "sample48000s",
+  .gui_name = "Samples 48000 stereo",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = local_read_dir,
+  .print_item = NULL,
+  .mkdir = local_mkdir,
+  .delete = local_delete,
+  .rename = local_rename,
+  .move = local_rename,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = local_download,
+  .upload = NULL,
+  .getid = get_item_name,
+  .load = NULL,
+  .save = save_file,
+  .get_ext = NULL,
+  .get_upload_path = NULL,
+  .get_download_path = local_get_download_path,
+  .type_ext = NULL,
+};
+
+const struct fs_operations FS_SYSTEM_SAMPLES_MONO_OPERATIONS = {
+  .fs = FS_SAMPLES_LOCAL_40000_MONO,
+  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER,
+  .name = "sample48000m",
+  .gui_name = "Samples 48000 mono",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = local_read_dir,
+  .print_item = NULL,
+  .mkdir = local_mkdir,
+  .delete = local_delete,
+  .rename = local_rename,
+  .move = local_rename,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = local_download,
+  .upload = NULL,
+  .getid = get_item_name,
+  .load = NULL,
+  .save = save_file,
+  .get_ext = NULL,
+  .get_upload_path = NULL,
+  .get_download_path = local_get_download_path,
+  .type_ext = NULL,
+};
+
+static const struct fs_operations *FS_SYSTEM_OPERATIONS[] = {
+  &FS_SYSTEM_SAMPLES_STEREO_OPERATIONS, &FS_SYSTEM_SAMPLES_MONO_OPERATIONS,
+  NULL
+};
+
 gint
 system_handshake (struct backend *backend)
 {
@@ -294,7 +345,8 @@ system_handshake (struct backend *backend)
     {
       return -ENODEV;
     }
-  backend->device_desc.filesystems = 1;
+  backend->device_desc.filesystems =
+    FS_SAMPLES_LOCAL_48000_STEREO | FS_SAMPLES_LOCAL_40000_MONO;
   backend->fs_ops = FS_SYSTEM_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
   snprintf (backend->device_name, LABEL_MAX, _("system"));
