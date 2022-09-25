@@ -306,6 +306,26 @@ local_upload (struct backend *backend, const gchar * path, GByteArray * input,
   return err;
 }
 
+static gint
+local_sample_load_441_16_stereo (const gchar * path, GByteArray * sample,
+				 struct job_control *control)
+{
+  struct sample_params sample_params;
+  sample_params.samplerate = 44100;
+  sample_params.channels = 2;
+  return local_sample_load_custom (path, sample, control, &sample_params);
+}
+
+static gint
+local_sample_load_441_16_mono (const gchar * path, GByteArray * sample,
+			       struct job_control *control)
+{
+  struct sample_params sample_params;
+  sample_params.samplerate = 44100;
+  sample_params.channels = 1;
+  return local_sample_load_custom (path, sample, control, &sample_params);
+}
+
 const struct fs_operations FS_LOCAL_OPERATIONS = {
   .fs = 0,
   .options =
@@ -336,10 +356,12 @@ const struct fs_operations FS_LOCAL_OPERATIONS = {
 enum sds_fs
 {
   FS_SAMPLES_LOCAL_48_16_STEREO = 0x1,
-  FS_SAMPLES_LOCAL_48_16_MONO = 0x2
+  FS_SAMPLES_LOCAL_48_16_MONO = 0x2,
+  FS_SAMPLES_LOCAL_441_16_STEREO = 0x4,
+  FS_SAMPLES_LOCAL_441_16_MONO = 0x8
 };
 
-const struct fs_operations FS_SYSTEM_SAMPLES_STEREO_OPERATIONS = {
+const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .fs = FS_SAMPLES_LOCAL_48_16_STEREO,
   .options =
     FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER | FS_OPTION_STEREO,
@@ -366,7 +388,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_STEREO_OPERATIONS = {
   .type_ext = NULL,
 };
 
-const struct fs_operations FS_SYSTEM_SAMPLES_MONO_OPERATIONS = {
+const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .fs = FS_SAMPLES_LOCAL_48_16_MONO,
   .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER,
   .name = "wav4816m",
@@ -392,8 +414,64 @@ const struct fs_operations FS_SYSTEM_SAMPLES_MONO_OPERATIONS = {
   .type_ext = NULL,
 };
 
+const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
+  .fs = FS_SAMPLES_LOCAL_441_16_STEREO,
+  .options =
+    FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER | FS_OPTION_STEREO,
+  .name = "wav44116s",
+  .gui_name = "WAV 44.1 KHz 16 bits stereo",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = local_read_dir,
+  .print_item = NULL,
+  .mkdir = local_mkdir,
+  .delete = local_delete,
+  .rename = local_rename,
+  .move = local_rename,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = local_download,
+  .upload = local_upload,
+  .getid = get_item_name,
+  .load = local_sample_load_441_16_stereo,
+  .save = save_file,
+  .get_ext = NULL,
+  .get_upload_path = local_get_upload_path,
+  .get_download_path = local_get_download_path,
+  .type_ext = NULL,
+};
+
+const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
+  .fs = FS_SAMPLES_LOCAL_441_16_MONO,
+  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER,
+  .name = "wav44116m",
+  .gui_name = "WAV 44.1 KHz 16 bits mono",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = local_read_dir,
+  .print_item = NULL,
+  .mkdir = local_mkdir,
+  .delete = local_delete,
+  .rename = local_rename,
+  .move = local_rename,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = local_download,
+  .upload = local_upload,
+  .getid = get_item_name,
+  .load = local_sample_load_441_16_mono,
+  .save = save_file,
+  .get_ext = NULL,
+  .get_upload_path = local_get_upload_path,
+  .get_download_path = local_get_download_path,
+  .type_ext = NULL,
+};
+
 static const struct fs_operations *FS_SYSTEM_OPERATIONS[] = {
-  &FS_SYSTEM_SAMPLES_STEREO_OPERATIONS, &FS_SYSTEM_SAMPLES_MONO_OPERATIONS,
+  &FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS,
+  &FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS,
+  &FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS,
+  &FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS,
   NULL
 };
 
@@ -405,7 +483,8 @@ system_handshake (struct backend *backend)
       return -ENODEV;
     }
   backend->device_desc.filesystems =
-    FS_SAMPLES_LOCAL_48_16_STEREO | FS_SAMPLES_LOCAL_48_16_MONO;
+    FS_SAMPLES_LOCAL_48_16_STEREO | FS_SAMPLES_LOCAL_48_16_MONO |
+    FS_SAMPLES_LOCAL_441_16_STEREO | FS_SAMPLES_LOCAL_441_16_MONO;
   backend->fs_ops = FS_SYSTEM_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
   snprintf (backend->device_name, LABEL_MAX, _("system"));
