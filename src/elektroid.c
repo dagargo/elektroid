@@ -393,6 +393,7 @@ elektroid_load_devices (gboolean auto_select)
 					 DEVICES_LIST_STORE_NAME_FIELD,
 					 device.name, -1);
     }
+  i++;				//We add local.
 
   g_array_free (devices, TRUE);
 
@@ -2675,9 +2676,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
   if (backend.type == BE_TYPE_SYSTEM)
     {
-      gchar *dir = get_expanded_dir ("~");
-      strcpy (remote_browser.dir, dir);
-      g_free (dir);
+      strcpy (remote_browser.dir, local_browser.dir);
     }
   else
     {
