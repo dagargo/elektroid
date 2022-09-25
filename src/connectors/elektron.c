@@ -24,7 +24,6 @@
 #include <poll.h>
 #include <zlib.h>
 #include <libgen.h>
-#include <glib/gi18n.h>
 #include "elektron.h"
 #include "elektron.h"
 #include "utils.h"

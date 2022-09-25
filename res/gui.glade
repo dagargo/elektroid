@@ -916,9 +916,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="tooltip-text" translatable="yes">Listening mix depends on the destination channels</property>
+                                <property name="tooltip-text" translatable="yes">Playing mix depends on the destination channels</property>
                                 <property name="valign">center</property>
-                                <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Mix depends
+                                <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Mix depending
 on destination</property>
                                 <property name="wrap">True</property>
                               </object>
@@ -1108,7 +1108,7 @@ audio-volume-medium-symbolic</property>
                             <property name="can-focus">False</property>
                             <property name="halign">end</property>
                             <property name="valign">center</property>
-                            <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Samples</property>
+                            <property name="label" translatable="yes">Samples</property>
                             <property name="wrap">True</property>
                           </object>
                           <packing>
@@ -1122,7 +1122,7 @@ audio-volume-medium-symbolic</property>
                             <property name="can-focus">False</property>
                             <property name="halign">end</property>
                             <property name="valign">center</property>
-                            <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Channels</property>
+                            <property name="label" translatable="yes">Channels</property>
                             <property name="wrap">True</property>
                           </object>
                           <packing>
@@ -1136,7 +1136,7 @@ audio-volume-medium-symbolic</property>
                             <property name="can-focus">False</property>
                             <property name="halign">end</property>
                             <property name="valign">center</property>
-                            <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Sample rate</property>
+                            <property name="label" translatable="yes">Sample rate</property>
                             <property name="wrap">True</property>
                           </object>
                           <packing>
@@ -1150,7 +1150,7 @@ audio-volume-medium-symbolic</property>
                             <property name="can-focus">False</property>
                             <property name="halign">end</property>
                             <property name="valign">center</property>
-                            <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Bit depth</property>
+                            <property name="label" translatable="yes">Bit depth</property>
                             <property name="wrap">True</property>
                           </object>
                           <packing>
