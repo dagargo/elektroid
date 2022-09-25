@@ -989,10 +989,12 @@ static gboolean
 elektroid_update_ui_on_load (gpointer data)
 {
   gboolean ready_to_play;
+  struct sample_info *sample_info = audio.control.data;
 
   g_mutex_lock (&audio.control.mutex);
   ready_to_play = audio.frames >= LOAD_BUFFER_LEN || (!audio.control.active
 						      && audio.frames > 0);
+  audio.channels = PLAYER_CHANNELS == 2 && sample_info->channels == 2 ? 2 : 1;
   g_mutex_unlock (&audio.control.mutex);
 
   if (ready_to_play)
@@ -1360,7 +1362,11 @@ elektroid_redraw_sample (struct job_control *control)
 static gpointer
 elektroid_load_sample (gpointer data)
 {
+  struct sample_params sample_params;
   struct sample_info *sample_info = audio.control.data;
+
+  sample_params.samplerate = AUDIO_SAMPLE_RATE;
+  sample_params.channels = PLAYER_CHANNELS;
 
   g_timeout_add (100, elektroid_update_ui_on_load, NULL);
 
@@ -1368,16 +1374,14 @@ elektroid_load_sample (gpointer data)
   audio.control.active = TRUE;
   g_mutex_unlock (&audio.control.mutex);
 
-  sample_info->samplerate = AUDIO_SAMPLE_RATE;
-  sample_info->channels = PLAYER_CHANNELS;
-  if (sample_load_with_frames
-      (audio.path, audio.sample, &audio.control, &audio.frames) >= 0)
+  if (sample_load_from_file (audio.path, audio.sample, &audio.control,
+			     &sample_params, &audio.frames) >= 0)
     {
       debug_print (1,
-		   "Samples: %d (%d B); channels: %d; loop start at %d; loop end at %d; sample rate: %d; bit depth: %d\n",
+		   "Samples: %d (%d B); channels: %d; loop start at %d; loop end at %d; sample rate: %.2f kHz; bit depth: %d\n",
 		   audio.frames, audio.sample->len, sample_info->channels,
 		   sample_info->loopstart, sample_info->loopend,
-		   sample_info->samplerate, sample_info->bitdepth);
+		   sample_info->samplerate / 1000.0, sample_info->bitdepth);
     }
 
   g_mutex_lock (&audio.control.mutex);

@@ -37,6 +37,7 @@ struct audio
   guint32 release_frames;
   struct job_control control;
   gchar path[PATH_MAX];
+  guint32 channels;
 };
 
 void audio_play (struct audio *);

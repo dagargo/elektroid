@@ -41,7 +41,6 @@ static void
 audio_write_callback (pa_stream * stream, size_t size, void *data)
 {
   struct audio *audio = data;
-  struct sample_info *sample_info;
   guint32 req_frames;
   void *buffer;
   gint16 *dst, *src;
@@ -52,14 +51,14 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
       return;
     }
 
-  sample_info = audio->control.data;
   req_frames = size >> AUDIO_CHANNELS;
 
-  debug_print (2, "Writing %d frames to %d channels...\n", req_frames,
-	       sample_info->achannels);
   pa_stream_begin_write (stream, &buffer, &size);
 
   g_mutex_lock (&audio->control.mutex);
+
+  debug_print (2, "Writing %d frames to %d channels...\n", req_frames,
+	       audio->channels);
 
   if (!audio->sample || !audio->sample->len)
     {
@@ -80,8 +79,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
     }
 
   dst = buffer;
-  src =
-    (gint16 *) & audio->sample->data[audio->pos << sample_info->achannels];
+  src = (gint16 *) & audio->sample->data[audio->pos << audio->channels];
   for (gint i = 0; i < req_frames; i++)
     {
       if (audio->pos == audio->frames)
@@ -95,7 +93,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
 
       *dst = *src;
       dst++;
-      if (sample_info->achannels == 2)
+      if (audio->channels == 2)
 	{
 	  src++;
 	}

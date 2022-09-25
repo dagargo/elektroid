@@ -92,10 +92,7 @@ struct job_control
   void *data;
 };
 
-// This contains information taken from from the sample file.
-// It's possible that this information does NOT represent the actual data loaded.
-// For instance, only 2 channels samples are loaded as a stereo sample. In the
-// rest of the cases the loaded audio is single channe sum.
+// This contains information taken from from the sample data.
 struct sample_info
 {
   guint32 loopstart;
@@ -103,9 +100,15 @@ struct sample_info
   guint32 looptype;
   guint32 samplerate;
   guint32 bitdepth;
-  guint32 channels;		//file channels
+  guint32 channels;
   guint32 frames;
-  guint32 achannels;		//loaded channels
+};
+
+// This contains the format in which data must be load.
+struct sample_params
+{
+  guint32 channels;
+  guint32 samplerate;
 };
 
 struct device_desc

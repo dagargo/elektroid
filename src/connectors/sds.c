@@ -940,11 +940,12 @@ gint
 sds_sample_load (const gchar * path, GByteArray * sample,
 		 struct job_control *control)
 {
-  struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
-  sample_info->samplerate = 0;
-  sample_info->channels = SDS_SAMPLE_CHANNELS;
-  control->data = sample_info;
-  return sample_load_with_frames (path, sample, control, NULL);
+  guint frames;
+  struct sample_params sample_params;
+  sample_params.samplerate = 0;	// Any sample rate is valid.
+  sample_params.channels = SDS_SAMPLE_CHANNELS;
+  return sample_load_from_file (path, sample, control, &sample_params,
+				&frames);
 }
 
 static void
@@ -981,7 +982,7 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .upload = sds_upload_8b,
   .getid = get_item_index,
   .load = sds_sample_load,
-  .save = sample_save,
+  .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path,
@@ -1008,7 +1009,7 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .upload = sds_upload_12b,
   .getid = get_item_index,
   .load = sds_sample_load,
-  .save = sample_save,
+  .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path,
@@ -1035,7 +1036,7 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .upload = sds_upload_14b,
   .getid = get_item_index,
   .load = sds_sample_load,
-  .save = sample_save,
+  .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path,
@@ -1062,7 +1063,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .upload = sds_upload_16b,
   .getid = get_item_index,
   .load = sds_sample_load,
-  .save = sample_save,
+  .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path,

@@ -305,7 +305,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .upload = elektron_upload_sample,
   .getid = get_item_name,
   .load = elektron_sample_load,
-  .save = sample_save,
+  .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = elektron_get_upload_path_smplrw,
   .get_download_path = elektron_get_download_path,
@@ -3321,11 +3321,9 @@ gint
 elektron_sample_load (const gchar * path, GByteArray * sample,
 		      struct job_control *control)
 {
-  struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
-  sample_info->samplerate = ELEKTRON_SAMPLE_RATE;
-  sample_info->channels = ELEKTRON_SAMPLE_CHANNELS;
-  control->data = sample_info;
-  return sample_load_with_frames (path, sample, control, NULL);
+  guint frames;
+  return sample_load_from_file (path, sample, control,
+				&ELEKTRON_SAMPLE_PARAMS, &frames);
 }
 
 gchar *

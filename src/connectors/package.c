@@ -47,6 +47,11 @@
 #define MAX_MANIFEST_LEN (128 * 1024)
 #define MANIFEST_FILENAME "manifest.json"
 
+const struct sample_params ELEKTRON_SAMPLE_PARAMS = {
+  .samplerate = ELEKTRON_SAMPLE_RATE,
+  .channels = ELEKTRON_SAMPLE_CHANNELS
+};
+
 static gint
 package_add_resource (struct package *pkg,
 		      struct package_resource *pkg_resource, gboolean new)
@@ -484,14 +489,7 @@ package_receive_pkg_resources (struct package *pkg,
 	}
 
       wave = g_byte_array_new ();
-
-      struct sample_info *sample_info =
-	g_malloc (sizeof (struct sample_info));
-      sample_info->samplerate = ELEKTRON_SAMPLE_RATE;
-      sample_info->samplerate = ELEKTRON_SAMPLE_CHANNELS;
-      control->data = sample_info;
-      ret = sample_get_wave (sample, wave, control);
-      g_free (control->data);
+      ret = sample_get_wav_from_array (sample, wave, control);
       if (ret)
 	{
 	  error_print
@@ -716,6 +714,8 @@ package_send_pkg_resources (struct package *pkg,
   control->part = 1;
   for (i = 0; i < elements; i++, control->part++)
     {
+      guint frames;
+
       json_reader_read_element (reader, i);
       json_reader_read_member (reader, PKG_TAG_FILE_NAME);
       sample_path = json_reader_get_string_value (reader);
@@ -738,7 +738,8 @@ package_send_pkg_resources (struct package *pkg,
       zip_fclose (zip_file);
 
       raw->len = 0;
-      if (sample_load_raw (wave, raw, control))
+      if (sample_load_from_array (wave, raw, control,
+				  &ELEKTRON_SAMPLE_PARAMS, &frames))
 	{
 	  error_print ("Error while loading '%s': %s\n",
 		       sample_path, zip_error_strerror (&zerror));

@@ -220,7 +220,7 @@ sample_get_wave_data (GByteArray * sample,
       error_print ("%s\n", sf_strerror (sndfile));
     }
 
-  frames = sample->len >> 1;
+  frames = sample->len >> sample_info->channels;
   total = sf_write_short (sndfile, (gint16 *) sample->data, frames);
 
   sf_close (sndfile);
@@ -236,8 +236,8 @@ sample_get_wave_data (GByteArray * sample,
 }
 
 gint
-sample_get_wave (GByteArray * sample, GByteArray * wave,
-		 struct job_control *control)
+sample_get_wav_from_array (GByteArray * sample, GByteArray * wave,
+			   struct job_control *control)
 {
   struct g_byte_array_io_data data;
   data.pos = 0;
@@ -246,11 +246,11 @@ sample_get_wave (GByteArray * sample, GByteArray * wave,
 }
 
 gint
-sample_save (const gchar * path, GByteArray * sample,
-	     struct job_control *control)
+sample_save_from_array (const gchar * path, GByteArray * sample,
+			struct job_control *control)
 {
   GByteArray *wave = g_byte_array_new ();
-  gint ret = sample_get_wave (sample, wave, control);
+  gint ret = sample_get_wav_from_array (sample, wave, control);
   if (!ret)
     {
       ret = save_file (path, wave, control);
@@ -282,11 +282,11 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
 // If control->data is NULL, then a new struct sample_info * is created and control->data points to it.
 // In case of failure, if control->data is NULL is freed.
 // Franes is the amount of frames after resampling. This value is set before the loading has terminated.
-//
+
 static gint
-sample_load_raw_data (struct g_byte_array_io_data *wave,
-		      struct job_control *control, GByteArray * sample,
-		      guint * frames)
+sample_load_raw (struct g_byte_array_io_data *wave,
+		 struct job_control *control, GByteArray * sample,
+		 const struct sample_params *sample_params, guint * frames)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -331,19 +331,24 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
   if (!control->data)
     {
       sample_info = g_malloc (sizeof (struct sample_info));
-      sample_info->samplerate = 0;
-      sample_info->channels = 0;
     }
 
-  channels = (sf_info.channels == 2 && (sample_info->channels == 2
-					|| !sample_info->channels)) ? 2 : 1;
-  sample_info->achannels = channels;
+  channels = sample_params->channels == 2 && sf_info.channels == 2 ? 2 : 1;
   samplerate =
-    sample_info->samplerate ? sample_info->samplerate : sf_info.samplerate;
+    sample_params->samplerate ? sample_params->
+    samplerate : sf_info.samplerate;
 
+  if (control)
+    {
+      g_mutex_lock (&control->mutex);
+    }
   sample_info->channels = sf_info.channels;
   sample_info->samplerate = sf_info.samplerate;
   sample_info->frames = sf_info.frames;
+  if (control)
+    {
+      g_mutex_unlock (&control->mutex);
+    }
 
   if (chunk_iter)
     {
@@ -432,10 +437,7 @@ sample_load_raw_data (struct g_byte_array_io_data *wave,
       goto cleanup;
     }
 
-  if (frames)
-    {
-      *frames = sf_info.frames * src_data.src_ratio;
-    }
+  *frames = sf_info.frames * src_data.src_ratio;
 
   if (samplerate != sf_info.samplerate)
     {
@@ -581,25 +583,30 @@ cleanup:
 }
 
 static gint
-sample_load_raw_frames (GByteArray * wave, GByteArray * sample,
-			struct job_control *control, guint * frames)
+sample_load (GByteArray * wave, GByteArray * sample,
+	     struct job_control *control,
+	     const struct sample_params *sample_params, guint * frames)
 {
   struct g_byte_array_io_data data;
   data.pos = 0;
   data.array = wave;
-  return sample_load_raw_data (&data, control, sample, frames);
+  return sample_load_raw (&data, control, sample, sample_params, frames);
 }
 
 gint
-sample_load_raw (GByteArray * wave, GByteArray * sample,
-		 struct job_control *control)
+sample_load_from_array (GByteArray * wave, GByteArray * sample,
+			struct job_control *control,
+			const struct sample_params *sample_params,
+			guint * frames)
 {
-  return sample_load_raw_frames (wave, sample, control, NULL);
+  return sample_load (wave, sample, control, sample_params, frames);
 }
 
 gint
-sample_load_with_frames (const gchar * path, GByteArray * sample,
-			 struct job_control *control, guint * frames)
+sample_load_from_file (const gchar * path, GByteArray * sample,
+		       struct job_control *control,
+		       const struct sample_params *sample_params,
+		       guint * frames)
 {
   GByteArray *wave = g_byte_array_new ();
 
@@ -608,17 +615,10 @@ sample_load_with_frames (const gchar * path, GByteArray * sample,
   int ret = load_file (path, wave, control);
   if (!ret)
     {
-      ret = sample_load_raw_frames (wave, sample, control, frames);
+      ret = sample_load (wave, sample, control, sample_params, frames);
     }
   g_byte_array_free (wave, TRUE);
   return ret;
-}
-
-gint
-sample_load (const gchar * path, GByteArray * sample,
-	     struct job_control *control)
-{
-  return sample_load_with_frames (path, sample, control, NULL);
 }
 
 static gboolean
