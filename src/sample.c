@@ -177,7 +177,7 @@ sample_get_wave_data (GByteArray * sample,
 
   memset (&sf_info, 0, sizeof (sf_info));
   sf_info.samplerate = sample_info->samplerate;
-  sf_info.channels = 1;
+  sf_info.channels = sample_info->channels;
   sf_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
   sndfile = sf_open_virtual (&G_BYTE_ARRAY_IO, SFM_WRITE, &sf_info, wave);
   if (!sndfile)

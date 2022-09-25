@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <glib/gi18n.h>
 #include "local.h"
+#include "sample.h"
 
 struct local_iterator_data
 {
@@ -40,10 +41,9 @@ static gint
 local_download (struct backend *backend, const gchar * path,
 		GByteArray * output, struct job_control *control)
 {
-  gint err = load_file (path, output, control);
   control->parts = 1;
   control->part = 0;
-  set_job_control_progress (control, 1.0);
+  gint err = load_file (path, output, control);
   return err;
 }
 
@@ -59,6 +59,17 @@ local_get_download_path (struct backend *backend,
   snprintf (path, PATH_MAX, "%s/%s", dst_dir, filename);
   g_free (src_pathc);
   return path;
+}
+
+static gchar *
+local_get_upload_path (struct backend *backend,
+		       struct item_iterator *remote_iter,
+		       const struct fs_operations *ops,
+		       const gchar * dst_dir,
+		       const gchar * src_path, gint32 * next_index)
+{
+  return local_get_download_path (backend, remote_iter, ops, dst_dir,
+				  src_path);
 }
 
 gint
@@ -247,6 +258,54 @@ local_copy_iterator (struct item_iterator *dst, struct item_iterator *src,
   return local_init_iterator (dst, data->path, cached);
 }
 
+static gint
+local_sample_load_custom (const gchar * path, GByteArray * sample,
+			  struct job_control *control,
+			  const struct sample_params *sample_params)
+{
+  guint frames;
+  gint err =
+    sample_load_from_file (path, sample, control, sample_params, &frames);
+  struct sample_info *sample_info = control->data;
+  sample_info->samplerate = sample_params->samplerate;
+  sample_info->channels =
+    sample_info->channels <
+    sample_params->channels ? sample_info->channels : sample_params->channels;
+  return err;
+}
+
+static gint
+local_sample_load_48_16_stereo (const gchar * path, GByteArray * sample,
+				struct job_control *control)
+{
+  struct sample_params sample_params;
+  sample_params.samplerate = 48000;
+  sample_params.channels = 2;
+  return local_sample_load_custom (path, sample, control, &sample_params);
+}
+
+static gint
+local_sample_load_48_16_mono (const gchar * path, GByteArray * sample,
+			      struct job_control *control)
+{
+  struct sample_params sample_params;
+  sample_params.samplerate = 48000;
+  sample_params.channels = 1;
+  return local_sample_load_custom (path, sample, control, &sample_params);
+}
+
+static gint
+local_upload (struct backend *backend, const gchar * path, GByteArray * input,
+	      struct job_control *control)
+{
+  control->parts = 1;
+  control->part = 0;
+  set_job_control_progress (control, 0.0);
+  gint err = sample_save_from_array (path, input, control);
+  set_job_control_progress (control, 1.0);
+  return err;
+}
+
 const struct fs_operations FS_LOCAL_OPERATIONS = {
   .fs = 0,
   .options =
@@ -276,16 +335,16 @@ const struct fs_operations FS_LOCAL_OPERATIONS = {
 
 enum sds_fs
 {
-  FS_SAMPLES_LOCAL_48000_STEREO = 0x1,
-  FS_SAMPLES_LOCAL_40000_MONO = 0x2
+  FS_SAMPLES_LOCAL_48_16_STEREO = 0x1,
+  FS_SAMPLES_LOCAL_48_16_MONO = 0x2
 };
 
 const struct fs_operations FS_SYSTEM_SAMPLES_STEREO_OPERATIONS = {
-  .fs = FS_SAMPLES_LOCAL_48000_STEREO,
+  .fs = FS_SAMPLES_LOCAL_48_16_STEREO,
   .options =
     FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER | FS_OPTION_STEREO,
-  .name = "sample48000s",
-  .gui_name = "Samples 48000 stereo",
+  .name = "wav4816s",
+  .gui_name = "WAV 48 KHz 16 bits stereo",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_read_dir,
   .print_item = NULL,
@@ -297,21 +356,21 @@ const struct fs_operations FS_SYSTEM_SAMPLES_STEREO_OPERATIONS = {
   .clear = NULL,
   .swap = NULL,
   .download = local_download,
-  .upload = NULL,
+  .upload = local_upload,
   .getid = get_item_name,
-  .load = NULL,
+  .load = local_sample_load_48_16_stereo,
   .save = save_file,
   .get_ext = NULL,
-  .get_upload_path = NULL,
+  .get_upload_path = local_get_upload_path,
   .get_download_path = local_get_download_path,
   .type_ext = NULL,
 };
 
 const struct fs_operations FS_SYSTEM_SAMPLES_MONO_OPERATIONS = {
-  .fs = FS_SAMPLES_LOCAL_40000_MONO,
+  .fs = FS_SAMPLES_LOCAL_48_16_MONO,
   .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER,
-  .name = "sample48000m",
-  .gui_name = "Samples 48000 mono",
+  .name = "wav4816m",
+  .gui_name = "WAV 48 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_read_dir,
   .print_item = NULL,
@@ -323,12 +382,12 @@ const struct fs_operations FS_SYSTEM_SAMPLES_MONO_OPERATIONS = {
   .clear = NULL,
   .swap = NULL,
   .download = local_download,
-  .upload = NULL,
+  .upload = local_upload,
   .getid = get_item_name,
-  .load = NULL,
+  .load = local_sample_load_48_16_mono,
   .save = save_file,
   .get_ext = NULL,
-  .get_upload_path = NULL,
+  .get_upload_path = local_get_upload_path,
   .get_download_path = local_get_download_path,
   .type_ext = NULL,
 };
@@ -346,7 +405,7 @@ system_handshake (struct backend *backend)
       return -ENODEV;
     }
   backend->device_desc.filesystems =
-    FS_SAMPLES_LOCAL_48000_STEREO | FS_SAMPLES_LOCAL_40000_MONO;
+    FS_SAMPLES_LOCAL_48_16_STEREO | FS_SAMPLES_LOCAL_48_16_MONO;
   backend->fs_ops = FS_SYSTEM_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
   snprintf (backend->device_name, LABEL_MAX, _("system"));
