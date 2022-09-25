@@ -198,8 +198,8 @@ struct fs_operations
 
 enum fs_options
 {
-  FS_OPTION_MONO_AUDIO_PLAYER = 0x1,
-  FS_OPTION_STEREO_AUDIO_PLAYER = 0x2,
+  FS_OPTION_AUDIO_PLAYER = 0x1,
+  FS_OPTION_STEREO = 0x2,
   FS_OPTION_SHOW_INDEX_COLUMN = 0x4,
   FS_OPTION_SINGLE_OP = 0x8,
   FS_OPTION_SLOT_STORAGE = 0x10,	//In SLOT mode, dst_dir passed to t_get_upload_path includes the index, ':' and the item name.

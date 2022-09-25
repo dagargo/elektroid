@@ -28,6 +28,7 @@
 #define PREFERENCES_FILE "/preferences.json"
 
 #define MEMBER_AUTOPLAY "autoplay"
+#define MEMBER_MIX "mix"
 #define MEMBER_LOCALDIR "localDir"
 
 gint
@@ -61,6 +62,9 @@ preferences_save (struct preferences *preferences)
 
   json_builder_set_member_name (builder, MEMBER_AUTOPLAY);
   json_builder_add_boolean_value (builder, preferences->autoplay);
+
+  json_builder_set_member_name (builder, MEMBER_MIX);
+  json_builder_add_boolean_value (builder, preferences->mix);
 
   json_builder_set_member_name (builder, MEMBER_LOCALDIR);
   json_builder_add_string_value (builder, preferences->local_dir);
@@ -101,6 +105,7 @@ preferences_load (struct preferences *preferences)
       g_object_unref (parser);
       g_free (preferences_file);
       preferences->autoplay = TRUE;
+      preferences->mix = TRUE;
       preferences->local_dir = get_expanded_dir ("~");
       return 0;
     }
@@ -114,6 +119,16 @@ preferences_load (struct preferences *preferences)
   else
     {
       preferences->autoplay = TRUE;
+    }
+  json_reader_end_member (reader);
+
+  if (json_reader_read_member (reader, MEMBER_MIX))
+    {
+      preferences->mix = json_reader_get_boolean_value (reader);
+    }
+  else
+    {
+      preferences->mix = TRUE;
     }
   json_reader_end_member (reader);
 

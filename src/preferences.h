@@ -23,6 +23,7 @@
 struct preferences
 {
   gboolean autoplay;
+  gboolean mix;
   gchar *local_dir;
 };
 
