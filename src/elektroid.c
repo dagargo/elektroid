@@ -254,10 +254,9 @@ elektroid_clear_file_extensions (gchar *** extensions)
 }
 
 static void
-elektroid_set_sample_file_extensions (gchar *** extensions)
+elektroid_set_file_extensions (gchar *** ext_dst, const gchar ** ext_src)
 {
-  const gchar **exts = sample_get_sample_extensions ();
-  const gchar **ext = exts;
+  const gchar **ext = ext_src;
   int ext_count = 0;
   while (*ext)
     {
@@ -266,16 +265,24 @@ elektroid_set_sample_file_extensions (gchar *** extensions)
     }
   ext_count++;			//NULL included
 
-  *extensions = malloc (sizeof (gchar *) * ext_count);
-  ext = exts;
+  *ext_dst = malloc (sizeof (gchar *) * ext_count);
+  ext = ext_src;
   int i = 0;
   while (*ext)
     {
-      (*extensions)[i] = strdup (*ext);
+      (*ext_dst)[i] = strdup (*ext);
       ext++;
       i++;
     }
-  (*extensions)[i] = NULL;
+  (*ext_dst)[i] = NULL;
+}
+
+static void
+elektroid_set_file_extension (gchar *** ext_dst, gchar * ext)
+{
+  *ext_dst = malloc (sizeof (gchar *) * 2);
+  (*ext_dst)[0] = ext;
+  (*ext_dst)[1] = NULL;
 }
 
 static void
@@ -288,13 +295,13 @@ elektroid_set_local_file_extensions (gint sel_fs)
 
   if (!ops || (ops->options & FS_OPTION_AUDIO_PLAYER))
     {
-      elektroid_set_sample_file_extensions (&local_browser.extensions);
+      elektroid_set_file_extensions (&local_browser.extensions,
+				     sample_get_sample_extensions ());
     }
   else
     {
-      local_browser.extensions = malloc (sizeof (gchar *) * 2);
-      local_browser.extensions[0] = ops->get_ext (&backend.device_desc, ops);
-      local_browser.extensions[1] = NULL;
+      elektroid_set_file_extension (&local_browser.extensions,
+				    ops->get_ext (&backend.device_desc, ops));
     }
 }
 
@@ -308,7 +315,8 @@ elektroid_set_remote_file_extensions (gint sel_fs)
 
   if (ops && backend.type == BE_TYPE_SYSTEM)
     {
-      elektroid_set_sample_file_extensions (&remote_browser.extensions);
+      elektroid_set_file_extension (&remote_browser.extensions,
+				    ops->get_ext (&backend.device_desc, ops));
     }
 }
 
