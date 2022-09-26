@@ -425,11 +425,10 @@ sample_load_raw (struct g_byte_array_io_data *wave,
   ratio = samplerate / (double) sf_info.samplerate;
   src_data.src_ratio = ratio;
 
-  resampled_buffer_len =
-    round (LOAD_BUFFER_LEN * channels * src_data.src_ratio);
+  src_data.output_frames = ceil (LOAD_BUFFER_LEN * src_data.src_ratio);
+  resampled_buffer_len = src_data.output_frames * channels;
   buffer_s = malloc (resampled_buffer_len * sizeof (gint16));
   src_data.data_out = malloc (resampled_buffer_len * sizeof (gfloat));
-  src_data.output_frames = resampled_buffer_len;
 
   src_state = src_new (SRC_SINC_BEST_QUALITY, channels, &err);
   if (err)
