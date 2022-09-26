@@ -41,10 +41,7 @@ static gint
 local_download (struct backend *backend, const gchar * path,
 		GByteArray * output, struct job_control *control)
 {
-  control->parts = 1;
-  control->part = 0;
-  gint err = load_file (path, output, control);
-  return err;
+  return load_file (path, output, control);
 }
 
 static gchar *
@@ -56,7 +53,8 @@ local_get_download_path (struct backend *backend,
   gchar *src_pathc = strdup (src_path);
   gchar *path = malloc (PATH_MAX);
   gchar *filename = basename (src_pathc);
-  snprintf (path, PATH_MAX, "%s/%s", dst_dir, filename);
+  remove_ext (filename);
+  snprintf (path, PATH_MAX, "%s/%s.wav", dst_dir, filename);
   g_free (src_pathc);
   return path;
 }
@@ -264,8 +262,10 @@ local_sample_load_custom (const gchar * path, GByteArray * sample,
 			  const struct sample_params *sample_params)
 {
   guint frames;
-  gint err =
-    sample_load_from_file (path, sample, control, sample_params, &frames);
+  control->parts = 1;
+  control->part = 0;
+  gint err = sample_load_from_file (path, sample, control, sample_params,
+				    &frames);
   struct sample_info *sample_info = control->data;
   sample_info->samplerate = sample_params->samplerate;
   sample_info->channels =
@@ -298,12 +298,7 @@ static gint
 local_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	      struct job_control *control)
 {
-  control->parts = 1;
-  control->part = 0;
-  set_job_control_progress (control, 0.0);
-  gint err = sample_save_from_array (path, input, control);
-  set_job_control_progress (control, 1.0);
-  return err;
+  return sample_save_from_array (path, input, control);
 }
 
 static gint
@@ -382,10 +377,10 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .getid = get_item_name,
   .load = local_sample_load_48_16_stereo,
   .save = save_file,
-  .get_ext = NULL,
+  .get_ext = backend_get_fs_ext,
   .get_upload_path = local_get_upload_path,
   .get_download_path = local_get_download_path,
-  .type_ext = NULL,
+  .type_ext = "wav"
 };
 
 const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
@@ -408,10 +403,10 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .getid = get_item_name,
   .load = local_sample_load_48_16_mono,
   .save = save_file,
-  .get_ext = NULL,
+  .get_ext = backend_get_fs_ext,
   .get_upload_path = local_get_upload_path,
   .get_download_path = local_get_download_path,
-  .type_ext = NULL,
+  .type_ext = "wav"
 };
 
 const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
@@ -435,10 +430,10 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .getid = get_item_name,
   .load = local_sample_load_441_16_stereo,
   .save = save_file,
-  .get_ext = NULL,
+  .get_ext = backend_get_fs_ext,
   .get_upload_path = local_get_upload_path,
   .get_download_path = local_get_download_path,
-  .type_ext = NULL,
+  .type_ext = "wav"
 };
 
 const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
@@ -461,10 +456,10 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .getid = get_item_name,
   .load = local_sample_load_441_16_mono,
   .save = save_file,
-  .get_ext = NULL,
+  .get_ext = backend_get_fs_ext,
   .get_upload_path = local_get_upload_path,
   .get_download_path = local_get_download_path,
-  .type_ext = NULL,
+  .type_ext = "wav"
 };
 
 static const struct fs_operations *FS_SYSTEM_OPERATIONS[] = {
