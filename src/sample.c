@@ -69,20 +69,6 @@ static const guint8 JUNK_CHUNK_DATA[] = {
   0, 0, 0, 0
 };
 
-static sf_count_t get_filelen_byte_array_io (void *);
-static sf_count_t seek_byte_array_io (sf_count_t, int, void *);
-static sf_count_t read_byte_array_io (void *, sf_count_t, void *);
-static sf_count_t write_byte_array_io (const void *, sf_count_t, void *);
-static sf_count_t tell_byte_array_io (void *);
-
-static SF_VIRTUAL_IO G_BYTE_ARRAY_IO = {
-  .get_filelen = get_filelen_byte_array_io,
-  .seek = seek_byte_array_io,
-  .read = read_byte_array_io,
-  .write = write_byte_array_io,
-  .tell = tell_byte_array_io
-};
-
 static sf_count_t
 get_filelen_byte_array_io (void *user_data)
 {
@@ -156,9 +142,63 @@ tell_byte_array_io (void *user_data)
   return data->pos;
 }
 
+static SF_VIRTUAL_IO G_BYTE_ARRAY_IO = {
+  .get_filelen = get_filelen_byte_array_io,
+  .seek = seek_byte_array_io,
+  .read = read_byte_array_io,
+  .write = write_byte_array_io,
+  .tell = tell_byte_array_io
+};
+
+static sf_count_t
+get_filelen_file_io (void *user_data)
+{
+  long fileSize, position;
+  FILE *file = user_data;
+  position = fseek (file, 0, SEEK_END);
+  fileSize = ftell (file);
+  fseek (file, position, SEEK_SET);
+  return fileSize;
+}
+
+static sf_count_t
+seek_file_io (sf_count_t offset, int whence, void *user_data)
+{
+  FILE *file = user_data;
+  return fseek (file, offset, whence);
+}
+
+static sf_count_t
+read_file_io (void *ptr, sf_count_t count, void *user_data)
+{
+  FILE *file = user_data;
+  return fread (ptr, 1, count, file);
+}
+
+static sf_count_t
+write_file_io (const void *ptr, sf_count_t count, void *user_data)
+{
+  FILE *file = user_data;
+  return fwrite (ptr, 1, count, file);
+}
+
+static sf_count_t
+tell_file_io (void *user_data)
+{
+  FILE *file = user_data;
+  return ftell (file);
+}
+
+static SF_VIRTUAL_IO FILE_IO = {
+  .get_filelen = get_filelen_file_io,
+  .seek = seek_file_io,
+  .read = read_file_io,
+  .write = write_file_io,
+  .tell = tell_file_io
+};
+
 static gint
-sample_get_wave_data (GByteArray * sample,
-		      struct job_control *control,
+sample_get_wave_data (GByteArray * sample, struct job_control *control,
 		      struct g_byte_array_io_data *wave)
 {
   SF_INFO sf_info;
@@ -284,7 +324,7 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
 // Franes is the amount of frames after resampling. This value is set before the loading has terminated.
 
 static gint
-sample_load_raw (struct g_byte_array_io_data *wave,
+sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 		 struct job_control *control, GByteArray * sample,
 		 const struct sample_params *sample_params, guint * frames)
 {
@@ -317,7 +357,7 @@ sample_load_raw (struct g_byte_array_io_data *wave,
     }
 
   sf_info.format = 0;
-  sndfile = sf_open_virtual (&G_BYTE_ARRAY_IO, SFM_READ, &sf_info, wave);
+  sndfile = sf_open_virtual (sf_virtual_io, SFM_READ, &sf_info, data);
   if (!sndfile)
     {
       error_print ("%s\n", sf_strerror (sndfile));
@@ -581,24 +621,17 @@ cleanup:
     }
 }
 
-static gint
-sample_load (GByteArray * wave, GByteArray * sample,
-	     struct job_control *control,
-	     const struct sample_params *sample_params, guint * frames)
-{
-  struct g_byte_array_io_data data;
-  data.pos = 0;
-  data.array = wave;
-  return sample_load_raw (&data, control, sample, sample_params, frames);
-}
-
 gint
 sample_load_from_array (GByteArray * wave, GByteArray * sample,
 			struct job_control *control,
 			const struct sample_params *sample_params,
 			guint * frames)
 {
-  return sample_load (wave, sample, control, sample_params, frames);
+  struct g_byte_array_io_data data;
+  data.pos = 0;
+  data.array = wave;
+  return sample_load_raw (&data, &G_BYTE_ARRAY_IO, control, sample,
+			  sample_params, frames);
 }
 
 gint
@@ -607,17 +640,15 @@ sample_load_from_file (const gchar * path, GByteArray * sample,
 		       const struct sample_params *sample_params,
 		       guint * frames)
 {
-  GByteArray *wave = g_byte_array_new ();
-
-  debug_print (1, "Loading file %s...\n", path);
-
-  int ret = load_file (path, wave, control);
-  if (!ret)
+  FILE *file = fopen (path, "rb");
+  if (!file)
     {
-      ret = sample_load (wave, sample, control, sample_params, frames);
+      return errno;
     }
-  g_byte_array_free (wave, TRUE);
-  return ret;
+  gint err = sample_load_raw (file, &FILE_IO, control, sample, sample_params,
+			      frames);
+  fclose (file);
+  return err;
 }
 
 static gboolean
