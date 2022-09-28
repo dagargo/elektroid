@@ -1903,8 +1903,6 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
   gint offset;
   gint res = 0;
 
-  transfer->status = SENDING;
-
   tx_msg = elektron_new_msg_upgrade_os_start (transfer->raw->len);
   rx_msg = elektron_tx_and_rx (backend, tx_msg);
 
@@ -1913,7 +1911,7 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
       res = -EIO;
       goto end;
     }
-  //Response: x, x, x, x, 0xd1, [0 (ok), 1 (error)]...
+  //Response: x, x, x, x, 0xd0, [0 (ok), 1 (error)]...
   op = elektron_get_msg_status (rx_msg);
   if (op)
     {
@@ -1927,7 +1925,7 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
   free_msg (rx_msg);
 
   offset = 0;
-  while (offset < transfer->raw->len && transfer->active)
+  while (offset < transfer->raw->len)
     {
       tx_msg = elektron_new_msg_upgrade_os_write (transfer->raw, &offset);
       rx_msg = elektron_tx_and_rx (backend, tx_msg);
@@ -1958,8 +1956,6 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
     }
 
 end:
-  transfer->active = FALSE;
-  transfer->status = FINISHED;
   return res;
 }
 
