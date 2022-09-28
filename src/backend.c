@@ -487,10 +487,18 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 	  continue;
 	}
 
+      //Everything is skipped until a 0xf0 is found. This includes every RT MIDI message.
       tmp_msg = tmp;
       if (!backend->rx_len && tmp[0] != 0xf0)
 	{
-	  debug_print (4, "Skipping partial message...\n");
+	  if (debug_level >= 4)
+	    {
+	      gchar *text = debug_get_hex_data (debug_level, tmp, rx_len);
+	      debug_print (4, "Skipping partial message (%ld): %s\n", rx_len,
+			   text);
+	      free (text);
+	    }
+
 	  tmp_msg++;
 	  rx_len_msg = 1;
 	  for (gint i = 1; i < rx_len; i++, tmp_msg++, rx_len_msg++)
@@ -505,6 +513,7 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 
       if (rx_len == 0)
 	{
+	  transfer->time += BE_POLL_TIMEOUT_MS;
 	  continue;
 	}
 
