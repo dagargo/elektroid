@@ -43,7 +43,7 @@ name=$(echo "$output" | head -n 1 | awk '{print $4}')
 [ "$type" != "F" ] || [ "$size" != "93.81KiB" ] || [ "$name" != "square" ] && exit 1
 
 echo "Testing upload (nonexistent source)..."
-$ecli elektron-sample-ul-sample $srcdir/res/foo $DEVICE:/$TEST_NAME
+$ecli elektron-sample-upload $srcdir/res/foo $DEVICE:/$TEST_NAME
 [ $? -eq 0 ] && exit 1
 
 echo "Testing download..."
