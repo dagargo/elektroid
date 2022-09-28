@@ -228,6 +228,7 @@ sds_get_download_info (GByteArray * header, struct sample_info *sample_info,
   sample_info->loopend =
     sds_get_bytes_value_right_just (&header->data[16], SDS_BYTES_PER_WORD);
   sample_info->looptype = header->data[19];
+  sample_info->channels = 1;
   return 0;
 }
 
