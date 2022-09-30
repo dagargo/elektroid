@@ -37,7 +37,8 @@
 #include "preferences.h"
 
 #define PLAYER_VISIBLE (remote_browser.fs_ops->options & FS_OPTION_AUDIO_PLAYER ? TRUE : FALSE)
-#define PLAYER_CHANNELS (!remote_browser.fs_ops || (remote_browser.fs_ops->options & FS_OPTION_STEREO) || !preferences.mix ? 2 : 1)
+#define PLAYER_PREF_CHANNELS (!remote_browser.fs_ops || (remote_browser.fs_ops->options & FS_OPTION_STEREO) || !preferences.mix ? 2 : 1)
+#define PLAYER_LOADED_CHANNELS (PLAYER_PREF_CHANNELS == 2 && sample_info->channels == 2 ? 2 : 1)
 
 #define MAX_DRAW_X 10000
 
@@ -1002,7 +1003,7 @@ elektroid_update_ui_on_load (gpointer data)
   g_mutex_lock (&audio.control.mutex);
   ready_to_play = audio.frames >= LOAD_BUFFER_LEN || (!audio.control.active
 						      && audio.frames > 0);
-  audio.channels = PLAYER_CHANNELS == 2 && sample_info->channels == 2 ? 2 : 1;
+  audio.channels = PLAYER_LOADED_CHANNELS;
   g_mutex_unlock (&audio.control.mutex);
 
   if (ready_to_play)
@@ -1374,7 +1375,7 @@ elektroid_load_sample (gpointer data)
   struct sample_info *sample_info = audio.control.data;
 
   sample_params.samplerate = AUDIO_SAMPLE_RATE;
-  sample_params.channels = PLAYER_CHANNELS;
+  sample_params.channels = PLAYER_PREF_CHANNELS;
 
   g_timeout_add (100, elektroid_update_ui_on_load, NULL);
 
@@ -1570,7 +1571,7 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
   double y_scale = 1.0 / (double) SHRT_MIN;
   double x_scale = 1.0 / (double) MAX_DRAW_X;
   struct sample_info *sample_info = audio.control.data;
-  gboolean stereo = (PLAYER_CHANNELS == 2 && sample_info->channels == 2);
+  gboolean stereo = PLAYER_LOADED_CHANNELS == 2;
 
   g_mutex_lock (&audio.control.mutex);
 
