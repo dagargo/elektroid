@@ -212,6 +212,9 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
   g_byte_array_set_size (wave->array, sample->len + 1024);	//We need space for the headers.
   wave->array->len = 0;
 
+  frames = sample->len >> sample_info->channels;
+  debug_print (1, "Frames: %ld; sample rate: %d; channels: %d\n", frames,
+	       sample_info->samplerate, sample_info->channels);
   debug_print (1, "Loop start at %d; loop end at %d\n",
 	       sample_info->loopstart, sample_info->loopend);
 
@@ -260,14 +263,12 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
       error_print ("%s\n", sf_strerror (sndfile));
     }
 
-  frames = sample->len >> sample_info->channels;
-  total = sf_write_short (sndfile, (gint16 *) sample->data, frames);
-
+  total = sf_writef_short (sndfile, (gint16 *) sample->data, frames);
   sf_close (sndfile);
 
   if (total != frames)
     {
-      error_print ("Unexpected frames while writing to sample (%ld != %ld)\n",
+      error_print ("Unexpected frames while writing to file (%ld != %ld)\n",
 		   total, frames);
       return -1;
     }
