@@ -40,6 +40,7 @@
 #define PLAYER_PREF_CHANNELS (!remote_browser.fs_ops || (remote_browser.fs_ops->options & FS_OPTION_STEREO) || !preferences.mix ? 2 : 1)
 #define PLAYER_LOADED_CHANNELS (PLAYER_PREF_CHANNELS == 2 && sample_info->channels == 2 ? 2 : 1)
 #define PLAYER_GET_SOURCE(browser) (browser == &local_browser ? AUDIO_SRC_LOCAL : AUDIO_SRC_REMOTE)
+#define PLAYER_SOURCE_IS_BROWSER(browser) (PLAYER_GET_SOURCE(browser) == audio.src)
 
 #define MAX_DRAW_X 10000
 
@@ -1283,7 +1284,15 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
 	  return FALSE;
 	}
 
-      if (!gtk_tree_selection_path_is_selected (selection, path))
+      if (gtk_tree_selection_path_is_selected (selection, path))
+	{
+	  if (browser_get_selected_items_count (browser) == 1 &&
+	      !PLAYER_SOURCE_IS_BROWSER (browser))
+	    {
+	      browser->check_selection (NULL);
+	    }
+	}
+      else
 	{
 	  gtk_tree_selection_unselect_all (selection);
 	  gtk_tree_selection_select_path (selection, path);
