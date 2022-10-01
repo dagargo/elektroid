@@ -39,6 +39,7 @@
 #define PLAYER_VISIBLE (remote_browser.fs_ops->options & FS_OPTION_AUDIO_PLAYER ? TRUE : FALSE)
 #define PLAYER_PREF_CHANNELS (!remote_browser.fs_ops || (remote_browser.fs_ops->options & FS_OPTION_STEREO) || !preferences.mix ? 2 : 1)
 #define PLAYER_LOADED_CHANNELS (PLAYER_PREF_CHANNELS == 2 && sample_info->channels == 2 ? 2 : 1)
+#define PLAYER_GET_SOURCE(browser) (browser == &local_browser ? AUDIO_SRC_LOCAL : AUDIO_SRC_REMOTE)
 
 #define MAX_DRAW_X 10000
 
@@ -342,34 +343,44 @@ show_error_msg (const char *format, ...)
 }
 
 static void
-elektroid_set_css_local_class (GtkWidget * widget, gboolean local)
+elektroid_set_widget_source (GtkWidget * widget, enum audio_src audio_src)
 {
+  const char *class;
   GtkStyleContext *context = gtk_widget_get_style_context (widget);
+  GList *classes, *list = gtk_style_context_list_classes (context);
+
+  for (classes = list; classes != NULL; classes = g_list_next (classes))
+    {
+      gtk_style_context_remove_class (context, classes->data);
+    }
+  g_list_free (list);
+
+  if (audio_src == AUDIO_SRC_NONE)
+    {
+      return;
+    }
+
   if (GTK_IS_SWITCH (widget))
     {
-      gtk_style_context_remove_class (context,
-				      local ? "remote_switch" :
-				      "local_switch");
-      gtk_style_context_add_class (context,
-				   local ? "local_switch" : "remote_switch");
+      class = audio_src == AUDIO_SRC_LOCAL ? "local_switch" : "remote_switch";
     }
   else
     {
-      gtk_style_context_remove_class (context, local ? "remote" : "local");
-      gtk_style_context_add_class (context, local ? "local" : "remote");
+      class = audio_src == AUDIO_SRC_LOCAL ? "local" : "remote";
     }
+  gtk_style_context_add_class (context, class);
 }
 
 static void
-elektroid_set_css_local_class_player (gboolean local)
+elektroid_set_player_source (enum audio_src audio_src)
 {
-  elektroid_set_css_local_class (autoplay_switch, local);
-  elektroid_set_css_local_class (mix_switch, local);
-  elektroid_set_css_local_class (play_button, local);
-  elektroid_set_css_local_class (stop_button, local);
-  elektroid_set_css_local_class (loop_button, local);
-  elektroid_set_css_local_class (volume_button, local);
-  elektroid_set_css_local_class (waveform_draw_area, local);
+  elektroid_set_widget_source (autoplay_switch, audio_src);
+  elektroid_set_widget_source (mix_switch, audio_src);
+  elektroid_set_widget_source (play_button, audio_src);
+  elektroid_set_widget_source (stop_button, audio_src);
+  elektroid_set_widget_source (loop_button, audio_src);
+  elektroid_set_widget_source (volume_button, audio_src);
+  elektroid_set_widget_source (waveform_draw_area, audio_src);
 }
 
 static void
@@ -402,7 +413,7 @@ elektroid_load_devices (gboolean auto_select)
 					 DEVICES_LIST_STORE_NAME_FIELD,
 					 device.name, -1);
     }
-  i++;				//We add local.
+  i++;				//We add the system backend.
 
   g_array_free (devices, TRUE);
 
@@ -416,7 +427,6 @@ elektroid_load_devices (gboolean auto_select)
       elektroid_set_local_file_extensions (0);
       gtk_widget_set_visible (local_audio_box, TRUE);
       gtk_tree_view_column_set_visible (remote_tree_view_index_column, FALSE);
-      elektroid_set_css_local_class_player (TRUE);
       browser_load_dir (&local_browser);
     }
 }
@@ -1446,6 +1456,21 @@ elektroid_stop_task_thread ()
   elektroid_join_task_thread ();
 }
 
+static void
+elektroid_reset_sample ()
+{
+  audio_stop (&audio, TRUE);
+  elektroid_stop_load_thread ();
+  audio_reset_sample (&audio);
+  gtk_widget_queue_draw (waveform_draw_area);
+  elektroid_set_player_source (AUDIO_SRC_NONE);
+  gtk_widget_set_visible (sample_info_box, FALSE);
+
+  gtk_widget_set_sensitive (local_play_menuitem, FALSE);
+  gtk_widget_set_sensitive (play_button, FALSE);
+  gtk_widget_set_sensitive (stop_button, FALSE);
+}
+
 static gboolean
 elektroid_check_and_load_sample (struct browser *browser, gint count)
 {
@@ -1457,22 +1482,6 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
   gboolean audio_fs = !remote_browser.fs_ops
     || (remote_browser.fs_ops->options & FS_OPTION_AUDIO_PLAYER);
 
-  //If remote type is also the system, we clear the selection of the other browser.
-  if (backend.type == BE_TYPE_SYSTEM)
-    {
-      struct browser *disabled_browser =
-	browser == &local_browser ? &remote_browser : &local_browser;
-      GtkTreeSelection *selection =
-	gtk_tree_view_get_selection (GTK_TREE_VIEW (disabled_browser->view));
-      g_signal_handler_block (gtk_tree_view_get_selection
-			      (disabled_browser->view),
-			      disabled_browser->selection_changed_handler_id);
-      gtk_tree_selection_unselect_all (selection);
-      g_signal_handler_unblock (gtk_tree_view_get_selection
-				(disabled_browser->view),
-				disabled_browser->selection_changed_handler_id);
-    }
-
   if (count == 1)
     {
       browser_set_selected_row_iter (browser, &iter);
@@ -1480,15 +1489,14 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
       browser_set_item (model, &iter, &item);
       if (item.type == ELEKTROID_DIR)
 	{
-	  audio_stop (&audio, TRUE);
-	  elektroid_stop_load_thread ();
-	  audio_reset_sample (&audio);
-	  gtk_widget_queue_draw (waveform_draw_area);
+	  elektroid_reset_sample ();
 	}
       else
 	{
 	  sample_path = chain_path (browser->dir, item.name);
-	  if (strcmp (audio.path, sample_path))
+
+	  if (strcmp (audio.path, sample_path)
+	      || PLAYER_GET_SOURCE (browser) != audio.src)
 	    {
 	      if (audio_fs)
 		{
@@ -1497,9 +1505,9 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 		  elektroid_stop_load_thread ();
 		  audio_reset_sample (&audio);
 		  strcpy (audio.path, sample_path);
+		  audio.src = PLAYER_GET_SOURCE (browser);
 		  elektroid_start_load_thread ();
-		  elektroid_set_css_local_class_player (browser ==
-							&local_browser);
+		  elektroid_set_player_source (PLAYER_GET_SOURCE (browser));
 		}
 	    }
 	  g_free (sample_path);
@@ -1507,10 +1515,7 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
     }
   else
     {
-      audio_stop (&audio, TRUE);
-      elektroid_stop_load_thread ();
-      audio_reset_sample (&audio);
-      gtk_widget_queue_draw (waveform_draw_area);
+      elektroid_reset_sample ();
     }
 
   return loaded;
@@ -1545,7 +1550,6 @@ elektroid_local_check_selection (gpointer data)
   gint count = browser_get_selected_items_count (&local_browser);
   gboolean loaded = elektroid_check_and_load_sample (&local_browser, count);
 
-  elektroid_set_sample_on_load (loaded);
   gtk_widget_set_sensitive (local_open_menuitem, loaded);
   gtk_widget_set_sensitive (local_show_menuitem, count <= 1);
   gtk_widget_set_sensitive (local_rename_menuitem, count == 1);
@@ -1748,6 +1752,7 @@ static gboolean
 elektroid_mix_clicked (GtkWidget * object, gboolean state, gpointer data)
 {
   gchar *path;
+  enum audio_src audio_src = audio.src;
   preferences.mix = state;
   if (strlen (audio.path))
     {
@@ -1757,6 +1762,7 @@ elektroid_mix_clicked (GtkWidget * object, gboolean state, gpointer data)
       audio_reset_sample (&audio);
       strcpy (audio.path, path);
       g_free (path);
+      audio.src = audio_src;
       elektroid_start_load_thread ();
     }
   return FALSE;

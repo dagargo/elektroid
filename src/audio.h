@@ -22,6 +22,13 @@
 #include <pulse/pulseaudio.h>
 #include "utils.h"
 
+enum audio_src
+{
+  AUDIO_SRC_NONE,
+  AUDIO_SRC_LOCAL,
+  AUDIO_SRC_REMOTE
+};
+
 struct audio
 {
   GByteArray *sample;
@@ -38,6 +45,8 @@ struct audio
   struct job_control control;
   gchar path[PATH_MAX];
   guint32 channels;
+  enum audio_src src;
+
 };
 
 void audio_play (struct audio *);

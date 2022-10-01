@@ -356,6 +356,7 @@ audio_reset_sample (struct audio *audio)
   audio->pos = 0;
   audio->path[0] = 0;
   audio->release_frames = AUDIO_PA_BUFFER_LEN;
+  audio->src = AUDIO_SRC_NONE;
   memset (audio->control.data, 0, sizeof (struct sample_info));
   g_mutex_unlock (&audio->control.mutex);
 }
