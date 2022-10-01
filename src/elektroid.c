@@ -3239,6 +3239,8 @@ elektroid_quit ()
   g_thread_join (notifier_thread);
   notifier_free (&notifier);
 
+  audio_destroy (&audio);
+
   debug_print (1, "Quitting GTK+...\n");
   gtk_main_quit ();
 }
@@ -3547,8 +3549,6 @@ elektroid_run (int argc, char *argv[])
 		     G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST),
 		     GDK_ACTION_COPY);
 
-  audio_init (&audio, elektroid_set_volume_callback, elektroid_redraw_sample);
-
   devices_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "devices_list_store"));
   devices_combo =
@@ -3559,6 +3559,8 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_set_device), NULL);
   g_signal_connect (refresh_devices_button, "clicked",
 		    G_CALLBACK (browser_refresh_devices), NULL);
+
+  audio_init (&audio, elektroid_set_volume_callback, elektroid_redraw_sample);
 
   task_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "task_list_store"));
@@ -3615,6 +3617,7 @@ elektroid_run (int argc, char *argv[])
   notifier_thread = g_thread_new ("notifier_thread", notifier_run, &notifier);
 
   gtk_widget_show (main_window);
+  audio_run (&audio);
   gtk_main ();
 
   free (remote_browser.dir);
@@ -3623,8 +3626,6 @@ elektroid_run (int argc, char *argv[])
     {
       backend_destroy (&backend);
     }
-
-  audio_destroy (&audio);
 
   return EXIT_SUCCESS;
 }

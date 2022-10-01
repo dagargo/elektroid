@@ -38,6 +38,22 @@ static const pa_sample_spec sample_spec = {
 };
 
 static void
+audio_success_cb (pa_stream * stream, int success, void *data)
+{
+  struct audio *audio = data;
+  pa_threaded_mainloop_signal (audio->mainloop, 0);
+}
+
+static void
+audio_wait_success (struct audio *audio, pa_operation * operation)
+{
+  while (pa_operation_get_state (operation) != PA_OPERATION_DONE)
+    {
+      pa_threaded_mainloop_wait (audio->mainloop);
+    }
+}
+
+static void
 audio_write_callback (pa_stream * stream, size_t size, void *data)
 {
   struct audio *audio = data;
@@ -130,11 +146,8 @@ audio_stop (struct audio *audio, gboolean flush)
 	}
     }
 
-  operation = pa_stream_cork (audio->stream, 1, NULL, NULL);
-  if (operation != NULL)
-    {
-      pa_operation_unref (operation);
-    }
+  operation = pa_stream_cork (audio->stream, 1, audio_success_cb, audio);
+  audio_wait_success (audio, operation);
   pa_threaded_mainloop_unlock (audio->mainloop);
 }
 
@@ -158,11 +171,8 @@ audio_play (struct audio *audio)
   g_mutex_unlock (&audio->control.mutex);
 
   pa_threaded_mainloop_lock (audio->mainloop);
-  operation = pa_stream_cork (audio->stream, 0, NULL, NULL);
-  if (operation != NULL)
-    {
-      pa_operation_unref (operation);
-    }
+  operation = pa_stream_cork (audio->stream, 0, audio_success_cb, audio);
+  audio_wait_success (audio, operation);
   pa_threaded_mainloop_unlock (audio->mainloop);
 }
 
@@ -252,43 +262,51 @@ audio_context_callback (pa_context * context, void *data)
     }
 }
 
-gint
+void
 audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
 	    job_control_callback load_progress_callback)
 {
-  pa_mainloop_api *api;
-  gint err = 0;
-
   debug_print (1, "Initializing audio...\n");
-
   audio->sample = g_byte_array_new ();
   audio->frames = 0;
   audio->loop = FALSE;
-  audio->mainloop = pa_threaded_mainloop_new ();
-  api = pa_threaded_mainloop_get_api (audio->mainloop);
-  audio->context = pa_context_new (api, PACKAGE);
   audio->stream = NULL;
   audio->index = PA_INVALID_INDEX;
   audio->volume_change_callback = volume_change_callback;
   audio->control.callback = load_progress_callback;
   audio->path[0] = 0;
   audio->control.data = g_malloc (sizeof (struct sample_info));
+}
+
+gint
+audio_run (struct audio *audio)
+{
+  pa_mainloop_api *api;
+  audio->mainloop = pa_threaded_mainloop_new ();
+  if (!audio->mainloop)
+    {
+      return -1;
+    }
+
+  api = pa_threaded_mainloop_get_api (audio->mainloop);
+  audio->context = pa_context_new (api, PACKAGE);
 
   if (pa_context_connect (audio->context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
     {
       pa_context_unref (audio->context);
       pa_threaded_mainloop_free (audio->mainloop);
       audio->mainloop = NULL;
-      err = -1;
+      return -1;
     }
   else
     {
       pa_context_set_state_callback (audio->context, audio_context_callback,
 				     audio);
       pa_threaded_mainloop_start (audio->mainloop);
+      pa_threaded_mainloop_wait (audio->mainloop);
     }
 
-  return err;
+  return 0;
 }
 
 void
@@ -297,27 +315,27 @@ audio_destroy (struct audio *audio)
   debug_print (1, "Destroying audio...\n");
 
   audio_stop (audio, TRUE);
+  audio_reset_sample (audio);
 
   g_mutex_lock (&audio->control.mutex);
 
-  g_byte_array_free (audio->sample, TRUE);
-  audio->sample = NULL;
-
-  if (audio->stream)
-    {
-      pa_stream_unref (audio->stream);
-      audio->stream = NULL;
-    }
-
   if (audio->mainloop)
     {
-      pa_context_unref (audio->context);
       pa_threaded_mainloop_stop (audio->mainloop);
+      pa_context_disconnect (audio->context);
+      pa_context_unref (audio->context);
+      if (audio->stream)
+	{
+	  pa_stream_unref (audio->stream);
+	  audio->stream = NULL;
+	}
       pa_threaded_mainloop_free (audio->mainloop);
       audio->mainloop = NULL;
     }
 
   g_free (audio->control.data);
+  g_byte_array_free (audio->sample, TRUE);
+  audio->sample = NULL;
 
   g_mutex_unlock (&audio->control.mutex);
 }
@@ -337,6 +355,7 @@ audio_reset_sample (struct audio *audio)
   audio->frames = 0;
   audio->pos = 0;
   audio->path[0] = 0;
+  audio->release_frames = AUDIO_PA_BUFFER_LEN;
   memset (audio->control.data, 0, sizeof (struct sample_info));
   g_mutex_unlock (&audio->control.mutex);
 }
