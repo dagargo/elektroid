@@ -169,8 +169,9 @@ backend_midi_handshake (struct backend *backend)
 	  if (rx_msg->len == 15 || rx_msg->len == 17)
 	    {
 	      offset = rx_msg->len - 15;
+	      memset (backend->midi_info.company, 0, BE_COMPANY_LEN);
 	      memcpy (backend->midi_info.company, &rx_msg->data[5],
-		      BE_COMPANY_LEN);
+		      rx_msg->len == 15 ? 1 : BE_COMPANY_LEN);
 	      memcpy (backend->midi_info.family, &rx_msg->data[6 + offset],
 		      BE_FAMILY_LEN);
 	      memcpy (backend->midi_info.model, &rx_msg->data[8 + offset],
@@ -181,8 +182,8 @@ backend_midi_handshake (struct backend *backend)
 	      snprintf (backend->device_name, LABEL_MAX,
 			"%02x-%02x-%02x %02x-%02x %02x-%02x %d.%d.%d.%d",
 			backend->midi_info.company[0],
-			offset ? backend->midi_info.company[1] : 0,
-			offset ? backend->midi_info.company[2] : 0,
+			backend->midi_info.company[1],
+			backend->midi_info.company[2],
 			backend->midi_info.family[0],
 			backend->midi_info.family[1],
 			backend->midi_info.model[0],
