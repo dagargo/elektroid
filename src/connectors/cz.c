@@ -107,7 +107,7 @@ cz_next_dentry_root (struct item_iterator *iter)
 	  GByteArray *tx_msg =
 	    cz_get_program_dump_msg (CZ_FIRST_CARTRIDGE_ID);
 	  GByteArray *rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg,
-							SYSEX_TIMEOUT_GUESS_MS);
+							BE_SYSEX_TIMEOUT_GUESS_MS);
 	  data->next++;
 	  if (rx_msg)
 	    {
@@ -410,7 +410,8 @@ cz_handshake (struct backend *backend)
   GByteArray *tx_msg, *rx_msg;
 
   tx_msg = cz_get_program_dump_msg (CZ_PANEL_ID);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
+  rx_msg =
+    backend_tx_and_rx_sysex (backend, tx_msg, BE_SYSEX_TIMEOUT_GUESS_MS);
   if (!rx_msg)
     {
       return -EIO;

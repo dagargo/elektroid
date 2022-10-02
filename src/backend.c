@@ -30,7 +30,7 @@
 #define BE_TMP_BUFF_LEN 256
 
 //Identity Request Universal Sysex message
-static const guint8 MIDI_IDENTITY_REQUEST[] =
+static const guint8 BE_MIDI_IDENTITY_REQUEST[] =
   { 0xf0, 0x7e, 0x7f, 6, 1, 0xf7 };
 
 gdouble
@@ -40,7 +40,8 @@ backend_get_storage_stats_percent (struct backend_storage_stats *statfs)
 }
 
 const struct fs_operations *
-backend_get_fs_operations (struct backend *backend, gint fs, const char *name)
+backend_get_fs_operations (struct backend *backend, gint fs,
+			   const gchar * name)
 {
   const struct fs_operations **fs_operations = backend->fs_ops;
   if (!fs_operations)
@@ -156,10 +157,11 @@ backend_midi_handshake (struct backend *backend)
   backend_rx_drain (backend);
   g_mutex_unlock (&backend->mutex);
 
-  tx_msg = g_byte_array_sized_new (sizeof (MIDI_IDENTITY_REQUEST));
-  g_byte_array_append (tx_msg, (guchar *) MIDI_IDENTITY_REQUEST,
-		       sizeof (MIDI_IDENTITY_REQUEST));
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
+  tx_msg = g_byte_array_sized_new (sizeof (BE_MIDI_IDENTITY_REQUEST));
+  g_byte_array_append (tx_msg, (guchar *) BE_MIDI_IDENTITY_REQUEST,
+		       sizeof (BE_MIDI_IDENTITY_REQUEST));
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg,
+				    BE_SYSEX_TIMEOUT_GUESS_MS);
   if (rx_msg)
     {
       if (rx_msg->data[4] == 2)
@@ -721,7 +723,7 @@ backend_tx_and_rx_sysex (struct backend *backend,
 {
   struct sysex_transfer transfer;
   transfer.raw = tx_msg;
-  transfer.timeout = timeout < 0 ? SYSEX_TIMEOUT_MS : timeout;
+  transfer.timeout = timeout < 0 ? BE_SYSEX_TIMEOUT_MS : timeout;
   backend_tx_and_rx_sysex_transfer (backend, &transfer, TRUE);
   return transfer.raw;
 }

@@ -372,7 +372,7 @@ cli_upgrade_os (int argc, gchar * argv[], int *optind)
   else
     {
       sysex_transfer.active = TRUE;
-      sysex_transfer.timeout = SYSEX_TIMEOUT_MS;
+      sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
       CHECK_FS_OPS_FUNC (backend.upgrade_os);
       res = backend.upgrade_os (&backend, &sysex_transfer);
     }
@@ -526,7 +526,7 @@ cli_send (int argc, gchar * argv[], int *optind)
     }
 
   sysex_transfer.active = TRUE;
-  sysex_transfer.timeout = DUMP_TIMEOUT;
+  sysex_transfer.timeout = BE_DUMP_TIMEOUT;
   sysex_transfer.raw = g_byte_array_new ();
 
   err = load_file (src_file, sysex_transfer.raw, NULL);
@@ -576,7 +576,7 @@ cli_receive (int argc, gchar * argv[], int *optind)
       return EXIT_FAILURE;
     }
 
-  sysex_transfer.timeout = DUMP_TIMEOUT;
+  sysex_transfer.timeout = BE_DUMP_TIMEOUT;
   sysex_transfer.batch = TRUE;
 
   backend_rx_drain (&backend);
@@ -778,6 +778,6 @@ main (int argc, gchar * argv[])
     }
 
 
-  usleep (REST_TIME_US * 2);
+  usleep (BE_REST_TIME_US * 2);
   return res;
 }

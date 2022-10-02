@@ -41,9 +41,8 @@ common_slot_get_id_name_from_path (const char *path, guint * id,
   path_copy = strdup (path);
   index_name = basename (path_copy);
   *id = (gint) strtol (index_name, &remainder, 10);
-  if (strncmp
-      (remainder, SAMPLE_ID_NAME_SEPARATOR,
-       strlen (SAMPLE_ID_NAME_SEPARATOR)) == 0)
+  if (strncmp (remainder, BE_SAMPLE_ID_NAME_SEPARATOR,
+	       strlen (BE_SAMPLE_ID_NAME_SEPARATOR)) == 0)
     {
       remainder++;		//Skip ':'
     }

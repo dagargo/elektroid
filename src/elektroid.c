@@ -680,7 +680,7 @@ elektroid_rx_sysex_thread (gpointer data)
 
   sysex_transfer.status = WAITING;
   sysex_transfer.active = TRUE;
-  sysex_transfer.timeout = DUMP_TIMEOUT;
+  sysex_transfer.timeout = BE_DUMP_TIMEOUT;
   sysex_transfer.batch = TRUE;
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
@@ -837,7 +837,7 @@ elektroid_tx_sysex_files_thread (gpointer data)
   GSList *filenames = data;
   gint *err = malloc (sizeof (gint));
   sysex_transfer.raw = g_byte_array_new ();
-  sysex_transfer.timeout = SYSEX_TIMEOUT_MS;
+  sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
@@ -847,7 +847,7 @@ elektroid_tx_sysex_files_thread (gpointer data)
       g_byte_array_set_size (sysex_transfer.raw, 0);
       *err = elektroid_send_sysex_file (filenames->data, backend_tx_sysex);
       filenames = filenames->next;
-      usleep (REST_TIME_US);
+      usleep (BE_REST_TIME_US);
     }
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
 
@@ -861,7 +861,7 @@ elektroid_tx_upgrade_os_thread (gpointer data)
   GSList *filenames = data;
   gint *err = malloc (sizeof (gint));
   sysex_transfer.raw = g_byte_array_new ();
-  sysex_transfer.timeout = SYSEX_TIMEOUT_MS;
+  sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
@@ -2933,7 +2933,7 @@ elektroid_add_upload_task_slot (const gchar * name,
       dst_file_path = g_malloc (PATH_MAX);
       snprintf (dst_file_path, PATH_MAX, "%s%s%s%s%s", remote_browser.dir,
 		strcmp (remote_browser.dir, "/") ? "/" : "", item.name,
-		SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
+		BE_SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
       g_free (name_wo_ext);
 
       elektroid_add_task (UPLOAD, src_file_path, dst_file_path,

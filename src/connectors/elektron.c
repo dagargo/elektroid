@@ -1083,7 +1083,7 @@ elektron_tx_and_rx_timeout (struct backend *backend, GByteArray * tx_msg,
       goto cleanup;
     }
 
-  rx_msg = elektron_rx (backend, timeout < 0 ? SYSEX_TIMEOUT_MS : timeout);
+  rx_msg = elektron_rx (backend, timeout < 0 ? BE_SYSEX_TIMEOUT_MS : timeout);
   if (rx_msg && rx_msg->data[4] != msg_type)
     {
       error_print ("Illegal message type in response\n");
@@ -1590,7 +1590,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar * path,
       active = control->active;
       g_mutex_unlock (&control->mutex);
 
-      usleep (REST_TIME_US);
+      usleep (BE_REST_TIME_US);
     }
 
   debug_print (2, "%d bytes sent\n", transferred);
@@ -1778,7 +1778,7 @@ elektron_download_smplrw (struct backend *backend, const gchar * path,
       active = control->active;
       g_mutex_unlock (&control->mutex);
 
-      usleep (REST_TIME_US);
+      usleep (BE_REST_TIME_US);
     }
 
   debug_print (2, "%d bytes received\n", next_block_start);
@@ -1953,7 +1953,7 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
 
       free_msg (rx_msg);
 
-      usleep (REST_TIME_US);
+      usleep (BE_REST_TIME_US);
     }
 
 end:
@@ -2174,7 +2174,7 @@ elektron_handshake (struct backend *backend)
 
   tx_msg = elektron_new_msg (PING_REQUEST, sizeof (PING_REQUEST));
   rx_msg =
-    elektron_tx_and_rx_timeout (backend, tx_msg, SYSEX_TIMEOUT_GUESS_MS);
+    elektron_tx_and_rx_timeout (backend, tx_msg, BE_SYSEX_TIMEOUT_GUESS_MS);
   if (!rx_msg)
     {
       backend->data = NULL;
@@ -2742,7 +2742,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
       return -EIO;
     }
 
-  usleep (REST_TIME_US);
+  usleep (BE_REST_TIME_US);
 
   jidbe = htobe32 (jid);
 
@@ -2823,7 +2823,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
 	  g_mutex_unlock (&control->mutex);
 	}
 
-      usleep (REST_TIME_US);
+      usleep (BE_REST_TIME_US);
     }
 
   return elektron_close_datum (backend, jid, O_RDONLY, 0);
@@ -3134,7 +3134,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
       goto end;
     }
 
-  usleep (REST_TIME_US);
+  usleep (BE_REST_TIME_US);
 
   jidbe = htobe32 (jid);
 
@@ -3186,7 +3186,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
 	  goto end;
 	}
 
-      usleep (REST_TIME_US);
+      usleep (BE_REST_TIME_US);
 
       if (!elektron_get_msg_status (rx_msg))
 	{
