@@ -1091,10 +1091,9 @@ sds_handshake (struct backend *backend)
   //Numbers higher than 1500 make an E-Mu ESI-2000 crash when entering into the 'MIDI SAMPLE DUMP' menu but the actual limit is unknown.
   tx_msg = sds_get_dump_msg (1000, 0, NULL, 16);
   //In case we receive anything, there is a MIDI SDS device listening.
-  err = sds_tx_and_wait_ack (backend, tx_msg, 0,
-			     SDS_SPEC_TIMEOUT_HANDSHAKE,
+  err = sds_tx_and_wait_ack (backend, tx_msg, 0, SDS_SPEC_TIMEOUT_HANDSHAKE,
 			     SDS_NO_SPEC_TIMEOUT_TRY);
-  if (err == -EIO || err == -ETIMEDOUT)
+  if (err == -EIO || err == -ETIMEDOUT || err == -ENOMSG)
     {
       return err;
     }
