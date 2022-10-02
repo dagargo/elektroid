@@ -152,6 +152,7 @@ backend_midi_handshake (struct backend *backend)
   backend->destroy_data = NULL;
   backend->upgrade_os = NULL;
   backend->get_storage_stats = NULL;
+  memset (&backend->midi_info, 0, sizeof (struct backend_midi_info));
 
   g_mutex_lock (&backend->mutex);
   backend_rx_drain (backend);
@@ -211,7 +212,6 @@ backend_midi_handshake (struct backend *backend)
   else
     {
       debug_print (1, "No MIDI identity reply\n");
-      memset (&backend->midi_info, 0, sizeof (struct backend_midi_info));
     }
 }
 
