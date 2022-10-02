@@ -1480,19 +1480,22 @@ elektroid_stop_task_thread ()
 }
 
 static void
-elektroid_reset_sample ()
+elektroid_reset_sample (struct browser *browser)
 {
-  audio_stop (&audio, TRUE);
-  elektroid_stop_load_thread ();
-  audio_reset_sample (&audio);
-  gtk_widget_queue_draw (waveform_draw_area);
-  elektroid_set_player_source (AUDIO_SRC_NONE);
-  gtk_widget_set_visible (sample_info_box, FALSE);
+  if (PLAYER_SOURCE_IS_BROWSER (browser))
+    {
+      audio_stop (&audio, TRUE);
+      elektroid_stop_load_thread ();
+      audio_reset_sample (&audio);
+      gtk_widget_queue_draw (waveform_draw_area);
+      elektroid_set_player_source (AUDIO_SRC_NONE);
+      gtk_widget_set_visible (sample_info_box, FALSE);
 
-  gtk_widget_set_sensitive (local_play_menuitem, FALSE);
-  gtk_widget_set_sensitive (remote_play_menuitem, FALSE);
-  gtk_widget_set_sensitive (play_button, FALSE);
-  gtk_widget_set_sensitive (stop_button, FALSE);
+      gtk_widget_set_sensitive (local_play_menuitem, FALSE);
+      gtk_widget_set_sensitive (remote_play_menuitem, FALSE);
+      gtk_widget_set_sensitive (play_button, FALSE);
+      gtk_widget_set_sensitive (stop_button, FALSE);
+    }
 }
 
 static void
@@ -1512,7 +1515,7 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
       browser_set_item (model, &iter, &item);
       if (item.type == ELEKTROID_DIR)
 	{
-	  elektroid_reset_sample ();
+	  elektroid_reset_sample (browser);
 	}
       else
 	{
@@ -1537,7 +1540,7 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
     }
   else
     {
-      elektroid_reset_sample ();
+      elektroid_reset_sample (browser);
     }
 }
 
