@@ -1263,6 +1263,26 @@ elektroid_selection_function_false (GtkTreeSelection * selection,
   return FALSE;
 }
 
+static void
+elektroid_button_press_update_menu (struct browser *browser,
+				    GtkTreeSelection * selection,
+				    GtkTreePath * path)
+{
+  if (gtk_tree_selection_path_is_selected (selection, path))
+    {
+      if (browser_get_selected_items_count (browser) == 1 &&
+	  !PLAYER_SOURCE_IS_BROWSER (browser))
+	{
+	  browser->check_selection (NULL);
+	}
+    }
+  else
+    {
+      gtk_tree_selection_unselect_all (selection);
+      gtk_tree_selection_select_path (selection, path);
+    }
+}
+
 static gboolean
 elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
 			gpointer data)
@@ -1292,19 +1312,8 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
 	  return FALSE;
 	}
 
-      if (gtk_tree_selection_path_is_selected (selection, path))
-	{
-	  if (browser_get_selected_items_count (browser) == 1 &&
-	      !PLAYER_SOURCE_IS_BROWSER (browser))
-	    {
-	      browser->check_selection (NULL);
-	    }
-	}
-      else
-	{
-	  gtk_tree_selection_unselect_all (selection);
-	  gtk_tree_selection_select_path (selection, path);
-	}
+      elektroid_button_press_update_menu (browser, selection, path);
+
       gtk_tree_path_free (path);
       gtk_tree_selection_set_select_function (selection,
 					      elektroid_selection_function_false,
@@ -1324,11 +1333,8 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
 	  return FALSE;
 	}
 
-      if (!gtk_tree_selection_path_is_selected (selection, path))
-	{
-	  gtk_tree_selection_unselect_all (selection);
-	  gtk_tree_selection_select_path (selection, path);
-	}
+      elektroid_button_press_update_menu (browser, selection, path);
+
       gtk_tree_path_free (path);
       gtk_menu_popup_at_pointer (browser->menu, (GdkEvent *) event);
 
@@ -1573,9 +1579,7 @@ elektroid_local_check_selection (gpointer data)
   gtk_widget_set_sensitive (local_delete_menuitem, count > 0);
   gtk_widget_set_sensitive (upload_menuitem, count > 0
 			    && remote_browser.fs_ops
-			    && remote_browser.fs_ops->upload
-			    && !(remote_browser.
-				 fs_ops->options & FS_OPTION_SINGLE_OP));
+			    && remote_browser.fs_ops->upload);
 
   return FALSE;
 }
