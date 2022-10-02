@@ -201,14 +201,19 @@ static GtkWidget *waveform_draw_area;
 static GtkStatusbar *status_bar;
 static GtkListStore *devices_list_store;
 static GtkComboBox *devices_combo;
-static GtkWidget *upload_menuitem;
 static GtkWidget *local_audio_box;
+static GtkWidget *upload_menuitem;
 static GtkWidget *local_play_menuitem;
 static GtkWidget *local_open_menuitem;
 static GtkWidget *local_show_menuitem;
 static GtkWidget *local_rename_menuitem;
 static GtkWidget *local_delete_menuitem;
 static GtkWidget *download_menuitem;
+static GtkWidget *remote_play_separator;
+static GtkWidget *remote_play_menuitem;
+static GtkWidget *remote_options_separator;
+static GtkWidget *remote_open_menuitem;
+static GtkWidget *remote_show_menuitem;
 static GtkWidget *remote_rename_menuitem;
 static GtkWidget *remote_delete_menuitem;
 static GtkWidget *play_button;
@@ -954,7 +959,10 @@ elektroid_set_sample_on_load (gboolean sensitive)
   gchar label[LABEL_MAX];
   struct sample_info *sample_info = audio.control.data;
 
-  gtk_widget_set_sensitive (local_play_menuitem, sensitive);
+  gtk_widget_set_sensitive (local_play_menuitem,
+			    audio.src == AUDIO_SRC_LOCAL);
+  gtk_widget_set_sensitive (remote_play_menuitem,
+			    audio.src == AUDIO_SRC_REMOTE);
   gtk_widget_set_sensitive (play_button, sensitive);
   gtk_widget_set_sensitive (stop_button, sensitive);
 
@@ -1476,18 +1484,18 @@ elektroid_reset_sample ()
   gtk_widget_set_visible (sample_info_box, FALSE);
 
   gtk_widget_set_sensitive (local_play_menuitem, FALSE);
+  gtk_widget_set_sensitive (remote_play_menuitem, FALSE);
   gtk_widget_set_sensitive (play_button, FALSE);
   gtk_widget_set_sensitive (stop_button, FALSE);
 }
 
-static gboolean
+static void
 elektroid_check_and_load_sample (struct browser *browser, gint count)
 {
   struct item item;
   GtkTreeIter iter;
   gchar *sample_path;
   GtkTreeModel *model;
-  gboolean loaded = FALSE;
   gboolean audio_fs = !remote_browser.fs_ops
     || (remote_browser.fs_ops->options & FS_OPTION_AUDIO_PLAYER);
 
@@ -1509,14 +1517,13 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	    {
 	      if (audio_fs)
 		{
-		  loaded = TRUE;
 		  audio_stop (&audio, TRUE);
 		  elektroid_stop_load_thread ();
 		  audio_reset_sample (&audio);
 		  strcpy (audio.path, sample_path);
 		  audio.src = PLAYER_GET_SOURCE (browser);
-		  elektroid_start_load_thread ();
 		  elektroid_set_player_source (PLAYER_GET_SOURCE (browser));
+		  elektroid_start_load_thread ();
 		}
 	    }
 	  g_free (sample_path);
@@ -1526,8 +1533,6 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
     {
       elektroid_reset_sample ();
     }
-
-  return loaded;
 }
 
 static gboolean
@@ -1547,6 +1552,8 @@ elektroid_remote_check_selection (gpointer data)
     }
 
   gtk_widget_set_sensitive (download_menuitem, count > 0 && dl_impl);
+  gtk_widget_set_sensitive (remote_open_menuitem, count == 1);
+  gtk_widget_set_sensitive (remote_show_menuitem, count <= 1);
   gtk_widget_set_sensitive (remote_rename_menuitem, count == 1 && move_impl);
   gtk_widget_set_sensitive (remote_delete_menuitem, count > 0 && del_impl);
 
@@ -1557,10 +1564,11 @@ static gboolean
 elektroid_local_check_selection (gpointer data)
 {
   gint count = browser_get_selected_items_count (&local_browser);
-  gboolean loaded = elektroid_check_and_load_sample (&local_browser, count);
 
-  gtk_widget_set_sensitive (local_open_menuitem, loaded);
-  gtk_widget_set_sensitive (local_show_menuitem, count <= 1);
+  elektroid_check_and_load_sample (&local_browser, count);
+
+  gtk_widget_set_sensitive (local_open_menuitem, count == 1);
+  gtk_widget_set_sensitive (local_show_menuitem, count == 1);
   gtk_widget_set_sensitive (local_rename_menuitem, count == 1);
   gtk_widget_set_sensitive (local_delete_menuitem, count > 0);
   gtk_widget_set_sensitive (upload_menuitem, count > 0
@@ -1648,18 +1656,19 @@ elektroid_show_clicked (GtkWidget * object, gpointer data)
   struct item item;
   gchar *path = NULL;
   gboolean done = FALSE;
-  gint count = browser_get_selected_items_count (&local_browser);
+  struct browser *browser = data;
+  gint count = browser_get_selected_items_count (browser);
 
   if (count == 0)
     {
-      path = chain_path (local_browser.dir, NULL);
+      path = chain_path (browser->dir, NULL);
     }
   else if (count == 1)
     {
-      browser_set_selected_row_iter (&local_browser, &iter);
-      model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
+      browser_set_selected_row_iter (browser, &iter);
+      model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
       browser_set_item (model, &iter, &item);
-      path = chain_path (local_browser.dir, item.name);
+      path = chain_path (browser->dir, item.name);
     }
   else
     {
@@ -1675,11 +1684,10 @@ elektroid_show_clicked (GtkWidget * object, gpointer data)
 					 G_DBUS_PROXY_FLAGS_DO_NOT_CONNECT_SIGNALS
 					 |
 					 G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
-					 NULL,
-					 "org.freedesktop.FileManager1",
+					 NULL, "org.freedesktop.FileManager1",
 					 "/org/freedesktop/FileManager1",
-					 "org.freedesktop.FileManager1",
-					 NULL, NULL);
+					 "org.freedesktop.FileManager1", NULL,
+					 NULL);
   if (proxy)
     {
       g_variant_builder_init (&builder, G_VARIANT_TYPE ("as"));
@@ -1717,11 +1725,12 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
   gchar *uri;
   GFile *file;
   struct item item;
+  struct browser *browser = data;
 
-  browser_set_selected_row_iter (&local_browser, &iter);
-  model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
+  browser_set_selected_row_iter (browser, &iter);
+  model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
   browser_set_item (model, &iter, &item);
-  path = chain_path (local_browser.dir, item.name);
+  path = chain_path (browser->dir, item.name);
 
   file = g_file_new_for_path (path);
   g_free (path);
@@ -2702,14 +2711,21 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
   remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
-  if (backend.type == BE_TYPE_SYSTEM)
-    {
-      strcpy (remote_browser.dir, local_browser.dir);
-    }
-  else
-    {
-      strcpy (remote_browser.dir, "/");
-    }
+
+  strcpy (remote_browser.dir,
+	  backend.type == BE_TYPE_SYSTEM ? local_browser.dir : "/");
+
+  gtk_widget_set_visible (remote_play_separator,
+			  backend.type == BE_TYPE_SYSTEM);
+  gtk_widget_set_visible (remote_play_menuitem,
+			  backend.type == BE_TYPE_SYSTEM);
+  gtk_widget_set_visible (remote_options_separator,
+			  backend.type == BE_TYPE_SYSTEM);
+  gtk_widget_set_visible (remote_open_menuitem,
+			  backend.type == BE_TYPE_SYSTEM);
+  gtk_widget_set_visible (remote_show_menuitem,
+			  backend.type == BE_TYPE_SYSTEM);
+
   elektroid_set_remote_file_extensions (fs);
   browser_load_dir (&remote_browser);
   browser_update_fs_options (&remote_browser);
@@ -3384,12 +3400,28 @@ elektroid_run (int argc, char *argv[])
 
   download_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "download_menuitem"));
+  remote_play_separator =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_play_separator"));
+  remote_play_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_play_menuitem"));
+  remote_options_separator =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_options_separator"));
+  remote_open_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_open_menuitem"));
+  remote_show_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_show_menuitem"));
   remote_rename_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_rename_menuitem"));
   remote_delete_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_delete_menuitem"));
   g_signal_connect (download_menuitem, "activate",
 		    G_CALLBACK (elektroid_add_download_tasks), NULL);
+  g_signal_connect (remote_play_menuitem, "activate",
+		    G_CALLBACK (elektroid_play_clicked), NULL);
+  g_signal_connect (remote_open_menuitem, "activate",
+		    G_CALLBACK (elektroid_open_clicked), &remote_browser);
+  g_signal_connect (remote_show_menuitem, "activate",
+		    G_CALLBACK (elektroid_show_clicked), &remote_browser);
   g_signal_connect (remote_rename_menuitem, "activate",
 		    G_CALLBACK (elektroid_rename_item), &remote_browser);
   g_signal_connect (remote_delete_menuitem, "activate",
@@ -3412,9 +3444,9 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (local_play_menuitem, "activate",
 		    G_CALLBACK (elektroid_play_clicked), NULL);
   g_signal_connect (local_open_menuitem, "activate",
-		    G_CALLBACK (elektroid_open_clicked), NULL);
+		    G_CALLBACK (elektroid_open_clicked), &local_browser);
   g_signal_connect (local_show_menuitem, "activate",
-		    G_CALLBACK (elektroid_show_clicked), NULL);
+		    G_CALLBACK (elektroid_show_clicked), &local_browser);
   g_signal_connect (local_rename_menuitem, "activate",
 		    G_CALLBACK (elektroid_rename_item), &local_browser);
   g_signal_connect (local_delete_menuitem, "activate",
