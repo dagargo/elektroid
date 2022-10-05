@@ -47,6 +47,11 @@ audio_success_cb (pa_stream * stream, int success, void *data)
 static void
 audio_wait_success (struct audio *audio, pa_operation * operation)
 {
+  if (!operation)
+    {
+      debug_print (2, "No operation. Skipping wait...\n");
+      return;
+    }
   while (pa_operation_get_state (operation) != PA_OPERATION_DONE)
     {
       pa_threaded_mainloop_wait (audio->mainloop);
@@ -139,11 +144,8 @@ audio_stop (struct audio *audio, gboolean flush)
   pa_threaded_mainloop_lock (audio->mainloop);
   if (flush)
     {
-      operation = pa_stream_flush (audio->stream, NULL, NULL);
-      if (operation != NULL)
-	{
-	  pa_operation_unref (operation);
-	}
+      operation = pa_stream_flush (audio->stream, audio_success_cb, audio);
+      audio_wait_success (audio, operation);
     }
 
   operation = pa_stream_cork (audio->stream, 1, audio_success_cb, audio);
