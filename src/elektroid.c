@@ -1490,6 +1490,18 @@ elektroid_stop_task_thread ()
 }
 
 static void
+elektroid_audio_widgets_set_status ()
+{
+  gtk_widget_set_sensitive (local_open_menuitem, FALSE);
+  gtk_widget_set_sensitive (remote_open_menuitem, FALSE);
+  gtk_widget_set_sensitive (local_play_menuitem, FALSE);
+  gtk_widget_set_sensitive (remote_play_menuitem, FALSE);
+  gtk_widget_set_sensitive (play_button, FALSE);
+  gtk_widget_set_sensitive (stop_button, FALSE);
+  gtk_widget_set_visible (sample_info_box, FALSE);
+}
+
+static void
 elektroid_reset_sample (struct browser *browser)
 {
   if (PLAYER_SOURCE_IS_BROWSER (browser))
@@ -1499,12 +1511,7 @@ elektroid_reset_sample (struct browser *browser)
       audio_reset_sample (&audio);
       gtk_widget_queue_draw (waveform_draw_area);
       elektroid_set_player_source (AUDIO_SRC_NONE);
-      gtk_widget_set_visible (sample_info_box, FALSE);
-
-      gtk_widget_set_sensitive (local_play_menuitem, FALSE);
-      gtk_widget_set_sensitive (remote_play_menuitem, FALSE);
-      gtk_widget_set_sensitive (play_button, FALSE);
-      gtk_widget_set_sensitive (stop_button, FALSE);
+      elektroid_audio_widgets_set_status ();
     }
 }
 
@@ -1523,6 +1530,12 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
       browser_set_selected_row_iter (browser, &iter);
       model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
       browser_set_item (model, &iter, &item);
+
+      gtk_widget_set_sensitive (browser ==
+				&local_browser ? local_open_menuitem :
+				remote_open_menuitem,
+				item.type == ELEKTROID_FILE);
+
       if (item.type == ELEKTROID_DIR)
 	{
 	  elektroid_reset_sample (browser);
@@ -1543,6 +1556,7 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 		  audio.src = PLAYER_GET_SOURCE (browser);
 		  elektroid_set_player_source (PLAYER_GET_SOURCE (browser));
 		  elektroid_start_load_thread ();
+
 		}
 	    }
 	  g_free (sample_path);
@@ -1570,11 +1584,10 @@ elektroid_remote_check_selection (gpointer data)
       elektroid_check_and_load_sample (&remote_browser, count);
     }
 
-  gtk_widget_set_sensitive (download_menuitem, count > 0 && dl_impl);
-  gtk_widget_set_sensitive (remote_open_menuitem, count == 1);
   gtk_widget_set_sensitive (remote_show_menuitem, count <= 1);
   gtk_widget_set_sensitive (remote_rename_menuitem, count == 1 && move_impl);
   gtk_widget_set_sensitive (remote_delete_menuitem, count > 0 && del_impl);
+  gtk_widget_set_sensitive (download_menuitem, count > 0 && dl_impl);
 
   return FALSE;
 }
@@ -1586,8 +1599,7 @@ elektroid_local_check_selection (gpointer data)
 
   elektroid_check_and_load_sample (&local_browser, count);
 
-  gtk_widget_set_sensitive (local_open_menuitem, count == 1);
-  gtk_widget_set_sensitive (local_show_menuitem, count == 1);
+  gtk_widget_set_sensitive (local_show_menuitem, count <= 1);
   gtk_widget_set_sensitive (local_rename_menuitem, count == 1);
   gtk_widget_set_sensitive (local_delete_menuitem, count > 0);
   gtk_widget_set_sensitive (upload_menuitem, count > 0
@@ -3662,6 +3674,8 @@ elektroid_run (int argc, char *argv[])
   gtk_widget_set_sensitive (rx_sysex_button, FALSE);
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   gtk_widget_set_sensitive (os_upgrade_button, FALSE);
+
+  elektroid_audio_widgets_set_status ();
 
   debug_print (1, "Creating local notifier...\n");
   notifier_init (&local_notifier, &local_browser);
