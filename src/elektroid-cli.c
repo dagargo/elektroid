@@ -384,7 +384,9 @@ cli_upgrade_os (int argc, gchar * argv[], int *optind)
 static int
 cli_download (int argc, gchar * argv[], int *optind)
 {
-  const gchar *src_path;
+  const gchar *src_path, *src_dir;
+  gchar *src_dirc;
+  struct item_iterator iter;
   gchar *device_src_path, *download_path;
   gint res;
   GByteArray *array;
@@ -415,7 +417,16 @@ cli_download (int argc, gchar * argv[], int *optind)
       goto end;
     }
 
-  download_path = fs_ops->get_download_path (&backend, NULL, fs_ops, ".",
+  src_dirc = strdup (src_path);
+  src_dir = dirname (src_dirc);
+  res = fs_ops->readdir (&backend, &iter, src_dir);
+  g_free (src_dirc);
+  if (res)
+    {
+      goto end;
+    }
+
+  download_path = fs_ops->get_download_path (&backend, &iter, fs_ops, ".",
 					     src_path);
   if (!download_path)
     {
