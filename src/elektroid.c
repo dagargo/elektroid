@@ -32,7 +32,6 @@
 #include "audio.h"
 #include "sample.h"
 #include "utils.h"
-#include "notifier.h"
 #include "local.h"
 #include "preferences.h"
 
@@ -180,8 +179,8 @@ static GThread *sysex_thread = NULL;
 static struct elektroid_transfer transfer;
 static struct sysex_transfer sysex_transfer;
 
-static GThread *notifier_thread = NULL;
-struct notifier notifier;
+struct notifier local_notifier;
+struct notifier remote_notifier;
 
 static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
@@ -387,6 +386,17 @@ elektroid_set_player_source (enum audio_src audio_src)
   elektroid_set_widget_source (loop_button, audio_src);
   elektroid_set_widget_source (volume_button, audio_src);
   elektroid_set_widget_source (waveform_draw_area, audio_src);
+}
+
+static gboolean
+elektroid_load_dir_if_midi (gpointer data)
+{
+  struct browser *browser = data;
+  if (browser == &remote_browser && backend.type == BE_TYPE_MIDI)
+    {
+      browser_load_dir (browser);
+    }
+  return FALSE;
 }
 
 static void
@@ -1122,7 +1132,7 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
     }
   g_list_free_full (ref_list, (GDestroyNotify) gtk_tree_row_reference_free);
 
-  browser_load_dir (browser);
+  elektroid_load_dir_if_midi (browser);
 }
 
 static void
@@ -1169,7 +1179,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	    }
 	  else
 	    {
-	      browser_load_dir (browser);
+	      elektroid_load_dir_if_midi (browser);
 	    }
 
 	  free (new_path);
@@ -1840,7 +1850,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 	    }
 	  else
 	    {
-	      browser_load_dir (browser);
+	      elektroid_load_dir_if_midi (browser);
 	    }
 
 	  free (pathname);
@@ -2224,7 +2234,7 @@ elektroid_upload_task (gpointer data)
       dst_dir = dirname (dst_path);
       if (strcmp (dst_dir, remote_browser.dir) == 0)
 	{
-	  g_idle_add (browser_load_dir, &remote_browser);
+	  g_idle_add (elektroid_load_dir_if_midi, &remote_browser);
 	}
       g_free (dst_path);
     }
@@ -2305,7 +2315,7 @@ elektroid_add_upload_task_path (const gchar * rel_path,
 
       if (!strchr (rel_path, '/'))
 	{
-	  browser_load_dir (&remote_browser);
+	  elektroid_load_dir_if_midi (&remote_browser);
 	}
     }
 
@@ -2705,7 +2715,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   if (!gtk_combo_box_get_active_iter (fs_combo, &iter))
     {
       remote_browser.fs_ops = NULL;
-      browser_load_dir (&remote_browser);
+      browser_reset (&remote_browser);
       elektroid_set_local_file_extensions (0);
       browser_update_fs_options (&remote_browser);
       browser_load_dir (&local_browser);
@@ -2721,6 +2731,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   strcpy (remote_browser.dir,
 	  backend.type == BE_TYPE_SYSTEM ? local_browser.dir : "/");
+  notifier_set_active (&remote_notifier, backend.type == BE_TYPE_SYSTEM);
 
   gtk_widget_set_visible (remote_play_separator,
 			  backend.type == BE_TYPE_SYSTEM);
@@ -2895,7 +2906,7 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
 			  filename, dst_path, g_strerror (res));
 	}
       g_free (dst_path);
-      browser_load_dir (&remote_browser);
+      elektroid_load_dir_if_midi (&remote_browser);
     }
   else
     {
@@ -3260,22 +3271,14 @@ elektroid_drag_leave_up (GtkWidget * widget,
 }
 
 static void
-elektroid_notify_local_dir_change (struct browser *browser)
-{
-  notifier_set_dir (&notifier, browser->dir);
-}
-
-static void
 elektroid_quit ()
 {
   elektroid_stop_sysex_thread ();
   elektroid_stop_task_thread ();
   elektroid_stop_load_thread ();
 
-  notifier.running = 0;
-  notifier_close (&notifier);
-  g_thread_join (notifier_thread);
-  notifier_free (&notifier);
+  notifier_destroy (&local_notifier);
+  notifier_destroy (&remote_notifier);
 
   audio_destroy (&audio);
 
@@ -3477,8 +3480,8 @@ elektroid_run (int argc, char *argv[])
     .file_icon = NULL,
     .fs_ops = NULL,
     .backend = &backend,
-    .notify_dir_change = NULL,
-    .check_callback = elektroid_check_backend
+    .check_callback = elektroid_check_backend,
+    .notifier = &remote_notifier
   };
   remote_tree_view_index_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
@@ -3548,8 +3551,8 @@ elektroid_run (int argc, char *argv[])
     .extensions = NULL,
     .fs_ops = &FS_LOCAL_OPERATIONS,
     .backend = NULL,
-    .notify_dir_change = elektroid_notify_local_dir_change,
-    .check_callback = NULL
+    .check_callback = NULL,
+    .notifier = &local_notifier
   };
 
   local_browser.selection_changed_handler_id =
@@ -3660,15 +3663,16 @@ elektroid_run (int argc, char *argv[])
   gtk_widget_set_sensitive (tx_sysex_button, FALSE);
   gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
+  debug_print (1, "Creating local notifier...\n");
+  notifier_init (&local_notifier, &local_browser);
+  notifier_set_active (&local_notifier, TRUE);
+  debug_print (1, "Creating remote notifier...\n");
+  notifier_init (&remote_notifier, &remote_browser);
+
   elektroid_load_devices (TRUE);	//This triggers a local browser reload due to the extensions and icons selected for the fs
 
   gethostname (hostname, LABEL_MAX);
   gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
-
-  debug_print (1, "Creating notifier thread...\n");
-  notifier_init (&notifier, &local_browser);
-  notifier_set_dir (&notifier, local_browser.dir);
-  notifier_thread = g_thread_new ("notifier_thread", notifier_run, &notifier);
 
   gtk_widget_show (main_window);
   audio_run (&audio);

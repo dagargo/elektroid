@@ -21,6 +21,7 @@
 #include <gtk/gtk.h>
 #include <libgen.h>
 #include "utils.h"
+#include "notifier.h"
 
 #ifndef BROWSER_H
 #define BROWSER_H
@@ -54,12 +55,12 @@ struct browser
   GtkTreePath *dnd_motion_path;
   gint dnd_timeout_function_id;
   GString *dnd_data;
-  void (*notify_dir_change) (struct browser *);
   const gchar *file_icon;
   gchar **extensions;
   const struct fs_operations *fs_ops;
   struct backend *backend;
     gboolean (*check_callback) ();
+  struct notifier *notifier;
 };
 
 gint browser_sort_by_name (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,

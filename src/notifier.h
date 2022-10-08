@@ -18,6 +18,9 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef NOTIFIER_H
+#define NOTIFIER_H
+
 #include <sys/inotify.h>
 #include <gtk/gtk.h>
 #include "browser.h"
@@ -28,16 +31,19 @@ struct notifier
   gint wd;
   size_t event_size;
   struct inotify_event *event;
-  gint running;
+  gboolean running;
+  gboolean active;
   struct browser *browser;
+  GThread *thread;
+  GMutex mutex;
 };
 
 void notifier_init (struct notifier *, struct browser *);
 
-void notifier_set_dir (struct notifier *, gchar *);
+void notifier_set_dir (struct notifier *);
 
-void notifier_close (struct notifier *);
+void notifier_set_active (struct notifier *, gboolean);
 
-void notifier_free (struct notifier *);
+void notifier_destroy (struct notifier *);
 
-gpointer notifier_run (gpointer);
+#endif

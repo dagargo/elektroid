@@ -19,6 +19,7 @@
  */
 
 #include "browser.h"
+#include "backend.h"
 
 gint
 browser_sort_by_name (GtkTreeModel * model,
@@ -123,10 +124,6 @@ browser_go_up (GtkWidget * object, gpointer data)
       new_path = dirname (dup);
       strcpy (browser->dir, new_path);
       free (dup);
-      if (browser->notify_dir_change)
-	{
-	  browser->notify_dir_change (browser);
-	}
     }
 
   g_idle_add (browser_load_dir, browser);
@@ -153,10 +150,6 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 	}
       strcat (browser->dir, item.name);
       browser_load_dir (browser);
-      if (browser->notify_dir_change)
-	{
-	  browser->notify_dir_change (browser);
-	}
     }
 }
 
@@ -271,6 +264,8 @@ browser_load_dir (gpointer data)
       error_print ("Error while opening '%s' dir\n", browser->dir);
       goto end;
     }
+
+  notifier_set_dir (browser->notifier);
 
   while (!next_item_iterator (&iter))
     {
