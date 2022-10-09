@@ -179,9 +179,6 @@ static GThread *sysex_thread = NULL;
 static struct elektroid_transfer transfer;
 static struct sysex_transfer sysex_transfer;
 
-struct notifier local_notifier;
-struct notifier remote_notifier;
-
 static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
 static GtkDialog *name_dialog;
@@ -2743,7 +2740,6 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   strcpy (remote_browser.dir,
 	  backend.type == BE_TYPE_SYSTEM ? local_browser.dir : "/");
-  notifier_set_active (&remote_notifier, backend.type == BE_TYPE_SYSTEM);
 
   gtk_widget_set_visible (remote_play_separator,
 			  backend.type == BE_TYPE_SYSTEM);
@@ -3289,8 +3285,8 @@ elektroid_quit ()
   elektroid_stop_task_thread ();
   elektroid_stop_load_thread ();
 
-  notifier_destroy (&local_notifier);
-  notifier_destroy (&remote_notifier);
+  browser_destroy (&local_browser);
+  browser_destroy (&remote_browser);
 
   audio_destroy (&audio);
 
@@ -3492,13 +3488,13 @@ elektroid_run (int argc, char *argv[])
     .file_icon = NULL,
     .fs_ops = NULL,
     .backend = &backend,
-    .check_callback = elektroid_check_backend,
-    .notifier = &remote_notifier
+    .check_callback = elektroid_check_backend
   };
+  browser_init (&remote_browser);
+
   remote_tree_view_index_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_index_column"));
-
   remote_browser.selection_changed_handler_id =
     g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
 		      "changed", G_CALLBACK (browser_selection_changed),
@@ -3563,9 +3559,9 @@ elektroid_run (int argc, char *argv[])
     .extensions = NULL,
     .fs_ops = &FS_LOCAL_OPERATIONS,
     .backend = NULL,
-    .check_callback = NULL,
-    .notifier = &local_notifier
+    .check_callback = NULL
   };
+  browser_init (&local_browser);
 
   local_browser.selection_changed_handler_id =
     g_signal_connect (gtk_tree_view_get_selection (local_browser.view),
@@ -3676,12 +3672,6 @@ elektroid_run (int argc, char *argv[])
   gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
   elektroid_audio_widgets_set_status ();
-
-  debug_print (1, "Creating local notifier...\n");
-  notifier_init (&local_notifier, &local_browser);
-  notifier_set_active (&local_notifier, TRUE);
-  debug_print (1, "Creating remote notifier...\n");
-  notifier_init (&remote_notifier, &remote_browser);
 
   elektroid_load_devices (TRUE);	//This triggers a local browser reload due to the extensions and icons selected for the fs
 

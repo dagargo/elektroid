@@ -32,7 +32,6 @@ struct notifier
   size_t event_size;
   struct inotify_event *event;
   gboolean running;
-  gboolean active;
   struct browser *browser;
   GThread *thread;
   GMutex mutex;

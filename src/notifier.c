@@ -59,8 +59,6 @@ notifier_close (struct notifier *notifier)
       inotify_rm_watch (notifier->fd, notifier->wd);
     }
   close (notifier->fd);
-  notifier->fd = -1;
-
 }
 
 static gboolean
@@ -76,7 +74,7 @@ notifier_run (gpointer data)
 {
   ssize_t size;
   struct notifier *notifier = data;
-  gboolean running, active;
+  gboolean running;
 
   while (1)
     {
@@ -84,17 +82,11 @@ notifier_run (gpointer data)
 
       g_mutex_lock (&notifier->mutex);
       running = notifier->running;
-      active = notifier->active;
       g_mutex_unlock (&notifier->mutex);
 
       if (!running)
 	{
 	  break;
-	}
-
-      if (!active)
-	{
-	  continue;
 	}
 
       if (size == 0 || size == EBADF)
@@ -143,28 +135,39 @@ notifier_init (struct notifier *notifier, struct browser *browser)
   notifier->wd = -1;
   notifier->event_size = sizeof (struct inotify_event) + PATH_MAX;
   notifier->event = malloc (notifier->event_size);
-  notifier->running = TRUE;
-  notifier->active = FALSE;
+  notifier->running = FALSE;
   notifier->browser = browser;
   g_mutex_init (&notifier->mutex);
-  notifier->thread = g_thread_new ("notifier", notifier_run, notifier);
 }
 
 void
 notifier_set_active (struct notifier *notifier, gboolean active)
 {
   g_mutex_lock (&notifier->mutex);
-  notifier->active = active;
+
+  if (active && !notifier->running)
+    {
+      notifier->running = TRUE;
+      notifier->thread = g_thread_new ("notifier", notifier_run, notifier);
+      g_mutex_unlock (&notifier->mutex);
+      return;
+    }
+
+  if (!active && notifier->running)
+    {
+      notifier->running = FALSE;
+      g_mutex_unlock (&notifier->mutex);
+      notifier_close (notifier);
+      g_thread_join (notifier->thread);
+      return;
+    }
+
   g_mutex_unlock (&notifier->mutex);
 }
 
 void
 notifier_destroy (struct notifier *notifier)
 {
-  g_mutex_lock (&notifier->mutex);
-  notifier->running = FALSE;
-  g_mutex_unlock (&notifier->mutex);
-  notifier_close (notifier);
-  g_thread_join (notifier->thread);
+  notifier_set_active (notifier, FALSE);
   g_free (notifier->event);
 }

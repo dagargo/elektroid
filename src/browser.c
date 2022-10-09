@@ -249,6 +249,7 @@ browser_file_match_extensions (struct browser *browser,
 gboolean
 browser_load_dir (gpointer data)
 {
+  gboolean system;
   struct item_iterator iter;
   struct browser *browser = data;
 
@@ -265,7 +266,12 @@ browser_load_dir (gpointer data)
       goto end;
     }
 
-  notifier_set_dir (browser->notifier);
+  system = !browser->backend || browser->backend->type == BE_TYPE_SYSTEM;
+  notifier_set_active (browser->notifier, system);
+  if (system)
+    {
+      notifier_set_dir (browser->notifier);
+    }
 
   while (!next_item_iterator (&iter))
     {
@@ -295,4 +301,18 @@ browser_update_fs_options (struct browser *browser)
 			    && browser->fs_ops->readdir != NULL);
   gtk_widget_set_sensitive (browser->up_button, browser->fs_ops
 			    && browser->fs_ops->readdir != NULL);
+}
+
+void
+browser_init (struct browser *browser)
+{
+  browser->notifier = g_malloc (sizeof (struct notifier));
+  notifier_init (browser->notifier, browser);
+}
+
+void
+browser_destroy (struct browser *browser)
+{
+  notifier_destroy (browser->notifier);
+  g_free (browser->notifier);
 }

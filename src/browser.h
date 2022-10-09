@@ -94,4 +94,8 @@ gboolean browser_load_dir (gpointer);
 
 void browser_update_fs_options (struct browser *);
 
+void browser_init (struct browser *);
+
+void browser_destroy (struct browser *);
+
 #endif
