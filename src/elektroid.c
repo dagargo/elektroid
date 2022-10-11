@@ -637,7 +637,7 @@ elektroid_stop_sysex_thread ()
 }
 
 static void
-elektroid_progress_dialog_end (gpointer data)
+elektroid_progress_dialog_close (gpointer data)
 {
   elektroid_cancel_running_sysex (NULL, 0, NULL);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
@@ -2745,15 +2745,6 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			  backend.type == BE_TYPE_SYSTEM);
   gtk_widget_set_visible (remote_show_menuitem,
 			  backend.type == BE_TYPE_SYSTEM);
-
-  elektroid_set_remote_file_extensions (fs);
-  browser_load_dir (&remote_browser);
-  browser_update_fs_options (&remote_browser);
-
-  local_browser.file_icon = remote_browser.file_icon;
-  elektroid_set_local_file_extensions (fs);
-  browser_load_dir (&local_browser);
-
   gtk_widget_set_visible (remote_rename_menuitem,
 			  remote_browser.fs_ops->rename != NULL);
   gtk_widget_set_visible (remote_delete_menuitem,
@@ -2784,6 +2775,14 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
     }
 
   elektroid_set_browser_options (&remote_browser);
+
+  elektroid_set_remote_file_extensions (fs);
+  browser_update_fs_options (&remote_browser);
+  local_browser.file_icon = remote_browser.file_icon;
+  elektroid_set_local_file_extensions (fs);
+
+  browser_load_dir (&remote_browser);
+  browser_load_dir (&local_browser);
 }
 
 static gboolean
@@ -2903,7 +2902,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
   g_mutex_unlock (&sysex_transfer.mutex);
   elektroid_join_sysex_thread ();
 
-  if (dres != GTK_RESPONSE_ACCEPT)
+  if (dres == GTK_RESPONSE_ACCEPT)
     {
       gtk_combo_box_set_active (devices_combo, -1);
     }
@@ -3431,7 +3430,7 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_delete_window), NULL);
 
   g_signal_connect (progress_dialog_cancel_button, "clicked",
-		    G_CALLBACK (elektroid_progress_dialog_end), NULL);
+		    G_CALLBACK (elektroid_progress_dialog_close), NULL);
   g_signal_connect (progress_dialog, "response",
 		    G_CALLBACK (elektroid_cancel_running_sysex), NULL);
 
@@ -3539,7 +3538,8 @@ elektroid_run (int argc, char *argv[])
     .file_icon = NULL,
     .fs_ops = NULL,
     .backend = &backend,
-    .check_callback = elektroid_check_backend
+    .check_callback = elektroid_check_backend,
+    .box = remote_box
   };
   browser_init (&remote_browser);
 
@@ -3610,7 +3610,8 @@ elektroid_run (int argc, char *argv[])
     .extensions = NULL,
     .fs_ops = &FS_LOCAL_OPERATIONS,
     .backend = NULL,
-    .check_callback = NULL
+    .check_callback = NULL,
+    .box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box"))
   };
   browser_init (&local_browser);
 

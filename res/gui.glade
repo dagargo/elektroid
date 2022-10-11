@@ -416,7 +416,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                     <property name="row-spacing">6</property>
                     <property name="column-spacing">6</property>
                     <child>
-                      <object class="GtkBox">
+                      <object class="GtkBox" id="local_box">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="hexpand">True</property>

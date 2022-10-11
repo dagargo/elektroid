@@ -246,12 +246,81 @@ browser_file_match_extensions (struct browser *browser,
   return match;
 }
 
+static gboolean
+browser_load_dir_runner_update_ui (gpointer data)
+{
+  struct browser *browser = data;
+  gboolean system = !browser->backend
+    || browser->backend->type == BE_TYPE_SYSTEM;
+
+  notifier_set_active (browser->notifier, system);
+  if (system)
+    {
+      notifier_set_dir (browser->notifier);
+    }
+
+  while (!next_item_iterator (&browser->iter))
+    {
+      if (browser_file_match_extensions (browser, &browser->iter))
+	{
+	  browser_add_dentry_item (browser, &browser->iter);
+	}
+    }
+  free_item_iterator (&browser->iter);
+
+  gtk_widget_set_sensitive (browser->box, TRUE);
+
+  g_thread_join (browser->thread);
+  browser->thread = NULL;
+
+  if (browser->check_callback)
+    {
+      browser->check_callback ();
+    }
+  gtk_tree_view_columns_autosize (browser->view);
+
+  g_mutex_lock (&browser->mutex);
+  browser->active = FALSE;
+  g_mutex_unlock (&browser->mutex);
+
+  return FALSE;
+}
+
+static gpointer
+browser_load_dir_runner (gpointer data)
+{
+  struct browser *browser = data;
+
+  if (browser->fs_ops->readdir (browser->backend, &browser->iter,
+				browser->dir))
+    {
+      error_print ("Error while opening '%s' dir\n", browser->dir);
+    }
+  else
+    {
+      g_idle_add (browser_load_dir_runner_update_ui, browser);
+    }
+
+  return NULL;
+}
+
 gboolean
 browser_load_dir (gpointer data)
 {
-  gboolean system;
-  struct item_iterator iter;
   struct browser *browser = data;
+
+  g_mutex_lock (&browser->mutex);
+  if (browser->active)
+    {
+      error_print ("Browser already loading. Skipping load...\n");
+      g_mutex_unlock (&browser->mutex);
+      return FALSE;
+    }
+  else
+    {
+      browser->active = TRUE;
+    }
+  g_mutex_unlock (&browser->mutex);
 
   browser_reset (browser);
 
@@ -260,34 +329,11 @@ browser_load_dir (gpointer data)
       return FALSE;
     }
 
-  if (browser->fs_ops->readdir (browser->backend, &iter, browser->dir))
-    {
-      error_print ("Error while opening '%s' dir\n", browser->dir);
-      goto end;
-    }
+  gtk_widget_set_sensitive (browser->box, FALSE);
 
-  system = !browser->backend || browser->backend->type == BE_TYPE_SYSTEM;
-  notifier_set_active (browser->notifier, system);
-  if (system)
-    {
-      notifier_set_dir (browser->notifier);
-    }
+  browser->thread =
+    g_thread_new ("browser_thread", browser_load_dir_runner, browser);
 
-  while (!next_item_iterator (&iter))
-    {
-      if (browser_file_match_extensions (browser, &iter))
-	{
-	  browser_add_dentry_item (browser, &iter);
-	}
-    }
-  free_item_iterator (&iter);
-
-end:
-  if (browser->check_callback)
-    {
-      browser->check_callback ();
-    }
-  gtk_tree_view_columns_autosize (browser->view);
   return FALSE;
 }
 
@@ -315,4 +361,8 @@ browser_destroy (struct browser *browser)
 {
   notifier_destroy (browser->notifier);
   g_free (browser->notifier);
+  if (browser->thread)
+    {
+      g_thread_join (browser->thread);
+    }
 }
