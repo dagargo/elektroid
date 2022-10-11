@@ -84,8 +84,10 @@ static const struct connector *CONNECTORS[] = {
 
 gint
 connector_init (struct backend *backend, const gchar * id,
-		const gchar * conn_name)
+		const gchar * conn_name,
+		struct sysex_transfer *sysex_transfer)
 {
+  gboolean active = TRUE;
   const struct connector **connector;
   int err = backend_init (backend, id);
   if (err)
@@ -97,6 +99,19 @@ connector_init (struct backend *backend, const gchar * id,
   connector = CONNECTORS;
   while (*connector)
     {
+      if (sysex_transfer)
+	{
+	  g_mutex_lock (&sysex_transfer->mutex);
+	  active = sysex_transfer->active;
+	  g_mutex_unlock (&sysex_transfer->mutex);
+	}
+
+      if (!active)
+	{
+	  err = -ECANCELED;
+	  goto end;
+	}
+
       if (conn_name)
 	{
 	  if (!strcmp (conn_name, (*connector)->name))
@@ -128,8 +143,9 @@ connector_init (struct backend *backend, const gchar * id,
       connector++;
     }
 
-end:
   error_print ("Device not recognized\n");
+
+end:
   backend_destroy (backend);
   return err;
 }

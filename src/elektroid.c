@@ -708,16 +708,6 @@ elektroid_rx_sysex_thread (gpointer data)
   return res;
 }
 
-static gboolean
-elektroid_start_rx_thread (gpointer data)
-{
-  debug_print (1, "Creating rx SysEx thread...\n");
-  sysex_thread =
-    g_thread_new ("sysex_thread", elektroid_rx_sysex_thread, NULL);
-
-  return FALSE;
-}
-
 static void
 elektroid_rx_sysex (GtkWidget * object, gpointer data)
 {
@@ -731,11 +721,15 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
   gint *res;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
-  g_idle_add (elektroid_start_rx_thread, NULL);
+  debug_print (1, "Creating rx SysEx thread...\n");
+  sysex_thread = g_thread_new ("sysex_thread", elektroid_rx_sysex_thread,
+			       NULL);
 
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
   dres = gtk_dialog_run (GTK_DIALOG (progress_dialog));
+  g_mutex_lock (&sysex_transfer.mutex);
   sysex_transfer.active = FALSE;
+  g_mutex_unlock (&sysex_transfer.mutex);
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
   res = elektroid_join_sysex_thread ();
@@ -2792,8 +2786,8 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   elektroid_set_browser_options (&remote_browser);
 }
 
-static void
-elektroid_fill_fs_combo ()
+static gboolean
+elektroid_fill_fs_combo_bg (gpointer data)
 {
   const struct fs_operations *ops;
 
@@ -2802,7 +2796,7 @@ elektroid_fill_fs_combo ()
   if (!backend.device_desc.filesystems)
     {
       elektroid_set_fs (NULL, NULL);
-      return;
+      return FALSE;
     }
 
   for (gint fs = 1, i = 0; i < MAX_BACKEND_FSS; fs = fs << 1, i++)
@@ -2826,6 +2820,50 @@ elektroid_fill_fs_combo ()
 
   debug_print (1, "Selecting first filesystem...\n");
   gtk_combo_box_set_active (fs_combo, 0);
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+
+  return FALSE;
+}
+
+static gboolean
+elektroid_update_set_device_progress (gpointer data)
+{
+  gboolean active;
+
+  g_mutex_lock (&sysex_transfer.mutex);
+  active = sysex_transfer.active;
+  g_mutex_unlock (&sysex_transfer.mutex);
+
+  gtk_progress_bar_pulse (GTK_PROGRESS_BAR (progress_bar));
+
+  return active;
+}
+
+static gpointer
+elektroid_set_device_thread (gpointer data)
+{
+  gchar *id = data;
+
+  g_timeout_add (100, elektroid_update_set_device_progress, NULL);
+
+  if (connector_init (&backend, id, NULL, &sysex_transfer) < 0)
+    {
+      error_print ("Error while connecting\n");
+    }
+
+  g_free (id);
+
+  g_idle_add (elektroid_check_backend_bg, NULL);
+  if (backend_check (&backend))
+    {
+      g_idle_add (elektroid_fill_fs_combo_bg, NULL);
+    }
+  else
+    {
+      gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+    }
+
+  return NULL;
 }
 
 static void
@@ -2833,30 +2871,41 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 {
   GtkTreeIter iter;
   gchar *id;
+  gint dres;
+
+  sysex_transfer.active = TRUE;
 
   elektroid_cancel_all_tasks_and_wait ();
 
-  if (gtk_combo_box_get_active_iter (devices_combo, &iter) == TRUE)
+  if (gtk_combo_box_get_active_iter (devices_combo, &iter) == FALSE)
     {
-      if (backend_check (&backend))
-	{
-	  backend_destroy (&backend);
-	}
+      return;
+    }
 
-      gtk_tree_model_get (GTK_TREE_MODEL (devices_list_store), &iter,
-			  DEVICES_LIST_STORE_ID_FIELD, &id, -1);
+  if (backend_check (&backend))
+    {
+      backend_destroy (&backend);
+    }
 
-      if (connector_init (&backend, id, NULL) < 0)
-	{
-	  error_print ("Error while connecting\n");
-	}
+  gtk_tree_model_get (GTK_TREE_MODEL (devices_list_store), &iter,
+		      DEVICES_LIST_STORE_ID_FIELD, &id, -1);
 
-      if (elektroid_check_backend ())
-	{
-	  elektroid_fill_fs_combo ();
-	}
+  debug_print (1, "Creating SysEx thread...\n");
+  sysex_thread =
+    g_thread_new ("sysex_thread", elektroid_set_device_thread, id);
 
-      g_free (id);
+  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Connect to device"));
+  gtk_label_set_text (GTK_LABEL (progress_label), _("Connecting..."));
+  dres = gtk_dialog_run (GTK_DIALOG (progress_dialog));
+  gtk_widget_hide (GTK_WIDGET (progress_dialog));
+  g_mutex_lock (&sysex_transfer.mutex);
+  sysex_transfer.active = FALSE;
+  g_mutex_unlock (&sysex_transfer.mutex);
+  elektroid_join_sysex_thread ();
+
+  if (dres != GTK_RESPONSE_ACCEPT)
+    {
+      gtk_combo_box_set_active (devices_combo, -1);
     }
 }
 
@@ -3281,6 +3330,8 @@ elektroid_drag_leave_up (GtkWidget * widget,
 static void
 elektroid_quit ()
 {
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
+
   elektroid_stop_sysex_thread ();
   elektroid_stop_task_thread ();
   elektroid_stop_load_thread ();

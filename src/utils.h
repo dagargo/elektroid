@@ -131,11 +131,11 @@ enum sysex_transfer_status
 struct sysex_transfer
 {
   gboolean active;
+  GMutex mutex;
   enum sysex_transfer_status status;
   gint timeout;			//Measured in ms. -1 is infinite.
   gint time;
   gboolean batch;
-  GMutex mutex;
   GByteArray *raw;
   gint err;
 };
