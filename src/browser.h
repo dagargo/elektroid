@@ -61,8 +61,10 @@ struct browser
   struct backend *backend;
     gboolean (*check_callback) ();
   struct notifier *notifier;
-  GtkWidget *box;
   //Background loading members
+  GtkWidget *box;
+  GtkWidget *stack;
+  GtkWidget *spinner;
   GThread *thread;
   GMutex mutex;
   gboolean active;

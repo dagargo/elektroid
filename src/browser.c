@@ -247,6 +247,15 @@ browser_file_match_extensions (struct browser *browser,
 }
 
 static gboolean
+browser_load_dir_runner_hide_spinner (gpointer data)
+{
+  struct browser *browser = data;
+  gtk_spinner_stop (GTK_SPINNER (browser->spinner));
+  gtk_stack_set_visible_child_name (GTK_STACK (browser->stack), "list");
+  return FALSE;
+}
+
+static gboolean
 browser_load_dir_runner_update_ui (gpointer data)
 {
   struct browser *browser = data;
@@ -290,9 +299,11 @@ static gpointer
 browser_load_dir_runner (gpointer data)
 {
   struct browser *browser = data;
+  gint err = browser->fs_ops->readdir (browser->backend, &browser->iter,
+				       browser->dir);
+  g_idle_add (browser_load_dir_runner_hide_spinner, browser);
 
-  if (browser->fs_ops->readdir (browser->backend, &browser->iter,
-				browser->dir))
+  if (err)
     {
       error_print ("Error while opening '%s' dir\n", browser->dir);
     }
@@ -312,7 +323,7 @@ browser_load_dir (gpointer data)
   g_mutex_lock (&browser->mutex);
   if (browser->active)
     {
-      error_print ("Browser already loading. Skipping load...\n");
+      debug_print (1, "Browser already loading. Skipping load...\n");
       g_mutex_unlock (&browser->mutex);
       return FALSE;
     }
@@ -330,6 +341,8 @@ browser_load_dir (gpointer data)
     }
 
   gtk_widget_set_sensitive (browser->box, FALSE);
+  gtk_stack_set_visible_child_name (GTK_STACK (browser->stack), "spinner");
+  gtk_spinner_start (GTK_SPINNER (browser->spinner));
 
   browser->thread =
     g_thread_new ("browser_thread", browser_load_dir_runner, browser);

@@ -594,7 +594,7 @@ elektroid_cancel_all_tasks_and_wait ()
 }
 
 static void
-browser_refresh_devices (GtkWidget * object, gpointer data)
+elektroid_refresh_devices (GtkWidget * object, gpointer data)
 {
   if (backend_check (&backend))
     {
@@ -3539,7 +3539,9 @@ elektroid_run (int argc, char *argv[])
     .fs_ops = NULL,
     .backend = &backend,
     .check_callback = elektroid_check_backend,
-    .box = remote_box
+    .box = remote_box,
+    .stack = GTK_WIDGET (gtk_builder_get_object (builder, "remote_stack")),
+    .spinner = GTK_WIDGET (gtk_builder_get_object (builder, "remote_spinner"))
   };
   browser_init (&remote_browser);
 
@@ -3611,7 +3613,9 @@ elektroid_run (int argc, char *argv[])
     .fs_ops = &FS_LOCAL_OPERATIONS,
     .backend = NULL,
     .check_callback = NULL,
-    .box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box"))
+    .box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box")),
+    .stack = GTK_WIDGET (gtk_builder_get_object (builder, "local_stack")),
+    .spinner = GTK_WIDGET (gtk_builder_get_object (builder, "local_spinner"))
   };
   browser_init (&local_browser);
 
@@ -3675,7 +3679,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (devices_combo, "changed",
 		    G_CALLBACK (elektroid_set_device), NULL);
   g_signal_connect (refresh_devices_button, "clicked",
-		    G_CALLBACK (browser_refresh_devices), NULL);
+		    G_CALLBACK (elektroid_refresh_devices), NULL);
 
   audio_init (&audio, elektroid_set_volume_callback, elektroid_redraw_sample);
 
