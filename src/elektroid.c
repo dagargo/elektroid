@@ -196,7 +196,7 @@ static GtkWidget *remote_box;
 static GtkWidget *waveform_draw_area;
 static GtkStatusbar *status_bar;
 static GtkListStore *devices_list_store;
-static GtkComboBox *devices_combo;
+static GtkWidget *devices_combo;
 static GtkWidget *local_audio_box;
 static GtkWidget *upload_menuitem;
 static GtkWidget *local_play_menuitem;
@@ -224,7 +224,7 @@ static GtkWidget *cancel_task_button;
 static GtkWidget *remove_tasks_button;
 static GtkWidget *clear_tasks_button;
 static GtkListStore *fs_list_store;
-static GtkComboBox *fs_combo;
+static GtkWidget *fs_combo;
 static GtkTreeViewColumn *remote_tree_view_index_column;
 static GtkWidget *sample_info_box;
 static GtkWidget *sample_length;
@@ -432,7 +432,7 @@ elektroid_load_devices (gboolean auto_select)
 
   device_index = auto_select && i == 1 ? 0 : -1;
   debug_print (1, "Selecting device %d...\n", device_index);
-  gtk_combo_box_set_active (devices_combo, device_index);
+  gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), device_index);
 
   if (device_index == -1)
     {
@@ -2715,7 +2715,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   gint fs;
 
   *remote_browser.dir = 0;
-  if (!gtk_combo_box_get_active_iter (fs_combo, &iter))
+  if (!gtk_combo_box_get_active_iter (GTK_COMBO_BOX (fs_combo), &iter))
     {
       remote_browser.fs_ops = NULL;
       browser_reset (&remote_browser);
@@ -2818,7 +2818,7 @@ elektroid_fill_fs_combo_bg (gpointer data)
     }
 
   debug_print (1, "Selecting first filesystem...\n");
-  gtk_combo_box_set_active (fs_combo, 0);
+  gtk_combo_box_set_active (GTK_COMBO_BOX (fs_combo), 0);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
 
   return FALSE;
@@ -2876,7 +2876,8 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 
   elektroid_cancel_all_tasks_and_wait ();
 
-  if (gtk_combo_box_get_active_iter (devices_combo, &iter) == FALSE)
+  if (gtk_combo_box_get_active_iter (GTK_COMBO_BOX (devices_combo), &iter) ==
+      FALSE)
     {
       return;
     }
@@ -2904,7 +2905,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 
   if (dres == GTK_RESPONSE_ACCEPT)
     {
-      gtk_combo_box_set_active (devices_combo, -1);
+      gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), -1);
     }
 }
 
@@ -3673,7 +3674,7 @@ elektroid_run (int argc, char *argv[])
   devices_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "devices_list_store"));
   devices_combo =
-    GTK_COMBO_BOX (gtk_builder_get_object (builder, "devices_combo"));
+    GTK_WIDGET (gtk_builder_get_object (builder, "devices_combo"));
   refresh_devices_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "refresh_devices_button"));
   g_signal_connect (devices_combo, "changed",
@@ -3708,7 +3709,7 @@ elektroid_run (int argc, char *argv[])
 
   fs_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "fs_list_store"));
-  fs_combo = GTK_COMBO_BOX (gtk_builder_get_object (builder, "fs_combo"));
+  fs_combo = GTK_WIDGET (gtk_builder_get_object (builder, "fs_combo"));
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
 
   sample_info_box =
