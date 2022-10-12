@@ -887,4 +887,5 @@ backend_destroy_data (struct backend *backend)
   debug_print (1, "Destroying backend data...\n");
   g_free (backend->data);
   backend->data = NULL;
+  backend->type = BE_TYPE_NONE;
 }

@@ -64,6 +64,7 @@ struct backend_midi_info
 
 enum backend_type
 {
+  BE_TYPE_NONE,
   BE_TYPE_SYSTEM,
   BE_TYPE_MIDI
 };

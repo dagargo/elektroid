@@ -600,9 +600,9 @@ elektroid_refresh_devices (GtkWidget * object, gpointer data)
     {
       elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (&backend);
-      elektroid_check_backend ();
+      remote_browser.fs_ops = NULL;
     }
-  elektroid_load_devices (FALSE);
+  elektroid_check_backend ();	//This triggers the actual devices refresh if there is no backend
 }
 
 static gpointer
