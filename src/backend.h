@@ -110,6 +110,8 @@ gint backend_tx_sysex (struct backend *, struct sysex_transfer *);
 
 gint backend_rx_sysex (struct backend *, struct sysex_transfer *);
 
+gint backend_tx (struct backend *, GByteArray *);
+
 gint backend_tx_and_rx_sysex_transfer (struct backend *,
 				       struct sysex_transfer *, gboolean);
 
@@ -136,5 +138,7 @@ gchar *backend_get_fs_ext (const struct device_desc *,
 gdouble backend_get_storage_stats_percent (struct backend_storage_stats *);
 
 void backend_destroy_data (struct backend *);
+
+gint backend_program_change (struct backend *, guint8, guint8);
 
 #endif

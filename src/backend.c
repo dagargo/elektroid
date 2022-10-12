@@ -691,6 +691,20 @@ end:
 //Synchronized
 
 gint
+backend_tx (struct backend *backend, GByteArray * tx_msg)
+{
+  struct sysex_transfer transfer;
+  transfer.raw = tx_msg;
+  g_mutex_lock (&backend->mutex);
+  backend_tx_sysex (backend, &transfer);
+  g_mutex_unlock (&backend->mutex);
+  free_msg (tx_msg);
+  return transfer.err;
+}
+
+//Synchronized
+
+gint
 backend_tx_and_rx_sysex_transfer (struct backend *backend,
 				  struct sysex_transfer *transfer,
 				  gboolean free)
@@ -888,4 +902,22 @@ backend_destroy_data (struct backend *backend)
   g_free (backend->data);
   backend->data = NULL;
   backend->type = BE_TYPE_NONE;
+}
+
+gint
+backend_program_change (struct backend *backend, guint8 channel,
+			guint8 program)
+{
+  ssize_t size;
+  guint8 status_byte = 0xc0 | (channel & 0xf);
+  program = program & 0x7f;
+  if ((size = backend_tx_raw (backend, (guint8 *) & status_byte, 1)) < 0)
+    {
+      return size;
+    }
+  if ((size = backend_tx_raw (backend, (guint8 *) & program, 1)) < 0)
+    {
+      return size;
+    }
+  return 0;
 }
