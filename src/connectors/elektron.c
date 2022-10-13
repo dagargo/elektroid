@@ -2173,13 +2173,13 @@ elektron_handshake (struct backend *backend)
   backend->data = data;
 
   tx_msg = elektron_new_msg (PING_REQUEST, sizeof (PING_REQUEST));
-  rx_msg =
-    elektron_tx_and_rx_timeout (backend, tx_msg, BE_SYSEX_TIMEOUT_GUESS_MS);
+  rx_msg = elektron_tx_and_rx_timeout (backend, tx_msg,
+				       BE_SYSEX_TIMEOUT_GUESS_MS);
   if (!rx_msg)
     {
       backend->data = NULL;
       g_free (data);
-      return -EIO;
+      return -ENODEV;
     }
 
   overbridge_name = strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
@@ -2202,7 +2202,7 @@ elektron_handshake (struct backend *backend)
       backend->data = NULL;
       g_free (overbridge_name);
       g_free (data);
-      return -EIO;
+      return -ENODEV;
     }
   if (snprintf (data->fw_version, LABEL_MAX, "%s",
 		(gchar *) & rx_msg->data[10]) >= LABEL_MAX)
@@ -2213,8 +2213,8 @@ elektron_handshake (struct backend *backend)
 
   if (debug_level > 1)
     {
-      tx_msg =
-	elektron_new_msg (DEVICEUID_REQUEST, sizeof (DEVICEUID_REQUEST));
+      tx_msg = elektron_new_msg (DEVICEUID_REQUEST,
+				 sizeof (DEVICEUID_REQUEST));
       rx_msg = elektron_tx_and_rx (backend, tx_msg);
       if (rx_msg)
 	{

@@ -304,7 +304,7 @@ cleanup_params:
 cleanup:
   backend_destroy (backend);
   g_free (backend->buffer);
-  return -1;
+  return -EIO;
 }
 
 ssize_t

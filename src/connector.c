@@ -82,6 +82,11 @@ static const struct connector *CONNECTORS[] = {
   &CONNECTOR_CZ, &CONNECTOR_SDS, &CONNECTOR_DEFAULT, NULL
 };
 
+// A handshake function might return these values:
+// 0, the device matches the connector.
+// -ENODEV, the device does not match the connector but we can continue with the next connector.
+// Other negative errors are allowed but we will not continue with the remaining connectors.
+
 gint
 connector_init (struct backend *backend, const gchar * id,
 		const gchar * conn_name,
@@ -118,12 +123,13 @@ connector_init (struct backend *backend, const gchar * id,
 	    {
 	      debug_print (1, "Testing %s connector...\n",
 			   (*connector)->name);
-	      if ((*connector)->handshake (backend))
+	      err = (*connector)->handshake (backend);
+	      if (err && err != -ENODEV)
 		{
-		  err = -EIO;
-		  goto end;
+		  return err;
 		}
-	      else
+
+	      if (!err)
 		{
 		  debug_print (1, "Using %s connector...\n",
 			       (*connector)->name);
@@ -134,7 +140,13 @@ connector_init (struct backend *backend, const gchar * id,
       else
 	{
 	  debug_print (1, "Testing %s connector...\n", (*connector)->name);
-	  if (!(*connector)->handshake (backend))
+	  err = (*connector)->handshake (backend);
+	  if (err && err != -ENODEV)
+	    {
+	      return err;
+	    }
+
+	  if (!err)
 	    {
 	      debug_print (1, "Using %s connector...\n", (*connector)->name);
 	      return 0;
@@ -143,7 +155,7 @@ connector_init (struct backend *backend, const gchar * id,
       connector++;
     }
 
-  error_print ("Device not recognized\n");
+  error_print ("No device recognized\n");
 
 end:
   backend_destroy (backend);

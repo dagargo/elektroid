@@ -404,7 +404,7 @@ microbrute_handshake (struct backend *backend)
       memcmp (backend->midi_info.family, FAMILY_ID, sizeof (FAMILY_ID)) ||
       memcmp (backend->midi_info.model, MODEL_ID, sizeof (MODEL_ID)))
     {
-      return -1;
+      return -ENODEV;
     }
 
   seq = malloc (sizeof (guint8));
