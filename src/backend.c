@@ -163,56 +163,55 @@ backend_midi_handshake (struct backend *backend)
 		       sizeof (BE_MIDI_IDENTITY_REQUEST));
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg,
 				    BE_SYSEX_TIMEOUT_GUESS_MS);
-  if (rx_msg)
+  if (!rx_msg)
     {
-      if (rx_msg->data[4] == 2)
-	{
-	  if (rx_msg->len == 15 || rx_msg->len == 17)
-	    {
-	      offset = rx_msg->len - 15;
-	      memset (backend->midi_info.company, 0, BE_COMPANY_LEN);
-	      memcpy (backend->midi_info.company, &rx_msg->data[5],
-		      rx_msg->len == 15 ? 1 : BE_COMPANY_LEN);
-	      memcpy (backend->midi_info.family, &rx_msg->data[6 + offset],
-		      BE_FAMILY_LEN);
-	      memcpy (backend->midi_info.model, &rx_msg->data[8 + offset],
-		      BE_MODEL_LEN);
-	      memcpy (backend->midi_info.version, &rx_msg->data[10 + offset],
-		      BE_VERSION_LEN);
+      debug_print (1, "No MIDI identity reply\n");
+      return;
+    }
 
-	      snprintf (backend->device_name, LABEL_MAX,
-			"%02x-%02x-%02x %02x-%02x %02x-%02x %d.%d.%d.%d",
-			backend->midi_info.company[0],
-			backend->midi_info.company[1],
-			backend->midi_info.company[2],
-			backend->midi_info.family[0],
-			backend->midi_info.family[1],
-			backend->midi_info.model[0],
-			backend->midi_info.model[1],
-			backend->midi_info.version[0],
-			backend->midi_info.version[1],
-			backend->midi_info.version[2],
-			backend->midi_info.version[3]);
-	      snprintf (backend->device_desc.name, LABEL_MAX,
-			backend->device_name);
-	      debug_print (1, "Detected device: %s\n", backend->device_name);
-	    }
-	  else
-	    {
-	      debug_print (1, "Illegal MIDI identity reply length\n");
-	    }
+  if (rx_msg->data[4] == 2)
+    {
+      if (rx_msg->len == 15 || rx_msg->len == 17)
+	{
+	  offset = rx_msg->len - 15;
+	  memset (backend->midi_info.company, 0, BE_COMPANY_LEN);
+	  memcpy (backend->midi_info.company, &rx_msg->data[5],
+		  rx_msg->len == 15 ? 1 : BE_COMPANY_LEN);
+	  memcpy (backend->midi_info.family, &rx_msg->data[6 + offset],
+		  BE_FAMILY_LEN);
+	  memcpy (backend->midi_info.model, &rx_msg->data[8 + offset],
+		  BE_MODEL_LEN);
+	  memcpy (backend->midi_info.version, &rx_msg->data[10 + offset],
+		  BE_VERSION_LEN);
+
+	  snprintf (backend->device_name, LABEL_MAX,
+		    "%02x-%02x-%02x %02x-%02x %02x-%02x %d.%d.%d.%d",
+		    backend->midi_info.company[0],
+		    backend->midi_info.company[1],
+		    backend->midi_info.company[2],
+		    backend->midi_info.family[0],
+		    backend->midi_info.family[1],
+		    backend->midi_info.model[0],
+		    backend->midi_info.model[1],
+		    backend->midi_info.version[0],
+		    backend->midi_info.version[1],
+		    backend->midi_info.version[2],
+		    backend->midi_info.version[3]);
+	  snprintf (backend->device_desc.name, LABEL_MAX,
+		    backend->device_name);
+	  debug_print (1, "Detected device: %s\n", backend->device_name);
 	}
       else
 	{
-	  debug_print (1, "Illegal SUB-ID2\n");
+	  debug_print (1, "Illegal MIDI identity reply length\n");
 	}
-
-      free_msg (rx_msg);
     }
   else
     {
-      debug_print (1, "No MIDI identity reply\n");
+      debug_print (1, "Illegal SUB-ID2\n");
     }
+
+  free_msg (rx_msg);
 }
 
 gint
@@ -582,14 +581,13 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	      else
 		{
 		  transfer->err = rx_len;
-		  goto error;
+		  goto end;
 		}
 	    }
-
-	  if (rx_len < 0)
+	  else if (rx_len < 0)
 	    {
 	      transfer->err = -EIO;
-	      goto error;
+	      goto end;
 	    }
 	}
       else
@@ -662,27 +660,28 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	}
     }
 
+end:
   if (!transfer->raw->len)
     {
       transfer->err = -ETIMEDOUT;
-      goto error;
     }
-
-  if (debug_level >= 2)
+  if (transfer->err)
     {
-      gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
-					transfer->raw->len);
-      debug_print (2, "Raw message received (%d): %s\n", transfer->raw->len,
-		   text);
-      free (text);
+      free_msg (transfer->raw);
+      transfer->raw = NULL;
     }
+  else
+    {
+      if (debug_level >= 2)
+	{
+	  gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
+					    transfer->raw->len);
+	  debug_print (2, "Raw message received (%d): %s\n",
+		       transfer->raw->len, text);
+	  free (text);
+	}
 
-  goto end;
-
-error:
-  free_msg (transfer->raw);
-  transfer->raw = NULL;
-end:
+    }
   transfer->active = FALSE;
   transfer->status = FINISHED;
   return transfer->err;
@@ -717,15 +716,13 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
   if (free)
     {
       free_msg (transfer->raw);
+      transfer->raw = NULL;
     }
-  if (transfer->err < 0)
+  if (!transfer->err)
     {
-      goto cleanup;
+      backend_rx_sysex (backend, transfer);
     }
 
-  backend_rx_sysex (backend, transfer);
-
-cleanup:
   g_mutex_unlock (&backend->mutex);
   return transfer->err;
 }
@@ -909,13 +906,12 @@ backend_program_change (struct backend *backend, guint8 channel,
 			guint8 program)
 {
   ssize_t size;
-  guint8 status_byte = 0xc0 | (channel & 0xf);
-  program = program & 0x7f;
-  if ((size = backend_tx_raw (backend, (guint8 *) & status_byte, 1)) < 0)
-    {
-      return size;
-    }
-  if ((size = backend_tx_raw (backend, (guint8 *) & program, 1)) < 0)
+  guint8 msg[2];
+
+  msg[0] = 0xc0 | (channel & 0xf);
+  msg[1] = program & 0x7f;
+
+  if ((size = backend_tx_raw (backend, (guint8 *) msg, 2)) < 0)
     {
       return size;
     }
