@@ -47,11 +47,6 @@ struct connector
   const gchar *name;
 };
 
-static const struct connector CONNECTOR_SYSTEM = {
-  .handshake = system_handshake,
-  .name = "system"
-};
-
 static const struct connector CONNECTOR_ELEKTRON = {
   .handshake = elektron_handshake,
   .name = "elektron"
@@ -77,9 +72,11 @@ static const struct connector CONNECTOR_DEFAULT = {
   .name = "default"
 };
 
+// To speed up detection, connectors that purely rely on the standard device inquiry should go first.
+
 static const struct connector *CONNECTORS[] = {
-  &CONNECTOR_SYSTEM, &CONNECTOR_MICROBRUTE, &CONNECTOR_ELEKTRON,
-  &CONNECTOR_CZ, &CONNECTOR_SDS, &CONNECTOR_DEFAULT, NULL
+  &CONNECTOR_MICROBRUTE, &CONNECTOR_ELEKTRON, &CONNECTOR_CZ, &CONNECTOR_SDS,
+  &CONNECTOR_DEFAULT, NULL
 };
 
 // A handshake function might return these values:

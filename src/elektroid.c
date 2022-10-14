@@ -444,6 +444,24 @@ elektroid_load_devices (gboolean auto_select)
     }
 }
 
+static gboolean
+elektroid_load_devices_bg (gpointer data)
+{
+  gboolean visible;
+  GValue value = G_VALUE_INIT;
+
+  g_object_get_property (G_OBJECT (main_window), "visible", &value);
+  visible = g_value_get_boolean (&value);
+
+  if (visible)
+    {
+      elektroid_load_devices (TRUE);	//This triggers a local browser reload due to the extensions and icons selected for the fs
+      return FALSE;
+    }
+
+  return TRUE;
+}
+
 static void
 elektroid_update_statusbar ()
 {
@@ -2842,26 +2860,13 @@ static gpointer
 elektroid_set_device_thread (gpointer data)
 {
   gchar *id = data;
-
   g_timeout_add (100, elektroid_update_set_device_progress, NULL);
-
-  if (connector_init (&backend, id, NULL, &sysex_transfer) < 0)
-    {
-      error_print ("Error while connecting\n");
-    }
-
+  sysex_transfer.err = connector_init (&backend, id, NULL, &sysex_transfer);
   g_free (id);
 
-  g_idle_add (elektroid_check_backend_bg, NULL);
-  if (backend_check (&backend))
-    {
-      g_idle_add (elektroid_fill_fs_combo_bg, NULL);
-    }
-  else
-    {
-      gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
-    }
-
+  gboolean ok = backend_check (&backend);
+  gtk_dialog_response (GTK_DIALOG (progress_dialog),
+		       ok ? GTK_RESPONSE_ACCEPT : GTK_RESPONSE_CANCEL);
   return NULL;
 }
 
@@ -2890,20 +2895,45 @@ elektroid_set_device (GtkWidget * object, gpointer data)
   gtk_tree_model_get (GTK_TREE_MODEL (devices_list_store), &iter,
 		      DEVICES_LIST_STORE_ID_FIELD, &id, -1);
 
-  debug_print (1, "Creating SysEx thread...\n");
-  sysex_thread =
-    g_thread_new ("sysex_thread", elektroid_set_device_thread, id);
+  if (!strcmp (id, BE_SYSTEM_ID) && !backend_init (&backend, id)
+      && !system_handshake (&backend))
+    {
+      debug_print (1, "System backend detected\n");
+      elektroid_check_backend_bg (NULL);
+      elektroid_fill_fs_combo_bg (NULL);
+      g_free (id);
+      return;
+    }
 
-  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Connect to device"));
+  debug_print (1, "Creating SysEx thread...\n");
+  sysex_thread = g_thread_new ("sysex_thread", elektroid_set_device_thread,
+			       id);
+
+  gtk_window_set_title (GTK_WINDOW (progress_dialog),
+			_("Connecting to Device"));
   gtk_label_set_text (GTK_LABEL (progress_label), _("Connecting..."));
   dres = gtk_dialog_run (GTK_DIALOG (progress_dialog));
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
+
   g_mutex_lock (&sysex_transfer.mutex);
   sysex_transfer.active = FALSE;
   g_mutex_unlock (&sysex_transfer.mutex);
+
   elektroid_join_sysex_thread ();
 
+  if (sysex_transfer.err && sysex_transfer.err != -ECANCELED)
+    {
+      error_print ("Error while connecting: %s\n",
+		   g_strerror (sysex_transfer.err));
+      show_error_msg (_("Device not recognized"));
+    }
+
+  elektroid_check_backend_bg (NULL);
   if (dres == GTK_RESPONSE_ACCEPT)
+    {
+      elektroid_fill_fs_combo_bg (NULL);
+    }
+  else
     {
       gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), -1);
     }
@@ -3730,11 +3760,10 @@ elektroid_run (int argc, char *argv[])
 
   elektroid_audio_widgets_set_status ();
 
-  elektroid_load_devices (TRUE);	//This triggers a local browser reload due to the extensions and icons selected for the fs
-
   gethostname (hostname, LABEL_MAX);
   gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
 
+  g_timeout_add (100, elektroid_load_devices_bg, NULL);
   gtk_widget_show (main_window);
   audio_run (&audio);
   gtk_main ();
