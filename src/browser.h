@@ -62,7 +62,7 @@ struct browser
     gboolean (*check_callback) ();
   struct notifier *notifier;
   //Background loading members
-  GtkWidget *box;
+  GSList *sensitive_widgets;
   GtkWidget *stack;
   GtkWidget *spinner;
   GThread *thread;

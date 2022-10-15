@@ -147,8 +147,16 @@ notifier_set_active (struct notifier *notifier, gboolean active)
 
   if (active && !notifier->running)
     {
-      notifier->running = TRUE;
-      notifier->thread = g_thread_new ("notifier", notifier_run, notifier);
+      if (!notifier->running)
+	{
+	  notifier->running = TRUE;
+	  notifier->thread = g_thread_new ("notifier",
+                                           notifier_run, notifier);
+	}
+      else
+	{
+	  notifier_set_dir (notifier);
+	}
       g_mutex_unlock (&notifier->mutex);
       return;
     }

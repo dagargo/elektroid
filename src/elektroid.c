@@ -192,6 +192,7 @@ static GtkWidget *rx_sysex_button;
 static GtkWidget *tx_sysex_button;
 static GtkWidget *os_upgrade_button;
 static GtkWidget *about_button;
+static GtkWidget *local_box;
 static GtkWidget *remote_box;
 static GtkWidget *waveform_draw_area;
 static GtkStatusbar *status_bar;
@@ -3442,6 +3443,7 @@ elektroid_run (int argc, char *argv[])
   hostname_label =
     GTK_WIDGET (gtk_builder_get_object (builder, "hostname_label"));
 
+  local_box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box"));
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
   local_audio_box =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_audio_box"));
@@ -3570,7 +3572,7 @@ elektroid_run (int argc, char *argv[])
     .fs_ops = NULL,
     .backend = &backend,
     .check_callback = elektroid_check_backend,
-    .box = remote_box,
+    .sensitive_widgets = NULL,
     .stack = GTK_WIDGET (gtk_builder_get_object (builder, "remote_stack")),
     .spinner = GTK_WIDGET (gtk_builder_get_object (builder, "remote_spinner"))
   };
@@ -3644,7 +3646,7 @@ elektroid_run (int argc, char *argv[])
     .fs_ops = &FS_LOCAL_OPERATIONS,
     .backend = NULL,
     .check_callback = NULL,
-    .box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box")),
+    .sensitive_widgets = NULL,
     .stack = GTK_WIDGET (gtk_builder_get_object (builder, "local_stack")),
     .spinner = GTK_WIDGET (gtk_builder_get_object (builder, "local_spinner"))
   };
@@ -3763,9 +3765,17 @@ elektroid_run (int argc, char *argv[])
   gethostname (hostname, LABEL_MAX);
   gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
 
+  local_browser.sensitive_widgets =
+    g_slist_append (local_browser.sensitive_widgets, local_box);
+  remote_browser.sensitive_widgets =
+    g_slist_append (remote_browser.sensitive_widgets, remote_box);
+  remote_browser.sensitive_widgets =
+    g_slist_append (remote_browser.sensitive_widgets, fs_combo);
+
   g_timeout_add (100, elektroid_load_devices_bg, NULL);
   gtk_widget_show (main_window);
   audio_run (&audio);
+
   gtk_main ();
 
   free (remote_browser.dir);

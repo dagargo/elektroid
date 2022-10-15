@@ -21,6 +21,18 @@
 #include "browser.h"
 #include "backend.h"
 
+static void
+browser_widget_set_sensitive (gpointer widget, gpointer data)
+{
+  gtk_widget_set_sensitive (GTK_WIDGET (widget), TRUE);
+}
+
+static void
+browser_widget_set_insensitive (gpointer widget, gpointer data)
+{
+  gtk_widget_set_sensitive (GTK_WIDGET (widget), FALSE);
+}
+
 gint
 browser_sort_by_name (GtkTreeModel * model,
 		      GtkTreeIter * a, GtkTreeIter * b, gpointer data)
@@ -277,7 +289,8 @@ browser_load_dir_runner_update_ui (gpointer data)
     }
   free_item_iterator (&browser->iter);
 
-  gtk_widget_set_sensitive (browser->box, TRUE);
+  g_slist_foreach (browser->sensitive_widgets, browser_widget_set_sensitive,
+		   NULL);
 
   g_thread_join (browser->thread);
   browser->thread = NULL;
@@ -340,7 +353,8 @@ browser_load_dir (gpointer data)
       return FALSE;
     }
 
-  gtk_widget_set_sensitive (browser->box, FALSE);
+  g_slist_foreach (browser->sensitive_widgets, browser_widget_set_insensitive,
+		   NULL);
   gtk_stack_set_visible_child_name (GTK_STACK (browser->stack), "spinner");
   gtk_spinner_start (GTK_SPINNER (browser->spinner));
 
@@ -378,4 +392,5 @@ browser_destroy (struct browser *browser)
     {
       g_thread_join (browser->thread);
     }
+  g_slist_free (browser->sensitive_widgets);
 }
