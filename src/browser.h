@@ -42,6 +42,7 @@ enum browser_list_field
 
 struct browser
 {
+  const gchar *name;
   GSourceFunc check_selection;
   gulong selection_changed_handler_id;
   GtkTreeView *view;

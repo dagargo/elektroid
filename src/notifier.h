@@ -27,19 +27,17 @@
 
 struct notifier
 {
+  gchar *dir;
   gint fd;
   gint wd;
   size_t event_size;
   struct inotify_event *event;
-  gboolean running;
   struct browser *browser;
   GThread *thread;
   GMutex mutex;
 };
 
 void notifier_init (struct notifier *, struct browser *);
-
-void notifier_set_dir (struct notifier *);
 
 void notifier_set_active (struct notifier *, gboolean);
 

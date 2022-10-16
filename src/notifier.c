@@ -25,40 +25,25 @@
 #include "notifier.h"
 #include "utils.h"
 
-void
+static void
 notifier_set_dir (struct notifier *notifier)
 {
-  gchar *path = notifier->browser->dir;
-  g_mutex_lock (&notifier->mutex);
-  debug_print (1, "Changing notifier path to '%s'...\n", path);
-  if (notifier->fd < 0)
+  debug_print (1, "Changing path to '%s'...\n", notifier->browser->dir);
+  if (!notifier->dir || strcmp (notifier->browser->dir, notifier->dir))
     {
-      g_mutex_unlock (&notifier->mutex);
-      return;
+      if (notifier->dir)
+	{
+	  g_free (notifier->dir);
+	  inotify_rm_watch (notifier->fd, notifier->wd);
+	  g_thread_join (notifier->thread);
+	  notifier->thread = NULL;
+	}
+      notifier->dir = strdup (notifier->browser->dir);
+      notifier->wd = inotify_add_watch (notifier->fd, notifier->dir,
+					IN_CREATE | IN_DELETE | IN_MOVED_FROM
+					| IN_DELETE_SELF | IN_MOVE_SELF
+					| IN_MOVED_TO | IN_IGNORED);
     }
-  if (notifier->wd >= 0)
-    {
-      inotify_rm_watch (notifier->fd, notifier->wd);
-    }
-  notifier->wd =
-    inotify_add_watch (notifier->fd, path,
-		       IN_CREATE | IN_DELETE | IN_MOVED_FROM | IN_DELETE_SELF
-		       | IN_MOVE_SELF | IN_MOVED_TO);
-  g_mutex_unlock (&notifier->mutex);
-}
-
-static void
-notifier_close (struct notifier *notifier)
-{
-  if (notifier->fd < 0)
-    {
-      return;
-    }
-  if (notifier->wd >= 0)
-    {
-      inotify_rm_watch (notifier->fd, notifier->wd);
-    }
-  close (notifier->fd);
 }
 
 static gboolean
@@ -74,31 +59,23 @@ notifier_run (gpointer data)
 {
   ssize_t size;
   struct notifier *notifier = data;
-  gboolean running;
+
+  debug_print (1, "%s notifier running...\n", notifier->browser->name);
 
   while (1)
     {
       size = read (notifier->fd, notifier->event, notifier->event_size);
-
-      g_mutex_lock (&notifier->mutex);
-      running = notifier->running;
-      g_mutex_unlock (&notifier->mutex);
-
-      if (!running)
+      if (size == 0)
 	{
 	  break;
 	}
-
-      if (size == 0 || size == EBADF)
+      if (size == -1)
 	{
+	  if (errno != EBADF)
+	    {
+	      debug_print (2, "%s\n", g_strerror (errno));
+	    }
 	  break;
-	}
-
-      if (size < 0)
-	{
-	  debug_print (2, "Error while reading notifier: %s\n",
-		       g_strerror (errno));
-	  continue;
 	}
 
       if (notifier->event->mask & IN_CREATE
@@ -106,22 +83,24 @@ notifier_run (gpointer data)
 	  || notifier->event->mask & IN_MOVED_FROM
 	  || notifier->event->mask & IN_MOVED_TO)
 	{
-	  debug_print (1, "Reloading local dir...\n");
+	  debug_print (1, "Reloading dir...\n");
 	  g_idle_add (browser_load_dir, notifier->browser);
 	}
       else if (notifier->event->mask & IN_DELETE_SELF
-	       || notifier->event->mask & IN_MOVE_SELF ||
-	       notifier->event->mask & IN_MOVED_TO)
+	       || notifier->event->mask & IN_MOVE_SELF
+	       || notifier->event->mask & IN_MOVED_TO)
 	{
-	  debug_print (1, "Loading local parent dir...\n");
+	  debug_print (1, "Loading parent dir...\n");
 	  g_idle_add (notifier_go_up, notifier->browser);
+	}
+      else if ((notifier->event->mask & IN_IGNORED))	// inotify_rm_watch called
+	{
+	  debug_print (1, "Finishing notifier...\n");
+	  break;
 	}
       else
 	{
-	  if (!(notifier->event->mask & IN_IGNORED))
-	    {
-	      error_print ("Unexpected event: %d\n", notifier->event->mask);
-	    }
+	  error_print ("Unexpected event: %d\n", notifier->event->mask);
 	}
     }
 
@@ -132,11 +111,11 @@ void
 notifier_init (struct notifier *notifier, struct browser *browser)
 {
   notifier->fd = inotify_init ();
-  notifier->wd = -1;
   notifier->event_size = sizeof (struct inotify_event) + PATH_MAX;
   notifier->event = malloc (notifier->event_size);
-  notifier->running = FALSE;
   notifier->browser = browser;
+  notifier->thread = NULL;
+  notifier->dir = NULL;
   g_mutex_init (&notifier->mutex);
 }
 
@@ -144,32 +123,29 @@ void
 notifier_set_active (struct notifier *notifier, gboolean active)
 {
   g_mutex_lock (&notifier->mutex);
-
-  if (active && !notifier->running)
+  if (active)
     {
-      if (!notifier->running)
+      notifier_set_dir (notifier);
+      if (!notifier->thread)
 	{
-	  notifier->running = TRUE;
-	  notifier->thread = g_thread_new ("notifier",
-                                           notifier_run, notifier);
+	  debug_print (1, "Starting %s notifier...\n",
+		       notifier->browser->name);
+	  notifier->thread = g_thread_new ("notifier", notifier_run,
+					   notifier);
 	}
-      else
-	{
-	  notifier_set_dir (notifier);
-	}
-      g_mutex_unlock (&notifier->mutex);
-      return;
     }
-
-  if (!active && notifier->running)
+  else
     {
-      notifier->running = FALSE;
-      g_mutex_unlock (&notifier->mutex);
-      notifier_close (notifier);
-      g_thread_join (notifier->thread);
-      return;
+      if (notifier->thread)
+	{
+	  debug_print (1, "Stopping %s notifier...\n",
+		       notifier->browser->name);
+	  inotify_rm_watch (notifier->fd, notifier->wd);
+	  g_thread_join (notifier->thread);
+	  notifier->thread = NULL;
+	  close (notifier->fd);
+	}
     }
-
   g_mutex_unlock (&notifier->mutex);
 }
 

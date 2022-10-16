@@ -271,14 +271,10 @@ static gboolean
 browser_load_dir_runner_update_ui (gpointer data)
 {
   struct browser *browser = data;
-  gboolean system = !browser->backend
+  gboolean active = !browser->backend
     || browser->backend->type == BE_TYPE_SYSTEM;
 
-  notifier_set_active (browser->notifier, system);
-  if (system)
-    {
-      notifier_set_dir (browser->notifier);
-    }
+  notifier_set_active (browser->notifier, active);
 
   while (!next_item_iterator (&browser->iter))
     {
@@ -288,10 +284,8 @@ browser_load_dir_runner_update_ui (gpointer data)
 	}
     }
   free_item_iterator (&browser->iter);
-
   g_slist_foreach (browser->sensitive_widgets, browser_widget_set_sensitive,
 		   NULL);
-
   g_thread_join (browser->thread);
   browser->thread = NULL;
 
@@ -315,7 +309,6 @@ browser_load_dir_runner (gpointer data)
   gint err = browser->fs_ops->readdir (browser->backend, &browser->iter,
 				       browser->dir);
   g_idle_add (browser_load_dir_runner_hide_spinner, browser);
-
   if (err)
     {
       error_print ("Error while opening '%s' dir\n", browser->dir);
@@ -324,7 +317,6 @@ browser_load_dir_runner (gpointer data)
     {
       g_idle_add (browser_load_dir_runner_update_ui, browser);
     }
-
   return NULL;
 }
 
@@ -357,9 +349,8 @@ browser_load_dir (gpointer data)
 		   NULL);
   gtk_stack_set_visible_child_name (GTK_STACK (browser->stack), "spinner");
   gtk_spinner_start (GTK_SPINNER (browser->spinner));
-
-  browser->thread =
-    g_thread_new ("browser_thread", browser_load_dir_runner, browser);
+  browser->thread = g_thread_new ("browser_thread", browser_load_dir_runner,
+				  browser);
 
   return FALSE;
 }

@@ -3555,6 +3555,7 @@ elektroid_run (int argc, char *argv[])
 
   remote_browser = (struct browser)
   {
+    .name = "remote",
     .view =
       GTK_TREE_VIEW (gtk_builder_get_object (builder, "remote_tree_view")),
     .up_button =
@@ -3628,6 +3629,7 @@ elektroid_run (int argc, char *argv[])
 
   local_browser = (struct browser)
   {
+    .name = "local",
     .view =
       GTK_TREE_VIEW (gtk_builder_get_object (builder, "local_tree_view")),
     .up_button =
@@ -3772,7 +3774,7 @@ elektroid_run (int argc, char *argv[])
   remote_browser.sensitive_widgets =
     g_slist_append (remote_browser.sensitive_widgets, fs_combo);
 
-  g_timeout_add (100, elektroid_load_devices_bg, NULL);
+  g_idle_add (elektroid_load_devices_bg, NULL);
   gtk_widget_show (main_window);
   audio_run (&audio);
 
