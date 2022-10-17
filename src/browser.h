@@ -44,7 +44,6 @@ struct browser
 {
   const gchar *name;
   GSourceFunc check_selection;
-  gulong selection_changed_handler_id;
   GtkTreeView *view;
   GtkWidget *up_button;
   GtkWidget *add_dir_button;

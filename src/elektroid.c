@@ -3597,10 +3597,9 @@ elektroid_run (int argc, char *argv[])
   remote_tree_view_index_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_index_column"));
-  remote_browser.selection_changed_handler_id =
-    g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
-		      "changed", G_CALLBACK (browser_selection_changed),
-		      &remote_browser);
+  g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
+		    "changed", G_CALLBACK (browser_selection_changed),
+		    &remote_browser);
   g_signal_connect (remote_browser.view, "row-activated",
 		    G_CALLBACK (browser_item_activated), &remote_browser);
   g_signal_connect (remote_browser.up_button, "clicked",
@@ -3669,10 +3668,9 @@ elektroid_run (int argc, char *argv[])
   };
   browser_init (&local_browser);
 
-  local_browser.selection_changed_handler_id =
-    g_signal_connect (gtk_tree_view_get_selection (local_browser.view),
-		      "changed", G_CALLBACK (browser_selection_changed),
-		      &local_browser);
+  g_signal_connect (gtk_tree_view_get_selection (local_browser.view),
+		    "changed", G_CALLBACK (browser_selection_changed),
+		    &local_browser);
   g_signal_connect (local_browser.view, "row-activated",
 		    G_CALLBACK (browser_item_activated), &local_browser);
   g_signal_connect (local_browser.up_button, "clicked",
