@@ -219,6 +219,7 @@ static GtkWidget *loop_button;
 static GtkWidget *autoplay_switch;
 static GtkWidget *mix_switch;
 static GtkWidget *volume_button;
+static gulong volume_changed_handler;
 static GtkListStore *task_list_store;
 static GtkWidget *task_tree_view;
 static GtkWidget *cancel_task_button;
@@ -1831,10 +1832,24 @@ elektroid_set_volume (GtkScaleButton * button, gdouble value, gpointer data)
   audio_set_volume (&audio, value);
 }
 
+static gboolean
+elektroid_set_volume_callback_bg (gpointer data)
+{
+  gdouble *value = data;
+  debug_print (1, "Setting volume to %f...\n", *value);
+  g_signal_handler_block (volume_button, volume_changed_handler);
+  gtk_scale_button_set_value (GTK_SCALE_BUTTON (volume_button), *value);
+  g_signal_handler_unblock (volume_button, volume_changed_handler);
+  g_free (data);
+  return FALSE;
+}
+
 static void
 elektroid_set_volume_callback (gdouble value)
 {
-  gtk_scale_button_set_value (GTK_SCALE_BUTTON (volume_button), value);
+  gdouble *v = g_malloc (sizeof (gdouble));
+  *v = value;
+  g_idle_add (elektroid_set_volume_callback_bg, v);
 }
 
 static void
@@ -3496,7 +3511,7 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_autoplay_clicked), NULL);
   g_signal_connect (mix_switch, "state-set",
 		    G_CALLBACK (elektroid_mix_clicked), NULL);
-  g_signal_connect (volume_button, "value_changed",
+  volume_changed_handler = g_signal_connect (volume_button, "value_changed",
 		    G_CALLBACK (elektroid_set_volume), NULL);
 
   download_menuitem =

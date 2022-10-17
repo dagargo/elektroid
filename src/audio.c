@@ -187,6 +187,7 @@ audio_set_sink_volume (pa_context * context, const pa_sink_input_info * info,
   if (info && pa_cvolume_valid (&info->volume))
     {
       gdouble v = pa_sw_volume_to_linear (pa_cvolume_avg (&info->volume));
+      debug_print (1, "Setting volume to %f...\n", v);
       audio->volume_change_callback (v);
     }
 }
@@ -375,9 +376,10 @@ audio_set_volume (struct audio *audio, gdouble volume)
       v = pa_sw_volume_from_linear (volume);
       pa_cvolume_set (&audio->volume, AUDIO_CHANNELS, v);
 
-      operation =
-	pa_context_set_sink_input_volume (audio->context, audio->index,
-					  &audio->volume, NULL, NULL);
+      operation = pa_context_set_sink_input_volume (audio->context,
+                                                    audio->index,
+					            &audio->volume, NULL,
+                                                    NULL);
       if (operation != NULL)
 	{
 	  pa_operation_unref (operation);
