@@ -3512,7 +3512,8 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (mix_switch, "state-set",
 		    G_CALLBACK (elektroid_mix_clicked), NULL);
   volume_changed_handler = g_signal_connect (volume_button, "value_changed",
-		    G_CALLBACK (elektroid_set_volume), NULL);
+					     G_CALLBACK
+					     (elektroid_set_volume), NULL);
 
   download_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "download_menuitem"));

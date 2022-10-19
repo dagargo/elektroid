@@ -377,9 +377,9 @@ audio_set_volume (struct audio *audio, gdouble volume)
       pa_cvolume_set (&audio->volume, AUDIO_CHANNELS, v);
 
       operation = pa_context_set_sink_input_volume (audio->context,
-                                                    audio->index,
-					            &audio->volume, NULL,
-                                                    NULL);
+						    audio->index,
+						    &audio->volume, NULL,
+						    NULL);
       if (operation != NULL)
 	{
 	  pa_operation_unref (operation);
