@@ -2823,6 +2823,7 @@ static gboolean
 elektroid_fill_fs_combo_bg (gpointer data)
 {
   const struct fs_operations *ops;
+  gint fs, i;
 
   gtk_list_store_clear (fs_list_store);
 
@@ -2832,7 +2833,7 @@ elektroid_fill_fs_combo_bg (gpointer data)
       return FALSE;
     }
 
-  for (gint fs = 1, i = 0; i < MAX_BACKEND_FSS; fs = fs << 1, i++)
+  for (fs = 1, i = 0; i < MAX_BACKEND_FSS; fs = fs << 1, i++)
     {
       if (backend.device_desc.filesystems & fs)
 	{
@@ -2851,8 +2852,11 @@ elektroid_fill_fs_combo_bg (gpointer data)
 	}
     }
 
-  debug_print (1, "Selecting first filesystem...\n");
-  gtk_combo_box_set_active (GTK_COMBO_BOX (fs_combo), 0);
+  if (i)
+    {
+      debug_print (1, "Selecting first filesystem...\n");
+      gtk_combo_box_set_active (GTK_COMBO_BOX (fs_combo), 0);
+    }
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
 
   return FALSE;
