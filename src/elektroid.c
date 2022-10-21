@@ -233,6 +233,8 @@ static GtkWidget *sample_length;
 static GtkWidget *sample_channels;
 static GtkWidget *sample_samplerate;
 static GtkWidget *sample_bitdepth;
+static gchar **dnd_uris;
+static gchar *dnd_type_name;
 
 inline static const gchar *
 elektroid_get_fs_name (guint fs)
@@ -500,7 +502,7 @@ elektroid_update_statusbar ()
       if (strlen (backend.device_name))
 	{
 	  snprintf (status, LABEL_MAX, "%s%s", backend.device_name,
-                    statfss_str);
+		    statfss_str);
 	}
       else
 	{
@@ -659,6 +661,7 @@ elektroid_stop_sysex_thread ()
 static void
 elektroid_progress_dialog_close (gpointer data)
 {
+  gtk_label_set_text (GTK_LABEL (progress_label), _("Cancelling..."));
   elektroid_cancel_running_sysex (NULL, 0, NULL);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
 }
@@ -2863,7 +2866,7 @@ elektroid_fill_fs_combo_bg (gpointer data)
 }
 
 static gboolean
-elektroid_update_set_device_progress (gpointer data)
+elektroid_update_basic_sysex_progress (gpointer data)
 {
   gboolean active;
 
@@ -2880,7 +2883,7 @@ static gpointer
 elektroid_set_device_thread (gpointer data)
 {
   gchar *id = data;
-  g_timeout_add (100, elektroid_update_set_device_progress, NULL);
+  g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
   sysex_transfer.err = connector_init (&backend, id, NULL, &sysex_transfer);
   g_free (id);
 
@@ -2934,10 +2937,6 @@ elektroid_set_device (GtkWidget * object, gpointer data)
   gtk_label_set_text (GTK_LABEL (progress_label), _("Connecting..."));
   dres = gtk_dialog_run (GTK_DIALOG (progress_dialog));
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
-
-  g_mutex_lock (&sysex_transfer.mutex);
-  sysex_transfer.active = FALSE;
-  g_mutex_unlock (&sysex_transfer.mutex);
 
   elektroid_join_sysex_thread ();
 
@@ -3059,42 +3058,19 @@ elektroid_add_upload_task_slot (const gchar * name,
     }
 }
 
-static void
-elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
-			gint x, gint y,
-			GtkSelectionData * selection_data,
-			guint info, guint time, gpointer userdata)
+static gpointer
+elektroid_dnd_received_bg (gpointer data)
 {
-  gchar *data;
-  gchar **uris;
-  gchar *filename;
-  gchar *path_basename;
-  gchar *path_dirname;
-  gchar *name;
-  gchar *dir;
-  GtkTreeIter iter;
-  gboolean queued_before, queued_after, load_remote;
-  GdkAtom type;
-  gchar *type_name;
+  GtkWidget *widget = data;
   gint32 next_idx = 1;
+  GtkTreeIter iter;
   struct item_iterator remote_item_iterator;
+  gboolean queued_before, queued_after, load_remote, active;
 
-  if (selection_data == NULL
-      || !gtk_selection_data_get_length (selection_data)
-      || info != TARGET_STRING)
-    {
-      goto end;
-    }
+  queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
+						  NULL);
 
-  type = gtk_selection_data_get_data_type (selection_data);
-  type_name = gdk_atom_name (type);
-
-  data = (gchar *) gtk_selection_data_get_data (selection_data);
-  debug_print (1, "DND received data (%s):\n%s\n", type_name, data);
-
-  uris = g_uri_list_extract_uris (data);
-  queued_before =
-    elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
+  g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
 
   if (widget == GTK_WIDGET (local_browser.view))
     {
@@ -3102,7 +3078,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
     }
 
   load_remote = widget == GTK_WIDGET (remote_browser.view) ||
-    strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0;
+    strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID) == 0;
 
   if (load_remote)
     {
@@ -3111,21 +3087,30 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 				      remote_browser.dir);
     }
 
-  for (gint i = 0; uris[i] != NULL; i++)
+  for (gint i = 0; dnd_uris[i] != NULL; i++)
     {
-      filename = g_filename_from_uri (uris[i], NULL, NULL);
-      path_basename = strdup (filename);
-      path_dirname = strdup (filename);
-      name = basename (path_basename);
-      dir = dirname (path_dirname);
+      g_mutex_lock (&sysex_transfer.mutex);
+      active = sysex_transfer.active;
+      g_mutex_unlock (&sysex_transfer.mutex);
+
+      if (!active)
+	{
+	  goto end;
+	}
+
+      gchar *filename = g_filename_from_uri (dnd_uris[i], NULL, NULL);
+      gchar *path_basename = strdup (filename);
+      gchar *path_dirname = strdup (filename);
+      gchar *name = basename (path_basename);
+      gchar *dir = dirname (path_dirname);
 
       if (widget == GTK_WIDGET (local_browser.view))
 	{
-	  if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
+	  if (strcmp (dnd_type_name, TEXT_URI_LIST_STD) == 0)
 	    {
 	      elektroid_dnd_received_local (dir, name, filename);
 	    }
-	  else if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+	  else if (strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID) == 0)
 	    {
 	      elektroid_add_download_task_path (name, dir, local_browser.dir,
 						&remote_item_iterator);
@@ -3133,13 +3118,13 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 	}
       else if (widget == GTK_WIDGET (remote_browser.view))
 	{
-	  if (strcmp (type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+	  if (strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID) == 0)
 	    {
 	      elektroid_dnd_received_remote (dir, name, filename,
 					     &remote_item_iterator,
 					     &next_idx);
 	    }
-	  else if (strcmp (type_name, TEXT_URI_LIST_STD) == 0)
+	  else if (strcmp (dnd_type_name, TEXT_URI_LIST_STD) == 0)
 	    {
 	      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 		{
@@ -3160,6 +3145,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       g_free (filename);
     }
 
+end:
   if (load_remote)
     {
       free_item_iterator (&remote_item_iterator);
@@ -3170,17 +3156,69 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       backend_disable_cache (&backend);
     }
 
-  queued_after =
-    elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
+  queued_after = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
+						 NULL);
   if (!queued_before && queued_after)
     {
       elektroid_run_next_task (NULL);
     }
 
-  g_strfreev (uris);
+  // Until a better solution is found, this sleep is necessary.
+  // The reason is that this thread might end before the dialog is showed, which leads to erratic dialog behaviour.
+  // As we start to run the next task before sleeping, this has no impact.
+  sleep (1);
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+  return NULL;
+}
 
-end:
+static void
+elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
+			gint x, gint y,
+			GtkSelectionData * selection_data,
+			guint info, guint time, gpointer userdata)
+{
+  gchar *data;
+  GdkAtom type;
+
+  if (selection_data == NULL
+      || !gtk_selection_data_get_length (selection_data)
+      || info != TARGET_STRING)
+    {
+      gtk_drag_finish (context, TRUE, TRUE, time);
+      return;
+    }
+
+  type = gtk_selection_data_get_data_type (selection_data);
+  dnd_type_name = gdk_atom_name (type);
+
+  data = (gchar *) gtk_selection_data_get_data (selection_data);
+  debug_print (1, "DND received data (%s):\n%s\n", dnd_type_name, data);
+
+  dnd_uris = g_uri_list_extract_uris (data);
+
   gtk_drag_finish (context, TRUE, TRUE, time);
+
+  g_mutex_lock (&sysex_transfer.mutex);
+  sysex_transfer.active = TRUE;
+  g_mutex_unlock (&sysex_transfer.mutex);
+
+  debug_print (1, "Creating SysEx thread...\n");
+  sysex_thread = g_thread_new ("sysex_thread", elektroid_dnd_received_bg,
+			       widget);
+
+  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Preparing Tasks"));
+  gtk_label_set_text (GTK_LABEL (progress_label), _("Reading..."));
+  gtk_dialog_run (GTK_DIALOG (progress_dialog));
+  gtk_widget_hide (GTK_WIDGET (progress_dialog));
+
+  g_mutex_lock (&sysex_transfer.mutex);
+  sysex_transfer.active = FALSE;
+  g_mutex_unlock (&sysex_transfer.mutex);
+
+  elektroid_join_sysex_thread ();
+
+  g_free (dnd_type_name);
+  g_strfreev (dnd_uris);
 }
 
 static void
