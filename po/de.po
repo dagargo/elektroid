@@ -22,11 +22,6 @@ msgstr ""
 msgid "generic MIDI device"
 msgstr ""
 
-#: src/elektroid.c:449
-#, c-format
-msgid "Connected to %s%s"
-msgstr "Verbunden mit %s%s"
-
 #: src/elektroid.c:462 src/elektroid.c:3569
 msgid "Not connected"
 msgstr "Nicht verbunden"

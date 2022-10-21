@@ -499,8 +499,8 @@ elektroid_update_statusbar ()
       status = g_malloc (LABEL_MAX);
       if (strlen (backend.device_name))
 	{
-	  snprintf (status, LABEL_MAX, _("Connected to %s%s"),
-		    backend.device_name, statfss_str);
+	  snprintf (status, LABEL_MAX, "%s%s", backend.device_name,
+                    statfss_str);
 	}
       else
 	{
