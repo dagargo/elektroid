@@ -1184,8 +1184,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	  new_path =
 	    chain_path (browser->dir, gtk_entry_get_text (name_dialog_entry));
 
-	  err = browser->fs_ops->move (&backend, old_path, new_path);
-
+	  err = browser->fs_ops->rename (&backend, old_path, new_path);
 	  if (err)
 	    {
 	      show_error_msg (_("Error while renaming to “%s”: %s."),
