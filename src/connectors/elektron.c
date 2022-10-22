@@ -1763,7 +1763,7 @@ elektron_download_smplrw (struct backend *backend, const gchar * path,
 	    be32toh (elektron_sample_header->loopstart);
 	  sample_info->loopend = be32toh (elektron_sample_header->loopend);
 	  sample_info->looptype = be32toh (elektron_sample_header->looptype);
-	  sample_info->samplerate = ELEKTRON_SAMPLE_RATE;	//In the case of the RAW filesystem is not used and it is harmless;
+	  sample_info->samplerate = be32toh (elektron_sample_header->samplerate);	//In the case of the RAW filesystem is not used and it is harmless.
 	  sample_info->channels = 1;
 	  sample_info->bitdepth = 16;
 	  control->data = sample_info;
