@@ -93,6 +93,8 @@ backend_destroy (struct backend *backend)
 
   backend->device_desc.id = -1;
   backend->device_desc.filesystems = 0;
+  backend->upgrade_os = NULL;
+  backend->get_storage_stats = NULL;
 
   if (backend->inputp)
     {
