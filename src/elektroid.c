@@ -211,6 +211,7 @@ static GtkWidget *remote_play_menuitem;
 static GtkWidget *remote_options_separator;
 static GtkWidget *remote_open_menuitem;
 static GtkWidget *remote_show_menuitem;
+static GtkWidget *remote_actions_separator;
 static GtkWidget *remote_rename_menuitem;
 static GtkWidget *remote_delete_menuitem;
 static GtkWidget *play_button;
@@ -1181,9 +1182,8 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 
       if (result == GTK_RESPONSE_ACCEPT)
 	{
-	  new_path =
-	    chain_path (browser->dir, gtk_entry_get_text (name_dialog_entry));
-
+	  new_path = chain_path (browser->dir,
+                                 gtk_entry_get_text (name_dialog_entry));
 	  err = browser->fs_ops->rename (&backend, old_path, new_path);
 	  if (err)
 	    {
@@ -1194,7 +1194,6 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	    {
 	      elektroid_load_dir_if_midi (browser);
 	    }
-
 	  free (new_path);
 	}
     }
@@ -1587,8 +1586,8 @@ elektroid_remote_check_selection (gpointer data)
   gint count = browser_get_selected_items_count (&remote_browser);
   gboolean dl_impl = remote_browser.fs_ops
     && remote_browser.fs_ops->download ? TRUE : FALSE;
-  gboolean move_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->move ? TRUE : FALSE;
+  gboolean ren_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->rename ? TRUE : FALSE;
   gboolean del_impl = remote_browser.fs_ops
     && remote_browser.fs_ops->delete ? TRUE : FALSE;
 
@@ -1598,7 +1597,7 @@ elektroid_remote_check_selection (gpointer data)
     }
 
   gtk_widget_set_sensitive (remote_show_menuitem, count <= 1);
-  gtk_widget_set_sensitive (remote_rename_menuitem, count == 1 && move_impl);
+  gtk_widget_set_sensitive (remote_rename_menuitem, count == 1 && ren_impl);
   gtk_widget_set_sensitive (remote_delete_menuitem, count > 0 && del_impl);
   gtk_widget_set_sensitive (download_menuitem, count > 0 && dl_impl);
 
@@ -2781,6 +2780,10 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			  backend.type == BE_TYPE_SYSTEM);
   gtk_widget_set_visible (remote_show_menuitem,
 			  backend.type == BE_TYPE_SYSTEM);
+  gtk_widget_set_visible (remote_actions_separator,
+			  backend.type == BE_TYPE_SYSTEM
+			  || remote_browser.fs_ops->rename != NULL
+			  || remote_browser.fs_ops->delete != NULL);
   gtk_widget_set_visible (remote_rename_menuitem,
 			  remote_browser.fs_ops->rename != NULL);
   gtk_widget_set_visible (remote_delete_menuitem,
@@ -2967,9 +2970,8 @@ elektroid_dnd_received_local (const gchar * dir, const gchar * name,
   if (strcmp (dir, local_browser.dir))
     {
       dst_path = chain_path (local_browser.dir, name);
-      res =
-	local_browser.fs_ops->move (local_browser.backend, filename,
-				    dst_path);
+      res = local_browser.fs_ops->move (local_browser.backend, filename,
+					dst_path);
       if (res)
 	{
 	  show_error_msg (_
@@ -3001,9 +3003,8 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
 						remote_browser.fs_ops,
 						remote_browser.dir, name,
 						next_idx);
-      res =
-	remote_browser.fs_ops->move (remote_browser.backend, filename,
-				     dst_path);
+      res = remote_browser.fs_ops->move (remote_browser.backend, filename,
+					 dst_path);
       if (res)
 	{
 	  show_error_msg (_
@@ -3568,6 +3569,8 @@ elektroid_run (int argc, char *argv[])
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_open_menuitem"));
   remote_show_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_show_menuitem"));
+  remote_actions_separator =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_actions_separator"));
   remote_rename_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_rename_menuitem"));
   remote_delete_menuitem =
