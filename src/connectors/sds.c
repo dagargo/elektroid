@@ -1139,7 +1139,18 @@ sds_handshake (struct backend *backend)
   backend->fs_ops = FS_SDS_ALL_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
   backend->data = sds_data;
-  snprintf (backend->device_name, LABEL_MAX, _("generic SDS sampler"));
+
+  if (strlen (backend->device_name))
+    {
+      gchar *device_name = strdup (backend->device_name);
+      snprintf (backend->device_name, LABEL_MAX, "%s %s", _("SDS sampler"),
+		device_name);
+      g_free (device_name);
+    }
+  else
+    {
+      snprintf (backend->device_name, LABEL_MAX, "%s", _("SDS sampler"));
+    }
 
   return 0;
 }

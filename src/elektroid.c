@@ -3201,7 +3201,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 			       widget);
 
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Preparing Tasks"));
-  gtk_label_set_text (GTK_LABEL (progress_label), _("Reading..."));
+  gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
   gtk_dialog_run (GTK_DIALOG (progress_dialog));
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
 

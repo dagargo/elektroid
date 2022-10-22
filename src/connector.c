@@ -34,9 +34,16 @@ default_handshake (struct backend *backend)
   backend->device_desc.filesystems = 0;
   backend->fs_ops = NULL;
   backend->destroy_data = backend_destroy_data;
-  if (!strlen (backend->device_name))
+  if (strlen (backend->device_name))
     {
-      snprintf (backend->device_name, LABEL_MAX, _("generic MIDI device"));
+      gchar *device_name = strdup (backend->device_name);
+      snprintf (backend->device_name, LABEL_MAX, "%s %s", _("MIDI device"),
+		device_name);
+      g_free (device_name);
+    }
+  else
+    {
+      snprintf (backend->device_name, LABEL_MAX, "%s", _("MIDI device"));
     }
   return 0;
 }

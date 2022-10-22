@@ -482,6 +482,6 @@ system_handshake (struct backend *backend)
     FS_SAMPLES_LOCAL_441_16_STEREO | FS_SAMPLES_LOCAL_441_16_MONO;
   backend->fs_ops = FS_SYSTEM_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
-  snprintf (backend->device_name, LABEL_MAX, _("system"));
+  snprintf (backend->device_name, LABEL_MAX, "%s", _("System"));
   return 0;
 }
