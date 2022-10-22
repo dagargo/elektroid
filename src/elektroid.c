@@ -3200,8 +3200,20 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   sysex_thread = g_thread_new ("sysex_thread", elektroid_dnd_received_bg,
 			       widget);
 
-  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Preparing Tasks"));
-  gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
+  if ((widget == GTK_WIDGET (local_browser.view)
+       && !strcmp (dnd_type_name, TEXT_URI_LIST_STD)) ||
+      (widget == GTK_WIDGET (remote_browser.view)
+       && !strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID)))
+    {
+      gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Moving Files"));
+      gtk_label_set_text (GTK_LABEL (progress_label), _("Moving..."));
+    }
+  else
+    {
+      gtk_window_set_title (GTK_WINDOW (progress_dialog),
+			    _("Preparing Tasks"));
+      gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
+    }
   gtk_dialog_run (GTK_DIALOG (progress_dialog));
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
