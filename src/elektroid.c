@@ -232,6 +232,7 @@ static GtkWidget *fs_combo;
 static GtkTreeViewColumn *remote_tree_view_index_column;
 static GtkWidget *sample_info_box;
 static GtkWidget *sample_length;
+static GtkWidget *sample_duration;
 static GtkWidget *sample_channels;
 static GtkWidget *sample_samplerate;
 static GtkWidget *sample_bitdepth;
@@ -999,27 +1000,18 @@ elektroid_set_sample_on_load (gboolean sensitive)
 
       gtk_widget_set_visible (sample_info_box, TRUE);
 
+      snprintf (label, LABEL_MAX, "%d", sample_info->frames);
+      gtk_label_set_text (GTK_LABEL (sample_length), label);
+
       if (time >= 60)
 	{
-	  snprintf (label, LABEL_MAX, "%d; %.0f %s", sample_info->frames,
-		    time / 60, _("min."));
-	}
-      else if (time >= 10)
-	{
-	  snprintf (label, LABEL_MAX, "%d; %.0f s", sample_info->frames,
-		    time);
-	}
-      else if (time >= 1)
-	{
-	  snprintf (label, LABEL_MAX, "%d; %.1f s", sample_info->frames,
-		    time);
+	  snprintf (label, LABEL_MAX, "%.2f %s", time / 60.0, _("minutes"));
 	}
       else
 	{
-	  snprintf (label, LABEL_MAX, "%d; %.2f s", sample_info->frames,
-		    time);
+	  snprintf (label, LABEL_MAX, "%.2f s", time);
 	}
-      gtk_label_set_text (GTK_LABEL (sample_length), label);
+      gtk_label_set_text (GTK_LABEL (sample_duration), label);
 
       snprintf (label, LABEL_MAX, "%.2f kHz",
 		sample_info->samplerate / 1000.f);
@@ -3810,6 +3802,8 @@ elektroid_run (int argc, char *argv[])
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_info_box"));
   sample_length =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_length"));
+  sample_duration =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_duration"));
   sample_channels =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_channels"));
   sample_samplerate =
