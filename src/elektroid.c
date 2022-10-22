@@ -2970,9 +2970,8 @@ elektroid_dnd_received_local (const gchar * dir, const gchar * name,
 					dst_path);
       if (res)
 	{
-	  show_error_msg (_
-			  ("Error while moving from “%s” to “%s”: %s."),
-			  filename, dst_path, g_strerror (-res));
+	  error_print ("Error while moving from %s to %s: %s.",
+		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
     }
@@ -3003,12 +3002,11 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
 					 dst_path);
       if (res)
 	{
-	  show_error_msg (_
-			  ("Error while moving from “%s” to “%s”: %s."),
-			  filename, dst_path, g_strerror (-res));
+	  error_print ("Error while moving from “%s” to “%s”: %s.",
+		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
-      elektroid_load_dir_if_midi (&remote_browser);
+      g_idle_add (elektroid_load_dir_if_midi, &remote_browser);
     }
   else
     {
