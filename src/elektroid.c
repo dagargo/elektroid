@@ -830,7 +830,7 @@ elektroid_rx_sysex (GtkWidget * object, gpointer data)
       if (*res)
 	{
 	  show_error_msg (_("Error while saving “%s”: %s."),
-			  filename, g_strerror (*res));
+			  filename, g_strerror (-*res));
 	}
       g_byte_array_free (sysex_transfer.raw, TRUE);
       g_free (res);
@@ -851,7 +851,7 @@ elektroid_send_sysex_file (const gchar * filename, t_sysex_transfer f)
   if (err && err != -ECANCELED)
     {
       show_error_msg (_("Error while loading “%s”: %s."),
-		      filename, g_strerror (err));
+		      filename, g_strerror (-err));
     }
   return err;
 }
@@ -1086,7 +1086,7 @@ elektroid_delete_file (GtkTreeModel * model, GtkTreePath * tree_path,
   if (err)
     {
       show_error_msg (_("Error while deleting “%s”: %s."),
-		      path, g_strerror (err));
+		      path, g_strerror (-err));
     }
   else
     {
@@ -1183,12 +1183,12 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
       if (result == GTK_RESPONSE_ACCEPT)
 	{
 	  new_path = chain_path (browser->dir,
-                                 gtk_entry_get_text (name_dialog_entry));
+				 gtk_entry_get_text (name_dialog_entry));
 	  err = browser->fs_ops->rename (&backend, old_path, new_path);
 	  if (err)
 	    {
 	      show_error_msg (_("Error while renaming to “%s”: %s."),
-			      new_path, g_strerror (err));
+			      new_path, g_strerror (-err));
 	    }
 	  else
 	    {
@@ -1884,7 +1884,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 	  if (err)
 	    {
 	      show_error_msg (_("Error while creating dir “%s”: %s."),
-			      pathname, g_strerror (err));
+			      pathname, g_strerror (-err));
 	    }
 	  else
 	    {
@@ -2945,7 +2945,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
   if (sysex_transfer.err && sysex_transfer.err != -ECANCELED)
     {
       error_print ("Error while connecting: %s\n",
-		   g_strerror (sysex_transfer.err));
+		   g_strerror (-sysex_transfer.err));
       show_error_msg (_("Device not recognized"));
     }
 
@@ -2976,7 +2976,7 @@ elektroid_dnd_received_local (const gchar * dir, const gchar * name,
 	{
 	  show_error_msg (_
 			  ("Error while moving from “%s” to “%s”: %s."),
-			  filename, dst_path, g_strerror (res));
+			  filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
     }
@@ -3009,7 +3009,7 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
 	{
 	  show_error_msg (_
 			  ("Error while moving from “%s” to “%s”: %s."),
-			  filename, dst_path, g_strerror (res));
+			  filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
       elektroid_load_dir_if_midi (&remote_browser);
