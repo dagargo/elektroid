@@ -106,6 +106,8 @@ void backend_destroy (struct backend *);
 
 ssize_t backend_tx_raw (struct backend *, const guint8 *, guint);
 
+gint backend_tx_sysex_no_update (struct backend *, struct sysex_transfer *);
+
 gint backend_tx_sysex (struct backend *, struct sysex_transfer *);
 
 gint backend_rx_sysex (struct backend *, struct sysex_transfer *);

@@ -677,6 +677,8 @@ elektroid_update_sysex_progress (gpointer data)
   gboolean active;
   enum sysex_transfer_status status;
 
+  gtk_progress_bar_pulse (GTK_PROGRESS_BAR (progress_bar));
+
   g_mutex_lock (&sysex_transfer.mutex);
   status = sysex_transfer.status;
   g_mutex_unlock (&sysex_transfer.mutex);
@@ -688,11 +690,9 @@ elektroid_update_sysex_progress (gpointer data)
       break;
     case SENDING:
       text = _("Sending...");
-      gtk_progress_bar_pulse (GTK_PROGRESS_BAR (progress_bar));
       break;
     case RECEIVING:
       text = _("Receiving...");
-      gtk_progress_bar_pulse (GTK_PROGRESS_BAR (progress_bar));
       break;
     default:
       text = "";
@@ -865,7 +865,8 @@ elektroid_tx_sysex_files_thread (gpointer data)
   GSList *filenames = data;
   gint *err = malloc (sizeof (gint));
   sysex_transfer.raw = g_byte_array_new ();
-  sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
+  sysex_transfer.active = TRUE;
+  sysex_transfer.status = SENDING;
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
@@ -873,7 +874,8 @@ elektroid_tx_sysex_files_thread (gpointer data)
   while (*err != -ECANCELED && filenames)
     {
       g_byte_array_set_size (sysex_transfer.raw, 0);
-      *err = elektroid_send_sysex_file (filenames->data, backend_tx_sysex);
+      *err = elektroid_send_sysex_file (filenames->data,
+					backend_tx_sysex_no_update);
       filenames = filenames->next;
       usleep (BE_REST_TIME_US);
     }
@@ -930,7 +932,7 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
       gtk_widget_hide (GTK_WIDGET (dialog));
       filenames = gtk_file_chooser_get_filenames (chooser);
       sysex_thread = g_thread_new ("sysex_thread", func, filenames);
-      gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Send SysEx"));
+      gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Sending SysEx"));
       gtk_dialog_run (GTK_DIALOG (progress_dialog));
 
       //If the progress_dialog is closed, we end the transfer.

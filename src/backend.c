@@ -329,17 +329,22 @@ backend_tx_raw (struct backend *backend, const guint8 * data, guint len)
   return tx_len;
 }
 
-gint
-backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
+static gint
+backend_tx_sysex_with_state_update (struct backend *backend,
+				    struct sysex_transfer *transfer,
+				    gboolean update)
 {
   ssize_t tx_len;
   guint total;
   guint len;
   guchar *b;
 
-  transfer->err = 0;
-  transfer->active = TRUE;
-  transfer->status = SENDING;
+  if (update)
+    {
+      transfer->err = 0;
+      transfer->active = TRUE;
+      transfer->status = SENDING;
+    }
 
   b = transfer->raw->data;
   total = 0;
@@ -375,9 +380,25 @@ backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
       free (text);
     }
 
-  transfer->active = FALSE;
-  transfer->status = FINISHED;
+  if (update)
+    {
+      transfer->active = FALSE;
+      transfer->status = FINISHED;
+    }
   return transfer->err;
+}
+
+gint
+backend_tx_sysex_no_update (struct backend *backend,
+			    struct sysex_transfer *transfer)
+{
+  return backend_tx_sysex_with_state_update (backend, transfer, FALSE);
+}
+
+gint
+backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
+{
+  return backend_tx_sysex_with_state_update (backend, transfer, TRUE);
 }
 
 //Access to this function must be synchronized.
