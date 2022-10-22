@@ -687,9 +687,9 @@ sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
   GByteArray *tx_msg, *rx_msg;
   guint id;
   gint err;
-  gchar *name;
+  gchar *name, *dstcpy;
   debug_print (1, "Sending rename request...\n");
-  err = common_slot_get_id_name_from_path (dst, &id, &name);
+  err = common_slot_get_id_name_from_path (src, &id, NULL);
   if (err)
     {
       return err;
@@ -699,20 +699,26 @@ sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
   backend_rx_drain (backend);
   g_mutex_unlock (&backend->mutex);
 
+  dstcpy = strdup (dst);
+  name = basename (dst);
   tx_msg = sds_get_rename_sample_msg (id, name);
+  err = -ENOSYS;
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
   if (rx_msg)
     {
+      err = 0;
       free_msg (rx_msg);
     }
 
-  return 0;
+  g_free (dstcpy);
+  return err;
 }
 
 static gint
 sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	    struct job_control *control, guint bits)
 {
+  gchar *name;
   GByteArray *tx_msg;
   gint16 *frame, *f;
   gboolean active, open_loop = FALSE;
@@ -726,7 +732,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
-  if (common_slot_get_id_name_from_path (path, &id, NULL))
+  if (common_slot_get_id_name_from_path (path, &id, &name))
     {
       return -EBADSLT;
     }
@@ -763,7 +769,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
     }
   else if (err)
     {
-      return err;
+      goto cleanup;
     }
 
   debug_print (1, "Sending dump data...\n");
@@ -849,7 +855,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 
   if (active && sds_data->name_extension)
     {
-      sds_rename (backend, path, path);
+      sds_rename (backend, path, name);
     }
 
 end:
@@ -864,6 +870,8 @@ end:
       err = -ECANCELED;
     }
 
+cleanup:
+  g_free (name);
   return err;
 }
 
