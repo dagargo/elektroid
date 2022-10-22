@@ -115,6 +115,7 @@ static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (struct job_control *);
 static void elektroid_cancel_all_tasks (GtkWidget *, gpointer);
+static void elektroid_reset_sample (struct browser *);
 
 static const struct option ELEKTROID_OPTIONS[] = {
   {"local-directory", 1, NULL, 'l'},
@@ -623,6 +624,7 @@ elektroid_refresh_devices (GtkWidget * object, gpointer data)
     {
       elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (&backend);
+      elektroid_reset_sample (&remote_browser);
       remote_browser.fs_ops = NULL;
     }
   elektroid_check_backend ();	//This triggers the actual devices refresh if there is no backend
