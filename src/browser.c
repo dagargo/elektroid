@@ -130,15 +130,19 @@ browser_go_up (GtkWidget * object, gpointer data)
   char *new_path;
   struct browser *browser = data;
 
-  if (strcmp (browser->dir, "/") != 0)
+  g_mutex_lock (&browser->mutex);
+  if (!browser->active)
     {
-      dup = strdup (browser->dir);
-      new_path = dirname (dup);
-      strcpy (browser->dir, new_path);
-      free (dup);
+      if (strcmp (browser->dir, "/"))
+	{
+	  dup = strdup (browser->dir);
+	  new_path = dirname (dup);
+	  strcpy (browser->dir, new_path);
+	  free (dup);
+	  g_idle_add (browser_load_dir, browser);
+	}
     }
-
-  g_idle_add (browser_load_dir, browser);
+  g_mutex_unlock (&browser->mutex);
 }
 
 void
@@ -262,8 +266,21 @@ static gboolean
 browser_load_dir_runner_hide_spinner (gpointer data)
 {
   struct browser *browser = data;
+  g_slist_foreach (browser->sensitive_widgets, browser_widget_set_sensitive,
+		   NULL);
   gtk_spinner_stop (GTK_SPINNER (browser->spinner));
   gtk_stack_set_visible_child_name (GTK_STACK (browser->stack), "list");
+  return FALSE;
+}
+
+static gboolean
+browser_load_dir_runner_show_spinner (gpointer data)
+{
+  struct browser *browser = data;
+  g_slist_foreach (browser->sensitive_widgets, browser_widget_set_insensitive,
+		   NULL);
+  gtk_stack_set_visible_child_name (GTK_STACK (browser->stack), "spinner");
+  gtk_spinner_start (GTK_SPINNER (browser->spinner));
   return FALSE;
 }
 
@@ -276,16 +293,20 @@ browser_load_dir_runner_update_ui (gpointer data)
 
   notifier_set_active (browser->notifier, active);
 
-  while (!next_item_iterator (&browser->iter))
+  if (browser->iter)
     {
-      if (browser_file_match_extensions (browser, &browser->iter))
+      while (!next_item_iterator (browser->iter))
 	{
-	  browser_add_dentry_item (browser, &browser->iter);
+	  if (browser_file_match_extensions (browser, browser->iter))
+	    {
+	      browser_add_dentry_item (browser, browser->iter);
+	    }
 	}
+      free_item_iterator (browser->iter);
+      g_free (browser->iter);
+      browser->iter = NULL;
     }
-  free_item_iterator (&browser->iter);
-  g_slist_foreach (browser->sensitive_widgets, browser_widget_set_sensitive,
-		   NULL);
+
   g_thread_join (browser->thread);
   browser->thread = NULL;
 
@@ -305,18 +326,21 @@ browser_load_dir_runner_update_ui (gpointer data)
 static gpointer
 browser_load_dir_runner (gpointer data)
 {
+  gint err;
   struct browser *browser = data;
-  gint err = browser->fs_ops->readdir (browser->backend, &browser->iter,
-				       browser->dir);
+
+  g_idle_add (browser_load_dir_runner_show_spinner, browser);
+  browser->iter = g_malloc (sizeof (struct item_iterator));
+  err = browser->fs_ops->readdir (browser->backend, browser->iter,
+				  browser->dir);
   g_idle_add (browser_load_dir_runner_hide_spinner, browser);
   if (err)
     {
       error_print ("Error while opening '%s' dir\n", browser->dir);
+      g_free (browser->iter);
+      browser->iter = NULL;
     }
-  else
-    {
-      g_idle_add (browser_load_dir_runner_update_ui, browser);
-    }
+  g_idle_add (browser_load_dir_runner_update_ui, browser);
   return NULL;
 }
 
@@ -345,13 +369,8 @@ browser_load_dir (gpointer data)
       return FALSE;
     }
 
-  g_slist_foreach (browser->sensitive_widgets, browser_widget_set_insensitive,
-		   NULL);
-  gtk_stack_set_visible_child_name (GTK_STACK (browser->stack), "spinner");
-  gtk_spinner_start (GTK_SPINNER (browser->spinner));
   browser->thread = g_thread_new ("browser_thread", browser_load_dir_runner,
 				  browser);
-
   return FALSE;
 }
 

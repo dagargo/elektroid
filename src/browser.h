@@ -68,7 +68,7 @@ struct browser
   GThread *thread;
   GMutex mutex;
   gboolean active;
-  struct item_iterator iter;
+  struct item_iterator *iter;
 };
 
 gint browser_sort_by_name (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
