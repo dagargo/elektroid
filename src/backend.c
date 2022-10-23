@@ -244,7 +244,7 @@ backend_init (struct backend *backend, const gchar * id)
        snd_rawmidi_open (&backend->inputp, &backend->outputp,
 			 id, SND_RAWMIDI_NONBLOCK | SND_RAWMIDI_SYNC)) < 0)
     {
-      error_print ("Error while opening MIDI port: %s\n", g_strerror (err));
+      error_print ("Error while opening MIDI port: %s\n", g_strerror (-err));
       goto cleanup;
     }
 
