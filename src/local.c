@@ -41,7 +41,28 @@ static gint
 local_download (struct backend *backend, const gchar * path,
 		GByteArray * output, struct job_control *control)
 {
-  return load_file (path, output, control);
+  gint err;
+  gboolean active;
+
+  control->parts = 1;
+  control->part = 0;
+  set_job_control_progress (control, 0.0);
+
+  err = load_file (path, output, control);
+
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
+  if (active)
+    {
+      set_job_control_progress (control, 1.0);
+    }
+  else
+    {
+      err = -ECANCELED;
+    }
+
+  return err;
 }
 
 static gchar *
