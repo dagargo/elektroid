@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.4\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2022-10-23 01:09+0200\n"
+"POT-Creation-Date: 2022-10-23 15:14+0200\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: Catalan\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "MIDI device"
 msgstr "Dispositiu MIDI"
 
-#: src/elektroid.c:520 src/elektroid.c:3803
+#: src/elektroid.c:520 src/elektroid.c:3814
 msgid "Not connected"
 msgstr "No connectat"
 
@@ -29,7 +29,7 @@ msgstr "No connectat"
 msgid "Cancelling..."
 msgstr "Cancel·lant..."
 
-#: src/elektroid.c:689 src/elektroid.c:3215
+#: src/elektroid.c:689 src/elektroid.c:3226
 msgid "Waiting..."
 msgstr "Esperant..."
 
@@ -49,7 +49,7 @@ msgstr "Rep SysEx"
 msgid "Save SysEx"
 msgstr "Alça SysEx"
 
-#: src/elektroid.c:790 src/elektroid.c:917 src/elektroid.c:1116
+#: src/elektroid.c:790 src/elektroid.c:920 src/elektroid.c:1119
 #: res/gui.glade:1617 res/gui.glade:1718
 msgid "_Cancel"
 msgstr "_Cancel·la"
@@ -62,7 +62,7 @@ msgstr "_Alça"
 msgid "Received SysEx"
 msgstr "SysEx rebut"
 
-#: src/elektroid.c:801 src/elektroid.c:923
+#: src/elektroid.c:801 src/elektroid.c:926
 msgid "SysEx Files"
 msgstr "Fitxers SysEx"
 
@@ -76,106 +76,107 @@ msgstr "Error al guardar «%s»: %s."
 msgid "Error while loading “%s”: %s."
 msgstr "Error al carregar «%s»: %s."
 
-#: src/elektroid.c:914
+#: src/elektroid.c:917
 msgid "Open SysEx"
 msgstr "Obri SysEx"
 
-#: src/elektroid.c:919
+#: src/elektroid.c:922
 msgid "_Open"
 msgstr "_Obri"
 
-#: src/elektroid.c:935
+#: src/elektroid.c:938
 msgid "Sending SysEx"
 msgstr "Enviant SysEx"
 
-#: src/elektroid.c:1010
+#: src/elektroid.c:1013
 msgid "minutes"
 msgstr "minuts"
 
-#: src/elektroid.c:1084
+#: src/elektroid.c:1087
 #, c-format
 msgid "Error while deleting “%s”: %s."
 msgstr "Error al eliminar «%s»: %s."
 
-#: src/elektroid.c:1115
+#: src/elektroid.c:1118
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Està segur de que vol eliminar els elements seleccionats?"
 
-#: src/elektroid.c:1117
+#: src/elektroid.c:1120
 msgid "_Delete"
 msgstr "_Elimina"
 
-#: src/elektroid.c:1170 res/gui.glade:121 res/gui.glade:210
+#: src/elektroid.c:1173 res/gui.glade:121 res/gui.glade:210
 msgid "Rename"
 msgstr "Canvia el nom"
 
-#: src/elektroid.c:1186
+#: src/elektroid.c:1189
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Error al canviar el nom a «%s»: %s."
 
-#: src/elektroid.c:1864 res/gui.glade:572 res/gui.glade:788
+#: src/elektroid.c:1867 res/gui.glade:572 res/gui.glade:788
 msgid "Add Directory"
 msgstr "Afig directori"
 
-#: src/elektroid.c:1882
+#: src/elektroid.c:1885
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Error al crear el directori «%s»: %s."
 
-#: src/elektroid.c:1954
+#: src/elektroid.c:1957
 msgid "Queued"
 msgstr "A la cua"
 
-#: src/elektroid.c:1956
+#: src/elektroid.c:1959
 msgid "Running"
 msgstr "Executant"
 
-#: src/elektroid.c:1958
+#: src/elektroid.c:1961
 msgid "Completed"
 msgstr "Completada"
 
-#: src/elektroid.c:1960
+#: src/elektroid.c:1963
 msgid "Completed with errors"
 msgstr "Completada amb errors"
 
-#: src/elektroid.c:1962
+#: src/elektroid.c:1965
 msgid "Canceled"
 msgstr "Cancel·lada"
 
-#: src/elektroid.c:1964 src/elektroid.c:1978
+#: src/elektroid.c:1967 src/elektroid.c:1981
 msgid "Undefined"
 msgstr "Indefinit"
 
-#: src/elektroid.c:1974
+#: src/elektroid.c:1977
 msgid "Upload"
 msgstr "Càrrega"
 
-#: src/elektroid.c:1976
+#: src/elektroid.c:1979
 msgid "Download"
 msgstr "Descàrrega"
 
-#: src/elektroid.c:2934
+#: src/elektroid.c:2941
 msgid "Connecting to Device"
 msgstr "Connectant amb el dispositiu"
 
-#: src/elektroid.c:2935
+#: src/elektroid.c:2942
 msgid "Connecting..."
 msgstr "Conectant..."
 
-#: src/elektroid.c:2945
-msgid "Device not recognized"
-msgstr "Dispositiu no reconegut"
+#: src/elektroid.c:2952
+#, c-format
+msgid "Device “%s” not recognized: %s"
+msgstr "Dispositiu «%s» no reconegut: %s"
 
-#: src/elektroid.c:3208
+#: src/elektroid.c:3219
 msgid "Moving Files"
 msgstr "Movent fitxers"
 
-#: src/elektroid.c:3209
+#: src/elektroid.c:3220
 msgid "Moving..."
 msgstr "Movent..."
 
-#: src/elektroid.c:3214
+#: src/elektroid.c:3225
 msgid "Preparing Tasks"
 msgstr "Preparant tasques..."
 

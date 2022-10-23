@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.4\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2022-10-23 01:09+0200\n"
+"POT-Creation-Date: 2022-10-23 15:14+0200\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: English\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "MIDI device"
 msgstr "MIDI device"
 
-#: src/elektroid.c:520 src/elektroid.c:3803
+#: src/elektroid.c:520 src/elektroid.c:3814
 msgid "Not connected"
 msgstr "Not connected"
 
@@ -29,7 +29,7 @@ msgstr "Not connected"
 msgid "Cancelling..."
 msgstr "Cancelling..."
 
-#: src/elektroid.c:689 src/elektroid.c:3215
+#: src/elektroid.c:689 src/elektroid.c:3226
 msgid "Waiting..."
 msgstr "Waiting..."
 
@@ -49,7 +49,7 @@ msgstr "Receive SysEx"
 msgid "Save SysEx"
 msgstr "Save SysEx"
 
-#: src/elektroid.c:790 src/elektroid.c:917 src/elektroid.c:1116
+#: src/elektroid.c:790 src/elektroid.c:920 src/elektroid.c:1119
 #: res/gui.glade:1617 res/gui.glade:1718
 msgid "_Cancel"
 msgstr "_Cancel"
@@ -62,7 +62,7 @@ msgstr "_Save"
 msgid "Received SysEx"
 msgstr "Received SysEx"
 
-#: src/elektroid.c:801 src/elektroid.c:923
+#: src/elektroid.c:801 src/elektroid.c:926
 msgid "SysEx Files"
 msgstr "SysEx Files"
 
@@ -76,106 +76,107 @@ msgstr "Error while saving “%s”: %s."
 msgid "Error while loading “%s”: %s."
 msgstr "Error while loading “%s”: %s."
 
-#: src/elektroid.c:914
+#: src/elektroid.c:917
 msgid "Open SysEx"
 msgstr "Open SysEx"
 
-#: src/elektroid.c:919
+#: src/elektroid.c:922
 msgid "_Open"
 msgstr "_Open"
 
-#: src/elektroid.c:935
+#: src/elektroid.c:938
 msgid "Sending SysEx"
 msgstr "Sending SysEx"
 
-#: src/elektroid.c:1010
+#: src/elektroid.c:1013
 msgid "minutes"
 msgstr "minutes"
 
-#: src/elektroid.c:1084
+#: src/elektroid.c:1087
 #, c-format
 msgid "Error while deleting “%s”: %s."
 msgstr "Error while deleting “%s”: %s."
 
-#: src/elektroid.c:1115
+#: src/elektroid.c:1118
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Are you sure you want to delete the selected items?"
 
-#: src/elektroid.c:1117
+#: src/elektroid.c:1120
 msgid "_Delete"
 msgstr "_Delete"
 
-#: src/elektroid.c:1170 res/gui.glade:121 res/gui.glade:210
+#: src/elektroid.c:1173 res/gui.glade:121 res/gui.glade:210
 msgid "Rename"
 msgstr "Rename"
 
-#: src/elektroid.c:1186
+#: src/elektroid.c:1189
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Error while renaming to “%s”: %s."
 
-#: src/elektroid.c:1864 res/gui.glade:572 res/gui.glade:788
+#: src/elektroid.c:1867 res/gui.glade:572 res/gui.glade:788
 msgid "Add Directory"
 msgstr "Add Directory"
 
-#: src/elektroid.c:1882
+#: src/elektroid.c:1885
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Error while creating dir “%s”: %s."
 
-#: src/elektroid.c:1954
+#: src/elektroid.c:1957
 msgid "Queued"
 msgstr "Queued"
 
-#: src/elektroid.c:1956
+#: src/elektroid.c:1959
 msgid "Running"
 msgstr "Running"
 
-#: src/elektroid.c:1958
+#: src/elektroid.c:1961
 msgid "Completed"
 msgstr "Completed"
 
-#: src/elektroid.c:1960
+#: src/elektroid.c:1963
 msgid "Completed with errors"
 msgstr "Completed with errors"
 
-#: src/elektroid.c:1962
+#: src/elektroid.c:1965
 msgid "Canceled"
 msgstr "Canceled"
 
-#: src/elektroid.c:1964 src/elektroid.c:1978
+#: src/elektroid.c:1967 src/elektroid.c:1981
 msgid "Undefined"
 msgstr "Undefined"
 
-#: src/elektroid.c:1974
+#: src/elektroid.c:1977
 msgid "Upload"
 msgstr "Upload"
 
-#: src/elektroid.c:1976
+#: src/elektroid.c:1979
 msgid "Download"
 msgstr "Download"
 
-#: src/elektroid.c:2934
+#: src/elektroid.c:2941
 msgid "Connecting to Device"
 msgstr "Connecting to Device"
 
-#: src/elektroid.c:2935
+#: src/elektroid.c:2942
 msgid "Connecting..."
 msgstr "Connecting..."
 
-#: src/elektroid.c:2945
-msgid "Device not recognized"
-msgstr "Device not recognized"
+#: src/elektroid.c:2952
+#, c-format
+msgid "Device “%s” not recognized: %s"
+msgstr "Device “%s” not recognized: %s"
 
-#: src/elektroid.c:3208
+#: src/elektroid.c:3219
 msgid "Moving Files"
 msgstr "Moving Files"
 
-#: src/elektroid.c:3209
+#: src/elektroid.c:3220
 msgid "Moving..."
 msgstr "Moving..."
 
-#: src/elektroid.c:3214
+#: src/elektroid.c:3225
 msgid "Preparing Tasks"
 msgstr "Preparing Tasks"
 

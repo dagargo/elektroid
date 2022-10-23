@@ -2886,11 +2886,14 @@ elektroid_set_device_thread (gpointer data)
   gchar *id = data;
   g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
   sysex_transfer.err = connector_init (&backend, id, NULL, &sysex_transfer);
-  g_free (id);
 
-  gboolean ok = backend_check (&backend);
+  // TODO: Until a better solution is found, this sleep is necessary.
+  // The reason is that this thread might end before the dialog is showed, which leads to erratic dialog behaviour.
+  // This wait has impact.
+  sleep (1);
   gtk_dialog_response (GTK_DIALOG (progress_dialog),
-		       ok ? GTK_RESPONSE_ACCEPT : GTK_RESPONSE_CANCEL);
+		       backend_check (&backend) ? GTK_RESPONSE_ACCEPT
+		       : GTK_RESPONSE_CANCEL);
   return NULL;
 }
 
@@ -2898,15 +2901,14 @@ static void
 elektroid_set_device (GtkWidget * object, gpointer data)
 {
   GtkTreeIter iter;
-  gchar *id;
+  gchar *id, *name;
   gint dres;
 
   sysex_transfer.active = TRUE;
 
   elektroid_cancel_all_tasks_and_wait ();
 
-  if (gtk_combo_box_get_active_iter (GTK_COMBO_BOX (devices_combo), &iter) ==
-      FALSE)
+  if (!gtk_combo_box_get_active_iter (GTK_COMBO_BOX (devices_combo), &iter))
     {
       return;
     }
@@ -2917,7 +2919,8 @@ elektroid_set_device (GtkWidget * object, gpointer data)
     }
 
   gtk_tree_model_get (GTK_TREE_MODEL (devices_list_store), &iter,
-		      DEVICES_LIST_STORE_ID_FIELD, &id, -1);
+		      DEVICES_LIST_STORE_ID_FIELD, &id,
+		      DEVICES_LIST_STORE_NAME_FIELD, &name, -1);
 
   if (!strcmp (id, BE_SYSTEM_ID) && !backend_init (&backend, id)
       && !system_handshake (&backend))
@@ -2926,6 +2929,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
       elektroid_check_backend_bg (NULL);
       elektroid_fill_fs_combo_bg (NULL);
       g_free (id);
+      g_free (name);
       return;
     }
 
@@ -2945,8 +2949,12 @@ elektroid_set_device (GtkWidget * object, gpointer data)
     {
       error_print ("Error while connecting: %s\n",
 		   g_strerror (-sysex_transfer.err));
-      show_error_msg (_("Device not recognized"));
+      show_error_msg (_("Device “%s” not recognized: %s"), name,
+		      g_strerror (-sysex_transfer.err));
     }
+
+  g_free (id);
+  g_free (name);
 
   elektroid_check_backend_bg (NULL);
   if (dres == GTK_RESPONSE_ACCEPT)
@@ -3160,7 +3168,7 @@ end:
       elektroid_run_next_task (NULL);
     }
 
-  // Until a better solution is found, this sleep is necessary.
+  // TODO: Until a better solution is found, this sleep is necessary.
   // The reason is that this thread might end before the dialog is showed, which leads to erratic dialog behaviour.
   // As we start to run the next task before sleeping, this has no impact.
   sleep (1);
