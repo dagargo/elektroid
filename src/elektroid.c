@@ -877,9 +877,11 @@ elektroid_tx_sysex_files_thread (gpointer data)
       *err = elektroid_send_sysex_file (filenames->data,
 					backend_tx_sysex_no_update);
       filenames = filenames->next;
+      //The device may have sent some messages in response so we skip all these.
+      backend_rx_drain (&backend);
       usleep (BE_REST_TIME_US);
     }
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);	//Any response is OK.
 
   free_msg (sysex_transfer.raw);
   return err;
@@ -896,9 +898,10 @@ elektroid_tx_upgrade_os_thread (gpointer data)
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
   *err = elektroid_send_sysex_file (filenames->data, backend.upgrade_os);
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);	//Any response is OK.
 
   free_msg (sysex_transfer.raw);
+
   return err;
 }
 
