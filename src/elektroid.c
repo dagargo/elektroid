@@ -2749,9 +2749,9 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   GValue fsv = G_VALUE_INIT;
   gint fs;
 
-  *remote_browser.dir = 0;
   if (!gtk_combo_box_get_active_iter (GTK_COMBO_BOX (fs_combo), &iter))
     {
+      *remote_browser.dir = 0;
       remote_browser.fs_ops = NULL;
       browser_reset (&remote_browser);
       elektroid_set_local_file_extensions (0);
@@ -2767,8 +2767,11 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
   remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
 
-  strcpy (remote_browser.dir,
-	  backend.type == BE_TYPE_SYSTEM ? local_browser.dir : "/");
+  if (!*remote_browser.dir)
+    {
+      strcpy (remote_browser.dir,
+	      backend.type == BE_TYPE_SYSTEM ? local_browser.dir : "/");
+    }
 
   gtk_widget_set_visible (remote_play_separator,
 			  backend.type == BE_TYPE_SYSTEM);

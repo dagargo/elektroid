@@ -10,10 +10,11 @@ Supported devices:
 * Elektron Digitone and Digitone Keys
 * Elektron Syntakt
 * Elektron Analog Rytm MKI and MKII
-* Elektron Analog Four MKI and MKII
+* Elektron Analog Four MKI, MKII and Keys
 * All samplers implementing MIDI SDS
 * Casio CZ-101
 * Arturia MicroBrute
+* Eventide ModFactor, PitchFactor, TimeFactor, Space and H. This requires **no custom program MIDI mapping**.
 
 To use with Elektron devices, USB configuration must be set to `USB MIDI` or `USB AUDIO/MIDI` as it won't work in Overbridge mode.
 
