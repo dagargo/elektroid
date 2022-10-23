@@ -411,3 +411,43 @@ set_job_control_progress_no_sync (struct job_control *control, gdouble p)
       control->callback (control);
     }
 }
+
+gboolean
+file_matches_extensions (const gchar * name, gchar ** extensions)
+{
+  const gchar *extension;
+  gchar **e = extensions;
+
+  if (!e)
+    {
+      return TRUE;
+    }
+
+  extension = get_ext (name);
+  if (!extension)
+    {
+      return FALSE;
+    }
+
+  while (*e)
+    {
+      if (!strcasecmp (extension, *e))
+	{
+	  return TRUE;
+	}
+      e++;
+    }
+
+  return FALSE;
+}
+
+gboolean
+iter_matches_extensions (struct item_iterator *iter, gchar ** extensions)
+{
+  if (iter->item.type == ELEKTROID_DIR)
+    {
+      return TRUE;
+    }
+
+  return file_matches_extensions (iter->item.name, extensions);
+}

@@ -253,4 +253,8 @@ void set_job_control_progress (struct job_control *, gdouble);
 
 void set_job_control_progress_no_sync (struct job_control *, gdouble);
 
+gboolean file_matches_extensions (const gchar *, gchar **);
+
+gboolean iter_matches_extensions (struct item_iterator *, gchar **);
+
 #endif

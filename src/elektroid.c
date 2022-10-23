@@ -2219,13 +2219,23 @@ elektroid_run_next_task (gpointer data)
 static gpointer
 elektroid_upload_task (gpointer data)
 {
-  gchar *dst_path;
-  gchar *dst_dir;
   gint res;
   GByteArray *array;
+  gchar *dst_path, *dst_dir;
 
   debug_print (1, "Local path: %s\n", transfer.src);
   debug_print (1, "Remote path: %s\n", transfer.dst);
+
+  dst_path = strdup (transfer.dst);
+  dst_dir = dirname (dst_path);
+
+  if (remote_browser.fs_ops->mkdir
+      && remote_browser.fs_ops->mkdir (remote_browser.backend, dst_dir))
+    {
+      error_print ("Error while creating remote %s dir\n", dst_dir);
+      transfer.status = COMPLETED_ERROR;
+      goto end_nodir;
+    }
 
   array = g_byte_array_new ();
 
@@ -2267,20 +2277,18 @@ elektroid_upload_task (gpointer data)
 
   if (!res && transfer.fs_ops == remote_browser.fs_ops)	//There is no need to refresh the local browser
     {
-      dst_path = strdup (transfer.dst);
-      dst_dir = dirname (dst_path);
-      if (strcmp (dst_dir, remote_browser.dir) == 0)
+      if (!strncmp (dst_dir, remote_browser.dir, strlen (remote_browser.dir)))
 	{
 	  g_idle_add (elektroid_load_dir_if_midi, &remote_browser);
 	}
-      g_free (dst_path);
     }
 
 end_cleanup:
   g_byte_array_free (array, TRUE);
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
-
+end_nodir:
+  g_free (dst_path);
   return NULL;
 }
 
@@ -2319,63 +2327,48 @@ elektroid_add_upload_task_path (const gchar * rel_path,
 				gint32 * next_idx)
 {
   gint32 children_next_idx;
-  gchar *path;
-  gchar *dst_abs_dir;
-  gchar *upload_path;
-  struct item_iterator iter;
-  struct item_iterator children_remote_item_iterator;
+  struct item_iterator iter, iter_copy;
+  gchar *path, *dst_abs_dir, *upload_path;
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
   gchar *src_abs_path = chain_path (src_dir, rel_path);
 
-  if (local_browser.
-      fs_ops->readdir (local_browser.backend, &iter, src_abs_path))
+  //Check if the item is a dir. If error, it's not.
+  if (local_browser.fs_ops->readdir (local_browser.backend, &iter,
+				     src_abs_path))
     {
       dst_abs_dir = dirname (dst_abs_path);
-      upload_path =
-	remote_browser.fs_ops->get_upload_path (&backend,
-						remote_dir_iter,
-						remote_browser.fs_ops,
-						dst_abs_dir, src_abs_path,
-						next_idx);
-      elektroid_add_task (UPLOAD, src_abs_path, upload_path,
-			  remote_browser.fs_ops->fs);
-      goto cleanup_not_dir;
+      upload_path = remote_browser.fs_ops->get_upload_path (&backend,
+							    remote_dir_iter,
+							    remote_browser.fs_ops,
+							    dst_abs_dir,
+							    src_abs_path,
+							    next_idx);
+      if (file_matches_extensions (src_abs_path, local_browser.extensions))
+	{
+	  elektroid_add_task (UPLOAD, src_abs_path, upload_path,
+			      remote_browser.fs_ops->fs);
+	}
+      g_free (upload_path);
+      goto cleanup;
     }
 
-  if (remote_browser.fs_ops->mkdir)
+  if (!remote_browser.fs_ops->mkdir)
+    {				//No recursive case.
+      goto cleanup;
+    }
+
+  copy_item_iterator (&iter_copy, &iter, TRUE);
+  while (!next_item_iterator (&iter))
     {
-      if (remote_browser.fs_ops->mkdir (remote_browser.backend, dst_abs_path))
-	{
-	  error_print ("Error while creating remote %s dir\n", dst_abs_path);
-	  goto cleanup;
-	}
-
-      if (!strchr (rel_path, '/'))
-	{
-	  elektroid_load_dir_if_midi (&remote_browser);
-	}
+      path = chain_path (rel_path, iter.item.name);
+      elektroid_add_upload_task_path (path, src_dir, dst_dir,
+				      &iter_copy, &children_next_idx);
+      free (path);
     }
+  free_item_iterator (&iter_copy);
 
-  if (!remote_browser.
-      fs_ops->readdir (remote_browser.backend, &children_remote_item_iterator,
-		       dst_abs_path))
-    {
-      while (!next_item_iterator (&iter))
-	{
-	  path = chain_path (rel_path, iter.item.name);
-	  elektroid_add_upload_task_path (path, src_dir, dst_dir,
-					  &children_remote_item_iterator,
-					  &children_next_idx);
-	  free (path);
-	}
-
-      free_item_iterator (&children_remote_item_iterator);
-    }
-
-
-cleanup:
   free_item_iterator (&iter);
-cleanup_not_dir:
+cleanup:
   g_free (dst_abs_path);
   g_free (src_abs_path);
 }
@@ -2427,11 +2420,22 @@ elektroid_download_task (gpointer userdata)
 {
   gint res;
   GByteArray *array;
-
-  array = g_byte_array_new ();
+  gchar *dst_path, *dst_dir;
 
   debug_print (1, "Remote path: %s\n", transfer.src);
   debug_print (1, "Local path: %s\n", transfer.dst);
+
+  dst_path = strdup (transfer.dst);
+  dst_dir = dirname (dst_path);
+
+  if (local_browser.fs_ops->mkdir (local_browser.backend, dst_dir))
+    {
+      error_print ("Error while creating local %s dir\n", dst_dir);
+      transfer.status = COMPLETED_ERROR;
+      goto end_nodir;
+    }
+
+  array = g_byte_array_new ();
 
   res = transfer.fs_ops->download (remote_browser.backend,
 				   transfer.src, array, &transfer.control);
@@ -2472,6 +2476,8 @@ elektroid_download_task (gpointer userdata)
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
 
+end_nodir:
+  g_free (dst_path);
   return NULL;
 }
 
@@ -2482,30 +2488,26 @@ elektroid_add_download_task_path (const gchar * rel_path,
 				  struct item_iterator *remote_dir_iter)
 {
   struct item_iterator iter, iter_copy;
-  gchar *path, *id, *download_path, *dst_abs_dirc, *dst_abs_dir;
+  gchar *path, *dst_abs_dir, *download_path, *id;
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
+  //Check if the item is a dir. If error, it's not.
   if (remote_browser.fs_ops->readdir (remote_browser.backend, &iter,
 				      src_abs_path))
     {
-      dst_abs_dirc = strdup (dst_abs_path);
-      dst_abs_dir = dirname (dst_abs_dirc);
-      download_path =
-	remote_browser.fs_ops->get_download_path (&backend,
-						  remote_dir_iter,
-						  remote_browser.fs_ops,
-						  dst_abs_dir, src_abs_path);
-      elektroid_add_task (DOWNLOAD, src_abs_path, download_path,
-			  remote_browser.fs_ops->fs);
-      g_free (dst_abs_dirc);
+      dst_abs_dir = dirname (dst_abs_path);
+      download_path = remote_browser.fs_ops->get_download_path (&backend,
+								remote_dir_iter,
+								remote_browser.fs_ops,
+								dst_abs_dir,
+								src_abs_path);
+      if (file_matches_extensions (src_abs_path, remote_browser.extensions))
+	{
+	  elektroid_add_task (DOWNLOAD, src_abs_path, download_path,
+			      remote_browser.fs_ops->fs);
+	}
       g_free (download_path);
-      goto cleanup_not_dir;
-    }
-
-  if (local_browser.fs_ops->mkdir (local_browser.backend, dst_abs_path))
-    {
-      error_print ("Error while creating local %s dir\n", dst_abs_path);
       goto cleanup;
     }
 
@@ -2520,9 +2522,8 @@ elektroid_add_download_task_path (const gchar * rel_path,
     }
   free_item_iterator (&iter_copy);
 
-cleanup:
   free_item_iterator (&iter);
-cleanup_not_dir:
+cleanup:
   free (dst_abs_path);
   free (src_abs_path);
 }

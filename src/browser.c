@@ -228,41 +228,6 @@ browser_add_dentry_item (struct browser *browser, struct item_iterator *iter)
 }
 
 static gboolean
-browser_file_match_extensions (struct browser *browser,
-			       struct item_iterator *iter)
-{
-  gboolean match;
-  const gchar *entry_ext;
-  gchar **ext = browser->extensions;
-
-  if (iter->item.type == ELEKTROID_DIR)
-    {
-      return TRUE;
-    }
-
-  if (!ext)
-    {
-      return TRUE;
-    }
-
-  entry_ext = get_ext (iter->item.name);
-
-  if (!entry_ext)
-    {
-      return FALSE;
-    }
-
-  match = FALSE;
-  while (*ext != NULL && !match)
-    {
-      match = !strcasecmp (entry_ext, *ext);
-      ext++;
-    }
-
-  return match;
-}
-
-static gboolean
 browser_load_dir_runner_hide_spinner (gpointer data)
 {
   struct browser *browser = data;
@@ -297,7 +262,7 @@ browser_load_dir_runner_update_ui (gpointer data)
     {
       while (!next_item_iterator (browser->iter))
 	{
-	  if (browser_file_match_extensions (browser, browser->iter))
+	  if (iter_matches_extensions (browser->iter, browser->extensions))
 	    {
 	      browser_add_dentry_item (browser, browser->iter);
 	    }
