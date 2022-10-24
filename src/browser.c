@@ -126,8 +126,6 @@ browser_refresh (GtkWidget * object, gpointer data)
 void
 browser_go_up (GtkWidget * object, gpointer data)
 {
-  char *dup;
-  char *new_path;
   struct browser *browser = data;
 
   g_mutex_lock (&browser->mutex);
@@ -135,14 +133,15 @@ browser_go_up (GtkWidget * object, gpointer data)
     {
       if (strcmp (browser->dir, "/"))
 	{
-	  dup = strdup (browser->dir);
-	  new_path = dirname (dup);
+	  gchar *dup = strdup (browser->dir);
+	  gchar *new_path = dirname (dup);
 	  strcpy (browser->dir, new_path);
 	  free (dup);
-	  g_idle_add (browser_load_dir, browser);
 	}
     }
   g_mutex_unlock (&browser->mutex);
+
+  g_idle_add (browser_load_dir, browser);
 }
 
 void

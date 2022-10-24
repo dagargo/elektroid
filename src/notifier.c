@@ -28,7 +28,8 @@
 static void
 notifier_set_dir (struct notifier *notifier)
 {
-  debug_print (1, "Changing path to '%s'...\n", notifier->browser->dir);
+  debug_print (1, "Changing %s browser path to '%s'...\n",
+	       notifier->browser->name, notifier->browser->dir);
   if (!notifier->dir || strcmp (notifier->browser->dir, notifier->dir))
     {
       if (notifier->dir)
@@ -92,6 +93,7 @@ notifier_run (gpointer data)
 	{
 	  debug_print (1, "Loading parent dir...\n");
 	  g_idle_add (notifier_go_up, notifier->browser);
+	  break;		//There is no directory to be nofified of.
 	}
       else if ((notifier->event->mask & IN_IGNORED))	// inotify_rm_watch called
 	{
