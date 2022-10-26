@@ -264,29 +264,33 @@ cli_command_mv_rename (int argc, gchar * argv[], int *optind)
       (*optind)++;
     }
 
-  src_card = atoi (device_src_path);
-  dst_card = atoi (device_dst_path);
-  if (src_card != dst_card)
-    {
-      error_print ("Source and destination device must be the same\n");
-      return EXIT_FAILURE;
-    }
-
   if (cli_connect (device_src_path))
     {
       return EXIT_FAILURE;
     }
 
+  src_card = atoi (device_src_path);
+  src_path = cli_get_path (device_src_path);
+
   // If move is implemented, rename must behave the same way.
   f = fs_ops->move;
-  if (!f)
+  if (f)
+    {
+      dst_card = atoi (device_dst_path);
+      if (src_card != dst_card)
+	{
+	  error_print ("Source and destination device must be the same\n");
+	  return EXIT_FAILURE;
+	}
+      dst_path = cli_get_path (device_dst_path);
+    }
+  else
     {
       f = fs_ops->rename;
+      dst_path = device_dst_path;
     }
 
   CHECK_FS_OPS_FUNC (f);
-  src_path = cli_get_path (device_src_path);
-  dst_path = cli_get_path (device_dst_path);
   ret = f (&backend, src_path, dst_path);
   return ret ? EXIT_FAILURE : EXIT_SUCCESS;
 }

@@ -81,7 +81,7 @@ These are the available commands:
 * `ls` or `list`
 * `mkdir` (behave as `mkdir -p`)
 * `rmdir` or `rm` (both behave as `rm -rf`)
-* `mv`
+* `mv` (in slot mode, the second path is just the name of the file)
 * `cp`
 * `cl`, clear item
 * `sw`, swap items

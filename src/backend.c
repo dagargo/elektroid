@@ -752,6 +752,7 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
 }
 
 //Synchronized
+//A timeout of 0 means infinity; a negative timeout means the default timeout.
 
 GByteArray *
 backend_tx_and_rx_sysex (struct backend *backend,
