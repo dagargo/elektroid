@@ -701,7 +701,7 @@ sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
   g_mutex_unlock (&backend->mutex);
 
   dstcpy = strdup (dst);
-  name = basename (dst);
+  name = basename (dstcpy);
   tx_msg = sds_get_rename_sample_msg (id, name);
   err = -ENOSYS;
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
