@@ -79,7 +79,7 @@ There are device commands and filesystem commands. The latter have the form `a-b
 These are the available commands:
 
 * `ls` or `list`
-* `mkdir`
+* `mkdir` (behave as `mkdir -p`)
 * `rmdir` or `rm` (both behave as `rm -rf`)
 * `mv`
 * `cp`
