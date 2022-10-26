@@ -53,6 +53,8 @@ static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 #define FS_SAMPLES_LAST_FRAME_POS_W 33
 #define FS_SAMPLES_PAD_RES 22
 
+#define ELEKTRON_NAME_MAX_LEN 32
+
 #define ELEKTRON_SAMPLE_INFO_PAD_I32_LEN 10
 #define ELEKTRON_LOOP_TYPE 0x7f
 
@@ -292,15 +294,14 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .name = "sample",
   .gui_name = "Samples",
   .gui_icon = BE_FILE_ICON_WAVE,
+  .type_ext = "wav",
+  .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_samples_dir,
   .print_item = print_smplrw,
   .mkdir = elektron_create_samples_dir,
   .delete = elektron_delete_samples_item,
   .rename = elektron_move_samples_item,
   .move = elektron_move_samples_item,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
   .download = elektron_download_sample,
   .upload = elektron_upload_sample,
   .getid = get_item_name,
@@ -308,25 +309,21 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = elektron_get_upload_path_smplrw,
-  .get_download_path = elektron_get_download_path,
-  .type_ext = "wav"
+  .get_download_path = elektron_get_download_path
 };
 
 static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .fs = FS_RAW_ALL,
   .options = 0,
   .name = "raw",
-  .gui_name = NULL,
-  .gui_icon = NULL,
+  .type_ext = "raw",
+  .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_raw_dir,
   .print_item = print_smplrw,
   .mkdir = elektron_create_raw_dir,
   .delete = elektron_delete_raw_item,
   .rename = elektron_move_raw_item,
   .move = elektron_move_raw_item,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
   .download = elektron_download_raw,
   .upload = elektron_upload_raw,
   .getid = get_item_name,
@@ -334,8 +331,7 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
   .get_upload_path = elektron_get_upload_path_smplrw,
-  .get_download_path = elektron_get_download_path,
-  .type_ext = "raw"
+  .get_download_path = elektron_get_download_path
 };
 
 static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
@@ -344,15 +340,14 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = BE_FILE_ICON_SND,
+  .type_ext = "pst",
+  .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_raw_dir,
   .print_item = print_smplrw,
   .mkdir = elektron_create_raw_dir,
   .delete = elektron_delete_raw_item,
   .rename = elektron_move_raw_item,
   .move = elektron_move_raw_item,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
   .download = elektron_download_raw_pst_pkg,
   .upload = elektron_upload_raw_pst_pkg,
   .getid = get_item_name,
@@ -360,21 +355,17 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
   .get_upload_path = elektron_get_upload_path_smplrw,
-  .get_download_path = elektron_get_download_path,
-  .type_ext = "pst"
+  .get_download_path = elektron_get_download_path
 };
 
 static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .fs = FS_DATA_ALL,
   .options = FS_OPTION_SORT_BY_ID,
   .name = "data",
-  .gui_name = NULL,
-  .gui_icon = NULL,
+  .type_ext = "data",
   .readdir = elektron_read_data_dir_any,
   .print_item = print_data,
-  .mkdir = NULL,
   .delete = elektron_clear_data_item_any,
-  .rename = NULL,
   .move = elektron_move_data_item_any,
   .copy = elektron_copy_data_item_any,
   .clear = elektron_clear_data_item_any,
@@ -386,8 +377,7 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
   .get_upload_path = elektron_get_upload_path_data,
-  .get_download_path = elektron_get_download_path,
-  .type_ext = "data"
+  .get_download_path = elektron_get_download_path
 };
 
 static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
@@ -396,11 +386,10 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .name = "project",
   .gui_name = "Projects",
   .gui_icon = BE_FILE_ICON_PRJ,
+  .type_ext = "prj",
   .readdir = elektron_read_data_dir_prj,
   .print_item = print_data,
-  .mkdir = NULL,
   .delete = elektron_clear_data_item_prj,
-  .rename = NULL,
   .move = elektron_move_data_item_prj,
   .copy = elektron_copy_data_item_prj,
   .clear = elektron_clear_data_item_prj,
@@ -412,8 +401,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
   .get_upload_path = elektron_get_upload_path_data,
-  .get_download_path = elektron_get_download_path,
-  .type_ext = "prj"
+  .get_download_path = elektron_get_download_path
 };
 
 static const struct fs_operations FS_DATA_SND_OPERATIONS = {
@@ -422,11 +410,10 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .name = "sound",
   .gui_name = "Sounds",
   .gui_icon = BE_FILE_ICON_SND,
+  .type_ext = "snd",
   .readdir = elektron_read_data_dir_snd,
   .print_item = print_data,
-  .mkdir = NULL,
   .delete = elektron_clear_data_item_snd,
-  .rename = NULL,
   .move = elektron_move_data_item_snd,
   .copy = elektron_copy_data_item_snd,
   .clear = elektron_clear_data_item_snd,
@@ -438,8 +425,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
   .get_upload_path = elektron_get_upload_path_data,
-  .get_download_path = elektron_get_download_path,
-  .type_ext = "snd"
+  .get_download_path = elektron_get_download_path
 };
 
 static const struct fs_operations *FS_OPERATIONS[] = {

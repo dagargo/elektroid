@@ -371,15 +371,9 @@ static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .name = "sequence",
   .gui_name = "Sequences",
   .gui_icon = BE_FILE_ICON_SEQ,
+  .type_ext = "mbseq",
   .readdir = microbrute_read_dir,
   .print_item = microbrute_print,
-  .mkdir = NULL,
-  .delete = NULL,
-  .rename = NULL,
-  .move = NULL,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
   .download = microbrute_download,
   .upload = microbrute_upload,
   .getid = get_item_name,
@@ -387,8 +381,7 @@ static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .save = save_file,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = microbrute_get_download_path,
-  .type_ext = "mbseq"
+  .get_download_path = microbrute_get_download_path
 };
 
 static const struct fs_operations *FS_MICROBRUTE_OPERATIONS_LIST[] = {

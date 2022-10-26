@@ -350,23 +350,14 @@ const struct fs_operations FS_LOCAL_OPERATIONS = {
   .gui_name = "localhost",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_read_dir,
-  .print_item = NULL,
   .mkdir = local_mkdir,
   .delete = local_delete,
   .rename = local_rename,
   .move = local_rename,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
-  .download = NULL,
-  .upload = NULL,
   .getid = get_item_name,
-  .load = NULL,
-  .save = NULL,
   .get_ext = backend_get_fs_ext,
-  .get_upload_path = NULL,
-  .get_download_path = NULL,
-  .type_ext = "wav"
+  .type_ext = "wav",
+  .max_name_len = 255
 };
 
 enum sds_fs
@@ -390,9 +381,6 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .delete = local_delete,
   .rename = local_rename,
   .move = local_rename,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
   .download = local_download,
   .upload = local_upload,
   .getid = get_item_name,
@@ -401,7 +389,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .get_ext = backend_get_fs_ext,
   .get_upload_path = local_get_upload_path,
   .get_download_path = local_get_download_path,
-  .type_ext = "wav"
+  .type_ext = "wav",
+  .max_name_len = 255
 };
 
 const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
@@ -416,9 +405,6 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .delete = local_delete,
   .rename = local_rename,
   .move = local_rename,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
   .download = local_download,
   .upload = local_upload,
   .getid = get_item_name,
@@ -427,7 +413,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .get_ext = backend_get_fs_ext,
   .get_upload_path = local_get_upload_path,
   .get_download_path = local_get_download_path,
-  .type_ext = "wav"
+  .type_ext = "wav",
+  .max_name_len = 255
 };
 
 const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
@@ -443,9 +430,6 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .delete = local_delete,
   .rename = local_rename,
   .move = local_rename,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
   .download = local_download,
   .upload = local_upload,
   .getid = get_item_name,
@@ -454,7 +438,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .get_ext = backend_get_fs_ext,
   .get_upload_path = local_get_upload_path,
   .get_download_path = local_get_download_path,
-  .type_ext = "wav"
+  .type_ext = "wav",
+  .max_name_len = 255
 };
 
 const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
@@ -480,7 +465,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .get_ext = backend_get_fs_ext,
   .get_upload_path = local_get_upload_path,
   .get_download_path = local_get_download_path,
-  .type_ext = "wav"
+  .type_ext = "wav",
+  .max_name_len = 255
 };
 
 static const struct fs_operations *FS_SYSTEM_OPERATIONS[] = {

@@ -233,6 +233,65 @@ cli_command_src_dst (int argc, gchar * argv[], int *optind,
 }
 
 static int
+cli_command_mv_rename (int argc, gchar * argv[], int *optind)
+{
+  const gchar *src_path, *dst_path;
+  gchar *device_src_path, *device_dst_path;
+  gint src_card;
+  gint dst_card;
+  int ret;
+  fs_src_dst_func f;
+
+  if (*optind == argc)
+    {
+      error_print ("Remote path source missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      device_src_path = argv[*optind];
+      (*optind)++;
+    }
+
+  if (*optind == argc)
+    {
+      error_print ("Remote path destination missing\n");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      device_dst_path = argv[*optind];
+      (*optind)++;
+    }
+
+  src_card = atoi (device_src_path);
+  dst_card = atoi (device_dst_path);
+  if (src_card != dst_card)
+    {
+      error_print ("Source and destination device must be the same\n");
+      return EXIT_FAILURE;
+    }
+
+  if (cli_connect (device_src_path))
+    {
+      return EXIT_FAILURE;
+    }
+
+  // If move is implemented, rename must behave the same way.
+  f = fs_ops->move;
+  if (!f)
+    {
+      f = fs_ops->rename;
+    }
+
+  CHECK_FS_OPS_FUNC (f);
+  src_path = cli_get_path (device_src_path);
+  dst_path = cli_get_path (device_dst_path);
+  ret = f (&backend, src_path, dst_path);
+  return ret ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+static int
 cli_info (int argc, gchar * argv[], int *optind)
 {
   gchar *device_path;
@@ -769,8 +828,7 @@ main (int argc, gchar * argv[])
 	}
       else if (!strcmp (op, "mv"))
 	{
-	  res = cli_command_src_dst (argc, argv, &optind,
-				     GET_FS_OPS_OFFSET (move));
+	  res = cli_command_mv_rename (argc, argv, &optind);
 	}
       else
 	{

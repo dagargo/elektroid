@@ -1673,7 +1673,6 @@ audio-volume-medium-symbolic</property>
                 <property name="can-focus">True</property>
                 <property name="is-focus">True</property>
                 <property name="hexpand">True</property>
-                <property name="max-length">32</property>
                 <property name="activates-default">True</property>
                 <property name="input-purpose">alpha</property>
               </object>

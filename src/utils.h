@@ -172,6 +172,13 @@ typedef gchar *(*t_get_download_path) (struct backend *,
 
 typedef gint (*t_sysex_transfer) (struct backend *, struct sysex_transfer *);
 
+// All the function members that return gint should return 0 if no error and a negative number in case of error.
+// errno values are recommended as will provide the user with a meaningful message. In particular,
+// ENOSYS could be used when a particular device does not support a feature that other devices implementing the same filesystem do.
+
+// rename and move are different operations. If move is implemented, rename must behave the same way. However, t's perfectly
+// possible to implement rename without implementing move. This is the case in slot mode filesystems.
+
 struct fs_operations
 {
   gint32 fs;
@@ -179,6 +186,8 @@ struct fs_operations
   const gchar *name;
   const gchar *gui_name;
   const gchar *gui_icon;
+  const gchar *type_ext;
+  guint32 max_name_len;
   fs_init_iter_func readdir;
   fs_print_item print_item;
   fs_path_func mkdir;
@@ -196,7 +205,6 @@ struct fs_operations
   fs_get_ext get_ext;
   t_get_upload_path get_upload_path;
   t_get_download_path get_download_path;
-  const gchar *type_ext;
 };
 
 enum fs_options

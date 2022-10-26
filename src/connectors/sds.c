@@ -39,6 +39,7 @@
 #define SDS_REST_TIME_DEFAULT 18000	//Rest time to not overwhelm the devices whn sending consecutive packets. Lower values cause an an E-Mu ESI-2000 to send corrupted packets.
 #define SDS_NO_SPEC_OPEN_LOOP_REST_TIME 200000
 #define SDS_SAMPLE_CHANNELS 1
+#define SDS_SAMPLE_NAME_MAX_LEN 127
 
 struct sds_data
 {
@@ -978,15 +979,11 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .name = "sample8",
   .gui_name = "Samples (8 bits)",
   .gui_icon = BE_FILE_ICON_WAVE,
+  .type_ext = "wav",
+  .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
   .print_item = sds_print,
-  .mkdir = NULL,
-  .delete = NULL,
   .rename = sds_rename,
-  .move = NULL,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
   .download = sds_download,
   .upload = sds_upload_8b,
   .getid = get_item_index,
@@ -994,8 +991,7 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = sds_get_download_path,
-  .type_ext = "wav"
+  .get_download_path = sds_get_download_path
 };
 
 static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
@@ -1005,15 +1001,11 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .name = "sample12",
   .gui_name = "Samples (12 bits)",
   .gui_icon = BE_FILE_ICON_WAVE,
+  .type_ext = "wav",
+  .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
   .print_item = sds_print,
-  .mkdir = NULL,
-  .delete = NULL,
   .rename = sds_rename,
-  .move = NULL,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
   .download = sds_download,
   .upload = sds_upload_12b,
   .getid = get_item_index,
@@ -1021,8 +1013,7 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = sds_get_download_path,
-  .type_ext = "wav"
+  .get_download_path = sds_get_download_path
 };
 
 static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
@@ -1032,15 +1023,11 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .name = "sample14",
   .gui_name = "Samples (14 bits)",
   .gui_icon = BE_FILE_ICON_WAVE,
+  .type_ext = "wav",
+  .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
   .print_item = sds_print,
-  .mkdir = NULL,
-  .delete = NULL,
   .rename = sds_rename,
-  .move = NULL,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
   .download = sds_download,
   .upload = sds_upload_14b,
   .getid = get_item_index,
@@ -1048,8 +1035,7 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = sds_get_download_path,
-  .type_ext = "wav"
+  .get_download_path = sds_get_download_path
 };
 
 static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
@@ -1059,15 +1045,11 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .name = "sample16",
   .gui_name = "Samples (16 bits)",
   .gui_icon = BE_FILE_ICON_WAVE,
+  .type_ext = "wav",
+  .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
   .print_item = sds_print,
-  .mkdir = NULL,
-  .delete = NULL,
   .rename = sds_rename,
-  .move = NULL,
-  .copy = NULL,
-  .clear = NULL,
-  .swap = NULL,
   .download = sds_download,
   .upload = sds_upload_16b,
   .getid = get_item_index,
@@ -1075,8 +1057,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = sds_get_download_path,
-  .type_ext = "wav"
+  .get_download_path = sds_get_download_path
 };
 
 static const struct fs_operations *FS_SDS_ALL_OPERATIONS[] = {

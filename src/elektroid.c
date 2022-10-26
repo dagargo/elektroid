@@ -1167,6 +1167,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
   old_path = browser_get_item_id_path (browser, &item);
 
   gtk_entry_set_text (name_dialog_entry, item.name);
+  gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
   gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
 
@@ -1861,6 +1862,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
   struct browser *browser = data;
 
   gtk_entry_set_text (name_dialog_entry, "");
+  gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
   gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
 
