@@ -95,6 +95,7 @@ backend_destroy (struct backend *backend)
   backend->device_desc.filesystems = 0;
   backend->upgrade_os = NULL;
   backend->get_storage_stats = NULL;
+  backend->type = BE_TYPE_NONE;
 
   if (backend->inputp)
     {
@@ -921,7 +922,6 @@ backend_destroy_data (struct backend *backend)
   debug_print (1, "Destroying backend data...\n");
   g_free (backend->data);
   backend->data = NULL;
-  backend->type = BE_TYPE_NONE;
 }
 
 gint
