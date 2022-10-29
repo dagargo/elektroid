@@ -3171,7 +3171,7 @@ end:
 						 NULL);
   if (!queued_before && queued_after)
     {
-      elektroid_run_next_task (NULL);
+      g_idle_add (elektroid_run_next_task, NULL);
     }
 
   // TODO: Until a better solution is found, this sleep is necessary.
