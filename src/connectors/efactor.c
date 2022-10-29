@@ -65,20 +65,24 @@ enum efactor_type
   EFACTOR_H9
 };
 
-struct efactor_iter_data
-{
-  guint next;
-  guint presets;
-  guint min;
-  gchar **rows;
-};
-
 struct efactor_data
 {
   guint id;
   guint presets;
   guint min;
   enum efactor_type type;
+  //Readdir data is kept in memory so it can be used in other operations.
+  //In the efactor case, the only way to get a single preset is by getting the panel, which needs a preset to be loaded
+  // but won't work properly if there are preset mappings. So we read all the memory -we were reading it anyway- and
+  // use it to get the download data from there.
+  gchar **lines;
+};
+
+struct efactor_iter_data
+{
+  guint next;
+  guint presets;
+  struct efactor_data *backend_data;
 };
 
 enum efactor_fs
@@ -149,6 +153,7 @@ static guint
 efactor_next_dentry (struct item_iterator *iter)
 {
   struct efactor_iter_data *data = iter->data;
+  struct efactor_data *backend_data = data->backend_data;
   gchar *preset_name;
 
   if (data->next == data->presets)
@@ -156,22 +161,14 @@ efactor_next_dentry (struct item_iterator *iter)
       return -ENOENT;
     }
 
-  iter->item.id = data->next + data->min;
-  preset_name = data->rows[data->next * 7 + 6];
+  iter->item.id = data->next + backend_data->min;
+  preset_name = data->backend_data->lines[data->next * 7 + 6];
   snprintf (iter->item.name, LABEL_MAX, "%s", preset_name);
   iter->item.type = ELEKTROID_FILE;
   iter->item.size = -1;
   data->next++;
 
   return 0;
-}
-
-static void
-efactor_free_iter_data (void *data)
-{
-  struct efactor_iter_data *iter_data = data;
-  g_strfreev (iter_data->rows);
-  g_free (iter_data);
 }
 
 static gint
@@ -198,15 +195,19 @@ efactor_read_dir (struct backend *backend, struct item_iterator *iter,
 
   iter_data = g_malloc (sizeof (struct efactor_iter_data));
   iter_data->next = 0;
-  iter_data->min = data->min;
   iter_data->presets = data->presets;
-  iter_data->rows =
+  iter_data->backend_data = backend->data;
+  if (iter_data->backend_data->lines)
+    {
+      g_strfreev (iter_data->backend_data->lines);
+    }
+  data->lines =
     g_strsplit ((gchar *) & rx_msg->data[EFACTOR_PRESET_DUMP_OFFSET],
 		EFACTOR_PRESET_LINE_SEPARATOR, -1);
   free_msg (rx_msg);
   iter->data = iter_data;
   iter->next = efactor_next_dentry;
-  iter->free = efactor_free_iter_data;
+  iter->free = g_free;
 
   return 0;
 }
@@ -218,34 +219,33 @@ efactor_download (struct backend *backend, const gchar * src_path,
   gint err = 0, id;
   gchar *basename_copy;
   gboolean active;
-  GByteArray *tx_msg, *rx_msg;
+  gchar **lines;
+  struct efactor_data *data = backend->data;
 
   control->parts = 1;
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
+  if (!data->lines)
+    {
+      return -ENODATA;
+    }
+
   basename_copy = strdup (src_path);
-  id = atoi (basename (basename_copy));
+  id = atoi (basename (basename_copy)) - data->min;	//Base 0
   g_free (basename_copy);
 
-  debug_print (1, "Loading preset %d...\n", id);
-  if ((err = backend_program_change (backend, 0, id)) < 0)
+  g_byte_array_append (output, EFACTOR_REQUEST_HEADER,
+		       sizeof (EFACTOR_REQUEST_HEADER));
+  g_byte_array_append (output, (guint8 *) "\x49", 1);	// EFACTOR_OP_PRESETS_DUMP
+  lines = &data->lines[id * 7];
+  for (gint i = 0; i < 7; i++, lines++)
     {
-      return err;
+      g_byte_array_append (output, (guint8 *) * lines, strlen (*lines));
+      g_byte_array_append (output, (guint8 *) EFACTOR_PRESET_LINE_SEPARATOR,
+			   strlen (EFACTOR_PRESET_LINE_SEPARATOR));
     }
-
-  backend_rx_drain (backend);
-  tx_msg = efactor_new_op_msg (EFACTOR_OP_PROGRAM_WANT);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-  if (!tx_msg)
-    {
-      return -ETIMEDOUT;
-    }
-
-  rx_msg->data[sizeof (EFACTOR_REQUEST_HEADER) - 1] = 0;	//We overwrite the system id.
-  rx_msg->data[sizeof (EFACTOR_REQUEST_HEADER)] = EFACTOR_OP_PRESETS_DUMP;	//This operation writes the preset to memory while 0x4f just overwrites the program (currently active preset) and even will need to be saved.
-  g_byte_array_append (output, rx_msg->data, rx_msg->len);
-  free_msg (rx_msg);
+  g_byte_array_append (output, (guint8 *) "\0\xf7", 2);
 
   g_mutex_lock (&control->mutex);
   active = control->active;
@@ -369,8 +369,8 @@ efactor_rename (struct backend *backend, const gchar * src, const gchar * dst)
       return -ETIMEDOUT;
     }
 
-  rx_msg->data[sizeof (EFACTOR_REQUEST_HEADER)] = EFACTOR_OP_PRESETS_DUMP;	//See efactor_download.
-  rx_msg->data[sizeof (EFACTOR_REQUEST_HEADER) - 1] = 0;	//See efactor_upload.
+  rx_msg->data[sizeof (EFACTOR_REQUEST_HEADER)] = EFACTOR_OP_PRESETS_DUMP;	//We overwrite the operation to be able to upload the result.
+  rx_msg->data[sizeof (EFACTOR_REQUEST_HEADER) - 1] = 0;	//Id must be zero when uploading.
   lines = g_strsplit ((gchar *) & rx_msg->data[EFACTOR_PRESET_DUMP_OFFSET],
 		      EFACTOR_PRESET_LINE_SEPARATOR, -1);
   dstcpy = strdup (dst);
@@ -436,6 +436,17 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
 static const struct fs_operations *FS_EFACTOR_OPERATIONS_LIST[] = {
   &FS_EFACTOR_OPERATIONS, NULL
 };
+
+void
+efactor_destroy_data (struct backend *backend)
+{
+  struct efactor_data *data = backend->data;
+  if (data->lines)
+    {
+      g_strfreev (data->lines);
+    }
+  backend_destroy_data (backend);
+}
 
 //We are replicanting the functionality in backend because the request is standard but the response is not.
 gint
@@ -558,10 +569,11 @@ efactor_handshake (struct backend *backend)
   data->presets = presets;
   data->min = min;
   data->type = type;
+  data->lines = NULL;
 
   backend->device_desc.filesystems = FS_EFACTOR_PRESET;
   backend->fs_ops = FS_EFACTOR_OPERATIONS_LIST;
-  backend->destroy_data = backend_destroy_data;
+  backend->destroy_data = efactor_destroy_data;
   backend->data = data;
 
   snprintf (backend->device_name, LABEL_MAX, "%s %d.%d.%d.%d",
