@@ -105,12 +105,6 @@ struct elektroid_transfer
   const struct fs_operations *fs_ops;	//Contains the fs_operations to use in this transfer
 };
 
-struct elektroid_add_upload_task_data
-{
-  struct item_iterator iter;
-  gint32 index;
-};
-
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (struct job_control *);
@@ -2375,37 +2369,69 @@ cleanup:
   g_free (src_abs_path);
 }
 
-static void
-elektroid_add_upload_task (GtkTreeModel * model,
-			   GtkTreePath * path,
-			   GtkTreeIter * iter, gpointer userdata)
+static gboolean
+elektroid_update_basic_sysex_progress (gpointer data)
 {
-  struct item item;
-  struct elektroid_add_upload_task_data *data = userdata;
-  browser_set_item (model, iter, &item);
-  elektroid_add_upload_task_path (item.name, local_browser.dir,
-				  remote_browser.dir, &data->iter,
-				  &data->index);
+  gboolean active;
+
+  g_mutex_lock (&sysex_transfer.mutex);
+  active = sysex_transfer.active;
+  g_mutex_unlock (&sysex_transfer.mutex);
+
+  gtk_progress_bar_pulse (GTK_PROGRESS_BAR (progress_bar));
+
+  return active;
 }
 
 static gpointer
 elektroid_add_upload_tasks_runner (gpointer userdata)
 {
+  gint32 next_idx;
   GtkTreeIter iter;
-  struct elektroid_add_upload_task_data data;  //TODO: DELETE struct
+  GList *selected_rows;
+  struct item_iterator item_iterator;
   gboolean queued_before, queued_after, active;
-  GtkTreeSelection *selection =
+  GtkTreeModel *model;
+  GtkTreeSelection *selection;
+
+  g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
+
+  model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
+  selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.view));
 
   queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
 						  NULL);
 
-  data.index = 1;
-  local_browser.fs_ops->readdir (local_browser.backend, &data.iter,
+  local_browser.fs_ops->readdir (local_browser.backend, &item_iterator,
 				 local_browser.dir);
-  gtk_tree_selection_selected_foreach (selection, elektroid_add_upload_task,
-				       &data);
-  free_item_iterator (&data.iter);
+  next_idx = 1;
+  selected_rows = gtk_tree_selection_get_selected_rows (selection, NULL);
+  while (selected_rows)
+    {
+      struct item item;
+      GtkTreeIter path_iter;
+      GtkTreePath *path = selected_rows->data;
+
+      gtk_tree_model_get_iter (model, &path_iter, path);
+      browser_set_item (model, &path_iter, &item);
+      elektroid_add_upload_task_path (item.name, local_browser.dir,
+				      remote_browser.dir, &item_iterator,
+				      &next_idx);
+
+      g_mutex_lock (&sysex_transfer.mutex);
+      active = sysex_transfer.active;
+      g_mutex_unlock (&sysex_transfer.mutex);
+
+      if (!active)
+	{
+	  break;
+	}
+
+      selected_rows = g_list_next (selected_rows);
+    }
+  g_list_free_full (selected_rows, (GDestroyNotify) gtk_tree_path_free);
+  free_item_iterator (&item_iterator);
 
   queued_after = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
 						 NULL);
@@ -2562,28 +2588,20 @@ cleanup:
   free (src_abs_path);
 }
 
-static void
-elektroid_add_download_task (GtkTreeModel * model,
-			     GtkTreePath * path,
-			     GtkTreeIter * iter, gpointer data)
-{
-  struct item item;
-  char *id;
-
-  browser_set_item (model, iter, &item);
-  id = remote_browser.fs_ops->getid (&item);
-  elektroid_add_download_task_path (id, remote_browser.dir, local_browser.dir,
-				    data);
-  g_free (id);
-}
-
 static gpointer
 elektroid_add_download_tasks_runner (gpointer data)
 {
   GtkTreeIter iter;
+  GList *selected_rows;
   struct item_iterator item_iterator;
   gboolean queued_before, queued_after, active;
-  GtkTreeSelection *selection =
+  GtkTreeModel *model;
+  GtkTreeSelection *selection;
+
+  g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
+
+  model = GTK_TREE_MODEL (gtk_tree_view_get_model (remote_browser.view));
+  selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
 
   queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
@@ -2593,8 +2611,33 @@ elektroid_add_download_tasks_runner (gpointer data)
 
   remote_browser.fs_ops->readdir (remote_browser.backend, &item_iterator,
 				  remote_browser.dir);
-  gtk_tree_selection_selected_foreach (selection, elektroid_add_download_task,
-				       &item_iterator);
+  selected_rows = gtk_tree_selection_get_selected_rows (selection, NULL);
+  while (selected_rows)
+    {
+      gchar *id;
+      struct item item;
+      GtkTreeIter path_iter;
+      GtkTreePath *path = selected_rows->data;
+
+      gtk_tree_model_get_iter (model, &path_iter, path);
+      browser_set_item (model, &path_iter, &item);
+      id = remote_browser.fs_ops->getid (&item);
+      elektroid_add_download_task_path (id, remote_browser.dir,
+					local_browser.dir, &item_iterator);
+      g_free (id);
+
+      g_mutex_lock (&sysex_transfer.mutex);
+      active = sysex_transfer.active;
+      g_mutex_unlock (&sysex_transfer.mutex);
+
+      if (!active)
+	{
+	  break;
+	}
+
+      selected_rows = g_list_next (selected_rows);
+    }
+  g_list_free_full (selected_rows, (GDestroyNotify) gtk_tree_path_free);
   free_item_iterator (&item_iterator);
 
   backend_disable_cache (remote_browser.backend);
@@ -2937,20 +2980,6 @@ elektroid_fill_fs_combo_bg (gpointer data)
   return FALSE;
 }
 
-static gboolean
-elektroid_update_basic_sysex_progress (gpointer data)
-{
-  gboolean active;
-
-  g_mutex_lock (&sysex_transfer.mutex);
-  active = sysex_transfer.active;
-  g_mutex_unlock (&sysex_transfer.mutex);
-
-  gtk_progress_bar_pulse (GTK_PROGRESS_BAR (progress_bar));
-
-  return active;
-}
-
 static gpointer
 elektroid_set_device_thread (gpointer data)
 {
@@ -3143,10 +3172,10 @@ elektroid_dnd_received_runner (gpointer data)
   struct item_iterator remote_item_iterator;
   gboolean queued_before, queued_after, load_remote, active;
 
+  g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
+
   queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
 						  NULL);
-
-  g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
 
   if (widget == GTK_WIDGET (local_browser.view))
     {
