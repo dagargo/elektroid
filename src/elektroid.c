@@ -388,7 +388,7 @@ elektroid_set_player_source (enum audio_src audio_src)
 }
 
 static gboolean
-elektroid_load_dir_if_midi (gpointer data)
+elektroid_load_remote_if_midi (gpointer data)
 {
   struct browser *browser = data;
   if (browser == &remote_browser && backend.type == BE_TYPE_MIDI)
@@ -1154,7 +1154,7 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
     }
   g_list_free_full (ref_list, (GDestroyNotify) gtk_tree_row_reference_free);
 
-  elektroid_load_dir_if_midi (browser);
+  elektroid_load_remote_if_midi (browser);
 }
 
 static void
@@ -1200,7 +1200,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	    }
 	  else
 	    {
-	      elektroid_load_dir_if_midi (browser);
+	      elektroid_load_remote_if_midi (browser);
 	    }
 	  free (new_path);
 	}
@@ -1897,7 +1897,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 	    }
 	  else
 	    {
-	      elektroid_load_dir_if_midi (browser);
+	      elektroid_load_remote_if_midi (browser);
 	    }
 
 	  free (pathname);
@@ -2289,7 +2289,7 @@ elektroid_upload_task (gpointer data)
     {
       if (!strncmp (dst_dir, remote_browser.dir, strlen (remote_browser.dir)))
 	{
-	  g_idle_add (elektroid_load_dir_if_midi, &remote_browser);
+	  g_idle_add (elektroid_load_remote_if_midi, &remote_browser);
 	}
     }
 
@@ -3137,7 +3137,7 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
 		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
-      g_idle_add (elektroid_load_dir_if_midi, &remote_browser);
+      g_idle_add (elektroid_load_remote_if_midi, &remote_browser);
     }
   else
     {
