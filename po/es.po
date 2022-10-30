@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.4\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2022-10-23 15:14+0200\n"
+"POT-Creation-Date: 2022-10-30 20:46+0100\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -21,170 +21,174 @@ msgstr ""
 msgid "MIDI device"
 msgstr "Dispositivo MIDI"
 
-#: src/elektroid.c:520 src/elektroid.c:3814
+#: src/elektroid.c:526 src/elektroid.c:3952
 msgid "Not connected"
 msgstr "No conectado"
 
-#: src/elektroid.c:668
+#: src/elektroid.c:676
 msgid "Cancelling..."
 msgstr "Cancelando..."
 
-#: src/elektroid.c:689 src/elektroid.c:3226
+#: src/elektroid.c:697 src/elektroid.c:2497 src/elektroid.c:2706
+#: src/elektroid.c:3362
 msgid "Waiting..."
 msgstr "Esperando..."
 
-#: src/elektroid.c:692
+#: src/elektroid.c:700
 msgid "Sending..."
 msgstr "Enviando..."
 
-#: src/elektroid.c:695
+#: src/elektroid.c:703
 msgid "Receiving..."
 msgstr "Recibiendo..."
 
-#: src/elektroid.c:755
+#: src/elektroid.c:763
 msgid "Receive SysEx"
 msgstr "Recibir SysEx"
 
-#: src/elektroid.c:787
+#: src/elektroid.c:795
 msgid "Save SysEx"
 msgstr "Guardar SysEx"
 
-#: src/elektroid.c:790 src/elektroid.c:920 src/elektroid.c:1119
-#: res/gui.glade:1617 res/gui.glade:1718
+#: src/elektroid.c:798 src/elektroid.c:928 src/elektroid.c:1160
+#: res/gui.glade:1617 res/gui.glade:1717
 msgid "_Cancel"
 msgstr "_Cancelar"
 
-#: src/elektroid.c:792 res/gui.glade:1631
+#: src/elektroid.c:800 res/gui.glade:1631
 msgid "_Save"
 msgstr "_Guardar"
 
-#: src/elektroid.c:796
+#: src/elektroid.c:804
 msgid "Received SysEx"
 msgstr "SysEx recibido"
 
-#: src/elektroid.c:801 src/elektroid.c:926
+#: src/elektroid.c:809 src/elektroid.c:934
 msgid "SysEx Files"
 msgstr "Archivos SysEx"
 
-#: src/elektroid.c:835
+#: src/elektroid.c:843
 #, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Error al guardar «%s»: %s."
 
-#: src/elektroid.c:856
+#: src/elektroid.c:864
 #, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Error al cargar «%s»: %s."
 
-#: src/elektroid.c:917
+#: src/elektroid.c:925
 msgid "Open SysEx"
 msgstr "Abrir SysEx"
 
-#: src/elektroid.c:922
+#: src/elektroid.c:930
 msgid "_Open"
 msgstr "_Abrir"
 
-#: src/elektroid.c:938
+#: src/elektroid.c:946
 msgid "Sending SysEx"
 msgstr "Enviando SysEx"
 
-#: src/elektroid.c:1013
+#: src/elektroid.c:1021
 msgid "minutes"
 msgstr "minutos"
 
-#: src/elektroid.c:1087
-#, c-format
-msgid "Error while deleting “%s”: %s."
-msgstr "Error al eliminar «%s»: %s."
-
-#: src/elektroid.c:1118
+#: src/elektroid.c:1159
 msgid "Are you sure you want to delete the selected items?"
 msgstr "¿Está seguro de que quiere eliminar los elementos seleccionados?"
 
-#: src/elektroid.c:1120
+#: src/elektroid.c:1161
 msgid "_Delete"
 msgstr "_Eliminar"
 
-#: src/elektroid.c:1173 res/gui.glade:121 res/gui.glade:210
+#: src/elektroid.c:1178
+msgid "Deleting Files"
+msgstr "Eliminando archivos"
+
+#: src/elektroid.c:1179
+msgid "Deleting..."
+msgstr "Eliminando..."
+
+#: src/elektroid.c:1212 res/gui.glade:121 res/gui.glade:210
 msgid "Rename"
 msgstr "Renombrar"
 
-#: src/elektroid.c:1189
+#: src/elektroid.c:1228
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Error al renombrar a «%s»: %s."
 
-#: src/elektroid.c:1867 res/gui.glade:572 res/gui.glade:788
+#: src/elektroid.c:1907 res/gui.glade:572 res/gui.glade:788
 msgid "Add Directory"
 msgstr "Añadir directorio"
 
-#: src/elektroid.c:1885
+#: src/elektroid.c:1925
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Error al crear el directorio «%s»: %s."
 
-#: src/elektroid.c:1957
+#: src/elektroid.c:1997
 msgid "Queued"
 msgstr "Encolada"
 
-#: src/elektroid.c:1959
+#: src/elektroid.c:1999
 msgid "Running"
 msgstr "Ejecutando"
 
-#: src/elektroid.c:1961
+#: src/elektroid.c:2001
 msgid "Completed"
 msgstr "Completada"
 
-#: src/elektroid.c:1963
+#: src/elektroid.c:2003
 msgid "Completed with errors"
 msgstr "Completada con errores"
 
-#: src/elektroid.c:1965
+#: src/elektroid.c:2005
 msgid "Canceled"
 msgstr "Cancelada"
 
-#: src/elektroid.c:1967 src/elektroid.c:1981
+#: src/elektroid.c:2007 src/elektroid.c:2021
 msgid "Undefined"
 msgstr "Indefinido"
 
-#: src/elektroid.c:1977
+#: src/elektroid.c:2017
 msgid "Upload"
 msgstr "Carga"
 
-#: src/elektroid.c:1979
+#: src/elektroid.c:2019
 msgid "Download"
 msgstr "Descarga"
 
-#: src/elektroid.c:2941
+#: src/elektroid.c:2496 src/elektroid.c:2705 src/elektroid.c:3361
+msgid "Preparing Tasks"
+msgstr "Preparando tareas"
+
+#: src/elektroid.c:3077
 msgid "Connecting to Device"
 msgstr "Conectando con el dispositivo"
 
-#: src/elektroid.c:2942
+#: src/elektroid.c:3078
 msgid "Connecting..."
 msgstr "Conectando..."
 
-#: src/elektroid.c:2952
+#: src/elektroid.c:3088
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Dispositivo «%s» no reconocido: %s"
 
-#: src/elektroid.c:3219
+#: src/elektroid.c:3355
 msgid "Moving Files"
 msgstr "Moviendo archivos"
 
-#: src/elektroid.c:3220
+#: src/elektroid.c:3356
 msgid "Moving..."
 msgstr "Moviendo..."
 
-#: src/elektroid.c:3225
-msgid "Preparing Tasks"
-msgstr "Preparando tareas"
-
-#: src/local.c:485
+#: src/local.c:492
 msgid "System"
 msgstr "Sistema"
 
-#: src/connectors/sds.c:1146 src/connectors/sds.c:1152
+#: src/connectors/sds.c:1127 src/connectors/sds.c:1133
 msgid "SDS sampler"
 msgstr "Sampler SDS"
 
