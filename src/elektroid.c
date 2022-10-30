@@ -195,6 +195,7 @@ static GtkListStore *devices_list_store;
 static GtkWidget *devices_combo;
 static GtkWidget *local_audio_box;
 static GtkWidget *upload_menuitem;
+static GtkWidget *local_play_separator;
 static GtkWidget *local_play_menuitem;
 static GtkWidget *local_open_menuitem;
 static GtkWidget *local_show_menuitem;
@@ -398,6 +399,16 @@ elektroid_load_dir_if_midi (gpointer data)
 }
 
 static void
+elektroid_update_upload_menuitem ()
+{
+  gboolean slot = remote_browser.fs_ops &&
+    !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE);
+
+  gtk_widget_set_visible (upload_menuitem, slot);
+  gtk_widget_set_visible (local_play_separator, slot);
+}
+
+static void
 elektroid_load_devices (gboolean auto_select)
 {
   gint i;
@@ -442,6 +453,7 @@ elektroid_load_devices (gboolean auto_select)
       gtk_widget_set_visible (local_audio_box, TRUE);
       gtk_tree_view_column_set_visible (remote_tree_view_index_column, FALSE);
       browser_load_dir (&local_browser);
+      elektroid_update_upload_menuitem ();
     }
 }
 
@@ -563,6 +575,8 @@ elektroid_check_backend ()
   gboolean connected = backend_check (&backend);
   gboolean queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
 						    NULL);
+
+  elektroid_update_upload_menuitem ();
 
   if (!remote_browser.fs_ops
       || remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
@@ -2811,6 +2825,12 @@ elektroid_local_key_press (GtkWidget * widget, GdkEventKey * event,
       return elektroid_common_key_press (widget, event, data);
     }
 
+  if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+    {
+      //Slot mode needs a slot destination.
+      return FALSE;
+    }
+
   if (!remote_browser.fs_ops->upload)
     {
       return FALSE;
@@ -3026,8 +3046,8 @@ elektroid_set_device (GtkWidget * object, gpointer data)
       && !system_handshake (&backend))
     {
       debug_print (1, "System backend detected\n");
-      elektroid_check_backend_bg (NULL);
       elektroid_fill_fs_combo_bg (NULL);
+      elektroid_check_backend_bg (NULL);
       g_free (id);
       g_free (name);
       return;
@@ -3707,6 +3727,8 @@ elektroid_run (int argc, char *argv[])
 
   upload_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "upload_menuitem"));
+  local_play_separator =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_play_separator"));
   local_play_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_play_menuitem"));
   local_open_menuitem =
