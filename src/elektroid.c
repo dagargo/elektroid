@@ -2388,12 +2388,40 @@ elektroid_add_upload_task (GtkTreeModel * model,
 				  &data->index);
 }
 
-static void
-elektroid_add_upload_tasks (GtkWidget * object, gpointer userdata)
+static gpointer
+elektroid_add_upload_tasks_runner (gpointer userdata)
 {
-  gboolean queued;
   GtkTreeIter iter;
-  struct elektroid_add_upload_task_data data;
+  struct elektroid_add_upload_task_data data;  //TODO: DELETE struct
+  gboolean queued_before, queued_after, active;
+  GtkTreeSelection *selection =
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.view));
+
+  queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
+						  NULL);
+
+  data.index = 1;
+  local_browser.fs_ops->readdir (local_browser.backend, &data.iter,
+				 local_browser.dir);
+  gtk_tree_selection_selected_foreach (selection, elektroid_add_upload_task,
+				       &data);
+  free_item_iterator (&data.iter);
+
+  queued_after = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
+						 NULL);
+  if (!queued_before && queued_after)
+    {
+      g_idle_add (elektroid_run_next_task, NULL);
+    }
+
+  sleep (1);			//See elektroid_dnd_received_runner
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+  return NULL;
+}
+
+static void
+elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
+{
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.view));
 
@@ -2402,19 +2430,23 @@ elektroid_add_upload_tasks (GtkWidget * object, gpointer userdata)
       return;
     }
 
-  queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
+  g_mutex_lock (&sysex_transfer.mutex);
+  sysex_transfer.active = TRUE;
+  g_mutex_unlock (&sysex_transfer.mutex);
 
-  data.index = 1;
-  remote_browser.fs_ops->readdir (remote_browser.backend, &data.iter,
-				  remote_browser.dir);
-  gtk_tree_selection_selected_foreach (selection, elektroid_add_upload_task,
-				       &data);
-  free_item_iterator (&data.iter);
+  debug_print (1, "Creating SysEx thread...\n");
+  sysex_thread = g_thread_new ("sysex_thread",
+			       elektroid_add_upload_tasks_runner, NULL);
+  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Preparing Tasks"));
+  gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
+  gtk_dialog_run (GTK_DIALOG (progress_dialog));
+  gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
-  if (!queued)
-    {
-      elektroid_run_next_task (NULL);
-    }
+  elektroid_join_sysex_thread ();
+
+  g_mutex_lock (&sysex_transfer.mutex);
+  sysex_transfer.active = FALSE;
+  g_mutex_unlock (&sysex_transfer.mutex);
 }
 
 static gpointer
@@ -2545,12 +2577,43 @@ elektroid_add_download_task (GtkTreeModel * model,
   g_free (id);
 }
 
+static gpointer
+elektroid_add_download_tasks_runner (gpointer data)
+{
+  GtkTreeIter iter;
+  struct item_iterator item_iterator;
+  gboolean queued_before, queued_after, active;
+  GtkTreeSelection *selection =
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
+
+  queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
+						  NULL);
+
+  backend_enable_cache (remote_browser.backend);
+
+  remote_browser.fs_ops->readdir (remote_browser.backend, &item_iterator,
+				  remote_browser.dir);
+  gtk_tree_selection_selected_foreach (selection, elektroid_add_download_task,
+				       &item_iterator);
+  free_item_iterator (&item_iterator);
+
+  backend_disable_cache (remote_browser.backend);
+
+  queued_after = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
+						 NULL);
+  if (!queued_before && queued_after)
+    {
+      g_idle_add (elektroid_run_next_task, NULL);
+    }
+
+  sleep (1);			//See elektroid_dnd_received_runner
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+  return NULL;
+}
+
 static void
 elektroid_add_download_tasks (GtkWidget * object, gpointer data)
 {
-  gboolean queued;
-  GtkTreeIter iter;
-  struct item_iterator item_iterator;
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
 
@@ -2559,18 +2622,23 @@ elektroid_add_download_tasks (GtkWidget * object, gpointer data)
       return;
     }
 
-  queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL, NULL);
+  g_mutex_lock (&sysex_transfer.mutex);
+  sysex_transfer.active = TRUE;
+  g_mutex_unlock (&sysex_transfer.mutex);
 
-  remote_browser.fs_ops->readdir (remote_browser.backend, &item_iterator,
-				  remote_browser.dir);
-  gtk_tree_selection_selected_foreach (selection, elektroid_add_download_task,
-				       &item_iterator);
-  free_item_iterator (&item_iterator);
+  debug_print (1, "Creating SysEx thread...\n");
+  sysex_thread = g_thread_new ("sysex_thread",
+			       elektroid_add_download_tasks_runner, NULL);
+  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Preparing Tasks"));
+  gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
+  gtk_dialog_run (GTK_DIALOG (progress_dialog));
+  gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
-  if (!queued)
-    {
-      elektroid_run_next_task (NULL);
-    }
+  elektroid_join_sysex_thread ();
+
+  g_mutex_lock (&sysex_transfer.mutex);
+  sysex_transfer.active = FALSE;
+  g_mutex_unlock (&sysex_transfer.mutex);
 }
 
 static gboolean
@@ -2667,49 +2735,46 @@ static gboolean
 elektroid_remote_key_press (GtkWidget * widget, GdkEventKey * event,
 			    gpointer data)
 {
-  if (event->type == GDK_KEY_PRESS)
+  if (event->type != GDK_KEY_PRESS)
     {
-      if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_Left)
-	{
-	  if (remote_browser.fs_ops->download)
-	    {
-	      struct backend *backend = remote_browser.backend;
-	      backend_enable_cache (backend);
-	      elektroid_add_download_tasks (NULL, NULL);
-	      backend_disable_cache (backend);
-	    }
-	  return TRUE;
-	}
-      else
-	{
-	  return elektroid_common_key_press (widget, event, data);
-	}
+      return FALSE;
     }
 
-  return FALSE;
+  if (!(event->state & GDK_CONTROL_MASK) || event->keyval != GDK_KEY_Left)
+    {
+      return elektroid_common_key_press (widget, event, data);
+    }
+
+  if (!remote_browser.fs_ops->download)
+    {
+      return FALSE;
+    }
+
+  elektroid_add_download_tasks (NULL, NULL);
+  return TRUE;
 }
 
 static gboolean
 elektroid_local_key_press (GtkWidget * widget, GdkEventKey * event,
 			   gpointer data)
 {
-  if (event->type == GDK_KEY_PRESS)
+  if (event->type != GDK_KEY_PRESS)
     {
-      if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_Right)
-	{
-	  if (remote_browser.fs_ops->upload)
-	    {
-	      elektroid_add_upload_tasks (NULL, NULL);
-	    }
-	  return TRUE;
-	}
-      else
-	{
-	  return elektroid_common_key_press (widget, event, data);
-	}
+      return FALSE;
     }
 
-  return FALSE;
+  if (!(event->state & GDK_CONTROL_MASK) || event->keyval != GDK_KEY_Right)
+    {
+      return elektroid_common_key_press (widget, event, data);
+    }
+
+  if (!remote_browser.fs_ops->upload)
+    {
+      return FALSE;
+    }
+
+  elektroid_add_upload_tasks (NULL, NULL);
+  return TRUE;
 }
 
 static void
@@ -3070,7 +3135,7 @@ elektroid_add_upload_task_slot (const gchar * name,
 }
 
 static gpointer
-elektroid_dnd_received_bg (gpointer data)
+elektroid_dnd_received_runner (gpointer data)
 {
   GtkWidget *widget = data;
   gint32 next_idx = 1;
@@ -3214,7 +3279,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   g_mutex_unlock (&sysex_transfer.mutex);
 
   debug_print (1, "Creating SysEx thread...\n");
-  sysex_thread = g_thread_new ("sysex_thread", elektroid_dnd_received_bg,
+  sysex_thread = g_thread_new ("sysex_thread", elektroid_dnd_received_runner,
 			       widget);
 
   if ((widget == GTK_WIDGET (local_browser.view)
