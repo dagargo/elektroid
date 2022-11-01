@@ -227,9 +227,9 @@ static enum item_type elektron_get_path_type (struct backend *,
 					      const gchar *,
 					      fs_init_iter_func);
 
-static void print_smplrw (struct item_iterator *);
+static void elektron_print_smplrw (struct item_iterator *);
 
-static void print_data (struct item_iterator *);
+static void elektron_print_data (struct item_iterator *);
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -297,7 +297,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .type_ext = "wav",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_samples_dir,
-  .print_item = print_smplrw,
+  .print_item = elektron_print_smplrw,
   .mkdir = elektron_create_samples_dir,
   .delete = elektron_delete_samples_item,
   .rename = elektron_move_samples_item,
@@ -319,7 +319,7 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .type_ext = "raw",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_raw_dir,
-  .print_item = print_smplrw,
+  .print_item = elektron_print_smplrw,
   .mkdir = elektron_create_raw_dir,
   .delete = elektron_delete_raw_item,
   .rename = elektron_move_raw_item,
@@ -343,7 +343,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .type_ext = "pst",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_raw_dir,
-  .print_item = print_smplrw,
+  .print_item = elektron_print_smplrw,
   .mkdir = elektron_create_raw_dir,
   .delete = elektron_delete_raw_item,
   .rename = elektron_move_raw_item,
@@ -364,7 +364,7 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .name = "data",
   .type_ext = "data",
   .readdir = elektron_read_data_dir_any,
-  .print_item = print_data,
+  .print_item = elektron_print_data,
   .delete = elektron_clear_data_item_any,
   .move = elektron_move_data_item_any,
   .copy = elektron_copy_data_item_any,
@@ -388,7 +388,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .gui_icon = BE_FILE_ICON_PRJ,
   .type_ext = "prj",
   .readdir = elektron_read_data_dir_prj,
-  .print_item = print_data,
+  .print_item = elektron_print_data,
   .delete = elektron_clear_data_item_prj,
   .move = elektron_move_data_item_prj,
   .copy = elektron_copy_data_item_prj,
@@ -412,7 +412,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .gui_icon = BE_FILE_ICON_SND,
   .type_ext = "snd",
   .readdir = elektron_read_data_dir_snd,
-  .print_item = print_data,
+  .print_item = elektron_print_data,
   .delete = elektron_clear_data_item_snd,
   .move = elektron_move_data_item_snd,
   .copy = elektron_copy_data_item_snd,
@@ -435,7 +435,7 @@ static const struct fs_operations *FS_OPERATIONS[] = {
 };
 
 static void
-print_smplrw (struct item_iterator *iter)
+elektron_print_smplrw (struct item_iterator *iter)
 {
   gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct elektron_iterator_data *data = iter->data;
@@ -446,7 +446,7 @@ print_smplrw (struct item_iterator *iter)
 }
 
 static void
-print_data (struct item_iterator *iter)
+elektron_print_data (struct item_iterator *iter)
 {
   gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct elektron_iterator_data *data = iter->data;
