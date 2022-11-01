@@ -1,14 +1,14 @@
 # German translations for Elektroid package.
-# Copyright (C) 2020 Dennis Braun
+# Copyright (C) 2020-2022 Dennis Braun
 # This file is distributed under the same license as the Elektroid package.
-# Dennis Braun <d_braun@kabelmail.de>, 2020.
+# Dennis Braun <d_braun@kabelmail.de>, 2022.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 1.4\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2022-10-30 20:46+0100\n"
-"PO-Revision-Date: 2021-01-11 22:00+0100\n"
+"PO-Revision-Date: 2022-11-01 21:47+0100\n"
 "Last-Translator: Dennis Braun <d_braun@kabelmail.de>\n"
 "Language-Team: German\n"
 "Language: de\n"
@@ -19,7 +19,7 @@ msgstr ""
 
 #: src/connector.c:41 src/connector.c:47
 msgid "MIDI device"
-msgstr ""
+msgstr "MIDI Gerät"
 
 #: src/elektroid.c:526 src/elektroid.c:3952
 msgid "Not connected"
@@ -27,7 +27,7 @@ msgstr "Nicht verbunden"
 
 #: src/elektroid.c:676
 msgid "Cancelling..."
-msgstr ""
+msgstr "Abbrechen..."
 
 #: src/elektroid.c:697 src/elektroid.c:2497 src/elektroid.c:2706
 #: src/elektroid.c:3362
@@ -87,11 +87,11 @@ msgstr "_Öffnen"
 
 #: src/elektroid.c:946
 msgid "Sending SysEx"
-msgstr ""
+msgstr "Sende SysEx"
 
 #: src/elektroid.c:1021
 msgid "minutes"
-msgstr ""
+msgstr "Minuten"
 
 #: src/elektroid.c:1159
 msgid "Are you sure you want to delete the selected items?"
@@ -103,11 +103,11 @@ msgstr "_Löschen"
 
 #: src/elektroid.c:1178
 msgid "Deleting Files"
-msgstr ""
+msgstr "Entfernt Dateien"
 
 #: src/elektroid.c:1179
 msgid "Deleting..."
-msgstr ""
+msgstr "Lösche..."
 
 #: src/elektroid.c:1212 res/gui.glade:121 res/gui.glade:210
 msgid "Rename"
@@ -161,28 +161,28 @@ msgstr "Herunterladen"
 
 #: src/elektroid.c:2496 src/elektroid.c:2705 src/elektroid.c:3361
 msgid "Preparing Tasks"
-msgstr ""
+msgstr "Aufgaben werden vorbereitet"
 
 #: src/elektroid.c:3077
 msgid "Connecting to Device"
-msgstr ""
+msgstr "Verbindung zum Gerät wird hergestellt"
 
 #: src/elektroid.c:3078
 msgid "Connecting..."
-msgstr ""
+msgstr "Verbinde..."
 
 #: src/elektroid.c:3088
 #, c-format
 msgid "Device “%s” not recognized: %s"
-msgstr ""
+msgstr "Gerät “%s” nicht erkannt: %s"
 
 #: src/elektroid.c:3355
 msgid "Moving Files"
-msgstr ""
+msgstr "Verschiebe Dateien"
 
 #: src/elektroid.c:3356
 msgid "Moving..."
-msgstr ""
+msgstr "Verschiebe..."
 
 #: src/local.c:492
 msgid "System"
@@ -267,7 +267,7 @@ msgstr "Auto Play"
 
 #: res/gui.glade:1027
 msgid "Playing mix depends on the destination channels"
-msgstr ""
+msgstr "Das Abspielen vom Mix hängt von den Zielkanälen ab"
 
 #. It is recommended to split the text in two lines if it is too long
 #: res/gui.glade:1029
@@ -275,6 +275,8 @@ msgid ""
 "Mix depending\n"
 "on destination"
 msgstr ""
+"Mix hängt ab von\n"
+"den Zielkanälen"
 
 #: res/gui.glade:1219
 msgid "Samples"
@@ -282,19 +284,19 @@ msgstr ""
 
 #: res/gui.glade:1233
 msgid "Channels"
-msgstr ""
+msgstr "Kanäle"
 
 #: res/gui.glade:1247
 msgid "Sample rate"
-msgstr ""
+msgstr "Sample Rate"
 
 #: res/gui.glade:1261
 msgid "Bit depth"
-msgstr ""
+msgstr "Bit-Tiefe"
 
 #: res/gui.glade:1319
 msgid "Duration"
-msgstr ""
+msgstr "Dauer"
 
 #: res/gui.glade:1385
 msgid "Status"
