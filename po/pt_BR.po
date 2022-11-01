@@ -8,19 +8,19 @@ msgstr ""
 "Project-Id-Version: elektroid 1.4\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2022-10-30 20:46+0100\n"
-"PO-Revision-Date: 2021-12-01 17:56-0300\n"
+"PO-Revision-Date: 2022-11-01 18:20-0300\n"
 "Last-Translator: Gustavo Costa <xfgusta@gmail.com>\n"
 "Language-Team: \n"
 "Language: pt_BR\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 3.0\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
+"X-Generator: Poedit 3.1.1\n"
 
 #: src/connector.c:41 src/connector.c:47
 msgid "MIDI device"
-msgstr ""
+msgstr "Dispositivo MIDI"
 
 #: src/elektroid.c:526 src/elektroid.c:3952
 msgid "Not connected"
@@ -28,7 +28,7 @@ msgstr "Não conectado"
 
 #: src/elektroid.c:676
 msgid "Cancelling..."
-msgstr ""
+msgstr "Cancelando..."
 
 #: src/elektroid.c:697 src/elektroid.c:2497 src/elektroid.c:2706
 #: src/elektroid.c:3362
@@ -71,12 +71,12 @@ msgstr "Arquivos SysEx"
 #: src/elektroid.c:843
 #, c-format
 msgid "Error while saving “%s”: %s."
-msgstr "Erro ao excluir \"%s\": %s."
+msgstr "Erro ao salvar \"%s\": %s."
 
 #: src/elektroid.c:864
 #, c-format
 msgid "Error while loading “%s”: %s."
-msgstr "Erro ao excluir \"%s\": %s."
+msgstr "Erro ao carregar \"%s\": %s."
 
 #: src/elektroid.c:925
 msgid "Open SysEx"
@@ -88,11 +88,11 @@ msgstr "_Abrir"
 
 #: src/elektroid.c:946
 msgid "Sending SysEx"
-msgstr ""
+msgstr "Enviando SysEx"
 
 #: src/elektroid.c:1021
 msgid "minutes"
-msgstr ""
+msgstr "minutos"
 
 #: src/elektroid.c:1159
 msgid "Are you sure you want to delete the selected items?"
@@ -104,11 +104,11 @@ msgstr "_Excluir"
 
 #: src/elektroid.c:1178
 msgid "Deleting Files"
-msgstr ""
+msgstr "Excluindo arquivos"
 
 #: src/elektroid.c:1179
 msgid "Deleting..."
-msgstr ""
+msgstr "Excluindo..."
 
 #: src/elektroid.c:1212 res/gui.glade:121 res/gui.glade:210
 msgid "Rename"
@@ -162,36 +162,36 @@ msgstr "Download"
 
 #: src/elektroid.c:2496 src/elektroid.c:2705 src/elektroid.c:3361
 msgid "Preparing Tasks"
-msgstr ""
+msgstr "Preparando tarefas"
 
 #: src/elektroid.c:3077
 msgid "Connecting to Device"
-msgstr ""
+msgstr "Conectando ao dispositivo"
 
 #: src/elektroid.c:3078
 msgid "Connecting..."
-msgstr ""
+msgstr "Conectando..."
 
 #: src/elektroid.c:3088
 #, c-format
 msgid "Device “%s” not recognized: %s"
-msgstr ""
+msgstr "Dispositivo \"%s\" não reconhecido: %s"
 
 #: src/elektroid.c:3355
 msgid "Moving Files"
-msgstr ""
+msgstr "Movendo arquivos"
 
 #: src/elektroid.c:3356
 msgid "Moving..."
-msgstr ""
+msgstr "Movendo..."
 
 #: src/local.c:492
 msgid "System"
-msgstr ""
+msgstr "Sistema"
 
 #: src/connectors/sds.c:1127 src/connectors/sds.c:1133
 msgid "SDS sampler"
-msgstr ""
+msgstr "Sampler SDS"
 
 #: res/gui.glade:70
 msgid "Upload Selection"
@@ -270,34 +270,34 @@ msgstr ""
 
 #: res/gui.glade:1027
 msgid "Playing mix depends on the destination channels"
-msgstr ""
+msgstr "A reprodução de mixagem depende dos canais de destino"
 
 #. It is recommended to split the text in two lines if it is too long
 #: res/gui.glade:1029
 msgid ""
 "Mix depending\n"
 "on destination"
-msgstr ""
+msgstr "Mixagem dependendo do destino"
 
 #: res/gui.glade:1219
 msgid "Samples"
-msgstr ""
+msgstr "Amostras"
 
 #: res/gui.glade:1233
 msgid "Channels"
-msgstr ""
+msgstr "Canais"
 
 #: res/gui.glade:1247
 msgid "Sample rate"
-msgstr ""
+msgstr "Taxa de amostragem"
 
 #: res/gui.glade:1261
 msgid "Bit depth"
-msgstr ""
+msgstr "Profundidade de bit"
 
 #: res/gui.glade:1319
 msgid "Duration"
-msgstr ""
+msgstr "Duração"
 
 #: res/gui.glade:1385
 msgid "Status"
