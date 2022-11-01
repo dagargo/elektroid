@@ -225,6 +225,7 @@ static GtkWidget *clear_tasks_button;
 static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
 static GtkTreeViewColumn *remote_tree_view_index_column;
+static GtkTreeViewColumn *remote_tree_view_slot_column;
 static GtkWidget *sample_info_box;
 static GtkWidget *sample_length;
 static GtkWidget *sample_duration;
@@ -452,6 +453,7 @@ elektroid_load_devices (gboolean auto_select)
       elektroid_set_local_file_extensions (0);
       gtk_widget_set_visible (local_audio_box, TRUE);
       gtk_tree_view_column_set_visible (remote_tree_view_index_column, FALSE);
+      gtk_tree_view_column_set_visible (remote_tree_view_slot_column, FALSE);
       browser_load_dir (&local_browser);
       elektroid_update_upload_menuitem ();
     }
@@ -1100,7 +1102,7 @@ elektroid_delete_file (struct browser *browser, gchar * dir,
 
   if (item->type == ELEKTROID_FILE)
     {
-      gchar *id = browser->fs_ops->getid (item);
+      gchar *id = browser->fs_ops->get_id (item);
       gchar *id_path = chain_path (dir, id);
       g_free (id);
       err = browser->fs_ops->delete (browser->backend, id_path);
@@ -2666,7 +2668,7 @@ elektroid_add_download_task_path (const gchar * rel_path,
   copy_item_iterator (&iter_copy, &iter, TRUE);
   while (!next_item_iterator (&iter))
     {
-      id = remote_browser.fs_ops->getid (&iter.item);
+      id = remote_browser.fs_ops->get_id (&iter.item);
       path = chain_path (rel_path, id);
       elektroid_add_download_task_path (path, src_dir, dst_dir, &iter_copy);
       g_free (path);
@@ -2713,7 +2715,7 @@ elektroid_add_download_tasks_runner (gpointer data)
 
       gtk_tree_model_get_iter (model, &path_iter, path);
       browser_set_item (model, &path_iter, &item);
-      id = remote_browser.fs_ops->getid (&item);
+      id = remote_browser.fs_ops->get_id (&item);
       elektroid_add_download_task_path (id, remote_browser.dir,
 					local_browser.dir, &item_iterator);
       g_free (id);
@@ -2919,38 +2921,6 @@ elektroid_local_key_press (GtkWidget * widget, GdkEventKey * event,
 }
 
 static void
-elektroid_set_browser_options (struct browser *browser)
-{
-  GtkTreeSortable *sortable =
-    GTK_TREE_SORTABLE (gtk_tree_view_get_model (browser->view));
-
-  if (browser->fs_ops->options & FS_OPTION_SORT_BY_ID)
-    {
-      gtk_tree_sortable_set_sort_func (sortable,
-				       BROWSER_LIST_STORE_INDEX_FIELD,
-				       browser_sort_by_id, NULL, NULL);
-      gtk_tree_sortable_set_sort_column_id (sortable,
-					    BROWSER_LIST_STORE_INDEX_FIELD,
-					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
-    }
-  else if (browser->fs_ops->options & FS_OPTION_SORT_BY_NAME)
-    {
-      gtk_tree_sortable_set_sort_func (sortable,
-				       BROWSER_LIST_STORE_NAME_FIELD,
-				       browser_sort_by_name, NULL, NULL);
-      gtk_tree_sortable_set_sort_column_id (sortable,
-					    BROWSER_LIST_STORE_NAME_FIELD,
-					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
-    }
-  else
-    {
-      gtk_tree_sortable_set_sort_column_id (sortable,
-					    GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID,
-					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
-    }
-}
-
-static void
 elektroid_set_fs (GtkWidget * object, gpointer data)
 {
   GtkTreeIter iter;
@@ -3000,9 +2970,14 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   gtk_widget_set_visible (remote_delete_menuitem,
 			  remote_browser.fs_ops->delete != NULL);
   gtk_widget_set_visible (local_audio_box, PLAYER_VISIBLE);
+
   gtk_tree_view_column_set_visible (remote_tree_view_index_column,
 				    remote_browser.fs_ops->options &
 				    FS_OPTION_SHOW_INDEX_COLUMN);
+  gtk_tree_view_column_set_visible (remote_tree_view_slot_column,
+				    (remote_browser.fs_ops->options &
+				     FS_OPTION_SLOT_STORAGE)
+				    && remote_browser.fs_ops->get_slot);
 
   if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
     {
@@ -3024,7 +2999,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       audio_stop (&audio, TRUE);
     }
 
-  elektroid_set_browser_options (&remote_browser);
+  browser_set_options (&remote_browser);
 
   elektroid_set_remote_file_extensions (fs);
   browser_update_fs_options (&remote_browser);
@@ -3859,6 +3834,10 @@ elektroid_run (int argc, char *argv[])
   remote_tree_view_index_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_index_column"));
+  remote_tree_view_slot_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "remote_tree_view_slot_column"));
+
   g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
 		    "changed", G_CALLBACK (browser_selection_changed),
 		    &remote_browser);
@@ -3964,7 +3943,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (local_browser.up_button, "drag-leave",
 		    G_CALLBACK (elektroid_drag_leave_up), &local_browser);
 
-  elektroid_set_browser_options (&local_browser);
+  browser_set_options (&local_browser);
 
   gtk_drag_source_set ((GtkWidget *) local_browser.view, GDK_BUTTON1_MASK,
 		       TARGET_ENTRIES_LOCAL_SRC,

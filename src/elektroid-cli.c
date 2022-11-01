@@ -137,7 +137,7 @@ cli_list (int argc, gchar * argv[], int *optind)
 
   while (!next_item_iterator (&iter))
     {
-      fs_ops->print_item (&iter);
+      fs_ops->print_item (&iter, &backend);
     }
 
   free_item_iterator (&iter);

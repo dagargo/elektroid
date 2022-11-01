@@ -959,9 +959,9 @@ sds_sample_load (const gchar * path, GByteArray * sample,
 }
 
 static void
-sds_print (struct item_iterator *iter)
+sds_print (struct item_iterator *iter, struct backend *backend)
 {
-  printf ("%c %s\n", iter->item.type, iter->item.name);
+  printf ("%c %3d %s\n", iter->item.type, iter->item.id, iter->item.name);
 }
 
 enum sds_fs
@@ -986,7 +986,7 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_8b,
-  .getid = get_item_index,
+  .get_id = get_item_index,
   .load = sds_sample_load,
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
@@ -1008,7 +1008,7 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_12b,
-  .getid = get_item_index,
+  .get_id = get_item_index,
   .load = sds_sample_load,
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
@@ -1030,7 +1030,7 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_14b,
-  .getid = get_item_index,
+  .get_id = get_item_index,
   .load = sds_sample_load,
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
@@ -1052,7 +1052,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_16b,
-  .getid = get_item_index,
+  .get_id = get_item_index,
   .load = sds_sample_load,
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,

@@ -188,7 +188,7 @@ browser_get_item_path (struct browser *browser, struct item *item)
 gchar *
 browser_get_item_id_path (struct browser *browser, struct item *item)
 {
-  gchar *id = browser->fs_ops->getid (item);
+  gchar *id = browser->fs_ops->get_id (item);
   gchar *path = chain_path (browser->dir, id);
   debug_print (1, "Using %s path for item %s (%d)...\n", path, item->name,
 	       item->id);
@@ -199,11 +199,15 @@ browser_get_item_id_path (struct browser *browser, struct item *item)
 static void
 browser_add_dentry_item (struct browser *browser, struct item_iterator *iter)
 {
-  gchar *hsize;
+  gchar *hsize, *slot;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
 
   hsize = iter->item.size ? get_human_size (iter->item.size, TRUE) : "";
+  slot = (browser->fs_ops->options & FS_OPTION_SLOT_STORAGE)
+    && browser->fs_ops->get_slot ? browser->fs_ops->get_slot (&iter->item,
+							      browser->backend)
+    : "";
 
   gtk_list_store_insert_with_values (list_store, NULL, -1,
 				     BROWSER_LIST_STORE_ICON_FIELD,
@@ -219,10 +223,16 @@ browser_add_dentry_item (struct browser *browser, struct item_iterator *iter)
 				     BROWSER_LIST_STORE_TYPE_FIELD,
 				     iter->item.type,
 				     BROWSER_LIST_STORE_INDEX_FIELD,
-				     iter->item.id, -1);
+				     iter->item.id,
+				     BROWSER_LIST_STORE_SLOT_FIELD, slot, -1);
   if (strlen (hsize))
     {
       g_free (hsize);
+    }
+
+  if (strlen (slot))
+    {
+      g_free (slot);
     }
 }
 
@@ -367,4 +377,36 @@ browser_destroy (struct browser *browser)
       g_thread_join (browser->thread);
     }
   g_slist_free (browser->sensitive_widgets);
+}
+
+void
+browser_set_options (struct browser *browser)
+{
+  GtkTreeSortable *sortable =
+    GTK_TREE_SORTABLE (gtk_tree_view_get_model (browser->view));
+
+  if (browser->fs_ops->options & FS_OPTION_SORT_BY_ID)
+    {
+      gtk_tree_sortable_set_sort_func (sortable,
+				       BROWSER_LIST_STORE_INDEX_FIELD,
+				       browser_sort_by_id, NULL, NULL);
+      gtk_tree_sortable_set_sort_column_id (sortable,
+					    BROWSER_LIST_STORE_INDEX_FIELD,
+					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+    }
+  else if (browser->fs_ops->options & FS_OPTION_SORT_BY_NAME)
+    {
+      gtk_tree_sortable_set_sort_func (sortable,
+				       BROWSER_LIST_STORE_NAME_FIELD,
+				       browser_sort_by_name, NULL, NULL);
+      gtk_tree_sortable_set_sort_column_id (sortable,
+					    BROWSER_LIST_STORE_NAME_FIELD,
+					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+    }
+  else
+    {
+      gtk_tree_sortable_set_sort_column_id (sortable,
+					    GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID,
+					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+    }
 }

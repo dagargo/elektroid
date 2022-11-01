@@ -75,7 +75,7 @@ struct item_iterator
   struct item item;
 };
 
-typedef void (*fs_print_item) (struct item_iterator *);
+typedef void (*fs_print_item) (struct item_iterator *, struct backend *);
 
 struct job_control;
 
@@ -155,6 +155,8 @@ typedef gint (*fs_remote_file_op) (struct backend *, const gchar *,
 
 typedef gchar *(*fs_get_item_id) (struct item *);
 
+typedef gchar *(*fs_get_item_slot) (struct item *, struct backend *);
+
 typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
 				  struct job_control *);
 
@@ -199,7 +201,8 @@ struct fs_operations
   fs_src_dst_func swap;
   fs_remote_file_op download;
   fs_remote_file_op upload;
-  fs_get_item_id getid;
+  fs_get_item_id get_id;
+  fs_get_item_slot get_slot;
   fs_local_file_op save;
   fs_local_file_op load;
   fs_get_ext get_ext;

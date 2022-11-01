@@ -405,10 +405,29 @@ efactor_rename (struct backend *backend, const gchar * src, const gchar * dst)
   return err;
 }
 
-static void
-efactor_print (struct item_iterator *iter)
+static gchar *
+efactor_get_slot (struct item *item, struct backend *backend)
 {
-  printf ("%c %s\n", iter->item.type, iter->item.name);
+  gchar *slot = malloc (LABEL_MAX);
+  struct efactor_data *data = backend->data;
+  if (data->type == EFACTOR_FACTOR)
+    {
+      snprintf (slot, LABEL_MAX, "[%d:%d]", (item->id / 2) + 1,
+		(item->id % 2) + 1);
+    }
+  else
+    {
+      snprintf (slot, LABEL_MAX, "%d", item->id + 1);
+    }
+  return slot;
+}
+
+static void
+efactor_print (struct item_iterator *iter, struct backend *backend)
+{
+  gchar *slot = efactor_get_slot (&iter->item, backend);
+  printf ("%c %s %s\n", iter->item.type, slot, iter->item.name);
+  g_free (slot);
 }
 
 static const struct fs_operations FS_EFACTOR_OPERATIONS = {
@@ -425,7 +444,8 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .rename = efactor_rename,
   .download = efactor_download,
   .upload = efactor_upload,
-  .getid = get_item_index,
+  .get_id = get_item_index,
+  .get_slot = efactor_get_slot,
   .load = load_file,
   .save = save_file,
   .get_ext = backend_get_fs_ext,

@@ -366,7 +366,7 @@ cleanup:
 }
 
 static void
-cz_print (struct item_iterator *iter)
+cz_print (struct item_iterator *iter, struct backend *backend)
 {
   printf ("%c % 4ldB %s\n", iter->item.type, iter->item.size,
 	  iter->item.name);
@@ -383,7 +383,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .print_item = cz_print,
   .download = cz_download,
   .upload = cz_upload,
-  .getid = get_item_name,
+  .get_id = get_item_name,
   .load = load_file,
   .save = save_file,
   .get_ext = backend_get_fs_ext,

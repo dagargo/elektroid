@@ -37,7 +37,8 @@ enum browser_list_field
   BROWSER_LIST_STORE_SIZE_FIELD,
   BROWSER_LIST_STORE_SIZE_STR_FIELD,
   BROWSER_LIST_STORE_TYPE_FIELD,
-  BROWSER_LIST_STORE_INDEX_FIELD
+  BROWSER_LIST_STORE_INDEX_FIELD,
+  BROWSER_LIST_STORE_SLOT_FIELD	//This is a human readable index
 };
 
 struct browser
@@ -71,12 +72,6 @@ struct browser
   struct item_iterator *iter;
 };
 
-gint browser_sort_by_name (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
-			   gpointer);
-
-gint browser_sort_by_id (GtkTreeModel *, GtkTreeIter *, GtkTreeIter *,
-			 gpointer);
-
 void browser_set_item (GtkTreeModel *, GtkTreeIter *, struct item *);
 
 gint browser_get_selected_items_count (struct browser *);
@@ -105,5 +100,7 @@ void browser_update_fs_options (struct browser *);
 void browser_init (struct browser *);
 
 void browser_destroy (struct browser *);
+
+void browser_set_options (struct browser *);
 
 #endif

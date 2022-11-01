@@ -227,9 +227,9 @@ static enum item_type elektron_get_path_type (struct backend *,
 					      const gchar *,
 					      fs_init_iter_func);
 
-static void elektron_print_smplrw (struct item_iterator *);
+static void elektron_print_smplrw (struct item_iterator *, struct backend *);
 
-static void elektron_print_data (struct item_iterator *);
+static void elektron_print_data (struct item_iterator *, struct backend *);
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -304,7 +304,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .move = elektron_move_samples_item,
   .download = elektron_download_sample,
   .upload = elektron_upload_sample,
-  .getid = get_item_name,
+  .get_id = get_item_name,
   .load = elektron_sample_load,
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
@@ -326,7 +326,7 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .move = elektron_move_raw_item,
   .download = elektron_download_raw,
   .upload = elektron_upload_raw,
-  .getid = get_item_name,
+  .get_id = get_item_name,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -350,7 +350,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .move = elektron_move_raw_item,
   .download = elektron_download_raw_pst_pkg,
   .upload = elektron_upload_raw_pst_pkg,
-  .getid = get_item_name,
+  .get_id = get_item_name,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -372,7 +372,7 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .swap = elektron_swap_data_item_any,
   .download = elektron_download_data_any,
   .upload = elektron_upload_data_any,
-  .getid = get_item_index,
+  .get_id = get_item_index,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -396,7 +396,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .swap = elektron_swap_data_item_prj,
   .download = elektron_download_data_prj_pkg,
   .upload = elektron_upload_data_prj_pkg,
-  .getid = get_item_index,
+  .get_id = get_item_index,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -420,7 +420,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .swap = elektron_swap_data_item_snd,
   .download = elektron_download_data_snd_pkg,
   .upload = elektron_upload_data_snd_pkg,
-  .getid = get_item_index,
+  .get_id = get_item_index,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -435,7 +435,7 @@ static const struct fs_operations *FS_OPERATIONS[] = {
 };
 
 static void
-elektron_print_smplrw (struct item_iterator *iter)
+elektron_print_smplrw (struct item_iterator *iter, struct backend *backend)
 {
   gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct elektron_iterator_data *data = iter->data;
@@ -446,7 +446,7 @@ elektron_print_smplrw (struct item_iterator *iter)
 }
 
 static void
-elektron_print_data (struct item_iterator *iter)
+elektron_print_data (struct item_iterator *iter, struct backend *backend)
 {
   gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct elektron_iterator_data *data = iter->data;

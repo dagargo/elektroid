@@ -359,7 +359,7 @@ end:
 }
 
 static void
-microbrute_print (struct item_iterator *iter)
+microbrute_print (struct item_iterator *iter, struct backend *backend)
 {
   printf ("%c %s\n", iter->item.type, iter->item.name);
 }
@@ -376,7 +376,7 @@ static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .print_item = microbrute_print,
   .download = microbrute_download,
   .upload = microbrute_upload,
-  .getid = get_item_name,
+  .get_id = get_item_name,
   .load = load_file,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
