@@ -1,14 +1,14 @@
 # French GUI translation for Elektroid.
-# Copyright (C) 2019-2021 Olivier Humbert
+# Copyright (C) 2019-2022 Olivier Humbert
 # This file is distributed under the same license as the Elektroid package.
-# Olivier Humbert <trebmuh@tuxfamily.org>, 2019-2021.
+# Olivier Humbert <trebmuh@tuxfamily.org>, 2019-2022.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2022-10-30 20:46+0100\n"
-"PO-Revision-Date: 2021-12-03 17:59+0100\n"
+"PO-Revision-Date: 2022-11-01 23:05+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
 "Language: fr\n"
@@ -19,7 +19,7 @@ msgstr ""
 
 #: src/connector.c:41 src/connector.c:47
 msgid "MIDI device"
-msgstr ""
+msgstr "périphérique MIDI"
 
 #: src/elektroid.c:526 src/elektroid.c:3952
 msgid "Not connected"
@@ -27,7 +27,7 @@ msgstr "Non connecté"
 
 #: src/elektroid.c:676
 msgid "Cancelling..."
-msgstr ""
+msgstr "Annulation..."
 
 #: src/elektroid.c:697 src/elektroid.c:2497 src/elektroid.c:2706
 #: src/elektroid.c:3362
@@ -87,11 +87,11 @@ msgstr "_Ouvrir"
 
 #: src/elektroid.c:946
 msgid "Sending SysEx"
-msgstr ""
+msgstr "Envoi SysEx"
 
 #: src/elektroid.c:1021
 msgid "minutes"
-msgstr ""
+msgstr "minutes"
 
 #: src/elektroid.c:1159
 msgid "Are you sure you want to delete the selected items?"
@@ -103,11 +103,11 @@ msgstr "_Supprimer"
 
 #: src/elektroid.c:1178
 msgid "Deleting Files"
-msgstr ""
+msgstr "Suppression des fichiers"
 
 #: src/elektroid.c:1179
 msgid "Deleting..."
-msgstr ""
+msgstr "Suppression..."
 
 #: src/elektroid.c:1212 res/gui.glade:121 res/gui.glade:210
 msgid "Rename"
@@ -161,36 +161,36 @@ msgstr "Téléchargement"
 
 #: src/elektroid.c:2496 src/elektroid.c:2705 src/elektroid.c:3361
 msgid "Preparing Tasks"
-msgstr ""
+msgstr "Préparation des tâches"
 
 #: src/elektroid.c:3077
 msgid "Connecting to Device"
-msgstr ""
+msgstr "Connexion au périphérique"
 
 #: src/elektroid.c:3078
 msgid "Connecting..."
-msgstr ""
+msgstr "Connexion..."
 
 #: src/elektroid.c:3088
 #, c-format
 msgid "Device “%s” not recognized: %s"
-msgstr ""
+msgstr "Périphérique “%s” non reconnu : %s"
 
 #: src/elektroid.c:3355
 msgid "Moving Files"
-msgstr ""
+msgstr "Déplacement des fichiers"
 
 #: src/elektroid.c:3356
 msgid "Moving..."
-msgstr ""
+msgstr "Déplacement..."
 
 #: src/local.c:492
 msgid "System"
-msgstr ""
+msgstr "Système"
 
 #: src/connectors/sds.c:1127 src/connectors/sds.c:1133
 msgid "SDS sampler"
-msgstr ""
+msgstr "échantillonneur SDS"
 
 #: res/gui.glade:70
 msgid "Upload Selection"
@@ -269,7 +269,7 @@ msgstr ""
 
 #: res/gui.glade:1027
 msgid "Playing mix depends on the destination channels"
-msgstr ""
+msgstr "Le mixage de lecture dépend des canaux de destination"
 
 #. It is recommended to split the text in two lines if it is too long
 #: res/gui.glade:1029
@@ -277,30 +277,32 @@ msgid ""
 "Mix depending\n"
 "on destination"
 msgstr ""
+""Mélange selon\n"
+"la destination"
 
 #: res/gui.glade:1219
 msgid "Samples"
-msgstr ""
+msgstr "Échantillons"
 
 #: res/gui.glade:1233
 msgid "Channels"
-msgstr ""
+msgstr "Canaux"
 
 #: res/gui.glade:1247
 msgid "Sample rate"
-msgstr ""
+msgstr "Taux d'échantillonnage"
 
 #: res/gui.glade:1261
 msgid "Bit depth"
-msgstr ""
+msgstr "Débit binaire"
 
 #: res/gui.glade:1319
 msgid "Duration"
-msgstr ""
+msgstr "Durée"
 
 #: res/gui.glade:1385
 msgid "Status"
-msgstr "Statut"
+msgstr "État"
 
 #: res/gui.glade:1396
 msgid "Type"
