@@ -1087,6 +1087,65 @@ elektroid_update_basic_sysex_progress (gpointer data)
   return active;
 }
 
+static gint
+elektroid_delete_file (struct browser *browser, gchar * dir,
+		       struct item *item)
+{
+  gint err = 0;
+  gchar *path;
+
+  path = chain_path (dir, item->name);
+
+  debug_print (1, "Deleting %s...\n", path);
+
+  if (item->type == ELEKTROID_FILE)
+    {
+      gchar *id = browser->fs_ops->getid (item);
+      gchar *id_path = chain_path (dir, id);
+      g_free (id);
+      err = browser->fs_ops->delete (browser->backend, id_path);
+      if (err)
+	{
+	  error_print ("Error while deleting “%s”: %s.", path,
+		       g_strerror (-err));
+	}
+      g_free (id_path);
+    }
+  else if (item->type == ELEKTROID_DIR)
+    {
+      gboolean active;
+      struct item_iterator iter;
+      if (browser->fs_ops->readdir (browser->backend, &iter, path))
+	{
+	  err = -ENOTDIR;
+	  goto end;
+	}
+
+      while (!next_item_iterator (&iter))
+	{
+	  elektroid_delete_file (browser, path, &iter.item);
+
+	  g_mutex_lock (&sysex_transfer.mutex);
+	  active = sysex_transfer.active;
+	  g_mutex_unlock (&sysex_transfer.mutex);
+
+	  if (!active)
+	    {
+	      free_item_iterator (&iter);
+	      err = -ECANCELED;
+	      goto end;
+	    }
+	}
+
+      browser->fs_ops->delete (browser->backend, path);
+      free_item_iterator (&iter);
+    }
+
+end:
+  g_free (path);
+  return err;
+}
+
 static gpointer
 elektroid_delete_files_runner (gpointer data)
 {
@@ -1102,47 +1161,50 @@ elektroid_delete_files_runner (gpointer data)
   tree_path_list = gtk_tree_selection_get_selected_rows (selection, &model);
   ref_list = NULL;
 
-  //A GtkTreeModel object can NOT be modified iterating over the selection.
-  for (list = tree_path_list; list != NULL; list = g_list_next (list))
+  //A GtkTreeModel object can NOT be modified while iterating over the selection.
+  list = tree_path_list;
+  while (list)
     {
       GtkTreeRowReference *ref = gtk_tree_row_reference_new (model,
 							     list->data);
       ref_list = g_list_append (ref_list, ref);
+
+      list = g_list_next (list);
     }
   g_list_free_full (tree_path_list, (GDestroyNotify) gtk_tree_path_free);
 
-  for (list = ref_list; list != NULL; list = g_list_next (list))
+  list = ref_list;
+  while (list)
     {
-      gint err;
+      gboolean active;
       GtkTreeIter iter;
       struct item item;
-      gchar *path, *id_path;
       GtkTreePath *tree_path = gtk_tree_row_reference_get_path (list->data);
 
       gtk_tree_model_get_iter (model, &iter, tree_path);
       browser_set_item (model, &iter, &item);
-      path = browser_get_item_path (browser, &item);
-      id_path = browser_get_item_id_path (browser, &item);
 
-      debug_print (1, "Deleting %s...\n", id_path);
-      err = browser->fs_ops->delete (browser->backend, id_path);
-      if (err)
-	{
-	  error_print ("Error while deleting “%s”: %s.", path,
-		       g_strerror (-err));
-	}
-      else
+      if (!elektroid_delete_file (browser, browser->dir, &item)
+	  && browser->backend->type != BE_TYPE_SYSTEM)
 	{
 	  gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
 	}
 
-      g_free (path);
-      g_free (id_path);
+      g_mutex_lock (&sysex_transfer.mutex);
+      active = sysex_transfer.active;
+      g_mutex_unlock (&sysex_transfer.mutex);
+
+      if (!active)
+	{
+	  break;
+	}
+
+      list = g_list_next (list);
     }
   g_list_free_full (ref_list, (GDestroyNotify) gtk_tree_row_reference_free);
 
-  elektroid_load_remote_if_midi (browser);
-
+  sleep (1);			//See elektroid_dnd_received_runner
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
   return NULL;
 }
 
