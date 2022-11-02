@@ -20,6 +20,11 @@ echo "Testing upload with name..."
 $ecli sds-sample16-ul $srcdir/res/silence.wav $DEVICE:/1:silence
 [ $? -ne 0 ] && exit 1
 
+# If renaming is not implemented, this will fail.
+echo "Testing mv..."
+$ecli sds-sample16-ul $DEVICE:/1 "Foo"
+[ $? -ne 1 ] && exit 1
+
 echo "Testing download..."
 $ecli sds-sample16-download $DEVICE:/1
 [ $? -ne 0 ] && exit 1
