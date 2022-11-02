@@ -19,7 +19,7 @@ msgstr ""
 
 #: src/connector.c:41 src/connector.c:47
 msgid "MIDI device"
-msgstr "périphérique MIDI"
+msgstr "Périphérique MIDI"
 
 #: src/elektroid.c:526 src/elektroid.c:3952
 msgid "Not connected"
