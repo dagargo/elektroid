@@ -975,7 +975,7 @@ enum sds_fs
 static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_8_B,
   .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID  |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
     FS_OPTION_SHOW_INDEX_COLUMN,
   .name = "sample8",
   .gui_name = "Samples (8 bits)",
