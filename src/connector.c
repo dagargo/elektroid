@@ -110,6 +110,8 @@ connector_init (struct backend *backend, const gchar * id,
       return err;
     }
 
+  backend_rx_drain (backend);	//This is needed in case of timeout.
+
   err = -ENODEV;
   connector = CONNECTORS;
   while (*connector)
@@ -163,6 +165,8 @@ connector_init (struct backend *backend, const gchar * id,
 	    }
 	}
       connector++;
+
+      backend_rx_drain (backend);
     }
 
   error_print ("No device recognized\n");
