@@ -228,7 +228,13 @@ efactor_download (struct backend *backend, const gchar * src_path,
 
   if (!data->lines)
     {
-      return -ENODATA;
+      struct item_iterator iter;
+      err = efactor_read_dir (backend, &iter, "/");
+      if (err)
+	{
+	  return err;
+	}
+      free_item_iterator (&iter);
     }
 
   basename_copy = strdup (src_path);
@@ -291,6 +297,7 @@ efactor_upload (struct backend *backend, const gchar * path,
       || input->data[sizeof (EFACTOR_REQUEST_HEADER)] !=
       EFACTOR_OP_PRESETS_DUMP)
     {
+      error_print ("Bad preset\n");
       err = -EBADMSG;
       goto end;
     }
@@ -341,10 +348,11 @@ end:
 static gint
 efactor_rename (struct backend *backend, const gchar * src, const gchar * dst)
 {
-  GByteArray *tx_msg, *rx_msg;
+  GByteArray *preset, *rx_msg;
   guint id;
   gint err;
-  gchar *name, *dstcpy, **lines, **line;
+  struct job_control control;
+  gchar **lines, **line;
   debug_print (1, "Sending rename request...\n");
   err = common_slot_get_id_name_from_path (src, &id, NULL);
   if (err)
@@ -352,51 +360,30 @@ efactor_rename (struct backend *backend, const gchar * src, const gchar * dst)
       return err;
     }
 
-  g_mutex_lock (&backend->mutex);
-  backend_rx_drain (backend);
-  g_mutex_unlock (&backend->mutex);
+  preset = g_byte_array_new ();
+  efactor_download (backend, src, preset, &control);
 
-  debug_print (1, "Loading preset %d...\n", id);
-  if ((err = backend_program_change (backend, 0, id)) < 0)
-    {
-      return err;
-    }
-
-  tx_msg = efactor_new_op_msg (EFACTOR_OP_PROGRAM_WANT);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-  if (!tx_msg)
-    {
-      return -ETIMEDOUT;
-    }
-
-  rx_msg->data[sizeof (EFACTOR_REQUEST_HEADER)] = EFACTOR_OP_PRESETS_DUMP;	//We overwrite the operation to be able to upload the result.
-  rx_msg->data[sizeof (EFACTOR_REQUEST_HEADER) - 1] = 0;	//Id must be zero when uploading.
-  lines = g_strsplit ((gchar *) & rx_msg->data[EFACTOR_PRESET_DUMP_OFFSET],
+  lines = g_strsplit ((gchar *) & preset->data[EFACTOR_PRESET_DUMP_OFFSET],
 		      EFACTOR_PRESET_LINE_SEPARATOR, -1);
-  dstcpy = strdup (dst);
-  name = basename (dstcpy);
   g_free (lines[6]);
   lines[6] = NULL;
 
   line = lines;
-  tx_msg = g_byte_array_new ();
-  g_byte_array_append (tx_msg, rx_msg->data, EFACTOR_PRESET_DUMP_OFFSET);
-  free_msg (rx_msg);
+  g_byte_array_set_size (preset, EFACTOR_PRESET_DUMP_OFFSET);
   while (*line)
     {
-      g_byte_array_append (tx_msg, (guint8 *) (*line), strlen (*line));
-      g_byte_array_append (tx_msg, (guint8 *) EFACTOR_PRESET_LINE_SEPARATOR,
+      g_byte_array_append (preset, (guint8 *) (*line), strlen (*line));
+      g_byte_array_append (preset, (guint8 *) EFACTOR_PRESET_LINE_SEPARATOR,
 			   strlen (EFACTOR_PRESET_LINE_SEPARATOR));
       line++;
     }
-  g_byte_array_append (tx_msg, (guint8 *) name, strlen (name));
-  g_byte_array_append (tx_msg, (guint8 *) EFACTOR_PRESET_LINE_SEPARATOR,
+  g_byte_array_append (preset, (guint8 *) dst, strlen (dst));
+  g_byte_array_append (preset, (guint8 *) EFACTOR_PRESET_LINE_SEPARATOR,
 		       strlen (EFACTOR_PRESET_LINE_SEPARATOR));
-  g_byte_array_append (tx_msg, (guint8 *) "\0\xf7", 2);
+  g_byte_array_append (preset, (guint8 *) "\0\xf7", 2);
   g_strfreev (lines);
-  g_free (dstcpy);
 
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, 100);	//There must be no response.
+  rx_msg = backend_tx_and_rx_sysex (backend, preset, 100);	//There must be no response.
   if (rx_msg)
     {
       err = -EIO;
