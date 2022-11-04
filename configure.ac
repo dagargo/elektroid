@@ -5,7 +5,7 @@ AC_PREREQ([2.69])
 AC_INIT([elektroid],[2.2],[dagargo@gmail.com])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
-AM_PROG_LIBTOOL
+LT_INIT
 AC_SEARCH_LIBS([sqrt], [m])
 AC_CONFIG_MACRO_DIRS([m4])
 AM_INIT_AUTOMAKE([subdir-objects])
