@@ -21,6 +21,7 @@
 #include <math.h>
 #include <string.h>
 #include <glib/gi18n.h>
+#include "elektron.h"
 #include "sample.h"
 #include "sds.h"
 #include "common.h"
@@ -1071,6 +1072,15 @@ sds_handshake (struct backend *backend)
   gint err;
   GByteArray *tx_msg, *rx_msg;
   struct sds_data *sds_data = g_malloc (sizeof (struct sds_data));
+
+  //Elektron devices support SDS so we need to be sure it is not.
+  rx_msg = elektron_ping (backend);
+  if (rx_msg)
+    {
+      free_msg (rx_msg);
+      g_free (backend->data);	//This is filled up by elektron_ping.
+      return -ENODEV;
+    }
 
   g_mutex_lock (&backend->mutex);
   backend_rx_drain (backend);

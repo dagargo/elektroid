@@ -2147,11 +2147,9 @@ cleanup_parser:
   return err;
 }
 
-gint
-elektron_handshake (struct backend *backend)
+GByteArray *
+elektron_ping (struct backend *backend)
 {
-  guint8 id;
-  gchar *overbridge_name;
   GByteArray *tx_msg, *rx_msg;
   struct elektron_data *data = g_malloc (sizeof (struct elektron_data));
 
@@ -2165,8 +2163,26 @@ elektron_handshake (struct backend *backend)
     {
       backend->data = NULL;
       g_free (data);
+    }
+
+  return rx_msg;
+}
+
+gint
+elektron_handshake (struct backend *backend)
+{
+  guint8 id;
+  gchar *overbridge_name;
+  GByteArray *tx_msg, *rx_msg;
+  struct elektron_data *data;
+
+  rx_msg = elektron_ping (backend);
+  if (!rx_msg)
+    {
       return -ENODEV;
     }
+
+  data = backend->data;
 
   overbridge_name = strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
   id = rx_msg->data[5];
