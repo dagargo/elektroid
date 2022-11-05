@@ -310,3 +310,17 @@ enum connector_storage
 ```
 
 If the file `~/.config/elektroid/elektron-devices.json` is found, it will take precedence over the installed one.
+
+## Running tests
+
+Elektroid includes automated integration tests for the supported devices and filesystems.
+
+In order to run a test, proceed as follows. The variable `TEST_CONNECTOR_FILESYSTEM` must contain the connector name, an underline char (`_`) and the filesystem name.
+
+```
+$ TEST_CONNECTOR_FILESYSTEM=efactor_preset make check
+```
+
+Running `make check` without setting this variable will succeed.
+
+## Adding and reconfiguring Elektron devices

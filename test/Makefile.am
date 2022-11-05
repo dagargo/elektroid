@@ -1,9 +1,4 @@
-TESTS = elektron_sample_fs_tests.sh \
-        elektron_data_fs_tests.sh \
-	microbrute_sequence_fs_tests.sh \
-	cz_program_fs_tests.sh \
-	sds_sample_fs_tests.sh \
-	efactor_preset_fs_tests.sh
+TESTS = test.sh
 
 EXTRA_DIST = \
 	$(TESTS) \
