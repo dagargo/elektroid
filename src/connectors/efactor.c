@@ -185,9 +185,16 @@ efactor_read_dir (struct backend *backend, struct item_iterator *iter,
       return -ENOTDIR;
     }
 
+  if (data->lines)
+    {
+      //Reading from the device switches off and on the internal relays.
+      //In case we call this function again just after calling it, we give the device some time to do it.
+      sleep (1);
+    }
+
   tx_msg = efactor_new_op_msg (EFACTOR_OP_PRESETS_WANT);
-  rx_msg =
-    backend_tx_and_rx_sysex (backend, tx_msg, EFACTOR_TIMEOUT_TOTAL_PRESETS);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg,
+				    EFACTOR_TIMEOUT_TOTAL_PRESETS);
   if (!rx_msg)
     {
       return -ETIMEDOUT;
