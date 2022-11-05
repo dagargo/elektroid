@@ -315,10 +315,10 @@ If the file `~/.config/elektroid/elektron-devices.json` is found, it will take p
 
 Elektroid includes automated integration tests for the supported devices and filesystems.
 
-In order to run a test, proceed as follows. The variable `TEST_CONNECTOR_FILESYSTEM` must contain the connector name, an underline char (`_`) and the filesystem name.
+In order to run a test, proceed as follows. The variable `TEST_DEVICE` must contain the device id and variable `TEST_CONNECTOR_FILESYSTEM` must contain the connector name, an underscore char (`_`) and the filesystem name.
 
 ```
-$ TEST_CONNECTOR_FILESYSTEM=efactor_preset make check
+$ TEST_DEVICE=0 TEST_CONNECTOR_FILESYSTEM=efactor_preset make check
 ```
 
 Running `make check` without setting this variable will succeed.
