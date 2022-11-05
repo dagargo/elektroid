@@ -961,7 +961,7 @@ sds_sample_load (const gchar * path, GByteArray * sample,
 static void
 sds_print (struct item_iterator *iter, struct backend *backend)
 {
-  printf ("%c %3d %s\n", iter->item.type, iter->item.id, iter->item.name);
+  printf ("%c %s\n", iter->item.type, iter->item.name);
 }
 
 enum sds_fs
@@ -975,8 +975,7 @@ enum sds_fs
 static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_8_B,
   .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_INDEX_COLUMN,
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "sample8",
   .gui_name = "Samples (8 bits)",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -998,8 +997,7 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_12_B,
   .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_INDEX_COLUMN,
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "sample12",
   .gui_name = "Samples (12 bits)",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -1021,8 +1019,7 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_14_B,
   .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_INDEX_COLUMN,
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "sample14",
   .gui_name = "Samples (14 bits)",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -1044,8 +1041,7 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_16_B,
   .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_INDEX_COLUMN,
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "sample16",
   .gui_name = "Samples (16 bits)",
   .gui_icon = BE_FILE_ICON_WAVE,
