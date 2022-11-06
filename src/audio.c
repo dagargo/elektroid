@@ -91,7 +91,8 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
 
   memset (buffer, 0, size);
 
-  if (audio->pos == audio->frames && !audio->loop)
+  if ((audio->pos == audio->frames && !audio->loop) ||
+      audio->status == AUDIO_STATUS_STOPPING)
     {
       g_mutex_unlock (&audio->control.mutex);
       pa_stream_write (stream, buffer, size, NULL, 0, PA_SEEK_RELATIVE);
@@ -141,18 +142,40 @@ audio_stop (struct audio *audio, gboolean flush)
       return;
     }
 
-  debug_print (1, "Stopping audio...\n");
-
-  pa_threaded_mainloop_lock (audio->mainloop);
-  if (flush)
+  g_mutex_lock (&audio->control.mutex);
+  if (audio->status == AUDIO_STATUS_PLAYING)
     {
-      operation = pa_stream_flush (audio->stream, audio_success_cb, audio);
-      audio_wait_success (audio, operation);
-    }
+      audio->status = AUDIO_STATUS_STOPPING;
+      g_mutex_unlock (&audio->control.mutex);
 
-  operation = pa_stream_cork (audio->stream, 1, audio_success_cb, audio);
-  audio_wait_success (audio, operation);
-  pa_threaded_mainloop_unlock (audio->mainloop);
+      debug_print (1, "Stopping audio...\n");
+
+      pa_threaded_mainloop_lock (audio->mainloop);
+      if (flush)
+	{
+	  operation =
+	    pa_stream_flush (audio->stream, audio_success_cb, audio);
+	  audio_wait_success (audio, operation);
+	}
+
+      operation = pa_stream_cork (audio->stream, 1, audio_success_cb, audio);
+      audio_wait_success (audio, operation);
+      pa_threaded_mainloop_unlock (audio->mainloop);
+
+      g_mutex_lock (&audio->control.mutex);
+      audio->status = AUDIO_STATUS_STOPPED;
+      g_mutex_unlock (&audio->control.mutex);
+    }
+  else
+    {
+      while (audio->status != AUDIO_STATUS_STOPPED)
+	{
+	  g_mutex_unlock (&audio->control.mutex);
+	  usleep (100000);
+	  g_mutex_lock (&audio->control.mutex);
+	}
+      g_mutex_unlock (&audio->control.mutex);
+    }
 }
 
 void
@@ -172,6 +195,7 @@ audio_play (struct audio *audio)
   g_mutex_lock (&audio->control.mutex);
   audio->pos = 0;
   audio->release_frames = 0;
+  audio->status = AUDIO_STATUS_PLAYING;
   g_mutex_unlock (&audio->control.mutex);
 
   pa_threaded_mainloop_lock (audio->mainloop);
@@ -281,6 +305,7 @@ audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
   audio->control.callback = load_progress_callback;
   audio->path[0] = 0;
   audio->control.data = g_malloc (sizeof (struct sample_info));
+  audio->status = AUDIO_STATUS_STOPPED;
 }
 
 gint
@@ -362,6 +387,7 @@ audio_reset_sample (struct audio *audio)
   audio->path[0] = 0;
   audio->release_frames = AUDIO_PA_BUFFER_LEN;
   audio->src = AUDIO_SRC_NONE;
+  audio->status = AUDIO_STATUS_STOPPED;
   memset (audio->control.data, 0, sizeof (struct sample_info));
   g_mutex_unlock (&audio->control.mutex);
 }

@@ -29,6 +29,14 @@ enum audio_src
   AUDIO_SRC_REMOTE
 };
 
+enum audio_status
+{
+  AUDIO_STATUS_PLAYING,
+  AUDIO_STATUS_STOPPING,
+  AUDIO_STATUS_STOPPED
+};
+
+
 struct audio
 {
   GByteArray *sample;
@@ -46,7 +54,7 @@ struct audio
   gchar path[PATH_MAX];
   guint32 channels;
   enum audio_src src;
-
+  enum audio_status status;
 };
 
 void audio_play (struct audio *);

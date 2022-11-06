@@ -1673,7 +1673,6 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 		  audio.src = PLAYER_GET_SOURCE (browser);
 		  elektroid_set_player_source (PLAYER_GET_SOURCE (browser));
 		  elektroid_start_load_thread ();
-
 		}
 	    }
 	  g_free (sample_path);
