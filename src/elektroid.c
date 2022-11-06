@@ -1186,8 +1186,9 @@ elektroid_delete_files_runner (gpointer data)
       gtk_tree_model_get_iter (model, &iter, tree_path);
       browser_set_item (model, &iter, &item);
 
-      if (!elektroid_delete_file (browser, browser->dir, &item)
-	  && browser->backend->type != BE_TYPE_SYSTEM)
+      if (!elektroid_delete_file (browser, browser->dir, &item) &&
+	  browser == &remote_browser &&
+	  browser->backend->type != BE_TYPE_SYSTEM)
 	{
 	  gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
 	}
