@@ -1175,6 +1175,7 @@ elektroid_delete_files_runner (gpointer data)
     }
   g_list_free_full (tree_path_list, (GDestroyNotify) gtk_tree_path_free);
 
+  g_mutex_lock (&browser->mutex);
   list = ref_list;
   while (list)
     {
@@ -1205,6 +1206,7 @@ elektroid_delete_files_runner (gpointer data)
       list = g_list_next (list);
     }
   g_list_free_full (ref_list, (GDestroyNotify) gtk_tree_row_reference_free);
+  g_mutex_unlock (&browser->mutex);
 
   sleep (1);			//See elektroid_dnd_received_runner
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
