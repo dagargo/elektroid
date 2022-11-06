@@ -109,7 +109,9 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
 	    {
 	      break;
 	    }
+	  debug_print (2, "Sample reset\n");
 	  audio->pos = 0;
+	  src = (gint16 *) audio->sample->data;
 	}
 
       *dst = *src;
