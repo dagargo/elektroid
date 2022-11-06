@@ -92,11 +92,20 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
   memset (buffer, 0, size);
 
   if ((audio->pos == audio->frames && !audio->loop) ||
+      audio->status == AUDIO_STATUS_PREPARING ||
       audio->status == AUDIO_STATUS_STOPPING)
     {
-      g_mutex_unlock (&audio->control.mutex);
+      if (audio->status == AUDIO_STATUS_PREPARING)
+	{
+	  audio->status = AUDIO_STATUS_PLAYING;
+	  g_mutex_unlock (&audio->control.mutex);
+	}
+      else
+	{
+	  g_mutex_unlock (&audio->control.mutex);
+	  audio->release_frames += req_frames;
+	}
       pa_stream_write (stream, buffer, size, NULL, 0, PA_SEEK_RELATIVE);
-      audio->release_frames += req_frames;
       return;
     }
 
@@ -143,7 +152,8 @@ audio_stop (struct audio *audio, gboolean flush)
     }
 
   g_mutex_lock (&audio->control.mutex);
-  if (audio->status == AUDIO_STATUS_PLAYING)
+  if (audio->status == AUDIO_STATUS_PREPARING ||
+      audio->status == AUDIO_STATUS_PLAYING)
     {
       audio->status = AUDIO_STATUS_STOPPING;
       g_mutex_unlock (&audio->control.mutex);
@@ -195,7 +205,7 @@ audio_play (struct audio *audio)
   g_mutex_lock (&audio->control.mutex);
   audio->pos = 0;
   audio->release_frames = 0;
-  audio->status = AUDIO_STATUS_PLAYING;
+  audio->status = AUDIO_STATUS_PREPARING;
   g_mutex_unlock (&audio->control.mutex);
 
   pa_threaded_mainloop_lock (audio->mainloop);
