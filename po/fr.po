@@ -277,7 +277,7 @@ msgid ""
 "Mix depending\n"
 "on destination"
 msgstr ""
-""Mélange selon\n"
+"Mélange selon\n"
 "la destination"
 
 #: res/gui.glade:1219
