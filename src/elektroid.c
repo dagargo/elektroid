@@ -2947,11 +2947,8 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
   remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
 
-  if (!*remote_browser.dir)
-    {
-      strcpy (remote_browser.dir,
-	      backend.type == BE_TYPE_SYSTEM ? local_browser.dir : "/");
-    }
+  strcpy (remote_browser.dir,
+	  backend.type == BE_TYPE_SYSTEM ? local_browser.dir : "/");
 
   gtk_widget_set_visible (remote_play_separator,
 			  backend.type == BE_TYPE_SYSTEM);
