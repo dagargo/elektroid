@@ -129,7 +129,7 @@ browser_go_up (GtkWidget * object, gpointer data)
   struct browser *browser = data;
 
   g_mutex_lock (&browser->mutex);
-  if (!browser->active)
+  if (!browser->loading)
     {
       if (strcmp (browser->dir, "/"))
 	{
@@ -291,7 +291,7 @@ browser_load_dir_runner_update_ui (gpointer data)
   gtk_tree_view_columns_autosize (browser->view);
 
   g_mutex_lock (&browser->mutex);
-  browser->active = FALSE;
+  browser->loading = FALSE;
   g_mutex_unlock (&browser->mutex);
 
   return FALSE;
@@ -324,7 +324,7 @@ browser_load_dir (gpointer data)
   struct browser *browser = data;
 
   g_mutex_lock (&browser->mutex);
-  if (browser->active)
+  if (browser->loading)
     {
       debug_print (1, "Browser already loading. Skipping load...\n");
       g_mutex_unlock (&browser->mutex);
@@ -332,7 +332,7 @@ browser_load_dir (gpointer data)
     }
   else
     {
-      browser->active = TRUE;
+      browser->loading = TRUE;
     }
   g_mutex_unlock (&browser->mutex);
 

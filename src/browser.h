@@ -68,7 +68,7 @@ struct browser
   GtkWidget *spinner;
   GThread *thread;
   GMutex mutex;
-  gboolean active;
+  gboolean loading;
   struct item_iterator *iter;
 };
 
