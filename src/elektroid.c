@@ -4025,6 +4025,10 @@ elektroid_run (int argc, char *argv[])
   local_browser.sensitive_widgets =
     g_slist_append (local_browser.sensitive_widgets, local_box);
   remote_browser.sensitive_widgets =
+    g_slist_append (remote_browser.sensitive_widgets, devices_combo);
+  remote_browser.sensitive_widgets =
+    g_slist_append (remote_browser.sensitive_widgets, refresh_devices_button);
+  remote_browser.sensitive_widgets =
     g_slist_append (remote_browser.sensitive_widgets, remote_box);
   remote_browser.sensitive_widgets =
     g_slist_append (remote_browser.sensitive_widgets, fs_combo);
