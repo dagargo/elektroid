@@ -227,6 +227,7 @@ efactor_download (struct backend *backend, const gchar * src_path,
   gchar *basename_copy;
   gboolean active;
   gchar **lines;
+  struct item_iterator iter;
   struct efactor_data *data = backend->data;
 
   control->parts = 1;
@@ -235,7 +236,6 @@ efactor_download (struct backend *backend, const gchar * src_path,
 
   if (!data->lines)
     {
-      struct item_iterator iter;
       err = efactor_read_dir (backend, &iter, "/");
       if (err)
 	{
@@ -245,13 +245,17 @@ efactor_download (struct backend *backend, const gchar * src_path,
     }
 
   basename_copy = strdup (src_path);
-  id = atoi (basename (basename_copy)) - data->min;	//Base 0
+  id = atoi (basename (basename_copy));
   g_free (basename_copy);
+  if (id < data->min || id >= data->presets)
+    {
+      return -EINVAL;
+    }
 
   g_byte_array_append (output, EFACTOR_REQUEST_HEADER,
 		       sizeof (EFACTOR_REQUEST_HEADER));
   g_byte_array_append (output, (guint8 *) "\x49", 1);	// EFACTOR_OP_PRESETS_DUMP
-  lines = &data->lines[id * 7];
+  lines = &data->lines[(id - data->min) * 7];
   for (gint i = 0; i < 7; i++, lines++)
     {
       g_byte_array_append (output, (guint8 *) * lines, strlen (*lines));
