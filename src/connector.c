@@ -136,17 +136,12 @@ connector_init (struct backend *backend, const gchar * id,
 	      debug_print (1, "Testing %s connector...\n",
 			   (*connector)->name);
 	      err = (*connector)->handshake (backend);
-	      if (err && err != -ENODEV)
-		{
-		  return err;
-		}
-
 	      if (!err)
 		{
 		  debug_print (1, "Using %s connector...\n",
 			       (*connector)->name);
-		  return 0;
 		}
+	      return err;
 	    }
 	}
       else
@@ -163,10 +158,10 @@ connector_init (struct backend *backend, const gchar * id,
 	      debug_print (1, "Using %s connector...\n", (*connector)->name);
 	      return 0;
 	    }
+
+	  backend_rx_drain (backend);
 	}
       connector++;
-
-      backend_rx_drain (backend);
     }
 
   error_print ("No device recognized\n");
