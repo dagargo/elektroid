@@ -1287,8 +1287,15 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 
       if (result == GTK_RESPONSE_ACCEPT)
 	{
-	  new_path = chain_path (browser->dir,
-				 gtk_entry_get_text (name_dialog_entry));
+	  if (browser->fs_ops->options & FS_OPTION_SLOT_STORAGE)
+	    {
+	      new_path = strdup (gtk_entry_get_text (name_dialog_entry));
+	    }
+	  else
+	    {
+	      new_path = chain_path (browser->dir,
+				     gtk_entry_get_text (name_dialog_entry));
+	    }
 	  err = browser->fs_ops->rename (&backend, old_path, new_path);
 	  if (err)
 	    {
