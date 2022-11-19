@@ -15,7 +15,7 @@ files=$($ecli cz-program-ls $TEST_DEVICE:/)
 expected="D   -1B preset
 D   -1B internal
 F  264B panel"
-[ "$files" != "$expected" ] && echo "Tests will fail an inserted cartridge" && exit 1
+[ "$files" != "$expected" ] && echo "Tests will fail with a cartridge inserted" && exit 1
 
 echo "Testing upload bad file..."
 $ecli cz-program-ul foo $TEST_DEVICE:/1:a
