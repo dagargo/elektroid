@@ -76,7 +76,7 @@ microbrute_get_download_path (struct backend *backend,
   gchar *filename = basename (src_path_copy);
   gint index = atoi (filename);
   snprintf (name, PATH_MAX, "%s/%s %d.mbseq", dst_dir,
-	    MICROBRUTE_SEQUENCE_PREFIX, index);
+	    MICROBRUTE_SEQUENCE_PREFIX, index + 1);
   g_free (src_path_copy);
 
   return name;
@@ -145,7 +145,7 @@ microbrute_download_seq_data (struct backend *backend, guint seqnum,
   gboolean first;
   guint8 *step;
 
-  tx_msg = microbrute_get_sequence_request_msg (backend, seqnum - 1, offset);
+  tx_msg = microbrute_get_sequence_request_msg (backend, seqnum, offset);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
@@ -189,7 +189,7 @@ microbrute_download (struct backend *backend, const gchar * src_path,
 
   g_free (src_path_copy);
 
-  snprintf (sequence, MICROBRUTE_MAX_SEQ_STR_LEN, "%1d:", seqnum);
+  snprintf (sequence, MICROBRUTE_MAX_SEQ_STR_LEN, "%1d:", seqnum + 1);
 
   control->parts = 1;
   control->part = 0;
@@ -328,7 +328,6 @@ microbrute_upload (struct backend *backend, const gchar * path,
       return -EBADSLT;
     }
 
-  seqnum++;			//To base 1
   g_mutex_lock (&backend->mutex);
 
   control->parts = 1;
@@ -377,7 +376,7 @@ static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .print_item = microbrute_print,
   .download = microbrute_download,
   .upload = microbrute_upload,
-  .get_id = get_item_name,
+  .get_id = get_item_index,
   .load = load_file,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
