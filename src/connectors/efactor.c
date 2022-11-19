@@ -368,7 +368,11 @@ efactor_rename (struct backend *backend, const gchar * src, const gchar * dst)
     }
 
   preset = g_byte_array_new ();
-  efactor_download (backend, src, preset, &control);
+  err = efactor_download (backend, src, preset, &control);
+  if (err)
+    {
+      return err;
+    }
 
   lines = g_strsplit ((gchar *) & preset->data[EFACTOR_PRESET_DUMP_OFFSET],
 		      EFACTOR_PRESET_LINE_SEPARATOR, -1);
