@@ -483,8 +483,7 @@ efactor_handshake (struct backend *backend)
   tx_msg = g_byte_array_sized_new (sizeof (MIDI_IDENTITY_REQUEST));
   g_byte_array_append (tx_msg, (guchar *) MIDI_IDENTITY_REQUEST,
 		       sizeof (MIDI_IDENTITY_REQUEST));
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg,
-				    BE_SYSEX_TIMEOUT_GUESS_MS);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -ENODEV;
