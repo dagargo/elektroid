@@ -372,6 +372,10 @@ efactor_rename (struct backend *backend, const gchar * src, const gchar * dst)
     }
 
   preset = g_byte_array_new ();
+  //The control initialization is needed.
+  control.active = TRUE;
+  control.callback = NULL;
+  g_mutex_init (&control.mutex);
   err = efactor_download (backend, src, preset, &control);
   if (err)
     {
