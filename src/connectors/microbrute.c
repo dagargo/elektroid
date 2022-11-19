@@ -247,7 +247,7 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
 			 gint total)
 {
   struct sysex_transfer transfer;
-  guint8 steps = 0, id = seqnum - 1;
+  guint8 steps = 0, id = seqnum;
   gchar *token = *tokens;
   gint err;
   guint8 *step;
@@ -328,6 +328,7 @@ microbrute_upload (struct backend *backend, const gchar * path,
       return -EBADSLT;
     }
 
+  seqnum++;			//To base 1
   g_mutex_lock (&backend->mutex);
 
   control->parts = 1;

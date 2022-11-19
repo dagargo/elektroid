@@ -3232,8 +3232,8 @@ elektroid_add_upload_task_slot (const gchar * name,
       name_wo_ext = strdup (name);
       remove_ext (name_wo_ext);
       dst_file_path = g_malloc (PATH_MAX);
-      snprintf (dst_file_path, PATH_MAX, "%s%s%s%s%s", remote_browser.dir,
-		strcmp (remote_browser.dir, "/") ? "/" : "", item.name,
+      snprintf (dst_file_path, PATH_MAX, "%s%s%d%s%s", remote_browser.dir,
+		strcmp (remote_browser.dir, "/") ? "/" : "", item.id,
 		BE_SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
       g_free (name_wo_ext);
 
