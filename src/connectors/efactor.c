@@ -277,6 +277,8 @@ efactor_download (struct backend *backend, const gchar * src_path,
       err = -ECANCELED;
     }
 
+  sleep (1);
+
   return err;
 }
 
@@ -353,6 +355,8 @@ efactor_upload (struct backend *backend, const gchar * path,
     }
 
 end:
+  sleep (1);
+
   return err;
 }
 
@@ -408,6 +412,9 @@ efactor_rename (struct backend *backend, const gchar * src, const gchar * dst)
       err = -EIO;
       free_msg (rx_msg);
     }
+
+  sleep (1);
+
   return err;
 }
 
@@ -474,7 +481,7 @@ efactor_destroy_data (struct backend *backend)
   backend_destroy_data (backend);
 }
 
-//We are replicanting the functionality in backend because the request is standard but the response is not.
+//We are replicanting the functionality in the backend because the request is standard but the response is not.
 gint
 efactor_handshake (struct backend *backend)
 {
@@ -484,7 +491,11 @@ efactor_handshake (struct backend *backend)
   GByteArray *tx_msg;
   GByteArray *rx_msg;
 
+  //Sometimes it takes a lot of time to receive the response to the MIDI identity request.
+  //As the backend is already asking for it, we need to ensure that the input buffer is empty before continuing.
+  //With these two calls, the total timeout including the backend handshake is 2.5 s, which is empirically enough.
   g_mutex_lock (&backend->mutex);
+  backend_rx_drain (backend);
   backend_rx_drain (backend);
   g_mutex_unlock (&backend->mutex);
 
