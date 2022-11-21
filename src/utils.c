@@ -227,21 +227,18 @@ get_item_name (struct item *item)
 }
 
 gchar *
-get_item_index (struct item *item)
+get_item_id (struct item *item)
 {
-  gchar *index;
+  gchar *id = malloc (LABEL_MAX);
+  snprintf (id, LABEL_MAX, "%d", item->id);
+  return id;
+}
 
-  if (item->type == ELEKTROID_DIR)
-    {
-      index = get_item_name (item);
-    }
-  else
-    {
-      index = malloc (LABEL_MAX);
-      snprintf (index, LABEL_MAX, "%d", item->id);
-    }
-
-  return index;
+gchar *
+get_item_dir_name_or_file_id (struct item *item)
+{
+  return item->type ==
+    ELEKTROID_DIR ? get_item_name (item) : get_item_id (item);
 }
 
 guint

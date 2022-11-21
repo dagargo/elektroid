@@ -243,7 +243,9 @@ void free_msg (gpointer);
 
 gchar *get_item_name (struct item *);
 
-gchar *get_item_index (struct item *);
+gchar *get_item_id (struct item *);
+
+gchar *get_item_dir_name_or_file_id (struct item *);
 
 guint next_item_iterator (struct item_iterator *);
 
