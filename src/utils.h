@@ -153,7 +153,7 @@ typedef gint (*fs_src_dst_func) (struct backend *, const gchar *,
 typedef gint (*fs_remote_file_op) (struct backend *, const gchar *,
 				   GByteArray *, struct job_control *);
 
-typedef gchar *(*fs_get_item_id) (struct item *);
+typedef gchar *(*fs_get_item_key) (struct item *);
 
 typedef gchar *(*fs_get_item_slot) (struct item *, struct backend *);
 
@@ -201,7 +201,7 @@ struct fs_operations
   fs_src_dst_func swap;
   fs_remote_file_op download;
   fs_remote_file_op upload;
-  fs_get_item_id get_id;
+  fs_get_item_key get_item_key;
   fs_get_item_slot get_slot;
   fs_local_file_op save;
   fs_local_file_op load;
