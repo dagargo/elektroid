@@ -532,7 +532,7 @@ efactor_handshake (struct backend *backend)
 		    backend->midi_info.version[1],
 		    backend->midi_info.version[2],
 		    backend->midi_info.version[3]);
-	  snprintf (backend->device_desc.name, LABEL_MAX,
+	  snprintf (backend->device_desc.name, LABEL_MAX, "%s",
 		    backend->device_name);
 	  debug_print (1, "XML version:\n%s\n", &rx_msg->data[14]);
 	}
