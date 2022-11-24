@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 
-PROGRAM_FILE="$srcdir/res/CZ-101 program.syx"
+#There are different files because of the ID stored in them.
+#We overwrite these IDs while uploading but it's easier to have different files to run cksum on them.
+
+PANEL_SRC_FILE="$srcdir/res/CZ-101 panel src.syx"
+INTERNAL_SRC_FILE="$srcdir/res/CZ-101 internal 01 src.syx"
 PANEL_FILE="CZ-101 panel.syx"
 PRESET_FILE="CZ-101 preset 01.syx"
+INTERNAL_FILE="CZ-101 internal 01.syx"
+INTERNAL_FILE_BACKUP="CZ-101 internal 01 backup.syx"
 
 function exitWithError() {
-  rm -f "$PANEL_FILE" "$PRESET_FILE"
+  echo "Restoring..."
+  $ecli cz-program-ul "$INTERNAL_FILE_BACKUP" $TEST_DEVICE:/internal/1:foo
+  rm -f "$PANEL_FILE" "$PRESET_FILE" "$INTERNAL_FILE" "$INTERNAL_FILE_BACKUP"
   exit $1
 }
 
@@ -17,6 +25,12 @@ D   -1B internal
 F  264B panel"
 [ "$files" != "$expected" ] && echo "Tests will fail with a cartridge inserted" && exit 1
 
+echo "Testing internal download..."
+$ecli cz-program-download $TEST_DEVICE:/internal/1 # No name is allowed in the CZ filesystem (slot mode)
+[ $? -ne 0 ] && exit 1
+[ ! -f "$INTERNAL_FILE" ] && exit 1
+mv "$INTERNAL_FILE" "$INTERNAL_FILE_BACKUP"
+
 echo "Testing upload bad file..."
 $ecli cz-program-ul foo $TEST_DEVICE:/1:a
 [ $? -eq 0 ] && exitWithError 1
@@ -26,22 +40,26 @@ $ecli cz-program-ul foo $TEST_DEVICE:/1
 [ $? -eq 0 ] && exitWithError 1
 
 echo "Testing panel upload..."
-$ecli cz-program-ul "$PROGRAM_FILE" $TEST_DEVICE:/panel:panel
+$ecli cz-program-ul "$PANEL_SRC_FILE" $TEST_DEVICE:/panel:panel
 [ $? -ne 0 ] && exitWithError 1
 
 echo "Testing panel download..."
 $ecli cz-program-download $TEST_DEVICE:/panel
-[ $? -ne 0 ] && exit 1
-[ ! -f "$PANEL_FILE" ] && exit 1
-[ $(cksum "$PANEL_FILE" | awk '{print $1}') != $(cksum "$PROGRAM_FILE" | awk '{print $1}') ] && exitWithError 1
-
-echo "Testing preset upload..."
-$ecli cz-program-ul "$PROGRAM_FILE" $TEST_DEVICE:/preset/1:panel
 [ $? -ne 0 ] && exitWithError 1
+[ ! -f "$PANEL_FILE" ] && exitWithError 1
+[ $(cksum "$PANEL_FILE" | awk '{print $1}') != $(cksum "$PANEL_SRC_FILE" | awk '{print $1}') ] && exitWithError 1
 
 echo "Testing preset download..."
-$ecli cz-program-download $TEST_DEVICE:/preset/1
-[ $? -ne 0 ] && exit 1
-[ ! -f "$PRESET_FILE" ] && exit 1
+$ecli cz-program-download $TEST_DEVICE:/preset/1 # No name is allowed in the CZ filesystem (slot mode)
+[ $? -ne 0 ] && exitWithError 1
+[ ! -f "$PRESET_FILE" ] && exitWithError 1
+
+echo "Testing internal upload..."
+$ecli cz-program-ul "$INTERNAL_SRC_FILE" $TEST_DEVICE:/internal/1:bar
+[ $? -ne 0 ] && exitWithError 1
+
+$ecli cz-program-download $TEST_DEVICE:/internal/1
+[ $? -ne 0 ] && exitWithError 1
+[ $(cksum "$INTERNAL_FILE" | awk '{print $1}') != $(cksum "$INTERNAL_SRC_FILE" | awk '{print $1}') ] && exitWithError 1
 
 exitWithError 0
