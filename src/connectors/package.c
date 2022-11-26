@@ -267,7 +267,7 @@ package_end (struct package *pkg, GByteArray * out)
     }
 
   zip_source_stat (pkg->zip_source, &zstat);
-  debug_print (1, "%ld B written to package\n", zstat.comp_size);
+  debug_print (1, "%" PRIu64 " B written to package\n", zstat.comp_size);
 
   zip_source_open (pkg->zip_source);
   g_byte_array_set_size (out, zstat.comp_size);
@@ -477,8 +477,8 @@ package_receive_pkg_resources (struct package *pkg,
 	  continue;
 	}
 
-      debug_print (1, "Hash: %ld; size: %ld; path: %s\n", hash, size,
-		   sample_path);
+      debug_print (1, "Hash: %" PRIu64 "; size: %" PRIu64 "; path: %s\n",
+		   hash, size, sample_path);
       debug_print (1, "Getting sample %s...\n", sample_path);
       g_byte_array_set_size (sample, 0);
       if (download_sample (backend, sample_path, sample, control))
@@ -679,7 +679,7 @@ package_send_pkg_resources (struct package *pkg,
       goto cleanup_reader;
     }
   product_type = atoi (json_reader_get_string_value (reader));
-  debug_print (1, "ProductType: %ld\n", product_type);
+  debug_print (1, "ProductType: %" PRId64 "\n", product_type);
   if (pkg->device_desc->id != product_type)
     {
       debug_print (1, "Incompatible product type. Continuing...\n");

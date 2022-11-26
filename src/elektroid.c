@@ -3229,7 +3229,7 @@ elektroid_add_upload_task_slot (const gchar * name,
 
       browser_set_item (model, &iter, &item);
 
-      key = remote_browser.fs_ops->get_item_key(&item);
+      key = remote_browser.fs_ops->get_item_key (&item);
       name_wo_ext = strdup (name);
       remove_ext (name_wo_ext);
       dst_file_path = g_malloc (PATH_MAX);

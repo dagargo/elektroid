@@ -521,8 +521,8 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 	  if (debug_level >= 4)
 	    {
 	      gchar *text = debug_get_hex_data (debug_level, tmp, rx_len);
-	      debug_print (4, "Skipping partial message (%ld): %s\n", rx_len,
-			   text);
+	      debug_print (4, "Skipping partial message (%zd): %s\n",
+			   rx_len, text);
 	      free (text);
 	    }
 

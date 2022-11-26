@@ -21,7 +21,6 @@
 #include "../config.h"
 #include <sndfile.h>
 #include <samplerate.h>
-#include <inttypes.h>
 #include <math.h>
 #include "sample.h"
 
@@ -213,8 +212,8 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
   wave->array->len = 0;
 
   frames = sample->len >> sample_info->channels;
-  debug_print (1, "Frames: %ld; sample rate: %d; channels: %d\n", frames,
-	       sample_info->samplerate, sample_info->channels);
+  debug_print (1, "Frames: %" PRIu64 "; sample rate: %d; channels: %d\n",
+	       frames, sample_info->samplerate, sample_info->channels);
   debug_print (1, "Loop start at %d; loop end at %d\n",
 	       sample_info->loopstart, sample_info->loopend);
 
@@ -268,8 +267,8 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
 
   if (total != frames)
     {
-      error_print ("Unexpected frames while writing to file (%ld != %ld)\n",
-		   total, frames);
+      error_print ("Unexpected frames while writing to file (%" PRIu64 " != %"
+		   PRIu64 ")\n", total, frames);
       return -1;
     }
 

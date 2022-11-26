@@ -267,7 +267,7 @@ gint
 load_file (const char *path, GByteArray * array, struct job_control *control)
 {
   FILE *file;
-  long size;
+  size_t size;
   gint res;
 
   file = fopen (path, "rb");
@@ -293,7 +293,7 @@ load_file (const char *path, GByteArray * array, struct job_control *control)
 
   if (fread (array->data, 1, size, file) == size)
     {
-      debug_print (1, "%zu bytes read\n", size);
+      debug_print (1, "%zu B read\n", size);
     }
   else
     {
@@ -310,7 +310,7 @@ gint
 save_file_char (const gchar * path, const guint8 * data, ssize_t len)
 {
   gint res;
-  long bytes;
+  size_t bytes;
   FILE *file;
 
   file = fopen (path, "w");
@@ -326,7 +326,7 @@ save_file_char (const gchar * path, const guint8 * data, ssize_t len)
   bytes = fwrite (data, 1, len, file);
   if (bytes == len)
     {
-      debug_print (1, "%zu bytes written\n", bytes);
+      debug_print (1, "%zu B written\n", bytes);
     }
   else
     {
@@ -358,7 +358,7 @@ get_human_size (gint64 size, gboolean with_space)
     }
   else if (size < KIB)
     {
-      snprintf (label, LABEL_MAX, "%ld%sB", size, space);
+      snprintf (label, LABEL_MAX, "%" PRId64 "%sB", size, space);
     }
   else if (size < KIB * KIB)
     {

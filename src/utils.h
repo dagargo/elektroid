@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <glib.h>
 #include <json-glib/json-glib.h>
+#include <inttypes.h>
 #include "../config.h"
 
 #define CONF_DIR "~/.config/" PACKAGE

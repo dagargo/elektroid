@@ -368,7 +368,7 @@ cleanup:
 static void
 cz_print (struct item_iterator *iter, struct backend *backend)
 {
-  printf ("%c % 4ldB %s\n", iter->item.type, iter->item.size,
+  printf ("%c % 4" PRId64 " B %s\n", iter->item.type, iter->item.size,
 	  iter->item.name);
 }
 
