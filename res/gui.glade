@@ -51,7 +51,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <!-- column-name name -->
       <column type="gchararray"/>
       <!-- column-name size -->
-      <column type="gint"/>
+      <column type="gint64"/>
       <!-- column-name size_str -->
       <column type="gchararray"/>
       <!-- column-name type -->
@@ -142,7 +142,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <!-- column-name name -->
       <column type="gchararray"/>
       <!-- column-name size -->
-      <column type="gint"/>
+      <column type="gint64"/>
       <!-- column-name size_str -->
       <column type="gchararray"/>
       <!-- column-name type -->
