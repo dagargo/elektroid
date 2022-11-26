@@ -997,54 +997,58 @@ elektroid_show_about (GtkWidget * object, gpointer data)
 }
 
 static void
-elektroid_set_sample_on_load (gboolean sensitive)
+elektroid_set_sample_properties_on_load ()
 {
+  double time;
   gchar label[LABEL_MAX];
   struct sample_info *sample_info = audio.control.data;
 
+  gtk_widget_set_visible (sample_info_box, sample_info->frames > 0);
+
+  if (!sample_info->frames)
+    {
+      return;
+    }
+
+  time = sample_info->frames / (double) sample_info->samplerate;
+
+  gtk_widget_set_visible (sample_info_box, TRUE);
+
+  snprintf (label, LABEL_MAX, "%d", sample_info->frames);
+  gtk_label_set_text (GTK_LABEL (sample_length), label);
+
+  if (time >= 60)
+    {
+      snprintf (label, LABEL_MAX, "%.2f %s", time / 60.0, _("minutes"));
+    }
+  else
+    {
+      snprintf (label, LABEL_MAX, "%.2f s", time);
+    }
+  gtk_label_set_text (GTK_LABEL (sample_duration), label);
+
+  snprintf (label, LABEL_MAX, "%.2f kHz", sample_info->samplerate / 1000.f);
+  gtk_label_set_text (GTK_LABEL (sample_samplerate), label);
+
+  snprintf (label, LABEL_MAX, "%d", sample_info->channels);
+  gtk_label_set_text (GTK_LABEL (sample_channels), label);
+
+  if (sample_info->bitdepth)
+    {
+      snprintf (label, LABEL_MAX, "%d", sample_info->bitdepth);
+      gtk_label_set_text (GTK_LABEL (sample_bitdepth), label);
+    }
+}
+
+static void
+elektroid_set_audio_controls_on_load (gboolean sensitive)
+{
   gtk_widget_set_sensitive (local_play_menuitem,
 			    audio.src == AUDIO_SRC_LOCAL);
   gtk_widget_set_sensitive (remote_play_menuitem,
 			    audio.src == AUDIO_SRC_REMOTE);
   gtk_widget_set_sensitive (play_button, sensitive);
   gtk_widget_set_sensitive (stop_button, sensitive);
-
-  if (sample_info->frames)
-    {
-      double time = sample_info->frames / (double) sample_info->samplerate;
-
-      gtk_widget_set_visible (sample_info_box, TRUE);
-
-      snprintf (label, LABEL_MAX, "%d", sample_info->frames);
-      gtk_label_set_text (GTK_LABEL (sample_length), label);
-
-      if (time >= 60)
-	{
-	  snprintf (label, LABEL_MAX, "%.2f %s", time / 60.0, _("minutes"));
-	}
-      else
-	{
-	  snprintf (label, LABEL_MAX, "%.2f s", time);
-	}
-      gtk_label_set_text (GTK_LABEL (sample_duration), label);
-
-      snprintf (label, LABEL_MAX, "%.2f kHz",
-		sample_info->samplerate / 1000.f);
-      gtk_label_set_text (GTK_LABEL (sample_samplerate), label);
-
-      snprintf (label, LABEL_MAX, "%d", sample_info->channels);
-      gtk_label_set_text (GTK_LABEL (sample_channels), label);
-
-      if (sample_info->bitdepth)
-	{
-	  snprintf (label, LABEL_MAX, "%d", sample_info->bitdepth);
-	  gtk_label_set_text (GTK_LABEL (sample_bitdepth), label);
-	}
-    }
-  else
-    {
-      gtk_widget_set_visible (sample_info_box, FALSE);
-    }
 }
 
 static gboolean
@@ -1059,11 +1063,13 @@ elektroid_update_ui_on_load (gpointer data)
   audio.channels = PLAYER_LOADED_CHANNELS;
   g_mutex_unlock (&audio.control.mutex);
 
+  elektroid_set_sample_properties_on_load ();
+
   if (ready_to_play)
     {
       if (audio_check (&audio))
 	{
-	  elektroid_set_sample_on_load (TRUE);
+	  elektroid_set_audio_controls_on_load (TRUE);
 	}
       if (preferences.autoplay)
 	{
