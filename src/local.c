@@ -354,7 +354,7 @@ const struct fs_operations FS_LOCAL_OPERATIONS = {
   .delete = local_delete,
   .rename = local_rename,
   .move = local_rename,
-  .get_item_key = get_item_name,
+  .get_filename = get_item_name,
   .get_ext = backend_get_fs_ext,
   .type_ext = "wav",
   .max_name_len = 255
@@ -370,8 +370,8 @@ enum sds_fs
 
 const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .fs = FS_SAMPLES_LOCAL_48_16_STEREO,
-  .options =
-    FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER | FS_OPTION_STEREO,
+  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER |
+    FS_OPTION_STEREO | FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "wav4816s",
   .gui_name = "WAV 48 KHz 16 bits stereo",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -382,7 +382,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .move = local_rename,
   .download = local_download,
   .upload = local_upload,
-  .get_item_key = get_item_name,
+  .get_filename = get_item_name,
   .load = local_sample_load_48_16_stereo,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
@@ -394,7 +394,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
 
 const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .fs = FS_SAMPLES_LOCAL_48_16_MONO,
-  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER,
+  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER |
+    FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "wav4816m",
   .gui_name = "WAV 48 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -405,7 +406,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .move = local_rename,
   .download = local_download,
   .upload = local_upload,
-  .get_item_key = get_item_name,
+  .get_filename = get_item_name,
   .load = local_sample_load_48_16_mono,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
@@ -418,7 +419,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
 const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .fs = FS_SAMPLES_LOCAL_441_16_STEREO,
   .options =
-    FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER | FS_OPTION_STEREO,
+    FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER |
+    FS_OPTION_STEREO | FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "wav44116s",
   .gui_name = "WAV 44.1 KHz 16 bits stereo",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -429,7 +431,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .move = local_rename,
   .download = local_download,
   .upload = local_upload,
-  .get_item_key = get_item_name,
+  .get_filename = get_item_name,
   .load = local_sample_load_441_16_stereo,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
@@ -441,7 +443,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
 
 const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .fs = FS_SAMPLES_LOCAL_441_16_MONO,
-  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER,
+  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER |
+    FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "wav44116m",
   .gui_name = "WAV 44.1 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -455,7 +458,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .swap = NULL,
   .download = local_download,
   .upload = local_upload,
-  .get_item_key = get_item_name,
+  .get_filename = get_item_name,
   .load = local_sample_load_441_16_mono,
   .save = save_file,
   .get_ext = backend_get_fs_ext,

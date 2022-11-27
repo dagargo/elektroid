@@ -58,12 +58,17 @@ typedef void (*iterator_free) (void *);
 typedef gint (*iterator_copy) (struct item_iterator *, struct item_iterator *,
 			       gboolean);
 
+//name must be filled up always. If no name is available, this can be a string representation of the id without padding. See set_item_name_from_id function.
+//In slot mode, id needs to be filled up and will typically be the MIDI preset number (items are addressed by id).
+//In default mode (not slot mode), id can be used for any or no purpose.
+//A value of -1 in size will show nothing on the interface. If the size column is not used at all, use FS_OPTION_SHOW_SIZE_COLUMN.
+
 struct item
 {
-  gint32 id;
-  gint64 size;
   enum item_type type;
   gchar name[LABEL_MAX];
+  gint32 id;
+  gint64 size;
 };
 
 struct item_iterator
@@ -154,7 +159,9 @@ typedef gint (*fs_src_dst_func) (struct backend *, const gchar *,
 typedef gint (*fs_remote_file_op) (struct backend *, const gchar *,
 				   GByteArray *, struct job_control *);
 
-typedef gchar *(*fs_get_item_key) (struct item *);
+//The returned value will be used as a unique key to identify the item in its directory.
+//This is what is used as the filename to form paths.
+typedef gchar *(*fs_get_filename) (struct item *);
 
 typedef gchar *(*fs_get_item_slot) (struct item *, struct backend *);
 
@@ -202,7 +209,7 @@ struct fs_operations
   fs_src_dst_func swap;
   fs_remote_file_op download;
   fs_remote_file_op upload;
-  fs_get_item_key get_item_key;
+  fs_get_filename get_filename;
   fs_get_item_slot get_slot;
   fs_local_file_op save;
   fs_local_file_op load;
@@ -213,13 +220,23 @@ struct fs_operations
 
 enum fs_options
 {
+  //Show the audio player.
   FS_OPTION_AUDIO_PLAYER = 0x1,
+  //Allow stereo samples. Only useful if used together with FS_OPTION_AUDIO_PLAYER
   FS_OPTION_STEREO = 0x2,
-  FS_OPTION_SHOW_INDEX_COLUMN = 0x4,
-  FS_OPTION_SINGLE_OP = 0x8,
-  FS_OPTION_SLOT_STORAGE = 0x10,	//In SLOT mode, dst_dir passed to t_get_upload_path includes the index, ':' and the item name.
-  FS_OPTION_SORT_BY_ID = 0x20,
-  FS_OPTION_SORT_BY_NAME = 0x40
+  //Every operation will block the remote browser.
+  FS_OPTION_SINGLE_OP = 0x4,
+  //In slot mode, every destination slot is always used so drop is only possible over a concrete slot.
+  //Multiple DND over a slot will behave as drops over the following slots.
+  //dst_dir passed to t_get_upload_path includes the key, a colon (':') and the item name.
+  FS_OPTION_SLOT_STORAGE = 0x8,
+  //Show column options. Key column is always showed.
+  FS_OPTION_SHOW_ID_COLUMN = 0x10,
+  FS_OPTION_SHOW_SIZE_COLUMN = 0x20,
+  FS_OPTION_SHOW_SLOT_COLUMN = 0x40,
+  //Sort items options.
+  FS_OPTION_SORT_BY_ID = 0x80,
+  FS_OPTION_SORT_BY_NAME = 0x100
 };
 
 extern int debug_level;

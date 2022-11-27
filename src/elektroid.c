@@ -224,8 +224,9 @@ static GtkWidget *remove_tasks_button;
 static GtkWidget *clear_tasks_button;
 static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
-static GtkTreeViewColumn *remote_tree_view_index_column;
+static GtkTreeViewColumn *remote_tree_view_id_column;
 static GtkTreeViewColumn *remote_tree_view_slot_column;
+static GtkTreeViewColumn *remote_tree_view_size_column;
 static GtkWidget *sample_info_box;
 static GtkWidget *sample_length;
 static GtkWidget *sample_duration;
@@ -452,8 +453,9 @@ elektroid_load_devices (gboolean auto_select)
       local_browser.file_icon = BE_FILE_ICON_WAVE;
       elektroid_set_local_file_extensions (0);
       gtk_widget_set_visible (local_audio_box, TRUE);
-      gtk_tree_view_column_set_visible (remote_tree_view_index_column, FALSE);
+      gtk_tree_view_column_set_visible (remote_tree_view_id_column, FALSE);
       gtk_tree_view_column_set_visible (remote_tree_view_slot_column, FALSE);
+      gtk_tree_view_column_set_visible (remote_tree_view_size_column, FALSE);
       browser_load_dir (&local_browser);
       elektroid_update_upload_menuitem ();
     }
@@ -1108,9 +1110,9 @@ elektroid_delete_file (struct browser *browser, gchar * dir,
 
   if (item->type == ELEKTROID_FILE)
     {
-      gchar *id = browser->fs_ops->get_item_key (item);
-      gchar *id_path = chain_path (dir, id);
-      g_free (id);
+      gchar *filename = browser->fs_ops->get_filename (item);
+      gchar *id_path = chain_path (dir, filename);
+      g_free (filename);
       err = browser->fs_ops->delete (browser->backend, id_path);
       if (err)
 	{
@@ -2657,7 +2659,7 @@ elektroid_add_download_task_path (const gchar * rel_path,
 				  struct item_iterator *remote_dir_iter)
 {
   struct item_iterator iter, iter_copy;
-  gchar *path, *dst_abs_dir, *download_path, *id;
+  gchar *path, *dst_abs_dir, *download_path, *filename;
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
@@ -2683,11 +2685,11 @@ elektroid_add_download_task_path (const gchar * rel_path,
   copy_item_iterator (&iter_copy, &iter, TRUE);
   while (!next_item_iterator (&iter))
     {
-      id = remote_browser.fs_ops->get_item_key (&iter.item);
-      path = chain_path (rel_path, id);
+      filename = remote_browser.fs_ops->get_filename (&iter.item);
+      path = chain_path (rel_path, filename);
       elektroid_add_download_task_path (path, src_dir, dst_dir, &iter_copy);
       g_free (path);
-      g_free (id);
+      g_free (filename);
     }
   free_item_iterator (&iter_copy);
 
@@ -2723,17 +2725,17 @@ elektroid_add_download_tasks_runner (gpointer data)
   selected_rows = gtk_tree_selection_get_selected_rows (selection, NULL);
   while (selected_rows)
     {
-      gchar *id;
+      gchar *filename;
       struct item item;
       GtkTreeIter path_iter;
       GtkTreePath *path = selected_rows->data;
 
       gtk_tree_model_get_iter (model, &path_iter, path);
       browser_set_item (model, &path_iter, &item);
-      id = remote_browser.fs_ops->get_item_key (&item);
-      elektroid_add_download_task_path (id, remote_browser.dir,
+      filename = remote_browser.fs_ops->get_filename (&item);
+      elektroid_add_download_task_path (filename, remote_browser.dir,
 					local_browser.dir, &item_iterator);
-      g_free (id);
+      g_free (filename);
 
       g_mutex_lock (&sysex_transfer.mutex);
       active = sysex_transfer.active;
@@ -2983,13 +2985,15 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			  remote_browser.fs_ops->delete != NULL);
   gtk_widget_set_visible (local_audio_box, PLAYER_VISIBLE);
 
-  gtk_tree_view_column_set_visible (remote_tree_view_index_column,
+  gtk_tree_view_column_set_visible (remote_tree_view_id_column,
 				    remote_browser.fs_ops->options &
-				    FS_OPTION_SHOW_INDEX_COLUMN);
+				    FS_OPTION_SHOW_ID_COLUMN);
   gtk_tree_view_column_set_visible (remote_tree_view_slot_column,
-				    (remote_browser.fs_ops->options &
-				     FS_OPTION_SLOT_STORAGE)
-				    && remote_browser.fs_ops->get_slot);
+				    remote_browser.fs_ops->options &
+				    FS_OPTION_SHOW_SLOT_COLUMN);
+  gtk_tree_view_column_set_visible (remote_tree_view_size_column,
+				    remote_browser.fs_ops->options &
+				    FS_OPTION_SHOW_SIZE_COLUMN);
 
   if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
     {
@@ -3217,7 +3221,7 @@ elektroid_add_upload_task_slot (const gchar * name,
   GtkTreeIter iter;
   GtkTreeModel *model;
   struct item item;
-  gchar *dst_file_path, *name_wo_ext, *key;
+  gchar *dst_file_path, *name_wo_ext, *filename;
 
   model =
     GTK_TREE_MODEL (gtk_tree_view_get_model
@@ -3235,15 +3239,15 @@ elektroid_add_upload_task_slot (const gchar * name,
 
       browser_set_item (model, &iter, &item);
 
-      key = remote_browser.fs_ops->get_item_key (&item);
+      filename = remote_browser.fs_ops->get_filename (&item);
       name_wo_ext = strdup (name);
       remove_ext (name_wo_ext);
       dst_file_path = g_malloc (PATH_MAX);
       snprintf (dst_file_path, PATH_MAX, "%s%s%s%s%s", remote_browser.dir,
-		strcmp (remote_browser.dir, "/") ? "/" : "", key,
+		strcmp (remote_browser.dir, "/") ? "/" : "", filename,
 		BE_SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
       g_free (name_wo_ext);
-      g_free (key);
+      g_free (filename);
 
       elektroid_add_task (UPLOAD, src_file_path, dst_file_path,
 			  remote_browser.fs_ops->fs);
@@ -3845,12 +3849,15 @@ elektroid_run (int argc, char *argv[])
   };
   browser_init (&remote_browser);
 
-  remote_tree_view_index_column =
+  remote_tree_view_id_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder, "remote_tree_view_index_column"));
+			  (builder, "remote_tree_view_id_column"));
   remote_tree_view_slot_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_slot_column"));
+  remote_tree_view_size_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "remote_tree_view_size_column"));
 
   g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
 		    "changed", G_CALLBACK (browser_selection_changed),

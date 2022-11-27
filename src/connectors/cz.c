@@ -93,6 +93,7 @@ cz_get_program_dump_msg (guint8 id)
 static guint
 cz_next_dentry_root (struct item_iterator *iter)
 {
+  GByteArray *tx_msg, *rx_msg;
   struct cz_type_iterator_data *data = iter->data;
 
   if (data->next < 3)
@@ -104,10 +105,9 @@ cz_next_dentry_root (struct item_iterator *iter)
 
       if (data->next == 2)
 	{
-	  GByteArray *tx_msg =
-	    cz_get_program_dump_msg (CZ_FIRST_CARTRIDGE_ID);
-	  GByteArray *rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg,
-							BE_SYSEX_TIMEOUT_GUESS_MS);
+	  tx_msg = cz_get_program_dump_msg (CZ_FIRST_CARTRIDGE_ID);
+	  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg,
+					    BE_SYSEX_TIMEOUT_GUESS_MS);
 	  data->next++;
 	  if (rx_msg)
 	    {
@@ -148,7 +148,7 @@ cz_next_dentry (struct item_iterator *iter)
     }
 
   iter->item.id = data->next + data->type * CZ_MEM_TYPE_OFFSET;
-  snprintf (iter->item.name, LABEL_MAX, "%02d", data->next + 1);
+  snprintf (iter->item.name, LABEL_MAX, "%d", data->next + 1);
   iter->item.type = ELEKTROID_FILE;
   iter->item.size = CZ_PROGRAM_LEN_FIXED;
   data->next++;
@@ -374,8 +374,8 @@ cz_print (struct item_iterator *iter, struct backend *backend)
 
 static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .fs = FS_PROGRAM_CZ,
-  .options =
-    FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_NAME,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "program",
   .gui_name = "Programs",
   .gui_icon = BE_FILE_ICON_SND,
@@ -383,7 +383,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .print_item = cz_print,
   .download = cz_download,
   .upload = cz_upload,
-  .get_item_key = get_item_name,
+  .get_filename = get_item_name,	//As program 1 in preset storage and program 1 in internal staorage have different IDs it won't work with the id as the key.
   .load = load_file,
   .save = save_file,
   .get_ext = backend_get_fs_ext,

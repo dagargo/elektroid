@@ -445,8 +445,8 @@ efactor_print (struct item_iterator *iter, struct backend *backend)
 
 static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .fs = FS_EFACTOR_PRESET,
-  .options =
-    FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SLOT_COLUMN,
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = BE_FILE_ICON_SND,
@@ -457,7 +457,7 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .rename = efactor_rename,
   .download = efactor_download,
   .upload = efactor_upload,
-  .get_item_key = get_item_id,
+  .get_filename = get_item_id,
   .get_slot = efactor_get_slot,
   .load = load_file,
   .save = save_file,

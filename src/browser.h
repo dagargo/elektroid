@@ -33,12 +33,12 @@
 enum browser_list_field
 {
   BROWSER_LIST_STORE_ICON_FIELD = 0,
-  BROWSER_LIST_STORE_NAME_FIELD,
+  BROWSER_LIST_STORE_NAME_FIELD,	//This is the value returned by the funciton se in the get_item_key member in struct fs_operations. It's the filename.
   BROWSER_LIST_STORE_SIZE_FIELD,
   BROWSER_LIST_STORE_SIZE_STR_FIELD,
   BROWSER_LIST_STORE_TYPE_FIELD,
-  BROWSER_LIST_STORE_INDEX_FIELD,
-  BROWSER_LIST_STORE_SLOT_FIELD	//This is a human readable index
+  BROWSER_LIST_STORE_ID_FIELD,
+  BROWSER_LIST_STORE_SLOT_FIELD	//This is an optional map of the id (number) to some string like "A1", "001" or "[A:001]" to mimic the device way of numbering the items.
 };
 
 struct browser
