@@ -195,7 +195,7 @@ browser_get_item_path (struct browser *browser, struct item *item)
 gchar *
 browser_get_item_id_path (struct browser *browser, struct item *item)
 {
-  gchar *filename = browser->fs_ops->get_filename (item);
+  gchar *filename = get_filename (browser->fs_ops->options, item);
   gchar *path = chain_path (browser->dir, filename);
   debug_print (1, "Using %s path for item %s (id %d)...\n", path, item->name,
 	       item->id);

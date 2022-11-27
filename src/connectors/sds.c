@@ -976,7 +976,7 @@ enum sds_fs
 static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_8_B,
   .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "mono8",
   .gui_name = "Mono 8 bits",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -987,7 +987,6 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_8b,
-  .get_filename = get_item_id,
   .load = sds_sample_load,
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
@@ -998,7 +997,7 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_12_B,
   .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "mono12",
   .gui_name = "Mono 12 bits",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -1009,7 +1008,6 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_12b,
-  .get_filename = get_item_id,
   .load = sds_sample_load,
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
@@ -1020,7 +1018,7 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_14_B,
   .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "mono14",
   .gui_name = "Mono 14 bits",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -1031,7 +1029,6 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_14b,
-  .get_filename = get_item_id,
   .load = sds_sample_load,
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
@@ -1042,7 +1039,7 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_16_B,
   .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "mono16",
   .gui_name = "Mono 16 bits",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -1053,7 +1050,6 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_16b,
-  .get_filename = get_item_id,
   .load = sds_sample_load,
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,

@@ -304,7 +304,6 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .move = elektron_move_samples_item,
   .download = elektron_download_sample,
   .upload = elektron_upload_sample,
-  .get_filename = get_item_name,
   .load = elektron_sample_load,
   .save = sample_save_from_array,
   .get_ext = backend_get_fs_ext,
@@ -326,7 +325,6 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .move = elektron_move_raw_item,
   .download = elektron_download_raw,
   .upload = elektron_upload_raw,
-  .get_filename = get_item_name,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -350,7 +348,6 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .move = elektron_move_raw_item,
   .download = elektron_download_raw_pst_pkg,
   .upload = elektron_upload_raw_pst_pkg,
-  .get_filename = get_item_name,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -360,7 +357,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .fs = FS_DATA_ALL,
-  .options = FS_OPTION_SORT_BY_ID,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME,
   .name = "data",
   .type_ext = "data",
   .readdir = elektron_read_data_dir_any,
@@ -372,7 +369,6 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .swap = elektron_swap_data_item_any,
   .download = elektron_download_data_any,
   .upload = elektron_upload_data_any,
-  .get_filename = get_item_dir_name_or_file_id,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -382,7 +378,8 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .fs = FS_DATA_PRJ,
-  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SIZE_COLUMN,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "project",
   .gui_name = "Projects",
   .gui_icon = BE_FILE_ICON_PRJ,
@@ -396,7 +393,6 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .swap = elektron_swap_data_item_prj,
   .download = elektron_download_data_prj_pkg,
   .upload = elektron_upload_data_prj_pkg,
-  .get_filename = get_item_dir_name_or_file_id,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -406,7 +402,8 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .fs = FS_DATA_SND,
-  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SIZE_COLUMN,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "sound",
   .gui_name = "Sounds",
   .gui_icon = BE_FILE_ICON_SND,
@@ -420,7 +417,6 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .swap = elektron_swap_data_item_snd,
   .download = elektron_download_data_snd_pkg,
   .upload = elektron_upload_data_snd_pkg,
-  .get_filename = get_item_dir_name_or_file_id,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -2918,7 +2914,7 @@ elektron_get_download_name (struct backend *backend,
     {
       if (remote_iter->item.id == id)
 	{
-	  name = get_item_name (&remote_iter->item);
+	  name = g_strdup (remote_iter->item.name);
 	  break;
 	}
     }

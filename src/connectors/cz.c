@@ -372,6 +372,9 @@ cz_print (struct item_iterator *iter, struct backend *backend)
 	  iter->item.name);
 }
 
+//As program X in preset storage and program X in internal staorage have different IDs
+//it won't work with the id as the filename so the item name must be used.
+
 static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .fs = FS_PROGRAM_CZ,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
@@ -383,7 +386,6 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .print_item = cz_print,
   .download = cz_download,
   .upload = cz_upload,
-  .get_filename = get_item_name,	//As program 1 in preset storage and program 1 in internal staorage have different IDs it won't work with the id as the key.
   .load = load_file,
   .save = save_file,
   .get_ext = backend_get_fs_ext,

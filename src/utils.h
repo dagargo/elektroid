@@ -58,9 +58,9 @@ typedef void (*iterator_free) (void *);
 typedef gint (*iterator_copy) (struct item_iterator *, struct item_iterator *,
 			       gboolean);
 
-//name must be filled up always. If no name is available, this can be a string representation of the id without padding. See set_item_name_from_id function.
-//In slot mode, id needs to be filled up and will typically be the MIDI preset number (items are addressed by id).
-//In default mode (not slot mode), id can be used for any or no purpose.
+//name must be filled up always. If no name is available, this can be a string representation of the ID without padding. See set_item_name_from_id function.
+//In slot mode, id needs to be filled up and will typically be the MIDI preset number (the id is the filename).
+//In default mode (not slot mode), id can be used for any or no purpose. It's still possible to use the id as the filename by using the FS_OPTION_ID_AS_FILENAME option.
 //A value of -1 in size will show nothing on the interface. If the size column is not used at all, use FS_OPTION_SHOW_SIZE_COLUMN.
 
 struct item
@@ -159,10 +159,6 @@ typedef gint (*fs_src_dst_func) (struct backend *, const gchar *,
 typedef gint (*fs_remote_file_op) (struct backend *, const gchar *,
 				   GByteArray *, struct job_control *);
 
-//The returned value will be used as a unique key to identify the item in its directory.
-//This is what is used as the filename to form paths.
-typedef gchar *(*fs_get_filename) (struct item *);
-
 typedef gchar *(*fs_get_item_slot) (struct item *, struct backend *);
 
 typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
@@ -209,7 +205,6 @@ struct fs_operations
   fs_src_dst_func swap;
   fs_remote_file_op download;
   fs_remote_file_op upload;
-  fs_get_filename get_filename;
   fs_get_item_slot get_slot;
   fs_local_file_op save;
   fs_local_file_op load;
@@ -226,17 +221,20 @@ enum fs_options
   FS_OPTION_STEREO = 0x2,
   //Every operation will block the remote browser.
   FS_OPTION_SINGLE_OP = 0x4,
-  //In slot mode, every destination slot is always used so drop is only possible over a concrete slot.
-  //Multiple DND over a slot will behave as drops over the following slots.
-  //dst_dir passed to t_get_upload_path includes the key, a colon (':') and the item name.
-  FS_OPTION_SLOT_STORAGE = 0x8,
-  //Show column options. Key column is always showed.
-  FS_OPTION_SHOW_ID_COLUMN = 0x10,
-  FS_OPTION_SHOW_SIZE_COLUMN = 0x20,
-  FS_OPTION_SHOW_SLOT_COLUMN = 0x40,
+  //Filename is the ID instead of the name. Useful when the device allows different items to have the same name.
+  FS_OPTION_ID_AS_FILENAME = 0x8,
+  //In slot mode, dst_dir passed to t_get_upload_path includes the ID, a colon (':') and the system filename.
+  //Also, as every destination slot is always used, drop is only possible over a concrete slot.
+  //A DND operation of several items over a slot will behave as dropping the first item over the destination slot and the rest over the following ones.
+  //Typically used together with FS_OPTION_ID_AS_FILENAME but not necessary.
+  FS_OPTION_SLOT_STORAGE = 0x10,
+  //Show column options. Name column is always showed.
+  FS_OPTION_SHOW_ID_COLUMN = 0x20,
+  FS_OPTION_SHOW_SIZE_COLUMN = 0x40,
+  FS_OPTION_SHOW_SLOT_COLUMN = 0x80,
   //Sort items options.
-  FS_OPTION_SORT_BY_ID = 0x80,
-  FS_OPTION_SORT_BY_NAME = 0x100
+  FS_OPTION_SORT_BY_ID = 0x100,
+  FS_OPTION_SORT_BY_NAME = 0x200
 };
 
 extern int debug_level;
@@ -259,11 +257,14 @@ gchar *get_local_startup_path (const gchar *);
 
 void free_msg (gpointer);
 
-gchar *get_item_name (struct item *);
-
-gchar *get_item_id (struct item *);
-
-gchar *get_item_dir_name_or_file_id (struct item *);
+/**
+ * Returns the filename for an item, which is a string that uniquely idenfifies an item.
+ * In a PC, filenames are typically strings but in embedded devices this could be just a number (in string format).
+ * Typically, in these systems, several slots can have the same name but the id is an address to a memory slot.
+ * @param options The options member in the fs_operations struct.
+ * @param item
+ */
+gchar *get_filename (guint32 options, struct item *item);
 
 guint next_item_iterator (struct item_iterator *);
 

@@ -221,24 +221,15 @@ free_msg (gpointer msg)
 }
 
 gchar *
-get_item_name (struct item *item)
+get_filename (guint32 fs_options, struct item *item)
 {
+  if (fs_options & FS_OPTION_ID_AS_FILENAME && item->type == ELEKTROID_FILE)
+    {
+      gchar *id = malloc (LABEL_MAX);
+      snprintf (id, LABEL_MAX, "%d", item->id);
+      return id;
+    }
   return strdup (item->name);
-}
-
-gchar *
-get_item_id (struct item *item)
-{
-  gchar *id = malloc (LABEL_MAX);
-  snprintf (id, LABEL_MAX, "%d", item->id);
-  return id;
-}
-
-gchar *
-get_item_dir_name_or_file_id (struct item *item)
-{
-  return item->type ==
-    ELEKTROID_DIR ? get_item_name (item) : get_item_id (item);
 }
 
 guint

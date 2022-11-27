@@ -366,8 +366,8 @@ microbrute_print (struct item_iterator *iter, struct backend *backend)
 
 static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .fs = FS_MICROBRUTE_SEQUENCE,
-  .options =
-    FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_NAME,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_NAME,
   .name = "sequence",
   .gui_name = "Sequences",
   .gui_icon = BE_FILE_ICON_SEQ,
@@ -376,7 +376,6 @@ static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .print_item = microbrute_print,
   .download = microbrute_download,
   .upload = microbrute_upload,
-  .get_filename = get_item_id,
   .load = load_file,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
