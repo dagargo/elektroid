@@ -1260,7 +1260,7 @@ elektron_src_dst_common (struct backend *backend,
   else
     {
       res = -EPERM;
-      error_print ("%s (%s)\n", snd_strerror (res),
+      error_print ("%s (%s)\n", backend_strerror (backend, res),
 		   elektron_get_msg_string (rx_msg));
     }
   free_msg (rx_msg);
@@ -1366,7 +1366,7 @@ elektron_path_common (struct backend *backend, const gchar * path,
   else
     {
       res = -EPERM;
-      error_print ("%s (%s)\n", snd_strerror (res),
+      error_print ("%s (%s)\n", backend_strerror (backend, res),
 		   elektron_get_msg_string (rx_msg));
     }
   free_msg (rx_msg);
@@ -1554,7 +1554,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar * path,
   res = elektron_get_smplrw_info_from_msg (rx_msg, &id, NULL);
   if (res)
     {
-      error_print ("%s (%s)\n", snd_strerror (res),
+      error_print ("%s (%s)\n", backend_strerror (backend, res),
 		   elektron_get_msg_string (rx_msg));
       free_msg (rx_msg);
       return res;
@@ -1715,7 +1715,7 @@ elektron_download_smplrw (struct backend *backend, const gchar * path,
   res = elektron_get_smplrw_info_from_msg (rx_msg, &id, &frames);
   if (res)
     {
-      error_print ("%s (%s)\n", snd_strerror (res),
+      error_print ("%s (%s)\n", backend_strerror (backend, res),
 		   elektron_get_msg_string (rx_msg));
       free_msg (rx_msg);
       return res;
@@ -1916,7 +1916,7 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
   if (op)
     {
       res = -EIO;
-      error_print ("%s (%s)\n", snd_strerror (res),
+      error_print ("%s (%s)\n", backend_strerror (backend, res),
 		   elektron_get_msg_string (rx_msg));
       free_msg (rx_msg);
       goto end;
@@ -1944,7 +1944,7 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
       else if (op > 1)
 	{
 	  res = -EIO;
-	  error_print ("%s (%s)\n", snd_strerror (res),
+	  error_print ("%s (%s)\n", backend_strerror (backend, res),
 		       elektron_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
 	  break;
@@ -1980,7 +1980,7 @@ elektron_get_storage_stats (struct backend *backend, gint type,
   op = elektron_get_msg_status (rx_msg);
   if (!op)
     {
-      error_print ("%s (%s)\n", snd_strerror (-EIO),
+      error_print ("%s (%s)\n", backend_strerror (backend, -EIO),
 		   elektron_get_msg_string (rx_msg));
       free_msg (rx_msg);
       return -EIO;
@@ -2616,7 +2616,7 @@ elektron_open_datum (struct backend *backend, const gchar * path,
   if (!elektron_get_msg_status (rx_msg))
     {
       res = -EPERM;
-      error_print ("%s (%s)\n", snd_strerror (res),
+      error_print ("%s (%s)\n", backend_strerror (backend, res),
 		   elektron_get_msg_string (rx_msg));
       free_msg (rx_msg);
       goto cleanup;
@@ -2701,7 +2701,7 @@ elektron_close_datum (struct backend *backend,
 
   if (!elektron_get_msg_status (rx_msg))
     {
-      error_print ("%s (%s)\n", snd_strerror (-EPERM),
+      error_print ("%s (%s)\n", backend_strerror (backend, -EPERM),
 		   elektron_get_msg_string (rx_msg));
       free_msg (rx_msg);
       return -EPERM;
@@ -2787,7 +2787,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
       if (!elektron_get_msg_status (rx_msg))
 	{
 	  res = -EPERM;
-	  error_print ("%s (%s)\n", snd_strerror (res),
+	  error_print ("%s (%s)\n", backend_strerror (backend, res),
 		       elektron_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
 	  break;
@@ -3142,8 +3142,8 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
   GByteArray *tx_msg;
   gchar *path_w_prefix = elektron_add_prefix_to_path (path, prefix);
 
-  res =
-    elektron_open_datum (backend, path_w_prefix, &jid, O_WRONLY, array->len);
+  res = elektron_open_datum (backend, path_w_prefix, &jid, O_WRONLY,
+			     array->len);
   g_free (path_w_prefix);
   if (res)
     {
@@ -3207,7 +3207,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
       if (!elektron_get_msg_status (rx_msg))
 	{
 	  res = -EPERM;
-	  error_print ("%s (%s)\n", snd_strerror (res),
+	  error_print ("%s (%s)\n", backend_strerror (backend, res),
 		       elektron_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
 	  break;

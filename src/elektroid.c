@@ -880,7 +880,7 @@ elektroid_tx_sysex_files_thread (gpointer data)
     {
       g_byte_array_set_size (sysex_transfer.raw, 0);
       *err = elektroid_send_sysex_file (filenames->data,
-					backend_tx_sysex_no_update);
+					backend_tx_sysex_no_status);
       filenames = filenames->next;
       //The device may have sent some messages in response so we skip all these.
       backend_rx_drain (&backend);
@@ -3092,7 +3092,8 @@ elektroid_set_device_thread (gpointer data)
 {
   gchar *id = data;
   g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
-  sysex_transfer.err = connector_init (&backend, id, NULL, &sysex_transfer);
+  sysex_transfer.err = connector_init_backend (&backend, id, NULL,
+					       &sysex_transfer);
 
   // TODO: Until a better solution is found, this sleep is necessary.
   // The reason is that this thread might end before the dialog is showed, which leads to erratic dialog behaviour.
@@ -3129,15 +3130,12 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 		      DEVICES_LIST_STORE_ID_FIELD, &id,
 		      DEVICES_LIST_STORE_NAME_FIELD, &name, -1);
 
-  if (!strcmp (id, BE_SYSTEM_ID) && !backend_init (&backend, id)
-      && !system_handshake (&backend))
+  if (!system_init_backend (&backend, id))
     {
       debug_print (1, "System backend detected\n");
       elektroid_fill_fs_combo_bg (NULL);
       elektroid_check_backend_bg (NULL);
-      g_free (id);
-      g_free (name);
-      return;
+      goto end;
     }
 
   debug_print (1, "Creating SysEx thread...\n");
@@ -3160,9 +3158,6 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 		      g_strerror (-sysex_transfer.err));
     }
 
-  g_free (id);
-  g_free (name);
-
   elektroid_check_backend_bg (NULL);
   if (dres == GTK_RESPONSE_ACCEPT)
     {
@@ -3172,6 +3167,10 @@ elektroid_set_device (GtkWidget * object, gpointer data)
     {
       gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), -1);
     }
+
+end:
+  g_free (id);
+  g_free (name);
 }
 
 static void

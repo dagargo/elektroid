@@ -27,6 +27,6 @@
 
 extern const struct fs_operations FS_LOCAL_OPERATIONS;
 
-gint system_handshake (struct backend *);
+gint system_init_backend (struct backend *, const gchar *);
 
 #endif

@@ -14,14 +14,15 @@ AM_INIT_AUTOMAKE([subdir-objects])
 AC_PROG_CC
 
 # Define conditional prior to package checks
-AM_CONDITIONAL([CLI_ONLY], [test "${CLI_ONLY}" == yes])
-AM_CONDITIONAL([GUI], [test "${CLI_ONLY}" != yes])
+AM_CONDITIONAL([ELEKTROID_CLI_ONLY], [test "${CLI_ONLY}" == yes])
+AM_CONDITIONAL([ELEKTROID_RTMIDI], [test "${RTMIDI}" == yes])
+AS_IF([test "${RTMIDI}" == yes], [AC_DEFINE([ELEKTROID_RTMIDI], [1], ["Use RtMidi"])])
 
 # Checks for libraries.
-PKG_CHECK_MODULES(ALSA, alsa >= 1.1.3)
+AM_COND_IF(ELEKTROID_RTMIDI, [PKG_CHECK_MODULES([RTMIDI], [rtmidi >= 4.0.0])], [PKG_CHECK_MODULES([ALSA], [alsa >= 1.1.3])])
 PKG_CHECK_MODULES(zlib, zlib >= 1.1.8)
 PKG_CHECK_MODULES(libzip, libzip >= 1.1.2)
-AM_COND_IF(GUI, [PKG_CHECK_MODULES([GTK], [gtk+-3.0])])
+AM_COND_IF(ELEKTROID_CLI_ONLY, [], [PKG_CHECK_MODULES([GTK], [gtk+-3.0])])
 
 PKG_CHECK_MODULES(SNDFILE, sndfile >= 1.0.2, ac_cv_sndfile=1, ac_cv_sndfile=0)
 AC_DEFINE_UNQUOTED([HAVE_SNDFILE],${ac_cv_sndfile}, [Set to 1 if you have libsndfile.])
@@ -33,11 +34,11 @@ AC_DEFINE_UNQUOTED([HAVE_SAMPLERATE],${ac_cv_samplerate}, [Set to 1 if you have 
 AC_SUBST(SAMPLERATE_CFLAGS)
 AC_SUBST(SAMPLERATE_LIBS)
 
-AM_COND_IF(GUI, [PKG_CHECK_MODULES([PULSEAUDIO], [libpulse >= 5.0])])
+AM_COND_IF(ELEKTROID_CLI_ONLY, [], [PKG_CHECK_MODULES([PULSEAUDIO], [libpulse >= 5.0])])
 AC_SUBST(PULSEAUDIO_CFLAGS)
 AC_SUBST(PULSEAUDIO_LIBS)
 
-AM_COND_IF(GUI, [
+AM_COND_IF(ELEKTROID_CLI_ONLY, [], [
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.19])
 ])

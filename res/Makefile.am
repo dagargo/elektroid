@@ -1,4 +1,4 @@
-if CLI_ONLY
+if ELEKTROID_CLI_ONLY
 res_DATA = elektron-devices.json
 desktop_DATA =
 metainfo_DATA =

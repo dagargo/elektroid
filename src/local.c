@@ -344,8 +344,8 @@ local_sample_load_441_16_mono (const gchar * path, GByteArray * sample,
 
 const struct fs_operations FS_LOCAL_OPERATIONS = {
   .fs = 0,
-  .options =
-    FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER | FS_OPTION_STEREO,
+  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER |
+    FS_OPTION_STEREO,
   .name = "local",
   .gui_name = "localhost",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -472,12 +472,14 @@ static const struct fs_operations *FS_SYSTEM_OPERATIONS[] = {
 };
 
 gint
-system_handshake (struct backend *backend)
+system_init_backend (struct backend *backend, const gchar * id)
 {
-  if (backend->type != BE_TYPE_SYSTEM)
+  if (strcmp (id, BE_SYSTEM_ID))
     {
       return -ENODEV;
     }
+
+  backend->type = BE_TYPE_SYSTEM;
   backend->device_desc.filesystems =
     FS_SAMPLES_LOCAL_48_16_STEREO | FS_SAMPLES_LOCAL_48_16_MONO |
     FS_SAMPLES_LOCAL_441_16_STEREO | FS_SAMPLES_LOCAL_441_16_MONO;

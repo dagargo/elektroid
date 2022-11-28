@@ -23,8 +23,8 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
-gint connector_init (struct backend *backend, const gchar * midi_id,
-		     const gchar * name,
-		     struct sysex_transfer *sysex_transfer);
+gint connector_init_backend (struct backend *backend, const gchar * midi_id,
+			     const gchar * name,
+			     struct sysex_transfer *sysex_transfer);
 
 #endif

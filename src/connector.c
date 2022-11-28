@@ -20,7 +20,6 @@
 
 #include <glib/gi18n.h>
 #include "backend.h"
-#include "local.h"
 #include "connector.h"
 #include "connectors/elektron.h"
 #include "connectors/microbrute.h"
@@ -98,12 +97,13 @@ static const struct connector *CONNECTORS[] = {
 // Other negative errors are allowed but we will not continue with the remaining connectors.
 
 gint
-connector_init (struct backend *backend, const gchar * id,
-		const gchar * conn_name,
-		struct sysex_transfer *sysex_transfer)
+connector_init_backend (struct backend *backend, const gchar * id,
+			const gchar * conn_name,
+			struct sysex_transfer *sysex_transfer)
 {
   gboolean active = TRUE;
   const struct connector **connector;
+
   int err = backend_init (backend, id);
   if (err)
     {

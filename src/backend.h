@@ -18,11 +18,25 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#if defined(__linux__) && !defined(ELEKTROID_RTMIDI)
 #include <alsa/asoundlib.h>
+#else
+#include <fcntl.h>
+#include <rtmidi_c.h>
+#endif
+
 #include "utils.h"
 
 #ifndef BACKEND_H
 #define BACKEND_H
+
+#define BE_POLL_TIMEOUT_MS 20
+#define BE_KB 1024
+#define BE_MAX_TX_LEN BE_KB	//With a higher value than 4 KB, functions behave erratically.
+#define BE_INT_BUF_LEN (32 * BE_KB)	//Max length of a SysEx message for Elektroid
+#define BE_DEV_RING_BUF_LEN (256 * BE_KB)
+#define BE_DEVICE_NAME "hw:%d,%d,%d"
+#define BE_TMP_BUFF_LEN 256
 
 #define BE_FILE_ICON_WAVE "elektroid-wave-symbolic"
 #define BE_FILE_ICON_SEQ "elektroid-sequence-symbolic"
@@ -71,27 +85,32 @@ enum backend_type
 
 struct backend
 {
+// ALSA or RtMidi backend
+#if defined(__linux__) && !defined(ELEKTROID_RTMIDI)
+  snd_rawmidi_t *inputp;
+  snd_rawmidi_t *outputp;
+  gint npfds;
+  struct pollfd *pfds;
+#else
+  struct RtMidiWrapper *inputp;
+  struct RtMidiWrapper *outputp;
+#endif
+  guint8 *buffer;
+  ssize_t rx_len;
   enum backend_type type;
   struct device_desc device_desc;
   struct backend_midi_info midi_info;
-  snd_rawmidi_t *inputp;
-  snd_rawmidi_t *outputp;
-  GMutex mutex;
-  //Internal buffer
-  guint8 *buffer;
-  ssize_t rx_len;
-  //Linux
-  gint npfds;
-  struct pollfd *pfds;
   gchar device_name[LABEL_MAX];
+  GMutex mutex;
   //Message cache
   GHashTable *cache;
   //These must be filled by the concrete backend.
-  const struct fs_operations **fs_ops;
   t_destroy_data destroy_data;
   t_sysex_transfer upgrade_os;
   t_get_storage_stats get_storage_stats;
   void *data;
+  //This must be filled by the concrete connector.
+  const struct fs_operations **fs_ops;
 };
 
 struct backend_system_device
@@ -106,7 +125,7 @@ void backend_destroy (struct backend *);
 
 ssize_t backend_tx_raw (struct backend *, const guint8 *, guint);
 
-gint backend_tx_sysex_no_update (struct backend *, struct sysex_transfer *);
+gint backend_tx_sysex_no_status (struct backend *, struct sysex_transfer *);
 
 gint backend_tx_sysex (struct backend *, struct sysex_transfer *);
 
@@ -142,5 +161,13 @@ gdouble backend_get_storage_stats_percent (struct backend_storage_stats *);
 void backend_destroy_data (struct backend *);
 
 gint backend_program_change (struct backend *, guint8, guint8);
+
+void backend_midi_handshake (struct backend *);
+
+/**
+ * Returns a human readable message for the given error or for the last ocurred error if the underlying API only returs a boolean value.
+ */
+
+const gchar *backend_strerror (struct backend *backend, gint error);
 
 #endif

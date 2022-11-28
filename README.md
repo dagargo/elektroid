@@ -1,6 +1,6 @@
 # Elektroid
 
-Elektroid is a GNU/Linux management application for MIDI devices. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.
+Elektroid is a sample and MIDI device manager. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.
 
 Supported devices:
 
@@ -18,9 +18,9 @@ Supported devices:
 
 To use with Elektron devices, USB configuration must be set to `USB MIDI` or `USB AUDIO/MIDI` as it won't work in Overbridge mode.
 
-## Installation
+## Compilation and installation
 
-As with other autotools project, you need to run the following commands. If you just want to compile `elektroid-cli`, pass `CLI_ONLY=yes` to `/configure`.
+As with other autotools project, you need to run the following commands. If you just want to compile `elektroid-cli`, pass `CLI_ONLY=yes` to `./configure`.
 
 ```
 autoreconf --install
@@ -51,6 +51,10 @@ If you are only compiling the CLI, install the dependencies with `sudo apt insta
 For Fedora, `sudo dnf install autoconf libtool alsa-lib-devel zlib-devel libzip-devel gtk3-devel libsndfile-devel gettext-devel libsamplerate-devel pulseaudio-libs-devel json-glib-devel` will install the build dependencies.
 
 For Arch Linux, `sudo pacman -S base-devel autoconf libtool alsa-lib zlib libzip gtk3 libsndfile gettext libsamplerate pulseaudio json-glib` will install the build dependencies.
+
+### MIDI backend
+
+By default, Elektroid uses ALSA as a MIDI backend on Linux and RtMidi on other OSs. To use RtMidi on Linux, pass `RTMIDI=yes` to `./configure`. In this case, the RtMidi development package will be needed (`librtmidi-dev` on Debian).
 
 ## Packaging
 
