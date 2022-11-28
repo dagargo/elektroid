@@ -345,7 +345,7 @@ get_human_size (gint64 size, gboolean with_space)
 
   if (size < 0)
     {
-      label = strdup ("");
+      *label = 0;
     }
   else if (size < KIB)
     {
