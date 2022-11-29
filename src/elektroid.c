@@ -1331,7 +1331,7 @@ elektroid_drag_begin (GtkWidget * widget, GdkDragContext * context,
   GtkTreeModel *model;
   GList *tree_path_list;
   GList *list;
-  gchar *uri;
+  gchar *uri, *escaped_uri;
   gchar *path;
   struct item item;
   struct browser *browser = data;
@@ -1346,21 +1346,21 @@ elektroid_drag_begin (GtkWidget * widget, GdkDragContext * context,
       gtk_tree_model_get_iter (model, &iter, list->data);
       browser_set_item (model, &iter, &item);
       path = browser_get_item_id_path (browser, &item);
-      if (widget == GTK_WIDGET (local_browser.view))
+      if (widget == GTK_WIDGET (local_browser.view) ||
+	  (widget == GTK_WIDGET (remote_browser.view)
+	   && backend.type == BE_TYPE_SYSTEM))
 	{
-	  uri = g_filename_to_uri (path, NULL, NULL);
-	}
-      else if (widget == GTK_WIDGET (remote_browser.view))
-	{
-	  uri = chain_path ("file://", &path[1]);
+	  escaped_uri = g_filename_to_uri (path, NULL, NULL);
 	}
       else
 	{
-	  continue;
+	  uri = chain_path ("file://", &path[1]);
+	  escaped_uri = g_uri_escape_string (uri, ":/", FALSE);
+	  g_free (uri);
 	}
       g_free (path);
-      g_string_append (browser->dnd_data, uri);
-      g_free (uri);
+      g_string_append (browser->dnd_data, escaped_uri);
+      g_free (escaped_uri);
       g_string_append (browser->dnd_data, "\n");
     }
   g_list_free_full (tree_path_list, (GDestroyNotify) gtk_tree_path_free);
