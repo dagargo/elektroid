@@ -3255,7 +3255,7 @@ elektroid_add_upload_task_slot (const gchar * name,
 }
 
 static gpointer
-elektroid_dnd_received_runner (gpointer data)
+elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 {
   GtkWidget *widget = data;
   gint32 next_idx = 1;
@@ -3263,7 +3263,10 @@ elektroid_dnd_received_runner (gpointer data)
   struct item_iterator remote_item_iterator;
   gboolean queued_before, queued_after, load_remote, active;
 
-  g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
+  if (dialog)
+    {
+      g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
+    }
 
   queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
 						  NULL);
@@ -3359,12 +3362,21 @@ end:
       g_idle_add (elektroid_run_next_task, NULL);
     }
 
-  // TODO: Until a better solution is found, this sleep is necessary.
-  // The reason is that this thread might end before the dialog is showed, which leads to erratic dialog behaviour.
-  // As we start to run the next task before sleeping, this has no impact.
-  sleep (1);
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+  if (dialog)
+    {
+      // TODO: Until a better solution is found, this sleep is necessary.
+      // The reason is that this thread might end before the dialog is showed, which leads to erratic dialog behaviour.
+      // As we start to run the next task before sleeping, this has no impact.
+      sleep (1);
+      gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+    }
   return NULL;
+}
+
+static gpointer
+elektroid_dnd_received_runner (gpointer data)
+{
+  return elektroid_dnd_received_runner_dialog (data, TRUE);
 }
 
 static void
@@ -3375,6 +3387,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 {
   gchar *data;
   GdkAtom type;
+  gboolean background = TRUE;
 
   if (selection_data == NULL
       || !gtk_selection_data_get_length (selection_data)
@@ -3398,17 +3411,20 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   sysex_transfer.active = TRUE;
   g_mutex_unlock (&sysex_transfer.mutex);
 
-  debug_print (1, "Creating SysEx thread...\n");
-  sysex_thread = g_thread_new ("sysex_thread", elektroid_dnd_received_runner,
-			       widget);
-
   if ((widget == GTK_WIDGET (local_browser.view)
        && !strcmp (dnd_type_name, TEXT_URI_LIST_STD)) ||
       (widget == GTK_WIDGET (remote_browser.view)
-       && !strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID)))
+       && !strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID)) ||
+      (widget == GTK_WIDGET (remote_browser.view)
+            && !strcmp (dnd_type_name, TEXT_URI_LIST_STD)
+            && backend.type == BE_TYPE_SYSTEM))
     {
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Moving Files"));
       gtk_label_set_text (GTK_LABEL (progress_label), _("Moving..."));
+      if (!strcmp (dnd_type_name, TEXT_URI_LIST_STD))
+	{
+	  background = FALSE;
+	}
     }
   else
     {
@@ -3416,14 +3432,26 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 			    _("Preparing Tasks"));
       gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
     }
-  gtk_dialog_run (GTK_DIALOG (progress_dialog));
-  gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
-  g_mutex_lock (&sysex_transfer.mutex);
-  sysex_transfer.active = FALSE;
-  g_mutex_unlock (&sysex_transfer.mutex);
+  if (background)
+    {
+      debug_print (1, "Creating SysEx thread...\n");
+      sysex_thread =
+	g_thread_new ("sysex_thread", elektroid_dnd_received_runner, widget);
 
-  elektroid_join_sysex_thread ();
+      gtk_dialog_run (GTK_DIALOG (progress_dialog));
+      gtk_widget_hide (GTK_WIDGET (progress_dialog));
+
+      g_mutex_lock (&sysex_transfer.mutex);
+      sysex_transfer.active = FALSE;
+      g_mutex_unlock (&sysex_transfer.mutex);
+
+      elektroid_join_sysex_thread ();
+    }
+  else
+    {
+      elektroid_dnd_received_runner_dialog (widget, FALSE);
+    }
 
   g_free (dnd_type_name);
   g_strfreev (dnd_uris);
