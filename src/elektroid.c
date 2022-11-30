@@ -119,45 +119,39 @@ static const struct option ELEKTROID_OPTIONS[] = {
 };
 
 static const GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
+  {TEXT_URI_LIST_STD, 0, TARGET_STRING},
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
-   TARGET_STRING},
-  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
-   TARGET_STRING},
-  {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
-};
-
-static const GtkTargetEntry TARGET_ENTRIES_LOCAL_SRC[] = {
-  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
-   TARGET_STRING},
-  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
-   TARGET_STRING},
-  {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
-};
-
-static const GtkTargetEntry TARGET_ENTRIES_REMOTE_DST[] = {
-  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
-   TARGET_STRING},
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
-   TARGET_STRING},
-  {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
-};
-
-static const GtkTargetEntry TARGET_ENTRIES_REMOTE_DST_SLOT[] = {
-  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
-   TARGET_STRING},
-  {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING}
-};
-
-static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SRC[] = {
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
-   TARGET_STRING},
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
    TARGET_STRING}
 };
 
+static const GtkTargetEntry TARGET_ENTRIES_LOCAL_SRC[] = {
+  {TEXT_URI_LIST_STD, 0, TARGET_STRING}
+};
+
+static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SYSTEM_DST[] = {
+  {TEXT_URI_LIST_STD, 0, TARGET_STRING}
+};
+
+static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SYSTEM_SRC[] = {
+  {TEXT_URI_LIST_STD, 0, TARGET_STRING}
+};
+
+static const GtkTargetEntry TARGET_ENTRIES_REMOTE_DST[] = {
+  {TEXT_URI_LIST_STD, 0, TARGET_STRING},
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
+   TARGET_STRING},
+};
+
+static const GtkTargetEntry TARGET_ENTRIES_REMOTE_DST_SLOT[] = {
+  {TEXT_URI_LIST_STD, 0, TARGET_STRING}
+};
+
+static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SRC[] = {
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING},
+};
+
 static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
-  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP, TARGET_STRING},
-  {TEXT_URI_LIST_STD, GTK_TARGET_OTHER_APP, TARGET_STRING},
+  {TEXT_URI_LIST_STD, 0, TARGET_STRING},
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING}
 };
 
@@ -2997,6 +2991,10 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
     {
+      gtk_drag_source_set ((GtkWidget *) remote_browser.view,
+			   GDK_BUTTON1_MASK, TARGET_ENTRIES_REMOTE_SRC,
+			   G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC),
+			   GDK_ACTION_COPY);
       gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
 			 GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_REMOTE_DST_SLOT,
 			 G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST_SLOT),
@@ -3004,10 +3002,31 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
     }
   else
     {
-      gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
-			 GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_REMOTE_DST,
-			 G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST),
-			 GDK_ACTION_COPY);
+      if (backend.type == BE_TYPE_SYSTEM)
+	{
+	  gtk_drag_source_set ((GtkWidget *) remote_browser.view,
+			       GDK_BUTTON1_MASK,
+			       TARGET_ENTRIES_REMOTE_SYSTEM_SRC,
+			       G_N_ELEMENTS
+			       (TARGET_ENTRIES_REMOTE_SYSTEM_SRC),
+			       GDK_ACTION_MOVE);
+	  gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
+			     GTK_DEST_DEFAULT_ALL,
+			     TARGET_ENTRIES_REMOTE_SYSTEM_DST,
+			     G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SYSTEM_DST),
+			     GDK_ACTION_MOVE);
+	}
+      else
+	{
+	  gtk_drag_source_set ((GtkWidget *) remote_browser.view,
+			       GDK_BUTTON1_MASK, TARGET_ENTRIES_REMOTE_SRC,
+			       G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC),
+			       GDK_ACTION_COPY);
+	  gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
+			     GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_REMOTE_DST,
+			     G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST),
+			     GDK_ACTION_COPY);
+	}
     }
 
   if (PLAYER_VISIBLE)
@@ -3157,17 +3176,17 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 }
 
 static void
-elektroid_dnd_received_local (const gchar * dir, const gchar * name,
-			      const gchar * filename)
+elektroid_dnd_received_system (const gchar * dir, const gchar * name,
+			       const gchar * filename,
+			       struct browser *browser)
 {
   gchar *dst_path;
   gint res;
 
-  if (strcmp (dir, local_browser.dir))
+  if (strcmp (dir, browser->dir))
     {
-      dst_path = chain_path (local_browser.dir, name);
-      res = local_browser.fs_ops->move (local_browser.backend, filename,
-					dst_path);
+      dst_path = chain_path (browser->dir, name);
+      res = browser->fs_ops->move (browser->backend, filename, dst_path);
       if (res)
 	{
 	  error_print ("Error while moving from “%s” to “%s”: %s.\n",
@@ -3192,12 +3211,12 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
 
   if (strcmp (dir, remote_browser.dir))
     {
-      dst_path =
-	remote_browser.fs_ops->get_upload_path (&backend,
-						remote_item_iterator,
-						remote_browser.fs_ops,
-						remote_browser.dir, name,
-						next_idx);
+      dst_path = remote_browser.fs_ops->get_upload_path (&backend,
+							 remote_item_iterator,
+							 remote_browser.fs_ops,
+							 remote_browser.dir,
+							 name, next_idx);
+
       res = remote_browser.fs_ops->move (remote_browser.backend, filename,
 					 dst_path);
       if (res)
@@ -3307,7 +3326,8 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 	{
 	  if (strcmp (dnd_type_name, TEXT_URI_LIST_STD) == 0)
 	    {
-	      elektroid_dnd_received_local (dir, name, filename);
+	      elektroid_dnd_received_system (dir, name, filename,
+					     &local_browser);
 	    }
 	  else if (strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID) == 0)
 	    {
@@ -3331,10 +3351,18 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 		}
 	      else
 		{
-		  elektroid_add_upload_task_path (name, dir,
-						  remote_browser.dir,
-						  &remote_item_iterator,
-						  &next_idx);
+		  if (backend.type == BE_TYPE_SYSTEM)
+		    {
+		      elektroid_dnd_received_system (dir, name, filename,
+						     &remote_browser);
+		    }
+		  else
+		    {
+		      elektroid_add_upload_task_path (name, dir,
+						      remote_browser.dir,
+						      &remote_item_iterator,
+						      &next_idx);
+		    }
 		}
 	    }
 	}
@@ -3416,8 +3444,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       (widget == GTK_WIDGET (remote_browser.view)
        && !strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID)) ||
       (widget == GTK_WIDGET (remote_browser.view)
-            && !strcmp (dnd_type_name, TEXT_URI_LIST_STD)
-            && backend.type == BE_TYPE_SYSTEM))
+       && !strcmp (dnd_type_name, TEXT_URI_LIST_STD)
+       && backend.type == BE_TYPE_SYSTEM))
     {
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Moving Files"));
       gtk_label_set_text (GTK_LABEL (progress_label), _("Moving..."));
@@ -3921,10 +3949,6 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (remote_browser.up_button, "drag-leave",
 		    G_CALLBACK (elektroid_drag_leave_up), &remote_browser);
 
-  gtk_drag_source_set ((GtkWidget *) remote_browser.view, GDK_BUTTON1_MASK,
-		       TARGET_ENTRIES_REMOTE_SRC,
-		       G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC),
-		       GDK_ACTION_COPY);
   gtk_drag_dest_set ((GtkWidget *) remote_browser.up_button,
 		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
 		     TARGET_ENTRIES_UP_BUTTON_DST,
