@@ -1116,7 +1116,7 @@ elektroid_delete_file (struct browser *browser, gchar * dir,
       err = browser->fs_ops->delete (browser->backend, id_path);
       if (err)
 	{
-	  error_print ("Error while deleting “%s”: %s.", path,
+	  error_print ("Error while deleting “%s”: %s.\n", path,
 		       g_strerror (-err));
 	}
       g_free (id_path);
@@ -3170,7 +3170,7 @@ elektroid_dnd_received_local (const gchar * dir, const gchar * name,
 					dst_path);
       if (res)
 	{
-	  error_print ("Error while moving from “%s” to “%s”: %s.",
+	  error_print ("Error while moving from “%s” to “%s”: %s.\n",
 		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
@@ -3202,7 +3202,7 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
 					 dst_path);
       if (res)
 	{
-	  error_print ("Error while moving from “%s” to “%s”: %s.",
+	  error_print ("Error while moving from “%s” to “%s”: %s.\n",
 		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
