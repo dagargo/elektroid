@@ -21,6 +21,7 @@
 #include <sndfile.h>
 #include <samplerate.h>
 #include <math.h>
+#include <errno.h>
 #include "sample.h"
 
 #define JUNK_CHUNK_ID "JUNK"
