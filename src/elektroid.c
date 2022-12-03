@@ -18,7 +18,6 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../config.h"
 #include <limits.h>
 #include <locale.h>
 #include <gtk/gtk.h>

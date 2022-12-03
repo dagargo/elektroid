@@ -18,7 +18,6 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../config.h"
 #include "audio.h"
 
 #define AUDIO_PA_BUFFER_LEN (AUDIO_SAMPLE_RATE / 10)

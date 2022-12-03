@@ -18,7 +18,6 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "../config.h"
 #include <sndfile.h>
 #include <samplerate.h>
 #include <math.h>
