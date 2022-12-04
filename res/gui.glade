@@ -428,6 +428,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkComboBox" id="devices_combo">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
+                            <property name="hexpand">True</property>
                             <property name="model">devices_list_store</property>
                             <child>
                               <object class="GtkCellRendererText"/>
@@ -437,7 +438,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             </child>
                           </object>
                           <packing>
-                            <property name="expand">True</property>
+                            <property name="expand">False</property>
                             <property name="fill">True</property>
                             <property name="position">0</property>
                           </packing>
