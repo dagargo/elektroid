@@ -1631,7 +1631,7 @@ elektroid_reset_sample (struct browser *browser)
 {
   if (PLAYER_SOURCE_IS_BROWSER (browser))
     {
-      audio_stop (&audio, TRUE);
+      audio_stop (&audio);
       elektroid_stop_load_thread ();
       audio_reset_sample (&audio);
       gtk_widget_queue_draw (waveform_draw_area);
@@ -1674,7 +1674,7 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	    {
 	      if (audio_fs)
 		{
-		  audio_stop (&audio, TRUE);
+		  audio_stop (&audio);
 		  elektroid_stop_load_thread ();
 		  audio_reset_sample (&audio);
 		  strcpy (audio.path, sample_path);
@@ -1903,7 +1903,7 @@ elektroid_play_clicked (GtkWidget * object, gpointer data)
 static void
 elektroid_stop_clicked (GtkWidget * object, gpointer data)
 {
-  audio_stop (&audio, TRUE);
+  audio_stop (&audio);
 }
 
 static void
@@ -1927,7 +1927,7 @@ elektroid_mix_clicked (GtkWidget * object, gboolean state, gpointer data)
   preferences.mix = state;
   if (strlen (audio.path))
     {
-      audio_stop (&audio, TRUE);
+      audio_stop (&audio);
       elektroid_stop_load_thread ();
       path = strdup (audio.path);
       audio_reset_sample (&audio);
@@ -3030,7 +3030,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   if (PLAYER_VISIBLE)
     {
-      audio_stop (&audio, TRUE);
+      audio_stop (&audio);
     }
 
   browser_set_options (&remote_browser);

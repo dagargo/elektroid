@@ -54,7 +54,11 @@ For Arch Linux, `sudo pacman -S base-devel autoconf libtool alsa-lib zlib libzip
 
 ### MIDI backend
 
-By default, Elektroid uses ALSA as a MIDI backend on Linux and RtMidi on other OSs. To use RtMidi on Linux, pass `RTMIDI=yes` to `./configure`. In this case, the RtMidi development package will be needed (`librtmidi-dev` on Debian).
+By default, Elektroid uses ALSA as the MIDI backend on Linux and RtMidi on other OSs. To use RtMidi on Linux, pass `RTMIDI=yes` to `./configure`. In this case, the RtMidi development package will be needed (`librtmidi-dev` on Debian).
+
+### Audio server
+
+By default, Elektroid uses PulseAudio as the audio server on Linux and RtAudio on other OSs. To use RtAudio on Linux, pass `RTAUDIO=yes` to `./configure`. In this case, the RtAudio development package will be needed (`librtaudio-dev` on Debian).
 
 ## Packaging
 
