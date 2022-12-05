@@ -27,9 +27,11 @@
 gint backend_tx_sysex_internal (struct backend *, struct sysex_transfer *,
 				gboolean);
 
-void backend_destroy_midi (struct backend *);
-gint backend_init_midi (struct backend *, const gchar *);
-gboolean backend_check_midi (struct backend *);
+void backend_destroy_int (struct backend *);
+gint backend_init_int (struct backend *, const gchar *);
+gboolean backend_check_int (struct backend *);
+const gchar *backend_name ();
+const gchar *backend_version ();
 
 //Identity Request Universal Sysex message
 static const guint8 BE_MIDI_IDENTITY_REQUEST[] =
@@ -310,9 +312,10 @@ backend_program_change (struct backend *backend, guint8 channel,
 gint
 backend_init (struct backend *backend, const gchar * id)
 {
-  debug_print (1, "Initializing backend to '%s'...\n", id);
+  debug_print (1, "Initializing backend (%s) to '%s'...\n",
+	       backend_name (), id);
   backend->type = BE_TYPE_MIDI;
-  return backend_init_midi (backend, id);
+  return backend_init_int (backend, id);
 }
 
 void
@@ -329,7 +332,7 @@ backend_destroy (struct backend *backend)
 
   if (backend->type == BE_TYPE_MIDI)
     {
-      backend_destroy_midi (backend);
+      backend_destroy_int (backend);
     }
 
   backend->device_desc.id = -1;
@@ -347,7 +350,7 @@ backend_check (struct backend *backend)
   switch (backend->type)
     {
     case BE_TYPE_MIDI:
-      return backend_check_midi (backend);
+      return backend_check_int (backend);
     case BE_TYPE_SYSTEM:
       return TRUE;
     default:

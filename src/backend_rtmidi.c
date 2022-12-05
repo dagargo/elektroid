@@ -22,7 +22,7 @@
 #include "rtmidi_c.h"
 
 void
-backend_destroy_midi (struct backend *backend)
+backend_destroy_int (struct backend *backend)
 {
   if (backend->inputp)
     {
@@ -44,7 +44,7 @@ backend_destroy_midi (struct backend *backend)
 }
 
 gint
-backend_init_midi (struct backend *backend, const gchar * id)
+backend_init_int (struct backend *backend, const gchar * id)
 {
   struct RtMidiWrapper *inputp;
   struct RtMidiWrapper *outputp;
@@ -192,7 +192,6 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 
       len = BE_INT_BUF_LEN;
       rtmidi_in_get_message (backend->inputp, backend->buffer, &len);
-
       if (!backend->inputp->ok)
 	{
 	  transfer->err = -EIO;
@@ -250,7 +249,7 @@ end:
 }
 
 gboolean
-backend_check_midi (struct backend *backend)
+backend_check_int (struct backend *backend)
 {
   return backend->inputp && backend->outputp;
 }
@@ -311,4 +310,10 @@ const gchar *
 backend_strerror (struct backend *backend, gint err)
 {
   return backend->outputp->msg ? backend->outputp->msg : backend->inputp->msg;
+}
+
+const gchar *
+backend_name ()
+{
+  return "RtMidi";
 }

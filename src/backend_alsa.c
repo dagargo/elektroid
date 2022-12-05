@@ -21,7 +21,7 @@
 #include "backend.h"
 
 void
-backend_destroy_midi (struct backend *backend)
+backend_destroy_int (struct backend *backend)
 {
   gint err;
 
@@ -61,7 +61,7 @@ backend_destroy_midi (struct backend *backend)
 }
 
 gint
-backend_init_midi (struct backend *backend, const gchar * id)
+backend_init_int (struct backend *backend, const gchar * id)
 {
   snd_rawmidi_params_t *params;
   gint err;
@@ -531,7 +531,7 @@ end:
 }
 
 gboolean
-backend_check_midi (struct backend *backend)
+backend_check_int (struct backend *backend)
 {
   return backend->inputp && backend->outputp;
 }
@@ -675,4 +675,10 @@ const gchar *
 backend_strerror (struct backend *backend, gint err)
 {
   return snd_strerror (err);
+}
+
+const gchar *
+backend_name ()
+{
+  return "ALSA";
 }
