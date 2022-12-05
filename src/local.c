@@ -484,7 +484,6 @@ system_init_backend (struct backend *backend, const gchar * id)
     FS_SAMPLES_LOCAL_48_16_STEREO | FS_SAMPLES_LOCAL_48_16_MONO |
     FS_SAMPLES_LOCAL_441_16_STEREO | FS_SAMPLES_LOCAL_441_16_MONO;
   backend->fs_ops = FS_SYSTEM_OPERATIONS;
-  backend->destroy_data = backend_destroy_data;
   snprintf (backend->device_name, LABEL_MAX, "%s", _("System"));
   return 0;
 }

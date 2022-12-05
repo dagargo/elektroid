@@ -104,13 +104,12 @@ struct backend
   GMutex mutex;
   //Message cache
   GHashTable *cache;
-  //These must be filled by the concrete backend.
+  //This must be filled by the concrete connector.
+  const struct fs_operations **fs_ops;
+  void *data;
   t_destroy_data destroy_data;
   t_sysex_transfer upgrade_os;
   t_get_storage_stats get_storage_stats;
-  void *data;
-  //This must be filled by the concrete connector.
-  const struct fs_operations **fs_ops;
 };
 
 struct backend_system_device

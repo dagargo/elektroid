@@ -100,7 +100,6 @@ backend_midi_handshake (struct backend *backend)
   backend->device_desc.alias[0] = 0;
   backend->device_name[0] = 0;
   backend->fs_ops = NULL;
-  backend->destroy_data = NULL;
   backend->upgrade_os = NULL;
   backend->get_storage_stats = NULL;
   memset (&backend->midi_info, 0, sizeof (struct backend_midi_info));

@@ -33,7 +33,6 @@ default_handshake (struct backend *backend)
   backend->type = BE_TYPE_MIDI;
   backend->device_desc.filesystems = 0;
   backend->fs_ops = NULL;
-  backend->destroy_data = backend_destroy_data;
   if (strlen (backend->device_name))
     {
       gchar *device_name = strdup (backend->device_name);
