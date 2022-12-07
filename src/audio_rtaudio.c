@@ -20,6 +20,8 @@
 
 #include "audio.h"
 
+#define AUDIO_BUF_FRAMES 512
+
 static struct rtaudio_stream_options STREAM_OPTIONS = {
   .flags = RTAUDIO_FLAGS_SCHEDULE_REALTIME,
   .num_buffers = 2,

@@ -26,7 +26,6 @@
 #include "rtaudio_c.h"
 #endif
 
-#define AUDIO_BUF_FRAMES 2048 // At 48 kHz, it's around 50 ms
 #define AUDIO_CHANNELS 2       // Audio system is always stereo
 
 enum audio_src
