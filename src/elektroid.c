@@ -236,88 +236,47 @@ elektroid_get_fs_name (guint fs)
 }
 
 static void
-elektroid_clear_file_extensions (gchar *** extensions)
+elektroid_set_local_browser_file_extensions (gint sel_fs)
 {
-  if (*extensions == NULL)
-    {
-      return;
-    }
-
-  gchar **ext = *extensions;
-  while (*ext)
-    {
-      g_free (*ext);
-      ext++;
-    }
-  g_free (*extensions);
-
-  *extensions = NULL;
-}
-
-static void
-elektroid_set_file_extensions (gchar *** ext_dst, const gchar ** ext_src)
-{
-  const gchar **ext = ext_src;
-  int ext_count = 0;
-  while (*ext)
-    {
-      ext_count++;
-      ext++;
-    }
-  ext_count++;			//NULL included
-
-  *ext_dst = malloc (sizeof (gchar *) * ext_count);
-  ext = ext_src;
-  int i = 0;
-  while (*ext)
-    {
-      (*ext_dst)[i] = strdup (*ext);
-      ext++;
-      i++;
-    }
-  (*ext_dst)[i] = NULL;
-}
-
-static void
-elektroid_set_file_extension (gchar *** ext_dst, gchar * ext)
-{
-  *ext_dst = malloc (sizeof (gchar *) * 2);
-  (*ext_dst)[0] = ext;
-  (*ext_dst)[1] = NULL;
-}
-
-static void
-elektroid_set_local_file_extensions (gint sel_fs)
-{
+  gboolean updated = FALSE;
   const struct fs_operations *ops =
     backend_get_fs_operations (&backend, sel_fs, NULL);
 
-  elektroid_clear_file_extensions (&local_browser.extensions);
-
-  if (!ops || (ops->options & FS_OPTION_AUDIO_PLAYER))
+  if (!ops || PLAYER_VISIBLE)
     {
-      elektroid_set_file_extensions (&local_browser.extensions,
-				     sample_get_sample_extensions ());
+      const gchar **exts = sample_get_sample_extensions ();
+      updated = browser_set_file_extensions (&local_browser, exts);
     }
   else
     {
-      elektroid_set_file_extension (&local_browser.extensions,
-				    ops->get_ext (&backend.device_desc, ops));
+      gchar *ext = ops->get_ext (&backend.device_desc, ops);
+      updated = browser_set_file_extension (&local_browser, ext);
+    }
+  if (updated)
+    {
+      elektroid_reset_sample (&local_browser);
     }
 }
 
 static void
-elektroid_set_remote_file_extensions (gint sel_fs)
+elektroid_set_remote_browser_file_extensions (gint sel_fs)
 {
+  gboolean updated = FALSE;
   const struct fs_operations *ops =
     backend_get_fs_operations (&backend, sel_fs, NULL);
 
-  elektroid_clear_file_extensions (&remote_browser.extensions);
-
   if (ops && backend.type == BE_TYPE_SYSTEM)
     {
-      elektroid_set_file_extension (&remote_browser.extensions,
-				    ops->get_ext (&backend.device_desc, ops));
+      gchar *ext = ops->get_ext (&backend.device_desc, ops);
+      updated = browser_set_file_extension (&remote_browser, ext);
+    }
+  else
+    {
+      updated = browser_set_file_extension (&remote_browser, NULL);
+    }
+  if (updated)
+    {
+      elektroid_reset_sample (&remote_browser);
     }
 }
 
@@ -333,8 +292,8 @@ show_error_msg (const char *format, ...)
   dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
 				   GTK_DIALOG_DESTROY_WITH_PARENT |
 				   GTK_DIALOG_MODAL,
-				   GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE, "%s",
-				   msg);
+				   GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
+				   "%s", msg);
   gtk_dialog_run (GTK_DIALOG (dialog));
   gtk_widget_destroy (dialog);
   g_free (msg);
@@ -444,12 +403,11 @@ elektroid_load_devices (gboolean auto_select)
   if (device_index == -1)
     {
       local_browser.file_icon = BE_FILE_ICON_WAVE;
-      elektroid_set_local_file_extensions (0);
+      elektroid_set_local_browser_file_extensions (0);
       gtk_widget_set_visible (local_audio_box, TRUE);
       gtk_tree_view_column_set_visible (remote_tree_view_id_column, FALSE);
       gtk_tree_view_column_set_visible (remote_tree_view_slot_column, FALSE);
       gtk_tree_view_column_set_visible (remote_tree_view_size_column, FALSE);
-      browser_load_dir (&local_browser);
       elektroid_update_upload_menuitem ();
     }
 }
@@ -2942,9 +2900,8 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       *remote_browser.dir = 0;
       remote_browser.fs_ops = NULL;
       browser_reset (&remote_browser);
-      elektroid_set_local_file_extensions (0);
+      elektroid_set_local_browser_file_extensions (0);
       browser_update_fs_options (&remote_browser);
-      browser_load_dir (&local_browser);
       return;
     }
 
@@ -3028,20 +2985,12 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 	}
     }
 
-  if (PLAYER_VISIBLE)
-    {
-      audio_stop (&audio);
-    }
-
   browser_set_options (&remote_browser);
 
-  elektroid_set_remote_file_extensions (fs);
+  elektroid_set_remote_browser_file_extensions (fs);
   browser_update_fs_options (&remote_browser);
   local_browser.file_icon = remote_browser.file_icon;
-  elektroid_set_local_file_extensions (fs);
-
-  browser_load_dir (&remote_browser);
-  browser_load_dir (&local_browser);
+  elektroid_set_local_browser_file_extensions (fs);
 }
 
 static gboolean

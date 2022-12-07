@@ -44,6 +44,8 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
   debug_print (2, "Writing %d frames to %d channels...\n", frames,
 	       audio->channels);
 
+  memset (buffer, 0, frames << AUDIO_CHANNELS);
+
   if ((audio->pos == audio->frames && !audio->loop) ||
       audio->status == AUDIO_STATUS_PREPARING ||
       audio->status == AUDIO_STATUS_STOPPING)

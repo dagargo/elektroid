@@ -26,7 +26,7 @@
 #include "rtaudio_c.h"
 #endif
 
-#define AUDIO_CHANNELS 2       // Audio system is always stereo
+#define AUDIO_CHANNELS 2	// Audio system is always stereo
 
 enum audio_src
 {

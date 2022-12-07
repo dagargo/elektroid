@@ -103,4 +103,8 @@ void browser_destroy (struct browser *);
 
 void browser_set_options (struct browser *);
 
+gboolean browser_set_file_extensions (struct browser *, const gchar **);
+
+gboolean browser_set_file_extension (struct browser *, gchar *);
+
 #endif

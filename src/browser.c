@@ -417,3 +417,133 @@ browser_set_options (struct browser *browser)
 					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
     }
 }
+
+static void
+browser_clear_file_extensions (struct browser *browser)
+{
+  if (browser->extensions == NULL)
+    {
+      return;
+    }
+
+  gchar **ext = browser->extensions;
+  while (*ext)
+    {
+      g_free (*ext);
+      ext++;
+    }
+  g_free (browser->extensions);
+
+  browser->extensions = NULL;
+}
+
+static gboolean
+browser_compare_extensions (struct browser *browser, const gchar ** ext_src)
+{
+  const gchar **src = ext_src;
+  gchar **dst = browser->extensions;
+
+  if (!dst && !src)
+    {
+      return TRUE;
+    }
+
+  if (!dst || !src)
+    {
+      return FALSE;
+    }
+
+  while (1)
+    {
+      if (*src == NULL && *dst == NULL)
+	{
+	  return TRUE;
+	}
+
+      if (strcmp (*src, *dst))
+	{
+	  return FALSE;
+	}
+
+      src++;
+      dst++;
+    }
+}
+
+/**
+ * Sets the file extensions and reloads the browser if the extensions were updated.
+ * If ext is NULL, it reloads the browser.
+ */
+
+gboolean
+browser_set_file_extensions (struct browser *browser, const gchar ** ext_src)
+{
+  const gchar **ext;
+  gchar **dst;
+  int ext_count;
+
+  if (browser_compare_extensions (browser, ext_src))
+    {
+      if (!ext_src)
+	{
+	  browser_load_dir (browser);
+	}
+      return FALSE;
+    }
+
+  browser_clear_file_extensions (browser);
+
+  if (!ext_src)
+    {
+      goto end;
+    }
+
+  ext = ext_src;
+  ext_count = 0;
+  while (*ext)
+    {
+      ext_count++;
+      ext++;
+    }
+  ext_count++;			//NULL included
+
+  browser->extensions = malloc (sizeof (gchar *) * ext_count);
+  dst = browser->extensions;
+  ext = ext_src;
+  while (*ext)
+    {
+      *dst = strdup (*ext);
+      ext++;
+      dst++;
+    }
+  *dst = NULL;
+
+end:
+  browser_load_dir (browser);
+  return TRUE;
+}
+
+//See browser_set_file_extensions.
+
+gboolean
+browser_set_file_extension (struct browser *browser, gchar * ext)
+{
+  gboolean updated;
+  const gchar **exts;
+  if (ext)
+    {
+      exts = malloc (sizeof (gchar *) * 2);
+      exts[0] = ext;
+      exts[1] = NULL;
+    }
+  else
+    {
+      exts = NULL;
+    }
+  updated = browser_set_file_extensions (browser, exts);
+  if (exts)
+    {
+      g_free (exts);
+    }
+  return updated;
+}
