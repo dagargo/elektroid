@@ -48,9 +48,9 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
       audio->status == AUDIO_STATUS_PREPARING ||
       audio->status == AUDIO_STATUS_STOPPING)
     {
+      memset (buffer, 0, frames << AUDIO_CHANNELS);
       if (audio->status == AUDIO_STATUS_PREPARING)
 	{
-	  memset (buffer, 0, frames << AUDIO_CHANNELS);
 	  audio->status = AUDIO_STATUS_PLAYING;
 	}
       else			//Stopping...
