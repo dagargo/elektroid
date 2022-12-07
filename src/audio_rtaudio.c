@@ -192,7 +192,10 @@ audio_run (struct audio *audio)
 void
 audio_destroy_int (struct audio *audio)
 {
-  rtaudio_destroy (audio->rtaudio);
+  if (audio_check (audio))
+    {
+      rtaudio_destroy (audio->rtaudio);
+    }
 }
 
 gboolean
