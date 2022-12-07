@@ -152,7 +152,7 @@ audio_init_int (struct audio *audio)
   dev_info = rtaudio_get_device_info (audio->rtaudio, dev_id);
 
   buffer_frames = AUDIO_BUF_FRAMES;
-  debug_print (1, "Using device %s with sample rate %d and buffer len %d",
+  debug_print (1, "Using device %s with sample rate %d and %d frames...\n",
 	       dev_info.name, AUDIO_SAMPLE_RATE, buffer_frames);
 
   out_stream_params = (struct rtaudio_stream_parameters)
@@ -168,7 +168,7 @@ audio_init_int (struct audio *audio)
 			     &STREAM_OPTIONS, audio_error_cb);
   if (err || !rtaudio_is_stream_open (audio->rtaudio))
     {
-      error_print ("Error occurred while opening the RtAudio stream: %s",
+      error_print ("Error occurred while opening the RtAudio stream: %s\n",
 		   rtaudio_error (audio->rtaudio));
       goto error;
     }
