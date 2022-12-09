@@ -18,14 +18,14 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#if defined(__linux__) && !defined(ELEKTROID_RTMIDI)
-#include <alsa/asoundlib.h>
-#else
+#include "utils.h"
+
+#if defined(ELEKTROID_RTMIDI)
 #include <fcntl.h>
 #include <rtmidi_c.h>
+#else
+#include <alsa/asoundlib.h>
 #endif
-
-#include "utils.h"
 
 #ifndef BACKEND_H
 #define BACKEND_H
@@ -86,14 +86,14 @@ enum backend_type
 struct backend
 {
 // ALSA or RtMidi backend
-#if defined(__linux__) && !defined(ELEKTROID_RTMIDI)
+#if defined(ELEKTROID_RTMIDI)
+  struct RtMidiWrapper *inputp;
+  struct RtMidiWrapper *outputp;
+#else
   snd_rawmidi_t *inputp;
   snd_rawmidi_t *outputp;
   gint npfds;
   struct pollfd *pfds;
-#else
-  struct RtMidiWrapper *inputp;
-  struct RtMidiWrapper *outputp;
 #endif
   guint8 *buffer;
   ssize_t rx_len;

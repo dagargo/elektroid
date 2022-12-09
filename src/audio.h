@@ -20,10 +20,10 @@
 
 #include <glib.h>
 #include "utils.h"
-#if defined(__linux__) && !defined(ELEKTROID_RTAUDIO)
-#include <pulse/pulseaudio.h>
-#else
+#if defined(ELEKTROID_RTAUDIO)
 #include "rtaudio_c.h"
+#else
+#include <pulse/pulseaudio.h>
 #endif
 
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
@@ -46,15 +46,15 @@ enum audio_status
 struct audio
 {
 // PulseAudio or RtAudio backend
-#if defined(__linux__) && !defined(ELEKTROID_RTAUDIO)
+#if defined(ELEKTROID_RTAUDIO)
+  rtaudio_t rtaudio;
+  gdouble volume;
+#else
   pa_threaded_mainloop *mainloop;
   pa_context *context;
   pa_stream *stream;
   pa_cvolume volume;
   guint32 index;
-#else
-  rtaudio_t rtaudio;
-  gdouble volume;
 #endif
   GByteArray *sample;
   guint32 frames;

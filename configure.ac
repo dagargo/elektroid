@@ -16,6 +16,18 @@ AC_PROG_CC
 # Define conditional prior to package checks
 AM_CONDITIONAL([ELEKTROID_CLI_ONLY], [test "${CLI_ONLY}" == yes])
 
+# Needed to access the 'host_os' variable
+AC_CANONICAL_HOST
+
+case "${host_os}" in
+  linux*)
+    ;;
+  *)
+    RTMIDI=yes
+    RTAUDIO=yes
+    ;;
+esac
+
 AM_CONDITIONAL([ELEKTROID_RTMIDI], [test "${RTMIDI}" == yes])
 AS_IF([test "${RTMIDI}" == yes], [AC_DEFINE([ELEKTROID_RTMIDI], [1], ["Use RtMidi"])])
 

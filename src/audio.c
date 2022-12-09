@@ -28,10 +28,10 @@ const gchar *audio_version ();
 static inline void
 copy_sample (struct audio *audio, gint16 * dst, gint16 * src)
 {
-#if defined(__linux__) && !defined(ELEKTROID_RTAUDIO)
-  *dst = *src;
-#else
+#if defined(ELEKTROID_RTAUDIO)
   *dst = (gint16) (*src * audio->volume);
+#else
+  *dst = *src;
 #endif
 }
 
