@@ -3363,6 +3363,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   gchar *data;
   GdkAtom type;
   gboolean background = TRUE;
+  gchar *filename, *src_dir, *dst_dir = NULL;
 
   if (selection_data == NULL
       || !gtk_selection_data_get_length (selection_data)
@@ -3386,18 +3387,43 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   sysex_transfer.active = TRUE;
   g_mutex_unlock (&sysex_transfer.mutex);
 
-  if ((widget == GTK_WIDGET (local_browser.view)
-       && !strcmp (dnd_type_name, TEXT_URI_LIST_STD)) ||
-      (widget == GTK_WIDGET (remote_browser.view)
+  // If we are moving a file (source and destination is the same browser) and the
+  // basedir of the first URI (every URI will share the same basename), equals
+  // the browser directory, there's nothing to do.
+  filename = g_filename_from_uri (dnd_uris[0], NULL, NULL);
+  src_dir = dirname (filename);
+
+  //Checking if it's a local move.
+  if (widget == GTK_WIDGET (local_browser.view) &&
+      !strcmp (dnd_type_name, TEXT_URI_LIST_STD))
+    {
+      dst_dir = local_browser.dir;	//Move
+    }
+
+  //Checking if it's a remote move.
+  if ((widget == GTK_WIDGET (remote_browser.view)
        && !strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID)) ||
       (widget == GTK_WIDGET (remote_browser.view)
        && !strcmp (dnd_type_name, TEXT_URI_LIST_STD)
        && backend.type == BE_TYPE_SYSTEM))
     {
+      dst_dir = remote_browser.dir;	//Move
+    }
+
+  if (dst_dir)
+    {
+      if (!strcmp (src_dir, dst_dir))
+	{
+	  debug_print (1, MSG_WARN_SAME_SRC_DST);
+	  goto end;
+	}
+
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Moving Files"));
       gtk_label_set_text (GTK_LABEL (progress_label), _("Moving..."));
+
       if (!strcmp (dnd_type_name, TEXT_URI_LIST_STD))
 	{
+	  //Moving inside the local browser takes no time.
 	  background = FALSE;
 	}
     }
@@ -3428,8 +3454,10 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       elektroid_dnd_received_runner_dialog (widget, FALSE);
     }
 
+end:
   g_free (dnd_type_name);
   g_strfreev (dnd_uris);
+  g_free (filename);
 }
 
 static void
