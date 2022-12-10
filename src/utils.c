@@ -247,13 +247,6 @@ free_item_iterator (struct item_iterator *iter)
     }
 }
 
-inline gint
-copy_item_iterator (struct item_iterator *dst, struct item_iterator *src,
-		    gboolean cached)
-{
-  return src->copy (dst, src, cached);
-}
-
 gint
 load_file (const char *path, GByteArray * array, struct job_control *control)
 {

@@ -193,28 +193,21 @@ static gint elektron_upload_data_snd_pkg (struct backend *, const gchar *,
 static gint elektron_upload_raw_pst_pkg (struct backend *, const gchar *,
 					 GByteArray *, struct job_control *);
 
-static gint elektron_copy_iterator (struct item_iterator *,
-				    struct item_iterator *, gboolean);
-
 static gchar *elektron_get_dev_and_fs_ext (const struct device_desc *,
 					   const struct fs_operations *);
 
 static gchar *elektron_get_upload_path_smplrw (struct backend *,
-					       struct item_iterator *,
 					       const struct fs_operations *,
 					       const gchar *, const gchar *,
 					       gint32 *);
 static gchar *elektron_get_upload_path_data (struct backend *,
-					     struct item_iterator *,
 					     const struct fs_operations *,
 					     const gchar *, const gchar *,
 					     gint32 *);
 static gchar *elektron_get_download_path (struct backend *,
-					  struct item_iterator *,
 					  const struct fs_operations *,
 					  const gchar *, const gchar *);
 static gchar *elektron_get_download_name (struct backend *,
-					  struct item_iterator *,
 					  const struct fs_operations *,
 					  const gchar *);
 
@@ -538,9 +531,6 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
     }
 }
 
-static gint elektron_copy_iterator (struct item_iterator *,
-				    struct item_iterator *, gboolean);
-
 static gint
 elektron_init_iterator (struct item_iterator *iter, GByteArray * msg,
 			iterator_next next, enum elektron_fs fs,
@@ -557,28 +547,9 @@ elektron_init_iterator (struct item_iterator *iter, GByteArray * msg,
   iter->data = data;
   iter->next = next;
   iter->free = elektron_free_iterator_data;
-  iter->copy = elektron_copy_iterator;
   iter->item.id = -1;
 
   return 0;
-}
-
-static gint
-elektron_copy_iterator (struct item_iterator *dst, struct item_iterator *src,
-			gboolean cached)
-{
-  GByteArray *array;
-  struct elektron_iterator_data *data = src->data;
-  if (cached)
-    {
-      array = data->msg;
-    }
-  else
-    {
-      array = g_byte_array_sized_new (data->msg->len);
-      g_byte_array_append (array, data->msg->data, data->msg->len);
-    }
-  return elektron_init_iterator (dst, array, src->next, data->fs, cached);
 }
 
 static GByteArray *
@@ -2878,7 +2849,6 @@ elektron_download_data_snd (struct backend *backend, const gchar * path,
 
 static gchar *
 elektron_get_download_name (struct backend *backend,
-			    struct item_iterator *remote_iter,
 			    const struct fs_operations *ops,
 			    const gchar * src_path)
 {
@@ -2886,7 +2856,6 @@ elektron_get_download_name (struct backend *backend,
   const gchar *src_dir;
   gchar *namec, *name, *src_dirc;
   gint ret;
-  gboolean new = FALSE;
 
   namec = strdup (src_path);
   name = basename (namec);
@@ -2898,19 +2867,15 @@ elektron_get_download_name (struct backend *backend,
       goto end;
     }
 
-  if (!remote_iter)
+  struct item_iterator *remote_iter = malloc (sizeof (struct item_iterator));
+  src_dirc = strdup (src_path);
+  src_dir = dirname (src_dirc);
+  ret = ops->readdir (backend, remote_iter, src_dir);
+  g_free (src_dirc);
+  if (ret)
     {
-      new = TRUE;
-      remote_iter = malloc (sizeof (struct item_iterator));
-      src_dirc = strdup (src_path);
-      src_dir = dirname (src_dirc);
-      ret = ops->readdir (backend, remote_iter, src_dir);
-      g_free (src_dirc);
-      if (ret)
-	{
-	  name = NULL;
-	  goto cleanup;
-	}
+      name = NULL;
+      goto cleanup;
     }
 
   id = atoi (name);
@@ -2926,10 +2891,6 @@ elektron_get_download_name (struct backend *backend,
     }
 
 cleanup:
-  if (new)
-    {
-      free_item_iterator (remote_iter);
-    }
   g_free (namec);
 end:
   return name;
@@ -2947,7 +2908,7 @@ elektron_download_pkg (struct backend *backend, const gchar * path,
   struct package pkg;
   struct elektron_data *data = backend->data;
 
-  pkg_name = elektron_get_download_name (backend, NULL, ops, path);
+  pkg_name = elektron_get_download_name (backend, ops, path);
   if (!pkg_name)
     {
       return -1;
@@ -3004,7 +2965,6 @@ elektron_download_raw_pst_pkg (struct backend *backend, const gchar * path,
 
 static gchar *
 elektron_get_upload_path_smplrw (struct backend *backend,
-				 struct item_iterator *remote_iter,
 				 const struct fs_operations *ops,
 				 const gchar * dst_dir,
 				 const gchar * src_path, gint32 * next_index)
@@ -3031,22 +2991,15 @@ elektron_get_upload_path_smplrw (struct backend *backend,
 
 static gchar *
 elektron_get_upload_path_data (struct backend *backend,
-			       struct item_iterator *remote_iter,
 			       const struct fs_operations *ops,
 			       const gchar * dst_dir,
 			       const gchar * src_path, gint32 * next_index)
 {
   gchar *indexs, *path;
-  gboolean new = FALSE;
-
-  if (!remote_iter)
+  struct item_iterator *remote_iter = malloc (sizeof (struct item_iterator));
+  if (ops->readdir (backend, remote_iter, dst_dir))
     {
-      new = TRUE;
-      remote_iter = malloc (sizeof (struct item_iterator));
-      if (ops->readdir (backend, remote_iter, dst_dir))
-	{
-	  return strdup (dst_dir);
-	}
+      return strdup (dst_dir);
     }
 
   if (remote_iter->item.id == *next_index)
@@ -3065,11 +3018,6 @@ elektron_get_upload_path_data (struct backend *backend,
 	}
     }
 
-  if (new)
-    {
-      free_item_iterator (remote_iter);
-    }
-
   indexs = malloc (PATH_MAX);
   snprintf (indexs, PATH_MAX, "%d", *next_index);
   path = chain_path (dst_dir, indexs);
@@ -3082,7 +3030,6 @@ elektron_get_upload_path_data (struct backend *backend,
 
 static gchar *
 elektron_get_download_path (struct backend *backend,
-			    struct item_iterator *remote_iter,
 			    const struct fs_operations *ops,
 			    const gchar * dst_dir, const gchar * src_path)
 {
@@ -3105,7 +3052,7 @@ elektron_get_download_path (struct backend *backend,
       md_ext = "";
     }
 
-  name = elektron_get_download_name (backend, remote_iter, ops, src_fpath);
+  name = elektron_get_download_name (backend, ops, src_fpath);
   if (name)
     {
       dl_ext = ops->get_ext (&backend->device_desc, ops);

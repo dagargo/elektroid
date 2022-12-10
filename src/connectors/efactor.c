@@ -117,35 +117,45 @@ efactor_new_get_msg (guint8 type, const gchar * key)
 
 static gchar *
 efactor_get_download_path (struct backend *backend,
-			   struct item_iterator *remote_iter,
 			   const struct fs_operations *ops,
 			   const gchar * dst_dir, const gchar * src_path)
 {
   gchar *path, *name;
+  struct item_iterator iter;
   struct efactor_data *data = backend->data;
-  gchar *src_path_copy = strdup (src_path);
-  gint id = atoi (basename (src_path_copy));
-  g_free (src_path_copy);
+  gchar *src_path_copy;
+  gint id;
 
   name = NULL;
-  while (!next_item_iterator (remote_iter))
+  if (ops->readdir (backend, &iter, "/"))
     {
-      if (remote_iter->item.id == id)
+      return NULL;
+    }
+
+  src_path_copy = strdup (src_path);
+  id = atoi (basename (src_path_copy));
+  g_free (src_path_copy);
+
+  while (!next_item_iterator (&iter))
+    {
+      if (iter.item.id == id)
 	{
-	  name = remote_iter->item.name;
+	  name = iter.item.name;
 	  break;
 	}
     }
 
   if (!name)
     {
-      return NULL;
+      path = NULL;
+      goto end;
     }
 
   path = malloc (PATH_MAX);
   snprintf (path, PATH_MAX, "%s/%s %s.syx", dst_dir,
 	    EFACTOR_PEDAL_NAME (data), name);
 
+end:
   return path;
 }
 

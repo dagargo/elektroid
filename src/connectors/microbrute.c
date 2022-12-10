@@ -67,7 +67,6 @@ microbrute_get_seq (struct backend *backend)
 
 static gchar *
 microbrute_get_download_path (struct backend *backend,
-			      struct item_iterator *remote_iter,
 			      const struct fs_operations *ops,
 			      const gchar * dst_dir, const gchar * src_path)
 {

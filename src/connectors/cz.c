@@ -56,7 +56,6 @@ struct cz_type_iterator_data
 
 static gchar *
 cz_get_download_path (struct backend *backend,
-		      struct item_iterator *remote_iter,
 		      const struct fs_operations *ops, const gchar * dst_dir,
 		      const gchar * src_path)
 {
@@ -157,24 +156,6 @@ cz_next_dentry (struct item_iterator *iter)
 }
 
 static gint
-cz_copy_iterator (struct item_iterator *dst, struct item_iterator *src,
-		  gboolean cached)
-{
-  struct cz_type_iterator_data *data = src->data;
-  struct cz_type_iterator_data *ndata =
-    g_malloc (sizeof (struct cz_type_iterator_data));
-  ndata->next = 0;
-  ndata->type = data->type;
-  ndata->backend = data->backend;
-  dst->data = ndata;
-  dst->next = cz_next_dentry_root;
-  dst->free = g_free;
-  dst->copy = cz_copy_iterator;
-
-  return 0;
-}
-
-static gint
 get_mem_type (const gchar * name)
 {
   const char **mem_type = CZ_MEM_TYPES;
@@ -203,7 +184,6 @@ cz_read_dir (struct backend *backend, struct item_iterator *iter,
       data->backend = backend;
       iter->data = data;
       iter->next = cz_next_dentry_root;
-      iter->copy = cz_copy_iterator;
       iter->free = g_free;
       return 0;
     }
@@ -216,7 +196,6 @@ cz_read_dir (struct backend *backend, struct item_iterator *iter,
       data->backend = backend;
       iter->data = data;
       iter->next = cz_next_dentry;
-      iter->copy = cz_copy_iterator;
       iter->free = g_free;
       return 0;
     }

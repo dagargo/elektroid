@@ -55,9 +55,6 @@ typedef guint (*iterator_next) (struct item_iterator *);
 
 typedef void (*iterator_free) (void *);
 
-typedef gint (*iterator_copy) (struct item_iterator *, struct item_iterator *,
-			       gboolean);
-
 //name must be filled up always. If no name is available, this can be a string representation of the ID without padding. See set_item_name_from_id function.
 //In slot mode, id needs to be filled up and will typically be the MIDI preset number (the id is the filename).
 //In default mode (not slot mode), id can be used for any or no purpose. It's still possible to use the id as the filename by using the FS_OPTION_ID_AS_FILENAME option.
@@ -75,8 +72,6 @@ struct item_iterator
 {
   iterator_next next;
   iterator_free free;
-  //copy is only needed when the FS supports directories. This does not mean that mkdir is supported, as dirs could be just a way to show the data.
-  iterator_copy copy;
   void *data;
   struct item item;
 };
@@ -170,12 +165,11 @@ typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
 typedef gchar *(*fs_get_ext) (const struct device_desc *,
 			      const struct fs_operations *);
 
-typedef gchar *(*t_get_upload_path) (struct backend *, struct item_iterator *,
+typedef gchar *(*t_get_upload_path) (struct backend *,
 				     const struct fs_operations *,
 				     const gchar *, const gchar *, gint32 *);
 
 typedef gchar *(*t_get_download_path) (struct backend *,
-				       struct item_iterator *,
 				       const struct fs_operations *,
 				       const gchar *, const gchar *);
 

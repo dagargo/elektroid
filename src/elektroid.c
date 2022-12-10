@@ -2392,14 +2392,11 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
 }
 
 static void
-elektroid_add_upload_task_path (const gchar * rel_path,
-				const gchar * src_dir,
-				const gchar * dst_dir,
-				struct item_iterator *remote_dir_iter,
-				gint32 * next_idx)
+elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
+				const gchar * dst_dir, gint32 * next_idx)
 {
   gint32 children_next_idx;
-  struct item_iterator iter, iter_copy;
+  struct item_iterator iter;
   gchar *path, *dst_abs_dir, *upload_path;
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
   gchar *src_abs_path = chain_path (src_dir, rel_path);
@@ -2410,7 +2407,6 @@ elektroid_add_upload_task_path (const gchar * rel_path,
     {
       dst_abs_dir = dirname (dst_abs_path);
       upload_path = remote_browser.fs_ops->get_upload_path (&backend,
-							    remote_dir_iter,
 							    remote_browser.fs_ops,
 							    dst_abs_dir,
 							    src_abs_path,
@@ -2429,15 +2425,13 @@ elektroid_add_upload_task_path (const gchar * rel_path,
       goto cleanup;
     }
 
-  copy_item_iterator (&iter_copy, &iter, TRUE);
   while (!next_item_iterator (&iter))
     {
       path = chain_path (rel_path, iter.item.name);
       elektroid_add_upload_task_path (path, src_dir, dst_dir,
-				      &iter_copy, &children_next_idx);
+				      &children_next_idx);
       free (path);
     }
-  free_item_iterator (&iter_copy);
 
   free_item_iterator (&iter);
 cleanup:
@@ -2451,7 +2445,6 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
   gint32 next_idx;
   GtkTreeIter iter;
   GList *selected_rows;
-  struct item_iterator item_iterator;
   gboolean queued_before, queued_after, active;
   GtkTreeModel *model;
   GtkTreeSelection *selection;
@@ -2465,8 +2458,6 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
   queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
 						  NULL);
 
-  local_browser.fs_ops->readdir (local_browser.backend, &item_iterator,
-				 local_browser.dir);
   next_idx = 1;
   selected_rows = gtk_tree_selection_get_selected_rows (selection, NULL);
   while (selected_rows)
@@ -2478,8 +2469,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
       gtk_tree_model_get_iter (model, &path_iter, path);
       browser_set_item (model, &path_iter, &item);
       elektroid_add_upload_task_path (item.name, local_browser.dir,
-				      remote_browser.dir, &item_iterator,
-				      &next_idx);
+				      remote_browser.dir, &next_idx);
 
       g_mutex_lock (&sysex_transfer.mutex);
       active = sysex_transfer.active;
@@ -2493,7 +2483,6 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
       selected_rows = g_list_next (selected_rows);
     }
   g_list_free_full (selected_rows, (GDestroyNotify) gtk_tree_path_free);
-  free_item_iterator (&item_iterator);
 
   queued_after = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
 						 NULL);
@@ -2606,10 +2595,9 @@ end_nodir:
 static void
 elektroid_add_download_task_path (const gchar * rel_path,
 				  const gchar * src_dir,
-				  const gchar * dst_dir,
-				  struct item_iterator *remote_dir_iter)
+				  const gchar * dst_dir)
 {
-  struct item_iterator iter, iter_copy;
+  struct item_iterator iter;
   gchar *path, *dst_abs_dir, *download_path, *filename;
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
@@ -2620,7 +2608,6 @@ elektroid_add_download_task_path (const gchar * rel_path,
     {
       dst_abs_dir = dirname (dst_abs_path);
       download_path = remote_browser.fs_ops->get_download_path (&backend,
-								remote_dir_iter,
 								remote_browser.fs_ops,
 								dst_abs_dir,
 								src_abs_path);
@@ -2633,16 +2620,14 @@ elektroid_add_download_task_path (const gchar * rel_path,
       goto cleanup;
     }
 
-  copy_item_iterator (&iter_copy, &iter, TRUE);
   while (!next_item_iterator (&iter))
     {
       filename = get_filename (remote_browser.fs_ops->options, &iter.item);
       path = chain_path (rel_path, filename);
-      elektroid_add_download_task_path (path, src_dir, dst_dir, &iter_copy);
+      elektroid_add_download_task_path (path, src_dir, dst_dir);
       g_free (path);
       g_free (filename);
     }
-  free_item_iterator (&iter_copy);
 
   free_item_iterator (&iter);
 cleanup:
@@ -2655,7 +2640,6 @@ elektroid_add_download_tasks_runner (gpointer data)
 {
   GtkTreeIter iter;
   GList *selected_rows;
-  struct item_iterator item_iterator;
   gboolean queued_before, queued_after, active;
   GtkTreeModel *model;
   GtkTreeSelection *selection;
@@ -2671,8 +2655,6 @@ elektroid_add_download_tasks_runner (gpointer data)
 
   backend_enable_cache (remote_browser.backend);
 
-  remote_browser.fs_ops->readdir (remote_browser.backend, &item_iterator,
-				  remote_browser.dir);
   selected_rows = gtk_tree_selection_get_selected_rows (selection, NULL);
   while (selected_rows)
     {
@@ -2685,7 +2667,7 @@ elektroid_add_download_tasks_runner (gpointer data)
       browser_set_item (model, &path_iter, &item);
       filename = get_filename (remote_browser.fs_ops->options, &item);
       elektroid_add_download_task_path (filename, remote_browser.dir,
-					local_browser.dir, &item_iterator);
+					local_browser.dir);
       g_free (filename);
 
       g_mutex_lock (&sysex_transfer.mutex);
@@ -2700,7 +2682,6 @@ elektroid_add_download_tasks_runner (gpointer data)
       selected_rows = g_list_next (selected_rows);
     }
   g_list_free_full (selected_rows, (GDestroyNotify) gtk_tree_path_free);
-  free_item_iterator (&item_iterator);
 
   backend_disable_cache (remote_browser.backend);
 
@@ -3149,9 +3130,7 @@ elektroid_dnd_received_system (const gchar * dir, const gchar * name,
 
 static void
 elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
-			       const gchar * filename,
-			       struct item_iterator *remote_item_iterator,
-			       gint32 * next_idx)
+			       const gchar * filename, gint32 * next_idx)
 {
   gchar *dst_path;
   gint res;
@@ -3159,7 +3138,6 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
   if (strcmp (dir, remote_browser.dir))
     {
       dst_path = remote_browser.fs_ops->get_upload_path (&backend,
-							 remote_item_iterator,
 							 remote_browser.fs_ops,
 							 remote_browser.dir,
 							 name, next_idx);
@@ -3226,8 +3204,7 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
   GtkWidget *widget = data;
   gint32 next_idx = 1;
   GtkTreeIter iter;
-  struct item_iterator remote_item_iterator;
-  gboolean queued_before, queued_after, load_remote, active;
+  gboolean queued_before, queued_after, active;
 
   if (dialog)
     {
@@ -3240,16 +3217,6 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
   if (widget == GTK_WIDGET (local_browser.view))
     {
       backend_enable_cache (&backend);
-    }
-
-  load_remote = widget == GTK_WIDGET (remote_browser.view) ||
-    strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID) == 0;
-
-  if (load_remote)
-    {
-      remote_browser.fs_ops->readdir (remote_browser.backend,
-				      &remote_item_iterator,
-				      remote_browser.dir);
     }
 
   for (gint i = 0; dnd_uris[i] != NULL; i++)
@@ -3278,17 +3245,14 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 	    }
 	  else if (strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID) == 0)
 	    {
-	      elektroid_add_download_task_path (name, dir, local_browser.dir,
-						&remote_item_iterator);
+	      elektroid_add_download_task_path (name, dir, local_browser.dir);
 	    }
 	}
       else if (widget == GTK_WIDGET (remote_browser.view))
 	{
 	  if (strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID) == 0)
 	    {
-	      elektroid_dnd_received_remote (dir, name, filename,
-					     &remote_item_iterator,
-					     &next_idx);
+	      elektroid_dnd_received_remote (dir, name, filename, &next_idx);
 	    }
 	  else if (strcmp (dnd_type_name, TEXT_URI_LIST_STD) == 0)
 	    {
@@ -3307,7 +3271,6 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 		    {
 		      elektroid_add_upload_task_path (name, dir,
 						      remote_browser.dir,
-						      &remote_item_iterator,
 						      &next_idx);
 		    }
 		}
@@ -3320,11 +3283,6 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
     }
 
 end:
-  if (load_remote)
-    {
-      free_item_iterator (&remote_item_iterator);
-    }
-
   if (widget == GTK_WIDGET (local_browser.view))
     {
       backend_disable_cache (&backend);

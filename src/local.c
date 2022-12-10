@@ -34,9 +34,6 @@ struct local_iterator_data
   gchar *path;
 };
 
-static gint local_copy_iterator (struct item_iterator *,
-				 struct item_iterator *, gboolean);
-
 static gint
 local_download (struct backend *backend, const gchar * path,
 		GByteArray * output, struct job_control *control)
@@ -67,7 +64,6 @@ local_download (struct backend *backend, const gchar * path,
 
 static gchar *
 local_get_download_path (struct backend *backend,
-			 struct item_iterator *remote_iter,
 			 const struct fs_operations *ops,
 			 const gchar * dst_dir, const gchar * src_path)
 {
@@ -82,13 +78,11 @@ local_get_download_path (struct backend *backend,
 
 static gchar *
 local_get_upload_path (struct backend *backend,
-		       struct item_iterator *remote_iter,
 		       const struct fs_operations *ops,
 		       const gchar * dst_dir,
 		       const gchar * src_path, gint32 * next_index)
 {
-  return local_get_download_path (backend, remote_iter, ops, dst_dir,
-				  src_path);
+  return local_get_download_path (backend, ops, dst_dir, src_path);
 }
 
 gint
@@ -257,7 +251,6 @@ local_init_iterator (struct item_iterator *iter, const gchar * path,
   iter->data = data;
   iter->next = local_next_dentry;
   iter->free = local_free_iterator_data;
-  iter->copy = local_copy_iterator;
 
   return 0;
 }
@@ -267,14 +260,6 @@ local_read_dir (struct backend *backend, struct item_iterator *iter,
 		const gchar * path)
 {
   return local_init_iterator (iter, path, FALSE);
-}
-
-static gint
-local_copy_iterator (struct item_iterator *dst, struct item_iterator *src,
-		     gboolean cached)
-{
-  struct local_iterator_data *data = src->data;
-  return local_init_iterator (dst, data->path, cached);
 }
 
 static gint

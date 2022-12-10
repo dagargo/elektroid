@@ -22,7 +22,6 @@
 
 gchar *
 common_slot_get_upload_path (struct backend *backend,
-			     struct item_iterator *remote_iter,
 			     const struct fs_operations *ops,
 			     const gchar * dst_dir, const gchar * src_path,
 			     gint32 * next_index)

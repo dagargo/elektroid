@@ -63,7 +63,6 @@ static const guint8 SDS_DUMP_HEADER[] =
 
 static gchar *
 sds_get_download_path (struct backend *backend,
-		       struct item_iterator *remote_iter,
 		       const struct fs_operations *ops, const gchar * dst_dir,
 		       const gchar * src_path)
 {
