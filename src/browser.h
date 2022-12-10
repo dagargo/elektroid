@@ -78,8 +78,6 @@ gint browser_get_selected_items_count (struct browser *);
 
 void browser_set_selected_row_iter (struct browser *, GtkTreeIter *);
 
-void browser_reset (gpointer);
-
 void browser_selection_changed (GtkTreeSelection *, gpointer);
 
 void browser_refresh (GtkWidget *, gpointer);
@@ -106,5 +104,7 @@ void browser_set_options (struct browser *);
 gboolean browser_set_file_extensions (struct browser *, const gchar **);
 
 gboolean browser_set_file_extension (struct browser *, gchar *);
+
+void browser_reset (struct browser *);
 
 #endif

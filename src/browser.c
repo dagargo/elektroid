@@ -104,10 +104,9 @@ browser_set_selected_row_iter (struct browser *browser, GtkTreeIter * iter)
   g_list_free_full (paths, (GDestroyNotify) gtk_tree_path_free);
 }
 
-void
-browser_reset (gpointer data)
+static void
+browser_clear (struct browser *browser)
 {
-  struct browser *browser = data;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
 
@@ -343,7 +342,7 @@ browser_load_dir (gpointer data)
     }
   g_mutex_unlock (&browser->mutex);
 
-  browser_reset (browser);
+  browser_clear (browser);
 
   if (!browser->fs_ops || !browser->fs_ops->readdir)
     {
@@ -546,4 +545,13 @@ browser_set_file_extension (struct browser *browser, gchar * ext)
       g_free (exts);
     }
   return updated;
+}
+
+void
+browser_reset (struct browser *browser)
+{
+  browser->fs_ops = NULL;
+  *browser->dir = 0;
+  browser_clear (browser);
+  browser_clear_file_extensions (browser);
 }

@@ -525,7 +525,6 @@ elektroid_get_next_queued_task (GtkTreeIter * iter,
 static gboolean
 elektroid_check_backend ()
 {
-  GtkListStore *list_store;
   GtkTreeIter iter;
   gboolean remote_sensitive;
   gboolean connected = backend_check (&backend);
@@ -552,10 +551,7 @@ elektroid_check_backend ()
 
   if (!connected)
     {
-      list_store =
-	GTK_LIST_STORE (gtk_tree_view_get_model (remote_browser.view));
-      gtk_entry_set_text (remote_browser.dir_entry, "");
-      gtk_list_store_clear (list_store);
+      browser_reset (&remote_browser);
       elektroid_load_devices (FALSE);
     }
 
@@ -590,7 +586,7 @@ elektroid_refresh_devices (GtkWidget * object, gpointer data)
       elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (&backend);
       elektroid_reset_sample (&remote_browser);
-      remote_browser.fs_ops = NULL;
+      browser_reset (&remote_browser);
     }
   elektroid_check_backend ();	//This triggers the actual devices refresh if there is no backend
 }
@@ -2879,10 +2875,8 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   if (!gtk_combo_box_get_active_iter (GTK_COMBO_BOX (fs_combo), &iter))
     {
-      *remote_browser.dir = 0;
-      remote_browser.fs_ops = NULL;
-      browser_reset (&remote_browser);
       elektroid_set_local_browser_file_extensions (0);
+      browser_reset (&remote_browser);
       browser_update_fs_options (&remote_browser);
       return;
     }
@@ -2894,8 +2888,17 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
   remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
 
-  strcpy (remote_browser.dir,
-	  backend.type == BE_TYPE_SYSTEM ? local_browser.dir : "/");
+  if (backend.type == BE_TYPE_SYSTEM)
+    {
+      if (!*remote_browser.dir)
+	{
+	  strcpy (remote_browser.dir, local_browser.dir);
+	}
+    }
+  else
+    {
+      strcpy (remote_browser.dir, "/");
+    }
 
   gtk_widget_set_visible (remote_play_separator,
 			  backend.type == BE_TYPE_SYSTEM);
@@ -2971,6 +2974,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   elektroid_set_remote_browser_file_extensions (fs);
   browser_update_fs_options (&remote_browser);
+
   local_browser.file_icon = remote_browser.file_icon;
   elektroid_set_local_browser_file_extensions (fs);
 }
