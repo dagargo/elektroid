@@ -67,9 +67,10 @@ output=$($ecli elektron-data-ls $TEST_DEVICE:/soundbanks/H)
 [ $(echo "$output" | grep "^F  63" | wc -l) -ne 0 ] && cleanupAndExitWithError
 
 echo "Testing upload..."
+$ecli elektron-data-cl $TEST_DEVICE:/soundbanks/H/1
 $ecli elektron-data-ul $srcdir/res/SOUND.dtdata $TEST_DEVICE:/soundbanks/H
 [ $? -ne 0 ] && cleanupAndExitWithError
-id=$($ecli elektron-data-ls $TEST_DEVICE:/soundbanks/H | grep 'SOUND$' | awk '{print $2}')
+id=$($ecli elektron-data-ls $TEST_DEVICE:/soundbanks/H | head -n 1 | grep 'SOUND$' | awk '{print $2}')
 
 echo "Testing download..."
 $ecli elektron-data-dl $TEST_DEVICE:/soundbanks/H/$id
@@ -87,7 +88,7 @@ $ecli elektron-data-cl $TEST_DEVICE:/soundbanks/H/$id
 echo "Testing upload..."
 $ecli elektron-data-ul $srcdir/res/SOUND.dtdata $TEST_DEVICE:/soundbanks/H/256
 [ $? -ne 0 ] && cleanupAndExitWithError
-id=$($ecli elektron-data-ls $TEST_DEVICE:/soundbanks/H | grep 'SOUND$' | awk '{print $2}')
+id=$($ecli elektron-data-ls $TEST_DEVICE:/soundbanks/H | tail -n 1 | grep 'SOUND$' | awk '{print $2}')
 [ $id != 256 ] && cleanupAndExitWithError
 
 echo "Testing data clear..."
