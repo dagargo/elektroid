@@ -128,17 +128,18 @@ static const GtkTargetEntry TARGET_ENTRIES_LOCAL_SRC[] = {
 };
 
 static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SYSTEM_DST[] = {
-  {TEXT_URI_LIST_STD, 0, TARGET_STRING}
+  {TEXT_URI_LIST_STD, 0, TARGET_STRING},
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING},
 };
 
 static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SYSTEM_SRC[] = {
-  {TEXT_URI_LIST_STD, 0, TARGET_STRING}
+  {TEXT_URI_LIST_ELEKTROID, 0, TARGET_STRING}
 };
 
 static const GtkTargetEntry TARGET_ENTRIES_REMOTE_DST[] = {
-  {TEXT_URI_LIST_STD, 0, TARGET_STRING},
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_SAME_WIDGET,
+  {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING},
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING},
 };
 
 static const GtkTargetEntry TARGET_ENTRIES_REMOTE_DST_SLOT[] = {
@@ -3204,7 +3205,7 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
   GtkWidget *widget = data;
   gint32 next_idx = 1;
   GtkTreeIter iter;
-  gboolean queued_before, queued_after, active;
+  gboolean queued_before, queued_after, active, cache;
 
   if (dialog)
     {
@@ -3214,7 +3215,10 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
   queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
 						  NULL);
 
-  if (widget == GTK_WIDGET (local_browser.view))
+  cache = widget == GTK_WIDGET (local_browser.view) &&
+    !strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID);
+
+  if (cache)
     {
       backend_enable_cache (&backend);
     }
@@ -3238,23 +3242,23 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 
       if (widget == GTK_WIDGET (local_browser.view))
 	{
-	  if (strcmp (dnd_type_name, TEXT_URI_LIST_STD) == 0)
+	  if (!strcmp (dnd_type_name, TEXT_URI_LIST_STD))
 	    {
 	      elektroid_dnd_received_system (dir, name, filename,
 					     &local_browser);
 	    }
-	  else if (strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+	  else if (!strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID))
 	    {
 	      elektroid_add_download_task_path (name, dir, local_browser.dir);
 	    }
 	}
       else if (widget == GTK_WIDGET (remote_browser.view))
 	{
-	  if (strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID) == 0)
+	  if (!strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID))
 	    {
 	      elektroid_dnd_received_remote (dir, name, filename, &next_idx);
 	    }
-	  else if (strcmp (dnd_type_name, TEXT_URI_LIST_STD) == 0)
+	  else if (!strcmp (dnd_type_name, TEXT_URI_LIST_STD))
 	    {
 	      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 		{
@@ -3262,17 +3266,9 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 		}
 	      else
 		{
-		  if (backend.type == BE_TYPE_SYSTEM)
-		    {
-		      elektroid_dnd_received_system (dir, name, filename,
-						     &remote_browser);
-		    }
-		  else
-		    {
-		      elektroid_add_upload_task_path (name, dir,
-						      remote_browser.dir,
-						      &next_idx);
-		    }
+		  elektroid_add_upload_task_path (name, dir,
+						  remote_browser.dir,
+						  &next_idx);
 		}
 	    }
 	}
@@ -3283,7 +3279,7 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
     }
 
 end:
-  if (widget == GTK_WIDGET (local_browser.view))
+  if (cache)
     {
       backend_disable_cache (&backend);
     }
@@ -3320,7 +3316,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 {
   gchar *data;
   GdkAtom type;
-  gboolean background = TRUE;
+  gboolean blocking = TRUE;
   gchar *filename, *src_dir, *dst_dir = NULL;
 
   if (selection_data == NULL
@@ -3359,11 +3355,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
     }
 
   //Checking if it's a remote move.
-  if ((widget == GTK_WIDGET (remote_browser.view)
-       && !strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID)) ||
-      (widget == GTK_WIDGET (remote_browser.view)
-       && !strcmp (dnd_type_name, TEXT_URI_LIST_STD)
-       && backend.type == BE_TYPE_SYSTEM))
+  if (widget == GTK_WIDGET (remote_browser.view)
+      && !strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID))
     {
       dst_dir = remote_browser.dir;	//Move
     }
@@ -3379,10 +3372,12 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Moving Files"));
       gtk_label_set_text (GTK_LABEL (progress_label), _("Moving..."));
 
-      if (!strcmp (dnd_type_name, TEXT_URI_LIST_STD))
+      if (!strcmp (dnd_type_name, TEXT_URI_LIST_STD) ||
+	  (!strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID) &&
+	   backend.type == BE_TYPE_SYSTEM))
 	{
 	  //Moving inside the local browser takes no time.
-	  background = FALSE;
+	  blocking = FALSE;
 	}
     }
   else
@@ -3392,7 +3387,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
     }
 
-  if (background)
+  if (blocking)
     {
       debug_print (1, "Creating SysEx thread...\n");
       sysex_thread =
