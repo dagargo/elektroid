@@ -72,3 +72,29 @@ end:
   g_free (path_copy);
   return err;
 }
+
+gchar *
+common_get_id_as_slot (struct item *item, struct backend *backend)
+{
+  gchar *slot = malloc (LABEL_MAX);
+  snprintf (slot, LABEL_MAX, "%d", item->id);
+  return slot;
+}
+
+void
+common_print_item (struct item_iterator *iter, struct backend *backend,
+		   const struct fs_operations *fs_ops)
+{
+  gchar *slot = NULL;
+  if (fs_ops->get_slot)
+    {
+      slot = fs_ops->get_slot (&iter->item, backend);
+    }
+  else
+    {
+      slot = common_get_id_as_slot (&iter->item, backend);
+    }
+  printf ("%c % 4" PRId64 "B %10s%s%s\n", iter->item.type, iter->item.size,
+	  slot ? slot : "", slot ? " " : "", iter->item.name);
+  g_free (slot);
+}

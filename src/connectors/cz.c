@@ -365,13 +365,6 @@ cleanup:
   return err;
 }
 
-static void
-cz_print (struct item_iterator *iter, struct backend *backend)
-{
-  printf ("%c % 4" PRId64 "B %s\n", iter->item.type, iter->item.size,
-	  iter->item.name);
-}
-
 //As program X in preset storage and program X in internal staorage have different IDs
 //it won't work with the id as the filename so the item name must be used.
 
@@ -383,7 +376,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .gui_name = "Programs",
   .gui_icon = BE_FILE_ICON_SND,
   .readdir = cz_read_dir,
-  .print_item = cz_print,
+  .print_item = common_print_item,
   .download = cz_download,
   .upload = cz_upload,
   .load = load_file,

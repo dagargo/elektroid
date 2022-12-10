@@ -959,12 +959,6 @@ sds_sample_load (const gchar * path, GByteArray * sample,
 				&frames);
 }
 
-static void
-sds_print (struct item_iterator *iter, struct backend *backend)
-{
-  printf ("%c %s\n", iter->item.type, iter->item.name);
-}
-
 enum sds_fs
 {
   FS_SAMPLES_SDS_16_B = 0x1,
@@ -983,7 +977,7 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
-  .print_item = sds_print,
+  .print_item = common_print_item,
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_8b,
@@ -1004,7 +998,7 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
-  .print_item = sds_print,
+  .print_item = common_print_item,
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_12b,
@@ -1025,7 +1019,7 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
-  .print_item = sds_print,
+  .print_item = common_print_item,
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_14b,
@@ -1046,7 +1040,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
-  .print_item = sds_print,
+  .print_item = common_print_item,
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_16b,

@@ -358,12 +358,6 @@ end:
   return steps < 0 ? steps : 0;
 }
 
-static void
-microbrute_print (struct item_iterator *iter, struct backend *backend)
-{
-  printf ("%c %s\n", iter->item.type, iter->item.name);
-}
-
 static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .fs = FS_MICROBRUTE_SEQUENCE,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
@@ -373,7 +367,7 @@ static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .gui_icon = BE_FILE_ICON_SEQ,
   .type_ext = "mbseq",
   .readdir = microbrute_read_dir,
-  .print_item = microbrute_print,
+  .print_item = common_print_item,
   .download = microbrute_download,
   .upload = microbrute_upload,
   .load = load_file,

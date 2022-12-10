@@ -81,7 +81,10 @@ struct item_iterator
   struct item item;
 };
 
-typedef void (*fs_print_item) (struct item_iterator *, struct backend *);
+struct fs_operations;
+
+typedef void (*fs_print_item) (struct item_iterator *, struct backend *,
+			       const struct fs_operations *);
 
 struct job_control;
 
@@ -194,7 +197,7 @@ struct fs_operations
   const gchar *gui_icon;
   const gchar *type_ext;
   guint32 max_name_len;
-  fs_init_iter_func readdir;
+  fs_init_iter_func readdir;	//This function runs on its own thread so it can take as long as needed in order to make calls to next_item_iterator not to wait for IO.
   fs_print_item print_item;
   fs_path_func mkdir;
   fs_path_func delete;

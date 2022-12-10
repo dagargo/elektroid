@@ -435,14 +435,6 @@ efactor_get_slot (struct item *item, struct backend *backend)
   return slot;
 }
 
-static void
-efactor_print (struct item_iterator *iter, struct backend *backend)
-{
-  gchar *slot = efactor_get_slot (&iter->item, backend);
-  printf ("%c %s %s\n", iter->item.type, slot, iter->item.name);
-  g_free (slot);
-}
-
 static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .fs = FS_EFACTOR_PRESET,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
@@ -454,7 +446,7 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .type_ext = "syx",
   .max_name_len = 16,
   .readdir = efactor_read_dir,
-  .print_item = efactor_print,
+  .print_item = common_print_item,
   .rename = efactor_rename,
   .download = efactor_download,
   .upload = efactor_upload,

@@ -29,3 +29,8 @@ gchar *common_slot_get_upload_path (struct backend *backend,
 
 int common_slot_get_id_name_from_path (const char *path, guint * id,
 				       gchar ** name);
+
+gchar *common_get_id_as_slot (struct item *item, struct backend *backend);
+
+void common_print_item (struct item_iterator *iter, struct backend *backend,
+			const struct fs_operations *fs_ops);

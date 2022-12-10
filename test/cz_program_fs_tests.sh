@@ -20,9 +20,9 @@ function exitWithError() {
 echo "Testing ls..."
 files=$($ecli cz-program-ls $TEST_DEVICE:/)
 [ $? -ne 0 ] && exit 1
-expected="D   -1B preset
-D   -1B internal
-F  264B panel"
+expected="D   -1B       4096 preset
+D   -1B       4097 internal
+F  264B         96 panel"
 [ "$files" != "$expected" ] && echo "Tests will fail with a cartridge inserted" && exit 1
 
 echo "Testing internal download..."

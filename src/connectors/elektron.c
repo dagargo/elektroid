@@ -227,9 +227,11 @@ static enum item_type elektron_get_path_type (struct backend *,
 					      const gchar *,
 					      fs_init_iter_func);
 
-static void elektron_print_smplrw (struct item_iterator *, struct backend *);
+static void elektron_print_smplrw (struct item_iterator *, struct backend *,
+				   const struct fs_operations *);
 
-static void elektron_print_data (struct item_iterator *, struct backend *);
+static void elektron_print_data (struct item_iterator *, struct backend *,
+				 const struct fs_operations *);
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -431,7 +433,9 @@ static const struct fs_operations *FS_OPERATIONS[] = {
 };
 
 static void
-elektron_print_smplrw (struct item_iterator *iter, struct backend *backend)
+elektron_print_smplrw (struct item_iterator *iter,
+		       struct backend *backend,
+		       const struct fs_operations *fs_ops)
 {
   gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct elektron_iterator_data *data = iter->data;
@@ -442,7 +446,9 @@ elektron_print_smplrw (struct item_iterator *iter, struct backend *backend)
 }
 
 static void
-elektron_print_data (struct item_iterator *iter, struct backend *backend)
+elektron_print_data (struct item_iterator *iter,
+		     struct backend *backend,
+		     const struct fs_operations *fs_ops)
 {
   gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct elektron_iterator_data *data = iter->data;
