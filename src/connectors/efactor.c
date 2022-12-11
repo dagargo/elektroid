@@ -393,6 +393,7 @@ efactor_rename (struct backend *backend, const gchar * src, const gchar * dst)
   err = efactor_download (backend, src, preset, &control);
   if (err)
     {
+      free_msg (preset);
       return err;
     }
 
