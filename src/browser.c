@@ -295,6 +295,8 @@ browser_load_dir_runner_update_ui (gpointer data)
   browser->loading = FALSE;
   g_mutex_unlock (&browser->mutex);
 
+  gtk_widget_grab_focus (GTK_WIDGET (browser->view));
+
   return FALSE;
 }
 
