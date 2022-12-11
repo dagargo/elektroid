@@ -32,10 +32,8 @@ $ecli efactor-preset-mv $TEST_DEVICE:/$TEST_PRESET "New Name"
 echo "Testing download..."
 $ecli efactor-preset-dl $TEST_DEVICE:/$TEST_PRESET
 [ $? -ne 0 ] && exitWithError 1
-actual_cksum="$(cksum "Eventide Factor New Name.syx" | awk '{print $1}')"
-rm "Eventide Factor New Name.syx"
-echo $actual_cksum  | awk '{print $1}'
-cksum "$srcdir/res/Eventide Factor New Name.syx"
+actual_cksum="$(cksum "Eventide Factor $TEST_PRESET New Name.syx" | awk '{print $1}')"
+rm "Eventide Factor $TEST_PRESET New Name.syx"
 [ "$actual_cksum" != $(cksum "$srcdir/res/Eventide Factor New Name.syx" | awk '{print $1}') ] && exitWithError 1
 
 exitWithError 0

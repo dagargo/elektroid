@@ -152,8 +152,8 @@ efactor_get_download_path (struct backend *backend,
     }
 
   path = malloc (PATH_MAX);
-  snprintf (path, PATH_MAX, "%s/%s %s.syx", dst_dir,
-	    EFACTOR_PEDAL_NAME (data), name);
+  snprintf (path, PATH_MAX, "%s/%s %02d %s.syx", dst_dir,
+	    EFACTOR_PEDAL_NAME (data), id, name);
 
 end:
   return path;
