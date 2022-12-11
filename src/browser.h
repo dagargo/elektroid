@@ -69,6 +69,7 @@ struct browser
   GThread *thread;
   GMutex mutex;
   gboolean loading;
+  gboolean dirty;
   struct item_iterator *iter;
 };
 

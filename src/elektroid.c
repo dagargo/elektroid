@@ -2278,6 +2278,7 @@ elektroid_run_next_task (gpointer data)
 	{
 	  task_thread =
 	    g_thread_new ("upload_task", elektroid_upload_task, NULL);
+	  remote_browser.dirty = TRUE;
 	}
       else if (type == DOWNLOAD)
 	{
@@ -2295,6 +2296,13 @@ elektroid_run_next_task (gpointer data)
       gtk_widget_set_sensitive (tx_sysex_button, TRUE);
       gtk_widget_set_sensitive (os_upgrade_button,
 				backend.upgrade_os != NULL);
+
+      if ((remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
+	  && remote_browser.dirty)
+	{
+	  remote_browser.dirty = FALSE;
+	  g_idle_add (elektroid_load_remote_if_midi, &remote_browser);
+	}
     }
 
   elektroid_check_task_buttons (NULL);
@@ -2361,12 +2369,11 @@ elektroid_upload_task (gpointer data)
       g_mutex_unlock (&transfer.control.mutex);
     }
 
-  if (!res && transfer.fs_ops == remote_browser.fs_ops)	//There is no need to refresh the local browser
+  if (!res && transfer.fs_ops == remote_browser.fs_ops &&
+      !strncmp (dst_dir, remote_browser.dir, strlen (remote_browser.dir))
+      && !(transfer.fs_ops->options & FS_OPTION_SINGLE_OP))
     {
-      if (!strncmp (dst_dir, remote_browser.dir, strlen (remote_browser.dir)))
-	{
-	  g_idle_add (elektroid_load_remote_if_midi, &remote_browser);
-	}
+      g_idle_add (elektroid_load_remote_if_midi, &remote_browser);
     }
 
 end_cleanup:
