@@ -31,7 +31,8 @@
 #define CZ_MEM_TYPE_OFFSET 0x20
 #define CZ_PANEL_ID 0x60
 #define CZ_FIRST_CARTRIDGE_ID 0x40
-#define CZ_PANEL_PATH "/panel"
+#define CZ_PANEL "panel"
+#define CZ_PANEL_PATH "/" CZ_PANEL
 
 static const char *CZ_MEM_TYPES[] =
   { "preset", "internal", "cartridge", NULL };
@@ -60,7 +61,7 @@ cz_get_download_path (struct backend *backend,
 		      const gchar * src_path)
 {
   gchar *name = malloc (PATH_MAX);
-  if (strcmp (&src_path[1], "panel"))
+  if (strcmp (src_path, CZ_PANEL_PATH))
     {
       gchar *src_path_copy = strdup (src_path);
       gchar *src_dir_copy = strdup (src_path);
@@ -284,7 +285,7 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
   guint8 id;
   gboolean active;
   struct sysex_transfer transfer;
-  char *name_copy, *dir_copy, *dir;
+  gchar *name_copy, *dir_copy, *dir;
   gint mem_type, err = 0;
 
   dir_copy = strdup (path);

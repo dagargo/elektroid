@@ -48,7 +48,8 @@ connectors/package.c connectors/package.h \
 connectors/microbrute.c connectors/microbrute.h \
 connectors/cz.c connectors/cz.h \
 connectors/sds.c connectors/sds.h \
-connectors/efactor.c connectors/efactor.h
+connectors/efactor.c connectors/efactor.h \
+connectors/phatty.c connectors/phatty.h
 
 elektroid_cli_SOURCES = $(elektroid_common_sources) elektroid-cli.c
 
