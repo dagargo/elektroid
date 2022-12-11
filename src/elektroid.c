@@ -49,6 +49,8 @@
 
 #define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping...\n"
 
+#define MIN_TIME_UNTIL_DIALOG_RESPONSE 1e6
+
 enum device_list_store_columns
 {
   DEVICES_LIST_STORE_ID_FIELD,
@@ -229,6 +231,20 @@ static GtkWidget *sample_samplerate;
 static GtkWidget *sample_bitdepth;
 static gchar **dnd_uris;
 static gchar *dnd_type_name;
+
+/**
+ * This function guarantees that the time since start is at least the timeout.
+ * This is needed when controlling a dialog from a thread because the dialog needs to be showed before the response is sent from the thread.
+ */
+static void
+elektroid_usleep_since (gint64 timeout, gint64 start)
+{
+  gint64 diff = g_get_monotonic_time () - start;
+  if (diff < timeout)
+    {
+      usleep (timeout - diff);
+    }
+}
 
 inline static const gchar *
 elektroid_get_fs_name (guint fs)
@@ -1111,6 +1127,7 @@ elektroid_delete_files_runner (gpointer data)
   GtkTreeSelection *selection;
   GtkTreeModel *model;
   struct browser *browser = data;
+  gint64 start = g_get_monotonic_time ();
 
   g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
 
@@ -1164,7 +1181,7 @@ elektroid_delete_files_runner (gpointer data)
   g_list_free_full (ref_list, (GDestroyNotify) gtk_tree_row_reference_free);
   g_mutex_unlock (&browser->mutex);
 
-  sleep (1);			//See elektroid_dnd_received_runner
+  elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
   return NULL;
 }
@@ -2445,6 +2462,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
   gboolean queued_before, queued_after, active;
   GtkTreeModel *model;
   GtkTreeSelection *selection;
+  guint64 start = g_get_monotonic_time ();
 
   g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
 
@@ -2488,7 +2506,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
       g_idle_add (elektroid_run_next_task, NULL);
     }
 
-  sleep (1);			//See elektroid_dnd_received_runner
+  elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
   return NULL;
 }
@@ -2640,6 +2658,7 @@ elektroid_add_download_tasks_runner (gpointer data)
   gboolean queued_before, queued_after, active;
   GtkTreeModel *model;
   GtkTreeSelection *selection;
+  gint64 start = g_get_monotonic_time ();
 
   g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
 
@@ -2689,7 +2708,7 @@ elektroid_add_download_tasks_runner (gpointer data)
       g_idle_add (elektroid_run_next_task, NULL);
     }
 
-  sleep (1);			//See elektroid_dnd_received_runner
+  elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
   return NULL;
 }
@@ -3026,14 +3045,12 @@ static gpointer
 elektroid_set_device_thread (gpointer data)
 {
   gchar *id = data;
+  gint64 start = g_get_monotonic_time ();
+
   g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
   sysex_transfer.err = connector_init_backend (&backend, id, NULL,
 					       &sysex_transfer);
-
-  // TODO: Until a better solution is found, this sleep is necessary.
-  // The reason is that this thread might end before the dialog is showed, which leads to erratic dialog behaviour.
-  // This wait has impact.
-  sleep (1);
+  elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
   gtk_dialog_response (GTK_DIALOG (progress_dialog),
 		       backend_check (&backend) ? GTK_RESPONSE_ACCEPT
 		       : GTK_RESPONSE_CANCEL);
@@ -3208,11 +3225,13 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 {
   GtkWidget *widget = data;
   gint32 next_idx = 1;
+  gint64 start;
   GtkTreeIter iter;
   gboolean queued_before, queued_after, active, cache;
 
   if (dialog)
     {
+      start = g_get_monotonic_time ();
       g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
     }
 
@@ -3297,10 +3316,8 @@ end:
 
   if (dialog)
     {
-      // TODO: Until a better solution is found, this sleep is necessary.
-      // The reason is that this thread might end before the dialog is showed, which leads to erratic dialog behaviour.
       // As we start to run the next task before sleeping, this has no impact.
-      sleep (1);
+      elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
       gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
     }
   return NULL;
