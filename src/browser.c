@@ -209,11 +209,11 @@ browser_add_dentry_item (struct browser *browser, struct item_iterator *iter)
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
 
-  hsize = iter->item.size ? get_human_size (iter->item.size, TRUE) : "";
+  hsize = get_human_size (iter->item.size, TRUE);
   slot = (browser->fs_ops->options & FS_OPTION_SLOT_STORAGE)
     && browser->fs_ops->get_slot ? browser->fs_ops->get_slot (&iter->item,
 							      browser->backend)
-    : "";
+    : NULL;
 
   gtk_list_store_insert_with_values (list_store, NULL, -1,
 				     BROWSER_LIST_STORE_ICON_FIELD,
@@ -230,16 +230,11 @@ browser_add_dentry_item (struct browser *browser, struct item_iterator *iter)
 				     iter->item.type,
 				     BROWSER_LIST_STORE_ID_FIELD,
 				     iter->item.id,
-				     BROWSER_LIST_STORE_SLOT_FIELD, slot, -1);
-  if (strlen (hsize))
-    {
-      g_free (hsize);
-    }
+				     BROWSER_LIST_STORE_SLOT_FIELD,
+				     slot ? slot : "", -1);
 
-  if (strlen (slot))
-    {
-      g_free (slot);
-    }
+  g_free (hsize);
+  g_free (slot);
 }
 
 static gboolean
