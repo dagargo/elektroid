@@ -544,6 +544,7 @@ elektroid_check_backend ()
   GtkTreeIter iter;
   gboolean remote_sensitive;
   gboolean connected = backend_check (&backend);
+  gboolean midi_connected = backend.type == BE_TYPE_MIDI && connected;
   gboolean queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
 						    NULL);
 
@@ -560,9 +561,9 @@ elektroid_check_backend ()
     }
   gtk_widget_set_sensitive (remote_box, remote_sensitive);
   gtk_widget_set_sensitive (upload_menuitem, remote_sensitive);
-  gtk_widget_set_sensitive (rx_sysex_button, connected && !queued);
-  gtk_widget_set_sensitive (tx_sysex_button, connected && !queued);
-  gtk_widget_set_sensitive (os_upgrade_button, connected && !queued
+  gtk_widget_set_sensitive (rx_sysex_button, midi_connected && !queued);
+  gtk_widget_set_sensitive (tx_sysex_button, midi_connected && !queued);
+  gtk_widget_set_sensitive (os_upgrade_button, midi_connected && !queued
 			    && backend.upgrade_os);
 
   if (!connected)
@@ -2290,12 +2291,14 @@ elektroid_run_next_task (gpointer data)
     }
   else
     {
+      gboolean midi_connected = backend.type == BE_TYPE_MIDI
+	&& backend_check (&backend);
       gtk_widget_set_sensitive (remote_box, TRUE);
       gtk_widget_set_sensitive (upload_menuitem, TRUE);
-      gtk_widget_set_sensitive (rx_sysex_button, TRUE);
-      gtk_widget_set_sensitive (tx_sysex_button, TRUE);
-      gtk_widget_set_sensitive (os_upgrade_button,
-				backend.upgrade_os != NULL);
+      gtk_widget_set_sensitive (rx_sysex_button, midi_connected);
+      gtk_widget_set_sensitive (tx_sysex_button, midi_connected);
+      gtk_widget_set_sensitive (os_upgrade_button, midi_connected
+				&& backend.upgrade_os != NULL);
 
       if ((remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
 	  && remote_browser.dirty)
