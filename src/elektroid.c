@@ -161,9 +161,10 @@ static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
 static struct browser remote_browser;
 static struct browser local_browser;
 
-struct backend backend;
+static struct backend backend;
 static struct audio audio;
 static struct preferences preferences;
+static struct ma_data ma_data;
 
 static GThread *load_thread = NULL;
 static GThread *task_thread = NULL;
@@ -180,7 +181,6 @@ static GtkDialog *progress_dialog;
 static GtkWidget *progress_dialog_cancel_button;
 static GtkWidget *progress_bar;
 static GtkWidget *progress_label;
-GtkWidget *menu_actions_box;
 static GtkWidget *about_button;
 static GtkWidget *local_box;
 static GtkWidget *remote_box;
@@ -560,7 +560,7 @@ elektroid_check_backend ()
     }
   gtk_widget_set_sensitive (remote_box, remote_sensitive);
   gtk_widget_set_sensitive (upload_menuitem, remote_sensitive);
-  gtk_widget_set_sensitive (menu_actions_box, midi_connected && !queued);
+  gtk_widget_set_sensitive (ma_data.box, midi_connected && !queued);
 
   if (!connected)
     {
@@ -591,14 +591,14 @@ elektroid_cancel_all_tasks_and_wait ()
     }
 }
 
-static void
-elektroid_refresh_devices (GtkWidget * object, gpointer data)
+void
+elektroid_refresh_devices (GtkWidget * widget, gpointer data)
 {
   if (backend_check (&backend))
     {
       elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (&backend);
-      ma_clear_device_menu_actions (menu_actions_box);
+      ma_clear_device_menu_actions (ma_data.box);
       elektroid_reset_sample (&remote_browser);
       browser_reset (&remote_browser);
     }
@@ -710,7 +710,7 @@ elektroid_rx_sysex_thread (gpointer data)
 }
 
 void
-elektroid_rx_sysex (GtkWidget * object, gpointer data)
+elektroid_rx_sysex ()
 {
   GtkWidget *dialog;
   GtkFileChooser *chooser;
@@ -2236,7 +2236,7 @@ elektroid_run_next_task (gpointer data)
 	  gtk_widget_set_sensitive (remote_box, FALSE);
 	  gtk_widget_set_sensitive (upload_menuitem, FALSE);
 	}
-      gtk_widget_set_sensitive (menu_actions_box, FALSE);
+      gtk_widget_set_sensitive (ma_data.box, FALSE);
 
       gtk_list_store_set (task_list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, RUNNING,
@@ -2276,7 +2276,7 @@ elektroid_run_next_task (gpointer data)
 	&& backend_check (&backend);
       gtk_widget_set_sensitive (remote_box, TRUE);
       gtk_widget_set_sensitive (upload_menuitem, TRUE);
-      gtk_widget_set_sensitive (menu_actions_box, midi_connected);
+      gtk_widget_set_sensitive (ma_data.box, midi_connected);
 
       if ((remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
 	  && remote_browser.dirty)
@@ -3102,7 +3102,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
   if (dres == GTK_RESPONSE_ACCEPT)
     {
       elektroid_fill_fs_combo_bg (NULL);
-      ma_set_device_menu_actions (menu_actions_box);
+      ma_set_device_menu_actions (&ma_data);
     }
   else
     {
@@ -3690,7 +3690,7 @@ elektroid_run (int argc, char *argv[])
   progress_label =
     GTK_WIDGET (gtk_builder_get_object (builder, "progress_label"));
 
-  menu_actions_box =
+  ma_data.box =
     GTK_WIDGET (gtk_builder_get_object (builder, "menu_actions_box"));
 
   about_button =
@@ -4036,6 +4036,9 @@ elektroid_run (int argc, char *argv[])
   g_idle_add (elektroid_load_devices_bg, NULL);
   gtk_widget_show (main_window);
   audio_run (&audio);
+
+  ma_data.backend = &backend;
+
 
   gtk_main ();
 

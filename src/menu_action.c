@@ -21,9 +21,6 @@
 #include "menu_action.h"
 #include "menu_actions/backend_actions.h"
 
-extern struct backend backend;
-extern GtkWidget *menu_actions_box;
-
 typedef struct menu_action *(*t_menu_action_initializer) (struct backend *);
 
 const t_menu_action_initializer MENU_ACTIONS[] = {
@@ -31,13 +28,13 @@ const t_menu_action_initializer MENU_ACTIONS[] = {
 };
 
 static GSList *
-ma_get_menu_actions ()
+ma_get_menu_actions (struct ma_data *ma_data)
 {
   GSList *actions = NULL;
   const t_menu_action_initializer *initializer = MENU_ACTIONS;
   while (*initializer)
     {
-      struct menu_action *ma = (*initializer) (&backend);
+      struct menu_action *ma = (*initializer) (ma_data->backend);
       if (ma)
 	{
 	  actions = g_slist_append (actions, ma);
@@ -49,47 +46,41 @@ ma_get_menu_actions ()
 }
 
 static void
-ma_generic_menu_action (GtkWidget * object, gpointer data)
-{
-  f_menu_action action = data;
-  action (&backend);
-}
-
-static void
 ma_remove_device_menu_action (GtkWidget * widget, gpointer data)
 {
-  gtk_container_remove (GTK_CONTAINER (menu_actions_box), widget);
+  GtkWidget *box = data;
+  gtk_container_remove (GTK_CONTAINER (box), widget);
 }
 
 void
-ma_clear_device_menu_actions ()
+ma_clear_device_menu_actions (GtkWidget * box)
 {
-  gtk_container_foreach (GTK_CONTAINER (menu_actions_box),
-			 ma_remove_device_menu_action, menu_actions_box);
+  gtk_container_foreach (GTK_CONTAINER (box),
+			 ma_remove_device_menu_action, box);
 }
 
 static void
 ma_add_device_menu_action (gpointer data, gpointer user_data)
 {
   struct menu_action *ma = data;
+  struct ma_data *ma_data = user_data;
   GtkWidget *button = gtk_model_button_new ();
   g_object_set (button, "text", ma->name, NULL);
   gtk_widget_show (button);
-  gtk_container_add (GTK_CONTAINER (menu_actions_box), button);
-  g_signal_connect (button, "clicked",
-		    G_CALLBACK (ma_generic_menu_action), ma->action);
+  gtk_container_add (GTK_CONTAINER (ma_data->box), button);
+  g_signal_connect (button, "clicked", ma->callback, ma_data->backend);
 }
 
 void
-ma_set_device_menu_actions ()
+ma_set_device_menu_actions (struct ma_data *ma_data)
 {
-  GSList *src = ma_get_menu_actions ();
-  ma_clear_device_menu_actions ();
-  g_slist_foreach (src, ma_add_device_menu_action, NULL);
+  GSList *src = ma_get_menu_actions (ma_data);
+  ma_clear_device_menu_actions (ma_data->box);
+  g_slist_foreach (src, ma_add_device_menu_action, ma_data);
   if (src)
     {
       GtkWidget *separator = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
-      gtk_container_add (GTK_CONTAINER (menu_actions_box), separator);
+      gtk_container_add (GTK_CONTAINER (ma_data->box), separator);
       gtk_widget_show (separator);
     }
   g_slist_free_full (src, g_free);

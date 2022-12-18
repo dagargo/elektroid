@@ -27,28 +27,26 @@
 extern gpointer elektroid_tx_upgrade_os_thread (gpointer data);
 extern gpointer elektroid_tx_sysex_files_thread (gpointer data);
 extern void elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple);
-extern void elektroid_check_backend ();
-extern void elektroid_rx_sysex (GtkWidget * object, gpointer data);
+extern void elektroid_rx_sysex ();
+extern void elektroid_refresh_devices (GtkWidget * object, gpointer data);
 
 static void
-os_upgrade_action (struct backend *backend)
+os_upgrade_callback (GtkWidget * object, gpointer data)
 {
   elektroid_tx_sysex_common (elektroid_tx_upgrade_os_thread, FALSE);
-  backend_destroy (backend);
-  ma_clear_device_menu_actions ();
-  elektroid_check_backend ();
+  elektroid_refresh_devices (NULL, NULL);
 }
 
 static void
-tx_sysex_action (struct backend *backend)
+tx_sysex_callback (GtkWidget * object, gpointer data)
 {
   elektroid_tx_sysex_common (elektroid_tx_sysex_files_thread, TRUE);
 }
 
 static void
-rx_sysex_action (struct backend *backend)
+rx_sysex_callback (GtkWidget * object, gpointer data)
 {
-  elektroid_rx_sysex (NULL, NULL);
+  elektroid_rx_sysex ();
 }
 
 struct menu_action *
@@ -59,7 +57,7 @@ os_upgrade_init (struct backend *backend)
     {
       ma = g_malloc (sizeof (struct menu_action));
       ma->name = _("OS _Upgrade");
-      ma->action = os_upgrade_action;
+      ma->callback = G_CALLBACK (os_upgrade_callback);
     }
   return ma;
 }
@@ -72,7 +70,7 @@ rx_sysex_init (struct backend *backend)
     {
       ma = g_malloc (sizeof (struct menu_action));
       ma->name = _("_Receive SysEx");
-      ma->action = rx_sysex_action;
+      ma->callback = G_CALLBACK (rx_sysex_callback);
     }
   return ma;
 }
@@ -85,7 +83,7 @@ tx_sysex_init (struct backend *backend)
     {
       ma = g_malloc (sizeof (struct menu_action));
       ma->name = _("_Send SysEx");
-      ma->action = tx_sysex_action;
+      ma->callback = G_CALLBACK (tx_sysex_callback);
     }
   return ma;
 }

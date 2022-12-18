@@ -24,16 +24,20 @@
 #include <gtk/gtk.h>
 #include "backend.h"
 
-typedef void (*f_menu_action) (struct backend *);
-
 struct menu_action
 {
   const gchar *name;
-  f_menu_action action;
+  GCallback callback;
 };
 
-void ma_clear_device_menu_actions ();
+struct ma_data
+{
+  GtkWidget *box;
+  struct backend *backend;
+};
 
-void ma_set_device_menu_actions ();
+void ma_clear_device_menu_actions (GtkWidget *);
+
+void ma_set_device_menu_actions (struct ma_data *);
 
 #endif
