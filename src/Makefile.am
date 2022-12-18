@@ -56,7 +56,10 @@ elektroid_cli_SOURCES = $(elektroid_common_sources) elektroid-cli.c
 elektroid_SOURCES = $(elektroid_common_sources) \
 audio.h audio.c $(elektroid_audio_sources) \
 browser.c browser.h notifier.c notifier.h \
-preferences.c preferences.h elektroid.c
+preferences.c preferences.h \
+menu_action.c menu_action.h \
+menu_actions/backend_actions.c menu_actions/backend_actions.h \
+elektroid.c
 
 SNDFILE_CFLAGS = @SNDFILE_CFLAGS@
 SNDFILE_LIBS = @SNDFILE_LIBS@

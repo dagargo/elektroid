@@ -1,5 +1,6 @@
 src/connector.c
 src/elektroid.c
+src/menu_actions/backend_actions.c
 src/local.c
 src/connectors/sds.c
 res/gui.glade

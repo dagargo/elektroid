@@ -33,6 +33,7 @@
 #include "utils.h"
 #include "local.h"
 #include "preferences.h"
+#include "menu_action.h"
 
 #define PLAYER_VISIBLE (remote_browser.fs_ops->options & FS_OPTION_AUDIO_PLAYER ? TRUE : FALSE)
 #define PLAYER_PREF_CHANNELS (!remote_browser.fs_ops || (remote_browser.fs_ops->options & FS_OPTION_STEREO) || !preferences.mix ? 2 : 1)
@@ -160,8 +161,8 @@ static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
 static struct browser remote_browser;
 static struct browser local_browser;
 
+struct backend backend;
 static struct audio audio;
-static struct backend backend;
 static struct preferences preferences;
 
 static GThread *load_thread = NULL;
@@ -179,9 +180,7 @@ static GtkDialog *progress_dialog;
 static GtkWidget *progress_dialog_cancel_button;
 static GtkWidget *progress_bar;
 static GtkWidget *progress_label;
-static GtkWidget *rx_sysex_button;
-static GtkWidget *tx_sysex_button;
-static GtkWidget *os_upgrade_button;
+GtkWidget *menu_actions_box;
 static GtkWidget *about_button;
 static GtkWidget *local_box;
 static GtkWidget *remote_box;
@@ -538,7 +537,7 @@ elektroid_get_next_queued_task (GtkTreeIter * iter,
   return found;
 }
 
-static gboolean
+gboolean
 elektroid_check_backend ()
 {
   GtkTreeIter iter;
@@ -561,10 +560,7 @@ elektroid_check_backend ()
     }
   gtk_widget_set_sensitive (remote_box, remote_sensitive);
   gtk_widget_set_sensitive (upload_menuitem, remote_sensitive);
-  gtk_widget_set_sensitive (rx_sysex_button, midi_connected && !queued);
-  gtk_widget_set_sensitive (tx_sysex_button, midi_connected && !queued);
-  gtk_widget_set_sensitive (os_upgrade_button, midi_connected && !queued
-			    && backend.upgrade_os);
+  gtk_widget_set_sensitive (menu_actions_box, midi_connected && !queued);
 
   if (!connected)
     {
@@ -602,6 +598,7 @@ elektroid_refresh_devices (GtkWidget * object, gpointer data)
     {
       elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (&backend);
+      ma_clear_device_menu_actions (menu_actions_box);
       elektroid_reset_sample (&remote_browser);
       browser_reset (&remote_browser);
     }
@@ -712,7 +709,7 @@ elektroid_rx_sysex_thread (gpointer data)
   return res;
 }
 
-static void
+void
 elektroid_rx_sysex (GtkWidget * object, gpointer data)
 {
   GtkWidget *dialog;
@@ -836,7 +833,7 @@ elektroid_send_sysex_file (const gchar * filename, t_sysex_transfer f)
   return err;
 }
 
-static gpointer
+gpointer
 elektroid_tx_sysex_files_thread (gpointer data)
 {
   GSList *filenames = data;
@@ -864,7 +861,7 @@ elektroid_tx_sysex_files_thread (gpointer data)
   return err;
 }
 
-static gpointer
+gpointer
 elektroid_tx_upgrade_os_thread (gpointer data)
 {
   GSList *filenames = data;
@@ -882,7 +879,7 @@ elektroid_tx_upgrade_os_thread (gpointer data)
   return err;
 }
 
-static void
+void
 elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
 {
   GtkWidget *dialog;
@@ -940,20 +937,6 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
 
 cleanup:
   gtk_widget_destroy (dialog);
-}
-
-static void
-elektroid_tx_sysex (GtkWidget * object, gpointer data)
-{
-  elektroid_tx_sysex_common (elektroid_tx_sysex_files_thread, TRUE);
-}
-
-static void
-elektroid_upgrade_os (GtkWidget * object, gpointer data)
-{
-  elektroid_tx_sysex_common (elektroid_tx_upgrade_os_thread, FALSE);
-  backend_destroy (&backend);
-  elektroid_check_backend ();
 }
 
 static void
@@ -2253,9 +2236,7 @@ elektroid_run_next_task (gpointer data)
 	  gtk_widget_set_sensitive (remote_box, FALSE);
 	  gtk_widget_set_sensitive (upload_menuitem, FALSE);
 	}
-      gtk_widget_set_sensitive (rx_sysex_button, FALSE);
-      gtk_widget_set_sensitive (tx_sysex_button, FALSE);
-      gtk_widget_set_sensitive (os_upgrade_button, FALSE);
+      gtk_widget_set_sensitive (menu_actions_box, FALSE);
 
       gtk_list_store_set (task_list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, RUNNING,
@@ -2295,10 +2276,7 @@ elektroid_run_next_task (gpointer data)
 	&& backend_check (&backend);
       gtk_widget_set_sensitive (remote_box, TRUE);
       gtk_widget_set_sensitive (upload_menuitem, TRUE);
-      gtk_widget_set_sensitive (rx_sysex_button, midi_connected);
-      gtk_widget_set_sensitive (tx_sysex_button, midi_connected);
-      gtk_widget_set_sensitive (os_upgrade_button, midi_connected
-				&& backend.upgrade_os != NULL);
+      gtk_widget_set_sensitive (menu_actions_box, midi_connected);
 
       if ((remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
 	  && remote_browser.dirty)
@@ -3124,6 +3102,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
   if (dres == GTK_RESPONSE_ACCEPT)
     {
       elektroid_fill_fs_combo_bg (NULL);
+      ma_set_device_menu_actions (menu_actions_box);
     }
   else
     {
@@ -3711,12 +3690,9 @@ elektroid_run (int argc, char *argv[])
   progress_label =
     GTK_WIDGET (gtk_builder_get_object (builder, "progress_label"));
 
-  rx_sysex_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "rx_sysex_button"));
-  tx_sysex_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "tx_sysex_button"));
-  os_upgrade_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "os_upgrade_button"));
+  menu_actions_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "menu_actions_box"));
+
   about_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "about_button"));
 
@@ -3747,12 +3723,6 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (progress_dialog, "response",
 		    G_CALLBACK (elektroid_cancel_running_sysex), NULL);
 
-  g_signal_connect (rx_sysex_button, "clicked",
-		    G_CALLBACK (elektroid_rx_sysex), NULL);
-  g_signal_connect (tx_sysex_button, "clicked",
-		    G_CALLBACK (elektroid_tx_sysex), NULL);
-  g_signal_connect (os_upgrade_button, "clicked",
-		    G_CALLBACK (elektroid_upgrade_os), NULL);
   g_signal_connect (about_button, "clicked",
 		    G_CALLBACK (elektroid_show_about), NULL);
 
@@ -4046,9 +4016,6 @@ elektroid_run (int argc, char *argv[])
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_bitdepth"));
 
   gtk_widget_set_sensitive (remote_box, FALSE);
-  gtk_widget_set_sensitive (rx_sysex_button, FALSE);
-  gtk_widget_set_sensitive (tx_sysex_button, FALSE);
-  gtk_widget_set_sensitive (os_upgrade_button, FALSE);
 
   elektroid_audio_widgets_set_status ();
 

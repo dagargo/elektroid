@@ -108,8 +108,8 @@ struct backend
   const struct fs_operations **fs_ops;
   void *data;
   t_destroy_data destroy_data;
-  t_sysex_transfer upgrade_os;
-  t_get_storage_stats get_storage_stats;
+  t_sysex_transfer upgrade_os;	//This function is device function, not a filesystem function.
+  t_get_storage_stats get_storage_stats;	//This function is device function, not a filesystem function. Several filesystems might share the same memory.
 };
 
 struct backend_system_device
