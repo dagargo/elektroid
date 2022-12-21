@@ -27,6 +27,7 @@
 #include "connectors/sds.h"
 #include "connectors/efactor.h"
 #include "connectors/phatty.h"
+#include "connectors/summit.h"
 
 static gint
 default_handshake (struct backend *backend)
@@ -91,6 +92,12 @@ static const struct connector CONNECTOR_PHATTY = {
   .name = "phatty"
 };
 
+static const struct connector CONNECTOR_SUMMIT = {
+  .handshake = summit_handshake,
+  .standard_id = TRUE,
+  .name = "summit"
+};
+
 static const struct connector CONNECTOR_DEFAULT = {
   .handshake = default_handshake,
   .standard_id = FALSE,
@@ -100,8 +107,9 @@ static const struct connector CONNECTOR_DEFAULT = {
 // To speed up detection, connectors that purely rely on the standard device inquiry should go first.
 
 static const struct connector *CONNECTORS[] = {
-  &CONNECTOR_MICROBRUTE, &CONNECTOR_PHATTY, &CONNECTOR_ELEKTRON,
-  &CONNECTOR_CZ, &CONNECTOR_SDS, &CONNECTOR_EFACTOR, &CONNECTOR_DEFAULT, NULL
+  &CONNECTOR_MICROBRUTE, &CONNECTOR_PHATTY, &CONNECTOR_SUMMIT,
+  &CONNECTOR_ELEKTRON, &CONNECTOR_CZ, &CONNECTOR_SDS, &CONNECTOR_EFACTOR,
+  &CONNECTOR_DEFAULT, NULL
 };
 
 // A handshake function might return these values:
