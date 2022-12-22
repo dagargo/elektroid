@@ -377,16 +377,10 @@ static gint
 efactor_rename (struct backend *backend, const gchar * src, const gchar * dst)
 {
   GByteArray *preset, *rx_msg;
-  guint id;
   gint err;
   struct job_control control;
   gchar **lines, **line;
-  debug_print (1, "Sending rename request...\n");
-  err = common_slot_get_id_name_from_path (src, &id, NULL);
-  if (err)
-    {
-      return err;
-    }
+  debug_print (1, "Renaming from %s to %s...\n", src, dst);
 
   preset = g_byte_array_new ();
   //The control initialization is needed.
