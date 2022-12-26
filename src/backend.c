@@ -302,7 +302,9 @@ backend_program_change (struct backend *backend, guint8 channel,
   msg[0] = 0xc0 | (channel & 0xf);
   msg[1] = program & 0x7f;
 
-  if ((size = backend_tx_raw (backend, (guint8 *) msg, 2)) < 0)
+  debug_print (1, "Setting MIDI program %d...\n", program);
+
+  if ((size = backend_tx_raw (backend, msg, 2)) < 0)
     {
       return size;
     }

@@ -30,6 +30,8 @@
 #ifndef BACKEND_H
 #define BACKEND_H
 
+#define BE_MAX_MIDI_PROGRAMS 128
+
 #define BE_POLL_TIMEOUT_MS 20
 #define BE_KB 1024
 #define BE_MAX_TX_LEN BE_KB	//With a higher value than 4 KB, functions behave erratically.

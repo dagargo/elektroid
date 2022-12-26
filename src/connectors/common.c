@@ -97,3 +97,14 @@ common_print_item (struct item_iterator *iter, struct backend *backend,
 	  slot ? slot : "", slot ? " " : "", iter->item.name);
   g_free (slot);
 }
+
+void
+common_midi_program_change (struct backend *backend, const gchar * dir,
+			    struct item *item)
+{
+  if (item->id > BE_MAX_MIDI_PROGRAMS)
+    {
+      return;
+    }
+  backend_program_change (backend, 0, item->id);
+}

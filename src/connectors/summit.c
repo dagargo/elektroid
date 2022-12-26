@@ -55,7 +55,6 @@ struct summit_root_iterator_data
 struct summit_bank_iterator_data
 {
   guint next;
-  guint bank;
   enum summit_fs fs;
   gchar names[SUMMIT_PATCHES_PER_BANK][SUMMIT_PATCH_NAME_LEN + 1];
 };
@@ -153,7 +152,7 @@ summit_next_dentry_root (struct item_iterator *iter)
 
   if (data->next < 4)
     {
-      iter->item.id = 0x1000 + data->next;	//Unique id
+      iter->item.id = 0x10000 + data->next;	//Unique id
       snprintf (iter->item.name, LABEL_MAX, "%c", 0x41 + iter->item.id);
       iter->item.type = ELEKTROID_DIR;
       iter->item.size = -1;
@@ -189,7 +188,6 @@ summit_common_read_dir (struct backend *backend, struct item_iterator *iter,
       struct summit_bank_iterator_data *data =
 	g_malloc (sizeof (struct summit_bank_iterator_data));
       data->next = 0;
-      data->bank = bank;
       data->fs = fs;
       iter->data = data;
       iter->next = summit_next_dentry;
@@ -435,17 +433,17 @@ summit_multi_rename (struct backend *backend, const gchar * src,
   return summit_common_rename (backend, src, dst, FS_SUMMIT_MULTI_PATCH);
 }
 
-gchar *
+static gchar *
 summit_get_id_as_slot (struct item *item, struct backend *backend)
 {
   gchar *slot = malloc (LABEL_MAX);
-  if (item->id >= SUMMIT_PATCHES_PER_BANK)
+  if (item->id < BE_MAX_MIDI_PROGRAMS)
     {
-      slot[0] = 0;
+      snprintf (slot, LABEL_MAX, "%03d", item->id);
     }
   else
     {
-      snprintf (slot, LABEL_MAX, "%03d", item->id);
+      slot[0] = 0;
     }
   return slot;
 }
@@ -497,7 +495,8 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .save = save_file,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = summit_get_download_path
+  .get_download_path = summit_get_download_path,
+  .select_item = summit_single_patch_change
 };
 
 static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
@@ -519,7 +518,8 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .save = save_file,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = summit_get_download_path
+  .get_download_path = summit_get_download_path,
+  .select_item = summit_multi_patch_change
 };
 
 static const struct fs_operations *FS_SUMMIT_OPERATIONS[] = {

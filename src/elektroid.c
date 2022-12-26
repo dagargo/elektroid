@@ -1678,6 +1678,18 @@ elektroid_remote_check_selection (gpointer data)
   gtk_widget_set_sensitive (remote_delete_menuitem, count > 0 && del_impl);
   gtk_widget_set_sensitive (download_menuitem, count > 0 && dl_impl);
 
+  if (count == 1 && remote_browser.fs_ops->select_item)
+    {
+      GtkTreeIter iter;
+      GtkTreeModel *model;
+      struct item item;
+      browser_set_selected_row_iter (&remote_browser, &iter);
+      model = GTK_TREE_MODEL (gtk_tree_view_get_model (remote_browser.view));
+      browser_set_item (model, &iter, &item);
+      remote_browser.fs_ops->select_item (&backend, remote_browser.dir,
+					  &item);
+    }
+
   return FALSE;
 }
 

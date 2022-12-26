@@ -360,6 +360,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .name = "program",
   .gui_name = "Programs",
   .gui_icon = BE_FILE_ICON_SND,
+  .type_ext = "syx",
   .readdir = cz_read_dir,
   .print_item = common_print_item,
   .download = cz_download,
@@ -369,7 +370,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = cz_get_download_path,
-  .type_ext = "syx"
+  .select_item = common_midi_program_change
 };
 
 static const struct fs_operations *FS_CZ_OPERATIONS[] = {

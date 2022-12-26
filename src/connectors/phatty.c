@@ -503,7 +503,8 @@ static const struct fs_operations FS_PHATTY_OPERATIONS = {
   .save = save_file,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = phatty_get_download_path
+  .get_download_path = phatty_get_download_path,
+  .select_item = common_midi_program_change
 };
 
 static const struct fs_operations *FS_PHATTY_OPERATIONS_LIST[] = {

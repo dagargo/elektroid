@@ -463,7 +463,8 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .save = save_file,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = efactor_get_download_path
+  .get_download_path = efactor_get_download_path,
+  .select_item = common_midi_program_change
 };
 
 static const struct fs_operations *FS_EFACTOR_OPERATIONS_LIST[] = {

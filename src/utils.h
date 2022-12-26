@@ -165,13 +165,16 @@ typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
 typedef gchar *(*fs_get_ext) (const struct device_desc *,
 			      const struct fs_operations *);
 
-typedef gchar *(*t_get_upload_path) (struct backend *,
-				     const struct fs_operations *,
-				     const gchar *, const gchar *, gint32 *);
+typedef gchar *(*fs_get_upload_path) (struct backend *,
+				      const struct fs_operations *,
+				      const gchar *, const gchar *, gint32 *);
 
-typedef gchar *(*t_get_download_path) (struct backend *,
-				       const struct fs_operations *,
-				       const gchar *, const gchar *);
+typedef gchar *(*fs_get_download_path) (struct backend *,
+					const struct fs_operations *,
+					const gchar *, const gchar *);
+
+typedef void (*fs_select_item) (struct backend *, const gchar *,
+				struct item *);
 
 typedef gint (*t_sysex_transfer) (struct backend *, struct sysex_transfer *);
 
@@ -206,8 +209,9 @@ struct fs_operations
   fs_local_file_op save;
   fs_local_file_op load;
   fs_get_ext get_ext;
-  t_get_upload_path get_upload_path;
-  t_get_download_path get_download_path;
+  fs_get_upload_path get_upload_path;
+  fs_get_download_path get_download_path;
+  fs_select_item select_item;
 };
 
 enum fs_options
