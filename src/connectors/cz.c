@@ -288,6 +288,11 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
   gchar *name_copy, *dir_copy, *dir;
   gint mem_type, err = 0;
 
+  if (input->len <= CZ_PROGRAM_HEADER_ID)
+    {
+      return -EINVAL;
+    }
+
   dir_copy = strdup (path);
   dir = dirname (dir_copy);
   mem_type = get_mem_type (&dir[1]);

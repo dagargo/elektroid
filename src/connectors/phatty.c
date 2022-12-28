@@ -403,6 +403,11 @@ phatty_upload (struct backend *backend, const gchar * path,
   gboolean active;
   struct sysex_transfer transfer;
 
+  if (input->len <= PHATTY_PRESET_ID_OFFSET)
+    {
+      return -EINVAL;
+    }
+
   if (common_slot_get_id_name_from_path (path, &id, NULL))
     {
       return -EINVAL;
