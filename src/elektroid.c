@@ -371,11 +371,12 @@ elektroid_load_remote_if_midi (gpointer data)
 static void
 elektroid_update_upload_menuitem ()
 {
-  gboolean slot = remote_browser.fs_ops &&
-    !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE);
+  gboolean upload = remote_browser.fs_ops &&
+    !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+    && remote_browser.fs_ops->upload;
 
-  gtk_widget_set_visible (upload_menuitem, slot);
-  gtk_widget_set_visible (local_play_separator, slot);
+  gtk_widget_set_visible (upload_menuitem, upload);
+  gtk_widget_set_visible (local_play_separator, upload);
 }
 
 static void
@@ -1412,6 +1413,14 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
     }
   else if (event->button == GDK_BUTTON_SECONDARY)
     {
+      if (backend.type != BE_TYPE_SYSTEM &&
+	  remote_browser.fs_ops->rename == NULL &&
+	  remote_browser.fs_ops->delete == NULL &&
+	  remote_browser.fs_ops->download == NULL)
+	{
+	  return FALSE;
+	}
+
       selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
       gtk_tree_view_get_path_at_pos (browser->view,
 				     event->x, event->y, &path, NULL, NULL,
@@ -2907,6 +2916,9 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       strcpy (remote_browser.dir, "/");
     }
 
+  gtk_widget_set_visible (download_menuitem,
+			  backend.type == BE_TYPE_SYSTEM
+			  || remote_browser.fs_ops->download != NULL);
   gtk_widget_set_visible (remote_play_separator,
 			  backend.type == BE_TYPE_SYSTEM);
   gtk_widget_set_visible (remote_play_menuitem,
@@ -2918,9 +2930,10 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   gtk_widget_set_visible (remote_show_menuitem,
 			  backend.type == BE_TYPE_SYSTEM);
   gtk_widget_set_visible (remote_actions_separator,
-			  backend.type == BE_TYPE_SYSTEM
-			  || remote_browser.fs_ops->rename != NULL
-			  || remote_browser.fs_ops->delete != NULL);
+			  backend.type == BE_TYPE_SYSTEM ||
+			  ((remote_browser.fs_ops->rename != NULL
+			    || remote_browser.fs_ops->delete != NULL)
+			   && remote_browser.fs_ops->download != NULL));
   gtk_widget_set_visible (remote_rename_menuitem,
 			  remote_browser.fs_ops->rename != NULL);
   gtk_widget_set_visible (remote_delete_menuitem,
@@ -2937,43 +2950,69 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 				    remote_browser.fs_ops->options &
 				    FS_OPTION_SHOW_SIZE_COLUMN);
 
-  if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+  gtk_drag_source_unset ((GtkWidget *) remote_browser.view);
+  gtk_drag_dest_unset ((GtkWidget *) remote_browser.view);
+
+  if (remote_browser.fs_ops->upload)
     {
-      gtk_drag_source_set ((GtkWidget *) remote_browser.view,
-			   GDK_BUTTON1_MASK, TARGET_ENTRIES_REMOTE_SRC,
-			   G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC),
-			   GDK_ACTION_COPY);
-      gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
-			 GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_REMOTE_DST_SLOT,
-			 G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST_SLOT),
-			 GDK_ACTION_COPY);
-    }
-  else
-    {
-      if (backend.type == BE_TYPE_SYSTEM)
+      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 	{
-	  gtk_drag_source_set ((GtkWidget *) remote_browser.view,
-			       GDK_BUTTON1_MASK,
-			       TARGET_ENTRIES_REMOTE_SYSTEM_SRC,
-			       G_N_ELEMENTS
-			       (TARGET_ENTRIES_REMOTE_SYSTEM_SRC),
-			       GDK_ACTION_MOVE);
 	  gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
 			     GTK_DEST_DEFAULT_ALL,
-			     TARGET_ENTRIES_REMOTE_SYSTEM_DST,
-			     G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SYSTEM_DST),
-			     GDK_ACTION_MOVE);
+			     TARGET_ENTRIES_REMOTE_DST_SLOT,
+			     G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST_SLOT),
+			     GDK_ACTION_COPY);
 	}
       else
+	{
+	  if (backend.type == BE_TYPE_SYSTEM)
+	    {
+	      gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
+				 GTK_DEST_DEFAULT_ALL,
+				 TARGET_ENTRIES_REMOTE_SYSTEM_DST,
+				 G_N_ELEMENTS
+				 (TARGET_ENTRIES_REMOTE_SYSTEM_DST),
+				 GDK_ACTION_MOVE);
+	    }
+	  else
+	    {
+	      gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
+				 GTK_DEST_DEFAULT_ALL,
+				 TARGET_ENTRIES_REMOTE_DST,
+				 G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST),
+				 GDK_ACTION_COPY);
+	    }
+	}
+    }
+
+  if (remote_browser.fs_ops->download)
+    {
+      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 	{
 	  gtk_drag_source_set ((GtkWidget *) remote_browser.view,
 			       GDK_BUTTON1_MASK, TARGET_ENTRIES_REMOTE_SRC,
 			       G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC),
 			       GDK_ACTION_COPY);
-	  gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
-			     GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_REMOTE_DST,
-			     G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST),
-			     GDK_ACTION_COPY);
+	}
+      else
+	{
+	  if (backend.type == BE_TYPE_SYSTEM)
+	    {
+	      gtk_drag_source_set ((GtkWidget *) remote_browser.view,
+				   GDK_BUTTON1_MASK,
+				   TARGET_ENTRIES_REMOTE_SYSTEM_SRC,
+				   G_N_ELEMENTS
+				   (TARGET_ENTRIES_REMOTE_SYSTEM_SRC),
+				   GDK_ACTION_MOVE);
+	    }
+	  else
+	    {
+	      gtk_drag_source_set ((GtkWidget *) remote_browser.view,
+				   GDK_BUTTON1_MASK,
+				   TARGET_ENTRIES_REMOTE_SRC,
+				   G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC),
+				   GDK_ACTION_COPY);
+	    }
 	}
     }
 
