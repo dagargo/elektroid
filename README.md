@@ -2,6 +2,8 @@
 
 Elektroid is a sample and MIDI device manager. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.
 
+![Elektroid GUI screenshot](doc/screenshot.png "Elektroid GUI")
+
 Supported devices:
 
 * Elektron Model:Samples
