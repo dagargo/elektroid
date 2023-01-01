@@ -2,8 +2,8 @@
 
 SEQ_FILE="MicroBrute sequence 1.mbseq"
 SEQ_FILE_BACKUP="backup.mbseq"
-SEQ_FILE_TEST="$srcdir/res/sequence.mbseq"
-SEQ_FILE_TEST_BACK="$srcdir/res/sequence_back.mbseq"
+SEQ_FILE_TEST="$srcdir/res/connectors/sequence.mbseq"
+SEQ_FILE_TEST_BACK="$srcdir/res/connectors/sequence_back.mbseq"
 
 function exitWithError() {
   echo "Restoring..."

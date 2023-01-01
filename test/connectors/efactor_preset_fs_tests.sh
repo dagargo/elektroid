@@ -20,7 +20,7 @@ files=$($ecli efactor-preset-ls $TEST_DEVICE:/)
 [ $? -ne 0 ] && exitWithError 1
 
 echo "Testing upload..."
-$ecli efactor-preset-ul "$srcdir/res/Eventide Factor Preset.syx" $TEST_DEVICE:/$TEST_PRESET
+$ecli efactor-preset-ul "$srcdir/res/connectors/Eventide Factor Preset.syx" $TEST_DEVICE:/$TEST_PRESET
 [ $? -ne 0 ] && exitWithError 1
 
 #Uploading with name makes no sense for factor pedals as the file includes the name.
@@ -34,6 +34,6 @@ $ecli efactor-preset-dl $TEST_DEVICE:/$TEST_PRESET
 [ $? -ne 0 ] && exitWithError 1
 actual_cksum="$(cksum "Eventide Factor $TEST_PRESET New Name.syx" | awk '{print $1}')"
 rm "Eventide Factor $TEST_PRESET New Name.syx"
-[ "$actual_cksum" != $(cksum "$srcdir/res/Eventide Factor New Name.syx" | awk '{print $1}') ] && exitWithError 1
+[ "$actual_cksum" != $(cksum "$srcdir/res/connectors/Eventide Factor New Name.syx" | awk '{print $1}') ] && exitWithError 1
 
 exitWithError 0

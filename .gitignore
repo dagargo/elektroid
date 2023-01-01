@@ -38,6 +38,8 @@ src/elektroid-cli
 src/*~
 test/*.log
 test/*.trs
+test/connectors/*.trs
+test/tests_scala
 config.guess
 config.sub
 ltmain.sh

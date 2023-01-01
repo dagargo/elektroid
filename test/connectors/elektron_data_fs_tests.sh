@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export ELEKTROID_ELEKTRON_JSON=$srcdir/res/devices.json
+export ELEKTROID_ELEKTRON_JSON=$srcdir/res/connectors/devices.json
 
 function cleanupAndExit () {
   for s in 1 62 63 64 256; do
@@ -75,7 +75,7 @@ output=$($ecli elektron-data-ls $TEST_DEVICE:/soundbanks/H)
 [ $(echo "$output" | grep "^F  63" | wc -l) -ne 0 ] && cleanupAndExit 1
 
 echo "Testing upload..."
-$ecli elektron-data-ul $srcdir/res/SOUND.dtdata $TEST_DEVICE:/soundbanks/H
+$ecli elektron-data-ul $srcdir/res/connectors/SOUND.dtdata $TEST_DEVICE:/soundbanks/H
 [ $? -ne 0 ] && cleanupAndExit 1
 id=$($ecli elektron-data-ls $TEST_DEVICE:/soundbanks/H | head -n 1 | grep 'SOUND$' | awk '{print $2}')
 
@@ -84,16 +84,16 @@ $ecli elektron-data-dl $TEST_DEVICE:/soundbanks/H/$id
 [ $? -ne 0 ] && cleanupAndExit 1
 ls "SOUND.dtdata"
 cksum SOUND.dtdata
-cksum $srcdir/res/SOUND.dtdata
+cksum $srcdir/res/connectors/SOUND.dtdata
 actual_cksum="$(cksum SOUND.dtdata | awk '{print $1}')"
-[ "$actual_cksum" != "$(cksum $srcdir/res/SOUND.dtdata | awk '{print $1}')" ] && cleanupAndExit 1
+[ "$actual_cksum" != "$(cksum $srcdir/res/connectors/SOUND.dtdata | awk '{print $1}')" ] && cleanupAndExit 1
 rm SOUND.dtdata
 [ $? -ne 0 ] && cleanupAndExit 1
 $ecli elektron-data-cl $TEST_DEVICE:/soundbanks/H/$id
 [ $? -ne 0 ] && cleanupAndExit 1
 
 echo "Testing upload..."
-$ecli elektron-data-ul $srcdir/res/SOUND.dtdata $TEST_DEVICE:/soundbanks/H/256
+$ecli elektron-data-ul $srcdir/res/connectors/SOUND.dtdata $TEST_DEVICE:/soundbanks/H/256
 [ $? -ne 0 ] && cleanupAndExit 1
 id=$($ecli elektron-data-ls $TEST_DEVICE:/soundbanks/H | tail -n 1 | grep 'SOUND$' | awk '{print $2}')
 [ $id != 256 ] && cleanupAndExit 1

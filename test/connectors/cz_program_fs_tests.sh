@@ -3,8 +3,8 @@
 #There are different files because of the ID stored in them.
 #We overwrite these IDs while uploading but it's easier to have different files to run cksum on them.
 
-PANEL_SRC_FILE="$srcdir/res/CZ-101 panel src.syx"
-INTERNAL_SRC_FILE="$srcdir/res/CZ-101 internal 01 src.syx"
+PANEL_SRC_FILE="$srcdir/res/connectors/CZ-101 panel src.syx"
+INTERNAL_SRC_FILE="$srcdir/res/connectors/CZ-101 internal 01 src.syx"
 PANEL_FILE="CZ-101 panel.syx"
 PRESET_FILE="CZ-101 preset 01.syx"
 INTERNAL_FILE="CZ-101 internal 01.syx"
