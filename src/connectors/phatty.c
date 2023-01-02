@@ -21,6 +21,7 @@
 #include <libgen.h>
 #include "phatty.h"
 #include "common.h"
+#include "scala.h"
 
 #define PHATTY_ALPHABET " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz!#$%&()*?@"
 
@@ -35,6 +36,7 @@
 #define PHATTY_PANEL "panel"
 #define PHATTY_PANEL_PATH "/" PHATTY_PANEL
 #define PHATTY_PANEL_ID 0x100
+#define PHATTY_MAX_SCALES 32
 
 static const guint8 MOOG_ID[] = { 0x04 };
 static const guint8 FAMILY_ID[] = { 0x0, 0x5 };
@@ -58,7 +60,8 @@ struct phatty_iter_data
 
 enum phatty_fs
 {
-  FS_PHATTY_PRESET = 1
+  FS_PHATTY_PRESET = 1,
+  FS_PHATTY_SCALE = 2
 };
 
 static gchar
@@ -483,7 +486,7 @@ end:
   return err;
 }
 
-static const struct fs_operations FS_PHATTY_OPERATIONS = {
+static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
   .fs = FS_PHATTY_PRESET,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
@@ -507,8 +510,115 @@ static const struct fs_operations FS_PHATTY_OPERATIONS = {
   .select_item = common_midi_program_change
 };
 
+static guint
+phatty_scale_next_dentry (struct item_iterator *iter)
+{
+  guint *id = iter->data;
+
+  if (*id >= PHATTY_MAX_SCALES)
+    {
+      return -ENOENT;
+    }
+
+  snprintf (iter->item.name, LABEL_MAX, "%d", *id);
+  iter->item.id = *id;
+  iter->item.type = ELEKTROID_FILE;
+  iter->item.size = -1;
+  (*id)++;
+
+  return 0;
+}
+
+static gint
+phatty_scale_read_dir (struct backend *backend, struct item_iterator *iter,
+		       const gchar * path)
+{
+  guint *id;
+
+  if (strcmp (path, "/"))
+    {
+      return -ENOTDIR;
+    }
+
+  id = g_malloc (sizeof (guint));
+  *id = 0;
+  iter->data = id;
+  iter->next = phatty_scale_next_dentry;
+  iter->free = g_free;
+
+  return 0;
+}
+
+static gint
+phatty_scale_upload (struct backend *backend, const gchar * path,
+		     GByteArray * input, struct job_control *control)
+{
+  gint err;
+  guint id;
+  gboolean active;
+  GByteArray *msg;
+  struct sysex_transfer transfer;
+
+  if (common_slot_get_id_name_from_path (path, &id, NULL))
+    {
+      return -EINVAL;
+    }
+
+  msg = scl_get_2_byte_tuning_msg_from_scala_file (input, 0, id);
+  if (!msg)
+    {
+      return -EINVAL;
+    }
+
+  g_mutex_lock (&backend->mutex);
+
+  control->parts = 1;
+  control->part = 0;
+  set_job_control_progress (control, 0.0);
+
+  transfer.raw = msg;
+  err = backend_tx_sysex (backend, &transfer);
+  if (err < 0)
+    {
+      goto cleanup;
+    }
+
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
+  if (active)
+    {
+      set_job_control_progress (control, 1.0);
+    }
+  else
+    {
+      err = -ECANCELED;
+    }
+
+cleanup:
+  g_mutex_unlock (&backend->mutex);
+  free_msg (msg);
+  return err;
+}
+
+static const struct fs_operations FS_PHATTY_SCALE_OPERATIONS = {
+  .fs = FS_PHATTY_SCALE,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .name = "scale",
+  .gui_name = "Scales",
+  .gui_icon = BE_FILE_ICON_SND,
+  .type_ext = "scl",
+  .readdir = phatty_scale_read_dir,
+  .print_item = common_print_item,
+  .upload = phatty_scale_upload,
+  .load = load_file,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = common_slot_get_upload_path
+};
+
 static const struct fs_operations *FS_PHATTY_OPERATIONS_LIST[] = {
-  &FS_PHATTY_OPERATIONS, NULL
+  &FS_PHATTY_PRESET_OPERATIONS, &FS_PHATTY_SCALE_OPERATIONS, NULL
 };
 
 gint
@@ -521,7 +631,7 @@ phatty_handshake (struct backend *backend)
       return -ENODEV;
     }
 
-  backend->device_desc.filesystems = FS_PHATTY_PRESET;
+  backend->device_desc.filesystems = FS_PHATTY_PRESET | FS_PHATTY_SCALE;
   backend->fs_ops = FS_PHATTY_OPERATIONS_LIST;
   backend->data = NULL;
   backend->destroy_data = backend_destroy_data;
