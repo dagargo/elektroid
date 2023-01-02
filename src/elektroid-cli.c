@@ -471,6 +471,7 @@ cli_download (int argc, gchar * argv[], int *optind)
 
   control.active = TRUE;
   array = g_byte_array_new ();
+  CHECK_FS_OPS_FUNC (fs_ops->download);
   res = fs_ops->download (&backend, src_path, array, &control);
   if (res)
     {
@@ -542,6 +543,7 @@ cli_upload (int argc, gchar * argv[], int *optind)
       goto cleanup;
     }
 
+  CHECK_FS_OPS_FUNC (fs_ops->upload);
   res = fs_ops->upload (&backend, upload_path, array, &control);
   g_free (control.data);
 
