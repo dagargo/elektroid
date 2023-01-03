@@ -283,12 +283,11 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	   struct job_control *control)
 {
   guint8 id;
-  gboolean active;
-  struct sysex_transfer transfer;
+  GByteArray *msg;
   gchar *name_copy, *dir_copy, *dir;
   gint mem_type, err = 0;
 
-  if (input->len <= CZ_PROGRAM_HEADER_ID)
+  if (input->len != CZ_PROGRAM_LEN_FIXED)
     {
       return -EINVAL;
     }
@@ -315,37 +314,14 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	}
     }
 
-  g_mutex_lock (&backend->mutex);
+  msg = g_byte_array_sized_new (input->len);
+  g_byte_array_append (msg, input->data, input->len);
+  msg->data[CZ_PROGRAM_HEADER_ID] = id;
 
-  control->parts = 1;
-  control->part = 0;
-  set_job_control_progress (control, 0.0);
-
-  transfer.raw = g_byte_array_sized_new (input->len);
-  g_byte_array_append (transfer.raw, input->data, input->len);
-  transfer.raw->data[CZ_PROGRAM_HEADER_ID] = id;
-
-  err = backend_tx_sysex (backend, &transfer);
-  free_msg (transfer.raw);
-  if (err < 0)
-    {
-      goto cleanup;
-    }
-
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-  if (active)
-    {
-      set_job_control_progress (control, 1.0);
-    }
-  else
-    {
-      err = -ECANCELED;
-    }
+  err = common_data_upload (backend, msg, control);
+  free_msg (msg);
 
 cleanup:
-  g_mutex_unlock (&backend->mutex);
   g_free (dir_copy);
   return err;
 }
