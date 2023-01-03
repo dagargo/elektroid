@@ -211,14 +211,9 @@ cz_download (struct backend *backend, const gchar * path,
 	     GByteArray * output, struct job_control *control)
 {
   guint8 id;
-  gboolean active;
   gint len, type, err = 0;
   GByteArray *tx_msg, *rx_msg;
   gchar *dirname_copy, *dir, *basename_copy;
-
-  control->parts = 1;
-  control->part = 0;
-  set_job_control_progress (control, 0.0);
 
   if (strcmp (path, CZ_PANEL_PATH))
     {
@@ -242,10 +237,10 @@ cz_download (struct backend *backend, const gchar * path,
     }
 
   tx_msg = cz_get_program_dump_msg (id);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-  if (!rx_msg)
+  err = common_data_download (backend, tx_msg, &rx_msg, control);
+  if (err)
     {
-      return -EIO;
+      goto end;
     }
   len = rx_msg->len;
   if (len != CZ_PROGRAM_LEN)
@@ -258,19 +253,6 @@ cz_download (struct backend *backend, const gchar * path,
   g_byte_array_append (output, &rx_msg->data[CZ_PROGRAM_HEADER_OFFSET],
 		       CZ_PROGRAM_LEN - CZ_PROGRAM_HEADER_OFFSET);
   output->data[CZ_PROGRAM_HEADER_ID] = id;
-
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-
-  if (active)
-    {
-      set_job_control_progress (control, 1.0);
-    }
-  else
-    {
-      err = -ECANCELED;
-    }
 
 cleanup:
   free_msg (rx_msg);

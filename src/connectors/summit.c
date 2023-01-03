@@ -249,14 +249,9 @@ summit_common_download (struct backend *backend, const gchar * path,
 			enum summit_fs fs)
 {
   guint8 id;
-  gboolean active;
   gint len, bank, err = 0;
   GByteArray *tx_msg, *rx_msg;
   gchar *dirname_copy, *dir, *basename_copy;
-
-  control->parts = 1;
-  control->part = 0;
-  set_job_control_progress (control, 0.0);
 
   dirname_copy = strdup (path);
   dir = dirname (dirname_copy);
@@ -273,10 +268,10 @@ summit_common_download (struct backend *backend, const gchar * path,
   g_free (basename_copy);
 
   tx_msg = summit_get_program_dump_msg (bank, id, fs);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-  if (!rx_msg)
+  err = common_data_download (backend, tx_msg, &rx_msg, control);
+  if (!err)
     {
-      return -EIO;
+      return err;
     }
   len = (fs == FS_SUMMIT_SINGLE_PATCH ? SUMMIT_SINGLE_LEN : SUMMIT_MULTI_LEN);
   if (rx_msg->len != len)
@@ -286,19 +281,6 @@ summit_common_download (struct backend *backend, const gchar * path,
     }
 
   g_byte_array_append (output, rx_msg->data, rx_msg->len);
-
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-
-  if (active)
-    {
-      set_job_control_progress (control, 1.0);
-    }
-  else
-    {
-      err = -ECANCELED;
-    }
 
 cleanup:
   free_msg (rx_msg);

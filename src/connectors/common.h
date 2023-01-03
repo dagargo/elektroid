@@ -47,3 +47,7 @@ guint common_simple_next_dentry (struct item_iterator *iter);
 
 guint common_data_upload (struct backend *backend, GByteArray * msg,
 			  struct job_control *control);
+
+guint common_data_download (struct backend *backend, GByteArray * tx_msg,
+			    GByteArray ** rx_msg,
+			    struct job_control *control);
