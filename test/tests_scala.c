@@ -7,8 +7,7 @@
 
 #define TEST_MAX_FILE_LEN 1024
 
-
-static const guint8 SUCCESS_MIDI_MESSAGE[] = {
+static const guint8 SUCCESS_OCTAVE_MIDI_MSG[] = {
   0xf0,
   0x7e,
   0x7f,
@@ -30,6 +29,30 @@ static const guint8 SUCCESS_MIDI_MESSAGE[] = {
   0x38, 0x3e,
   0x2e,				//cksum
   0xf7
+};
+
+static const guint8 SUCCESS_BULK_MIDI_MSG_HEADER[] = {
+  0xf0,
+  0x7e,
+  0x7f,
+  8, 1,
+  1,				//tuning
+  0x35, 0x2d, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x20, 0x6a, 0x75, 0x73, 0x74, 0x20, 0x69, 0x6e, 0x74,	//name
+};
+
+static const guint8 SUCCESS_BULK_MIDI_MSG_OCTAVE_DATA[] = {
+  0x00, 0x00, 0x00,
+  0x01, 0x0f, 0x03,
+  0x02, 0x05, 0x00,
+  0x03, 0x14, 0x04,
+  0x03, 0x6e, 0x45,
+  0x04, 0x7d, 0x48,
+  0x05, 0x73, 0x46,
+  0x07, 0x02, 0x40,
+  0x08, 0x11, 0x43,
+  0x08, 0x6c, 0x05,
+  0x09, 0x7b, 0x08,
+  0x0a, 0x71, 0x06
 };
 
 void
@@ -155,7 +178,7 @@ test_unmatching_notes ()
 }
 
 void
-test_get_midi_message ()
+test_get_2_byte_octave_midi_message ()
 {
   struct scala scala;
   GByteArray *data, *msg;
@@ -165,13 +188,58 @@ test_get_midi_message ()
 
   data = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
   load_file ("res/scala/success.scl", data, NULL);
-  msg = scl_get_2_byte_tuning_msg_from_scala_file (data, 0, 1);
+  msg = scl_get_2_byte_octave_tuning_msg_from_scala_file (data, 0, 1);
 
   CU_ASSERT_EQUAL (err, 0);
-  CU_ASSERT_EQUAL (msg->len, sizeof (SUCCESS_MIDI_MESSAGE));
+  CU_ASSERT_EQUAL (msg->len, sizeof (SUCCESS_OCTAVE_MIDI_MSG));
   CU_ASSERT_EQUAL (memcmp
-		   (msg->data, SUCCESS_MIDI_MESSAGE,
-		    sizeof (SUCCESS_MIDI_MESSAGE)), 0);
+		   (msg->data, SUCCESS_OCTAVE_MIDI_MSG,
+		    sizeof (SUCCESS_OCTAVE_MIDI_MSG)), 0);
+
+  g_byte_array_free (data, TRUE);
+  g_byte_array_free (msg, TRUE);
+}
+
+void
+test_get_bulk_tuning_midi_message ()
+{
+  gint err;
+  struct scala scala;
+  GByteArray *data, *msg;
+  guint8 *b, *f_data;
+
+  printf ("\n");
+
+  data = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
+  load_file ("res/scala/success.scl", data, NULL);
+  msg = scl_get_key_based_tuning_msg_from_scala_file (data, 1);
+
+  CU_ASSERT_EQUAL (err, 0);
+  CU_ASSERT_EQUAL (msg->len, 408);
+
+  CU_ASSERT_EQUAL (memcmp
+		   (msg->data, SUCCESS_BULK_MIDI_MSG_HEADER,
+		    sizeof (SUCCESS_BULK_MIDI_MSG_HEADER)), 0);
+
+  //Test the first octave.
+  f_data = msg->data + sizeof (SUCCESS_BULK_MIDI_MSG_HEADER);
+  CU_ASSERT_EQUAL (memcmp
+		   (f_data, SUCCESS_BULK_MIDI_MSG_OCTAVE_DATA,
+		    sizeof (SUCCESS_BULK_MIDI_MSG_OCTAVE_DATA)), 0);
+
+  //Test the nots above the first octave by comparing them to the notes in the first one.
+  b = f_data + 12 * 3;
+  for (guint8 i = 12; i < 128; i++, b += 3)
+    {
+      gint offset = (i % 12) * 3;
+      gint octave = (i / 12) * 12;
+      CU_ASSERT_EQUAL (*b, *(f_data + offset) + octave);
+      CU_ASSERT_EQUAL (*(b + 1), *(f_data + offset + 1));
+      CU_ASSERT_EQUAL (*(b + 2), *(f_data + offset + 2));
+    }
+
+  CU_ASSERT_EQUAL (msg->data[406], 0x02);
+  CU_ASSERT_EQUAL (msg->data[407], 0xf7);
 
   g_byte_array_free (data, TRUE);
   g_byte_array_free (msg, TRUE);
@@ -224,10 +292,20 @@ main (int argc, char *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "test_get_midi_message", test_get_midi_message))
+  if (!CU_add_test
+      (suite, "test_get_2_byte_octave_midi_message",
+       test_get_2_byte_octave_midi_message))
     {
       goto cleanup;
     }
+
+  if (!CU_add_test
+      (suite, "test_get_bulk_tuning_midi_message",
+       test_get_bulk_tuning_midi_message))
+    {
+      goto cleanup;
+    }
+
 
   CU_basic_set_mode (CU_BRM_VERBOSE);
 

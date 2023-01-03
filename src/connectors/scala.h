@@ -32,6 +32,10 @@ struct scala
 
 gint scl_init_scala_from_bytes (struct scala *scala, GByteArray * input);
 
-GByteArray *scl_get_2_byte_tuning_msg_from_scala_file (GByteArray * input,
-						       guint8 bank,
-						       guint8 tuning);
+GByteArray *scl_get_2_byte_octave_tuning_msg_from_scala_file (GByteArray *
+							      input,
+							      guint8 bank,
+							      guint8 tuning);
+
+GByteArray *scl_get_key_based_tuning_msg_from_scala_file (GByteArray * input,
+							  guint8 tuning);

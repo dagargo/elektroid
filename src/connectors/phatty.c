@@ -564,7 +564,7 @@ phatty_scale_upload (struct backend *backend, const gchar * path,
       return -EINVAL;
     }
 
-  msg = scl_get_2_byte_tuning_msg_from_scala_file (input, 0, id);
+  msg = scl_get_2_byte_octave_tuning_msg_from_scala_file (input, 0, id);
   if (!msg)
     {
       return -EINVAL;

@@ -24,10 +24,17 @@
 
 #define SCALA_FILE_LINE_SEPARATOR "\x0d\x0a"
 #define SCALA_FILE_COMMENT_CHAR '!'
-#define SCALA_ELEKTROID_NOTES 12
+#define SCALA_OCTAVE_NOTES 12
 #define SCALA_MIDI_TUNING_NAME_LEN 16
+#define SCALA_OCTAVE_STEP_SIZE .012207
+#define SCALA_C0_FREQ 8.1758
+#define SCALA_MIDI_NOTES 128
+#define SCALA_BULK_STEP_SIZE .0061
 
-static const guint8 SCALA_MIDI_TUNING_HEADER[] = { 0xf0, 0x7e, 0x7f, 8, 6 };
+static const guint8 SCALA_MIDI_OCTAVE_TUNING_HEADER[] =
+  { 0xf0, 0x7e, 0x7f, 8, 6 };
+static const guint8 SCALA_MIDI_BULK_TUNING_HEADER[] =
+  { 0xf0, 0x7e, 0x7f, 8, 1 };
 
 static gint
 scl_parser_get_pitch (gchar * line, gdouble * val)
@@ -152,20 +159,65 @@ end:
   return err;
 }
 
-static double
-scala_get_cents_from_ratio (double ratio)
+static gdouble
+scala_get_cents_from_ratio (gdouble ratio)
 {
   return 1200.0 * log (ratio) / log (2);
 }
 
+static guint8
+scl_get_nearest_note_below (gdouble f, gdouble * note_f)
+{
+  gdouble next, p = exp (log (2.0) / 12.0);
+  guint8 n;
+  *note_f = SCALA_C0_FREQ;
+  for (n = 0; n < SCALA_MIDI_NOTES; n++)
+    {
+      next = *note_f * p;
+      if (next > f)
+	{
+	  return n;
+	}
+      *note_f = next;
+    }
+  return n;
+}
+
+static void
+scl_append_name_to_msg (struct scala *scala, GByteArray * msg)
+{
+  guint len = strlen (scala->desc);
+  if (len > SCALA_MIDI_TUNING_NAME_LEN)
+    {
+      len = SCALA_MIDI_TUNING_NAME_LEN;
+    }
+  g_byte_array_append (msg, (guint8 *) scala->desc, len);
+  while (len < SCALA_MIDI_TUNING_NAME_LEN)
+    {
+      g_byte_array_append (msg, (guint8 *) " ", 1);
+      len++;
+    }
+}
+
+static guint8
+scl_get_cksum (guint8 * b, gint len)
+{
+  guint8 cksum = 0;
+  for (gint i = 0; i < len; i++, b++)
+    {
+      cksum ^= *b;
+    }
+  cksum &= 0x7f;
+  return cksum;
+}
+
 GByteArray *
-scl_get_2_byte_tuning_msg_from_scala_file (GByteArray * input, guint8 bank,
-					   guint8 tuning)
+scl_get_2_byte_octave_tuning_msg_from_scala_file (GByteArray * input,
+						  guint8 bank, guint8 tuning)
 {
   gint err;
-  guint8 *b, cksum;
-  guint len;
   GByteArray *msg;
+  guint8 cksum, msb, lsb;
   struct scala scala;
 
   err = scl_init_scala_from_bytes (&scala, input);
@@ -174,58 +226,116 @@ scl_get_2_byte_tuning_msg_from_scala_file (GByteArray * input, guint8 bank,
       return NULL;
     }
 
-  msg = g_byte_array_sized_new (256);
-  g_byte_array_append (msg, SCALA_MIDI_TUNING_HEADER,
-		       sizeof (SCALA_MIDI_TUNING_HEADER));
+  if (scala.notes != SCALA_OCTAVE_NOTES)
+    {
+      return NULL;
+    }
+
+  msg = g_byte_array_sized_new (512);
+  g_byte_array_append (msg, SCALA_MIDI_OCTAVE_TUNING_HEADER,
+		       sizeof (SCALA_MIDI_OCTAVE_TUNING_HEADER));
   g_byte_array_append (msg, &bank, 1);
   g_byte_array_append (msg, &tuning, 1);
 
-  len = strlen (scala.desc);
-  if (len > SCALA_MIDI_TUNING_NAME_LEN)
-    {
-      len = SCALA_MIDI_TUNING_NAME_LEN;
-    }
-  g_byte_array_append (msg, (guint8 *) scala.desc, len);
-  while (len < SCALA_MIDI_TUNING_NAME_LEN)
-    {
-      g_byte_array_append (msg, (guint8 *) " ", 1);
-      len++;
-    }
+  scl_append_name_to_msg (&scala, msg);
 
-  for (gint i = 0; i < scala.notes; i++)
+  for (guint8 i = 0; i < SCALA_OCTAVE_NOTES; i++)
     {
       double pitch, cents, diff;
       guint value;
-      guint8 msb, lsb;
       if (i == 0)
 	{
-	  pitch = 1.0;
-	  cents = 0.0;
-	  diff = 0.0;
+	  pitch = scala.pitches[SCALA_OCTAVE_NOTES - 1] / 2.0;
 	}
       else
 	{
 	  pitch = scala.pitches[i - 1];
-	  cents = scala_get_cents_from_ratio (pitch);
-	  diff = cents - i * 100;
 	}
-      value = (diff + 100.0) / .012207;
+      cents = scala_get_cents_from_ratio (pitch);
+      diff = cents - i * 100.0;
+      value = (diff + 100.0) / SCALA_OCTAVE_STEP_SIZE;
       msb = (value >> 7) & 0x7f;
       lsb = value & 0x7f;
       debug_print (2,
-		   "Adding note %d (pitch %.6f, cents %.2f, diff %.2f, value %d, MSB %02x, LSB %02x)...\n",
+		   "Note %d (pitch %.6f, cents %.2f, diff %.2f, value %d, MSB %02x, LSB %02x)...\n",
 		   i, pitch, cents, diff, value, msb, lsb);
       g_byte_array_append (msg, (guint8 *) & msb, 1);
       g_byte_array_append (msg, (guint8 *) & lsb, 1);
     }
 
-  cksum = 0;
-  b = &msg->data[1];
-  for (gint i = 1; i < msg->len; i++, b++)
+  cksum = scl_get_cksum (&msg->data[1], 46);
+  g_byte_array_append (msg, &cksum, 1);
+  g_byte_array_append (msg, (guint8 *) "\xf7", 1);
+
+  return msg;
+}
+
+GByteArray *
+scl_get_key_based_tuning_msg_from_scala_file (GByteArray * input,
+					      guint8 tuning)
+{
+  gint err;
+  guint8 cksum;
+  GByteArray *msg;
+  struct scala scala;
+  guint8 note[SCALA_OCTAVE_NOTES];
+  guint8 msb[SCALA_OCTAVE_NOTES];
+  guint8 lsb[SCALA_OCTAVE_NOTES];
+
+  err = scl_init_scala_from_bytes (&scala, input);
+  if (err)
     {
-      cksum ^= *b;
+      return NULL;
     }
-  cksum &= 0x7f;
+
+  if (scala.notes != SCALA_OCTAVE_NOTES)
+    {
+      return NULL;
+    }
+
+  msg = g_byte_array_sized_new (512);
+  g_byte_array_append (msg, SCALA_MIDI_BULK_TUNING_HEADER,
+		       sizeof (SCALA_MIDI_BULK_TUNING_HEADER));
+  g_byte_array_append (msg, &tuning, 1);
+
+  scl_append_name_to_msg (&scala, msg);
+
+  //Calculate pitches only for the first octave.
+  for (guint8 i = 0; i < SCALA_OCTAVE_NOTES; i++)
+    {
+      double pitch, f, note_f, cents;
+      guint value;
+      if (i == 0)
+	{
+	  pitch = scala.pitches[SCALA_OCTAVE_NOTES - 1] / 2.0;
+	}
+      else
+	{
+	  pitch = scala.pitches[i - 1];
+	}
+      f = pitch * SCALA_C0_FREQ;
+      note[i] = scl_get_nearest_note_below (f, &note_f);
+      cents = scala_get_cents_from_ratio (f / note_f);
+      value = cents / SCALA_BULK_STEP_SIZE;
+      msb[i] = (value >> 7) & 0x7f;
+      lsb[i] = value & 0x7f;
+      debug_print (2,
+		   "Note %d (pitch %.6f, note %d, cents %.2f, value %d, MSB %02x, LSB %02x)...\n",
+		   i, pitch, note[i], cents, value, msb[i], lsb[i]);
+    }
+
+  //Replicate pitches for all the notes.
+  for (guint8 i = 0; i < 128; i++)
+    {
+      gint pos = i % SCALA_OCTAVE_NOTES;
+      gint octave = i / SCALA_OCTAVE_NOTES;
+      guint8 n = note[pos] + octave * SCALA_OCTAVE_NOTES;
+      g_byte_array_append (msg, (guint8 *) & n, 1);
+      g_byte_array_append (msg, (guint8 *) & msb[pos], 1);
+      g_byte_array_append (msg, (guint8 *) & lsb[pos], 1);
+    }
+
+  cksum = scl_get_cksum (&msg->data[1], 405);
   g_byte_array_append (msg, &cksum, 1);
   g_byte_array_append (msg, (guint8 *) "\xf7", 1);
 
