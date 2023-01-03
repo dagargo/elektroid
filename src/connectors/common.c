@@ -108,3 +108,60 @@ common_midi_program_change (struct backend *backend, const gchar * dir,
     }
   backend_program_change (backend, 0, item->id);
 }
+
+guint
+common_simple_next_dentry (struct item_iterator *iter)
+{
+  struct common_simple_read_dir_data *data = iter->data;
+
+  if (data->next >= data->max)
+    {
+      return -ENOENT;
+    }
+
+  snprintf (iter->item.name, LABEL_MAX, "%d", data->next);
+  iter->item.id = data->next;
+  iter->item.type = ELEKTROID_FILE;
+  iter->item.size = -1;
+  data->next++;
+
+  return 0;
+}
+
+guint
+common_data_upload (struct backend *backend, GByteArray * msg,
+		    struct job_control *control)
+{
+  gint err = 0;
+  gboolean active;
+  struct sysex_transfer transfer;
+
+  g_mutex_lock (&backend->mutex);
+
+  control->parts = 1;
+  control->part = 0;
+  set_job_control_progress (control, 0.0);
+
+  transfer.raw = msg;
+  err = backend_tx_sysex (backend, &transfer);
+  if (err < 0)
+    {
+      goto cleanup;
+    }
+
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
+  if (active)
+    {
+      set_job_control_progress (control, 1.0);
+    }
+  else
+    {
+      err = -ECANCELED;
+    }
+
+cleanup:
+  g_mutex_unlock (&backend->mutex);
+  return err;
+}

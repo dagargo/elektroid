@@ -20,6 +20,12 @@
 
 #include "backend.h"
 
+struct common_simple_read_dir_data
+{
+  guint32 next;
+  guint32 max;
+};
+
 gchar *common_slot_get_upload_path (struct backend *backend,
 				    const struct fs_operations *ops,
 				    const gchar * dst_dir,
@@ -36,3 +42,8 @@ void common_print_item (struct item_iterator *iter, struct backend *backend,
 
 void common_midi_program_change (struct backend *backend, const gchar * dir,
 				 struct item *item);
+
+guint common_simple_next_dentry (struct item_iterator *iter);
+
+guint common_data_upload (struct backend *backend, GByteArray * msg,
+			  struct job_control *control);

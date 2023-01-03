@@ -402,11 +402,8 @@ phatty_upload (struct backend *backend, const gchar * path,
 	       GByteArray * input, struct job_control *control)
 {
   guint id;
-  gint err;
-  gboolean active;
-  struct sysex_transfer transfer;
 
-  if (input->len <= PHATTY_PRESET_ID_OFFSET)
+  if (input->len != PHATTY_PROGRAM_SIZE)
     {
       return -EINVAL;
     }
@@ -421,35 +418,8 @@ phatty_upload (struct backend *backend, const gchar * path,
       return -EINVAL;
     }
 
-  g_mutex_lock (&backend->mutex);
-
-  control->parts = 1;
-  control->part = 0;
-  set_job_control_progress (control, 0.0);
-
   input->data[PHATTY_PRESET_ID_OFFSET] = id;
-  transfer.raw = input;
-  err = backend_tx_sysex (backend, &transfer);
-  if (err < 0)
-    {
-      goto cleanup;
-    }
-
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-  if (active)
-    {
-      set_job_control_progress (control, 1.0);
-    }
-  else
-    {
-      err = -ECANCELED;
-    }
-
-cleanup:
-  g_mutex_unlock (&backend->mutex);
-  return err;
+  return common_data_upload (backend, input, control);
 }
 
 static gint
@@ -510,40 +480,22 @@ static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
   .select_item = common_midi_program_change
 };
 
-static guint
-phatty_scale_next_dentry (struct item_iterator *iter)
-{
-  guint *id = iter->data;
-
-  if (*id >= PHATTY_MAX_SCALES)
-    {
-      return -ENOENT;
-    }
-
-  snprintf (iter->item.name, LABEL_MAX, "%d", *id);
-  iter->item.id = *id;
-  iter->item.type = ELEKTROID_FILE;
-  iter->item.size = -1;
-  (*id)++;
-
-  return 0;
-}
-
 static gint
 phatty_scale_read_dir (struct backend *backend, struct item_iterator *iter,
 		       const gchar * path)
 {
-  guint *id;
+  struct common_simple_read_dir_data *data;
 
   if (strcmp (path, "/"))
     {
       return -ENOTDIR;
     }
 
-  id = g_malloc (sizeof (guint));
-  *id = 0;
-  iter->data = id;
-  iter->next = phatty_scale_next_dentry;
+  data = g_malloc (sizeof (struct common_simple_read_dir_data));
+  data->next = 0;
+  data->max = PHATTY_MAX_SCALES;
+  iter->data = data;
+  iter->next = common_simple_next_dentry;
   iter->free = g_free;
 
   return 0;
@@ -555,9 +507,7 @@ phatty_scale_upload (struct backend *backend, const gchar * path,
 {
   gint err;
   guint id;
-  gboolean active;
   GByteArray *msg;
-  struct sysex_transfer transfer;
 
   if (common_slot_get_id_name_from_path (path, &id, NULL))
     {
@@ -570,33 +520,7 @@ phatty_scale_upload (struct backend *backend, const gchar * path,
       return -EINVAL;
     }
 
-  g_mutex_lock (&backend->mutex);
-
-  control->parts = 1;
-  control->part = 0;
-  set_job_control_progress (control, 0.0);
-
-  transfer.raw = msg;
-  err = backend_tx_sysex (backend, &transfer);
-  if (err < 0)
-    {
-      goto cleanup;
-    }
-
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-  if (active)
-    {
-      set_job_control_progress (control, 1.0);
-    }
-  else
-    {
-      err = -ECANCELED;
-    }
-
-cleanup:
-  g_mutex_unlock (&backend->mutex);
+  err = common_data_upload (backend, msg, control);
   free_msg (msg);
   return err;
 }
