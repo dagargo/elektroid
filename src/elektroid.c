@@ -1413,7 +1413,8 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
     }
   else if (event->button == GDK_BUTTON_SECONDARY)
     {
-      if (backend.type != BE_TYPE_SYSTEM &&
+      if (browser == &remote_browser &&
+	  backend.type != BE_TYPE_SYSTEM &&
 	  remote_browser.fs_ops->rename == NULL &&
 	  remote_browser.fs_ops->delete == NULL &&
 	  remote_browser.fs_ops->download == NULL)
