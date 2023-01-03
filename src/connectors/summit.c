@@ -21,6 +21,7 @@
 #include <libgen.h>
 #include "summit.h"
 #include "common.h"
+#include "scala.h"
 
 #define SUMMIT_PATCHES_PER_BANK 128
 #define SUMMIT_PATCH_NAME_LEN 16
@@ -30,6 +31,7 @@
 #define SUMMIT_REST_TIME_US 5000
 #define SUMMIT_MSG_BANK_POS 12
 #define SUMMIT_MSG_PATCH_POS 13
+#define SUMMIT_MAX_SCALES 16
 
 #define SUMMIT_GET_NAME_FROM_MSG(msg, type) (&msg->data[type == FS_SUMMIT_SINGLE_PATCH ? 0x10 : 0x19b])
 #define SUMMIT_GET_BANK_ID_FROM_DIR(dir) (dir[1] - 0x40)
@@ -43,7 +45,8 @@ static const guint8 SUMMIT_PATCH_REQ[] =
 enum summit_fs
 {
   FS_SUMMIT_SINGLE_PATCH = 1,
-  FS_SUMMIT_MULTI_PATCH = 2
+  FS_SUMMIT_MULTI_PATCH = 2,
+  FS_SUMMIT_SCALE = 4
 };
 
 struct summit_root_iterator_data
@@ -506,8 +509,63 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .select_item = summit_multi_patch_change
 };
 
+static gint
+summit_scale_read_dir (struct backend *backend, struct item_iterator *iter,
+		       const gchar * path)
+{
+  struct common_simple_read_dir_data *data;
+
+  if (strcmp (path, "/"))
+    {
+      return -ENOTDIR;
+    }
+
+  data = g_malloc (sizeof (struct common_simple_read_dir_data));
+  data->next = 1;
+  data->max = SUMMIT_MAX_SCALES + 1;
+  iter->data = data;
+  iter->next = common_simple_next_dentry;
+  iter->free = g_free;
+
+  return 0;
+}
+
+static gint
+summit_scale_upload (struct backend *backend, const gchar * path,
+		     GByteArray * input, struct job_control *control)
+{
+  guint id;
+
+  if (common_slot_get_id_name_from_path (path, &id, NULL))
+    {
+      return -EINVAL;
+    }
+
+  input->data[2] = 0;		//0x7f does not work with the Summit.
+  input->data[5] = id - 1;	//tuning
+
+  return common_data_upload (backend, input, control);
+}
+
+static const struct fs_operations FS_SUMMIT_SCALE_OPERATIONS = {
+  .fs = FS_SUMMIT_SCALE,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .name = "scale",
+  .gui_name = "Scales",
+  .gui_icon = BE_FILE_ICON_SND,
+  .type_ext = "scl",
+  .readdir = summit_scale_read_dir,
+  .print_item = common_print_item,
+  .upload = summit_scale_upload,
+  .load = scl_get_key_based_tuning_msg_from_scala_file,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = common_slot_get_upload_path
+};
+
 static const struct fs_operations *FS_SUMMIT_OPERATIONS[] = {
-  &FS_SUMMIT_SINGLE_OPERATIONS, &FS_SUMMIT_MULTI_OPERATIONS, NULL
+  &FS_SUMMIT_SINGLE_OPERATIONS, &FS_SUMMIT_MULTI_OPERATIONS,
+  &FS_SUMMIT_SCALE_OPERATIONS, NULL
 };
 
 gint
@@ -524,7 +582,7 @@ summit_handshake (struct backend *backend)
     }
 
   backend->device_desc.filesystems =
-    FS_SUMMIT_SINGLE_PATCH | FS_SUMMIT_MULTI_PATCH;
+    FS_SUMMIT_SINGLE_PATCH | FS_SUMMIT_MULTI_PATCH | FS_SUMMIT_SCALE;
   backend->fs_ops = FS_SUMMIT_OPERATIONS;
   snprintf (backend->device_name, LABEL_MAX, "Novation Summit %d.%d.%d.%d",
 	    backend->midi_info.version[0], backend->midi_info.version[1],

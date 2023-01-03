@@ -396,12 +396,12 @@ main (int argc, char *argv[])
       goto cleanup;
     }
 
-    if (!CU_add_test
-        (suite, "test_get_2_byte_octave_midi_message_tet",
-         test_get_2_byte_octave_midi_message_tet))
-      {
-        goto cleanup;
-      }
+  if (!CU_add_test
+      (suite, "test_get_2_byte_octave_midi_message_tet",
+       test_get_2_byte_octave_midi_message_tet))
+    {
+      goto cleanup;
+    }
 
   if (!CU_add_test
       (suite, "test_get_bulk_tuning_midi_message_tet",
