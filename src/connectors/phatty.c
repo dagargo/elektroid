@@ -344,7 +344,7 @@ phatty_download (struct backend *backend, const gchar * path,
 		 GByteArray * output, struct job_control *control)
 {
   guint8 id;
-  gint len, err = 0;
+  gint err = 0;
   gchar *basename_copy;
   GByteArray *tx_msg, *rx_msg;
 
@@ -365,8 +365,7 @@ phatty_download (struct backend *backend, const gchar * path,
     {
       goto end;
     }
-  len = rx_msg->len;
-  if (len != PHATTY_PROGRAM_SIZE)
+  if (rx_msg->len != PHATTY_PROGRAM_SIZE)
     {
       err = -EINVAL;
       goto cleanup;
@@ -488,24 +487,17 @@ static gint
 phatty_scale_upload (struct backend *backend, const gchar * path,
 		     GByteArray * input, struct job_control *control)
 {
-  gint err;
   guint id;
-  GByteArray *msg;
 
   if (common_slot_get_id_name_from_path (path, &id, NULL))
     {
       return -EINVAL;
     }
 
-  msg = scl_get_2_byte_octave_tuning_msg_from_scala_file (input, 0, id);
-  if (!msg)
-    {
-      return -EINVAL;
-    }
+  input->data[5] = 0;		//bank
+  input->data[6] = id;		//scale
 
-  err = common_data_upload (backend, msg, control);
-  free_msg (msg);
-  return err;
+  return common_data_upload (backend, input, control);
 }
 
 static const struct fs_operations FS_PHATTY_SCALE_OPERATIONS = {
@@ -519,7 +511,7 @@ static const struct fs_operations FS_PHATTY_SCALE_OPERATIONS = {
   .readdir = phatty_scale_read_dir,
   .print_item = common_print_item,
   .upload = phatty_scale_upload,
-  .load = load_file,
+  .load = scl_get_2_byte_octave_tuning_msg_from_scala_file,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path
 };

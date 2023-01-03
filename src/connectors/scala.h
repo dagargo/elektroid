@@ -19,6 +19,7 @@
  */
 
 #include <glib.h>
+#include "utils.h"
 
 #define SCALA_DESC_MAX_LEN 1024
 #define SCALA_NOTES_MAX 1024
@@ -32,10 +33,12 @@ struct scala
 
 gint scl_init_scala_from_bytes (struct scala *scala, GByteArray * input);
 
-GByteArray *scl_get_2_byte_octave_tuning_msg_from_scala_file (GByteArray *
-							      input,
-							      guint8 bank,
-							      guint8 tuning);
+gint scl_get_2_byte_octave_tuning_msg_from_scala_file (const char *path,
+						       GByteArray * msg,
+						       struct job_control
+						       *control);
 
-GByteArray *scl_get_key_based_tuning_msg_from_scala_file (GByteArray * input,
-							  guint8 tuning);
+gint scl_get_key_based_tuning_msg_from_scala_file (const char *path,
+						   GByteArray * msg,
+						   struct job_control
+						   *control);

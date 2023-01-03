@@ -13,7 +13,7 @@ static const guint8 SUCCESS_OCTAVE_MIDI_MSG[] = {
   0x7f,
   8, 6,
   0,				//bank
-  1,				//tuning
+  0,				//tuning
   0x35, 0x2d, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x20, 0x6a, 0x75, 0x73, 0x74, 0x20, 0x69, 0x6e, 0x74,	//name
   0x40, 0x00,			//pitches
   0x47, 0x41,
@@ -27,7 +27,7 @@ static const guint8 SUCCESS_OCTAVE_MIDI_MSG[] = {
   0x35, 0x7e,
   0x3d, 0x3f,
   0x38, 0x3e,
-  0x2e,				//cksum
+  0x2f,				//cksum
   0xf7
 };
 
@@ -36,7 +36,7 @@ static const guint8 SUCCESS_BULK_MIDI_MSG_HEADER[] = {
   0x7e,
   0x7f,
   8, 1,
-  1,				//tuning
+  0,				//tuning
   0x35, 0x2d, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x20, 0x6a, 0x75, 0x73, 0x74, 0x20, 0x69, 0x6e, 0x74,	//name
 };
 
@@ -181,14 +181,15 @@ void
 test_get_2_byte_octave_midi_message ()
 {
   struct scala scala;
-  GByteArray *data, *msg;
+  GByteArray *msg;
   gint err;
 
   printf ("\n");
 
-  data = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
-  load_file ("res/scala/success.scl", data, NULL);
-  msg = scl_get_2_byte_octave_tuning_msg_from_scala_file (data, 0, 1);
+  msg = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
+  err =
+    scl_get_2_byte_octave_tuning_msg_from_scala_file ("res/scala/success.scl",
+						      msg, NULL);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_EQUAL (msg->len, sizeof (SUCCESS_OCTAVE_MIDI_MSG));
@@ -196,7 +197,6 @@ test_get_2_byte_octave_midi_message ()
 		   (msg->data, SUCCESS_OCTAVE_MIDI_MSG,
 		    sizeof (SUCCESS_OCTAVE_MIDI_MSG)), 0);
 
-  g_byte_array_free (data, TRUE);
   g_byte_array_free (msg, TRUE);
 }
 
@@ -205,14 +205,14 @@ test_get_bulk_tuning_midi_message ()
 {
   gint err;
   struct scala scala;
-  GByteArray *data, *msg;
+  GByteArray *msg;
   guint8 *b, *f_data;
 
   printf ("\n");
 
-  data = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
-  load_file ("res/scala/success.scl", data, NULL);
-  msg = scl_get_key_based_tuning_msg_from_scala_file (data, 1);
+  msg = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
+  err = scl_get_key_based_tuning_msg_from_scala_file ("res/scala/success.scl",
+						      msg, NULL);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_EQUAL (msg->len, 408);
@@ -238,10 +238,9 @@ test_get_bulk_tuning_midi_message ()
       CU_ASSERT_EQUAL (*(b + 2), *(f_data + offset + 2));
     }
 
-  CU_ASSERT_EQUAL (msg->data[406], 0x02);
+  CU_ASSERT_EQUAL (msg->data[406], 0x03);
   CU_ASSERT_EQUAL (msg->data[407], 0xf7);
 
-  g_byte_array_free (data, TRUE);
   g_byte_array_free (msg, TRUE);
 }
 

@@ -20,7 +20,6 @@
 
 #include <math.h>
 #include "scala.h"
-#include "utils.h"
 
 #define SCALA_FILE_LINE_SEPARATOR "\x0d\x0a"
 #define SCALA_FILE_COMMENT_CHAR '!'
@@ -32,9 +31,9 @@
 #define SCALA_BULK_STEP_SIZE .0061
 
 static const guint8 SCALA_MIDI_OCTAVE_TUNING_HEADER[] =
-  { 0xf0, 0x7e, 0x7f, 8, 6 };
+  { 0xf0, 0x7e, 0x7f, 8, 6, 0, 0 };
 static const guint8 SCALA_MIDI_BULK_TUNING_HEADER[] =
-  { 0xf0, 0x7e, 0x7f, 8, 1 };
+  { 0xf0, 0x7e, 0x7f, 8, 1, 0 };
 
 static gint
 scl_parser_get_pitch (gchar * line, gdouble * val)
@@ -211,31 +210,37 @@ scl_get_cksum (guint8 * b, gint len)
   return cksum;
 }
 
-GByteArray *
-scl_get_2_byte_octave_tuning_msg_from_scala_file (GByteArray * input,
-						  guint8 bank, guint8 tuning)
+gint
+scl_get_2_byte_octave_tuning_msg_from_scala_file (const char *path,
+						  GByteArray * msg,
+						  struct job_control *control)
 {
-  gint err;
-  GByteArray *msg;
+  gint err = 0;
+  GByteArray *input;
   guint8 cksum, msb, lsb;
   struct scala scala;
+
+  input = g_byte_array_sized_new (512);
+  err = load_file (path, input, control);
+  if (err)
+    {
+      goto end;
+    }
 
   err = scl_init_scala_from_bytes (&scala, input);
   if (err)
     {
-      return NULL;
+      goto end;
     }
 
   if (scala.notes != SCALA_OCTAVE_NOTES)
     {
-      return NULL;
+      err = -EINVAL;
+      goto end;
     }
 
-  msg = g_byte_array_sized_new (512);
   g_byte_array_append (msg, SCALA_MIDI_OCTAVE_TUNING_HEADER,
 		       sizeof (SCALA_MIDI_OCTAVE_TUNING_HEADER));
-  g_byte_array_append (msg, &bank, 1);
-  g_byte_array_append (msg, &tuning, 1);
 
   scl_append_name_to_msg (&scala, msg);
 
@@ -267,36 +272,45 @@ scl_get_2_byte_octave_tuning_msg_from_scala_file (GByteArray * input,
   g_byte_array_append (msg, &cksum, 1);
   g_byte_array_append (msg, (guint8 *) "\xf7", 1);
 
-  return msg;
+end:
+  free_msg (input);
+  return err;
 }
 
-GByteArray *
-scl_get_key_based_tuning_msg_from_scala_file (GByteArray * input,
-					      guint8 tuning)
+gint
+scl_get_key_based_tuning_msg_from_scala_file (const char *path,
+					      GByteArray * msg,
+					      struct job_control *control)
 {
-  gint err;
+  gint err = 0;
   guint8 cksum;
-  GByteArray *msg;
+  GByteArray *input;
   struct scala scala;
   guint8 note[SCALA_OCTAVE_NOTES];
   guint8 msb[SCALA_OCTAVE_NOTES];
   guint8 lsb[SCALA_OCTAVE_NOTES];
 
+  input = g_byte_array_sized_new (512);
+  err = load_file (path, input, control);
+  if (err)
+    {
+      goto end;
+    }
+
   err = scl_init_scala_from_bytes (&scala, input);
   if (err)
     {
-      return NULL;
+      goto end;
     }
 
   if (scala.notes != SCALA_OCTAVE_NOTES)
     {
-      return NULL;
+      err = -EINVAL;
+      goto end;
     }
 
-  msg = g_byte_array_sized_new (512);
   g_byte_array_append (msg, SCALA_MIDI_BULK_TUNING_HEADER,
 		       sizeof (SCALA_MIDI_BULK_TUNING_HEADER));
-  g_byte_array_append (msg, &tuning, 1);
 
   scl_append_name_to_msg (&scala, msg);
 
@@ -339,5 +353,7 @@ scl_get_key_based_tuning_msg_from_scala_file (GByteArray * input,
   g_byte_array_append (msg, &cksum, 1);
   g_byte_array_append (msg, (guint8 *) "\xf7", 1);
 
-  return msg;
+end:
+  free_msg (input);
+  return err;
 }
