@@ -323,12 +323,11 @@ summit_multi_download (struct backend *backend, const gchar * path,
 }
 
 static gint
-summit_upload (struct backend *backend, const gchar * path,
-	       GByteArray * input, struct job_control *control)
+summit_common_upload (struct backend *backend, const gchar * path,
+		      GByteArray * input, struct job_control *control)
 {
   guint8 id;
-  gboolean active;
-  struct sysex_transfer transfer;
+  GByteArray *msg;
   gchar *name_copy, *dir_copy, *dir;
   gint bank, err = 0;
 
@@ -341,45 +340,48 @@ summit_upload (struct backend *backend, const gchar * path,
 
   g_mutex_lock (&backend->mutex);
 
-  control->parts = 1;
-  control->part = 0;
-  set_job_control_progress (control, 0.0);
+  msg = g_byte_array_sized_new (input->len);
+  g_byte_array_append (msg, input->data, input->len);
 
-  transfer.raw = g_byte_array_sized_new (input->len);
-  g_byte_array_append (transfer.raw, input->data, input->len);
-
-  err = summit_set_program_bank_and_id (transfer.raw, bank, id);
+  err = summit_set_program_bank_and_id (msg, bank, id);
   if (err)
-    {
-      return err;
-    }
-
-  err = backend_tx_sysex (backend, &transfer);
-  free_msg (transfer.raw);
-  if (err < 0)
     {
       goto cleanup;
     }
 
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-  if (active)
-    {
-      set_job_control_progress (control, 1.0);
-    }
-  else
-    {
-      err = -ECANCELED;
-    }
-
+  err = common_data_upload (backend, msg, control);
   usleep (SUMMIT_REST_TIME_US);
 
 cleanup:
-  g_mutex_unlock (&backend->mutex);
+  free_msg (msg);
   g_free (dir_copy);
   return err;
 }
+
+static gint
+summit_single_upload (struct backend *backend, const gchar * path,
+		      GByteArray * input, struct job_control *control)
+{
+  if (input->len != SUMMIT_SINGLE_LEN)
+    {
+      return -EINVAL;
+    }
+
+  return summit_common_upload (backend, path, input, control);
+}
+
+static gint
+summit_multi_upload (struct backend *backend, const gchar * path,
+		     GByteArray * input, struct job_control *control)
+{
+  if (input->len != SUMMIT_MULTI_LEN)
+    {
+      return -EINVAL;
+    }
+
+  return summit_common_upload (backend, path, input, control);
+}
+
 
 static gint
 summit_common_rename (struct backend *backend, const gchar * src,
@@ -489,7 +491,7 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .print_item = common_print_item,
   .rename = summit_single_rename,
   .download = summit_single_download,
-  .upload = summit_upload,
+  .upload = summit_single_upload,
   .get_slot = summit_get_id_as_slot,
   .load = load_file,
   .save = save_file,
@@ -513,7 +515,7 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .print_item = common_print_item,
   .rename = summit_multi_rename,
   .download = summit_multi_download,
-  .upload = summit_upload,
+  .upload = summit_multi_upload,
   .load = load_file,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
