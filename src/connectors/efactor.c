@@ -301,7 +301,6 @@ efactor_upload (struct backend *backend, const gchar * path,
 {
   gint err = 0, i, id;
   gchar *name, *b;
-  gboolean active;
   GByteArray *tx_msg;
   gchar id_tag[EFACTOR_MAX_ID_TAG_LEN];
   struct efactor_data *data = backend->data;
@@ -309,10 +308,6 @@ efactor_upload (struct backend *backend, const gchar * path,
   name = strdup (path);
   id = atoi (basename (name));	//This stops at the ':'.
   g_free (name);
-
-  control->parts = 1;
-  control->part = 0;
-  set_job_control_progress (control, 0.0);
 
   //The fourth header byte is the device number ID so it might be different than 0.
   input->data[sizeof (EFACTOR_REQUEST_HEADER) - 1] = 0;
@@ -352,24 +347,10 @@ efactor_upload (struct backend *backend, const gchar * path,
     }
   g_byte_array_append (tx_msg, (guint8 *) b, input->len - i);
 
-  err = backend_tx (backend, tx_msg);
-
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-
-  if (active)
-    {
-      set_job_control_progress (control, 1.0);
-    }
-  else
-    {
-      err = -ECANCELED;
-    }
-
+  err = common_data_upload (backend, tx_msg, control);
+  free_msg (tx_msg);
 end:
   sleep (1);
-
   return err;
 }
 
