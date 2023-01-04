@@ -248,7 +248,7 @@ test_get_bulk_tuning_midi_message ()
 						      msg, NULL);
 
   CU_ASSERT_EQUAL (err, 0);
-  CU_ASSERT_EQUAL (msg->len, 408);
+  CU_ASSERT_EQUAL (msg->len, SCALA_TUNING_BANK_SIZE);
 
   CU_ASSERT_EQUAL (memcmp
 		   (msg->data, SUCCESS_BULK_MIDI_MSG_HEADER,
@@ -315,7 +315,7 @@ test_get_bulk_tuning_midi_message_tet ()
 						      msg, NULL);
 
   CU_ASSERT_EQUAL (err, 0);
-  CU_ASSERT_EQUAL (msg->len, 408);
+  CU_ASSERT_EQUAL (msg->len, SCALA_TUNING_BANK_SIZE);
 
   CU_ASSERT_EQUAL (memcmp
 		   (msg->data, SUCCESS_BULK_MIDI_MSG_HEADER_TET,

@@ -24,6 +24,7 @@
 #define SCALA_DESC_MAX_LEN 1024
 #define SCALA_NOTES_MAX 1024
 #define SCALA_MIDI_NOTES 128
+#define SCALA_TUNING_BANK_SIZE 408
 
 struct scala
 {

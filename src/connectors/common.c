@@ -201,3 +201,18 @@ common_data_download (struct backend *backend, GByteArray * tx_msg,
 cleanup:
   return err;
 }
+
+gchar *
+common_get_download_path (struct backend *backend,
+			  const struct fs_operations *ops,
+			  const gchar * dst_dir, const gchar * src_path)
+{
+  guint id;
+  gchar *path;
+
+  common_slot_get_id_name_from_path (src_path, &id, NULL);
+  path = malloc (PATH_MAX);
+  snprintf (path, PATH_MAX, "%s/%s %s %03d.syx", dst_dir,
+	    backend->device_name, ops->name, id);
+  return path;
+}

@@ -31,7 +31,7 @@
 #define SUMMIT_REST_TIME_US 5000
 #define SUMMIT_MSG_BANK_POS 12
 #define SUMMIT_MSG_PATCH_POS 13
-#define SUMMIT_MAX_SCALES 16
+#define SUMMIT_MAX_TUNINGS 17	// Tuning 0 is stored but can't be changed form the UI.
 
 #define SUMMIT_GET_NAME_FROM_MSG(msg, type) (&msg->data[type == FS_SUMMIT_SINGLE_PATCH ? 0x10 : 0x19b])
 #define SUMMIT_GET_BANK_ID_FROM_DIR(dir) (dir[1] - 0x40)
@@ -42,11 +42,15 @@ static const guint8 SUMMIT_ID[] = { 0x33, 1, 0, 0 };
 static const guint8 SUMMIT_PATCH_REQ[] =
   { 0xf0, 0, 0x20, 0x29, 0x01, 0x11, 0x01, 0x33, 0, 0, 0, 0, 0, 0, 0xf7 };
 
+static const guint8 SUMMIT_BULK_TUNING_REQ[] =
+  { 0xf0, 0x7e, 0x00, 0x08, 0x00, 0x00, 0xf7 };
+
 enum summit_fs
 {
   FS_SUMMIT_SINGLE_PATCH = 1,
   FS_SUMMIT_MULTI_PATCH = 2,
-  FS_SUMMIT_SCALE = 4
+  FS_SUMMIT_SCALE = 4,
+  FS_SUMMIT_BULK_TUNING = 8
 };
 
 struct summit_root_iterator_data
@@ -258,7 +262,7 @@ summit_common_download (struct backend *backend, const gchar * path,
 
   dirname_copy = strdup (path);
   dir = dirname (dirname_copy);
-  bank = dir[1] - 0x40;
+  bank = SUMMIT_GET_BANK_ID_FROM_DIR (dir);
   g_free (dirname_copy);
   if (bank < 1 || bank > 4)
     {
@@ -521,8 +525,8 @@ summit_scale_read_dir (struct backend *backend, struct item_iterator *iter,
     }
 
   data = g_malloc (sizeof (struct common_simple_read_dir_data));
-  data->next = 1;
-  data->max = SUMMIT_MAX_SCALES + 1;
+  data->next = 0;
+  data->max = SUMMIT_MAX_TUNINGS;
   iter->data = data;
   iter->next = common_simple_next_dentry;
   iter->free = g_free;
@@ -542,7 +546,7 @@ summit_scale_upload (struct backend *backend, const gchar * path,
     }
 
   input->data[2] = 0;		//0x7f does not work with the Summit.
-  input->data[5] = id - 1;	//tuning
+  input->data[5] = id;		//tuning
 
   return common_data_upload (backend, input, control);
 }
@@ -563,9 +567,71 @@ static const struct fs_operations FS_SUMMIT_SCALE_OPERATIONS = {
   .get_upload_path = common_slot_get_upload_path
 };
 
+static gint
+summit_tuning_upload (struct backend *backend, const gchar * path,
+		      GByteArray * input, struct job_control *control)
+{
+  if (input->len != SCALA_TUNING_BANK_SIZE)
+    {
+      return -EINVAL;
+    }
+  return summit_scale_upload (backend, path, input, control);
+}
+
+static gint
+summit_tuning_download (struct backend *backend, const gchar * path,
+			GByteArray * output, struct job_control *control)
+{
+  guint32 id;
+  gint err = 0;
+  GByteArray *tx_msg, *rx_msg;
+
+  common_slot_get_id_name_from_path (path, &id, NULL);
+  tx_msg = g_byte_array_sized_new (16);
+  g_byte_array_append (tx_msg, SUMMIT_BULK_TUNING_REQ,
+		       sizeof (SUMMIT_BULK_TUNING_REQ));
+  tx_msg->data[5] = id;
+  err = common_data_download (backend, tx_msg, &rx_msg, control);
+  if (err)
+    {
+      goto end;
+    }
+  if (rx_msg->len != SCALA_TUNING_BANK_SIZE)
+    {
+      err = -EINVAL;
+      goto cleanup;
+    }
+
+  g_byte_array_append (output, rx_msg->data, rx_msg->len);
+
+cleanup:
+  free_msg (rx_msg);
+end:
+  return err;
+}
+
+static const struct fs_operations FS_SUMMIT_BULK_TUNING_OPERATIONS = {
+  .fs = FS_SUMMIT_BULK_TUNING,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .name = "tuning",
+  .gui_name = "Tunings",
+  .gui_icon = BE_FILE_ICON_SND,
+  .type_ext = "syx",
+  .readdir = summit_scale_read_dir,
+  .print_item = common_print_item,
+  .download = summit_tuning_download,
+  .upload = summit_tuning_upload,
+  .load = load_file,
+  .save = save_file,
+  .get_ext = backend_get_fs_ext,
+  .get_download_path = common_get_download_path,
+  .get_upload_path = common_slot_get_upload_path
+};
+
 static const struct fs_operations *FS_SUMMIT_OPERATIONS[] = {
   &FS_SUMMIT_SINGLE_OPERATIONS, &FS_SUMMIT_MULTI_OPERATIONS,
-  &FS_SUMMIT_SCALE_OPERATIONS, NULL
+  &FS_SUMMIT_SCALE_OPERATIONS, &FS_SUMMIT_BULK_TUNING_OPERATIONS, NULL
 };
 
 gint
@@ -582,7 +648,8 @@ summit_handshake (struct backend *backend)
     }
 
   backend->device_desc.filesystems =
-    FS_SUMMIT_SINGLE_PATCH | FS_SUMMIT_MULTI_PATCH | FS_SUMMIT_SCALE;
+    FS_SUMMIT_SINGLE_PATCH | FS_SUMMIT_MULTI_PATCH | FS_SUMMIT_SCALE |
+    FS_SUMMIT_BULK_TUNING;
   backend->fs_ops = FS_SUMMIT_OPERATIONS;
   snprintf (backend->device_name, LABEL_MAX, "Novation Summit %d.%d.%d.%d",
 	    backend->midi_info.version[0], backend->midi_info.version[1],
