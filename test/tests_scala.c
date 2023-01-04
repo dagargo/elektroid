@@ -37,7 +37,7 @@ static const guint8 SUCCESS_BULK_MIDI_MSG_HEADER[] = {
   0x7f,
   8, 1,
   0,				//tuning
-  0x35, 0x2d, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x20, 0x6a, 0x75, 0x73, 0x74, 0x20, 0x69, 0x6e, 0x74,	//name
+  0x35, 0x2d, 0x6c, 0x69, 0x6d, 0x69, 0x74, 0x20, 0x6a, 0x75, 0x73, 0x74, 0x20, 0x69, 0x6e, 0x74	//name
 };
 
 static const guint8 SUCCESS_BULK_MIDI_MSG_OCTAVE_DATA[] = {
@@ -53,6 +53,39 @@ static const guint8 SUCCESS_BULK_MIDI_MSG_OCTAVE_DATA[] = {
   0x08, 0x6c, 0x05,
   0x09, 0x7b, 0x08,
   0x0a, 0x71, 0x06
+};
+
+static const guint8 SUCCESS_OCTAVE_MIDI_MSG_TET[] = {
+  0xf0,
+  0x7e,
+  0x7f,
+  8, 6,
+  0,				//bank
+  0,				//tuning
+  0x54, 0x45, 0x54, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20,	//name
+  0x40, 0x00,			//pitches
+  0x40, 0x00,
+  0x40, 0x00,
+  0x40, 0x00,
+  0x40, 0x00,
+  0x40, 0x00,
+  0x40, 0x00,
+  0x40, 0x00,
+  0x40, 0x00,
+  0x40, 0x00,
+  0x40, 0x00,
+  0x40, 0x00,
+  0x6a,				//cksum
+  0xf7
+};
+
+static const guint8 SUCCESS_BULK_MIDI_MSG_HEADER_TET[] = {
+  0xf0,
+  0x7e,
+  0x7f,
+  8, 1,
+  0,				//tuning
+  0x54, 0x45, 0x54, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20, 0x20	//name
 };
 
 void
@@ -229,7 +262,7 @@ test_get_bulk_tuning_midi_message ()
 
   //Test the nots above the first octave by comparing them to the notes in the first one.
   b = f_data + 12 * 3;
-  for (guint8 i = 12; i < 128; i++, b += 3)
+  for (guint8 i = 12; i < SCALA_MIDI_NOTES; i++, b += 3)
     {
       gint offset = (i % 12) * 3;
       gint octave = (i / 12) * 12;
@@ -239,6 +272,64 @@ test_get_bulk_tuning_midi_message ()
     }
 
   CU_ASSERT_EQUAL (msg->data[406], 0x03);
+  CU_ASSERT_EQUAL (msg->data[407], 0xf7);
+
+  g_byte_array_free (msg, TRUE);
+}
+
+void
+test_get_2_byte_octave_midi_message_tet ()
+{
+  struct scala scala;
+  GByteArray *msg;
+  gint err;
+
+  printf ("\n");
+
+  msg = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
+  err =
+    scl_get_2_byte_octave_tuning_msg_from_scala_file ("res/scala/TET.scl",
+						      msg, NULL);
+
+  CU_ASSERT_EQUAL (err, 0);
+  CU_ASSERT_EQUAL (msg->len, sizeof (SUCCESS_OCTAVE_MIDI_MSG_TET));
+  CU_ASSERT_EQUAL (memcmp
+		   (msg->data, SUCCESS_OCTAVE_MIDI_MSG_TET,
+		    sizeof (SUCCESS_OCTAVE_MIDI_MSG_TET)), 0);
+
+  g_byte_array_free (msg, TRUE);
+}
+
+void
+test_get_bulk_tuning_midi_message_tet ()
+{
+  gint err;
+  guint8 *b;
+  struct scala scala;
+  GByteArray *msg;
+
+  printf ("\n");
+
+  msg = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
+  err = scl_get_key_based_tuning_msg_from_scala_file ("res/scala/TET.scl",
+						      msg, NULL);
+
+  CU_ASSERT_EQUAL (err, 0);
+  CU_ASSERT_EQUAL (msg->len, 408);
+
+  CU_ASSERT_EQUAL (memcmp
+		   (msg->data, SUCCESS_BULK_MIDI_MSG_HEADER_TET,
+		    sizeof (SUCCESS_BULK_MIDI_MSG_HEADER_TET)), 0);
+
+  b = msg->data + sizeof (SUCCESS_BULK_MIDI_MSG_HEADER_TET);
+  for (guint8 i = 0; i < SCALA_MIDI_NOTES; i++, b += 3)
+    {
+      CU_ASSERT_EQUAL (*b, i);
+      CU_ASSERT_EQUAL (*(b + 1), 0);
+      CU_ASSERT_EQUAL (*(b + 2), 0);
+    }
+
+  CU_ASSERT_EQUAL (msg->data[406], 0x6d);
   CU_ASSERT_EQUAL (msg->data[407], 0xf7);
 
   g_byte_array_free (msg, TRUE);
@@ -305,6 +396,19 @@ main (int argc, char *argv[])
       goto cleanup;
     }
 
+    if (!CU_add_test
+        (suite, "test_get_2_byte_octave_midi_message_tet",
+         test_get_2_byte_octave_midi_message_tet))
+      {
+        goto cleanup;
+      }
+
+  if (!CU_add_test
+      (suite, "test_get_bulk_tuning_midi_message_tet",
+       test_get_bulk_tuning_midi_message_tet))
+    {
+      goto cleanup;
+    }
 
   CU_basic_set_mode (CU_BRM_VERBOSE);
 

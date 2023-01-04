@@ -27,7 +27,6 @@
 #define SCALA_MIDI_TUNING_NAME_LEN 16
 #define SCALA_OCTAVE_STEP_SIZE .012207
 #define SCALA_C0_FREQ 8.1758
-#define SCALA_MIDI_NOTES 128
 #define SCALA_BULK_STEP_SIZE .0061
 
 static const guint8 SCALA_MIDI_OCTAVE_TUNING_HEADER[] =
@@ -57,7 +56,8 @@ scl_parser_get_pitch (gchar * line, gdouble * val)
 
   if (dot)
     {
-      *val = g_ascii_strtod (line, NULL);
+      double cents = g_ascii_strtod (line, NULL);
+      *val = exp (log (2) * cents / 1200);
     }
   else
     {
@@ -167,13 +167,13 @@ scala_get_cents_from_ratio (gdouble ratio)
 static guint8
 scl_get_nearest_note_below (gdouble f, gdouble * note_f)
 {
-  gdouble next, p = exp (log (2.0) / 12.0);
+  gdouble next;
   guint8 n;
   *note_f = SCALA_C0_FREQ;
-  for (n = 0; n < SCALA_MIDI_NOTES; n++)
+  for (n = 0; n < SCALA_MIDI_NOTES - 1; n++)
     {
-      next = *note_f * p;
-      if (next > f)
+      next = exp (log (2.0) * ((n + 1) / 12.0)) * SCALA_C0_FREQ;
+      if (next - f > 0.00001)
 	{
 	  return n;
 	}
