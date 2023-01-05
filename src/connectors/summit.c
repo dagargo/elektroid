@@ -25,7 +25,6 @@
 
 #define SUMMIT_PATCHES_PER_BANK 128
 #define SUMMIT_PATCH_NAME_LEN 16
-#define SUMMIT_PATCH_PREFIX "Summit"
 #define SUMMIT_SINGLE_LEN 527
 #define SUMMIT_MULTI_LEN 1039
 #define SUMMIT_REST_TIME_US 5000
@@ -34,7 +33,7 @@
 #define SUMMIT_MAX_TUNINGS 17	// Tuning 0 is stored but can't be changed form the UI.
 
 #define SUMMIT_GET_NAME_FROM_MSG(msg, type) (&msg->data[type == FS_SUMMIT_SINGLE_PATCH ? 0x10 : 0x19b])
-#define SUMMIT_GET_BANK_ID_FROM_DIR(dir) (dir[1] - 0x40)
+#define SUMMIT_GET_BANK_ID_FROM_DIR(dir) ((guint8) dir[1] - 0x40)	// Bank A is the bank 1.
 
 static const guint8 NOVATION_ID[] = { 0x0, 0x20, 0x29 };
 static const guint8 SUMMIT_ID[] = { 0x33, 1, 0, 0 };
@@ -67,7 +66,7 @@ struct summit_bank_iterator_data
 };
 
 static gint
-summit_set_program_bank_and_id (GByteArray * msg, guint8 bank, guint8 id)
+summit_set_patch_bank_and_id (GByteArray * msg, guint8 bank, guint8 id)
 {
   if (msg->len <= SUMMIT_MSG_PATCH_POS)
     {
@@ -79,12 +78,12 @@ summit_set_program_bank_and_id (GByteArray * msg, guint8 bank, guint8 id)
 }
 
 static GByteArray *
-summit_get_program_dump_msg (gint bank, gint id, enum summit_fs fs)
+summit_get_patch_dump_msg (gint bank, gint id, enum summit_fs fs)
 {
   GByteArray *tx_msg = g_byte_array_sized_new (sizeof (SUMMIT_PATCH_REQ));
   g_byte_array_append (tx_msg, SUMMIT_PATCH_REQ, sizeof (SUMMIT_PATCH_REQ));
   tx_msg->data[8] = fs == FS_SUMMIT_SINGLE_PATCH ? 0x41 : 0x43;
-  summit_set_program_bank_and_id (tx_msg, bank, id);
+  summit_set_patch_bank_and_id (tx_msg, bank, id);
   return tx_msg;
 }
 
@@ -93,14 +92,14 @@ summit_get_download_path (struct backend *backend,
 			  const struct fs_operations *ops,
 			  const gchar * dst_dir, const gchar * src_path)
 {
+  guint id;
   struct item_iterator iter;
-  gchar *path = NULL, *name = NULL;
-  gchar *src_path_copy = strdup (src_path);
-  gchar *src_dir_copy = strdup (src_path);
-  gchar *filename = basename (src_path_copy);
-  gchar *dir = dirname (src_dir_copy);
-  gint id = atoi (filename);
-  g_free (src_path_copy);
+  gchar *path = NULL, *name = NULL, *src_dir_copy, *dir;
+
+  common_slot_get_id_name_from_path (src_path, &id, NULL);
+
+  src_dir_copy = strdup (src_path);
+  dir = dirname (src_dir_copy);
 
   if (ops->readdir (backend, &iter, dir))
     {
@@ -121,9 +120,8 @@ summit_get_download_path (struct backend *backend,
       goto end;
     }
 
-  path = malloc (PATH_MAX);
-  snprintf (path, PATH_MAX, "%s/%s %s %c%03d %s.syx", dst_dir,
-	    SUMMIT_PATCH_PREFIX, ops->gui_name, dir[1], id, name);
+  path = common_get_download_path_with_params (backend, ops, dst_dir, id, 3,
+					       name);
 
   free_item_iterator (&iter);
 
@@ -202,7 +200,7 @@ summit_common_read_dir (struct backend *backend, struct item_iterator *iter,
 
       for (gint i = 0; i < SUMMIT_PATCHES_PER_BANK; i++)
 	{
-	  tx_msg = summit_get_program_dump_msg (bank, i, fs);
+	  tx_msg = summit_get_patch_dump_msg (bank, i, fs);
 	  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg,
 					    BE_SYSEX_TIMEOUT_GUESS_MS);
 	  if (!rx_msg)
@@ -250,35 +248,46 @@ summit_multi_read_dir (struct backend *backend, struct item_iterator *iter,
   return summit_common_read_dir (backend, iter, path, FS_SUMMIT_MULTI_PATCH);
 }
 
+static guint
+summit_get_bank_and_id_from_path (const gchar * path, guint8 * bank,
+				  guint8 * id)
+{
+  if (strlen (path) < 4)
+    {
+      return -EINVAL;
+    }
+
+  *bank = SUMMIT_GET_BANK_ID_FROM_DIR (path);
+  *id = (guint8) atoi (&path[3]);
+
+  if (*bank < 1 || *bank > 4 || *id >= SUMMIT_PATCHES_PER_BANK)
+    {
+      return -EBADSLT;
+    }
+
+  return 0;
+}
+
 static gint
 summit_common_download (struct backend *backend, const gchar * path,
 			GByteArray * output, struct job_control *control,
 			enum summit_fs fs)
 {
-  guint8 id;
-  gint len, bank, err = 0;
+  guint8 id, bank;
+  gint len, err;
   GByteArray *tx_msg, *rx_msg;
-  gchar *dirname_copy, *dir, *basename_copy;
 
-  dirname_copy = strdup (path);
-  dir = dirname (dirname_copy);
-  bank = SUMMIT_GET_BANK_ID_FROM_DIR (dir);
-  g_free (dirname_copy);
-  if (bank < 1 || bank > 4)
+  err = summit_get_bank_and_id_from_path (path, &bank, &id);
+  if (err)
     {
-      err = -EINVAL;
       goto end;
     }
 
-  basename_copy = strdup (path);
-  id = atoi (basename (basename_copy));
-  g_free (basename_copy);
-
-  tx_msg = summit_get_program_dump_msg (bank, id, fs);
+  tx_msg = summit_get_patch_dump_msg (bank, id, fs);
   err = common_data_download (backend, tx_msg, &rx_msg, control);
-  if (!err)
+  if (err)
     {
-      return err;
+      goto end;
     }
   len = (fs == FS_SUMMIT_SINGLE_PATCH ? SUMMIT_SINGLE_LEN : SUMMIT_MULTI_LEN);
   if (rx_msg->len != len)
@@ -292,6 +301,7 @@ summit_common_download (struct backend *backend, const gchar * path,
 cleanup:
   free_msg (rx_msg);
 end:
+  usleep (SUMMIT_REST_TIME_US);
   return err;
 }
 
@@ -315,35 +325,31 @@ static gint
 summit_common_upload (struct backend *backend, const gchar * path,
 		      GByteArray * input, struct job_control *control)
 {
-  guint8 id;
+  guint8 id, bank;
+  gint err;
   GByteArray *msg;
-  gchar *name_copy, *dir_copy, *dir;
-  gint bank, err = 0;
 
-  dir_copy = strdup (path);
-  dir = dirname (dir_copy);
-  bank = SUMMIT_GET_BANK_ID_FROM_DIR (dir);
-  name_copy = strdup (path);
-  id = atoi (basename (name_copy));
-  g_free (name_copy);
-
-  g_mutex_lock (&backend->mutex);
+  err = summit_get_bank_and_id_from_path (path, &bank, &id);
+  if (err)
+    {
+      goto end;
+    }
 
   msg = g_byte_array_sized_new (input->len);
   g_byte_array_append (msg, input->data, input->len);
 
-  err = summit_set_program_bank_and_id (msg, bank, id);
+  err = summit_set_patch_bank_and_id (msg, bank, id);
   if (err)
     {
       goto cleanup;
     }
 
   err = common_data_upload (backend, msg, control);
-  usleep (SUMMIT_REST_TIME_US);
 
 cleanup:
   free_msg (msg);
-  g_free (dir_copy);
+end:
+  usleep (SUMMIT_REST_TIME_US);
   return err;
 }
 
@@ -378,14 +384,16 @@ summit_common_rename (struct backend *backend, const gchar * src,
 {
   GByteArray *preset, *rx_msg;
   gint err, len;
+  guint8 *name;
   struct job_control control;
   debug_print (1, "Renaming from %s to %s...\n", src, dst);
 
-  preset = g_byte_array_new ();
   //The control initialization is needed.
   control.active = TRUE;
   control.callback = NULL;
   g_mutex_init (&control.mutex);
+
+  preset = g_byte_array_sized_new (1024);
   err = summit_common_download (backend, src, preset, &control, fs);
   if (err)
     {
@@ -393,10 +401,12 @@ summit_common_rename (struct backend *backend, const gchar * src,
       return err;
     }
 
+  usleep (SUMMIT_REST_TIME_US);
+
   len = strlen (dst);
-  memcpy (SUMMIT_GET_NAME_FROM_MSG (preset, fs), dst, len);
-  memset (SUMMIT_GET_NAME_FROM_MSG (preset, fs) + len, ' ',
-	  SUMMIT_PATCH_NAME_LEN - len);
+  name = SUMMIT_GET_NAME_FROM_MSG (preset, fs);
+  memcpy (name, dst, len);
+  memset (name + len, ' ', SUMMIT_PATCH_NAME_LEN - len);
 
   rx_msg = backend_tx_and_rx_sysex (backend, preset, 100);	//There must be no response.
   if (rx_msg)
@@ -651,8 +661,6 @@ summit_handshake (struct backend *backend)
     FS_SUMMIT_SINGLE_PATCH | FS_SUMMIT_MULTI_PATCH | FS_SUMMIT_SCALE |
     FS_SUMMIT_BULK_TUNING;
   backend->fs_ops = FS_SUMMIT_OPERATIONS;
-  snprintf (backend->device_name, LABEL_MAX, "Novation Summit %d.%d.%d.%d",
-	    backend->midi_info.version[0], backend->midi_info.version[1],
-	    backend->midi_info.version[2], backend->midi_info.version[3]);
+  snprintf (backend->device_name, LABEL_MAX, "Novation Summit");
   return 0;
 }

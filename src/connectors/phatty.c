@@ -401,7 +401,7 @@ phatty_upload (struct backend *backend, const gchar * path,
 
   if (id >= PHATTY_MAX_PRESETS && id != PHATTY_PANEL_ID)
     {
-     return -EINVAL;
+      return -EINVAL;
     }
 
   if (!strcmp (path, PHATTY_PANEL_PATH))
