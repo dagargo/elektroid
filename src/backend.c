@@ -137,18 +137,13 @@ backend_midi_handshake (struct backend *backend)
 		  BE_VERSION_LEN);
 
 	  snprintf (backend->device_name, LABEL_MAX,
-		    "%02x-%02x-%02x %02x-%02x %02x-%02x %d.%d.%d.%d",
+		    "%02x-%02x-%02x %02x-%02x %02x-%02x",
 		    backend->midi_info.company[0],
 		    backend->midi_info.company[1],
 		    backend->midi_info.company[2],
 		    backend->midi_info.family[0],
 		    backend->midi_info.family[1],
-		    backend->midi_info.model[0],
-		    backend->midi_info.model[1],
-		    backend->midi_info.version[0],
-		    backend->midi_info.version[1],
-		    backend->midi_info.version[2],
-		    backend->midi_info.version[3]);
+		    backend->midi_info.model[0], backend->midi_info.model[1]);
 	  snprintf (backend->device_desc.name, LABEL_MAX, "%s",
 		    backend->device_name);
 	  debug_print (1, "Detected device: %s\n", backend->device_name);

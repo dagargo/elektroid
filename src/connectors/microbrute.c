@@ -24,7 +24,6 @@
 #define MICROBRUTE_MAX_SEQ_STR_LEN 256
 
 #define MICROBRUTE_MAX_SEQUENCES 8
-#define MICROBRUTE_SEQUENCE_PREFIX "MicroBrute sequence"
 
 #define MICROBRUTE_SEQUENCE_REQUEST_SEQ_POS 6
 #define MICROBRUTE_SEQUENCE_REQUEST_ID_POS 9
@@ -70,15 +69,10 @@ microbrute_get_download_path (struct backend *backend,
 			      const struct fs_operations *ops,
 			      const gchar * dst_dir, const gchar * src_path)
 {
-  gchar *name = malloc (PATH_MAX);
-  gchar *src_path_copy = strdup (src_path);
-  gchar *filename = basename (src_path_copy);
-  gint index = atoi (filename);
-  snprintf (name, PATH_MAX, "%s/%s %d.mbseq", dst_dir,
-	    MICROBRUTE_SEQUENCE_PREFIX, index + 1);
-  g_free (src_path_copy);
-
-  return name;
+  guint id;
+  common_slot_get_id_name_from_path (src_path, &id, NULL);
+  return common_get_download_path_with_params (backend, ops, dst_dir,
+					       id + 1, 1, NULL);
 }
 
 static guint

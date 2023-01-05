@@ -190,8 +190,8 @@ phatty_get_download_path (struct backend *backend,
     }
   data = backend->data;
   phatty_get_preset_name (data->presets[id], preset_name);
-  snprintf (name, PATH_MAX, "%s/Moog Little Phatty %02d %s.syx", dst_dir, id,
-	    preset_name);
+  snprintf (name, PATH_MAX, "%s/Moog Little Phatty preset %02d - %s.syx",
+	    dst_dir, id, preset_name);
 
   return name;
 }
@@ -353,6 +353,10 @@ phatty_download (struct backend *backend, const gchar * path,
       basename_copy = strdup (path);
       id = atoi (basename (basename_copy));
       g_free (basename_copy);
+      if (id >= PHATTY_MAX_PRESETS)
+	{
+	  return -EINVAL;
+	}
       tx_msg = phatty_get_preset_dump_msg (id);
     }
   else
@@ -393,6 +397,11 @@ phatty_upload (struct backend *backend, const gchar * path,
   if (common_slot_get_id_name_from_path (path, &id, NULL))
     {
       return -EINVAL;
+    }
+
+  if (id >= PHATTY_MAX_PRESETS && id != PHATTY_PANEL_ID)
+    {
+     return -EINVAL;
     }
 
   if (!strcmp (path, PHATTY_PANEL_PATH))
@@ -535,9 +544,7 @@ phatty_handshake (struct backend *backend)
   backend->data = NULL;
   backend->destroy_data = backend_destroy_data;
 
-  snprintf (backend->device_name, LABEL_MAX, "Moog Little Phatty %d.%d.%d.%d",
-	    backend->midi_info.version[0], backend->midi_info.version[1],
-	    backend->midi_info.version[2], backend->midi_info.version[3]);
+  snprintf (backend->device_name, LABEL_MAX, "Moog Little Phatty");
 
   return 0;
 }

@@ -205,16 +205,32 @@ cleanup:
 }
 
 gchar *
+common_get_download_path_with_params (struct backend *backend,
+				      const struct fs_operations *ops,
+				      const gchar * dst_dir,
+				      guint id, guint digits,
+				      const gchar * name)
+{
+  gchar *path;
+  path = malloc (PATH_MAX);
+  snprintf (path, PATH_MAX, "%s/%s %s %.*d", dst_dir,
+	    backend->device_name, ops->name, digits, id);
+  if (name)
+    {
+      strcat (path, " - ");
+      strcat (path, name);
+    }
+  strcat (path, ".syx");
+  return path;
+}
+
+gchar *
 common_get_download_path (struct backend *backend,
 			  const struct fs_operations *ops,
 			  const gchar * dst_dir, const gchar * src_path)
 {
   guint id;
-  gchar *path;
-
   common_slot_get_id_name_from_path (src_path, &id, NULL);
-  path = malloc (PATH_MAX);
-  snprintf (path, PATH_MAX, "%s/%s %s %03d.syx", dst_dir,
-	    backend->device_name, ops->name, id);
-  return path;
+  return common_get_download_path_with_params (backend, ops, dst_dir,
+					       id, 3, NULL);
 }
