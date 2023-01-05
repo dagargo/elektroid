@@ -35,5 +35,5 @@ EXTRA_DIST = \
 	res/connectors/square_loop.wav
 
 AM_TESTS_ENVIRONMENT = \
-	ecli='$(abs_top_builddir)/src/elektroid-cli'; \
+	ecli='$(abs_top_builddir)/src/elektroid-cli -vv'; \
 	export ecli;

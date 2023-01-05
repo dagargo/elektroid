@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include "common.h"
 
 gchar *
@@ -113,13 +114,14 @@ guint
 common_simple_next_dentry (struct item_iterator *iter)
 {
   struct common_simple_read_dir_data *data = iter->data;
+  guint digits = floor (log10 (data->max));
 
   if (data->next >= data->max)
     {
       return -ENOENT;
     }
 
-  snprintf (iter->item.name, LABEL_MAX, "%d", data->next);
+  snprintf (iter->item.name, LABEL_MAX, "%.*d", digits, data->next);
   iter->item.id = data->next;
   iter->item.type = ELEKTROID_FILE;
   iter->item.size = -1;

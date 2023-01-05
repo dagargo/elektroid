@@ -179,14 +179,20 @@ static gint
 microbrute_download (struct backend *backend, const gchar * src_path,
 		     GByteArray * output, struct job_control *control)
 {
-  gchar sequence[MICROBRUTE_MAX_SEQ_STR_LEN];
-  gboolean active;
-  gchar *src_path_copy = strdup (src_path);
-  gchar *filename = basename (src_path_copy);
-  guint seqnum = atoi (filename);
   gint err;
+  guint seqnum;
+  gboolean active;
+  gchar sequence[MICROBRUTE_MAX_SEQ_STR_LEN];
 
-  g_free (src_path_copy);
+  if (common_slot_get_id_name_from_path (src_path, &seqnum, NULL))
+    {
+      return -EINVAL;
+    }
+
+  if (seqnum >= MICROBRUTE_MAX_SEQUENCES)
+    {
+      return -EBADSLT;
+    }
 
   snprintf (sequence, MICROBRUTE_MAX_SEQ_STR_LEN, "%1d:", seqnum + 1);
 
@@ -323,6 +329,11 @@ microbrute_upload (struct backend *backend, const gchar * path,
   gint steps;
 
   if (common_slot_get_id_name_from_path (path, &seqnum, NULL))
+    {
+      return -EBADSLT;
+    }
+
+  if (seqnum >= MICROBRUTE_MAX_SEQUENCES)
     {
       return -EBADSLT;
     }
