@@ -87,46 +87,44 @@ summit_get_patch_dump_msg (gint bank, gint id, enum summit_fs fs)
   return tx_msg;
 }
 
-static gchar *
-summit_get_download_path (struct backend *backend,
-			  const struct fs_operations *ops,
-			  const gchar * dst_dir, const gchar * src_path)
+static void
+summit_truncate_name_at_last_useful_char (gchar * c)
 {
-  guint id;
-  struct item_iterator iter;
-  gchar *path = NULL, *name = NULL, *src_dir_copy, *dir;
-
-  common_slot_get_id_name_from_path (src_path, &id, NULL);
-
-  src_dir_copy = strdup (src_path);
-  dir = dirname (src_dir_copy);
-
-  if (ops->readdir (backend, &iter, dir))
+  for (int i = SUMMIT_PATCH_NAME_LEN - 1; i >= 0; i--, c--)
     {
-      goto end;
-    }
-
-  while (!next_item_iterator (&iter))
-    {
-      if (iter.item.id == id)
+      if (*c == ' ')
 	{
-	  name = iter.item.name;
+	  *c = 0;
+	}
+      else
+	{
 	  break;
 	}
     }
+}
 
-  if (!name)
+static gchar *
+summit_get_download_path (struct backend *backend,
+			  const struct fs_operations *ops,
+			  const gchar * dst_dir, const gchar * src_path,
+			  GByteArray * patch)
+{
+  guint id;
+  gchar *path;
+  gchar name[SUMMIT_PATCH_NAME_LEN + 1];
+
+  if (common_slot_get_id_name_from_path (src_path, &id, NULL))
     {
-      goto end;
+      return NULL;
     }
 
+  memcpy (name, SUMMIT_GET_NAME_FROM_MSG (patch, ops->fs),
+	  SUMMIT_PATCH_NAME_LEN);
+  name[SUMMIT_PATCH_NAME_LEN] = 0;
+  summit_truncate_name_at_last_useful_char (&name[SUMMIT_PATCH_NAME_LEN - 1]);
   path = common_get_download_path_with_params (backend, ops, dst_dir, id, 3,
 					       name);
 
-  free_item_iterator (&iter);
-
-end:
-  g_free (src_dir_copy);
   return path;
 }
 
@@ -212,17 +210,7 @@ summit_common_read_dir (struct backend *backend, struct item_iterator *iter,
 	  gchar *c = &data->names[i][SUMMIT_PATCH_NAME_LEN];
 	  *c = 0;
 	  c--;
-	  for (int j = SUMMIT_PATCH_NAME_LEN - 1; j >= 0; j--, c--)
-	    {
-	      if (*c == ' ')
-		{
-		  *c = 0;
-		}
-	      else
-		{
-		  break;
-		}
-	    }
+	  summit_truncate_name_at_last_useful_char (c);
 	  free_msg (rx_msg);
 
 	  usleep (SUMMIT_REST_TIME_US);	//Without this, it will start to act erratically, including not answering to the MIDI identity request.

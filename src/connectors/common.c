@@ -227,7 +227,8 @@ common_get_download_path_with_params (struct backend *backend,
 gchar *
 common_get_download_path (struct backend *backend,
 			  const struct fs_operations *ops,
-			  const gchar * dst_dir, const gchar * src_path)
+			  const gchar * dst_dir, const gchar * src_path,
+			  GByteArray * sysex)
 {
   guint id;
   common_slot_get_id_name_from_path (src_path, &id, NULL);

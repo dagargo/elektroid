@@ -64,7 +64,7 @@ static const guint8 SDS_DUMP_HEADER[] =
 static gchar *
 sds_get_download_path (struct backend *backend,
 		       const struct fs_operations *ops, const gchar * dst_dir,
-		       const gchar * src_path)
+		       const gchar * src_path, GByteArray * data)
 {
   GByteArray *tx_msg, *rx_msg;
   gchar *name = malloc (PATH_MAX);

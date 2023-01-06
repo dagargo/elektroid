@@ -160,13 +160,11 @@ phatty_get_preset_name (guint8 * preset, gchar * preset_name)
 static gchar *
 phatty_get_download_path (struct backend *backend,
 			  const struct fs_operations *ops,
-			  const gchar * dst_dir, const gchar * src_path)
+			  const gchar * dst_dir, const gchar * src_path,
+			  GByteArray * preset)
 {
-  struct phatty_data *data;
-  struct item_iterator iter;
   gchar preset_name[MOOG_NAME_LEN + 1];
-  gint err = 0;
-  gchar *name = malloc (PATH_MAX);
+  gchar *path;
   gchar *src_path_copy = strdup (src_path);
   gchar *filename = basename (src_path_copy);
   gint id = atoi (filename);
@@ -174,26 +172,16 @@ phatty_get_download_path (struct backend *backend,
 
   if (id == PHATTY_PANEL_ID)
     {
-      snprintf (name, PATH_MAX, "%s/Moog Little Phatty %s.syx", dst_dir,
-		PHATTY_PANEL);
-      return name;
+      path = malloc (PATH_MAX);
+      snprintf (path, PATH_MAX, "%s/%s %s %s.syx", dst_dir,
+		backend->device_name, ops->name, PHATTY_PANEL);
+      return path;
     }
 
-  if (!backend->data)
-    {
-      err = ops->readdir (backend, &iter, PHATTY_PRESETS_DIR);
-      if (err)
-	{
-	  return NULL;
-	}
-      free_item_iterator (&iter);
-    }
-  data = backend->data;
-  phatty_get_preset_name (data->presets[id], preset_name);
-  snprintf (name, PATH_MAX, "%s/Moog Little Phatty preset %02d - %s.syx",
-	    dst_dir, id, preset_name);
-
-  return name;
+  phatty_get_preset_name (preset->data, preset_name);
+  path = common_get_download_path_with_params (backend, ops, dst_dir, id, 2,
+					       preset_name);
+  return path;
 }
 
 static GByteArray *

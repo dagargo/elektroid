@@ -2559,25 +2559,21 @@ elektroid_download_task (gpointer userdata)
 {
   gint res;
   GByteArray *array;
-  gchar *dst_path, *dst_dir;
+  gchar *dst_path;
 
   debug_print (1, "Remote path: %s\n", transfer.src);
-  debug_print (1, "Local path: %s\n", transfer.dst);
+  debug_print (1, "Local dir: %s\n", transfer.dst);
 
-  dst_path = strdup (transfer.dst);
-  dst_dir = dirname (dst_path);
-
-  if (local_browser.fs_ops->mkdir (local_browser.backend, dst_dir))
+  if (local_browser.fs_ops->mkdir (local_browser.backend, transfer.dst))
     {
-      error_print ("Error while creating local %s dir\n", dst_dir);
+      error_print ("Error while creating local %s dir\n", transfer.dst);
       transfer.status = COMPLETED_ERROR;
       goto end_nodir;
     }
 
   array = g_byte_array_new ();
-
-  res = transfer.fs_ops->download (remote_browser.backend,
-				   transfer.src, array, &transfer.control);
+  res = transfer.fs_ops->download (remote_browser.backend, transfer.src,
+				   array, &transfer.control);
   g_idle_add (elektroid_check_backend_bg, NULL);
 
   g_mutex_lock (&transfer.control.mutex);
@@ -2590,16 +2586,21 @@ elektroid_download_task (gpointer userdata)
     {
       if (transfer.control.active)
 	{
+	  dst_path = remote_browser.fs_ops->get_download_path (&backend,
+							       remote_browser.fs_ops,
+							       transfer.dst,
+							       transfer.src,
+							       array);
 	  debug_print (1, "Writing %d bytes to file %s (filesystem %s)...\n",
-		       array->len, transfer.dst,
+		       array->len, dst_path,
 		       elektroid_get_fs_name (transfer.fs_ops->fs));
 
-	  res =
-	    transfer.fs_ops->save (transfer.dst, array, &transfer.control);
+	  res = transfer.fs_ops->save (dst_path, array, &transfer.control);
 	  if (!res)
 	    {
 	      transfer.status = COMPLETED_OK;
 	    }
+	  g_free (dst_path);
 	}
       else
 	{
@@ -2616,7 +2617,6 @@ elektroid_download_task (gpointer userdata)
   g_idle_add (elektroid_run_next_task, NULL);
 
 end_nodir:
-  g_free (dst_path);
   return NULL;
 }
 
@@ -2626,7 +2626,7 @@ elektroid_add_download_task_path (const gchar * rel_path,
 				  const gchar * dst_dir)
 {
   struct item_iterator iter;
-  gchar *path, *dst_abs_dir, *download_path, *filename;
+  gchar *path, *dst_abs_dir, *filename;
   gchar *src_abs_path = chain_path (src_dir, rel_path);
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
 
@@ -2635,16 +2635,11 @@ elektroid_add_download_task_path (const gchar * rel_path,
 				      src_abs_path))
     {
       dst_abs_dir = dirname (dst_abs_path);
-      download_path = remote_browser.fs_ops->get_download_path (&backend,
-								remote_browser.fs_ops,
-								dst_abs_dir,
-								src_abs_path);
       if (file_matches_extensions (src_abs_path, remote_browser.extensions))
 	{
-	  elektroid_add_task (DOWNLOAD, src_abs_path, download_path,
+	  elektroid_add_task (DOWNLOAD, src_abs_path, dst_abs_dir,
 			      remote_browser.fs_ops->fs);
 	}
-      g_free (download_path);
       goto cleanup;
     }
 

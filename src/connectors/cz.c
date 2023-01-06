@@ -58,26 +58,25 @@ struct cz_type_iterator_data
 static gchar *
 cz_get_download_path (struct backend *backend,
 		      const struct fs_operations *ops, const gchar * dst_dir,
-		      const gchar * src_path)
+		      const gchar * src_path, GByteArray * program)
 {
-  gchar *name = malloc (PATH_MAX);
+  gchar *path;
   if (strcmp (src_path, CZ_PANEL_PATH))
     {
       gchar *src_path_copy = strdup (src_path);
-      gchar *src_dir_copy = strdup (src_path);
       gchar *filename = basename (src_path_copy);
-      gchar *dir = dirname (src_dir_copy);
-      gint index = atoi (filename);
-      snprintf (name, PATH_MAX, "%s/%s %s %02d.syx", dst_dir,
-		CZ_PRESET_PREFIX, &dir[1], index);
+      gint id = atoi (filename);
+      path = common_get_download_path_with_params (backend, ops, dst_dir, id,
+						   2, NULL);
       g_free (src_path_copy);
-      g_free (src_dir_copy);
     }
   else
     {
-      snprintf (name, PATH_MAX, "%s/%s panel.syx", dst_dir, CZ_PRESET_PREFIX);
+      path = malloc (PATH_MAX);
+      snprintf (path, PATH_MAX, "%s/%s %s panel.syx", dst_dir,
+		backend->device_name, ops->name);
     }
-  return name;
+  return path;
 }
 
 static GByteArray *

@@ -62,4 +62,4 @@ gchar *common_get_download_path_with_params (struct backend *backend,
 gchar *common_get_download_path (struct backend *backend,
 				 const struct fs_operations *ops,
 				 const gchar * dst_dir,
-				 const gchar * src_path);
+				 const gchar * src_path, GByteArray * sysex);

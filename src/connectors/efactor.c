@@ -21,6 +21,7 @@
 #include "efactor.h"
 #include "common.h"
 
+#define EFACTOR_MAX_PRESETS 100
 #define EFACTOR_MSG_TYPE_OBJECT 0x31
 #define EFACTOR_MSG_TYPE_VALUE 0x3b
 
@@ -118,47 +119,23 @@ efactor_new_get_msg (guint8 type, const gchar * key)
 static gchar *
 efactor_get_download_path (struct backend *backend,
 			   const struct fs_operations *ops,
-			   const gchar * dst_dir, const gchar * src_path)
+			   const gchar * dst_dir, const gchar * src_path,
+			   GByteArray * preset)
 {
-  gchar *path, *name;
-  struct item_iterator iter;
-  struct efactor_data *data = backend->data;
-  gchar *src_path_copy;
-  gint id;
+  guint id;
+  gchar *path, *name, **lines;
 
-  name = NULL;
-  if (ops->readdir (backend, &iter, "/"))
+  if (common_slot_get_id_name_from_path (src_path, &id, NULL))
     {
       return NULL;
     }
 
-  src_path_copy = strdup (src_path);
-  id = atoi (basename (src_path_copy));
-  g_free (src_path_copy);
-
-  while (!next_item_iterator (&iter))
-    {
-      if (iter.item.id == id)
-	{
-	  name = iter.item.name;
-	  break;
-	}
-    }
-
-  if (!name)
-    {
-      path = NULL;
-      goto end;
-    }
-
-
-  path = malloc (PATH_MAX);
-  snprintf (path, PATH_MAX, "%s/%s %02d %s.syx", dst_dir,
-	    EFACTOR_PEDAL_NAME (data), id, name);
-
-  free_item_iterator (&iter);
-
-end:
+  lines = g_strsplit ((gchar *) & preset->data[EFACTOR_PRESET_DUMP_OFFSET],
+		      EFACTOR_PRESET_LINE_SEPARATOR, -1);
+  name = lines[6];
+  path = common_get_download_path_with_params (backend, ops, dst_dir, id, 2,
+					       name);
+  g_strfreev (lines);
   return path;
 }
 
@@ -299,7 +276,7 @@ static gint
 efactor_upload (struct backend *backend, const gchar * path,
 		GByteArray * input, struct job_control *control)
 {
-  gint err = 0, i, id;
+  gint err = 0, i, id, num;
   gchar *name, *b;
   GByteArray *tx_msg;
   gchar id_tag[EFACTOR_MAX_ID_TAG_LEN];
@@ -308,6 +285,11 @@ efactor_upload (struct backend *backend, const gchar * path,
   name = strdup (path);
   id = atoi (basename (name));	//This stops at the ':'.
   g_free (name);
+
+  if (id >= EFACTOR_MAX_PRESETS)
+    {
+      return -EBADSLT;
+    }
 
   //The fourth header byte is the device number ID so it might be different than 0.
   input->data[sizeof (EFACTOR_REQUEST_HEADER) - 1] = 0;
@@ -327,7 +309,8 @@ efactor_upload (struct backend *backend, const gchar * path,
   g_byte_array_append (tx_msg, input->data,
 		       sizeof (EFACTOR_REQUEST_HEADER) + 1);
   tx_msg->data[sizeof (EFACTOR_REQUEST_HEADER) - 1] = (guint8) data->id;
-  snprintf (id_tag, EFACTOR_MAX_ID_TAG_LEN, "[%d]", (id % 100) + 1);	//1 based
+  num = (id % EFACTOR_MAX_PRESETS) + 1;
+  snprintf (id_tag, EFACTOR_MAX_ID_TAG_LEN, "[%d]", num);	//1 based
   g_byte_array_append (tx_msg, (guint8 *) id_tag, strlen (id_tag));
 
   i = sizeof (EFACTOR_REQUEST_HEADER) + 1;
@@ -502,18 +485,13 @@ efactor_handshake (struct backend *backend)
 		  BE_VERSION_LEN);
 
 	  snprintf (backend->device_name, LABEL_MAX,
-		    "%02x-%02x-%02x %02x-%02x %02x-%02x %d.%d.%d.%d",
+		    "%02x-%02x-%02x %02x-%02x %02x-%02x",
 		    backend->midi_info.company[0],
 		    backend->midi_info.company[1],
 		    backend->midi_info.company[2],
 		    backend->midi_info.family[0],
 		    backend->midi_info.family[1],
-		    backend->midi_info.model[0],
-		    backend->midi_info.model[1],
-		    backend->midi_info.version[0],
-		    backend->midi_info.version[1],
-		    backend->midi_info.version[2],
-		    backend->midi_info.version[3]);
+		    backend->midi_info.model[0], backend->midi_info.model[1]);
 	  snprintf (backend->device_desc.name, LABEL_MAX, "%s",
 		    backend->device_name);
 	  debug_print (1, "XML version:\n%s\n", &rx_msg->data[14]);
@@ -594,10 +572,7 @@ efactor_handshake (struct backend *backend)
   backend->destroy_data = efactor_destroy_data;
   backend->data = data;
 
-  snprintf (backend->device_name, LABEL_MAX, "%s %d.%d.%d.%d",
-	    EFACTOR_PEDAL_NAME (data), backend->midi_info.version[0],
-	    backend->midi_info.version[1], backend->midi_info.version[2],
-	    backend->midi_info.version[3]);
+  snprintf (backend->device_name, LABEL_MAX, "%s", EFACTOR_PEDAL_NAME (data));
 
   return 0;
 }

@@ -206,7 +206,8 @@ static gchar *elektron_get_upload_path_data (struct backend *,
 					     gint32 *);
 static gchar *elektron_get_download_path (struct backend *,
 					  const struct fs_operations *,
-					  const gchar *, const gchar *);
+					  const gchar *, const gchar *,
+					  GByteArray *);
 static gchar *elektron_get_download_name (struct backend *,
 					  const struct fs_operations *,
 					  const gchar *);
@@ -3028,10 +3029,15 @@ elektron_get_upload_path_data (struct backend *backend,
   return path;
 }
 
+// As Elektron devices provide their own file extension and the file content is
+// not just SysEx, it is not needed to indicate in the filename the type of
+// device, filesystem or id.
+
 static gchar *
 elektron_get_download_path (struct backend *backend,
 			    const struct fs_operations *ops,
-			    const gchar * dst_dir, const gchar * src_path)
+			    const gchar * dst_dir, const gchar * src_path,
+			    GByteArray * data)
 {
   gchar *path, *src_pathc, *name, *dl_ext, *filename;
   const gchar *src_fpath, *md_ext, *ext = get_ext (src_path);

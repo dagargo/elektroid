@@ -171,7 +171,8 @@ typedef gchar *(*fs_get_upload_path) (struct backend *,
 
 typedef gchar *(*fs_get_download_path) (struct backend *,
 					const struct fs_operations *,
-					const gchar *, const gchar *);
+					const gchar *, const gchar *,
+					GByteArray *);
 
 typedef void (*fs_select_item) (struct backend *, const gchar *,
 				struct item *);

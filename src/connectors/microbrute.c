@@ -67,7 +67,8 @@ microbrute_get_seq (struct backend *backend)
 static gchar *
 microbrute_get_download_path (struct backend *backend,
 			      const struct fs_operations *ops,
-			      const gchar * dst_dir, const gchar * src_path)
+			      const gchar * dst_dir, const gchar * src_path,
+			      GByteArray * sequence)
 {
   guint id;
   common_slot_get_id_name_from_path (src_path, &id, NULL);
