@@ -227,8 +227,14 @@ cz_download (struct backend *backend, const gchar * path,
 	}
 
       basename_copy = strdup (path);
-      id = atoi (basename (basename_copy)) - 1 + type * CZ_MEM_TYPE_OFFSET;
+      id = atoi (basename (basename_copy));
       g_free (basename_copy);
+      if (id - 1 >= CZ_MAX_PROGRAMS)
+	{
+	  err = -EBADSLT;
+	  goto end;
+	}
+      id = id - 1 + type * CZ_MEM_TYPE_OFFSET;
     }
   else
     {
@@ -266,7 +272,7 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
   guint8 id;
   GByteArray *msg;
   gchar *name_copy, *dir_copy, *dir;
-  gint mem_type, err = 0;
+  gint type, err = 0;
 
   if (input->len != CZ_PROGRAM_LEN_FIXED)
     {
@@ -275,19 +281,24 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
 
   dir_copy = strdup (path);
   dir = dirname (dir_copy);
-  mem_type = get_mem_type (&dir[1]);
-  if (mem_type >= 0)
+  type = get_mem_type (&dir[1]);
+  g_free (dir_copy);
+  if (type >= 0)
     {
       name_copy = strdup (path);
-      id = atoi (basename (name_copy)) - 1 + mem_type * CZ_MEM_TYPE_OFFSET;
+      id = atoi (basename (name_copy));
       g_free (name_copy);
+      if (id - 1 >= CZ_MAX_PROGRAMS)
+	{
+	  return -EBADSLT;
+	}
+      id = id - 1 + type * CZ_MEM_TYPE_OFFSET;
     }
   else
     {
       if (strncmp (path, CZ_PANEL_PATH, strlen (CZ_PANEL_PATH)))
 	{
-	  err = -EIO;
-	  goto cleanup;
+	  return -EIO;
 	}
       else
 	{
@@ -302,8 +313,6 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
   err = common_data_upload (backend, msg, control);
   free_msg (msg);
 
-cleanup:
-  g_free (dir_copy);
   return err;
 }
 

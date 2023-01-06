@@ -10,6 +10,9 @@ FILE_UPLOAD_NAME=$7
 FILE_NEW_NAME=$8
 FILE_TO_UPLOAD=$srcdir/res/connectors/${CONN}_${FS}.data
 FILE_UPLOADED_BACK="$FILE_TO_UPLOAD.back"
+if [ ! -f "$FILE_UPLOADED_BACK" ]; then
+  FILE_UPLOADED_BACK="$FILE_TO_UPLOAD"
+fi
 
 BACKUP_PREFIX="Backup - "
 
@@ -75,6 +78,6 @@ $ecli ${CONN}-${FS}-dl $TEST_DEVICE:$FILE_PATH
 [ $? -ne 0 ] && exitWithError 1
 FILE=$(echo "$srcdir/$DEVICE_NAME $FS"*)
 [ ! -f "$FILE" ] && exitWithError 1
-[ $(cksum "$FILE" | awk '{print $1}') != $(cksum $FILE_UPLOADED_BACK | awk '{print $1}') ] && exitWithError 1
+[ $(cksum "$FILE" | awk '{print $1}') != $(cksum "$FILE_UPLOADED_BACK" | awk '{print $1}') ] && exitWithError 1
 
 exitWithError 0
