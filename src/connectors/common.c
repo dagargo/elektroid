@@ -220,7 +220,8 @@ common_get_download_path_with_params (struct backend *backend,
       strcat (path, " - ");
       strcat (path, name);
     }
-  strcat (path, ".syx");
+  strcat (path, ".");
+  strcat (path, ops->type_ext);
   return path;
 }
 

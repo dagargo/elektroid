@@ -406,9 +406,7 @@ microbrute_handshake (struct backend *backend)
   backend->destroy_data = backend_destroy_data;
   backend->data = seq;
 
-  snprintf (backend->device_name, LABEL_MAX, "Arturia MicroBrute %d.%d.%d.%d",
-	    backend->midi_info.version[0], backend->midi_info.version[1],
-	    backend->midi_info.version[2], backend->midi_info.version[3]);
+  snprintf (backend->device_name, LABEL_MAX, "Arturia MicroBrute");
 
   return 0;
 }
