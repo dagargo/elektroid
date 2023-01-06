@@ -74,7 +74,7 @@ cz_get_download_path (struct backend *backend,
     {
       path = malloc (PATH_MAX);
       snprintf (path, PATH_MAX, "%s/%s %s panel.syx", dst_dir,
-		backend->device_name, ops->name);
+		backend->name, ops->name);
     }
   return path;
 }
@@ -354,9 +354,9 @@ cz_handshake (struct backend *backend)
       goto end;
     }
 
-  backend->device_desc.filesystems = FS_PROGRAM_CZ;
+  backend->filesystems = FS_PROGRAM_CZ;
   backend->fs_ops = FS_CZ_OPERATIONS;
-  snprintf (backend->device_name, LABEL_MAX, "Casio CZ-101");
+  snprintf (backend->name, LABEL_MAX, "Casio CZ-101");
 
 end:
   free_msg (rx_msg);

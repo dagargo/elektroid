@@ -1114,23 +1114,15 @@ sds_handshake (struct backend *backend)
 
   sds_data->rest_time = SDS_REST_TIME_DEFAULT;
 
-  backend->device_desc.filesystems =
-    FS_SAMPLES_SDS_8_B | FS_SAMPLES_SDS_12_B | FS_SAMPLES_SDS_14_B |
-    FS_SAMPLES_SDS_16_B;
+  backend->filesystems = FS_SAMPLES_SDS_8_B | FS_SAMPLES_SDS_12_B |
+    FS_SAMPLES_SDS_14_B | FS_SAMPLES_SDS_16_B;
   backend->fs_ops = FS_SDS_ALL_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
   backend->data = sds_data;
 
-  if (strlen (backend->device_name))
+  if (!strlen (backend->name))
     {
-      gchar *device_name = strdup (backend->device_name);
-      snprintf (backend->device_name, LABEL_MAX, "%s %s", _("SDS sampler"),
-		device_name);
-      g_free (device_name);
-    }
-  else
-    {
-      snprintf (backend->device_name, LABEL_MAX, "%s", _("SDS sampler"));
+      snprintf (backend->name, LABEL_MAX, "%s", _("SDS sampler"));
     }
 
   return 0;

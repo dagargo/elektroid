@@ -256,7 +256,8 @@ elektroid_set_local_browser_file_extensions (gint sel_fs)
 {
   gboolean updated = FALSE;
   const struct fs_operations *ops =
-    backend_get_fs_operations (&backend, sel_fs, NULL);
+    backend_get_fs_operations (&backend, sel_fs,
+			       NULL);
 
   if (!ops || PLAYER_VISIBLE)
     {
@@ -265,7 +266,7 @@ elektroid_set_local_browser_file_extensions (gint sel_fs)
     }
   else
     {
-      gchar *ext = ops->get_ext (&backend.device_desc, ops);
+      gchar *ext = ops->get_ext (&backend, ops);
       updated = browser_set_file_extension (&local_browser, ext);
     }
   if (updated)
@@ -283,7 +284,7 @@ elektroid_set_remote_browser_file_extensions (gint sel_fs)
 
   if (ops && backend.type == BE_TYPE_SYSTEM)
     {
-      gchar *ext = ops->get_ext (&backend.device_desc, ops);
+      gchar *ext = ops->get_ext (&backend, ops);
       updated = browser_set_file_extension (&remote_browser, ext);
     }
   else
@@ -465,7 +466,7 @@ elektroid_update_statusbar ()
 	  for (gint i = 0, storage = 1; i < MAX_BACKEND_STORAGE;
 	       i++, storage <<= 1)
 	    {
-	      if (backend.device_desc.storage & storage)
+	      if (backend.storage & storage)
 		{
 		  if (!backend.get_storage_stats (&backend, storage, &statfs))
 		    {
@@ -480,10 +481,26 @@ elektroid_update_statusbar ()
 
       statfss_str = g_string_free (statfss, FALSE);
       status = g_malloc (LABEL_MAX);
-      if (strlen (backend.device_name))
+      if (strlen (backend.name))
 	{
-	  snprintf (status, LABEL_MAX, "%s%s", backend.device_name,
-		    statfss_str);
+	  snprintf (status, LABEL_MAX, "%s", backend.name);
+	  if (strlen (backend.version))
+	    {
+	      strncat (status, " ", sizeof (status) - 2);
+	      strncat (status, backend.version,
+		       sizeof (status) - strlen (backend.version) - 1);
+	    }
+	  if (strlen (backend.description))
+	    {
+	      strncat (status, " (", sizeof (status) - 3);
+	      strncat (status, backend.description,
+		       sizeof (status) - strlen (backend.description) - 1);
+	      strncat (status, ")", sizeof (status) - 2);
+	    }
+	  if (statfss_str)
+	    {
+	      strncat (status, statfss_str, LABEL_MAX - 1);
+	    }
 	}
       else
 	{
@@ -3044,7 +3061,7 @@ elektroid_fill_fs_combo_bg (gpointer data)
 
   gtk_list_store_clear (fs_list_store);
 
-  if (!backend.device_desc.filesystems)
+  if (!backend.filesystems)
     {
       elektroid_set_fs (NULL, NULL);
       return FALSE;
@@ -3052,7 +3069,7 @@ elektroid_fill_fs_combo_bg (gpointer data)
 
   for (fs = 1, i = 0; i < MAX_BACKEND_FSS; fs = fs << 1, i++)
     {
-      if (backend.device_desc.filesystems & fs)
+      if (backend.filesystems & fs)
 	{
 	  ops = backend_get_fs_operations (&backend, fs, NULL);
 	  if (ops->gui_name)

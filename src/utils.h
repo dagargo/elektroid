@@ -115,15 +115,6 @@ struct sample_params
   guint32 samplerate;
 };
 
-struct device_desc
-{
-  guint32 id;
-  gchar name[LABEL_MAX];
-  gchar alias[LABEL_MAX];
-  guint32 filesystems;
-  guint32 storage;
-};
-
 enum sysex_transfer_status
 {
   WAITING,
@@ -162,8 +153,7 @@ typedef gchar *(*fs_get_item_slot) (struct item *, struct backend *);
 typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
 				  struct job_control *);
 
-typedef gchar *(*fs_get_ext) (const struct device_desc *,
-			      const struct fs_operations *);
+typedef gchar *(*fs_get_ext) (struct backend *, const struct fs_operations *);
 
 typedef gchar *(*fs_get_upload_path) (struct backend *,
 				      const struct fs_operations *,

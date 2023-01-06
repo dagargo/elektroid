@@ -100,9 +100,12 @@ struct backend
   guint8 *buffer;
   ssize_t rx_len;
   enum backend_type type;
-  struct device_desc device_desc;
   struct backend_midi_info midi_info;
-  gchar device_name[LABEL_MAX];
+  gchar name[LABEL_MAX];
+  gchar version[LABEL_MAX];
+  gchar description[LABEL_MAX];
+  guint32 filesystems;
+  guint32 storage;
   GMutex mutex;
   //Message cache
   GHashTable *cache;
@@ -154,8 +157,7 @@ const struct fs_operations *backend_get_fs_operations (struct backend *, gint,
 
 const gchar *backend_get_fs_name (struct backend *, guint);
 
-gchar *backend_get_fs_ext (const struct device_desc *,
-			   const struct fs_operations *);
+gchar *backend_get_fs_ext (struct backend *, const struct fs_operations *);
 
 gdouble backend_get_storage_stats_percent (struct backend_storage_stats *);
 

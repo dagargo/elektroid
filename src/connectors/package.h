@@ -53,6 +53,13 @@ enum package_type
   PKG_FILE_TYPE_PRESET,
 };
 
+struct device_desc
+{
+  guint32 id;
+  gchar name[LABEL_MAX];
+  gchar alias[LABEL_MAX];
+};
+
 struct package
 {
   gchar *name;

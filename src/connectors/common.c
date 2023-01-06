@@ -214,7 +214,7 @@ common_get_download_path_with_params (struct backend *backend,
   gchar *path;
   path = malloc (PATH_MAX);
   snprintf (path, PATH_MAX, "%s/%s %s %.*d", dst_dir,
-	    backend->device_name, ops->name, digits, id);
+	    backend->name, ops->name, digits, id);
   if (name)
     {
       strcat (path, " - ");

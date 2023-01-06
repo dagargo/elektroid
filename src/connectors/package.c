@@ -183,16 +183,13 @@ package_add_manifest (struct package *pkg)
       json_builder_add_string_value (builder, pkg->fw_version);
     }
 
-  if (pkg->device_desc->filesystems & FS_SAMPLES)
+  for (resource = pkg->resources; resource; resource = resource->next)
     {
-      for (resource = pkg->resources; resource; resource = resource->next)
+      pkg_resource = resource->data;
+      if (pkg_resource->type == PKG_RES_TYPE_SAMPLE)
 	{
-	  pkg_resource = resource->data;
-	  if (pkg_resource->type == PKG_RES_TYPE_SAMPLE)
-	    {
-	      samples_found = TRUE;
-	      break;
-	    }
+	  samples_found = TRUE;
+	  break;
 	}
     }
 
@@ -307,8 +304,8 @@ package_open (struct package *pkg, GByteArray * data,
   debug_print (1, "Opening zip stream...\n");
 
   zip_error_init (&zerror);
-  pkg->zip_source =
-    zip_source_buffer_create (data->data, data->len, 0, &zerror);
+  pkg->zip_source = zip_source_buffer_create (data->data, data->len, 0,
+					      &zerror);
   if (!pkg->zip_source)
     {
       error_print ("Error while creating zip source: %s\n",
@@ -689,10 +686,6 @@ package_send_pkg_resources (struct package *pkg,
 
   if (!json_reader_read_member (reader, PKG_TAG_SAMPLES))
     {
-      if (pkg->device_desc->filesystems & FS_SAMPLES)
-	{
-	  debug_print (1, "No samples found\n");
-	}
       control->parts = 1;	// Only payload and it's done.
       control->part = 0;
       set_job_control_progress (control, 1.0);

@@ -484,7 +484,7 @@ efactor_handshake (struct backend *backend)
 	  memcpy (backend->midi_info.version, &rx_msg->data[10],
 		  BE_VERSION_LEN);
 
-	  snprintf (backend->device_name, LABEL_MAX,
+	  snprintf (backend->name, LABEL_MAX,
 		    "%02x-%02x-%02x %02x-%02x %02x-%02x",
 		    backend->midi_info.company[0],
 		    backend->midi_info.company[1],
@@ -492,8 +492,11 @@ efactor_handshake (struct backend *backend)
 		    backend->midi_info.family[0],
 		    backend->midi_info.family[1],
 		    backend->midi_info.model[0], backend->midi_info.model[1]);
-	  snprintf (backend->device_desc.name, LABEL_MAX, "%s",
-		    backend->device_name);
+	  snprintf (backend->version, LABEL_MAX, "%d.%d.%d.%d",
+		    backend->midi_info.version[0],
+		    backend->midi_info.version[1],
+		    backend->midi_info.version[2],
+		    backend->midi_info.version[3]);
 	  debug_print (1, "XML version:\n%s\n", &rx_msg->data[14]);
 	}
       else
@@ -567,12 +570,12 @@ efactor_handshake (struct backend *backend)
   data->type = type;
   data->lines = NULL;
 
-  backend->device_desc.filesystems = FS_EFACTOR_PRESET;
+  backend->filesystems = FS_EFACTOR_PRESET;
   backend->fs_ops = FS_EFACTOR_OPERATIONS_LIST;
   backend->destroy_data = efactor_destroy_data;
   backend->data = data;
 
-  snprintf (backend->device_name, LABEL_MAX, "%s", EFACTOR_PEDAL_NAME (data));
+  snprintf (backend->name, LABEL_MAX, "%s", EFACTOR_PEDAL_NAME (data));
 
   return 0;
 }

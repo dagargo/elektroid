@@ -90,7 +90,7 @@ enum elektron_storage
 struct elektron_data
 {
   guint16 seq;
-  gchar fw_version[LABEL_MAX];
+  struct device_desc device_desc;
 };
 
 typedef GByteArray *(*elektron_msg_id_func) (guint);
@@ -193,7 +193,7 @@ static gint elektron_upload_data_snd_pkg (struct backend *, const gchar *,
 static gint elektron_upload_raw_pst_pkg (struct backend *, const gchar *,
 					 GByteArray *, struct job_control *);
 
-static gchar *elektron_get_dev_and_fs_ext (const struct device_desc *,
+static gchar *elektron_get_dev_and_fs_ext (struct backend *,
 					   const struct fs_operations *);
 
 static gchar *elektron_get_upload_path_smplrw (struct backend *,
@@ -1985,8 +1985,8 @@ elektron_get_storage_stats (struct backend *backend, gint type,
   return res;
 }
 
-gint
-elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
+static gint
+elektron_configure_device (struct backend *backend, guint8 id)
 {
   gint err, devices;
   JsonParser *parser;
@@ -1994,6 +1994,7 @@ elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
   gchar *devices_filename;
   GError *error = NULL;
   const gchar *elektroid_elektron_json;
+  struct elektron_data *data = backend->data;
 
   parser = json_parser_new ();
 
@@ -2065,10 +2066,10 @@ elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
 		       DEV_TAG_ID);
 	  continue;
 	}
-      device_desc->id = json_reader_get_int_value (reader);
+      data->device_desc.id = json_reader_get_int_value (reader);
       json_reader_end_member (reader);
 
-      if (device_desc->id != id)
+      if (data->device_desc.id != id)
 	{
 	  json_reader_end_element (reader);
 	  continue;
@@ -2076,18 +2077,6 @@ elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
 
       err = 0;
       debug_print (1, "Device %d found\n", id);
-
-      if (!json_reader_read_member (reader, DEV_TAG_NAME))
-	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
-		       DEV_TAG_NAME);
-	  json_reader_end_element (reader);
-	  err = -ENODEV;
-	  break;
-	}
-      snprintf (device_desc->name, LABEL_MAX, "%s",
-		json_reader_get_string_value (reader));
-      json_reader_end_member (reader);
 
       if (!json_reader_read_member (reader, DEV_TAG_ALIAS))
 	{
@@ -2097,7 +2086,19 @@ elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
 	  err = -ENODEV;
 	  break;
 	}
-      snprintf (device_desc->alias, LABEL_MAX, "%s",
+      snprintf (data->device_desc.alias, LABEL_MAX, "%s",
+		json_reader_get_string_value (reader));
+      json_reader_end_member (reader);
+
+      if (!json_reader_read_member (reader, DEV_TAG_NAME))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_NAME);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      snprintf (backend->name, LABEL_MAX, "%s",
 		json_reader_get_string_value (reader));
       json_reader_end_member (reader);
 
@@ -2109,7 +2110,7 @@ elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
 	  err = -ENODEV;
 	  break;
 	}
-      device_desc->filesystems = json_reader_get_int_value (reader);
+      backend->filesystems = json_reader_get_int_value (reader);
       json_reader_end_member (reader);
 
       if (!json_reader_read_member (reader, DEV_TAG_STORAGE))
@@ -2120,7 +2121,7 @@ elektron_load_device_desc (struct device_desc *device_desc, guint8 id)
 	  err = -ENODEV;
 	  break;
 	}
-      device_desc->storage = json_reader_get_int_value (reader);
+      backend->storage = json_reader_get_int_value (reader);
       json_reader_end_member (reader);
 
       break;
@@ -2133,7 +2134,7 @@ cleanup_parser:
   g_free (devices_filename);
   if (err)
     {
-      device_desc->id = -1;
+      data->device_desc.id = -1;
     }
   return err;
 }
@@ -2180,7 +2181,7 @@ elektron_handshake (struct backend *backend)
   id = rx_msg->data[5];
   free_msg (rx_msg);
 
-  if (elektron_load_device_desc (&backend->device_desc, id))
+  if (elektron_configure_device (backend, id))
     {
       backend->data = NULL;
       g_free (overbridge_name);
@@ -2198,11 +2199,7 @@ elektron_handshake (struct backend *backend)
       g_free (data);
       return -ENODEV;
     }
-  if (snprintf (data->fw_version, LABEL_MAX, "%s",
-		(gchar *) & rx_msg->data[10]) >= LABEL_MAX)
-    {
-      error_print ("Firmware version truncated\n");
-    }
+  snprintf (backend->version, LABEL_MAX, "%s", (gchar *) & rx_msg->data[10]);
   free_msg (rx_msg);
 
   if (debug_level > 1)
@@ -2217,13 +2214,8 @@ elektron_handshake (struct backend *backend)
 	}
     }
 
-  if (snprintf (backend->device_name, LABEL_MAX, "%s %s (%s)",
-		backend->device_desc.name, data->fw_version,
-		overbridge_name) >= LABEL_MAX)
-    {
-      error_print ("Device name truncated\n");
-    }
-  debug_print (1, "Connected to %s\n", backend->device_name);
+  snprintf (backend->description, LABEL_MAX, "Overbridge name %s",
+	    overbridge_name);
 
   g_free (overbridge_name);
 
@@ -2915,8 +2907,8 @@ elektron_download_pkg (struct backend *backend, const gchar * path,
       return -1;
     }
 
-  if (package_begin
-      (&pkg, pkg_name, data->fw_version, &backend->device_desc, type))
+  if (package_begin (&pkg, pkg_name, backend->version, &data->device_desc,
+		     type))
     {
       g_free (pkg_name);
       return -1;
@@ -3061,7 +3053,7 @@ elektron_get_download_path (struct backend *backend,
   name = elektron_get_download_name (backend, ops, src_fpath);
   if (name)
     {
-      dl_ext = ops->get_ext (&backend->device_desc, ops);
+      dl_ext = ops->get_ext (backend, ops);
       filename = malloc (PATH_MAX);
       snprintf (filename, PATH_MAX, "%s.%s%s", name, dl_ext, md_ext);
       path = chain_path (dst_dir, filename);
@@ -3244,8 +3236,9 @@ elektron_upload_pkg (struct backend *backend, const gchar * path,
 {
   gint ret;
   struct package pkg;
+  struct elektron_data *data = backend->data;
 
-  ret = package_open (&pkg, input, &backend->device_desc);
+  ret = package_open (&pkg, input, &data->device_desc);
   if (!ret)
     {
       ret = package_send_pkg_resources (&pkg, path, control, backend,
@@ -3285,11 +3278,12 @@ elektron_upload_raw_pst_pkg (struct backend *backend, const gchar * path,
 }
 
 static gchar *
-elektron_get_dev_and_fs_ext (const struct device_desc *desc,
+elektron_get_dev_and_fs_ext (struct backend *backend,
 			     const struct fs_operations *ops)
 {
+  struct elektron_data *data = backend->data;
   gchar *ext = malloc (LABEL_MAX);
-  snprintf (ext, LABEL_MAX, "%s%s", desc->alias, ops->type_ext);
+  snprintf (ext, LABEL_MAX, "%s%s", data->device_desc.alias, ops->type_ext);
   return ext;
 }
 

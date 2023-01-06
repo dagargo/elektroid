@@ -33,19 +33,9 @@ static gint
 default_handshake (struct backend *backend)
 {
   backend->type = BE_TYPE_MIDI;
-  backend->device_desc.filesystems = 0;
+  backend->filesystems = 0;
   backend->fs_ops = NULL;
-  if (strlen (backend->device_name))
-    {
-      gchar *device_name = strdup (backend->device_name);
-      snprintf (backend->device_name, LABEL_MAX, "%s %s", _("MIDI device"),
-		device_name);
-      g_free (device_name);
-    }
-  else
-    {
-      snprintf (backend->device_name, LABEL_MAX, "%s", _("MIDI device"));
-    }
+  snprintf (backend->name, LABEL_MAX, "%s", _("MIDI device"));
   return 0;
 }
 

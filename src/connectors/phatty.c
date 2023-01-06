@@ -174,7 +174,7 @@ phatty_get_download_path (struct backend *backend,
     {
       path = malloc (PATH_MAX);
       snprintf (path, PATH_MAX, "%s/%s %s %s.syx", dst_dir,
-		backend->device_name, ops->name, PHATTY_PANEL);
+		backend->name, ops->name, PHATTY_PANEL);
       return path;
     }
 
@@ -527,12 +527,12 @@ phatty_handshake (struct backend *backend)
       return -ENODEV;
     }
 
-  backend->device_desc.filesystems = FS_PHATTY_PRESET | FS_PHATTY_SCALE;
+  backend->filesystems = FS_PHATTY_PRESET | FS_PHATTY_SCALE;
   backend->fs_ops = FS_PHATTY_OPERATIONS_LIST;
   backend->data = NULL;
   backend->destroy_data = backend_destroy_data;
 
-  snprintf (backend->device_name, LABEL_MAX, "Moog Little Phatty");
+  snprintf (backend->name, LABEL_MAX, "Moog Little Phatty");
 
   return 0;
 }

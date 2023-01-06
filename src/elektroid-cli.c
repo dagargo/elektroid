@@ -316,11 +316,12 @@ cli_info (int argc, gchar * argv[], int *optind)
       return EXIT_FAILURE;
     }
 
-  printf ("%s; filesystems=", backend.device_name);
+  printf ("%s; version: %s; description: %s; filesystems: ",
+	  backend.name, backend.version, backend.description);
 
   for (gint fs = 1; fs <= MAX_BACKEND_FSS; fs <<= 1)
     {
-      if (backend.device_desc.filesystems & fs)
+      if (backend.filesystems & fs)
 	{
 	  name = backend_get_fs_operations (&backend, fs, NULL)->name;
 	  printf ("%s%s", fs == 1 ? "" : ",", name);
@@ -357,7 +358,7 @@ cli_df (int argc, gchar * argv[], int *optind)
       return EXIT_FAILURE;
     }
 
-  if (!backend.device_desc.storage || !backend.get_storage_stats)
+  if (!backend.storage || !backend.get_storage_stats)
     {
       return EXIT_FAILURE;
     }
@@ -368,7 +369,7 @@ cli_df (int argc, gchar * argv[], int *optind)
   res = 0;
   for (storage = 1; storage < MAX_BACKEND_STORAGE; storage <<= 1)
     {
-      if (backend.device_desc.storage & storage)
+      if (backend.storage & storage)
 	{
 	  res |= backend.get_storage_stats (&backend, storage, &statfs);
 	  if (res)

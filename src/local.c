@@ -466,10 +466,10 @@ system_init_backend (struct backend *backend, const gchar * id)
     }
 
   backend->type = BE_TYPE_SYSTEM;
-  backend->device_desc.filesystems =
+  backend->filesystems =
     FS_SAMPLES_LOCAL_48_16_STEREO | FS_SAMPLES_LOCAL_48_16_MONO |
     FS_SAMPLES_LOCAL_441_16_STEREO | FS_SAMPLES_LOCAL_441_16_MONO;
   backend->fs_ops = FS_SYSTEM_OPERATIONS;
-  snprintf (backend->device_name, LABEL_MAX, "%s", _("System"));
+  snprintf (backend->name, LABEL_MAX, "%s", _("System"));
   return 0;
 }

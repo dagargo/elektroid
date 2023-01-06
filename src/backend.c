@@ -96,11 +96,9 @@ backend_midi_handshake (struct backend *backend)
   GByteArray *rx_msg;
   gint offset;
 
-  backend->device_desc.id = -1;
-  backend->device_desc.storage = 0;
-  backend->device_desc.name[0] = 0;
-  backend->device_desc.alias[0] = 0;
-  backend->device_name[0] = 0;
+  backend->name[0] = 0;
+  backend->version[0] = 0;
+  backend->description[0] = 0;
   backend->fs_ops = NULL;
   backend->upgrade_os = NULL;
   backend->get_storage_stats = NULL;
@@ -136,7 +134,7 @@ backend_midi_handshake (struct backend *backend)
 	  memcpy (backend->midi_info.version, &rx_msg->data[10 + offset],
 		  BE_VERSION_LEN);
 
-	  snprintf (backend->device_name, LABEL_MAX,
+	  snprintf (backend->name, LABEL_MAX,
 		    "%02x-%02x-%02x %02x-%02x %02x-%02x",
 		    backend->midi_info.company[0],
 		    backend->midi_info.company[1],
@@ -144,9 +142,13 @@ backend_midi_handshake (struct backend *backend)
 		    backend->midi_info.family[0],
 		    backend->midi_info.family[1],
 		    backend->midi_info.model[0], backend->midi_info.model[1]);
-	  snprintf (backend->device_desc.name, LABEL_MAX, "%s",
-		    backend->device_name);
-	  debug_print (1, "Detected device: %s\n", backend->device_name);
+	  snprintf (backend->version, LABEL_MAX, "%d.%d.%d.%d",
+		    backend->midi_info.version[0],
+		    backend->midi_info.version[1],
+		    backend->midi_info.version[2],
+		    backend->midi_info.version[3]);
+	  debug_print (1, "Detected device: %s %s (%s)\n", backend->name,
+		       backend->version, backend->description);
 	}
       else
 	{
@@ -271,8 +273,7 @@ backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg,
 }
 
 gchar *
-backend_get_fs_ext (const struct device_desc *desc,
-		    const struct fs_operations *ops)
+backend_get_fs_ext (struct backend *backend, const struct fs_operations *ops)
 {
   gchar *ext = malloc (LABEL_MAX);
   snprintf (ext, LABEL_MAX, "%s", ops->type_ext);
@@ -332,8 +333,6 @@ backend_destroy (struct backend *backend)
       backend_destroy_int (backend);
     }
 
-  backend->device_desc.id = -1;
-  backend->device_desc.filesystems = 0;
   backend->upgrade_os = NULL;
   backend->get_storage_stats = NULL;
   backend->destroy_data = NULL;

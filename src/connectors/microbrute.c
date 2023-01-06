@@ -401,12 +401,12 @@ microbrute_handshake (struct backend *backend)
   seq = malloc (sizeof (guint8));
   *seq = 0;
 
-  backend->device_desc.filesystems = FS_MICROBRUTE_SEQUENCE;
+  backend->filesystems = FS_MICROBRUTE_SEQUENCE;
   backend->fs_ops = FS_MICROBRUTE_OPERATIONS_LIST;
   backend->destroy_data = backend_destroy_data;
   backend->data = seq;
 
-  snprintf (backend->device_name, LABEL_MAX, "Arturia MicroBrute");
+  snprintf (backend->name, LABEL_MAX, "Arturia MicroBrute");
 
   return 0;
 }

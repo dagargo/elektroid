@@ -645,10 +645,10 @@ summit_handshake (struct backend *backend)
       return -ENODEV;
     }
 
-  backend->device_desc.filesystems =
+  backend->filesystems =
     FS_SUMMIT_SINGLE_PATCH | FS_SUMMIT_MULTI_PATCH | FS_SUMMIT_SCALE |
     FS_SUMMIT_BULK_TUNING;
   backend->fs_ops = FS_SUMMIT_OPERATIONS;
-  snprintf (backend->device_name, LABEL_MAX, "Novation Summit");
+  snprintf (backend->name, LABEL_MAX, "Novation Summit");
   return 0;
 }
