@@ -904,45 +904,24 @@ sds_upload_16b (struct backend *backend, const gchar * path,
   return sds_upload (backend, path, input, control, 16);
 }
 
-static void
-sds_free_iterator_data (void *iter_data)
-{
-  debug_print (2, "No packet received after a WAIT. Continuing...\n");
-  g_free (iter_data);
-}
-
-static guint
-sds_next_dentry (struct item_iterator *iter)
-{
-  gint next = *((gint *) iter->data);
-  if (next < SDS_SAMPLE_LIMIT)
-    {
-      iter->item.id = next;
-      snprintf (iter->item.name, LABEL_MAX, "%03d", next);
-      iter->item.type = ELEKTROID_FILE;
-      iter->item.size = -1;
-      (*((gint *) iter->data))++;
-      return 0;
-    }
-  else
-    {
-      return -ENOENT;
-    }
-}
-
 static gint
 sds_read_dir (struct backend *backend, struct item_iterator *iter,
 	      const gchar * path)
 {
+  struct common_simple_read_dir_data *data;
+
   if (strcmp (path, "/"))
     {
       return -ENOTDIR;
     }
 
-  iter->data = g_malloc (sizeof (guint));
-  *((gint *) iter->data) = 0;
-  iter->next = sds_next_dentry;
-  iter->free = sds_free_iterator_data;
+  data = g_malloc (sizeof (struct common_simple_read_dir_data));
+  data->next = 0;
+  data->max = SDS_SAMPLE_LIMIT;
+  iter->data = data;
+  iter->next = common_simple_next_dentry;
+  iter->free = g_free;
+
   return 0;
 }
 
