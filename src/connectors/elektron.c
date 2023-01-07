@@ -2214,8 +2214,7 @@ elektron_handshake (struct backend *backend)
 	}
     }
 
-  snprintf (backend->description, LABEL_MAX, "Overbridge name %s",
-	    overbridge_name);
+  snprintf (backend->description, LABEL_MAX, "%s", overbridge_name);
 
   g_free (overbridge_name);
 
@@ -2914,9 +2913,8 @@ elektron_download_pkg (struct backend *backend, const gchar * path,
       return -1;
     }
 
-  ret =
-    package_receive_pkg_resources (&pkg, path, control, backend, download,
-				   elektron_download_sample_part);
+  ret = package_receive_pkg_resources (&pkg, path, control, backend, download,
+				       elektron_download_sample_part);
   ret = ret || package_end (&pkg, output);
 
   package_destroy (&pkg);
