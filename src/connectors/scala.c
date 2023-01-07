@@ -19,6 +19,7 @@
  */
 
 #include <math.h>
+#include <errno.h>
 #include "scala.h"
 
 #define SCALA_FILE_LINE_SEPARATOR "\x0d\x0a"
