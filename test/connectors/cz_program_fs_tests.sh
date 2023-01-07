@@ -31,6 +31,6 @@ $ecli cz-program-download $TEST_DEVICE:/panel
 [ ! -f "$PANEL_FILE" ] && exitWithError 1
 [ $(cksum "$PANEL_FILE" | awk '{print $1}') != $(cksum "$PANEL_SRC_FILE" | awk '{print $1}') ] && exitWithError 1
 
-$srcdir/connectors/generic_fs_tests.sh cz program /internal 16 /internal/17 /internal/16 "" ""
+$srcdir/connectors/generic_fs_tests.sh cz program /internal 16 "/internal/0 /internal/17" /internal/16 "" ""
 
 exit $?

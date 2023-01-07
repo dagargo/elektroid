@@ -229,12 +229,14 @@ cz_download (struct backend *backend, const gchar * path,
       basename_copy = strdup (path);
       id = atoi (basename (basename_copy));
       g_free (basename_copy);
-      if (id - 1 >= CZ_MAX_PROGRAMS)
+
+      id--;
+      if (id >= CZ_MAX_PROGRAMS)
 	{
 	  err = -EBADSLT;
 	  goto end;
 	}
-      id = id - 1 + type * CZ_MEM_TYPE_OFFSET;
+      id += type * CZ_MEM_TYPE_OFFSET;
     }
   else
     {
@@ -288,11 +290,12 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
       name_copy = strdup (path);
       id = atoi (basename (name_copy));
       g_free (name_copy);
-      if (id - 1 >= CZ_MAX_PROGRAMS)
+      id--;
+      if (id >= CZ_MAX_PROGRAMS)
 	{
 	  return -EBADSLT;
 	}
-      id = id - 1 + type * CZ_MEM_TYPE_OFFSET;
+      id += type * CZ_MEM_TYPE_OFFSET;
     }
   else
     {

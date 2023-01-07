@@ -4,7 +4,7 @@ CONN=$1
 FS=$2
 DIR_PATH=$3
 LS_ROWS=$4
-BAD_FILE_PATH=$5
+BAD_FILE_PATHS=$5
 FILE_PATH=$6
 FILE_UPLOAD_NAME=$7
 FILE_NEW_NAME=$8
@@ -37,9 +37,11 @@ files=$($ecli ${CONN}-${FS}-ls $TEST_DEVICE:$DIR_PATH)
 echo "$files" | head
 [ $(echo "$files" | wc -l) -ne $LS_ROWS ] && exit 1
 
-echo "Testing download with bad path $BAD_FILE_PATH..."
-$ecli ${CONN}-${FS}-dl $TEST_DEVICE:$BAD_FILE_PATH
-[ $? -eq 0 ] && exit 1
+for p in $BAD_FILE_PATHS; do
+  echo "Testing download with bad path $p..."
+  $ecli ${CONN}-${FS}-dl $TEST_DEVICE:$p
+  [ $? -eq 0 ] && exit 1
+done
 
 echo "Testing download with path $FILE_PATH..."
 $ecli ${CONN}-${FS}-dl $TEST_DEVICE:$FILE_PATH
@@ -49,9 +51,11 @@ FILE=$(echo "$srcdir/$DEVICE_NAME $FS"*)
 FILE_BACKUP=$srcdir/$BACKUP_PREFIX$(basename "$FILE")
 mv "$FILE" "$FILE_BACKUP"
 
-echo "Testing upload with bad path $BAD_FILE_PATH..."
-$ecli ${CONN}-${FS}-ul $FILE_TO_UPLOAD $TEST_DEVICE:$BAD_FILE_PATH
-[ $? -eq 0 ] && exitWithError 1
+for p in $BAD_FILE_PATHS; do
+  echo "Testing upload with bad path $p..."
+  $ecli ${CONN}-${FS}-ul $FILE_TO_UPLOAD $TEST_DEVICE:$p
+  [ $? -eq 0 ] && exitWithError 1
+done
 
 echo "Testing upload with non existing file to $FILE_PATH..."
 $ecli ${CONN}-${FS}-ul foo $TEST_DEVICE:$FILE_PATH
