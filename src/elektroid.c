@@ -481,25 +481,29 @@ elektroid_update_statusbar ()
 
       statfss_str = g_string_free (statfss, FALSE);
       status = g_malloc (LABEL_MAX);
+
       if (strlen (backend.name))
 	{
 	  snprintf (status, LABEL_MAX, "%s", backend.name);
-	  if (strlen (backend.version))
+	  if (*backend.version)
 	    {
-	      strncat (status, " ", sizeof (status) - 2);
+	      strncat (status, " ", LABEL_MAX - sizeof (status) - 2);
 	      strncat (status, backend.version,
-		       sizeof (status) - strlen (backend.version) - 1);
+		       LABEL_MAX - sizeof (status) -
+		       strlen (backend.version) - 1);
 	    }
-	  if (strlen (backend.description))
+	  if (*backend.description)
 	    {
-	      strncat (status, " (", sizeof (status) - 3);
+	      strncat (status, " (", LABEL_MAX - sizeof (status) - 3);
 	      strncat (status, backend.description,
-		       sizeof (status) - strlen (backend.description) - 1);
-	      strncat (status, ")", sizeof (status) - 2);
+		       LABEL_MAX - sizeof (status) -
+		       strlen (backend.description) - 1);
+	      strncat (status, ")", LABEL_MAX - sizeof (status) - 2);
 	    }
 	  if (statfss_str)
 	    {
-	      strncat (status, statfss_str, LABEL_MAX - 1);
+	      strncat (status, statfss_str,
+		       sizeof (status) - strlen (statfss_str) - 1);
 	    }
 	}
       else
