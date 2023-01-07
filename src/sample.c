@@ -154,7 +154,8 @@ get_filelen_file_io (void *user_data)
 {
   long fileSize, position;
   FILE *file = user_data;
-  position = fseek (file, 0, SEEK_END);
+  position = ftell (file);
+  fseek (file, 0, SEEK_END);
   fileSize = ftell (file);
   fseek (file, position, SEEK_SET);
   return fileSize;
@@ -164,7 +165,8 @@ static sf_count_t
 seek_file_io (sf_count_t offset, int whence, void *user_data)
 {
   FILE *file = user_data;
-  return fseek (file, offset, whence);
+  fseek (file, offset, whence);
+  return ftell (file);
 }
 
 static sf_count_t
