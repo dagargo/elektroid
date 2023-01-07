@@ -23,23 +23,23 @@
 
 #define MICROBRUTE_MAX_SEQ_STR_LEN 256
 
-#define MICROBRUTE_MAX_SEQUENCES 8
+#define MICROBRUTE_MAX_SEQS 8
 
-#define MICROBRUTE_SEQUENCE_REQUEST_SEQ_POS 6
-#define MICROBRUTE_SEQUENCE_REQUEST_ID_POS 9
-#define MICROBRUTE_SEQUENCE_REQUEST_OFFSET_POS 10
-#define MICROBRUTE_SEQUENCE_RESPONSE_LEN_POS 11
-#define MICROBRUTE_SEQUENCE_RESPONSE_DATA_POS 12
-#define MICROBRUTE_SEQUENCE_TXT_POS 2
+#define MICROBRUTE_SEQ_REQ_COUNTER_POS 6
+#define MICROBRUTE_SEQ_REQ_ID_POS 9
+#define MICROBRUTE_SEQ_REQ_OFFSET_POS 10
+#define MICROBRUTE_SEQ_RPLY_LEN_POS 11
+#define MICROBRUTE_SEQ_RPLY_DATA_POS 12
+#define MICROBRUTE_SEQ_TXT_POS 2
 
 static const guint8 ARTURIA_ID[] = { 0x0, 0x20, 0x6b };
 static const guint8 FAMILY_ID[] = { 0x4, 0x0 };
 static const guint8 MODEL_ID[] = { 0x2, 0x1 };
 
-static const guint8 MICROBRUTE_SEQUENCE_REQUEST[] =
+static const guint8 MICROBRUTE_SEQ_REQ[] =
   { 0xf0, 0x0, 0x20, 0x6B, 0x5, 0x1, 0x0, 0x03, 0x3B, 0x0, 0x0, 0x20, 0xf7 };
 
-static const guint8 MICROBRUTE_SEQUENCE_MSG[] =
+static const guint8 MICROBRUTE_SEQ_MSG[] =
   { 0xf0, 0x0, 0x20, 0x6b, 0x05, 0x01, 0x0, 0x23, 0x3a, 0x0, 0x0, 0x20,
   0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
   0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0,
@@ -52,7 +52,7 @@ enum cz_fs
 };
 
 static guint8
-microbrute_get_seq (struct backend *backend)
+microbrute_get_counter (struct backend *backend)
 {
   guint8 *seq = backend->data;
   guint8 value = *seq;
@@ -73,43 +73,25 @@ microbrute_get_download_path (struct backend *backend,
   guint id;
   common_slot_get_id_name_from_path (src_path, &id, NULL);
   return common_get_download_path_with_params (backend, ops, dst_dir,
-					       id + 1, 1, NULL);
-}
-
-static guint
-microbrute_next_dentry (struct item_iterator *iter)
-{
-  guint *next = iter->data;
-
-  if (*next >= MICROBRUTE_MAX_SEQUENCES)
-    {
-      return -ENOENT;
-    }
-
-  iter->item.id = *next;
-  snprintf (iter->item.name, LABEL_MAX, "%d", *next + 1);
-  iter->item.type = ELEKTROID_FILE;
-  iter->item.size = -1;
-  (*next)++;
-
-  return 0;
+					       id, 1, NULL);
 }
 
 static gint
 microbrute_read_dir (struct backend *backend, struct item_iterator *iter,
 		     const gchar * path)
 {
-  guint *next;
+  struct common_simple_read_dir_data *data;
 
   if (strcmp (path, "/"))
     {
       return -ENOTDIR;
     }
 
-  next = g_malloc (sizeof (guint));
-  *next = 0;
-  iter->data = next;
-  iter->next = microbrute_next_dentry;
+  data = g_malloc (sizeof (struct common_simple_read_dir_data));
+  data->next = 1;
+  data->max = MICROBRUTE_MAX_SEQS + 1;
+  iter->data = data;
+  iter->next = common_simple_next_dentry;
   iter->free = g_free;
 
   return 0;
@@ -119,25 +101,29 @@ static GByteArray *
 microbrute_get_sequence_request_msg (struct backend *backend, guint8 id,
 				     guint8 offset)
 {
-  GByteArray *tx_msg =
-    g_byte_array_sized_new (sizeof (MICROBRUTE_SEQUENCE_REQUEST));
-  g_byte_array_append (tx_msg, MICROBRUTE_SEQUENCE_REQUEST,
-		       sizeof (MICROBRUTE_SEQUENCE_REQUEST));
-  tx_msg->data[MICROBRUTE_SEQUENCE_REQUEST_SEQ_POS] =
-    microbrute_get_seq (backend);
-  tx_msg->data[MICROBRUTE_SEQUENCE_REQUEST_ID_POS] = id;
-  tx_msg->data[MICROBRUTE_SEQUENCE_REQUEST_OFFSET_POS] = offset;
+  guint8 counter = microbrute_get_counter (backend);
+  GByteArray *tx_msg = g_byte_array_sized_new (sizeof (MICROBRUTE_SEQ_REQ));
+  g_byte_array_append (tx_msg, MICROBRUTE_SEQ_REQ,
+		       sizeof (MICROBRUTE_SEQ_REQ));
+  tx_msg->data[MICROBRUTE_SEQ_REQ_COUNTER_POS] = counter;
+  tx_msg->data[MICROBRUTE_SEQ_REQ_ID_POS] = id;
+  tx_msg->data[MICROBRUTE_SEQ_REQ_OFFSET_POS] = offset;
   return tx_msg;
 }
 
 static gint
 microbrute_download_seq_data (struct backend *backend, guint seqnum,
-			      guint offset, gchar * sequence)
+			      guint offset, GByteArray * sequence)
 {
   GByteArray *tx_msg, *rx_msg;
   gchar aux[LABEL_MAX];
-  gboolean first;
   guint8 *step;
+
+  if (!offset)
+    {
+      snprintf (aux, LABEL_MAX, "%1d:", seqnum + 1);
+      g_byte_array_append (sequence, (guint8 *) aux, strlen (aux));
+    }
 
   tx_msg = microbrute_get_sequence_request_msg (backend, seqnum, offset);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
@@ -146,21 +132,17 @@ microbrute_download_seq_data (struct backend *backend, guint seqnum,
       return -EIO;
     }
 
-  first = offset ? FALSE : TRUE;
-  step = &rx_msg->data[MICROBRUTE_SEQUENCE_RESPONSE_DATA_POS];
+  step = &rx_msg->data[MICROBRUTE_SEQ_RPLY_DATA_POS];
   while (*step && *step != 0xf7)
     {
-      snprintf (aux, LABEL_MAX, "%s", first ? "" : " ");
-      strcat (sequence, aux);
-      first = FALSE;
       if (*step == 0x7f)
 	{
-	  strcat (sequence, "x");
+	  g_byte_array_append (sequence, (guint8 *) " x", 2);
 	}
       else
 	{
-	  snprintf (aux, LABEL_MAX, "%02d", *step);
-	  strcat (sequence, aux);
+	  snprintf (aux, LABEL_MAX, " %02d", *step);
+	  g_byte_array_append (sequence, (guint8 *) aux, strlen (aux));
 	}
       step++;
     }
@@ -172,24 +154,23 @@ microbrute_download_seq_data (struct backend *backend, guint seqnum,
 
 static gint
 microbrute_download (struct backend *backend, const gchar * src_path,
-		     GByteArray * output, struct job_control *control)
+		     GByteArray * sequence, struct job_control *control)
 {
   gint err;
   guint seqnum;
   gboolean active;
-  gchar sequence[MICROBRUTE_MAX_SEQ_STR_LEN];
 
-  if (common_slot_get_id_name_from_path (src_path, &seqnum, NULL))
+  err = common_slot_get_id_name_from_path (src_path, &seqnum, NULL);
+  if (err)
     {
-      return -EINVAL;
+      return err;
     }
 
-  if (seqnum >= MICROBRUTE_MAX_SEQUENCES)
+  seqnum--;
+  if (seqnum >= MICROBRUTE_MAX_SEQS)
     {
       return -EBADSLT;
     }
-
-  snprintf (sequence, MICROBRUTE_MAX_SEQ_STR_LEN, "%1d:", seqnum + 1);
 
   control->parts = 1;
   control->part = 0;
@@ -221,8 +202,6 @@ microbrute_download (struct backend *backend, const gchar * src_path,
       return -ECANCELED;
     }
 
-  g_byte_array_append (output, (guint8 *) sequence, strlen (sequence));
-
   return 0;
 }
 
@@ -230,14 +209,13 @@ static GByteArray *
 microbrute_set_sequence_request_msg (struct backend *backend, guint8 id,
 				     guint8 offset)
 {
-  GByteArray *tx_msg =
-    g_byte_array_sized_new (sizeof (MICROBRUTE_SEQUENCE_MSG));
-  g_byte_array_append (tx_msg, MICROBRUTE_SEQUENCE_MSG,
-		       sizeof (MICROBRUTE_SEQUENCE_MSG));
-  tx_msg->data[MICROBRUTE_SEQUENCE_REQUEST_SEQ_POS] =
-    microbrute_get_seq (backend);
-  tx_msg->data[MICROBRUTE_SEQUENCE_REQUEST_ID_POS] = id;
-  tx_msg->data[MICROBRUTE_SEQUENCE_REQUEST_OFFSET_POS] = offset;
+  guint8 counter = microbrute_get_counter (backend);
+  GByteArray *tx_msg = g_byte_array_sized_new (sizeof (MICROBRUTE_SEQ_MSG));
+  g_byte_array_append (tx_msg, MICROBRUTE_SEQ_MSG,
+		       sizeof (MICROBRUTE_SEQ_MSG));
+  tx_msg->data[MICROBRUTE_SEQ_REQ_COUNTER_POS] = counter;
+  tx_msg->data[MICROBRUTE_SEQ_REQ_ID_POS] = id;
+  tx_msg->data[MICROBRUTE_SEQ_REQ_OFFSET_POS] = offset;
   return tx_msg;
 }
 
@@ -247,14 +225,15 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
 			 gint total)
 {
   struct sysex_transfer transfer;
-  guint8 steps = 0, id = seqnum;
+  guint8 steps = 0;
   gchar *token = *tokens;
   gint err;
   guint8 *step;
 
-  transfer.raw = microbrute_set_sequence_request_msg (backend, id, offset);
+  transfer.raw = microbrute_set_sequence_request_msg (backend, seqnum,
+						      offset);
 
-  step = &transfer.raw->data[MICROBRUTE_SEQUENCE_RESPONSE_DATA_POS];
+  step = &transfer.raw->data[MICROBRUTE_SEQ_RPLY_DATA_POS];
   while (steps < 32 && *pos < total)
     {
       if (*token < 0x20)
@@ -303,7 +282,7 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
       steps++;
       step++;
     }
-  transfer.raw->data[MICROBRUTE_SEQUENCE_RESPONSE_LEN_POS] = steps;
+  transfer.raw->data[MICROBRUTE_SEQ_RPLY_LEN_POS] = steps;
 
   //This doesn't need synchronized access as the caller provices this already.
   err = backend_tx_sysex (backend, &transfer);
@@ -318,17 +297,19 @@ static gint
 microbrute_upload (struct backend *backend, const gchar * path,
 		   GByteArray * input, struct job_control *control)
 {
-  gchar *token = (gchar *) & input->data[MICROBRUTE_SEQUENCE_TXT_POS];
-  gint pos = MICROBRUTE_SEQUENCE_TXT_POS;
+  gchar *token = (gchar *) & input->data[MICROBRUTE_SEQ_TXT_POS];
+  gint pos = MICROBRUTE_SEQ_TXT_POS;
   guint seqnum;
-  gint steps;
+  gint steps, err;
 
-  if (common_slot_get_id_name_from_path (path, &seqnum, NULL))
+  err = common_slot_get_id_name_from_path (path, &seqnum, NULL);
+  if (err)
     {
-      return -EBADSLT;
+      return err;
     }
 
-  if (seqnum >= MICROBRUTE_MAX_SEQUENCES)
+  seqnum--;
+  if (seqnum >= MICROBRUTE_MAX_SEQS)
     {
       return -EBADSLT;
     }
