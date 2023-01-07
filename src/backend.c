@@ -147,8 +147,8 @@ backend_midi_handshake (struct backend *backend)
 		    backend->midi_info.version[1],
 		    backend->midi_info.version[2],
 		    backend->midi_info.version[3]);
-	  debug_print (1, "Detected device: %s %s (%s)\n", backend->name,
-		       backend->version, backend->description);
+	  debug_print (1, "Detected device: %s %s\n", backend->name,
+		       backend->version);
 	}
       else
 	{
