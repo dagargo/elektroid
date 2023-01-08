@@ -168,19 +168,18 @@ cleanup:
   return err;
 }
 
+
 guint
-common_data_download (struct backend *backend, GByteArray * tx_msg,
-		      GByteArray ** rx_msg, struct job_control *control)
+common_data_download_part (struct backend *backend, GByteArray * tx_msg,
+			   GByteArray ** rx_msg, struct job_control *control)
 {
   gint err = 0;
   gboolean active;
 
-  control->parts = 1;
-  control->part = 0;
   set_job_control_progress (control, 0.0);
 
   *rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-  if (!rx_msg)
+  if (!*rx_msg)
     {
       err = -EIO;
       goto cleanup;
@@ -202,6 +201,15 @@ common_data_download (struct backend *backend, GByteArray * tx_msg,
 
 cleanup:
   return err;
+}
+
+guint
+common_data_download (struct backend *backend, GByteArray * tx_msg,
+		      GByteArray ** rx_msg, struct job_control *control)
+{
+  control->parts = 1;
+  control->part = 0;
+  return common_data_download_part (backend, tx_msg, rx_msg, control);
 }
 
 gchar *

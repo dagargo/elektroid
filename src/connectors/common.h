@@ -53,6 +53,10 @@ guint common_data_download (struct backend *backend, GByteArray * tx_msg,
 			    GByteArray ** rx_msg,
 			    struct job_control *control);
 
+guint common_data_download_part (struct backend *backend, GByteArray * tx_msg,
+				 GByteArray ** rx_msg,
+				 struct job_control *control);
+
 gchar *common_get_download_path_with_params (struct backend *backend,
 					     const struct fs_operations *ops,
 					     const gchar * dst_dir,
