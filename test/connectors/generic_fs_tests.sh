@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+download=true
+[ "$1" == "--no-download" ] && shift && download=false
+
 CONN=$1
 FS=$2
 DIR_PATH=$3
@@ -37,19 +40,21 @@ files=$($ecli ${CONN}-${FS}-ls $TEST_DEVICE:$DIR_PATH)
 echo "$files" | head
 [ $(echo "$files" | wc -l) -ne $LS_ROWS ] && exit 1
 
-for p in $BAD_FILE_PATHS; do
-  echo "Testing download with bad path $p..."
-  $ecli ${CONN}-${FS}-dl $TEST_DEVICE:$p
-  [ $? -eq 0 ] && exit 1
-done
+if $download; then
+  for p in $BAD_FILE_PATHS; do
+    echo "Testing download with bad path $p..."
+    $ecli ${CONN}-${FS}-dl $TEST_DEVICE:$p
+    [ $? -eq 0 ] && exit 1
+  done
 
-echo "Testing download with path $FILE_PATH..."
-$ecli ${CONN}-${FS}-dl $TEST_DEVICE:$FILE_PATH
-[ $? -ne 0 ] && exit 1
-FILE=$(echo "$srcdir/$DEVICE_NAME $FS"*)
-[ ! -f "$FILE" ] && exit 1
-FILE_BACKUP=$srcdir/$BACKUP_PREFIX$(basename "$FILE")
-mv "$FILE" "$FILE_BACKUP"
+  echo "Testing download with path $FILE_PATH..."
+  $ecli ${CONN}-${FS}-dl $TEST_DEVICE:$FILE_PATH
+  [ $? -ne 0 ] && exit 1
+  FILE=$(echo "$srcdir/$DEVICE_NAME $FS"*)
+  [ ! -f "$FILE" ] && exit 1
+  FILE_BACKUP=$srcdir/$BACKUP_PREFIX$(basename "$FILE")
+  mv "$FILE" "$FILE_BACKUP"
+fi
 
 for p in $BAD_FILE_PATHS; do
   echo "Testing upload with bad path $p..."
@@ -77,11 +82,13 @@ if [ -n "$FILE_NEW_NAME" ]; then
   [ $? -ne 0 ] && exitWithError 1
 fi
 
-echo "Testing data changes..."
-$ecli ${CONN}-${FS}-dl $TEST_DEVICE:$FILE_PATH
-[ $? -ne 0 ] && exitWithError 1
-FILE=$(echo "$srcdir/$DEVICE_NAME $FS"*)
-[ ! -f "$FILE" ] && exitWithError 1
-[ $(cksum "$FILE" | awk '{print $1}') != $(cksum "$FILE_UPLOADED_BACK" | awk '{print $1}') ] && exitWithError 1
+if $download; then
+  echo "Testing data changes..."
+  $ecli ${CONN}-${FS}-dl $TEST_DEVICE:$FILE_PATH
+  [ $? -ne 0 ] && exitWithError 1
+  FILE=$(echo "$srcdir/$DEVICE_NAME $FS"*)
+  [ ! -f "$FILE" ] && exitWithError 1
+  [ $(cksum "$FILE" | awk '{print $1}') != $(cksum "$FILE_UPLOADED_BACK" | awk '{print $1}') ] && exitWithError 1
+fi
 
 exitWithError 0

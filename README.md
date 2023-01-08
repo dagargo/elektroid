@@ -18,7 +18,7 @@ Supported devices:
 * Arturia MicroBrute sequences
 * Eventide ModFactor, PitchFactor, TimeFactor, Space and H9 presets
 * Moog Little Phatty and Slim Phatty
-* Novation Summit
+* Novation Summit and Peak
 
 To use with Elektron devices, USB configuration must be set to `USB MIDI` or `USB AUDIO/MIDI` as it won't work in Overbridge mode.
 

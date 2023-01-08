@@ -55,7 +55,6 @@ enum summit_fs
 struct summit_root_iterator_data
 {
   guint next;
-  struct backend *backend;
 };
 
 struct summit_bank_iterator_data
@@ -178,7 +177,6 @@ summit_common_read_dir (struct backend *backend, struct item_iterator *iter,
       struct summit_root_iterator_data *data =
 	g_malloc (sizeof (struct summit_root_iterator_data));
       data->next = 0;
-      data->backend = backend;
       iter->data = data;
       iter->next = summit_next_dentry_root;
       iter->free = g_free;
@@ -588,6 +586,12 @@ summit_tuning_download (struct backend *backend, const gchar * path,
   tx_msg = g_byte_array_sized_new (16);
   g_byte_array_append (tx_msg, SUMMIT_BULK_TUNING_REQ,
 		       sizeof (SUMMIT_BULK_TUNING_REQ));
+
+  if (id >= SUMMIT_MAX_TUNINGS)
+    {
+      return -EBADSLT;
+    }
+
   tx_msg->data[5] = id;
   err = common_data_download (backend, tx_msg, &rx_msg, control);
   if (err)
