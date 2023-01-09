@@ -27,7 +27,7 @@
 #define SUMMIT_PATCH_NAME_LEN 16
 #define SUMMIT_SINGLE_LEN 527
 #define SUMMIT_MULTI_LEN 1039
-#define SUMMIT_REST_TIME_US 50000
+#define SUMMIT_REST_TIME_US 5000
 #define SUMMIT_MSG_BANK_POS 12
 #define SUMMIT_MSG_PATCH_POS 13
 #define SUMMIT_MAX_TUNINGS 17	// Tuning 0 is stored but can't be changed form the UI.
@@ -52,16 +52,12 @@ enum summit_fs
   FS_SUMMIT_BULK_TUNING = 8
 };
 
-struct summit_root_iterator_data
-{
-  guint next;
-};
-
 struct summit_bank_iterator_data
 {
-  guint next;
+  guint8 next;
+  guint8 bank;
   enum summit_fs fs;
-  gchar names[SUMMIT_PATCHES_PER_BANK][SUMMIT_PATCH_NAME_LEN + 1];
+  struct backend *backend;
 };
 
 static gint
@@ -130,35 +126,52 @@ summit_get_download_path (struct backend *backend,
 static guint
 summit_next_dentry (struct item_iterator *iter)
 {
+  GByteArray *tx_msg, *rx_msg;
   struct summit_bank_iterator_data *data = iter->data;
 
-  if (data->next < SUMMIT_PATCHES_PER_BANK)
+  if (data->next >= SUMMIT_PATCHES_PER_BANK)
     {
-      iter->item.id = data->next;
-      snprintf (iter->item.name, LABEL_MAX, "%s", data->names[data->next]);
-      iter->item.type = ELEKTROID_FILE;
-      iter->item.size =
-	data->fs ==
-	FS_SUMMIT_SINGLE_PATCH ? SUMMIT_SINGLE_LEN : SUMMIT_MULTI_LEN;
-      data->next++;
-      return 0;
+      return -ENOENT;
     }
 
-  return -ENOENT;
+  tx_msg = summit_get_patch_dump_msg (data->bank, data->next, data->fs);
+  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg,
+				    BE_SYSEX_TIMEOUT_GUESS_MS);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+
+  memcpy (iter->item.name, SUMMIT_GET_NAME_FROM_MSG (rx_msg, data->fs),
+	  SUMMIT_PATCH_NAME_LEN);
+  iter->item.name[SUMMIT_PATCH_NAME_LEN] = 0;
+  gchar *c = &iter->item.name[SUMMIT_PATCH_NAME_LEN - 1];
+  summit_truncate_name_at_last_useful_char (c);
+  free_msg (rx_msg);
+
+  iter->item.id = data->next;
+  iter->item.type = ELEKTROID_FILE;
+  iter->item.size =
+    data->fs == FS_SUMMIT_SINGLE_PATCH ? SUMMIT_SINGLE_LEN : SUMMIT_MULTI_LEN;
+  data->next++;
+
+  usleep (SUMMIT_REST_TIME_US);
+
+  return 0;
 }
 
 static guint
 summit_next_dentry_root (struct item_iterator *iter)
 {
-  struct summit_root_iterator_data *data = iter->data;
+  guint *next = iter->data;
 
-  if (data->next < 4)
+  if (*next < 4)
     {
-      iter->item.id = 0x10000 + data->next;	//Unique id
+      iter->item.id = 0x10000 + *next;	//Unique id
       snprintf (iter->item.name, LABEL_MAX, "%c", 0x41 + iter->item.id);
       iter->item.type = ELEKTROID_DIR;
       iter->item.size = -1;
-      data->next++;
+      (*next)++;
       return 0;
     }
 
@@ -169,15 +182,13 @@ static gint
 summit_common_read_dir (struct backend *backend, struct item_iterator *iter,
 			const gchar * path, enum summit_fs fs)
 {
-  GByteArray *tx_msg, *rx_msg;
   guint bank;
 
   if (!strcmp (path, "/"))
     {
-      struct summit_root_iterator_data *data =
-	g_malloc (sizeof (struct summit_root_iterator_data));
-      data->next = 0;
-      iter->data = data;
+      guint *next = g_malloc (sizeof (guint));
+      *next = 0;
+      iter->data = next;
       iter->next = summit_next_dentry_root;
       iter->free = g_free;
       return 0;
@@ -190,30 +201,11 @@ summit_common_read_dir (struct backend *backend, struct item_iterator *iter,
 	g_malloc (sizeof (struct summit_bank_iterator_data));
       data->next = 0;
       data->fs = fs;
+      data->bank = bank;
+      data->backend = backend;
       iter->data = data;
       iter->next = summit_next_dentry;
       iter->free = g_free;
-
-      for (gint i = 0; i < SUMMIT_PATCHES_PER_BANK; i++)
-	{
-	  tx_msg = summit_get_patch_dump_msg (bank, i, fs);
-	  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg,
-					    BE_SYSEX_TIMEOUT_GUESS_MS);
-	  if (!rx_msg)
-	    {
-	      return -EIO;
-	    }
-	  snprintf (data->names[i], SUMMIT_PATCH_NAME_LEN + 1, "%16s",
-		    SUMMIT_GET_NAME_FROM_MSG (rx_msg, fs));
-	  gchar *c = &data->names[i][SUMMIT_PATCH_NAME_LEN];
-	  *c = 0;
-	  c--;
-	  summit_truncate_name_at_last_useful_char (c);
-	  free_msg (rx_msg);
-
-	  usleep (SUMMIT_REST_TIME_US);	//Without this, it will start to act erratically, including not answering to the MIDI identity request.
-	}
-
       return 0;
     }
 
