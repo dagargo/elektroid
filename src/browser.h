@@ -70,7 +70,6 @@ struct browser
   GMutex mutex;
   gboolean loading;
   gboolean dirty;
-  struct item_iterator *iter;
 };
 
 void browser_set_item (GtkTreeModel *, GtkTreeIter *, struct item *);

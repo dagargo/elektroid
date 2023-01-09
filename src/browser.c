@@ -21,6 +21,12 @@
 #include "browser.h"
 #include "backend.h"
 
+struct browser_add_dentry_item_data
+{
+  struct browser *browser;
+  struct item item;
+};
+
 static void
 browser_widget_set_sensitive (gpointer widget, gpointer data)
 {
@@ -202,54 +208,58 @@ browser_get_item_id_path (struct browser *browser, struct item *item)
   return path;
 }
 
-static void
-browser_add_dentry_item (struct browser *browser, struct item_iterator *iter)
+static gint
+browser_add_dentry_item (gpointer data)
 {
+  struct browser_add_dentry_item_data *add_data = data;
+  struct browser *browser = add_data->browser;
+  struct item *item = &add_data->item;
   gchar *hsize, *slot;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
 
-  hsize = get_human_size (iter->item.size, TRUE);
+  hsize = get_human_size (item->size, TRUE);
   slot = (browser->fs_ops->options & FS_OPTION_SLOT_STORAGE)
-    && browser->fs_ops->get_slot ? browser->fs_ops->get_slot (&iter->item,
+    && browser->fs_ops->get_slot ? browser->fs_ops->get_slot (item,
 							      browser->backend)
     : NULL;
 
   gtk_list_store_insert_with_values (list_store, NULL, -1,
 				     BROWSER_LIST_STORE_ICON_FIELD,
-				     iter->item.type ==
+				     item->type ==
 				     ELEKTROID_DIR ? DIR_ICON :
 				     browser->file_icon,
 				     BROWSER_LIST_STORE_NAME_FIELD,
-				     iter->item.name,
+				     item->name,
 				     BROWSER_LIST_STORE_SIZE_FIELD,
-				     iter->item.size,
+				     item->size,
 				     BROWSER_LIST_STORE_SIZE_STR_FIELD,
 				     hsize,
 				     BROWSER_LIST_STORE_TYPE_FIELD,
-				     iter->item.type,
+				     item->type,
 				     BROWSER_LIST_STORE_ID_FIELD,
-				     iter->item.id,
+				     item->id,
 				     BROWSER_LIST_STORE_SLOT_FIELD,
 				     slot ? slot : "", -1);
 
   g_free (hsize);
   g_free (slot);
+  g_free (add_data);
+
+  return G_SOURCE_REMOVE;
 }
 
 static gboolean
 browser_load_dir_runner_hide_spinner (gpointer data)
 {
   struct browser *browser = data;
-  g_slist_foreach (browser->sensitive_widgets, browser_widget_set_sensitive,
-		   NULL);
   gtk_spinner_stop (GTK_SPINNER (browser->spinner));
   gtk_stack_set_visible_child_name (GTK_STACK (browser->stack), "list");
   return FALSE;
 }
 
 static gboolean
-browser_load_dir_runner_show_spinner (gpointer data)
+browser_load_dir_runner_show_spinner_and_lock_browser (gpointer data)
 {
   struct browser *browser = data;
   g_slist_foreach (browser->sensitive_widgets, browser_widget_set_insensitive,
@@ -268,20 +278,6 @@ browser_load_dir_runner_update_ui (gpointer data)
 
   notifier_set_active (browser->notifier, active);
 
-  if (browser->iter)
-    {
-      while (!next_item_iterator (browser->iter))
-	{
-	  if (iter_matches_extensions (browser->iter, browser->extensions))
-	    {
-	      browser_add_dentry_item (browser, browser->iter);
-	    }
-	}
-      free_item_iterator (browser->iter);
-      g_free (browser->iter);
-      browser->iter = NULL;
-    }
-
   g_thread_join (browser->thread);
   browser->thread = NULL;
 
@@ -297,6 +293,10 @@ browser_load_dir_runner_update_ui (gpointer data)
 
   gtk_widget_grab_focus (GTK_WIDGET (browser->view));
 
+  //Unlock browser
+  g_slist_foreach (browser->sensitive_widgets, browser_widget_set_sensitive,
+		   NULL);
+
   return FALSE;
 }
 
@@ -305,18 +305,31 @@ browser_load_dir_runner (gpointer data)
 {
   gint err;
   struct browser *browser = data;
+  struct item_iterator iter;
 
-  g_idle_add (browser_load_dir_runner_show_spinner, browser);
-  browser->iter = g_malloc (sizeof (struct item_iterator));
-  err = browser->fs_ops->readdir (browser->backend, browser->iter,
-				  browser->dir);
+  g_idle_add (browser_load_dir_runner_show_spinner_and_lock_browser, browser);
+  err = browser->fs_ops->readdir (browser->backend, &iter, browser->dir);
   g_idle_add (browser_load_dir_runner_hide_spinner, browser);
   if (err)
     {
       error_print ("Error while opening '%s' dir\n", browser->dir);
-      g_free (browser->iter);
-      browser->iter = NULL;
+      goto end;
     }
+
+  while (!next_item_iterator (&iter))
+    {
+      if (iter_matches_extensions (&iter, browser->extensions))
+	{
+	  struct browser_add_dentry_item_data *data =
+	    g_malloc (sizeof (struct browser_add_dentry_item_data));
+	  data->browser = browser;
+	  memcpy (&data->item, &iter.item, sizeof (struct item));
+	  g_idle_add (browser_add_dentry_item, data);
+	}
+    }
+  free_item_iterator (&iter);
+
+end:
   g_idle_add (browser_load_dir_runner_update_ui, browser);
   return NULL;
 }
