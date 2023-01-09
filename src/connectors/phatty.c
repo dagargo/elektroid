@@ -47,15 +47,10 @@ static const guint8 PHATTY_REQUEST_PANEL[] =
 static const guint8 PHATTY_REQUEST_PRESET[] =
   { 0xf0, 4, 5, 6, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xf7 };
 
-struct phatty_data
-{
-  guint8 presets[PHATTY_MAX_PRESETS][PHATTY_PROGRAM_SIZE];
-};
-
 struct phatty_iter_data
 {
   guint next;
-  struct phatty_data *backend_data;
+  struct backend *backend;
 };
 
 enum phatty_fs
@@ -236,21 +231,30 @@ static guint
 phatty_next_preset_dentry (struct item_iterator *iter)
 {
   gchar preset_name[MOOG_NAME_LEN + 1];
+  GByteArray *tx_msg, *rx_msg;
   struct phatty_iter_data *data = iter->data;
-  struct phatty_data *backend_data = data->backend_data;
 
   if (data->next >= PHATTY_MAX_PRESETS)
     {
       return -ENOENT;
     }
 
-  phatty_get_preset_name (backend_data->presets[data->next], preset_name);
+  tx_msg = phatty_get_preset_dump_msg (data->next);
+  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg,
+				    BE_SYSEX_TIMEOUT_GUESS_MS);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+
+  phatty_get_preset_name (rx_msg->data, preset_name);
   snprintf (iter->item.name, LABEL_MAX, "%s", preset_name);
   iter->item.id = data->next;
   iter->item.type = ELEKTROID_FILE;
   iter->item.size = PHATTY_PROGRAM_SIZE;
   (data->next)++;
 
+  free_msg (rx_msg);
   return 0;
 }
 
@@ -259,9 +263,6 @@ phatty_read_dir (struct backend *backend, struct item_iterator *iter,
 		 const gchar * path)
 {
   gint err = 0;
-  GByteArray *tx_msg, *rx_msg;
-  struct phatty_data *data;
-  struct phatty_iter_data *iter_data;
 
   if (!strcmp (path, "/"))
     {
@@ -273,34 +274,11 @@ phatty_read_dir (struct backend *backend, struct item_iterator *iter,
     }
   else if (!strcmp (path, PHATTY_PRESETS_DIR))
     {
-      if (backend->data)
-	{
-	  data = backend->data;
-	}
-      else
-	{
-	  data = g_malloc (sizeof (struct phatty_data));
-	  backend->data = data;
-	}
-
-      for (gint i = 0; i < PHATTY_MAX_PRESETS; i++)
-	{
-	  tx_msg = phatty_get_preset_dump_msg (i);
-	  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg,
-					    BE_SYSEX_TIMEOUT_GUESS_MS);
-	  if (!rx_msg)
-	    {
-	      return -EIO;
-	    }
-
-	  memcpy (data->presets[i], rx_msg->data, rx_msg->len);
-	  free_msg (rx_msg);
-	}
-
-      iter_data = g_malloc (sizeof (struct phatty_iter_data));
-      iter_data->next = 0;
-      iter_data->backend_data = data;
-      iter->data = iter_data;
+      struct phatty_iter_data *data =
+	g_malloc (sizeof (struct phatty_iter_data));
+      data->next = 0;
+      data->backend = backend;
+      iter->data = data;
       iter->next = phatty_next_preset_dentry;
       iter->free = g_free;
     }
@@ -322,7 +300,7 @@ phatty_get_id_as_slot (struct item *item, struct backend *backend)
     }
   else
     {
-      snprintf (slot, LABEL_MAX, "%d", item->id);
+      snprintf (slot, LABEL_MAX, "%.2d", item->id);
     }
   return slot;
 }
