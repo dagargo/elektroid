@@ -188,24 +188,12 @@ sds_get_bytes_per_word (gint32 bits, guint * word_size,
 }
 
 static gint
-sds_tx (struct backend *backend, GByteArray * tx_msg)
-{
-  struct sysex_transfer transfer;
-  transfer.raw = tx_msg;
-  g_mutex_lock (&backend->mutex);
-  backend_tx_sysex (backend, &transfer);
-  g_mutex_unlock (&backend->mutex);
-  free_msg (tx_msg);
-  return transfer.err;
-}
-
-static gint
 sds_tx_handshake (struct backend *backend, const guint8 * msg, guint8 packet)
 {
   GByteArray *tx_msg = g_byte_array_sized_new (sizeof (SDS_ACK));
   g_byte_array_append (tx_msg, msg, sizeof (SDS_ACK));
   tx_msg->data[4] = packet;
-  return sds_tx (backend, tx_msg);
+  return backend_tx (backend, tx_msg);
 }
 
 static guint
@@ -435,7 +423,7 @@ sds_download_try (struct backend *backend, const gchar * path,
 
       if (rx_packets == packets)
 	{
-	  err = sds_tx (backend, tx_msg);
+	  err = backend_tx (backend, tx_msg);
 	  goto end;
 	}
       else
@@ -794,7 +782,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 					bytes_per_word);
       if (open_loop)
 	{
-	  err = sds_tx (backend, tx_msg);
+	  err = backend_tx (backend, tx_msg);
 	  usleep (SDS_NO_SPEC_OPEN_LOOP_REST_TIME);
 	}
       else
