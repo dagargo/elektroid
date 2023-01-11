@@ -108,7 +108,7 @@ audio_init_int (struct audio *audio)
     {
       debug_print (2, "Testing API %s...\n", rtaudio_api_name (apis[i]));
 #if defined(__linux__)
-      if (apis[i] == RTAUDIO_API_LINUX_ALSA)
+      if (apis[i] == RTAUDIO_API_LINUX_PULSE)
 	{
 	  break;
 	}
