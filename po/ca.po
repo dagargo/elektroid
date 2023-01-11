@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2022-12-18 12:27+0100\n"
+"POT-Creation-Date: 2023-01-15 22:03+0100\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: Catalan\n"
@@ -17,190 +17,190 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/connector.c:40 src/connector.c:46
+#: src/connector.c:38
 msgid "MIDI device"
 msgstr "Dispositiu MIDI"
 
-#: src/elektroid.c:497 src/elektroid.c:3995
+#: src/elektroid.c:519 src/elektroid.c:4066
 msgid "Not connected"
 msgstr "No connectat"
 
-#: src/elektroid.c:642
+#: src/elektroid.c:664
 msgid "Cancelling..."
 msgstr "Cancel·lant..."
 
-#: src/elektroid.c:663 src/elektroid.c:2521 src/elektroid.c:2723
-#: src/elektroid.c:3397
+#: src/elektroid.c:685 src/elektroid.c:2567 src/elektroid.c:2764
+#: src/elektroid.c:3468
 msgid "Waiting..."
 msgstr "Esperant..."
 
-#: src/elektroid.c:666
+#: src/elektroid.c:688
 msgid "Sending..."
 msgstr "Enviant..."
 
-#: src/elektroid.c:669
+#: src/elektroid.c:691
 msgid "Receiving..."
 msgstr "Rebent..."
 
-#: src/elektroid.c:729
+#: src/elektroid.c:751
 msgid "Receive SysEx"
 msgstr "Rep SysEx"
 
-#: src/elektroid.c:761
+#: src/elektroid.c:783
 msgid "Save SysEx"
 msgstr "Alça SysEx"
 
-#: src/elektroid.c:764 src/elektroid.c:894 src/elektroid.c:1184
+#: src/elektroid.c:786 src/elektroid.c:916 src/elektroid.c:1204
 #: res/gui.glade:1589 res/gui.glade:1689
 msgid "_Cancel"
 msgstr "_Cancel·la"
 
-#: src/elektroid.c:766 res/gui.glade:1603
+#: src/elektroid.c:788 res/gui.glade:1603
 msgid "_Save"
 msgstr "_Alça"
 
-#: src/elektroid.c:770
+#: src/elektroid.c:792
 msgid "Received SysEx"
 msgstr "SysEx rebut"
 
-#: src/elektroid.c:775 src/elektroid.c:900
+#: src/elektroid.c:797 src/elektroid.c:922
 msgid "SysEx Files"
 msgstr "Fitxers SysEx"
 
-#: src/elektroid.c:809
+#: src/elektroid.c:831
 #, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Error al guardar «%s»: %s."
 
-#: src/elektroid.c:830
+#: src/elektroid.c:852
 #, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Error al carregar «%s»: %s."
 
-#: src/elektroid.c:891
+#: src/elektroid.c:913
 msgid "Open SysEx"
 msgstr "Obri SysEx"
 
-#: src/elektroid.c:896
+#: src/elektroid.c:918
 msgid "_Open"
 msgstr "_Obri"
 
-#: src/elektroid.c:912
+#: src/elektroid.c:934
 msgid "Sending SysEx"
 msgstr "Enviant SysEx"
 
-#: src/elektroid.c:972
+#: src/elektroid.c:994
 msgid "minutes"
 msgstr "minuts"
 
-#: src/elektroid.c:1183
+#: src/elektroid.c:1203
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Està segur de que vol eliminar els elements seleccionats?"
 
-#: src/elektroid.c:1185
+#: src/elektroid.c:1205
 msgid "_Delete"
 msgstr "_Elimina"
 
-#: src/elektroid.c:1202
+#: src/elektroid.c:1222
 msgid "Deleting Files"
 msgstr "Eliminant fitxers"
 
-#: src/elektroid.c:1203
+#: src/elektroid.c:1223
 msgid "Deleting..."
 msgstr "Eliminant..."
 
-#: src/elektroid.c:1236 res/gui.glade:123 res/gui.glade:214
+#: src/elektroid.c:1258 res/gui.glade:123 res/gui.glade:214
 msgid "Rename"
 msgstr "Canvia el nom"
 
-#: src/elektroid.c:1259
+#: src/elektroid.c:1281
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Error al canviar el nom a «%s»: %s."
 
-#: src/elektroid.c:1937 res/gui.glade:531 res/gui.glade:760
+#: src/elektroid.c:1980 res/gui.glade:531 res/gui.glade:760
 msgid "Add Directory"
 msgstr "Afig directori"
 
-#: src/elektroid.c:1955
+#: src/elektroid.c:1998
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Error al crear el directori «%s»: %s."
 
-#: src/elektroid.c:2027
+#: src/elektroid.c:2070
 msgid "Queued"
 msgstr "A la cua"
 
-#: src/elektroid.c:2029
+#: src/elektroid.c:2072
 msgid "Running"
 msgstr "Executant"
 
-#: src/elektroid.c:2031
+#: src/elektroid.c:2074
 msgid "Completed"
 msgstr "Completada"
 
-#: src/elektroid.c:2033
+#: src/elektroid.c:2076
 msgid "Completed with errors"
 msgstr "Completada amb errors"
 
-#: src/elektroid.c:2035
+#: src/elektroid.c:2078
 msgid "Canceled"
 msgstr "Cancel·lada"
 
-#: src/elektroid.c:2037 src/elektroid.c:2051
+#: src/elektroid.c:2080 src/elektroid.c:2094
 msgid "Undefined"
 msgstr "Indefinit"
 
-#: src/elektroid.c:2047
+#: src/elektroid.c:2090
 msgid "Upload"
 msgstr "Càrrega"
 
-#: src/elektroid.c:2049
+#: src/elektroid.c:2092
 msgid "Download"
 msgstr "Descàrrega"
 
-#: src/elektroid.c:2520 src/elektroid.c:2722 src/elektroid.c:3396
+#: src/elektroid.c:2566 src/elektroid.c:2763 src/elektroid.c:3467
 msgid "Preparing Tasks"
 msgstr "Preparant tasques..."
 
-#: src/elektroid.c:3086
+#: src/elektroid.c:3157
 msgid "Connecting to Device"
 msgstr "Connectant amb el dispositiu"
 
-#: src/elektroid.c:3087
+#: src/elektroid.c:3158
 msgid "Connecting..."
 msgstr "Conectant..."
 
-#: src/elektroid.c:3097
+#: src/elektroid.c:3168
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Dispositiu «%s» no reconegut: %s"
 
-#: src/elektroid.c:3382
+#: src/elektroid.c:3453
 msgid "Moving Files"
 msgstr "Movent fitxers"
 
-#: src/elektroid.c:3383
+#: src/elektroid.c:3454
 msgid "Moving..."
 msgstr "Movent..."
 
-#: src/menu_actions/backend_actions.c:60
+#: src/menu_actions/backend_actions.c:59
 msgid "OS _Upgrade"
 msgstr "_Actualitza el SO"
 
-#: src/menu_actions/backend_actions.c:73
+#: src/menu_actions/backend_actions.c:72
 msgid "_Receive SysEx"
 msgstr "_Rep SysEx"
 
-#: src/menu_actions/backend_actions.c:86
+#: src/menu_actions/backend_actions.c:85
 msgid "_Send SysEx"
 msgstr "_Envia SysEx"
 
-#: src/local.c:472
+#: src/local.c:473
 msgid "System"
 msgstr "Sistema"
 
-#: src/connectors/sds.c:1127 src/connectors/sds.c:1133
+#: src/connectors/sds.c:1092
 msgid "SDS sampler"
 msgstr "Mostrador SDS"
 
@@ -229,8 +229,8 @@ msgid "Download Selection"
 msgstr "Descarrega la selecció"
 
 #: res/gui.glade:259
-msgid "GNU/Linux transfer application for Elektron devices"
-msgstr "Aplicació GNU/Linux de transferència per a dispositius Elektron"
+msgid "Sample and MIDI device manager"
+msgstr "Gestor de mostres i dispositius MIDI"
 
 #: res/gui.glade:262
 msgid "translator-credits"

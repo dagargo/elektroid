@@ -256,7 +256,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     <property name="transient-for">main_window</property>
     <property name="program-name">Elektroid</property>
     <property name="copyright">Copyright © 2019 David García Goñi</property>
-    <property name="comments" translatable="yes">GNU/Linux transfer application for Elektron devices</property>
+    <property name="comments" translatable="yes">Sample and MIDI device manager</property>
     <property name="website">https://github.com/dagargo/elektroid</property>
     <property name="authors">David García Goñi&lt;dagargo@gmail.com&gt;</property>
     <property name="translator-credits" translatable="yes">translator-credits</property>

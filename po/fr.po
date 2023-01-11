@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2022-12-18 12:27+0100\n"
+"POT-Creation-Date: 2023-01-15 22:03+0100\n"
 "PO-Revision-Date: 2022-11-01 23:05+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
@@ -17,190 +17,190 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/connector.c:40 src/connector.c:46
+#: src/connector.c:38
 msgid "MIDI device"
 msgstr "Périphérique MIDI"
 
-#: src/elektroid.c:497 src/elektroid.c:3995
+#: src/elektroid.c:519 src/elektroid.c:4066
 msgid "Not connected"
 msgstr "Non connecté"
 
-#: src/elektroid.c:642
+#: src/elektroid.c:664
 msgid "Cancelling..."
 msgstr "Annulation..."
 
-#: src/elektroid.c:663 src/elektroid.c:2521 src/elektroid.c:2723
-#: src/elektroid.c:3397
+#: src/elektroid.c:685 src/elektroid.c:2567 src/elektroid.c:2764
+#: src/elektroid.c:3468
 msgid "Waiting..."
 msgstr "En attente..."
 
-#: src/elektroid.c:666
+#: src/elektroid.c:688
 msgid "Sending..."
 msgstr "Envoi en cours..."
 
-#: src/elektroid.c:669
+#: src/elektroid.c:691
 msgid "Receiving..."
 msgstr "Réception en cours..."
 
-#: src/elektroid.c:729
+#: src/elektroid.c:751
 msgid "Receive SysEx"
 msgstr "Réception de SysEx"
 
-#: src/elektroid.c:761
+#: src/elektroid.c:783
 msgid "Save SysEx"
 msgstr "Sauvegarde de SysEx"
 
-#: src/elektroid.c:764 src/elektroid.c:894 src/elektroid.c:1184
+#: src/elektroid.c:786 src/elektroid.c:916 src/elektroid.c:1204
 #: res/gui.glade:1589 res/gui.glade:1689
 msgid "_Cancel"
 msgstr "_Annuler"
 
-#: src/elektroid.c:766 res/gui.glade:1603
+#: src/elektroid.c:788 res/gui.glade:1603
 msgid "_Save"
 msgstr "_Sauvegarder"
 
-#: src/elektroid.c:770
+#: src/elektroid.c:792
 msgid "Received SysEx"
 msgstr "SysEx reçu"
 
-#: src/elektroid.c:775 src/elektroid.c:900
+#: src/elektroid.c:797 src/elektroid.c:922
 msgid "SysEx Files"
 msgstr "Fichiers SysEx"
 
-#: src/elektroid.c:809
+#: src/elektroid.c:831
 #, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Erreur lors de la sauvegarde de « %s » : %s."
 
-#: src/elektroid.c:830
+#: src/elektroid.c:852
 #, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Erreur lors du chargement de « %s » : %s."
 
-#: src/elektroid.c:891
+#: src/elektroid.c:913
 msgid "Open SysEx"
 msgstr "Ouvrir SysEx"
 
-#: src/elektroid.c:896
+#: src/elektroid.c:918
 msgid "_Open"
 msgstr "_Ouvrir"
 
-#: src/elektroid.c:912
+#: src/elektroid.c:934
 msgid "Sending SysEx"
 msgstr "Envoi SysEx"
 
-#: src/elektroid.c:972
+#: src/elektroid.c:994
 msgid "minutes"
 msgstr "minutes"
 
-#: src/elektroid.c:1183
+#: src/elektroid.c:1203
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Souhaitez-vous vraiment supprimer les éléments sélectionnés ?"
 
-#: src/elektroid.c:1185
+#: src/elektroid.c:1205
 msgid "_Delete"
 msgstr "_Supprimer"
 
-#: src/elektroid.c:1202
+#: src/elektroid.c:1222
 msgid "Deleting Files"
 msgstr "Suppression des fichiers"
 
-#: src/elektroid.c:1203
+#: src/elektroid.c:1223
 msgid "Deleting..."
 msgstr "Suppression..."
 
-#: src/elektroid.c:1236 res/gui.glade:123 res/gui.glade:214
+#: src/elektroid.c:1258 res/gui.glade:123 res/gui.glade:214
 msgid "Rename"
 msgstr "Renommer"
 
-#: src/elektroid.c:1259
+#: src/elektroid.c:1281
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Erreur lors du renommage de « %s » : %s."
 
-#: src/elektroid.c:1937 res/gui.glade:531 res/gui.glade:760
+#: src/elektroid.c:1980 res/gui.glade:531 res/gui.glade:760
 msgid "Add Directory"
 msgstr "Ajout d'un répertoire"
 
-#: src/elektroid.c:1955
+#: src/elektroid.c:1998
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Erreur lors de la création du répertoire « %s » : %s."
 
-#: src/elektroid.c:2027
+#: src/elektroid.c:2070
 msgid "Queued"
 msgstr "Mise en file d'attente"
 
-#: src/elektroid.c:2029
+#: src/elektroid.c:2072
 msgid "Running"
 msgstr "En cours"
 
-#: src/elektroid.c:2031
+#: src/elektroid.c:2074
 msgid "Completed"
 msgstr "Terminé"
 
-#: src/elektroid.c:2033
+#: src/elektroid.c:2076
 msgid "Completed with errors"
 msgstr "Terminé avec des erreurs"
 
-#: src/elektroid.c:2035
+#: src/elektroid.c:2078
 msgid "Canceled"
 msgstr "Annulé"
 
-#: src/elektroid.c:2037 src/elektroid.c:2051
+#: src/elektroid.c:2080 src/elektroid.c:2094
 msgid "Undefined"
 msgstr "Indéfini"
 
-#: src/elektroid.c:2047
+#: src/elektroid.c:2090
 msgid "Upload"
 msgstr "Téléversement"
 
-#: src/elektroid.c:2049
+#: src/elektroid.c:2092
 msgid "Download"
 msgstr "Téléchargement"
 
-#: src/elektroid.c:2520 src/elektroid.c:2722 src/elektroid.c:3396
+#: src/elektroid.c:2566 src/elektroid.c:2763 src/elektroid.c:3467
 msgid "Preparing Tasks"
 msgstr "Préparation des tâches"
 
-#: src/elektroid.c:3086
+#: src/elektroid.c:3157
 msgid "Connecting to Device"
 msgstr "Connexion au périphérique"
 
-#: src/elektroid.c:3087
+#: src/elektroid.c:3158
 msgid "Connecting..."
 msgstr "Connexion..."
 
-#: src/elektroid.c:3097
+#: src/elektroid.c:3168
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Périphérique “%s” non reconnu : %s"
 
-#: src/elektroid.c:3382
+#: src/elektroid.c:3453
 msgid "Moving Files"
 msgstr "Déplacement des fichiers"
 
-#: src/elektroid.c:3383
+#: src/elektroid.c:3454
 msgid "Moving..."
 msgstr "Déplacement..."
 
-#: src/menu_actions/backend_actions.c:60
+#: src/menu_actions/backend_actions.c:59
 msgid "OS _Upgrade"
 msgstr "Mise à jo_ur SE"
 
-#: src/menu_actions/backend_actions.c:73
+#: src/menu_actions/backend_actions.c:72
 msgid "_Receive SysEx"
 msgstr "_Réception de SysEx"
 
-#: src/menu_actions/backend_actions.c:86
+#: src/menu_actions/backend_actions.c:85
 msgid "_Send SysEx"
 msgstr "Envoi de _Sysex"
 
-#: src/local.c:472
+#: src/local.c:473
 msgid "System"
 msgstr "Système"
 
-#: src/connectors/sds.c:1127 src/connectors/sds.c:1133
+#: src/connectors/sds.c:1092
 msgid "SDS sampler"
 msgstr "échantillonneur SDS"
 
@@ -229,8 +229,8 @@ msgid "Download Selection"
 msgstr "Téléchargement de la sélection"
 
 #: res/gui.glade:259
-msgid "GNU/Linux transfer application for Elektron devices"
-msgstr "Application GNU/Linux de transfert pour les périphériques Elektron"
+msgid "Sample and MIDI device manager"
+msgstr "Gestionnaire d'échantillons et de périphériques MIDI"
 
 #: res/gui.glade:262
 msgid "translator-credits"
