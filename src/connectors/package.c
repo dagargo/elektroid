@@ -550,7 +550,7 @@ package_send_pkg_resources (struct package *pkg,
 			    fs_remote_file_op upload_sample)
 {
   gint elements, i, ret = 0;
-  const gchar *file_type, *sample_path;
+  const gchar *file_type, *sample_path, *dev_sample_path;
   gint64 product_type;
   JsonParser *parser;
   JsonReader *reader;
@@ -748,9 +748,13 @@ package_send_pkg_resources (struct package *pkg,
 
       pkg->resources = g_list_append (pkg->resources, pkg_resource);
 
-      //We remove the "Samples" at the beggining of the full zip path.
-      ret = upload_sample (backend, &sample_path[7], pkg_resource->data,
+      //We remove the "Samples" at the beggining of the full zip path...
+      dev_sample_path = strdup(&sample_path[7]);
+      //... And the extension.
+      remove_ext (dev_sample_path);
+      ret = upload_sample (backend, dev_sample_path, pkg_resource->data,
 			   control);
+      g_free (dev_sample_path);
       g_free (control->data);
       control->data = NULL;
       if (ret)
