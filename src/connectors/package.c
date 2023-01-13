@@ -211,7 +211,7 @@ package_add_manifest (struct package *pkg)
 	      json_builder_add_int_value (builder, pkg_resource->size);
 
 	      json_builder_set_member_name (builder, PKG_TAG_HASH);
-	      snprintf (val, LABEL_MAX, "%d", pkg_resource->hash);
+	      snprintf (val, LABEL_MAX, "%u", pkg_resource->hash);
 	      json_builder_add_string_value (builder, val);
 
 	      json_builder_end_object (builder);
