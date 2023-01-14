@@ -49,6 +49,9 @@ backend_init_int (struct backend *backend, const gchar * id)
   struct RtMidiWrapper *inputp;
   struct RtMidiWrapper *outputp;
   guint iports, oports, err = 0;
+  gchar iportname[LABEL_MAX];
+  gchar oportname[LABEL_MAX];
+  gint iportnamelen, oportnamelen;
 
   backend->inputp = NULL;
   backend->outputp = NULL;
@@ -69,10 +72,24 @@ backend_init_int (struct backend *backend, const gchar * id)
   oports = rtmidi_get_port_count (outputp);
   for (guint i = 0; i < iports; i++)
     {
-      const gchar *iportname = rtmidi_get_port_name (inputp, i);
+      if (rtmidi_get_port_name (inputp, i, NULL, &iportnamelen))
+	{
+	  goto cleanup_output;
+	}
+      if (rtmidi_get_port_name (inputp, i, iportname, &iportnamelen) < 0)
+	{
+	  goto cleanup_output;
+	}
       for (guint j = 0; j < oports; j++)
 	{
-	  const gchar *oportname = rtmidi_get_port_name (outputp, j);
+	  if (rtmidi_get_port_name (outputp, j, NULL, &oportnamelen))
+	    {
+	      goto cleanup_output;
+	    }
+	  if (rtmidi_get_port_name (outputp, j, oportname, &oportnamelen) < 0)
+	    {
+	      goto cleanup_output;
+	    }
 	  if (!strcmp (iportname, oportname) && !strcmp (iportname, id))
 	    {
 	      backend->inputp =
@@ -86,12 +103,12 @@ backend_init_int (struct backend *backend, const gchar * id)
 
 	      backend->rx_len = 0;
 	      backend->buffer = g_malloc (sizeof (guint8) * BE_INT_BUF_LEN);
-	      goto cleanup;
+	      goto cleanup_output;
 	    }
 	}
     }
 
-cleanup:
+cleanup_output:
   rtmidi_close_port (inputp);
   rtmidi_in_free (inputp);
 
@@ -259,6 +276,9 @@ backend_get_system_devices ()
   struct RtMidiWrapper *inputp;
   struct RtMidiWrapper *outputp;
   guint iports, oports;
+  gchar iportname[LABEL_MAX];
+  gchar oportname[LABEL_MAX];
+  gint iportnamelen, oportnamelen;
   struct backend_system_device *backend_system_device;
   GArray *devices = g_array_new (FALSE, FALSE,
 				 sizeof (struct backend_system_device));
@@ -277,10 +297,26 @@ backend_get_system_devices ()
   oports = rtmidi_get_port_count (outputp);
   for (guint i = 0; i < iports; i++)
     {
-      const gchar *iportname = rtmidi_get_port_name (inputp, i);
+      if (rtmidi_get_port_name (inputp, i, NULL, &iportnamelen))
+	{
+	  goto cleanup_output;
+	}
+      if (rtmidi_get_port_name (inputp, i, iportname, &iportnamelen) < 0)
+	{
+	  goto cleanup_output;
+	}
       for (guint j = 0; j < oports; j++)
 	{
-	  const gchar *oportname = rtmidi_get_port_name (outputp, j);
+	  if (rtmidi_get_port_name (outputp, j, NULL, &oportnamelen))
+	    {
+	      goto cleanup_output;
+	    }
+	  if (rtmidi_get_port_name (outputp, j, oportname, &oportnamelen) < 0)
+	    {
+	      goto cleanup_output;
+	    }
+	  debug_print (3, "Checking I/O availability (%s == %s)...\n",
+		       iportname, oportname);
 	  if (!strcmp (iportname, oportname))
 	    {
 	      backend_system_device =
@@ -294,6 +330,7 @@ backend_get_system_devices ()
 	}
     }
 
+cleanup_output:
   rtmidi_close_port (inputp);
   rtmidi_in_free (inputp);
 
