@@ -920,12 +920,10 @@ static const struct fs_operations *FS_SUMMIT_OPERATIONS[] = {
 gint
 summit_handshake (struct backend *backend)
 {
-  gboolean novation = memcmp (backend->midi_info.company, NOVATION_ID,
-			      sizeof (NOVATION_ID)) == 0;
-  gboolean summit =
-    memcmp (backend->midi_info.family, SUMMIT_ID, sizeof (SUMMIT_ID)) == 0;
+  backend_midi_handshake (backend);
 
-  if (!novation || (!summit))
+  if (memcmp (backend->midi_info.company, NOVATION_ID, sizeof (NOVATION_ID))
+      || memcmp (backend->midi_info.family, SUMMIT_ID, sizeof (SUMMIT_ID)))
     {
       return -ENODEV;
     }
@@ -934,5 +932,6 @@ summit_handshake (struct backend *backend)
     FS_SUMMIT_WAVETABLE | FS_SUMMIT_SCALE | FS_SUMMIT_BULK_TUNING;
   backend->fs_ops = FS_SUMMIT_OPERATIONS;
   snprintf (backend->name, LABEL_MAX, "Novation Summit");
+
   return 0;
 }

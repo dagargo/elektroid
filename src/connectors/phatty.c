@@ -498,6 +498,8 @@ static const struct fs_operations *FS_PHATTY_OPERATIONS_LIST[] = {
 gint
 phatty_handshake (struct backend *backend)
 {
+  backend_midi_handshake (backend);
+
   if (memcmp (backend->midi_info.company, MOOG_ID, sizeof (MOOG_ID)) ||
       memcmp (backend->midi_info.family, FAMILY_ID, sizeof (FAMILY_ID)) ||
       memcmp (backend->midi_info.model, MODEL_ID, sizeof (MODEL_ID)))
@@ -507,9 +509,6 @@ phatty_handshake (struct backend *backend)
 
   backend->filesystems = FS_PHATTY_PRESET | FS_PHATTY_SCALE;
   backend->fs_ops = FS_PHATTY_OPERATIONS_LIST;
-  backend->data = NULL;
-  backend->destroy_data = backend_destroy_data;
-
   snprintf (backend->name, LABEL_MAX, "Moog Little Phatty");
 
   return 0;

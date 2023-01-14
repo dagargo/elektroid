@@ -45,7 +45,7 @@
 #define EFACTOR_SINGLE_PRESET_MAX_LEN 256	//This is an empirical value. The maximum found value is 233 but we just add a few bytes just in case.
 #define EFACTOR_MAX_ID_TAG_LEN 16	//The longest value is "[100]" plus the \0.
 
-#define EFACTOR_TIMEOUT_TOTAL_PRESETS 20000	//This takes more than 10s for 100 presets.
+#define EFACTOR_TIMEOUT_TOTAL_PRESETS 30000	//20 s is not enough with RtMidi.
 
 #define EFACTOR_PEDAL_NAME(data) (data->type == EFACTOR_FACTOR ? EFACTOR_FACTOR_NAME_PREFIX : EFACTOR_H9_NAME_PREFIX)
 
@@ -446,7 +446,7 @@ efactor_destroy_data (struct backend *backend)
   backend_destroy_data (backend);
 }
 
-//We are replicanting the functionality in the backend because the request is standard but the response is not.
+//The MIDI Identity Request follows the standard but the Identity Reply does not.
 gint
 efactor_handshake (struct backend *backend)
 {
@@ -455,14 +455,6 @@ efactor_handshake (struct backend *backend)
   struct efactor_data *data;
   GByteArray *tx_msg;
   GByteArray *rx_msg;
-
-  //Sometimes it takes a lot of time to receive the response to the MIDI identity request.
-  //As the backend is already asking for it, we need to ensure that the input buffer is empty before continuing.
-  //With these two calls, the total timeout including the backend handshake is 2.5 s, which is empirically enough.
-  g_mutex_lock (&backend->mutex);
-  backend_rx_drain (backend);
-  backend_rx_drain (backend);
-  g_mutex_unlock (&backend->mutex);
 
   tx_msg = g_byte_array_sized_new (sizeof (MIDI_IDENTITY_REQUEST));
   g_byte_array_append (tx_msg, (guchar *) MIDI_IDENTITY_REQUEST,

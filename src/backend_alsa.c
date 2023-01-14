@@ -131,8 +131,6 @@ backend_init_int (struct backend *backend, const gchar * id)
       goto cleanup_params;
     }
 
-  backend_midi_handshake (backend);
-
   return 0;
 
 cleanup_params:

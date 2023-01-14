@@ -92,7 +92,6 @@ backend_init_int (struct backend *backend, const gchar * id)
     }
 
 cleanup:
-  backend_midi_handshake (backend);
   rtmidi_close_port (inputp);
   rtmidi_in_free (inputp);
 

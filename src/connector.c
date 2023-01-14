@@ -32,7 +32,7 @@
 static gint
 default_handshake (struct backend *backend)
 {
-  backend->type = BE_TYPE_MIDI;
+  backend_midi_handshake (backend);
   backend->filesystems = 0;
   backend->fs_ops = NULL;
   snprintf (backend->name, LABEL_MAX, "%s", _("MIDI device"));
@@ -120,8 +120,6 @@ connector_init_backend (struct backend *backend, const gchar * id,
     {
       return err;
     }
-
-  backend_rx_drain (backend);	//This is needed in case of timeout.
 
   err = -ENODEV;
   connector = CONNECTORS;
