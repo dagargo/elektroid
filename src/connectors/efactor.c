@@ -467,7 +467,7 @@ efactor_handshake (struct backend *backend)
 
   if (rx_msg->data[4] == 2)
     {
-      if (rx_msg->len > 15)
+      if (rx_msg->len > 17)
 	{
 	  memset (backend->midi_info.company, 0, BE_COMPANY_LEN);
 	  memcpy (backend->midi_info.company, &rx_msg->data[5], 1);
