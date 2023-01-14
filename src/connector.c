@@ -42,63 +42,54 @@ default_handshake (struct backend *backend)
 struct connector
 {
   gint (*handshake) (struct backend * backend);
-  gboolean standard_id;
   const gchar *name;
 };
 
 static const struct connector CONNECTOR_ELEKTRON = {
   .handshake = elektron_handshake,
-  .standard_id = FALSE,
   .name = "elektron"
 };
 
 static const struct connector CONNECTOR_MICROBRUTE = {
   .handshake = microbrute_handshake,
-  .standard_id = TRUE,
   .name = "microbrute"
 };
 
 static const struct connector CONNECTOR_CZ = {
   .handshake = cz_handshake,
-  .standard_id = FALSE,
   .name = "cz"
 };
 
 static const struct connector CONNECTOR_SDS = {
   .handshake = sds_handshake,
-  .standard_id = FALSE,
   .name = "sds"
 };
 
 static const struct connector CONNECTOR_EFACTOR = {
   .handshake = efactor_handshake,
-  .standard_id = FALSE,
   .name = "efactor"
 };
 
 static const struct connector CONNECTOR_PHATTY = {
   .handshake = phatty_handshake,
-  .standard_id = TRUE,
   .name = "phatty"
 };
 
 static const struct connector CONNECTOR_SUMMIT = {
   .handshake = summit_handshake,
-  .standard_id = TRUE,
   .name = "summit"
 };
 
 static const struct connector CONNECTOR_DEFAULT = {
   .handshake = default_handshake,
-  .standard_id = FALSE,
   .name = "default"
 };
 
-// To speed up detection, connectors that purely rely on the standard device inquiry should go first.
+// To speed up detection, connectors that do not rely on the standard device inquiry should go first.
 
 static const struct connector *CONNECTORS[] = {
-  &CONNECTOR_MICROBRUTE, &CONNECTOR_PHATTY, &CONNECTOR_SUMMIT,
   &CONNECTOR_ELEKTRON, &CONNECTOR_CZ, &CONNECTOR_SDS, &CONNECTOR_EFACTOR,
+  &CONNECTOR_MICROBRUTE, &CONNECTOR_PHATTY, &CONNECTOR_SUMMIT,
   &CONNECTOR_DEFAULT, NULL
 };
 
@@ -166,11 +157,6 @@ connector_init_backend (struct backend *backend, const gchar * id,
 	    {
 	      debug_print (1, "Using %s connector...\n", (*connector)->name);
 	      return 0;
-	    }
-
-	  if (!(*connector)->standard_id)
-	    {
-	      backend_rx_drain (backend);
 	    }
 	}
       connector++;
