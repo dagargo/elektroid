@@ -78,7 +78,6 @@ struct elektron_iterator_data
   guint8 has_valid_data;
   guint8 has_metadata;
   guint32 fs;
-  gboolean cached;
 };
 
 enum elektron_storage
@@ -457,11 +456,7 @@ static void
 elektron_free_iterator_data (void *iter_data)
 {
   struct elektron_iterator_data *data = iter_data;
-
-  if (!data->cached)
-    {
-      free_msg (data->msg);
-    }
+  free_msg (data->msg);
   g_free (data);
 }
 
@@ -534,8 +529,7 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
 
 static gint
 elektron_init_iterator (struct item_iterator *iter, GByteArray * msg,
-			iterator_next next, enum elektron_fs fs,
-			gboolean cached)
+			iterator_next next, enum elektron_fs fs)
 {
   struct elektron_iterator_data *data =
     malloc (sizeof (struct elektron_iterator_data));
@@ -543,7 +537,6 @@ elektron_init_iterator (struct item_iterator *iter, GByteArray * msg,
   data->msg = msg;
   data->pos = fs == FS_DATA_ALL ? FS_DATA_START_POS : FS_SAMPLES_START_POS;
   data->fs = fs;
-  data->cached = cached;
 
   iter->data = data;
   iter->next = next;
@@ -1149,7 +1142,6 @@ elektron_read_common_dir (struct backend *backend,
 			  const guint8 msg[], int size,
 			  fs_init_iter_func init_iter, enum elektron_fs fs)
 {
-  gboolean cache = FALSE;
   GByteArray *tx_msg, *rx_msg = NULL;
 
   tx_msg = elektron_new_msg_path (msg, size, dir);
@@ -1172,7 +1164,7 @@ elektron_read_common_dir (struct backend *backend,
     }
 
   return elektron_init_iterator (iter, rx_msg, elektron_next_smplrw_entry,
-				 fs, cache);
+				 fs);
 }
 
 static gint
@@ -2338,7 +2330,7 @@ elektron_read_data_dir_prefix (struct backend *backend,
     }
 
   return elektron_init_iterator (iter, rx_msg, elektron_next_data_entry,
-				 FS_DATA_ALL, FALSE);
+				 FS_DATA_ALL);
 }
 
 static gint
