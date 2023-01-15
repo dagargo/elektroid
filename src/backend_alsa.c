@@ -331,7 +331,7 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 	  if (debug_level >= 4)
 	    {
 	      gchar *text = debug_get_hex_data (debug_level, tmp, rx_len);
-	      debug_print (4, "Skipping partial message (%zd): %s\n", rx_len,
+	      debug_print (4, "Skipping non SysEx data (%zd): %s\n", rx_len,
 			   text);
 	      free (text);
 	    }
@@ -377,12 +377,6 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
     }
 
   return rx_len;
-}
-
-static inline gboolean
-backend_is_byte_rt_msg (guint8 b)
-{
-  return (b >= 0xf1 && b <= 0xf6) || (b >= 0xf8 && b <= 0xff);
 }
 
 //Access to this function must be synchronized.
@@ -453,17 +447,19 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 
       if (len > 0)
 	{
-	  debug_print (3, "Copying %d bytes...\n", len);
-
-	  //Filter out RT messages
+	  //Filter out everything until an 0xf0 is found.
 	  b = backend->buffer;
-	  for (i = 0; i < len; i++, b++)
+	  for (i = 0; i < len && *b != 0xf0; i++, b++);
+	  if (i > 0 && debug_level >= 4)
 	    {
-	      if (!backend_is_byte_rt_msg (*b))
-		{
-		  g_byte_array_append (transfer->raw, b, 1);
-		}
+	      gchar *text = debug_get_hex_data (debug_level, backend->buffer,
+						i);
+	      debug_print (4, "Skipping non SysEx data in buffer (%d): %s\n",
+			   i, text);
+	      free (text);
 	    }
+	  debug_print (3, "Copying %d bytes...\n", len - i);
+	  g_byte_array_append (transfer->raw, b, len - i);
 
 	  backend->rx_len -= len;
 	  memmove (backend->buffer, backend->buffer + next_check,
