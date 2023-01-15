@@ -87,10 +87,8 @@ void package_destroy (struct package *);
 gint package_open (struct package *, GByteArray *,
 		   const struct device_desc *);
 
-gint package_send_pkg_resources (struct package *,
-				 const gchar *,
-				 struct job_control *,
-				 struct backend *, fs_remote_file_op,
+gint package_send_pkg_resources (struct package *, const gchar *,
+				 struct job_control *, struct backend *,
 				 fs_remote_file_op);
 
 void package_close (struct package *);

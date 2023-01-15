@@ -78,6 +78,7 @@ struct elektron_iterator_data
   guint8 has_valid_data;
   guint8 has_metadata;
   guint32 fs;
+  gint32 max_slots;
 };
 
 enum elektron_storage
@@ -226,6 +227,9 @@ static void elektron_print_smplrw (struct item_iterator *, struct backend *,
 static void elektron_print_data (struct item_iterator *, struct backend *,
 				 const struct fs_operations *);
 
+static gchar *elektron_get_id_as_slot (struct item *, struct backend *);
+
+
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
 static const guint8 PING_REQUEST[] = { 0x1 };
@@ -364,6 +368,7 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .swap = elektron_swap_data_item_any,
   .download = elektron_download_data_any,
   .upload = elektron_upload_data_any,
+  .get_slot = elektron_get_id_as_slot,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -374,7 +379,8 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
 static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .fs = FS_DATA_PRJ,
   .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SHOW_SIZE_COLUMN,
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SLOT_COLUMN,
   .name = "project",
   .gui_name = "Projects",
   .gui_icon = BE_FILE_ICON_PRJ,
@@ -388,6 +394,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .swap = elektron_swap_data_item_prj,
   .download = elektron_download_data_prj_pkg,
   .upload = elektron_upload_data_prj_pkg,
+  .get_slot = elektron_get_id_as_slot,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -398,7 +405,8 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
 static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .fs = FS_DATA_SND,
   .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SHOW_SIZE_COLUMN,
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SLOT_COLUMN,
   .name = "sound",
   .gui_name = "Sounds",
   .gui_icon = BE_FILE_ICON_SND,
@@ -412,6 +420,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .swap = elektron_swap_data_item_snd,
   .download = elektron_download_data_snd_pkg,
   .upload = elektron_upload_data_snd_pkg,
+  .get_slot = elektron_get_id_as_slot,
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
@@ -424,6 +433,21 @@ static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
   NULL
 };
+
+static gchar *
+elektron_get_id_as_slot (struct item *item, struct backend *backend)
+{
+  gchar *slot = malloc (LABEL_MAX);
+  if (item->id >= 0)
+    {
+      snprintf (slot, LABEL_MAX, "%03d", item->id);
+    }
+  else
+    {
+      slot[0] = 0;
+    }
+  return slot;
+}
 
 static void
 elektron_print_smplrw (struct item_iterator *iter,
@@ -445,11 +469,12 @@ elektron_print_data (struct item_iterator *iter,
 {
   gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct elektron_iterator_data *data = iter->data;
-
-  printf ("%c %3d %04x %d %d %10s %s\n", iter->item.type,
-	  iter->item.id, data->operations, data->has_valid_data,
-	  data->has_metadata, hsize, iter->item.name);
+  gchar *slot = iter->item.id > 0 ? elektron_get_id_as_slot (&iter->item, backend) : " -1";
+  printf ("%c %04x %d %d %10s %s %s\n", iter->item.type,
+	  data->operations, data->has_valid_data,
+	  data->has_metadata, hsize, slot, iter->item.name);
   g_free (hsize);
+  g_free (slot);
 }
 
 static void
@@ -529,7 +554,8 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
 
 static gint
 elektron_init_iterator (struct item_iterator *iter, GByteArray * msg,
-			iterator_next next, enum elektron_fs fs)
+			iterator_next next, enum elektron_fs fs,
+			gint32 max_slots)
 {
   struct elektron_iterator_data *data =
     malloc (sizeof (struct elektron_iterator_data));
@@ -537,11 +563,13 @@ elektron_init_iterator (struct item_iterator *iter, GByteArray * msg,
   data->msg = msg;
   data->pos = fs == FS_DATA_ALL ? FS_DATA_START_POS : FS_SAMPLES_START_POS;
   data->fs = fs;
+  data->max_slots = max_slots;
 
   iter->data = data;
   iter->next = next;
   iter->free = elektron_free_iterator_data;
-  iter->item.id = -1;
+  iter->item.id = 0;
+  iter->item.type = ELEKTROID_NONE;
 
   return 0;
 }
@@ -1164,7 +1192,7 @@ elektron_read_common_dir (struct backend *backend,
     }
 
   return elektron_init_iterator (iter, rx_msg, elektron_next_smplrw_entry,
-				 fs);
+				 fs, -1);
 }
 
 static gint
@@ -1583,7 +1611,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar * path,
   return res;
 }
 
-static gint
+gint
 elektron_upload_sample_part (struct backend *backend, const gchar * path,
 			     GByteArray * sample, struct job_control *control)
 {
@@ -2226,14 +2254,35 @@ elektron_next_data_entry (struct item_iterator *iter)
   guint16 *data16;
   guint8 type;
   guint8 has_children;
+  guint32 id;
   struct elektron_iterator_data *data = iter->data;
 
   if (data->pos == data->msg->len)
     {
-      return -ENOENT;
+      //A data directory only contains either files or directories.
+      //If the last visited item was a directory, there are no more slots to visit.
+      if (iter->item.type == ELEKTROID_DIR
+	  || iter->item.id >= data->max_slots)
+	{
+	  return -ENOENT;
+	}
+
+      goto not_found;
     }
 
   name_cp1252 = (gchar *) & data->msg->data[data->pos];
+
+  if (data->max_slots != -1 && iter->item.type != ELEKTROID_DIR)
+    {
+      data32 =
+	(guint32 *) & data->msg->data[data->pos + strlen (name_cp1252) + 3];
+      id = be32toh (*data32);
+      if (id > iter->item.id + 1)
+	{
+	  goto not_found;
+	}
+    }
+
   elektron_get_utf8 (iter->item.name, name_cp1252);
   data->pos += strlen (name_cp1252) + 1;
   has_children = data->msg->data[data->pos];
@@ -2256,7 +2305,7 @@ elektron_next_data_entry (struct item_iterator *iter)
       iter->item.type = has_children ? ELEKTROID_DIR : ELEKTROID_FILE;
 
       data32 = (guint32 *) & data->msg->data[data->pos];
-      iter->item.id = be32toh (*data32);	//index
+      iter->item.id = has_children ? -1 : be32toh (*data32);
       data->pos += sizeof (gint32);
 
       data32 = (guint32 *) & data->msg->data[data->pos];
@@ -2280,6 +2329,16 @@ elektron_next_data_entry (struct item_iterator *iter)
     }
 
   return 0;
+
+not_found:
+  iter->item.type = ELEKTROID_FILE;
+  iter->item.name[0] = 0;
+  iter->item.size = -1;
+  iter->item.id++;
+  data->operations = 0;
+  data->has_valid_data = 0;
+  data->has_metadata = 0;
+  return 0;
 }
 
 static gchar *
@@ -2302,7 +2361,8 @@ elektron_add_prefix_to_path (const gchar * dir, const gchar * prefix)
 static gint
 elektron_read_data_dir_prefix (struct backend *backend,
 			       struct item_iterator *iter,
-			       const gchar * dir, const char *prefix)
+			       const gchar * dir, const char *prefix,
+			       gint32 max_slots)
 {
   int res;
   GByteArray *tx_msg;
@@ -2330,14 +2390,14 @@ elektron_read_data_dir_prefix (struct backend *backend,
     }
 
   return elektron_init_iterator (iter, rx_msg, elektron_next_data_entry,
-				 FS_DATA_ALL);
+				 FS_DATA_ALL, max_slots);
 }
 
 static gint
 elektron_read_data_dir_any (struct backend *backend,
 			    struct item_iterator *iter, const gchar * dir)
 {
-  return elektron_read_data_dir_prefix (backend, iter, dir, NULL);
+  return elektron_read_data_dir_prefix (backend, iter, dir, NULL, -1);
 }
 
 static gint
@@ -2345,7 +2405,7 @@ elektron_read_data_dir_prj (struct backend *backend,
 			    struct item_iterator *iter, const gchar * dir)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
-					FS_DATA_PRJ_PREFIX);
+					FS_DATA_PRJ_PREFIX, 128);
 }
 
 static gint
@@ -2353,7 +2413,7 @@ elektron_read_data_dir_snd (struct backend *backend,
 			    struct item_iterator *iter, const gchar * dir)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
-					FS_DATA_SND_PREFIX);
+					FS_DATA_SND_PREFIX, 256);
 }
 
 static gint
@@ -2837,24 +2897,25 @@ elektron_get_download_name (struct backend *backend,
 			    const gchar * src_path)
 {
   gint32 id;
+  gint ret;
   const gchar *src_dir;
   gchar *namec, *name, *src_dirc;
-  gint ret;
+  struct item_iterator *iter;
 
-  namec = strdup (src_path);
+  namec = g_strdup (src_path);
   name = basename (namec);
 
   if (ops->fs == FS_SAMPLES || ops->fs == FS_RAW_ALL
       || ops->fs == FS_RAW_PRESETS)
     {
-      name = strdup (name);
-      goto end;
+      name = g_strdup (name);
+      goto cleanup;
     }
 
-  struct item_iterator *remote_iter = malloc (sizeof (struct item_iterator));
-  src_dirc = strdup (src_path);
+  iter = malloc (sizeof (struct item_iterator));
+  src_dirc = g_strdup (src_path);
   src_dir = dirname (src_dirc);
-  ret = ops->readdir (backend, remote_iter, src_dir);
+  ret = ops->readdir (backend, iter, src_dir);
   g_free (src_dirc);
   if (ret)
     {
@@ -2865,18 +2926,19 @@ elektron_get_download_name (struct backend *backend,
   id = atoi (name);
   name = NULL;
 
-  while (!next_item_iterator (remote_iter))
+  while (!next_item_iterator (iter))
     {
-      if (remote_iter->item.id == id)
+      if (iter->item.id == id)
 	{
-	  name = g_strdup (remote_iter->item.name);
+	  name = g_strdup (iter->item.name);
 	  break;
 	}
     }
 
+  free_item_iterator (iter);
+
 cleanup:
   g_free (namec);
-end:
   return name;
 }
 
@@ -3025,6 +3087,8 @@ elektron_get_download_path (struct backend *backend,
   const gchar *src_fpath, *md_ext, *ext = get_ext (src_path);
 
   // Examples:
+  // 0:/project0
+  // 0:/soundbanks/A/1
   // 0:/soundbanks/A/1/.metadata
   // 0:/loops/sample
 
@@ -3060,6 +3124,17 @@ elektron_get_download_path (struct backend *backend,
   return path;
 }
 
+static void
+elektron_remove_slot_name_from_path (gchar * path)
+{
+  gchar *c = path + strlen (path) - 1;
+  while (*c != ':')
+    {
+      c--;
+    }
+  *c = 0;
+}
+
 static gint
 elektron_upload_data_prefix (struct backend *backend, const gchar * path,
 			     GByteArray * array,
@@ -3082,6 +3157,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
   GByteArray *rx_msg;
   GByteArray *tx_msg;
   gchar *path_w_prefix = elektron_add_prefix_to_path (path, prefix);
+  elektron_remove_slot_name_from_path (path_w_prefix);	//The slot name is not used with Elektron devices
 
   res = elektron_open_datum (backend, path_w_prefix, &jid, O_WRONLY,
 			     array->len);
@@ -3231,8 +3307,7 @@ elektron_upload_pkg (struct backend *backend, const gchar * path,
   ret = package_open (&pkg, input, &data->device_desc);
   if (!ret)
     {
-      ret = package_send_pkg_resources (&pkg, path, control, backend,
-					upload, elektron_upload_sample_part);
+      ret = package_send_pkg_resources (&pkg, path, control, backend, upload);
       package_close (&pkg);
     }
   return ret;

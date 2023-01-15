@@ -37,6 +37,9 @@ enum elektron_fs
 gchar *elektron_get_sample_path_from_hash_size (struct backend *, guint32,
 						guint32);
 
+gint elektron_upload_sample_part (struct backend *, const gchar *,
+				  GByteArray *, struct job_control *);
+
 GByteArray *elektron_ping (struct backend *);
 
 gint elektron_handshake (struct backend *);

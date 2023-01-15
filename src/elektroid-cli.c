@@ -487,8 +487,8 @@ cli_download (int argc, gchar * argv[], int *optind)
       goto end;
     }
 
-  download_path =
-    fs_ops->get_download_path (&backend, fs_ops, ".", src_path, array);
+  download_path = fs_ops->get_download_path (&backend, fs_ops, ".", src_path,
+					     array);
   if (!download_path)
     {
       err = -EINVAL;

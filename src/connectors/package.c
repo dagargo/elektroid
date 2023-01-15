@@ -542,12 +542,10 @@ get_payload:
 }
 
 gint
-package_send_pkg_resources (struct package *pkg,
-			    const gchar * payload_path,
+package_send_pkg_resources (struct package *pkg, const gchar * payload_path,
 			    struct job_control *control,
 			    struct backend *backend,
-			    fs_remote_file_op upload_data,
-			    fs_remote_file_op upload_sample)
+			    fs_remote_file_op upload_data)
 {
   gint elements, i, ret = 0;
   const gchar *file_type, *sample_path;
@@ -753,8 +751,8 @@ package_send_pkg_resources (struct package *pkg,
       dev_sample_path = strdup (&sample_path[7]);
       //... And the extension.
       remove_ext (dev_sample_path);
-      ret = upload_sample (backend, dev_sample_path, pkg_resource->data,
-			   control);
+      ret = elektron_upload_sample_part (backend, dev_sample_path,
+					 pkg_resource->data, control);
       g_free (dev_sample_path);
       g_free (control->data);
       control->data = NULL;
