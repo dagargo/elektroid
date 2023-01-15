@@ -1166,11 +1166,9 @@ elektroid_delete_files_runner (gpointer data)
       gtk_tree_model_get_iter (model, &iter, tree_path);
       browser_set_item (model, &iter, &item);
 
-      if (!elektroid_delete_file (browser, browser->dir, &item) &&
-	  browser == &remote_browser &&
-	  browser->backend->type != BE_TYPE_SYSTEM)
+      if (elektroid_delete_file (browser, browser->dir, &item))
 	{
-	  gtk_list_store_remove (GTK_LIST_STORE (model), &iter);
+	  error_print ("Error while deleting file");
 	}
 
       g_mutex_lock (&sysex_transfer.mutex);
@@ -1227,6 +1225,8 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
 
   elektroid_join_sysex_thread ();
+
+  elektroid_load_remote_if_midi (data);
 
   g_mutex_lock (&sysex_transfer.mutex);
   sysex_transfer.active = FALSE;
