@@ -27,7 +27,7 @@
 #define SUMMIT_PATCH_NAME_LEN 16
 #define SUMMIT_SINGLE_LEN 527
 #define SUMMIT_MULTI_LEN 1039
-#define SUMMIT_REST_TIME_US 5000
+#define SUMMIT_REST_TIME_US 10000
 #define SUMMIT_MSG_BANK_POS 12
 #define SUMMIT_MSG_PATCH_POS 13
 #define SUMMIT_MAX_TUNINGS 17	// Tuning 0 is stored but can't be changed form the UI.
