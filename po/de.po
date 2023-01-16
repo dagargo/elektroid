@@ -230,9 +230,9 @@ msgstr "Download Auswahl"
 
 #: res/gui.glade:259
 msgid "Sample and MIDI device manager"
-msgstr "Transfer Anwendung für Elektron Instrumente"
+msgstr "Sample und MIDI Gerätemanager"
 
-#: res/gui.glade:262
+#: res/gui.glade:2621
 msgid "translator-credits"
 msgstr "Dennis Braun <d_braun@kabelmail.de>"
 
