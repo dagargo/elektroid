@@ -3,18 +3,18 @@ Upstream-Name: elektroid
 Upstream-Contact: https://github.com/dagargo/elektroid
 Source: https://github.com/dagargo/elektroid/releases
 Comment:
- This package was debianized by Dennis Braun <d_braun@kabelmail.de> on
+ This package was debianized by Dennis Braun <snd@debian.org> on
  Sun, 08 Mar 2020 01:05:20 +0100.
 
 Files: *
 Copyright:
  2019-2022 David García Goñi <dagargo@gmail.com>
  2019 Olivier Humbert <trebmuh@tuxfamily.org>
- 2020-2021 Dennis Braun <d_braun@kabelmail.de>
+ 2020-2022 Dennis Braun <snd@debian.org>
 License: GPL-3+
 
 Files: debian/*
-Copyright: 2020-2022 Dennis Braun <d_braun@kabelmail.de>
+Copyright: 2020-2022 Dennis Braun <snd@debian.org>
 License: GPL-3+
 
 Files: res/elektroid.svg
@@ -24,7 +24,7 @@ License: CC-BY-SA-4.0
 Files:
   res/elektroid.appdata.xml
 Copyright:
- 2020 Dennis Braun <d_braun@kabelmail.de>
+ 2020 Dennis Braun <snd@debian.org>
 License: FSFAP
  Copying and distribution of this file, with or without modification,
  are permitted in any medium without royalty provided the copyright
@@ -47,7 +47,7 @@ Comment:
  .
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <https://www.gnu.org/licenses/>.
- 
+
 License: CC-BY-SA-4.0
  Creative Commons Attribution-ShareAlike 4.0 International Public License
  .

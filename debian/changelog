@@ -1,3 +1,17 @@
+elektroid (2.3-1) unstable; urgency=medium
+
+  [ Johannes Schauer Marin Rodrigues ]
+  * d/copyright: remove superfluous trailing newline
+
+  [ Dennis Braun ]
+  * New upstream version 2.3
+  * d/watch: Fix regex
+  * Update my email address
+  * Bump my d/copyright year
+  * d/rules: Remove obsolete dh flag --with-autoreconf, it's default
+
+ -- Dennis Braun <snd@debian.org>  Mon, 05 Dec 2022 15:49:42 +0100
+
 elektroid (2.1-1) unstable; urgency=medium
 
   * New upstream version 2.1

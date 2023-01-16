@@ -10,7 +10,7 @@ ifneq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
 endif
 
 %:
-	dh $@ --with autoreconf
+	dh $@
 
 override_dh_auto_test:
 	# Don't enable tests, if no elektron device is connected
