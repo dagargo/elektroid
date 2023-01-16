@@ -14,9 +14,9 @@ Supported devices:
 * Elektron Analog Rytm MKI and MKII
 * Elektron Analog Four MKI, MKII and Keys
 * All samplers implementing MIDI SDS
-* Casio CZ-101 presets
-* Arturia MicroBrute sequences
-* Eventide ModFactor, PitchFactor, TimeFactor, Space and H9 presets
+* Casio CZ-101
+* Arturia MicroBrute
+* Eventide ModFactor, PitchFactor, TimeFactor, Space and H9
 * Moog Little Phatty and Slim Phatty
 * Novation Summit and Peak
 

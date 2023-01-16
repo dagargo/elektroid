@@ -1,7 +1,7 @@
-.TH ELEKTROID-CLI "1" "Dec 2021"
+.TH ELEKTROID-CLI "1" "Jan 2023"
 
 .SH NAME
-elektroid-cli \- transfer CLI application for Elektron devices
+elektroid-cli \- Sample and MIDI device manager (CLI)
 
 .SH SYNOPSIS
 .B elektroid-cli
@@ -10,11 +10,40 @@ elektroid-cli \- transfer CLI application for Elektron devices
 
 .SH DESCRIPTION
 .B elektroid-cli
-provides the same funcionality than elektroid. See man elektroid for the GUI application.
+is part of Elektroid, a sample and MIDI device manager. See man elektroid for the GUI application.
 .PP
-Provided paths must always be prepended with the device id and a colon (':'), e.g. 0:/samples. Paths pointing to a data, sound or project file use the index of a file instead of its name.
+With Elektroid you can easily upload and download audio files and manage different types of data on different MIDI devices, such as presets, projects or tunings. It can also be used to send and receive MIDI SysEx files.
+
+.SH SUPPORTED DEVICES
+.IP \[bu] 2
+Elektron Model:Samples
+.IP \[bu]
+Elektron Model:Cycles
+.IP \[bu]
+Elektron Digitakt
+.IP \[bu]
+Elektron Digitone and Digitone Keys
+.IP \[bu]
+Elektron Syntakt
+.IP \[bu]
+Elektron Analog Rytm MKI and MKII
+.IP \[bu]
+Elektron Analog Four MKI, MKII and Keys
+.IP \[bu]
+All samplers implementing MIDI SDS
+.IP \[bu]
+Casio CZ-101
+.IP \[bu]
+Arturia MicroBrute
+.IP \[bu]
+Eventide ModFactor, PitchFactor, TimeFactor, Space and H9
+.IP \[bu]
+Moog Little Phatty and Slim Phatty
+.IP \[bu]
+Novation Summit and Peak
 
 .SH DEVICE COMMANDS
+Device commands operate over the device itself. For the commands that operate over the different types of data a device provides see the filesystem commands section.
 .TP
 [ \fBld\fR | \fBlist-devices\fR ]
 List compatible devices
@@ -29,8 +58,13 @@ Show device info
 Upgrade the device
 
 .SH FILESYSTEM COMMANDS
-.PP
-Filesystem commands must be followed by a hyphen ('-') and a filesystem name. The available filesystemas are sample, sound, project, data, preset and raw. Data is an unpackaged form of sound and project and so is raw with regards to preset.
+Different filesystem operations are implemented on different connectors so a command has the following form:
+.TP
+\tconnector, hyphen ('-'), filesystem name, hyphen ('-'), and the operation itself
+.TP
+Provided paths must always be prepended with the device id and a colon (':'), e.g. 0:/samples. Paths pointing to a data, sound or project file use the index of a file instead of its name.
+.TP
+These are the available operations.
 .TP
 [ \fBls\fR | \fBlist\fR ] device_number:path_to_directory
 List directory contents
@@ -64,29 +98,31 @@ Swap files
 
 .SH OPTIONS
 .TP
-\fB\-v\fR
-Show verbose output. Use it more than once for more verbosity.
-.PP
+\fB\-v\fR give verbose output. Use it more than once for more verbosity.
 
 .SH EXAMPLES
-.PP
-Upload a sample.
 .TP
-\tul-sample square.wav 0:/waveforms
-.PP
-Download a preset into the current directory.
+\fBelektroid-cli ls\fR
+lists the available devices.
 .TP
-\tdl-raw 0:/snare/snare.mc-snd
-.PP
-List projects.
+\fBelektroid-cli info 0\fR
+shows information about the device, including the connector and the available filesystems.
 .TP
-\tls-project 0:/
+\fBelektroid-cli elektron-sample-ul square.wav 0:/waveforms\fR
+uploads a sample to an Elektron device.
+.TP
+\fBelektroid-cli sds-mono16-dl 0:/1\fR
+downloads a mono 16 bits sample from an SDS sampler.
+.TP
+\fBelektroid-cli summit-single-ls 0:/A\fR
+lists Novation Summit single patches in bank A.
 
 .SH "SEE ALSO"
 The GitHub page provides some examples: <https://github.com/dagargo/elektroid>
 
 .SH "AUTHOR"
 elektroid-cli was written by David García Goñi <dagargo@gmail.com>.
+
 .PP
 This manual page was written by Dennis Braun <snd@debian.org>
 for the Debian project (but may be used by others).
