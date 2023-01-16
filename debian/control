@@ -2,7 +2,7 @@ Source: elektroid
 Section: sound
 Priority: optional
 Maintainer: Debian Multimedia Maintainers <debian-multimedia@lists.debian.org>
-Uploaders: Dennis Braun <d_braun@kabelmail.de>
+Uploaders: Dennis Braun <snd@debian.org>
 Build-Depends: debhelper-compat (= 13),
                libasound2-dev [linux-any],
                libjson-glib-dev,
@@ -16,7 +16,7 @@ Build-Depends: debhelper-compat (= 13),
 Homepage: https://github.com/dagargo/elektroid
 Vcs-Browser: https://salsa.debian.org/multimedia-team/elektroid
 Vcs-Git: https://salsa.debian.org/multimedia-team/elektroid.git
-Standards-Version: 4.6.1
+Standards-Version: 4.6.2
 Rules-Requires-Root: no
 
 Package: elektroid
