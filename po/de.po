@@ -1,15 +1,15 @@
 # German translations for Elektroid package.
-# Copyright (C) 2020-2022 Dennis Braun
+# Copyright (C) 2020-2023 Dennis Braun
 # This file is distributed under the same license as the Elektroid package.
-# Dennis Braun <d_braun@kabelmail.de>, 2022.
+# Dennis Braun <snd@debian.org>, 2023.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2023-01-15 22:03+0100\n"
-"PO-Revision-Date: 2022-11-01 21:47+0100\n"
-"Last-Translator: Dennis Braun <d_braun@kabelmail.de>\n"
+"PO-Revision-Date: 2023-01-16 19:47+0100\n"
+"Last-Translator: Dennis Braun <snd@debian.org>\n"
 "Language-Team: German\n"
 "Language: de\n"
 "MIME-Version: 1.0\n"
@@ -234,7 +234,7 @@ msgstr "Sample und MIDI Gerätemanager"
 
 #: res/gui.glade:2621
 msgid "translator-credits"
-msgstr "Dennis Braun <d_braun@kabelmail.de>"
+msgstr "Dennis Braun <snd@debian.org>"
 
 #: res/gui.glade:325
 msgid "_About"
