@@ -321,8 +321,9 @@ cli_info (int argc, gchar * argv[], int *optind)
       return err;
     }
 
-  printf ("%s; version: %s; description: %s; filesystems: ",
-	  backend.name, backend.version, backend.description);
+  printf ("%s; version: %s; description: %s; connector: %s; filesystems: ",
+	  backend.name, backend.version, backend.description,
+	  backend.conn_name);
 
   for (gint fs = 1; fs <= MAX_BACKEND_FSS; fs <<= 1)
     {

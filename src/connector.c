@@ -141,6 +141,7 @@ connector_init_backend (struct backend *backend, const gchar * id,
 		  debug_print (1, "Using %s connector...\n",
 			       (*connector)->name);
 		}
+	      backend->conn_name = (*connector)->name;
 	      return err;
 	    }
 	}
@@ -156,6 +157,7 @@ connector_init_backend (struct backend *backend, const gchar * id,
 	  if (!err)
 	    {
 	      debug_print (1, "Using %s connector...\n", (*connector)->name);
+	      backend->conn_name = (*connector)->name;
 	      return 0;
 	    }
 	}

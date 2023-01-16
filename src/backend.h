@@ -110,6 +110,7 @@ struct backend
   //Message cache
   GHashTable *cache;
   //This must be filled by the concrete connector.
+  const gchar *conn_name;
   const struct fs_operations **fs_ops;
   void *data;
   t_destroy_data destroy_data;
