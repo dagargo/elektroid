@@ -36,6 +36,7 @@
 
 static struct backend backend;
 static struct job_control control;
+static struct sysex_transfer sysex_transfer;
 static gchar *connector, *fs, *op;
 const struct fs_operations *fs_ops;
 
@@ -404,7 +405,6 @@ cli_upgrade_os (int argc, gchar * argv[], int *optind)
   gint err;
   const gchar *src_path;
   const gchar *device_path;
-  struct sysex_transfer sysex_transfer;
 
   if (*optind == argc)
     {
@@ -570,7 +570,6 @@ cli_send (int argc, gchar * argv[], int *optind)
 {
   gint err;
   const gchar *device_dst_path, *src_file;
-  struct sysex_transfer sysex_transfer;
 
   if (*optind == argc)
     {
@@ -614,7 +613,6 @@ cli_send (int argc, gchar * argv[], int *optind)
     }
 
   free_msg (sysex_transfer.raw);
-
   return err;
 }
 
@@ -623,7 +621,6 @@ cli_receive (int argc, gchar * argv[], int *optind)
 {
   gint err;
   const gchar *device_src_path, *dst_file;
-  struct sysex_transfer sysex_transfer;
 
   if (*optind == argc)
     {
@@ -667,7 +664,6 @@ cli_receive (int argc, gchar * argv[], int *optind)
     }
 
   free_msg (sysex_transfer.raw);
-
   return err;
 }
 
@@ -709,6 +705,10 @@ cli_end (int sig)
   g_mutex_lock (&control.mutex);
   control.active = FALSE;
   g_mutex_unlock (&control.mutex);
+
+  g_mutex_lock (&sysex_transfer.mutex);
+  sysex_transfer.active = FALSE;
+  g_mutex_unlock (&sysex_transfer.mutex);
 }
 
 int
