@@ -1901,6 +1901,7 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
   gint8 op;
   gint offset;
   gint res = 0;
+  gboolean active;
 
   tx_msg = elektron_new_msg_upgrade_os_start (transfer->raw->len);
   rx_msg = elektron_tx_and_rx (backend, tx_msg);
@@ -1952,6 +1953,15 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
       free_msg (rx_msg);
 
       usleep (BE_REST_TIME_US);
+
+      g_mutex_lock (&transfer->mutex);
+      active = transfer->active;
+      g_mutex_unlock (&transfer->mutex);
+      if (!active)
+	{
+	  res = -ECANCELED;
+	  goto end;
+	}
     }
 
 end:
