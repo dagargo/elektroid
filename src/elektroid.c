@@ -889,6 +889,8 @@ elektroid_tx_upgrade_os_thread (gpointer data)
   GSList *filenames = data;
   gint *err = malloc (sizeof (gint));
   sysex_transfer.raw = g_byte_array_new ();
+  sysex_transfer.active = TRUE;
+  sysex_transfer.status = SENDING;
   sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
