@@ -191,15 +191,6 @@ browser_get_selected_items_count (struct browser *browser)
 gchar *
 browser_get_item_path (struct browser *browser, struct item *item)
 {
-  gchar *path = chain_path (browser->dir, item->name);
-  debug_print (1, "Using %s path for item %s (%d)...\n", path, item->name,
-	       item->id);
-  return path;
-}
-
-gchar *
-browser_get_item_id_path (struct browser *browser, struct item *item)
-{
   gchar *filename = get_filename (browser->fs_ops->options, item);
   gchar *path = chain_path (browser->dir, filename);
   debug_print (1, "Using %s path for item %s (id %d)...\n", path, item->name,

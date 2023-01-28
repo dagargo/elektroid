@@ -89,8 +89,6 @@ void browser_item_activated (GtkTreeView *, GtkTreePath *,
 
 gchar *browser_get_item_path (struct browser *, struct item *);
 
-gchar *browser_get_item_id_path (struct browser *, struct item *);
-
 gboolean browser_load_dir (gpointer);
 
 void browser_update_fs_options (struct browser *);

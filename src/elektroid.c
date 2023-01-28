@@ -1250,7 +1250,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 
   browser_set_selected_row_iter (browser, &iter);
   browser_set_item (model, &iter, &item);
-  old_path = browser_get_item_id_path (browser, &item);
+  old_path = browser_get_item_path (browser, &item);
 
   gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
   gtk_entry_set_text (name_dialog_entry, item.name);
@@ -1318,7 +1318,7 @@ elektroid_drag_begin (GtkWidget * widget, GdkDragContext * context,
     {
       gtk_tree_model_get_iter (model, &iter, list->data);
       browser_set_item (model, &iter, &item);
-      path = browser_get_item_id_path (browser, &item);
+      path = browser_get_item_path (browser, &item);
       if (widget == GTK_WIDGET (local_browser.view) ||
 	  (widget == GTK_WIDGET (remote_browser.view)
 	   && backend.type == BE_TYPE_SYSTEM))
@@ -3407,6 +3407,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       || info != TARGET_STRING)
     {
       gtk_drag_finish (context, TRUE, TRUE, time);
+      error_print ("DND invalid data\n");
       return;
     }
 
