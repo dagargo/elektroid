@@ -208,11 +208,12 @@ local_next_dentry (struct item_iterator *iter)
 	  snprintf (iter->item.name, LABEL_MAX, "%s", dirent->d_name);
 	  iter->item.type = mode == S_IFREG ? ELEKTROID_FILE : ELEKTROID_DIR;
 	  iter->item.size = st.st_size;
+	  iter->item.id = -1;
 	  found = TRUE;
 	  break;
 	default:
-	  error_print
-	    ("stat mode neither file nor directory for %s\n", full_path);
+	  error_print ("stat mode neither file nor directory for %s\n",
+		       full_path);
 	  found = FALSE;
 	}
 
