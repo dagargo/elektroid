@@ -1319,9 +1319,7 @@ elektroid_drag_begin (GtkWidget * widget, GdkDragContext * context,
       gtk_tree_model_get_iter (model, &iter, list->data);
       browser_set_item (model, &iter, &item);
       path = browser_get_item_path (browser, &item);
-      if (widget == GTK_WIDGET (local_browser.view) ||
-	  (widget == GTK_WIDGET (remote_browser.view)
-	   && backend.type == BE_TYPE_SYSTEM))
+      if (backend.type == BE_TYPE_SYSTEM)
 	{
 	  escaped_uri = g_filename_to_uri (path, NULL, NULL);
 	}
