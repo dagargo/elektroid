@@ -23,6 +23,36 @@
 
 #include "backend.h"
 
+#define MICROBRUTE_NAME "microbrute"
+
+enum microbrute_param
+{
+  MICROBRUTE_NOTE_PRIORITY,
+  MICROBRUTE_VEL_RESPONSE,
+  MICROBRUTE_LFO_KEY_RETRIGGER,
+  MICROBRUTE_ENVELOPE_LEGATO,
+  MICROBRUTE_BEND_RANGE,
+  MICROBRUTE_GATE_LENGTH,
+  MICROBRUTE_SYNC,
+  MICROBRUTE_TX_CHANNEL,
+  MICROBRUTE_RX_CHANNEL,
+  MICROBRUTE_RETRIGGERING,
+  MICROBRUTE_PLAY_ON,
+  MICROBRUTE_NEXT_SEQUENCE,
+  MICROBRUTE_STEP_ON,
+  MICROBRUTE_STEP_LENGTH,
+  MICROBRUTE_CALIB_PB_CENTER,
+  MICROBRUTE_CALIB_BOTH_BOTTOM,
+  MICROBRUTE_CALIB_BOTH_TOP,
+  MICROBRUTE_CALIB_END
+};
+
 gint microbrute_handshake (struct backend *);
+
+gint microbrute_get_parameter (struct backend *, enum microbrute_param,
+			       guint8 *);
+
+gint microbrute_set_parameter (struct backend *, enum microbrute_param,
+			       guint8, guint8, gboolean);
 
 #endif

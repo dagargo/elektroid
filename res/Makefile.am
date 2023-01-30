@@ -3,11 +3,13 @@ res_DATA =
 desktop_DATA =
 metainfo_DATA =
 svgicon_DATA =
+microbrute_DATA =
 else
 res_DATA = gui.glade gui.css
 desktop_DATA = elektroid.desktop
 metainfo_DATA = elektroid.appdata.xml
 svgicon_DATA = elektroid.svg elektroid-symbolic.svg elektroid-wave-symbolic.svg elektroid-sequence-symbolic.svg elektroid-project-symbolic.svg elektroid-sound-symbolic.svg
+microbrute_DATA = microbrute/gui.glade
 endif
 
 elektron_DATA = elektron/devices.json
@@ -20,6 +22,7 @@ svgicondir = $(datarootdir)/icons/hicolor/scalable/apps
 
 # Connectors data dirs
 elektrondir = $(resdir)/elektron
+microbrutedir = $(resdir)/microbrute
 
 gtk_update_icon_cache = gtk-update-icon-cache -f -t $(datarootdir)/icons/hicolor
 

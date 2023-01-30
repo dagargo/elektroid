@@ -24,8 +24,15 @@
 #include <gtk/gtk.h>
 #include "backend.h"
 
+enum menu_action_type
+{
+  MENU_ACTION_ITEM,
+  MENU_ACTION_SEPARATOR
+};
+
 struct menu_action
 {
+  enum menu_action_type type;
   const gchar *name;
   GCallback callback;
 };
@@ -34,10 +41,14 @@ struct ma_data
 {
   GtkWidget *box;
   struct backend *backend;
+  gboolean separator;		//This does not need to be initialized as it's used internally.
 };
+
+typedef struct menu_action *(*t_menu_action_initializer) (struct backend *,
+							  GtkWindow *);
 
 void ma_clear_device_menu_actions (GtkWidget *);
 
-void ma_set_device_menu_actions (struct ma_data *);
+void ma_set_device_menu_actions (struct ma_data *, GtkWindow *);
 
 #endif

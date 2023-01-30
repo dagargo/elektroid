@@ -50,12 +50,13 @@ rx_sysex_callback (GtkWidget * object, gpointer data)
 }
 
 struct menu_action *
-os_upgrade_init (struct backend *backend)
+os_upgrade_init (struct backend *backend, GtkWindow * parent)
 {
   struct menu_action *ma = NULL;
   if (backend->upgrade_os)
     {
       ma = g_malloc (sizeof (struct menu_action));
+      ma->type = MENU_ACTION_ITEM;
       ma->name = _("OS _Upgrade");
       ma->callback = G_CALLBACK (os_upgrade_callback);
     }
@@ -63,12 +64,13 @@ os_upgrade_init (struct backend *backend)
 }
 
 struct menu_action *
-rx_sysex_init (struct backend *backend)
+rx_sysex_init (struct backend *backend, GtkWindow * parent)
 {
   struct menu_action *ma = NULL;
   if (backend->type == BE_TYPE_MIDI)
     {
       ma = g_malloc (sizeof (struct menu_action));
+      ma->type = MENU_ACTION_ITEM;
       ma->name = _("_Receive SysEx");
       ma->callback = G_CALLBACK (rx_sysex_callback);
     }
@@ -76,12 +78,13 @@ rx_sysex_init (struct backend *backend)
 }
 
 struct menu_action *
-tx_sysex_init (struct backend *backend)
+tx_sysex_init (struct backend *backend, GtkWindow * parent)
 {
   struct menu_action *ma = NULL;
   if (backend->type == BE_TYPE_MIDI)
     {
       ma = g_malloc (sizeof (struct menu_action));
+      ma->type = MENU_ACTION_ITEM;
       ma->name = _("_Send SysEx");
       ma->callback = G_CALLBACK (tx_sysex_callback);
     }

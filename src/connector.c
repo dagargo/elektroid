@@ -55,7 +55,7 @@ static const struct connector CONNECTOR_ELEKTRON = {
 
 static const struct connector CONNECTOR_MICROBRUTE = {
   .handshake = microbrute_handshake,
-  .name = "microbrute",
+  .name = MICROBRUTE_NAME,
   .regex = ".*MicroBrute.*"
 };
 

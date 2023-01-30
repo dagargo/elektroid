@@ -3158,7 +3158,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
   if (dres == GTK_RESPONSE_ACCEPT)
     {
       elektroid_fill_fs_combo_bg (NULL);
-      ma_set_device_menu_actions (&ma_data);
+      ma_set_device_menu_actions (&ma_data, GTK_WINDOW (main_window));
     }
   else
     {
@@ -3697,7 +3697,7 @@ elektroid_run (int argc, char *argv[])
 					     GTK_STYLE_PROVIDER_PRIORITY_USER);
 
   main_window = GTK_WIDGET (gtk_builder_get_object (builder, "main_window"));
-  gtk_window_resize (GTK_WINDOW (main_window), 1, 1);	//Compact window
+  gtk_window_resize (GTK_WINDOW (main_window), 1, 1);
 
   about_dialog =
     GTK_ABOUT_DIALOG (gtk_builder_get_object (builder, "about_dialog"));
@@ -4072,7 +4072,6 @@ elektroid_run (int argc, char *argv[])
 
   ma_data.backend = &backend;
 
-
   gtk_main ();
 
   free (remote_browser.dir);
@@ -4081,6 +4080,8 @@ elektroid_run (int argc, char *argv[])
     {
       backend_destroy (&backend);
     }
+
+  g_object_unref (G_OBJECT (builder));
 
   return EXIT_SUCCESS;
 }

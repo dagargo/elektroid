@@ -298,13 +298,46 @@ backend_program_change (struct backend *backend, guint8 channel,
   msg[0] = 0xc0 | (channel & 0xf);
   msg[1] = program & 0x7f;
 
-  debug_print (1, "Setting MIDI program %d...\n", program);
+  debug_print (1, "Sending MIDI program %d...\n", msg[1]);
 
   if ((size = backend_tx_raw (backend, msg, 2)) < 0)
     {
       return size;
     }
   return 0;
+}
+
+gint
+backend_send_controller (struct backend *backend, guint8 channel,
+			 guint8 controller, guint8 value)
+{
+  ssize_t size;
+  guint8 msg[3];
+
+  msg[0] = 0xb0 | (channel & 0xf);
+  msg[1] = controller & 0x7f;
+  msg[2] = value & 0x7f;
+
+  debug_print (1, "Sending MIDI controller %d with value %d...\n", msg[1],
+	       msg[2]);
+
+  if ((size = backend_tx_raw (backend, msg, 3)) < 0)
+    {
+      return size;
+    }
+  return 0;
+}
+
+gint
+backend_send_rpn (struct backend *backend, guint8 channel,
+		  guint8 controller_msb, guint8 controller_lsb,
+		  guint8 value_msb, guint8 value_lsb)
+{
+  gint err = backend_send_controller (backend, channel, 101, controller_msb);
+  err |= backend_send_controller (backend, channel, 100, controller_lsb);
+  err |= backend_send_controller (backend, channel, 6, value_msb);
+  err |= backend_send_controller (backend, channel, 38, value_lsb);
+  return err;
 }
 
 gint

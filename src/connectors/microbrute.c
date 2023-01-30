@@ -32,6 +32,43 @@
 #define MICROBRUTE_SEQ_RPLY_DATA_POS 12
 #define MICROBRUTE_SEQ_TXT_POS 2
 
+#define MICROBRUTE_SYSEX_RX_CHANNEL 0x5
+#define MICROBRUTE_SYSEX_TX_CHANNEL 0x7
+#define MICROBRUTE_SYSEX_NOTE_PRIORITY 0xB
+#define MICROBRUTE_SYSEX_ENVELOPE_LEGATO 0xD
+#define MICROBRUTE_SYSEX_LFO_KEY_RETRIGGER 0xF
+#define MICROBRUTE_SYSEX_VEL_RESPONSE 0x11
+#define MICROBRUTE_SYSEX_STEP_ON 0x2A
+#define MICROBRUTE_SYSEX_BEND_RANGE 0x2C
+#define MICROBRUTE_SYSEX_PLAY_ON 0x2E
+#define MICROBRUTE_SYSEX_NEXT_SEQUENCE 0x32
+#define MICROBRUTE_SYSEX_RETRIGGERING 0x34
+#define MICROBRUTE_SYSEX_GATE_LENGTH 0x36
+#define MICROBRUTE_SYSEX_STEP_LENGTH 0x38
+#define MICROBRUTE_SYSEX_SYNC 0x3C
+
+#define MICROBRUTE_SYSEX_CALIB_PB_CENTER 0x21
+#define MICROBRUTE_SYSEX_CALIB_BOTH_BOTTOM 0x22
+#define MICROBRUTE_SYSEX_CALIB_BOTH_TOP 0x23
+#define MICROBRUTE_SYSEX_CALIB_END 0x24
+
+#define MICROBRUTE_CTL_RX_CHANNEL 102
+#define MICROBRUTE_CTL_TX_CHANNEL 103
+#define MICROBRUTE_CTL_NOTE_PRIORITY 111
+#define MICROBRUTE_CTL_ENVELOPE_LEGATO 109
+#define MICROBRUTE_CTL_LFO_KEY_RETRIGGER 110
+#define MICROBRUTE_CTL_VEL_RESPONSE 112
+#define MICROBRUTE_CTL_STEP_ON 114
+//Setting the bend range is performed with a RPN
+#define MICROBRUTE_CTL_PLAY_ON 105
+#define MICROBRUTE_CTL_NEXT_SEQUENCE 106
+#define MICROBRUTE_CTL_RETRIGGERING 104
+#define MICROBRUTE_CTL_GATE_LENGTH 113
+#define MICROBRUTE_CTL_STEP_LENGTH 107
+#define MICROBRUTE_CTL_SYNC 108
+
+#define MICROBRUTE_NOP 0xff
+
 static const guint8 ARTURIA_ID[] = { 0x0, 0x20, 0x6b };
 static const guint8 FAMILY_ID[] = { 0x4, 0x0 };
 static const guint8 MODEL_ID[] = { 0x2, 0x1 };
@@ -46,9 +83,107 @@ static const guint8 MICROBRUTE_SEQ_MSG[] =
   0x0, 0x0, 0xf7
 };
 
+static const guint8 MICROBRUTE_GET_PARAM_MSG[] =
+  { 0xf0, 0x0, 0x20, 0x6B, 0x5, 0x1, 0, 0, 0, 0xf7 };
+
+static const guint8 MICROBRUTE_SET_PARAM_MSG[] =
+  { 0xf0, 0x0, 0x20, 0x6B, 0x5, 0x1, 0, 0, 0, 0, 0xf7 };
+
 enum cz_fs
 {
   FS_MICROBRUTE_SEQUENCE = 1
+};
+
+struct microbrute_int_param
+{
+  guint8 sysex;
+  guint8 ctl;
+    guint8 (*value_map) (guint8);
+};
+
+static guint8
+microbrute_map_plus_one (guint8 value)
+{
+  return value + 1;
+}
+
+static guint8
+microbrute_map_proportional_3 (guint8 value)
+{
+  return value * 42;
+}
+
+static guint8
+microbrute_map_proportional_2 (guint8 value)
+{
+  return value * 64;
+}
+
+static guint8
+microbrute_map_step_length (guint8 value)
+{
+  switch (value)
+    {
+    case 4:
+      return 0;
+    case 8:
+      return 30;
+    case 16:
+      return 60;
+    case 32:
+      return 90;
+    default:
+      return 0;
+    }
+}
+
+static guint8
+microbrute_map_special (guint8 value)
+{
+  switch (value)
+    {
+    case 0:
+      return 0;
+    case 1:
+      return 43;
+    case 2:
+      return 87;
+    default:
+      return 0;
+    }
+}
+
+static const struct microbrute_int_param MICROBRUTE_PARAMS[] = {
+  {MICROBRUTE_SYSEX_NOTE_PRIORITY, MICROBRUTE_CTL_NOTE_PRIORITY,
+   microbrute_map_special},
+  {MICROBRUTE_SYSEX_VEL_RESPONSE, MICROBRUTE_CTL_VEL_RESPONSE,
+   microbrute_map_special},
+  {MICROBRUTE_SYSEX_LFO_KEY_RETRIGGER, MICROBRUTE_CTL_LFO_KEY_RETRIGGER,
+   microbrute_map_proportional_2},
+  {MICROBRUTE_SYSEX_ENVELOPE_LEGATO, MICROBRUTE_CTL_ENVELOPE_LEGATO,
+   microbrute_map_proportional_2},
+  {MICROBRUTE_SYSEX_BEND_RANGE, MICROBRUTE_NOP, NULL},	//This uses a NRPN instead of a controller
+  {MICROBRUTE_SYSEX_GATE_LENGTH, MICROBRUTE_CTL_GATE_LENGTH,
+   microbrute_map_proportional_3},
+  {MICROBRUTE_SYSEX_SYNC, MICROBRUTE_CTL_SYNC, microbrute_map_special},
+  {MICROBRUTE_SYSEX_TX_CHANNEL, MICROBRUTE_CTL_TX_CHANNEL,
+   microbrute_map_plus_one},
+  {MICROBRUTE_SYSEX_RX_CHANNEL, MICROBRUTE_CTL_RX_CHANNEL,
+   microbrute_map_plus_one},
+  {MICROBRUTE_SYSEX_RETRIGGERING, MICROBRUTE_CTL_RETRIGGERING,
+   microbrute_map_special},
+  {MICROBRUTE_SYSEX_PLAY_ON, MICROBRUTE_CTL_PLAY_ON,
+   microbrute_map_proportional_2},
+  {MICROBRUTE_SYSEX_NEXT_SEQUENCE, MICROBRUTE_CTL_NEXT_SEQUENCE,
+   microbrute_map_special},
+  {MICROBRUTE_SYSEX_STEP_ON, MICROBRUTE_CTL_STEP_ON,
+   microbrute_map_proportional_2},
+  {MICROBRUTE_SYSEX_STEP_LENGTH, MICROBRUTE_CTL_STEP_LENGTH,
+   microbrute_map_step_length},
+  {MICROBRUTE_SYSEX_CALIB_PB_CENTER, MICROBRUTE_NOP, NULL},
+  {MICROBRUTE_SYSEX_CALIB_BOTH_BOTTOM, MICROBRUTE_NOP, NULL},
+  {MICROBRUTE_SYSEX_CALIB_BOTH_TOP, MICROBRUTE_NOP, NULL},
+  {MICROBRUTE_SYSEX_CALIB_END, MICROBRUTE_NOP, NULL}
 };
 
 static guint8
@@ -392,4 +527,107 @@ microbrute_handshake (struct backend *backend)
   snprintf (backend->name, LABEL_MAX, "Arturia MicroBrute");
 
   return 0;
+}
+
+static GByteArray *
+microbrute_get_parameter_msg (struct backend *backend, guint8 param)
+{
+  GByteArray *tx_msg;
+  guint8 counter = microbrute_get_counter (backend);
+
+  tx_msg = g_byte_array_sized_new (sizeof (MICROBRUTE_GET_PARAM_MSG));
+  g_byte_array_append (tx_msg, MICROBRUTE_GET_PARAM_MSG,
+		       sizeof (MICROBRUTE_GET_PARAM_MSG));
+  tx_msg->data[6] = counter;
+  tx_msg->data[8] = param;
+  return tx_msg;
+}
+
+gint
+microbrute_get_parameter (struct backend *backend,
+			  enum microbrute_param param, guint8 * value)
+{
+  GByteArray *tx_msg, *rx_msg;
+  guint8 *seq = backend->data;
+  guint8 counter = *seq;
+  guint8 op = MICROBRUTE_PARAMS[param].sysex;
+
+  tx_msg = microbrute_get_parameter_msg (backend, op + 1);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+
+  if (rx_msg->data[6] != counter)
+    {
+      error_print ("Bad sequence number byte\n");
+      return -EIO;
+    }
+  if (rx_msg->data[7] != 1)
+    {
+      error_print ("Bad client byte\n");
+      return -EIO;
+    }
+  if (rx_msg->data[8] != op)
+    {
+      error_print ("Bad parameter byte\n");
+      return -EIO;
+    }
+
+  *value = rx_msg->data[9];
+  free_msg (rx_msg);
+  return 0;
+}
+
+static GByteArray *
+microbrute_set_parameter_msg (struct backend *backend, guint8 param,
+			      guint8 value)
+{
+  guint8 counter = microbrute_get_counter (backend);
+  GByteArray *tx_msg =
+    g_byte_array_sized_new (sizeof (MICROBRUTE_SET_PARAM_MSG));
+  g_byte_array_append (tx_msg, MICROBRUTE_SET_PARAM_MSG,
+		       sizeof (MICROBRUTE_SET_PARAM_MSG));
+  tx_msg->data[6] = counter;
+  tx_msg->data[7] = 1;
+  tx_msg->data[8] = MICROBRUTE_PARAMS[param].sysex;
+  tx_msg->data[9] = value;
+  return tx_msg;
+}
+
+gint
+microbrute_set_parameter (struct backend *backend,
+			  enum microbrute_param param, guint8 value,
+			  guint8 channel, gboolean sysex)
+{
+  gint err;
+  if (sysex)
+    {
+      struct sysex_transfer transfer;
+      transfer.raw = microbrute_set_parameter_msg (backend, param, value);
+      err = backend_tx_sysex (backend, &transfer);
+      free_msg (transfer.raw);
+    }
+  else
+    {
+      if (MICROBRUTE_PARAMS[param].ctl == MICROBRUTE_NOP ||
+	  !MICROBRUTE_PARAMS[param].value_map)
+	{
+	  error_print ("Bad parameter\n");
+	  return -EINVAL;
+	}
+      if (param == MICROBRUTE_BEND_RANGE)
+	{
+	  err = backend_send_rpn (backend, channel, 0, 0, value, 0);
+	}
+      else
+	{
+	  guint8 v = MICROBRUTE_PARAMS[param].value_map (value);
+	  err = backend_send_controller (backend, channel,
+					 MICROBRUTE_PARAMS[param].ctl, v);
+	}
+    }
+
+  return err;
 }

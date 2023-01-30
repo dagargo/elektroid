@@ -20,24 +20,36 @@
 
 #include "menu_action.h"
 
-struct menu_action *os_upgrade_init (struct backend *);
-struct menu_action *rx_sysex_init (struct backend *);
-struct menu_action *tx_sysex_init (struct backend *);
+struct menu_action *os_upgrade_init (struct backend *, GtkWindow *);
+struct menu_action *rx_sysex_init (struct backend *, GtkWindow *);
+struct menu_action *tx_sysex_init (struct backend *, GtkWindow *);
+struct menu_action *microbrute_configuration_init (struct backend *,
+						   GtkWindow *);
+struct menu_action *microbrute_calibration_init (struct backend *,
+						 GtkWindow *);
 
-typedef struct menu_action *(*t_menu_action_initializer) (struct backend *);
+struct menu_action *
+menu_action_separator (struct backend *backend, GtkWindow * parent)
+{
+  struct menu_action *ma = g_malloc (sizeof (struct menu_action));
+  ma->type = MENU_ACTION_SEPARATOR;
+  return ma;
+}
 
 const t_menu_action_initializer MENU_ACTIONS[] = {
-  os_upgrade_init, rx_sysex_init, tx_sysex_init, NULL
+  microbrute_configuration_init, microbrute_calibration_init,
+  menu_action_separator, rx_sysex_init, tx_sysex_init, menu_action_separator,
+  os_upgrade_init, NULL
 };
 
 static GSList *
-ma_get_menu_actions (struct ma_data *ma_data)
+ma_get_menu_actions (struct ma_data *ma_data, GtkWindow * parent)
 {
   GSList *actions = NULL;
   const t_menu_action_initializer *initializer = MENU_ACTIONS;
   while (*initializer)
     {
-      struct menu_action *ma = (*initializer) (ma_data->backend);
+      struct menu_action *ma = (*initializer) (ma_data->backend, parent);
       if (ma)
 	{
 	  actions = g_slist_append (actions, ma);
@@ -67,24 +79,34 @@ ma_add_device_menu_action (gpointer data, gpointer user_data)
 {
   struct menu_action *ma = data;
   struct ma_data *ma_data = user_data;
-  GtkWidget *button = gtk_model_button_new ();
-  g_object_set (button, "text", ma->name, NULL);
-  gtk_widget_show (button);
-  gtk_container_add (GTK_CONTAINER (ma_data->box), button);
-  g_signal_connect (button, "clicked", ma->callback, ma_data->backend);
+  if (ma->type == MENU_ACTION_ITEM)
+    {
+      ma_data->separator = TRUE;
+      GtkWidget *button = gtk_model_button_new ();
+      g_object_set (button, "text", ma->name, NULL);
+      gtk_widget_show (button);
+      gtk_container_add (GTK_CONTAINER (ma_data->box), button);
+      g_signal_connect (button, "clicked", ma->callback, ma_data->backend);
+    }
+  else
+    {
+      if (ma_data->separator)
+	{
+	  GtkWidget *separator =
+	    gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
+	  gtk_container_add (GTK_CONTAINER (ma_data->box), separator);
+	  gtk_widget_show (separator);
+	}
+      ma_data->separator = FALSE;
+    }
 }
 
 void
-ma_set_device_menu_actions (struct ma_data *ma_data)
+ma_set_device_menu_actions (struct ma_data *ma_data, GtkWindow * parent)
 {
-  GSList *src = ma_get_menu_actions (ma_data);
+  GSList *src = ma_get_menu_actions (ma_data, parent);
   ma_clear_device_menu_actions (ma_data->box);
+  ma_data->separator = FALSE;
   g_slist_foreach (src, ma_add_device_menu_action, ma_data);
-  if (src)
-    {
-      GtkWidget *separator = gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
-      gtk_container_add (GTK_CONTAINER (ma_data->box), separator);
-      gtk_widget_show (separator);
-    }
   g_slist_free_full (src, g_free);
 }
