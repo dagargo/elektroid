@@ -19,7 +19,10 @@
  */
 
 #include "menu_action.h"
-#include "menu_actions/backend_actions.h"
+
+struct menu_action *os_upgrade_init (struct backend *);
+struct menu_action *rx_sysex_init (struct backend *);
+struct menu_action *tx_sysex_init (struct backend *);
 
 typedef struct menu_action *(*t_menu_action_initializer) (struct backend *);
 

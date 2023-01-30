@@ -19,7 +19,7 @@
  */
 
 #include <glib/gi18n.h>
-#include "backend_actions.h"
+#include "menu_action.h"
 
 //This is a bit of a hack as the backend function are implemented inside
 //elektroid.c. However, as these actions depend on the backend initialization,

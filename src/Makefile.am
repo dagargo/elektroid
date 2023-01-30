@@ -60,7 +60,7 @@ audio.h audio.c $(elektroid_audio_sources) \
 browser.c browser.h notifier.c notifier.h \
 preferences.c preferences.h \
 menu_action.c menu_action.h \
-menu_actions/backend_actions.c menu_actions/backend_actions.h \
+menu_actions/backend.c \
 elektroid.c
 
 SNDFILE_CFLAGS = @SNDFILE_CFLAGS@
