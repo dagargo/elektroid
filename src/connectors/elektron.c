@@ -31,7 +31,7 @@
 #include "package.h"
 #include "../config.h"
 
-#define DEVICES_FILE "/elektron-devices.json"
+#define DEVICES_FILE "/elektron/devices.json"
 
 #define DEV_TAG_ID "id"
 #define DEV_TAG_NAME "name"

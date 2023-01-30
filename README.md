@@ -287,7 +287,7 @@ $ elektroid-cli elektron-data-ul sound 0:/soundbanks/D
 
 Since version 2.1, it is possible to add and reconfigure devices without recompiling as the device definitions are stored in a JSON file. Hopefully, this approach will make it easier for users to modify and add devices and new releases will only be needed if new funcionalities are actually added.
 
-This is a device definition from `res/elektron-devices.json`.
+This is a device definition from `res/elektron/devices.json`.
 
 ```
 }, {
@@ -321,7 +321,7 @@ enum connector_storage
 };
 ```
 
-If the file `~/.config/elektroid/elektron-devices.json` is found, it will take precedence over the installed one.
+If the file `~/.config/elektroid/elektron/devices.json` is found, it will take precedence over the installed one.
 
 ## Running tests
 
