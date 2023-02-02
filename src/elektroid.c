@@ -2989,24 +2989,25 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   if (remote_browser.fs_ops->upload)
     {
-      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+      if (backend.type == BE_TYPE_SYSTEM)
 	{
 	  gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
 			     GTK_DEST_DEFAULT_ALL,
-			     TARGET_ENTRIES_REMOTE_DST_SLOT,
-			     G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST_SLOT),
-			     GDK_ACTION_COPY);
+			     TARGET_ENTRIES_REMOTE_SYSTEM_DST,
+			     G_N_ELEMENTS
+			     (TARGET_ENTRIES_REMOTE_SYSTEM_DST),
+			     GDK_ACTION_MOVE);
 	}
       else
 	{
-	  if (backend.type == BE_TYPE_SYSTEM)
+	  if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 	    {
 	      gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
 				 GTK_DEST_DEFAULT_ALL,
-				 TARGET_ENTRIES_REMOTE_SYSTEM_DST,
+				 TARGET_ENTRIES_REMOTE_DST_SLOT,
 				 G_N_ELEMENTS
-				 (TARGET_ENTRIES_REMOTE_SYSTEM_DST),
-				 GDK_ACTION_MOVE);
+				 (TARGET_ENTRIES_REMOTE_DST_SLOT),
+				 GDK_ACTION_COPY);
 	    }
 	  else
 	    {
@@ -3021,23 +3022,24 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   if (remote_browser.fs_ops->download)
     {
-      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+      if (backend.type == BE_TYPE_SYSTEM)
 	{
 	  gtk_drag_source_set ((GtkWidget *) remote_browser.view,
-			       GDK_BUTTON1_MASK, TARGET_ENTRIES_REMOTE_SRC,
-			       G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC),
-			       GDK_ACTION_COPY);
+			       GDK_BUTTON1_MASK,
+			       TARGET_ENTRIES_REMOTE_SYSTEM_SRC,
+			       G_N_ELEMENTS
+			       (TARGET_ENTRIES_REMOTE_SYSTEM_SRC),
+			       GDK_ACTION_MOVE);
 	}
       else
 	{
-	  if (backend.type == BE_TYPE_SYSTEM)
+	  if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 	    {
 	      gtk_drag_source_set ((GtkWidget *) remote_browser.view,
 				   GDK_BUTTON1_MASK,
-				   TARGET_ENTRIES_REMOTE_SYSTEM_SRC,
-				   G_N_ELEMENTS
-				   (TARGET_ENTRIES_REMOTE_SYSTEM_SRC),
-				   GDK_ACTION_MOVE);
+				   TARGET_ENTRIES_REMOTE_SRC,
+				   G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC),
+				   GDK_ACTION_COPY);
 	    }
 	  else
 	    {
