@@ -132,25 +132,25 @@ static const GtkTargetEntry TARGET_ENTRIES_LOCAL_SRC[] = {
 
 static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SYSTEM_DST[] = {
   {TEXT_URI_LIST_STD, 0, TARGET_STRING},
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING},
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING}
 };
 
 static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SYSTEM_SRC[] = {
   {TEXT_URI_LIST_ELEKTROID, 0, TARGET_STRING}
 };
 
-static const GtkTargetEntry TARGET_ENTRIES_REMOTE_DST[] = {
+static const GtkTargetEntry TARGET_ENTRIES_REMOTE_MIDI_DST[] = {
   {TEXT_URI_LIST_STD, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING},
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING},
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING}
 };
 
-static const GtkTargetEntry TARGET_ENTRIES_REMOTE_DST_SLOT[] = {
+static const GtkTargetEntry TARGET_ENTRIES_REMOTE_MIDI_DST_SLOT[] = {
   {TEXT_URI_LIST_STD, 0, TARGET_STRING}
 };
 
-static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SRC[] = {
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING},
+static const GtkTargetEntry TARGET_ENTRIES_REMOTE_MIDI_SRC[] = {
+  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING}
 };
 
 static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
@@ -3004,17 +3004,18 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 	    {
 	      gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
 				 GTK_DEST_DEFAULT_ALL,
-				 TARGET_ENTRIES_REMOTE_DST_SLOT,
+				 TARGET_ENTRIES_REMOTE_MIDI_DST_SLOT,
 				 G_N_ELEMENTS
-				 (TARGET_ENTRIES_REMOTE_DST_SLOT),
+				 (TARGET_ENTRIES_REMOTE_MIDI_DST_SLOT),
 				 GDK_ACTION_COPY);
 	    }
 	  else
 	    {
 	      gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
 				 GTK_DEST_DEFAULT_ALL,
-				 TARGET_ENTRIES_REMOTE_DST,
-				 G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_DST),
+				 TARGET_ENTRIES_REMOTE_MIDI_DST,
+				 G_N_ELEMENTS
+				 (TARGET_ENTRIES_REMOTE_MIDI_DST),
 				 GDK_ACTION_COPY);
 	    }
 	}
@@ -3037,16 +3038,18 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 	    {
 	      gtk_drag_source_set ((GtkWidget *) remote_browser.view,
 				   GDK_BUTTON1_MASK,
-				   TARGET_ENTRIES_REMOTE_SRC,
-				   G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC),
+				   TARGET_ENTRIES_REMOTE_MIDI_SRC,
+				   G_N_ELEMENTS
+				   (TARGET_ENTRIES_REMOTE_MIDI_SRC),
 				   GDK_ACTION_COPY);
 	    }
 	  else
 	    {
 	      gtk_drag_source_set ((GtkWidget *) remote_browser.view,
 				   GDK_BUTTON1_MASK,
-				   TARGET_ENTRIES_REMOTE_SRC,
-				   G_N_ELEMENTS (TARGET_ENTRIES_REMOTE_SRC),
+				   TARGET_ENTRIES_REMOTE_MIDI_SRC,
+				   G_N_ELEMENTS
+				   (TARGET_ENTRIES_REMOTE_MIDI_SRC),
 				   GDK_ACTION_COPY);
 	    }
 	}
