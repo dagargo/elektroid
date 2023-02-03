@@ -3407,9 +3407,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   gboolean blocking = TRUE;
   gchar *filename, *src_dir, *dst_dir = NULL;
 
-  if (selection_data == NULL
-      || !gtk_selection_data_get_length (selection_data)
-      || info != TARGET_STRING)
+  if (!gtk_selection_data_get_length (selection_data))
     {
       gtk_drag_finish (context, TRUE, TRUE, time);
       error_print ("DND invalid data\n");
