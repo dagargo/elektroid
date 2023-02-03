@@ -107,6 +107,13 @@ struct elektroid_transfer
   const struct fs_operations *fs_ops;	//Contains the fs_operations to use in this transfer
 };
 
+struct elektroid_dnd_data
+{
+  GtkWidget *widget;
+  gchar **uris;
+  gchar *type_name;
+};
+
 static gpointer elektroid_upload_task (gpointer);
 static gpointer elektroid_download_task (gpointer);
 static void elektroid_update_progress (struct job_control *);
@@ -228,8 +235,6 @@ static GtkWidget *sample_duration;
 static GtkWidget *sample_channels;
 static GtkWidget *sample_samplerate;
 static GtkWidget *sample_bitdepth;
-static gchar **dnd_uris;
-static gchar *dnd_type_name;
 
 /**
  * This function guarantees that the time since start is at least the timeout.
@@ -3290,11 +3295,12 @@ elektroid_add_upload_task_slot (const gchar * name,
 static gpointer
 elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 {
-  GtkWidget *widget = data;
   gint32 next_idx = 1;
   gint64 start;
   GtkTreeIter iter;
   gboolean queued_before, queued_after, active, cache;
+  struct elektroid_dnd_data *dnd_data = data;
+  GtkWidget *widget = dnd_data->widget;
 
   if (dialog)
     {
@@ -3306,14 +3312,14 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 						  NULL);
 
   cache = widget == GTK_WIDGET (local_browser.view) &&
-    !strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID);
+    !strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID);
 
   if (cache)
     {
       backend_enable_cache (&backend);
     }
 
-  for (gint i = 0; dnd_uris[i] != NULL; i++)
+  for (gint i = 0; dnd_data->uris[i] != NULL; i++)
     {
       g_mutex_lock (&sysex_transfer.mutex);
       active = sysex_transfer.active;
@@ -3324,7 +3330,7 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 	  goto end;
 	}
 
-      gchar *filename = g_filename_from_uri (dnd_uris[i], NULL, NULL);
+      gchar *filename = g_filename_from_uri (dnd_data->uris[i], NULL, NULL);
       gchar *path_basename = strdup (filename);
       gchar *path_dirname = strdup (filename);
       gchar *name = basename (path_basename);
@@ -3332,23 +3338,23 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 
       if (widget == GTK_WIDGET (local_browser.view))
 	{
-	  if (!strcmp (dnd_type_name, TEXT_URI_LIST_STD))
+	  if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD))
 	    {
 	      elektroid_dnd_received_system (dir, name, filename,
 					     &local_browser);
 	    }
-	  else if (!strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID))
+	  else if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID))
 	    {
 	      elektroid_add_download_task_path (name, dir, local_browser.dir);
 	    }
 	}
       else if (widget == GTK_WIDGET (remote_browser.view))
 	{
-	  if (!strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID))
+	  if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID))
 	    {
 	      elektroid_dnd_received_remote (dir, name, filename, &next_idx);
 	    }
-	  else if (!strcmp (dnd_type_name, TEXT_URI_LIST_STD))
+	  else if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD))
 	    {
 	      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 		{
@@ -3387,6 +3393,11 @@ end:
       elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
       gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
     }
+
+  g_free (dnd_data->type_name);
+  g_strfreev (dnd_data->uris);
+  g_free (dnd_data);
+
   return NULL;
 }
 
@@ -3406,6 +3417,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   GdkAtom type;
   gboolean blocking = TRUE;
   gchar *filename, *src_dir, *dst_dir = NULL;
+  struct elektroid_dnd_data *dnd_data;
 
   if (!gtk_selection_data_get_length (selection_data))
     {
@@ -3414,13 +3426,16 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       return;
     }
 
+  dnd_data = g_malloc (sizeof (struct elektroid_dnd_data));
+  dnd_data->widget = widget;
+
   type = gtk_selection_data_get_data_type (selection_data);
-  dnd_type_name = gdk_atom_name (type);
+  dnd_data->type_name = gdk_atom_name (type);
 
   data = (gchar *) gtk_selection_data_get_data (selection_data);
-  debug_print (1, "DND received data (%s):\n%s\n", dnd_type_name, data);
+  debug_print (1, "DND received data (%s):\n%s\n", dnd_data->type_name, data);
 
-  dnd_uris = g_uri_list_extract_uris (data);
+  dnd_data->uris = g_uri_list_extract_uris (data);
 
   gtk_drag_finish (context, TRUE, TRUE, time);
 
@@ -3431,19 +3446,19 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   // If we are moving a file (source and destination is the same browser) and the
   // basedir of the first URI (every URI will share the same basename), equals
   // the browser directory, there's nothing to do.
-  filename = g_filename_from_uri (dnd_uris[0], NULL, NULL);
+  filename = g_filename_from_uri (dnd_data->uris[0], NULL, NULL);
   src_dir = dirname (filename);
 
   //Checking if it's a local move.
   if (widget == GTK_WIDGET (local_browser.view) &&
-      !strcmp (dnd_type_name, TEXT_URI_LIST_STD))
+      !strcmp (dnd_data->type_name, TEXT_URI_LIST_STD))
     {
       dst_dir = local_browser.dir;	//Move
     }
 
   //Checking if it's a remote move.
   if (widget == GTK_WIDGET (remote_browser.view)
-      && !strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID))
+      && !strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID))
     {
       dst_dir = remote_browser.dir;	//Move
     }
@@ -3459,8 +3474,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Moving Files"));
       gtk_label_set_text (GTK_LABEL (progress_label), _("Moving..."));
 
-      if (!strcmp (dnd_type_name, TEXT_URI_LIST_STD) ||
-	  (!strcmp (dnd_type_name, TEXT_URI_LIST_ELEKTROID) &&
+      if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD) ||
+	  (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID) &&
 	   backend.type == BE_TYPE_SYSTEM))
 	{
 	  //Moving inside the local browser takes no time.
@@ -3477,8 +3492,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   if (blocking)
     {
       debug_print (1, "Creating SysEx thread...\n");
-      sysex_thread =
-	g_thread_new ("sysex_thread", elektroid_dnd_received_runner, widget);
+      sysex_thread = g_thread_new ("sysex_thread",
+				   elektroid_dnd_received_runner, dnd_data);
 
       gtk_dialog_run (GTK_DIALOG (progress_dialog));
       gtk_widget_hide (GTK_WIDGET (progress_dialog));
@@ -3491,12 +3506,10 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
     }
   else
     {
-      elektroid_dnd_received_runner_dialog (widget, FALSE);
+      elektroid_dnd_received_runner_dialog (dnd_data, FALSE);
     }
 
 end:
-  g_free (dnd_type_name);
-  g_strfreev (dnd_uris);
   g_free (filename);
 }
 
