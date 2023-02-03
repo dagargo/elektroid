@@ -3519,30 +3519,13 @@ elektroid_dnd_get (GtkWidget * widget,
 		   GtkSelectionData * selection_data,
 		   guint info, guint time, gpointer user_data)
 {
-  GdkAtom type;
-  gchar *type_name;
   struct browser *browser = user_data;
-
-  switch (info)
-    {
-    case TARGET_STRING:
-      debug_print (1, "Creating DND data...\n");
-
-      gtk_selection_data_set (selection_data,
-			      gtk_selection_data_get_target
-			      (selection_data), 8,
-			      (guchar *) browser->dnd_data->str,
-			      browser->dnd_data->len);
-
-      type = gtk_selection_data_get_data_type (selection_data);
-      type_name = gdk_atom_name (type);
-      debug_print (1, "DND sent data (%s):\n%s\n", type_name,
-		   browser->dnd_data->str);
-
-      break;
-    default:
-      error_print ("DND type not supported\n");
-    }
+  debug_print (1, "Creating DND data...\n");
+  gtk_selection_data_set (selection_data,
+			  gtk_selection_data_get_target
+			  (selection_data), 8,
+			  (guchar *) browser->dnd_data->str,
+			  browser->dnd_data->len);
 }
 
 static gboolean
