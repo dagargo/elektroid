@@ -3001,7 +3001,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			     TARGET_ENTRIES_REMOTE_SYSTEM_DST,
 			     G_N_ELEMENTS
 			     (TARGET_ENTRIES_REMOTE_SYSTEM_DST),
-			     GDK_ACTION_MOVE);
+			     GDK_ACTION_COPY | GDK_ACTION_MOVE);
 	}
       else
 	{
@@ -3035,7 +3035,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			       TARGET_ENTRIES_REMOTE_SYSTEM_SRC,
 			       G_N_ELEMENTS
 			       (TARGET_ENTRIES_REMOTE_SYSTEM_SRC),
-			       GDK_ACTION_MOVE);
+			       GDK_ACTION_COPY | GDK_ACTION_MOVE);
 	}
       else
 	{
@@ -3955,7 +3955,7 @@ elektroid_run (int argc, char *argv[])
 		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
 		     TARGET_ENTRIES_UP_BUTTON_DST,
 		     G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST),
-		     GDK_ACTION_COPY);
+		     GDK_ACTION_COPY | GDK_ACTION_MOVE);
 
   local_browser = (struct browser)
   {
@@ -4023,16 +4023,16 @@ elektroid_run (int argc, char *argv[])
   gtk_drag_source_set ((GtkWidget *) local_browser.view, GDK_BUTTON1_MASK,
 		       TARGET_ENTRIES_LOCAL_SRC,
 		       G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_SRC),
-		       GDK_ACTION_MOVE);
+		       GDK_ACTION_COPY | GDK_ACTION_MOVE);
   gtk_drag_dest_set ((GtkWidget *) local_browser.view, GTK_DEST_DEFAULT_ALL,
 		     TARGET_ENTRIES_LOCAL_DST,
 		     G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_DST),
-		     GDK_ACTION_COPY);
+		     GDK_ACTION_COPY | GDK_ACTION_MOVE);
   gtk_drag_dest_set ((GtkWidget *) local_browser.up_button,
 		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
 		     TARGET_ENTRIES_UP_BUTTON_DST,
 		     G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST),
-		     GDK_ACTION_COPY);
+		     GDK_ACTION_COPY | GDK_ACTION_MOVE);
 
   devices_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "devices_list_store"));
