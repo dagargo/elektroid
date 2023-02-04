@@ -366,9 +366,6 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
       return -1;
     }
 
-  strcpy (chunk_info.id, SMPL_CHUNK_ID);
-  chunk_info.id_size = strlen (SMPL_CHUNK_ID);
-  chunk_iter = sf_get_chunk_iterator (sndfile, &chunk_info);
   sample_info = control->data;
   if (!control->data)
     {
@@ -392,37 +389,34 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
       g_mutex_unlock (&control->mutex);
     }
 
+  switch (sf_info.format & SF_FORMAT_SUBMASK)
+    {
+    case SF_FORMAT_PCM_S8:
+      sample_info->bitdepth = 8;
+      break;
+    case SF_FORMAT_PCM_16:
+      sample_info->bitdepth = 16;
+      break;
+    case SF_FORMAT_PCM_24:
+      sample_info->bitdepth = 24;
+      break;
+    case SF_FORMAT_PCM_32:
+      sample_info->bitdepth = 32;
+      break;
+    default:
+      sample_info->bitdepth = 0;
+    }
+
+  strcpy (chunk_info.id, SMPL_CHUNK_ID);
+  chunk_info.id_size = strlen (SMPL_CHUNK_ID);
+  chunk_iter = sf_get_chunk_iterator (sndfile, &chunk_info);
+
   if (chunk_iter)
     {
       chunk_info.datalen = sizeof (struct smpl_chunk_data);
       memset (&smpl_chunk_data, 0, chunk_info.datalen);
       chunk_info.data = &smpl_chunk_data;
       sf_get_chunk_data (chunk_iter, &chunk_info);
-
-      if ((sf_info.format & SF_FORMAT_TYPEMASK) == SF_FORMAT_WAV)
-	{
-	  switch (sf_info.format & SF_FORMAT_SUBMASK)
-	    {
-	    case SF_FORMAT_PCM_S8:
-	      sample_info->bitdepth = 8;
-	      break;
-	    case SF_FORMAT_PCM_16:
-	      sample_info->bitdepth = 16;
-	      break;
-	    case SF_FORMAT_PCM_24:
-	      sample_info->bitdepth = 24;
-	      break;
-	    case SF_FORMAT_PCM_32:
-	      sample_info->bitdepth = 32;
-	      break;
-	    default:
-	      sample_info->bitdepth = 0;
-	    }
-	}
-      else
-	{
-	  sample_info->bitdepth = 0;
-	}
       sample_info->loopstart = le32toh (smpl_chunk_data.sample_loop.start);
       sample_info->loopend = le32toh (smpl_chunk_data.sample_loop.end);
       sample_info->looptype = le32toh (smpl_chunk_data.sample_loop.type);
@@ -447,7 +441,6 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
       sample_info->loopend = sample_info->loopstart;
       sample_info->looptype = 0;
     }
-  sample_info->bitdepth = 16;
 
   //Set scale factor. See http://www.mega-nerd.com/libsndfile/api.html#note2
   if ((sf_info.format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||
