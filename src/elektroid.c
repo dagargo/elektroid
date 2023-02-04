@@ -1741,12 +1741,14 @@ elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
   gint x_widget, x_sample;
   double x_ratio, mid_y1, mid_y2, value;
   short *sample;
+  gboolean stereo;
   double y_scale = 1.0 / (double) SHRT_MIN;
   double x_scale = 1.0 / (double) MAX_DRAW_X;
   struct sample_info *sample_info = audio.control.data;
-  gboolean stereo = PLAYER_LOADED_CHANNELS == 2;
 
   g_mutex_lock (&audio.control.mutex);
+
+  stereo = PLAYER_LOADED_CHANNELS == 2;
 
   context = gtk_widget_get_style_context (widget);
   width = gtk_widget_get_allocated_width (widget) - 2;
