@@ -1,6 +1,6 @@
 PKG_CONFIG ?= pkg-config
 
-AM_CFLAGS = -Wall
+AM_CPPFLAGS = -Wall -DSCALA_TEST_DIR='"$(srcdir)/res/scala"'
 
 check_PROGRAMS = tests_scala
 
@@ -18,21 +18,7 @@ tests_scala_SOURCES = \
 
 TESTS = connectors/test.sh $(check_PROGRAMS)
 
-EXTRA_DIST = \
-	$(TESTS) \
-        res/connectors/CZ-101 internal 01 src.syx \
-	res/connectors/CZ-101 panel 01 src.syx \
-	res/connectors/devices.json \
-        res/connectors/Eventide Factor New Name.syx \
-	res/connectors/Eventide Factor Preset.syx \
-        res/connectors/Moog Little Phatty New Name.syx \
-	res/connectors/Moog Little Phatty Preset.syx \
-	res/connectors/sequence_back.mbseq \
-	res/connectors/sequence.mbseq \
-	res/connectors/silence.wav \
-	res/connectors/SOUND.dtdata \
-	res/connectors/square.wav \
-	res/connectors/square_loop.wav
+EXTRA_DIST = connectors res
 
 AM_TESTS_ENVIRONMENT = \
 	ecli='$(abs_top_builddir)/src/elektroid-cli -vv'; \
