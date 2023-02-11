@@ -3114,11 +3114,11 @@ elektroid_fill_fs_combo_bg (gpointer data)
 static gpointer
 elektroid_set_device_thread (gpointer data)
 {
-  gchar *id = data;
+  struct backend_system_device *be_sys_device = data;
   gint64 start = g_get_monotonic_time ();
 
   g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
-  sysex_transfer.err = connector_init_backend (&backend, id, NULL,
+  sysex_transfer.err = connector_init_backend (&backend, be_sys_device, NULL,
 					       &sysex_transfer);
   elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
   gtk_dialog_response (GTK_DIALOG (progress_dialog),
@@ -3133,6 +3133,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
   GtkTreeIter iter;
   gchar *id, *name;
   gint dres;
+  struct backend_system_device be_sys_device;
 
   sysex_transfer.active = TRUE;
 
@@ -3152,17 +3153,22 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 		      DEVICES_LIST_STORE_ID_FIELD, &id,
 		      DEVICES_LIST_STORE_NAME_FIELD, &name, -1);
 
-  if (!system_init_backend (&backend, id))
+  strcpy (be_sys_device.id, id);
+  strcpy (be_sys_device.name, name);
+  g_free (id);
+  g_free (name);
+
+  if (!system_init_backend (&backend, be_sys_device.id))
     {
       debug_print (1, "System backend detected\n");
       elektroid_fill_fs_combo_bg (NULL);
       elektroid_check_backend_bg (NULL);
-      goto end;
+      return;
     }
 
   debug_print (1, "Creating SysEx thread...\n");
   sysex_thread = g_thread_new ("sysex_thread", elektroid_set_device_thread,
-			       id);
+			       &be_sys_device);
 
   gtk_window_set_title (GTK_WINDOW (progress_dialog),
 			_("Connecting to Device"));
@@ -3176,7 +3182,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
     {
       error_print ("Error while connecting: %s\n",
 		   g_strerror (-sysex_transfer.err));
-      show_error_msg (_("Device “%s” not recognized: %s"), name,
+      show_error_msg (_("Device “%s” not recognized: %s"), be_sys_device.name,
 		      g_strerror (-sysex_transfer.err));
     }
 
@@ -3190,10 +3196,6 @@ elektroid_set_device (GtkWidget * object, gpointer data)
     {
       gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), -1);
     }
-
-end:
-  g_free (id);
-  g_free (name);
 }
 
 static void
