@@ -219,9 +219,9 @@ test_get_2_byte_octave_midi_message ()
   printf ("\n");
 
   msg = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
-  err =
-    scl_get_2_byte_octave_tuning_msg_from_scala_file (SCALA_TEST_DIR "/success.scl",
-						      msg, NULL);
+  err = scl_get_2_byte_octave_tuning_msg_from_scala_file (SCALA_TEST_DIR
+							  "/success.scl", msg,
+							  NULL);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_EQUAL (msg->len, sizeof (SUCCESS_OCTAVE_MIDI_MSG));
@@ -242,8 +242,9 @@ test_get_bulk_tuning_midi_message ()
   printf ("\n");
 
   msg = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
-  err = scl_get_key_based_tuning_msg_from_scala_file (SCALA_TEST_DIR "/success.scl",
-						      msg, NULL);
+  err = scl_get_key_based_tuning_msg_from_scala_file (SCALA_TEST_DIR
+						      "/success.scl", msg,
+						      NULL);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_EQUAL (msg->len, SCALA_TUNING_BANK_SIZE);
@@ -285,8 +286,8 @@ test_get_2_byte_octave_midi_message_tet ()
 
   msg = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
   err =
-    scl_get_2_byte_octave_tuning_msg_from_scala_file (SCALA_TEST_DIR "/TET.scl",
-						      msg, NULL);
+    scl_get_2_byte_octave_tuning_msg_from_scala_file (SCALA_TEST_DIR
+						      "/TET.scl", msg, NULL);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_EQUAL (msg->len, sizeof (SUCCESS_OCTAVE_MIDI_MSG_TET));
@@ -307,8 +308,8 @@ test_get_bulk_tuning_midi_message_tet ()
   printf ("\n");
 
   msg = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
-  err = scl_get_key_based_tuning_msg_from_scala_file (SCALA_TEST_DIR "/TET.scl",
-						      msg, NULL);
+  err = scl_get_key_based_tuning_msg_from_scala_file (SCALA_TEST_DIR
+						      "/TET.scl", msg, NULL);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_EQUAL (msg->len, SCALA_TUNING_BANK_SIZE);
