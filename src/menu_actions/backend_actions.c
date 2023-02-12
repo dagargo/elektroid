@@ -24,8 +24,8 @@
 //This is a bit of a hack as the backend function are implemented inside
 //elektroid.c. However, as these actions depend on the backend initialization,
 //it's convenient to implement the menus this way.
-extern gpointer elektroid_tx_upgrade_os_thread (gpointer data);
-extern gpointer elektroid_tx_sysex_files_thread (gpointer data);
+extern gpointer elektroid_tx_upgrade_os_runner (gpointer data);
+extern gpointer elektroid_tx_sysex_files_runner (gpointer data);
 extern void elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple);
 extern void elektroid_rx_sysex ();
 extern void elektroid_refresh_devices (GtkWidget * object, gpointer data);
@@ -33,14 +33,14 @@ extern void elektroid_refresh_devices (GtkWidget * object, gpointer data);
 static void
 os_upgrade_callback (GtkWidget * object, gpointer data)
 {
-  elektroid_tx_sysex_common (elektroid_tx_upgrade_os_thread, FALSE);
+  elektroid_tx_sysex_common (elektroid_tx_upgrade_os_runner, FALSE);
   elektroid_refresh_devices (NULL, NULL);
 }
 
 static void
 tx_sysex_callback (GtkWidget * object, gpointer data)
 {
-  elektroid_tx_sysex_common (elektroid_tx_sysex_files_thread, TRUE);
+  elektroid_tx_sysex_common (elektroid_tx_sysex_files_runner, TRUE);
 }
 
 static void
