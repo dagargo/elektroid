@@ -731,15 +731,23 @@ elektroid_rx_sysex_runner (gpointer data)
 
   g_timeout_add (100, elektroid_update_sysex_progress, NULL);
 
-  backend_rx_drain (&backend);
   //This doesn't need to be synchronized because the GUI doesn't allow concurrent access when receiving SysEx in batch mode.
-  *res = backend_rx_sysex (&backend, &sysex_transfer);
-  if (!*res)
+  backend_rx_drain (&backend);
+
+  if (sysex_transfer.active)
     {
-      text = debug_get_hex_msg (sysex_transfer.raw);
-      debug_print (1, "SysEx message received (%d): %s\n",
-		   sysex_transfer.raw->len, text);
-      free (text);
+      *res = backend_rx_sysex (&backend, &sysex_transfer);
+      if (!*res)
+	{
+	  text = debug_get_hex_msg (sysex_transfer.raw);
+	  debug_print (1, "SysEx message received (%d): %s\n",
+		       sysex_transfer.raw->len, text);
+	  free (text);
+	}
+    }
+  else
+    {
+      *res = -ECANCELED;
     }
 
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
