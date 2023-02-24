@@ -154,8 +154,10 @@ audio_init_int (struct audio *audio)
   dev_info = rtaudio_get_device_info (audio->rtaudio, dev_id);
 
   buffer_frames = AUDIO_BUF_FRAMES;
-  debug_print (1, "Using device %s with sample rate %d and %d frames...\n",
-	       dev_info.name, AUDIO_SAMPLE_RATE, buffer_frames);
+  audio->samplerate = dev_info.preferred_sample_rate;
+  debug_print (1, "Using %s with %d Hz sample rate and %d frames...\n",
+	       dev_info.name, audio->samplerate, buffer_frames);
+
 
   out_stream_params = (struct rtaudio_stream_parameters)
   {
@@ -165,7 +167,7 @@ audio_init_int (struct audio *audio)
   };
 
   err = rtaudio_open_stream (audio->rtaudio, &out_stream_params, NULL,
-			     RTAUDIO_FORMAT_SINT16, AUDIO_SAMPLE_RATE,
+			     RTAUDIO_FORMAT_SINT16, audio->samplerate,
 			     &buffer_frames, audio_cb, audio,
 			     &STREAM_OPTIONS, audio_error_cb);
   if (err || !rtaudio_is_stream_open (audio->rtaudio))

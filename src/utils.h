@@ -32,8 +32,6 @@
 
 #define LABEL_MAX 256
 
-#define AUDIO_SAMPLE_RATE 48000
-
 #define MAX_BACKEND_FSS (sizeof (gint32) * 8)
 #define MAX_BACKEND_STORAGE MAX_BACKEND_FSS
 

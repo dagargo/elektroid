@@ -58,7 +58,9 @@ struct audio
   pa_stream *stream;
   pa_cvolume volume;
   guint32 index;
+  pa_sample_spec sample_spec;
 #endif
+  guint32 samplerate;
   GByteArray *sample;
   guint32 frames;
   gboolean loop;

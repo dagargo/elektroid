@@ -248,7 +248,7 @@ editor_load_sample_runner (gpointer data)
   struct audio *audio = &editor->audio;
   struct sample_info *sample_info = audio->control.data;
 
-  sample_params.samplerate = AUDIO_SAMPLE_RATE;
+  sample_params.samplerate = audio->samplerate;
   sample_params.channels = editor->target_channels;
 
   g_timeout_add (100, editor_update_ui_on_load, editor);

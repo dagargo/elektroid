@@ -29,12 +29,6 @@ static const pa_buffer_attr BUFFER_ATTR = {
   .minreq = -1
 };
 
-static const pa_sample_spec SAMPLE_SPEC = {
-  .format = PA_SAMPLE_S16LE,
-  .channels = AUDIO_CHANNELS,
-  .rate = AUDIO_SAMPLE_RATE
-};
-
 static void
 audio_success_cb (pa_stream * stream, int success, void *data)
 {
@@ -211,38 +205,51 @@ audio_connect_callback (pa_stream * stream, void *data)
     }
 }
 
-static void
-audio_context_callback (pa_context * context, void *data)
+void
+audio_server_info_callback (pa_context * context, const pa_server_info * info,
+			    void *data)
 {
   struct audio *audio = data;
   pa_operation *operation;
-  pa_proplist *props = pa_proplist_new ();
   pa_stream_flags_t stream_flags =
     PA_STREAM_START_CORKED | PA_STREAM_INTERPOLATE_TIMING |
     PA_STREAM_NOT_MONOTONIC | PA_STREAM_AUTO_TIMING_UPDATE |
     PA_STREAM_ADJUST_LATENCY;
+  pa_proplist *props = pa_proplist_new ();
 
+  audio->samplerate = info->sample_spec.rate;
+  audio->sample_spec.format = PA_SAMPLE_S16LE;
+  audio->sample_spec.channels = AUDIO_CHANNELS;
+  audio->sample_spec.rate = audio->samplerate;
 
+  debug_print (1, "Using %d Hz sample rate...\n", audio->samplerate);
+
+  pa_proplist_set (props, PA_PROP_APPLICATION_ICON_NAME, PACKAGE,
+		   sizeof (PACKAGE));
+  audio->stream = pa_stream_new_with_proplist (context, PACKAGE,
+					       &audio->sample_spec, NULL,
+					       props);
+  pa_proplist_free (props);
+  pa_stream_set_state_callback (audio->stream, audio_connect_callback, audio);
+  pa_stream_connect_playback (audio->stream, NULL, &BUFFER_ATTR,
+			      stream_flags, NULL, NULL);
+  pa_context_set_subscribe_callback (audio->context, audio_notify, audio);
+  operation = pa_context_subscribe (audio->context,
+				    PA_SUBSCRIPTION_MASK_SINK_INPUT, NULL,
+				    NULL);
+  if (operation != NULL)
+    {
+      pa_operation_unref (operation);
+    }
+}
+
+static void
+audio_context_callback (pa_context * context, void *data)
+{
+  struct audio *audio = data;
   if (pa_context_get_state (context) == PA_CONTEXT_READY)
     {
-      pa_proplist_set (props,
-		       PA_PROP_APPLICATION_ICON_NAME,
-		       PACKAGE, sizeof (PACKAGE));
-      audio->stream = pa_stream_new_with_proplist (context, PACKAGE,
-						   &SAMPLE_SPEC, NULL, props);
-      pa_proplist_free (props);
-      pa_stream_set_state_callback (audio->stream, audio_connect_callback,
-				    audio);
-      pa_stream_connect_playback (audio->stream, NULL, &BUFFER_ATTR,
-				  stream_flags, NULL, NULL);
-      pa_context_set_subscribe_callback (audio->context, audio_notify, audio);
-      operation = pa_context_subscribe (audio->context,
-					PA_SUBSCRIPTION_MASK_SINK_INPUT, NULL,
-					NULL);
-      if (operation != NULL)
-	{
-	  pa_operation_unref (operation);
-	}
+      pa_context_get_server_info (context, audio_server_info_callback, audio);
     }
 }
 
