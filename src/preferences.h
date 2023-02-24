@@ -18,6 +18,9 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef PREFERENCES_H
+#define PREFERENCES_H
+
 #include <glib.h>
 
 struct preferences
@@ -33,3 +36,5 @@ gint preferences_save (struct preferences *);
 gint preferences_load (struct preferences *);
 
 void preferences_free (struct preferences *);
+
+#endif

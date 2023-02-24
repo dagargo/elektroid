@@ -328,7 +328,8 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
 static gint
 sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 		 struct job_control *control, GByteArray * sample,
-		 const struct sample_params *sample_params, guint * frames)
+		 const struct sample_params *sample_params, guint * frames,
+		 sample_load_cb cb, gpointer cb_data)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -562,8 +563,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
       if (control)
 	{
 	  g_mutex_lock (&control->mutex);
-	  set_job_control_progress_no_sync (control,
-					    f * 1.0 / sf_info.frames);
+	  cb (control, f * 1.0 / sf_info.frames, cb_data);
 	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
 	}
@@ -577,7 +577,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 
       if (control->active)
 	{
-	  set_job_control_progress_no_sync (control, 1.0);
+	  cb (control, 1.0, cb_data);
 	}
       else
 	{
@@ -626,7 +626,26 @@ sample_load_from_array (GByteArray * wave, GByteArray * sample,
   data.pos = 0;
   data.array = wave;
   return sample_load_raw (&data, &G_BYTE_ARRAY_IO, control, sample,
-			  sample_params, frames);
+			  sample_params, frames,
+			  set_job_control_progress_no_sync, NULL);
+}
+
+gint
+sample_load_from_file_with_cb (const gchar * path, GByteArray * sample,
+			       struct job_control *control,
+			       const struct sample_params *sample_params,
+			       guint * frames, sample_load_cb cb,
+			       gpointer cb_data)
+{
+  FILE *file = fopen (path, "rb");
+  if (!file)
+    {
+      return errno;
+    }
+  gint err = sample_load_raw (file, &FILE_IO, control, sample, sample_params,
+			      frames, cb, cb_data);
+  fclose (file);
+  return err;
 }
 
 gint
@@ -635,15 +654,10 @@ sample_load_from_file (const gchar * path, GByteArray * sample,
 		       const struct sample_params *sample_params,
 		       guint * frames)
 {
-  FILE *file = fopen (path, "rb");
-  if (!file)
-    {
-      return errno;
-    }
-  gint err = sample_load_raw (file, &FILE_IO, control, sample, sample_params,
-			      frames);
-  fclose (file);
-  return err;
+  return sample_load_from_file_with_cb (path, sample, control,
+					sample_params, frames,
+					set_job_control_progress_no_sync,
+					NULL);
 }
 
 static gboolean

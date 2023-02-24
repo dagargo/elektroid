@@ -370,7 +370,8 @@ set_job_control_progress_value (struct job_control *control, gdouble p)
 }
 
 void
-set_job_control_progress (struct job_control *control, gdouble p)
+set_job_control_progress_with_cb (struct job_control *control, gdouble p,
+				  gpointer data)
 {
   g_mutex_lock (&control->mutex);
   set_job_control_progress_value (control, p);
@@ -383,7 +384,14 @@ set_job_control_progress (struct job_control *control, gdouble p)
 }
 
 void
-set_job_control_progress_no_sync (struct job_control *control, gdouble p)
+set_job_control_progress (struct job_control *control, gdouble p)
+{
+  set_job_control_progress_with_cb (control, p, NULL);
+}
+
+void
+set_job_control_progress_no_sync (struct job_control *control, gdouble p,
+				  gpointer data)
 {
   set_job_control_progress_value (control, p);
 

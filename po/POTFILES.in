@@ -1,5 +1,6 @@
 src/connector.c
 src/elektroid.c
+src/editor.c
 src/menu_actions/backend.c
 src/menu_actions/microbrute.c
 src/local.c

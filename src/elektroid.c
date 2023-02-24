@@ -28,20 +28,17 @@
 #include "backend.h"
 #include "connector.h"
 #include "browser.h"
-#include "audio.h"
+#include "editor.h"
 #include "sample.h"
 #include "utils.h"
 #include "local.h"
 #include "preferences.h"
 #include "menu_action.h"
 
-#define PLAYER_VISIBLE (remote_browser.fs_ops->options & FS_OPTION_AUDIO_PLAYER ? TRUE : FALSE)
-#define PLAYER_PREF_CHANNELS (!remote_browser.fs_ops || (remote_browser.fs_ops->options & FS_OPTION_STEREO) || !preferences.mix ? 2 : 1)
-#define PLAYER_LOADED_CHANNELS (PLAYER_PREF_CHANNELS == 2 && sample_info->channels == 2 ? 2 : 1)
-#define PLAYER_GET_SOURCE(browser) (browser == &local_browser ? AUDIO_SRC_LOCAL : AUDIO_SRC_REMOTE)
-#define PLAYER_SOURCE_IS_BROWSER(browser) (PLAYER_GET_SOURCE(browser) == audio.src)
-
-#define MAX_DRAW_X 10000
+#define EDITOR_VISIBLE (remote_browser.fs_ops->options & FS_OPTION_AUDIO_PLAYER ? TRUE : FALSE)
+#define EDITOR_PREF_CHANNELS (!remote_browser.fs_ops || (remote_browser.fs_ops->options & FS_OPTION_STEREO) || !preferences.mix ? 2 : 1)
+#define EDITOR_GET_SOURCE(browser) (browser == &local_browser ? AUDIO_SRC_LOCAL : AUDIO_SRC_REMOTE)
+#define EDITOR_SOURCE_IS_BROWSER(browser) (EDITOR_GET_SOURCE(browser) == editor.audio.src)
 
 #define DND_TIMEOUT 1000
 
@@ -166,13 +163,12 @@ static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
 
 static struct browser remote_browser;
 static struct browser local_browser;
+static struct editor editor;
 
 static struct backend backend;
-static struct audio audio;
 static struct preferences preferences;
 static struct ma_data ma_data;
 
-static GThread *load_thread = NULL;
 static GThread *task_thread = NULL;
 static GThread *sysex_thread = NULL;
 static struct elektroid_transfer transfer;
@@ -190,11 +186,9 @@ static GtkWidget *progress_label;
 static GtkWidget *about_button;
 static GtkWidget *local_box;
 static GtkWidget *remote_box;
-static GtkWidget *waveform_draw_area;
 static GtkStatusbar *status_bar;
 static GtkListStore *devices_list_store;
 static GtkWidget *devices_combo;
-static GtkWidget *local_audio_box;
 static GtkWidget *upload_menuitem;
 static GtkWidget *local_play_separator;
 static GtkWidget *local_play_menuitem;
@@ -211,13 +205,6 @@ static GtkWidget *remote_show_menuitem;
 static GtkWidget *remote_actions_separator;
 static GtkWidget *remote_rename_menuitem;
 static GtkWidget *remote_delete_menuitem;
-static GtkWidget *play_button;
-static GtkWidget *stop_button;
-static GtkWidget *loop_button;
-static GtkWidget *autoplay_switch;
-static GtkWidget *mix_switch;
-static GtkWidget *volume_button;
-static gulong volume_changed_handler;
 static GtkListStore *task_list_store;
 static GtkWidget *task_tree_view;
 static GtkWidget *cancel_task_button;
@@ -228,12 +215,6 @@ static GtkWidget *fs_combo;
 static GtkTreeViewColumn *remote_tree_view_id_column;
 static GtkTreeViewColumn *remote_tree_view_slot_column;
 static GtkTreeViewColumn *remote_tree_view_size_column;
-static GtkWidget *sample_info_box;
-static GtkWidget *sample_length;
-static GtkWidget *sample_duration;
-static GtkWidget *sample_channels;
-static GtkWidget *sample_samplerate;
-static GtkWidget *sample_bitdepth;
 
 /**
  * This function guarantees that the time since start is at least the timeout.
@@ -263,7 +244,7 @@ elektroid_set_local_browser_file_extensions (gint sel_fs)
     backend_get_fs_operations (&backend, sel_fs,
 			       NULL);
 
-  if (!ops || PLAYER_VISIBLE)
+  if (!ops || EDITOR_VISIBLE)
     {
       const gchar **exts = sample_get_sample_extensions ();
       updated = browser_set_file_extensions (&local_browser, exts);
@@ -321,46 +302,6 @@ show_error_msg (const char *format, ...)
   va_end (args);
 }
 
-static void
-elektroid_set_widget_source (GtkWidget * widget, enum audio_src audio_src)
-{
-  const char *class;
-  GtkStyleContext *context = gtk_widget_get_style_context (widget);
-  GList *classes, *list = gtk_style_context_list_classes (context);
-
-  for (classes = list; classes != NULL; classes = g_list_next (classes))
-    {
-      gtk_style_context_remove_class (context, classes->data);
-    }
-  g_list_free (list);
-
-  if (audio_src == AUDIO_SRC_NONE)
-    {
-      return;
-    }
-
-  if (GTK_IS_SWITCH (widget))
-    {
-      class = audio_src == AUDIO_SRC_LOCAL ? "local_switch" : "remote_switch";
-    }
-  else
-    {
-      class = audio_src == AUDIO_SRC_LOCAL ? "local" : "remote";
-    }
-  gtk_style_context_add_class (context, class);
-}
-
-static void
-elektroid_set_player_source (enum audio_src audio_src)
-{
-  elektroid_set_widget_source (autoplay_switch, audio_src);
-  elektroid_set_widget_source (mix_switch, audio_src);
-  elektroid_set_widget_source (play_button, audio_src);
-  elektroid_set_widget_source (stop_button, audio_src);
-  elektroid_set_widget_source (loop_button, audio_src);
-  elektroid_set_widget_source (volume_button, audio_src);
-  elektroid_set_widget_source (waveform_draw_area, audio_src);
-}
 
 static gboolean
 elektroid_load_remote_if_midi (gpointer data)
@@ -426,7 +367,7 @@ elektroid_load_devices (gboolean auto_select)
     {
       local_browser.file_icon = BE_FILE_ICON_WAVE;
       elektroid_set_local_browser_file_extensions (0);
-      gtk_widget_set_visible (local_audio_box, TRUE);
+      gtk_widget_set_visible (editor.box, TRUE);
       gtk_tree_view_column_set_visible (remote_tree_view_id_column, FALSE);
       gtk_tree_view_column_set_visible (remote_tree_view_slot_column, FALSE);
       gtk_tree_view_column_set_visible (remote_tree_view_size_column, FALSE);
@@ -982,89 +923,15 @@ elektroid_show_about (GtkWidget * object, gpointer data)
   gtk_widget_hide (GTK_WIDGET (about_dialog));
 }
 
-static void
-elektroid_set_sample_properties_on_load ()
-{
-  double time;
-  gchar label[LABEL_MAX];
-  struct sample_info *sample_info = audio.control.data;
-
-  gtk_widget_set_visible (sample_info_box, sample_info->frames > 0);
-
-  if (!sample_info->frames)
-    {
-      return;
-    }
-
-  time = sample_info->frames / (double) sample_info->samplerate;
-
-  gtk_widget_set_visible (sample_info_box, TRUE);
-
-  snprintf (label, LABEL_MAX, "%d", sample_info->frames);
-  gtk_label_set_text (GTK_LABEL (sample_length), label);
-
-  if (time >= 60)
-    {
-      snprintf (label, LABEL_MAX, "%.2f %s", time / 60.0, _("minutes"));
-    }
-  else
-    {
-      snprintf (label, LABEL_MAX, "%.2f s", time);
-    }
-  gtk_label_set_text (GTK_LABEL (sample_duration), label);
-
-  snprintf (label, LABEL_MAX, "%.2f kHz", sample_info->samplerate / 1000.f);
-  gtk_label_set_text (GTK_LABEL (sample_samplerate), label);
-
-  snprintf (label, LABEL_MAX, "%d", sample_info->channels);
-  gtk_label_set_text (GTK_LABEL (sample_channels), label);
-
-  if (sample_info->bitdepth)
-    {
-      snprintf (label, LABEL_MAX, "%d", sample_info->bitdepth);
-      gtk_label_set_text (GTK_LABEL (sample_bitdepth), label);
-    }
-}
-
-static void
+void
 elektroid_set_audio_controls_on_load (gboolean sensitive)
 {
   gtk_widget_set_sensitive (local_play_menuitem,
-			    audio.src == AUDIO_SRC_LOCAL);
+			    editor.audio.src == AUDIO_SRC_LOCAL);
   gtk_widget_set_sensitive (remote_play_menuitem,
-			    audio.src == AUDIO_SRC_REMOTE);
-  gtk_widget_set_sensitive (play_button, sensitive);
-  gtk_widget_set_sensitive (stop_button, sensitive);
-}
-
-static gboolean
-elektroid_update_ui_on_load (gpointer data)
-{
-  gboolean ready_to_play;
-  struct sample_info *sample_info = audio.control.data;
-
-  g_mutex_lock (&audio.control.mutex);
-  ready_to_play = audio.frames >= LOAD_BUFFER_LEN || (!audio.control.active
-						      && audio.frames > 0);
-  audio.channels = PLAYER_LOADED_CHANNELS;
-  g_mutex_unlock (&audio.control.mutex);
-
-  elektroid_set_sample_properties_on_load ();
-
-  if (ready_to_play)
-    {
-      if (audio_check (&audio))
-	{
-	  elektroid_set_audio_controls_on_load (TRUE);
-	}
-      if (preferences.autoplay)
-	{
-	  audio_play (&audio);
-	}
-      return FALSE;
-    }
-
-  return TRUE;
+			    editor.audio.src == AUDIO_SRC_REMOTE);
+  gtk_widget_set_sensitive (editor.play_button, sensitive);
+  gtk_widget_set_sensitive (editor.stop_button, sensitive);
 }
 
 static gint
@@ -1374,7 +1241,7 @@ elektroid_button_press_update_menu (struct browser *browser,
   if (gtk_tree_selection_path_is_selected (selection, path))
     {
       if (browser_get_selected_items_count (browser) == 1 &&
-	  !PLAYER_SOURCE_IS_BROWSER (browser))
+	  !EDITOR_SOURCE_IS_BROWSER (browser))
 	{
 	  browser->check_selection (NULL);
 	}
@@ -1500,75 +1367,6 @@ elektroid_button_release (GtkWidget * treeview, GdkEventButton * event,
   return FALSE;
 }
 
-static gboolean
-elektroid_queue_draw_waveform ()
-{
-  gtk_widget_queue_draw (waveform_draw_area);
-  return FALSE;
-}
-
-static void
-elektroid_redraw_sample (struct job_control *control)
-{
-  g_idle_add (elektroid_queue_draw_waveform, NULL);
-}
-
-static gpointer
-elektroid_load_sample_runner (gpointer data)
-{
-  struct sample_params sample_params;
-  struct sample_info *sample_info = audio.control.data;
-
-  sample_params.samplerate = AUDIO_SAMPLE_RATE;
-  sample_params.channels = PLAYER_PREF_CHANNELS;
-
-  g_timeout_add (100, elektroid_update_ui_on_load, NULL);
-
-  g_mutex_lock (&audio.control.mutex);
-  audio.control.active = TRUE;
-  g_mutex_unlock (&audio.control.mutex);
-
-  if (sample_load_from_file (audio.path, audio.sample, &audio.control,
-			     &sample_params, &audio.frames) >= 0)
-    {
-      debug_print (1,
-		   "Samples: %d (%d B); channels: %d; loop start at %d; loop end at %d; sample rate: %.2f kHz; bit depth: %d\n",
-		   audio.frames, audio.sample->len, sample_info->channels,
-		   sample_info->loopstart, sample_info->loopend,
-		   sample_info->samplerate / 1000.0, sample_info->bitdepth);
-    }
-
-  g_mutex_lock (&audio.control.mutex);
-  audio.control.active = FALSE;
-  g_mutex_unlock (&audio.control.mutex);
-
-  return NULL;
-}
-
-static void
-elektroid_start_load_thread ()
-{
-  debug_print (1, "Creating load thread...\n");
-  load_thread =
-    g_thread_new ("load_sample", elektroid_load_sample_runner, NULL);
-}
-
-static void
-elektroid_stop_load_thread ()
-{
-  debug_print (1, "Stopping load thread...\n");
-
-  g_mutex_lock (&audio.control.mutex);
-  audio.control.active = FALSE;
-  g_mutex_unlock (&audio.control.mutex);
-
-  if (load_thread)
-    {
-      g_thread_join (load_thread);
-      load_thread = NULL;
-    }
-}
-
 static void
 elektroid_join_task_thread ()
 {
@@ -1599,22 +1397,22 @@ elektroid_audio_widgets_set_status ()
   gtk_widget_set_sensitive (remote_open_menuitem, FALSE);
   gtk_widget_set_sensitive (local_play_menuitem, FALSE);
   gtk_widget_set_sensitive (remote_play_menuitem, FALSE);
-  gtk_widget_set_sensitive (play_button, FALSE);
-  gtk_widget_set_sensitive (stop_button, FALSE);
-  gtk_widget_set_visible (sample_info_box, FALSE);
+  gtk_widget_set_sensitive (editor.play_button, FALSE);
+  gtk_widget_set_sensitive (editor.stop_button, FALSE);
+  gtk_widget_set_visible (editor.sample_info_box, FALSE);
 }
 
 static void
 elektroid_reset_sample (struct browser *browser)
 {
-  if (PLAYER_SOURCE_IS_BROWSER (browser))
+  if (EDITOR_SOURCE_IS_BROWSER (browser))
     {
-      audio_stop (&audio);
-      elektroid_stop_load_thread ();
-      audio_reset_sample (&audio);
-      gtk_widget_queue_draw (waveform_draw_area);
-      elektroid_set_player_source (AUDIO_SRC_NONE);
-      elektroid_audio_widgets_set_status ();
+      audio_stop (&editor.audio);
+      editor_stop_load_thread (&editor);
+      audio_reset_sample (&editor.audio);
+      gtk_widget_queue_draw (editor.waveform_draw_area);
+      editor_set_source (&editor, AUDIO_SRC_NONE);
+      elektroid_audio_widgets_set_status (&editor);
     }
 }
 
@@ -1647,18 +1445,18 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	{
 	  sample_path = chain_path (browser->dir, item.name);
 
-	  if (strcmp (audio.path, sample_path)
-	      || PLAYER_GET_SOURCE (browser) != audio.src)
+	  if (strcmp (editor.audio.path, sample_path)
+	      || EDITOR_GET_SOURCE (browser) != editor.audio.src)
 	    {
 	      if (audio_fs)
 		{
-		  audio_stop (&audio);
-		  elektroid_stop_load_thread ();
-		  audio_reset_sample (&audio);
-		  strcpy (audio.path, sample_path);
-		  audio.src = PLAYER_GET_SOURCE (browser);
-		  elektroid_set_player_source (PLAYER_GET_SOURCE (browser));
-		  elektroid_start_load_thread ();
+		  audio_stop (&editor.audio);
+		  editor_stop_load_thread (&editor);
+		  audio_reset_sample (&editor.audio);
+		  strcpy (editor.audio.path, sample_path);
+		  editor.audio.src = EDITOR_GET_SOURCE (browser);
+		  editor_set_source (&editor, EDITOR_GET_SOURCE (browser));
+		  editor_start_load_thread (&editor);
 		}
 	    }
 	  g_free (sample_path);
@@ -1719,71 +1517,6 @@ elektroid_local_check_selection (gpointer data)
   gtk_widget_set_sensitive (upload_menuitem, count > 0
 			    && remote_browser.fs_ops
 			    && remote_browser.fs_ops->upload);
-
-  return FALSE;
-}
-
-static gboolean
-elektroid_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
-{
-  guint width, height;
-  GdkRGBA color;
-  GtkStyleContext *context;
-  gint x_widget, x_sample;
-  double x_ratio, mid_y1, mid_y2, value;
-  short *sample;
-  gboolean stereo;
-  double y_scale = 1.0 / (double) SHRT_MIN;
-  double x_scale = 1.0 / (double) MAX_DRAW_X;
-  struct sample_info *sample_info = audio.control.data;
-
-  g_mutex_lock (&audio.control.mutex);
-
-  stereo = PLAYER_LOADED_CHANNELS == 2;
-
-  context = gtk_widget_get_style_context (widget);
-  width = gtk_widget_get_allocated_width (widget) - 2;
-  height = gtk_widget_get_allocated_height (widget) - 2;
-  y_scale *= height;
-  if (stereo)
-    {
-      mid_y1 = height * 0.25;
-      mid_y2 = height * 0.75;
-      y_scale *= 0.25;
-    }
-  else
-    {
-      mid_y1 = height * 0.50;
-      y_scale *= 0.5;
-    }
-  gtk_render_background (context, cr, 0, 0, width, height);
-  gtk_style_context_get_color (context, gtk_style_context_get_state (context),
-			       &color);
-  gdk_cairo_set_source_rgba (cr, &color);
-
-  sample = (short *) audio.sample->data;
-  x_ratio = audio.frames / (double) MAX_DRAW_X;
-  for (gint i = 0; i < MAX_DRAW_X; i++)
-    {
-      x_sample = i * x_ratio * (stereo ? 2 : 1);
-      x_widget = i * width * x_scale;
-      if (x_sample < audio.sample->len >> 1)
-	{
-	  value = mid_y1 - sample[x_sample] * y_scale;
-	  cairo_move_to (cr, x_widget, mid_y1);
-	  cairo_line_to (cr, x_widget, value);
-	  cairo_stroke (cr);
-	  if (stereo)
-	    {
-	      value = mid_y2 - sample[x_sample + 1] * y_scale;
-	      cairo_move_to (cr, x_widget, mid_y2);
-	      cairo_line_to (cr, x_widget, value);
-	      cairo_stroke (cr);
-	    }
-	}
-    }
-
-  g_mutex_unlock (&audio.control.mutex);
 
   return FALSE;
 }
@@ -1884,77 +1617,6 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
 
   g_app_info_launch_default_for_uri_async (uri, NULL, NULL, NULL, NULL);
   free (uri);
-}
-
-static void
-elektroid_play_clicked (GtkWidget * object, gpointer data)
-{
-  audio_play (&audio);
-}
-
-static void
-elektroid_stop_clicked (GtkWidget * object, gpointer data)
-{
-  audio_stop (&audio);
-}
-
-static void
-elektroid_loop_clicked (GtkWidget * object, gpointer data)
-{
-  audio.loop = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (object));
-}
-
-static gboolean
-elektroid_autoplay_clicked (GtkWidget * object, gboolean state, gpointer data)
-{
-  preferences.autoplay = state;
-  return FALSE;
-}
-
-static gboolean
-elektroid_mix_clicked (GtkWidget * object, gboolean state, gpointer data)
-{
-  gchar *path;
-  enum audio_src audio_src = audio.src;
-  preferences.mix = state;
-  if (strlen (audio.path))
-    {
-      audio_stop (&audio);
-      elektroid_stop_load_thread ();
-      path = strdup (audio.path);
-      audio_reset_sample (&audio);
-      strcpy (audio.path, path);
-      g_free (path);
-      audio.src = audio_src;
-      elektroid_start_load_thread ();
-    }
-  return FALSE;
-}
-
-static void
-elektroid_set_volume (GtkScaleButton * button, gdouble value, gpointer data)
-{
-  audio_set_volume (&audio, value);
-}
-
-static gboolean
-elektroid_set_volume_callback_bg (gpointer data)
-{
-  gdouble *value = data;
-  debug_print (1, "Setting volume to %f...\n", *value);
-  g_signal_handler_block (volume_button, volume_changed_handler);
-  gtk_scale_button_set_value (GTK_SCALE_BUTTON (volume_button), *value);
-  g_signal_handler_unblock (volume_button, volume_changed_handler);
-  g_free (data);
-  return FALSE;
-}
-
-static void
-elektroid_set_volume_callback (gdouble value)
-{
-  gdouble *v = g_malloc (sizeof (gdouble));
-  *v = value;
-  g_idle_add (elektroid_set_volume_callback_bg, v);
 }
 
 static void
@@ -2912,6 +2574,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
   remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
+  editor.target_channels = EDITOR_PREF_CHANNELS;
 
   if (backend.type == BE_TYPE_SYSTEM)
     {
@@ -2947,7 +2610,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			  remote_browser.fs_ops->rename != NULL);
   gtk_widget_set_visible (remote_delete_menuitem,
 			  remote_browser.fs_ops->delete != NULL);
-  gtk_widget_set_visible (local_audio_box, PLAYER_VISIBLE);
+  gtk_widget_set_visible (editor.box, EDITOR_VISIBLE);
 
   gtk_tree_view_column_set_visible (remote_tree_view_id_column,
 				    remote_browser.fs_ops->options &
@@ -3657,12 +3320,12 @@ elektroid_quit ()
 
   elektroid_stop_sysex_thread ();
   elektroid_stop_task_thread ();
-  elektroid_stop_load_thread ();
+  editor_stop_load_thread (&editor);
 
   browser_destroy (&local_browser);
   browser_destroy (&remote_browser);
 
-  audio_destroy (&audio);
+  audio_destroy (&editor.audio);
 
   debug_print (1, "Quitting GTK+...\n");
   gtk_main_quit ();
@@ -3734,18 +3397,22 @@ elektroid_run (int argc, char *argv[])
 
   local_box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box"));
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
-  local_audio_box =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_audio_box"));
-  waveform_draw_area =
+  editor.box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
+  editor.waveform_draw_area =
     GTK_WIDGET (gtk_builder_get_object (builder, "waveform_draw_area"));
-  play_button = GTK_WIDGET (gtk_builder_get_object (builder, "play_button"));
-  stop_button = GTK_WIDGET (gtk_builder_get_object (builder, "stop_button"));
-  loop_button = GTK_WIDGET (gtk_builder_get_object (builder, "loop_button"));
-  autoplay_switch =
+  editor.play_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "play_button"));
+  editor.stop_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "stop_button"));
+  editor.loop_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "loop_button"));
+  editor.autoplay_switch =
     GTK_WIDGET (gtk_builder_get_object (builder, "autoplay_switch"));
-  mix_switch = GTK_WIDGET (gtk_builder_get_object (builder, "mix_switch"));
-  volume_button =
+  editor.mix_switch =
+    GTK_WIDGET (gtk_builder_get_object (builder, "mix_switch"));
+  editor.volume_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "volume_button"));
+
   status_bar = GTK_STATUSBAR (gtk_builder_get_object (builder, "status_bar"));
 
   g_signal_connect (main_window, "delete-event",
@@ -3767,21 +3434,23 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_name_dialog_entry_changed),
 		    name_dialog_accept_button);
 
-  g_signal_connect (waveform_draw_area, "draw",
-		    G_CALLBACK (elektroid_draw_waveform), NULL);
-  g_signal_connect (play_button, "clicked",
-		    G_CALLBACK (elektroid_play_clicked), NULL);
-  g_signal_connect (stop_button, "clicked",
-		    G_CALLBACK (elektroid_stop_clicked), NULL);
-  g_signal_connect (loop_button, "clicked",
-		    G_CALLBACK (elektroid_loop_clicked), NULL);
-  g_signal_connect (autoplay_switch, "state-set",
-		    G_CALLBACK (elektroid_autoplay_clicked), NULL);
-  g_signal_connect (mix_switch, "state-set",
-		    G_CALLBACK (elektroid_mix_clicked), NULL);
-  volume_changed_handler = g_signal_connect (volume_button, "value_changed",
-					     G_CALLBACK
-					     (elektroid_set_volume), NULL);
+  g_signal_connect (editor.waveform_draw_area, "draw",
+		    G_CALLBACK (editor_draw_waveform), &editor);
+  g_signal_connect (editor.play_button, "clicked",
+		    G_CALLBACK (editor_play_clicked), &editor);
+  g_signal_connect (editor.stop_button, "clicked",
+		    G_CALLBACK (editor_stop_clicked), &editor);
+  g_signal_connect (editor.loop_button, "clicked",
+		    G_CALLBACK (editor_loop_clicked), &editor);
+  g_signal_connect (editor.autoplay_switch, "state-set",
+		    G_CALLBACK (editor_autoplay_clicked), &editor);
+  g_signal_connect (editor.mix_switch, "state-set",
+		    G_CALLBACK (editor_mix_clicked), &editor);
+  editor.volume_changed_handler = g_signal_connect (editor.volume_button,
+						    "value_changed",
+						    G_CALLBACK
+						    (editor_set_volume),
+						    &editor);
 
   download_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "download_menuitem"));
@@ -3804,7 +3473,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (download_menuitem, "activate",
 		    G_CALLBACK (elektroid_add_download_tasks), NULL);
   g_signal_connect (remote_play_menuitem, "activate",
-		    G_CALLBACK (elektroid_play_clicked), NULL);
+		    G_CALLBACK (editor_play_clicked), &editor);
   g_signal_connect (remote_open_menuitem, "activate",
 		    G_CALLBACK (elektroid_open_clicked), &remote_browser);
   g_signal_connect (remote_show_menuitem, "activate",
@@ -3831,7 +3500,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (upload_menuitem, "activate",
 		    G_CALLBACK (elektroid_add_upload_tasks), NULL);
   g_signal_connect (local_play_menuitem, "activate",
-		    G_CALLBACK (elektroid_play_clicked), NULL);
+		    G_CALLBACK (editor_play_clicked), &editor);
   g_signal_connect (local_open_menuitem, "activate",
 		    G_CALLBACK (elektroid_open_clicked), &local_browser);
   g_signal_connect (local_show_menuitem, "activate",
@@ -4005,7 +3674,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (refresh_devices_button, "clicked",
 		    G_CALLBACK (elektroid_refresh_devices), NULL);
 
-  audio_init (&audio, elektroid_set_volume_callback, elektroid_redraw_sample);
+  audio_init (&editor.audio, editor_set_volume_callback, &editor);
 
   task_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "task_list_store"));
@@ -4026,26 +3695,27 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_clear_finished_tasks), NULL);
 
   gtk_statusbar_push (status_bar, 0, _("Not connected"));
-  elektroid_loop_clicked (loop_button, NULL);
-  gtk_switch_set_active (GTK_SWITCH (autoplay_switch), preferences.autoplay);
-  gtk_switch_set_active (GTK_SWITCH (mix_switch), preferences.mix);
+  editor_loop_clicked (editor.loop_button, &editor);
+  gtk_switch_set_active (GTK_SWITCH (editor.autoplay_switch),
+			 preferences.autoplay);
+  gtk_switch_set_active (GTK_SWITCH (editor.mix_switch), preferences.mix);
 
   fs_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "fs_list_store"));
   fs_combo = GTK_WIDGET (gtk_builder_get_object (builder, "fs_combo"));
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
 
-  sample_info_box =
+  editor.sample_info_box =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_info_box"));
-  sample_length =
+  editor.sample_length =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_length"));
-  sample_duration =
+  editor.sample_duration =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_duration"));
-  sample_channels =
+  editor.sample_channels =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_channels"));
-  sample_samplerate =
+  editor.sample_samplerate =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_samplerate"));
-  sample_bitdepth =
+  editor.sample_bitdepth =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_bitdepth"));
 
   gtk_widget_set_sensitive (remote_box, FALSE);
@@ -4068,7 +3738,7 @@ elektroid_run (int argc, char *argv[])
 
   g_idle_add (elektroid_load_devices_bg, NULL);
   gtk_widget_show (main_window);
-  audio_run (&audio);
+  audio_run (&editor.audio);
 
   ma_data.backend = &backend;
 
@@ -4173,6 +3843,7 @@ main (int argc, char *argv[])
       g_free (preferences.local_dir);
       preferences.local_dir = get_local_startup_path (local_dir);
     }
+  editor.preferences = &preferences;
 
   ret = elektroid_run (argc, argv);
 

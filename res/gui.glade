@@ -917,7 +917,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox" id="local_audio_box">
+                  <object class="GtkBox" id="editor_box">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="hexpand">True</property>

@@ -169,7 +169,7 @@ audio_set_sink_volume (pa_context * context, const pa_sink_input_info * info,
     {
       gdouble v = pa_sw_volume_to_linear (pa_cvolume_avg (&info->volume));
       debug_print (1, "Setting volume to %f...\n", v);
-      audio->volume_change_callback (v);
+      audio->volume_change_callback (audio->volume_change_callback_data, v);
     }
 }
 

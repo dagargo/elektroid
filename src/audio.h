@@ -18,6 +18,9 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef AUDIO_H
+#define AUDIO_H
+
 #include <glib.h>
 #include "utils.h"
 #if defined(ELEKTROID_RTAUDIO)
@@ -60,7 +63,8 @@ struct audio
   guint32 frames;
   gboolean loop;
   guint32 pos;
-  void (*volume_change_callback) (gdouble);
+  void (*volume_change_callback) (gpointer, gdouble);
+  gpointer volume_change_callback_data;
   guint32 release_frames;
   struct job_control control;	//Used to synchronize access to sample, frames, loop and pos members.
   gchar path[PATH_MAX];
@@ -75,7 +79,7 @@ void audio_stop (struct audio *);
 
 gboolean audio_check (struct audio *);
 
-void audio_init (struct audio *, void (*)(gdouble), job_control_callback);
+void audio_init (struct audio *, void (*)(gpointer, gdouble), gpointer);
 
 gint audio_run (struct audio *);
 
@@ -86,3 +90,5 @@ void audio_reset_sample (struct audio *);
 void audio_set_volume (struct audio *, gdouble);
 
 void audio_write_to_output_buffer (struct audio *, void *, gint);
+
+#endif

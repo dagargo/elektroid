@@ -28,17 +28,26 @@
 
 #define LOAD_BUFFER_LEN 9600	// In guint16 frames; 0.2 ms
 
+typedef void (*sample_load_cb) (struct job_control *, gdouble, gpointer);
+
 gint sample_get_wav_from_array (GByteArray *, GByteArray *,
 				struct job_control *);
 
 gint sample_save_from_array (const gchar *, GByteArray *,
 			     struct job_control *);
 
-gint sample_load_from_array (GByteArray *, GByteArray *, struct job_control *,
+gint sample_load_from_array (GByteArray *, GByteArray *,
+			     struct job_control *,
 			     const struct sample_params *, guint *);
 
-gint sample_load_from_file (const gchar *, GByteArray *, struct job_control *,
+gint sample_load_from_file (const gchar *, GByteArray *,
+			    struct job_control *,
 			    const struct sample_params *, guint *);
+
+gint sample_load_from_file_with_cb (const gchar *, GByteArray *,
+				    struct job_control *,
+				    const struct sample_params *,
+				    guint *, sample_load_cb, gpointer);
 
 const gchar **sample_get_sample_extensions ();
 

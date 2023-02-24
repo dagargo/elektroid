@@ -91,8 +91,8 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
 }
 
 void
-audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
-	    job_control_callback load_progress_callback)
+audio_init (struct audio *audio,
+	    void (*volume_change_callback) (gpointer, gdouble), gpointer data)
 {
   debug_print (1, "Initializing audio (%s %s)...\n", audio_name (),
 	       audio_version ());
@@ -102,8 +102,9 @@ audio_init (struct audio *audio, void (*volume_change_callback) (gdouble),
   audio->path[0] = 0;
   audio->status = AUDIO_STATUS_STOPPED;
   audio->volume_change_callback = volume_change_callback;
+  audio->volume_change_callback_data = data;
   audio->control.data = g_malloc (sizeof (struct sample_info));
-  audio->control.callback = load_progress_callback;
+  audio->control.callback = NULL;
 
   audio_init_int (audio);
 }

@@ -176,7 +176,8 @@ audio_init_int (struct audio *audio)
     }
 
   audio->volume = 1.0;
-  audio->volume_change_callback (audio->volume);
+  audio->volume_change_callback (audio->volume_change_callback_data,
+				 audio->volume);
   return;
 
 error:
