@@ -70,6 +70,16 @@ struct browser
   GMutex mutex;
   gboolean loading;
   gboolean dirty;
+  //Menu
+  GtkWidget *transfer_menuitem;
+  GtkWidget *play_separator;
+  GtkWidget *play_menuitem;
+  GtkWidget *options_separator;
+  GtkWidget *open_menuitem;
+  GtkWidget *show_menuitem;
+  GtkWidget *actions_separator;
+  GtkWidget *rename_menuitem;
+  GtkWidget *delete_menuitem;
 };
 
 void browser_set_item (GtkTreeModel *, GtkTreeIter *, struct item *);

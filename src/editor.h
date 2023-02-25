@@ -29,7 +29,7 @@ struct editor
 {
   struct audio audio;
   struct preferences *preferences;
-  struct browser * remote_browser;
+  struct browser *remote_browser;
   GThread *thread;
   guint target_channels;	//Channels to load from file
   GtkWidget *box;
