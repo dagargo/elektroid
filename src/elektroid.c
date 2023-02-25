@@ -36,7 +36,6 @@
 #include "menu_action.h"
 
 #define EDITOR_VISIBLE (remote_browser.fs_ops->options & FS_OPTION_AUDIO_PLAYER ? TRUE : FALSE)
-#define EDITOR_PREF_CHANNELS (!remote_browser.fs_ops || (remote_browser.fs_ops->options & FS_OPTION_STEREO) || !preferences.mix ? 2 : 1)
 #define EDITOR_GET_SOURCE(browser) (browser == &local_browser ? AUDIO_SRC_LOCAL : AUDIO_SRC_REMOTE)
 #define EDITOR_SOURCE_IS_BROWSER(browser) (EDITOR_GET_SOURCE(browser) == editor.audio.src)
 
@@ -2574,7 +2573,13 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
   remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
-  editor.target_channels = EDITOR_PREF_CHANNELS;
+
+  if (preferences.mix)
+    {
+      audio_stop (&editor.audio);
+      editor_stop_load_thread (&editor);
+      editor_start_load_thread (&editor);
+    }
 
   if (backend.type == BE_TYPE_SYSTEM)
     {
@@ -3844,6 +3849,7 @@ main (int argc, char *argv[])
       preferences.local_dir = get_local_startup_path (local_dir);
     }
   editor.preferences = &preferences;
+  editor.remote_browser = &remote_browser;
 
   ret = elektroid_run (argc, argv);
 

@@ -22,12 +22,14 @@
 #define EDITOR_H
 
 #include "audio.h"
+#include "browser.h"
 #include "preferences.h"
 
 struct editor
 {
   struct audio audio;
   struct preferences *preferences;
+  struct browser * remote_browser;
   GThread *thread;
   guint target_channels;	//Channels to load from file
   GtkWidget *box;

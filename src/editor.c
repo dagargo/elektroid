@@ -23,6 +23,8 @@
 #include "editor.h"
 #include "sample.h"
 
+#define EDITOR_PREF_CHANNELS (!editor->remote_browser->fs_ops || (editor->remote_browser->fs_ops->options & FS_OPTION_STEREO) || !editor->preferences->mix ? 2 : 1)
+
 #define MAX_DRAW_X 10000
 
 #define EDITOR_LOADED_CHANNELS(n) (n == 2 && sample_info->channels == 2 ? 2 : 1)
@@ -309,6 +311,7 @@ void
 editor_start_load_thread (struct editor *editor)
 {
   debug_print (1, "Creating load thread...\n");
+  editor->target_channels = EDITOR_PREF_CHANNELS;
   editor->thread = g_thread_new ("load_sample", editor_load_sample_runner,
 				 editor);
 }
@@ -333,20 +336,13 @@ editor_stop_load_thread (struct editor *editor)
 gboolean
 editor_mix_clicked (GtkWidget * object, gboolean state, gpointer data)
 {
-  gchar *path;
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
-  enum audio_src audio_src = audio->src;
   editor->preferences->mix = state;
   if (strlen (audio->path))
     {
       audio_stop (audio);
       editor_stop_load_thread (editor);
-      path = strdup (audio->path);
-      audio_reset_sample (audio);
-      strcpy (audio->path, path);
-      g_free (path);
-      audio->src = audio_src;
       editor_start_load_thread (editor);
     }
   return FALSE;
