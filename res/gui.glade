@@ -996,10 +996,10 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="tooltip-text" translatable="yes">Playing mix depends on the destination channels</property>
+                                <property name="tooltip-text" translatable="yes">Playing mix depends on the remote channels</property>
                                 <property name="valign">center</property>
                                 <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Mix depending
-on destination</property>
+on remote</property>
                                 <property name="wrap">True</property>
                               </object>
                               <packing>
