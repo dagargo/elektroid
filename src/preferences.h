@@ -25,6 +25,7 @@ struct preferences
   gboolean autoplay;
   gboolean mix;
   gchar *local_dir;
+  gchar *remote_dir;
 };
 
 gint preferences_save (struct preferences *);

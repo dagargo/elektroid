@@ -3855,7 +3855,7 @@ elektroid_run (int argc, char *argv[])
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry")),
     .menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu")),
-    .dir = g_malloc0 (PATH_MAX),
+    .dir = preferences.remote_dir,
     .check_selection = elektroid_remote_check_selection,
     .file_icon = NULL,
     .fs_ops = NULL,
@@ -4073,8 +4073,6 @@ elektroid_run (int argc, char *argv[])
   ma_data.backend = &backend;
 
   gtk_main ();
-
-  free (remote_browser.dir);
 
   if (backend_check (&backend))
     {
