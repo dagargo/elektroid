@@ -2080,7 +2080,6 @@ elektroid_upload_task_runner (gpointer data)
 
   res = transfer.fs_ops->upload (remote_browser.backend, upload_path, array,
 				 &transfer.control);
-  g_free (upload_path);
   g_free (transfer.control.data);
   transfer.control.data = NULL;
   g_idle_add (elektroid_check_backend_bg, NULL);
@@ -2104,12 +2103,15 @@ elektroid_upload_task_runner (gpointer data)
       g_mutex_unlock (&transfer.control.mutex);
     }
 
+  dst_dir = dirname (upload_path);
   if (!res && transfer.fs_ops == remote_browser.fs_ops &&
       !strncmp (dst_dir, remote_browser.dir, strlen (remote_browser.dir))
       && !(transfer.fs_ops->options & FS_OPTION_SINGLE_OP))
     {
       g_idle_add (elektroid_load_remote_if_midi, &remote_browser);
     }
+
+  g_free (upload_path);
 
 end_cleanup:
   g_byte_array_free (array, TRUE);
