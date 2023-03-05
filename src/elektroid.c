@@ -2083,9 +2083,8 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
 
 static void
 elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
-				const gchar * dst_dir, gint32 * next_idx)
+				const gchar * dst_dir)
 {
-  gint32 children_next_idx;
   struct item_iterator iter;
   gchar *path, *dst_abs_dir, *upload_path;
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
@@ -2099,8 +2098,7 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
       upload_path = remote_browser.fs_ops->get_upload_path (&backend,
 							    remote_browser.fs_ops,
 							    dst_abs_dir,
-							    src_abs_path,
-							    next_idx);
+							    src_abs_path);
       if (file_matches_extensions (src_abs_path, local_browser.extensions))
 	{
 	  elektroid_add_task (UPLOAD, src_abs_path, upload_path,
@@ -2118,8 +2116,7 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
   while (!next_item_iterator (&iter))
     {
       path = chain_path (rel_path, iter.item.name);
-      elektroid_add_upload_task_path (path, src_dir, dst_dir,
-				      &children_next_idx);
+      elektroid_add_upload_task_path (path, src_dir, dst_dir);
       free (path);
     }
 
@@ -2132,7 +2129,6 @@ cleanup:
 static gpointer
 elektroid_add_upload_tasks_runner (gpointer userdata)
 {
-  gint32 next_idx;
   GtkTreeIter iter;
   GList *selected_rows;
   gboolean queued_before, queued_after, active;
@@ -2150,7 +2146,6 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
   queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
 						  NULL);
 
-  next_idx = 1;
   selected_rows = gtk_tree_selection_get_selected_rows (selection, NULL);
   while (selected_rows)
     {
@@ -2161,7 +2156,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
       gtk_tree_model_get_iter (model, &path_iter, path);
       browser_set_item (model, &path_iter, &item);
       elektroid_add_upload_task_path (item.name, local_browser.dir,
-				      remote_browser.dir, &next_idx);
+				      remote_browser.dir);
 
       g_mutex_lock (&sysex_transfer.mutex);
       active = sysex_transfer.active;
@@ -2849,7 +2844,7 @@ elektroid_dnd_received_system (const gchar * dir, const gchar * name,
 
 static void
 elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
-			       const gchar * filename, gint32 * next_idx)
+			       const gchar * filename)
 {
   gchar *dst_path;
   gint res;
@@ -2859,7 +2854,7 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
       dst_path = remote_browser.fs_ops->get_upload_path (&backend,
 							 remote_browser.fs_ops,
 							 remote_browser.dir,
-							 name, next_idx);
+							 name);
 
       res = remote_browser.fs_ops->move (remote_browser.backend, filename,
 					 dst_path);
@@ -2920,7 +2915,6 @@ elektroid_add_upload_task_slot (const gchar * name,
 static gpointer
 elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 {
-  gint32 next_idx = 1;
   gint64 start;
   GtkTreeIter iter;
   gboolean queued_before, queued_after, active, cache;
@@ -2978,7 +2972,7 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 	{
 	  if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID))
 	    {
-	      elektroid_dnd_received_remote (dir, name, filename, &next_idx);
+	      elektroid_dnd_received_remote (dir, name, filename);
 	    }
 	  else if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD))
 	    {
@@ -2989,8 +2983,7 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 	      else
 		{
 		  elektroid_add_upload_task_path (name, dir,
-						  remote_browser.dir,
-						  &next_idx);
+						  remote_browser.dir);
 		}
 	    }
 	}

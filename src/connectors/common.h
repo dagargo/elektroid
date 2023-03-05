@@ -29,9 +29,8 @@ struct common_simple_read_dir_data
 
 gchar *common_slot_get_upload_path (struct backend *backend,
 				    const struct fs_operations *ops,
-				    const gchar * dst_dir,
-				    const gchar * src_path,
-				    gint32 * next_index);
+				    const gchar * dst_path,
+				    const gchar * src_path);
 
 gint common_slot_get_id_name_from_path (const char *path, guint * id,
 					gchar ** name);

@@ -508,11 +508,10 @@ end:
 static int
 cli_upload (int argc, gchar * argv[], int *optind)
 {
-  const gchar *dst_dir;
+  const gchar *dst_path;
   gchar *src_path, *device_dst_path, *upload_path;
   gint err;
   GByteArray *array;
-  gint32 index = 1;
 
   if (*optind == argc)
     {
@@ -542,10 +541,10 @@ cli_upload (int argc, gchar * argv[], int *optind)
       return err;
     }
 
-  dst_dir = cli_get_path (device_dst_path);
+  dst_path = cli_get_path (device_dst_path);
 
-  upload_path = fs_ops->get_upload_path (&backend, fs_ops, dst_dir,
-					 src_path, &index);
+  upload_path = fs_ops->get_upload_path (&backend, fs_ops, dst_path,
+					 src_path);
 
   array = g_byte_array_new ();
   control.active = TRUE;

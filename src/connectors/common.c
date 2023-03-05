@@ -24,11 +24,10 @@
 gchar *
 common_slot_get_upload_path (struct backend *backend,
 			     const struct fs_operations *ops,
-			     const gchar * dst_dir, const gchar * src_path,
-			     gint32 * next_index)
+			     const gchar * dst_path, const gchar * src_path)
 {
-  //In SLOT mode, dst_dir includes the index, ':' and the item name.
-  return strdup (dst_dir);
+  //In SLOT mode, dst_path includes the index, ':' and the item name.
+  return strdup (dst_path);
 }
 
 int

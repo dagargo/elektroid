@@ -29,6 +29,7 @@
 #include "utils.h"
 #include "sample.h"
 #include "package.h"
+#include "common.h"
 #include "../config.h"
 
 #define DEVICES_FILE "/elektron/devices.json"
@@ -198,12 +199,7 @@ static gchar *elektron_get_dev_and_fs_ext (struct backend *,
 
 static gchar *elektron_get_upload_path_smplrw (struct backend *,
 					       const struct fs_operations *,
-					       const gchar *, const gchar *,
-					       gint32 *);
-static gchar *elektron_get_upload_path_data (struct backend *,
-					     const struct fs_operations *,
-					     const gchar *, const gchar *,
-					     gint32 *);
+					       const gchar *, const gchar *);
 static gchar *elektron_get_download_path (struct backend *,
 					  const struct fs_operations *,
 					  const gchar *, const gchar *,
@@ -356,7 +352,8 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .fs = FS_DATA_ALL,
-  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SLOT_STORAGE,
   .name = "data",
   .type_ext = "data",
   .readdir = elektron_read_data_dir_any,
@@ -372,7 +369,7 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
-  .get_upload_path = elektron_get_upload_path_data,
+  .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
 
@@ -398,7 +395,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
-  .get_upload_path = elektron_get_upload_path_data,
+  .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
 
@@ -424,7 +421,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .load = load_file,
   .save = save_file,
   .get_ext = elektron_get_dev_and_fs_ext,
-  .get_upload_path = elektron_get_upload_path_data,
+  .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
 
@@ -3023,7 +3020,7 @@ static gchar *
 elektron_get_upload_path_smplrw (struct backend *backend,
 				 const struct fs_operations *ops,
 				 const gchar * dst_dir,
-				 const gchar * src_path, gint32 * next_index)
+				 const gchar * src_path)
 {
   gchar *path, *namec, *name, *aux;
 
@@ -3042,45 +3039,6 @@ elektron_get_upload_path_smplrw (struct backend *backend,
     {
       path = aux;
     }
-  return path;
-}
-
-static gchar *
-elektron_get_upload_path_data (struct backend *backend,
-			       const struct fs_operations *ops,
-			       const gchar * dst_dir,
-			       const gchar * src_path, gint32 * next_index)
-{
-  gchar *indexs, *path;
-  struct item_iterator *remote_iter = malloc (sizeof (struct item_iterator));
-  if (ops->readdir (backend, remote_iter, dst_dir))
-    {
-      return strdup (dst_dir);
-    }
-
-  if (remote_iter->item.id == *next_index)
-    {
-      (*next_index)++;
-    }
-  else
-    {
-      while (!next_item_iterator (remote_iter))
-	{
-	  if (remote_iter->item.id > *next_index)
-	    {
-	      break;
-	    }
-	  (*next_index)++;
-	}
-    }
-
-  indexs = malloc (PATH_MAX);
-  snprintf (indexs, PATH_MAX, "%d", *next_index);
-  path = chain_path (dst_dir, indexs);
-  g_free (indexs);
-
-  (*next_index)++;
-
   return path;
 }
 

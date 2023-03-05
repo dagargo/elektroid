@@ -155,7 +155,7 @@ typedef gchar *(*fs_get_ext) (struct backend *, const struct fs_operations *);
 
 typedef gchar *(*fs_get_upload_path) (struct backend *,
 				      const struct fs_operations *,
-				      const gchar *, const gchar *, gint32 *);
+				      const gchar *, const gchar *);
 
 typedef gchar *(*fs_get_download_path) (struct backend *,
 					const struct fs_operations *,
@@ -213,7 +213,7 @@ enum fs_options
   FS_OPTION_SINGLE_OP = 0x4,
   //Filename is the ID instead of the name. Useful when the device allows different items to have the same name.
   FS_OPTION_ID_AS_FILENAME = 0x8,
-  //In slot mode, dst_dir passed to t_get_upload_path includes the ID, a colon (':') and the system filename.
+  //In slot mode, dst_path passed to t_get_upload_path includes the ID, a colon (':') and the system filename.
   //Also, as every destination slot is always used, drop is only possible over a concrete slot.
   //A DND operation of several items over a slot will behave as dropping the first item over the destination slot and the rest over the following ones.
   //Typically used together with FS_OPTION_ID_AS_FILENAME but not necessary.

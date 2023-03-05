@@ -80,8 +80,7 @@ local_get_download_path (struct backend *backend,
 static gchar *
 local_get_upload_path (struct backend *backend,
 		       const struct fs_operations *ops,
-		       const gchar * dst_dir,
-		       const gchar * src_path, gint32 * next_index)
+		       const gchar * dst_dir, const gchar * src_path)
 {
   return local_get_download_path (backend, ops, dst_dir, src_path, NULL);
 }
