@@ -87,6 +87,7 @@ struct job_control
 {
   gboolean active;
   GMutex mutex;
+  GCond cond;			//This can be used by the calling threads. It requires to call g_cond_init and g_cond_clear.
   job_control_callback callback;
   gint parts;
   gint part;
@@ -167,6 +168,8 @@ typedef void (*fs_select_item) (struct backend *, const gchar *,
 
 typedef gint (*t_sysex_transfer) (struct backend *, struct sysex_transfer *);
 
+typedef gboolean (*fs_path_exists) (struct backend *, const gchar *);
+
 // All the function members that return gint should return 0 if no error and a negative number in case of error.
 // errno values are recommended as will provide the user with a meaningful message. In particular,
 // ENOSYS could be used when a particular device does not support a feature that other devices implementing the same filesystem do.
@@ -184,6 +187,7 @@ struct fs_operations
   const gchar *type_ext;
   guint32 max_name_len;
   fs_init_iter_func readdir;	//This function runs on its own thread so it can take as long as needed in order to make calls to next_item_iterator not to wait for IO.
+  fs_path_exists path_exists;
   fs_print_item print_item;
   fs_path_func mkdir;
   fs_path_func delete;

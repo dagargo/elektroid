@@ -1045,7 +1045,7 @@ elektroid_delete_files_runner (gpointer data)
 static void
 elektroid_delete_files (GtkWidget * object, gpointer data)
 {
-  gint confirmation;
+  gint res;
   GtkWidget *dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
 					      GTK_DIALOG_DESTROY_WITH_PARENT |
 					      GTK_DIALOG_MODAL,
@@ -1057,9 +1057,9 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
 			  GTK_RESPONSE_CANCEL, _("_Delete"),
 			  GTK_RESPONSE_ACCEPT, NULL);
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
-  confirmation = gtk_dialog_run (GTK_DIALOG (dialog));
+  res = gtk_dialog_run (GTK_DIALOG (dialog));
   gtk_widget_destroy (dialog);
-  if (confirmation != GTK_RESPONSE_ACCEPT)
+  if (res != GTK_RESPONSE_ACCEPT)
     {
       return;
     }
@@ -1979,6 +1979,52 @@ elektroid_run_next_task (gpointer data)
   return FALSE;
 }
 
+static gboolean
+elektroid_show_task_overwrite_dialog (gpointer data)
+{
+  gint res;
+  GtkWidget *dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
+					      GTK_DIALOG_DESTROY_WITH_PARENT |
+					      GTK_DIALOG_MODAL,
+					      GTK_MESSAGE_WARNING,
+					      GTK_BUTTONS_NONE,
+					      _("Replace file “%s”?"),
+					      (gchar *) data);
+  gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
+			  GTK_RESPONSE_CANCEL, _("_Replace"),
+			  GTK_RESPONSE_ACCEPT, NULL);
+
+  //Close the preparing tasks progress dialog if it is still open.
+  gtk_widget_hide (GTK_WIDGET (progress_dialog));
+
+  res = gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_widget_destroy (dialog);
+  if (res != GTK_RESPONSE_ACCEPT)
+    {
+      transfer.status = CANCELED;
+    }
+
+  g_mutex_lock (&transfer.control.mutex);
+  g_cond_signal (&transfer.control.cond);
+  g_mutex_unlock (&transfer.control.mutex);
+
+  return FALSE;
+}
+
+static void
+elektroid_check_file_and_wait (gchar * path, struct browser *browser)
+{
+  struct backend *backend = browser->backend;
+  const struct fs_operations *fs_ops = browser->fs_ops;
+  if (fs_ops->path_exists && fs_ops->path_exists (backend, path))
+    {
+      g_cond_init (&transfer.control.cond);
+      g_idle_add (elektroid_show_task_overwrite_dialog, path);
+      g_cond_wait (&transfer.control.cond, &transfer.control.mutex);
+      g_cond_clear (&transfer.control.cond);
+    }
+}
+
 static gpointer
 elektroid_upload_task_runner (gpointer data)
 {
@@ -2023,6 +2069,13 @@ elektroid_upload_task_runner (gpointer data)
 							    remote_browser.fs_ops,
 							    transfer.dst,
 							    transfer.src);
+      g_mutex_lock (&transfer.control.mutex);
+      elektroid_check_file_and_wait (upload_path, &remote_browser);
+      g_mutex_unlock (&transfer.control.mutex);
+      if (transfer.status == CANCELED)
+	{
+	  goto end_cleanup;
+	}
     }
 
   res = transfer.fs_ops->upload (remote_browser.backend, upload_path, array,
@@ -2266,10 +2319,15 @@ elektroid_download_task_runner (gpointer userdata)
 		       array->len, dst_path,
 		       elektroid_get_fs_name (transfer.fs_ops->fs));
 
-	  res = transfer.fs_ops->save (dst_path, array, &transfer.control);
-	  if (!res)
+	  elektroid_check_file_and_wait (dst_path, &local_browser);
+	  if (transfer.status != CANCELED)
 	    {
-	      transfer.status = COMPLETED_OK;
+	      res =
+		transfer.fs_ops->save (dst_path, array, &transfer.control);
+	      if (!res)
+		{
+		  transfer.status = COMPLETED_OK;
+		}
 	    }
 	  g_free (dst_path);
 	}

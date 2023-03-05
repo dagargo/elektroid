@@ -328,6 +328,12 @@ local_sample_load_441_16_mono (const gchar * path, GByteArray * sample,
   return local_sample_load_custom (path, sample, control, &sample_params);
 }
 
+static gboolean
+local_path_exists (struct backend *backend, const gchar * path)
+{
+  return access (path, F_OK) == 0;
+}
+
 const struct fs_operations FS_LOCAL_OPERATIONS = {
   .fs = 0,
   .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER |
@@ -336,6 +342,7 @@ const struct fs_operations FS_LOCAL_OPERATIONS = {
   .gui_name = "localhost",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_read_dir,
+  .path_exists = local_path_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,
   .rename = local_rename,
@@ -361,6 +368,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .gui_name = "WAV 48 KHz 16 bits stereo",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_read_dir,
+  .path_exists = local_path_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,
   .rename = local_rename,
@@ -384,6 +392,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .gui_name = "WAV 48 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_read_dir,
+  .path_exists = local_path_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,
   .rename = local_rename,
@@ -408,6 +417,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .gui_name = "WAV 44.1 KHz 16 bits stereo",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_read_dir,
+  .path_exists = local_path_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,
   .rename = local_rename,
@@ -431,6 +441,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .gui_name = "WAV 44.1 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_read_dir,
+  .path_exists = local_path_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,
   .rename = local_rename,
