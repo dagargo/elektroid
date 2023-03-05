@@ -1984,7 +1984,7 @@ elektroid_upload_task_runner (gpointer data)
 {
   gint res;
   GByteArray *array;
-  gchar *dst_path, *dst_dir;
+  gchar *dst_path, *dst_dir, *upload_path;
 
   debug_print (1, "Local path: %s\n", transfer.src);
   debug_print (1, "Remote path: %s\n", transfer.dst);
@@ -2013,8 +2013,21 @@ elektroid_upload_task_runner (gpointer data)
   debug_print (1, "Writing from file %s (filesystem %s)...\n", transfer.src,
 	       elektroid_get_fs_name (transfer.fs_ops->fs));
 
-  res = transfer.fs_ops->upload (remote_browser.backend, transfer.dst, array,
+  if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+    {
+      upload_path = strdup (transfer.dst);
+    }
+  else
+    {
+      upload_path = remote_browser.fs_ops->get_upload_path (&backend,
+							    remote_browser.fs_ops,
+							    transfer.dst,
+							    transfer.src);
+    }
+
+  res = transfer.fs_ops->upload (remote_browser.backend, upload_path, array,
 				 &transfer.control);
+  g_free (upload_path);
   g_free (transfer.control.data);
   transfer.control.data = NULL;
   g_idle_add (elektroid_check_backend_bg, NULL);
@@ -2086,7 +2099,7 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
 				const gchar * dst_dir)
 {
   struct item_iterator iter;
-  gchar *path, *dst_abs_dir, *upload_path;
+  gchar *path, *upload_path;
   gchar *dst_abs_path = chain_path (dst_dir, rel_path);
   gchar *src_abs_path = chain_path (src_dir, rel_path);
 
@@ -2094,11 +2107,19 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
   if (local_browser.fs_ops->readdir (local_browser.backend, &iter,
 				     src_abs_path))
     {
-      dst_abs_dir = dirname (dst_abs_path);
-      upload_path = remote_browser.fs_ops->get_upload_path (&backend,
-							    remote_browser.fs_ops,
-							    dst_abs_dir,
-							    src_abs_path);
+      dst_abs_path = dirname (dst_abs_path);
+      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+	{
+	  upload_path = remote_browser.fs_ops->get_upload_path (&backend,
+								remote_browser.fs_ops,
+								dst_abs_path,
+								src_abs_path);
+	}
+      else
+	{
+	  //We can delay the path calculation to the moment the upload runs.
+	  upload_path = strdup (dst_abs_path);
+	}
       if (file_matches_extensions (src_abs_path, local_browser.extensions))
 	{
 	  elektroid_add_task (UPLOAD, src_abs_path, upload_path,
