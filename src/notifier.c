@@ -43,7 +43,8 @@ notifier_set_dir (struct notifier *notifier)
       notifier->wd = inotify_add_watch (notifier->fd, notifier->dir,
 					IN_CREATE | IN_DELETE | IN_MOVED_FROM
 					| IN_DELETE_SELF | IN_MOVE_SELF
-					| IN_MOVED_TO | IN_IGNORED);
+					| IN_MOVED_TO | IN_IGNORED |
+					IN_ATTRIB);
     }
 }
 
@@ -82,7 +83,8 @@ notifier_run (gpointer data)
       if (notifier->event->mask & IN_CREATE
 	  || notifier->event->mask & IN_DELETE
 	  || notifier->event->mask & IN_MOVED_FROM
-	  || notifier->event->mask & IN_MOVED_TO)
+	  || notifier->event->mask & IN_MOVED_TO
+	  || notifier->event->mask & IN_ATTRIB)
 	{
 	  debug_print (1, "Reloading dir...\n");
 	  g_idle_add (browser_load_dir, notifier->browser);
