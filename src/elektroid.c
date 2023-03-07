@@ -65,6 +65,8 @@ enum task_list_store_columns
   TASK_LIST_STORE_TYPE_HUMAN_FIELD,
   TASK_LIST_STORE_REMOTE_FS_ID_FIELD,
   TASK_LIST_STORE_REMOTE_FS_ICON_FIELD,
+  TASK_LIST_STORE_BATCH_ID_FIELD,
+  TASK_LIST_STORE_MODE_FIELD
 };
 
 enum fs_list_store_columns
@@ -94,6 +96,13 @@ enum elektroid_task_status
   CANCELED
 };
 
+enum elektroid_task_mode
+{
+  ELEKTROID_TASK_OPTION_ASK,
+  ELEKTROID_TASK_OPTION_REPLACE,
+  ELEKTROID_TASK_OPTION_SKIP
+};
+
 struct elektroid_transfer
 {
   struct job_control control;
@@ -101,6 +110,8 @@ struct elektroid_transfer
   gchar *dst;			//Contains a path to a file
   enum elektroid_task_status status;	//Contains the final status
   const struct fs_operations *fs_ops;	//Contains the fs_operations to use in this transfer
+  guint mode;
+  guint batch_id;
 };
 
 struct elektroid_dnd_data
@@ -108,6 +119,12 @@ struct elektroid_dnd_data
   GtkWidget *widget;
   gchar **uris;
   gchar *type_name;
+};
+
+struct elektron_sysex_thread_data
+{
+  GThreadFunc f;
+  gpointer data;
 };
 
 static gpointer elektroid_upload_task_runner (gpointer);
@@ -168,13 +185,15 @@ static struct backend backend;
 static struct preferences preferences;
 static struct ma_data ma_data;
 
-static GThread *task_thread = NULL;
-static GThread *sysex_thread = NULL;
+static guint batch_id;
+static GThread *task_thread;
+static GThread *sysex_thread;
 static struct elektroid_transfer transfer;
 static struct sysex_transfer sysex_transfer;
 
 static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
+static GtkWidget *dialog;
 static GtkDialog *name_dialog;
 static GtkEntry *name_dialog_entry;
 static GtkWidget *name_dialog_accept_button;
@@ -268,19 +287,18 @@ elektroid_set_remote_browser_file_extensions (gint sel_fs)
 static void
 show_error_msg (const char *format, ...)
 {
-  GtkWidget *dialog;
   gchar *msg;
   va_list args;
 
   va_start (args, format);
   g_vasprintf (&msg, format, args);
   dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
-				   GTK_DIALOG_DESTROY_WITH_PARENT |
 				   GTK_DIALOG_MODAL,
 				   GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
 				   "%s", msg);
   gtk_dialog_run (GTK_DIALOG (dialog));
   gtk_widget_destroy (dialog);
+  dialog = NULL;
   g_free (msg);
   va_end (args);
 }
@@ -451,7 +469,8 @@ elektroid_update_statusbar ()
 static gboolean
 elektroid_get_next_queued_task (GtkTreeIter * iter,
 				enum elektroid_task_type *type,
-				gchar ** src, gchar ** dst, gint * fs)
+				gchar ** src, gchar ** dst, gint * fs,
+				guint * batch_id, guint * mode)
 {
   enum elektroid_task_status status;
   gboolean found = FALSE;
@@ -467,7 +486,9 @@ elektroid_get_next_queued_task (GtkTreeIter * iter,
 			      TASK_LIST_STORE_TYPE_FIELD, type,
 			      TASK_LIST_STORE_SRC_FIELD, src,
 			      TASK_LIST_STORE_DST_FIELD, dst,
-			      TASK_LIST_STORE_REMOTE_FS_ID_FIELD, fs, -1);
+			      TASK_LIST_STORE_REMOTE_FS_ID_FIELD, fs,
+			      TASK_LIST_STORE_BATCH_ID_FIELD, batch_id,
+			      TASK_LIST_STORE_MODE_FIELD, mode, -1);
 	}
       else
 	{
@@ -495,7 +516,7 @@ elektroid_check_backend ()
   gboolean connected = backend_check (&backend);
   gboolean midi_connected = backend.type == BE_TYPE_MIDI && connected;
   gboolean queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						    NULL);
+						    NULL, NULL, NULL);
 
   elektroid_update_upload_menuitem ();
 
@@ -680,10 +701,30 @@ elektroid_rx_sysex_runner (gpointer data)
   return res;
 }
 
+static gboolean
+elektroid_new_sysex_thread_gsourcefunc (gpointer user_data)
+{
+  struct elektron_sysex_thread_data *data = user_data;
+  debug_print (1, "Creating SysEx thread...\n");
+  sysex_thread = g_thread_new ("sysex_thread", data->f, data->data);
+  g_free (data);
+  return FALSE;
+}
+
+//Using this before a call to gtk_dialog_run ensures that the threads starts after the dialog is being run.
+static void
+elektroid_new_sysex_thread (GThreadFunc f, gpointer user_data)
+{
+  struct elektron_sysex_thread_data *data =
+    g_malloc (sizeof (struct elektron_sysex_thread_data));
+  data->f = f;
+  data->data = user_data;
+  g_idle_add (elektroid_new_sysex_thread_gsourcefunc, data);
+}
+
 void
 elektroid_rx_sysex ()
 {
-  GtkWidget *dialog;
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
   gint dres;
@@ -693,10 +734,7 @@ elektroid_rx_sysex ()
   gint *res;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
-  debug_print (1, "Creating rx SysEx thread...\n");
-  sysex_thread = g_thread_new ("sysex_thread", elektroid_rx_sysex_runner,
-			       NULL);
-
+  elektroid_new_sysex_thread (elektroid_rx_sysex_runner, NULL);
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
   dres = gtk_dialog_run (GTK_DIALOG (progress_dialog));
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
@@ -781,6 +819,7 @@ elektroid_rx_sysex ()
     }
 
   gtk_widget_destroy (dialog);
+  dialog = NULL;
 }
 
 static gint
@@ -849,7 +888,6 @@ elektroid_tx_upgrade_os_runner (gpointer data)
 void
 elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
 {
-  GtkWidget *dialog;
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
   gint res, *err;
@@ -875,7 +913,7 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
     {
       gtk_widget_hide (GTK_WIDGET (dialog));
       filenames = gtk_file_chooser_get_filenames (chooser);
-      sysex_thread = g_thread_new ("sysex_thread", func, filenames);
+      elektroid_new_sysex_thread (func, filenames);
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Sending SysEx"));
       gtk_dialog_run (GTK_DIALOG (progress_dialog));
       gtk_widget_hide (GTK_WIDGET (progress_dialog));
@@ -898,6 +936,7 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
 
 cleanup:
   gtk_widget_destroy (dialog);
+  dialog = NULL;
 }
 
 static void
@@ -1046,27 +1085,25 @@ static void
 elektroid_delete_files (GtkWidget * object, gpointer data)
 {
   gint res;
-  GtkWidget *dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
-					      GTK_DIALOG_DESTROY_WITH_PARENT |
-					      GTK_DIALOG_MODAL,
-					      GTK_MESSAGE_ERROR,
-					      GTK_BUTTONS_NONE,
-					      _
-					      ("Are you sure you want to delete the selected items?"));
+  dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
+				   GTK_DIALOG_MODAL,
+				   GTK_MESSAGE_ERROR,
+				   GTK_BUTTONS_NONE,
+				   _
+				   ("Are you sure you want to delete the selected items?"));
   gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
 			  GTK_RESPONSE_CANCEL, _("_Delete"),
 			  GTK_RESPONSE_ACCEPT, NULL);
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
   res = gtk_dialog_run (GTK_DIALOG (dialog));
   gtk_widget_destroy (dialog);
+  dialog = NULL;
   if (res != GTK_RESPONSE_ACCEPT)
     {
       return;
     }
 
-  debug_print (1, "Creating SysEx thread...\n");
-  sysex_thread = g_thread_new ("sysex_thread",
-			       elektroid_delete_files_runner, data);
+  elektroid_new_sysex_thread (elektroid_delete_files_runner, data);
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Deleting Files"));
   gtk_label_set_text (GTK_LABEL (progress_label), _("Deleting..."));
   gtk_dialog_run (GTK_DIALOG (progress_dialog));
@@ -1355,6 +1392,11 @@ static void
 elektroid_join_task_thread ()
 {
   debug_print (2, "Joining task thread...\n");
+
+  g_mutex_lock (&transfer.control.mutex);
+  g_cond_signal (&transfer.control.cond);
+  g_mutex_unlock (&transfer.control.mutex);
+
   if (task_thread)
     {
       g_thread_join (task_thread);
@@ -1794,35 +1836,40 @@ elektroid_check_task_buttons (gpointer data)
 }
 
 static void
-elektroid_cancel_all_tasks (GtkWidget * object, gpointer data)
+elektroid_task_visitor_set_canceled (GtkTreeIter * iter)
+{
+  const gchar *canceled = elektroid_get_human_task_status (CANCELED);
+  gtk_list_store_set (task_list_store, iter,
+		      TASK_LIST_STORE_STATUS_FIELD,
+		      CANCELED,
+		      TASK_LIST_STORE_STATUS_HUMAN_FIELD, canceled, -1);
+}
+
+static void
+elektroid_visit_pending_tasks (void (*visitor) (GtkTreeIter * iter))
 {
   enum elektroid_task_status status;
   GtkTreeIter iter;
   gboolean valid =
     gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), &iter);
-  const gchar *canceled = elektroid_get_human_task_status (CANCELED);
 
   while (valid)
     {
       gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, &status, -1);
-
       if (status == QUEUED)
 	{
-	  gtk_list_store_set (task_list_store, &iter,
-			      TASK_LIST_STORE_STATUS_FIELD,
-			      CANCELED,
-			      TASK_LIST_STORE_STATUS_HUMAN_FIELD, canceled,
-			      -1);
-	  valid = gtk_list_store_iter_is_valid (task_list_store, &iter);
+	  visitor (&iter);
 	}
-      else
-	{
-	  valid =
-	    gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store),
-				      &iter);
-	}
+      valid = gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store),
+					&iter);
     }
+}
+
+static void
+elektroid_cancel_all_tasks (GtkWidget * object, gpointer data)
+{
+  elektroid_visit_pending_tasks (elektroid_task_visitor_set_canceled);
 
   elektroid_stop_running_task (NULL, NULL);
   elektroid_check_task_buttons (NULL);
@@ -1904,10 +1951,11 @@ elektroid_run_next_task (gpointer data)
   gchar *src;
   gchar *dst;
   gint fs;
+  guint batch_id, mode;
   GtkTreePath *path;
   gboolean transfer_active;
-  gboolean found =
-    elektroid_get_next_queued_task (&iter, &type, &src, &dst, &fs);
+  gboolean found = elektroid_get_next_queued_task (&iter, &type, &src, &dst,
+						   &fs, &batch_id, &mode);
   const gchar *status_human = elektroid_get_human_task_status (RUNNING);
 
   g_mutex_lock (&transfer.control.mutex);
@@ -1941,6 +1989,8 @@ elektroid_run_next_task (gpointer data)
       transfer.src = src;
       transfer.dst = dst;
       transfer.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
+      transfer.batch_id = batch_id;
+      transfer.mode = mode;
       debug_print (1, "Running task type %d from %s to %s (%s)...\n", type,
 		   transfer.src, transfer.dst, elektroid_get_fs_name (fs));
 
@@ -1979,35 +2029,119 @@ elektroid_run_next_task (gpointer data)
   return FALSE;
 }
 
+static void
+elektroid_task_batch_visitor_set_status (GtkTreeIter * iter,
+					 enum elektroid_task_mode mode)
+{
+  gint batch_id;
+  gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), iter,
+		      TASK_LIST_STORE_BATCH_ID_FIELD, &batch_id, -1);
+  if (batch_id == transfer.batch_id)
+    {
+      gtk_list_store_set (task_list_store, iter,
+			  TASK_LIST_STORE_MODE_FIELD, mode, -1);
+    }
+}
+
+static void
+elektroid_task_batch_visitor_set_canceled (GtkTreeIter * iter)
+{
+  gint batch_id;
+  gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), iter,
+		      TASK_LIST_STORE_BATCH_ID_FIELD, &batch_id, -1);
+  if (batch_id == transfer.batch_id)
+    {
+      elektroid_task_visitor_set_canceled (iter);
+    }
+}
+
+static void
+elektroid_task_batch_visitor_set_skip (GtkTreeIter * iter)
+{
+  elektroid_task_batch_visitor_set_status (iter, ELEKTROID_TASK_OPTION_SKIP);
+}
+
+static void
+elektroid_task_batch_visitor_set_replace (GtkTreeIter * iter)
+{
+  elektroid_task_batch_visitor_set_status (iter,
+					   ELEKTROID_TASK_OPTION_REPLACE);
+}
+
 static gboolean
 elektroid_show_task_overwrite_dialog (gpointer data)
 {
   gint res;
-  GtkWidget *dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
-					      GTK_DIALOG_DESTROY_WITH_PARENT |
-					      GTK_DIALOG_MODAL,
-					      GTK_MESSAGE_WARNING,
-					      GTK_BUTTONS_NONE,
-					      _("Replace file “%s”?"),
-					      (gchar *) data);
-  gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
-			  GTK_RESPONSE_CANCEL, _("_Replace"),
-			  GTK_RESPONSE_ACCEPT, NULL);
+  gboolean apply_to_all;
+  GtkWidget *container, *checkbutton;
 
-  //Close the preparing tasks progress dialog if it is still open.
-  gtk_widget_hide (GTK_WIDGET (progress_dialog));
+  dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
+				   GTK_DIALOG_MODAL |
+				   GTK_DIALOG_USE_HEADER_BAR,
+				   GTK_MESSAGE_WARNING,
+				   GTK_BUTTONS_NONE,
+				   _("Replace file “%s”?"),
+				   (gchar *) data);
+  gtk_dialog_add_buttons (GTK_DIALOG (dialog),
+			  _("_Cancel"), GTK_RESPONSE_CANCEL,
+			  _("_Skip"), GTK_RESPONSE_REJECT,
+			  _("_Replace"), GTK_RESPONSE_ACCEPT, NULL);
+  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
+  container = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+  checkbutton =
+    gtk_check_button_new_with_label (_("Apply this action to all files"));
+  gtk_widget_set_hexpand (checkbutton, TRUE);
+  gtk_widget_set_halign (checkbutton, GTK_ALIGN_CENTER);
+  gtk_widget_show (checkbutton);
+  gtk_container_add (GTK_CONTAINER (container), checkbutton);
 
   res = gtk_dialog_run (GTK_DIALOG (dialog));
-  gtk_widget_destroy (dialog);
-  if (res != GTK_RESPONSE_ACCEPT)
+  apply_to_all =
+    gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (checkbutton));
+  switch (res)
     {
+    case GTK_RESPONSE_CANCEL:
+      //Cancel current task.
       transfer.status = CANCELED;
+      //Cancel all tasks belonging to the same batch.
+      elektroid_visit_pending_tasks
+	(elektroid_task_batch_visitor_set_canceled);
+      break;
+    case GTK_RESPONSE_REJECT:
+      //Cancel current task.
+      transfer.status = CANCELED;
+      if (apply_to_all)
+	{
+	  //Mark pending tasks as SKIP.
+	  elektroid_visit_pending_tasks
+	    (elektroid_task_batch_visitor_set_skip);
+	}
+      break;
+    case GTK_RESPONSE_ACCEPT:
+      //Mark pending tasks as REPLACE.
+      if (apply_to_all)
+	{
+	  elektroid_visit_pending_tasks
+	    (elektroid_task_batch_visitor_set_replace);
+	}
+      break;
     }
+
+  gtk_widget_destroy (dialog);
+  dialog = NULL;
 
   g_mutex_lock (&transfer.control.mutex);
   g_cond_signal (&transfer.control.cond);
   g_mutex_unlock (&transfer.control.mutex);
 
+  return FALSE;
+}
+
+//Close the preparing tasks progress dialog if it is open.
+static gboolean
+elektroid_close_progress_dialog (gpointer data)
+{
+  gtk_dialog_response (progress_dialog, GTK_RESPONSE_CANCEL);
   return FALSE;
 }
 
@@ -2018,10 +2152,17 @@ elektroid_check_file_and_wait (gchar * path, struct browser *browser)
   const struct fs_operations *fs_ops = browser->fs_ops;
   if (fs_ops->path_exists && fs_ops->path_exists (backend, path))
     {
-      g_cond_init (&transfer.control.cond);
-      g_idle_add (elektroid_show_task_overwrite_dialog, path);
-      g_cond_wait (&transfer.control.cond, &transfer.control.mutex);
-      g_cond_clear (&transfer.control.cond);
+      switch (transfer.mode)
+	{
+	case ELEKTROID_TASK_OPTION_ASK:
+	  g_idle_add (elektroid_close_progress_dialog, NULL);
+	  g_idle_add (elektroid_show_task_overwrite_dialog, path);
+	  g_cond_wait (&transfer.control.cond, &transfer.control.mutex);
+	  break;
+	case ELEKTROID_TASK_OPTION_SKIP:
+	  transfer.status = CANCELED;
+	  break;
+	}
     }
 }
 
@@ -2144,7 +2285,10 @@ elektroid_add_task (enum elektroid_task_type type, const char *src,
 				     TASK_LIST_STORE_REMOTE_FS_ID_FIELD,
 				     remote_fs_id,
 				     TASK_LIST_STORE_REMOTE_FS_ICON_FIELD,
-				     icon, -1);
+				     icon,
+				     TASK_LIST_STORE_BATCH_ID_FIELD, batch_id,
+				     TASK_LIST_STORE_MODE_FIELD,
+				     ELEKTROID_TASK_OPTION_ASK, -1);
 
   gtk_widget_set_sensitive (remove_tasks_button, TRUE);
 }
@@ -2220,7 +2364,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
     gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.view));
 
   queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						  NULL);
+						  NULL, NULL, NULL);
 
   selected_rows = gtk_tree_selection_get_selected_rows (selection, NULL);
   while (selected_rows)
@@ -2248,7 +2392,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
   g_list_free_full (selected_rows, (GDestroyNotify) gtk_tree_path_free);
 
   queued_after = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						 NULL);
+						 NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
       g_idle_add (elektroid_run_next_task, NULL);
@@ -2270,9 +2414,7 @@ elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
       return;
     }
 
-  debug_print (1, "Creating SysEx thread...\n");
-  sysex_thread = g_thread_new ("sysex_thread",
-			       elektroid_add_upload_tasks_runner, NULL);
+  elektroid_new_sysex_thread (elektroid_add_upload_tasks_runner, NULL);
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Preparing Tasks"));
   gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
   gtk_dialog_run (GTK_DIALOG (progress_dialog));
@@ -2317,13 +2459,13 @@ elektroid_download_task_runner (gpointer userdata)
 							       transfer.dst,
 							       transfer.src,
 							       array);
-	  debug_print (1, "Writing %d bytes to file %s (filesystem %s)...\n",
-		       array->len, dst_path,
-		       elektroid_get_fs_name (transfer.fs_ops->fs));
-
 	  elektroid_check_file_and_wait (dst_path, &local_browser);
 	  if (transfer.status != CANCELED)
 	    {
+	      debug_print (1,
+			   "Writing %d bytes to file %s (filesystem %s)...\n",
+			   array->len, dst_path,
+			   elektroid_get_fs_name (transfer.fs_ops->fs));
 	      res =
 		transfer.fs_ops->save (dst_path, array, &transfer.control);
 	      if (!res)
@@ -2407,7 +2549,7 @@ elektroid_add_download_tasks_runner (gpointer data)
     gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
 
   queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						  NULL);
+						  NULL, NULL, NULL);
 
   backend_enable_cache (remote_browser.backend);
 
@@ -2442,7 +2584,7 @@ elektroid_add_download_tasks_runner (gpointer data)
   backend_disable_cache (remote_browser.backend);
 
   queued_after = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						 NULL);
+						 NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
       g_idle_add (elektroid_run_next_task, NULL);
@@ -2464,9 +2606,7 @@ elektroid_add_download_tasks (GtkWidget * object, gpointer data)
       return;
     }
 
-  debug_print (1, "Creating SysEx thread...\n");
-  sysex_thread = g_thread_new ("sysex_thread",
-			       elektroid_add_download_tasks_runner, NULL);
+  elektroid_new_sysex_thread (elektroid_add_download_tasks_runner, NULL);
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Preparing Tasks"));
   gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
   gtk_dialog_run (GTK_DIALOG (progress_dialog));
@@ -2867,10 +3007,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
       return;
     }
 
-  debug_print (1, "Creating SysEx thread...\n");
-  sysex_thread = g_thread_new ("sysex_thread", elektroid_set_device_runner,
-			       &be_sys_device);
-
+  elektroid_new_sysex_thread (elektroid_set_device_runner, &be_sys_device);
   gtk_window_set_title (GTK_WINDOW (progress_dialog),
 			_("Connecting to Device"));
   gtk_label_set_text (GTK_LABEL (progress_label), _("Connecting..."));
@@ -3010,7 +3147,7 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
     }
 
   queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						  NULL);
+						  NULL, NULL, NULL);
 
   cache = widget == GTK_WIDGET (local_browser.view) &&
     !strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID);
@@ -3081,7 +3218,7 @@ end:
     }
 
   queued_after = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						 NULL);
+						 NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
       g_idle_add (elektroid_run_next_task, NULL);
@@ -3133,7 +3270,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   dnd_data->type_name = gdk_atom_name (type);
 
   data = (gchar *) gtk_selection_data_get_data (selection_data);
-  debug_print (1, "DND received data (%s):\n%s\n", dnd_data->type_name, data);
+  debug_print (1, "DND received batch %d data (%s):\n%s\n", batch_id,
+	       dnd_data->type_name, data);
 
   dnd_data->uris = g_uri_list_extract_uris (data);
 
@@ -3187,12 +3325,11 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 
   if (blocking)
     {
-      debug_print (1, "Creating SysEx thread...\n");
-      sysex_thread = g_thread_new ("sysex_thread",
-				   elektroid_dnd_received_runner, dnd_data);
+      elektroid_new_sysex_thread (elektroid_dnd_received_runner, dnd_data);
       gtk_dialog_run (GTK_DIALOG (progress_dialog));
       gtk_widget_hide (GTK_WIDGET (progress_dialog));
       elektroid_join_sysex_thread ();
+      batch_id++;
     }
   else
     {
@@ -3383,7 +3520,12 @@ elektroid_drag_leave_up (GtkWidget * widget,
 static void
 elektroid_quit ()
 {
+  gtk_dialog_response (GTK_DIALOG (about_dialog), GTK_RESPONSE_CANCEL);
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
+  if (dialog)
+    {
+      gtk_dialog_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
+    }
 
   elektroid_stop_sysex_thread ();
   elektroid_stop_task_thread ();

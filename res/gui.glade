@@ -229,9 +229,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
   <object class="GtkListStore" id="task_list_store">
     <columns>
       <!-- column-name status -->
-      <column type="gint"/>
+      <column type="guint"/>
       <!-- column-name type -->
-      <column type="gint"/>
+      <column type="guint"/>
       <!-- column-name src -->
       <column type="gchararray"/>
       <!-- column-name dst -->
@@ -246,6 +246,10 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gint"/>
       <!-- column-name remote_fs_icon -->
       <column type="gchararray"/>
+      <!-- column-name batch_id -->
+      <column type="guint"/>
+      <!-- column-name mode -->
+      <column type="guint"/>
     </columns>
   </object>
   <object class="GtkAboutDialog" id="about_dialog">
