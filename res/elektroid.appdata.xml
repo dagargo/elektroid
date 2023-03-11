@@ -5,11 +5,11 @@
  <metadata_license>FSFAP</metadata_license>
  <project_license>GPL-3.0+</project_license>
  <name>elektroid</name>
- <summary>Transfer application for Elektron devices</summary>
+ <summary>Sample and MIDI device manager</summary>
  <description>
-  <p>Elektroid is an transfer application for Elektron devices.</p>
-  <p>With Elektroid you can easily upload and download audio files, projects, sounds and presets to and from Elektron devices. It can also be used to send and receive MIDI SysEx files.</p>
-  <p>Elektroid has been reported to work with Model:Samples, Model:Cycles, Digitakt, Digitone and Analog Rytm MKI and MKII.</p>
+  <p>Elektroid is a sample and MIDI device manager.</p>
+  <p>With Elektroid you can easily upload and download audio files and manage different types of data on different MIDI devices, such as presets, projects or tunings.</p>
+  <p>It can also be used to send and receive SysEx MIDI files.</p>
  </description>
  <launchable type="desktop-id">elektroid.desktop</launchable>
  <provides>

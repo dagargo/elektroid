@@ -29,15 +29,13 @@ BuildRequires:	gettext-devel
 BuildRequires:	json-glib-devel
 
 %description
-Elektroid is an transfer application for Elektron devices.
-With Elektroid you can easily upload and download audio files, projects, sounds
-and presets to and from Elektron devices. It can also be used to send and
-receive MIDI SysEx files.
-Elektroid has been reported to work with Model:Samples, Model:Cycles, Digitakt,
-Digitone and Analog Rytm MKI and MKII.
+Elektroid is a sample and MIDI device manager.
+With Elektroid you can easily upload and download audio files and manage
+different types of data on different MIDI devices, such as presets, projects or
+tunings. It can also be used to send and receive SysEx MIDI files.
 
 %package cli
-Summary: Transfer application for Elektron devices
+Summary: Sample and MIDI device manager
 
 %description cli
 This is the command-line client for Elektroid.
@@ -62,7 +60,8 @@ automake
 %files
 %{_bindir}/elektroid
 %{_datadir}/applications/%{name}.desktop
-%{_datadir}/%{name}/devices.json
+%{_datadir}/%{name}/elektron/devices.json
+%{_datadir}/%{name}/microbrute/gui.glade
 %{_datadir}/%{name}/gui.css
 %{_datadir}/%{name}/gui.glade
 %{_datadir}/icons/hicolor/scalable/apps/%{name}.svg
@@ -78,13 +77,16 @@ automake
 
 %files cli
 %{_bindir}/elektroid-cli
-%{_datadir}/%{name}/devices.json
+%{_datadir}/%{name}/elektron/devices.json
 %{_datadir}/locale/*/LC_MESSAGES/%{name}.mo
 %{_mandir}/man1/elektroid-cli.1.gz
 %license COPYING
 
 
 %changelog
+* Sat Mar 11 2023 David García Goñi <dagargo@gmail.com> - 2.5-1
+- Update to 2.5 release
+
 * Wed Jun 08 2022 Jonathan Wakely <jwakely@redhat.com> - 2.1-1
 - Update to 2.1 release
 

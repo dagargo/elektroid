@@ -23,14 +23,13 @@ Package: elektroid
 Architecture: linux-any
 Depends: ${misc:Depends},
          ${shlibs:Depends}
-Description: Transfer application for Elektron devices
- Elektroid is an transfer application for Elektron devices.
+Description: Sample and MIDI device manager
+ Elektroid is a sample and MIDI device manager.
  .
- With Elektroid you can easily upload and download audio files, projects,
- sounds and presets to and from Elektron devices. It can also be used to
- send and receive MIDI SysEx files.
+ With Elektroid you can easily upload and download audio files and manage
+ different types of data on different MIDI devices, such as presets, projects or
+ tunings.
  .
- Elektroid has been reported to work with Model:Samples, Model:Cycles,
- Digitakt, Digitone, Syntakt and Analog Rytm MKI and MKII.
+ It can also be used to send and receive SysEx MIDI files.
  .
- This package provides both the GUI and CLI application of elektroid.
+ This package provides both the GUI and CLI application of Elektroid.
