@@ -168,7 +168,7 @@ typedef void (*fs_select_item) (struct backend *, const gchar *,
 
 typedef gint (*t_sysex_transfer) (struct backend *, struct sysex_transfer *);
 
-typedef gboolean (*fs_path_exists) (struct backend *, const gchar *);
+typedef gboolean (*fs_file_exists) (struct backend *, const gchar *);
 
 // All the function members that return gint should return 0 if no error and a negative number in case of error.
 // errno values are recommended as will provide the user with a meaningful message. In particular,
@@ -187,7 +187,7 @@ struct fs_operations
   const gchar *type_ext;
   guint32 max_name_len;
   fs_init_iter_func readdir;	//This function runs on its own thread so it can take as long as needed in order to make calls to next_item_iterator not to wait for IO.
-  fs_path_exists path_exists;
+  fs_file_exists file_exists;
   fs_print_item print_item;
   fs_path_func mkdir;
   fs_path_func delete;

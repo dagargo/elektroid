@@ -225,6 +225,8 @@ static void elektron_print_data (struct item_iterator *, struct backend *,
 
 static gchar *elektron_get_id_as_slot (struct item *, struct backend *);
 
+static gboolean elektron_sample_file_exists (struct backend *, const gchar *);
+static gboolean elektron_raw_file_exists (struct backend *, const gchar *);
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -238,6 +240,7 @@ static const guint8 FS_SAMPLE_CREATE_DIR_REQUEST[] = { 0x11 };
 static const guint8 FS_SAMPLE_DELETE_DIR_REQUEST[] = { 0x12 };
 static const guint8 FS_SAMPLE_DELETE_FILE_REQUEST[] = { 0x20 };
 static const guint8 FS_SAMPLE_RENAME_FILE_REQUEST[] = { 0x21 };
+static const guint8 FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST[] = { 0x22 };
 static const guint8 FS_SAMPLE_GET_FILE_INFO_FROM_HASH_AND_SIZE_REQUEST[] =
   { 0x23, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 FS_SAMPLE_OPEN_FILE_READER_REQUEST[] = { 0x30 };
@@ -256,6 +259,7 @@ static const guint8 FS_RAW_CREATE_DIR_REQUEST[] = { 0x15 };
 static const guint8 FS_RAW_DELETE_DIR_REQUEST[] = { 0x16 };
 static const guint8 FS_RAW_DELETE_FILE_REQUEST[] = { 0x24 };
 static const guint8 FS_RAW_RENAME_FILE_REQUEST[] = { 0x25 };
+static const guint8 FS_RAW_GET_FILE_INFO_FROM_PATH_REQUEST[] = { 0x26 };
 static const guint8 FS_RAW_OPEN_FILE_READER_REQUEST[] = { 0x33 };
 static const guint8 FS_RAW_CLOSE_FILE_READER_REQUEST[] = { 0x34 };
 static const guint8 FS_RAW_READ_FILE_REQUEST[] =
@@ -292,6 +296,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .type_ext = "wav",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_samples_dir,
+  .file_exists = elektron_sample_file_exists,
   .print_item = elektron_print_smplrw,
   .mkdir = elektron_create_samples_dir,
   .delete = elektron_delete_samples_item,
@@ -313,6 +318,7 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .type_ext = "raw",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_raw_dir,
+  .file_exists = elektron_raw_file_exists,
   .print_item = elektron_print_smplrw,
   .mkdir = elektron_create_raw_dir,
   .delete = elektron_delete_raw_item,
@@ -336,6 +342,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .type_ext = "pst",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_raw_dir,
+  .file_exists = elektron_raw_file_exists,
   .print_item = elektron_print_smplrw,
   .mkdir = elektron_create_raw_dir,
   .delete = elektron_delete_raw_item,
@@ -1392,6 +1399,28 @@ elektron_add_ext_to_mc_snd (const gchar * path)
   gchar *path_with_ext = malloc (PATH_MAX);
   snprintf (path_with_ext, PATH_MAX, "%s%s", path, ".mc-snd");
   return path_with_ext;
+}
+
+static gboolean
+elektron_sample_file_exists (struct backend *backend, const gchar * path)
+{
+  gint res = elektron_path_common (backend, path,
+				   FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST,
+				   sizeof
+				   (FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST));
+  return res == 0;
+}
+
+static gboolean
+elektron_raw_file_exists (struct backend *backend, const gchar * path)
+{
+  gchar *name_with_ext = elektron_add_ext_to_mc_snd (path);
+  gint res = elektron_path_common (backend, path,
+				   FS_RAW_GET_FILE_INFO_FROM_PATH_REQUEST,
+				   sizeof
+				   (FS_RAW_GET_FILE_INFO_FROM_PATH_REQUEST));
+  g_free (name_with_ext);
+  return res == 0;
 }
 
 static gint

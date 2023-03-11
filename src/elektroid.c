@@ -2150,7 +2150,7 @@ elektroid_check_file_and_wait (gchar * path, struct browser *browser)
 {
   struct backend *backend = browser->backend;
   const struct fs_operations *fs_ops = browser->fs_ops;
-  if (fs_ops->path_exists && fs_ops->path_exists (backend, path))
+  if (fs_ops->file_exists && fs_ops->file_exists (backend, path))
     {
       switch (transfer.mode)
 	{
