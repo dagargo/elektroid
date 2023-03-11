@@ -44,4 +44,5 @@ EXTRA_DIST = \
         $(desktop_DATA) \
         $(metainfo_DATA) \
         $(svgicon_DATA) \
-        $(elektron_DATA)
+        $(elektron_DATA) \
+        $(microbrute_DATA)
