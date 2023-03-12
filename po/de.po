@@ -158,19 +158,19 @@ msgstr "Herunterladen"
 #: src/elektroid.c:2083
 #, c-format
 msgid "Replace file “%s”?"
-msgstr ""
+msgstr "Ersetze Datei “%s”?"
 
 #: src/elektroid.c:2087
 msgid "_Skip"
-msgstr ""
+msgstr "_Überspringen"
 
 #: src/elektroid.c:2088
 msgid "_Replace"
-msgstr ""
+msgstr "_Ersetzen"
 
 #: src/elektroid.c:2092
 msgid "Apply this action to all files"
-msgstr ""
+msgstr "Diese Aktion auf alle Dateien anwenden"
 
 #: src/elektroid.c:2418 src/elektroid.c:2610 src/elektroid.c:3322
 msgid "Preparing Tasks"
@@ -361,11 +361,11 @@ msgstr "Abgeschlossene Aufgaben aufräumen"
 
 #: res/microbrute/gui.glade:35
 msgid "Calibration assistant"
-msgstr ""
+msgstr "Kalibrierungsassistent"
 
 #: res/microbrute/gui.glade:46
 msgid "This procedure calibrates the pitch bend and modulation wheels."
-msgstr ""
+msgstr "Dieser Vorgang kalibriert das Pitchbend- und das Modulationsrad"
 
 #: res/microbrute/gui.glade:50
 msgid "Start"
@@ -375,41 +375,44 @@ msgstr ""
 msgid ""
 "Let the pitch bend wheel rest at the neutral position and click on the next "
 "button."
-msgstr ""
+msgstr "Lassen Sie das Pitch-Bend-Rad in der neutralen Position stehen und "
+"klicken Sie auf die Schaltfläche „Weiter“."
 
 #: res/microbrute/gui.glade:68
 msgid "Step 1"
-msgstr ""
+msgstr "Schritt 1"
 
 #: res/microbrute/gui.glade:81
 msgid "While setting both wheels at the bottom click on the next button."
-msgstr ""
+msgstr "Während Sie beide Räder ganz unten einstellen, klicken Sie auf die "
+"Schaltfläche „Weiter“."
 
 #: res/microbrute/gui.glade:86
 msgid "Step 2"
-msgstr ""
+msgstr "Schritt 2"
 
 #: res/microbrute/gui.glade:99
 msgid "While setting both wheels at the top click on the next button."
-msgstr ""
+msgstr "Während Sie beide Räder ganz oben einstellen, klicken Sie auf "
+"die Schaltfläche „Weiter“."
 
 #: res/microbrute/gui.glade:104
 msgid "Step 3"
-msgstr ""
+msgstr "Schritt 3"
 
 #: res/microbrute/gui.glade:117
 #, fuzzy
 msgid "Calibration completed"
-msgstr "Fertig"
+msgstr "Kalibrierung vollendet"
 
 #: res/microbrute/gui.glade:122
 msgid "End"
-msgstr ""
+msgstr "Ende"
 
 #: res/microbrute/gui.glade:145
 msgctxt "Gate Length"
 msgid "Short"
-msgstr ""
+msgstr "Kurz"
 
 #: res/microbrute/gui.glade:149
 msgctxt "Gate Length"
@@ -419,47 +422,47 @@ msgstr ""
 #: res/microbrute/gui.glade:153
 msgctxt "Gate Length"
 msgid "Long"
-msgstr ""
+msgstr "Lang"
 
 #: res/microbrute/gui.glade:167
 msgctxt "Key Priority"
 msgid "Last"
-msgstr ""
+msgstr "Letzte"
 
 #: res/microbrute/gui.glade:171
 msgctxt "Key Priority"
 msgid "Low"
-msgstr ""
+msgstr "Niedrig"
 
 #: res/microbrute/gui.glade:175
 msgctxt "Key Priority"
 msgid "High"
-msgstr ""
+msgstr "Hoch"
 
 #: res/microbrute/gui.glade:189
 msgctxt "Play Mode"
 msgid "Hold"
-msgstr ""
+msgstr "Halten"
 
 #: res/microbrute/gui.glade:193
 msgctxt "Play Mode"
 msgid "Note On"
-msgstr ""
+msgstr "Note an"
 
 #: res/microbrute/gui.glade:207
 msgctxt "Receive Channel"
 msgid "Any"
-msgstr ""
+msgstr "Beliebig"
 
 #: res/microbrute/gui.glade:285
 msgctxt "Sequence Change"
 msgid "At End"
-msgstr ""
+msgstr "Am Ende"
 
 #: res/microbrute/gui.glade:289
 msgctxt "Sequence Change"
 msgid "Instant Reset"
-msgstr ""
+msgstr "Sofortiges Zurücksetzen"
 
 #: res/microbrute/gui.glade:293
 #, fuzzy
@@ -470,17 +473,17 @@ msgstr "Dauer"
 #: res/microbrute/gui.glade:307
 msgctxt "Sequence Retrigger"
 msgid "Reset"
-msgstr ""
+msgstr "Zurücksetzen"
 
 #: res/microbrute/gui.glade:311
 msgctxt "Sequence Retrigger"
 msgid "Reset But Legato"
-msgstr ""
+msgstr "Zurücksetzen, aber Legato"
 
 #: res/microbrute/gui.glade:315
 msgctxt "Sequence Retrigger"
 msgid "None"
-msgstr ""
+msgstr "Keine"
 
 #: res/microbrute/gui.glade:355
 msgctxt "Step On"
@@ -501,12 +504,12 @@ msgstr "Auto Play"
 #: res/microbrute/gui.glade:377
 msgctxt "Synchronization"
 msgid "Internal"
-msgstr ""
+msgstr "Intern"
 
 #: res/microbrute/gui.glade:381
 msgctxt "Synchronization"
 msgid "External"
-msgstr ""
+msgstr "Extern"
 
 #: res/microbrute/gui.glade:469
 msgctxt "Velocity Response"
@@ -516,34 +519,34 @@ msgstr ""
 #: res/microbrute/gui.glade:473
 msgctxt "Velocity Response"
 msgid "Logarithmic"
-msgstr ""
+msgstr "Logarithmisch"
 
 #: res/microbrute/gui.glade:477
 msgctxt "Velocity Response"
 msgid "Exponential"
-msgstr ""
+msgstr "Exponentiell"
 
 #: res/microbrute/gui.glade:484
 #, fuzzy
 msgid "MicroBrute Configuration"
-msgstr "Dauer"
+msgstr "MicroBrute Konfiguration"
 
 #: res/microbrute/gui.glade:508
 msgid "Persistent changes"
-msgstr ""
+msgstr "Anhaltende Veränderungen"
 
 #: res/microbrute/gui.glade:575
 msgid "Transmit Channel"
-msgstr ""
+msgstr "Sendekanal"
 
 #: res/microbrute/gui.glade:587
 #, fuzzy
 msgid "Receive Channel"
-msgstr "Kanäle"
+msgstr "Empfangskanal"
 
 #: res/microbrute/gui.glade:678
 msgid "Key Priority"
-msgstr ""
+msgstr "Key Priorität"
 
 #: res/microbrute/gui.glade:690
 msgid "Velocity Response"
@@ -551,32 +554,32 @@ msgstr ""
 
 #: res/microbrute/gui.glade:743
 msgid "Keyboard Parameters"
-msgstr ""
+msgstr "Keyboard Parameter"
 
 #: res/microbrute/gui.glade:781
 #, fuzzy
 msgid "Play Mode"
-msgstr "Abspielen"
+msgstr "Abspielmodus"
 
 #: res/microbrute/gui.glade:793
 msgid "Sequence Retrigger"
-msgstr ""
+msgstr "Sequenz Retrigger"
 
 #: res/microbrute/gui.glade:805
 msgid "Sequence Change"
-msgstr ""
+msgstr "Sequenz Änderung"
 
 #: res/microbrute/gui.glade:817
 msgid "Next Step On"
-msgstr ""
+msgstr "Nächster Schritt An"
 
 #: res/microbrute/gui.glade:829
 msgid "Step Length"
-msgstr ""
+msgstr "Schrittlänge"
 
 #: res/microbrute/gui.glade:942
 msgid "Sequencer Control"
-msgstr ""
+msgstr "Sequenzersteuerung"
 
 #: res/microbrute/gui.glade:980
 msgid "LFO Key Retrigger"
@@ -588,16 +591,16 @@ msgstr ""
 
 #: res/microbrute/gui.glade:1004
 msgid "Bend Range"
-msgstr ""
+msgstr "Bend Bereich"
 
 #: res/microbrute/gui.glade:1016
 msgid "Gate Length"
-msgstr ""
+msgstr "Gate Länge"
 
 #: res/microbrute/gui.glade:1028
 msgid "Synchronization"
-msgstr ""
+msgstr "Synchronisierung"
 
 #: res/microbrute/gui.glade:1122
 msgid "Module Parameters"
-msgstr ""
+msgstr "Modul Parameter"
