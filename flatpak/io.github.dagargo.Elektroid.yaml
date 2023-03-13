@@ -6,6 +6,10 @@ command: elektroid.sh
 finish-args:
   - "--socket=fallback-x11"
   - "--filesystem=home"
+rename-desktop-file: elektroid.desktop
+rename-appdata-file: elektroid.metadata.xml
+rename-icon: elektroid
+copy-icon: true
 modules:
   - name: libzip
     buildsystem: cmake-ninja
