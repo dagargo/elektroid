@@ -43,9 +43,6 @@ This is the command-line client for Elektroid.
 
 %prep
 %autosetup -p1
-sed -i s/^include_HEADERS/noinst_HEADERS/ src/Makefile.am
-aclocal
-automake
 
 
 %build
