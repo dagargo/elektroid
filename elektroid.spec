@@ -1,5 +1,5 @@
 Name:		elektroid
-Version:	2.1
+Version:	2.5
 Release:	1%{?dist}
 Summary:	Transfer application for Elektron devices
 
@@ -87,10 +87,10 @@ automake
 * Sat Mar 11 2023 David García Goñi <dagargo@gmail.com> - 2.5-1
 - Update to 2.5 release
 
-* Wed Jun 08 2022 Jonathan Wakely <jwakely@redhat.com> - 2.1-1
+* Wed Jun 08 2022 Jonathan Wakely <jwakely@fedoraproject.org> - 2.1-1
 - Update to 2.1 release
 
-* Wed Jun 08 2022 Jonathan Wakely <jwakely@redhat.com> - 2.0-2
+* Wed Jun 08 2022 Jonathan Wakely <jwakely@fedoraproject.org> - 2.0-2
 - Add subpackage for elektroid-cli
 
 * Mon Feb 07 2022 Jonathan Wakely <jwakely@fedoraproject.org> - 2.0-1
