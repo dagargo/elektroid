@@ -270,6 +270,11 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 	  && transfer->time >= transfer->timeout)
 	{
 	  debug_print (1, "Timeout\n");
+	  gchar *text = debug_get_hex_data (debug_level, backend->buffer,
+					    backend->rx_len);
+	  debug_print (4, "Internal buffer data (%zd): %s\n", backend->rx_len,
+		       text);
+	  free (text);
 	  return -ETIMEDOUT;
 	}
 
