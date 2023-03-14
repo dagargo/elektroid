@@ -407,6 +407,7 @@ sds_download_try (struct backend *backend, const gchar * path,
       if (retries == SDS_MAX_RETRIES)
 	{
 	  debug_print (1, "Too many retries\n");
+	  err = -EIO;
 	  break;
 	}
 
