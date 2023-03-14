@@ -32,12 +32,13 @@
 #define SDS_DATA_PACKET_CKSUM_POS 125
 #define SDS_DATA_PACKET_CKSUM_START 1
 #define SDS_BYTES_PER_WORD 3
-#define SDS_MAX_RETRIES 3
+#define SDS_MAX_RETRIES 5
 #define SDS_SPEC_TIMEOUT 20	//Timeout in the specs to consider no response when transmission is going on.
 #define SDS_SPEC_TIMEOUT_HANDSHAKE 2000	//Timeout in the specs to consider no response during the handshake.
 #define SDS_NO_SPEC_TIMEOUT 5000	//Timeout used when the specs indicate to wait indefinitely.
 #define SDS_NO_SPEC_TIMEOUT_TRY 1500	//Timeout for SDS extensions that might not be implemented.
-#define SDS_REST_TIME_DEFAULT 18000	//Rest time to not overwhelm the devices whn sending consecutive packets. Lower values cause an an E-Mu ESI-2000 to send corrupted packets.
+#define SDS_REST_TIME_DEFAULT 18000	//Rest time to not overwhelm the devices when sending consecutive packets. Lower values cause an an E-Mu ESI-2000 to send corrupted packets.
+#define SDS_INCOMPLETE_PACKET_TIMEOUT 2000
 #define SDS_NO_SPEC_OPEN_LOOP_REST_TIME 200000
 #define SDS_SAMPLE_CHANNELS 1
 #define SDS_SAMPLE_NAME_MAX_LEN 127
@@ -317,6 +318,8 @@ sds_download_get_header (struct backend *backend, guint id)
   GByteArray *tx_msg, *rx_msg;
 
   tx_msg = sds_get_request_msg (id);
+  g_byte_array_append (tx_msg, SDS_WAIT, sizeof (SDS_WAIT));	//We add a WAIT packet.
+  tx_msg->data[11] = 0;
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
 
   if (rx_msg && rx_msg->len == sizeof (SDS_DUMP_HEADER)
@@ -355,18 +358,27 @@ sds_download_try (struct backend *backend, const gchar * path,
   debug_print (1, "Sending dump request...\n");
   packet = 0;
 
-  g_mutex_lock (&backend->mutex);
-  backend_rx_drain (backend);
-  g_mutex_unlock (&backend->mutex);
-
-  rx_msg = sds_download_get_header (backend, id);
-  if (!rx_msg)
+  retries = 0;
+  while (1)
     {
-      err = -EIO;
-      goto end;
-    }
+      g_mutex_lock (&backend->mutex);
+      backend_rx_drain (backend);
+      g_mutex_unlock (&backend->mutex);
 
-  usleep (sds_data->rest_time);
+      rx_msg = sds_download_get_header (backend, id);
+      if (rx_msg)
+	{
+	  break;
+	}
+      retries++;
+      if (retries == SDS_MAX_RETRIES)
+	{
+	  err = -EIO;
+	  goto end;
+	}
+
+      usleep (sds_data->rest_time);
+    }
 
   sample_info = malloc (sizeof (struct sample_info));
   if (sds_get_download_info (rx_msg, sample_info, &words, &word_size,
@@ -427,19 +439,22 @@ sds_download_try (struct backend *backend, const gchar * path,
 	  err = backend_tx (backend, tx_msg);
 	  goto end;
 	}
-      else
+
+      if (last_packet_ack)
 	{
-	  transfer.raw = tx_msg;
-	  transfer.timeout = SDS_NO_SPEC_TIMEOUT;
-	  err = backend_tx_and_rx_sysex_transfer (backend, &transfer, FALSE);
-	  if (err == -ECANCELED)
-	    {
-	      break;
-	    }
-	  rx_msg = transfer.raw;
+	  sds_download_inc_packet (&first, &packet);
 	}
 
-      if (!rx_msg)
+      g_byte_array_append (tx_msg, SDS_WAIT, sizeof (SDS_WAIT));
+      tx_msg->data[10] = (packet) % 0x80;
+      transfer.raw = tx_msg;
+      transfer.timeout = SDS_INCOMPLETE_PACKET_TIMEOUT;	//This is enough to detect incomplete packets.
+      err = backend_tx_and_rx_sysex_transfer (backend, &transfer, FALSE);
+      if (err == -ECANCELED)
+	{
+	  break;
+	}
+      else if (err == -ETIMEDOUT)
 	{
 	  debug_print (2,
 		       "Packet not received. Remaining packets: %d; remaining samples: %d\n",
@@ -453,42 +468,33 @@ sds_download_try (struct backend *backend, const gchar * path,
 	      err = 0;
 	      goto end;
 	    }
-	  err = (rx_packets == packets - 1) ? -EBADMSG : -EINVAL;
-	  sds_download_inc_packet (&first, &packet);
-	  break;
+	  rx_msg = NULL;
+	  goto retry;
+	}
+      else
+	{
+	  rx_msg = transfer.raw;
 	}
 
       if (rx_msg->len != SDS_DATA_PACKET_LEN)
 	{
-	  debug_print (2, "Invalid length. Stopping...\n");
-	  free_msg (rx_msg);
-	  err = -EBADMSG;
-	  break;
+	  debug_print (2, "Invalid length\n");
+	  goto retry;
 	}
 
       guint exp_packet_id = exp_packet % 0x80;
       if (rx_msg->data[4] != exp_packet_id)
 	{
-	  debug_print (2, "Invalid packet number. Stopping...\n");
-	  free_msg (rx_msg);
-	  err = -EINVAL;
-	  break;
-	}
-
-      if (last_packet_ack)
-	{
-	  sds_download_inc_packet (&first, &packet);
+	  debug_print (2, "Invalid packet number (%d != %d)\n",
+		       rx_msg->data[4], exp_packet_id);
+	  goto retry;
 	}
 
       if (sds_checksum (rx_msg->data) !=
 	  rx_msg->data[SDS_DATA_PACKET_CKSUM_POS])
 	{
-	  debug_print (2, "Invalid cksum. Retrying...\n");
-	  free_msg (rx_msg);
-	  last_packet_ack = FALSE;
-	  usleep (sds_data->rest_time);
-	  retries++;
-	  continue;
+	  debug_print (2, "Invalid cksum\n");
+	  goto retry;
 	}
 
       exp_packet++;
@@ -519,6 +525,19 @@ sds_download_try (struct backend *backend, const gchar * path,
       free_msg (rx_msg);
 
       usleep (sds_data->rest_time);
+
+      continue;
+
+    retry:
+      debug_print (2, "Retrying packet...\n");
+      if (rx_msg)
+	{
+	  free_msg (rx_msg);
+	}
+      last_packet_ack = FALSE;
+      usleep (sds_data->rest_time);
+      retries++;
+      continue;
     }
 
   free_msg (tx_msg);
@@ -532,9 +551,10 @@ end:
   else
     {
       debug_print (1, "Cancelling SDS download...\n");
-      usleep (sds_data->rest_time);
       sds_tx_handshake (backend, SDS_CANCEL, packet % 0x80);
     }
+
+  usleep (sds_data->rest_time);
 
   return err;
 }
@@ -744,7 +764,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   packets = ceil (words / (double) words_per_packet);
 
   tx_msg = sds_get_dump_msg (id, words, sample_info, bits);
-  //The first timeout should be SDS_SPEC_TIMEOUT_HANDSHAKE (2 s) buit it is not enough sometimes.
+  //The first timeout should be SDS_SPEC_TIMEOUT_HANDSHAKE (2 s) but it is not enough sometimes.
   err = sds_tx_and_wait_ack (backend, tx_msg, 0, SDS_NO_SPEC_TIMEOUT,
 			     SDS_NO_SPEC_TIMEOUT);
   if (err == -ENOMSG)
@@ -1026,7 +1046,7 @@ static const struct fs_operations *FS_SDS_ALL_OPERATIONS[] = {
 gint
 sds_handshake (struct backend *backend)
 {
-  gint err;
+  gint err, retries;
   GByteArray *tx_msg, *rx_msg;
   struct sds_data *sds_data = g_malloc (sizeof (struct sds_data));
 
@@ -1034,25 +1054,36 @@ sds_handshake (struct backend *backend)
   rx_msg = elektron_ping (backend);
   if (rx_msg)
     {
-      free_msg (rx_msg);
-      g_free (backend->data);	//This is filled up by elektron_ping.
+      free_msg (rx_msg);	//This is filled up by elektron_ping.
+      g_free (backend->data);
       return -ENODEV;
     }
 
-  g_mutex_lock (&backend->mutex);
-  backend_rx_drain (backend);
-  g_mutex_unlock (&backend->mutex);
-
-  //We send a dump header for a number higher than every device might allow. Hopefully, this will fail on every device.
-  //Numbers higher than 1500 make an E-Mu ESI-2000 crash when entering into the 'MIDI SAMPLE DUMP' menu but the actual limit is unknown.
-  tx_msg = sds_get_dump_msg (1000, 0, NULL, 16);
-  //In case we receive an ACK, NAK or CANCEL, there is a MIDI SDS device listening.
-  err = sds_tx_and_wait_ack (backend, tx_msg, 0, SDS_SPEC_TIMEOUT_HANDSHAKE,
-			     SDS_NO_SPEC_TIMEOUT_TRY);
-
-  if (err && err != -EBADMSG && err != -ECANCELED)
+  retries = 0;
+  while (1)
     {
-      return -ENODEV;
+      g_mutex_lock (&backend->mutex);
+      backend_rx_drain (backend);
+      g_mutex_unlock (&backend->mutex);
+
+      //We send a dump header for a number higher than every device might allow. Hopefully, this will fail on every device.
+      //Numbers higher than 1500 make an E-Mu ESI-2000 crash when entering into the 'MIDI SAMPLE DUMP' menu but the actual limit is unknown.
+      tx_msg = sds_get_dump_msg (1000, 0, NULL, 16);
+      //In case we receive an ACK, NAK or CANCEL, there is a MIDI SDS device listening.
+      err = sds_tx_and_wait_ack (backend, tx_msg, 0,
+				 SDS_SPEC_TIMEOUT_HANDSHAKE,
+				 SDS_NO_SPEC_TIMEOUT_TRY);
+      if (err && err != -EBADMSG && err != -ECANCELED)
+	{
+	  retries++;
+	  if (retries == SDS_MAX_RETRIES)
+	    {
+	      return -ENODEV;
+	    }
+	  usleep (SDS_REST_TIME_DEFAULT);
+	}
+
+      break;
     }
 
   //We cancel the upload.
