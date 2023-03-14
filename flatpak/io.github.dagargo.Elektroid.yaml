@@ -27,6 +27,10 @@ modules:
       - type: archive
         url: https://github.com/dagargo/elektroid/releases/download/2.4.1/elektroid-2.4.1.tar.gz
         sha256: 5690754d4cd73309cb6d6af898643f9e27c7cdaebba12747e5616c8548755cf2
+      # Add <releases> to elektroid-2.4.1/res/elektroid.appdata.xml
+      # This patch can be removed if elektroid-2.5 includes PR #95
+      - type: patch
+        path: add-releases-to-appdata.patch
   - name: elektroid.sh
     buildsystem: simple
     sources:
