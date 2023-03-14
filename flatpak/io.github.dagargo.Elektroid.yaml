@@ -10,6 +10,7 @@ rename-desktop-file: elektroid.desktop
 rename-appdata-file: elektroid.appdata.xml
 rename-icon: elektroid
 copy-icon: true
+separate-locales: false
 modules:
   - name: libzip
     buildsystem: cmake-ninja
