@@ -158,10 +158,13 @@ typedef gchar *(*fs_get_upload_path) (struct backend *,
 				      const struct fs_operations *,
 				      const gchar *, const gchar *);
 
+//This function will be called before the download (with sysex NULL) and after the download (with sysex containing the download).
+//If the fs needs the SysEx data to determine the download path it must return NULL if sysex is NULL.
+
 typedef gchar *(*fs_get_download_path) (struct backend *,
 					const struct fs_operations *,
 					const gchar *, const gchar *,
-					GByteArray *);
+					GByteArray * sysex);
 
 typedef void (*fs_select_item) (struct backend *, const gchar *,
 				struct item *);

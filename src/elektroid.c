@@ -2436,7 +2436,20 @@ elektroid_download_task_runner (gpointer userdata)
     {
       error_print ("Error while creating local %s dir\n", transfer.dst);
       transfer.status = COMPLETED_ERROR;
-      goto end_nodir;
+      goto end_no_dir;
+    }
+
+  dst_path = remote_browser.fs_ops->get_download_path (&backend,
+						       remote_browser.fs_ops,
+						       transfer.dst,
+						       transfer.src, NULL);
+  g_mutex_lock (&transfer.control.mutex);
+  elektroid_check_file_and_wait (dst_path, &local_browser);
+  g_mutex_unlock (&transfer.control.mutex);
+
+  if (transfer.status == CANCELED)
+    {
+      goto end_with_no_download;
     }
 
   array = g_byte_array_new ();
@@ -2449,47 +2462,52 @@ elektroid_download_task_runner (gpointer userdata)
     {
       error_print ("Error while downloading\n");
       transfer.status = COMPLETED_ERROR;
+      goto end_with_download_error;
     }
-  else
-    {
-      if (transfer.control.active)
-	{
-	  dst_path = remote_browser.fs_ops->get_download_path (&backend,
-							       remote_browser.fs_ops,
-							       transfer.dst,
-							       transfer.src,
-							       array);
-	  elektroid_check_file_and_wait (dst_path, &local_browser);
-	  if (transfer.status != CANCELED)
-	    {
-	      debug_print (1,
-			   "Writing %d bytes to file %s (filesystem %s)...\n",
-			   array->len, dst_path,
-			   elektroid_get_fs_name (transfer.fs_ops->fs));
-	      res =
-		transfer.fs_ops->save (dst_path, array, &transfer.control);
-	      if (!res)
-		{
-		  transfer.status = COMPLETED_OK;
-		}
-	    }
-	  g_free (dst_path);
-	}
-      else
-	{
-	  transfer.status = CANCELED;
-	}
 
-      g_byte_array_free (array, TRUE);
-      g_free (transfer.control.data);
-      transfer.control.data = NULL;
+  if (!transfer.control.active)
+    {
+      transfer.status = CANCELED;
+      goto end_canceled_transfer;
     }
+
+  if (!dst_path)
+    {
+      dst_path = remote_browser.fs_ops->get_download_path (&backend,
+							   remote_browser.fs_ops,
+							   transfer.dst,
+							   transfer.src,
+							   array);
+      elektroid_check_file_and_wait (dst_path, &local_browser);
+    }
+
+  if (transfer.status != CANCELED)
+    {
+      debug_print (1,
+		   "Writing %d bytes to file %s (filesystem %s)...\n",
+		   array->len, dst_path,
+		   elektroid_get_fs_name (transfer.fs_ops->fs));
+      res = transfer.fs_ops->save (dst_path, array, &transfer.control);
+      if (!res)
+	{
+	  transfer.status = COMPLETED_OK;
+	}
+    }
+  g_free (dst_path);
+
+end_canceled_transfer:
+  g_byte_array_free (array, TRUE);
+  g_free (transfer.control.data);
+  transfer.control.data = NULL;
+
+end_with_download_error:
   g_mutex_unlock (&transfer.control.mutex);
 
+end_with_no_download:
   g_idle_add (elektroid_complete_running_task, NULL);
   g_idle_add (elektroid_run_next_task, NULL);
 
-end_nodir:
+end_no_dir:
   return NULL;
 }
 

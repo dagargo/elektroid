@@ -125,6 +125,11 @@ efactor_get_download_path (struct backend *backend,
   guint id;
   gchar *path, *name, **lines;
 
+  if (!preset)
+    {
+      return NULL;
+    }
+
   if (common_slot_get_id_name_from_path (src_path, &id, NULL))
     {
       return NULL;

@@ -125,6 +125,11 @@ summit_get_patch_download_path (struct backend *backend,
   gchar *path;
   gchar name[SUMMIT_PATCH_NAME_LEN + 1];
 
+  if (!patch)
+    {
+      return NULL;
+    }
+
   if (common_slot_get_id_name_from_path (src_path, &id, NULL))
     {
       return NULL;

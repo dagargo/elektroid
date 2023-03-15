@@ -159,10 +159,17 @@ phatty_get_download_path (struct backend *backend,
 			  GByteArray * preset)
 {
   gchar preset_name[MOOG_NAME_LEN + 1];
-  gchar *path;
-  gchar *src_path_copy = strdup (src_path);
-  gchar *filename = basename (src_path_copy);
-  gint id = atoi (filename);
+  gchar *path, *src_path_copy, *filename;
+  gint id;
+
+  if (!preset)
+    {
+      return NULL;
+    }
+
+  src_path_copy = strdup (src_path);
+  filename = basename (src_path_copy);
+  id = atoi (filename);
   g_free (src_path_copy);
 
   if (id == PHATTY_PANEL_ID)
