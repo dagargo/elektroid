@@ -229,7 +229,7 @@ editor_queue_draw (gpointer data)
   return FALSE;
 }
 
-void
+static void
 editor_redraw (struct job_control *control, gpointer data)
 {
   g_idle_add (editor_queue_draw, data);
@@ -242,7 +242,7 @@ editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
   editor_redraw (control, data);
 }
 
-gpointer
+static gpointer
 editor_load_sample_runner (gpointer data)
 {
   struct sample_params sample_params;

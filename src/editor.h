@@ -59,8 +59,6 @@ void editor_audio_widgets_set_status (struct editor *editor);
 gboolean editor_draw_waveform (GtkWidget * widget, cairo_t * cr,
 			       gpointer data);
 
-void editor_redraw (struct job_control *control, gpointer data);
-
 void editor_play_clicked (GtkWidget * object, gpointer data);
 
 void editor_stop_clicked (GtkWidget * object, gpointer data);
