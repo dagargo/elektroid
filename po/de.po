@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2023-03-11 12:16+0100\n"
+"POT-Creation-Date: 2023-03-16 21:08+0100\n"
 "PO-Revision-Date: 2023-01-16 19:47+0100\n"
 "Last-Translator: Dennis Braun <snd@debian.org>\n"
 "Language-Team: German\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "MIDI device"
 msgstr "MIDI Gerät"
 
-#: src/elektroid.c:465 src/elektroid.c:3909
+#: src/elektroid.c:465 src/elektroid.c:3923
 msgid "Not connected"
 msgstr "Nicht verbunden"
 
@@ -29,8 +29,8 @@ msgstr "Nicht verbunden"
 msgid "Cancelling..."
 msgstr "Abbrechen..."
 
-#: src/elektroid.c:651 src/elektroid.c:2419 src/elektroid.c:2611
-#: src/elektroid.c:3323
+#: src/elektroid.c:651 src/elektroid.c:2419 src/elektroid.c:2629
+#: src/elektroid.c:3337
 msgid "Waiting..."
 msgstr "Warte..."
 
@@ -136,7 +136,8 @@ msgid "Completed"
 msgstr "Fertig"
 
 #: src/elektroid.c:1760
-msgid "Completed with errors"
+#, fuzzy
+msgid "Finished with errors"
 msgstr "Abgeschlossen mit Fehlern"
 
 #: src/elektroid.c:1762
@@ -172,28 +173,28 @@ msgstr "_Ersetzen"
 msgid "Apply this action to all files"
 msgstr "Diese Aktion auf alle Dateien anwenden"
 
-#: src/elektroid.c:2418 src/elektroid.c:2610 src/elektroid.c:3322
+#: src/elektroid.c:2418 src/elektroid.c:2628 src/elektroid.c:3336
 msgid "Preparing Tasks"
 msgstr "Aufgaben werden vorbereitet"
 
-#: src/elektroid.c:3012
+#: src/elektroid.c:3026
 msgid "Connecting to Device"
 msgstr "Verbindung zum Gerät wird hergestellt"
 
-#: src/elektroid.c:3013
+#: src/elektroid.c:3027
 msgid "Connecting..."
 msgstr "Verbinde..."
 
-#: src/elektroid.c:3022
+#: src/elektroid.c:3036
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Gerät “%s” nicht erkannt: %s"
 
-#: src/elektroid.c:3308
+#: src/elektroid.c:3322
 msgid "Moving Files"
 msgstr "Verschiebe Dateien"
 
-#: src/elektroid.c:3309
+#: src/elektroid.c:3323
 msgid "Moving..."
 msgstr "Verschiebe..."
 
@@ -227,7 +228,7 @@ msgstr "Dauer"
 msgid "System"
 msgstr ""
 
-#: src/connectors/sds.c:1092
+#: src/connectors/sds.c:1124
 msgid "SDS sampler"
 msgstr ""
 
@@ -375,8 +376,9 @@ msgstr ""
 msgid ""
 "Let the pitch bend wheel rest at the neutral position and click on the next "
 "button."
-msgstr "Lassen Sie das Pitch-Bend-Rad in der neutralen Position stehen und "
-"klicken Sie auf die Schaltfläche „Weiter“."
+msgstr ""
+"Lassen Sie das Pitch-Bend-Rad in der neutralen Position stehen und klicken "
+"Sie auf die Schaltfläche „Weiter“."
 
 #: res/microbrute/gui.glade:68
 msgid "Step 1"
@@ -384,7 +386,8 @@ msgstr "Schritt 1"
 
 #: res/microbrute/gui.glade:81
 msgid "While setting both wheels at the bottom click on the next button."
-msgstr "Während Sie beide Räder ganz unten einstellen, klicken Sie auf die "
+msgstr ""
+"Während Sie beide Räder ganz unten einstellen, klicken Sie auf die "
 "Schaltfläche „Weiter“."
 
 #: res/microbrute/gui.glade:86
@@ -393,8 +396,9 @@ msgstr "Schritt 2"
 
 #: res/microbrute/gui.glade:99
 msgid "While setting both wheels at the top click on the next button."
-msgstr "Während Sie beide Räder ganz oben einstellen, klicken Sie auf "
-"die Schaltfläche „Weiter“."
+msgstr ""
+"Während Sie beide Räder ganz oben einstellen, klicken Sie auf die "
+"Schaltfläche „Weiter“."
 
 #: res/microbrute/gui.glade:104
 msgid "Step 3"

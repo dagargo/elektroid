@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2023-03-11 12:16+0100\n"
+"POT-Creation-Date: 2023-03-16 21:08+0100\n"
 "PO-Revision-Date: 2023-03-12 11:18+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "MIDI device"
 msgstr "Périphérique MIDI"
 
-#: src/elektroid.c:465 src/elektroid.c:3909
+#: src/elektroid.c:465 src/elektroid.c:3923
 msgid "Not connected"
 msgstr "Non connecté"
 
@@ -29,8 +29,8 @@ msgstr "Non connecté"
 msgid "Cancelling..."
 msgstr "Annulation..."
 
-#: src/elektroid.c:651 src/elektroid.c:2419 src/elektroid.c:2611
-#: src/elektroid.c:3323
+#: src/elektroid.c:651 src/elektroid.c:2419 src/elektroid.c:2629
+#: src/elektroid.c:3337
 msgid "Waiting..."
 msgstr "En attente..."
 
@@ -136,7 +136,8 @@ msgid "Completed"
 msgstr "Terminé"
 
 #: src/elektroid.c:1760
-msgid "Completed with errors"
+#, fuzzy
+msgid "Finished with errors"
 msgstr "Terminé avec des erreurs"
 
 #: src/elektroid.c:1762
@@ -172,28 +173,28 @@ msgstr "_Remplacer"
 msgid "Apply this action to all files"
 msgstr "Appliquer cette action à tous les fichiers"
 
-#: src/elektroid.c:2418 src/elektroid.c:2610 src/elektroid.c:3322
+#: src/elektroid.c:2418 src/elektroid.c:2628 src/elektroid.c:3336
 msgid "Preparing Tasks"
 msgstr "Préparation des tâches"
 
-#: src/elektroid.c:3012
+#: src/elektroid.c:3026
 msgid "Connecting to Device"
 msgstr "Connexion au périphérique"
 
-#: src/elektroid.c:3013
+#: src/elektroid.c:3027
 msgid "Connecting..."
 msgstr "Connexion..."
 
-#: src/elektroid.c:3022
+#: src/elektroid.c:3036
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Périphérique “%s” non reconnu : %s"
 
-#: src/elektroid.c:3308
+#: src/elektroid.c:3322
 msgid "Moving Files"
 msgstr "Déplacement des fichiers"
 
-#: src/elektroid.c:3309
+#: src/elektroid.c:3323
 msgid "Moving..."
 msgstr "Déplacement..."
 
@@ -225,7 +226,7 @@ msgstr "_Calibration"
 msgid "System"
 msgstr "Système"
 
-#: src/connectors/sds.c:1092
+#: src/connectors/sds.c:1124
 msgid "SDS sampler"
 msgstr "Échantillonneur SDS"
 
