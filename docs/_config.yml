@@ -3,7 +3,7 @@ author: David García Goñi
 email: dagargo@gmail.com
 description: >-
   Sample and MIDI device manager
-baseurl: ""
+baseurl: "/elektroid"
 url: "https://dagargo.github.io/elektroid"
 github_username:  dagargo
 
