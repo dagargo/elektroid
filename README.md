@@ -2,7 +2,7 @@
 
 Elektroid is a sample and MIDI device manager. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.
 
-![Elektroid GUI screenshot](doc/screenshot.png "Elektroid GUI")
+![Elektroid GUI screenshot](docs/images/screenshot.png "Elektroid GUI")
 
 Supported devices:
 
@@ -19,8 +19,6 @@ Supported devices:
 * Eventide ModFactor, PitchFactor, TimeFactor, Space and H9
 * Moog Little Phatty and Slim Phatty
 * Novation Summit and Peak
-
-To use with Elektron devices, USB configuration must be set to `USB MIDI` or `USB AUDIO/MIDI` as it won't work in Overbridge mode.
 
 ## Compilation and installation
 

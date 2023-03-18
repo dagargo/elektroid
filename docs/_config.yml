@@ -1,0 +1,13 @@
+title: Elektroid
+author: David García Goñi
+email: dagargo@gmail.com
+description: >-
+  Sample and MIDI device manager
+baseurl: ""
+url: "https://dagargo.github.io/elektroid"
+github_username:  dagargo
+
+# Build settings
+markdown: kramdown
+theme: minima
+plugins:
