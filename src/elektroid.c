@@ -1757,7 +1757,7 @@ elektroid_get_human_task_status (enum elektroid_task_status status)
     case COMPLETED_OK:
       return _("Completed");
     case COMPLETED_ERROR:
-      return _("Finished with errors");
+      return _("Terminated with errors");
     case CANCELED:
       return _("Canceled");
     default:

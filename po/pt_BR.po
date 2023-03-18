@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2023-03-16 21:08+0100\n"
+"POT-Creation-Date: 2023-03-18 23:23+0100\n"
 "PO-Revision-Date: 2022-11-01 18:20-0300\n"
 "Last-Translator: Gustavo Costa <xfgusta@gmail.com>\n"
 "Language-Team: \n"
@@ -138,7 +138,7 @@ msgstr "Completado"
 
 #: src/elektroid.c:1760
 #, fuzzy
-msgid "Finished with errors"
+msgid "Terminated with errors"
 msgstr "Completado com erros"
 
 #: src/elektroid.c:1762
