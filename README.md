@@ -1,10 +1,15 @@
 # Elektroid
 
+[//]: # (Do not modify this file manually.)
+[//]: # (This file is generated from the docs directory by executing `make`.)
+
 Elektroid is a sample and MIDI device manager. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.
 
 ![Elektroid GUI screenshot](docs/images/screenshot.png "Elektroid GUI")
 
-Supported devices:
+Elektroid started as a FLOSS Elektron Transfer alternative and it has ended up supporting other devices from different vendors in the same fashion.
+
+These are the supported devices:
 
 * Elektron Model:Samples
 * Elektron Model:Cycles
@@ -20,7 +25,7 @@ Supported devices:
 * Moog Little Phatty and Slim Phatty
 * Novation Summit and Peak
 
-## Compilation and installation
+## Installation
 
 As with other autotools project, you need to run the following commands. If you just want to compile `elektroid-cli`, pass `CLI_ONLY=yes` to `./configure`.
 
@@ -54,10 +59,6 @@ For Fedora, `sudo dnf install autoconf libtool alsa-lib-devel zlib-devel libzip-
 
 For Arch Linux, `sudo pacman -S base-devel autoconf libtool alsa-lib zlib libzip gtk3 libsndfile gettext libsamplerate pulseaudio json-glib` will install the build dependencies.
 
-To build a standalone Flatpak application, `flatpak-builder --user --install --force-clean flatpak/build flatpak/io.github.dagargo.Elektroid.yaml`
-and then you can use `flatpak run io.github.dagargo.Elektroid`
-(add `--cli` and extra arguments for the CLI utility).
-
 ### MIDI backend
 
 By default, Elektroid uses ALSA as the MIDI backend on Linux and RtMidi on other OSs. To use RtMidi on Linux, pass `RTMIDI=yes` to `./configure`. In this case, the RtMidi development package will be needed (`librtmidi-dev` on Debian).
@@ -65,6 +66,46 @@ By default, Elektroid uses ALSA as the MIDI backend on Linux and RtMidi on other
 ### Audio server
 
 By default, Elektroid uses PulseAudio as the audio server on Linux and RtAudio on other OSs. To use RtAudio on Linux, pass `RTAUDIO=yes` to `./configure`. In this case, the RtAudio development package will be needed (`librtaudio-dev` on Debian).
+
+### Adding and reconfiguring Elektron devices
+
+Since version 2.1, it is possible to add and reconfigure devices without recompiling as the device definitions are stored in a JSON file. Hopefully, this approach will make it easier for users to modify and add devices and new releases will only be needed if new funcionalities are actually added.
+
+This is a device definition from `res/elektron/devices.json`.
+
+```
+}, {
+        "id": 12,
+        "name": "Digitakt",
+        "alias": "dt",
+        "filesystems": 57,
+        "storage": 3
+}, {
+```
+
+Properties `filesystems` and `storage` are based on the definitions found in `src/connectors/elektron.h` and are the bitwise OR result of all the supported filesystems and storage types.
+
+```
+enum connector_fs
+{
+  FS_SAMPLES = 0x1,
+  FS_RAW_ALL = 0x2,
+  FS_RAW_PRESETS = 0x4,
+  FS_DATA_ALL = 0x8,
+  FS_DATA_PRJ = 0x10,
+  FS_DATA_SND = 0x20,
+};
+```
+
+```
+enum connector_storage
+{
+  STORAGE_PLUS_DRIVE = 0x1,
+  STORAGE_RAM = 0x2
+};
+```
+
+If the file `~/.config/elektroid/elektron/devices.json` is found, it will take precedence over the installed one.
 
 ## Packaging
 
@@ -84,9 +125,14 @@ $ mock -r fedora-$rel-x86_64 --buildsrpm --spec elektroid.spec --sources .
 $ mock -r fedora-$rel-x86_64 --no-clean --rebuild /var/lib/mock/fedora-$rel-x86_64/result/elektroid-*.src.rpm
 ```
 
+### Flatpack
+
+To build a standalone Flatpak application, run `flatpak-builder --user --install --force-clean flatpak/build flatpak/io.github.dagargo.Elektroid.yaml`
+and then you can use `flatpak run io.github.dagargo.Elektroid` (add `--cli` and extra arguments for the CLI utility).
+
 ## CLI
 
-`elektroid-cli` brings the same functionality as `elektroid` to the command line.
+`elektroid-cli` brings the same filesystem related functionality to the terminal.
 
 There are device commands and filesystem commands. The latter have the form `a-b-c` where `a` is a connector, `b` is a filesystem and `c` is the command, (e.g., `elektron-project-ls`, `cz-program-upload`, `sds-sample-download`). Notice that the filesystem is always in the singular form. As of version 2.2, **older command forms have been removed**.
 
@@ -285,47 +331,14 @@ $ elektroid-cli elektron-data-dl 0:/soundbanks/D/1
 $ elektroid-cli elektron-data-ul sound 0:/soundbanks/D
 ```
 
-## Adding and reconfiguring Elektron devices
+## API
 
-Since version 2.1, it is possible to add and reconfigure devices without recompiling as the device definitions are stored in a JSON file. Hopefully, this approach will make it easier for users to modify and add devices and new releases will only be needed if new funcionalities are actually added.
+Elektroid is extensible and offers two extension points.
 
-This is a device definition from `res/elektron/devices.json`.
+* Filesystems, which is a set of operations over MIDI and the computer filesystem to implement file uploading, downloading, renaming and the like. A device can implement several filesystems.
+* Device menu actions, which are shown in the application menu and are meant to be device related configuration windows.
 
-```
-}, {
-        "id": 12,
-        "name": "Digitakt",
-        "alias": "dt",
-        "filesystems": 57,
-        "storage": 3
-}, {
-```
-
-Properties `filesystems` and `storage` are based on the definitions found in `src/connectors/elektron.h` and are the bitwise OR result of all the supported filesystems and storage types.
-
-```
-enum connector_fs
-{
-  FS_SAMPLES = 0x1,
-  FS_RAW_ALL = 0x2,
-  FS_RAW_PRESETS = 0x4,
-  FS_DATA_ALL = 0x8,
-  FS_DATA_PRJ = 0x10,
-  FS_DATA_SND = 0x20,
-};
-```
-
-```
-enum connector_storage
-{
-  STORAGE_PLUS_DRIVE = 0x1,
-  STORAGE_RAM = 0x2
-};
-```
-
-If the file `~/.config/elektroid/elektron/devices.json` is found, it will take precedence over the installed one.
-
-## Running tests
+## Tests
 
 Elektroid includes automated integration tests for the supported devices and filesystems.
 
