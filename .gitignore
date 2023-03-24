@@ -69,3 +69,5 @@ docs/.sass-cache/
 docs/.jekyll-cache/
 docs/.jekyll-metadata
 docs/.bundle/
+flatpak/build/
+.flatpak-builder/
