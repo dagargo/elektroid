@@ -5,6 +5,8 @@ sdk: org.gnome.Sdk
 command: elektroid.sh
 finish-args:
   - "--socket=fallback-x11"
+  - "--socket=wayland"
+  - "--socket=pulseaudio"
   - "--filesystem=home"
   - "--device=all"
 rename-desktop-file: elektroid.desktop
