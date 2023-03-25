@@ -121,7 +121,7 @@ $ dpkg-buildpackage -b -rfakeroot -us -uc
 
 ```
 $ rel=35
-$ mock -r fedora-$rel-x86_64 --buildsrpm --spec elektroid.spec --sources .
+$ mock -r fedora-$rel-x86_64 --buildsrpm --spec rpm/elektroid.spec --sources .
 $ mock -r fedora-$rel-x86_64 --no-clean --rebuild /var/lib/mock/fedora-$rel-x86_64/result/elektroid-*.src.rpm
 ```
 
