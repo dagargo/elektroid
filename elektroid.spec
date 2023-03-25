@@ -63,7 +63,7 @@ This is the command-line client for Elektroid.
 %{_datadir}/%{name}/gui.glade
 %{_datadir}/icons/hicolor/scalable/apps/%{name}.svg
 %{_datadir}/icons/hicolor/scalable/apps/%{name}-symbolic.svg
-%{_datadir}/icons/hicolor/scalable/apps/%{name}-data-symbolic.svg
+%{_datadir}/icons/hicolor/scalable/apps/%{name}-sequence-symbolic.svg
 %{_datadir}/icons/hicolor/scalable/apps/%{name}-project-symbolic.svg
 %{_datadir}/icons/hicolor/scalable/apps/%{name}-sound-symbolic.svg
 %{_datadir}/icons/hicolor/scalable/apps/%{name}-wave-symbolic.svg
