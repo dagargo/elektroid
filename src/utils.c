@@ -172,13 +172,10 @@ gchar *
 get_expanded_dir (const char *exp)
 {
   wordexp_t exp_result;
-  size_t n;
-  gchar *exp_dir = malloc (PATH_MAX);
+  gchar *exp_dir;
 
   wordexp (exp, &exp_result, 0);
-  n = PATH_MAX - 1;
-  strncpy (exp_dir, exp_result.we_wordv[0], n);
-  exp_dir[PATH_MAX - 1] = 0;
+  exp_dir = strdup (exp_result.we_wordv[0]);
   wordfree (&exp_result);
 
   return exp_dir;

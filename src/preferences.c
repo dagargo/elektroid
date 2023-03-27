@@ -35,7 +35,6 @@
 gint
 preferences_save (struct preferences *preferences)
 {
-  size_t n;
   gchar *preferences_path;
   JsonBuilder *builder;
   JsonGenerator *gen;
@@ -51,9 +50,8 @@ preferences_save (struct preferences *preferences)
       return 1;
     }
 
-  n = PATH_MAX - strlen (preferences_path) - 1;
-  strncat (preferences_path, PREFERENCES_FILE, n);
-  preferences_path[PATH_MAX - 1] = 0;
+  g_free (preferences_path);
+  preferences_path = get_expanded_dir (CONF_DIR PREFERENCES_FILE);
 
   debug_print (1, "Saving preferences to '%s'...\n", preferences_path);
 
