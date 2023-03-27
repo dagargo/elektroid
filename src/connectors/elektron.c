@@ -1512,9 +1512,8 @@ elektron_delete_common_item (struct backend *backend, const gchar * path,
 	  while (!res && !next_item_iterator (&iter))
 	    {
 	      new_path = chain_path (path, iter.item.name);
-	      res = res
-		|| elektron_delete_common_item (backend, new_path,
-						init_iter, rmdir, rm);
+	      res = res || elektron_delete_common_item (backend, new_path,
+							init_iter, rmdir, rm);
 	      free (new_path);
 	    }
 	  free_item_iterator (&iter);

@@ -113,17 +113,15 @@ debug_get_hex_msg (const GByteArray * msg)
 gchar *
 chain_path (const gchar * parent, const gchar * child)
 {
-  gchar *pathname = malloc (PATH_MAX);
-  if (strcmp (parent, "/") == 0)
-    {
-      snprintf (pathname, PATH_MAX, "/%s", child);
-    }
-  else
-    {
-      snprintf (pathname, PATH_MAX, "%s/%s", parent, child);
-    }
+  gchar *str;
+  GString *path;
 
-  return pathname;
+  path = strcmp (parent, "/") ? g_string_new (parent) : g_string_new (NULL);
+  g_string_append_printf (path, "/%s", child);
+  str = path->str;
+  g_string_free (path, FALSE);
+
+  return str;
 }
 
 void

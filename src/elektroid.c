@@ -1672,8 +1672,8 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 
       if (result == GTK_RESPONSE_ACCEPT)
 	{
-	  pathname =
-	    chain_path (browser->dir, gtk_entry_get_text (name_dialog_entry));
+	  pathname = chain_path (browser->dir,
+				 gtk_entry_get_text (name_dialog_entry));
 
 	  err = browser->fs_ops->mkdir (&backend, pathname);
 
