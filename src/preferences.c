@@ -139,8 +139,8 @@ preferences_load (struct preferences *preferences)
       g_file_test (json_reader_get_string_value (reader),
 		   (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
     {
-      preferences->local_dir = malloc (PATH_MAX);
-      strcpy (preferences->local_dir, json_reader_get_string_value (reader));
+      preferences->local_dir =
+	g_strdup (json_reader_get_string_value (reader));
     }
   else
     {
@@ -152,8 +152,8 @@ preferences_load (struct preferences *preferences)
       g_file_test (json_reader_get_string_value (reader),
 		   (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
     {
-      preferences->remote_dir = malloc (PATH_MAX);
-      strcpy (preferences->remote_dir, json_reader_get_string_value (reader));
+      preferences->remote_dir =
+	g_strdup (json_reader_get_string_value (reader));
     }
   else
     {
