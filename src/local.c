@@ -68,13 +68,16 @@ local_get_download_path (struct backend *backend,
 			 const gchar * dst_dir, const gchar * src_path,
 			 GByteArray * content)
 {
+  gchar *str;
+  GString *path = g_string_new (dst_dir);
   gchar *src_pathc = strdup (src_path);
-  gchar *path = malloc (PATH_MAX);
   gchar *filename = basename (src_pathc);
   remove_ext (filename);
-  snprintf (path, PATH_MAX, "%s/%s.wav", dst_dir, filename);
+  g_string_append_printf (path, "/%s.%s", filename, ops->type_ext);
+  str = path->str;
+  g_string_free (path, FALSE);
   g_free (src_pathc);
-  return path;
+  return str;
 }
 
 static gchar *
