@@ -1396,8 +1396,11 @@ elektron_delete_samples_dir (struct backend *backend, const gchar * path)
 static gchar *
 elektron_add_ext_to_mc_snd (const gchar * path)
 {
-  gchar *path_with_ext = malloc (PATH_MAX);
-  snprintf (path_with_ext, PATH_MAX, "%s%s", path, ".mc-snd");
+  gchar *path_with_ext;
+  GString *str = g_string_new (path);
+  g_string_append (str, ".mc-snd");
+  path_with_ext = str->str;
+  g_string_free (str, FALSE);
   return path_with_ext;
 }
 
@@ -2380,15 +2383,18 @@ not_found:
 static gchar *
 elektron_add_prefix_to_path (const gchar * dir, const gchar * prefix)
 {
-  gchar *full = malloc (PATH_MAX);
+  gchar *full;
 
   if (prefix)
     {
-      snprintf (full, PATH_MAX, "%s%s", prefix, dir);
+      GString *str = g_string_new (NULL);
+      g_string_append_printf (str, "%s%s", prefix, dir);
+      full = str->str;
+      g_string_free (str, FALSE);
     }
   else
     {
-      strcpy (full, dir);
+      full = strdup (dir);
     }
 
   return full;
@@ -3080,7 +3086,7 @@ elektron_get_download_path (struct backend *backend,
 			    const gchar * dst_dir, const gchar * src_path,
 			    GByteArray * data)
 {
-  gchar *path, *src_pathc, *name, *dl_ext, *filename;
+  gchar *path, *src_pathc, *name, *dl_ext;
   const gchar *src_fpath, *md_ext, *ext = get_ext (src_path);
 
   // Examples:
@@ -3104,13 +3110,13 @@ elektron_get_download_path (struct backend *backend,
   name = elektron_get_download_name (backend, ops, src_fpath);
   if (name)
     {
+      GString *filename = g_string_new (NULL);
       dl_ext = ops->get_ext (backend, ops);
-      filename = malloc (PATH_MAX);
-      snprintf (filename, PATH_MAX, "%s.%s%s", name, dl_ext, md_ext);
-      path = chain_path (dst_dir, filename);
+      g_string_append_printf (filename, "%s.%s%s", name, dl_ext, md_ext);
+      path = chain_path (dst_dir, filename->str);
       g_free (name);
       g_free (dl_ext);
-      g_free (filename);
+      g_string_free (filename, TRUE);
     }
   else
     {

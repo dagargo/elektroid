@@ -377,6 +377,7 @@ package_receive_pkg_resources (struct package *pkg,
   gchar *sample_path, *metadata_path;
   struct package_resource *pkg_resource;
   GByteArray *wave, *payload, *metadata, *sample;
+  GString *package_resource_path;
 
   metadata_path = chain_path (payload_path, ".metadata");
   debug_print (1, "Getting metadata from %s...\n", metadata_path);
@@ -501,9 +502,11 @@ package_receive_pkg_resources (struct package *pkg,
       pkg_resource->data = wave;
       pkg_resource->hash = hash;
       pkg_resource->size = size;
-      pkg_resource->path = g_malloc (PATH_MAX);
-      snprintf (pkg_resource->path, PATH_MAX, "%s%s.wav", PKG_TAG_SAMPLES,
-		sample_path);
+      package_resource_path = g_string_new (NULL);
+      g_string_append_printf (package_resource_path, "%s%s.wav",
+			      PKG_TAG_SAMPLES, sample_path);
+      pkg_resource->path = package_resource_path->str;
+      g_string_free (package_resource_path, FALSE);
       if (package_add_resource (pkg, pkg_resource, TRUE))
 	{
 	  package_free_package_resource (pkg_resource);
