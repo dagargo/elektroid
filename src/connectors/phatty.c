@@ -174,15 +174,19 @@ phatty_get_download_path (struct backend *backend,
 
   if (id == PHATTY_PANEL_ID)
     {
-      path = malloc (PATH_MAX);
-      snprintf (path, PATH_MAX, "%s/%s %s %s.syx", dst_dir,
-		backend->name, ops->name, PHATTY_PANEL);
-      return path;
+      GString *str = g_string_new (dst_dir);
+      g_string_append_printf (str, "/%s %s %s.%s", backend->name, ops->name,
+			      PHATTY_PANEL, ops->type_ext);
+      path = str->str;
+      g_string_free (str, FALSE);
+    }
+  else
+    {
+      phatty_get_preset_name (preset->data, preset_name);
+      path = common_get_download_path_with_params (backend, ops, dst_dir, id,
+						   2, preset_name);
     }
 
-  phatty_get_preset_name (preset->data, preset_name);
-  path = common_get_download_path_with_params (backend, ops, dst_dir, id, 2,
-					       preset_name);
   return path;
 }
 
