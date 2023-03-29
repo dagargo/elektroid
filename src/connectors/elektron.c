@@ -57,7 +57,7 @@ static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 #define ELEKTRON_NAME_MAX_LEN 32
 
 #define ELEKTRON_SAMPLE_INFO_PAD_I32_LEN 10
-#define ELEKTRON_LOOP_TYPE 0x7f
+#define ELEKTRON_LOOP_TYPE 0x7f000000
 
 struct elektron_sample_header
 {
@@ -1786,7 +1786,7 @@ elektron_download_smplrw (struct backend *backend, const gchar * path,
 	  sample_info->loopstart =
 	    be32toh (elektron_sample_header->loopstart);
 	  sample_info->loopend = be32toh (elektron_sample_header->loopend);
-	  sample_info->looptype = be32toh (elektron_sample_header->looptype);
+	  sample_info->looptype = elektron_sample_header->looptype;	// For some reason, this is already in the required format.
 	  sample_info->samplerate = be32toh (elektron_sample_header->samplerate);	//In the case of the RAW filesystem is not used and it is harmless.
 	  sample_info->channels = 1;
 	  sample_info->bitdepth = 16;
