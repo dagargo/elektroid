@@ -219,16 +219,20 @@ common_get_download_path_with_params (struct backend *backend,
 				      const gchar * name)
 {
   gchar *path;
-  path = malloc (PATH_MAX);
-  snprintf (path, PATH_MAX, "%s/%s %s %.*d", dst_dir,
-	    backend->name, ops->name, digits, id);
+  GString *str = g_string_new (dst_dir);
+  g_string_append_printf (str, "/%s %s %.*d", backend->name, ops->name,
+			  digits, id);
   if (name)
     {
-      strcat (path, " - ");
-      strcat (path, name);
+      g_string_append (str, " - ");
+      g_string_append (str, name);
     }
-  strcat (path, ".");
-  strcat (path, ops->type_ext);
+  g_string_append (str, ".");
+  g_string_append (str, ops->type_ext);
+
+  path = str->str;
+  g_string_free (str, FALSE);
+
   return path;
 }
 
