@@ -3112,6 +3112,7 @@ elektroid_add_upload_task_slot (const gchar * name,
   GtkTreeModel *model;
   struct item item;
   gchar *dst_file_path, *name_wo_ext, *filename;
+  GString *str;
 
   model =
     GTK_TREE_MODEL (gtk_tree_view_get_model
@@ -3132,12 +3133,15 @@ elektroid_add_upload_task_slot (const gchar * name,
       filename = get_filename (remote_browser.fs_ops->options, &item);
       name_wo_ext = strdup (name);
       remove_ext (name_wo_ext);
-      dst_file_path = g_malloc (PATH_MAX);
-      snprintf (dst_file_path, PATH_MAX, "%s%s%s%s%s", remote_browser.dir,
-		strcmp (remote_browser.dir, "/") ? "/" : "", filename,
-		BE_SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
+      str = g_string_new (NULL);
+      g_string_append_printf (str, "%s%s%s%s%s", remote_browser.dir,
+			      strcmp (remote_browser.dir, "/") ? "/" : "",
+			      filename, BE_SAMPLE_ID_NAME_SEPARATOR,
+			      name_wo_ext);
       g_free (name_wo_ext);
       g_free (filename);
+      dst_file_path = str->str;
+      g_string_free (str, FALSE);
 
       elektroid_add_task (UPLOAD, src_file_path, dst_file_path,
 			  remote_browser.fs_ops->fs);
