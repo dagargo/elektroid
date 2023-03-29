@@ -72,9 +72,11 @@ cz_get_download_path (struct backend *backend,
     }
   else
     {
-      path = malloc (PATH_MAX);
-      snprintf (path, PATH_MAX, "%s/%s %s panel.syx", dst_dir,
-		backend->name, ops->name);
+      GString *str = g_string_new (dst_dir);
+      g_string_append_printf (str, "/%s %s panel.syx", backend->name,
+			      ops->name);
+      path = str->str;
+      g_string_free (str, FALSE);
     }
   return path;
 }
