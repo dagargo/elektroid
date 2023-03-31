@@ -3979,6 +3979,9 @@ elektroid_run (int argc, char *argv[])
       backend_destroy (&backend);
     }
 
+  preferences.local_dir = local_browser.dir;
+  preferences.remote_dir = remote_browser.dir;
+
   g_object_unref (G_OBJECT (builder));
 
   return EXIT_SUCCESS;

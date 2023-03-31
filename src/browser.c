@@ -171,11 +171,9 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 
   if (item.type == ELEKTROID_DIR)
     {
-      if (strcmp (browser->dir, "/"))
-	{
-	  strcat (browser->dir, "/");
-	}
-      strcat (browser->dir, item.name);
+      gchar *new_dir = chain_path (browser->dir, item.name);
+      g_free (browser->dir);
+      browser->dir = new_dir;
       browser_load_dir (browser);
     }
 }
