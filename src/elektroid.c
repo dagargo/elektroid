@@ -2297,10 +2297,21 @@ static void
 elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
 				const gchar * dst_dir)
 {
+  gboolean active;
   struct item_iterator iter;
-  gchar *path, *upload_path;
-  gchar *dst_abs_path = chain_path (dst_dir, rel_path);
-  gchar *src_abs_path = chain_path (src_dir, rel_path);
+  gchar *path, *upload_path, *dst_abs_path, *src_abs_path;
+
+  g_mutex_lock (&sysex_transfer.mutex);
+  active = sysex_transfer.active;
+  g_mutex_unlock (&sysex_transfer.mutex);
+
+  if (!active)
+    {
+      return;
+    }
+
+  dst_abs_path = chain_path (dst_dir, rel_path);
+  src_abs_path = chain_path (src_dir, rel_path);
 
   //Check if the item is a dir. If error, it's not.
   if (local_browser.fs_ops->readdir (local_browser.backend, &iter,
@@ -2516,10 +2527,21 @@ elektroid_add_download_task_path (const gchar * rel_path,
 				  const gchar * src_dir,
 				  const gchar * dst_dir)
 {
+  gboolean active;
   struct item_iterator iter;
-  gchar *path, *dst_abs_dir, *filename;
-  gchar *src_abs_path = chain_path (src_dir, rel_path);
-  gchar *dst_abs_path = chain_path (dst_dir, rel_path);
+  gchar *path, *dst_abs_dir, *filename, *src_abs_path, *dst_abs_path;
+
+  g_mutex_lock (&sysex_transfer.mutex);
+  active = sysex_transfer.active;
+  g_mutex_unlock (&sysex_transfer.mutex);
+
+  if (!active)
+    {
+      return;
+    }
+
+  src_abs_path = chain_path (src_dir, rel_path);
+  dst_abs_path = chain_path (dst_dir, rel_path);
 
   //Check if the item is a dir. If error, it's not.
   if (remote_browser.fs_ops->readdir (remote_browser.backend, &iter,
