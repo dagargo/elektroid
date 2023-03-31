@@ -473,8 +473,8 @@ elektron_print_data (struct item_iterator *iter,
 {
   gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct elektron_iterator_data *data = iter->data;
-  gchar *slot = iter->item.id > 0 ? elektron_get_id_as_slot (&iter->item,
-							     backend) : " -1";
+  gchar *slot = iter->item.id > 0 ?
+    elektron_get_id_as_slot (&iter->item, backend) : strdup (" -1");
   printf ("%c %04x %d %d %10s %s %s\n", iter->item.type, data->operations,
 	  data->has_valid_data, data->has_metadata, hsize, slot,
 	  iter->item.name);
