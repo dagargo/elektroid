@@ -2334,7 +2334,7 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
 
   if (!remote_browser.fs_ops->mkdir)
     {				//No recursive case.
-      goto cleanup;
+      goto cleanup_iter;
     }
 
   while (!next_item_iterator (&iter))
@@ -2344,6 +2344,7 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
       free (path);
     }
 
+cleanup_iter:
   free_item_iterator (&iter);
 cleanup:
   g_free (dst_abs_path);
