@@ -16,7 +16,7 @@ tests_scala_SOURCES = \
         ../src/connectors/scala.c \
 	../src/connectors/scala.h
 
-TESTS = connectors/test.sh $(check_PROGRAMS)
+TESTS = integration/test.sh $(check_PROGRAMS)
 
 EXTRA_DIST = connectors res
 

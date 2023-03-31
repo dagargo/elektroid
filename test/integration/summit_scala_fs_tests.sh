@@ -4,7 +4,7 @@ FILE="$srcdir/Novation Summit tuning 016.syx"
 
 rm "$FILE"
 
-$srcdir/connectors/generic_fs_tests.sh --no-download summit scala / 17 /17 /16 "" ""
+$srcdir/integration/generic_fs_tests.sh --no-download summit scala / 17 /17 /16 "" ""
 
 echo "Testing download scala as tuning..."
 $ecli summit-tuning-dl $TEST_DEVICE:/16
