@@ -2233,14 +2233,7 @@ elektroid_upload_task_runner (gpointer data)
   else
     {
       g_mutex_lock (&transfer.control.mutex);
-      if (transfer.control.active)
-	{
-	  transfer.status = COMPLETED_OK;
-	}
-      else
-	{
-	  transfer.status = CANCELED;
-	}
+      transfer.status = transfer.control.active ? COMPLETED_OK : CANCELED;
       g_mutex_unlock (&transfer.control.mutex);
     }
 
