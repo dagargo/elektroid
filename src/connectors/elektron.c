@@ -1173,9 +1173,15 @@ static gint
 elektron_read_common_dir (struct backend *backend,
 			  struct item_iterator *iter, const gchar * dir,
 			  const guint8 msg[], int size,
-			  fs_init_iter_func init_iter, enum elektron_fs fs)
+			  fs_init_iter_func init_iter, enum elektron_fs fs,
+			  fs_file_exists file_exists)
 {
   GByteArray *tx_msg, *rx_msg = NULL;
+
+  if (file_exists (backend, dir))
+    {
+      return -ENOTDIR;
+    }
 
   tx_msg = elektron_new_msg_path (msg, size, dir);
   if (!tx_msg)
@@ -1207,7 +1213,8 @@ elektron_read_samples_dir (struct backend *backend,
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_SAMPLE_READ_DIR_REQUEST,
 				   sizeof (FS_SAMPLE_READ_DIR_REQUEST),
-				   elektron_read_samples_dir, FS_SAMPLES);
+				   elektron_read_samples_dir, FS_SAMPLES,
+				   elektron_sample_file_exists);
 }
 
 static gint
@@ -1217,7 +1224,8 @@ elektron_read_raw_dir (struct backend *backend, struct item_iterator *iter,
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_RAW_READ_DIR_REQUEST,
 				   sizeof (FS_RAW_READ_DIR_REQUEST),
-				   elektron_read_raw_dir, FS_RAW_ALL);
+				   elektron_read_raw_dir, FS_RAW_ALL,
+				   elektron_raw_file_exists);
 }
 
 static gint
@@ -1369,7 +1377,7 @@ elektron_path_common (struct backend *backend, const gchar * path,
   else
     {
       res = -EPERM;
-      error_print ("%s (%s)\n", backend_strerror (backend, res),
+      debug_print (1, "%s (%s)\n", backend_strerror (backend, res),
 		   elektron_get_msg_string (rx_msg));
     }
   free_msg (rx_msg);
