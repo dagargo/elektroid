@@ -21,6 +21,15 @@
 #include "backend.h"
 #include "rtmidi_c.h"
 
+#if defined(__linux__)
+#define ELEKTROID_RTMIDI_API RTMIDI_API_LINUX_ALSA
+#define FIRST_OUTPUT_PORT 0
+#else
+#define WINDOWS_INPUT_OUTPUT_SEPARATOR " :: "
+#define ELEKTROID_RTMIDI_API RTMIDI_API_WINDOWS_MM
+#define FIRST_OUTPUT_PORT 1
+#endif
+
 void
 backend_destroy_int (struct backend *backend)
 {
@@ -80,7 +89,7 @@ backend_init_int (struct backend *backend, const gchar * id)
 	{
 	  goto cleanup_output;
 	}
-      for (guint j = 0; j < oports; j++)
+      for (guint j = FIRST_OUTPUT_PORT; j < oports; j++)
 	{
 	  if (rtmidi_get_port_name (outputp, j, NULL, &oportnamelen))
 	    {
@@ -90,18 +99,22 @@ backend_init_int (struct backend *backend, const gchar * id)
 	    {
 	      goto cleanup_output;
 	    }
+#if defined(__linux__)
 	  if (!strcmp (iportname, oportname) && !strcmp (iportname, id))
+#else
+          guint iportnamelen = strlen(iportname);
+	  if (!strncmp (id, iportname, iportnamelen) &&
+	      !strcmp (id + iportnamelen + strlen(WINDOWS_INPUT_OUTPUT_SEPARATOR), oportname))
+#endif
 	    {
-	      backend->inputp =
-		rtmidi_in_create (RTMIDI_API_LINUX_ALSA, PACKAGE_NAME,
-				  BE_INT_BUF_LEN);
+	      backend->inputp = rtmidi_in_create (ELEKTROID_RTMIDI_API, PACKAGE_NAME,
+	                                          BE_INT_BUF_LEN);
 	      rtmidi_in_ignore_types (backend->inputp, false, true, true);
 	      rtmidi_open_port (backend->inputp, i, PACKAGE_NAME);
-	      backend->outputp =
-		rtmidi_out_create (RTMIDI_API_LINUX_ALSA, PACKAGE_NAME);
+	      backend->outputp = rtmidi_out_create (ELEKTROID_RTMIDI_API, PACKAGE_NAME);
 	      rtmidi_open_port (backend->outputp, j, PACKAGE_NAME);
-
 	      backend->rx_len = 0;
+
 	      backend->buffer = g_malloc (sizeof (guint8) * BE_INT_BUF_LEN);
 	      goto cleanup_output;
 	    }
@@ -305,7 +318,7 @@ backend_get_system_devices ()
 	{
 	  goto cleanup_output;
 	}
-      for (guint j = 0; j < oports; j++)
+      for (guint j = FIRST_OUTPUT_PORT; j < oports; j++)
 	{
 	  if (rtmidi_get_port_name (outputp, j, NULL, &oportnamelen))
 	    {
@@ -317,6 +330,7 @@ backend_get_system_devices ()
 	    }
 	  debug_print (3, "Checking I/O availability (%s == %s)...\n",
 		       iportname, oportname);
+#if defined(__linux__)
 	  if (!strcmp (iportname, oportname))
 	    {
 	      backend_system_device =
@@ -327,6 +341,16 @@ backend_get_system_devices ()
 			iportname);
 	      g_array_append_vals (devices, backend_system_device, 1);
 	    }
+#else
+	  //We consider the cartesian product of inputs and outputs as the available ports.
+	  backend_system_device =
+	  malloc (sizeof (struct backend_system_device));
+	  snprintf (backend_system_device->id, LABEL_MAX, "%s%s%s",
+			iportname, WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
+	  snprintf (backend_system_device->name, LABEL_MAX, "%s%s%s",
+			iportname, WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
+	  g_array_append_vals (devices, backend_system_device, 1);
+#endif
 	}
     }
 

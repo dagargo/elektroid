@@ -231,7 +231,7 @@ cz_download (struct backend *backend, const gchar * path,
       id--;
       if (id >= CZ_MAX_PROGRAMS)
 	{
-	  err = -EBADSLT;
+	  err = -EINVAL;
 	  goto end;
 	}
       id += type * CZ_MEM_TYPE_OFFSET;
@@ -290,7 +290,7 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
       id--;
       if (id >= CZ_MAX_PROGRAMS)
 	{
-	  return -EBADSLT;
+	  return -EINVAL;
 	}
       id += type * CZ_MEM_TYPE_OFFSET;
     }

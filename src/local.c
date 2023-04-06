@@ -107,7 +107,12 @@ local_mkdir (struct backend *backend, const gchar * name)
 	}
     }
 
-  if (mkdir (name, 0755) == 0 || errno == EEXIST)
+#if defined(__MINGW32__) || defined(__MINGW64__)
+  res = mkdir (name);
+#else
+  res = mkdir (name, 0755);
+#endif
+  if (res == 0 || errno == EEXIST)
     {
       res = 0;
     }

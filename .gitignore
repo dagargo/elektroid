@@ -34,6 +34,8 @@ test-driver
 .dirstamp
 src/elektroid
 src/elektroid-cli
+src/*.exe
+src/.libs
 src/*~
 test/*.log
 test/*.trs

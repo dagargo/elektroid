@@ -21,6 +21,18 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#if defined(__linux__)
+#include <endian.h>
+#else
+//Windows x86 and x86_64 are little endian
+#define be32toh(x) ntohl(x)
+#define htobe32(x) htonl(x)
+#define be16toh(x) ntohs(x)
+#define htobe16(x) htons(x)
+#define be64toh(x) (((guint64)ntohl((guint32)(((guint64)(x)) << 32))) | ((guint64) ntohl((guint32)(((guint64)(x)) >> 32))))
+#define le32toh(x) (x)
+#endif
+
 #include <stdio.h>
 #include <unistd.h>
 #include <glib.h>

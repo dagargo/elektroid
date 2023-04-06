@@ -19,7 +19,13 @@
  */
 
 #include <stdio.h>
+#if defined(__linux__)
 #include <wordexp.h>
+#define ELEKTROID_HOME_PATH "~"
+#else
+#define ELEKTROID_HOME_PATH "C:\\"
+#include <dirent.h>
+#endif
 #include <errno.h>
 #include "utils.h"
 
@@ -169,12 +175,16 @@ get_ext (const gchar * name)
 gchar *
 get_expanded_dir (const char *exp)
 {
-  wordexp_t exp_result;
   gchar *exp_dir;
 
+#if defined(__linux__)
+  wordexp_t exp_result;
   wordexp (exp, &exp_result, 0);
   exp_dir = strdup (exp_result.we_wordv[0]);
   wordfree (&exp_result);
+#else
+  exp_dir = strdup(exp);
+#endif
 
   return exp_dir;
 }
@@ -190,7 +200,11 @@ get_local_startup_path (const gchar * local_dir)
       dir = opendir (local_dir);
       if (dir)
 	{
+#if defined(__linux__)
 	  startup_path = realpath (local_dir, NULL);
+#else
+	  startup_path = strdup(local_dir);
+#endif
 	}
       else
 	{
@@ -201,7 +215,7 @@ get_local_startup_path (const gchar * local_dir)
 
   if (!startup_path)
     {
-      startup_path = get_expanded_dir ("~");
+      startup_path = get_expanded_dir (ELEKTROID_HOME_PATH);
     }
 
   debug_print (1, "Using '%s' as local dir...\n", startup_path);
@@ -292,7 +306,7 @@ save_file_char (const gchar * path, const guint8 * data, ssize_t len)
   size_t bytes;
   FILE *file;
 
-  file = fopen (path, "w");
+  file = fopen (path, "wb");
 
   if (!file)
     {

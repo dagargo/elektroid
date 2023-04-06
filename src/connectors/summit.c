@@ -261,7 +261,7 @@ summit_get_bank_and_id_from_path (const gchar * path, guint8 * bank,
 
   if (*bank < 1 || *bank > 4 || *id >= SUMMIT_PATCHES_PER_BANK)
     {
-      return -EBADSLT;
+      return -EINVAL;
     }
 
   return 0;
@@ -562,7 +562,7 @@ summit_tuning_upload (struct backend *backend, const gchar * path,
     }
   if (id >= SUMMIT_MAX_TUNINGS)
     {
-      return -EBADSLT;
+      return -EINVAL;
     }
 
   if (input->len != SCALA_TUNING_BANK_SIZE)
@@ -606,7 +606,7 @@ summit_tuning_download (struct backend *backend, const gchar * path,
     }
   if (id >= SUMMIT_MAX_TUNINGS)
     {
-      return -EBADSLT;
+      return -EINVAL;
     }
 
   tx_msg = g_byte_array_sized_new (16);
@@ -748,7 +748,7 @@ summit_wavetable_download (struct backend *backend, const gchar * path,
     }
   if (id >= SUMMIT_MAX_WAVETABLES)
     {
-      return -EBADSLT;
+      return -EINVAL;
     }
 
   control->parts = 6;
@@ -841,7 +841,7 @@ summit_wavetable_upload (struct backend *backend, const gchar * path,
     }
   if (id >= SUMMIT_MAX_WAVETABLES)
     {
-      return -EBADSLT;
+      return -EINVAL;
     }
 
   if (input->len != SUMMIT_WAVETABLE_LEN)
@@ -875,7 +875,7 @@ summit_wavetable_rename (struct backend *backend, const gchar * src,
     }
   if (id >= SUMMIT_MAX_WAVETABLES)
     {
-      return -EBADSLT;
+      return -EINVAL;
     }
 
   debug_print (1, "Renaming from %s to %s...\n", src, dst);

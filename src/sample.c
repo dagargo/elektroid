@@ -663,8 +663,8 @@ sample_load_from_file (const gchar * path, GByteArray * sample,
 static gboolean
 sample_is_mp3_supported ()
 {
+#if defined(__linux__)
   static char buffer[LABEL_MAX];
-
   sf_command (NULL, SFC_GET_LIB_VERSION, buffer, LABEL_MAX);
   debug_print (1, "libsndfile version: %s...\n", buffer);
   if (strverscmp (buffer, "libsndfile-1.1.0") >= 0)
@@ -673,6 +673,9 @@ sample_is_mp3_supported ()
     }
 
   return FALSE;
+#else
+  return TRUE;
+#endif
 }
 
 const gchar **

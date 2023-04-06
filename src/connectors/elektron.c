@@ -20,8 +20,6 @@
 
 #include <stdio.h>
 #include <math.h>
-#include <endian.h>
-#include <poll.h>
 #include <zlib.h>
 #include "elektron.h"
 #include "elektron.h"

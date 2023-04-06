@@ -21,7 +21,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#if defined(__linux__)
 #include <signal.h>
+#endif
 #include <stdint.h>
 #include <inttypes.h>
 #include <stddef.h>
@@ -46,7 +48,7 @@ cli_get_path (gchar * device_path)
   gchar *path = device_path;
   gint i = 0;
 
-  while (path[0] != '/' && i < len)
+  while (*path != '/' && i < len)
     {
       path++;
       i++;
@@ -65,7 +67,7 @@ cli_ld ()
   for (i = 0; i < devices->len; i++)
     {
       device = g_array_index (devices, struct backend_system_device, i);
-      printf ("%d: %s %s\n", i, device.id, device.name);
+      printf ("%d: id: %s; name: %s\n", i, device.id, device.name);
     }
 
   g_array_free (devices, TRUE);
@@ -716,6 +718,7 @@ main (int argc, gchar * argv[])
   gint err;
   gchar *command;
   gint vflg = 0, errflg = 0;
+#if defined(__linux__)
   struct sigaction action;
 
   action.sa_handler = cli_end;
@@ -725,6 +728,7 @@ main (int argc, gchar * argv[])
   sigaction (SIGQUIT, &action, NULL);
   sigaction (SIGINT, &action, NULL);
   sigaction (SIGHUP, &action, NULL);
+#endif
 
   while ((c = getopt (argc, argv, "v")) != -1)
     {

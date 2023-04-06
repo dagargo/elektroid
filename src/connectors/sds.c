@@ -744,7 +744,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 
   if (common_slot_get_id_name_from_path (path, &id, &name))
     {
-      return -EBADSLT;
+      return -EINVAL;
     }
 
   g_mutex_lock (&backend->mutex);

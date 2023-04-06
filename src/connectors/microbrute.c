@@ -304,7 +304,7 @@ microbrute_download (struct backend *backend, const gchar * src_path,
   seqnum--;
   if (seqnum >= MICROBRUTE_MAX_SEQS)
     {
-      return -EBADSLT;
+      return -EINVAL;
     }
 
   control->parts = 1;
@@ -446,7 +446,7 @@ microbrute_upload (struct backend *backend, const gchar * path,
   seqnum--;
   if (seqnum >= MICROBRUTE_MAX_SEQS)
     {
-      return -EBADSLT;
+      return -EINVAL;
     }
 
   g_mutex_lock (&backend->mutex);

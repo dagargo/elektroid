@@ -22,11 +22,18 @@ AC_CANONICAL_HOST
 case "${host_os}" in
   linux*)
     ;;
+  *mingw*)
+    MINGW=yes
+    RTMIDI=yes
+    RTAUDIO=yes
+    ;;
   *)
     RTMIDI=yes
     RTAUDIO=yes
     ;;
 esac
+
+AM_CONDITIONAL([MINGW], [test "${MINGW}" == yes])
 
 AM_CONDITIONAL([ELEKTROID_RTMIDI], [test "${RTMIDI}" == yes])
 AS_IF([test "${RTMIDI}" == yes], [AC_DEFINE([ELEKTROID_RTMIDI], [1], ["Use RtMidi"])])

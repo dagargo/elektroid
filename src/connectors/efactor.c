@@ -293,7 +293,7 @@ efactor_upload (struct backend *backend, const gchar * path,
 
   if (id >= EFACTOR_MAX_PRESETS)
     {
-      return -EBADSLT;
+      return -EINVAL;
     }
 
   //The fourth header byte is the device number ID so it might be different than 0.
