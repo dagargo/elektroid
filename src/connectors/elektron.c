@@ -23,7 +23,6 @@
 #include <endian.h>
 #include <poll.h>
 #include <zlib.h>
-#include <libgen.h>
 #include "elektron.h"
 #include "elektron.h"
 #include "utils.h"
@@ -1134,9 +1133,7 @@ static enum item_type
 elektron_get_path_type (struct backend *backend, const gchar * path,
 			fs_init_iter_func init_iter)
 {
-  gchar *parent_copy;
-  gchar *name;
-  gchar *parent;
+  gchar *dir, *name;
   enum item_type res;
   struct item_iterator iter;
 
@@ -1145,11 +1142,10 @@ elektron_get_path_type (struct backend *backend, const gchar * path,
       return ELEKTROID_DIR;
     }
 
-  parent_copy = strdup (path);
   name = g_path_get_basename (path);
-  parent = dirname (parent_copy);
+  dir = g_path_get_dirname (path);
   res = ELEKTROID_NONE;
-  if (!init_iter (backend, &iter, parent))
+  if (!init_iter (backend, &iter, dir))
     {
       while (!next_item_iterator (&iter))
 	{
@@ -1163,7 +1159,7 @@ elektron_get_path_type (struct backend *backend, const gchar * path,
     }
 
   g_free (name);
-  g_free (parent_copy);
+  g_free (dir);
   return res;
 }
 
@@ -2946,8 +2942,7 @@ elektron_get_download_name (struct backend *backend,
 {
   gint32 id;
   gint ret;
-  const gchar *src_dir;
-  gchar *name, *src_dirc;
+  gchar *dir, *name;
   struct item_iterator *iter;
 
   if (ops->fs == FS_SAMPLES || ops->fs == FS_RAW_ALL
@@ -2957,10 +2952,9 @@ elektron_get_download_name (struct backend *backend,
     }
 
   iter = malloc (sizeof (struct item_iterator));
-  src_dirc = g_strdup (src_path);
-  src_dir = dirname (src_dirc);
-  ret = ops->readdir (backend, iter, src_dir);
-  g_free (src_dirc);
+  dir = g_path_get_dirname (src_path);
+  ret = ops->readdir (backend, iter, dir);
+  g_free (dir);
   if (ret)
     {
       return NULL;
@@ -3085,8 +3079,8 @@ elektron_get_download_path (struct backend *backend,
 			    const gchar * dst_dir, const gchar * src_path,
 			    GByteArray * data)
 {
-  gchar *path, *src_pathc, *name, *dl_ext;
-  const gchar *src_fpath, *md_ext, *ext = get_ext (src_path);
+  gchar *path, *name, *dl_ext, *src_fpath;
+  const gchar *md_ext, *ext = get_ext (src_path);
 
   // Examples:
   // 0:/project0
@@ -3094,19 +3088,19 @@ elektron_get_download_path (struct backend *backend,
   // 0:/soundbanks/A/1/.metadata
   // 0:/loops/sample
 
-  src_pathc = strdup (src_path);
   if (ext && strcmp (ext, "metadata") == 0)
     {
-      src_fpath = dirname (src_pathc);
+      src_fpath = g_path_get_dirname (src_path);
       md_ext = ".metadata";
     }
   else
     {
-      src_fpath = src_pathc;
+      src_fpath = strdup (src_path);
       md_ext = "";
     }
 
   name = elektron_get_download_name (backend, ops, src_fpath);
+  g_free (src_fpath);
   if (name)
     {
       GString *filename = g_string_new (NULL);
@@ -3122,7 +3116,6 @@ elektron_get_download_path (struct backend *backend,
       path = NULL;
     }
 
-  g_free (src_pathc);
   return path;
 }
 

@@ -20,7 +20,6 @@
 
 #include <dirent.h>
 #include <errno.h>
-#include <libgen.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -91,12 +90,9 @@ local_mkdir (struct backend *backend, const gchar * name)
 {
   DIR *dir;
   gint res = 0;
-  gchar *dup;
   gchar *parent;
 
-  dup = strdup (name);
-  parent = dirname (dup);
-
+  parent = g_path_get_dirname (name);
   dir = opendir (parent);
   if (dir)
     {
@@ -122,7 +118,7 @@ local_mkdir (struct backend *backend, const gchar * name)
     }
 
 cleanup:
-  g_free (dup);
+  g_free (parent);
   return res;
 }
 

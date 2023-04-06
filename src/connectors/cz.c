@@ -18,7 +18,6 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <libgen.h>
 #include "cz.h"
 #include "common.h"
 

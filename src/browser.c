@@ -145,10 +145,9 @@ browser_go_up (GtkWidget * object, gpointer data)
     {
       if (strcmp (browser->dir, "/"))
 	{
-	  gchar *dup = strdup (browser->dir);
-	  gchar *new_path = dirname (dup);
+	  gchar *new_path = g_path_get_dirname (browser->dir);
 	  strcpy (browser->dir, new_path);
-	  free (dup);
+	  free (new_path);
 	}
     }
   g_mutex_unlock (&browser->mutex);

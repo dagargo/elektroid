@@ -19,7 +19,6 @@
  */
 
 #include <gtk/gtk.h>
-#include <libgen.h>
 #include "utils.h"
 #include "notifier.h"
 
