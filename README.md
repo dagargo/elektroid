@@ -59,6 +59,8 @@ For Fedora, `sudo dnf install autoconf libtool alsa-lib-devel zlib-devel libzip-
 
 For Arch Linux, `sudo pacman -S base-devel autoconf libtool alsa-lib zlib libzip gtk3 libsndfile gettext libsamplerate pulseaudio json-glib` will install the build dependencies.
 
+For MSYS2, ...
+
 ### MIDI backend
 
 By default, Elektroid uses ALSA as the MIDI backend on Linux and RtMidi on other OSs. To use RtMidi on Linux, pass `RTMIDI=yes` to `./configure`. In this case, the RtMidi development package will be needed (`librtmidi-dev` on Debian).

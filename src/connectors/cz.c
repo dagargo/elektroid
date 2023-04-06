@@ -63,12 +63,10 @@ cz_get_download_path (struct backend *backend,
   gchar *path;
   if (strcmp (src_path, CZ_PANEL_PATH))
     {
-      gchar *src_path_copy = strdup (src_path);
-      gchar *filename = basename (src_path_copy);
+      gchar *filename = g_path_get_basename (src_path);
       gint id = atoi (filename);
       path = common_get_download_path_with_params (backend, ops, dst_dir, id,
 						   2, NULL);
-      g_free (src_path_copy);
     }
   else
     {
@@ -214,23 +212,22 @@ cz_download (struct backend *backend, const gchar * path,
   guint8 id;
   gint len, type, err = 0;
   GByteArray *tx_msg, *rx_msg;
-  gchar *dirname_copy, *dir, *basename_copy;
+  gchar *dir, *name;
 
   if (strcmp (path, CZ_PANEL_PATH))
     {
-      dirname_copy = strdup (path);
-      dir = dirname (dirname_copy);
+      dir = g_path_get_dirname (path);
       type = get_mem_type (&dir[1]);
-      g_free (dirname_copy);
+      g_free (dir);
       if (type < 0)
 	{
 	  err = -EINVAL;
 	  goto end;
 	}
 
-      basename_copy = strdup (path);
-      id = atoi (basename (basename_copy));
-      g_free (basename_copy);
+      name = g_path_get_basename (path);
+      id = atoi (name);
+      g_free (name);
 
       id--;
       if (id >= CZ_MAX_PROGRAMS)
@@ -275,7 +272,7 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
 {
   guint8 id;
   GByteArray *msg;
-  gchar *name_copy, *dir_copy, *dir;
+  gchar *dir, *name;
   gint type, err = 0;
 
   if (input->len != CZ_PROGRAM_LEN_FIXED)
@@ -283,15 +280,14 @@ cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
       return -EINVAL;
     }
 
-  dir_copy = strdup (path);
-  dir = dirname (dir_copy);
+  dir = g_path_get_dirname (path);
   type = get_mem_type (&dir[1]);
-  g_free (dir_copy);
+  g_free (dir);
   if (type >= 0)
     {
-      name_copy = strdup (path);
-      id = atoi (basename (name_copy));
-      g_free (name_copy);
+      name = g_path_get_basename (path);
+      id = atoi (name);
+      g_free (name);
       id--;
       if (id >= CZ_MAX_PROGRAMS)
 	{

@@ -35,10 +35,9 @@ common_slot_get_id_name_from_path (const char *path, guint * id,
 				   gchar ** name)
 {
   gint err = 0;
-  gchar *path_copy, *index_name, *remainder;
+  gchar *index_name, *remainder;
 
-  path_copy = strdup (path);
-  index_name = basename (path_copy);
+  index_name = g_path_get_basename (path);
   *id = (gint) strtol (index_name, &remainder, 10);
   if (strncmp (remainder, BE_SAMPLE_ID_NAME_SEPARATOR,
 	       strlen (BE_SAMPLE_ID_NAME_SEPARATOR)) == 0)
@@ -50,8 +49,7 @@ common_slot_get_id_name_from_path (const char *path, guint * id,
       if (name)
 	{
 	  error_print ("Path name not provided properly\n");
-	  err = -EINVAL;
-	  goto end;
+	  return -EINVAL;
 	}
     }
 
@@ -67,8 +65,6 @@ common_slot_get_id_name_from_path (const char *path, guint * id,
 	}
     }
 
-end:
-  g_free (path_copy);
   return err;
 }
 

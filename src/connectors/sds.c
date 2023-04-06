@@ -68,11 +68,10 @@ sds_get_download_path (struct backend *backend,
 		       const gchar * src_path, GByteArray * data)
 {
   GByteArray *tx_msg, *rx_msg;
-  GString *name = g_string_new (dst_dir);
+  GString *str = g_string_new (dst_dir);
   gchar *path;
-  gchar *src_path_copy = strdup (src_path);
-  gchar *filename = basename (src_path_copy);
-  gint index = atoi (filename);
+  gchar *name = g_path_get_basename (src_path);
+  gint index = atoi (name);
   gboolean use_id = TRUE;
   struct sds_data *sds_data = backend->data;
 
@@ -90,7 +89,7 @@ sds_get_download_path (struct backend *backend,
       rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
       if (rx_msg)
 	{
-	  g_string_append_printf (name, "/%s.wav", &rx_msg->data[5]);
+	  g_string_append_printf (str, "/%s.wav", &rx_msg->data[5]);
 	  free_msg (rx_msg);
 	  use_id = FALSE;
 	}
@@ -98,12 +97,12 @@ sds_get_download_path (struct backend *backend,
 
   if (use_id)
     {
-      g_string_append_printf (name, "/%03d.wav", index);
+      g_string_append_printf (str, "/%03d.wav", index);
     }
 
-  g_free (src_path_copy);
-  path = name->str;
-  g_string_free (name, FALSE);
+  g_free (name);
+  path = str->str;
+  g_string_free (str, FALSE);
   return path;
 }
 
@@ -345,7 +344,7 @@ sds_download_try (struct backend *backend, const gchar * path,
     retries, packets, packet, exp_packet, rx_packets;
   gint16 sample;
   GByteArray *tx_msg, *rx_msg;
-  gchar *path_copy, *index;
+  gchar *name;
   guint8 *dataptr;
   gboolean active, first;
   gboolean last_packet_ack;
@@ -353,10 +352,9 @@ sds_download_try (struct backend *backend, const gchar * path,
   struct sysex_transfer transfer;
   struct sds_data *sds_data = backend->data;
 
-  path_copy = strdup (path);
-  index = basename (path_copy);
-  id = atoi (index);
-  g_free (path_copy);
+  name = g_path_get_basename (path);
+  id = atoi (name);
+  g_free (name);
 
   debug_print (1, "Sending dump request...\n");
   packet = 0;
@@ -700,7 +698,7 @@ sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
   GByteArray *tx_msg, *rx_msg;
   guint id;
   gint err;
-  gchar *name, *dstcpy;
+  gchar *name;
   debug_print (1, "Sending rename request...\n");
   err = common_slot_get_id_name_from_path (src, &id, NULL);
   if (err)
@@ -712,8 +710,7 @@ sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
   backend_rx_drain (backend);
   g_mutex_unlock (&backend->mutex);
 
-  dstcpy = strdup (dst);
-  name = basename (dstcpy);
+  name = g_path_get_basename (dst);
   tx_msg = sds_get_rename_sample_msg (id, name);
   err = -ENOSYS;
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
@@ -723,7 +720,7 @@ sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
       free_msg (rx_msg);
     }
 
-  g_free (dstcpy);
+  g_free (name);
   return err;
 }
 

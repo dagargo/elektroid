@@ -3204,9 +3204,8 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 	}
 
       gchar *filename = g_filename_from_uri (dnd_data->uris[i], NULL, NULL);
-      gchar *path_basename = strdup (filename);
       gchar *path_dirname = strdup (filename);
-      gchar *name = basename (path_basename);
+      gchar *name = g_path_get_basename (filename);
       gchar *dir = dirname (path_dirname);
 
       if (widget == GTK_WIDGET (local_browser.view))
@@ -3241,7 +3240,7 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 	    }
 	}
 
-      g_free (path_basename);
+      g_free (name);
       g_free (path_dirname);
       g_free (filename);
     }
@@ -4019,7 +4018,7 @@ elektroid_print_help (gchar * executable_path)
   const struct option *option;
 
   fprintf (stderr, "%s\n", PACKAGE_STRING);
-  exec_name = basename (executable_path);
+  exec_name = g_path_get_basename (executable_path);
   fprintf (stderr, "Usage: %s [options]\n", exec_name);
   fprintf (stderr, "Options:\n");
   option = ELEKTROID_OPTIONS;
@@ -4033,6 +4032,7 @@ elektroid_print_help (gchar * executable_path)
       fprintf (stderr, "\n");
       option++;
     }
+  g_free (exec_name);
 }
 
 int

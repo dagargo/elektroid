@@ -159,7 +159,7 @@ phatty_get_download_path (struct backend *backend,
 			  GByteArray * preset)
 {
   gchar preset_name[MOOG_NAME_LEN + 1];
-  gchar *path, *src_path_copy, *filename;
+  gchar *path, *name;
   gint id;
 
   if (!preset)
@@ -167,10 +167,9 @@ phatty_get_download_path (struct backend *backend,
       return NULL;
     }
 
-  src_path_copy = strdup (src_path);
-  filename = basename (src_path_copy);
-  id = atoi (filename);
-  g_free (src_path_copy);
+  name = g_path_get_basename (src_path);
+  id = atoi (name);
+  g_free (name);
 
   if (id == PHATTY_PANEL_ID)
     {
@@ -322,14 +321,14 @@ phatty_download (struct backend *backend, const gchar * path,
 {
   guint8 id;
   gint err = 0;
-  gchar *basename_copy;
+  gchar *name;
   GByteArray *tx_msg, *rx_msg;
 
   if (strcmp (path, PHATTY_PANEL_PATH))
     {
-      basename_copy = strdup (path);
-      id = atoi (basename (basename_copy));
-      g_free (basename_copy);
+      name = g_path_get_basename (path);
+      id = atoi (name);
+      g_free (name);
       if (id >= PHATTY_MAX_PRESETS)
 	{
 	  return -EINVAL;

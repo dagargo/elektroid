@@ -219,7 +219,7 @@ efactor_download (struct backend *backend, const gchar * src_path,
 		  GByteArray * output, struct job_control *control)
 {
   gint err = 0, id;
-  gchar *basename_copy;
+  gchar *name;
   gboolean active;
   gchar **lines;
   struct item_iterator iter;
@@ -239,9 +239,9 @@ efactor_download (struct backend *backend, const gchar * src_path,
       free_item_iterator (&iter);
     }
 
-  basename_copy = strdup (src_path);
-  id = atoi (basename (basename_copy));
-  g_free (basename_copy);
+  name = g_path_get_basename (src_path);
+  id = atoi (name);
+  g_free (name);
   if (id < data->min || id >= data->presets)
     {
       return -EINVAL;
@@ -287,8 +287,8 @@ efactor_upload (struct backend *backend, const gchar * path,
   gchar id_tag[EFACTOR_MAX_ID_TAG_LEN];
   struct efactor_data *data = backend->data;
 
-  name = strdup (path);
-  id = atoi (basename (name));	//This stops at the ':'.
+  name = g_path_get_basename (path);
+  id = atoi (name);		//This stops at the ':'.
   g_free (name);
 
   if (id >= EFACTOR_MAX_PRESETS)

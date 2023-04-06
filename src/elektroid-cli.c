@@ -757,7 +757,7 @@ main (int argc, gchar * argv[])
   if (errflg > 0)
     {
       fprintf (stderr, "%s\n", PACKAGE_STRING);
-      gchar *exec_name = basename (argv[0]);
+      gchar *exec_name = g_path_get_basename (argv[0]);
       fprintf (stderr, "Usage: %s [options] command\n", exec_name);
       exit (EXIT_FAILURE);
     }

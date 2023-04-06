@@ -70,13 +70,11 @@ local_get_download_path (struct backend *backend,
 {
   gchar *str;
   GString *path = g_string_new (dst_dir);
-  gchar *src_pathc = strdup (src_path);
-  gchar *filename = basename (src_pathc);
+  gchar *filename = g_path_get_basename (src_path);
   remove_ext (filename);
   g_string_append_printf (path, "/%s.%s", filename, ops->type_ext);
   str = path->str;
   g_string_free (path, FALSE);
-  g_free (src_pathc);
   return str;
 }
 

@@ -1134,7 +1134,6 @@ static enum item_type
 elektron_get_path_type (struct backend *backend, const gchar * path,
 			fs_init_iter_func init_iter)
 {
-  gchar *name_copy;
   gchar *parent_copy;
   gchar *name;
   gchar *parent;
@@ -1146,9 +1145,8 @@ elektron_get_path_type (struct backend *backend, const gchar * path,
       return ELEKTROID_DIR;
     }
 
-  name_copy = strdup (path);
   parent_copy = strdup (path);
-  name = basename (name_copy);
+  name = g_path_get_basename (path);
   parent = dirname (parent_copy);
   res = ELEKTROID_NONE;
   if (!init_iter (backend, &iter, parent))
@@ -1164,7 +1162,7 @@ elektron_get_path_type (struct backend *backend, const gchar * path,
       free_item_iterator (&iter);
     }
 
-  g_free (name_copy);
+  g_free (name);
   g_free (parent_copy);
   return res;
 }
@@ -2949,17 +2947,13 @@ elektron_get_download_name (struct backend *backend,
   gint32 id;
   gint ret;
   const gchar *src_dir;
-  gchar *namec, *name, *src_dirc;
+  gchar *name, *src_dirc;
   struct item_iterator *iter;
-
-  namec = g_strdup (src_path);
-  name = basename (namec);
 
   if (ops->fs == FS_SAMPLES || ops->fs == FS_RAW_ALL
       || ops->fs == FS_RAW_PRESETS)
     {
-      name = g_strdup (name);
-      goto cleanup;
+      return g_path_get_basename (src_path);
     }
 
   iter = malloc (sizeof (struct item_iterator));
@@ -2969,12 +2963,12 @@ elektron_get_download_name (struct backend *backend,
   g_free (src_dirc);
   if (ret)
     {
-      name = NULL;
-      goto cleanup;
+      return NULL;
     }
 
+  name = g_path_get_basename (src_path);
   id = atoi (name);
-  name = NULL;
+  g_free (name);
 
   while (!next_item_iterator (iter))
     {
@@ -2987,8 +2981,6 @@ elektron_get_download_name (struct backend *backend,
 
   free_item_iterator (iter);
 
-cleanup:
-  g_free (namec);
   return name;
 }
 
@@ -3064,13 +3056,12 @@ elektron_get_upload_path_smplrw (struct backend *backend,
 				 const gchar * dst_dir,
 				 const gchar * src_path)
 {
-  gchar *path, *namec, *name, *aux;
+  gchar *path, *name, *aux;
 
-  namec = strdup (src_path);
-  name = basename (namec);
+  name = g_path_get_basename (src_path);
   remove_ext (name);
   aux = chain_path (dst_dir, name);
-  g_free (namec);
+  g_free (name);
 
   if (ops->fs == FS_RAW_ALL || ops->fs == FS_RAW_PRESETS)
     {
