@@ -23,6 +23,12 @@
 #include "editor.h"
 #include "sample.h"
 
+#if defined(__linux__)
+#define FRAMES_TO_PLAY (16 * 1024)
+#else
+#define FRAMES_TO_PLAY (64 * 1024)
+#endif
+
 #define EDITOR_PREF_CHANNELS (!editor->remote_browser->fs_ops || (editor->remote_browser->fs_ops->options & FS_OPTION_STEREO) || !editor->preferences->mix ? 2 : 1)
 
 #define MAX_DRAW_X 10000
@@ -131,7 +137,7 @@ editor_update_ui_on_load (gpointer data)
   struct sample_info *sample_info = audio->control.data;
 
   g_mutex_lock (&audio->control.mutex);
-  ready_to_play = audio->frames >= LOAD_BUFFER_LEN || (!audio->control.active
+  ready_to_play = audio->frames >= FRAMES_TO_PLAY || (!audio->control.active
 						       && audio->frames > 0);
   audio->channels = EDITOR_LOADED_CHANNELS (editor->target_channels);
   g_mutex_unlock (&audio->control.mutex);

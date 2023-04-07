@@ -23,7 +23,7 @@
 #include <wordexp.h>
 #define ELEKTROID_HOME_PATH "~"
 #else
-#define ELEKTROID_HOME_PATH "C:\\"
+#define ELEKTROID_HOME_PATH "/"
 #include <dirent.h>
 #endif
 #include <errno.h>
@@ -183,7 +183,7 @@ get_expanded_dir (const char *exp)
   exp_dir = strdup (exp_result.we_wordv[0]);
   wordfree (&exp_result);
 #else
-  exp_dir = strdup(exp);
+  exp_dir = strcmp(exp, "~") ? strdup(exp) : strdup("/");
 #endif
 
   return exp_dir;

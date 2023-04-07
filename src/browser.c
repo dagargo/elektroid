@@ -52,7 +52,11 @@ browser_sort_by_name (GtkTreeModel * model,
 
   if (itema.type == itemb.type)
     {
+#if defined(__MINGW32__) | defined(__MINGW64__)
+      ret = strcmp(itema.name, itemb.name);
+#else
       ret = g_utf8_collate (itema.name, itemb.name);
+#endif
     }
   else
     {

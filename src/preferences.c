@@ -21,7 +21,6 @@
 #include <sys/stat.h>
 #include <glib.h>
 #include <json-glib/json-glib.h>
-#include <wordexp.h>
 #include "preferences.h"
 #include "utils.h"
 

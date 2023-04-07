@@ -21,7 +21,9 @@
 #include <limits.h>
 #include <locale.h>
 #include <gtk/gtk.h>
+#if defined(__linux__)
 #include <glib-unix.h>
+#endif
 #include <glib/gi18n.h>
 #include <glib/gprintf.h>
 #include <getopt.h>
@@ -303,6 +305,18 @@ show_error_msg (const char *format, ...)
   va_end (args);
 }
 
+static gboolean
+elektroid_load_local_if_no_notifier (gpointer data)
+{
+#if !defined(__linux__)
+  struct browser *browser = data;
+  if (browser == &local_browser);
+    {
+      browser_load_dir (browser);
+    }
+#endif
+  return FALSE;
+}
 
 static gboolean
 elektroid_load_remote_if_midi (gpointer data)
@@ -1111,6 +1125,7 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
   elektroid_join_sysex_thread ();
 
   elektroid_load_remote_if_midi (data);
+  elektroid_load_local_if_no_notifier (data);
 }
 
 static void
@@ -2497,6 +2512,7 @@ elektroid_download_task_runner (gpointer userdata)
       if (!res)
 	{
 	  transfer.status = COMPLETED_OK;
+	  g_idle_add (elektroid_load_local_if_no_notifier, &local_browser);
 	}
     }
   g_free (dst_path);
@@ -3085,6 +3101,7 @@ elektroid_dnd_received_system (const gchar * dir, const gchar * name,
 		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
+      g_idle_add (elektroid_load_local_if_no_notifier, &local_browser);
     }
   else
     {
@@ -4045,9 +4062,11 @@ main (int argc, char *argv[])
   gint vflg = 0, dflg = 0, errflg = 0;
   int long_index = 0;
 
+#if defined(__linux__)
   g_unix_signal_add (SIGHUP, elektroid_end, NULL);
   g_unix_signal_add (SIGINT, elektroid_end, NULL);
   g_unix_signal_add (SIGTERM, elektroid_end, NULL);
+#endif
 
   setlocale (LC_ALL, "");
   bindtextdomain (PACKAGE, LOCALEDIR);

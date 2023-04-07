@@ -24,6 +24,8 @@
 #include <errno.h>
 #include "sample.h"
 
+#define LOAD_BUFFER_LEN (8 * 1024)
+
 #define JUNK_CHUNK_ID "JUNK"
 #define SMPL_CHUNK_ID "smpl"
 

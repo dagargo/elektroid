@@ -25,6 +25,7 @@
 #include "notifier.h"
 #include "utils.h"
 
+#if defined(__linux__)
 static void
 notifier_set_dir (struct notifier *notifier)
 {
@@ -110,10 +111,12 @@ notifier_run (gpointer data)
 
   return NULL;
 }
+#endif
 
 void
 notifier_init (struct notifier *notifier, struct browser *browser)
 {
+#if defined(__linux__)
   notifier->fd = inotify_init ();
   notifier->event_size = sizeof (struct inotify_event) + PATH_MAX;
   notifier->event = malloc (notifier->event_size);
@@ -121,11 +124,13 @@ notifier_init (struct notifier *notifier, struct browser *browser)
   notifier->thread = NULL;
   notifier->dir = NULL;
   g_mutex_init (&notifier->mutex);
+#endif
 }
 
 void
 notifier_set_active (struct notifier *notifier, gboolean active)
 {
+#if defined(__linux__)
   g_mutex_lock (&notifier->mutex);
   if (active)
     {
@@ -151,11 +156,14 @@ notifier_set_active (struct notifier *notifier, gboolean active)
 	}
     }
   g_mutex_unlock (&notifier->mutex);
+#endif
 }
 
 void
 notifier_destroy (struct notifier *notifier)
 {
+#if defined(__linux__)
   notifier_set_active (notifier, FALSE);
   g_free (notifier->event);
+#endif
 }

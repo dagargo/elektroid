@@ -26,8 +26,6 @@
 #ifndef SAMPLE_H
 #define SAMPLE_H
 
-#define LOAD_BUFFER_LEN 9600	// In guint16 frames; 0.2 ms
-
 typedef void (*sample_load_cb) (struct job_control *, gdouble, gpointer);
 
 gint sample_get_wav_from_array (GByteArray *, GByteArray *,
