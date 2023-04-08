@@ -138,7 +138,7 @@ editor_update_ui_on_load (gpointer data)
 
   g_mutex_lock (&audio->control.mutex);
   ready_to_play = audio->frames >= FRAMES_TO_PLAY || (!audio->control.active
-						       && audio->frames > 0);
+						      && audio->frames > 0);
   audio->channels = EDITOR_LOADED_CHANNELS (editor->target_channels);
   g_mutex_unlock (&audio->control.mutex);
 

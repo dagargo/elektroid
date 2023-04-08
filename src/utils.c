@@ -19,11 +19,7 @@
  */
 
 #include <stdio.h>
-#if defined(__linux__)
-#include <wordexp.h>
-#define ELEKTROID_HOME_PATH "~"
-#else
-#define ELEKTROID_HOME_PATH "/"
+#if !defined(__linux__)
 #include <dirent.h>
 #endif
 #include <errno.h>
@@ -173,24 +169,15 @@ get_ext (const gchar * name)
 }
 
 gchar *
-get_expanded_dir (const char *exp)
+get_user_dir (const char *rel_conf_path)
 {
-  gchar *exp_dir;
-
-#if defined(__linux__)
-  wordexp_t exp_result;
-  wordexp (exp, &exp_result, 0);
-  exp_dir = strdup (exp_result.we_wordv[0]);
-  wordfree (&exp_result);
-#else
-  exp_dir = strcmp(exp, "~") ? strdup(exp) : strdup("/");
-#endif
-
-  return exp_dir;
+  const gchar *home = getenv ("HOME");
+  return rel_conf_path ? g_strconcat (home, rel_conf_path, NULL) :
+    strdup (home);
 }
 
 char *
-get_local_startup_path (const gchar * local_dir)
+get_system_startup_path (const gchar * local_dir)
 {
   DIR *dir;
   gchar *startup_path = NULL;
@@ -200,11 +187,7 @@ get_local_startup_path (const gchar * local_dir)
       dir = opendir (local_dir);
       if (dir)
 	{
-#if defined(__linux__)
-	  startup_path = realpath (local_dir, NULL);
-#else
-	  startup_path = strdup(local_dir);
-#endif
+	  startup_path = strdup (local_dir);
 	}
       else
 	{
@@ -215,7 +198,7 @@ get_local_startup_path (const gchar * local_dir)
 
   if (!startup_path)
     {
-      startup_path = get_expanded_dir (ELEKTROID_HOME_PATH);
+      startup_path = get_user_dir (NULL);
     }
 
   debug_print (1, "Using '%s' as local dir...\n", startup_path);

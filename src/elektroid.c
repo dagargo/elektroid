@@ -311,9 +311,9 @@ elektroid_load_local_if_no_notifier (gpointer data)
 #if !defined(__linux__)
   struct browser *browser = data;
   if (browser == &local_browser);
-    {
-      browser_load_dir (browser);
-    }
+  {
+    browser_load_dir (browser);
+  }
 #endif
   return FALSE;
 }
@@ -4113,7 +4113,7 @@ main (int argc, char *argv[])
   if (local_dir)
     {
       g_free (preferences.local_dir);
-      preferences.local_dir = get_local_startup_path (local_dir);
+      preferences.local_dir = get_system_startup_path (local_dir);
     }
   editor.preferences = &preferences;
   editor.remote_browser = &remote_browser;

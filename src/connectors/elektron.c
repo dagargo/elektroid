@@ -2065,7 +2065,7 @@ elektron_configure_device (struct backend *backend, guint8 id)
     }
   else
     {
-      devices_filename = get_expanded_dir (CONF_DIR DEVICES_FILE);
+      devices_filename = get_user_dir (CONF_DIR DEVICES_FILE);
     }
 
   if (!json_parser_load_from_file (parser, devices_filename, &error))

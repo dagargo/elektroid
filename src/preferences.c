@@ -40,17 +40,17 @@ preferences_save (struct preferences *preferences)
   JsonNode *root;
   gchar *json;
 
-  preferences_path = get_expanded_dir (CONF_DIR);
+  preferences_path = get_user_dir (CONF_DIR);
   if (g_mkdir_with_parents (preferences_path,
 			    S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH |
 			    S_IXOTH))
     {
-      error_print ("Error wile creating directory `%s'\n", CONF_DIR);
+      error_print ("Error wile creating directory `%s'\n", preferences_path);
       return 1;
     }
 
   g_free (preferences_path);
-  preferences_path = get_expanded_dir (CONF_DIR PREFERENCES_FILE);
+  preferences_path = get_user_dir (CONF_DIR PREFERENCES_FILE);
 
   debug_print (1, "Saving preferences to '%s'...\n", preferences_path);
 
@@ -94,21 +94,21 @@ preferences_load (struct preferences *preferences)
   GError *error;
   JsonReader *reader;
   JsonParser *parser = json_parser_new ();
-  gchar *preferences_file = get_expanded_dir (CONF_DIR PREFERENCES_FILE);
+  gchar *preferences_file = get_user_dir (CONF_DIR PREFERENCES_FILE);
 
   error = NULL;
   json_parser_load_from_file (parser, preferences_file, &error);
   if (error)
     {
       debug_print (1, "Error wile loading preferences from `%s': %s\n",
-		   CONF_DIR PREFERENCES_FILE, error->message);
+		   preferences_file, error->message);
       g_error_free (error);
       g_object_unref (parser);
       g_free (preferences_file);
       preferences->autoplay = TRUE;
       preferences->mix = TRUE;
-      preferences->local_dir = get_expanded_dir ("~");
-      preferences->remote_dir = get_expanded_dir ("~");
+      preferences->local_dir = get_user_dir (NULL);
+      preferences->remote_dir = get_user_dir (NULL);
       return 0;
     }
 
@@ -143,7 +143,7 @@ preferences_load (struct preferences *preferences)
     }
   else
     {
-      preferences->local_dir = get_expanded_dir ("~");
+      preferences->local_dir = get_user_dir (NULL);
     }
   json_reader_end_member (reader);
 
@@ -156,7 +156,7 @@ preferences_load (struct preferences *preferences)
     }
   else
     {
-      preferences->remote_dir = get_expanded_dir ("~");
+      preferences->remote_dir = get_user_dir (NULL);
     }
   json_reader_end_member (reader);
 

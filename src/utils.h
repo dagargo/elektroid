@@ -40,7 +40,7 @@
 #include <inttypes.h>
 #include "../config.h"
 
-#define CONF_DIR "~/.config/" PACKAGE
+#define CONF_DIR "/.config/" PACKAGE
 
 #define LABEL_MAX 256
 
@@ -260,9 +260,9 @@ const gchar *get_ext (const gchar *);
 
 gchar get_type_from_inventory_icon (const gchar *);
 
-gchar *get_expanded_dir (const gchar *);
+gchar *get_user_dir (const gchar *);
 
-gchar *get_local_startup_path (const gchar *);
+gchar *get_system_startup_path (const gchar *);
 
 void free_msg (gpointer);
 
