@@ -81,6 +81,12 @@ debug_get_hex_data (gint level, guint8 * data, guint len)
   size = bytes_shown * 3 + extra;
   str = malloc (sizeof (char) * size);
 
+  if (!len)
+    {
+      *str = 0;
+      return str;
+    }
+
   b = data;
   next = str;
 
