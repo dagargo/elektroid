@@ -102,16 +102,19 @@ backend_init_int (struct backend *backend, const gchar * id)
 #if defined(__linux__)
 	  if (!strcmp (iportname, oportname) && !strcmp (iportname, id))
 #else
-          guint iportnamelen = strlen(iportname);
+	  guint iportnamelen = strlen (iportname);
 	  if (!strncmp (id, iportname, iportnamelen) &&
-	      !strcmp (id + iportnamelen + strlen(WINDOWS_INPUT_OUTPUT_SEPARATOR), oportname))
+	      !strcmp (id + iportnamelen +
+		       strlen (WINDOWS_INPUT_OUTPUT_SEPARATOR), oportname))
 #endif
 	    {
-	      backend->inputp = rtmidi_in_create (ELEKTROID_RTMIDI_API, PACKAGE_NAME,
-	                                          BE_INT_BUF_LEN);
+	      backend->inputp =
+		rtmidi_in_create (ELEKTROID_RTMIDI_API, PACKAGE_NAME,
+				  BE_INT_BUF_LEN);
 	      rtmidi_in_ignore_types (backend->inputp, false, true, true);
 	      rtmidi_open_port (backend->inputp, i, PACKAGE_NAME);
-	      backend->outputp = rtmidi_out_create (ELEKTROID_RTMIDI_API, PACKAGE_NAME);
+	      backend->outputp =
+		rtmidi_out_create (ELEKTROID_RTMIDI_API, PACKAGE_NAME);
 	      rtmidi_open_port (backend->outputp, j, PACKAGE_NAME);
 	      backend->rx_len = 0;
 
@@ -344,11 +347,11 @@ backend_get_system_devices ()
 #else
 	  //We consider the cartesian product of inputs and outputs as the available ports.
 	  backend_system_device =
-	  malloc (sizeof (struct backend_system_device));
+	    malloc (sizeof (struct backend_system_device));
 	  snprintf (backend_system_device->id, LABEL_MAX, "%s%s%s",
-			iportname, WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
+		    iportname, WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
 	  snprintf (backend_system_device->name, LABEL_MAX, "%s%s%s",
-			iportname, WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
+		    iportname, WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
 	  g_array_append_vals (devices, backend_system_device, 1);
 #endif
 	}
