@@ -82,7 +82,7 @@ cli_connect (const gchar * device_path)
   struct backend_system_device device;
   GArray *devices = backend_get_system_devices ();
 
-  if (!devices->len)
+  if (!devices->len || id >= devices->len)
     {
       error_print ("Invalid device %d\n", id);
       return -ENODEV;
