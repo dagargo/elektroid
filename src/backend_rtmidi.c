@@ -168,7 +168,7 @@ backend_tx_sysex_internal (struct backend *backend,
 }
 
 ssize_t
-backend_tx_raw (struct backend *backend, const guint8 * data, guint len)
+backend_tx_raw (struct backend *backend, guint8 * data, guint len)
 {
   struct sysex_transfer transfer;
   transfer.raw = g_byte_array_sized_new (len);
@@ -195,89 +195,23 @@ backend_rx_drain (struct backend *backend)
     }
 }
 
-//Access to this function must be synchronized.
-
-gint
-backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
+ssize_t
+backend_rx_raw (struct backend *backend, guint8 * buffer, guint len)
 {
-  size_t len;
-
-  if (!backend->inputp)
+  size_t size = len;
+  debug_print (4, "Reading...\n");
+  rtmidi_in_get_message (backend->inputp, buffer, &size);
+  if (!backend->inputp->ok)
     {
-      error_print ("Input port is NULL\n");
-      return -ENOTCONN;
+      return -EIO;
     }
 
-  transfer->time = 0;
-  transfer->err = -1;
-  transfer->active = TRUE;
-  transfer->status = WAITING;
-  transfer->raw = g_byte_array_sized_new (BE_INT_BUF_LEN);
-
-  while (1)
+  if (!size)
     {
-      if (!transfer->active)
-	{
-	  transfer->err = -ECANCELED;
-	  goto end;
-	}
-
-      len = BE_INT_BUF_LEN;
-      rtmidi_in_get_message (backend->inputp, backend->buffer, &len);
-      if (!backend->inputp->ok)
-	{
-	  transfer->err = -EIO;
-	  goto end;
-	}
-
-      if (len && backend->buffer[0] == 0xf0)	//We filter out everything is not a SysEx message.
-	{
-	  g_byte_array_append (transfer->raw, backend->buffer, len);
-	  transfer->time = 0;
-	  transfer->status = RECEIVING;
-	  transfer->err = 0;
-	  if (!transfer->batch)
-	    {
-	      break;
-	    }
-	}
-      else
-	{
-	  usleep (BE_POLL_TIMEOUT_MS * 1000);
-	  transfer->time += BE_POLL_TIMEOUT_MS;
-	}
-
-      debug_print (4, "Checking timeout (%d ms, %d ms, %s mode)...\n",
-		   transfer->time, transfer->timeout,
-		   transfer->batch ? "batch" : "single");
-      if (((transfer->batch && transfer->status == RECEIVING)
-	   || !transfer->batch) && transfer->timeout > -1
-	  && transfer->time >= transfer->timeout)
-	{
-	  debug_print (1, "Timeout\n");
-	  transfer->err = -ETIMEDOUT;
-	  goto end;
-	}
+      usleep (BE_POLL_TIMEOUT_MS * 1000);
     }
 
-  if (transfer->raw->len && debug_level >= 2)
-    {
-      gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
-					transfer->raw->len);
-      debug_print (2, "Raw message received (%d): %s\n", transfer->raw->len,
-		   text);
-      free (text);
-    }
-
-end:
-  if (transfer->err < 0)
-    {
-      free_msg (transfer->raw);
-      transfer->raw = NULL;
-    }
-  transfer->active = FALSE;
-  transfer->status = FINISHED;
-  return transfer->err;
+  return size;
 }
 
 gboolean
