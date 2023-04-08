@@ -345,7 +345,7 @@ elektroid_load_devices (gboolean auto_select)
 {
   gint i;
   gint device_index;
-  gchar hostname[LABEL_MAX];
+  const gchar *hostname;
   GArray *devices = backend_get_system_devices ();
   struct backend_system_device device;
 
@@ -354,7 +354,7 @@ elektroid_load_devices (gboolean auto_select)
   gtk_list_store_clear (fs_list_store);
   gtk_list_store_clear (devices_list_store);
 
-  gethostname (hostname, LABEL_MAX);
+  hostname = g_get_host_name ();
   gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
 				     DEVICES_LIST_STORE_ID_FIELD,
 				     BE_SYSTEM_ID,
