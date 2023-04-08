@@ -178,16 +178,15 @@ backend_tx_raw (struct backend *backend, guint8 * data, guint len)
 }
 
 void
-backend_rx_drain (struct backend *backend)
+backend_rx_drain_int (struct backend *backend)
 {
   size_t len;
+  guint8 buffer[BE_INT_BUF_LEN];
 
-  debug_print (2, "Draining buffers...\n");
-  backend->rx_len = 0;
   while (1)
     {
       len = BE_INT_BUF_LEN;
-      rtmidi_in_get_message (backend->inputp, backend->buffer, &len);
+      rtmidi_in_get_message (backend->inputp, buffer, &len);
       if (len == 0)
 	{
 	  break;

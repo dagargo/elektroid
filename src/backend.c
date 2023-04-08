@@ -27,6 +27,7 @@
 gint backend_tx_sysex_internal (struct backend *, struct sysex_transfer *,
 				gboolean);
 
+void backend_rx_drain_int (struct backend *);
 void backend_destroy_int (struct backend *);
 gint backend_init_int (struct backend *, const gchar *);
 gboolean backend_check_int (struct backend *);
@@ -640,4 +641,22 @@ end:
   transfer->active = FALSE;
   transfer->status = FINISHED;
   return transfer->err;
+}
+
+//Access to this function must be synchronized.
+
+void
+backend_rx_drain (struct backend *backend)
+{
+  struct sysex_transfer transfer;
+  transfer.timeout = 1000;
+  transfer.batch = FALSE;
+
+  debug_print (2, "Draining buffers...\n");
+  backend->rx_len = 0;
+  backend_rx_drain_int (backend);
+  while (!backend_rx_sysex (backend, &transfer))
+    {
+      free_msg (transfer.raw);
+    }
 }

@@ -221,22 +221,10 @@ backend_tx_sysex_internal (struct backend *backend,
   return transfer->err;
 }
 
-//Access to this function must be synchronized.
-
 void
-backend_rx_drain (struct backend *backend)
+backend_rx_drain_int (struct backend *backend)
 {
-  struct sysex_transfer transfer;
-  transfer.timeout = 1000;
-  transfer.batch = FALSE;
-
-  debug_print (2, "Draining buffers...\n");
-  backend->rx_len = 0;
   snd_rawmidi_drain (backend->inputp);
-  while (!backend_rx_sysex (backend, &transfer))
-    {
-      free_msg (transfer.raw);
-    }
 }
 
 ssize_t
