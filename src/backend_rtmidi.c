@@ -23,11 +23,11 @@
 
 #if defined(__linux__)
 #define ELEKTROID_RTMIDI_API RTMIDI_API_LINUX_ALSA
-#define FIRST_OUTPUT_PORT 0
+#define FIRST_OUTPUT_PORT 1	//Skip Midi Through
 #else
 #define WINDOWS_INPUT_OUTPUT_SEPARATOR " :: "
 #define ELEKTROID_RTMIDI_API RTMIDI_API_WINDOWS_MM
-#define FIRST_OUTPUT_PORT 1
+#define FIRST_OUTPUT_PORT 1	//Skip Microsoft GS Wavetable Synth 0
 #endif
 
 void
