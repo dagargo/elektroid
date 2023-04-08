@@ -104,10 +104,6 @@ backend_midi_handshake (struct backend *backend)
   backend->get_storage_stats = NULL;
   memset (&backend->midi_info, 0, sizeof (struct backend_midi_info));
 
-  g_mutex_lock (&backend->mutex);
-  backend_rx_drain (backend);
-  g_mutex_unlock (&backend->mutex);
-
   tx_msg = g_byte_array_sized_new (sizeof (BE_MIDI_IDENTITY_REQUEST));
   g_byte_array_append (tx_msg, (guchar *) BE_MIDI_IDENTITY_REQUEST,
 		       sizeof (BE_MIDI_IDENTITY_REQUEST));
@@ -346,7 +342,14 @@ backend_init (struct backend *backend, const gchar * id)
   debug_print (1, "Initializing backend (%s) to '%s'...\n",
 	       backend_name (), id);
   backend->type = BE_TYPE_MIDI;
-  return backend_init_int (backend, id);
+  gint err = backend_init_int (backend, id);
+  if (!err)
+    {
+      g_mutex_lock (&backend->mutex);
+      backend_rx_drain (backend);
+      g_mutex_unlock (&backend->mutex);
+    }
+  return err;
 }
 
 void
