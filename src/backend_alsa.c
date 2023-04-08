@@ -142,7 +142,7 @@ cleanup:
 }
 
 ssize_t
-backend_tx_raw (struct backend *backend, const guint8 * data, guint len)
+backend_tx_raw (struct backend *backend, guint8 * data, guint len)
 {
   ssize_t tx_len;
 
@@ -239,12 +239,64 @@ backend_rx_drain (struct backend *backend)
     }
 }
 
+ssize_t
+backend_rx_raw (struct backend *backend, guint8 * buffer, guint len)
+{
+  gint err;
+  ssize_t rx_len;
+  unsigned short revents;
+
+  debug_print (4, "Polling...\n");
+  err = poll (backend->pfds, backend->npfds, BE_POLL_TIMEOUT_MS);
+  if (err == 0)
+    {
+      return 0;
+    }
+
+  if (err < 0)
+    {
+      error_print ("Error while polling. %s.\n", g_strerror (errno));
+      if (errno == EINTR)
+	{
+	  return -ECANCELED;
+	}
+      return err;
+    }
+
+  if ((err = snd_rawmidi_poll_descriptors_revents (backend->inputp,
+						   backend->pfds,
+						   backend->npfds,
+						   &revents)) < 0)
+    {
+      error_print ("Error while getting poll events. %s.\n",
+		   snd_strerror (err));
+      return err;
+    }
+
+  if (revents & (POLLERR | POLLHUP))
+    {
+      return -ENODATA;
+    }
+
+  if (!(revents & POLLIN))
+    {
+      return 0;
+    }
+
+  debug_print (4, "Reading data...\n");
+  rx_len = snd_rawmidi_read (backend->inputp, buffer, len);
+  if (rx_len == -EAGAIN)
+    {
+      return 0;
+    }
+
+  return rx_len;
+}
+
 static ssize_t
-backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
+backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
 {
   ssize_t rx_len, rx_len_msg;
-  unsigned short revents;
-  gint err;
   gchar *text;
   guint8 tmp[BE_TMP_BUFF_LEN];
   guint8 *tmp_msg, *data = backend->buffer + backend->rx_len;
@@ -278,54 +330,20 @@ backend_rx_raw (struct backend *backend, struct sysex_transfer *transfer)
 	  return -ETIMEDOUT;
 	}
 
-      debug_print (4, "Polling...\n");
-      err = poll (backend->pfds, backend->npfds, BE_POLL_TIMEOUT_MS);
-
-      if (err == 0)
+      debug_print (4, "Reading data...\n");
+      rx_len = backend_rx_raw (backend, tmp, BE_TMP_BUFF_LEN);
+      if (rx_len < 0)
+	{
+	  return rx_len;
+	}
+      if (rx_len == 0)
 	{
 	  if ((transfer->batch && transfer->status == RECEIVING)
 	      || !transfer->batch)
 	    {
 	      transfer->time += BE_POLL_TIMEOUT_MS;
 	    }
-	  continue;
-	}
 
-      if (err < 0)
-	{
-	  error_print ("Error while polling. %s.\n", g_strerror (errno));
-	  if (errno == EINTR)
-	    {
-	      return -ECANCELED;
-	    }
-	  return err;
-	}
-
-      if ((err = snd_rawmidi_poll_descriptors_revents (backend->inputp,
-						       backend->pfds,
-						       backend->npfds,
-						       &revents)) < 0)
-	{
-	  error_print ("Error while getting poll events. %s.\n",
-		       snd_strerror (err));
-	  return err;
-	}
-
-      if (revents & (POLLERR | POLLHUP))
-	{
-	  return -ENODATA;
-	}
-
-      if (!(revents & POLLIN))
-	{
-	  continue;
-	}
-
-      debug_print (4, "Reading data...\n");
-      rx_len = snd_rawmidi_read (backend->inputp, tmp, BE_TMP_BUFF_LEN);
-
-      if (rx_len == -EAGAIN || rx_len == 0)
-	{
 	  continue;
 	}
 
@@ -409,7 +427,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	    {
 	      transfer->time = 0;
 	    }
-	  rx_len = backend_rx_raw (backend, transfer);
+	  rx_len = backend_rx_raw_loop (backend, transfer);
 
 	  if (rx_len == -ENODATA || rx_len == -ETIMEDOUT
 	      || rx_len == -ECANCELED)

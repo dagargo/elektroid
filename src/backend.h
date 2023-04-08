@@ -128,7 +128,9 @@ gint backend_init (struct backend *, const gchar *);
 
 void backend_destroy (struct backend *);
 
-ssize_t backend_tx_raw (struct backend *, const guint8 *, guint);
+ssize_t backend_rx_raw (struct backend *, guint8 *, guint);
+
+ssize_t backend_tx_raw (struct backend *, guint8 *, guint);
 
 gint backend_tx_sysex_no_status (struct backend *, struct sysex_transfer *);
 
