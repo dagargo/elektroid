@@ -179,6 +179,8 @@ static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING}
 };
 
+static const gchar *hostname;
+
 static struct browser remote_browser;
 static struct browser local_browser;
 static struct editor editor;
@@ -345,7 +347,6 @@ elektroid_load_devices (gboolean auto_select)
 {
   gint i;
   gint device_index;
-  const gchar *hostname;
   GArray *devices = backend_get_system_devices ();
   struct backend_system_device device;
 
@@ -354,7 +355,6 @@ elektroid_load_devices (gboolean auto_select)
   gtk_list_store_clear (fs_list_store);
   gtk_list_store_clear (devices_list_store);
 
-  hostname = g_get_host_name ();
   gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
 				     DEVICES_LIST_STORE_ID_FIELD,
 				     BE_SYSTEM_ID,
@@ -3611,7 +3611,6 @@ elektroid_run (int argc, char *argv[])
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
   GtkWidget *hostname_label;
-  gchar hostname[LABEL_MAX];
 
   gtk_init (&argc, &argv);
   builder = gtk_builder_new ();
@@ -3990,7 +3989,6 @@ elektroid_run (int argc, char *argv[])
 
   elektroid_audio_widgets_set_status ();
 
-  gethostname (hostname, LABEL_MAX);
   gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
 
   local_browser.sensitive_widgets =
@@ -4110,6 +4108,8 @@ main (int argc, char *argv[])
       elektroid_print_help (argv[0]);
       exit (EXIT_FAILURE);
     }
+
+  hostname = g_get_host_name ();
 
   preferences_load (&preferences);
   if (local_dir)
