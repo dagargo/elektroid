@@ -88,30 +88,7 @@ local_get_upload_path (struct backend *backend,
 gint
 local_mkdir (struct backend *backend, const gchar * name)
 {
-  DIR *dir;
-  gint res = 0;
-  gchar *parent;
-
-  parent = g_path_get_dirname (name);
-  dir = opendir (parent);
-  if (dir)
-    {
-      closedir (dir);
-    }
-  else
-    {
-      res = local_mkdir (backend, parent);
-      if (res)
-	{
-	  goto cleanup;
-	}
-    }
-
-#if defined(__MINGW32__) || defined(__MINGW64__)
-  res = mkdir (name);
-#else
-  res = mkdir (name, 0755);
-#endif
+  gint res = g_mkdir_with_parents (name, 0755);
   if (res == 0 || errno == EEXIST)
     {
       res = 0;
@@ -122,8 +99,6 @@ local_mkdir (struct backend *backend, const gchar * name)
       res = -errno;
     }
 
-cleanup:
-  g_free (parent);
   return res;
 }
 
