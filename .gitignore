@@ -39,6 +39,8 @@ src/.libs
 src/*~
 test/*.log
 test/*.trs
+test/*.exe
+test/.libs
 test/integration/*.trs
 test/tests_scala
 config.guess
