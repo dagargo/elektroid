@@ -1219,7 +1219,7 @@ elektroid_drag_begin (GtkWidget * widget, GdkDragContext * context,
 	}
       else
 	{
-	  uri = chain_path ("file://", &path[1]);
+	  uri = g_strconcat ("file://", path);
 	  escaped_uri = g_uri_escape_string (uri, ":/", FALSE);
 	  g_free (uri);
 	}
