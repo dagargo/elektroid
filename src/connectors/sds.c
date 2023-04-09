@@ -829,7 +829,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	}
       else if (err == -EINVAL)
 	{
-	  debug_print (2, "Unexpectd packet number. Continuing...\n");
+	  debug_print (2, "Unexpected packet number. Continuing...\n");
 	  retries++;
 	  continue;
 	}

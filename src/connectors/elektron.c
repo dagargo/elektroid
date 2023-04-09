@@ -1369,8 +1369,7 @@ elektron_path_common (struct backend *backend, const gchar * path,
   else
     {
       res = -EPERM;
-      debug_print (1, "%s (%s)\n", backend_strerror (backend, res),
-		   elektron_get_msg_string (rx_msg));
+      debug_print (1, "Error: %s\n", elektron_get_msg_string (rx_msg));
     }
   free_msg (rx_msg);
 

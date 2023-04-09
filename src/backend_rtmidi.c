@@ -108,9 +108,9 @@ backend_init_int (struct backend *backend, const gchar * id)
 		       strlen (WINDOWS_INPUT_OUTPUT_SEPARATOR), oportname))
 #endif
 	    {
-	      backend->inputp =
-		rtmidi_in_create (ELEKTROID_RTMIDI_API, PACKAGE_NAME,
-				  BE_INT_BUF_LEN);
+	      backend->inputp = rtmidi_in_create (ELEKTROID_RTMIDI_API,
+						  PACKAGE_NAME,
+						  BE_INT_BUF_LEN);
 	      rtmidi_in_ignore_types (backend->inputp, false, true, true);
 	      rtmidi_open_port (backend->inputp, i, PACKAGE_NAME);
 	      backend->outputp =
@@ -180,13 +180,10 @@ backend_tx_raw (struct backend *backend, guint8 * data, guint len)
 void
 backend_rx_drain_int (struct backend *backend)
 {
-  size_t len;
-  guint8 buffer[BE_INT_BUF_LEN];
-
   while (1)
     {
-      len = BE_INT_BUF_LEN;
-      rtmidi_in_get_message (backend->inputp, buffer, &len);
+      size_t len = BE_INT_BUF_LEN;
+      rtmidi_in_get_message (backend->inputp, backend->buffer, &len);
       if (len == 0)
 	{
 	  break;
@@ -198,7 +195,6 @@ ssize_t
 backend_rx_raw (struct backend *backend, guint8 * buffer, guint len)
 {
   size_t size = len;
-  debug_print (4, "Reading...\n");
   rtmidi_in_get_message (backend->inputp, buffer, &size);
   if (!backend->inputp->ok)
     {

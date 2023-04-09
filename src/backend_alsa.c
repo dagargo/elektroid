@@ -234,7 +234,7 @@ backend_rx_raw (struct backend *backend, guint8 * buffer, guint len)
   ssize_t rx_len;
   unsigned short revents;
 
-  debug_print (4, "Polling...\n");
+  debug_print (6, "Polling...\n");
   err = poll (backend->pfds, backend->npfds, BE_POLL_TIMEOUT_MS);
   if (err == 0)
     {
@@ -271,7 +271,6 @@ backend_rx_raw (struct backend *backend, guint8 * buffer, guint len)
       return 0;
     }
 
-  debug_print (4, "Reading data...\n");
   rx_len = snd_rawmidi_read (backend->inputp, buffer, len);
   if (rx_len == -EAGAIN)
     {

@@ -405,6 +405,8 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
       return -ENOTCONN;
     }
 
+  debug_print (4, "Reading data...\n");
+
   while (1)
     {
       if (!transfer->active)
@@ -412,14 +414,14 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
 	  return -ECANCELED;
 	}
 
-      debug_print (4, "Checking timeout (%d ms, %d ms, %s mode)...\n",
+      debug_print (6, "Checking timeout (%d ms, %d ms, %s mode)...\n",
 		   transfer->time, transfer->timeout,
 		   transfer->batch ? "batch" : "single");
       if (((transfer->batch && transfer->status == RECEIVING)
 	   || !transfer->batch) && transfer->timeout > -1
 	  && transfer->time >= transfer->timeout)
 	{
-	  debug_print (1, "Timeout\n");
+	  debug_print (1, "Timeout (%d)\n", transfer->timeout);
 	  gchar *text = debug_get_hex_data (debug_level, backend->buffer,
 					    backend->rx_len);
 	  debug_print (4, "Internal buffer data (%zd): %s\n", backend->rx_len,
@@ -428,7 +430,6 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
 	  return -ETIMEDOUT;
 	}
 
-      debug_print (4, "Reading data...\n");
       rx_len = backend_rx_raw (backend, tmp, BE_TMP_BUFF_LEN);
       if (rx_len < 0)
 	{
@@ -441,13 +442,12 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
 	    {
 	      transfer->time += BE_POLL_TIMEOUT_MS;
 	    }
-
 	  continue;
 	}
 
       //Everything is skipped until a 0xf0 is found. This includes every RT MIDI message.
       tmp_msg = tmp;
-      if (!backend->rx_len && tmp[0] != 0xf0)
+      if (!backend->rx_len && *tmp_msg != 0xf0)
 	{
 	  if (debug_level >= 4)
 	    {
