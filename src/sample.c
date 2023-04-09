@@ -642,7 +642,7 @@ sample_load_from_file_with_cb (const gchar * path, GByteArray * sample,
   FILE *file = fopen (path, "rb");
   if (!file)
     {
-      return errno;
+      return -errno;
     }
   gint err = sample_load_raw (file, &FILE_IO, control, sample, sample_params,
 			      frames, cb, cb_data);
