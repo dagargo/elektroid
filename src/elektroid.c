@@ -1179,6 +1179,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	  else
 	    {
 	      elektroid_load_remote_if_midi (browser);
+	      elektroid_load_local_if_no_notifier (browser);
 	    }
 	  free (new_path);
 	}
@@ -1700,6 +1701,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 	  else
 	    {
 	      elektroid_load_remote_if_midi (browser);
+	      elektroid_load_local_if_no_notifier (browser);
 	    }
 
 	  free (pathname);
