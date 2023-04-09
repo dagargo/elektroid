@@ -24,6 +24,7 @@
 #endif
 #include <errno.h>
 #include "utils.h"
+#include "backend.h"
 
 #define DEBUG_SHORT_HEX_LEN 64
 #define DEBUG_FULL_HEX_THRES 5
@@ -178,8 +179,11 @@ gchar *
 get_user_dir (const char *rel_conf_path)
 {
   const gchar *home = getenv ("HOME");
-  return rel_conf_path ? g_strconcat (home, rel_conf_path, NULL) :
+  gchar *input = rel_conf_path ? g_strconcat (home, rel_conf_path, NULL) :
     strdup (home);
+  gchar *output = backend_translate_path (NULL, input);
+  g_free (input);
+  return output;
 }
 
 char *

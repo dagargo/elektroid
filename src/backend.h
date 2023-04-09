@@ -183,4 +183,14 @@ void backend_midi_handshake (struct backend *);
 
 const gchar *backend_strerror (struct backend *backend, gint error);
 
+//Use a backslash for the system backend on WSYS2.
+
+gchar *backend_chain_path (struct backend *, const gchar *, const gchar *);
+
+gchar *backend_translate_path (struct backend *backend, const gchar * input);
+
+gchar *backend_filename_from_uri (struct backend *backend, gchar * uri);
+
+gchar *backend_filename_to_uri (struct backend *backend, gchar * filename);
+
 #endif

@@ -120,7 +120,7 @@ local_delete (struct backend *backend, const gchar * path)
 	    {
 	      continue;
 	    }
-	  new_path = chain_path (path, dirent->d_name);
+	  new_path = backend_chain_path (NULL, path, dirent->d_name);
 	  local_delete (backend, new_path);
 	  free (new_path);
 	}
@@ -169,7 +169,7 @@ local_next_dentry (struct item_iterator *iter)
 	  continue;
 	}
 
-      full_path = chain_path (data->path, dirent->d_name);
+      full_path = backend_chain_path (NULL, data->path, dirent->d_name);
       if (stat (full_path, &st))
 	{
 	  free (full_path);

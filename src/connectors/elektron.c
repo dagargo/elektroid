@@ -1321,8 +1321,8 @@ elektron_move_common_item (struct backend *backend, const gchar * src,
 	{
 	  while (!next_item_iterator (&iter) && !res)
 	    {
-	      src_plus = chain_path (src, iter.item.name);
-	      dst_plus = chain_path (dst, iter.item.name);
+	      src_plus = backend_chain_path (NULL, src, iter.item.name);
+	      dst_plus = backend_chain_path (NULL, dst, iter.item.name);
 	      res = elektron_move_common_item (backend, src_plus, dst_plus,
 					       init_iter, mv, mkdir, rmdir);
 	      free (src_plus);
@@ -1513,7 +1513,7 @@ elektron_delete_common_item (struct backend *backend, const gchar * path,
 	  res = 0;
 	  while (!res && !next_item_iterator (&iter))
 	    {
-	      new_path = chain_path (path, iter.item.name);
+	      new_path = backend_chain_path (NULL, path, iter.item.name);
 	      res = res || elektron_delete_common_item (backend, new_path,
 							init_iter, rmdir, rm);
 	      free (new_path);
@@ -3052,7 +3052,7 @@ elektron_get_upload_path_smplrw (struct backend *backend,
 
   name = g_path_get_basename (src_path);
   remove_ext (name);
-  aux = chain_path (dst_dir, name);
+  aux = backend_chain_path (NULL, dst_dir, name);
   g_free (name);
 
   if (ops->fs == FS_RAW_ALL || ops->fs == FS_RAW_PRESETS)
@@ -3104,7 +3104,7 @@ elektron_get_download_path (struct backend *backend,
       GString *filename = g_string_new (NULL);
       dl_ext = ops->get_ext (backend, ops);
       g_string_append_printf (filename, "%s.%s%s", name, dl_ext, md_ext);
-      path = chain_path (dst_dir, filename->str);
+      path = backend_chain_path (NULL, dst_dir, filename->str);
       g_free (name);
       g_free (dl_ext);
       g_string_free (filename, TRUE);
