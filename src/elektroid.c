@@ -3173,10 +3173,11 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
   struct elektroid_dnd_data *dnd_data = data;
   GtkWidget *widget = dnd_data->widget;
 
+  sysex_transfer.active = TRUE;
+
   if (dialog)
     {
       start = g_get_monotonic_time ();
-      sysex_transfer.active = TRUE;
       g_timeout_add (100, elektroid_update_basic_sysex_progress, NULL);
     }
 
@@ -3362,6 +3363,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
       elektroid_new_sysex_thread (elektroid_dnd_received_runner, dnd_data);
       gtk_dialog_run (GTK_DIALOG (progress_dialog));
       gtk_widget_hide (GTK_WIDGET (progress_dialog));
+
       elektroid_join_sysex_thread ();
       batch_id++;
     }
