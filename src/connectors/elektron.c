@@ -3104,7 +3104,7 @@ elektron_get_download_path (struct backend *backend,
       GString *filename = g_string_new (NULL);
       dl_ext = ops->get_ext (backend, ops);
       g_string_append_printf (filename, "%s.%s%s", name, dl_ext, md_ext);
-      path = path_chain (PATH_INTERNAL, dst_dir, filename->str);
+      path = path_chain (PATH_SYSTEM, dst_dir, filename->str);
       g_free (name);
       g_free (dl_ext);
       g_string_free (filename, TRUE);

@@ -68,7 +68,7 @@ sds_get_download_path (struct backend *backend,
 		       const gchar * src_path, GByteArray * data)
 {
   GByteArray *tx_msg, *rx_msg;
-  GString *str = g_string_new (dst_dir);
+  GString *str = g_string_new (NULL);
   gchar *path;
   gchar *name = g_path_get_basename (src_path);
   gint index = atoi (name);
@@ -89,7 +89,7 @@ sds_get_download_path (struct backend *backend,
       rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
       if (rx_msg)
 	{
-	  g_string_append_printf (str, "/%s.wav", &rx_msg->data[5]);
+	  g_string_append_printf (str, "%s.wav", &rx_msg->data[5]);
 	  free_msg (rx_msg);
 	  use_id = FALSE;
 	}
@@ -97,12 +97,12 @@ sds_get_download_path (struct backend *backend,
 
   if (use_id)
     {
-      g_string_append_printf (str, "/%03d.wav", index);
+      g_string_append_printf (str, "%03d.wav", index);
     }
 
   g_free (name);
-  path = str->str;
-  g_string_free (str, FALSE);
+  path = path_chain(PATH_SYSTEM, dst_dir, str->str);
+  g_string_free (str, TRUE);
   return path;
 }
 

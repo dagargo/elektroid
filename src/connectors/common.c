@@ -215,8 +215,8 @@ common_get_download_path_with_params (struct backend *backend,
 				      const gchar * name)
 {
   gchar *path;
-  GString *str = g_string_new (dst_dir);
-  g_string_append_printf (str, "/%s %s %.*d", backend->name, ops->name,
+  GString *str = g_string_new (NULL);
+  g_string_append_printf (str, "%s %s %.*d", backend->name, ops->name,
 			  digits, id);
   if (name)
     {
@@ -226,8 +226,8 @@ common_get_download_path_with_params (struct backend *backend,
   g_string_append (str, ".");
   g_string_append (str, ops->type_ext);
 
-  path = str->str;
-  g_string_free (str, FALSE);
+  path = path_chain(PATH_SYSTEM, dst_dir, str->str);
+  g_string_free (str, TRUE);
 
   return path;
 }
