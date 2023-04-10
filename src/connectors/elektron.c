@@ -2962,6 +2962,7 @@ elektron_get_download_name (struct backend *backend,
   id = atoi (name);
   g_free (name);
 
+  name = NULL;
   while (!next_item_iterator (iter))
     {
       if (iter->item.id == id)
