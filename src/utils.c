@@ -24,7 +24,6 @@
 #endif
 #include <errno.h>
 #include "utils.h"
-#include "backend.h"
 
 #define DEBUG_SHORT_HEX_LEN 64
 #define DEBUG_FULL_HEX_THRES 5
@@ -181,7 +180,7 @@ get_user_dir (const char *rel_conf_path)
   const gchar *home = getenv ("HOME");
   gchar *input = rel_conf_path ? g_strconcat (home, rel_conf_path, NULL) :
     strdup (home);
-  gchar *output = backend_translate_path (NULL, input);
+  gchar *output = backend_translate_path (PATH_SYSTEM, input);
   g_free (input);
   return output;
 }
@@ -441,4 +440,93 @@ iter_matches_extensions (struct item_iterator *iter, gchar ** extensions)
     }
 
   return file_matches_extensions (iter->item.name, extensions);
+}
+
+static inline const gchar *
+backend_get_separator (enum path_type type)
+{
+  const gchar *sep;
+  if (type == PATH_SYSTEM)
+    {
+#if defined(__MINGW32__) | defined(__MINGW64__)
+      sep = "\\";
+#else
+      sep = "/";
+#endif
+    }
+  else
+    {
+      sep = "/";
+    }
+  return sep;
+}
+
+gchar *
+backend_chain_path (enum path_type type, const gchar * parent,
+		    const gchar * child)
+{
+  const gchar *sep = backend_get_separator (type);
+  return g_build_path (sep, parent, child, NULL);
+}
+
+gchar *
+backend_translate_path (enum path_type type, const gchar * input)
+{
+  gchar *output, *o;
+  const gchar *i;
+  const gchar *sep = backend_get_separator (type);
+
+  if (!strcmp (sep, "/"))
+    {
+      return strdup (input);
+    }
+
+  output = g_malloc (strlen (input) * 2 + 1);	//Worst case scenario
+  i = input;
+  o = output;
+  while (*i)
+    {
+      if (*i == '/')
+	{
+	  *o = 0;
+	  strcat (o, sep);
+	  o += strlen (sep);
+	}
+      else
+	{
+	  *o = *i;
+	  o++;
+	}
+      i++;
+    }
+  *o = 0;
+  return output;
+}
+
+//These two functions are needed as g_filename_to_uri and g_uri_to_filename
+//depend on the local system and therefore can not be used for BE_TYPE_MIDI
+//under MSYS2.
+
+gchar *
+backend_filename_from_uri (enum path_type type, gchar * uri)
+{
+  if (type == PATH_SYSTEM)
+    {
+      return g_filename_from_uri (uri, NULL, NULL);
+    }
+  const gchar *filename = &uri[7];	//Skip "file://".
+  return g_uri_unescape_string (filename, ":/");
+}
+
+gchar *
+backend_filename_to_uri (enum path_type type, gchar * filename)
+{
+  if (type == PATH_SYSTEM)
+    {
+      return g_filename_to_uri (filename, NULL, NULL);
+    }
+  gchar *uri = g_strconcat ("file://", filename, NULL);
+  gchar *escaped_uri = g_uri_escape_string (uri, ":/", FALSE);
+  g_free (uri);
+  return escaped_uri;
 }

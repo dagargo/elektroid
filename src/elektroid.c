@@ -41,6 +41,8 @@
 #define EDITOR_GET_SOURCE(browser) (browser == &local_browser ? AUDIO_SRC_LOCAL : AUDIO_SRC_REMOTE)
 #define EDITOR_SOURCE_IS_BROWSER(browser) (EDITOR_GET_SOURCE(browser) == editor.audio.src)
 
+#define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : path_type_from_backend (&backend))
+
 #define DND_TIMEOUT 1000
 
 #define TEXT_URI_LIST_STD "text/uri-list"
@@ -977,15 +979,16 @@ elektroid_delete_file (struct browser *browser, gchar * dir,
 {
   gint err = 0;
   gchar *path;
+  enum path_type type = path_type_from_backend (browser->backend);
 
-  path = backend_chain_path (browser->backend, dir, item->name);
+  path = backend_chain_path (type, dir, item->name);
 
   debug_print (1, "Deleting %s...\n", path);
 
   if (item->type == ELEKTROID_FILE)
     {
       gchar *filename = get_filename (browser->fs_ops->options, item);
-      gchar *id_path = backend_chain_path (browser->backend, dir, filename);
+      gchar *id_path = backend_chain_path (type, dir, filename);
       g_free (filename);
       err = browser->fs_ops->delete (browser->backend, id_path);
       if (err)
@@ -1167,7 +1170,8 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	    }
 	  else
 	    {
-	      new_path = backend_chain_path (browser->backend, browser->dir,
+              enum path_type type = path_type_from_backend (browser->backend);
+	      new_path = backend_chain_path (type, browser->dir,
 					     gtk_entry_get_text
 					     (name_dialog_entry));
 	    }
@@ -1202,6 +1206,7 @@ elektroid_drag_begin (GtkWidget * widget, GdkDragContext * context,
   gchar *uri, *path;
   struct item item;
   struct browser *browser = data;
+  enum path_type type = path_type_from_backend (browser->backend);
 
   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (widget));
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (GTK_TREE_VIEW (widget)));
@@ -1213,7 +1218,7 @@ elektroid_drag_begin (GtkWidget * widget, GdkDragContext * context,
       gtk_tree_model_get_iter (model, &iter, list->data);
       browser_set_item (model, &iter, &item);
       path = browser_get_item_path (browser, &item);
-      uri = backend_filename_to_uri (browser->backend, path);
+      uri = backend_filename_to_uri (type, path);
       g_free (path);
       g_string_append (browser->dnd_data, uri);
       g_free (uri);
@@ -1476,8 +1481,8 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	}
       else
 	{
-	  sample_path = backend_chain_path (browser->backend, browser->dir,
-					    item.name);
+          enum path_type type = path_type_from_backend (browser->backend);
+	  sample_path = backend_chain_path (type, browser->dir, item.name);
 	  if (strcmp (editor.audio.path, sample_path)
 	      || EDITOR_GET_SOURCE (browser) != editor.audio.src)
 	    {
@@ -1572,17 +1577,18 @@ elektroid_show_clicked (GtkWidget * object, gpointer data)
   gboolean done = FALSE;
   struct browser *browser = data;
   gint count = browser_get_selected_items_count (browser);
+  enum path_type type = path_type_from_backend (browser->backend);
 
   if (count == 0)
     {
-      path = backend_chain_path (browser->backend, browser->dir, NULL);
+      path = backend_chain_path (type, browser->dir, NULL);
     }
   else if (count == 1)
     {
       browser_set_selected_row_iter (browser, &iter);
       model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
       browser_set_item (model, &iter, &item);
-      path = backend_chain_path (browser->backend, browser->dir, item.name);
+      path = backend_chain_path (type, browser->dir, item.name);
     }
   else
     {
@@ -1640,11 +1646,12 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
   GFile *file;
   struct item item;
   struct browser *browser = data;
+  enum path_type type = path_type_from_backend (browser->backend);
 
   browser_set_selected_row_iter (browser, &iter);
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
   browser_set_item (model, &iter, &item);
-  path = backend_chain_path (browser->backend, browser->dir, item.name);
+  path = backend_chain_path (type, browser->dir, item.name);
 
   file = g_file_new_for_path (path);
   g_free (path);
@@ -1662,6 +1669,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
   int result;
   gint err;
   struct browser *browser = data;
+  enum path_type type = path_type_from_backend (browser->backend);
 
   gtk_entry_set_text (name_dialog_entry, "");
   gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
@@ -1679,7 +1687,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 
       if (result == GTK_RESPONSE_ACCEPT)
 	{
-	  pathname = backend_chain_path (browser->backend, browser->dir,
+	  pathname = backend_chain_path (type, browser->dir,
 					 gtk_entry_get_text
 					 (name_dialog_entry));
 
@@ -2297,6 +2305,7 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
   gboolean active;
   struct item_iterator iter;
   gchar *path, *upload_path, *src_abs_path, *rel_path_trans;
+  enum path_type type = path_type_from_backend (&backend);
 
   g_mutex_lock (&sysex_transfer.mutex);
   active = sysex_transfer.active;
@@ -2307,16 +2316,16 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
       return;
     }
 
-  rel_path_trans = backend_translate_path (NULL, rel_path);
-  src_abs_path = backend_chain_path (NULL, src_dir, rel_path_trans);
+  rel_path_trans = backend_translate_path (PATH_SYSTEM, rel_path);
+  src_abs_path = backend_chain_path (PATH_SYSTEM, src_dir, rel_path_trans);
   g_free (rel_path_trans);
 
   //Check if the item is a dir. If error, it's not.
   if (local_browser.fs_ops->readdir (NULL, &iter, src_abs_path))
     {
-      rel_path_trans = backend_translate_path (&backend, rel_path);
-      gchar *dst_abs_path = backend_chain_path (&backend, dst_dir,
-						rel_path_trans);
+      rel_path_trans = backend_translate_path (type, rel_path);
+      gchar *dst_abs_path = backend_chain_path (type, dst_dir,
+                                                rel_path_trans);
       g_free (rel_path_trans);
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
@@ -2535,6 +2544,7 @@ elektroid_add_download_task_path (const gchar * rel_path,
   gboolean active;
   struct item_iterator iter;
   gchar *path, *filename, *src_abs_path, *rel_path_trans;
+  enum path_type type = path_type_from_backend (&backend);
 
   g_mutex_lock (&sysex_transfer.mutex);
   active = sysex_transfer.active;
@@ -2545,16 +2555,16 @@ elektroid_add_download_task_path (const gchar * rel_path,
       return;
     }
 
-  rel_path_trans = backend_translate_path (&backend, rel_path);
-  src_abs_path = backend_chain_path (&backend, src_dir, rel_path_trans);
+  rel_path_trans = backend_translate_path (type, rel_path);
+  src_abs_path = backend_chain_path (type, src_dir, rel_path_trans);
   g_free (rel_path_trans);
 
   //Check if the item is a dir. If error, it's not.
   if (remote_browser.fs_ops->readdir (remote_browser.backend, &iter,
 				      src_abs_path))
     {
-      rel_path_trans = backend_translate_path (NULL, rel_path);
-      gchar *dst_abs_path = backend_chain_path (NULL, dst_dir,
+      rel_path_trans = backend_translate_path (PATH_SYSTEM, rel_path);
+      gchar *dst_abs_path = backend_chain_path (PATH_SYSTEM, dst_dir,
 						rel_path_trans);
       g_free (rel_path_trans);
 
@@ -3090,10 +3100,11 @@ elektroid_dnd_received_system (const gchar * dir, const gchar * name,
 {
   gchar *dst_path;
   gint res;
+  enum path_type type = path_type_from_backend (browser->backend);
 
   if (strcmp (dir, browser->dir))
     {
-      dst_path = backend_chain_path (browser->backend, browser->dir, name);
+      dst_path = backend_chain_path (type, browser->dir, name);
       res = browser->fs_ops->move (browser->backend, filename, dst_path);
       if (res)
 	{
@@ -3222,9 +3233,8 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 	  goto end;
 	}
 
-      struct backend *be = strcmp (dnd_data->type_name, TEXT_URI_LIST_STD) ?
-	&backend : NULL;
-      gchar *filename = backend_filename_from_uri (be, dnd_data->uris[i]);
+      enum path_type type = PATH_TYPE_FROM_DND_TYPE(dnd_data->type_name);
+      gchar *filename = backend_filename_from_uri (type, dnd_data->uris[i]);
       gchar *name = g_path_get_basename (filename);
       gchar *dir = g_path_get_dirname (filename);
 
@@ -3331,9 +3341,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 
   gtk_drag_finish (context, TRUE, TRUE, time);
 
-  struct backend *be = strcmp (dnd_data->type_name, TEXT_URI_LIST_STD) ?
-    &backend : NULL;
-  filename = backend_filename_from_uri (be, dnd_data->uris[0]);
+  enum path_type path_type = PATH_TYPE_FROM_DND_TYPE(dnd_data->type_name);
+  filename = backend_filename_from_uri (path_type, dnd_data->uris[0]);
   src_dir = g_path_get_dirname (filename);
 
   //Checking if it's a local move.

@@ -174,8 +174,8 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 
   if (item.type == ELEKTROID_DIR)
     {
-      gchar *new_dir = backend_chain_path (browser->backend, browser->dir,
-					   item.name);
+      enum path_type type = path_type_from_backend (browser->backend);
+      gchar *new_dir = backend_chain_path (type, browser->dir, item.name);
       g_free (browser->dir);
       browser->dir = new_dir;
       browser_load_dir (browser);
@@ -194,7 +194,8 @@ gchar *
 browser_get_item_path (struct browser *browser, struct item *item)
 {
   gchar *filename = get_filename (browser->fs_ops->options, item);
-  gchar *path = backend_chain_path (browser->backend, browser->dir, filename);
+  enum path_type type = path_type_from_backend (browser->backend);
+  gchar *path = backend_chain_path (type, browser->dir, filename);
   debug_print (1, "Using %s path for item %s (id %d)...\n", path, item->name,
 	       item->id);
   g_free (filename);

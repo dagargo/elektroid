@@ -146,6 +146,12 @@ struct sysex_transfer
   gint err;
 };
 
+enum path_type
+{
+  PATH_INTERNAL,
+  PATH_SYSTEM
+};
+
 struct fs_operations;
 
 typedef gint (*fs_init_iter_func) (struct backend *, struct item_iterator *,
@@ -301,5 +307,15 @@ void set_job_control_progress_no_sync (struct job_control *, gdouble,
 gboolean file_matches_extensions (const gchar *, gchar **);
 
 gboolean iter_matches_extensions (struct item_iterator *, gchar **);
+
+//Use a backslash for the system backend on WSYS2.
+
+gchar *backend_chain_path (enum path_type, const gchar *, const gchar *);
+
+gchar *backend_translate_path (enum path_type, const gchar *);
+
+gchar *backend_filename_from_uri (enum path_type, gchar *);
+
+gchar *backend_filename_to_uri (enum path_type, gchar *);
 
 #endif

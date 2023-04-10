@@ -379,7 +379,8 @@ package_receive_pkg_resources (struct package *pkg,
   GByteArray *wave, *payload, *metadata, *sample;
   GString *package_resource_path;
 
-  metadata_path = backend_chain_path (NULL, payload_path, ".metadata");
+  metadata_path = backend_chain_path (PATH_INTERNAL, payload_path,
+                                      ".metadata");
   debug_print (1, "Getting metadata from %s...\n", metadata_path);
   metadata = g_byte_array_new ();
   control->parts = 130;		// 128 sample slots, metadata and main.
