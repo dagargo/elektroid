@@ -981,14 +981,14 @@ elektroid_delete_file (struct browser *browser, gchar * dir,
   gchar *path;
   enum path_type type = path_type_from_backend (browser->backend);
 
-  path = backend_chain_path (type, dir, item->name);
+  path = path_chain (type, dir, item->name);
 
   debug_print (1, "Deleting %s...\n", path);
 
   if (item->type == ELEKTROID_FILE)
     {
       gchar *filename = get_filename (browser->fs_ops->options, item);
-      gchar *id_path = backend_chain_path (type, dir, filename);
+      gchar *id_path = path_chain (type, dir, filename);
       g_free (filename);
       err = browser->fs_ops->delete (browser->backend, id_path);
       if (err)
@@ -1170,10 +1170,9 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	    }
 	  else
 	    {
-              enum path_type type = path_type_from_backend (browser->backend);
-	      new_path = backend_chain_path (type, browser->dir,
-					     gtk_entry_get_text
-					     (name_dialog_entry));
+	      enum path_type type = path_type_from_backend (browser->backend);
+	      new_path = path_chain (type, browser->dir,
+				     gtk_entry_get_text (name_dialog_entry));
 	    }
 	  err = browser->fs_ops->rename (&backend, old_path, new_path);
 	  if (err)
@@ -1218,7 +1217,7 @@ elektroid_drag_begin (GtkWidget * widget, GdkDragContext * context,
       gtk_tree_model_get_iter (model, &iter, list->data);
       browser_set_item (model, &iter, &item);
       path = browser_get_item_path (browser, &item);
-      uri = backend_filename_to_uri (type, path);
+      uri = path_filename_to_uri (type, path);
       g_free (path);
       g_string_append (browser->dnd_data, uri);
       g_free (uri);
@@ -1481,8 +1480,8 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	}
       else
 	{
-          enum path_type type = path_type_from_backend (browser->backend);
-	  sample_path = backend_chain_path (type, browser->dir, item.name);
+	  enum path_type type = path_type_from_backend (browser->backend);
+	  sample_path = path_chain (type, browser->dir, item.name);
 	  if (strcmp (editor.audio.path, sample_path)
 	      || EDITOR_GET_SOURCE (browser) != editor.audio.src)
 	    {
@@ -1581,14 +1580,14 @@ elektroid_show_clicked (GtkWidget * object, gpointer data)
 
   if (count == 0)
     {
-      path = backend_chain_path (type, browser->dir, NULL);
+      path = path_chain (type, browser->dir, NULL);
     }
   else if (count == 1)
     {
       browser_set_selected_row_iter (browser, &iter);
       model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
       browser_set_item (model, &iter, &item);
-      path = backend_chain_path (type, browser->dir, item.name);
+      path = path_chain (type, browser->dir, item.name);
     }
   else
     {
@@ -1651,7 +1650,7 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
   browser_set_selected_row_iter (browser, &iter);
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
   browser_set_item (model, &iter, &item);
-  path = backend_chain_path (type, browser->dir, item.name);
+  path = path_chain (type, browser->dir, item.name);
 
   file = g_file_new_for_path (path);
   g_free (path);
@@ -1687,9 +1686,8 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 
       if (result == GTK_RESPONSE_ACCEPT)
 	{
-	  pathname = backend_chain_path (type, browser->dir,
-					 gtk_entry_get_text
-					 (name_dialog_entry));
+	  pathname = path_chain (type, browser->dir,
+				 gtk_entry_get_text (name_dialog_entry));
 
 	  err = browser->fs_ops->mkdir (&backend, pathname);
 
@@ -2316,16 +2314,16 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
       return;
     }
 
-  rel_path_trans = backend_translate_path (PATH_SYSTEM, rel_path);
-  src_abs_path = backend_chain_path (PATH_SYSTEM, src_dir, rel_path_trans);
+  rel_path_trans = path_translate (PATH_SYSTEM, rel_path);
+  src_abs_path = path_chain (PATH_SYSTEM, src_dir, rel_path_trans);
   g_free (rel_path_trans);
 
   //Check if the item is a dir. If error, it's not.
   if (local_browser.fs_ops->readdir (NULL, &iter, src_abs_path))
     {
-      rel_path_trans = backend_translate_path (type, rel_path);
-      gchar *dst_abs_path = backend_chain_path (type, dst_dir,
-                                                rel_path_trans);
+      rel_path_trans = path_translate (type, rel_path);
+      gchar *dst_abs_path = path_chain (type, dst_dir,
+					rel_path_trans);
       g_free (rel_path_trans);
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
@@ -2359,7 +2357,7 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
 
   while (!next_item_iterator (&iter))
     {
-      path = chain_path (rel_path, iter.item.name);
+      path = path_chain (PATH_INTERNAL, rel_path, iter.item.name);
       elektroid_add_upload_task_path (path, src_dir, dst_dir);
       free (path);
     }
@@ -2555,17 +2553,17 @@ elektroid_add_download_task_path (const gchar * rel_path,
       return;
     }
 
-  rel_path_trans = backend_translate_path (type, rel_path);
-  src_abs_path = backend_chain_path (type, src_dir, rel_path_trans);
+  rel_path_trans = path_translate (type, rel_path);
+  src_abs_path = path_chain (type, src_dir, rel_path_trans);
   g_free (rel_path_trans);
 
   //Check if the item is a dir. If error, it's not.
   if (remote_browser.fs_ops->readdir (remote_browser.backend, &iter,
 				      src_abs_path))
     {
-      rel_path_trans = backend_translate_path (PATH_SYSTEM, rel_path);
-      gchar *dst_abs_path = backend_chain_path (PATH_SYSTEM, dst_dir,
-						rel_path_trans);
+      rel_path_trans = path_translate (PATH_SYSTEM, rel_path);
+      gchar *dst_abs_path = path_chain (PATH_SYSTEM, dst_dir,
+					rel_path_trans);
       g_free (rel_path_trans);
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
@@ -2582,7 +2580,7 @@ elektroid_add_download_task_path (const gchar * rel_path,
   while (!next_item_iterator (&iter))
     {
       filename = get_filename (remote_browser.fs_ops->options, &iter.item);
-      path = chain_path (rel_path, filename);
+      path = path_chain (PATH_INTERNAL, rel_path, filename);
       elektroid_add_download_task_path (path, src_dir, dst_dir);
       g_free (path);
       g_free (filename);
@@ -3104,7 +3102,7 @@ elektroid_dnd_received_system (const gchar * dir, const gchar * name,
 
   if (strcmp (dir, browser->dir))
     {
-      dst_path = backend_chain_path (type, browser->dir, name);
+      dst_path = path_chain (type, browser->dir, name);
       res = browser->fs_ops->move (browser->backend, filename, dst_path);
       if (res)
 	{
@@ -3233,8 +3231,8 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 	  goto end;
 	}
 
-      enum path_type type = PATH_TYPE_FROM_DND_TYPE(dnd_data->type_name);
-      gchar *filename = backend_filename_from_uri (type, dnd_data->uris[i]);
+      enum path_type type = PATH_TYPE_FROM_DND_TYPE (dnd_data->type_name);
+      gchar *filename = path_filename_from_uri (type, dnd_data->uris[i]);
       gchar *name = g_path_get_basename (filename);
       gchar *dir = g_path_get_dirname (filename);
 
@@ -3341,8 +3339,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 
   gtk_drag_finish (context, TRUE, TRUE, time);
 
-  enum path_type path_type = PATH_TYPE_FROM_DND_TYPE(dnd_data->type_name);
-  filename = backend_filename_from_uri (path_type, dnd_data->uris[0]);
+  enum path_type path_type = PATH_TYPE_FROM_DND_TYPE (dnd_data->type_name);
+  filename = path_filename_from_uri (path_type, dnd_data->uris[0]);
   src_dir = g_path_get_dirname (filename);
 
   //Checking if it's a local move.

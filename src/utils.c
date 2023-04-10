@@ -118,20 +118,6 @@ debug_get_hex_msg (const GByteArray * msg)
   return debug_get_hex_data (debug_level, msg->data, msg->len);
 }
 
-gchar *
-chain_path (const gchar * parent, const gchar * child)
-{
-  gchar *str;
-  GString *path;
-
-  path = strcmp (parent, "/") ? g_string_new (parent) : g_string_new (NULL);
-  g_string_append_printf (path, "/%s", child);
-  str = path->str;
-  g_string_free (path, FALSE);
-
-  return str;
-}
-
 void
 remove_ext (char *name)
 {
@@ -180,7 +166,7 @@ get_user_dir (const char *rel_conf_path)
   const gchar *home = getenv ("HOME");
   gchar *input = rel_conf_path ? g_strconcat (home, rel_conf_path, NULL) :
     strdup (home);
-  gchar *output = backend_translate_path (PATH_SYSTEM, input);
+  gchar *output = path_translate (PATH_SYSTEM, input);
   g_free (input);
   return output;
 }
@@ -443,7 +429,7 @@ iter_matches_extensions (struct item_iterator *iter, gchar ** extensions)
 }
 
 static inline const gchar *
-backend_get_separator (enum path_type type)
+path_get_separator (enum path_type type)
 {
   const gchar *sep;
   if (type == PATH_SYSTEM)
@@ -462,19 +448,20 @@ backend_get_separator (enum path_type type)
 }
 
 gchar *
-backend_chain_path (enum path_type type, const gchar * parent,
-		    const gchar * child)
+path_chain (enum path_type type, const gchar * parent, const gchar * child)
 {
-  const gchar *sep = backend_get_separator (type);
+  const gchar *sep = path_get_separator (type);
   return g_build_path (sep, parent, child, NULL);
 }
 
+//Translate from internal path to system path.
+
 gchar *
-backend_translate_path (enum path_type type, const gchar * input)
+path_translate (enum path_type type, const gchar * input)
 {
   gchar *output, *o;
   const gchar *i;
-  const gchar *sep = backend_get_separator (type);
+  const gchar *sep = path_get_separator (type);
 
   if (!strcmp (sep, "/"))
     {
@@ -508,7 +495,7 @@ backend_translate_path (enum path_type type, const gchar * input)
 //under MSYS2.
 
 gchar *
-backend_filename_from_uri (enum path_type type, gchar * uri)
+path_filename_from_uri (enum path_type type, gchar * uri)
 {
   if (type == PATH_SYSTEM)
     {
@@ -519,7 +506,7 @@ backend_filename_from_uri (enum path_type type, gchar * uri)
 }
 
 gchar *
-backend_filename_to_uri (enum path_type type, gchar * filename)
+path_filename_to_uri (enum path_type type, gchar * filename)
 {
   if (type == PATH_SYSTEM)
     {

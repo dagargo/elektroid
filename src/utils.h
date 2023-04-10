@@ -148,8 +148,8 @@ struct sysex_transfer
 
 enum path_type
 {
-  PATH_INTERNAL,
-  PATH_SYSTEM
+  PATH_INTERNAL,		// Slash separated paths
+  PATH_SYSTEM			// Slash or backslash depending on the system
 };
 
 struct fs_operations;
@@ -258,8 +258,6 @@ gchar *debug_get_hex_data (gint, guint8 *, guint);
 
 gchar *debug_get_hex_msg (const GByteArray *);
 
-gchar *chain_path (const gchar *, const gchar *);
-
 void remove_ext (gchar *);
 
 const gchar *get_ext (const gchar *);
@@ -310,12 +308,12 @@ gboolean iter_matches_extensions (struct item_iterator *, gchar **);
 
 //Use a backslash for the system backend on WSYS2.
 
-gchar *backend_chain_path (enum path_type, const gchar *, const gchar *);
+gchar *path_chain (enum path_type, const gchar *, const gchar *);
 
-gchar *backend_translate_path (enum path_type, const gchar *);
+gchar *path_translate (enum path_type, const gchar *);
 
-gchar *backend_filename_from_uri (enum path_type, gchar *);
+gchar *path_filename_from_uri (enum path_type, gchar *);
 
-gchar *backend_filename_to_uri (enum path_type, gchar *);
+gchar *path_filename_to_uri (enum path_type, gchar *);
 
 #endif
