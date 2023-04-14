@@ -699,6 +699,7 @@ set_conn_fs_op_from_command (const gchar * cmd)
   return 0;
 }
 
+#if defined(__linux__)
 static void
 cli_end (int sig)
 {
@@ -710,6 +711,7 @@ cli_end (int sig)
   sysex_transfer.active = FALSE;
   g_mutex_unlock (&sysex_transfer.mutex);
 }
+#endif
 
 int
 main (int argc, gchar * argv[])

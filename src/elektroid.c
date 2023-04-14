@@ -4033,12 +4033,14 @@ elektroid_run (int argc, char *argv[])
   return EXIT_SUCCESS;
 }
 
+#if defined(__linux__)
 static gboolean
 elektroid_end (gpointer data)
 {
   elektroid_quit ();
   return FALSE;
 }
+#endif
 
 static void
 elektroid_print_help (gchar * executable_path)
