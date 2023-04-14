@@ -55,11 +55,11 @@ You can easily install them by running `sudo apt install automake libtool build-
 
 If you are only compiling the CLI, install the dependencies with `sudo apt install automake libtool build-essential libasound2-dev libglib2.0-dev libsndfile1-dev libsamplerate0-dev autopoint libtool zlib1g-dev libjson-glib-dev libzip-dev`.
 
-For Fedora, `sudo dnf install autoconf libtool alsa-lib-devel zlib-devel libzip-devel gtk3-devel libsndfile-devel gettext-devel libsamplerate-devel pulseaudio-libs-devel json-glib-devel` will install the build dependencies.
+For Fedora, run `sudo dnf install autoconf libtool alsa-lib-devel zlib-devel libzip-devel gtk3-devel libsndfile-devel gettext-devel libsamplerate-devel pulseaudio-libs-devel json-glib-devel` to install the build dependencies.
 
-For Arch Linux, `sudo pacman -S base-devel autoconf libtool alsa-lib zlib libzip gtk3 libsndfile gettext libsamplerate pulseaudio json-glib` will install the build dependencies.
+For Arch Linux, run `sudo pacman -S base-devel autoconf libtool alsa-lib zlib libzip gtk3 libsndfile gettext libsamplerate pulseaudio json-glib` to install the build dependencies.
 
-For MSYS2, ...
+For MSYS2 (MINGW64), run `pacman -S mingw-w64-x86_64-toolchain gettext gettext-devel mingw-w64-x86_64-autotools mingw-w64-x86_64-gcc mingw-w64-x86_64-libzip mingw-w64-x86_64-gtk3 mingw-w64-x86_64-json-glib mingw-w64-x86_64-libsndfile mingw-w64-x86_64-rtmidi mingw-w64-x86_64-rtaudio mingw-w64-x86_64-libsamplerate` to install the build dependencies.
 
 ### MIDI backend
 
@@ -131,6 +131,10 @@ $ mock -r fedora-$rel-x86_64 --no-clean --rebuild /var/lib/mock/fedora-$rel-x86_
 
 To build a standalone Flatpak application, run `flatpak-builder --user --install --force-clean flatpak/build flatpak/io.github.dagargo.Elektroid.yaml`
 and then you can use `flatpak run io.github.dagargo.Elektroid` (add `--cli` and extra arguments for the CLI utility).
+
+### MSYS2
+
+To build an installable for Windows, 
 
 ## CLI
 
