@@ -37,7 +37,7 @@
 #define SDS_SPEC_TIMEOUT_HANDSHAKE 2000	//Timeout in the specs to consider no response during the handshake.
 #define SDS_NO_SPEC_TIMEOUT 5000	//Timeout used when the specs indicate to wait indefinitely.
 #define SDS_NO_SPEC_TIMEOUT_TRY 1500	//Timeout for SDS extensions that might not be implemented.
-#define SDS_REST_TIME_DEFAULT 18000	//Rest time to not overwhelm the devices when sending consecutive packets. Lower values cause an an E-Mu ESI-2000 to send corrupted packets.
+#define SDS_REST_TIME_DEFAULT 50000	//Rest time to not overwhelm the devices when sending consecutive packets. Lower values cause an an E-Mu ESI-2000 to send corrupted packets.s
 #define SDS_INCOMPLETE_PACKET_TIMEOUT 2000
 #define SDS_NO_SPEC_OPEN_LOOP_REST_TIME 200000
 #define SDS_SAMPLE_CHANNELS 1
@@ -387,8 +387,6 @@ sds_download_try (struct backend *backend, const gchar * path,
 	  err = -EIO;
 	  goto end;
 	}
-
-      usleep (sds_data->rest_time);
     }
 
   sample_info = malloc (sizeof (struct sample_info));
@@ -476,6 +474,12 @@ sds_download_try (struct backend *backend, const gchar * path,
 	      debug_print (2,
 			   "Skipping last packet as it has only one sample...\n");
 	      rx_packets++;
+
+	      //We cancel the upload.
+	      usleep (sds_data->rest_time);
+	      sds_tx_handshake (backend, SDS_CANCEL, packet % 0x80);
+	      usleep (sds_data->rest_time);
+
 	      err = 0;
 	      goto end;
 	    }
@@ -534,8 +538,6 @@ sds_download_try (struct backend *backend, const gchar * path,
       g_mutex_unlock (&control->mutex);
 
       free_msg (rx_msg);
-
-      usleep (sds_data->rest_time);
 
       continue;
 
@@ -801,6 +803,11 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
   frame = (gint16 *) input->data;
   while (packet < packets && active)
     {
+      if (retries)
+	{
+	  usleep (sds_data->rest_time);
+	}
+
       if (retries == SDS_MAX_RETRIES)
 	{
 	  debug_print (1, "Too many retries\n");
@@ -839,15 +846,15 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 	}
       else if (err == -EINVAL)
 	{
-	  debug_print (2, "Unexpected packet number. Continuing...\n");
+	  debug_print (2, "Unexpected packet number. Retrying...\n");
 	  retries++;
 	  continue;
 	}
       else if (err == -ETIMEDOUT)
 	{
-	  debug_print (2, "No response. Continuing in open loop...\n");
-	  open_loop = TRUE;
-	  err = 0;
+	  debug_print (2, "No response. Retrying...\n");
+	  retries++;
+	  continue;
 	}
       else if (err == -ECANCELED)
 	{
@@ -1060,6 +1067,11 @@ sds_handshake (struct backend *backend)
   gint err;
   GByteArray *tx_msg, *rx_msg;
   struct sds_data *sds_data = g_malloc (sizeof (struct sds_data));
+
+  //We cancel anything that might be running.
+  usleep (SDS_REST_TIME_DEFAULT);
+  sds_tx_handshake (backend, SDS_CANCEL, 0);
+  usleep (SDS_REST_TIME_DEFAULT);
 
   //Elektron devices support SDS so we need to be sure it is not.
   rx_msg = elektron_ping (backend);
