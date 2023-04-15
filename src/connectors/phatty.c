@@ -175,7 +175,7 @@ phatty_get_download_path (struct backend *backend,
       GString *str = g_string_new (NULL);
       g_string_append_printf (str, "%s %s %s.%s", backend->name, ops->name,
 			      PHATTY_PANEL, ops->type_ext);
-      path = path_chain(PATH_SYSTEM, dst_dir, str->str);
+      path = path_chain (PATH_SYSTEM, dst_dir, str->str);
       g_string_free (str, TRUE);
     }
   else

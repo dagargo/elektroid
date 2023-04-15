@@ -226,7 +226,7 @@ common_get_download_path_with_params (struct backend *backend,
   g_string_append (str, ".");
   g_string_append (str, ops->type_ext);
 
-  path = path_chain(PATH_SYSTEM, dst_dir, str->str);
+  path = path_chain (PATH_SYSTEM, dst_dir, str->str);
   g_string_free (str, TRUE);
 
   return path;

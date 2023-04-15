@@ -72,7 +72,7 @@ cz_get_download_path (struct backend *backend,
       GString *str = g_string_new (NULL);
       g_string_append_printf (str, "%s %s panel.syx", backend->name,
 			      ops->name);
-      path = path_chain(PATH_SYSTEM, dst_dir, str->str);
+      path = path_chain (PATH_SYSTEM, dst_dir, str->str);
       g_string_free (str, TRUE);
     }
   return path;
