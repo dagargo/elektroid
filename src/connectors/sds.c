@@ -101,7 +101,7 @@ sds_get_download_path (struct backend *backend,
     }
 
   g_free (name);
-  path = path_chain(PATH_SYSTEM, dst_dir, str->str);
+  path = path_chain (PATH_SYSTEM, dst_dir, str->str);
   g_string_free (str, TRUE);
   return path;
 }
@@ -362,6 +362,16 @@ sds_download_try (struct backend *backend, const gchar * path,
   retries = 0;
   while (1)
     {
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
+
+      if (!active)
+	{
+	  err = -ECANCELED;
+	  goto end;
+	}
+
       g_mutex_lock (&backend->mutex);
       backend_rx_drain (backend);
       g_mutex_unlock (&backend->mutex);
