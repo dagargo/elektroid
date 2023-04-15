@@ -132,10 +132,6 @@ $ mock -r fedora-$rel-x86_64 --no-clean --rebuild /var/lib/mock/fedora-$rel-x86_
 To build a standalone Flatpak application, run `flatpak-builder --user --install --force-clean flatpak/build flatpak/io.github.dagargo.Elektroid.yaml`
 and then you can use `flatpak run io.github.dagargo.Elektroid` (add `--cli` and extra arguments for the CLI utility).
 
-### MSYS2
-
-To build an installable for Windows, 
-
 ## CLI
 
 `elektroid-cli` brings the same filesystem related functionality to the terminal.
