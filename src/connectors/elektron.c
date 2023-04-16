@@ -2796,7 +2796,8 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
 			       struct job_control *control,
 			       const gchar * prefix)
 {
-  gint res;
+  gint err;
+  guint id;
   guint32 seq;
   guint32 seqbe;
   guint32 jid;
@@ -2811,11 +2812,18 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
   gboolean active;
   GByteArray *rx_msg;
   GByteArray *tx_msg;
-  gchar *path_w_prefix = elektron_add_prefix_to_path (path, prefix);
+  gchar *path_w_prefix;
 
-  res = elektron_open_datum (backend, path_w_prefix, &jid, O_RDONLY, 0);
+  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  if (err)
+    {
+      return err;
+    }
+
+  path_w_prefix = elektron_add_prefix_to_path (path, prefix);
+  err = elektron_open_datum (backend, path_w_prefix, &jid, O_RDONLY, 0);
   g_free (path_w_prefix);
-  if (res)
+  if (err)
     {
       return -EIO;
     }
@@ -2824,7 +2832,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
 
   jidbe = htobe32 (jid);
 
-  res = 0;
+  err = 0;
   seq = 0;
   last = 0;
   control->data = NULL;
@@ -2842,14 +2850,14 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
       rx_msg = elektron_tx_and_rx (backend, tx_msg);
       if (!rx_msg)
 	{
-	  res = -EIO;
+	  err = -EIO;
 	  break;
 	}
 
       if (!elektron_get_msg_status (rx_msg))
 	{
-	  res = -EPERM;
-	  error_print ("%s (%s)\n", backend_strerror (backend, res),
+	  err = -EPERM;
+	  error_print ("%s (%s)\n", backend_strerror (backend, err),
 		       elektron_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
 	  break;
@@ -3134,7 +3142,8 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
 			     struct job_control *control,
 			     const gchar * prefix)
 {
-  gint res;
+  gint err;
+  guint id;
   guint32 seq;
   guint32 jid;
   guint32 crc;
@@ -3149,13 +3158,21 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
   guint32 total;
   GByteArray *rx_msg;
   GByteArray *tx_msg;
-  gchar *path_w_prefix = elektron_add_prefix_to_path (path, prefix);
+  gchar *path_w_prefix;
+
+  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  if (err)
+    {
+      return err;
+    }
+
+  path_w_prefix = elektron_add_prefix_to_path (path, prefix);
   elektron_remove_slot_name_from_path (path_w_prefix);	//The slot name is not used with Elektron devices
 
-  res = elektron_open_datum (backend, path_w_prefix, &jid, O_WRONLY,
+  err = elektron_open_datum (backend, path_w_prefix, &jid, O_WRONLY,
 			     array->len);
   g_free (path_w_prefix);
-  if (res)
+  if (err)
     {
       goto end;
     }
@@ -3208,7 +3225,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
       rx_msg = elektron_tx_and_rx (backend, tx_msg);
       if (!rx_msg)
 	{
-	  res = -EIO;
+	  err = -EIO;
 	  goto end;
 	}
 
@@ -3216,8 +3233,8 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
 
       if (!elektron_get_msg_status (rx_msg))
 	{
-	  res = -EPERM;
-	  error_print ("%s (%s)\n", backend_strerror (backend, res),
+	  err = -EPERM;
+	  error_print ("%s (%s)\n", backend_strerror (backend, err),
 		       elektron_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
 	  break;
@@ -3256,10 +3273,10 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
 
   debug_print (2, "%d bytes sent\n", offset);
 
-  res = elektron_close_datum (backend, jid, O_WRONLY, array->len);
+  err = elektron_close_datum (backend, jid, O_WRONLY, array->len);
 
 end:
-  return res;
+  return err;
 }
 
 static gint

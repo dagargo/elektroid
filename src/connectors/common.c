@@ -30,27 +30,39 @@ common_slot_get_upload_path (struct backend *backend,
   return strdup (dst_path);
 }
 
-int
+gint
 common_slot_get_id_name_from_path (const char *path, guint * id,
 				   gchar ** name)
 {
   gint err = 0;
-  gchar *index_name, *remainder;
+  gchar *basename, *remainder;
 
-  index_name = g_path_get_basename (path);
-  *id = (gint) strtol (index_name, &remainder, 10);
-  if (strncmp (remainder, BE_SAMPLE_ID_NAME_SEPARATOR,
-	       strlen (BE_SAMPLE_ID_NAME_SEPARATOR)) == 0)
+  basename = g_path_get_basename (path);
+  *id = (guint) g_ascii_strtoull (basename, &remainder, 10);
+  if (remainder == basename)
     {
-      remainder++;		//Skip ':'
+      err = -EINVAL;
+      goto end;
     }
-  else
+  if (errno)
+    {
+      err = errno;
+      goto end;
+    }
+
+  if (strncmp (remainder, BE_SAMPLE_ID_NAME_SEPARATOR,
+	       strlen (BE_SAMPLE_ID_NAME_SEPARATOR)))
     {
       if (name)
 	{
 	  error_print ("Path name not provided properly\n");
-	  return -EINVAL;
+	  err = -EINVAL;
+	  goto end;
 	}
+    }
+  else
+    {
+      remainder++;		//Skip ':'
     }
 
   if (name)
@@ -65,6 +77,8 @@ common_slot_get_id_name_from_path (const char *path, guint * id,
 	}
     }
 
+end:
+  g_free (basename);
   return err;
 }
 
