@@ -22,7 +22,6 @@
 #include <math.h>
 #include <zlib.h>
 #include "elektron.h"
-#include "elektron.h"
 #include "utils.h"
 #include "sample.h"
 #include "package.h"
