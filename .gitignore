@@ -43,6 +43,7 @@ test/*.exe
 test/.libs
 test/integration/*.trs
 test/tests_scala
+test/tests_common
 config.guess
 config.sub
 ltmain.sh
