@@ -350,6 +350,12 @@ backend_init (struct backend *backend, const gchar * id)
       backend_rx_drain (backend);
       g_mutex_unlock (&backend->mutex);
     }
+
+  debug_print (1, "Stopping device...\n");
+  if (backend_tx_raw (backend, (guint8 *) "\xfc", 1) < 0)
+    {
+      error_print ("Error while stopping device\n");
+    }
   return err;
 }
 

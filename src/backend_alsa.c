@@ -94,12 +94,6 @@ backend_init_int (struct backend *backend, const gchar * id)
       goto cleanup;
     }
 
-  debug_print (1, "Stopping device...\n");
-  if (snd_rawmidi_write (backend->outputp, "\xfc", 1) < 0)
-    {
-      error_print ("Error while stopping device\n");
-    }
-
   backend->npfds = snd_rawmidi_poll_descriptors_count (backend->inputp);
   backend->pfds = malloc (backend->npfds * sizeof (struct pollfd));
 
