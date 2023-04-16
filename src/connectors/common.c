@@ -257,3 +257,26 @@ common_get_download_path (struct backend *backend,
   return common_get_download_path_with_params (backend, ops, dst_dir,
 					       id, 3, NULL);
 }
+
+void
+common_remove_slot_name_from_path (gchar * path)
+{
+  gchar *c;
+  gint i, len = strlen (path);
+  if (len == 0)
+    {
+      return;
+    }
+  i = len - 1;
+  c = path + i;
+  while (i >= 0 && *c != '/')
+    {
+      if (*c == ':')
+	{
+	  *c = 0;
+	  break;
+	}
+      c--;
+      i--;
+    }
+}

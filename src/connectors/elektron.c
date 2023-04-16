@@ -3125,17 +3125,6 @@ elektron_get_download_path (struct backend *backend,
   return path;
 }
 
-static void
-elektron_remove_slot_name_from_path (gchar * path)
-{
-  gchar *c = path + strlen (path) - 1;
-  while (*c != ':')
-    {
-      c--;
-    }
-  *c = 0;
-}
-
 static gint
 elektron_upload_data_prefix (struct backend *backend, const gchar * path,
 			     GByteArray * array,
@@ -3167,7 +3156,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
     }
 
   path_w_prefix = elektron_add_prefix_to_path (path, prefix);
-  elektron_remove_slot_name_from_path (path_w_prefix);	//The slot name is not used with Elektron devices
+  common_remove_slot_name_from_path (path_w_prefix);	//The slot name is not used with Elektron devices
 
   err = elektron_open_datum (backend, path_w_prefix, &jid, O_WRONLY,
 			     array->len);
@@ -3197,9 +3186,8 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
 
   while (offset < array->len && active)
     {
-      tx_msg =
-	elektron_new_msg (DATA_WRITE_PARTIAL_REQUEST,
-			  sizeof (DATA_WRITE_PARTIAL_REQUEST));
+      tx_msg = elektron_new_msg (DATA_WRITE_PARTIAL_REQUEST,
+				 sizeof (DATA_WRITE_PARTIAL_REQUEST));
       g_byte_array_append (tx_msg, (guint8 *) & jidbe, sizeof (guint32));
       aux32 = htobe32 (seq);
       g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));

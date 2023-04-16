@@ -66,3 +66,5 @@ gchar *common_get_download_path (struct backend *backend,
 				 const struct fs_operations *ops,
 				 const gchar * dst_dir,
 				 const gchar * src_path, GByteArray * sysex);
+
+void common_remove_slot_name_from_path (gchar * path);
