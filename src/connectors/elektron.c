@@ -1053,9 +1053,13 @@ elektron_tx_and_rx_timeout_no_cache (struct backend *backend,
 				     GByteArray * tx_msg, gint timeout)
 {
   ssize_t len;
+  guint16 seq;
   GByteArray *rx_msg;
   guint msg_type = tx_msg->data[4] | 0x80;
+  struct elektron_data *data = backend->data;
+  gint t = timeout < 0 ? BE_SYSEX_TIMEOUT_MS : timeout;
 
+  seq = data->seq;
   len = elektron_tx (backend, tx_msg);
   if (len < 0)
     {
@@ -1063,13 +1067,31 @@ elektron_tx_and_rx_timeout_no_cache (struct backend *backend,
       goto cleanup;
     }
 
-  rx_msg = elektron_rx (backend, timeout < 0 ? BE_SYSEX_TIMEOUT_MS : timeout);
-  if (rx_msg && rx_msg->data[4] != msg_type)
+  while (1)
     {
-      error_print ("Illegal message type in response\n");
-      free_msg (rx_msg);
-      rx_msg = NULL;
-      goto cleanup;
+      rx_msg = elektron_rx (backend, t);
+      if (!rx_msg)
+	{
+	  break;
+	}
+
+      guint16 exp_seq = be16toh (*((guint16 *) & rx_msg->data[2]));
+      if (seq != exp_seq)
+	{
+	  error_print ("Unexpected sequence in response. Skipping...\n");
+	  free_msg (rx_msg);
+	  continue;
+	}
+
+      if (rx_msg->data[4] != msg_type)
+	{
+	  error_print ("Illegal message type in response. Skipping...\n");
+	  free_msg (rx_msg);
+	  rx_msg = NULL;
+	  break;
+	}
+
+      break;
     }
 
 cleanup:
