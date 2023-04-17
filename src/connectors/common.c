@@ -44,9 +44,9 @@ common_slot_get_id_name_from_path (const char *path, guint * id,
       err = -EINVAL;
       goto end;
     }
-  if (errno)
+  if (!id && errno)
     {
-      err = errno;
+      err = -errno;
       goto end;
     }
 
