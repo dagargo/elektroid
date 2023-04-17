@@ -29,7 +29,6 @@
 #define MEMBER_AUTOPLAY "autoplay"
 #define MEMBER_MIX "mix"
 #define MEMBER_LOCALDIR "localDir"
-#define MEMBER_REMOTEDIR "remoteDir"
 
 gint
 preferences_save (struct preferences *preferences)
@@ -66,9 +65,6 @@ preferences_save (struct preferences *preferences)
 
   json_builder_set_member_name (builder, MEMBER_LOCALDIR);
   json_builder_add_string_value (builder, preferences->local_dir);
-
-  json_builder_set_member_name (builder, MEMBER_REMOTEDIR);
-  json_builder_add_string_value (builder, preferences->remote_dir);
 
   json_builder_end_object (builder);
 
@@ -108,7 +104,6 @@ preferences_load (struct preferences *preferences)
       preferences->autoplay = TRUE;
       preferences->mix = TRUE;
       preferences->local_dir = get_user_dir (NULL);
-      preferences->remote_dir = get_user_dir (NULL);
       return 0;
     }
 
@@ -149,19 +144,6 @@ preferences_load (struct preferences *preferences)
     }
   json_reader_end_member (reader);
 
-  if (json_reader_read_member (reader, MEMBER_REMOTEDIR) &&
-      g_file_test (json_reader_get_string_value (reader),
-		   (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
-    {
-      preferences->remote_dir =
-	g_strdup (json_reader_get_string_value (reader));
-    }
-  else
-    {
-      preferences->remote_dir = get_user_dir (NULL);
-    }
-  json_reader_end_member (reader);
-
   g_object_unref (reader);
   g_object_unref (parser);
 
@@ -174,5 +156,4 @@ void
 preferences_free (struct preferences *preferences)
 {
   g_free (preferences->local_dir);
-  g_free (preferences->remote_dir);
 }

@@ -2841,17 +2841,9 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   audio_stop (&editor.audio);
   editor_stop_load_thread (&editor);
 
-  if (backend.type == BE_TYPE_SYSTEM)
-    {
-      if (!*remote_browser.dir)
-	{
-	  strcpy (remote_browser.dir, local_browser.dir);
-	}
-    }
-  else
-    {
-      strcpy (remote_browser.dir, "/");
-    }
+  g_free (remote_browser.dir);
+  remote_browser.dir = backend.type == BE_TYPE_SYSTEM ?
+    strdup (local_browser.dir) : strdup ("/");
 
   gtk_widget_set_visible (remote_browser.transfer_menuitem,
 			  backend.type == BE_TYPE_SYSTEM
@@ -3740,7 +3732,7 @@ elektroid_run (int argc, char *argv[])
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry")),
     .menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu")),
-    .dir = preferences.remote_dir,
+    .dir = NULL,
     .check_selection = elektroid_remote_check_selection,
     .file_icon = NULL,
     .fs_ops = NULL,
@@ -4026,7 +4018,6 @@ elektroid_run (int argc, char *argv[])
     }
 
   preferences.local_dir = local_browser.dir;
-  preferences.remote_dir = remote_browser.dir;
 
   g_object_unref (G_OBJECT (builder));
 

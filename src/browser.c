@@ -120,7 +120,7 @@ browser_clear (struct browser *browser)
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
 
-  gtk_entry_set_text (browser->dir_entry, browser->dir);
+  gtk_entry_set_text (browser->dir_entry, browser->dir ? browser->dir : "");
   gtk_list_store_clear (list_store);
   browser->check_selection (NULL);
 }
@@ -555,7 +555,8 @@ void
 browser_reset (struct browser *browser)
 {
   browser->fs_ops = NULL;
-  *browser->dir = 0;
+  g_free (browser->dir);
+  browser->dir = NULL;
   browser_clear (browser);
   browser_clear_file_extensions (browser);
 }
