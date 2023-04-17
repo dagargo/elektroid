@@ -395,6 +395,8 @@ cli_df (int argc, gchar * argv[], int *optind)
 	  g_free (diff);
 	  g_free (free);
 	}
+
+      sleep (BE_REST_TIME_US);
     }
 
   return err;

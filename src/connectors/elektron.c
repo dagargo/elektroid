@@ -2271,6 +2271,8 @@ elektron_handshake (struct backend *backend)
       return -ENODEV;
     }
 
+  usleep (BE_REST_TIME_US);
+
   tx_msg = elektron_new_msg (SOFTWARE_VERSION_REQUEST,
 			     sizeof (SOFTWARE_VERSION_REQUEST));
   rx_msg = elektron_tx_and_rx (backend, tx_msg);
@@ -2284,6 +2286,8 @@ elektron_handshake (struct backend *backend)
   snprintf (backend->version, LABEL_MAX, "%s", (gchar *) & rx_msg->data[10]);
   free_msg (rx_msg);
 
+  usleep (BE_REST_TIME_US);
+
   if (debug_level > 1)
     {
       tx_msg = elektron_new_msg (DEVICEUID_REQUEST,
@@ -2294,6 +2298,8 @@ elektron_handshake (struct backend *backend)
 	  debug_print (1, "UID: %x\n", *((guint32 *) & rx_msg->data[5]));
 	  free_msg (rx_msg);
 	}
+
+      usleep (BE_REST_TIME_US);
     }
 
   snprintf (backend->description, LABEL_MAX, "%s", overbridge_name);

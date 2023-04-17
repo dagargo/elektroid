@@ -437,6 +437,7 @@ elektroid_update_statusbar ()
 					      backend_get_storage_stats_percent
 					      (&statfs));
 		    }
+		  usleep (BE_REST_TIME_US);
 		}
 	    }
 	}
