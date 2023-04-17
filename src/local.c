@@ -458,5 +458,7 @@ system_init_backend (struct backend *backend, const gchar * id)
     FS_SAMPLES_LOCAL_441_16_STEREO | FS_SAMPLES_LOCAL_441_16_MONO;
   backend->fs_ops = FS_SYSTEM_OPERATIONS;
   snprintf (backend->name, LABEL_MAX, "%s", _("System"));
+  *backend->version = 0;
+  *backend->description = 0;
   return 0;
 }
