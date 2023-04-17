@@ -112,6 +112,8 @@ preferences_load (struct preferences *preferences)
       return 0;
     }
 
+  debug_print (1, "Loading preferences from '%s'...\n", preferences_file);
+
   reader = json_reader_new (json_parser_get_root (parser));
 
   if (json_reader_read_member (reader, MEMBER_AUTOPLAY))
