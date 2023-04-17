@@ -1168,8 +1168,11 @@ elektron_read_common_dir (struct backend *backend,
 			  fs_file_exists file_exists)
 {
   GByteArray *tx_msg, *rx_msg = NULL;
+  gboolean is_file = file_exists (backend, dir);
 
-  if (file_exists (backend, dir))
+  usleep (BE_REST_TIME_US);
+
+  if (is_file)
     {
       return -ENOTDIR;
     }
