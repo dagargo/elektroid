@@ -156,8 +156,7 @@ summit_patch_next_dentry (struct item_iterator *iter)
     }
 
   tx_msg = summit_get_patch_dump_msg (data->bank, data->next, data->fs);
-  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg,
-				    BE_SYSEX_TIMEOUT_GUESS_MS);
+  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -699,8 +698,7 @@ summit_wavetable_next_dentry (struct item_iterator *iter)
     }
 
   tx_msg = summit_get_wavetable_header_dump_msg (data->next + 64);
-  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg,
-				    BE_SYSEX_TIMEOUT_GUESS_MS);
+  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;

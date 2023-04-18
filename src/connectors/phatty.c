@@ -249,8 +249,7 @@ phatty_next_preset_dentry (struct item_iterator *iter)
     }
 
   tx_msg = phatty_get_preset_dump_msg (data->next);
-  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg,
-				    BE_SYSEX_TIMEOUT_GUESS_MS);
+  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
