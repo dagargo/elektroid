@@ -458,12 +458,25 @@ static void
 summit_common_patch_change (struct backend *backend, guint8 type,
 			    const gchar * dir, struct item *item)
 {
+  guint8 msg[3];
+
+  if (!strcmp (dir, "/"))
+    {
+      return;
+    }
+
   //This seems to be broken on firmware 2.1 as documented in https://forum.electra.one/t/preset-novation-summit-peak/1424/24
-  guint8 bank = SUMMIT_GET_BANK_ID_FROM_DIR (dir);
-  backend_tx_raw (backend, (guint8 *) "\xb0\x63\x3e\xb0\x62\x00\xb0\x06", 8);	//Single o multi
-  backend_tx_raw (backend, &type, 1);	//Single o multi
-  backend_tx_raw (backend, (guint8 *) "\xb0\x20", 2);	//Bank
-  backend_tx_raw (backend, &bank, 1);	//Bank
+  //Single o multi
+  backend_tx_raw (backend, (guint8 *) "\xb0\x63\x3e", 3);
+  backend_tx_raw (backend, (guint8 *) "\xb0\x62\x00", 3);
+  memcpy (msg, "\xb0\x06", 2);
+  msg[2] = type;
+  backend_tx_raw (backend, msg, 3);
+  //Bank
+  memcpy (msg, "\xb0\x20", 2);
+  msg[2] = SUMMIT_GET_BANK_ID_FROM_DIR (dir);
+  backend_tx_raw (backend, msg, 3);
+  //Patch
   common_midi_program_change (backend, dir, item);
 }
 
