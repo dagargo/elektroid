@@ -43,7 +43,7 @@ tests_common_SOURCES = \
 
 TESTS = integration/test.sh $(check_PROGRAMS)
 
-EXTRA_DIST = connectors res
+EXTRA_DIST = integration res
 
 AM_TESTS_ENVIRONMENT = \
 	ecli='$(abs_top_builddir)/src/elektroid-cli -vv'; \
