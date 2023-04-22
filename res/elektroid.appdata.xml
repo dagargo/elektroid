@@ -16,6 +16,7 @@
   <binary>elektroid</binary>
  </provides>
  <releases>
+  <release version="2.5.1" date="2023-04-19" />
   <release version="2.4.1" date="2023-02-10" />
   <release version="2.3" date="2022-12-04" />
   <release version="2.2" date="2022-11-20" />
@@ -26,7 +27,7 @@
  </releases>
  <screenshots>
   <screenshot type="default">
-   <image>https://screenshots.debian.net/screenshots/000/019/315/large.png</image>
+   <image>https://dagargo.github.io/elektroid/images/screenshot.png</image>
    <caption>The main window showing the application in action</caption>
   </screenshot>
  </screenshots>
@@ -35,7 +36,7 @@
   <keyword>MIDI</keyword>
   <keyword>ALSA</keyword>
  </keywords>
- <url type="homepage">https://github.com/dagargo/elektroid</url>
+ <url type="homepage">https://dagargo.github.io/elektroid/</url>
  <project_group>https://github.com/dagargo</project_group>
  <developer_name>David García Goñi</developer_name>
  <update_contact>dagargo@gmail.com</update_contact>
