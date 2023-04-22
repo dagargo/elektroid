@@ -40,4 +40,5 @@
  <project_group>https://github.com/dagargo</project_group>
  <developer_name>David García Goñi</developer_name>
  <update_contact>dagargo@gmail.com</update_contact>
+ <content_rating type="oars-1.0" />
 </component>
