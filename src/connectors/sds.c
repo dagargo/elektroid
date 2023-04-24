@@ -24,6 +24,7 @@
 #include "elektron.h"
 #include "sample.h"
 #include "sds.h"
+#include "default.h"
 #include "common.h"
 
 #define SDS_SAMPLE_LIMIT 1000
@@ -966,10 +967,11 @@ sds_sample_load (const gchar * path, GByteArray * sample,
 
 enum sds_fs
 {
-  FS_SAMPLES_SDS_16_B = 0x1,
-  FS_SAMPLES_SDS_14_B = 0x2,
-  FS_SAMPLES_SDS_12_B = 0x4,
-  FS_SAMPLES_SDS_8_B = 0x8
+  FS_SAMPLES_DEFAULT = FS_PROGRAM_DEFAULT,
+  FS_SAMPLES_SDS_16_B = 0x2,
+  FS_SAMPLES_SDS_14_B = 0x4,
+  FS_SAMPLES_SDS_12_B = 0x8,
+  FS_SAMPLES_SDS_8_B = 0x10
 };
 
 static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
@@ -1057,8 +1059,9 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
 };
 
 static const struct fs_operations *FS_SDS_ALL_OPERATIONS[] = {
-  &FS_SAMPLES_SDS_8B_OPERATIONS, &FS_SAMPLES_SDS_12B_OPERATIONS,
-  &FS_SAMPLES_SDS_14B_OPERATIONS, &FS_SAMPLES_SDS_16B_OPERATIONS, NULL
+  &FS_PROGRAM_DEFAULT_OPERATIONS, &FS_SAMPLES_SDS_8B_OPERATIONS,
+  &FS_SAMPLES_SDS_12B_OPERATIONS, &FS_SAMPLES_SDS_14B_OPERATIONS,
+  &FS_SAMPLES_SDS_16B_OPERATIONS, NULL
 };
 
 gint
@@ -1125,8 +1128,8 @@ sds_handshake (struct backend *backend)
 
   sds_data->rest_time = SDS_REST_TIME_DEFAULT;
 
-  backend->filesystems = FS_SAMPLES_SDS_8_B | FS_SAMPLES_SDS_12_B |
-    FS_SAMPLES_SDS_14_B | FS_SAMPLES_SDS_16_B;
+  backend->filesystems = FS_PROGRAM_DEFAULT | FS_SAMPLES_SDS_8_B |
+    FS_SAMPLES_SDS_12_B | FS_SAMPLES_SDS_14_B | FS_SAMPLES_SDS_16_B;
   backend->fs_ops = FS_SDS_ALL_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
   backend->data = sds_data;

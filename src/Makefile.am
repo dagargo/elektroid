@@ -43,8 +43,10 @@ else
 elektroid_audio_sources = audio_pa.c
 endif
 
-elektroid_common_sources = local.c local.h connector.c connector.h \
-sample.c sample.h utils.c utils.h \
+elektroid_common_sources = local.c local.h \
+connector.c connector.h \
+sample.c sample.h \
+utils.c utils.h \
 backend.c backend.h $(elektroid_backend_sources) \
 connectors/common.c connectors/common.h \
 connectors/elektron.c connectors/elektron.h \
@@ -55,7 +57,8 @@ connectors/sds.c connectors/sds.h \
 connectors/efactor.c connectors/efactor.h \
 connectors/phatty.c connectors/phatty.h \
 connectors/summit.c connectors/summit.h \
-connectors/scala.c connectors/scala.h
+connectors/scala.c connectors/scala.h \
+connectors/default.c connectors/default.h
 
 elektroid_cli_SOURCES = $(elektroid_common_sources) elektroid-cli.c
 

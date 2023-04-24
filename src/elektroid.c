@@ -248,9 +248,8 @@ static void
 elektroid_set_local_browser_file_extensions (gint sel_fs)
 {
   gboolean updated = FALSE;
-  const struct fs_operations *ops =
-    backend_get_fs_operations (&backend, sel_fs,
-			       NULL);
+  const struct fs_operations *ops = backend_get_fs_operations (&backend,
+                                                               sel_fs, NULL);
 
   if (!ops || EDITOR_VISIBLE)
     {
@@ -259,8 +258,11 @@ elektroid_set_local_browser_file_extensions (gint sel_fs)
     }
   else
     {
-      gchar *ext = ops->get_ext (&backend, ops);
-      updated = browser_set_file_extension (&local_browser, ext);
+      if (ops->get_ext)
+        {
+          gchar *ext =  ops->get_ext (&backend, ops);
+          updated = browser_set_file_extension (&local_browser, ext);
+        }
     }
   if (updated)
     {

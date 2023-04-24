@@ -18,7 +18,6 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <glib/gi18n.h>
 #include "backend.h"
 #include "connector.h"
 #include "connectors/elektron.h"
@@ -28,16 +27,7 @@
 #include "connectors/efactor.h"
 #include "connectors/phatty.h"
 #include "connectors/summit.h"
-
-static gint
-default_handshake (struct backend *backend)
-{
-  backend_midi_handshake (backend);
-  backend->filesystems = 0;
-  backend->fs_ops = NULL;
-  snprintf (backend->name, LABEL_MAX, "%s", _("MIDI device"));
-  return 0;
-}
+#include "connectors/default.h"
 
 struct connector
 {
