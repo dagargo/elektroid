@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.38.2 
+<!-- Generated with glade 3.40.0 
 
 Copyright (C) David García Goñi
 
@@ -673,16 +673,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                 <property name="can-focus">False</property>
                                 <property name="label-xalign">0</property>
                                 <child>
-                                  <object class="GtkAlignment">
+                                  <object class="GtkSpinner" id="remote_spinner">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
-                                    <property name="left-padding">12</property>
-                                    <child>
-                                      <object class="GtkSpinner" id="remote_spinner">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                      </object>
-                                    </child>
                                   </object>
                                 </child>
                                 <child type="label_item">
@@ -879,16 +872,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                 <property name="can-focus">False</property>
                                 <property name="label-xalign">0</property>
                                 <child>
-                                  <object class="GtkAlignment">
+                                  <object class="GtkSpinner" id="local_spinner">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
-                                    <property name="left-padding">12</property>
-                                    <child>
-                                      <object class="GtkSpinner" id="local_spinner">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                      </object>
-                                    </child>
                                   </object>
                                 </child>
                                 <child type="label_item">
