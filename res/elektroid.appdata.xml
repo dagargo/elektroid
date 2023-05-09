@@ -4,7 +4,7 @@
  <id>elektroid.desktop</id>
  <metadata_license>FSFAP</metadata_license>
  <project_license>GPL-3.0+</project_license>
- <name>elektroid</name>
+ <name>Elektroid</name>
  <summary>Sample and MIDI device manager</summary>
  <description>
   <p>Elektroid is a sample and MIDI device manager.</p>
