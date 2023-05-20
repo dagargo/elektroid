@@ -33,7 +33,8 @@ struct editor
   GThread *thread;
   guint target_channels;	//Channels to load from file
   GtkWidget *box;
-  GtkWidget *waveform_draw_area;
+  GtkWidget *waveform_scrolled_window;
+  GtkWidget *waveform;
   GtkWidget *play_button;
   GtkWidget *stop_button;
   GtkWidget *loop_button;
@@ -47,6 +48,7 @@ struct editor
   GtkWidget *sample_channels;
   GtkWidget *sample_samplerate;
   GtkWidget *sample_bitdepth;
+  guint zoom;
 };
 
 void editor_set_source (struct editor *editor, enum audio_src audio_src);
@@ -79,5 +81,10 @@ void editor_set_volume_callback (gpointer editor, gdouble volume);
 void editor_start_load_thread (struct editor *editor);
 
 void editor_stop_load_thread (struct editor *editor);
+
+gboolean editor_waveform_scroll (GtkWidget * object, GdkEventScroll * event,
+				 gpointer data);
+
+void editor_init (struct editor *);
 
 #endif

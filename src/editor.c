@@ -30,10 +30,9 @@
 #endif
 
 #define EDITOR_PREF_CHANNELS (!editor->remote_browser->fs_ops || (editor->remote_browser->fs_ops->options & FS_OPTION_STEREO) || !editor->preferences->mix ? 2 : 1)
-
-#define MAX_DRAW_X 10000
-
 #define EDITOR_LOADED_CHANNELS(n) (n == 2 && sample_info->channels == 2 ? 2 : 1)
+
+#define EDITOR_DRAW_X_FACTOR 5
 
 struct editor_set_volume_data
 {
@@ -42,6 +41,22 @@ struct editor_set_volume_data
 };
 
 extern void elektroid_set_audio_controls_on_load (gboolean sensitive);
+
+static void
+editor_set_layout_width_to_val (struct editor *editor, guint w)
+{
+  guint h;
+  gtk_layout_get_size (GTK_LAYOUT (editor->waveform), NULL, &h);
+  gtk_layout_set_size (GTK_LAYOUT (editor->waveform), w, h);
+}
+
+static void
+editor_set_layout_width (struct editor *editor)
+{
+  guint w = gtk_widget_get_allocated_width (editor->waveform_scrolled_window);
+  w = w * editor->zoom - 2;	//2 border pixels
+  editor_set_layout_width_to_val (editor, w);
+}
 
 static void
 editor_set_widget_source (GtkWidget * widget, enum audio_src audio_src)
@@ -75,13 +90,51 @@ editor_set_widget_source (GtkWidget * widget, enum audio_src audio_src)
 void
 editor_set_source (struct editor *editor, enum audio_src audio_src)
 {
+  if (audio_src == AUDIO_SRC_NONE)
+    {
+      editor_set_layout_width_to_val (editor, 1);
+    }
+
   editor_set_widget_source (editor->autoplay_switch, audio_src);
   editor_set_widget_source (editor->mix_switch, audio_src);
   editor_set_widget_source (editor->play_button, audio_src);
   editor_set_widget_source (editor->stop_button, audio_src);
   editor_set_widget_source (editor->loop_button, audio_src);
   editor_set_widget_source (editor->volume_button, audio_src);
-  editor_set_widget_source (editor->waveform_draw_area, audio_src);
+  editor_set_widget_source (editor->waveform, audio_src);
+}
+
+static void
+editor_set_start_frame (struct editor *editor, gint start)
+{
+  gint max = editor->audio.frames - 1;
+  start = start < 0 ? 0 : start;
+  start = start > max ? max : start;
+
+  gdouble widget_w =
+    gtk_widget_get_allocated_width (editor->waveform_scrolled_window);
+  GtkAdjustment *adj =
+    gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW
+					 (editor->waveform_scrolled_window));
+  gdouble upper = widget_w * editor->zoom - 3;	//Base 0 and 2 border pixels
+  gdouble lower = 0;
+  gdouble value = upper * start / (double) editor->audio.frames;
+
+  debug_print (1, "Setting waveform scrollbar to %f [%f, %f]...\n", value,
+	       lower, upper);
+  gtk_adjustment_set_lower (adj, 0);
+  gtk_adjustment_set_upper (adj, upper);
+  gtk_adjustment_set_value (adj, value);
+}
+
+static guint
+editor_get_start_frame (struct editor *editor)
+{
+  GtkAdjustment *adj =
+    gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW
+					 (editor->waveform_scrolled_window));
+  return editor->audio.frames * gtk_adjustment_get_value (adj) /
+    (gdouble) gtk_adjustment_get_upper (adj);
 }
 
 static void
@@ -126,6 +179,8 @@ editor_set_sample_properties_on_load (struct editor *editor)
       snprintf (label, LABEL_MAX, "%d", sample_info->bitdepth);
       gtk_label_set_text (GTK_LABEL (editor->sample_bitdepth), label);
     }
+
+  editor_set_start_frame (editor, 0);
 }
 
 static gboolean
@@ -170,19 +225,29 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
   double x_ratio, mid_y1, mid_y2, value;
   short *sample;
   gboolean stereo;
+  guint samples, channels, sample_start;
+  guint max_draw_x =
+    gtk_widget_get_allocated_width (widget) * EDITOR_DRAW_X_FACTOR;
   double y_scale = 1.0 / (double) SHRT_MIN;
-  double x_scale = 1.0 / (double) MAX_DRAW_X;
+  double x_scale = 1.0 / (double) max_draw_x;
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
   struct sample_info *sample_info = audio->control.data;
+  guint start = editor_get_start_frame (editor);
+
+  debug_print (3, "Drawing waveform from %d with %dx zoom...\n",
+	       start, editor->zoom);
 
   g_mutex_lock (&audio->control.mutex);
 
-  stereo = EDITOR_LOADED_CHANNELS (editor->target_channels) == 2;
+  channels = EDITOR_LOADED_CHANNELS (editor->target_channels);
+  stereo = channels == 2;
+  samples = audio->sample->len >> 1;
+  x_ratio = audio->frames / (gdouble) (max_draw_x * editor->zoom);
 
   context = gtk_widget_get_style_context (widget);
-  width = gtk_widget_get_allocated_width (widget) - 2;
-  height = gtk_widget_get_allocated_height (widget) - 2;
+  width = gtk_widget_get_allocated_width (widget);
+  height = gtk_widget_get_allocated_height (widget);
   y_scale *= height;
   if (stereo)
     {
@@ -192,7 +257,7 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
     }
   else
     {
-      mid_y1 = height * 0.50;
+      mid_y1 = height * 0.5;
       y_scale *= 0.5;
     }
   gtk_render_background (context, cr, 0, 0, width, height);
@@ -200,25 +265,26 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 			       &color);
   gdk_cairo_set_source_rgba (cr, &color);
 
-  sample = (short *) audio->sample->data;
-  x_ratio = audio->frames / (double) MAX_DRAW_X;
-  for (gint i = 0; i < MAX_DRAW_X; i++)
+  sample_start = start * channels;
+  sample = ((short *) audio->sample->data) + sample_start;
+  for (gint i = 0; i < max_draw_x; i++)
     {
-      x_sample = i * x_ratio * (stereo ? 2 : 1);
+      x_sample = i * x_ratio * channels;
       x_widget = i * width * x_scale;
-      if (x_sample < audio->sample->len >> 1)
+      if (x_sample + sample_start >= samples)
 	{
-	  value = mid_y1 - sample[x_sample] * y_scale;
-	  cairo_move_to (cr, x_widget, mid_y1);
+	  break;
+	}
+      value = mid_y1 - sample[x_sample] * y_scale;
+      cairo_move_to (cr, x_widget, mid_y1);
+      cairo_line_to (cr, x_widget, value);
+      cairo_stroke (cr);
+      if (stereo)
+	{
+	  value = mid_y2 - sample[x_sample + 1] * y_scale;
+	  cairo_move_to (cr, x_widget, mid_y2);
 	  cairo_line_to (cr, x_widget, value);
 	  cairo_stroke (cr);
-	  if (stereo)
-	    {
-	      value = mid_y2 - sample[x_sample + 1] * y_scale;
-	      cairo_move_to (cr, x_widget, mid_y2);
-	      cairo_line_to (cr, x_widget, value);
-	      cairo_stroke (cr);
-	    }
 	}
     }
 
@@ -231,7 +297,7 @@ static gboolean
 editor_queue_draw (gpointer data)
 {
   struct editor *editor = data;
-  gtk_widget_queue_draw (editor->waveform_draw_area);
+  gtk_widget_queue_draw (editor->waveform);
   return FALSE;
 }
 
@@ -256,6 +322,8 @@ editor_load_sample_runner (gpointer data)
   struct audio *audio = &editor->audio;
   struct sample_info *sample_info = audio->control.data;
 
+  editor->zoom = 1;
+
   sample_params.samplerate = audio->samplerate;
   sample_params.channels = editor->target_channels;
 
@@ -279,6 +347,8 @@ editor_load_sample_runner (gpointer data)
   g_mutex_lock (&audio->control.mutex);
   audio->control.active = FALSE;
   g_mutex_unlock (&audio->control.mutex);
+
+  editor_set_layout_width (editor);
 
   return NULL;
 }
@@ -386,4 +456,107 @@ editor_set_volume_callback (gpointer editor, gdouble volume)
   data->editor = editor;
   data->volume = volume;
   g_idle_add (editor_set_volume_callback_bg, data);
+}
+
+static void
+editor_get_frame_at_cursor (struct editor *editor, GdkEventScroll * event,
+			    guint * cursor_frame, gdouble * rel_pos)
+{
+  guint lw;
+  guint start = editor_get_start_frame (editor);
+  gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &lw, NULL);
+  *cursor_frame = editor->audio.frames * event->x / lw;
+  *rel_pos = (*cursor_frame - start) /
+    (editor->audio.frames / (double) editor->zoom);
+}
+
+static gboolean
+editor_zoom (struct editor *editor, GdkEventScroll * event, gdouble dy)
+{
+  gdouble rel_pos;
+  guint start, cursor_frame;
+  gboolean ctrl = ((event->state) & GDK_CONTROL_MASK) != 0;
+
+  if (!ctrl)
+    {
+      return FALSE;
+    }
+
+  if (dy == 0.0)
+    {
+      return FALSE;
+    }
+
+  g_mutex_lock (&editor->audio.control.mutex);
+
+  editor_get_frame_at_cursor (editor, event, &cursor_frame, &rel_pos);
+  debug_print (1, "Zooming at frame %d...\n", cursor_frame);
+
+  if (dy == -1.0)
+    {
+      guint w;
+      gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &w, NULL);
+      if (w >= editor->audio.frames)
+	{
+	  goto end;
+	}
+      editor->zoom = editor->zoom << 1;
+    }
+  else
+    {
+      if (editor->zoom == 1)
+	{
+	  goto end;
+	}
+      editor->zoom = editor->zoom >> 1;
+    }
+
+  debug_print (1, "Setting zoon to %dx...\n", editor->zoom);
+
+  start = cursor_frame - rel_pos * editor->audio.frames /
+    (gdouble) editor->zoom;
+  editor_set_layout_width (editor);
+  editor_set_start_frame (editor, start);
+
+end:
+  g_mutex_unlock (&editor->audio.control.mutex);
+
+  return TRUE;
+}
+
+gboolean
+editor_waveform_scroll (GtkWidget * widget, GdkEventScroll * event,
+			gpointer data)
+{
+  if (event->direction == GDK_SCROLL_SMOOTH)
+    {
+      gdouble dx, dy;
+      gdk_event_get_scroll_deltas ((GdkEvent *) event, &dx, &dy);
+      if (editor_zoom (data, event, dy))
+	{
+	  g_idle_add (editor_queue_draw, data);
+	}
+    }
+  return FALSE;
+}
+
+static void
+editor_on_size_allocate (GtkWidget * self, GtkAllocation * allocation,
+			 struct editor *editor)
+{
+  if (editor->audio.frames == 0)
+    {
+      return;
+    }
+
+  guint start = editor_get_start_frame (editor);
+  editor_set_layout_width (editor);
+  editor_set_start_frame (editor, start);
+}
+
+void
+editor_init (struct editor *editor)
+{
+  g_signal_connect (editor->waveform_scrolled_window, "size-allocate",
+		    G_CALLBACK (editor_on_size_allocate), editor);
 }

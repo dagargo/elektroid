@@ -249,7 +249,7 @@ elektroid_set_local_browser_file_extensions (gint sel_fs)
 {
   gboolean updated = FALSE;
   const struct fs_operations *ops = backend_get_fs_operations (&backend,
-                                                               sel_fs, NULL);
+							       sel_fs, NULL);
 
   if (!ops || EDITOR_VISIBLE)
     {
@@ -259,10 +259,10 @@ elektroid_set_local_browser_file_extensions (gint sel_fs)
   else
     {
       if (ops->get_ext)
-        {
-          gchar *ext =  ops->get_ext (&backend, ops);
-          updated = browser_set_file_extension (&local_browser, ext);
-        }
+	{
+	  gchar *ext = ops->get_ext (&backend, ops);
+	  updated = browser_set_file_extension (&local_browser, ext);
+	}
     }
   if (updated)
     {
@@ -1450,7 +1450,7 @@ elektroid_reset_sample (struct browser *browser)
       audio_stop (&editor.audio);
       editor_stop_load_thread (&editor);
       audio_reset_sample (&editor.audio);
-      gtk_widget_queue_draw (editor.waveform_draw_area);
+      gtk_widget_queue_draw (editor.waveform);
       editor_set_source (&editor, AUDIO_SRC_NONE);
       elektroid_audio_widgets_set_status (&editor);
     }
@@ -3667,8 +3667,9 @@ elektroid_run (int argc, char *argv[])
   local_box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box"));
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
   editor.box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
-  editor.waveform_draw_area =
-    GTK_WIDGET (gtk_builder_get_object (builder, "waveform_draw_area"));
+  editor.waveform_scrolled_window =
+    GTK_WIDGET (gtk_builder_get_object (builder, "waveform_scrolled_window"));
+  editor.waveform = GTK_WIDGET (gtk_builder_get_object (builder, "waveform"));
   editor.play_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "play_button"));
   editor.stop_button =
@@ -3703,8 +3704,11 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_name_dialog_entry_changed),
 		    name_dialog_accept_button);
 
-  g_signal_connect (editor.waveform_draw_area, "draw",
+  g_signal_connect (editor.waveform, "draw",
 		    G_CALLBACK (editor_draw_waveform), &editor);
+  gtk_widget_add_events (editor.waveform, GDK_SCROLL_MASK);
+  g_signal_connect (editor.waveform, "scroll-event",
+		    G_CALLBACK (editor_waveform_scroll), &editor);
   g_signal_connect (editor.play_button, "clicked",
 		    G_CALLBACK (editor_play_clicked), &editor);
   g_signal_connect (editor.stop_button, "clicked",
@@ -3720,6 +3724,19 @@ elektroid_run (int argc, char *argv[])
 						    G_CALLBACK
 						    (editor_set_volume),
 						    &editor);
+
+  editor.sample_info_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_info_box"));
+  editor.sample_length =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_length"));
+  editor.sample_duration =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_duration"));
+  editor.sample_channels =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_channels"));
+  editor.sample_samplerate =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_samplerate"));
+  editor.sample_bitdepth =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_bitdepth"));
 
   remote_browser = (struct browser)
   {
@@ -3977,19 +3994,6 @@ elektroid_run (int argc, char *argv[])
   fs_combo = GTK_WIDGET (gtk_builder_get_object (builder, "fs_combo"));
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
 
-  editor.sample_info_box =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_info_box"));
-  editor.sample_length =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_length"));
-  editor.sample_duration =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_duration"));
-  editor.sample_channels =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_channels"));
-  editor.sample_samplerate =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_samplerate"));
-  editor.sample_bitdepth =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_bitdepth"));
-
   gtk_widget_set_sensitive (remote_box, FALSE);
 
   elektroid_audio_widgets_set_status ();
@@ -4012,6 +4016,8 @@ elektroid_run (int argc, char *argv[])
   audio_run (&editor.audio);
 
   ma_data.backend = &backend;
+
+  editor_init (&editor);
 
   gtk_main ();
 
