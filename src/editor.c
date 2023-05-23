@@ -32,8 +32,6 @@
 #define EDITOR_PREF_CHANNELS (!editor->remote_browser->fs_ops || (editor->remote_browser->fs_ops->options & FS_OPTION_STEREO) || !editor->preferences->mix ? 2 : 1)
 #define EDITOR_LOADED_CHANNELS(n) (n == 2 && sample_info->channels == 2 ? 2 : 1)
 
-#define EDITOR_DRAW_X_FACTOR 5
-
 struct editor_set_volume_data
 {
   struct editor *editor;
@@ -215,21 +213,65 @@ editor_update_ui_on_load (gpointer data)
   return TRUE;
 }
 
+static gboolean
+editor_get_y_frame (GByteArray * sample, guint channels, guint frame,
+		    guint len, gdouble * lp, gdouble * ln, gdouble * rp,
+		    gdouble * rn)
+{
+  guint loaded_frames = sample->len >> (1 * channels);
+  gshort *data = (gshort *) sample->data;
+  gdouble avg_lp = 0.0, avg_ln = 0.0, avg_rp = 0.0, avg_rn = 0.0;
+  guint cnt_lp = 0, cnt_ln = 0, cnt_rp = 0, cnt_rn = 0;
+  gshort *s = &data[frame * channels];
+  for (guint i = 0, f = frame; i < len; i++, f++)
+    {
+      if (f >= loaded_frames)
+	{
+	  return FALSE;
+	}
+      if (*s > 0)
+	{
+	  avg_lp += *s;
+	  cnt_lp++;
+	}
+      else
+	{
+	  avg_ln += *s;
+	  cnt_ln++;
+	}
+      s++;
+      if (channels == 2)
+	{
+	  if (*s > 0)
+	    {
+	      avg_rp += *s;
+	      cnt_rp++;
+	    }
+	  else
+	    {
+	      avg_rn += *s;
+	      cnt_rn++;
+	    }
+	  s++;
+	}
+    }
+  *lp = cnt_lp == 0 ? 0.0 : avg_lp / cnt_lp;
+  *ln = cnt_ln == 0 ? 0.0 : avg_ln / cnt_ln;
+  *rp = cnt_rp == 0 ? 0.0 : avg_rp / cnt_rp;
+  *rn = cnt_rn == 0 ? 0.0 : avg_rn / cnt_rn;
+
+  return TRUE;
+}
+
 gboolean
 editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 {
-  guint width, height;
   GdkRGBA color;
+  guint width, height, channels, x_count, layout_width;
   GtkStyleContext *context;
-  gint x_widget, x_sample;
-  double x_ratio, mid_y1, mid_y2, value;
-  short *sample;
+  gdouble x_ratio, mid_l, mid_r, value, lp, ln, rp, rn, x_frame, x_frame_next;
   gboolean stereo;
-  guint samples, channels, sample_start;
-  guint max_draw_x =
-    gtk_widget_get_allocated_width (widget) * EDITOR_DRAW_X_FACTOR;
-  double y_scale = 1.0 / (double) SHRT_MIN;
-  double x_scale = 1.0 / (double) max_draw_x;
+  gdouble y_scale = 1.0 / (double) SHRT_MIN;
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
   struct sample_info *sample_info = audio->control.data;
@@ -240,51 +282,71 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 
   g_mutex_lock (&audio->control.mutex);
 
-  channels = EDITOR_LOADED_CHANNELS (editor->target_channels);
-  stereo = channels == 2;
-  samples = audio->sample->len >> 1;
-  x_ratio = audio->frames / (gdouble) (max_draw_x * editor->zoom);
-
-  context = gtk_widget_get_style_context (widget);
   width = gtk_widget_get_allocated_width (widget);
   height = gtk_widget_get_allocated_height (widget);
+  channels = EDITOR_LOADED_CHANNELS (editor->target_channels);
+  stereo = channels == 2;
+  gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &layout_width, NULL);
+  x_ratio = audio->frames / (gdouble) layout_width;
+
   y_scale *= height;
   if (stereo)
     {
-      mid_y1 = height * 0.25;
-      mid_y2 = height * 0.75;
+      mid_l = height * 0.25;
+      mid_r = height * 0.75;
       y_scale *= 0.25;
     }
   else
     {
-      mid_y1 = height * 0.5;
+      mid_l = height * 0.5;
+      mid_r = 0.0;
       y_scale *= 0.5;
     }
-  gtk_render_background (context, cr, 0, 0, width, height);
-  gtk_style_context_get_color (context, gtk_style_context_get_state (context),
-			       &color);
-  gdk_cairo_set_source_rgba (cr, &color);
 
-  sample_start = start * channels;
-  sample = ((short *) audio->sample->data) + sample_start;
-  for (gint i = 0; i < max_draw_x; i++)
+  context = gtk_widget_get_style_context (widget);
+  gtk_render_background (context, cr, 0, 0, width, height);
+
+  if (audio->frames)
     {
-      x_sample = i * x_ratio * channels;
-      x_widget = i * width * x_scale;
-      if (x_sample + sample_start >= samples)
+      gtk_style_context_get_color (context,
+				   gtk_style_context_get_state (context),
+				   &color);
+      gdk_cairo_set_source_rgba (cr, &color);
+
+      for (gint i = 0; i < width; i++)
 	{
-	  break;
-	}
-      value = mid_y1 - sample[x_sample] * y_scale;
-      cairo_move_to (cr, x_widget, mid_y1);
-      cairo_line_to (cr, x_widget, value);
-      cairo_stroke (cr);
-      if (stereo)
-	{
-	  value = mid_y2 - sample[x_sample + 1] * y_scale;
-	  cairo_move_to (cr, x_widget, mid_y2);
-	  cairo_line_to (cr, x_widget, value);
+	  x_frame = start + i * x_ratio;
+	  x_frame_next = x_frame + x_ratio;
+	  if (x_frame_next > audio->frames)
+	    {
+	      x_frame_next = audio->frames;
+	    }
+	  x_count = x_frame_next - (guint) x_frame;
+	  if (!x_count)
+	    {
+	      continue;
+	    }
+	  if (!editor_get_y_frame (audio->sample, channels, x_frame, x_count,
+				   &lp, &ln, &rp, &rn))
+	    {
+	      debug_print (3,
+			   "Last available frame before the sample end. Stopping...\n");
+	      break;
+	    }
+
+	  value = mid_l + lp * y_scale;
+	  cairo_move_to (cr, i, value);
+	  value = mid_l + ln * y_scale;
+	  cairo_line_to (cr, i, value);
 	  cairo_stroke (cr);
+	  if (stereo)
+	    {
+	      value = mid_r + rp * y_scale;
+	      cairo_move_to (cr, i, value);
+	      value = mid_r + rn * y_scale;
+	      cairo_line_to (cr, i, value);
+	      cairo_stroke (cr);
+	    }
 	}
     }
 
