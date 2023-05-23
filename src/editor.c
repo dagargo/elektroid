@@ -266,7 +266,7 @@ editor_get_y_frame (GByteArray * sample, guint channels, guint frame,
 gboolean
 editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 {
-  GdkRGBA color;
+  GdkRGBA color, bgcolor;
   guint width, height, channels, x_count, layout_width;
   GtkStyleContext *context;
   gdouble x_ratio, mid_l, mid_r, value, lp, ln, rp, rn, x_frame, x_frame_next;
@@ -308,19 +308,26 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 
   if (audio->frames)
     {
-      gtk_style_context_get_color (context,
-				   gtk_style_context_get_state (context),
-				   &color);
+      GtkStateFlags state = gtk_style_context_get_state (context);
+      gtk_style_context_get_color (context, state, &color);
+      gtk_style_context_get_color (context, state, &bgcolor);
+      bgcolor.alpha = 0.15;
+
+      if (editor->sel_len)
+	{
+	  gdouble x_len = editor->sel_len / x_ratio;
+	  gdouble x_start = (editor->sel_start - (gdouble) start) / x_ratio;
+	  gdk_cairo_set_source_rgba (cr, &bgcolor);
+	  cairo_rectangle (cr, x_start, 0, x_len, height);
+	  cairo_fill (cr);
+	}
+
       gdk_cairo_set_source_rgba (cr, &color);
 
       for (gint i = 0; i < width; i++)
 	{
 	  x_frame = start + i * x_ratio;
 	  x_frame_next = x_frame + x_ratio;
-	  if (x_frame_next > audio->frames)
-	    {
-	      x_frame_next = audio->frames;
-	    }
 	  x_count = x_frame_next - (guint) x_frame;
 	  if (!x_count)
 	    {
@@ -385,6 +392,8 @@ editor_load_sample_runner (gpointer data)
   struct sample_info *sample_info = audio->control.data;
 
   editor->zoom = 1;
+  editor->sel_start = 0;
+  editor->sel_len = 0;
 
   sample_params.samplerate = audio->samplerate;
   sample_params.channels = editor->target_channels;
