@@ -50,7 +50,8 @@ struct editor
   GtkWidget *sample_bitdepth;
   guint zoom;
   guint sel_start;
-  guint sel_len;
+  gint sel_len;
+  gboolean selecting;
 };
 
 void editor_set_source (struct editor *editor, enum audio_src audio_src);

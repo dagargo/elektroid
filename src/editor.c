@@ -394,6 +394,7 @@ editor_load_sample_runner (gpointer data)
   editor->zoom = 1;
   editor->sel_start = 0;
   editor->sel_len = 0;
+  editor->selecting = FALSE;
 
   sample_params.samplerate = audio->samplerate;
   sample_params.channels = editor->target_channels;
@@ -530,15 +531,18 @@ editor_set_volume_callback (gpointer editor, gdouble volume)
 }
 
 static void
-editor_get_frame_at_cursor (struct editor *editor, GdkEventScroll * event,
-			    guint * cursor_frame, gdouble * rel_pos)
+editor_get_frame_at_position (struct editor *editor, gdouble x,
+			      guint * cursor_frame, gdouble * rel_pos)
 {
   guint lw;
   guint start = editor_get_start_frame (editor);
   gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &lw, NULL);
-  *cursor_frame = editor->audio.frames * event->x / lw;
-  *rel_pos = (*cursor_frame - start) /
-    (editor->audio.frames / (double) editor->zoom);
+  *cursor_frame = editor->audio.frames * x / lw;
+  if (rel_pos)
+    {
+      *rel_pos = (*cursor_frame - start) /
+	(editor->audio.frames / (double) editor->zoom);
+    }
 }
 
 static gboolean
@@ -560,7 +564,7 @@ editor_zoom (struct editor *editor, GdkEventScroll * event, gdouble dy)
 
   g_mutex_lock (&editor->audio.control.mutex);
 
-  editor_get_frame_at_cursor (editor, event, &cursor_frame, &rel_pos);
+  editor_get_frame_at_position (editor, event->x, &cursor_frame, &rel_pos);
   debug_print (1, "Zooming at frame %d...\n", cursor_frame);
 
   if (dy == -1.0)
@@ -625,9 +629,72 @@ editor_on_size_allocate (GtkWidget * self, GtkAllocation * allocation,
   editor_set_start_frame (editor, start);
 }
 
+static gboolean
+editor_button_press (GtkWidget * widget, GdkEventButton * event,
+		     gpointer data)
+{
+  guint cursor_frame;
+  struct editor *editor = data;
+
+  audio_stop (&editor->audio);
+  editor->selecting = TRUE;
+  editor->sel_len = 0;
+  gtk_widget_grab_focus (editor->waveform_scrolled_window);
+
+  editor_get_frame_at_position (data, event->x, &cursor_frame, NULL);
+  debug_print (2, "Pressing at frame %d...\n", cursor_frame);
+  editor->sel_start = cursor_frame;
+
+  g_idle_add (editor_queue_draw, data);
+  return FALSE;
+}
+
+static gboolean
+editor_button_release (GtkWidget * widget, GdkEventButton * event,
+		       gpointer data)
+{
+  guint cursor_frame;
+  struct editor *editor = data;
+
+  editor->selecting = FALSE;
+  gtk_widget_grab_focus (editor->waveform_scrolled_window);
+
+  editor_get_frame_at_position (data, event->x, &cursor_frame, NULL);
+  debug_print (2, "Releasing at frame %d...\n", cursor_frame);
+
+  g_idle_add (editor_queue_draw, data);
+  return FALSE;
+}
+
+static gboolean
+editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
+		      gpointer data)
+{
+  guint cursor_frame;
+  struct editor *editor = data;
+  if (editor->selecting)
+    {
+      editor_get_frame_at_position (editor, event->x, &cursor_frame, NULL);
+      debug_print (3, "Motion over sample %d...\n", cursor_frame);
+      editor->sel_len = cursor_frame - editor->sel_start;
+
+      g_idle_add (editor_queue_draw, data);
+    }
+  return FALSE;
+}
+
 void
 editor_init (struct editor *editor)
 {
   g_signal_connect (editor->waveform_scrolled_window, "size-allocate",
 		    G_CALLBACK (editor_on_size_allocate), editor);
+  gtk_widget_add_events (editor->waveform, GDK_BUTTON_PRESS_MASK);
+  g_signal_connect (editor->waveform, "button-press-event",
+		    G_CALLBACK (editor_button_press), editor);
+  gtk_widget_add_events (editor->waveform, GDK_BUTTON_RELEASE_MASK);
+  g_signal_connect (editor->waveform, "button-release-event",
+		    G_CALLBACK (editor_button_release), editor);
+  gtk_widget_add_events (editor->waveform, GDK_POINTER_MOTION_MASK);
+  g_signal_connect (editor->waveform, "motion-notify-event",
+		    G_CALLBACK (editor_motion_notify), editor);
 }
