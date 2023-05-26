@@ -105,6 +105,7 @@ audio_init (struct audio *audio,
   audio->volume_change_callback_data = data;
   audio->control.data = g_malloc (sizeof (struct sample_info));
   audio->control.callback = NULL;
+  audio->sel_len = 0;
 
   audio_init_int (audio);
 }

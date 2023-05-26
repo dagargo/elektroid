@@ -313,10 +313,11 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
       gtk_style_context_get_color (context, state, &bgcolor);
       bgcolor.alpha = 0.15;
 
-      if (editor->sel_len)
+      if (editor->audio.sel_len)
 	{
-	  gdouble x_len = editor->sel_len / x_ratio;
-	  gdouble x_start = (editor->sel_start - (gdouble) start) / x_ratio;
+	  gdouble x_len = editor->audio.sel_len / x_ratio;
+	  gdouble x_start =
+	    (editor->audio.sel_start - (gdouble) start) / x_ratio;
 	  gdk_cairo_set_source_rgba (cr, &bgcolor);
 	  cairo_rectangle (cr, x_start, 0, x_len, height);
 	  cairo_fill (cr);
@@ -392,9 +393,7 @@ editor_load_sample_runner (gpointer data)
   struct sample_info *sample_info = audio->control.data;
 
   editor->zoom = 1;
-  editor->sel_start = 0;
-  editor->sel_len = 0;
-  editor->selecting = FALSE;
+  editor->audio.sel_start = 0;
 
   sample_params.samplerate = audio->samplerate;
   sample_params.channels = editor->target_channels;
@@ -415,6 +414,8 @@ editor_load_sample_runner (gpointer data)
 		   sample_info->loopstart, sample_info->loopend,
 		   sample_info->samplerate / 1000.0, sample_info->bitdepth);
     }
+
+  editor->audio.sel_len = 0;
 
   g_mutex_lock (&audio->control.mutex);
   audio->control.active = FALSE;
@@ -638,12 +639,12 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
 
   audio_stop (&editor->audio);
   editor->selecting = TRUE;
-  editor->sel_len = 0;
+  editor->audio.sel_len = 0;
   gtk_widget_grab_focus (editor->waveform_scrolled_window);
 
   editor_get_frame_at_position (data, event->x, &cursor_frame, NULL);
   debug_print (2, "Pressing at frame %d...\n", cursor_frame);
-  editor->sel_start = cursor_frame;
+  editor->audio.sel_start = cursor_frame;
 
   g_idle_add (editor_queue_draw, data);
   return FALSE;
@@ -653,16 +654,25 @@ static gboolean
 editor_button_release (GtkWidget * widget, GdkEventButton * event,
 		       gpointer data)
 {
-  guint cursor_frame;
   struct editor *editor = data;
 
   editor->selecting = FALSE;
   gtk_widget_grab_focus (editor->waveform_scrolled_window);
 
-  editor_get_frame_at_position (data, event->x, &cursor_frame, NULL);
-  debug_print (2, "Releasing at frame %d...\n", cursor_frame);
+  if (editor->audio.sel_len < 0)
+    {
+      editor->audio.sel_start =
+	editor->audio.sel_start + editor->audio.sel_len;
+      editor->audio.sel_len = -editor->audio.sel_len;
+    }
 
   g_idle_add (editor_queue_draw, data);
+
+  if (editor->preferences->autoplay && editor->audio.sel_len)
+    {
+      audio_play (&editor->audio);
+    }
+
   return FALSE;
 }
 
@@ -676,7 +686,7 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
     {
       editor_get_frame_at_position (editor, event->x, &cursor_frame, NULL);
       debug_print (3, "Motion over sample %d...\n", cursor_frame);
-      editor->sel_len = cursor_frame - editor->sel_start;
+      editor->audio.sel_len = ((glong)cursor_frame) - editor->audio.sel_start;
 
       g_idle_add (editor_queue_draw, data);
     }

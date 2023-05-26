@@ -49,8 +49,6 @@ struct editor
   GtkWidget *sample_samplerate;
   GtkWidget *sample_bitdepth;
   guint zoom;
-  guint sel_start;
-  gint sel_len;
   gboolean selecting;
 };
 
