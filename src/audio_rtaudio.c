@@ -48,11 +48,7 @@ audio_stop (struct audio *audio)
 void
 audio_play (struct audio *audio)
 {
-  g_mutex_lock (&audio->control.mutex);
-  audio->pos = 0;
-  audio->release_frames = 0;
-  audio->status = AUDIO_STATUS_PREPARING;
-  g_mutex_unlock (&audio->control.mutex);
+  audio_prepare (audio);
 
   if (!rtaudio_is_stream_running (audio->rtaudio))
     {

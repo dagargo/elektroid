@@ -40,13 +40,15 @@ void
 audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
 {
   gint16 *dst, *src;
+  guint len =
+    audio->sel_len ? audio->sel_start + audio->sel_len : audio->frames;
 
   debug_print (2, "Writing %d frames to %d channels...\n", frames,
 	       audio->channels);
 
   memset (buffer, 0, frames << AUDIO_CHANNELS);
 
-  if ((audio->pos == audio->frames && !audio->loop) ||
+  if ((audio->pos == len && !audio->loop) ||
       audio->status == AUDIO_STATUS_PREPARING ||
       audio->status == AUDIO_STATUS_STOPPING)
     {
@@ -66,14 +68,14 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
   src = (gint16 *) & audio->sample->data[audio->pos << audio->channels];
   for (gint i = 0; i < frames; i++)
     {
-      if (audio->pos == audio->frames)
+      if (audio->pos == len)
 	{
 	  if (!audio->loop)
 	    {
 	      break;
 	    }
 	  debug_print (2, "Sample reset\n");
-	  audio->pos = 0;
+	  audio->pos = audio->sel_len ? audio->sel_start : 0;
 	  src = (gint16 *) audio->sample->data;
 	}
 
@@ -142,5 +144,15 @@ audio_reset_sample (struct audio *audio)
   audio->src = AUDIO_SRC_NONE;
   audio->status = AUDIO_STATUS_STOPPED;
   memset (audio->control.data, 0, sizeof (struct sample_info));
+  g_mutex_unlock (&audio->control.mutex);
+}
+
+void
+audio_prepare (struct audio *audio)
+{
+  g_mutex_lock (&audio->control.mutex);
+  audio->pos = audio->sel_len ? audio->sel_start : 0;
+  audio->release_frames = 0;
+  audio->status = AUDIO_STATUS_PREPARING;
   g_mutex_unlock (&audio->control.mutex);
 }

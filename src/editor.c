@@ -661,8 +661,7 @@ editor_button_release (GtkWidget * widget, GdkEventButton * event,
 
   if (editor->audio.sel_len < 0)
     {
-      editor->audio.sel_start =
-	editor->audio.sel_start + editor->audio.sel_len;
+      editor->audio.sel_start += editor->audio.sel_len;
       editor->audio.sel_len = -editor->audio.sel_len;
     }
 
@@ -686,7 +685,8 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
     {
       editor_get_frame_at_position (editor, event->x, &cursor_frame, NULL);
       debug_print (3, "Motion over sample %d...\n", cursor_frame);
-      editor->audio.sel_len = ((glong)cursor_frame) - editor->audio.sel_start;
+      editor->audio.sel_len =
+	((glong) cursor_frame) - editor->audio.sel_start;
 
       g_idle_add (editor_queue_draw, data);
     }

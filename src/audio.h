@@ -95,4 +95,6 @@ void audio_set_volume (struct audio *, gdouble);
 
 void audio_write_to_output_buffer (struct audio *, void *, gint);
 
+void audio_prepare (struct audio *);
+
 #endif

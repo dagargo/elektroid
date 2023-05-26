@@ -141,11 +141,7 @@ audio_play (struct audio *audio)
 
   debug_print (1, "Playing audio...\n");
 
-  g_mutex_lock (&audio->control.mutex);
-  audio->pos = 0;
-  audio->release_frames = 0;
-  audio->status = AUDIO_STATUS_PREPARING;
-  g_mutex_unlock (&audio->control.mutex);
+  audio_prepare (audio);
 
   pa_threaded_mainloop_lock (audio->mainloop);
   operation = pa_stream_cork (audio->stream, 0, audio_success_cb, audio);
