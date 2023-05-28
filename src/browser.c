@@ -190,6 +190,14 @@ browser_get_selected_items_count (struct browser *browser)
   return gtk_tree_selection_count_selected_rows (selection);
 }
 
+void
+browser_clear_selection (struct browser *browser)
+{
+  GtkTreeSelection *selection =
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+  gtk_tree_selection_unselect_all (selection);
+}
+
 gchar *
 browser_get_item_path (struct browser *browser, struct item *item)
 {

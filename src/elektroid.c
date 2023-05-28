@@ -1468,6 +1468,15 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 
   if (count == 1)
     {
+      if (browser == &local_browser)
+	{
+	  browser_clear_selection (&remote_browser);
+	}
+      else
+	{
+	  browser_clear_selection (&local_browser);
+	}
+
       browser_set_selected_row_iter (browser, &iter);
       model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
       browser_set_item (model, &iter, &item);

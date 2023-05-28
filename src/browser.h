@@ -85,6 +85,8 @@ void browser_set_item (GtkTreeModel *, GtkTreeIter *, struct item *);
 
 gint browser_get_selected_items_count (struct browser *);
 
+void browser_clear_selection (struct browser *);
+
 void browser_set_selected_row_iter (struct browser *, GtkTreeIter *);
 
 void browser_selection_changed (GtkTreeSelection *, gpointer);
