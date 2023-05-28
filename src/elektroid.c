@@ -2724,6 +2724,11 @@ elektroid_common_key_press (GtkWidget * widget, GdkEventKey * event,
 			      NULL);
       return TRUE;
     }
+  else if (event->keyval == GDK_KEY_space && editor.audio.frames)
+    {
+      editor_play_clicked (NULL, &editor);
+      return TRUE;
+    }
   else if (event->keyval == GDK_KEY_F2)
     {
       count = browser_get_selected_items_count (browser);
