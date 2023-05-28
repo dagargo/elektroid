@@ -693,6 +693,24 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
   return FALSE;
 }
 
+static gboolean
+editor_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
+{
+  struct editor *editor = data;
+
+  if (event->type != GDK_KEY_PRESS)
+    {
+      return FALSE;
+    }
+
+  if (event->keyval == GDK_KEY_space)
+    {
+      audio_play (&editor->audio);
+    }
+
+  return TRUE;
+}
+
 void
 editor_init (struct editor *editor)
 {
@@ -707,4 +725,6 @@ editor_init (struct editor *editor)
   gtk_widget_add_events (editor->waveform, GDK_POINTER_MOTION_MASK);
   g_signal_connect (editor->waveform, "motion-notify-event",
 		    G_CALLBACK (editor_motion_notify), editor);
+  g_signal_connect (editor->waveform_scrolled_window, "key-press-event",
+		    G_CALLBACK (editor_key_press), editor);
 }
