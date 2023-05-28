@@ -25,7 +25,7 @@ These are the supported devices:
 * Moog Little Phatty and Slim Phatty
 * Novation Summit and Peak
 
-While Elektroid is already available in some GNU/Linux distributions such as Debian or Ubuntu, it can also be installed easily with a [Flatpak](https://flathub.org/apps/io.github.dagargo.Elektroid).
+While Elektroid is already available in some GNU/Linux distributions such as Debian or Ubuntu, it can also be easily installed on other distributions with [Flatpak](https://flathub.org/apps/io.github.dagargo.Elektroid).
 
 ## Installation
 
