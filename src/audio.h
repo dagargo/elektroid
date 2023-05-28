@@ -73,8 +73,8 @@ struct audio
   guint32 channels;
   enum audio_src src;
   enum audio_status status;
-  guint sel_start;
-  glong sel_len;
+  guint32 sel_start;
+  gint64 sel_len;
 };
 
 void audio_play (struct audio *);

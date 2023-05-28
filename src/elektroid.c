@@ -1431,7 +1431,7 @@ elektroid_stop_task_thread ()
 }
 
 static void
-elektroid_audio_widgets_set_status ()
+elektroid_audio_widgets_reset ()
 {
   gtk_widget_set_sensitive (local_browser.open_menuitem, FALSE);
   gtk_widget_set_sensitive (remote_browser.open_menuitem, FALSE);
@@ -1452,7 +1452,7 @@ elektroid_reset_sample (struct browser *browser)
       audio_reset_sample (&editor.audio);
       gtk_widget_queue_draw (editor.waveform);
       editor_set_source (&editor, AUDIO_SRC_NONE);
-      elektroid_audio_widgets_set_status (&editor);
+      elektroid_audio_widgets_reset (&editor);
     }
 }
 
@@ -3609,7 +3609,7 @@ elektroid_quit ()
   browser_destroy (&local_browser);
   browser_destroy (&remote_browser);
 
-  audio_destroy (&editor.audio);
+  editor_destroy (&editor);
 
   debug_print (1, "Quitting GTK+...\n");
   gtk_main_quit ();
@@ -3680,23 +3680,6 @@ elektroid_run (int argc, char *argv[])
 
   local_box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box"));
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
-  editor.box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
-  editor.waveform_scrolled_window =
-    GTK_WIDGET (gtk_builder_get_object (builder, "waveform_scrolled_window"));
-  editor.waveform = GTK_WIDGET (gtk_builder_get_object (builder, "waveform"));
-  editor.play_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "play_button"));
-  editor.stop_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "stop_button"));
-  editor.loop_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "loop_button"));
-  editor.autoplay_switch =
-    GTK_WIDGET (gtk_builder_get_object (builder, "autoplay_switch"));
-  editor.mix_switch =
-    GTK_WIDGET (gtk_builder_get_object (builder, "mix_switch"));
-  editor.volume_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "volume_button"));
-
   status_bar = GTK_STATUSBAR (gtk_builder_get_object (builder, "status_bar"));
 
   g_signal_connect (main_window, "delete-event",
@@ -3717,40 +3700,6 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (name_dialog_entry, "changed",
 		    G_CALLBACK (elektroid_name_dialog_entry_changed),
 		    name_dialog_accept_button);
-
-  g_signal_connect (editor.waveform, "draw",
-		    G_CALLBACK (editor_draw_waveform), &editor);
-  gtk_widget_add_events (editor.waveform, GDK_SCROLL_MASK);
-  g_signal_connect (editor.waveform, "scroll-event",
-		    G_CALLBACK (editor_waveform_scroll), &editor);
-  g_signal_connect (editor.play_button, "clicked",
-		    G_CALLBACK (editor_play_clicked), &editor);
-  g_signal_connect (editor.stop_button, "clicked",
-		    G_CALLBACK (editor_stop_clicked), &editor);
-  g_signal_connect (editor.loop_button, "clicked",
-		    G_CALLBACK (editor_loop_clicked), &editor);
-  g_signal_connect (editor.autoplay_switch, "state-set",
-		    G_CALLBACK (editor_autoplay_clicked), &editor);
-  g_signal_connect (editor.mix_switch, "state-set",
-		    G_CALLBACK (editor_mix_clicked), &editor);
-  editor.volume_changed_handler = g_signal_connect (editor.volume_button,
-						    "value_changed",
-						    G_CALLBACK
-						    (editor_set_volume),
-						    &editor);
-
-  editor.sample_info_box =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_info_box"));
-  editor.sample_length =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_length"));
-  editor.sample_duration =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_duration"));
-  editor.sample_channels =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_channels"));
-  editor.sample_samplerate =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_samplerate"));
-  editor.sample_bitdepth =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_bitdepth"));
 
   remote_browser = (struct browser)
   {
@@ -3977,8 +3926,6 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (refresh_devices_button, "clicked",
 		    G_CALLBACK (elektroid_refresh_devices), NULL);
 
-  audio_init (&editor.audio, editor_set_volume_callback, &editor);
-
   task_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "task_list_store"));
   task_tree_view =
@@ -3998,21 +3945,11 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_clear_finished_tasks), NULL);
 
   gtk_statusbar_push (status_bar, 0, _("Not connected"));
-  editor_loop_clicked (editor.loop_button, &editor);
-  gtk_switch_set_active (GTK_SWITCH (editor.autoplay_switch),
-			 preferences.autoplay);
-  gtk_switch_set_active (GTK_SWITCH (editor.mix_switch), preferences.mix);
 
   fs_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "fs_list_store"));
   fs_combo = GTK_WIDGET (gtk_builder_get_object (builder, "fs_combo"));
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
-
-  gtk_widget_set_sensitive (remote_box, FALSE);
-
-  elektroid_audio_widgets_set_status ();
-
-  gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
 
   local_browser.sensitive_widgets =
     g_slist_append (local_browser.sensitive_widgets, local_box);
@@ -4025,13 +3962,16 @@ elektroid_run (int argc, char *argv[])
   remote_browser.sensitive_widgets =
     g_slist_append (remote_browser.sensitive_widgets, fs_combo);
 
+  editor_init (&editor, builder);
+
+  gtk_widget_set_sensitive (remote_box, FALSE);
+  elektroid_audio_widgets_reset ();
+  gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
+
   g_idle_add (elektroid_load_devices_bg, NULL);
   gtk_widget_show (main_window);
-  audio_run (&editor.audio);
 
   ma_data.backend = &backend;
-
-  editor_init (&editor);
 
   gtk_main ();
 

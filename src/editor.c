@@ -30,7 +30,7 @@
 #endif
 
 #define EDITOR_PREF_CHANNELS (!editor->remote_browser->fs_ops || (editor->remote_browser->fs_ops->options & FS_OPTION_STEREO) || !editor->preferences->mix ? 2 : 1)
-#define EDITOR_LOADED_CHANNELS(n) (n == 2 && sample_info->channels == 2 ? 2 : 1)
+#define EDITOR_LOADED_CHANNELS(editor) (editor->target_channels == 2 && ((struct sample_info *)editor->audio.control.data)->channels == 2 ? 2 : 1)
 
 struct editor_set_volume_data
 {
@@ -187,12 +187,11 @@ editor_update_ui_on_load (gpointer data)
   gboolean ready_to_play;
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
-  struct sample_info *sample_info = audio->control.data;
 
   g_mutex_lock (&audio->control.mutex);
   ready_to_play = audio->frames >= FRAMES_TO_PLAY || (!audio->control.active
 						      && audio->frames > 0);
-  audio->channels = EDITOR_LOADED_CHANNELS (editor->target_channels);
+  audio->channels = EDITOR_LOADED_CHANNELS (editor);
   g_mutex_unlock (&audio->control.mutex);
 
   editor_set_sample_properties_on_load (editor);
@@ -274,7 +273,6 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
   gdouble y_scale = 1.0 / (double) SHRT_MIN;
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
-  struct sample_info *sample_info = audio->control.data;
   guint start = editor_get_start_frame (editor);
 
   debug_print (3, "Drawing waveform from %d with %dx zoom...\n",
@@ -284,7 +282,7 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 
   width = gtk_widget_get_allocated_width (widget);
   height = gtk_widget_get_allocated_height (widget);
-  channels = EDITOR_LOADED_CHANNELS (editor->target_channels);
+  channels = EDITOR_LOADED_CHANNELS (editor);
   stereo = channels == 2;
   gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &layout_width, NULL);
   x_ratio = audio->frames / (gdouble) layout_width;
@@ -392,6 +390,7 @@ editor_load_sample_runner (gpointer data)
   struct audio *audio = &editor->audio;
   struct sample_info *sample_info = audio->control.data;
 
+  editor->dirty = FALSE;
   editor->zoom = 1;
   editor->audio.sel_start = 0;
 
@@ -433,14 +432,14 @@ editor_play_clicked (GtkWidget * object, gpointer data)
   audio_play (&editor->audio);
 }
 
-void
+static void
 editor_stop_clicked (GtkWidget * object, gpointer data)
 {
   struct editor *editor = data;
   audio_stop (&editor->audio);
 }
 
-void
+static void
 editor_loop_clicked (GtkWidget * object, gpointer data)
 {
   struct editor *editor = data;
@@ -448,7 +447,7 @@ editor_loop_clicked (GtkWidget * object, gpointer data)
     gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (object));
 }
 
-gboolean
+static gboolean
 editor_autoplay_clicked (GtkWidget * object, gboolean state, gpointer data)
 {
   struct editor *editor = data;
@@ -482,7 +481,7 @@ editor_stop_load_thread (struct editor *editor)
     }
 }
 
-gboolean
+static gboolean
 editor_mix_clicked (GtkWidget * object, gboolean state, gpointer data)
 {
   struct editor *editor = data;
@@ -497,7 +496,7 @@ editor_mix_clicked (GtkWidget * object, gboolean state, gpointer data)
   return FALSE;
 }
 
-void
+static void
 editor_set_volume (GtkScaleButton * button, gdouble value, gpointer data)
 {
   struct editor *editor = data;
@@ -521,7 +520,7 @@ editor_set_volume_callback_bg (gpointer user_data)
   return FALSE;
 }
 
-void
+static void
 editor_set_volume_callback (gpointer editor, gdouble volume)
 {
   struct editor_set_volume_data *data =
@@ -538,7 +537,16 @@ editor_get_frame_at_position (struct editor *editor, gdouble x,
   guint lw;
   guint start = editor_get_start_frame (editor);
   gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &lw, NULL);
-  *cursor_frame = editor->audio.frames * x / lw;
+  gint64 aux = editor->audio.frames * x / lw;
+  if (aux > 0)
+    {
+      *cursor_frame =
+	aux > editor->audio.frames ? editor->audio.frames : (guint) aux;
+    }
+  else
+    {
+      *cursor_frame = 0;
+    }
   if (rel_pos)
     {
       *rel_pos = (*cursor_frame - start) /
@@ -631,22 +639,51 @@ editor_on_size_allocate (GtkWidget * self, GtkAllocation * allocation,
 }
 
 static gboolean
+editor_loading_completed (struct editor *editor)
+{
+  guint loaded_frames;
+  guint channels = EDITOR_LOADED_CHANNELS (editor);
+
+  g_mutex_lock (&editor->audio.control.mutex);
+  loaded_frames = editor->audio.sample->len >> (1 * channels);
+  g_mutex_unlock (&editor->audio.control.mutex);
+
+  return editor->audio.frames == loaded_frames && editor->audio.frames;
+}
+
+static gboolean
 editor_button_press (GtkWidget * widget, GdkEventButton * event,
 		     gpointer data)
 {
   guint cursor_frame;
   struct editor *editor = data;
 
-  audio_stop (&editor->audio);
-  editor->selecting = TRUE;
-  editor->audio.sel_len = 0;
-  gtk_widget_grab_focus (editor->waveform_scrolled_window);
+  if (!editor_loading_completed (editor))
+    {
+      return FALSE;
+    }
 
-  editor_get_frame_at_position (data, event->x, &cursor_frame, NULL);
-  debug_print (2, "Pressing at frame %d...\n", cursor_frame);
-  editor->audio.sel_start = cursor_frame;
+  if (event->button == GDK_BUTTON_PRIMARY)
+    {
+      audio_stop (&editor->audio);
+      editor->selecting = TRUE;
+      editor->audio.sel_len = 0;
+      gtk_widget_grab_focus (editor->waveform_scrolled_window);
 
-  g_idle_add (editor_queue_draw, data);
+      editor_get_frame_at_position (data, event->x, &cursor_frame, NULL);
+      debug_print (2, "Pressing at frame %d...\n", cursor_frame);
+      editor->audio.sel_start = cursor_frame;
+
+      g_idle_add (editor_queue_draw, data);
+    }
+  else if (event->button == GDK_BUTTON_SECONDARY)
+    {
+      gtk_widget_set_sensitive (editor->delete_menuitem,
+				editor->audio.sel_len > 0);
+      gtk_widget_set_sensitive (editor->save_menuitem, editor->dirty);
+      gtk_menu_popup_at_pointer (editor->menu, (GdkEvent *) event);
+    }
+
   return FALSE;
 }
 
@@ -656,13 +693,27 @@ editor_button_release (GtkWidget * widget, GdkEventButton * event,
 {
   struct editor *editor = data;
 
+  if (!editor->selecting)
+    {
+      return FALSE;
+    }
+
   editor->selecting = FALSE;
   gtk_widget_grab_focus (editor->waveform_scrolled_window);
 
   if (editor->audio.sel_len < 0)
     {
-      editor->audio.sel_start += editor->audio.sel_len;
+      gint64 aux = ((gint64) editor->audio.sel_start) + editor->audio.sel_len;
+      editor->audio.sel_start = (guint32) aux;
       editor->audio.sel_len = -editor->audio.sel_len;
+    }
+
+  debug_print (2, "Audio selected from %d with len %ld...\n",
+	       editor->audio.sel_start, editor->audio.sel_len);
+
+  if (editor->audio.sel_len)
+    {
+      gtk_widget_set_sensitive (editor->delete_menuitem, TRUE);
     }
 
   g_idle_add (editor_queue_draw, data);
@@ -686,11 +737,48 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
       editor_get_frame_at_position (editor, event->x, &cursor_frame, NULL);
       debug_print (3, "Motion over sample %d...\n", cursor_frame);
       editor->audio.sel_len =
-	((glong) cursor_frame) - editor->audio.sel_start;
+	((gint64) cursor_frame) - editor->audio.sel_start;
 
       g_idle_add (editor_queue_draw, data);
     }
   return FALSE;
+}
+
+static void
+editor_delete_clicked (GtkWidget * object, gpointer data)
+{
+  struct editor *editor = data;
+
+  if (!editor_loading_completed (editor))
+    {
+      return;
+    }
+
+  guint channels = EDITOR_LOADED_CHANNELS (editor);
+  guint index = editor->audio.sel_start * channels * 2;
+  guint len = editor->audio.sel_len * channels * 2;
+  debug_print (2, "Deleting range from %d with len %d...\n", index, len);
+  g_byte_array_remove_range (editor->audio.sample, index, len);
+  editor->audio.frames -= (guint32) editor->audio.sel_len;
+  editor->audio.sel_start = 0;
+  editor->audio.sel_len = 0;
+  editor->dirty = TRUE;
+  g_idle_add (editor_queue_draw, data);
+}
+
+static void
+editor_save_clicked (GtkWidget * object, gpointer data)
+{
+  struct editor *editor = data;
+
+  if (!editor_loading_completed (editor))
+    {
+      return;
+    }
+
+  debug_print (2, "Saving sample to %s...\n", editor->audio.path);
+  sample_save_from_array (editor->audio.path, editor->audio.sample,
+			  &editor->audio.control);
 }
 
 static gboolean
@@ -707,13 +795,81 @@ editor_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
     {
       audio_play (&editor->audio);
     }
+  else if (event->keyval == GDK_KEY_Delete)
+    {
+      editor_delete_clicked (NULL, editor);
+    }
+  else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_S)
+    {
+      editor_save_clicked (NULL, editor);
+    }
 
   return TRUE;
 }
 
 void
-editor_init (struct editor *editor)
+editor_init (struct editor *editor, GtkBuilder * builder)
 {
+  editor->box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
+  editor->waveform_scrolled_window =
+    GTK_WIDGET (gtk_builder_get_object (builder, "waveform_scrolled_window"));
+  editor->waveform =
+    GTK_WIDGET (gtk_builder_get_object (builder, "waveform"));
+  editor->play_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "play_button"));
+  editor->stop_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "stop_button"));
+  editor->loop_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "loop_button"));
+  editor->autoplay_switch =
+    GTK_WIDGET (gtk_builder_get_object (builder, "autoplay_switch"));
+  editor->mix_switch =
+    GTK_WIDGET (gtk_builder_get_object (builder, "mix_switch"));
+  editor->volume_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "volume_button"));
+
+  editor->sample_info_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_info_box"));
+  editor->sample_length =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_length"));
+  editor->sample_duration =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_duration"));
+  editor->sample_channels =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_channels"));
+  editor->sample_samplerate =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_samplerate"));
+  editor->sample_bitdepth =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_bitdepth"));
+
+  editor->menu = GTK_MENU (gtk_builder_get_object (builder, "editor_menu"));
+  editor->play_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "editor_play_menuitem"));
+  editor->delete_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "editor_delete_menuitem"));
+  editor->save_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "editor_save_menuitem"));
+
+  g_signal_connect (editor->waveform, "draw",
+		    G_CALLBACK (editor_draw_waveform), editor);
+  gtk_widget_add_events (editor->waveform, GDK_SCROLL_MASK);
+  g_signal_connect (editor->waveform, "scroll-event",
+		    G_CALLBACK (editor_waveform_scroll), editor);
+  g_signal_connect (editor->play_button, "clicked",
+		    G_CALLBACK (editor_play_clicked), editor);
+  g_signal_connect (editor->stop_button, "clicked",
+		    G_CALLBACK (editor_stop_clicked), editor);
+  g_signal_connect (editor->loop_button, "clicked",
+		    G_CALLBACK (editor_loop_clicked), editor);
+  g_signal_connect (editor->autoplay_switch, "state-set",
+		    G_CALLBACK (editor_autoplay_clicked), editor);
+  g_signal_connect (editor->mix_switch, "state-set",
+		    G_CALLBACK (editor_mix_clicked), editor);
+  editor->volume_changed_handler = g_signal_connect (editor->volume_button,
+						     "value_changed",
+						     G_CALLBACK
+						     (editor_set_volume),
+						     editor);
+
   g_signal_connect (editor->waveform_scrolled_window, "size-allocate",
 		    G_CALLBACK (editor_on_size_allocate), editor);
   gtk_widget_add_events (editor->waveform, GDK_BUTTON_PRESS_MASK);
@@ -727,4 +883,26 @@ editor_init (struct editor *editor)
 		    G_CALLBACK (editor_motion_notify), editor);
   g_signal_connect (editor->waveform_scrolled_window, "key-press-event",
 		    G_CALLBACK (editor_key_press), editor);
+
+  g_signal_connect (editor->play_menuitem, "activate",
+		    G_CALLBACK (editor_play_clicked), editor);
+  g_signal_connect (editor->delete_menuitem, "activate",
+		    G_CALLBACK (editor_delete_clicked), editor);
+  g_signal_connect (editor->save_menuitem, "activate",
+		    G_CALLBACK (editor_save_clicked), editor);
+
+  editor_loop_clicked (editor->loop_button, editor);
+  gtk_switch_set_active (GTK_SWITCH (editor->autoplay_switch),
+			 editor->preferences->autoplay);
+  gtk_switch_set_active (GTK_SWITCH (editor->mix_switch),
+			 editor->preferences->mix);
+
+  audio_init (&editor->audio, editor_set_volume_callback, editor);
+  audio_run (&editor->audio);
+}
+
+void
+editor_destroy (struct editor *editor)
+{
+  audio_destroy (&editor->audio);
 }

@@ -48,44 +48,25 @@ struct editor
   GtkWidget *sample_channels;
   GtkWidget *sample_samplerate;
   GtkWidget *sample_bitdepth;
+  GtkMenu *menu;
+  GtkWidget *play_menuitem;
+  GtkWidget *delete_menuitem;
+  GtkWidget *save_menuitem;
   guint zoom;
   gboolean selecting;
+  gboolean dirty;
 };
 
 void editor_set_source (struct editor *editor, enum audio_src audio_src);
 
-void editor_set_audio_controls_on_load (struct editor *editor,
-					gboolean sensitive);
-
-void editor_audio_widgets_set_status (struct editor *editor);
-
-gboolean editor_draw_waveform (GtkWidget * widget, cairo_t * cr,
-			       gpointer data);
-
 void editor_play_clicked (GtkWidget * object, gpointer data);
-
-void editor_stop_clicked (GtkWidget * object, gpointer data);
-
-void editor_loop_clicked (GtkWidget * object, gpointer data);
-
-gboolean editor_autoplay_clicked (GtkWidget * object, gboolean state,
-				  gpointer data);
-
-gboolean editor_mix_clicked (GtkWidget * object, gboolean state,
-			     gpointer data);
-
-void editor_set_volume (GtkScaleButton * button, gdouble value,
-			gpointer data);
-
-void editor_set_volume_callback (gpointer editor, gdouble volume);
 
 void editor_start_load_thread (struct editor *editor);
 
 void editor_stop_load_thread (struct editor *editor);
 
-gboolean editor_waveform_scroll (GtkWidget * object, GdkEventScroll * event,
-				 gpointer data);
+void editor_init (struct editor *, GtkBuilder * builder);
 
-void editor_init (struct editor *);
+void editor_destroy (struct editor *);
 
 #endif

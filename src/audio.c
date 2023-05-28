@@ -40,7 +40,7 @@ void
 audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
 {
   gint16 *dst, *src;
-  guint len =
+  guint32 len =
     audio->sel_len ? audio->sel_start + audio->sel_len : audio->frames;
 
   debug_print (2, "Writing %d frames to %d channels...\n", frames,

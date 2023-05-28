@@ -34,6 +34,43 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
     </columns>
   </object>
+  <object class="GtkMenu" id="editor_menu">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <child>
+      <object class="GtkMenuItem" id="editor_play_menuitem">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">Play</property>
+        <property name="use-underline">True</property>
+        <accelerator key="space" signal="activate"/>
+      </object>
+    </child>
+    <child>
+      <object class="GtkSeparatorMenuItem">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="editor_delete_menuitem">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">Delete</property>
+        <property name="use-underline">True</property>
+        <accelerator key="Delete" signal="activate"/>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="editor_save_menuitem">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">Save</property>
+        <property name="use-underline">True</property>
+        <accelerator key="s" signal="activate" modifiers="GDK_CONTROL_MASK"/>
+      </object>
+    </child>
+  </object>
   <object class="GtkListStore" id="fs_list_store">
     <columns>
       <!-- column-name id -->
