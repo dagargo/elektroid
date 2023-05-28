@@ -23,3 +23,5 @@ These are the supported devices:
 * Eventide ModFactor, PitchFactor, TimeFactor, Space and H9
 * Moog Little Phatty and Slim Phatty
 * Novation Summit and Peak
+
+While Elektroid is already available in some GNU/Linux distributions such as Debian or Ubuntu, it can also be installed easily with a [Flatpak](https://flathub.org/apps/io.github.dagargo.Elektroid).
