@@ -59,7 +59,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
 
   if (audio->release_frames > AUDIO_BUF_FRAMES)
     {
-      pa_stream_cork (audio->stream, 1, NULL, NULL);
+      pa_stream_cork (audio->playback_stream, 1, NULL, NULL);
       return;
     }
 
@@ -89,7 +89,7 @@ audio_stop (struct audio *audio)
 {
   pa_operation *operation;
 
-  if (!audio->stream)
+  if (!audio->playback_stream)
     {
       return;
     }
@@ -104,10 +104,12 @@ audio_stop (struct audio *audio)
       debug_print (1, "Stopping audio...\n");
 
       pa_threaded_mainloop_lock (audio->mainloop);
-      operation = pa_stream_flush (audio->stream, audio_success_cb, audio);
+      operation =
+	pa_stream_flush (audio->playback_stream, audio_success_cb, audio);
       audio_wait_success (audio, operation);
 
-      operation = pa_stream_cork (audio->stream, 1, audio_success_cb, audio);
+      operation =
+	pa_stream_cork (audio->playback_stream, 1, audio_success_cb, audio);
       audio_wait_success (audio, operation);
       pa_threaded_mainloop_unlock (audio->mainloop);
 
@@ -132,7 +134,7 @@ audio_play (struct audio *audio)
 {
   pa_operation *operation;
 
-  if (!audio->stream)
+  if (!audio->playback_stream)
     {
       return;
     }
@@ -144,7 +146,8 @@ audio_play (struct audio *audio)
   audio_prepare (audio);
 
   pa_threaded_mainloop_lock (audio->mainloop);
-  operation = pa_stream_cork (audio->stream, 0, audio_success_cb, audio);
+  operation =
+    pa_stream_cork (audio->playback_stream, 0, audio_success_cb, audio);
   audio_wait_success (audio, operation);
   pa_threaded_mainloop_unlock (audio->mainloop);
 }
@@ -180,7 +183,8 @@ audio_notify (pa_context * context, pa_subscription_event_type_t type,
       if ((type & PA_SUBSCRIPTION_EVENT_TYPE_MASK) ==
 	  PA_SUBSCRIPTION_EVENT_CHANGE)
 	{
-	  pa_context_get_sink_input_info (audio->context, audio->index,
+	  pa_context_get_sink_input_info (audio->context,
+					  audio->playback_index,
 					  audio_set_sink_volume, audio);
 	}
     }
@@ -194,9 +198,9 @@ audio_connect_callback (pa_stream * stream, void *data)
   if (pa_stream_get_state (stream) == PA_STREAM_READY)
     {
       pa_stream_set_write_callback (stream, audio_write_callback, audio);
-      audio->index = pa_stream_get_index (audio->stream);
-      debug_print (2, "Sink index: %d\n", audio->index);
-      pa_context_get_sink_input_info (audio->context, audio->index,
+      audio->playback_index = pa_stream_get_index (audio->playback_stream);
+      debug_print (2, "Sink index: %d\n", audio->playback_index);
+      pa_context_get_sink_input_info (audio->context, audio->playback_index,
 				      audio_set_sink_volume, audio);
     }
 }
@@ -222,12 +226,13 @@ audio_server_info_callback (pa_context * context, const pa_server_info * info,
 
   pa_proplist_set (props, PA_PROP_APPLICATION_ICON_NAME, PACKAGE,
 		   sizeof (PACKAGE));
-  audio->stream = pa_stream_new_with_proplist (context, PACKAGE,
-					       &audio->sample_spec, NULL,
-					       props);
+  audio->playback_stream = pa_stream_new_with_proplist (context, PACKAGE,
+							&audio->sample_spec,
+							NULL, props);
   pa_proplist_free (props);
-  pa_stream_set_state_callback (audio->stream, audio_connect_callback, audio);
-  pa_stream_connect_playback (audio->stream, NULL, &BUFFER_ATTR,
+  pa_stream_set_state_callback (audio->playback_stream,
+				audio_connect_callback, audio);
+  pa_stream_connect_playback (audio->playback_stream, NULL, &BUFFER_ATTR,
 			      stream_flags, NULL, NULL);
   pa_context_set_subscribe_callback (audio->context, audio_notify, audio);
   operation = pa_context_subscribe (audio->context,
@@ -252,8 +257,8 @@ audio_context_callback (pa_context * context, void *data)
 void
 audio_init_int (struct audio *audio)
 {
-  audio->stream = NULL;
-  audio->index = PA_INVALID_INDEX;
+  audio->playback_stream = NULL;
+  audio->playback_index = PA_INVALID_INDEX;
 }
 
 gint
@@ -295,10 +300,10 @@ audio_destroy_int (struct audio *audio)
       pa_threaded_mainloop_stop (audio->mainloop);
       pa_context_disconnect (audio->context);
       pa_context_unref (audio->context);
-      if (audio->stream)
+      if (audio->playback_stream)
 	{
-	  pa_stream_unref (audio->stream);
-	  audio->stream = NULL;
+	  pa_stream_unref (audio->playback_stream);
+	  audio->playback_stream = NULL;
 	}
       pa_threaded_mainloop_free (audio->mainloop);
       audio->mainloop = NULL;
@@ -317,14 +322,14 @@ audio_set_volume (struct audio *audio, gdouble volume)
   pa_operation *operation;
   pa_volume_t v;
 
-  if (audio->index != PA_INVALID_INDEX)
+  if (audio->playback_index != PA_INVALID_INDEX)
     {
       debug_print (1, "Setting volume to %f...\n", volume);
       v = pa_sw_volume_from_linear (volume);
       pa_cvolume_set (&audio->volume, AUDIO_CHANNELS, v);
 
       operation = pa_context_set_sink_input_volume (audio->context,
-						    audio->index,
+						    audio->playback_index,
 						    &audio->volume, NULL,
 						    NULL);
       if (operation != NULL)

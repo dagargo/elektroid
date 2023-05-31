@@ -103,10 +103,6 @@ editor_set_source (struct editor *editor, enum audio_src audio_src)
       editor_set_layout_width_to_val (editor, 1);
     }
 
-  gboolean record = audio_src == AUDIO_SRC_NONE ||
-    audio_src == AUDIO_SRC_LOCAL;
-  gtk_widget_set_visible (editor->record_button, record);
-
   editor_set_widget_source (editor->autoplay_switch, audio_src);
   editor_set_widget_source (editor->mix_switch, audio_src);
   editor_set_widget_source (editor->play_button, audio_src);

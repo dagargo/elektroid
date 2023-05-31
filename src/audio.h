@@ -55,9 +55,9 @@ struct audio
 #else
   pa_threaded_mainloop *mainloop;
   pa_context *context;
-  pa_stream *stream;
+  pa_stream *playback_stream;
+  guint32 playback_index;
   pa_cvolume volume;
-  guint32 index;
   pa_sample_spec sample_spec;
 #endif
   guint32 samplerate;
