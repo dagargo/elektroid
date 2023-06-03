@@ -1853,10 +1853,6 @@ elektron_download_smplrw (struct backend *backend, const gchar * path,
 
 cleanup:
   free_msg (array);
-  if (res)
-    {
-      g_free (control->data);
-    }
   return res;
 }
 
