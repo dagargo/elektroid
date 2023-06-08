@@ -284,8 +284,8 @@ static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
-  .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_STEREO |
-    FS_OPTION_SORT_BY_NAME | FS_OPTION_SHOW_SIZE_COLUMN,
+  .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SORT_BY_NAME |
+    FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "sample",
   .gui_name = "Samples",
   .gui_icon = BE_FILE_ICON_WAVE,
