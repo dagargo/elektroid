@@ -31,7 +31,6 @@ struct editor
   struct preferences *preferences;
   struct browser *remote_browser;
   GThread *thread;
-  guint target_channels;	//Channels to load from file
   GtkWidget *box;
   GtkWidget *waveform_scrolled_window;
   GtkWidget *waveform;

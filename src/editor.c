@@ -29,8 +29,15 @@
 #define FRAMES_TO_PLAY (64 * 1024)
 #endif
 
-#define EDITOR_PREF_CHANNELS (!editor->remote_browser->fs_ops || (editor->remote_browser->fs_ops->options & FS_OPTION_STEREO) || !editor->preferences->mix ? 2 : 1)
-#define EDITOR_LOADED_CHANNELS(editor) (editor->target_channels == 2 && ((struct sample_info *)editor->audio.control.data)->channels == 2 ? 2 : 1)
+#define EDITOR_SAMPLE_CHANNELS(editor) (((struct sample_info *)editor->audio.control.data)->channels)
+
+struct editor_y_frame_state
+{
+  gdouble *wp;
+  gdouble *wn;
+  guint *wpc;
+  guint *wnc;
+};
 
 struct editor_set_volume_data
 {
@@ -191,7 +198,7 @@ editor_update_ui_on_load (gpointer data)
   g_mutex_lock (&audio->control.mutex);
   ready_to_play = audio->frames >= FRAMES_TO_PLAY || (!audio->control.active
 						      && audio->frames > 0);
-  audio->channels = EDITOR_LOADED_CHANNELS (editor);
+  audio->channels = EDITOR_SAMPLE_CHANNELS (editor);
   g_mutex_unlock (&audio->control.mutex);
 
   editor_set_sample_properties_on_load (editor);
@@ -212,52 +219,67 @@ editor_update_ui_on_load (gpointer data)
   return TRUE;
 }
 
+static void
+editor_init_y_frame_state (struct editor_y_frame_state *state, guint channels)
+{
+  state->wp = g_malloc (sizeof (gdouble) * channels);
+  state->wn = g_malloc (sizeof (gdouble) * channels);
+  state->wpc = g_malloc (sizeof (guint) * channels);
+  state->wnc = g_malloc (sizeof (guint) * channels);
+}
+
+static void
+editor_destroy_y_frame_state (struct editor_y_frame_state *state)
+{
+  g_free (state->wp);
+  g_free (state->wn);
+  g_free (state->wpc);
+  g_free (state->wnc);
+}
+
 static gboolean
 editor_get_y_frame (GByteArray * sample, guint channels, guint frame,
-		    guint len, gdouble * lp, gdouble * ln, gdouble * rp,
-		    gdouble * rn)
+		    guint len, struct editor_y_frame_state *state)
 {
-  guint loaded_frames = sample->len >> (1 * channels);
+  guint loaded_frames = sample->len / (2 * channels);
   gshort *data = (gshort *) sample->data;
-  gdouble avg_lp = 0.0, avg_ln = 0.0, avg_rp = 0.0, avg_rn = 0.0;
-  guint cnt_lp = 0, cnt_ln = 0, cnt_rp = 0, cnt_rn = 0;
   gshort *s = &data[frame * channels];
+
+  for (guint i = 0; i < channels; i++)
+    {
+      state->wp[i] = 0.0;
+      state->wn[i] = 0.0;
+      state->wpc[i] = 0;
+      state->wnc[i] = 0;
+    }
+
   for (guint i = 0, f = frame; i < len; i++, f++)
     {
       if (f >= loaded_frames)
 	{
 	  return FALSE;
 	}
-      if (*s > 0)
-	{
-	  avg_lp += *s;
-	  cnt_lp++;
-	}
-      else
-	{
-	  avg_ln += *s;
-	  cnt_ln++;
-	}
-      s++;
-      if (channels == 2)
+
+      for (guint j = 0; j < channels; j++, s++)
 	{
 	  if (*s > 0)
 	    {
-	      avg_rp += *s;
-	      cnt_rp++;
+	      state->wp[j] += *s;
+	      state->wpc[j]++;
 	    }
 	  else
 	    {
-	      avg_rn += *s;
-	      cnt_rn++;
+	      state->wn[j] += *s;
+	      state->wnc[j]++;
 	    }
-	  s++;
 	}
     }
-  *lp = cnt_lp == 0 ? 0.0 : avg_lp / cnt_lp;
-  *ln = cnt_ln == 0 ? 0.0 : avg_ln / cnt_ln;
-  *rp = cnt_rp == 0 ? 0.0 : avg_rp / cnt_rp;
-  *rn = cnt_rn == 0 ? 0.0 : avg_rn / cnt_rn;
+
+  for (guint i = 0; i < channels; i++)
+    {
+      state->wp[i] = state->wpc[i] == 0 ? 0.0 : state->wp[i] / state->wpc[i];
+      state->wn[i] = state->wnc[i] == 0 ? 0.0 : state->wn[i] / state->wnc[i];
+    }
 
   return TRUE;
 }
@@ -266,11 +288,11 @@ gboolean
 editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 {
   GdkRGBA color, bgcolor;
-  guint width, height, channels, x_count, layout_width;
+  guint width, height, channels, x_count, layout_width, c_height,
+    c_height_half;
   GtkStyleContext *context;
-  gdouble x_ratio, mid_l, mid_r, value, lp, ln, rp, rn, x_frame, x_frame_next;
-  gboolean stereo;
-  gdouble y_scale = 1.0 / (double) SHRT_MIN;
+  gdouble x_ratio, x_frame, x_frame_next, y_scale;
+  struct editor_y_frame_state y_frame_state;
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
   guint start = editor_get_start_frame (editor);
@@ -282,24 +304,16 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 
   width = gtk_widget_get_allocated_width (widget);
   height = gtk_widget_get_allocated_height (widget);
-  channels = EDITOR_LOADED_CHANNELS (editor);
-  stereo = channels == 2;
+  channels = EDITOR_SAMPLE_CHANNELS (editor);
   gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &layout_width, NULL);
   x_ratio = audio->frames / (gdouble) layout_width;
 
-  y_scale *= height;
-  if (stereo)
-    {
-      mid_l = height * 0.25;
-      mid_r = height * 0.75;
-      y_scale *= 0.25;
-    }
-  else
-    {
-      mid_l = height * 0.5;
-      mid_r = 0.0;
-      y_scale *= 0.5;
-    }
+  y_scale = height / (double) SHRT_MIN;
+  y_scale /= (gdouble) channels *2;
+  c_height = height / (gdouble) channels;
+  c_height_half = c_height / 2;
+
+  editor_init_y_frame_state (&y_frame_state, channels);
 
   context = gtk_widget_get_style_context (widget);
   gtk_render_background (context, cr, 0, 0, width, height);
@@ -332,31 +346,31 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 	    {
 	      continue;
 	    }
+
 	  if (!editor_get_y_frame (audio->sample, channels, x_frame, x_count,
-				   &lp, &ln, &rp, &rn))
+				   &y_frame_state))
 	    {
 	      debug_print (3,
 			   "Last available frame before the sample end. Stopping...\n");
 	      break;
 	    }
 
-	  value = mid_l + lp * y_scale;
-	  cairo_move_to (cr, i, value);
-	  value = mid_l + ln * y_scale;
-	  cairo_line_to (cr, i, value);
-	  cairo_stroke (cr);
-	  if (stereo)
+	  gdouble mid_c = c_height_half;
+	  for (gint j = 0; j < channels; j++)
 	    {
-	      value = mid_r + rp * y_scale;
+	      gdouble value = mid_c + y_frame_state.wp[j] * y_scale;
 	      cairo_move_to (cr, i, value);
-	      value = mid_r + rn * y_scale;
+	      value = mid_c + y_frame_state.wn[j] * y_scale;
 	      cairo_line_to (cr, i, value);
 	      cairo_stroke (cr);
+	      mid_c += c_height;
 	    }
 	}
     }
 
   g_mutex_unlock (&audio->control.mutex);
+
+  editor_destroy_y_frame_state (&y_frame_state);
 
   return FALSE;
 }
@@ -395,7 +409,7 @@ editor_load_sample_runner (gpointer data)
   editor->audio.sel_start = 0;
 
   sample_params.samplerate = audio->samplerate;
-  sample_params.channels = editor->target_channels;
+  sample_params.channels = 0;	//Automatic
 
   g_timeout_add (100, editor_update_ui_on_load, editor);
 
@@ -459,7 +473,6 @@ void
 editor_start_load_thread (struct editor *editor)
 {
   debug_print (1, "Creating load thread...\n");
-  editor->target_channels = EDITOR_PREF_CHANNELS;
   editor->thread = g_thread_new ("load_sample", editor_load_sample_runner,
 				 editor);
 }
@@ -642,7 +655,7 @@ static gboolean
 editor_loading_completed (struct editor *editor)
 {
   guint loaded_frames;
-  guint channels = EDITOR_LOADED_CHANNELS (editor);
+  guint channels = EDITOR_SAMPLE_CHANNELS (editor);
 
   g_mutex_lock (&editor->audio.control.mutex);
   loaded_frames = editor->audio.sample->len >> (1 * channels);
@@ -754,7 +767,7 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
       return;
     }
 
-  guint channels = EDITOR_LOADED_CHANNELS (editor);
+  guint channels = EDITOR_SAMPLE_CHANNELS (editor);
   guint index = editor->audio.sel_start * channels * 2;
   guint len = editor->audio.sel_len * channels * 2;
   debug_print (2, "Deleting range from %d with len %d...\n", index, len);

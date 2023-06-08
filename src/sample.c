@@ -375,10 +375,11 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
       sample_info = g_malloc (sizeof (struct sample_info));
     }
 
-  channels = sample_params->channels == 2 && sf_info.channels == 2 ? 2 : 1;
+  channels =
+    sample_params->channels ? sample_params->channels : sf_info.channels;
   samplerate =
-    sample_params->samplerate ? sample_params->
-    samplerate : sf_info.samplerate;
+    sample_params->samplerate ? sample_params->samplerate :
+    sf_info.samplerate;
 
   if (control)
     {
