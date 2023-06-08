@@ -350,6 +350,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   struct sample_info *sample_info;
   struct smpl_chunk_data smpl_chunk_data;
   gboolean disable_loop = FALSE;
+  guint bytes_per_frame;
 
   if (control)
     {
@@ -380,6 +381,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   samplerate =
     sample_params->samplerate ? sample_params->samplerate :
     sf_info.samplerate;
+  bytes_per_frame = channels * sizeof (gint16);
 
   if (control)
     {
@@ -526,7 +528,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 	      g_mutex_lock (&control->mutex);
 	    }
 	  g_byte_array_append (sample, (guint8 *) buffer_input,
-			       frames_read << channels);
+			       frames_read * bytes_per_frame);
 	  if (control)
 	    {
 	      g_mutex_unlock (&control->mutex);
@@ -556,7 +558,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 	      g_mutex_lock (&control->mutex);
 	    }
 	  g_byte_array_append (sample, (guint8 *) buffer_s,
-			       src_data.output_frames_gen << channels);
+			       src_data.output_frames_gen * bytes_per_frame);
 	  if (control)
 	    {
 	      g_mutex_unlock (&control->mutex);
