@@ -29,6 +29,7 @@
 #define FRAMES_TO_PLAY (64 * 1024)
 #endif
 
+#define MAX_FRAMES_PER_PIXEL 300
 #define EDITOR_SAMPLE_CHANNELS(editor) (((struct sample_info *)editor->audio.control.data)->channels)
 
 struct editor_y_frame_state
@@ -260,6 +261,7 @@ editor_get_y_frame (GByteArray * sample, guint channels, guint frame,
   guint loaded_frames = sample->len / (2 * channels);
   gshort *data = (gshort *) sample->data;
   gshort *s = &data[frame * channels];
+  len = len < MAX_FRAMES_PER_PIXEL ? len : MAX_FRAMES_PER_PIXEL;
 
   for (guint i = 0; i < channels; i++)
     {
