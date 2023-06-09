@@ -70,11 +70,11 @@ struct audio
   guint32 release_frames;
   struct job_control control;	//Used to synchronize access to sample, frames, loop and pos members.
   gchar path[PATH_MAX];
-  guint32 channels;
   enum audio_src src;
   enum audio_status status;
   guint32 sel_start;
   gint64 sel_len;
+  gboolean mono_mix;
 };
 
 void audio_play (struct audio *);

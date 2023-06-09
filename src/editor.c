@@ -188,6 +188,22 @@ editor_set_sample_properties_on_load (struct editor *editor)
   editor_set_start_frame (editor, 0);
 }
 
+void
+editor_set_audio_mono_mix (struct editor *editor)
+{
+  if (editor->audio.frames > 0)
+    {
+      gboolean remote_mono = editor->remote_browser->fs_ops &&
+	!(editor->remote_browser->fs_ops->options & FS_OPTION_STEREO);
+      gboolean mono_mix = (editor->preferences->mix && remote_mono) ||
+	EDITOR_SAMPLE_CHANNELS (editor) != 2;
+
+      g_mutex_lock (&editor->audio.control.mutex);
+      editor->audio.mono_mix = mono_mix;
+      g_mutex_unlock (&editor->audio.control.mutex);
+    }
+}
+
 static gboolean
 editor_update_ui_on_load (gpointer data)
 {
@@ -198,10 +214,10 @@ editor_update_ui_on_load (gpointer data)
   g_mutex_lock (&audio->control.mutex);
   ready_to_play = audio->frames >= FRAMES_TO_PLAY || (!audio->control.active
 						      && audio->frames > 0);
-  audio->channels = EDITOR_SAMPLE_CHANNELS (editor);
   g_mutex_unlock (&audio->control.mutex);
 
   editor_set_sample_properties_on_load (editor);
+  editor_set_audio_mono_mix (editor);
 
   if (ready_to_play)
     {
@@ -411,7 +427,7 @@ editor_load_sample_runner (gpointer data)
   sample_params.samplerate = audio->samplerate;
   sample_params.channels = 0;	//Automatic
 
-  g_timeout_add (100, editor_update_ui_on_load, editor);
+  g_timeout_add (200, editor_update_ui_on_load, editor);
 
   g_mutex_lock (&audio->control.mutex);
   audio->control.active = TRUE;
@@ -498,14 +514,8 @@ static gboolean
 editor_mix_clicked (GtkWidget * object, gboolean state, gpointer data)
 {
   struct editor *editor = data;
-  struct audio *audio = &editor->audio;
   editor->preferences->mix = state;
-  if (strlen (audio->path))
-    {
-      audio_stop (audio);
-      editor_stop_load_thread (editor);
-      editor_start_load_thread (editor);
-    }
+  editor_set_audio_mono_mix (editor);
   return FALSE;
 }
 
@@ -658,7 +668,7 @@ editor_loading_completed (struct editor *editor)
   guint channels = EDITOR_SAMPLE_CHANNELS (editor);
 
   g_mutex_lock (&editor->audio.control.mutex);
-  loaded_frames = editor->audio.sample->len >> (1 * channels);
+  loaded_frames = editor->audio.sample->len / (channels * sizeof (gint16));
   g_mutex_unlock (&editor->audio.control.mutex);
 
   return editor->audio.frames == loaded_frames && editor->audio.frames;
@@ -768,8 +778,9 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
     }
 
   guint channels = EDITOR_SAMPLE_CHANNELS (editor);
-  guint index = editor->audio.sel_start * channels * 2;
-  guint len = editor->audio.sel_len * channels * 2;
+  guint bytes_per_frame = channels * sizeof (gint16);
+  guint index = editor->audio.sel_start * bytes_per_frame;
+  guint len = editor->audio.sel_len * bytes_per_frame;
   debug_print (2, "Deleting range from %d with len %d...\n", index, len);
   g_byte_array_remove_range (editor->audio.sample, index, len);
   editor->audio.frames -= (guint32) editor->audio.sel_len;

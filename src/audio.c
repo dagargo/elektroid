@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include "audio.h"
 
 void audio_init_int (struct audio *);
@@ -25,8 +26,19 @@ void audio_destroy_int (struct audio *);
 const gchar *audio_name ();
 const gchar *audio_version ();
 
+static inline gint16
+audio_mix_channels (gint16 ** src, guint channels, gdouble gain)
+{
+  gdouble mix = 0;
+  for (gint i = 0; i < channels; i++, (*src)++)
+    {
+      mix += **src;
+    }
+  return (gint16) (mix * gain);
+}
+
 static inline void
-copy_sample (struct audio *audio, gint16 * dst, gint16 * src)
+audio_copy_sample (gint16 * dst, gint16 * src)
 {
 #if defined(ELEKTROID_RTAUDIO)
   *dst = (gint16) (*src * audio->volume);
@@ -42,9 +54,11 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
   gint16 *dst, *src;
   guint32 len =
     audio->sel_len ? audio->sel_start + audio->sel_len : audio->frames;
+  guint channels = (((struct sample_info *) audio->control.data)->channels);
+  guint bytes_per_frame = channels * sizeof (gint16);
+  gdouble gain = 1.0 / sqrt (channels);
 
-  debug_print (2, "Writing %d frames to %d channels...\n", frames,
-	       audio->channels);
+  debug_print (2, "Writing %d frames...\n", frames);
 
   memset (buffer, 0, frames << AUDIO_CHANNELS);
 
@@ -65,7 +79,8 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
     }
 
   dst = buffer;
-  src = (gint16 *) & audio->sample->data[audio->pos << audio->channels];
+
+  src = (gint16 *) & audio->sample->data[audio->pos * bytes_per_frame];
   for (gint i = 0; i < frames; i++)
     {
       if (audio->pos == len)
@@ -79,15 +94,24 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
 	  src = (gint16 *) audio->sample->data;
 	}
 
-      copy_sample (audio, dst, src);
-      dst++;
-      if (audio->channels == 2)
+      if (audio->mono_mix)
 	{
-	  src++;
+	  gint16 mix = audio_mix_channels (&src, channels, gain);
+	  audio_copy_sample (dst, &mix);
+	  dst++;
+	  audio_copy_sample (dst, &mix);
+	  dst++;
 	}
-      copy_sample (audio, dst, src);
-      src++;
-      dst++;
+      else
+	{
+	  audio_copy_sample (dst, src);
+	  src++;
+	  dst++;
+	  audio_copy_sample (dst, src);
+	  src++;
+	  dst++;
+	}
+
       audio->pos++;
     }
 }

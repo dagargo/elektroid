@@ -2855,8 +2855,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
   remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
 
-  audio_stop (&editor.audio);
-  editor_stop_load_thread (&editor);
+  editor_set_audio_mono_mix (&editor);
 
   g_free (remote_browser.dir);
   remote_browser.dir = backend.type == BE_TYPE_SYSTEM ?

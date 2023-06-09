@@ -68,4 +68,6 @@ void editor_init (struct editor *, GtkBuilder * builder);
 
 void editor_destroy (struct editor *);
 
+void editor_set_audio_mono_mix (struct editor *editor);
+
 #endif
