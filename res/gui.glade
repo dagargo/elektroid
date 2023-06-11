@@ -1125,6 +1125,28 @@ on remote</property>
                                     <property name="position">2</property>
                                   </packing>
                                 </child>
+                                <child>
+                                  <object class="GtkButton" id="record_button">
+                                    <property name="name">play_button</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="halign">center</property>
+                                    <property name="valign">center</property>
+                                    <child>
+                                      <object class="GtkImage">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="icon-name">media-record-symbolic</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">3</property>
+                                  </packing>
+                                </child>
                                 <style>
                                   <class name="linked"/>
                                 </style>

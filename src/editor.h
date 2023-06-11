@@ -29,6 +29,7 @@ struct editor
 {
   struct audio audio;
   struct preferences *preferences;
+  struct browser *local_browser;
   struct browser *remote_browser;
   enum audio_src audio_src;
   GThread *thread;
@@ -38,6 +39,7 @@ struct editor
   GtkWidget *play_button;
   GtkWidget *stop_button;
   GtkWidget *loop_button;
+  GtkWidget *record_button;
   GtkWidget *autoplay_switch;
   GtkWidget *mix_switch;
   GtkWidget *volume_button;

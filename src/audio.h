@@ -30,6 +30,7 @@
 #endif
 
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
+#define MAX_RECORDING_TIME_S 5
 
 enum audio_src
 {
@@ -40,9 +41,12 @@ enum audio_src
 
 enum audio_status
 {
-  AUDIO_STATUS_PREPARING,
+  AUDIO_STATUS_PREPARING_PLAYBACK,
   AUDIO_STATUS_PLAYING,
-  AUDIO_STATUS_STOPPING,
+  AUDIO_STATUS_STOPPING_PLAYBACK,
+  AUDIO_STATUS_PREPARING_RECORD,
+  AUDIO_STATUS_RECORDING,
+  AUDIO_STATUS_STOPPING_RECORD,
   AUDIO_STATUS_STOPPED
 };
 
@@ -56,7 +60,9 @@ struct audio
   pa_threaded_mainloop *mainloop;
   pa_context *context;
   pa_stream *playback_stream;
+  pa_stream *record_stream;
   guint32 playback_index;
+  guint32 record_index;
   pa_cvolume volume;
   pa_sample_spec sample_spec;
 #endif
@@ -77,9 +83,13 @@ struct audio
   gboolean mono_mix;
 };
 
-void audio_play (struct audio *);
+void audio_start_playback (struct audio *);
 
-void audio_stop (struct audio *);
+void audio_stop_playback (struct audio *);
+
+void audio_start_recording (struct audio *, guint);
+
+void audio_stop_recording (struct audio *);
 
 gboolean audio_check (struct audio *);
 
@@ -95,6 +105,6 @@ void audio_set_volume (struct audio *, gdouble);
 
 void audio_write_to_output_buffer (struct audio *, void *, gint);
 
-void audio_prepare (struct audio *);
+void audio_prepare (struct audio *, enum audio_status);
 
 #endif

@@ -63,11 +63,11 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
   memset (buffer, 0, frames << AUDIO_CHANNELS);
 
   if ((audio->pos == len && !audio->loop) ||
-      audio->status == AUDIO_STATUS_PREPARING ||
-      audio->status == AUDIO_STATUS_STOPPING)
+      audio->status == AUDIO_STATUS_PREPARING_PLAYBACK ||
+      audio->status == AUDIO_STATUS_STOPPING_PLAYBACK)
     {
       memset (buffer, 0, frames << AUDIO_CHANNELS);
-      if (audio->status == AUDIO_STATUS_PREPARING)
+      if (audio->status == AUDIO_STATUS_PREPARING_PLAYBACK)
 	{
 	  audio->status = AUDIO_STATUS_PLAYING;
 	}
@@ -141,7 +141,7 @@ audio_destroy (struct audio *audio)
 {
   debug_print (1, "Destroying audio...\n");
 
-  audio_stop (audio);
+  audio_stop_playback (audio);
   audio_reset_sample (audio);
 
   g_mutex_lock (&audio->control.mutex);
@@ -172,11 +172,11 @@ audio_reset_sample (struct audio *audio)
 }
 
 void
-audio_prepare (struct audio *audio)
+audio_prepare (struct audio *audio, enum audio_status status)
 {
   g_mutex_lock (&audio->control.mutex);
   audio->pos = audio->sel_len ? audio->sel_start : 0;
   audio->release_frames = 0;
-  audio->status = AUDIO_STATUS_PREPARING;
+  audio->status = status;
   g_mutex_unlock (&audio->control.mutex);
 }

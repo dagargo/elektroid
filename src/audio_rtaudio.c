@@ -30,7 +30,7 @@ static struct rtaudio_stream_options STREAM_OPTIONS = {
 };
 
 void
-audio_stop (struct audio *audio)
+audio_stop_playback (struct audio *audio)
 {
   enum audio_status status;
 
@@ -46,7 +46,7 @@ audio_stop (struct audio *audio)
 }
 
 void
-audio_play (struct audio *audio)
+audio_start_playback (struct audio *audio)
 {
   audio_prepare (audio);
 
@@ -64,7 +64,7 @@ audio_cb (void *out, void *in, unsigned int frames, double stream_time,
 
   if (audio->release_frames > AUDIO_BUF_FRAMES)
     {
-      audio_stop (audio);
+      audio_stop_playback (audio);
       return 0;
     }
 
@@ -73,7 +73,7 @@ audio_cb (void *out, void *in, unsigned int frames, double stream_time,
   if (audio->pos == audio->frames && !audio->loop)
     {
       g_mutex_unlock (&audio->control.mutex);
-      audio_stop (audio);
+      audio_stop_playback (audio);
       return 0;
     }
 

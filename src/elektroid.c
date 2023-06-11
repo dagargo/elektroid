@@ -973,7 +973,6 @@ elektroid_set_audio_controls_on_load (gboolean sensitive)
   gtk_widget_set_sensitive (remote_browser.play_menuitem,
 			    editor.audio.src == AUDIO_SRC_REMOTE);
   gtk_widget_set_sensitive (editor.play_button, sensitive);
-  gtk_widget_set_sensitive (editor.stop_button, sensitive);
 }
 
 static gint
@@ -1438,7 +1437,6 @@ elektroid_audio_widgets_reset ()
   gtk_widget_set_sensitive (local_browser.play_menuitem, FALSE);
   gtk_widget_set_sensitive (remote_browser.play_menuitem, FALSE);
   gtk_widget_set_sensitive (editor.play_button, FALSE);
-  gtk_widget_set_sensitive (editor.stop_button, FALSE);
   gtk_widget_set_visible (editor.sample_info_box, FALSE);
 }
 
@@ -1447,7 +1445,8 @@ elektroid_reset_sample (struct browser *browser)
 {
   if (EDITOR_SOURCE_IS_BROWSER (browser))
     {
-      audio_stop (&editor.audio);
+      audio_stop_playback (&editor.audio);
+      audio_stop_recording (&editor.audio);
       editor_stop_load_thread (&editor);
       audio_reset_sample (&editor.audio);
       gtk_widget_queue_draw (editor.waveform);
@@ -1499,7 +1498,8 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	    {
 	      if (audio_fs)
 		{
-		  audio_stop (&editor.audio);
+		  audio_stop_playback (&editor.audio);
+		  audio_stop_recording (&editor.audio);
 		  editor_stop_load_thread (&editor);
 		  audio_reset_sample (&editor.audio);
 		  strcpy (editor.audio.path, sample_path);
@@ -1673,21 +1673,21 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
   free (uri);
 }
 
-static void
-elektroid_add_dir (GtkWidget * object, gpointer data)
+gchar *
+elektroid_ask_name (const gchar * title, const gchar * value,
+		    struct browser *browser)
 {
-  char *pathname;
+  char *pathname = NULL;
   int result;
   gint err;
-  struct browser *browser = data;
   enum path_type type = path_type_from_backend (browser->backend);
 
-  gtk_entry_set_text (name_dialog_entry, "");
+  gtk_entry_set_text (name_dialog_entry, value);
   gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
-  gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
+  gtk_widget_set_sensitive (name_dialog_accept_button, strlen (value) > 0);
 
-  gtk_window_set_title (GTK_WINDOW (name_dialog), _("Add Directory"));
+  gtk_window_set_title (GTK_WINDOW (name_dialog), title);
 
   result = GTK_RESPONSE_ACCEPT;
 
@@ -1700,25 +1700,39 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 	{
 	  pathname = path_chain (type, browser->dir,
 				 gtk_entry_get_text (name_dialog_entry));
-
-	  err = browser->fs_ops->mkdir (&backend, pathname);
-
-	  if (err)
-	    {
-	      show_error_msg (_("Error while creating dir “%s”: %s."),
-			      pathname, g_strerror (-err));
-	    }
-	  else
-	    {
-	      elektroid_load_remote_if_midi (browser);
-	      elektroid_load_local_if_no_notifier (browser);
-	    }
-
-	  free (pathname);
+	  break;
 	}
     }
 
   gtk_widget_hide (GTK_WIDGET (name_dialog));
+
+  return pathname;
+}
+
+static void
+elektroid_add_dir (GtkWidget * object, gpointer data)
+{
+  char *pathname;
+  struct browser *browser = data;
+
+  pathname = elektroid_ask_name (_("Add Directory"), "", browser);
+  if (pathname)
+    {
+      gint err = browser->fs_ops->mkdir (&backend, pathname);
+
+      if (err)
+	{
+	  show_error_msg (_("Error while creating dir “%s”: %s."),
+			  pathname, g_strerror (-err));
+	}
+      else
+	{
+	  elektroid_load_remote_if_midi (browser);
+	  elektroid_load_local_if_no_notifier (browser);
+	}
+
+      free (pathname);
+    }
 }
 
 static void
@@ -4083,6 +4097,7 @@ main (int argc, char *argv[])
       preferences.local_dir = get_system_startup_path (local_dir);
     }
   editor.preferences = &preferences;
+  editor.local_browser = &local_browser;
   editor.remote_browser = &remote_browser;
 
   ret = elektroid_run (argc, argv);
