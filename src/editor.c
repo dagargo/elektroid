@@ -144,20 +144,11 @@ editor_get_start_frame (struct editor *editor)
 }
 
 static void
-editor_set_sample_properties_on_load (struct editor *editor)
+editor_set_sample_time_properties (struct editor *editor)
 {
-  double time;
   gchar label[LABEL_MAX];
   struct sample_info *sample_info = editor->audio.control.data;
-
-  gtk_widget_set_visible (editor->sample_info_box, sample_info->frames > 0);
-
-  if (!sample_info->frames)
-    {
-      return;
-    }
-
-  time = sample_info->frames / (double) sample_info->samplerate;
+  double time = sample_info->frames / (double) sample_info->samplerate;
 
   gtk_widget_set_visible (editor->sample_info_box, TRUE);
 
@@ -173,6 +164,22 @@ editor_set_sample_properties_on_load (struct editor *editor)
       snprintf (label, LABEL_MAX, "%.2f s", time);
     }
   gtk_label_set_text (GTK_LABEL (editor->sample_duration), label);
+}
+
+static void
+editor_set_sample_properties_on_load (struct editor *editor)
+{
+  gchar label[LABEL_MAX];
+  struct sample_info *sample_info = editor->audio.control.data;
+
+  gtk_widget_set_visible (editor->sample_info_box, sample_info->frames > 0);
+
+  if (!sample_info->frames)
+    {
+      return;
+    }
+
+  editor_set_sample_time_properties (editor);
 
   snprintf (label, LABEL_MAX, "%.2f kHz", sample_info->samplerate / 1000.f);
   gtk_label_set_text (GTK_LABEL (editor->sample_samplerate), label);
@@ -773,6 +780,7 @@ static void
 editor_delete_clicked (GtkWidget * object, gpointer data)
 {
   struct editor *editor = data;
+  struct sample_info *sample_info = editor->audio.control.data;
 
   if (!editor_loading_completed (editor))
     {
@@ -793,6 +801,8 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
   editor->audio.sel_start = 0;
   editor->audio.sel_len = 0;
   editor->dirty = TRUE;
+  sample_info->frames = editor->audio.frames;
+  editor_set_sample_time_properties (editor);
   g_idle_add (editor_queue_draw, data);
 }
 
