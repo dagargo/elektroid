@@ -96,10 +96,16 @@ editor_set_widget_source (GtkWidget * widget, enum audio_src audio_src)
 void
 editor_set_source (struct editor *editor, enum audio_src audio_src)
 {
+  editor->audio_src = audio_src;
+
   if (audio_src == AUDIO_SRC_NONE)
     {
       editor_set_layout_width_to_val (editor, 1);
     }
+
+  gboolean record = audio_src == AUDIO_SRC_NONE ||
+    audio_src == AUDIO_SRC_LOCAL;
+  gtk_widget_set_visible (editor->record_button, record);
 
   editor_set_widget_source (editor->autoplay_switch, audio_src);
   editor_set_widget_source (editor->mix_switch, audio_src);
@@ -708,7 +714,8 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
 
       g_idle_add (editor_queue_draw, data);
     }
-  else if (event->button == GDK_BUTTON_SECONDARY)
+  else if (event->button == GDK_BUTTON_SECONDARY &&
+	   editor->audio_src != AUDIO_SRC_REMOTE)
     {
       gtk_widget_set_sensitive (editor->delete_menuitem,
 				editor->audio.sel_len > 0);
@@ -783,6 +790,11 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
   struct sample_info *sample_info = editor->audio.control.data;
 
   if (!editor_loading_completed (editor))
+    {
+      return;
+    }
+
+  if (editor->audio_src == AUDIO_SRC_REMOTE)
     {
       return;
     }
