@@ -839,7 +839,7 @@ editor_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
     {
       editor_delete_clicked (NULL, editor);
     }
-  else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_S)
+  else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_s)
     {
       editor_save_clicked (NULL, editor);
     }
