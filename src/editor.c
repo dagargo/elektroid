@@ -781,8 +781,12 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
 
   guint channels = EDITOR_SAMPLE_CHANNELS (editor);
   guint bytes_per_frame = channels * sizeof (gint16);
-  guint index = editor->audio.sel_start * bytes_per_frame;
   guint len = editor->audio.sel_len * bytes_per_frame;
+  if (!len)
+    {
+      return;
+    }
+  guint index = editor->audio.sel_start * bytes_per_frame;
   debug_print (2, "Deleting range from %d with len %d...\n", index, len);
   g_byte_array_remove_range (editor->audio.sample, index, len);
   editor->audio.frames -= (guint32) editor->audio.sel_len;
