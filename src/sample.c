@@ -215,7 +215,7 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
   g_byte_array_set_size (wave->array, sample->len + 1024);	//We need space for the headers.
   wave->array->len = 0;
 
-  frames = sample->len >> sample_info->channels;
+  frames = sample->len / (sample_info->channels * sizeof(gint16));
   debug_print (1, "Frames: %" PRIu64 "; sample rate: %d; channels: %d\n",
 	       frames, sample_info->samplerate, sample_info->channels);
   debug_print (1, "Loop start at %d; loop end at %d\n",
