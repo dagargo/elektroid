@@ -249,11 +249,15 @@ local_sample_load_custom (const gchar * path, GByteArray * sample,
   control->part = 0;
   gint err = sample_load_from_file (path, sample, control, sample_params,
 				    &frames);
-  struct sample_info *sample_info = control->data;
-  sample_info->samplerate = sample_params->samplerate;
-  sample_info->channels =
-    sample_info->channels <
-    sample_params->channels ? sample_info->channels : sample_params->channels;
+  if (!err)
+    {
+      struct sample_info *sample_info = control->data;
+      sample_info->samplerate = sample_params->samplerate;
+      sample_info->channels =
+	sample_info->channels <
+	sample_params->channels ? sample_info->
+	channels : sample_params->channels;
+    }
   return err;
 }
 
