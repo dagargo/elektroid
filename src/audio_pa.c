@@ -247,7 +247,7 @@ audio_stop_recording (struct audio *audio)
 }
 
 void
-audio_start_recording (struct audio *audio, guint channels)
+audio_start_recording (struct audio *audio)
 {
   pa_operation *operation;
   struct sample_info *sample_info = audio->control.data;
@@ -261,7 +261,7 @@ audio_start_recording (struct audio *audio, guint channels)
 
   audio_prepare (audio, AUDIO_STATUS_PREPARING_RECORD);
   audio->frames = audio->samplerate * MAX_RECORDING_TIME_S;
-  g_byte_array_set_size (audio->sample, audio->frames << channels);
+  g_byte_array_set_size (audio->sample, audio->frames << AUDIO_CHANNELS);
   audio->sample->len = 0;
   audio->pos = 0;
   sample_info->loopstart = 0;
@@ -269,7 +269,7 @@ audio_start_recording (struct audio *audio, guint channels)
   sample_info->looptype = 0;
   sample_info->samplerate = audio->samplerate;
   sample_info->bitdepth = 16;
-  sample_info->channels = channels;
+  sample_info->channels = AUDIO_CHANNELS;
   sample_info->frames = audio->frames;
 
   debug_print (1, "Recording audio (max %d frames)...\n", audio->frames);

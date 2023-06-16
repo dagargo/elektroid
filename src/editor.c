@@ -532,7 +532,7 @@ editor_record_clicked (GtkWidget * object, gpointer data)
 
   gtk_widget_set_sensitive (editor->play_button, FALSE);
   gtk_widget_set_visible (editor->sample_info_box, FALSE);
-  audio_start_recording (&editor->audio, 2);	//TODO: get value from browser
+  audio_start_recording (&editor->audio);
   g_timeout_add (200, editor_update_ui_on_record, data);
 }
 

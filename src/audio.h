@@ -87,7 +87,7 @@ void audio_start_playback (struct audio *);
 
 void audio_stop_playback (struct audio *);
 
-void audio_start_recording (struct audio *, guint);
+void audio_start_recording (struct audio *);
 
 void audio_stop_recording (struct audio *);
 
