@@ -30,7 +30,7 @@
 #endif
 
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
-#define MAX_RECORDING_TIME_S 5
+#define MAX_RECORDING_TIME_S 30
 
 enum audio_src
 {
