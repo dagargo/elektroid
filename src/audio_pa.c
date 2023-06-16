@@ -58,11 +58,6 @@ audio_read_callback (pa_stream * stream, size_t size, void *data)
   size_t total_bytes, wsize;
   struct audio *audio = data;
 
-  if (audio->release_frames > AUDIO_BUF_FRAMES)
-    {
-      return;
-    }
-
   if (pa_stream_peek (stream, &buffer, &size) < 0)
     {
       return;
