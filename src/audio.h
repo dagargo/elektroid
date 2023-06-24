@@ -31,6 +31,7 @@
 
 #define AUDIO_BUF_FRAMES 512
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
+#define BYTES_PER_FRAME (AUDIO_CHANNELS * sizeof(gint16))
 #define MAX_RECORDING_TIME_S 30
 
 enum audio_src
@@ -55,7 +56,8 @@ struct audio
 {
 // PulseAudio or RtAudio backend
 #if defined(ELEKTROID_RTAUDIO)
-  rtaudio_t rtaudio;
+  rtaudio_t playback_rtaudio;
+  rtaudio_t record_rtaudio;
   gdouble volume;
 #else
   pa_threaded_mainloop *mainloop;
@@ -93,6 +95,8 @@ void audio_start_recording (struct audio *);
 void audio_stop_recording (struct audio *);
 
 gboolean audio_check (struct audio *);
+
+void audio_reset_record_buffer (struct audio *);
 
 void audio_init (struct audio *, void (*)(gpointer, gdouble), gpointer);
 

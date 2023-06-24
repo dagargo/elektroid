@@ -38,7 +38,7 @@ audio_mix_channels (gint16 ** src, guint channels, gdouble gain)
 }
 
 static inline void
-audio_copy_sample (gint16 * dst, gint16 * src)
+audio_copy_sample (gint16 * dst, gint16 * src, struct audio *audio)
 {
 #if defined(ELEKTROID_RTAUDIO)
   *dst = (gint16) (*src * audio->volume);
@@ -60,13 +60,13 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
 
   debug_print (2, "Writing %d frames...\n", frames);
 
-  memset (buffer, 0, frames << AUDIO_CHANNELS);
+  memset (buffer, 0, frames * BYTES_PER_FRAME);
 
   if ((audio->pos == len && !audio->loop) ||
       audio->status == AUDIO_STATUS_PREPARING_PLAYBACK ||
       audio->status == AUDIO_STATUS_STOPPING_PLAYBACK)
     {
-      memset (buffer, 0, frames << AUDIO_CHANNELS);
+      memset (buffer, 0, frames * BYTES_PER_FRAME);
       if (audio->status == AUDIO_STATUS_PREPARING_PLAYBACK)
 	{
 	  audio->status = AUDIO_STATUS_PLAYING;
@@ -97,23 +97,41 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
       if (audio->mono_mix)
 	{
 	  gint16 mix = audio_mix_channels (&src, channels, gain);
-	  audio_copy_sample (dst, &mix);
+	  audio_copy_sample (dst, &mix, audio);
 	  dst++;
-	  audio_copy_sample (dst, &mix);
+	  audio_copy_sample (dst, &mix, audio);
 	  dst++;
 	}
       else
 	{
-	  audio_copy_sample (dst, src);
+	  audio_copy_sample (dst, src, audio);
 	  src++;
 	  dst++;
-	  audio_copy_sample (dst, src);
+	  audio_copy_sample (dst, src, audio);
 	  src++;
 	  dst++;
 	}
 
       audio->pos++;
     }
+}
+
+void
+audio_reset_record_buffer (struct audio *audio)
+{
+  struct sample_info *sample_info = audio->control.data;
+  audio->frames = audio->samplerate * MAX_RECORDING_TIME_S;
+  guint size = audio->frames * BYTES_PER_FRAME;
+  g_byte_array_set_size (audio->sample, size);
+  audio->sample->len = 0;
+  audio->pos = 0;
+  sample_info->loopstart = 0;
+  sample_info->loopend = 0;
+  sample_info->looptype = 0;
+  sample_info->samplerate = audio->samplerate;
+  sample_info->bitdepth = 16;
+  sample_info->channels = AUDIO_CHANNELS;
+  sample_info->frames = audio->frames;
 }
 
 void

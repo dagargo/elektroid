@@ -488,8 +488,8 @@ editor_update_ui_on_record (gpointer data)
   read = editor->audio.sample->len;
   frames = editor->audio.frames;
   g_mutex_unlock (&editor->audio.control.mutex);
-  bytes = frames * EDITOR_SAMPLE_CHANNELS (editor) * sizeof (gint16);
 
+  bytes = frames * BYTES_PER_FRAME;
   if (bytes != read)
     {
       return TRUE;

@@ -22,10 +22,10 @@
 
 static const pa_buffer_attr BUFFER_ATTR = {
   .maxlength = -1,
-  .tlength = AUDIO_BUF_FRAMES << AUDIO_CHANNELS,	//bytes
+  .tlength = AUDIO_BUF_FRAMES * BYTES_PER_FRAME,	//bytes
   .prebuf = 0,
   .minreq = -1,
-  .fragsize = AUDIO_BUF_FRAMES << AUDIO_CHANNELS
+  .fragsize = AUDIO_BUF_FRAMES * BYTES_PER_FRAME	//bytes
 };
 
 static void
@@ -62,7 +62,7 @@ audio_read_callback (pa_stream * stream, size_t size, void *data)
     }
 
   g_mutex_lock (&audio->control.mutex);
-  total_bytes = audio->frames << AUDIO_CHANNELS;
+  total_bytes = audio->frames * BYTES_PER_FRAME;
   wsize = total_bytes - (size_t) audio->sample->len;
   wsize = wsize < size ? wsize : size;
 
@@ -88,7 +88,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
       return;
     }
 
-  frames = size >> AUDIO_CHANNELS;
+  frames = size / BYTES_PER_FRAME;
 
   pa_stream_begin_write (stream, &buffer, &size);
 
@@ -223,7 +223,7 @@ audio_stop_recording (struct audio *audio)
 
       g_mutex_lock (&audio->control.mutex);
       audio->status = AUDIO_STATUS_STOPPED;
-      audio->frames = audio->sample->len >> sample_info->channels;
+      audio->frames = audio->sample->len / BYTES_PER_FRAME;
       sample_info->frames = audio->frames;
       g_mutex_unlock (&audio->control.mutex);
     }
@@ -243,7 +243,6 @@ void
 audio_start_recording (struct audio *audio)
 {
   pa_operation *operation;
-  struct sample_info *sample_info = audio->control.data;
 
   if (!audio->record_stream)
     {
@@ -251,19 +250,8 @@ audio_start_recording (struct audio *audio)
     }
 
   audio_stop_recording (audio);
-
+  audio_reset_record_buffer (audio);
   audio_prepare (audio, AUDIO_STATUS_PREPARING_RECORD);
-  audio->frames = audio->samplerate * MAX_RECORDING_TIME_S;
-  g_byte_array_set_size (audio->sample, audio->frames << AUDIO_CHANNELS);
-  audio->sample->len = 0;
-  audio->pos = 0;
-  sample_info->loopstart = 0;
-  sample_info->loopend = 0;
-  sample_info->looptype = 0;
-  sample_info->samplerate = audio->samplerate;
-  sample_info->bitdepth = 16;
-  sample_info->channels = AUDIO_CHANNELS;
-  sample_info->frames = audio->frames;
 
   debug_print (1, "Recording audio (max %d frames)...\n", audio->frames);
 
