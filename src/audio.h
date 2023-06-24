@@ -29,6 +29,7 @@
 #include <pulse/pulseaudio.h>
 #endif
 
+#define AUDIO_BUF_FRAMES 512
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
 #define MAX_RECORDING_TIME_S 30
 

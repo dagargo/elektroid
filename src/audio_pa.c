@@ -20,8 +20,6 @@
 
 #include "audio.h"
 
-#define AUDIO_BUF_FRAMES 2048
-
 static const pa_buffer_attr BUFFER_ATTR = {
   .maxlength = -1,
   .tlength = AUDIO_BUF_FRAMES << AUDIO_CHANNELS,	//bytes
