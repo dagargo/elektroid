@@ -108,7 +108,9 @@ void audio_reset_sample (struct audio *);
 
 void audio_set_volume (struct audio *, gdouble);
 
-void audio_write_to_output_buffer (struct audio *, void *, gint);
+void audio_write_to_output (struct audio *, void *, gint, size_t);
+
+void audio_read_from_input (struct audio *, void *, gint, size_t);
 
 void audio_prepare (struct audio *, enum audio_status);
 

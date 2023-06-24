@@ -47,9 +47,9 @@ audio_copy_sample (gint16 * dst, gint16 * src, struct audio *audio)
 #endif
 }
 
-//Access must be synchronized
 void
-audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
+audio_write_to_output (struct audio *audio, void *buffer, gint frames,
+		       size_t size)
 {
   gint16 *dst, *src;
   guint32 len =
@@ -60,13 +60,15 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
 
   debug_print (2, "Writing %d frames...\n", frames);
 
-  memset (buffer, 0, frames * BYTES_PER_FRAME);
+  memset (buffer, 0, size);
+
+  g_mutex_lock (&audio->control.mutex);
 
   if ((audio->pos == len && !audio->loop) ||
       audio->status == AUDIO_STATUS_PREPARING_PLAYBACK ||
       audio->status == AUDIO_STATUS_STOPPING_PLAYBACK)
     {
-      memset (buffer, 0, frames * BYTES_PER_FRAME);
+      memset (buffer, 0, size);
       if (audio->status == AUDIO_STATUS_PREPARING_PLAYBACK)
 	{
 	  audio->status = AUDIO_STATUS_PLAYING;
@@ -75,7 +77,7 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
 	{
 	  audio->release_frames += frames;
 	}
-      return;
+      goto end;
     }
 
   dst = buffer;
@@ -113,6 +115,35 @@ audio_write_to_output_buffer (struct audio *audio, void *buffer, gint frames)
 	}
 
       audio->pos++;
+    }
+
+end:
+  g_mutex_unlock (&audio->control.mutex);
+
+  if (audio->release_frames > AUDIO_BUF_FRAMES)
+    {
+      audio_stop_playback (audio);
+    }
+}
+
+void
+audio_read_from_input (struct audio *audio, void *buffer, gint frames,
+		       size_t size)
+{
+  size_t total_bytes, wsize;
+
+  debug_print (2, "Reading %d frames...\n", frames);
+
+  g_mutex_lock (&audio->control.mutex);
+  total_bytes = audio->frames * BYTES_PER_FRAME;
+  wsize = total_bytes - (size_t) audio->sample->len;
+  wsize = wsize < size ? wsize : size;
+  g_byte_array_append (audio->sample, buffer, wsize);
+  g_mutex_unlock (&audio->control.mutex);
+
+  if (wsize != size)
+    {
+      audio_stop_recording (audio);
     }
 }
 
@@ -160,6 +191,7 @@ audio_destroy (struct audio *audio)
   debug_print (1, "Destroying audio...\n");
 
   audio_stop_playback (audio);
+  audio_stop_recording (audio);
   audio_reset_sample (audio);
 
   g_mutex_lock (&audio->control.mutex);

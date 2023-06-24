@@ -495,7 +495,6 @@ editor_update_ui_on_record (gpointer data)
       return TRUE;
     }
 
-  audio_stop_recording (&editor->audio);
   editor_set_sample_properties_on_load (editor);
   gtk_widget_set_sensitive (editor->play_button, TRUE);
 

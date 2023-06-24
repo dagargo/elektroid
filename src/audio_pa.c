@@ -20,6 +20,8 @@
 
 #include "audio.h"
 
+#define WAIT_TIME_TO_STOP_US 10000
+
 static const pa_buffer_attr BUFFER_ATTR = {
   .maxlength = -1,
   .tlength = AUDIO_BUF_FRAMES * BYTES_PER_FRAME,	//bytes
@@ -53,67 +55,57 @@ static void
 audio_read_callback (pa_stream * stream, size_t size, void *data)
 {
   const void *buffer;
-  size_t total_bytes, wsize;
   struct audio *audio = data;
 
   if (pa_stream_peek (stream, &buffer, &size) < 0)
     {
+      audio_stop_recording (audio);
       return;
     }
 
-  g_mutex_lock (&audio->control.mutex);
-  total_bytes = audio->frames * BYTES_PER_FRAME;
-  wsize = total_bytes - (size_t) audio->sample->len;
-  wsize = wsize < size ? wsize : size;
-
-  debug_print (2, "Audio read (%ld bytes)\n", wsize);
-
-  g_byte_array_append (audio->sample, buffer, wsize);
-
+  audio_read_from_input (audio, (void *) buffer, size / BYTES_PER_FRAME,
+			 size);
   pa_stream_drop (stream);
-
-  g_mutex_unlock (&audio->control.mutex);
 }
 
 static void
 audio_write_callback (pa_stream * stream, size_t size, void *data)
 {
   struct audio *audio = data;
-  guint32 frames;
   void *buffer;
 
-  if (audio->release_frames > AUDIO_BUF_FRAMES)
-    {
-      pa_stream_cork (audio->playback_stream, 1, NULL, NULL);
-      return;
-    }
-
-  frames = size / BYTES_PER_FRAME;
-
   pa_stream_begin_write (stream, &buffer, &size);
-
-  g_mutex_lock (&audio->control.mutex);
-
-  if (!audio->sample || !audio->sample->len)
-    {
-      g_mutex_unlock (&audio->control.mutex);
-      pa_stream_cancel_write (stream);
-      debug_print (2, "Cancelled\n");
-      return;
-    }
-
-  audio_write_to_output_buffer (audio, buffer, frames);
-
-  g_mutex_unlock (&audio->control.mutex);
-
+  audio_write_to_output (audio, buffer, size / BYTES_PER_FRAME, size);
   pa_stream_write (stream, buffer, size, NULL, 0, PA_SEEK_RELATIVE);
+}
+
+void
+audio_stop_and_flush_stream (struct audio *audio, pa_stream * stream)
+{
+  pa_operation *operation;
+
+  if (pa_threaded_mainloop_in_thread (audio->mainloop))
+    {
+      pa_stream_flush (stream, NULL, NULL);
+      pa_stream_cork (stream, 1, NULL, NULL);
+    }
+  else
+    {
+      pa_threaded_mainloop_lock (audio->mainloop);
+
+      operation = pa_stream_flush (stream, audio_success_cb, audio);
+      audio_wait_success (audio, operation);
+
+      operation = pa_stream_cork (stream, 1, audio_success_cb, audio);
+      audio_wait_success (audio, operation);
+
+      pa_threaded_mainloop_unlock (audio->mainloop);
+    }
 }
 
 void
 audio_stop_playback (struct audio *audio)
 {
-  pa_operation *operation;
-
   if (!audio->playback_stream)
     {
       return;
@@ -132,17 +124,9 @@ audio_stop_playback (struct audio *audio)
       audio->status = AUDIO_STATUS_STOPPING_PLAYBACK;
       g_mutex_unlock (&audio->control.mutex);
 
-      debug_print (1, "Stopping playback audio stream...\n");
+      debug_print (1, "Stopping playback...\n");
 
-      pa_threaded_mainloop_lock (audio->mainloop);
-      operation =
-	pa_stream_flush (audio->playback_stream, audio_success_cb, audio);
-      audio_wait_success (audio, operation);
-
-      operation =
-	pa_stream_cork (audio->playback_stream, 1, audio_success_cb, audio);
-      audio_wait_success (audio, operation);
-      pa_threaded_mainloop_unlock (audio->mainloop);
+      audio_stop_and_flush_stream (audio, audio->playback_stream);
 
       g_mutex_lock (&audio->control.mutex);
       audio->status = AUDIO_STATUS_STOPPED;
@@ -150,10 +134,11 @@ audio_stop_playback (struct audio *audio)
     }
   else
     {
-      while (audio->status != AUDIO_STATUS_STOPPED)
+      while (audio->status != AUDIO_STATUS_STOPPED &&
+	     !pa_threaded_mainloop_in_thread (audio->mainloop))
 	{
 	  g_mutex_unlock (&audio->control.mutex);
-	  usleep (100000);
+	  usleep (WAIT_TIME_TO_STOP_US);
 	  g_mutex_lock (&audio->control.mutex);
 	}
       g_mutex_unlock (&audio->control.mutex);
@@ -172,7 +157,7 @@ audio_start_playback (struct audio *audio)
 
   audio_stop_playback (audio);
 
-  debug_print (1, "Playing audio...\n");
+  debug_print (1, "Starting playback...\n");
 
   audio_prepare (audio, AUDIO_STATUS_PREPARING_PLAYBACK);
 
@@ -186,7 +171,6 @@ audio_start_playback (struct audio *audio)
 void
 audio_stop_recording (struct audio *audio)
 {
-  pa_operation *operation;
   struct sample_info *sample_info = audio->control.data;
 
   if (!audio->record_stream)
@@ -208,31 +192,24 @@ audio_stop_recording (struct audio *audio)
       audio->status = AUDIO_STATUS_STOPPING_RECORD;
       g_mutex_unlock (&audio->control.mutex);
 
-      debug_print (1, "Stopping record audio stream (%d frames read)...\n",
-		   audio->frames);
-
-      pa_threaded_mainloop_lock (audio->mainloop);
-      operation =
-	pa_stream_flush (audio->record_stream, audio_success_cb, audio);
-      audio_wait_success (audio, operation);
-
-      operation =
-	pa_stream_cork (audio->record_stream, 1, audio_success_cb, audio);
-      audio_wait_success (audio, operation);
-      pa_threaded_mainloop_unlock (audio->mainloop);
 
       g_mutex_lock (&audio->control.mutex);
       audio->status = AUDIO_STATUS_STOPPED;
       audio->frames = audio->sample->len / BYTES_PER_FRAME;
       sample_info->frames = audio->frames;
       g_mutex_unlock (&audio->control.mutex);
+
+      debug_print (1, "Stopping recording (%d frames read)...\n",
+		   audio->frames);
+      audio_stop_and_flush_stream (audio, audio->record_stream);
     }
   else
     {
-      while (audio->status != AUDIO_STATUS_STOPPED)
+      while (audio->status != AUDIO_STATUS_STOPPED &&
+	     !pa_threaded_mainloop_in_thread (audio->mainloop))
 	{
 	  g_mutex_unlock (&audio->control.mutex);
-	  usleep (100000);
+	  usleep (WAIT_TIME_TO_STOP_US);
 	  g_mutex_lock (&audio->control.mutex);
 	}
       g_mutex_unlock (&audio->control.mutex);
@@ -253,7 +230,7 @@ audio_start_recording (struct audio *audio)
   audio_reset_record_buffer (audio);
   audio_prepare (audio, AUDIO_STATUS_PREPARING_RECORD);
 
-  debug_print (1, "Recording audio (max %d frames)...\n", audio->frames);
+  debug_print (1, "Starting recording (max %d frames)...\n", audio->frames);
 
   pa_threaded_mainloop_lock (audio->mainloop);
   operation = pa_stream_cork (audio->record_stream, 0, audio_success_cb,

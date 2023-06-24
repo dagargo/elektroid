@@ -44,15 +44,17 @@ audio_stop_playback (struct audio *audio)
   audio->status = AUDIO_STATUS_STOPPED;
   g_mutex_unlock (&audio->control.mutex);
 
+  debug_print (1, "Stopping playback...\n");
   rtaudio_abort_stream (audio->playback_rtaudio);	//Stop and flush buffer
 }
 
 void
 audio_start_playback (struct audio *audio)
 {
+  audio_stop_playback (audio);
   audio_prepare (audio, AUDIO_STATUS_PLAYING);
+  debug_print (1, "Starting playback...\n");
   rtaudio_start_stream (audio->playback_rtaudio);
-  debug_print (1, "Playing audio...\n");
 }
 
 void
@@ -76,6 +78,7 @@ audio_stop_recording (struct audio *audio)
   sample_info->frames = audio->frames;
   g_mutex_unlock (&audio->control.mutex);
 
+  debug_print (1, "Stopping recording (%d frames read)...\n", audio->frames);
   rtaudio_abort_stream (audio->record_rtaudio);	//Stop and flush buffer
 }
 
@@ -85,64 +88,24 @@ audio_start_recording (struct audio *audio)
   audio_stop_recording (audio);
   audio_reset_record_buffer (audio);
   audio_prepare (audio, AUDIO_STATUS_RECORDING);
-
-  debug_print (1, "Recording audio (max %d frames)...\n", audio->frames);
-
+  debug_print (1, "Starting recording (max %d frames)...\n", audio->frames);
   rtaudio_start_stream (audio->record_rtaudio);
+}
+
+int
+audio_record_cb (void *out, void *in, unsigned int frames, double stream_time,
+		 rtaudio_stream_status_t rtaudio_status, void *audio)
+{
+  audio_read_from_input (audio, in, frames, frames * BYTES_PER_FRAME);
+  return 0;
 }
 
 int
 audio_playback_cb (void *out, void *in, unsigned int frames,
 		   double stream_time, rtaudio_stream_status_t rtaudio_status,
-		   void *userdata)
+		   void *audio)
 {
-  struct audio *audio = userdata;
-
-  if (audio->release_frames > AUDIO_BUF_FRAMES)
-    {
-      audio_stop_playback (audio);
-      return 0;
-    }
-
-  g_mutex_lock (&audio->control.mutex);
-
-  if (audio->pos == audio->frames && !audio->loop)
-    {
-      g_mutex_unlock (&audio->control.mutex);
-      audio_stop_playback (audio);
-      return 0;
-    }
-
-  audio_write_to_output_buffer (audio, out, frames);
-  g_mutex_unlock (&audio->control.mutex);
-  return 0;
-}
-
-int
-audio_record_cb (void *out, void *in, unsigned int frames, double stream_time,
-		 rtaudio_stream_status_t rtaudio_status, void *userdata)
-{
-  struct audio *audio = userdata;
-  size_t total_bytes, wsize, size;
-  enum audio_status status;
-
-  g_mutex_lock (&audio->control.mutex);
-  status = audio->status;
-  g_mutex_unlock (&audio->control.mutex);
-
-  if (status != AUDIO_STATUS_RECORDING)
-    {
-      return 0;
-    }
-
-  g_mutex_lock (&audio->control.mutex);
-  total_bytes = audio->frames * BYTES_PER_FRAME;
-  size = frames * BYTES_PER_FRAME;
-  wsize = total_bytes - (size_t) audio->sample->len;
-  wsize = wsize < size ? wsize : size;
-  g_byte_array_append (audio->sample, in, wsize);
-  g_mutex_unlock (&audio->control.mutex);
-
+  audio_write_to_output (audio, out, frames, frames * BYTES_PER_FRAME);
   return 0;
 }
 
