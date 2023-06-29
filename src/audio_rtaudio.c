@@ -164,13 +164,13 @@ audio_init_int (struct audio *audio)
     {
       error_print ("Error while initilizing playback RtAudio: %s\n",
 		   rtaudio_error (audio->playback_rtaudio));
-      goto error;
+      return;
     }
 
   if (!rtaudio_device_count (audio->playback_rtaudio))
     {
       error_print ("No devices found\n");
-      goto error;
+      goto error_playback;
     }
 
   dev_id = rtaudio_get_default_output_device (audio->playback_rtaudio);
@@ -193,7 +193,7 @@ audio_init_int (struct audio *audio)
       error_print
 	("Error occurred while opening the playback RtAudio stream: %s\n",
 	 rtaudio_error (audio->playback_rtaudio));
-      goto error;
+      goto error_playback;
     }
 
   debug_print (1,
@@ -209,13 +209,13 @@ audio_init_int (struct audio *audio)
     {
       error_print ("Error while initilizing recording RtAudio: %s\n",
 		   rtaudio_error (audio->record_rtaudio));
-      goto error;
+      goto error_playback;
     }
 
   if (!rtaudio_device_count (audio->record_rtaudio))
     {
       error_print ("No devices found\n");
-      goto error;
+      goto error_record;
     }
 
   dev_id = rtaudio_get_default_input_device (audio->record_rtaudio);
@@ -238,7 +238,7 @@ audio_init_int (struct audio *audio)
       error_print
 	("Error occurred while opening the recording RtAudio stream: %s\n",
 	 rtaudio_error (audio->record_rtaudio));
-      goto error;
+      goto error_record;
     }
 
   debug_print (1,
@@ -247,11 +247,12 @@ audio_init_int (struct audio *audio)
 
   return;
 
-error:
-  rtaudio_destroy (audio->playback_rtaudio);
+error_record:
   rtaudio_destroy (audio->record_rtaudio);
-  audio->playback_rtaudio = NULL;
   audio->record_rtaudio = NULL;
+error_playback:
+  rtaudio_destroy (audio->playback_rtaudio);
+  audio->playback_rtaudio = NULL;
 }
 
 gint
