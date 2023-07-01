@@ -1590,6 +1590,19 @@ audio-volume-medium-symbolic</property>
             <property name="hexpand">True</property>
             <property name="spacing">6</property>
             <child>
+              <object class="GtkLabel" id="audio_status_label">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="halign">start</property>
+                <property name="hexpand">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkLabel" id="backend_status_label">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
@@ -1599,12 +1612,12 @@ audio-volume-medium-symbolic</property>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">0</property>
+                <property name="position">1</property>
               </packing>
             </child>
           </object>
           <packing>
-            <property name="expand">True</property>
+            <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">1</property>
           </packing>

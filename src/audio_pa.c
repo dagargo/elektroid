@@ -353,6 +353,8 @@ audio_server_info_callback (pa_context * context, const pa_server_info * info,
     {
       pa_operation_unref (operation);
     }
+
+  audio->ready_callback ();
 }
 
 static void
@@ -368,21 +370,18 @@ audio_context_callback (pa_context * context, void *data)
 void
 audio_init_int (struct audio *audio)
 {
+  pa_mainloop_api *api;
+
   audio->playback_stream = NULL;
   audio->playback_index = PA_INVALID_INDEX;
 
   audio->record_stream = NULL;
   audio->record_index = PA_INVALID_INDEX;
-}
 
-gint
-audio_run (struct audio *audio)
-{
-  pa_mainloop_api *api;
   audio->mainloop = pa_threaded_mainloop_new ();
   if (!audio->mainloop)
     {
-      return -1;
+      return;
     }
 
   api = pa_threaded_mainloop_get_api (audio->mainloop);
@@ -393,7 +392,7 @@ audio_run (struct audio *audio)
       pa_context_unref (audio->context);
       pa_threaded_mainloop_free (audio->mainloop);
       audio->mainloop = NULL;
-      return -1;
+      return;
     }
   else
     {
@@ -402,8 +401,6 @@ audio_run (struct audio *audio)
       pa_threaded_mainloop_start (audio->mainloop);
       pa_threaded_mainloop_wait (audio->mainloop);
     }
-
-  return 0;
 }
 
 void

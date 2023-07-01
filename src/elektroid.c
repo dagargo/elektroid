@@ -211,6 +211,7 @@ static GtkWidget *about_button;
 static GtkWidget *local_box;
 static GtkWidget *remote_box;
 static GtkLabel *backend_status_label;
+static GtkLabel *audio_status_label;
 static GtkListStore *devices_list_store;
 static GtkWidget *devices_combo;
 static GtkListStore *task_list_store;
@@ -412,6 +413,15 @@ elektroid_load_devices_bg (gpointer data)
   return TRUE;
 }
 
+void
+elektroid_update_audio_status ()
+{
+  gchar status[LABEL_MAX];
+  snprintf (status, LABEL_MAX, "%s %s, %d Hz", audio_name (),
+	    audio_version (), editor.audio.samplerate);
+  gtk_label_set_text (audio_status_label, status);
+}
+
 static void
 elektroid_update_backend_status ()
 {
@@ -419,8 +429,6 @@ elektroid_update_backend_status ()
   gchar *statfss_str;
   struct backend_storage_stats statfs;
   GString *statfss;
-
-  gtk_label_set_text (backend_status_label, "");
 
   if (backend_check (&backend))
     {
@@ -484,6 +492,7 @@ elektroid_update_backend_status ()
       gtk_label_set_text (backend_status_label, _("Not connected"));
     }
 }
+
 
 static gboolean
 elektroid_get_next_queued_task (GtkTreeIter * iter,
@@ -3695,6 +3704,8 @@ elektroid_run (int argc, char *argv[])
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
   backend_status_label =
     GTK_LABEL (gtk_builder_get_object (builder, "backend_status_label"));
+  audio_status_label =
+    GTK_LABEL (gtk_builder_get_object (builder, "audio_status_label"));
 
   g_signal_connect (main_window, "delete-event",
 		    G_CALLBACK (elektroid_delete_window), NULL);

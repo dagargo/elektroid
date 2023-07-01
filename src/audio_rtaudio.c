@@ -245,6 +245,8 @@ audio_init_int (struct audio *audio)
 	       "Using %s for recording with %d Hz sample rate and %d frames...\n",
 	       dev_info.name, audio->samplerate, buffer_frames);
 
+  audio->ready_callback ();
+
   return;
 
 error_record:
@@ -253,12 +255,6 @@ error_record:
 error_playback:
   rtaudio_destroy (audio->playback_rtaudio);
   audio->playback_rtaudio = NULL;
-}
-
-gint
-audio_run (struct audio *audio)
-{
-  return 0;
 }
 
 void

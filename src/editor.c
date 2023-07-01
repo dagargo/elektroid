@@ -32,6 +32,8 @@
 #define MAX_FRAMES_PER_PIXEL 300
 #define EDITOR_SAMPLE_CHANNELS(editor) (((struct sample_info *)editor->audio.control.data)->channels)
 
+extern void elektroid_update_audio_status ();
+
 struct editor_y_frame_state
 {
   gdouble *wp;
@@ -1021,8 +1023,8 @@ editor_init (struct editor *editor, GtkBuilder * builder)
   gtk_switch_set_active (GTK_SWITCH (editor->mix_switch),
 			 editor->preferences->mix);
 
-  audio_init (&editor->audio, editor_set_volume_callback, editor);
-  audio_run (&editor->audio);
+  audio_init (&editor->audio, editor_set_volume_callback,
+	      elektroid_update_audio_status, editor);
 }
 
 void
