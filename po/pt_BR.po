@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2023-06-14 20:47+0200\n"
+"POT-Creation-Date: 2023-07-01 21:31+0200\n"
 "PO-Revision-Date: 2023-03-26 11:30-0300\n"
 "Last-Translator: Gustavo Costa <xfgusta@gmail.com>\n"
 "Language-Team: \n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Poedit 3.2.2\n"
 
-#: src/elektroid.c:484 src/elektroid.c:3960
+#: src/elektroid.c:484 src/elektroid.c:3961
 msgid "Not connected"
 msgstr "Não conectado"
 
@@ -48,11 +48,11 @@ msgid "Save SysEx"
 msgstr "Salvar SysEx"
 
 #: src/elektroid.c:787 src/elektroid.c:918 src/elektroid.c:1113
-#: src/elektroid.c:2127 res/gui.glade:1644 res/gui.glade:1744
+#: src/elektroid.c:2127 res/gui.glade:1661 res/gui.glade:1761
 msgid "_Cancel"
 msgstr "_Cancelar"
 
-#: src/elektroid.c:789 res/gui.glade:1658
+#: src/elektroid.c:789 res/gui.glade:1675
 msgid "_Save"
 msgstr "_Salvar"
 
@@ -198,7 +198,7 @@ msgstr "Movendo..."
 msgid "minutes"
 msgstr "minutos"
 
-#: src/editor.c:890
+#: src/editor.c:889
 msgid "Save Sample"
 msgstr "Salvar amostra"
 
@@ -229,6 +229,10 @@ msgstr "Sistema"
 #: src/connectors/sds.c:1139
 msgid "SDS sampler"
 msgstr "Sampler SDS"
+
+#: src/connectors/default.c:87
+msgid "MIDI device"
+msgstr "Dispositivo MIDI"
 
 #: res/gui.glade:44 res/gui.glade:124 res/gui.glade:216
 msgid "Play"
@@ -282,7 +286,7 @@ msgstr "Ir para o diretório pai"
 msgid "Refresh Directory"
 msgstr "Atualizar diretório"
 
-#: res/gui.glade:683 res/gui.glade:883 res/gui.glade:1689
+#: res/gui.glade:683 res/gui.glade:883 res/gui.glade:1706
 msgid "Name"
 msgstr "Nome"
 
@@ -603,6 +607,3 @@ msgstr "Sincronização"
 #: res/microbrute/gui.glade:1122
 msgid "Module Parameters"
 msgstr "Parâmetros de módulo"
-
-#~ msgid "MIDI device"
-#~ msgstr "Dispositivo MIDI"
