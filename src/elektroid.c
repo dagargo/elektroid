@@ -210,7 +210,7 @@ static GtkWidget *progress_label;
 static GtkWidget *about_button;
 static GtkWidget *local_box;
 static GtkWidget *remote_box;
-static GtkStatusbar *status_bar;
+static GtkLabel *backend_status_label;
 static GtkListStore *devices_list_store;
 static GtkWidget *devices_combo;
 static GtkListStore *task_list_store;
@@ -413,14 +413,14 @@ elektroid_load_devices_bg (gpointer data)
 }
 
 static void
-elektroid_update_statusbar ()
+elektroid_update_backend_status ()
 {
   gchar *status;
   gchar *statfss_str;
   struct backend_storage_stats statfs;
   GString *statfss;
 
-  gtk_statusbar_pop (status_bar, 0);
+  gtk_label_set_text (backend_status_label, "");
 
   if (backend_check (&backend))
     {
@@ -475,13 +475,13 @@ elektroid_update_statusbar ()
 	{
 	  status[0] = 0;
 	}
-      gtk_statusbar_push (status_bar, 0, status);
+      gtk_label_set_text (backend_status_label, status);
       free (status);
       g_free (statfss_str);
     }
   else
     {
-      gtk_statusbar_push (status_bar, 0, _("Not connected"));
+      gtk_label_set_text (backend_status_label, _("Not connected"));
     }
 }
 
@@ -559,7 +559,7 @@ elektroid_check_backend ()
       elektroid_load_devices (FALSE);
     }
 
-  elektroid_update_statusbar ();
+  elektroid_update_backend_status ();
 
   return connected;
 }
@@ -3693,7 +3693,8 @@ elektroid_run (int argc, char *argv[])
 
   local_box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box"));
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
-  status_bar = GTK_STATUSBAR (gtk_builder_get_object (builder, "status_bar"));
+  backend_status_label =
+    GTK_LABEL (gtk_builder_get_object (builder, "backend_status_label"));
 
   g_signal_connect (main_window, "delete-event",
 		    G_CALLBACK (elektroid_delete_window), NULL);
@@ -3957,7 +3958,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (clear_tasks_button, "clicked",
 		    G_CALLBACK (elektroid_clear_finished_tasks), NULL);
 
-  gtk_statusbar_push (status_bar, 0, _("Not connected"));
+  gtk_label_set_text (backend_status_label, _("Not connected"));
 
   fs_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "fs_list_store"));
