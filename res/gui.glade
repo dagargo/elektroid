@@ -421,6 +421,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                     <property name="vexpand">True</property>
                     <property name="row-spacing">6</property>
                     <property name="column-spacing">6</property>
+                    <property name="column-homogeneous">True</property>
                     <child>
                       <object class="GtkBox">
                         <property name="visible">True</property>
