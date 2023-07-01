@@ -333,9 +333,9 @@ microbrute_configure_gui (struct backend *backend, GtkWindow * parent)
   g_signal_connect (bend_range, "value-changed",
 		    G_CALLBACK (microbrute_bend_range_value_changed),
 		    backend);
-  g_signal_connect (note_priority, "changed",
+  g_signal_connect (gate_length, "changed",
 		    G_CALLBACK (microbrute_gate_length_changed), backend);
-  g_signal_connect (note_priority, "changed",
+  g_signal_connect (synchronization, "changed",
 		    G_CALLBACK (microbrute_synchronization_changed), backend);
 
   g_signal_connect (tx_channel, "changed",
