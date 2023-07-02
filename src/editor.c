@@ -211,7 +211,7 @@ editor_set_audio_mono_mix (struct editor *editor)
       gboolean remote_mono = editor->remote_browser->fs_ops &&
 	!(editor->remote_browser->fs_ops->options & FS_OPTION_STEREO);
       gboolean mono_mix = (editor->preferences->mix && remote_mono) ||
-	EDITOR_SAMPLE_CHANNELS (editor) != 2;
+	AUDIO_SAMPLE_CHANNELS (&editor->audio) != 2;
 
       g_mutex_lock (&editor->audio.control.mutex);
       editor->audio.mono_mix = mono_mix;
@@ -336,7 +336,7 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 
   width = gtk_widget_get_allocated_width (widget);
   height = gtk_widget_get_allocated_height (widget);
-  channels = EDITOR_SAMPLE_CHANNELS (editor);
+  channels = AUDIO_SAMPLE_CHANNELS (&(editor->audio));
   gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &layout_width, NULL);
   x_ratio = audio->frames / (gdouble) layout_width;
 
@@ -491,15 +491,13 @@ editor_update_ui_on_record (gpointer data)
   frames = editor->audio.frames;
   g_mutex_unlock (&editor->audio.control.mutex);
 
-  bytes = frames * BYTES_PER_FRAME;
+  bytes = frames * AUDIO_SAMPLE_BYTES_PER_FRAME (&editor->audio);
   if (bytes != read)
     {
       return TRUE;
     }
 
-  editor_set_sample_properties_on_load (editor);
-  gtk_widget_set_sensitive (editor->play_button, TRUE);
-
+  editor_update_ui_on_load (editor);
   return FALSE;
 }
 
@@ -512,8 +510,25 @@ editor_stop_clicked (GtkWidget * object, gpointer data)
 }
 
 static void
+editor_start_record (GtkWidget * object, gpointer data)
+{
+  struct editor *editor = data;
+  gtk_dialog_response (editor->record_dialog, GTK_RESPONSE_ACCEPT);
+}
+
+static void
+editor_cancel_record (GtkWidget * object, gpointer data)
+{
+  struct editor *editor = data;
+  gtk_dialog_response (editor->record_dialog, GTK_RESPONSE_CANCEL);
+}
+
+static void
 editor_record_clicked (GtkWidget * object, gpointer data)
 {
+  gint res;
+  guint channel_mask;
+  GtkTreeIter iter;
   struct editor *editor = data;
 
   if (editor->audio_src != AUDIO_SRC_NONE)
@@ -533,7 +548,21 @@ editor_record_clicked (GtkWidget * object, gpointer data)
 
   gtk_widget_set_sensitive (editor->play_button, FALSE);
   gtk_widget_set_visible (editor->sample_info_box, FALSE);
-  audio_start_recording (&editor->audio);
+
+  res = gtk_dialog_run (editor->record_dialog);
+  gtk_widget_hide (GTK_WIDGET (editor->record_dialog));
+  if (res == GTK_RESPONSE_CANCEL)
+    {
+      editor_set_source (editor, AUDIO_SRC_NONE);
+      return;
+    }
+
+  gtk_combo_box_get_active_iter (GTK_COMBO_BOX
+				 (editor->record_channels_combo), &iter);
+  gtk_tree_model_get (GTK_TREE_MODEL (editor->record_channels_list_store),
+		      &iter, 1, &channel_mask, -1);
+
+  audio_start_recording (&editor->audio, channel_mask);
   g_timeout_add (200, editor_update_ui_on_record, data);
 }
 
@@ -733,7 +762,7 @@ static gboolean
 editor_loading_completed (struct editor *editor)
 {
   guint loaded_frames;
-  guint channels = EDITOR_SAMPLE_CHANNELS (editor);
+  guint channels = AUDIO_SAMPLE_CHANNELS (&(editor->audio));
 
   g_mutex_lock (&editor->audio.control.mutex);
   loaded_frames = editor->audio.sample->len / (channels * sizeof (gint16));
@@ -852,7 +881,7 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
       return;
     }
 
-  guint channels = EDITOR_SAMPLE_CHANNELS (editor);
+  guint channels = AUDIO_SAMPLE_CHANNELS (&(editor->audio));
   guint bytes_per_frame = channels * sizeof (gint16);
   guint len = editor->audio.sel_len * bytes_per_frame;
   if (!len)
@@ -973,6 +1002,20 @@ editor_init (struct editor *editor, GtkBuilder * builder)
   editor->save_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "editor_save_menuitem"));
 
+  editor->record_dialog =
+    GTK_DIALOG (gtk_builder_get_object (builder, "record_dialog"));
+  editor->record_channels_combo =
+    GTK_WIDGET (gtk_builder_get_object (builder, "record_channels_combo"));
+  editor->record_channels_list_store =
+    GTK_LIST_STORE (gtk_builder_get_object
+		    (builder, "record_channels_list_store"));
+  editor->record_dialog_cancel_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "record_dialog_cancel_button"));
+  editor->record_dialog_record_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "record_dialog_record_button"));
+
   g_signal_connect (editor->waveform, "draw",
 		    G_CALLBACK (editor_draw_waveform), editor);
   gtk_widget_add_events (editor->waveform, GDK_SCROLL_MASK);
@@ -1022,6 +1065,11 @@ editor_init (struct editor *editor, GtkBuilder * builder)
 			 editor->preferences->autoplay);
   gtk_switch_set_active (GTK_SWITCH (editor->mix_switch),
 			 editor->preferences->mix);
+
+  g_signal_connect (editor->record_dialog_record_button, "clicked",
+		    G_CALLBACK (editor_start_record), editor);
+  g_signal_connect (editor->record_dialog_cancel_button, "clicked",
+		    G_CALLBACK (editor_cancel_record), editor);
 
   audio_init (&editor->audio, editor_set_volume_callback,
 	      elektroid_update_audio_status, editor);

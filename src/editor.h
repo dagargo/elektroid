@@ -54,6 +54,11 @@ struct editor
   GtkWidget *play_menuitem;
   GtkWidget *delete_menuitem;
   GtkWidget *save_menuitem;
+  GtkDialog *record_dialog;
+  GtkWidget *record_channels_combo;
+  GtkListStore *record_channels_list_store;
+  GtkWidget *record_dialog_cancel_button;
+  GtkWidget *record_dialog_record_button;
   guint zoom;
   gboolean selecting;
   gboolean dirty;

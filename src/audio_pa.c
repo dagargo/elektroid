@@ -24,10 +24,10 @@
 
 static const pa_buffer_attr BUFFER_ATTR = {
   .maxlength = -1,
-  .tlength = AUDIO_BUF_FRAMES * BYTES_PER_FRAME,	//bytes
+  .tlength = AUDIO_BUF_FRAMES * BYTES_PER_FRAME (AUDIO_CHANNELS),	//bytes
   .prebuf = 0,
   .minreq = -1,
-  .fragsize = AUDIO_BUF_FRAMES * BYTES_PER_FRAME	//bytes
+  .fragsize = AUDIO_BUF_FRAMES * BYTES_PER_FRAME (AUDIO_CHANNELS)	//bytes
 };
 
 static void
@@ -63,8 +63,8 @@ audio_read_callback (pa_stream * stream, size_t size, void *data)
       return;
     }
 
-  audio_read_from_input (audio, (void *) buffer, size / BYTES_PER_FRAME,
-			 size);
+  audio_read_from_input (audio, (void *) buffer,
+			 size / BYTES_PER_FRAME (AUDIO_CHANNELS));
   pa_stream_drop (stream);
 }
 
@@ -75,7 +75,8 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
   void *buffer;
 
   pa_stream_begin_write (stream, &buffer, &size);
-  audio_write_to_output (audio, buffer, size / BYTES_PER_FRAME, size);
+  audio_write_to_output (audio, buffer,
+			 size / BYTES_PER_FRAME (AUDIO_CHANNELS));
   pa_stream_write (stream, buffer, size, NULL, 0, PA_SEEK_RELATIVE);
 }
 
@@ -195,7 +196,8 @@ audio_stop_recording (struct audio *audio)
 
       g_mutex_lock (&audio->control.mutex);
       audio->status = AUDIO_STATUS_STOPPED;
-      audio->frames = audio->sample->len / BYTES_PER_FRAME;
+      audio->frames = audio->sample->len /
+	AUDIO_SAMPLE_BYTES_PER_FRAME (audio);
       sample_info->frames = audio->frames;
       g_mutex_unlock (&audio->control.mutex);
 
@@ -217,7 +219,7 @@ audio_stop_recording (struct audio *audio)
 }
 
 void
-audio_start_recording (struct audio *audio)
+audio_start_recording (struct audio *audio, guint channel_mask)
 {
   pa_operation *operation;
 
@@ -227,7 +229,7 @@ audio_start_recording (struct audio *audio)
     }
 
   audio_stop_recording (audio);
-  audio_reset_record_buffer (audio);
+  audio_reset_record_buffer (audio, channel_mask);
   audio_prepare (audio, AUDIO_STATUS_PREPARING_RECORD);
 
   debug_print (1, "Starting recording (max %d frames)...\n", audio->frames);

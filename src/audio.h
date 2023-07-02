@@ -31,8 +31,10 @@
 
 #define AUDIO_BUF_FRAMES 512
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
-#define BYTES_PER_FRAME (AUDIO_CHANNELS * sizeof(gint16))
+#define BYTES_PER_FRAME(x) (x * sizeof(gint16))
 #define MAX_RECORDING_TIME_S 30
+#define AUDIO_SAMPLE_CHANNELS(audio) (((struct sample_info *)(audio)->control.data)->channels)
+#define AUDIO_SAMPLE_BYTES_PER_FRAME(audio) (BYTES_PER_FRAME(AUDIO_SAMPLE_CHANNELS(audio)))
 
 enum audio_src
 {
@@ -85,19 +87,20 @@ struct audio
   guint32 sel_start;
   gint64 sel_len;
   gboolean mono_mix;
+  guint record_channel_mask;
 };
 
 void audio_start_playback (struct audio *);
 
 void audio_stop_playback (struct audio *);
 
-void audio_start_recording (struct audio *);
+void audio_start_recording (struct audio *, guint);
 
 void audio_stop_recording (struct audio *);
 
 gboolean audio_check (struct audio *);
 
-void audio_reset_record_buffer (struct audio *);
+void audio_reset_record_buffer (struct audio *, guint);
 
 void audio_init (struct audio *, void (*)(gpointer, gdouble),
 		 void (*)(), gpointer);
@@ -110,9 +113,9 @@ void audio_reset_sample (struct audio *);
 
 void audio_set_volume (struct audio *, gdouble);
 
-void audio_write_to_output (struct audio *, void *, gint, size_t);
+void audio_write_to_output (struct audio *, void *, gint);
 
-void audio_read_from_input (struct audio *, void *, gint, size_t);
+void audio_read_from_input (struct audio *, void *, gint);
 
 void audio_prepare (struct audio *, enum audio_status);
 

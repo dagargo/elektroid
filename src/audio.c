@@ -48,15 +48,15 @@ audio_copy_sample (gint16 * dst, gint16 * src, struct audio *audio)
 }
 
 void
-audio_write_to_output (struct audio *audio, void *buffer, gint frames,
-		       size_t size)
+audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 {
   gint16 *dst, *src;
   guint32 len =
     audio->sel_len ? audio->sel_start + audio->sel_len : audio->frames;
-  guint channels = (((struct sample_info *) audio->control.data)->channels);
-  guint bytes_per_frame = channels * sizeof (gint16);
+  guint channels = AUDIO_SAMPLE_CHANNELS (audio);
+  guint bytes_per_frame = BYTES_PER_FRAME (channels);
   gdouble gain = 1.0 / sqrt (channels);
+  size_t size = frames * BYTES_PER_FRAME (AUDIO_CHANNELS);
 
   debug_print (2, "Writing %d frames...\n", frames);
 
@@ -68,7 +68,6 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames,
       audio->status == AUDIO_STATUS_PREPARING_PLAYBACK ||
       audio->status == AUDIO_STATUS_STOPPING_PLAYBACK)
     {
-      memset (buffer, 0, size);
       if (audio->status == AUDIO_STATUS_PREPARING_PLAYBACK)
 	{
 	  audio->status = AUDIO_STATUS_PLAYING;
@@ -127,41 +126,62 @@ end:
 }
 
 void
-audio_read_from_input (struct audio *audio, void *buffer, gint frames,
-		       size_t size)
+audio_read_from_input (struct audio *audio, void *buffer, gint frames)
 {
-  size_t total_bytes, wsize;
+  guint recorded_frames, remaining_frames, recording_frames;
+  guint bytes_per_frame = (audio->record_channel_mask == 3 ? 2 : 1) *
+    sizeof (gint16);
 
   debug_print (2, "Reading %d frames...\n", frames);
 
   g_mutex_lock (&audio->control.mutex);
-  total_bytes = audio->frames * BYTES_PER_FRAME;
-  wsize = total_bytes - (size_t) audio->sample->len;
-  wsize = wsize < size ? wsize : size;
-  g_byte_array_append (audio->sample, buffer, wsize);
+  recorded_frames = audio->sample->len / bytes_per_frame;
+  remaining_frames = audio->frames - recorded_frames;
+  recording_frames = remaining_frames > frames ? frames : remaining_frames;
+
+  if (audio->record_channel_mask == 3)
+    {
+      g_byte_array_append (audio->sample, buffer,
+			   recording_frames * bytes_per_frame);
+    }
+  else
+    {
+      gint16 *data = buffer;
+      if (audio->record_channel_mask == 2)
+	{
+	  data++;
+	}
+      for (gint i = 0; i < recording_frames; i++, data += 2)
+	{
+	  g_byte_array_append (audio->sample, (guint8 *) data,
+			       sizeof (gint16));
+	}
+    }
   g_mutex_unlock (&audio->control.mutex);
 
-  if (wsize != size)
+  if (recording_frames < frames)
     {
       audio_stop_recording (audio);
     }
 }
 
 void
-audio_reset_record_buffer (struct audio *audio)
+audio_reset_record_buffer (struct audio *audio, guint channel_mask)
 {
   struct sample_info *sample_info = audio->control.data;
+  guint channels = channel_mask == 3 ? 2 : 1;
   audio->frames = audio->samplerate * MAX_RECORDING_TIME_S;
-  guint size = audio->frames * BYTES_PER_FRAME;
+  guint size = audio->frames * channels * sizeof (gint16);
   g_byte_array_set_size (audio->sample, size);
   audio->sample->len = 0;
   audio->pos = 0;
+  audio->record_channel_mask = channel_mask;
   sample_info->loopstart = 0;
   sample_info->loopend = 0;
   sample_info->looptype = 0;
   sample_info->samplerate = audio->samplerate;
   sample_info->bitdepth = 16;
-  sample_info->channels = AUDIO_CHANNELS;
+  sample_info->channels = channels;
   sample_info->frames = audio->frames;
 }
 
