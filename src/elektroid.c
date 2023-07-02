@@ -417,8 +417,8 @@ void
 elektroid_update_audio_status ()
 {
   gchar status[LABEL_MAX];
-  snprintf (status, LABEL_MAX, "%s %s, %d Hz", audio_name (),
-	    audio_version (), editor.audio.samplerate);
+  snprintf (status, LABEL_MAX, "%s %s, %.2f kHz", audio_name (),
+	    audio_version (), editor.audio.samplerate / 1000.f);
   gtk_label_set_text (audio_status_label, status);
 }
 
