@@ -20,6 +20,8 @@
 
 #include "audio.h"
 
+void audio_finish_recording (struct audio *);
+
 static struct rtaudio_stream_options STREAM_OPTIONS = {
   .flags = 0,
   .priority = 99,
@@ -61,7 +63,6 @@ void
 audio_stop_recording (struct audio *audio)
 {
   enum audio_status status;
-  struct sample_info *sample_info = audio->control.data;
 
   g_mutex_lock (&audio->control.mutex);
   status = audio->status;
@@ -73,10 +74,10 @@ audio_stop_recording (struct audio *audio)
     }
 
   g_mutex_lock (&audio->control.mutex);
-  audio->status = AUDIO_STATUS_STOPPED;
-  audio->frames = audio->sample->len / AUDIO_SAMPLE_BYTES_PER_FRAME (audio);
-  sample_info->frames = audio->frames;
+  audio->status = AUDIO_STATUS_STOPPING_RECORD;
   g_mutex_unlock (&audio->control.mutex);
+
+  audio_finish_recording (audio);
 
   debug_print (1, "Stopping recording (%d frames read)...\n", audio->frames);
   rtaudio_abort_stream (audio->record_rtaudio);	//Stop and flush buffer

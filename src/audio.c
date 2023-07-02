@@ -252,3 +252,57 @@ audio_prepare (struct audio *audio, enum audio_status status)
   audio->status = status;
   g_mutex_unlock (&audio->control.mutex);
 }
+
+static void
+audio_normalize (struct audio *audio)
+{
+  gdouble ratio, ratiop, ration;
+  gint16 *data, maxp = 1, minn = -1;
+  guint samples = audio->sample->len / SAMPLE_SIZE;
+
+  data = (gint16 *) audio->sample->data;
+  for (gint i = 0; i < samples; i++, data++)
+    {
+      gint16 v = *data;
+      if (v >= 0)
+	{
+	  if (v > maxp)
+	    {
+	      maxp = v;
+	    }
+	}
+      else
+	{
+	  if (v < minn)
+	    {
+	      minn = v;
+	    }
+	}
+    }
+  ratiop = SHRT_MAX / (gdouble) maxp;
+  ration = SHRT_MIN / (gdouble) minn;
+  ratio = ratiop < ration ? ratiop : ration;
+
+  debug_print (1, "Normalizing to %f...\n", ratio);
+
+  data = (gint16 *) audio->sample->data;
+  for (gint i = 0; i < samples; i++, data++)
+    {
+      *data = (gint16) (*data * ratio);
+    }
+}
+
+void
+audio_finish_recording (struct audio *audio)
+{
+  struct sample_info *sample_info = audio->control.data;
+
+  g_mutex_lock (&audio->control.mutex);
+  audio->status = AUDIO_STATUS_STOPPED;
+  audio->frames = audio->sample->len / AUDIO_SAMPLE_BYTES_PER_FRAME (audio);
+  sample_info->frames = audio->frames;
+
+  audio_normalize (audio);
+
+  g_mutex_unlock (&audio->control.mutex);
+}

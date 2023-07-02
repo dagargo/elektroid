@@ -20,6 +20,8 @@
 
 #include "audio.h"
 
+void audio_finish_recording (struct audio *);
+
 #define WAIT_TIME_TO_STOP_US 10000
 
 static const pa_buffer_attr BUFFER_ATTR = {
@@ -172,8 +174,6 @@ audio_start_playback (struct audio *audio)
 void
 audio_stop_recording (struct audio *audio)
 {
-  struct sample_info *sample_info = audio->control.data;
-
   if (!audio->record_stream)
     {
       return;
@@ -193,13 +193,7 @@ audio_stop_recording (struct audio *audio)
       audio->status = AUDIO_STATUS_STOPPING_RECORD;
       g_mutex_unlock (&audio->control.mutex);
 
-
-      g_mutex_lock (&audio->control.mutex);
-      audio->status = AUDIO_STATUS_STOPPED;
-      audio->frames = audio->sample->len /
-	AUDIO_SAMPLE_BYTES_PER_FRAME (audio);
-      sample_info->frames = audio->frames;
-      g_mutex_unlock (&audio->control.mutex);
+      audio_finish_recording (audio);
 
       debug_print (1, "Stopping recording (%d frames read)...\n",
 		   audio->frames);

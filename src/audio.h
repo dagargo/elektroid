@@ -29,10 +29,11 @@
 #include <pulse/pulseaudio.h>
 #endif
 
+#define MAX_RECORDING_TIME_S 30
 #define AUDIO_BUF_FRAMES 512
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
-#define BYTES_PER_FRAME(x) (x * sizeof(gint16))
-#define MAX_RECORDING_TIME_S 30
+#define SAMPLE_SIZE (sizeof(gint16))
+#define BYTES_PER_FRAME(x) (x * SAMPLE_SIZE)
 #define AUDIO_SAMPLE_CHANNELS(audio) (((struct sample_info *)(audio)->control.data)->channels)
 #define AUDIO_SAMPLE_BYTES_PER_FRAME(audio) (BYTES_PER_FRAME(AUDIO_SAMPLE_CHANNELS(audio)))
 
