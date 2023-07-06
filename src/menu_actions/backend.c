@@ -1,5 +1,5 @@
 /*
- *   backend_actions.c
+ *   backend.c
  *   Copyright (C) 2022 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
