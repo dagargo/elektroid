@@ -3997,6 +3997,7 @@ elektroid_run (int argc, char *argv[])
   gtk_widget_show (main_window);
 
   ma_data.backend = &backend;
+  ma_data.builder = builder;
 
   gtk_main ();
 

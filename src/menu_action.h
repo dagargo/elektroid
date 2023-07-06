@@ -41,10 +41,12 @@ struct ma_data
 {
   GtkWidget *box;
   struct backend *backend;
+  GtkBuilder *builder;
   gboolean separator;		//This does not need to be initialized as it's used internally.
 };
 
 typedef struct menu_action *(*t_menu_action_initializer) (struct backend *,
+							  GtkBuilder *,
 							  GtkWindow *);
 
 void ma_clear_device_menu_actions (GtkWidget *);

@@ -20,16 +20,22 @@
 
 #include "menu_action.h"
 
-struct menu_action *os_upgrade_init (struct backend *, GtkWindow *);
-struct menu_action *rx_sysex_init (struct backend *, GtkWindow *);
-struct menu_action *tx_sysex_init (struct backend *, GtkWindow *);
+struct menu_action *os_upgrade_init (struct backend *, GtkBuilder *,
+				     GtkWindow *);
+struct menu_action *rx_sysex_init (struct backend *, GtkBuilder *,
+				   GtkWindow *);
+struct menu_action *tx_sysex_init (struct backend *, GtkBuilder *,
+				   GtkWindow *);
 struct menu_action *microbrute_configuration_init (struct backend *,
-						   GtkWindow *);
+						   GtkBuilder *, GtkWindow *);
 struct menu_action *microbrute_calibration_init (struct backend *,
-						 GtkWindow *);
+						 GtkBuilder *, GtkWindow *);
+struct menu_action *autosampler_init (struct backend *, GtkBuilder *,
+				      GtkWindow *);
 
 struct menu_action *
-menu_action_separator (struct backend *backend, GtkWindow * parent)
+menu_action_separator (struct backend *backend, GtkBuilder * builder,
+		       GtkWindow * parent)
 {
   struct menu_action *ma = g_malloc (sizeof (struct menu_action));
   ma->type = MENU_ACTION_SEPARATOR;
@@ -49,7 +55,8 @@ ma_get_menu_actions (struct ma_data *ma_data, GtkWindow * parent)
   const t_menu_action_initializer *initializer = MENU_ACTIONS;
   while (*initializer)
     {
-      struct menu_action *ma = (*initializer) (ma_data->backend, parent);
+      struct menu_action *ma = (*initializer) (ma_data->backend,
+					       ma_data->builder, parent);
       if (ma)
 	{
 	  actions = g_slist_append (actions, ma);

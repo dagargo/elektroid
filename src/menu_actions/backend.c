@@ -50,7 +50,8 @@ rx_sysex_callback (GtkWidget * object, gpointer data)
 }
 
 struct menu_action *
-os_upgrade_init (struct backend *backend, GtkWindow * parent)
+os_upgrade_init (struct backend *backend, GtkBuilder * builder,
+		 GtkWindow * parent)
 {
   struct menu_action *ma = NULL;
   if (backend->upgrade_os)
@@ -64,7 +65,8 @@ os_upgrade_init (struct backend *backend, GtkWindow * parent)
 }
 
 struct menu_action *
-rx_sysex_init (struct backend *backend, GtkWindow * parent)
+rx_sysex_init (struct backend *backend, GtkBuilder * builder,
+	       GtkWindow * parent)
 {
   struct menu_action *ma = NULL;
   if (backend->type == BE_TYPE_MIDI)
@@ -78,7 +80,8 @@ rx_sysex_init (struct backend *backend, GtkWindow * parent)
 }
 
 struct menu_action *
-tx_sysex_init (struct backend *backend, GtkWindow * parent)
+tx_sysex_init (struct backend *backend, GtkBuilder * builder,
+	       GtkWindow * parent)
 {
   struct menu_action *ma = NULL;
   if (backend->type == BE_TYPE_MIDI)

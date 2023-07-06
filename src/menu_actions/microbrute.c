@@ -376,7 +376,8 @@ microbrute_configure_gui (struct backend *backend, GtkWindow * parent)
 }
 
 struct menu_action *
-microbrute_configuration_init (struct backend *backend, GtkWindow * parent)
+microbrute_configuration_init (struct backend *backend, GtkBuilder * builder,
+			       GtkWindow * parent)
 {
   struct menu_action *ma;
 
@@ -403,7 +404,8 @@ microbrute_calibration_callback (GtkWidget * object, gpointer data)
 
 
 struct menu_action *
-microbrute_calibration_init (struct backend *backend, GtkWindow * parent)
+microbrute_calibration_init (struct backend *backend, GtkBuilder * builder,
+			     GtkWindow * parent)
 {
   struct menu_action *ma;
 
