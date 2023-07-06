@@ -381,7 +381,7 @@ microbrute_configuration_init (struct backend *backend, GtkBuilder * builder,
 {
   struct menu_action *ma;
 
-  if (strcmp (backend->conn_name, MICROBRUTE_NAME))
+  if (!backend->conn_name || strcmp (backend->conn_name, MICROBRUTE_NAME))
     {
       return NULL;
     }
@@ -409,7 +409,7 @@ microbrute_calibration_init (struct backend *backend, GtkBuilder * builder,
 {
   struct menu_action *ma;
 
-  if (strcmp (backend->conn_name, MICROBRUTE_NAME))
+  if (!backend->conn_name || strcmp (backend->conn_name, MICROBRUTE_NAME))
     {
       return NULL;
     }

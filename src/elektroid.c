@@ -542,7 +542,6 @@ elektroid_check_backend ()
   GtkTreeIter iter;
   gboolean remote_sensitive;
   gboolean connected = backend_check (&backend);
-  gboolean midi_connected = backend.type == BE_TYPE_MIDI && connected;
   gboolean queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
 						    NULL, NULL, NULL);
 
@@ -560,7 +559,7 @@ elektroid_check_backend ()
   gtk_widget_set_sensitive (remote_box, remote_sensitive);
   gtk_widget_set_sensitive (local_browser.transfer_menuitem,
 			    remote_sensitive);
-  gtk_widget_set_sensitive (ma_data.box, midi_connected && !queued);
+  gtk_widget_set_sensitive (ma_data.box, !queued);
 
   if (!connected)
     {
@@ -2060,11 +2059,8 @@ elektroid_run_next_task (gpointer data)
     }
   else
     {
-      gboolean midi_connected = backend.type == BE_TYPE_MIDI
-	&& backend_check (&backend);
       gtk_widget_set_sensitive (remote_box, TRUE);
       gtk_widget_set_sensitive (local_browser.transfer_menuitem, TRUE);
-      gtk_widget_set_sensitive (ma_data.box, midi_connected);
 
       if ((remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
 	  && remote_browser.dirty)
@@ -3086,11 +3082,15 @@ elektroid_set_device (GtkWidget * object, gpointer data)
   g_free (id);
   g_free (name);
 
+  ma_clear_device_menu_actions (ma_data.box);
+
   if (!system_init_backend (&backend, be_sys_device.id))
     {
       debug_print (1, "System backend detected\n");
       elektroid_fill_fs_combo_bg (NULL);
       elektroid_check_backend_bg (NULL);
+      backend.conn_name = NULL;
+      ma_set_device_menu_actions (&ma_data, GTK_WINDOW (main_window));
       return;
     }
 
