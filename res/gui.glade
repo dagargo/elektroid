@@ -456,7 +456,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="hexpand">True</property>
                             <property name="model">devices_list_store</property>
                             <child>
-                              <object class="GtkCellRendererText"/>
+                              <object class="GtkCellRendererText">
+                                <property name="ellipsize">end</property>
+                              </object>
                               <attributes>
                                 <attribute name="text">1</attribute>
                               </attributes>
