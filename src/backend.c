@@ -305,18 +305,18 @@ backend_program_change (struct backend *backend, guint8 channel,
 }
 
 gint
-backend_send_controller (struct backend *backend, guint8 channel,
-			 guint8 controller, guint8 value)
+backend_send_3_byte_message (struct backend *backend, guint8 msg_type,
+			     guint8 channel, guint8 d1, guint8 d2)
 {
   ssize_t size;
   guint8 msg[3];
 
-  msg[0] = 0xb0 | (channel & 0xf);
-  msg[1] = controller & 0x7f;
-  msg[2] = value & 0x7f;
+  msg[0] = msg_type | (channel & 0xf);
+  msg[1] = d1 & 0x7f;
+  msg[2] = d2 & 0x7f;
 
-  debug_print (1, "Sending MIDI controller %d with value %d...\n", msg[1],
-	       msg[2]);
+  debug_print (1, "Sending MIDI message: status %08x; data %d, %d...\n",
+	       msg[0], msg[1], msg[2]);
 
   if ((size = backend_tx_raw (backend, msg, 3)) < 0)
     {
@@ -324,6 +324,29 @@ backend_send_controller (struct backend *backend, guint8 channel,
     }
   return 0;
 }
+
+gint
+backend_send_controller (struct backend *backend, guint8 channel,
+			 guint8 controller, guint8 value)
+{
+  return backend_send_3_byte_message (backend, 0xb0, channel, controller,
+				      value);
+}
+
+gint
+backend_send_note_on (struct backend *backend, guint8 channel,
+		      guint8 note, guint8 velocity)
+{
+  return backend_send_3_byte_message (backend, 0x90, channel, note, velocity);
+}
+
+gint
+backend_send_note_off (struct backend *backend, guint8 channel,
+		       guint8 note, guint8 velocity)
+{
+  return backend_send_3_byte_message (backend, 0x80, channel, note, velocity);
+}
+
 
 gint
 backend_send_rpn (struct backend *backend, guint8 channel,

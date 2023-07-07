@@ -171,6 +171,12 @@ gint backend_program_change (struct backend *, guint8, guint8);
 gint backend_send_controller (struct backend *backend, guint8 channel,
 			      guint8 controller, guint8 value);
 
+gint backend_send_note_on (struct backend *backend, guint8 channel,
+			   guint8 note, guint8 velocity);
+
+gint backend_send_note_off (struct backend *backend, guint8 channel,
+			    guint8 note, guint8 velocity);
+
 gint backend_send_rpn (struct backend *backend, guint8 channel,
 		       guint8 controller_msb, guint8 controller_lsb,
 		       guint8 value_msb, guint8 value_lsb);
