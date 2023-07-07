@@ -253,6 +253,24 @@ audio_prepare (struct audio *audio, enum audio_status status)
   g_mutex_unlock (&audio->control.mutex);
 }
 
+void
+audio_delete_range (struct audio *audio, guint start_frame, guint frames)
+{
+  struct sample_info *sample_info = audio->control.data;
+  guint index = start_frame * AUDIO_SAMPLE_BYTES_PER_FRAME (audio);
+  guint len = frames * AUDIO_SAMPLE_BYTES_PER_FRAME (audio);
+
+  debug_print (2, "Deleting range from %d with len %d...\n", index, len);
+  g_byte_array_remove_range (audio->sample, index, len);
+
+  g_mutex_lock (&audio->control.mutex);
+  audio->frames -= (guint32) frames;
+  audio->sel_start = 0;
+  audio->sel_len = 0;
+  sample_info->frames = audio->frames;
+  g_mutex_unlock (&audio->control.mutex);
+}
+
 static void
 audio_normalize (struct audio *audio)
 {

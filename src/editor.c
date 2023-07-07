@@ -869,7 +869,6 @@ static void
 editor_delete_clicked (GtkWidget * object, gpointer data)
 {
   struct editor *editor = data;
-  struct sample_info *sample_info = editor->audio.control.data;
 
   if (!editor_loading_completed (editor))
     {
@@ -881,26 +880,15 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
       return;
     }
 
-  guint channels = AUDIO_SAMPLE_CHANNELS (&(editor->audio));
-  guint bytes_per_frame = channels * sizeof (gint16);
-  guint len = editor->audio.sel_len * bytes_per_frame;
-  if (!len)
+  if (!editor->audio.sel_len)
     {
       return;
     }
-  guint index = editor->audio.sel_start * bytes_per_frame;
-  debug_print (2, "Deleting range from %d with len %d...\n", index, len);
-  g_byte_array_remove_range (editor->audio.sample, index, len);
 
-  g_mutex_lock (&editor->audio.control.mutex);
-  editor->audio.frames -= (guint32) editor->audio.sel_len;
-  editor->audio.sel_start = 0;
-  editor->audio.sel_len = 0;
+  audio_delete_range (&editor->audio, editor->audio.sel_start,
+		      editor->audio.sel_len);
   editor->dirty = TRUE;
-  sample_info->frames = editor->audio.frames;
   editor_set_sample_time_properties (editor);
-  g_mutex_unlock (&editor->audio.control.mutex);
-
   g_idle_add (editor_queue_draw, data);
 }
 

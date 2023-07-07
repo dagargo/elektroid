@@ -120,6 +120,8 @@ void audio_read_from_input (struct audio *, void *, gint);
 
 void audio_prepare (struct audio *, enum audio_status);
 
+void audio_delete_range (struct audio *, guint, guint);
+
 const gchar *audio_name ();
 
 const gchar *audio_version ();
