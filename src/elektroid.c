@@ -403,6 +403,7 @@ elektroid_load_devices_bg (gpointer data)
 
   g_object_get_property (G_OBJECT (main_window), "visible", &value);
   visible = g_value_get_boolean (&value);
+  g_value_unset (&value);
 
   if (visible)
     {
@@ -2870,6 +2871,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   gtk_tree_model_get_value (GTK_TREE_MODEL (fs_list_store),
 			    &iter, FS_LIST_STORE_ID_FIELD, &fsv);
   fs = g_value_get_uint (&fsv);
+  g_value_unset (&fsv);
 
   remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
   remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
