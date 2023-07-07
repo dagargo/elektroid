@@ -253,6 +253,44 @@ audio_prepare (struct audio *audio, enum audio_status status)
   g_mutex_unlock (&audio->control.mutex);
 }
 
+guint
+audio_detect_start (struct audio *audio)
+{
+  guint start_frame = 0;
+  gint16 *data = (gint16 *) audio->sample->data;
+
+//Searching for audio data...
+  for (gint i = 0; i < audio->frames; i++)
+    {
+      for (gint j = 0; j < AUDIO_SAMPLE_CHANNELS (audio); j++, data++)
+	{
+	  if (!start_frame && abs (*data) >= SHRT_MAX * 0.01)
+	    {
+	      start_frame = i;
+	      data -= j + 1;
+	      goto search_last_zero;
+	    }
+	}
+    }
+
+search_last_zero:
+  for (gint i = start_frame - 1; i >= 0; i--)
+    {
+      for (gint j = 0; j < AUDIO_SAMPLE_CHANNELS (audio); j++, data--)
+	{
+	  if (abs (*data) == 0)	//SHRT_MAX * 0.001)
+	    {
+	      start_frame = i;
+	      goto end;
+	    }
+	}
+    }
+
+end:
+  debug_print (1, "Detected start at frame %d\n", start_frame);
+  return start_frame;
+}
+
 void
 audio_delete_range (struct audio *audio, guint start_frame, guint frames)
 {

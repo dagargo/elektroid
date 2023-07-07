@@ -122,6 +122,8 @@ void audio_prepare (struct audio *, enum audio_status);
 
 void audio_delete_range (struct audio *, guint, guint);
 
+guint audio_detect_start (struct audio *);
+
 const gchar *audio_name ();
 
 const gchar *audio_version ();
