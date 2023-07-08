@@ -69,6 +69,7 @@ preferences.c preferences.h \
 menu_action.c menu_action.h \
 menu_actions/backend.c menu_actions/microbrute.c \
 editor.c editor.h \
+progress.c progress.h \
 elektroid.c
 
 SNDFILE_CFLAGS = @SNDFILE_CFLAGS@

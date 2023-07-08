@@ -4,6 +4,7 @@ src/editor.c
 src/menu_actions/backend.c
 src/menu_actions/microbrute.c
 src/local.c
+src/progress.c
 src/connectors/sds.c
 src/connectors/default.c
 res/gui.glade
