@@ -2754,7 +2754,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   g_free (remote_browser.dir);
   remote_browser.dir = backend.type == BE_TYPE_SYSTEM ?
-    strdup (local_browser.dir) : strdup ("/");
+    get_user_dir (NULL) : strdup ("/");
 
   gtk_widget_set_visible (remote_browser.transfer_menuitem,
 			  backend.type == BE_TYPE_SYSTEM
