@@ -1639,14 +1639,8 @@ elektroid_cancel_name (GtkWidget * object, gpointer data)
 static void
 elektroid_name_dialog_entry_changed (GtkWidget * object, gpointer data)
 {
-  if (strlen (gtk_entry_get_text (name_dialog_entry)) > 0)
-    {
-      gtk_widget_set_sensitive (name_dialog_accept_button, TRUE);
-    }
-  else
-    {
-      gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
-    }
+  size_t len = strlen (gtk_entry_get_text (name_dialog_entry));
+  gtk_widget_set_sensitive (name_dialog_accept_button, len > 0);
 }
 
 static gboolean
@@ -3589,8 +3583,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (name_dialog_cancel_button, "clicked",
 		    G_CALLBACK (elektroid_cancel_name), NULL);
   g_signal_connect (name_dialog_entry, "changed",
-		    G_CALLBACK (elektroid_name_dialog_entry_changed),
-		    name_dialog_accept_button);
+		    G_CALLBACK (elektroid_name_dialog_entry_changed), NULL);
 
   remote_browser = (struct browser)
   {
