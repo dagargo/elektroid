@@ -67,7 +67,7 @@ audio.h audio.c $(elektroid_audio_sources) \
 browser.c browser.h notifier.c notifier.h \
 preferences.c preferences.h \
 menu_action.c menu_action.h \
-menu_actions/backend.c menu_actions/microbrute.c \
+menu_actions/backend.c menu_actions/microbrute.c menu_actions/autosampler.c\
 editor.c editor.h \
 progress.c progress.h \
 elektroid.c

@@ -45,7 +45,8 @@ menu_action_separator (struct backend *backend, GtkBuilder * builder,
 const t_menu_action_initializer MENU_ACTIONS[] = {
   microbrute_configuration_init, microbrute_calibration_init,
   menu_action_separator, rx_sysex_init, tx_sysex_init, menu_action_separator,
-  os_upgrade_init, menu_action_separator, NULL
+  os_upgrade_init, menu_action_separator, autosampler_init,
+  menu_action_separator, NULL
 };
 
 static GSList *

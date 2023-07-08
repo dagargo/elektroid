@@ -29,4 +29,6 @@ extern const struct fs_operations FS_LOCAL_OPERATIONS;
 
 gint system_init_backend (struct backend *, const gchar *);
 
+gint local_mkdir (struct backend *, const gchar *);
+
 #endif

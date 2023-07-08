@@ -3,6 +3,7 @@ src/elektroid.c
 src/editor.c
 src/menu_actions/backend.c
 src/menu_actions/microbrute.c
+src/menu_actions/autosampler.c
 src/local.c
 src/progress.c
 src/connectors/sds.c

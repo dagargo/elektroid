@@ -26,6 +26,33 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
   <!-- interface-name Elektroid -->
   <!-- interface-description GNU/Linux transfer application for Elektron devices -->
   <!-- interface-copyright David Garc\303\255a Go\303\261i -->
+  <object class="GtkAdjustment" id="autosampler_duration_adj">
+    <property name="lower">0.01</property>
+    <property name="upper">30</property>
+    <property name="step-increment">0.01</property>
+    <property name="page-increment">10</property>
+  </object>
+  <object class="GtkAdjustment" id="autosampler_midi_channel_adj">
+    <property name="upper">15</property>
+    <property name="step-increment">1</property>
+    <property name="page-increment">1</property>
+  </object>
+  <object class="GtkAdjustment" id="autosampler_release_adj">
+    <property name="upper">30</property>
+    <property name="step-increment">0.01000000000000001</property>
+    <property name="page-increment">10</property>
+  </object>
+  <object class="GtkAdjustment" id="autosampler_semitones_adj">
+    <property name="lower">1</property>
+    <property name="upper">127</property>
+    <property name="step-increment">1</property>
+    <property name="page-increment">12</property>
+  </object>
+  <object class="GtkAdjustment" id="autosampler_velocity_adj">
+    <property name="upper">127</property>
+    <property name="step-increment">1</property>
+    <property name="page-increment">10</property>
+  </object>
   <object class="GtkListStore" id="devices_list_store">
     <columns>
       <!-- column-name id -->
@@ -173,6 +200,528 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       </object>
     </child>
   </object>
+  <object class="GtkListStore" id="notes_list_store">
+    <columns>
+      <!-- column-name caption -->
+      <column type="gchararray"/>
+      <!-- column-name value -->
+      <column type="gint"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0">C-1</col>
+        <col id="1">0</col>
+      </row>
+      <row>
+        <col id="0">C#-1</col>
+        <col id="1">1</col>
+      </row>
+      <row>
+        <col id="0">D-1</col>
+        <col id="1">2</col>
+      </row>
+      <row>
+        <col id="0">D#-1</col>
+        <col id="1">3</col>
+      </row>
+      <row>
+        <col id="0">E-1</col>
+        <col id="1">4</col>
+      </row>
+      <row>
+        <col id="0">F-1</col>
+        <col id="1">5</col>
+      </row>
+      <row>
+        <col id="0">F#-1</col>
+        <col id="1">6</col>
+      </row>
+      <row>
+        <col id="0">G-1</col>
+        <col id="1">7</col>
+      </row>
+      <row>
+        <col id="0">G#-1</col>
+        <col id="1">8</col>
+      </row>
+      <row>
+        <col id="0">A-1</col>
+        <col id="1">9</col>
+      </row>
+      <row>
+        <col id="0">A#-1</col>
+        <col id="1">10</col>
+      </row>
+      <row>
+        <col id="0">B-1</col>
+        <col id="1">11</col>
+      </row>
+      <row>
+        <col id="0">C0</col>
+        <col id="1">12</col>
+      </row>
+      <row>
+        <col id="0">C#0</col>
+        <col id="1">13</col>
+      </row>
+      <row>
+        <col id="0">D0</col>
+        <col id="1">14</col>
+      </row>
+      <row>
+        <col id="0">D#0</col>
+        <col id="1">15</col>
+      </row>
+      <row>
+        <col id="0">E0</col>
+        <col id="1">16</col>
+      </row>
+      <row>
+        <col id="0">F0</col>
+        <col id="1">17</col>
+      </row>
+      <row>
+        <col id="0">F#0</col>
+        <col id="1">18</col>
+      </row>
+      <row>
+        <col id="0">G0</col>
+        <col id="1">19</col>
+      </row>
+      <row>
+        <col id="0">G#0</col>
+        <col id="1">20</col>
+      </row>
+      <row>
+        <col id="0">A0</col>
+        <col id="1">21</col>
+      </row>
+      <row>
+        <col id="0">A#0</col>
+        <col id="1">22</col>
+      </row>
+      <row>
+        <col id="0">B0</col>
+        <col id="1">23</col>
+      </row>
+      <row>
+        <col id="0">C1</col>
+        <col id="1">24</col>
+      </row>
+      <row>
+        <col id="0">C#1</col>
+        <col id="1">25</col>
+      </row>
+      <row>
+        <col id="0">D1</col>
+        <col id="1">26</col>
+      </row>
+      <row>
+        <col id="0">D#1</col>
+        <col id="1">27</col>
+      </row>
+      <row>
+        <col id="0">E1</col>
+        <col id="1">28</col>
+      </row>
+      <row>
+        <col id="0">F1</col>
+        <col id="1">29</col>
+      </row>
+      <row>
+        <col id="0">F#1</col>
+        <col id="1">30</col>
+      </row>
+      <row>
+        <col id="0">G1</col>
+        <col id="1">31</col>
+      </row>
+      <row>
+        <col id="0">G#1</col>
+        <col id="1">32</col>
+      </row>
+      <row>
+        <col id="0">A1</col>
+        <col id="1">33</col>
+      </row>
+      <row>
+        <col id="0">A#1</col>
+        <col id="1">34</col>
+      </row>
+      <row>
+        <col id="0">B1</col>
+        <col id="1">35</col>
+      </row>
+      <row>
+        <col id="0">C2</col>
+        <col id="1">36</col>
+      </row>
+      <row>
+        <col id="0">C#2</col>
+        <col id="1">37</col>
+      </row>
+      <row>
+        <col id="0">D2</col>
+        <col id="1">38</col>
+      </row>
+      <row>
+        <col id="0">D#2</col>
+        <col id="1">39</col>
+      </row>
+      <row>
+        <col id="0">E2</col>
+        <col id="1">40</col>
+      </row>
+      <row>
+        <col id="0">F2</col>
+        <col id="1">41</col>
+      </row>
+      <row>
+        <col id="0">F#2</col>
+        <col id="1">42</col>
+      </row>
+      <row>
+        <col id="0">G2</col>
+        <col id="1">43</col>
+      </row>
+      <row>
+        <col id="0">G#2</col>
+        <col id="1">44</col>
+      </row>
+      <row>
+        <col id="0">A2</col>
+        <col id="1">45</col>
+      </row>
+      <row>
+        <col id="0">A#2</col>
+        <col id="1">46</col>
+      </row>
+      <row>
+        <col id="0">B2</col>
+        <col id="1">47</col>
+      </row>
+      <row>
+        <col id="0">C3</col>
+        <col id="1">48</col>
+      </row>
+      <row>
+        <col id="0">C#3</col>
+        <col id="1">49</col>
+      </row>
+      <row>
+        <col id="0">D3</col>
+        <col id="1">50</col>
+      </row>
+      <row>
+        <col id="0">D#3</col>
+        <col id="1">51</col>
+      </row>
+      <row>
+        <col id="0">E3</col>
+        <col id="1">52</col>
+      </row>
+      <row>
+        <col id="0">F3</col>
+        <col id="1">53</col>
+      </row>
+      <row>
+        <col id="0">F#3</col>
+        <col id="1">54</col>
+      </row>
+      <row>
+        <col id="0">G3</col>
+        <col id="1">55</col>
+      </row>
+      <row>
+        <col id="0">G#3</col>
+        <col id="1">56</col>
+      </row>
+      <row>
+        <col id="0">A3</col>
+        <col id="1">57</col>
+      </row>
+      <row>
+        <col id="0">A#3</col>
+        <col id="1">58</col>
+      </row>
+      <row>
+        <col id="0">B3</col>
+        <col id="1">59</col>
+      </row>
+      <row>
+        <col id="0">C4</col>
+        <col id="1">60</col>
+      </row>
+      <row>
+        <col id="0">C#4</col>
+        <col id="1">61</col>
+      </row>
+      <row>
+        <col id="0">D4</col>
+        <col id="1">62</col>
+      </row>
+      <row>
+        <col id="0">D#4</col>
+        <col id="1">63</col>
+      </row>
+      <row>
+        <col id="0">E4</col>
+        <col id="1">64</col>
+      </row>
+      <row>
+        <col id="0">F4</col>
+        <col id="1">65</col>
+      </row>
+      <row>
+        <col id="0">F#4</col>
+        <col id="1">66</col>
+      </row>
+      <row>
+        <col id="0">G4</col>
+        <col id="1">67</col>
+      </row>
+      <row>
+        <col id="0">G#4</col>
+        <col id="1">68</col>
+      </row>
+      <row>
+        <col id="0">A4</col>
+        <col id="1">69</col>
+      </row>
+      <row>
+        <col id="0">A#4</col>
+        <col id="1">70</col>
+      </row>
+      <row>
+        <col id="0">B4</col>
+        <col id="1">71</col>
+      </row>
+      <row>
+        <col id="0">C5</col>
+        <col id="1">72</col>
+      </row>
+      <row>
+        <col id="0">C#5</col>
+        <col id="1">73</col>
+      </row>
+      <row>
+        <col id="0">D5</col>
+        <col id="1">74</col>
+      </row>
+      <row>
+        <col id="0">D#5</col>
+        <col id="1">75</col>
+      </row>
+      <row>
+        <col id="0">E5</col>
+        <col id="1">76</col>
+      </row>
+      <row>
+        <col id="0">F5</col>
+        <col id="1">77</col>
+      </row>
+      <row>
+        <col id="0">F#5</col>
+        <col id="1">78</col>
+      </row>
+      <row>
+        <col id="0">G5</col>
+        <col id="1">79</col>
+      </row>
+      <row>
+        <col id="0">G#5</col>
+        <col id="1">80</col>
+      </row>
+      <row>
+        <col id="0">A5</col>
+        <col id="1">81</col>
+      </row>
+      <row>
+        <col id="0">A#5</col>
+        <col id="1">82</col>
+      </row>
+      <row>
+        <col id="0">B5</col>
+        <col id="1">83</col>
+      </row>
+      <row>
+        <col id="0">C6</col>
+        <col id="1">84</col>
+      </row>
+      <row>
+        <col id="0">C#6</col>
+        <col id="1">85</col>
+      </row>
+      <row>
+        <col id="0">D6</col>
+        <col id="1">86</col>
+      </row>
+      <row>
+        <col id="0">D#6</col>
+        <col id="1">87</col>
+      </row>
+      <row>
+        <col id="0">E6</col>
+        <col id="1">88</col>
+      </row>
+      <row>
+        <col id="0">F6</col>
+        <col id="1">89</col>
+      </row>
+      <row>
+        <col id="0">F#6</col>
+        <col id="1">90</col>
+      </row>
+      <row>
+        <col id="0">G6</col>
+        <col id="1">91</col>
+      </row>
+      <row>
+        <col id="0">G#6</col>
+        <col id="1">92</col>
+      </row>
+      <row>
+        <col id="0">A6</col>
+        <col id="1">93</col>
+      </row>
+      <row>
+        <col id="0">A#6</col>
+        <col id="1">94</col>
+      </row>
+      <row>
+        <col id="0">B6</col>
+        <col id="1">95</col>
+      </row>
+      <row>
+        <col id="0">C7</col>
+        <col id="1">96</col>
+      </row>
+      <row>
+        <col id="0">C#7</col>
+        <col id="1">97</col>
+      </row>
+      <row>
+        <col id="0">D7</col>
+        <col id="1">98</col>
+      </row>
+      <row>
+        <col id="0">D#7</col>
+        <col id="1">99</col>
+      </row>
+      <row>
+        <col id="0">E7</col>
+        <col id="1">100</col>
+      </row>
+      <row>
+        <col id="0">F7</col>
+        <col id="1">101</col>
+      </row>
+      <row>
+        <col id="0">F#7</col>
+        <col id="1">102</col>
+      </row>
+      <row>
+        <col id="0">G7</col>
+        <col id="1">103</col>
+      </row>
+      <row>
+        <col id="0">G#7</col>
+        <col id="1">104</col>
+      </row>
+      <row>
+        <col id="0">A7</col>
+        <col id="1">105</col>
+      </row>
+      <row>
+        <col id="0">A#7</col>
+        <col id="1">106</col>
+      </row>
+      <row>
+        <col id="0">B7</col>
+        <col id="1">107</col>
+      </row>
+      <row>
+        <col id="0">C8</col>
+        <col id="1">108</col>
+      </row>
+      <row>
+        <col id="0">C#8</col>
+        <col id="1">109</col>
+      </row>
+      <row>
+        <col id="0">D8</col>
+        <col id="1">110</col>
+      </row>
+      <row>
+        <col id="0">D#8</col>
+        <col id="1">111</col>
+      </row>
+      <row>
+        <col id="0">E8</col>
+        <col id="1">112</col>
+      </row>
+      <row>
+        <col id="0">F8</col>
+        <col id="1">113</col>
+      </row>
+      <row>
+        <col id="0">F#8</col>
+        <col id="1">114</col>
+      </row>
+      <row>
+        <col id="0">G8</col>
+        <col id="1">115</col>
+      </row>
+      <row>
+        <col id="0">G#8</col>
+        <col id="1">116</col>
+      </row>
+      <row>
+        <col id="0">A8</col>
+        <col id="1">117</col>
+      </row>
+      <row>
+        <col id="0">A#8</col>
+        <col id="1">118</col>
+      </row>
+      <row>
+        <col id="0">B8</col>
+        <col id="1">119</col>
+      </row>
+      <row>
+        <col id="0">C9</col>
+        <col id="1">120</col>
+      </row>
+      <row>
+        <col id="0">C#9</col>
+        <col id="1">121</col>
+      </row>
+      <row>
+        <col id="0">D9</col>
+        <col id="1">122</col>
+      </row>
+      <row>
+        <col id="0">D#9</col>
+        <col id="1">123</col>
+      </row>
+      <row>
+        <col id="0">E9</col>
+        <col id="1">124</col>
+      </row>
+      <row>
+        <col id="0">F9</col>
+        <col id="1">125</col>
+      </row>
+      <row>
+        <col id="0">F#9</col>
+        <col id="1">126</col>
+      </row>
+      <row>
+        <col id="0">G9</col>
+        <col id="1">127</col>
+      </row>
+    </data>
+  </object>
   <object class="GtkListStore" id="record_channels_list_store">
     <columns>
       <!-- column-name caption -->
@@ -182,15 +731,15 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     </columns>
     <data>
       <row>
-        <col id="0" translatable="yes" context="Both channels (left and right)">Both</col>
+        <col id="0" translatable="yes" comments="Stereo recording">Stereo</col>
         <col id="1">3</col>
       </row>
       <row>
-        <col id="0" translatable="yes" context="Left channel">Left</col>
+        <col id="0" translatable="yes" comments="Mono recording from left channel">Left</col>
         <col id="1">1</col>
       </row>
       <row>
-        <col id="0" translatable="yes" context="Right channel">Right</col>
+        <col id="0" translatable="yes" comments="Mono recording from right channel">Right</col>
         <col id="1">2</col>
       </row>
     </data>
@@ -356,6 +905,471 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         </child>
         <child>
           <placeholder/>
+        </child>
+      </object>
+    </child>
+  </object>
+  <object class="GtkDialog" id="autosampler_dialog">
+    <property name="can-focus">False</property>
+    <property name="title" translatable="yes" comments="This should only be translated if a non latin alphabet is used">Auto Sampler</property>
+    <property name="resizable">False</property>
+    <property name="modal">True</property>
+    <property name="type-hint">dialog</property>
+    <property name="deletable">False</property>
+    <property name="transient-for">main_window</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can-focus">False</property>
+        <property name="margin-start">6</property>
+        <property name="margin-end">6</property>
+        <property name="margin-top">6</property>
+        <property name="margin-bottom">6</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">6</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can-focus">False</property>
+            <property name="layout-style">end</property>
+            <child>
+              <object class="GtkButton" id="autosampler_dialog_cancel_button">
+                <property name="label" translatable="yes">_Cancel</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="use-underline">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton" id="autosampler_dialog_start_button">
+                <property name="label" translatable="yes">_Start</property>
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="can-default">True</property>
+                <property name="has-default">True</property>
+                <property name="receives-default">False</property>
+                <property name="use-underline">True</property>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">4</property>
+          </packing>
+        </child>
+        <child>
+          <!-- n-columns=2 n-rows=1 -->
+          <object class="GtkGrid">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="margin-bottom">6</property>
+            <property name="column-spacing">6</property>
+            <property name="column-homogeneous">True</property>
+            <child>
+              <object class="GtkFrame">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="vexpand">False</property>
+                <property name="label-xalign">0</property>
+                <property name="shadow-type">in</property>
+                <child>
+                  <!-- n-columns=2 n-rows=5 -->
+                  <object class="GtkGrid">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="valign">start</property>
+                    <property name="margin-start">6</property>
+                    <property name="margin-end">6</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
+                    <property name="vexpand">False</property>
+                    <property name="row-spacing">6</property>
+                    <property name="column-spacing">6</property>
+                    <property name="row-homogeneous">True</property>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="halign">end</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes" context="Auto Sampler" comments="Start MIDI key (note)">Start</property>
+                        <property name="wrap">True</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkComboBox" id="autosampler_dialog_start_combo">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="hexpand">True</property>
+                        <property name="model">notes_list_store</property>
+                        <property name="active">24</property>
+                        <child>
+                          <object class="GtkCellRendererText"/>
+                          <attributes>
+                            <attribute name="text">0</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">2</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="halign">end</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes" context="Auto Sampler" comments="End MIDI key (note)">End</property>
+                        <property name="wrap">True</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">3</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkComboBox" id="autosampler_dialog_end_combo">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="hexpand">True</property>
+                        <property name="model">notes_list_store</property>
+                        <property name="active">36</property>
+                        <child>
+                          <object class="GtkCellRendererText"/>
+                          <attributes>
+                            <attribute name="text">0</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">3</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="halign">end</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes" context="Auto Sampler" comments="Distance between different samples">Distance</property>
+                        <property name="wrap">True</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">4</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="halign">end</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes" context="Auto Sampler" comments="As in MIDI velocity">Velocity</property>
+                        <property name="wrap">True</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkSpinButton" id="autosampler_dialog_distance_spin">
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="adjustment">autosampler_semitones_adj</property>
+                        <property name="climb-rate">1</property>
+                        <property name="value">1</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">4</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkSpinButton" id="autosampler_dialog_velocity_spin">
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="adjustment">autosampler_velocity_adj</property>
+                        <property name="climb-rate">1</property>
+                        <property name="value">100</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="halign">end</property>
+                        <property name="valign">center</property>
+                        <property name="label" translatable="yes" context="Auto Sampler" comments="MIDI channel">Channel</property>
+                        <property name="wrap">True</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkSpinButton" id="autosampler_dialog_channel_spin">
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="hexpand">True</property>
+                        <property name="adjustment">autosampler_midi_channel_adj</property>
+                        <property name="climb-rate">1</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">0</property>
+                      </packing>
+                    </child>
+                  </object>
+                </child>
+                <child type="label">
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="label">MIDI</property>
+                    <attributes>
+                      <attribute name="weight" value="bold"/>
+                    </attributes>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="left-attach">1</property>
+                <property name="top-attach">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="vexpand">True</property>
+                <property name="orientation">vertical</property>
+                <property name="spacing">6</property>
+                <child>
+                  <object class="GtkFrame">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="valign">start</property>
+                    <property name="vexpand">True</property>
+                    <property name="label-xalign">0</property>
+                    <property name="shadow-type">in</property>
+                    <child>
+                      <!-- n-columns=2 n-rows=2 -->
+                      <object class="GtkGrid">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="margin-start">6</property>
+                        <property name="margin-end">6</property>
+                        <property name="margin-top">6</property>
+                        <property name="margin-bottom">6</property>
+                        <property name="row-spacing">6</property>
+                        <property name="column-spacing">6</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">end</property>
+                            <property name="label" translatable="yes">Name</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkEntry" id="autosampler_dialog_name_entry">
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="hexpand">True</property>
+                            <property name="activates-default">True</property>
+                            <property name="input-purpose">alpha</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">end</property>
+                            <property name="label" translatable="yes" comments="Audio channels">Channels</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkComboBox" id="autosampler_dialog_channels_combo">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="hexpand">True</property>
+                            <property name="model">record_channels_list_store</property>
+                            <property name="active">0</property>
+                            <child>
+                              <object class="GtkCellRendererText"/>
+                              <attributes>
+                                <attribute name="text">0</attribute>
+                              </attributes>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">Global</property>
+                        <attributes>
+                          <attribute name="weight" value="bold"/>
+                        </attributes>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkFrame">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="valign">end</property>
+                    <property name="vexpand">True</property>
+                    <property name="label-xalign">0</property>
+                    <property name="shadow-type">in</property>
+                    <child>
+                      <!-- n-columns=2 n-rows=2 -->
+                      <object class="GtkGrid">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="margin-start">6</property>
+                        <property name="margin-end">6</property>
+                        <property name="margin-top">6</property>
+                        <property name="margin-bottom">6</property>
+                        <property name="row-spacing">6</property>
+                        <property name="column-spacing">6</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">end</property>
+                            <property name="valign">center</property>
+                            <property name="label" translatable="yes" context="Auto Sampler" comments="Press key time">Press</property>
+                            <property name="wrap">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">end</property>
+                            <property name="valign">center</property>
+                            <property name="label" translatable="yes" context="Auto Sampler" comments="As the R in ADSR">Release</property>
+                            <property name="wrap">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton" id="autosampler_dialog_press_spin">
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="hexpand">True</property>
+                            <property name="adjustment">autosampler_duration_adj</property>
+                            <property name="climb-rate">0.10</property>
+                            <property name="digits">2</property>
+                            <property name="value">1</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSpinButton" id="autosampler_dialog_release_spin">
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="adjustment">autosampler_release_adj</property>
+                            <property name="climb-rate">0.10</property>
+                            <property name="digits">2</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                    </child>
+                    <child type="label">
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="label" translatable="yes">Duration</property>
+                        <attributes>
+                          <attribute name="weight" value="bold"/>
+                        </attributes>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="left-attach">0</property>
+                <property name="top-attach">0</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
         </child>
       </object>
     </child>
@@ -1363,6 +2377,17 @@ audio-volume-medium-symbolic</property>
                           </packing>
                         </child>
                         <child>
+                          <object class="GtkLabel" id="sample_duration">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">start</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">1</property>
+                          </packing>
+                        </child>
+                        <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
@@ -1373,17 +2398,6 @@ audio-volume-medium-symbolic</property>
                           </object>
                           <packing>
                             <property name="left-attach">0</property>
-                            <property name="top-attach">1</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkLabel" id="sample_duration">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="halign">start</property>
-                          </object>
-                          <packing>
-                            <property name="left-attach">1</property>
                             <property name="top-attach">1</property>
                           </packing>
                         </child>
@@ -1923,7 +2937,7 @@ audio-volume-medium-symbolic</property>
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="label" translatable="yes">Channels</property>
+                <property name="label" translatable="yes" comments="Audio channels">Channels</property>
               </object>
               <packing>
                 <property name="expand">False</property>
