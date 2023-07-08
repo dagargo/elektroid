@@ -32,6 +32,8 @@
 #define MAX_FRAMES_PER_PIXEL 300
 #define EDITOR_SAMPLE_CHANNELS(editor) (((struct sample_info *)editor->audio.control.data)->channels)
 
+struct editor editor;
+
 extern void elektroid_update_audio_status ();
 
 struct editor_y_frame_state
@@ -947,120 +949,119 @@ editor_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
 }
 
 void
-editor_init (struct editor *editor, GtkBuilder * builder)
+editor_init (GtkBuilder * builder)
 {
-  editor->box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
-  editor->waveform_scrolled_window =
+  editor.box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
+  editor.waveform_scrolled_window =
     GTK_WIDGET (gtk_builder_get_object (builder, "waveform_scrolled_window"));
-  editor->waveform =
-    GTK_WIDGET (gtk_builder_get_object (builder, "waveform"));
-  editor->play_button =
+  editor.waveform = GTK_WIDGET (gtk_builder_get_object (builder, "waveform"));
+  editor.play_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "play_button"));
-  editor->stop_button =
+  editor.stop_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "stop_button"));
-  editor->loop_button =
+  editor.loop_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "loop_button"));
-  editor->record_button =
+  editor.record_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "record_button"));
-  editor->autoplay_switch =
+  editor.autoplay_switch =
     GTK_WIDGET (gtk_builder_get_object (builder, "autoplay_switch"));
-  editor->mix_switch =
+  editor.mix_switch =
     GTK_WIDGET (gtk_builder_get_object (builder, "mix_switch"));
-  editor->volume_button =
+  editor.volume_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "volume_button"));
 
-  editor->sample_info_box =
+  editor.sample_info_box =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_info_box"));
-  editor->sample_length =
+  editor.sample_length =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_length"));
-  editor->sample_duration =
+  editor.sample_duration =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_duration"));
-  editor->sample_channels =
+  editor.sample_channels =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_channels"));
-  editor->sample_samplerate =
+  editor.sample_samplerate =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_samplerate"));
-  editor->sample_bitdepth =
+  editor.sample_bitdepth =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_bitdepth"));
 
-  editor->menu = GTK_MENU (gtk_builder_get_object (builder, "editor_menu"));
-  editor->play_menuitem =
+  editor.menu = GTK_MENU (gtk_builder_get_object (builder, "editor_menu"));
+  editor.play_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "editor_play_menuitem"));
-  editor->delete_menuitem =
+  editor.delete_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "editor_delete_menuitem"));
-  editor->save_menuitem =
+  editor.save_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "editor_save_menuitem"));
 
-  editor->record_dialog =
+  editor.record_dialog =
     GTK_DIALOG (gtk_builder_get_object (builder, "record_dialog"));
-  editor->record_channels_combo =
+  editor.record_channels_combo =
     GTK_WIDGET (gtk_builder_get_object (builder, "record_channels_combo"));
-  editor->record_channels_list_store =
+  editor.record_channels_list_store =
     GTK_LIST_STORE (gtk_builder_get_object
 		    (builder, "record_channels_list_store"));
-  editor->record_dialog_cancel_button =
+  editor.record_dialog_cancel_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "record_dialog_cancel_button"));
-  editor->record_dialog_record_button =
+  editor.record_dialog_record_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "record_dialog_record_button"));
 
-  g_signal_connect (editor->waveform, "draw",
-		    G_CALLBACK (editor_draw_waveform), editor);
-  gtk_widget_add_events (editor->waveform, GDK_SCROLL_MASK);
-  g_signal_connect (editor->waveform, "scroll-event",
-		    G_CALLBACK (editor_waveform_scroll), editor);
-  g_signal_connect (editor->play_button, "clicked",
-		    G_CALLBACK (editor_play_clicked), editor);
-  g_signal_connect (editor->stop_button, "clicked",
-		    G_CALLBACK (editor_stop_clicked), editor);
-  g_signal_connect (editor->loop_button, "clicked",
-		    G_CALLBACK (editor_loop_clicked), editor);
-  g_signal_connect (editor->record_button, "clicked",
-		    G_CALLBACK (editor_record_clicked), editor);
-  g_signal_connect (editor->autoplay_switch, "state-set",
-		    G_CALLBACK (editor_autoplay_clicked), editor);
-  g_signal_connect (editor->mix_switch, "state-set",
-		    G_CALLBACK (editor_mix_clicked), editor);
-  editor->volume_changed_handler = g_signal_connect (editor->volume_button,
-						     "value_changed",
-						     G_CALLBACK
-						     (editor_set_volume),
-						     editor);
+  g_signal_connect (editor.waveform, "draw",
+		    G_CALLBACK (editor_draw_waveform), &editor);
+  gtk_widget_add_events (editor.waveform, GDK_SCROLL_MASK);
+  g_signal_connect (editor.waveform, "scroll-event",
+		    G_CALLBACK (editor_waveform_scroll), &editor);
+  g_signal_connect (editor.play_button, "clicked",
+		    G_CALLBACK (editor_play_clicked), &editor);
+  g_signal_connect (editor.stop_button, "clicked",
+		    G_CALLBACK (editor_stop_clicked), &editor);
+  g_signal_connect (editor.loop_button, "clicked",
+		    G_CALLBACK (editor_loop_clicked), &editor);
+  g_signal_connect (editor.record_button, "clicked",
+		    G_CALLBACK (editor_record_clicked), &editor);
+  g_signal_connect (editor.autoplay_switch, "state-set",
+		    G_CALLBACK (editor_autoplay_clicked), &editor);
+  g_signal_connect (editor.mix_switch, "state-set",
+		    G_CALLBACK (editor_mix_clicked), &editor);
+  editor.volume_changed_handler = g_signal_connect (editor.volume_button,
+						    "value_changed",
+						    G_CALLBACK
+						    (editor_set_volume),
+						    &editor);
 
-  g_signal_connect (editor->waveform_scrolled_window, "size-allocate",
-		    G_CALLBACK (editor_on_size_allocate), editor);
-  gtk_widget_add_events (editor->waveform, GDK_BUTTON_PRESS_MASK);
-  g_signal_connect (editor->waveform, "button-press-event",
-		    G_CALLBACK (editor_button_press), editor);
-  gtk_widget_add_events (editor->waveform, GDK_BUTTON_RELEASE_MASK);
-  g_signal_connect (editor->waveform, "button-release-event",
-		    G_CALLBACK (editor_button_release), editor);
-  gtk_widget_add_events (editor->waveform, GDK_POINTER_MOTION_MASK);
-  g_signal_connect (editor->waveform, "motion-notify-event",
-		    G_CALLBACK (editor_motion_notify), editor);
-  g_signal_connect (editor->waveform_scrolled_window, "key-press-event",
-		    G_CALLBACK (editor_key_press), editor);
+  g_signal_connect (editor.waveform_scrolled_window, "size-allocate",
+		    G_CALLBACK (editor_on_size_allocate), &editor);
+  gtk_widget_add_events (editor.waveform, GDK_BUTTON_PRESS_MASK);
+  g_signal_connect (editor.waveform, "button-press-event",
+		    G_CALLBACK (editor_button_press), &editor);
+  gtk_widget_add_events (editor.waveform, GDK_BUTTON_RELEASE_MASK);
+  g_signal_connect (editor.waveform, "button-release-event",
+		    G_CALLBACK (editor_button_release), &editor);
+  gtk_widget_add_events (editor.waveform, GDK_POINTER_MOTION_MASK);
+  g_signal_connect (editor.waveform, "motion-notify-event",
+		    G_CALLBACK (editor_motion_notify), &editor);
+  g_signal_connect (editor.waveform_scrolled_window, "key-press-event",
+		    G_CALLBACK (editor_key_press), &editor);
 
-  g_signal_connect (editor->play_menuitem, "activate",
-		    G_CALLBACK (editor_play_clicked), editor);
-  g_signal_connect (editor->delete_menuitem, "activate",
-		    G_CALLBACK (editor_delete_clicked), editor);
-  g_signal_connect (editor->save_menuitem, "activate",
-		    G_CALLBACK (editor_save_clicked), editor);
+  g_signal_connect (editor.play_menuitem, "activate",
+		    G_CALLBACK (editor_play_clicked), &editor);
+  g_signal_connect (editor.delete_menuitem, "activate",
+		    G_CALLBACK (editor_delete_clicked), &editor);
+  g_signal_connect (editor.save_menuitem, "activate",
+		    G_CALLBACK (editor_save_clicked), &editor);
 
-  editor_loop_clicked (editor->loop_button, editor);
-  gtk_switch_set_active (GTK_SWITCH (editor->autoplay_switch),
-			 editor->preferences->autoplay);
-  gtk_switch_set_active (GTK_SWITCH (editor->mix_switch),
-			 editor->preferences->mix);
+  editor_loop_clicked (editor.loop_button, &editor);
+  gtk_switch_set_active (GTK_SWITCH (editor.autoplay_switch),
+			 editor.preferences->autoplay);
+  gtk_switch_set_active (GTK_SWITCH (editor.mix_switch),
+			 editor.preferences->mix);
 
-  g_signal_connect (editor->record_dialog_record_button, "clicked",
-		    G_CALLBACK (editor_start_record), editor);
-  g_signal_connect (editor->record_dialog_cancel_button, "clicked",
-		    G_CALLBACK (editor_cancel_record), editor);
+  g_signal_connect (editor.record_dialog_record_button, "clicked",
+		    G_CALLBACK (editor_start_record), &editor);
+  g_signal_connect (editor.record_dialog_cancel_button, "clicked",
+		    G_CALLBACK (editor_cancel_record), &editor);
 
-  audio_init (&editor->audio, editor_set_volume_callback,
-	      elektroid_update_audio_status, editor);
+  audio_init (&editor.audio, editor_set_volume_callback,
+	      elektroid_update_audio_status, &editor);
 }
 
 void

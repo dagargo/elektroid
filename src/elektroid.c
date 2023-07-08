@@ -180,7 +180,6 @@ static const gchar *hostname;
 
 static struct browser remote_browser;
 static struct browser local_browser;
-static struct editor editor;
 
 static struct backend backend;
 static struct preferences preferences;
@@ -3854,7 +3853,7 @@ elektroid_run (int argc, char *argv[])
   remote_browser.sensitive_widgets =
     g_slist_append (remote_browser.sensitive_widgets, fs_combo);
 
-  editor_init (&editor, builder);
+  editor_init (builder);
   progress_init (builder);
 
   gtk_widget_set_sensitive (remote_box, FALSE);
