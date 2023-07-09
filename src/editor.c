@@ -530,7 +530,6 @@ editor_record_clicked (GtkWidget * object, gpointer data)
 {
   gint res;
   guint channel_mask;
-  GtkTreeIter iter;
   struct editor *editor = data;
 
   if (editor->audio_src != AUDIO_SRC_NONE)
@@ -551,6 +550,14 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   gtk_widget_set_sensitive (editor->play_button, FALSE);
   gtk_widget_set_visible (editor->sample_info_box, FALSE);
 
+  guint options =
+    guirecorder_get_channel_mask (editor->guirecorder.channels_combo) |
+    RECORD_MONITOR_ONLY;
+
+  audio_stop_playback (&editor->audio);
+  audio_start_recording (&editor->audio, options,
+			 guirecorder_monitor_notifier, &editor->guirecorder);
+
   res = gtk_dialog_run (editor->record_dialog);
   gtk_widget_hide (GTK_WIDGET (editor->record_dialog));
   if (res == GTK_RESPONSE_CANCEL)
@@ -559,11 +566,8 @@ editor_record_clicked (GtkWidget * object, gpointer data)
       return;
     }
 
-  gtk_combo_box_get_active_iter (GTK_COMBO_BOX
-				 (editor->record_channels_combo), &iter);
-  gtk_tree_model_get (GTK_TREE_MODEL (editor->record_channels_list_store),
-		      &iter, 1, &channel_mask, -1);
-
+  channel_mask =
+    guirecorder_get_channel_mask (editor->guirecorder.channels_combo);
   audio_start_recording (&editor->audio, channel_mask, NULL, NULL);
   g_timeout_add (200, editor_update_ui_on_record, data);
 }
@@ -993,11 +997,12 @@ editor_init (GtkBuilder * builder)
 
   editor.record_dialog =
     GTK_DIALOG (gtk_builder_get_object (builder, "record_dialog"));
-  editor.record_channels_combo =
-    GTK_WIDGET (gtk_builder_get_object (builder, "record_channels_combo"));
-  editor.record_channels_list_store =
-    GTK_LIST_STORE (gtk_builder_get_object
-		    (builder, "record_channels_list_store"));
+  editor.guirecorder.channels_combo =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "record_dialog_channels_combo"));
+  editor.guirecorder.monitor_levelbar =
+    GTK_LEVEL_BAR (gtk_builder_get_object
+		   (builder, "record_dialog_monitor_levelbar"));
   editor.record_dialog_cancel_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "record_dialog_cancel_button"));
@@ -1055,6 +1060,8 @@ editor_init (GtkBuilder * builder)
   gtk_switch_set_active (GTK_SWITCH (editor.mix_switch),
 			 editor.preferences->mix);
 
+  g_signal_connect (editor.guirecorder.channels_combo, "changed",
+		    G_CALLBACK (guirecorder_channels_changed), &editor.audio);
   g_signal_connect (editor.record_dialog_record_button, "clicked",
 		    G_CALLBACK (editor_start_record), &editor);
   g_signal_connect (editor.record_dialog_cancel_button, "clicked",

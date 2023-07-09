@@ -18,6 +18,9 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef GUIRECORDER_H
+#define GUIRECORDER_H
+
 #include <gtk/gtk.h>
 
 struct guirecorder
@@ -32,3 +35,5 @@ void guirecorder_monitor_notifier (void *, gdouble);
 guint guirecorder_get_channel_mask (GtkWidget *);
 
 void guirecorder_channels_changed (GtkWidget *, gpointer);
+
+#endif

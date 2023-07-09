@@ -23,6 +23,7 @@
 
 #include "audio.h"
 #include "browser.h"
+#include "guirecorder.h"
 #include "preferences.h"
 
 struct editor
@@ -55,8 +56,7 @@ struct editor
   GtkWidget *delete_menuitem;
   GtkWidget *save_menuitem;
   GtkDialog *record_dialog;
-  GtkWidget *record_channels_combo;
-  GtkListStore *record_channels_list_store;
+  struct guirecorder guirecorder;
   GtkWidget *record_dialog_cancel_button;
   GtkWidget *record_dialog_record_button;
   guint zoom;
