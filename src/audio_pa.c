@@ -214,7 +214,8 @@ audio_stop_recording (struct audio *audio)
 
 void
 audio_start_recording (struct audio *audio, guint channel_mask,
-		       void (*monitor) (gdouble))
+		       audio_monitor_notifier monitor_notifier,
+		       void *monitor_data)
 {
   pa_operation *operation;
 
@@ -224,7 +225,8 @@ audio_start_recording (struct audio *audio, guint channel_mask,
     }
 
   audio_stop_recording (audio);
-  audio_reset_record_buffer (audio, channel_mask, monitor);
+  audio_reset_record_buffer (audio, channel_mask, monitor_notifier,
+			     monitor_data);
   audio_prepare (audio, AUDIO_STATUS_PREPARING_RECORD);
 
   debug_print (1, "Starting recording (max %d frames)...\n", audio->frames);

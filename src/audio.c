@@ -186,7 +186,7 @@ audio_read_from_input (struct audio *audio, void *buffer, gint frames)
   monitor_frames += frames;
   if (audio->monitor && monitor_frames >= FRAMES_TO_MONITOR)
     {
-      audio->monitor (level / (gdouble) SHRT_MAX);
+      audio->monitor (audio->monitor_data, level / (gdouble) SHRT_MAX);
       level = 0;
       monitor_frames -= FRAMES_TO_MONITOR;
     }
@@ -200,7 +200,8 @@ audio_read_from_input (struct audio *audio, void *buffer, gint frames)
 
 void
 audio_reset_record_buffer (struct audio *audio, guint record_options,
-			   void (*monitor) (gdouble))
+			   void (*monitor) (void *, gdouble),
+			   void *monitor_data)
 {
   struct sample_info *sample_info = audio->control.data;
   guint channels = (record_options & RECORD_STEREO) == 3 ? 2 : 1;
@@ -211,6 +212,7 @@ audio_reset_record_buffer (struct audio *audio, guint record_options,
   audio->pos = 0;
   audio->record_options = record_options;
   audio->monitor = monitor;
+  audio->monitor_data = monitor_data;
   sample_info->loopstart = 0;
   sample_info->loopend = 0;
   sample_info->looptype = 0;

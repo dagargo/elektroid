@@ -564,7 +564,7 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   gtk_tree_model_get (GTK_TREE_MODEL (editor->record_channels_list_store),
 		      &iter, 1, &channel_mask, -1);
 
-  audio_start_recording (&editor->audio, channel_mask, NULL);
+  audio_start_recording (&editor->audio, channel_mask, NULL, NULL);
   g_timeout_add (200, editor_update_ui_on_record, data);
 }
 

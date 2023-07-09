@@ -29,6 +29,8 @@
 #include <pulse/pulseaudio.h>
 #endif
 
+typedef void (*audio_monitor_notifier) (void *, gdouble);
+
 #define MAX_RECORDING_TIME_S 30
 #define AUDIO_BUF_FRAMES 512
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
@@ -94,20 +96,23 @@ struct audio
   gint64 sel_len;
   gboolean mono_mix;
   guint record_options;
-  void (*monitor) (gdouble);
+  void (*monitor) (void *, gdouble);
+  void *monitor_data;
 };
 
 void audio_start_playback (struct audio *);
 
 void audio_stop_playback (struct audio *);
 
-void audio_start_recording (struct audio *, guint, void (*)(gdouble));
+void audio_start_recording (struct audio *, guint, audio_monitor_notifier,
+			    void *);
 
 void audio_stop_recording (struct audio *);
 
 gboolean audio_check (struct audio *);
 
-void audio_reset_record_buffer (struct audio *, guint, void (*)(gdouble));
+void audio_reset_record_buffer (struct audio *, guint, audio_monitor_notifier,
+				void *);
 
 void audio_init (struct audio *, void (*)(gpointer, gdouble),
 		 void (*)(), gpointer);
