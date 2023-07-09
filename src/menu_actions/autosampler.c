@@ -30,6 +30,7 @@
 static GtkDialog *autosampler_dialog;
 static GtkEntry *autosampler_dialog_name_entry;
 static GtkWidget *autosampler_dialog_channels_combo;
+static GtkLevelBar *autosampler_dialog_monitor_levelbar;
 static GtkWidget *autosampler_dialog_channel_spin;
 static GtkWidget *autosampler_dialog_start_combo;
 static GtkWidget *autosampler_dialog_end_combo;
@@ -96,7 +97,7 @@ autosampler_runner (gpointer user_data)
       note = g_value_get_string (&value);
       debug_print (1, "Recording note %s (%d)...\n", note, i);
 
-      audio_start_recording (&editor.audio, data->channel_mask);
+      audio_start_recording (&editor.audio, data->channel_mask, NULL);
       backend_send_note_on (data->backend, data->channel, i, data->velocity);
       //Add some extra time to deal with runtime delays.
       usleep ((data->press + 0.25) * 1000000);
@@ -158,21 +159,52 @@ autosampler_runner (gpointer user_data)
   return NULL;
 }
 
+static gboolean
+autosampler_set_monitor_level (gpointer data)
+{
+  gtk_level_bar_set_value (autosampler_dialog_monitor_levelbar,
+			   *((gdouble *) data));
+  return FALSE;
+}
+
+static void
+autosampler_notify_monitor (gdouble value)
+{
+  static double monitor_level;
+  monitor_level = value;
+  g_idle_add (autosampler_set_monitor_level, &monitor_level);
+}
+
+static guint
+autosampler_get_channel_mask ()
+{
+  guint channel_mask;
+  GtkTreeIter iter;
+  gtk_combo_box_get_active_iter (GTK_COMBO_BOX
+				 (autosampler_dialog_channels_combo), &iter);
+  gtk_tree_model_get (GTK_TREE_MODEL (record_channels_list_store),
+		      &iter, 1, &channel_mask, -1);
+  return channel_mask;
+}
+
 static void
 autosampler_callback (GtkWidget * object, gpointer user_data)
 {
   gint res;
   struct autosampler_data *data = g_malloc (sizeof (struct autosampler_data));
   data->backend = user_data;
+  guint options = autosampler_get_channel_mask () | RECORD_MONITOR_ONLY;
 
   audio_stop_playback (&editor.audio);
   audio_stop_recording (&editor.audio);
+  audio_start_recording (&editor.audio, options, autosampler_notify_monitor);
 
   gtk_entry_set_text (autosampler_dialog_name_entry, "");
   gtk_widget_grab_focus (GTK_WIDGET (autosampler_dialog_name_entry));
   gtk_widget_set_sensitive (autosampler_dialog_start_button, FALSE);
   res = gtk_dialog_run (GTK_DIALOG (autosampler_dialog));
   gtk_widget_hide (GTK_WIDGET (autosampler_dialog));
+  audio_stop_recording (&editor.audio);
   if (res != GTK_RESPONSE_ACCEPT)
     {
       return;
@@ -218,6 +250,15 @@ autosampler_callback (GtkWidget * object, gpointer user_data)
 }
 
 static void
+autosampler_channels_changed (GtkWidget * object, gpointer data)
+{
+  guint options = autosampler_get_channel_mask () | RECORD_MONITOR_ONLY;
+  g_mutex_lock (&editor.audio.control.mutex);
+  editor.audio.record_options = options;
+  g_mutex_unlock (&editor.audio.control.mutex);
+}
+
+static void
 autosampler_dialog_name_changed (GtkWidget * object, gpointer data)
 {
   size_t len = strlen (gtk_entry_get_text (autosampler_dialog_name_entry));
@@ -240,6 +281,9 @@ autosampler_configure_gui (struct backend *backend, GtkBuilder * builder)
   autosampler_dialog_channels_combo =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "autosampler_dialog_channels_combo"));
+  autosampler_dialog_monitor_levelbar = GTK_LEVEL_BAR (gtk_builder_get_object
+						       (builder,
+							"autosampler_dialog_monitor_levelbar"));
   autosampler_dialog_channel_spin =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "autosampler_dialog_channel_spin"));
@@ -280,6 +324,8 @@ autosampler_configure_gui (struct backend *backend, GtkBuilder * builder)
 
   g_signal_connect (autosampler_dialog_name_entry, "changed",
 		    G_CALLBACK (autosampler_dialog_name_changed), NULL);
+  g_signal_connect (autosampler_dialog_channels_combo, "changed",
+		    G_CALLBACK (autosampler_channels_changed), NULL);
 }
 
 struct menu_action *

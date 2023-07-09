@@ -979,7 +979,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
               <object class="GtkFrame">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="vexpand">False</property>
+                <property name="valign">start</property>
                 <property name="label-xalign">0</property>
                 <property name="shadow-type">in</property>
                 <child>
@@ -1167,19 +1167,16 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
               <object class="GtkBox">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="vexpand">True</property>
                 <property name="orientation">vertical</property>
                 <property name="spacing">6</property>
                 <child>
                   <object class="GtkFrame">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="valign">start</property>
-                    <property name="vexpand">True</property>
                     <property name="label-xalign">0</property>
                     <property name="shadow-type">in</property>
                     <child>
-                      <!-- n-columns=2 n-rows=2 -->
+                      <!-- n-columns=2 n-rows=3 -->
                       <object class="GtkGrid">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
@@ -1189,6 +1186,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <property name="margin-bottom">6</property>
                         <property name="row-spacing">6</property>
                         <property name="column-spacing">6</property>
+                        <property name="row-homogeneous">True</property>
                         <child>
                           <object class="GtkLabel">
                             <property name="visible">True</property>
@@ -1245,6 +1243,30 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="top-attach">1</property>
                           </packing>
                         </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">end</property>
+                            <property name="label" translatable="yes" comments="Input audio monitor">Monitor</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLevelBar" id="autosampler_dialog_monitor_levelbar">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="valign">center</property>
+                            <property name="vexpand">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">2</property>
+                          </packing>
+                        </child>
                       </object>
                     </child>
                     <child type="label">
@@ -1268,8 +1290,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                   <object class="GtkFrame">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="valign">end</property>
-                    <property name="vexpand">True</property>
                     <property name="label-xalign">0</property>
                     <property name="shadow-type">in</property>
                     <child>

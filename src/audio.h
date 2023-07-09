@@ -37,6 +37,11 @@
 #define AUDIO_SAMPLE_CHANNELS(audio) (((struct sample_info *)(audio)->control.data)->channels)
 #define AUDIO_SAMPLE_BYTES_PER_FRAME(audio) (BYTES_PER_FRAME(AUDIO_SAMPLE_CHANNELS(audio)))
 
+#define RECORD_LEFT 0x1
+#define RECORD_RIGHT 0x2
+#define RECORD_STEREO (RECORD_LEFT | RECORD_RIGHT)
+#define RECORD_MONITOR_ONLY 0x4
+
 enum audio_src
 {
   AUDIO_SRC_NONE,
@@ -88,20 +93,21 @@ struct audio
   guint32 sel_start;
   gint64 sel_len;
   gboolean mono_mix;
-  guint record_channel_mask;
+  guint record_options;
+  void (*monitor) (gdouble);
 };
 
 void audio_start_playback (struct audio *);
 
 void audio_stop_playback (struct audio *);
 
-void audio_start_recording (struct audio *, guint);
+void audio_start_recording (struct audio *, guint, void (*)(gdouble));
 
 void audio_stop_recording (struct audio *);
 
 gboolean audio_check (struct audio *);
 
-void audio_reset_record_buffer (struct audio *, guint);
+void audio_reset_record_buffer (struct audio *, guint, void (*)(gdouble));
 
 void audio_init (struct audio *, void (*)(gpointer, gdouble),
 		 void (*)(), gpointer);

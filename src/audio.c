@@ -21,6 +21,8 @@
 #include <math.h>
 #include "audio.h"
 
+#define FRAMES_TO_MONITOR 10000
+
 void audio_init_int (struct audio *);
 void audio_destroy_int (struct audio *);
 const gchar *audio_name ();
@@ -128,34 +130,65 @@ end:
 void
 audio_read_from_input (struct audio *audio, void *buffer, gint frames)
 {
+  static gint monitor_frames = 0;
+  static gint16 level = 0;
+  gint16 *data;
   guint recorded_frames, remaining_frames, recording_frames;
-  guint bytes_per_frame = (audio->record_channel_mask == 3 ? 2 : 1) *
-    sizeof (gint16);
+  guint channels =
+    (audio->record_options & RECORD_STEREO) == RECORD_STEREO ? 2 : 1;
+  guint bytes_per_frame = channels * sizeof (gint16);
+  guint record = !(audio->record_options & RECORD_MONITOR_ONLY);
 
-  debug_print (2, "Reading %d frames...\n", frames);
+  debug_print (2, "Reading %d frames (recording = %d)...\n", frames, record);
 
   g_mutex_lock (&audio->control.mutex);
   recorded_frames = audio->sample->len / bytes_per_frame;
   remaining_frames = audio->frames - recorded_frames;
   recording_frames = remaining_frames > frames ? frames : remaining_frames;
 
-  if (audio->record_channel_mask == 3)
+  if (channels == 2)
     {
-      g_byte_array_append (audio->sample, buffer,
-			   recording_frames * bytes_per_frame);
+      if (record)
+	{
+	  g_byte_array_append (audio->sample, buffer,
+			       recording_frames * bytes_per_frame);
+	}
+      data = buffer;
+      for (gint i = 0; i < frames * 2; i++, data++)
+	{
+	  if (*data > level)
+	    {
+	      level = *data;
+	    }
+	}
     }
-  else
+  else if (channels == 1)
     {
-      gint16 *data = buffer;
-      if (audio->record_channel_mask == 2)
+      data = buffer;
+      if (audio->record_options & RECORD_RIGHT)
 	{
 	  data++;
 	}
       for (gint i = 0; i < recording_frames; i++, data += 2)
 	{
-	  g_byte_array_append (audio->sample, (guint8 *) data,
-			       sizeof (gint16));
+	  if (record)
+	    {
+	      g_byte_array_append (audio->sample, (guint8 *) data,
+				   sizeof (gint16));
+	    }
+	  if (*data > level)
+	    {
+	      level = *data;
+	    }
 	}
+    }
+
+  monitor_frames += frames;
+  if (audio->monitor && monitor_frames >= FRAMES_TO_MONITOR)
+    {
+      audio->monitor (level / (gdouble) SHRT_MAX);
+      level = 0;
+      monitor_frames -= FRAMES_TO_MONITOR;
     }
   g_mutex_unlock (&audio->control.mutex);
 
@@ -166,16 +199,18 @@ audio_read_from_input (struct audio *audio, void *buffer, gint frames)
 }
 
 void
-audio_reset_record_buffer (struct audio *audio, guint channel_mask)
+audio_reset_record_buffer (struct audio *audio, guint record_options,
+			   void (*monitor) (gdouble))
 {
   struct sample_info *sample_info = audio->control.data;
-  guint channels = channel_mask == 3 ? 2 : 1;
+  guint channels = (record_options & RECORD_STEREO) == 3 ? 2 : 1;
   audio->frames = audio->samplerate * MAX_RECORDING_TIME_S;
   guint size = audio->frames * channels * sizeof (gint16);
   g_byte_array_set_size (audio->sample, size);
   audio->sample->len = 0;
   audio->pos = 0;
-  audio->record_channel_mask = channel_mask;
+  audio->record_options = record_options;
+  audio->monitor = monitor;
   sample_info->loopstart = 0;
   sample_info->loopend = 0;
   sample_info->looptype = 0;
@@ -352,13 +387,15 @@ void
 audio_finish_recording (struct audio *audio)
 {
   struct sample_info *sample_info = audio->control.data;
+  guint record = !(audio->record_options & RECORD_MONITOR_ONLY);
 
   g_mutex_lock (&audio->control.mutex);
   audio->status = AUDIO_STATUS_STOPPED;
   audio->frames = audio->sample->len / AUDIO_SAMPLE_BYTES_PER_FRAME (audio);
   sample_info->frames = audio->frames;
-
-  audio_normalize (audio);
-
+  if (record)
+    {
+      audio_normalize (audio);
+    }
   g_mutex_unlock (&audio->control.mutex);
 }
