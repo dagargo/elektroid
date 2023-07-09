@@ -41,7 +41,6 @@ static GtkWidget *autosampler_dialog_release_spin;
 static GtkWidget *autosampler_dialog_cancel_button;
 static GtkWidget *autosampler_dialog_start_button;
 static GtkListStore *notes_list_store;
-static GtkListStore *record_channels_list_store;
 
 void elektroid_new_sysex_thread (GThreadFunc f, gpointer user_data);
 gpointer elektroid_join_sysex_thread ();
@@ -180,10 +179,13 @@ autosampler_get_channel_mask ()
 {
   guint channel_mask;
   GtkTreeIter iter;
+  GtkTreeModel *model;
   gtk_combo_box_get_active_iter (GTK_COMBO_BOX
 				 (autosampler_dialog_channels_combo), &iter);
-  gtk_tree_model_get (GTK_TREE_MODEL (record_channels_list_store),
-		      &iter, 1, &channel_mask, -1);
+  model =
+    gtk_combo_box_get_model (GTK_COMBO_BOX
+			     (autosampler_dialog_channels_combo));
+  gtk_tree_model_get (model, &iter, 1, &channel_mask, -1);
   return channel_mask;
 }
 
@@ -210,12 +212,7 @@ autosampler_callback (GtkWidget * object, gpointer user_data)
       return;
     }
 
-  gtk_combo_box_get_active_iter (GTK_COMBO_BOX
-				 (autosampler_dialog_channels_combo),
-				 &data->iter);
-  gtk_tree_model_get (GTK_TREE_MODEL (record_channels_list_store),
-		      &data->iter, 1, &data->channel_mask, -1);
-
+  data->channel_mask = autosampler_get_channel_mask ();
   data->name = gtk_entry_get_text (autosampler_dialog_name_entry);
   data->channel =
     gtk_spin_button_get_value (GTK_SPIN_BUTTON
@@ -313,9 +310,6 @@ autosampler_configure_gui (struct backend *backend, GtkBuilder * builder)
 		(builder, "autosampler_dialog_start_button"));
   notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
-  record_channels_list_store =
-    GTK_LIST_STORE (gtk_builder_get_object
-		    (builder, "record_channels_list_store"));
 
   g_signal_connect (autosampler_dialog_start_button, "clicked",
 		    G_CALLBACK (autosampler_run), NULL);
