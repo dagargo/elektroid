@@ -222,22 +222,40 @@ editor_set_audio_mono_mix (struct editor *editor)
 }
 
 static gboolean
+editor_loading_completed_no_lock (struct editor *editor)
+{
+  guint32 actual, frames, expected;
+  actual = editor->audio.sample->len;
+  frames = editor->audio.frames;
+  expected = frames * AUDIO_SAMPLE_BYTES_PER_FRAME (&editor->audio);
+  return actual == expected && frames;
+}
+
+static gboolean
 editor_update_ui_on_load (gpointer data)
 {
   gboolean ready_to_play;
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
 
-  g_mutex_lock (&audio->control.mutex);
-  ready_to_play = audio->frames >= FRAMES_TO_PLAY || (!audio->control.active
-						      && audio->frames > 0);
-  g_mutex_unlock (&audio->control.mutex);
-
-  editor_set_sample_properties_on_load (editor);
-  editor_set_audio_mono_mix (editor);
-
-  if (ready_to_play)
+  if (!editor->ready)
     {
+      g_mutex_lock (&audio->control.mutex);
+      ready_to_play = audio->frames >= FRAMES_TO_PLAY
+	|| editor_loading_completed_no_lock (editor);
+      g_mutex_unlock (&audio->control.mutex);
+
+      if (!ready_to_play)
+	{
+	  return FALSE;
+	}
+
+      editor->ready = TRUE;
+
+      editor_set_sample_properties_on_load (editor);
+      editor_set_audio_mono_mix (editor);
+      editor_set_layout_width (editor);
+
       if (audio_check (&editor->audio))
 	{
 	  elektroid_set_audio_controls_on_load (TRUE);
@@ -246,10 +264,9 @@ editor_update_ui_on_load (gpointer data)
 	{
 	  audio_start_playback (&editor->audio);
 	}
-      return FALSE;
     }
 
-  return TRUE;
+  return FALSE;
 }
 
 static void
@@ -418,16 +435,11 @@ editor_queue_draw (gpointer data)
 }
 
 static void
-editor_redraw (struct job_control *control, gpointer data)
-{
-  g_idle_add (editor_queue_draw, data);
-}
-
-static void
 editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
 {
   set_job_control_progress_no_sync (control, p, NULL);
-  editor_redraw (control, data);
+  g_idle_add (editor_queue_draw, data);
+  g_idle_add (editor_update_ui_on_load, data);
 }
 
 static gpointer
@@ -439,13 +451,12 @@ editor_load_sample_runner (gpointer data)
   struct sample_info *sample_info = audio->control.data;
 
   editor->dirty = FALSE;
+  editor->ready = FALSE;
   editor->zoom = 1;
   editor->audio.sel_start = 0;
 
   sample_params.samplerate = audio->samplerate;
   sample_params.channels = 0;	//Automatic
-
-  g_timeout_add (200, editor_update_ui_on_load, editor);
 
   g_mutex_lock (&audio->control.mutex);
   audio->control.active = TRUE;
@@ -468,8 +479,6 @@ editor_load_sample_runner (gpointer data)
   audio->control.active = FALSE;
   g_mutex_unlock (&audio->control.mutex);
 
-  editor_set_layout_width (editor);
-
   return NULL;
 }
 
@@ -481,26 +490,15 @@ editor_play_clicked (GtkWidget * object, gpointer data)
   audio_start_playback (&editor->audio);
 }
 
-static gboolean
-editor_update_ui_on_record (gpointer data)
+static void
+editor_update_ui_on_record (gpointer data, gdouble value)
 {
-  struct editor *editor = data;
-  guint32 read, frames, bytes;
+  g_idle_add (editor_queue_draw, data);
 
-  gtk_widget_queue_draw (editor->waveform);
-  g_mutex_lock (&editor->audio.control.mutex);
-  read = editor->audio.sample->len;
-  frames = editor->audio.frames;
-  g_mutex_unlock (&editor->audio.control.mutex);
-
-  bytes = frames * AUDIO_SAMPLE_BYTES_PER_FRAME (&editor->audio);
-  if (bytes != read)
+  if (editor_loading_completed_no_lock (data))
     {
-      return TRUE;
+      g_idle_add (editor_update_ui_on_load, data);
     }
-
-  editor_update_ui_on_load (editor);
-  return FALSE;
 }
 
 static void
@@ -542,6 +540,7 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   audio_stop_playback (&editor->audio);
   editor_set_source (editor, AUDIO_SRC_LOCAL);
 
+  editor->ready = FALSE;
   editor->dirty = TRUE;
   editor->zoom = 1;
   editor->audio.sel_start = 0;
@@ -568,8 +567,8 @@ editor_record_clicked (GtkWidget * object, gpointer data)
 
   channel_mask =
     guirecorder_get_channel_mask (editor->guirecorder.channels_combo);
-  audio_start_recording (&editor->audio, channel_mask, NULL, NULL);
-  g_timeout_add (200, editor_update_ui_on_record, data);
+  audio_start_recording (&editor->audio, channel_mask,
+			 editor_update_ui_on_record, data);
 }
 
 static void
@@ -767,14 +766,13 @@ editor_on_size_allocate (GtkWidget * self, GtkAllocation * allocation,
 static gboolean
 editor_loading_completed (struct editor *editor)
 {
-  guint loaded_frames;
-  guint channels = AUDIO_SAMPLE_CHANNELS (&(editor->audio));
+  gboolean res;
 
   g_mutex_lock (&editor->audio.control.mutex);
-  loaded_frames = editor->audio.sample->len / (channels * sizeof (gint16));
+  res = editor_loading_completed_no_lock (editor);
   g_mutex_unlock (&editor->audio.control.mutex);
 
-  return editor->audio.frames == loaded_frames && editor->audio.frames;
+  return res;
 }
 
 static gboolean

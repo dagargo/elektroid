@@ -62,6 +62,7 @@ struct editor
   guint zoom;
   gboolean selecting;
   gboolean dirty;
+  gboolean ready;
 };
 
 extern struct editor editor;

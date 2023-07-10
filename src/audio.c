@@ -399,5 +399,9 @@ audio_finish_recording (struct audio *audio)
     {
       audio_normalize (audio);
     }
+  if (audio->monitor)
+    {
+      audio->monitor (audio->monitor_data, 0.0);
+    }
   g_mutex_unlock (&audio->control.mutex);
 }
