@@ -32,7 +32,7 @@ guirecorder_set_monitor_level (gpointer data)
 }
 
 void
-guirecorder_monitor_notifier (void *recorder, gdouble value)
+guirecorder_monitor_notifier (gpointer recorder, gdouble value)
 {
   struct guirecorder *guirecorder = recorder;
   guirecorder->level = value;

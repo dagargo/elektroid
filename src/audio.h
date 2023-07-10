@@ -29,7 +29,7 @@
 #include <pulse/pulseaudio.h>
 #endif
 
-typedef void (*audio_monitor_notifier) (void *, gdouble);
+typedef void (*audio_monitor_notifier) (gpointer, gdouble);
 
 #define MAX_RECORDING_TIME_S 30
 #define AUDIO_BUF_FRAMES 512
