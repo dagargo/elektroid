@@ -579,16 +579,10 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   if (control)
     {
       g_mutex_lock (&control->mutex);
-
-      if (control->active)
-	{
-	  cb (control, 1.0, cb_data);
-	}
-      else
+      if (!control->active)
 	{
 	  g_byte_array_set_size (sample, 0);
 	}
-
       g_mutex_unlock (&control->mutex);
     }
 
