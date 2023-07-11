@@ -561,6 +561,7 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   gtk_widget_hide (GTK_WIDGET (editor->record_dialog));
   if (res == GTK_RESPONSE_CANCEL)
     {
+      audio_stop_recording (&editor->audio);
       editor_set_source (editor, AUDIO_SRC_NONE);
       return;
     }
