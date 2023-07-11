@@ -45,6 +45,8 @@ struct editor
   GtkWidget *sample_info_box;
   GtkWidget *sample_length;
   GtkWidget *sample_duration;
+  GtkWidget *sample_loopstart;
+  GtkWidget *sample_loopend;
   GtkWidget *sample_channels;
   GtkWidget *sample_samplerate;
   GtkWidget *sample_bitdepth;
@@ -57,7 +59,7 @@ struct editor
   GtkWidget *record_dialog_cancel_button;
   GtkWidget *record_dialog_record_button;
   guint zoom;
-  gboolean selecting;
+  guint operation;
   gboolean dirty;
   gboolean ready;
   struct browser *browser;
