@@ -138,12 +138,13 @@ audio_read_from_input (struct audio *audio, void *buffer, gint frames)
     (audio->record_options & RECORD_STEREO) == RECORD_STEREO ? 2 : 1;
   guint bytes_per_frame = channels * sizeof (gint16);
   guint record = !(audio->record_options & RECORD_MONITOR_ONLY);
+  struct sample_info *sample_info = audio->control.data;
 
   debug_print (2, "Reading %d frames (recording = %d)...\n", frames, record);
 
   g_mutex_lock (&audio->control.mutex);
   recorded_frames = audio->sample->len / bytes_per_frame;
-  remaining_frames = audio->frames - recorded_frames;
+  remaining_frames = sample_info->frames - recorded_frames;
   recording_frames = remaining_frames > frames ? frames : remaining_frames;
 
   if (channels == 2)

@@ -1334,12 +1334,7 @@ elektroid_reset_sample (struct browser *browser)
 {
   if (EDITOR_SOURCE_IS_BROWSER (browser))
     {
-      audio_stop_playback (&editor.audio);
-      audio_stop_recording (&editor.audio);
-      editor_stop_load_thread (&editor);
-      audio_reset_sample (&editor.audio);
-      gtk_widget_queue_draw (editor.waveform);
-      editor_set_source (&editor, AUDIO_SRC_NONE);
+      editor_reset_sample (&editor);
       elektroid_audio_widgets_reset (&editor);
     }
 }

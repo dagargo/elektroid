@@ -241,8 +241,9 @@ editor_update_ui_on_load (gpointer data)
   if (!editor->ready)
     {
       g_mutex_lock (&audio->control.mutex);
-      ready_to_play = audio->frames >= FRAMES_TO_PLAY
-	|| editor_loading_completed_no_lock (editor);
+      ready_to_play = editor->audio.sample->len >=
+	FRAMES_TO_PLAY * AUDIO_SAMPLE_BYTES_PER_FRAME (&editor->audio) ||
+	editor_loading_completed_no_lock (editor);
       g_mutex_unlock (&audio->control.mutex);
 
       if (!ready_to_play)
@@ -523,6 +524,17 @@ editor_cancel_record (GtkWidget * object, gpointer data)
   gtk_dialog_response (editor->record_dialog, GTK_RESPONSE_CANCEL);
 }
 
+void
+editor_reset_sample (struct editor *editor)
+{
+  audio_stop_playback (&editor->audio);
+  audio_stop_recording (&editor->audio);
+  editor_stop_load_thread (editor);
+  audio_reset_sample (&editor->audio);
+  gtk_widget_queue_draw (editor->waveform);
+  editor_set_source (editor, AUDIO_SRC_NONE);
+}
+
 static void
 editor_record_clicked (GtkWidget * object, gpointer data)
 {
@@ -534,11 +546,12 @@ editor_record_clicked (GtkWidget * object, gpointer data)
     {
       browser_clear_selection (editor->local_browser);
       browser_clear_selection (editor->remote_browser);
-      audio_reset_sample (&editor->audio);
+      editor_reset_sample (editor);
     }
 
-  audio_stop_playback (&editor->audio);
   editor_set_source (editor, AUDIO_SRC_LOCAL);
+  gtk_widget_set_sensitive (editor->play_button, FALSE);
+  gtk_widget_set_visible (editor->sample_info_box, FALSE);
 
   editor->ready = FALSE;
   editor->dirty = TRUE;
@@ -546,14 +559,10 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   editor->audio.sel_start = 0;
   editor->audio.sel_len = 0;
 
-  gtk_widget_set_sensitive (editor->play_button, FALSE);
-  gtk_widget_set_visible (editor->sample_info_box, FALSE);
-
   guint options =
     guirecorder_get_channel_mask (editor->guirecorder.channels_combo) |
     RECORD_MONITOR_ONLY;
 
-  audio_stop_playback (&editor->audio);
   audio_start_recording (&editor->audio, options,
 			 guirecorder_monitor_notifier, &editor->guirecorder);
 

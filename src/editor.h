@@ -77,6 +77,8 @@ void editor_stop_load_thread (struct editor *editor);
 
 void editor_init (GtkBuilder * builder);
 
+void editor_reset_sample (struct editor *);
+
 void editor_destroy (struct editor *);
 
 void editor_set_audio_mono_mix (struct editor *editor);
