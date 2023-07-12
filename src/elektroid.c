@@ -130,7 +130,7 @@ static gpointer elektroid_upload_task_runner (gpointer);
 static gpointer elektroid_download_task_runner (gpointer);
 static void elektroid_update_progress (struct job_control *);
 static void elektroid_cancel_all_tasks (GtkWidget *, gpointer);
-static void elektroid_reset_sample (struct browser *);
+static void elektroid_clear_selection (struct browser *);
 
 static const struct option ELEKTROID_OPTIONS[] = {
   {"local-directory", 1, NULL, 'l'},
@@ -255,7 +255,7 @@ elektroid_set_local_browser_file_extensions (gint sel_fs)
     }
   if (updated)
     {
-      elektroid_reset_sample (&local_browser);
+      elektroid_clear_selection (&local_browser);
     }
 }
 
@@ -277,7 +277,7 @@ elektroid_set_remote_browser_file_extensions (gint sel_fs)
     }
   if (updated)
     {
-      elektroid_reset_sample (&remote_browser);
+      elektroid_clear_selection (&remote_browser);
     }
 }
 
@@ -587,7 +587,7 @@ elektroid_refresh_devices (GtkWidget * widget, gpointer data)
       elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (&backend);
       ma_clear_device_menu_actions (ma_data.box);
-      elektroid_reset_sample (&remote_browser);
+      elektroid_clear_selection (&remote_browser);
       browser_reset (&remote_browser);
     }
   elektroid_check_backend ();	//This triggers the actual devices refresh if there is no backend
@@ -852,16 +852,6 @@ elektroid_show_about (GtkWidget * object, gpointer data)
 {
   gtk_dialog_run (GTK_DIALOG (about_dialog));
   gtk_widget_hide (GTK_WIDGET (about_dialog));
-}
-
-void
-elektroid_set_audio_controls_on_load (gboolean sensitive)
-{
-  gtk_widget_set_sensitive (local_browser.play_menuitem,
-			    editor.audio.src == AUDIO_SRC_LOCAL);
-  gtk_widget_set_sensitive (remote_browser.play_menuitem,
-			    editor.audio.src == AUDIO_SRC_REMOTE);
-  gtk_widget_set_sensitive (editor.play_button, sensitive);
 }
 
 static gint
@@ -1325,16 +1315,14 @@ elektroid_audio_widgets_reset ()
   gtk_widget_set_sensitive (remote_browser.open_menuitem, FALSE);
   gtk_widget_set_sensitive (local_browser.play_menuitem, FALSE);
   gtk_widget_set_sensitive (remote_browser.play_menuitem, FALSE);
-  gtk_widget_set_sensitive (editor.play_button, FALSE);
-  gtk_widget_set_visible (editor.sample_info_box, FALSE);
 }
 
 static void
-elektroid_reset_sample (struct browser *browser)
+elektroid_clear_selection (struct browser *browser)
 {
   if (EDITOR_SOURCE_IS_BROWSER (browser))
     {
-      editor_reset_sample (&editor);
+      editor_reset (&editor, AUDIO_SRC_NONE);
       elektroid_audio_widgets_reset (&editor);
     }
 }
@@ -1371,7 +1359,7 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 
       if (item.type == ELEKTROID_DIR)
 	{
-	  elektroid_reset_sample (browser);
+	  elektroid_clear_selection (browser);
 	}
       else
 	{
@@ -1382,13 +1370,8 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	    {
 	      if (audio_fs)
 		{
-		  audio_stop_playback (&editor.audio);
-		  audio_stop_recording (&editor.audio);
-		  editor_stop_load_thread (&editor);
-		  audio_reset_sample (&editor.audio);
+		  editor_reset (&editor, EDITOR_GET_SOURCE (browser));
 		  strcpy (editor.audio.path, sample_path);
-		  editor.audio.src = EDITOR_GET_SOURCE (browser);
-		  editor_set_source (&editor, EDITOR_GET_SOURCE (browser));
 		  editor_start_load_thread (&editor);
 		}
 	    }
@@ -1397,7 +1380,7 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
     }
   else
     {
-      elektroid_reset_sample (browser);
+      elektroid_clear_selection (browser);
     }
 }
 

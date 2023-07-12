@@ -50,7 +50,6 @@ struct editor_set_volume_data
   gdouble volume;
 };
 
-extern void elektroid_set_audio_controls_on_load (gboolean sensitive);
 extern gchar *elektroid_ask_name (const gchar * title, const gchar * value,
 				  struct browser *browser);
 
@@ -100,14 +99,16 @@ editor_set_widget_source (GtkWidget * widget, enum audio_src audio_src)
 }
 
 void
-editor_set_source (struct editor *editor, enum audio_src audio_src)
+editor_reset (struct editor *editor, enum audio_src audio_src)
 {
-  editor->audio_src = audio_src;
+  editor_set_layout_width_to_val (editor, 1);
+  audio_stop_playback (&editor->audio);
+  audio_stop_recording (&editor->audio);
+  editor_stop_load_thread (editor);
+  audio_reset_sample (&editor->audio);
+  editor->audio.src = audio_src;
 
-  if (audio_src == AUDIO_SRC_NONE)
-    {
-      editor_set_layout_width_to_val (editor, 1);
-    }
+  gtk_widget_queue_draw (editor->waveform);
 
   editor_set_widget_source (editor->autoplay_switch, audio_src);
   editor_set_widget_source (editor->mix_switch, audio_src);
@@ -117,6 +118,9 @@ editor_set_source (struct editor *editor, enum audio_src audio_src)
   editor_set_widget_source (editor->record_button, audio_src);
   editor_set_widget_source (editor->volume_button, audio_src);
   editor_set_widget_source (editor->waveform, audio_src);
+
+  gtk_widget_set_sensitive (editor->play_button, FALSE);
+  gtk_widget_set_visible (editor->sample_info_box, FALSE);
 }
 
 static void
@@ -259,7 +263,11 @@ editor_update_ui_on_load (gpointer data)
 
       if (audio_check (&editor->audio))
 	{
-	  elektroid_set_audio_controls_on_load (TRUE);
+	  gtk_widget_set_sensitive (editor->local_browser->play_menuitem,
+				    editor->audio.src == AUDIO_SRC_LOCAL);
+	  gtk_widget_set_sensitive (editor->remote_browser->play_menuitem,
+				    editor->audio.src == AUDIO_SRC_REMOTE);
+	  gtk_widget_set_sensitive (editor->play_button, TRUE);
 	}
       if (editor->preferences->autoplay)
 	{
@@ -292,7 +300,7 @@ static gboolean
 editor_get_y_frame (GByteArray * sample, guint channels, guint frame,
 		    guint len, struct editor_y_frame_state *state)
 {
-  guint loaded_frames = sample->len / (2 * channels);
+  guint loaded_frames = sample->len / BYTES_PER_FRAME (channels);
   gshort *data = (gshort *) sample->data;
   gshort *s = &data[frame * channels];
   len = len < MAX_FRAMES_PER_PIXEL ? len : MAX_FRAMES_PER_PIXEL;
@@ -352,10 +360,11 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
   debug_print (3, "Drawing waveform from %d with %dx zoom...\n",
 	       start, editor->zoom);
 
-  g_mutex_lock (&audio->control.mutex);
-
   width = gtk_widget_get_allocated_width (widget);
   height = gtk_widget_get_allocated_height (widget);
+
+  g_mutex_lock (&audio->control.mutex);
+
   channels = AUDIO_SAMPLE_CHANNELS (&(editor->audio));
   gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &layout_width, NULL);
   x_ratio = audio->frames / (gdouble) layout_width;
@@ -495,7 +504,6 @@ static void
 editor_update_ui_on_record (gpointer data, gdouble value)
 {
   g_idle_add (editor_queue_draw, data);
-
   if (editor_loading_completed_no_lock (data))
     {
       g_idle_add (editor_update_ui_on_load, data);
@@ -524,60 +532,51 @@ editor_cancel_record (GtkWidget * object, gpointer data)
   gtk_dialog_response (editor->record_dialog, GTK_RESPONSE_CANCEL);
 }
 
-void
-editor_reset_sample (struct editor *editor)
+static gboolean
+editor_reset_for_recording (gpointer data)
 {
-  audio_stop_playback (&editor->audio);
-  audio_stop_recording (&editor->audio);
-  editor_stop_load_thread (editor);
-  audio_reset_sample (&editor->audio);
-  gtk_widget_queue_draw (editor->waveform);
-  editor_set_source (editor, AUDIO_SRC_NONE);
+  guint options;
+  struct editor *editor = data;
+  editor_reset (data, AUDIO_SRC_LOCAL);
+  editor->ready = FALSE;
+  editor->dirty = TRUE;
+  editor->zoom = 1;
+  editor->audio.sel_start = 0;
+  editor->audio.sel_len = 0;
+  options = guirecorder_get_channel_mask (editor->guirecorder.channels_combo);
+  audio_start_recording (&editor->audio, options | RECORD_MONITOR_ONLY,
+			 guirecorder_monitor_notifier, &editor->guirecorder);
+  return FALSE;
 }
 
 static void
 editor_record_clicked (GtkWidget * object, gpointer data)
 {
   gint res;
-  guint channel_mask;
+  guint options;
   struct editor *editor = data;
 
-  if (editor->audio_src != AUDIO_SRC_NONE)
-    {
-      browser_clear_selection (editor->local_browser);
-      browser_clear_selection (editor->remote_browser);
-      editor_reset_sample (editor);
-    }
-
-  editor_set_source (editor, AUDIO_SRC_LOCAL);
-  gtk_widget_set_sensitive (editor->play_button, FALSE);
-  gtk_widget_set_visible (editor->sample_info_box, FALSE);
-
-  editor->ready = FALSE;
-  editor->dirty = TRUE;
-  editor->zoom = 1;
-  editor->audio.sel_start = 0;
-  editor->audio.sel_len = 0;
-
-  guint options =
-    guirecorder_get_channel_mask (editor->guirecorder.channels_combo) |
-    RECORD_MONITOR_ONLY;
-
-  audio_start_recording (&editor->audio, options,
-			 guirecorder_monitor_notifier, &editor->guirecorder);
+  browser_clear_selection (editor->local_browser);
+  browser_clear_selection (editor->remote_browser);
+  //Running editor_reset_for_recording asynchronously is needed as calling
+  //browser_clear_selection might raise some signals that will eventually call
+  //editor_reset with AUDIO_SRC_NONE.
+  //If using g_idle_add, a call to editor_reset with AUDIO_SRC_LOCAL will happen
+  //always later than those.
+  //All these calls will happen at the time the dialog is shown.
+  g_idle_add (editor_reset_for_recording, editor);
 
   res = gtk_dialog_run (editor->record_dialog);
   gtk_widget_hide (GTK_WIDGET (editor->record_dialog));
   if (res == GTK_RESPONSE_CANCEL)
     {
       audio_stop_recording (&editor->audio);
-      editor_set_source (editor, AUDIO_SRC_NONE);
+      editor_reset (editor, AUDIO_SRC_NONE);
       return;
     }
 
-  channel_mask =
-    guirecorder_get_channel_mask (editor->guirecorder.channels_combo);
-  audio_start_recording (&editor->audio, channel_mask,
+  options = guirecorder_get_channel_mask (editor->guirecorder.channels_combo);
+  audio_start_recording (&editor->audio, options,
 			 editor_update_ui_on_record, data);
 }
 
@@ -811,7 +810,7 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
       g_idle_add (editor_queue_draw, data);
     }
   else if (event->button == GDK_BUTTON_SECONDARY &&
-	   editor->audio_src != AUDIO_SRC_REMOTE)
+	   editor->audio.src != AUDIO_SRC_REMOTE)
     {
       gtk_widget_set_sensitive (editor->delete_menuitem,
 				editor->audio.sel_len > 0);
@@ -889,7 +888,7 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
       return;
     }
 
-  if (editor->audio_src == AUDIO_SRC_REMOTE)
+  if (editor->audio.src == AUDIO_SRC_REMOTE)
     {
       return;
     }
@@ -1077,6 +1076,8 @@ editor_init (GtkBuilder * builder)
 
   audio_init (&editor.audio, editor_set_volume_callback,
 	      elektroid_update_audio_status, &editor);
+
+  editor_reset (&editor, AUDIO_SRC_NONE);
 }
 
 void
