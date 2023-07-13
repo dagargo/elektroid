@@ -26,13 +26,6 @@
 #include "guirecorder.h"
 #include "preferences.h"
 
-enum editor_src
-{
-  EDITOR_SRC_NONE,
-  EDITOR_SRC_LOCAL,
-  EDITOR_SRC_REMOTE
-};
-
 struct editor
 {
   struct audio audio;
@@ -67,12 +60,12 @@ struct editor
   gboolean selecting;
   gboolean dirty;
   gboolean ready;
-  enum editor_src src;
+  struct browser *browser;
 };
 
 extern struct editor editor;
 
-void editor_reset (struct editor *editor, enum editor_src editor_src);
+void editor_reset (struct editor *editor, struct browser *browser);
 
 void editor_play_clicked (GtkWidget * object, gpointer data);
 

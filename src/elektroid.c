@@ -39,8 +39,6 @@
 #include "progress.h"
 
 #define EDITOR_VISIBLE (remote_browser.fs_ops->options & FS_OPTION_AUDIO_PLAYER ? TRUE : FALSE)
-#define EDITOR_GET_SOURCE(browser) (browser == &local_browser ? EDITOR_SRC_LOCAL : EDITOR_SRC_REMOTE)
-#define EDITOR_SOURCE_IS_BROWSER(browser) (EDITOR_GET_SOURCE(browser) == editor.src)
 
 #define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : path_type_from_backend (&backend))
 
@@ -1151,7 +1149,7 @@ elektroid_button_press_update_menu (struct browser *browser,
   if (gtk_tree_selection_path_is_selected (selection, path))
     {
       if (browser_get_selected_items_count (browser) == 1 &&
-	  !EDITOR_SOURCE_IS_BROWSER (browser))
+	  editor.browser != browser)
 	{
 	  browser->check_selection (NULL);
 	}
@@ -1317,9 +1315,9 @@ elektroid_audio_widgets_reset ()
 static void
 elektroid_clear_selection (struct browser *browser)
 {
-  if (EDITOR_SOURCE_IS_BROWSER (browser))
+  if (editor.browser == browser)
     {
-      editor_reset (&editor, EDITOR_SRC_NONE);
+      editor_reset (&editor, NULL);
       elektroid_audio_widgets_reset (&editor);
     }
 }
@@ -1362,12 +1360,12 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	{
 	  enum path_type type = path_type_from_backend (browser->backend);
 	  sample_path = path_chain (type, browser->dir, item.name);
-	  if (strcmp (editor.audio.path, sample_path)
-	      || EDITOR_GET_SOURCE (browser) != editor.src)
+	  if (strcmp (editor.audio.path, sample_path) ||
+	      editor.browser != browser)
 	    {
 	      if (audio_fs)
 		{
-		  editor_reset (&editor, EDITOR_GET_SOURCE (browser));
+		  editor_reset (&editor, browser);
 		  strcpy (editor.audio.path, sample_path);
 		  editor_start_load_thread (&editor);
 		}
