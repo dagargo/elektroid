@@ -37,8 +37,6 @@ struct editor
 {
   struct audio audio;
   struct preferences *preferences;
-  struct browser *local_browser;
-  struct browser *remote_browser;
   GThread *thread;
   GtkWidget *box;
   GtkWidget *waveform_scrolled_window;

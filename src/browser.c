@@ -21,6 +21,9 @@
 #include "browser.h"
 #include "backend.h"
 
+struct browser local_browser;
+struct browser remote_browser;
+
 struct browser_add_dentry_item_data
 {
   struct browser *browser;

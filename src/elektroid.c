@@ -178,9 +178,6 @@ static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
 
 static const gchar *hostname;
 
-static struct browser remote_browser;
-static struct browser local_browser;
-
 static struct backend backend;
 static struct preferences preferences;
 static struct ma_data ma_data;
@@ -3948,8 +3945,6 @@ main (int argc, char *argv[])
       preferences.local_dir = get_system_startup_path (local_dir);
     }
   editor.preferences = &preferences;
-  editor.local_browser = &local_browser;
-  editor.remote_browser = &remote_browser;
 
   ret = elektroid_run (argc, argv);
 

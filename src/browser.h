@@ -81,6 +81,9 @@ struct browser
   GtkWidget *delete_menuitem;
 };
 
+extern struct browser local_browser;
+extern struct browser remote_browser;
+
 void browser_set_item (GtkTreeModel *, GtkTreeIter *, struct item *);
 
 gint browser_get_selected_items_count (struct browser *);

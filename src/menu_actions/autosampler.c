@@ -112,8 +112,7 @@ autosampler_runner (gpointer user_data)
       guint len = editor.audio.frames - start;
       audio_delete_range (&editor.audio, start, len);
 
-      gchar *dir = path_chain (PATH_SYSTEM, editor.local_browser->dir,
-			       data->name);
+      gchar *dir = path_chain (PATH_SYSTEM, local_browser.dir, data->name);
       local_mkdir (NULL, dir);
       //We add the note number to ensure lexicographical order.
       snprintf (filename, LABEL_MAX, "%03d %s %s.wav", s, data->name, note);

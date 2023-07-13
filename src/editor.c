@@ -89,7 +89,8 @@ editor_set_widget_source (GtkWidget * widget, enum editor_src editor_src)
 
   if (GTK_IS_SWITCH (widget))
     {
-      class = editor_src == EDITOR_SRC_LOCAL ? "local_switch" : "remote_switch";
+      class =
+	editor_src == EDITOR_SRC_LOCAL ? "local_switch" : "remote_switch";
     }
   else
     {
@@ -214,8 +215,8 @@ editor_set_audio_mono_mix (struct editor *editor)
 {
   if (editor->audio.frames > 0)
     {
-      gboolean remote_mono = editor->remote_browser->fs_ops &&
-	!(editor->remote_browser->fs_ops->options & FS_OPTION_STEREO);
+      gboolean remote_mono = remote_browser.fs_ops &&
+	!(remote_browser.fs_ops->options & FS_OPTION_STEREO);
       gboolean mono_mix = (editor->preferences->mix && remote_mono) ||
 	AUDIO_SAMPLE_CHANNELS (&editor->audio) != 2;
 
@@ -263,9 +264,9 @@ editor_update_ui_on_load (gpointer data)
 
       if (audio_check (&editor->audio))
 	{
-	  gtk_widget_set_sensitive (editor->local_browser->play_menuitem,
+	  gtk_widget_set_sensitive (local_browser.play_menuitem,
 				    editor->src == EDITOR_SRC_LOCAL);
-	  gtk_widget_set_sensitive (editor->remote_browser->play_menuitem,
+	  gtk_widget_set_sensitive (remote_browser.play_menuitem,
 				    editor->src == EDITOR_SRC_REMOTE);
 	  gtk_widget_set_sensitive (editor->play_button, TRUE);
 	}
@@ -556,8 +557,8 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   guint options;
   struct editor *editor = data;
 
-  browser_clear_selection (editor->local_browser);
-  browser_clear_selection (editor->remote_browser);
+  browser_clear_selection (&local_browser);
+  browser_clear_selection (&remote_browser);
   //Running editor_reset_for_recording asynchronously is needed as calling
   //browser_clear_selection might raise some signals that will eventually call
   //editor_reset with EDITOR_SRC_NONE.
@@ -919,7 +920,7 @@ editor_save_clicked (GtkWidget * object, gpointer data)
     {
       //This is a recording.
       gchar *name = elektroid_ask_name (_("Save Sample"), "sample.wav",
-					editor->local_browser);
+					&local_browser);
       if (!name)
 	{
 	  return;
