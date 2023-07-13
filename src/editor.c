@@ -70,7 +70,7 @@ editor_set_layout_width (struct editor *editor)
 }
 
 static void
-editor_set_widget_source (GtkWidget * widget, enum audio_src audio_src)
+editor_set_widget_source (GtkWidget * widget, enum editor_src editor_src)
 {
   const char *class;
   GtkStyleContext *context = gtk_widget_get_style_context (widget);
@@ -82,42 +82,42 @@ editor_set_widget_source (GtkWidget * widget, enum audio_src audio_src)
     }
   g_list_free (list);
 
-  if (audio_src == AUDIO_SRC_NONE)
+  if (editor_src == EDITOR_SRC_NONE)
     {
       return;
     }
 
   if (GTK_IS_SWITCH (widget))
     {
-      class = audio_src == AUDIO_SRC_LOCAL ? "local_switch" : "remote_switch";
+      class = editor_src == EDITOR_SRC_LOCAL ? "local_switch" : "remote_switch";
     }
   else
     {
-      class = audio_src == AUDIO_SRC_LOCAL ? "local" : "remote";
+      class = editor_src == EDITOR_SRC_LOCAL ? "local" : "remote";
     }
   gtk_style_context_add_class (context, class);
 }
 
 void
-editor_reset (struct editor *editor, enum audio_src audio_src)
+editor_reset (struct editor *editor, enum editor_src editor_src)
 {
   editor_set_layout_width_to_val (editor, 1);
   audio_stop_playback (&editor->audio);
   audio_stop_recording (&editor->audio);
   editor_stop_load_thread (editor);
   audio_reset_sample (&editor->audio);
-  editor->audio.src = audio_src;
+  editor->src = editor_src;
 
   gtk_widget_queue_draw (editor->waveform);
 
-  editor_set_widget_source (editor->autoplay_switch, audio_src);
-  editor_set_widget_source (editor->mix_switch, audio_src);
-  editor_set_widget_source (editor->play_button, audio_src);
-  editor_set_widget_source (editor->stop_button, audio_src);
-  editor_set_widget_source (editor->loop_button, audio_src);
-  editor_set_widget_source (editor->record_button, audio_src);
-  editor_set_widget_source (editor->volume_button, audio_src);
-  editor_set_widget_source (editor->waveform, audio_src);
+  editor_set_widget_source (editor->autoplay_switch, editor_src);
+  editor_set_widget_source (editor->mix_switch, editor_src);
+  editor_set_widget_source (editor->play_button, editor_src);
+  editor_set_widget_source (editor->stop_button, editor_src);
+  editor_set_widget_source (editor->loop_button, editor_src);
+  editor_set_widget_source (editor->record_button, editor_src);
+  editor_set_widget_source (editor->volume_button, editor_src);
+  editor_set_widget_source (editor->waveform, editor_src);
 
   gtk_widget_set_sensitive (editor->play_button, FALSE);
   gtk_widget_set_visible (editor->sample_info_box, FALSE);
@@ -264,9 +264,9 @@ editor_update_ui_on_load (gpointer data)
       if (audio_check (&editor->audio))
 	{
 	  gtk_widget_set_sensitive (editor->local_browser->play_menuitem,
-				    editor->audio.src == AUDIO_SRC_LOCAL);
+				    editor->src == EDITOR_SRC_LOCAL);
 	  gtk_widget_set_sensitive (editor->remote_browser->play_menuitem,
-				    editor->audio.src == AUDIO_SRC_REMOTE);
+				    editor->src == EDITOR_SRC_REMOTE);
 	  gtk_widget_set_sensitive (editor->play_button, TRUE);
 	}
       if (editor->preferences->autoplay)
@@ -537,7 +537,7 @@ editor_reset_for_recording (gpointer data)
 {
   guint options;
   struct editor *editor = data;
-  editor_reset (data, AUDIO_SRC_LOCAL);
+  editor_reset (data, EDITOR_SRC_LOCAL);
   editor->ready = FALSE;
   editor->dirty = TRUE;
   editor->zoom = 1;
@@ -560,8 +560,8 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   browser_clear_selection (editor->remote_browser);
   //Running editor_reset_for_recording asynchronously is needed as calling
   //browser_clear_selection might raise some signals that will eventually call
-  //editor_reset with AUDIO_SRC_NONE.
-  //If using g_idle_add, a call to editor_reset with AUDIO_SRC_LOCAL will happen
+  //editor_reset with EDITOR_SRC_NONE.
+  //If using g_idle_add, a call to editor_reset with EDITOR_SRC_LOCAL will happen
   //always later than those.
   //All these calls will happen at the time the dialog is shown.
   g_idle_add (editor_reset_for_recording, editor);
@@ -571,7 +571,7 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   if (res == GTK_RESPONSE_CANCEL)
     {
       audio_stop_recording (&editor->audio);
-      editor_reset (editor, AUDIO_SRC_NONE);
+      editor_reset (editor, EDITOR_SRC_NONE);
       return;
     }
 
@@ -810,7 +810,7 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
       g_idle_add (editor_queue_draw, data);
     }
   else if (event->button == GDK_BUTTON_SECONDARY &&
-	   editor->audio.src != AUDIO_SRC_REMOTE)
+	   editor->src != EDITOR_SRC_REMOTE)
     {
       gtk_widget_set_sensitive (editor->delete_menuitem,
 				editor->audio.sel_len > 0);
@@ -888,7 +888,7 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
       return;
     }
 
-  if (editor->audio.src == AUDIO_SRC_REMOTE)
+  if (editor->src == EDITOR_SRC_REMOTE)
     {
       return;
     }
@@ -1077,7 +1077,7 @@ editor_init (GtkBuilder * builder)
   audio_init (&editor.audio, editor_set_volume_callback,
 	      elektroid_update_audio_status, &editor);
 
-  editor_reset (&editor, AUDIO_SRC_NONE);
+  editor_reset (&editor, EDITOR_SRC_NONE);
 }
 
 void

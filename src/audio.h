@@ -44,13 +44,6 @@ typedef void (*audio_monitor_notifier) (gpointer, gdouble);
 #define RECORD_STEREO (RECORD_LEFT | RECORD_RIGHT)
 #define RECORD_MONITOR_ONLY 0x4
 
-enum audio_src
-{
-  AUDIO_SRC_NONE,
-  AUDIO_SRC_LOCAL,
-  AUDIO_SRC_REMOTE
-};
-
 enum audio_status
 {
   AUDIO_STATUS_PREPARING_PLAYBACK,
@@ -90,7 +83,6 @@ struct audio
   guint32 release_frames;
   struct job_control control;	//Used to synchronize access to sample, frames, loop and pos members.
   gchar path[PATH_MAX];
-  enum audio_src src;
   enum audio_status status;
   guint32 sel_start;
   gint64 sel_len;
