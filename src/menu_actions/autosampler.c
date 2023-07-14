@@ -210,12 +210,12 @@ autosampler_callback (GtkWidget * object, gpointer user_data)
 				 (autosampler_dialog_start_combo),
 				 &data->iter);
 
-  progress_new_sysex_thread (autosampler_runner, data);
+  progress_run (autosampler_runner, data);
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Auto Sampler"));
   gtk_label_set_text (GTK_LABEL (progress_label), _("Recording..."));
   gtk_dialog_run (GTK_DIALOG (progress_dialog));
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  progress_join_sysex_thread ();
+  progress_join_thread ();
 }
 
 static void

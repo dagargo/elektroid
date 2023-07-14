@@ -21,7 +21,7 @@
 #include <glib/gi18n.h>
 #include "progress.h"
 
-struct progress_sysex_thread_data
+struct progress_progress_thread_data
 {
   GThreadFunc f;
   gpointer data;
@@ -31,26 +31,25 @@ struct sysex_transfer sysex_transfer;
 GtkDialog *progress_dialog;
 GtkWidget *progress_bar;
 GtkWidget *progress_label;
-GtkWidget *progress_dialog_cancel_button;
 
-static GThread *sysex_thread;
+static GThread *progress_thread;
 
 gpointer
-progress_join_sysex_thread ()
+progress_join_thread ()
 {
   gpointer output = NULL;
 
   debug_print (1, "Stopping SysEx thread...\n");
-  if (sysex_thread)
+  if (progress_thread)
     {
-      output = g_thread_join (sysex_thread);
+      output = g_thread_join (progress_thread);
     }
-  sysex_thread = NULL;
+  progress_thread = NULL;
 
   return output;
 }
 
-void
+static void
 progress_stop_running_sysex (GtkDialog * dialog, gint response_id,
 			     gpointer data)
 {
@@ -61,14 +60,14 @@ progress_stop_running_sysex (GtkDialog * dialog, gint response_id,
 }
 
 void
-progress_stop_sysex_thread ()
+progress_stop_thread ()
 {
   progress_stop_running_sysex (NULL, 0, NULL);
-  progress_join_sysex_thread ();
+  progress_join_thread ();
 }
 
 void
-progress_progress_dialog_close (gpointer data)
+progress_dialog_close (gpointer data)
 {
   gtk_label_set_text (GTK_LABEL (progress_label), _("Cancelling..."));
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
@@ -125,6 +124,7 @@ progress_update (gpointer data)
 void
 progress_init (GtkBuilder * builder)
 {
+  GtkWidget *progress_dialog_cancel_button;
   progress_dialog =
     GTK_DIALOG (gtk_builder_get_object (builder, "progress_dialog"));
   progress_dialog_cancel_button =
@@ -136,28 +136,28 @@ progress_init (GtkBuilder * builder)
     GTK_WIDGET (gtk_builder_get_object (builder, "progress_label"));
 
   g_signal_connect (progress_dialog_cancel_button, "clicked",
-		    G_CALLBACK (progress_progress_dialog_close), NULL);
+		    G_CALLBACK (progress_dialog_close), NULL);
   g_signal_connect (progress_dialog, "response",
 		    G_CALLBACK (progress_stop_running_sysex), NULL);
 }
 
 static gboolean
-elektroid_new_sysex_thread_gsourcefunc (gpointer user_data)
+elektroid_new_progress_thread_gsourcefunc (gpointer user_data)
 {
-  struct progress_sysex_thread_data *data = user_data;
+  struct progress_progress_thread_data *data = user_data;
   debug_print (1, "Creating SysEx thread...\n");
-  sysex_thread = g_thread_new ("sysex_thread", data->f, data->data);
+  progress_thread = g_thread_new ("progress_thread", data->f, data->data);
   g_free (data);
   return FALSE;
 }
 
 //Using this before a call to gtk_dialog_run ensures that the threads starts after the dialog is being run.
 void
-progress_new_sysex_thread (GThreadFunc f, gpointer user_data)
+progress_run (GThreadFunc f, gpointer user_data)
 {
-  struct progress_sysex_thread_data *data =
-    g_malloc (sizeof (struct progress_sysex_thread_data));
+  struct progress_progress_thread_data *data =
+    g_malloc (sizeof (struct progress_progress_thread_data));
   data->f = f;
   data->data = user_data;
-  g_idle_add (elektroid_new_sysex_thread_gsourcefunc, data);
+  g_idle_add (elektroid_new_progress_thread_gsourcefunc, data);
 }

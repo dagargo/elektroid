@@ -25,21 +25,17 @@ extern struct sysex_transfer sysex_transfer;
 extern GtkDialog *progress_dialog;
 extern GtkWidget *progress_bar;
 extern GtkWidget *progress_label;
-extern GtkWidget *progress_dialog_cancel_button;
 
-gpointer progress_join_sysex_thread ();
+gpointer progress_join_thread ();
 
-void progress_stop_running_sysex (GtkDialog * dialog, gint response_id,
-				  gpointer data);
+void progress_stop_thread ();
 
-void progress_stop_sysex_thread ();
-
-void progress_progress_dialog_close (gpointer data);
+void progress_dialog_close (gpointer data);
 
 gboolean progress_pulse (gpointer data);
 
 gboolean progress_update (gpointer data);
 
-void progress_new_sysex_thread (GThreadFunc f, gpointer user_data);
+void progress_run (GThreadFunc f, gpointer user_data);
 
 void progress_init (GtkBuilder * builder);

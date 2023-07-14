@@ -646,11 +646,11 @@ elektroid_rx_sysex ()
   gint *res;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
-  progress_new_sysex_thread (elektroid_rx_sysex_runner, NULL);
+  progress_run (elektroid_rx_sysex_runner, NULL);
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
   dres = gtk_dialog_run (GTK_DIALOG (progress_dialog));
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  res = progress_join_sysex_thread ();
+  res = progress_join_thread ();
   if (!res)			//Signal captured while running the dialog.
     {
       g_byte_array_free (sysex_transfer.raw, TRUE);
@@ -825,11 +825,11 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
     {
       gtk_widget_hide (GTK_WIDGET (dialog));
       filenames = gtk_file_chooser_get_filenames (chooser);
-      progress_new_sysex_thread (func, filenames);
+      progress_run (func, filenames);
       gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Sending SysEx"));
       gtk_dialog_run (GTK_DIALOG (progress_dialog));
       gtk_widget_hide (GTK_WIDGET (progress_dialog));
-      err = progress_join_sysex_thread ();
+      err = progress_join_thread ();
 
       g_slist_free_full (g_steal_pointer (&filenames), g_free);
 
@@ -1005,12 +1005,12 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
       return;
     }
 
-  progress_new_sysex_thread (elektroid_delete_files_runner, data);
+  progress_run (elektroid_delete_files_runner, data);
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Deleting Files"));
   gtk_label_set_text (GTK_LABEL (progress_label), _("Deleting..."));
   gtk_dialog_run (GTK_DIALOG (progress_dialog));
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  progress_join_sysex_thread ();
+  progress_join_thread ();
 
   elektroid_load_remote_if_midi (data);
   elektroid_load_local_if_no_notifier (data);
@@ -2324,12 +2324,12 @@ elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
       return;
     }
 
-  progress_new_sysex_thread (elektroid_add_upload_tasks_runner, NULL);
+  progress_run (elektroid_add_upload_tasks_runner, NULL);
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Preparing Tasks"));
   gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
   gtk_dialog_run (GTK_DIALOG (progress_dialog));
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  progress_join_sysex_thread ();
+  progress_join_thread ();
 }
 
 static gpointer
@@ -2554,12 +2554,12 @@ elektroid_add_download_tasks (GtkWidget * object, gpointer data)
       return;
     }
 
-  progress_new_sysex_thread (elektroid_add_download_tasks_runner, NULL);
+  progress_run (elektroid_add_download_tasks_runner, NULL);
   gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Preparing Tasks"));
   gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
   gtk_dialog_run (GTK_DIALOG (progress_dialog));
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  progress_join_sysex_thread ();
+  progress_join_thread ();
 }
 
 static gboolean
@@ -2956,13 +2956,13 @@ elektroid_set_device (GtkWidget * object, gpointer data)
       return;
     }
 
-  progress_new_sysex_thread (elektroid_set_device_runner, &be_sys_device);
+  progress_run (elektroid_set_device_runner, &be_sys_device);
   gtk_window_set_title (GTK_WINDOW (progress_dialog),
 			_("Connecting to Device"));
   gtk_label_set_text (GTK_LABEL (progress_label), _("Connecting..."));
   dres = gtk_dialog_run (GTK_DIALOG (progress_dialog));
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  progress_join_sysex_thread ();
+  progress_join_thread ();
 
   if (sysex_transfer.err && sysex_transfer.err != -ECANCELED)
     {
@@ -3282,10 +3282,10 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 
   if (blocking)
     {
-      progress_new_sysex_thread (elektroid_dnd_received_runner, dnd_data);
+      progress_run (elektroid_dnd_received_runner, dnd_data);
       gtk_dialog_run (GTK_DIALOG (progress_dialog));
       gtk_widget_hide (GTK_WIDGET (progress_dialog));
-      progress_join_sysex_thread ();
+      progress_join_thread ();
       batch_id++;
     }
   else
@@ -3485,7 +3485,7 @@ elektroid_quit ()
       gtk_dialog_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
     }
 
-  progress_stop_sysex_thread ();
+  progress_stop_thread ();
   elektroid_stop_task_thread ();
   editor_stop_load_thread (&editor);
 
