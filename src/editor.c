@@ -32,6 +32,9 @@
 #define MAX_FRAMES_PER_PIXEL 300
 #define EDITOR_SAMPLE_CHANNELS(editor) (((struct sample_info *)editor->audio.control.data)->channels)
 
+extern struct browser local_browser;
+extern struct browser remote_browser;
+
 extern void elektroid_update_audio_status ();
 
 struct editor_y_frame_state

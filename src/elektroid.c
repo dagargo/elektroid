@@ -177,6 +177,8 @@ static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
 static const gchar *hostname;
 
 struct editor editor;
+struct browser local_browser;
+struct browser remote_browser;
 
 static struct backend backend;
 static struct preferences preferences;

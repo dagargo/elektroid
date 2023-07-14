@@ -29,6 +29,7 @@
 #include "guirecorder.h"
 
 extern struct editor editor;
+extern struct browser local_browser;
 
 static GtkDialog *autosampler_dialog;
 static GtkEntry *autosampler_dialog_name_entry;
