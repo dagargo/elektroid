@@ -129,6 +129,7 @@ static gpointer elektroid_download_task_runner (gpointer);
 static void elektroid_update_progress (struct job_control *);
 static void elektroid_cancel_all_tasks (GtkWidget *, gpointer);
 static void elektroid_clear_selection (struct browser *);
+static gboolean elektroid_local_check_selection (gpointer);
 
 static const struct option ELEKTROID_OPTIONS[] = {
   {"local-directory", 1, NULL, 'l'},
@@ -255,6 +256,10 @@ elektroid_set_local_browser_file_extensions (gint sel_fs)
   if (updated)
     {
       elektroid_clear_selection (&local_browser);
+    }
+  else
+    {
+      elektroid_local_check_selection (NULL);
     }
 }
 
@@ -2755,6 +2760,10 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			  remote_browser.fs_ops->rename != NULL);
   gtk_widget_set_visible (remote_browser.delete_menuitem,
 			  remote_browser.fs_ops->delete != NULL);
+  if (!EDITOR_VISIBLE)
+    {
+      editor_reset (&editor, NULL);
+    }
   gtk_widget_set_visible (editor.box, EDITOR_VISIBLE);
 
   gtk_tree_view_column_set_visible (remote_tree_view_id_column,
