@@ -176,6 +176,8 @@ static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
 
 static const gchar *hostname;
 
+struct editor editor;
+
 static struct backend backend;
 static struct preferences preferences;
 static struct ma_data ma_data;
@@ -3819,7 +3821,7 @@ elektroid_run (int argc, char *argv[])
   remote_browser.sensitive_widgets =
     g_slist_append (remote_browser.sensitive_widgets, fs_combo);
 
-  editor_init (builder);
+  editor_init (&editor, builder);
   progress_init (builder);
 
   gtk_widget_set_sensitive (remote_box, FALSE);

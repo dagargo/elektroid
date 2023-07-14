@@ -28,6 +28,8 @@
 #include "local.h"
 #include "guirecorder.h"
 
+extern struct editor editor;
+
 static GtkDialog *autosampler_dialog;
 static GtkEntry *autosampler_dialog_name_entry;
 static struct guirecorder autosampler_guirecorder;
