@@ -45,9 +45,6 @@ static GtkWidget *autosampler_dialog_cancel_button;
 static GtkWidget *autosampler_dialog_start_button;
 static GtkListStore *notes_list_store;
 
-void elektroid_new_sysex_thread (GThreadFunc f, gpointer user_data);
-gpointer elektroid_join_sysex_thread ();
-
 struct autosampler_data
 {
   const gchar *name;
