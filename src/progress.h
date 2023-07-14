@@ -22,20 +22,20 @@
 #include "utils.h"
 
 extern struct sysex_transfer sysex_transfer;
-extern GtkDialog *progress_dialog;
-extern GtkWidget *progress_bar;
-extern GtkWidget *progress_label;
-
-gpointer progress_join_thread ();
 
 void progress_stop_thread ();
 
 void progress_dialog_close (gpointer data);
 
+void progress_set_fraction (gdouble fraction);
+
 gboolean progress_pulse (gpointer data);
 
 gboolean progress_update (gpointer data);
 
-void progress_run (GThreadFunc f, gpointer user_data);
+gpointer progress_run (GThreadFunc f, gpointer user_data, const gchar * name,
+		       const gchar * text, gint * res);
 
 void progress_init (GtkBuilder * builder);
+
+void progress_response (gint response);

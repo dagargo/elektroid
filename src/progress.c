@@ -28,13 +28,13 @@ struct progress_progress_thread_data
 };
 
 struct sysex_transfer sysex_transfer;
-GtkDialog *progress_dialog;
-GtkWidget *progress_bar;
-GtkWidget *progress_label;
 
+static GtkDialog *progress_dialog;
+static GtkWidget *progress_bar;
+static GtkWidget *progress_label;
 static GThread *progress_thread;
 
-gpointer
+static gpointer
 progress_join_thread ()
 {
   gpointer output = NULL;
@@ -71,6 +71,12 @@ progress_dialog_close (gpointer data)
 {
   gtk_label_set_text (GTK_LABEL (progress_label), _("Cancelling..."));
   gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
+}
+
+void
+progress_set_fraction (gdouble fraction)
+{
+  gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (progress_bar), fraction);
 }
 
 gboolean
@@ -152,12 +158,30 @@ elektroid_new_progress_thread_gsourcefunc (gpointer user_data)
 }
 
 //Using this before a call to gtk_dialog_run ensures that the threads starts after the dialog is being run.
-void
-progress_run (GThreadFunc f, gpointer user_data)
+gpointer
+progress_run (GThreadFunc f, gpointer user_data, const gchar * name,
+	      const gchar * text, gint * res)
 {
+  gint dres;
   struct progress_progress_thread_data *data =
     g_malloc (sizeof (struct progress_progress_thread_data));
   data->f = f;
   data->data = user_data;
   g_idle_add (elektroid_new_progress_thread_gsourcefunc, data);
+
+  gtk_window_set_title (GTK_WINDOW (progress_dialog), name);
+  gtk_label_set_text (GTK_LABEL (progress_label), text);
+  dres = gtk_dialog_run (GTK_DIALOG (progress_dialog));
+  if (res)
+    {
+      *res = dres;
+    }
+  gtk_widget_hide (GTK_WIDGET (progress_dialog));
+  return progress_join_thread ();
+}
+
+void
+progress_response (gint response)
+{
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
 }

@@ -84,7 +84,7 @@ autosampler_runner (gpointer user_data)
   gchar filename[LABEL_MAX];
 
   sysex_transfer.active = TRUE;
-  gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (progress_bar), 0.0);
+  progress_set_fraction (0.0);
 
   total = ((data->last - data->first) / data->semitones) + 1;
   s = 0;
@@ -133,7 +133,7 @@ autosampler_runner (gpointer user_data)
 
       s++;
       fract = s / (gdouble) total;
-      gtk_progress_bar_set_fraction (GTK_PROGRESS_BAR (progress_bar), fract);
+      progress_set_fraction (fract);
 
       if (i > data->last)
 	{
@@ -153,7 +153,7 @@ autosampler_runner (gpointer user_data)
     }
 
   g_free (data);
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+  progress_response (GTK_RESPONSE_ACCEPT);
   return NULL;
 }
 
@@ -210,12 +210,8 @@ autosampler_callback (GtkWidget * object, gpointer user_data)
 				 (autosampler_dialog_start_combo),
 				 &data->iter);
 
-  progress_run (autosampler_runner, data);
-  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Auto Sampler"));
-  gtk_label_set_text (GTK_LABEL (progress_label), _("Recording..."));
-  gtk_dialog_run (GTK_DIALOG (progress_dialog));
-  gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  progress_join_thread ();
+  progress_run (autosampler_runner, data, _("Auto Sampler"),
+		_("Recording..."), NULL);
 }
 
 static void

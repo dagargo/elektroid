@@ -629,7 +629,7 @@ elektroid_rx_sysex_runner (gpointer data)
       *res = -ECANCELED;
     }
 
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+  progress_response (GTK_RESPONSE_ACCEPT);
 
   return res;
 }
@@ -646,11 +646,8 @@ elektroid_rx_sysex ()
   gint *res;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
-  progress_run (elektroid_rx_sysex_runner, NULL);
-  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Receive SysEx"));
-  dres = gtk_dialog_run (GTK_DIALOG (progress_dialog));
-  gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  res = progress_join_thread ();
+  res = progress_run (elektroid_rx_sysex_runner, NULL, _("Receive SysEx"),
+		      "", &dres);
   if (!res)			//Signal captured while running the dialog.
     {
       g_byte_array_free (sysex_transfer.raw, TRUE);
@@ -772,7 +769,7 @@ elektroid_tx_sysex_files_runner (gpointer data)
       backend_rx_drain (&backend);
       usleep (BE_REST_TIME_US);
     }
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);	//Any response is OK.
+  progress_response (GTK_RESPONSE_CANCEL);	//Any response is OK.
 
   free_msg (sysex_transfer.raw);
   return err;
@@ -791,7 +788,7 @@ elektroid_tx_upgrade_os_runner (gpointer data)
   g_timeout_add (100, progress_update, NULL);
 
   *err = elektroid_send_sysex_file (filenames->data, backend.upgrade_os);
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);	//Any response is OK.
+  progress_response (GTK_RESPONSE_CANCEL);	//Any response is OK.
 
   free_msg (sysex_transfer.raw);
   return err;
@@ -825,12 +822,7 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
     {
       gtk_widget_hide (GTK_WIDGET (dialog));
       filenames = gtk_file_chooser_get_filenames (chooser);
-      progress_run (func, filenames);
-      gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Sending SysEx"));
-      gtk_dialog_run (GTK_DIALOG (progress_dialog));
-      gtk_widget_hide (GTK_WIDGET (progress_dialog));
-      err = progress_join_thread ();
-
+      err = progress_run (func, filenames, _("Sending SysEx"), "", NULL);
       g_slist_free_full (g_steal_pointer (&filenames), g_free);
 
       if (!err)			//Signal captured while running the dialog.
@@ -979,7 +971,7 @@ elektroid_delete_files_runner (gpointer data)
   g_mutex_unlock (&browser->mutex);
 
   elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+  progress_response (GTK_RESPONSE_ACCEPT);
   return NULL;
 }
 
@@ -1005,13 +997,8 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
       return;
     }
 
-  progress_run (elektroid_delete_files_runner, data);
-  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Deleting Files"));
-  gtk_label_set_text (GTK_LABEL (progress_label), _("Deleting..."));
-  gtk_dialog_run (GTK_DIALOG (progress_dialog));
-  gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  progress_join_thread ();
-
+  progress_run (elektroid_delete_files_runner, data, _("Deleting Files"),
+		_("Deleting..."), NULL);
   elektroid_load_remote_if_midi (data);
   elektroid_load_local_if_no_notifier (data);
 }
@@ -2044,7 +2031,7 @@ elektroid_show_task_overwrite_dialog (gpointer data)
 static gboolean
 elektroid_close_progress_dialog (gpointer data)
 {
-  gtk_dialog_response (progress_dialog, GTK_RESPONSE_CANCEL);
+  progress_response (GTK_RESPONSE_CANCEL);
   return FALSE;
 }
 
@@ -2210,8 +2197,7 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
   if (local_browser.fs_ops->readdir (NULL, &iter, src_abs_path))
     {
       rel_path_trans = path_translate (type, rel_path);
-      gchar *dst_abs_path = path_chain (type, dst_dir,
-					rel_path_trans);
+      gchar *dst_abs_path = path_chain (type, dst_dir, rel_path_trans);
       g_free (rel_path_trans);
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
@@ -2309,7 +2295,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
     }
 
   elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+  progress_response (GTK_RESPONSE_ACCEPT);
   return NULL;
 }
 
@@ -2324,12 +2310,8 @@ elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
       return;
     }
 
-  progress_run (elektroid_add_upload_tasks_runner, NULL);
-  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Preparing Tasks"));
-  gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
-  gtk_dialog_run (GTK_DIALOG (progress_dialog));
-  gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  progress_join_thread ();
+  progress_run (elektroid_add_upload_tasks_runner, NULL, _("Preparing Tasks"),
+		_("Waiting..."), NULL);
 }
 
 static gpointer
@@ -2450,8 +2432,7 @@ elektroid_add_download_task_path (const gchar * rel_path,
 				      src_abs_path))
     {
       rel_path_trans = path_translate (PATH_SYSTEM, rel_path);
-      gchar *dst_abs_path = path_chain (PATH_SYSTEM, dst_dir,
-					rel_path_trans);
+      gchar *dst_abs_path = path_chain (PATH_SYSTEM, dst_dir, rel_path_trans);
       g_free (rel_path_trans);
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
@@ -2539,7 +2520,7 @@ elektroid_add_download_tasks_runner (gpointer data)
     }
 
   elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+  progress_response (GTK_RESPONSE_ACCEPT);
   return NULL;
 }
 
@@ -2554,12 +2535,8 @@ elektroid_add_download_tasks (GtkWidget * object, gpointer data)
       return;
     }
 
-  progress_run (elektroid_add_download_tasks_runner, NULL);
-  gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Preparing Tasks"));
-  gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
-  gtk_dialog_run (GTK_DIALOG (progress_dialog));
-  gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  progress_join_thread ();
+  progress_run (elektroid_add_download_tasks_runner, NULL,
+		_("Preparing Tasks"), _("Waiting..."), NULL);
 }
 
 static gboolean
@@ -2909,9 +2886,8 @@ elektroid_set_device_runner (gpointer data)
   sysex_transfer.err = connector_init_backend (&backend, be_sys_device, NULL,
 					       &sysex_transfer);
   elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
-  gtk_dialog_response (GTK_DIALOG (progress_dialog),
-		       backend_check (&backend) ? GTK_RESPONSE_ACCEPT
-		       : GTK_RESPONSE_CANCEL);
+  progress_response (backend_check (&backend) ? GTK_RESPONSE_ACCEPT
+		     : GTK_RESPONSE_CANCEL);
   return NULL;
 }
 
@@ -2956,13 +2932,8 @@ elektroid_set_device (GtkWidget * object, gpointer data)
       return;
     }
 
-  progress_run (elektroid_set_device_runner, &be_sys_device);
-  gtk_window_set_title (GTK_WINDOW (progress_dialog),
-			_("Connecting to Device"));
-  gtk_label_set_text (GTK_LABEL (progress_label), _("Connecting..."));
-  dres = gtk_dialog_run (GTK_DIALOG (progress_dialog));
-  gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  progress_join_thread ();
+  progress_run (elektroid_set_device_runner, &be_sys_device,
+		_("Connecting to Device"), _("Connecting..."), &dres);
 
   if (sysex_transfer.err && sysex_transfer.err != -ECANCELED)
     {
@@ -3183,7 +3154,7 @@ end:
     {
       // As we start to run the next task before sleeping, this has no impact.
       elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
-      gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+      progress_response (GTK_RESPONSE_ACCEPT);
     }
 
   g_free (dnd_data->type_name);
@@ -3207,6 +3178,7 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 {
   gchar *data;
   GdkAtom type;
+  const gchar *title, *text;
   gboolean blocking = TRUE;
   gchar *filename, *src_dir, *dst_dir = NULL;
   struct elektroid_dnd_data *dnd_data;
@@ -3262,8 +3234,8 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
 	  goto end;
 	}
 
-      gtk_window_set_title (GTK_WINDOW (progress_dialog), _("Moving Files"));
-      gtk_label_set_text (GTK_LABEL (progress_label), _("Moving..."));
+      title = _("Moving Files");
+      text = _("Moving...");
 
       if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD) ||
 	  (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID) &&
@@ -3275,17 +3247,14 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
     }
   else
     {
-      gtk_window_set_title (GTK_WINDOW (progress_dialog),
-			    _("Preparing Tasks"));
-      gtk_label_set_text (GTK_LABEL (progress_label), _("Waiting..."));
+      title = _("Preparing Tasks");
+      text = _("Waiting...");
     }
 
   if (blocking)
     {
-      progress_run (elektroid_dnd_received_runner, dnd_data);
-      gtk_dialog_run (GTK_DIALOG (progress_dialog));
-      gtk_widget_hide (GTK_WIDGET (progress_dialog));
-      progress_join_thread ();
+      progress_run (elektroid_dnd_received_runner, dnd_data, title, text,
+		    NULL);
       batch_id++;
     }
   else
@@ -3479,7 +3448,7 @@ static void
 elektroid_quit ()
 {
   gtk_dialog_response (GTK_DIALOG (about_dialog), GTK_RESPONSE_CANCEL);
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
+  progress_response (GTK_RESPONSE_CANCEL);
   if (dialog)
     {
       gtk_dialog_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
