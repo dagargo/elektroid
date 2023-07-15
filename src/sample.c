@@ -323,6 +323,20 @@ audio_multichannel_to_mono (gshort * input, gshort * output, gint size,
     }
 }
 
+static void
+audio_mono_to_stereo (gshort * input, gshort * output, gint size)
+{
+  debug_print (2, "Converting to stereo...\n");
+
+  for (gint i = 0; i < size; i++, input++)
+    {
+      *output = *input;
+      output++;
+      *output = *input;
+      output++;
+    }
+}
+
 // If control->data is NULL, then a new struct sample_info * is created and control->data points to it.
 // In case of failure, if control->data is NULL is freed.
 // Franes is the amount of frames after resampling. This value is set before the loading has terminated.
@@ -342,6 +356,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   gint16 *buffer_input;
   gint16 *buffer_input_multi;
   gint16 *buffer_input_mono;
+  gint16 *buffer_input_stereo;
   gint16 *buffer_s;
   gfloat *buffer_f;
   gint err, resampled_buffer_len, f, frames_read, channels, samplerate;
@@ -387,7 +402,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     {
       g_mutex_lock (&control->mutex);
     }
-  sample_info->channels = sf_info.channels;
+  sample_info->channels = channels;
   sample_info->samplerate = sf_info.samplerate;
   sample_info->frames = sf_info.frames;
   if (control)
@@ -460,6 +475,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   buffer_input_multi =
     malloc (LOAD_BUFFER_LEN * sf_info.channels * sizeof (gint16));
   buffer_input_mono = malloc (LOAD_BUFFER_LEN * sizeof (gint16));
+  buffer_input_stereo = malloc (LOAD_BUFFER_LEN * 2 * sizeof (gint16));
 
   buffer_f = malloc (LOAD_BUFFER_LEN * channels * sizeof (gfloat));
   src_data.data_in = buffer_f;
@@ -510,15 +526,25 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 				    LOAD_BUFFER_LEN);
       f += frames_read;
 
-      if (channels == sf_info.channels)	// 1 <= channels <= 2
+      if (channels == sf_info.channels)
 	{
 	  buffer_input = buffer_input_multi;
 	}
       else
 	{
-	  audio_multichannel_to_mono (buffer_input_multi, buffer_input_mono,
-				      frames_read, sf_info.channels);
-	  buffer_input = buffer_input_mono;
+	  audio_multichannel_to_mono (buffer_input_multi,
+				      buffer_input_mono, frames_read,
+				      sf_info.channels);
+	  if (channels == 1)
+	    {
+	      buffer_input = buffer_input_mono;
+	    }
+	  else
+	    {
+	      audio_mono_to_stereo (buffer_input_mono,
+				    buffer_input_stereo, frames_read);
+	      buffer_input = buffer_input_stereo;
+	    }
 	}
 
       if (samplerate == sf_info.samplerate)
@@ -589,6 +615,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 cleanup:
   free (buffer_input_multi);
   free (buffer_input_mono);
+  free (buffer_input_stereo);
   free (buffer_s);
   free (buffer_f);
   free (src_data.data_out);
