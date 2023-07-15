@@ -2711,9 +2711,18 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   editor_set_audio_mono_mix (&editor);
 
-  g_free (remote_browser.dir);
-  remote_browser.dir = backend.type == BE_TYPE_SYSTEM ?
-    get_user_dir (NULL) : strdup ("/");
+  if (backend.type == BE_TYPE_SYSTEM)
+    {
+      if (!remote_browser.dir)
+	{
+	  remote_browser.dir = get_user_dir (NULL);
+	}
+    }
+  else
+    {
+      g_free (remote_browser.dir);
+      remote_browser.dir = strdup ("/");
+    }
 
   gtk_widget_set_visible (remote_browser.transfer_menuitem,
 			  backend.type == BE_TYPE_SYSTEM
