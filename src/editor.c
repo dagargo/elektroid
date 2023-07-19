@@ -166,8 +166,6 @@ editor_set_sample_time_properties (struct editor *editor)
   struct sample_info *sample_info = editor->audio.control.data;
   double time = sample_info->frames / (double) sample_info->samplerate;
 
-  gtk_widget_set_visible (editor->sample_info_box, TRUE);
-
   snprintf (label, LABEL_MAX, "%d", sample_info->frames);
   gtk_label_set_text (GTK_LABEL (editor->sample_length), label);
 
