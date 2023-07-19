@@ -227,13 +227,19 @@ editor_set_audio_mono_mix (struct editor *editor)
 }
 
 static gboolean
-editor_loading_completed_no_lock (struct editor *editor)
+editor_loading_completed_no_lock (struct editor *editor,
+				  guint32 * actual_frames)
 {
-  guint32 actual, frames, expected;
-  actual = editor->audio.sample->len;
-  frames = editor->audio.frames;
-  expected = frames * AUDIO_SAMPLE_BYTES_PER_FRAME (&editor->audio);
-  return actual == expected && frames;
+  gboolean completed;
+  guint32 actual;
+  actual = editor->audio.sample->len /
+    AUDIO_SAMPLE_BYTES_PER_FRAME (&editor->audio);
+  completed = actual == editor->audio.frames && actual;
+  if (actual_frames)
+    {
+      *actual_frames = actual;
+    }
+  return completed;
 }
 
 static gboolean
@@ -430,16 +436,16 @@ editor_queue_draw (gpointer data)
 static void
 editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
 {
+  guint32 actual_frames;
+  gboolean completed, ready_to_play;
   struct editor *editor = data;
-  struct audio *audio = &editor->audio;
 
   set_job_control_progress_no_sync (control, p, NULL);
   g_idle_add (editor_queue_draw, data);
   if (!editor->ready)
     {
-      gboolean ready_to_play = audio->sample->len >=
-	FRAMES_TO_PLAY * AUDIO_SAMPLE_BYTES_PER_FRAME (audio) ||
-	editor_loading_completed_no_lock (editor);
+      completed = editor_loading_completed_no_lock (editor, &actual_frames);
+      ready_to_play = completed || actual_frames >= FRAMES_TO_PLAY;
       if (ready_to_play)
 	{
 	  g_idle_add (editor_update_ui_on_load, data);
@@ -502,7 +508,7 @@ editor_update_ui_on_record (gpointer data, gdouble value)
   struct editor *editor = data;
 
   g_idle_add (editor_queue_draw, data);
-  if (!editor->ready && editor_loading_completed_no_lock (data))
+  if (!editor->ready && editor_loading_completed_no_lock (data, NULL))
     {
       g_idle_add (editor_update_ui_on_load, data);
       editor->ready = TRUE;
@@ -777,7 +783,7 @@ editor_loading_completed (struct editor *editor)
   gboolean res;
 
   g_mutex_lock (&editor->audio.control.mutex);
-  res = editor_loading_completed_no_lock (editor);
+  res = editor_loading_completed_no_lock (editor, NULL);
   g_mutex_unlock (&editor->audio.control.mutex);
 
   return res;
