@@ -239,41 +239,23 @@ editor_loading_completed_no_lock (struct editor *editor)
 static gboolean
 editor_update_ui_on_load (gpointer data)
 {
-  gboolean ready_to_play;
   struct editor *editor = data;
-  struct audio *audio = &editor->audio;
 
-  if (!editor->ready)
+  editor_set_sample_properties_on_load (editor);
+  editor_set_audio_mono_mix (editor);
+  editor_set_layout_width (editor);
+
+  if (audio_check (&editor->audio))
     {
-      g_mutex_lock (&audio->control.mutex);
-      ready_to_play = editor->audio.sample->len >=
-	FRAMES_TO_PLAY * AUDIO_SAMPLE_BYTES_PER_FRAME (&editor->audio) ||
-	editor_loading_completed_no_lock (editor);
-      g_mutex_unlock (&audio->control.mutex);
-
-      if (!ready_to_play)
-	{
-	  return FALSE;
-	}
-
-      editor->ready = TRUE;
-
-      editor_set_sample_properties_on_load (editor);
-      editor_set_audio_mono_mix (editor);
-      editor_set_layout_width (editor);
-
-      if (audio_check (&editor->audio))
-	{
-	  gtk_widget_set_sensitive (local_browser.play_menuitem,
-				    editor->browser == &local_browser);
-	  gtk_widget_set_sensitive (remote_browser.play_menuitem,
-				    editor->browser == &remote_browser);
-	  gtk_widget_set_sensitive (editor->play_button, TRUE);
-	}
-      if (editor->preferences->autoplay)
-	{
-	  audio_start_playback (&editor->audio);
-	}
+      gtk_widget_set_sensitive (local_browser.play_menuitem,
+				editor->browser == &local_browser);
+      gtk_widget_set_sensitive (remote_browser.play_menuitem,
+				editor->browser == &remote_browser);
+      gtk_widget_set_sensitive (editor->play_button, TRUE);
+    }
+  if (editor->preferences->autoplay)
+    {
+      audio_start_playback (&editor->audio);
     }
 
   return FALSE;
@@ -448,9 +430,22 @@ editor_queue_draw (gpointer data)
 static void
 editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
 {
+  struct editor *editor = data;
+  struct audio *audio = &editor->audio;
+
   set_job_control_progress_no_sync (control, p, NULL);
   g_idle_add (editor_queue_draw, data);
-  g_idle_add (editor_update_ui_on_load, data);
+  if (!editor->ready)
+    {
+      gboolean ready_to_play = audio->sample->len >=
+	FRAMES_TO_PLAY * AUDIO_SAMPLE_BYTES_PER_FRAME (audio) ||
+	editor_loading_completed_no_lock (editor);
+      if (ready_to_play)
+	{
+	  g_idle_add (editor_update_ui_on_load, data);
+	  editor->ready = TRUE;
+	}
+    }
 }
 
 static gpointer
@@ -504,10 +499,13 @@ editor_play_clicked (GtkWidget * object, gpointer data)
 static void
 editor_update_ui_on_record (gpointer data, gdouble value)
 {
+  struct editor *editor = data;
+
   g_idle_add (editor_queue_draw, data);
-  if (editor_loading_completed_no_lock (data))
+  if (!editor->ready && editor_loading_completed_no_lock (data))
     {
       g_idle_add (editor_update_ui_on_load, data);
+      editor->ready = TRUE;
     }
 }
 
