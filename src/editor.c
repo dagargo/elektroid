@@ -474,16 +474,9 @@ editor_load_sample_runner (gpointer data)
   audio->control.active = TRUE;
   g_mutex_unlock (&audio->control.mutex);
 
-  if (sample_load_from_file_with_cb
-      (audio->path, audio->sample, &audio->control, &sample_params,
-       &audio->frames, editor_load_sample_cb, editor) >= 0)
-    {
-      debug_print (1,
-		   "Frames: %d (%d B); channels: %d; loop start at %d; loop end at %d; sample rate: %.2f kHz; bit depth: %d\n",
-		   audio->frames, audio->sample->len, sample_info->channels,
-		   sample_info->loopstart, sample_info->loopend,
-		   sample_info->samplerate / 1000.0, sample_info->bitdepth);
-    }
+  sample_load_from_file_with_cb
+    (audio->path, audio->sample, &audio->control, &sample_params,
+     &audio->frames, editor_load_sample_cb, editor);
 
   editor->audio.sel_len = 0;
 
