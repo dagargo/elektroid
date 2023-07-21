@@ -495,15 +495,8 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 
   *frames = sf_info.frames * src_data.src_ratio;
 
-  if (samplerate != sf_info.samplerate)
-    {
-      debug_print (2, "Loop start at %d, loop end at %d before resampling\n",
-		   sample_info->loopstart, sample_info->loopend);
-      sample_info->loopstart = round (sample_info->loopstart * ratio);
-      sample_info->loopend = round (sample_info->loopend * ratio);
-      debug_print (2, "Loop start at %d, loop end at %d after resampling\n",
-		   sample_info->loopstart, sample_info->loopend);
-    }
+  debug_print (2, "Loop start at %d, loop end at %d\n",
+	       sample_info->loopstart, sample_info->loopend);
 
   debug_print (2, "Loading sample (%" PRId64 " frames)...\n", sf_info.frames);
 
