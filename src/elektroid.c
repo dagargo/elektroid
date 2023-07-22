@@ -412,7 +412,7 @@ elektroid_update_audio_status ()
 {
   gchar status[LABEL_MAX];
   snprintf (status, LABEL_MAX, "%s %s, %.2f kHz", audio_name (),
-	    audio_version (), editor.audio.samplerate / 1000.f);
+	    audio_version (), editor.audio.sample_info.samplerate / 1000.f);
   gtk_label_set_text (audio_status_label, status);
 }
 
@@ -2587,7 +2587,7 @@ elektroid_common_key_press (GtkWidget * widget, GdkEventKey * event,
 			      NULL);
       return TRUE;
     }
-  else if (event->keyval == GDK_KEY_space && editor.audio.frames)
+  else if (event->keyval == GDK_KEY_space && editor.audio.sample_info.frames)
     {
       editor_play_clicked (NULL, &editor);
       return TRUE;

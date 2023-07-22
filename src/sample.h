@@ -35,17 +35,15 @@ gint sample_save_from_array (const gchar *, GByteArray *,
 			     struct job_control *);
 
 gint sample_load_from_array (GByteArray *, GByteArray *,
-			     struct job_control *,
-			     const struct sample_params *, guint *);
+			     struct job_control *, struct sample_info *);
 
 gint sample_load_from_file (const gchar *, GByteArray *,
-			    struct job_control *,
-			    const struct sample_params *, guint *);
+			    struct job_control *, struct sample_info *);
 
 gint sample_load_from_file_with_cb (const gchar *, GByteArray *,
 				    struct job_control *,
-				    const struct sample_params *,
-				    guint *, sample_load_cb, gpointer);
+				    struct sample_info *, sample_load_cb,
+				    gpointer);
 
 const gchar **sample_get_sample_extensions ();
 

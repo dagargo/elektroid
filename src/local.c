@@ -242,43 +242,36 @@ local_read_dir (struct backend *backend, struct item_iterator *iter,
 static gint
 local_sample_load_custom (const gchar * path, GByteArray * sample,
 			  struct job_control *control,
-			  const struct sample_params *sample_params)
+			  struct sample_info *sample_info_dst)
 {
-  guint frames;
   control->parts = 1;
   control->part = 0;
-  gint err = sample_load_from_file (path, sample, control, sample_params,
-				    &frames);
-  if (!err)
+  gint res = sample_load_from_file (path, sample, control, sample_info_dst);
+  if (!res)
     {
-      struct sample_info *sample_info = control->data;
-      sample_info->samplerate = sample_params->samplerate;
-      sample_info->channels =
-	sample_info->channels <
-	sample_params->channels ? sample_info->
-	channels : sample_params->channels;
+      memcpy (control->data, sample_info_dst, sizeof (struct sample_info));
     }
-  return err;
+  return res;
 }
 
 static gint
 local_sample_load_48_16_stereo (const gchar * path, GByteArray * sample,
 				struct job_control *control)
 {
-  struct sample_params sample_params;
-  sample_params.samplerate = 48000;
-  sample_params.channels = 2;
-  return local_sample_load_custom (path, sample, control, &sample_params);
+  struct sample_info sample_info_dst;
+  sample_info_dst.samplerate = 48000;
+  sample_info_dst.channels = 2;
+  return local_sample_load_custom (path, sample, control, &sample_info_dst);
 }
 
 static gint
 local_sample_load_48_16_mono (const gchar * path, GByteArray * sample,
 			      struct job_control *control)
 {
-  struct sample_params sample_params;
-  sample_params.samplerate = 48000;
-  sample_params.channels = 1;
-  return local_sample_load_custom (path, sample, control, &sample_params);
+  struct sample_info sample_info_dst;
+  sample_info_dst.samplerate = 48000;
+  sample_info_dst.channels = 1;
+  return local_sample_load_custom (path, sample, control, &sample_info_dst);
 }
 
 static gint
@@ -292,20 +285,20 @@ static gint
 local_sample_load_441_16_stereo (const gchar * path, GByteArray * sample,
 				 struct job_control *control)
 {
-  struct sample_params sample_params;
-  sample_params.samplerate = 44100;
-  sample_params.channels = 2;
-  return local_sample_load_custom (path, sample, control, &sample_params);
+  struct sample_info sample_info_dst;
+  sample_info_dst.samplerate = 44100;
+  sample_info_dst.channels = 2;
+  return local_sample_load_custom (path, sample, control, &sample_info_dst);
 }
 
 static gint
 local_sample_load_441_16_mono (const gchar * path, GByteArray * sample,
 			       struct job_control *control)
 {
-  struct sample_params sample_params;
-  sample_params.samplerate = 44100;
-  sample_params.channels = 1;
-  return local_sample_load_custom (path, sample, control, &sample_params);
+  struct sample_info sample_info_dst;
+  sample_info_dst.samplerate = 44100;
+  sample_info_dst.channels = 1;
+  return local_sample_load_custom (path, sample, control, &sample_info_dst);
 }
 
 static gboolean

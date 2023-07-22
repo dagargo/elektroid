@@ -108,8 +108,9 @@ autosampler_runner (gpointer user_data)
       guint start = audio_detect_start (&editor.audio);
       audio_delete_range (&editor.audio, 0, start);
       //Cut off the frames after the requested time.
-      start = (data->press + data->release) * editor.audio.samplerate;
-      guint len = editor.audio.frames - start;
+      start = (data->press + data->release) *
+	editor.audio.sample_info.samplerate;
+      guint len = editor.audio.sample_info.frames - start;
       audio_delete_range (&editor.audio, start, len);
 
       gchar *dir = path_chain (PATH_SYSTEM, local_browser.dir, data->name);

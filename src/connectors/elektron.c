@@ -3380,9 +3380,15 @@ gint
 elektron_sample_load (const gchar * path, GByteArray * sample,
 		      struct job_control *control)
 {
-  guint frames;
-  return sample_load_from_file (path, sample, control,
-				&ELEKTRON_SAMPLE_PARAMS, &frames);
+  struct sample_info sample_info_dst;
+  sample_info_dst.samplerate = ELEKTRON_SAMPLE_RATE;
+  sample_info_dst.channels = ELEKTRON_SAMPLE_CHANNELS;
+  gint res = sample_load_from_file (path, sample, control, &sample_info_dst);
+  if (!res)
+    {
+      memcpy (control->data, &sample_info_dst, sizeof (struct sample_info));
+    }
+  return res;
 }
 
 gchar *

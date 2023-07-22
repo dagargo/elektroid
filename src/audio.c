@@ -53,11 +53,10 @@ void
 audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 {
   gint16 *dst, *src;
-  guint32 len =
-    audio->sel_len ? audio->sel_start + audio->sel_len : audio->frames;
-  guint channels = AUDIO_SAMPLE_CHANNELS (audio);
-  guint bytes_per_frame = BYTES_PER_FRAME (channels);
-  gdouble gain = 1.0 / sqrt (channels);
+  guint32 len = audio->sel_len ? audio->sel_start + audio->sel_len :
+    audio->sample_info.frames;
+  guint bytes_per_frame = BYTES_PER_FRAME (audio->sample_info.channels);
+  gdouble gain = 1.0 / sqrt (audio->sample_info.channels);
   size_t size = frames * BYTES_PER_FRAME (AUDIO_CHANNELS);
 
   debug_print (2, "Writing %d frames...\n", frames);
@@ -99,7 +98,8 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 
       if (audio->mono_mix)
 	{
-	  gint16 mix = audio_mix_channels (&src, channels, gain);
+	  gint16 mix = audio_mix_channels (&src, audio->sample_info.channels,
+					   gain);
 	  audio_copy_sample (dst, &mix, audio);
 	  dst++;
 	  audio_copy_sample (dst, &mix, audio);
@@ -138,13 +138,12 @@ audio_read_from_input (struct audio *audio, void *buffer, gint frames)
     (audio->record_options & RECORD_STEREO) == RECORD_STEREO ? 2 : 1;
   guint bytes_per_frame = channels * sizeof (gint16);
   guint record = !(audio->record_options & RECORD_MONITOR_ONLY);
-  struct sample_info *sample_info = audio->control.data;
 
   debug_print (2, "Reading %d frames (recording = %d)...\n", frames, record);
 
   g_mutex_lock (&audio->control.mutex);
   recorded_frames = audio->sample->len / bytes_per_frame;
-  remaining_frames = sample_info->frames - recorded_frames;
+  remaining_frames = audio->sample_info.frames - recorded_frames;
   recording_frames = remaining_frames > frames ? frames : remaining_frames;
 
   if (channels == 2)
@@ -204,23 +203,17 @@ audio_reset_record_buffer (struct audio *audio, guint record_options,
 			   void (*monitor) (void *, gdouble),
 			   void *monitor_data)
 {
-  struct sample_info *sample_info = audio->control.data;
-  guint channels = (record_options & RECORD_STEREO) == 3 ? 2 : 1;
-  audio->frames = audio->samplerate * MAX_RECORDING_TIME_S;
-  guint size = audio->frames * channels * sizeof (gint16);
+  audio->sample_info.channels = (record_options & RECORD_STEREO) == 3 ? 2 : 1;
+  audio->sample_info.frames = audio->sample_info.samplerate *
+    MAX_RECORDING_TIME_S;
+  guint size = audio->sample_info.frames *
+    BYTES_PER_FRAME (audio->sample_info.channels);
   g_byte_array_set_size (audio->sample, size);
   audio->sample->len = 0;
   audio->pos = 0;
   audio->record_options = record_options;
   audio->monitor = monitor;
   audio->monitor_data = monitor_data;
-  sample_info->loopstart = 0;
-  sample_info->loopend = 0;
-  sample_info->looptype = 0;
-  sample_info->samplerate = audio->samplerate;
-  sample_info->bitdepth = 16;
-  sample_info->channels = channels;
-  sample_info->frames = audio->frames;
 }
 
 void
@@ -231,7 +224,9 @@ audio_init (struct audio *audio,
   debug_print (1, "Initializing audio (%s %s)...\n", audio_name (),
 	       audio_version ());
   audio->sample = g_byte_array_new ();
-  audio->frames = 0;
+  audio->sample_info.frames = 0;
+  audio->sample_info.samplerate = 0;
+  audio->sample_info.channels = 0;
   audio->loop = FALSE;
   audio->path[0] = 0;
   audio->status = AUDIO_STATUS_STOPPED;
@@ -271,7 +266,7 @@ audio_reset_sample (struct audio *audio)
   g_mutex_lock (&audio->control.mutex);
   debug_print (1, "Resetting sample...\n");
   g_byte_array_set_size (audio->sample, 0);
-  audio->frames = 0;
+  audio->sample_info.frames = 0;
   audio->pos = 0;
   audio->path[0] = 0;
   audio->release_frames = 0;
@@ -297,9 +292,9 @@ audio_detect_start (struct audio *audio)
   gint16 *data = (gint16 *) audio->sample->data;
 
 //Searching for audio data...
-  for (gint i = 0; i < audio->frames; i++)
+  for (gint i = 0; i < audio->sample_info.frames; i++)
     {
-      for (gint j = 0; j < AUDIO_SAMPLE_CHANNELS (audio); j++, data++)
+      for (gint j = 0; j < audio->sample_info.channels; j++, data++)
 	{
 	  if (!start_frame && abs (*data) >= SHRT_MAX * 0.01)
 	    {
@@ -313,7 +308,7 @@ audio_detect_start (struct audio *audio)
 search_last_zero:
   for (gint i = start_frame - 1; i >= 0; i--)
     {
-      for (gint j = 0; j < AUDIO_SAMPLE_CHANNELS (audio); j++, data--)
+      for (gint j = 0; j < audio->sample_info.channels; j++, data--)
 	{
 	  if (abs (*data) == 0)	//SHRT_MAX * 0.001)
 	    {
@@ -332,17 +327,18 @@ void
 audio_delete_range (struct audio *audio, guint start_frame, guint frames)
 {
   struct sample_info *sample_info = audio->control.data;
-  guint index = start_frame * AUDIO_SAMPLE_BYTES_PER_FRAME (audio);
-  guint len = frames * AUDIO_SAMPLE_BYTES_PER_FRAME (audio);
+  guint index = start_frame * BYTES_PER_FRAME (audio->sample_info.channels);
+  guint len = frames * BYTES_PER_FRAME (audio->sample_info.channels);
 
   debug_print (2, "Deleting range from %d with len %d...\n", index, len);
   g_byte_array_remove_range (audio->sample, index, len);
 
   g_mutex_lock (&audio->control.mutex);
-  audio->frames -= (guint32) frames;
+  audio->sample_info.frames -= (guint32) frames;
   audio->sel_start = 0;
   audio->sel_len = 0;
-  sample_info->frames = audio->frames;
+  sample_info->frames = audio->sample_info.frames * sample_info->samplerate /
+    (double) audio->sample_info.samplerate;
   g_mutex_unlock (&audio->control.mutex);
 }
 
@@ -393,8 +389,9 @@ audio_finish_recording (struct audio *audio)
 
   g_mutex_lock (&audio->control.mutex);
   audio->status = AUDIO_STATUS_STOPPED;
-  audio->frames = audio->sample->len / AUDIO_SAMPLE_BYTES_PER_FRAME (audio);
-  sample_info->frames = audio->frames;
+  audio->sample_info.frames = audio->sample->len /
+    BYTES_PER_FRAME (audio->sample_info.channels);
+  sample_info->frames = audio->sample_info.frames;
   if (record)
     {
       audio_normalize (audio);

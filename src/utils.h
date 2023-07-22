@@ -47,6 +47,9 @@
 #define MAX_BACKEND_FSS (sizeof (gint32) * 8)
 #define MAX_BACKEND_STORAGE MAX_BACKEND_FSS
 
+#define SAMPLE_SIZE (sizeof(gint16))
+#define BYTES_PER_FRAME(x) (x * SAMPLE_SIZE)
+
 #define debug_print(level, format, ...) if (level <= debug_level) fprintf(stderr, "DEBUG:" __FILE__ ":%d:(%s): " format, __LINE__, __FUNCTION__, ## __VA_ARGS__)
 #define error_print(format, ...) fprintf(stderr, "%sERROR:" __FILE__ ":%d:(%s): " format "%s", isatty(fileno(stderr)) ? "\x1b[31m" : "", __LINE__, __FUNCTION__, ## __VA_ARGS__, isatty(fileno(stderr)) ? "\x1b[m" : "")
 
@@ -107,23 +110,15 @@ struct job_control
   void *data;
 };
 
-// This contains information taken from from the sample data.
 struct sample_info
 {
+  guint32 frames;
   guint32 loopstart;
   guint32 loopend;
   guint32 looptype;
   guint32 samplerate;
   guint32 bitdepth;
   guint32 channels;
-  guint32 frames;
-};
-
-// This contains the format in which data must be load.
-struct sample_params
-{
-  guint32 channels;
-  guint32 samplerate;
 };
 
 enum sysex_transfer_status

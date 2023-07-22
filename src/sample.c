@@ -215,7 +215,7 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
   g_byte_array_set_size (wave->array, sample->len + 1024);	//We need space for the headers.
   wave->array->len = 0;
 
-  frames = sample->len / (sample_info->channels * sizeof (gint16));
+  frames = sample->len / (sample_info->channels * SAMPLE_SIZE);
   debug_print (1, "Frames: %" PRIu64 "; sample rate: %d; channels: %d\n",
 	       frames, sample_info->samplerate, sample_info->channels);
   debug_print (1, "Loop start at %d; loop end at %d\n",
@@ -339,13 +339,12 @@ audio_mono_to_stereo (gshort * input, gshort * output, gint size)
 
 // If control->data is NULL, then a new struct sample_info * is created and control->data points to it.
 // In case of failure, if control->data is NULL is freed.
-// Franes is the amount of frames after resampling. This value is set before the loading has terminated.
 
 static gint
 sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 		 struct job_control *control, GByteArray * sample,
-		 const struct sample_params *sample_params, guint * frames,
-		 sample_load_cb cb, gpointer cb_data)
+		 struct sample_info *sample_info_dst, sample_load_cb cb,
+		 gpointer cb_data)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -359,10 +358,10 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   gint16 *buffer_input_stereo;
   gint16 *buffer_s;
   gfloat *buffer_f;
-  gint err, resampled_buffer_len, f, frames_read, channels, samplerate;
+  gint err, resampled_buffer_len, f, frames_read;
   gboolean active;
   gdouble ratio;
-  struct sample_info *sample_info;
+  struct sample_info *sample_info_src;
   struct smpl_chunk_data smpl_chunk_data;
   gboolean disable_loop = FALSE;
   guint bytes_per_frame;
@@ -385,26 +384,27 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
       return -1;
     }
 
-  sample_info = control->data;
+  sample_info_src = control->data;
   if (!control->data)
     {
-      sample_info = g_malloc (sizeof (struct sample_info));
+      sample_info_src = g_malloc (sizeof (struct sample_info));
     }
-
-  channels =
-    sample_params->channels ? sample_params->channels : sf_info.channels;
-  samplerate =
-    sample_params->samplerate ? sample_params->samplerate :
-    sf_info.samplerate;
-  bytes_per_frame = channels * sizeof (gint16);
 
   if (control)
     {
       g_mutex_lock (&control->mutex);
     }
-  sample_info->channels = channels;
-  sample_info->samplerate = sf_info.samplerate;
-  sample_info->frames = sf_info.frames;
+  sample_info_dst->channels =
+    sample_info_dst->channels ? sample_info_dst->channels : sf_info.channels;
+  sample_info_dst->samplerate =
+    sample_info_dst->samplerate ? sample_info_dst->samplerate :
+    sf_info.samplerate;
+
+  sample_info_src->channels = sf_info.channels;
+  sample_info_src->samplerate = sf_info.samplerate;
+  sample_info_src->frames = sf_info.frames;
+
+  bytes_per_frame = sample_info_dst->channels * SAMPLE_SIZE;
   if (control)
     {
       g_mutex_unlock (&control->mutex);
@@ -413,20 +413,21 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   switch (sf_info.format & SF_FORMAT_SUBMASK)
     {
     case SF_FORMAT_PCM_S8:
-      sample_info->bitdepth = 8;
+      sample_info_src->bitdepth = 8;
       break;
     case SF_FORMAT_PCM_16:
-      sample_info->bitdepth = 16;
+      sample_info_src->bitdepth = 16;
       break;
     case SF_FORMAT_PCM_24:
-      sample_info->bitdepth = 24;
+      sample_info_src->bitdepth = 24;
       break;
     case SF_FORMAT_PCM_32:
-      sample_info->bitdepth = 32;
+      sample_info_src->bitdepth = 32;
       break;
     default:
-      sample_info->bitdepth = 0;
+      sample_info_src->bitdepth = 0;
     }
+  sample_info_dst->bitdepth = 16;
 
   strcpy (chunk_info.id, SMPL_CHUNK_ID);
   chunk_info.id_size = strlen (SMPL_CHUNK_ID);
@@ -438,15 +439,16 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
       memset (&smpl_chunk_data, 0, chunk_info.datalen);
       chunk_info.data = &smpl_chunk_data;
       sf_get_chunk_data (chunk_iter, &chunk_info);
-      sample_info->loopstart = le32toh (smpl_chunk_data.sample_loop.start);
-      sample_info->loopend = le32toh (smpl_chunk_data.sample_loop.end);
-      sample_info->looptype = le32toh (smpl_chunk_data.sample_loop.type);
-      if (sample_info->loopstart >= sf_info.frames)
+      sample_info_src->loopstart =
+	le32toh (smpl_chunk_data.sample_loop.start);
+      sample_info_src->loopend = le32toh (smpl_chunk_data.sample_loop.end);
+      sample_info_src->looptype = le32toh (smpl_chunk_data.sample_loop.type);
+      if (sample_info_src->loopstart >= sample_info_src->frames)
 	{
 	  debug_print (2, "Bad loop start\n");
 	  disable_loop = TRUE;
 	}
-      if (sample_info->loopend >= sf_info.frames)
+      if (sample_info_src->loopend >= sample_info_src->frames)
 	{
 	  debug_print (2, "Bad loop end\n");
 	  disable_loop = TRUE;
@@ -458,10 +460,14 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     }
   if (disable_loop)
     {
-      sample_info->loopstart = sf_info.frames - 1;
-      sample_info->loopend = sample_info->loopstart;
-      sample_info->looptype = 0;
+      sample_info_src->loopstart = sample_info_src->frames - 1;
+      sample_info_src->loopend = sample_info_src->loopstart;
+      sample_info_src->looptype = 0;
     }
+  sample_info_dst->looptype = sample_info_src->looptype;
+
+  debug_print (2, "Loop start at %d, loop end at %d\n",
+	       sample_info_src->loopstart, sample_info_src->loopend);
 
   //Set scale factor. See http://www.mega-nerd.com/libsndfile/api.html#note2
   if ((sf_info.format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||
@@ -473,32 +479,41 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     }
 
   buffer_input_multi =
-    malloc (LOAD_BUFFER_LEN * sf_info.channels * sizeof (gint16));
-  buffer_input_mono = malloc (LOAD_BUFFER_LEN * sizeof (gint16));
-  buffer_input_stereo = malloc (LOAD_BUFFER_LEN * 2 * sizeof (gint16));
+    malloc (LOAD_BUFFER_LEN * BYTES_PER_FRAME (sample_info_src->channels));
+  buffer_input_mono = malloc (LOAD_BUFFER_LEN * SAMPLE_SIZE);
+  buffer_input_stereo = malloc (LOAD_BUFFER_LEN * 2 * SAMPLE_SIZE);
 
-  buffer_f = malloc (LOAD_BUFFER_LEN * channels * sizeof (gfloat));
+  buffer_f =
+    malloc (LOAD_BUFFER_LEN * sample_info_dst->channels * sizeof (gfloat));
   src_data.data_in = buffer_f;
-  ratio = samplerate / (double) sf_info.samplerate;
+  ratio = sample_info_dst->samplerate / (double) sample_info_src->samplerate;
   src_data.src_ratio = ratio;
 
   src_data.output_frames = ceil (LOAD_BUFFER_LEN * src_data.src_ratio);
-  resampled_buffer_len = src_data.output_frames * channels;
-  buffer_s = malloc (resampled_buffer_len * sizeof (gint16));
+  resampled_buffer_len = src_data.output_frames * sample_info_dst->channels;
+  buffer_s = malloc (resampled_buffer_len * SAMPLE_SIZE);
   src_data.data_out = malloc (resampled_buffer_len * sizeof (gfloat));
 
-  src_state = src_new (SRC_SINC_BEST_QUALITY, channels, &err);
+  src_state = src_new (SRC_SINC_BEST_QUALITY, sample_info_dst->channels,
+		       &err);
   if (err)
     {
       goto cleanup;
     }
 
-  *frames = sf_info.frames * src_data.src_ratio;
+  if (control)
+    {
+      g_mutex_lock (&control->mutex);
+    }
+  sample_info_dst->frames = sample_info_src->frames * ratio;
+  sample_info_dst->loopstart = round (sample_info_src->loopstart * ratio);
+  sample_info_dst->loopend = round (sample_info_src->loopend * ratio);
+  if (control)
+    {
+      g_mutex_unlock (&control->mutex);
+    }
 
-  debug_print (2, "Loop start at %d, loop end at %d\n",
-	       sample_info->loopstart, sample_info->loopend);
-
-  debug_print (2, "Loading sample (%" PRId64 " frames)...\n", sf_info.frames);
+  debug_print (2, "Loading sample (%d frames)...\n", sample_info_src->frames);
 
   if (control)
     {
@@ -512,14 +527,15 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     }
 
   f = 0;
-  while (f < sf_info.frames && active)
+  while (f < sample_info_src->frames && active)
     {
-      debug_print (2, "Loading %d channels buffer...\n", channels);
+      debug_print (2, "Loading %d channels buffer...\n",
+		   sample_info_dst->channels);
       frames_read = sf_readf_short (sndfile, buffer_input_multi,
 				    LOAD_BUFFER_LEN);
       f += frames_read;
 
-      if (channels == sf_info.channels)
+      if (sample_info_dst->channels == sample_info_src->channels)
 	{
 	  buffer_input = buffer_input_multi;
 	}
@@ -527,8 +543,8 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 	{
 	  audio_multichannel_to_mono (buffer_input_multi,
 				      buffer_input_mono, frames_read,
-				      sf_info.channels);
-	  if (channels == 1)
+				      sample_info_src->channels);
+	  if (sample_info_dst->channels == 1)
 	    {
 	      buffer_input = buffer_input_mono;
 	    }
@@ -540,7 +556,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 	    }
 	}
 
-      if (samplerate == sf_info.samplerate)
+      if (sample_info_dst->samplerate == sample_info_src->samplerate)
 	{
 	  if (control)
 	    {
@@ -559,9 +575,9 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 	  src_data.input_frames = frames_read;
 
 	  src_short_to_float_array (buffer_input, buffer_f,
-				    frames_read * channels);
+				    frames_read * sample_info_dst->channels);
 	  debug_print (2, "Resampling %d channels with ratio %f...\n",
-		       channels, src_data.src_ratio);
+		       sample_info_dst->channels, src_data.src_ratio);
 	  err = src_process (src_state, &src_data);
 	  if (err)
 	    {
@@ -571,7 +587,8 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 	      break;
 	    }
 	  src_float_to_short_array (src_data.data_out, buffer_s,
-				    src_data.output_frames_gen * channels);
+				    src_data.output_frames_gen *
+				    sample_info_dst->channels);
 	  if (control)
 	    {
 	      g_mutex_lock (&control->mutex);
@@ -587,7 +604,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
       if (control)
 	{
 	  g_mutex_lock (&control->mutex);
-	  cb (control, f * 1.0 / sf_info.frames, cb_data);
+	  cb (control, f * 1.0 / sample_info_src->frames, cb_data);
 	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
 	}
@@ -619,17 +636,18 @@ cleanup:
     {
       if (!control->data)
 	{
-	  control->data = sample_info;
+	  control->data = sample_info_src;
 	}
       // This removes the additional samples added by the resampler due to rounding.
-      g_byte_array_set_size (sample, *frames * bytes_per_frame);
+      g_byte_array_set_size (sample,
+			     sample_info_dst->frames * bytes_per_frame);
       return 0;
     }
   else
     {
       if (!control->data)
 	{
-	  g_free (sample_info);
+	  g_free (sample_info_src);
 	}
       return -1;
     }
@@ -638,31 +656,29 @@ cleanup:
 gint
 sample_load_from_array (GByteArray * wave, GByteArray * sample,
 			struct job_control *control,
-			const struct sample_params *sample_params,
-			guint * frames)
+			struct sample_info *sample_info_dst)
 {
   struct g_byte_array_io_data data;
   data.pos = 0;
   data.array = wave;
   return sample_load_raw (&data, &G_BYTE_ARRAY_IO, control, sample,
-			  sample_params, frames,
-			  set_job_control_progress_no_sync, NULL);
+			  sample_info_dst, set_job_control_progress_no_sync,
+			  NULL);
 }
 
 gint
 sample_load_from_file_with_cb (const gchar * path, GByteArray * sample,
 			       struct job_control *control,
-			       const struct sample_params *sample_params,
-			       guint * frames, sample_load_cb cb,
-			       gpointer cb_data)
+			       struct sample_info *sample_info_dst,
+			       sample_load_cb cb, gpointer cb_data)
 {
   FILE *file = fopen (path, "rb");
   if (!file)
     {
       return -errno;
     }
-  gint err = sample_load_raw (file, &FILE_IO, control, sample, sample_params,
-			      frames, cb, cb_data);
+  gint err = sample_load_raw (file, &FILE_IO, control, sample,
+			      sample_info_dst, cb, cb_data);
   fclose (file);
   return err;
 }
@@ -670,11 +686,10 @@ sample_load_from_file_with_cb (const gchar * path, GByteArray * sample,
 gint
 sample_load_from_file (const gchar * path, GByteArray * sample,
 		       struct job_control *control,
-		       const struct sample_params *sample_params,
-		       guint * frames)
+		       struct sample_info *sample_info_dst)
 {
   return sample_load_from_file_with_cb (path, sample, control,
-					sample_params, frames,
+					sample_info_dst,
 					set_job_control_progress_no_sync,
 					NULL);
 }

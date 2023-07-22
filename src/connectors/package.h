@@ -93,6 +93,4 @@ gint package_send_pkg_resources (struct package *, const gchar *,
 
 void package_close (struct package *);
 
-extern const struct sample_params ELEKTRON_SAMPLE_PARAMS;
-
 #endif

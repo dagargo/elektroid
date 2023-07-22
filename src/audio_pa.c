@@ -196,7 +196,7 @@ audio_stop_recording (struct audio *audio)
       audio_finish_recording (audio);
 
       debug_print (1, "Stopping recording (%d frames read)...\n",
-		   audio->frames);
+		   audio->sample_info.frames);
       audio_stop_and_flush_stream (audio, audio->record_stream);
     }
   else
@@ -228,7 +228,8 @@ audio_start_recording (struct audio *audio, guint options,
   audio_reset_record_buffer (audio, options, monitor_notifier, monitor_data);
   audio_prepare (audio, AUDIO_STATUS_PREPARING_RECORD);
 
-  debug_print (1, "Starting recording (max %d frames)...\n", audio->frames);
+  debug_print (1, "Starting recording (max %d frames)...\n",
+	       audio->sample_info.frames);
 
   pa_threaded_mainloop_lock (audio->mainloop);
   operation = pa_stream_cork (audio->record_stream, 0, audio_success_cb,
@@ -315,12 +316,13 @@ audio_server_info_callback (pa_context * context, const pa_server_info * info,
     PA_STREAM_ADJUST_LATENCY;
   pa_proplist *props = pa_proplist_new ();
 
-  audio->samplerate = info->sample_spec.rate;
+  audio->sample_info.samplerate = info->sample_spec.rate;
   audio->sample_spec.format = PA_SAMPLE_S16LE;
   audio->sample_spec.channels = AUDIO_CHANNELS;
-  audio->sample_spec.rate = audio->samplerate;
+  audio->sample_spec.rate = audio->sample_info.samplerate;
 
-  debug_print (1, "Using %d Hz sample rate...\n", audio->samplerate);
+  debug_print (1, "Using %d Hz sample rate...\n",
+	       audio->sample_info.samplerate);
 
   pa_proplist_set (props, PA_PROP_APPLICATION_ICON_NAME, PACKAGE,
 		   sizeof (PACKAGE));

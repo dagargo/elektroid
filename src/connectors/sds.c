@@ -957,12 +957,15 @@ gint
 sds_sample_load (const gchar * path, GByteArray * sample,
 		 struct job_control *control)
 {
-  guint frames;
-  struct sample_params sample_params;
-  sample_params.samplerate = 0;	// Any sample rate is valid.
-  sample_params.channels = SDS_SAMPLE_CHANNELS;
-  return sample_load_from_file (path, sample, control, &sample_params,
-				&frames);
+  struct sample_info sample_info_dst;
+  sample_info_dst.samplerate = 0;	// Any sample rate is valid.
+  sample_info_dst.channels = SDS_SAMPLE_CHANNELS;
+  gint res = sample_load_from_file (path, sample, control, &sample_info_dst);
+  if (!res)
+    {
+      memcpy (control->data, &sample_info_dst, sizeof (struct sample_info));
+    }
+  return res;
 }
 
 enum sds_fs
