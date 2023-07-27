@@ -21,6 +21,8 @@
 #include "browser.h"
 #include "backend.h"
 
+#define DND_TIMEOUT 1000
+
 struct browser_add_dentry_item_data
 {
   struct browser *browser;
@@ -567,4 +569,22 @@ browser_reset (struct browser *browser)
   browser->dir = NULL;
   browser_clear (browser);
   browser_clear_file_extensions (browser);
+}
+
+void
+browser_clear_dnd_function (struct browser *browser)
+{
+  if (browser->dnd_timeout_function_id)
+    {
+      g_source_remove (browser->dnd_timeout_function_id);
+      browser->dnd_timeout_function_id = 0;
+    }
+}
+
+void
+browser_set_dnd_function (struct browser *browser, GSourceFunc function)
+{
+  browser_clear_dnd_function (browser);
+  browser->dnd_timeout_function_id = g_timeout_add (DND_TIMEOUT, function,
+						    browser);
 }

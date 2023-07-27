@@ -42,8 +42,6 @@
 
 #define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : path_type_from_backend (&backend))
 
-#define DND_TIMEOUT 1000
-
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
 
@@ -3305,7 +3303,7 @@ elektroid_drag_list_timeout (gpointer user_data)
 			  browser);
 
   gtk_tree_path_free (browser->dnd_motion_path);
-  browser->dnd_timeout_function_id = 0;
+  browser_clear_dnd_function (browser);
   browser->dnd_motion_path = NULL;
   return FALSE;
 }
@@ -3319,10 +3317,10 @@ elektroid_drag_motion_list (GtkWidget * widget,
   GtkTreeModel *model;
   GtkTreeIter iter;
   gchar *spath;
-  gint tx;
-  gint ty;
+  gint tx, ty;
   gboolean slot;
   GtkTreeSelection *selection;
+  GtkTreeViewColumn *column;
   struct item item;
   struct browser *browser = user_data;
 
@@ -3332,8 +3330,8 @@ elektroid_drag_motion_list (GtkWidget * widget,
   gtk_tree_view_convert_widget_to_bin_window_coords
     (GTK_TREE_VIEW (widget), wx, wy, &tx, &ty);
 
-  if (gtk_tree_view_get_path_at_pos
-      (GTK_TREE_VIEW (widget), tx, ty, &path, NULL, NULL, NULL))
+  if (gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (widget), tx, ty,
+				     &path, &column, NULL, NULL))
     {
       spath = gtk_tree_path_to_string (path);
       debug_print (2, "Drag motion path: %s\n", spath);
@@ -3350,11 +3348,7 @@ elektroid_drag_motion_list (GtkWidget * widget,
 	    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
 	  if (gtk_tree_selection_path_is_selected (selection, path))
 	    {
-	      if (browser->dnd_timeout_function_id)
-		{
-		  g_source_remove (browser->dnd_timeout_function_id);
-		  browser->dnd_timeout_function_id = 0;
-		}
+	      browser_clear_dnd_function (browser);
 	      return TRUE;
 	    }
 	}
@@ -3371,22 +3365,12 @@ elektroid_drag_motion_list (GtkWidget * widget,
 					     (browser->dnd_motion_path,
 					      path))))
 	{
-	  if (browser->dnd_timeout_function_id)
-	    {
-	      g_source_remove (browser->dnd_timeout_function_id);
-	      browser->dnd_timeout_function_id = 0;
-	    }
-	  browser->dnd_timeout_function_id =
-	    g_timeout_add (DND_TIMEOUT, elektroid_drag_list_timeout, browser);
+	  browser_set_dnd_function (browser, elektroid_drag_list_timeout);
 	}
     }
   else
     {
-      if (browser->dnd_timeout_function_id)
-	{
-	  g_source_remove (browser->dnd_timeout_function_id);
-	  browser->dnd_timeout_function_id = 0;
-	}
+      browser_clear_dnd_function (browser);
     }
 
   if (browser->dnd_motion_path)
@@ -3404,21 +3388,14 @@ elektroid_drag_leave_list (GtkWidget * widget,
 			   GdkDragContext * context,
 			   guint time, gpointer user_data)
 {
-  struct browser *browser = user_data;
-  if (browser->dnd_timeout_function_id)
-    {
-      g_source_remove (browser->dnd_timeout_function_id);
-      browser->dnd_timeout_function_id = 0;
-    }
+  browser_clear_dnd_function (user_data);
 }
 
 static gboolean
 elektroid_drag_up_timeout (gpointer user_data)
 {
   struct browser *browser = user_data;
-
   browser_go_up (NULL, browser);
-
   return TRUE;
 }
 
@@ -3428,15 +3405,7 @@ elektroid_drag_motion_up (GtkWidget * widget,
 			  gint wx, gint wy, guint time, gpointer user_data)
 {
   struct browser *browser = user_data;
-
-  if (browser->dnd_timeout_function_id)
-    {
-      g_source_remove (browser->dnd_timeout_function_id);
-      browser->dnd_timeout_function_id = 0;
-    }
-  browser->dnd_timeout_function_id =
-    g_timeout_add (DND_TIMEOUT, elektroid_drag_up_timeout, browser);
-
+  browser_set_dnd_function (browser, elektroid_drag_up_timeout);
   return TRUE;
 }
 
@@ -3445,12 +3414,7 @@ elektroid_drag_leave_up (GtkWidget * widget,
 			 GdkDragContext * context,
 			 guint time, gpointer user_data)
 {
-  struct browser *browser = user_data;
-  if (browser->dnd_timeout_function_id)
-    {
-      g_source_remove (browser->dnd_timeout_function_id);
-      browser->dnd_timeout_function_id = 0;
-    }
+  browser_clear_dnd_function (user_data);
 }
 
 static void

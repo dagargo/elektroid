@@ -116,4 +116,8 @@ gboolean browser_set_file_extension (struct browser *, gchar *);
 
 void browser_reset (struct browser *);
 
+void browser_clear_dnd_function (struct browser *);
+
+void browser_set_dnd_function (struct browser *, GSourceFunc);
+
 #endif
