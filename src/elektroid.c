@@ -49,6 +49,9 @@
 
 #define MIN_TIME_UNTIL_DIALOG_RESPONSE 1e6
 
+#define TREEVIEW_SCROLL_LINES 2
+#define TREEVIEW_EDGE_SIZE 20
+
 enum device_list_store_columns
 {
   DEVICES_LIST_STORE_ID_FIELD,
@@ -3309,6 +3312,40 @@ elektroid_drag_list_timeout (gpointer user_data)
 }
 
 static gboolean
+elektroid_drag_scroll_up_timeout (gpointer user_data)
+{
+  GtkTreePath *start;
+  struct browser *browser = user_data;
+  debug_print (2, "Scrolling up...\n");
+  gtk_tree_view_get_visible_range (browser->view, &start, NULL);
+  for (guint i = 0; i < TREEVIEW_SCROLL_LINES; i++)
+    {
+      gtk_tree_path_prev (start);
+    }
+  gtk_tree_view_scroll_to_cell (browser->view, start, NULL, FALSE, .0, .0);
+  gtk_tree_path_free (start);
+  browser_set_dnd_function (browser, elektroid_drag_scroll_up_timeout);
+  return TRUE;
+}
+
+static gboolean
+elektroid_drag_scroll_down_timeout (gpointer user_data)
+{
+  GtkTreePath *end;
+  struct browser *browser = user_data;
+  debug_print (2, "Scrolling down...\n");
+  gtk_tree_view_get_visible_range (browser->view, NULL, &end);
+  for (guint i = 0; i < TREEVIEW_SCROLL_LINES; i++)
+    {
+      gtk_tree_path_next (end);
+    }
+  gtk_tree_view_scroll_to_cell (browser->view, end, NULL, FALSE, .0, .0);
+  gtk_tree_path_free (end);
+  browser_set_dnd_function (browser, elektroid_drag_scroll_down_timeout);
+  return TRUE;
+}
+
+static gboolean
 elektroid_drag_motion_list (GtkWidget * widget,
 			    GdkDragContext * context,
 			    gint wx, gint wy, guint time, gpointer user_data)
@@ -3333,39 +3370,58 @@ elektroid_drag_motion_list (GtkWidget * widget,
   if (gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (widget), tx, ty,
 				     &path, &column, NULL, NULL))
     {
-      spath = gtk_tree_path_to_string (path);
-      debug_print (2, "Drag motion path: %s\n", spath);
-      g_free (spath);
-
-      if (slot)
+      GtkAllocation allocation;
+      gtk_widget_get_allocation (GTK_WIDGET (browser->view), &allocation);
+      if (column == browser->tree_view_name_column)
 	{
-	  gtk_tree_view_set_drag_dest_row (remote_browser.view, path,
-					   GTK_TREE_VIEW_DROP_INTO_OR_BEFORE);
+	  spath = gtk_tree_path_to_string (path);
+	  debug_print (2, "Drag motion path: %s\n", spath);
+	  g_free (spath);
+
+	  if (slot)
+	    {
+	      gtk_tree_view_set_drag_dest_row (remote_browser.view, path,
+					       GTK_TREE_VIEW_DROP_INTO_OR_BEFORE);
+	    }
+	  else
+	    {
+	      selection =
+		gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+	      if (gtk_tree_selection_path_is_selected (selection, path))
+		{
+		  browser_clear_dnd_function (browser);
+		  return TRUE;
+		}
+	    }
+
+	  model =
+	    GTK_TREE_MODEL (gtk_tree_view_get_model (GTK_TREE_VIEW (widget)));
+	  gtk_tree_model_get_iter (model, &iter, path);
+	  browser_set_item (model, &iter, &item);
+
+	  if (item.type == ELEKTROID_DIR && (!browser->dnd_motion_path ||
+					     (browser->dnd_motion_path
+					      &&
+					      gtk_tree_path_compare
+					      (browser->dnd_motion_path,
+					       path))))
+	    {
+	      browser_set_dnd_function (browser, elektroid_drag_list_timeout);
+	    }
+	}
+      else if (ty < TREEVIEW_EDGE_SIZE)
+	{
+	  browser_set_dnd_function (browser,
+				    elektroid_drag_scroll_up_timeout);
+	}
+      else if (wy > allocation.height - TREEVIEW_EDGE_SIZE)
+	{
+	  browser_set_dnd_function (browser,
+				    elektroid_drag_scroll_down_timeout);
 	}
       else
 	{
-	  selection =
-	    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
-	  if (gtk_tree_selection_path_is_selected (selection, path))
-	    {
-	      browser_clear_dnd_function (browser);
-	      return TRUE;
-	    }
-	}
-
-      model =
-	GTK_TREE_MODEL (gtk_tree_view_get_model (GTK_TREE_VIEW (widget)));
-      gtk_tree_model_get_iter (model, &iter, path);
-      browser_set_item (model, &iter, &item);
-
-      if (item.type == ELEKTROID_DIR && (!browser->dnd_motion_path
-					 || (browser->dnd_motion_path
-					     &&
-					     gtk_tree_path_compare
-					     (browser->dnd_motion_path,
-					      path))))
-	{
-	  browser_set_dnd_function (browser, elektroid_drag_list_timeout);
+	  browser_clear_dnd_function (browser);
 	}
     }
   else
@@ -3556,7 +3612,10 @@ elektroid_run (int argc, char *argv[])
     .rename_menuitem =
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_rename_menuitem")),
     .delete_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_delete_menuitem"))
+      GTK_WIDGET (gtk_builder_get_object (builder, "remote_delete_menuitem")),
+    .tree_view_name_column =
+      GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			    (builder, "remote_tree_view_name_column"))
   };
   browser_init (&remote_browser);
 
@@ -3610,7 +3669,10 @@ elektroid_run (int argc, char *argv[])
     .rename_menuitem =
       GTK_WIDGET (gtk_builder_get_object (builder, "local_rename_menuitem")),
     .delete_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_delete_menuitem"))
+      GTK_WIDGET (gtk_builder_get_object (builder, "local_delete_menuitem")),
+    .tree_view_name_column =
+      GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			    (builder, "local_tree_view_name_column"))
   };
   browser_init (&local_browser);
 

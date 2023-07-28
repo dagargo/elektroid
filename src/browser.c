@@ -21,7 +21,7 @@
 #include "browser.h"
 #include "backend.h"
 
-#define DND_TIMEOUT 1000
+#define DND_TIMEOUT 800
 
 struct browser_add_dentry_item_data
 {

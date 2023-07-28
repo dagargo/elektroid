@@ -79,6 +79,7 @@ struct browser
   GtkWidget *actions_separator;
   GtkWidget *rename_menuitem;
   GtkWidget *delete_menuitem;
+  GtkTreeViewColumn *tree_view_name_column;
 };
 
 void browser_set_item (GtkTreeModel *, GtkTreeIter *, struct item *);

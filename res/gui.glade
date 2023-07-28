@@ -1738,7 +1738,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                       </object>
                                     </child>
                                     <child>
-                                      <object class="GtkTreeViewColumn">
+                                      <object class="GtkTreeViewColumn" id="remote_tree_view_name_column">
                                         <property name="title" translatable="yes">Name</property>
                                         <property name="expand">True</property>
                                         <child>
@@ -1938,7 +1938,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                       </object>
                                     </child>
                                     <child>
-                                      <object class="GtkTreeViewColumn">
+                                      <object class="GtkTreeViewColumn" id="local_tree_view_name_column">
                                         <property name="title" translatable="yes">Name</property>
                                         <property name="expand">True</property>
                                         <child>
