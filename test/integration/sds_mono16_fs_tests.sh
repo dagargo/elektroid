@@ -19,7 +19,7 @@ $ecli sds-mono16-ul $srcdir/res/connectors/silence.wav $TEST_DEVICE:/1:silence
 
 # If renaming is not implemented, this will fail.
 echo "Testing mv..."
-$ecli sds-mono16-ul $TEST_DEVICE:/1 "Foo"
+$ecli sds-mono16-mv $TEST_DEVICE:/1 "Foo"
 [ $? -ne 1 ] && exit 1
 
 echo "Testing download..."
