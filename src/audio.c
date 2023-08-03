@@ -313,19 +313,26 @@ audio_detect_start (struct audio *audio)
     }
 
 search_last_zero:
-  for (gint i = start_frame - 1; i >= 0; i--)
+  for (gint i = start_frame - 1; i >= 1; i--)
     {
       for (gint j = 0; j < audio->sample_info.channels; j++, data--)
 	{
-	  if (abs (*data) == 0)	//SHRT_MAX * 0.001)
+	  gint16 curr = *data;
+	  gint16 prev = *(data - audio->sample_info.channels);
+	  if ((curr > 0 && prev < 0) || (curr < 0 && prev > 0))
 	    {
-	      start_frame = i;
+	      start_frame = i - 1;
 	      goto end;
 	    }
 	}
     }
 
 end:
+  data = (gint16 *) & audio->sample->data[start_frame];
+  for (gint j = 0; j < audio->sample_info.channels; j++, data++)
+    {
+      *data = 0;
+    }
   debug_print (1, "Detected start at frame %d\n", start_frame);
   return start_frame;
 }
