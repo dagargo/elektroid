@@ -398,7 +398,9 @@ audio_finish_recording (struct audio *audio)
   audio->status = AUDIO_STATUS_STOPPED;
   audio->sample_info.frames = audio->sample->len /
     BYTES_PER_FRAME (audio->sample_info.channels);
-  sample_info->frames = audio->sample_info.frames;
+  audio->sample_info.loopstart = audio->sample_info.frames - 1;
+  audio->sample_info.loopend = audio->sample_info.loopstart;
+  memcpy (sample_info, &audio->sample_info, sizeof (struct sample_info));
   if (record)
     {
       audio_normalize (audio);
