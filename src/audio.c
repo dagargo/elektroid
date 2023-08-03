@@ -85,7 +85,14 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
   src = (gint16 *) & audio->sample->data[audio->pos * bytes_per_frame];
   for (gint i = 0; i < frames; i++)
     {
-      if (audio->pos == len)
+      if (audio->pos == audio->sample_info.loopend + 1 && audio->loop)
+	{
+	  debug_print (2, "Sample reset\n");
+	  audio->pos = audio->sample_info.loopstart;
+	  src = (gint16 *) & audio->sample->data[audio->pos *
+						 bytes_per_frame];
+	}
+      else if (audio->pos == len)
 	{
 	  if (!audio->loop)
 	    {
