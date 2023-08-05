@@ -938,8 +938,8 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
   if (editor->operation == EDITOR_OP_SELECT)
     {
       editor->audio.sel_len = ((gint64) cursor_frame) -
-	editor->audio.sel_start;
-      debug_print (2, "Setting selection size to %" PRIu64 "...\n",
+	((gint64) editor->audio.sel_start);
+      debug_print (2, "Setting selection size to %" PRId64 "...\n",
 		   editor->audio.sel_len);
     }
   else if (editor->operation == EDITOR_OP_MOVE_LOOP_START)
