@@ -59,6 +59,12 @@ struct editor_set_volume_data
   gdouble volume;
 };
 
+struct editor_record_clicked_data
+{
+  struct editor *editor;
+  struct browser *browser;
+};
+
 extern gchar *elektroid_ask_name (const gchar * title, const gchar * value,
 				  struct browser *browser);
 
@@ -581,8 +587,10 @@ static gboolean
 editor_reset_for_recording (gpointer data)
 {
   guint options;
-  struct editor *editor = data;
-  editor_reset (data, &local_browser);
+  struct editor_record_clicked_data *record_data = data;
+  struct editor *editor = record_data->editor;
+  struct browser *browser = record_data->browser;
+  editor_reset (editor, browser ? browser : &local_browser);
   editor->ready = FALSE;
   editor->dirty = TRUE;
   editor->zoom = 1;
@@ -600,16 +608,18 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   gint res;
   guint options;
   struct editor *editor = data;
+  static struct editor_record_clicked_data record_data;
 
+  record_data.browser = editor->browser;
+  record_data.editor = editor;
   browser_clear_selection (&local_browser);
   browser_clear_selection (&remote_browser);
   //Running editor_reset_for_recording asynchronously is needed as calling
   //browser_clear_selection might raise some signals that will eventually call
-  //editor_reset with EDITOR_SRC_NONE.
-  //If using g_idle_add, a call to editor_reset with EDITOR_SRC_LOCAL will happen
-  //always later than those.
-  //All these calls will happen at the time the dialog is shown.
-  g_idle_add (editor_reset_for_recording, editor);
+  //editor_reset and clear the browser member.
+  //If using g_idle_add, a call to editor_reset will happen always later than
+  //those. All these calls will happen at the time the dialog is shown.
+  g_idle_add (editor_reset_for_recording, &record_data);
 
   res = gtk_dialog_run (editor->record_dialog);
   gtk_widget_hide (GTK_WIDGET (editor->record_dialog));
@@ -1063,7 +1073,7 @@ editor_save_clicked (GtkWidget * object, gpointer data)
     {
       //This is a recording.
       gchar *name = elektroid_ask_name (_("Save Sample"), "sample.wav",
-					&local_browser);
+					editor->browser);
       if (!name)
 	{
 	  return;
