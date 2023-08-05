@@ -340,6 +340,7 @@ end:
 void
 audio_delete_range (struct audio *audio, guint start_frame, guint frames)
 {
+  gdouble r;
   struct sample_info *sample_info = audio->control.data;
   guint index = start_frame * BYTES_PER_FRAME (audio->sample_info.channels);
   guint len = frames * BYTES_PER_FRAME (audio->sample_info.channels);
@@ -349,10 +350,34 @@ audio_delete_range (struct audio *audio, guint start_frame, guint frames)
 
   g_mutex_lock (&audio->control.mutex);
   audio->sample_info.frames -= (guint32) frames;
+
+  if (audio->sample_info.loopstart >= audio->sel_start + audio->sel_len)
+    {
+      audio->sample_info.loopstart -= (guint32) audio->sel_len;
+    }
+  else if (audio->sample_info.loopstart >= audio->sel_start &&
+	   audio->sample_info.loopstart < audio->sel_start + audio->sel_len)
+    {
+      audio->sample_info.loopstart = 0;
+    }
+
+  if (audio->sample_info.loopend >= audio->sel_start + audio->sel_len)
+    {
+      audio->sample_info.loopend -= (guint32) audio->sel_len;
+    }
+  else if (audio->sample_info.loopend >= audio->sel_start &&
+	   audio->sample_info.loopend < audio->sel_start + audio->sel_len)
+    {
+      audio->sample_info.loopend = audio->sample_info.frames - 1;
+    }
+
   audio->sel_start = 0;
   audio->sel_len = 0;
-  sample_info->frames = audio->sample_info.frames * sample_info->samplerate /
-    (double) audio->sample_info.samplerate;
+
+  r = sample_info->samplerate / (double) audio->sample_info.samplerate;
+  sample_info->frames = audio->sample_info.frames * r;
+  sample_info->loopstart = audio->sample_info.loopstart * r;
+  sample_info->loopend = audio->sample_info.loopend * r;
   g_mutex_unlock (&audio->control.mutex);
 }
 
