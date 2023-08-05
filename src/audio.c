@@ -374,7 +374,7 @@ audio_delete_range (struct audio *audio, guint start_frame, guint frames)
   audio->sel_start = 0;
   audio->sel_len = 0;
 
-  r = sample_info->samplerate / (double) audio->sample_info.samplerate;
+  r = sample_info->frames / (double) audio->sample_info.frames;
   sample_info->frames = audio->sample_info.frames * r;
   sample_info->loopstart = audio->sample_info.loopstart * r;
   sample_info->loopend = audio->sample_info.loopend * r;

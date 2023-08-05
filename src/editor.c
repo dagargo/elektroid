@@ -943,8 +943,8 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
     }
   else if (editor->operation == EDITOR_OP_MOVE_LOOP_START)
     {
-      gdouble r = sample_info_src->samplerate /
-	(gdouble) editor->audio.sample_info.samplerate;
+      gdouble r = sample_info_src->frames /
+	(gdouble) editor->audio.sample_info.frames;
       editor->audio.sample_info.loopstart = cursor_frame;
       sample_info_src->loopstart = cursor_frame * r;
       debug_print (2,
@@ -958,8 +958,8 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
     }
   else if (editor->operation == EDITOR_OP_MOVE_LOOP_END)
     {
-      gdouble r = sample_info_src->samplerate /
-	(gdouble) editor->audio.sample_info.samplerate;
+      gdouble r = sample_info_src->frames /
+	(gdouble) editor->audio.sample_info.frames;
       editor->audio.sample_info.loopend = cursor_frame;
       sample_info_src->loopend = cursor_frame * r;
       debug_print (2,
