@@ -242,8 +242,8 @@ editor_loading_completed_no_lock (struct editor *editor,
 {
   gboolean completed;
   guint32 actual;
-  actual = editor->audio.sample->len /
-    BYTES_PER_FRAME (editor->audio.sample_info.channels);
+  gint bytes_per_frame = BYTES_PER_FRAME (editor->audio.sample_info.channels);
+  actual = bytes_per_frame ? editor->audio.sample->len / bytes_per_frame : 0;
   completed = actual == editor->audio.sample_info.frames && actual;
   if (actual_frames)
     {
