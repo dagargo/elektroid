@@ -999,6 +999,7 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
 static void
 editor_delete_clicked (GtkWidget * object, gpointer data)
 {
+  enum audio_status status;
   struct editor *editor = data;
 
   if (!editor_loading_completed (editor))
@@ -1011,11 +1012,26 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
       return;
     }
 
+  //As the playback pointer could be in the selected range, it's safer to stop.
+  //Later, playback will be restarted.
+  g_mutex_lock (&editor->audio.control.mutex);
+  status = editor->audio.status;
+  g_mutex_unlock (&editor->audio.control.mutex);
+  if (status == AUDIO_STATUS_PLAYING)
+    {
+      audio_stop_playback (&editor->audio);
+    }
+
   audio_delete_range (&editor->audio, editor->audio.sel_start,
 		      editor->audio.sel_len);
   editor->dirty = TRUE;
   editor_show_sample_time_properties (editor);
   g_idle_add (editor_queue_draw, data);
+
+  if (status == AUDIO_STATUS_PLAYING)
+    {
+      audio_start_playback (&editor->audio);
+    }
 }
 
 static void
