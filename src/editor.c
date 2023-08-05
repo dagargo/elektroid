@@ -867,8 +867,7 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
 	  g_idle_add (editor_queue_draw, editor);
 	}
     }
-  else if (event->button == GDK_BUTTON_SECONDARY &&
-	   editor->browser != &remote_browser)
+  else if (event->button == GDK_BUTTON_SECONDARY)
     {
       gtk_widget_set_sensitive (editor->delete_menuitem,
 				editor->audio.sel_len > 0);
@@ -1003,11 +1002,6 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
   struct editor *editor = data;
 
   if (!editor_loading_completed (editor))
-    {
-      return;
-    }
-
-  if (editor->browser == &remote_browser)
     {
       return;
     }
