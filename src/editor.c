@@ -28,6 +28,10 @@
 #define EDITOR_OP_MOVE_LOOP_START 2
 #define EDITOR_OP_MOVE_LOOP_END 3
 
+#define EDITOR_LOOP_MARKER_WIDTH 7
+#define EDITOR_LOOP_MARKER_HALF_HEIGHT 4
+#define EDITOR_LOOP_MARKER_FULL_HEIGHT (EDITOR_LOOP_MARKER_HALF_HEIGHT * 2)
+
 #if defined(__linux__)
 #define FRAMES_TO_PLAY (16 * 1024)
 #else
@@ -447,11 +451,21 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
       cairo_move_to (cr, value, 0);
       cairo_line_to (cr, value, height - 1);
       cairo_stroke (cr);
+      cairo_move_to (cr, value, 0);
+      cairo_line_to (cr, value + EDITOR_LOOP_MARKER_WIDTH,
+                     EDITOR_LOOP_MARKER_HALF_HEIGHT);
+      cairo_line_to (cr, value, EDITOR_LOOP_MARKER_FULL_HEIGHT);
+      cairo_fill (cr);
 
       value = ((gint) ((audio->sample_info.loopend - start) / x_ratio)) + .5;
       cairo_move_to (cr, value, 0);
       cairo_line_to (cr, value, height - 1);
       cairo_stroke (cr);
+      cairo_move_to (cr, value, 0);
+      cairo_line_to (cr, value - EDITOR_LOOP_MARKER_WIDTH,
+                     EDITOR_LOOP_MARKER_HALF_HEIGHT);
+      cairo_line_to (cr, value, EDITOR_LOOP_MARKER_FULL_HEIGHT);
+      cairo_fill (cr);
     }
 
   g_mutex_unlock (&audio->control.mutex);
