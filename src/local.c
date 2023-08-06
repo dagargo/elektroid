@@ -275,9 +275,22 @@ local_sample_load_48_16_mono (const gchar * path, GByteArray * sample,
 }
 
 static gint
-local_upload (struct backend *backend, const gchar * path, GByteArray * input,
-	      struct job_control *control)
+local_upload_48_16_stereo (struct backend *backend, const gchar * path,
+			   GByteArray * input, struct job_control *control)
 {
+  struct sample_info *sample_info_dst = control->data;
+  sample_info_dst->samplerate = 48000;
+  sample_info_dst->channels = 2;
+  return sample_save_from_array (path, input, control);
+}
+
+static gint
+local_upload_48_16_mono (struct backend *backend, const gchar * path,
+			 GByteArray * input, struct job_control *control)
+{
+  struct sample_info *sample_info_dst = control->data;
+  sample_info_dst->samplerate = 48000;
+  sample_info_dst->channels = 1;
   return sample_save_from_array (path, input, control);
 }
 
@@ -299,6 +312,26 @@ local_sample_load_441_16_mono (const gchar * path, GByteArray * sample,
   sample_info_dst.samplerate = 44100;
   sample_info_dst.channels = 1;
   return local_sample_load_custom (path, sample, control, &sample_info_dst);
+}
+
+static gint
+local_upload_441_16_stereo (struct backend *backend, const gchar * path,
+			    GByteArray * input, struct job_control *control)
+{
+  struct sample_info *sample_info_dst = control->data;
+  sample_info_dst->samplerate = 44100;
+  sample_info_dst->channels = 2;
+  return sample_save_from_array (path, input, control);
+}
+
+static gint
+local_upload_441_16_mono (struct backend *backend, const gchar * path,
+			  GByteArray * input, struct job_control *control)
+{
+  struct sample_info *sample_info_dst = control->data;
+  sample_info_dst->samplerate = 44100;
+  sample_info_dst->channels = 1;
+  return sample_save_from_array (path, input, control);
 }
 
 static gboolean
@@ -325,7 +358,7 @@ const struct fs_operations FS_LOCAL_OPERATIONS = {
   .max_name_len = 255
 };
 
-enum sds_fs
+enum local_fs
 {
   FS_SAMPLES_LOCAL_48_16_STEREO = 0x1,
   FS_SAMPLES_LOCAL_48_16_MONO = 0x2,
@@ -347,7 +380,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .rename = local_rename,
   .move = local_rename,
   .download = local_download,
-  .upload = local_upload,
+  .upload = local_upload_48_16_stereo,
   .load = local_sample_load_48_16_stereo,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
@@ -371,7 +404,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .rename = local_rename,
   .move = local_rename,
   .download = local_download,
-  .upload = local_upload,
+  .upload = local_upload_48_16_mono,
   .load = local_sample_load_48_16_mono,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
@@ -396,7 +429,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .rename = local_rename,
   .move = local_rename,
   .download = local_download,
-  .upload = local_upload,
+  .upload = local_upload_441_16_stereo,
   .load = local_sample_load_441_16_stereo,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
@@ -423,7 +456,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .clear = NULL,
   .swap = NULL,
   .download = local_download,
-  .upload = local_upload,
+  .upload = local_upload_441_16_mono,
   .load = local_sample_load_441_16_mono,
   .save = save_file,
   .get_ext = backend_get_fs_ext,

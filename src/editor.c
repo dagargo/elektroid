@@ -1062,7 +1062,6 @@ static void
 editor_save_clicked (GtkWidget * object, gpointer data)
 {
   struct editor *editor = data;
-  void *backup;
 
   if (!editor_loading_completed (editor))
     {
@@ -1083,15 +1082,9 @@ editor_save_clicked (GtkWidget * object, gpointer data)
     }
 
   debug_print (2, "Saving sample to %s...\n", editor->audio.path);
-
-  //As audio is processed internally at 48 kHz always, control data must be
-  //set to the sample_info in the audio struct when saving the changes. Later,
-  //this can be reverted.
-  backup = editor->audio.control.data;
-  editor->audio.control.data = &editor->audio.sample_info;
-  sample_save_from_array (editor->audio.path, editor->audio.sample,
-			  &editor->audio.control);
-  editor->audio.control.data = backup;
+  editor->browser->fs_ops->upload (editor->browser->backend,
+				   editor->audio.path, editor->audio.sample,
+				   &editor->audio.control);
 }
 
 static gboolean
