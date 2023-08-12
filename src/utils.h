@@ -212,11 +212,11 @@ struct fs_operations
   fs_src_dst_func copy;
   fs_path_func clear;
   fs_src_dst_func swap;
-  fs_remote_file_op download;
-  fs_remote_file_op upload;
+  fs_remote_file_op download;	//Donload a resource from the filesystem to memory.
+  fs_remote_file_op upload;	//Upload a resource from memory to the filesystem.
+  fs_local_file_op save;	//Write a file from memory to the OS storage. Typically used after download.
+  fs_local_file_op load;	//Load a file from the OS storage into memory. Typically used before upload.
   fs_get_item_slot get_slot;
-  fs_local_file_op save;
-  fs_local_file_op load;
   fs_get_ext get_ext;
   fs_get_upload_path get_upload_path;
   fs_get_download_path get_download_path;

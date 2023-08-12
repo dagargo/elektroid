@@ -275,6 +275,13 @@ local_sample_load_48_16_mono (const gchar * path, GByteArray * sample,
 }
 
 static gint
+local_upload (struct backend *backend, const gchar * path, GByteArray * input,
+	      struct job_control *control)
+{
+  return sample_save_from_array (path, input, control);
+}
+
+static gint
 local_upload_48_16_stereo (struct backend *backend, const gchar * path,
 			   GByteArray * input, struct job_control *control)
 {
@@ -353,6 +360,8 @@ const struct fs_operations FS_LOCAL_OPERATIONS = {
   .delete = local_delete,
   .rename = local_rename,
   .move = local_rename,
+  //While the local operatinos do not neet to implement download, upload, load or save, the upload function is used by the editor to save the loaded sample in the appropriate format.
+  .upload = local_upload,
   .get_ext = backend_get_fs_ext,
   .type_ext = "wav",
   .max_name_len = 255
