@@ -244,7 +244,7 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
   smpl_chunk_data.manufacturer = 0;
   smpl_chunk_data.product = 0;
   smpl_chunk_data.sample_period = 1e9 / sample_info->samplerate;
-  smpl_chunk_data.midi_unity_note = 60;
+  smpl_chunk_data.midi_unity_note = sample_info->midinote;
   smpl_chunk_data.midi_pitch_fraction = 0;
   smpl_chunk_data.smpte_format = 0;
   smpl_chunk_data.smpte_offset = 0;

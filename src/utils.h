@@ -119,6 +119,7 @@ struct sample_info
   guint32 samplerate;
   guint32 bitdepth;
   guint32 channels;
+  guint32 midinote;
 };
 
 enum sysex_transfer_status

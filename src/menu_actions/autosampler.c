@@ -95,6 +95,7 @@ autosampler_runner (gpointer user_data)
 				&data->iter, 0, &value);
       note = g_value_get_string (&value);
       debug_print (1, "Recording note %s (%d)...\n", note, i);
+      editor.audio.sample_info.midinote = i;
 
       audio_start_recording (&editor.audio, data->channel_mask, NULL, NULL);
       backend_send_note_on (data->backend, data->channel, i, data->velocity);
