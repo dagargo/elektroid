@@ -27,6 +27,7 @@ struct preferences
 {
   gboolean autoplay;
   gboolean mix;
+  gboolean show_remote;
   gchar *local_dir;
 };
 

@@ -196,9 +196,14 @@ static GtkWidget *dialog;
 static GtkDialog *name_dialog;
 static GtkEntry *name_dialog_entry;
 static GtkWidget *name_dialog_accept_button;
+static GtkPopover *main_popover;
+static GtkWidget *show_remote_button;
 static GtkWidget *about_button;
+static GtkWidget *local_label;
 static GtkWidget *local_box;
+static GtkWidget *remote_devices_box;
 static GtkWidget *remote_box;
+static GtkWidget *tasks_box;
 static GtkLabel *backend_status_label;
 static GtkLabel *audio_status_label;
 static GtkListStore *devices_list_store;
@@ -842,6 +847,31 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
 cleanup:
   gtk_widget_destroy (dialog);
   dialog = NULL;
+}
+
+static void
+elektroid_show_remote (gboolean active)
+{
+  elektroid_refresh_devices (NULL, NULL);
+  gtk_widget_set_visible (local_label, active);
+  gtk_widget_set_visible (remote_box, active);
+  gtk_widget_set_visible (tasks_box, active);
+  gtk_widget_set_visible (remote_devices_box, active);
+}
+
+static void
+elektroid_show_remote_clicked (GtkWidget * object, gpointer data)
+{
+  gboolean active;
+
+  g_object_get (G_OBJECT (show_remote_button), "active", &active, NULL);
+  active = !active;
+  preferences.show_remote = active;
+  g_object_set (G_OBJECT (show_remote_button), "active", active, NULL);
+
+  gtk_widget_hide (GTK_WIDGET (main_popover));
+
+  elektroid_show_remote (active);
 }
 
 static void
@@ -3510,7 +3540,6 @@ elektroid_run (int argc, char *argv[])
   GtkCssProvider *css_provider;
   GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
-  GtkWidget *hostname_label;
 
   gtk_init (&argc, &argv);
   builder = gtk_builder_new ();
@@ -3543,14 +3572,22 @@ elektroid_run (int argc, char *argv[])
   ma_data.box =
     GTK_WIDGET (gtk_builder_get_object (builder, "menu_actions_box"));
 
+  main_popover =
+    GTK_POPOVER (gtk_builder_get_object (builder, "main_popover"));
+  gtk_popover_set_constrain_to (main_popover, GTK_POPOVER_CONSTRAINT_NONE);
+  show_remote_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "show_remote_button"));
+  g_object_set (G_OBJECT (show_remote_button), "role",
+		GTK_BUTTON_ROLE_CHECK, NULL);
   about_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "about_button"));
 
-  hostname_label =
-    GTK_WIDGET (gtk_builder_get_object (builder, "hostname_label"));
-
+  local_label = GTK_WIDGET (gtk_builder_get_object (builder, "local_label"));
+  remote_devices_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_devices_box"));
   local_box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box"));
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
+  tasks_box = GTK_WIDGET (gtk_builder_get_object (builder, "tasks_box"));
   backend_status_label =
     GTK_LABEL (gtk_builder_get_object (builder, "backend_status_label"));
   audio_status_label =
@@ -3558,6 +3595,9 @@ elektroid_run (int argc, char *argv[])
 
   g_signal_connect (main_window, "delete-event",
 		    G_CALLBACK (elektroid_delete_window), NULL);
+
+  g_signal_connect (show_remote_button, "clicked",
+		    G_CALLBACK (elektroid_show_remote_clicked), NULL);
 
   g_signal_connect (about_button, "clicked",
 		    G_CALLBACK (elektroid_show_about), NULL);
@@ -3839,9 +3879,13 @@ elektroid_run (int argc, char *argv[])
   editor_init (&editor, builder);
   progress_init (builder);
 
+  g_object_set (G_OBJECT (show_remote_button), "active",
+  preferences.show_remote, NULL);
+  elektroid_show_remote (preferences.show_remote);
+
   gtk_widget_set_sensitive (remote_box, FALSE);
   elektroid_audio_widgets_reset ();
-  gtk_label_set_text (GTK_LABEL (hostname_label), hostname);
+  gtk_label_set_text (GTK_LABEL (local_label), hostname);
 
   g_idle_add (elektroid_load_devices_bg, NULL);
   gtk_widget_show (main_window);

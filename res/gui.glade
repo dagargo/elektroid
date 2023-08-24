@@ -1422,6 +1422,30 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           </packing>
         </child>
         <child>
+          <object class="GtkModelButton" id="show_remote_button">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="text" translatable="yes">Show Remote</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkModelButton" id="about_button">
             <property name="visible">True</property>
             <property name="can-focus">True</property>
@@ -1431,7 +1455,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">1</property>
+            <property name="position">3</property>
           </packing>
         </child>
       </object>
@@ -1479,7 +1503,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                     <property name="column-spacing">6</property>
                     <property name="column-homogeneous">True</property>
                     <child>
-                      <object class="GtkBox">
+                      <object class="GtkBox" id="remote_devices_box">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="spacing">6</property>
@@ -1570,7 +1594,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="hostname_label">
+                      <object class="GtkLabel" id="local_label">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="halign">start</property>
@@ -2143,24 +2167,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
 audio-volume-high-symbolic
 audio-volume-low-symbolic
 audio-volume-medium-symbolic</property>
-                                <child internal-child="plus_button">
-                                  <object class="GtkButton">
-                                    <property name="can-focus">True</property>
-                                    <property name="receives-default">True</property>
-                                    <property name="halign">center</property>
-                                    <property name="valign">center</property>
-                                    <property name="relief">none</property>
-                                  </object>
-                                </child>
-                                <child internal-child="minus_button">
-                                  <object class="GtkButton">
-                                    <property name="can-focus">True</property>
-                                    <property name="receives-default">True</property>
-                                    <property name="halign">center</property>
-                                    <property name="valign">center</property>
-                                    <property name="relief">none</property>
-                                  </object>
-                                </child>
                               </object>
                               <packing>
                                 <property name="expand">True</property>
@@ -2186,17 +2192,17 @@ audio-volume-medium-symbolic</property>
                             <property name="column-spacing">6</property>
                             <property name="row-homogeneous">True</property>
                             <child>
-                              <object class="GtkLabel">
+                              <object class="GtkSwitch" id="mix_switch">
+                                <property name="name">autoplay_switch</property>
                                 <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="halign">end</property>
-                                <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Auto play</property>
-                                <property name="justify">right</property>
-                                <property name="wrap">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="halign">start</property>
+                                <property name="valign">center</property>
+                                <property name="active">True</property>
                               </object>
                               <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">0</property>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">1</property>
                               </packing>
                             </child>
                             <child>
@@ -2230,17 +2236,17 @@ on remote</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkSwitch" id="mix_switch">
-                                <property name="name">autoplay_switch</property>
+                              <object class="GtkLabel">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="halign">start</property>
-                                <property name="valign">center</property>
-                                <property name="active">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="halign">end</property>
+                                <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Auto play</property>
+                                <property name="justify">right</property>
+                                <property name="wrap">True</property>
                               </object>
                               <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">1</property>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">0</property>
                               </packing>
                             </child>
                           </object>
@@ -2259,6 +2265,7 @@ on remote</property>
                     </child>
                     <child>
                       <object class="GtkScrolledWindow" id="waveform_scrolled_window">
+                        <property name="height-request">100</property>
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="hexpand">True</property>
@@ -2482,7 +2489,7 @@ on remote</property>
               </packing>
             </child>
             <child>
-              <object class="GtkBox">
+              <object class="GtkBox" id="tasks_box">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="margin-top">6</property>

@@ -29,6 +29,7 @@
 #define MEMBER_AUTOPLAY "autoplay"
 #define MEMBER_MIX "mix"
 #define MEMBER_LOCALDIR "localDir"
+#define MEMBER_SHOWREMOTE "showRemote"
 
 gint
 preferences_save (struct preferences *preferences)
@@ -62,6 +63,9 @@ preferences_save (struct preferences *preferences)
 
   json_builder_set_member_name (builder, MEMBER_MIX);
   json_builder_add_boolean_value (builder, preferences->mix);
+
+  json_builder_set_member_name (builder, MEMBER_SHOWREMOTE);
+  json_builder_add_boolean_value (builder, preferences->show_remote);
 
   json_builder_set_member_name (builder, MEMBER_LOCALDIR);
   json_builder_add_string_value (builder, preferences->local_dir);
@@ -103,6 +107,7 @@ preferences_load (struct preferences *preferences)
       g_free (preferences_file);
       preferences->autoplay = TRUE;
       preferences->mix = TRUE;
+      preferences->show_remote = TRUE;
       preferences->local_dir = get_user_dir (NULL);
       return 0;
     }
@@ -128,6 +133,16 @@ preferences_load (struct preferences *preferences)
   else
     {
       preferences->mix = TRUE;
+    }
+  json_reader_end_member (reader);
+
+  if (json_reader_read_member (reader, MEMBER_SHOWREMOTE))
+    {
+      preferences->show_remote = json_reader_get_boolean_value (reader);
+    }
+  else
+    {
+      preferences->show_remote = TRUE;
     }
   json_reader_end_member (reader);
 

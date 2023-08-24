@@ -459,7 +459,7 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
       cairo_stroke (cr);
       cairo_move_to (cr, value, 0);
       cairo_line_to (cr, value + EDITOR_LOOP_MARKER_WIDTH,
-                     EDITOR_LOOP_MARKER_HALF_HEIGHT);
+		     EDITOR_LOOP_MARKER_HALF_HEIGHT);
       cairo_line_to (cr, value, EDITOR_LOOP_MARKER_FULL_HEIGHT);
       cairo_fill (cr);
 
@@ -469,7 +469,7 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
       cairo_stroke (cr);
       cairo_move_to (cr, value, 0);
       cairo_line_to (cr, value - EDITOR_LOOP_MARKER_WIDTH,
-                     EDITOR_LOOP_MARKER_HALF_HEIGHT);
+		     EDITOR_LOOP_MARKER_HALF_HEIGHT);
       cairo_line_to (cr, value, EDITOR_LOOP_MARKER_FULL_HEIGHT);
       cairo_fill (cr);
     }
