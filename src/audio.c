@@ -213,6 +213,7 @@ audio_reset_record_buffer (struct audio *audio, guint record_options,
   audio->sample_info.channels = (record_options & RECORD_STEREO) == 3 ? 2 : 1;
   audio->sample_info.frames = audio->sample_info.samplerate *
     MAX_RECORDING_TIME_S;
+  audio->sample_info.bitdepth = 16;
   guint size = audio->sample_info.frames *
     BYTES_PER_FRAME (audio->sample_info.channels);
   g_byte_array_set_size (audio->sample, size);
