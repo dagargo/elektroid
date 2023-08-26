@@ -69,6 +69,7 @@ preferences.c preferences.h \
 menu_action.c menu_action.h \
 menu_actions/backend.c menu_actions/microbrute.c menu_actions/autosampler.c\
 editor.c editor.h \
+tasks.c tasks.h \
 guirecorder.c guirecorder.h \
 progress.c progress.h \
 elektroid.c

@@ -31,6 +31,7 @@
 #include "connector.h"
 #include "browser.h"
 #include "editor.h"
+#include "tasks.h"
 #include "sample.h"
 #include "utils.h"
 #include "local.h"
@@ -58,21 +59,6 @@ enum device_list_store_columns
   DEVICES_LIST_STORE_NAME_FIELD
 };
 
-enum task_list_store_columns
-{
-  TASK_LIST_STORE_STATUS_FIELD,
-  TASK_LIST_STORE_TYPE_FIELD,
-  TASK_LIST_STORE_SRC_FIELD,
-  TASK_LIST_STORE_DST_FIELD,
-  TASK_LIST_STORE_PROGRESS_FIELD,
-  TASK_LIST_STORE_STATUS_HUMAN_FIELD,
-  TASK_LIST_STORE_TYPE_HUMAN_FIELD,
-  TASK_LIST_STORE_REMOTE_FS_ID_FIELD,
-  TASK_LIST_STORE_REMOTE_FS_ICON_FIELD,
-  TASK_LIST_STORE_BATCH_ID_FIELD,
-  TASK_LIST_STORE_MODE_FIELD
-};
-
 enum fs_list_store_columns
 {
   FS_LIST_STORE_ID_FIELD,
@@ -85,39 +71,6 @@ enum
   TARGET_STRING,
 };
 
-enum elektroid_task_type
-{
-  UPLOAD,
-  DOWNLOAD
-};
-
-enum elektroid_task_status
-{
-  QUEUED,
-  RUNNING,
-  COMPLETED_OK,
-  COMPLETED_ERROR,
-  CANCELED
-};
-
-enum elektroid_task_mode
-{
-  ELEKTROID_TASK_OPTION_ASK,
-  ELEKTROID_TASK_OPTION_REPLACE,
-  ELEKTROID_TASK_OPTION_SKIP
-};
-
-struct elektroid_transfer
-{
-  struct job_control control;
-  gchar *src;			//Contains a path to a file
-  gchar *dst;			//Contains a path to a file
-  enum elektroid_task_status status;	//Contains the final status
-  const struct fs_operations *fs_ops;	//Contains the fs_operations to use in this transfer
-  guint mode;
-  guint batch_id;
-};
-
 struct elektroid_dnd_data
 {
   GtkWidget *widget;
@@ -128,7 +81,6 @@ struct elektroid_dnd_data
 static gpointer elektroid_upload_task_runner (gpointer);
 static gpointer elektroid_download_task_runner (gpointer);
 static void elektroid_update_progress (struct job_control *);
-static void elektroid_cancel_all_tasks (GtkWidget *, gpointer);
 static void elektroid_clear_selection (struct browser *);
 static gboolean elektroid_local_check_selection (gpointer);
 
@@ -179,6 +131,7 @@ static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
 static const gchar *hostname;
 
 struct editor editor;
+struct tasks tasks;
 struct browser local_browser;
 struct browser remote_browser;
 
@@ -187,8 +140,6 @@ static struct preferences preferences;
 static struct ma_data ma_data;
 
 static guint batch_id;
-static GThread *task_thread;
-static struct elektroid_transfer transfer;
 
 static GtkWidget *main_window;
 static GtkAboutDialog *about_dialog;
@@ -208,11 +159,6 @@ static GtkLabel *backend_status_label;
 static GtkLabel *audio_status_label;
 static GtkListStore *devices_list_store;
 static GtkWidget *devices_combo;
-static GtkListStore *task_list_store;
-static GtkWidget *task_tree_view;
-static GtkWidget *cancel_task_button;
-static GtkWidget *remove_tasks_button;
-static GtkWidget *clear_tasks_button;
 static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
 static GtkTreeViewColumn *remote_tree_view_id_column;
@@ -492,57 +438,14 @@ elektroid_update_backend_status ()
     }
 }
 
-
-static gboolean
-elektroid_get_next_queued_task (GtkTreeIter * iter,
-				enum elektroid_task_type *type,
-				gchar ** src, gchar ** dst, gint * fs,
-				guint * batch_id, guint * mode)
-{
-  enum elektroid_task_status status;
-  gboolean found = FALSE;
-  gboolean valid =
-    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), iter);
-
-  while (valid)
-    {
-      if (type)
-	{
-	  gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), iter,
-			      TASK_LIST_STORE_STATUS_FIELD, &status,
-			      TASK_LIST_STORE_TYPE_FIELD, type,
-			      TASK_LIST_STORE_SRC_FIELD, src,
-			      TASK_LIST_STORE_DST_FIELD, dst,
-			      TASK_LIST_STORE_REMOTE_FS_ID_FIELD, fs,
-			      TASK_LIST_STORE_BATCH_ID_FIELD, batch_id,
-			      TASK_LIST_STORE_MODE_FIELD, mode, -1);
-	}
-      else
-	{
-	  gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), iter,
-			      TASK_LIST_STORE_STATUS_FIELD, &status, -1);
-	}
-
-      if (status == QUEUED)
-	{
-	  found = TRUE;
-	  break;
-	}
-      valid =
-	gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store), iter);
-    }
-
-  return found;
-}
-
 gboolean
 elektroid_check_backend ()
 {
   GtkTreeIter iter;
   gboolean remote_sensitive;
   gboolean connected = backend_check (&backend);
-  gboolean queued = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						    NULL, NULL, NULL);
+  gboolean queued = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+					   NULL, NULL, NULL);
 
   elektroid_update_upload_menuitem ();
 
@@ -581,9 +484,9 @@ elektroid_check_backend_bg (gpointer data)
 static void
 elektroid_cancel_all_tasks_and_wait ()
 {
-  elektroid_cancel_all_tasks (NULL, NULL);
+  tasks_cancel_all (NULL, &tasks);
   //In this case, the active waiting can not be avoided as the user has cancelled the operation.
-  while (transfer.status == RUNNING)
+  while (tasks.transfer.status == RUNNING)
     {
       usleep (50000);
     }
@@ -1303,34 +1206,6 @@ elektroid_button_release (GtkWidget * treeview, GdkEventButton * event,
 }
 
 static void
-elektroid_join_task_thread ()
-{
-  debug_print (2, "Joining task thread...\n");
-
-  g_mutex_lock (&transfer.control.mutex);
-  g_cond_signal (&transfer.control.cond);
-  g_mutex_unlock (&transfer.control.mutex);
-
-  if (task_thread)
-    {
-      g_thread_join (task_thread);
-      task_thread = NULL;
-    }
-}
-
-static void
-elektroid_stop_task_thread ()
-{
-  debug_print (1, "Stopping task thread...\n");
-
-  g_mutex_lock (&transfer.control.mutex);
-  transfer.control.active = FALSE;
-  g_mutex_unlock (&transfer.control.mutex);
-
-  elektroid_join_task_thread ();
-}
-
-static void
 elektroid_audio_widgets_reset ()
 {
   gtk_widget_set_sensitive (local_browser.open_menuitem, FALSE);
@@ -1644,231 +1519,7 @@ elektroid_name_dialog_entry_changed (GtkWidget * object, gpointer data)
 }
 
 static gboolean
-elektroid_get_running_task (GtkTreeIter * iter)
-{
-  enum elektroid_task_status status;
-  gboolean found = FALSE;
-  gboolean valid =
-    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), iter);
-
-  while (valid)
-    {
-      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), iter,
-			  TASK_LIST_STORE_STATUS_FIELD, &status, -1);
-
-      if (status == RUNNING)
-	{
-	  found = TRUE;
-	  break;
-	}
-
-      valid =
-	gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store), iter);
-    }
-
-  return found;
-}
-
-static const gchar *
-elektroid_get_human_task_status (enum elektroid_task_status status)
-{
-  switch (status)
-    {
-    case QUEUED:
-      return _("Queued");
-    case RUNNING:
-      return _("Running");
-    case COMPLETED_OK:
-      return _("Completed");
-    case COMPLETED_ERROR:
-      return _("Terminated with errors");
-    case CANCELED:
-      return _("Canceled");
-    default:
-      return _("Undefined");
-    }
-}
-
-static const gchar *
-elektroid_get_human_task_type (enum elektroid_task_type type)
-{
-  switch (type)
-    {
-    case UPLOAD:
-      return _("Upload");
-    case DOWNLOAD:
-      return _("Download");
-    default:
-      return _("Undefined");
-    }
-}
-
-static void
-elektroid_stop_running_task (GtkWidget * object, gpointer data)
-{
-  g_mutex_lock (&transfer.control.mutex);
-  transfer.control.active = FALSE;
-  g_mutex_unlock (&transfer.control.mutex);
-}
-
-static gboolean
-elektroid_task_is_queued (enum elektroid_task_status status)
-{
-  return (status == QUEUED);
-}
-
-static gboolean
-elektroid_task_is_finished (enum elektroid_task_status status)
-{
-  return (status == COMPLETED_OK ||
-	  status == COMPLETED_ERROR || status == CANCELED);
-}
-
-static gboolean
-elektroid_check_task_buttons (gpointer data)
-{
-  enum elektroid_task_status status;
-  gboolean queued = FALSE;
-  gboolean finished = FALSE;
-  GtkTreeIter iter;
-  gboolean valid =
-    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), &iter);
-
-  while (valid)
-    {
-      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter,
-			  TASK_LIST_STORE_STATUS_FIELD, &status, -1);
-
-      if (elektroid_task_is_queued (status))
-	{
-	  queued = TRUE;
-	}
-
-      if (elektroid_task_is_finished (status))
-	{
-	  finished = TRUE;
-	}
-
-      valid =
-	gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store), &iter);
-    }
-
-  gtk_widget_set_sensitive (remove_tasks_button, queued);
-  gtk_widget_set_sensitive (clear_tasks_button, finished);
-
-  return FALSE;
-}
-
-static void
-elektroid_task_visitor_set_canceled (GtkTreeIter * iter)
-{
-  const gchar *canceled = elektroid_get_human_task_status (CANCELED);
-  gtk_list_store_set (task_list_store, iter,
-		      TASK_LIST_STORE_STATUS_FIELD,
-		      CANCELED,
-		      TASK_LIST_STORE_STATUS_HUMAN_FIELD, canceled, -1);
-}
-
-static void
-elektroid_visit_pending_tasks (void (*visitor) (GtkTreeIter * iter))
-{
-  enum elektroid_task_status status;
-  GtkTreeIter iter;
-  gboolean valid =
-    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), &iter);
-
-  while (valid)
-    {
-      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter,
-			  TASK_LIST_STORE_STATUS_FIELD, &status, -1);
-      if (status == QUEUED)
-	{
-	  visitor (&iter);
-	}
-      valid = gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store),
-					&iter);
-    }
-}
-
-static void
-elektroid_cancel_all_tasks (GtkWidget * object, gpointer data)
-{
-  elektroid_visit_pending_tasks (elektroid_task_visitor_set_canceled);
-
-  elektroid_stop_running_task (NULL, NULL);
-  elektroid_check_task_buttons (NULL);
-}
-
-static void
-elektroid_remove_tasks_on_cond (gboolean (*selector)
-				(enum elektroid_task_status))
-{
-  enum elektroid_task_status status;
-  GtkTreeIter iter;
-  gboolean valid =
-    gtk_tree_model_get_iter_first (GTK_TREE_MODEL (task_list_store), &iter);
-
-  while (valid)
-    {
-      gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), &iter,
-			  TASK_LIST_STORE_STATUS_FIELD, &status, -1);
-
-      if (selector (status))
-	{
-	  gtk_list_store_remove (task_list_store, &iter);
-	  valid = gtk_list_store_iter_is_valid (task_list_store, &iter);
-	}
-      else
-	{
-	  valid =
-	    gtk_tree_model_iter_next (GTK_TREE_MODEL (task_list_store),
-				      &iter);
-	}
-    }
-
-  elektroid_check_task_buttons (NULL);
-}
-
-static void
-elektroid_remove_queued_tasks (GtkWidget * object, gpointer data)
-{
-  elektroid_remove_tasks_on_cond (elektroid_task_is_queued);
-}
-
-static void
-elektroid_clear_finished_tasks (GtkWidget * object, gpointer data)
-{
-  elektroid_remove_tasks_on_cond (elektroid_task_is_finished);
-}
-
-static gboolean
-elektroid_complete_running_task (gpointer data)
-{
-  GtkTreeIter iter;
-  const gchar *status = elektroid_get_human_task_status (transfer.status);
-
-  if (elektroid_get_running_task (&iter))
-    {
-      gtk_list_store_set (task_list_store, &iter,
-			  TASK_LIST_STORE_STATUS_FIELD,
-			  transfer.status,
-			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status, -1);
-      elektroid_stop_running_task (NULL, NULL);
-      g_free (transfer.src);
-      g_free (transfer.dst);
-
-      gtk_widget_set_sensitive (cancel_task_button, FALSE);
-    }
-  else
-    {
-      debug_print (1, "No task running. Skipping...\n");
-    }
-
-  return FALSE;
-}
-
-static gboolean
-elektroid_run_next_task (gpointer data)
+tasks_run_next (gpointer data)
 {
   GtkTreeIter iter;
   enum elektroid_task_type type;
@@ -1878,13 +1529,13 @@ elektroid_run_next_task (gpointer data)
   guint batch_id, mode;
   GtkTreePath *path;
   gboolean transfer_active;
-  gboolean found = elektroid_get_next_queued_task (&iter, &type, &src, &dst,
-						   &fs, &batch_id, &mode);
-  const gchar *status_human = elektroid_get_human_task_status (RUNNING);
+  gboolean found = tasks_get_next_queued (&tasks, &iter, &type, &src, &dst,
+					  &fs, &batch_id, &mode);
+  const gchar *status_human = tasks_get_human_status (RUNNING);
 
-  g_mutex_lock (&transfer.control.mutex);
-  transfer_active = transfer.control.active;
-  g_mutex_unlock (&transfer.control.mutex);
+  g_mutex_lock (&tasks.transfer.control.mutex);
+  transfer_active = tasks.transfer.control.active;
+  g_mutex_unlock (&tasks.transfer.control.mutex);
 
   if (!transfer_active && found)
     {
@@ -1895,42 +1546,43 @@ elektroid_run_next_task (gpointer data)
 	}
       gtk_widget_set_sensitive (ma_data.box, FALSE);
 
-      gtk_list_store_set (task_list_store, &iter,
+      gtk_list_store_set (tasks.list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, RUNNING,
 			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status_human,
 			  -1);
-      path =
-	gtk_tree_model_get_path (GTK_TREE_MODEL (task_list_store), &iter);
-      gtk_tree_view_set_cursor (GTK_TREE_VIEW (task_tree_view), path, NULL,
+      path = gtk_tree_model_get_path (GTK_TREE_MODEL (tasks.list_store),
+				      &iter);
+      gtk_tree_view_set_cursor (GTK_TREE_VIEW (tasks.tree_view), path, NULL,
 				FALSE);
       gtk_tree_path_free (path);
-      transfer.status = RUNNING;
-      transfer.control.active = TRUE;
-      transfer.control.callback = elektroid_update_progress;
-      transfer.control.parts = 1000;	//Any reasonable high number is enough to make the progress monotonic.
-      transfer.control.part = 0;
-      set_job_control_progress (&transfer.control, 0.0);
-      transfer.src = src;
-      transfer.dst = dst;
-      transfer.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
-      transfer.batch_id = batch_id;
-      transfer.mode = mode;
+      tasks.transfer.status = RUNNING;
+      tasks.transfer.control.active = TRUE;
+      tasks.transfer.control.callback = elektroid_update_progress;
+      tasks.transfer.control.parts = 1000;	//Any reasonable high number is enough to make the progress monotonic.
+      tasks.transfer.control.part = 0;
+      set_job_control_progress (&tasks.transfer.control, 0.0);
+      tasks.transfer.src = src;
+      tasks.transfer.dst = dst;
+      tasks.transfer.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
+      tasks.transfer.batch_id = batch_id;
+      tasks.transfer.mode = mode;
       debug_print (1, "Running task type %d from %s to %s (%s)...\n", type,
-		   transfer.src, transfer.dst, elektroid_get_fs_name (fs));
+		   tasks.transfer.src, tasks.transfer.dst,
+		   elektroid_get_fs_name (fs));
 
       if (type == UPLOAD)
 	{
-	  task_thread = g_thread_new ("upload_task",
-				      elektroid_upload_task_runner, NULL);
+	  tasks.thread = g_thread_new ("upload_task",
+				       elektroid_upload_task_runner, NULL);
 	  remote_browser.dirty = TRUE;
 	}
       else if (type == DOWNLOAD)
 	{
-	  task_thread = g_thread_new ("download_task",
-				      elektroid_download_task_runner, NULL);
+	  tasks.thread = g_thread_new ("download_task",
+				       elektroid_download_task_runner, NULL);
 	}
 
-      gtk_widget_set_sensitive (cancel_task_button, TRUE);
+      gtk_widget_set_sensitive (tasks.cancel_task_button, TRUE);
     }
   else
     {
@@ -1945,48 +1597,9 @@ elektroid_run_next_task (gpointer data)
 	}
     }
 
-  elektroid_check_task_buttons (NULL);
+  tasks_check_buttons (&tasks);
 
   return FALSE;
-}
-
-static void
-elektroid_task_batch_visitor_set_status (GtkTreeIter * iter,
-					 enum elektroid_task_mode mode)
-{
-  gint batch_id;
-  gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), iter,
-		      TASK_LIST_STORE_BATCH_ID_FIELD, &batch_id, -1);
-  if (batch_id == transfer.batch_id)
-    {
-      gtk_list_store_set (task_list_store, iter,
-			  TASK_LIST_STORE_MODE_FIELD, mode, -1);
-    }
-}
-
-static void
-elektroid_task_batch_visitor_set_canceled (GtkTreeIter * iter)
-{
-  gint batch_id;
-  gtk_tree_model_get (GTK_TREE_MODEL (task_list_store), iter,
-		      TASK_LIST_STORE_BATCH_ID_FIELD, &batch_id, -1);
-  if (batch_id == transfer.batch_id)
-    {
-      elektroid_task_visitor_set_canceled (iter);
-    }
-}
-
-static void
-elektroid_task_batch_visitor_set_skip (GtkTreeIter * iter)
-{
-  elektroid_task_batch_visitor_set_status (iter, ELEKTROID_TASK_OPTION_SKIP);
-}
-
-static void
-elektroid_task_batch_visitor_set_replace (GtkTreeIter * iter)
-{
-  elektroid_task_batch_visitor_set_status (iter,
-					   ELEKTROID_TASK_OPTION_REPLACE);
 }
 
 static gboolean
@@ -2023,27 +1636,24 @@ elektroid_show_task_overwrite_dialog (gpointer data)
     {
     case GTK_RESPONSE_CANCEL:
       //Cancel current task.
-      transfer.status = CANCELED;
+      tasks.transfer.status = CANCELED;
       //Cancel all tasks belonging to the same batch.
-      elektroid_visit_pending_tasks
-	(elektroid_task_batch_visitor_set_canceled);
+      tasks_visit_pending (&tasks, tasks_visitor_set_batch_canceled);
       break;
     case GTK_RESPONSE_REJECT:
       //Cancel current task.
-      transfer.status = CANCELED;
+      tasks.transfer.status = CANCELED;
       if (apply_to_all)
 	{
 	  //Mark pending tasks as SKIP.
-	  elektroid_visit_pending_tasks
-	    (elektroid_task_batch_visitor_set_skip);
+	  tasks_visit_pending (&tasks, tasks_batch_visitor_set_skip);
 	}
       break;
     case GTK_RESPONSE_ACCEPT:
       //Mark pending tasks as REPLACE.
       if (apply_to_all)
 	{
-	  elektroid_visit_pending_tasks
-	    (elektroid_task_batch_visitor_set_replace);
+	  tasks_visit_pending (&tasks, tasks_batch_visitor_set_replace);
 	}
       break;
     }
@@ -2051,9 +1661,9 @@ elektroid_show_task_overwrite_dialog (gpointer data)
   gtk_widget_destroy (dialog);
   dialog = NULL;
 
-  g_mutex_lock (&transfer.control.mutex);
-  g_cond_signal (&transfer.control.cond);
-  g_mutex_unlock (&transfer.control.mutex);
+  g_mutex_lock (&tasks.transfer.control.mutex);
+  g_cond_signal (&tasks.transfer.control.cond);
+  g_mutex_unlock (&tasks.transfer.control.mutex);
 
   return FALSE;
 }
@@ -2073,15 +1683,16 @@ elektroid_check_file_and_wait (gchar * path, struct browser *browser)
   const struct fs_operations *fs_ops = browser->fs_ops;
   if (fs_ops->file_exists && fs_ops->file_exists (backend, path))
     {
-      switch (transfer.mode)
+      switch (tasks.transfer.mode)
 	{
 	case ELEKTROID_TASK_OPTION_ASK:
 	  g_idle_add (elektroid_close_progress_dialog, NULL);
 	  g_idle_add (elektroid_show_task_overwrite_dialog, path);
-	  g_cond_wait (&transfer.control.cond, &transfer.control.mutex);
+	  g_cond_wait (&tasks.transfer.control.cond,
+		       &tasks.transfer.control.mutex);
 	  break;
 	case ELEKTROID_TASK_OPTION_SKIP:
-	  transfer.status = CANCELED;
+	  tasks.transfer.status = CANCELED;
 	  break;
 	}
     }
@@ -2094,70 +1705,79 @@ elektroid_upload_task_runner (gpointer data)
   GByteArray *array;
   gchar *dst_dir, *upload_path;
 
-  debug_print (1, "Local path: %s\n", transfer.src);
-  debug_print (1, "Remote path: %s\n", transfer.dst);
+  debug_print (1, "Local path: %s\n", tasks.transfer.src);
+  debug_print (1, "Remote path: %s\n", tasks.transfer.dst);
 
   if (remote_browser.fs_ops->mkdir
-      && remote_browser.fs_ops->mkdir (remote_browser.backend, transfer.dst))
+      && remote_browser.fs_ops->mkdir (remote_browser.backend,
+				       tasks.transfer.dst))
     {
-      error_print ("Error while creating remote %s dir\n", transfer.dst);
-      transfer.status = COMPLETED_ERROR;
+      error_print ("Error while creating remote %s dir\n",
+		   tasks.transfer.dst);
+      tasks.transfer.status = COMPLETED_ERROR;
       return NULL;
     }
 
   array = g_byte_array_new ();
-  res = transfer.fs_ops->load (transfer.src, array, &transfer.control);
+  res =
+    tasks.transfer.fs_ops->load (tasks.transfer.src, array,
+				 &tasks.transfer.control);
   if (res)
     {
       error_print ("Error while loading file\n");
-      transfer.status = COMPLETED_ERROR;
+      tasks.transfer.status = COMPLETED_ERROR;
       goto end_cleanup;
     }
 
-  debug_print (1, "Writing from file %s (filesystem %s)...\n", transfer.src,
-	       elektroid_get_fs_name (transfer.fs_ops->fs));
+  debug_print (1, "Writing from file %s (filesystem %s)...\n",
+	       tasks.transfer.src,
+	       elektroid_get_fs_name (tasks.transfer.fs_ops->fs));
 
   if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
     {
-      upload_path = strdup (transfer.dst);
+      upload_path = strdup (tasks.transfer.dst);
     }
   else
     {
       upload_path = remote_browser.fs_ops->get_upload_path (&backend,
 							    remote_browser.fs_ops,
+							    tasks.
 							    transfer.dst,
+							    tasks.
 							    transfer.src);
-      g_mutex_lock (&transfer.control.mutex);
+      g_mutex_lock (&tasks.transfer.control.mutex);
       elektroid_check_file_and_wait (upload_path, &remote_browser);
-      g_mutex_unlock (&transfer.control.mutex);
-      if (transfer.status == CANCELED)
+      g_mutex_unlock (&tasks.transfer.control.mutex);
+      if (tasks.transfer.status == CANCELED)
 	{
 	  goto end_cleanup;
 	}
     }
 
-  res = transfer.fs_ops->upload (remote_browser.backend, upload_path, array,
-				 &transfer.control);
-  g_free (transfer.control.data);
-  transfer.control.data = NULL;
+  res =
+    tasks.transfer.fs_ops->upload (remote_browser.backend, upload_path, array,
+				   &tasks.transfer.control);
+  g_free (tasks.transfer.control.data);
+  tasks.transfer.control.data = NULL;
   g_idle_add (elektroid_check_backend_bg, NULL);
 
-  if (res && transfer.control.active)
+  if (res && tasks.transfer.control.active)
     {
       error_print ("Error while uploading\n");
-      transfer.status = COMPLETED_ERROR;
+      tasks.transfer.status = COMPLETED_ERROR;
     }
   else
     {
-      g_mutex_lock (&transfer.control.mutex);
-      transfer.status = transfer.control.active ? COMPLETED_OK : CANCELED;
-      g_mutex_unlock (&transfer.control.mutex);
+      g_mutex_lock (&tasks.transfer.control.mutex);
+      tasks.transfer.status =
+	tasks.transfer.control.active ? COMPLETED_OK : CANCELED;
+      g_mutex_unlock (&tasks.transfer.control.mutex);
     }
 
   dst_dir = g_path_get_dirname (upload_path);
-  if (!res && transfer.fs_ops == remote_browser.fs_ops &&
+  if (!res && tasks.transfer.fs_ops == remote_browser.fs_ops &&
       !strncmp (dst_dir, remote_browser.dir, strlen (remote_browser.dir))
-      && !(transfer.fs_ops->options & FS_OPTION_SINGLE_OP))
+      && !(tasks.transfer.fs_ops->options & FS_OPTION_SINGLE_OP))
     {
       g_idle_add (elektroid_load_remote_if_midi, &remote_browser);
     }
@@ -2167,39 +1787,9 @@ elektroid_upload_task_runner (gpointer data)
 
 end_cleanup:
   g_byte_array_free (array, TRUE);
-  g_idle_add (elektroid_complete_running_task, NULL);
-  g_idle_add (elektroid_run_next_task, NULL);
+  g_idle_add (tasks_complete_current, &tasks);
+  g_idle_add (tasks_run_next, NULL);
   return NULL;
-}
-
-static void
-elektroid_add_task (enum elektroid_task_type type, const char *src,
-		    const char *dst, gint remote_fs_id)
-{
-  const gchar *status_human = elektroid_get_human_task_status (QUEUED);
-  const gchar *type_human = elektroid_get_human_task_type (type);
-  const gchar *icon =
-    backend_get_fs_operations (&backend, remote_fs_id, NULL)->gui_icon;
-
-  gtk_list_store_insert_with_values (task_list_store, NULL, -1,
-				     TASK_LIST_STORE_STATUS_FIELD, QUEUED,
-				     TASK_LIST_STORE_TYPE_FIELD, type,
-				     TASK_LIST_STORE_SRC_FIELD, src,
-				     TASK_LIST_STORE_DST_FIELD, dst,
-				     TASK_LIST_STORE_PROGRESS_FIELD, 0.0,
-				     TASK_LIST_STORE_STATUS_HUMAN_FIELD,
-				     status_human,
-				     TASK_LIST_STORE_TYPE_HUMAN_FIELD,
-				     type_human,
-				     TASK_LIST_STORE_REMOTE_FS_ID_FIELD,
-				     remote_fs_id,
-				     TASK_LIST_STORE_REMOTE_FS_ICON_FIELD,
-				     icon,
-				     TASK_LIST_STORE_BATCH_ID_FIELD, batch_id,
-				     TASK_LIST_STORE_MODE_FIELD,
-				     ELEKTROID_TASK_OPTION_ASK, -1);
-
-  gtk_widget_set_sensitive (remove_tasks_button, TRUE);
 }
 
 static void
@@ -2246,8 +1836,8 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
 	}
       if (file_matches_extensions (src_abs_path, local_browser.extensions))
 	{
-	  elektroid_add_task (UPLOAD, src_abs_path, upload_path,
-			      remote_browser.fs_ops->fs);
+	  tasks_add (&tasks, UPLOAD, src_abs_path, upload_path,
+		     remote_browser.fs_ops->fs, &backend);
 	}
       g_free (upload_path);
       g_free (dst_abs_dir);
@@ -2290,8 +1880,8 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
   selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.view));
 
-  queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						  NULL, NULL, NULL);
+  queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+					 NULL, NULL, NULL);
 
   selected_rows = gtk_tree_selection_get_selected_rows (selection, NULL);
   while (selected_rows)
@@ -2318,11 +1908,11 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
     }
   g_list_free_full (selected_rows, (GDestroyNotify) gtk_tree_path_free);
 
-  queued_after = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						 NULL, NULL, NULL);
+  queued_after = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+					NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
-      g_idle_add (elektroid_run_next_task, NULL);
+      g_idle_add (tasks_run_next, NULL);
     }
 
   elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
@@ -2352,45 +1942,48 @@ elektroid_download_task_runner (gpointer userdata)
   GByteArray *array;
   gchar *dst_path;
 
-  debug_print (1, "Remote path: %s\n", transfer.src);
-  debug_print (1, "Local dir: %s\n", transfer.dst);
+  debug_print (1, "Remote path: %s\n", tasks.transfer.src);
+  debug_print (1, "Local dir: %s\n", tasks.transfer.dst);
 
-  if (local_browser.fs_ops->mkdir (local_browser.backend, transfer.dst))
+  if (local_browser.fs_ops->mkdir (local_browser.backend, tasks.transfer.dst))
     {
-      error_print ("Error while creating local %s dir\n", transfer.dst);
-      transfer.status = COMPLETED_ERROR;
+      error_print ("Error while creating local %s dir\n", tasks.transfer.dst);
+      tasks.transfer.status = COMPLETED_ERROR;
       goto end_no_dir;
     }
 
   dst_path = remote_browser.fs_ops->get_download_path (&backend,
 						       remote_browser.fs_ops,
-						       transfer.dst,
-						       transfer.src, NULL);
-  g_mutex_lock (&transfer.control.mutex);
+						       tasks.transfer.dst,
+						       tasks.transfer.src,
+						       NULL);
+  g_mutex_lock (&tasks.transfer.control.mutex);
   elektroid_check_file_and_wait (dst_path, &local_browser);
-  g_mutex_unlock (&transfer.control.mutex);
+  g_mutex_unlock (&tasks.transfer.control.mutex);
 
-  if (transfer.status == CANCELED)
+  if (tasks.transfer.status == CANCELED)
     {
       goto end_with_no_download;
     }
 
   array = g_byte_array_new ();
-  res = transfer.fs_ops->download (remote_browser.backend, transfer.src,
-				   array, &transfer.control);
+  res =
+    tasks.transfer.fs_ops->download (remote_browser.backend,
+				     tasks.transfer.src, array,
+				     &tasks.transfer.control);
   g_idle_add (elektroid_check_backend_bg, NULL);
 
-  g_mutex_lock (&transfer.control.mutex);
-  if (res && transfer.control.active)
+  g_mutex_lock (&tasks.transfer.control.mutex);
+  if (res && tasks.transfer.control.active)
     {
       error_print ("Error while downloading\n");
-      transfer.status = COMPLETED_ERROR;
+      tasks.transfer.status = COMPLETED_ERROR;
       goto end_with_download_error;
     }
 
-  if (!transfer.control.active)
+  if (!tasks.transfer.control.active)
     {
-      transfer.status = CANCELED;
+      tasks.transfer.status = CANCELED;
       goto end_canceled_transfer;
     }
 
@@ -2398,22 +1991,24 @@ elektroid_download_task_runner (gpointer userdata)
     {
       dst_path = remote_browser.fs_ops->get_download_path (&backend,
 							   remote_browser.fs_ops,
-							   transfer.dst,
-							   transfer.src,
+							   tasks.transfer.dst,
+							   tasks.transfer.src,
 							   array);
       elektroid_check_file_and_wait (dst_path, &local_browser);
     }
 
-  if (transfer.status != CANCELED)
+  if (tasks.transfer.status != CANCELED)
     {
       debug_print (1,
 		   "Writing %d bytes to file %s (filesystem %s)...\n",
 		   array->len, dst_path,
-		   elektroid_get_fs_name (transfer.fs_ops->fs));
-      res = transfer.fs_ops->save (dst_path, array, &transfer.control);
+		   elektroid_get_fs_name (tasks.transfer.fs_ops->fs));
+      res =
+	tasks.transfer.fs_ops->save (dst_path, array,
+				     &tasks.transfer.control);
       if (!res)
 	{
-	  transfer.status = COMPLETED_OK;
+	  tasks.transfer.status = COMPLETED_OK;
 	  g_idle_add (elektroid_load_local_if_no_notifier, &local_browser);
 	}
     }
@@ -2421,15 +2016,15 @@ elektroid_download_task_runner (gpointer userdata)
 
 end_canceled_transfer:
   g_byte_array_free (array, TRUE);
-  g_free (transfer.control.data);
-  transfer.control.data = NULL;
+  g_free (tasks.transfer.control.data);
+  tasks.transfer.control.data = NULL;
 
 end_with_download_error:
-  g_mutex_unlock (&transfer.control.mutex);
+  g_mutex_unlock (&tasks.transfer.control.mutex);
 
 end_with_no_download:
-  g_idle_add (elektroid_complete_running_task, NULL);
-  g_idle_add (elektroid_run_next_task, NULL);
+  g_idle_add (tasks_complete_current, &tasks);
+  g_idle_add (tasks_run_next, NULL);
 
 end_no_dir:
   return NULL;
@@ -2469,8 +2064,8 @@ elektroid_add_download_task_path (const gchar * rel_path,
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
       if (file_matches_extensions (src_abs_path, remote_browser.extensions))
 	{
-	  elektroid_add_task (DOWNLOAD, src_abs_path, dst_abs_dir,
-			      remote_browser.fs_ops->fs);
+	  tasks_add (&tasks, DOWNLOAD, src_abs_path, dst_abs_dir,
+		     remote_browser.fs_ops->fs, &backend);
 	}
       g_free (dst_abs_dir);
       g_free (dst_abs_path);
@@ -2508,8 +2103,8 @@ elektroid_add_download_tasks_runner (gpointer data)
   selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
 
-  queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						  NULL, NULL, NULL);
+  queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+					 NULL, NULL, NULL);
 
   backend_enable_cache (remote_browser.backend);
 
@@ -2543,11 +2138,11 @@ elektroid_add_download_tasks_runner (gpointer data)
 
   backend_disable_cache (remote_browser.backend);
 
-  queued_after = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						 NULL, NULL, NULL);
+  queued_after = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+					NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
-      g_idle_add (elektroid_run_next_task, NULL);
+      g_idle_add (tasks_run_next, NULL);
     }
 
   elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
@@ -2570,32 +2165,10 @@ elektroid_add_download_tasks (GtkWidget * object, gpointer data)
 		_("Preparing Tasks"), _("Waiting..."), NULL);
 }
 
-static gboolean
-elektroid_set_progress_value (gpointer data)
-{
-  GtkTreeIter iter;
-  gdouble progress;
-
-  if (elektroid_get_running_task (&iter))
-    {
-      g_mutex_lock (&transfer.control.mutex);
-      progress = transfer.control.progress;
-      g_mutex_unlock (&transfer.control.mutex);
-
-      gtk_list_store_set (task_list_store, &iter,
-			  TASK_LIST_STORE_PROGRESS_FIELD,
-			  100.0 * progress, -1);
-    }
-
-  free (data);
-
-  return FALSE;
-}
-
 static void
 elektroid_update_progress (struct job_control *control)
 {
-  g_idle_add (elektroid_set_progress_value, NULL);
+  g_idle_add (tasks_update_current_progress, &tasks);
 }
 
 static gboolean
@@ -3091,8 +2664,8 @@ elektroid_add_upload_task_slot (const gchar * name,
       dst_file_path = str->str;
       g_string_free (str, FALSE);
 
-      elektroid_add_task (UPLOAD, src_file_path, dst_file_path,
-			  remote_browser.fs_ops->fs);
+      tasks_add (&tasks, UPLOAD, src_file_path, dst_file_path,
+		 remote_browser.fs_ops->fs, &backend);
     }
 }
 
@@ -3113,8 +2686,8 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
       g_timeout_add (100, progress_pulse, NULL);
     }
 
-  queued_before = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						  NULL, NULL, NULL);
+  queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+					 NULL, NULL, NULL);
 
   cache = widget == GTK_WIDGET (local_browser.view) &&
     !strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID);
@@ -3183,11 +2756,11 @@ end:
       backend_disable_cache (&backend);
     }
 
-  queued_after = elektroid_get_next_queued_task (&iter, NULL, NULL, NULL,
-						 NULL, NULL, NULL);
+  queued_after = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+					NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
-      g_idle_add (elektroid_run_next_task, NULL);
+      g_idle_add (tasks_run_next, NULL);
     }
 
   if (dialog)
@@ -3514,7 +3087,7 @@ elektroid_quit ()
     }
 
   progress_stop_thread ();
-  elektroid_stop_task_thread ();
+  tasks_stop_thread (&tasks);
   editor_stop_load_thread (&editor);
 
   browser_destroy (&local_browser);
@@ -3840,24 +3413,6 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (refresh_devices_button, "clicked",
 		    G_CALLBACK (elektroid_refresh_devices), NULL);
 
-  task_list_store =
-    GTK_LIST_STORE (gtk_builder_get_object (builder, "task_list_store"));
-  task_tree_view =
-    GTK_WIDGET (gtk_builder_get_object (builder, "task_tree_view"));
-
-  cancel_task_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "cancel_task_button"));
-  remove_tasks_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remove_tasks_button"));
-  clear_tasks_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "clear_tasks_button"));
-  g_signal_connect (cancel_task_button, "clicked",
-		    G_CALLBACK (elektroid_cancel_all_tasks), NULL);
-  g_signal_connect (remove_tasks_button, "clicked",
-		    G_CALLBACK (elektroid_remove_queued_tasks), NULL);
-  g_signal_connect (clear_tasks_button, "clicked",
-		    G_CALLBACK (elektroid_clear_finished_tasks), NULL);
-
   gtk_label_set_text (backend_status_label, _("Not connected"));
 
   fs_list_store =
@@ -3877,10 +3432,11 @@ elektroid_run (int argc, char *argv[])
     g_slist_append (remote_browser.sensitive_widgets, fs_combo);
 
   editor_init (&editor, builder);
+  tasks_init (&tasks, builder);
   progress_init (builder);
 
   g_object_set (G_OBJECT (show_remote_button), "active",
-  preferences.show_remote, NULL);
+		preferences.show_remote, NULL);
   elektroid_show_remote (preferences.show_remote);
 
   gtk_widget_set_sensitive (remote_box, FALSE);

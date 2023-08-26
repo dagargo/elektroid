@@ -28,7 +28,6 @@ struct progress_progress_thread_data
 };
 
 struct sysex_transfer sysex_transfer;
-
 static GtkDialog *progress_dialog;
 static GtkWidget *progress_bar;
 static GtkWidget *progress_label;
