@@ -443,6 +443,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 	le32toh (smpl_chunk_data.sample_loop.start);
       sample_info_src->loopend = le32toh (smpl_chunk_data.sample_loop.end);
       sample_info_src->looptype = le32toh (smpl_chunk_data.sample_loop.type);
+      sample_info_src->midinote = le32toh (smpl_chunk_data.midi_unity_note);
       if (sample_info_src->loopstart >= sample_info_src->frames)
 	{
 	  debug_print (2, "Bad loop start\n");

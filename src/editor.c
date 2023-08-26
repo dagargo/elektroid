@@ -203,7 +203,10 @@ editor_show_sample_time_properties (struct editor *editor)
 static void
 editor_show_sample_properties_on_load (struct editor *editor)
 {
+  GValue value = G_VALUE_INIT;
   gchar label[LABEL_MAX];
+  const gchar *note;
+  GtkTreeIter iter;
   struct sample_info *sample_info = editor->audio.control.data;
 
   gtk_widget_set_visible (editor->sample_info_box, sample_info->frames > 0);
@@ -221,11 +224,22 @@ editor_show_sample_properties_on_load (struct editor *editor)
   snprintf (label, LABEL_MAX, "%d", sample_info->channels);
   gtk_label_set_text (GTK_LABEL (editor->sample_channels), label);
 
-  if (sample_info->bitdepth)
+  snprintf (label, LABEL_MAX, "%d", sample_info->bitdepth);
+  gtk_label_set_text (GTK_LABEL (editor->sample_bitdepth), label);
+
+  gtk_tree_model_get_iter_first (GTK_TREE_MODEL (editor->notes_list_store),
+				 &iter);
+  for (gint i = 0; i < sample_info->midinote; i++)
     {
-      snprintf (label, LABEL_MAX, "%d", sample_info->bitdepth);
-      gtk_label_set_text (GTK_LABEL (editor->sample_bitdepth), label);
+      gtk_tree_model_iter_next (GTK_TREE_MODEL (editor->notes_list_store),
+				&iter);
     }
+  gtk_tree_model_get_value (GTK_TREE_MODEL (editor->notes_list_store),
+			    &iter, 0, &value);
+  note = g_value_get_string (&value);
+  snprintf (label, LABEL_MAX, "%s (%d)", note, sample_info->midinote);
+  g_value_unset (&value);
+  gtk_label_set_text (GTK_LABEL (editor->sample_midinote), label);
 
   editor_set_start_frame (editor, 0);
 }
@@ -1152,6 +1166,11 @@ editor_init (struct editor *editor, GtkBuilder * builder)
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_samplerate"));
   editor->sample_bitdepth =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_bitdepth"));
+  editor->sample_midinote =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_midinote"));
+
+  editor->notes_list_store =
+    GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
 
   editor->menu = GTK_MENU (gtk_builder_get_object (builder, "editor_menu"));
   editor->play_menuitem =

@@ -2333,7 +2333,7 @@ on remote</property>
                           </packing>
                         </child>
                         <child>
-                          <!-- n-columns=2 n-rows=7 -->
+                          <!-- n-columns=2 n-rows=8 -->
                           <object class="GtkGrid" id="sample_info_box">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
@@ -2513,6 +2513,31 @@ on remote</property>
                               <packing>
                                 <property name="left-attach">1</property>
                                 <property name="top-attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="halign">end</property>
+                                <property name="valign">center</property>
+                                <property name="label" translatable="yes">MIDI note</property>
+                                <property name="wrap">True</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">7</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="sample_midinote">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="halign">start</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">7</property>
                               </packing>
                             </child>
                           </object>

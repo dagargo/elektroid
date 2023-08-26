@@ -50,6 +50,8 @@ struct editor
   GtkWidget *sample_channels;
   GtkWidget *sample_samplerate;
   GtkWidget *sample_bitdepth;
+  GtkWidget *sample_midinote;
+  GtkListStore *notes_list_store;
   GtkMenu *menu;
   GtkWidget *play_menuitem;
   GtkWidget *delete_menuitem;
