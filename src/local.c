@@ -204,8 +204,7 @@ local_next_dentry (struct item_iterator *iter)
 }
 
 static gint
-local_init_iterator (struct item_iterator *iter, const gchar * path,
-		     gboolean cached)
+local_init_iterator (struct item_iterator *iter, const gchar * path)
 {
   DIR *dir;
   struct local_iterator_data *data;
@@ -236,7 +235,7 @@ static gint
 local_read_dir (struct backend *backend, struct item_iterator *iter,
 		const gchar * path)
 {
-  return local_init_iterator (iter, path, FALSE);
+  return local_init_iterator (iter, path);
 }
 
 static gint
