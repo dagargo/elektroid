@@ -24,19 +24,19 @@
 #include "browser.h"
 
 const gchar *
-tasks_get_human_status (enum elektroid_task_status status)
+tasks_get_human_status (enum task_status status)
 {
   switch (status)
     {
-    case QUEUED:
+    case TASK_STATUS_QUEUED:
       return _("Queued");
-    case RUNNING:
+    case TASK_STATUS_RUNNING:
       return _("Running");
-    case COMPLETED_OK:
+    case TASK_STATUS_COMPLETED_OK:
       return _("Completed");
-    case COMPLETED_ERROR:
+    case TASK_STATUS_COMPLETED_ERROR:
       return _("Terminated with errors");
-    case CANCELED:
+    case TASK_STATUS_CANCELED:
       return _("Canceled");
     default:
       return _("Undefined");
@@ -44,13 +44,13 @@ tasks_get_human_status (enum elektroid_task_status status)
 }
 
 static const gchar *
-tasks_get_human_type (enum elektroid_task_type type)
+tasks_get_human_type (enum task_type type)
 {
   switch (type)
     {
-    case UPLOAD:
+    case TASK_TYPE_UPLOAD:
       return _("Upload");
-    case DOWNLOAD:
+    case TASK_TYPE_DOWNLOAD:
       return _("Download");
     default:
       return _("Undefined");
@@ -71,7 +71,7 @@ tasks_visit_pending (struct tasks *tasks,
 		     void (*visitor) (struct tasks * tasks,
 				      GtkTreeIter * iter))
 {
-  enum elektroid_task_status status;
+  enum task_status status;
   GtkTreeIter iter;
   gboolean valid =
     gtk_tree_model_get_iter_first (GTK_TREE_MODEL (tasks->list_store), &iter);
@@ -80,7 +80,7 @@ tasks_visit_pending (struct tasks *tasks,
     {
       gtk_tree_model_get (GTK_TREE_MODEL (tasks->list_store), &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, &status, -1);
-      if (status == QUEUED)
+      if (status == TASK_STATUS_QUEUED)
 	{
 	  visitor (tasks, &iter);
 	}
@@ -92,7 +92,7 @@ tasks_visit_pending (struct tasks *tasks,
 static gboolean
 tasks_get_current (struct tasks *tasks, GtkTreeIter * iter)
 {
-  enum elektroid_task_status status;
+  enum task_status status;
   gboolean found = FALSE;
   gboolean valid =
     gtk_tree_model_get_iter_first (GTK_TREE_MODEL (tasks->list_store), iter);
@@ -102,7 +102,7 @@ tasks_get_current (struct tasks *tasks, GtkTreeIter * iter)
       gtk_tree_model_get (GTK_TREE_MODEL (tasks->list_store), iter,
 			  TASK_LIST_STORE_STATUS_FIELD, &status, -1);
 
-      if (status == RUNNING)
+      if (status == TASK_STATUS_RUNNING)
 	{
 	  found = TRUE;
 	  break;
@@ -144,11 +144,11 @@ tasks_complete_current (gpointer data)
 
 gboolean
 tasks_get_next_queued (struct tasks *tasks, GtkTreeIter * iter,
-		       enum elektroid_task_type *type, gchar ** src,
+		       enum task_type *type, gchar ** src,
 		       gchar ** dst, gint * fs, guint * batch_id,
 		       guint * mode)
 {
-  enum elektroid_task_status status;
+  enum task_status status;
   gboolean found = FALSE;
   gboolean valid =
     gtk_tree_model_get_iter_first (GTK_TREE_MODEL (tasks->list_store), iter);
@@ -172,7 +172,7 @@ tasks_get_next_queued (struct tasks *tasks, GtkTreeIter * iter,
 			      TASK_LIST_STORE_STATUS_FIELD, &status, -1);
 	}
 
-      if (status == QUEUED)
+      if (status == TASK_STATUS_QUEUED)
 	{
 	  found = TRUE;
 	  break;
@@ -185,23 +185,24 @@ tasks_get_next_queued (struct tasks *tasks, GtkTreeIter * iter,
 }
 
 static gboolean
-tasks_is_queued (enum elektroid_task_status status)
+tasks_is_queued (enum task_status status)
 {
-  return (status == QUEUED);
+  return (status == TASK_STATUS_QUEUED);
 }
 
 static gboolean
-tasks_is_finished (enum elektroid_task_status status)
+tasks_is_finished (enum task_status status)
 {
-  return (status == COMPLETED_OK ||
-	  status == COMPLETED_ERROR || status == CANCELED);
+  return (status == TASK_STATUS_COMPLETED_OK ||
+	  status == TASK_STATUS_COMPLETED_ERROR ||
+	  status == TASK_STATUS_CANCELED);
 }
 
 gboolean
 tasks_check_buttons (gpointer data)
 {
   struct tasks *tasks = data;
-  enum elektroid_task_status status;
+  enum task_status status;
   gboolean queued = FALSE;
   gboolean finished = FALSE;
   GtkTreeIter iter;
@@ -235,10 +236,10 @@ tasks_check_buttons (gpointer data)
 }
 
 static void
-tasks_remove_on_cond (struct tasks *tasks, gboolean (*selector)
-		      (enum elektroid_task_status))
+tasks_remove_on_cond (struct tasks *tasks,
+		      gboolean (*selector) (enum task_status))
 {
-  enum elektroid_task_status status;
+  enum task_status status;
   GtkTreeIter iter;
   gboolean valid =
     gtk_tree_model_get_iter_first (GTK_TREE_MODEL (tasks->list_store),
@@ -280,10 +281,10 @@ tasks_clear_finished (GtkWidget * object, gpointer data)
 static void
 tasks_visitor_set_canceled (struct tasks *tasks, GtkTreeIter * iter)
 {
-  const gchar *canceled = tasks_get_human_status (CANCELED);
+  const gchar *canceled = tasks_get_human_status (TASK_STATUS_CANCELED);
   gtk_list_store_set (tasks->list_store, iter,
 		      TASK_LIST_STORE_STATUS_FIELD,
-		      CANCELED,
+		      TASK_STATUS_CANCELED,
 		      TASK_LIST_STORE_STATUS_HUMAN_FIELD, canceled, -1);
 }
 
@@ -298,7 +299,7 @@ tasks_cancel_all (GtkWidget * object, gpointer data)
 
 void
 tasks_visitor_set_batch_status (struct tasks *tasks, GtkTreeIter * iter,
-				enum elektroid_task_mode mode)
+				enum task_mode mode)
 {
   gint batch_id;
   gtk_tree_model_get (GTK_TREE_MODEL (tasks->list_store), iter,
@@ -325,27 +326,28 @@ tasks_visitor_set_batch_canceled (struct tasks *tasks, GtkTreeIter * iter)
 void
 tasks_batch_visitor_set_skip (struct tasks *tasks, GtkTreeIter * iter)
 {
-  tasks_visitor_set_batch_status (tasks, iter, ELEKTROID_TASK_OPTION_SKIP);
+  tasks_visitor_set_batch_status (tasks, iter, TASK_MODE_SKIP);
 }
 
 void
 tasks_batch_visitor_set_replace (struct tasks *tasks, GtkTreeIter * iter)
 {
-  tasks_visitor_set_batch_status (tasks, iter, ELEKTROID_TASK_OPTION_REPLACE);
+  tasks_visitor_set_batch_status (tasks, iter, TASK_MODE_REPLACE);
 }
 
 void
-tasks_add (struct tasks *tasks, enum elektroid_task_type type,
+tasks_add (struct tasks *tasks, enum task_type type,
 	   const char *src, const char *dst, gint remote_fs_id,
 	   struct backend *backend)
 {
-  const gchar *status_human = tasks_get_human_status (QUEUED);
+  const gchar *status_human = tasks_get_human_status (TASK_STATUS_QUEUED);
   const gchar *type_human = tasks_get_human_type (type);
   const gchar *icon = backend_get_fs_operations (backend, remote_fs_id,
 						 NULL)->gui_icon;
 
   gtk_list_store_insert_with_values (tasks->list_store, NULL, -1,
-				     TASK_LIST_STORE_STATUS_FIELD, QUEUED,
+				     TASK_LIST_STORE_STATUS_FIELD,
+				     TASK_STATUS_QUEUED,
 				     TASK_LIST_STORE_TYPE_FIELD, type,
 				     TASK_LIST_STORE_SRC_FIELD, src,
 				     TASK_LIST_STORE_DST_FIELD, dst,
@@ -361,7 +363,7 @@ tasks_add (struct tasks *tasks, enum elektroid_task_type type,
 				     TASK_LIST_STORE_BATCH_ID_FIELD,
 				     tasks->batch_id,
 				     TASK_LIST_STORE_MODE_FIELD,
-				     ELEKTROID_TASK_OPTION_ASK, -1);
+				     TASK_MODE_ASK, -1);
 
   gtk_widget_set_sensitive (tasks->remove_tasks_button, TRUE);
 }

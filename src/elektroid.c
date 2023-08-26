@@ -486,7 +486,7 @@ elektroid_cancel_all_tasks_and_wait ()
 {
   tasks_cancel_all (NULL, &tasks);
   //In this case, the active waiting can not be avoided as the user has cancelled the operation.
-  while (tasks.transfer.status == RUNNING)
+  while (tasks.transfer.status == TASK_STATUS_RUNNING)
     {
       usleep (50000);
     }
@@ -1522,7 +1522,7 @@ static gboolean
 tasks_run_next (gpointer data)
 {
   GtkTreeIter iter;
-  enum elektroid_task_type type;
+  enum task_type type;
   gchar *src;
   gchar *dst;
   gint fs;
@@ -1531,7 +1531,7 @@ tasks_run_next (gpointer data)
   gboolean transfer_active;
   gboolean found = tasks_get_next_queued (&tasks, &iter, &type, &src, &dst,
 					  &fs, &batch_id, &mode);
-  const gchar *status_human = tasks_get_human_status (RUNNING);
+  const gchar *status_human = tasks_get_human_status (TASK_STATUS_RUNNING);
 
   g_mutex_lock (&tasks.transfer.control.mutex);
   transfer_active = tasks.transfer.control.active;
@@ -1547,7 +1547,7 @@ tasks_run_next (gpointer data)
       gtk_widget_set_sensitive (ma_data.box, FALSE);
 
       gtk_list_store_set (tasks.list_store, &iter,
-			  TASK_LIST_STORE_STATUS_FIELD, RUNNING,
+			  TASK_LIST_STORE_STATUS_FIELD, TASK_STATUS_RUNNING,
 			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status_human,
 			  -1);
       path = gtk_tree_model_get_path (GTK_TREE_MODEL (tasks.list_store),
@@ -1555,7 +1555,7 @@ tasks_run_next (gpointer data)
       gtk_tree_view_set_cursor (GTK_TREE_VIEW (tasks.tree_view), path, NULL,
 				FALSE);
       gtk_tree_path_free (path);
-      tasks.transfer.status = RUNNING;
+      tasks.transfer.status = TASK_STATUS_RUNNING;
       tasks.transfer.control.active = TRUE;
       tasks.transfer.control.callback = elektroid_update_progress;
       tasks.transfer.control.parts = 1000;	//Any reasonable high number is enough to make the progress monotonic.
@@ -1570,13 +1570,13 @@ tasks_run_next (gpointer data)
 		   tasks.transfer.src, tasks.transfer.dst,
 		   elektroid_get_fs_name (fs));
 
-      if (type == UPLOAD)
+      if (type == TASK_TYPE_UPLOAD)
 	{
 	  tasks.thread = g_thread_new ("upload_task",
 				       elektroid_upload_task_runner, NULL);
 	  remote_browser.dirty = TRUE;
 	}
-      else if (type == DOWNLOAD)
+      else if (type == TASK_TYPE_DOWNLOAD)
 	{
 	  tasks.thread = g_thread_new ("download_task",
 				       elektroid_download_task_runner, NULL);
@@ -1636,13 +1636,13 @@ elektroid_show_task_overwrite_dialog (gpointer data)
     {
     case GTK_RESPONSE_CANCEL:
       //Cancel current task.
-      tasks.transfer.status = CANCELED;
+      tasks.transfer.status = TASK_STATUS_CANCELED;
       //Cancel all tasks belonging to the same batch.
       tasks_visit_pending (&tasks, tasks_visitor_set_batch_canceled);
       break;
     case GTK_RESPONSE_REJECT:
       //Cancel current task.
-      tasks.transfer.status = CANCELED;
+      tasks.transfer.status = TASK_STATUS_CANCELED;
       if (apply_to_all)
 	{
 	  //Mark pending tasks as SKIP.
@@ -1685,14 +1685,14 @@ elektroid_check_file_and_wait (gchar * path, struct browser *browser)
     {
       switch (tasks.transfer.mode)
 	{
-	case ELEKTROID_TASK_OPTION_ASK:
+	case TASK_MODE_ASK:
 	  g_idle_add (elektroid_close_progress_dialog, NULL);
 	  g_idle_add (elektroid_show_task_overwrite_dialog, path);
 	  g_cond_wait (&tasks.transfer.control.cond,
 		       &tasks.transfer.control.mutex);
 	  break;
-	case ELEKTROID_TASK_OPTION_SKIP:
-	  tasks.transfer.status = CANCELED;
+	case TASK_MODE_SKIP:
+	  tasks.transfer.status = TASK_STATUS_CANCELED;
 	  break;
 	}
     }
@@ -1714,7 +1714,7 @@ elektroid_upload_task_runner (gpointer data)
     {
       error_print ("Error while creating remote %s dir\n",
 		   tasks.transfer.dst);
-      tasks.transfer.status = COMPLETED_ERROR;
+      tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
       return NULL;
     }
 
@@ -1725,7 +1725,7 @@ elektroid_upload_task_runner (gpointer data)
   if (res)
     {
       error_print ("Error while loading file\n");
-      tasks.transfer.status = COMPLETED_ERROR;
+      tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
       goto end_cleanup;
     }
 
@@ -1748,7 +1748,7 @@ elektroid_upload_task_runner (gpointer data)
       g_mutex_lock (&tasks.transfer.control.mutex);
       elektroid_check_file_and_wait (upload_path, &remote_browser);
       g_mutex_unlock (&tasks.transfer.control.mutex);
-      if (tasks.transfer.status == CANCELED)
+      if (tasks.transfer.status == TASK_STATUS_CANCELED)
 	{
 	  goto end_cleanup;
 	}
@@ -1764,13 +1764,13 @@ elektroid_upload_task_runner (gpointer data)
   if (res && tasks.transfer.control.active)
     {
       error_print ("Error while uploading\n");
-      tasks.transfer.status = COMPLETED_ERROR;
+      tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
     }
   else
     {
       g_mutex_lock (&tasks.transfer.control.mutex);
-      tasks.transfer.status =
-	tasks.transfer.control.active ? COMPLETED_OK : CANCELED;
+      tasks.transfer.status = tasks.transfer.control.active ?
+	TASK_STATUS_COMPLETED_OK : TASK_STATUS_CANCELED;
       g_mutex_unlock (&tasks.transfer.control.mutex);
     }
 
@@ -1836,7 +1836,7 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
 	}
       if (file_matches_extensions (src_abs_path, local_browser.extensions))
 	{
-	  tasks_add (&tasks, UPLOAD, src_abs_path, upload_path,
+	  tasks_add (&tasks, TASK_TYPE_UPLOAD, src_abs_path, upload_path,
 		     remote_browser.fs_ops->fs, &backend);
 	}
       g_free (upload_path);
@@ -1948,7 +1948,7 @@ elektroid_download_task_runner (gpointer userdata)
   if (local_browser.fs_ops->mkdir (local_browser.backend, tasks.transfer.dst))
     {
       error_print ("Error while creating local %s dir\n", tasks.transfer.dst);
-      tasks.transfer.status = COMPLETED_ERROR;
+      tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
       goto end_no_dir;
     }
 
@@ -1961,7 +1961,7 @@ elektroid_download_task_runner (gpointer userdata)
   elektroid_check_file_and_wait (dst_path, &local_browser);
   g_mutex_unlock (&tasks.transfer.control.mutex);
 
-  if (tasks.transfer.status == CANCELED)
+  if (tasks.transfer.status == TASK_STATUS_CANCELED)
     {
       goto end_with_no_download;
     }
@@ -1977,13 +1977,13 @@ elektroid_download_task_runner (gpointer userdata)
   if (res && tasks.transfer.control.active)
     {
       error_print ("Error while downloading\n");
-      tasks.transfer.status = COMPLETED_ERROR;
+      tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
       goto end_with_download_error;
     }
 
   if (!tasks.transfer.control.active)
     {
-      tasks.transfer.status = CANCELED;
+      tasks.transfer.status = TASK_STATUS_CANCELED;
       goto end_canceled_transfer;
     }
 
@@ -1997,7 +1997,7 @@ elektroid_download_task_runner (gpointer userdata)
       elektroid_check_file_and_wait (dst_path, &local_browser);
     }
 
-  if (tasks.transfer.status != CANCELED)
+  if (tasks.transfer.status != TASK_STATUS_CANCELED)
     {
       debug_print (1,
 		   "Writing %d bytes to file %s (filesystem %s)...\n",
@@ -2008,7 +2008,7 @@ elektroid_download_task_runner (gpointer userdata)
 				     &tasks.transfer.control);
       if (!res)
 	{
-	  tasks.transfer.status = COMPLETED_OK;
+	  tasks.transfer.status = TASK_STATUS_COMPLETED_OK;
 	  g_idle_add (elektroid_load_local_if_no_notifier, &local_browser);
 	}
     }
@@ -2064,7 +2064,7 @@ elektroid_add_download_task_path (const gchar * rel_path,
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
       if (file_matches_extensions (src_abs_path, remote_browser.extensions))
 	{
-	  tasks_add (&tasks, DOWNLOAD, src_abs_path, dst_abs_dir,
+	  tasks_add (&tasks, TASK_TYPE_DOWNLOAD, src_abs_path, dst_abs_dir,
 		     remote_browser.fs_ops->fs, &backend);
 	}
       g_free (dst_abs_dir);
@@ -2664,7 +2664,7 @@ elektroid_add_upload_task_slot (const gchar * name,
       dst_file_path = str->str;
       g_string_free (str, FALSE);
 
-      tasks_add (&tasks, UPLOAD, src_file_path, dst_file_path,
+      tasks_add (&tasks, TASK_TYPE_UPLOAD, src_file_path, dst_file_path,
 		 remote_browser.fs_ops->fs, &backend);
     }
 }

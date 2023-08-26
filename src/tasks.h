@@ -39,26 +39,26 @@ enum task_list_store_columns
   TASK_LIST_STORE_MODE_FIELD
 };
 
-enum elektroid_task_status
+enum task_status
 {
-  QUEUED,
-  RUNNING,
-  COMPLETED_OK,
-  COMPLETED_ERROR,
-  CANCELED
+  TASK_STATUS_QUEUED,
+  TASK_STATUS_RUNNING,
+  TASK_STATUS_COMPLETED_OK,
+  TASK_STATUS_COMPLETED_ERROR,
+  TASK_STATUS_CANCELED
 };
 
-enum elektroid_task_mode
+enum task_mode
 {
-  ELEKTROID_TASK_OPTION_ASK,
-  ELEKTROID_TASK_OPTION_REPLACE,
-  ELEKTROID_TASK_OPTION_SKIP
+  TASK_MODE_ASK,
+  TASK_MODE_REPLACE,
+  TASK_MODE_SKIP
 };
 
-enum elektroid_task_type
+enum task_type
 {
-  UPLOAD,
-  DOWNLOAD
+  TASK_TYPE_UPLOAD,
+  TASK_TYPE_DOWNLOAD
 };
 
 struct task_transfer
@@ -66,7 +66,7 @@ struct task_transfer
   struct job_control control;
   gchar *src;			//Contains a path to a file
   gchar *dst;			//Contains a path to a file
-  enum elektroid_task_status status;	//Contains the final status
+  enum task_status status;	//Contains the final status
   const struct fs_operations *fs_ops;	//Contains the fs_operations to use in this transfer
   guint mode;
   guint batch_id;
@@ -87,7 +87,7 @@ struct tasks
 void tasks_init (struct tasks *tasks, GtkBuilder * builder);
 
 gboolean tasks_get_next_queued (struct tasks *tasks, GtkTreeIter * iter,
-				enum elektroid_task_type *type, gchar ** src,
+				enum task_type *type, gchar ** src,
 				gchar ** dst, gint * fs, guint * batch_id,
 				guint * mode);
 
@@ -105,7 +105,7 @@ void tasks_batch_visitor_set_replace (struct tasks *tasks,
 
 void tasks_stop_thread (struct tasks *tasks);
 
-const gchar *tasks_get_human_status (enum elektroid_task_status status);
+const gchar *tasks_get_human_status (enum task_status status);
 
 gboolean tasks_check_buttons (gpointer data);
 
@@ -113,7 +113,7 @@ void tasks_visit_pending (struct tasks *tasks,
 			  void (*visitor) (struct tasks * tasks,
 					   GtkTreeIter * iter));
 
-void tasks_add (struct tasks *tasks, enum elektroid_task_type type,
+void tasks_add (struct tasks *tasks, enum task_type type,
 		const char *src, const char *dst, gint remote_fs_id,
 		struct backend *backend);
 
