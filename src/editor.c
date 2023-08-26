@@ -137,7 +137,15 @@ editor_reset (struct editor *editor, struct browser *browser)
   editor_set_widget_source (editor->waveform, editor);
 
   gtk_widget_set_sensitive (editor->play_button, FALSE);
-  gtk_widget_set_visible (editor->sample_info_box, FALSE);
+
+  gtk_label_set_text (GTK_LABEL (editor->sample_length), "");
+  gtk_label_set_text (GTK_LABEL (editor->sample_duration), "");
+  gtk_label_set_text (GTK_LABEL (editor->sample_loop_start), "");
+  gtk_label_set_text (GTK_LABEL (editor->sample_loop_end), "");
+  gtk_label_set_text (GTK_LABEL (editor->sample_rate), "");
+  gtk_label_set_text (GTK_LABEL (editor->sample_channels), "");
+  gtk_label_set_text (GTK_LABEL (editor->sample_bit_depth), "");
+  gtk_label_set_text (GTK_LABEL (editor->sample_midi_note), "");
 }
 
 static void
@@ -208,8 +216,6 @@ editor_show_sample_properties_on_load (struct editor *editor)
   const gchar *note;
   GtkTreeIter iter;
   struct sample_info *sample_info = editor->audio.control.data;
-
-  gtk_widget_set_visible (editor->sample_info_box, sample_info->frames > 0);
 
   if (!sample_info->frames)
     {

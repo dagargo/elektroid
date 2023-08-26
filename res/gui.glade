@@ -2303,11 +2303,9 @@ on remote</property>
                     </child>
                     <child>
                       <object class="GtkBox">
-                        <property name="height-request">150</property>
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="hexpand">True</property>
-                        <property name="vexpand">True</property>
                         <property name="spacing">6</property>
                         <property name="baseline-position">bottom</property>
                         <child>
@@ -2315,7 +2313,6 @@ on remote</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
                             <property name="hexpand">True</property>
-                            <property name="vexpand">True</property>
                             <property name="hadjustment">waveform_adj</property>
                             <property name="vscrollbar-policy">never</property>
                             <property name="shadow-type">in</property>
@@ -2340,6 +2337,8 @@ on remote</property>
                             <property name="valign">start</property>
                             <property name="row-spacing">6</property>
                             <property name="column-spacing">6</property>
+                            <property name="row-homogeneous">True</property>
+                            <property name="column-homogeneous">True</property>
                             <child>
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
