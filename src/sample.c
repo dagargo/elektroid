@@ -337,6 +337,103 @@ audio_mono_to_stereo (gshort * input, gshort * output, gint size)
     }
 }
 
+static void
+sample_set_sample_info (struct sample_info *sample_info, SNDFILE * sndfile,
+			SF_INFO * sf_info)
+{
+  struct SF_CHUNK_INFO chunk_info;
+  SF_CHUNK_ITERATOR *chunk_iter;
+  struct smpl_chunk_data smpl_chunk_data;
+  gboolean disable_loop = FALSE;
+
+  sample_info->channels = sf_info->channels;
+  sample_info->rate = sf_info->samplerate;
+  sample_info->frames = sf_info->frames;
+
+  switch (sf_info->format & SF_FORMAT_SUBMASK)
+    {
+    case SF_FORMAT_PCM_S8:
+      sample_info->bit_depth = 8;
+      break;
+    case SF_FORMAT_PCM_16:
+      sample_info->bit_depth = 16;
+      break;
+    case SF_FORMAT_PCM_24:
+      sample_info->bit_depth = 24;
+      break;
+    case SF_FORMAT_PCM_32:
+      sample_info->bit_depth = 32;
+      break;
+    default:
+      sample_info->bit_depth = 0;
+    }
+
+  strcpy (chunk_info.id, SMPL_CHUNK_ID);
+  chunk_info.id_size = strlen (SMPL_CHUNK_ID);
+  chunk_iter = sf_get_chunk_iterator (sndfile, &chunk_info);
+
+  if (chunk_iter)
+    {
+      chunk_info.datalen = sizeof (struct smpl_chunk_data);
+      memset (&smpl_chunk_data, 0, chunk_info.datalen);
+      chunk_info.data = &smpl_chunk_data;
+      sf_get_chunk_data (chunk_iter, &chunk_info);
+      sample_info->loop_start = le32toh (smpl_chunk_data.sample_loop.start);
+      sample_info->loop_end = le32toh (smpl_chunk_data.sample_loop.end);
+      sample_info->loop_type = le32toh (smpl_chunk_data.sample_loop.type);
+      sample_info->midi_note = le32toh (smpl_chunk_data.midi_unity_note);
+      if (sample_info->loop_start >= sample_info->frames)
+	{
+	  debug_print (2, "Bad loop start\n");
+	  disable_loop = TRUE;
+	}
+      if (sample_info->loop_end >= sample_info->frames)
+	{
+	  debug_print (2, "Bad loop end\n");
+	  disable_loop = TRUE;
+	}
+    }
+  else
+    {
+      disable_loop = TRUE;
+    }
+  if (disable_loop)
+    {
+      sample_info->loop_start = sample_info->frames - 1;
+      sample_info->loop_end = sample_info->loop_start;
+      sample_info->loop_type = 0;
+    }
+
+  debug_print (2, "Loop start at %d, loop end at %d\n",
+	       sample_info->loop_start, sample_info->loop_end);
+}
+
+gint
+sample_load_sample_info (const gchar * path, struct sample_info *sample_info)
+{
+  SF_INFO sf_info;
+  SNDFILE *sndfile;
+  FILE *file;
+
+  file = fopen (path, "rb");
+  if (!file)
+    {
+      return -errno;
+    }
+
+  sndfile = sf_open_virtual (&FILE_IO, SFM_READ, &sf_info, file);
+  if (!sndfile)
+    {
+      error_print ("%s\n", sf_strerror (sndfile));
+      return -1;
+    }
+
+  sample_set_sample_info (sample_info, sndfile, &sf_info);
+
+  fclose (file);
+  return 0;
+}
+
 // If control->data is NULL, then a new struct sample_info * is created and control->data points to it.
 // In case of failure, if control->data is NULL is freed.
 
@@ -350,8 +447,6 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   SNDFILE *sndfile;
   SRC_DATA src_data;
   SRC_STATE *src_state;
-  struct SF_CHUNK_INFO chunk_info;
-  SF_CHUNK_ITERATOR *chunk_iter;
   gint16 *buffer_input;
   gint16 *buffer_input_multi;
   gint16 *buffer_input_mono;
@@ -362,8 +457,6 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   gboolean active;
   gdouble ratio;
   struct sample_info *sample_info_src;
-  struct smpl_chunk_data smpl_chunk_data;
-  gboolean disable_loop = FALSE;
   guint bytes_per_frame;
 
   if (control)
@@ -385,7 +478,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     }
 
   sample_info_src = control->data;
-  if (!control->data)
+  if (!sample_info_src)
     {
       sample_info_src = g_malloc (sizeof (struct sample_info));
     }
@@ -394,80 +487,23 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     {
       g_mutex_lock (&control->mutex);
     }
+
   sample_info_dst->channels = sample_info_dst->channels ?
     sample_info_dst->channels : sf_info.channels;
   sample_info_dst->rate = sample_info_dst->rate ? sample_info_dst->rate :
     sf_info.samplerate;
-
-  sample_info_src->channels = sf_info.channels;
-  sample_info_src->rate = sf_info.samplerate;
-  sample_info_src->frames = sf_info.frames;
+  sample_info_dst->bit_depth = 16;
 
   bytes_per_frame = sample_info_dst->channels * SAMPLE_SIZE;
+
+  sample_set_sample_info (sample_info_src, sndfile, &sf_info);
+
+  sample_info_dst->loop_type = sample_info_src->loop_type;
+
   if (control)
     {
       g_mutex_unlock (&control->mutex);
     }
-
-  switch (sf_info.format & SF_FORMAT_SUBMASK)
-    {
-    case SF_FORMAT_PCM_S8:
-      sample_info_src->bit_depth = 8;
-      break;
-    case SF_FORMAT_PCM_16:
-      sample_info_src->bit_depth = 16;
-      break;
-    case SF_FORMAT_PCM_24:
-      sample_info_src->bit_depth = 24;
-      break;
-    case SF_FORMAT_PCM_32:
-      sample_info_src->bit_depth = 32;
-      break;
-    default:
-      sample_info_src->bit_depth = 0;
-    }
-  sample_info_dst->bit_depth = 16;
-
-  strcpy (chunk_info.id, SMPL_CHUNK_ID);
-  chunk_info.id_size = strlen (SMPL_CHUNK_ID);
-  chunk_iter = sf_get_chunk_iterator (sndfile, &chunk_info);
-
-  if (chunk_iter)
-    {
-      chunk_info.datalen = sizeof (struct smpl_chunk_data);
-      memset (&smpl_chunk_data, 0, chunk_info.datalen);
-      chunk_info.data = &smpl_chunk_data;
-      sf_get_chunk_data (chunk_iter, &chunk_info);
-      sample_info_src->loop_start =
-	le32toh (smpl_chunk_data.sample_loop.start);
-      sample_info_src->loop_end = le32toh (smpl_chunk_data.sample_loop.end);
-      sample_info_src->loop_type = le32toh (smpl_chunk_data.sample_loop.type);
-      sample_info_src->midi_note = le32toh (smpl_chunk_data.midi_unity_note);
-      if (sample_info_src->loop_start >= sample_info_src->frames)
-	{
-	  debug_print (2, "Bad loop start\n");
-	  disable_loop = TRUE;
-	}
-      if (sample_info_src->loop_end >= sample_info_src->frames)
-	{
-	  debug_print (2, "Bad loop end\n");
-	  disable_loop = TRUE;
-	}
-    }
-  else
-    {
-      disable_loop = TRUE;
-    }
-  if (disable_loop)
-    {
-      sample_info_src->loop_start = sample_info_src->frames - 1;
-      sample_info_src->loop_end = sample_info_src->loop_start;
-      sample_info_src->loop_type = 0;
-    }
-  sample_info_dst->loop_type = sample_info_src->loop_type;
-
-  debug_print (2, "Loop start at %d, loop end at %d\n",
-	       sample_info_src->loop_start, sample_info_src->loop_end);
 
   //Set scale factor. See http://www.mega-nerd.com/libsndfile/api.html#note2
   if ((sf_info.format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||

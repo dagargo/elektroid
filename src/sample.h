@@ -45,6 +45,8 @@ gint sample_load_from_file_with_cb (const gchar *, GByteArray *,
 				    struct sample_info *, sample_load_cb,
 				    gpointer);
 
+gint sample_load_sample_info (const gchar *, struct sample_info *);
+
 const gchar **sample_get_sample_extensions ();
 
 #endif
