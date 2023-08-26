@@ -217,12 +217,12 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
 
   frames = sample->len / (sample_info->channels * SAMPLE_SIZE);
   debug_print (1, "Frames: %" PRIu64 "; sample rate: %d; channels: %d\n",
-	       frames, sample_info->samplerate, sample_info->channels);
+	       frames, sample_info->rate, sample_info->channels);
   debug_print (1, "Loop start at %d; loop end at %d\n",
-	       sample_info->loopstart, sample_info->loopend);
+	       sample_info->loop_start, sample_info->loop_end);
 
   memset (&sf_info, 0, sizeof (sf_info));
-  sf_info.samplerate = sample_info->samplerate;
+  sf_info.samplerate = sample_info->rate;
   sf_info.channels = sample_info->channels;
   sf_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
   sndfile = sf_open_virtual (&G_BYTE_ARRAY_IO, SFM_WRITE, &sf_info, wave);
@@ -243,17 +243,17 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
 
   smpl_chunk_data.manufacturer = 0;
   smpl_chunk_data.product = 0;
-  smpl_chunk_data.sample_period = 1e9 / sample_info->samplerate;
-  smpl_chunk_data.midi_unity_note = sample_info->midinote;
+  smpl_chunk_data.sample_period = 1e9 / sample_info->rate;
+  smpl_chunk_data.midi_unity_note = sample_info->midi_note;
   smpl_chunk_data.midi_pitch_fraction = 0;
   smpl_chunk_data.smpte_format = 0;
   smpl_chunk_data.smpte_offset = 0;
   smpl_chunk_data.num_sampler_loops = 1;
   smpl_chunk_data.sampler_data = 0;
   smpl_chunk_data.sample_loop.cue_point_id = 0;
-  smpl_chunk_data.sample_loop.type = sample_info->looptype;
-  smpl_chunk_data.sample_loop.start = sample_info->loopstart;
-  smpl_chunk_data.sample_loop.end = sample_info->loopend;
+  smpl_chunk_data.sample_loop.type = sample_info->loop_type;
+  smpl_chunk_data.sample_loop.start = sample_info->loop_start;
+  smpl_chunk_data.sample_loop.end = sample_info->loop_end;
   smpl_chunk_data.sample_loop.fraction = 0;
   smpl_chunk_data.sample_loop.play_count = 0;
 
@@ -394,14 +394,13 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     {
       g_mutex_lock (&control->mutex);
     }
-  sample_info_dst->channels =
-    sample_info_dst->channels ? sample_info_dst->channels : sf_info.channels;
-  sample_info_dst->samplerate =
-    sample_info_dst->samplerate ? sample_info_dst->samplerate :
+  sample_info_dst->channels = sample_info_dst->channels ?
+    sample_info_dst->channels : sf_info.channels;
+  sample_info_dst->rate = sample_info_dst->rate ? sample_info_dst->rate :
     sf_info.samplerate;
 
   sample_info_src->channels = sf_info.channels;
-  sample_info_src->samplerate = sf_info.samplerate;
+  sample_info_src->rate = sf_info.samplerate;
   sample_info_src->frames = sf_info.frames;
 
   bytes_per_frame = sample_info_dst->channels * SAMPLE_SIZE;
@@ -413,21 +412,21 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   switch (sf_info.format & SF_FORMAT_SUBMASK)
     {
     case SF_FORMAT_PCM_S8:
-      sample_info_src->bitdepth = 8;
+      sample_info_src->bit_depth = 8;
       break;
     case SF_FORMAT_PCM_16:
-      sample_info_src->bitdepth = 16;
+      sample_info_src->bit_depth = 16;
       break;
     case SF_FORMAT_PCM_24:
-      sample_info_src->bitdepth = 24;
+      sample_info_src->bit_depth = 24;
       break;
     case SF_FORMAT_PCM_32:
-      sample_info_src->bitdepth = 32;
+      sample_info_src->bit_depth = 32;
       break;
     default:
-      sample_info_src->bitdepth = 0;
+      sample_info_src->bit_depth = 0;
     }
-  sample_info_dst->bitdepth = 16;
+  sample_info_dst->bit_depth = 16;
 
   strcpy (chunk_info.id, SMPL_CHUNK_ID);
   chunk_info.id_size = strlen (SMPL_CHUNK_ID);
@@ -439,17 +438,17 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
       memset (&smpl_chunk_data, 0, chunk_info.datalen);
       chunk_info.data = &smpl_chunk_data;
       sf_get_chunk_data (chunk_iter, &chunk_info);
-      sample_info_src->loopstart =
+      sample_info_src->loop_start =
 	le32toh (smpl_chunk_data.sample_loop.start);
-      sample_info_src->loopend = le32toh (smpl_chunk_data.sample_loop.end);
-      sample_info_src->looptype = le32toh (smpl_chunk_data.sample_loop.type);
-      sample_info_src->midinote = le32toh (smpl_chunk_data.midi_unity_note);
-      if (sample_info_src->loopstart >= sample_info_src->frames)
+      sample_info_src->loop_end = le32toh (smpl_chunk_data.sample_loop.end);
+      sample_info_src->loop_type = le32toh (smpl_chunk_data.sample_loop.type);
+      sample_info_src->midi_note = le32toh (smpl_chunk_data.midi_unity_note);
+      if (sample_info_src->loop_start >= sample_info_src->frames)
 	{
 	  debug_print (2, "Bad loop start\n");
 	  disable_loop = TRUE;
 	}
-      if (sample_info_src->loopend >= sample_info_src->frames)
+      if (sample_info_src->loop_end >= sample_info_src->frames)
 	{
 	  debug_print (2, "Bad loop end\n");
 	  disable_loop = TRUE;
@@ -461,14 +460,14 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     }
   if (disable_loop)
     {
-      sample_info_src->loopstart = sample_info_src->frames - 1;
-      sample_info_src->loopend = sample_info_src->loopstart;
-      sample_info_src->looptype = 0;
+      sample_info_src->loop_start = sample_info_src->frames - 1;
+      sample_info_src->loop_end = sample_info_src->loop_start;
+      sample_info_src->loop_type = 0;
     }
-  sample_info_dst->looptype = sample_info_src->looptype;
+  sample_info_dst->loop_type = sample_info_src->loop_type;
 
   debug_print (2, "Loop start at %d, loop end at %d\n",
-	       sample_info_src->loopstart, sample_info_src->loopend);
+	       sample_info_src->loop_start, sample_info_src->loop_end);
 
   //Set scale factor. See http://www.mega-nerd.com/libsndfile/api.html#note2
   if ((sf_info.format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||
@@ -487,7 +486,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   buffer_f =
     malloc (LOAD_BUFFER_LEN * sample_info_dst->channels * sizeof (gfloat));
   src_data.data_in = buffer_f;
-  ratio = sample_info_dst->samplerate / (double) sample_info_src->samplerate;
+  ratio = sample_info_dst->rate / (double) sample_info_src->rate;
   src_data.src_ratio = ratio;
 
   src_data.output_frames = ceil (LOAD_BUFFER_LEN * src_data.src_ratio);
@@ -507,8 +506,8 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
       g_mutex_lock (&control->mutex);
     }
   sample_info_dst->frames = sample_info_src->frames * ratio;
-  sample_info_dst->loopstart = round (sample_info_src->loopstart * ratio);
-  sample_info_dst->loopend = round (sample_info_src->loopend * ratio);
+  sample_info_dst->loop_start = round (sample_info_src->loop_start * ratio);
+  sample_info_dst->loop_end = round (sample_info_src->loop_end * ratio);
   if (control)
     {
       g_mutex_unlock (&control->mutex);
@@ -557,7 +556,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 	    }
 	}
 
-      if (sample_info_dst->samplerate == sample_info_src->samplerate)
+      if (sample_info_dst->rate == sample_info_src->rate)
 	{
 	  if (control)
 	    {

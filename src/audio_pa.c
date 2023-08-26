@@ -316,13 +316,12 @@ audio_server_info_callback (pa_context * context, const pa_server_info * info,
     PA_STREAM_ADJUST_LATENCY;
   pa_proplist *props = pa_proplist_new ();
 
-  audio->sample_info.samplerate = info->sample_spec.rate;
+  audio->sample_info.rate = info->sample_spec.rate;
   audio->sample_spec.format = PA_SAMPLE_S16LE;
   audio->sample_spec.channels = AUDIO_CHANNELS;
-  audio->sample_spec.rate = audio->sample_info.samplerate;
+  audio->sample_spec.rate = audio->sample_info.rate;
 
-  debug_print (1, "Using %d Hz sample rate...\n",
-	       audio->sample_info.samplerate);
+  debug_print (1, "Using %d Hz sample rate...\n", audio->sample_info.rate);
 
   pa_proplist_set (props, PA_PROP_APPLICATION_ICON_NAME, PACKAGE,
 		   sizeof (PACKAGE));

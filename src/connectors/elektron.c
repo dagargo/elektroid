@@ -59,10 +59,10 @@ struct elektron_sample_header
 {
   guint32 type;
   guint32 sample_len_bytes;
-  guint32 samplerate;
-  guint32 loopstart;
-  guint32 loopend;
-  guint32 looptype;
+  guint32 rate;
+  guint32 loop_start;
+  guint32 loop_end;
+  guint32 loop_type;
   guint32 padding[ELEKTRON_SAMPLE_INFO_PAD_I32_LEN];
 };
 
@@ -824,10 +824,10 @@ elektron_new_msg_write_sample_blk (guint id, GByteArray * sample,
     {
       elektron_sample_header.type = 0;
       elektron_sample_header.sample_len_bytes = htobe32 (sample->len);
-      elektron_sample_header.samplerate = htobe32 (ELEKTRON_SAMPLE_RATE);
-      elektron_sample_header.loopstart = htobe32 (sample_info->loopstart);
-      elektron_sample_header.loopend = htobe32 (sample_info->loopend);
-      elektron_sample_header.looptype = htobe32 (ELEKTRON_LOOP_TYPE);
+      elektron_sample_header.rate = htobe32 (ELEKTRON_SAMPLE_RATE);
+      elektron_sample_header.loop_start = htobe32 (sample_info->loop_start);
+      elektron_sample_header.loop_end = htobe32 (sample_info->loop_end);
+      elektron_sample_header.loop_type = htobe32 (ELEKTRON_LOOP_TYPE);
       memset (&elektron_sample_header.padding, 0,
 	      sizeof (guint32) * ELEKTRON_SAMPLE_INFO_PAD_I32_LEN);
 
@@ -1808,16 +1808,16 @@ elektron_download_smplrw (struct backend *backend, const gchar * path,
 	    (struct elektron_sample_header *)
 	    &rx_msg->data[FS_SAMPLES_PAD_RES];
 	  sample_info = malloc (sizeof (struct elektron_sample_header));
-	  sample_info->loopstart =
-	    be32toh (elektron_sample_header->loopstart);
-	  sample_info->loopend = be32toh (elektron_sample_header->loopend);
-	  sample_info->looptype = elektron_sample_header->looptype;	// For some reason, this is already in the required format.
-	  sample_info->samplerate = be32toh (elektron_sample_header->samplerate);	//In the case of the RAW filesystem is not used and it is harmless.
+	  sample_info->loop_start =
+	    be32toh (elektron_sample_header->loop_start);
+	  sample_info->loop_end = be32toh (elektron_sample_header->loop_end);
+	  sample_info->loop_type = elektron_sample_header->loop_type;	// For some reason, this is already in the required format.
+	  sample_info->rate = be32toh (elektron_sample_header->rate);	//In the case of the RAW filesystem is not used and it is harmless.
 	  sample_info->channels = 1;
-	  sample_info->bitdepth = 16;
+	  sample_info->bit_depth = 16;
 	  control->data = sample_info;
 	  debug_print (2, "Loop start at %d, loop end at %d\n",
-		       sample_info->loopstart, sample_info->loopend);
+		       sample_info->loop_start, sample_info->loop_end);
 	}
 
       free_msg (rx_msg);
@@ -3381,7 +3381,7 @@ elektron_sample_load (const gchar * path, GByteArray * sample,
 		      struct job_control *control)
 {
   struct sample_info sample_info_dst;
-  sample_info_dst.samplerate = ELEKTRON_SAMPLE_RATE;
+  sample_info_dst.rate = ELEKTRON_SAMPLE_RATE;
   sample_info_dst.channels = ELEKTRON_SAMPLE_CHANNELS;
   gint res = sample_load_from_file (path, sample, control, &sample_info_dst);
   if (!res)

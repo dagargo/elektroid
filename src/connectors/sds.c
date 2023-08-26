@@ -205,22 +205,21 @@ sds_get_download_info (GByteArray * header, struct sample_info *sample_info,
 		       guint * words, guint * word_size,
 		       guint * bytes_per_word)
 {
-  sample_info->bitdepth = header->data[6];
-  if (sds_get_bytes_per_word (sample_info->bitdepth, word_size,
+  sample_info->bit_depth = header->data[6];
+  if (sds_get_bytes_per_word (sample_info->bit_depth, word_size,
 			      bytes_per_word))
     {
       return -1;
     }
-  sample_info->samplerate =
-    1.0e9 / sds_get_bytes_value_right_just (&header->data[7],
-					    SDS_BYTES_PER_WORD);
+  sample_info->rate = 1.0e9 /
+    sds_get_bytes_value_right_just (&header->data[7], SDS_BYTES_PER_WORD);
   *words =
     sds_get_bytes_value_right_just (&header->data[10], SDS_BYTES_PER_WORD);
-  sample_info->loopstart =
+  sample_info->loop_start =
     sds_get_bytes_value_right_just (&header->data[13], SDS_BYTES_PER_WORD);
-  sample_info->loopend =
+  sample_info->loop_end =
     sds_get_bytes_value_right_just (&header->data[16], SDS_BYTES_PER_WORD);
-  sample_info->looptype = header->data[19];
+  sample_info->loop_type = header->data[19];
   sample_info->channels = 1;
   return 0;
 }
@@ -260,18 +259,18 @@ sds_get_dump_msg (guint id, guint frames, struct sample_info *sample_info,
   if (sample_info)
     {
       tx_msg->data[6] = (guint8) bits;
-      period = 1.0e9 / sample_info->samplerate;
+      period = 1.0e9 / sample_info->rate;
       sds_set_bytes_value_right_just (&tx_msg->data[7], SDS_BYTES_PER_WORD,
 				      period);
       sds_set_bytes_value_right_just (&tx_msg->data[10], SDS_BYTES_PER_WORD,
 				      frames);
       sds_set_bytes_value_right_just (&tx_msg->data[13], SDS_BYTES_PER_WORD,
-				      sample_info->loopstart);
+				      sample_info->loop_start);
       sds_set_bytes_value_right_just (&tx_msg->data[16], SDS_BYTES_PER_WORD,
-				      sample_info->loopend);
-      tx_msg->data[19] = (sample_info->loopstart == sample_info->loopend
-			  && sample_info->loopstart ==
-			  frames - 1) ? 0x7f : sample_info->looptype;
+				      sample_info->loop_end);
+      tx_msg->data[19] = (sample_info->loop_start == sample_info->loop_end
+			  && sample_info->loop_start ==
+			  frames - 1) ? 0x7f : sample_info->loop_type;
     }
 
   return tx_msg;
@@ -303,13 +302,13 @@ sds_download_inc_packet (gboolean * first, guint * packet)
 }
 
 static void
-sds_debug_print_sample_data (guint bitdepth, guint bytes_per_word,
+sds_debug_print_sample_data (guint bit_depth, guint bytes_per_word,
 			     guint word_size, guint sample_rate, guint words,
 			     guint packets)
 {
   debug_print (1,
 	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
-	       bitdepth, bytes_per_word, word_size);
+	       bit_depth, bytes_per_word, word_size);
   debug_print (1, "Sample rate: %d Hz\n", sample_rate);
   debug_print (1, "Words: %d\n", words);
   debug_print (1, "Packets: %d\n", packets);
@@ -402,9 +401,8 @@ sds_download_try (struct backend *backend, const gchar * path,
 
   packets =
     ceil (words / (double) (SDS_DATA_PACKET_PAYLOAD_LEN / bytes_per_word));
-  sds_debug_print_sample_data (sample_info->bitdepth, bytes_per_word,
-			       word_size, sample_info->samplerate, words,
-			       packets);
+  sds_debug_print_sample_data (sample_info->bit_depth, bytes_per_word,
+			       word_size, sample_info->rate, words, packets);
 
   g_mutex_lock (&control->mutex);
   active = control->active;
@@ -525,7 +523,7 @@ sds_download_try (struct backend *backend, const gchar * path,
 	{
 	  sample = sds_get_gint16_value_left_just (dataptr,
 						   bytes_per_word,
-						   sample_info->bitdepth);
+						   sample_info->bit_depth);
 	  g_byte_array_append (output, (guint8 *) & sample, sizeof (sample));
 	  dataptr += bytes_per_word;
 	  read_bytes += bytes_per_word;
@@ -799,8 +797,7 @@ sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
 
   word = 0;
   sds_debug_print_sample_data (bits, bytes_per_word,
-			       word_size, sample_info->samplerate, words,
-			       packets);
+			       word_size, sample_info->rate, words, packets);
   frame = (gint16 *) input->data;
   while (packet < packets && active)
     {
@@ -958,7 +955,7 @@ sds_sample_load (const gchar * path, GByteArray * sample,
 		 struct job_control *control)
 {
   struct sample_info sample_info_dst;
-  sample_info_dst.samplerate = 0;	// Any sample rate is valid.
+  sample_info_dst.rate = 0;	// Any sample rate is valid.
   sample_info_dst.channels = SDS_SAMPLE_CHANNELS;
   gint res = sample_load_from_file (path, sample, control, &sample_info_dst);
   if (!res)

@@ -705,7 +705,7 @@ package_send_pkg_resources (struct package *pkg, const gchar * payload_path,
   for (i = 0; i < elements; i++, control->part++)
     {
       struct sample_info sample_info_dst;
-      sample_info_dst.samplerate = ELEKTRON_SAMPLE_RATE;
+      sample_info_dst.rate = ELEKTRON_SAMPLE_RATE;
       sample_info_dst.channels = ELEKTRON_SAMPLE_CHANNELS;
 
       json_reader_read_element (reader, i);

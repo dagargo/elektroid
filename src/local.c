@@ -259,7 +259,7 @@ local_sample_load_48_16_stereo (const gchar * path, GByteArray * sample,
 				struct job_control *control)
 {
   struct sample_info sample_info_dst;
-  sample_info_dst.samplerate = 48000;
+  sample_info_dst.rate = 48000;
   sample_info_dst.channels = 2;
   return local_sample_load_custom (path, sample, control, &sample_info_dst);
 }
@@ -269,7 +269,7 @@ local_sample_load_48_16_mono (const gchar * path, GByteArray * sample,
 			      struct job_control *control)
 {
   struct sample_info sample_info_dst;
-  sample_info_dst.samplerate = 48000;
+  sample_info_dst.rate = 48000;
   sample_info_dst.channels = 1;
   return local_sample_load_custom (path, sample, control, &sample_info_dst);
 }
@@ -286,7 +286,7 @@ local_upload_48_16_stereo (struct backend *backend, const gchar * path,
 			   GByteArray * input, struct job_control *control)
 {
   struct sample_info *sample_info_dst = control->data;
-  sample_info_dst->samplerate = 48000;
+  sample_info_dst->rate = 48000;
   sample_info_dst->channels = 2;
   return sample_save_from_array (path, input, control);
 }
@@ -296,7 +296,7 @@ local_upload_48_16_mono (struct backend *backend, const gchar * path,
 			 GByteArray * input, struct job_control *control)
 {
   struct sample_info *sample_info_dst = control->data;
-  sample_info_dst->samplerate = 48000;
+  sample_info_dst->rate = 48000;
   sample_info_dst->channels = 1;
   return sample_save_from_array (path, input, control);
 }
@@ -306,7 +306,7 @@ local_sample_load_441_16_stereo (const gchar * path, GByteArray * sample,
 				 struct job_control *control)
 {
   struct sample_info sample_info_dst;
-  sample_info_dst.samplerate = 44100;
+  sample_info_dst.rate = 44100;
   sample_info_dst.channels = 2;
   return local_sample_load_custom (path, sample, control, &sample_info_dst);
 }
@@ -316,7 +316,7 @@ local_sample_load_441_16_mono (const gchar * path, GByteArray * sample,
 			       struct job_control *control)
 {
   struct sample_info sample_info_dst;
-  sample_info_dst.samplerate = 44100;
+  sample_info_dst.rate = 44100;
   sample_info_dst.channels = 1;
   return local_sample_load_custom (path, sample, control, &sample_info_dst);
 }
@@ -326,7 +326,7 @@ local_upload_441_16_stereo (struct backend *backend, const gchar * path,
 			    GByteArray * input, struct job_control *control)
 {
   struct sample_info *sample_info_dst = control->data;
-  sample_info_dst->samplerate = 44100;
+  sample_info_dst->rate = 44100;
   sample_info_dst->channels = 2;
   return sample_save_from_array (path, input, control);
 }
@@ -336,7 +336,7 @@ local_upload_441_16_mono (struct backend *backend, const gchar * path,
 			  GByteArray * input, struct job_control *control)
 {
   struct sample_info *sample_info_dst = control->data;
-  sample_info_dst->samplerate = 44100;
+  sample_info_dst->rate = 44100;
   sample_info_dst->channels = 1;
   return sample_save_from_array (path, input, control);
 }

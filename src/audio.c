@@ -85,10 +85,10 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
   src = (gint16 *) & audio->sample->data[audio->pos * bytes_per_frame];
   for (gint i = 0; i < frames; i++)
     {
-      if (audio->pos == audio->sample_info.loopend + 1 && audio->loop)
+      if (audio->pos == audio->sample_info.loop_end + 1 && audio->loop)
 	{
 	  debug_print (2, "Sample reset\n");
-	  audio->pos = audio->sample_info.loopstart;
+	  audio->pos = audio->sample_info.loop_start;
 	  src = (gint16 *) & audio->sample->data[audio->pos *
 						 bytes_per_frame];
 	}
@@ -211,9 +211,8 @@ audio_reset_record_buffer (struct audio *audio, guint record_options,
 			   void *monitor_data)
 {
   audio->sample_info.channels = (record_options & RECORD_STEREO) == 3 ? 2 : 1;
-  audio->sample_info.frames = audio->sample_info.samplerate *
-    MAX_RECORDING_TIME_S;
-  audio->sample_info.bitdepth = 16;
+  audio->sample_info.frames = audio->sample_info.rate * MAX_RECORDING_TIME_S;
+  audio->sample_info.bit_depth = 16;
   guint size = audio->sample_info.frames *
     BYTES_PER_FRAME (audio->sample_info.channels);
   g_byte_array_set_size (audio->sample, size);
@@ -233,7 +232,7 @@ audio_init (struct audio *audio,
 	       audio_version ());
   audio->sample = g_byte_array_new ();
   audio->sample_info.frames = 0;
-  audio->sample_info.samplerate = 0;
+  audio->sample_info.rate = 0;
   audio->sample_info.channels = 0;
   audio->loop = FALSE;
   audio->path[0] = 0;
@@ -352,24 +351,24 @@ audio_delete_range (struct audio *audio, guint start_frame, guint frames)
   g_mutex_lock (&audio->control.mutex);
   audio->sample_info.frames -= (guint32) frames;
 
-  if (audio->sample_info.loopstart >= audio->sel_start + audio->sel_len)
+  if (audio->sample_info.loop_start >= audio->sel_start + audio->sel_len)
     {
-      audio->sample_info.loopstart -= (guint32) audio->sel_len;
+      audio->sample_info.loop_start -= (guint32) audio->sel_len;
     }
-  else if (audio->sample_info.loopstart >= audio->sel_start &&
-	   audio->sample_info.loopstart < audio->sel_start + audio->sel_len)
+  else if (audio->sample_info.loop_start >= audio->sel_start &&
+	   audio->sample_info.loop_start < audio->sel_start + audio->sel_len)
     {
-      audio->sample_info.loopstart = 0;
+      audio->sample_info.loop_start = 0;
     }
 
-  if (audio->sample_info.loopend >= audio->sel_start + audio->sel_len)
+  if (audio->sample_info.loop_end >= audio->sel_start + audio->sel_len)
     {
-      audio->sample_info.loopend -= (guint32) audio->sel_len;
+      audio->sample_info.loop_end -= (guint32) audio->sel_len;
     }
-  else if (audio->sample_info.loopend >= audio->sel_start &&
-	   audio->sample_info.loopend < audio->sel_start + audio->sel_len)
+  else if (audio->sample_info.loop_end >= audio->sel_start &&
+	   audio->sample_info.loop_end < audio->sel_start + audio->sel_len)
     {
-      audio->sample_info.loopend = audio->sample_info.frames - 1;
+      audio->sample_info.loop_end = audio->sample_info.frames - 1;
     }
 
   audio->sel_start = 0;
@@ -377,8 +376,8 @@ audio_delete_range (struct audio *audio, guint start_frame, guint frames)
 
   r = sample_info->frames / (double) audio->sample_info.frames;
   sample_info->frames = audio->sample_info.frames * r;
-  sample_info->loopstart = audio->sample_info.loopstart * r;
-  sample_info->loopend = audio->sample_info.loopend * r;
+  sample_info->loop_start = audio->sample_info.loop_start * r;
+  sample_info->loop_end = audio->sample_info.loop_end * r;
   g_mutex_unlock (&audio->control.mutex);
 }
 
@@ -431,8 +430,8 @@ audio_finish_recording (struct audio *audio)
   audio->status = AUDIO_STATUS_STOPPED;
   audio->sample_info.frames = audio->sample->len /
     BYTES_PER_FRAME (audio->sample_info.channels);
-  audio->sample_info.loopstart = audio->sample_info.frames - 1;
-  audio->sample_info.loopend = audio->sample_info.loopstart;
+  audio->sample_info.loop_start = audio->sample_info.frames - 1;
+  audio->sample_info.loop_end = audio->sample_info.loop_start;
   memcpy (sample_info, &audio->sample_info, sizeof (struct sample_info));
   if (record)
     {

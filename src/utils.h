@@ -71,7 +71,7 @@ typedef void (*iterator_free) (void *);
 //name must be filled up always. If no name is available, this can be a string representation of the ID without padding. See set_item_name_from_id function.
 //In slot mode, id needs to be filled up and will typically be the MIDI preset number (the id is the filename).
 //In default mode (not slot mode), id can be used for any or no purpose. It's still possible to use the id as the filename by using the FS_OPTION_ID_AS_FILENAME option.
-//A value of -1 in size will show nothing on the interface. If the size column is not used at all, use FS_OPTION_SHOW_SIZE_COLUMN.
+//A value of -1 in size will show nothing on the interface. If the size column is not used at all, do not use FS_OPTION_SHOW_SIZE_COLUMN.
 
 struct item
 {
@@ -113,13 +113,13 @@ struct job_control
 struct sample_info
 {
   guint32 frames;
-  guint32 loopstart;
-  guint32 loopend;
-  guint32 looptype;
-  guint32 samplerate;
-  guint32 bitdepth;
+  guint32 loop_start;
+  guint32 loop_end;
+  guint32 loop_type;
+  guint32 rate;
+  guint32 bit_depth;
   guint32 channels;
-  guint32 midinote;
+  guint32 midi_note;
 };
 
 enum sysex_transfer_status

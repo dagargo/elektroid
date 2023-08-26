@@ -178,7 +178,7 @@ editor_show_sample_time_properties (struct editor *editor)
 {
   gchar label[LABEL_MAX];
   struct sample_info *sample_info = editor->audio.control.data;
-  double time = sample_info->frames / (double) sample_info->samplerate;
+  double time = sample_info->frames / (double) sample_info->rate;
 
   snprintf (label, LABEL_MAX, "%d", sample_info->frames);
   gtk_label_set_text (GTK_LABEL (editor->sample_length), label);
@@ -193,11 +193,11 @@ editor_show_sample_time_properties (struct editor *editor)
     }
   gtk_label_set_text (GTK_LABEL (editor->sample_duration), label);
 
-  snprintf (label, LABEL_MAX, "%d", sample_info->loopstart);
-  gtk_label_set_text (GTK_LABEL (editor->sample_loopstart), label);
+  snprintf (label, LABEL_MAX, "%d", sample_info->loop_start);
+  gtk_label_set_text (GTK_LABEL (editor->sample_loop_start), label);
 
-  snprintf (label, LABEL_MAX, "%d", sample_info->loopend);
-  gtk_label_set_text (GTK_LABEL (editor->sample_loopend), label);
+  snprintf (label, LABEL_MAX, "%d", sample_info->loop_end);
+  gtk_label_set_text (GTK_LABEL (editor->sample_loop_end), label);
 }
 
 static void
@@ -218,18 +218,18 @@ editor_show_sample_properties_on_load (struct editor *editor)
 
   editor_show_sample_time_properties (editor);
 
-  snprintf (label, LABEL_MAX, "%.2f kHz", sample_info->samplerate / 1000.f);
-  gtk_label_set_text (GTK_LABEL (editor->sample_samplerate), label);
+  snprintf (label, LABEL_MAX, "%.2f kHz", sample_info->rate / 1000.f);
+  gtk_label_set_text (GTK_LABEL (editor->sample_rate), label);
 
   snprintf (label, LABEL_MAX, "%d", sample_info->channels);
   gtk_label_set_text (GTK_LABEL (editor->sample_channels), label);
 
-  snprintf (label, LABEL_MAX, "%d", sample_info->bitdepth);
-  gtk_label_set_text (GTK_LABEL (editor->sample_bitdepth), label);
+  snprintf (label, LABEL_MAX, "%d", sample_info->bit_depth);
+  gtk_label_set_text (GTK_LABEL (editor->sample_bit_depth), label);
 
   gtk_tree_model_get_iter_first (GTK_TREE_MODEL (editor->notes_list_store),
 				 &iter);
-  for (gint i = 0; i < sample_info->midinote; i++)
+  for (gint i = 0; i < sample_info->midi_note; i++)
     {
       gtk_tree_model_iter_next (GTK_TREE_MODEL (editor->notes_list_store),
 				&iter);
@@ -237,9 +237,9 @@ editor_show_sample_properties_on_load (struct editor *editor)
   gtk_tree_model_get_value (GTK_TREE_MODEL (editor->notes_list_store),
 			    &iter, 0, &value);
   note = g_value_get_string (&value);
-  snprintf (label, LABEL_MAX, "%s (%d)", note, sample_info->midinote);
+  snprintf (label, LABEL_MAX, "%s (%d)", note, sample_info->midi_note);
   g_value_unset (&value);
-  gtk_label_set_text (GTK_LABEL (editor->sample_midinote), label);
+  gtk_label_set_text (GTK_LABEL (editor->sample_midi_note), label);
 
   editor_set_start_frame (editor, 0);
 }
@@ -466,7 +466,7 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
       bgcolor.alpha = 0.15;
       gdk_cairo_set_source_rgba (cr, &color);
 
-      value = ((gint) ((audio->sample_info.loopstart - start) / x_ratio)) +
+      value = ((gint) ((audio->sample_info.loop_start - start) / x_ratio)) +
 	.5;
       cairo_move_to (cr, value, 0);
       cairo_line_to (cr, value, height - 1);
@@ -477,7 +477,7 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
       cairo_line_to (cr, value, EDITOR_LOOP_MARKER_FULL_HEIGHT);
       cairo_fill (cr);
 
-      value = ((gint) ((audio->sample_info.loopend - start) / x_ratio)) + .5;
+      value = ((gint) ((audio->sample_info.loop_end - start) / x_ratio)) + .5;
       cairo_move_to (cr, value, 0);
       cairo_line_to (cr, value, height - 1);
       cairo_stroke (cr);
@@ -881,7 +881,7 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
       debug_print (2, "Pressing at frame %d...\n", cursor_frame);
       if (editor_cursor_frame_over_frame (editor, cursor_frame,
 					  editor->audio.
-					  sample_info.loopstart))
+					  sample_info.loop_start))
 	{
 	  debug_print (2, "Clicking on loop start...\n");
 	  editor->operation = EDITOR_OP_MOVE_LOOP_START;
@@ -889,7 +889,7 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
 	}
       else if (editor_cursor_frame_over_frame (editor, cursor_frame,
 					       editor->audio.
-					       sample_info.loopend))
+					       sample_info.loop_end))
 	{
 	  debug_print (2, "Clicking on loop end...\n");
 	  editor->operation = EDITOR_OP_MOVE_LOOP_END;
@@ -983,14 +983,14 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
     {
       gdouble r = sample_info_src->frames /
 	(gdouble) editor->audio.sample_info.frames;
-      editor->audio.sample_info.loopstart = cursor_frame;
-      sample_info_src->loopstart = cursor_frame * r;
+      editor->audio.sample_info.loop_start = cursor_frame;
+      sample_info_src->loop_start = cursor_frame * r;
       debug_print (2,
 		   "Setting loop start to %d frame and %d value (%d file frame)...\n",
-		   editor->audio.sample_info.loopstart,
-		   samples[editor->audio.sample_info.loopstart *
+		   editor->audio.sample_info.loop_start,
+		   samples[editor->audio.sample_info.loop_start *
 			   editor->audio.sample_info.channels],
-		   sample_info_src->loopstart);
+		   sample_info_src->loop_start);
       editor->dirty = TRUE;
       editor_show_sample_time_properties (editor);
     }
@@ -998,14 +998,14 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
     {
       gdouble r = sample_info_src->frames /
 	(gdouble) editor->audio.sample_info.frames;
-      editor->audio.sample_info.loopend = cursor_frame;
-      sample_info_src->loopend = cursor_frame * r;
+      editor->audio.sample_info.loop_end = cursor_frame;
+      sample_info_src->loop_end = cursor_frame * r;
       debug_print (2,
 		   "Setting loop end to %d frame and %d value (%d file frame)...\n",
-		   editor->audio.sample_info.loopend,
-		   samples[editor->audio.sample_info.loopend *
+		   editor->audio.sample_info.loop_end,
+		   samples[editor->audio.sample_info.loop_end *
 			   editor->audio.sample_info.channels],
-		   sample_info_src->loopend);
+		   sample_info_src->loop_end);
       editor->dirty = TRUE;
       editor_show_sample_time_properties (editor);
     }
@@ -1013,13 +1013,13 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
     {
       if (editor_cursor_frame_over_frame (editor, cursor_frame,
 					  editor->audio.
-					  sample_info.loopstart))
+					  sample_info.loop_start))
 	{
 	  editor_set_cursor (editor, "col-resize");
 	}
       else if (editor_cursor_frame_over_frame (editor, cursor_frame,
 					       editor->audio.
-					       sample_info.loopend))
+					       sample_info.loop_end))
 	{
 	  editor_set_cursor (editor, "col-resize");
 	}
@@ -1156,18 +1156,18 @@ editor_init (struct editor *editor, GtkBuilder * builder)
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_length"));
   editor->sample_duration =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_duration"));
-  editor->sample_loopstart =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_loopstart"));
-  editor->sample_loopend =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_loopend"));
+  editor->sample_loop_start =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_loop_start"));
+  editor->sample_loop_end =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_loop_end"));
   editor->sample_channels =
     GTK_WIDGET (gtk_builder_get_object (builder, "sample_channels"));
-  editor->sample_samplerate =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_samplerate"));
-  editor->sample_bitdepth =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_bitdepth"));
-  editor->sample_midinote =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_midinote"));
+  editor->sample_rate =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_rate"));
+  editor->sample_bit_depth =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_bit_depth"));
+  editor->sample_midi_note =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_midi_note"));
 
   editor->notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));

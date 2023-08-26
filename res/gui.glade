@@ -2419,7 +2419,7 @@ on remote</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="sample_samplerate">
+                              <object class="GtkLabel" id="sample_rate">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="halign">start</property>
@@ -2430,7 +2430,7 @@ on remote</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="sample_bitdepth">
+                              <object class="GtkLabel" id="sample_bit_depth">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="halign">start</property>
@@ -2494,7 +2494,7 @@ on remote</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="sample_loopstart">
+                              <object class="GtkLabel" id="sample_loop_start">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="halign">start</property>
@@ -2505,7 +2505,7 @@ on remote</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="sample_loopend">
+                              <object class="GtkLabel" id="sample_loop_end">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="halign">start</property>
@@ -2530,7 +2530,7 @@ on remote</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="sample_midinote">
+                              <object class="GtkLabel" id="sample_midi_note">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="halign">start</property>

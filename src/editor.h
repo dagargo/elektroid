@@ -45,12 +45,12 @@ struct editor
   GtkWidget *sample_info_box;
   GtkWidget *sample_length;
   GtkWidget *sample_duration;
-  GtkWidget *sample_loopstart;
-  GtkWidget *sample_loopend;
+  GtkWidget *sample_loop_start;
+  GtkWidget *sample_loop_end;
   GtkWidget *sample_channels;
-  GtkWidget *sample_samplerate;
-  GtkWidget *sample_bitdepth;
-  GtkWidget *sample_midinote;
+  GtkWidget *sample_rate;
+  GtkWidget *sample_bit_depth;
+  GtkWidget *sample_midi_note;
   GtkListStore *notes_list_store;
   GtkMenu *menu;
   GtkWidget *play_menuitem;
