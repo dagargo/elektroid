@@ -813,7 +813,7 @@ elektroid_delete_file (struct browser *browser, gchar * dir,
     {
       gboolean active;
       struct item_iterator iter;
-      if (browser->fs_ops->readdir (browser->backend, &iter, path))
+      if (browser->fs_ops->readdir (browser->backend, &iter, path, NULL))
 	{
 	  err = -ENOTDIR;
 	  goto end;
@@ -1815,7 +1815,7 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
   g_free (rel_path_trans);
 
   //Check if the item is a dir. If error, it's not.
-  if (local_browser.fs_ops->readdir (NULL, &iter, src_abs_path))
+  if (local_browser.fs_ops->readdir (NULL, &iter, src_abs_path, NULL))
     {
       rel_path_trans = path_translate (type, rel_path);
       gchar *dst_abs_path = path_chain (type, dst_dir, rel_path_trans);
@@ -2055,7 +2055,7 @@ elektroid_add_download_task_path (const gchar * rel_path,
 
   //Check if the item is a dir. If error, it's not.
   if (remote_browser.fs_ops->readdir (remote_browser.backend, &iter,
-				      src_abs_path))
+				      src_abs_path, NULL))
     {
       rel_path_trans = path_translate (PATH_SYSTEM, rel_path);
       gchar *dst_abs_path = path_chain (PATH_SYSTEM, dst_dir, rel_path_trans);

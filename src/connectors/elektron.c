@@ -917,7 +917,7 @@ elektron_get_path_type (struct backend *backend, const gchar * path,
   name = g_path_get_basename (path);
   dir = g_path_get_dirname (path);
   res = ELEKTROID_NONE;
-  if (!init_iter (backend, &iter, dir))
+  if (!init_iter (backend, &iter, dir, NULL))
     {
       while (!next_item_iterator (&iter))
 	{
@@ -977,7 +977,8 @@ elektron_read_common_dir (struct backend *backend,
 
 static gint
 elektron_read_samples_dir (struct backend *backend,
-			   struct item_iterator *iter, const gchar * dir)
+			   struct item_iterator *iter, const gchar * dir,
+			   gchar ** extensions)
 {
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_SAMPLE_READ_DIR_REQUEST,
@@ -988,7 +989,7 @@ elektron_read_samples_dir (struct backend *backend,
 
 static gint
 elektron_read_raw_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar * dir)
+		       const gchar * dir, gchar ** extensions)
 {
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_RAW_READ_DIR_REQUEST,
@@ -1094,7 +1095,7 @@ elektron_move_common_item (struct backend *backend, const gchar * src,
 	{
 	  return res;
 	}
-      if (!init_iter (backend, &iter, src))
+      if (!init_iter (backend, &iter, src, NULL))
 	{
 	  while (!next_item_iterator (&iter) && !res)
 	    {
@@ -1280,7 +1281,7 @@ elektron_delete_common_item (struct backend *backend, const gchar * path,
     {
       debug_print (1, "Deleting %s samples dir...\n", path);
 
-      if (init_iter (backend, &iter, path))
+      if (init_iter (backend, &iter, path, NULL))
 	{
 	  error_print ("Error while opening samples dir %s dir\n", path);
 	  res = -EINVAL;
@@ -2144,14 +2145,16 @@ elektron_read_data_dir_prefix (struct backend *backend,
 
 static gint
 elektron_read_data_dir_any (struct backend *backend,
-			    struct item_iterator *iter, const gchar * dir)
+			    struct item_iterator *iter, const gchar * dir,
+			    gchar ** extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir, NULL, -1);
 }
 
 static gint
 elektron_read_data_dir_prj (struct backend *backend,
-			    struct item_iterator *iter, const gchar * dir)
+			    struct item_iterator *iter, const gchar * dir,
+			    gchar ** extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_PRJ_PREFIX, 128);
@@ -2159,7 +2162,8 @@ elektron_read_data_dir_prj (struct backend *backend,
 
 static gint
 elektron_read_data_dir_snd (struct backend *backend,
-			    struct item_iterator *iter, const gchar * dir)
+			    struct item_iterator *iter, const gchar * dir,
+			    gchar ** extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_SND_PREFIX, 256);
@@ -2666,7 +2670,7 @@ elektron_get_download_name (struct backend *backend,
 
   iter = g_malloc (sizeof (struct item_iterator));
   dir = g_path_get_dirname (src_path);
-  ret = ops->readdir (backend, iter, dir);
+  ret = ops->readdir (backend, iter, dir, NULL);
   g_free (dir);
   if (ret)
     {

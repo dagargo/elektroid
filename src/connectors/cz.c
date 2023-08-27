@@ -170,7 +170,7 @@ get_mem_type (const gchar * name)
 
 static gint
 cz_read_dir (struct backend *backend, struct item_iterator *iter,
-	     const gchar * path)
+	     const gchar * path, gchar ** extensions)
 {
   gint mem_type;
 

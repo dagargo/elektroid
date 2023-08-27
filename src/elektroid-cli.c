@@ -134,7 +134,7 @@ cli_list (int argc, gchar * argv[], int *optind)
 
   CHECK_FS_OPS_FUNC (fs_ops->readdir);
 
-  err = fs_ops->readdir (&backend, &iter, path);
+  err = fs_ops->readdir (&backend, &iter, path, NULL);
   if (err)
     {
       return err;

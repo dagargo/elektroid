@@ -168,7 +168,7 @@ efactor_next_dentry (struct item_iterator *iter)
 
 static gint
 efactor_read_dir (struct backend *backend, struct item_iterator *iter,
-		  const gchar * path)
+		  const gchar * path, gchar ** extensions)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -231,7 +231,7 @@ efactor_download (struct backend *backend, const gchar * src_path,
 
   if (!data->lines)
     {
-      err = efactor_read_dir (backend, &iter, "/");
+      err = efactor_read_dir (backend, &iter, "/", NULL);
       if (err)
 	{
 	  return err;

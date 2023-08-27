@@ -31,6 +31,7 @@ struct local_iterator_data
 {
   DIR *dir;
   gchar *path;
+  gchar **extensions;
 };
 
 static gint
@@ -194,7 +195,7 @@ local_next_dentry (struct item_iterator *iter)
 
       g_free (full_path);
 
-      if (found)
+      if (found && iter_is_dir_or_matches_extensions (iter, data->extensions))
 	{
 	  return 0;
 	}
@@ -204,7 +205,8 @@ local_next_dentry (struct item_iterator *iter)
 }
 
 static gint
-local_init_iterator (struct item_iterator *iter, const gchar * path)
+local_read_dir (struct backend *backend, struct item_iterator *iter,
+		const gchar * path, gchar ** extensions)
 {
   DIR *dir;
   struct local_iterator_data *data;
@@ -217,19 +219,13 @@ local_init_iterator (struct item_iterator *iter, const gchar * path)
   data = g_malloc (sizeof (struct local_iterator_data));
   data->dir = dir;
   data->path = strdup (path);
+  data->extensions = extensions;
 
   iter->data = data;
   iter->next = local_next_dentry;
   iter->free = local_free_iterator_data;
 
   return 0;
-}
-
-static gint
-local_read_dir (struct backend *backend, struct item_iterator *iter,
-		const gchar * path)
-{
-  return local_init_iterator (iter, path);
 }
 
 static gint

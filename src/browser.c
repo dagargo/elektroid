@@ -312,7 +312,8 @@ browser_load_dir_runner (gpointer data)
   struct item_iterator iter;
 
   g_idle_add (browser_load_dir_runner_show_spinner_and_lock_browser, browser);
-  err = browser->fs_ops->readdir (browser->backend, &iter, browser->dir);
+  err = browser->fs_ops->readdir (browser->backend, &iter, browser->dir,
+				  browser->extensions);
   g_idle_add (browser_load_dir_runner_hide_spinner, browser);
   if (err)
     {
@@ -322,14 +323,11 @@ browser_load_dir_runner (gpointer data)
 
   while (!next_item_iterator (&iter))
     {
-      if (iter_matches_extensions (&iter, browser->extensions))
-	{
-	  struct browser_add_dentry_item_data *data =
-	    g_malloc (sizeof (struct browser_add_dentry_item_data));
-	  data->browser = browser;
-	  memcpy (&data->item, &iter.item, sizeof (struct item));
-	  g_idle_add (browser_add_dentry_item, data);
-	}
+      struct browser_add_dentry_item_data *data =
+	g_malloc (sizeof (struct browser_add_dentry_item_data));
+      data->browser = browser;
+      memcpy (&data->item, &iter.item, sizeof (struct item));
+      g_idle_add (browser_add_dentry_item, data);
     }
   free_item_iterator (&iter);
 

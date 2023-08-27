@@ -416,7 +416,8 @@ file_matches_extensions (const gchar * name, gchar ** extensions)
 }
 
 gboolean
-iter_matches_extensions (struct item_iterator *iter, gchar ** extensions)
+iter_is_dir_or_matches_extensions (struct item_iterator *iter,
+				   gchar ** extensions)
 {
   if (iter->item.type == ELEKTROID_DIR)
     {
