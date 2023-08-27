@@ -110,67 +110,6 @@ typedef gint (*elektron_path_func) (struct backend *, const gchar *);
 typedef gint (*elektron_src_dst_func) (struct backend *, const gchar *,
 				       const gchar *);
 
-static gint elektron_delete_samples_dir (struct backend *, const gchar *);
-static gint elektron_read_samples_dir (struct backend *,
-				       struct item_iterator *, const gchar *);
-static gint elektron_create_samples_dir (struct backend *, const gchar *);
-static gint elektron_delete_samples_item (struct backend *, const gchar *);
-static gint elektron_move_samples_item (struct backend *, const gchar *,
-					const gchar *);
-static gint elektron_download_sample (struct backend *, const gchar *,
-				      GByteArray *, struct job_control *);
-static gint elektron_upload_sample (struct backend *, const gchar *,
-				    GByteArray *, struct job_control *);
-
-static gint elektron_delete_raw_dir (struct backend *, const gchar *);
-static gint elektron_read_raw_dir (struct backend *, struct item_iterator *,
-				   const gchar *);
-static gint elektron_create_raw_dir (struct backend *, const gchar *);
-static gint elektron_delete_raw_item (struct backend *, const gchar *);
-static gint elektron_move_raw_item (struct backend *, const gchar *,
-				    const gchar *);
-static gint elektron_download_raw (struct backend *, const gchar *,
-				   GByteArray *, struct job_control *);
-static gint elektron_upload_raw (struct backend *, const gchar *,
-				 GByteArray *, struct job_control *);
-
-static gint elektron_read_data_dir_any (struct backend *,
-					struct item_iterator *,
-					const gchar *);
-static gint elektron_read_data_dir_prj (struct backend *,
-					struct item_iterator *,
-					const gchar *);
-static gint elektron_read_data_dir_snd (struct backend *,
-					struct item_iterator *,
-					const gchar *);
-
-static gint elektron_move_data_item_any (struct backend *, const gchar *,
-					 const gchar *);
-static gint elektron_move_data_item_prj (struct backend *, const gchar *,
-					 const gchar *);
-static gint elektron_move_data_item_snd (struct backend *, const gchar *,
-					 const gchar *);
-
-static gint elektron_copy_data_item_any (struct backend *, const gchar *,
-					 const gchar *);
-static gint elektron_copy_data_item_prj (struct backend *, const gchar *,
-					 const gchar *);
-static gint elektron_copy_data_item_snd (struct backend *, const gchar *,
-					 const gchar *);
-
-static gint elektron_clear_data_item_any (struct backend *, const gchar *);
-static gint elektron_clear_data_item_prj (struct backend *, const gchar *);
-static gint elektron_clear_data_item_snd (struct backend *, const gchar *);
-
-static gint elektron_swap_data_item_any (struct backend *, const gchar *,
-					 const gchar *);
-static gint elektron_swap_data_item_prj (struct backend *, const gchar *,
-					 const gchar *);
-static gint elektron_swap_data_item_snd (struct backend *, const gchar *,
-					 const gchar *);
-
-static gint elektron_download_data_any (struct backend *, const gchar *,
-					GByteArray *, struct job_control *);
 static gint elektron_download_data_snd_pkg (struct backend *, const gchar *,
 					    GByteArray *,
 					    struct job_control *);
@@ -180,46 +119,12 @@ static gint elektron_download_data_prj_pkg (struct backend *, const gchar *,
 static gint elektron_download_raw_pst_pkg (struct backend *, const gchar *,
 					   GByteArray *,
 					   struct job_control *);
-
-static gint elektron_upload_data_any (struct backend *, const gchar *,
-				      GByteArray *, struct job_control *);
 static gint elektron_upload_data_prj_pkg (struct backend *, const gchar *,
 					  GByteArray *, struct job_control *);
 static gint elektron_upload_data_snd_pkg (struct backend *, const gchar *,
 					  GByteArray *, struct job_control *);
 static gint elektron_upload_raw_pst_pkg (struct backend *, const gchar *,
 					 GByteArray *, struct job_control *);
-
-static gchar *elektron_get_dev_and_fs_ext (struct backend *,
-					   const struct fs_operations *);
-
-static gchar *elektron_get_upload_path_smplrw (struct backend *,
-					       const struct fs_operations *,
-					       const gchar *, const gchar *);
-static gchar *elektron_get_download_path (struct backend *,
-					  const struct fs_operations *,
-					  const gchar *, const gchar *,
-					  GByteArray *);
-static gchar *elektron_get_download_name (struct backend *,
-					  const struct fs_operations *,
-					  const gchar *);
-
-static gint elektron_upgrade_os (struct backend *, struct sysex_transfer *);
-
-static gint elektron_sample_load (const gchar *, GByteArray *,
-				  struct job_control *);
-
-static enum item_type elektron_get_path_type (struct backend *,
-					      const gchar *,
-					      fs_init_iter_func);
-
-static void elektron_print_smplrw (struct item_iterator *, struct backend *,
-				   const struct fs_operations *);
-
-static void elektron_print_data (struct item_iterator *, struct backend *,
-				 const struct fs_operations *);
-
-static gchar *elektron_get_id_as_slot (struct item *, struct backend *);
 
 static gboolean elektron_sample_file_exists (struct backend *, const gchar *);
 static gboolean elektron_raw_file_exists (struct backend *, const gchar *);
@@ -281,158 +186,6 @@ static const guint8 OS_UPGRADE_START_REQUEST[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
 static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
   { 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-
-static const struct fs_operations FS_SAMPLES_OPERATIONS = {
-  .fs = FS_SAMPLES,
-  .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SORT_BY_NAME |
-    FS_OPTION_SHOW_SIZE_COLUMN,
-  .name = "sample",
-  .gui_name = "Samples",
-  .gui_icon = BE_FILE_ICON_WAVE,
-  .type_ext = "wav",
-  .max_name_len = ELEKTRON_NAME_MAX_LEN,
-  .readdir = elektron_read_samples_dir,
-  .file_exists = elektron_sample_file_exists,
-  .print_item = elektron_print_smplrw,
-  .mkdir = elektron_create_samples_dir,
-  .delete = elektron_delete_samples_item,
-  .rename = elektron_move_samples_item,
-  .move = elektron_move_samples_item,
-  .download = elektron_download_sample,
-  .upload = elektron_upload_sample,
-  .load = elektron_sample_load,
-  .save = sample_save_from_array,
-  .get_ext = backend_get_fs_ext,
-  .get_upload_path = elektron_get_upload_path_smplrw,
-  .get_download_path = elektron_get_download_path
-};
-
-static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
-  .fs = FS_RAW_ALL,
-  .options = 0,
-  .name = "raw",
-  .type_ext = "raw",
-  .max_name_len = ELEKTRON_NAME_MAX_LEN,
-  .readdir = elektron_read_raw_dir,
-  .file_exists = elektron_raw_file_exists,
-  .print_item = elektron_print_smplrw,
-  .mkdir = elektron_create_raw_dir,
-  .delete = elektron_delete_raw_item,
-  .rename = elektron_move_raw_item,
-  .move = elektron_move_raw_item,
-  .download = elektron_download_raw,
-  .upload = elektron_upload_raw,
-  .load = load_file,
-  .save = save_file,
-  .get_ext = elektron_get_dev_and_fs_ext,
-  .get_upload_path = elektron_get_upload_path_smplrw,
-  .get_download_path = elektron_get_download_path
-};
-
-static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
-  .fs = FS_RAW_PRESETS,
-  .options = 0,
-  .name = "preset",
-  .gui_name = "Presets",
-  .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "pst",
-  .max_name_len = ELEKTRON_NAME_MAX_LEN,
-  .readdir = elektron_read_raw_dir,
-  .file_exists = elektron_raw_file_exists,
-  .print_item = elektron_print_smplrw,
-  .mkdir = elektron_create_raw_dir,
-  .delete = elektron_delete_raw_item,
-  .rename = elektron_move_raw_item,
-  .move = elektron_move_raw_item,
-  .download = elektron_download_raw_pst_pkg,
-  .upload = elektron_upload_raw_pst_pkg,
-  .load = load_file,
-  .save = save_file,
-  .get_ext = elektron_get_dev_and_fs_ext,
-  .get_upload_path = elektron_get_upload_path_smplrw,
-  .get_download_path = elektron_get_download_path
-};
-
-static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
-  .fs = FS_DATA_ALL,
-  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE,
-  .name = "data",
-  .type_ext = "data",
-  .readdir = elektron_read_data_dir_any,
-  .print_item = elektron_print_data,
-  .delete = elektron_clear_data_item_any,
-  .move = elektron_move_data_item_any,
-  .copy = elektron_copy_data_item_any,
-  .clear = elektron_clear_data_item_any,
-  .swap = elektron_swap_data_item_any,
-  .download = elektron_download_data_any,
-  .upload = elektron_upload_data_any,
-  .get_slot = elektron_get_id_as_slot,
-  .load = load_file,
-  .save = save_file,
-  .get_ext = elektron_get_dev_and_fs_ext,
-  .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = elektron_get_download_path
-};
-
-static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
-  .fs = FS_DATA_PRJ,
-  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SHOW_SLOT_COLUMN,
-  .name = "project",
-  .gui_name = "Projects",
-  .gui_icon = BE_FILE_ICON_PRJ,
-  .type_ext = "prj",
-  .readdir = elektron_read_data_dir_prj,
-  .print_item = elektron_print_data,
-  .delete = elektron_clear_data_item_prj,
-  .move = elektron_move_data_item_prj,
-  .copy = elektron_copy_data_item_prj,
-  .clear = elektron_clear_data_item_prj,
-  .swap = elektron_swap_data_item_prj,
-  .download = elektron_download_data_prj_pkg,
-  .upload = elektron_upload_data_prj_pkg,
-  .get_slot = elektron_get_id_as_slot,
-  .load = load_file,
-  .save = save_file,
-  .get_ext = elektron_get_dev_and_fs_ext,
-  .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = elektron_get_download_path
-};
-
-static const struct fs_operations FS_DATA_SND_OPERATIONS = {
-  .fs = FS_DATA_SND,
-  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SHOW_SLOT_COLUMN,
-  .name = "sound",
-  .gui_name = "Sounds",
-  .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "snd",
-  .readdir = elektron_read_data_dir_snd,
-  .print_item = elektron_print_data,
-  .delete = elektron_clear_data_item_snd,
-  .move = elektron_move_data_item_snd,
-  .copy = elektron_copy_data_item_snd,
-  .clear = elektron_clear_data_item_snd,
-  .swap = elektron_swap_data_item_snd,
-  .download = elektron_download_data_snd_pkg,
-  .upload = elektron_upload_data_snd_pkg,
-  .get_slot = elektron_get_id_as_slot,
-  .load = load_file,
-  .save = save_file,
-  .get_ext = elektron_get_dev_and_fs_ext,
-  .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = elektron_get_download_path
-};
-
-static const struct fs_operations *FS_OPERATIONS[] = {
-  &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
-  &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
-  NULL
-};
 
 static gchar *
 elektron_get_id_as_slot (struct item *item, struct backend *backend)
@@ -2239,77 +1992,6 @@ elektron_ping (struct backend *backend)
   return rx_msg;
 }
 
-gint
-elektron_handshake (struct backend *backend)
-{
-  guint8 id;
-  gchar *overbridge_name;
-  GByteArray *tx_msg, *rx_msg;
-  struct elektron_data *data;
-
-  rx_msg = elektron_ping (backend);
-  if (!rx_msg)
-    {
-      return -ENODEV;
-    }
-
-  data = backend->data;
-
-  overbridge_name = strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
-  id = rx_msg->data[5];
-  free_msg (rx_msg);
-
-  if (elektron_configure_device (backend, id))
-    {
-      backend->data = NULL;
-      g_free (overbridge_name);
-      g_free (data);
-      return -ENODEV;
-    }
-
-  usleep (BE_REST_TIME_US);
-
-  tx_msg = elektron_new_msg (SOFTWARE_VERSION_REQUEST,
-			     sizeof (SOFTWARE_VERSION_REQUEST));
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
-  if (!rx_msg)
-    {
-      backend->data = NULL;
-      g_free (overbridge_name);
-      g_free (data);
-      return -ENODEV;
-    }
-  snprintf (backend->version, LABEL_MAX, "%s", (gchar *) & rx_msg->data[10]);
-  free_msg (rx_msg);
-
-  usleep (BE_REST_TIME_US);
-
-  if (debug_level > 1)
-    {
-      tx_msg = elektron_new_msg (DEVICEUID_REQUEST,
-				 sizeof (DEVICEUID_REQUEST));
-      rx_msg = elektron_tx_and_rx (backend, tx_msg);
-      if (rx_msg)
-	{
-	  debug_print (1, "UID: %x\n", *((guint32 *) & rx_msg->data[5]));
-	  free_msg (rx_msg);
-	}
-
-      usleep (BE_REST_TIME_US);
-    }
-
-  snprintf (backend->description, LABEL_MAX, "%s", overbridge_name);
-
-  g_free (overbridge_name);
-
-  backend->fs_ops = FS_OPERATIONS;
-  backend->destroy_data = backend_destroy_data;
-  backend->upgrade_os = elektron_upgrade_os;
-  backend->get_storage_stats = elektron_get_storage_stats;
-
-  return 0;
-}
-
 static guint
 elektron_next_data_entry (struct item_iterator *iter)
 {
@@ -3043,39 +2725,6 @@ elektron_download_pkg (struct backend *backend, const gchar * path,
   return ret;
 }
 
-static gint
-elektron_download_data_snd_pkg (struct backend *backend,
-				const gchar * path, GByteArray * output,
-				struct job_control *control)
-{
-  return elektron_download_pkg (backend, path, output, control,
-				PKG_FILE_TYPE_SOUND,
-				&FS_DATA_SND_OPERATIONS,
-				elektron_download_data_snd);
-}
-
-static gint
-elektron_download_data_prj_pkg (struct backend *backend,
-				const gchar * path, GByteArray * output,
-				struct job_control *control)
-{
-  return elektron_download_pkg (backend, path, output, control,
-				PKG_FILE_TYPE_PROJECT,
-				&FS_DATA_PRJ_OPERATIONS,
-				elektron_download_data_prj);
-}
-
-static gint
-elektron_download_raw_pst_pkg (struct backend *backend, const gchar * path,
-			       GByteArray * output,
-			       struct job_control *control)
-{
-  return elektron_download_pkg (backend, path, output, control,
-				PKG_FILE_TYPE_PRESET,
-				&FS_RAW_ANY_OPERATIONS,
-				elektron_download_raw);
-}
-
 static gchar *
 elektron_get_upload_path_smplrw (struct backend *backend,
 				 const struct fs_operations *ops,
@@ -3337,35 +2986,6 @@ elektron_upload_pkg (struct backend *backend, const gchar * path,
   return ret;
 }
 
-static gint
-elektron_upload_data_snd_pkg (struct backend *backend, const gchar * path,
-			      GByteArray * input, struct job_control *control)
-{
-  return elektron_upload_pkg (backend, path, input, control,
-			      PKG_FILE_TYPE_SOUND,
-			      &FS_DATA_SND_OPERATIONS,
-			      elektron_upload_data_snd);
-}
-
-static gint
-elektron_upload_data_prj_pkg (struct backend *backend, const gchar * path,
-			      GByteArray * input, struct job_control *control)
-{
-  return elektron_upload_pkg (backend, path, input, control,
-			      PKG_FILE_TYPE_PROJECT,
-			      &FS_DATA_PRJ_OPERATIONS,
-			      elektron_upload_data_prj);
-}
-
-static gint
-elektron_upload_raw_pst_pkg (struct backend *backend, const gchar * path,
-			     GByteArray * input, struct job_control *control)
-{
-  return elektron_upload_pkg (backend, path, input, control,
-			      PKG_FILE_TYPE_PRESET,
-			      &FS_RAW_ANY_OPERATIONS, elektron_upload_raw);
-}
-
 static gchar *
 elektron_get_dev_and_fs_ext (struct backend *backend,
 			     const struct fs_operations *ops)
@@ -3423,4 +3043,289 @@ elektron_get_sample_path_from_hash_size (struct backend *backend,
     }
   g_byte_array_free (rx_msg, TRUE);
   return path;
+}
+
+static const struct fs_operations FS_SAMPLES_OPERATIONS = {
+  .fs = FS_SAMPLES,
+  .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SORT_BY_NAME |
+    FS_OPTION_SHOW_SIZE_COLUMN,
+  .name = "sample",
+  .gui_name = "Samples",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .type_ext = "wav",
+  .max_name_len = ELEKTRON_NAME_MAX_LEN,
+  .readdir = elektron_read_samples_dir,
+  .file_exists = elektron_sample_file_exists,
+  .print_item = elektron_print_smplrw,
+  .mkdir = elektron_create_samples_dir,
+  .delete = elektron_delete_samples_item,
+  .rename = elektron_move_samples_item,
+  .move = elektron_move_samples_item,
+  .download = elektron_download_sample,
+  .upload = elektron_upload_sample,
+  .load = elektron_sample_load,
+  .save = sample_save_from_array,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = elektron_get_upload_path_smplrw,
+  .get_download_path = elektron_get_download_path
+};
+
+static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
+  .fs = FS_RAW_ALL,
+  .options = 0,
+  .name = "raw",
+  .type_ext = "raw",
+  .max_name_len = ELEKTRON_NAME_MAX_LEN,
+  .readdir = elektron_read_raw_dir,
+  .file_exists = elektron_raw_file_exists,
+  .print_item = elektron_print_smplrw,
+  .mkdir = elektron_create_raw_dir,
+  .delete = elektron_delete_raw_item,
+  .rename = elektron_move_raw_item,
+  .move = elektron_move_raw_item,
+  .download = elektron_download_raw,
+  .upload = elektron_upload_raw,
+  .load = load_file,
+  .save = save_file,
+  .get_ext = elektron_get_dev_and_fs_ext,
+  .get_upload_path = elektron_get_upload_path_smplrw,
+  .get_download_path = elektron_get_download_path
+};
+
+static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
+  .fs = FS_RAW_PRESETS,
+  .options = 0,
+  .name = "preset",
+  .gui_name = "Presets",
+  .gui_icon = BE_FILE_ICON_SND,
+  .type_ext = "pst",
+  .max_name_len = ELEKTRON_NAME_MAX_LEN,
+  .readdir = elektron_read_raw_dir,
+  .file_exists = elektron_raw_file_exists,
+  .print_item = elektron_print_smplrw,
+  .mkdir = elektron_create_raw_dir,
+  .delete = elektron_delete_raw_item,
+  .rename = elektron_move_raw_item,
+  .move = elektron_move_raw_item,
+  .download = elektron_download_raw_pst_pkg,
+  .upload = elektron_upload_raw_pst_pkg,
+  .load = load_file,
+  .save = save_file,
+  .get_ext = elektron_get_dev_and_fs_ext,
+  .get_upload_path = elektron_get_upload_path_smplrw,
+  .get_download_path = elektron_get_download_path
+};
+
+static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
+  .fs = FS_DATA_ALL,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SLOT_STORAGE,
+  .name = "data",
+  .type_ext = "data",
+  .readdir = elektron_read_data_dir_any,
+  .print_item = elektron_print_data,
+  .delete = elektron_clear_data_item_any,
+  .move = elektron_move_data_item_any,
+  .copy = elektron_copy_data_item_any,
+  .clear = elektron_clear_data_item_any,
+  .swap = elektron_swap_data_item_any,
+  .download = elektron_download_data_any,
+  .upload = elektron_upload_data_any,
+  .get_slot = elektron_get_id_as_slot,
+  .load = load_file,
+  .save = save_file,
+  .get_ext = elektron_get_dev_and_fs_ext,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = elektron_get_download_path
+};
+
+static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
+  .fs = FS_DATA_PRJ,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SLOT_COLUMN,
+  .name = "project",
+  .gui_name = "Projects",
+  .gui_icon = BE_FILE_ICON_PRJ,
+  .type_ext = "prj",
+  .readdir = elektron_read_data_dir_prj,
+  .print_item = elektron_print_data,
+  .delete = elektron_clear_data_item_prj,
+  .move = elektron_move_data_item_prj,
+  .copy = elektron_copy_data_item_prj,
+  .clear = elektron_clear_data_item_prj,
+  .swap = elektron_swap_data_item_prj,
+  .download = elektron_download_data_prj_pkg,
+  .upload = elektron_upload_data_prj_pkg,
+  .get_slot = elektron_get_id_as_slot,
+  .load = load_file,
+  .save = save_file,
+  .get_ext = elektron_get_dev_and_fs_ext,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = elektron_get_download_path
+};
+
+static const struct fs_operations FS_DATA_SND_OPERATIONS = {
+  .fs = FS_DATA_SND,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SLOT_COLUMN,
+  .name = "sound",
+  .gui_name = "Sounds",
+  .gui_icon = BE_FILE_ICON_SND,
+  .type_ext = "snd",
+  .readdir = elektron_read_data_dir_snd,
+  .print_item = elektron_print_data,
+  .delete = elektron_clear_data_item_snd,
+  .move = elektron_move_data_item_snd,
+  .copy = elektron_copy_data_item_snd,
+  .clear = elektron_clear_data_item_snd,
+  .swap = elektron_swap_data_item_snd,
+  .download = elektron_download_data_snd_pkg,
+  .upload = elektron_upload_data_snd_pkg,
+  .get_slot = elektron_get_id_as_slot,
+  .load = load_file,
+  .save = save_file,
+  .get_ext = elektron_get_dev_and_fs_ext,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = elektron_get_download_path
+};
+
+static const struct fs_operations *FS_OPERATIONS[] = {
+  &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
+  &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
+  NULL
+};
+
+gint
+elektron_handshake (struct backend *backend)
+{
+  guint8 id;
+  gchar *overbridge_name;
+  GByteArray *tx_msg, *rx_msg;
+  struct elektron_data *data;
+
+  rx_msg = elektron_ping (backend);
+  if (!rx_msg)
+    {
+      return -ENODEV;
+    }
+
+  data = backend->data;
+
+  overbridge_name = strdup ((gchar *) & rx_msg->data[7 + rx_msg->data[6]]);
+  id = rx_msg->data[5];
+  free_msg (rx_msg);
+
+  if (elektron_configure_device (backend, id))
+    {
+      backend->data = NULL;
+      g_free (overbridge_name);
+      g_free (data);
+      return -ENODEV;
+    }
+
+  usleep (BE_REST_TIME_US);
+
+  tx_msg = elektron_new_msg (SOFTWARE_VERSION_REQUEST,
+			     sizeof (SOFTWARE_VERSION_REQUEST));
+  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  if (!rx_msg)
+    {
+      backend->data = NULL;
+      g_free (overbridge_name);
+      g_free (data);
+      return -ENODEV;
+    }
+  snprintf (backend->version, LABEL_MAX, "%s", (gchar *) & rx_msg->data[10]);
+  free_msg (rx_msg);
+
+  usleep (BE_REST_TIME_US);
+
+  if (debug_level > 1)
+    {
+      tx_msg = elektron_new_msg (DEVICEUID_REQUEST,
+				 sizeof (DEVICEUID_REQUEST));
+      rx_msg = elektron_tx_and_rx (backend, tx_msg);
+      if (rx_msg)
+	{
+	  debug_print (1, "UID: %x\n", *((guint32 *) & rx_msg->data[5]));
+	  free_msg (rx_msg);
+	}
+
+      usleep (BE_REST_TIME_US);
+    }
+
+  snprintf (backend->description, LABEL_MAX, "%s", overbridge_name);
+
+  g_free (overbridge_name);
+
+  backend->fs_ops = FS_OPERATIONS;
+  backend->destroy_data = backend_destroy_data;
+  backend->upgrade_os = elektron_upgrade_os;
+  backend->get_storage_stats = elektron_get_storage_stats;
+
+  return 0;
+}
+
+static gint
+elektron_download_data_snd_pkg (struct backend *backend,
+				const gchar * path, GByteArray * output,
+				struct job_control *control)
+{
+  return elektron_download_pkg (backend, path, output, control,
+				PKG_FILE_TYPE_SOUND,
+				&FS_DATA_SND_OPERATIONS,
+				elektron_download_data_snd);
+}
+
+static gint
+elektron_download_data_prj_pkg (struct backend *backend,
+				const gchar * path, GByteArray * output,
+				struct job_control *control)
+{
+  return elektron_download_pkg (backend, path, output, control,
+				PKG_FILE_TYPE_PROJECT,
+				&FS_DATA_PRJ_OPERATIONS,
+				elektron_download_data_prj);
+}
+
+static gint
+elektron_download_raw_pst_pkg (struct backend *backend, const gchar * path,
+			       GByteArray * output,
+			       struct job_control *control)
+{
+  return elektron_download_pkg (backend, path, output, control,
+				PKG_FILE_TYPE_PRESET,
+				&FS_RAW_ANY_OPERATIONS,
+				elektron_download_raw);
+}
+
+static gint
+elektron_upload_data_snd_pkg (struct backend *backend, const gchar * path,
+			      GByteArray * input, struct job_control *control)
+{
+  return elektron_upload_pkg (backend, path, input, control,
+			      PKG_FILE_TYPE_SOUND,
+			      &FS_DATA_SND_OPERATIONS,
+			      elektron_upload_data_snd);
+}
+
+static gint
+elektron_upload_data_prj_pkg (struct backend *backend, const gchar * path,
+			      GByteArray * input, struct job_control *control)
+{
+  return elektron_upload_pkg (backend, path, input, control,
+			      PKG_FILE_TYPE_PROJECT,
+			      &FS_DATA_PRJ_OPERATIONS,
+			      elektron_upload_data_prj);
+}
+
+static gint
+elektron_upload_raw_pst_pkg (struct backend *backend, const gchar * path,
+			     GByteArray * input, struct job_control *control)
+{
+  return elektron_upload_pkg (backend, path, input, control,
+			      PKG_FILE_TYPE_PRESET,
+			      &FS_RAW_ANY_OPERATIONS, elektron_upload_raw);
 }
