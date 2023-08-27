@@ -49,13 +49,13 @@ backend_destroy_int (struct backend *backend)
 
   if (backend->buffer)
     {
-      free (backend->buffer);
+      g_free (backend->buffer);
       backend->buffer = NULL;
     }
 
   if (backend->pfds)
     {
-      free (backend->pfds);
+      g_free (backend->pfds);
       backend->pfds = NULL;
     }
 }
@@ -95,7 +95,7 @@ backend_init_int (struct backend *backend, const gchar * id)
     }
 
   backend->npfds = snd_rawmidi_poll_descriptors_count (backend->inputp);
-  backend->pfds = malloc (backend->npfds * sizeof (struct pollfd));
+  backend->pfds = g_malloc (backend->npfds * sizeof (struct pollfd));
 
   snd_rawmidi_poll_descriptors (backend->inputp, backend->pfds,
 				backend->npfds);
@@ -204,7 +204,7 @@ backend_tx_sysex_internal (struct backend *backend,
 					transfer->raw->len);
       debug_print (2, "Raw message sent (%d): %s\n", transfer->raw->len,
 		   text);
-      free (text);
+      g_free (text);
     }
 
   if (update)
@@ -362,7 +362,8 @@ backend_get_system_subdevices (snd_ctl_t * ctl, int card, int device,
 
       debug_print (1, "Adding hw:%d (name '%s', subname '%s')...\n", card,
 		   name, sub_name);
-      backend_system_device = malloc (sizeof (struct backend_system_device));
+      backend_system_device =
+	g_malloc (sizeof (struct backend_system_device));
       snprintf (backend_system_device->id, LABEL_MAX, BE_DEVICE_NAME, card,
 		device, sub);
       snprintf (backend_system_device->name, LABEL_MAX,

@@ -79,14 +79,12 @@ debug_get_hex_data (gint level, guint8 * data, guint len)
 	}
     }
   size = bytes_shown * 3 + extra;
-  str = malloc (sizeof (char) * size);
-
-  if (!len)
+  if (!size)
     {
-      *str = 0;
-      return str;
+      return NULL;
     }
 
+  str = g_malloc (sizeof (char) * size);
   b = data;
   next = str;
 
@@ -212,7 +210,7 @@ get_filename (guint32 fs_options, struct item *item)
 {
   if (fs_options & FS_OPTION_ID_AS_FILENAME && item->type == ELEKTROID_FILE)
     {
-      gchar *id = malloc (LABEL_MAX);
+      gchar *id = g_malloc (LABEL_MAX);
       snprintf (id, LABEL_MAX, "%d", item->id);
       return id;
     }
@@ -320,7 +318,7 @@ save_file (const gchar * path, GByteArray * array,
 gchar *
 get_human_size (gint64 size, gboolean with_space)
 {
-  gchar *label = malloc (LABEL_MAX);
+  gchar *label = g_malloc (LABEL_MAX);
   gchar *space = with_space ? " " : "";
 
   if (size < 0)

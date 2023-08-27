@@ -153,7 +153,7 @@ browser_go_up (GtkWidget * object, gpointer data)
 	{
 	  gchar *new_path = g_path_get_dirname (browser->dir);
 	  strcpy (browser->dir, new_path);
-	  free (new_path);
+	  g_free (new_path);
 	}
     }
   g_mutex_unlock (&browser->mutex);
@@ -520,7 +520,7 @@ browser_set_file_extensions (struct browser *browser, const gchar ** ext_src)
     }
   ext_count++;			//NULL included
 
-  browser->extensions = malloc (sizeof (gchar *) * ext_count);
+  browser->extensions = g_malloc (sizeof (gchar *) * ext_count);
   dst = browser->extensions;
   ext = ext_src;
   while (*ext)
@@ -545,7 +545,7 @@ browser_set_file_extension (struct browser *browser, gchar * ext)
   const gchar **exts;
   if (ext)
     {
-      exts = malloc (sizeof (gchar *) * 2);
+      exts = g_malloc (sizeof (gchar *) * 2);
       exts[0] = ext;
       exts[1] = NULL;
     }

@@ -121,7 +121,7 @@ local_delete (struct backend *backend, const gchar * path)
 	    }
 	  new_path = path_chain (PATH_SYSTEM, path, dirent->d_name);
 	  local_delete (backend, new_path);
-	  free (new_path);
+	  g_free (new_path);
 	}
 
       closedir (dir);
@@ -171,7 +171,7 @@ local_next_dentry (struct item_iterator *iter)
       full_path = path_chain (PATH_SYSTEM, data->path, dirent->d_name);
       if (stat (full_path, &st))
 	{
-	  free (full_path);
+	  g_free (full_path);
 	  continue;
 	}
 
@@ -192,7 +192,7 @@ local_next_dentry (struct item_iterator *iter)
 	  found = FALSE;
 	}
 
-      free (full_path);
+      g_free (full_path);
 
       if (found)
 	{
@@ -214,13 +214,7 @@ local_init_iterator (struct item_iterator *iter, const gchar * path)
       return -errno;
     }
 
-  data = malloc (sizeof (struct local_iterator_data));
-  if (!data)
-    {
-      closedir (dir);
-      return -errno;
-    }
-
+  data = g_malloc (sizeof (struct local_iterator_data));
   data->dir = dir;
   data->path = strdup (path);
 

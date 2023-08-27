@@ -190,7 +190,7 @@ static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
 static gchar *
 elektron_get_id_as_slot (struct item *item, struct backend *backend)
 {
-  gchar *slot = malloc (LABEL_MAX);
+  gchar *slot = g_malloc (LABEL_MAX);
   if (item->id >= 0)
     {
       snprintf (slot, LABEL_MAX, "%03d", item->id);
@@ -312,7 +312,7 @@ elektron_init_iterator (struct item_iterator *iter, GByteArray * msg,
 			gint32 max_slots)
 {
   struct elektron_iterator_data *data =
-    malloc (sizeof (struct elektron_iterator_data));
+    g_malloc (sizeof (struct elektron_iterator_data));
 
   data->msg = msg;
   data->pos = fs == FS_DATA_ALL ? FS_DATA_START_POS : FS_SAMPLES_START_POS;
@@ -747,7 +747,7 @@ elektron_tx (struct backend *backend, const GByteArray * msg)
     {
       text = debug_get_hex_msg (msg);
       debug_print (1, "Message sent (%d): %s\n", msg->len, text);
-      free (text);
+      g_free (text);
     }
 
   free_msg (transfer.raw);
@@ -782,7 +782,7 @@ elektron_rx (struct backend *backend, gint timeout)
 	  text = debug_get_hex_msg (transfer.raw);
 	  debug_print (2, "Message skipped (%d): %s\n", transfer.raw->len,
 		       text);
-	  free (text);
+	  g_free (text);
 	}
       free_msg (transfer.raw);
     }
@@ -792,7 +792,7 @@ elektron_rx (struct backend *backend, gint timeout)
     {
       text = debug_get_hex_msg (msg);
       debug_print (1, "Message received (%d): %s\n", msg->len, text);
-      free (text);
+      g_free (text);
     }
 
   free_msg (transfer.raw);
@@ -1102,8 +1102,8 @@ elektron_move_common_item (struct backend *backend, const gchar * src,
 	      dst_plus = path_chain (PATH_INTERNAL, dst, iter.item.name);
 	      res = elektron_move_common_item (backend, src_plus, dst_plus,
 					       init_iter, mv, mkdir, rmdir);
-	      free (src_plus);
-	      free (dst_plus);
+	      g_free (src_plus);
+	      g_free (dst_plus);
 	    }
 	  free_item_iterator (&iter);
 	}
@@ -1293,7 +1293,7 @@ elektron_delete_common_item (struct backend *backend, const gchar * path,
 	      new_path = path_chain (PATH_INTERNAL, path, iter.item.name);
 	      res = res || elektron_delete_common_item (backend, new_path,
 							init_iter, rmdir, rm);
-	      free (new_path);
+	      g_free (new_path);
 	    }
 	  free_item_iterator (&iter);
 	}
@@ -1560,7 +1560,7 @@ elektron_download_smplrw (struct backend *backend, const gchar * path,
 	  elektron_sample_header =
 	    (struct elektron_sample_header *)
 	    &rx_msg->data[FS_SAMPLES_PAD_RES];
-	  sample_info = malloc (sizeof (struct elektron_sample_header));
+	  sample_info = g_malloc (sizeof (struct elektron_sample_header));
 	  sample_info->loop_start =
 	    be32toh (elektron_sample_header->loop_start);
 	  sample_info->loop_end = be32toh (elektron_sample_header->loop_end);
@@ -2664,7 +2664,7 @@ elektron_get_download_name (struct backend *backend,
       return g_path_get_basename (src_path);
     }
 
-  iter = malloc (sizeof (struct item_iterator));
+  iter = g_malloc (sizeof (struct item_iterator));
   dir = g_path_get_dirname (src_path);
   ret = ops->readdir (backend, iter, dir);
   g_free (dir);
@@ -2991,7 +2991,7 @@ elektron_get_dev_and_fs_ext (struct backend *backend,
 			     const struct fs_operations *ops)
 {
   struct elektron_data *data = backend->data;
-  gchar *ext = malloc (LABEL_MAX);
+  gchar *ext = g_malloc (LABEL_MAX);
   snprintf (ext, LABEL_MAX, "%s%s", data->device_desc.alias, ops->type_ext);
   return ext;
 }

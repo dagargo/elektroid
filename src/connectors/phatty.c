@@ -301,7 +301,7 @@ phatty_read_dir (struct backend *backend, struct item_iterator *iter,
 gchar *
 phatty_get_id_as_slot (struct item *item, struct backend *backend)
 {
-  gchar *slot = malloc (LABEL_MAX);
+  gchar *slot = g_malloc (LABEL_MAX);
   if (item->id >= PHATTY_MAX_PRESETS)
     {
       slot[0] = 0;

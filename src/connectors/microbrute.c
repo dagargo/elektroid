@@ -516,7 +516,7 @@ microbrute_handshake (struct backend *backend)
       return -ENODEV;
     }
 
-  seq = malloc (sizeof (guint8));
+  seq = g_malloc (sizeof (guint8));
   *seq = 0;
 
   backend->filesystems = FS_MICROBRUTE_SEQUENCE;

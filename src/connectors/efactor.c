@@ -398,7 +398,7 @@ efactor_rename (struct backend *backend, const gchar * src, const gchar * dst)
 static gchar *
 efactor_get_slot (struct item *item, struct backend *backend)
 {
-  gchar *slot = malloc (LABEL_MAX);
+  gchar *slot = g_malloc (LABEL_MAX);
   struct efactor_data *data = backend->data;
   if (data->type == EFACTOR_FACTOR)
     {

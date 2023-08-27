@@ -429,7 +429,7 @@ elektroid_update_backend_status ()
 	  status[0] = 0;
 	}
       gtk_label_set_text (backend_status_label, status);
-      free (status);
+      g_free (status);
       g_free (statfss_str);
     }
   else
@@ -509,7 +509,7 @@ elektroid_refresh_devices (GtkWidget * widget, gpointer data)
 static gpointer
 elektroid_rx_sysex_runner (gpointer data)
 {
-  gint *res = malloc (sizeof (gint));
+  gint *res = g_malloc (sizeof (gint));
   gchar *text;
 
   sysex_transfer.status = WAITING;
@@ -530,7 +530,7 @@ elektroid_rx_sysex_runner (gpointer data)
 	  text = debug_get_hex_msg (sysex_transfer.raw);
 	  debug_print (1, "SysEx message received (%d): %s\n",
 		       sysex_transfer.raw->len, text);
-	  free (text);
+	  g_free (text);
 	}
     }
   else
@@ -660,7 +660,7 @@ gpointer
 elektroid_tx_sysex_files_runner (gpointer data)
 {
   GSList *filenames = data;
-  gint *err = malloc (sizeof (gint));
+  gint *err = g_malloc (sizeof (gint));
   sysex_transfer.raw = g_byte_array_new ();
   sysex_transfer.active = TRUE;
   sysex_transfer.status = SENDING;
@@ -688,7 +688,7 @@ gpointer
 elektroid_tx_upgrade_os_runner (gpointer data)
 {
   GSList *filenames = data;
-  gint *err = malloc (sizeof (gint));
+  gint *err = g_malloc (sizeof (gint));
   sysex_transfer.raw = g_byte_array_new ();
   sysex_transfer.active = TRUE;
   sysex_transfer.status = SENDING;
@@ -991,7 +991,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 	      elektroid_load_remote_if_midi (browser);
 	      elektroid_load_local_if_no_notifier (browser);
 	    }
-	  free (new_path);
+	  g_free (new_path);
 	}
     }
 
@@ -1434,7 +1434,7 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
   g_object_unref (file);
 
   g_app_info_launch_default_for_uri_async (uri, NULL, NULL, NULL, NULL);
-  free (uri);
+  g_free (uri);
 }
 
 gchar *
@@ -1495,7 +1495,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 	  elektroid_load_local_if_no_notifier (browser);
 	}
 
-      free (pathname);
+      g_free (pathname);
     }
 }
 
@@ -1854,7 +1854,7 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
     {
       path = path_chain (PATH_INTERNAL, rel_path, iter.item.name);
       elektroid_add_upload_task_path (path, src_dir, dst_dir);
-      free (path);
+      g_free (path);
     }
 
 cleanup_iter:

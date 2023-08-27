@@ -272,7 +272,7 @@ backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg,
 gchar *
 backend_get_fs_ext (struct backend *backend, const struct fs_operations *ops)
 {
-  gchar *ext = malloc (LABEL_MAX);
+  gchar *ext = g_malloc (LABEL_MAX);
   snprintf (ext, LABEL_MAX, "%s", ops->type_ext);
   return ext;
 }
@@ -455,7 +455,7 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
 					    backend->rx_len);
 	  debug_print (4, "Internal buffer data (%zd): %s\n", backend->rx_len,
 		       text);
-	  free (text);
+	  g_free (text);
 	  return -ETIMEDOUT;
 	}
 
@@ -483,7 +483,7 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
 	      gchar *text = debug_get_hex_data (debug_level, tmp, rx_len);
 	      debug_print (4, "Skipping non SysEx data (%zd): %s\n", rx_len,
 			   text);
-	      free (text);
+	      g_free (text);
 	    }
 
 	  tmp_msg++;
@@ -521,7 +521,7 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
     {
       text = debug_get_hex_data (debug_level, data, rx_len);
       debug_print (3, "Queued data (%zu): %s\n", rx_len, text);
-      free (text);
+      g_free (text);
     }
 
   return rx_len;
@@ -604,7 +604,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 						i);
 	      debug_print (4, "Skipping non SysEx data in buffer (%d): %s\n",
 			   i, text);
-	      free (text);
+	      g_free (text);
 	    }
 	  debug_print (3, "Copying %d bytes...\n", len - i);
 	  g_byte_array_append (transfer->raw, b, len - i);
@@ -631,7 +631,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 				    transfer->raw->len);
 	      debug_print (4, "Queued data (%d): %s\n",
 			   transfer->raw->len, text);
-	      free (text);
+	      g_free (text);
 	    }
 	}
       else
@@ -663,7 +663,7 @@ end:
 					    transfer->raw->len);
 	  debug_print (2, "Raw message received (%d): %s\n",
 		       transfer->raw->len, text);
-	  free (text);
+	  g_free (text);
 	}
 
     }

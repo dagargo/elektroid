@@ -515,20 +515,20 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     }
 
   buffer_input_multi =
-    malloc (LOAD_BUFFER_LEN * BYTES_PER_FRAME (sample_info_src->channels));
-  buffer_input_mono = malloc (LOAD_BUFFER_LEN * SAMPLE_SIZE);
-  buffer_input_stereo = malloc (LOAD_BUFFER_LEN * 2 * SAMPLE_SIZE);
+    g_malloc (LOAD_BUFFER_LEN * BYTES_PER_FRAME (sample_info_src->channels));
+  buffer_input_mono = g_malloc (LOAD_BUFFER_LEN * SAMPLE_SIZE);
+  buffer_input_stereo = g_malloc (LOAD_BUFFER_LEN * 2 * SAMPLE_SIZE);
 
   buffer_f =
-    malloc (LOAD_BUFFER_LEN * sample_info_dst->channels * sizeof (gfloat));
+    g_malloc (LOAD_BUFFER_LEN * sample_info_dst->channels * sizeof (gfloat));
   src_data.data_in = buffer_f;
   ratio = sample_info_dst->rate / (double) sample_info_src->rate;
   src_data.src_ratio = ratio;
 
   src_data.output_frames = ceil (LOAD_BUFFER_LEN * src_data.src_ratio);
   resampled_buffer_len = src_data.output_frames * sample_info_dst->channels;
-  buffer_s = malloc (resampled_buffer_len * SAMPLE_SIZE);
-  src_data.data_out = malloc (resampled_buffer_len * sizeof (gfloat));
+  buffer_s = g_malloc (resampled_buffer_len * SAMPLE_SIZE);
+  src_data.data_out = g_malloc (resampled_buffer_len * sizeof (gfloat));
 
   src_state = src_new (SRC_SINC_BEST_QUALITY, sample_info_dst->channels,
 		       &err);
@@ -659,12 +659,12 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     }
 
 cleanup:
-  free (buffer_input_multi);
-  free (buffer_input_mono);
-  free (buffer_input_stereo);
-  free (buffer_s);
-  free (buffer_f);
-  free (src_data.data_out);
+  g_free (buffer_input_multi);
+  g_free (buffer_input_mono);
+  g_free (buffer_input_stereo);
+  g_free (buffer_s);
+  g_free (buffer_f);
+  g_free (src_data.data_out);
 
   sf_close (sndfile);
 

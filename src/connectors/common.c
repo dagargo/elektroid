@@ -85,7 +85,7 @@ end:
 gchar *
 common_get_id_as_slot (struct item *item, struct backend *backend)
 {
-  gchar *slot = malloc (LABEL_MAX);
+  gchar *slot = g_malloc (LABEL_MAX);
   snprintf (slot, LABEL_MAX, "%d", item->id);
   return slot;
 }

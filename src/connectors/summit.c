@@ -435,7 +435,7 @@ static gchar *
 summit_get_id_as_slot (struct item *item, struct backend *backend,
 		       gint digits)
 {
-  gchar *slot = malloc (LABEL_MAX);
+  gchar *slot = g_malloc (LABEL_MAX);
   if (item->id < BE_MAX_MIDI_PROGRAMS)
     {
       snprintf (slot, LABEL_MAX, "%.*d", digits, item->id);

@@ -389,7 +389,7 @@ sds_download_try (struct backend *backend, const gchar * path,
 	}
     }
 
-  sample_info = malloc (sizeof (struct sample_info));
+  sample_info = g_malloc (sizeof (struct sample_info));
   if (sds_get_download_info (rx_msg, sample_info, &words, &word_size,
 			     &bytes_per_word))
     {

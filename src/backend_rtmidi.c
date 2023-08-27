@@ -156,7 +156,7 @@ backend_tx_sysex_internal (struct backend *backend,
 					transfer->raw->len);
       debug_print (2, "Raw message sent (%d): %s\n", transfer->raw->len,
 		   text);
-      free (text);
+      g_free (text);
     }
 
   if (update)
@@ -266,7 +266,7 @@ backend_get_system_devices ()
 	  if (!strcmp (iportname, oportname))
 	    {
 	      backend_system_device =
-		malloc (sizeof (struct backend_system_device));
+		g_malloc (sizeof (struct backend_system_device));
 	      snprintf (backend_system_device->id, LABEL_MAX, "%s",
 			iportname);
 	      snprintf (backend_system_device->name, LABEL_MAX, "%s",
@@ -276,7 +276,7 @@ backend_get_system_devices ()
 #else
 	  //We consider the cartesian product of inputs and outputs as the available ports.
 	  backend_system_device =
-	    malloc (sizeof (struct backend_system_device));
+	    g_malloc (sizeof (struct backend_system_device));
 	  snprintf (backend_system_device->id, LABEL_MAX, "%s%s%s",
 		    iportname, WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
 	  snprintf (backend_system_device->name, LABEL_MAX, "%s%s%s",
