@@ -284,8 +284,6 @@ elektroid_load_devices (gboolean auto_select)
   if (device_index == -1)
     {
       local_browser.file_icon = BE_FILE_ICON_WAVE;
-      elektroid_clear_selection (&local_browser);
-      browser_load_dir (&local_browser);
       gtk_widget_set_visible (editor.box, TRUE);
       gtk_tree_view_column_set_visible (remote_tree_view_id_column, FALSE);
       gtk_tree_view_column_set_visible (remote_tree_view_slot_column, FALSE);
@@ -2270,8 +2268,13 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   if (!gtk_combo_box_get_active_iter (GTK_COMBO_BOX (fs_combo), &iter))
     {
+      last_local_fs_ops = local_browser.fs_ops;
       local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
-      elektroid_clear_selection (&local_browser);
+      if (last_local_fs_ops != local_browser.fs_ops)
+	{
+	  elektroid_clear_selection (&local_browser);
+	}
+
       browser_reset (&remote_browser);
       browser_update_fs_options (&remote_browser);
       elektroid_show_sample_columns ();
@@ -3454,6 +3457,8 @@ elektroid_run (int argc, char *argv[])
 
   g_idle_add (elektroid_load_devices_bg, NULL);
   gtk_widget_show (main_window);
+
+  browser_load_dir (&local_browser);
 
   ma_data.backend = &backend;
   ma_data.builder = builder;
