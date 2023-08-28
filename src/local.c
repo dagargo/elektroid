@@ -31,7 +31,7 @@ struct local_iterator_data
 {
   DIR *dir;
   gchar *path;
-  gchar **extensions;
+  const gchar **extensions;
 };
 
 static gint
@@ -206,7 +206,7 @@ local_next_dentry (struct item_iterator *iter)
 
 static gint
 local_read_dir (struct backend *backend, struct item_iterator *iter,
-		const gchar * path, gchar ** extensions)
+		const gchar * path, const gchar ** extensions)
 {
   DIR *dir;
   struct local_iterator_data *data;
@@ -230,7 +230,7 @@ local_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 local_samples_read_dir (struct backend *backend, struct item_iterator *iter,
-			const gchar * path, gchar ** extensions)
+			const gchar * path, const gchar ** extensions)
 {
   return local_read_dir (backend, iter, path,
 			 sample_get_sample_extensions ());

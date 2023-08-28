@@ -168,7 +168,7 @@ efactor_next_dentry (struct item_iterator *iter)
 
 static gint
 efactor_read_dir (struct backend *backend, struct item_iterator *iter,
-		  const gchar * path, gchar ** extensions)
+		  const gchar * path, const gchar ** extensions)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;

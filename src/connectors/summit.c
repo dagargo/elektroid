@@ -234,14 +234,14 @@ summit_patch_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 summit_single_read_dir (struct backend *backend, struct item_iterator *iter,
-			const gchar * path, gchar ** extensions)
+			const gchar * path, const gchar ** extensions)
 {
   return summit_patch_read_dir (backend, iter, path, FS_SUMMIT_SINGLE_PATCH);
 }
 
 static gint
 summit_multi_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar * path, gchar ** extensions)
+		       const gchar * path, const gchar ** extensions)
 {
   return summit_patch_read_dir (backend, iter, path, FS_SUMMIT_MULTI_PATCH);
 }
@@ -543,7 +543,7 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
 
 static gint
 summit_scale_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar * path, gchar ** extensions)
+		       const gchar * path, const gchar ** extensions)
 {
   struct common_simple_read_dir_data *data;
 
@@ -729,7 +729,7 @@ summit_get_wavetable_id_as_slot (struct item *item, struct backend *backend)
 static gint
 summit_wavetable_read_dir (struct backend *backend,
 			   struct item_iterator *iter, const gchar * path,
-			   gchar ** extensions)
+			   const gchar ** extensions)
 {
   if (!strcmp (path, "/"))
     {

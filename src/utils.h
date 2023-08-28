@@ -151,7 +151,7 @@ enum path_type
 struct fs_operations;
 
 typedef gint (*fs_init_iter_func) (struct backend *, struct item_iterator *,
-				   const gchar *, gchar **);
+				   const gchar *, const gchar **);
 
 typedef gint (*fs_path_func) (struct backend *, const gchar *);
 
@@ -298,9 +298,10 @@ void set_job_control_progress (struct job_control *, gdouble);
 void set_job_control_progress_no_sync (struct job_control *, gdouble,
 				       gpointer);
 
-gboolean file_matches_extensions (const gchar *, gchar **);
+gboolean file_matches_extensions (const gchar *, const gchar **);
 
-gboolean iter_is_dir_or_matches_extensions (struct item_iterator *, gchar **);
+gboolean iter_is_dir_or_matches_extensions (struct item_iterator *,
+					    const gchar **);
 
 //Use a backslash for the system backend on WSYS2.
 

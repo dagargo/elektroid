@@ -387,10 +387,10 @@ set_job_control_progress_no_sync (struct job_control *control, gdouble p,
 }
 
 gboolean
-file_matches_extensions (const gchar * name, gchar ** extensions)
+file_matches_extensions (const gchar * name, const gchar ** extensions)
 {
   const gchar *extension;
-  gchar **e = extensions;
+  const gchar **e = extensions;
 
   if (!e)
     {
@@ -417,7 +417,7 @@ file_matches_extensions (const gchar * name, gchar ** extensions)
 
 gboolean
 iter_is_dir_or_matches_extensions (struct item_iterator *iter,
-				   gchar ** extensions)
+				   const gchar ** extensions)
 {
   if (iter->item.type == ELEKTROID_DIR)
     {

@@ -931,7 +931,7 @@ sds_upload_16b (struct backend *backend, const gchar * path,
 
 static gint
 sds_read_dir (struct backend *backend, struct item_iterator *iter,
-	      const gchar * path, gchar ** extensions)
+	      const gchar * path, const gchar ** extensions)
 {
   struct common_simple_read_dir_data *data;
 

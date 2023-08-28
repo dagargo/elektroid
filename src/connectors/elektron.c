@@ -978,7 +978,7 @@ elektron_read_common_dir (struct backend *backend,
 static gint
 elektron_read_samples_dir (struct backend *backend,
 			   struct item_iterator *iter, const gchar * dir,
-			   gchar ** extensions)
+			   const gchar ** extensions)
 {
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_SAMPLE_READ_DIR_REQUEST,
@@ -989,7 +989,7 @@ elektron_read_samples_dir (struct backend *backend,
 
 static gint
 elektron_read_raw_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar * dir, gchar ** extensions)
+		       const gchar * dir, const gchar ** extensions)
 {
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_RAW_READ_DIR_REQUEST,
@@ -2146,7 +2146,7 @@ elektron_read_data_dir_prefix (struct backend *backend,
 static gint
 elektron_read_data_dir_any (struct backend *backend,
 			    struct item_iterator *iter, const gchar * dir,
-			    gchar ** extensions)
+			    const gchar ** extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir, NULL, -1);
 }
@@ -2154,7 +2154,7 @@ elektron_read_data_dir_any (struct backend *backend,
 static gint
 elektron_read_data_dir_prj (struct backend *backend,
 			    struct item_iterator *iter, const gchar * dir,
-			    gchar ** extensions)
+			    const gchar ** extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_PRJ_PREFIX, 128);
@@ -2163,7 +2163,7 @@ elektron_read_data_dir_prj (struct backend *backend,
 static gint
 elektron_read_data_dir_snd (struct backend *backend,
 			    struct item_iterator *iter, const gchar * dir,
-			    gchar ** extensions)
+			    const gchar ** extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_SND_PREFIX, 256);

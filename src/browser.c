@@ -313,7 +313,7 @@ browser_load_dir_runner (gpointer data)
   gint err;
   struct browser *browser = data;
   struct item_iterator iter;
-  gchar **extensions = NULL;
+  const gchar **extensions = NULL;
 
   if (browser->fs_ops == &FS_LOCAL_GENERIC_OPERATIONS &&
       remote_browser.fs_ops->get_ext)
