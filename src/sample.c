@@ -424,7 +424,8 @@ sample_load_sample_info (const gchar * path, struct sample_info *sample_info)
   sndfile = sf_open_virtual (&FILE_IO, SFM_READ, &sf_info, file);
   if (!sndfile)
     {
-      error_print ("%s\n", sf_strerror (sndfile));
+      error_print ("Error while reading %s: %s\n", path,
+		   sf_strerror (sndfile));
       return -1;
     }
 

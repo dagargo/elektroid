@@ -153,11 +153,10 @@ local_free_iterator_data (void *iter_data)
 }
 
 static guint
-local_next_dentry (struct item_iterator *iter)
+local_next_dentry (struct item_iterator *iter, gboolean sample_info)
 {
   gchar *full_path;
   struct dirent *dirent;
-  gboolean found;
   struct stat st;
   mode_t mode;
   struct local_iterator_data *data = iter->data;
@@ -185,23 +184,39 @@ local_next_dentry (struct item_iterator *iter)
 	  iter->item.type = mode == S_IFREG ? ELEKTROID_FILE : ELEKTROID_DIR;
 	  iter->item.size = st.st_size;
 	  iter->item.id = -1;
-	  found = TRUE;
 	  break;
 	default:
 	  error_print ("stat mode neither file nor directory for %s\n",
 		       full_path);
-	  found = FALSE;
+	  continue;
+	}
+
+      if (iter_is_dir_or_matches_extensions (iter, data->extensions))
+	{
+	  if (iter->item.type == ELEKTROID_FILE && sample_info)
+	    {
+	      sample_load_sample_info (full_path, &iter->item.sample_info);
+	    }
+	  g_free (full_path);
+	  return 0;
 	}
 
       g_free (full_path);
-
-      if (found && iter_is_dir_or_matches_extensions (iter, data->extensions))
-	{
-	  return 0;
-	}
     }
 
   return -ENOENT;
+}
+
+static guint
+local_next_dentry_without_sample_info (struct item_iterator *iter)
+{
+  return local_next_dentry (iter, FALSE);
+}
+
+static guint
+local_next_dentry_with_sample_info (struct item_iterator *iter)
+{
+  return local_next_dentry (iter, TRUE);
 }
 
 static gint
@@ -222,7 +237,7 @@ local_read_dir (struct backend *backend, struct item_iterator *iter,
   data->extensions = extensions;
 
   iter->data = data;
-  iter->next = local_next_dentry;
+  iter->next = local_next_dentry_without_sample_info;
   iter->free = local_free_iterator_data;
 
   return 0;
@@ -232,8 +247,13 @@ static gint
 local_samples_read_dir (struct backend *backend, struct item_iterator *iter,
 			const gchar * path, const gchar ** extensions)
 {
-  return local_read_dir (backend, iter, path,
-			 sample_get_sample_extensions ());
+  gint ret = local_read_dir (backend, iter, path,
+			     sample_get_sample_extensions ());
+  if (!ret)
+    {
+      iter->next = local_next_dentry_with_sample_info;
+    }
+  return ret;
 }
 
 static gint
@@ -361,7 +381,7 @@ const struct fs_operations FS_LOCAL_GENERIC_OPERATIONS = {
 
 const struct fs_operations FS_LOCAL_SAMPLE_OPERATIONS = {
   .fs = 0,
-  .options = FS_OPTION_SORT_BY_NAME,
+  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_SAMPLE_ATTRS,
   .name = "local",
   .gui_name = "localhost",
   .gui_icon = BE_FILE_ICON_WAVE,

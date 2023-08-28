@@ -137,15 +137,6 @@ editor_reset (struct editor *editor, struct browser *browser)
   editor_set_widget_source (editor->waveform, editor);
 
   gtk_widget_set_sensitive (editor->play_button, FALSE);
-
-  gtk_label_set_text (GTK_LABEL (editor->sample_length), "");
-  gtk_label_set_text (GTK_LABEL (editor->sample_duration), "");
-  gtk_label_set_text (GTK_LABEL (editor->sample_loop_start), "");
-  gtk_label_set_text (GTK_LABEL (editor->sample_loop_end), "");
-  gtk_label_set_text (GTK_LABEL (editor->sample_rate), "");
-  gtk_label_set_text (GTK_LABEL (editor->sample_channels), "");
-  gtk_label_set_text (GTK_LABEL (editor->sample_bit_depth), "");
-  gtk_label_set_text (GTK_LABEL (editor->sample_midi_note), "");
 }
 
 static void
@@ -179,75 +170,6 @@ editor_get_start_frame (struct editor *editor)
 					 (editor->waveform_scrolled_window));
   return editor->audio.sample_info.frames * gtk_adjustment_get_value (adj) /
     (gdouble) gtk_adjustment_get_upper (adj);
-}
-
-static void
-editor_show_sample_time_properties (struct editor *editor)
-{
-  gchar label[LABEL_MAX];
-  struct sample_info *sample_info = editor->audio.control.data;
-  double time = sample_info->frames / (double) sample_info->rate;
-
-  snprintf (label, LABEL_MAX, "%d", sample_info->frames);
-  gtk_label_set_text (GTK_LABEL (editor->sample_length), label);
-
-  if (time >= 60)
-    {
-      snprintf (label, LABEL_MAX, "%.2f %s", time / 60.0, _("minutes"));
-    }
-  else
-    {
-      snprintf (label, LABEL_MAX, "%.2f s", time);
-    }
-  gtk_label_set_text (GTK_LABEL (editor->sample_duration), label);
-
-  snprintf (label, LABEL_MAX, "%d", sample_info->loop_start);
-  gtk_label_set_text (GTK_LABEL (editor->sample_loop_start), label);
-
-  snprintf (label, LABEL_MAX, "%d", sample_info->loop_end);
-  gtk_label_set_text (GTK_LABEL (editor->sample_loop_end), label);
-}
-
-static void
-editor_show_sample_properties_on_load (struct editor *editor)
-{
-  GValue value = G_VALUE_INIT;
-  gchar label[LABEL_MAX];
-  const gchar *note;
-  GtkTreeIter iter;
-  struct sample_info *sample_info = editor->audio.control.data;
-
-  if (!sample_info->frames)
-    {
-      return;
-    }
-
-  editor_show_sample_time_properties (editor);
-
-  snprintf (label, LABEL_MAX, "%.2f kHz", sample_info->rate / 1000.f);
-  gtk_label_set_text (GTK_LABEL (editor->sample_rate), label);
-
-  snprintf (label, LABEL_MAX, "%d", sample_info->channels);
-  gtk_label_set_text (GTK_LABEL (editor->sample_channels), label);
-
-  snprintf (label, LABEL_MAX, "%d", sample_info->bit_depth);
-  gtk_label_set_text (GTK_LABEL (editor->sample_bit_depth), label);
-
-  gtk_tree_model_get_iter_first (GTK_TREE_MODEL (editor->notes_list_store),
-				 &iter);
-  for (gint i = 0; i < sample_info->midi_note; i++)
-    {
-      gtk_tree_model_iter_next (GTK_TREE_MODEL (editor->notes_list_store),
-				&iter);
-    }
-  gtk_tree_model_get_value (GTK_TREE_MODEL (editor->notes_list_store),
-			    &iter, 0, &value);
-  note = g_value_get_string (&value);
-  snprintf (label, LABEL_MAX, "%s (%d)", note, sample_info->midi_note);
-  g_value_unset (&value);
-  gtk_label_set_text (GTK_LABEL (editor->sample_midi_note), label);
-
-  editor_set_start_frame (editor, 0);
 }
 
 void
@@ -287,7 +209,6 @@ editor_update_ui_on_load (gpointer data)
 {
   struct editor *editor = data;
 
-  editor_show_sample_properties_on_load (editor);
   editor_set_audio_mono_mix (editor);
   editor_set_layout_width (editor);
 
@@ -466,8 +387,7 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 	    }
 	}
 
-      // gtk_style_context_lookup_color (context, "text-color", &color);
-      context = gtk_widget_get_style_context (editor->sample_length);
+      context = gtk_widget_get_style_context (editor->play_menuitem);	//Any text widget is valid
       gtk_style_context_get_color (context, GTK_STATE_FLAG_NORMAL, &color);
       bgcolor.alpha = 0.15;
       gdk_cairo_set_source_rgba (cr, &color);
@@ -998,7 +918,6 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
 			   editor->audio.sample_info.channels],
 		   sample_info_src->loop_start);
       editor->dirty = TRUE;
-      editor_show_sample_time_properties (editor);
     }
   else if (editor->operation == EDITOR_OP_MOVE_LOOP_END)
     {
@@ -1013,7 +932,6 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
 			   editor->audio.sample_info.channels],
 		   sample_info_src->loop_end);
       editor->dirty = TRUE;
-      editor_show_sample_time_properties (editor);
     }
   else
     {
@@ -1069,7 +987,6 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
   audio_delete_range (&editor->audio, editor->audio.sel_start,
 		      editor->audio.sel_len);
   editor->dirty = TRUE;
-  editor_show_sample_time_properties (editor);
   g_idle_add (editor_queue_draw, data);
 
   if (status == AUDIO_STATUS_PLAYING)
@@ -1155,25 +1072,6 @@ editor_init (struct editor *editor, GtkBuilder * builder)
     GTK_WIDGET (gtk_builder_get_object (builder, "mix_switch"));
   editor->volume_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "volume_button"));
-
-  editor->sample_info_box =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_info_box"));
-  editor->sample_length =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_length"));
-  editor->sample_duration =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_duration"));
-  editor->sample_loop_start =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_loop_start"));
-  editor->sample_loop_end =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_loop_end"));
-  editor->sample_channels =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_channels"));
-  editor->sample_rate =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_rate"));
-  editor->sample_bit_depth =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_bit_depth"));
-  editor->sample_midi_note =
-    GTK_WIDGET (gtk_builder_get_object (builder, "sample_midi_note"));
 
   editor->notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));

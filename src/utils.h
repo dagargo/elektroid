@@ -60,6 +60,18 @@ enum item_type
   ELEKTROID_DIR = 'D'
 };
 
+struct sample_info
+{
+  guint32 frames;
+  guint32 loop_start;
+  guint32 loop_end;
+  guint32 loop_type;
+  guint32 rate;
+  guint32 bit_depth;
+  guint32 channels;
+  guint32 midi_note;
+};
+
 struct backend;
 
 struct item_iterator;
@@ -79,6 +91,8 @@ struct item
   gchar name[LABEL_MAX];
   gint32 id;
   gint64 size;
+  //Optionally filled up by sample filesystems
+  struct sample_info sample_info;
 };
 
 struct item_iterator
@@ -108,18 +122,6 @@ struct job_control
   gint part;
   gdouble progress;
   void *data;
-};
-
-struct sample_info
-{
-  guint32 frames;
-  guint32 loop_start;
-  guint32 loop_end;
-  guint32 loop_type;
-  guint32 rate;
-  guint32 bit_depth;
-  guint32 channels;
-  guint32 midi_note;
 };
 
 enum sysex_transfer_status
@@ -245,7 +247,8 @@ enum fs_options
   FS_OPTION_SHOW_SLOT_COLUMN = 0x80,
   //Sort items options.
   FS_OPTION_SORT_BY_ID = 0x100,
-  FS_OPTION_SORT_BY_NAME = 0x200
+  FS_OPTION_SORT_BY_NAME = 0x200,
+  FS_OPTION_SAMPLE_ATTRS = 0x400,
 };
 
 extern int debug_level;
