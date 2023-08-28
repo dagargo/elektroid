@@ -289,6 +289,7 @@ elektroid_load_devices (gboolean auto_select)
       gtk_tree_view_column_set_visible (remote_tree_view_slot_column, FALSE);
       gtk_tree_view_column_set_visible (remote_tree_view_size_column, FALSE);
       elektroid_update_upload_menuitem ();
+      editor_set_audio_mono_mix (&editor);
     }
 }
 
