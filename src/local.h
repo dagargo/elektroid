@@ -25,7 +25,8 @@
 #include "backend.h"
 #include "utils.h"
 
-extern const struct fs_operations FS_LOCAL_OPERATIONS;
+extern const struct fs_operations FS_LOCAL_GENERIC_OPERATIONS;
+extern const struct fs_operations FS_LOCAL_SAMPLE_OPERATIONS;
 
 gint system_init_backend (struct backend *, const gchar *);
 

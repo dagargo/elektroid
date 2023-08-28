@@ -186,58 +186,6 @@ elektroid_get_fs_name (guint fs)
 }
 
 static void
-elektroid_set_local_browser_file_extensions (gint sel_fs)
-{
-  gboolean updated = FALSE;
-  const struct fs_operations *ops = backend_get_fs_operations (&backend,
-							       sel_fs, NULL);
-
-  if (!ops || EDITOR_VISIBLE)
-    {
-      const gchar **exts = sample_get_sample_extensions ();
-      updated = browser_set_file_extensions (&local_browser, exts);
-    }
-  else
-    {
-      if (ops->get_ext)
-	{
-	  gchar *ext = ops->get_ext (&backend, ops);
-	  updated = browser_set_file_extension (&local_browser, ext);
-	}
-    }
-  if (updated)
-    {
-      elektroid_clear_selection (&local_browser);
-    }
-  else
-    {
-      elektroid_local_check_selection (NULL);
-    }
-}
-
-static void
-elektroid_set_remote_browser_file_extensions (gint sel_fs)
-{
-  gboolean updated = FALSE;
-  const struct fs_operations *ops =
-    backend_get_fs_operations (&backend, sel_fs, NULL);
-
-  if (ops && backend.type == BE_TYPE_SYSTEM)
-    {
-      gchar *ext = ops->get_ext (&backend, ops);
-      updated = browser_set_file_extension (&remote_browser, ext);
-    }
-  else
-    {
-      updated = browser_set_file_extension (&remote_browser, NULL);
-    }
-  if (updated)
-    {
-      elektroid_clear_selection (&remote_browser);
-    }
-}
-
-static void
 show_error_msg (const char *format, ...)
 {
   gchar *msg;
@@ -330,7 +278,8 @@ elektroid_load_devices (gboolean auto_select)
   if (device_index == -1)
     {
       local_browser.file_icon = BE_FILE_ICON_WAVE;
-      elektroid_set_local_browser_file_extensions (0);
+      elektroid_clear_selection (&local_browser);
+      browser_load_dir (&local_browser);
       gtk_widget_set_visible (editor.box, TRUE);
       gtk_tree_view_column_set_visible (remote_tree_view_id_column, FALSE);
       gtk_tree_view_column_set_visible (remote_tree_view_slot_column, FALSE);
@@ -1834,11 +1783,8 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
 	  //We can delay the path calculation to the moment the upload runs.
 	  upload_path = strdup (dst_abs_dir);
 	}
-      if (file_matches_extensions (src_abs_path, local_browser.extensions))
-	{
-	  tasks_add (&tasks, TASK_TYPE_UPLOAD, src_abs_path, upload_path,
-		     remote_browser.fs_ops->fs, &backend);
-	}
+      tasks_add (&tasks, TASK_TYPE_UPLOAD, src_abs_path, upload_path,
+		 remote_browser.fs_ops->fs, &backend);
       g_free (upload_path);
       g_free (dst_abs_dir);
       g_free (dst_abs_path);
@@ -2062,11 +2008,8 @@ elektroid_add_download_task_path (const gchar * rel_path,
       g_free (rel_path_trans);
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
-      if (file_matches_extensions (src_abs_path, remote_browser.extensions))
-	{
-	  tasks_add (&tasks, TASK_TYPE_DOWNLOAD, src_abs_path, dst_abs_dir,
-		     remote_browser.fs_ops->fs, &backend);
-	}
+      tasks_add (&tasks, TASK_TYPE_DOWNLOAD, src_abs_path, dst_abs_dir,
+		 remote_browser.fs_ops->fs, &backend);
       g_free (dst_abs_dir);
       g_free (dst_abs_path);
       goto cleanup;
@@ -2296,10 +2239,12 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   GtkTreeIter iter;
   GValue fsv = G_VALUE_INIT;
   gint fs;
+  const struct fs_operations *last_local_fs_ops;
 
   if (!gtk_combo_box_get_active_iter (GTK_COMBO_BOX (fs_combo), &iter))
     {
-      elektroid_set_local_browser_file_extensions (0);
+      local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
+      elektroid_clear_selection (&local_browser);
       browser_reset (&remote_browser);
       browser_update_fs_options (&remote_browser);
       return;
@@ -2312,6 +2257,17 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
   remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
+
+  last_local_fs_ops = local_browser.fs_ops;
+  if (EDITOR_VISIBLE)
+    {
+      local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
+    }
+  else
+    {
+      local_browser.fs_ops = &FS_LOCAL_GENERIC_OPERATIONS;
+      editor_reset (&editor, NULL);
+    }
 
   editor_set_audio_mono_mix (&editor);
 
@@ -2350,10 +2306,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 			  remote_browser.fs_ops->rename != NULL);
   gtk_widget_set_visible (remote_browser.delete_menuitem,
 			  remote_browser.fs_ops->delete != NULL);
-  if (!EDITOR_VISIBLE)
-    {
-      editor_reset (&editor, NULL);
-    }
+
   gtk_widget_set_visible (editor.box, EDITOR_VISIBLE);
 
   gtk_tree_view_column_set_visible (remote_tree_view_id_column,
@@ -2439,11 +2392,16 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   browser_set_options (&remote_browser);
 
-  elektroid_set_remote_browser_file_extensions (fs);
+  elektroid_clear_selection (&remote_browser);
+  browser_load_dir (&remote_browser);
   browser_update_fs_options (&remote_browser);
 
   local_browser.file_icon = remote_browser.file_icon;
-  elektroid_set_local_browser_file_extensions (fs);
+  if (last_local_fs_ops != local_browser.fs_ops)
+    {
+      elektroid_clear_selection (&local_browser);
+      browser_load_dir (&local_browser);
+    }
 }
 
 static gboolean
@@ -3262,8 +3220,7 @@ elektroid_run (int argc, char *argv[])
     .dir = preferences.local_dir,
     .check_selection = elektroid_local_check_selection,
     .file_icon = BE_FILE_ICON_WAVE,
-    .extensions = NULL,
-    .fs_ops = &FS_LOCAL_OPERATIONS,
+    .fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS,
     .backend = NULL,
     .check_callback = NULL,
     .sensitive_widgets = NULL,

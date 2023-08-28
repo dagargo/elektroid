@@ -56,7 +56,6 @@ struct browser
   gint dnd_timeout_function_id;
   GString *dnd_data;
   const gchar *file_icon;
-  gchar **extensions;
   const struct fs_operations *fs_ops;
   struct backend *backend;
     gboolean (*check_callback) ();

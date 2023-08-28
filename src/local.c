@@ -229,6 +229,14 @@ local_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
+local_samples_read_dir (struct backend *backend, struct item_iterator *iter,
+			const gchar * path, gchar ** extensions)
+{
+  return local_read_dir (backend, iter, path,
+			 sample_get_sample_extensions ());
+}
+
+static gint
 local_sample_load_custom (const gchar * path, GByteArray * sample,
 			  struct job_control *control,
 			  struct sample_info *sample_info_dst)
@@ -336,14 +344,28 @@ local_file_exists (struct backend *backend, const gchar * path)
   return access (path, F_OK) == 0;
 }
 
-const struct fs_operations FS_LOCAL_OPERATIONS = {
+const struct fs_operations FS_LOCAL_GENERIC_OPERATIONS = {
   .fs = 0,
-  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_AUDIO_PLAYER |
-    FS_OPTION_STEREO,
+  .options = FS_OPTION_SORT_BY_NAME,
   .name = "local",
   .gui_name = "localhost",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_read_dir,
+  .file_exists = local_file_exists,
+  .mkdir = local_mkdir,
+  .delete = local_delete,
+  .rename = local_rename,
+  .move = local_rename,
+  .max_name_len = 255
+};
+
+const struct fs_operations FS_LOCAL_SAMPLE_OPERATIONS = {
+  .fs = 0,
+  .options = FS_OPTION_SORT_BY_NAME,
+  .name = "local",
+  .gui_name = "localhost",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = local_samples_read_dir,
   .file_exists = local_file_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,
@@ -371,7 +393,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .name = "wav4816s",
   .gui_name = "WAV 48 KHz 16 bits stereo",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .readdir = local_read_dir,
+  .readdir = local_samples_read_dir,
   .file_exists = local_file_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,
@@ -395,7 +417,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .name = "wav4816m",
   .gui_name = "WAV 48 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .readdir = local_read_dir,
+  .readdir = local_samples_read_dir,
   .file_exists = local_file_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,
@@ -420,7 +442,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .name = "wav44116s",
   .gui_name = "WAV 44.1 KHz 16 bits stereo",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .readdir = local_read_dir,
+  .readdir = local_samples_read_dir,
   .file_exists = local_file_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,
@@ -444,7 +466,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .name = "wav44116m",
   .gui_name = "WAV 44.1 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .readdir = local_read_dir,
+  .readdir = local_samples_read_dir,
   .file_exists = local_file_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,

@@ -19,9 +19,12 @@
  */
 
 #include "browser.h"
+#include "local.h"
 #include "backend.h"
 
 #define DND_TIMEOUT 800
+
+extern struct browser remote_browser;
 
 struct browser_add_dentry_item_data
 {
@@ -310,10 +313,20 @@ browser_load_dir_runner (gpointer data)
   gint err;
   struct browser *browser = data;
   struct item_iterator iter;
+  gchar **extensions = NULL;
+
+  if (browser->fs_ops == &FS_LOCAL_GENERIC_OPERATIONS &&
+      remote_browser.fs_ops->get_ext)
+    {
+      extensions = g_malloc (sizeof (gchar *) * 2);
+      extensions[0] = remote_browser.fs_ops->get_ext (remote_browser.backend,
+					              remote_browser.fs_ops);
+      extensions[1] = NULL;
+    }
 
   g_idle_add (browser_load_dir_runner_show_spinner_and_lock_browser, browser);
   err = browser->fs_ops->readdir (browser->backend, &iter, browser->dir,
-				  browser->extensions);
+				  extensions);
   g_idle_add (browser_load_dir_runner_hide_spinner, browser);
   if (err)
     {
@@ -333,6 +346,7 @@ browser_load_dir_runner (gpointer data)
 
 end:
   g_idle_add (browser_load_dir_runner_update_ui, browser);
+  g_free (extensions);
   return NULL;
 }
 
@@ -429,136 +443,6 @@ browser_set_options (struct browser *browser)
     }
 }
 
-static void
-browser_clear_file_extensions (struct browser *browser)
-{
-  if (browser->extensions == NULL)
-    {
-      return;
-    }
-
-  gchar **ext = browser->extensions;
-  while (*ext)
-    {
-      g_free (*ext);
-      ext++;
-    }
-  g_free (browser->extensions);
-
-  browser->extensions = NULL;
-}
-
-static gboolean
-browser_compare_extensions (struct browser *browser, const gchar ** ext_src)
-{
-  const gchar **src = ext_src;
-  gchar **dst = browser->extensions;
-
-  if (!dst && !src)
-    {
-      return TRUE;
-    }
-
-  if (!dst || !src)
-    {
-      return FALSE;
-    }
-
-  while (1)
-    {
-      if (*src == NULL && *dst == NULL)
-	{
-	  return TRUE;
-	}
-
-      if (strcmp (*src, *dst))
-	{
-	  return FALSE;
-	}
-
-      src++;
-      dst++;
-    }
-}
-
-/**
- * Sets the file extensions and reloads the browser if the extensions were updated.
- * If ext is NULL, it reloads the browser.
- */
-
-gboolean
-browser_set_file_extensions (struct browser *browser, const gchar ** ext_src)
-{
-  const gchar **ext;
-  gchar **dst;
-  int ext_count;
-
-  if (browser_compare_extensions (browser, ext_src))
-    {
-      if (!ext_src)
-	{
-	  browser_load_dir (browser);
-	}
-      return FALSE;
-    }
-
-  browser_clear_file_extensions (browser);
-
-  if (!ext_src)
-    {
-      goto end;
-    }
-
-  ext = ext_src;
-  ext_count = 0;
-  while (*ext)
-    {
-      ext_count++;
-      ext++;
-    }
-  ext_count++;			//NULL included
-
-  browser->extensions = g_malloc (sizeof (gchar *) * ext_count);
-  dst = browser->extensions;
-  ext = ext_src;
-  while (*ext)
-    {
-      *dst = strdup (*ext);
-      ext++;
-      dst++;
-    }
-  *dst = NULL;
-
-end:
-  browser_load_dir (browser);
-  return TRUE;
-}
-
-//See browser_set_file_extensions.
-
-gboolean
-browser_set_file_extension (struct browser *browser, gchar * ext)
-{
-  gboolean updated;
-  const gchar **exts;
-  if (ext)
-    {
-      exts = g_malloc (sizeof (gchar *) * 2);
-      exts[0] = ext;
-      exts[1] = NULL;
-    }
-  else
-    {
-      exts = NULL;
-    }
-  updated = browser_set_file_extensions (browser, exts);
-  if (exts)
-    {
-      g_free (exts);
-    }
-  return updated;
-}
-
 void
 browser_reset (struct browser *browser)
 {
@@ -566,7 +450,6 @@ browser_reset (struct browser *browser)
   g_free (browser->dir);
   browser->dir = NULL;
   browser_clear (browser);
-  browser_clear_file_extensions (browser);
 }
 
 void
