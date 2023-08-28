@@ -29,16 +29,22 @@
 
 #define DIR_ICON "folder-visiting-symbolic"
 
-enum browser_list_field
-{
-  BROWSER_LIST_STORE_ICON_FIELD = 0,
-  BROWSER_LIST_STORE_NAME_FIELD,	//This is the value returned by the funciton se in the get_item_key member in struct fs_operations. It's the filename.
-  BROWSER_LIST_STORE_SIZE_FIELD,
-  BROWSER_LIST_STORE_SIZE_STR_FIELD,
-  BROWSER_LIST_STORE_TYPE_FIELD,
-  BROWSER_LIST_STORE_ID_FIELD,
-  BROWSER_LIST_STORE_SLOT_FIELD	//This is an optional map of the id (number) to some string like "A1", "001" or "[A:001]" to mimic the device way of numbering the items.
-};
+//Common columns
+#define BROWSER_LIST_STORE_ICON_FIELD 0
+#define BROWSER_LIST_STORE_NAME_FIELD 1	//This is the value returned by the funciton se in the get_item_key member in struct fs_operations. It's the filename.
+#define BROWSER_LIST_STORE_SIZE_FIELD 2
+#define BROWSER_LIST_STORE_SIZE_STR_FIELD 3
+#define BROWSER_LIST_STORE_TYPE_FIELD 4
+#define BROWSER_LIST_STORE_ID_FIELD 5
+//Remote columns
+#define BROWSER_LIST_STORE_SLOT_FIELD 6	//This is an optional map of the id (number) to some string like "A1", "001" or "[A:001]" to mimic the device way of numbering the items.
+//Local columns
+#define BROWSER_LIST_STORE_SAMPLE_FRAMES_FIELD 6
+#define BROWSER_LIST_STORE_SAMPLE_RATE_FIELD 7
+#define BROWSER_LIST_STORE_SAMPLE_TIME_FIELD 8
+#define BROWSER_LIST_STORE_SAMPLE_BITS_FIELD 9
+#define BROWSER_LIST_STORE_SAMPLE_CHANNELS_FIELD 10
+#define BROWSER_LIST_STORE_SAMPLE_MIDI_NOTE_FIELD 11
 
 struct browser
 {

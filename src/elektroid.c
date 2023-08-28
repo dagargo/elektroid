@@ -164,6 +164,12 @@ static GtkWidget *fs_combo;
 static GtkTreeViewColumn *remote_tree_view_id_column;
 static GtkTreeViewColumn *remote_tree_view_slot_column;
 static GtkTreeViewColumn *remote_tree_view_size_column;
+static GtkTreeViewColumn *local_tree_view_sample_frames_column;
+static GtkTreeViewColumn *local_tree_view_sample_rate_column;
+static GtkTreeViewColumn *local_tree_view_sample_duration_column;
+static GtkTreeViewColumn *local_tree_view_sample_channels_column;
+static GtkTreeViewColumn *local_tree_view_sample_bits_column;
+static GtkTreeViewColumn *local_tree_view_sample_midi_note_column;
 
 /**
  * This function guarantees that the time since start is at least the timeout.
@@ -2234,6 +2240,26 @@ elektroid_local_key_press (GtkWidget * widget, GdkEventKey * event,
 }
 
 static void
+elektroid_show_sample_columns ()
+{
+  gboolean sample_columns = (local_browser.fs_ops->options &
+			     FS_OPTION_SAMPLE_ATTRS) != 0;
+
+  gtk_tree_view_column_set_visible (local_tree_view_sample_frames_column,
+				    sample_columns);
+  gtk_tree_view_column_set_visible (local_tree_view_sample_rate_column,
+				    sample_columns);
+  gtk_tree_view_column_set_visible (local_tree_view_sample_duration_column,
+				    sample_columns);
+  gtk_tree_view_column_set_visible (local_tree_view_sample_channels_column,
+				    sample_columns);
+  gtk_tree_view_column_set_visible (local_tree_view_sample_bits_column,
+				    sample_columns);
+  gtk_tree_view_column_set_visible (local_tree_view_sample_midi_note_column,
+				    sample_columns);
+}
+
+static void
 elektroid_set_fs (GtkWidget * object, gpointer data)
 {
   GtkTreeIter iter;
@@ -2247,6 +2273,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       elektroid_clear_selection (&local_browser);
       browser_reset (&remote_browser);
       browser_update_fs_options (&remote_browser);
+      elektroid_show_sample_columns ();
       return;
     }
 
@@ -2268,6 +2295,8 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       local_browser.fs_ops = &FS_LOCAL_GENERIC_OPERATIONS;
       editor_reset (&editor, NULL);
     }
+
+  elektroid_show_sample_columns ();
 
   editor_set_audio_mono_mix (&editor);
 
@@ -3268,6 +3297,28 @@ elektroid_run (int argc, char *argv[])
   remote_tree_view_size_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_size_column"));
+
+  local_tree_view_sample_frames_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "local_tree_view_sample_frames_column"));
+  local_tree_view_sample_rate_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "local_tree_view_sample_rate_column"));
+  local_tree_view_sample_duration_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder,
+			   "local_tree_view_sample_duration_column"));
+  local_tree_view_sample_channels_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder,
+			   "local_tree_view_sample_channels_column"));
+  local_tree_view_sample_bits_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "local_tree_view_sample_bits_column"));
+  local_tree_view_sample_midi_note_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder,
+			   "local_tree_view_sample_midi_note_column"));
 
   g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
 		    "changed", G_CALLBACK (browser_selection_changed),

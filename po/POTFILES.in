@@ -2,6 +2,7 @@ src/connector.c
 src/elektroid.c
 src/editor.c
 src/tasks.c
+src/browser.c
 src/menu_actions/backend.c
 src/menu_actions/microbrute.c
 src/menu_actions/autosampler.c

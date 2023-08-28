@@ -18,13 +18,16 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <glib/gi18n.h>
 #include "browser.h"
+#include "editor.h"
 #include "local.h"
 #include "backend.h"
 
 #define DND_TIMEOUT 800
 
 extern struct browser remote_browser;
+extern struct editor editor;
 
 struct browser_add_dentry_item_data
 {
@@ -218,20 +221,19 @@ browser_get_item_path (struct browser *browser, struct item *item)
 static gint
 browser_add_dentry_item (gpointer data)
 {
+  gchar *hsize;
+  gchar label[LABEL_MAX];
   struct browser_add_dentry_item_data *add_data = data;
   struct browser *browser = add_data->browser;
   struct item *item = &add_data->item;
-  gchar *hsize, *slot;
+  GtkTreeIter iter, note_iter;
+  GValue v = G_VALUE_INIT;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
 
   hsize = get_human_size (item->size, TRUE);
-  slot = (browser->fs_ops->options & FS_OPTION_SLOT_STORAGE)
-    && browser->fs_ops->get_slot ? browser->fs_ops->get_slot (item,
-							      browser->backend)
-    : NULL;
 
-  gtk_list_store_insert_with_values (list_store, NULL, -1,
+  gtk_list_store_insert_with_values (list_store, &iter, -1,
 				     BROWSER_LIST_STORE_ICON_FIELD,
 				     item->type ==
 				     ELEKTROID_DIR ? DIR_ICON :
@@ -245,12 +247,96 @@ browser_add_dentry_item (gpointer data)
 				     BROWSER_LIST_STORE_TYPE_FIELD,
 				     item->type,
 				     BROWSER_LIST_STORE_ID_FIELD,
-				     item->id,
-				     BROWSER_LIST_STORE_SLOT_FIELD,
-				     slot ? slot : "", -1);
-
+				     item->id, -1);
   g_free (hsize);
-  g_free (slot);
+
+  if (browser->fs_ops->options & FS_OPTION_SLOT_STORAGE)
+    {
+      if (browser->fs_ops->get_slot)
+	{
+	  gchar *s = browser->fs_ops->get_slot (item, browser->backend);
+	  g_value_init (&v, G_TYPE_STRING);
+	  g_value_set_string (&v, s);
+	  gtk_list_store_set_value (list_store, &iter,
+				    BROWSER_LIST_STORE_SLOT_FIELD, &v);
+	  g_free (s);
+	  g_value_unset (&v);
+	}
+    }
+
+  if (item->type == ELEKTROID_FILE &&
+      browser->fs_ops->options & FS_OPTION_SAMPLE_ATTRS &&
+      item->sample_info.frames)
+    {
+      snprintf (label, LABEL_MAX, "%u", item->sample_info.frames);
+      g_value_init (&v, G_TYPE_STRING);
+      g_value_set_string (&v, label);
+      gtk_list_store_set_value (list_store, &iter,
+				BROWSER_LIST_STORE_SAMPLE_FRAMES_FIELD, &v);
+      g_value_unset (&v);
+
+      snprintf (label, LABEL_MAX, "%.2f kHz",
+		item->sample_info.rate / 1000.0);
+      g_value_init (&v, G_TYPE_STRING);
+      g_value_set_string (&v, label);
+      gtk_list_store_set_value (list_store, &iter,
+				BROWSER_LIST_STORE_SAMPLE_RATE_FIELD, &v);
+      g_value_unset (&v);
+
+      gdouble time =
+	item->sample_info.frames / (gdouble) item->sample_info.rate;
+      if (time >= 60)
+	{
+	  snprintf (label, LABEL_MAX, "%.2f %s", time / 60.0, _("min."));
+	}
+      else
+	{
+	  snprintf (label, LABEL_MAX, "%.2f s", time);
+	}
+      g_value_init (&v, G_TYPE_STRING);
+      g_value_set_string (&v, label);
+      gtk_list_store_set_value (list_store, &iter,
+				BROWSER_LIST_STORE_SAMPLE_TIME_FIELD, &v);
+      g_value_unset (&v);
+
+      snprintf (label, LABEL_MAX, "%u", item->sample_info.bits);
+      g_value_init (&v, G_TYPE_STRING);
+      g_value_set_string (&v, label);
+      gtk_list_store_set_value (list_store, &iter,
+				BROWSER_LIST_STORE_SAMPLE_BITS_FIELD, &v);
+      g_value_unset (&v);
+
+      snprintf (label, LABEL_MAX, "%u", item->sample_info.channels);
+      g_value_init (&v, G_TYPE_STRING);
+      g_value_set_string (&v, label);
+      gtk_list_store_set_value (list_store, &iter,
+				BROWSER_LIST_STORE_SAMPLE_CHANNELS_FIELD, &v);
+      g_value_unset (&v);
+
+      gtk_tree_model_get_iter_first (GTK_TREE_MODEL (editor.notes_list_store),
+				     &note_iter);
+      if (item->sample_info.midi_note <= 127)
+	{
+	  for (gint i = 0; i < item->sample_info.midi_note; i++)
+	    {
+	      gtk_tree_model_iter_next (GTK_TREE_MODEL
+					(editor.notes_list_store),
+					&note_iter);
+	    }
+	  gtk_tree_model_get_value (GTK_TREE_MODEL (editor.notes_list_store),
+				    &note_iter, 0, &v);
+	}
+      else
+	{
+	  g_value_init (&v, G_TYPE_STRING);
+	  g_value_set_string (&v, "-");
+	}
+      gtk_list_store_set_value (list_store, &iter,
+				BROWSER_LIST_STORE_SAMPLE_MIDI_NOTE_FIELD,
+				&v);
+      g_value_unset (&v);
+    }
+
   g_free (add_data);
 
   return G_SOURCE_REMOVE;

@@ -415,6 +415,8 @@ sample_load_sample_info (const gchar * path, struct sample_info *sample_info)
   SNDFILE *sndfile;
   FILE *file;
 
+  memset (sample_info, 0, sizeof (struct sample_info));
+
   file = fopen (path, "rb");
   if (!file)
     {
