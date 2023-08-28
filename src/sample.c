@@ -353,19 +353,19 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE * sndfile,
   switch (sf_info->format & SF_FORMAT_SUBMASK)
     {
     case SF_FORMAT_PCM_S8:
-      sample_info->bit_depth = 8;
+      sample_info->bits = 8;
       break;
     case SF_FORMAT_PCM_16:
-      sample_info->bit_depth = 16;
+      sample_info->bits = 16;
       break;
     case SF_FORMAT_PCM_24:
-      sample_info->bit_depth = 24;
+      sample_info->bits = 24;
       break;
     case SF_FORMAT_PCM_32:
-      sample_info->bit_depth = 32;
+      sample_info->bits = 32;
       break;
     default:
-      sample_info->bit_depth = 0;
+      sample_info->bits = 0;
     }
 
   strcpy (chunk_info.id, SMPL_CHUNK_ID);
@@ -493,7 +493,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     sample_info_dst->channels : sf_info.channels;
   sample_info_dst->rate = sample_info_dst->rate ? sample_info_dst->rate :
     sf_info.samplerate;
-  sample_info_dst->bit_depth = 16;
+  sample_info_dst->bits = 16;
 
   bytes_per_frame = sample_info_dst->channels * SAMPLE_SIZE;
 

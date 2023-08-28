@@ -205,9 +205,8 @@ sds_get_download_info (GByteArray * header, struct sample_info *sample_info,
 		       guint * words, guint * word_size,
 		       guint * bytes_per_word)
 {
-  sample_info->bit_depth = header->data[6];
-  if (sds_get_bytes_per_word (sample_info->bit_depth, word_size,
-			      bytes_per_word))
+  sample_info->bits = header->data[6];
+  if (sds_get_bytes_per_word (sample_info->bits, word_size, bytes_per_word))
     {
       return -1;
     }
@@ -302,13 +301,13 @@ sds_download_inc_packet (gboolean * first, guint * packet)
 }
 
 static void
-sds_debug_print_sample_data (guint bit_depth, guint bytes_per_word,
+sds_debug_print_sample_data (guint bits, guint bytes_per_word,
 			     guint word_size, guint sample_rate, guint words,
 			     guint packets)
 {
   debug_print (1,
 	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
-	       bit_depth, bytes_per_word, word_size);
+	       bits, bytes_per_word, word_size);
   debug_print (1, "Sample rate: %d Hz\n", sample_rate);
   debug_print (1, "Words: %d\n", words);
   debug_print (1, "Packets: %d\n", packets);
@@ -401,7 +400,7 @@ sds_download_try (struct backend *backend, const gchar * path,
 
   packets =
     ceil (words / (double) (SDS_DATA_PACKET_PAYLOAD_LEN / bytes_per_word));
-  sds_debug_print_sample_data (sample_info->bit_depth, bytes_per_word,
+  sds_debug_print_sample_data (sample_info->bits, bytes_per_word,
 			       word_size, sample_info->rate, words, packets);
 
   g_mutex_lock (&control->mutex);
@@ -523,7 +522,7 @@ sds_download_try (struct backend *backend, const gchar * path,
 	{
 	  sample = sds_get_gint16_value_left_just (dataptr,
 						   bytes_per_word,
-						   sample_info->bit_depth);
+						   sample_info->bits);
 	  g_byte_array_append (output, (guint8 *) & sample, sizeof (sample));
 	  dataptr += bytes_per_word;
 	  read_bytes += bytes_per_word;

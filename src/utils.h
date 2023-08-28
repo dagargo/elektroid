@@ -67,7 +67,7 @@ struct sample_info
   guint32 loop_end;
   guint32 loop_type;
   guint32 rate;
-  guint32 bit_depth;
+  guint32 bits;
   guint32 channels;
   guint32 midi_note;
 };
