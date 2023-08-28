@@ -41,6 +41,7 @@ struct editor
   GtkWidget *autoplay_switch;
   GtkWidget *mix_switch;
   GtkWidget *volume_button;
+  GtkWidget *mix_switch_box;
   gulong volume_changed_handler;
   GtkListStore *notes_list_store;
   GtkMenu *menu;

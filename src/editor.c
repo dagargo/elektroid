@@ -1072,6 +1072,8 @@ editor_init (struct editor *editor, GtkBuilder * builder)
     GTK_WIDGET (gtk_builder_get_object (builder, "mix_switch"));
   editor->volume_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "volume_button"));
+  editor->mix_switch_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "mix_switch_box"));
 
   editor->notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));

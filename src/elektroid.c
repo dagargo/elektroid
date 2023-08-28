@@ -715,6 +715,7 @@ elektroid_show_remote (gboolean active)
   gtk_widget_set_visible (remote_box, active);
   gtk_widget_set_visible (tasks_box, active);
   gtk_widget_set_visible (remote_devices_box, active);
+  gtk_widget_set_visible (editor.mix_switch_box, active);
 }
 
 static void
