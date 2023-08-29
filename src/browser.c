@@ -223,6 +223,7 @@ static gint
 browser_add_dentry_item (gpointer data)
 {
   gchar *hsize;
+  gdouble time;
   gchar label[LABEL_MAX];
   struct browser_add_dentry_item_data *add_data = data;
   struct browser *browser = add_data->browser;
@@ -276,7 +277,7 @@ browser_add_dentry_item (gpointer data)
 				BROWSER_LIST_STORE_SAMPLE_FRAMES_FIELD, &v);
       g_value_unset (&v);
 
-      snprintf (label, LABEL_MAX, "%.2f kHz",
+      snprintf (label, LABEL_MAX, "%.5g kHz",
 		item->sample_info.rate / 1000.0);
       g_value_init (&v, G_TYPE_STRING);
       g_value_set_string (&v, label);
@@ -284,15 +285,14 @@ browser_add_dentry_item (gpointer data)
 				BROWSER_LIST_STORE_SAMPLE_RATE_FIELD, &v);
       g_value_unset (&v);
 
-      gdouble time =
-	item->sample_info.frames / (gdouble) item->sample_info.rate;
+      time = item->sample_info.frames / (gdouble) item->sample_info.rate;
       if (time >= 60)
 	{
-	  snprintf (label, LABEL_MAX, "%.2f %s", time / 60.0, _("min."));
+	  snprintf (label, LABEL_MAX, "%.4g %s", time / 60.0, _("min."));
 	}
       else
 	{
-	  snprintf (label, LABEL_MAX, "%.2f s", time);
+	  snprintf (label, LABEL_MAX, "%.3g s", time);
 	}
       g_value_init (&v, G_TYPE_STRING);
       g_value_set_string (&v, label);

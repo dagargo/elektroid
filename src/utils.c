@@ -331,16 +331,16 @@ get_human_size (gint64 size, gboolean with_space)
     }
   else if (size < KIB * KIB)
     {
-      snprintf (label, LABEL_MAX, "%.2f%sKiB", size / (double) KIB, space);
+      snprintf (label, LABEL_MAX, "%.4g%sKiB", size / (double) KIB, space);
     }
   else if (size < KIB * KIB * KIB)
     {
-      snprintf (label, LABEL_MAX, "%.2f%sMiB", size / (double) (KIB * KIB),
+      snprintf (label, LABEL_MAX, "%.4g%sMiB", size / (double) (KIB * KIB),
 		space);
     }
   else
     {
-      snprintf (label, LABEL_MAX, "%.2f%sGiB",
+      snprintf (label, LABEL_MAX, "%.4g%sGiB",
 		size / (double) (KIB * KIB * KIB), space);
     }
 
