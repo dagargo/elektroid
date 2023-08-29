@@ -1494,19 +1494,16 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
             <property name="vexpand">True</property>
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkBox">
+              <object class="GtkPaned">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="margin-bottom">6</property>
-                <property name="hexpand">True</property>
-                <property name="vexpand">True</property>
                 <property name="orientation">vertical</property>
-                <property name="spacing">6</property>
                 <child>
                   <!-- n-columns=2 n-rows=2 -->
                   <object class="GtkGrid">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-bottom">6</property>
                     <property name="hexpand">True</property>
                     <property name="vexpand">True</property>
                     <property name="row-spacing">6</property>
@@ -2104,15 +2101,16 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
+                    <property name="resize">True</property>
+                    <property name="shrink">False</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkBox" id="editor_box">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="margin-top">6</property>
+                    <property name="margin-bottom">6</property>
                     <property name="orientation">vertical</property>
                     <property name="spacing">6</property>
                     <child>
@@ -2373,6 +2371,7 @@ on remote</property>
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="hexpand">True</property>
+                        <property name="vexpand">True</property>
                         <property name="hadjustment">waveform_adj</property>
                         <property name="vscrollbar-policy">never</property>
                         <property name="shadow-type">in</property>
@@ -2391,9 +2390,8 @@ on remote</property>
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
+                    <property name="resize">True</property>
+                    <property name="shrink">False</property>
                   </packing>
                 </child>
               </object>
