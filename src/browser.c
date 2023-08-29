@@ -406,7 +406,7 @@ browser_load_dir_runner (gpointer data)
     {
       extensions = g_malloc (sizeof (gchar *) * 2);
       extensions[0] = remote_browser.fs_ops->get_ext (remote_browser.backend,
-					              remote_browser.fs_ops);
+						      remote_browser.fs_ops);
       extensions[1] = NULL;
     }
 

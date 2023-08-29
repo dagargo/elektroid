@@ -118,7 +118,7 @@ struct backend
   t_get_storage_stats get_storage_stats;	//This function is device function, not a filesystem function. Several filesystems might share the same memory.
 };
 
-struct backend_system_device
+struct backend_device
 {
   gchar name[LABEL_MAX];
   gchar id[LABEL_MAX];
@@ -153,7 +153,7 @@ void backend_enable_cache (struct backend *);
 
 void backend_disable_cache (struct backend *);
 
-GArray *backend_get_system_devices ();
+GArray *backend_get_devices ();
 
 const struct fs_operations *backend_get_fs_operations (struct backend *, gint,
 						       const char *);

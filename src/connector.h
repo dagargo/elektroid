@@ -24,7 +24,7 @@
 #define CONNECTOR_H
 
 gint connector_init_backend (struct backend *backend,
-			     struct backend_system_device *device,
+			     struct backend_device *device,
 			     const gchar * name,
 			     struct sysex_transfer *sysex_transfer);
 

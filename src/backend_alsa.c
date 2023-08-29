@@ -296,7 +296,7 @@ backend_get_system_subdevices (snd_ctl_t * ctl, int card, int device,
   int subs, subs_in, subs_out;
   int sub;
   int err;
-  struct backend_system_device *backend_system_device;
+  struct backend_device *backend_device;
 
   snd_rawmidi_info_alloca (&info);
   snd_rawmidi_info_set_device (info, device);
@@ -362,15 +362,14 @@ backend_get_system_subdevices (snd_ctl_t * ctl, int card, int device,
 
       debug_print (1, "Adding hw:%d (name '%s', subname '%s')...\n", card,
 		   name, sub_name);
-      backend_system_device =
-	g_malloc (sizeof (struct backend_system_device));
-      snprintf (backend_system_device->id, LABEL_MAX, BE_DEVICE_NAME, card,
-		device, sub);
-      snprintf (backend_system_device->name, LABEL_MAX,
-		BE_DEVICE_NAME ": %s%s%s", card, device, sub, name,
-		strlen (sub_name) ? ", " : "", sub_name);
+      backend_device = g_malloc (sizeof (struct backend_device));
+      snprintf (backend_device->id, LABEL_MAX, BE_DEVICE_NAME, card, device,
+		sub);
+      snprintf (backend_device->name, LABEL_MAX, BE_DEVICE_NAME ": %s%s%s",
+		card, device, sub, name, strlen (sub_name) ? ", " : "",
+		sub_name);
 
-      g_array_append_vals (devices, backend_system_device, 1);
+      g_array_append_vals (devices, backend_device, 1);
     }
 }
 
@@ -403,11 +402,11 @@ backend_fill_card_devices (gint card, GArray * devices)
 }
 
 GArray *
-backend_get_system_devices ()
+backend_get_devices ()
 {
   gint card, err;
   GArray *devices =
-    g_array_new (FALSE, FALSE, sizeof (struct backend_system_device));
+    g_array_new (FALSE, FALSE, sizeof (struct backend_device));
 
   card = -1;
   while (!(err = snd_card_next (&card)) && card >= 0)

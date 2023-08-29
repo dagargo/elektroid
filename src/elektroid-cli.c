@@ -61,12 +61,12 @@ static gint
 cli_ld ()
 {
   gint i;
-  struct backend_system_device device;
-  GArray *devices = backend_get_system_devices ();
+  struct backend_device device;
+  GArray *devices = backend_get_devices ();
 
   for (i = 0; i < devices->len; i++)
     {
-      device = g_array_index (devices, struct backend_system_device, i);
+      device = g_array_index (devices, struct backend_device, i);
       printf ("%d: id: %s; name: %s\n", i, device.id, device.name);
     }
 
@@ -79,8 +79,8 @@ static gint
 cli_connect (const gchar * device_path)
 {
   gint err, id = (gint) atoi (device_path);
-  struct backend_system_device device;
-  GArray *devices = backend_get_system_devices ();
+  struct backend_device device;
+  GArray *devices = backend_get_devices ();
 
   if (!devices->len || id >= devices->len)
     {
@@ -88,7 +88,7 @@ cli_connect (const gchar * device_path)
       return -ENODEV;
     }
 
-  device = g_array_index (devices, struct backend_system_device, id);
+  device = g_array_index (devices, struct backend_device, id);
   err = connector_init_backend (&backend, &device, connector, NULL);
   g_array_free (devices, TRUE);
 

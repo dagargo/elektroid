@@ -216,7 +216,7 @@ backend_check_int (struct backend *backend)
 }
 
 GArray *
-backend_get_system_devices ()
+backend_get_devices ()
 {
   struct RtMidiWrapper *inputp;
   struct RtMidiWrapper *outputp;
@@ -224,9 +224,9 @@ backend_get_system_devices ()
   gchar iportname[LABEL_MAX];
   gchar oportname[LABEL_MAX];
   gint iportnamelen, oportnamelen;
-  struct backend_system_device *backend_system_device;
+  struct backend_device *backend_device;
   GArray *devices = g_array_new (FALSE, FALSE,
-				 sizeof (struct backend_system_device));
+				 sizeof (struct backend_device));
 
   if (!(inputp = rtmidi_in_create_default ()))
     {
@@ -265,23 +265,19 @@ backend_get_system_devices ()
 #if defined(__linux__)
 	  if (!strcmp (iportname, oportname))
 	    {
-	      backend_system_device =
-		g_malloc (sizeof (struct backend_system_device));
-	      snprintf (backend_system_device->id, LABEL_MAX, "%s",
-			iportname);
-	      snprintf (backend_system_device->name, LABEL_MAX, "%s",
-			iportname);
-	      g_array_append_vals (devices, backend_system_device, 1);
+	      backend_device = g_malloc (sizeof (struct backend_device));
+	      snprintf (backend_device->id, LABEL_MAX, "%s", iportname);
+	      snprintf (backend_device->name, LABEL_MAX, "%s", iportname);
+	      g_array_append_vals (devices, backend_device, 1);
 	    }
 #else
 	  //We consider the cartesian product of inputs and outputs as the available ports.
-	  backend_system_device =
-	    g_malloc (sizeof (struct backend_system_device));
-	  snprintf (backend_system_device->id, LABEL_MAX, "%s%s%s",
-		    iportname, WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
-	  snprintf (backend_system_device->name, LABEL_MAX, "%s%s%s",
-		    iportname, WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
-	  g_array_append_vals (devices, backend_system_device, 1);
+	  backend_device = g_malloc (sizeof (struct backend_device));
+	  snprintf (backend_device->id, LABEL_MAX, "%s%s%s", iportname,
+		    WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
+	  snprintf (backend_device->name, LABEL_MAX, "%s%s%s", iportname,
+		    WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
+	  g_array_append_vals (devices, backend_device, 1);
 #endif
 	}
     }

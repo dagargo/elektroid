@@ -250,8 +250,8 @@ elektroid_load_devices (gboolean auto_select)
 {
   gint i;
   gint device_index;
-  GArray *devices = backend_get_system_devices ();
-  struct backend_system_device device;
+  GArray *devices = backend_get_devices ();
+  struct backend_device device;
 
   debug_print (1, "Loading devices...\n");
 
@@ -266,7 +266,7 @@ elektroid_load_devices (gboolean auto_select)
 
   for (i = 0; i < devices->len; i++)
     {
-      device = g_array_index (devices, struct backend_system_device, i);
+      device = g_array_index (devices, struct backend_device, i);
       gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
 					 DEVICES_LIST_STORE_ID_FIELD,
 					 device.id,
@@ -2483,7 +2483,7 @@ elektroid_fill_fs_combo_bg (gpointer data)
 static gpointer
 elektroid_set_device_runner (gpointer data)
 {
-  struct backend_system_device *be_sys_device = data;
+  struct backend_device *be_sys_device = data;
   gint64 start = g_get_monotonic_time ();
 
   sysex_transfer.active = TRUE;
@@ -2502,7 +2502,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
   GtkTreeIter iter;
   gchar *id, *name;
   gint dres;
-  struct backend_system_device be_sys_device;
+  struct backend_device be_sys_device;
 
   elektroid_cancel_all_tasks_and_wait ();
 
