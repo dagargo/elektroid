@@ -33,6 +33,7 @@ struct browser_add_dentry_item_data
 {
   struct browser *browser;
   struct item item;
+  const gchar *icon;
 };
 
 static void
@@ -237,7 +238,7 @@ browser_add_dentry_item (gpointer data)
 				     BROWSER_LIST_STORE_ICON_FIELD,
 				     item->type ==
 				     ELEKTROID_DIR ? DIR_ICON :
-				     browser->file_icon,
+				     add_data->icon,
 				     BROWSER_LIST_STORE_NAME_FIELD,
 				     item->name,
 				     BROWSER_LIST_STORE_SIZE_FIELD,
@@ -400,6 +401,7 @@ browser_load_dir_runner (gpointer data)
   struct browser *browser = data;
   struct item_iterator iter;
   const gchar **extensions = NULL;
+  const gchar *icon = browser->fs_ops->gui_icon;
 
   if (browser->fs_ops == &FS_LOCAL_GENERIC_OPERATIONS &&
       remote_browser.fs_ops->get_ext)
@@ -408,6 +410,7 @@ browser_load_dir_runner (gpointer data)
       extensions[0] = remote_browser.fs_ops->get_ext (remote_browser.backend,
 						      remote_browser.fs_ops);
       extensions[1] = NULL;
+      icon = remote_browser.fs_ops->gui_icon;
     }
 
   g_idle_add (browser_load_dir_runner_show_spinner_and_lock_browser, browser);
@@ -426,6 +429,7 @@ browser_load_dir_runner (gpointer data)
 	g_malloc (sizeof (struct browser_add_dentry_item_data));
       data->browser = browser;
       memcpy (&data->item, &iter.item, sizeof (struct item));
+      data->icon = icon;
       g_idle_add (browser_add_dentry_item, data);
     }
   free_item_iterator (&iter);

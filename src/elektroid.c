@@ -283,7 +283,11 @@ elektroid_load_devices (gboolean auto_select)
 
   if (device_index == -1)
     {
-      local_browser.file_icon = BE_FILE_ICON_WAVE;
+      if (local_browser.fs_ops != &FS_LOCAL_SAMPLE_OPERATIONS)
+	{
+	  local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
+	  browser_load_dir (&local_browser);
+	}
       gtk_widget_set_visible (editor.box, TRUE);
       gtk_tree_view_column_set_visible (remote_tree_view_id_column, FALSE);
       gtk_tree_view_column_set_visible (remote_tree_view_slot_column, FALSE);
@@ -2288,7 +2292,6 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   g_value_unset (&fsv);
 
   remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
-  remote_browser.file_icon = remote_browser.fs_ops->gui_icon;
 
   last_local_fs_ops = local_browser.fs_ops;
   if (EDITOR_VISIBLE)
@@ -2430,7 +2433,6 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   browser_load_dir (&remote_browser);
   browser_update_fs_options (&remote_browser);
 
-  local_browser.file_icon = remote_browser.file_icon;
   if (last_local_fs_ops != local_browser.fs_ops)
     {
       elektroid_clear_selection (&local_browser);
@@ -3190,7 +3192,6 @@ elektroid_run (int argc, char *argv[])
     .menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu")),
     .dir = NULL,
     .check_selection = elektroid_remote_check_selection,
-    .file_icon = NULL,
     .fs_ops = NULL,
     .backend = &backend,
     .check_callback = elektroid_check_backend,
@@ -3253,7 +3254,6 @@ elektroid_run (int argc, char *argv[])
     .menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu")),
     .dir = preferences.local_dir,
     .check_selection = elektroid_local_check_selection,
-    .file_icon = BE_FILE_ICON_WAVE,
     .fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS,
     .backend = NULL,
     .check_callback = NULL,

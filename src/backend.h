@@ -44,6 +44,7 @@
 #define BE_FILE_ICON_SEQ "elektroid-sequence-symbolic"
 #define BE_FILE_ICON_PRJ "elektroid-project-symbolic"
 #define BE_FILE_ICON_SND "elektroid-sound-symbolic"
+#define BE_FILE_ICON_GENERIC "text-x-generic-symbolic"
 
 #define BE_DUMP_TIMEOUT 5000	//With and E-Mu ESI-2000 it takes this more than 3 seconds to receive to receive some packets after the process has started.
 #define BE_REST_TIME_US 50000
