@@ -431,6 +431,18 @@ editor_queue_draw (gpointer data)
   return FALSE;
 }
 
+static gboolean
+editor_join_load_thread (gpointer data)
+{
+  struct editor *editor = data;
+  if (editor->thread)
+    {
+      g_thread_join (editor->thread);
+      editor->thread = NULL;
+    }
+  return FALSE;
+}
+
 static void
 editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
 {
@@ -448,6 +460,10 @@ editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
 	{
 	  g_idle_add (editor_update_ui_on_load, data);
 	  editor->ready = TRUE;
+	}
+      if (completed)
+	{
+	  g_idle_add (editor_join_load_thread, data);
 	}
     }
 }
@@ -610,12 +626,7 @@ editor_stop_load_thread (struct editor *editor)
   g_mutex_lock (&audio->control.mutex);
   audio->control.active = FALSE;
   g_mutex_unlock (&audio->control.mutex);
-
-  if (editor->thread)
-    {
-      g_thread_join (editor->thread);
-      editor->thread = NULL;
-    }
+  editor_join_load_thread (editor);
 }
 
 static gboolean
