@@ -137,6 +137,7 @@ editor_reset (struct editor *editor, struct browser *browser)
   editor_set_widget_source (editor->waveform, editor);
 
   gtk_widget_set_sensitive (editor->play_button, FALSE);
+  gtk_widget_set_sensitive (editor->stop_button, FALSE);
 }
 
 static void
@@ -219,6 +220,7 @@ editor_update_ui_on_load (gpointer data)
       gtk_widget_set_sensitive (remote_browser.play_menuitem,
 				editor->browser == &remote_browser);
       gtk_widget_set_sensitive (editor->play_button, TRUE);
+      gtk_widget_set_sensitive (editor->stop_button, TRUE);
     }
   if (editor->preferences->autoplay)
     {
