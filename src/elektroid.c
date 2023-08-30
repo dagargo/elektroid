@@ -43,6 +43,8 @@
 
 #define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : path_type_from_backend (&backend))
 
+#define OTHER_BROWSER(b) (b == &local_browser ? &remote_browser : &local_browser)
+
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
 
@@ -81,8 +83,6 @@ struct elektroid_dnd_data
 static gpointer elektroid_upload_task_runner (gpointer);
 static gpointer elektroid_download_task_runner (gpointer);
 static void elektroid_update_progress (struct job_control *);
-static void elektroid_clear_selection (struct browser *);
-static gboolean elektroid_local_check_selection (gpointer);
 
 static const struct option ELEKTROID_OPTIONS[] = {
   {"local-directory", 1, NULL, 'l'},
@@ -280,21 +280,6 @@ elektroid_load_devices (gboolean auto_select)
   device_index = auto_select && i == 1 ? 0 : -1;
   debug_print (1, "Selecting device %d...\n", device_index);
   gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), device_index);
-
-  if (device_index == -1)
-    {
-      if (local_browser.fs_ops != &FS_LOCAL_SAMPLE_OPERATIONS)
-	{
-	  local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
-	  browser_load_dir (&local_browser);
-	}
-      gtk_widget_set_visible (editor.box, TRUE);
-      gtk_tree_view_column_set_visible (remote_tree_view_id_column, FALSE);
-      gtk_tree_view_column_set_visible (remote_tree_view_slot_column, FALSE);
-      gtk_tree_view_column_set_visible (remote_tree_view_size_column, FALSE);
-      elektroid_update_upload_menuitem ();
-      editor_set_audio_mono_mix (&editor);
-    }
 }
 
 static gboolean
@@ -450,6 +435,25 @@ elektroid_cancel_all_tasks_and_wait ()
     }
 }
 
+static void
+elektroid_audio_widgets_reset ()
+{
+  gtk_widget_set_sensitive (local_browser.open_menuitem, FALSE);
+  gtk_widget_set_sensitive (remote_browser.open_menuitem, FALSE);
+  gtk_widget_set_sensitive (local_browser.play_menuitem, FALSE);
+  gtk_widget_set_sensitive (remote_browser.play_menuitem, FALSE);
+}
+
+static void
+elektroid_disable_sample_widgets (struct browser *browser)
+{
+  if (editor.browser == browser)
+    {
+      editor_reset (&editor, NULL);
+      elektroid_audio_widgets_reset (&editor);
+    }
+}
+
 void
 elektroid_refresh_devices (GtkWidget * widget, gpointer data)
 {
@@ -458,7 +462,7 @@ elektroid_refresh_devices (GtkWidget * widget, gpointer data)
       elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (&backend);
       ma_clear_device_menu_actions (ma_data.box);
-      elektroid_clear_selection (&remote_browser);
+      elektroid_disable_sample_widgets (&remote_browser);
       browser_reset (&remote_browser);
     }
   elektroid_check_backend ();	//This triggers the actual devices refresh if there is no backend
@@ -1165,25 +1169,6 @@ elektroid_button_release (GtkWidget * treeview, GdkEventButton * event,
 }
 
 static void
-elektroid_audio_widgets_reset ()
-{
-  gtk_widget_set_sensitive (local_browser.open_menuitem, FALSE);
-  gtk_widget_set_sensitive (remote_browser.open_menuitem, FALSE);
-  gtk_widget_set_sensitive (local_browser.play_menuitem, FALSE);
-  gtk_widget_set_sensitive (remote_browser.play_menuitem, FALSE);
-}
-
-static void
-elektroid_clear_selection (struct browser *browser)
-{
-  if (editor.browser == browser)
-    {
-      editor_reset (&editor, NULL);
-      elektroid_audio_widgets_reset (&editor);
-    }
-}
-
-static void
 elektroid_check_and_load_sample (struct browser *browser, gint count)
 {
   struct item item;
@@ -1195,27 +1180,18 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 
   if (count == 1)
     {
-      if (browser == &local_browser)
-	{
-	  browser_clear_selection (&remote_browser);
-	}
-      else
-	{
-	  browser_clear_selection (&local_browser);
-	}
-
       browser_set_selected_row_iter (browser, &iter);
       model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
       browser_set_item (model, &iter, &item);
 
-      gtk_widget_set_sensitive (browser ==
-				&local_browser ? local_browser.open_menuitem :
+      gtk_widget_set_sensitive (browser == &local_browser ?
+				local_browser.open_menuitem :
 				remote_browser.open_menuitem,
 				item.type == ELEKTROID_FILE);
 
       if (item.type == ELEKTROID_DIR)
 	{
-	  elektroid_clear_selection (browser);
+	  elektroid_disable_sample_widgets (browser);
 	}
       else
 	{
@@ -1226,6 +1202,7 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	    {
 	      if (sample_editor)
 		{
+		  browser_clear_selection (OTHER_BROWSER (browser));
 		  editor_reset (&editor, browser);
 		  strcpy (editor.audio.path, sample_path);
 		  editor_start_load_thread (&editor);
@@ -1236,7 +1213,7 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
     }
   else
     {
-      elektroid_clear_selection (browser);
+      elektroid_disable_sample_widgets (browser);
     }
 }
 
@@ -2277,12 +2254,21 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
       if (last_local_fs_ops != local_browser.fs_ops)
 	{
-	  elektroid_clear_selection (&local_browser);
+	  elektroid_disable_sample_widgets (&local_browser);
+	  browser_load_dir (&local_browser);
 	}
 
       browser_reset (&remote_browser);
       browser_update_fs_options (&remote_browser);
       elektroid_show_sample_columns ();
+
+      gtk_widget_set_visible (editor.box, TRUE);
+      gtk_tree_view_column_set_visible (remote_tree_view_id_column, FALSE);
+      gtk_tree_view_column_set_visible (remote_tree_view_slot_column, FALSE);
+      gtk_tree_view_column_set_visible (remote_tree_view_size_column, FALSE);
+      elektroid_update_upload_menuitem ();
+      editor_set_audio_mono_mix (&editor);
+
       return;
     }
 
@@ -2429,13 +2415,13 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   browser_set_options (&remote_browser);
 
-  elektroid_clear_selection (&remote_browser);
+  elektroid_disable_sample_widgets (&remote_browser);
   browser_load_dir (&remote_browser);
   browser_update_fs_options (&remote_browser);
 
   if (last_local_fs_ops != local_browser.fs_ops)
     {
-      elektroid_clear_selection (&local_browser);
+      elektroid_disable_sample_widgets (&local_browser);
       browser_load_dir (&local_browser);
     }
 }
