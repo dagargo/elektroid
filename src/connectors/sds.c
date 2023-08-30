@@ -975,7 +975,7 @@ enum sds_fs
 
 static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_8_B,
-  .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SINGLE_OP |
     FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "mono8",
   .gui_name = "Mono 8 bits",
@@ -996,7 +996,7 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
 
 static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_12_B,
-  .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SINGLE_OP |
     FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "mono12",
   .gui_name = "Mono 12 bits",
@@ -1017,7 +1017,7 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
 
 static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_14_B,
-  .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SINGLE_OP |
     FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "mono14",
   .gui_name = "Mono 14 bits",
@@ -1038,7 +1038,7 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
 
 static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_16_B,
-  .options = FS_OPTION_AUDIO_PLAYER | FS_OPTION_SINGLE_OP |
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SINGLE_OP |
     FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "mono16",
   .gui_name = "Mono 16 bits",

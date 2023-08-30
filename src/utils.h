@@ -229,8 +229,8 @@ struct fs_operations
 enum fs_options
 {
   //Show the audio player.
-  FS_OPTION_AUDIO_PLAYER = 0x1,
-  //Allow stereo samples. Only useful if used together with FS_OPTION_AUDIO_PLAYER
+  FS_OPTION_SAMPLE_EDITOR = 0x1,
+  //Allow stereo samples. Only useful if used together with FS_OPTION_SAMPLE_EDITOR
   FS_OPTION_STEREO = 0x2,
   //Every operation will block the remote browser.
   FS_OPTION_SINGLE_OP = 0x4,

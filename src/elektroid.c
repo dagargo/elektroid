@@ -39,7 +39,7 @@
 #include "menu_action.h"
 #include "progress.h"
 
-#define EDITOR_VISIBLE (remote_browser.fs_ops->options & FS_OPTION_AUDIO_PLAYER ? TRUE : FALSE)
+#define EDITOR_VISIBLE (remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE)
 
 #define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : path_type_from_backend (&backend))
 
@@ -1190,8 +1190,8 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
   GtkTreeIter iter;
   gchar *sample_path;
   GtkTreeModel *model;
-  gboolean audio_fs = !remote_browser.fs_ops
-    || (remote_browser.fs_ops->options & FS_OPTION_AUDIO_PLAYER);
+  gboolean sample_editor = !remote_browser.fs_ops
+    || (remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR);
 
   if (count == 1)
     {
@@ -1224,7 +1224,7 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	  if (strcmp (editor.audio.path, sample_path) ||
 	      editor.browser != browser)
 	    {
-	      if (audio_fs)
+	      if (sample_editor)
 		{
 		  editor_reset (&editor, browser);
 		  strcpy (editor.audio.path, sample_path);
