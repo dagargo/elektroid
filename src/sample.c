@@ -376,6 +376,8 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE * sndfile,
     {
       chunk_info.datalen = sizeof (struct smpl_chunk_data);
       memset (&smpl_chunk_data, 0, chunk_info.datalen);
+      debug_print (2, "%s chunk found (%d B)\n", SMPL_CHUNK_ID,
+		   chunk_info.datalen);
       chunk_info.data = &smpl_chunk_data;
       sf_get_chunk_data (chunk_iter, &chunk_info);
       sample_info->loop_start = le32toh (smpl_chunk_data.sample_loop.start);
@@ -391,6 +393,11 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE * sndfile,
 	{
 	  debug_print (2, "Bad loop end\n");
 	  disable_loop = TRUE;
+	}
+
+      while (chunk_iter)
+	{
+	  chunk_iter = sf_next_chunk_iterator (chunk_iter);
 	}
     }
   else
