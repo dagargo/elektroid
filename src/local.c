@@ -220,8 +220,9 @@ local_next_dentry_with_sample_info (struct item_iterator *iter)
 }
 
 static gint
-local_read_dir (struct backend *backend, struct item_iterator *iter,
-		const gchar * path, const gchar ** extensions)
+local_read_dir_opts (struct backend *backend, struct item_iterator *iter,
+		     const gchar * path, const gchar ** extensions,
+		     iterator_next next)
 {
   DIR *dir;
   struct local_iterator_data *data;
@@ -237,23 +238,27 @@ local_read_dir (struct backend *backend, struct item_iterator *iter,
   data->extensions = extensions;
 
   iter->data = data;
-  iter->next = local_next_dentry_without_sample_info;
+  iter->next = next;
   iter->free = local_free_iterator_data;
 
   return 0;
 }
 
 static gint
+local_read_dir (struct backend *backend, struct item_iterator *iter,
+		const gchar * path, const gchar ** extensions)
+{
+  return local_read_dir_opts (backend, iter, path, extensions,
+			      local_next_dentry_without_sample_info);
+}
+
+static gint
 local_samples_read_dir (struct backend *backend, struct item_iterator *iter,
 			const gchar * path, const gchar ** extensions)
 {
-  gint ret = local_read_dir (backend, iter, path,
-			     sample_get_sample_extensions ());
-  if (!ret)
-    {
-      iter->next = local_next_dentry_with_sample_info;
-    }
-  return ret;
+  return local_read_dir_opts (backend, iter, path,
+			      sample_get_sample_extensions (),
+			      local_next_dentry_with_sample_info);
 }
 
 static gint
