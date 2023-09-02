@@ -144,7 +144,7 @@ efactor_get_download_path (struct backend *backend,
   return path;
 }
 
-static guint
+static gint
 efactor_next_dentry (struct item_iterator *iter)
 {
   struct efactor_iter_data *data = iter->data;

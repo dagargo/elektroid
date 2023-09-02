@@ -152,7 +152,7 @@ local_free_iterator_data (void *iter_data)
   g_free (data);
 }
 
-static guint
+static gint
 local_next_dentry (struct item_iterator *iter, gboolean sample_info)
 {
   gchar *full_path;
@@ -207,13 +207,13 @@ local_next_dentry (struct item_iterator *iter, gboolean sample_info)
   return -ENOENT;
 }
 
-static guint
+static gint
 local_next_dentry_without_sample_info (struct item_iterator *iter)
 {
   return local_next_dentry (iter, FALSE);
 }
 
-static guint
+static gint
 local_next_dentry_with_sample_info (struct item_iterator *iter)
 {
   return local_next_dentry (iter, TRUE);

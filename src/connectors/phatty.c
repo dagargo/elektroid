@@ -208,7 +208,7 @@ phatty_get_preset_dump_msg (guint8 id)
   return tx_msg;
 }
 
-static guint
+static gint
 phatty_next_root_dentry (struct item_iterator *iter)
 {
   guint *next = iter->data;
@@ -236,7 +236,7 @@ phatty_next_root_dentry (struct item_iterator *iter)
   return 0;
 }
 
-static guint
+static gint
 phatty_next_preset_dentry (struct item_iterator *iter)
 {
   gchar preset_name[MOOG_NAME_LEN + 1];

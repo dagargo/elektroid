@@ -119,7 +119,7 @@ common_midi_program_change (struct backend *backend, const gchar * dir,
   backend_program_change (backend, 0, item->id);
 }
 
-guint
+gint
 common_simple_next_dentry (struct item_iterator *iter)
 {
   struct common_simple_read_dir_data *data = iter->data;
@@ -139,7 +139,7 @@ common_simple_next_dentry (struct item_iterator *iter)
   return 0;
 }
 
-guint
+gint
 common_data_upload (struct backend *backend, GByteArray * msg,
 		    struct job_control *control)
 {
@@ -178,7 +178,7 @@ cleanup:
 }
 
 
-guint
+gint
 common_data_download_part (struct backend *backend, GByteArray * tx_msg,
 			   GByteArray ** rx_msg, struct job_control *control)
 {
@@ -212,7 +212,7 @@ cleanup:
   return err;
 }
 
-guint
+gint
 common_data_download (struct backend *backend, GByteArray * tx_msg,
 		      GByteArray ** rx_msg, struct job_control *control)
 {

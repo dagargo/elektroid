@@ -144,7 +144,7 @@ summit_get_patch_download_path (struct backend *backend,
   return path;
 }
 
-static guint
+static gint
 summit_patch_next_dentry (struct item_iterator *iter)
 {
   GByteArray *tx_msg, *rx_msg;
@@ -180,7 +180,7 @@ summit_patch_next_dentry (struct item_iterator *iter)
   return 0;
 }
 
-static guint
+static gint
 summit_patch_next_dentry_root (struct item_iterator *iter)
 {
   guint *next = iter->data;
@@ -686,7 +686,7 @@ summit_get_wavetable_wave_dump_msg (guint id, guint8 wave)
   return tx_msg;
 }
 
-static guint
+static gint
 summit_wavetable_next_dentry (struct item_iterator *iter)
 {
   GByteArray *tx_msg, *rx_msg;

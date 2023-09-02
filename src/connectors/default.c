@@ -24,7 +24,7 @@
 
 #define DEFAULT_MAX_PROGRAMS 128
 
-static guint
+static gint
 default_next_dentry (struct item_iterator *iter)
 {
   guint *data = iter->data;

@@ -88,7 +88,7 @@ cz_get_program_dump_msg (guint8 id)
   return tx_msg;
 }
 
-static guint
+static gint
 cz_next_dentry_root (struct item_iterator *iter)
 {
   GByteArray *tx_msg, *rx_msg;
@@ -135,7 +135,7 @@ cz_next_dentry_root (struct item_iterator *iter)
     }
 }
 
-static guint
+static gint
 cz_next_dentry (struct item_iterator *iter)
 {
   struct cz_type_iterator_data *data = iter->data;

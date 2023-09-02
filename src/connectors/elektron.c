@@ -265,7 +265,7 @@ elektron_get_msg_string (const GByteArray * msg)
   return (gchar *) & msg->data[6];
 }
 
-static guint
+static gint
 elektron_next_smplrw_entry (struct item_iterator *iter)
 {
   guint32 *data32;
@@ -1993,7 +1993,7 @@ elektron_ping (struct backend *backend)
   return rx_msg;
 }
 
-static guint
+static gint
 elektron_next_data_entry (struct item_iterator *iter)
 {
   gchar *name_cp1252;

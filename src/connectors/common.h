@@ -43,18 +43,17 @@ void common_print_item (struct item_iterator *iter, struct backend *backend,
 void common_midi_program_change (struct backend *backend, const gchar * dir,
 				 struct item *item);
 
-guint common_simple_next_dentry (struct item_iterator *iter);
+gint common_simple_next_dentry (struct item_iterator *iter);
 
-guint common_data_upload (struct backend *backend, GByteArray * msg,
-			  struct job_control *control);
+gint common_data_upload (struct backend *backend, GByteArray * msg,
+			 struct job_control *control);
 
-guint common_data_download (struct backend *backend, GByteArray * tx_msg,
-			    GByteArray ** rx_msg,
-			    struct job_control *control);
+gint common_data_download (struct backend *backend, GByteArray * tx_msg,
+			   GByteArray ** rx_msg, struct job_control *control);
 
-guint common_data_download_part (struct backend *backend, GByteArray * tx_msg,
-				 GByteArray ** rx_msg,
-				 struct job_control *control);
+gint common_data_download_part (struct backend *backend, GByteArray * tx_msg,
+				GByteArray ** rx_msg,
+				struct job_control *control);
 
 gchar *common_get_download_path_with_params (struct backend *backend,
 					     const struct fs_operations *ops,

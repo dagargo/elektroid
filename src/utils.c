@@ -217,7 +217,7 @@ get_filename (guint32 fs_options, struct item *item)
   return strdup (item->name);
 }
 
-guint
+gint
 next_item_iterator (struct item_iterator *iter)
 {
   return iter->next (iter);

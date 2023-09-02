@@ -76,7 +76,7 @@ struct backend;
 
 struct item_iterator;
 
-typedef guint (*iterator_next) (struct item_iterator *);
+typedef gint (*iterator_next) (struct item_iterator *);
 
 typedef void (*iterator_free) (void *);
 
@@ -278,7 +278,7 @@ void free_msg (gpointer);
  */
 gchar *get_filename (guint32 options, struct item *item);
 
-guint next_item_iterator (struct item_iterator *);
+gint next_item_iterator (struct item_iterator *);
 
 void free_item_iterator (struct item_iterator *);
 
