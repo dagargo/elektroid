@@ -34,6 +34,7 @@ struct browser_add_dentry_item_data
   struct browser *browser;
   struct item item;
   const gchar *icon;
+  gchar *rel_path;
 };
 
 static void
@@ -241,7 +242,7 @@ browser_add_dentry_item (gpointer data)
 				     ELEKTROID_DIR ? DIR_ICON :
 				     add_data->icon,
 				     BROWSER_LIST_STORE_NAME_FIELD,
-				     item->name,
+				     add_data->rel_path,
 				     BROWSER_LIST_STORE_SIZE_FIELD,
 				     item->size,
 				     BROWSER_LIST_STORE_SIZE_STR_FIELD,
@@ -338,6 +339,7 @@ browser_add_dentry_item (gpointer data)
       g_value_unset (&v);
     }
 
+  g_free (add_data->rel_path);
   g_free (add_data);
 
   return G_SOURCE_REMOVE;
@@ -394,6 +396,66 @@ browser_load_dir_runner_update_ui (gpointer data)
   return FALSE;
 }
 
+static void
+browser_iterate_dir_add (struct browser *browser, struct item_iterator *iter,
+			 const gchar * icon, struct item *item,
+			 gchar * rel_path)
+{
+  struct browser_add_dentry_item_data *data =
+    g_malloc (sizeof (struct browser_add_dentry_item_data));
+  data->browser = browser;
+  memcpy (&data->item, &iter->item, sizeof (struct item));
+  data->icon = icon;
+  data->rel_path = rel_path;
+  g_idle_add (browser_add_dentry_item, data);
+}
+
+static void
+browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
+		     const gchar * icon)
+{
+  while (!next_item_iterator (iter))
+    {
+      browser_iterate_dir_add (browser, iter, icon, &iter->item,
+			       strdup (iter->item.name));
+    }
+  free_item_iterator (iter);
+}
+
+static void
+browser_iterate_dir_recursive (struct browser *browser, const gchar * rel_dir,
+			       struct item_iterator *iter, const gchar * icon,
+			       const gchar ** extensions)
+{
+  gint err;
+  gchar *child_dir, *child_rel_dir;
+  struct item_iterator child_iter;
+
+  while (!next_item_iterator (iter))
+    {
+      child_rel_dir = path_chain (PATH_SYSTEM, rel_dir, iter->item.name);
+      if (iter->item.type == ELEKTROID_DIR)
+	{
+	  child_dir = path_chain (PATH_SYSTEM, browser->dir, child_rel_dir);
+	  err = browser->fs_ops->readdir (browser->backend, &child_iter,
+					  child_dir, extensions);
+	  if (!err)
+	    {
+	      browser_iterate_dir_recursive (browser, child_rel_dir,
+					     &child_iter, icon, extensions);
+	    }
+	  g_free (child_dir);
+	}
+      else
+	{
+          browser_iterate_dir_add (browser, iter, icon, &iter->item,
+				   strdup (child_rel_dir));
+	}
+      g_free (child_rel_dir);
+    }
+  free_item_iterator (iter);
+}
+
 static gpointer
 browser_load_dir_runner (gpointer data)
 {
@@ -423,16 +485,8 @@ browser_load_dir_runner (gpointer data)
       goto end;
     }
 
-  while (!next_item_iterator (&iter))
-    {
-      struct browser_add_dentry_item_data *data =
-	g_malloc (sizeof (struct browser_add_dentry_item_data));
-      data->browser = browser;
-      memcpy (&data->item, &iter.item, sizeof (struct item));
-      data->icon = icon;
-      g_idle_add (browser_add_dentry_item, data);
-    }
-  free_item_iterator (&iter);
+  browser_iterate_dir (browser, &iter, icon);
+  // browser_iterate_dir_recursive (browser, "", &iter, icon, extensions);
 
 end:
   g_idle_add (browser_load_dir_runner_update_ui, browser);
