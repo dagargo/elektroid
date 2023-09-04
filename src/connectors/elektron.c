@@ -3098,7 +3098,8 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
 
 static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .fs = FS_RAW_PRESETS,
-  .options = 0,
+  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_SHOW_SIZE_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = BE_FILE_ICON_SND,
