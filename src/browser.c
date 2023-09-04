@@ -184,6 +184,8 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 
   if (item.type == ELEKTROID_DIR)
     {
+      browser_close_search (NULL, browser);
+
       enum path_type type = path_type_from_backend (browser->backend);
       gchar *new_dir = path_chain (type, browser->dir, item.name);
       g_free (browser->dir);
@@ -350,7 +352,7 @@ browser_load_dir_runner_hide_spinner (gpointer data)
 {
   struct browser *browser = data;
   gtk_spinner_stop (GTK_SPINNER (browser->spinner));
-  gtk_stack_set_visible_child_name (GTK_STACK (browser->stack), "list");
+  gtk_stack_set_visible_child_name (GTK_STACK (browser->list_stack), "list");
   return FALSE;
 }
 
@@ -360,22 +362,30 @@ browser_load_dir_runner_show_spinner_and_lock_browser (gpointer data)
   struct browser *browser = data;
   g_slist_foreach (browser->sensitive_widgets, browser_widget_set_insensitive,
 		   NULL);
-  gtk_stack_set_visible_child_name (GTK_STACK (browser->stack), "spinner");
+  gtk_stack_set_visible_child_name (GTK_STACK (browser->list_stack),
+				    "spinner");
   gtk_spinner_start (GTK_SPINNER (browser->spinner));
   return FALSE;
+}
+
+static void
+browser_wait (struct browser *browser)
+{
+  if (browser->thread)
+    {
+      g_thread_join (browser->thread);
+      browser->thread = NULL;
+    }
 }
 
 static gboolean
 browser_load_dir_runner_update_ui (gpointer data)
 {
   struct browser *browser = data;
-  gboolean active = !browser->backend
-    || browser->backend->type == BE_TYPE_SYSTEM;
+  gboolean active = (!browser->backend
+		     || browser->backend->type == BE_TYPE_SYSTEM);
 
-  notifier_set_active (browser->notifier, active);
-
-  g_thread_join (browser->thread);
-  browser->thread = NULL;
+  browser_wait (browser);
 
   if (browser->check_callback)
     {
@@ -383,15 +393,23 @@ browser_load_dir_runner_update_ui (gpointer data)
     }
   gtk_tree_view_columns_autosize (browser->view);
 
-  g_mutex_lock (&browser->mutex);
-  browser->loading = FALSE;
-  g_mutex_unlock (&browser->mutex);
-
-  gtk_widget_grab_focus (GTK_WIDGET (browser->view));
+  if (!browser->search_mode)
+    {
+      gtk_widget_grab_focus (GTK_WIDGET (browser->view));
+      notifier_set_active (browser->notifier, active);
+    }
 
   //Unlock browser
   g_slist_foreach (browser->sensitive_widgets, browser_widget_set_sensitive,
 		   NULL);
+
+  g_mutex_lock (&browser->mutex);
+  if (!browser->loading)
+    {
+      browser_clear (browser);
+    }
+  browser->loading = FALSE;
+  g_mutex_unlock (&browser->mutex);
 
   return FALSE;
 }
@@ -401,6 +419,14 @@ browser_iterate_dir_add (struct browser *browser, struct item_iterator *iter,
 			 const gchar * icon, struct item *item,
 			 gchar * rel_path)
 {
+  if (browser->filter)
+    {
+      if (!g_str_match_string (browser->filter, iter->item.name, TRUE))
+	{
+	  return;
+	}
+    }
+
   struct browser_add_dentry_item_data *data =
     g_malloc (sizeof (struct browser_add_dentry_item_data));
   data->browser = browser;
@@ -414,10 +440,16 @@ static void
 browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
 		     const gchar * icon)
 {
-  while (!next_item_iterator (iter))
+  gboolean loading = TRUE;
+
+  while (loading && !next_item_iterator (iter))
     {
       browser_iterate_dir_add (browser, iter, icon, &iter->item,
 			       strdup (iter->item.name));
+
+      g_mutex_lock (&browser->mutex);
+      loading = browser->loading;
+      g_mutex_unlock (&browser->mutex);
     }
   free_item_iterator (iter);
 }
@@ -430,10 +462,15 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar * rel_dir,
   gint err;
   gchar *child_dir, *child_rel_dir;
   struct item_iterator child_iter;
+  gboolean loading = TRUE;
 
-  while (!next_item_iterator (iter))
+  while (loading && !next_item_iterator (iter))
     {
       child_rel_dir = path_chain (PATH_SYSTEM, rel_dir, iter->item.name);
+
+      browser_iterate_dir_add (browser, iter, icon, &iter->item,
+			       strdup (child_rel_dir));
+
       if (iter->item.type == ELEKTROID_DIR)
 	{
 	  child_dir = path_chain (PATH_SYSTEM, browser->dir, child_rel_dir);
@@ -446,12 +483,11 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar * rel_dir,
 	    }
 	  g_free (child_dir);
 	}
-      else
-	{
-          browser_iterate_dir_add (browser, iter, icon, &iter->item,
-				   strdup (child_rel_dir));
-	}
       g_free (child_rel_dir);
+
+      g_mutex_lock (&browser->mutex);
+      loading = browser->loading;
+      g_mutex_unlock (&browser->mutex);
     }
   free_item_iterator (iter);
 }
@@ -464,6 +500,7 @@ browser_load_dir_runner (gpointer data)
   struct item_iterator iter;
   const gchar **extensions = NULL;
   const gchar *icon = browser->fs_ops->gui_icon;
+  gboolean search_mode;
 
   if (browser->fs_ops == &FS_LOCAL_GENERIC_OPERATIONS &&
       remote_browser.fs_ops->get_ext)
@@ -485,8 +522,17 @@ browser_load_dir_runner (gpointer data)
       goto end;
     }
 
-  browser_iterate_dir (browser, &iter, icon);
-  // browser_iterate_dir_recursive (browser, "", &iter, icon, extensions);
+  g_mutex_lock (&browser->mutex);
+  search_mode = browser->search_mode;
+  g_mutex_unlock (&browser->mutex);
+  if (search_mode)
+    {
+      browser_iterate_dir_recursive (browser, "", &iter, icon, extensions);
+    }
+  else
+    {
+      browser_iterate_dir (browser, &iter, icon);
+    }
 
 end:
   g_idle_add (browser_load_dir_runner_update_ui, browser);
@@ -527,13 +573,44 @@ browser_load_dir (gpointer data)
 void
 browser_update_fs_options (struct browser *browser)
 {
+  GtkTreeSortable *sortable =
+    GTK_TREE_SORTABLE (gtk_tree_view_get_model (browser->view));
+
   gtk_widget_set_visible (browser->add_dir_button,
-			  browser->fs_ops && browser->fs_ops->mkdir != NULL);
+			  !browser->fs_ops || browser->fs_ops->mkdir);
+  gtk_widget_set_visible (browser->search_button,
+			  !browser->fs_ops ||
+			  browser->fs_ops->options & FS_OPTION_ALLOW_SEARCH);
   gtk_widget_set_sensitive (browser->refresh_button,
-			    browser->fs_ops
-			    && browser->fs_ops->readdir != NULL);
-  gtk_widget_set_sensitive (browser->up_button, browser->fs_ops
-			    && browser->fs_ops->readdir != NULL);
+			    browser->fs_ops && browser->fs_ops->readdir);
+  gtk_widget_set_sensitive (browser->up_button, browser->fs_ops &&
+			    browser->fs_ops->readdir);
+
+  if (browser->fs_ops && browser->fs_ops->options & FS_OPTION_SORT_BY_ID)
+    {
+      gtk_tree_sortable_set_sort_func (sortable,
+				       BROWSER_LIST_STORE_ID_FIELD,
+				       browser_sort_by_id, NULL, NULL);
+      gtk_tree_sortable_set_sort_column_id (sortable,
+					    BROWSER_LIST_STORE_ID_FIELD,
+					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+    }
+  else if (browser->fs_ops
+	   && browser->fs_ops->options & FS_OPTION_SORT_BY_NAME)
+    {
+      gtk_tree_sortable_set_sort_func (sortable,
+				       BROWSER_LIST_STORE_NAME_FIELD,
+				       browser_sort_by_name, NULL, NULL);
+      gtk_tree_sortable_set_sort_column_id (sortable,
+					    BROWSER_LIST_STORE_NAME_FIELD,
+					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+    }
+  else
+    {
+      gtk_tree_sortable_set_sort_column_id (sortable,
+					    GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID,
+					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+    }
 }
 
 void
@@ -550,41 +627,9 @@ browser_destroy (struct browser *browser)
   g_free (browser->notifier);
   if (browser->thread)
     {
-      g_thread_join (browser->thread);
+      browser_wait (browser);
     }
   g_slist_free (browser->sensitive_widgets);
-}
-
-void
-browser_set_options (struct browser *browser)
-{
-  GtkTreeSortable *sortable =
-    GTK_TREE_SORTABLE (gtk_tree_view_get_model (browser->view));
-
-  if (browser->fs_ops->options & FS_OPTION_SORT_BY_ID)
-    {
-      gtk_tree_sortable_set_sort_func (sortable,
-				       BROWSER_LIST_STORE_ID_FIELD,
-				       browser_sort_by_id, NULL, NULL);
-      gtk_tree_sortable_set_sort_column_id (sortable,
-					    BROWSER_LIST_STORE_ID_FIELD,
-					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
-    }
-  else if (browser->fs_ops->options & FS_OPTION_SORT_BY_NAME)
-    {
-      gtk_tree_sortable_set_sort_func (sortable,
-				       BROWSER_LIST_STORE_NAME_FIELD,
-				       browser_sort_by_name, NULL, NULL);
-      gtk_tree_sortable_set_sort_column_id (sortable,
-					    BROWSER_LIST_STORE_NAME_FIELD,
-					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
-    }
-  else
-    {
-      gtk_tree_sortable_set_sort_column_id (sortable,
-					    GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID,
-					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
-    }
 }
 
 void
@@ -612,4 +657,60 @@ browser_set_dnd_function (struct browser *browser, GSourceFunc function)
   browser_clear_dnd_function (browser);
   browser->dnd_timeout_function_id = g_timeout_add (DND_TIMEOUT, function,
 						    browser);
+}
+
+void
+browser_open_search (GtkWidget * widget, gpointer data)
+{
+  struct browser *browser = data;
+  gtk_stack_set_visible_child_name (GTK_STACK (browser->buttons_stack),
+				    "search");
+
+  g_mutex_lock (&browser->mutex);
+  browser->loading = FALSE;
+  browser->search_mode = TRUE;
+  g_mutex_unlock (&browser->mutex);
+  browser_wait (browser);
+
+  browser_clear (browser);
+}
+
+void
+browser_close_search (GtkSearchEntry * entry, gpointer data)
+{
+  struct browser *browser = data;
+  gtk_stack_set_visible_child_name (GTK_STACK (browser->buttons_stack),
+				    "buttons");
+
+  g_mutex_lock (&browser->mutex);
+  browser->loading = FALSE;
+  browser->search_mode = FALSE;
+  g_mutex_unlock (&browser->mutex);
+  browser_wait (browser);
+
+  gtk_entry_set_text (GTK_ENTRY (browser->search_entry), "");
+  browser->filter = NULL;
+  browser_refresh (NULL, browser);
+}
+
+void
+browser_search_changed (GtkSearchEntry * entry, gpointer data)
+{
+  struct browser *browser = data;
+  const gchar *filter = gtk_entry_get_text (GTK_ENTRY (entry));
+
+  g_mutex_lock (&browser->mutex);
+  browser->loading = FALSE;
+  g_mutex_unlock (&browser->mutex);
+  browser_wait (browser);
+
+  if (strlen (filter))
+    {
+      browser->filter = filter;
+      browser_refresh (NULL, browser);
+    }
+  else
+    {
+      browser_clear (browser);
+    }
 }

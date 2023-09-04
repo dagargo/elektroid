@@ -3052,7 +3052,7 @@ elektron_get_sample_path_from_hash_size (struct backend *backend,
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SORT_BY_NAME |
-    FS_OPTION_SHOW_SIZE_COLUMN,
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "sample",
   .gui_name = "Samples",
   .gui_icon = BE_FILE_ICON_WAVE,

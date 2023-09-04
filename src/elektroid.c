@@ -2252,11 +2252,9 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
     {
       last_local_fs_ops = local_browser.fs_ops;
       local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
-      if (last_local_fs_ops != local_browser.fs_ops)
-	{
-	  elektroid_disable_sample_widgets (&local_browser);
-	  browser_load_dir (&local_browser);
-	}
+      elektroid_disable_sample_widgets (&local_browser);
+      browser_update_fs_options (&local_browser);
+      browser_load_dir (&local_browser);
 
       browser_reset (&remote_browser);
       browser_update_fs_options (&remote_browser);
@@ -2413,7 +2411,9 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 	}
     }
 
-  browser_set_options (&remote_browser);
+
+
+  browser_update_fs_options (&local_browser);
 
   elektroid_disable_sample_widgets (&remote_browser);
   browser_load_dir (&remote_browser);
@@ -3167,12 +3167,18 @@ elektroid_run (int argc, char *argv[])
     .name = "remote",
     .view =
       GTK_TREE_VIEW (gtk_builder_get_object (builder, "remote_tree_view")),
+    .buttons_stack =
+      GTK_WIDGET (gtk_builder_get_object (builder, "remote_buttons_stack")),
     .up_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_up_button")),
     .add_dir_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_add_dir_button")),
     .refresh_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_refresh_button")),
+    .search_button =
+      GTK_WIDGET (gtk_builder_get_object (builder, "remote_search_button")),
+    .search_entry =
+      GTK_WIDGET (gtk_builder_get_object (builder, "remote_search_entry")),
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry")),
     .menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu")),
@@ -3182,7 +3188,8 @@ elektroid_run (int argc, char *argv[])
     .backend = &backend,
     .check_callback = elektroid_check_backend,
     .sensitive_widgets = NULL,
-    .stack = GTK_WIDGET (gtk_builder_get_object (builder, "remote_stack")),
+    .list_stack =
+      GTK_WIDGET (gtk_builder_get_object (builder, "remote_list_stack")),
     .spinner =
       GTK_WIDGET (gtk_builder_get_object (builder, "remote_spinner")),
     .transfer_menuitem =
@@ -3229,12 +3236,18 @@ elektroid_run (int argc, char *argv[])
     .name = "local",
     .view =
       GTK_TREE_VIEW (gtk_builder_get_object (builder, "local_tree_view")),
+    .buttons_stack =
+      GTK_WIDGET (gtk_builder_get_object (builder, "local_buttons_stack")),
     .up_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "local_up_button")),
     .add_dir_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "local_add_dir_button")),
     .refresh_button =
       GTK_WIDGET (gtk_builder_get_object (builder, "local_refresh_button")),
+    .search_button =
+      GTK_WIDGET (gtk_builder_get_object (builder, "local_search_button")),
+    .search_entry =
+      GTK_WIDGET (gtk_builder_get_object (builder, "local_search_entry")),
     .dir_entry =
       GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry")),
     .menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu")),
@@ -3244,7 +3257,8 @@ elektroid_run (int argc, char *argv[])
     .backend = NULL,
     .check_callback = NULL,
     .sensitive_widgets = NULL,
-    .stack = GTK_WIDGET (gtk_builder_get_object (builder, "local_stack")),
+    .list_stack =
+      GTK_WIDGET (gtk_builder_get_object (builder, "local_list_stack")),
     .spinner = GTK_WIDGET (gtk_builder_get_object (builder, "local_spinner")),
     .transfer_menuitem =
       GTK_WIDGET (gtk_builder_get_object (builder, "upload_menuitem")),
@@ -3322,6 +3336,12 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_add_dir), &remote_browser);
   g_signal_connect (remote_browser.refresh_button, "clicked",
 		    G_CALLBACK (browser_refresh), &remote_browser);
+  g_signal_connect (remote_browser.search_button, "clicked",
+		    G_CALLBACK (browser_open_search), &remote_browser);
+  g_signal_connect (remote_browser.search_entry, "stop-search",
+		    G_CALLBACK (browser_close_search), &remote_browser);
+  g_signal_connect (remote_browser.search_entry, "search-changed",
+		    G_CALLBACK (browser_search_changed), &remote_browser);
   g_signal_connect (remote_browser.view, "button-press-event",
 		    G_CALLBACK (elektroid_button_press), &remote_browser);
   g_signal_connect (remote_browser.view, "button-release-event",
@@ -3362,6 +3382,12 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_add_dir), &local_browser);
   g_signal_connect (local_browser.refresh_button, "clicked",
 		    G_CALLBACK (browser_refresh), &local_browser);
+  g_signal_connect (local_browser.search_button, "clicked",
+		    G_CALLBACK (browser_open_search), &local_browser);
+  g_signal_connect (local_browser.search_entry, "stop-search",
+		    G_CALLBACK (browser_close_search), &local_browser);
+  g_signal_connect (local_browser.search_entry, "search-changed",
+		    G_CALLBACK (browser_search_changed), &local_browser);
   g_signal_connect (local_browser.view, "button-press-event",
 		    G_CALLBACK (elektroid_button_press), &local_browser);
   g_signal_connect (local_browser.view, "button-release-event",
@@ -3384,8 +3410,6 @@ elektroid_run (int argc, char *argv[])
 		    G_CALLBACK (elektroid_drag_motion_up), &local_browser);
   g_signal_connect (local_browser.up_button, "drag-leave",
 		    G_CALLBACK (elektroid_drag_leave_up), &local_browser);
-
-  browser_set_options (&local_browser);
 
   gtk_drag_source_set ((GtkWidget *) local_browser.view, GDK_BUTTON1_MASK,
 		       TARGET_ENTRIES_LOCAL_SRC,
@@ -3420,15 +3444,39 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
 
   local_browser.sensitive_widgets =
-    g_slist_append (local_browser.sensitive_widgets, local_box);
+    g_slist_append (local_browser.sensitive_widgets, local_browser.view);
+  local_browser.sensitive_widgets =
+    g_slist_append (local_browser.sensitive_widgets, local_browser.up_button);
+  local_browser.sensitive_widgets =
+    g_slist_append (local_browser.sensitive_widgets,
+		    local_browser.add_dir_button);
+  local_browser.sensitive_widgets =
+    g_slist_append (local_browser.sensitive_widgets,
+		    local_browser.refresh_button);
+  local_browser.sensitive_widgets =
+    g_slist_append (local_browser.sensitive_widgets,
+		    local_browser.search_button);
+
   remote_browser.sensitive_widgets =
     g_slist_append (remote_browser.sensitive_widgets, devices_combo);
   remote_browser.sensitive_widgets =
     g_slist_append (remote_browser.sensitive_widgets, refresh_devices_button);
   remote_browser.sensitive_widgets =
-    g_slist_append (remote_browser.sensitive_widgets, remote_box);
-  remote_browser.sensitive_widgets =
     g_slist_append (remote_browser.sensitive_widgets, fs_combo);
+  remote_browser.sensitive_widgets =
+    g_slist_append (remote_browser.sensitive_widgets, remote_browser.view);
+  remote_browser.sensitive_widgets =
+    g_slist_append (remote_browser.sensitive_widgets,
+		    remote_browser.up_button);
+  remote_browser.sensitive_widgets =
+    g_slist_append (remote_browser.sensitive_widgets,
+		    remote_browser.add_dir_button);
+  remote_browser.sensitive_widgets =
+    g_slist_append (remote_browser.sensitive_widgets,
+		    remote_browser.refresh_button);
+  remote_browser.sensitive_widgets =
+    g_slist_append (remote_browser.sensitive_widgets,
+		    remote_browser.search_button);
 
   editor_init (&editor, builder);
   tasks_init (&tasks, builder);
@@ -3445,6 +3493,7 @@ elektroid_run (int argc, char *argv[])
   g_idle_add (elektroid_load_devices_bg, NULL);
   gtk_widget_show (main_window);
 
+  browser_update_fs_options (&local_browser);
   browser_load_dir (&local_browser);
 
   ma_data.backend = &backend;

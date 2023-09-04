@@ -51,9 +51,12 @@ struct browser
   const gchar *name;
   GSourceFunc check_selection;
   GtkTreeView *view;
+  GtkWidget *buttons_stack;
   GtkWidget *up_button;
   GtkWidget *add_dir_button;
   GtkWidget *refresh_button;
+  GtkWidget *search_button;
+  GtkWidget *search_entry;
   GtkEntry *dir_entry;
   gchar *dir;
   GtkMenu *menu;
@@ -67,12 +70,14 @@ struct browser
   struct notifier *notifier;
   //Background loading members
   GSList *sensitive_widgets;
-  GtkWidget *stack;
+  GtkWidget *list_stack;
   GtkWidget *spinner;
   GThread *thread;
   GMutex mutex;
   gboolean loading;
   gboolean dirty;
+  gboolean search_mode;
+  const gchar *filter;
   //Menu
   GtkWidget *transfer_menuitem;
   GtkWidget *play_separator;
@@ -113,8 +118,6 @@ void browser_init (struct browser *);
 
 void browser_destroy (struct browser *);
 
-void browser_set_options (struct browser *);
-
 gboolean browser_set_file_extensions (struct browser *, const gchar **);
 
 gboolean browser_set_file_extension (struct browser *, gchar *);
@@ -124,5 +127,11 @@ void browser_reset (struct browser *);
 void browser_clear_dnd_function (struct browser *);
 
 void browser_set_dnd_function (struct browser *, GSourceFunc);
+
+void browser_open_search (GtkWidget *, gpointer);
+
+void browser_close_search (GtkSearchEntry *, gpointer);
+
+void browser_search_changed (GtkSearchEntry *, gpointer);
 
 #endif
