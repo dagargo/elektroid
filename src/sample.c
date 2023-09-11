@@ -551,7 +551,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     {
       g_mutex_lock (&control->mutex);
     }
-  sample_info_dst->frames = sample_info_src->frames * ratio;
+  sample_info_dst->frames = ceil (sample_info_src->frames * ratio);
   sample_info_dst->loop_start = round (sample_info_src->loop_start * ratio);
   sample_info_dst->loop_end = round (sample_info_src->loop_end * ratio);
   if (control)
