@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.38.2 
+<!-- Generated with glade 3.40.0 
 
 Copyright (C) David García Goñi
 
@@ -39,27 +39,18 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <object class="GtkLabel">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="margin-start">6</property>
-        <property name="margin-end">6</property>
-        <property name="margin-top">6</property>
-        <property name="margin-bottom">6</property>
         <property name="label" translatable="yes">This procedure calibrates the pitch bend and modulation wheels.</property>
         <property name="wrap">True</property>
       </object>
       <packing>
         <property name="title" translatable="yes">Start</property>
         <property name="complete">True</property>
-        <property name="has-padding">False</property>
       </packing>
     </child>
     <child>
       <object class="GtkLabel">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="margin-start">6</property>
-        <property name="margin-end">6</property>
-        <property name="margin-top">6</property>
-        <property name="margin-bottom">6</property>
         <property name="label" translatable="yes">Let the pitch bend wheel rest at the neutral position and click on the next button.</property>
         <property name="wrap">True</property>
       </object>
@@ -67,17 +58,12 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         <property name="page-type">intro</property>
         <property name="title" translatable="yes">Step 1</property>
         <property name="complete">True</property>
-        <property name="has-padding">False</property>
       </packing>
     </child>
     <child>
       <object class="GtkLabel">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="margin-start">6</property>
-        <property name="margin-end">6</property>
-        <property name="margin-top">6</property>
-        <property name="margin-bottom">6</property>
         <property name="label" translatable="yes">While setting both wheels at the bottom click on the next button.</property>
         <property name="wrap">True</property>
       </object>
@@ -85,17 +71,12 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         <property name="page-type">intro</property>
         <property name="title" translatable="yes">Step 2</property>
         <property name="complete">True</property>
-        <property name="has-padding">False</property>
       </packing>
     </child>
     <child>
       <object class="GtkLabel">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="margin-start">6</property>
-        <property name="margin-end">6</property>
-        <property name="margin-top">6</property>
-        <property name="margin-bottom">6</property>
         <property name="label" translatable="yes">While setting both wheels at the top click on the next button.</property>
         <property name="wrap">True</property>
       </object>
@@ -103,17 +84,12 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         <property name="page-type">intro</property>
         <property name="title" translatable="yes">Step 3</property>
         <property name="complete">True</property>
-        <property name="has-padding">False</property>
       </packing>
     </child>
     <child>
       <object class="GtkLabel">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
-        <property name="margin-start">6</property>
-        <property name="margin-end">6</property>
-        <property name="margin-top">6</property>
-        <property name="margin-bottom">6</property>
         <property name="label" translatable="yes">Calibration completed</property>
         <property name="wrap">True</property>
       </object>
@@ -121,16 +97,12 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         <property name="page-type">summary</property>
         <property name="title" translatable="yes">End</property>
         <property name="complete">True</property>
-        <property name="has-padding">False</property>
       </packing>
     </child>
     <child internal-child="action_area">
       <object class="GtkBox">
         <property name="can-focus">False</property>
       </object>
-      <packing>
-        <property name="has-padding">False</property>
-      </packing>
     </child>
   </object>
   <object class="GtkListStore" id="gate_lengths">
