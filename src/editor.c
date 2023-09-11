@@ -452,19 +452,19 @@ editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
 
   set_job_control_progress_no_sync (control, p, NULL);
   g_idle_add (editor_queue_draw, data);
+  completed = editor_loading_completed_no_lock (editor, &actual_frames);
   if (!editor->ready)
     {
-      completed = editor_loading_completed_no_lock (editor, &actual_frames);
       ready_to_play = completed || actual_frames >= FRAMES_TO_PLAY;
       if (ready_to_play)
 	{
 	  g_idle_add (editor_update_ui_on_load, data);
 	  editor->ready = TRUE;
 	}
-      if (completed)
-	{
-	  g_idle_add (editor_join_load_thread, data);
-	}
+    }
+  if (completed)
+    {
+      g_idle_add (editor_join_load_thread, data);
     }
 }
 
