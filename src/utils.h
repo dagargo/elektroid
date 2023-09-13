@@ -249,7 +249,6 @@ enum fs_options
   FS_OPTION_SORT_BY_ID = 0x100,
   FS_OPTION_SORT_BY_NAME = 0x200,
   FS_OPTION_SAMPLE_ATTRS = 0x400,
-  //Show a search button. This is not compatible with slot storage.
   FS_OPTION_ALLOW_SEARCH = 0x800
 };
 

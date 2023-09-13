@@ -3148,7 +3148,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .fs = FS_DATA_PRJ,
   .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SHOW_SLOT_COLUMN,
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "project",
   .gui_name = "Projects",
   .gui_icon = BE_FILE_ICON_PRJ,
@@ -3174,7 +3174,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .fs = FS_DATA_SND,
   .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SHOW_SLOT_COLUMN,
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "sound",
   .gui_name = "Sounds",
   .gui_icon = BE_FILE_ICON_SND,
