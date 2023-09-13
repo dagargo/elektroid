@@ -632,6 +632,22 @@ browser_destroy (struct browser *browser)
   g_slist_free (browser->sensitive_widgets);
 }
 
+static void
+browser_reset_search (struct browser *browser)
+{
+  gtk_stack_set_visible_child_name (GTK_STACK (browser->buttons_stack),
+				    "buttons");
+
+  g_mutex_lock (&browser->mutex);
+  browser->loading = FALSE;
+  browser->search_mode = FALSE;
+  g_mutex_unlock (&browser->mutex);
+  browser_wait (browser);
+
+  gtk_entry_set_text (GTK_ENTRY (browser->search_entry), "");
+  browser->filter = NULL;
+}
+
 void
 browser_reset (struct browser *browser)
 {
@@ -639,6 +655,7 @@ browser_reset (struct browser *browser)
   g_free (browser->dir);
   browser->dir = NULL;
   browser_clear (browser);
+  browser_reset_search (browser);
 }
 
 void
@@ -678,19 +695,8 @@ browser_open_search (GtkWidget * widget, gpointer data)
 void
 browser_close_search (GtkSearchEntry * entry, gpointer data)
 {
-  struct browser *browser = data;
-  gtk_stack_set_visible_child_name (GTK_STACK (browser->buttons_stack),
-				    "buttons");
-
-  g_mutex_lock (&browser->mutex);
-  browser->loading = FALSE;
-  browser->search_mode = FALSE;
-  g_mutex_unlock (&browser->mutex);
-  browser_wait (browser);
-
-  gtk_entry_set_text (GTK_ENTRY (browser->search_entry), "");
-  browser->filter = NULL;
-  browser_refresh (NULL, browser);
+  browser_reset_search (data);
+  browser_refresh (NULL, data);
 }
 
 void
