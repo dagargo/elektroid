@@ -249,6 +249,7 @@ enum fs_options
   FS_OPTION_SORT_BY_ID = 0x100,
   FS_OPTION_SORT_BY_NAME = 0x200,
   FS_OPTION_SAMPLE_ATTRS = 0x400,
+  //This requires the function readdir to be relatively fast because canceling the search will block the GUI.
   FS_OPTION_ALLOW_SEARCH = 0x800
 };
 
