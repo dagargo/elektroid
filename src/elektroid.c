@@ -39,11 +39,9 @@
 #include "menu_action.h"
 #include "progress.h"
 
-#define EDITOR_VISIBLE (remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE)
+#define EDITOR_VISIBLE (remote_browser.browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE)
 
 #define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : path_type_from_backend (&backend))
-
-#define OTHER_BROWSER(b) (b == &local_browser ? &remote_browser : &local_browser)
 
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
@@ -132,8 +130,8 @@ static const gchar *hostname;
 
 struct editor editor;
 struct tasks tasks;
-struct browser local_browser;
-struct browser remote_browser;
+extern struct local_browser local_browser;
+extern struct remote_browser remote_browser;
 
 static struct backend backend;
 static struct preferences preferences;
@@ -161,15 +159,6 @@ static GtkListStore *devices_list_store;
 static GtkWidget *devices_combo;
 static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
-static GtkTreeViewColumn *remote_tree_view_id_column;
-static GtkTreeViewColumn *remote_tree_view_slot_column;
-static GtkTreeViewColumn *remote_tree_view_size_column;
-static GtkTreeViewColumn *local_tree_view_sample_frames_column;
-static GtkTreeViewColumn *local_tree_view_sample_rate_column;
-static GtkTreeViewColumn *local_tree_view_sample_duration_column;
-static GtkTreeViewColumn *local_tree_view_sample_channels_column;
-static GtkTreeViewColumn *local_tree_view_sample_bits_column;
-static GtkTreeViewColumn *local_tree_view_sample_midi_note_column;
 
 /**
  * This function guarantees that the time since start is at least the timeout.
@@ -227,7 +216,7 @@ static gboolean
 elektroid_load_remote_if_midi (gpointer data)
 {
   struct browser *browser = data;
-  if (browser == &remote_browser && backend.type == BE_TYPE_MIDI)
+  if (browser == &remote_browser.browser && backend.type == BE_TYPE_MIDI)
     {
       browser_load_dir (browser);
     }
@@ -237,12 +226,12 @@ elektroid_load_remote_if_midi (gpointer data)
 static void
 elektroid_update_upload_menuitem ()
 {
-  gboolean upload = remote_browser.fs_ops &&
-    !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
-    && remote_browser.fs_ops->upload;
+  gboolean upload = remote_browser.browser.fs_ops &&
+    !(remote_browser.browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+    && remote_browser.browser.fs_ops->upload;
 
-  gtk_widget_set_visible (local_browser.transfer_menuitem, upload);
-  gtk_widget_set_visible (local_browser.play_separator, upload);
+  gtk_widget_set_visible (local_browser.browser.transfer_menuitem, upload);
+  gtk_widget_set_visible (local_browser.browser.play_separator, upload);
 }
 
 static void
@@ -392,8 +381,8 @@ elektroid_check_backend ()
 
   elektroid_update_upload_menuitem ();
 
-  if (!remote_browser.fs_ops
-      || remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
+  if (!remote_browser.browser.fs_ops
+      || remote_browser.browser.fs_ops->options & FS_OPTION_SINGLE_OP)
     {
       remote_sensitive = connected && !queued;
     }
@@ -402,13 +391,13 @@ elektroid_check_backend ()
       remote_sensitive = connected;
     }
   gtk_widget_set_sensitive (remote_box, remote_sensitive);
-  gtk_widget_set_sensitive (local_browser.transfer_menuitem,
+  gtk_widget_set_sensitive (local_browser.browser.transfer_menuitem,
 			    remote_sensitive);
   gtk_widget_set_sensitive (ma_data.box, !queued);
 
   if (!connected)
     {
-      browser_reset (&remote_browser);
+      browser_reset (&remote_browser.browser);
       elektroid_load_devices (FALSE);
     }
 
@@ -435,25 +424,6 @@ elektroid_cancel_all_tasks_and_wait ()
     }
 }
 
-static void
-elektroid_audio_widgets_reset ()
-{
-  gtk_widget_set_sensitive (local_browser.open_menuitem, FALSE);
-  gtk_widget_set_sensitive (remote_browser.open_menuitem, FALSE);
-  gtk_widget_set_sensitive (local_browser.play_menuitem, FALSE);
-  gtk_widget_set_sensitive (remote_browser.play_menuitem, FALSE);
-}
-
-static void
-elektroid_disable_sample_widgets (struct browser *browser)
-{
-  if (editor.browser == browser)
-    {
-      editor_reset (&editor, NULL);
-      elektroid_audio_widgets_reset (&editor);
-    }
-}
-
 void
 elektroid_refresh_devices (GtkWidget * widget, gpointer data)
 {
@@ -462,8 +432,8 @@ elektroid_refresh_devices (GtkWidget * widget, gpointer data)
       elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (&backend);
       ma_clear_device_menu_actions (ma_data.box);
-      elektroid_disable_sample_widgets (&remote_browser);
-      browser_reset (&remote_browser);
+      browser_disable_sample_menuitems (&remote_browser.browser);
+      browser_reset (&remote_browser.browser);
     }
   elektroid_check_backend ();	//This triggers the actual devices refresh if there is no backend
 }
@@ -1092,11 +1062,11 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
     }
   else if (event->button == GDK_BUTTON_SECONDARY)
     {
-      if (browser == &remote_browser &&
+      if (browser == &remote_browser.browser &&
 	  backend.type != BE_TYPE_SYSTEM &&
-	  remote_browser.fs_ops->rename == NULL &&
-	  remote_browser.fs_ops->delete == NULL &&
-	  remote_browser.fs_ops->download == NULL)
+	  remote_browser.browser.fs_ops->rename == NULL &&
+	  remote_browser.browser.fs_ops->delete == NULL &&
+	  remote_browser.browser.fs_ops->download == NULL)
 	{
 	  return FALSE;
 	}
@@ -1164,111 +1134,6 @@ elektroid_button_release (GtkWidget * treeview, GdkEventButton * event,
 
       return FALSE;
     }
-
-  return FALSE;
-}
-
-static void
-elektroid_check_and_load_sample (struct browser *browser, gint count)
-{
-  struct item item;
-  GtkTreeIter iter;
-  gchar *sample_path;
-  GtkTreeModel *model;
-  gboolean sample_editor = !remote_browser.fs_ops
-    || (remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR);
-
-  if (count == 1)
-    {
-      browser_set_selected_row_iter (browser, &iter);
-      model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
-      browser_set_item (model, &iter, &item);
-
-      gtk_widget_set_sensitive (browser == &local_browser ?
-				local_browser.open_menuitem :
-				remote_browser.open_menuitem,
-				item.type == ELEKTROID_FILE);
-
-      if (item.type == ELEKTROID_DIR)
-	{
-	  elektroid_disable_sample_widgets (browser);
-	}
-      else
-	{
-	  enum path_type type = path_type_from_backend (browser->backend);
-	  sample_path = path_chain (type, browser->dir, item.name);
-	  if (strcmp (editor.audio.path, sample_path) ||
-	      editor.browser != browser)
-	    {
-	      if (sample_editor)
-		{
-		  browser_clear_selection (OTHER_BROWSER (browser));
-		  editor_reset (&editor, browser);
-		  strcpy (editor.audio.path, sample_path);
-		  editor_start_load_thread (&editor);
-		}
-	    }
-	  g_free (sample_path);
-	}
-    }
-  else
-    {
-      elektroid_disable_sample_widgets (browser);
-    }
-}
-
-static gboolean
-elektroid_remote_check_selection (gpointer data)
-{
-  gint count = browser_get_selected_items_count (&remote_browser);
-  gboolean dl_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->download ? TRUE : FALSE;
-  gboolean ren_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->rename ? TRUE : FALSE;
-  gboolean del_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->delete ? TRUE : FALSE;
-
-  if (backend.type == BE_TYPE_SYSTEM)
-    {
-      elektroid_check_and_load_sample (&remote_browser, count);
-    }
-
-  gtk_widget_set_sensitive (remote_browser.show_menuitem, count <= 1);
-  gtk_widget_set_sensitive (remote_browser.rename_menuitem, count == 1
-			    && ren_impl);
-  gtk_widget_set_sensitive (remote_browser.delete_menuitem, count > 0
-			    && del_impl);
-  gtk_widget_set_sensitive (remote_browser.transfer_menuitem, count > 0
-			    && dl_impl);
-
-  if (count == 1 && remote_browser.fs_ops->select_item)
-    {
-      GtkTreeIter iter;
-      GtkTreeModel *model;
-      struct item item;
-      browser_set_selected_row_iter (&remote_browser, &iter);
-      model = GTK_TREE_MODEL (gtk_tree_view_get_model (remote_browser.view));
-      browser_set_item (model, &iter, &item);
-      remote_browser.fs_ops->select_item (&backend, remote_browser.dir,
-					  &item);
-    }
-
-  return FALSE;
-}
-
-static gboolean
-elektroid_local_check_selection (gpointer data)
-{
-  gint count = browser_get_selected_items_count (&local_browser);
-
-  elektroid_check_and_load_sample (&local_browser, count);
-
-  gtk_widget_set_sensitive (local_browser.show_menuitem, count <= 1);
-  gtk_widget_set_sensitive (local_browser.rename_menuitem, count == 1);
-  gtk_widget_set_sensitive (local_browser.delete_menuitem, count > 0);
-  gtk_widget_set_sensitive (local_browser.transfer_menuitem, count > 0
-			    && remote_browser.fs_ops
-			    && remote_browser.fs_ops->upload);
 
   return FALSE;
 }
@@ -1475,10 +1340,11 @@ tasks_run_next (gpointer data)
 
   if (!transfer_active && found)
     {
-      if (remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
+      if (remote_browser.browser.fs_ops->options & FS_OPTION_SINGLE_OP)
 	{
 	  gtk_widget_set_sensitive (remote_box, FALSE);
-	  gtk_widget_set_sensitive (local_browser.transfer_menuitem, FALSE);
+	  gtk_widget_set_sensitive (local_browser.browser.transfer_menuitem,
+				    FALSE);
 	}
       gtk_widget_set_sensitive (ma_data.box, FALSE);
 
@@ -1510,7 +1376,7 @@ tasks_run_next (gpointer data)
 	{
 	  tasks.thread = g_thread_new ("upload_task",
 				       elektroid_upload_task_runner, NULL);
-	  remote_browser.dirty = TRUE;
+	  remote_browser.browser.dirty = TRUE;
 	}
       else if (type == TASK_TYPE_DOWNLOAD)
 	{
@@ -1523,12 +1389,13 @@ tasks_run_next (gpointer data)
   else
     {
       gtk_widget_set_sensitive (remote_box, TRUE);
-      gtk_widget_set_sensitive (local_browser.transfer_menuitem, TRUE);
+      gtk_widget_set_sensitive (local_browser.browser.transfer_menuitem,
+				TRUE);
 
-      if ((remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
-	  && remote_browser.dirty)
+      if ((remote_browser.browser.fs_ops->options & FS_OPTION_SINGLE_OP)
+	  && remote_browser.browser.dirty)
 	{
-	  remote_browser.dirty = FALSE;
+	  remote_browser.browser.dirty = FALSE;
 	  g_idle_add (elektroid_load_remote_if_midi, &remote_browser);
 	}
     }
@@ -1644,9 +1511,9 @@ elektroid_upload_task_runner (gpointer data)
   debug_print (1, "Local path: %s\n", tasks.transfer.src);
   debug_print (1, "Remote path: %s\n", tasks.transfer.dst);
 
-  if (remote_browser.fs_ops->mkdir
-      && remote_browser.fs_ops->mkdir (remote_browser.backend,
-				       tasks.transfer.dst))
+  if (remote_browser.browser.fs_ops->mkdir
+      && remote_browser.browser.fs_ops->mkdir (remote_browser.browser.backend,
+					       tasks.transfer.dst))
     {
       error_print ("Error while creating remote %s dir\n",
 		   tasks.transfer.dst);
@@ -1669,20 +1536,20 @@ elektroid_upload_task_runner (gpointer data)
 	       tasks.transfer.src,
 	       elektroid_get_fs_name (tasks.transfer.fs_ops->fs));
 
-  if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+  if (remote_browser.browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
     {
       upload_path = strdup (tasks.transfer.dst);
     }
   else
     {
-      upload_path = remote_browser.fs_ops->get_upload_path (&backend,
-							    remote_browser.fs_ops,
-							    tasks.
-							    transfer.dst,
-							    tasks.
-							    transfer.src);
+      upload_path = remote_browser.browser.fs_ops->get_upload_path (&backend,
+								    remote_browser.browser.fs_ops,
+								    tasks.
+								    transfer.dst,
+								    tasks.
+								    transfer.src);
       g_mutex_lock (&tasks.transfer.control.mutex);
-      elektroid_check_file_and_wait (upload_path, &remote_browser);
+      elektroid_check_file_and_wait (upload_path, &remote_browser.browser);
       g_mutex_unlock (&tasks.transfer.control.mutex);
       if (tasks.transfer.status == TASK_STATUS_CANCELED)
 	{
@@ -1691,7 +1558,8 @@ elektroid_upload_task_runner (gpointer data)
     }
 
   res =
-    tasks.transfer.fs_ops->upload (remote_browser.backend, upload_path, array,
+    tasks.transfer.fs_ops->upload (remote_browser.browser.backend,
+				   upload_path, array,
 				   &tasks.transfer.control);
   g_free (tasks.transfer.control.data);
   tasks.transfer.control.data = NULL;
@@ -1711,8 +1579,9 @@ elektroid_upload_task_runner (gpointer data)
     }
 
   dst_dir = g_path_get_dirname (upload_path);
-  if (!res && tasks.transfer.fs_ops == remote_browser.fs_ops &&
-      !strncmp (dst_dir, remote_browser.dir, strlen (remote_browser.dir))
+  if (!res && tasks.transfer.fs_ops == remote_browser.browser.fs_ops &&
+      !strncmp (dst_dir, remote_browser.browser.dir,
+		strlen (remote_browser.browser.dir))
       && !(tasks.transfer.fs_ops->options & FS_OPTION_SINGLE_OP))
     {
       g_idle_add (elektroid_load_remote_if_midi, &remote_browser);
@@ -1751,19 +1620,21 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
   g_free (rel_path_trans);
 
   //Check if the item is a dir. If error, it's not.
-  if (local_browser.fs_ops->readdir (NULL, &iter, src_abs_path, NULL))
+  if (local_browser.browser.fs_ops->readdir (NULL, &iter, src_abs_path, NULL))
     {
       rel_path_trans = path_translate (type, rel_path);
       gchar *dst_abs_path = path_chain (type, dst_dir, rel_path_trans);
       g_free (rel_path_trans);
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
-      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+      if (remote_browser.browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 	{
-	  upload_path = remote_browser.fs_ops->get_upload_path (&backend,
-								remote_browser.fs_ops,
-								dst_abs_dir,
-								src_abs_path);
+	  upload_path =
+	    remote_browser.browser.fs_ops->get_upload_path (&backend,
+							    remote_browser.browser.
+							    fs_ops,
+							    dst_abs_dir,
+							    src_abs_path);
 	}
       else
 	{
@@ -1771,14 +1642,14 @@ elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
 	  upload_path = strdup (dst_abs_dir);
 	}
       tasks_add (&tasks, TASK_TYPE_UPLOAD, src_abs_path, upload_path,
-		 remote_browser.fs_ops->fs, &backend);
+		 remote_browser.browser.fs_ops->fs, &backend);
       g_free (upload_path);
       g_free (dst_abs_dir);
       g_free (dst_abs_path);
       goto cleanup;
     }
 
-  if (!remote_browser.fs_ops->mkdir)
+  if (!remote_browser.browser.fs_ops->mkdir)
     {				//No recursive case.
       goto cleanup_iter;
     }
@@ -1809,9 +1680,10 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
   sysex_transfer.active = TRUE;
   g_timeout_add (100, progress_pulse, NULL);
 
-  model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
+  model =
+    GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.browser.view));
   selection =
-    gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.view));
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.browser.view));
 
   queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
@@ -1825,8 +1697,8 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
 
       gtk_tree_model_get_iter (model, &path_iter, path);
       browser_set_item (model, &path_iter, &item);
-      elektroid_add_upload_task_path (item.name, local_browser.dir,
-				      remote_browser.dir);
+      elektroid_add_upload_task_path (item.name, local_browser.browser.dir,
+				      remote_browser.browser.dir);
 
       g_mutex_lock (&sysex_transfer.mutex);
       active = sysex_transfer.active;
@@ -1857,7 +1729,7 @@ static void
 elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
 {
   GtkTreeSelection *selection =
-    gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.view));
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.browser.view));
 
   if (!gtk_tree_selection_count_selected_rows (selection))
     {
@@ -1878,20 +1750,24 @@ elektroid_download_task_runner (gpointer userdata)
   debug_print (1, "Remote path: %s\n", tasks.transfer.src);
   debug_print (1, "Local dir: %s\n", tasks.transfer.dst);
 
-  if (local_browser.fs_ops->mkdir (local_browser.backend, tasks.transfer.dst))
+  if (local_browser.browser.
+      fs_ops->mkdir (local_browser.browser.backend, tasks.transfer.dst))
     {
       error_print ("Error while creating local %s dir\n", tasks.transfer.dst);
       tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
       goto end_no_dir;
     }
 
-  dst_path = remote_browser.fs_ops->get_download_path (&backend,
-						       remote_browser.fs_ops,
-						       tasks.transfer.dst,
-						       tasks.transfer.src,
-						       NULL);
+  dst_path = remote_browser.browser.fs_ops->get_download_path (&backend,
+							       remote_browser.browser.
+							       fs_ops,
+							       tasks.
+							       transfer.dst,
+							       tasks.
+							       transfer.src,
+							       NULL);
   g_mutex_lock (&tasks.transfer.control.mutex);
-  elektroid_check_file_and_wait (dst_path, &local_browser);
+  elektroid_check_file_and_wait (dst_path, &local_browser.browser);
   g_mutex_unlock (&tasks.transfer.control.mutex);
 
   if (tasks.transfer.status == TASK_STATUS_CANCELED)
@@ -1901,7 +1777,7 @@ elektroid_download_task_runner (gpointer userdata)
 
   array = g_byte_array_new ();
   res =
-    tasks.transfer.fs_ops->download (remote_browser.backend,
+    tasks.transfer.fs_ops->download (remote_browser.browser.backend,
 				     tasks.transfer.src, array,
 				     &tasks.transfer.control);
   g_idle_add (elektroid_check_backend_bg, NULL);
@@ -1922,12 +1798,12 @@ elektroid_download_task_runner (gpointer userdata)
 
   if (!dst_path)
     {
-      dst_path = remote_browser.fs_ops->get_download_path (&backend,
-							   remote_browser.fs_ops,
-							   tasks.transfer.dst,
-							   tasks.transfer.src,
-							   array);
-      elektroid_check_file_and_wait (dst_path, &local_browser);
+      dst_path = remote_browser.browser.fs_ops->get_download_path (&backend,
+								   remote_browser.browser.fs_ops,
+								   tasks.transfer.dst,
+								   tasks.transfer.src,
+								   array);
+      elektroid_check_file_and_wait (dst_path, &local_browser.browser);
     }
 
   if (tasks.transfer.status != TASK_STATUS_CANCELED)
@@ -1987,8 +1863,9 @@ elektroid_add_download_task_path (const gchar * rel_path,
   g_free (rel_path_trans);
 
   //Check if the item is a dir. If error, it's not.
-  if (remote_browser.fs_ops->readdir (remote_browser.backend, &iter,
-				      src_abs_path, NULL))
+  if (remote_browser.browser.
+      fs_ops->readdir (remote_browser.browser.backend, &iter, src_abs_path,
+		       NULL))
     {
       rel_path_trans = path_translate (PATH_SYSTEM, rel_path);
       gchar *dst_abs_path = path_chain (PATH_SYSTEM, dst_dir, rel_path_trans);
@@ -1996,7 +1873,7 @@ elektroid_add_download_task_path (const gchar * rel_path,
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
       tasks_add (&tasks, TASK_TYPE_DOWNLOAD, src_abs_path, dst_abs_dir,
-		 remote_browser.fs_ops->fs, &backend);
+		 remote_browser.browser.fs_ops->fs, &backend);
       g_free (dst_abs_dir);
       g_free (dst_abs_path);
       goto cleanup;
@@ -2004,7 +1881,8 @@ elektroid_add_download_task_path (const gchar * rel_path,
 
   while (!next_item_iterator (&iter))
     {
-      filename = get_filename (remote_browser.fs_ops->options, &iter.item);
+      filename =
+	get_filename (remote_browser.browser.fs_ops->options, &iter.item);
       path = path_chain (PATH_INTERNAL, rel_path, filename);
       elektroid_add_download_task_path (path, src_dir, dst_dir);
       g_free (path);
@@ -2029,14 +1907,15 @@ elektroid_add_download_tasks_runner (gpointer data)
   sysex_transfer.active = TRUE;
   g_timeout_add (100, progress_pulse, NULL);
 
-  model = GTK_TREE_MODEL (gtk_tree_view_get_model (remote_browser.view));
+  model =
+    GTK_TREE_MODEL (gtk_tree_view_get_model (remote_browser.browser.view));
   selection =
-    gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.browser.view));
 
   queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
 
-  backend_enable_cache (remote_browser.backend);
+  backend_enable_cache (remote_browser.browser.backend);
 
   selected_rows = gtk_tree_selection_get_selected_rows (selection, NULL);
   while (selected_rows)
@@ -2048,9 +1927,9 @@ elektroid_add_download_tasks_runner (gpointer data)
 
       gtk_tree_model_get_iter (model, &path_iter, path);
       browser_set_item (model, &path_iter, &item);
-      filename = get_filename (remote_browser.fs_ops->options, &item);
-      elektroid_add_download_task_path (filename, remote_browser.dir,
-					local_browser.dir);
+      filename = get_filename (remote_browser.browser.fs_ops->options, &item);
+      elektroid_add_download_task_path (filename, remote_browser.browser.dir,
+					local_browser.browser.dir);
       g_free (filename);
 
       g_mutex_lock (&sysex_transfer.mutex);
@@ -2066,7 +1945,7 @@ elektroid_add_download_tasks_runner (gpointer data)
     }
   g_list_free_full (selected_rows, (GDestroyNotify) gtk_tree_path_free);
 
-  backend_disable_cache (remote_browser.backend);
+  backend_disable_cache (remote_browser.browser.backend);
 
   queued_after = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					NULL, NULL, NULL);
@@ -2084,7 +1963,7 @@ static void
 elektroid_add_download_tasks (GtkWidget * object, gpointer data)
 {
   GtkTreeSelection *selection =
-    gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.browser.view));
 
   if (!gtk_tree_selection_count_selected_rows (selection))
     {
@@ -2182,7 +2061,7 @@ elektroid_remote_key_press (GtkWidget * widget, GdkEventKey * event,
       return elektroid_common_key_press (widget, event, data);
     }
 
-  if (!remote_browser.fs_ops->download)
+  if (!remote_browser.browser.fs_ops->download)
     {
       return FALSE;
     }
@@ -2205,39 +2084,19 @@ elektroid_local_key_press (GtkWidget * widget, GdkEventKey * event,
       return elektroid_common_key_press (widget, event, data);
     }
 
-  if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+  if (remote_browser.browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
     {
       //Slot mode needs a slot destination.
       return FALSE;
     }
 
-  if (!remote_browser.fs_ops->upload)
+  if (!remote_browser.browser.fs_ops->upload)
     {
       return FALSE;
     }
 
   elektroid_add_upload_tasks (NULL, NULL);
   return TRUE;
-}
-
-static void
-elektroid_show_sample_columns ()
-{
-  gboolean sample_columns = (local_browser.fs_ops->options &
-			     FS_OPTION_SAMPLE_ATTRS) != 0;
-
-  gtk_tree_view_column_set_visible (local_tree_view_sample_frames_column,
-				    sample_columns);
-  gtk_tree_view_column_set_visible (local_tree_view_sample_rate_column,
-				    sample_columns);
-  gtk_tree_view_column_set_visible (local_tree_view_sample_duration_column,
-				    sample_columns);
-  gtk_tree_view_column_set_visible (local_tree_view_sample_channels_column,
-				    sample_columns);
-  gtk_tree_view_column_set_visible (local_tree_view_sample_bits_column,
-				    sample_columns);
-  gtk_tree_view_column_set_visible (local_tree_view_sample_midi_note_column,
-				    sample_columns);
 }
 
 static void
@@ -2250,20 +2109,18 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
   if (!gtk_combo_box_get_active_iter (GTK_COMBO_BOX (fs_combo), &iter))
     {
-      last_local_fs_ops = local_browser.fs_ops;
-      local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
-      elektroid_disable_sample_widgets (&local_browser);
-      browser_update_fs_options (&local_browser);
-      browser_load_dir (&local_browser);
+      last_local_fs_ops = local_browser.browser.fs_ops;
+      local_browser.browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
+      browser_disable_sample_menuitems (&local_browser.browser);
+      browser_update_fs_options (&local_browser.browser);
+      browser_load_dir (&local_browser.browser);
 
-      browser_reset (&remote_browser);
-      browser_update_fs_options (&remote_browser);
-      elektroid_show_sample_columns ();
+      browser_reset (&remote_browser.browser);
+      browser_update_fs_options (&remote_browser.browser);
+      browser_local_set_sample_columns_visibility ();
 
       gtk_widget_set_visible (editor.box, TRUE);
-      gtk_tree_view_column_set_visible (remote_tree_view_id_column, FALSE);
-      gtk_tree_view_column_set_visible (remote_tree_view_slot_column, FALSE);
-      gtk_tree_view_column_set_visible (remote_tree_view_size_column, FALSE);
+      browser_remote_set_custom_columns_visibility (FALSE);
       elektroid_update_upload_menuitem ();
       editor_set_audio_mono_mix (&editor);
 
@@ -2275,79 +2132,73 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   fs = g_value_get_uint (&fsv);
   g_value_unset (&fsv);
 
-  remote_browser.fs_ops = backend_get_fs_operations (&backend, fs, NULL);
+  remote_browser.browser.fs_ops =
+    backend_get_fs_operations (&backend, fs, NULL);
 
-  last_local_fs_ops = local_browser.fs_ops;
+  last_local_fs_ops = local_browser.browser.fs_ops;
   if (EDITOR_VISIBLE)
     {
-      local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
+      local_browser.browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
     }
   else
     {
-      local_browser.fs_ops = &FS_LOCAL_GENERIC_OPERATIONS;
+      local_browser.browser.fs_ops = &FS_LOCAL_GENERIC_OPERATIONS;
       editor_reset (&editor, NULL);
     }
 
-  elektroid_show_sample_columns ();
+  browser_local_set_sample_columns_visibility ();
 
   editor_set_audio_mono_mix (&editor);
 
   if (backend.type == BE_TYPE_SYSTEM)
     {
-      if (!remote_browser.dir)
+      if (!remote_browser.browser.dir)
 	{
-	  remote_browser.dir = get_user_dir (NULL);
+	  remote_browser.browser.dir = get_user_dir (NULL);
 	}
     }
   else
     {
-      g_free (remote_browser.dir);
-      remote_browser.dir = strdup ("/");
+      g_free (remote_browser.browser.dir);
+      remote_browser.browser.dir = strdup ("/");
     }
 
-  gtk_widget_set_visible (remote_browser.transfer_menuitem,
+  gtk_widget_set_visible (remote_browser.browser.transfer_menuitem,
 			  backend.type == BE_TYPE_SYSTEM
-			  || remote_browser.fs_ops->download != NULL);
-  gtk_widget_set_visible (remote_browser.play_separator,
+			  || remote_browser.browser.fs_ops->download != NULL);
+  gtk_widget_set_visible (remote_browser.browser.play_separator,
 			  backend.type == BE_TYPE_SYSTEM);
-  gtk_widget_set_visible (remote_browser.play_menuitem,
+  gtk_widget_set_visible (remote_browser.browser.play_menuitem,
 			  backend.type == BE_TYPE_SYSTEM);
-  gtk_widget_set_visible (remote_browser.options_separator,
+  gtk_widget_set_visible (remote_browser.browser.options_separator,
 			  backend.type == BE_TYPE_SYSTEM);
-  gtk_widget_set_visible (remote_browser.open_menuitem,
+  gtk_widget_set_visible (remote_browser.browser.open_menuitem,
 			  backend.type == BE_TYPE_SYSTEM);
-  gtk_widget_set_visible (remote_browser.show_menuitem,
+  gtk_widget_set_visible (remote_browser.browser.show_menuitem,
 			  backend.type == BE_TYPE_SYSTEM);
-  gtk_widget_set_visible (remote_browser.actions_separator,
+  gtk_widget_set_visible (remote_browser.browser.actions_separator,
 			  backend.type == BE_TYPE_SYSTEM ||
-			  ((remote_browser.fs_ops->rename != NULL
-			    || remote_browser.fs_ops->delete != NULL)
-			   && remote_browser.fs_ops->download != NULL));
-  gtk_widget_set_visible (remote_browser.rename_menuitem,
-			  remote_browser.fs_ops->rename != NULL);
-  gtk_widget_set_visible (remote_browser.delete_menuitem,
-			  remote_browser.fs_ops->delete != NULL);
+			  ((remote_browser.browser.fs_ops->rename != NULL
+			    || remote_browser.browser.fs_ops->delete != NULL)
+			   && remote_browser.browser.fs_ops->download !=
+			   NULL));
+  gtk_widget_set_visible (remote_browser.browser.rename_menuitem,
+			  remote_browser.browser.fs_ops->rename != NULL);
+  gtk_widget_set_visible (remote_browser.browser.delete_menuitem,
+			  remote_browser.browser.fs_ops->delete != NULL);
 
   gtk_widget_set_visible (editor.box, EDITOR_VISIBLE);
 
-  gtk_tree_view_column_set_visible (remote_tree_view_id_column,
-				    remote_browser.fs_ops->options &
-				    FS_OPTION_SHOW_ID_COLUMN);
-  gtk_tree_view_column_set_visible (remote_tree_view_slot_column,
-				    remote_browser.fs_ops->options &
-				    FS_OPTION_SHOW_SLOT_COLUMN);
-  gtk_tree_view_column_set_visible (remote_tree_view_size_column,
-				    remote_browser.fs_ops->options &
-				    FS_OPTION_SHOW_SIZE_COLUMN);
+  browser_remote_set_custom_columns_visibility (TRUE);
 
-  gtk_drag_source_unset ((GtkWidget *) remote_browser.view);
-  gtk_drag_dest_unset ((GtkWidget *) remote_browser.view);
+  gtk_drag_source_unset ((GtkWidget *) remote_browser.browser.view);
+  gtk_drag_dest_unset ((GtkWidget *) remote_browser.browser.view);
 
-  if (remote_browser.fs_ops->upload)
+  if (remote_browser.browser.fs_ops->upload)
     {
       if (backend.type == BE_TYPE_SYSTEM)
 	{
-	  gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
+	  gtk_drag_dest_set ((GtkWidget *) remote_browser.browser.view,
 			     GTK_DEST_DEFAULT_ALL,
 			     TARGET_ENTRIES_REMOTE_SYSTEM_DST,
 			     G_N_ELEMENTS
@@ -2356,9 +2207,9 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 	}
       else
 	{
-	  if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+	  if (remote_browser.browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 	    {
-	      gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
+	      gtk_drag_dest_set ((GtkWidget *) remote_browser.browser.view,
 				 GTK_DEST_DEFAULT_ALL,
 				 TARGET_ENTRIES_REMOTE_MIDI_DST_SLOT,
 				 G_N_ELEMENTS
@@ -2367,7 +2218,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 	    }
 	  else
 	    {
-	      gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
+	      gtk_drag_dest_set ((GtkWidget *) remote_browser.browser.view,
 				 GTK_DEST_DEFAULT_ALL,
 				 TARGET_ENTRIES_REMOTE_MIDI_DST,
 				 G_N_ELEMENTS
@@ -2377,11 +2228,11 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 	}
     }
 
-  if (remote_browser.fs_ops->download)
+  if (remote_browser.browser.fs_ops->download)
     {
       if (backend.type == BE_TYPE_SYSTEM)
 	{
-	  gtk_drag_source_set ((GtkWidget *) remote_browser.view,
+	  gtk_drag_source_set ((GtkWidget *) remote_browser.browser.view,
 			       GDK_BUTTON1_MASK,
 			       TARGET_ENTRIES_REMOTE_SYSTEM_SRC,
 			       G_N_ELEMENTS
@@ -2390,9 +2241,9 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 	}
       else
 	{
-	  if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+	  if (remote_browser.browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 	    {
-	      gtk_drag_source_set ((GtkWidget *) remote_browser.view,
+	      gtk_drag_source_set ((GtkWidget *) remote_browser.browser.view,
 				   GDK_BUTTON1_MASK,
 				   TARGET_ENTRIES_REMOTE_MIDI_SRC,
 				   G_N_ELEMENTS
@@ -2401,7 +2252,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 	    }
 	  else
 	    {
-	      gtk_drag_source_set ((GtkWidget *) remote_browser.view,
+	      gtk_drag_source_set ((GtkWidget *) remote_browser.browser.view,
 				   GDK_BUTTON1_MASK,
 				   TARGET_ENTRIES_REMOTE_MIDI_SRC,
 				   G_N_ELEMENTS
@@ -2413,16 +2264,16 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
 
 
-  browser_update_fs_options (&local_browser);
+  browser_update_fs_options (&local_browser.browser);
 
-  elektroid_disable_sample_widgets (&remote_browser);
-  browser_load_dir (&remote_browser);
-  browser_update_fs_options (&remote_browser);
+  browser_disable_sample_menuitems (&remote_browser.browser);
+  browser_load_dir (&remote_browser.browser);
+  browser_update_fs_options (&remote_browser.browser);
 
-  if (last_local_fs_ops != local_browser.fs_ops)
+  if (last_local_fs_ops != local_browser.browser.fs_ops)
     {
-      elektroid_disable_sample_widgets (&local_browser);
-      browser_load_dir (&local_browser);
+      browser_disable_sample_menuitems (&local_browser.browser);
+      browser_load_dir (&local_browser.browser);
     }
 }
 
@@ -2582,15 +2433,16 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
   gchar *dst_path;
   gint res;
 
-  if (strcmp (dir, remote_browser.dir))
+  if (strcmp (dir, remote_browser.browser.dir))
     {
-      dst_path = remote_browser.fs_ops->get_upload_path (&backend,
-							 remote_browser.fs_ops,
-							 remote_browser.dir,
-							 name);
+      dst_path = remote_browser.browser.fs_ops->get_upload_path (&backend,
+								 remote_browser.browser.fs_ops,
+								 remote_browser.browser.
+								 dir, name);
 
-      res = remote_browser.fs_ops->move (remote_browser.backend, filename,
-					 dst_path);
+      res =
+	remote_browser.browser.fs_ops->move (remote_browser.browser.backend,
+					     filename, dst_path);
       if (res)
 	{
 	  error_print ("Error while moving from “%s” to “%s”: %s.\n",
@@ -2617,9 +2469,10 @@ elektroid_add_upload_task_slot (const gchar * name,
 
   model =
     GTK_TREE_MODEL (gtk_tree_view_get_model
-		    (GTK_TREE_VIEW (remote_browser.view)));
+		    (GTK_TREE_VIEW (remote_browser.browser.view)));
 
-  if (gtk_tree_model_get_iter (model, &iter, remote_browser.dnd_motion_path))
+  if (gtk_tree_model_get_iter
+      (model, &iter, remote_browser.browser.dnd_motion_path))
     {
       for (gint i = 0; i < slot; i++)
 	{
@@ -2631,21 +2484,21 @@ elektroid_add_upload_task_slot (const gchar * name,
 
       browser_set_item (model, &iter, &item);
 
-      filename = get_filename (remote_browser.fs_ops->options, &item);
+      filename = get_filename (remote_browser.browser.fs_ops->options, &item);
       name_wo_ext = strdup (name);
       remove_ext (name_wo_ext);
       str = g_string_new (NULL);
-      g_string_append_printf (str, "%s%s%s%s%s", remote_browser.dir,
-			      strcmp (remote_browser.dir, "/") ? "/" : "",
-			      filename, BE_SAMPLE_ID_NAME_SEPARATOR,
-			      name_wo_ext);
+      g_string_append_printf (str, "%s%s%s%s%s", remote_browser.browser.dir,
+			      strcmp (remote_browser.browser.dir,
+				      "/") ? "/" : "", filename,
+			      BE_SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
       g_free (name_wo_ext);
       g_free (filename);
       dst_file_path = str->str;
       g_string_free (str, FALSE);
 
       tasks_add (&tasks, TASK_TYPE_UPLOAD, src_file_path, dst_file_path,
-		 remote_browser.fs_ops->fs, &backend);
+		 remote_browser.browser.fs_ops->fs, &backend);
     }
 }
 
@@ -2669,7 +2522,7 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
   queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
 
-  cache = widget == GTK_WIDGET (local_browser.view) &&
+  cache = widget == GTK_WIDGET (local_browser.browser.view) &&
     !strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID);
 
   if (cache)
@@ -2693,19 +2546,20 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
       gchar *name = g_path_get_basename (filename);
       gchar *dir = g_path_get_dirname (filename);
 
-      if (widget == GTK_WIDGET (local_browser.view))
+      if (widget == GTK_WIDGET (local_browser.browser.view))
 	{
 	  if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD))
 	    {
 	      elektroid_dnd_received_system (dir, name, filename,
-					     &local_browser);
+					     &local_browser.browser);
 	    }
 	  else if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID))
 	    {
-	      elektroid_add_download_task_path (name, dir, local_browser.dir);
+	      elektroid_add_download_task_path (name, dir,
+						local_browser.browser.dir);
 	    }
 	}
-      else if (widget == GTK_WIDGET (remote_browser.view))
+      else if (widget == GTK_WIDGET (remote_browser.browser.view))
 	{
 	  if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID))
 	    {
@@ -2713,14 +2567,15 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 	    }
 	  else if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD))
 	    {
-	      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+	      if (remote_browser.browser.
+		  fs_ops->options & FS_OPTION_SLOT_STORAGE)
 		{
 		  elektroid_add_upload_task_slot (name, filename, i);
 		}
 	      else
 		{
 		  elektroid_add_upload_task_path (name, dir,
-						  remote_browser.dir);
+						  remote_browser.browser.dir);
 		}
 	    }
 	}
@@ -2802,17 +2657,17 @@ elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
   src_dir = g_path_get_dirname (filename);
 
   //Checking if it's a local move.
-  if (widget == GTK_WIDGET (local_browser.view) &&
+  if (widget == GTK_WIDGET (local_browser.browser.view) &&
       !strcmp (dnd_data->type_name, TEXT_URI_LIST_STD))
     {
-      dst_dir = local_browser.dir;	//Move
+      dst_dir = local_browser.browser.dir;	//Move
     }
 
   //Checking if it's a remote move.
-  if (widget == GTK_WIDGET (remote_browser.view)
+  if (widget == GTK_WIDGET (remote_browser.browser.view)
       && !strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID))
     {
-      dst_dir = remote_browser.dir;	//Move
+      dst_dir = remote_browser.browser.dir;	//Move
     }
 
   if (dst_dir)
@@ -2944,8 +2799,8 @@ elektroid_drag_motion_list (GtkWidget * widget,
   struct item item;
   struct browser *browser = user_data;
 
-  slot = widget == GTK_WIDGET (remote_browser.view)
-    && remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE;
+  slot = widget == GTK_WIDGET (remote_browser.browser.view)
+    && remote_browser.browser.fs_ops->options & FS_OPTION_SLOT_STORAGE;
 
   gtk_tree_view_convert_widget_to_bin_window_coords
     (GTK_TREE_VIEW (widget), wx, wy, &tx, &ty);
@@ -2963,7 +2818,8 @@ elektroid_drag_motion_list (GtkWidget * widget,
 
 	  if (slot)
 	    {
-	      gtk_tree_view_set_drag_dest_row (remote_browser.view, path,
+	      gtk_tree_view_set_drag_dest_row (remote_browser.browser.view,
+					       path,
 					       GTK_TREE_VIEW_DROP_INTO_OR_BEFORE);
 	    }
 	  else
@@ -3070,8 +2926,8 @@ elektroid_quit ()
   tasks_stop_thread (&tasks);
   editor_stop_load_thread (&editor);
 
-  browser_destroy (&local_browser);
-  browser_destroy (&remote_browser);
+  browser_destroy (&local_browser.browser);
+  browser_destroy (&remote_browser.browser);
 
   editor_destroy (&editor);
 
@@ -3162,264 +3018,131 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (name_dialog_entry, "changed",
 		    G_CALLBACK (elektroid_name_dialog_entry_changed), NULL);
 
-  remote_browser = (struct browser)
-  {
-    .name = "remote",
-    .view =
-      GTK_TREE_VIEW (gtk_builder_get_object (builder, "remote_tree_view")),
-    .buttons_stack =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_buttons_stack")),
-    .up_button =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_up_button")),
-    .add_dir_button =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_add_dir_button")),
-    .refresh_button =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_refresh_button")),
-    .search_button =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_search_button")),
-    .search_entry =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_search_entry")),
-    .dir_entry =
-      GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry")),
-    .menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu")),
-    .dir = NULL,
-    .check_selection = elektroid_remote_check_selection,
-    .fs_ops = NULL,
-    .backend = &backend,
-    .check_callback = elektroid_check_backend,
-    .sensitive_widgets = NULL,
-    .list_stack =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_list_stack")),
-    .spinner =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_spinner")),
-    .transfer_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "download_menuitem")),
-    .play_separator =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_play_separator")),
-    .play_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_play_menuitem")),
-    .options_separator =
-      GTK_WIDGET (gtk_builder_get_object
-		  (builder, "remote_options_separator")),
-    .open_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_open_menuitem")),
-    .show_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_show_menuitem")),
-    .actions_separator =
-      GTK_WIDGET (gtk_builder_get_object
-		  (builder, "remote_actions_separator")),
-    .rename_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_rename_menuitem")),
-    .delete_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "remote_delete_menuitem")),
-    .tree_view_name_column =
-      GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			    (builder, "remote_tree_view_name_column"))
-  };
-  browser_init (&remote_browser);
+  browser_remote_init (&remote_browser, builder, &backend);
 
-  g_signal_connect (remote_browser.transfer_menuitem, "activate",
+  g_signal_connect (remote_browser.browser.transfer_menuitem, "activate",
 		    G_CALLBACK (elektroid_add_download_tasks), NULL);
-  g_signal_connect (remote_browser.play_menuitem, "activate",
+  g_signal_connect (remote_browser.browser.play_menuitem, "activate",
 		    G_CALLBACK (editor_play_clicked), &editor);
-  g_signal_connect (remote_browser.open_menuitem, "activate",
+  g_signal_connect (remote_browser.browser.open_menuitem, "activate",
 		    G_CALLBACK (elektroid_open_clicked), &remote_browser);
-  g_signal_connect (remote_browser.show_menuitem, "activate",
+  g_signal_connect (remote_browser.browser.show_menuitem, "activate",
 		    G_CALLBACK (elektroid_show_clicked), &remote_browser);
-  g_signal_connect (remote_browser.rename_menuitem, "activate",
+  g_signal_connect (remote_browser.browser.rename_menuitem, "activate",
 		    G_CALLBACK (elektroid_rename_item), &remote_browser);
-  g_signal_connect (remote_browser.delete_menuitem, "activate",
+  g_signal_connect (remote_browser.browser.delete_menuitem, "activate",
 		    G_CALLBACK (elektroid_delete_files), &remote_browser);
 
-  local_browser = (struct browser)
-  {
-    .name = "local",
-    .view =
-      GTK_TREE_VIEW (gtk_builder_get_object (builder, "local_tree_view")),
-    .buttons_stack =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_buttons_stack")),
-    .up_button =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_up_button")),
-    .add_dir_button =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_add_dir_button")),
-    .refresh_button =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_refresh_button")),
-    .search_button =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_search_button")),
-    .search_entry =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_search_entry")),
-    .dir_entry =
-      GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry")),
-    .menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu")),
-    .dir = preferences.local_dir,
-    .check_selection = elektroid_local_check_selection,
-    .fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS,
-    .backend = NULL,
-    .check_callback = NULL,
-    .sensitive_widgets = NULL,
-    .list_stack =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_list_stack")),
-    .spinner = GTK_WIDGET (gtk_builder_get_object (builder, "local_spinner")),
-    .transfer_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "upload_menuitem")),
-    .play_separator =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_play_separator")),
-    .play_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_play_menuitem")),
-    .open_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_open_menuitem")),
-    .show_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_show_menuitem")),
-    .rename_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_rename_menuitem")),
-    .delete_menuitem =
-      GTK_WIDGET (gtk_builder_get_object (builder, "local_delete_menuitem")),
-    .tree_view_name_column =
-      GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			    (builder, "local_tree_view_name_column"))
-  };
-  browser_init (&local_browser);
+  browser_local_init (&local_browser, builder, &preferences);
 
-  g_signal_connect (local_browser.transfer_menuitem, "activate",
+  g_signal_connect (local_browser.browser.transfer_menuitem, "activate",
 		    G_CALLBACK (elektroid_add_upload_tasks), NULL);
-  g_signal_connect (local_browser.play_menuitem, "activate",
+  g_signal_connect (local_browser.browser.play_menuitem, "activate",
 		    G_CALLBACK (editor_play_clicked), &editor);
-  g_signal_connect (local_browser.open_menuitem, "activate",
+  g_signal_connect (local_browser.browser.open_menuitem, "activate",
 		    G_CALLBACK (elektroid_open_clicked), &local_browser);
-  g_signal_connect (local_browser.show_menuitem, "activate",
+  g_signal_connect (local_browser.browser.show_menuitem, "activate",
 		    G_CALLBACK (elektroid_show_clicked), &local_browser);
-  g_signal_connect (local_browser.rename_menuitem, "activate",
+  g_signal_connect (local_browser.browser.rename_menuitem, "activate",
 		    G_CALLBACK (elektroid_rename_item), &local_browser);
-  g_signal_connect (local_browser.delete_menuitem, "activate",
+  g_signal_connect (local_browser.browser.delete_menuitem, "activate",
 		    G_CALLBACK (elektroid_delete_files), &local_browser);
 
-  remote_tree_view_id_column =
-    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder, "remote_tree_view_id_column"));
-  remote_tree_view_slot_column =
-    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder, "remote_tree_view_slot_column"));
-  remote_tree_view_size_column =
-    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder, "remote_tree_view_size_column"));
-
-  local_tree_view_sample_frames_column =
-    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder, "local_tree_view_sample_frames_column"));
-  local_tree_view_sample_rate_column =
-    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder, "local_tree_view_sample_rate_column"));
-  local_tree_view_sample_duration_column =
-    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder,
-			   "local_tree_view_sample_duration_column"));
-  local_tree_view_sample_channels_column =
-    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder,
-			   "local_tree_view_sample_channels_column"));
-  local_tree_view_sample_bits_column =
-    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder, "local_tree_view_sample_bits_column"));
-  local_tree_view_sample_midi_note_column =
-    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder,
-			   "local_tree_view_sample_midi_note_column"));
-
-  g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),
+  g_signal_connect (gtk_tree_view_get_selection (remote_browser.browser.view),
 		    "changed", G_CALLBACK (browser_selection_changed),
 		    &remote_browser);
-  g_signal_connect (remote_browser.view, "row-activated",
+  g_signal_connect (remote_browser.browser.view, "row-activated",
 		    G_CALLBACK (browser_item_activated), &remote_browser);
-  g_signal_connect (remote_browser.up_button, "clicked",
+  g_signal_connect (remote_browser.browser.up_button, "clicked",
 		    G_CALLBACK (browser_go_up), &remote_browser);
-  g_signal_connect (remote_browser.add_dir_button, "clicked",
+  g_signal_connect (remote_browser.browser.add_dir_button, "clicked",
 		    G_CALLBACK (elektroid_add_dir), &remote_browser);
-  g_signal_connect (remote_browser.refresh_button, "clicked",
+  g_signal_connect (remote_browser.browser.refresh_button, "clicked",
 		    G_CALLBACK (browser_refresh), &remote_browser);
-  g_signal_connect (remote_browser.search_button, "clicked",
+  g_signal_connect (remote_browser.browser.search_button, "clicked",
 		    G_CALLBACK (browser_open_search), &remote_browser);
-  g_signal_connect (remote_browser.search_entry, "stop-search",
+  g_signal_connect (remote_browser.browser.search_entry, "stop-search",
 		    G_CALLBACK (browser_close_search), &remote_browser);
-  g_signal_connect (remote_browser.search_entry, "search-changed",
+  g_signal_connect (remote_browser.browser.search_entry, "search-changed",
 		    G_CALLBACK (browser_search_changed), &remote_browser);
-  g_signal_connect (remote_browser.view, "button-press-event",
+  g_signal_connect (remote_browser.browser.view, "button-press-event",
 		    G_CALLBACK (elektroid_button_press), &remote_browser);
-  g_signal_connect (remote_browser.view, "button-release-event",
+  g_signal_connect (remote_browser.browser.view, "button-release-event",
 		    G_CALLBACK (elektroid_button_release), &remote_browser);
-  g_signal_connect (remote_browser.view, "key-press-event",
+  g_signal_connect (remote_browser.browser.view, "key-press-event",
 		    G_CALLBACK (elektroid_remote_key_press), &remote_browser);
-  g_signal_connect (remote_browser.view, "drag-begin",
+  g_signal_connect (remote_browser.browser.view, "drag-begin",
 		    G_CALLBACK (elektroid_drag_begin), &remote_browser);
-  g_signal_connect (remote_browser.view, "drag-end",
+  g_signal_connect (remote_browser.browser.view, "drag-end",
 		    G_CALLBACK (elektroid_drag_end), &remote_browser);
-  g_signal_connect (remote_browser.view, "drag-data-get",
+  g_signal_connect (remote_browser.browser.view, "drag-data-get",
 		    G_CALLBACK (elektroid_dnd_get), &remote_browser);
-  g_signal_connect (remote_browser.view, "drag-data-received",
+  g_signal_connect (remote_browser.browser.view, "drag-data-received",
 		    G_CALLBACK (elektroid_dnd_received), &remote_browser);
-  g_signal_connect (remote_browser.view, "drag-motion",
+  g_signal_connect (remote_browser.browser.view, "drag-motion",
 		    G_CALLBACK (elektroid_drag_motion_list), &remote_browser);
-  g_signal_connect (remote_browser.view, "drag-leave",
+  g_signal_connect (remote_browser.browser.view, "drag-leave",
 		    G_CALLBACK (elektroid_drag_leave_list), &remote_browser);
-  g_signal_connect (remote_browser.up_button, "drag-motion",
+  g_signal_connect (remote_browser.browser.up_button, "drag-motion",
 		    G_CALLBACK (elektroid_drag_motion_up), &remote_browser);
-  g_signal_connect (remote_browser.up_button, "drag-leave",
+  g_signal_connect (remote_browser.browser.up_button, "drag-leave",
 		    G_CALLBACK (elektroid_drag_leave_up), &remote_browser);
 
-  gtk_drag_dest_set ((GtkWidget *) remote_browser.up_button,
+  gtk_drag_dest_set ((GtkWidget *) remote_browser.browser.up_button,
 		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
 		     TARGET_ENTRIES_UP_BUTTON_DST,
 		     G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST),
 		     GDK_ACTION_COPY | GDK_ACTION_MOVE);
 
-  g_signal_connect (gtk_tree_view_get_selection (local_browser.view),
+  g_signal_connect (gtk_tree_view_get_selection (local_browser.browser.view),
 		    "changed", G_CALLBACK (browser_selection_changed),
 		    &local_browser);
-  g_signal_connect (local_browser.view, "row-activated",
+  g_signal_connect (local_browser.browser.view, "row-activated",
 		    G_CALLBACK (browser_item_activated), &local_browser);
-  g_signal_connect (local_browser.up_button, "clicked",
+  g_signal_connect (local_browser.browser.up_button, "clicked",
 		    G_CALLBACK (browser_go_up), &local_browser);
-  g_signal_connect (local_browser.add_dir_button, "clicked",
+  g_signal_connect (local_browser.browser.add_dir_button, "clicked",
 		    G_CALLBACK (elektroid_add_dir), &local_browser);
-  g_signal_connect (local_browser.refresh_button, "clicked",
+  g_signal_connect (local_browser.browser.refresh_button, "clicked",
 		    G_CALLBACK (browser_refresh), &local_browser);
-  g_signal_connect (local_browser.search_button, "clicked",
+  g_signal_connect (local_browser.browser.search_button, "clicked",
 		    G_CALLBACK (browser_open_search), &local_browser);
-  g_signal_connect (local_browser.search_entry, "stop-search",
+  g_signal_connect (local_browser.browser.search_entry, "stop-search",
 		    G_CALLBACK (browser_close_search), &local_browser);
-  g_signal_connect (local_browser.search_entry, "search-changed",
+  g_signal_connect (local_browser.browser.search_entry, "search-changed",
 		    G_CALLBACK (browser_search_changed), &local_browser);
-  g_signal_connect (local_browser.view, "button-press-event",
+  g_signal_connect (local_browser.browser.view, "button-press-event",
 		    G_CALLBACK (elektroid_button_press), &local_browser);
-  g_signal_connect (local_browser.view, "button-release-event",
+  g_signal_connect (local_browser.browser.view, "button-release-event",
 		    G_CALLBACK (elektroid_button_release), &local_browser);
-  g_signal_connect (local_browser.view, "key-press-event",
+  g_signal_connect (local_browser.browser.view, "key-press-event",
 		    G_CALLBACK (elektroid_local_key_press), &local_browser);
-  g_signal_connect (local_browser.view, "drag-begin",
+  g_signal_connect (local_browser.browser.view, "drag-begin",
 		    G_CALLBACK (elektroid_drag_begin), &local_browser);
-  g_signal_connect (local_browser.view, "drag-end",
+  g_signal_connect (local_browser.browser.view, "drag-end",
 		    G_CALLBACK (elektroid_drag_end), &local_browser);
-  g_signal_connect (local_browser.view, "drag-data-get",
+  g_signal_connect (local_browser.browser.view, "drag-data-get",
 		    G_CALLBACK (elektroid_dnd_get), &local_browser);
-  g_signal_connect (local_browser.view, "drag-data-received",
+  g_signal_connect (local_browser.browser.view, "drag-data-received",
 		    G_CALLBACK (elektroid_dnd_received), &local_browser);
-  g_signal_connect (local_browser.view, "drag-motion",
+  g_signal_connect (local_browser.browser.view, "drag-motion",
 		    G_CALLBACK (elektroid_drag_motion_list), &local_browser);
-  g_signal_connect (local_browser.view, "drag-leave",
+  g_signal_connect (local_browser.browser.view, "drag-leave",
 		    G_CALLBACK (elektroid_drag_leave_list), &local_browser);
-  g_signal_connect (local_browser.up_button, "drag-motion",
+  g_signal_connect (local_browser.browser.up_button, "drag-motion",
 		    G_CALLBACK (elektroid_drag_motion_up), &local_browser);
-  g_signal_connect (local_browser.up_button, "drag-leave",
+  g_signal_connect (local_browser.browser.up_button, "drag-leave",
 		    G_CALLBACK (elektroid_drag_leave_up), &local_browser);
 
-  gtk_drag_source_set ((GtkWidget *) local_browser.view, GDK_BUTTON1_MASK,
-		       TARGET_ENTRIES_LOCAL_SRC,
+  gtk_drag_source_set ((GtkWidget *) local_browser.browser.view,
+		       GDK_BUTTON1_MASK, TARGET_ENTRIES_LOCAL_SRC,
 		       G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_SRC),
 		       GDK_ACTION_COPY | GDK_ACTION_MOVE);
-  gtk_drag_dest_set ((GtkWidget *) local_browser.view, GTK_DEST_DEFAULT_ALL,
-		     TARGET_ENTRIES_LOCAL_DST,
+  gtk_drag_dest_set ((GtkWidget *) local_browser.browser.view,
+		     GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_LOCAL_DST,
 		     G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_DST),
 		     GDK_ACTION_COPY | GDK_ACTION_MOVE);
-  gtk_drag_dest_set ((GtkWidget *) local_browser.up_button,
+  gtk_drag_dest_set ((GtkWidget *) local_browser.browser.up_button,
 		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
 		     TARGET_ENTRIES_UP_BUTTON_DST,
 		     G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST),
@@ -3443,41 +3166,6 @@ elektroid_run (int argc, char *argv[])
   fs_combo = GTK_WIDGET (gtk_builder_get_object (builder, "fs_combo"));
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
 
-  local_browser.sensitive_widgets =
-    g_slist_append (local_browser.sensitive_widgets, local_browser.view);
-  local_browser.sensitive_widgets =
-    g_slist_append (local_browser.sensitive_widgets, local_browser.up_button);
-  local_browser.sensitive_widgets =
-    g_slist_append (local_browser.sensitive_widgets,
-		    local_browser.add_dir_button);
-  local_browser.sensitive_widgets =
-    g_slist_append (local_browser.sensitive_widgets,
-		    local_browser.refresh_button);
-  local_browser.sensitive_widgets =
-    g_slist_append (local_browser.sensitive_widgets,
-		    local_browser.search_button);
-
-  remote_browser.sensitive_widgets =
-    g_slist_append (remote_browser.sensitive_widgets, devices_combo);
-  remote_browser.sensitive_widgets =
-    g_slist_append (remote_browser.sensitive_widgets, refresh_devices_button);
-  remote_browser.sensitive_widgets =
-    g_slist_append (remote_browser.sensitive_widgets, fs_combo);
-  remote_browser.sensitive_widgets =
-    g_slist_append (remote_browser.sensitive_widgets, remote_browser.view);
-  remote_browser.sensitive_widgets =
-    g_slist_append (remote_browser.sensitive_widgets,
-		    remote_browser.up_button);
-  remote_browser.sensitive_widgets =
-    g_slist_append (remote_browser.sensitive_widgets,
-		    remote_browser.add_dir_button);
-  remote_browser.sensitive_widgets =
-    g_slist_append (remote_browser.sensitive_widgets,
-		    remote_browser.refresh_button);
-  remote_browser.sensitive_widgets =
-    g_slist_append (remote_browser.sensitive_widgets,
-		    remote_browser.search_button);
-
   editor_init (&editor, builder);
   tasks_init (&tasks, builder);
   progress_init (builder);
@@ -3487,14 +3175,17 @@ elektroid_run (int argc, char *argv[])
   elektroid_show_remote (preferences.show_remote);
 
   gtk_widget_set_sensitive (remote_box, FALSE);
-  elektroid_audio_widgets_reset ();
+
+  browser_disable_sample_menuitems (&local_browser.browser);
+  browser_disable_sample_menuitems (&remote_browser.browser);
+
   gtk_label_set_text (GTK_LABEL (local_label), hostname);
 
   g_idle_add (elektroid_load_devices_bg, NULL);
   gtk_widget_show (main_window);
 
-  browser_update_fs_options (&local_browser);
-  browser_load_dir (&local_browser);
+  browser_update_fs_options (&local_browser.browser);
+  browser_load_dir (&local_browser.browser);
 
   ma_data.backend = &backend;
   ma_data.builder = builder;
@@ -3506,7 +3197,7 @@ elektroid_run (int argc, char *argv[])
       backend_destroy (&backend);
     }
 
-  preferences.local_dir = local_browser.dir;
+  preferences.local_dir = local_browser.browser.dir;
 
   g_object_unref (G_OBJECT (builder));
 

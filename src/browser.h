@@ -21,6 +21,8 @@
 #include <gtk/gtk.h>
 #include "utils.h"
 #include "notifier.h"
+#include "preferences.h"
+#include "backend.h"
 
 #ifndef BROWSER_H
 #define BROWSER_H
@@ -91,6 +93,25 @@ struct browser
   GtkTreeViewColumn *tree_view_name_column;
 };
 
+struct local_browser
+{
+  struct browser browser;
+  GtkTreeViewColumn *tree_view_sample_frames_column;
+  GtkTreeViewColumn *tree_view_sample_rate_column;
+  GtkTreeViewColumn *tree_view_sample_duration_column;
+  GtkTreeViewColumn *tree_view_sample_channels_column;
+  GtkTreeViewColumn *tree_view_sample_bits_column;
+  GtkTreeViewColumn *tree_view_sample_midi_note_column;
+};
+
+struct remote_browser
+{
+  struct browser browser;
+  GtkTreeViewColumn *tree_view_id_column;
+  GtkTreeViewColumn *tree_view_slot_column;
+  GtkTreeViewColumn *tree_view_size_column;
+};
+
 void browser_set_item (GtkTreeModel *, GtkTreeIter *, struct item *);
 
 gint browser_get_selected_items_count (struct browser *);
@@ -114,7 +135,11 @@ gboolean browser_load_dir (gpointer);
 
 void browser_update_fs_options (struct browser *);
 
-void browser_init (struct browser *);
+void browser_local_init (struct local_browser *, GtkBuilder *,
+			 struct preferences *);
+
+void browser_remote_init (struct remote_browser *, GtkBuilder *,
+			  struct backend *);
 
 void browser_destroy (struct browser *);
 
@@ -133,5 +158,13 @@ void browser_open_search (GtkWidget *, gpointer);
 void browser_close_search (GtkSearchEntry *, gpointer);
 
 void browser_search_changed (GtkSearchEntry *, gpointer);
+
+void browser_disable_sample_menuitems (struct browser *);
+
+void browser_disable_sample_widgets (struct browser *);
+
+void browser_local_set_sample_columns_visibility ();
+
+void browser_remote_set_custom_columns_visibility (gboolean);
 
 #endif
