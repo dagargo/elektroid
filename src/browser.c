@@ -570,23 +570,14 @@ browser_load_dir (gpointer data)
   return FALSE;
 }
 
-void
-browser_update_fs_options (struct browser *browser)
+static void
+browser_update_fs_sorting_options (struct browser *browser)
 {
   GtkTreeSortable *sortable =
     GTK_TREE_SORTABLE (gtk_tree_view_get_model (browser->view));
 
-  gtk_widget_set_visible (browser->add_dir_button,
-			  !browser->fs_ops || browser->fs_ops->mkdir);
-  gtk_widget_set_visible (browser->search_button,
-			  !browser->fs_ops ||
-			  browser->fs_ops->options & FS_OPTION_ALLOW_SEARCH);
-  gtk_widget_set_sensitive (browser->refresh_button,
-			    browser->fs_ops && browser->fs_ops->readdir);
-  gtk_widget_set_sensitive (browser->up_button, browser->fs_ops &&
-			    browser->fs_ops->readdir);
-
-  if (browser->fs_ops && browser->fs_ops->options & FS_OPTION_SORT_BY_ID)
+  if (!browser->search_mode && browser->fs_ops
+      && browser->fs_ops->options & FS_OPTION_SORT_BY_ID)
     {
       gtk_tree_sortable_set_sort_func (sortable,
 				       BROWSER_LIST_STORE_ID_FIELD,
@@ -595,8 +586,9 @@ browser_update_fs_options (struct browser *browser)
 					    BROWSER_LIST_STORE_ID_FIELD,
 					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
     }
-  else if (browser->fs_ops
-	   && browser->fs_ops->options & FS_OPTION_SORT_BY_NAME)
+  else if (browser->search_mode || (browser->fs_ops
+				    && browser->
+				    fs_ops->options & FS_OPTION_SORT_BY_NAME))
     {
       gtk_tree_sortable_set_sort_func (sortable,
 				       BROWSER_LIST_STORE_NAME_FIELD,
@@ -611,6 +603,22 @@ browser_update_fs_options (struct browser *browser)
 					    GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID,
 					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
     }
+}
+
+void
+browser_update_fs_options (struct browser *browser)
+{
+  gtk_widget_set_visible (browser->add_dir_button,
+			  !browser->fs_ops || browser->fs_ops->mkdir);
+  gtk_widget_set_visible (browser->search_button,
+			  !browser->fs_ops ||
+			  browser->fs_ops->options & FS_OPTION_ALLOW_SEARCH);
+  gtk_widget_set_sensitive (browser->refresh_button,
+			    browser->fs_ops && browser->fs_ops->readdir);
+  gtk_widget_set_sensitive (browser->up_button, browser->fs_ops &&
+			    browser->fs_ops->readdir);
+
+  browser_update_fs_sorting_options (browser);
 }
 
 void
@@ -690,12 +698,15 @@ browser_open_search (GtkWidget * widget, gpointer data)
   browser_wait (browser);
 
   browser_clear (browser);
+
+  browser_update_fs_sorting_options (data);
 }
 
 void
 browser_close_search (GtkSearchEntry * entry, gpointer data)
 {
   browser_reset_search (data);
+  browser_update_fs_sorting_options (data);
   browser_refresh (NULL, data);
 }
 
