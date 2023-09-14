@@ -42,6 +42,8 @@ struct editor
   GtkWidget *mix_switch;
   GtkWidget *volume_button;
   GtkWidget *mix_switch_box;
+  GtkWidget *grid_length_spin;
+  GtkWidget *show_grid_switch;
   gulong volume_changed_handler;
   GtkListStore *notes_list_store;
   GtkMenu *menu;

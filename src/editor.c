@@ -134,6 +134,7 @@ editor_reset (struct editor *editor, struct browser *browser)
   editor_set_widget_source (editor->loop_button, editor);
   editor_set_widget_source (editor->record_button, editor);
   editor_set_widget_source (editor->volume_button, editor);
+  editor_set_widget_source (editor->show_grid_switch, editor);
   editor_set_widget_source (editor->waveform, editor);
 
   gtk_widget_set_sensitive (editor->play_button, FALSE);
@@ -391,7 +392,6 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 
       context = gtk_widget_get_style_context (editor->play_menuitem);	//Any text widget is valid
       gtk_style_context_get_color (context, GTK_STATE_FLAG_NORMAL, &color);
-      bgcolor.alpha = 0.15;
       gdk_cairo_set_source_rgba (cr, &color);
 
       value = ((gint) ((audio->sample_info.loop_start - start) / x_ratio)) +
@@ -414,6 +414,22 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 		     EDITOR_LOOP_MARKER_HALF_HEIGHT);
       cairo_line_to (cr, value, EDITOR_LOOP_MARKER_FULL_HEIGHT);
       cairo_fill (cr);
+
+      if (editor->preferences->show_grid)
+	{
+	  color.alpha = 0.25;
+	  gdk_cairo_set_source_rgba (cr, &color);
+
+	  gdouble grid_inc = audio->sample_info.frames /
+	    (gdouble) editor->preferences->grid_length;
+	  for (gint i = 1; i < editor->preferences->grid_length; i++)
+	    {
+	      value = ((gint) ((i * grid_inc) - start) / x_ratio) + .5;
+	      cairo_move_to (cr, value, 0);
+	      cairo_line_to (cr, value, height - 1);
+	      cairo_stroke (cr);
+	    }
+	}
     }
 
   g_mutex_unlock (&audio->control.mutex);
@@ -670,6 +686,23 @@ editor_set_volume_callback (gpointer editor, gdouble volume)
   data->editor = editor;
   data->volume = volume;
   g_idle_add (editor_set_volume_callback_bg, data);
+}
+
+static gboolean
+editor_show_grid_clicked (GtkWidget * object, gboolean state, gpointer data)
+{
+  struct editor *editor = data;
+  editor->preferences->show_grid = state;
+  g_idle_add (editor_queue_draw, data);
+  return FALSE;
+}
+
+static void
+editor_grid_length_changed (GtkSpinButton * self, gpointer data)
+{
+  struct editor *editor = data;
+  editor->preferences->grid_length = gtk_spin_button_get_value (self);
+  g_idle_add (editor_queue_draw, data);
 }
 
 static void
@@ -1087,6 +1120,10 @@ editor_init (struct editor *editor, GtkBuilder * builder)
     GTK_WIDGET (gtk_builder_get_object (builder, "volume_button"));
   editor->mix_switch_box =
     GTK_WIDGET (gtk_builder_get_object (builder, "mix_switch_box"));
+  editor->grid_length_spin =
+    GTK_WIDGET (gtk_builder_get_object (builder, "grid_length_spin"));
+  editor->show_grid_switch =
+    GTK_WIDGET (gtk_builder_get_object (builder, "show_grid_switch"));
 
   editor->notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
@@ -1131,6 +1168,10 @@ editor_init (struct editor *editor, GtkBuilder * builder)
 		    G_CALLBACK (editor_autoplay_clicked), editor);
   g_signal_connect (editor->mix_switch, "state-set",
 		    G_CALLBACK (editor_mix_clicked), editor);
+  g_signal_connect (editor->grid_length_spin, "value-changed",
+		    G_CALLBACK (editor_grid_length_changed), editor);
+  g_signal_connect (editor->show_grid_switch, "state-set",
+		    G_CALLBACK (editor_show_grid_clicked), editor);
   editor->volume_changed_handler = g_signal_connect (editor->volume_button,
 						     "value_changed",
 						     G_CALLBACK
@@ -1163,6 +1204,11 @@ editor_init (struct editor *editor, GtkBuilder * builder)
 			 editor->preferences->autoplay);
   gtk_switch_set_active (GTK_SWITCH (editor->mix_switch),
 			 editor->preferences->mix);
+  gtk_switch_set_active (GTK_SWITCH (editor->show_grid_switch),
+			 editor->preferences->show_grid);
+
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (editor->grid_length_spin),
+			     editor->preferences->grid_length);
 
   g_signal_connect (editor->guirecorder.channels_combo, "changed",
 		    G_CALLBACK (guirecorder_channels_changed),

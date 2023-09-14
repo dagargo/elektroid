@@ -28,8 +28,12 @@
 
 #define MEMBER_AUTOPLAY "autoplay"
 #define MEMBER_MIX "mix"
-#define MEMBER_LOCALDIR "localDir"
-#define MEMBER_SHOWREMOTE "showRemote"
+#define MEMBER_LOCAL_DIR "localDir"
+#define MEMBER_SHOW_REMOTE "showRemote"
+#define MEMBER_SHOW_GRID "showGrid"
+#define MEMBER_GRID_LENGTH "gridLength"
+
+#define DEFAULT_GRID_LENGHT 16
 
 gint
 preferences_save (struct preferences *preferences)
@@ -64,11 +68,17 @@ preferences_save (struct preferences *preferences)
   json_builder_set_member_name (builder, MEMBER_MIX);
   json_builder_add_boolean_value (builder, preferences->mix);
 
-  json_builder_set_member_name (builder, MEMBER_SHOWREMOTE);
+  json_builder_set_member_name (builder, MEMBER_SHOW_REMOTE);
   json_builder_add_boolean_value (builder, preferences->show_remote);
 
-  json_builder_set_member_name (builder, MEMBER_LOCALDIR);
+  json_builder_set_member_name (builder, MEMBER_LOCAL_DIR);
   json_builder_add_string_value (builder, preferences->local_dir);
+
+  json_builder_set_member_name (builder, MEMBER_SHOW_GRID);
+  json_builder_add_boolean_value (builder, preferences->show_grid);
+
+  json_builder_set_member_name (builder, MEMBER_GRID_LENGTH);
+  json_builder_add_int_value (builder, preferences->grid_length);
 
   json_builder_end_object (builder);
 
@@ -109,6 +119,8 @@ preferences_load (struct preferences *preferences)
       preferences->mix = TRUE;
       preferences->show_remote = TRUE;
       preferences->local_dir = get_user_dir (NULL);
+      preferences->show_grid = FALSE;
+      preferences->grid_length = DEFAULT_GRID_LENGHT;
       return 0;
     }
 
@@ -136,7 +148,7 @@ preferences_load (struct preferences *preferences)
     }
   json_reader_end_member (reader);
 
-  if (json_reader_read_member (reader, MEMBER_SHOWREMOTE))
+  if (json_reader_read_member (reader, MEMBER_SHOW_REMOTE))
     {
       preferences->show_remote = json_reader_get_boolean_value (reader);
     }
@@ -146,7 +158,7 @@ preferences_load (struct preferences *preferences)
     }
   json_reader_end_member (reader);
 
-  if (json_reader_read_member (reader, MEMBER_LOCALDIR) &&
+  if (json_reader_read_member (reader, MEMBER_LOCAL_DIR) &&
       g_file_test (json_reader_get_string_value (reader),
 		   (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
     {
@@ -156,6 +168,30 @@ preferences_load (struct preferences *preferences)
   else
     {
       preferences->local_dir = get_user_dir (NULL);
+    }
+  json_reader_end_member (reader);
+
+  if (json_reader_read_member (reader, MEMBER_SHOW_GRID))
+    {
+      preferences->show_grid = json_reader_get_boolean_value (reader);
+    }
+  else
+    {
+      preferences->show_grid = FALSE;
+    }
+  json_reader_end_member (reader);
+
+  if (json_reader_read_member (reader, MEMBER_GRID_LENGTH))
+    {
+      preferences->grid_length = json_reader_get_int_value (reader);
+      if (preferences->grid_length > 64 || preferences->grid_length < 2)
+	{
+	  preferences->grid_length = DEFAULT_GRID_LENGHT;
+	}
+    }
+  else
+    {
+      preferences->grid_length = DEFAULT_GRID_LENGHT;
     }
   json_reader_end_member (reader);
 

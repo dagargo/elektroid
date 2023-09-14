@@ -29,6 +29,8 @@ struct preferences
   gboolean mix;
   gboolean show_remote;
   gchar *local_dir;
+  gboolean show_grid;
+  gint grid_length;
 };
 
 gint preferences_save (struct preferences *);
