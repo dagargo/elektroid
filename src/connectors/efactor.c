@@ -161,6 +161,7 @@ efactor_next_dentry (struct item_iterator *iter)
   snprintf (iter->item.name, LABEL_MAX, "%s", preset_name);
   iter->item.type = ELEKTROID_FILE;
   iter->item.size = -1;
+  iter->item.slot_used = TRUE;
   data->next++;
 
   return 0;

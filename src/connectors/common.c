@@ -134,6 +134,7 @@ common_simple_next_dentry (struct item_iterator *iter)
   iter->item.id = data->next;
   iter->item.type = ELEKTROID_FILE;
   iter->item.size = -1;
+  iter->item.slot_used = TRUE;
   data->next++;
 
   return 0;

@@ -1881,12 +1881,20 @@ elektroid_add_download_task_path (const gchar * rel_path,
 
   while (!next_item_iterator (&iter))
     {
-      filename =
-	get_filename (remote_browser.browser.fs_ops->options, &iter.item);
-      path = path_chain (PATH_INTERNAL, rel_path, filename);
-      elektroid_add_download_task_path (path, src_dir, dst_dir);
-      g_free (path);
-      g_free (filename);
+      if (!(remote_browser.browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+	  || iter.item.slot_used)
+	{
+	  filename = get_filename (remote_browser.browser.fs_ops->options,
+				   &iter.item);
+	  path = path_chain (PATH_INTERNAL, rel_path, filename);
+	  elektroid_add_download_task_path (path, src_dir, dst_dir);
+	  printf ("name: %s\n", filename);
+	  g_free (path);
+	  g_free (filename);
+
+	}
+
+      printf ("next\n");
     }
 
   free_item_iterator (&iter);

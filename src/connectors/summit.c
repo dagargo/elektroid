@@ -173,6 +173,7 @@ summit_patch_next_dentry (struct item_iterator *iter)
   iter->item.type = ELEKTROID_FILE;
   iter->item.size =
     data->fs == FS_SUMMIT_SINGLE_PATCH ? SUMMIT_SINGLE_LEN : SUMMIT_MULTI_LEN;
+  iter->item.slot_used = TRUE;
   data->next++;
 
   usleep (SUMMIT_REST_TIME_US);
@@ -191,6 +192,7 @@ summit_patch_next_dentry_root (struct item_iterator *iter)
       snprintf (iter->item.name, LABEL_MAX, "%c", 0x41 + iter->item.id);
       iter->item.type = ELEKTROID_DIR;
       iter->item.size = -1;
+      iter->item.slot_used = TRUE;
       (*next)++;
       return 0;
     }
@@ -715,6 +717,7 @@ summit_wavetable_next_dentry (struct item_iterator *iter)
   iter->item.id = data->next;
   iter->item.type = ELEKTROID_FILE;
   iter->item.size = 2678;
+  iter->item.slot_used = TRUE;
   data->next++;
 
   usleep (SUMMIT_REST_TIME_US * 10);

@@ -91,6 +91,7 @@ struct item
   gchar name[LABEL_MAX];
   gint32 id;
   gint64 size;
+  gboolean slot_used;		//Slot filesystems might use this if the underlying filesystem distinguishes between used and unused slots.
   //Optionally filled up by sample filesystems
   struct sample_info sample_info;
 };
