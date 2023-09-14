@@ -444,6 +444,19 @@ sample_load_sample_info (const gchar * path, struct sample_info *sample_info)
   return 0;
 }
 
+static void
+sample_check_and_fix_loop_points (struct sample_info *sample_info)
+{
+  if (sample_info->loop_start >= sample_info->frames)
+    {
+      sample_info->loop_start = sample_info->frames - 1;
+    }
+  if (sample_info->loop_end >= sample_info->frames)
+    {
+      sample_info->loop_end = sample_info->frames - 1;
+    }
+}
+
 // If control->data is NULL, then a new struct sample_info * is created and control->data points to it.
 // In case of failure, if control->data is NULL is freed.
 
@@ -555,6 +568,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   sample_info_dst->frames = floor (sample_info_src->frames * ratio);	//Lower bound estimation. The actual amount is updated later.
   sample_info_dst->loop_start = round (sample_info_src->loop_start * ratio);
   sample_info_dst->loop_end = round (sample_info_src->loop_end * ratio);
+  sample_check_and_fix_loop_points (sample_info_dst);
   if (control)
     {
       g_mutex_unlock (&control->mutex);
@@ -693,6 +707,7 @@ cleanup:
 	}
       // This removes the additional samples added by the resampler due to rounding.
       sample_info_dst->frames = actual_frames;
+      sample_check_and_fix_loop_points (sample_info_dst);
       g_byte_array_set_size (sample,
 			     sample_info_dst->frames * bytes_per_frame);
       if (control)
