@@ -463,11 +463,12 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   gint16 *buffer_input_stereo;
   gint16 *buffer_s;
   gfloat *buffer_f;
-  gint err, resampled_buffer_len, f, frames_read;
+  gint err, resampled_buffer_len, frames_read;
   gboolean active;
   gdouble ratio;
   struct sample_info *sample_info_src;
   guint bytes_per_frame;
+  guint32 f, actual_frames = 0;
 
   if (control)
     {
@@ -551,7 +552,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     {
       g_mutex_lock (&control->mutex);
     }
-  sample_info_dst->frames = ceil (sample_info_src->frames * ratio);
+  sample_info_dst->frames = floor (sample_info_src->frames * ratio);	//Lower bound estimation. The actual amount is updated later.
   sample_info_dst->loop_start = round (sample_info_src->loop_start * ratio);
   sample_info_dst->loop_end = round (sample_info_src->loop_end * ratio);
   if (control)
@@ -610,6 +611,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 	    }
 	  g_byte_array_append (sample, (guint8 *) buffer_input,
 			       frames_read * bytes_per_frame);
+	  actual_frames += frames_read;
 	  if (control)
 	    {
 	      g_mutex_unlock (&control->mutex);
@@ -641,6 +643,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 	    }
 	  g_byte_array_append (sample, (guint8 *) buffer_s,
 			       src_data.output_frames_gen * bytes_per_frame);
+	  actual_frames += src_data.output_frames_gen;
 	  if (control)
 	    {
 	      g_mutex_unlock (&control->mutex);
@@ -684,9 +687,19 @@ cleanup:
 	{
 	  control->data = sample_info_src;
 	}
+      if (control)
+	{
+	  g_mutex_lock (&control->mutex);
+	}
       // This removes the additional samples added by the resampler due to rounding.
+      sample_info_dst->frames = actual_frames;
       g_byte_array_set_size (sample,
 			     sample_info_dst->frames * bytes_per_frame);
+      if (control)
+	{
+	  cb (control, 1.0, cb_data);
+	  g_mutex_unlock (&control->mutex);
+	}
       return 0;
     }
   else
