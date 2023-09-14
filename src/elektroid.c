@@ -2117,10 +2117,8 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 
       browser_reset (&remote_browser.browser);
       browser_update_fs_options (&remote_browser.browser);
-      browser_local_set_sample_columns_visibility ();
 
       gtk_widget_set_visible (editor.box, TRUE);
-      browser_remote_set_custom_columns_visibility (FALSE);
       elektroid_update_upload_menuitem ();
       editor_set_audio_mono_mix (&editor);
 
@@ -2145,8 +2143,6 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
       local_browser.browser.fs_ops = &FS_LOCAL_GENERIC_OPERATIONS;
       editor_reset (&editor, NULL);
     }
-
-  browser_local_set_sample_columns_visibility ();
 
   editor_set_audio_mono_mix (&editor);
 
@@ -2187,9 +2183,9 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
   gtk_widget_set_visible (remote_browser.browser.delete_menuitem,
 			  remote_browser.browser.fs_ops->delete != NULL);
 
-  gtk_widget_set_visible (editor.box, EDITOR_VISIBLE);
+  browser_close_search (NULL, &remote_browser.browser);
 
-  browser_remote_set_custom_columns_visibility (TRUE);
+  gtk_widget_set_visible (editor.box, EDITOR_VISIBLE);
 
   gtk_drag_source_unset ((GtkWidget *) remote_browser.browser.view);
   gtk_drag_dest_unset ((GtkWidget *) remote_browser.browser.view);

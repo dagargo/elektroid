@@ -69,6 +69,7 @@ struct browser
   const struct fs_operations *fs_ops;
   struct backend *backend;
     gboolean (*check_callback) ();
+  void (*set_columns_visibility) ();
   struct notifier *notifier;
   //Background loading members
   GSList *sensitive_widgets;
@@ -162,9 +163,5 @@ void browser_search_changed (GtkSearchEntry *, gpointer);
 void browser_disable_sample_menuitems (struct browser *);
 
 void browser_disable_sample_widgets (struct browser *);
-
-void browser_local_set_sample_columns_visibility ();
-
-void browser_remote_set_custom_columns_visibility (gboolean);
 
 #endif

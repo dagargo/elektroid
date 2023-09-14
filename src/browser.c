@@ -627,6 +627,7 @@ browser_update_fs_options (struct browser *browser)
 			    browser->fs_ops->readdir);
 
   browser_update_fs_sorting_options (browser);
+  browser->set_columns_visibility ();
 }
 
 static void
@@ -693,7 +694,7 @@ browser_set_dnd_function (struct browser *browser, GSourceFunc function)
 }
 
 void
-browser_local_set_sample_columns_visibility ()
+browser_local_set_columns_visibility ()
 {
   gboolean sample_columns = (local_browser.browser.fs_ops->options &
 			     FS_OPTION_SAMPLE_ATTRS) != 0;
@@ -713,9 +714,9 @@ browser_local_set_sample_columns_visibility ()
 }
 
 void
-browser_remote_set_custom_columns_visibility (gboolean visibility)
+browser_remote_set_columns_visibility ()
 {
-  if (visibility)
+  if (remote_browser.browser.fs_ops)
     {
       gtk_tree_view_column_set_visible (remote_browser.tree_view_id_column,
 					remote_browser.browser.
@@ -747,24 +748,22 @@ browser_open_search (GtkWidget * widget, gpointer data)
   struct browser *browser = data;
   gtk_stack_set_visible_child_name (GTK_STACK (browser->buttons_stack),
 				    "search");
-
   g_mutex_lock (&browser->mutex);
   browser->loading = FALSE;
   browser->search_mode = TRUE;
   g_mutex_unlock (&browser->mutex);
   browser_wait (browser);
-
   browser_clear (browser);
-
   browser_update_fs_sorting_options (data);
 }
 
 void
 browser_close_search (GtkSearchEntry * entry, gpointer data)
 {
-  browser_reset_search (data);
-  browser_update_fs_sorting_options (data);
-  browser_refresh (NULL, data);
+  struct browser *browser = data;
+  browser_reset_search (browser);
+  browser_update_fs_sorting_options (browser);
+  browser_refresh (NULL, browser);
 }
 
 void
@@ -944,6 +943,8 @@ browser_local_init (struct local_browser *local_browser, GtkBuilder * builder,
   local_browser->browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
   local_browser->browser.backend = NULL;
   local_browser->browser.check_callback = NULL;
+  local_browser->browser.set_columns_visibility =
+    browser_local_set_columns_visibility;
   local_browser->browser.sensitive_widgets = NULL;
   local_browser->browser.list_stack =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_list_stack"));
@@ -1036,6 +1037,8 @@ browser_remote_init (struct remote_browser *remote_browser,
   remote_browser->browser.fs_ops = NULL;
   remote_browser->browser.backend = backend;
   remote_browser->browser.check_callback = elektroid_check_backend;
+  remote_browser->browser.set_columns_visibility =
+    browser_remote_set_columns_visibility;
   remote_browser->browser.sensitive_widgets = NULL;
   remote_browser->browser.list_stack =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_list_stack"));
