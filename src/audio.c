@@ -235,7 +235,7 @@ audio_init (struct audio *audio,
   audio->sample_info.rate = 0;
   audio->sample_info.channels = 0;
   audio->loop = FALSE;
-  audio->path[0] = 0;
+  audio->path = NULL;
   audio->status = AUDIO_STATUS_STOPPED;
   audio->volume_change_callback = volume_change_callback;
   audio->volume_change_callback_data = data;
@@ -275,7 +275,8 @@ audio_reset_sample (struct audio *audio)
   g_byte_array_set_size (audio->sample, 0);
   audio->sample_info.frames = 0;
   audio->pos = 0;
-  audio->path[0] = 0;
+  g_free (audio->path);
+  audio->path = NULL;
   audio->release_frames = 0;
   audio->status = AUDIO_STATUS_STOPPED;
   memset (audio->control.data, 0, sizeof (struct sample_info));

@@ -77,7 +77,7 @@ struct audio
   void (*ready_callback) ();
   guint32 release_frames;
   struct job_control control;	//Used to synchronize access to sample, frames, loop and pos members.
-  gchar path[PATH_MAX];
+  gchar *path;
   enum audio_status status;
   guint32 sel_start;
   gint64 sel_len;

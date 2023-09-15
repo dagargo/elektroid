@@ -834,14 +834,16 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	{
 	  enum path_type type = path_type_from_backend (browser->backend);
 	  sample_path = path_chain (type, browser->dir, item.name);
-	  if (strcmp (editor.audio.path, sample_path) ||
+	  if (!editor.audio.path || strcmp (editor.audio.path, sample_path) ||
 	      editor.browser != browser)
 	    {
 	      if (sample_editor)
 		{
 		  browser_clear_selection (OTHER_BROWSER (browser));
 		  editor_reset (&editor, browser);
-		  strcpy (editor.audio.path, sample_path);
+		  g_free (editor.audio.path);
+		  editor.audio.path = sample_path;
+		  sample_path = NULL;
 		  editor_start_load_thread (&editor);
 		}
 	    }

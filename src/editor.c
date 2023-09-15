@@ -1051,7 +1051,7 @@ editor_save_clicked (GtkWidget * object, gpointer data)
       return;
     }
 
-  if (!*editor->audio.path)
+  if (!editor->audio.path)
     {
       //This is a recording.
       gchar *name = elektroid_ask_name (_("Save Sample"), "sample.wav",
@@ -1060,8 +1060,7 @@ editor_save_clicked (GtkWidget * object, gpointer data)
 	{
 	  return;
 	}
-      strcat (editor->audio.path, name);
-      g_free (name);
+      editor->audio.path = name;
     }
 
   debug_print (2, "Saving sample to %s...\n", editor->audio.path);
