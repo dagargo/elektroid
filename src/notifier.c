@@ -118,7 +118,7 @@ notifier_init (struct notifier *notifier, struct browser *browser)
 {
 #if defined(__linux__)
   notifier->fd = inotify_init ();
-  notifier->event_size = sizeof (struct inotify_event) + PATH_MAX;
+  notifier->event_size = sizeof (struct inotify_event) + NAME_MAX + 1;
   notifier->event = g_malloc (notifier->event_size);
   notifier->browser = browser;
   notifier->thread = NULL;
