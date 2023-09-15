@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include "audio.h"
+#include "sample.h"
 
 #define FRAMES_TO_MONITOR 10000
 
@@ -342,7 +343,7 @@ void
 audio_delete_range (struct audio *audio, guint start_frame, guint frames)
 {
   gdouble r;
-  struct sample_info *sample_info = audio->control.data;
+  struct sample_info *sample_info_src = audio->control.data;
   guint bytes_per_frame = BYTES_PER_FRAME (audio->sample_info.channels);
   guint index = start_frame * bytes_per_frame;
   guint len = frames * bytes_per_frame;
@@ -376,10 +377,11 @@ audio_delete_range (struct audio *audio, guint start_frame, guint frames)
   audio->sel_start = 0;
   audio->sel_len = 0;
 
-  r = sample_info->frames / (double) audio->sample_info.frames;
-  sample_info->frames = audio->sample_info.frames * r;
-  sample_info->loop_start = audio->sample_info.loop_start * r;
-  sample_info->loop_end = audio->sample_info.loop_end * r;
+  r = sample_info_src->rate / (double) audio->sample_info.rate;
+  sample_info_src->frames = floor (audio->sample_info.frames * r);
+  sample_info_src->loop_start = round (audio->sample_info.loop_start * r);
+  sample_info_src->loop_end = round (audio->sample_info.loop_end * r);
+  sample_check_and_fix_loop_points (sample_info_src);
   g_mutex_unlock (&audio->control.mutex);
 }
 

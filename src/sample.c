@@ -444,7 +444,7 @@ sample_load_sample_info (const gchar * path, struct sample_info *sample_info)
   return 0;
 }
 
-static void
+void
 sample_check_and_fix_loop_points (struct sample_info *sample_info)
 {
   if (sample_info->loop_start >= sample_info->frames)
