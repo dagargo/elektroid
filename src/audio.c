@@ -143,7 +143,7 @@ audio_read_from_input (struct audio *audio, void *buffer, gint frames)
   guint recorded_frames, remaining_frames, recording_frames;
   guint channels =
     (audio->record_options & RECORD_STEREO) == RECORD_STEREO ? 2 : 1;
-  guint bytes_per_frame = channels * sizeof (gint16);
+  guint bytes_per_frame = BYTES_PER_FRAME (channels);
   guint record = !(audio->record_options & RECORD_MONITOR_ONLY);
 
   debug_print (2, "Reading %d frames (recording = %d)...\n", frames, record);
@@ -343,8 +343,9 @@ audio_delete_range (struct audio *audio, guint start_frame, guint frames)
 {
   gdouble r;
   struct sample_info *sample_info = audio->control.data;
-  guint index = start_frame * BYTES_PER_FRAME (audio->sample_info.channels);
-  guint len = frames * BYTES_PER_FRAME (audio->sample_info.channels);
+  guint bytes_per_frame = BYTES_PER_FRAME (audio->sample_info.channels);
+  guint index = start_frame * bytes_per_frame;
+  guint len = frames * bytes_per_frame;
 
   debug_print (2, "Deleting range from %d with len %d...\n", index, len);
   g_byte_array_remove_range (audio->sample, index, len);
