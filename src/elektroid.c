@@ -890,6 +890,9 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
   gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
   gtk_entry_set_text (name_dialog_entry, item.name);
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
+  gtk_editable_select_region (GTK_EDITABLE (name_dialog_entry), 0,
+			      strlen (item.name) -
+			      strlen (get_ext (item.name)) - 1);
   gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
 
   gtk_window_set_title (GTK_WINDOW (name_dialog), _("Rename"));
@@ -1240,7 +1243,7 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
 
 gchar *
 elektroid_ask_name (const gchar * title, const gchar * value,
-		    struct browser *browser)
+		    struct browser *browser, gint start_pos, gint end_pos)
 {
   char *pathname = NULL;
   int result;
@@ -1250,6 +1253,8 @@ elektroid_ask_name (const gchar * title, const gchar * value,
   gtk_entry_set_text (name_dialog_entry, value);
   gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
+  gtk_editable_select_region (GTK_EDITABLE (name_dialog_entry), start_pos,
+			      end_pos);
   gtk_widget_set_sensitive (name_dialog_accept_button, strlen (value) > 0);
 
   gtk_window_set_title (GTK_WINDOW (name_dialog), title);
@@ -1280,7 +1285,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
   char *pathname;
   struct browser *browser = data;
 
-  pathname = elektroid_ask_name (_("Add Directory"), "", browser);
+  pathname = elektroid_ask_name (_("Add Directory"), "", browser, 0, 0);
   if (pathname)
     {
       gint err = browser->fs_ops->mkdir (&backend, pathname);

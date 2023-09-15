@@ -65,8 +65,9 @@ struct editor_record_clicked_data
   struct browser *browser;
 };
 
-extern gchar *elektroid_ask_name (const gchar * title, const gchar * value,
-				  struct browser *browser);
+gchar *elektroid_ask_name (const gchar * title, const gchar * value,
+			   struct browser *browser, gint start_pos,
+			   gint end_pos);
 
 static void
 editor_set_layout_width_to_val (struct editor *editor, guint w)
@@ -1055,7 +1056,7 @@ editor_save_clicked (GtkWidget * object, gpointer data)
     {
       //This is a recording.
       gchar *name = elektroid_ask_name (_("Save Sample"), "sample.wav",
-					editor->browser);
+					editor->browser, 0, 6);
       if (!name)
 	{
 	  return;
