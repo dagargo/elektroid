@@ -1047,6 +1047,7 @@ static void
 editor_save_clicked (GtkWidget * object, gpointer data)
 {
   struct editor *editor = data;
+  struct sample_info *sample_info_src = editor->audio.control.data;
 
   if (!editor_loading_completed (editor))
     {
@@ -1078,6 +1079,14 @@ editor_save_clicked (GtkWidget * object, gpointer data)
     }
 
   debug_print (2, "Saving sample to %s...\n", editor->audio.path);
+
+  if (sample_info_src->rate != editor->audio.sample_info.rate)
+    {
+      debug_print (1, "Overwriting sample with different sample rate...\n");
+      memcpy (sample_info_src, &editor->audio.sample_info,
+	      sizeof (struct sample_info));
+    }
+
   editor->browser->fs_ops->upload (editor->browser->backend,
 				   editor->audio.path, editor->audio.sample,
 				   &editor->audio.control);
