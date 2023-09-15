@@ -1052,7 +1052,19 @@ editor_save_clicked (GtkWidget * object, gpointer data)
       return;
     }
 
-  if (!editor->audio.path)
+  if (editor->audio.path)
+    {
+      if (strcmp ("wav", get_ext (editor->audio.path)))
+	{
+	  remove_ext (editor->audio.path);
+	  gchar *name = editor->audio.path;
+	  editor->audio.path = g_malloc (strlen (name) + 5);
+	  strcpy (editor->audio.path, name);
+	  strcat (editor->audio.path, ".wav");
+	  g_free (name);
+	}
+    }
+  else
     {
       //This is a recording.
       gchar *name = elektroid_ask_name (_("Save Sample"), "sample.wav",
