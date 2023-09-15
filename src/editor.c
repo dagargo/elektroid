@@ -605,6 +605,7 @@ editor_record_clicked (GtkWidget * object, gpointer data)
       return;
     }
 
+  gtk_widget_set_sensitive (editor->stop_button, TRUE);
   options = guirecorder_get_channel_mask (editor->guirecorder.channels_combo);
   audio_start_recording (&editor->audio, options,
 			 editor_update_ui_on_record, data);
