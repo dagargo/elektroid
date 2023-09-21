@@ -500,8 +500,7 @@ package_receive_pkg_resources (struct package *pkg,
       package_resource_path = g_string_new (NULL);
       g_string_append_printf (package_resource_path, "%s%s.wav",
 			      PKG_TAG_SAMPLES, sample_path);
-      pkg_resource->path = package_resource_path->str;
-      g_string_free (package_resource_path, FALSE);
+      pkg_resource->path = g_string_free (package_resource_path, FALSE);
       if (package_add_resource (pkg, pkg_resource, TRUE))
 	{
 	  package_free_package_resource (pkg_resource);

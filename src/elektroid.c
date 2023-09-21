@@ -2503,8 +2503,7 @@ elektroid_add_upload_task_slot (const gchar * name,
 			      BE_SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
       g_free (name_wo_ext);
       g_free (filename);
-      dst_file_path = str->str;
-      g_string_free (str, FALSE);
+      dst_file_path = g_string_free (str, FALSE);
 
       tasks_add (&tasks, TASK_TYPE_UPLOAD, src_file_path, dst_file_path,
 		 remote_browser.browser.fs_ops->fs, &backend);

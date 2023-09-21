@@ -1176,8 +1176,7 @@ elektron_add_ext_to_mc_snd (const gchar * path)
   gchar *path_with_ext;
   GString *str = g_string_new (path);
   g_string_append (str, ".mc-snd");
-  path_with_ext = str->str;
-  g_string_free (str, FALSE);
+  path_with_ext = g_string_free (str, FALSE);
   return path_with_ext;
 }
 
@@ -2101,8 +2100,7 @@ elektron_add_prefix_to_path (const gchar * dir, const gchar * prefix)
     {
       GString *str = g_string_new (NULL);
       g_string_append_printf (str, "%s%s", prefix, dir);
-      full = str->str;
-      g_string_free (str, FALSE);
+      full = g_string_free (str, FALSE);
     }
   else
     {
