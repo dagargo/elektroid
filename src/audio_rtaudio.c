@@ -187,11 +187,11 @@ audio_init_int (struct audio *audio)
   };
 
   dev_info = rtaudio_get_device_info (audio->playback_rtaudio, dev_id);
-  audio->sample_info.samplerate = dev_info.preferred_sample_rate;
+  audio->sample_info.rate = dev_info.preferred_sample_rate;
   buffer_frames = AUDIO_BUF_FRAMES;
   err = rtaudio_open_stream (audio->playback_rtaudio, &playback_stream_params,
 			     NULL, RTAUDIO_FORMAT_SINT16,
-			     audio->sample_info.samplerate, &buffer_frames,
+			     audio->sample_info.rate, &buffer_frames,
 			     audio_playback_cb, audio, &STREAM_OPTIONS,
 			     audio_error_cb);
   if (err || !rtaudio_is_stream_open (audio->playback_rtaudio))
@@ -204,7 +204,7 @@ audio_init_int (struct audio *audio)
 
   debug_print (1,
 	       "Using %s for playback with %d Hz sample rate and %d frames...\n",
-	       dev_info.name, audio->sample_info.samplerate, buffer_frames);
+	       dev_info.name, audio->sample_info.rate, buffer_frames);
 
   audio->volume = 1.0;
   audio->volume_change_callback (audio->volume_change_callback_data,
@@ -236,7 +236,7 @@ audio_init_int (struct audio *audio)
   buffer_frames = AUDIO_BUF_FRAMES;
   err = rtaudio_open_stream (audio->record_rtaudio, NULL,
 			     &record_stream_params, RTAUDIO_FORMAT_SINT16,
-			     audio->sample_info.samplerate, &buffer_frames,
+			     audio->sample_info.rate, &buffer_frames,
 			     audio_record_cb, audio, &STREAM_OPTIONS,
 			     audio_error_cb);
   if (err || !rtaudio_is_stream_open (audio->record_rtaudio))
@@ -249,7 +249,7 @@ audio_init_int (struct audio *audio)
 
   debug_print (1,
 	       "Using %s for recording with %d Hz sample rate and %d frames...\n",
-	       dev_info.name, audio->sample_info.samplerate, buffer_frames);
+	       dev_info.name, audio->sample_info.rate, buffer_frames);
 
   audio->ready_callback ();
 
