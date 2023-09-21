@@ -380,10 +380,14 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE * sndfile,
 		   chunk_info.datalen);
       chunk_info.data = &smpl_chunk_data;
       sf_get_chunk_data (chunk_iter, &chunk_info);
-      sample_info->loop_start = le32toh (smpl_chunk_data.sample_loop.start);
-      sample_info->loop_end = le32toh (smpl_chunk_data.sample_loop.end);
-      sample_info->loop_type = le32toh (smpl_chunk_data.sample_loop.type);
-      sample_info->midi_note = le32toh (smpl_chunk_data.midi_unity_note);
+      sample_info->loop_start =
+	GUINT32_FROM_LE (smpl_chunk_data.sample_loop.start);
+      sample_info->loop_end =
+	GUINT32_FROM_LE (smpl_chunk_data.sample_loop.end);
+      sample_info->loop_type =
+	GUINT32_FROM_LE (smpl_chunk_data.sample_loop.type);
+      sample_info->midi_note =
+	GUINT32_FROM_LE (smpl_chunk_data.midi_unity_note);
       if (sample_info->loop_start >= sample_info->frames)
 	{
 	  debug_print (2, "Bad loop start\n");

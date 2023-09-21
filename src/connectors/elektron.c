@@ -279,11 +279,11 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
   else
     {
       data32 = (guint32 *) & data->msg->data[data->pos];
-      data->hash = be32toh (*data32);
+      data->hash = g_ntohl (*data32);
       data->pos += sizeof (guint32);
 
       data32 = (guint32 *) & data->msg->data[data->pos];
-      iter->item.size = be32toh (*data32);
+      iter->item.size = g_ntohl (*data32);
       data->pos += sizeof (guint32);
 
       data->pos++;		//write_protected
@@ -408,11 +408,11 @@ elektron_get_smplrw_info_from_msg (GByteArray * info_msg, guint32 * id,
     {
       if (id)
 	{
-	  *id = be32toh (*((guint32 *) & info_msg->data[6]));
+	  *id = g_ntohl (*((guint32 *) & info_msg->data[6]));
 	}
       if (size)
 	{
-	  *size = be32toh (*((guint32 *) & info_msg->data[10]));
+	  *size = g_ntohl (*((guint32 *) & info_msg->data[10]));
 	}
     }
   else
@@ -471,7 +471,7 @@ elektron_new_msg_close_common_read (const guint8 * data, guint len, guint id)
   guint32 aux32;
   GByteArray *msg = elektron_new_msg (data, len);
 
-  aux32 = htobe32 (id);
+  aux32 = g_htonl (id);
   g_byte_array_append (msg, (guchar *) & aux32, sizeof (guint32));
   return msg;
 }
@@ -503,7 +503,7 @@ elektron_new_msg_open_common_write (const guint8 * data, guint len,
   guint32 aux32;
   GByteArray *msg = elektron_new_msg_path (data, len, path);
 
-  aux32 = htobe32 (bytes);
+  aux32 = g_htonl (bytes);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
 
   return msg;
@@ -542,9 +542,9 @@ elektron_new_msg_list (const gchar * path, int32_t start_index,
 					   sizeof (DATA_LIST_REQUEST),
 					   path);
 
-  aux32 = htobe32 (start_index);
+  aux32 = g_htonl (start_index);
   g_byte_array_append (msg, (guchar *) & aux32, sizeof (guint32));
-  aux32 = htobe32 (end_index);
+  aux32 = g_htonl (end_index);
   g_byte_array_append (msg, (guchar *) & aux32, sizeof (guint32));
   aux8 = all;
   g_byte_array_append (msg, (guchar *) & aux8, sizeof (guint8));
@@ -565,9 +565,9 @@ elektron_new_msg_write_sample_blk (guint id, GByteArray * sample,
 				      sizeof (FS_SAMPLE_WRITE_FILE_REQUEST));
 
 
-  aux32 = htobe32 (id);
+  aux32 = g_htonl (id);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
-  aux32 = htobe32 (DATA_TRANSF_BLOCK_BYTES * seq);
+  aux32 = g_htonl (DATA_TRANSF_BLOCK_BYTES * seq);
   memcpy (&msg->data[13], &aux32, sizeof (guint32));
 
   bytes_blk = DATA_TRANSF_BLOCK_BYTES;
@@ -576,11 +576,11 @@ elektron_new_msg_write_sample_blk (guint id, GByteArray * sample,
   if (seq == 0)
     {
       elektron_sample_header.type = 0;
-      elektron_sample_header.sample_len_bytes = htobe32 (sample->len);
-      elektron_sample_header.rate = htobe32 (ELEKTRON_SAMPLE_RATE);
-      elektron_sample_header.loop_start = htobe32 (sample_info->loop_start);
-      elektron_sample_header.loop_end = htobe32 (sample_info->loop_end);
-      elektron_sample_header.loop_type = htobe32 (ELEKTRON_LOOP_TYPE);
+      elektron_sample_header.sample_len_bytes = g_htonl (sample->len);
+      elektron_sample_header.rate = g_htonl (ELEKTRON_SAMPLE_RATE);
+      elektron_sample_header.loop_start = g_htonl (sample_info->loop_start);
+      elektron_sample_header.loop_end = g_htonl (sample_info->loop_end);
+      elektron_sample_header.loop_type = g_htonl (ELEKTRON_LOOP_TYPE);
       memset (&elektron_sample_header.padding, 0,
 	      sizeof (guint32) * ELEKTRON_SAMPLE_INFO_PAD_I32_LEN);
 
@@ -595,7 +595,7 @@ elektron_new_msg_write_sample_blk (guint id, GByteArray * sample,
   aux16p = (guint16 *) & sample->data[*total];
   while (i < bytes_blk && *total < sample->len)
     {
-      aux16 = htobe16 (*aux16p);
+      aux16 = g_htons (*aux16p);
       g_byte_array_append (msg, (guint8 *) & aux16, sizeof (guint16));
       aux16p++;
       (*total) += sizeof (guint16);
@@ -603,7 +603,7 @@ elektron_new_msg_write_sample_blk (guint id, GByteArray * sample,
       i += sizeof (guint16);
     }
 
-  aux32 = htobe32 (consumed);
+  aux32 = g_htonl (consumed);
   memcpy (&msg->data[9], &aux32, sizeof (guint32));
 
   return msg;
@@ -618,9 +618,9 @@ elektron_new_msg_write_raw_blk (guint id, GByteArray * raw, guint * total,
   GByteArray *msg = elektron_new_msg (FS_RAW_WRITE_FILE_REQUEST,
 				      sizeof (FS_RAW_WRITE_FILE_REQUEST));
 
-  aux32 = htobe32 (id);
+  aux32 = g_htonl (id);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
-  aux32 = htobe32 (DATA_TRANSF_BLOCK_BYTES * seq);
+  aux32 = g_htonl (DATA_TRANSF_BLOCK_BYTES * seq);
   memcpy (&msg->data[13], &aux32, sizeof (guint32));
 
   len = raw->len - *total;
@@ -628,7 +628,7 @@ elektron_new_msg_write_raw_blk (guint id, GByteArray * raw, guint * total,
   g_byte_array_append (msg, &raw->data[*total], len);
   (*total) += len;
 
-  aux32 = htobe32 (len);
+  aux32 = g_htonl (len);
   memcpy (&msg->data[9], &aux32, sizeof (guint32));
 
   return msg;
@@ -641,9 +641,9 @@ elektron_new_msg_close_common_write (const guint8 * data, guint len,
   guint32 aux32;
   GByteArray *msg = elektron_new_msg (data, len);
 
-  aux32 = htobe32 (id);
+  aux32 = g_htonl (id);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
-  aux32 = htobe32 (bytes);
+  aux32 = g_htonl (bytes);
   memcpy (&msg->data[9], &aux32, sizeof (guint32));
 
   return msg;
@@ -679,11 +679,11 @@ elektron_new_msg_read_common_blk (const guint8 * data, guint len, guint id,
   guint32 aux;
   GByteArray *msg = elektron_new_msg (data, len);
 
-  aux = htobe32 (id);
+  aux = g_htonl (id);
   memcpy (&msg->data[5], &aux, sizeof (guint32));
-  aux = htobe32 (size);
+  aux = g_htonl (size);
   memcpy (&msg->data[9], &aux, sizeof (guint32));
-  aux = htobe32 (start);
+  aux = g_htonl (start);
   memcpy (&msg->data[13], &aux, sizeof (guint32));
 
   return msg;
@@ -737,7 +737,7 @@ elektron_tx (struct backend *backend, const GByteArray * msg)
   struct sysex_transfer transfer;
   struct elektron_data *data = backend->data;
 
-  aux = htobe16 (data->seq);
+  aux = g_htons (data->seq);
   memcpy (msg->data, &aux, sizeof (guint16));
   data->seq++;
 
@@ -828,7 +828,7 @@ elektron_tx_and_rx_timeout_no_cache (struct backend *backend,
 	  break;
 	}
 
-      guint16 exp_seq = be16toh (*((guint16 *) & rx_msg->data[2]));
+      guint16 exp_seq = g_ntohs (*((guint16 *) & rx_msg->data[2]));
       if (seq != exp_seq)
 	{
 	  error_print ("Unexpected sequence in response. Skipping...\n");
@@ -1470,7 +1470,7 @@ elektron_copy_sample_data (GByteArray * input, GByteArray * output)
 
   for (i = 0; i < input->len; i += sizeof (gint16))
     {
-      v = be16toh (*frame);
+      v = g_ntohs (*frame);
       g_byte_array_append (output, (guint8 *) & v, sizeof (gint16));
       frame++;
     }
@@ -1562,10 +1562,10 @@ elektron_download_smplrw (struct backend *backend, const gchar * path,
 	    &rx_msg->data[FS_SAMPLES_PAD_RES];
 	  sample_info = g_malloc (sizeof (struct sample_info));
 	  sample_info->loop_start =
-	    be32toh (elektron_sample_header->loop_start);
-	  sample_info->loop_end = be32toh (elektron_sample_header->loop_end);
+	    g_ntohl (elektron_sample_header->loop_start);
+	  sample_info->loop_end = g_ntohl (elektron_sample_header->loop_end);
 	  sample_info->loop_type = elektron_sample_header->loop_type;	// For some reason, this is already in the required format.
-	  sample_info->rate = be32toh (elektron_sample_header->rate);	//In the case of the RAW filesystem is not used and it is harmless.
+	  sample_info->rate = g_ntohl (elektron_sample_header->rate);	//In the case of the RAW filesystem is not used and it is harmless.
 	  sample_info->channels = 1;
 	  sample_info->bits = 16;
 	  control->data = sample_info;
@@ -1679,11 +1679,11 @@ elektron_new_msg_upgrade_os_write (GByteArray * os_data, gint * offset)
 
   debug_print (2, "CRC: %0x\n", crc);
 
-  aux32 = htobe32 (crc);
+  aux32 = g_htonl (crc);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
-  aux32 = htobe32 (len);
+  aux32 = g_htonl (len);
   memcpy (&msg->data[9], &aux32, sizeof (guint32));
-  aux32 = htobe32 (*offset);
+  aux32 = g_htonl (*offset);
   memcpy (&msg->data[13], &aux32, sizeof (guint32));
 
   g_byte_array_append (msg, &os_data->data[*offset], len);
@@ -1807,9 +1807,9 @@ elektron_get_storage_stats (struct backend *backend, gint type,
 
   statfs->name = FS_TYPE_NAMES[index];
   data = (guint64 *) & rx_msg->data[6];
-  statfs->bfree = be64toh (*data);
+  statfs->bfree = GUINT64_FROM_BE (*data);
   data = (guint64 *) & rx_msg->data[14];
-  statfs->bsize = be64toh (*data);
+  statfs->bsize = GUINT64_FROM_BE (*data);
 
   free_msg (rx_msg);
 
@@ -2022,7 +2022,7 @@ elektron_next_data_entry (struct item_iterator *iter)
     {
       guint32 pos = data->pos + strlen (name_cp1252) + 3;
       data32 = (guint32 *) & data->msg->data[pos];
-      id = be32toh (*data32);
+      id = g_ntohl (*data32);
       if (id > iter->item.id + 1)
 	{
 	  goto not_found;
@@ -2052,17 +2052,17 @@ elektron_next_data_entry (struct item_iterator *iter)
       iter->item.type = has_children ? ELEKTROID_DIR : ELEKTROID_FILE;
 
       data32 = (guint32 *) & data->msg->data[data->pos];
-      iter->item.id = has_children ? -1 : be32toh (*data32);
+      iter->item.id = has_children ? -1 : g_ntohl (*data32);
       data->pos += sizeof (gint32);
 
       data32 = (guint32 *) & data->msg->data[data->pos];
-      iter->item.size = be32toh (*data32);
+      iter->item.size = g_ntohl (*data32);
       data->pos += sizeof (guint32);
 
       iter->item.slot_used = TRUE;
 
       data16 = (guint16 *) & data->msg->data[data->pos];
-      data->operations = be16toh (*data16);
+      data->operations = g_ntohs (*data16);
       data->pos += sizeof (guint16);
 
       data->has_valid_data = data->msg->data[data->pos];
@@ -2368,7 +2368,7 @@ elektron_open_datum (struct backend *backend, const gchar * path,
     {
       g_byte_array_append (tx_msg, (guint8 *) path_cp1252,
 			   strlen (path_cp1252) + 1);
-      chunk_size = htobe32 (DATA_TRANSF_BLOCK_BYTES);
+      chunk_size = g_htonl (DATA_TRANSF_BLOCK_BYTES);
       g_byte_array_append (tx_msg, (guint8 *) & chunk_size, sizeof (guint32));
       compression = 1;
       g_byte_array_append (tx_msg, &compression, sizeof (guint8));
@@ -2376,7 +2376,7 @@ elektron_open_datum (struct backend *backend, const gchar * path,
 
   if (mode == O_WRONLY)
     {
-      sizebe = htobe32 (size);
+      sizebe = g_htonl (size);
       g_byte_array_append (tx_msg, (guint8 *) & sizebe, sizeof (guint32));
       g_byte_array_append (tx_msg, (guint8 *) path_cp1252,
 			   strlen (path_cp1252) + 1);
@@ -2399,12 +2399,12 @@ elektron_open_datum (struct backend *backend, const gchar * path,
     }
 
   data32 = (guint32 *) & rx_msg->data[6];
-  *jid = be32toh (*data32);
+  *jid = g_ntohl (*data32);
 
   if (mode == O_RDONLY)
     {
       data32 = (guint32 *) & rx_msg->data[10];
-      chunk_size = be32toh (*data32);
+      chunk_size = g_ntohl (*data32);
 
       compression = rx_msg->data[14];
 
@@ -2460,12 +2460,12 @@ elektron_close_datum (struct backend *backend,
       return -ENOMEM;
     }
 
-  jidbe = htobe32 (jid);
+  jidbe = g_htonl (jid);
   g_byte_array_append (tx_msg, (guchar *) & jidbe, sizeof (guint32));
 
   if (mode == O_WRONLY)
     {
-      wsizebe = htobe32 (wsize);
+      wsizebe = g_htonl (wsize);
       g_byte_array_append (tx_msg, (guchar *) & wsizebe, sizeof (guint32));
     }
 
@@ -2484,10 +2484,10 @@ elektron_close_datum (struct backend *backend,
     }
 
   data32 = (guint32 *) & rx_msg->data[6];
-  r_jid = be32toh (*data32);
+  r_jid = g_ntohl (*data32);
 
   data32 = (guint32 *) & rx_msg->data[10];
-  asize = be32toh (*data32);
+  asize = g_ntohl (*data32);
 
   debug_print (1, "Close datum info: job id: %d; size: %d\n", r_jid, asize);
 
@@ -2544,7 +2544,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
 
   usleep (BE_REST_TIME_US);
 
-  jidbe = htobe32 (jid);
+  jidbe = g_htonl (jid);
 
   err = 0;
   seq = 0;
@@ -2559,7 +2559,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
 	elektron_new_msg (DATA_READ_PARTIAL_REQUEST,
 			  sizeof (DATA_READ_PARTIAL_REQUEST));
       g_byte_array_append (tx_msg, (guint8 *) & jidbe, sizeof (guint32));
-      seqbe = htobe32 (seq);
+      seqbe = g_htonl (seq);
       g_byte_array_append (tx_msg, (guint8 *) & seqbe, sizeof (guint32));
       rx_msg = elektron_tx_and_rx (backend, tx_msg);
       if (!rx_msg)
@@ -2578,21 +2578,21 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
 	}
 
       data32 = (guint32 *) & rx_msg->data[6];
-      r_jid = be32toh (*data32);
+      r_jid = g_ntohl (*data32);
 
       data32 = (guint32 *) & rx_msg->data[10];
-      r_seq = be32toh (*data32);
+      r_seq = g_ntohl (*data32);
 
       data32 = (guint32 *) & rx_msg->data[14];
-      status = be32toh (*data32);
+      status = g_ntohl (*data32);
 
       last = rx_msg->data[18];
 
       data32 = (guint32 *) & rx_msg->data[19];
-      hash = be32toh (*data32);
+      hash = g_ntohl (*data32);
 
       data32 = (guint32 *) & rx_msg->data[23];
-      data_size = be32toh (*data32);
+      data_size = g_ntohl (*data32);
 
       if (data_size)
 	{
@@ -2849,7 +2849,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
 
   usleep (BE_REST_TIME_US);
 
-  jidbe = htobe32 (jid);
+  jidbe = g_htonl (jid);
 
   seq = 0;
   offset = 0;
@@ -2870,7 +2870,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
       tx_msg = elektron_new_msg (DATA_WRITE_PARTIAL_REQUEST,
 				 sizeof (DATA_WRITE_PARTIAL_REQUEST));
       g_byte_array_append (tx_msg, (guint8 *) & jidbe, sizeof (guint32));
-      aux32 = htobe32 (seq);
+      aux32 = g_htonl (seq);
       g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
 
       if (offset + DATA_TRANSF_BLOCK_BYTES < array->len)
@@ -2883,10 +2883,10 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
 	}
 
       crc = crc32 (0xffffffff, &array->data[offset], len);
-      aux32 = htobe32 (crc);
+      aux32 = g_htonl (crc);
       g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
 
-      aux32 = htobe32 (len);
+      aux32 = g_htonl (len);
       g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
 
       g_byte_array_append (tx_msg, &array->data[offset], len);
@@ -2910,13 +2910,13 @@ elektron_upload_data_prefix (struct backend *backend, const gchar * path,
 	}
 
       data32 = (guint32 *) & rx_msg->data[6];
-      r_jid = be32toh (*data32);
+      r_jid = g_ntohl (*data32);
 
       data32 = (guint32 *) & rx_msg->data[10];
-      r_seq = be32toh (*data32);
+      r_seq = g_ntohl (*data32);
 
       data32 = (guint32 *) & rx_msg->data[14];
-      total = be32toh (*data32);
+      total = g_ntohl (*data32);
 
       free_msg (rx_msg);
 
@@ -3028,9 +3028,9 @@ elektron_get_sample_path_from_hash_size (struct backend *backend,
 		      sizeof
 		      (FS_SAMPLE_GET_FILE_INFO_FROM_HASH_AND_SIZE_REQUEST));
 
-  aux32 = htobe32 (hash);
+  aux32 = g_htonl (hash);
   memcpy (&tx_msg->data[5], &aux32, sizeof (guint32));
-  aux32 = htobe32 (size);
+  aux32 = g_htonl (size);
   memcpy (&tx_msg->data[9], &aux32, sizeof (guint32));
 
   rx_msg = elektron_tx_and_rx (backend, tx_msg);
