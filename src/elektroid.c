@@ -204,7 +204,7 @@ elektroid_load_local_if_no_notifier (gpointer data)
 {
 #if !defined(__linux__)
   struct browser *browser = data;
-  if (browser == &local_browser)
+  if (browser == &local_browser.browser)
     {
       browser_load_dir (browser);
     }
