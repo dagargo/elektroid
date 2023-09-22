@@ -1566,6 +1566,7 @@ elektron_download_smplrw (struct backend *backend, const gchar * path,
 	  sample_info->loop_end = g_ntohl (elektron_sample_header->loop_end);
 	  sample_info->loop_type = elektron_sample_header->loop_type;	// For some reason, this is already in the required format.
 	  sample_info->rate = g_ntohl (elektron_sample_header->rate);	//In the case of the RAW filesystem is not used and it is harmless.
+	  sample_info->midi_note = 0;
 	  sample_info->channels = 1;
 	  sample_info->bits = 16;
 	  control->data = sample_info;
