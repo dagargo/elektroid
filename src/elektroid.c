@@ -873,10 +873,9 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
 static void
 elektroid_rename_item (GtkWidget * object, gpointer data)
 {
-  char *old_path;
-  char *new_path;
-  int result;
-  gint err;
+  gchar *old_path, *new_path;
+  const gchar *ext;
+  gint result, err, sel_len;
   GtkTreeIter iter;
   struct item item;
   struct browser *browser = data;
@@ -887,12 +886,17 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
   browser_set_item (model, &iter, &item);
   old_path = browser_get_item_path (browser, &item);
 
+  sel_len = strlen (item.name);
+  ext = get_ext (item.name);
+  if (ext)
+    {
+      sel_len -= strlen (ext) + 1;
+    }
+
   gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
   gtk_entry_set_text (name_dialog_entry, item.name);
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
-  gtk_editable_select_region (GTK_EDITABLE (name_dialog_entry), 0,
-			      strlen (item.name) -
-			      strlen (get_ext (item.name)) - 1);
+  gtk_editable_select_region (GTK_EDITABLE (name_dialog_entry), 0, sel_len);
   gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
 
   gtk_window_set_title (GTK_WINDOW (name_dialog), _("Rename"));
