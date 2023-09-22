@@ -1561,6 +1561,7 @@ elektron_download_smplrw (struct backend *backend, const gchar * path,
 	    (struct elektron_sample_header *)
 	    &rx_msg->data[FS_SAMPLES_PAD_RES];
 	  sample_info = g_malloc (sizeof (struct sample_info));
+	  sample_info->frames = frames;
 	  sample_info->loop_start =
 	    g_ntohl (elektron_sample_header->loop_start);
 	  sample_info->loop_end = g_ntohl (elektron_sample_header->loop_end);
