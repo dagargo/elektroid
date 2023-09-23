@@ -506,5 +506,6 @@ system_init_backend (struct backend *backend, const gchar * id)
   snprintf (backend->name, LABEL_MAX, "%s", _("System"));
   *backend->version = 0;
   *backend->description = 0;
+  backend->conn_name = "system";
   return 0;
 }

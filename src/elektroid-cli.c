@@ -31,6 +31,8 @@
 #include "connector.h"
 #include "utils.h"
 
+#define COMMAND_NOT_IN_SYSTEM_FS "Command not available in system backend\n"
+
 #define GET_FS_OPS_OFFSET(member) offsetof(struct fs_operations, member)
 #define GET_FS_OPS_FUNC(type,fs,offset) (*(((type *) (((gchar *) fs) + offset))))
 #define CHECK_FS_OPS_FUNC(f) if (!(f)) {return -ENOSYS;}
@@ -436,6 +438,11 @@ cli_upgrade_os (int argc, gchar * argv[], int *optind)
     {
       return err;
     }
+  if (backend.type == BE_TYPE_SYSTEM)
+    {
+      error_print (COMMAND_NOT_IN_SYSTEM_FS);
+      return EXIT_FAILURE;
+    }
 
   sysex_transfer.raw = g_byte_array_new ();
   err = load_file (src_path, sysex_transfer.raw, NULL);
@@ -596,11 +603,15 @@ cli_send (int argc, gchar * argv[], int *optind)
     }
 
   connector = "default";
-
   err = cli_connect (device_dst_path);
   if (err)
     {
       return err;
+    }
+  if (backend.type == BE_TYPE_SYSTEM)
+    {
+      error_print (COMMAND_NOT_IN_SYSTEM_FS);
+      return EXIT_FAILURE;
     }
 
   sysex_transfer.active = TRUE;
@@ -647,11 +658,15 @@ cli_receive (int argc, gchar * argv[], int *optind)
     }
 
   connector = "default";
-
   err = cli_connect (device_src_path);
   if (err)
     {
       return err;
+    }
+  if (backend.type == BE_TYPE_SYSTEM)
+    {
+      error_print (COMMAND_NOT_IN_SYSTEM_FS);
+      return EXIT_FAILURE;
     }
 
   sysex_transfer.timeout = BE_DUMP_TIMEOUT;
