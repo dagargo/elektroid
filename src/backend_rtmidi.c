@@ -215,8 +215,8 @@ backend_check_int (struct backend *backend)
   return backend->inputp && backend->outputp;
 }
 
-GArray *
-backend_get_devices ()
+void
+backend_fill_devices_array (GArray * devices)
 {
   struct RtMidiWrapper *inputp;
   struct RtMidiWrapper *outputp;
@@ -225,12 +225,10 @@ backend_get_devices ()
   gchar oportname[LABEL_MAX];
   gint iportnamelen, oportnamelen;
   struct backend_device *backend_device;
-  GArray *devices = g_array_new (FALSE, FALSE,
-				 sizeof (struct backend_device));
 
   if (!(inputp = rtmidi_in_create_default ()))
     {
-      goto end;
+      return;
     }
 
   if (!(outputp = rtmidi_out_create_default ()))
@@ -266,6 +264,7 @@ backend_get_devices ()
 	  if (!strcmp (iportname, oportname))
 	    {
 	      backend_device = g_malloc (sizeof (struct backend_device));
+	      backend_device->type = BE_TYPE_MIDI;
 	      snprintf (backend_device->id, LABEL_MAX, "%s", iportname);
 	      snprintf (backend_device->name, LABEL_MAX, "%s", iportname);
 	      g_array_append_vals (devices, backend_device, 1);
@@ -273,6 +272,7 @@ backend_get_devices ()
 #else
 	  //We consider the cartesian product of inputs and outputs as the available ports.
 	  backend_device = g_malloc (sizeof (struct backend_device));
+	  backend_device->type = BE_TYPE_MIDI;
 	  snprintf (backend_device->id, LABEL_MAX, "%s%s%s", iportname,
 		    WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
 	  snprintf (backend_device->name, LABEL_MAX, "%s%s%s", iportname,
@@ -289,9 +289,6 @@ cleanup_output:
 cleanup_input:
   rtmidi_close_port (outputp);
   rtmidi_out_free (outputp);
-
-end:
-  return devices;
 }
 
 const gchar *

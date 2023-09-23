@@ -55,6 +55,7 @@
 
 enum device_list_store_columns
 {
+  DEVICES_LIST_STORE_TYPE_FIELD,
   DEVICES_LIST_STORE_ID_FIELD,
   DEVICES_LIST_STORE_NAME_FIELD
 };
@@ -247,22 +248,17 @@ elektroid_load_devices (gboolean auto_select)
   gtk_list_store_clear (fs_list_store);
   gtk_list_store_clear (devices_list_store);
 
-  gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
-				     DEVICES_LIST_STORE_ID_FIELD,
-				     BE_SYSTEM_ID,
-				     DEVICES_LIST_STORE_NAME_FIELD,
-				     hostname, -1);
-
   for (i = 0; i < devices->len; i++)
     {
       device = g_array_index (devices, struct backend_device, i);
       gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
+					 DEVICES_LIST_STORE_TYPE_FIELD,
+					 device.type,
 					 DEVICES_LIST_STORE_ID_FIELD,
 					 device.id,
 					 DEVICES_LIST_STORE_NAME_FIELD,
 					 device.name, -1);
     }
-  i++;				//We add the system backend.
 
   g_array_free (devices, TRUE);
 
@@ -2353,7 +2349,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 {
   GtkTreeIter iter;
   gchar *id, *name;
-  gint dres;
+  gint dres, err;
   struct backend_device be_sys_device;
 
   elektroid_cancel_all_tasks_and_wait ();
@@ -2369,6 +2365,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
     }
 
   gtk_tree_model_get (GTK_TREE_MODEL (devices_list_store), &iter,
+		      DEVICES_LIST_STORE_TYPE_FIELD, &be_sys_device.type,
 		      DEVICES_LIST_STORE_ID_FIELD, &id,
 		      DEVICES_LIST_STORE_NAME_FIELD, &name, -1);
 
@@ -2379,36 +2376,37 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 
   ma_clear_device_menu_actions (ma_data.box);
 
-  if (!system_init_backend (&backend, be_sys_device.id))
+  if (be_sys_device.type == BE_TYPE_SYSTEM)
     {
-      debug_print (1, "System backend detected\n");
-      elektroid_fill_fs_combo_bg (NULL);
-      elektroid_check_backend_bg (NULL);
-      backend.conn_name = NULL;
-      ma_set_device_menu_actions (&ma_data, GTK_WINDOW (main_window));
-      return;
-    }
-
-  progress_run (elektroid_set_device_runner, &be_sys_device,
-		_("Connecting to Device"), _("Connecting..."), &dres);
-
-  if (sysex_transfer.err && sysex_transfer.err != -ECANCELED)
-    {
-      error_print ("Error while connecting: %s\n",
-		   g_strerror (-sysex_transfer.err));
-      show_error_msg (_("Device “%s” not recognized: %s"),
-		      be_sys_device.name, g_strerror (-sysex_transfer.err));
-    }
-
-  elektroid_check_backend_bg (NULL);
-  if (dres == GTK_RESPONSE_ACCEPT)
-    {
-      elektroid_fill_fs_combo_bg (NULL);
-      ma_set_device_menu_actions (&ma_data, GTK_WINDOW (main_window));
+      connector_init_backend (&backend, &be_sys_device, NULL, NULL);
+      err = 0;
     }
   else
     {
+      progress_run (elektroid_set_device_runner, &be_sys_device,
+		    _("Connecting to Device"), _("Connecting..."), &dres);
+
+      if (sysex_transfer.err && sysex_transfer.err != -ECANCELED)
+	{
+	  error_print ("Error while connecting: %s\n",
+		       g_strerror (-sysex_transfer.err));
+	  show_error_msg (_("Device “%s” not recognized: %s"),
+			  be_sys_device.name,
+			  g_strerror (-sysex_transfer.err));
+	}
+
+      elektroid_check_backend_bg (NULL);
+      err = dres == GTK_RESPONSE_ACCEPT ? 0 : 1;
+    }
+
+  if (err)
+    {
       gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), -1);
+    }
+  else
+    {
+      elektroid_fill_fs_combo_bg (NULL);
+      ma_set_device_menu_actions (&ma_data, GTK_WINDOW (main_window));
     }
 }
 

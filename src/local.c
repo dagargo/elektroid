@@ -26,6 +26,7 @@
 #include <glib/gi18n.h>
 #include "local.h"
 #include "sample.h"
+#include "connectors/common.h"
 
 struct local_iterator_data
 {
@@ -420,6 +421,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .gui_name = "WAV 48 KHz 16 bits stereo",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_samples_read_dir,
+  .print_item = common_print_item,
   .file_exists = local_file_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,
@@ -444,6 +446,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .gui_name = "WAV 48 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_samples_read_dir,
+  .print_item = common_print_item,
   .file_exists = local_file_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,
@@ -469,6 +472,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .gui_name = "WAV 44.1 KHz 16 bits stereo",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_samples_read_dir,
+  .print_item = common_print_item,
   .file_exists = local_file_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,
@@ -493,6 +497,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .gui_name = "WAV 44.1 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .readdir = local_samples_read_dir,
+  .print_item = common_print_item,
   .file_exists = local_file_exists,
   .mkdir = local_mkdir,
   .delete = local_delete,

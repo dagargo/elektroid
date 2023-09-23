@@ -19,6 +19,7 @@
  */
 
 #include "backend.h"
+#include "local.h"
 #include "connector.h"
 #include "connectors/elektron.h"
 #include "connectors/microbrute.h"
@@ -106,6 +107,14 @@ connector_init_backend (struct backend *backend,
   GSList *list = NULL, *iterator;
   gboolean active = TRUE;
   const struct connector **connector;
+
+  if (device->type == BE_TYPE_SYSTEM)
+    {
+      if (!system_init_backend (backend, device->id))
+	{
+	  return 0;
+	}
+    }
 
   err = backend_init (backend, device->id);
   if (err)

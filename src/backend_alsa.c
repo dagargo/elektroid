@@ -363,6 +363,7 @@ backend_get_system_subdevices (snd_ctl_t * ctl, int card, int device,
       debug_print (1, "Adding hw:%d (name '%s', subname '%s')...\n", card,
 		   name, sub_name);
       backend_device = g_malloc (sizeof (struct backend_device));
+      backend_device->type = BE_TYPE_MIDI;
       snprintf (backend_device->id, LABEL_MAX, BE_DEVICE_NAME, card, device,
 		sub);
       snprintf (backend_device->name, LABEL_MAX, BE_DEVICE_NAME ": %s%s%s",
@@ -401,13 +402,10 @@ backend_fill_card_devices (gint card, GArray * devices)
   snd_ctl_close (ctl);
 }
 
-GArray *
-backend_get_devices ()
+void
+backend_fill_devices_array (GArray * devices)
 {
   gint card, err;
-  GArray *devices =
-    g_array_new (FALSE, FALSE, sizeof (struct backend_device));
-
   card = -1;
   while (!(err = snd_card_next (&card)) && card >= 0)
     {
@@ -417,8 +415,6 @@ backend_get_devices ()
     {
       error_print ("Cannot determine card number: %s\n", snd_strerror (err));
     }
-
-  return devices;
 }
 
 const gchar *

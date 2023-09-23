@@ -95,16 +95,21 @@ common_print_item (struct item_iterator *iter, struct backend *backend,
 		   const struct fs_operations *fs_ops)
 {
   gchar *slot = NULL;
-  if (fs_ops->get_slot)
+  if (fs_ops->options & FS_OPTION_SLOT_STORAGE)
     {
-      slot = fs_ops->get_slot (&iter->item, backend);
+      if (fs_ops->get_slot)
+	{
+	  slot = fs_ops->get_slot (&iter->item, backend);
+	}
+      else
+	{
+	  slot = common_get_id_as_slot (&iter->item, backend);
+	}
     }
-  else
-    {
-      slot = common_get_id_as_slot (&iter->item, backend);
-    }
-  printf ("%c % 4" PRId64 "B %10s%s%s\n", iter->item.type, iter->item.size,
-	  slot ? slot : "", slot ? " " : "", iter->item.name);
+  gchar *hsize = get_human_size (iter->item.size, FALSE);
+  printf ("%c %10s %.*s%s%s\n", iter->item.type, hsize, slot ? 10 : 0,
+	  slot, slot ? " " : "", iter->item.name);
+  g_free (hsize);
   g_free (slot);
 }
 

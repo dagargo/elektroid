@@ -33,6 +33,7 @@ gint backend_init_int (struct backend *, const gchar *);
 gboolean backend_check_int (struct backend *);
 const gchar *backend_name ();
 const gchar *backend_version ();
+void backend_fill_devices_array (GArray *);
 
 //Identity Request Universal Sysex message
 static const guint8 BE_MIDI_IDENTITY_REQUEST[] =
@@ -695,4 +696,21 @@ path_type_from_backend (struct backend *backend)
 {
   return (!backend || backend->type == BE_TYPE_SYSTEM) ? PATH_SYSTEM :
     PATH_INTERNAL;
+}
+
+GArray *
+backend_get_devices ()
+{
+  struct backend_device *backend_device;
+  GArray *devices =
+    g_array_new (FALSE, FALSE, sizeof (struct backend_device));
+
+  backend_device = g_malloc (sizeof (struct backend_device));
+  backend_device->type = BE_TYPE_SYSTEM;
+  snprintf (backend_device->id, LABEL_MAX, "%s", BE_SYSTEM_ID);
+  snprintf (backend_device->name, LABEL_MAX, "%s", g_get_host_name ());
+  g_array_append_vals (devices, backend_device, 1);
+
+  backend_fill_devices_array (devices);
+  return devices;
 }

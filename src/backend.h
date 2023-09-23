@@ -121,6 +121,7 @@ struct backend
 
 struct backend_device
 {
+  enum backend_type type;
   gchar name[LABEL_MAX];
   gchar id[LABEL_MAX];
 };
