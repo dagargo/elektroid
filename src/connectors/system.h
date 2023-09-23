@@ -1,6 +1,6 @@
 /*
- *   local.h
- *   Copyright (C) 2021 David García Goñi <dagargo@gmail.com>
+ *   system.h
+ *   Copyright (C) 2022 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
  *
@@ -18,13 +18,24 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef LOCAL_H
-#define LOCAL_H
-
 #include "backend.h"
 #include "utils.h"
 
-extern const struct fs_operations FS_LOCAL_GENERIC_OPERATIONS;
-extern const struct fs_operations FS_LOCAL_SAMPLE_OPERATIONS;
+gint system_read_dir (struct backend *, struct item_iterator *, const gchar *,
+		      const gchar **);
 
-#endif
+gint system_samples_read_dir (struct backend *, struct item_iterator *,
+			      const gchar *, const gchar **);
+
+gboolean system_file_exists (struct backend *, const gchar *);
+
+gint system_mkdir (struct backend *, const gchar *);
+
+gint system_delete (struct backend *, const gchar *);
+
+gint system_rename (struct backend *, const gchar *, const gchar *);
+
+gint system_upload (struct backend *, const gchar *, GByteArray *,
+		    struct job_control *);
+
+gint system_init_backend (struct backend *, const gchar *);

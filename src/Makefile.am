@@ -49,6 +49,7 @@ sample.c sample.h \
 utils.c utils.h \
 backend.c backend.h $(elektroid_backend_sources) \
 connectors/common.c connectors/common.h \
+connectors/system.c connectors/system.h \
 connectors/elektron.c connectors/elektron.h \
 connectors/package.c connectors/package.h \
 connectors/microbrute.c connectors/microbrute.h \

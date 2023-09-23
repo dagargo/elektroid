@@ -25,7 +25,7 @@
 #include "audio.h"
 #include "sample.h"
 #include "progress.h"
-#include "local.h"
+#include "connectors/system.h"
 #include "guirecorder.h"
 
 extern struct editor editor;
@@ -114,7 +114,7 @@ autosampler_runner (gpointer user_data)
       audio_delete_range (&editor.audio, start, len);
 
       gchar *dir = path_chain (PATH_SYSTEM, local_browser.dir, data->name);
-      local_mkdir (NULL, dir);
+      system_mkdir (NULL, dir);
       //We add the note number to ensure lexicographical order.
       snprintf (filename, LABEL_MAX, "%03d %s %s.wav", s, data->name, note);
       gchar *path = path_chain (PATH_SYSTEM, dir, filename);
