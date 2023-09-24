@@ -42,6 +42,8 @@ static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 #define OS_TRANSF_BLOCK_BYTES 0x800
 #define MAX_ZIP_SIZE (128 * 1024 * 1024)
 
+#define FS_DATA_METADATA_EXT "metadata"
+#define FS_DATA_METADATA_FILE "." FS_DATA_METADATA_EXT
 #define FS_DATA_PRJ_PREFIX "/projects"
 #define FS_DATA_SND_PREFIX "/soundbanks"
 #define FS_SAMPLES_START_POS 5
@@ -2514,7 +2516,6 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
 			       const gchar * prefix)
 {
   gint err;
-  guint id;
   guint32 seq;
   guint32 seqbe;
   guint32 jid;
@@ -2529,12 +2530,19 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
   gboolean active;
   GByteArray *rx_msg;
   GByteArray *tx_msg;
-  gchar *path_w_prefix;
+  gchar *path_w_prefix, *basename;
 
-  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  basename = g_path_get_basename (path);
+  err = strcmp (basename, FS_DATA_METADATA_FILE);
+  g_free (basename);
   if (err)
     {
-      return err;
+      guint id;
+      err = common_slot_get_id_name_from_path (path, &id, NULL);
+      if (err)
+	{
+	  return err;
+	}
     }
 
   path_w_prefix = elektron_add_prefix_to_path (path, prefix);
@@ -2778,10 +2786,10 @@ elektron_get_download_path (struct backend *backend,
   // 0:/soundbanks/A/1/.metadata
   // 0:/loops/sample
 
-  if (ext && strcmp (ext, "metadata") == 0)
+  if (ext && strcmp (ext, FS_DATA_METADATA_EXT) == 0)
     {
       src_fpath = g_path_get_dirname (src_path);
-      md_ext = ".metadata";
+      md_ext = FS_DATA_METADATA_FILE;
     }
   else
     {
