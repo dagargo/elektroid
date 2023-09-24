@@ -1,11 +1,35 @@
 #!/usr/bin/env bash
 
-$ecli elektron-data-ul $srcdir/res/connectors/SOUND.dtdata $TEST_DEVICE:/soundbanks/H/256
+echo "Cleaning up sample..."
+$ecli elektron-sample-rm $TEST_DEVICE:/auto-test/square
+$ecli elektron-sample-rmdir $TEST_DEVICE:/auto-test
 
-$srcdir/integration/generic_fs_tests.sh elektron sound /H 256 "/H/0 /H/257" /H/256 "" ""
+echo "Preparing tests..."
+$ecli elektron-sound-ul $srcdir/res/connectors/elektron_sound.data $TEST_DEVICE:/H/256
+$ecli elektron-sound-dl $TEST_DEVICE:/H/256
 
-$ecli elektron-data-rm $TEST_DEVICE:/soundbanks/H/256
+src_content=$(unzip -l $srcdir/res/connectors/elektron_sound.data | tail -n +4 | head -n -2 | awk '{print $1" "$4}')
+dst_content=$(unzip -l $srcdir/SOUND.dtsnd | tail -n +4 | head -n -2 | awk '{print $1" "$4}')
+echo "Comparing zip files..."
+echo "$src_content"
+echo "---"
+echo "$dst_content"
+cksum1=$(echo "$src_content" | cksum)
+cksum2=$(echo "$dst_content" | cksum)
+[ "$cksum1" != "$cksum2" ] && err=1
 
-rm $srcdir/SOUND.dtsnd
+echo "Looking for sample..."
+$ecli elektron-sample-dl $TEST_DEVICE:/auto-test/square
+[ $? -ne 0 ] && err=1
 
-exit $?
+$srcdir/integration/generic_fs_tests.sh --no-download elektron sound /H 256 "/H/0 /H/257" /H/256 "" ""
+[ $? -ne 0 ] && err=1
+
+echo "Cleaning up..."
+rm -f $srcdir/SOUND.dtsnd
+rm -f $srcdir/square.wav
+$ecli elektron-sound-rm $TEST_DEVICE:/H/256
+$ecli elektron-sample-rm $TEST_DEVICE:/auto-test/square
+$ecli elektron-sample-rmdir $TEST_DEVICE:/auto-test
+
+exit $err

@@ -20,8 +20,10 @@ fi
 BACKUP_PREFIX="Backup - "
 
 function exitWithError() {
-  echo "Restoring..."
-  $ecli ${CONN}-${FS}-ul "$FILE_BACKUP" $TEST_DEVICE:$FILE_PATH
+  if [ -n "$FILE_BACKUP" ]; then
+    echo "Restoring..."
+    $ecli ${CONN}-${FS}-ul "$FILE_BACKUP" $TEST_DEVICE:$FILE_PATH
+  fi
   rm -f "$FILE"
   rm -f "$FILE_BACKUP"
   exit $1
