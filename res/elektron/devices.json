@@ -76,4 +76,11 @@
 	"alias": "st",
 	"filesystems": 56,
 	"storage": 0
+}
+, {
+	"id": 32,
+	"name": "Elektron Analog Heat +FX",
+	"alias": "ah",
+	"filesystems": 40,
+	"storage": 0
 }]
