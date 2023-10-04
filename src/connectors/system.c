@@ -18,11 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <dirent.h>
 #include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <glib/gi18n.h>
 #include "local.h"
 #include "sample.h"
@@ -30,7 +26,7 @@
 
 struct system_iterator_data
 {
-  DIR *dir;
+  GDir *dir;
   gchar *path;
   const gchar **extensions;
 };
@@ -106,34 +102,29 @@ system_mkdir (struct backend *backend, const gchar * name)
 gint
 system_delete (struct backend *backend, const gchar * path)
 {
-  DIR *dir;
+  GDir *dir;
   gchar *new_path;
-  struct dirent *dirent;
 
-  if ((dir = opendir (path)))
+  if ((dir = g_dir_open (path, 0, NULL)))
     {
       debug_print (1, "Deleting local %s dir...\n", path);
 
-      while ((dirent = readdir (dir)) != NULL)
+      const gchar *name;
+      while ((name = g_dir_read_name (dir)) != NULL)
 	{
-	  if (strcmp (dirent->d_name, ".") == 0 ||
-	      strcmp (dirent->d_name, "..") == 0)
-	    {
-	      continue;
-	    }
-	  new_path = path_chain (PATH_SYSTEM, path, dirent->d_name);
+	  new_path = path_chain (PATH_SYSTEM, path, name);
 	  system_delete (backend, new_path);
 	  g_free (new_path);
 	}
 
-      closedir (dir);
+      g_dir_close (dir);
 
       return rmdir (path);
     }
   else
     {
       debug_print (1, "Deleting local %s file...\n", path);
-      return unlink (path);
+      return g_unlink (path);
     }
 }
 
@@ -148,7 +139,7 @@ static void
 system_free_iterator_data (void *iter_data)
 {
   struct system_iterator_data *data = iter_data;
-  closedir (data->dir);
+  g_dir_close (data->dir);
   g_free (data->path);
   g_free (data);
 }
@@ -157,49 +148,50 @@ static gint
 system_next_dentry (struct item_iterator *iter, gboolean sample_info)
 {
   gchar *full_path;
-  struct dirent *dirent;
+  const gchar *name;
   struct stat st;
-  mode_t mode;
   struct system_iterator_data *data = iter->data;
 
-  while ((dirent = readdir (data->dir)) != NULL)
+  while ((name = g_dir_read_name (data->dir)) != NULL)
     {
-      if (dirent->d_name[0] == '.')
+      if (name[0] == '.')
 	{
 	  continue;
 	}
 
-      full_path = path_chain (PATH_SYSTEM, data->path, dirent->d_name);
-      if (stat (full_path, &st))
+      full_path = path_chain (PATH_SYSTEM, data->path, name);
+      enum item_type type;
+      if (g_file_test (full_path, G_FILE_TEST_IS_DIR))
 	{
-	  g_free (full_path);
+	  type = ELEKTROID_DIR;
+	}
+      else if (g_file_test (full_path, G_FILE_TEST_IS_REGULAR))
+	{
+	  type = ELEKTROID_FILE;
+	}
+      else
+	{
+	  error_print ("'%s' is neither file nor directory\n", full_path);
 	  continue;
 	}
 
-      mode = st.st_mode & S_IFMT;
-      switch (mode)
+      if (!stat (full_path, &st))
 	{
-	case S_IFREG:
-	case S_IFDIR:
-	  snprintf (iter->item.name, LABEL_MAX, "%s", dirent->d_name);
-	  iter->item.type = mode == S_IFREG ? ELEKTROID_FILE : ELEKTROID_DIR;
+	  snprintf (iter->item.name, LABEL_MAX, "%s", name);
+	  iter->item.type = type;
 	  iter->item.size = st.st_size;
 	  iter->item.id = -1;
-	  break;
-	default:
-	  error_print ("stat mode neither file nor directory for %s\n",
-		       full_path);
-	  continue;
-	}
 
-      if (iter_is_dir_or_matches_extensions (iter, data->extensions))
-	{
-	  if (iter->item.type == ELEKTROID_FILE && sample_info)
+	  if (iter_is_dir_or_matches_extensions (iter, data->extensions))
 	    {
-	      sample_load_sample_info (full_path, &iter->item.sample_info);
+	      if (iter->item.type == ELEKTROID_FILE && sample_info)
+		{
+		  sample_load_sample_info (full_path,
+					   &iter->item.sample_info);
+		}
+	      g_free (full_path);
+	      return 0;
 	    }
-	  g_free (full_path);
-	  return 0;
 	}
 
       g_free (full_path);
@@ -225,10 +217,10 @@ system_read_dir_opts (struct backend *backend, struct item_iterator *iter,
 		      const gchar * path, const gchar ** extensions,
 		      iterator_next next)
 {
-  DIR *dir;
+  GDir *dir;
   struct system_iterator_data *data;
 
-  if (!(dir = opendir (path)))
+  if (!(dir = g_dir_open (path, 0, NULL)))
     {
       return -errno;
     }
