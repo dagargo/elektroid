@@ -1772,7 +1772,8 @@ end:
 
 static gint
 elektron_get_storage_stats (struct backend *backend, gint type,
-			    struct backend_storage_stats *statfs)
+			    struct backend_storage_stats *statfs,
+			    const gchar * path)
 {
   GByteArray *tx_msg, *rx_msg;
   gint8 op;
@@ -1807,7 +1808,7 @@ elektron_get_storage_stats (struct backend *backend, gint type,
 	}
     }
 
-  statfs->name = FS_TYPE_NAMES[index];
+  snprintf (statfs->name, LABEL_MAX, "%s", FS_TYPE_NAMES[index]);
   data = (guint64 *) & rx_msg->data[6];
   statfs->bfree = GUINT64_FROM_BE (*data);
   data = (guint64 *) & rx_msg->data[14];

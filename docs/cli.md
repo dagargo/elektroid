@@ -47,7 +47,7 @@ Digitakt 1.30 (Digitakt) filesystems=sample,data,project,sound
 * `df` or `info-storage`, show size and use of +Drive and RAM
 
 ```
-$ elektroid-cli df 0
+$ elektroid-cli df 0:/
 Storage               Size            Used       Available       Use%
 +Drive           959.50MiB       198.20MiB       761.30MiB     20.66%
 RAM               64.00MiB        13.43MiB        50.57MiB     20.98%

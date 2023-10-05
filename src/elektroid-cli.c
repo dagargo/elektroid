@@ -346,6 +346,7 @@ static int
 cli_df (int argc, gchar * argv[], int *optind)
 {
   gchar *device_path;
+  const gchar *path;
   gchar *size;
   gchar *diff;
   gchar *free;
@@ -374,7 +375,13 @@ cli_df (int argc, gchar * argv[], int *optind)
       return -ENOSYS;
     }
 
-  printf ("%-10.10s%16.16s%16.16s%16.16s%11.10s\n", "Storage", "Size",
+  path = cli_get_path (device_path);
+  if (!strlen (path))
+    {
+      return -EINVAL;
+    }
+
+  printf ("%-20.20s%16.16s%16.16s%16.16s%11.10s\n", "Storage", "Size",
 	  "Used", "Available", "Use%");
 
   err = 0;
@@ -382,7 +389,7 @@ cli_df (int argc, gchar * argv[], int *optind)
     {
       if (backend.storage & storage)
 	{
-	  err |= backend.get_storage_stats (&backend, storage, &statfs);
+	  err |= backend.get_storage_stats (&backend, storage, &statfs, path);
 	  if (err)
 	    {
 	      continue;
@@ -390,7 +397,7 @@ cli_df (int argc, gchar * argv[], int *optind)
 	  size = get_human_size (statfs.bsize, FALSE);
 	  diff = get_human_size (statfs.bsize - statfs.bfree, FALSE);
 	  free = get_human_size (statfs.bfree, FALSE);
-	  printf ("%-10.10s%16s%16s%16s%10.2f%%\n",
+	  printf ("%-20.20s%16s%16s%16s%10.2f%%\n",
 		  statfs.name, size, diff, free,
 		  backend_get_storage_stats_percent (&statfs));
 	  g_free (size);

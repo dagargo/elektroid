@@ -313,7 +313,8 @@ elektroid_update_backend_status ()
 	    {
 	      if (backend.storage & storage)
 		{
-		  if (!backend.get_storage_stats (&backend, storage, &statfs))
+		  if (!backend.get_storage_stats (&backend, storage, &statfs,
+						  remote_browser.browser.dir))
 		    {
 		      g_string_append_printf (statfss, " %s %.2f%%",
 					      statfs.name,

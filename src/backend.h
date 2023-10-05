@@ -61,7 +61,7 @@
 
 struct backend_storage_stats
 {
-  const gchar *name;
+  gchar name[LABEL_MAX];
   guint64 bsize;
   guint64 bfree;
 };
@@ -69,7 +69,8 @@ struct backend_storage_stats
 typedef void (*t_destroy_data) (struct backend *);
 
 typedef gint (*t_get_storage_stats) (struct backend *, gint,
-				     struct backend_storage_stats *);
+				     struct backend_storage_stats *,
+				     const gchar *);
 
 struct backend_midi_info
 {

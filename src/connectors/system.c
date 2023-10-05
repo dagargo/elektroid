@@ -20,6 +20,10 @@
 
 #include <errno.h>
 #include <glib/gi18n.h>
+#if defined(__linux__)
+#include <sys/statvfs.h>
+#include <mntent.h>
+#endif
 #include "local.h"
 #include "sample.h"
 #include "connectors/common.h"
@@ -482,6 +486,52 @@ static const struct fs_operations *FS_SYSTEM_OPERATIONS[] = {
   NULL
 };
 
+#if defined (__linux__)
+static gint
+system_get_storage_stats (struct backend *backend, gint type,
+			  struct backend_storage_stats *statfs,
+			  const gchar * path)
+{
+  gint err;
+  FILE *f;
+  struct statvfs svfs;
+  struct stat s1, s2;
+  struct mntent *me;
+
+  if ((err = stat (path, &s1)) < 0)
+    {
+      return err;
+    }
+
+  f = setmntent ("/proc/mounts", "r");
+  if (f == NULL)
+    {
+      return -ENODEV;
+    }
+  while ((me = getmntent (f)))
+    {
+      if (!stat (me->mnt_dir, &s2))
+	{
+	  if (s1.st_dev == s2.st_dev)
+	    {
+	      break;
+	    }
+	}
+    }
+  endmntent (f);
+
+  err = statvfs (path, &svfs);
+  if (!err)
+    {
+      snprintf (statfs->name, LABEL_MAX, "%s", me->mnt_fsname);
+      statfs->bfree = svfs.f_bavail * svfs.f_frsize;
+      statfs->bsize = svfs.f_blocks * svfs.f_frsize;
+    }
+
+  return err;
+}
+#endif
+
 gint
 system_init_backend (struct backend *backend, const gchar * id)
 {
@@ -499,5 +549,14 @@ system_init_backend (struct backend *backend, const gchar * id)
   *backend->version = 0;
   *backend->description = 0;
   backend->conn_name = "system";
+  backend->destroy_data = NULL;
+  backend->upgrade_os = NULL;
+#if defined (__linux__)
+  backend->get_storage_stats = system_get_storage_stats;
+  backend->storage = 1;
+#else
+  backend->get_storage_stats = NULL;
+  backend->storage = 0;
+#endif
   return 0;
 }
