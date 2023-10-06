@@ -27,6 +27,9 @@
 #define EDITOR_OP_SELECT 1
 #define EDITOR_OP_MOVE_LOOP_START 2
 #define EDITOR_OP_MOVE_LOOP_END 3
+#define EDITOR_OP_MOVE_SEL_START 4
+#define EDITOR_OP_MOVE_SEL_END 5
+
 
 #define EDITOR_LOOP_MARKER_WIDTH 7
 #define EDITOR_LOOP_MARKER_HALF_HEIGHT 4
@@ -823,7 +826,7 @@ static gboolean
 editor_cursor_frame_over_frame (struct editor *editor,
 				guint cursor_frame, guint frame)
 {
-  gdouble x_ratio = editor_get_x_ratio (editor);
+  gdouble x_ratio = editor_get_x_ratio (editor) * 2.0;
   return cursor_frame >= frame - x_ratio && cursor_frame <= frame + x_ratio;
 }
 
@@ -869,6 +872,22 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
 	  editor->operation = EDITOR_OP_MOVE_LOOP_END;
 	  editor_set_cursor (editor, "col-resize");
 	}
+      else if (editor_cursor_frame_over_frame (editor, cursor_frame,
+					       editor->audio.sel_start))
+	{
+	  debug_print (2, "Clicking on selection start...\n");
+	  editor->operation = EDITOR_OP_MOVE_SEL_START;
+	  editor_set_cursor (editor, "col-resize");
+	}
+      else if (editor_cursor_frame_over_frame (editor, cursor_frame,
+					       editor->audio.sel_start +
+					       editor->audio.sel_len))
+	{
+	  debug_print (2, "Clicking on selection end...\n");
+	  editor->operation = EDITOR_OP_MOVE_SEL_END;
+	  editor_set_cursor (editor, "col-resize");
+	}
+
       else
 	{
 	  audio_stop_playback (&editor->audio);
@@ -981,6 +1000,18 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
 		   sample_info_src->loop_end);
       editor->dirty = TRUE;
     }
+  else if (editor->operation == EDITOR_OP_MOVE_SEL_START)
+    {
+      gint32 diff = cursor_frame - editor->audio.sel_start;
+      editor->audio.sel_start = cursor_frame;
+      editor->audio.sel_len -= diff;
+      debug_print (2, "Setting selection start to %d ...\n", cursor_frame);
+    }
+  else if (editor->operation == EDITOR_OP_MOVE_SEL_END)
+    {
+      editor->audio.sel_len = cursor_frame - editor->audio.sel_start;
+      debug_print (2, "Setting selection length to %d ...\n", cursor_frame);
+    }
   else
     {
       if (editor_cursor_frame_over_frame (editor, cursor_frame,
@@ -992,6 +1023,17 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
       else if (editor_cursor_frame_over_frame (editor, cursor_frame,
 					       editor->audio.
 					       sample_info.loop_end))
+	{
+	  editor_set_cursor (editor, "col-resize");
+	}
+      else if (editor_cursor_frame_over_frame (editor, cursor_frame,
+					       editor->audio.sel_start))
+	{
+	  editor_set_cursor (editor, "col-resize");
+	}
+      else if (editor_cursor_frame_over_frame (editor, cursor_frame,
+					       editor->audio.sel_start +
+					       editor->audio.sel_len))
 	{
 	  editor_set_cursor (editor, "col-resize");
 	}
