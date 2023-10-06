@@ -3192,7 +3192,10 @@ elektroid_run (int argc, char *argv[])
 
   gtk_label_set_text (GTK_LABEL (local_label), hostname);
 
-  g_idle_add (elektroid_load_devices_bg, NULL);
+  if (preferences.show_remote)
+    {
+      g_idle_add (elektroid_load_devices_bg, NULL);
+    }
   gtk_widget_show (main_window);
 
   browser_update_fs_options (&local_browser.browser);
