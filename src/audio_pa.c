@@ -312,8 +312,7 @@ audio_server_info_callback (pa_context * context, const pa_server_info * info,
   pa_operation *operation;
   pa_stream_flags_t stream_flags =
     PA_STREAM_START_CORKED | PA_STREAM_INTERPOLATE_TIMING |
-    PA_STREAM_NOT_MONOTONIC | PA_STREAM_AUTO_TIMING_UPDATE |
-    PA_STREAM_ADJUST_LATENCY;
+    PA_STREAM_NOT_MONOTONIC | PA_STREAM_AUTO_TIMING_UPDATE;
   pa_proplist *props = pa_proplist_new ();
 
   audio->sample_info.rate = info->sample_spec.rate;
