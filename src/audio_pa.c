@@ -26,10 +26,10 @@ void audio_finish_recording (struct audio *);
 
 static const pa_buffer_attr BUFFER_ATTR = {
   .maxlength = -1,
-  .tlength = AUDIO_BUF_FRAMES * BYTES_PER_FRAME (AUDIO_CHANNELS),	//bytes
+  .tlength = AUDIO_BUF_BYTES,
   .prebuf = -1,
   .minreq = -1,
-  .fragsize = AUDIO_BUF_FRAMES * BYTES_PER_FRAME (AUDIO_CHANNELS)	//bytes
+  .fragsize = AUDIO_BUF_BYTES
 };
 
 static void
