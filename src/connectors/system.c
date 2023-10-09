@@ -259,9 +259,9 @@ system_samples_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
-system_sample_load_custom (const gchar * path, GByteArray * sample,
-			   struct job_control *control,
-			   struct sample_info *sample_info_dst)
+system_load_custom (const gchar * path, GByteArray * sample,
+		    struct job_control *control,
+		    struct sample_info *sample_info_dst)
 {
   control->parts = 1;
   control->part = 0;
@@ -274,14 +274,14 @@ system_sample_load_custom (const gchar * path, GByteArray * sample,
 }
 
 static gint
-system_sample_load_48_16_stereo (const gchar * path, GByteArray * sample,
-				 struct job_control *control)
+system_load_48_16_stereo (const gchar * path, GByteArray * sample,
+			  struct job_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 48000;
   sample_info_dst.channels = 2;
   sample_info_dst.format = SF_FORMAT_PCM_16;
-  return system_sample_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, &sample_info_dst);
 }
 
 static gint
@@ -293,14 +293,14 @@ system_upload_48_16_stereo (struct backend *backend, const gchar * path,
 }
 
 static gint
-system_sample_load_48_16_mono (const gchar * path, GByteArray * sample,
-			       struct job_control *control)
+system_load_48_16_mono (const gchar * path, GByteArray * sample,
+			struct job_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 48000;
   sample_info_dst.channels = 1;
   sample_info_dst.format = SF_FORMAT_PCM_16;
-  return system_sample_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, &sample_info_dst);
 }
 
 static gint
@@ -312,14 +312,14 @@ system_upload_48_16_mono (struct backend *backend, const gchar * path,
 }
 
 static gint
-system_sample_load_441_16_stereo (const gchar * path, GByteArray * sample,
-				  struct job_control *control)
+system_load_441_16_stereo (const gchar * path, GByteArray * sample,
+			   struct job_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 44100;
   sample_info_dst.channels = 2;
   sample_info_dst.format = SF_FORMAT_PCM_16;
-  return system_sample_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, &sample_info_dst);
 }
 
 static gint
@@ -331,14 +331,14 @@ system_upload_441_16_stereo (struct backend *backend, const gchar * path,
 }
 
 static gint
-system_sample_load_441_16_mono (const gchar * path, GByteArray * sample,
-				struct job_control *control)
+system_load_441_16_mono (const gchar * path, GByteArray * sample,
+			 struct job_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 44100;
   sample_info_dst.channels = 1;
   sample_info_dst.format = SF_FORMAT_PCM_16;
-  return system_sample_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, &sample_info_dst);
 }
 
 static gint
@@ -347,6 +347,82 @@ system_upload_441_16_mono (struct backend *backend, const gchar * path,
 {
   return sample_save_to_file (path, input, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+}
+
+static gint
+system_load_441_24_stereo (const gchar * path, GByteArray * sample,
+			   struct job_control *control)
+{
+  struct sample_info sample_info_dst;
+  sample_info_dst.rate = 44100;
+  sample_info_dst.channels = 2;
+  sample_info_dst.format = SF_FORMAT_FLOAT;
+  return system_load_custom (path, sample, control, &sample_info_dst);
+}
+
+static gint
+system_upload_441_24_stereo (struct backend *backend, const gchar * path,
+			     GByteArray * input, struct job_control *control)
+{
+  return sample_save_to_file (path, input, control,
+			      SF_FORMAT_WAV | SF_FORMAT_PCM_24);
+}
+
+static gint
+system_load_441_24_mono (const gchar * path, GByteArray * sample,
+			 struct job_control *control)
+{
+  struct sample_info sample_info_dst;
+  sample_info_dst.rate = 44100;
+  sample_info_dst.channels = 1;
+  sample_info_dst.format = SF_FORMAT_FLOAT;
+  return system_load_custom (path, sample, control, &sample_info_dst);
+}
+
+static gint
+system_upload_441_24_mono (struct backend *backend, const gchar * path,
+			   GByteArray * input, struct job_control *control)
+{
+  return sample_save_to_file (path, input, control,
+			      SF_FORMAT_WAV | SF_FORMAT_PCM_24);
+}
+
+static gint
+system_load_441_8_stereo (const gchar * path, GByteArray * sample,
+			  struct job_control *control)
+{
+  struct sample_info sample_info_dst;
+  sample_info_dst.rate = 44100;
+  sample_info_dst.channels = 2;
+  sample_info_dst.format = SF_FORMAT_PCM_16;
+  return system_load_custom (path, sample, control, &sample_info_dst);
+}
+
+static gint
+system_upload_441_8_stereo (struct backend *backend, const gchar * path,
+			    GByteArray * input, struct job_control *control)
+{
+  return sample_save_to_file (path, input, control,
+			      SF_FORMAT_WAV | SF_FORMAT_PCM_U8);
+}
+
+static gint
+system_load_441_8_mono (const gchar * path, GByteArray * sample,
+			struct job_control *control)
+{
+  struct sample_info sample_info_dst;
+  sample_info_dst.rate = 44100;
+  sample_info_dst.channels = 1;
+  sample_info_dst.format = SF_FORMAT_PCM_16;
+  return system_load_custom (path, sample, control, &sample_info_dst);
+}
+
+static gint
+system_upload_441_8_mono (struct backend *backend, const gchar * path,
+			  GByteArray * input, struct job_control *control)
+{
+  return sample_save_to_file (path, input, control,
+			      SF_FORMAT_WAV | SF_FORMAT_PCM_U8);
 }
 
 gboolean
@@ -360,7 +436,11 @@ enum system_fs
   FS_SAMPLES_LOCAL_48_16_STEREO = 0x1,
   FS_SAMPLES_LOCAL_48_16_MONO = 0x2,
   FS_SAMPLES_LOCAL_441_16_STEREO = 0x4,
-  FS_SAMPLES_LOCAL_441_16_MONO = 0x8
+  FS_SAMPLES_LOCAL_441_16_MONO = 0x8,
+  FS_SAMPLES_LOCAL_441_24_STEREO = 0x10,
+  FS_SAMPLES_LOCAL_441_24_MONO = 0x20,
+  FS_SAMPLES_LOCAL_441_8_STEREO = 0x40,
+  FS_SAMPLES_LOCAL_441_8_MONO = 0x80
 };
 
 const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
@@ -379,7 +459,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .move = system_rename,
   .download = system_download,
   .upload = system_upload_48_16_stereo,
-  .load = system_sample_load_48_16_stereo,
+  .load = system_load_48_16_stereo,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
@@ -404,7 +484,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .move = system_rename,
   .download = system_download,
   .upload = system_upload_48_16_mono,
-  .load = system_sample_load_48_16_mono,
+  .load = system_load_48_16_mono,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
@@ -430,7 +510,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .move = system_rename,
   .download = system_download,
   .upload = system_upload_441_16_stereo,
-  .load = system_sample_load_441_16_stereo,
+  .load = system_load_441_16_stereo,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
@@ -458,7 +538,111 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .swap = NULL,
   .download = system_download,
   .upload = system_upload_441_16_mono,
-  .load = system_sample_load_441_16_mono,
+  .load = system_load_441_16_mono,
+  .save = save_file,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = system_get_upload_path,
+  .get_download_path = system_get_download_path,
+  .type_ext = "wav",
+  .max_name_len = 255
+};
+
+const struct fs_operations FS_SYSTEM_SAMPLES_441_24_STEREO_OPERATIONS = {
+  .fs = FS_SAMPLES_LOCAL_441_24_STEREO,
+  .options =
+    FS_OPTION_SORT_BY_NAME | FS_OPTION_SAMPLE_EDITOR |
+    FS_OPTION_STEREO | FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .name = "wav44124s",
+  .gui_name = "WAV 44.1 KHz 24 bits stereo",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = system_samples_read_dir,
+  .file_exists = system_file_exists,
+  .mkdir = system_mkdir,
+  .delete = system_delete,
+  .rename = system_rename,
+  .move = system_rename,
+  .download = system_download,
+  .upload = system_upload_441_24_stereo,
+  .load = system_load_441_24_stereo,
+  .save = save_file,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = system_get_upload_path,
+  .get_download_path = system_get_download_path,
+  .type_ext = "wav",
+  .max_name_len = 255
+};
+
+const struct fs_operations FS_SYSTEM_SAMPLES_441_24_MONO_OPERATIONS = {
+  .fs = FS_SAMPLES_LOCAL_441_24_MONO,
+  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_SAMPLE_EDITOR |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .name = "wav44124m",
+  .gui_name = "WAV 44.1 KHz 24 bits mono",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = system_samples_read_dir,
+  .file_exists = system_file_exists,
+  .mkdir = system_mkdir,
+  .delete = system_delete,
+  .rename = system_rename,
+  .move = system_rename,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = system_download,
+  .upload = system_upload_441_24_mono,
+  .load = system_load_441_24_mono,
+  .save = save_file,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = system_get_upload_path,
+  .get_download_path = system_get_download_path,
+  .type_ext = "wav",
+  .max_name_len = 255
+};
+
+const struct fs_operations FS_SYSTEM_SAMPLES_441_8_STEREO_OPERATIONS = {
+  .fs = FS_SAMPLES_LOCAL_441_8_STEREO,
+  .options =
+    FS_OPTION_SORT_BY_NAME | FS_OPTION_SAMPLE_EDITOR |
+    FS_OPTION_STEREO | FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .name = "wav4418s",
+  .gui_name = "WAV 44.1 KHz 8 bits stereo",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = system_samples_read_dir,
+  .file_exists = system_file_exists,
+  .mkdir = system_mkdir,
+  .delete = system_delete,
+  .rename = system_rename,
+  .move = system_rename,
+  .download = system_download,
+  .upload = system_upload_441_8_stereo,
+  .load = system_load_441_8_stereo,
+  .save = save_file,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = system_get_upload_path,
+  .get_download_path = system_get_download_path,
+  .type_ext = "wav",
+  .max_name_len = 255
+};
+
+const struct fs_operations FS_SYSTEM_SAMPLES_441_8_MONO_OPERATIONS = {
+  .fs = FS_SAMPLES_LOCAL_441_8_MONO,
+  .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_SAMPLE_EDITOR |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .name = "wav4418m",
+  .gui_name = "WAV 44.1 KHz 8 bits mono",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = system_samples_read_dir,
+  .file_exists = system_file_exists,
+  .mkdir = system_mkdir,
+  .delete = system_delete,
+  .rename = system_rename,
+  .move = system_rename,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = system_download,
+  .upload = system_upload_441_8_mono,
+  .load = system_load_441_8_mono,
   .save = save_file,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
@@ -472,6 +656,10 @@ static const struct fs_operations *FS_SYSTEM_OPERATIONS[] = {
   &FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS,
   &FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS,
   &FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS,
+  &FS_SYSTEM_SAMPLES_441_24_STEREO_OPERATIONS,
+  &FS_SYSTEM_SAMPLES_441_24_MONO_OPERATIONS,
+  &FS_SYSTEM_SAMPLES_441_8_STEREO_OPERATIONS,
+  &FS_SYSTEM_SAMPLES_441_8_MONO_OPERATIONS,
   NULL
 };
 
@@ -532,7 +720,9 @@ system_init_backend (struct backend *backend, const gchar * id)
   backend->type = BE_TYPE_SYSTEM;
   backend->filesystems =
     FS_SAMPLES_LOCAL_48_16_STEREO | FS_SAMPLES_LOCAL_48_16_MONO |
-    FS_SAMPLES_LOCAL_441_16_STEREO | FS_SAMPLES_LOCAL_441_16_MONO;
+    FS_SAMPLES_LOCAL_441_16_STEREO | FS_SAMPLES_LOCAL_441_16_MONO |
+    FS_SAMPLES_LOCAL_441_24_STEREO | FS_SAMPLES_LOCAL_441_24_MONO |
+    FS_SAMPLES_LOCAL_441_8_STEREO | FS_SAMPLES_LOCAL_441_8_MONO;
   backend->fs_ops = FS_SYSTEM_OPERATIONS;
   snprintf (backend->name, LABEL_MAX, "%s", _("System"));
   *backend->version = 0;
