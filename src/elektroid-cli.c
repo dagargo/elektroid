@@ -329,7 +329,7 @@ cli_info (int argc, gchar * argv[], int *optind)
 	  backend.name, backend.version, backend.description,
 	  backend.conn_name);
 
-  for (gint fs = 1; fs <= MAX_BACKEND_FSS; fs <<= 1)
+  for (guint32 fs = 1, i = 0; i < MAX_BACKEND_FSS; fs <<= 1, i++)
     {
       if (backend.filesystems & fs)
 	{
