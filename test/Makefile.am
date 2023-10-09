@@ -41,7 +41,7 @@ tests_common_SOURCES = \
         ../src/connectors/common.c \
 	../src/connectors/common.h
 
-TESTS = integration/test.sh $(check_PROGRAMS)
+TESTS = integration/test.sh integration/system_all_fs_tests.sh $(check_PROGRAMS)
 
 EXTRA_DIST = integration res
 
