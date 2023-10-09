@@ -424,6 +424,18 @@ elektroid_cancel_all_tasks_and_wait ()
 void
 elektroid_refresh_devices (GtkWidget * widget, gpointer data)
 {
+  if (backend.type == BE_TYPE_SYSTEM)
+    {
+      if (remote_browser.browser.dir)
+	{
+	  if (preferences.remote_dir)
+	    {
+	      g_free (preferences.remote_dir);
+	    }
+	  preferences.remote_dir = strdup (remote_browser.browser.dir);
+	}
+    }
+
   if (backend_check (&backend))
     {
       elektroid_cancel_all_tasks_and_wait ();
@@ -2164,11 +2176,19 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
     {
       if (!remote_browser.browser.dir)
 	{
-	  remote_browser.browser.dir = get_user_dir (NULL);
+	  remote_browser.browser.dir = strdup (preferences.remote_dir);
 	}
     }
   else
     {
+      if (remote_browser.browser.dir)
+	{
+	  if (preferences.remote_dir)
+	    {
+	      g_free (preferences.remote_dir);
+	    }
+	  preferences.remote_dir = remote_browser.browser.dir;
+	}
       g_free (remote_browser.browser.dir);
       remote_browser.browser.dir = strdup ("/");
     }
@@ -3044,7 +3064,8 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (remote_browser.browser.delete_menuitem, "activate",
 		    G_CALLBACK (elektroid_delete_files), &remote_browser);
 
-  browser_local_init (&local_browser, builder, &preferences);
+  browser_local_init (&local_browser, builder, preferences.local_dir);
+  preferences.local_dir = NULL;
 
   g_signal_connect (local_browser.browser.transfer_menuitem, "activate",
 		    G_CALLBACK (elektroid_add_upload_tasks), NULL);
@@ -3206,12 +3227,16 @@ elektroid_run (int argc, char *argv[])
 
   gtk_main ();
 
+  preferences.local_dir = local_browser.browser.dir;
+  if (backend.type == BE_TYPE_SYSTEM)
+    {
+      preferences.remote_dir = remote_browser.browser.dir;
+    }
+
   if (backend_check (&backend))
     {
       backend_destroy (&backend);
     }
-
-  preferences.local_dir = local_browser.browser.dir;
 
   g_object_unref (G_OBJECT (builder));
 

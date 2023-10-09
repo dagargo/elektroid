@@ -29,6 +29,7 @@ struct preferences
   gboolean mix;
   gboolean show_remote;
   gchar *local_dir;
+  gchar *remote_dir;
   gboolean show_grid;
   gint grid_length;
 };

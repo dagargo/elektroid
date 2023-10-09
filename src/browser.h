@@ -136,8 +136,7 @@ gboolean browser_load_dir (gpointer);
 
 void browser_update_fs_options (struct browser *);
 
-void browser_local_init (struct local_browser *, GtkBuilder *,
-			 struct preferences *);
+void browser_local_init (struct local_browser *, GtkBuilder *, gchar *);
 
 void browser_remote_init (struct remote_browser *, GtkBuilder *,
 			  struct backend *);

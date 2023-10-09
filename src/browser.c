@@ -919,7 +919,7 @@ browser_remote_check_selection (gpointer data)
 
 void
 browser_local_init (struct local_browser *local_browser, GtkBuilder * builder,
-		    struct preferences *preferences)
+		    gchar * local_dir)
 {
   local_browser->browser.name = "local";
   local_browser->browser.view =
@@ -940,7 +940,7 @@ browser_local_init (struct local_browser *local_browser, GtkBuilder * builder,
     GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry"));
   local_browser->browser.menu =
     GTK_MENU (gtk_builder_get_object (builder, "local_menu"));
-  local_browser->browser.dir = preferences->local_dir;
+  local_browser->browser.dir = local_dir;
   local_browser->browser.check_selection = browser_local_check_selection;
   local_browser->browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
   local_browser->browser.backend = NULL;

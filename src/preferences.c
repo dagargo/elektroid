@@ -29,6 +29,7 @@
 #define MEMBER_AUTOPLAY "autoplay"
 #define MEMBER_MIX "mix"
 #define MEMBER_LOCAL_DIR "localDir"
+#define MEMBER_REMOTE_DIR "remoteDir"	//Only used in system filesystems.
 #define MEMBER_SHOW_REMOTE "showRemote"
 #define MEMBER_SHOW_GRID "showGrid"
 #define MEMBER_GRID_LENGTH "gridLength"
@@ -73,6 +74,9 @@ preferences_save (struct preferences *preferences)
 
   json_builder_set_member_name (builder, MEMBER_LOCAL_DIR);
   json_builder_add_string_value (builder, preferences->local_dir);
+
+  json_builder_set_member_name (builder, MEMBER_REMOTE_DIR);
+  json_builder_add_string_value (builder, preferences->remote_dir);
 
   json_builder_set_member_name (builder, MEMBER_SHOW_GRID);
   json_builder_add_boolean_value (builder, preferences->show_grid);
@@ -119,6 +123,7 @@ preferences_load (struct preferences *preferences)
       preferences->mix = TRUE;
       preferences->show_remote = TRUE;
       preferences->local_dir = get_user_dir (NULL);
+      preferences->remote_dir = get_user_dir (NULL);
       preferences->show_grid = FALSE;
       preferences->grid_length = DEFAULT_GRID_LENGHT;
       return 0;
@@ -168,6 +173,19 @@ preferences_load (struct preferences *preferences)
   else
     {
       preferences->local_dir = get_user_dir (NULL);
+    }
+  json_reader_end_member (reader);
+
+  if (json_reader_read_member (reader, MEMBER_REMOTE_DIR) &&
+      g_file_test (json_reader_get_string_value (reader),
+		   (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
+    {
+      preferences->remote_dir =
+	g_strdup (json_reader_get_string_value (reader));
+    }
+  else
+    {
+      preferences->remote_dir = strdup ("/");
     }
   json_reader_end_member (reader);
 
