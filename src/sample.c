@@ -18,7 +18,6 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sndfile.h>
 #include <samplerate.h>
 #include <math.h>
 #include <errno.h>
@@ -201,8 +200,8 @@ static SF_VIRTUAL_IO FILE_IO = {
 };
 
 static gint
-sample_get_wave_data (GByteArray * sample, struct job_control *control,
-		      struct g_byte_array_io_data *wave)
+sample_get_audio_file_data (GByteArray * sample, struct job_control *control,
+			    struct g_byte_array_io_data *wave, guint32 format)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -212,10 +211,10 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
   struct smpl_chunk_data smpl_chunk_data;
   struct sample_info *sample_info = control->data;
 
-  g_byte_array_set_size (wave->array, sample->len + 1024);	//We need space for the headers.
+  g_byte_array_set_size (wave->array, sample->len + 4096);	//We need space for the headers.
   wave->array->len = 0;
 
-  frames = sample->len / (sample_info->channels * SAMPLE_SIZE);
+  frames = sample->len / SAMPLE_INFO_FRAME_SIZE (sample_info);
   debug_print (1, "Frames: %" PRIu64 "; sample rate: %d; channels: %d\n",
 	       frames, sample_info->rate, sample_info->channels);
   debug_print (1, "Loop start at %d; loop end at %d\n",
@@ -224,7 +223,8 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
   memset (&sf_info, 0, sizeof (sf_info));
   sf_info.samplerate = sample_info->rate;
   sf_info.channels = sample_info->channels;
-  sf_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
+  sf_info.format = format;
+
   sndfile = sf_open_virtual (&G_BYTE_ARRAY_IO, SFM_WRITE, &sf_info, wave);
   if (!sndfile)
     {
@@ -266,7 +266,20 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
       error_print ("%s\n", sf_strerror (sndfile));
     }
 
-  total = sf_writef_short (sndfile, (gint16 *) sample->data, frames);
+  if ((sample_info->format & SF_FORMAT_SUBMASK) == SF_FORMAT_PCM_16)
+    {
+      total = sf_writef_short (sndfile, (gint16 *) sample->data, frames);
+    }
+  else if ((sample_info->format & SF_FORMAT_SUBMASK) == SF_FORMAT_FLOAT)
+    {
+      total = sf_writef_float (sndfile, (gfloat *) sample->data, frames);
+    }
+  else
+    {
+      error_print ("Invalid sample format. Using gint16...\n");
+      total = sf_writef_short (sndfile, (gint16 *) sample->data, frames);
+    }
+
   sf_close (sndfile);
 
   if (total != frames)
@@ -280,21 +293,23 @@ sample_get_wave_data (GByteArray * sample, struct job_control *control,
 }
 
 gint
-sample_get_wav_from_array (GByteArray * sample, GByteArray * wave,
-			   struct job_control *control)
+sample_get_audio_file_data_from_array (GByteArray * sample, GByteArray * wave,
+				       struct job_control *control,
+				       guint32 format)
 {
   struct g_byte_array_io_data data;
   data.pos = 0;
   data.array = wave;
-  return sample_get_wave_data (sample, control, &data);
+  return sample_get_audio_file_data (sample, control, &data, format);
 }
 
 gint
-sample_save_from_array (const gchar * path, GByteArray * sample,
-			struct job_control *control)
+sample_save_to_file (const gchar * path, GByteArray * sample,
+		     struct job_control *control, guint32 format)
 {
   GByteArray *wave = g_byte_array_new ();
-  gint ret = sample_get_wav_from_array (sample, wave, control);
+  gint ret = sample_get_audio_file_data_from_array (sample, wave, control,
+						    format);
   if (!ret)
     {
       ret = save_file (path, wave, control);
@@ -349,24 +364,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE * sndfile,
   sample_info->channels = sf_info->channels;
   sample_info->rate = sf_info->samplerate;
   sample_info->frames = sf_info->frames;
-
-  switch (sf_info->format & SF_FORMAT_SUBMASK)
-    {
-    case SF_FORMAT_PCM_S8:
-      sample_info->bits = 8;
-      break;
-    case SF_FORMAT_PCM_16:
-      sample_info->bits = 16;
-      break;
-    case SF_FORMAT_PCM_24:
-      sample_info->bits = 24;
-      break;
-    case SF_FORMAT_PCM_32:
-      sample_info->bits = 32;
-      break;
-    default:
-      sample_info->bits = 0;
-    }
+  sample_info->format = sf_info->format;
 
   strcpy (chunk_info.id, SMPL_CHUNK_ID);
   chunk_info.id_size = strlen (SMPL_CHUNK_ID);
@@ -407,6 +405,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE * sndfile,
   else
     {
       disable_loop = TRUE;
+      sample_info->midi_note = 0;
     }
   if (disable_loop)
     {
@@ -484,7 +483,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   gboolean active;
   gdouble ratio;
   struct sample_info *sample_info_src;
-  guint bytes_per_frame;
+  guint bytes_per_sample, bytes_per_frame;
   guint32 f, actual_frames = 0;
 
   if (control)
@@ -520,9 +519,17 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     sample_info_dst->channels : sf_info.channels;
   sample_info_dst->rate = sample_info_dst->rate ? sample_info_dst->rate :
     sf_info.samplerate;
-  sample_info_dst->bits = 16;
+  sample_info_dst->format =
+    sample_info_dst->format ? sample_info_dst->format : SF_FORMAT_PCM_16;
 
-  bytes_per_frame = sample_info_dst->channels * SAMPLE_SIZE;
+  if (sample_info_dst->format != SF_FORMAT_PCM_16)
+    {
+      error_print ("Invalid sample format. Using gint16...\n");
+      sample_info_dst->format = SF_FORMAT_PCM_16;
+    }
+
+  bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info_dst);
+  bytes_per_sample = SAMPLE_SIZE (sample_info_dst->format);
 
   sample_set_sample_info (sample_info_src, sndfile, &sf_info);
 
@@ -542,10 +549,11 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
       sf_command (sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
     }
 
-  buffer_input_multi =
-    g_malloc (LOAD_BUFFER_LEN * BYTES_PER_FRAME (sample_info_src->channels));
-  buffer_input_mono = g_malloc (LOAD_BUFFER_LEN * SAMPLE_SIZE);
-  buffer_input_stereo = g_malloc (LOAD_BUFFER_LEN * 2 * SAMPLE_SIZE);
+  buffer_input_multi = g_malloc (LOAD_BUFFER_LEN *
+				 FRAME_SIZE (sample_info_src->channels,
+					     sample_info_dst->format));
+  buffer_input_mono = g_malloc (LOAD_BUFFER_LEN * bytes_per_sample);
+  buffer_input_stereo = g_malloc (LOAD_BUFFER_LEN * 2 * bytes_per_sample);
 
   buffer_f =
     g_malloc (LOAD_BUFFER_LEN * sample_info_dst->channels * sizeof (gfloat));
@@ -555,7 +563,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 
   src_data.output_frames = ceil (LOAD_BUFFER_LEN * src_data.src_ratio);
   resampled_buffer_len = src_data.output_frames * sample_info_dst->channels;
-  buffer_s = g_malloc (resampled_buffer_len * SAMPLE_SIZE);
+  buffer_s = g_malloc (resampled_buffer_len * bytes_per_sample);
   src_data.data_out = g_malloc (resampled_buffer_len * sizeof (gfloat));
 
   src_state = src_new (SRC_SINC_BEST_QUALITY, sample_info_dst->channels,
@@ -596,6 +604,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     {
       debug_print (2, "Loading %d channels buffer...\n",
 		   sample_info_dst->channels);
+
       frames_read = sf_readf_short (sndfile, buffer_input_multi,
 				    LOAD_BUFFER_LEN);
       f += frames_read;
@@ -798,4 +807,50 @@ sample_get_sample_extensions ()
       return ELEKTROID_AUDIO_LOCAL_EXTS_MP3;
     }
   return ELEKTROID_AUDIO_LOCAL_EXTS;
+}
+
+const gchar *
+sample_get_format (struct sample_info *sample_info)
+{
+  switch (sample_info->format & SF_FORMAT_TYPEMASK)
+    {
+    case SF_FORMAT_WAV:
+      return "WAV";
+    case SF_FORMAT_AIFF:
+      return "AIFF";
+    case SF_FORMAT_AU:
+      return "Au";
+    case SF_FORMAT_FLAC:
+      return "FLAC";
+    case SF_FORMAT_OGG:
+      return "Ogg";
+    case SF_FORMAT_MPEG:
+      return "MPEG";
+    default:
+      return "?";
+    }
+}
+
+const gchar *
+sample_get_subtype (struct sample_info *sample_info)
+{
+  switch (sample_info->format & SF_FORMAT_SUBMASK)
+    {
+    case SF_FORMAT_PCM_S8:
+      return "s8";
+    case SF_FORMAT_PCM_16:
+      return "s16";
+    case SF_FORMAT_PCM_24:
+      return "s24";
+    case SF_FORMAT_PCM_32:
+      return "s32";
+    case SF_FORMAT_PCM_U8:
+      return "u8";
+    case SF_FORMAT_FLOAT:
+      return "f32";
+    case SF_FORMAT_DOUBLE:
+      return "f64";
+    default:
+      return "?";
+    }
 }

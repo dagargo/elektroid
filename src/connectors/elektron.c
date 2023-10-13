@@ -1569,7 +1569,7 @@ elektron_download_smplrw (struct backend *backend, const gchar * path,
 	  sample_info->rate = g_ntohl (elektron_sample_header->rate);	//In the case of the RAW filesystem is not used and it is harmless.
 	  sample_info->midi_note = 0;
 	  sample_info->channels = 1;
-	  sample_info->bits = 16;
+	  sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
 	  control->data = sample_info;
 	  debug_print (2, "Loop start at %d, loop end at %d\n",
 		       sample_info->loop_start, sample_info->loop_end);
@@ -3012,6 +3012,7 @@ elektron_sample_load (const gchar * path, GByteArray * sample,
   struct sample_info sample_info_dst;
   sample_info_dst.rate = ELEKTRON_SAMPLE_RATE;
   sample_info_dst.channels = ELEKTRON_SAMPLE_CHANNELS;
+  sample_info_dst.format = SF_FORMAT_PCM_16;
   gint res = sample_load_from_file (path, sample, control, &sample_info_dst);
   if (!res)
     {
@@ -3054,6 +3055,14 @@ elektron_get_sample_path_from_hash_size (struct backend *backend,
   return path;
 }
 
+gint
+elektron_sample_save (const gchar * path, GByteArray * sample,
+		      struct job_control *control)
+{
+  return sample_save_to_file (path, sample, control,
+			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+}
+
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SORT_BY_NAME |
@@ -3073,7 +3082,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .download = elektron_download_sample,
   .upload = elektron_upload_sample,
   .load = elektron_sample_load,
-  .save = sample_save_from_array,
+  .save = elektron_sample_save,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = elektron_get_upload_path_smplrw,
   .get_download_path = elektron_get_download_path

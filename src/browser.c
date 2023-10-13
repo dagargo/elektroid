@@ -23,6 +23,7 @@
 #include "editor.h"
 #include "local.h"
 #include "backend.h"
+#include "sample.h"
 
 #define OTHER_BROWSER(b) (b == &local_browser.browser ? &remote_browser.browser : &local_browser.browser)
 
@@ -308,11 +309,13 @@ browser_add_dentry_item (gpointer data)
 				BROWSER_LIST_STORE_SAMPLE_TIME_FIELD, &v);
       g_value_unset (&v);
 
-      snprintf (label, LABEL_MAX, "%u", item->sample_info.bits);
+      snprintf (label, LABEL_MAX, "%s, %s",
+		sample_get_format (&item->sample_info),
+		sample_get_subtype (&item->sample_info));
       g_value_init (&v, G_TYPE_STRING);
       g_value_set_string (&v, label);
       gtk_list_store_set_value (list_store, &iter,
-				BROWSER_LIST_STORE_SAMPLE_BITS_FIELD, &v);
+				BROWSER_LIST_STORE_SAMPLE_FORMAT_FIELD, &v);
       g_value_unset (&v);
 
       snprintf (label, LABEL_MAX, "%u", item->sample_info.channels);

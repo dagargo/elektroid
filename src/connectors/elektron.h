@@ -44,4 +44,6 @@ GByteArray *elektron_ping (struct backend *);
 
 gint elektron_handshake (struct backend *);
 
+gint elektron_sample_save (const gchar *, GByteArray *, struct job_control *);
+
 #endif

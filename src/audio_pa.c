@@ -66,7 +66,8 @@ audio_read_callback (pa_stream * stream, size_t size, void *data)
     }
 
   audio_read_from_input (audio, (void *) buffer,
-			 size / BYTES_PER_FRAME (AUDIO_CHANNELS));
+			 size / FRAME_SIZE (AUDIO_CHANNELS,
+					    SF_FORMAT_PCM_16));
   pa_stream_drop (stream);
 }
 
@@ -78,7 +79,8 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
 
   pa_stream_begin_write (stream, &buffer, &size);
   audio_write_to_output (audio, buffer,
-			 size / BYTES_PER_FRAME (AUDIO_CHANNELS));
+			 size / FRAME_SIZE (AUDIO_CHANNELS,
+					    SF_FORMAT_PCM_16));
   pa_stream_write (stream, buffer, size, NULL, 0, PA_SEEK_RELATIVE);
 }
 

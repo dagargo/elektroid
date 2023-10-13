@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2023-09-14 22:37+0200\n"
+"POT-Creation-Date: 2023-10-09 19:43+0200\n"
 "PO-Revision-Date: 2023-01-16 19:47+0100\n"
 "Last-Translator: Dennis Braun <snd@debian.org>\n"
 "Language-Team: German\n"
@@ -17,140 +17,140 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:369 src/elektroid.c:3166
+#: src/elektroid.c:366 src/elektroid.c:3176
 msgid "Not connected"
 msgstr "Nicht verbunden"
 
-#: src/elektroid.c:490
+#: src/elektroid.c:487
 msgid "Receive SysEx"
 msgstr "Empfange SysEx"
 
-#: src/elektroid.c:515
+#: src/elektroid.c:512
 msgid "Save SysEx"
 msgstr "Speichere SysEx"
 
-#: src/elektroid.c:518 src/elektroid.c:649 src/elektroid.c:855
-#: src/elektroid.c:1423 res/gui.glade:952 res/gui.glade:2869 res/gui.glade:2969
-#: res/gui.glade:3051
+#: src/elektroid.c:515 src/elektroid.c:646 src/elektroid.c:852
+#: src/elektroid.c:1429 res/gui.glade:955 res/gui.glade:2873 res/gui.glade:2974
+#: res/gui.glade:3057
 msgid "_Cancel"
 msgstr "_Abbrechen"
 
-#: src/elektroid.c:520 res/gui.glade:2883
+#: src/elektroid.c:517 res/gui.glade:2887
 msgid "_Save"
 msgstr "_Speichern"
 
-#: src/elektroid.c:524
+#: src/elektroid.c:521
 msgid "Received SysEx"
 msgstr "SysEx empfangen"
 
-#: src/elektroid.c:529 src/elektroid.c:655
+#: src/elektroid.c:526 src/elektroid.c:652
 msgid "SysEx Files"
 msgstr "SysEx Dateien"
 
-#: src/elektroid.c:563
+#: src/elektroid.c:560
 #, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Fehler beim Löschen »%s«: %s."
 
-#: src/elektroid.c:585
+#: src/elektroid.c:582
 #, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Fehler beim Löschen »%s«: %s."
 
-#: src/elektroid.c:646
+#: src/elektroid.c:643
 msgid "Open SysEx"
 msgstr "Öffne SysEx"
 
-#: src/elektroid.c:651
+#: src/elektroid.c:648
 msgid "_Open"
 msgstr "_Öffnen"
 
-#: src/elektroid.c:666
+#: src/elektroid.c:663
 msgid "Sending SysEx"
 msgstr "Sende SysEx"
 
-#: src/elektroid.c:854
+#: src/elektroid.c:851
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Bist du sicher das du die ausgewählten Elemente löschen möchtest?"
 
-#: src/elektroid.c:856
+#: src/elektroid.c:853
 msgid "_Delete"
 msgstr "_Löschen"
 
-#: src/elektroid.c:867
+#: src/elektroid.c:864
 msgid "Deleting Files"
 msgstr "Entfernt Dateien"
 
-#: src/elektroid.c:868
+#: src/elektroid.c:865
 msgid "Deleting..."
 msgstr "Lösche..."
 
-#: src/elektroid.c:895 res/gui.glade:205 res/gui.glade:841
+#: src/elektroid.c:899 res/gui.glade:207 res/gui.glade:843
 msgid "Rename"
 msgstr "Umbenennen"
 
-#: src/elektroid.c:919
+#: src/elektroid.c:923
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Fehler beim Umbenennen von »%s«: %s."
 
-#: src/elektroid.c:1283 res/gui.glade:1686 res/gui.glade:1964
+#: src/elektroid.c:1289 res/gui.glade:1689 res/gui.glade:1967
 msgid "Add Directory"
 msgstr "Verzeichnis hinzufügen"
 
-#: src/elektroid.c:1290
+#: src/elektroid.c:1296
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Fehler beim Erstellen des Verzeichnisses »%s«: %s."
 
-#: src/elektroid.c:1420
+#: src/elektroid.c:1426
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Ersetze Datei “%s”?"
 
-#: src/elektroid.c:1424
+#: src/elektroid.c:1430
 msgid "_Skip"
 msgstr "_Überspringen"
 
-#: src/elektroid.c:1425
+#: src/elektroid.c:1431
 msgid "_Replace"
 msgstr "_Ersetzen"
 
-#: src/elektroid.c:1429
+#: src/elektroid.c:1435
 msgid "Apply this action to all files"
 msgstr "Diese Aktion auf alle Dateien anwenden"
 
-#: src/elektroid.c:1739 src/elektroid.c:1982 src/elektroid.c:2702
+#: src/elektroid.c:1745 src/elektroid.c:1988 src/elektroid.c:2711
 msgid "Preparing Tasks"
 msgstr "Aufgaben werden vorbereitet"
 
-#: src/elektroid.c:1740 src/elektroid.c:1982 src/elektroid.c:2703
+#: src/elektroid.c:1746 src/elektroid.c:1988 src/elektroid.c:2712
 #: src/progress.c:113
 msgid "Waiting..."
 msgstr "Warte..."
 
-#: src/elektroid.c:2384
+#: src/elektroid.c:2390
 msgid "Connecting to Device"
 msgstr "Verbindung zum Gerät wird hergestellt"
 
-#: src/elektroid.c:2384
+#: src/elektroid.c:2390
 msgid "Connecting..."
 msgstr "Verbinde..."
 
-#: src/elektroid.c:2390
+#: src/elektroid.c:2396
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Gerät “%s” nicht erkannt: %s"
 
-#: src/elektroid.c:2689
+#: src/elektroid.c:2698
 msgid "Moving Files"
 msgstr "Verschiebe Dateien"
 
-#: src/elektroid.c:2690
+#: src/elektroid.c:2699
 msgid "Moving..."
 msgstr "Verschiebe..."
 
-#: src/editor.c:1057
+#: src/editor.c:1113
 msgid "Save Sample"
 msgstr "Speichere Sample"
 
@@ -186,7 +186,7 @@ msgstr "Hochladen"
 msgid "Download"
 msgstr "Herunterladen"
 
-#: src/browser.c:299
+#: src/browser.c:300
 msgid "min."
 msgstr "Min."
 
@@ -211,7 +211,7 @@ msgid "_Calibration"
 msgstr "Dauer"
 
 #. This should only be translated if a non latin alphabet is used
-#: src/menu_actions/autosampler.c:214 res/gui.glade:931
+#: src/menu_actions/autosampler.c:214 res/gui.glade:934
 msgid "Auto Sampler"
 msgstr ""
 
@@ -221,10 +221,6 @@ msgstr ""
 
 #: src/menu_actions/autosampler.c:295
 msgid "_Auto Sampler"
-msgstr ""
-
-#: src/local.c:536
-msgid "System"
 msgstr ""
 
 #: src/progress.c:71
@@ -239,7 +235,7 @@ msgstr "Sende..."
 msgid "Receiving..."
 msgstr "Empfange..."
 
-#: src/connectors/sds.c:1139
+#: src/connectors/sds.c:1138
 msgid "SDS sampler"
 msgstr ""
 
@@ -247,176 +243,180 @@ msgstr ""
 msgid "MIDI device"
 msgstr "MIDI Gerät"
 
-#: res/gui.glade:78 res/gui.glade:168 res/gui.glade:804
+#: src/connectors/system.c:750
+msgid "System"
+msgstr ""
+
+#: res/gui.glade:73 res/gui.glade:170 res/gui.glade:806
 msgid "Play"
 msgstr "Abspielen"
 
-#: res/gui.glade:93 res/gui.glade:214 res/gui.glade:850
+#: res/gui.glade:88 res/gui.glade:216 res/gui.glade:852
 msgid "Delete"
 msgstr "Löschen"
 
-#: res/gui.glade:102
+#: res/gui.glade:97
 msgid "Save"
 msgstr "Speichern"
 
-#: res/gui.glade:153
+#: res/gui.glade:155
 msgid "Upload Selection"
 msgstr "Upload Auswahl"
 
-#: res/gui.glade:183 res/gui.glade:819
+#: res/gui.glade:185 res/gui.glade:821
 msgid "Open With External Editor"
 msgstr "Öffnen mit externen Editor"
 
-#: res/gui.glade:191 res/gui.glade:827
+#: res/gui.glade:193 res/gui.glade:829
 msgid "Show in File Manager"
 msgstr "Im Dateimanager _Anzeigen"
 
 #. Stereo recording
-#: res/gui.glade:751
+#: res/gui.glade:753
 msgid "Stereo"
 msgstr ""
 
 #. Mono recording from left channel
-#: res/gui.glade:755
+#: res/gui.glade:757
 msgid "Left"
 msgstr ""
 
 #. Mono recording from right channel
-#: res/gui.glade:759
+#: res/gui.glade:761
 msgid "Right"
 msgstr ""
 
-#: res/gui.glade:789
+#: res/gui.glade:791
 msgid "Download Selection"
 msgstr "Download Auswahl"
 
-#: res/gui.glade:895
+#: res/gui.glade:897
 msgid "Sample and MIDI device manager"
 msgstr "Sample und MIDI Gerätemanager"
 
-#: res/gui.glade:898
+#: res/gui.glade:900
 msgid "translator-credits"
 msgstr "Dennis Braun <snd@debian.org>"
 
-#: res/gui.glade:966
+#: res/gui.glade:969
 msgid "_Start"
 msgstr ""
 
 #. Start MIDI key (note)
-#: res/gui.glade:1022
+#: res/gui.glade:1025
 msgctxt "Auto Sampler"
 msgid "Start"
 msgstr ""
 
 #. End MIDI key (note)
-#: res/gui.glade:1055
+#: res/gui.glade:1058
 msgctxt "Auto Sampler"
 msgid "End"
 msgstr "Ende"
 
 #. Distance between different samples
-#: res/gui.glade:1088
+#: res/gui.glade:1091
 msgctxt "Auto Sampler"
 msgid "Distance"
 msgstr ""
 
 #. As in MIDI velocity
-#: res/gui.glade:1102
+#: res/gui.glade:1105
 msgctxt "Auto Sampler"
 msgid "Velocity"
 msgstr ""
 
 #. MIDI channel
-#: res/gui.glade:1144
+#: res/gui.glade:1147
 #, fuzzy
 msgctxt "Auto Sampler"
 msgid "Channel"
 msgstr "Kanäle"
 
-#: res/gui.glade:1212 res/gui.glade:1836 res/gui.glade:2092 res/gui.glade:2914
+#: res/gui.glade:1215 res/gui.glade:1839 res/gui.glade:2095 res/gui.glade:2918
 msgid "Name"
 msgstr "Name"
 
 #. Audio channels
-#: res/gui.glade:1237 res/gui.glade:2117 res/gui.glade:3100
+#: res/gui.glade:1240 res/gui.glade:2120 res/gui.glade:3106
 msgid "Channels"
 msgstr "Kanäle"
 
 #. Input audio monitor
-#: res/gui.glade:1268 res/gui.glade:3131
+#: res/gui.glade:1271 res/gui.glade:3137
 msgid "Monitor"
 msgstr ""
 
-#: res/gui.glade:1293
+#: res/gui.glade:1296
 msgid "Global"
 msgstr ""
 
 #. Press key time
-#: res/gui.glade:1329
+#: res/gui.glade:1332
 msgctxt "Auto Sampler"
 msgid "Press"
 msgstr ""
 
 #. As the R in ADSR
-#: res/gui.glade:1343
+#: res/gui.glade:1346
 msgctxt "Auto Sampler"
 msgid "Release"
 msgstr ""
 
-#: res/gui.glade:1385 res/gui.glade:2139
+#: res/gui.glade:1388 res/gui.glade:2142
 msgid "Duration"
 msgstr "Dauer"
 
-#: res/gui.glade:1446
+#: res/gui.glade:1449
 msgid "Show Remote"
 msgstr ""
 
-#: res/gui.glade:1470
+#: res/gui.glade:1473
 msgid "_About"
 msgstr "_Info"
 
-#: res/gui.glade:1551
+#: res/gui.glade:1554
 msgid "Refresh Devices"
 msgstr "Aktualisiere Geräte"
 
-#: res/gui.glade:1665 res/gui.glade:1943
+#: res/gui.glade:1668 res/gui.glade:1946
 msgid "Go to Parent Directory"
 msgstr "Gehe zum Überverzeichnis"
 
-#: res/gui.glade:1707 res/gui.glade:1728 res/gui.glade:1985 res/gui.glade:2006
+#: res/gui.glade:1710 res/gui.glade:1731 res/gui.glade:1988 res/gui.glade:2009
 msgid "Refresh Directory"
 msgstr "Aktualisiere Verzeichnis"
 
-#: res/gui.glade:1851 res/gui.glade:2172
+#: res/gui.glade:1854 res/gui.glade:2175
 msgid "Size"
 msgstr "Größe"
 
-#: res/gui.glade:2106
-msgid "Bits"
+#: res/gui.glade:2109
+msgid "Format"
 msgstr ""
 
-#: res/gui.glade:2128
+#: res/gui.glade:2131
 msgid "MIDI Note"
 msgstr ""
 
-#: res/gui.glade:2150
+#: res/gui.glade:2153
 msgid "Rate"
 msgstr ""
 
-#: res/gui.glade:2161
+#: res/gui.glade:2164
 msgid "Samples"
 msgstr ""
 
-#: res/gui.glade:2389
+#: res/gui.glade:2392
 msgid "Grid"
 msgstr ""
 
-#: res/gui.glade:2442
+#: res/gui.glade:2445
 msgid "Playing mix depends on the remote channels"
 msgstr "Das Abspielen vom Mix hängt von den Zielkanälen ab"
 
 #. It is recommended to split the text in two lines if it is too long
-#: res/gui.glade:2444
+#: res/gui.glade:2447
 msgid ""
 "Mix depending\n"
 "on remote"
@@ -425,47 +425,47 @@ msgstr ""
 "den Zielkanälen"
 
 #. It is recommended to split the text in two lines if it is too long
-#: res/gui.glade:2498
+#: res/gui.glade:2501
 msgid "Auto play"
 msgstr "Auto Play"
 
-#: res/gui.glade:2608
+#: res/gui.glade:2611
 msgid "Status"
 msgstr "Status"
 
-#: res/gui.glade:2619
+#: res/gui.glade:2622
 msgid "Type"
 msgstr "Typ"
 
-#: res/gui.glade:2640
+#: res/gui.glade:2643
 msgid "Source"
 msgstr "Quelle"
 
-#: res/gui.glade:2654
+#: res/gui.glade:2657
 msgid "Destination"
 msgstr "Ziel"
 
-#: res/gui.glade:2669
+#: res/gui.glade:2672
 msgid "Progress"
 msgstr "Fortschritt"
 
-#: res/gui.glade:2701
+#: res/gui.glade:2704
 msgid "Cancel Tasks"
 msgstr "Aufgaben abbrechen"
 
-#: res/gui.glade:2722
+#: res/gui.glade:2725
 msgid "Remove Queued Tasks"
 msgstr "Lösche Aufgaben in der Warteschlange"
 
-#: res/gui.glade:2743
+#: res/gui.glade:2746
 msgid "Clear Finished Tasks"
 msgstr "Abgeschlossene Aufgaben aufräumen"
 
-#: res/gui.glade:3030
+#: res/gui.glade:3036
 msgid "Record Channels"
 msgstr ""
 
-#: res/gui.glade:3065
+#: res/gui.glade:3071
 msgid "_Record"
 msgstr ""
 

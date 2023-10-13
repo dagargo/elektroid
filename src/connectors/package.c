@@ -482,7 +482,9 @@ package_receive_pkg_resources (struct package *pkg,
 	}
 
       wave = g_byte_array_new ();
-      ret = sample_get_wav_from_array (sample, wave, control);
+      ret = sample_get_audio_file_data_from_array (sample, wave, control,
+						   SF_FORMAT_WAV |
+						   SF_FORMAT_PCM_16);
       if (ret)
 	{
 	  error_print

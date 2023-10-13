@@ -21,24 +21,29 @@
 #include <glib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sndfile.h>
 #include "utils.h"
 
 #ifndef SAMPLE_H
 #define SAMPLE_H
 
+#define SAMPLE_SIZE(format) ((format & SF_FORMAT_SUBMASK) == SF_FORMAT_FLOAT ? sizeof(gfloat) : sizeof(gint16))
+#define FRAME_SIZE(channels,format) ((channels) * SAMPLE_SIZE(format))
+#define SAMPLE_INFO_FRAME_SIZE(sample_info) ((sample_info)->channels * SAMPLE_SIZE((sample_info)->format))
+
 typedef void (*sample_load_cb) (struct job_control *, gdouble, gpointer);
 
-gint sample_get_wav_from_array (GByteArray *, GByteArray *,
-				struct job_control *);
-
-gint sample_save_from_array (const gchar *, GByteArray *,
-			     struct job_control *);
+gint sample_save_to_file (const gchar *, GByteArray *, struct job_control *,
+			  guint32);
 
 gint sample_load_from_array (GByteArray *, GByteArray *,
 			     struct job_control *, struct sample_info *);
 
-gint sample_load_from_file (const gchar *, GByteArray *,
-			    struct job_control *, struct sample_info *);
+gint sample_load_from_file (const gchar *, GByteArray *, struct job_control *,
+			    struct sample_info *);
+
+gint sample_get_audio_file_data_from_array (GByteArray *, GByteArray *,
+					    struct job_control *, guint32);
 
 gint sample_load_from_file_with_cb (const gchar *, GByteArray *,
 				    struct job_control *,
@@ -50,5 +55,9 @@ gint sample_load_sample_info (const gchar *, struct sample_info *);
 const gchar **sample_get_sample_extensions ();
 
 void sample_check_and_fix_loop_points (struct sample_info *);
+
+const gchar *sample_get_format (struct sample_info *);
+
+const gchar *sample_get_subtype (struct sample_info *);
 
 #endif

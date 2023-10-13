@@ -194,7 +194,7 @@ editor_loading_completed_no_lock (struct editor *editor,
 {
   gboolean completed;
   guint32 actual;
-  gint bytes_per_frame = BYTES_PER_FRAME (editor->audio.sample_info.channels);
+  gint bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (&editor->audio.sample_info);
   actual = bytes_per_frame ? editor->audio.sample->len / bytes_per_frame : 0;
   completed = actual == editor->audio.sample_info.frames && actual;
   if (actual_frames)
@@ -251,7 +251,7 @@ static gboolean
 editor_get_y_frame (GByteArray * sample, guint channels, guint frame,
 		    guint len, struct editor_y_frame_state *state)
 {
-  guint loaded_frames = sample->len / BYTES_PER_FRAME (channels);
+  guint loaded_frames = sample->len / FRAME_SIZE (channels, SF_FORMAT_PCM_16);
   gshort *data = (gshort *) sample->data;
   gshort *s = &data[frame * channels];
   len = len < MAX_FRAMES_PER_PIXEL ? len : MAX_FRAMES_PER_PIXEL;
@@ -1112,8 +1112,9 @@ editor_save_clicked (GtkWidget * object, gpointer data)
   debug_print (2, "Saving sample to %s...\n", editor->audio.path);
   memcpy (sample_info_src, &editor->audio.sample_info,
 	  sizeof (struct sample_info));
-  sample_save_from_array (editor->audio.path, editor->audio.sample,
-			  &editor->audio.control);
+  sample_save_to_file (editor->audio.path, editor->audio.sample,
+		       &editor->audio.control,
+		       SF_FORMAT_WAV | SF_FORMAT_PCM_16);
 }
 
 static gboolean

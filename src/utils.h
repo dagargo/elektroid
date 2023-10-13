@@ -35,9 +35,6 @@
 #define MAX_BACKEND_FSS (sizeof (gint32) * 8)
 #define MAX_BACKEND_STORAGE MAX_BACKEND_FSS
 
-#define SAMPLE_SIZE (sizeof(gint16))
-#define BYTES_PER_FRAME(x) (x * SAMPLE_SIZE)
-
 #define debug_print(level, format, ...) if (level <= debug_level) fprintf(stderr, "DEBUG:" __FILE__ ":%d:(%s): " format, __LINE__, __FUNCTION__, ## __VA_ARGS__)
 #define error_print(format, ...) fprintf(stderr, "%sERROR:" __FILE__ ":%d:(%s): " format "%s", isatty(fileno(stderr)) ? "\x1b[31m" : "", __LINE__, __FUNCTION__, ## __VA_ARGS__, isatty(fileno(stderr)) ? "\x1b[m" : "")
 
@@ -55,7 +52,7 @@ struct sample_info
   guint32 loop_end;
   guint32 loop_type;
   guint32 rate;
-  guint32 bits;
+  guint32 format;
   guint32 channels;
   guint32 midi_note;
 };

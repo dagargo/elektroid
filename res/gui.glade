@@ -137,7 +137,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
       <!-- column-name sample_time -->
       <column type="gchararray"/>
-      <!-- column-name sample_bits -->
+      <!-- column-name sample_format -->
       <column type="gchararray"/>
       <!-- column-name sample_channels -->
       <column type="gchararray"/>
@@ -2106,7 +2106,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                     </child>
                                     <child>
                                       <object class="GtkTreeViewColumn" id="local_tree_view_sample_bits_column">
-                                        <property name="title" translatable="yes">Bits</property>
+                                        <property name="title" translatable="yes">Format</property>
                                         <child>
                                           <object class="GtkCellRendererText"/>
                                           <attributes>

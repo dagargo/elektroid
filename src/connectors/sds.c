@@ -202,11 +202,19 @@ sds_tx_handshake (struct backend *backend, const guint8 * msg, guint8 packet)
 
 static guint
 sds_get_download_info (GByteArray * header, struct sample_info *sample_info,
-		       guint * words, guint * word_size,
+		       guint * bits, guint * words, guint * word_size,
 		       guint * bytes_per_word)
 {
-  sample_info->bits = header->data[6];
-  if (sds_get_bytes_per_word (sample_info->bits, word_size, bytes_per_word))
+  *bits = header->data[6];
+  if (*bits == 8)
+    {
+      sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_U8;
+    }
+  else
+    {
+      sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
+    }
+  if (sds_get_bytes_per_word (*bits, word_size, bytes_per_word))
     {
       return -1;
     }
@@ -219,7 +227,7 @@ sds_get_download_info (GByteArray * header, struct sample_info *sample_info,
   sample_info->loop_end =
     sds_get_bytes_value_right_just (&header->data[16], SDS_BYTES_PER_WORD);
   sample_info->loop_type = header->data[19];
-  sample_info->midi_note = 128;	//This is an illegal note.
+  sample_info->midi_note = 0;
   sample_info->channels = 1;
   return 0;
 }
@@ -341,7 +349,7 @@ sds_download_try (struct backend *backend, const gchar * path,
 		  GByteArray * output, struct job_control *control)
 {
   guint id, words, word_size, read_bytes, bytes_per_word, total_words, err,
-    retries, packets, packet, exp_packet, rx_packets;
+    retries, packets, packet, exp_packet, rx_packets, bits;
   gint16 sample;
   GByteArray *tx_msg, *rx_msg;
   gchar *name;
@@ -390,7 +398,7 @@ sds_download_try (struct backend *backend, const gchar * path,
     }
 
   sample_info = g_malloc (sizeof (struct sample_info));
-  if (sds_get_download_info (rx_msg, sample_info, &words, &word_size,
+  if (sds_get_download_info (rx_msg, sample_info, &bits, &words, &word_size,
 			     &bytes_per_word))
     {
       free_msg (rx_msg);
@@ -401,8 +409,8 @@ sds_download_try (struct backend *backend, const gchar * path,
 
   packets =
     ceil (words / (double) (SDS_DATA_PACKET_PAYLOAD_LEN / bytes_per_word));
-  sds_debug_print_sample_data (sample_info->bits, bytes_per_word,
-			       word_size, sample_info->rate, words, packets);
+  sds_debug_print_sample_data (bits, bytes_per_word, word_size,
+			       sample_info->rate, words, packets);
 
   g_mutex_lock (&control->mutex);
   active = control->active;
@@ -521,9 +529,8 @@ sds_download_try (struct backend *backend, const gchar * path,
       dataptr = &rx_msg->data[5];
       while (read_bytes < SDS_DATA_PACKET_PAYLOAD_LEN && total_words < words)
 	{
-	  sample = sds_get_gint16_value_left_just (dataptr,
-						   bytes_per_word,
-						   sample_info->bits);
+	  sample = sds_get_gint16_value_left_just (dataptr, bytes_per_word,
+						   bits);
 	  g_byte_array_append (output, (guint8 *) & sample, sizeof (sample));
 	  dataptr += bytes_per_word;
 	  read_bytes += bytes_per_word;
@@ -957,12 +964,21 @@ sds_sample_load (const gchar * path, GByteArray * sample,
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 0;	// Any sample rate is valid.
   sample_info_dst.channels = SDS_SAMPLE_CHANNELS;
+  sample_info_dst.format = SF_FORMAT_PCM_16;
   gint res = sample_load_from_file (path, sample, control, &sample_info_dst);
   if (!res)
     {
       memcpy (control->data, &sample_info_dst, sizeof (struct sample_info));
     }
   return res;
+}
+
+gint
+sds_sample_save (const gchar * path, GByteArray * sample,
+		 struct job_control *control)
+{
+  return sample_save_to_file (path, sample, control,
+			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
 }
 
 enum sds_fs
@@ -989,7 +1005,7 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .download = sds_download,
   .upload = sds_upload_8b,
   .load = sds_sample_load,
-  .save = sample_save_from_array,
+  .save = sds_sample_save,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path
@@ -1010,7 +1026,7 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .download = sds_download,
   .upload = sds_upload_12b,
   .load = sds_sample_load,
-  .save = sample_save_from_array,
+  .save = sds_sample_save,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path
@@ -1031,7 +1047,7 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .download = sds_download,
   .upload = sds_upload_14b,
   .load = sds_sample_load,
-  .save = sample_save_from_array,
+  .save = sds_sample_save,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path
@@ -1052,7 +1068,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .download = sds_download,
   .upload = sds_upload_16b,
   .load = sds_sample_load,
-  .save = sample_save_from_array,
+  .save = sds_sample_save,
   .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path

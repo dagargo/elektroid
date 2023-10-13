@@ -119,8 +119,8 @@ autosampler_runner (gpointer user_data)
       snprintf (filename, LABEL_MAX, "%03d %s %s.wav", s, data->name, note);
       gchar *path = path_chain (PATH_SYSTEM, dir, filename);
       debug_print (1, "Saving sample to %s...\n", path);
-      sample_save_from_array (path, editor.audio.sample,
-			      &editor.audio.control);
+      sample_save_to_file (path, editor.audio.sample, &editor.audio.control,
+			   SF_FORMAT_WAV | SF_FORMAT_PCM_16);
       g_free (dir);
       g_free (path);
 
