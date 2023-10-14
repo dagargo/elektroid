@@ -568,7 +568,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   bytes_per_sample = SAMPLE_SIZE (sample_info_dst->format);
 
   sample_set_sample_info (sample_info_src, sndfile, &sf_info);
-
+  sample_info_dst->midi_note = sample_info_src->midi_note;
   sample_info_dst->loop_type = sample_info_src->loop_type;
 
   if (control)
