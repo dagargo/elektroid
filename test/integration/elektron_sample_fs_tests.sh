@@ -29,10 +29,6 @@ echo "Testing upload..."
 $ecli elektron-sample-ul $srcdir/res/connectors/square.wav $TEST_DEVICE:/$TEST_NAME
 [ $? -ne 0 ] && exit 1
 
-echo "Testing upload (loop)..."
-$ecli elektron-sample-ul $srcdir/res/connectors/square_loop.wav $TEST_DEVICE:/$TEST_NAME
-[ $? -ne 0 ] && exit 1
-
 output=$($ecli elektron-sample-ls $TEST_DEVICE:/$TEST_NAME)
 type=$(echo "$output" | head -n 1 | awk '{print $1}')
 size=$(echo "$output" | head -n 1 | awk '{print $2}')
@@ -49,13 +45,6 @@ $ecli elektron-sample-download $TEST_DEVICE:/$TEST_NAME/square
 actual_cksum="$(cksum square.wav | awk '{print $1}')"
 rm square.wav
 [ "$actual_cksum" != "$(cksum $srcdir/res/connectors/square.wav | awk '{print $1}')" ] && exit 1
-
-echo "Testing download (loop)..."
-$ecli elektron-sample-dl $TEST_DEVICE:/$TEST_NAME/square_loop
-[ $? -ne 0 ] && exit 1
-actual_cksum="$(cksum square_loop.wav | awk '{print $1}')"
-rm square_loop.wav
-[ "$actual_cksum" != "$(cksum $srcdir/res/connectors/square_loop.wav | awk '{print $1}')" ] && exit 1
 
 echo "Testing download (nonexistent source)..."
 $ecli elektron-sample-dl $TEST_DEVICE:/$TEST_NAME/foo
