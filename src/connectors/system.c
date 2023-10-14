@@ -293,13 +293,6 @@ system_sample_load_48_16_mono (const gchar * path, GByteArray * sample,
   return system_sample_load_custom (path, sample, control, &sample_info_dst);
 }
 
-gint
-system_upload (struct backend *backend, const gchar * path,
-	       GByteArray * input, struct job_control *control)
-{
-  return sample_save_from_array (path, input, control);
-}
-
 static gint
 system_upload_48_16_stereo (struct backend *backend, const gchar * path,
 			    GByteArray * input, struct job_control *control)

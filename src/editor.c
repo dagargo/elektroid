@@ -62,12 +62,6 @@ struct editor_set_volume_data
   gdouble volume;
 };
 
-struct editor_record_clicked_data
-{
-  struct editor *editor;
-  struct browser *browser;
-};
-
 gchar *elektroid_ask_name (const gchar * title, const gchar * value,
 			   struct browser *browser, gint start_pos,
 			   gint end_pos);
@@ -565,10 +559,8 @@ static gboolean
 editor_reset_for_recording (gpointer data)
 {
   guint options;
-  struct editor_record_clicked_data *record_data = data;
-  struct editor *editor = record_data->editor;
-  struct browser *browser = record_data->browser;
-  editor_reset (editor, browser ? browser : &local_browser);
+  struct editor *editor = data;
+  editor_reset (editor, &local_browser);
   editor->ready = FALSE;
   editor->dirty = TRUE;
   editor->zoom = 1;
@@ -586,10 +578,7 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   gint res;
   guint options;
   struct editor *editor = data;
-  static struct editor_record_clicked_data record_data;
 
-  record_data.browser = editor->browser;
-  record_data.editor = editor;
   browser_clear_selection (&local_browser);
   browser_clear_selection (&remote_browser);
   //Running editor_reset_for_recording asynchronously is needed as calling
@@ -597,7 +586,7 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   //editor_reset and clear the browser member.
   //If using g_idle_add, a call to editor_reset will happen always later than
   //those. All these calls will happen at the time the dialog is shown.
-  g_idle_add (editor_reset_for_recording, &record_data);
+  g_idle_add (editor_reset_for_recording, editor);
 
   res = gtk_dialog_run (editor->record_dialog);
   gtk_widget_hide (GTK_WIDGET (editor->record_dialog));
@@ -1121,17 +1110,10 @@ editor_save_clicked (GtkWidget * object, gpointer data)
     }
 
   debug_print (2, "Saving sample to %s...\n", editor->audio.path);
-
-  if (sample_info_src->rate != editor->audio.sample_info.rate)
-    {
-      debug_print (1, "Overwriting sample with different sample rate...\n");
-      memcpy (sample_info_src, &editor->audio.sample_info,
-	      sizeof (struct sample_info));
-    }
-
-  editor->browser->fs_ops->upload (editor->browser->backend,
-				   editor->audio.path, editor->audio.sample,
-				   &editor->audio.control);
+  memcpy (sample_info_src, &editor->audio.sample_info,
+	  sizeof (struct sample_info));
+  sample_save_from_array (editor->audio.path, editor->audio.sample,
+			  &editor->audio.control);
 }
 
 static gboolean
