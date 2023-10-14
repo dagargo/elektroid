@@ -28,7 +28,8 @@ function exitWithError() {
 }
 
 echo "Using device $TEST_DEVICE..."
-DEVICE_NAME=$(elektroid-cli info $TEST_DEVICE | awk -F\; '{print $1}')
+DEVICE_NAME=$(elektroid-cli info $TEST_DEVICE | grep "Device name:" | awk -F': ' '{print $2}')
+echo "Device name: $DEVICE_NAME"
 
 echo "Cleaning up previous executions..."
 rm -f "$srcdir/$DEVICE_NAME $FS"*

@@ -325,9 +325,12 @@ cli_info (int argc, gchar * argv[], int *optind)
       return err;
     }
 
-  printf ("%s; version: %s; description: %s; connector: %s; filesystems: ",
-	  backend.name, backend.version, backend.description,
-	  backend.conn_name);
+  printf ("Type: %s\n", backend.type == BE_TYPE_SYSTEM ? "SYSTEM" : "MIDI");
+  printf ("Device name: %s\n", backend.name);
+  printf ("Device version: %s\n", backend.version);
+  printf ("Device description: %s\n", backend.description);
+  printf ("Connector name: %s\n", backend.conn_name);
+  printf ("Filesystems: ");
 
   for (guint32 fs = 1, i = 0; i < MAX_BACKEND_FSS; fs <<= 1, i++)
     {
