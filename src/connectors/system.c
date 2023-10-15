@@ -356,7 +356,7 @@ system_load_441_24_stereo (const gchar * path, GByteArray * sample,
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 44100;
   sample_info_dst.channels = 2;
-  sample_info_dst.format = SF_FORMAT_FLOAT;
+  sample_info_dst.format = SF_FORMAT_PCM_32;
   return system_load_custom (path, sample, control, &sample_info_dst);
 }
 
@@ -375,7 +375,7 @@ system_load_441_24_mono (const gchar * path, GByteArray * sample,
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 44100;
   sample_info_dst.channels = 1;
-  sample_info_dst.format = SF_FORMAT_FLOAT;
+  sample_info_dst.format = SF_FORMAT_PCM_32;
   return system_load_custom (path, sample, control, &sample_info_dst);
 }
 

@@ -274,6 +274,10 @@ sample_get_audio_file_data (GByteArray * sample, struct job_control *control,
     {
       total = sf_writef_float (sndfile, (gfloat *) sample->data, frames);
     }
+  else if ((sample_info->format & SF_FORMAT_SUBMASK) == SF_FORMAT_PCM_32)
+    {
+      total = sf_writef_int (sndfile, (gint32 *) sample->data, frames);
+    }
   else
     {
       error_print ("Invalid sample format. Using short...\n");
@@ -322,9 +326,9 @@ static void
 audio_multichannel_to_mono_short (gshort * input, gshort * output, gint size,
 				  gint channels)
 {
-  int i, j, v;
+  gint32 i, j, v;
 
-  debug_print (2, "Converting to mono...\n");
+  debug_print (2, "Converting short values to mono...\n");
 
   for (i = 0; i < size; i++)
     {
@@ -345,7 +349,28 @@ audio_multichannel_to_mono_float (gfloat * input, gfloat * output, gint size,
   gfloat v;
   gint i, j;
 
-  debug_print (2, "Converting to mono...\n");
+  debug_print (2, "Converting float values to mono...\n");
+
+  for (i = 0; i < size; i++)
+    {
+      v = 0;
+      for (j = 0; j < channels; j++)
+	{
+	  v += input[i * channels + j];
+	}
+      v /= channels;
+      output[i] = v;
+    }
+}
+
+static void
+audio_multichannel_to_mono_int (gint32 * input, gint32 * output, gint size,
+				gint channels)
+{
+  gint32 v;
+  gint i, j;
+
+  debug_print (2, "Converting int values to mono...\n");
 
   for (i = 0; i < size; i++)
     {
@@ -362,7 +387,7 @@ audio_multichannel_to_mono_float (gfloat * input, gfloat * output, gint size,
 static void
 audio_mono_to_stereo_short (gshort * input, gshort * output, gint size)
 {
-  debug_print (2, "Converting to stereo...\n");
+  debug_print (2, "Converting short values to stereo...\n");
 
   for (gint i = 0; i < size; i++, input++)
     {
@@ -376,7 +401,21 @@ audio_mono_to_stereo_short (gshort * input, gshort * output, gint size)
 static void
 audio_mono_to_stereo_float (gfloat * input, gfloat * output, gint size)
 {
-  debug_print (2, "Converting to stereo...\n");
+  debug_print (2, "Converting float values to stereo...\n");
+
+  for (gint i = 0; i < size; i++, input++)
+    {
+      *output = *input;
+      output++;
+      *output = *input;
+      output++;
+    }
+}
+
+static void
+audio_mono_to_stereo_int (gint32 * input, gint32 * output, gint size)
+{
+  debug_print (2, "Converting int values to stereo...\n");
 
   for (gint i = 0; i < size; i++, input++)
     {
@@ -512,8 +551,9 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
   void *buffer_input_multi;
   void *buffer_input_mono;
   void *buffer_input_stereo;
-  void *buffer_s;
+  void *buffer_i;		//For gint16 or gint32
   gfloat *buffer_f;
+  void *buffer_output;
   gint err, resampled_buffer_len, frames_read;
   gboolean active;
   gdouble ratio;
@@ -558,6 +598,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
     sample_info_dst->format ? sample_info_dst->format : SF_FORMAT_PCM_16;
 
   if (sample_info_dst->format != SF_FORMAT_PCM_16 &&
+      sample_info_dst->format != SF_FORMAT_PCM_32 &&
       sample_info_dst->format != SF_FORMAT_FLOAT)
     {
       error_print ("Invalid sample format. Using short...\n");
@@ -596,17 +637,20 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 
   src_data.output_frames = ceil (LOAD_BUFFER_LEN * src_data.src_ratio);
   resampled_buffer_len = src_data.output_frames * sample_info_dst->channels;
-  buffer_s = g_malloc (resampled_buffer_len * bytes_per_sample);
+  buffer_i = g_malloc (resampled_buffer_len * bytes_per_sample);
   src_data.data_out = g_malloc (resampled_buffer_len * sizeof (gfloat));
-  if (sample_info_dst->format == SF_FORMAT_PCM_16)
+  if (sample_info_dst->format == SF_FORMAT_PCM_16 ||
+      sample_info_dst->format == SF_FORMAT_PCM_32)
     {
       buffer_f = g_malloc (LOAD_BUFFER_LEN * sample_info_dst->channels *
 			   sizeof (gfloat));
       src_data.data_in = buffer_f;
+      buffer_output = buffer_i;
     }
   else
     {
       buffer_f = NULL;
+      buffer_output = src_data.data_out;
     }
 
   src_state = src_new (SRC_SINC_BEST_QUALITY, sample_info_dst->channels,
@@ -654,6 +698,12 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 					(gfloat *) buffer_input_multi,
 					LOAD_BUFFER_LEN);
 	}
+      else if (sample_info_dst->format == SF_FORMAT_PCM_32)
+	{
+	  frames_read = sf_readf_int (sndfile,
+				      (gint32 *) buffer_input_multi,
+				      LOAD_BUFFER_LEN);
+	}
       else
 	{
 	  frames_read = sf_readf_short (sndfile,
@@ -675,6 +725,13 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 						frames_read,
 						sample_info_src->channels);
 	    }
+	  else if (sample_info_dst->format == SF_FORMAT_PCM_32)
+	    {
+	      audio_multichannel_to_mono_int (buffer_input_multi,
+					      buffer_input_mono,
+					      frames_read,
+					      sample_info_src->channels);
+	    }
 	  else
 	    {
 	      audio_multichannel_to_mono_short (buffer_input_multi,
@@ -693,6 +750,11 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 		  audio_mono_to_stereo_float (buffer_input_mono,
 					      buffer_input_stereo,
 					      frames_read);
+		}
+	      else if (sample_info_dst->format == SF_FORMAT_PCM_32)
+		{
+		  audio_mono_to_stereo_int (buffer_input_mono,
+					    buffer_input_stereo, frames_read);
 		}
 	      else
 		{
@@ -727,10 +789,14 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 	    {
 	      src_data.data_in = buffer_input;
 	    }
+	  else if (sample_info_dst->format == SF_FORMAT_PCM_32)
+	    {
+	      src_int_to_float_array (buffer_input, buffer_f, frames_read *
+				      sample_info_dst->channels);
+	    }
 	  else
 	    {
-	      src_short_to_float_array (buffer_input, buffer_f,
-					frames_read *
+	      src_short_to_float_array (buffer_input, buffer_f, frames_read *
 					sample_info_dst->channels);
 	    }
 
@@ -750,21 +816,20 @@ sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
 	      g_mutex_lock (&control->mutex);
 	    }
 
-	  if (sample_info_dst->format == SF_FORMAT_FLOAT)
+	  if (sample_info_dst->format == SF_FORMAT_PCM_32)
 	    {
-	      g_byte_array_append (sample, (guint8 *) src_data.data_out,
-				   src_data.output_frames_gen *
-				   bytes_per_frame);
+	      src_float_to_int_array (src_data.data_out, buffer_i,
+				      src_data.output_frames_gen *
+				      sample_info_dst->channels);
 	    }
-	  else
+	  if (sample_info_dst->format == SF_FORMAT_PCM_16)
 	    {
-	      src_float_to_short_array (src_data.data_out, buffer_s,
+	      src_float_to_short_array (src_data.data_out, buffer_i,
 					src_data.output_frames_gen *
 					sample_info_dst->channels);
-	      g_byte_array_append (sample, (guint8 *) buffer_s,
-				   src_data.output_frames_gen *
-				   bytes_per_frame);
 	    }
+	  g_byte_array_append (sample, (guint8 *) buffer_output,
+			       src_data.output_frames_gen * bytes_per_frame);
 	  actual_frames += src_data.output_frames_gen;
 	  if (control)
 	    {
@@ -797,8 +862,9 @@ cleanup:
   g_free (buffer_input_multi);
   g_free (buffer_input_mono);
   g_free (buffer_input_stereo);
-  g_free (buffer_s);
-  if (sample_info_dst->format == SF_FORMAT_PCM_16)
+  g_free (buffer_i);
+  if (sample_info_dst->format == SF_FORMAT_PCM_16 ||
+      sample_info_dst->format == SF_FORMAT_PCM_32)
     {
       g_free (buffer_f);
     }

@@ -27,7 +27,7 @@
 #ifndef SAMPLE_H
 #define SAMPLE_H
 
-#define SAMPLE_SIZE(format) ((format & SF_FORMAT_SUBMASK) == SF_FORMAT_FLOAT ? sizeof(gfloat) : sizeof(gint16))
+#define SAMPLE_SIZE(format) ((format & SF_FORMAT_SUBMASK) == SF_FORMAT_PCM_16 ? 2 : 4)
 #define FRAME_SIZE(channels,format) ((channels) * SAMPLE_SIZE(format))
 #define SAMPLE_INFO_FRAME_SIZE(sample_info) ((sample_info)->channels * SAMPLE_SIZE((sample_info)->format))
 
