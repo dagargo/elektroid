@@ -32,38 +32,55 @@ Provided paths must always be prepended with the device id and a colon (e.g., `0
 
 ```
 $ elektroid-cli ld
-0: hw:2,0,0 Elektron Digitakt MIDI 1
-1: hw:4,0,0 padKONTROL MIDI 1
-2: hw:4,0,1 padKONTROL MIDI 2
+0: id: SYSTEM_ID; name: computer
+1: id: hw:2,0,0; name: hw:2,0,0: Elektron Digitakt, Elektron Digitakt MIDI 1
+2: id: hw:1,0,0; name: hw:1,0,0: M-Audio MIDISPORT Uno, M-Audio MIDISPORT Uno MIDI 1
+3: id: hw:3,0,0; name: hw:3,0,0: MicroBrute, MicroBrute MicroBrute
+4: id: hw:3,0,1; name: hw:3,0,1: MicroBrute, MicroBrute MicroBrute MIDI Inte
+5: id: hw:4,0,0; name: hw:4,0,0: Little Phatty SE II, Little Phatty SE II MIDI 1
+6: id: hw:5,0,0; name: hw:5,0,0: Summit, Summit MIDI 1
 ```
 
 * `info` or `info-device`, show device info including device filesystems
 
 ```
-$ elektroid-cli info 0
-Digitakt 1.30 (Digitakt) filesystems=sample,data,project,sound
+$ elektroid-cli info 1
+Type: MIDI
+Device name: Elektron Digitakt
+Device version: 1.50
+Device description: Digitakt
+Connector name: elektron
+Filesystems: sample,data,project,sound
 ```
 
 * `df` or `info-storage`, show size and use of +Drive and RAM
 
 ```
-$ elektroid-cli df 0:/
-Storage               Size            Used       Available       Use%
-+Drive           959.50MiB       198.20MiB       761.30MiB     20.66%
-RAM               64.00MiB        13.43MiB        50.57MiB     20.98%
+$ elektroid-cli df 1:/
+Storage                         Size            Used       Available       Use%
++Drive                      959.5MiB        285.9MiB        673.6MiB     29.80%
+RAM                            64MiB              0B           64MiB      0.00%
 ```
 
 * `send` and `receive` work with a batch of SysEx messages. These are useful when working with generic devices, which have no filesystems implemented buf offer options to receive or send data.
 
 ```
-$ elektroid-cli send file.syx 0:/
-$ elektroid-cli receive 0:/
+$ elektroid-cli send file.syx 1:/
+$ elektroid-cli receive 1:/
 ```
 
 * `upgrade`, upgrade firmware
 
 ```
-$ elektroid-cli upgrade Digitakt_OS1.30.syx 0
+$ elektroid-cli upgrade Digitakt_OS1.30.syx 1
+```
+
+### System connector
+
+The first connector is always a system (local computer) one used to convert sample formats. It can be used like any other connector.
+
+```
+$ elektroid-cli system-wav48k16b2c-ul square.wav 0:/home/user/samples
 ```
 
 ### Elektron conector
