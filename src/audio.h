@@ -33,7 +33,7 @@
 typedef void (*audio_monitor_notifier) (gpointer, gdouble);
 
 #define MAX_RECORDING_TIME_S 30
-#define AUDIO_BUF_FRAMES 512
+#define AUDIO_BUF_FRAMES 256
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
 #define AUDIO_BUF_BYTES (AUDIO_BUF_FRAMES * FRAME_SIZE (AUDIO_CHANNELS,SF_FORMAT_PCM_16))
 

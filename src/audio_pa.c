@@ -25,10 +25,10 @@ void audio_finish_recording (struct audio *);
 #define WAIT_TIME_TO_STOP_US 10000
 
 static const pa_buffer_attr BUFFER_ATTR = {
-  .maxlength = -1,
-  .tlength = AUDIO_BUF_BYTES,
-  .prebuf = -1,
-  .minreq = -1,
+  .maxlength = AUDIO_BUF_BYTES,
+  .tlength = -1,
+  .prebuf = 0,
+  .minreq = AUDIO_BUF_BYTES,
   .fragsize = AUDIO_BUF_BYTES
 };
 
