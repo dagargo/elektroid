@@ -337,7 +337,7 @@ audio_multichannel_to_mono_short (gshort * input, gshort * output, gint size,
 	{
 	  v += input[i * channels + j];
 	}
-      v /= channels;
+      v *= MULTICHANNEL_MIX_GAIN (channels);
       output[i] = v;
     }
 }
@@ -358,7 +358,7 @@ audio_multichannel_to_mono_float (gfloat * input, gfloat * output, gint size,
 	{
 	  v += input[i * channels + j];
 	}
-      v /= channels;
+      v *= MULTICHANNEL_MIX_GAIN (channels);
       output[i] = v;
     }
 }
@@ -379,7 +379,7 @@ audio_multichannel_to_mono_int (gint32 * input, gint32 * output, gint size,
 	{
 	  v += input[i * channels + j];
 	}
-      v /= channels;
+      v *= MULTICHANNEL_MIX_GAIN (channels);
       output[i] = v;
     }
 }

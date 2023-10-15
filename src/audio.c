@@ -29,14 +29,14 @@ const gchar *audio_name ();
 const gchar *audio_version ();
 
 static inline gint16
-audio_mix_channels (gint16 ** src, guint channels, gdouble gain)
+audio_mix_channels (gint16 ** src, guint channels)
 {
   gdouble mix = 0;
   for (gint i = 0; i < channels; i++, (*src)++)
     {
       mix += **src;
     }
-  return (gint16) (mix * gain);
+  return (gint16) (mix * MULTICHANNEL_MIX_GAIN (channels));
 }
 
 static inline void
@@ -56,7 +56,6 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
   guint32 len = audio->sel_len ? audio->sel_start + audio->sel_len :
     audio->sample_info.frames;
   guint bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (&audio->sample_info);
-  gdouble gain = 1.0 / sqrt (audio->sample_info.channels);
   size_t size = frames * FRAME_SIZE (AUDIO_CHANNELS, SF_FORMAT_PCM_16);
 
   debug_print (2, "Writing %d frames...\n", frames);
@@ -105,8 +104,7 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 
       if (audio->mono_mix)
 	{
-	  gint16 mix = audio_mix_channels (&src, audio->sample_info.channels,
-					   gain);
+	  gint16 mix = audio_mix_channels (&src, audio->sample_info.channels);
 	  audio_copy_sample (dst, &mix, audio);
 	  dst++;
 	  audio_copy_sample (dst, &mix, audio);
