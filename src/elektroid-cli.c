@@ -50,11 +50,12 @@ cli_get_path (gchar * device_path)
   gchar *path = device_path;
   gint i = 0;
 
-  while (*path != '/' && i < len)
+  while (*path != G_SEARCHPATH_SEPARATOR && i < len)
     {
       path++;
       i++;
     }
+  path++;
 
   return path;
 }
