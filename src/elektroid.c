@@ -155,7 +155,8 @@ static GtkWidget *remote_devices_box;
 static GtkWidget *remote_box;
 static GtkWidget *tasks_box;
 static GtkLabel *backend_status_label;
-static GtkLabel *audio_status_label;
+static GtkLabel *host_audio_status_label;
+static GtkLabel *host_midi_status_label;
 static GtkListStore *devices_list_store;
 static GtkWidget *devices_combo;
 static GtkListStore *fs_list_store;
@@ -290,9 +291,12 @@ void
 elektroid_update_audio_status ()
 {
   gchar status[LABEL_MAX];
-  snprintf (status, LABEL_MAX, "%s %s, %.5g kHz", audio_name (),
-	    audio_version (), editor.audio.sample_info.rate / 1000.f);
-  gtk_label_set_text (audio_status_label, status);
+  snprintf (status, LABEL_MAX, "%s: %s %s, %.5g kHz", _("Audio"),
+	    audio_name (), audio_version (),
+	    editor.audio.sample_info.rate / 1000.f);
+  gtk_label_set_text (host_audio_status_label, status);
+  snprintf (status, LABEL_MAX, "MIDI: %s", backend_name ());
+  gtk_label_set_text (host_midi_status_label, status);
 }
 
 static void
@@ -3030,8 +3034,10 @@ elektroid_run (int argc, char *argv[])
   tasks_box = GTK_WIDGET (gtk_builder_get_object (builder, "tasks_box"));
   backend_status_label =
     GTK_LABEL (gtk_builder_get_object (builder, "backend_status_label"));
-  audio_status_label =
-    GTK_LABEL (gtk_builder_get_object (builder, "audio_status_label"));
+  host_audio_status_label =
+    GTK_LABEL (gtk_builder_get_object (builder, "host_audio_status_label"));
+  host_midi_status_label =
+    GTK_LABEL (gtk_builder_get_object (builder, "host_midi_status_label"));
 
   g_signal_connect (main_window, "delete-event",
 		    G_CALLBACK (elektroid_delete_window), NULL);

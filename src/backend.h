@@ -194,4 +194,6 @@ const gchar *backend_strerror (struct backend *backend, gint error);
 
 enum path_type path_type_from_backend (struct backend *);
 
+const gchar *backend_name ();
+
 #endif
