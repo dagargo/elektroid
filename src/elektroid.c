@@ -2524,10 +2524,10 @@ elektroid_add_upload_task_slot (const gchar * name,
       name_wo_ext = strdup (name);
       remove_ext (name_wo_ext);
       str = g_string_new (NULL);
-      g_string_append_printf (str, "%s%s%s%s%s", remote_browser.browser.dir,
-			      strcmp (remote_browser.browser.dir,
-				      "/") ? "/" : "", filename,
-			      BE_SAMPLE_ID_NAME_SEPARATOR, name_wo_ext);
+      g_string_append_printf (str, "%s%s%s%c%s", remote_browser.browser.dir,
+			      strcmp (remote_browser.browser.dir, "/") ?
+			      "/" : "", filename, G_SEARCHPATH_SEPARATOR,
+			      name_wo_ext);
       g_free (name_wo_ext);
       g_free (filename);
       dst_file_path = g_string_free (str, FALSE);

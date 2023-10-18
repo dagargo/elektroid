@@ -50,7 +50,6 @@
 #define BE_REST_TIME_US 50000
 #define BE_SYSEX_TIMEOUT_MS 5000
 #define BE_SYSEX_TIMEOUT_GUESS_MS 1000	//When the request is not implemented, 5 s is too much.
-#define BE_SAMPLE_ID_NAME_SEPARATOR ":"
 
 #define BE_COMPANY_LEN 3
 #define BE_FAMILY_LEN 2

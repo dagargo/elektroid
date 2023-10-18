@@ -50,8 +50,11 @@ common_slot_get_id_name_from_path (const char *path, guint * id,
       goto end;
     }
 
-  if (strncmp (remainder, BE_SAMPLE_ID_NAME_SEPARATOR,
-	       strlen (BE_SAMPLE_ID_NAME_SEPARATOR)))
+  if (*remainder == G_SEARCHPATH_SEPARATOR)
+    {
+      remainder++;		//Skip ':'
+    }
+  else
     {
       if (name)
 	{
@@ -59,10 +62,6 @@ common_slot_get_id_name_from_path (const char *path, guint * id,
 	  err = -EINVAL;
 	  goto end;
 	}
-    }
-  else
-    {
-      remainder++;		//Skip ':'
     }
 
   if (name)
