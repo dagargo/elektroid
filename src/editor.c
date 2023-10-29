@@ -546,20 +546,6 @@ editor_stop_clicked (GtkWidget * object, gpointer data)
   audio_stop_recording (&editor->audio);
 }
 
-static void
-editor_start_record (GtkWidget * object, gpointer data)
-{
-  struct editor *editor = data;
-  gtk_dialog_response (editor->record_dialog, GTK_RESPONSE_ACCEPT);
-}
-
-static void
-editor_cancel_record (GtkWidget * object, gpointer data)
-{
-  struct editor *editor = data;
-  gtk_dialog_response (editor->record_dialog, GTK_RESPONSE_CANCEL);
-}
-
 static gboolean
 editor_reset_for_recording (gpointer data)
 {
@@ -1196,12 +1182,6 @@ editor_init (struct editor *editor, GtkBuilder * builder)
   editor->guirecorder.monitor_levelbar =
     GTK_LEVEL_BAR (gtk_builder_get_object
 		   (builder, "record_dialog_monitor_levelbar"));
-  editor->record_dialog_cancel_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "record_dialog_cancel_button"));
-  editor->record_dialog_record_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "record_dialog_record_button"));
 
   g_signal_connect (editor->waveform, "draw",
 		    G_CALLBACK (editor_draw_waveform), editor);
@@ -1265,10 +1245,6 @@ editor_init (struct editor *editor, GtkBuilder * builder)
   g_signal_connect (editor->guirecorder.channels_combo, "changed",
 		    G_CALLBACK (guirecorder_channels_changed),
 		    &editor->audio);
-  g_signal_connect (editor->record_dialog_record_button, "clicked",
-		    G_CALLBACK (editor_start_record), editor);
-  g_signal_connect (editor->record_dialog_cancel_button, "clicked",
-		    G_CALLBACK (editor_cancel_record), editor);
 
   audio_init (&editor->audio, editor_set_volume_callback,
 	      elektroid_update_audio_status, editor);

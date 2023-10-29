@@ -3205,5 +3205,9 @@ on remote</property>
         </child>
       </object>
     </child>
+    <action-widgets>
+      <action-widget response="-6">record_dialog_cancel_button</action-widget>
+      <action-widget response="-3">record_dialog_record_button</action-widget>
+    </action-widgets>
   </object>
 </interface>

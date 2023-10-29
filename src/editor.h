@@ -52,8 +52,6 @@ struct editor
   GtkWidget *save_menuitem;
   GtkDialog *record_dialog;
   struct guirecorder guirecorder;
-  GtkWidget *record_dialog_cancel_button;
-  GtkWidget *record_dialog_record_button;
   guint zoom;
   guint operation;
   gboolean dirty;
