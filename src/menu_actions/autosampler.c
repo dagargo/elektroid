@@ -41,7 +41,6 @@ static GtkWidget *autosampler_dialog_distance_spin;
 static GtkWidget *autosampler_dialog_velocity_spin;
 static GtkWidget *autosampler_dialog_press_spin;
 static GtkWidget *autosampler_dialog_release_spin;
-static GtkWidget *autosampler_dialog_cancel_button;
 static GtkWidget *autosampler_dialog_start_button;
 static GtkListStore *notes_list_store;
 
@@ -59,18 +58,6 @@ struct autosampler_data
   struct backend *backend;
   GtkTreeIter iter;
 };
-
-static void
-autosampler_run (GtkWidget * object, gpointer data)
-{
-  gtk_dialog_response (autosampler_dialog, GTK_RESPONSE_ACCEPT);
-}
-
-static void
-autosampler_cancel (GtkWidget * object, gpointer data)
-{
-  gtk_dialog_response (autosampler_dialog, GTK_RESPONSE_CANCEL);
-}
 
 static gpointer
 autosampler_runner (gpointer user_data)
@@ -262,19 +249,11 @@ autosampler_configure_gui (struct backend *backend, GtkBuilder * builder)
   autosampler_dialog_release_spin =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "autosampler_dialog_release_spin"));
-  autosampler_dialog_cancel_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "autosampler_dialog_cancel_button"));
   autosampler_dialog_start_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "autosampler_dialog_start_button"));
   notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
-
-  g_signal_connect (autosampler_dialog_start_button, "clicked",
-		    G_CALLBACK (autosampler_run), NULL);
-  g_signal_connect (autosampler_dialog_cancel_button, "clicked",
-		    G_CALLBACK (autosampler_cancel), NULL);
 
   g_signal_connect (autosampler_dialog_name_entry, "changed",
 		    G_CALLBACK (autosampler_dialog_name_changed), NULL);

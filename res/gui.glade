@@ -1413,6 +1413,10 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         </child>
       </object>
     </child>
+    <action-widgets>
+      <action-widget response="-6">autosampler_dialog_cancel_button</action-widget>
+      <action-widget response="-3">autosampler_dialog_start_button</action-widget>
+    </action-widgets>
   </object>
   <object class="GtkPopoverMenu" id="main_popover">
     <property name="can-focus">False</property>
