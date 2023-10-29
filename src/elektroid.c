@@ -1323,18 +1323,6 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 }
 
 static void
-elektroid_accept_name (GtkWidget * object, gpointer data)
-{
-  gtk_dialog_response (name_dialog, GTK_RESPONSE_ACCEPT);
-}
-
-static void
-elektroid_cancel_name (GtkWidget * object, gpointer data)
-{
-  gtk_dialog_response (name_dialog, GTK_RESPONSE_CANCEL);
-}
-
-static void
 elektroid_name_dialog_entry_changed (GtkWidget * object, gpointer data)
 {
   size_t len = strlen (gtk_entry_get_text (name_dialog_entry));
@@ -2982,7 +2970,6 @@ elektroid_run (int argc, char *argv[])
 {
   GtkBuilder *builder;
   GtkCssProvider *css_provider;
-  GtkWidget *name_dialog_cancel_button;
   GtkWidget *refresh_devices_button;
 
   gtk_init (&argc, &argv);
@@ -3007,9 +2994,6 @@ elektroid_run (int argc, char *argv[])
   name_dialog_accept_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "name_dialog_accept_button"));
-  name_dialog_cancel_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "name_dialog_cancel_button"));
   name_dialog_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "name_dialog_entry"));
 
@@ -3048,10 +3032,6 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (about_button, "clicked",
 		    G_CALLBACK (elektroid_show_about), NULL);
 
-  g_signal_connect (name_dialog_accept_button, "clicked",
-		    G_CALLBACK (elektroid_accept_name), NULL);
-  g_signal_connect (name_dialog_cancel_button, "clicked",
-		    G_CALLBACK (elektroid_cancel_name), NULL);
   g_signal_connect (name_dialog_entry, "changed",
 		    G_CALLBACK (elektroid_name_dialog_entry_changed), NULL);
 
