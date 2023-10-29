@@ -3072,6 +3072,9 @@ on remote</property>
         </child>
       </object>
     </child>
+    <action-widgets>
+      <action-widget response="-6">progress_dialog_cancel_button</action-widget>
+    </action-widgets>
   </object>
   <object class="GtkDialog" id="record_dialog">
     <property name="width-request">400</property>

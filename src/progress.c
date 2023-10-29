@@ -52,6 +52,11 @@ static void
 progress_stop_running_sysex (GtkDialog * dialog, gint response_id,
 			     gpointer data)
 {
+  if (response_id == GTK_RESPONSE_CANCEL)
+    {
+      gtk_label_set_text (GTK_LABEL (progress_label), _("Cancelling..."));
+    }
+
   debug_print (1, "Stopping SysEx transfer...\n");
   g_mutex_lock (&sysex_transfer.mutex);
   sysex_transfer.active = FALSE;
@@ -63,13 +68,6 @@ progress_stop_thread ()
 {
   progress_stop_running_sysex (NULL, 0, NULL);
   progress_join_thread ();
-}
-
-void
-progress_dialog_close (gpointer data)
-{
-  gtk_label_set_text (GTK_LABEL (progress_label), _("Cancelling..."));
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_CANCEL);
 }
 
 void
@@ -88,11 +86,6 @@ progress_pulse (gpointer data)
   g_mutex_unlock (&sysex_transfer.mutex);
 
   gtk_progress_bar_pulse (GTK_PROGRESS_BAR (progress_bar));
-
-  if (!active)
-    {
-      debug_print (1, "Stopping SysEx progress...\n");
-    }
 
   return active;
 }
@@ -129,19 +122,13 @@ progress_update (gpointer data)
 void
 progress_init (GtkBuilder * builder)
 {
-  GtkWidget *progress_dialog_cancel_button;
   progress_dialog =
     GTK_DIALOG (gtk_builder_get_object (builder, "progress_dialog"));
-  progress_dialog_cancel_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "progress_dialog_cancel_button"));
   progress_bar =
     GTK_WIDGET (gtk_builder_get_object (builder, "progress_bar"));
   progress_label =
     GTK_WIDGET (gtk_builder_get_object (builder, "progress_label"));
 
-  g_signal_connect (progress_dialog_cancel_button, "clicked",
-		    G_CALLBACK (progress_dialog_close), NULL);
   g_signal_connect (progress_dialog, "response",
 		    G_CALLBACK (progress_stop_running_sysex), NULL);
 }
@@ -161,6 +148,7 @@ gpointer
 progress_run (GThreadFunc f, gpointer user_data, const gchar * name,
 	      const gchar * text, gint * res)
 {
+  gpointer v;
   gint dres;
   struct progress_progress_thread_data *data =
     g_malloc (sizeof (struct progress_progress_thread_data));
@@ -170,17 +158,27 @@ progress_run (GThreadFunc f, gpointer user_data, const gchar * name,
 
   gtk_window_set_title (GTK_WINDOW (progress_dialog), name);
   gtk_label_set_text (GTK_LABEL (progress_label), text);
-  dres = gtk_dialog_run (GTK_DIALOG (progress_dialog));
+  dres = gtk_dialog_run (progress_dialog);
   if (res)
     {
       *res = dres;
     }
+  //Without these lines below, the progress_label is not updated.
+  //This happens because when the dialog is closed the gtk main thread to blocked
+  //when joining the thread which ultimately causes pending widget updates to
+  //not be performed.
+  usleep (100000);
+  while (gtk_events_pending ())
+    {
+      gtk_main_iteration ();
+    }
+  v = progress_join_thread ();
   gtk_widget_hide (GTK_WIDGET (progress_dialog));
-  return progress_join_thread ();
+  return v;
 }
 
 void
 progress_response (gint response)
 {
-  gtk_dialog_response (GTK_DIALOG (progress_dialog), GTK_RESPONSE_ACCEPT);
+  gtk_dialog_response (GTK_DIALOG (progress_dialog), response);
 }
