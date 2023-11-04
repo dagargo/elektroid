@@ -831,9 +831,9 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
       return FALSE;
     }
 
+  editor_get_frame_at_position (editor, event->x, &cursor_frame, NULL);
   if (event->button == GDK_BUTTON_PRIMARY)
     {
-      editor_get_frame_at_position (editor, event->x, &cursor_frame, NULL);
       debug_print (2, "Pressing at frame %d...\n", cursor_frame);
       if (editor_cursor_frame_over_frame (editor, cursor_frame,
 					  editor->audio.
@@ -878,9 +878,13 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
     }
   else if (event->button == GDK_BUTTON_SECONDARY)
     {
+      gboolean cursor_on_sel = editor->audio.sel_len > 0
+	&& cursor_frame >= editor->audio.sel_start
+	&& cursor_frame < editor->audio.sel_start + editor->audio.sel_len;
       gtk_widget_set_sensitive (editor->delete_menuitem,
 				editor->audio.sel_len > 0);
-      gtk_widget_set_sensitive (editor->save_menuitem, editor->dirty);
+      gtk_widget_set_sensitive (editor->save_menuitem, editor->dirty
+				|| cursor_on_sel);
       gtk_menu_popup_at_pointer (editor->menu, (GdkEvent *) event);
     }
 
@@ -1071,14 +1075,13 @@ static void
 editor_save_clicked (GtkWidget * object, gpointer data)
 {
   struct editor *editor = data;
-  struct sample_info *sample_info_src = editor->audio.control.data;
 
   if (!editor_loading_completed (editor))
     {
       return;
     }
 
-  if (editor->audio.path)
+  if (editor->audio.path && !editor->audio.sel_len)
     {
       if (strcmp ("wav", get_ext (editor->audio.path)))
 	{
@@ -1089,33 +1092,65 @@ editor_save_clicked (GtkWidget * object, gpointer data)
 	  strcat (editor->audio.path, ".wav");
 	  g_free (name);
 	}
+
+      sample_save_to_file (editor->audio.path,
+			   editor->audio.sample,
+			   &editor->audio.control,
+			   SF_FORMAT_WAV | SF_FORMAT_PCM_16);
     }
   else
     {
-      //This is a recording.
-      struct tm tm;
-      time_t curr_time = time (NULL);
-      localtime_r (&curr_time, &tm);
-      gchar curr_time_str[PATH_MAX >> 1];
       gchar suggestion[PATH_MAX];
-      strftime (curr_time_str, PATH_MAX, "%FT%T", &tm);
-      snprintf (suggestion, PATH_MAX, "%s_%s.wav", _("Audio"), curr_time_str);
+      GByteArray *sample = NULL;
+      if (!editor->audio.sel_len)
+	{
+	  struct tm tm;
+	  time_t curr_time = time (NULL);
+	  localtime_r (&curr_time, &tm);
+	  gchar curr_time_str[PATH_MAX >> 1];
+	  strftime (curr_time_str, PATH_MAX, "%FT%T", &tm);
+	  snprintf (suggestion, PATH_MAX, "%s_%s.wav", _("Audio"),
+		    curr_time_str);
+	}
+      else
+	{
+	  sample = g_byte_array_new ();
+	  guint fsize = SAMPLE_INFO_FRAME_SIZE (&editor->audio.sample_info);
+	  guint start = editor->audio.sel_start * fsize;
+	  guint len = editor->audio.sel_len * fsize;
+	  g_byte_array_append (sample, &editor->audio.sample->data[start],
+			       len);
+	  snprintf (suggestion, PATH_MAX, "%s", "Sample.wav");
+	}
+
       gchar *name = elektroid_ask_name (_("Save Sample"), suggestion,
 					editor->browser, 0,
 					strlen (suggestion) - 4);
-      if (!name)
+      if (name)
 	{
-	  return;
+	  memcpy (editor->audio.control.data, &editor->audio.sample_info,
+		  sizeof (struct sample_info));
+	  if (!editor->audio.sel_len)
+	    {
+	      debug_print (2, "Saving recording to %s...\n", name);
+	      editor->audio.path = name;
+	      sample_save_to_file (editor->audio.path, editor->audio.sample,
+				   &editor->audio.control,
+				   SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+	    }
+	  else
+	    {
+	      debug_print (2, "Saving selection to %s...\n", name);
+	      sample_save_to_file (name, sample, &editor->audio.control,
+				   SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+	    }
 	}
-      editor->audio.path = name;
-    }
 
-  debug_print (2, "Saving sample to %s...\n", editor->audio.path);
-  memcpy (sample_info_src, &editor->audio.sample_info,
-	  sizeof (struct sample_info));
-  sample_save_to_file (editor->audio.path, editor->audio.sample,
-		       &editor->audio.control,
-		       SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+      if (sample)
+	{
+	  g_byte_array_free (sample, TRUE);
+	}
+    }
 }
 
 static gboolean
