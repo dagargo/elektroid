@@ -497,6 +497,7 @@ editor_load_sample_runner (gpointer data)
   editor->ready = FALSE;
   editor->zoom = 1;
   editor->audio.sel_start = 0;
+  editor->audio.sel_len = 0;
 
   audio->sample_info.channels = 0;	//Automatic
 
@@ -507,8 +508,6 @@ editor_load_sample_runner (gpointer data)
   sample_load_from_file_with_cb
     (audio->path, audio->sample, &audio->control,
      &audio->sample_info, editor_load_sample_cb, editor);
-
-  editor->audio.sel_len = 0;
 
   g_mutex_lock (&audio->control.mutex);
   audio->control.active = FALSE;
@@ -867,7 +866,6 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
 	  editor->operation = EDITOR_OP_MOVE_SEL_END;
 	  editor_set_cursor (editor, "col-resize");
 	}
-
       else
 	{
 	  audio_stop_playback (&editor->audio);
@@ -919,7 +917,9 @@ editor_button_release (GtkWidget * widget, GdkEventButton * event,
 	{
 	  gtk_widget_set_sensitive (editor->delete_menuitem, TRUE);
 	}
-
+      else {
+          editor->audio.sel_start = 0;
+      }
 
       if (editor->preferences->autoplay && editor->audio.sel_len)
 	{
