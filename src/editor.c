@@ -898,7 +898,9 @@ editor_button_release (GtkWidget * widget, GdkEventButton * event,
       return FALSE;
     }
 
-  if (editor->operation == EDITOR_OP_SELECT)
+  if (editor->operation == EDITOR_OP_SELECT
+      || editor->operation == EDITOR_OP_MOVE_SEL_START
+      || editor->operation == EDITOR_OP_MOVE_SEL_END)
     {
       gtk_widget_grab_focus (editor->waveform_scrolled_window);
 
@@ -916,14 +918,14 @@ editor_button_release (GtkWidget * widget, GdkEventButton * event,
       if (editor->audio.sel_len)
 	{
 	  gtk_widget_set_sensitive (editor->delete_menuitem, TRUE);
+	  if (editor->preferences->autoplay)
+	    {
+	      audio_start_playback (&editor->audio);
+	    }
 	}
-      else {
-          editor->audio.sel_start = 0;
-      }
-
-      if (editor->preferences->autoplay && editor->audio.sel_len)
+      else
 	{
-	  audio_start_playback (&editor->audio);
+	  editor->audio.sel_start = 0;
 	}
     }
 
