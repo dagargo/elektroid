@@ -3042,13 +3042,16 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (remote_browser.browser.play_menuitem, "activate",
 		    G_CALLBACK (editor_play_clicked), &editor);
   g_signal_connect (remote_browser.browser.open_menuitem, "activate",
-		    G_CALLBACK (elektroid_open_clicked), &remote_browser);
+		    G_CALLBACK (elektroid_open_clicked),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.show_menuitem, "activate",
 		    G_CALLBACK (elektroid_show_clicked), &remote_browser);
   g_signal_connect (remote_browser.browser.rename_menuitem, "activate",
-		    G_CALLBACK (elektroid_rename_item), &remote_browser);
+		    G_CALLBACK (elektroid_rename_item),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.delete_menuitem, "activate",
-		    G_CALLBACK (elektroid_delete_files), &remote_browser);
+		    G_CALLBACK (elektroid_delete_files),
+		    &remote_browser.browser);
 
   browser_local_init (&local_browser, builder, preferences.local_dir);
   preferences.local_dir = NULL;
@@ -3058,53 +3061,69 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (local_browser.browser.play_menuitem, "activate",
 		    G_CALLBACK (editor_play_clicked), &editor);
   g_signal_connect (local_browser.browser.open_menuitem, "activate",
-		    G_CALLBACK (elektroid_open_clicked), &local_browser);
+		    G_CALLBACK (elektroid_open_clicked),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.show_menuitem, "activate",
-		    G_CALLBACK (elektroid_show_clicked), &local_browser);
+		    G_CALLBACK (elektroid_show_clicked),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.rename_menuitem, "activate",
-		    G_CALLBACK (elektroid_rename_item), &local_browser);
+		    G_CALLBACK (elektroid_rename_item),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.delete_menuitem, "activate",
-		    G_CALLBACK (elektroid_delete_files), &local_browser);
+		    G_CALLBACK (elektroid_delete_files),
+		    &local_browser.browser);
 
   g_signal_connect (gtk_tree_view_get_selection (remote_browser.browser.view),
 		    "changed", G_CALLBACK (browser_selection_changed),
-		    &remote_browser);
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.view, "row-activated",
-		    G_CALLBACK (browser_item_activated), &remote_browser);
+		    G_CALLBACK (browser_item_activated),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.up_button, "clicked",
-		    G_CALLBACK (browser_go_up), &remote_browser);
+		    G_CALLBACK (browser_go_up), &remote_browser.browser);
   g_signal_connect (remote_browser.browser.add_dir_button, "clicked",
-		    G_CALLBACK (elektroid_add_dir), &remote_browser);
+		    G_CALLBACK (elektroid_add_dir), &remote_browser.browser);
   g_signal_connect (remote_browser.browser.refresh_button, "clicked",
-		    G_CALLBACK (browser_refresh), &remote_browser);
+		    G_CALLBACK (browser_refresh), &remote_browser.browser);
   g_signal_connect (remote_browser.browser.search_button, "clicked",
-		    G_CALLBACK (browser_open_search), &remote_browser);
+		    G_CALLBACK (browser_open_search),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.search_entry, "stop-search",
-		    G_CALLBACK (browser_close_search), &remote_browser);
+		    G_CALLBACK (browser_close_search),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.search_entry, "search-changed",
-		    G_CALLBACK (browser_search_changed), &remote_browser);
+		    G_CALLBACK (browser_search_changed),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.view, "button-press-event",
-		    G_CALLBACK (elektroid_button_press), &remote_browser);
+		    G_CALLBACK (elektroid_button_press),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.view, "button-release-event",
-		    G_CALLBACK (elektroid_button_release), &remote_browser);
+		    G_CALLBACK (elektroid_button_release),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.view, "key-press-event",
-		    G_CALLBACK (elektroid_remote_key_press), &remote_browser);
+		    G_CALLBACK (elektroid_remote_key_press),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.view, "drag-begin",
-		    G_CALLBACK (elektroid_drag_begin), &remote_browser);
+		    G_CALLBACK (elektroid_drag_begin),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.view, "drag-end",
-		    G_CALLBACK (elektroid_drag_end), &remote_browser);
+		    G_CALLBACK (elektroid_drag_end), &remote_browser.browser);
   g_signal_connect (remote_browser.browser.view, "drag-data-get",
-		    G_CALLBACK (elektroid_dnd_get), &remote_browser);
+		    G_CALLBACK (elektroid_dnd_get), &remote_browser.browser);
   g_signal_connect (remote_browser.browser.view, "drag-data-received",
-		    G_CALLBACK (elektroid_dnd_received), &remote_browser);
+		    G_CALLBACK (elektroid_dnd_received), NULL);
   g_signal_connect (remote_browser.browser.view, "drag-motion",
-		    G_CALLBACK (elektroid_drag_motion_list), &remote_browser);
+		    G_CALLBACK (elektroid_drag_motion_list),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.view, "drag-leave",
-		    G_CALLBACK (elektroid_drag_leave_list), &remote_browser);
+		    G_CALLBACK (elektroid_drag_leave_list),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.up_button, "drag-motion",
-		    G_CALLBACK (elektroid_drag_motion_up), &remote_browser);
+		    G_CALLBACK (elektroid_drag_motion_up),
+		    &remote_browser.browser);
   g_signal_connect (remote_browser.browser.up_button, "drag-leave",
-		    G_CALLBACK (elektroid_drag_leave_up), &remote_browser);
+		    G_CALLBACK (elektroid_drag_leave_up),
+		    &remote_browser.browser);
 
   gtk_drag_dest_set ((GtkWidget *) remote_browser.browser.up_button,
 		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
@@ -3114,43 +3133,54 @@ elektroid_run (int argc, char *argv[])
 
   g_signal_connect (gtk_tree_view_get_selection (local_browser.browser.view),
 		    "changed", G_CALLBACK (browser_selection_changed),
-		    &local_browser);
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.view, "row-activated",
-		    G_CALLBACK (browser_item_activated), &local_browser);
+		    G_CALLBACK (browser_item_activated),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.up_button, "clicked",
-		    G_CALLBACK (browser_go_up), &local_browser);
+		    G_CALLBACK (browser_go_up), &local_browser.browser);
   g_signal_connect (local_browser.browser.add_dir_button, "clicked",
-		    G_CALLBACK (elektroid_add_dir), &local_browser);
+		    G_CALLBACK (elektroid_add_dir), &local_browser.browser);
   g_signal_connect (local_browser.browser.refresh_button, "clicked",
-		    G_CALLBACK (browser_refresh), &local_browser);
+		    G_CALLBACK (browser_refresh), &local_browser.browser);
   g_signal_connect (local_browser.browser.search_button, "clicked",
-		    G_CALLBACK (browser_open_search), &local_browser);
+		    G_CALLBACK (browser_open_search), &local_browser.browser);
   g_signal_connect (local_browser.browser.search_entry, "stop-search",
-		    G_CALLBACK (browser_close_search), &local_browser);
+		    G_CALLBACK (browser_close_search),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.search_entry, "search-changed",
-		    G_CALLBACK (browser_search_changed), &local_browser);
+		    G_CALLBACK (browser_search_changed),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.view, "button-press-event",
-		    G_CALLBACK (elektroid_button_press), &local_browser);
+		    G_CALLBACK (elektroid_button_press),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.view, "button-release-event",
-		    G_CALLBACK (elektroid_button_release), &local_browser);
+		    G_CALLBACK (elektroid_button_release),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.view, "key-press-event",
-		    G_CALLBACK (elektroid_local_key_press), &local_browser);
+		    G_CALLBACK (elektroid_local_key_press),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.view, "drag-begin",
-		    G_CALLBACK (elektroid_drag_begin), &local_browser);
+		    G_CALLBACK (elektroid_drag_begin),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.view, "drag-end",
-		    G_CALLBACK (elektroid_drag_end), &local_browser);
+		    G_CALLBACK (elektroid_drag_end), &local_browser.browser);
   g_signal_connect (local_browser.browser.view, "drag-data-get",
-		    G_CALLBACK (elektroid_dnd_get), &local_browser);
+		    G_CALLBACK (elektroid_dnd_get), &local_browser.browser);
   g_signal_connect (local_browser.browser.view, "drag-data-received",
-		    G_CALLBACK (elektroid_dnd_received), &local_browser);
+		    G_CALLBACK (elektroid_dnd_received), NULL);
   g_signal_connect (local_browser.browser.view, "drag-motion",
-		    G_CALLBACK (elektroid_drag_motion_list), &local_browser);
+		    G_CALLBACK (elektroid_drag_motion_list),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.view, "drag-leave",
-		    G_CALLBACK (elektroid_drag_leave_list), &local_browser);
+		    G_CALLBACK (elektroid_drag_leave_list),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.up_button, "drag-motion",
-		    G_CALLBACK (elektroid_drag_motion_up), &local_browser);
+		    G_CALLBACK (elektroid_drag_motion_up),
+		    &local_browser.browser);
   g_signal_connect (local_browser.browser.up_button, "drag-leave",
-		    G_CALLBACK (elektroid_drag_leave_up), &local_browser);
+		    G_CALLBACK (elektroid_drag_leave_up),
+		    &local_browser.browser);
 
   gtk_drag_source_set ((GtkWidget *) local_browser.browser.view,
 		       GDK_BUTTON1_MASK, TARGET_ENTRIES_LOCAL_SRC,
