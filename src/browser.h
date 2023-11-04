@@ -161,6 +161,4 @@ void browser_search_changed (GtkSearchEntry *, gpointer);
 
 void browser_disable_sample_menuitems (struct browser *);
 
-void browser_disable_sample_widgets (struct browser *);
-
 #endif

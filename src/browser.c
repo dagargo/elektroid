@@ -120,10 +120,9 @@ browser_set_item (GtkTreeModel * model, GtkTreeIter * iter, struct item *item)
 void
 browser_set_selected_row_iter (struct browser *browser, GtkTreeIter * iter)
 {
+  GtkTreeModel *model;
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
-  GtkTreeModel *model =
-    GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
   GList *paths = gtk_tree_selection_get_selected_rows (selection, &model);
 
   gtk_tree_model_get_iter (model, iter, g_list_nth_data (paths, 0));
@@ -135,24 +134,35 @@ browser_clear (struct browser *browser)
 {
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
+  GtkTreeSelection *selection =
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
 
   gtk_entry_set_text (browser->dir_entry, browser->dir ? browser->dir : "");
+  g_signal_handlers_block_by_func (selection,
+				   G_CALLBACK (browser_selection_changed),
+				   browser);
   gtk_list_store_clear (list_store);
-  browser->check_selection (NULL);
+  g_signal_handlers_unblock_by_func (selection,
+				     G_CALLBACK (browser_selection_changed),
+				     browser);
 }
 
 void
 browser_selection_changed (GtkTreeSelection * selection, gpointer data)
 {
   struct browser *browser = data;
-  g_idle_add (browser->check_selection, NULL);
+  if (browser_get_selected_items_count (browser) != 1)
+    {
+      editor_reset (&editor, NULL);
+    }
+  browser->check_selection (NULL);
 }
 
 void
 browser_refresh (GtkWidget * object, gpointer data)
 {
   struct browser *browser = data;
-  g_idle_add (browser_load_dir, browser);
+  browser_load_dir (browser);
 }
 
 void
@@ -172,7 +182,7 @@ browser_go_up (GtkWidget * object, gpointer data)
     }
   g_mutex_unlock (&browser->mutex);
 
-  g_idle_add (browser_load_dir, browser);
+  browser_load_dir (browser);
 }
 
 void
@@ -233,14 +243,21 @@ browser_add_dentry_item (gpointer data)
 {
   gchar *hsize;
   gdouble time;
+  gchar *name;
   gchar label[LABEL_MAX];
+  GtkTreePath *path;
+  GtkTreeIter iter, note_iter;
   struct browser_add_dentry_item_data *add_data = data;
   struct browser *browser = add_data->browser;
   struct item *item = &add_data->item;
-  GtkTreeIter iter, note_iter;
   GValue v = G_VALUE_INIT;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
+  GtkTreeModel *model =
+    GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
+  GtkTreeSelection *selection =
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+
 
   hsize = get_human_size (item->size, TRUE);
 
@@ -349,6 +366,27 @@ browser_add_dentry_item (gpointer data)
       g_value_unset (&v);
     }
 
+  if (editor.audio.path)
+    {
+      name = path_chain (PATH_SYSTEM, browser->dir, add_data->rel_path);
+      if (!strcmp (editor.audio.path, name))
+	{
+	  path = gtk_tree_model_get_path (model, &iter);
+	  g_signal_handlers_block_by_func (selection,
+					   G_CALLBACK
+					   (browser_selection_changed),
+					   browser);
+	  gtk_tree_selection_select_iter (selection, &iter);
+	  gtk_tree_view_set_cursor (browser->view, path, NULL, FALSE);
+	  g_signal_handlers_unblock_by_func (selection,
+					     G_CALLBACK
+					     (browser_selection_changed),
+					     browser);
+	  gtk_tree_path_free (path);
+	}
+      g_free (name);
+    }
+
   g_free (add_data->rel_path);
   g_free (add_data);
 
@@ -412,12 +450,20 @@ browser_load_dir_runner_update_ui (gpointer data)
 		   NULL);
 
   g_mutex_lock (&browser->mutex);
-  if (!browser->loading)
-    {
-      browser_clear (browser);
-    }
   browser->loading = FALSE;
   g_mutex_unlock (&browser->mutex);
+
+  //Wait for every pending call to browser_add_dentry_item scheduled from the thread
+  while (gtk_events_pending ())
+    {
+      gtk_main_iteration ();
+    }
+
+  //If editor.audio.path is empty is a recording buffer.
+  if (!browser_get_selected_items_count (browser) && editor.audio.path)
+    {
+      editor_reset (&editor, NULL);
+    }
 
   return FALSE;
 }
@@ -798,22 +844,11 @@ browser_disable_sample_menuitems (struct browser *browser)
   gtk_widget_set_sensitive (browser->play_menuitem, FALSE);
 }
 
-void
-browser_disable_sample_widgets (struct browser *browser)
-{
-  if (editor.browser == browser)
-    {
-      editor_reset (&editor, NULL);
-      browser_disable_sample_menuitems (browser);
-    }
-}
-
 static void
 elektroid_check_and_load_sample (struct browser *browser, gint count)
 {
   struct item item;
   GtkTreeIter iter;
-  gchar *sample_path;
   GtkTreeModel *model;
   gboolean sample_editor = !remote_browser.browser.fs_ops
     || (remote_browser.browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR);
@@ -829,33 +864,16 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 				remote_browser.browser.open_menuitem,
 				item.type == ELEKTROID_FILE);
 
-      if (item.type == ELEKTROID_DIR)
-	{
-	  browser_disable_sample_widgets (browser);
-	}
-      else
+      if (item.type == ELEKTROID_FILE && sample_editor)
 	{
 	  enum path_type type = path_type_from_backend (browser->backend);
-	  sample_path = path_chain (type, browser->dir, item.name);
-	  if (!editor.audio.path || strcmp (editor.audio.path, sample_path) ||
-	      editor.browser != browser)
-	    {
-	      if (sample_editor)
-		{
-		  browser_clear_selection (OTHER_BROWSER (browser));
-		  editor_reset (&editor, browser);
-		  g_free (editor.audio.path);
-		  editor.audio.path = sample_path;
-		  sample_path = NULL;
-		  editor_start_load_thread (&editor);
-		}
-	    }
-	  g_free (sample_path);
+	  gchar *sample_path = path_chain (type, browser->dir, item.name);
+	  browser_clear_selection (OTHER_BROWSER (browser));
+	  editor_reset (&editor, browser);
+	  g_free (editor.audio.path);
+	  editor.audio.path = sample_path;
+	  editor_start_load_thread (&editor);
 	}
-    }
-  else
-    {
-      browser_disable_sample_widgets (browser);
     }
 }
 
@@ -887,6 +905,8 @@ browser_remote_check_selection (gpointer data)
     && remote_browser.browser.fs_ops->rename ? TRUE : FALSE;
   gboolean del_impl = remote_browser.browser.fs_ops
     && remote_browser.browser.fs_ops->delete ? TRUE : FALSE;
+  gboolean sel_impl = remote_browser.browser.fs_ops
+    && remote_browser.browser.fs_ops->select_item ? TRUE : FALSE;
 
   if (remote_browser.browser.backend->type == BE_TYPE_SYSTEM)
     {
@@ -901,7 +921,7 @@ browser_remote_check_selection (gpointer data)
   gtk_widget_set_sensitive (remote_browser.browser.transfer_menuitem,
 			    count > 0 && dl_impl);
 
-  if (count == 1 && remote_browser.browser.fs_ops->select_item)
+  if (count == 1 && sel_impl)
     {
       GtkTreeIter iter;
       GtkTreeModel *model;
