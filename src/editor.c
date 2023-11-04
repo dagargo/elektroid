@@ -1091,8 +1091,16 @@ editor_save_clicked (GtkWidget * object, gpointer data)
   else
     {
       //This is a recording.
-      gchar *name = elektroid_ask_name (_("Save Sample"), "sample.wav",
-					editor->browser, 0, 6);
+      struct tm tm;
+      time_t curr_time = time (NULL);
+      localtime_r (&curr_time, &tm);
+      gchar curr_time_str[PATH_MAX >> 1];
+      gchar suggestion[PATH_MAX];
+      strftime (curr_time_str, PATH_MAX, "%FT%T", &tm);
+      snprintf (suggestion, PATH_MAX, "%s_%s.wav", _("Audio"), curr_time_str);
+      gchar *name = elektroid_ask_name (_("Save Sample"), suggestion,
+					editor->browser, 0,
+					strlen (suggestion) - 4);
       if (!name)
 	{
 	  return;

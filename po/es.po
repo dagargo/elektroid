@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2023-10-16 21:05+0200\n"
+"POT-Creation-Date: 2023-11-04 09:10+0100\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -17,11 +17,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/elektroid.c:293
+#: src/elektroid.c:293 src/editor.c:1100
 msgid "Audio"
 msgstr ""
 
-#: src/elektroid.c:367 src/elektroid.c:3195
+#: src/elektroid.c:367 src/elektroid.c:3175
 msgid "Not connected"
 msgstr "No conectado"
 
@@ -34,12 +34,12 @@ msgid "Save SysEx"
 msgstr "Guardar SysEx"
 
 #: src/elektroid.c:528 src/elektroid.c:659 src/elektroid.c:865
-#: src/elektroid.c:1442 res/gui.glade:955 res/gui.glade:2873 res/gui.glade:2974
-#: res/gui.glade:3057
+#: src/elektroid.c:1430 res/gui.glade:955 res/gui.glade:2877 res/gui.glade:2982
+#: res/gui.glade:3068
 msgid "_Cancel"
 msgstr "_Cancelar"
 
-#: src/elektroid.c:530 res/gui.glade:2887
+#: src/elektroid.c:530 res/gui.glade:2891
 msgid "_Save"
 msgstr "_Guardar"
 
@@ -98,7 +98,7 @@ msgstr "Renombrar"
 msgid "Error while renaming to “%s”: %s."
 msgstr "Error al renombrar a «%s»: %s."
 
-#: src/elektroid.c:1302 res/gui.glade:1689 res/gui.glade:1967
+#: src/elektroid.c:1302 res/gui.glade:1693 res/gui.glade:1971
 msgid "Add Directory"
 msgstr "Añadir directorio"
 
@@ -107,54 +107,54 @@ msgstr "Añadir directorio"
 msgid "Error while creating dir “%s”: %s."
 msgstr "Error al crear el directorio «%s»: %s."
 
-#: src/elektroid.c:1439
+#: src/elektroid.c:1427
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "¿Reemplazar el archivo «%s»?"
 
-#: src/elektroid.c:1443
+#: src/elektroid.c:1431
 msgid "_Skip"
 msgstr "_Omitir"
 
-#: src/elektroid.c:1444
+#: src/elektroid.c:1432
 msgid "_Replace"
 msgstr "_Reemplazar"
 
-#: src/elektroid.c:1448
+#: src/elektroid.c:1436
 msgid "Apply this action to all files"
 msgstr "Aplicar esta acción a todos los archivos"
 
-#: src/elektroid.c:1758 src/elektroid.c:2001 src/elektroid.c:2730
+#: src/elektroid.c:1746 src/elektroid.c:1989 src/elektroid.c:2718
 msgid "Preparing Tasks"
 msgstr "Preparando tareas"
 
-#: src/elektroid.c:1759 src/elektroid.c:2001 src/elektroid.c:2731
-#: src/progress.c:113
+#: src/elektroid.c:1747 src/elektroid.c:1989 src/elektroid.c:2719
+#: src/progress.c:106
 msgid "Waiting..."
 msgstr "Esperando..."
 
-#: src/elektroid.c:2409
+#: src/elektroid.c:2397
 msgid "Connecting to Device"
 msgstr "Conectando con el dispositivo"
 
-#: src/elektroid.c:2409
+#: src/elektroid.c:2397
 msgid "Connecting..."
 msgstr "Conectando..."
 
-#: src/elektroid.c:2415
+#: src/elektroid.c:2403
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Dispositivo «%s» no reconocido: %s"
 
-#: src/elektroid.c:2717
+#: src/elektroid.c:2705
 msgid "Moving Files"
 msgstr "Moviendo archivos"
 
-#: src/elektroid.c:2718
+#: src/elektroid.c:2706
 msgid "Moving..."
 msgstr "Moviendo..."
 
-#: src/editor.c:1108
+#: src/editor.c:1101
 msgid "Save Sample"
 msgstr "Guardar muestra"
 
@@ -215,27 +215,27 @@ msgid "_Calibration"
 msgstr "_Calibración"
 
 #. This should only be translated if a non latin alphabet is used
-#: src/menu_actions/autosampler.c:214 res/gui.glade:934
+#: src/menu_actions/autosampler.c:201 res/gui.glade:934
 msgid "Auto Sampler"
 msgstr ""
 
-#: src/menu_actions/autosampler.c:215
+#: src/menu_actions/autosampler.c:202
 msgid "Recording..."
 msgstr "Grabando..."
 
-#: src/menu_actions/autosampler.c:295
+#: src/menu_actions/autosampler.c:274
 msgid "_Auto Sampler"
 msgstr ""
 
-#: src/progress.c:71
+#: src/progress.c:57
 msgid "Cancelling..."
 msgstr "Cancelando..."
 
-#: src/progress.c:116
+#: src/progress.c:109
 msgid "Sending..."
 msgstr "Enviando..."
 
-#: src/progress.c:119
+#: src/progress.c:112
 msgid "Receiving..."
 msgstr "Recibiendo..."
 
@@ -336,17 +336,17 @@ msgctxt "Auto Sampler"
 msgid "Channel"
 msgstr "Canal"
 
-#: res/gui.glade:1215 res/gui.glade:1839 res/gui.glade:2095 res/gui.glade:2918
+#: res/gui.glade:1215 res/gui.glade:1843 res/gui.glade:2099 res/gui.glade:2922
 msgid "Name"
 msgstr "Nombre"
 
 #. Audio channels
-#: res/gui.glade:1240 res/gui.glade:2120 res/gui.glade:3106
+#: res/gui.glade:1240 res/gui.glade:2124 res/gui.glade:3117
 msgid "Channels"
 msgstr "Canales"
 
 #. Input audio monitor
-#: res/gui.glade:1271 res/gui.glade:3137
+#: res/gui.glade:1271 res/gui.glade:3148
 msgid "Monitor"
 msgstr ""
 
@@ -366,60 +366,60 @@ msgctxt "Auto Sampler"
 msgid "Release"
 msgstr "Desvanecimiento"
 
-#: res/gui.glade:1388 res/gui.glade:2142
+#: res/gui.glade:1388 res/gui.glade:2146
 msgid "Duration"
 msgstr "Duración"
 
-#: res/gui.glade:1449
+#: res/gui.glade:1453
 msgid "Show Remote"
 msgstr "Mostrar remoto"
 
-#: res/gui.glade:1473
+#: res/gui.glade:1477
 msgid "_About"
 msgstr "_Acerca de"
 
-#: res/gui.glade:1554
+#: res/gui.glade:1558
 msgid "Refresh Devices"
 msgstr "Actualizar dispositivos"
 
-#: res/gui.glade:1668 res/gui.glade:1946
+#: res/gui.glade:1672 res/gui.glade:1950
 msgid "Go to Parent Directory"
 msgstr "Ir al directorio padre"
 
-#: res/gui.glade:1710 res/gui.glade:1731 res/gui.glade:1988 res/gui.glade:2009
+#: res/gui.glade:1714 res/gui.glade:1735 res/gui.glade:1992 res/gui.glade:2013
 msgid "Refresh Directory"
 msgstr "Actualizar directorio"
 
-#: res/gui.glade:1854 res/gui.glade:2175
+#: res/gui.glade:1858 res/gui.glade:2179
 msgid "Size"
 msgstr "Tamaño"
 
-#: res/gui.glade:2109
+#: res/gui.glade:2113
 msgid "Format"
 msgstr "Formato"
 
-#: res/gui.glade:2131
+#: res/gui.glade:2135
 msgid "MIDI Note"
 msgstr "Nota MIDI"
 
-#: res/gui.glade:2153
+#: res/gui.glade:2157
 msgid "Rate"
 msgstr "Frecuencia"
 
-#: res/gui.glade:2164
+#: res/gui.glade:2168
 msgid "Samples"
 msgstr "Muestras"
 
-#: res/gui.glade:2392
+#: res/gui.glade:2396
 msgid "Grid"
 msgstr "Rejilla"
 
-#: res/gui.glade:2445
+#: res/gui.glade:2449
 msgid "Playing mix depends on the remote channels"
 msgstr "La mezcla para reproducción depende de los canales del remoto"
 
 #. It is recommended to split the text in two lines if it is too long
-#: res/gui.glade:2447
+#: res/gui.glade:2451
 msgid ""
 "Mix depending\n"
 "on remote"
@@ -428,49 +428,49 @@ msgstr ""
 "el remoto"
 
 #. It is recommended to split the text in two lines if it is too long
-#: res/gui.glade:2501
+#: res/gui.glade:2505
 msgid "Auto play"
 msgstr ""
 "Reproducir\n"
 "automáticamente"
 
-#: res/gui.glade:2611
+#: res/gui.glade:2615
 msgid "Status"
 msgstr "Estado"
 
-#: res/gui.glade:2622
+#: res/gui.glade:2626
 msgid "Type"
 msgstr "Tipo"
 
-#: res/gui.glade:2643
+#: res/gui.glade:2647
 msgid "Source"
 msgstr "Origen"
 
-#: res/gui.glade:2657
+#: res/gui.glade:2661
 msgid "Destination"
 msgstr "Destino"
 
-#: res/gui.glade:2672
+#: res/gui.glade:2676
 msgid "Progress"
 msgstr "Progreso"
 
-#: res/gui.glade:2704
+#: res/gui.glade:2708
 msgid "Cancel Tasks"
 msgstr "Cancelar tareas"
 
-#: res/gui.glade:2725
+#: res/gui.glade:2729
 msgid "Remove Queued Tasks"
 msgstr "Eliminar tareas encoladas"
 
-#: res/gui.glade:2746
+#: res/gui.glade:2750
 msgid "Clear Finished Tasks"
 msgstr "Limpiar tareas terminadas"
 
-#: res/gui.glade:3036
+#: res/gui.glade:3047
 msgid "Record Channels"
 msgstr "Canales de grabación"
 
-#: res/gui.glade:3071
+#: res/gui.glade:3082
 msgid "_Record"
 msgstr "_Grabar"
 
