@@ -48,7 +48,7 @@ AM_COND_IF(ELEKTROID_CLI_ONLY, [], [PKG_CHECK_MODULES([GTK], [gtk+-3.0])])
 
 PKG_CHECK_MODULES(SNDFILE, sndfile >= 1.0.2, ac_cv_sndfile=1, ac_cv_sndfile=0)
 AC_DEFINE_UNQUOTED([HAVE_SNDFILE],${ac_cv_sndfile}, [Set to 1 if you have libsndfile.])
-PKG_CHECK_MODULES(SNDFILE, sndfile >= 1.1.0, ac_cv_sndfile_mp3=1, ac_cv_sndfile_mp3=0)
+PKG_CHECK_MODULES(SNDFILE_MP3, sndfile >= 1.1.0, ac_cv_sndfile_mp3=1, ac_cv_sndfile_mp3=0)
 AC_DEFINE_UNQUOTED([HAVE_SNDFILE_MP3],${ac_cv_sndfile_mp3}, [Set to 1 if you have libsndfile > 1.1.0.])
 AC_SUBST(SNDFILE_CFLAGS)
 AC_SUBST(SNDFILE_LIBS)
