@@ -29,10 +29,11 @@
 #define SMPL_CHUNK_ID "smpl"
 
 static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
-  { "wav", "ogg", "aiff", "flac", NULL };
-
-static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS_MP3[] =
+#if !defined(__linux__) || HAVE_SNDFILE_MP3
   { "wav", "ogg", "aiff", "flac", "mp3", NULL };
+#else
+  { "wav", "ogg", "aiff", "flac", NULL };
+#endif
 
 struct smpl_chunk_data
 {
@@ -945,31 +946,9 @@ sample_load_from_file (const gchar * path, GByteArray * sample,
 					NULL);
 }
 
-static gboolean
-sample_is_mp3_supported ()
-{
-#if defined(__linux__)
-  static char buffer[LABEL_MAX];
-  sf_command (NULL, SFC_GET_LIB_VERSION, buffer, LABEL_MAX);
-  debug_print (1, "libsndfile version: %s...\n", buffer);
-  if (strverscmp (buffer, "libsndfile-1.1.0") >= 0)
-    {
-      return TRUE;
-    }
-
-  return FALSE;
-#else
-  return TRUE;
-#endif
-}
-
 const gchar **
 sample_get_sample_extensions ()
 {
-  if (sample_is_mp3_supported ())
-    {
-      return ELEKTROID_AUDIO_LOCAL_EXTS_MP3;
-    }
   return ELEKTROID_AUDIO_LOCAL_EXTS;
 }
 
@@ -988,8 +967,10 @@ sample_get_format (struct sample_info *sample_info)
       return "FLAC";
     case SF_FORMAT_OGG:
       return "Ogg";
+#if !defined(__linux__) || HAVE_SNDFILE_MP3
     case SF_FORMAT_MPEG:
       return "MPEG";
+#endif
     default:
       return "?";
     }
