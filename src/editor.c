@@ -881,6 +881,11 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
       gboolean cursor_on_sel = editor->audio.sel_len > 0
 	&& cursor_frame >= editor->audio.sel_start
 	&& cursor_frame < editor->audio.sel_start + editor->audio.sel_len;
+      if (!cursor_on_sel)
+	{
+	  editor->audio.sel_start = 0;
+	  editor->audio.sel_len = 0;
+	}
       gtk_widget_set_sensitive (editor->delete_menuitem,
 				editor->audio.sel_len > 0);
       gtk_widget_set_sensitive (editor->save_menuitem, editor->dirty
