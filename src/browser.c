@@ -245,7 +245,6 @@ browser_add_dentry_item (gpointer data)
   gdouble time;
   gchar *name;
   gchar label[LABEL_MAX];
-  GtkTreePath *path;
   GtkTreeIter iter, note_iter;
   struct browser_add_dentry_item_data *add_data = data;
   struct browser *browser = add_data->browser;
@@ -253,8 +252,6 @@ browser_add_dentry_item (gpointer data)
   GValue v = G_VALUE_INIT;
   GtkListStore *list_store =
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
-  GtkTreeModel *model =
-    GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
 
@@ -371,18 +368,15 @@ browser_add_dentry_item (gpointer data)
       name = path_chain (PATH_SYSTEM, browser->dir, add_data->rel_path);
       if (!strcmp (editor.audio.path, name))
 	{
-	  path = gtk_tree_model_get_path (model, &iter);
 	  g_signal_handlers_block_by_func (selection,
 					   G_CALLBACK
 					   (browser_selection_changed),
 					   browser);
 	  gtk_tree_selection_select_iter (selection, &iter);
-	  gtk_tree_view_set_cursor (browser->view, path, NULL, FALSE);
 	  g_signal_handlers_unblock_by_func (selection,
 					     G_CALLBACK
 					     (browser_selection_changed),
 					     browser);
-	  gtk_tree_path_free (path);
 	}
       g_free (name);
     }
@@ -449,21 +443,32 @@ browser_load_dir_runner_update_ui (gpointer data)
   g_slist_foreach (browser->sensitive_widgets, browser_widget_set_sensitive,
 		   NULL);
 
-  g_mutex_lock (&browser->mutex);
-  browser->loading = FALSE;
-  g_mutex_unlock (&browser->mutex);
-
   //Wait for every pending call to browser_add_dentry_item scheduled from the thread
   while (gtk_events_pending ())
     {
       gtk_main_iteration ();
     }
 
-  //If editor.audio.path is empty is a recording buffer.
-  if (!browser_get_selected_items_count (browser) && editor.audio.path)
+  if (browser_get_selected_items_count (browser))
     {
-      editor_reset (&editor, NULL);
+      GtkTreeSelection *selection =
+	gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+      GList *list = gtk_tree_selection_get_selected_rows (selection, NULL);
+      gtk_tree_view_set_cursor (browser->view, list->data, NULL, FALSE);
+      g_list_free_full (list, (GDestroyNotify) gtk_tree_path_free);
     }
+  else
+    {
+      //If editor.audio.path is empty is a recording buffer.
+      if (editor.audio.path)
+	{
+	  editor_reset (&editor, NULL);
+	}
+    }
+
+  g_mutex_lock (&browser->mutex);
+  browser->loading = FALSE;
+  g_mutex_unlock (&browser->mutex);
 
   return FALSE;
 }
