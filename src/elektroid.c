@@ -1258,6 +1258,18 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
   g_free (uri);
 }
 
+gint
+elektroid_run_dialog_and_destroy (GtkWidget * custom_dialog)
+{
+  dialog = custom_dialog;
+  gtk_window_set_transient_for (GTK_WINDOW (dialog),
+				GTK_WINDOW (main_window));
+  gint result = gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_widget_destroy (dialog);
+  dialog = NULL;
+  return result;
+}
+
 gchar *
 elektroid_ask_name (const gchar * title, const gchar * value,
 		    struct browser *browser, gint start_pos, gint end_pos)

@@ -46,7 +46,9 @@
 extern struct browser local_browser;
 extern struct browser remote_browser;
 
-extern void elektroid_update_audio_status ();
+void elektroid_update_audio_status ();
+
+gint elektroid_run_dialog_and_destroy (GtkWidget *);
 
 struct editor_y_frame_state
 {
@@ -1080,6 +1082,33 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
     }
 }
 
+static gboolean
+editor_check_file_exists_and_overwrite (const gchar * filename)
+{
+  gint res = GTK_RESPONSE_ACCEPT;
+  GtkWidget *dialog;
+
+  if (g_file_test (filename, G_FILE_TEST_EXISTS))
+    {
+      dialog = gtk_message_dialog_new (NULL,
+				       GTK_DIALOG_MODAL |
+				       GTK_DIALOG_USE_HEADER_BAR,
+				       GTK_MESSAGE_WARNING,
+				       GTK_BUTTONS_NONE,
+				       _("Replace file “%s”?"),
+				       (gchar *) filename);
+      gtk_dialog_add_buttons (GTK_DIALOG (dialog),
+			      _("_Cancel"), GTK_RESPONSE_CANCEL,
+			      _("_Replace"), GTK_RESPONSE_ACCEPT, NULL);
+      gtk_dialog_set_default_response (GTK_DIALOG (dialog),
+				       GTK_RESPONSE_ACCEPT);
+
+      res = elektroid_run_dialog_and_destroy (dialog);
+    }
+
+  return res;
+}
+
 static void
 editor_save_clicked (GtkWidget * object, gpointer data)
 {
@@ -1100,6 +1129,12 @@ editor_save_clicked (GtkWidget * object, gpointer data)
 	  strcpy (editor->audio.path, name);
 	  strcat (editor->audio.path, ".wav");
 	  g_free (name);
+
+	  if (editor_check_file_exists_and_overwrite (editor->audio.path) !=
+	      GTK_RESPONSE_ACCEPT)
+	    {
+	      return;
+	    }
 	}
 
       sample_save_to_file (editor->audio.path,
@@ -1107,6 +1142,7 @@ editor_save_clicked (GtkWidget * object, gpointer data)
 			   &editor->audio.control,
 			   SF_FORMAT_WAV | SF_FORMAT_PCM_16);
     }
+
   else
     {
       gchar suggestion[PATH_MAX];
@@ -1143,12 +1179,23 @@ editor_save_clicked (GtkWidget * object, gpointer data)
 	    {
 	      debug_print (2, "Saving recording to %s...\n", name);
 	      editor->audio.path = name;
+	      if (editor_check_file_exists_and_overwrite (editor->audio.path)
+		  != GTK_RESPONSE_ACCEPT)
+		{
+		  return;
+		}
 	      sample_save_to_file (editor->audio.path, editor->audio.sample,
 				   &editor->audio.control,
 				   SF_FORMAT_WAV | SF_FORMAT_PCM_16);
 	    }
 	  else
 	    {
+	      if (editor_check_file_exists_and_overwrite (name)
+		  != GTK_RESPONSE_ACCEPT)
+		{
+		  return;
+		}
+	      //New file. Check if file exists.
 	      debug_print (2, "Saving selection to %s...\n", name);
 	      sample_save_to_file (name, sample, &editor->audio.control,
 				   SF_FORMAT_WAV | SF_FORMAT_PCM_16);
