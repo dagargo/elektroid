@@ -30,9 +30,9 @@
 
 static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
 #if !defined(__linux__) || HAVE_SNDFILE_MP3
-  { "wav", "ogg", "aiff", "flac", "mp3", NULL };
+{ "wav", "ogg", "aiff", "flac", "mp3", NULL };
 #else
-  { "wav", "ogg", "aiff", "flac", NULL };
+{ "wav", "ogg", "aiff", "flac", NULL };
 #endif
 
 struct smpl_chunk_data
