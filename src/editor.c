@@ -852,7 +852,8 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
 	  editor_set_cursor (editor, "col-resize");
 	}
       else if (editor_cursor_frame_over_frame (editor, cursor_frame,
-					       editor->audio.sel_start))
+					       editor->audio.sel_start)
+	       && editor->audio.sel_len)
 	{
 	  debug_print (2, "Clicking on selection start...\n");
 	  editor->operation = EDITOR_OP_MOVE_SEL_START;
@@ -860,7 +861,8 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
 	}
       else if (editor_cursor_frame_over_frame (editor, cursor_frame,
 					       editor->audio.sel_start +
-					       editor->audio.sel_len))
+					       editor->audio.sel_len)
+	       && editor->audio.sel_len)
 	{
 	  debug_print (2, "Clicking on selection end...\n");
 	  editor->operation = EDITOR_OP_MOVE_SEL_END;
@@ -1018,13 +1020,15 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
 	  editor_set_cursor (editor, "col-resize");
 	}
       else if (editor_cursor_frame_over_frame (editor, cursor_frame,
-					       editor->audio.sel_start))
+					       editor->audio.sel_start)
+	       && editor->audio.sel_len)
 	{
 	  editor_set_cursor (editor, "col-resize");
 	}
       else if (editor_cursor_frame_over_frame (editor, cursor_frame,
 					       editor->audio.sel_start +
-					       editor->audio.sel_len))
+					       editor->audio.sel_len)
+	       && editor->audio.sel_len)
 	{
 	  editor_set_cursor (editor, "col-resize");
 	}
