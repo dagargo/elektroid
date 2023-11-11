@@ -629,6 +629,11 @@ editor_stop_load_thread (struct editor *editor)
   audio->control.active = FALSE;
   g_mutex_unlock (&audio->control.mutex);
   editor_join_load_thread (editor);
+  //Wait for every pending call to editor_join_load_thread scheduled from editor_load_sample_cb
+  while (gtk_events_pending ())
+    {
+      gtk_main_iteration ();
+    }
 }
 
 static gboolean
