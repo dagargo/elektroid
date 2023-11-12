@@ -1418,7 +1418,7 @@ tasks_run_next (gpointer data)
 	  && remote_browser.browser.dirty)
 	{
 	  remote_browser.browser.dirty = FALSE;
-	  g_idle_add (elektroid_load_remote_if_midi, &remote_browser);
+	  g_idle_add (elektroid_load_remote_if_midi, &remote_browser.browser);
 	}
     }
 
@@ -1606,7 +1606,7 @@ elektroid_upload_task_runner (gpointer data)
 		strlen (remote_browser.browser.dir))
       && !(tasks.transfer.fs_ops->options & FS_OPTION_SINGLE_OP))
     {
-      g_idle_add (elektroid_load_remote_if_midi, &remote_browser);
+      g_idle_add (elektroid_load_remote_if_midi, &remote_browser.browser);
     }
 
   g_free (upload_path);
@@ -1840,7 +1840,8 @@ elektroid_download_task_runner (gpointer userdata)
       if (!res)
 	{
 	  tasks.transfer.status = TASK_STATUS_COMPLETED_OK;
-	  g_idle_add (elektroid_load_local_if_no_notifier, &local_browser);
+	  g_idle_add (elektroid_load_local_if_no_notifier,
+		      &local_browser.browser);
 	}
     }
   g_free (dst_path);
@@ -2453,7 +2454,8 @@ elektroid_dnd_received_system (const gchar * dir, const gchar * name,
 		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
-      g_idle_add (elektroid_load_local_if_no_notifier, &local_browser);
+      g_idle_add (elektroid_load_local_if_no_notifier,
+		  &local_browser.browser);
     }
   else
     {
@@ -2484,7 +2486,7 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
 		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
-      g_idle_add (elektroid_load_remote_if_midi, &remote_browser);
+      g_idle_add (elektroid_load_remote_if_midi, &remote_browser.browser);
     }
   else
     {
