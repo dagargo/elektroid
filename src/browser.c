@@ -460,7 +460,7 @@ browser_load_dir_runner_update_ui (gpointer data)
   else
     {
       //If editor.audio.path is empty is a recording buffer.
-      if (editor.audio.path)
+      if (editor.browser == browser && editor.audio.path)
 	{
 	  editor_reset (&editor, NULL);
 	}
