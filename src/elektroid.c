@@ -2193,7 +2193,6 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
 	    }
 	  preferences.remote_dir = remote_browser.browser.dir;
 	}
-      g_free (remote_browser.browser.dir);
       remote_browser.browser.dir = strdup ("/");
     }
 
