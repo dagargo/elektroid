@@ -957,12 +957,12 @@ sds_read_dir (struct backend *backend, struct item_iterator *iter,
   return 0;
 }
 
-gint
-sds_sample_load (const gchar * path, GByteArray * sample,
-		 struct job_control *control)
+static gint
+sds_sample_load_with_rate (const gchar * path, GByteArray * sample,
+			   struct job_control *control, guint32 rate)
 {
   struct sample_info sample_info_dst;
-  sample_info_dst.rate = 0;	// Any sample rate is valid.
+  sample_info_dst.rate = rate;
   sample_info_dst.channels = SDS_SAMPLE_CHANNELS;
   sample_info_dst.format = SF_FORMAT_PCM_16;
   gint res = sample_load_from_file (path, sample, control, &sample_info_dst);
@@ -973,7 +973,42 @@ sds_sample_load (const gchar * path, GByteArray * sample,
   return res;
 }
 
-gint
+static gint
+sds_sample_load (const gchar * path, GByteArray * sample,
+		 struct job_control *control)
+{
+  return sds_sample_load_with_rate (path, sample, control, 0);	// Any sample rate is valid.
+}
+
+static gint
+sds_sample_load_441 (const gchar * path, GByteArray * sample,
+		     struct job_control *control)
+{
+  return sds_sample_load_with_rate (path, sample, control, 44100);
+}
+
+static gint
+sds_sample_load_32 (const gchar * path, GByteArray * sample,
+		    struct job_control *control)
+{
+  return sds_sample_load_with_rate (path, sample, control, 32000);
+}
+
+static gint
+sds_sample_load_16 (const gchar * path, GByteArray * sample,
+		    struct job_control *control)
+{
+  return sds_sample_load_with_rate (path, sample, control, 16000);
+}
+
+static gint
+sds_sample_load_8 (const gchar * path, GByteArray * sample,
+		   struct job_control *control)
+{
+  return sds_sample_load_with_rate (path, sample, control, 8000);
+}
+
+static gint
 sds_sample_save (const gchar * path, GByteArray * sample,
 		 struct job_control *control)
 {
@@ -987,15 +1022,19 @@ enum sds_fs
   FS_SAMPLES_SDS_16_B = 0x2,
   FS_SAMPLES_SDS_14_B = 0x4,
   FS_SAMPLES_SDS_12_B = 0x8,
-  FS_SAMPLES_SDS_8_B = 0x10
+  FS_SAMPLES_SDS_8_B = 0x10,
+  FS_SAMPLES_SDS_16_B_441 = 0x20,
+  FS_SAMPLES_SDS_16_B_32 = 0x40,
+  FS_SAMPLES_SDS_16_B_16 = 0x80,
+  FS_SAMPLES_SDS_16_B_8 = 0x100
 };
 
 static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_8_B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SINGLE_OP |
     FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
-  .name = "mono8",
-  .gui_name = "Mono 8 bits",
+  .name = "8bits1c",
+  .gui_name = "8 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
@@ -1015,8 +1054,8 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_12_B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SINGLE_OP |
     FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
-  .name = "mono12",
-  .gui_name = "Mono 12 bits",
+  .name = "12bits1c",
+  .gui_name = "12 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
@@ -1036,8 +1075,8 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_14_B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SINGLE_OP |
     FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
-  .name = "mono14",
-  .gui_name = "Mono 14 bits",
+  .name = "14bits1c",
+  .gui_name = "14 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
@@ -1057,8 +1096,8 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_16_B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SINGLE_OP |
     FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
-  .name = "mono16",
-  .gui_name = "Mono 16 bits",
+  .name = "16bits1c",
+  .gui_name = "16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
@@ -1074,10 +1113,96 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .get_download_path = sds_get_download_path
 };
 
+static const struct fs_operations FS_SAMPLES_SDS_16B_441_OPERATIONS = {
+  .fs = FS_SAMPLES_SDS_16_B_441,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SINGLE_OP |
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .name = "44.1k16b1c",
+  .gui_name = "44.1 KHz 16 bits mono",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .type_ext = "wav",
+  .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
+  .readdir = sds_read_dir,
+  .print_item = common_print_item,
+  .rename = sds_rename,
+  .download = sds_download,
+  .upload = sds_upload_16b,
+  .load = sds_sample_load_441,
+  .save = sds_sample_save,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = sds_get_download_path
+};
+
+static const struct fs_operations FS_SAMPLES_SDS_16B_32_OPERATIONS = {
+  .fs = FS_SAMPLES_SDS_16_B_32,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SINGLE_OP |
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .name = "32k16b1c",
+  .gui_name = "32 KHz 16 bits mono",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .type_ext = "wav",
+  .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
+  .readdir = sds_read_dir,
+  .print_item = common_print_item,
+  .rename = sds_rename,
+  .download = sds_download,
+  .upload = sds_upload_16b,
+  .load = sds_sample_load_32,
+  .save = sds_sample_save,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = sds_get_download_path
+};
+
+static const struct fs_operations FS_SAMPLES_SDS_16B_16_OPERATIONS = {
+  .fs = FS_SAMPLES_SDS_16_B_16,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SINGLE_OP |
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .name = "16k16b1c",
+  .gui_name = "16 KHz 16 bits mono",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .type_ext = "wav",
+  .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
+  .readdir = sds_read_dir,
+  .print_item = common_print_item,
+  .rename = sds_rename,
+  .download = sds_download,
+  .upload = sds_upload_16b,
+  .load = sds_sample_load_16,
+  .save = sds_sample_save,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = sds_get_download_path
+};
+
+static const struct fs_operations FS_SAMPLES_SDS_16B_8_OPERATIONS = {
+  .fs = FS_SAMPLES_SDS_16_B_8,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SINGLE_OP |
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .name = "8k16b1c",
+  .gui_name = "8 KHz 16 bits mono",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .type_ext = "wav",
+  .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
+  .readdir = sds_read_dir,
+  .print_item = common_print_item,
+  .rename = sds_rename,
+  .download = sds_download,
+  .upload = sds_upload_16b,
+  .load = sds_sample_load_8,
+  .save = sds_sample_save,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = sds_get_download_path
+};
+
 static const struct fs_operations *FS_SDS_ALL_OPERATIONS[] = {
   &FS_PROGRAM_DEFAULT_OPERATIONS, &FS_SAMPLES_SDS_8B_OPERATIONS,
   &FS_SAMPLES_SDS_12B_OPERATIONS, &FS_SAMPLES_SDS_14B_OPERATIONS,
-  &FS_SAMPLES_SDS_16B_OPERATIONS, NULL
+  &FS_SAMPLES_SDS_16B_OPERATIONS, &FS_SAMPLES_SDS_16B_441_OPERATIONS,
+  &FS_SAMPLES_SDS_16B_32_OPERATIONS, &FS_SAMPLES_SDS_16B_16_OPERATIONS,
+  &FS_SAMPLES_SDS_16B_8_OPERATIONS, NULL
 };
 
 gint
@@ -1145,7 +1270,9 @@ sds_handshake (struct backend *backend)
   sds_data->rest_time = SDS_REST_TIME_DEFAULT;
 
   backend->filesystems = FS_PROGRAM_DEFAULT | FS_SAMPLES_SDS_8_B |
-    FS_SAMPLES_SDS_12_B | FS_SAMPLES_SDS_14_B | FS_SAMPLES_SDS_16_B;
+    FS_SAMPLES_SDS_12_B | FS_SAMPLES_SDS_14_B | FS_SAMPLES_SDS_16_B |
+    FS_SAMPLES_SDS_16_B_441 | FS_SAMPLES_SDS_16_B_32 | FS_SAMPLES_SDS_16_B_16
+    | FS_SAMPLES_SDS_16_B_8;
   backend->fs_ops = FS_SDS_ALL_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
   backend->data = sds_data;
