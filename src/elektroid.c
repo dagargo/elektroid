@@ -2384,6 +2384,8 @@ elektroid_set_device (GtkWidget * object, gpointer data)
       return;
     }
 
+  browser_clear_selection (&remote_browser.browser);
+
   if (backend_check (&backend))
     {
       backend_destroy (&backend);
