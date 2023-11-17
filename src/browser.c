@@ -363,7 +363,7 @@ browser_add_dentry_item (gpointer data)
       g_value_unset (&v);
     }
 
-  if (editor.audio.path)
+  if (editor.audio.path && editor.browser == browser)
     {
       name = path_chain (PATH_SYSTEM, browser->dir, add_data->rel_path);
       if (!strcmp (editor.audio.path, name))
