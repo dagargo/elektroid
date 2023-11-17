@@ -3073,7 +3073,8 @@ elektron_sample_save (const gchar * path, GByteArray * sample,
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .fs = FS_SAMPLES,
-  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SORT_BY_NAME |
+  .options =
+    FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SORT_BY_NAME | FS_OPTION_MONO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "sample",
   .gui_name = "Samples",

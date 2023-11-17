@@ -22,6 +22,7 @@
 #include <glib/gi18n.h>
 #include "editor.h"
 #include "sample.h"
+#include "connectors/system.h"
 
 #define EDITOR_OP_NONE 0
 #define EDITOR_OP_SELECT 1
@@ -62,6 +63,12 @@ struct editor_set_volume_data
 {
   struct editor *editor;
   gdouble volume;
+};
+
+struct editor_record_clicked_data
+{
+  struct editor *editor;
+  struct browser *browser;
 };
 
 gchar *elektroid_ask_name (const gchar * title, const gchar * value,
@@ -551,8 +558,15 @@ static gboolean
 editor_reset_for_recording (gpointer data)
 {
   guint options;
-  struct editor *editor = data;
-  editor_reset (editor, &local_browser.browser);
+  struct editor_record_clicked_data *record_data = data;
+  struct editor *editor = record_data->editor;
+  struct browser *browser = record_data->browser;
+
+  editor_reset (editor, browser ? browser : &local_browser.browser);
+
+  guirecorder_set_channels_masks (&editor->guirecorder,
+				  editor->browser->fs_ops);
+
   editor->ready = FALSE;
   editor->dirty = TRUE;
   editor->zoom = 1;
@@ -570,6 +584,10 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   gint res;
   guint options;
   struct editor *editor = data;
+  static struct editor_record_clicked_data record_data;
+
+  record_data.browser = editor->browser;
+  record_data.editor = editor;
 
   browser_clear_selection (&local_browser.browser);
   browser_clear_selection (&remote_browser.browser);
@@ -578,7 +596,7 @@ editor_record_clicked (GtkWidget * object, gpointer data)
   //editor_reset and clear the browser member.
   //If using g_idle_add, a call to editor_reset will happen always later than
   //those. All these calls will happen at the time the dialog is shown.
-  g_idle_add (editor_reset_for_recording, editor);
+  g_idle_add (editor_reset_for_recording, &record_data);
 
   res = gtk_dialog_run (editor->record_dialog);
   gtk_widget_hide (GTK_WIDGET (editor->record_dialog));
@@ -1088,7 +1106,7 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
 }
 
 static gboolean
-editor_check_file_exists_and_overwrite (const gchar * filename)
+editor_file_exists_no_overwrite (const gchar * filename)
 {
   gint res = GTK_RESPONSE_ACCEPT;
   GtkWidget *dialog;
@@ -1111,12 +1129,67 @@ editor_check_file_exists_and_overwrite (const gchar * filename)
       res = elektroid_run_dialog_and_destroy (dialog);
     }
 
-  return res;
+  return res == GTK_RESPONSE_CANCEL;
+}
+
+// Due to the way filesystems work (the load function loads the file from a
+// local path) we need to persist the recording or selection to a temporary
+// file.
+static gint
+editor_save_to_remote (struct editor *editor, gchar * name,
+		       GByteArray * sample)
+{
+  gint err;
+  GByteArray *tmp_sample;
+  gchar *tmp_file = path_chain (PATH_SYSTEM, g_get_tmp_dir (), PACKAGE);
+
+  err = system_upload (editor->browser->backend, tmp_file, sample,
+		       &editor->audio.control);
+  if (err)
+    {
+      goto end;
+    }
+
+  tmp_sample = g_byte_array_new ();
+  editor->audio.control.active = TRUE;
+  err = editor->browser->fs_ops->load (tmp_file, tmp_sample,
+				       &editor->audio.control);
+  if (err)
+    {
+      goto cleanup;
+    }
+
+  editor->audio.control.active = TRUE;
+  err = editor->browser->fs_ops->upload (editor->browser->backend, name,
+					 tmp_sample, &editor->audio.control);
+cleanup:
+  g_unlink (tmp_file);
+  g_byte_array_free (tmp_sample, TRUE);
+end:
+  g_free (tmp_file);
+  return err;
+}
+
+static gint
+editor_save (struct editor *editor, gchar * name, GByteArray * sample)
+{
+  gint err;
+  if (editor->browser == &local_browser.browser)
+    {
+      err = editor->browser->fs_ops->upload (editor->browser->backend, name,
+					     sample, &editor->audio.control);
+    }
+  else
+    {
+      err = editor_save_to_remote (editor, name, sample);
+    }
+  return err;
 }
 
 static void
 editor_save_clicked (GtkWidget * object, gpointer data)
 {
+  gchar *name;
   struct editor *editor = data;
 
   if (!editor_loading_completed (editor))
@@ -1135,34 +1208,19 @@ editor_save_clicked (GtkWidget * object, gpointer data)
 	  strcat (editor->audio.path, ".wav");
 	  g_free (name);
 
-	  if (editor_check_file_exists_and_overwrite (editor->audio.path) !=
-	      GTK_RESPONSE_ACCEPT)
+	  if (editor_file_exists_no_overwrite (editor->audio.path))
 	    {
 	      return;
 	    }
 	}
 
-      sample_save_to_file (editor->audio.path,
-			   editor->audio.sample,
-			   &editor->audio.control,
-			   SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+      editor_save (editor, editor->audio.path, editor->audio.sample);
     }
-
   else
     {
       gchar suggestion[PATH_MAX];
       GByteArray *sample = NULL;
-      if (!editor->audio.sel_len)
-	{
-	  struct tm tm;
-	  time_t curr_time = time (NULL);
-	  localtime_r (&curr_time, &tm);
-	  gchar curr_time_str[PATH_MAX >> 1];
-	  strftime (curr_time_str, PATH_MAX, "%FT%T", &tm);
-	  snprintf (suggestion, PATH_MAX, "%s_%s.wav", _("Audio"),
-		    curr_time_str);
-	}
-      else
+      if (editor->audio.sel_len)
 	{
 	  sample = g_byte_array_new ();
 	  guint fsize = SAMPLE_INFO_FRAME_SIZE (&editor->audio.sample_info);
@@ -1172,38 +1230,38 @@ editor_save_clicked (GtkWidget * object, gpointer data)
 			       len);
 	  snprintf (suggestion, PATH_MAX, "%s", "Sample.wav");
 	}
+      else
+	{
+	  struct tm tm;
+	  time_t curr_time = time (NULL);
+	  localtime_r (&curr_time, &tm);
+	  gchar curr_time_str[PATH_MAX >> 1];
+	  strftime (curr_time_str, PATH_MAX, "%FT%T", &tm);
+	  snprintf (suggestion, PATH_MAX, "%s_%s.wav", _("Audio"),
+		    curr_time_str);
+	}
 
-      gchar *name = elektroid_ask_name (_("Save Sample"), suggestion,
-					editor->browser, 0,
-					strlen (suggestion) - 4);
+      name = elektroid_ask_name (_("Save Sample"), suggestion,
+				 editor->browser, 0, strlen (suggestion) - 4);
       if (name)
 	{
+	  if (editor_file_exists_no_overwrite (name))
+	    {
+	      return;
+	    }
+
+	  debug_print (2, "Saving recording to %s...\n", name);
 	  memcpy (editor->audio.control.data, &editor->audio.sample_info,
 		  sizeof (struct sample_info));
-	  if (!editor->audio.sel_len)
+
+	  if (editor->audio.sel_len)
 	    {
-	      debug_print (2, "Saving recording to %s...\n", name);
-	      editor->audio.path = name;
-	      if (editor_check_file_exists_and_overwrite (editor->audio.path)
-		  != GTK_RESPONSE_ACCEPT)
-		{
-		  return;
-		}
-	      sample_save_to_file (editor->audio.path, editor->audio.sample,
-				   &editor->audio.control,
-				   SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+	      editor_save (editor, name, sample);
 	    }
 	  else
 	    {
-	      if (editor_check_file_exists_and_overwrite (name)
-		  != GTK_RESPONSE_ACCEPT)
-		{
-		  return;
-		}
-	      //New file. Check if file exists.
-	      debug_print (2, "Saving selection to %s...\n", name);
-	      sample_save_to_file (name, sample, &editor->audio.control,
-				   SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+	      editor->audio.path = name;
+	      editor_save (editor, editor->audio.path, editor->audio.sample);
 	    }
 	}
 
@@ -1285,6 +1343,9 @@ editor_init (struct editor *editor, GtkBuilder * builder)
   editor->guirecorder.channels_combo =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "record_dialog_channels_combo"));
+  editor->guirecorder.channels_list_store =
+    GTK_LIST_STORE (gtk_builder_get_object
+		    (builder, "record_dialog_channels_list_store"));
   editor->guirecorder.monitor_levelbar =
     GTK_LEVEL_BAR (gtk_builder_get_object
 		   (builder, "record_dialog_monitor_levelbar"));

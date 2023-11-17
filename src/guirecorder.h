@@ -22,10 +22,18 @@
 #define GUIRECORDER_H
 
 #include <gtk/gtk.h>
+#include "utils.h"
+
+enum channels_list_store_columns
+{
+  CHANNELS_LIST_STORE_CAPTION_FIELD,
+  CHANNELS_LIST_STORE_ID_FIELD
+};
 
 struct guirecorder
 {
   GtkWidget *channels_combo;
+  GtkListStore *channels_list_store;
   GtkLevelBar *monitor_levelbar;
   gdouble level;
 };
@@ -33,6 +41,9 @@ struct guirecorder
 void guirecorder_monitor_notifier (void *, gdouble);
 
 guint guirecorder_get_channel_mask (GtkWidget *);
+
+void guirecorder_set_channels_masks (struct guirecorder *,
+				     const struct fs_operations *);
 
 void guirecorder_channels_changed (GtkWidget *, gpointer);
 

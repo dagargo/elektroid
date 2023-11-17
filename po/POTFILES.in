@@ -8,6 +8,7 @@ src/menu_actions/microbrute.c
 src/menu_actions/autosampler.c
 src/local.c
 src/progress.c
+src/guirecorder.c
 src/connectors/sds.c
 src/connectors/default.c
 src/connectors/system.c

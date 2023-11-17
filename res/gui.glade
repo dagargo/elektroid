@@ -741,27 +741,13 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       </row>
     </data>
   </object>
-  <object class="GtkListStore" id="record_channels_list_store">
+  <object class="GtkListStore" id="record_dialog_channels_list_store">
     <columns>
       <!-- column-name caption -->
       <column type="gchararray"/>
       <!-- column-name value -->
       <column type="guint"/>
     </columns>
-    <data>
-      <row>
-        <col id="0" translatable="yes" comments="Stereo recording">Stereo</col>
-        <col id="1">3</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes" comments="Mono recording from left channel">Left</col>
-        <col id="1">1</col>
-      </row>
-      <row>
-        <col id="0" translatable="yes" comments="Mono recording from right channel">Right</col>
-        <col id="1">2</col>
-      </row>
-    </data>
   </object>
   <object class="GtkListStore" id="remote_list_store">
     <columns>
@@ -1249,7 +1235,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <property name="hexpand">True</property>
-                            <property name="model">record_channels_list_store</property>
+                            <property name="model">record_dialog_channels_list_store</property>
                             <property name="active">0</property>
                             <child>
                               <object class="GtkCellRendererText"/>
@@ -3161,7 +3147,7 @@ on remote</property>
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="hexpand">True</property>
-                <property name="model">record_channels_list_store</property>
+                <property name="model">record_dialog_channels_list_store</property>
                 <property name="active">0</property>
                 <child>
                   <object class="GtkCellRendererText"/>

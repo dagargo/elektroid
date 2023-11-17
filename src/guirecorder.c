@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <glib/gi18n.h>
 #include "guirecorder.h"
 #include "audio.h"
 
@@ -42,13 +43,50 @@ guirecorder_monitor_notifier (gpointer recorder, gdouble value)
 guint
 guirecorder_get_channel_mask (GtkWidget * widget)
 {
-  guint channel_mask;
+  guint channel_mask = 0;
   GtkTreeIter iter;
   GtkComboBox *combo = GTK_COMBO_BOX (widget);
   GtkTreeModel *model = gtk_combo_box_get_model (combo);
-  gtk_combo_box_get_active_iter (combo, &iter);
-  gtk_tree_model_get (model, &iter, 1, &channel_mask, -1);
+  if (gtk_combo_box_get_active_iter (combo, &iter))
+    {
+      gtk_tree_model_get (model, &iter, 1, &channel_mask, -1);
+    }
   return channel_mask;
+}
+
+void
+guirecorder_set_channels_masks (struct guirecorder *guirecorder,
+				const struct fs_operations *fs_ops)
+{
+  gtk_list_store_clear (guirecorder->channels_list_store);
+  if (fs_ops->options & FS_OPTION_STEREO)
+    {
+      gtk_list_store_insert_with_values (guirecorder->channels_list_store,
+					 NULL, -1,
+					 CHANNELS_LIST_STORE_CAPTION_FIELD,
+/* TRANSLATORS: Stereo recording */
+					 _("Stereo"),
+					 CHANNELS_LIST_STORE_ID_FIELD,
+					 RECORD_STEREO, -1);
+    }
+  if (fs_ops->options & FS_OPTION_MONO)
+    {
+      gtk_list_store_insert_with_values (guirecorder->channels_list_store,
+					 NULL, -1,
+					 CHANNELS_LIST_STORE_CAPTION_FIELD,
+/* TRANSLATORS: Mono recording from left channel */
+					 _("Left"),
+					 CHANNELS_LIST_STORE_ID_FIELD,
+					 RECORD_LEFT, -1);
+      gtk_list_store_insert_with_values (guirecorder->channels_list_store,
+					 NULL, -1,
+					 CHANNELS_LIST_STORE_CAPTION_FIELD,
+/* TRANSLATORS: Mono recording from right channel */
+					 _("Right"),
+					 CHANNELS_LIST_STORE_ID_FIELD,
+					 RECORD_RIGHT, -1);
+    }
+  gtk_combo_box_set_active (GTK_COMBO_BOX (guirecorder->channels_combo), 0);
 }
 
 void
