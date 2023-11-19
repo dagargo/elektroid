@@ -151,10 +151,11 @@ void
 browser_selection_changed (GtkTreeSelection * selection, gpointer data)
 {
   struct browser *browser = data;
-  if (browser_get_selected_items_count (browser) != 1)
-    {
-      editor_reset (&editor, NULL);
-    }
+  if ((!browser->backend || browser->backend->type == BE_TYPE_SYSTEM) &&
+      browser_get_selected_items_count (browser) != 1)
+     {
+       editor_reset (&editor, NULL);
+     }
   browser->check_selection (NULL);
 }
 
