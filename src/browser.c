@@ -454,7 +454,14 @@ browser_load_dir_runner_update_ui (gpointer data)
       GtkTreeSelection *selection =
 	gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
       GList *list = gtk_tree_selection_get_selected_rows (selection, NULL);
+      g_signal_handlers_block_by_func (selection,
+				       G_CALLBACK
+				       (browser_selection_changed), browser);
       gtk_tree_view_set_cursor (browser->view, list->data, NULL, FALSE);
+      g_signal_handlers_unblock_by_func (selection,
+					 G_CALLBACK
+					 (browser_selection_changed),
+					 browser);
       g_list_free_full (list, (GDestroyNotify) gtk_tree_path_free);
     }
   else
