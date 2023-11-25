@@ -425,20 +425,27 @@ elektroid_cancel_all_tasks_and_wait ()
     }
 }
 
-void
-elektroid_refresh_devices (GtkWidget * widget, gpointer data)
+static void
+elektroid_set_preferences_remote_dir ()
 {
   if (backend.type == BE_TYPE_SYSTEM)
     {
       if (remote_browser.browser.dir)
 	{
+	  gchar *dir = strdup (remote_browser.browser.dir);
 	  if (preferences.remote_dir)
 	    {
 	      g_free (preferences.remote_dir);
 	    }
-	  preferences.remote_dir = strdup (remote_browser.browser.dir);
+	  preferences.remote_dir = dir;
 	}
     }
+}
+
+void
+elektroid_refresh_devices (GtkWidget * widget, gpointer data)
+{
+  elektroid_set_preferences_remote_dir ();
 
   if (backend_check (&backend))
     {
@@ -2188,11 +2195,7 @@ elektroid_set_fs (GtkWidget * object, gpointer data)
     {
       if (remote_browser.browser.dir)
 	{
-	  if (preferences.remote_dir)
-	    {
-	      g_free (preferences.remote_dir);
-	    }
-	  preferences.remote_dir = remote_browser.browser.dir;
+	  g_free (remote_browser.browser.dir);
 	}
       remote_browser.browser.dir = strdup ("/");
     }
@@ -2384,7 +2387,7 @@ elektroid_set_device (GtkWidget * object, gpointer data)
       return;
     }
 
-  browser_clear_selection (&remote_browser.browser);
+  elektroid_set_preferences_remote_dir ();
 
   if (backend_check (&backend))
     {
@@ -3259,10 +3262,7 @@ elektroid_run (int argc, char *argv[])
   gtk_main ();
 
   preferences.local_dir = local_browser.browser.dir;
-  if (backend.type == BE_TYPE_SYSTEM)
-    {
-      preferences.remote_dir = remote_browser.browser.dir;
-    }
+  elektroid_set_preferences_remote_dir ();
 
   if (backend_check (&backend))
     {
