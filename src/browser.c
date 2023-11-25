@@ -153,9 +153,9 @@ browser_selection_changed (GtkTreeSelection * selection, gpointer data)
   struct browser *browser = data;
   if ((!browser->backend || browser->backend->type == BE_TYPE_SYSTEM) &&
       browser_get_selected_items_count (browser) != 1)
-     {
-       editor_reset (&editor, NULL);
-     }
+    {
+      editor_reset (&editor, NULL);
+    }
   browser->check_selection (NULL);
 }
 
@@ -201,13 +201,11 @@ browser_item_activated (GtkTreeView * view, GtkTreePath * path,
 
   if (item.type == ELEKTROID_DIR)
     {
-      browser_close_search (NULL, browser);
-
       enum path_type type = path_type_from_backend (browser->backend);
       gchar *new_dir = path_chain (type, browser->dir, item.name);
       g_free (browser->dir);
       browser->dir = new_dir;
-      browser_load_dir (browser);
+      browser_close_search (NULL, browser);	//This triggers a refresh
     }
 }
 
