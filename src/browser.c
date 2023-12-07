@@ -151,11 +151,6 @@ void
 browser_selection_changed (GtkTreeSelection * selection, gpointer data)
 {
   struct browser *browser = data;
-  if ((!browser->backend || browser->backend->type == BE_TYPE_SYSTEM) &&
-      browser_get_selected_items_count (browser) != 1)
-    {
-      editor_reset (&editor, NULL);
-    }
   browser->check_selection (NULL);
 }
 
@@ -222,7 +217,13 @@ browser_clear_selection (struct browser *browser)
 {
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+  g_signal_handlers_block_by_func (selection,
+				   G_CALLBACK (browser_selection_changed),
+				   browser);
   gtk_tree_selection_unselect_all (selection);
+  g_signal_handlers_unblock_by_func (selection,
+				     G_CALLBACK (browser_selection_changed),
+				     browser);
 }
 
 gchar *
@@ -856,6 +857,18 @@ browser_disable_sample_menuitems (struct browser *browser)
 }
 
 static void
+elektroid_clear_other_browser_if_system (struct browser *browser)
+{
+  if ((browser == &local_browser.browser
+       && (remote_browser.browser.backend
+	   && remote_browser.browser.backend->type == BE_TYPE_SYSTEM))
+      || browser == &remote_browser.browser)
+    {
+      browser_clear_selection (OTHER_BROWSER (browser));
+    }
+}
+
+static void
 elektroid_check_and_load_sample (struct browser *browser, gint count)
 {
   struct item item;
@@ -879,12 +892,17 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	{
 	  enum path_type type = path_type_from_backend (browser->backend);
 	  gchar *sample_path = path_chain (type, browser->dir, item.name);
-	  browser_clear_selection (OTHER_BROWSER (browser));
+	  elektroid_clear_other_browser_if_system (browser);
 	  editor_reset (&editor, browser);
 	  g_free (editor.audio.path);
 	  editor.audio.path = sample_path;
 	  editor_start_load_thread (&editor);
 	}
+    }
+  else
+    {
+      elektroid_clear_other_browser_if_system (browser);
+      editor_reset (&editor, NULL);
     }
 }
 
@@ -938,9 +956,8 @@ browser_remote_check_selection (gpointer data)
       GtkTreeModel *model;
       struct item item;
       browser_set_selected_row_iter (&remote_browser.browser, &iter);
-      model =
-	GTK_TREE_MODEL (gtk_tree_view_get_model
-			(remote_browser.browser.view));
+      model = GTK_TREE_MODEL (gtk_tree_view_get_model
+			      (remote_browser.browser.view));
       browser_set_item (model, &iter, &item);
       remote_browser.browser.fs_ops->select_item (remote_browser.
 						  browser.backend,
