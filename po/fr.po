@@ -5,10 +5,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: elektroid 2.2\n"
+"Project-Id-Version: elektroid 3.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2023-11-17 19:05+0100\n"
-"PO-Revision-Date: 2023-03-12 11:18+0100\n"
+"PO-Revision-Date: 2023-12-16 11:18+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
 "Language: fr\n"
@@ -221,11 +221,11 @@ msgstr ""
 
 #: src/menu_actions/autosampler.c:202
 msgid "Recording..."
-msgstr ""
+msgstr "Enregistre..."
 
 #: src/menu_actions/autosampler.c:274
 msgid "_Auto Sampler"
-msgstr ""
+msgstr "Échantillonneur _automatique
 
 #: src/progress.c:57
 msgid "Cancelling..."
@@ -242,17 +242,17 @@ msgstr "Réception en cours..."
 #. TRANSLATORS: Stereo recording
 #: src/guirecorder.c:68
 msgid "Stereo"
-msgstr ""
+msgstr "Stéréo"
 
 #. TRANSLATORS: Mono recording from left channel
 #: src/guirecorder.c:78
 msgid "Left"
-msgstr ""
+msgstr "Gauche"
 
 #. TRANSLATORS: Mono recording from right channel
 #: src/guirecorder.c:85
 msgid "Right"
-msgstr ""
+msgstr "Droite"
 
 #: src/connectors/sds.c:1282
 msgid "SDS sampler"
@@ -304,7 +304,7 @@ msgstr "Olivier Humbert <trebmuh@tuxfamily.org>"
 
 #: res/gui.glade:955
 msgid "_Start"
-msgstr ""
+msgstr "_Démarrage"
 
 #. Start MIDI key (note)
 #: res/gui.glade:1011
@@ -328,14 +328,13 @@ msgstr ""
 #: res/gui.glade:1091
 msgctxt "Auto Sampler"
 msgid "Velocity"
-msgstr ""
+msgstr "Vélocité"
 
 #. MIDI channel
 #: res/gui.glade:1133
-#, fuzzy
 msgctxt "Auto Sampler"
 msgid "Channel"
-msgstr "Canaux"
+msgstr "Canal"
 
 #: res/gui.glade:1201 res/gui.glade:1829 res/gui.glade:2085 res/gui.glade:2943
 msgid "Name"
@@ -349,7 +348,7 @@ msgstr "Canaux"
 #. Input audio monitor
 #: res/gui.glade:1257 res/gui.glade:3169
 msgid "Monitor"
-msgstr ""
+msgstr "Moniteur"
 
 #: res/gui.glade:1282
 msgid "Global"
@@ -359,13 +358,13 @@ msgstr ""
 #: res/gui.glade:1318
 msgctxt "Auto Sampler"
 msgid "Press"
-msgstr ""
+msgstr "Appui"
 
 #. As the R in ADSR
 #: res/gui.glade:1332
 msgctxt "Auto Sampler"
 msgid "Release"
-msgstr ""
+msgstr "Relâche"
 
 #: res/gui.glade:1374 res/gui.glade:2132
 msgid "Duration"
@@ -373,7 +372,7 @@ msgstr "Durée"
 
 #: res/gui.glade:1439
 msgid "Show Remote"
-msgstr ""
+msgstr "Affichage distant"
 
 #: res/gui.glade:1463
 msgid "_About"
@@ -401,7 +400,7 @@ msgstr ""
 
 #: res/gui.glade:2121
 msgid "MIDI Note"
-msgstr ""
+msgstr "Note MIDI"
 
 #: res/gui.glade:2143
 msgid "Rate"
@@ -413,7 +412,7 @@ msgstr "Échantillons"
 
 #: res/gui.glade:2382
 msgid "Grid"
-msgstr ""
+msgstr "Grille"
 
 #: res/gui.glade:2435
 msgid "Playing mix depends on the remote channels"
@@ -469,11 +468,11 @@ msgstr "Nettoyer les tâches terminées"
 
 #: res/gui.glade:3068
 msgid "Record Channels"
-msgstr ""
+msgstr "Canaux enregistrés"
 
 #: res/gui.glade:3103
 msgid "_Record"
-msgstr ""
+msgstr "E_nregistrement"
 
 #: res/microbrute/gui.glade:35
 msgid "Calibration assistant"
