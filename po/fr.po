@@ -225,7 +225,7 @@ msgstr "Enregistre..."
 
 #: src/menu_actions/autosampler.c:274
 msgid "_Auto Sampler"
-msgstr "Échantillonneur _automatique
+msgstr "Échantillonneur _automatique"
 
 #: src/progress.c:57
 msgid "Cancelling..."
