@@ -387,9 +387,13 @@ msgstr "Aktualisiere Geräte"
 msgid "Go to Parent Directory"
 msgstr "Gehe zum Überverzeichnis"
 
-#: res/gui.glade:1700 res/gui.glade:1721 res/gui.glade:1978 res/gui.glade:1999
+#: res/gui.glade:1700 res/gui.glade:1978
 msgid "Refresh Directory"
 msgstr "Aktualisiere Verzeichnis"
+
+#: res/gui.glade:1721 res/gui.glade:1999
+msgid "Search"
+msgstr "Suche"
 
 #: res/gui.glade:1844 res/gui.glade:2165
 msgid "Size"

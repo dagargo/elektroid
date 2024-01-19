@@ -1714,11 +1714,11 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                     </child>
                                     <child>
                                       <object class="GtkButton" id="remote_search_button">
-                                        <property name="name">remote_refresh_button</property>
+                                        <property name="name">remote_search_button</property>
                                         <property name="visible">True</property>
                                         <property name="can-focus">True</property>
                                         <property name="receives-default">True</property>
-                                        <property name="tooltip-text" translatable="yes">Refresh Directory</property>
+                                        <property name="tooltip-text" translatable="yes">Search</property>
                                         <child>
                                           <object class="GtkImage">
                                             <property name="visible">True</property>
@@ -1992,11 +1992,11 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                     </child>
                                     <child>
                                       <object class="GtkButton" id="local_search_button">
-                                        <property name="name">local_refresh_button</property>
+                                        <property name="name">local_search_button</property>
                                         <property name="visible">True</property>
                                         <property name="can-focus">True</property>
                                         <property name="receives-default">True</property>
-                                        <property name="tooltip-text" translatable="yes">Refresh Directory</property>
+                                        <property name="tooltip-text" translatable="yes">Search</property>
                                         <child>
                                           <object class="GtkImage">
                                             <property name="visible">True</property>
