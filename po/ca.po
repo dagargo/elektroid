@@ -386,9 +386,13 @@ msgstr "Actualitza els dispositius"
 msgid "Go to Parent Directory"
 msgstr "Ves al directori pare"
 
-#: res/gui.glade:1700 res/gui.glade:1721 res/gui.glade:1978 res/gui.glade:1999
+#: res/gui.glade:1700 res/gui.glade:1978
 msgid "Refresh Directory"
 msgstr "Actualitza el directori"
+
+#: res/gui.glade:1721 res/gui.glade:1999
+msgid "Search"
+msgstr ""
 
 #: res/gui.glade:1844 res/gui.glade:2165
 msgid "Size"

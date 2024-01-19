@@ -386,9 +386,13 @@ msgstr "Rafraîchir les périphériques"
 msgid "Go to Parent Directory"
 msgstr "Aller au répertoire parent"
 
-#: res/gui.glade:1700 res/gui.glade:1721 res/gui.glade:1978 res/gui.glade:1999
+#: res/gui.glade:1700 res/gui.glade:1978
 msgid "Refresh Directory"
 msgstr "Rafraîchir le répertoire"
+
+#: res/gui.glade:1721 res/gui.glade:1999
+msgid "Search"
+msgstr "Recherche"
 
 #: res/gui.glade:1844 res/gui.glade:2165
 msgid "Size"
