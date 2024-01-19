@@ -365,7 +365,7 @@ msgstr "Drücke"
 #: res/gui.glade:1332
 msgctxt "Auto Sampler"
 msgid "Release"
-msgstr "Lasse los"
+msgstr ""
 
 #: res/gui.glade:1374 res/gui.glade:2132
 msgid "Duration"
@@ -373,7 +373,7 @@ msgstr "Dauer"
 
 #: res/gui.glade:1439
 msgid "Show Remote"
-msgstr "Zeige Fernantrieb"
+msgstr "Zeige Remote"
 
 #: res/gui.glade:1463
 msgid "_About"
@@ -385,7 +385,7 @@ msgstr "Aktualisiere Geräte"
 
 #: res/gui.glade:1658 res/gui.glade:1936
 msgid "Go to Parent Directory"
-msgstr "Gehe zum Überverzeichnis"
+msgstr "Gehe zum übergeordneten Verzeichnis"
 
 #: res/gui.glade:1700 res/gui.glade:1978
 msgid "Refresh Directory"
@@ -417,11 +417,11 @@ msgstr ""
 
 #: res/gui.glade:2382
 msgid "Grid"
-msgstr "Gitter"
+msgstr ""
 
 #: res/gui.glade:2435
 msgid "Playing mix depends on the remote channels"
-msgstr "Das Abspielen vom Mix hängt von den Zielkanälen ab"
+msgstr "Das Abspielen vom Mix hängt von den Remote-Kanälen ab"
 
 #. It is recommended to split the text in two lines if it is too long
 #: res/gui.glade:2437
@@ -430,7 +430,7 @@ msgid ""
 "on remote"
 msgstr ""
 "Mix hängt ab von\n"
-"den Zielkanälen"
+"den Remote-Kanälen"
 
 #. It is recommended to split the text in two lines if it is too long
 #: res/gui.glade:2491
