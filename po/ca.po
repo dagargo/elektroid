@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2023-11-17 19:05+0100\n"
+"POT-Creation-Date: 2024-01-20 07:11+0100\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: Catalan\n"
@@ -21,136 +21,136 @@ msgstr ""
 msgid "Audio"
 msgstr ""
 
-#: src/elektroid.c:370 src/elektroid.c:3225
+#: src/elektroid.c:370 src/elektroid.c:3228
 msgid "Not connected"
 msgstr "No connectat"
 
-#: src/elektroid.c:503
+#: src/elektroid.c:510
 msgid "Receive SysEx"
 msgstr "Rep SysEx"
 
-#: src/elektroid.c:528
+#: src/elektroid.c:535
 msgid "Save SysEx"
 msgstr "Alça SysEx"
 
-#: src/elektroid.c:531 src/elektroid.c:662 src/elektroid.c:868
-#: src/elektroid.c:1445 src/editor.c:1124 res/gui.glade:941 res/gui.glade:2898
+#: src/elektroid.c:538 src/elektroid.c:669 src/elektroid.c:875
+#: src/elektroid.c:1452 src/editor.c:1124 res/gui.glade:941 res/gui.glade:2898
 #: res/gui.glade:3003 res/gui.glade:3089
 msgid "_Cancel"
 msgstr "_Cancel·la"
 
-#: src/elektroid.c:533 res/gui.glade:2912
+#: src/elektroid.c:540 res/gui.glade:2912
 msgid "_Save"
 msgstr "_Alça"
 
-#: src/elektroid.c:537
+#: src/elektroid.c:544
 msgid "Received SysEx"
 msgstr "SysEx rebut"
 
-#: src/elektroid.c:542 src/elektroid.c:668
+#: src/elektroid.c:549 src/elektroid.c:675
 msgid "SysEx Files"
 msgstr "Fitxers SysEx"
 
-#: src/elektroid.c:576
+#: src/elektroid.c:583
 #, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Error al guardar «%s»: %s."
 
-#: src/elektroid.c:598
+#: src/elektroid.c:605
 #, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Error al carregar «%s»: %s."
 
-#: src/elektroid.c:659
+#: src/elektroid.c:666
 msgid "Open SysEx"
 msgstr "Obri SysEx"
 
-#: src/elektroid.c:664
+#: src/elektroid.c:671
 msgid "_Open"
 msgstr "_Obri"
 
-#: src/elektroid.c:679
+#: src/elektroid.c:686
 msgid "Sending SysEx"
 msgstr "Enviant SysEx"
 
-#: src/elektroid.c:867
+#: src/elektroid.c:874
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Està segur de que vol eliminar els elements seleccionats?"
 
-#: src/elektroid.c:869
+#: src/elektroid.c:876
 msgid "_Delete"
 msgstr "_Elimina"
 
-#: src/elektroid.c:880
+#: src/elektroid.c:887
 msgid "Deleting Files"
 msgstr "Eliminant fitxers"
 
-#: src/elektroid.c:881
+#: src/elektroid.c:888
 msgid "Deleting..."
 msgstr "Eliminant..."
 
-#: src/elektroid.c:915 res/gui.glade:207 res/gui.glade:829
+#: src/elektroid.c:922 res/gui.glade:207 res/gui.glade:829
 msgid "Rename"
 msgstr "Canvia el nom"
 
-#: src/elektroid.c:939
+#: src/elektroid.c:946
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Error al canviar el nom a «%s»: %s."
 
-#: src/elektroid.c:1317 res/gui.glade:1679 res/gui.glade:1957
+#: src/elektroid.c:1324 res/gui.glade:1679 res/gui.glade:1957
 msgid "Add Directory"
 msgstr "Afig directori"
 
-#: src/elektroid.c:1324
+#: src/elektroid.c:1331
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Error al crear el directori «%s»: %s."
 
-#: src/elektroid.c:1442 src/editor.c:1121
+#: src/elektroid.c:1449 src/editor.c:1121
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Voleu reemplaçar el fitxer «%s»?"
 
-#: src/elektroid.c:1446
+#: src/elektroid.c:1453
 msgid "_Skip"
 msgstr "_Omet"
 
-#: src/elektroid.c:1447 src/editor.c:1125
+#: src/elektroid.c:1454 src/editor.c:1125
 msgid "_Replace"
 msgstr "_Reemplaça"
 
-#: src/elektroid.c:1451
+#: src/elektroid.c:1458
 msgid "Apply this action to all files"
 msgstr "Aplica aquesta acció a tots els fitxers"
 
-#: src/elektroid.c:1761 src/elektroid.c:2005 src/elektroid.c:2736
+#: src/elektroid.c:1768 src/elektroid.c:2012 src/elektroid.c:2739
 msgid "Preparing Tasks"
 msgstr "Preparant tasques..."
 
-#: src/elektroid.c:1762 src/elektroid.c:2005 src/elektroid.c:2737
+#: src/elektroid.c:1769 src/elektroid.c:2012 src/elektroid.c:2740
 #: src/progress.c:106
 msgid "Waiting..."
 msgstr "Esperant..."
 
-#: src/elektroid.c:2414
+#: src/elektroid.c:2417
 msgid "Connecting to Device"
 msgstr "Connectant amb el dispositiu"
 
-#: src/elektroid.c:2414
+#: src/elektroid.c:2417
 msgid "Connecting..."
 msgstr "Conectant..."
 
-#: src/elektroid.c:2420
+#: src/elektroid.c:2423
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Dispositiu «%s» no reconegut: %s"
 
-#: src/elektroid.c:2723
+#: src/elektroid.c:2726
 msgid "Moving Files"
 msgstr "Movent fitxers"
 
-#: src/elektroid.c:2724
+#: src/elektroid.c:2727
 msgid "Moving..."
 msgstr "Movent..."
 
