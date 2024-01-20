@@ -83,7 +83,7 @@ msgstr "_Löschen"
 
 #: src/elektroid.c:880
 msgid "Deleting Files"
-msgstr "Entfernt Dateien"
+msgstr "Entferne Dateien"
 
 #: src/elektroid.c:881
 msgid "Deleting..."
@@ -114,11 +114,11 @@ msgstr "Ersetze Datei “%s”?"
 
 #: src/elektroid.c:1446
 msgid "_Skip"
-msgstr "_Überspringen"
+msgstr "_Überspringe"
 
 #: src/elektroid.c:1447 src/editor.c:1125
 msgid "_Replace"
-msgstr "_Ersetzen"
+msgstr "_Ersetze"
 
 #: src/elektroid.c:1451
 msgid "Apply this action to all files"
@@ -332,7 +332,6 @@ msgstr "Geschwindigkeit"
 
 #. MIDI channel
 #: res/gui.glade:1133
-#, fuzzy
 msgctxt "Auto Sampler"
 msgid "Channel"
 msgstr "Kanäle"
@@ -650,7 +649,7 @@ msgstr "MicroBrute Konfiguration"
 
 #: res/microbrute/gui.glade:480
 msgid "Persistent changes"
-msgstr "Anhaltende Veränderungen"
+msgstr "Beständige Veränderungen"
 
 #: res/microbrute/gui.glade:547
 msgid "Transmit Channel"
