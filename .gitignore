@@ -44,6 +44,7 @@ test/.libs
 test/integration/*.trs
 test/tests_scala
 test/tests_common
+test/tests_microfreak
 config.guess
 config.sub
 ltmain.sh

@@ -91,7 +91,7 @@ backend_disable_cache (struct backend *backend)
   g_mutex_unlock (&backend->mutex);
 }
 
-static void
+void
 backend_midi_handshake (struct backend *backend)
 {
   GByteArray *tx_msg;

@@ -168,6 +168,8 @@ gdouble backend_get_storage_stats_percent (struct backend_storage_stats *);
 
 void backend_destroy_data (struct backend *);
 
+void backend_midi_handshake (struct backend *backend);
+
 gint backend_program_change (struct backend *, guint8, guint8);
 
 gint backend_send_controller (struct backend *backend, guint8 channel,

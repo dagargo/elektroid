@@ -81,6 +81,15 @@ end:
 }
 
 gchar *
+common_get_id_as_slot_padded (struct item *item, struct backend *backend,
+			      gint digits)
+{
+  gchar *slot = g_malloc (LABEL_MAX);
+  snprintf (slot, LABEL_MAX, "%.*d", digits, item->id);
+  return slot;
+}
+
+gchar *
 common_get_id_as_slot (struct item *item, struct backend *backend)
 {
   gchar *slot = g_malloc (LABEL_MAX);
@@ -109,6 +118,14 @@ common_print_item (struct item_iterator *iter, struct backend *backend,
 	  slot, slot ? " " : "", iter->item.name);
   g_free (hsize);
   g_free (slot);
+}
+
+void
+common_midi_program_change_int (struct backend *backend, const gchar *dir,
+				guint32 program)
+{
+  backend_send_controller (backend, 0, 0, COMMON_GET_MIDI_BANK (program));
+  backend_program_change (backend, 0, COMMON_GET_MIDI_PRESET (program));
 }
 
 void

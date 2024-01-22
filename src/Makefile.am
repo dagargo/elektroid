@@ -53,6 +53,7 @@ connectors/system.c connectors/system.h \
 connectors/elektron.c connectors/elektron.h \
 connectors/package.c connectors/package.h \
 connectors/microbrute.c connectors/microbrute.h \
+connectors/microfreak.c connectors/microfreak.h \
 connectors/cz.c connectors/cz.h \
 connectors/sds.c connectors/sds.h \
 connectors/efactor.c connectors/efactor.h \

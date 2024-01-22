@@ -20,6 +20,9 @@
 
 #include "backend.h"
 
+#define COMMON_GET_MIDI_BANK(p) ((p & 0x3f80) >> 7)
+#define COMMON_GET_MIDI_PRESET(p) (p & 0x7f)
+
 struct common_simple_read_dir_data
 {
   guint32 next;
@@ -37,11 +40,18 @@ gint common_slot_get_id_name_from_path (const char *path, guint * id,
 
 gchar *common_get_id_as_slot (struct item *item, struct backend *backend);
 
+gchar *common_get_id_as_slot_padded (struct item *item,
+				     struct backend *backend, gint digits);
+
 void common_print_item (struct item_iterator *iter, struct backend *backend,
 			const struct fs_operations *fs_ops);
 
 void common_midi_program_change (struct backend *backend, const gchar * dir,
 				 struct item *item);
+
+void
+common_midi_program_change_int (struct backend *backend, const gchar * dir,
+				guint32 program);
 
 gint common_simple_next_dentry (struct item_iterator *iter);
 
