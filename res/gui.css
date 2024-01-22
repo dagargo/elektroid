@@ -30,11 +30,11 @@
 	background-color: @remote_color;
 }
 
-#local_up_button, #local_add_dir_button, #local_refresh_button, #upload_button {
+#local_up_button, #local_add_dir_button, #local_refresh_button, #local_search_button, #upload_button {
 	color: @local_color;
 }
 
-#remote_up_button, #remote_add_dir_button, #remote_refresh_button, #download_button, #refresh_devices_button {
+#remote_up_button, #remote_add_dir_button, #remote_refresh_button, #remote_search_button, #download_button, #refresh_devices_button {
 	color: @remote_color
 }
 
