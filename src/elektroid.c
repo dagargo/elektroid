@@ -443,7 +443,7 @@ elektroid_set_preferences_remote_dir ()
 }
 
 void
-elektroid_refresh_devices (GtkWidget * widget, gpointer data)
+elektroid_refresh_devices (GtkWidget *widget, gpointer data)
 {
   elektroid_set_preferences_remote_dir ();
 
@@ -593,7 +593,7 @@ elektroid_rx_sysex ()
 }
 
 static gint
-elektroid_send_sysex_file (const gchar * filename, t_sysex_transfer f)
+elektroid_send_sysex_file (const gchar *filename, t_sysex_transfer f)
 {
   gint err = load_file (filename, sysex_transfer.raw, NULL);
   if (!err)
@@ -716,7 +716,7 @@ elektroid_show_remote (gboolean active)
 }
 
 static void
-elektroid_show_remote_clicked (GtkWidget * object, gpointer data)
+elektroid_show_remote_clicked (GtkWidget *object, gpointer data)
 {
   gboolean active;
 
@@ -731,15 +731,14 @@ elektroid_show_remote_clicked (GtkWidget * object, gpointer data)
 }
 
 static void
-elektroid_show_about (GtkWidget * object, gpointer data)
+elektroid_show_about (GtkWidget *object, gpointer data)
 {
   gtk_dialog_run (GTK_DIALOG (about_dialog));
   gtk_widget_hide (GTK_WIDGET (about_dialog));
 }
 
 static gint
-elektroid_delete_file (struct browser *browser, gchar * dir,
-		       struct item *item)
+elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
 {
   gint err = 0;
   gchar *path;
@@ -863,7 +862,7 @@ elektroid_delete_files_runner (gpointer data)
 }
 
 static void
-elektroid_delete_files (GtkWidget * object, gpointer data)
+elektroid_delete_files (GtkWidget *object, gpointer data)
 {
   gint res;
   dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
@@ -891,7 +890,7 @@ elektroid_delete_files (GtkWidget * object, gpointer data)
 }
 
 static void
-elektroid_rename_item (GtkWidget * object, gpointer data)
+elektroid_rename_item (GtkWidget *object, gpointer data)
 {
   gchar *old_path, *new_path;
   const gchar *ext;
@@ -960,7 +959,7 @@ elektroid_rename_item (GtkWidget * object, gpointer data)
 }
 
 static gboolean
-elektroid_drag_begin (GtkWidget * widget, GdkDragContext * context,
+elektroid_drag_begin (GtkWidget *widget, GdkDragContext *context,
 		      gpointer data)
 {
   GtkTreeIter iter;
@@ -998,8 +997,7 @@ elektroid_drag_begin (GtkWidget * widget, GdkDragContext * context,
 }
 
 static gboolean
-elektroid_drag_end (GtkWidget * widget,
-		    GdkDragContext * context, gpointer data)
+elektroid_drag_end (GtkWidget *widget, GdkDragContext *context, gpointer data)
 {
   struct browser *browser = data;
 
@@ -1012,9 +1010,9 @@ elektroid_drag_end (GtkWidget * widget,
 }
 
 static gboolean
-elektroid_selection_function_true (GtkTreeSelection * selection,
-				   GtkTreeModel * model,
-				   GtkTreePath * path,
+elektroid_selection_function_true (GtkTreeSelection *selection,
+				   GtkTreeModel *model,
+				   GtkTreePath *path,
 				   gboolean path_currently_selected,
 				   gpointer data)
 {
@@ -1022,9 +1020,9 @@ elektroid_selection_function_true (GtkTreeSelection * selection,
 }
 
 static gboolean
-elektroid_selection_function_false (GtkTreeSelection * selection,
-				    GtkTreeModel * model,
-				    GtkTreePath * path,
+elektroid_selection_function_false (GtkTreeSelection *selection,
+				    GtkTreeModel *model,
+				    GtkTreePath *path,
 				    gboolean path_currently_selected,
 				    gpointer data)
 {
@@ -1033,8 +1031,8 @@ elektroid_selection_function_false (GtkTreeSelection * selection,
 
 static void
 elektroid_button_press_update_menu (struct browser *browser,
-				    GtkTreeSelection * selection,
-				    GtkTreePath * path)
+				    GtkTreeSelection *selection,
+				    GtkTreePath *path)
 {
   if (gtk_tree_selection_path_is_selected (selection, path))
     {
@@ -1052,7 +1050,7 @@ elektroid_button_press_update_menu (struct browser *browser,
 }
 
 static gboolean
-elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
+elektroid_button_press (GtkWidget *treeview, GdkEventButton *event,
 			gpointer data)
 {
   GtkTreePath *path;
@@ -1122,7 +1120,7 @@ elektroid_button_press (GtkWidget * treeview, GdkEventButton * event,
 }
 
 static gboolean
-elektroid_button_release (GtkWidget * treeview, GdkEventButton * event,
+elektroid_button_release (GtkWidget *treeview, GdkEventButton *event,
 			  gpointer data)
 {
   GtkTreePath *path;
@@ -1166,7 +1164,7 @@ elektroid_button_release (GtkWidget * treeview, GdkEventButton * event,
 }
 
 static void
-elektroid_show_clicked (GtkWidget * object, gpointer data)
+elektroid_show_clicked (GtkWidget *object, gpointer data)
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
@@ -1240,7 +1238,7 @@ elektroid_show_clicked (GtkWidget * object, gpointer data)
 }
 
 static void
-elektroid_open_clicked (GtkWidget * object, gpointer data)
+elektroid_open_clicked (GtkWidget *object, gpointer data)
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
@@ -1266,7 +1264,7 @@ elektroid_open_clicked (GtkWidget * object, gpointer data)
 }
 
 gint
-elektroid_run_dialog_and_destroy (GtkWidget * custom_dialog)
+elektroid_run_dialog_and_destroy (GtkWidget *custom_dialog)
 {
   dialog = custom_dialog;
   gtk_window_set_transient_for (GTK_WINDOW (dialog),
@@ -1278,7 +1276,7 @@ elektroid_run_dialog_and_destroy (GtkWidget * custom_dialog)
 }
 
 gchar *
-elektroid_ask_name (const gchar * title, const gchar * value,
+elektroid_ask_name (const gchar *title, const gchar *value,
 		    struct browser *browser, gint start_pos, gint end_pos)
 {
   char *pathname = NULL;
@@ -1316,7 +1314,7 @@ elektroid_ask_name (const gchar * title, const gchar * value,
 }
 
 static void
-elektroid_add_dir (GtkWidget * object, gpointer data)
+elektroid_add_dir (GtkWidget *object, gpointer data)
 {
   char *pathname;
   struct browser *browser = data;
@@ -1342,7 +1340,7 @@ elektroid_add_dir (GtkWidget * object, gpointer data)
 }
 
 static void
-elektroid_name_dialog_entry_changed (GtkWidget * object, gpointer data)
+elektroid_name_dialog_entry_changed (GtkWidget *object, gpointer data)
 {
   size_t len = strlen (gtk_entry_get_text (name_dialog_entry));
   gtk_widget_set_sensitive (name_dialog_accept_button, len > 0);
@@ -1509,7 +1507,7 @@ elektroid_close_progress_dialog (gpointer data)
 }
 
 static void
-elektroid_check_file_and_wait (gchar * path, struct browser *browser)
+elektroid_check_file_and_wait (gchar *path, struct browser *browser)
 {
   struct backend *backend = browser->backend;
   const struct fs_operations *fs_ops = browser->fs_ops;
@@ -1627,8 +1625,8 @@ end_cleanup:
 }
 
 static void
-elektroid_add_upload_task_path (const gchar * rel_path, const gchar * src_dir,
-				const gchar * dst_dir)
+elektroid_add_upload_task_path (const gchar *rel_path, const gchar *src_dir,
+				const gchar *dst_dir)
 {
   gboolean active;
   struct item_iterator iter;
@@ -1755,7 +1753,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
 }
 
 static void
-elektroid_add_upload_tasks (GtkWidget * object, gpointer data)
+elektroid_add_upload_tasks (GtkWidget *object, gpointer data)
 {
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.browser.view));
@@ -1870,9 +1868,8 @@ end_no_dir:
 }
 
 static void
-elektroid_add_download_task_path (const gchar * rel_path,
-				  const gchar * src_dir,
-				  const gchar * dst_dir)
+elektroid_add_download_task_path (const gchar *rel_path,
+				  const gchar *src_dir, const gchar *dst_dir)
 {
   gboolean active;
   struct item_iterator iter;
@@ -1998,7 +1995,7 @@ elektroid_add_download_tasks_runner (gpointer data)
 }
 
 static void
-elektroid_add_download_tasks (GtkWidget * object, gpointer data)
+elektroid_add_download_tasks (GtkWidget *object, gpointer data)
 {
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.browser.view));
@@ -2019,7 +2016,7 @@ elektroid_update_progress (struct job_control *control)
 }
 
 static gboolean
-elektroid_common_key_press (GtkWidget * widget, GdkEventKey * event,
+elektroid_common_key_press (GtkWidget *widget, GdkEventKey *event,
 			    gpointer data)
 {
   gint count;
@@ -2086,7 +2083,7 @@ elektroid_common_key_press (GtkWidget * widget, GdkEventKey * event,
 }
 
 static gboolean
-elektroid_remote_key_press (GtkWidget * widget, GdkEventKey * event,
+elektroid_remote_key_press (GtkWidget *widget, GdkEventKey *event,
 			    gpointer data)
 {
   if (event->type != GDK_KEY_PRESS)
@@ -2109,7 +2106,7 @@ elektroid_remote_key_press (GtkWidget * widget, GdkEventKey * event,
 }
 
 static gboolean
-elektroid_local_key_press (GtkWidget * widget, GdkEventKey * event,
+elektroid_local_key_press (GtkWidget *widget, GdkEventKey *event,
 			   gpointer data)
 {
   if (event->type != GDK_KEY_PRESS)
@@ -2138,7 +2135,7 @@ elektroid_local_key_press (GtkWidget * widget, GdkEventKey * event,
 }
 
 static void
-elektroid_set_fs (GtkWidget * object, gpointer data)
+elektroid_set_fs (GtkWidget *object, gpointer data)
 {
   GtkTreeIter iter;
   GValue fsv = G_VALUE_INIT;
@@ -2373,7 +2370,7 @@ elektroid_set_device_runner (gpointer data)
 }
 
 static void
-elektroid_set_device (GtkWidget * object, gpointer data)
+elektroid_set_device (GtkWidget *object, gpointer data)
 {
   GtkTreeIter iter;
   gchar *id, *name;
@@ -2441,9 +2438,8 @@ elektroid_set_device (GtkWidget * object, gpointer data)
 }
 
 static void
-elektroid_dnd_received_system (const gchar * dir, const gchar * name,
-			       const gchar * filename,
-			       struct browser *browser)
+elektroid_dnd_received_system (const gchar *dir, const gchar *name,
+			       const gchar *filename, struct browser *browser)
 {
   gchar *dst_path;
   gint res;
@@ -2469,8 +2465,8 @@ elektroid_dnd_received_system (const gchar * dir, const gchar * name,
 }
 
 static void
-elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
-			       const gchar * filename)
+elektroid_dnd_received_remote (const gchar *dir, const gchar *name,
+			       const gchar *filename)
 {
   gchar *dst_path;
   gint res;
@@ -2500,8 +2496,8 @@ elektroid_dnd_received_remote (const gchar * dir, const gchar * name,
 }
 
 static void
-elektroid_add_upload_task_slot (const gchar * name,
-				const gchar * src_file_path, gint slot)
+elektroid_add_upload_task_slot (const gchar *name,
+				const gchar *src_file_path, gint slot)
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
@@ -2660,9 +2656,9 @@ elektroid_dnd_received_runner (gpointer data)
 }
 
 static void
-elektroid_dnd_received (GtkWidget * widget, GdkDragContext * context,
+elektroid_dnd_received (GtkWidget *widget, GdkDragContext *context,
 			gint x, gint y,
-			GtkSelectionData * selection_data,
+			GtkSelectionData *selection_data,
 			guint info, guint time, gpointer userdata)
 {
   gchar *data;
@@ -2757,9 +2753,9 @@ end:
 }
 
 static void
-elektroid_dnd_get (GtkWidget * widget,
-		   GdkDragContext * context,
-		   GtkSelectionData * selection_data,
+elektroid_dnd_get (GtkWidget *widget,
+		   GdkDragContext *context,
+		   GtkSelectionData *selection_data,
 		   guint info, guint time, gpointer user_data)
 {
   struct browser *browser = user_data;
@@ -2825,8 +2821,8 @@ elektroid_drag_scroll_down_timeout (gpointer user_data)
 }
 
 static gboolean
-elektroid_drag_motion_list (GtkWidget * widget,
-			    GdkDragContext * context,
+elektroid_drag_motion_list (GtkWidget *widget,
+			    GdkDragContext *context,
 			    gint wx, gint wy, guint time, gpointer user_data)
 {
   GtkTreePath *path;
@@ -2920,8 +2916,8 @@ elektroid_drag_motion_list (GtkWidget * widget,
 }
 
 static void
-elektroid_drag_leave_list (GtkWidget * widget,
-			   GdkDragContext * context,
+elektroid_drag_leave_list (GtkWidget *widget,
+			   GdkDragContext *context,
 			   guint time, gpointer user_data)
 {
   browser_clear_dnd_function (user_data);
@@ -2936,8 +2932,8 @@ elektroid_drag_up_timeout (gpointer user_data)
 }
 
 static gboolean
-elektroid_drag_motion_up (GtkWidget * widget,
-			  GdkDragContext * context,
+elektroid_drag_motion_up (GtkWidget *widget,
+			  GdkDragContext *context,
 			  gint wx, gint wy, guint time, gpointer user_data)
 {
   struct browser *browser = user_data;
@@ -2946,8 +2942,8 @@ elektroid_drag_motion_up (GtkWidget * widget,
 }
 
 static void
-elektroid_drag_leave_up (GtkWidget * widget,
-			 GdkDragContext * context,
+elektroid_drag_leave_up (GtkWidget *widget,
+			 GdkDragContext *context,
 			 guint time, gpointer user_data)
 {
   browser_clear_dnd_function (user_data);
@@ -2977,7 +2973,7 @@ elektroid_quit ()
 }
 
 static gboolean
-elektroid_delete_window (GtkWidget * widget, GdkEvent * event, gpointer data)
+elektroid_delete_window (GtkWidget *widget, GdkEvent *event, gpointer data)
 {
   elektroid_quit ();
   return FALSE;
@@ -3284,7 +3280,7 @@ elektroid_end (gpointer data)
 #endif
 
 static void
-elektroid_print_help (gchar * executable_path)
+elektroid_print_help (gchar *executable_path)
 {
   gchar *exec_name;
   const struct option *option;

@@ -31,27 +31,27 @@ extern void elektroid_rx_sysex ();
 extern void elektroid_refresh_devices (GtkWidget * object, gpointer data);
 
 static void
-os_upgrade_callback (GtkWidget * object, gpointer data)
+os_upgrade_callback (GtkWidget *object, gpointer data)
 {
   elektroid_tx_sysex_common (elektroid_tx_upgrade_os_runner, FALSE);
   elektroid_refresh_devices (NULL, NULL);
 }
 
 static void
-tx_sysex_callback (GtkWidget * object, gpointer data)
+tx_sysex_callback (GtkWidget *object, gpointer data)
 {
   elektroid_tx_sysex_common (elektroid_tx_sysex_files_runner, TRUE);
 }
 
 static void
-rx_sysex_callback (GtkWidget * object, gpointer data)
+rx_sysex_callback (GtkWidget *object, gpointer data)
 {
   elektroid_rx_sysex ();
 }
 
 struct menu_action *
-os_upgrade_init (struct backend *backend, GtkBuilder * builder,
-		 GtkWindow * parent)
+os_upgrade_init (struct backend *backend, GtkBuilder *builder,
+		 GtkWindow *parent)
 {
   struct menu_action *ma = NULL;
   if (backend->upgrade_os)
@@ -65,8 +65,8 @@ os_upgrade_init (struct backend *backend, GtkBuilder * builder,
 }
 
 struct menu_action *
-rx_sysex_init (struct backend *backend, GtkBuilder * builder,
-	       GtkWindow * parent)
+rx_sysex_init (struct backend *backend, GtkBuilder *builder,
+	       GtkWindow *parent)
 {
   struct menu_action *ma = NULL;
   if (backend->type == BE_TYPE_MIDI)
@@ -80,8 +80,8 @@ rx_sysex_init (struct backend *backend, GtkBuilder * builder,
 }
 
 struct menu_action *
-tx_sysex_init (struct backend *backend, GtkBuilder * builder,
-	       GtkWindow * parent)
+tx_sysex_init (struct backend *backend, GtkBuilder *builder,
+	       GtkWindow *parent)
 {
   struct menu_action *ma = NULL;
   if (backend->type == BE_TYPE_MIDI)

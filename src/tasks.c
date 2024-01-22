@@ -58,7 +58,7 @@ tasks_get_human_type (enum task_type type)
 }
 
 static void
-tasks_stop_current (GtkWidget * object, gpointer data)
+tasks_stop_current (GtkWidget *object, gpointer data)
 {
   struct tasks *tasks = data;
   g_mutex_lock (&tasks->transfer.control.mutex);
@@ -68,8 +68,7 @@ tasks_stop_current (GtkWidget * object, gpointer data)
 
 void
 tasks_visit_pending (struct tasks *tasks,
-		     void (*visitor) (struct tasks * tasks,
-				      GtkTreeIter * iter))
+		     void (*visitor) (struct tasks *tasks, GtkTreeIter *iter))
 {
   enum task_status status;
   GtkTreeIter iter;
@@ -90,7 +89,7 @@ tasks_visit_pending (struct tasks *tasks,
 }
 
 static gboolean
-tasks_get_current (struct tasks *tasks, GtkTreeIter * iter)
+tasks_get_current (struct tasks *tasks, GtkTreeIter *iter)
 {
   enum task_status status;
   gboolean found = FALSE;
@@ -143,10 +142,9 @@ tasks_complete_current (gpointer data)
 }
 
 gboolean
-tasks_get_next_queued (struct tasks *tasks, GtkTreeIter * iter,
-		       enum task_type *type, gchar ** src,
-		       gchar ** dst, gint * fs, guint * batch_id,
-		       guint * mode)
+tasks_get_next_queued (struct tasks *tasks, GtkTreeIter *iter,
+		       enum task_type *type, gchar **src,
+		       gchar **dst, gint *fs, guint *batch_id, guint *mode)
 {
   enum task_status status;
   gboolean found = FALSE;
@@ -267,19 +265,19 @@ tasks_remove_on_cond (struct tasks *tasks,
 }
 
 static void
-tasks_remove_queued (GtkWidget * object, gpointer data)
+tasks_remove_queued (GtkWidget *object, gpointer data)
 {
   tasks_remove_on_cond (data, tasks_is_queued);
 }
 
 static void
-tasks_clear_finished (GtkWidget * object, gpointer data)
+tasks_clear_finished (GtkWidget *object, gpointer data)
 {
   tasks_remove_on_cond (data, tasks_is_finished);
 }
 
 static void
-tasks_visitor_set_canceled (struct tasks *tasks, GtkTreeIter * iter)
+tasks_visitor_set_canceled (struct tasks *tasks, GtkTreeIter *iter)
 {
   const gchar *canceled = tasks_get_human_status (TASK_STATUS_CANCELED);
   gtk_list_store_set (tasks->list_store, iter,
@@ -289,7 +287,7 @@ tasks_visitor_set_canceled (struct tasks *tasks, GtkTreeIter * iter)
 }
 
 void
-tasks_cancel_all (GtkWidget * object, gpointer data)
+tasks_cancel_all (GtkWidget *object, gpointer data)
 {
   tasks_visit_pending (data, tasks_visitor_set_canceled);
 
@@ -298,7 +296,7 @@ tasks_cancel_all (GtkWidget * object, gpointer data)
 }
 
 void
-tasks_visitor_set_batch_status (struct tasks *tasks, GtkTreeIter * iter,
+tasks_visitor_set_batch_status (struct tasks *tasks, GtkTreeIter *iter,
 				enum task_mode mode)
 {
   gint batch_id;
@@ -312,7 +310,7 @@ tasks_visitor_set_batch_status (struct tasks *tasks, GtkTreeIter * iter,
 }
 
 void
-tasks_visitor_set_batch_canceled (struct tasks *tasks, GtkTreeIter * iter)
+tasks_visitor_set_batch_canceled (struct tasks *tasks, GtkTreeIter *iter)
 {
   gint batch_id;
   gtk_tree_model_get (GTK_TREE_MODEL (tasks->list_store), iter,
@@ -324,13 +322,13 @@ tasks_visitor_set_batch_canceled (struct tasks *tasks, GtkTreeIter * iter)
 }
 
 void
-tasks_batch_visitor_set_skip (struct tasks *tasks, GtkTreeIter * iter)
+tasks_batch_visitor_set_skip (struct tasks *tasks, GtkTreeIter *iter)
 {
   tasks_visitor_set_batch_status (tasks, iter, TASK_MODE_SKIP);
 }
 
 void
-tasks_batch_visitor_set_replace (struct tasks *tasks, GtkTreeIter * iter)
+tasks_batch_visitor_set_replace (struct tasks *tasks, GtkTreeIter *iter)
 {
   tasks_visitor_set_batch_status (tasks, iter, TASK_MODE_REPLACE);
 }
@@ -418,7 +416,7 @@ tasks_update_current_progress (gpointer data)
 }
 
 void
-tasks_init (struct tasks *tasks, GtkBuilder * builder)
+tasks_init (struct tasks *tasks, GtkBuilder *builder)
 {
   tasks->list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "task_list_store"));

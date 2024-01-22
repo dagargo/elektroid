@@ -202,8 +202,8 @@ microbrute_get_counter (struct backend *backend)
 static gchar *
 microbrute_get_download_path (struct backend *backend,
 			      const struct fs_operations *ops,
-			      const gchar * dst_dir, const gchar * src_path,
-			      GByteArray * sequence)
+			      const gchar *dst_dir, const gchar *src_path,
+			      GByteArray *sequence)
 {
   guint id;
   common_slot_get_id_name_from_path (src_path, &id, NULL);
@@ -213,7 +213,7 @@ microbrute_get_download_path (struct backend *backend,
 
 static gint
 microbrute_read_dir (struct backend *backend, struct item_iterator *iter,
-		     const gchar * path, const gchar ** extensions)
+		     const gchar *path, const gchar **extensions)
 {
   struct common_simple_read_dir_data *data;
 
@@ -248,7 +248,7 @@ microbrute_get_sequence_request_msg (struct backend *backend, guint8 id,
 
 static gint
 microbrute_download_seq_data (struct backend *backend, guint seqnum,
-			      guint offset, GByteArray * sequence)
+			      guint offset, GByteArray *sequence)
 {
   GByteArray *tx_msg, *rx_msg;
   gchar aux[LABEL_MAX];
@@ -288,8 +288,8 @@ microbrute_download_seq_data (struct backend *backend, guint seqnum,
 }
 
 static gint
-microbrute_download (struct backend *backend, const gchar * src_path,
-		     GByteArray * sequence, struct job_control *control)
+microbrute_download (struct backend *backend, const gchar *src_path,
+		     GByteArray *sequence, struct job_control *control)
 {
   gint err;
   guint seqnum;
@@ -356,8 +356,7 @@ microbrute_set_sequence_request_msg (struct backend *backend, guint8 id,
 
 static gint
 microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
-			 guint8 offset, gchar ** tokens, gint * pos,
-			 gint total)
+			 guint8 offset, gchar **tokens, gint *pos, gint total)
 {
   struct sysex_transfer transfer;
   guint8 steps = 0;
@@ -429,8 +428,8 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
 }
 
 static gint
-microbrute_upload (struct backend *backend, const gchar * path,
-		   GByteArray * input, struct job_control *control)
+microbrute_upload (struct backend *backend, const gchar *path,
+		   GByteArray *input, struct job_control *control)
 {
   gchar *token = (gchar *) & input->data[MICROBRUTE_SEQ_TXT_POS];
   gint pos = MICROBRUTE_SEQ_TXT_POS;
@@ -545,7 +544,7 @@ microbrute_get_parameter_msg (struct backend *backend, guint8 param)
 
 gint
 microbrute_get_parameter (struct backend *backend,
-			  enum microbrute_param param, guint8 * value)
+			  enum microbrute_param param, guint8 *value)
 {
   GByteArray *tx_msg, *rx_msg;
   guint8 *seq = backend->data;

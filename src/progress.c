@@ -49,7 +49,7 @@ progress_join_thread ()
 }
 
 static void
-progress_stop_running_sysex (GtkDialog * dialog, gint response_id,
+progress_stop_running_sysex (GtkDialog *dialog, gint response_id,
 			     gpointer data)
 {
   if (response_id == GTK_RESPONSE_CANCEL)
@@ -120,7 +120,7 @@ progress_update (gpointer data)
 }
 
 void
-progress_init (GtkBuilder * builder)
+progress_init (GtkBuilder *builder)
 {
   progress_dialog =
     GTK_DIALOG (gtk_builder_get_object (builder, "progress_dialog"));
@@ -145,8 +145,8 @@ elektroid_new_progress_thread_gsourcefunc (gpointer user_data)
 
 //Using this before a call to gtk_dialog_run ensures that the threads starts after the dialog is being run.
 gpointer
-progress_run (GThreadFunc f, gpointer user_data, const gchar * name,
-	      const gchar * text, gint * res)
+progress_run (GThreadFunc f, gpointer user_data, const gchar *name,
+	      const gchar *text, gint *res)
 {
   gpointer v;
   gint dres;

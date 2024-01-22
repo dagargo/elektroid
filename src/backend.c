@@ -47,7 +47,7 @@ backend_get_storage_stats_percent (struct backend_storage_stats *statfs)
 
 const struct fs_operations *
 backend_get_fs_operations (struct backend *backend, gint fs,
-			   const gchar * name)
+			   const gchar *name)
 {
   const struct fs_operations **fs_operations = backend->fs_ops;
   if (!fs_operations)
@@ -177,7 +177,7 @@ backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 //Synchronized
 
 gint
-backend_tx (struct backend *backend, GByteArray * tx_msg)
+backend_tx (struct backend *backend, GByteArray *tx_msg)
 {
   struct sysex_transfer transfer;
   transfer.raw = tx_msg;
@@ -260,7 +260,7 @@ end:
 //A timeout of 0 means infinity; a negative timeout means the default timeout.
 
 GByteArray *
-backend_tx_and_rx_sysex (struct backend *backend, GByteArray * tx_msg,
+backend_tx_and_rx_sysex (struct backend *backend, GByteArray *tx_msg,
 			 gint timeout)
 {
   struct sysex_transfer transfer;
@@ -362,7 +362,7 @@ backend_send_rpn (struct backend *backend, guint8 channel,
 }
 
 gint
-backend_init (struct backend *backend, const gchar * id)
+backend_init (struct backend *backend, const gchar *id)
 {
   debug_print (1, "Initializing backend (%s) to '%s'...\n",
 	       backend_name (), id);

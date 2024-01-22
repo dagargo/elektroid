@@ -61,7 +61,7 @@ backend_destroy_int (struct backend *backend)
 }
 
 gint
-backend_init_int (struct backend *backend, const gchar * id)
+backend_init_int (struct backend *backend, const gchar *id)
 {
   snd_rawmidi_params_t *params;
   gint err;
@@ -136,7 +136,7 @@ cleanup:
 }
 
 ssize_t
-backend_tx_raw (struct backend *backend, guint8 * data, guint len)
+backend_tx_raw (struct backend *backend, guint8 *data, guint len)
 {
   ssize_t tx_len;
 
@@ -222,7 +222,7 @@ backend_rx_drain_int (struct backend *backend)
 }
 
 ssize_t
-backend_rx_raw (struct backend *backend, guint8 * buffer, guint len)
+backend_rx_raw (struct backend *backend, guint8 *buffer, guint len)
 {
   gint err;
   ssize_t rx_len;
@@ -287,8 +287,8 @@ backend_check_int (struct backend *backend)
 }
 
 static void
-backend_get_system_subdevices (snd_ctl_t * ctl, int card, int device,
-			       GArray * devices)
+backend_get_system_subdevices (snd_ctl_t *ctl, int card, int device,
+			       GArray *devices)
 {
   snd_rawmidi_info_t *info;
   const gchar *name;
@@ -375,7 +375,7 @@ backend_get_system_subdevices (snd_ctl_t * ctl, int card, int device,
 }
 
 static void
-backend_fill_card_devices (gint card, GArray * devices)
+backend_fill_card_devices (gint card, GArray *devices)
 {
   snd_ctl_t *ctl;
   gchar name[32];
@@ -403,7 +403,7 @@ backend_fill_card_devices (gint card, GArray * devices)
 }
 
 void
-backend_fill_devices_array (GArray * devices)
+backend_fill_devices_array (GArray *devices)
 {
   gint card, err;
   card = -1;

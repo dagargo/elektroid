@@ -36,8 +36,8 @@ struct system_iterator_data
 };
 
 static gint
-system_download (struct backend *backend, const gchar * path,
-		 GByteArray * output, struct job_control *control)
+system_download (struct backend *backend, const gchar *path,
+		 GByteArray *output, struct job_control *control)
 {
   gint err;
   gboolean active;
@@ -66,8 +66,8 @@ system_download (struct backend *backend, const gchar * path,
 static gchar *
 system_get_download_path (struct backend *backend,
 			  const struct fs_operations *ops,
-			  const gchar * dst_dir, const gchar * src_path,
-			  GByteArray * content)
+			  const gchar *dst_dir, const gchar *src_path,
+			  GByteArray *content)
 {
   gchar *name = g_path_get_basename (src_path);
   GString *name_with_ext = g_string_new (NULL);
@@ -81,13 +81,13 @@ system_get_download_path (struct backend *backend,
 static gchar *
 system_get_upload_path (struct backend *backend,
 			const struct fs_operations *ops,
-			const gchar * dst_dir, const gchar * src_path)
+			const gchar *dst_dir, const gchar *src_path)
 {
   return system_get_download_path (backend, ops, dst_dir, src_path, NULL);
 }
 
 gint
-system_mkdir (struct backend *backend, const gchar * name)
+system_mkdir (struct backend *backend, const gchar *name)
 {
   gint res = g_mkdir_with_parents (name, 0755);
   if (res == 0 || errno == EEXIST)
@@ -104,7 +104,7 @@ system_mkdir (struct backend *backend, const gchar * name)
 }
 
 gint
-system_delete (struct backend *backend, const gchar * path)
+system_delete (struct backend *backend, const gchar *path)
 {
   GDir *dir;
   gchar *new_path;
@@ -133,7 +133,7 @@ system_delete (struct backend *backend, const gchar * path)
 }
 
 gint
-system_rename (struct backend *backend, const gchar * old, const gchar * new)
+system_rename (struct backend *backend, const gchar *old, const gchar *new)
 {
   debug_print (1, "Renaming locally from %s to %s...\n", old, new);
   return rename (old, new);
@@ -218,7 +218,7 @@ system_next_dentry_with_sample_info (struct item_iterator *iter)
 
 static gint
 system_read_dir_opts (struct backend *backend, struct item_iterator *iter,
-		      const gchar * path, const gchar ** extensions,
+		      const gchar *path, const gchar **extensions,
 		      iterator_next next)
 {
   GDir *dir;
@@ -243,7 +243,7 @@ system_read_dir_opts (struct backend *backend, struct item_iterator *iter,
 
 gint
 system_read_dir (struct backend *backend, struct item_iterator *iter,
-		 const gchar * path, const gchar ** extensions)
+		 const gchar *path, const gchar **extensions)
 {
   return system_read_dir_opts (backend, iter, path, extensions,
 			       system_next_dentry_without_sample_info);
@@ -251,7 +251,7 @@ system_read_dir (struct backend *backend, struct item_iterator *iter,
 
 gint
 system_samples_read_dir (struct backend *backend, struct item_iterator *iter,
-			 const gchar * path, const gchar ** extensions)
+			 const gchar *path, const gchar **extensions)
 {
   return system_read_dir_opts (backend, iter, path,
 			       sample_get_sample_extensions (),
@@ -259,7 +259,7 @@ system_samples_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
-system_load_custom (const gchar * path, GByteArray * sample,
+system_load_custom (const gchar *path, GByteArray *sample,
 		    struct job_control *control,
 		    struct sample_info *sample_info_dst)
 {
@@ -274,7 +274,7 @@ system_load_custom (const gchar * path, GByteArray * sample,
 }
 
 static gint
-system_load_48_16_stereo (const gchar * path, GByteArray * sample,
+system_load_48_16_stereo (const gchar *path, GByteArray *sample,
 			  struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -285,15 +285,15 @@ system_load_48_16_stereo (const gchar * path, GByteArray * sample,
 }
 
 gint
-system_upload (struct backend *backend, const gchar * path,
-	       GByteArray * input, struct job_control *control)
+system_upload (struct backend *backend, const gchar *path,
+	       GByteArray *input, struct job_control *control)
 {
   return sample_save_to_file (path, input, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
 }
 
 static gint
-system_load_48_16_mono (const gchar * path, GByteArray * sample,
+system_load_48_16_mono (const gchar *path, GByteArray *sample,
 			struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -304,7 +304,7 @@ system_load_48_16_mono (const gchar * path, GByteArray * sample,
 }
 
 static gint
-system_load_441_16_stereo (const gchar * path, GByteArray * sample,
+system_load_441_16_stereo (const gchar *path, GByteArray *sample,
 			   struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -315,7 +315,7 @@ system_load_441_16_stereo (const gchar * path, GByteArray * sample,
 }
 
 static gint
-system_load_441_16_mono (const gchar * path, GByteArray * sample,
+system_load_441_16_mono (const gchar *path, GByteArray *sample,
 			 struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -326,7 +326,7 @@ system_load_441_16_mono (const gchar * path, GByteArray * sample,
 }
 
 static gint
-system_load_441_24_stereo (const gchar * path, GByteArray * sample,
+system_load_441_24_stereo (const gchar *path, GByteArray *sample,
 			   struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -337,15 +337,15 @@ system_load_441_24_stereo (const gchar * path, GByteArray * sample,
 }
 
 static gint
-system_upload_24_bits (struct backend *backend, const gchar * path,
-		       GByteArray * input, struct job_control *control)
+system_upload_24_bits (struct backend *backend, const gchar *path,
+		       GByteArray *input, struct job_control *control)
 {
   return sample_save_to_file (path, input, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_24);
 }
 
 static gint
-system_load_441_24_mono (const gchar * path, GByteArray * sample,
+system_load_441_24_mono (const gchar *path, GByteArray *sample,
 			 struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -356,7 +356,7 @@ system_load_441_24_mono (const gchar * path, GByteArray * sample,
 }
 
 static gint
-system_load_441_8_stereo (const gchar * path, GByteArray * sample,
+system_load_441_8_stereo (const gchar *path, GByteArray *sample,
 			  struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -367,15 +367,15 @@ system_load_441_8_stereo (const gchar * path, GByteArray * sample,
 }
 
 static gint
-system_upload_8_bits (struct backend *backend, const gchar * path,
-		      GByteArray * input, struct job_control *control)
+system_upload_8_bits (struct backend *backend, const gchar *path,
+		      GByteArray *input, struct job_control *control)
 {
   return sample_save_to_file (path, input, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_U8);
 }
 
 static gint
-system_load_441_8_mono (const gchar * path, GByteArray * sample,
+system_load_441_8_mono (const gchar *path, GByteArray *sample,
 			struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -386,7 +386,7 @@ system_load_441_8_mono (const gchar * path, GByteArray * sample,
 }
 
 gboolean
-system_file_exists (struct backend *backend, const gchar * path)
+system_file_exists (struct backend *backend, const gchar *path)
 {
   return access (path, F_OK) == 0;
 }
@@ -631,7 +631,7 @@ static const struct fs_operations *FS_SYSTEM_OPERATIONS[] = {
 static gint
 system_get_storage_stats (struct backend *backend, gint type,
 			  struct backend_storage_stats *statfs,
-			  const gchar * path)
+			  const gchar *path)
 {
   gint err;
   FILE *f;
@@ -674,7 +674,7 @@ system_get_storage_stats (struct backend *backend, gint type,
 #endif
 
 gint
-system_init_backend (struct backend *backend, const gchar * id)
+system_init_backend (struct backend *backend, const gchar *id)
 {
   if (strcmp (id, BE_SYSTEM_ID))
     {

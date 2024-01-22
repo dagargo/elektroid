@@ -34,8 +34,8 @@ struct menu_action *autosampler_init (struct backend *, GtkBuilder *,
 				      GtkWindow *);
 
 struct menu_action *
-menu_action_separator (struct backend *backend, GtkBuilder * builder,
-		       GtkWindow * parent)
+menu_action_separator (struct backend *backend, GtkBuilder *builder,
+		       GtkWindow *parent)
 {
   struct menu_action *ma = g_malloc (sizeof (struct menu_action));
   ma->type = MENU_ACTION_SEPARATOR;
@@ -50,7 +50,7 @@ const t_menu_action_initializer MENU_ACTIONS[] = {
 };
 
 static GSList *
-ma_get_menu_actions (struct ma_data *ma_data, GtkWindow * parent)
+ma_get_menu_actions (struct ma_data *ma_data, GtkWindow *parent)
 {
   GSList *actions = NULL;
   const t_menu_action_initializer *initializer = MENU_ACTIONS;
@@ -69,14 +69,14 @@ ma_get_menu_actions (struct ma_data *ma_data, GtkWindow * parent)
 }
 
 static void
-ma_remove_device_menu_action (GtkWidget * widget, gpointer data)
+ma_remove_device_menu_action (GtkWidget *widget, gpointer data)
 {
   GtkWidget *box = data;
   gtk_container_remove (GTK_CONTAINER (box), widget);
 }
 
 void
-ma_clear_device_menu_actions (GtkWidget * box)
+ma_clear_device_menu_actions (GtkWidget *box)
 {
   gtk_container_foreach (GTK_CONTAINER (box),
 			 ma_remove_device_menu_action, box);
@@ -110,7 +110,7 @@ ma_add_device_menu_action (gpointer data, gpointer user_data)
 }
 
 void
-ma_set_device_menu_actions (struct ma_data *ma_data, GtkWindow * parent)
+ma_set_device_menu_actions (struct ma_data *ma_data, GtkWindow *parent)
 {
   GSList *src = ma_get_menu_actions (ma_data, parent);
   ma_clear_device_menu_actions (ma_data->box);

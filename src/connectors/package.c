@@ -89,7 +89,7 @@ package_add_resource (struct package *pkg,
 
 
 gint
-package_begin (struct package *pkg, gchar * name, const gchar * fw_version,
+package_begin (struct package *pkg, gchar *name, const gchar *fw_version,
 	       const struct device_desc *device_desc, enum package_type type)
 {
   zip_error_t zerror;
@@ -238,7 +238,7 @@ package_add_manifest (struct package *pkg)
 }
 
 gint
-package_end (struct package *pkg, GByteArray * out)
+package_end (struct package *pkg, GByteArray *out)
 {
   int ret = 0;
   zip_stat_t zstat;
@@ -288,7 +288,7 @@ package_destroy (struct package *pkg)
 }
 
 gint
-package_open (struct package *pkg, GByteArray * data,
+package_open (struct package *pkg, GByteArray *data,
 	      const struct device_desc *device_desc)
 {
   gint ret;
@@ -358,7 +358,7 @@ package_close (struct package *pkg)
 
 gint
 package_receive_pkg_resources (struct package *pkg,
-			       const gchar * payload_path,
+			       const gchar *payload_path,
 			       struct job_control *control,
 			       struct backend *backend,
 			       fs_remote_file_op download_data,
@@ -541,7 +541,7 @@ get_payload:
 }
 
 gint
-package_send_pkg_resources (struct package *pkg, const gchar * payload_path,
+package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 			    struct job_control *control,
 			    struct backend *backend,
 			    fs_remote_file_op upload_data)

@@ -65,8 +65,8 @@ static const guint8 SDS_DUMP_HEADER[] =
 
 static gchar *
 sds_get_download_path (struct backend *backend,
-		       const struct fs_operations *ops, const gchar * dst_dir,
-		       const gchar * src_path, GByteArray * data)
+		       const struct fs_operations *ops, const gchar *dst_dir,
+		       const gchar *src_path, GByteArray *data)
 {
   GByteArray *tx_msg, *rx_msg;
   GString *str = g_string_new (NULL);
@@ -108,7 +108,7 @@ sds_get_download_path (struct backend *backend,
 }
 
 static guint
-sds_get_bytes_value_right_just (guint8 * data, gint length)
+sds_get_bytes_value_right_just (guint8 *data, gint length)
 {
   gint value = 0;
   for (gint i = 0, shift = 0; i < length; i++, shift += 7)
@@ -119,7 +119,7 @@ sds_get_bytes_value_right_just (guint8 * data, gint length)
 }
 
 static void
-sds_set_bytes_value_right_just (guint8 * data, gint length, guint value)
+sds_set_bytes_value_right_just (guint8 *data, gint length, guint value)
 {
   for (gint i = 0, shift = 0; i < length; i++, shift += 7)
     {
@@ -129,7 +129,7 @@ sds_set_bytes_value_right_just (guint8 * data, gint length, guint value)
 }
 
 static gint16
-sds_get_gint16_value_left_just (guint8 * data, gint length, guint bits)
+sds_get_gint16_value_left_just (guint8 *data, gint length, guint bits)
 {
   guint value = 0;
   gint16 svalue;
@@ -143,7 +143,7 @@ sds_get_gint16_value_left_just (guint8 * data, gint length, guint bits)
 }
 
 static void
-sds_set_gint16_value_left_just (guint8 * data, gint length, guint bits,
+sds_set_gint16_value_left_just (guint8 *data, gint length, guint bits,
 				gint16 svalue)
 {
   gint value = svalue;
@@ -156,7 +156,7 @@ sds_set_gint16_value_left_just (guint8 * data, gint length, guint bits,
 }
 
 static guint8
-sds_checksum (guint8 * data)
+sds_checksum (guint8 *data)
 {
   guint8 checksum = 0;
   for (int i = SDS_DATA_PACKET_CKSUM_START; i < SDS_DATA_PACKET_CKSUM_POS;
@@ -169,8 +169,7 @@ sds_checksum (guint8 * data)
 }
 
 static gint
-sds_get_bytes_per_word (gint32 bits, guint * word_size,
-			guint * bytes_per_word)
+sds_get_bytes_per_word (gint32 bits, guint *word_size, guint *bytes_per_word)
 {
   *word_size = (guint) ceil (bits / 8.0);
   if (*word_size != 2)
@@ -192,7 +191,7 @@ sds_get_bytes_per_word (gint32 bits, guint * word_size,
 }
 
 static gint
-sds_tx_handshake (struct backend *backend, const guint8 * msg, guint8 packet)
+sds_tx_handshake (struct backend *backend, const guint8 *msg, guint8 packet)
 {
   GByteArray *tx_msg = g_byte_array_sized_new (sizeof (SDS_ACK));
   g_byte_array_append (tx_msg, msg, sizeof (SDS_ACK));
@@ -201,9 +200,9 @@ sds_tx_handshake (struct backend *backend, const guint8 * msg, guint8 packet)
 }
 
 static guint
-sds_get_download_info (GByteArray * header, struct sample_info *sample_info,
-		       guint * bits, guint * words, guint * word_size,
-		       guint * bytes_per_word)
+sds_get_download_info (GByteArray *header, struct sample_info *sample_info,
+		       guint *bits, guint *words, guint *word_size,
+		       guint *bytes_per_word)
 {
   *bits = header->data[6];
   if (*bits == 8)
@@ -233,13 +232,13 @@ sds_get_download_info (GByteArray * header, struct sample_info *sample_info,
 }
 
 static inline gboolean
-sds_check_message_id (GByteArray * msg, guint id)
+sds_check_message_id (GByteArray *msg, guint id)
 {
   return (msg->data[4] == id % 0x80 && msg->data[5] == id / 0x80);
 }
 
 static inline void
-sds_set_message_id (GByteArray * tx_msg, guint id)
+sds_set_message_id (GByteArray *tx_msg, guint id)
 {
   tx_msg->data[4] = id % 0x80;
   tx_msg->data[5] = id / 0x80;
@@ -297,7 +296,7 @@ sds_rx (struct backend *backend, gint timeout)
 }
 
 static void
-sds_download_inc_packet (gboolean * first, guint * packet)
+sds_download_inc_packet (gboolean *first, guint *packet)
 {
   if (*first)
     {
@@ -345,8 +344,8 @@ sds_download_get_header (struct backend *backend, guint id)
 }
 
 static gint
-sds_download_try (struct backend *backend, const gchar * path,
-		  GByteArray * output, struct job_control *control)
+sds_download_try (struct backend *backend, const gchar *path,
+		  GByteArray *output, struct job_control *control)
 {
   guint id, words, word_size, read_bytes, bytes_per_word, total_words, err,
     retries, packets, packet, exp_packet, rx_packets, bits;
@@ -579,8 +578,8 @@ end:
 }
 
 static gint
-sds_download (struct backend *backend, const gchar * path,
-	      GByteArray * output, struct job_control *control)
+sds_download (struct backend *backend, const gchar *path,
+	      GByteArray *output, struct job_control *control)
 {
   gint err;
   for (gint i = 0; i < SDS_MAX_RETRIES; i++)
@@ -601,7 +600,7 @@ sds_download (struct backend *backend, const gchar * path,
 }
 
 static gint
-sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
+sds_tx_and_wait_ack (struct backend *backend, GByteArray *tx_msg,
 		     guint packet, gint timeout, gint timeout2)
 {
   gint err;
@@ -666,8 +665,8 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray * tx_msg,
 }
 
 static inline GByteArray *
-sds_get_data_packet_msg (gint packet, guint words, guint * word,
-			 gint16 ** frame, guint bits, guint bytes_per_word)
+sds_get_data_packet_msg (gint packet, guint words, guint *word,
+			 gint16 **frame, guint bits, guint bytes_per_word)
 {
   guint8 *data;
   GByteArray *tx_msg = g_byte_array_sized_new (SDS_DATA_PACKET_LEN);
@@ -695,7 +694,7 @@ sds_get_data_packet_msg (gint packet, guint words, guint * word,
 }
 
 static inline GByteArray *
-sds_get_rename_sample_msg (guint id, gchar * name)
+sds_get_rename_sample_msg (guint id, gchar *name)
 {
   GByteArray *tx_msg = g_byte_array_new ();
   guint name_len = strlen (name);
@@ -711,7 +710,7 @@ sds_get_rename_sample_msg (guint id, gchar * name)
 }
 
 static gint
-sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
+sds_rename (struct backend *backend, const gchar *src, const gchar *dst)
 {
   GByteArray *tx_msg, *rx_msg;
   guint id;
@@ -743,7 +742,7 @@ sds_rename (struct backend *backend, const gchar * src, const gchar * dst)
 }
 
 static gint
-sds_upload (struct backend *backend, const gchar * path, GByteArray * input,
+sds_upload (struct backend *backend, const gchar *path, GByteArray *input,
 	    struct job_control *control, guint bits)
 {
   gchar *name;
@@ -909,36 +908,36 @@ cleanup:
 }
 
 static gint
-sds_upload_8b (struct backend *backend, const gchar * path,
-	       GByteArray * input, struct job_control *control)
+sds_upload_8b (struct backend *backend, const gchar *path,
+	       GByteArray *input, struct job_control *control)
 {
   return sds_upload (backend, path, input, control, 8);
 }
 
 static gint
-sds_upload_12b (struct backend *backend, const gchar * path,
-		GByteArray * input, struct job_control *control)
+sds_upload_12b (struct backend *backend, const gchar *path,
+		GByteArray *input, struct job_control *control)
 {
   return sds_upload (backend, path, input, control, 12);
 }
 
 static gint
-sds_upload_14b (struct backend *backend, const gchar * path,
-		GByteArray * input, struct job_control *control)
+sds_upload_14b (struct backend *backend, const gchar *path,
+		GByteArray *input, struct job_control *control)
 {
   return sds_upload (backend, path, input, control, 14);
 }
 
 static gint
-sds_upload_16b (struct backend *backend, const gchar * path,
-		GByteArray * input, struct job_control *control)
+sds_upload_16b (struct backend *backend, const gchar *path,
+		GByteArray *input, struct job_control *control)
 {
   return sds_upload (backend, path, input, control, 16);
 }
 
 static gint
 sds_read_dir (struct backend *backend, struct item_iterator *iter,
-	      const gchar * path, const gchar ** extensions)
+	      const gchar *path, const gchar **extensions)
 {
   struct common_simple_read_dir_data *data;
 
@@ -958,7 +957,7 @@ sds_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
-sds_sample_load_with_rate (const gchar * path, GByteArray * sample,
+sds_sample_load_with_rate (const gchar *path, GByteArray *sample,
 			   struct job_control *control, guint32 rate)
 {
   struct sample_info sample_info_dst;
@@ -974,42 +973,42 @@ sds_sample_load_with_rate (const gchar * path, GByteArray * sample,
 }
 
 static gint
-sds_sample_load (const gchar * path, GByteArray * sample,
+sds_sample_load (const gchar *path, GByteArray *sample,
 		 struct job_control *control)
 {
   return sds_sample_load_with_rate (path, sample, control, 0);	// Any sample rate is valid.
 }
 
 static gint
-sds_sample_load_441 (const gchar * path, GByteArray * sample,
+sds_sample_load_441 (const gchar *path, GByteArray *sample,
 		     struct job_control *control)
 {
   return sds_sample_load_with_rate (path, sample, control, 44100);
 }
 
 static gint
-sds_sample_load_32 (const gchar * path, GByteArray * sample,
+sds_sample_load_32 (const gchar *path, GByteArray *sample,
 		    struct job_control *control)
 {
   return sds_sample_load_with_rate (path, sample, control, 32000);
 }
 
 static gint
-sds_sample_load_16 (const gchar * path, GByteArray * sample,
+sds_sample_load_16 (const gchar *path, GByteArray *sample,
 		    struct job_control *control)
 {
   return sds_sample_load_with_rate (path, sample, control, 16000);
 }
 
 static gint
-sds_sample_load_8 (const gchar * path, GByteArray * sample,
+sds_sample_load_8 (const gchar *path, GByteArray *sample,
 		   struct job_control *control)
 {
   return sds_sample_load_with_rate (path, sample, control, 8000);
 }
 
 static gint
-sds_sample_save (const gchar * path, GByteArray * sample,
+sds_sample_save (const gchar *path, GByteArray *sample,
 		 struct job_control *control)
 {
   return sample_save_to_file (path, sample, control,

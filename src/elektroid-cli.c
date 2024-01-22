@@ -44,7 +44,7 @@ static gchar *connector, *fs, *op;
 const struct fs_operations *fs_ops;
 
 static const gchar *
-cli_get_path (gchar * device_path)
+cli_get_path (gchar *device_path)
 {
   gint len = strlen (device_path);
   gchar *path = device_path;
@@ -79,7 +79,7 @@ cli_ld ()
 }
 
 static gint
-cli_connect (const gchar * device_path)
+cli_connect (const gchar *device_path)
 {
   gint err, id = (gint) atoi (device_path);
   struct backend_device device;
@@ -109,7 +109,7 @@ cli_connect (const gchar * device_path)
 }
 
 static gint
-cli_list (int argc, gchar * argv[], int *optind)
+cli_list (int argc, gchar *argv[], int *optind)
 {
   gint err;
   const gchar *path;
@@ -154,8 +154,7 @@ cli_list (int argc, gchar * argv[], int *optind)
 }
 
 static int
-cli_command_path (int argc, gchar * argv[], int *optind,
-		  ssize_t member_offset)
+cli_command_path (int argc, gchar *argv[], int *optind, ssize_t member_offset)
 {
   const gchar *path;
   gchar *device_path;
@@ -188,7 +187,7 @@ cli_command_path (int argc, gchar * argv[], int *optind,
 }
 
 static gint
-cli_command_src_dst (int argc, gchar * argv[], int *optind,
+cli_command_src_dst (int argc, gchar *argv[], int *optind,
 		     ssize_t member_offset)
 {
   const gchar *src_path, *dst_path;
@@ -241,7 +240,7 @@ cli_command_src_dst (int argc, gchar * argv[], int *optind,
 }
 
 static gint
-cli_command_mv_rename (int argc, gchar * argv[], int *optind)
+cli_command_mv_rename (int argc, gchar *argv[], int *optind)
 {
   const gchar *src_path, *dst_path;
   gchar *device_src_path, *device_dst_path;
@@ -303,7 +302,7 @@ cli_command_mv_rename (int argc, gchar * argv[], int *optind)
 }
 
 static int
-cli_info (int argc, gchar * argv[], int *optind)
+cli_info (int argc, gchar *argv[], int *optind)
 {
   gchar *device_path;
   const gchar *name;
@@ -347,7 +346,7 @@ cli_info (int argc, gchar * argv[], int *optind)
 }
 
 static int
-cli_df (int argc, gchar * argv[], int *optind)
+cli_df (int argc, gchar *argv[], int *optind)
 {
   gchar *device_path;
   const gchar *path;
@@ -416,7 +415,7 @@ cli_df (int argc, gchar * argv[], int *optind)
 }
 
 static int
-cli_upgrade_os (int argc, gchar * argv[], int *optind)
+cli_upgrade_os (int argc, gchar *argv[], int *optind)
 {
   gint err;
   const gchar *src_path;
@@ -474,7 +473,7 @@ cli_upgrade_os (int argc, gchar * argv[], int *optind)
 }
 
 static int
-cli_download (int argc, gchar * argv[], int *optind)
+cli_download (int argc, gchar *argv[], int *optind)
 {
   const gchar *src_path;
   gchar *device_src_path, *download_path;
@@ -527,7 +526,7 @@ end:
 }
 
 static int
-cli_upload (int argc, gchar * argv[], int *optind)
+cli_upload (int argc, gchar *argv[], int *optind)
 {
   const gchar *dst_path;
   gchar *src_path, *device_dst_path, *upload_path;
@@ -586,7 +585,7 @@ cleanup:
 }
 
 static int
-cli_send (int argc, gchar * argv[], int *optind)
+cli_send (int argc, gchar *argv[], int *optind)
 {
   gint err;
   const gchar *device_dst_path, *src_file;
@@ -641,7 +640,7 @@ cli_send (int argc, gchar * argv[], int *optind)
 }
 
 static int
-cli_receive (int argc, gchar * argv[], int *optind)
+cli_receive (int argc, gchar *argv[], int *optind)
 {
   gint err;
   const gchar *device_src_path, *dst_file;
@@ -696,7 +695,7 @@ cli_receive (int argc, gchar * argv[], int *optind)
 }
 
 static gint
-set_conn_fs_op_from_command (const gchar * cmd)
+set_conn_fs_op_from_command (const gchar *cmd)
 {
   gchar *aux;
 
@@ -742,7 +741,7 @@ cli_end (int sig)
 #endif
 
 int
-main (int argc, gchar * argv[])
+main (int argc, gchar *argv[])
 {
   gint c;
   gint err;

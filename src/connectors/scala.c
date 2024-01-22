@@ -36,7 +36,7 @@ static const guint8 SCALA_MIDI_BULK_TUNING_HEADER[] =
   { 0xf0, 0x7e, 0x7f, 8, 1, 0 };
 
 static gint
-scl_parser_get_pitch (gchar * line, gdouble * val)
+scl_parser_get_pitch (gchar *line, gdouble *val)
 {
   gint err = 0;
   gdouble num, den;
@@ -83,7 +83,7 @@ scl_parser_get_pitch (gchar * line, gdouble * val)
 }
 
 static gchar **
-scl_parser_get_next_line (gchar ** lines)
+scl_parser_get_next_line (gchar **lines)
 {
   while (*lines && (*lines)[0] == SCALA_FILE_COMMENT_CHAR)
     {
@@ -93,7 +93,7 @@ scl_parser_get_next_line (gchar ** lines)
 }
 
 gint
-scl_init_scala_from_bytes (struct scala *scala, GByteArray * input)
+scl_init_scala_from_bytes (struct scala *scala, GByteArray *input)
 {
   gint err = 0;
   gchar **line, **lines, *rem;
@@ -166,7 +166,7 @@ scala_get_cents_from_ratio (gdouble ratio)
 }
 
 static guint8
-scl_get_nearest_note_below (gdouble f, gdouble * note_f)
+scl_get_nearest_note_below (gdouble f, gdouble *note_f)
 {
   gdouble next;
   guint8 n;
@@ -184,7 +184,7 @@ scl_get_nearest_note_below (gdouble f, gdouble * note_f)
 }
 
 static void
-scl_append_name_to_msg (struct scala *scala, GByteArray * msg)
+scl_append_name_to_msg (struct scala *scala, GByteArray *msg)
 {
   guint len = strlen (scala->desc);
   if (len > SCALA_MIDI_TUNING_NAME_LEN)
@@ -200,7 +200,7 @@ scl_append_name_to_msg (struct scala *scala, GByteArray * msg)
 }
 
 static guint8
-scl_get_cksum (guint8 * b, gint len)
+scl_get_cksum (guint8 *b, gint len)
 {
   guint8 cksum = 0;
   for (gint i = 0; i < len; i++, b++)
@@ -213,7 +213,7 @@ scl_get_cksum (guint8 * b, gint len)
 
 gint
 scl_get_2_byte_octave_tuning_msg_from_scala_file (const char *path,
-						  GByteArray * msg,
+						  GByteArray *msg,
 						  struct job_control *control)
 {
   gint err = 0;
@@ -280,7 +280,7 @@ end:
 
 gint
 scl_get_key_based_tuning_msg_from_scala_file (const char *path,
-					      GByteArray * msg,
+					      GByteArray *msg,
 					      struct job_control *control)
 {
   gint err = 0;

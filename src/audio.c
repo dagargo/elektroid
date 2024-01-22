@@ -29,7 +29,7 @@ const gchar *audio_name ();
 const gchar *audio_version ();
 
 static inline gint16
-audio_mix_channels (gint16 ** src, guint channels)
+audio_mix_channels (gint16 **src, guint channels)
 {
   gdouble mix = 0;
   for (gint i = 0; i < channels; i++, (*src)++)
@@ -40,7 +40,7 @@ audio_mix_channels (gint16 ** src, guint channels)
 }
 
 static inline void
-audio_copy_sample (gint16 * dst, gint16 * src, struct audio *audio)
+audio_copy_sample (gint16 *dst, gint16 *src, struct audio *audio)
 {
 #if defined(ELEKTROID_RTAUDIO)
   *dst = (gint16) (*src * audio->volume);

@@ -92,7 +92,7 @@ editor_set_layout_width (struct editor *editor)
 }
 
 static void
-editor_set_widget_source (GtkWidget * widget, gpointer data)
+editor_set_widget_source (GtkWidget *widget, gpointer data)
 {
   const char *class;
   struct editor *editor = data;
@@ -199,7 +199,7 @@ editor_set_audio_mono_mix (struct editor *editor)
 
 static gboolean
 editor_loading_completed_no_lock (struct editor *editor,
-				  guint32 * actual_frames)
+				  guint32 *actual_frames)
 {
   gboolean completed;
   guint32 actual;
@@ -257,7 +257,7 @@ editor_destroy_y_frame_state (struct editor_y_frame_state *state)
 }
 
 static gboolean
-editor_get_y_frame (GByteArray * sample, guint channels, guint frame,
+editor_get_y_frame (GByteArray *sample, guint channels, guint frame,
 		    guint len, struct editor_y_frame_state *state)
 {
   guint loaded_frames = sample->len / FRAME_SIZE (channels, SF_FORMAT_PCM_16);
@@ -314,7 +314,7 @@ editor_get_x_ratio (struct editor *editor)
 }
 
 gboolean
-editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
+editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 {
   GdkRGBA color, bgcolor;
   guint width, height, x_count, layout_width, c_height, c_height_half;
@@ -526,7 +526,7 @@ editor_load_sample_runner (gpointer data)
 }
 
 void
-editor_play_clicked (GtkWidget * object, gpointer data)
+editor_play_clicked (GtkWidget *object, gpointer data)
 {
   struct editor *editor = data;
   audio_stop_recording (&editor->audio);
@@ -547,7 +547,7 @@ editor_update_ui_on_record (gpointer data, gdouble value)
 }
 
 static void
-editor_stop_clicked (GtkWidget * object, gpointer data)
+editor_stop_clicked (GtkWidget *object, gpointer data)
 {
   struct editor *editor = data;
   audio_stop_playback (&editor->audio);
@@ -579,7 +579,7 @@ editor_reset_for_recording (gpointer data)
 }
 
 static void
-editor_record_clicked (GtkWidget * object, gpointer data)
+editor_record_clicked (GtkWidget *object, gpointer data)
 {
   gint res;
   guint options;
@@ -614,7 +614,7 @@ editor_record_clicked (GtkWidget * object, gpointer data)
 }
 
 static void
-editor_loop_clicked (GtkWidget * object, gpointer data)
+editor_loop_clicked (GtkWidget *object, gpointer data)
 {
   struct editor *editor = data;
   editor->audio.loop =
@@ -622,7 +622,7 @@ editor_loop_clicked (GtkWidget * object, gpointer data)
 }
 
 static gboolean
-editor_autoplay_clicked (GtkWidget * object, gboolean state, gpointer data)
+editor_autoplay_clicked (GtkWidget *object, gboolean state, gpointer data)
 {
   struct editor *editor = data;
   editor->preferences->autoplay = state;
@@ -655,7 +655,7 @@ editor_stop_load_thread (struct editor *editor)
 }
 
 static gboolean
-editor_mix_clicked (GtkWidget * object, gboolean state, gpointer data)
+editor_mix_clicked (GtkWidget *object, gboolean state, gpointer data)
 {
   struct editor *editor = data;
   editor->preferences->mix = state;
@@ -664,7 +664,7 @@ editor_mix_clicked (GtkWidget * object, gboolean state, gpointer data)
 }
 
 static void
-editor_set_volume (GtkScaleButton * button, gdouble value, gpointer data)
+editor_set_volume (GtkScaleButton *button, gdouble value, gpointer data)
 {
   struct editor *editor = data;
   audio_set_volume (&editor->audio, value);
@@ -698,7 +698,7 @@ editor_set_volume_callback (gpointer editor, gdouble volume)
 }
 
 static gboolean
-editor_show_grid_clicked (GtkWidget * object, gboolean state, gpointer data)
+editor_show_grid_clicked (GtkWidget *object, gboolean state, gpointer data)
 {
   struct editor *editor = data;
   editor->preferences->show_grid = state;
@@ -707,7 +707,7 @@ editor_show_grid_clicked (GtkWidget * object, gboolean state, gpointer data)
 }
 
 static void
-editor_grid_length_changed (GtkSpinButton * self, gpointer data)
+editor_grid_length_changed (GtkSpinButton *self, gpointer data)
 {
   struct editor *editor = data;
   editor->preferences->grid_length = gtk_spin_button_get_value (self);
@@ -716,7 +716,7 @@ editor_grid_length_changed (GtkSpinButton * self, gpointer data)
 
 static void
 editor_get_frame_at_position (struct editor *editor, gdouble x,
-			      guint * cursor_frame, gdouble * rel_pos)
+			      guint *cursor_frame, gdouble *rel_pos)
 {
   guint lw;
   guint start = editor_get_start_frame (editor);
@@ -731,7 +731,7 @@ editor_get_frame_at_position (struct editor *editor, gdouble x,
 }
 
 static gboolean
-editor_zoom (struct editor *editor, GdkEventScroll * event, gdouble dy)
+editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
 {
   gdouble rel_pos;
   guint start, cursor_frame;
@@ -785,7 +785,7 @@ end:
 }
 
 gboolean
-editor_waveform_scroll (GtkWidget * widget, GdkEventScroll * event,
+editor_waveform_scroll (GtkWidget *widget, GdkEventScroll *event,
 			gpointer data)
 {
   if (event->direction == GDK_SCROLL_SMOOTH)
@@ -801,7 +801,7 @@ editor_waveform_scroll (GtkWidget * widget, GdkEventScroll * event,
 }
 
 static void
-editor_on_size_allocate (GtkWidget * self, GtkAllocation * allocation,
+editor_on_size_allocate (GtkWidget *self, GtkAllocation *allocation,
 			 struct editor *editor)
 {
   if (editor->audio.sample_info.frames == 0)
@@ -835,7 +835,7 @@ editor_cursor_frame_over_frame (struct editor *editor,
 }
 
 static void
-editor_set_cursor (struct editor *editor, const gchar * cursor_name)
+editor_set_cursor (struct editor *editor, const gchar *cursor_name)
 {
   GdkDisplay *display = gdk_display_get_default ();
   GdkCursor *cursor = gdk_cursor_new_from_name (display,
@@ -845,8 +845,7 @@ editor_set_cursor (struct editor *editor, const gchar * cursor_name)
 }
 
 static gboolean
-editor_button_press (GtkWidget * widget, GdkEventButton * event,
-		     gpointer data)
+editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
   guint cursor_frame;
   struct editor *editor = data;
@@ -924,7 +923,7 @@ editor_button_press (GtkWidget * widget, GdkEventButton * event,
 }
 
 static gboolean
-editor_button_release (GtkWidget * widget, GdkEventButton * event,
+editor_button_release (GtkWidget *widget, GdkEventButton *event,
 		       gpointer data)
 {
   struct editor *editor = data;
@@ -972,8 +971,7 @@ editor_button_release (GtkWidget * widget, GdkEventButton * event,
 }
 
 static gboolean
-editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
-		      gpointer data)
+editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 {
   guint cursor_frame;
   struct editor *editor = data;
@@ -1069,7 +1067,7 @@ editor_motion_notify (GtkWidget * widget, GdkEventMotion * event,
 }
 
 static void
-editor_delete_clicked (GtkWidget * object, gpointer data)
+editor_delete_clicked (GtkWidget *object, gpointer data)
 {
   enum audio_status status;
   struct editor *editor = data;
@@ -1106,7 +1104,7 @@ editor_delete_clicked (GtkWidget * object, gpointer data)
 }
 
 static gboolean
-editor_file_exists_no_overwrite (const gchar * filename)
+editor_file_exists_no_overwrite (const gchar *filename)
 {
   gint res = GTK_RESPONSE_ACCEPT;
   GtkWidget *dialog;
@@ -1136,8 +1134,7 @@ editor_file_exists_no_overwrite (const gchar * filename)
 // local path) we need to persist the recording or selection to a temporary
 // file.
 static gint
-editor_save_to_remote (struct editor *editor, gchar * name,
-		       GByteArray * sample)
+editor_save_to_remote (struct editor *editor, gchar *name, GByteArray *sample)
 {
   gint err;
   GByteArray *tmp_sample;
@@ -1171,7 +1168,7 @@ end:
 }
 
 static gint
-editor_save (struct editor *editor, gchar * name, GByteArray * sample)
+editor_save (struct editor *editor, gchar *name, GByteArray *sample)
 {
   gint err;
   if (editor->browser == &local_browser.browser)
@@ -1187,7 +1184,7 @@ editor_save (struct editor *editor, gchar * name, GByteArray * sample)
 }
 
 static void
-editor_save_clicked (GtkWidget * object, gpointer data)
+editor_save_clicked (GtkWidget *object, gpointer data)
 {
   gchar *name;
   struct editor *editor = data;
@@ -1273,7 +1270,7 @@ editor_save_clicked (GtkWidget * object, gpointer data)
 }
 
 static gboolean
-editor_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
+editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
   struct editor *editor = data;
 
@@ -1299,7 +1296,7 @@ editor_key_press (GtkWidget * widget, GdkEventKey * event, gpointer data)
 }
 
 void
-editor_init (struct editor *editor, GtkBuilder * builder)
+editor_init (struct editor *editor, GtkBuilder *builder)
 {
   editor->box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
   editor->waveform_scrolled_window =

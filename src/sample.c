@@ -201,7 +201,7 @@ static SF_VIRTUAL_IO FILE_IO = {
 };
 
 static gint
-sample_get_audio_file_data (GByteArray * sample, struct job_control *control,
+sample_get_audio_file_data (GByteArray *sample, struct job_control *control,
 			    struct g_byte_array_io_data *wave, guint32 format)
 {
   SF_INFO sf_info;
@@ -298,7 +298,7 @@ sample_get_audio_file_data (GByteArray * sample, struct job_control *control,
 }
 
 gint
-sample_get_audio_file_data_from_array (GByteArray * sample, GByteArray * wave,
+sample_get_audio_file_data_from_array (GByteArray *sample, GByteArray *wave,
 				       struct job_control *control,
 				       guint32 format)
 {
@@ -309,7 +309,7 @@ sample_get_audio_file_data_from_array (GByteArray * sample, GByteArray * wave,
 }
 
 gint
-sample_save_to_file (const gchar * path, GByteArray * sample,
+sample_save_to_file (const gchar *path, GByteArray *sample,
 		     struct job_control *control, guint32 format)
 {
   GByteArray *wave = g_byte_array_new ();
@@ -324,7 +324,7 @@ sample_save_to_file (const gchar * path, GByteArray * sample,
 }
 
 static void
-audio_multichannel_to_mono_short (gshort * input, gshort * output, gint size,
+audio_multichannel_to_mono_short (gshort *input, gshort *output, gint size,
 				  gint channels)
 {
   gint32 i, j, v;
@@ -344,7 +344,7 @@ audio_multichannel_to_mono_short (gshort * input, gshort * output, gint size,
 }
 
 static void
-audio_multichannel_to_mono_float (gfloat * input, gfloat * output, gint size,
+audio_multichannel_to_mono_float (gfloat *input, gfloat *output, gint size,
 				  gint channels)
 {
   gfloat v;
@@ -365,7 +365,7 @@ audio_multichannel_to_mono_float (gfloat * input, gfloat * output, gint size,
 }
 
 static void
-audio_multichannel_to_mono_int (gint32 * input, gint32 * output, gint size,
+audio_multichannel_to_mono_int (gint32 *input, gint32 *output, gint size,
 				gint channels)
 {
   gint32 v;
@@ -386,7 +386,7 @@ audio_multichannel_to_mono_int (gint32 * input, gint32 * output, gint size,
 }
 
 static void
-audio_mono_to_stereo_short (gshort * input, gshort * output, gint size)
+audio_mono_to_stereo_short (gshort *input, gshort *output, gint size)
 {
   debug_print (2, "Converting short values to stereo...\n");
 
@@ -400,7 +400,7 @@ audio_mono_to_stereo_short (gshort * input, gshort * output, gint size)
 }
 
 static void
-audio_mono_to_stereo_float (gfloat * input, gfloat * output, gint size)
+audio_mono_to_stereo_float (gfloat *input, gfloat *output, gint size)
 {
   debug_print (2, "Converting float values to stereo...\n");
 
@@ -414,7 +414,7 @@ audio_mono_to_stereo_float (gfloat * input, gfloat * output, gint size)
 }
 
 static void
-audio_mono_to_stereo_int (gint32 * input, gint32 * output, gint size)
+audio_mono_to_stereo_int (gint32 *input, gint32 *output, gint size)
 {
   debug_print (2, "Converting int values to stereo...\n");
 
@@ -428,8 +428,8 @@ audio_mono_to_stereo_int (gint32 * input, gint32 * output, gint size)
 }
 
 static void
-sample_set_sample_info (struct sample_info *sample_info, SNDFILE * sndfile,
-			SF_INFO * sf_info)
+sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
+			SF_INFO *sf_info)
 {
   struct SF_CHUNK_INFO chunk_info;
   SF_CHUNK_ITERATOR *chunk_iter;
@@ -494,7 +494,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE * sndfile,
 }
 
 gint
-sample_load_sample_info (const gchar * path, struct sample_info *sample_info)
+sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -539,8 +539,8 @@ sample_check_and_fix_loop_points (struct sample_info *sample_info)
 // In case of failure, if control->data is NULL is freed.
 
 static gint
-sample_load_raw (void *data, SF_VIRTUAL_IO * sf_virtual_io,
-		 struct job_control *control, GByteArray * sample,
+sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
+		 struct job_control *control, GByteArray *sample,
 		 struct sample_info *sample_info_dst, sample_load_cb cb,
 		 gpointer cb_data)
 {
@@ -906,7 +906,7 @@ cleanup:
 }
 
 gint
-sample_load_from_array (GByteArray * wave, GByteArray * sample,
+sample_load_from_array (GByteArray *wave, GByteArray *sample,
 			struct job_control *control,
 			struct sample_info *sample_info_dst)
 {
@@ -919,7 +919,7 @@ sample_load_from_array (GByteArray * wave, GByteArray * sample,
 }
 
 gint
-sample_load_from_file_with_cb (const gchar * path, GByteArray * sample,
+sample_load_from_file_with_cb (const gchar *path, GByteArray *sample,
 			       struct job_control *control,
 			       struct sample_info *sample_info_dst,
 			       sample_load_cb cb, gpointer cb_data)
@@ -936,7 +936,7 @@ sample_load_from_file_with_cb (const gchar * path, GByteArray * sample,
 }
 
 gint
-sample_load_from_file (const gchar * path, GByteArray * sample,
+sample_load_from_file (const gchar *path, GByteArray *sample,
 		       struct job_control *control,
 		       struct sample_info *sample_info_dst)
 {

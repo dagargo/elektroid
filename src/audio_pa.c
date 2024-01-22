@@ -33,14 +33,14 @@ static const pa_buffer_attr BUFFER_ATTR = {
 };
 
 static void
-audio_success_cb (pa_stream * stream, int success, void *data)
+audio_success_cb (pa_stream *stream, int success, void *data)
 {
   struct audio *audio = data;
   pa_threaded_mainloop_signal (audio->mainloop, 0);
 }
 
 static void
-audio_wait_success (struct audio *audio, pa_operation * operation)
+audio_wait_success (struct audio *audio, pa_operation *operation)
 {
   if (!operation)
     {
@@ -54,7 +54,7 @@ audio_wait_success (struct audio *audio, pa_operation * operation)
 }
 
 static void
-audio_read_callback (pa_stream * stream, size_t size, void *data)
+audio_read_callback (pa_stream *stream, size_t size, void *data)
 {
   const void *buffer;
   struct audio *audio = data;
@@ -72,7 +72,7 @@ audio_read_callback (pa_stream * stream, size_t size, void *data)
 }
 
 static void
-audio_write_callback (pa_stream * stream, size_t size, void *data)
+audio_write_callback (pa_stream *stream, size_t size, void *data)
 {
   struct audio *audio = data;
   void *buffer;
@@ -85,7 +85,7 @@ audio_write_callback (pa_stream * stream, size_t size, void *data)
 }
 
 void
-audio_stop_and_flush_stream (struct audio *audio, pa_stream * stream)
+audio_stop_and_flush_stream (struct audio *audio, pa_stream *stream)
 {
   pa_operation *operation;
 
@@ -241,7 +241,7 @@ audio_start_recording (struct audio *audio, guint options,
 }
 
 static void
-audio_set_sink_volume (pa_context * context, const pa_sink_input_info * info,
+audio_set_sink_volume (pa_context *context, const pa_sink_input_info *info,
 		       int eol, void *data)
 {
   struct audio *audio = data;
@@ -255,7 +255,7 @@ audio_set_sink_volume (pa_context * context, const pa_sink_input_info * info,
 }
 
 static void
-audio_notify (pa_context * context, pa_subscription_event_type_t type,
+audio_notify (pa_context *context, pa_subscription_event_type_t type,
 	      uint32_t index, void *data)
 {
   struct audio *audio = data;
@@ -279,7 +279,7 @@ audio_notify (pa_context * context, pa_subscription_event_type_t type,
 }
 
 static void
-audio_connect_playback_stream_callback (pa_stream * stream, void *data)
+audio_connect_playback_stream_callback (pa_stream *stream, void *data)
 {
   struct audio *audio = data;
 
@@ -294,7 +294,7 @@ audio_connect_playback_stream_callback (pa_stream * stream, void *data)
 }
 
 static void
-audio_connect_record_stream_callback (pa_stream * stream, void *data)
+audio_connect_record_stream_callback (pa_stream *stream, void *data)
 {
   struct audio *audio = data;
 
@@ -307,7 +307,7 @@ audio_connect_record_stream_callback (pa_stream * stream, void *data)
 }
 
 void
-audio_server_info_callback (pa_context * context, const pa_server_info * info,
+audio_server_info_callback (pa_context *context, const pa_server_info *info,
 			    void *data)
 {
   struct audio *audio = data;
@@ -358,7 +358,7 @@ audio_server_info_callback (pa_context * context, const pa_server_info * info,
 }
 
 static void
-audio_context_callback (pa_context * context, void *data)
+audio_context_callback (pa_context *context, void *data)
 {
   struct audio *audio = data;
   if (pa_context_get_state (context) == PA_CONTEXT_READY)

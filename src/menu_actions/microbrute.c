@@ -44,7 +44,7 @@ static GtkWidget *persistent_changes;
 static gboolean loading;
 
 static void
-microbrute_set_combo_value (GtkWidget * combo, guint8 value)
+microbrute_set_combo_value (GtkWidget *combo, guint8 value)
 {
   guint v;
   gint index = 0;
@@ -72,7 +72,7 @@ microbrute_set_combo_value (GtkWidget * combo, guint8 value)
 }
 
 static void
-microbrute_configure_callback (GtkWidget * object, gpointer data)
+microbrute_configure_callback (GtkWidget *object, gpointer data)
 {
   guint8 v;
   struct backend *backend = data;
@@ -118,7 +118,7 @@ microbrute_configure_callback (GtkWidget * object, gpointer data)
 }
 
 static void
-microbrute_combo_changed (GtkComboBox * combo, struct backend *backend,
+microbrute_combo_changed (GtkComboBox *combo, struct backend *backend,
 			  guint8 param)
 {
   guint value;
@@ -149,19 +149,19 @@ microbrute_switch_state_set (struct backend *backend, guint8 param,
 }
 
 static void
-microbrute_note_priority_changed (GtkComboBox * combo, gpointer data)
+microbrute_note_priority_changed (GtkComboBox *combo, gpointer data)
 {
   microbrute_combo_changed (combo, data, MICROBRUTE_NOTE_PRIORITY);
 }
 
 static void
-microbrute_vel_response_changed (GtkComboBox * combo, gpointer data)
+microbrute_vel_response_changed (GtkComboBox *combo, gpointer data)
 {
   microbrute_combo_changed (combo, data, MICROBRUTE_VEL_RESPONSE);
 }
 
 static gboolean
-microbrute_lfo_key_retrigger_state_set (GtkSwitch * s, gboolean state,
+microbrute_lfo_key_retrigger_state_set (GtkSwitch *s, gboolean state,
 					gpointer data)
 {
   return microbrute_switch_state_set (data, MICROBRUTE_LFO_KEY_RETRIGGER,
@@ -169,7 +169,7 @@ microbrute_lfo_key_retrigger_state_set (GtkSwitch * s, gboolean state,
 }
 
 static gboolean
-microbrute_envelope_legato_state_set (GtkSwitch * s, gboolean state,
+microbrute_envelope_legato_state_set (GtkSwitch *s, gboolean state,
 				      gpointer data)
 {
   return microbrute_switch_state_set (data, MICROBRUTE_ENVELOPE_LEGATO,
@@ -177,7 +177,7 @@ microbrute_envelope_legato_state_set (GtkSwitch * s, gboolean state,
 }
 
 static void
-microbrute_bend_range_value_changed (GtkSpinButton * spin, gpointer data)
+microbrute_bend_range_value_changed (GtkSpinButton *spin, gpointer data)
 {
   gboolean sysex;
   guint8 value;
@@ -191,67 +191,67 @@ microbrute_bend_range_value_changed (GtkSpinButton * spin, gpointer data)
 }
 
 static void
-microbrute_gate_length_changed (GtkComboBox * combo, gpointer data)
+microbrute_gate_length_changed (GtkComboBox *combo, gpointer data)
 {
   microbrute_combo_changed (combo, data, MICROBRUTE_GATE_LENGTH);
 }
 
 static void
-microbrute_synchronization_changed (GtkComboBox * combo, gpointer data)
+microbrute_synchronization_changed (GtkComboBox *combo, gpointer data)
 {
   microbrute_combo_changed (combo, data, MICROBRUTE_SYNC);
 }
 
 static void
-microbrute_tx_channel_changed (GtkComboBox * combo, gpointer data)
+microbrute_tx_channel_changed (GtkComboBox *combo, gpointer data)
 {
   microbrute_combo_changed (combo, data, MICROBRUTE_TX_CHANNEL);
 }
 
 static void
-microbrute_rx_channel_changed (GtkComboBox * combo, gpointer data)
+microbrute_rx_channel_changed (GtkComboBox *combo, gpointer data)
 {
   microbrute_combo_changed (combo, data, MICROBRUTE_RX_CHANNEL);
 }
 
 static void
-microbrute_play_changed (GtkComboBox * combo, gpointer data)
+microbrute_play_changed (GtkComboBox *combo, gpointer data)
 {
   microbrute_combo_changed (combo, data, MICROBRUTE_PLAY_ON);
 }
 
 static void
-microbrute_retriggering_changed (GtkComboBox * combo, gpointer data)
+microbrute_retriggering_changed (GtkComboBox *combo, gpointer data)
 {
   microbrute_combo_changed (combo, data, MICROBRUTE_RETRIGGERING);
 }
 
 static void
-microbrute_next_sequence_changed (GtkComboBox * combo, gpointer data)
+microbrute_next_sequence_changed (GtkComboBox *combo, gpointer data)
 {
   microbrute_combo_changed (combo, data, MICROBRUTE_NEXT_SEQUENCE);
 }
 
 static void
-microbrute_step_on_changed (GtkComboBox * combo, gpointer data)
+microbrute_step_on_changed (GtkComboBox *combo, gpointer data)
 {
   microbrute_combo_changed (combo, data, MICROBRUTE_STEP_ON);
 }
 
 static void
-microbrute_step_length_changed (GtkComboBox * combo, gpointer data)
+microbrute_step_length_changed (GtkComboBox *combo, gpointer data)
 {
   microbrute_combo_changed (combo, data, MICROBRUTE_STEP_LENGTH);
 }
 
 static void
-microbrute_assistant_close (GtkWidget * assistant, gpointer data)
+microbrute_assistant_close (GtkWidget *assistant, gpointer data)
 {
   gtk_widget_hide (assistant);
 }
 
 static void
-microbrute_assistant_prepare (GtkAssistant * assistant, GtkWidget * page,
+microbrute_assistant_prepare (GtkAssistant *assistant, GtkWidget *page,
 			      gpointer data)
 {
   struct backend *backend = data;
@@ -277,7 +277,7 @@ microbrute_assistant_prepare (GtkAssistant * assistant, GtkWidget * page,
 }
 
 static void
-microbrute_configure_gui (struct backend *backend, GtkWindow * parent)
+microbrute_configure_gui (struct backend *backend, GtkWindow *parent)
 {
   if (config_window)
     {
@@ -376,8 +376,8 @@ microbrute_configure_gui (struct backend *backend, GtkWindow * parent)
 }
 
 struct menu_action *
-microbrute_configuration_init (struct backend *backend, GtkBuilder * builder,
-			       GtkWindow * parent)
+microbrute_configuration_init (struct backend *backend, GtkBuilder *builder,
+			       GtkWindow *parent)
 {
   struct menu_action *ma;
 
@@ -397,15 +397,15 @@ microbrute_configuration_init (struct backend *backend, GtkBuilder * builder,
 }
 
 static void
-microbrute_calibration_callback (GtkWidget * object, gpointer data)
+microbrute_calibration_callback (GtkWidget *object, gpointer data)
 {
   gtk_widget_show (calibration_assistant);
 }
 
 
 struct menu_action *
-microbrute_calibration_init (struct backend *backend, GtkBuilder * builder,
-			     GtkWindow * parent)
+microbrute_calibration_init (struct backend *backend, GtkBuilder *builder,
+			     GtkWindow *parent)
 {
   struct menu_action *ma;
 

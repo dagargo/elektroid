@@ -59,7 +59,7 @@ enum phatty_fs
 };
 
 static gchar
-phatty_decode_char (guint8 * data, gint position)
+phatty_decode_char (guint8 *data, gint position)
 {
   gint index;
   gint k = (3 * (position / 2)) + 23;
@@ -82,7 +82,7 @@ phatty_decode_char (guint8 * data, gint position)
 }
 
 static void
-phatty_encode_char (guint8 * data, gchar c, gint position)
+phatty_encode_char (guint8 *data, gchar c, gint position)
 {
   gchar *s = PHATTY_ALPHABET;
   gint k, index = 0;
@@ -114,7 +114,7 @@ phatty_encode_char (guint8 * data, gchar c, gint position)
 }
 
 void
-phatty_set_preset_name (guint8 * preset, const gchar * preset_name)
+phatty_set_preset_name (guint8 *preset, const gchar *preset_name)
 {
   gint i;
   const gchar *c = preset_name;
@@ -129,7 +129,7 @@ phatty_set_preset_name (guint8 * preset, const gchar * preset_name)
 }
 
 void
-phatty_get_preset_name (guint8 * preset, gchar * preset_name)
+phatty_get_preset_name (guint8 *preset, gchar *preset_name)
 {
   gchar *c = preset_name;
   for (gint i = 0; i < MOOG_NAME_LEN; i++, c++)
@@ -154,8 +154,8 @@ phatty_get_preset_name (guint8 * preset, gchar * preset_name)
 static gchar *
 phatty_get_download_path (struct backend *backend,
 			  const struct fs_operations *ops,
-			  const gchar * dst_dir, const gchar * src_path,
-			  GByteArray * preset)
+			  const gchar *dst_dir, const gchar *src_path,
+			  GByteArray *preset)
 {
   gchar preset_name[MOOG_NAME_LEN + 1];
   gchar *path, *name;
@@ -271,7 +271,7 @@ phatty_next_preset_dentry (struct item_iterator *iter)
 
 static gint
 phatty_read_dir (struct backend *backend, struct item_iterator *iter,
-		 const gchar * path, const gchar ** extensions)
+		 const gchar *path, const gchar **extensions)
 {
   gint err = 0;
 
@@ -317,8 +317,8 @@ phatty_get_id_as_slot (struct item *item, struct backend *backend)
 }
 
 static gint
-phatty_download (struct backend *backend, const gchar * path,
-		 GByteArray * output, struct job_control *control)
+phatty_download (struct backend *backend, const gchar *path,
+		 GByteArray *output, struct job_control *control)
 {
   guint8 id;
   gint err = 0;
@@ -361,8 +361,8 @@ end:
 }
 
 static gint
-phatty_upload (struct backend *backend, const gchar * path,
-	       GByteArray * input, struct job_control *control)
+phatty_upload (struct backend *backend, const gchar *path,
+	       GByteArray *input, struct job_control *control)
 {
   guint id;
 
@@ -391,7 +391,7 @@ phatty_upload (struct backend *backend, const gchar * path,
 }
 
 static gint
-phatty_rename (struct backend *backend, const gchar * src, const gchar * dst)
+phatty_rename (struct backend *backend, const gchar *src, const gchar *dst)
 {
   guint id;
   gint err;
@@ -451,7 +451,7 @@ static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
 
 static gint
 phatty_scale_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar * path, const gchar ** extensions)
+		       const gchar *path, const gchar **extensions)
 {
   struct common_simple_read_dir_data *data;
 
@@ -471,8 +471,8 @@ phatty_scale_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
-phatty_scale_upload (struct backend *backend, const gchar * path,
-		     GByteArray * input, struct job_control *control)
+phatty_scale_upload (struct backend *backend, const gchar *path,
+		     GByteArray *input, struct job_control *control)
 {
   guint id;
 

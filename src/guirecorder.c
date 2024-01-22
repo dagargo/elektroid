@@ -41,7 +41,7 @@ guirecorder_monitor_notifier (gpointer recorder, gdouble value)
 }
 
 guint
-guirecorder_get_channel_mask (GtkWidget * widget)
+guirecorder_get_channel_mask (GtkWidget *widget)
 {
   guint channel_mask = 0;
   GtkTreeIter iter;
@@ -90,7 +90,7 @@ guirecorder_set_channels_masks (struct guirecorder *guirecorder,
 }
 
 void
-guirecorder_channels_changed (GtkWidget * object, gpointer data)
+guirecorder_channels_changed (GtkWidget *object, gpointer data)
 {
   struct audio *audio = data;
   guint options = guirecorder_get_channel_mask (object) | RECORD_MONITOR_ONLY;

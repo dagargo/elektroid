@@ -56,8 +56,8 @@ browser_widget_set_insensitive (gpointer widget, gpointer data)
 }
 
 gint
-browser_sort_by_name (GtkTreeModel * model,
-		      GtkTreeIter * a, GtkTreeIter * b, gpointer data)
+browser_sort_by_name (GtkTreeModel *model,
+		      GtkTreeIter *a, GtkTreeIter *b, gpointer data)
 {
   struct item itema;
   struct item itemb;
@@ -83,7 +83,7 @@ browser_sort_by_name (GtkTreeModel * model,
 }
 
 gint
-browser_sort_by_id (GtkTreeModel * model, GtkTreeIter * a, GtkTreeIter * b,
+browser_sort_by_id (GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b,
 		    gpointer data)
 {
   struct item itema;
@@ -106,7 +106,7 @@ browser_sort_by_id (GtkTreeModel * model, GtkTreeIter * a, GtkTreeIter * b,
 }
 
 void
-browser_set_item (GtkTreeModel * model, GtkTreeIter * iter, struct item *item)
+browser_set_item (GtkTreeModel *model, GtkTreeIter *iter, struct item *item)
 {
   gchar *name;
   gtk_tree_model_get (model, iter, BROWSER_LIST_STORE_TYPE_FIELD, &item->type,
@@ -118,7 +118,7 @@ browser_set_item (GtkTreeModel * model, GtkTreeIter * iter, struct item *item)
 }
 
 void
-browser_set_selected_row_iter (struct browser *browser, GtkTreeIter * iter)
+browser_set_selected_row_iter (struct browser *browser, GtkTreeIter *iter)
 {
   GtkTreeModel *model;
   GtkTreeSelection *selection =
@@ -148,21 +148,21 @@ browser_clear (struct browser *browser)
 }
 
 void
-browser_selection_changed (GtkTreeSelection * selection, gpointer data)
+browser_selection_changed (GtkTreeSelection *selection, gpointer data)
 {
   struct browser *browser = data;
   browser->check_selection (NULL);
 }
 
 void
-browser_refresh (GtkWidget * object, gpointer data)
+browser_refresh (GtkWidget *object, gpointer data)
 {
   struct browser *browser = data;
   browser_load_dir (browser);
 }
 
 void
-browser_go_up (GtkWidget * object, gpointer data)
+browser_go_up (GtkWidget *object, gpointer data)
 {
   struct browser *browser = data;
 
@@ -182,8 +182,8 @@ browser_go_up (GtkWidget * object, gpointer data)
 }
 
 void
-browser_item_activated (GtkTreeView * view, GtkTreePath * path,
-			GtkTreeViewColumn * column, gpointer data)
+browser_item_activated (GtkTreeView *view, GtkTreePath *path,
+			GtkTreeViewColumn *column, gpointer data)
 {
   GtkTreeIter iter;
   struct item item;
@@ -482,8 +482,8 @@ browser_load_dir_runner_update_ui (gpointer data)
 
 static void
 browser_iterate_dir_add (struct browser *browser, struct item_iterator *iter,
-			 const gchar * icon, struct item *item,
-			 gchar * rel_path)
+			 const gchar *icon, struct item *item,
+			 gchar *rel_path)
 {
   if (browser->filter)
     {
@@ -504,7 +504,7 @@ browser_iterate_dir_add (struct browser *browser, struct item_iterator *iter,
 
 static void
 browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
-		     const gchar * icon)
+		     const gchar *icon)
 {
   gboolean loading = TRUE;
 
@@ -521,9 +521,9 @@ browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
 }
 
 static void
-browser_iterate_dir_recursive (struct browser *browser, const gchar * rel_dir,
-			       struct item_iterator *iter, const gchar * icon,
-			       const gchar ** extensions)
+browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
+			       struct item_iterator *iter, const gchar *icon,
+			       const gchar **extensions)
 {
   gint err;
   gchar *child_dir, *child_rel_dir;
@@ -804,7 +804,7 @@ browser_remote_set_columns_visibility ()
 }
 
 void
-browser_open_search (GtkWidget * widget, gpointer data)
+browser_open_search (GtkWidget *widget, gpointer data)
 {
   struct browser *browser = data;
   gtk_stack_set_visible_child_name (GTK_STACK (browser->buttons_stack),
@@ -819,7 +819,7 @@ browser_open_search (GtkWidget * widget, gpointer data)
 }
 
 void
-browser_close_search (GtkSearchEntry * entry, gpointer data)
+browser_close_search (GtkSearchEntry *entry, gpointer data)
 {
   struct browser *browser = data;
   browser_reset_search (browser);
@@ -828,7 +828,7 @@ browser_close_search (GtkSearchEntry * entry, gpointer data)
 }
 
 void
-browser_search_changed (GtkSearchEntry * entry, gpointer data)
+browser_search_changed (GtkSearchEntry *entry, gpointer data)
 {
   struct browser *browser = data;
   const gchar *filter = gtk_entry_get_text (GTK_ENTRY (entry));
@@ -969,8 +969,8 @@ browser_remote_check_selection (gpointer data)
 }
 
 void
-browser_local_init (struct local_browser *local_browser, GtkBuilder * builder,
-		    gchar * local_dir)
+browser_local_init (struct local_browser *local_browser, GtkBuilder *builder,
+		    gchar *local_dir)
 {
   local_browser->browser.name = "local";
   local_browser->browser.view =
@@ -1064,7 +1064,7 @@ browser_local_init (struct local_browser *local_browser, GtkBuilder * builder,
 
 void
 browser_remote_init (struct remote_browser *remote_browser,
-		     GtkBuilder * builder, struct backend *backend)
+		     GtkBuilder *builder, struct backend *backend)
 {
   remote_browser->browser.name = "remote";
   remote_browser->browser.view =

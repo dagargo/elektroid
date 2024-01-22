@@ -53,7 +53,7 @@ backend_destroy_int (struct backend *backend)
 }
 
 gint
-backend_init_int (struct backend *backend, const gchar * id)
+backend_init_int (struct backend *backend, const gchar *id)
 {
   struct RtMidiWrapper *inputp;
   struct RtMidiWrapper *outputp;
@@ -168,7 +168,7 @@ backend_tx_sysex_internal (struct backend *backend,
 }
 
 ssize_t
-backend_tx_raw (struct backend *backend, guint8 * data, guint len)
+backend_tx_raw (struct backend *backend, guint8 *data, guint len)
 {
   struct sysex_transfer transfer;
   transfer.raw = g_byte_array_sized_new (len);
@@ -192,7 +192,7 @@ backend_rx_drain_int (struct backend *backend)
 }
 
 ssize_t
-backend_rx_raw (struct backend *backend, guint8 * buffer, guint len)
+backend_rx_raw (struct backend *backend, guint8 *buffer, guint len)
 {
   size_t size = len;
   rtmidi_in_get_message (backend->inputp, buffer, &size);
@@ -216,7 +216,7 @@ backend_check_int (struct backend *backend)
 }
 
 void
-backend_fill_devices_array (GArray * devices)
+backend_fill_devices_array (GArray *devices)
 {
   struct RtMidiWrapper *inputp;
   struct RtMidiWrapper *outputp;

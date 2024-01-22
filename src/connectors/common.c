@@ -24,15 +24,14 @@
 gchar *
 common_slot_get_upload_path (struct backend *backend,
 			     const struct fs_operations *ops,
-			     const gchar * dst_path, const gchar * src_path)
+			     const gchar *dst_path, const gchar *src_path)
 {
   //In SLOT mode, dst_path includes the index, ':' and the item name.
   return strdup (dst_path);
 }
 
 gint
-common_slot_get_id_name_from_path (const char *path, guint * id,
-				   gchar ** name)
+common_slot_get_id_name_from_path (const char *path, guint *id, gchar **name)
 {
   gint err = 0;
   gchar *basename, *remainder;
@@ -113,7 +112,7 @@ common_print_item (struct item_iterator *iter, struct backend *backend,
 }
 
 void
-common_midi_program_change (struct backend *backend, const gchar * dir,
+common_midi_program_change (struct backend *backend, const gchar *dir,
 			    struct item *item)
 {
   if (item->id > BE_MAX_MIDI_PROGRAMS)
@@ -145,7 +144,7 @@ common_simple_next_dentry (struct item_iterator *iter)
 }
 
 gint
-common_data_upload (struct backend *backend, GByteArray * msg,
+common_data_upload (struct backend *backend, GByteArray *msg,
 		    struct job_control *control)
 {
   gint err = 0;
@@ -184,8 +183,8 @@ cleanup:
 
 
 gint
-common_data_download_part (struct backend *backend, GByteArray * tx_msg,
-			   GByteArray ** rx_msg, struct job_control *control)
+common_data_download_part (struct backend *backend, GByteArray *tx_msg,
+			   GByteArray **rx_msg, struct job_control *control)
 {
   gint err = 0;
   gboolean active;
@@ -218,8 +217,8 @@ cleanup:
 }
 
 gint
-common_data_download (struct backend *backend, GByteArray * tx_msg,
-		      GByteArray ** rx_msg, struct job_control *control)
+common_data_download (struct backend *backend, GByteArray *tx_msg,
+		      GByteArray **rx_msg, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
@@ -229,9 +228,9 @@ common_data_download (struct backend *backend, GByteArray * tx_msg,
 gchar *
 common_get_download_path_with_params (struct backend *backend,
 				      const struct fs_operations *ops,
-				      const gchar * dst_dir,
+				      const gchar *dst_dir,
 				      guint id, guint digits,
-				      const gchar * name)
+				      const gchar *name)
 {
   gchar *path;
   GString *str = g_string_new (NULL);
@@ -254,8 +253,8 @@ common_get_download_path_with_params (struct backend *backend,
 gchar *
 common_get_download_path (struct backend *backend,
 			  const struct fs_operations *ops,
-			  const gchar * dst_dir, const gchar * src_path,
-			  GByteArray * sysex)
+			  const gchar *dst_dir, const gchar *src_path,
+			  GByteArray *sysex)
 {
   guint id;
   common_slot_get_id_name_from_path (src_path, &id, NULL);
@@ -264,7 +263,7 @@ common_get_download_path (struct backend *backend,
 }
 
 void
-common_remove_slot_name_from_path (gchar * path)
+common_remove_slot_name_from_path (gchar *path)
 {
   gchar *c;
   gint i, len = strlen (path);

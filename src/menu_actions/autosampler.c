@@ -146,7 +146,7 @@ autosampler_runner (gpointer user_data)
 }
 
 static void
-autosampler_callback (GtkWidget * object, gpointer user_data)
+autosampler_callback (GtkWidget *object, gpointer user_data)
 {
   gint res;
   struct autosampler_data *data = g_malloc (sizeof (struct autosampler_data));
@@ -203,14 +203,14 @@ autosampler_callback (GtkWidget * object, gpointer user_data)
 }
 
 static void
-autosampler_dialog_name_changed (GtkWidget * object, gpointer data)
+autosampler_dialog_name_changed (GtkWidget *object, gpointer data)
 {
   size_t len = strlen (gtk_entry_get_text (autosampler_dialog_name_entry));
   gtk_widget_set_sensitive (autosampler_dialog_start_button, len > 0);
 }
 
 static void
-autosampler_configure_gui (struct backend *backend, GtkBuilder * builder)
+autosampler_configure_gui (struct backend *backend, GtkBuilder *builder)
 {
   if (autosampler_dialog)
     {
@@ -262,8 +262,8 @@ autosampler_configure_gui (struct backend *backend, GtkBuilder * builder)
 }
 
 struct menu_action *
-autosampler_init (struct backend *backend, GtkBuilder * builder,
-		  GtkWindow * parent)
+autosampler_init (struct backend *backend, GtkBuilder *builder,
+		  GtkWindow *parent)
 {
   struct menu_action *ma = NULL;
 

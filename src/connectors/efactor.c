@@ -104,7 +104,7 @@ efactor_new_op_msg (guint8 op)
 }
 
 static GByteArray *
-efactor_new_get_msg (guint8 type, const gchar * key)
+efactor_new_get_msg (guint8 type, const gchar *key)
 {
   GByteArray *tx_msg =
     g_byte_array_sized_new (sizeof (EFACTOR_REQUEST_HEADER));
@@ -119,8 +119,8 @@ efactor_new_get_msg (guint8 type, const gchar * key)
 static gchar *
 efactor_get_download_path (struct backend *backend,
 			   const struct fs_operations *ops,
-			   const gchar * dst_dir, const gchar * src_path,
-			   GByteArray * preset)
+			   const gchar *dst_dir, const gchar *src_path,
+			   GByteArray *preset)
 {
   guint id;
   gchar *path, *name, **lines;
@@ -169,7 +169,7 @@ efactor_next_dentry (struct item_iterator *iter)
 
 static gint
 efactor_read_dir (struct backend *backend, struct item_iterator *iter,
-		  const gchar * path, const gchar ** extensions)
+		  const gchar *path, const gchar **extensions)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -216,8 +216,8 @@ efactor_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
-efactor_download (struct backend *backend, const gchar * src_path,
-		  GByteArray * output, struct job_control *control)
+efactor_download (struct backend *backend, const gchar *src_path,
+		  GByteArray *output, struct job_control *control)
 {
   gint err = 0, id;
   gchar *name;
@@ -279,8 +279,8 @@ efactor_download (struct backend *backend, const gchar * src_path,
 }
 
 static gint
-efactor_upload (struct backend *backend, const gchar * path,
-		GByteArray * input, struct job_control *control)
+efactor_upload (struct backend *backend, const gchar *path,
+		GByteArray *input, struct job_control *control)
 {
   gint err = 0, i, id, num;
   gchar *name, *b;
@@ -344,7 +344,7 @@ end:
 }
 
 static gint
-efactor_rename (struct backend *backend, const gchar * src, const gchar * dst)
+efactor_rename (struct backend *backend, const gchar *src, const gchar *dst)
 {
   GByteArray *preset, *rx_msg;
   gint err;

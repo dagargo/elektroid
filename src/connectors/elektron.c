@@ -242,7 +242,7 @@ elektron_free_iterator_data (void *iter_data)
 }
 
 static inline void
-elektron_get_utf8 (gchar * dst, const gchar * s)
+elektron_get_utf8 (gchar *dst, const gchar *s)
 {
   gchar *aux = g_convert (s, -1, "UTF8", "CP1252", NULL, NULL, NULL);
   snprintf (dst, LABEL_MAX, "%s", aux);
@@ -250,19 +250,19 @@ elektron_get_utf8 (gchar * dst, const gchar * s)
 }
 
 static inline gchar *
-elektron_get_cp1252 (const gchar * s)
+elektron_get_cp1252 (const gchar *s)
 {
   return g_convert (s, -1, "CP1252", "UTF8", NULL, NULL, NULL);
 }
 
 static inline guint8
-elektron_get_msg_status (const GByteArray * msg)
+elektron_get_msg_status (const GByteArray *msg)
 {
   return msg->data[5];
 }
 
 static inline gchar *
-elektron_get_msg_string (const GByteArray * msg)
+elektron_get_msg_string (const GByteArray *msg)
 {
   return (gchar *) & msg->data[6];
 }
@@ -309,7 +309,7 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
 }
 
 static gint
-elektron_init_iterator (struct item_iterator *iter, GByteArray * msg,
+elektron_init_iterator (struct item_iterator *iter, GByteArray *msg,
 			iterator_next next, enum elektron_fs fs,
 			gint32 max_slots)
 {
@@ -331,7 +331,7 @@ elektron_init_iterator (struct item_iterator *iter, GByteArray * msg,
 }
 
 static GByteArray *
-elektron_decode_payload (const GByteArray * src)
+elektron_decode_payload (const GByteArray *src)
 {
   GByteArray *dst;
   int i, j, k, dst_len;
@@ -356,7 +356,7 @@ elektron_decode_payload (const GByteArray * src)
 }
 
 static GByteArray *
-elektron_encode_payload (const GByteArray * src)
+elektron_encode_payload (const GByteArray *src)
 {
   GByteArray *dst;
   int i, j, k, dst_len;
@@ -388,7 +388,7 @@ elektron_encode_payload (const GByteArray * src)
 }
 
 static GByteArray *
-elektron_msg_to_raw (const GByteArray * msg)
+elektron_msg_to_raw (const GByteArray *msg)
 {
   GByteArray *encoded;
   GByteArray *sysex = g_byte_array_new ();
@@ -403,8 +403,8 @@ elektron_msg_to_raw (const GByteArray * msg)
 }
 
 static gint
-elektron_get_smplrw_info_from_msg (GByteArray * info_msg, guint32 * id,
-				   guint * size)
+elektron_get_smplrw_info_from_msg (GByteArray *info_msg, guint32 *id,
+				   guint *size)
 {
   if (elektron_get_msg_status (info_msg))
     {
@@ -429,7 +429,7 @@ elektron_get_smplrw_info_from_msg (GByteArray * info_msg, guint32 * id,
 }
 
 static GByteArray *
-elektron_new_msg (const guint8 * data, guint len)
+elektron_new_msg (const guint8 *data, guint len)
 {
   GByteArray *msg = g_byte_array_new ();
 
@@ -440,7 +440,7 @@ elektron_new_msg (const guint8 * data, guint len)
 }
 
 static GByteArray *
-elektron_new_msg_uint8 (const guint8 * data, guint len, guint8 type)
+elektron_new_msg_uint8 (const guint8 *data, guint len, guint8 type)
 {
   GByteArray *msg = elektron_new_msg (data, len);
 
@@ -450,7 +450,7 @@ elektron_new_msg_uint8 (const guint8 * data, guint len, guint8 type)
 }
 
 static GByteArray *
-elektron_new_msg_path (const guint8 * data, guint len, const gchar * path)
+elektron_new_msg_path (const guint8 *data, guint len, const gchar *path)
 {
   GByteArray *msg;
   gchar *path_cp1252 = elektron_get_cp1252 (path);
@@ -468,7 +468,7 @@ elektron_new_msg_path (const guint8 * data, guint len, const gchar * path)
 }
 
 static GByteArray *
-elektron_new_msg_close_common_read (const guint8 * data, guint len, guint id)
+elektron_new_msg_close_common_read (const guint8 *data, guint len, guint id)
 {
   guint32 aux32;
   GByteArray *msg = elektron_new_msg (data, len);
@@ -499,8 +499,8 @@ elektron_new_msg_close_raw_read (guint id)
 }
 
 static GByteArray *
-elektron_new_msg_open_common_write (const guint8 * data, guint len,
-				    const gchar * path, guint bytes)
+elektron_new_msg_open_common_write (const guint8 *data, guint len,
+				    const gchar *path, guint bytes)
 {
   guint32 aux32;
   GByteArray *msg = elektron_new_msg_path (data, len, path);
@@ -512,7 +512,7 @@ elektron_new_msg_open_common_write (const guint8 * data, guint len,
 }
 
 static GByteArray *
-elektron_new_msg_open_sample_write (const gchar * path, guint bytes)
+elektron_new_msg_open_sample_write (const gchar *path, guint bytes)
 {
   return
     elektron_new_msg_open_common_write (FS_SAMPLE_OPEN_FILE_WRITER_REQUEST,
@@ -525,7 +525,7 @@ elektron_new_msg_open_sample_write (const gchar * path, guint bytes)
 }
 
 static GByteArray *
-elektron_new_msg_open_raw_write (const gchar * path, guint bytes)
+elektron_new_msg_open_raw_write (const gchar *path, guint bytes)
 {
   return elektron_new_msg_open_common_write (FS_RAW_OPEN_FILE_WRITER_REQUEST,
 					     sizeof
@@ -535,7 +535,7 @@ elektron_new_msg_open_raw_write (const gchar * path, guint bytes)
 
 
 static GByteArray *
-elektron_new_msg_list (const gchar * path, int32_t start_index,
+elektron_new_msg_list (const gchar *path, int32_t start_index,
 		       int32_t end_index, gboolean all)
 {
   guint32 aux32;
@@ -555,8 +555,8 @@ elektron_new_msg_list (const gchar * path, int32_t start_index,
 }
 
 static GByteArray *
-elektron_new_msg_write_sample_blk (guint id, GByteArray * sample,
-				   guint * total, guint seq, void *data)
+elektron_new_msg_write_sample_blk (guint id, GByteArray *sample,
+				   guint *total, guint seq, void *data)
 {
   guint32 aux32;
   guint16 aux16, *aux16p;
@@ -612,7 +612,7 @@ elektron_new_msg_write_sample_blk (guint id, GByteArray * sample,
 }
 
 static GByteArray *
-elektron_new_msg_write_raw_blk (guint id, GByteArray * raw, guint * total,
+elektron_new_msg_write_raw_blk (guint id, GByteArray *raw, guint *total,
 				guint seq, void *data)
 {
   gint len;
@@ -637,7 +637,7 @@ elektron_new_msg_write_raw_blk (guint id, GByteArray * raw, guint * total,
 }
 
 static GByteArray *
-elektron_new_msg_close_common_write (const guint8 * data, guint len,
+elektron_new_msg_close_common_write (const guint8 *data, guint len,
 				     guint id, guint bytes)
 {
   guint32 aux32;
@@ -675,7 +675,7 @@ elektron_new_msg_close_raw_write (guint id, guint bytes)
 }
 
 static GByteArray *
-elektron_new_msg_read_common_blk (const guint8 * data, guint len, guint id,
+elektron_new_msg_read_common_blk (const guint8 *data, guint len, guint id,
 				  guint start, guint size)
 {
   guint32 aux;
@@ -709,7 +709,7 @@ elektron_new_msg_read_raw_blk (guint id, guint start, guint size)
 }
 
 static GByteArray *
-elektron_raw_to_msg (GByteArray * sysex)
+elektron_raw_to_msg (GByteArray *sysex)
 {
   GByteArray *msg;
   GByteArray *payload;
@@ -731,7 +731,7 @@ elektron_raw_to_msg (GByteArray * sysex)
 }
 
 static gint
-elektron_tx (struct backend *backend, const GByteArray * msg)
+elektron_tx (struct backend *backend, const GByteArray *msg)
 {
   gint res;
   guint16 aux;
@@ -805,7 +805,7 @@ elektron_rx (struct backend *backend, gint timeout)
 
 static GByteArray *
 elektron_tx_and_rx_timeout_no_cache (struct backend *backend,
-				     GByteArray * tx_msg, gint timeout)
+				     GByteArray *tx_msg, gint timeout)
 {
   ssize_t len;
   guint16 seq;
@@ -857,7 +857,7 @@ cleanup:
 //Synchronized
 
 static GByteArray *
-elektron_tx_and_rx_timeout (struct backend *backend, GByteArray * tx_msg,
+elektron_tx_and_rx_timeout (struct backend *backend, GByteArray *tx_msg,
 			    gint timeout)
 {
   GBytes *key;
@@ -898,13 +898,13 @@ end:
 }
 
 static GByteArray *
-elektron_tx_and_rx (struct backend *backend, GByteArray * tx_msg)
+elektron_tx_and_rx (struct backend *backend, GByteArray *tx_msg)
 {
   return elektron_tx_and_rx_timeout (backend, tx_msg, -1);
 }
 
 static enum item_type
-elektron_get_path_type (struct backend *backend, const gchar * path,
+elektron_get_path_type (struct backend *backend, const gchar *path,
 			fs_init_iter_func init_iter)
 {
   gchar *dir, *name;
@@ -939,7 +939,7 @@ elektron_get_path_type (struct backend *backend, const gchar * path,
 
 static gint
 elektron_read_common_dir (struct backend *backend,
-			  struct item_iterator *iter, const gchar * dir,
+			  struct item_iterator *iter, const gchar *dir,
 			  const guint8 msg[], int size,
 			  fs_init_iter_func init_iter, enum elektron_fs fs,
 			  fs_file_exists file_exists)
@@ -979,8 +979,8 @@ elektron_read_common_dir (struct backend *backend,
 
 static gint
 elektron_read_samples_dir (struct backend *backend,
-			   struct item_iterator *iter, const gchar * dir,
-			   const gchar ** extensions)
+			   struct item_iterator *iter, const gchar *dir,
+			   const gchar **extensions)
 {
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_SAMPLE_READ_DIR_REQUEST,
@@ -991,7 +991,7 @@ elektron_read_samples_dir (struct backend *backend,
 
 static gint
 elektron_read_raw_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar * dir, const gchar ** extensions)
+		       const gchar *dir, const gchar **extensions)
 {
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_RAW_READ_DIR_REQUEST,
@@ -1002,8 +1002,8 @@ elektron_read_raw_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 elektron_src_dst_common (struct backend *backend,
-			 const gchar * src, const gchar * dst,
-			 const guint8 * data, guint len)
+			 const gchar *src, const gchar *dst,
+			 const guint8 *data, guint len)
 {
   gint res;
   GByteArray *rx_msg;
@@ -1052,8 +1052,8 @@ elektron_src_dst_common (struct backend *backend,
 }
 
 static gint
-elektron_rename_sample_file (struct backend *backend, const gchar * src,
-			     const gchar * dst)
+elektron_rename_sample_file (struct backend *backend, const gchar *src,
+			     const gchar *dst)
 {
   return elektron_src_dst_common (backend, src, dst,
 				  FS_SAMPLE_RENAME_FILE_REQUEST,
@@ -1061,8 +1061,8 @@ elektron_rename_sample_file (struct backend *backend, const gchar * src,
 }
 
 static gint
-elektron_rename_raw_file (struct backend *backend, const gchar * src,
-			  const gchar * dst)
+elektron_rename_raw_file (struct backend *backend, const gchar *src,
+			  const gchar *dst)
 {
   return elektron_src_dst_common (backend, src, dst,
 				  FS_RAW_RENAME_FILE_REQUEST,
@@ -1070,8 +1070,8 @@ elektron_rename_raw_file (struct backend *backend, const gchar * src,
 }
 
 static gint
-elektron_move_common_item (struct backend *backend, const gchar * src,
-			   const gchar * dst, fs_init_iter_func init_iter,
+elektron_move_common_item (struct backend *backend, const gchar *src,
+			   const gchar *dst, fs_init_iter_func init_iter,
 			   elektron_src_dst_func mv, fs_path_func mkdir,
 			   elektron_path_func rmdir)
 {
@@ -1123,8 +1123,8 @@ elektron_move_common_item (struct backend *backend, const gchar * src,
 }
 
 static gint
-elektron_path_common (struct backend *backend, const gchar * path,
-		      const guint8 * template, gint size)
+elektron_path_common (struct backend *backend, const gchar *path,
+		      const guint8 *template, gint size)
 {
   gint res;
   GByteArray *rx_msg;
@@ -1157,7 +1157,7 @@ elektron_path_common (struct backend *backend, const gchar * path,
 }
 
 static gint
-elektron_delete_sample (struct backend *backend, const gchar * path)
+elektron_delete_sample (struct backend *backend, const gchar *path)
 {
   return elektron_path_common (backend, path,
 			       FS_SAMPLE_DELETE_FILE_REQUEST,
@@ -1165,7 +1165,7 @@ elektron_delete_sample (struct backend *backend, const gchar * path)
 }
 
 static gint
-elektron_delete_samples_dir (struct backend *backend, const gchar * path)
+elektron_delete_samples_dir (struct backend *backend, const gchar *path)
 {
   return elektron_path_common (backend, path, FS_SAMPLE_DELETE_DIR_REQUEST,
 			       sizeof (FS_SAMPLE_DELETE_DIR_REQUEST));
@@ -1173,7 +1173,7 @@ elektron_delete_samples_dir (struct backend *backend, const gchar * path)
 
 //This adds back the extension ".mc-snd" that the device provides.
 static gchar *
-elektron_add_ext_to_mc_snd (const gchar * path)
+elektron_add_ext_to_mc_snd (const gchar *path)
 {
   gchar *path_with_ext;
   GString *str = g_string_new (path);
@@ -1183,7 +1183,7 @@ elektron_add_ext_to_mc_snd (const gchar * path)
 }
 
 static gboolean
-elektron_sample_file_exists (struct backend *backend, const gchar * path)
+elektron_sample_file_exists (struct backend *backend, const gchar *path)
 {
   gint res = elektron_path_common (backend, path,
 				   FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST,
@@ -1193,7 +1193,7 @@ elektron_sample_file_exists (struct backend *backend, const gchar * path)
 }
 
 static gboolean
-elektron_raw_file_exists (struct backend *backend, const gchar * path)
+elektron_raw_file_exists (struct backend *backend, const gchar *path)
 {
   gchar *name_with_ext = elektron_add_ext_to_mc_snd (path);
   gint res = elektron_path_common (backend, path,
@@ -1205,7 +1205,7 @@ elektron_raw_file_exists (struct backend *backend, const gchar * path)
 }
 
 static gint
-elektron_delete_raw (struct backend *backend, const gchar * path)
+elektron_delete_raw (struct backend *backend, const gchar *path)
 {
   gint ret;
   gchar *path_with_ext = elektron_add_ext_to_mc_snd (path);
@@ -1217,22 +1217,22 @@ elektron_delete_raw (struct backend *backend, const gchar * path)
 }
 
 static gint
-elektron_delete_raw_dir (struct backend *backend, const gchar * path)
+elektron_delete_raw_dir (struct backend *backend, const gchar *path)
 {
   return elektron_path_common (backend, path, FS_RAW_DELETE_DIR_REQUEST,
 			       sizeof (FS_RAW_DELETE_DIR_REQUEST));
 }
 
 static gint
-elektron_create_samples_dir (struct backend *backend, const gchar * path)
+elektron_create_samples_dir (struct backend *backend, const gchar *path)
 {
   return elektron_path_common (backend, path, FS_SAMPLE_CREATE_DIR_REQUEST,
 			       sizeof (FS_SAMPLE_CREATE_DIR_REQUEST));
 }
 
 static gint
-elektron_move_samples_item (struct backend *backend, const gchar * src,
-			    const gchar * dst)
+elektron_move_samples_item (struct backend *backend, const gchar *src,
+			    const gchar *dst)
 {
   return elektron_move_common_item (backend, src, dst,
 				    elektron_read_samples_dir,
@@ -1242,15 +1242,15 @@ elektron_move_samples_item (struct backend *backend, const gchar * src,
 }
 
 static gint
-elektron_create_raw_dir (struct backend *backend, const gchar * path)
+elektron_create_raw_dir (struct backend *backend, const gchar *path)
 {
   return elektron_path_common (backend, path, FS_RAW_CREATE_DIR_REQUEST,
 			       sizeof (FS_RAW_CREATE_DIR_REQUEST));
 }
 
 static gint
-elektron_move_raw_item (struct backend *backend, const gchar * src,
-			const gchar * dst)
+elektron_move_raw_item (struct backend *backend, const gchar *src,
+			const gchar *dst)
 {
   gint ret;
   gchar *src_with_ext = elektron_add_ext_to_mc_snd (src);
@@ -1264,7 +1264,7 @@ elektron_move_raw_item (struct backend *backend, const gchar * src,
 }
 
 static gint
-elektron_delete_common_item (struct backend *backend, const gchar * path,
+elektron_delete_common_item (struct backend *backend, const gchar *path,
 			     fs_init_iter_func init_iter,
 			     elektron_path_func rmdir, elektron_path_func rm)
 {
@@ -1308,7 +1308,7 @@ elektron_delete_common_item (struct backend *backend, const gchar * path,
 }
 
 static gint
-elektron_delete_samples_item (struct backend *backend, const gchar * path)
+elektron_delete_samples_item (struct backend *backend, const gchar *path)
 {
   return elektron_delete_common_item (backend, path,
 				      elektron_read_samples_dir,
@@ -1317,7 +1317,7 @@ elektron_delete_samples_item (struct backend *backend, const gchar * path)
 }
 
 static gint
-elektron_delete_raw_item (struct backend *backend, const gchar * path)
+elektron_delete_raw_item (struct backend *backend, const gchar *path)
 {
   return elektron_delete_common_item (backend, path,
 				      elektron_read_raw_dir,
@@ -1326,8 +1326,8 @@ elektron_delete_raw_item (struct backend *backend, const gchar * path)
 }
 
 static gint
-elektron_upload_smplrw (struct backend *backend, const gchar * path,
-			GByteArray * input, struct job_control *control,
+elektron_upload_smplrw (struct backend *backend, const gchar *path,
+			GByteArray *input, struct job_control *control,
 			elektron_msg_path_len_func new_msg_open_write,
 			elektron_msg_write_blk_func new_msg_write_blk,
 			elektron_msg_id_len_func new_msg_close_write)
@@ -1419,8 +1419,8 @@ elektron_upload_smplrw (struct backend *backend, const gchar * path,
 }
 
 gint
-elektron_upload_sample_part (struct backend *backend, const gchar * path,
-			     GByteArray * sample, struct job_control *control)
+elektron_upload_sample_part (struct backend *backend, const gchar *path,
+			     GByteArray *sample, struct job_control *control)
 {
   return elektron_upload_smplrw (backend, path, sample, control,
 				 elektron_new_msg_open_sample_write,
@@ -1429,8 +1429,8 @@ elektron_upload_sample_part (struct backend *backend, const gchar * path,
 }
 
 static gint
-elektron_upload_sample (struct backend *backend, const gchar * path,
-			GByteArray * input, struct job_control *control)
+elektron_upload_sample (struct backend *backend, const gchar *path,
+			GByteArray *input, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
@@ -1438,8 +1438,8 @@ elektron_upload_sample (struct backend *backend, const gchar * path,
 }
 
 static gint
-elektron_upload_raw (struct backend *backend, const gchar * path,
-		     GByteArray * sample, struct job_control *control)
+elektron_upload_raw (struct backend *backend, const gchar *path,
+		     GByteArray *sample, struct job_control *control)
 {
   return elektron_upload_smplrw (backend, path, sample, control,
 				 elektron_new_msg_open_raw_write,
@@ -1448,7 +1448,7 @@ elektron_upload_raw (struct backend *backend, const gchar * path,
 }
 
 static GByteArray *
-elektron_new_msg_open_sample_read (const gchar * path)
+elektron_new_msg_open_sample_read (const gchar *path)
 {
   return elektron_new_msg_path (FS_SAMPLE_OPEN_FILE_READER_REQUEST,
 				sizeof
@@ -1456,7 +1456,7 @@ elektron_new_msg_open_sample_read (const gchar * path)
 }
 
 static GByteArray *
-elektron_new_msg_open_raw_read (const gchar * path)
+elektron_new_msg_open_raw_read (const gchar *path)
 {
   return elektron_new_msg_path (FS_RAW_OPEN_FILE_READER_REQUEST,
 				sizeof
@@ -1464,7 +1464,7 @@ elektron_new_msg_open_raw_read (const gchar * path)
 }
 
 static void
-elektron_copy_sample_data (GByteArray * input, GByteArray * output)
+elektron_copy_sample_data (GByteArray *input, GByteArray *output)
 {
   gint i;
   gint16 v;
@@ -1479,14 +1479,14 @@ elektron_copy_sample_data (GByteArray * input, GByteArray * output)
 }
 
 static void
-elektron_copy_raw_data (GByteArray * input, GByteArray * output)
+elektron_copy_raw_data (GByteArray *input, GByteArray *output)
 {
   g_byte_array_append (output, input->data, input->len);
 }
 
 static gint
-elektron_download_smplrw (struct backend *backend, const gchar * path,
-			  GByteArray * output, struct job_control *control,
+elektron_download_smplrw (struct backend *backend, const gchar *path,
+			  GByteArray *output, struct job_control *control,
 			  elektron_msg_path_func new_msg_open_read,
 			  guint read_offset,
 			  elektron_msg_read_blk_func new_msg_read_blk,
@@ -1614,8 +1614,8 @@ cleanup:
 }
 
 static gint
-elektron_download_sample_part (struct backend *backend, const gchar * path,
-			       GByteArray * output,
+elektron_download_sample_part (struct backend *backend, const gchar *path,
+			       GByteArray *output,
 			       struct job_control *control)
 {
   return elektron_download_smplrw (backend, path, output, control,
@@ -1627,8 +1627,8 @@ elektron_download_sample_part (struct backend *backend, const gchar * path,
 }
 
 static gint
-elektron_download_sample (struct backend *backend, const gchar * path,
-			  GByteArray * output, struct job_control *control)
+elektron_download_sample (struct backend *backend, const gchar *path,
+			  GByteArray *output, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
@@ -1636,8 +1636,8 @@ elektron_download_sample (struct backend *backend, const gchar * path,
 }
 
 static gint
-elektron_download_raw (struct backend *backend, const gchar * path,
-		       GByteArray * output, struct job_control *control)
+elektron_download_raw (struct backend *backend, const gchar *path,
+		       GByteArray *output, struct job_control *control)
 {
   gint ret;
   gchar *path_with_ext = elektron_add_ext_to_mc_snd (path);
@@ -1662,7 +1662,7 @@ elektron_new_msg_upgrade_os_start (guint size)
 }
 
 static GByteArray *
-elektron_new_msg_upgrade_os_write (GByteArray * os_data, gint * offset)
+elektron_new_msg_upgrade_os_write (GByteArray *os_data, gint *offset)
 {
   GByteArray *msg = elektron_new_msg (OS_UPGRADE_WRITE_RESPONSE,
 				      sizeof (OS_UPGRADE_WRITE_RESPONSE));
@@ -1775,7 +1775,7 @@ end:
 static gint
 elektron_get_storage_stats (struct backend *backend, gint type,
 			    struct backend_storage_stats *statfs,
-			    const gchar * path)
+			    const gchar *path)
 {
   GByteArray *tx_msg, *rx_msg;
   gint8 op;
@@ -2097,7 +2097,7 @@ not_found:
 }
 
 static gchar *
-elektron_add_prefix_to_path (const gchar * dir, const gchar * prefix)
+elektron_add_prefix_to_path (const gchar *dir, const gchar *prefix)
 {
   gchar *full;
 
@@ -2118,7 +2118,7 @@ elektron_add_prefix_to_path (const gchar * dir, const gchar * prefix)
 static gint
 elektron_read_data_dir_prefix (struct backend *backend,
 			       struct item_iterator *iter,
-			       const gchar * dir, const char *prefix,
+			       const gchar *dir, const char *prefix,
 			       gint32 max_slots)
 {
   int res;
@@ -2152,16 +2152,16 @@ elektron_read_data_dir_prefix (struct backend *backend,
 
 static gint
 elektron_read_data_dir_any (struct backend *backend,
-			    struct item_iterator *iter, const gchar * dir,
-			    const gchar ** extensions)
+			    struct item_iterator *iter, const gchar *dir,
+			    const gchar **extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir, NULL, -1);
 }
 
 static gint
 elektron_read_data_dir_prj (struct backend *backend,
-			    struct item_iterator *iter, const gchar * dir,
-			    const gchar ** extensions)
+			    struct item_iterator *iter, const gchar *dir,
+			    const gchar **extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_PRJ_PREFIX, 128);
@@ -2169,8 +2169,8 @@ elektron_read_data_dir_prj (struct backend *backend,
 
 static gint
 elektron_read_data_dir_snd (struct backend *backend,
-			    struct item_iterator *iter, const gchar * dir,
-			    const gchar ** extensions)
+			    struct item_iterator *iter, const gchar *dir,
+			    const gchar **extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_SND_PREFIX, 256);
@@ -2178,9 +2178,9 @@ elektron_read_data_dir_snd (struct backend *backend,
 
 static gint
 elektron_dst_src_data_prefix_common (struct backend *backend,
-				     const gchar * src, const gchar * dst,
+				     const gchar *src, const gchar *dst,
 				     const char *prefix,
-				     const guint8 * op_data, guint len)
+				     const guint8 *op_data, guint len)
 {
   gint res;
   char *src_w_prefix = elektron_add_prefix_to_path (src, prefix);
@@ -2195,8 +2195,8 @@ elektron_dst_src_data_prefix_common (struct backend *backend,
 }
 
 static gint
-elektron_move_data_item_prefix (struct backend *backend, const gchar * src,
-				const gchar * dst, const char *prefix)
+elektron_move_data_item_prefix (struct backend *backend, const gchar *src,
+				const gchar *dst, const char *prefix)
 {
   return elektron_dst_src_data_prefix_common (backend, src, dst, prefix,
 					      DATA_MOVE_REQUEST,
@@ -2204,31 +2204,31 @@ elektron_move_data_item_prefix (struct backend *backend, const gchar * src,
 }
 
 static gint
-elektron_move_data_item_any (struct backend *backend, const gchar * src,
-			     const gchar * dst)
+elektron_move_data_item_any (struct backend *backend, const gchar *src,
+			     const gchar *dst)
 {
   return elektron_move_data_item_prefix (backend, src, dst, NULL);
 }
 
 static gint
-elektron_move_data_item_prj (struct backend *backend, const gchar * src,
-			     const gchar * dst)
+elektron_move_data_item_prj (struct backend *backend, const gchar *src,
+			     const gchar *dst)
 {
   return elektron_move_data_item_prefix (backend, src, dst,
 					 FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-elektron_move_data_item_snd (struct backend *backend, const gchar * src,
-			     const gchar * dst)
+elektron_move_data_item_snd (struct backend *backend, const gchar *src,
+			     const gchar *dst)
 {
   return elektron_move_data_item_prefix (backend, src, dst,
 					 FS_DATA_SND_PREFIX);
 }
 
 static gint
-elektron_copy_data_item_prefix (struct backend *backend, const gchar * src,
-				const gchar * dst, const gchar * prefix)
+elektron_copy_data_item_prefix (struct backend *backend, const gchar *src,
+				const gchar *dst, const gchar *prefix)
 {
   return elektron_dst_src_data_prefix_common (backend, src, dst, prefix,
 					      DATA_COPY_REQUEST,
@@ -2236,23 +2236,23 @@ elektron_copy_data_item_prefix (struct backend *backend, const gchar * src,
 }
 
 static gint
-elektron_copy_data_item_any (struct backend *backend, const gchar * src,
-			     const gchar * dst)
+elektron_copy_data_item_any (struct backend *backend, const gchar *src,
+			     const gchar *dst)
 {
   return elektron_copy_data_item_prefix (backend, src, dst, NULL);
 }
 
 static gint
-elektron_copy_data_item_prj (struct backend *backend, const gchar * src,
-			     const gchar * dst)
+elektron_copy_data_item_prj (struct backend *backend, const gchar *src,
+			     const gchar *dst)
 {
   return elektron_copy_data_item_prefix (backend, src, dst,
 					 FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-elektron_copy_data_item_snd (struct backend *backend, const gchar * src,
-			     const gchar * dst)
+elektron_copy_data_item_snd (struct backend *backend, const gchar *src,
+			     const gchar *dst)
 {
   return elektron_copy_data_item_prefix (backend, src, dst,
 					 FS_DATA_SND_PREFIX);
@@ -2260,8 +2260,8 @@ elektron_copy_data_item_snd (struct backend *backend, const gchar * src,
 
 static gint
 elektron_path_data_prefix_common (struct backend *backend,
-				  const gchar * path, const char *prefix,
-				  const guint8 * op_data, guint len)
+				  const gchar *path, const char *prefix,
+				  const guint8 *op_data, guint len)
 {
   gint res;
   char *path_w_prefix = elektron_add_prefix_to_path (path, prefix);
@@ -2274,7 +2274,7 @@ elektron_path_data_prefix_common (struct backend *backend,
 
 static gint
 elektron_clear_data_item_prefix (struct backend *backend,
-				 const gchar * path, const gchar * prefix)
+				 const gchar *path, const gchar *prefix)
 {
   return elektron_path_data_prefix_common (backend, path, prefix,
 					   DATA_CLEAR_REQUEST,
@@ -2282,26 +2282,26 @@ elektron_clear_data_item_prefix (struct backend *backend,
 }
 
 static gint
-elektron_clear_data_item_any (struct backend *backend, const gchar * path)
+elektron_clear_data_item_any (struct backend *backend, const gchar *path)
 {
   return elektron_clear_data_item_prefix (backend, path, NULL);
 }
 
 static gint
-elektron_clear_data_item_prj (struct backend *backend, const gchar * path)
+elektron_clear_data_item_prj (struct backend *backend, const gchar *path)
 {
   return elektron_clear_data_item_prefix (backend, path, FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-elektron_clear_data_item_snd (struct backend *backend, const gchar * path)
+elektron_clear_data_item_snd (struct backend *backend, const gchar *path)
 {
   return elektron_clear_data_item_prefix (backend, path, FS_DATA_SND_PREFIX);
 }
 
 static gint
-elektron_swap_data_item_prefix (struct backend *backend, const gchar * src,
-				const gchar * dst, const gchar * prefix)
+elektron_swap_data_item_prefix (struct backend *backend, const gchar *src,
+				const gchar *dst, const gchar *prefix)
 {
   return elektron_dst_src_data_prefix_common (backend, src, dst, prefix,
 					      DATA_SWAP_REQUEST,
@@ -2309,31 +2309,31 @@ elektron_swap_data_item_prefix (struct backend *backend, const gchar * src,
 }
 
 static gint
-elektron_swap_data_item_any (struct backend *backend, const gchar * src,
-			     const gchar * dst)
+elektron_swap_data_item_any (struct backend *backend, const gchar *src,
+			     const gchar *dst)
 {
   return elektron_swap_data_item_prefix (backend, src, dst, NULL);
 }
 
 static gint
-elektron_swap_data_item_prj (struct backend *backend, const gchar * src,
-			     const gchar * dst)
+elektron_swap_data_item_prj (struct backend *backend, const gchar *src,
+			     const gchar *dst)
 {
   return elektron_swap_data_item_prefix (backend, src, dst,
 					 FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-elektron_swap_data_item_snd (struct backend *backend, const gchar * src,
-			     const gchar * dst)
+elektron_swap_data_item_snd (struct backend *backend, const gchar *src,
+			     const gchar *dst)
 {
   return elektron_swap_data_item_prefix (backend, src, dst,
 					 FS_DATA_SND_PREFIX);
 }
 
 static gint
-elektron_open_datum (struct backend *backend, const gchar * path,
-		     guint32 * jid, gint mode, guint32 size)
+elektron_open_datum (struct backend *backend, const gchar *path,
+		     guint32 *jid, gint mode, guint32 size)
 {
   guint32 *data32;
   guint32 sizebe;
@@ -2510,10 +2510,10 @@ elektron_close_datum (struct backend *backend,
 }
 
 static gint
-elektron_download_data_prefix (struct backend *backend, const gchar * path,
-			       GByteArray * output,
+elektron_download_data_prefix (struct backend *backend, const gchar *path,
+			       GByteArray *output,
 			       struct job_control *control,
-			       const gchar * prefix)
+			       const gchar *prefix)
 {
   gint err;
   guint32 seq;
@@ -2641,8 +2641,8 @@ elektron_download_data_prefix (struct backend *backend, const gchar * path,
 }
 
 static gint
-elektron_download_data_any (struct backend *backend, const gchar * path,
-			    GByteArray * output, struct job_control *control)
+elektron_download_data_any (struct backend *backend, const gchar *path,
+			    GByteArray *output, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
@@ -2650,16 +2650,16 @@ elektron_download_data_any (struct backend *backend, const gchar * path,
 }
 
 static gint
-elektron_download_data_prj (struct backend *backend, const gchar * path,
-			    GByteArray * output, struct job_control *control)
+elektron_download_data_prj (struct backend *backend, const gchar *path,
+			    GByteArray *output, struct job_control *control)
 {
   return elektron_download_data_prefix (backend, path, output, control,
 					FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-elektron_download_data_snd (struct backend *backend, const gchar * path,
-			    GByteArray * output, struct job_control *control)
+elektron_download_data_snd (struct backend *backend, const gchar *path,
+			    GByteArray *output, struct job_control *control)
 {
   return elektron_download_data_prefix (backend, path, output, control,
 					FS_DATA_SND_PREFIX);
@@ -2668,7 +2668,7 @@ elektron_download_data_snd (struct backend *backend, const gchar * path,
 static gchar *
 elektron_get_download_name (struct backend *backend,
 			    const struct fs_operations *ops,
-			    const gchar * src_path)
+			    const gchar *src_path)
 {
   gint32 id;
   gint ret;
@@ -2710,8 +2710,8 @@ elektron_get_download_name (struct backend *backend,
 }
 
 static gint
-elektron_download_pkg (struct backend *backend, const gchar * path,
-		       GByteArray * output, struct job_control *control,
+elektron_download_pkg (struct backend *backend, const gchar *path,
+		       GByteArray *output, struct job_control *control,
 		       enum package_type type,
 		       const struct fs_operations *ops,
 		       fs_remote_file_op download)
@@ -2745,8 +2745,7 @@ elektron_download_pkg (struct backend *backend, const gchar * path,
 static gchar *
 elektron_get_upload_path_smplrw (struct backend *backend,
 				 const struct fs_operations *ops,
-				 const gchar * dst_dir,
-				 const gchar * src_path)
+				 const gchar *dst_dir, const gchar *src_path)
 {
   gchar *path, *name, *aux;
 
@@ -2774,8 +2773,8 @@ elektron_get_upload_path_smplrw (struct backend *backend,
 static gchar *
 elektron_get_download_path (struct backend *backend,
 			    const struct fs_operations *ops,
-			    const gchar * dst_dir, const gchar * src_path,
-			    GByteArray * data)
+			    const gchar *dst_dir, const gchar *src_path,
+			    GByteArray *data)
 {
   gchar *path, *name, *dl_ext, *src_fpath;
   const gchar *md_ext, *ext = get_ext (src_path);
@@ -2818,10 +2817,9 @@ elektron_get_download_path (struct backend *backend,
 }
 
 static gint
-elektron_upload_data_prefix (struct backend *backend, const gchar * path,
-			     GByteArray * array,
-			     struct job_control *control,
-			     const gchar * prefix)
+elektron_upload_data_prefix (struct backend *backend, const gchar *path,
+			     GByteArray *array,
+			     struct job_control *control, const gchar *prefix)
 {
   gint err;
   guint id;
@@ -2960,8 +2958,8 @@ end:
 }
 
 static gint
-elektron_upload_data_any (struct backend *backend, const gchar * path,
-			  GByteArray * array, struct job_control *control)
+elektron_upload_data_any (struct backend *backend, const gchar *path,
+			  GByteArray *array, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
@@ -2969,24 +2967,24 @@ elektron_upload_data_any (struct backend *backend, const gchar * path,
 }
 
 static gint
-elektron_upload_data_prj (struct backend *backend, const gchar * path,
-			  GByteArray * array, struct job_control *control)
+elektron_upload_data_prj (struct backend *backend, const gchar *path,
+			  GByteArray *array, struct job_control *control)
 {
   return elektron_upload_data_prefix (backend, path, array, control,
 				      FS_DATA_PRJ_PREFIX);
 }
 
 static gint
-elektron_upload_data_snd (struct backend *backend, const gchar * path,
-			  GByteArray * array, struct job_control *control)
+elektron_upload_data_snd (struct backend *backend, const gchar *path,
+			  GByteArray *array, struct job_control *control)
 {
   return elektron_upload_data_prefix (backend, path, array, control,
 				      FS_DATA_SND_PREFIX);
 }
 
 static gint
-elektron_upload_pkg (struct backend *backend, const gchar * path,
-		     GByteArray * input, struct job_control *control,
+elektron_upload_pkg (struct backend *backend, const gchar *path,
+		     GByteArray *input, struct job_control *control,
 		     guint8 type, const struct fs_operations *ops,
 		     fs_remote_file_op upload)
 {
@@ -3014,7 +3012,7 @@ elektron_get_dev_and_fs_ext (struct backend *backend,
 }
 
 gint
-elektron_sample_load (const gchar * path, GByteArray * sample,
+elektron_sample_load (const gchar *path, GByteArray *sample,
 		      struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -3064,7 +3062,7 @@ elektron_get_sample_path_from_hash_size (struct backend *backend,
 }
 
 gint
-elektron_sample_save (const gchar * path, GByteArray * sample,
+elektron_sample_save (const gchar *path, GByteArray *sample,
 		      struct job_control *control)
 {
   return sample_save_to_file (path, sample, control,
@@ -3298,7 +3296,7 @@ elektron_handshake (struct backend *backend)
 
 static gint
 elektron_download_data_snd_pkg (struct backend *backend,
-				const gchar * path, GByteArray * output,
+				const gchar *path, GByteArray *output,
 				struct job_control *control)
 {
   return elektron_download_pkg (backend, path, output, control,
@@ -3309,7 +3307,7 @@ elektron_download_data_snd_pkg (struct backend *backend,
 
 static gint
 elektron_download_data_prj_pkg (struct backend *backend,
-				const gchar * path, GByteArray * output,
+				const gchar *path, GByteArray *output,
 				struct job_control *control)
 {
   return elektron_download_pkg (backend, path, output, control,
@@ -3319,8 +3317,8 @@ elektron_download_data_prj_pkg (struct backend *backend,
 }
 
 static gint
-elektron_download_raw_pst_pkg (struct backend *backend, const gchar * path,
-			       GByteArray * output,
+elektron_download_raw_pst_pkg (struct backend *backend, const gchar *path,
+			       GByteArray *output,
 			       struct job_control *control)
 {
   return elektron_download_pkg (backend, path, output, control,
@@ -3330,8 +3328,8 @@ elektron_download_raw_pst_pkg (struct backend *backend, const gchar * path,
 }
 
 static gint
-elektron_upload_data_snd_pkg (struct backend *backend, const gchar * path,
-			      GByteArray * input, struct job_control *control)
+elektron_upload_data_snd_pkg (struct backend *backend, const gchar *path,
+			      GByteArray *input, struct job_control *control)
 {
   return elektron_upload_pkg (backend, path, input, control,
 			      PKG_FILE_TYPE_SOUND,
@@ -3340,8 +3338,8 @@ elektron_upload_data_snd_pkg (struct backend *backend, const gchar * path,
 }
 
 static gint
-elektron_upload_data_prj_pkg (struct backend *backend, const gchar * path,
-			      GByteArray * input, struct job_control *control)
+elektron_upload_data_prj_pkg (struct backend *backend, const gchar *path,
+			      GByteArray *input, struct job_control *control)
 {
   return elektron_upload_pkg (backend, path, input, control,
 			      PKG_FILE_TYPE_PROJECT,
@@ -3350,8 +3348,8 @@ elektron_upload_data_prj_pkg (struct backend *backend, const gchar * path,
 }
 
 static gint
-elektron_upload_raw_pst_pkg (struct backend *backend, const gchar * path,
-			     GByteArray * input, struct job_control *control)
+elektron_upload_raw_pst_pkg (struct backend *backend, const gchar *path,
+			     GByteArray *input, struct job_control *control)
 {
   return elektron_upload_pkg (backend, path, input, control,
 			      PKG_FILE_TYPE_PRESET,

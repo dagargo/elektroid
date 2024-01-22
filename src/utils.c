@@ -50,7 +50,7 @@ get_max_message_length (guint msg_len)
 }
 
 gchar *
-debug_get_hex_data (gint level, guint8 * data, guint len)
+debug_get_hex_data (gint level, guint8 *data, guint len)
 {
   gint i;
   guint8 *b;
@@ -111,7 +111,7 @@ debug_get_hex_data (gint level, guint8 * data, guint len)
 }
 
 gchar *
-debug_get_hex_msg (const GByteArray * msg)
+debug_get_hex_msg (const GByteArray *msg)
 {
   return debug_get_hex_data (debug_level, msg->data, msg->len);
 }
@@ -136,7 +136,7 @@ remove_ext (char *name)
 }
 
 const gchar *
-get_ext (const gchar * name)
+get_ext (const gchar *name)
 {
   int namelen = strlen (name) - 1;
   int i = namelen;
@@ -170,7 +170,7 @@ get_user_dir (const char *rel_conf_path)
 }
 
 char *
-get_system_startup_path (const gchar * local_dir)
+get_system_startup_path (const gchar *local_dir)
 {
   DIR *dir;
   gchar *startup_path = NULL;
@@ -244,7 +244,7 @@ free_item_iterator (struct item_iterator *iter)
 }
 
 gint
-load_file (const char *path, GByteArray * array, struct job_control *control)
+load_file (const char *path, GByteArray *array, struct job_control *control)
 {
   FILE *file;
   size_t size;
@@ -287,7 +287,7 @@ end:
 }
 
 gint
-save_file_char (const gchar * path, const guint8 * data, ssize_t len)
+save_file_char (const gchar *path, const guint8 *data, ssize_t len)
 {
   gint res;
   size_t bytes;
@@ -320,8 +320,7 @@ save_file_char (const gchar * path, const guint8 * data, ssize_t len)
 }
 
 gint
-save_file (const gchar * path, GByteArray * array,
-	   struct job_control *control)
+save_file (const gchar *path, GByteArray *array, struct job_control *control)
 {
   return save_file_char (path, array->data, array->len);
 }
@@ -398,7 +397,7 @@ set_job_control_progress_no_sync (struct job_control *control, gdouble p,
 }
 
 gboolean
-file_matches_extensions (const gchar * name, const gchar ** extensions)
+file_matches_extensions (const gchar *name, const gchar **extensions)
 {
   const gchar *extension;
   const gchar **e = extensions;
@@ -428,7 +427,7 @@ file_matches_extensions (const gchar * name, const gchar ** extensions)
 
 gboolean
 iter_is_dir_or_matches_extensions (struct item_iterator *iter,
-				   const gchar ** extensions)
+				   const gchar **extensions)
 {
   if (iter->item.type == ELEKTROID_DIR)
     {
@@ -458,7 +457,7 @@ path_get_separator (enum path_type type)
 }
 
 gchar *
-path_chain (enum path_type type, const gchar * parent, const gchar * child)
+path_chain (enum path_type type, const gchar *parent, const gchar *child)
 {
   const gchar *sep = path_get_separator (type);
   return g_build_path (sep, parent, child, NULL);
@@ -467,7 +466,7 @@ path_chain (enum path_type type, const gchar * parent, const gchar * child)
 //Translate from internal path to system path.
 
 gchar *
-path_translate (enum path_type type, const gchar * input)
+path_translate (enum path_type type, const gchar *input)
 {
   gchar *output, *o;
   const gchar *i;
@@ -505,7 +504,7 @@ path_translate (enum path_type type, const gchar * input)
 //under MSYS2.
 
 gchar *
-path_filename_from_uri (enum path_type type, gchar * uri)
+path_filename_from_uri (enum path_type type, gchar *uri)
 {
   if (type == PATH_SYSTEM)
     {
@@ -516,7 +515,7 @@ path_filename_from_uri (enum path_type type, gchar * uri)
 }
 
 gchar *
-path_filename_to_uri (enum path_type type, gchar * filename)
+path_filename_to_uri (enum path_type type, gchar *filename)
 {
   if (type == PATH_SYSTEM)
     {

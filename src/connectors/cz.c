@@ -56,8 +56,8 @@ struct cz_type_iterator_data
 
 static gchar *
 cz_get_download_path (struct backend *backend,
-		      const struct fs_operations *ops, const gchar * dst_dir,
-		      const gchar * src_path, GByteArray * program)
+		      const struct fs_operations *ops, const gchar *dst_dir,
+		      const gchar *src_path, GByteArray *program)
 {
   gchar *path;
   if (strcmp (src_path, CZ_PANEL_PATH))
@@ -158,7 +158,7 @@ cz_next_dentry (struct item_iterator *iter)
 }
 
 static gint
-get_mem_type (const gchar * name)
+get_mem_type (const gchar *name)
 {
   const char **mem_type = CZ_MEM_TYPES;
   for (int i = 0; *mem_type; i++, mem_type++)
@@ -173,7 +173,7 @@ get_mem_type (const gchar * name)
 
 static gint
 cz_read_dir (struct backend *backend, struct item_iterator *iter,
-	     const gchar * path, const gchar ** extensions)
+	     const gchar *path, const gchar **extensions)
 {
   gint mem_type;
 
@@ -208,8 +208,8 @@ cz_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
-cz_download (struct backend *backend, const gchar * path,
-	     GByteArray * output, struct job_control *control)
+cz_download (struct backend *backend, const gchar *path,
+	     GByteArray *output, struct job_control *control)
 {
   guint8 id;
   gint len, type, err = 0;
@@ -269,7 +269,7 @@ end:
 }
 
 static gint
-cz_upload (struct backend *backend, const gchar * path, GByteArray * input,
+cz_upload (struct backend *backend, const gchar *path, GByteArray *input,
 	   struct job_control *control)
 {
   guint8 id;
