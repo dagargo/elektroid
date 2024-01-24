@@ -356,7 +356,7 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
       GtkStateFlags state = gtk_style_context_get_state (context);
       gtk_style_context_get_color (context, state, &color);
       gtk_style_context_get_color (context, state, &bgcolor);
-      bgcolor.alpha = 0.15;
+      bgcolor.alpha = 0.25;
 
       if (editor->audio.sel_len)
 	{
