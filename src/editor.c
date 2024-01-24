@@ -391,10 +391,10 @@ editor_draw_waveform (GtkWidget * widget, cairo_t * cr, gpointer data)
 	  gdouble mid_c = c_height_half;
 	  for (gint j = 0; j < audio->sample_info.channels; j++)
 	    {
-	      value = mid_c + y_frame_state.wp[j] * y_scale + 0.5;
-	      cairo_move_to (cr, i, value);
-	      value = mid_c + y_frame_state.wn[j] * y_scale + 0.5;
-	      cairo_line_to (cr, i, value);
+	      value = mid_c + y_frame_state.wp[j] * y_scale;
+	      cairo_move_to (cr, i + 0.5, value);
+	      value = mid_c + y_frame_state.wn[j] * y_scale;
+	      cairo_line_to (cr, i + 0.5, value);
 	      cairo_stroke (cr);
 	      mid_c += c_height;
 	    }
