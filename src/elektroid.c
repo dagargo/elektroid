@@ -1347,7 +1347,7 @@ elektroid_name_dialog_entry_changed (GtkWidget *object, gpointer data)
 }
 
 static gboolean
-tasks_run_next (gpointer data)
+elektroid_run_next (gpointer data)
 {
   GtkTreeIter iter;
   enum task_type type;
@@ -1620,7 +1620,7 @@ elektroid_upload_task_runner (gpointer data)
 end_cleanup:
   g_byte_array_free (array, TRUE);
   g_idle_add (tasks_complete_current, &tasks);
-  g_idle_add (tasks_run_next, NULL);
+  g_idle_add (elektroid_run_next, NULL);
   return NULL;
 }
 
@@ -1744,7 +1744,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
 					NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
-      g_idle_add (tasks_run_next, NULL);
+      g_idle_add (elektroid_run_next, NULL);
     }
 
   elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
@@ -1861,7 +1861,7 @@ end_with_download_error:
 
 end_with_no_download:
   g_idle_add (tasks_complete_current, &tasks);
-  g_idle_add (tasks_run_next, NULL);
+  g_idle_add (elektroid_run_next, NULL);
 
 end_no_dir:
   return NULL;
@@ -1986,7 +1986,7 @@ elektroid_add_download_tasks_runner (gpointer data)
 					NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
-      g_idle_add (tasks_run_next, NULL);
+      g_idle_add (elektroid_run_next, NULL);
     }
 
   elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
@@ -2632,7 +2632,7 @@ end:
 					NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
-      g_idle_add (tasks_run_next, NULL);
+      g_idle_add (elektroid_run_next, NULL);
     }
 
   if (dialog)
