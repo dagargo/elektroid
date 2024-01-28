@@ -422,6 +422,8 @@ static gboolean
 browser_load_dir_runner_update_ui (gpointer data)
 {
   struct browser *browser = data;
+  GtkTreeSelection *selection =
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
   gboolean active = (!browser->backend
 		     || browser->backend->type == BE_TYPE_SYSTEM);
 
@@ -451,8 +453,6 @@ browser_load_dir_runner_update_ui (gpointer data)
 
   if (browser_get_selected_items_count (browser))
     {
-      GtkTreeSelection *selection =
-	gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
       GList *list = gtk_tree_selection_get_selected_rows (selection, NULL);
       g_signal_handlers_block_by_func (selection,
 				       G_CALLBACK
@@ -466,6 +466,15 @@ browser_load_dir_runner_update_ui (gpointer data)
     }
   else
     {
+      GtkTreeModel *model =
+	GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
+      if (gtk_tree_model_iter_n_children (model, NULL))
+	{
+	  GtkTreePath *first = gtk_tree_path_new_first ();
+	  gtk_tree_view_scroll_to_cell (browser->view, first, NULL, FALSE, 0,
+					0);
+	  gtk_tree_path_free (first);
+	}
       //If editor.audio.path is empty is a recording buffer.
       if (editor.browser == browser && editor.audio.path)
 	{
