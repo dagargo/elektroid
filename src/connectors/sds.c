@@ -62,6 +62,8 @@ static const guint8 SDS_SAMPLE_NAME_HEADER[] =
   { 0xf0, 0x7e, 0, 0x5, 0x3, 0, 0, 0 };
 static const guint8 SDS_DUMP_HEADER[] =
   { 0xf0, 0x7e, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xf7 };
+static const guint8 SDS_LOOP_POINT_REQUEST[] =
+  { 0xf0, 0x7e, 0, 5, 2, 0, 0, 0, 0, 0xf7 };
 
 static gchar *
 sds_get_download_path (struct backend *backend,
@@ -1205,19 +1207,10 @@ static const struct fs_operations *FS_SDS_ALL_OPERATIONS[] = {
 };
 
 gint
-sds_handshake (struct backend *backend)
+sds_handshake_elektron (struct backend *backend)
 {
-  gint err;
-  GByteArray *tx_msg, *rx_msg;
-  struct sds_data *sds_data = g_malloc (sizeof (struct sds_data));
-
-  //We cancel anything that might be running.
-  usleep (SDS_REST_TIME_DEFAULT);
-  sds_tx_handshake (backend, SDS_CANCEL, 0);
-  usleep (SDS_REST_TIME_DEFAULT);
-
   //Elektron devices support SDS so we need to be sure it is not.
-  rx_msg = elektron_ping (backend);
+  GByteArray *rx_msg = elektron_ping (backend);
   if (rx_msg)
     {
       free_msg (rx_msg);	//This is filled up by elektron_ping.
@@ -1229,13 +1222,62 @@ sds_handshake (struct backend *backend)
   backend_rx_drain (backend);
   g_mutex_unlock (&backend->mutex);
 
+  return 0;
+}
+
+gint
+sds_handshake_name (struct backend *backend)
+{
+  GByteArray *tx_msg =
+    g_byte_array_sized_new (sizeof (SDS_SAMPLE_NAME_REQUEST));
+  g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
+		       sizeof (SDS_SAMPLE_NAME_REQUEST));
+  tx_msg->data[5] = 1;
+  tx_msg->data[6] = 0;
+  GByteArray *rx_msg =
+    backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT_TRY);
+  if (rx_msg)
+    {
+      free_msg (rx_msg);
+      return 0;
+    }
+
+  return -ENODEV;
+}
+
+gint
+sds_handshake_loop_point (struct backend *backend)
+{
+  GByteArray *tx_msg =
+    g_byte_array_sized_new (sizeof (SDS_LOOP_POINT_REQUEST));
+  g_byte_array_append (tx_msg, SDS_LOOP_POINT_REQUEST,
+		       sizeof (SDS_LOOP_POINT_REQUEST));
+  tx_msg->data[5] = 1;
+  tx_msg->data[6] = 0;
+  tx_msg->data[7] = 1;
+  tx_msg->data[8] = 0;
+  GByteArray *rx_msg =
+    backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT_TRY);
+  if (rx_msg)
+    {
+      free_msg (rx_msg);
+      return 0;
+    }
+
+  return -ENODEV;
+}
+
+gint
+sds_handshake_esi_2000 (struct backend *backend)
+{
+  //An upload to a real sample will erase the sample even if cancelled, so a sample id of a non existing slot is need.
   //We send a dump header for a number higher than every device might allow. Hopefully, this will fail on every device.
   //Numbers higher than 1500 make an E-Mu ESI-2000 crash when entering into the 'MIDI SAMPLE DUMP' menu but the actual limit is unknown.
-  tx_msg = sds_get_dump_msg (1000, 0, NULL, 16);
+  GByteArray *tx_msg = sds_get_dump_msg (1000, 0, NULL, 16);
   //In case we receive an ACK, NAK or CANCEL, there is a MIDI SDS device listening.
-  err = sds_tx_and_wait_ack (backend, tx_msg, 0,
-			     SDS_SPEC_TIMEOUT_HANDSHAKE,
-			     SDS_NO_SPEC_TIMEOUT_TRY);
+  gint err = sds_tx_and_wait_ack (backend, tx_msg, 0,
+				  SDS_SPEC_TIMEOUT_HANDSHAKE,
+				  SDS_NO_SPEC_TIMEOUT_TRY);
   if (err && err != -EBADMSG && err != -ECANCELED)
     {
       return -ENODEV;
@@ -1246,27 +1288,58 @@ sds_handshake (struct backend *backend)
   sds_tx_handshake (backend, SDS_CANCEL, 0);
   usleep (SDS_REST_TIME_DEFAULT);
 
-  tx_msg = g_byte_array_new ();
-  g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
-		       sizeof (SDS_SAMPLE_NAME_REQUEST));
-  tx_msg->data[5] = 1;
-  tx_msg->data[6] = 0;
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT_TRY);
-  if (rx_msg)
+  return 0;
+}
+
+gint
+sds_handshake (struct backend *backend)
+{
+  gint err;
+  gboolean name_extension;
+  struct sds_data *sds_data;
+
+  //We cancel anything that might be running.
+  usleep (SDS_REST_TIME_DEFAULT);
+  sds_tx_handshake (backend, SDS_CANCEL, 0);
+  usleep (SDS_REST_TIME_DEFAULT);
+
+  err = sds_handshake_elektron (backend);
+  if (err)
     {
-      sds_data->name_extension = TRUE;
-      free_msg (rx_msg);
+      return err;
+    }
+
+  err = sds_handshake_name (backend);
+  if (err)
+    {
+      name_extension = FALSE;
     }
   else
     {
-      sds_data->name_extension = FALSE;
+      name_extension = TRUE;
+      goto end;
     }
-  debug_print (1, "Name extension: %s\n",
-	       sds_data->name_extension ? "yes" : "no");
+
+  err = sds_handshake_loop_point (backend);
+  if (!err)
+    {
+      goto end;
+    }
+
+  err = sds_handshake_esi_2000 (backend);
+  if (err)
+    {
+      return err;
+    }
+
+end:
+  debug_print (1, "Name extension: %s\n", name_extension ? "yes" : "no");
 
   //The remaining code is meant to set up different devices. These are the default values.
 
+  sds_data = g_malloc (sizeof (struct sds_data));
   sds_data->rest_time = SDS_REST_TIME_DEFAULT;
+  sds_data->name_extension = name_extension;
 
   backend->filesystems = FS_PROGRAM_DEFAULT | FS_SAMPLES_SDS_8_B |
     FS_SAMPLES_SDS_12_B | FS_SAMPLES_SDS_14_B | FS_SAMPLES_SDS_16_B |
