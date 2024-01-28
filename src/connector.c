@@ -146,6 +146,8 @@ connector_init_backend (struct backend *backend,
       connector++;
     }
 
+  backend_midi_handshake (backend);
+
   err = -ENODEV;
   for (iterator = list; iterator; iterator = iterator->next)
     {

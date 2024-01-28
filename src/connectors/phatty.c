@@ -510,8 +510,6 @@ static const struct fs_operations *FS_PHATTY_OPERATIONS_LIST[] = {
 gint
 phatty_handshake (struct backend *backend)
 {
-  backend_midi_handshake (backend);
-
   if (memcmp (backend->midi_info.company, MOOG_ID, sizeof (MOOG_ID)) ||
       memcmp (backend->midi_info.family, FAMILY_ID, sizeof (FAMILY_ID)) ||
       memcmp (backend->midi_info.model, MODEL_ID, sizeof (MODEL_ID)))

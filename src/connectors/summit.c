@@ -939,8 +939,6 @@ static const struct fs_operations *FS_SUMMIT_OPERATIONS[] = {
 gint
 summit_handshake (struct backend *backend)
 {
-  backend_midi_handshake (backend);
-
   if (memcmp (backend->midi_info.company, NOVATION_ID, sizeof (NOVATION_ID))
       || memcmp (backend->midi_info.family, SUMMIT_ID, sizeof (SUMMIT_ID)))
     {

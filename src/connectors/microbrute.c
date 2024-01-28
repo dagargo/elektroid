@@ -506,8 +506,6 @@ microbrute_handshake (struct backend *backend)
 {
   guint8 *seq;
 
-  backend_midi_handshake (backend);
-
   if (memcmp (backend->midi_info.company, ARTURIA_ID, sizeof (ARTURIA_ID)) ||
       memcmp (backend->midi_info.family, FAMILY_ID, sizeof (FAMILY_ID)) ||
       memcmp (backend->midi_info.model, MODEL_ID, sizeof (MODEL_ID)))

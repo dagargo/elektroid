@@ -80,7 +80,6 @@ static const struct fs_operations *FS_DEFAULT_OPERATIONS[] = {
 gint
 default_handshake (struct backend *backend)
 {
-  backend_midi_handshake (backend);
   backend->filesystems = 0;
   backend->fs_ops = NULL;
   backend->filesystems = FS_PROGRAM_DEFAULT;
