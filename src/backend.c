@@ -91,7 +91,7 @@ backend_disable_cache (struct backend *backend)
   g_mutex_unlock (&backend->mutex);
 }
 
-void
+static void
 backend_midi_handshake (struct backend *backend)
 {
   GByteArray *tx_msg;
@@ -159,6 +159,8 @@ backend_midi_handshake (struct backend *backend)
     }
 
   free_msg (rx_msg);
+
+  usleep (BE_REST_TIME_US);
 }
 
 gint
@@ -380,6 +382,10 @@ backend_init (struct backend *backend, const gchar *id)
     {
       error_print ("Error while stopping device\n");
     }
+  usleep (BE_REST_TIME_US);
+
+  backend_midi_handshake (backend);
+
   return err;
 }
 
