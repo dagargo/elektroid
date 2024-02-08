@@ -847,14 +847,20 @@ browser_search_changed (GtkSearchEntry *entry, gpointer data)
   g_mutex_unlock (&browser->mutex);
   browser_wait (browser);
 
+  //Wait for every pending call to browser_add_dentry_item scheduled from the thread
+  while (gtk_events_pending ())
+    {
+      gtk_main_iteration ();
+    }
+
+  browser_clear (browser);
+
+  usleep (250000);
+
   if (strlen (filter))
     {
       browser->filter = filter;
       browser_refresh (NULL, browser);
-    }
-  else
-    {
-      browser_clear (browser);
     }
 }
 
