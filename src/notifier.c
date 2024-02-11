@@ -25,14 +25,17 @@
 #include "notifier.h"
 #include "utils.h"
 
+#define NOTIFIER_BATCH_EVENTS 256
+#define NOTIFIER_REST_TIME_US 250000
+
 #if defined(__linux__)
 static void
 notifier_set_dir (struct notifier *notifier)
 {
-  debug_print (1, "Changing %s browser path to '%s'...\n",
-	       notifier->browser->name, notifier->browser->dir);
   if (!notifier->dir || strcmp (notifier->browser->dir, notifier->dir))
     {
+      debug_print (1, "Changing %s browser path to '%s'...\n",
+		   notifier->browser->name, notifier->browser->dir);
       if (notifier->dir)
 	{
 	  g_free (notifier->dir);
@@ -61,6 +64,7 @@ static gpointer
 notifier_run (gpointer data)
 {
   ssize_t size;
+  gboolean reload = FALSE;
   struct notifier *notifier = data;
 
   debug_print (1, "%s notifier running...\n", notifier->browser->name);
@@ -68,47 +72,54 @@ notifier_run (gpointer data)
   while (1)
     {
       size = read (notifier->fd, notifier->event, notifier->event_size);
-      if (size == 0)
-	{
-	  break;
-	}
       if (size == -1)
 	{
-	  if (errno != EBADF)
+	  if (errno == EAGAIN)
 	    {
-	      debug_print (2, "%s\n", g_strerror (errno));
+	      if (reload)
+		{
+		  debug_print (1, "Adding browser load function...\n");
+		  g_idle_add (browser_load_dir, notifier->browser);
+		  reload = FALSE;
+		}
+	      usleep (NOTIFIER_REST_TIME_US);
+	      continue;
 	    }
 	  break;
 	}
 
-      if (notifier->event->mask & IN_CREATE
-	  || notifier->event->mask & IN_DELETE
-	  || notifier->event->mask & IN_MOVED_FROM
-	  || notifier->event->mask & IN_MOVED_TO
-	  || notifier->event->mask & IN_ATTRIB)
+      struct inotify_event *e = notifier->event;
+      for (gint i = 0; i < NOTIFIER_BATCH_EVENTS; i++, e++)
 	{
-	  debug_print (1, "Reloading dir...\n");
-	  g_idle_add (browser_load_dir, notifier->browser);
-	}
-      else if (notifier->event->mask & IN_DELETE_SELF
-	       || notifier->event->mask & IN_MOVE_SELF
-	       || notifier->event->mask & IN_MOVED_TO)
-	{
-	  debug_print (1, "Loading parent dir...\n");
-	  g_idle_add (notifier_go_up, notifier->browser);
-	  break;		//There is no directory to be nofified of.
-	}
-      else if ((notifier->event->mask & IN_IGNORED))	// inotify_rm_watch called
-	{
-	  debug_print (1, "Finishing notifier...\n");
-	  break;
-	}
-      else
-	{
-	  error_print ("Unexpected event: %d\n", notifier->event->mask);
+	  if (notifier->event->mask & IN_CREATE
+	      || notifier->event->mask & IN_DELETE
+	      || notifier->event->mask & IN_MOVED_FROM
+	      || notifier->event->mask & IN_MOVED_TO
+	      || notifier->event->mask & IN_ATTRIB)
+	    {
+	      reload = TRUE;
+	    }
+	  else if (notifier->event->mask & IN_DELETE_SELF
+		   || notifier->event->mask & IN_MOVE_SELF
+		   || notifier->event->mask & IN_MOVED_TO)
+	    {
+	      debug_print (1, "Loading parent dir...\n");
+	      g_idle_add (notifier_go_up, notifier->browser);
+	      goto end;		//There is no directory to be nofified of.
+	    }
+	  else if ((notifier->event->mask & IN_IGNORED))	// inotify_rm_watch called
+	    {
+	      debug_print (1, "Finishing notifier...\n");
+	      goto end;
+	    }
+	  else
+	    {
+	      error_print ("Unexpected event: %d\n", notifier->event->mask);
+	    }
 	}
     }
 
+end:
   return NULL;
 }
 #endif
@@ -117,8 +128,9 @@ void
 notifier_init (struct notifier *notifier, struct browser *browser)
 {
 #if defined(__linux__)
-  notifier->fd = inotify_init ();
-  notifier->event_size = sizeof (struct inotify_event) + NAME_MAX + 1;
+  notifier->fd = inotify_init1 (IN_NONBLOCK);
+  notifier->event_size =
+    (sizeof (struct inotify_event) + NAME_MAX + 1) * NOTIFIER_BATCH_EVENTS;
   notifier->event = g_malloc (notifier->event_size);
   notifier->browser = browser;
   notifier->thread = NULL;

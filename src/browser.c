@@ -626,8 +626,8 @@ browser_load_dir (gpointer data)
   g_mutex_lock (&browser->mutex);
   if (browser->loading)
     {
-      debug_print (1, "Browser already loading. Skipping load...\n");
       g_mutex_unlock (&browser->mutex);
+      debug_print (1, "Browser already loading. Skipping load...\n");
       return FALSE;
     }
   else
