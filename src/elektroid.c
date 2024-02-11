@@ -2221,8 +2221,6 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
   gtk_widget_set_visible (remote_browser.browser.delete_menuitem,
 			  remote_browser.browser.fs_ops->delete != NULL);
 
-  browser_close_search (NULL, &remote_browser.browser);
-
   gtk_widget_set_visible (editor.box, EDITOR_VISIBLE);
 
   gtk_drag_source_unset ((GtkWidget *) remote_browser.browser.view);
@@ -2301,7 +2299,7 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
   browser_update_fs_options (&local_browser.browser);
 
   browser_disable_sample_menuitems (&remote_browser.browser);
-  browser_load_dir (&remote_browser.browser);
+  browser_close_search (NULL, &remote_browser.browser);	//This triggers a refresh
   browser_update_fs_options (&remote_browser.browser);
 
   if (last_local_fs_ops != local_browser.browser.fs_ops)
