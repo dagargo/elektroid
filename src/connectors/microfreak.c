@@ -24,7 +24,7 @@
 
 #define MICROFREAK_PRESET_NAME_LEN 14
 #define MICROFREAK_MAX_PRESETS 512
-#define MICROFREAK_REST_TIME_US 15000
+#define MICROFREAK_REST_TIME_US 25000
 
 #define MICROFREAK_GET_MSG_PAYLOAD_LEN(msg) (msg->data[7])
 #define MICROFREAK_GET_MSG_PAYLOAD(msg) (&msg->data[9])
@@ -44,7 +44,8 @@ static const guint8 MODEL_ID[] = { 0x6, 0x1 };
 
 enum microfreak_fs
 {
-  FS_MICROFREAK_PRESET = 1
+  FS_MICROFREAK_PRESET = 1,
+  FS_MICROFREAK_ZPRESET = 2
 };
 
 struct microfreak_iter_data
@@ -433,6 +434,7 @@ end:
     {
       microfreak_serialize_preset (output, &mfp);
     }
+  usleep (MICROFREAK_REST_TIME_US);	//Additional rest
   return err;
 }
 
@@ -519,6 +521,7 @@ microfreak_upload (struct backend *backend, const gchar *path,
       usleep (MICROFREAK_REST_TIME_US);
     }
 
+  usleep (MICROFREAK_REST_TIME_US);	//Additional rest
   return 0;
 }
 
@@ -632,8 +635,139 @@ static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
   .select_item = microfreak_midi_program_change
 };
 
+gint
+microfreak_save_zpreset (const gchar *path, GByteArray *array,
+			 struct job_control *control)
+{
+  gint err = 0, index;
+  zip_t *archive;
+  zip_error_t zerror;
+  zip_source_t *source;
+
+  zip_error_init (&zerror);
+
+  archive = zip_open (path, ZIP_CREATE, &err);
+  if (!archive)
+    {
+      zip_error_init_with_code (&zerror, err);
+      error_print ("Error while saving zip file: %s\n",
+		   zip_error_strerror (&zerror));
+      zip_error_fini (&zerror);
+      return -EIO;
+    }
+
+  source = zip_source_buffer (archive, array->data, array->len, 0);
+  if (!source)
+    {
+      error_print ("Error while creating source buffer: %s\n",
+		   zip_strerror (archive));
+      err = -EIO;
+      goto end;
+    }
+
+  //Any name works as long as its a number, an underscore and additional characters without spaces.
+  index = zip_file_add (archive, "0_preset", source, ZIP_FL_OVERWRITE);
+  if (index < 0)
+    {
+      error_print ("Error while adding to file: %s\n",
+		   zip_strerror (archive));
+      err = -EIO;
+      goto end;
+    }
+
+  if (zip_close (archive))
+    {
+      error_print ("Error while saving zip file: %s\n",
+		   zip_error_strerror (&zerror));
+      zip_error_fini (&zerror);
+      err = -EIO;
+    }
+
+end:
+  if (err)
+    {
+      zip_discard (archive);
+    }
+  return err;
+}
+
+gint
+microfreak_load_zpreset (const char *path, GByteArray *array,
+			 struct job_control *control)
+{
+  gint err = 0;
+  zip_t *archive;
+  zip_stat_t zstat;
+  zip_error_t zerror;
+  zip_file_t *file = NULL;
+
+  archive = zip_open (path, ZIP_RDONLY, &err);
+  if (!archive)
+    {
+      zip_error_init_with_code (&zerror, err);
+      error_print ("Error while saving zip file: %s\n",
+		   zip_error_strerror (&zerror));
+      zip_error_fini (&zerror);
+      return -EIO;
+    }
+
+  if (zip_get_num_entries (archive, 0) != 1)
+    {
+      err = -EIO;
+      goto end;
+    }
+
+  file = zip_fopen_index (archive, 0, 0);
+  if (!file)
+    {
+      err = -EIO;
+      goto end;
+    }
+
+  if (zip_stat_index (archive, 0, ZIP_FL_ENC_STRICT, &zstat))
+    {
+      err = -EIO;
+      goto end;
+    }
+
+  g_byte_array_set_size (array, zstat.size);
+  zip_fread (file, array->data, zstat.size);
+
+end:
+  if (file)
+    {
+      zip_fclose (file);
+    }
+  err = zip_close (archive) ? -EIO : 0;
+  return err;
+}
+
+static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
+  .fs = FS_MICROFREAK_ZPRESET,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .name = "zpreset",
+  .gui_name = "Presets",
+  .gui_icon = BE_FILE_ICON_SND,
+  .type_ext = "mfpz",
+  .max_name_len = MICROFREAK_PRESET_NAME_LEN,
+  .readdir = microfreak_preset_read_dir,
+  .print_item = common_print_item,
+  .get_slot = microfreak_get_preset_id_as_slot,
+  .rename = microfreak_rename,
+  .download = microfreak_download,
+  .upload = microfreak_upload,
+  .load = microfreak_load_zpreset,
+  .save = microfreak_save_zpreset,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = microfreak_get_preset_download_path,
+  .select_item = microfreak_midi_program_change
+};
+
 static const struct fs_operations *FS_MICROFREAK_OPERATIONS[] = {
-  &FS_MICROFREAK_PRESET_OPERATIONS, NULL
+  &FS_MICROFREAK_PRESET_OPERATIONS, &FS_MICROFREAK_ZPRESET_OPERATIONS, NULL
 };
 
 gint
@@ -690,7 +824,7 @@ microfreak_handshake (struct backend *backend)
 	}
     }
 
-  backend->filesystems = FS_MICROFREAK_PRESET;
+  backend->filesystems = FS_MICROFREAK_ZPRESET;
   backend->fs_ops = FS_MICROFREAK_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
 

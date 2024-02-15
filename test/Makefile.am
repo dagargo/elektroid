@@ -16,7 +16,7 @@ AM_CPPFLAGS = -Wall -DSCALA_TEST_DIR='"$(srcdir)/res/scala"'
 
 check_PROGRAMS = tests_scala tests_common tests_microfreak
 
-tests_LIBS = glib-2.0 json-glib-1.0 cunit $(BE_LIBS)
+tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip $(BE_LIBS)
 
 tests_scala_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` -pthread
 tests_scala_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(MSYS2_LIBS)
