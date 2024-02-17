@@ -35,6 +35,9 @@
 #define MICROFREAK_GET_P1_FROM_HEADER(header) (&header[11])
 #define MICROFREAK_GET_NAME_FROM_HEADER(header) ((gchar*)&header[12])
 
+#define MICROFREAK_ALPHABET " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
+#define MICROFREAK_DEFAULT_CHAR '.'
+
 static const guint8 MICROFREAK_REQUEST_HEADER[] =
   { 0xf0, 0, 0x20, 0x6b, 7, 1 };
 
@@ -544,7 +547,7 @@ microfreak_rename (struct backend *backend, const gchar *src,
 {
   guint id;
   gint err;
-  gchar *name;
+  gchar *name, *sanitized;
   guint8 *header_payload, len, payload[3];
   GByteArray *tx_msg, *rx_msg;
 
@@ -578,8 +581,12 @@ microfreak_rename (struct backend *backend, const gchar *src,
 
   header_payload = MICROFREAK_GET_MSG_PAYLOAD (rx_msg);
   name = MICROFREAK_GET_NAME_FROM_HEADER (header_payload);
-  len = strlen (dst);
-  memcpy (name, dst, len);
+  sanitized = common_get_sanitized_name (dst, MICROFREAK_ALPHABET,
+					 MICROFREAK_DEFAULT_CHAR);
+  len = strlen (sanitized);
+  len = len > MICROFREAK_PRESET_NAME_LEN ? MICROFREAK_PRESET_NAME_LEN : len;
+  memcpy (name, sanitized, len);
+  g_free (sanitized);
   memset (name + len, 0, MICROFREAK_PRESET_NAME_LEN - len);
   tx_msg = microfreak_get_msg (backend, 0x52, header_payload,
 			       MICROFREAK_PRESET_HEADER_MSG_LEN);
