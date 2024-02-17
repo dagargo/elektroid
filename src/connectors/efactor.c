@@ -49,6 +49,10 @@
 
 #define EFACTOR_PEDAL_NAME(data) (data->type == EFACTOR_FACTOR ? EFACTOR_FACTOR_NAME_PREFIX : EFACTOR_H9_NAME_PREFIX)
 
+#define EFACTOR_MAX_NAME_LEN 16
+#define EFACTOR_ALPHABET " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz*+-_|}"
+#define EFACTOR_DEFAULT_CHAR '_'
+
 static const guint8 EVENTIDE_ID[] = { 0x1c };
 static const guint8 FAMILY_ID[] = { 0, 6 };	//This might not be the same value for all the Factor and H9 pedals.
 static const guint8 MODEL_ID[] = { 0x11, 0 };	//This might not be the same value for all the Factor and H9 pedals.
@@ -347,9 +351,9 @@ static gint
 efactor_rename (struct backend *backend, const gchar *src, const gchar *dst)
 {
   GByteArray *preset, *rx_msg;
-  gint err;
+  gint err, len;
   struct job_control control;
-  gchar **lines, **line;
+  gchar **lines, **line, *sanitized;
   debug_print (1, "Renaming from %s to %s...\n", src, dst);
 
   preset = g_byte_array_new ();
@@ -378,10 +382,15 @@ efactor_rename (struct backend *backend, const gchar *src, const gchar *dst)
 			   strlen (EFACTOR_PRESET_LINE_SEPARATOR));
       line++;
     }
-  g_byte_array_append (preset, (guint8 *) dst, strlen (dst));
+  sanitized = common_get_sanitized_name (dst, EFACTOR_ALPHABET,
+					 EFACTOR_DEFAULT_CHAR);
+  len = strlen (sanitized);
+  len = len > EFACTOR_MAX_NAME_LEN ? EFACTOR_MAX_NAME_LEN : len;
+  g_byte_array_append (preset, (guint8 *) sanitized, len);
   g_byte_array_append (preset, (guint8 *) EFACTOR_PRESET_LINE_SEPARATOR,
 		       strlen (EFACTOR_PRESET_LINE_SEPARATOR));
   g_byte_array_append (preset, (guint8 *) "\0\xf7", 2);
+  g_free (sanitized);
   g_strfreev (lines);
 
   rx_msg = backend_tx_and_rx_sysex (backend, preset, 100);	//There must be no response.
@@ -422,7 +431,7 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .gui_name = "Presets",
   .gui_icon = BE_FILE_ICON_SND,
   .type_ext = "syx",
-  .max_name_len = 16,
+  .max_name_len = EFACTOR_MAX_NAME_LEN,
   .readdir = efactor_read_dir,
   .print_item = common_print_item,
   .rename = efactor_rename,
