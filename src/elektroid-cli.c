@@ -307,7 +307,7 @@ cli_info (int argc, gchar *argv[], int *optind)
   gchar *device_path;
   gint err;
   gboolean first;
-  const struct fs_operations ** ops;
+  const struct fs_operations **ops;
 
   if (*optind == argc)
     {
@@ -337,9 +337,9 @@ cli_info (int argc, gchar *argv[], int *optind)
   first = TRUE;
   while (*ops)
     {
-      const gchar * name = (*ops)->name;
+      const gchar *name = (*ops)->name;
       gboolean gui = (backend.filesystems & (*ops)->fs);
-      printf ("%s%s%s", first ? "" : ",", name, gui ? "" : " (CLI only)");
+      printf ("%s%s%s", first ? "" : ", ", name, gui ? "" : " (CLI only)");
       ops++;
       first = FALSE;
     }
