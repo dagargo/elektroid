@@ -52,6 +52,9 @@ gint sds_upload (struct backend *backend, const gchar * path,
 		 struct idata *sample, struct task_control *control,
 		 guint bits);
 
+gint sds_upload_16b (struct backend *backend, const gchar *path,
+		struct idata *sample, struct task_control *control);
+
 gint sds_sample_load (struct backend *backend, const gchar * path,
 		      struct idata *sample, struct task_control *control);
 

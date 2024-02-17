@@ -25,6 +25,7 @@
 #include "connectors/efactor.h"
 #include "connectors/elektron.h"
 #include "connectors/logue.h"
+#include "connectors/machinedrum.h"
 #include "connectors/microbrute.h"
 #include "connectors/microfreak.h"
 #include "connectors/monomachine.h"
@@ -45,7 +46,8 @@ regconn_register ()
 	       &CONNECTOR_CZ, &CONNECTOR_PADKONTROL,
 	       &CONNECTOR_VOLCA_SAMPLE_2, &CONNECTOR_LOGUE, &CONNECTOR_SDS,
 	       &CONNECTOR_EFACTOR, &CONNECTOR_DEFAULT,
-	       &CONNECTOR_VOLCA_SAMPLE, &CONNECTOR_MONOMACHINE, NULL);
+	       &CONNECTOR_VOLCA_SAMPLE, &CONNECTOR_MONOMACHINE,
+	       &CONNECTOR_MACHINEDRUM, NULL);
 }
 
 void
