@@ -18,6 +18,7 @@ These are the supported devices:
 * Elektron Analog Rytm MKI and MKII
 * Elektron Digitakt I and II
 * Elektron Digitone I and II and Digitone Keys
+* Elektron MachineDrum
 * Elektron Model:Cycles
 * Elektron Model:Samples
 * Elektron Syntakt
