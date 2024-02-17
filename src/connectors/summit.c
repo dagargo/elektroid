@@ -891,6 +891,7 @@ summit_wavetable_rename (struct backend *backend, const gchar *src,
 {
   GByteArray *tx_msg;
   guint id, len;
+  gchar *sanitized;
 
   if (common_slot_get_id_name_from_path (src, &id, NULL))
     {
@@ -909,9 +910,12 @@ summit_wavetable_rename (struct backend *backend, const gchar *src,
   tx_msg->data[SUMMIT_REQ_OP_POS] = 0x7;
   tx_msg->data[14] = id;
   g_byte_array_append (tx_msg, (guint8 *) "       \xf7", 8);
-  len = strlen (dst);
+  sanitized = common_get_sanitized_name (dst, SUMMIT_ALPHABET,
+					 SUMMIT_DEFAULT_CHAR);
+  len = strlen (sanitized);
   len = len > SUMMIT_WAVETABLE_NAME_LEN ? SUMMIT_WAVETABLE_NAME_LEN : len;
-  memcpy (&tx_msg->data[15], dst, len);
+  memcpy (&tx_msg->data[15], sanitized, len);
+  g_free (sanitized);
   return backend_tx (backend, tx_msg);
 }
 
