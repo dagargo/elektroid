@@ -22,6 +22,7 @@
 
 #include "connectors/system.h"
 #include "connectors/elektron.h"
+#include "connectors/machinedrum.h"
 #include "connectors/microbrute.h"
 #include "connectors/microfreak.h"
 #include "connectors/cz.h"
@@ -37,8 +38,8 @@ regconn_register ()
   system_connector = &CONNECTOR_SYSTEM;
   gslist_fill (&connectors, &CONNECTOR_ELEKTRON, &CONNECTOR_MICROBRUTE,
 	       &CONNECTOR_MICROFREAK, &CONNECTOR_PHATTY, &CONNECTOR_SUMMIT,
-	       &CONNECTOR_CZ, &CONNECTOR_SDS, &CONNECTOR_EFACTOR,
-	       &CONNECTOR_DEFAULT, NULL);
+	       &CONNECTOR_CZ, &CONNECTOR_MACHINEDRUM, &CONNECTOR_SDS,
+	       &CONNECTOR_EFACTOR, &CONNECTOR_DEFAULT, NULL);
 }
 
 void

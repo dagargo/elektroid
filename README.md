@@ -19,6 +19,7 @@ These are the supported devices:
 * Elektron Analog Rytm MKI and MKII
 * Elektron Analog Four MKI, MKII and Keys
 * Elektron Analog Heat MKI, MKII and +FX
+* Elektron MachineDrum
 * All samplers implementing MIDI SDS
 * Casio CZ-101
 * Arturia MicroBrute
