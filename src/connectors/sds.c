@@ -26,7 +26,7 @@
 #include "default.h"
 #include "common.h"
 
-#define SDS_SAMPLE_LIMIT 1000
+#define SDS_SAMPLE_TOTAL 1000
 #define SDS_DATA_PACKET_LEN 127
 #define SDS_DATA_PACKET_PAYLOAD_LEN 120
 #define SDS_DATA_PACKET_CKSUM_POS 125
@@ -42,18 +42,6 @@
 #define SDS_NO_SPEC_OPEN_LOOP_REST_TIME 200000
 #define SDS_SAMPLE_CHANNELS 1
 #define SDS_SAMPLE_NAME_MAX_LEN 127
-
-struct sds_data
-{
-  gint rest_time;
-  gboolean name_extension;
-};
-
-struct sds_iterator_data
-{
-  guint32 next;
-  struct backend *backend;
-};
 
 static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
 static const guint8 SDS_ACK[] = { 0xf0, 0x7e, 0, 0x7f, 0, 0xf7 };
@@ -556,7 +544,7 @@ end:
   return err;
 }
 
-static gint
+gint
 sds_download (struct backend *backend, const gchar *path,
 	      struct idata *sample, struct job_control *control)
 {
@@ -697,7 +685,7 @@ sds_get_rename_sample_msg (guint id, const gchar *name)
   return tx_msg;
 }
 
-static gint
+gint
 sds_rename (struct backend *backend, const gchar *src, const gchar *dst)
 {
   GByteArray *tx_msg, *rx_msg;
@@ -907,20 +895,20 @@ sds_upload_14b (struct backend *backend, const gchar *path,
   return sds_upload (backend, path, sample, control, 14);
 }
 
-static gint
+gint
 sds_upload_16b (struct backend *backend, const gchar *path,
 		struct idata *sample, struct job_control *control)
 {
   return sds_upload (backend, path, sample, control, 16);
 }
 
-static gint
+gint
 sds_next_sample_dentry (struct item_iterator *iter)
 {
   struct sds_iterator_data *iterator_data = iter->data;
   struct sds_data *data = iterator_data->backend->data;
 
-  if (iterator_data->next >= SDS_SAMPLE_LIMIT)
+  if (iterator_data->next > iterator_data->last)
     {
       return -ENOENT;
     }
@@ -958,6 +946,7 @@ sds_read_dir (struct backend *backend, struct item_iterator *iter,
 
   data = g_malloc (sizeof (struct sds_iterator_data));
   data->next = 0;
+  data->last = SDS_SAMPLE_TOTAL - 1;
   data->backend = backend;
 
   item_iterator_init (iter, dir, data, sds_next_sample_dentry, g_free);
@@ -973,7 +962,7 @@ sds_sample_load_common (const gchar *path, struct idata *sample,
 			     SF_FORMAT_PCM_16);
 }
 
-static gint
+gint
 sds_sample_load (const gchar *path, struct idata *sample,
 		 struct job_control *control)
 {
@@ -1008,7 +997,7 @@ sds_sample_load_8 (const gchar *path, struct idata *sample,
   return sds_sample_load_common (path, sample, control, 8000);
 }
 
-static gint
+gint
 sds_sample_save (const gchar *path, struct idata *sample,
 		 struct job_control *control)
 {
