@@ -301,3 +301,36 @@ common_remove_slot_name_from_path (gchar *path)
       i--;
     }
 }
+
+gchar *
+common_get_sanitized_name (const gchar *name, const gchar *alphabet,
+			   gchar defchar)
+{
+  gchar *sanitized = g_str_to_ascii (name, NULL);
+  gchar *t, *v;
+
+  if (alphabet)
+    {
+      t = sanitized;
+      while (*t)
+	{
+	  gboolean valid = FALSE;
+	  v = (gchar *) alphabet;
+	  while (*v)
+	    {
+	      if (*t == *v)
+		{
+		  valid = TRUE;
+		  break;
+		}
+	      v++;
+	    }
+	  if (!valid)
+	    {
+	      *t = defchar;
+	    }
+	  t++;
+	}
+    }
+  return sanitized;
+}

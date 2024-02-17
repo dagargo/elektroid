@@ -77,3 +77,6 @@ gchar *common_get_download_path (struct backend *backend,
 				 const gchar * src_path, GByteArray * sysex);
 
 void common_remove_slot_name_from_path (gchar * path);
+
+gchar *common_get_sanitized_name (const gchar * name, const gchar * alphabet,
+				  gchar defchar);

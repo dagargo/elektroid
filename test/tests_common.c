@@ -82,6 +82,34 @@ test_common_slot_get_id_name_from_path ()
   CU_ASSERT_STRING_EQUAL (str, "a");
 }
 
+void
+test_common_get_sanitized_name ()
+{
+  gchar *str;
+
+  printf ("\n");
+
+  str = common_get_sanitized_name ("asdf", NULL, '?');
+  CU_ASSERT_STRING_EQUAL (str, "asdf");
+  g_free (str);
+
+  str = common_get_sanitized_name ("ásdf", NULL, '?');
+  CU_ASSERT_STRING_EQUAL (str, "asdf");
+  g_free (str);
+
+  str = common_get_sanitized_name ("asdf", "asd", '?');
+  CU_ASSERT_STRING_EQUAL (str, "asd?");
+  g_free (str);
+
+  str = common_get_sanitized_name ("ásdf", "asd", '?');
+  CU_ASSERT_STRING_EQUAL (str, "asd?");
+  g_free (str);
+
+  str = common_get_sanitized_name ("ásdf", "asd", 0);
+  CU_ASSERT_STRING_EQUAL (str, "asd");
+  g_free (str);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -107,6 +135,12 @@ main (int argc, char *argv[])
 
   if (!CU_add_test (suite, "common_slot_get_id_name_from_path",
 		    test_common_remove_slot_name_from_path))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "common_get_sanitized_name",
+		    test_common_get_sanitized_name))
     {
       goto cleanup;
     }
