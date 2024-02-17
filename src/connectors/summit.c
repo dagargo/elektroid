@@ -42,6 +42,9 @@
 #define SUMMIT_GET_NAME_FROM_MSG(msg, type) (&msg->data[type == FS_SUMMIT_SINGLE_PATCH ? 0x10 : 0x19b])
 #define SUMMIT_GET_BANK_ID_FROM_DIR(dir) ((guint8) dir[1] - 0x40)	// Bank A is the bank 1.
 
+#define SUMMIT_ALPHABET " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}"
+#define SUMMIT_DEFAULT_CHAR '?'
+
 static const guint8 NOVATION_ID[] = { 0x0, 0x20, 0x29 };
 static const guint8 SUMMIT_ID[] = { 0x33, 1, 0, 0 };
 
@@ -383,6 +386,7 @@ summit_patch_rename (struct backend *backend, const gchar *src,
   GByteArray *preset, *rx_msg;
   gint err, len;
   guint8 *name;
+  gchar *sanitized;
   struct job_control control;
   debug_print (1, "Renaming from %s to %s...\n", src, dst);
 
@@ -401,9 +405,13 @@ summit_patch_rename (struct backend *backend, const gchar *src,
 
   usleep (SUMMIT_REST_TIME_US);
 
-  len = strlen (dst);
   name = SUMMIT_GET_NAME_FROM_MSG (preset, fs);
-  memcpy (name, dst, len);
+  sanitized = common_get_sanitized_name (dst, SUMMIT_ALPHABET,
+					 SUMMIT_DEFAULT_CHAR);
+  len = strlen (sanitized);
+  len = len > SUMMIT_PATCH_NAME_LEN ? SUMMIT_PATCH_NAME_LEN : len;
+  memcpy (name, sanitized, len);
+  g_free (sanitized);
   memset (name + len, ' ', SUMMIT_PATCH_NAME_LEN - len);
 
   rx_msg = backend_tx_and_rx_sysex (backend, preset, 100);	//There must be no response.
