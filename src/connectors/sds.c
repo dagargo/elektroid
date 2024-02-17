@@ -66,11 +66,31 @@ static const guint8 SDS_LOOP_POINT_REQUEST[] =
   { 0xf0, 0x7e, 0, 5, 2, 0, 0, 0, 0, 0xf7 };
 
 static gchar *
+sds_get_sample_name (struct backend *backend, gint index)
+{
+  GByteArray *tx_msg, *rx_msg;
+  gchar *name = NULL;
+
+  tx_msg = g_byte_array_new ();
+  g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
+		       sizeof (SDS_SAMPLE_NAME_REQUEST));
+  tx_msg->data[5] = index % 0x80;
+  tx_msg->data[6] = index / 0x80;
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
+  if (rx_msg)
+    {
+      name = strdup ((gchar *) & rx_msg->data[5]);
+      free_msg (rx_msg);
+    }
+
+  return name;
+}
+
+static gchar *
 sds_get_download_path (struct backend *backend,
 		       const struct fs_operations *ops, const gchar *dst_dir,
 		       const gchar *src_path, GByteArray *data)
 {
-  GByteArray *tx_msg, *rx_msg;
   GString *str = g_string_new (NULL);
   gchar *path;
   gchar *name = g_path_get_basename (src_path);
@@ -80,20 +100,11 @@ sds_get_download_path (struct backend *backend,
 
   if (sds_data->name_extension)
     {
-      g_mutex_lock (&backend->mutex);
-      backend_rx_drain (backend);
-      g_mutex_unlock (&backend->mutex);
-
-      tx_msg = g_byte_array_new ();
-      g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
-			   sizeof (SDS_SAMPLE_NAME_REQUEST));
-      tx_msg->data[5] = index % 0x80;
-      tx_msg->data[6] = index / 0x80;
-      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
-      if (rx_msg)
+      gchar *sample_name = sds_get_sample_name (backend, index);
+      if (sample_name)
 	{
-	  g_string_append_printf (str, "%s.wav", &rx_msg->data[5]);
-	  free_msg (rx_msg);
+	  g_string_append_printf (str, "%s.wav", sample_name);
+	  g_free (name);
 	  use_id = FALSE;
 	}
     }
@@ -103,7 +114,6 @@ sds_get_download_path (struct backend *backend,
       g_string_append_printf (str, "%03d.wav", index);
     }
 
-  g_free (name);
   path = path_chain (PATH_SYSTEM, dst_dir, str->str);
   g_string_free (str, TRUE);
   return path;
