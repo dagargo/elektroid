@@ -50,6 +50,12 @@ struct sds_data
   gboolean name_extension;
 };
 
+struct sds_iterator_data
+{
+  guint32 next;
+  struct backend *backend;
+};
+
 static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
 static const guint8 SDS_ACK[] = { 0xf0, 0x7e, 0, 0x7f, 0, 0xf7 };
 static const guint8 SDS_NAK[] = { 0xf0, 0x7e, 0, 0x7e, 0, 0xf7 };
@@ -69,7 +75,7 @@ static gchar *
 sds_get_sample_name (struct backend *backend, gint index)
 {
   GByteArray *tx_msg, *rx_msg;
-  gchar *name = NULL;
+  gchar *name = g_malloc (sizeof (gchar) * (SDS_SAMPLE_NAME_MAX_LEN + 1));
 
   tx_msg = g_byte_array_new ();
   g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
@@ -79,7 +85,9 @@ sds_get_sample_name (struct backend *backend, gint index)
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
   if (rx_msg)
     {
-      name = strdup ((gchar *) & rx_msg->data[5]);
+      size_t n = rx_msg->data[9];
+      memcpy (name, (gchar *) & rx_msg->data[10], n);
+      memset (name + n, 0, SDS_SAMPLE_NAME_MAX_LEN + 1 - n);
       free_msg (rx_msg);
     }
 
@@ -947,21 +955,53 @@ sds_upload_16b (struct backend *backend, const gchar *path,
 }
 
 static gint
+sds_next_sample_dentry (struct item_iterator *iter)
+{
+  struct sds_iterator_data *iterator_data = iter->data;
+  struct sds_data *data = iterator_data->backend->data;
+
+  if (iterator_data->next >= SDS_SAMPLE_LIMIT)
+    {
+      return -ENOENT;
+    }
+
+  iter->item.id = iterator_data->next;
+  iter->item.type = ELEKTROID_FILE;
+  iter->item.size = -1;
+  iter->item.slot_used = TRUE;
+  (iterator_data->next)++;
+
+  if (data->name_extension)
+    {
+      gchar *name = sds_get_sample_name (iterator_data->backend,
+					 iterator_data->next);
+      snprintf (iter->item.name, LABEL_MAX, "%s", name ? name : "");
+      g_free (name);
+    }
+  else
+    {
+      iter->item.name[0] = 0;
+    }
+
+  return 0;
+}
+
+static gint
 sds_read_dir (struct backend *backend, struct item_iterator *iter,
 	      const gchar *path, const gchar **extensions)
 {
-  struct common_simple_read_dir_data *data;
+  struct sds_iterator_data *data;
 
   if (strcmp (path, "/"))
     {
       return -ENOTDIR;
     }
 
-  data = g_malloc (sizeof (struct common_simple_read_dir_data));
+  data = g_malloc (sizeof (struct sds_iterator_data));
   data->next = 0;
-  data->max = SDS_SAMPLE_LIMIT;
+  data->backend = backend;
   iter->data = data;
-  iter->next = common_simple_next_dentry;
+  iter->next = sds_next_sample_dentry;
   iter->free = g_free;
 
   return 0;
@@ -1042,7 +1082,8 @@ enum sds_fs
 static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_8_B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_ID_COLUMN,
   .name = "8b1c",
   .gui_name = "8 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -1063,7 +1104,8 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_12_B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_ID_COLUMN,
   .name = "12b1c",
   .gui_name = "12 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -1084,7 +1126,8 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_14_B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_ID_COLUMN,
   .name = "14b1c",
   .gui_name = "14 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -1105,7 +1148,8 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_16_B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_ID_COLUMN,
   .name = "16b1c",
   .gui_name = "16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -1126,7 +1170,8 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_16B_441_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_16_B_441,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_ID_COLUMN,
   .name = "44.1k16b1c",
   .gui_name = "44.1 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -1147,7 +1192,8 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_441_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_16B_32_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_16_B_32,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_ID_COLUMN,
   .name = "32k16b1c",
   .gui_name = "32 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -1168,7 +1214,8 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_32_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_16B_16_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_16_B_16,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_ID_COLUMN,
   .name = "16k16b1c",
   .gui_name = "16 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -1189,7 +1236,8 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_16_OPERATIONS = {
 static const struct fs_operations FS_SAMPLES_SDS_16B_8_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_16_B_8,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_ID_COLUMN,
   .name = "8k16b1c",
   .gui_name = "8 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
