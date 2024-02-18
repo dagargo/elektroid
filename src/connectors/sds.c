@@ -1044,7 +1044,7 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_8_B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
-  .name = "8bits1c",
+  .name = "8b1c",
   .gui_name = "8 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .type_ext = "wav",
@@ -1065,7 +1065,7 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_12_B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
-  .name = "12bits1c",
+  .name = "12b1c",
   .gui_name = "12 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .type_ext = "wav",
@@ -1086,7 +1086,7 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_14_B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
-  .name = "14bits1c",
+  .name = "14b1c",
   .gui_name = "14 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .type_ext = "wav",
@@ -1107,7 +1107,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .fs = FS_SAMPLES_SDS_16_B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
-  .name = "16bits1c",
+  .name = "16b1c",
   .gui_name = "16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
   .type_ext = "wav",
