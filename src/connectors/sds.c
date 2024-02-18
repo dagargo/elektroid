@@ -706,18 +706,20 @@ sds_get_data_packet_msg (gint packet, guint words, guint *word,
 }
 
 static inline GByteArray *
-sds_get_rename_sample_msg (guint id, gchar *name)
+sds_get_rename_sample_msg (guint id, const gchar *name)
 {
   GByteArray *tx_msg = g_byte_array_new ();
-  guint name_len = strlen (name);
-  name_len = name_len > 127 ? 127 : name_len;
+  gchar *sanitized = common_get_sanitized_name (name, NULL, 0);
+  guint len = strlen (sanitized);
+  len = len > SDS_SAMPLE_NAME_MAX_LEN ? SDS_SAMPLE_NAME_MAX_LEN : len;
   g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_HEADER,
 		       sizeof (SDS_SAMPLE_NAME_HEADER));
   tx_msg->data[5] = id % 0x80;
   tx_msg->data[6] = id / 0x80;
-  g_byte_array_append (tx_msg, (guint8 *) & name_len, 1);
-  g_byte_array_append (tx_msg, (guint8 *) name, name_len);
+  g_byte_array_append (tx_msg, (guint8 *) & len, 1);
+  g_byte_array_append (tx_msg, (guint8 *) name, len);
   g_byte_array_append (tx_msg, (guint8 *) "\xf7", 1);
+  g_free (sanitized);
   return tx_msg;
 }
 
@@ -727,7 +729,6 @@ sds_rename (struct backend *backend, const gchar *src, const gchar *dst)
   GByteArray *tx_msg, *rx_msg;
   guint id;
   gint err;
-  gchar *name;
   debug_print (1, "Sending rename request...\n");
   err = common_slot_get_id_name_from_path (src, &id, NULL);
   if (err)
@@ -739,8 +740,7 @@ sds_rename (struct backend *backend, const gchar *src, const gchar *dst)
   backend_rx_drain (backend);
   g_mutex_unlock (&backend->mutex);
 
-  name = g_path_get_basename (dst);
-  tx_msg = sds_get_rename_sample_msg (id, name);
+  tx_msg = sds_get_rename_sample_msg (id, dst);
   err = -ENOSYS;
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
   if (rx_msg)
@@ -749,7 +749,6 @@ sds_rename (struct backend *backend, const gchar *src, const gchar *dst)
       free_msg (rx_msg);
     }
 
-  g_free (name);
   return err;
 }
 
