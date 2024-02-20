@@ -75,7 +75,7 @@ static gchar *
 sds_get_sample_name (struct backend *backend, gint index)
 {
   GByteArray *tx_msg, *rx_msg;
-  gchar *name = g_malloc (sizeof (gchar) * (SDS_SAMPLE_NAME_MAX_LEN + 1));
+  gchar *name = NULL;
 
   tx_msg = g_byte_array_new ();
   g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
@@ -86,6 +86,7 @@ sds_get_sample_name (struct backend *backend, gint index)
   if (rx_msg)
     {
       size_t n = rx_msg->data[9];
+      name = g_malloc (sizeof (gchar) * (SDS_SAMPLE_NAME_MAX_LEN + 1));
       memcpy (name, (gchar *) & rx_msg->data[10], n);
       memset (name + n, 0, SDS_SAMPLE_NAME_MAX_LEN + 1 - n);
       free_msg (rx_msg);
