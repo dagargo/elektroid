@@ -80,8 +80,6 @@ static const struct fs_operations *FS_DEFAULT_OPERATIONS[] = {
 gint
 default_handshake (struct backend *backend)
 {
-  backend->filesystems = 0;
-  backend->fs_ops = NULL;
   backend->filesystems = FS_PROGRAM_DEFAULT;
   backend->fs_ops = FS_DEFAULT_OPERATIONS;
   snprintf (backend->name, LABEL_MAX, "%s", _("MIDI device"));
