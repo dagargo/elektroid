@@ -334,3 +334,20 @@ common_get_sanitized_name (const gchar *name, const gchar *alphabet,
     }
   return sanitized;
 }
+
+gint
+common_sample_load (const gchar *path, GByteArray *sample,
+		    struct job_control *control, guint32 rate,
+		    guint32 channels, guint32 format)
+{
+  struct sample_info sample_info_dst;
+  sample_info_dst.rate = rate;
+  sample_info_dst.channels = channels;
+  sample_info_dst.format = format;
+  gint res = sample_load_from_file (path, sample, control, &sample_info_dst);
+  if (!res)
+    {
+      memcpy (control->data, &sample_info_dst, sizeof (struct sample_info));
+    }
+  return res;
+}

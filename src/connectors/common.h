@@ -19,6 +19,7 @@
  */
 
 #include "backend.h"
+#include "sample.h"
 
 #define COMMON_GET_MIDI_BANK(p) ((p & 0x3f80) >> 7)
 #define COMMON_GET_MIDI_PRESET(p) (p & 0x7f)
@@ -80,3 +81,7 @@ void common_remove_slot_name_from_path (gchar * path);
 
 gchar *common_get_sanitized_name (const gchar * name, const gchar * alphabet,
 				  gchar defchar);
+
+gint common_sample_load (const gchar * path, GByteArray * sample,
+			 struct job_control *control, guint32 rate,
+			 guint32 channels, guint32 format);

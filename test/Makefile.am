@@ -28,8 +28,8 @@ tests_scala_SOURCES = \
         ../src/connectors/scala.c \
 	../src/connectors/scala.h
 
-tests_common_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` -pthread
-tests_common_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(MSYS2_LIBS)
+tests_common_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -pthread
+tests_common_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
 
 tests_common_SOURCES = \
         tests_common.c \
@@ -39,10 +39,12 @@ tests_common_SOURCES = \
         ../src/backend.h \
 	$(BE_SOURCES) \
         ../src/connectors/common.c \
-	../src/connectors/common.h
+	../src/connectors/common.h \
+	../src/sample.c \
+        ../src/sample.h
 
-tests_microfreak_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` -pthread
-tests_microfreak_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(MSYS2_LIBS)
+tests_microfreak_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -pthread
+tests_microfreak_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
 
 tests_microfreak_SOURCES = \
         tests_microfreak.c \
@@ -53,6 +55,8 @@ tests_microfreak_SOURCES = \
 	$(BE_SOURCES) \
         ../src/connectors/common.c \
 	../src/connectors/common.h \
+	../src/sample.c \
+        ../src/sample.h \
 	../src/connectors/microfreak.c \
 	../src/connectors/microfreak.h
 

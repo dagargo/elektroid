@@ -23,7 +23,6 @@
 #include <zlib.h>
 #include "elektron.h"
 #include "utils.h"
-#include "sample.h"
 #include "package.h"
 #include "common.h"
 #include "../config.h"
@@ -3015,16 +3014,8 @@ gint
 elektron_sample_load (const gchar *path, GByteArray *sample,
 		      struct job_control *control)
 {
-  struct sample_info sample_info_dst;
-  sample_info_dst.rate = ELEKTRON_SAMPLE_RATE;
-  sample_info_dst.channels = ELEKTRON_SAMPLE_CHANNELS;
-  sample_info_dst.format = SF_FORMAT_PCM_16;
-  gint res = sample_load_from_file (path, sample, control, &sample_info_dst);
-  if (!res)
-    {
-      memcpy (control->data, &sample_info_dst, sizeof (struct sample_info));
-    }
-  return res;
+  return common_sample_load (path, sample, control, ELEKTRON_SAMPLE_RATE,
+			     ELEKTRON_SAMPLE_CHANNELS, SF_FORMAT_PCM_16);
 }
 
 gchar *

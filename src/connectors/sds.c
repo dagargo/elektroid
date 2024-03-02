@@ -22,7 +22,6 @@
 #include <string.h>
 #include <glib/gi18n.h>
 #include "elektron.h"
-#include "sample.h"
 #include "sds.h"
 #include "default.h"
 #include "common.h"
@@ -1009,54 +1008,46 @@ sds_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
-sds_sample_load_with_rate (const gchar *path, GByteArray *sample,
-			   struct job_control *control, guint32 rate)
+sds_sample_load_common (const gchar *path, GByteArray *sample,
+			struct job_control *control, gint32 rate)
 {
-  struct sample_info sample_info_dst;
-  sample_info_dst.rate = rate;
-  sample_info_dst.channels = SDS_SAMPLE_CHANNELS;
-  sample_info_dst.format = SF_FORMAT_PCM_16;
-  gint res = sample_load_from_file (path, sample, control, &sample_info_dst);
-  if (!res)
-    {
-      memcpy (control->data, &sample_info_dst, sizeof (struct sample_info));
-    }
-  return res;
+  return common_sample_load (path, sample, control, rate, SDS_SAMPLE_CHANNELS,
+			     SF_FORMAT_PCM_16);
 }
 
 static gint
 sds_sample_load (const gchar *path, GByteArray *sample,
 		 struct job_control *control)
 {
-  return sds_sample_load_with_rate (path, sample, control, 0);	// Any sample rate is valid.
+  return sds_sample_load_common (path, sample, control, 0);	// Any sample rate is valid.
 }
 
 static gint
 sds_sample_load_441 (const gchar *path, GByteArray *sample,
 		     struct job_control *control)
 {
-  return sds_sample_load_with_rate (path, sample, control, 44100);
+  return sds_sample_load_common (path, sample, control, 44100);
 }
 
 static gint
 sds_sample_load_32 (const gchar *path, GByteArray *sample,
 		    struct job_control *control)
 {
-  return sds_sample_load_with_rate (path, sample, control, 32000);
+  return sds_sample_load_common (path, sample, control, 32000);
 }
 
 static gint
 sds_sample_load_16 (const gchar *path, GByteArray *sample,
 		    struct job_control *control)
 {
-  return sds_sample_load_with_rate (path, sample, control, 16000);
+  return sds_sample_load_common (path, sample, control, 16000);
 }
 
 static gint
 sds_sample_load_8 (const gchar *path, GByteArray *sample,
 		   struct job_control *control)
 {
-  return sds_sample_load_with_rate (path, sample, control, 8000);
+  return sds_sample_load_common (path, sample, control, 8000);
 }
 
 static gint
