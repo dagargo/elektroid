@@ -245,7 +245,7 @@ cz_download (struct backend *backend, const gchar *path,
     }
 
   tx_msg = cz_get_program_dump_msg (id);
-  err = common_data_download (backend, tx_msg, &rx_msg, control);
+  err = common_data_tx_and_rx (backend, tx_msg, &rx_msg, control);
   if (err)
     {
       goto end;
@@ -313,7 +313,7 @@ cz_upload (struct backend *backend, const gchar *path, GByteArray *input,
   g_byte_array_append (msg, input->data, input->len);
   msg->data[CZ_PROGRAM_HEADER_ID] = id;
 
-  err = common_data_upload (backend, msg, control);
+  err = common_data_tx (backend, msg, control);
   free_msg (msg);
 
   return err;

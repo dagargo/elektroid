@@ -341,7 +341,7 @@ phatty_download (struct backend *backend, const gchar *path,
       tx_msg = phatty_get_panel_dump_msg ();
     }
 
-  err = common_data_download (backend, tx_msg, &rx_msg, control);
+  err = common_data_tx_and_rx (backend, tx_msg, &rx_msg, control);
   if (err)
     {
       goto end;
@@ -387,7 +387,7 @@ phatty_upload (struct backend *backend, const gchar *path,
     }
 
   input->data[PHATTY_PRESET_ID_OFFSET] = id;
-  return common_data_upload (backend, input, control);
+  return common_data_tx (backend, input, control);
 }
 
 static gint
@@ -484,7 +484,7 @@ phatty_scale_upload (struct backend *backend, const gchar *path,
   input->data[5] = 0;		//bank
   input->data[6] = id;		//scale
 
-  return common_data_upload (backend, input, control);
+  return common_data_tx (backend, input, control);
 }
 
 static const struct fs_operations FS_PHATTY_SCALE_OPERATIONS = {

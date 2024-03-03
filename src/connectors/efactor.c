@@ -340,7 +340,7 @@ efactor_upload (struct backend *backend, const gchar *path,
     }
   g_byte_array_append (tx_msg, (guint8 *) b, input->len - i);
 
-  err = common_data_upload (backend, tx_msg, control);
+  err = common_data_tx (backend, tx_msg, control);
   free_msg (tx_msg);
 end:
   sleep (1);

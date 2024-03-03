@@ -56,15 +56,16 @@ common_midi_program_change_int (struct backend *backend, const gchar * dir,
 
 gint common_simple_next_dentry (struct item_iterator *iter);
 
-gint common_data_upload (struct backend *backend, GByteArray * msg,
-			 struct job_control *control);
+gint common_data_tx (struct backend *backend, GByteArray * msg,
+		     struct job_control *control);
 
-gint common_data_download (struct backend *backend, GByteArray * tx_msg,
-			   GByteArray ** rx_msg, struct job_control *control);
+gint common_data_tx_and_rx (struct backend *backend, GByteArray * tx_msg,
+			    GByteArray ** rx_msg,
+			    struct job_control *control);
 
-gint common_data_download_part (struct backend *backend, GByteArray * tx_msg,
-				GByteArray ** rx_msg,
-				struct job_control *control);
+gint common_data_tx_and_rx_part (struct backend *backend, GByteArray * tx_msg,
+				 GByteArray ** rx_msg,
+				 struct job_control *control);
 
 gchar *common_get_download_path_with_params (struct backend *backend,
 					     const struct fs_operations *ops,

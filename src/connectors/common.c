@@ -161,8 +161,8 @@ common_simple_next_dentry (struct item_iterator *iter)
 }
 
 gint
-common_data_upload (struct backend *backend, GByteArray *msg,
-		    struct job_control *control)
+common_data_tx (struct backend *backend, GByteArray *msg,
+		struct job_control *control)
 {
   gint err = 0;
   gboolean active;
@@ -198,10 +198,9 @@ cleanup:
   return err;
 }
 
-
 gint
-common_data_download_part (struct backend *backend, GByteArray *tx_msg,
-			   GByteArray **rx_msg, struct job_control *control)
+common_data_tx_and_rx_part (struct backend *backend, GByteArray *tx_msg,
+			    GByteArray **rx_msg, struct job_control *control)
 {
   gint err = 0;
   gboolean active;
@@ -234,12 +233,12 @@ cleanup:
 }
 
 gint
-common_data_download (struct backend *backend, GByteArray *tx_msg,
-		      GByteArray **rx_msg, struct job_control *control)
+common_data_tx_and_rx (struct backend *backend, GByteArray *tx_msg,
+		       GByteArray **rx_msg, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
-  return common_data_download_part (backend, tx_msg, rx_msg, control);
+  return common_data_tx_and_rx_part (backend, tx_msg, rx_msg, control);
 }
 
 gchar *

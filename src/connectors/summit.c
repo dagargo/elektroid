@@ -286,7 +286,7 @@ summit_patch_download (struct backend *backend, const gchar *path,
     }
 
   tx_msg = summit_get_patch_dump_msg (bank, id, fs);
-  err = common_data_download (backend, tx_msg, &rx_msg, control);
+  err = common_data_tx_and_rx (backend, tx_msg, &rx_msg, control);
   if (err)
     {
       goto end;
@@ -346,7 +346,7 @@ summit_patch_upload (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
-  err = common_data_upload (backend, msg, control);
+  err = common_data_tx (backend, msg, control);
 
 cleanup:
   free_msg (msg);
@@ -596,7 +596,7 @@ summit_tuning_upload (struct backend *backend, const gchar *path,
   input->data[2] = 0;		//0x7f does not work with the Summit.
   input->data[5] = id;		//tuning
 
-  return common_data_upload (backend, input, control);
+  return common_data_tx (backend, input, control);
 }
 
 static const struct fs_operations FS_SUMMIT_SCALE_OPERATIONS = {
@@ -636,7 +636,7 @@ summit_tuning_download (struct backend *backend, const gchar *path,
   g_byte_array_append (tx_msg, SUMMIT_BULK_TUNING_REQ,
 		       sizeof (SUMMIT_BULK_TUNING_REQ));
   tx_msg->data[5] = id;
-  err = common_data_download (backend, tx_msg, &rx_msg, control);
+  err = common_data_tx_and_rx (backend, tx_msg, &rx_msg, control);
   if (err)
     {
       goto end;
@@ -780,7 +780,7 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
 
   //Header
   tx_msg = summit_get_wavetable_header_dump_msg (id + 64);
-  err = common_data_download_part (backend, tx_msg, &rx_msg, control);
+  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
   if (err)
     {
       return err;
@@ -802,7 +802,7 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
   for (gint8 i = 0; i < SUMMIT_WAVETABLE_WAVES; i++)
     {
       tx_msg = summit_get_wavetable_wave_dump_msg (id, i);
-      err = common_data_download_part (backend, tx_msg, &rx_msg, control);
+      err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
       if (err)
 	{
 	  goto err;
@@ -882,7 +882,7 @@ summit_wavetable_upload (struct backend *backend, const gchar *path,
 		  + SUMMIT_WAVETABLE_ID_POS] = id;
     }
 
-  return common_data_upload (backend, input, control);
+  return common_data_tx (backend, input, control);
 }
 
 static gint
