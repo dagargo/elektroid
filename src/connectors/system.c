@@ -385,6 +385,17 @@ system_load_441_8_mono (const gchar *path, GByteArray *sample,
   return system_load_custom (path, sample, control, &sample_info_dst);
 }
 
+static gint
+system_load_32_16_mono (const gchar *path, GByteArray *sample,
+			struct job_control *control)
+{
+  struct sample_info sample_info_dst;
+  sample_info_dst.rate = 32000;
+  sample_info_dst.channels = 1;
+  sample_info_dst.format = SF_FORMAT_PCM_16;
+  return system_load_custom (path, sample, control, &sample_info_dst);
+}
+
 gboolean
 system_file_exists (struct backend *backend, const gchar *path)
 {
@@ -400,7 +411,8 @@ enum system_fs
   FS_SAMPLES_LOCAL_441_24_STEREO = 0x10,
   FS_SAMPLES_LOCAL_441_24_MONO = 0x20,
   FS_SAMPLES_LOCAL_441_8_STEREO = 0x40,
-  FS_SAMPLES_LOCAL_441_8_MONO = 0x80
+  FS_SAMPLES_LOCAL_441_8_MONO = 0x80,
+  FS_SAMPLES_LOCAL_32_16_MONO = 0x100,
 };
 
 const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
@@ -615,6 +627,34 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_MONO_OPERATIONS = {
   .max_name_len = 255
 };
 
+const struct fs_operations FS_SYSTEM_SAMPLES_32_16_MONO_OPERATIONS = {
+  .fs = FS_SAMPLES_LOCAL_32_16_MONO,
+  .options =
+    FS_OPTION_SORT_BY_NAME | FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .name = "wav32k8b1c",
+  .gui_name = "WAV 32 KHz 16 bits mono",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = system_samples_read_dir,
+  .file_exists = system_file_exists,
+  .mkdir = system_mkdir,
+  .delete = system_delete,
+  .rename = system_rename,
+  .move = system_rename,
+  .copy = NULL,
+  .clear = NULL,
+  .swap = NULL,
+  .download = system_download,
+  .upload = system_upload,
+  .load = system_load_32_16_mono,
+  .save = save_file,
+  .get_ext = backend_get_fs_ext,
+  .get_upload_path = system_get_upload_path,
+  .get_download_path = system_get_download_path,
+  .type_ext = "wav",
+  .max_name_len = 255
+};
+
 static const struct fs_operations *FS_SYSTEM_OPERATIONS[] = {
   &FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS,
   &FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS,
@@ -624,6 +664,7 @@ static const struct fs_operations *FS_SYSTEM_OPERATIONS[] = {
   &FS_SYSTEM_SAMPLES_441_24_MONO_OPERATIONS,
   &FS_SYSTEM_SAMPLES_441_8_STEREO_OPERATIONS,
   &FS_SYSTEM_SAMPLES_441_8_MONO_OPERATIONS,
+  &FS_SYSTEM_SAMPLES_32_16_MONO_OPERATIONS,
   NULL
 };
 
@@ -686,7 +727,8 @@ system_init_backend (struct backend *backend, const gchar *id)
     FS_SAMPLES_LOCAL_48_16_STEREO | FS_SAMPLES_LOCAL_48_16_MONO |
     FS_SAMPLES_LOCAL_441_16_STEREO | FS_SAMPLES_LOCAL_441_16_MONO |
     FS_SAMPLES_LOCAL_441_24_STEREO | FS_SAMPLES_LOCAL_441_24_MONO |
-    FS_SAMPLES_LOCAL_441_8_STEREO | FS_SAMPLES_LOCAL_441_8_MONO;
+    FS_SAMPLES_LOCAL_441_8_STEREO | FS_SAMPLES_LOCAL_441_8_MONO |
+    FS_SAMPLES_LOCAL_32_16_MONO;
   backend->fs_ops = FS_SYSTEM_OPERATIONS;
   snprintf (backend->name, LABEL_MAX, "%s", _("System"));
   *backend->version = 0;
