@@ -839,7 +839,7 @@ elektroid_delete_files_runner (gpointer data)
 
       if (elektroid_delete_file (browser, browser->dir, &item))
 	{
-	  error_print ("Error while deleting file");
+	  error_print ("Error while deleting file\n");
 	}
 
       g_mutex_lock (&sysex_transfer.mutex);
