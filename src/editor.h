@@ -52,7 +52,7 @@ struct editor
   GtkWidget *save_menuitem;
   GtkDialog *record_dialog;
   struct guirecorder guirecorder;
-  guint zoom;
+  gdouble zoom;
   guint operation;
   gboolean dirty;
   gboolean ready;

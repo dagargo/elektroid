@@ -326,7 +326,7 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
   struct audio *audio = &editor->audio;
   guint start = editor_get_start_frame (editor);
 
-  debug_print (3, "Drawing waveform from %d with %dx zoom...\n",
+  debug_print (3, "Drawing waveform from %d with %f.2x zoom...\n",
 	       start, editor->zoom);
 
   width = gtk_widget_get_allocated_width (widget);
@@ -754,13 +754,18 @@ editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
 
   if (dy == -1.0)
     {
-      guint w;
-      gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &w, NULL);
-      if (w >= editor->audio.sample_info.frames)
+      guint w =
+	gtk_widget_get_allocated_width (editor->waveform_scrolled_window);
+      gdouble max_zoom = editor->audio.sample_info.frames / (double) w;
+      if (editor->zoom == max_zoom)
 	{
 	  goto end;
 	}
-      editor->zoom = editor->zoom << 1;
+      editor->zoom = editor->zoom * 2.0;
+      if (editor->zoom > max_zoom)
+	{
+	  editor->zoom = max_zoom;
+	}
     }
   else
     {
@@ -768,10 +773,14 @@ editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
 	{
 	  goto end;
 	}
-      editor->zoom = editor->zoom >> 1;
+      editor->zoom = editor->zoom / 2.0;
+      if (editor->zoom < 1.0)
+	{
+	  editor->zoom = 1.0;
+	}
     }
 
-  debug_print (1, "Setting zoon to %dx...\n", editor->zoom);
+  debug_print (1, "Setting zoom to %f.2x...\n", editor->zoom);
 
   start = cursor_frame - rel_pos * editor->audio.sample_info.frames /
     (gdouble) editor->zoom;
