@@ -43,7 +43,7 @@
 #define MICROFREAK_GET_P1_FROM_HEADER(header) (&header[11])
 #define MICROFREAK_GET_NAME_FROM_HEADER(header) ((gchar*)&header[12])
 
-#define MICROFREAK_CHECK_OP_LEN(msg,op,len) (MICROFREAK_GET_MSG_OP(msg) != op || MICROFREAK_GET_MSG_PAYLOAD_LEN(msg) != len)
+#define MICROFREAK_CHECK_OP_LEN(msg,op,len) (MICROFREAK_GET_MSG_OP(msg) == op && MICROFREAK_GET_MSG_PAYLOAD_LEN(msg) == len ? 0 : -EIO)
 
 #define MICROFREAK_ALPHABET " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
 #define MICROFREAK_DEFAULT_CHAR '.'
@@ -215,6 +215,7 @@ microfreak_get_preset_dump_msg (struct backend *backend, guint32 id,
 static gint
 microfreak_next_preset_dentry (struct item_iterator *iter)
 {
+  gint err;
   gchar preset_name[MICROFREAK_PRESET_NAME_LEN + 1];
   GByteArray *tx_msg, *rx_msg;
   struct microfreak_iter_data *data = iter->data;
@@ -230,16 +231,15 @@ microfreak_next_preset_dentry (struct item_iterator *iter)
     {
       return -EIO;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x52,
-			       MICROFREAK_PRESET_HEADER_MSG_LEN))
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x52,
+				 MICROFREAK_PRESET_HEADER_MSG_LEN);
+  if (err)
     {
-      free_msg (rx_msg);
-      return -EIO;
+      goto end;
     }
 
   microfreak_get_preset_name (preset_name, rx_msg);
   snprintf (iter->item.name, LABEL_MAX, "%s", preset_name);
-  free_msg (rx_msg);
 
   iter->item.id = data->next;
   iter->item.type = ELEKTROID_FILE;
@@ -247,8 +247,9 @@ microfreak_next_preset_dentry (struct item_iterator *iter)
   iter->item.slot_used = TRUE;
   (data->next)++;
 
+end:
+  free_msg (rx_msg);
   usleep (MICROFREAK_REST_TIME_US);
-
   return 0;
 }
 
@@ -859,7 +860,7 @@ microfreak_get_sample_op_msg (struct backend *backend, guint8 op, guint8 id,
 static gint
 microfreak_next_sample_dentry (struct item_iterator *iter)
 {
-  gint err = 0;
+  gint err;
   GByteArray *tx_msg, *rx_msg;
   struct microfreak_sample_header *header;
   struct microfreak_iter_data *data = iter->data;
@@ -876,13 +877,12 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
     {
       return -EIO;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0))
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0);
+  free_msg (rx_msg);
+  if (err)
     {
-      err = -EIO;
       goto end;
     }
-
-  free_msg (rx_msg);
 
   tx_msg = microfreak_get_msg (data->backend, 0x18, "\x01", 1);
   rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
@@ -890,9 +890,9 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
     {
       return -EIO;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x16, MICROFREAK_SAMPLE_MSG_SIZE))
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x16, MICROFREAK_SAMPLE_MSG_SIZE);
+  if (err)
     {
-      err = -EIO;
       goto end;
     }
 
@@ -907,8 +907,8 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
   g_free (header);
 
 end:
-  usleep (MICROFREAK_REST_TIME_US);
   free_msg (rx_msg);
+  usleep (MICROFREAK_REST_TIME_US);
   return err;
 }
 
@@ -938,7 +938,7 @@ static gint
 microfreak_reset_sample (struct backend *backend, guint id,
 			 struct microfreak_sample_header *header)
 {
-  gint err = 0;
+  gint err;
   GByteArray *tx_msg, *rx_msg;
 
   tx_msg = microfreak_get_sample_op_msg (backend, 0x5a, id, 0);
@@ -947,13 +947,13 @@ microfreak_reset_sample (struct backend *backend, guint id,
     {
       return -EIO;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0))
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+  free_msg (rx_msg);
+  if (err)
     {
-      err = -EIO;
       goto end;
     }
 
-  free_msg (rx_msg);
   usleep (MICROFREAK_REST_TIME_US);
 
   tx_msg = microfreak_get_msg (backend, 0x15, NULL, 0);
@@ -962,13 +962,13 @@ microfreak_reset_sample (struct backend *backend, guint id,
     {
       return -EIO;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0))
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+  free_msg (rx_msg);
+  if (err)
     {
-      err = -EIO;
       goto end;
     }
 
-  free_msg (rx_msg);
   usleep (MICROFREAK_REST_TIME_US);
 
   tx_msg = microfreak_get_msg_from_sample_header (backend, 0x17, header);
@@ -977,13 +977,10 @@ microfreak_reset_sample (struct backend *backend, guint id,
     {
       return -EIO;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0))
-    {
-      err = -EIO;
-    }
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+  free_msg (rx_msg);
 
 end:
-  free_msg (rx_msg);
   usleep (MICROFREAK_REST_TIME_US);
   return err;
 }
@@ -1049,14 +1046,13 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
     {
       goto end;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0))
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+  free_msg (rx_msg);
+  if (err)
     {
-      err = -EIO;
-      free_msg (rx_msg);
       goto end;
     }
 
-  free_msg (rx_msg);
   control->part++;
   usleep (MICROFREAK_REST_TIME_US);
 
@@ -1066,14 +1062,13 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
     {
       goto end;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0))
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+  free_msg (rx_msg);
+  if (err)
     {
-      err = -EIO;
-      free_msg (rx_msg);
       goto end;
     }
 
-  free_msg (rx_msg);
   control->part++;
   usleep (MICROFREAK_REST_TIME_US);
 
@@ -1088,15 +1083,17 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
     {
       goto end;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x16, 1) &&
-      *MICROFREAK_GET_MSG_PAYLOAD (rx_msg) == 1)
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x16, 1);
+  if (!err)
     {
-      err = -EIO;
-      free_msg (rx_msg);
+      err = *MICROFREAK_GET_MSG_PAYLOAD (rx_msg) == 1 ? 0 : -EIO;
+    }
+  free_msg (rx_msg);
+  if (err)
+    {
       goto end;
     }
 
-  free_msg (rx_msg);
   control->part++;
   usleep (MICROFREAK_REST_TIME_US);
 
@@ -1106,14 +1103,13 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
     {
       goto end;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0))
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+  free_msg (rx_msg);
+  if (err)
     {
-      err = -EIO;
-      free_msg (rx_msg);
       goto end;
     }
 
-  free_msg (rx_msg);
   control->part++;
   usleep (MICROFREAK_REST_TIME_US);
 
@@ -1133,14 +1129,13 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
     {
       goto end;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0))
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+  free_msg (rx_msg);
+  if (err)
     {
-      err = -EIO;
-      free_msg (rx_msg);
       goto end;
     }
 
-  free_msg (rx_msg);
   control->part++;
   usleep (MICROFREAK_REST_TIME_US);
 
@@ -1150,14 +1145,13 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
     {
       goto end;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0))
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+  free_msg (rx_msg);
+  if (err)
     {
-      err = -EIO;
-      free_msg (rx_msg);
       goto end;
     }
 
-  free_msg (rx_msg);
   control->part++;
   usleep (MICROFREAK_REST_TIME_US);
 
@@ -1193,14 +1187,13 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
 	{
 	  goto end;
 	}
-      if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0))
+      err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+      free_msg (rx_msg);
+      if (err)
 	{
-	  err = -EIO;
-	  free_msg (rx_msg);
 	  goto end;
 	}
 
-      free_msg (rx_msg);
       usleep (MICROFREAK_REST_TIME_US);
     }
 
@@ -1212,13 +1205,14 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
     {
       return -EIO;
     }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0))
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0);
+  free_msg (rx_msg);
+  if (err)
     {
-      err = -EIO;
       goto end;
     }
 
-  free_msg (rx_msg);
+  usleep (MICROFREAK_REST_TIME_US);
 
   while (1)
     {
@@ -1229,15 +1223,15 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
 	  return -EIO;
 	}
 
-      usleep (MICROFREAK_REST_TIME_US);
-
-      if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x17, MICROFREAK_SAMPLE_MSG_SIZE))
+      gint end = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x16,
+					  MICROFREAK_SAMPLE_MSG_SIZE);
+      free_msg (rx_msg);
+      if (end)
 	{
-	  free_msg (rx_msg);
 	  break;
 	}
 
-      free_msg (rx_msg);
+      usleep (MICROFREAK_REST_TIME_US);
     }
 
 end:
