@@ -27,6 +27,7 @@
 #include "local.h"
 #include "sample.h"
 #include "connectors/common.h"
+#include <sys/unistd.h>
 
 struct system_iterator_data
 {
@@ -128,7 +129,7 @@ system_delete (struct backend *backend, const gchar *path)
   else
     {
       debug_print (1, "Deleting local %s file...\n", path);
-      return g_unlink (path);
+      return unlink (path);
     }
 }
 
