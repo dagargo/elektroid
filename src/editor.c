@@ -1149,56 +1149,41 @@ editor_file_exists_no_overwrite (const gchar *filename)
   return res == GTK_RESPONSE_CANCEL;
 }
 
-// Due to the way filesystems work (the load function loads the file from a
-// local path) we need to persist the recording or selection to a temporary
-// file.
-static gint
-editor_save_to_remote (struct editor *editor, gchar *name, GByteArray *sample)
-{
-  gint err;
-  GByteArray *tmp_sample;
-  gchar *tmp_file = path_chain (PATH_SYSTEM, g_get_tmp_dir (), PACKAGE);
-
-  err = system_upload (editor->browser->backend, tmp_file, sample,
-		       &editor->audio.control);
-  if (err)
-    {
-      goto end;
-    }
-
-  tmp_sample = g_byte_array_new ();
-  editor->audio.control.active = TRUE;
-  err = editor->browser->fs_ops->load (tmp_file, tmp_sample,
-				       &editor->audio.control);
-  if (err)
-    {
-      goto cleanup;
-    }
-
-  editor->audio.control.active = TRUE;
-  err = editor->browser->fs_ops->upload (editor->browser->backend, name,
-					 tmp_sample, &editor->audio.control);
-cleanup:
-  g_unlink (tmp_file);
-  g_byte_array_free (tmp_sample, TRUE);
-end:
-  g_free (tmp_file);
-  return err;
-}
-
 static gint
 editor_save (struct editor *editor, gchar *name, GByteArray *sample)
 {
   gint err;
-  if (editor->browser == &local_browser)
+  struct sample_info *sample_info_src = editor->audio.control.data;
+  struct sample_info *sample_info_dst = &editor->audio.sample_info;
+  gdouble ratio = sample_info_src->rate / (gdouble) sample_info_dst->rate;
+  guint32 format_dst = sample_info_src->format;
+
+  //Control format needs to be set to internal sample format but format
+  //destination is needed to ensure the same file type and sample type is
+  //used when saving.
+  sample_info_src->format =
+    (sample_info_src->format & SF_FORMAT_TYPEMASK) | SF_FORMAT_PCM_16;
+  if (ratio == 1.0)
     {
-      err = editor->browser->fs_ops->upload (editor->browser->backend, name,
-					     sample, &editor->audio.control);
+      err = sample_save_to_file (name, sample, &editor->audio.control,
+				 format_dst);
     }
   else
     {
-      err = editor_save_to_remote (editor, name, sample);
+      GByteArray *resampled = g_byte_array_new ();
+      err = sample_resample (sample, resampled, sample_info_src->channels,
+			     ratio);
+      if (!err)
+	{
+	  err = sample_save_to_file (name, resampled, &editor->audio.control,
+				     format_dst);
+	}
+      g_byte_array_free (resampled, TRUE);
     }
+
+  //This needs to be restored. If not, following calls will loose the format.
+  sample_info_src->format = format_dst;
+
   return err;
 }
 

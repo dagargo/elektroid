@@ -61,4 +61,6 @@ const gchar *sample_get_format (struct sample_info *);
 
 const gchar *sample_get_subtype (struct sample_info *);
 
+gint sample_resample (GByteArray *, GByteArray *, gint, gdouble);
+
 #endif
