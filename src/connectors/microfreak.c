@@ -363,7 +363,7 @@ microfreak_download (struct backend *backend, const gchar *path,
   control->parts = 2 + MICROFREAK_PRESET_PARTS;	//Worst case
   control->part = 0;
   tx_msg = microfreak_get_preset_dump_msg (backend, id, 0);
-  err = common_data_download_part (backend, tx_msg, &rx_msg, control);
+  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
   if (err)
     {
       goto end;
@@ -392,7 +392,7 @@ microfreak_download (struct backend *backend, const gchar *path,
 
   control->part++;
   tx_msg = microfreak_get_preset_dump_msg (backend, id, 1);
-  err = common_data_download_part (backend, tx_msg, &rx_msg, control);
+  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
   if (err)
     {
       goto end;
@@ -414,7 +414,7 @@ microfreak_download (struct backend *backend, const gchar *path,
       guint8 payload = 0;
       control->part++;
       tx_msg = microfreak_get_msg (backend, 0x18, &payload, 1);
-      err = common_data_download_part (backend, tx_msg, &rx_msg, control);
+      err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
       if (err)
 	{
 	  goto end;
@@ -475,7 +475,7 @@ microfreak_upload (struct backend *backend, const gchar *path,
   *MICROFREAK_GET_ID_IN_BANK_FROM_HEADER (mfp.header) = mfp.header[1];
   tx_msg = microfreak_get_msg (backend, 0x52, mfp.header,
 			       MICROFREAK_PRESET_HEADER_MSG_LEN);
-  err = common_data_download_part (backend, tx_msg, &rx_msg, control);
+  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
   free_msg (rx_msg);
   if (err)
     {
@@ -489,7 +489,7 @@ microfreak_upload (struct backend *backend, const gchar *path,
   payload[1] = COMMON_GET_MIDI_PRESET (id);
   payload[2] = 1;
   tx_msg = microfreak_get_msg (backend, 0x52, payload, 3);
-  err = common_data_download_part (backend, tx_msg, &rx_msg, control);
+  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
   if (err)
     {
       return err;
@@ -500,7 +500,7 @@ microfreak_upload (struct backend *backend, const gchar *path,
 
   control->part++;
   tx_msg = microfreak_get_msg (backend, 0x15, NULL, 0);
-  err = common_data_download_part (backend, tx_msg, &rx_msg, control);
+  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
   if (err)
     {
       return err;
@@ -515,7 +515,7 @@ microfreak_upload (struct backend *backend, const gchar *path,
       guint8 op = (i < mfp.parts - 1) ? 0x16 : 0x17;
       tx_msg = microfreak_get_msg (backend, op, mfp.part[i],
 				   MICROFREAK_PRESET_PART_LEN);
-      err = common_data_download_part (backend, tx_msg, &rx_msg, control);
+      err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
       free_msg (rx_msg);
       if (err)
 	{
