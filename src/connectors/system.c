@@ -27,7 +27,7 @@
 #include "local.h"
 #include "sample.h"
 #include "connectors/common.h"
-#include <sys/unistd.h>
+#include <unistd.h>
 
 struct system_iterator_data
 {

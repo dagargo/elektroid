@@ -23,7 +23,7 @@
 #include "editor.h"
 #include "sample.h"
 #include "connectors/system.h"
-#include <sys/unistd.h>
+#include <unistd.h>
 
 #define EDITOR_OP_NONE 0
 #define EDITOR_OP_SELECT 1
