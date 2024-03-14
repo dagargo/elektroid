@@ -20,6 +20,7 @@
 
 #include <errno.h>
 #include <glib/gi18n.h>
+#include <glib/gstdio.h>
 #if defined(__linux__)
 #include <sys/statvfs.h>
 #include <mntent.h>
@@ -27,7 +28,6 @@
 #include "local.h"
 #include "sample.h"
 #include "connectors/common.h"
-#include <unistd.h>
 
 struct system_iterator_data
 {
@@ -129,7 +129,7 @@ system_delete (struct backend *backend, const gchar *path)
   else
     {
       debug_print (1, "Deleting local %s file...\n", path);
-      return unlink (path);
+      return g_unlink (path);
     }
 }
 
