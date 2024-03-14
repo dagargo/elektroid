@@ -20,10 +20,10 @@
 
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
+#include <glib/gstdio.h>
 #include "editor.h"
 #include "sample.h"
 #include "connectors/system.h"
-#include <unistd.h>
 
 #define EDITOR_OP_NONE 0
 #define EDITOR_OP_SELECT 1
@@ -1170,7 +1170,7 @@ editor_save_to_remote (struct editor *editor, gchar *name, GByteArray *sample)
   err = editor->browser->fs_ops->upload (editor->browser->backend, name,
 					 tmp_sample, &editor->audio.control);
 cleanup:
-  unlink (tmp_file);
+  g_unlink (tmp_file);
   g_byte_array_free (tmp_sample, TRUE);
 end:
   g_free (tmp_file);
