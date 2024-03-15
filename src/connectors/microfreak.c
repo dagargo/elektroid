@@ -30,8 +30,11 @@
 #define MICROFREAK_SAMPLE_SIZE_PER_S (32000 * 2)	// at 32 kHz 16 bits
 #define MICROFREAK_SAMPLE_MEM_SIZE (MICROFREAK_SAMPLE_TIME_S * MICROFREAK_SAMPLE_SIZE_PER_S)
 #define MICROFREAK_SAMPLE_BLK_SHRT 14
+#define MICROFREAK_SAMPLE_BLK_LAST_SHRT 4
 #define MICROFREAK_SAMPLE_BLK_SIZE (MICROFREAK_SAMPLE_BLK_SHRT * 2)
 #define MICROFREAK_SAMPLE_MSG_SIZE (MICROFREAK_SAMPLE_BLK_SIZE * 8 / 7)
+#define MICROFREAK_SAMPLE_BATCH_SIZE 4096	// 147 packets (146 * 14 + 4)
+#define MICROFREAK_SAMPLE_BATCH_PACKETS 147
 
 #define MICROFREAK_GET_MSG_PAYLOAD_LEN(msg) (msg->data[7])
 #define MICROFREAK_GET_MSG_OP(msg) (msg->data[8])
@@ -848,12 +851,12 @@ static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
 
 static GByteArray *
 microfreak_get_sample_op_msg (struct backend *backend, guint8 op, guint8 id,
-			      guint8 last)
+			      guint8 foo)
 {
   guint8 payload[3];
   payload[0] = COMMON_GET_MIDI_PRESET (id);
   payload[1] = 0;
-  payload[2] = last;
+  payload[2] = foo;
   return microfreak_get_msg (backend, op, payload, 3);
 }
 
@@ -1014,7 +1017,7 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
 			  GByteArray *input, struct job_control *control)
 {
   gint err;
-  guint id, parts;
+  guint id, batches;
   gchar *name, *sanitized;
   struct microfreak_sample_header header;
   GByteArray *tx_msg, *rx_msg;
@@ -1035,9 +1038,9 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
       goto end;
     }
 
-  parts = input->len / MICROFREAK_SAMPLE_BLK_SIZE;
-  parts += (input->len % MICROFREAK_SAMPLE_BLK_SIZE) ? 1 : 0;
-  control->parts = 7 + parts;
+  batches = input->len / MICROFREAK_SAMPLE_BATCH_SIZE;
+  batches += (input->len % MICROFREAK_SAMPLE_BATCH_SIZE) ? 1 : 0;
+  control->parts = 5 + batches * (2 + MICROFREAK_SAMPLE_BATCH_PACKETS);
   control->part = 0;
 
   tx_msg = microfreak_get_sample_op_msg (backend, 0x5d, id, 0);
@@ -1123,65 +1126,13 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
   set_job_control_progress (control, 1.0);
   usleep (MICROFREAK_REST_TIME_US);
 
-  tx_msg = microfreak_get_sample_op_msg (backend, 0x58, id, 1);
-  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
-  if (err)
-    {
-      goto end;
-    }
-  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
-  free_msg (rx_msg);
-  if (err)
-    {
-      goto end;
-    }
-
-  control->part++;
-  usleep (MICROFREAK_REST_TIME_US);
-
-  tx_msg = microfreak_get_msg (backend, 0x15, NULL, 0);
-  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
-  if (err)
-    {
-      goto end;
-    }
-  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
-  free_msg (rx_msg);
-  if (err)
-    {
-      goto end;
-    }
-
-  control->part++;
-  usleep (MICROFREAK_REST_TIME_US);
-
   guint32 total = 0;
   gint16 *src = (gint16 *) input->data;
-  for (gint i = 0; i < parts; i++)
+  for (gint b = 0; b < batches; b++)
     {
-      guint8 op = (i < parts - 1) ? 0x16 : 0x17;
-      gint16 blk[MICROFREAK_SAMPLE_BLK_SHRT];
-      gint16 *dst = blk;
+      //Starting packets
 
-      gint j;
-      for (j = 0; j < MICROFREAK_SAMPLE_BLK_SHRT && total < input->len; j++)
-	{
-	  *dst = GINT16_TO_LE (*src);
-	  dst++;
-	  src++;
-	  total += 2;
-	}
-      for (; j < MICROFREAK_SAMPLE_BLK_SHRT; j++)
-	{
-	  *dst = 0;
-	  dst++;
-	}
-
-      control->part++;
-      guint8 *msg = microfreak_sample_bytes_to_msg ((guint8 *) blk);
-      tx_msg = microfreak_get_msg (backend, op, msg,
-				   MICROFREAK_SAMPLE_MSG_SIZE);
-      g_free (msg);
+      tx_msg = microfreak_get_sample_op_msg (backend, 0x58, id, 1);
       err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
       if (err)
 	{
@@ -1194,7 +1145,79 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
 	  goto end;
 	}
 
+      control->part++;
       usleep (MICROFREAK_REST_TIME_US);
+
+      tx_msg = microfreak_get_msg (backend, 0x15, NULL, 0);
+      err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
+      if (err)
+	{
+	  goto end;
+	}
+      err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+      free_msg (rx_msg);
+      if (err)
+	{
+	  goto end;
+	}
+
+      control->part++;
+      usleep (MICROFREAK_REST_TIME_US);
+
+      //Data packets
+
+      for (gint p = 1; p <= MICROFREAK_SAMPLE_BATCH_PACKETS; p++)
+	{
+	  guint8 op, *msg;
+	  guint samples;
+	  gint16 blk[MICROFREAK_SAMPLE_BLK_SHRT];
+	  gint16 *dst = blk;
+
+	  if (p < MICROFREAK_SAMPLE_BATCH_PACKETS)
+	    {
+	      op = 0x16;
+	      samples = MICROFREAK_SAMPLE_BLK_SHRT;
+	    }
+	  else
+	    {
+	      op = 0x17;
+	      samples = MICROFREAK_SAMPLE_BLK_LAST_SHRT;
+	    }
+
+	  gint i;
+	  for (i = 0; i < samples && total < input->len; i++)
+	    {
+	      *dst = GINT16_TO_LE (*src);
+	      dst++;
+	      src++;
+	      total += sizeof (gint16);
+	    }
+	  for (; i < samples; i++)
+	    {
+	      *dst = 0;
+	      dst++;
+	    }
+
+	  msg = microfreak_sample_bytes_to_msg ((guint8 *) blk);
+	  tx_msg = microfreak_get_msg (backend, op, msg,
+				       MICROFREAK_SAMPLE_MSG_SIZE);
+	  g_free (msg);
+	  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg,
+					    control);
+	  if (err)
+	    {
+	      goto end;
+	    }
+	  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+	  free_msg (rx_msg);
+	  if (err)
+	    {
+	      goto end;
+	    }
+
+	  control->part++;
+	  usleep (MICROFREAK_REST_TIME_US);
+	}
     }
 
 end:
