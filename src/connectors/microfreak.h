@@ -27,12 +27,24 @@
 #define MICROFREAK_PRESET_PARTS 146
 #define MICROFREAK_PRESET_PART_LEN 0x20
 #define MICROFREAK_PRESET_HEADER "22 serialization::archive 10 0 4 3 174"
+#define MICROFREAK_SAMPLE_NAME_LEN 13
 
 struct microfreak_preset
 {
   guint8 header[MICROFREAK_PRESET_HEADER_MSG_LEN];
   guint8 part[MICROFREAK_PRESET_PARTS][MICROFREAK_PRESET_PART_LEN];
   guint parts;
+};
+
+// The size of this structure is 28 bytes and matches MICROFREAK_SAMPLE_BLK_SIZE.
+struct microfreak_sample_header
+{
+  guint8 start[4];
+  guint32 size;
+  guint8 pad[2];
+  gchar name[MICROFREAK_SAMPLE_NAME_LEN];
+  guint8 id;
+  guint8 end[4];
 };
 
 gint microfreak_handshake (struct backend *);
@@ -42,5 +54,9 @@ gint microfreak_serialize_preset (GByteArray * output,
 
 gint microfreak_deserialize_preset (struct microfreak_preset *mfp,
 				    GByteArray * input);
+
+struct microfreak_sample_header *microfreak_msg_to_sample_header (guint8 *);
+
+guint8 *microfreak_sample_header_to_msg (struct microfreak_sample_header *);
 
 #endif

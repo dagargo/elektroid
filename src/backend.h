@@ -105,7 +105,7 @@ struct backend
   gchar name[LABEL_MAX];
   gchar version[LABEL_MAX];
   gchar description[LABEL_MAX];
-  guint32 filesystems;
+  guint32 filesystems;		//Bitwise or of the GUI only filesystems
   guint32 storage;
   GMutex mutex;
   //Message cache

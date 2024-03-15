@@ -74,6 +74,28 @@ test_serialization_deserialization_init ()
   CU_ASSERT_EQUAL (mfp_dst.parts, mfp_src.parts);
 }
 
+void
+test_sample_header_conversions ()
+{
+  struct microfreak_sample_header src, *dst;
+  guint8 *serialized;
+  guint8 *v = (guint8 *) & src;
+
+  for (gint i = 0; i < sizeof (src); i++, v++)
+    {
+      *v = g_random_int () & 0xff;
+    }
+  snprintf (src.name, MICROFREAK_SAMPLE_NAME_LEN + 1, "%s", "foo");
+
+  serialized = microfreak_sample_header_to_msg (&src);
+  dst = microfreak_msg_to_sample_header (serialized);
+
+  CU_ASSERT_EQUAL (memcmp (&src, dst, sizeof (src)), 0);
+
+  g_free (serialized);
+  g_free (dst);
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -101,6 +123,13 @@ main (int argc, char *argv[])
   if (!CU_add_test
       (suite, "test_serialization_deserialization_init",
        test_serialization_deserialization_init))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test
+      (suite, "test_sample_header_conversions",
+       test_sample_header_conversions))
     {
       goto cleanup;
     }
