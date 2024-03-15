@@ -1197,43 +1197,6 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
       usleep (MICROFREAK_REST_TIME_US);
     }
 
-  //From here till the end, the messages seem to properly commit the transferred data.
-
-  tx_msg = microfreak_get_sample_op_msg (backend, 0x5b, id, 1);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-  if (!rx_msg)
-    {
-      return -EIO;
-    }
-  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0);
-  free_msg (rx_msg);
-  if (err)
-    {
-      goto end;
-    }
-
-  usleep (MICROFREAK_REST_TIME_US);
-
-  while (1)
-    {
-      tx_msg = microfreak_get_msg (backend, 0x18, "\x00", 1);
-      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-      if (!rx_msg)
-	{
-	  return -EIO;
-	}
-
-      gint end = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x16,
-					  MICROFREAK_SAMPLE_MSG_SIZE);
-      free_msg (rx_msg);
-      if (end)
-	{
-	  break;
-	}
-
-      usleep (MICROFREAK_REST_TIME_US);
-    }
-
 end:
   g_free (name);
   g_free (sanitized);
