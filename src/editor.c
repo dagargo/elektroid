@@ -317,7 +317,7 @@ gboolean
 editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 {
   GdkRGBA color, bgcolor;
-  guint width, height, x_count, layout_width, c_height, c_height_half;
+  guint width, height, x_count, c_height, c_height_half;
   guint32 loop_start, loop_end;
   GtkStyleContext *context;
   gdouble x_ratio, x_frame, x_frame_next, y_scale, value;
@@ -331,7 +331,6 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 
   width = gtk_widget_get_allocated_width (widget);
   height = gtk_widget_get_allocated_height (widget);
-  gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &layout_width, NULL);
 
   context = gtk_widget_get_style_context (widget);
   gtk_render_background (context, cr, 0, 0, width, height);
@@ -340,7 +339,7 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 
   loop_start = audio->sample_info.loop_start;
   loop_end = audio->sample_info.loop_end;
-  x_ratio = audio->sample_info.frames / (gdouble) layout_width;
+  x_ratio = editor_get_x_ratio (editor);
 
   y_scale = height / (double) SHRT_MIN;
   y_scale /= (gdouble) audio->sample_info.channels * 2;
