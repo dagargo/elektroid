@@ -198,8 +198,8 @@ microfreak_get_msg_from_sample_header (struct backend *backend, guint8 op,
 				       *header)
 {
   guint8 *payload = microfreak_sample_header_to_msg (header);
-  GByteArray *msg =
-    microfreak_get_msg (backend, op, payload, MICROFREAK_SAMPLE_MSG_SIZE);
+  GByteArray *msg = microfreak_get_msg (backend, op, payload,
+					MICROFREAK_SAMPLE_MSG_SIZE);
   g_free (payload);
   return msg;
 }
@@ -439,6 +439,8 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
 
   control->parts = 2 + MICROFREAK_PRESET_PARTS;	//Worst case
   control->part = 0;
+  set_job_control_progress (control, 0.0);
+
   tx_msg = microfreak_get_preset_dump_msg (backend, id, 0);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
   if (err)
@@ -545,6 +547,7 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
 
   control->parts = 3 + mfp.parts;
   control->part = 0;
+  set_job_control_progress (control, 0.0);
 
   mfp.header[0] = COMMON_GET_MIDI_BANK (id);
   mfp.header[1] = COMMON_GET_MIDI_PRESET (id);
@@ -1042,6 +1045,7 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
   batches += (input->len % MICROFREAK_SAMPLE_BATCH_SIZE) ? 1 : 0;
   control->parts = 5 + batches * (2 + MICROFREAK_SAMPLE_BATCH_PACKETS);
   control->part = 0;
+  set_job_control_progress (control, 0.0);
 
   tx_msg = microfreak_get_sample_op_msg (backend, 0x5d, id, 0);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
