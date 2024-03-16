@@ -846,8 +846,9 @@ static gboolean
 editor_cursor_frame_over_frame (struct editor *editor,
 				guint cursor_frame, guint frame)
 {
-  gdouble x_ratio = editor_get_x_ratio (editor) * 2.0;
-  return cursor_frame >= frame - x_ratio && cursor_frame <= frame + x_ratio;
+  gdouble x_ratio = editor_get_x_ratio (editor);
+  gdouble shift = x_ratio < 2 ? 2 : x_ratio * 2;
+  return cursor_frame >= frame - shift && cursor_frame <= frame + shift;
 }
 
 static void
