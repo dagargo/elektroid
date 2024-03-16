@@ -349,7 +349,7 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 
   editor_init_y_frame_state (&y_frame_state, audio->sample_info.channels);
 
-  cairo_set_line_width (cr, 1);
+  cairo_set_line_width (cr, x_ratio < 1.0 ? 1.0 / x_ratio : 1);
 
   if (audio->sample_info.frames)
     {
@@ -402,6 +402,8 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
     }
 
   g_mutex_unlock (&audio->control.mutex);
+
+  cairo_set_line_width (cr, 1);
 
   if (audio->sample_info.frames)
     {
