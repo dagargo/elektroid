@@ -730,6 +730,14 @@ editor_get_frame_at_position (struct editor *editor, gdouble x,
     }
 }
 
+static gdouble
+editor_get_max_zoom (struct editor *editor)
+{
+  guint w = gtk_widget_get_allocated_width (editor->waveform_scrolled_window);
+  gdouble max_zoom = editor->audio.sample_info.frames / (double) w;
+  return max_zoom < 1 ? 1 : max_zoom;
+}
+
 static gboolean
 editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
 {
@@ -754,9 +762,7 @@ editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
 
   if (dy == -1.0)
     {
-      guint w =
-	gtk_widget_get_allocated_width (editor->waveform_scrolled_window);
-      gdouble max_zoom = editor->audio.sample_info.frames / (double) w;
+      gdouble max_zoom = editor_get_max_zoom (editor);
       if (editor->zoom == max_zoom)
 	{
 	  goto end;
