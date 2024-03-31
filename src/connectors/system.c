@@ -20,6 +20,7 @@
 
 #include <errno.h>
 #include <glib/gi18n.h>
+#include <glib/gstdio.h>
 #if defined(__linux__)
 #include <sys/statvfs.h>
 #include <mntent.h>

@@ -20,6 +20,7 @@
 
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
+#include <glib/gstdio.h>
 #include "editor.h"
 #include "sample.h"
 #include "connectors/system.h"
