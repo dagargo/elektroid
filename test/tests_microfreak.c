@@ -85,7 +85,7 @@ test_sample_header_conversions ()
     {
       *v = g_random_int () & 0xff;
     }
-  snprintf (src.name, MICROFREAK_SAMPLE_NAME_LEN + 1, "%s", "foo");
+  snprintf (src.name, MICROFREAK_SAMPLE_NAME_LEN, "%s", "foo");
 
   serialized = microfreak_sample_header_to_msg (&src);
   dst = microfreak_msg_to_sample_header (serialized);
