@@ -290,7 +290,7 @@ browser_add_dentry_item (gpointer data)
     }
 
   if (item->type == ELEKTROID_FILE &&
-      browser->fs_ops->options & FS_OPTION_SAMPLE_ATTRS &&
+      browser->fs_ops->options & FS_OPTION_SHOW_SAMPLE_COLUMNS &&
       item->sample_info.frames)
     {
       snprintf (label, LABEL_MAX, "%u", item->sample_info.frames);
@@ -767,7 +767,7 @@ void
 browser_local_set_columns_visibility ()
 {
   gboolean sample_columns = (local_browser.browser.fs_ops->options &
-			     FS_OPTION_SAMPLE_ATTRS) != 0;
+			     FS_OPTION_SHOW_SAMPLE_COLUMNS) != 0;
 
   gtk_tree_view_column_set_visible
     (local_browser.tree_view_sample_frames_column, sample_columns);

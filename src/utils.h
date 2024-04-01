@@ -233,10 +233,10 @@ enum fs_options
   FS_OPTION_SHOW_ID_COLUMN = 0x40,
   FS_OPTION_SHOW_SIZE_COLUMN = 0x80,
   FS_OPTION_SHOW_SLOT_COLUMN = 0x100,
+  FS_OPTION_SHOW_SAMPLE_COLUMNS = 0x200,
   //Sort items options.
-  FS_OPTION_SORT_BY_ID = 0x200,
-  FS_OPTION_SORT_BY_NAME = 0x400,
-  FS_OPTION_SAMPLE_ATTRS = 0x800,
+  FS_OPTION_SORT_BY_ID = 0x400,
+  FS_OPTION_SORT_BY_NAME = 0x800,
   //This requires the function readdir to be relatively fast because canceling the search will block the GUI.
   FS_OPTION_ALLOW_SEARCH = 0x1000
 };
