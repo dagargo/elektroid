@@ -99,16 +99,7 @@ struct browser
   GtkTreeViewColumn *tree_view_sample_channels_column;
   GtkTreeViewColumn *tree_view_sample_bits_column;
   GtkTreeViewColumn *tree_view_sample_midi_note_column;
-};
-
-struct local_browser
-{
-  struct browser browser;
-};
-
-struct remote_browser
-{
-  struct browser browser;
+  //Only present in the remote browser
   GtkTreeViewColumn *tree_view_id_column;
   GtkTreeViewColumn *tree_view_slot_column;
   GtkTreeViewColumn *tree_view_size_column;
@@ -137,10 +128,9 @@ gboolean browser_load_dir (gpointer);
 
 void browser_update_fs_options (struct browser *);
 
-void browser_local_init (struct local_browser *, GtkBuilder *, gchar *);
+void browser_local_init (struct browser *, GtkBuilder *, gchar *);
 
-void browser_remote_init (struct remote_browser *, GtkBuilder *,
-			  struct backend *);
+void browser_remote_init (struct browser *, GtkBuilder *, struct backend *);
 
 void browser_destroy (struct browser *);
 

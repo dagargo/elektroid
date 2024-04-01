@@ -45,8 +45,8 @@
 
 #define MAX_FRAMES_PER_PIXEL 300
 
-extern struct local_browser local_browser;
-extern struct remote_browser remote_browser;
+extern struct browser local_browser;
+extern struct browser remote_browser;
 
 void elektroid_update_audio_status ();
 
@@ -113,12 +113,12 @@ editor_set_widget_source (GtkWidget *widget, gpointer data)
 
   if (GTK_IS_SWITCH (widget))
     {
-      class = editor->browser == &local_browser.browser ? "local_switch" :
+      class = editor->browser == &local_browser ? "local_switch" :
 	"remote_switch";
     }
   else
     {
-      class = editor->browser == &local_browser.browser ? "local" : "remote";
+      class = editor->browser == &local_browser ? "local" : "remote";
     }
   gtk_style_context_add_class (context, class);
 }
@@ -187,8 +187,8 @@ editor_set_audio_mono_mix (struct editor *editor)
 {
   if (editor->audio.sample_info.frames > 0)
     {
-      gboolean remote_mono = remote_browser.browser.fs_ops &&
-	!(remote_browser.browser.fs_ops->options & FS_OPTION_STEREO);
+      gboolean remote_mono = remote_browser.fs_ops &&
+	!(remote_browser.fs_ops->options & FS_OPTION_STEREO);
       gboolean mono_mix = (editor->preferences->mix && remote_mono) ||
 	editor->audio.sample_info.channels != 2;
 
@@ -224,10 +224,10 @@ editor_update_ui_on_load (gpointer data)
 
   if (audio_check (&editor->audio))
     {
-      gtk_widget_set_sensitive (local_browser.browser.play_menuitem,
-				editor->browser == &local_browser.browser);
-      gtk_widget_set_sensitive (remote_browser.browser.play_menuitem,
-				editor->browser == &remote_browser.browser);
+      gtk_widget_set_sensitive (local_browser.play_menuitem,
+				editor->browser == &local_browser);
+      gtk_widget_set_sensitive (remote_browser.play_menuitem,
+				editor->browser == &remote_browser);
       gtk_widget_set_sensitive (editor->play_button, TRUE);
       gtk_widget_set_sensitive (editor->stop_button, TRUE);
     }
@@ -564,7 +564,7 @@ editor_reset_for_recording (gpointer data)
   struct editor *editor = record_data->editor;
   struct browser *browser = record_data->browser;
 
-  editor_reset (editor, browser ? browser : &local_browser.browser);
+  editor_reset (editor, browser ? browser : &local_browser);
 
   guirecorder_set_channels_masks (&editor->guirecorder,
 				  editor->browser->fs_ops);
@@ -591,8 +591,8 @@ editor_record_clicked (GtkWidget *object, gpointer data)
   record_data.browser = editor->browser;
   record_data.editor = editor;
 
-  browser_clear_selection (&local_browser.browser);
-  browser_clear_selection (&remote_browser.browser);
+  browser_clear_selection (&local_browser);
+  browser_clear_selection (&remote_browser);
   //Running editor_reset_for_recording asynchronously is needed as calling
   //browser_clear_selection might raise some signals that will eventually call
   //editor_reset and clear the browser member.
@@ -1189,7 +1189,7 @@ static gint
 editor_save (struct editor *editor, gchar *name, GByteArray *sample)
 {
   gint err;
-  if (editor->browser == &local_browser.browser)
+  if (editor->browser == &local_browser)
     {
       err = editor->browser->fs_ops->upload (editor->browser->backend, name,
 					     sample, &editor->audio.control);

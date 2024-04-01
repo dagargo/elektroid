@@ -25,12 +25,12 @@
 #include "backend.h"
 #include "sample.h"
 
-#define OTHER_BROWSER(b) (b == &local_browser.browser ? &remote_browser.browser : &local_browser.browser)
+#define OTHER_BROWSER(b) (b == &local_browser ? &remote_browser : &local_browser)
 
 #define DND_TIMEOUT 800
 
-struct local_browser local_browser;
-struct remote_browser remote_browser;
+struct browser local_browser;
+struct browser remote_browser;
 extern struct editor editor;
 
 struct browser_add_dentry_item_data
@@ -578,16 +578,13 @@ browser_load_dir_runner (gpointer data)
   gboolean search_mode;
 
   if (browser->fs_ops == &FS_LOCAL_GENERIC_OPERATIONS &&
-      remote_browser.browser.fs_ops->get_ext)
+      remote_browser.fs_ops->get_ext)
     {
       extensions = g_malloc (sizeof (gchar *) * 2);
-      extensions[0] =
-	remote_browser.browser.fs_ops->get_ext (remote_browser.
-						browser.backend,
-						remote_browser.
-						browser.fs_ops);
+      extensions[0] = remote_browser.fs_ops->get_ext (remote_browser.backend,
+						      remote_browser.fs_ops);
       extensions[1] = NULL;
-      icon = remote_browser.browser.fs_ops->gui_icon;
+      icon = remote_browser.fs_ops->gui_icon;
     }
 
   g_idle_add (browser_load_dir_runner_show_spinner_and_lock_browser, browser);
@@ -766,10 +763,20 @@ browser_set_dnd_function (struct browser *browser, GSourceFunc function)
 static void
 browser_set_columns_visibility (struct browser *browser)
 {
-  gboolean sample_columns = (browser->fs_ops->options &
-			     FS_OPTION_SHOW_SAMPLE_COLUMNS) != 0;
-  gboolean info_column = (browser->fs_ops->options &
-			  FS_OPTION_SHOW_INFO_COLUMN) != 0;
+  gboolean sample_columns, info_column;
+
+  if (browser->fs_ops)
+    {
+      sample_columns = (browser->fs_ops->options &
+			FS_OPTION_SHOW_SAMPLE_COLUMNS) != 0;
+      info_column = (browser->fs_ops->options &
+		     FS_OPTION_SHOW_INFO_COLUMN) != 0;
+    }
+  else
+    {
+      sample_columns = FALSE;
+      info_column = FALSE;
+    }
 
   gtk_tree_view_column_set_visible
     (browser->tree_view_sample_frames_column, sample_columns);
@@ -787,30 +794,27 @@ browser_set_columns_visibility (struct browser *browser)
     (browser->tree_view_info_column, info_column);
 }
 
-static void
+static inline void
 browser_local_set_columns_visibility ()
 {
-  browser_set_columns_visibility (&local_browser.browser);
+  browser_set_columns_visibility (&local_browser);
 }
 
 static void
 browser_remote_set_columns_visibility ()
 {
-  browser_set_columns_visibility (&remote_browser.browser);
+  browser_set_columns_visibility (&remote_browser);
 
-  if (remote_browser.browser.fs_ops)
+  if (remote_browser.fs_ops)
     {
       gtk_tree_view_column_set_visible (remote_browser.tree_view_id_column,
-					remote_browser.browser.
-					fs_ops->options &
+					remote_browser.fs_ops->options &
 					FS_OPTION_SHOW_ID_COLUMN);
       gtk_tree_view_column_set_visible (remote_browser.tree_view_slot_column,
-					remote_browser.browser.
-					fs_ops->options &
+					remote_browser.fs_ops->options &
 					FS_OPTION_SHOW_SLOT_COLUMN);
       gtk_tree_view_column_set_visible (remote_browser.tree_view_size_column,
-					remote_browser.browser.
-					fs_ops->options &
+					remote_browser.fs_ops->options &
 					FS_OPTION_SHOW_SIZE_COLUMN);
     }
   else
@@ -886,10 +890,10 @@ browser_disable_sample_menuitems (struct browser *browser)
 static void
 elektroid_clear_other_browser_if_system (struct browser *browser)
 {
-  if ((browser == &local_browser.browser
-       && (remote_browser.browser.backend
-	   && remote_browser.browser.backend->type == BE_TYPE_SYSTEM))
-      || browser == &remote_browser.browser)
+  if ((browser == &local_browser
+       && (remote_browser.backend
+	   && remote_browser.backend->type == BE_TYPE_SYSTEM))
+      || browser == &remote_browser)
     {
       browser_clear_selection (OTHER_BROWSER (browser));
     }
@@ -901,8 +905,8 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
   struct item item;
   GtkTreeIter iter;
   GtkTreeModel *model;
-  gboolean sample_editor = !remote_browser.browser.fs_ops
-    || (remote_browser.browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR);
+  gboolean sample_editor = !remote_browser.fs_ops
+    || (remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR);
 
   if (count == 1)
     {
@@ -910,9 +914,9 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
       model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
       browser_set_item (model, &iter, &item);
 
-      gtk_widget_set_sensitive (browser == &local_browser.browser ?
-				local_browser.browser.open_menuitem :
-				remote_browser.browser.open_menuitem,
+      gtk_widget_set_sensitive (browser == &local_browser ?
+				local_browser.open_menuitem :
+				remote_browser.open_menuitem,
 				item.type == ELEKTROID_FILE);
 
       if (item.type == ELEKTROID_FILE && sample_editor)
@@ -936,17 +940,16 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 static gboolean
 browser_local_check_selection (gpointer data)
 {
-  gint count = browser_get_selected_items_count (&local_browser.browser);
+  gint count = browser_get_selected_items_count (&local_browser);
 
-  elektroid_check_and_load_sample (&local_browser.browser, count);
+  elektroid_check_and_load_sample (&local_browser, count);
 
-  gtk_widget_set_sensitive (local_browser.browser.show_menuitem, count <= 1);
-  gtk_widget_set_sensitive (local_browser.browser.rename_menuitem,
-			    count == 1);
-  gtk_widget_set_sensitive (local_browser.browser.delete_menuitem, count > 0);
-  gtk_widget_set_sensitive (local_browser.browser.transfer_menuitem, count > 0
-			    && remote_browser.browser.fs_ops
-			    && remote_browser.browser.fs_ops->upload);
+  gtk_widget_set_sensitive (local_browser.show_menuitem, count <= 1);
+  gtk_widget_set_sensitive (local_browser.rename_menuitem, count == 1);
+  gtk_widget_set_sensitive (local_browser.delete_menuitem, count > 0);
+  gtk_widget_set_sensitive (local_browser.transfer_menuitem, count > 0
+			    && remote_browser.fs_ops
+			    && remote_browser.fs_ops->upload);
 
   return FALSE;
 }
@@ -954,27 +957,27 @@ browser_local_check_selection (gpointer data)
 static gboolean
 browser_remote_check_selection (gpointer data)
 {
-  gint count = browser_get_selected_items_count (&remote_browser.browser);
-  gboolean dl_impl = remote_browser.browser.fs_ops
-    && remote_browser.browser.fs_ops->download ? TRUE : FALSE;
-  gboolean ren_impl = remote_browser.browser.fs_ops
-    && remote_browser.browser.fs_ops->rename ? TRUE : FALSE;
-  gboolean del_impl = remote_browser.browser.fs_ops
-    && remote_browser.browser.fs_ops->delete ? TRUE : FALSE;
-  gboolean sel_impl = remote_browser.browser.fs_ops
-    && remote_browser.browser.fs_ops->select_item ? TRUE : FALSE;
+  gint count = browser_get_selected_items_count (&remote_browser);
+  gboolean dl_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->download ? TRUE : FALSE;
+  gboolean ren_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->rename ? TRUE : FALSE;
+  gboolean del_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->delete ? TRUE : FALSE;
+  gboolean sel_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->select_item ? TRUE : FALSE;
 
-  if (remote_browser.browser.backend->type == BE_TYPE_SYSTEM)
+  if (remote_browser.backend->type == BE_TYPE_SYSTEM)
     {
-      elektroid_check_and_load_sample (&remote_browser.browser, count);
+      elektroid_check_and_load_sample (&remote_browser, count);
     }
 
-  gtk_widget_set_sensitive (remote_browser.browser.show_menuitem, count <= 1);
-  gtk_widget_set_sensitive (remote_browser.browser.rename_menuitem, count == 1
+  gtk_widget_set_sensitive (remote_browser.show_menuitem, count <= 1);
+  gtk_widget_set_sensitive (remote_browser.rename_menuitem, count == 1
 			    && ren_impl);
-  gtk_widget_set_sensitive (remote_browser.browser.delete_menuitem, count > 0
+  gtk_widget_set_sensitive (remote_browser.delete_menuitem, count > 0
 			    && del_impl);
-  gtk_widget_set_sensitive (remote_browser.browser.transfer_menuitem,
+  gtk_widget_set_sensitive (remote_browser.transfer_menuitem,
 			    count > 0 && dl_impl);
 
   if (count == 1 && sel_impl)
@@ -982,237 +985,224 @@ browser_remote_check_selection (gpointer data)
       GtkTreeIter iter;
       GtkTreeModel *model;
       struct item item;
-      browser_set_selected_row_iter (&remote_browser.browser, &iter);
-      model = GTK_TREE_MODEL (gtk_tree_view_get_model
-			      (remote_browser.browser.view));
+      browser_set_selected_row_iter (&remote_browser, &iter);
+      model = GTK_TREE_MODEL (gtk_tree_view_get_model (remote_browser.view));
       browser_set_item (model, &iter, &item);
-      remote_browser.browser.fs_ops->select_item (remote_browser.
-						  browser.backend,
-						  remote_browser.browser.dir,
-						  &item);
+      remote_browser.fs_ops->select_item (remote_browser.backend,
+					  remote_browser.dir, &item);
     }
 
   return FALSE;
 }
 
 void
-browser_local_init (struct local_browser *local_browser, GtkBuilder *builder,
+browser_local_init (struct browser *browser, GtkBuilder *builder,
 		    gchar *local_dir)
 {
-  local_browser->browser.name = "local";
-  local_browser->browser.view =
+  browser->name = "local";
+  browser->view =
     GTK_TREE_VIEW (gtk_builder_get_object (builder, "local_tree_view"));
-  local_browser->browser.buttons_stack =
+  browser->buttons_stack =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_buttons_stack"));
-  local_browser->browser.up_button =
+  browser->up_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_up_button"));
-  local_browser->browser.add_dir_button =
+  browser->add_dir_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_add_dir_button"));
-  local_browser->browser.refresh_button =
+  browser->refresh_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_refresh_button"));
-  local_browser->browser.search_button =
+  browser->search_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_search_button"));
-  local_browser->browser.search_entry =
+  browser->search_entry =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_search_entry"));
-  local_browser->browser.dir_entry =
+  browser->dir_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry"));
-  local_browser->browser.menu =
-    GTK_MENU (gtk_builder_get_object (builder, "local_menu"));
-  local_browser->browser.dir = local_dir;
-  local_browser->browser.check_selection = browser_local_check_selection;
-  local_browser->browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
-  local_browser->browser.backend = NULL;
-  local_browser->browser.check_callback = NULL;
-  local_browser->browser.set_columns_visibility =
-    browser_local_set_columns_visibility;
-  local_browser->browser.sensitive_widgets = NULL;
-  local_browser->browser.list_stack =
+  browser->menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu"));
+  browser->dir = local_dir;
+  browser->check_selection = browser_local_check_selection;
+  browser->fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
+  browser->backend = NULL;
+  browser->check_callback = NULL;
+  browser->set_columns_visibility = browser_local_set_columns_visibility;
+  browser->sensitive_widgets = NULL;
+  browser->list_stack =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_list_stack"));
-  local_browser->browser.spinner =
+  browser->spinner =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_spinner"));
-  local_browser->browser.transfer_menuitem =
+  browser->transfer_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "upload_menuitem"));
-  local_browser->browser.play_separator =
+  browser->play_separator =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_play_separator"));
-  local_browser->browser.play_menuitem =
+  browser->play_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_play_menuitem"));
-  local_browser->browser.open_menuitem =
+  browser->open_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_open_menuitem"));
-  local_browser->browser.show_menuitem =
+  browser->show_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_show_menuitem"));
-  local_browser->browser.rename_menuitem =
+  browser->rename_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_rename_menuitem"));
-  local_browser->browser.delete_menuitem =
+  browser->delete_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_delete_menuitem"));
-  local_browser->browser.tree_view_name_column =
+  browser->tree_view_name_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_name_column"));
 
-  local_browser->browser.sensitive_widgets =
-    g_slist_append (local_browser->browser.sensitive_widgets,
-		    local_browser->browser.view);
-  local_browser->browser.sensitive_widgets =
-    g_slist_append (local_browser->browser.sensitive_widgets,
-		    local_browser->browser.up_button);
-  local_browser->browser.sensitive_widgets =
-    g_slist_append (local_browser->browser.sensitive_widgets,
-		    local_browser->browser.add_dir_button);
-  local_browser->browser.sensitive_widgets =
-    g_slist_append (local_browser->browser.sensitive_widgets,
-		    local_browser->browser.refresh_button);
-  local_browser->browser.sensitive_widgets =
-    g_slist_append (local_browser->browser.sensitive_widgets,
-		    local_browser->browser.search_button);
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets, browser->view);
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets, browser->up_button);
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets, browser->add_dir_button);
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets, browser->refresh_button);
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets, browser->search_button);
 
-  local_browser->browser.tree_view_sample_frames_column =
+  browser->tree_view_sample_frames_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_sample_frames_column"));
-  local_browser->browser.tree_view_sample_rate_column =
+  browser->tree_view_sample_rate_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_sample_rate_column"));
-  local_browser->browser.tree_view_sample_duration_column =
+  browser->tree_view_sample_duration_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "local_tree_view_sample_duration_column"));
-  local_browser->browser.tree_view_sample_channels_column =
+  browser->tree_view_sample_channels_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "local_tree_view_sample_channels_column"));
-  local_browser->browser.tree_view_sample_bits_column =
+  browser->tree_view_sample_bits_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_sample_bits_column"));
-  local_browser->browser.tree_view_sample_midi_note_column =
+  browser->tree_view_sample_midi_note_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "local_tree_view_sample_midi_note_column"));
 
-  local_browser->browser.tree_view_info_column =
+  browser->tree_view_info_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_info_column"));
 
-  browser_init (&local_browser->browser);
+  browser->tree_view_id_column = NULL;
+  browser->tree_view_slot_column = NULL;
+  browser->tree_view_size_column = NULL;
+
+  browser_init (browser);
 }
 
 void
-browser_remote_init (struct remote_browser *remote_browser,
+browser_remote_init (struct browser *browser,
 		     GtkBuilder *builder, struct backend *backend)
 {
-  remote_browser->browser.name = "remote";
-  remote_browser->browser.view =
+  browser->name = "remote";
+  browser->view =
     GTK_TREE_VIEW (gtk_builder_get_object (builder, "remote_tree_view"));
-  remote_browser->browser.buttons_stack =
+  browser->buttons_stack =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_buttons_stack"));
-  remote_browser->browser.up_button =
+  browser->up_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_up_button"));
-  remote_browser->browser.add_dir_button =
+  browser->add_dir_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_add_dir_button"));
-  remote_browser->browser.refresh_button =
+  browser->refresh_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_refresh_button"));
-  remote_browser->browser.search_button =
+  browser->search_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_search_button"));
-  remote_browser->browser.search_entry =
+  browser->search_entry =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_search_entry"));
-  remote_browser->browser.dir_entry =
+  browser->dir_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry"));
-  remote_browser->browser.menu =
-    GTK_MENU (gtk_builder_get_object (builder, "remote_menu"));
-  remote_browser->browser.dir = NULL;
-  remote_browser->browser.check_selection = browser_remote_check_selection;
-  remote_browser->browser.fs_ops = NULL;
-  remote_browser->browser.backend = backend;
-  remote_browser->browser.check_callback = elektroid_check_backend;
-  remote_browser->browser.set_columns_visibility =
-    browser_remote_set_columns_visibility;
-  remote_browser->browser.sensitive_widgets = NULL;
-  remote_browser->browser.list_stack =
+  browser->menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu"));
+  browser->dir = NULL;
+  browser->check_selection = browser_remote_check_selection;
+  browser->fs_ops = NULL;
+  browser->backend = backend;
+  browser->check_callback = elektroid_check_backend;
+  browser->set_columns_visibility = browser_remote_set_columns_visibility;
+  browser->sensitive_widgets = NULL;
+  browser->list_stack =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_list_stack"));
-  remote_browser->browser.spinner =
+  browser->spinner =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_spinner"));
-  remote_browser->browser.transfer_menuitem =
+  browser->transfer_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "download_menuitem"));
-  remote_browser->browser.play_separator =
+  browser->play_separator =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_play_separator"));
-  remote_browser->browser.play_menuitem =
+  browser->play_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_play_menuitem"));
-  remote_browser->browser.options_separator =
+  browser->options_separator =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_options_separator"));
-  remote_browser->browser.open_menuitem =
+  browser->open_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_open_menuitem"));
-  remote_browser->browser.show_menuitem =
+  browser->show_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_show_menuitem"));
-  remote_browser->browser.actions_separator =
+  browser->actions_separator =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_actions_separator"));
-  remote_browser->browser.rename_menuitem =
+  browser->rename_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_rename_menuitem"));
-  remote_browser->browser.delete_menuitem =
+  browser->delete_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_delete_menuitem"));
-  remote_browser->browser.tree_view_name_column =
+  browser->tree_view_name_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_name_column"));
 
-  remote_browser->browser.sensitive_widgets =
-    g_slist_append (remote_browser->browser.sensitive_widgets,
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets,
 		    GTK_WIDGET (gtk_builder_get_object
 				(builder, "devices_combo")));
-  remote_browser->browser.sensitive_widgets =
-    g_slist_append (remote_browser->browser.sensitive_widgets,
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets,
 		    GTK_WIDGET (gtk_builder_get_object
 				(builder, "refresh_devices_button")));
-  remote_browser->browser.sensitive_widgets =
-    g_slist_append (remote_browser->browser.sensitive_widgets,
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets,
 		    GTK_WIDGET (gtk_builder_get_object
 				(builder, "fs_combo")));
-  remote_browser->browser.sensitive_widgets =
-    g_slist_append (remote_browser->browser.sensitive_widgets,
-		    remote_browser->browser.view);
-  remote_browser->browser.sensitive_widgets =
-    g_slist_append (remote_browser->browser.sensitive_widgets,
-		    remote_browser->browser.up_button);
-  remote_browser->browser.sensitive_widgets =
-    g_slist_append (remote_browser->browser.sensitive_widgets,
-		    remote_browser->browser.add_dir_button);
-  remote_browser->browser.sensitive_widgets =
-    g_slist_append (remote_browser->browser.sensitive_widgets,
-		    remote_browser->browser.refresh_button);
-  remote_browser->browser.sensitive_widgets =
-    g_slist_append (remote_browser->browser.sensitive_widgets,
-		    remote_browser->browser.search_button);
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets, browser->view);
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets, browser->up_button);
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets, browser->add_dir_button);
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets, browser->refresh_button);
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets, browser->search_button);
 
-  remote_browser->tree_view_id_column =
+  browser->tree_view_id_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_id_column"));
-  remote_browser->tree_view_slot_column =
+  browser->tree_view_slot_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_slot_column"));
-  remote_browser->tree_view_size_column =
+  browser->tree_view_size_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_size_column"));
 
-  remote_browser->browser.tree_view_sample_frames_column =
+  browser->tree_view_sample_frames_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_sample_frames_column"));
-  remote_browser->browser.tree_view_sample_rate_column =
+  browser->tree_view_sample_rate_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_sample_rate_column"));
-  remote_browser->browser.tree_view_sample_duration_column =
+  browser->tree_view_sample_duration_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "remote_tree_view_sample_duration_column"));
-  remote_browser->browser.tree_view_sample_channels_column =
+  browser->tree_view_sample_channels_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "remote_tree_view_sample_channels_column"));
-  remote_browser->browser.tree_view_sample_bits_column =
+  browser->tree_view_sample_bits_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_sample_bits_column"));
-  remote_browser->browser.tree_view_sample_midi_note_column =
+  browser->tree_view_sample_midi_note_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "remote_tree_view_sample_midi_note_column"));
 
-  remote_browser->browser.tree_view_info_column =
+  browser->tree_view_info_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_info_column"));
 
-  browser_init (&remote_browser->browser);
+  browser_init (browser);
 }
