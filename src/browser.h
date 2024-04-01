@@ -38,15 +38,15 @@
 #define BROWSER_LIST_STORE_SIZE_STR_FIELD 3
 #define BROWSER_LIST_STORE_TYPE_FIELD 4
 #define BROWSER_LIST_STORE_ID_FIELD 5
+#define BROWSER_LIST_STORE_INFO_FIELD 6
+#define BROWSER_LIST_STORE_SAMPLE_FRAMES_FIELD 7
+#define BROWSER_LIST_STORE_SAMPLE_RATE_FIELD 8
+#define BROWSER_LIST_STORE_SAMPLE_TIME_FIELD 9
+#define BROWSER_LIST_STORE_SAMPLE_FORMAT_FIELD 10
+#define BROWSER_LIST_STORE_SAMPLE_CHANNELS_FIELD 11
+#define BROWSER_LIST_STORE_SAMPLE_MIDI_NOTE_FIELD 12
 //Remote columns
-#define BROWSER_LIST_STORE_SLOT_FIELD 6	//This is an optional map of the id (number) to some string like "A1", "001" or "[A:001]" to mimic the device way of numbering the items.
-//Local columns
-#define BROWSER_LIST_STORE_SAMPLE_FRAMES_FIELD 6
-#define BROWSER_LIST_STORE_SAMPLE_RATE_FIELD 7
-#define BROWSER_LIST_STORE_SAMPLE_TIME_FIELD 8
-#define BROWSER_LIST_STORE_SAMPLE_FORMAT_FIELD 9
-#define BROWSER_LIST_STORE_SAMPLE_CHANNELS_FIELD 10
-#define BROWSER_LIST_STORE_SAMPLE_MIDI_NOTE_FIELD 11
+#define BROWSER_LIST_STORE_SLOT_FIELD 13	//This is an optional map of the id (number) to some string like "A1", "001" or "[A:001]" to mimic the device way of numbering the items.
 
 struct browser
 {
@@ -92,17 +92,18 @@ struct browser
   GtkWidget *rename_menuitem;
   GtkWidget *delete_menuitem;
   GtkTreeViewColumn *tree_view_name_column;
-};
-
-struct local_browser
-{
-  struct browser browser;
+  GtkTreeViewColumn *tree_view_info_column;
   GtkTreeViewColumn *tree_view_sample_frames_column;
   GtkTreeViewColumn *tree_view_sample_rate_column;
   GtkTreeViewColumn *tree_view_sample_duration_column;
   GtkTreeViewColumn *tree_view_sample_channels_column;
   GtkTreeViewColumn *tree_view_sample_bits_column;
   GtkTreeViewColumn *tree_view_sample_midi_note_column;
+};
+
+struct local_browser
+{
+  struct browser browser;
 };
 
 struct remote_browser

@@ -763,29 +763,41 @@ browser_set_dnd_function (struct browser *browser, GSourceFunc function)
 						    browser);
 }
 
-void
-browser_local_set_columns_visibility ()
+static void
+browser_set_columns_visibility (struct browser *browser)
 {
-  gboolean sample_columns = (local_browser.browser.fs_ops->options &
+  gboolean sample_columns = (browser->fs_ops->options &
 			     FS_OPTION_SHOW_SAMPLE_COLUMNS) != 0;
+  gboolean info_column = (browser->fs_ops->options &
+			  FS_OPTION_SHOW_INFO_COLUMN) != 0;
 
   gtk_tree_view_column_set_visible
-    (local_browser.tree_view_sample_frames_column, sample_columns);
+    (browser->tree_view_sample_frames_column, sample_columns);
   gtk_tree_view_column_set_visible
-    (local_browser.tree_view_sample_rate_column, sample_columns);
+    (browser->tree_view_sample_rate_column, sample_columns);
   gtk_tree_view_column_set_visible
-    (local_browser.tree_view_sample_duration_column, sample_columns);
+    (browser->tree_view_sample_duration_column, sample_columns);
   gtk_tree_view_column_set_visible
-    (local_browser.tree_view_sample_channels_column, sample_columns);
+    (browser->tree_view_sample_channels_column, sample_columns);
   gtk_tree_view_column_set_visible
-    (local_browser.tree_view_sample_bits_column, sample_columns);
+    (browser->tree_view_sample_bits_column, sample_columns);
   gtk_tree_view_column_set_visible
-    (local_browser.tree_view_sample_midi_note_column, sample_columns);
+    (browser->tree_view_sample_midi_note_column, sample_columns);
+  gtk_tree_view_column_set_visible
+    (browser->tree_view_info_column, info_column);
 }
 
-void
+static void
+browser_local_set_columns_visibility ()
+{
+  browser_set_columns_visibility (&local_browser.browser);
+}
+
+static void
 browser_remote_set_columns_visibility ()
 {
+  browser_set_columns_visibility (&remote_browser.browser);
+
   if (remote_browser.browser.fs_ops)
     {
       gtk_tree_view_column_set_visible (remote_browser.tree_view_id_column,
@@ -1052,27 +1064,31 @@ browser_local_init (struct local_browser *local_browser, GtkBuilder *builder,
     g_slist_append (local_browser->browser.sensitive_widgets,
 		    local_browser->browser.search_button);
 
-  local_browser->tree_view_sample_frames_column =
+  local_browser->browser.tree_view_sample_frames_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_sample_frames_column"));
-  local_browser->tree_view_sample_rate_column =
+  local_browser->browser.tree_view_sample_rate_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_sample_rate_column"));
-  local_browser->tree_view_sample_duration_column =
+  local_browser->browser.tree_view_sample_duration_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "local_tree_view_sample_duration_column"));
-  local_browser->tree_view_sample_channels_column =
+  local_browser->browser.tree_view_sample_channels_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "local_tree_view_sample_channels_column"));
-  local_browser->tree_view_sample_bits_column =
+  local_browser->browser.tree_view_sample_bits_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_sample_bits_column"));
-  local_browser->tree_view_sample_midi_note_column =
+  local_browser->browser.tree_view_sample_midi_note_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "local_tree_view_sample_midi_note_column"));
+
+  local_browser->browser.tree_view_info_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "local_tree_view_info_column"));
 
   browser_init (&local_browser->browser);
 }
@@ -1171,6 +1187,32 @@ browser_remote_init (struct remote_browser *remote_browser,
   remote_browser->tree_view_size_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_size_column"));
+
+  remote_browser->browser.tree_view_sample_frames_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "remote_tree_view_sample_frames_column"));
+  remote_browser->browser.tree_view_sample_rate_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "remote_tree_view_sample_rate_column"));
+  remote_browser->browser.tree_view_sample_duration_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder,
+			   "remote_tree_view_sample_duration_column"));
+  remote_browser->browser.tree_view_sample_channels_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder,
+			   "remote_tree_view_sample_channels_column"));
+  remote_browser->browser.tree_view_sample_bits_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "remote_tree_view_sample_bits_column"));
+  remote_browser->browser.tree_view_sample_midi_note_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder,
+			   "remote_tree_view_sample_midi_note_column"));
+
+  remote_browser->browser.tree_view_info_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "remote_tree_view_info_column"));
 
   browser_init (&remote_browser->browser);
 }

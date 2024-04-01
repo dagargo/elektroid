@@ -131,6 +131,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gint"/>
       <!-- column-name id -->
       <column type="gint"/>
+      <!-- column-name info -->
+      <column type="gchararray"/>
       <!-- column-name sample_frames -->
       <column type="gchararray"/>
       <!-- column-name sample_rate -->
@@ -763,6 +765,20 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gint"/>
       <!-- column-name id -->
       <column type="gint"/>
+      <!-- column-name info -->
+      <column type="gchararray"/>
+      <!-- column-name sample_frames -->
+      <column type="gchararray"/>
+      <!-- column-name sample_rate -->
+      <column type="gchararray"/>
+      <!-- column-name sample_time -->
+      <column type="gchararray"/>
+      <!-- column-name sample_format -->
+      <column type="gchararray"/>
+      <!-- column-name sample_channels -->
+      <column type="gchararray"/>
+      <!-- column-name sample_midi_note -->
+      <column type="gchararray"/>
       <!-- column-name slot -->
       <column type="gchararray"/>
     </columns>
@@ -1819,7 +1835,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                         <child>
                                           <object class="GtkCellRendererText"/>
                                           <attributes>
-                                            <attribute name="text">6</attribute>
+                                            <attribute name="text">13</attribute>
                                           </attributes>
                                         </child>
                                       </object>
@@ -1834,6 +1850,92 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                           </object>
                                           <attributes>
                                             <attribute name="text">1</attribute>
+                                          </attributes>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkTreeViewColumn" id="remote_tree_view_sample_bits_column">
+                                        <property name="visible">False</property>
+                                        <property name="title" translatable="yes">Format</property>
+                                        <child>
+                                          <object class="GtkCellRendererText"/>
+                                          <attributes>
+                                            <attribute name="text">10</attribute>
+                                          </attributes>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkTreeViewColumn" id="remote_tree_view_sample_channels_column">
+                                        <property name="visible">False</property>
+                                        <property name="title" translatable="yes">Channels</property>
+                                        <child>
+                                          <object class="GtkCellRendererText"/>
+                                          <attributes>
+                                            <attribute name="text">11</attribute>
+                                          </attributes>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkTreeViewColumn" id="remote_tree_view_sample_midi_note_column">
+                                        <property name="visible">False</property>
+                                        <property name="title" translatable="yes">MIDI Note</property>
+                                        <child>
+                                          <object class="GtkCellRendererText"/>
+                                          <attributes>
+                                            <attribute name="text">12</attribute>
+                                          </attributes>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkTreeViewColumn" id="remote_tree_view_sample_duration_column">
+                                        <property name="visible">False</property>
+                                        <property name="title" translatable="yes">Duration</property>
+                                        <child>
+                                          <object class="GtkCellRendererText"/>
+                                          <attributes>
+                                            <attribute name="text">9</attribute>
+                                          </attributes>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkTreeViewColumn" id="remote_tree_view_sample_rate_column">
+                                        <property name="visible">False</property>
+                                        <property name="title" translatable="yes">Rate</property>
+                                        <child>
+                                          <object class="GtkCellRendererText"/>
+                                          <attributes>
+                                            <attribute name="text">8</attribute>
+                                          </attributes>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkTreeViewColumn" id="remote_tree_view_sample_frames_column">
+                                        <property name="visible">False</property>
+                                        <property name="title" translatable="yes">Samples</property>
+                                        <child>
+                                          <object class="GtkCellRendererText"/>
+                                          <attributes>
+                                            <attribute name="text">7</attribute>
+                                          </attributes>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkTreeViewColumn" id="remote_tree_view_info_column">
+                                        <property name="visible">False</property>
+                                        <property name="title" translatable="yes">Information</property>
+                                        <child>
+                                          <object class="GtkCellRendererText">
+                                            <property name="ellipsize">middle</property>
+                                          </object>
+                                          <attributes>
+                                            <attribute name="text">6</attribute>
                                           </attributes>
                                         </child>
                                       </object>
@@ -2100,7 +2202,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                         <child>
                                           <object class="GtkCellRendererText"/>
                                           <attributes>
-                                            <attribute name="text">9</attribute>
+                                            <attribute name="text">10</attribute>
                                           </attributes>
                                         </child>
                                       </object>
@@ -2111,7 +2213,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                         <child>
                                           <object class="GtkCellRendererText"/>
                                           <attributes>
-                                            <attribute name="text">10</attribute>
+                                            <attribute name="text">11</attribute>
                                           </attributes>
                                         </child>
                                       </object>
@@ -2122,7 +2224,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                         <child>
                                           <object class="GtkCellRendererText"/>
                                           <attributes>
-                                            <attribute name="text">11</attribute>
+                                            <attribute name="text">12</attribute>
                                           </attributes>
                                         </child>
                                       </object>
@@ -2133,7 +2235,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                         <child>
                                           <object class="GtkCellRendererText"/>
                                           <attributes>
-                                            <attribute name="text">8</attribute>
+                                            <attribute name="text">9</attribute>
                                           </attributes>
                                         </child>
                                       </object>
@@ -2144,7 +2246,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                         <child>
                                           <object class="GtkCellRendererText"/>
                                           <attributes>
-                                            <attribute name="text">7</attribute>
+                                            <attribute name="text">8</attribute>
                                           </attributes>
                                         </child>
                                       </object>
@@ -2155,13 +2257,26 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                         <child>
                                           <object class="GtkCellRendererText"/>
                                           <attributes>
+                                            <attribute name="text">7</attribute>
+                                          </attributes>
+                                        </child>
+                                      </object>
+                                    </child>
+                                    <child>
+                                      <object class="GtkTreeViewColumn" id="local_tree_view_info_column">
+                                        <property name="title" translatable="yes">Information</property>
+                                        <child>
+                                          <object class="GtkCellRendererText">
+                                            <property name="ellipsize">middle</property>
+                                          </object>
+                                          <attributes>
                                             <attribute name="text">6</attribute>
                                           </attributes>
                                         </child>
                                       </object>
                                     </child>
                                     <child>
-                                      <object class="GtkTreeViewColumn">
+                                      <object class="GtkTreeViewColumn" id="local_tree_view_size_column">
                                         <property name="title" translatable="yes">Size</property>
                                         <child>
                                           <object class="GtkCellRendererText"/>
