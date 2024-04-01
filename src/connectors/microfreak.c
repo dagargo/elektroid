@@ -215,10 +215,48 @@ microfreak_get_preset_dump_msg (struct backend *backend, guint32 id,
   return microfreak_get_msg (backend, 0x19, payload, 3);
 }
 
+static const gchar *
+microfreak_get_category_name (GByteArray *rx_msg)
+{
+  gint8 category_id =
+    *MICROFREAK_GET_CATEGORY_FROM_HEADER (MICROFREAK_GET_MSG_PAYLOAD
+					  (rx_msg));
+  switch (category_id)
+    {
+    case 0:
+      return "Bass";
+    case 1:
+      return "Brass";
+    case 2:
+      return "Keys";
+    case 3:
+      return "Lead";
+    case 4:
+      return "Organ";
+    case 5:
+      return "Pad";
+    case 6:
+      return "Percussion";
+    case 7:
+      return "Sequence";
+    case 8:
+      return "SFX";
+    case 9:
+      return "Strings";
+    case 10:
+      return "Template";
+    case 11:
+      return "Vocoder";
+    default:
+      return "";
+    }
+}
+
 static gint
 microfreak_next_preset_dentry (struct item_iterator *iter)
 {
   gint err;
+  const gchar *category;
   gchar preset_name[MICROFREAK_PRESET_NAME_LEN + 1];
   GByteArray *tx_msg, *rx_msg;
   struct microfreak_iter_data *data = iter->data;
@@ -248,6 +286,8 @@ microfreak_next_preset_dentry (struct item_iterator *iter)
   iter->item.type = ELEKTROID_FILE;
   iter->item.size = -1;
   iter->item.slot_used = TRUE;
+  category = microfreak_get_category_name (rx_msg);
+  snprintf (iter->item.object_info, LABEL_MAX, "%s", category);
   (data->next)++;
 
 end:
@@ -701,7 +741,8 @@ static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
   .fs = FS_MICROFREAK_PRESET,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = BE_FILE_ICON_SND,
@@ -832,7 +873,8 @@ static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .fs = FS_MICROFREAK_ZPRESET,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
   .name = "zpreset",
   .gui_name = "Presets",
   .gui_icon = BE_FILE_ICON_SND,
