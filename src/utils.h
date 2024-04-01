@@ -78,7 +78,11 @@ struct item
   gint64 size;
   gboolean slot_used;		//Slot filesystems might use this if the underlying filesystem distinguishes between used and unused slots.
   //Optionally filled up by sample filesystems
-  struct sample_info sample_info;
+  union
+  {
+    struct sample_info sample_info;
+    gchar object_info[LABEL_MAX];
+  };
 };
 
 struct item_iterator

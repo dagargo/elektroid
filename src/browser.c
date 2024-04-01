@@ -363,6 +363,16 @@ browser_add_dentry_item (gpointer data)
       g_value_unset (&v);
     }
 
+  if (item->type == ELEKTROID_FILE &&
+      browser->fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN)
+    {
+      g_value_init (&v, G_TYPE_STRING);
+      g_value_set_string (&v, item->object_info);
+      gtk_list_store_set_value (list_store, &iter,
+				BROWSER_LIST_STORE_INFO_FIELD, &v);
+      g_value_unset (&v);
+    }
+
   if (editor.audio.path && editor.browser == browser)
     {
       name = path_chain (PATH_SYSTEM, browser->dir, add_data->rel_path);
