@@ -48,7 +48,7 @@ notifier_set_dir (struct notifier *notifier)
 					IN_CREATE | IN_DELETE | IN_MOVED_FROM
 					| IN_DELETE_SELF | IN_MOVE_SELF
 					| IN_MOVED_TO | IN_IGNORED |
-					IN_ATTRIB);
+					IN_ATTRIB | IN_MODIFY);
     }
 }
 
@@ -95,7 +95,8 @@ notifier_run (gpointer data)
 	      || notifier->event->mask & IN_DELETE
 	      || notifier->event->mask & IN_MOVED_FROM
 	      || notifier->event->mask & IN_MOVED_TO
-	      || notifier->event->mask & IN_ATTRIB)
+	      || notifier->event->mask & IN_ATTRIB
+	      || notifier->event->mask & IN_MODIFY)
 	    {
 	      reload = TRUE;
 	    }
