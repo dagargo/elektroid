@@ -147,6 +147,46 @@ summit_get_patch_download_path (struct backend *backend,
   return path;
 }
 
+static const gchar *
+summit_get_category_name (GByteArray *rx_msg)
+{
+  switch (rx_msg->data[32])
+    {
+    case 0:
+      return "None";
+    case 1:
+      return "Arp";
+    case 2:
+      return "Bass";
+    case 3:
+      return "Bell";
+    case 4:
+      return "Classic";
+    case 5:
+      return "DrumPerc";
+    case 6:
+      return "Keyboard";
+    case 7:
+      return "Lead";
+    case 8:
+      return "Motion";
+    case 9:
+      return "Pad";
+    case 10:
+      return "Poly";
+    case 11:
+      return "SFX";
+    case 12:
+      return "String";
+    case 13:
+      return "User 1";
+    case 14:
+      return "User 2";
+    default:
+      return "";
+    }
+}
+
 static gint
 summit_patch_next_dentry (struct item_iterator *iter)
 {
@@ -170,6 +210,11 @@ summit_patch_next_dentry (struct item_iterator *iter)
   iter->item.name[SUMMIT_PATCH_NAME_LEN] = 0;
   gchar *c = &iter->item.name[SUMMIT_PATCH_NAME_LEN - 1];
   summit_truncate_name_at_last_useful_char (c);
+  if (data->fs == FS_SUMMIT_SINGLE_PATCH)
+    {
+      const gchar *category = summit_get_category_name (rx_msg);
+      snprintf (iter->item.object_info, LABEL_MAX, "%s", category);
+    }
   free_msg (rx_msg);
 
   iter->item.id = data->next;
@@ -507,7 +552,7 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
-    FS_OPTION_ALLOW_SEARCH,
+    FS_OPTION_SHOW_INFO_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "single",
   .gui_name = "Single",
   .gui_icon = BE_FILE_ICON_SND,
