@@ -511,6 +511,7 @@ editor_load_sample_runner (gpointer data)
   editor->audio.sel_len = 0;
 
   audio->sample_info.channels = 0;	//Automatic
+  audio->sample_info.format = SF_FORMAT_PCM_16;
 
   g_mutex_lock (&audio->control.mutex);
   audio->control.active = TRUE;
