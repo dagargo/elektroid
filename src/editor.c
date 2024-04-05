@@ -1149,6 +1149,9 @@ editor_file_exists_no_overwrite (const gchar *filename)
   return res == GTK_RESPONSE_CANCEL;
 }
 
+//This function does not need synchronized acess as it is only called from
+//editor_save_clicked which already provides this.
+
 static gint
 editor_save (struct editor *editor, gchar *name, GByteArray *sample)
 {
@@ -1198,6 +1201,8 @@ editor_save_clicked (GtkWidget *object, gpointer data)
       return;
     }
 
+  g_mutex_lock (&editor->audio.control.mutex);
+
   if (editor->audio.path && !editor->audio.sel_len)
     {
       if (strcmp ("wav", get_ext (editor->audio.path)))
@@ -1211,6 +1216,7 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 
 	  if (editor_file_exists_no_overwrite (editor->audio.path))
 	    {
+	      g_mutex_unlock (&editor->audio.control.mutex);
 	      return;
 	    }
 	}
@@ -1242,12 +1248,15 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 		    curr_time_str);
 	}
 
+      g_mutex_unlock (&editor->audio.control.mutex);
       name = elektroid_ask_name (_("Save Sample"), suggestion,
 				 editor->browser, 0, strlen (suggestion) - 4);
+      g_mutex_lock (&editor->audio.control.mutex);
       if (name)
 	{
 	  if (editor_file_exists_no_overwrite (name))
 	    {
+	      g_mutex_unlock (&editor->audio.control.mutex);
 	      return;
 	    }
 
@@ -1271,6 +1280,8 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	  g_byte_array_free (sample, TRUE);
 	}
     }
+
+  g_mutex_unlock (&editor->audio.control.mutex);
 }
 
 static gboolean
