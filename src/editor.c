@@ -1205,22 +1205,15 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 
   if (editor->audio.path && !editor->audio.sel_len)
     {
-      if (strcmp ("wav", get_ext (editor->audio.path)))
+      g_mutex_unlock (&editor->audio.control.mutex);
+      if (editor_file_exists_no_overwrite (editor->audio.path))
 	{
-	  remove_ext (editor->audio.path);
-	  gchar *name = editor->audio.path;
-	  editor->audio.path = g_malloc (strlen (name) + 5);
-	  strcpy (editor->audio.path, name);
-	  strcat (editor->audio.path, ".wav");
-	  g_free (name);
-
-	  if (editor_file_exists_no_overwrite (editor->audio.path))
-	    {
-	      g_mutex_unlock (&editor->audio.control.mutex);
-	      return;
-	    }
+	  return;
 	}
 
+      debug_print (2, "Saving changes to %s...\n", editor->audio.path);
+
+      g_mutex_lock (&editor->audio.control.mutex);
       editor_save (editor, editor->audio.path, editor->audio.sample);
     }
   else
@@ -1254,15 +1247,15 @@ editor_save_clicked (GtkWidget *object, gpointer data)
       g_mutex_lock (&editor->audio.control.mutex);
       if (name)
 	{
+	  g_mutex_unlock (&editor->audio.control.mutex);
 	  if (editor_file_exists_no_overwrite (name))
 	    {
-	      g_mutex_unlock (&editor->audio.control.mutex);
 	      return;
 	    }
 
 	  debug_print (2, "Saving recording to %s...\n", name);
-	  memcpy (editor->audio.control.data, &editor->audio.sample_info,
-		  sizeof (struct sample_info));
+
+	  g_mutex_lock (&editor->audio.control.mutex);
 
 	  if (editor->audio.sel_len)
 	    {
