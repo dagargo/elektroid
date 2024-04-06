@@ -964,6 +964,8 @@ static gboolean
 browser_local_check_selection (gpointer data)
 {
   gint count = browser_get_selected_items_count (&local_browser);
+  gboolean ul_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->upload ? TRUE : FALSE;
 
   browser_check_and_load_sample (&local_browser, count);
 
@@ -971,8 +973,7 @@ browser_local_check_selection (gpointer data)
   gtk_widget_set_sensitive (local_browser.rename_menuitem, count == 1);
   gtk_widget_set_sensitive (local_browser.delete_menuitem, count > 0);
   gtk_widget_set_sensitive (local_browser.transfer_menuitem, count > 0
-			    && remote_browser.fs_ops
-			    && remote_browser.fs_ops->upload);
+			    && ul_impl);
 
   return FALSE;
 }
@@ -1000,8 +1001,8 @@ browser_remote_check_selection (gpointer data)
 			    && ren_impl);
   gtk_widget_set_sensitive (remote_browser.delete_menuitem, count > 0
 			    && del_impl);
-  gtk_widget_set_sensitive (remote_browser.transfer_menuitem,
-			    count > 0 && dl_impl);
+  gtk_widget_set_sensitive (remote_browser.transfer_menuitem, count > 0
+			    && dl_impl);
 
   if (count == 1 && sel_impl)
     {
