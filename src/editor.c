@@ -224,10 +224,6 @@ editor_update_ui_on_load (gpointer data)
 
   if (audio_check (&editor->audio))
     {
-      gtk_widget_set_sensitive (local_browser.play_menuitem,
-				editor->browser == &local_browser);
-      gtk_widget_set_sensitive (remote_browser.play_menuitem,
-				editor->browser == &remote_browser);
       gtk_widget_set_sensitive (editor->play_button, TRUE);
       gtk_widget_set_sensitive (editor->stop_button, TRUE);
     }

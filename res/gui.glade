@@ -175,7 +175,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       </object>
     </child>
     <child>
-      <object class="GtkSeparatorMenuItem">
+      <object class="GtkSeparatorMenuItem" id="local_options_separator">
         <property name="visible">True</property>
         <property name="can-focus">False</property>
       </object>

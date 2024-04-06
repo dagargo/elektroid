@@ -903,13 +903,6 @@ browser_search_changed (GtkSearchEntry *entry, gpointer data)
     }
 }
 
-void
-browser_disable_sample_menuitems (struct browser *browser)
-{
-  gtk_widget_set_sensitive (browser->open_menuitem, FALSE);
-  gtk_widget_set_sensitive (browser->play_menuitem, FALSE);
-}
-
 static void
 browser_clear_other_browser_if_system (struct browser *browser)
 {
@@ -937,11 +930,6 @@ browser_check_and_load_sample (struct browser *browser, gint count)
       model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
       browser_set_item (model, &iter, &item);
 
-      gtk_widget_set_sensitive (browser == &local_browser ?
-				local_browser.open_menuitem :
-				remote_browser.open_menuitem,
-				item.type == ELEKTROID_FILE);
-
       if (item.type == ELEKTROID_FILE && sample_editor)
 	{
 	  enum path_type type = path_type_from_backend (browser->backend);
@@ -964,17 +952,7 @@ static gboolean
 browser_local_check_selection (gpointer data)
 {
   gint count = browser_get_selected_items_count (&local_browser);
-  gboolean ul_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->upload ? TRUE : FALSE;
-
   browser_check_and_load_sample (&local_browser, count);
-
-  gtk_widget_set_sensitive (local_browser.show_menuitem, count <= 1);
-  gtk_widget_set_sensitive (local_browser.rename_menuitem, count == 1);
-  gtk_widget_set_sensitive (local_browser.delete_menuitem, count > 0);
-  gtk_widget_set_sensitive (local_browser.transfer_menuitem, count > 0
-			    && ul_impl);
-
   return FALSE;
 }
 
@@ -982,12 +960,6 @@ static gboolean
 browser_remote_check_selection (gpointer data)
 {
   gint count = browser_get_selected_items_count (&remote_browser);
-  gboolean dl_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->download ? TRUE : FALSE;
-  gboolean ren_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->rename ? TRUE : FALSE;
-  gboolean del_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->delete ? TRUE : FALSE;
   gboolean sel_impl = remote_browser.fs_ops
     && remote_browser.fs_ops->select_item ? TRUE : FALSE;
 
@@ -995,14 +967,6 @@ browser_remote_check_selection (gpointer data)
     {
       browser_check_and_load_sample (&remote_browser, count);
     }
-
-  gtk_widget_set_sensitive (remote_browser.show_menuitem, count <= 1);
-  gtk_widget_set_sensitive (remote_browser.rename_menuitem, count == 1
-			    && ren_impl);
-  gtk_widget_set_sensitive (remote_browser.delete_menuitem, count > 0
-			    && del_impl);
-  gtk_widget_set_sensitive (remote_browser.transfer_menuitem, count > 0
-			    && dl_impl);
 
   if (count == 1 && sel_impl)
     {
@@ -1017,6 +981,93 @@ browser_remote_check_selection (gpointer data)
     }
 
   return FALSE;
+}
+
+static void
+browser_local_setup_popup_options (gint count, gboolean file)
+{
+  gboolean ul_avail = remote_browser.fs_ops &&
+    !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+    && remote_browser.fs_ops->upload;
+  gboolean edit_avail =
+    local_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR;
+  gboolean editing = editor.browser == &local_browser;
+
+  gtk_widget_set_visible (local_browser.transfer_menuitem, ul_avail);
+  gtk_widget_set_visible (local_browser.play_separator, ul_avail);
+  gtk_widget_set_visible (local_browser.play_menuitem, edit_avail);
+  gtk_widget_set_visible (local_browser.options_separator, edit_avail);
+
+  gtk_widget_set_sensitive (local_browser.transfer_menuitem, count > 0
+			    && ul_avail);
+  gtk_widget_set_sensitive (local_browser.play_menuitem, file && editing);
+  gtk_widget_set_sensitive (local_browser.open_menuitem, file);
+  gtk_widget_set_sensitive (local_browser.show_menuitem, count <= 1);
+  gtk_widget_set_sensitive (local_browser.rename_menuitem, count == 1);
+  gtk_widget_set_sensitive (local_browser.delete_menuitem, count > 0);
+}
+
+static void
+browser_remote_setup_popup_options (gint count, gboolean file)
+{
+  gboolean dl_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->download ? TRUE : FALSE;
+  gboolean ren_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->rename ? TRUE : FALSE;
+  gboolean del_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->delete ? TRUE : FALSE;
+  gboolean edit_avail = remote_browser.fs_ops
+    && remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR;
+  gboolean editing = editor.browser == &remote_browser;
+  gboolean system = remote_browser.fs_ops
+    && remote_browser.backend->type == BE_TYPE_SYSTEM;
+
+  gtk_widget_set_visible (remote_browser.transfer_menuitem, dl_impl);
+  gtk_widget_set_visible (remote_browser.play_separator, dl_impl);
+  gtk_widget_set_visible (remote_browser.play_menuitem, system && edit_avail);
+  gtk_widget_set_visible (remote_browser.options_separator, system
+			  && edit_avail);
+  gtk_widget_set_visible (remote_browser.open_menuitem, system);
+  gtk_widget_set_visible (remote_browser.show_menuitem, system);
+  gtk_widget_set_visible (remote_browser.actions_separator, system);
+
+  gtk_widget_set_sensitive (remote_browser.transfer_menuitem, count > 0
+			    && dl_impl);
+  gtk_widget_set_sensitive (remote_browser.play_menuitem, file && editing);
+  gtk_widget_set_sensitive (remote_browser.open_menuitem, file);
+  gtk_widget_set_sensitive (remote_browser.show_menuitem, count <= 1
+			    && system);
+  gtk_widget_set_sensitive (remote_browser.rename_menuitem, count == 1
+			    && ren_impl);
+  gtk_widget_set_sensitive (remote_browser.delete_menuitem, count > 0
+			    && del_impl);
+}
+
+void
+browser_setup_popup_options (struct browser *browser)
+{
+  struct item item;
+  GtkTreeIter iter;
+  gboolean file = FALSE;
+  gint count = browser_get_selected_items_count (browser);
+  GtkTreeModel *model = GTK_TREE_MODEL (gtk_tree_view_get_model
+					(browser->view));
+
+  if (count == 1)
+    {
+      browser_set_selected_row_iter (browser, &iter);
+      browser_set_item (model, &iter, &item);
+      file = item.type == ELEKTROID_FILE;
+    }
+
+  if (browser == &local_browser)
+    {
+      browser_local_setup_popup_options (count, file);
+    }
+  else
+    {
+      browser_remote_setup_popup_options (count, file);
+    }
 }
 
 void
@@ -1058,6 +1109,8 @@ browser_local_init (struct browser *browser, GtkBuilder *builder,
     GTK_WIDGET (gtk_builder_get_object (builder, "local_play_separator"));
   browser->play_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_play_menuitem"));
+  browser->options_separator =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_options_separator"));
   browser->open_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_open_menuitem"));
   browser->show_menuitem =

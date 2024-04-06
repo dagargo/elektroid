@@ -226,17 +226,6 @@ elektroid_load_remote_if_midi (gpointer data)
 }
 
 static void
-elektroid_update_upload_menuitem ()
-{
-  gboolean upload = remote_browser.fs_ops &&
-    !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
-    && remote_browser.fs_ops->upload;
-
-  gtk_widget_set_visible (local_browser.transfer_menuitem, upload);
-  gtk_widget_set_visible (local_browser.play_separator, upload);
-}
-
-static void
 elektroid_load_devices (gboolean auto_select)
 {
   gint i;
@@ -380,8 +369,6 @@ elektroid_check_backend ()
   gboolean queued = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					   NULL, NULL, NULL);
 
-  elektroid_update_upload_menuitem ();
-
   if (!remote_browser.fs_ops
       || remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
     {
@@ -392,8 +379,6 @@ elektroid_check_backend ()
       remote_sensitive = connected;
     }
   gtk_widget_set_sensitive (remote_box, remote_sensitive);
-  gtk_widget_set_sensitive (local_browser.transfer_menuitem,
-			    remote_sensitive);
   gtk_widget_set_sensitive (ma_data.box, !queued);
 
   if (!connected)
@@ -452,7 +437,6 @@ elektroid_refresh_devices (GtkWidget *widget, gpointer data)
       elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (&backend);
       ma_clear_device_menu_actions (ma_data.box);
-      browser_disable_sample_menuitems (&remote_browser);
       browser_reset (&remote_browser);
     }
   elektroid_check_backend ();	//This triggers the actual devices refresh if there is no backend
@@ -1087,16 +1071,6 @@ elektroid_button_press (GtkWidget *treeview, GdkEventButton *event,
     }
   else if (event->button == GDK_BUTTON_SECONDARY)
     {
-      if (browser == &remote_browser &&
-	  backend.type != BE_TYPE_SYSTEM &&
-	  remote_browser.fs_ops->rename == NULL &&
-	  remote_browser.fs_ops->delete == NULL &&
-	  remote_browser.fs_ops->download == NULL)
-	{
-	  return FALSE;
-	}
-
-      selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
       gtk_tree_view_get_path_at_pos (browser->view,
 				     event->x, event->y, &path, NULL, NULL,
 				     NULL);
@@ -1104,6 +1078,7 @@ elektroid_button_press (GtkWidget *treeview, GdkEventButton *event,
       if (!path)
 	{
 	  gtk_tree_selection_unselect_all (selection);
+	  browser_setup_popup_options (browser);
 	  gtk_menu_popup_at_pointer (browser->menu, (GdkEvent *) event);
 	  return FALSE;
 	}
@@ -1111,6 +1086,7 @@ elektroid_button_press (GtkWidget *treeview, GdkEventButton *event,
       elektroid_button_press_update_menu (browser, selection, path);
 
       gtk_tree_path_free (path);
+      browser_setup_popup_options (browser);
       gtk_menu_popup_at_pointer (browser->menu, (GdkEvent *) event);
 
       return TRUE;
@@ -1370,7 +1346,6 @@ elektroid_run_next (gpointer data)
       if (remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
 	{
 	  gtk_widget_set_sensitive (remote_box, FALSE);
-	  gtk_widget_set_sensitive (local_browser.transfer_menuitem, FALSE);
 	}
       gtk_widget_set_sensitive (ma_data.box, FALSE);
 
@@ -1415,7 +1390,6 @@ elektroid_run_next (gpointer data)
   else
     {
       gtk_widget_set_sensitive (remote_box, TRUE);
-      gtk_widget_set_sensitive (local_browser.transfer_menuitem, TRUE);
 
       if ((remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
 	  && remote_browser.dirty)
@@ -2135,7 +2109,6 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
     {
       last_local_fs_ops = local_browser.fs_ops;
       local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
-      browser_disable_sample_menuitems (&local_browser);
       browser_update_fs_options (&local_browser);
       browser_load_dir (&local_browser);
 
@@ -2143,7 +2116,6 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
       browser_update_fs_options (&remote_browser);
 
       gtk_widget_set_visible (editor.box, TRUE);
-      elektroid_update_upload_menuitem ();
       editor_set_audio_mono_mix (&editor);
 
       return;
@@ -2184,29 +2156,6 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
 	}
       remote_browser.dir = strdup ("/");
     }
-
-  gtk_widget_set_visible (remote_browser.transfer_menuitem,
-			  backend.type == BE_TYPE_SYSTEM
-			  || remote_browser.fs_ops->download != NULL);
-  gtk_widget_set_visible (remote_browser.play_separator,
-			  backend.type == BE_TYPE_SYSTEM);
-  gtk_widget_set_visible (remote_browser.play_menuitem,
-			  backend.type == BE_TYPE_SYSTEM);
-  gtk_widget_set_visible (remote_browser.options_separator,
-			  backend.type == BE_TYPE_SYSTEM);
-  gtk_widget_set_visible (remote_browser.open_menuitem,
-			  backend.type == BE_TYPE_SYSTEM);
-  gtk_widget_set_visible (remote_browser.show_menuitem,
-			  backend.type == BE_TYPE_SYSTEM);
-  gtk_widget_set_visible (remote_browser.actions_separator,
-			  backend.type == BE_TYPE_SYSTEM ||
-			  ((remote_browser.fs_ops->rename != NULL
-			    || remote_browser.fs_ops->delete != NULL)
-			   && remote_browser.fs_ops->download != NULL));
-  gtk_widget_set_visible (remote_browser.rename_menuitem,
-			  remote_browser.fs_ops->rename != NULL);
-  gtk_widget_set_visible (remote_browser.delete_menuitem,
-			  remote_browser.fs_ops->delete != NULL);
 
   gtk_widget_set_visible (editor.box, EDITOR_VISIBLE);
 
@@ -2285,13 +2234,11 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
 
   browser_update_fs_options (&local_browser);
 
-  browser_disable_sample_menuitems (&remote_browser);
   browser_close_search (NULL, &remote_browser);	//This triggers a refresh
   browser_update_fs_options (&remote_browser);
 
   if (last_local_fs_ops != local_browser.fs_ops)
     {
-      browser_disable_sample_menuitems (&local_browser);
       browser_load_dir (&local_browser);
     }
 }
@@ -3188,9 +3135,6 @@ elektroid_run (int argc, char *argv[])
   elektroid_show_remote (preferences.show_remote);
 
   gtk_widget_set_sensitive (remote_box, FALSE);
-
-  browser_disable_sample_menuitems (&local_browser);
-  browser_disable_sample_menuitems (&remote_browser);
 
   gtk_label_set_text (GTK_LABEL (local_label), hostname);
 
