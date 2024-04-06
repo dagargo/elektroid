@@ -911,7 +911,7 @@ browser_disable_sample_menuitems (struct browser *browser)
 }
 
 static void
-elektroid_clear_other_browser_if_system (struct browser *browser)
+browser_clear_other_browser_if_system (struct browser *browser)
 {
   if ((browser == &local_browser
        && (remote_browser.backend
@@ -923,7 +923,7 @@ elektroid_clear_other_browser_if_system (struct browser *browser)
 }
 
 static void
-elektroid_check_and_load_sample (struct browser *browser, gint count)
+browser_check_and_load_sample (struct browser *browser, gint count)
 {
   struct item item;
   GtkTreeIter iter;
@@ -946,7 +946,7 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
 	{
 	  enum path_type type = path_type_from_backend (browser->backend);
 	  gchar *sample_path = path_chain (type, browser->dir, item.name);
-	  elektroid_clear_other_browser_if_system (browser);
+	  browser_clear_other_browser_if_system (browser);
 	  editor_reset (&editor, browser);
 	  g_free (editor.audio.path);
 	  editor.audio.path = sample_path;
@@ -955,7 +955,7 @@ elektroid_check_and_load_sample (struct browser *browser, gint count)
     }
   else
     {
-      elektroid_clear_other_browser_if_system (browser);
+      browser_clear_other_browser_if_system (browser);
       editor_reset (&editor, NULL);
     }
 }
@@ -965,7 +965,7 @@ browser_local_check_selection (gpointer data)
 {
   gint count = browser_get_selected_items_count (&local_browser);
 
-  elektroid_check_and_load_sample (&local_browser, count);
+  browser_check_and_load_sample (&local_browser, count);
 
   gtk_widget_set_sensitive (local_browser.show_menuitem, count <= 1);
   gtk_widget_set_sensitive (local_browser.rename_menuitem, count == 1);
@@ -992,7 +992,7 @@ browser_remote_check_selection (gpointer data)
 
   if (remote_browser.backend->type == BE_TYPE_SYSTEM)
     {
-      elektroid_check_and_load_sample (&remote_browser, count);
+      browser_check_and_load_sample (&remote_browser, count);
     }
 
   gtk_widget_set_sensitive (remote_browser.show_menuitem, count <= 1);
