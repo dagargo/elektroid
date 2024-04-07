@@ -148,13 +148,6 @@ browser_clear (struct browser *browser)
 }
 
 void
-browser_selection_changed (GtkTreeSelection *selection, gpointer data)
-{
-  struct browser *browser = data;
-  browser->check_selection (NULL);
-}
-
-void
 browser_refresh (GtkWidget *object, gpointer data)
 {
   struct browser *browser = data;
@@ -939,13 +932,13 @@ browser_check_and_load_sample (struct browser *browser, gint count)
 	  g_free (editor.audio.path);
 	  editor.audio.path = sample_path;
 	  editor_start_load_thread (&editor);
+
+	  return;
 	}
     }
-  else
-    {
-      browser_clear_other_browser_if_system (browser);
-      editor_reset (&editor, NULL);
-    }
+
+  browser_clear_other_browser_if_system (browser);
+  editor_reset (&editor, NULL);
 }
 
 static gboolean
@@ -1043,7 +1036,7 @@ browser_remote_setup_popup_options (gint count, gboolean file)
 			    && del_impl);
 }
 
-void
+static void
 browser_setup_popup_options (struct browser *browser)
 {
   struct item item;
@@ -1068,6 +1061,14 @@ browser_setup_popup_options (struct browser *browser)
     {
       browser_remote_setup_popup_options (count, file);
     }
+}
+
+void
+browser_selection_changed (GtkTreeSelection *selection, gpointer data)
+{
+  struct browser *browser = data;
+  browser->check_selection (NULL);
+  browser_setup_popup_options (browser);
 }
 
 void

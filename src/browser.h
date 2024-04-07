@@ -150,6 +150,4 @@ void browser_close_search (GtkSearchEntry *, gpointer);
 
 void browser_search_changed (GtkSearchEntry *, gpointer);
 
-void browser_setup_popup_options (struct browser *);
-
 #endif

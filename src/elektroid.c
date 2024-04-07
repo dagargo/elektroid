@@ -1013,26 +1013,6 @@ elektroid_selection_function_false (GtkTreeSelection *selection,
   return FALSE;
 }
 
-static void
-elektroid_button_press_update_menu (struct browser *browser,
-				    GtkTreeSelection *selection,
-				    GtkTreePath *path)
-{
-  if (gtk_tree_selection_path_is_selected (selection, path))
-    {
-      if (browser_get_selected_items_count (browser) == 1 &&
-	  editor.browser != browser)
-	{
-	  browser->check_selection (NULL);
-	}
-    }
-  else
-    {
-      gtk_tree_selection_unselect_all (selection);
-      gtk_tree_selection_select_path (selection, path);
-    }
-}
-
 static gboolean
 elektroid_button_press (GtkWidget *treeview, GdkEventButton *event,
 			gpointer data)
@@ -1040,8 +1020,10 @@ elektroid_button_press (GtkWidget *treeview, GdkEventButton *event,
   GtkTreePath *path;
   GtkTreeSelection *selection;
   struct browser *browser = data;
+  gboolean val = FALSE;
 
   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+
   gtk_tree_selection_set_select_function (selection,
 					  elektroid_selection_function_true,
 					  NULL, NULL);
@@ -1051,48 +1033,48 @@ elektroid_button_press (GtkWidget *treeview, GdkEventButton *event,
       return FALSE;
     }
 
-  if (event->button == GDK_BUTTON_PRIMARY)
+  if (event->button == GDK_BUTTON_PRIMARY
+      || event->button == GDK_BUTTON_SECONDARY)
     {
-      gtk_tree_view_get_path_at_pos (browser->view, event->x, event->y,
-				     &path, NULL, NULL, NULL);
+      gtk_tree_view_get_path_at_pos (browser->view, event->x, event->y, &path,
+				     NULL, NULL, NULL);
 
-      if (!path)
+      if (path)
+	{
+
+	  if (gtk_tree_selection_path_is_selected (selection, path))
+	    {
+	      if (event->button == GDK_BUTTON_PRIMARY)
+		{
+		  gtk_tree_selection_set_select_function (selection,
+							  elektroid_selection_function_false,
+							  NULL, NULL);
+		}
+	      else if (event->button == GDK_BUTTON_SECONDARY)
+		{
+		  val = TRUE;
+		}
+	    }
+	  else
+	    {
+	      gtk_tree_selection_unselect_all (selection);
+	      gtk_tree_selection_select_path (selection, path);
+	    }
+
+	  gtk_tree_path_free (path);
+	}
+      else
 	{
 	  gtk_tree_selection_unselect_all (selection);
-	  return FALSE;
 	}
 
-      elektroid_button_press_update_menu (browser, selection, path);
-
-      gtk_tree_path_free (path);
-      gtk_tree_selection_set_select_function (selection,
-					      elektroid_selection_function_false,
-					      NULL, NULL);
-    }
-  else if (event->button == GDK_BUTTON_SECONDARY)
-    {
-      gtk_tree_view_get_path_at_pos (browser->view,
-				     event->x, event->y, &path, NULL, NULL,
-				     NULL);
-
-      if (!path)
+      if (event->button == GDK_BUTTON_SECONDARY)
 	{
-	  gtk_tree_selection_unselect_all (selection);
-	  browser_setup_popup_options (browser);
 	  gtk_menu_popup_at_pointer (browser->menu, (GdkEvent *) event);
-	  return FALSE;
 	}
-
-      elektroid_button_press_update_menu (browser, selection, path);
-
-      gtk_tree_path_free (path);
-      browser_setup_popup_options (browser);
-      gtk_menu_popup_at_pointer (browser->menu, (GdkEvent *) event);
-
-      return TRUE;
     }
 
-  return FALSE;
+  return val;
 }
 
 static gboolean
@@ -1110,30 +1092,27 @@ elektroid_button_release (GtkWidget *treeview, GdkEventButton *event,
 
   if (event->button == GDK_BUTTON_PRIMARY)
     {
-      selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
-      gtk_tree_selection_set_select_function (selection,
-					      elektroid_selection_function_true,
-					      NULL, NULL);
+      gtk_tree_view_get_path_at_pos (browser->view, event->x, event->y,
+				     &path, NULL, NULL, NULL);
 
-      if (!browser->dnd)
+      if (path)
 	{
-	  gtk_tree_view_get_path_at_pos (browser->view, event->x, event->y,
-					 &path, NULL, NULL, NULL);
+	  selection =
+	    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
 
-	  if (!path)
+	  if (gtk_tree_selection_path_is_selected (selection, path))
 	    {
-	      return FALSE;
-	    }
-
-	  if (browser_get_selected_items_count (browser) > 1)
-	    {
-	      gtk_tree_selection_unselect_all (selection);
-	      gtk_tree_selection_select_path (selection, path);
+	      gtk_tree_selection_set_select_function (selection,
+						      elektroid_selection_function_true,
+						      NULL, NULL);
+	      if (browser_get_selected_items_count (browser) != 1)
+		{
+		  gtk_tree_selection_unselect_all (selection);
+		  gtk_tree_selection_select_path (selection, path);
+		}
 	    }
 	  gtk_tree_path_free (path);
 	}
-
-      return FALSE;
     }
 
   return FALSE;
