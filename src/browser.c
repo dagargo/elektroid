@@ -711,6 +711,7 @@ browser_update_fs_options (struct browser *browser)
 
   browser_update_fs_sorting_options (browser);
   browser->set_columns_visibility ();
+  browser->set_popup_menuitems_visibility ();
 }
 
 static void
@@ -982,20 +983,28 @@ browser_remote_check_selection (gpointer data)
   return FALSE;
 }
 
-static void
-browser_local_setup_popup_options (gint count, gboolean file)
+void
+browser_local_set_popup_visibility ()
 {
   gboolean ul_avail = remote_browser.fs_ops &&
     !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
     && remote_browser.fs_ops->upload;
   gboolean edit_avail =
     local_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR;
-  gboolean editing = editor.browser == &local_browser;
 
   gtk_widget_set_visible (local_browser.transfer_menuitem, ul_avail);
   gtk_widget_set_visible (local_browser.play_separator, ul_avail);
   gtk_widget_set_visible (local_browser.play_menuitem, edit_avail);
   gtk_widget_set_visible (local_browser.options_separator, edit_avail);
+}
+
+static void
+browser_local_set_popup_sensitivity (gint count, gboolean file)
+{
+  gboolean ul_avail = remote_browser.fs_ops &&
+    !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+    && remote_browser.fs_ops->upload;
+  gboolean editing = editor.browser == &local_browser;
 
   gtk_widget_set_sensitive (local_browser.transfer_menuitem, count > 0
 			    && ul_avail);
@@ -1006,18 +1015,13 @@ browser_local_setup_popup_options (gint count, gboolean file)
   gtk_widget_set_sensitive (local_browser.delete_menuitem, count > 0);
 }
 
-static void
-browser_remote_setup_popup_options (gint count, gboolean file)
+void
+browser_remote_set_popup_visibility ()
 {
   gboolean dl_impl = remote_browser.fs_ops
     && remote_browser.fs_ops->download ? TRUE : FALSE;
-  gboolean ren_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->rename ? TRUE : FALSE;
-  gboolean del_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->delete ? TRUE : FALSE;
   gboolean edit_avail = remote_browser.fs_ops
     && remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR;
-  gboolean editing = editor.browser == &remote_browser;
   gboolean system = remote_browser.fs_ops
     && remote_browser.backend->type == BE_TYPE_SYSTEM;
 
@@ -1029,6 +1033,20 @@ browser_remote_setup_popup_options (gint count, gboolean file)
   gtk_widget_set_visible (remote_browser.open_menuitem, system);
   gtk_widget_set_visible (remote_browser.show_menuitem, system);
   gtk_widget_set_visible (remote_browser.actions_separator, system);
+}
+
+static void
+browser_remote_set_popup_sensitivity (gint count, gboolean file)
+{
+  gboolean dl_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->download ? TRUE : FALSE;
+  gboolean ren_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->rename ? TRUE : FALSE;
+  gboolean del_impl = remote_browser.fs_ops
+    && remote_browser.fs_ops->delete ? TRUE : FALSE;
+  gboolean editing = editor.browser == &remote_browser;
+  gboolean system = remote_browser.fs_ops
+    && remote_browser.backend->type == BE_TYPE_SYSTEM;
 
   gtk_widget_set_sensitive (remote_browser.transfer_menuitem, count > 0
 			    && dl_impl);
@@ -1043,7 +1061,7 @@ browser_remote_setup_popup_options (gint count, gboolean file)
 }
 
 static void
-browser_setup_popup_options (struct browser *browser)
+browser_setup_popup_sensitivity (struct browser *browser)
 {
   struct item item;
   GtkTreeIter iter;
@@ -1061,11 +1079,11 @@ browser_setup_popup_options (struct browser *browser)
 
   if (browser == &local_browser)
     {
-      browser_local_setup_popup_options (count, file);
+      browser_local_set_popup_sensitivity (count, file);
     }
   else
     {
-      browser_remote_setup_popup_options (count, file);
+      browser_remote_set_popup_sensitivity (count, file);
     }
 }
 
@@ -1074,7 +1092,7 @@ browser_selection_changed (GtkTreeSelection *selection, gpointer data)
 {
   struct browser *browser = data;
   browser->check_selection (data);
-  browser_setup_popup_options (browser);
+  browser_setup_popup_sensitivity (browser);
 }
 
 void
@@ -1104,6 +1122,8 @@ browser_local_init (struct browser *browser, GtkBuilder *builder,
   browser->fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
   browser->backend = NULL;
   browser->check_callback = NULL;
+  browser->set_popup_menuitems_visibility =
+    browser_local_set_popup_visibility;
   browser->set_columns_visibility = browser_local_set_columns_visibility;
   browser->sensitive_widgets = NULL;
   browser->list_stack =
@@ -1201,6 +1221,8 @@ browser_remote_init (struct browser *browser,
   browser->fs_ops = NULL;
   browser->backend = backend;
   browser->check_callback = elektroid_check_backend;
+  browser->set_popup_menuitems_visibility =
+    browser_remote_set_popup_visibility;
   browser->set_columns_visibility = browser_remote_set_columns_visibility;
   browser->sensitive_widgets = NULL;
   browser->list_stack =

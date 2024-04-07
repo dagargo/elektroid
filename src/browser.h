@@ -70,6 +70,7 @@ struct browser
   struct backend *backend;
     gboolean (*check_callback) ();
   void (*set_columns_visibility) ();
+  void (*set_popup_menuitems_visibility) ();
   struct notifier *notifier;
   //Background loading members
   GSList *sensitive_widgets;
