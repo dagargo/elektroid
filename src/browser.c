@@ -944,33 +944,39 @@ browser_check_and_load_sample (struct browser *browser, gint count)
 static gboolean
 browser_local_check_selection (gpointer data)
 {
-  gint count = browser_get_selected_items_count (&local_browser);
-  browser_check_and_load_sample (&local_browser, count);
+  struct browser *browser = data;
+  gint count = browser_get_selected_items_count (browser);
+  gboolean editor_impl = browser->fs_ops
+    && browser->fs_ops->options && FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE;
+
+  if (editor_impl)
+    {
+      browser_check_and_load_sample (browser, count);
+    }
+
   return FALSE;
 }
 
 static gboolean
 browser_remote_check_selection (gpointer data)
 {
-  gint count = browser_get_selected_items_count (&remote_browser);
-  gboolean sel_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->select_item ? TRUE : FALSE;
+  struct browser *browser = data;
+  gint count = browser_get_selected_items_count (browser);
+  gboolean sel_impl = browser->fs_ops
+    && browser->fs_ops->select_item ? TRUE : FALSE;
 
-  if (remote_browser.backend->type == BE_TYPE_SYSTEM)
-    {
-      browser_check_and_load_sample (&remote_browser, count);
-    }
+  browser_local_check_selection (browser);
 
   if (count == 1 && sel_impl)
     {
       GtkTreeIter iter;
       GtkTreeModel *model;
       struct item item;
-      browser_set_selected_row_iter (&remote_browser, &iter);
-      model = GTK_TREE_MODEL (gtk_tree_view_get_model (remote_browser.view));
+      browser_set_selected_row_iter (browser, &iter);
+      model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
       browser_set_item (model, &iter, &item);
-      remote_browser.fs_ops->select_item (remote_browser.backend,
-					  remote_browser.dir, &item);
+      remote_browser.fs_ops->select_item (browser->backend, browser->dir,
+					  &item);
     }
 
   return FALSE;
@@ -1067,7 +1073,7 @@ void
 browser_selection_changed (GtkTreeSelection *selection, gpointer data)
 {
   struct browser *browser = data;
-  browser->check_selection (NULL);
+  browser->check_selection (data);
   browser_setup_popup_options (browser);
 }
 
