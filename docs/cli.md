@@ -39,18 +39,19 @@ $ elektroid-cli ld
 4: id: hw:3,0,1; name: hw:3,0,1: MicroBrute, MicroBrute MicroBrute MIDI Inte
 5: id: hw:4,0,0; name: hw:4,0,0: Little Phatty SE II, Little Phatty SE II MIDI 1
 6: id: hw:5,0,0; name: hw:5,0,0: Summit, Summit MIDI 1
+7: id: hw:3,0,0; name: hw:3,0,0: Arturia MicroFreak, Arturia MicroFreak Arturia Micr
 ```
 
-* `info` or `info-device`, show device info including device filesystems
+* `info` or `info-device`, show device info including the compatible filesystems (filesystems implemented in the connector but not compatible with the  device are not shown). Notice that some filesystems are not meant to be used from the GUI so they are shown as `CLI only`.
 
 ```
 $ elektroid-cli info 1
 Type: MIDI
 Device name: Elektron Digitakt
-Device version: 1.50
+Device version: 1.51A
 Device description: Digitakt
 Connector name: elektron
-Filesystems: sample,data,project,sound
+Filesystems: sample, data (CLI only), project, sound
 ```
 
 * `df` or `info-storage`, show size and use of +Drive and RAM
