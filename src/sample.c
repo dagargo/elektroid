@@ -890,7 +890,10 @@ cleanup:
 			     sample_info_dst->frames * bytes_per_frame);
       if (control)
 	{
-	  cb (control, 1.0, cb_data);
+	  if (!control->active)
+	    {
+	      cb (control, 1.0, cb_data);
+	    }
 	  g_mutex_unlock (&control->mutex);
 	}
       return 0;
