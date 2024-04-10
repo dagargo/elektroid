@@ -338,10 +338,15 @@ cli_info (int argc, gchar *argv[], int *optind)
   while (*ops)
     {
       const gchar *name = (*ops)->name;
-      gboolean gui = (backend.filesystems & (*ops)->fs);
-      printf ("%s%s%s", first ? "" : ", ", name, gui ? "" : " (CLI only)");
+      gboolean available = (backend.filesystems & (*ops)->fs);
+      if (available)
+	{
+	  gboolean cli_only = (*ops)->gui_name == NULL;
+	  printf ("%s%s%s", first ? "" : ", ", name,
+		  cli_only ? " (CLI only)" : "");
+	  first = FALSE;
+	}
       ops++;
-      first = FALSE;
     }
   printf ("\n");
 
