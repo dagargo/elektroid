@@ -744,8 +744,6 @@ static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
     FS_OPTION_ALLOW_SEARCH,
   .name = "preset",
-  .gui_name = "Presets",
-  .gui_icon = BE_FILE_ICON_SND,
   .type_ext = "syx",
   .max_name_len = MICROFREAK_PRESET_NAME_LEN,
   .readdir = microfreak_preset_read_dir,
@@ -1405,7 +1403,8 @@ microfreak_handshake (struct backend *backend)
 	}
     }
 
-  backend->filesystems = FS_MICROFREAK_ZPRESET | FS_MICROFREAK_SAMPLE;
+  backend->filesystems =
+    FS_MICROFREAK_PRESET | FS_MICROFREAK_ZPRESET | FS_MICROFREAK_SAMPLE;
   backend->fs_ops = FS_MICROFREAK_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
   backend->get_storage_stats = microfreak_get_storage_stats;
