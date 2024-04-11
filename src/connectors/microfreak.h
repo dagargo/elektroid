@@ -28,6 +28,12 @@
 #define MICROFREAK_PRESET_PART_LEN 0x20
 #define MICROFREAK_PRESET_HEADER "22 serialization::archive 10 0 4 3 174"
 #define MICROFREAK_SAMPLE_NAME_LEN 13
+#define MICROFREAK_SAMPLE_SIZE (sizeof(gint16))
+#define MICROFREAK_WAVE_BLK_SHRT 14
+#define MICROFREAK_WAVE_BLK_LAST_SHRT 4
+#define MICROFREAK_WAVE_BLK_SIZE (MICROFREAK_WAVE_BLK_SHRT * MICROFREAK_SAMPLE_SIZE)
+#define MICROFREAK_WAVE_MSG_SIZE (MICROFREAK_WAVE_BLK_SIZE * 8 / 7)
+#define MICROFREAK_WAVETABLE_NAME_LEN 16
 
 struct microfreak_preset
 {
@@ -36,7 +42,7 @@ struct microfreak_preset
   guint parts;
 };
 
-// The size of this structure is 28 bytes and matches MICROFREAK_SAMPLE_BLK_SIZE.
+// The size of this structure is 28 bytes and matches MICROFREAK_WAVE_BLK_SIZE.
 struct microfreak_sample_header
 {
   guint8 start[4];
@@ -47,6 +53,20 @@ struct microfreak_sample_header
   guint8 end[4];
 };
 
+// The size of this structure is 28 bytes and matches MICROFREAK_WAVE_BLK_SIZE.
+struct microfreak_wavetable_header
+{
+  guint8 id0;
+  guint8 pad0[2];
+  guint8 status0;
+  guint8 data[4];
+  guint8 id1;
+  guint8 pad1;
+  guint8 status1;
+  guint8 status2;
+  gchar name[MICROFREAK_WAVETABLE_NAME_LEN];
+};
+
 gint microfreak_handshake (struct backend *);
 
 gint microfreak_serialize_preset (GByteArray * output,
@@ -55,8 +75,8 @@ gint microfreak_serialize_preset (GByteArray * output,
 gint microfreak_deserialize_preset (struct microfreak_preset *mfp,
 				    GByteArray * input);
 
-struct microfreak_sample_header *microfreak_msg_to_sample_header (guint8 *);
+void microfreak_midi_msg_to_8bit_msg (guint8 *, guint8 *);
 
-guint8 *microfreak_sample_header_to_msg (struct microfreak_sample_header *);
+void microfreak_8bit_msg_to_midi_msg (guint8 *, guint8 *);
 
 #endif

@@ -25,16 +25,22 @@
 #define MICROFREAK_PRESET_NAME_LEN 14
 #define MICROFREAK_MAX_PRESETS 512
 #define MICROFREAK_MAX_SAMPLES 128
-#define MICROFREAK_REST_TIME_US 25000
+#define MICROFREAK_REST_TIME_US 5000
+#define MICROFREAK_REST_TIME_LONG_US 20000
+#define MICROFREAK_SAMPLERATE 32000
 #define MICROFREAK_SAMPLE_TIME_S 210
-#define MICROFREAK_SAMPLE_SIZE_PER_S (32000 * 2)	// at 32 kHz 16 bits
+#define MICROFREAK_SAMPLE_SIZE_PER_S (MICROFREAK_SAMPLERATE * MICROFREAK_SAMPLE_SIZE)	// at 32 kHz 16 bits
 #define MICROFREAK_SAMPLE_MEM_SIZE (MICROFREAK_SAMPLE_TIME_S * MICROFREAK_SAMPLE_SIZE_PER_S)
-#define MICROFREAK_SAMPLE_BLK_SHRT 14
-#define MICROFREAK_SAMPLE_BLK_LAST_SHRT 4
-#define MICROFREAK_SAMPLE_BLK_SIZE (MICROFREAK_SAMPLE_BLK_SHRT * 2)
-#define MICROFREAK_SAMPLE_MSG_SIZE (MICROFREAK_SAMPLE_BLK_SIZE * 8 / 7)
-#define MICROFREAK_SAMPLE_BATCH_SIZE 4096	// 147 packets (146 * 14 + 4)
+#define MICROFREAK_SAMPLE_BATCH_SIZE 4096	// 147 packets (146 * 28 + 8)
+#define MICROFREAK_SAMPLE_BATCH_LEN (MICROFREAK_SAMPLE_BATCH_SIZE / MICROFREAK_SAMPLE_SIZE)
 #define MICROFREAK_SAMPLE_BATCH_PACKETS 147
+#define MICROFREAK_MAX_WAVETABLES 16
+#define MICROFREAK_WAVETABLE_SAMPLE_LEN 256
+#define MICROFREAK_WAVETABLE_CYCLES 32
+#define MICROFREAK_WAVETABLE_LEN (MICROFREAK_WAVETABLE_SAMPLE_LEN * MICROFREAK_WAVETABLE_CYCLES)
+#define MICROFREAK_WAVETABLE_SIZE (MICROFREAK_WAVETABLE_LEN * MICROFREAK_SAMPLE_SIZE)
+#define MICROFREAK_WAVETABLE_PAGES 4
+#define MICROFREAK_WAVETABLE_FRAMES_PER_BATCH (MICROFREAK_SAMPLE_BATCH_SIZE / (MICROFREAK_WAVETABLE_CYCLES * MICROFREAK_SAMPLE_SIZE))
 
 #define MICROFREAK_GET_MSG_PAYLOAD_LEN(msg) (msg->data[7])
 #define MICROFREAK_GET_MSG_OP(msg) (msg->data[8])
@@ -62,7 +68,8 @@ enum microfreak_fs
 {
   FS_MICROFREAK_PRESET,
   FS_MICROFREAK_ZPRESET,
-  FS_MICROFREAK_SAMPLE
+  FS_MICROFREAK_SAMPLE,
+  FS_MICROFREAK_WAVETABLE
 };
 
 struct microfreak_iter_data
@@ -71,13 +78,11 @@ struct microfreak_iter_data
   struct backend *backend;
 };
 
-struct microfreak_sample_header *
-microfreak_msg_to_sample_header (guint8 *payload)
+void
+microfreak_midi_msg_to_8bit_msg (guint8 *msg_midi, guint8 *msg_8bit)
 {
-  struct microfreak_sample_header *header =
-    g_malloc (sizeof (struct microfreak_sample_header));
-  guint8 *dst = (guint8 *) header;
-  guint8 *src = payload;
+  guint8 *dst = msg_8bit;
+  guint8 *src = msg_midi;
   for (gint i = 0; i < 4; i++)
     {
       guint8 bits = *src;
@@ -88,16 +93,13 @@ microfreak_msg_to_sample_header (guint8 *payload)
 	  bits >>= 1;
 	}
     }
-  header->size = GINT32_FROM_LE (header->size);
-  return header;
 }
 
-static guint8 *
-microfreak_sample_bytes_to_msg (guint8 *bytes)
+void
+microfreak_8bit_msg_to_midi_msg (guint8 *msg_8bit, guint8 *msg_midi)
 {
-  guint8 *msg = g_malloc (MICROFREAK_SAMPLE_MSG_SIZE);
-  guint8 *dst = msg;
-  guint8 *src = (guint8 *) bytes;
+  guint8 *dst = msg_midi;
+  guint8 *src = msg_8bit;
   for (gint i = 0; i < 4; i++)
     {
       guint8 *bits = dst;
@@ -110,20 +112,10 @@ microfreak_sample_bytes_to_msg (guint8 *bytes)
 	  *bits >>= 1;
 	}
     }
-  return msg;
-}
-
-guint8 *
-microfreak_sample_header_to_msg (struct microfreak_sample_header *header)
-{
-  struct microfreak_sample_header iheader;
-  memcpy (&iheader, header, sizeof (iheader));
-  iheader.size = GINT32_TO_LE (iheader.size);
-  return microfreak_sample_bytes_to_msg ((guint8 *) & iheader);
 }
 
 static gchar *
-microfreak_get_preset_download_path (struct backend *backend,
+microfreak_get_download_preset_path (struct backend *backend,
 				     const struct fs_operations *ops,
 				     const gchar *dst_dir,
 				     const gchar *src_path,
@@ -131,7 +123,6 @@ microfreak_get_preset_download_path (struct backend *backend,
 {
   guint id;
   gint64 len;
-  gchar *path;
   gchar *next;
   gchar name[MICROFREAK_PRESET_NAME_LEN + 1];
 
@@ -149,10 +140,8 @@ microfreak_get_preset_download_path (struct backend *backend,
   next++;
   memcpy (name, next, len);
   name[len] = 0;
-  path = common_get_download_path_with_params (backend, ops, dst_dir, id, 3,
+  return common_get_download_path_with_params (backend, ops, dst_dir, id, 3,
 					       name);
-
-  return path;
 }
 
 static void
@@ -193,26 +182,25 @@ microfreak_get_msg (struct backend *backend, guint8 op, void *data,
 }
 
 static GByteArray *
-microfreak_get_msg_from_sample_header (struct backend *backend, guint8 op,
-				       struct microfreak_sample_header
-				       *header)
+microfreak_get_msg_from_8bit_msg (struct backend *backend, guint8 op,
+				  guint8 *msg_8bit)
 {
-  guint8 *payload = microfreak_sample_header_to_msg (header);
-  GByteArray *msg = microfreak_get_msg (backend, op, payload,
-					MICROFREAK_SAMPLE_MSG_SIZE);
-  g_free (payload);
+  guint8 midi_msg[MICROFREAK_WAVE_MSG_SIZE];
+  microfreak_8bit_msg_to_midi_msg (msg_8bit, midi_msg);
+  GByteArray *msg = microfreak_get_msg (backend, op, midi_msg,
+					MICROFREAK_WAVE_MSG_SIZE);
   return msg;
 }
 
 static GByteArray *
-microfreak_get_preset_dump_msg (struct backend *backend, guint32 id,
-				guint8 last)
+microfreak_get_preset_op_msg (struct backend *backend, guint8 op, guint id,
+			      guint8 data)
 {
   guint8 payload[3];
   payload[0] = COMMON_GET_MIDI_BANK (id);
   payload[1] = COMMON_GET_MIDI_PRESET (id);
-  payload[2] = last;
-  return microfreak_get_msg (backend, 0x19, payload, 3);
+  payload[2] = data;
+  return microfreak_get_msg (backend, op, payload, 3);
 }
 
 static const gchar *
@@ -253,6 +241,28 @@ microfreak_get_category_name (GByteArray *rx_msg)
 }
 
 static gint
+microfreak_common_read_dir (struct backend *backend,
+			    struct item_iterator *iter, const gchar *path,
+			    iterator_next next)
+{
+  struct microfreak_iter_data *data;
+
+  if (strcmp (path, "/"))
+    {
+      return -ENOTDIR;
+    }
+
+  data = g_malloc (sizeof (struct microfreak_iter_data));
+  data->next = 1;
+  data->backend = backend;
+  iter->data = data;
+  iter->next = next;
+  iter->free = g_free;
+
+  return 0;
+}
+
+static gint
 microfreak_next_preset_dentry (struct item_iterator *iter)
 {
   gint err;
@@ -260,13 +270,14 @@ microfreak_next_preset_dentry (struct item_iterator *iter)
   gchar preset_name[MICROFREAK_PRESET_NAME_LEN + 1];
   GByteArray *tx_msg, *rx_msg;
   struct microfreak_iter_data *data = iter->data;
+  guint id = data->next - 1;
 
   if (data->next > MICROFREAK_MAX_PRESETS)
     {
       return -ENOENT;
     }
 
-  tx_msg = microfreak_get_preset_dump_msg (data->backend, data->next - 1, 0);
+  tx_msg = microfreak_get_preset_op_msg (data->backend, 0x19, id, 0);
   rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
@@ -291,7 +302,7 @@ microfreak_next_preset_dentry (struct item_iterator *iter)
 
 end:
   free_msg (rx_msg);
-  usleep (MICROFREAK_REST_TIME_US);
+  usleep (MICROFREAK_REST_TIME_LONG_US);
   return 0;
 }
 
@@ -300,21 +311,8 @@ microfreak_preset_read_dir (struct backend *backend,
 			    struct item_iterator *iter, const gchar *path,
 			    gchar **extensions)
 {
-  struct microfreak_iter_data *data;
-
-  if (strcmp (path, "/"))
-    {
-      return -ENOTDIR;
-    }
-
-  data = g_malloc (sizeof (struct microfreak_iter_data));
-  data->next = 1;
-  data->backend = backend;
-  iter->data = data;
-  iter->next = microfreak_next_preset_dentry;
-  iter->free = g_free;
-
-  return 0;
+  return microfreak_common_read_dir (backend, iter, path,
+				     microfreak_next_preset_dentry);
 }
 
 gint
@@ -458,8 +456,7 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
 			    GByteArray *output, struct job_control *control)
 {
   guint id;
-  gint8 len;
-  gint err = 0;
+  gint err;
   guint8 init, *payload;
   GByteArray *tx_msg, *rx_msg;
   struct microfreak_preset mfp;
@@ -480,14 +477,15 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
-  tx_msg = microfreak_get_preset_dump_msg (backend, id, 0);
+  tx_msg = microfreak_get_preset_op_msg (backend, 0x19, id, 0);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
   if (err)
     {
       goto end;
     }
-  len = MICROFREAK_GET_MSG_PAYLOAD_LEN (rx_msg);
-  if (rx_msg->len != 45 || len != MICROFREAK_PRESET_HEADER_MSG_LEN)
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x52,
+				 MICROFREAK_PRESET_HEADER_MSG_LEN);
+  if (err)
     {
       err = -EINVAL;
       free_msg (rx_msg);
@@ -495,7 +493,7 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
     }
   payload = MICROFREAK_GET_MSG_PAYLOAD (rx_msg);
   init = (*MICROFREAK_GET_INIT_FROM_HEADER (payload)) & 0x08;
-  memcpy (mfp.header, payload, len);
+  memcpy (mfp.header, payload, MICROFREAK_PRESET_HEADER_MSG_LEN);
   free_msg (rx_msg);
   mfp.parts = init ? 0 : MICROFREAK_PRESET_PARTS;
 
@@ -508,15 +506,14 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
       goto end;
     }
 
-  control->part++;
-  tx_msg = microfreak_get_preset_dump_msg (backend, id, 1);
+  tx_msg = microfreak_get_preset_op_msg (backend, 0x19, id, 1);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
   if (err)
     {
       goto end;
     }
-  len = MICROFREAK_GET_MSG_PAYLOAD_LEN (rx_msg);
-  if (rx_msg->len != 10 || len != 0)
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0);
+  if (err)
     {
       err = -EINVAL;
       free_msg (rx_msg);
@@ -525,27 +522,44 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
   //Nothing to do with this response
   free_msg (rx_msg);
 
+  control->part++;
+  set_job_control_progress (control, 1.0);
   usleep (MICROFREAK_REST_TIME_US);
 
   for (gint i = 0; i < mfp.parts; i++)
     {
-      control->part++;
+      gboolean active;
+      guint8 op = i == mfp.parts - 1 ? 0x17 : 0x16;
+
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
+
+      if (!active)
+	{
+	  err = -ECANCELED;
+	  goto end;
+	}
+
       tx_msg = microfreak_get_msg (backend, 0x18, "\x00", 1);
       err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
       if (err)
 	{
 	  goto end;
 	}
-      len = MICROFREAK_GET_MSG_PAYLOAD_LEN (rx_msg);
-      if (rx_msg->len != 42 || len != MICROFREAK_PRESET_PART_LEN)
+      err = MICROFREAK_CHECK_OP_LEN (rx_msg, op, MICROFREAK_PRESET_PART_LEN);
+      if (err)
 	{
 	  err = -EINVAL;
 	  free_msg (rx_msg);
 	  goto end;
 	}
-      memcpy (mfp.part[i], MICROFREAK_GET_MSG_PAYLOAD (rx_msg), len);
+      memcpy (mfp.part[i], MICROFREAK_GET_MSG_PAYLOAD (rx_msg),
+	      MICROFREAK_PRESET_PART_LEN);
       free_msg (rx_msg);
 
+      control->part++;
+      set_job_control_progress (control, 1.0);
       usleep (MICROFREAK_REST_TIME_US);
     }
 
@@ -554,7 +568,7 @@ end:
     {
       microfreak_serialize_preset (output, &mfp);
     }
-  usleep (MICROFREAK_REST_TIME_US);	//Additional rest
+  usleep (MICROFREAK_REST_TIME_LONG_US);	//Additional rest
   return err;
 }
 
@@ -565,7 +579,6 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
   struct microfreak_preset mfp;
   GByteArray *tx_msg, *rx_msg;
   guint id;
-  guint8 payload[3];
   gint err = common_slot_get_id_name_from_path (path, &id, NULL);
   if (err)
     {
@@ -603,10 +616,7 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
   usleep (MICROFREAK_REST_TIME_US);
 
   control->part++;
-  payload[0] = COMMON_GET_MIDI_BANK (id);
-  payload[1] = COMMON_GET_MIDI_PRESET (id);
-  payload[2] = 1;
-  tx_msg = microfreak_get_msg (backend, 0x52, payload, 3);
+  tx_msg = microfreak_get_preset_op_msg (backend, 0x52, id, TRUE);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
   if (err)
     {
@@ -629,6 +639,18 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
 
   for (gint i = 0; i < mfp.parts; i++)
     {
+      gboolean active;
+
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
+
+      if (!active)
+	{
+	  err = -ECANCELED;
+	  break;
+	}
+
       control->part++;
       guint8 op = (i < mfp.parts - 1) ? 0x16 : 0x17;
       tx_msg = microfreak_get_msg (backend, op, mfp.part[i],
@@ -642,7 +664,7 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
       usleep (MICROFREAK_REST_TIME_US);
     }
 
-  usleep (MICROFREAK_REST_TIME_US);	//Additional rest
+  usleep (MICROFREAK_REST_TIME_LONG_US);	//Additional rest
   return 0;
 }
 
@@ -666,7 +688,7 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
   guint id;
   gint err;
   gchar *name, *sanitized;
-  guint8 *header_payload, len, payload[3];
+  guint8 *header_payload, len;
   GByteArray *tx_msg, *rx_msg;
 
   debug_print (1, "Renaming preset...\n");
@@ -682,7 +704,7 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
       return -EINVAL;
     }
 
-  tx_msg = microfreak_get_preset_dump_msg (backend, id, 0);
+  tx_msg = microfreak_get_preset_op_msg (backend, 0x19, id, 0);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
@@ -718,10 +740,7 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
 
   usleep (MICROFREAK_REST_TIME_US);
 
-  payload[0] = COMMON_GET_MIDI_BANK (id);
-  payload[1] = COMMON_GET_MIDI_PRESET (id);
-  payload[2] = 1;
-  tx_msg = microfreak_get_msg (backend, 0x52, payload, 3);
+  tx_msg = microfreak_get_preset_op_msg (backend, 0x52, id, TRUE);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
@@ -754,12 +773,12 @@ static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
   .load = load_file,
   .save = save_file,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = microfreak_get_preset_download_path,
+  .get_download_path = microfreak_get_download_preset_path,
   .select_item = microfreak_midi_program_change
 };
 
 gint
-microfreak_save_zpreset (const gchar *path, GByteArray *array,
+microfreak_zpreset_save (const gchar *path, GByteArray *array,
 			 struct job_control *control)
 {
   gint err = 0, index;
@@ -815,7 +834,7 @@ end:
 }
 
 gint
-microfreak_load_zpreset (const char *path, GByteArray *array,
+microfreak_zpreset_load (const char *path, GByteArray *array,
 			 struct job_control *control)
 {
   gint err = 0;
@@ -882,21 +901,21 @@ static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .rename = microfreak_preset_rename,
   .download = microfreak_preset_download,
   .upload = microfreak_preset_upload,
-  .load = microfreak_load_zpreset,
-  .save = microfreak_save_zpreset,
+  .load = microfreak_zpreset_load,
+  .save = microfreak_zpreset_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = microfreak_get_preset_download_path,
+  .get_download_path = microfreak_get_download_preset_path,
   .select_item = microfreak_midi_program_change
 };
 
 static GByteArray *
-microfreak_get_sample_op_msg (struct backend *backend, guint8 op, guint8 id,
-			      guint8 foo)
+microfreak_get_wave_op_msg (struct backend *backend, guint8 op, guint8 id,
+			    guint8 part, guint8 data)
 {
   guint8 payload[3];
   payload[0] = COMMON_GET_MIDI_PRESET (id);
-  payload[1] = 0;
-  payload[2] = foo;
+  payload[1] = part;
+  payload[2] = data;
   return microfreak_get_msg (backend, op, payload, 3);
 }
 
@@ -905,7 +924,7 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
 {
   gint err;
   GByteArray *tx_msg, *rx_msg;
-  struct microfreak_sample_header *header;
+  struct microfreak_sample_header header;
   struct microfreak_iter_data *data = iter->data;
 
   if (data->next > MICROFREAK_MAX_SAMPLES)
@@ -913,8 +932,8 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
       return -ENOENT;
     }
 
-  tx_msg = microfreak_get_sample_op_msg (data->backend, 0x5b, data->next - 1,
-					 0);
+  tx_msg = microfreak_get_wave_op_msg (data->backend, 0x5b, data->next - 1,
+				       0, 0);
   rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
@@ -933,24 +952,23 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
     {
       return -EIO;
     }
-  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x16, MICROFREAK_SAMPLE_MSG_SIZE);
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x16, MICROFREAK_WAVE_MSG_SIZE);
   if (err)
     {
       goto end;
     }
 
-  header =
-    microfreak_msg_to_sample_header (MICROFREAK_GET_MSG_PAYLOAD (rx_msg));
-  snprintf (iter->item.name, LABEL_MAX, "%s", header->name);
+  microfreak_midi_msg_to_8bit_msg (MICROFREAK_GET_MSG_PAYLOAD (rx_msg),
+				   (guint8 *) & header);
+  snprintf (iter->item.name, LABEL_MAX, "%s", header.name);
   iter->item.id = data->next;
   iter->item.type = ELEKTROID_FILE;
-  iter->item.size = header->size;
+  iter->item.size = iter->item.size != 0 ? GINT32_FROM_LE (header.size) : 0;
   (data->next)++;
-  g_free (header);
 
 end:
   free_msg (rx_msg);
-  usleep (MICROFREAK_REST_TIME_US);
+  usleep (MICROFREAK_REST_TIME_LONG_US);
   return err;
 }
 
@@ -959,31 +977,18 @@ microfreak_sample_read_dir (struct backend *backend,
 			    struct item_iterator *iter, const gchar *path,
 			    gchar **extensions)
 {
-  struct microfreak_iter_data *data;
-
-  if (strcmp (path, "/"))
-    {
-      return -ENOTDIR;
-    }
-
-  data = g_malloc (sizeof (struct microfreak_iter_data));
-  data->next = 1;
-  data->backend = backend;
-  iter->data = data;
-  iter->next = microfreak_next_sample_dentry;
-  iter->free = g_free;
-
-  return 0;
+  return microfreak_common_read_dir (backend, iter, path,
+				     microfreak_next_sample_dentry);
 }
 
 static gint
-microfreak_reset_sample (struct backend *backend, guint id,
+microfreak_sample_reset (struct backend *backend, guint id,
 			 struct microfreak_sample_header *header)
 {
   gint err;
   GByteArray *tx_msg, *rx_msg;
 
-  tx_msg = microfreak_get_sample_op_msg (backend, 0x5a, id, 0);
+  tx_msg = microfreak_get_wave_op_msg (backend, 0x5a, id, 0, 0);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
@@ -1013,7 +1018,8 @@ microfreak_reset_sample (struct backend *backend, guint id,
 
   usleep (MICROFREAK_REST_TIME_US);
 
-  tx_msg = microfreak_get_msg_from_sample_header (backend, 0x17, header);
+  tx_msg = microfreak_get_msg_from_8bit_msg (backend, 0x17,
+					     (guint8 *) header);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
@@ -1028,7 +1034,7 @@ end:
 }
 
 static gint
-microfreak_clear_sample (struct backend *backend, const gchar *path)
+microfreak_sample_clear (struct backend *backend, const gchar *path)
 {
   gint err;
   guint id;
@@ -1048,11 +1054,11 @@ microfreak_clear_sample (struct backend *backend, const gchar *path)
 
   memset (&header, 0, sizeof (header));
   header.id = id;
-  return microfreak_reset_sample (backend, id, &header);
+  return microfreak_sample_reset (backend, id, &header);
 }
 
 static gint
-microfreak_upload_sample (struct backend *backend, const gchar *path,
+microfreak_sample_upload (struct backend *backend, const gchar *path,
 			  GByteArray *input, struct job_control *control)
 {
   gint err;
@@ -1083,7 +1089,7 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
-  tx_msg = microfreak_get_sample_op_msg (backend, 0x5d, id, 0);
+  tx_msg = microfreak_get_wave_op_msg (backend, 0x5d, id, 0, 0);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
   if (err)
     {
@@ -1097,6 +1103,7 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
     }
 
   control->part++;
+  set_job_control_progress (control, 1.0);
   usleep (MICROFREAK_REST_TIME_US);
 
   tx_msg = microfreak_get_msg (backend, 0x15, NULL, 0);
@@ -1113,14 +1120,16 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
     }
 
   control->part++;
+  set_job_control_progress (control, 1.0);
   usleep (MICROFREAK_REST_TIME_US);
 
   memset (&header, 0, sizeof (header));
-  header.size = input->len;
+  header.size = GINT32_TO_LE (input->len);
   snprintf (header.name, MICROFREAK_SAMPLE_NAME_LEN, "%s", sanitized);
   header.id = id;
 
-  tx_msg = microfreak_get_msg_from_sample_header (backend, 0x17, &header);
+  tx_msg = microfreak_get_msg_from_8bit_msg (backend, 0x17,
+					     (guint8 *) & header);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
   if (err)
     {
@@ -1156,7 +1165,7 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
   control->part++;
   usleep (MICROFREAK_REST_TIME_US);
 
-  err = microfreak_reset_sample (backend, id, &header);
+  err = microfreak_sample_reset (backend, id, &header);
   if (err)
     {
       goto end;
@@ -1172,7 +1181,7 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
     {
       //Starting packets
 
-      tx_msg = microfreak_get_sample_op_msg (backend, 0x58, id, 1);
+      tx_msg = microfreak_get_wave_op_msg (backend, 0x58, id, 0, 1);
       err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
       if (err)
 	{
@@ -1208,20 +1217,31 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
 
       for (gint p = 1; p <= MICROFREAK_SAMPLE_BATCH_PACKETS; p++)
 	{
-	  guint8 op, *msg;
+	  guint8 op, midi_msg[MICROFREAK_WAVE_MSG_SIZE];
 	  guint samples;
-	  gint16 blk[MICROFREAK_SAMPLE_BLK_SHRT];
+	  gint16 blk[MICROFREAK_WAVE_BLK_SHRT];
 	  gint16 *dst = blk;
+	  gboolean active;
+
+	  g_mutex_lock (&control->mutex);
+	  active = control->active;
+	  g_mutex_unlock (&control->mutex);
+
+	  if (!active)
+	    {
+	      err = -ECANCELED;
+	      goto end;
+	    }
 
 	  if (p < MICROFREAK_SAMPLE_BATCH_PACKETS)
 	    {
 	      op = 0x16;
-	      samples = MICROFREAK_SAMPLE_BLK_SHRT;
+	      samples = MICROFREAK_WAVE_BLK_SHRT;
 	    }
 	  else
 	    {
 	      op = 0x17;
-	      samples = MICROFREAK_SAMPLE_BLK_LAST_SHRT;
+	      samples = MICROFREAK_WAVE_BLK_LAST_SHRT;
 	    }
 
 	  gint i;
@@ -1238,10 +1258,9 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
 	      dst++;
 	    }
 
-	  msg = microfreak_sample_bytes_to_msg ((guint8 *) blk);
-	  tx_msg = microfreak_get_msg (backend, op, msg,
-				       MICROFREAK_SAMPLE_MSG_SIZE);
-	  g_free (msg);
+	  microfreak_8bit_msg_to_midi_msg ((guint8 *) blk, midi_msg);
+	  tx_msg = microfreak_get_msg (backend, op, midi_msg,
+				       MICROFREAK_WAVE_MSG_SIZE);
 	  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg,
 					    control);
 	  if (err)
@@ -1256,14 +1275,14 @@ microfreak_upload_sample (struct backend *backend, const gchar *path,
 	    }
 
 	  control->part++;
-	  usleep (MICROFREAK_REST_TIME_US);
+	  usleep (MICROFREAK_REST_TIME_LONG_US);
 	}
     }
 
 end:
   g_free (name);
   g_free (sanitized);
-  usleep (MICROFREAK_REST_TIME_US);
+  usleep (MICROFREAK_REST_TIME_LONG_US);
   return err;
 }
 
@@ -1309,7 +1328,7 @@ microfreak_get_storage_stats (struct backend *backend, guint8 type,
 
 err:
   free_msg (rx_msg);
-  usleep (MICROFREAK_REST_TIME_US);
+  usleep (MICROFREAK_REST_TIME_LONG_US);
   return err;
 }
 
@@ -1317,7 +1336,7 @@ static gint
 microfreak_sample_load (const gchar *path, GByteArray *sample,
 			struct job_control *control)
 {
-  return common_sample_load (path, sample, control, 32000, 1,
+  return common_sample_load (path, sample, control, MICROFREAK_SAMPLERATE, 1,
 			     SF_FORMAT_PCM_16);
 }
 
@@ -1333,12 +1352,392 @@ static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
   .readdir = microfreak_sample_read_dir,
   .print_item = common_print_item,
   .get_slot = microfreak_get_object_id_as_slot,
-  .delete = microfreak_clear_sample,
-  .clear = microfreak_clear_sample,
-  .upload = microfreak_upload_sample,
+  .delete = microfreak_sample_clear,
+  .clear = microfreak_sample_clear,
+  .upload = microfreak_sample_upload,
   .load = microfreak_sample_load,
   .get_exts = backend_get_audio_exts,
   .get_upload_path = common_slot_get_upload_path
+};
+
+static gint
+microfreak_next_wavetable_dentry (struct item_iterator *iter)
+{
+  gint err;
+  GByteArray *tx_msg, *rx_msg;
+  struct microfreak_wavetable_header header;
+  struct microfreak_iter_data *data = iter->data;
+  guint8 id = data->next - 1;
+
+  if (data->next > MICROFREAK_MAX_WAVETABLES)
+    {
+      return -ENOENT;
+    }
+
+  tx_msg = microfreak_get_wave_op_msg (data->backend, 0x57, id, 0, 1);
+  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0);
+  free_msg (rx_msg);
+  if (err)
+    {
+      goto end;
+    }
+
+  //0x00 used in the MIDI control center but 0x01 makes more sense.
+  tx_msg = microfreak_get_msg (data->backend, 0x18, "\x01", 1);
+  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x16, MICROFREAK_WAVE_MSG_SIZE);
+  if (err)
+    {
+      goto end;
+    }
+
+  microfreak_midi_msg_to_8bit_msg (MICROFREAK_GET_MSG_PAYLOAD (rx_msg),
+				   (guint8 *) & header);
+  snprintf (iter->item.name, LABEL_MAX, "%s", header.name);
+  iter->item.id = data->next;
+  iter->item.type = ELEKTROID_FILE;
+  iter->item.size = header.status0 == 0 ? MICROFREAK_WAVETABLE_SIZE : 0;
+  (data->next)++;
+
+end:
+  free_msg (rx_msg);
+  usleep (MICROFREAK_REST_TIME_LONG_US);
+  return err;
+}
+
+static gint
+microfreak_wavetable_read_dir (struct backend *backend,
+			       struct item_iterator *iter, const gchar *path,
+			       gchar **extensions)
+{
+  return microfreak_common_read_dir (backend, iter, path,
+				     microfreak_next_wavetable_dentry);
+}
+
+static gint
+microfreak_wavetable_load (const gchar *path, GByteArray *sample,
+			   struct job_control *control)
+{
+  gint err = common_sample_load (path, sample, control, 0, 1,
+				 SF_FORMAT_PCM_16);
+  if (!err && sample->len != MICROFREAK_WAVETABLE_SIZE)
+    {
+      err = -EINVAL;
+    }
+
+  return err;
+}
+
+static gint
+microfreak_wavetable_save (const gchar *path, GByteArray *sample,
+			   struct job_control *control)
+{
+  return sample_save_to_file (path, sample, control,
+			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+}
+
+static gint
+microfreak_wavetable_download_page (struct backend *backend,
+				    GByteArray *output,
+				    struct job_control *control, guint8 id,
+				    guint8 page)
+{
+  gint err;
+  gint16 *src, *dst;
+  guint8 msg_8bit[MICROFREAK_WAVE_BLK_SIZE];
+  GByteArray *tx_msg, *rx_msg;
+
+  tx_msg = microfreak_get_wave_op_msg (backend, 0x55, id, page, 0);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0);
+  free_msg (rx_msg);
+  if (err)
+    {
+      goto end;
+    }
+
+  control->part++;
+  set_job_control_progress (control, 1.0);
+  usleep (MICROFREAK_REST_TIME_US);
+
+  dst = (gint16 *) (output->data + page * MICROFREAK_SAMPLE_BATCH_SIZE);
+  for (gint p = 1; p <= MICROFREAK_SAMPLE_BATCH_PACKETS; p++)
+    {
+      guint8 op;
+      guint len;
+      gboolean active;
+
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
+
+      if (!active)
+	{
+	  err = -ECANCELED;
+	  goto end;
+	}
+
+      if (p < MICROFREAK_SAMPLE_BATCH_PACKETS)
+	{
+	  op = 0x16;
+	  len = MICROFREAK_WAVE_BLK_SHRT;
+	}
+      else
+	{
+	  op = 0x17;
+	  len = MICROFREAK_WAVE_BLK_LAST_SHRT;
+	}
+
+      tx_msg = microfreak_get_msg (backend, 0x18, "0x00", 1);
+      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+      if (!rx_msg)
+	{
+	  return -EIO;
+	}
+      err = MICROFREAK_CHECK_OP_LEN (rx_msg, op, 0x20);
+      if (!err)
+	{
+	  microfreak_midi_msg_to_8bit_msg (MICROFREAK_GET_MSG_PAYLOAD
+					   (rx_msg), msg_8bit);
+	  src = (gint16 *) msg_8bit;
+	  for (gint i = 0; i < len; i++)
+	    {
+	      gint16 v = GINT16_FROM_LE (*src);
+	      memcpy ((guint8 *) dst, (guint8 *) & v, MICROFREAK_SAMPLE_SIZE);
+	      dst++;
+	      src++;
+	    }
+	}
+      free_msg (rx_msg);
+      if (err)
+	{
+	  goto end;
+	}
+
+      control->part++;
+      set_job_control_progress (control, 1.0);
+      usleep (MICROFREAK_REST_TIME_US);
+    }
+
+end:
+  return err;
+}
+
+static gint
+microfreak_wavetable_download (struct backend *backend, const gchar *path,
+			       GByteArray *output,
+			       struct job_control *control)
+{
+  guint id;
+  guint err = 0;
+  struct sample_info *sample_info;
+
+  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  if (err)
+    {
+      return err;
+    }
+
+  id--;
+  if (id >= MICROFREAK_MAX_WAVETABLES)
+    {
+      return -EINVAL;
+    }
+
+  sample_info = g_malloc (sizeof (struct sample_info));
+  sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
+  sample_info->rate = MICROFREAK_SAMPLERATE;
+  sample_info->loop_start = 0;
+  sample_info->loop_end = MICROFREAK_WAVETABLE_LEN - 1;
+  sample_info->loop_type = 0;
+  sample_info->midi_note = 0;
+  sample_info->channels = 1;
+
+  g_byte_array_set_size (output, MICROFREAK_WAVETABLE_SIZE);
+
+  control->parts = (MICROFREAK_SAMPLE_BATCH_PACKETS + 1) *
+    MICROFREAK_WAVETABLE_PAGES;
+  control->part = 0;
+  set_job_control_progress (control, 0.0);
+
+  for (guint8 page = 0; page < MICROFREAK_WAVETABLE_PAGES && !err; page++)
+    {
+      err = microfreak_wavetable_download_page (backend, output, control,
+						id, page);
+    }
+
+  if (err)
+    {
+      g_free (sample_info);
+    }
+  else
+    {
+      control->data = sample_info;
+    }
+  return err;
+}
+
+static gint
+microfreak_wavetable_upload (struct backend *backend, const gchar *path,
+			     GByteArray *input, struct job_control *control)
+{
+  return -ENOSYS;
+}
+
+static gint
+microfreak_wavetable_reset (struct backend *backend, guint id,
+			    struct microfreak_wavetable_header *header)
+{
+  gint err;
+  GByteArray *tx_msg, *rx_msg;
+
+  tx_msg = microfreak_get_wave_op_msg (backend, 0x56, id, 0, 0);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+  free_msg (rx_msg);
+  if (err)
+    {
+      goto end;
+    }
+
+  usleep (MICROFREAK_REST_TIME_US);
+
+  tx_msg = microfreak_get_msg (backend, 0x15, NULL, 0);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+  free_msg (rx_msg);
+  if (err)
+    {
+      goto end;
+    }
+
+  usleep (MICROFREAK_REST_TIME_US);
+
+  tx_msg = microfreak_get_msg_from_8bit_msg (backend, 0x16,
+					     (guint8 *) header);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+  free_msg (rx_msg);
+  if (err)
+    {
+      goto end;
+    }
+
+  usleep (MICROFREAK_REST_TIME_US);
+
+  tx_msg = microfreak_get_msg (backend, 0x17,
+			       "\x00\x00\x00\x00\x00\x00\x00\x00", 8);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+  free_msg (rx_msg);
+
+end:
+  usleep (MICROFREAK_REST_TIME_US);
+  return err;
+}
+
+static gint
+microfreak_wavetable_clear (struct backend *backend, const gchar *path)
+{
+  gint err;
+  guint id;
+  struct microfreak_wavetable_header header;
+
+  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  if (err)
+    {
+      return err;
+    }
+
+  id--;
+  if (id >= MICROFREAK_MAX_WAVETABLES)
+    {
+      return -EINVAL;
+    }
+
+  memset (&header, 0, sizeof (header));
+  header.id0 = id;
+  header.status0 = 8;
+  header.id1 = id;
+  header.status1 = 1;
+  header.status2 = 1;
+  return microfreak_wavetable_reset (backend, id, &header);
+}
+
+static gchar *
+microfreak_get_download_wavetable_path (struct backend *backend,
+					const struct fs_operations *ops,
+					const gchar *dst_dir,
+					const gchar *src_path,
+					GByteArray *wavetable)
+{
+  guint id;
+
+  if (!wavetable)
+    {
+      return NULL;
+    }
+
+  if (common_slot_get_id_name_from_path (src_path, &id, NULL))
+    {
+      return NULL;
+    }
+
+  return common_get_download_path_with_params (backend, ops, dst_dir, id, 2,
+					       NULL);
+}
+
+static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
+  .id = FS_MICROFREAK_WAVETABLE,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_SIZE_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
+  .name = "wavetable",
+  .gui_name = "Wavetables",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .ext = "wav",
+  .max_name_len = MICROFREAK_WAVETABLE_NAME_LEN,
+  .readdir = microfreak_wavetable_read_dir,
+  .print_item = common_print_item,
+  .get_slot = microfreak_get_object_id_as_slot,
+  .delete = microfreak_wavetable_clear,
+  .clear = microfreak_wavetable_clear,
+  .download = microfreak_wavetable_download,
+  .upload = microfreak_wavetable_upload,
+  .load = microfreak_wavetable_load,
+  .save = microfreak_wavetable_save,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = microfreak_get_download_wavetable_path
 };
 
 gint
@@ -1375,7 +1774,7 @@ microfreak_handshake (struct backend *backend)
   if (err)
     {
       //After booting, the MicroFreak needs this message to start responding.
-      tx_msg = microfreak_get_preset_dump_msg (backend, 0, 0);
+      tx_msg = microfreak_get_preset_op_msg (backend, 0x19, 0, 0);
       rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
       if (!rx_msg)
 	{
@@ -1384,7 +1783,7 @@ microfreak_handshake (struct backend *backend)
 	  return -ENODEV;
 	}
       free_msg (rx_msg);
-      usleep (MICROFREAK_REST_TIME_US);
+      usleep (MICROFREAK_REST_TIME_LONG_US);
       backend_midi_handshake (backend);
       err = microfreak_handshake_int (backend);
       if (err)
@@ -1397,7 +1796,8 @@ microfreak_handshake (struct backend *backend)
 
   backend_fill_fs_ops (backend, &FS_MICROFREAK_PRESET_OPERATIONS,
 		       &FS_MICROFREAK_ZPRESET_OPERATIONS,
-		       &FS_MICROFREAK_SAMPLE_OPERATIONS, NULL);
+		       &FS_MICROFREAK_SAMPLE_OPERATIONS,
+		       &FS_MICROFREAK_WAVETABLE_OPERATIONS, NULL);
   backend->destroy_data = backend_destroy_data;
   backend->get_storage_stats = microfreak_get_storage_stats;
 

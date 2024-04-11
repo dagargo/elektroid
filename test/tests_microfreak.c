@@ -75,11 +75,14 @@ test_serialization_deserialization_init ()
 }
 
 void
-test_sample_header_conversions ()
+test_8bit_header_conversions ()
 {
-  struct microfreak_sample_header src, *dst;
-  guint8 *serialized;
+  struct microfreak_sample_header src, dst;
+  guint8 msg_midi[MICROFREAK_WAVE_MSG_SIZE];
+  gchar *text;
   guint8 *v = (guint8 *) & src;
+
+  printf ("\n");
 
   for (gint i = 0; i < sizeof (src); i++, v++)
     {
@@ -87,13 +90,23 @@ test_sample_header_conversions ()
     }
   snprintf (src.name, MICROFREAK_SAMPLE_NAME_LEN, "%s", "foo");
 
-  serialized = microfreak_sample_header_to_msg (&src);
-  dst = microfreak_msg_to_sample_header (serialized);
+  text = debug_get_hex_data (debug_level, (guint8 *) & src, sizeof (src));
+  debug_print (0, "src (%zd): %s\n", sizeof (src), text);
+  g_free (text);
 
-  CU_ASSERT_EQUAL (memcmp (&src, dst, sizeof (src)), 0);
+  microfreak_8bit_msg_to_midi_msg ((guint8 *) & src, msg_midi);
 
-  g_free (serialized);
-  g_free (dst);
+  text = debug_get_hex_data (debug_level, msg_midi, MICROFREAK_WAVE_MSG_SIZE);
+  debug_print (0, "msg (%zd): %s\n", MICROFREAK_WAVE_MSG_SIZE, text);
+  g_free (text);
+
+  microfreak_midi_msg_to_8bit_msg (msg_midi, (guint8 *) & dst);
+
+  text = debug_get_hex_data (debug_level, (guint8 *) & dst, sizeof (dst));
+  debug_print (0, "dst (%zd): %s\n", sizeof (dst), text);
+  g_free (text);
+
+  CU_ASSERT_EQUAL (memcmp (&src, &dst, sizeof (src)), 0);
 }
 
 int
@@ -113,23 +126,20 @@ main (int argc, char *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test
-      (suite, "test_serialization_deserialization",
-       test_serialization_deserialization))
+  if (!CU_add_test (suite, "test_serialization_deserialization",
+		    test_serialization_deserialization))
     {
       goto cleanup;
     }
 
-  if (!CU_add_test
-      (suite, "test_serialization_deserialization_init",
-       test_serialization_deserialization_init))
+  if (!CU_add_test (suite, "test_serialization_deserialization_init",
+		    test_serialization_deserialization_init))
     {
       goto cleanup;
     }
 
-  if (!CU_add_test
-      (suite, "test_sample_header_conversions",
-       test_sample_header_conversions))
+  if (!CU_add_test (suite, "test_sample_header_conversions",
+		    test_8bit_header_conversions))
     {
       goto cleanup;
     }
