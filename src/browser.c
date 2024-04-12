@@ -966,7 +966,10 @@ browser_remote_check_selection (gpointer data)
   gboolean sel_impl = browser->fs_ops
     && browser->fs_ops->select_item ? TRUE : FALSE;
 
-  browser_local_check_selection (browser);
+  if (browser->backend->type == BE_TYPE_SYSTEM)
+    {
+      browser_local_check_selection (browser);
+    }
 
   if (count == 1 && sel_impl)
     {
