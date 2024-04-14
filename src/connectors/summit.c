@@ -833,7 +833,6 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
   g_byte_array_append (output, rx_msg->data, rx_msg->len);
   free_msg (rx_msg);
 
-  control->part++;
   usleep (SUMMIT_REST_TIME_US);
 
   //Waves
@@ -854,7 +853,6 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
       g_byte_array_append (output, rx_msg->data, rx_msg->len);
       free_msg (rx_msg);
 
-      control->part++;
       usleep (SUMMIT_REST_TIME_US);
     }
 

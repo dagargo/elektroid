@@ -228,6 +228,8 @@ common_data_tx_and_rx_part (struct backend *backend, GByteArray *tx_msg,
       err = -ECANCELED;
     }
 
+  control->part++;
+
 cleanup:
   return err;
 }
