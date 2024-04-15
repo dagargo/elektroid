@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+err=0
+
 echo "Cleaning up sample..."
 $ecli elektron-sample-rm $TEST_DEVICE:/auto-test/square
 $ecli elektron-sample-rmdir $TEST_DEVICE:/auto-test
@@ -18,12 +20,16 @@ cksum1=$(echo "$src_content" | cksum)
 cksum2=$(echo "$dst_content" | cksum)
 [ "$cksum1" != "$cksum2" ] && err=1
 
-echo "Looking for sample..."
-$ecli elektron-sample-dl $TEST_DEVICE:/auto-test/square
-[ $? -ne 0 ] && err=1
+if [ $err -eq 0 ]; then
+  echo "Looking for sample..."
+  $ecli elektron-sample-dl $TEST_DEVICE:/auto-test/square
+  [ $? -ne 0 ] && err=1
+fi
 
-$srcdir/integration/generic_fs_tests.sh --no-download elektron project / 128 "/0 /129" /128 "" ""
-[ $? -ne 0 ] && err=1
+if [ $err -eq 0 ]; then
+  $srcdir/integration/generic_fs_tests.sh --no-download elektron project / 128 "/0 /129" /128 "" ""
+  [ $? -ne 0 ] && err=1
+fi
 
 echo "Cleaning up..."
 rm -f $srcdir/PROJECT.dtprj
