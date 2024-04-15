@@ -37,6 +37,7 @@
 #define PKG_TAG_HASH "Hash"
 #define PKG_VAL_FILE_TYPE_PRJ "Project"
 #define PKG_VAL_FILE_TYPE_SND "Sound"
+#define PKG_VAL_FILE_TYPE_PST "Preset"
 #define PKG_VAL_FILE_TYPE_UNK "Unknown"
 
 #define MAN_TAG_SAMPLE_REFS "sample_references"
@@ -136,6 +137,27 @@ package_begin (struct package *pkg, gchar *name, const gchar *fw_version,
   return 0;
 }
 
+static const gchar *
+package_get_file_type (enum package_type type)
+{
+  if (type & PKG_FILE_TYPE_DATA_PROJECT)
+    {
+      return PKG_VAL_FILE_TYPE_PRJ;
+    }
+  else if (type & PKG_FILE_TYPE_DATA_SOUND)
+    {
+      return PKG_VAL_FILE_TYPE_SND;
+    }
+  else if (type & PKG_FILE_TYPE_DATA_PRESET)
+    {
+      return PKG_VAL_FILE_TYPE_PST;
+    }
+  else
+    {
+      return PKG_VAL_FILE_TYPE_UNK;
+    }
+}
+
 static gint
 package_add_manifest (struct package *pkg)
 {
@@ -166,13 +188,9 @@ package_add_manifest (struct package *pkg)
   json_builder_add_string_value (builder, pkg->name);
 
   json_builder_set_member_name (builder, PKG_TAG_FILE_TYPE);
-  json_builder_add_string_value (builder,
-				 pkg->type & PKG_FILE_TYPE_SOUND ?
-				 PKG_VAL_FILE_TYPE_SND : pkg->type &
-				 PKG_FILE_TYPE_PROJECT ? PKG_VAL_FILE_TYPE_PRJ
-				 : PKG_VAL_FILE_TYPE_UNK);
+  json_builder_add_string_value (builder, package_get_file_type (pkg->type));
 
-  if (pkg->type != PKG_FILE_TYPE_PRESET)
+  if (pkg->type != PKG_FILE_TYPE_RAW_PRESET)
     {
       json_builder_set_member_name (builder, PKG_TAG_FIRMWARE_VERSION);
       json_builder_add_string_value (builder, pkg->fw_version);
@@ -638,11 +656,15 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
   if (strcmp (file_type, PKG_VAL_FILE_TYPE_SND) == 0)
     {
-      pkg->type = PKG_FILE_TYPE_SOUND;
+      pkg->type = PKG_FILE_TYPE_DATA_SOUND;
     }
   else if (strcmp (file_type, PKG_VAL_FILE_TYPE_PRJ) == 0)
     {
-      pkg->type = PKG_FILE_TYPE_PROJECT;
+      pkg->type = PKG_FILE_TYPE_DATA_PROJECT;
+    }
+  else if (strcmp (file_type, PKG_VAL_FILE_TYPE_PST) == 0)
+    {
+      pkg->type = PKG_FILE_TYPE_DATA_PRESET;
     }
   else
     {

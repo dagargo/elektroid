@@ -20,7 +20,7 @@
 	"id": 10,
 	"name": "Elektron Analog Heat",
 	"alias": "ah",
-	"filesystems": 40,
+	"filesystems": 72,
 	"storage": 0
 }, {
 	"id": 12,
@@ -50,7 +50,7 @@
 	"id": 22,
 	"name": "Elektron Analog Heat MKII",
 	"alias": "ah",
-	"filesystems": 40,
+	"filesystems": 72,
 	"storage": 0
 }, {
 	"id": 28,
@@ -79,7 +79,7 @@
 }, {
 	"id": 32,
 	"name": "Elektron Analog Heat +FX",
-	"alias": "ah",
-	"filesystems": 40,
+	"alias": "ahfx",
+	"filesystems": 72,
 	"storage": 0
 }]

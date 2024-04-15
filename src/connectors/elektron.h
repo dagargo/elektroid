@@ -31,7 +31,8 @@ enum elektron_fs
   FS_RAW_PRESETS = 0x4,
   FS_DATA_ALL = 0x8,
   FS_DATA_PRJ = 0x10,
-  FS_DATA_SND = 0x20
+  FS_DATA_SND = 0x20,
+  FS_DATA_PST = 0x40
 };
 
 gchar *elektron_get_sample_path_from_hash_size (struct backend *, guint32,

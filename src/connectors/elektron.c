@@ -45,6 +45,7 @@ static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 #define FS_DATA_METADATA_FILE "." FS_DATA_METADATA_EXT
 #define FS_DATA_PRJ_PREFIX "/projects"
 #define FS_DATA_SND_PREFIX "/soundbanks"
+#define FS_DATA_PST_PREFIX "/presets"
 #define FS_SAMPLES_START_POS 5
 #define FS_DATA_START_POS 18
 #define FS_SAMPLES_SIZE_POS_W 21
@@ -117,12 +118,17 @@ static gint elektron_download_data_snd_pkg (struct backend *, const gchar *,
 static gint elektron_download_data_prj_pkg (struct backend *, const gchar *,
 					    GByteArray *,
 					    struct job_control *);
+static gint elektron_download_data_pst_pkg (struct backend *, const gchar *,
+					    GByteArray *,
+					    struct job_control *);
 static gint elektron_download_raw_pst_pkg (struct backend *, const gchar *,
 					   GByteArray *,
 					   struct job_control *);
 static gint elektron_upload_data_prj_pkg (struct backend *, const gchar *,
 					  GByteArray *, struct job_control *);
 static gint elektron_upload_data_snd_pkg (struct backend *, const gchar *,
+					  GByteArray *, struct job_control *);
+static gint elektron_upload_data_pst_pkg (struct backend *, const gchar *,
 					  GByteArray *, struct job_control *);
 static gint elektron_upload_raw_pst_pkg (struct backend *, const gchar *,
 					 GByteArray *, struct job_control *);
@@ -2176,6 +2182,17 @@ elektron_read_data_dir_snd (struct backend *backend,
 }
 
 static gint
+elektron_read_data_dir_pst (struct backend *backend,
+			    struct item_iterator *iter, const gchar *dir,
+			    const gchar **extensions)
+{
+  struct elektron_data *data = backend->data;
+  gint32 slots = data->device_desc.id == 32 ? 512 : 128;	//Analog Heat +FX has 512 presets
+  return elektron_read_data_dir_prefix (backend, iter, dir,
+					FS_DATA_PST_PREFIX, slots);
+}
+
+static gint
 elektron_dst_src_data_prefix_common (struct backend *backend,
 				     const gchar *src, const gchar *dst,
 				     const char *prefix,
@@ -2226,6 +2243,15 @@ elektron_move_data_item_snd (struct backend *backend, const gchar *src,
 }
 
 static gint
+elektron_move_data_item_pst (struct backend *backend, const gchar *src,
+			     const gchar *dst)
+{
+  return elektron_move_data_item_prefix (backend, src, dst,
+					 FS_DATA_PST_PREFIX);
+}
+
+
+static gint
 elektron_copy_data_item_prefix (struct backend *backend, const gchar *src,
 				const gchar *dst, const gchar *prefix)
 {
@@ -2255,6 +2281,14 @@ elektron_copy_data_item_snd (struct backend *backend, const gchar *src,
 {
   return elektron_copy_data_item_prefix (backend, src, dst,
 					 FS_DATA_SND_PREFIX);
+}
+
+static gint
+elektron_copy_data_item_pst (struct backend *backend, const gchar *src,
+			     const gchar *dst)
+{
+  return elektron_copy_data_item_prefix (backend, src, dst,
+					 FS_DATA_PST_PREFIX);
 }
 
 static gint
@@ -2299,6 +2333,12 @@ elektron_clear_data_item_snd (struct backend *backend, const gchar *path)
 }
 
 static gint
+elektron_clear_data_item_pst (struct backend *backend, const gchar *path)
+{
+  return elektron_clear_data_item_prefix (backend, path, FS_DATA_PST_PREFIX);
+}
+
+static gint
 elektron_swap_data_item_prefix (struct backend *backend, const gchar *src,
 				const gchar *dst, const gchar *prefix)
 {
@@ -2328,6 +2368,14 @@ elektron_swap_data_item_snd (struct backend *backend, const gchar *src,
 {
   return elektron_swap_data_item_prefix (backend, src, dst,
 					 FS_DATA_SND_PREFIX);
+}
+
+static gint
+elektron_swap_data_item_pst (struct backend *backend, const gchar *src,
+			     const gchar *dst)
+{
+  return elektron_swap_data_item_prefix (backend, src, dst,
+					 FS_DATA_PST_PREFIX);
 }
 
 static gint
@@ -2664,6 +2712,14 @@ elektron_download_data_snd (struct backend *backend, const gchar *path,
 					FS_DATA_SND_PREFIX);
 }
 
+static gint
+elektron_download_data_pst (struct backend *backend, const gchar *path,
+			    GByteArray *output, struct job_control *control)
+{
+  return elektron_download_data_prefix (backend, path, output, control,
+					FS_DATA_PST_PREFIX);
+}
+
 static gchar *
 elektron_get_download_name (struct backend *backend,
 			    const struct fs_operations *ops,
@@ -2982,6 +3038,14 @@ elektron_upload_data_snd (struct backend *backend, const gchar *path,
 }
 
 static gint
+elektron_upload_data_pst (struct backend *backend, const gchar *path,
+			  GByteArray *array, struct job_control *control)
+{
+  return elektron_upload_data_prefix (backend, path, array, control,
+				      FS_DATA_PST_PREFIX);
+}
+
+static gint
 elektron_upload_pkg (struct backend *backend, const gchar *path,
 		     GByteArray *input, struct job_control *control,
 		     guint8 type, const struct fs_operations *ops,
@@ -3208,10 +3272,36 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .get_download_path = elektron_get_download_path
 };
 
+static const struct fs_operations FS_DATA_PST_OPERATIONS = {
+  .fs = FS_DATA_PST,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .name = "preset",
+  .gui_name = "Presets",
+  .gui_icon = BE_FILE_ICON_SND,
+  .type_ext = "pst",
+  .readdir = elektron_read_data_dir_pst,
+  .print_item = elektron_print_data,
+  .delete = elektron_clear_data_item_pst,
+  .move = elektron_move_data_item_pst,
+  .copy = elektron_copy_data_item_pst,
+  .clear = elektron_clear_data_item_pst,
+  .swap = elektron_swap_data_item_pst,
+  .download = elektron_download_data_pst_pkg,
+  .upload = elektron_upload_data_pst_pkg,
+  .get_slot = elektron_get_id_as_slot,
+  .load = load_file,
+  .save = save_file,
+  .get_ext = elektron_get_dev_and_fs_ext,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = elektron_get_download_path
+};
+
 static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
   &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
-  NULL
+  &FS_DATA_PST_OPERATIONS, NULL
 };
 
 gint
@@ -3291,7 +3381,7 @@ elektron_download_data_snd_pkg (struct backend *backend,
 				struct job_control *control)
 {
   return elektron_download_pkg (backend, path, output, control,
-				PKG_FILE_TYPE_SOUND,
+				PKG_FILE_TYPE_DATA_SOUND,
 				&FS_DATA_SND_OPERATIONS,
 				elektron_download_data_snd);
 }
@@ -3302,9 +3392,20 @@ elektron_download_data_prj_pkg (struct backend *backend,
 				struct job_control *control)
 {
   return elektron_download_pkg (backend, path, output, control,
-				PKG_FILE_TYPE_PROJECT,
+				PKG_FILE_TYPE_DATA_PROJECT,
 				&FS_DATA_PRJ_OPERATIONS,
 				elektron_download_data_prj);
+}
+
+static gint
+elektron_download_data_pst_pkg (struct backend *backend,
+				const gchar *path, GByteArray *output,
+				struct job_control *control)
+{
+  return elektron_download_pkg (backend, path, output, control,
+				PKG_FILE_TYPE_DATA_PRESET,
+				&FS_DATA_PST_OPERATIONS,
+				elektron_download_data_pst);
 }
 
 static gint
@@ -3313,7 +3414,7 @@ elektron_download_raw_pst_pkg (struct backend *backend, const gchar *path,
 			       struct job_control *control)
 {
   return elektron_download_pkg (backend, path, output, control,
-				PKG_FILE_TYPE_PRESET,
+				PKG_FILE_TYPE_RAW_PRESET,
 				&FS_RAW_ANY_OPERATIONS,
 				elektron_download_raw);
 }
@@ -3323,7 +3424,7 @@ elektron_upload_data_snd_pkg (struct backend *backend, const gchar *path,
 			      GByteArray *input, struct job_control *control)
 {
   return elektron_upload_pkg (backend, path, input, control,
-			      PKG_FILE_TYPE_SOUND,
+			      PKG_FILE_TYPE_DATA_SOUND,
 			      &FS_DATA_SND_OPERATIONS,
 			      elektron_upload_data_snd);
 }
@@ -3333,9 +3434,19 @@ elektron_upload_data_prj_pkg (struct backend *backend, const gchar *path,
 			      GByteArray *input, struct job_control *control)
 {
   return elektron_upload_pkg (backend, path, input, control,
-			      PKG_FILE_TYPE_PROJECT,
+			      PKG_FILE_TYPE_DATA_PROJECT,
 			      &FS_DATA_PRJ_OPERATIONS,
 			      elektron_upload_data_prj);
+}
+
+static gint
+elektron_upload_data_pst_pkg (struct backend *backend, const gchar *path,
+			      GByteArray *input, struct job_control *control)
+{
+  return elektron_upload_pkg (backend, path, input, control,
+			      PKG_FILE_TYPE_DATA_PRESET,
+			      &FS_DATA_PST_OPERATIONS,
+			      elektron_upload_data_pst);
 }
 
 static gint
@@ -3343,6 +3454,6 @@ elektron_upload_raw_pst_pkg (struct backend *backend, const gchar *path,
 			     GByteArray *input, struct job_control *control)
 {
   return elektron_upload_pkg (backend, path, input, control,
-			      PKG_FILE_TYPE_PRESET,
+			      PKG_FILE_TYPE_RAW_PRESET,
 			      &FS_RAW_ANY_OPERATIONS, elektron_upload_raw);
 }
