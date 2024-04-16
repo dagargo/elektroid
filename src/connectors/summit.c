@@ -987,12 +987,6 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .get_upload_path = common_slot_get_upload_path
 };
 
-static const struct fs_operations *FS_SUMMIT_OPERATIONS[] = {
-  &FS_SUMMIT_SINGLE_OPERATIONS, &FS_SUMMIT_MULTI_OPERATIONS,
-  &FS_SUMMIT_WAVETABLE_OPERATIONS, &FS_SUMMIT_SCALE_OPERATIONS,
-  &FS_SUMMIT_BULK_TUNING_OPERATIONS, NULL
-};
-
 gint
 summit_handshake (struct backend *backend)
 {
@@ -1002,9 +996,11 @@ summit_handshake (struct backend *backend)
       return -ENODEV;
     }
 
-  backend->filesystems = FS_SUMMIT_SINGLE_PATCH | FS_SUMMIT_MULTI_PATCH |
-    FS_SUMMIT_WAVETABLE | FS_SUMMIT_SCALE | FS_SUMMIT_BULK_TUNING;
-  backend->fs_ops = FS_SUMMIT_OPERATIONS;
+  backend_fill_fs_ops (backend, &FS_SUMMIT_SINGLE_OPERATIONS,
+		       &FS_SUMMIT_MULTI_OPERATIONS,
+		       &FS_SUMMIT_WAVETABLE_OPERATIONS,
+		       &FS_SUMMIT_SCALE_OPERATIONS,
+		       &FS_SUMMIT_BULK_TUNING_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "Novation Summit");
 
   return 0;

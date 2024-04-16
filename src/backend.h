@@ -105,18 +105,17 @@ struct backend
   gchar name[LABEL_MAX];
   gchar version[LABEL_MAX];
   gchar description[LABEL_MAX];
-  guint32 filesystems;		//Bitwise or of the GUI only filesystems
   guint32 storage;
   GMutex mutex;
   //Message cache
   GHashTable *cache;
   //This must be filled by the concrete connector.
   const gchar *conn_name;
-  const struct fs_operations **fs_ops;
+  GSList *fs_ops;
   void *data;
   t_destroy_data destroy_data;
   t_sysex_transfer upgrade_os;	//This function is device function, not a filesystem function.
-  t_get_storage_stats get_storage_stats;	//This function is device function, not a filesystem function. Several filesystems might share the same memory.
+  t_get_storage_stats get_storage_stats;	//This function is a device function, not a filesystem function. Several filesystems might share the same memory.
 };
 
 struct backend_device
@@ -194,5 +193,7 @@ const gchar *backend_strerror (struct backend *backend, gint error);
 enum path_type path_type_from_backend (struct backend *);
 
 const gchar *backend_name ();
+
+void backend_fill_fs_ops (struct backend *backend, ...);
 
 #endif

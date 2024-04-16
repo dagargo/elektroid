@@ -1247,14 +1247,6 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_8_OPERATIONS = {
   .get_download_path = sds_get_download_path
 };
 
-static const struct fs_operations *FS_SDS_ALL_OPERATIONS[] = {
-  &FS_PROGRAM_DEFAULT_OPERATIONS, &FS_SAMPLES_SDS_8B_OPERATIONS,
-  &FS_SAMPLES_SDS_12B_OPERATIONS, &FS_SAMPLES_SDS_14B_OPERATIONS,
-  &FS_SAMPLES_SDS_16B_OPERATIONS, &FS_SAMPLES_SDS_16B_441_OPERATIONS,
-  &FS_SAMPLES_SDS_16B_32_OPERATIONS, &FS_SAMPLES_SDS_16B_16_OPERATIONS,
-  &FS_SAMPLES_SDS_16B_8_OPERATIONS, NULL
-};
-
 gint
 sds_handshake_elektron (struct backend *backend)
 {
@@ -1390,11 +1382,15 @@ end:
   sds_data->rest_time = SDS_REST_TIME_DEFAULT;
   sds_data->name_extension = name_extension;
 
-  backend->filesystems = FS_PROGRAM_DEFAULT | FS_SAMPLES_SDS_8_B |
-    FS_SAMPLES_SDS_12_B | FS_SAMPLES_SDS_14_B | FS_SAMPLES_SDS_16_B |
-    FS_SAMPLES_SDS_16_B_441 | FS_SAMPLES_SDS_16_B_32 | FS_SAMPLES_SDS_16_B_16
-    | FS_SAMPLES_SDS_16_B_8;
-  backend->fs_ops = FS_SDS_ALL_OPERATIONS;
+  backend_fill_fs_ops (backend, &FS_PROGRAM_DEFAULT_OPERATIONS,
+		       &FS_SAMPLES_SDS_8B_OPERATIONS,
+		       &FS_SAMPLES_SDS_12B_OPERATIONS,
+		       &FS_SAMPLES_SDS_14B_OPERATIONS,
+		       &FS_SAMPLES_SDS_16B_OPERATIONS,
+		       &FS_SAMPLES_SDS_16B_441_OPERATIONS,
+		       &FS_SAMPLES_SDS_16B_32_OPERATIONS,
+		       &FS_SAMPLES_SDS_16B_16_OPERATIONS,
+		       &FS_SAMPLES_SDS_16B_8_OPERATIONS, NULL);
   backend->destroy_data = backend_destroy_data;
   backend->data = sds_data;
 

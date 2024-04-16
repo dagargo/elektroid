@@ -1827,182 +1827,6 @@ elektron_get_storage_stats (struct backend *backend, gint type,
 }
 
 static gint
-elektron_configure_device (struct backend *backend, guint8 id)
-{
-  gint err, devices;
-  JsonParser *parser;
-  JsonReader *reader;
-  gchar *devices_filename;
-  GError *error = NULL;
-  const gchar *elektroid_elektron_json;
-  struct elektron_data *data = backend->data;
-
-  parser = json_parser_new ();
-
-  elektroid_elektron_json = getenv ("ELEKTROID_ELEKTRON_JSON");
-
-  if (elektroid_elektron_json)
-    {
-      devices_filename = strdup (elektroid_elektron_json);
-    }
-  else
-    {
-      devices_filename = get_user_dir (CONF_DIR DEVICES_FILE);
-    }
-
-  if (!json_parser_load_from_file (parser, devices_filename, &error))
-    {
-      debug_print (1, "%s\n", error->message);
-      g_clear_error (&error);
-
-      g_free (devices_filename);
-      devices_filename = strdup (DATADIR DEVICES_FILE);
-
-      debug_print (1, "Falling back to %s...\n", devices_filename);
-
-      if (!json_parser_load_from_file (parser, devices_filename, &error))
-	{
-	  error_print ("%s", error->message);
-	  g_clear_error (&error);
-	  err = -ENODEV;
-	  goto cleanup_parser;
-	}
-    }
-
-  reader = json_reader_new (json_parser_get_root (parser));
-  if (!reader)
-    {
-      error_print ("Unable to read from parser");
-      err = -ENODEV;
-      goto cleanup_parser;
-    }
-
-  if (!json_reader_is_array (reader))
-    {
-      error_print ("Not an array\n");
-      err = -ENODEV;
-      goto cleanup_reader;
-    }
-
-  devices = json_reader_count_elements (reader);
-  if (!devices)
-    {
-      debug_print (1, "No devices found\n");
-      err = -ENODEV;
-      goto cleanup_reader;
-    }
-
-  err = -ENODEV;
-  for (int i = 0; i < devices; i++)
-    {
-      if (!json_reader_read_element (reader, i))
-	{
-	  error_print ("Cannot read element %d. Continuing...\n", i);
-	  continue;
-	}
-
-      if (!json_reader_read_member (reader, DEV_TAG_ID))
-	{
-	  error_print ("Cannot read member '%s'. Continuing...\n",
-		       DEV_TAG_ID);
-	  continue;
-	}
-      data->device_desc.id = json_reader_get_int_value (reader);
-      json_reader_end_member (reader);
-
-      if (data->device_desc.id != id)
-	{
-	  json_reader_end_element (reader);
-	  continue;
-	}
-
-      err = 0;
-      debug_print (1, "Device %d found\n", id);
-
-      if (!json_reader_read_member (reader, DEV_TAG_ALIAS))
-	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
-		       DEV_TAG_ALIAS);
-	  json_reader_end_element (reader);
-	  err = -ENODEV;
-	  break;
-	}
-      snprintf (data->device_desc.alias, LABEL_MAX, "%s",
-		json_reader_get_string_value (reader));
-      json_reader_end_member (reader);
-
-      if (!json_reader_read_member (reader, DEV_TAG_NAME))
-	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
-		       DEV_TAG_NAME);
-	  json_reader_end_element (reader);
-	  err = -ENODEV;
-	  break;
-	}
-      snprintf (backend->name, LABEL_MAX, "%s",
-		json_reader_get_string_value (reader));
-      json_reader_end_member (reader);
-
-      if (!json_reader_read_member (reader, DEV_TAG_FILESYSTEMS))
-	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
-		       DEV_TAG_FILESYSTEMS);
-	  json_reader_end_element (reader);
-	  err = -ENODEV;
-	  break;
-	}
-      backend->filesystems = json_reader_get_int_value (reader);
-      json_reader_end_member (reader);
-
-      if (!json_reader_read_member (reader, DEV_TAG_STORAGE))
-	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
-		       DEV_TAG_STORAGE);
-	  json_reader_end_element (reader);
-	  err = -ENODEV;
-	  break;
-	}
-      backend->storage = json_reader_get_int_value (reader);
-      json_reader_end_member (reader);
-
-      break;
-    }
-
-cleanup_reader:
-  g_object_unref (reader);
-cleanup_parser:
-  g_object_unref (parser);
-  g_free (devices_filename);
-  if (err)
-    {
-      data->device_desc.id = -1;
-    }
-  return err;
-}
-
-GByteArray *
-elektron_ping (struct backend *backend)
-{
-  GByteArray *tx_msg, *rx_msg;
-  struct elektron_data *data = g_malloc (sizeof (struct elektron_data));
-
-  data->seq = 0;
-  backend->data = data;
-
-  tx_msg = elektron_new_msg (PING_REQUEST, sizeof (PING_REQUEST));
-  rx_msg = elektron_tx_and_rx_timeout (backend, tx_msg,
-				       BE_SYSEX_TIMEOUT_GUESS_MS);
-  if (!rx_msg)
-    {
-      backend->data = NULL;
-      g_free (data);
-    }
-
-
-  return rx_msg;
-}
-
-static gint
 elektron_next_data_entry (struct item_iterator *iter)
 {
   gchar *name_cp1252;
@@ -3304,6 +3128,195 @@ static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_DATA_PST_OPERATIONS, NULL
 };
 
+static gint
+elektron_configure_device (struct backend *backend, guint8 id)
+{
+  gint err, devices;
+  guint32 filesystems = 0;
+  JsonParser *parser;
+  JsonReader *reader;
+  gchar *devices_filename;
+  GError *error = NULL;
+  const gchar *elektroid_elektron_json;
+  struct elektron_data *data = backend->data;
+
+  parser = json_parser_new ();
+
+  elektroid_elektron_json = getenv ("ELEKTROID_ELEKTRON_JSON");
+
+  if (elektroid_elektron_json)
+    {
+      devices_filename = strdup (elektroid_elektron_json);
+    }
+  else
+    {
+      devices_filename = get_user_dir (CONF_DIR DEVICES_FILE);
+    }
+
+  if (!json_parser_load_from_file (parser, devices_filename, &error))
+    {
+      debug_print (1, "%s\n", error->message);
+      g_clear_error (&error);
+
+      g_free (devices_filename);
+      devices_filename = strdup (DATADIR DEVICES_FILE);
+
+      debug_print (1, "Falling back to %s...\n", devices_filename);
+
+      if (!json_parser_load_from_file (parser, devices_filename, &error))
+	{
+	  error_print ("%s", error->message);
+	  g_clear_error (&error);
+	  err = -ENODEV;
+	  goto cleanup_parser;
+	}
+    }
+
+  reader = json_reader_new (json_parser_get_root (parser));
+  if (!reader)
+    {
+      error_print ("Unable to read from parser");
+      err = -ENODEV;
+      goto cleanup_parser;
+    }
+
+  if (!json_reader_is_array (reader))
+    {
+      error_print ("Not an array\n");
+      err = -ENODEV;
+      goto cleanup_reader;
+    }
+
+  devices = json_reader_count_elements (reader);
+  if (!devices)
+    {
+      debug_print (1, "No devices found\n");
+      err = -ENODEV;
+      goto cleanup_reader;
+    }
+
+  err = -ENODEV;
+  for (int i = 0; i < devices; i++)
+    {
+      if (!json_reader_read_element (reader, i))
+	{
+	  error_print ("Cannot read element %d. Continuing...\n", i);
+	  continue;
+	}
+
+      if (!json_reader_read_member (reader, DEV_TAG_ID))
+	{
+	  error_print ("Cannot read member '%s'. Continuing...\n",
+		       DEV_TAG_ID);
+	  continue;
+	}
+      data->device_desc.id = json_reader_get_int_value (reader);
+      json_reader_end_member (reader);
+
+      if (data->device_desc.id != id)
+	{
+	  json_reader_end_element (reader);
+	  continue;
+	}
+
+      err = 0;
+      debug_print (1, "Device %d found\n", id);
+
+      if (!json_reader_read_member (reader, DEV_TAG_ALIAS))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_ALIAS);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      snprintf (data->device_desc.alias, LABEL_MAX, "%s",
+		json_reader_get_string_value (reader));
+      json_reader_end_member (reader);
+
+      if (!json_reader_read_member (reader, DEV_TAG_NAME))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_NAME);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      snprintf (backend->name, LABEL_MAX, "%s",
+		json_reader_get_string_value (reader));
+      json_reader_end_member (reader);
+
+      if (!json_reader_read_member (reader, DEV_TAG_FILESYSTEMS))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_FILESYSTEMS);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      filesystems = json_reader_get_int_value (reader);
+      json_reader_end_member (reader);
+
+      if (!json_reader_read_member (reader, DEV_TAG_STORAGE))
+	{
+	  error_print ("Cannot read member '%s'. Stopping...\n",
+		       DEV_TAG_STORAGE);
+	  json_reader_end_element (reader);
+	  err = -ENODEV;
+	  break;
+	}
+      backend->storage = json_reader_get_int_value (reader);
+      json_reader_end_member (reader);
+
+      break;
+    }
+
+  backend->fs_ops = NULL;
+  const struct fs_operations **fs_ops = FS_OPERATIONS;
+  while (*fs_ops)
+    {
+      if ((*fs_ops)->fs & filesystems)
+	{
+	  backend->fs_ops =
+	    g_slist_append (backend->fs_ops, (gpointer) * fs_ops);
+	}
+      fs_ops++;
+    }
+
+cleanup_reader:
+  g_object_unref (reader);
+cleanup_parser:
+  g_object_unref (parser);
+  g_free (devices_filename);
+  if (err)
+    {
+      data->device_desc.id = -1;
+    }
+  return err;
+}
+
+GByteArray *
+elektron_ping (struct backend *backend)
+{
+  GByteArray *tx_msg, *rx_msg;
+  struct elektron_data *data = g_malloc (sizeof (struct elektron_data));
+
+  data->seq = 0;
+  backend->data = data;
+
+  tx_msg = elektron_new_msg (PING_REQUEST, sizeof (PING_REQUEST));
+  rx_msg = elektron_tx_and_rx_timeout (backend, tx_msg,
+				       BE_SYSEX_TIMEOUT_GUESS_MS);
+  if (!rx_msg)
+    {
+      backend->data = NULL;
+      g_free (data);
+    }
+
+
+  return rx_msg;
+}
+
 gint
 elektron_handshake (struct backend *backend)
 {
@@ -3367,7 +3380,6 @@ elektron_handshake (struct backend *backend)
 
   g_free (overbridge_name);
 
-  backend->fs_ops = FS_OPERATIONS;
   backend->destroy_data = backend_destroy_data;
   backend->upgrade_os = elektron_upgrade_os;
   backend->get_storage_stats = elektron_get_storage_stats;

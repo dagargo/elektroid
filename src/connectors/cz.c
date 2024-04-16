@@ -342,10 +342,6 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .select_item = common_midi_program_change
 };
 
-static const struct fs_operations *FS_CZ_OPERATIONS[] = {
-  &FS_PROGRAM_CZ_OPERATIONS, NULL
-};
-
 gint
 cz_handshake (struct backend *backend)
 {
@@ -366,8 +362,7 @@ cz_handshake (struct backend *backend)
       goto end;
     }
 
-  backend->filesystems = FS_PROGRAM_CZ;
-  backend->fs_ops = FS_CZ_OPERATIONS;
+  backend_fill_fs_ops (backend, &FS_PROGRAM_CZ_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "Casio CZ-101");
 
 end:

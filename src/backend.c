@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdarg.h>
 #include "backend.h"
 #include "local.h"
 
@@ -49,19 +50,15 @@ const struct fs_operations *
 backend_get_fs_operations (struct backend *backend, gint fs,
 			   const gchar *name)
 {
-  const struct fs_operations **fs_operations = backend->fs_ops;
-  if (!fs_operations)
+  GSList *e = backend->fs_ops;
+  while (e)
     {
-      return NULL;
-    }
-  while (*fs_operations)
-    {
-      const struct fs_operations *ops = *fs_operations;
+      const struct fs_operations *ops = e->data;
       if (ops->fs == fs || (name && !strcmp (ops->name, name)))
 	{
 	  return ops;
 	}
-      fs_operations++;
+      e = e->next;
     }
   return NULL;
 }
@@ -410,7 +407,7 @@ backend_destroy (struct backend *backend)
   backend->get_storage_stats = NULL;
   backend->destroy_data = NULL;
   backend->type = BE_TYPE_NONE;
-  backend->fs_ops = NULL;
+  g_slist_free (backend->fs_ops);
 }
 
 gboolean
@@ -719,4 +716,19 @@ backend_get_devices ()
 
   backend_fill_devices_array (devices);
   return devices;
+}
+
+void
+backend_fill_fs_ops (struct backend *backend, ...)
+{
+  gpointer v;
+  va_list argptr;
+
+  backend->fs_ops = NULL;
+  va_start (argptr, backend);
+  while ((v = va_arg (argptr, gpointer)))
+    {
+      backend->fs_ops = g_slist_append (backend->fs_ops, v);
+    }
+  va_end (argptr);
 }

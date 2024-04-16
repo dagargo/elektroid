@@ -446,10 +446,6 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .select_item = common_midi_program_change
 };
 
-static const struct fs_operations *FS_EFACTOR_OPERATIONS_LIST[] = {
-  &FS_EFACTOR_OPERATIONS, NULL
-};
-
 void
 efactor_destroy_data (struct backend *backend)
 {
@@ -577,8 +573,7 @@ efactor_handshake (struct backend *backend)
   data->type = type;
   data->lines = NULL;
 
-  backend->filesystems = FS_EFACTOR_PRESET;
-  backend->fs_ops = FS_EFACTOR_OPERATIONS_LIST;
+  backend_fill_fs_ops (backend, &FS_EFACTOR_OPERATIONS, NULL);
   backend->destroy_data = efactor_destroy_data;
   backend->data = data;
 
