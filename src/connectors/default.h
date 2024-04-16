@@ -23,11 +23,6 @@
 
 #include "backend.h"
 
-enum default_fs
-{
-  FS_PROGRAM_DEFAULT = 1
-};
-
 extern const struct fs_operations FS_PROGRAM_DEFAULT_OPERATIONS;
 
 gint default_handshake (struct backend *);

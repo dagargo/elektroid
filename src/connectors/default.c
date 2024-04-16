@@ -24,6 +24,11 @@
 
 #define DEFAULT_MAX_PROGRAMS 128
 
+enum default_fs
+{
+  FS_PROGRAM_DEFAULT
+};
+
 static gint
 default_next_dentry (struct item_iterator *iter)
 {

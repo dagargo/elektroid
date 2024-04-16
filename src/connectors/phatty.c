@@ -54,8 +54,8 @@ struct phatty_iter_data
 
 enum phatty_fs
 {
-  FS_PHATTY_PRESET = 1,
-  FS_PHATTY_SCALE = 2
+  FS_PHATTY_PRESET,
+  FS_PHATTY_SCALE
 };
 
 static gchar

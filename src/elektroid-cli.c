@@ -97,7 +97,7 @@ cli_connect (const gchar *device_path)
 
   if (!err && fs)
     {
-      fs_ops = backend_get_fs_operations (&backend, 0, fs);
+      fs_ops = backend_get_fs_operations_by_name (&backend, fs);
       if (!fs_ops)
 	{
 	  error_print ("Invalid filesystem '%s'\n", fs);

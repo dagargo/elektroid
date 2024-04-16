@@ -44,7 +44,7 @@ static const guint8 CZ_PROGRAM_HEADER[] =
 
 enum cz_fs
 {
-  FS_PROGRAM_CZ = 1
+  FS_PROGRAM_CZ
 };
 
 struct cz_type_iterator_data

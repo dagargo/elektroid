@@ -60,9 +60,9 @@ static const guint8 MODEL_ID[] = { 0x6, 0x1 };
 
 enum microfreak_fs
 {
-  FS_MICROFREAK_PRESET = 1,
-  FS_MICROFREAK_ZPRESET = 2,
-  FS_MICROFREAK_SAMPLE = 4,
+  FS_MICROFREAK_PRESET,
+  FS_MICROFREAK_ZPRESET,
+  FS_MICROFREAK_SAMPLE
 };
 
 struct microfreak_iter_data

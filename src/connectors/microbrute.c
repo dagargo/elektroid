@@ -91,7 +91,7 @@ static const guint8 MICROBRUTE_SET_PARAM_MSG[] =
 
 enum microbrute_fs
 {
-  FS_MICROBRUTE_SEQUENCE = 1
+  FS_MICROBRUTE_SEQUENCE
 };
 
 struct microbrute_int_param

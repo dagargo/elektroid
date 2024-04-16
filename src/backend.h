@@ -150,8 +150,12 @@ gboolean backend_check (struct backend *);
 
 GArray *backend_get_devices ();
 
-const struct fs_operations *backend_get_fs_operations (struct backend *, gint,
-						       const char *);
+const struct fs_operations *backend_get_fs_operations_by_id (struct backend *,
+							     guint32);
+
+const struct fs_operations *backend_get_fs_operations_by_name (struct backend
+							       *,
+							       const char *);
 
 const gchar *backend_get_fs_name (struct backend *, guint);
 

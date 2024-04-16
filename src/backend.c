@@ -46,21 +46,34 @@ backend_get_storage_stats_percent (struct backend_storage_stats *statfs)
   return (statfs->bsize - statfs->bfree) * 100.0 / statfs->bsize;
 }
 
-const struct fs_operations *
-backend_get_fs_operations (struct backend *backend, gint fs,
-			   const gchar *name)
+static gint
+backend_get_fs_operations_id_comparator (gconstpointer a, gconstpointer b)
 {
-  GSList *e = backend->fs_ops;
-  while (e)
-    {
-      const struct fs_operations *ops = e->data;
-      if (ops->fs == fs || (name && !strcmp (ops->name, name)))
-	{
-	  return ops;
-	}
-      e = e->next;
-    }
-  return NULL;
+  const struct fs_operations *ops = a;
+  return ops->fs != *((guint32 *) b);
+}
+
+const struct fs_operations *
+backend_get_fs_operations_by_id (struct backend *backend, guint32 id)
+{
+  GSList *e = g_slist_find_custom (backend->fs_ops, &id,
+				   backend_get_fs_operations_id_comparator);
+  return e ? e->data : NULL;
+}
+
+static gint
+backend_get_fs_operations_name_comparator (gconstpointer a, gconstpointer b)
+{
+  const struct fs_operations *ops = a;
+  return strcmp (ops->name, (gchar *) b);
+}
+
+const struct fs_operations *
+backend_get_fs_operations_by_name (struct backend *backend, const gchar *name)
+{
+  GSList *e = g_slist_find_custom (backend->fs_ops, name,
+				   backend_get_fs_operations_name_comparator);
+  return e ? e->data : NULL;
 }
 
 void

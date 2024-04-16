@@ -340,8 +340,8 @@ tasks_add (struct tasks *tasks, enum task_type type,
 {
   const gchar *status_human = tasks_get_human_status (TASK_STATUS_QUEUED);
   const gchar *type_human = tasks_get_human_type (type);
-  const gchar *icon = backend_get_fs_operations (backend, remote_fs_id,
-						 NULL)->gui_icon;
+  const struct fs_operations *ops = backend_get_fs_operations_by_id (backend,
+								     remote_fs_id);
 
   gtk_list_store_insert_with_values (tasks->list_store, NULL, -1,
 				     TASK_LIST_STORE_STATUS_FIELD,
@@ -357,7 +357,7 @@ tasks_add (struct tasks *tasks, enum task_type type,
 				     TASK_LIST_STORE_REMOTE_FS_ID_FIELD,
 				     remote_fs_id,
 				     TASK_LIST_STORE_REMOTE_FS_ICON_FIELD,
-				     icon,
+				     ops->gui_icon,
 				     TASK_LIST_STORE_BATCH_ID_FIELD,
 				     tasks->batch_id,
 				     TASK_LIST_STORE_MODE_FIELD,

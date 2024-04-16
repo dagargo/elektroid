@@ -1060,15 +1060,14 @@ sds_sample_save (const gchar *path, GByteArray *sample,
 
 enum sds_fs
 {
-  FS_SAMPLES_DEFAULT = FS_PROGRAM_DEFAULT,
-  FS_SAMPLES_SDS_16_B = 0x2,
-  FS_SAMPLES_SDS_14_B = 0x4,
-  FS_SAMPLES_SDS_12_B = 0x8,
-  FS_SAMPLES_SDS_8_B = 0x10,
-  FS_SAMPLES_SDS_16_B_441 = 0x20,
-  FS_SAMPLES_SDS_16_B_32 = 0x40,
-  FS_SAMPLES_SDS_16_B_16 = 0x80,
-  FS_SAMPLES_SDS_16_B_8 = 0x100
+  FS_SAMPLES_SDS_16_B = 1,	//SDS devices also include FS_PROGRAM_DEFAULT_OPERATIONS as the first filesystem.
+  FS_SAMPLES_SDS_14_B,
+  FS_SAMPLES_SDS_12_B,
+  FS_SAMPLES_SDS_8_B,
+  FS_SAMPLES_SDS_16_B_441,
+  FS_SAMPLES_SDS_16_B_32,
+  FS_SAMPLES_SDS_16_B_16,
+  FS_SAMPLES_SDS_16_B_8
 };
 
 static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {

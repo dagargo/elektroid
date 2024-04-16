@@ -92,7 +92,7 @@ struct efactor_iter_data
 
 enum efactor_fs
 {
-  FS_EFACTOR_PRESET = 1
+  FS_EFACTOR_PRESET
 };
 
 static GByteArray *
