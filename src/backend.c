@@ -627,7 +627,7 @@ backend_rx_drain (struct backend *backend)
 }
 
 enum path_type
-path_type_from_backend (struct backend *backend)
+backend_get_path_type (struct backend *backend)
 {
   return (!backend || backend->type == BE_TYPE_SYSTEM) ? PATH_SYSTEM :
     PATH_INTERNAL;

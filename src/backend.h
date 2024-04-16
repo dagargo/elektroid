@@ -184,7 +184,7 @@ gint backend_send_rpn (struct backend *backend, guint8 channel,
 
 const gchar *backend_strerror (struct backend *backend, gint error);
 
-enum path_type path_type_from_backend (struct backend *);
+enum path_type backend_get_path_type (struct backend *);
 
 const gchar *backend_name ();
 

@@ -41,7 +41,7 @@
 
 #define EDITOR_VISIBLE (remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE)
 
-#define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : path_type_from_backend (&backend))
+#define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : backend_get_path_type (&backend))
 
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
@@ -726,7 +726,7 @@ elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
 {
   gint err = 0;
   gchar *path;
-  enum path_type type = path_type_from_backend (browser->backend);
+  enum path_type type = backend_get_path_type (browser->backend);
 
   path = path_chain (type, dir, item->name);
 
@@ -919,7 +919,7 @@ elektroid_rename_item (GtkWidget *object, gpointer data)
 	    }
 	  else
 	    {
-	      enum path_type type = path_type_from_backend (browser->backend);
+	      enum path_type type = backend_get_path_type (browser->backend);
 	      new_path = path_chain (type, browser->dir,
 				     gtk_entry_get_text (name_dialog_entry));
 	    }
@@ -954,7 +954,7 @@ elektroid_drag_begin (GtkWidget *widget, GdkDragContext *context,
   gchar *uri, *path;
   struct item item;
   struct browser *browser = data;
-  enum path_type type = path_type_from_backend (browser->backend);
+  enum path_type type = backend_get_path_type (browser->backend);
 
   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (widget));
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (GTK_TREE_VIEW (widget)));
@@ -1133,7 +1133,7 @@ elektroid_show_clicked (GtkWidget *object, gpointer data)
   gboolean done = FALSE;
   struct browser *browser = data;
   gint count = browser_get_selected_items_count (browser);
-  enum path_type type = path_type_from_backend (browser->backend);
+  enum path_type type = backend_get_path_type (browser->backend);
 
   if (count == 0)
     {
@@ -1202,7 +1202,7 @@ elektroid_open_clicked (GtkWidget *object, gpointer data)
   GFile *file;
   struct item item;
   struct browser *browser = data;
-  enum path_type type = path_type_from_backend (browser->backend);
+  enum path_type type = backend_get_path_type (browser->backend);
 
   browser_set_selected_row_iter (browser, &iter);
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
@@ -1237,7 +1237,7 @@ elektroid_ask_name (const gchar *title, const gchar *value,
   char *pathname = NULL;
   int result;
   gint err;
-  enum path_type type = path_type_from_backend (browser->backend);
+  enum path_type type = backend_get_path_type (browser->backend);
 
   gtk_entry_set_text (name_dialog_entry, value);
   gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
@@ -1582,7 +1582,7 @@ elektroid_add_upload_task_path (const gchar *rel_path, const gchar *src_dir,
   gboolean active;
   struct item_iterator iter;
   gchar *path, *upload_path, *src_abs_path, *rel_path_trans;
-  enum path_type type = path_type_from_backend (&backend);
+  enum path_type type = backend_get_path_type (&backend);
 
   g_mutex_lock (&sysex_transfer.mutex);
   active = sysex_transfer.active;
@@ -1818,7 +1818,7 @@ elektroid_add_download_task_path (const gchar *rel_path,
   gboolean active;
   struct item_iterator iter;
   gchar *path, *filename, *src_abs_path, *rel_path_trans;
-  enum path_type type = path_type_from_backend (&backend);
+  enum path_type type = backend_get_path_type (&backend);
 
   g_mutex_lock (&sysex_transfer.mutex);
   active = sysex_transfer.active;
@@ -2344,7 +2344,7 @@ elektroid_dnd_received_system (const gchar *dir, const gchar *name,
 {
   gchar *dst_path;
   gint res;
-  enum path_type type = path_type_from_backend (browser->backend);
+  enum path_type type = backend_get_path_type (browser->backend);
 
   if (strcmp (dir, browser->dir))
     {
