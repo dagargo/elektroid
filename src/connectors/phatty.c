@@ -503,10 +503,6 @@ static const struct fs_operations FS_PHATTY_SCALE_OPERATIONS = {
   .get_upload_path = common_slot_get_upload_path
 };
 
-static const struct fs_operations *FS_PHATTY_OPERATIONS_LIST[] = {
-  &FS_PHATTY_PRESET_OPERATIONS, &FS_PHATTY_SCALE_OPERATIONS, NULL
-};
-
 gint
 phatty_handshake (struct backend *backend)
 {
@@ -517,8 +513,8 @@ phatty_handshake (struct backend *backend)
       return -ENODEV;
     }
 
-  backend->filesystems = FS_PHATTY_PRESET | FS_PHATTY_SCALE;
-  backend->fs_ops = FS_PHATTY_OPERATIONS_LIST;
+  backend_fill_fs_ops (backend, &FS_PHATTY_PRESET_OPERATIONS,
+		       &FS_PHATTY_SCALE_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "Moog Little Phatty");
 
   return 0;

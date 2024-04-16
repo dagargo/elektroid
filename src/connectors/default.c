@@ -73,15 +73,10 @@ const struct fs_operations FS_PROGRAM_DEFAULT_OPERATIONS = {
   .select_item = common_midi_program_change
 };
 
-static const struct fs_operations *FS_DEFAULT_OPERATIONS[] = {
-  &FS_PROGRAM_DEFAULT_OPERATIONS, NULL
-};
-
 gint
 default_handshake (struct backend *backend)
 {
-  backend->filesystems = FS_PROGRAM_DEFAULT;
-  backend->fs_ops = FS_DEFAULT_OPERATIONS;
+  backend_fill_fs_ops (backend, &FS_PROGRAM_DEFAULT_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "%s", _("MIDI device"));
   return 0;
 }

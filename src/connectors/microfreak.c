@@ -1344,11 +1344,6 @@ static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
   .get_upload_path = common_slot_get_upload_path,
 };
 
-static const struct fs_operations *FS_MICROFREAK_OPERATIONS[] = {
-  &FS_MICROFREAK_PRESET_OPERATIONS, &FS_MICROFREAK_ZPRESET_OPERATIONS,
-  &FS_MICROFREAK_SAMPLE_OPERATIONS, NULL
-};
-
 gint
 microfreak_handshake_int (struct backend *backend)
 {
@@ -1403,9 +1398,9 @@ microfreak_handshake (struct backend *backend)
 	}
     }
 
-  backend->filesystems =
-    FS_MICROFREAK_PRESET | FS_MICROFREAK_ZPRESET | FS_MICROFREAK_SAMPLE;
-  backend->fs_ops = FS_MICROFREAK_OPERATIONS;
+  backend_fill_fs_ops (backend, &FS_MICROFREAK_PRESET_OPERATIONS,
+		       &FS_MICROFREAK_ZPRESET_OPERATIONS,
+		       &FS_MICROFREAK_SAMPLE_OPERATIONS, NULL);
   backend->destroy_data = backend_destroy_data;
   backend->get_storage_stats = microfreak_get_storage_stats;
   backend->storage = 1;

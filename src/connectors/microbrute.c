@@ -497,10 +497,6 @@ static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .get_download_path = microbrute_get_download_path
 };
 
-static const struct fs_operations *FS_MICROBRUTE_OPERATIONS_LIST[] = {
-  &FS_MICROBRUTE_OPERATIONS, NULL
-};
-
 gint
 microbrute_handshake (struct backend *backend)
 {
@@ -516,8 +512,7 @@ microbrute_handshake (struct backend *backend)
   seq = g_malloc (sizeof (guint8));
   *seq = 0;
 
-  backend->filesystems = FS_MICROBRUTE_SEQUENCE;
-  backend->fs_ops = FS_MICROBRUTE_OPERATIONS_LIST;
+  backend_fill_fs_ops (backend, &FS_MICROBRUTE_OPERATIONS, NULL);
   backend->destroy_data = backend_destroy_data;
   backend->data = seq;
 

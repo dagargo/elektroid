@@ -307,7 +307,7 @@ cli_info (int argc, gchar *argv[], int *optind)
   gchar *device_path;
   gint err;
   gboolean first;
-  const struct fs_operations **ops;
+  GSList *e;
 
   if (*optind == argc)
     {
@@ -333,20 +333,17 @@ cli_info (int argc, gchar *argv[], int *optind)
   printf ("Connector name: %s\n", backend.conn_name);
   printf ("Filesystems: ");
 
-  ops = backend.fs_ops;
+  e = backend.fs_ops;
   first = TRUE;
-  while (*ops)
+  while (e)
     {
-      const gchar *name = (*ops)->name;
-      gboolean available = (backend.filesystems & (*ops)->fs);
-      if (available)
-	{
-	  gboolean cli_only = (*ops)->gui_name == NULL;
-	  printf ("%s%s%s", first ? "" : ", ", name,
-		  cli_only ? " (CLI only)" : "");
-	  first = FALSE;
-	}
-      ops++;
+      const struct fs_operations *fs_ops = e->data;
+      const gchar *name = fs_ops->name;
+      gboolean cli_only = fs_ops->gui_name == NULL;
+      printf ("%s%s%s", first ? "" : ", ", name,
+	      cli_only ? " (CLI only)" : "");
+      first = FALSE;
+      e = e->next;
     }
   printf ("\n");
 

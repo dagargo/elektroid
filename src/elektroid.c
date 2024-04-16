@@ -2225,37 +2225,31 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
 static gboolean
 elektroid_fill_fs_combo_bg (gpointer data)
 {
-  const struct fs_operations *ops;
-  gint fs, i;
+  const struct fs_operations *fs_ops;
+  GSList *e;
+  gboolean any = FALSE;
 
   gtk_list_store_clear (fs_list_store);
 
-  if (!backend.filesystems)
+  e = backend.fs_ops;
+  while (e)
     {
-      elektroid_set_fs (NULL, NULL);
-      return FALSE;
-    }
-
-  for (fs = 1, i = 0; i < MAX_BACKEND_FSS; fs = fs << 1, i++)
-    {
-      if (backend.filesystems & fs)
+      fs_ops = e->data;
+      if (fs_ops->gui_name)
 	{
-	  ops = backend_get_fs_operations (&backend, fs, NULL);
-	  if (ops->gui_name)
-	    {
-	      gtk_list_store_insert_with_values (fs_list_store, NULL, -1,
-						 FS_LIST_STORE_ID_FIELD,
-						 fs,
-						 FS_LIST_STORE_ICON_FIELD,
-						 ops->gui_icon,
-						 FS_LIST_STORE_NAME_FIELD,
-						 elektroid_get_fs_name (fs),
-						 -1);
-	    }
+	  any = TRUE;
+	  gtk_list_store_insert_with_values (fs_list_store, NULL, -1,
+					     FS_LIST_STORE_ID_FIELD,
+					     fs_ops->fs,
+					     FS_LIST_STORE_ICON_FIELD,
+					     fs_ops->gui_icon,
+					     FS_LIST_STORE_NAME_FIELD,
+					     fs_ops->gui_name, -1);
 	}
+      e = e->next;
     }
 
-  if (i)
+  if (any)
     {
       debug_print (1, "Selecting first filesystem...\n");
       gtk_combo_box_set_active (GTK_COMBO_BOX (fs_combo), 0);
