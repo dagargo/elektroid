@@ -1843,20 +1843,13 @@ elektroid_add_download_task_path (const gchar *rel_path,
 
   while (!next_item_iterator (&iter))
     {
-      if (!(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
-	  || iter.item.slot_used)
-	{
-	  filename = get_filename (remote_browser.fs_ops->options,
-				   &iter.item);
-	  path = path_chain (PATH_INTERNAL, rel_path, filename);
-	  elektroid_add_download_task_path (path, src_dir, dst_dir);
-	  printf ("name: %s\n", filename);
-	  g_free (path);
-	  g_free (filename);
-
-	}
-
-      printf ("next\n");
+      filename = get_filename (remote_browser.fs_ops->options, &iter.item);
+      path = path_chain (PATH_INTERNAL, rel_path, filename);
+      elektroid_add_download_task_path (path, src_dir, dst_dir);
+      debug_print (1, "name: %s\n", filename);
+      g_free (path);
+      g_free (filename);
+      debug_print (1, "next\n");
     }
 
   free_item_iterator (&iter);

@@ -218,7 +218,6 @@ phatty_next_root_dentry (struct item_iterator *iter)
       iter->item.id = 0x1000;
       iter->item.type = ELEKTROID_DIR;
       iter->item.size = -1;
-      iter->item.slot_used = TRUE;
     }
   else if (*next == 1)
     {
@@ -226,7 +225,6 @@ phatty_next_root_dentry (struct item_iterator *iter)
       iter->item.id = PHATTY_PANEL_ID;
       iter->item.type = ELEKTROID_FILE;
       iter->item.size = -1;
-      iter->item.slot_used = TRUE;
     }
   else
     {
@@ -262,7 +260,6 @@ phatty_next_preset_dentry (struct item_iterator *iter)
   iter->item.id = data->next;
   iter->item.type = ELEKTROID_FILE;
   iter->item.size = PHATTY_PROGRAM_SIZE;
-  iter->item.slot_used = TRUE;
   (data->next)++;
 
   free_msg (rx_msg);

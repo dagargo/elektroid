@@ -285,7 +285,6 @@ microfreak_next_preset_dentry (struct item_iterator *iter)
   iter->item.id = data->next;
   iter->item.type = ELEKTROID_FILE;
   iter->item.size = -1;
-  iter->item.slot_used = TRUE;
   category = microfreak_get_category_name (rx_msg);
   snprintf (iter->item.object_info, LABEL_MAX, "%s", category);
   (data->next)++;
@@ -948,7 +947,6 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
   iter->item.id = data->next;
   iter->item.type = ELEKTROID_FILE;
   iter->item.size = header->size;
-  iter->item.slot_used = TRUE;
   (data->next)++;
   g_free (header);
 

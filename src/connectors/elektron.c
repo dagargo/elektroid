@@ -1837,7 +1837,6 @@ elektron_next_data_entry (struct item_iterator *iter)
       data->pos += sizeof (guint32);	// child entries
       iter->item.size = 0;
       iter->item.id = -1;
-      iter->item.slot_used = TRUE;
       data->operations = 0;
       data->has_valid_data = 0;
       data->has_metadata = 0;
@@ -1852,8 +1851,6 @@ elektron_next_data_entry (struct item_iterator *iter)
       data32 = (guint32 *) & data->msg->data[data->pos];
       iter->item.size = g_ntohl (*data32);
       data->pos += sizeof (guint32);
-
-      iter->item.slot_used = TRUE;
 
       data16 = (guint16 *) & data->msg->data[data->pos];
       data->operations = g_ntohs (*data16);
@@ -1878,7 +1875,6 @@ not_found:
   iter->item.name[0] = 0;
   iter->item.size = -1;
   iter->item.id++;
-  iter->item.slot_used = FALSE;
   data->operations = 0;
   data->has_valid_data = 0;
   data->has_metadata = 0;
