@@ -1892,8 +1892,6 @@ elektroid_add_download_tasks_runner (gpointer data)
   queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
 
-  backend_enable_cache (remote_browser.backend);
-
   selected_rows = gtk_tree_selection_get_selected_rows (selection, NULL);
   while (selected_rows)
     {
@@ -1921,8 +1919,6 @@ elektroid_add_download_tasks_runner (gpointer data)
       selected_rows = g_list_next (selected_rows);
     }
   g_list_free_full (selected_rows, (GDestroyNotify) gtk_tree_path_free);
-
-  backend_disable_cache (remote_browser.backend);
 
   queued_after = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					NULL, NULL, NULL);
@@ -2447,7 +2443,7 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 {
   gint64 start;
   GtkTreeIter iter;
-  gboolean queued_before, queued_after, active, cache;
+  gboolean queued_before, queued_after, active;
   struct elektroid_dnd_data *dnd_data = data;
   GtkWidget *widget = dnd_data->widget;
 
@@ -2461,14 +2457,6 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 
   queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
-
-  cache = widget == GTK_WIDGET (local_browser.view) &&
-    !strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID);
-
-  if (cache)
-    {
-      backend_enable_cache (&backend);
-    }
 
   for (gint i = 0; dnd_data->uris[i] != NULL; i++)
     {
@@ -2524,11 +2512,6 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
     }
 
 end:
-  if (cache)
-    {
-      backend_disable_cache (&backend);
-    }
-
   queued_after = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					NULL, NULL, NULL);
   if (!queued_before && queued_after)

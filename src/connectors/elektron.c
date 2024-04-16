@@ -806,11 +806,11 @@ elektron_rx (struct backend *backend, gint timeout)
   return msg;
 }
 
-//Not synchronized. Only meant to be called from elektron_tx_and_rx_timeout.
+//Synchronized
 
 static GByteArray *
-elektron_tx_and_rx_timeout_no_cache (struct backend *backend,
-				     GByteArray *tx_msg, gint timeout)
+elektron_tx_and_rx_timeout (struct backend *backend,
+			    GByteArray *tx_msg, gint timeout)
 {
   ssize_t len;
   guint16 seq;
@@ -818,6 +818,8 @@ elektron_tx_and_rx_timeout_no_cache (struct backend *backend,
   guint msg_type = tx_msg->data[4] | 0x80;
   struct elektron_data *data = backend->data;
   gint t = timeout < 0 ? BE_SYSEX_TIMEOUT_MS : timeout;
+
+  g_mutex_lock (&backend->mutex);
 
   seq = data->seq;
   len = elektron_tx (backend, tx_msg);
@@ -855,51 +857,9 @@ elektron_tx_and_rx_timeout_no_cache (struct backend *backend,
     }
 
 cleanup:
+  g_mutex_unlock (&backend->mutex);
   free_msg (tx_msg);
   return rx_msg;
-}
-
-//Synchronized
-
-static GByteArray *
-elektron_tx_and_rx_timeout (struct backend *backend, GByteArray *tx_msg,
-			    gint timeout)
-{
-  GBytes *key;
-  GByteArray *rx_msg, *ret = NULL;
-
-  g_mutex_lock (&backend->mutex);
-  if (backend->cache)
-    {
-      key = g_bytes_new (tx_msg->data, tx_msg->len);
-      rx_msg = g_hash_table_lookup (backend->cache, key);
-      if (rx_msg)
-	{
-	  ret = g_byte_array_sized_new (rx_msg->len);
-	  g_byte_array_append (ret, rx_msg->data, rx_msg->len);
-	  g_bytes_unref (key);
-	  goto end;
-	}
-
-      rx_msg = elektron_tx_and_rx_timeout_no_cache (backend, tx_msg, timeout);
-      if (!rx_msg)
-	{
-	  g_bytes_unref (key);
-	  goto end;
-	}
-
-      ret = g_byte_array_sized_new (rx_msg->len);
-      g_byte_array_append (ret, rx_msg->data, rx_msg->len);
-      g_hash_table_insert (backend->cache, key, rx_msg);
-    }
-  else
-    {
-      ret = elektron_tx_and_rx_timeout_no_cache (backend, tx_msg, timeout);
-    }
-
-end:
-  g_mutex_unlock (&backend->mutex);
-  return ret;
 }
 
 static GByteArray *

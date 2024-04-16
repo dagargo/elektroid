@@ -107,8 +107,6 @@ struct backend
   gchar description[LABEL_MAX];
   guint32 storage;
   GMutex mutex;
-  //Message cache
-  GHashTable *cache;
   //This must be filled by the concrete connector.
   const gchar *conn_name;
   GSList *fs_ops;
@@ -149,10 +147,6 @@ GByteArray *backend_tx_and_rx_sysex (struct backend *, GByteArray *, gint);
 void backend_rx_drain (struct backend *);
 
 gboolean backend_check (struct backend *);
-
-void backend_enable_cache (struct backend *);
-
-void backend_disable_cache (struct backend *);
 
 GArray *backend_get_devices ();
 

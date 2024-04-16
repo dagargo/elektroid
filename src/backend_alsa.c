@@ -70,7 +70,6 @@ backend_init_int (struct backend *backend, const gchar *id)
   backend->outputp = NULL;
   backend->pfds = NULL;
   backend->rx_len = 0;
-  backend->cache = NULL;
   backend->buffer = NULL;
 
   backend->buffer = g_malloc (sizeof (guint8) * BE_INT_BUF_LEN);

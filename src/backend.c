@@ -64,31 +64,6 @@ backend_get_fs_operations (struct backend *backend, gint fs,
 }
 
 void
-backend_enable_cache (struct backend *backend)
-{
-  g_mutex_lock (&backend->mutex);
-  if (!backend->cache)
-    {
-      backend->cache = g_hash_table_new_full (g_bytes_hash, g_bytes_equal,
-					      (GDestroyNotify) g_bytes_unref,
-					      (GDestroyNotify) free_msg);
-    }
-  g_mutex_unlock (&backend->mutex);
-}
-
-void
-backend_disable_cache (struct backend *backend)
-{
-  g_mutex_lock (&backend->mutex);
-  if (backend->cache)
-    {
-      g_hash_table_destroy (backend->cache);
-      backend->cache = NULL;
-    }
-  g_mutex_unlock (&backend->mutex);
-}
-
-void
 backend_midi_handshake (struct backend *backend)
 {
   GByteArray *tx_msg;
@@ -187,14 +162,16 @@ backend_tx (struct backend *backend, GByteArray *tx_msg)
   return transfer.err;
 }
 
-//Not synchronized. Only meant to be called from backend_tx_and_rx_sysex_transfer.
+//Synchronized
 
-static gint
-backend_tx_and_rx_sysex_transfer_no_cache (struct backend *backend,
-					   struct sysex_transfer *transfer,
-					   gboolean free)
+gint
+backend_tx_and_rx_sysex_transfer (struct backend *backend,
+				  struct sysex_transfer *transfer,
+				  gboolean free)
 {
   transfer->batch = FALSE;
+
+  g_mutex_lock (&backend->mutex);
 
   backend_tx_sysex (backend, transfer);
   if (free)
@@ -207,51 +184,8 @@ backend_tx_and_rx_sysex_transfer_no_cache (struct backend *backend,
       backend_rx_sysex (backend, transfer);
     }
 
-  return transfer->err;
-}
-
-//Synchronized
-
-gint
-backend_tx_and_rx_sysex_transfer (struct backend *backend,
-				  struct sysex_transfer *transfer,
-				  gboolean free)
-{
-  GBytes *key;
-  GByteArray *rx_msg;
-  transfer->batch = FALSE;
-
-  g_mutex_lock (&backend->mutex);
-  if (backend->cache)
-    {
-      key = g_bytes_new (transfer->raw->data, transfer->raw->len);
-      rx_msg = g_hash_table_lookup (backend->cache, key);
-      if (rx_msg)
-	{
-	  transfer->raw = g_byte_array_sized_new (rx_msg->len);
-	  g_byte_array_append (transfer->raw, rx_msg->data, rx_msg->len);
-	  transfer->err = 0;
-	  g_bytes_unref (key);
-	  goto end;
-	}
-
-      if (backend_tx_and_rx_sysex_transfer_no_cache (backend, transfer, free))
-	{
-	  g_bytes_unref (key);
-	  goto end;
-	}
-
-      rx_msg = g_byte_array_sized_new (transfer->raw->len);
-      g_byte_array_append (rx_msg, transfer->raw->data, transfer->raw->len);
-      g_hash_table_insert (backend->cache, key, rx_msg);
-    }
-  else
-    {
-      backend_tx_and_rx_sysex_transfer_no_cache (backend, transfer, free);
-    }
-
-end:
   g_mutex_unlock (&backend->mutex);
+
   return transfer->err;
 }
 
@@ -395,8 +329,6 @@ backend_destroy (struct backend *backend)
     {
       backend->destroy_data (backend);
     }
-
-  backend_disable_cache (backend);
 
   if (backend->type == BE_TYPE_MIDI)
     {
