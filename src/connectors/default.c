@@ -67,7 +67,7 @@ default_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 const struct fs_operations FS_PROGRAM_DEFAULT_OPERATIONS = {
-  .fs = FS_PROGRAM_DEFAULT,
+  .id = FS_PROGRAM_DEFAULT,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
     FS_OPTION_SORT_BY_ID,
   .name = "program",

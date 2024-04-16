@@ -323,7 +323,7 @@ cz_upload (struct backend *backend, const gchar *path, GByteArray *input,
 //it won't work with the id as the filename so the item name must be used.
 
 static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
-  .fs = FS_PROGRAM_CZ,
+  .id = FS_PROGRAM_CZ,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
     FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "program",

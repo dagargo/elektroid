@@ -50,7 +50,7 @@ static gint
 backend_get_fs_operations_id_comparator (gconstpointer a, gconstpointer b)
 {
   const struct fs_operations *ops = a;
-  return ops->fs != *((guint32 *) b);
+  return ops->id != *((guint32 *) b);
 }
 
 const struct fs_operations *

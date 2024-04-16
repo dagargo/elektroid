@@ -423,7 +423,7 @@ efactor_get_slot (struct item *item, struct backend *backend)
 }
 
 static const struct fs_operations FS_EFACTOR_OPERATIONS = {
-  .fs = FS_EFACTOR_PRESET,
+  .id = FS_EFACTOR_PRESET,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
     FS_OPTION_SHOW_SLOT_COLUMN,

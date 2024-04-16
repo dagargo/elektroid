@@ -2514,8 +2514,8 @@ elektron_get_download_name (struct backend *backend,
   gchar *dir, *name;
   struct item_iterator *iter;
 
-  if (ops->fs == FS_SAMPLES || ops->fs == FS_RAW_ALL
-      || ops->fs == FS_RAW_PRESETS)
+  if (ops->id == FS_SAMPLES || ops->id == FS_RAW_ALL
+      || ops->id == FS_RAW_PRESETS)
     {
       return g_path_get_basename (src_path);
     }
@@ -2593,7 +2593,7 @@ elektron_get_upload_path_smplrw (struct backend *backend,
   aux = path_chain (PATH_INTERNAL, dst_dir, name);
   g_free (name);
 
-  if (ops->fs == FS_RAW_ALL || ops->fs == FS_RAW_PRESETS)
+  if (ops->id == FS_RAW_ALL || ops->id == FS_RAW_PRESETS)
     {
       path = elektron_add_ext_to_mc_snd (aux);
       g_free (aux);
@@ -2909,10 +2909,9 @@ elektron_sample_save (const gchar *path, GByteArray *sample,
 }
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
-  .fs = FS_SAMPLES,
-  .options =
-    FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SORT_BY_NAME | FS_OPTION_MONO |
-    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .id = FS_SAMPLES,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SORT_BY_NAME |
+    FS_OPTION_MONO | FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "sample",
   .gui_name = "Samples",
   .gui_icon = BE_FILE_ICON_WAVE,
@@ -2935,7 +2934,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
 };
 
 static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
-  .fs = FS_RAW_ALL,
+  .id = FS_RAW_ALL,
   .options = 0,
   .name = "raw",
   .type_ext = "raw",
@@ -2957,7 +2956,7 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
 };
 
 static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
-  .fs = FS_RAW_PRESETS,
+  .id = FS_RAW_PRESETS,
   .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_SHOW_SIZE_COLUMN |
     FS_OPTION_ALLOW_SEARCH,
   .name = "preset",
@@ -2982,7 +2981,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
 };
 
 static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
-  .fs = FS_DATA_ALL,
+  .id = FS_DATA_ALL,
   .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE,
   .name = "data",
@@ -3005,7 +3004,7 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
 };
 
 static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
-  .fs = FS_DATA_PRJ,
+  .id = FS_DATA_PRJ,
   .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
@@ -3031,7 +3030,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
 };
 
 static const struct fs_operations FS_DATA_SND_OPERATIONS = {
-  .fs = FS_DATA_SND,
+  .id = FS_DATA_SND,
   .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
@@ -3057,7 +3056,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
 };
 
 static const struct fs_operations FS_DATA_PST_OPERATIONS = {
-  .fs = FS_DATA_PST,
+  .id = FS_DATA_PST,
   .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
@@ -3235,7 +3234,7 @@ elektron_configure_device (struct backend *backend, guint8 id)
   const struct fs_operations **fs_ops = FS_OPERATIONS;
   while (*fs_ops)
     {
-      if ((*fs_ops)->fs & filesystems)
+      if ((*fs_ops)->id & filesystems)
 	{
 	  backend->fs_ops =
 	    g_slist_append (backend->fs_ops, (gpointer) * fs_ops);

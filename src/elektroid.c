@@ -176,12 +176,6 @@ elektroid_usleep_since (gint64 timeout, gint64 start)
     }
 }
 
-inline static const gchar *
-elektroid_get_fs_name (guint fs)
-{
-  return backend_get_fs_operations (&backend, fs, NULL)->gui_name;
-}
-
 static void
 show_error_msg (const char *format, ...)
 {
@@ -1348,9 +1342,10 @@ elektroid_run_next (gpointer data)
       tasks.transfer.fs_ops = backend_get_fs_operations_by_id (&backend, fs);
       tasks.transfer.batch_id = batch_id;
       tasks.transfer.mode = mode;
-      debug_print (1, "Running task type %d from %s to %s (%s)...\n", type,
-		   tasks.transfer.src, tasks.transfer.dst,
-		   elektroid_get_fs_name (fs));
+      debug_print (1,
+		   "Running task type %d from %s to %s (filesystem %s)...\n",
+		   type, tasks.transfer.src, tasks.transfer.dst,
+		   tasks.transfer.fs_ops->name);
 
       if (type == TASK_TYPE_UPLOAD)
 	{
@@ -1511,8 +1506,7 @@ elektroid_upload_task_runner (gpointer data)
     }
 
   debug_print (1, "Writing from file %s (filesystem %s)...\n",
-	       tasks.transfer.src,
-	       elektroid_get_fs_name (tasks.transfer.fs_ops->fs));
+	       tasks.transfer.src, tasks.transfer.fs_ops->name);
 
   if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
     {
@@ -1619,7 +1613,7 @@ elektroid_add_upload_task_path (const gchar *rel_path, const gchar *src_dir,
 	  upload_path = strdup (dst_abs_dir);
 	}
       tasks_add (&tasks, TASK_TYPE_UPLOAD, src_abs_path, upload_path,
-		 remote_browser.fs_ops->fs, &backend);
+		 remote_browser.fs_ops->id, &backend);
       g_free (upload_path);
       g_free (dst_abs_dir);
       g_free (dst_abs_path);
@@ -1780,10 +1774,8 @@ elektroid_download_task_runner (gpointer userdata)
 
   if (tasks.transfer.status != TASK_STATUS_CANCELED)
     {
-      debug_print (1,
-		   "Writing %d bytes to file %s (filesystem %s)...\n",
-		   array->len, dst_path,
-		   elektroid_get_fs_name (tasks.transfer.fs_ops->fs));
+      debug_print (1, "Writing %d bytes to file %s (filesystem %s)...\n",
+		   array->len, dst_path, tasks.transfer.fs_ops->name);
       res =
 	tasks.transfer.fs_ops->save (dst_path, array,
 				     &tasks.transfer.control);
@@ -1843,7 +1835,7 @@ elektroid_add_download_task_path (const gchar *rel_path,
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
       tasks_add (&tasks, TASK_TYPE_DOWNLOAD, src_abs_path, dst_abs_dir,
-		 remote_browser.fs_ops->fs, &backend);
+		 remote_browser.fs_ops->id, &backend);
       g_free (dst_abs_dir);
       g_free (dst_abs_path);
       goto cleanup;
@@ -2236,7 +2228,7 @@ elektroid_fill_fs_combo_bg (gpointer data)
 	  any = TRUE;
 	  gtk_list_store_insert_with_values (fs_list_store, NULL, -1,
 					     FS_LIST_STORE_ID_FIELD,
-					     fs_ops->fs,
+					     fs_ops->id,
 					     FS_LIST_STORE_ICON_FIELD,
 					     fs_ops->gui_icon,
 					     FS_LIST_STORE_NAME_FIELD,
@@ -2434,7 +2426,7 @@ elektroid_add_upload_task_slot (const gchar *name,
       dst_file_path = g_string_free (str, FALSE);
 
       tasks_add (&tasks, TASK_TYPE_UPLOAD, src_file_path, dst_file_path,
-		 remote_browser.fs_ops->fs, &backend);
+		 remote_browser.fs_ops->id, &backend);
     }
 }
 

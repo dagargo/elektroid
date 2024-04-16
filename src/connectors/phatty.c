@@ -425,7 +425,7 @@ end:
 }
 
 static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
-  .fs = FS_PHATTY_PRESET,
+  .id = FS_PHATTY_PRESET,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
@@ -488,7 +488,7 @@ phatty_scale_upload (struct backend *backend, const gchar *path,
 }
 
 static const struct fs_operations FS_PHATTY_SCALE_OPERATIONS = {
-  .fs = FS_PHATTY_SCALE,
+  .id = FS_PHATTY_SCALE,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "scale",

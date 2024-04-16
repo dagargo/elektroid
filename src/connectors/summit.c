@@ -137,7 +137,7 @@ summit_get_patch_download_path (struct backend *backend,
       return NULL;
     }
 
-  memcpy (name, SUMMIT_GET_NAME_FROM_MSG (patch, ops->fs),
+  memcpy (name, SUMMIT_GET_NAME_FROM_MSG (patch, ops->id),
 	  SUMMIT_PATCH_NAME_LEN);
   name[SUMMIT_PATCH_NAME_LEN] = 0;
   summit_truncate_name_at_last_useful_char (&name[SUMMIT_PATCH_NAME_LEN - 1]);
@@ -548,7 +548,7 @@ summit_multi_patch_change (struct backend *backend, const gchar *dir,
 }
 
 static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
-  .fs = FS_SUMMIT_SINGLE_PATCH,
+  .id = FS_SUMMIT_SINGLE_PATCH,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
@@ -573,7 +573,7 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
 };
 
 static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
-  .fs = FS_SUMMIT_MULTI_PATCH,
+  .id = FS_SUMMIT_MULTI_PATCH,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
@@ -645,7 +645,7 @@ summit_tuning_upload (struct backend *backend, const gchar *path,
 }
 
 static const struct fs_operations FS_SUMMIT_SCALE_OPERATIONS = {
-  .fs = FS_SUMMIT_SCALE,
+  .id = FS_SUMMIT_SCALE,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "scale",
@@ -701,7 +701,7 @@ end:
 }
 
 static const struct fs_operations FS_SUMMIT_BULK_TUNING_OPERATIONS = {
-  .fs = FS_SUMMIT_BULK_TUNING,
+  .id = FS_SUMMIT_BULK_TUNING,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
   .name = "tuning",
@@ -965,7 +965,7 @@ summit_wavetable_rename (struct backend *backend, const gchar *src,
 }
 
 static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
-  .fs = FS_SUMMIT_WAVETABLE,
+  .id = FS_SUMMIT_WAVETABLE,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN,
