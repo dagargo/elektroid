@@ -358,7 +358,7 @@ cli_df (int argc, gchar *argv[], int *optind)
   gchar *size;
   gchar *diff;
   gchar *free;
-  gint err, storage;
+  gint err;
   struct backend_storage_stats statfs;
 
   if (*optind == argc)
@@ -378,7 +378,7 @@ cli_df (int argc, gchar *argv[], int *optind)
       return err;
     }
 
-  if (!backend.storage || !backend.get_storage_stats)
+  if (!backend.get_storage_stats)
     {
       return -ENOSYS;
     }
@@ -393,15 +393,11 @@ cli_df (int argc, gchar *argv[], int *optind)
 	  "Used", "Available", "Use%");
 
   err = 0;
-  for (storage = 1; storage < MAX_BACKEND_STORAGE; storage <<= 1)
+  for (guint8 i = 0; i < G_MAXUINT8; i++)
     {
-      if (backend.storage & storage)
+      gint v = backend.get_storage_stats (&backend, i, &statfs, path);
+      if (v >= 0)
 	{
-	  err |= backend.get_storage_stats (&backend, storage, &statfs, path);
-	  if (err)
-	    {
-	      continue;
-	    }
 	  size = get_human_size (statfs.bsize, FALSE);
 	  diff = get_human_size (statfs.bsize - statfs.bfree, FALSE);
 	  free = get_human_size (statfs.bfree, FALSE);
@@ -413,7 +409,10 @@ cli_df (int argc, gchar *argv[], int *optind)
 	  g_free (free);
 	}
 
-      usleep (BE_REST_TIME_US);
+      if (!v)
+	{
+	  break;
+	}
     }
 
   return err;

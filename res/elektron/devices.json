@@ -15,7 +15,7 @@
 	"name": "Elektron Analog Rytm",
 	"alias": "ar",
 	"filesystems": 57,
-	"storage": 3
+	"storage": 2
 }, {
 	"id": 10,
 	"name": "Elektron Analog Heat",
@@ -27,7 +27,7 @@
 	"name": "Elektron Digitakt",
 	"alias": "dt",
 	"filesystems": 57,
-	"storage": 3
+	"storage": 2
 }, {
 	"id": 14,
 	"name": "Elektron Analog Four MKII",
@@ -39,7 +39,7 @@
 	"name": "Elektron Analog Rytm MKII",
 	"alias": "ar",
 	"filesystems": 57,
-	"storage": 3
+	"storage": 2
 }, {
 	"id": 20,
 	"name": "Elektron Digitone",
@@ -63,7 +63,7 @@
 	"name": "Elektron Model:Samples",
 	"alias": "ms",
 	"filesystems": 57,
-	"storage": 3
+	"storage": 2
 }, {
 	"id": 27,
 	"name": "Elektron Model:Cycles",

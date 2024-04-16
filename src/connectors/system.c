@@ -667,7 +667,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_32_16_MONO_OPERATIONS = {
 
 #if defined (__linux__)
 static gint
-system_get_storage_stats (struct backend *backend, gint type,
+system_get_storage_stats (struct backend *backend, guint8 type,
 			  struct backend_storage_stats *statfs,
 			  const gchar *path)
 {
@@ -737,10 +737,8 @@ system_init_backend (struct backend *backend, const gchar *id)
   backend->upgrade_os = NULL;
 #if defined (__linux__)
   backend->get_storage_stats = system_get_storage_stats;
-  backend->storage = 1;
 #else
   backend->get_storage_stats = NULL;
-  backend->storage = 0;
 #endif
   return 0;
 }

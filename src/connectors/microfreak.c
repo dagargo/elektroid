@@ -1286,7 +1286,7 @@ microfreak_get_bfree_from_msg (GByteArray *rx_msg)
 }
 
 static gint
-microfreak_get_storage_stats (struct backend *backend, gint type,
+microfreak_get_storage_stats (struct backend *backend, guint8 type,
 			      struct backend_storage_stats *statfs,
 			      const gchar *path)
 {
@@ -1401,7 +1401,6 @@ microfreak_handshake (struct backend *backend)
 		       &FS_MICROFREAK_SAMPLE_OPERATIONS, NULL);
   backend->destroy_data = backend_destroy_data;
   backend->get_storage_stats = microfreak_get_storage_stats;
-  backend->storage = 1;
 
   snprintf (backend->name, LABEL_MAX, "Arturia MicroFreak");
 

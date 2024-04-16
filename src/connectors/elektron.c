@@ -80,15 +80,10 @@ struct elektron_iterator_data
   gint32 max_slots;
 };
 
-enum elektron_storage
-{
-  STORAGE_PLUS_DRIVE = 0x1,
-  STORAGE_RAM = 0x2
-};
-
 struct elektron_data
 {
   guint16 seq;
+  guint8 storage;
   struct device_desc device_desc;
 };
 
@@ -1738,18 +1733,18 @@ end:
 }
 
 static gint
-elektron_get_storage_stats (struct backend *backend, gint type,
+elektron_get_storage_stats (struct backend *backend, guint8 type,
 			    struct backend_storage_stats *statfs,
 			    const gchar *path)
 {
   GByteArray *tx_msg, *rx_msg;
   gint8 op;
-  guint64 *data;
-  int index;
+  guint64 *v;
   gint res = 0;
+  struct elektron_data *data = backend->data;
 
   tx_msg = elektron_new_msg_uint8 (STORAGEINFO_REQUEST,
-				   sizeof (STORAGEINFO_REQUEST), type);
+				   sizeof (STORAGEINFO_REQUEST), type + 1);
   rx_msg = elektron_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
@@ -1765,25 +1760,15 @@ elektron_get_storage_stats (struct backend *backend, gint type,
       return -EIO;
     }
 
-  index = 0;
-  for (int i = 0, storage = STORAGE_PLUS_DRIVE; storage <= STORAGE_RAM;
-       i++, storage <<= 1)
-    {
-      if (storage == type)
-	{
-	  index = i;
-	}
-    }
-
-  snprintf (statfs->name, LABEL_MAX, "%s", FS_TYPE_NAMES[index]);
-  data = (guint64 *) & rx_msg->data[6];
-  statfs->bfree = GUINT64_FROM_BE (*data);
-  data = (guint64 *) & rx_msg->data[14];
-  statfs->bsize = GUINT64_FROM_BE (*data);
+  snprintf (statfs->name, LABEL_MAX, "%s", FS_TYPE_NAMES[type]);
+  v = (guint64 *) & rx_msg->data[6];
+  statfs->bfree = GUINT64_FROM_BE (*v);
+  v = (guint64 *) & rx_msg->data[14];
+  statfs->bsize = GUINT64_FROM_BE (*v);
 
   free_msg (rx_msg);
 
-  return res;
+  return res ? res : (type < data->storage - 1);
 }
 
 static gint
@@ -3220,7 +3205,7 @@ elektron_configure_device (struct backend *backend, guint8 id)
 	  err = -ENODEV;
 	  break;
 	}
-      backend->storage = json_reader_get_int_value (reader);
+      data->storage = json_reader_get_int_value (reader);
       json_reader_end_member (reader);
 
       break;
@@ -3337,7 +3322,8 @@ elektron_handshake (struct backend *backend)
 
   backend->destroy_data = backend_destroy_data;
   backend->upgrade_os = elektron_upgrade_os;
-  backend->get_storage_stats = elektron_get_storage_stats;
+  backend->get_storage_stats =
+    data->storage ? elektron_get_storage_stats : NULL;
 
   return 0;
 }

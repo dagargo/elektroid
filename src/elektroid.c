@@ -295,20 +295,20 @@ elektroid_update_backend_status ()
       statfss = g_string_new (NULL);
       if (backend.get_storage_stats)
 	{
-	  for (gint i = 0, storage = 1; i < MAX_BACKEND_STORAGE;
-	       i++, storage <<= 1)
+	  for (guint8 i = 0; i < G_MAXUINT8; i++)
 	    {
-	      if (backend.storage & storage)
+	      gint v = backend.get_storage_stats (&backend, i, &statfs,
+						  remote_browser.dir);
+	      if (v >= 0)
 		{
-		  if (!backend.get_storage_stats (&backend, storage, &statfs,
-						  remote_browser.dir))
-		    {
-		      g_string_append_printf (statfss, " %s %.2f%%",
-					      statfs.name,
-					      backend_get_storage_stats_percent
-					      (&statfs));
-		    }
-		  usleep (BE_REST_TIME_US);
+		  g_string_append_printf (statfss, " %s %.2f%%", statfs.name,
+					  backend_get_storage_stats_percent
+					  (&statfs));
+		}
+
+	      if (!v)
+		{
+		  break;
 		}
 	    }
 	}

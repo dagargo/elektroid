@@ -67,7 +67,7 @@ struct backend_storage_stats
 
 typedef void (*t_destroy_data) (struct backend *);
 
-typedef gint (*t_get_storage_stats) (struct backend *, gint,
+typedef gint (*t_get_storage_stats) (struct backend *, guint8,
 				     struct backend_storage_stats *,
 				     const gchar *);
 
@@ -105,7 +105,6 @@ struct backend
   gchar name[LABEL_MAX];
   gchar version[LABEL_MAX];
   gchar description[LABEL_MAX];
-  guint32 storage;
   GMutex mutex;
   //This must be filled by the concrete connector.
   const gchar *conn_name;
