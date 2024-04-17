@@ -533,7 +533,7 @@ elektroid_rx_sysex ()
   while (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
     {
       filename = gtk_file_chooser_get_filename (chooser);
-      ext = get_ext (filename);
+      ext = get_file_ext (filename);
 
       if (ext == NULL || strcmp (ext, "syx") != 0)
 	{
@@ -884,7 +884,7 @@ elektroid_rename_item (GtkWidget *object, gpointer data)
   old_path = browser_get_item_path (browser, &item);
 
   sel_len = strlen (item.name);
-  ext = get_ext (item.name);
+  ext = get_file_ext (item.name);
   if (ext)
     {
       sel_len -= strlen (ext) + 1;
@@ -1742,10 +1742,9 @@ elektroid_download_task_runner (gpointer userdata)
     }
 
   array = g_byte_array_new ();
-  res =
-    tasks.transfer.fs_ops->download (remote_browser.backend,
-				     tasks.transfer.src, array,
-				     &tasks.transfer.control);
+  res = tasks.transfer.fs_ops->download (remote_browser.backend,
+					 tasks.transfer.src, array,
+					 &tasks.transfer.control);
   g_idle_add (elektroid_check_backend_bg, NULL);
 
   g_mutex_lock (&tasks.transfer.control.mutex);

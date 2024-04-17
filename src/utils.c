@@ -136,7 +136,7 @@ remove_ext (char *name)
 }
 
 const gchar *
-get_ext (const gchar *name)
+get_file_ext (const gchar *name)
 {
   int namelen = strlen (name) - 1;
   int i = namelen;
@@ -407,7 +407,7 @@ file_matches_extensions (const gchar *name, const gchar **extensions)
       return TRUE;
     }
 
-  extension = get_ext (name);
+  extension = get_file_ext (name);
   if (!extension)
     {
       return FALSE;
