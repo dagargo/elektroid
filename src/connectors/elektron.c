@@ -2873,6 +2873,27 @@ elektron_get_dev_exts (struct backend *backend,
   return array;
 }
 
+static gchar **
+elektron_get_dev_exts_pst (struct backend *backend,
+			   const struct fs_operations *ops)
+{
+  struct elektron_data *data = backend->data;
+  if (data->device_desc.id == 32)	//AH +FX
+    {
+      gchar *ext = elektron_get_dev_ext (backend, ops);
+      gchar **exts = g_malloc (sizeof (gchar *) * 3);
+      exts[0] = strdup (ext);
+      exts[2] = strdup ("ahpst");
+      exts[1] = NULL;
+      g_free (ext);
+      return exts;
+    }
+  else
+    {
+      return elektron_get_dev_exts (backend, ops);
+    }
+}
+
 gint
 elektron_sample_load (const gchar *path, GByteArray *sample,
 		      struct job_control *control)
@@ -3091,7 +3112,7 @@ static const struct fs_operations FS_DATA_PST_OPERATIONS = {
   .get_slot = elektron_get_id_as_slot,
   .load = load_file,
   .save = save_file,
-  .get_exts = elektron_get_dev_exts,
+  .get_exts = elektron_get_dev_exts_pst,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
