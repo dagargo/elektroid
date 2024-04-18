@@ -548,7 +548,7 @@ browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
 static void
 browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
 			       struct item_iterator *iter, const gchar *icon,
-			       const gchar **extensions)
+			       gchar **extensions)
 {
   gint err;
   gchar *child_dir, *child_rel_dir;
@@ -589,23 +589,32 @@ browser_load_dir_runner (gpointer data)
   gint err;
   struct browser *browser = data;
   struct item_iterator iter;
-  const gchar **extensions = NULL;
+  gchar **exts;
   const gchar *icon = browser->fs_ops->gui_icon;
   gboolean search_mode;
 
-  if (browser->fs_ops == &FS_LOCAL_GENERIC_OPERATIONS &&
-      remote_browser.fs_ops->get_ext)
+  if (remote_browser.fs_ops)
     {
-      extensions = g_malloc (sizeof (gchar *) * 2);
-      extensions[0] = remote_browser.fs_ops->get_ext (remote_browser.backend,
-						      remote_browser.fs_ops);
-      extensions[1] = NULL;
-      icon = remote_browser.fs_ops->gui_icon;
+      if (remote_browser.fs_ops->get_exts)
+	{
+	  exts = remote_browser.fs_ops->get_exts (remote_browser.backend,
+						  remote_browser.fs_ops);
+	}
+      else
+	{
+	  exts = new_ext_array (remote_browser.fs_ops->ext);
+	}
+    }
+  else
+    {
+      //If !remote_browser.fs_ops, only FS_LOCAL_SAMPLE_OPERATIONS is used, which implements get_exts.
+      exts = local_browser.fs_ops->get_exts (remote_browser.backend,
+					     remote_browser.fs_ops);
     }
 
   g_idle_add (browser_load_dir_runner_show_spinner_and_lock_browser, browser);
   err = browser->fs_ops->readdir (browser->backend, &iter, browser->dir,
-				  extensions);
+				  exts);
   g_idle_add (browser_load_dir_runner_hide_spinner, browser);
   if (err)
     {
@@ -618,7 +627,7 @@ browser_load_dir_runner (gpointer data)
   g_mutex_unlock (&browser->mutex);
   if (search_mode)
     {
-      browser_iterate_dir_recursive (browser, "", &iter, icon, extensions);
+      browser_iterate_dir_recursive (browser, "", &iter, icon, exts);
     }
   else
     {
@@ -627,7 +636,7 @@ browser_load_dir_runner (gpointer data)
 
 end:
   g_idle_add (browser_load_dir_runner_update_ui, browser);
-  g_free (extensions);
+  free_ext_array (exts);
   return NULL;
 }
 

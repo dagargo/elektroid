@@ -298,7 +298,7 @@ end:
 static gint
 microfreak_preset_read_dir (struct backend *backend,
 			    struct item_iterator *iter, const gchar *path,
-			    const gchar **extensions)
+			    gchar **extensions)
 {
   struct microfreak_iter_data *data;
 
@@ -743,7 +743,7 @@ static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
     FS_OPTION_ALLOW_SEARCH,
   .name = "preset",
-  .type_ext = "syx",
+  .ext = "syx",
   .max_name_len = MICROFREAK_PRESET_NAME_LEN,
   .readdir = microfreak_preset_read_dir,
   .print_item = common_print_item,
@@ -753,7 +753,6 @@ static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
   .upload = microfreak_preset_upload,
   .load = load_file,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microfreak_get_preset_download_path,
   .select_item = microfreak_midi_program_change
@@ -875,7 +874,7 @@ static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .name = "zpreset",
   .gui_name = "Presets",
   .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "mfpz",
+  .ext = "mfpz",
   .max_name_len = MICROFREAK_PRESET_NAME_LEN,
   .readdir = microfreak_preset_read_dir,
   .print_item = common_print_item,
@@ -885,7 +884,6 @@ static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .upload = microfreak_preset_upload,
   .load = microfreak_load_zpreset,
   .save = microfreak_save_zpreset,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microfreak_get_preset_download_path,
   .select_item = microfreak_midi_program_change
@@ -959,7 +957,7 @@ end:
 static gint
 microfreak_sample_read_dir (struct backend *backend,
 			    struct item_iterator *iter, const gchar *path,
-			    const gchar **extensions)
+			    gchar **extensions)
 {
   struct microfreak_iter_data *data;
 
@@ -1339,7 +1337,8 @@ static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
   .clear = microfreak_clear_sample,
   .upload = microfreak_upload_sample,
   .load = microfreak_sample_load,
-  .get_upload_path = common_slot_get_upload_path,
+  .get_exts = backend_get_audio_exts,
+  .get_upload_path = common_slot_get_upload_path
 };
 
 gint

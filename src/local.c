@@ -49,7 +49,6 @@ const struct fs_operations FS_LOCAL_SAMPLE_OPERATIONS = {
   .delete = system_delete,
   .rename = system_rename,
   .move = system_rename,
-  .get_ext = backend_get_fs_ext,
-  .type_ext = "wav",
+  .get_exts = backend_get_audio_exts,
   .max_name_len = 255
 };

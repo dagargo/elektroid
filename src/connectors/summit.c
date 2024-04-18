@@ -282,14 +282,14 @@ summit_patch_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 summit_single_read_dir (struct backend *backend, struct item_iterator *iter,
-			const gchar *path, const gchar **extensions)
+			const gchar *path, gchar **extensions)
 {
   return summit_patch_read_dir (backend, iter, path, FS_SUMMIT_SINGLE_PATCH);
 }
 
 static gint
 summit_multi_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *path, const gchar **extensions)
+		       const gchar *path, gchar **extensions)
 {
   return summit_patch_read_dir (backend, iter, path, FS_SUMMIT_MULTI_PATCH);
 }
@@ -554,7 +554,7 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .name = "single",
   .gui_name = "Single",
   .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "syx",
+  .ext = "syx",
   .max_name_len = SUMMIT_PATCH_NAME_LEN,
   .readdir = summit_single_read_dir,
   .print_item = common_print_item,
@@ -564,7 +564,6 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .get_slot = summit_get_patch_id_as_slot,
   .load = load_file,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = summit_get_patch_download_path,
   .select_item = summit_single_patch_change
@@ -579,7 +578,7 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .name = "multi",
   .gui_name = "Multi",
   .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "syx",
+  .ext = "syx",
   .max_name_len = SUMMIT_PATCH_NAME_LEN,
   .readdir = summit_multi_read_dir,
   .print_item = common_print_item,
@@ -589,7 +588,6 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .get_slot = summit_get_patch_id_as_slot,
   .load = load_file,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = summit_get_patch_download_path,
   .select_item = summit_multi_patch_change
@@ -597,7 +595,7 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
 
 static gint
 summit_scale_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *path, const gchar **extensions)
+		       const gchar *path, gchar **extensions)
 {
   struct common_simple_read_dir_data *data;
 
@@ -649,12 +647,11 @@ static const struct fs_operations FS_SUMMIT_SCALE_OPERATIONS = {
   .name = "scale",
   .gui_name = "Scales",
   .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "scl",
+  .ext = "scl",
   .readdir = summit_scale_read_dir,
   .print_item = common_print_item,
   .upload = summit_tuning_upload,
   .load = scl_get_key_based_tuning_msg_from_scala_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path
 };
 
@@ -705,14 +702,13 @@ static const struct fs_operations FS_SUMMIT_BULK_TUNING_OPERATIONS = {
   .name = "tuning",
   .gui_name = "Tunings",
   .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "syx",
+  .ext = "syx",
   .readdir = summit_scale_read_dir,
   .print_item = common_print_item,
   .download = summit_tuning_download,
   .upload = summit_tuning_upload,
   .load = load_file,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_download_path = common_get_download_path,
   .get_upload_path = common_slot_get_upload_path
 };
@@ -783,7 +779,7 @@ summit_get_wavetable_id_as_slot (struct item *item, struct backend *backend)
 static gint
 summit_wavetable_read_dir (struct backend *backend,
 			   struct item_iterator *iter, const gchar *path,
-			   const gchar **extensions)
+			   gchar **extensions)
 {
   if (!strcmp (path, "/"))
     {
@@ -969,7 +965,7 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .name = "wavetable",
   .gui_name = "Wavetables",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .type_ext = "syx",
+  .ext = "syx",
   .max_name_len = SUMMIT_WAVETABLE_NAME_LEN,
   .readdir = summit_wavetable_read_dir,
   .print_item = common_print_item,
@@ -979,7 +975,6 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .get_slot = summit_get_wavetable_id_as_slot,
   .load = load_file,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_download_path = summit_get_wavetable_download_path,
   .get_upload_path = common_slot_get_upload_path
 };

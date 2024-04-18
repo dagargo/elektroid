@@ -21,6 +21,7 @@
 #include <stdarg.h>
 #include "backend.h"
 #include "local.h"
+#include "sample.h"
 
 // When sending a batch of SysEx messages we want the trasfer status to be controlled outside this function.
 // This is what the update parameter is for.
@@ -214,14 +215,6 @@ backend_tx_and_rx_sysex (struct backend *backend, GByteArray *tx_msg,
   transfer.timeout = timeout < 0 ? BE_SYSEX_TIMEOUT_MS : timeout;
   backend_tx_and_rx_sysex_transfer (backend, &transfer, TRUE);
   return transfer.raw;
-}
-
-gchar *
-backend_get_fs_ext (struct backend *backend, const struct fs_operations *ops)
-{
-  gchar *ext = g_malloc (LABEL_MAX);
-  snprintf (ext, LABEL_MAX, "%s", ops->type_ext);
-  return ext;
 }
 
 void
@@ -676,4 +669,11 @@ backend_fill_fs_ops (struct backend *backend, ...)
       backend->fs_ops = g_slist_append (backend->fs_ops, v);
     }
   va_end (argptr);
+}
+
+gchar **
+backend_get_audio_exts (struct backend *backend,
+			const struct fs_operations *ops)
+{
+  return sample_get_sample_extensions ();
 }

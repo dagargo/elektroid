@@ -172,7 +172,7 @@ efactor_next_dentry (struct item_iterator *iter)
 
 static gint
 efactor_read_dir (struct backend *backend, struct item_iterator *iter,
-		  const gchar *path, const gchar **extensions)
+		  const gchar *path, gchar **extensions)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
@@ -429,7 +429,7 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "syx",
+  .ext = "syx",
   .max_name_len = EFACTOR_MAX_NAME_LEN,
   .readdir = efactor_read_dir,
   .print_item = common_print_item,
@@ -439,7 +439,6 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .get_slot = efactor_get_slot,
   .load = load_file,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = efactor_get_download_path,
   .select_item = common_midi_program_change

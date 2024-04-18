@@ -33,7 +33,7 @@ struct system_iterator_data
 {
   GDir *dir;
   gchar *path;
-  const gchar **extensions;
+  gchar **extensions;
 };
 
 static gint
@@ -73,7 +73,7 @@ system_get_download_path (struct backend *backend,
   gchar *name = g_path_get_basename (src_path);
   GString *name_with_ext = g_string_new (NULL);
   remove_ext (name);
-  g_string_append_printf (name_with_ext, "%s.%s", name, ops->type_ext);
+  g_string_append_printf (name_with_ext, "%s.wav", name);
   gchar *path = path_chain (PATH_SYSTEM, dst_dir, name_with_ext->str);
   g_string_free (name_with_ext, TRUE);
   return path;
@@ -219,7 +219,7 @@ system_next_dentry_with_sample_info (struct item_iterator *iter)
 
 static gint
 system_read_dir_opts (struct backend *backend, struct item_iterator *iter,
-		      const gchar *path, const gchar **extensions,
+		      const gchar *path, gchar **extensions,
 		      iterator_next next)
 {
   GDir *dir;
@@ -244,7 +244,7 @@ system_read_dir_opts (struct backend *backend, struct item_iterator *iter,
 
 gint
 system_read_dir (struct backend *backend, struct item_iterator *iter,
-		 const gchar *path, const gchar **extensions)
+		 const gchar *path, gchar **extensions)
 {
   return system_read_dir_opts (backend, iter, path, extensions,
 			       system_next_dentry_without_sample_info);
@@ -252,10 +252,9 @@ system_read_dir (struct backend *backend, struct item_iterator *iter,
 
 gint
 system_samples_read_dir (struct backend *backend, struct item_iterator *iter,
-			 const gchar *path, const gchar **extensions)
+			 const gchar *path, gchar **extensions)
 {
-  return system_read_dir_opts (backend, iter, path,
-			       sample_get_sample_extensions (),
+  return system_read_dir_opts (backend, iter, path, extensions,
 			       system_next_dentry_with_sample_info);
 }
 
@@ -435,10 +434,9 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .upload = system_upload,
   .load = system_load_48_16_stereo,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .type_ext = "wav",
+  .get_exts = backend_get_audio_exts,
   .max_name_len = 255
 };
 
@@ -462,10 +460,9 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .upload = system_upload,
   .load = system_load_48_16_mono,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .type_ext = "wav",
+  .get_exts = backend_get_audio_exts,
   .max_name_len = 255
 };
 
@@ -489,10 +486,9 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .upload = system_upload,
   .load = system_load_441_16_stereo,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .type_ext = "wav",
+  .get_exts = backend_get_audio_exts,
   .max_name_len = 255
 };
 
@@ -519,10 +515,9 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .upload = system_upload,
   .load = system_load_441_16_mono,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .type_ext = "wav",
+  .get_exts = backend_get_audio_exts,
   .max_name_len = 255
 };
 
@@ -545,10 +540,9 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_24_STEREO_OPERATIONS = {
   .upload = system_upload_24_bits,
   .load = system_load_441_24_stereo,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .type_ext = "wav",
+  .get_exts = backend_get_audio_exts,
   .max_name_len = 255
 };
 
@@ -574,10 +568,9 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_24_MONO_OPERATIONS = {
   .upload = system_upload_24_bits,
   .load = system_load_441_24_mono,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .type_ext = "wav",
+  .get_exts = backend_get_audio_exts,
   .max_name_len = 255
 };
 
@@ -600,10 +593,9 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_STEREO_OPERATIONS = {
   .upload = system_upload_8_bits,
   .load = system_load_441_8_stereo,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .type_ext = "wav",
+  .get_exts = backend_get_audio_exts,
   .max_name_len = 255
 };
 
@@ -629,10 +621,9 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_MONO_OPERATIONS = {
   .upload = system_upload_8_bits,
   .load = system_load_441_8_mono,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .type_ext = "wav",
+  .get_exts = backend_get_audio_exts,
   .max_name_len = 255
 };
 
@@ -658,10 +649,9 @@ const struct fs_operations FS_SYSTEM_SAMPLES_32_16_MONO_OPERATIONS = {
   .upload = system_upload,
   .load = system_load_32_16_mono,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .type_ext = "wav",
+  .get_exts = backend_get_audio_exts,
   .max_name_len = 255
 };
 

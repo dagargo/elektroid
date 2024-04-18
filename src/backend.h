@@ -158,8 +158,6 @@ const struct fs_operations *backend_get_fs_operations_by_name (struct backend
 
 const gchar *backend_get_fs_name (struct backend *, guint);
 
-gchar *backend_get_fs_ext (struct backend *, const struct fs_operations *);
-
 gdouble backend_get_storage_stats_percent (struct backend_storage_stats *);
 
 void backend_destroy_data (struct backend *);
@@ -192,5 +190,8 @@ enum path_type backend_get_path_type (struct backend *);
 const gchar *backend_name ();
 
 void backend_fill_fs_ops (struct backend *backend, ...);
+
+gchar **backend_get_audio_exts (struct backend *,
+				const struct fs_operations *);
 
 #endif

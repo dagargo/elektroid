@@ -174,7 +174,7 @@ phatty_get_download_path (struct backend *backend,
     {
       GString *str = g_string_new (NULL);
       g_string_append_printf (str, "%s %s %s.%s", backend->name, ops->name,
-			      PHATTY_PANEL, ops->type_ext);
+			      PHATTY_PANEL, ops->ext);
       path = path_chain (PATH_SYSTEM, dst_dir, str->str);
       g_string_free (str, TRUE);
     }
@@ -268,7 +268,7 @@ phatty_next_preset_dentry (struct item_iterator *iter)
 
 static gint
 phatty_read_dir (struct backend *backend, struct item_iterator *iter,
-		 const gchar *path, const gchar **extensions)
+		 const gchar *path, gchar **extensions)
 {
   gint err = 0;
 
@@ -430,7 +430,7 @@ static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "syx",
+  .ext = "syx",
   .max_name_len = MOOG_NAME_LEN,
   .readdir = phatty_read_dir,
   .print_item = common_print_item,
@@ -440,7 +440,6 @@ static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
   .get_slot = phatty_get_id_as_slot,
   .load = load_file,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = phatty_get_download_path,
   .select_item = common_midi_program_change
@@ -448,7 +447,7 @@ static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
 
 static gint
 phatty_scale_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *path, const gchar **extensions)
+		       const gchar *path, gchar **extensions)
 {
   struct common_simple_read_dir_data *data;
 
@@ -491,12 +490,11 @@ static const struct fs_operations FS_PHATTY_SCALE_OPERATIONS = {
   .name = "scale",
   .gui_name = "Scales",
   .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "scl",
+  .ext = "scl",
   .readdir = phatty_scale_read_dir,
   .print_item = common_print_item,
   .upload = phatty_scale_upload,
   .load = scl_get_2_byte_octave_tuning_msg_from_scala_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path
 };
 

@@ -940,7 +940,7 @@ elektron_read_common_dir (struct backend *backend,
 static gint
 elektron_read_samples_dir (struct backend *backend,
 			   struct item_iterator *iter, const gchar *dir,
-			   const gchar **extensions)
+			   gchar **extensions)
 {
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_SAMPLE_READ_DIR_REQUEST,
@@ -951,7 +951,7 @@ elektron_read_samples_dir (struct backend *backend,
 
 static gint
 elektron_read_raw_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *dir, const gchar **extensions)
+		       const gchar *dir, gchar **extensions)
 {
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_RAW_READ_DIR_REQUEST,
@@ -1923,7 +1923,7 @@ elektron_read_data_dir_prefix (struct backend *backend,
 static gint
 elektron_read_data_dir_any (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
-			    const gchar **extensions)
+			    gchar **extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir, NULL, -1);
 }
@@ -1931,7 +1931,7 @@ elektron_read_data_dir_any (struct backend *backend,
 static gint
 elektron_read_data_dir_prj (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
-			    const gchar **extensions)
+			    gchar **extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_PRJ_PREFIX, 128);
@@ -1940,7 +1940,7 @@ elektron_read_data_dir_prj (struct backend *backend,
 static gint
 elektron_read_data_dir_snd (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
-			    const gchar **extensions)
+			    gchar **extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_SND_PREFIX, 256);
@@ -1949,7 +1949,7 @@ elektron_read_data_dir_snd (struct backend *backend,
 static gint
 elektron_read_data_dir_pst (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
-			    const gchar **extensions)
+			    gchar **extensions)
 {
   struct elektron_data *data = backend->data;
   gint32 slots = data->device_desc.id == 32 ? 512 : 128;	//Analog Heat +FX has 512 presets
@@ -2586,6 +2586,16 @@ elektron_get_upload_path_smplrw (struct backend *backend,
   return path;
 }
 
+static gchar *
+elektron_get_dev_ext (struct backend *backend,
+		      const struct fs_operations *ops)
+{
+  struct elektron_data *data = backend->data;
+  gchar *ext = g_malloc (LABEL_MAX);
+  snprintf (ext, LABEL_MAX, "%s%s", data->device_desc.alias, ops->ext);
+  return ext;
+}
+
 // As Elektron devices provide their own file extension and the file content is
 // not just SysEx, it is not needed to indicate in the filename the type of
 // device, filesystem or id.
@@ -2603,7 +2613,6 @@ elektron_get_download_path (struct backend *backend,
   // 0:/project0
   // 0:/soundbanks/A/1
   // 0:/soundbanks/A/1/.metadata
-  // 0:/loops/sample
 
   if (ext && strcmp (ext, FS_DATA_METADATA_EXT) == 0)
     {
@@ -2621,11 +2630,36 @@ elektron_get_download_path (struct backend *backend,
   if (name)
     {
       GString *filename = g_string_new (NULL);
-      dl_ext = ops->get_ext (backend, ops);
+      dl_ext = elektron_get_dev_ext (backend, ops);
       g_string_append_printf (filename, "%s.%s%s", name, dl_ext, md_ext);
       path = path_chain (PATH_SYSTEM, dst_dir, filename->str);
       g_free (name);
       g_free (dl_ext);
+      g_string_free (filename, TRUE);
+    }
+  else
+    {
+      path = NULL;
+    }
+
+  return path;
+}
+
+static gchar *
+elektron_get_download_path_sample (struct backend *backend,
+				   const struct fs_operations *ops,
+				   const gchar *dst_dir,
+				   const gchar *src_path, GByteArray *data)
+{
+  gchar *path;
+  gchar *name = elektron_get_download_name (backend, ops, src_path);
+
+  if (name)
+    {
+      GString *filename = g_string_new (NULL);
+      g_string_append_printf (filename, "%s.wav", name);
+      path = path_chain (PATH_SYSTEM, dst_dir, filename->str);
+      g_free (name);
       g_string_free (filename, TRUE);
     }
   else
@@ -2829,14 +2863,14 @@ elektron_upload_pkg (struct backend *backend, const gchar *path,
   return ret;
 }
 
-static gchar *
-elektron_get_dev_and_fs_ext (struct backend *backend,
-			     const struct fs_operations *ops)
+static gchar **
+elektron_get_dev_exts (struct backend *backend,
+		       const struct fs_operations *ops)
 {
-  struct elektron_data *data = backend->data;
-  gchar *ext = g_malloc (LABEL_MAX);
-  snprintf (ext, LABEL_MAX, "%s%s", data->device_desc.alias, ops->type_ext);
-  return ext;
+  gchar *ext = elektron_get_dev_ext (backend, ops);
+  gchar **array = new_ext_array (ext);
+  g_free (ext);
+  return array;
 }
 
 gint
@@ -2896,7 +2930,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .name = "sample",
   .gui_name = "Samples",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .type_ext = "wav",
+  .ext = "wav",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_samples_dir,
   .file_exists = elektron_sample_file_exists,
@@ -2909,16 +2943,16 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .upload = elektron_upload_sample,
   .load = elektron_sample_load,
   .save = elektron_sample_save,
-  .get_ext = backend_get_fs_ext,
+  .get_exts = backend_get_audio_exts,
   .get_upload_path = elektron_get_upload_path_smplrw,
-  .get_download_path = elektron_get_download_path
+  .get_download_path = elektron_get_download_path_sample
 };
 
 static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .id = FS_RAW_ALL,
   .options = 0,
   .name = "raw",
-  .type_ext = "raw",
+  .ext = "raw",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_raw_dir,
   .file_exists = elektron_raw_file_exists,
@@ -2931,7 +2965,7 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .upload = elektron_upload_raw,
   .load = load_file,
   .save = save_file,
-  .get_ext = elektron_get_dev_and_fs_ext,
+  .get_exts = elektron_get_dev_exts,
   .get_upload_path = elektron_get_upload_path_smplrw,
   .get_download_path = elektron_get_download_path
 };
@@ -2943,7 +2977,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "pst",
+  .ext = "pst",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_raw_dir,
   .file_exists = elektron_raw_file_exists,
@@ -2956,7 +2990,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .upload = elektron_upload_raw_pst_pkg,
   .load = load_file,
   .save = save_file,
-  .get_ext = elektron_get_dev_and_fs_ext,
+  .get_exts = elektron_get_dev_exts,
   .get_upload_path = elektron_get_upload_path_smplrw,
   .get_download_path = elektron_get_download_path
 };
@@ -2966,7 +3000,7 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE,
   .name = "data",
-  .type_ext = "data",
+  .ext = "data",
   .readdir = elektron_read_data_dir_any,
   .print_item = elektron_print_data,
   .delete = elektron_clear_data_item_any,
@@ -2979,7 +3013,7 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .get_slot = elektron_get_id_as_slot,
   .load = load_file,
   .save = save_file,
-  .get_ext = elektron_get_dev_and_fs_ext,
+  .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
@@ -2992,7 +3026,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .name = "project",
   .gui_name = "Projects",
   .gui_icon = BE_FILE_ICON_PRJ,
-  .type_ext = "prj",
+  .ext = "prj",
   .readdir = elektron_read_data_dir_prj,
   .print_item = elektron_print_data,
   .delete = elektron_clear_data_item_prj,
@@ -3005,7 +3039,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .get_slot = elektron_get_id_as_slot,
   .load = load_file,
   .save = save_file,
-  .get_ext = elektron_get_dev_and_fs_ext,
+  .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
@@ -3018,7 +3052,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .name = "sound",
   .gui_name = "Sounds",
   .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "snd",
+  .ext = "snd",
   .readdir = elektron_read_data_dir_snd,
   .print_item = elektron_print_data,
   .delete = elektron_clear_data_item_snd,
@@ -3031,7 +3065,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .get_slot = elektron_get_id_as_slot,
   .load = load_file,
   .save = save_file,
-  .get_ext = elektron_get_dev_and_fs_ext,
+  .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
@@ -3044,7 +3078,7 @@ static const struct fs_operations FS_DATA_PST_OPERATIONS = {
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = BE_FILE_ICON_SND,
-  .type_ext = "pst",
+  .ext = "pst",
   .readdir = elektron_read_data_dir_pst,
   .print_item = elektron_print_data,
   .delete = elektron_clear_data_item_pst,
@@ -3057,7 +3091,7 @@ static const struct fs_operations FS_DATA_PST_OPERATIONS = {
   .get_slot = elektron_get_id_as_slot,
   .load = load_file,
   .save = save_file,
-  .get_ext = elektron_get_dev_and_fs_ext,
+  .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };

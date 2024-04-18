@@ -141,7 +141,7 @@ enum path_type
 struct fs_operations;
 
 typedef gint (*fs_init_iter_func) (struct backend *, struct item_iterator *,
-				   const gchar *, const gchar **);
+				   const gchar *, gchar **);
 
 typedef gint (*fs_path_func) (struct backend *, const gchar *);
 
@@ -156,7 +156,8 @@ typedef gchar *(*fs_get_item_slot) (struct item *, struct backend *);
 typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
 				  struct job_control *);
 
-typedef gchar *(*fs_get_ext) (struct backend *, const struct fs_operations *);
+typedef gchar **(*fs_get_exts) (struct backend *,
+				const struct fs_operations *);
 
 typedef gchar *(*fs_get_upload_path) (struct backend *,
 				      const struct fs_operations *,
@@ -191,7 +192,7 @@ struct fs_operations
   const gchar *name;
   const gchar *gui_name;
   const gchar *gui_icon;
-  const gchar *type_ext;
+  const gchar *ext;
   guint32 max_name_len;
   fs_init_iter_func readdir;	//This function runs on its own thread so it can take as long as needed in order to make calls to next_item_iterator not to wait for IO.
   fs_file_exists file_exists;
@@ -208,7 +209,7 @@ struct fs_operations
   fs_local_file_op save;	//Write a file from memory to the OS storage. Typically used after download.
   fs_local_file_op load;	//Load a file from the OS storage into memory. Typically used before upload.
   fs_get_item_slot get_slot;
-  fs_get_ext get_ext;
+  fs_get_exts get_exts;		//If present, this is used; if not, type_ext is used.
   fs_get_upload_path get_upload_path;
   fs_get_download_path get_download_path;
   fs_select_item select_item;
@@ -294,10 +295,9 @@ void set_job_control_progress (struct job_control *, gdouble);
 void set_job_control_progress_no_sync (struct job_control *, gdouble,
 				       gpointer);
 
-gboolean file_matches_extensions (const gchar *, const gchar **);
+gboolean file_matches_extensions (const gchar *, gchar **);
 
-gboolean iter_is_dir_or_matches_extensions (struct item_iterator *,
-					    const gchar **);
+gboolean iter_is_dir_or_matches_extensions (struct item_iterator *, gchar **);
 
 //Use a backslash for the system backend on WSYS2.
 
@@ -308,5 +308,9 @@ gchar *path_translate (enum path_type, const gchar *);
 gchar *path_filename_from_uri (enum path_type, gchar *);
 
 gchar *path_filename_to_uri (enum path_type, gchar *);
+
+gchar **new_ext_array (const gchar *);
+
+void free_ext_array (gchar **);
 
 #endif

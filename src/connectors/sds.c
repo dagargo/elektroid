@@ -987,7 +987,7 @@ sds_next_sample_dentry (struct item_iterator *iter)
 
 static gint
 sds_read_dir (struct backend *backend, struct item_iterator *iter,
-	      const gchar *path, const gchar **extensions)
+	      const gchar *path, gchar **extensions)
 {
   struct sds_iterator_data *data;
 
@@ -1077,7 +1077,6 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .name = "8b1c",
   .gui_name = "8 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
   .print_item = common_print_item,
@@ -1086,7 +1085,7 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .upload = sds_upload_8b,
   .load = sds_sample_load,
   .save = sds_sample_save,
-  .get_ext = backend_get_fs_ext,
+  .get_exts = backend_get_audio_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path
 };
@@ -1099,7 +1098,6 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .name = "12b1c",
   .gui_name = "12 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
   .print_item = common_print_item,
@@ -1108,7 +1106,7 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .upload = sds_upload_12b,
   .load = sds_sample_load,
   .save = sds_sample_save,
-  .get_ext = backend_get_fs_ext,
+  .get_exts = backend_get_audio_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path
 };
@@ -1121,7 +1119,6 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .name = "14b1c",
   .gui_name = "14 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
   .print_item = common_print_item,
@@ -1130,7 +1127,7 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .upload = sds_upload_14b,
   .load = sds_sample_load,
   .save = sds_sample_save,
-  .get_ext = backend_get_fs_ext,
+  .get_exts = backend_get_audio_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path
 };
@@ -1143,7 +1140,6 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .name = "16b1c",
   .gui_name = "16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
   .print_item = common_print_item,
@@ -1152,7 +1148,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .upload = sds_upload_16b,
   .load = sds_sample_load,
   .save = sds_sample_save,
-  .get_ext = backend_get_fs_ext,
+  .get_exts = backend_get_audio_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path
 };
@@ -1165,7 +1161,6 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_441_OPERATIONS = {
   .name = "44.1k16b1c",
   .gui_name = "44.1 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
   .print_item = common_print_item,
@@ -1174,7 +1169,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_441_OPERATIONS = {
   .upload = sds_upload_16b,
   .load = sds_sample_load_441,
   .save = sds_sample_save,
-  .get_ext = backend_get_fs_ext,
+  .get_exts = backend_get_audio_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path
 };
@@ -1187,7 +1182,6 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_32_OPERATIONS = {
   .name = "32k16b1c",
   .gui_name = "32 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
   .print_item = common_print_item,
@@ -1196,7 +1190,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_32_OPERATIONS = {
   .upload = sds_upload_16b,
   .load = sds_sample_load_32,
   .save = sds_sample_save,
-  .get_ext = backend_get_fs_ext,
+  .get_exts = backend_get_audio_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path
 };
@@ -1209,7 +1203,6 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_16_OPERATIONS = {
   .name = "16k16b1c",
   .gui_name = "16 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
   .print_item = common_print_item,
@@ -1218,7 +1211,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_16_OPERATIONS = {
   .upload = sds_upload_16b,
   .load = sds_sample_load_16,
   .save = sds_sample_save,
-  .get_ext = backend_get_fs_ext,
+  .get_exts = backend_get_audio_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path
 };
@@ -1231,7 +1224,6 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_8_OPERATIONS = {
   .name = "8k16b1c",
   .gui_name = "8 KHz 16 bits mono",
   .gui_icon = BE_FILE_ICON_WAVE,
-  .type_ext = "wav",
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
   .print_item = common_print_item,
@@ -1240,7 +1232,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_8_OPERATIONS = {
   .upload = sds_upload_16b,
   .load = sds_sample_load_8,
   .save = sds_sample_save,
-  .get_ext = backend_get_fs_ext,
+  .get_exts = backend_get_audio_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = sds_get_download_path
 };

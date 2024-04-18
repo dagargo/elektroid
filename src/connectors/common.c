@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include "common.h"
+#include "sample.h"
 
 gchar *
 common_slot_get_upload_path (struct backend *backend,
@@ -257,7 +258,7 @@ common_get_download_path_with_params (struct backend *backend,
       g_string_append (str, name);
     }
   g_string_append (str, ".");
-  g_string_append (str, ops->type_ext);
+  g_string_append (str, ops->ext);
 
   path = path_chain (PATH_SYSTEM, dst_dir, str->str);
   g_string_free (str, TRUE);

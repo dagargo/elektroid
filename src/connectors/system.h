@@ -22,10 +22,10 @@
 #include "utils.h"
 
 gint system_read_dir (struct backend *, struct item_iterator *, const gchar *,
-		      const gchar **);
+		      gchar **);
 
 gint system_samples_read_dir (struct backend *, struct item_iterator *,
-			      const gchar *, const gchar **);
+			      const gchar *, gchar **);
 
 gboolean system_file_exists (struct backend *, const gchar *);
 

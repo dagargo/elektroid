@@ -213,7 +213,7 @@ microbrute_get_download_path (struct backend *backend,
 
 static gint
 microbrute_read_dir (struct backend *backend, struct item_iterator *iter,
-		     const gchar *path, const gchar **extensions)
+		     const gchar *path, gchar **extensions)
 {
   struct common_simple_read_dir_data *data;
 
@@ -485,14 +485,13 @@ static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .name = "sequence",
   .gui_name = "Sequences",
   .gui_icon = BE_FILE_ICON_SEQ,
-  .type_ext = "mbseq",
+  .ext = "mbseq",
   .readdir = microbrute_read_dir,
   .print_item = common_print_item,
   .download = microbrute_download,
   .upload = microbrute_upload,
   .load = load_file,
   .save = save_file,
-  .get_ext = backend_get_fs_ext,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microbrute_get_download_path
 };
