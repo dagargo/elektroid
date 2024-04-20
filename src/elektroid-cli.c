@@ -44,10 +44,10 @@ static gchar *connector, *fs, *op;
 const struct fs_operations *fs_ops;
 
 static const gchar *
-cli_get_path (gchar *device_path)
+cli_get_path (const gchar *device_path)
 {
   gint len = strlen (device_path);
-  gchar *path = device_path;
+  const gchar *path = device_path;
   gint i = 0;
 
   while (*path != G_SEARCHPATH_SEPARATOR && i < len)
@@ -114,7 +114,7 @@ cli_list (int argc, gchar *argv[], int *optind)
   gint err;
   const gchar *path;
   struct item_iterator iter;
-  gchar *device_path;
+  const gchar *device_path;
 
   if (*optind == argc)
     {
@@ -157,7 +157,7 @@ static int
 cli_command_path (int argc, gchar *argv[], int *optind, ssize_t member_offset)
 {
   const gchar *path;
-  gchar *device_path;
+  const gchar *device_path;
   gint err;
   fs_path_func f;
 
@@ -304,7 +304,7 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
 static int
 cli_info (int argc, gchar *argv[], int *optind)
 {
-  gchar *device_path;
+  const gchar *device_path;
   gint err;
   gboolean first;
   GSList *e;
@@ -353,7 +353,7 @@ cli_info (int argc, gchar *argv[], int *optind)
 static int
 cli_df (int argc, gchar *argv[], int *optind)
 {
-  gchar *device_path;
+  const gchar *device_path;
   const gchar *path;
   gchar *size;
   gchar *diff;
