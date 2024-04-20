@@ -2062,11 +2062,9 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
   GtkTreeIter iter;
   GValue fsv = G_VALUE_INIT;
   gint fs;
-  const struct fs_operations *last_local_fs_ops;
 
   if (!gtk_combo_box_get_active_iter (GTK_COMBO_BOX (fs_combo), &iter))
     {
-      last_local_fs_ops = local_browser.fs_ops;
       local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
       browser_update_fs_options (&local_browser);
       browser_load_dir (&local_browser);
@@ -2087,7 +2085,6 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
 
   remote_browser.fs_ops = backend_get_fs_operations_by_id (&backend, fs);
 
-  last_local_fs_ops = local_browser.fs_ops;
   if (EDITOR_VISIBLE)
     {
       local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
@@ -2189,17 +2186,11 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
 	}
     }
 
-
-
+  browser_close_search (NULL, &local_browser); 	//This triggers a refresh
   browser_update_fs_options (&local_browser);
 
   browser_close_search (NULL, &remote_browser);	//This triggers a refresh
   browser_update_fs_options (&remote_browser);
-
-  if (last_local_fs_ops != local_browser.fs_ops)
-    {
-      browser_load_dir (&local_browser);
-    }
 }
 
 static gboolean
