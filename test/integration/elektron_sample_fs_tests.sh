@@ -82,11 +82,11 @@ echo "Testing recursive rmdir..."
 $ecli elektron-sample-rmdir $TEST_DEVICE:/$TEST_NAME
 [ $? -ne 0 ] && exit 1
 
-echo "Testing ls (nonexistent dir)..."
+echo "Testing ls (nonexistent dir) [fails on versions newer than 1.40B]..."
 $ecli elektron-sample-ls $TEST_DEVICE:/$TEST_NAME
 [ $? -eq 0 ] && exit 1
 
-echo "Testing ls (nonexistent dir inside nonexistent dir)..."
+echo "Testing ls (nonexistent dir inside nonexistent dir) [fails on versions newer than 1.40B]..."
 $ecli elektron-sample-ls $TEST_DEVICE:/$TEST_NAME/foo
 [ $? -eq 0 ] && exit 1
 
