@@ -2705,6 +2705,7 @@ on remote</property>
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
                         <property name="model">task_list_store</property>
+                        <property name="enable-search">False</property>
                         <property name="search-column">0</property>
                         <child internal-child="selection">
                           <object class="GtkTreeSelection">
