@@ -135,10 +135,6 @@ void browser_remote_init (struct browser *, GtkBuilder *, struct backend *);
 
 void browser_destroy (struct browser *);
 
-gboolean browser_set_file_extensions (struct browser *, const gchar **);
-
-gboolean browser_set_file_extension (struct browser *, gchar *);
-
 void browser_reset (struct browser *);
 
 void browser_clear_dnd_function (struct browser *);
