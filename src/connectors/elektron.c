@@ -2883,8 +2883,8 @@ elektron_get_dev_exts_pst (struct backend *backend,
       gchar *ext = elektron_get_dev_ext (backend, ops);
       gchar **exts = g_malloc (sizeof (gchar *) * 3);
       exts[0] = strdup (ext);
-      exts[2] = strdup ("ahpst");
-      exts[1] = NULL;
+      exts[1] = strdup ("ahpst");
+      exts[2] = NULL;
       g_free (ext);
       return exts;
     }
