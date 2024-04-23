@@ -232,13 +232,6 @@ elektroid_load_devices (gboolean auto_select)
     }
 }
 
-static gboolean
-elektroid_load_devices_bg (gpointer data)
-{
-  elektroid_load_devices (TRUE);	//This triggers a local browser reload due to the extensions and icons selected for the fs
-  return FALSE;
-}
-
 void
 elektroid_update_audio_status ()
 {
@@ -3033,8 +3026,6 @@ elektroid_run (int argc, char *argv[])
   gtk_widget_set_sensitive (remote_box, FALSE);
 
   gtk_label_set_text (GTK_LABEL (local_label), hostname);
-
-  g_idle_add (elektroid_load_devices_bg, NULL);
 
   gtk_widget_show (main_window);
 
