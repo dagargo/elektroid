@@ -322,7 +322,7 @@ elektroid_update_backend_status ()
 }
 
 gboolean
-elektroid_check_backend ()
+elektroid_check_backend (gboolean startup)
 {
   GtkTreeIter iter;
   gboolean remote_sensitive;
@@ -345,7 +345,7 @@ elektroid_check_backend ()
   if (!connected)
     {
       browser_reset (&remote_browser);
-      elektroid_load_devices (FALSE);
+      elektroid_load_devices (startup);
     }
 
   elektroid_update_backend_status ();
@@ -356,7 +356,7 @@ elektroid_check_backend ()
 static gboolean
 elektroid_check_backend_bg (gpointer data)
 {
-  elektroid_check_backend ();
+  elektroid_check_backend (FALSE);
   return FALSE;
 }
 
@@ -389,7 +389,7 @@ elektroid_set_preferences_remote_dir ()
 }
 
 void
-elektroid_refresh_devices (GtkWidget *widget, gpointer data)
+elektroid_refresh_devices (gboolean startup)
 {
   elektroid_set_preferences_remote_dir ();
 
@@ -400,7 +400,13 @@ elektroid_refresh_devices (GtkWidget *widget, gpointer data)
       ma_clear_device_menu_actions (ma_data.box);
       browser_reset (&remote_browser);
     }
-  elektroid_check_backend ();	//This triggers the actual devices refresh if there is no backend
+  elektroid_check_backend (startup);	//This triggers the actual devices refresh if there is no backend
+}
+
+static void
+elektroid_refresh_devices_int (GtkWidget *widget, gpointer data)
+{
+  elektroid_refresh_devices (FALSE);
 }
 
 static gpointer
@@ -472,7 +478,7 @@ elektroid_rx_sysex ()
 
   if (*res)
     {
-      elektroid_check_backend ();
+      elektroid_check_backend (FALSE);
       g_free (res);
       return;
     }
@@ -638,7 +644,7 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
 
       if (*err < 0)
 	{
-	  elektroid_check_backend ();
+	  elektroid_check_backend (FALSE);
 	}
 
       g_free (err);
@@ -652,7 +658,7 @@ cleanup:
 static void
 elektroid_show_remote (gboolean active)
 {
-  elektroid_refresh_devices (NULL, NULL);
+  elektroid_refresh_devices (TRUE);
   gtk_widget_set_visible (local_label, active);
   gtk_widget_set_visible (remote_box, active);
   gtk_widget_set_visible (tasks_box, active);
@@ -3011,7 +3017,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (devices_combo, "changed",
 		    G_CALLBACK (elektroid_set_device), NULL);
   g_signal_connect (refresh_devices_button, "clicked",
-		    G_CALLBACK (elektroid_refresh_devices), NULL);
+		    G_CALLBACK (elektroid_refresh_devices_int), NULL);
 
   gtk_label_set_text (backend_status_label, _("Not connected"));
 
@@ -3026,16 +3032,17 @@ elektroid_run (int argc, char *argv[])
 
   g_object_set (G_OBJECT (show_remote_button), "active",
 		preferences.show_remote, NULL);
-  elektroid_show_remote (preferences.show_remote);
 
   gtk_widget_set_sensitive (remote_box, FALSE);
+
+  ma_data.backend = &backend;
+  ma_data.builder = builder;
+
+  elektroid_show_remote (preferences.show_remote);	//This triggers both browsers initializations.
 
   gtk_label_set_text (GTK_LABEL (local_label), hostname);
 
   gtk_widget_show (main_window);
-
-  ma_data.backend = &backend;
-  ma_data.builder = builder;
 
   gtk_main ();
 

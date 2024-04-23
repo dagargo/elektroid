@@ -28,13 +28,13 @@ extern gpointer elektroid_tx_upgrade_os_runner (gpointer data);
 extern gpointer elektroid_tx_sysex_files_runner (gpointer data);
 extern void elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple);
 extern void elektroid_rx_sysex ();
-extern void elektroid_refresh_devices (GtkWidget * object, gpointer data);
+extern void elektroid_refresh_devices (gboolean startup);
 
 static void
 os_upgrade_callback (GtkWidget *object, gpointer data)
 {
   elektroid_tx_sysex_common (elektroid_tx_upgrade_os_runner, FALSE);
-  elektroid_refresh_devices (NULL, NULL);
+  elektroid_refresh_devices (FALSE);
 }
 
 static void
