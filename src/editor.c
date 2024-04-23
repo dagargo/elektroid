@@ -1147,7 +1147,7 @@ editor_file_exists_no_overwrite (const gchar *filename)
   return res == GTK_RESPONSE_CANCEL;
 }
 
-//This function does not need synchronized acess as it is only called from
+//This function does not need synchronized access as it is only called from
 //editor_save_clicked which already provides this.
 
 static gint

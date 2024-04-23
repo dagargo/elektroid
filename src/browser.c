@@ -674,7 +674,8 @@ gboolean
 browser_load_dir_if_needed (gpointer data)
 {
   struct browser *browser = data;
-  if (browser->backend->type == BE_TYPE_MIDI || !browser->notifier)
+  if ((browser->backend && browser->backend->type == BE_TYPE_MIDI) ||
+      !browser->notifier)
     {
       browser_load_dir (browser);
     }
