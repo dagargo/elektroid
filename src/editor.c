@@ -39,8 +39,10 @@
 
 #if defined(__linux__)
 #define FRAMES_TO_PLAY (16 * 1024)
+#define OS_DATE_TIME_FILENAME_FORMAT "%F %T"
 #else
 #define FRAMES_TO_PLAY (64 * 1024)
+#define OS_DATE_TIME_FILENAME_FORMAT "%F %H.%M.%S"	//Some OSs do not allow ':' in the name.
 #endif
 
 #define MAX_FRAMES_PER_PIXEL 300
@@ -1228,13 +1230,11 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	}
       else
 	{
-	  struct tm tm;
-	  time_t curr_time = time (NULL);
-	  localtime_r (&curr_time, &tm);
-	  gchar curr_time_str[PATH_MAX >> 1];
-	  strftime (curr_time_str, PATH_MAX, "%FT%T", &tm);
-	  snprintf (suggestion, PATH_MAX, "%s_%s.wav", _("Audio"),
-		    curr_time_str);
+	  GDateTime *dt = g_date_time_new_now_local ();
+	  gchar *s = g_date_time_format (dt, OS_DATE_TIME_FILENAME_FORMAT);
+	  snprintf (suggestion, PATH_MAX, "%s %s.wav", _("Audio"), s);
+	  g_free (s);
+	  g_date_time_unref (dt);
 	}
 
       g_mutex_unlock (&editor->audio.control.mutex);
