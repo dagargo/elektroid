@@ -185,7 +185,7 @@ preferences_load (struct preferences *preferences)
     }
   else
     {
-      preferences->remote_dir = strdup ("/");
+      preferences->remote_dir = get_user_dir (NULL);
     }
   json_reader_end_member (reader);
 
