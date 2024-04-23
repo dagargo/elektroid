@@ -1185,6 +1185,8 @@ editor_save (struct editor *editor, gchar *name, GByteArray *sample)
   //This needs to be restored. If not, following calls will loose the format.
   sample_info_src->format = format_dst;
 
+  browser_load_dir_if_needed (editor->browser);
+
   return err;
 }
 

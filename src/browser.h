@@ -127,6 +127,8 @@ gchar *browser_get_item_path (struct browser *, struct item *);
 
 gboolean browser_load_dir (gpointer);
 
+gboolean browser_load_dir_if_needed (gpointer);
+
 void browser_update_fs_options (struct browser *);
 
 void browser_local_init (struct browser *, GtkBuilder *, gchar *);

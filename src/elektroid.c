@@ -195,17 +195,6 @@ show_error_msg (const char *format, ...)
   va_end (args);
 }
 
-static gboolean
-elektroid_load_browser_if_needed (gpointer data)
-{
-  struct browser *browser = data;
-  if (browser->backend->type == BE_TYPE_MIDI || !browser->notifier)
-    {
-      browser_load_dir (browser);
-    }
-  return FALSE;
-}
-
 static void
 elektroid_load_devices (gboolean auto_select)
 {
@@ -843,7 +832,7 @@ elektroid_delete_files (GtkWidget *object, gpointer data)
 
   progress_run (elektroid_delete_files_runner, data, _("Deleting Files"),
 		_("Deleting..."), NULL);
-  elektroid_load_browser_if_needed (data);
+  browser_load_dir_if_needed (data);
 }
 
 static void
@@ -904,7 +893,7 @@ elektroid_rename_item (GtkWidget *object, gpointer data)
 	    }
 	  else
 	    {
-	      elektroid_load_browser_if_needed (browser);
+	      browser_load_dir_if_needed (browser);
 	    }
 	  g_free (new_path);
 	}
@@ -1258,7 +1247,7 @@ elektroid_add_dir (GtkWidget *object, gpointer data)
 	}
       else
 	{
-	  elektroid_load_browser_if_needed (browser);
+	  browser_load_dir_if_needed (browser);
 	}
 
       g_free (pathname);
@@ -1346,7 +1335,7 @@ elektroid_run_next (gpointer data)
 	  && remote_browser.dirty)
 	{
 	  remote_browser.dirty = FALSE;
-	  g_idle_add (elektroid_load_browser_if_needed, &remote_browser);
+	  g_idle_add (browser_load_dir_if_needed, &remote_browser);
 	}
     }
 
@@ -1533,7 +1522,7 @@ elektroid_upload_task_runner (gpointer data)
 		strlen (remote_browser.dir))
       && !(tasks.transfer.fs_ops->options & FS_OPTION_SINGLE_OP))
     {
-      g_idle_add (elektroid_load_browser_if_needed, &remote_browser);
+      g_idle_add (browser_load_dir_if_needed, &remote_browser);
     }
 
   g_free (upload_path);
@@ -1758,7 +1747,7 @@ elektroid_download_task_runner (gpointer userdata)
       if (!res)
 	{
 	  tasks.transfer.status = TASK_STATUS_COMPLETED_OK;
-	  g_idle_add (elektroid_load_browser_if_needed, &local_browser);
+	  g_idle_add (browser_load_dir_if_needed, &local_browser);
 	}
     }
   g_free (dst_path);
@@ -2308,7 +2297,7 @@ elektroid_dnd_received_system (const gchar *dir, const gchar *name,
 		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
-      g_idle_add (elektroid_load_browser_if_needed, &local_browser);
+      g_idle_add (browser_load_dir_if_needed, &local_browser);
     }
   else
     {
@@ -2338,7 +2327,7 @@ elektroid_dnd_received_remote (const gchar *dir, const gchar *name,
 		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
-      g_idle_add (elektroid_load_browser_if_needed, &remote_browser);
+      g_idle_add (browser_load_dir_if_needed, &remote_browser);
     }
   else
     {

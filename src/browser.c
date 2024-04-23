@@ -670,6 +670,17 @@ browser_load_dir (gpointer data)
   return FALSE;
 }
 
+gboolean
+browser_load_dir_if_needed (gpointer data)
+{
+  struct browser *browser = data;
+  if (browser->backend->type == BE_TYPE_MIDI || !browser->notifier)
+    {
+      browser_load_dir (browser);
+    }
+  return FALSE;
+}
+
 static void
 browser_update_fs_sorting_options (struct browser *browser)
 {
