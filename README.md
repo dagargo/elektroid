@@ -26,7 +26,7 @@ These are the supported devices:
 * Moog Little Phatty and Slim Phatty
 * Novation Summit and Peak
 
-While Elektroid is already available in some GNU/Linux distributions such as Debian or Ubuntu, it can also be easily installed on other distributions with [Flatpak](https://flathub.org/apps/io.github.dagargo.Elektroid).
+While Elektroid is already available in some GNU/Linux distributions such as Debian or Ubuntu, it can also be easily installed on other distributions via Flatpak.
 
 ## Installation
 
@@ -132,8 +132,9 @@ $ mock -r fedora-$rel-x86_64 --no-clean --rebuild /var/lib/mock/fedora-$rel-x86_
 
 ### Flatpak
 
-To build a standalone Flatpak application, run `flatpak-builder --user --install --force-clean flatpak/build flatpak/io.github.dagargo.Elektroid.yaml`
-and then you can use `flatpak run io.github.dagargo.Elektroid` (add `--cli` and extra arguments for the CLI utility).
+There is an official Flathub repository in https://github.com/flathub/io.github.dagargo.Elektroid so installing the Flatpak is as easy as running `flatpak install flathub io.github.dagargo.Elektroid`.
+
+From that repository, building and installing the Flatpak can be done with `flatpak-builder --user --install --force-clean flatpak/build io.github.dagargo.Elektroid.yaml`.
 
 ## CLI
 
