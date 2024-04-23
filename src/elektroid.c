@@ -205,6 +205,11 @@ elektroid_load_devices (gboolean auto_select)
 
   debug_print (1, "Loading devices...\n");
 
+  if (editor.browser == &remote_browser)
+    {
+      editor_reset (&editor, NULL);
+    }
+
   gtk_list_store_clear (fs_list_store);
   gtk_list_store_clear (devices_list_store);
 
