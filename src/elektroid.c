@@ -249,25 +249,18 @@ elektroid_load_devices (gboolean auto_select)
   device_index = auto_select && i == 1 ? 0 : -1;
   debug_print (1, "Selecting device %d...\n", device_index);
   gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), device_index);
+  if (device_index == -1)
+    {
+      browser_update_fs_options (&local_browser);
+      browser_load_dir (&local_browser);
+    }
 }
 
 static gboolean
 elektroid_load_devices_bg (gpointer data)
 {
-  gboolean visible;
-  GValue value = G_VALUE_INIT;
-
-  g_object_get_property (G_OBJECT (main_window), "visible", &value);
-  visible = g_value_get_boolean (&value);
-  g_value_unset (&value);
-
-  if (visible)
-    {
-      elektroid_load_devices (TRUE);	//This triggers a local browser reload due to the extensions and icons selected for the fs
-      return FALSE;
-    }
-
-  return TRUE;
+  elektroid_load_devices (TRUE);	//This triggers a local browser reload due to the extensions and icons selected for the fs
+  return FALSE;
 }
 
 void
@@ -2186,7 +2179,7 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
 	}
     }
 
-  browser_close_search (NULL, &local_browser); 	//This triggers a refresh
+  browser_close_search (NULL, &local_browser);	//This triggers a refresh
   browser_update_fs_options (&local_browser);
 
   browser_close_search (NULL, &remote_browser);	//This triggers a refresh
@@ -3069,14 +3062,9 @@ elektroid_run (int argc, char *argv[])
 
   gtk_label_set_text (GTK_LABEL (local_label), hostname);
 
-  if (preferences.show_remote)
-    {
-      g_idle_add (elektroid_load_devices_bg, NULL);
-    }
-  gtk_widget_show (main_window);
+  g_idle_add (elektroid_load_devices_bg, NULL);
 
-  browser_update_fs_options (&local_browser);
-  browser_load_dir (&local_browser);
+  gtk_widget_show (main_window);
 
   ma_data.backend = &backend;
   ma_data.builder = builder;
