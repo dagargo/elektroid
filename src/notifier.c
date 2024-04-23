@@ -126,17 +126,21 @@ end:
 #endif
 
 void
-notifier_init (struct notifier *notifier, struct browser *browser)
+notifier_init (struct notifier **notifier, struct browser *browser)
 {
 #if defined(__linux__)
-  notifier->fd = inotify_init1 (IN_NONBLOCK);
-  notifier->event_size =
+  struct notifier *n = g_malloc (sizeof (struct notifier));
+  n->fd = inotify_init1 (IN_NONBLOCK);
+  n->event_size =
     (sizeof (struct inotify_event) + NAME_MAX + 1) * NOTIFIER_BATCH_EVENTS;
-  notifier->event = g_malloc (notifier->event_size);
-  notifier->browser = browser;
-  notifier->thread = NULL;
-  notifier->dir = NULL;
-  g_mutex_init (&notifier->mutex);
+  n->event = g_malloc (n->event_size);
+  n->browser = browser;
+  n->thread = NULL;
+  n->dir = NULL;
+  g_mutex_init (&n->mutex);
+  *notifier = n;
+#else
+  *notifier = NULL;
 #endif
 }
 
@@ -178,5 +182,6 @@ notifier_destroy (struct notifier *notifier)
 #if defined(__linux__)
   notifier_set_active (notifier, FALSE);
   g_free (notifier->event);
+  g_free (notifier);
 #endif
 }

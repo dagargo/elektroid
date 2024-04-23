@@ -41,7 +41,7 @@ struct notifier
 #endif
 };
 
-void notifier_init (struct notifier *, struct browser *);
+void notifier_init (struct notifier **, struct browser *);
 
 void notifier_set_active (struct notifier *, gboolean);
 

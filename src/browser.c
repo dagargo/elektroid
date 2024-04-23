@@ -726,15 +726,13 @@ browser_update_fs_options (struct browser *browser)
 static void
 browser_init (struct browser *browser)
 {
-  browser->notifier = g_malloc (sizeof (struct notifier));
-  notifier_init (browser->notifier, browser);
+  notifier_init (&browser->notifier, browser);
 }
 
 void
 browser_destroy (struct browser *browser)
 {
   notifier_destroy (browser->notifier);
-  g_free (browser->notifier);
   if (browser->thread)
     {
       browser_wait (browser);
