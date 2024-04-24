@@ -393,9 +393,9 @@ backend_fill_card_devices (gint card, GArray *devices)
     {
       backend_get_system_subdevices (ctl, card, device, devices);
     }
-  if (err < 0)
+  if (device >= 0 && err < 0)
     {
-      error_print ("Cannot determine device number: %s\n",
+      error_print ("Cannot determine device number %d: %s\n", device,
 		   snd_strerror (err));
     }
   snd_ctl_close (ctl);
@@ -410,9 +410,10 @@ backend_fill_devices_array (GArray *devices)
     {
       backend_fill_card_devices (card, devices);
     }
-  if (err < 0)
+  if (card >= 0 && err < 0)
     {
-      error_print ("Cannot determine card number: %s\n", snd_strerror (err));
+      error_print ("Cannot determine card number %d: %s\n", card,
+                   snd_strerror (err));
     }
 }
 
