@@ -413,7 +413,7 @@ backend_fill_devices_array (GArray *devices)
   if (card >= 0 && err < 0)
     {
       error_print ("Cannot determine card number %d: %s\n", card,
-                   snd_strerror (err));
+		   snd_strerror (err));
     }
 }
 
