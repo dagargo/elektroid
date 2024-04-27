@@ -1151,13 +1151,13 @@ editor_file_exists_no_overwrite (const gchar *filename)
 //editor_save_clicked which already provides this.
 
 static gint
-editor_save (struct editor *editor, gchar *name, GByteArray *sample)
+editor_save_with_format (struct editor *editor, gchar *name,
+			 GByteArray *sample, guint32 format_dst)
 {
   gint err;
   struct sample_info *sample_info_src = editor->audio.control.data;
   struct sample_info *sample_info_dst = &editor->audio.sample_info;
   gdouble ratio = sample_info_src->rate / (gdouble) sample_info_dst->rate;
-  guint32 format_dst = sample_info_src->format;
 
   //Control format needs to be set to internal sample format but format
   //destination is needed to ensure the same file type and sample type is
@@ -1188,6 +1188,14 @@ editor_save (struct editor *editor, gchar *name, GByteArray *sample)
   browser_load_dir_if_needed (editor->browser);
 
   return err;
+}
+
+static gint
+editor_save (struct editor *editor, gchar *name, GByteArray *sample)
+{
+  struct sample_info *sample_info_src = editor->audio.control.data;
+  return editor_save_with_format (editor, name, sample,
+				  sample_info_src->format);
 }
 
 static void
@@ -1257,7 +1265,8 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 
 	  if (editor->audio.sel_len)
 	    {
-	      editor_save (editor, name, sample);
+	      editor_save_with_format (editor, name, sample, SF_FORMAT_WAV |
+				       SF_FORMAT_PCM_16);
 	    }
 	  else
 	    {
