@@ -556,7 +556,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   gfloat *buffer_f;
   void *buffer_output;
   gint err, resampled_buffer_len, frames_read;
-  gboolean active;
+  gboolean active, rounding_fix;
   gdouble ratio;
   struct sample_info *sample_info_src;
   guint bytes_per_sample, bytes_per_frame;
@@ -884,13 +884,15 @@ cleanup:
 	  g_mutex_lock (&control->mutex);
 	}
       // This removes the additional samples added by the resampler due to rounding.
+      rounding_fix = sample_info_dst->frames != actual_frames;
       sample_info_dst->frames = actual_frames;
       sample_check_and_fix_loop_points (sample_info_dst);
       g_byte_array_set_size (sample,
 			     sample_info_dst->frames * bytes_per_frame);
       if (control)
 	{
-	  if (!control->active)
+	  //It there was a rounding fix in the previous lines, the call is needed to detect the end of the loading process.
+	  if (rounding_fix)
 	    {
 	      cb (control, 1.0, cb_data);
 	    }
