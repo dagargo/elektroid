@@ -55,16 +55,20 @@ static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 #define ELEKTRON_NAME_MAX_LEN 32
 
 #define ELEKTRON_SAMPLE_INFO_PAD_I32_LEN 10
-#define ELEKTRON_LOOP_TYPE 0x7f000000
+#define ELEKTRON_LOOP_TYPE_FWD 0
+#define ELEKTRON_LOOP_TYPE_NO 0x7f
 
 struct elektron_sample_header
 {
-  guint32 type;
-  guint32 sample_len_bytes;
+  guint8 type;
+  guint8 stereo;		//0: mono, 1: stereo interleaved
+  guint8 rsvd0[2];
+  guint32 size;			//Bytes
   guint32 rate;
   guint32 loop_start;
   guint32 loop_end;
-  guint32 loop_type;
+  guint8 loop_type;		// as in midi sds, 0x00 = forward loop, 0x7F = no loop
+  guint8 rsvd1[3];
   guint32 padding[ELEKTRON_SAMPLE_INFO_PAD_I32_LEN];
 };
 
@@ -578,11 +582,14 @@ elektron_new_msg_write_sample_blk (guint id, GByteArray *sample,
   if (seq == 0)
     {
       elektron_sample_header.type = 0;
-      elektron_sample_header.sample_len_bytes = g_htonl (sample->len);
+      elektron_sample_header.stereo = sample_info->channels - 1;
+      memset (&elektron_sample_header.rsvd0, 0, 2);
+      elektron_sample_header.size = g_htonl (sample->len);
       elektron_sample_header.rate = g_htonl (ELEKTRON_SAMPLE_RATE);
       elektron_sample_header.loop_start = g_htonl (sample_info->loop_start);
       elektron_sample_header.loop_end = g_htonl (sample_info->loop_end);
-      elektron_sample_header.loop_type = g_htonl (ELEKTRON_LOOP_TYPE);
+      elektron_sample_header.loop_type = ELEKTRON_LOOP_TYPE_NO;
+      memset (&elektron_sample_header.rsvd1, 0, 3);
       memset (&elektron_sample_header.padding, 0,
 	      sizeof (guint32) * ELEKTRON_SAMPLE_INFO_PAD_I32_LEN);
 
@@ -1527,10 +1534,10 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 	  sample_info->loop_start =
 	    g_ntohl (elektron_sample_header->loop_start);
 	  sample_info->loop_end = g_ntohl (elektron_sample_header->loop_end);
-	  sample_info->loop_type = elektron_sample_header->loop_type;	// For some reason, this is already in the required format.
+	  sample_info->loop_type = elektron_sample_header->loop_type;
 	  sample_info->rate = g_ntohl (elektron_sample_header->rate);	//In the case of the RAW filesystem is not used and it is harmless.
 	  sample_info->midi_note = 0;
-	  sample_info->channels = 1;
+	  sample_info->channels = elektron_sample_header->stereo + 1;
 	  sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
 	  control->data = sample_info;
 	  debug_print (2, "Loop start at %d, loop end at %d\n",
@@ -2899,12 +2906,68 @@ elektron_get_dev_exts_pst (struct backend *backend,
     }
 }
 
+static gchar **
+elektron_get_dev_exts_prj (struct backend *backend,
+			   const struct fs_operations *ops)
+{
+  struct elektron_data *data = backend->data;
+  if (data->device_desc.id == 42)	//Digitakt II
+    {
+      gchar *ext = elektron_get_dev_ext (backend, ops);
+      gchar **exts = g_malloc (sizeof (gchar *) * 3);
+      exts[0] = strdup (ext);
+      exts[1] = strdup ("dtprj");
+      exts[2] = NULL;
+      g_free (ext);
+      return exts;
+    }
+  else
+    {
+      return elektron_get_dev_exts (backend, ops);
+    }
+}
+
+static gchar **
+elektron_get_dt2_pst_exts (struct backend *backend,
+			   const struct fs_operations *ops)
+{
+  gchar *ext = elektron_get_dev_ext (backend, ops);
+  gchar **exts = g_malloc (sizeof (gchar *) * 3);
+  exts[0] = strdup (ext);
+  exts[1] = strdup ("dtsnd");
+  exts[2] = NULL;
+  g_free (ext);
+  return exts;
+}
+
 gint
 elektron_sample_load (const gchar *path, GByteArray *sample,
 		      struct job_control *control)
 {
   return common_sample_load (path, sample, control, ELEKTRON_SAMPLE_RATE,
 			     ELEKTRON_SAMPLE_CHANNELS, SF_FORMAT_PCM_16);
+}
+
+gint
+elektron_sample_stereo_load (const gchar *path, GByteArray *sample,
+			     struct job_control *control)
+{
+  struct sample_info *sample_info;
+  gint err = common_sample_load (path, sample, control, ELEKTRON_SAMPLE_RATE,
+				 0, SF_FORMAT_PCM_16);
+  if (err)
+    {
+      return err;
+    }
+
+  sample_info = control->data;
+  if (sample_info->channels > 2)
+    {
+      g_byte_array_free (sample, TRUE);
+      err = -EINVAL;
+    }
+
+  return err;
 }
 
 gchar *
@@ -3065,7 +3128,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .get_slot = elektron_get_id_as_slot,
   .load = load_file,
   .save = save_file,
-  .get_exts = elektron_get_dev_exts,
+  .get_exts = elektron_get_dev_exts_prj,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
@@ -3122,10 +3185,62 @@ static const struct fs_operations FS_DATA_PST_OPERATIONS = {
   .get_download_path = elektron_get_download_path
 };
 
+static const struct fs_operations FS_SAMPLES_STEREO_OPERATIONS = {
+  .id = FS_SAMPLES_STEREO,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_SORT_BY_NAME |
+    FS_OPTION_MONO | FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .name = "sample",
+  .gui_name = "Samples",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .ext = "wav",
+  .max_name_len = ELEKTRON_NAME_MAX_LEN,
+  .readdir = elektron_read_samples_dir,
+  .file_exists = elektron_sample_file_exists,
+  .print_item = elektron_print_smplrw,
+  .mkdir = elektron_create_samples_dir,
+  .delete = elektron_delete_samples_item,
+  .rename = elektron_move_samples_item,
+  .move = elektron_move_samples_item,
+  .download = elektron_download_sample,
+  .upload = elektron_upload_sample,
+  .load = elektron_sample_stereo_load,
+  .save = elektron_sample_save,
+  .get_exts = backend_get_audio_exts,
+  .get_upload_path = elektron_get_upload_path_smplrw,
+  .get_download_path = elektron_get_download_path_sample
+};
+
+static const struct fs_operations FS_DATA_DT2_PST_OPERATIONS = {
+  .id = FS_DATA_DT2_PST,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .name = "preset",
+  .gui_name = "Presets",
+  .gui_icon = BE_FILE_ICON_SND,
+  .ext = "pst",
+  .readdir = elektron_read_data_dir_snd,
+  .print_item = elektron_print_data,
+  .delete = elektron_clear_data_item_snd,
+  .move = elektron_move_data_item_snd,
+  .copy = elektron_copy_data_item_snd,
+  .clear = elektron_clear_data_item_snd,
+  .swap = elektron_swap_data_item_snd,
+  .download = elektron_download_data_snd_pkg,
+  .upload = elektron_upload_data_snd_pkg,
+  .get_slot = elektron_get_id_as_slot,
+  .load = load_file,
+  .save = save_file,
+  .get_exts = elektron_get_dt2_pst_exts,	//Backwards compatible Digitakt I
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = elektron_get_download_path
+};
+
 static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
   &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
-  &FS_DATA_PST_OPERATIONS, NULL
+  &FS_DATA_PST_OPERATIONS, &FS_SAMPLES_STEREO_OPERATIONS,
+  &FS_DATA_DT2_PST_OPERATIONS, NULL
 };
 
 static gint

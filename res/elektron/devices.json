@@ -82,4 +82,10 @@
 	"alias": "ahfx",
 	"filesystems": 72,
 	"storage": 0
+}, {
+	"id": 42,
+	"name": "Elektron Digitakt II",
+	"alias": "dt2",
+	"filesystems": 408,
+	"storage": 2
 }]
