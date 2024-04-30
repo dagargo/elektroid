@@ -374,6 +374,18 @@ package_close (struct package *pkg)
   package_destroy (pkg);
 }
 
+static gint
+packaget_get_pkg_sample_slots (struct backend *backend)
+{
+  struct elektron_data *data = backend->data;
+  gint slots = 127;		// slot 0 is never used
+  if (data->device_desc.id == 42)	// Digitakt II has 8 banks (1026)
+    {
+      slots *= 8;
+    }
+  return slots;
+}
+
 gint
 package_receive_pkg_resources (struct package *pkg,
 			       const gchar *payload_path,
@@ -395,7 +407,7 @@ package_receive_pkg_resources (struct package *pkg,
   metadata_path = path_chain (PATH_INTERNAL, payload_path, ".metadata");
   debug_print (1, "Getting metadata from %s...\n", metadata_path);
   metadata = g_byte_array_new ();
-  control->parts = 130;		// 128 sample slots, metadata and main.
+  control->parts = 2 + packaget_get_pkg_sample_slots (backend);	// main, metadata and sample slots.
   control->part = 0;
   set_job_control_progress (control, 0.0);
   ret = download_data (backend, metadata_path, metadata, control);
@@ -626,7 +638,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
   pkg->resources = g_list_append (pkg->resources, pkg_resource);
 
-  control->parts = 129;		// 128 sample slots and main.
+  control->parts = 1 + packaget_get_pkg_sample_slots (backend);	// main and sample slots
   control->part = 0;
   ret = upload_data (backend, payload_path, pkg_resource->data, control);
   if (ret)

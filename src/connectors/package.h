@@ -61,6 +61,13 @@ struct device_desc
   gchar alias[LABEL_MAX];
 };
 
+struct elektron_data
+{
+  guint16 seq;
+  guint8 storage;
+  struct device_desc device_desc;
+};
+
 struct package
 {
   gchar *name;
