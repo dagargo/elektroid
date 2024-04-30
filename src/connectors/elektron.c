@@ -22,7 +22,6 @@
 #include <math.h>
 #include <zlib.h>
 #include "elektron.h"
-#include "utils.h"
 #include "package.h"
 #include "common.h"
 #include "../config.h"
@@ -82,13 +81,6 @@ struct elektron_iterator_data
   guint8 has_metadata;
   guint32 fs;
   gint32 max_slots;
-};
-
-struct elektron_data
-{
-  guint16 seq;
-  guint8 storage;
-  struct device_desc device_desc;
 };
 
 typedef GByteArray *(*elektron_msg_id_func) (guint);
