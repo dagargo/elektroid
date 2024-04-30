@@ -293,13 +293,9 @@ gint save_file_char (const gchar *, const guint8 *, ssize_t);
 
 gchar *get_human_size (gint64, gboolean);
 
-void set_job_control_progress_with_cb (struct job_control *, gdouble,
-				       gpointer);
-
 void set_job_control_progress (struct job_control *, gdouble);
 
-void set_job_control_progress_no_sync (struct job_control *, gdouble,
-				       gpointer);
+void set_sample_progress_no_sync (struct job_control *, gdouble, gpointer);
 
 gboolean file_matches_extensions (const gchar *, gchar **);
 

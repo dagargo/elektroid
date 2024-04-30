@@ -480,7 +480,7 @@ editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
   gboolean completed, ready_to_play;
   struct editor *editor = data;
 
-  set_job_control_progress_no_sync (control, p, NULL);
+  set_sample_progress_no_sync (control, p, NULL);
   g_idle_add (editor_queue_draw, data);
   completed = editor_loading_completed_no_lock (editor, &actual_frames);
   if (!editor->ready)

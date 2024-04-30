@@ -919,8 +919,7 @@ sample_load_from_array (GByteArray *wave, GByteArray *sample,
   data.pos = 0;
   data.array = wave;
   return sample_load_raw (&data, &G_BYTE_ARRAY_IO, control, sample,
-			  sample_info_dst, set_job_control_progress_no_sync,
-			  NULL);
+			  sample_info_dst, set_sample_progress_no_sync, NULL);
 }
 
 gint
@@ -947,8 +946,7 @@ sample_load_from_file (const gchar *path, GByteArray *sample,
 {
   return sample_load_from_file_with_cb (path, sample, control,
 					sample_info_dst,
-					set_job_control_progress_no_sync,
-					NULL);
+					set_sample_progress_no_sync, NULL);
 }
 
 gchar **

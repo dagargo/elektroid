@@ -375,9 +375,8 @@ set_job_control_progress_value (struct job_control *control, gdouble p)
     (control->part / (double) control->parts) + (p / (double) control->parts);
 }
 
-void
-set_job_control_progress_with_cb (struct job_control *control, gdouble p,
-				  gpointer data)
+static void
+set_job_control_progress_with_cb (struct job_control *control, gdouble p)
 {
   g_mutex_lock (&control->mutex);
   set_job_control_progress_value (control, p);
@@ -392,12 +391,12 @@ set_job_control_progress_with_cb (struct job_control *control, gdouble p,
 void
 set_job_control_progress (struct job_control *control, gdouble p)
 {
-  set_job_control_progress_with_cb (control, p, NULL);
+  set_job_control_progress_with_cb (control, p);
 }
 
 void
-set_job_control_progress_no_sync (struct job_control *control, gdouble p,
-				  gpointer data)
+set_sample_progress_no_sync (struct job_control *control, gdouble p,
+			     gpointer data)
 {
   set_job_control_progress_value (control, p);
 
