@@ -71,6 +71,13 @@ struct elektron_sample_header
   guint32 padding[ELEKTRON_SAMPLE_INFO_PAD_I32_LEN];
 };
 
+enum elektron_iterator_mode
+{
+  ITER_MODE_SAMPLE,
+  ITER_MODE_RAW,
+  ITER_MODE_DATA
+};
+
 struct elektron_iterator_data
 {
   GByteArray *msg;
@@ -79,7 +86,7 @@ struct elektron_iterator_data
   guint16 operations;
   guint8 has_valid_data;
   guint8 has_metadata;
-  guint32 fs;
+  enum elektron_iterator_mode mode;
   gint32 max_slots;
 };
 
@@ -291,7 +298,7 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
 
       name_cp1252 = (gchar *) & data->msg->data[data->pos];
       elektron_get_utf8 (iter->item.name, name_cp1252);
-      if (data->fs == FS_RAW_ALL && iter->item.type == ELEKTROID_FILE)
+      if (data->mode == ITER_MODE_RAW && iter->item.type == ELEKTROID_FILE)
 	{
 	  //This eliminates the extension ".mc-snd" that the device provides.
 	  iter->item.name[strlen (iter->item.name) - 7] = 0;
@@ -306,15 +313,16 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
 
 static gint
 elektron_init_iterator (struct item_iterator *iter, GByteArray *msg,
-			iterator_next next, enum elektron_fs fs,
+			iterator_next next, enum elektron_iterator_mode mode,
 			gint32 max_slots)
 {
   struct elektron_iterator_data *data =
     g_malloc (sizeof (struct elektron_iterator_data));
 
   data->msg = msg;
-  data->pos = fs == FS_DATA_ALL ? FS_DATA_START_POS : FS_SAMPLES_START_POS;
-  data->fs = fs;
+  data->pos = mode == ITER_MODE_DATA ? FS_DATA_START_POS :
+    FS_SAMPLES_START_POS;
+  data->mode = mode;
   data->max_slots = max_slots;
 
   iter->data = data;
@@ -900,7 +908,8 @@ static gint
 elektron_read_common_dir (struct backend *backend,
 			  struct item_iterator *iter, const gchar *dir,
 			  const guint8 msg[], int size,
-			  fs_init_iter_func init_iter, enum elektron_fs fs,
+			  fs_init_iter_func init_iter,
+			  enum elektron_iterator_mode mode,
 			  fs_file_exists file_exists)
 {
   GByteArray *tx_msg, *rx_msg = NULL;
@@ -933,7 +942,7 @@ elektron_read_common_dir (struct backend *backend,
     }
 
   return elektron_init_iterator (iter, rx_msg, elektron_next_smplrw_entry,
-				 fs, -1);
+				 mode, -1);
 }
 
 static gint
@@ -944,7 +953,8 @@ elektron_read_samples_dir (struct backend *backend,
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_SAMPLE_READ_DIR_REQUEST,
 				   sizeof (FS_SAMPLE_READ_DIR_REQUEST),
-				   elektron_read_samples_dir, FS_SAMPLES,
+				   elektron_read_samples_dir,
+				   ITER_MODE_SAMPLE,
 				   elektron_sample_file_exists);
 }
 
@@ -955,7 +965,7 @@ elektron_read_raw_dir (struct backend *backend, struct item_iterator *iter,
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_RAW_READ_DIR_REQUEST,
 				   sizeof (FS_RAW_READ_DIR_REQUEST),
-				   elektron_read_raw_dir, FS_RAW_ALL,
+				   elektron_read_raw_dir, ITER_MODE_RAW,
 				   elektron_raw_file_exists);
 }
 
@@ -1916,7 +1926,7 @@ elektron_read_data_dir_prefix (struct backend *backend,
     }
 
   return elektron_init_iterator (iter, rx_msg, elektron_next_data_entry,
-				 FS_DATA_ALL, max_slots);
+				 ITER_MODE_DATA, max_slots);
 }
 
 static gint
@@ -2499,8 +2509,8 @@ elektron_get_download_name (struct backend *backend,
   gchar *dir, *name;
   struct item_iterator *iter;
 
-  if (ops->id == FS_SAMPLES || ops->id == FS_RAW_ALL
-      || ops->id == FS_RAW_PRESETS)
+  if (ops->id == FS_SAMPLES || ops->id == FS_SAMPLES_STEREO ||
+      ops->id == FS_RAW_ALL || ops->id == FS_RAW_PRESETS)
     {
       return g_path_get_basename (src_path);
     }
