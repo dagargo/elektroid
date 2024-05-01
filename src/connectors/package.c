@@ -741,7 +741,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
     {
       struct sample_info sample_info_dst;
       sample_info_dst.rate = ELEKTRON_SAMPLE_RATE;
-      sample_info_dst.channels = ELEKTRON_SAMPLE_CHANNELS;
+      sample_info_dst.channels = 0;	//Automatic
 
       json_reader_read_element (reader, i);
       json_reader_read_member (reader, PKG_TAG_FILE_NAME);

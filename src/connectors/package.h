@@ -26,7 +26,6 @@
 #define PACKAGE_H
 
 #define ELEKTRON_SAMPLE_RATE 48000
-#define ELEKTRON_SAMPLE_CHANNELS 1
 
 enum package_resource_type
 {
