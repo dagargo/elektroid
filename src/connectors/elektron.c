@@ -2946,8 +2946,8 @@ gint
 elektron_sample_load (const gchar *path, GByteArray *sample,
 		      struct job_control *control)
 {
-  return common_sample_load (path, sample, control, ELEKTRON_SAMPLE_RATE,
-			     ELEKTRON_SAMPLE_CHANNELS, SF_FORMAT_PCM_16);
+  return common_sample_load (path, sample, control, ELEKTRON_SAMPLE_RATE, 1,
+			     SF_FORMAT_PCM_16);
 }
 
 gint
