@@ -2448,11 +2448,11 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
 
       usleep (BE_REST_TIME_US);
     }
-  
+
   if (active)
-  {
-    set_job_control_progress (control, 1.0);
-  }
+    {
+      set_job_control_progress (control, 1.0);
+    }
 
   return elektron_close_datum (backend, jid, O_RDONLY, 0);
 }
