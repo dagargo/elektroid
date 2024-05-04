@@ -417,7 +417,7 @@ elektroid_rx_sysex_runner (gpointer data)
 
   sysex_transfer.status = WAITING;
   sysex_transfer.active = TRUE;
-  sysex_transfer.timeout = BE_DUMP_TIMEOUT;
+  sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
   sysex_transfer.batch = TRUE;
 
   g_timeout_add (100, progress_update, NULL);

@@ -629,7 +629,7 @@ cli_send (int argc, gchar *argv[], int *optind)
     }
 
   sysex_transfer.active = TRUE;
-  sysex_transfer.timeout = BE_DUMP_TIMEOUT;
+  sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
   sysex_transfer.raw = g_byte_array_new ();
 
   err = load_file (src_file, sysex_transfer.raw, NULL);
@@ -683,7 +683,7 @@ cli_receive (int argc, gchar *argv[], int *optind)
       return EXIT_FAILURE;
     }
 
-  sysex_transfer.timeout = BE_DUMP_TIMEOUT;
+  sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
   sysex_transfer.batch = TRUE;
 
   backend_rx_drain (&backend);
