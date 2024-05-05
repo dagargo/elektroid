@@ -39,11 +39,12 @@
 
 #if defined(__linux__)
 #define FRAMES_TO_PLAY (16 * 1024)
-#define OS_DATE_TIME_FILENAME_FORMAT "%F %T"
 #else
 #define FRAMES_TO_PLAY (64 * 1024)
-#define OS_DATE_TIME_FILENAME_FORMAT "%F %H.%M.%S"	//Some OSs do not allow ':' in the name.
 #endif
+
+//Some OSs do not allow ':' in the name. Same format used by the GNOME screenshot tool.
+#define DATE_TIME_FILENAME_FORMAT "%Y-%m-%d %H-%M-%S"
 
 #define MAX_FRAMES_PER_PIXEL 300
 
@@ -1241,7 +1242,7 @@ editor_save_clicked (GtkWidget *object, gpointer data)
       else
 	{
 	  GDateTime *dt = g_date_time_new_now_local ();
-	  gchar *s = g_date_time_format (dt, OS_DATE_TIME_FILENAME_FORMAT);
+	  gchar *s = g_date_time_format (dt, DATE_TIME_FILENAME_FORMAT);
 	  snprintf (suggestion, PATH_MAX, "%s %s.wav", _("Audio"), s);
 	  g_free (s);
 	  g_date_time_unref (dt);
