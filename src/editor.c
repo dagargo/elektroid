@@ -32,7 +32,6 @@
 #define EDITOR_OP_MOVE_SEL_START 4
 #define EDITOR_OP_MOVE_SEL_END 5
 
-
 #define EDITOR_LOOP_MARKER_WIDTH 7
 #define EDITOR_LOOP_MARKER_HALF_HEIGHT 4
 #define EDITOR_LOOP_MARKER_FULL_HEIGHT (EDITOR_LOOP_MARKER_HALF_HEIGHT * 2)
@@ -150,6 +149,7 @@ editor_reset (struct editor *editor, struct browser *browser)
 
   gtk_widget_set_sensitive (editor->play_button, FALSE);
   gtk_widget_set_sensitive (editor->stop_button, FALSE);
+  gtk_widget_set_sensitive (editor->loop_button, FALSE);
 }
 
 static void
@@ -229,6 +229,7 @@ editor_update_ui_on_load (gpointer data)
     {
       gtk_widget_set_sensitive (editor->play_button, TRUE);
       gtk_widget_set_sensitive (editor->stop_button, TRUE);
+      gtk_widget_set_sensitive (editor->loop_button, TRUE);
     }
   if (editor->preferences->autoplay)
     {
