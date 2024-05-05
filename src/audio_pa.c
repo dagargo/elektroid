@@ -240,7 +240,7 @@ audio_set_sink_volume (pa_context *context, const pa_sink_input_info *info,
     {
       gdouble v = pa_sw_volume_to_linear (pa_cvolume_avg (&info->volume));
       debug_print (1, "Setting volume to %f...\n", v);
-      audio->volume_change_callback (audio->volume_change_callback_data, v);
+      audio->volume_change_callback (audio->callback_data, v);
     }
 }
 
@@ -344,7 +344,7 @@ audio_server_info_callback (pa_context *context, const pa_server_info *info,
       pa_operation_unref (operation);
     }
 
-  audio->ready_callback ();
+  audio->ready_callback (audio);
 }
 
 static void
@@ -354,6 +354,10 @@ audio_context_callback (pa_context *context, void *data)
   if (pa_context_get_state (context) == PA_CONTEXT_READY)
     {
       pa_context_get_server_info (context, audio_server_info_callback, audio);
+    }
+  else
+    {
+      audio->ready_callback (audio);
     }
 }
 
@@ -371,6 +375,7 @@ audio_init_int (struct audio *audio)
   audio->mainloop = pa_threaded_mainloop_new ();
   if (!audio->mainloop)
     {
+      audio->ready_callback (audio->callback_data);
       return;
     }
 
@@ -382,6 +387,7 @@ audio_init_int (struct audio *audio)
       pa_context_unref (audio->context);
       pa_threaded_mainloop_free (audio->mainloop);
       audio->mainloop = NULL;
+      audio->ready_callback (audio->callback_data);
       return;
     }
   else

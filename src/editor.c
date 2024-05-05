@@ -50,7 +50,7 @@
 extern struct browser local_browser;
 extern struct browser remote_browser;
 
-void elektroid_update_audio_status ();
+void elektroid_update_audio_status (gboolean);
 
 gint elektroid_run_dialog_and_destroy (GtkWidget *);
 
@@ -1317,6 +1317,18 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
   return TRUE;
 }
 
+static void
+editor_update_audio_status (gpointer data)
+{
+  struct editor *editor = data;
+  gboolean status = audio_check (&editor->audio);
+
+  gtk_widget_set_sensitive (editor->record_button, status);
+  gtk_widget_set_sensitive (editor->volume_button, status);
+
+  elektroid_update_audio_status (status);
+}
+
 void
 editor_init (struct editor *editor, GtkBuilder *builder)
 {
@@ -1433,7 +1445,7 @@ editor_init (struct editor *editor, GtkBuilder *builder)
 		    &editor->audio);
 
   audio_init (&editor->audio, editor_set_volume_callback,
-	      elektroid_update_audio_status, editor);
+	      editor_update_audio_status, editor);
 
   editor_reset (editor, NULL);
 }

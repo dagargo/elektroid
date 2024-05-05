@@ -75,8 +75,8 @@ struct audio
   gboolean loop;
   guint32 pos;
   void (*volume_change_callback) (gpointer, gdouble);
-  gpointer volume_change_callback_data;
-  void (*ready_callback) ();
+  void (*ready_callback) (gpointer);
+  gpointer callback_data;
   guint32 release_frames;
   struct job_control control;	//Used to synchronize access to sample, frames, loop and pos members.
   gchar *path;
@@ -104,7 +104,7 @@ void audio_reset_record_buffer (struct audio *, guint, audio_monitor_notifier,
 				void *);
 
 void audio_init (struct audio *, void (*)(gpointer, gdouble),
-		 void (*)(), gpointer);
+		 void (*)(gpointer), gpointer);
 
 gint audio_run (struct audio *);
 

@@ -241,10 +241,10 @@ elektroid_load_devices (gboolean auto_select)
 }
 
 void
-elektroid_update_audio_status ()
+elektroid_update_audio_status (gboolean status)
 {
   gchar msg[LABEL_MAX];
-  if (audio_check (&editor.audio))
+  if (status)
     {
       snprintf (msg, LABEL_MAX, "%s: %s %s, %.5g kHz %s", _("Audio"),
 		audio_name (), audio_version (),

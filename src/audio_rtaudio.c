@@ -207,8 +207,7 @@ audio_init_int (struct audio *audio)
 	       dev_info.name, audio->sample_info.rate, buffer_frames);
 
   audio->volume = 1.0;
-  audio->volume_change_callback (audio->volume_change_callback_data,
-				 audio->volume);
+  audio->volume_change_callback (audio->callback_data, audio->volume);
 
   audio->record_rtaudio = rtaudio_create (apis[i]);
   if (rtaudio_error (audio->record_rtaudio))
@@ -251,9 +250,7 @@ audio_init_int (struct audio *audio)
 	       "Using %s for recording with %d Hz sample rate and %d frames...\n",
 	       dev_info.name, audio->sample_info.rate, buffer_frames);
 
-  audio->ready_callback ();
-
-  return;
+  goto end;
 
 error_record:
   rtaudio_destroy (audio->record_rtaudio);
@@ -261,6 +258,8 @@ error_record:
 error_playback:
   rtaudio_destroy (audio->playback_rtaudio);
   audio->playback_rtaudio = NULL;
+end:
+  audio->ready_callback (audio->callback_data);
 }
 
 void

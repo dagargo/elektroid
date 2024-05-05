@@ -226,7 +226,7 @@ audio_reset_record_buffer (struct audio *audio, guint record_options,
 void
 audio_init (struct audio *audio,
 	    void (*volume_change_callback) (gpointer, gdouble),
-	    void (*audio_ready_callback) (), gpointer data)
+	    void (*audio_ready_callback) (gpointer), gpointer data)
 {
   debug_print (1, "Initializing audio (%s %s)...\n", audio_name (),
 	       audio_version ());
@@ -238,8 +238,8 @@ audio_init (struct audio *audio,
   audio->path = NULL;
   audio->status = AUDIO_STATUS_STOPPED;
   audio->volume_change_callback = volume_change_callback;
-  audio->volume_change_callback_data = data;
   audio->ready_callback = audio_ready_callback;
+  audio->callback_data = data;
   audio->control.data = g_malloc (sizeof (struct sample_info));
   audio->control.callback = NULL;
   audio->sel_len = 0;
