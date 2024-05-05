@@ -1779,7 +1779,7 @@ microfreak_wavetable_upload (struct backend *backend, const gchar *path,
   header.id1 = id;
   header.status1 = 1;
   header.status2 = 1;
-  snprintf (header.name, MICROFREAK_WAVETABLE_NAME_LEN, name);
+  snprintf (header.name, MICROFREAK_WAVETABLE_NAME_LEN, "%s", name);
   g_free (name);
 
   control->parts = 1 + MICROFREAK_WAVETABLE_PARTS;
