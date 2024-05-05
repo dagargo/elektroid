@@ -241,9 +241,16 @@ void
 elektroid_update_audio_status ()
 {
   gchar status[LABEL_MAX];
-  snprintf (status, LABEL_MAX, "%s: %s %s, %.5g kHz", _("Audio"),
-	    audio_name (), audio_version (),
-	    editor.audio.sample_info.rate / 1000.f);
+  if (audio_check (editor.audio))
+    {
+      snprintf (status, LABEL_MAX, "%s: %s %s, %.5g kHz", _("Audio"),
+		audio_name (), audio_version (),
+		editor.audio.sample_info.rate / 1000.f);
+    }
+  else
+    {
+      snprintf (status, LABEL_MAX, "%s: -", _("Audio"));
+    }
   gtk_label_set_text (host_audio_status_label, status);
   snprintf (status, LABEL_MAX, "MIDI: %s", backend_name ());
   gtk_label_set_text (host_midi_status_label, status);
