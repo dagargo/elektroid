@@ -230,10 +230,10 @@ editor_update_ui_on_load (gpointer data)
       gtk_widget_set_sensitive (editor->play_button, TRUE);
       gtk_widget_set_sensitive (editor->stop_button, TRUE);
       gtk_widget_set_sensitive (editor->loop_button, TRUE);
-    }
-  if (editor->preferences->autoplay)
-    {
-      audio_start_playback (&editor->audio);
+      if (editor->preferences->autoplay)
+	{
+	  audio_start_playback (&editor->audio);
+	}
     }
 
   return FALSE;
@@ -532,8 +532,12 @@ void
 editor_play_clicked (GtkWidget *object, gpointer data)
 {
   struct editor *editor = data;
-  audio_stop_recording (&editor->audio);
-  audio_start_playback (&editor->audio);
+
+  if (audio_check (&editor->audio))
+    {
+      audio_stop_recording (&editor->audio);
+      audio_start_playback (&editor->audio);
+    }
 }
 
 static void
@@ -1298,7 +1302,7 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
 
   if (event->keyval == GDK_KEY_space)
     {
-      audio_start_playback (&editor->audio);
+      editor_play_clicked (NULL, editor);
     }
   else if (event->keyval == GDK_KEY_Delete)
     {
