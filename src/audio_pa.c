@@ -111,11 +111,6 @@ audio_stop_and_flush_stream (struct audio *audio, pa_stream *stream)
 void
 audio_stop_playback (struct audio *audio)
 {
-  if (!audio->playback_stream)
-    {
-      return;
-    }
-
   g_mutex_lock (&audio->control.mutex);
   if (audio->status == AUDIO_STATUS_PREPARING_RECORD ||
       audio->status == AUDIO_STATUS_RECORDING ||
@@ -154,11 +149,6 @@ void
 audio_start_playback (struct audio *audio)
 {
   pa_operation *operation;
-
-  if (!audio->playback_stream)
-    {
-      return;
-    }
 
   audio_stop_playback (audio);
 
