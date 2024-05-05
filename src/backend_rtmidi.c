@@ -24,11 +24,15 @@
 #if defined(__linux__)
 #define ELEKTROID_RTMIDI_API RTMIDI_API_LINUX_ALSA
 #define FIRST_OUTPUT_PORT 1	//Skip Midi Through
+#elif defined(__APPLE__) && defined(__MACH__)
+#define ELEKTROID_RTMIDI_API RTMIDI_API_MACOSX_CORE
+#define FIRST_OUTPUT_PORT 0
 #else
-#define WINDOWS_INPUT_OUTPUT_SEPARATOR " :: "
 #define ELEKTROID_RTMIDI_API RTMIDI_API_WINDOWS_MM
 #define FIRST_OUTPUT_PORT 1	//Skip Microsoft GS Wavetable Synth 0
 #endif
+
+#define INPUT_OUTPUT_SEPARATOR " :: "
 
 void
 backend_destroy_int (struct backend *backend)
@@ -105,7 +109,7 @@ backend_init_int (struct backend *backend, const gchar *id)
 	  guint iportnamelen = strlen (iportname);
 	  if (!strncmp (id, iportname, iportnamelen) &&
 	      !strcmp (id + iportnamelen +
-		       strlen (WINDOWS_INPUT_OUTPUT_SEPARATOR), oportname))
+		       strlen (INPUT_OUTPUT_SEPARATOR), oportname))
 #endif
 	    {
 	      backend->inputp = rtmidi_in_create (ELEKTROID_RTMIDI_API,
@@ -274,9 +278,9 @@ backend_fill_devices_array (GArray *devices)
 	  backend_device = g_malloc (sizeof (struct backend_device));
 	  backend_device->type = BE_TYPE_MIDI;
 	  snprintf (backend_device->id, LABEL_MAX, "%s%s%s", iportname,
-		    WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
+		    INPUT_OUTPUT_SEPARATOR, oportname);
 	  snprintf (backend_device->name, LABEL_MAX, "%s%s%s", iportname,
-		    WINDOWS_INPUT_OUTPUT_SEPARATOR, oportname);
+		    INPUT_OUTPUT_SEPARATOR, oportname);
 	  g_array_append_vals (devices, backend_device, 1);
 #endif
 	}
