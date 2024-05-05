@@ -64,6 +64,8 @@ For Arch Linux, run `sudo pacman -S base-devel autoconf libtool alsa-lib zlib li
 
 For MSYS2 (UCRT64), run `pacman -S mingw-w64-x86_64-toolchain gettext gettext-devel mingw-w64-x86_64-autotools mingw-w64-x86_64-gcc mingw-w64-x86_64-libzip mingw-w64-x86_64-gtk3 mingw-w64-x86_64-json-glib mingw-w64-x86_64-libsndfile mingw-w64-x86_64-rtmidi mingw-w64-x86_64-rtaudio mingw-w64-x86_64-libsamplerate` to install the build dependencies.
 
+For OSX (Homebrew), run `homebrew install automake bltool pkg-config gtk+3 libsndfile libsamplerate gettext zlib json-glib libzip rtaudio rtmidi`.
+
 ### MIDI backend
 
 By default, Elektroid uses ALSA as the MIDI backend on Linux and RtMidi on other OSs. To use RtMidi on Linux, pass `RTMIDI=yes` to `./configure`. In this case, the RtMidi development package will be needed (`librtmidi-dev` on Debian).
