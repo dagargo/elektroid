@@ -53,6 +53,9 @@
 #define TREEVIEW_SCROLL_LINES 2
 #define TREEVIEW_EDGE_SIZE 20
 
+#define BACKEND_PLAYING "\u23f5"
+#define BACKEND_STOPPED "\u23f9"
+
 enum device_list_store_columns
 {
   DEVICES_LIST_STORE_TYPE_FIELD,
@@ -240,20 +243,29 @@ elektroid_load_devices (gboolean auto_select)
 void
 elektroid_update_audio_status ()
 {
-  gchar status[LABEL_MAX];
-  if (audio_check (editor.audio))
+  gchar msg[LABEL_MAX];
+  if (audio_check (&editor.audio))
     {
-      snprintf (status, LABEL_MAX, "%s: %s %s, %.5g kHz", _("Audio"),
+      snprintf (msg, LABEL_MAX, "%s: %s %s, %.5g kHz %s", _("Audio"),
 		audio_name (), audio_version (),
-		editor.audio.sample_info.rate / 1000.f);
+		editor.audio.sample_info.rate / 1000.f, BACKEND_PLAYING);
     }
   else
     {
-      snprintf (status, LABEL_MAX, "%s: -", _("Audio"));
+      snprintf (msg, LABEL_MAX, "%s: %s %s %s", _("Audio"), audio_name (),
+		audio_version (), BACKEND_STOPPED);
     }
-  gtk_label_set_text (host_audio_status_label, status);
-  snprintf (status, LABEL_MAX, "MIDI: %s", backend_name ());
-  gtk_label_set_text (host_midi_status_label, status);
+  gtk_label_set_text (host_audio_status_label, msg);
+}
+
+static void
+elektroid_update_midi_status ()
+{
+  gchar msg[LABEL_MAX];
+  const gchar *v = backend.type == BE_TYPE_MIDI ? BACKEND_PLAYING :
+    BACKEND_STOPPED;
+  snprintf (msg, LABEL_MAX, "MIDI: %s %s", backend_name (), v);
+  gtk_label_set_text (host_midi_status_label, msg);
 }
 
 static void
@@ -2216,6 +2228,7 @@ elektroid_set_device_runner (gpointer data)
   g_timeout_add (100, progress_pulse, NULL);
   sysex_transfer.err = connector_init_backend (&backend, be_sys_device, NULL,
 					       &sysex_transfer);
+  elektroid_update_midi_status ();
   elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
   progress_response (backend_check (&backend) ? GTK_RESPONSE_ACCEPT
 		     : GTK_RESPONSE_CANCEL);
@@ -2259,6 +2272,7 @@ elektroid_set_device (GtkWidget *object, gpointer data)
   if (be_sys_device.type == BE_TYPE_SYSTEM)
     {
       connector_init_backend (&backend, &be_sys_device, NULL, NULL);
+      elektroid_update_midi_status ();
       err = 0;
     }
   else
@@ -3034,6 +3048,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
 
   editor_init (&editor, builder);
+  elektroid_update_midi_status ();
   tasks_init (&tasks, builder);
   progress_init (builder);
 
