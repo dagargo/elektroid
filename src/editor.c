@@ -970,7 +970,7 @@ editor_button_release (GtkWidget *widget, GdkEventButton *event,
 	  editor->audio.sel_len = -editor->audio.sel_len;
 	}
 
-      debug_print (2, "Audio selected from %d with len %ld...\n",
+      debug_print (2, "Audio selected from %d with len %" PRId64 "...\n",
 		   editor->audio.sel_start, editor->audio.sel_len);
 
       if (editor->audio.sel_len)
