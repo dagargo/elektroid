@@ -1528,7 +1528,6 @@ elektroid_upload_task_runner (gpointer data)
 				   &tasks.transfer.control);
   g_free (tasks.transfer.control.data);
   tasks.transfer.control.data = NULL;
-  g_idle_add (elektroid_check_backend_bg, NULL);
 
   if (res && tasks.transfer.control.active)
     {
@@ -1738,7 +1737,6 @@ elektroid_download_task_runner (gpointer userdata)
   res = tasks.transfer.fs_ops->download (remote_browser.backend,
 					 tasks.transfer.src, array,
 					 &tasks.transfer.control);
-  g_idle_add (elektroid_check_backend_bg, NULL);
 
   g_mutex_lock (&tasks.transfer.control.mutex);
   if (res && tasks.transfer.control.active)
