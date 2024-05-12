@@ -1308,6 +1308,7 @@ elektroid_run_next (gpointer data)
       if (remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
 	{
 	  gtk_widget_set_sensitive (remote_box, FALSE);
+	  gtk_widget_set_sensitive (fs_combo, FALSE);
 	}
       gtk_widget_set_sensitive (ma_data.box, FALSE);
 
@@ -1352,13 +1353,16 @@ elektroid_run_next (gpointer data)
     }
   else
     {
-      gtk_widget_set_sensitive (remote_box, TRUE);
-
-      if ((remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
-	  && remote_browser.dirty)
+      if (remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
 	{
-	  remote_browser.dirty = FALSE;
-	  g_idle_add (browser_load_dir_if_needed, &remote_browser);
+	  gtk_widget_set_sensitive (remote_box, TRUE);
+	  gtk_widget_set_sensitive (fs_combo, TRUE);
+
+	  if (remote_browser.dirty)
+	    {
+	      remote_browser.dirty = FALSE;
+	      g_idle_add (browser_load_dir_if_needed, &remote_browser);
+	    }
 	}
     }
 
