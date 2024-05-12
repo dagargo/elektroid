@@ -75,7 +75,8 @@ enum elektron_iterator_mode
 {
   ITER_MODE_SAMPLE,
   ITER_MODE_RAW,
-  ITER_MODE_DATA
+  ITER_MODE_DATA,
+  ITER_MODE_DATA_SND
 };
 
 struct elektron_iterator_data
@@ -88,6 +89,7 @@ struct elektron_iterator_data
   guint8 has_metadata;
   enum elektron_iterator_mode mode;
   gint32 max_slots;
+  struct backend *backend;
 };
 
 typedef GByteArray *(*elektron_msg_id_func) (guint);
@@ -109,6 +111,9 @@ typedef gint (*elektron_path_func) (struct backend *, const gchar *);
 
 typedef gint (*elektron_src_dst_func) (struct backend *, const gchar *,
 				       const gchar *);
+
+static gint elektron_download_data_snd (struct backend *, const gchar *,
+					GByteArray *, struct job_control *);
 
 static gint elektron_download_data_snd_pkg (struct backend *, const gchar *,
 					    GByteArray *,
@@ -225,13 +230,17 @@ elektron_print_data (struct item_iterator *iter,
 		     struct backend *backend,
 		     const struct fs_operations *fs_ops)
 {
-  gchar *hsize = get_human_size (iter->item.size, FALSE);
   struct elektron_iterator_data *data = iter->data;
+  gchar *hsize = get_human_size (iter->item.size, FALSE);
   gchar *slot = iter->item.id > 0 ?
     elektron_get_id_as_slot (&iter->item, backend) : strdup (" -1");
-  printf ("%c %04x %d %d %10s %s %s\n", iter->item.type, data->operations,
-	  data->has_valid_data, data->has_metadata, hsize, slot,
-	  iter->item.name);
+  gboolean info = fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN;
+
+  printf ("%c %04x %d %d %10s %s %-*s%s%s%s\n", iter->item.type,
+	  data->operations, data->has_valid_data, data->has_metadata,
+	  hsize, slot, DEFAULT_MAX_NAME_LEN, iter->item.name,
+	  info ? " [ " : "", iter->item.object_info, info ? " ]" : "");
+
   g_free (hsize);
   g_free (slot);
 }
@@ -312,7 +321,7 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
 }
 
 static gint
-elektron_init_iterator (struct item_iterator *iter, const gchar *dir,
+elektron_init_iterator (struct backend *backend, struct item_iterator *iter, const gchar *dir,
 			GByteArray *msg, iterator_next next,
 			enum elektron_iterator_mode mode, gint32 max_slots)
 {
@@ -320,10 +329,11 @@ elektron_init_iterator (struct item_iterator *iter, const gchar *dir,
     g_malloc (sizeof (struct elektron_iterator_data));
 
   data->msg = msg;
-  data->pos = mode == ITER_MODE_DATA ? FS_DATA_START_POS :
-    FS_SAMPLES_START_POS;
+  data->pos = (mode == ITER_MODE_DATA || mode == ITER_MODE_DATA_SND) ?
+    FS_DATA_START_POS : FS_SAMPLES_START_POS;
   data->mode = mode;
   data->max_slots = max_slots;
+  data->backend = backend;
 
   init_item_iterator (iter, dir, data, next, elektron_free_iterator_data);
   iter->item.id = 0;		//This is needed in case the response when reading a directory is empty
@@ -938,7 +948,7 @@ elektron_read_common_dir (struct backend *backend,
       return -ENOTDIR;
     }
 
-  return elektron_init_iterator (iter, dir, rx_msg,
+  return elektron_init_iterator (backend, iter, dir, rx_msg,
 				 elektron_next_smplrw_entry, mode, -1);
 }
 
@@ -1831,6 +1841,7 @@ elektron_next_data_entry (struct item_iterator *iter)
       data->operations = 0;
       data->has_valid_data = 0;
       data->has_metadata = 0;
+      iter->item.object_info[0] = 0;
       break;
     case 2:
       iter->item.type = has_children ? ELEKTROID_DIR : ELEKTROID_FILE;
@@ -1853,6 +1864,24 @@ elektron_next_data_entry (struct item_iterator *iter)
       data->has_metadata = data->msg->data[data->pos];
       data->pos++;
 
+      iter->item.object_info[0] = 0;
+      if (data->has_metadata && data->mode == ITER_MODE_DATA_SND)
+	{
+	  gchar metadata_path[PATH_MAX];
+	  GByteArray *output = g_byte_array_new ();
+
+	  snprintf (metadata_path, PATH_MAX, "%s/%d/%s", iter->dir,
+		    iter->item.id, FS_DATA_METADATA_FILE);
+	  debug_print (2, "Reading metadata from %s...\n", metadata_path);
+	  if (!elektron_download_data_snd (data->backend, metadata_path,
+					   output, NULL))
+	    {
+	      package_set_object_info_from_snd_metadata (&iter->item, output);
+	    }
+
+	  g_byte_array_free (output, TRUE);
+	}
+
       break;
     default:
       error_print ("Unrecognized data entry: %d\n", iter->item.type);
@@ -1869,6 +1898,7 @@ not_found:
   data->operations = 0;
   data->has_valid_data = 0;
   data->has_metadata = 0;
+  iter->item.object_info[0] = 0;
   return 0;
 }
 
@@ -1895,6 +1925,7 @@ static gint
 elektron_read_data_dir_prefix (struct backend *backend,
 			       struct item_iterator *iter,
 			       const gchar *dir, const char *prefix,
+			       enum elektron_iterator_mode mode,
 			       gint32 max_slots)
 {
   int res;
@@ -1922,8 +1953,8 @@ elektron_read_data_dir_prefix (struct backend *backend,
       return -ENOTDIR;
     }
 
-  return elektron_init_iterator (iter, dir, rx_msg, elektron_next_data_entry,
-				 ITER_MODE_DATA, max_slots);
+  return elektron_init_iterator (backend, iter, dir, rx_msg,
+				 elektron_next_data_entry, mode, max_slots);
 }
 
 static gint
@@ -1931,7 +1962,8 @@ elektron_read_data_dir_any (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
 			    gchar **extensions)
 {
-  return elektron_read_data_dir_prefix (backend, iter, dir, NULL, -1);
+  return elektron_read_data_dir_prefix (backend, iter, dir, NULL,
+					ITER_MODE_DATA, -1);
 }
 
 static gint
@@ -1940,7 +1972,8 @@ elektron_read_data_dir_prj (struct backend *backend,
 			    gchar **extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
-					FS_DATA_PRJ_PREFIX, 128);
+					FS_DATA_PRJ_PREFIX, ITER_MODE_DATA,
+					128);
 }
 
 static gint
@@ -1949,7 +1982,8 @@ elektron_read_data_dir_snd (struct backend *backend,
 			    gchar **extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
-					FS_DATA_SND_PREFIX, 256);
+					FS_DATA_SND_PREFIX,
+					ITER_MODE_DATA_SND, 256);
 }
 
 static gint
@@ -1960,7 +1994,8 @@ elektron_read_data_dir_pst (struct backend *backend,
   struct elektron_data *data = backend->data;
   gint32 slots = data->device_desc.id == 32 ? 512 : 128;	//Analog Heat +FX has 512 presets
   return elektron_read_data_dir_prefix (backend, iter, dir,
-					FS_DATA_PST_PREFIX, slots);
+					FS_DATA_PST_PREFIX,
+					ITER_MODE_DATA, slots);
 }
 
 static gint
@@ -3142,7 +3177,8 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .id = FS_DATA_SND,
   .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
   .name = "sound",
   .gui_name = "Sounds",
   .gui_icon = BE_FILE_ICON_SND,
@@ -3219,7 +3255,8 @@ static const struct fs_operations FS_DATA_DT2_PST_OPERATIONS = {
   .id = FS_DATA_DT2_PST,
   .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = BE_FILE_ICON_SND,

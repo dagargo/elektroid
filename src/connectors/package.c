@@ -44,9 +44,86 @@
 #define MAN_TAG_HASH "hash"
 #define MAN_TAG_SIZE "size"
 
+#define METADATA_TAG_SAMPLE_REFS "sound_tags"
+
 #define MAX_PACKAGE_LEN (64 * 1024 * 1024)
 #define MAX_MANIFEST_LEN (128 * 1024)
 #define MANIFEST_FILENAME "manifest.json"
+
+void
+package_set_object_info_from_snd_metadata (struct item *item,
+					   GByteArray *metadata)
+{
+  JsonParser *parser;
+  JsonReader *reader;
+  GError *error;
+  gint elements;
+  gchar *info;
+  gboolean first = TRUE;
+  GString *tags = g_string_new (NULL);
+
+  parser = json_parser_new ();
+  if (!json_parser_load_from_data (parser, (gchar *) metadata->data,
+				   metadata->len, &error))
+    {
+      error_print ("Unable to parse stream: %s. Continuing...",
+		   error->message);
+      g_clear_error (&error);
+      goto cleanup_parser;
+    }
+
+  reader = json_reader_new (json_parser_get_root (parser));
+  if (!reader)
+    {
+      error_print ("Unable to read from parser. Continuing...");
+      goto cleanup_parser;
+    }
+
+  if (!json_reader_read_member (reader, METADATA_TAG_SAMPLE_REFS))
+    {
+      debug_print (1, "Member '%s' not found\n", METADATA_TAG_SAMPLE_REFS);
+      goto cleanup_reader;
+    }
+
+  if (!json_reader_is_array (reader))
+    {
+      error_print ("Member '%s' is not an array. Continuing...\n",
+		   METADATA_TAG_SAMPLE_REFS);
+      goto cleanup_reader;
+    }
+
+  elements = json_reader_count_elements (reader);
+  if (!elements)
+    {
+      debug_print (1, "No tags found\n");
+      goto cleanup_reader;
+    }
+
+  for (gint i = 0; i < elements; i++)
+    {
+      const gchar *tag;
+
+      if (!json_reader_read_element (reader, i))
+	{
+	  error_print ("Cannot read element %d. Continuing...\n", i);
+	  continue;
+	}
+
+      tag = json_reader_get_string_value (reader);
+      g_string_append_printf (tags, "%s%s", first ? "" : ", ", tag);
+
+      json_reader_end_element (reader);
+      first = FALSE;
+    }
+
+cleanup_reader:
+  g_object_unref (reader);
+cleanup_parser:
+  g_object_unref (parser);
+  info = g_string_free (tags, FALSE);
+  snprintf (item->object_info, LABEL_MAX, "%s", info);
+  g_free (info);
+}
 
 static gint
 package_add_resource (struct package *pkg,

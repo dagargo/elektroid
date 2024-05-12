@@ -80,6 +80,9 @@ struct package
   struct package_resource *manifest;
 };
 
+void package_set_object_info_from_snd_metadata (struct item *item,
+						GByteArray * metadata);
+
 gint package_begin (struct package *, gchar *, const gchar *,
 		    const struct device_desc *, enum package_type);
 

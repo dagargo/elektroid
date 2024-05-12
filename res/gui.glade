@@ -1930,6 +1930,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                       <object class="GtkTreeViewColumn" id="remote_tree_view_info_column">
                                         <property name="visible">False</property>
                                         <property name="title" translatable="yes">Information</property>
+                                        <property name="expand">True</property>
                                         <child>
                                           <object class="GtkCellRendererText">
                                             <property name="ellipsize">middle</property>
