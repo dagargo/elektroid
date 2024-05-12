@@ -343,23 +343,9 @@ elektroid_update_backend_status ()
 gboolean
 elektroid_check_backend (gboolean startup)
 {
-  GtkTreeIter iter;
-  gboolean remote_sensitive;
   gboolean connected = backend_check (&backend);
-  gboolean queued = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
-					   NULL, NULL, NULL);
 
-  if (!remote_browser.fs_ops
-      || remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
-    {
-      remote_sensitive = connected && !queued;
-    }
-  else
-    {
-      remote_sensitive = connected;
-    }
-  gtk_widget_set_sensitive (remote_box, remote_sensitive);
-  gtk_widget_set_sensitive (ma_data.box, !queued);
+  gtk_widget_set_sensitive (remote_box, connected);
 
   if (!connected)
     {
@@ -1364,6 +1350,7 @@ elektroid_run_next (gpointer data)
 	      g_idle_add (browser_load_dir_if_needed, &remote_browser);
 	    }
 	}
+      gtk_widget_set_sensitive (ma_data.box, TRUE);
     }
 
   tasks_check_buttons (&tasks);
