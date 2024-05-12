@@ -1291,8 +1291,8 @@ elektroid_run_next (gpointer data)
 
   if (!transfer_active && found)
     {
-      struct fs_operations *ops = backend_get_fs_operations_by_id (&backend,
-								   fs);
+      const struct fs_operations *ops =
+	backend_get_fs_operations_by_id (&backend, fs);
       if (ops->options & FS_OPTION_SINGLE_OP)
 	{
 	  gtk_widget_set_sensitive (remote_box, FALSE);
