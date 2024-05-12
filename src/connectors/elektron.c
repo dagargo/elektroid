@@ -2387,9 +2387,8 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
   g_mutex_unlock (&control->mutex);
   while (!last && active)
     {
-      tx_msg =
-	elektron_new_msg (DATA_READ_PARTIAL_REQUEST,
-			  sizeof (DATA_READ_PARTIAL_REQUEST));
+      tx_msg = elektron_new_msg (DATA_READ_PARTIAL_REQUEST,
+				 sizeof (DATA_READ_PARTIAL_REQUEST));
       g_byte_array_append (tx_msg, (guint8 *) & jidbe, sizeof (guint32));
       seqbe = g_htonl (seq);
       g_byte_array_append (tx_msg, (guint8 *) & seqbe, sizeof (guint32));
@@ -3394,8 +3393,8 @@ elektron_configure_device (struct backend *backend, guint8 id)
     {
       if ((*fs_ops)->id & filesystems)
 	{
-	  backend->fs_ops =
-	    g_slist_append (backend->fs_ops, (gpointer) * fs_ops);
+	  backend->fs_ops = g_slist_append (backend->fs_ops,
+					    (gpointer) * fs_ops);
 	}
       fs_ops++;
     }
@@ -3499,8 +3498,8 @@ elektron_handshake (struct backend *backend)
 
   backend->destroy_data = backend_destroy_data;
   backend->upgrade_os = elektron_upgrade_os;
-  backend->get_storage_stats =
-    data->storage ? elektron_get_storage_stats : NULL;
+  backend->get_storage_stats = data->storage ? elektron_get_storage_stats :
+    NULL;
 
   return 0;
 }

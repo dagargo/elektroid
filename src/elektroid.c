@@ -1478,9 +1478,8 @@ elektroid_upload_task_runner (gpointer data)
     }
 
   array = g_byte_array_new ();
-  res =
-    tasks.transfer.fs_ops->load (tasks.transfer.src, array,
-				 &tasks.transfer.control);
+  res = tasks.transfer.fs_ops->load (tasks.transfer.src, array,
+				     &tasks.transfer.control);
   if (res)
     {
       error_print ("Error while loading file\n");
@@ -1512,10 +1511,9 @@ elektroid_upload_task_runner (gpointer data)
 	}
     }
 
-  res =
-    tasks.transfer.fs_ops->upload (remote_browser.backend,
-				   upload_path, array,
-				   &tasks.transfer.control);
+  res = tasks.transfer.fs_ops->upload (remote_browser.backend,
+				       upload_path, array,
+				       &tasks.transfer.control);
   g_free (tasks.transfer.control.data);
   tasks.transfer.control.data = NULL;
 
@@ -1583,11 +1581,10 @@ elektroid_add_upload_task_path (const gchar *rel_path, const gchar *src_dir,
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
       if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 	{
-	  upload_path =
-	    remote_browser.fs_ops->get_upload_path (&backend,
-						    remote_browser.fs_ops,
-						    dst_abs_dir,
-						    src_abs_path);
+	  upload_path = remote_browser.fs_ops->get_upload_path (&backend,
+								remote_browser.fs_ops,
+								dst_abs_dir,
+								src_abs_path);
 	}
       else
 	{
@@ -1756,9 +1753,8 @@ elektroid_download_task_runner (gpointer userdata)
     {
       debug_print (1, "Writing %d bytes to file %s (filesystem %s)...\n",
 		   array->len, dst_path, tasks.transfer.fs_ops->name);
-      res =
-	tasks.transfer.fs_ops->save (dst_path, array,
-				     &tasks.transfer.control);
+      res = tasks.transfer.fs_ops->save (dst_path, array,
+					 &tasks.transfer.control);
       if (!res)
 	{
 	  tasks.transfer.status = TASK_STATUS_COMPLETED_OK;
@@ -3124,9 +3120,8 @@ main (int argc, char *argv[])
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
 
-  while ((opt =
-	  getopt_long (argc, argv, "l:vh", ELEKTROID_OPTIONS,
-		       &long_index)) != -1)
+  while ((opt = getopt_long (argc, argv, "l:vh", ELEKTROID_OPTIONS,
+			     &long_index)) != -1)
     {
       switch (opt)
 	{
