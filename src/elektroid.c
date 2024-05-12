@@ -1291,7 +1291,9 @@ elektroid_run_next (gpointer data)
 
   if (!transfer_active && found)
     {
-      if (remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
+      struct fs_operations *ops = backend_get_fs_operations_by_id (&backend,
+								   fs);
+      if (ops->options & FS_OPTION_SINGLE_OP)
 	{
 	  gtk_widget_set_sensitive (remote_box, FALSE);
 	  gtk_widget_set_sensitive (fs_combo, FALSE);
@@ -1315,7 +1317,7 @@ elektroid_run_next (gpointer data)
       set_job_control_progress (&tasks.transfer.control, 0.0);
       tasks.transfer.src = src;
       tasks.transfer.dst = dst;
-      tasks.transfer.fs_ops = backend_get_fs_operations_by_id (&backend, fs);
+      tasks.transfer.fs_ops = ops;
       tasks.transfer.batch_id = batch_id;
       tasks.transfer.mode = mode;
       debug_print (1,
@@ -1339,7 +1341,8 @@ elektroid_run_next (gpointer data)
     }
   else
     {
-      if (remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
+      if (remote_browser.fs_ops &&
+	  remote_browser.fs_ops->options & FS_OPTION_SINGLE_OP)
 	{
 	  gtk_widget_set_sensitive (remote_box, TRUE);
 	  gtk_widget_set_sensitive (fs_combo, TRUE);
