@@ -2376,15 +2376,22 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
 
   usleep (BE_REST_TIME_US);
 
-  jidbe = g_htonl (jid);
+  if (control)
+    {
+      control->data = NULL;
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
+    }
+  else
+    {
+      active = TRUE;
+    }
 
+  jidbe = g_htonl (jid);
   err = 0;
   seq = 0;
   last = 0;
-  control->data = NULL;
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
   while (!last && active)
     {
       tx_msg = elektron_new_msg (DATA_READ_PARTIAL_REQUEST,
@@ -2457,7 +2464,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
       usleep (BE_REST_TIME_US);
     }
 
-  if (active)
+  if (control && active)
     {
       set_job_control_progress (control, 1.0);
     }
