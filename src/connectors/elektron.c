@@ -2561,7 +2561,7 @@ elektron_get_download_name (struct backend *backend,
   gint32 id;
   gint ret;
   gchar *dir, *name;
-  struct item_iterator *iter;
+  struct item_iterator iter;
 
   if (ops->id == FS_SAMPLES || ops->id == FS_SAMPLES_STEREO ||
       ops->id == FS_RAW_ALL || ops->id == FS_RAW_PRESETS)
@@ -2569,9 +2569,8 @@ elektron_get_download_name (struct backend *backend,
       return g_path_get_basename (src_path);
     }
 
-  iter = g_malloc (sizeof (struct item_iterator));
   dir = g_path_get_dirname (src_path);
-  ret = ops->readdir (backend, iter, dir, NULL);
+  ret = ops->readdir (backend, &iter, dir, NULL);
   g_free (dir);
   if (ret)
     {
@@ -2583,16 +2582,16 @@ elektron_get_download_name (struct backend *backend,
   g_free (name);
 
   name = NULL;
-  while (!next_item_iterator (iter))
+  while (!next_item_iterator (&iter))
     {
-      if (iter->item.id == id)
+      if (iter.item.id == id)
 	{
-	  name = g_strdup (iter->item.name);
+	  name = g_strdup (iter.item.name);
 	  break;
 	}
     }
 
-  free_item_iterator (iter);
+  free_item_iterator (&iter);
 
   return name;
 }
