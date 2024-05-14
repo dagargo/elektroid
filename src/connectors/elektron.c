@@ -321,8 +321,8 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
 }
 
 static gint
-elektron_init_iterator (struct backend *backend, struct item_iterator *iter, const gchar *dir,
-			GByteArray *msg, iterator_next next,
+elektron_init_iterator (struct backend *backend, struct item_iterator *iter,
+			const gchar *dir, GByteArray *msg, iterator_next next,
 			enum elektron_iterator_mode mode, gint32 max_slots)
 {
   struct elektron_iterator_data *data =

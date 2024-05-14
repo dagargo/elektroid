@@ -142,9 +142,9 @@ package_add_resource (struct package *pkg,
 
   debug_print (1, "Adding file %s to zip (%d B)...\n", pkg_resource->path,
 	       pkg_resource->data->len);
-  sample_source =
-    zip_source_buffer_create (pkg_resource->data->data,
-			      pkg_resource->data->len, 0, &zerror);
+  sample_source = zip_source_buffer_create (pkg_resource->data->data,
+					    pkg_resource->data->len, 0,
+					    &zerror);
   if (!sample_source)
     {
       error_print ("Error while creating file source: %s\n",
@@ -153,9 +153,8 @@ package_add_resource (struct package *pkg,
       return -1;
     }
 
-  index =
-    zip_file_add (pkg->zip, pkg_resource->path, sample_source,
-		  ZIP_FL_OVERWRITE | ZIP_FL_ENC_UTF_8);
+  index = zip_file_add (pkg->zip, pkg_resource->path, sample_source,
+			ZIP_FL_OVERWRITE | ZIP_FL_ENC_UTF_8);
   if (index < 0)
     {
       error_print ("Error while adding file: %s\n",
@@ -188,8 +187,8 @@ package_begin (struct package *pkg, gchar *name, const gchar *fw_version,
   debug_print (1, "Creating zip buffer...\n");
 
   zip_error_init (&zerror);
-  pkg->zip_source =
-    zip_source_buffer_create (pkg->buff, MAX_PACKAGE_LEN, 0, &zerror);
+  pkg->zip_source = zip_source_buffer_create (pkg->buff, MAX_PACKAGE_LEN, 0,
+					      &zerror);
   if (!pkg->zip_source)
     {
       error_print ("Error while creating zip source: %s\n",
