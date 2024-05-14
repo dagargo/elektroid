@@ -428,7 +428,7 @@ package_receive_pkg_resources (struct package *pkg,
 		   error->message);
       g_clear_error (&error);
       control->parts = 2;
-      goto get_payload;
+      goto cleanup_parser;
     }
 
   reader = json_reader_new (json_parser_get_root (parser));
@@ -436,14 +436,14 @@ package_receive_pkg_resources (struct package *pkg,
     {
       error_print ("Unable to read from parser. Continuing...");
       control->parts = 2;
-      goto get_payload;
+      goto cleanup_parser;
     }
 
   if (!json_reader_read_member (reader, MAN_TAG_SAMPLE_REFS))
     {
       debug_print (1, "Member '%s' not found\n", MAN_TAG_SAMPLE_REFS);
       control->parts = 2;
-      goto get_payload;
+      goto cleanup_reader;
     }
 
   if (!json_reader_is_array (reader))
@@ -544,6 +544,7 @@ package_receive_pkg_resources (struct package *pkg,
   g_byte_array_free (sample, TRUE);
 cleanup_reader:
   g_object_unref (reader);
+cleanup_parser:
   g_object_unref (parser);
 get_payload:
   g_byte_array_free (metadata, TRUE);
