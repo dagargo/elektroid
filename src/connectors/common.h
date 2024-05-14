@@ -21,6 +21,8 @@
 #include "backend.h"
 #include "sample.h"
 
+#define DEFAULT_MAX_NAME_LEN 32
+
 #define COMMON_GET_MIDI_BANK(p) ((p & 0x3f80) >> 7)
 #define COMMON_GET_MIDI_PRESET(p) (p & 0x7f)
 

@@ -103,6 +103,11 @@ common_print_item (struct item_iterator *iter, struct backend *backend,
 		   const struct fs_operations *fs_ops)
 {
   gchar *slot = NULL;
+  gchar *hsize = get_human_size (iter->item.size, FALSE);
+  gint max_name_len = fs_ops->max_name_len ? fs_ops->max_name_len :
+    DEFAULT_MAX_NAME_LEN;
+  gboolean info = (fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN) != 0;
+
   if (fs_ops->options & FS_OPTION_SLOT_STORAGE)
     {
       if (fs_ops->get_slot)
@@ -114,9 +119,11 @@ common_print_item (struct item_iterator *iter, struct backend *backend,
 	  slot = common_get_id_as_slot (&iter->item, backend);
 	}
     }
-  gchar *hsize = get_human_size (iter->item.size, FALSE);
-  printf ("%c %10s %.*s%s%s\n", iter->item.type, hsize, slot ? 10 : 0,
-	  slot, slot ? " " : "", iter->item.name);
+
+  printf ("%c %10s %.*s%s%-*s%s%s%s\n", iter->item.type, hsize, slot ? 10 : 0,
+	  slot, slot ? " " : "", max_name_len, iter->item.name,
+	  info ? " [ " : "", iter->item.object_info, info ? " ]" : "");
+
   g_free (hsize);
   g_free (slot);
 }
