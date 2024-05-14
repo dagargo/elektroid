@@ -1876,7 +1876,25 @@ elektron_next_data_entry (struct item_iterator *iter)
 	  if (!elektron_download_data_snd (data->backend, metadata_path,
 					   output, NULL))
 	    {
-	      package_set_object_info_from_snd_metadata (&iter->item, output);
+	      gchar *s;
+	      gboolean first = TRUE;
+	      GString *info = g_string_new (NULL);
+	      GSList *tags = package_get_tags_from_snd_metadata (output);
+	      GSList *e = tags;
+
+	      while (e)
+		{
+		  gchar *tag = (gchar *) e->data;
+		  const gchar *separator = first ? "" : ", ";
+		  g_string_append_printf (info, "%s%s", separator, tag);
+		  first = FALSE;
+		  e = e->next;
+		}
+
+	      s = g_string_free (info, FALSE);
+	      snprintf (iter->item.object_info, LABEL_MAX, "%s", s);
+	      g_free (s);
+	      g_slist_free_full (tags, g_free);
 	    }
 
 	  g_byte_array_free (output, TRUE);

@@ -50,17 +50,14 @@
 #define MAX_MANIFEST_LEN (128 * 1024)
 #define MANIFEST_FILENAME "manifest.json"
 
-void
-package_set_object_info_from_snd_metadata (struct item *item,
-					   GByteArray *metadata)
+GSList *
+package_get_tags_from_snd_metadata (GByteArray *metadata)
 {
   JsonParser *parser;
   JsonReader *reader;
   GError *error;
   gint elements;
-  gchar *info;
-  gboolean first = TRUE;
-  GString *tags = g_string_new (NULL);
+  GSList *tags = NULL;
 
   parser = json_parser_new ();
   if (!json_parser_load_from_data (parser, (gchar *) metadata->data,
@@ -110,19 +107,16 @@ package_set_object_info_from_snd_metadata (struct item *item,
 	}
 
       tag = json_reader_get_string_value (reader);
-      g_string_append_printf (tags, "%s%s", first ? "" : ", ", tag);
-
+      tags = g_slist_append (tags, strdup (tag));
       json_reader_end_element (reader);
-      first = FALSE;
     }
 
 cleanup_reader:
   g_object_unref (reader);
 cleanup_parser:
   g_object_unref (parser);
-  info = g_string_free (tags, FALSE);
-  snprintf (item->object_info, LABEL_MAX, "%s", info);
-  g_free (info);
+
+  return tags;
 }
 
 static gint
