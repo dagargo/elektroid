@@ -40,8 +40,6 @@ static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 #define OS_TRANSF_BLOCK_BYTES 0x800
 #define MAX_ZIP_SIZE (128 * 1024 * 1024)
 
-#define FS_DATA_METADATA_EXT "metadata"
-#define FS_DATA_METADATA_FILE "." FS_DATA_METADATA_EXT
 #define FS_DATA_PRJ_PREFIX "/projects"
 #define FS_DATA_SND_PREFIX "/soundbanks"
 #define FS_DATA_PST_PREFIX "/presets"
@@ -2625,7 +2623,7 @@ elektron_download_pkg (struct backend *backend, const gchar *path,
     }
 
   ret = package_receive_pkg_resources (&pkg, path, control, backend, download,
-				       elektron_download_sample_part);
+				       elektron_download_sample_part, type);
   ret = ret || package_end (&pkg, output);
 
   package_destroy (&pkg);

@@ -27,6 +27,9 @@
 
 #define ELEKTRON_SAMPLE_RATE 48000
 
+#define FS_DATA_METADATA_EXT "metadata"
+#define FS_DATA_METADATA_FILE "." FS_DATA_METADATA_EXT
+
 enum package_resource_type
 {
   PKG_RES_TYPE_NONE,
@@ -42,6 +45,7 @@ struct package_resource
   guint32 size;
   gchar *path;
   GByteArray *data;
+  GSList *tags;			//Used for PKG_RES_TYPE_MANIFEST only
 };
 
 enum package_type
@@ -85,9 +89,13 @@ GSList *package_get_tags_from_snd_metadata (GByteArray * metadata);
 gint package_begin (struct package *, gchar *, const gchar *,
 		    const struct device_desc *, enum package_type);
 
-gint package_receive_pkg_resources (struct package *, const gchar *,
-				    struct job_control *, struct backend *,
-				    fs_remote_file_op, fs_remote_file_op);
+gint package_receive_pkg_resources (struct package *pkg,
+				    const gchar * payload_path,
+				    struct job_control *control,
+				    struct backend *backend,
+				    fs_remote_file_op download_data,
+				    fs_remote_file_op download_sample,
+				    enum package_type type);
 
 gint package_end (struct package *, GByteArray *);
 

@@ -31,6 +31,8 @@
 #define PKG_TAG_PAYLOAD "Payload"
 #define PKG_TAG_FILE_TYPE "FileType"
 #define PKG_TAG_FIRMWARE_VERSION "FirmwareVersion"
+#define PKG_TAG_METAINFO "MetaInfo"
+#define PKG_TAG_TAGS "Tags"
 #define PKG_TAG_SAMPLES "Samples"
 #define PKG_TAG_FILE_NAME "FileName"
 #define PKG_TAG_FILE_SIZE "FileSize"
@@ -51,7 +53,7 @@
 #define MANIFEST_FILENAME "manifest.json"
 
 static GSList *
-package_get_tags_from_snd_metadata_reader (JsonReader *reader)
+package_get_tags_from_snd_metadata_int (JsonReader *reader)
 {
   gint elements;
   GSList *tags = NULL;
@@ -122,7 +124,7 @@ package_get_tags_from_snd_metadata (GByteArray *metadata)
       goto cleanup_parser;
     }
 
-  tags = package_get_tags_from_snd_metadata_reader (reader);
+  tags = package_get_tags_from_snd_metadata_int (reader);
 
   g_object_unref (reader);
 
@@ -287,6 +289,26 @@ package_add_manifest (struct package *pkg)
 	  samples_found = TRUE;
 	  break;
 	}
+    }
+
+  if (pkg->manifest->tags)	// PKG_FILE_TYPE_DATA_SOUND or PKG_FILE_TYPE_DATA_PRESET
+    {
+      json_builder_set_member_name (builder, PKG_TAG_METAINFO);
+      json_builder_begin_object (builder);
+      json_builder_set_member_name (builder, PKG_TAG_TAGS);
+      json_builder_begin_array (builder);
+
+      GSList *e = pkg->manifest->tags;
+
+      while (e)
+	{
+	  gchar *tag = (gchar *) e->data;
+	  json_builder_add_string_value (builder, tag);
+	  e = e->next;
+	}
+
+      json_builder_end_array (builder);
+      json_builder_end_object (builder);
     }
 
   if (samples_found)
@@ -475,7 +497,8 @@ package_receive_pkg_resources (struct package *pkg,
 			       struct job_control *control,
 			       struct backend *backend,
 			       fs_remote_file_op download_data,
-			       fs_remote_file_op download_sample)
+			       fs_remote_file_op download_sample,
+			       enum package_type type)
 {
   gint ret, i, elements;
   JsonParser *parser;
@@ -487,7 +510,8 @@ package_receive_pkg_resources (struct package *pkg,
   GByteArray *wave, *payload, *metadata, *sample;
   GString *package_resource_path;
 
-  metadata_path = path_chain (PATH_INTERNAL, payload_path, ".metadata");
+  metadata_path = path_chain (PATH_INTERNAL, payload_path,
+			      FS_DATA_METADATA_FILE);
   debug_print (1, "Getting metadata from %s...\n", metadata_path);
   metadata = g_byte_array_new ();
   control->parts = 2 + packaget_get_pkg_sample_slots (backend);	// main, metadata and sample slots.
@@ -520,6 +544,15 @@ package_receive_pkg_resources (struct package *pkg,
       error_print ("Unable to read from parser. Continuing...");
       control->parts = 2;
       goto cleanup_parser;
+    }
+
+  if (type == PKG_FILE_TYPE_DATA_SOUND || type == PKG_FILE_TYPE_DATA_PRESET)
+    {
+      pkg->manifest->tags = package_get_tags_from_snd_metadata_int (reader);
+    }
+  else
+    {
+      pkg->manifest->tags = NULL;
     }
 
   if (!json_reader_read_member (reader, MAN_TAG_SAMPLE_REFS))

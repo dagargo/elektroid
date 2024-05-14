@@ -20,6 +20,16 @@ cksum1=$(echo "$src_content" | cksum)
 cksum2=$(echo "$dst_content" | cksum)
 [ "$cksum1" != "$cksum2" ] && err=1
 
+src_manifest_content=$(unzip -p $srcdir/res/connectors/elektron_sound.data manifest.json)
+dst_manifest_content=$(unzip -p $srcdir/SOUND.dtsnd manifest.json)
+
+echo "Checking manifest.json..."
+echo "$src_manifest_content"
+echo "---"
+echo "$dst_manifest_content"
+
+[ "$src_manifest_content" != "$dst_manifest_content" ] && err=1
+
 if [ $err -eq 0 ]; then
   echo "Looking for sample..."
   $ecli elektron-sample-dl $TEST_DEVICE:/auto-test/square
