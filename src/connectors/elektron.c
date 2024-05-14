@@ -88,6 +88,7 @@ struct elektron_iterator_data
   enum elektron_iterator_mode mode;
   gint32 max_slots;
   struct backend *backend;
+  gboolean load_metadata;
 };
 
 typedef GByteArray *(*elektron_msg_id_func) (guint);
@@ -332,6 +333,7 @@ elektron_init_iterator (struct backend *backend, struct item_iterator *iter,
   data->mode = mode;
   data->max_slots = max_slots;
   data->backend = backend;
+  data->load_metadata = TRUE;
 
   init_item_iterator (iter, dir, data, next, elektron_free_iterator_data);
   iter->item.id = 0;		//This is needed in case the response when reading a directory is empty
@@ -1863,7 +1865,8 @@ elektron_next_data_entry (struct item_iterator *iter)
       data->pos++;
 
       iter->item.object_info[0] = 0;
-      if (data->has_metadata && data->mode == ITER_MODE_DATA_SND)
+      if (data->load_metadata && data->has_metadata &&
+	  data->mode == ITER_MODE_DATA_SND)
 	{
 	  gchar metadata_path[PATH_MAX];
 	  GByteArray *output = g_byte_array_new ();
@@ -2562,6 +2565,7 @@ elektron_get_download_name (struct backend *backend,
   gint ret;
   gchar *dir, *name;
   struct item_iterator iter;
+  struct elektron_iterator_data *data;
 
   if (ops->id == FS_SAMPLES || ops->id == FS_SAMPLES_STEREO ||
       ops->id == FS_RAW_ALL || ops->id == FS_RAW_PRESETS)
@@ -2582,6 +2586,8 @@ elektron_get_download_name (struct backend *backend,
   g_free (name);
 
   name = NULL;
+  data = iter.data;
+  data->load_metadata = FALSE;
   while (!next_item_iterator (&iter))
     {
       if (iter.item.id == id)
