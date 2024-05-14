@@ -50,13 +50,59 @@
 #define MAX_MANIFEST_LEN (128 * 1024)
 #define MANIFEST_FILENAME "manifest.json"
 
+static GSList *
+package_get_tags_from_snd_metadata_reader (JsonReader *reader)
+{
+  gint elements;
+  GSList *tags = NULL;
+
+  if (!json_reader_read_member (reader, METADATA_TAG_SAMPLE_REFS))
+    {
+      debug_print (1, "Member '%s' not found\n", METADATA_TAG_SAMPLE_REFS);
+      return NULL;
+    }
+
+  if (!json_reader_is_array (reader))
+    {
+      error_print ("Member '%s' is not an array. Continuing...\n",
+		   METADATA_TAG_SAMPLE_REFS);
+      goto end;
+    }
+
+  elements = json_reader_count_elements (reader);
+  if (!elements)
+    {
+      debug_print (1, "No tags found\n");
+      return NULL;
+    }
+
+  for (gint i = 0; i < elements; i++)
+    {
+      const gchar *tag;
+
+      if (!json_reader_read_element (reader, i))
+	{
+	  error_print ("Cannot read element %d. Continuing...\n", i);
+	  continue;
+	}
+
+      tag = json_reader_get_string_value (reader);
+      tags = g_slist_append (tags, strdup (tag));
+      json_reader_end_element (reader);
+    }
+
+end:
+  json_reader_end_element (reader);
+
+  return tags;
+}
+
 GSList *
 package_get_tags_from_snd_metadata (GByteArray *metadata)
 {
   JsonParser *parser;
   JsonReader *reader;
   GError *error;
-  gint elements;
   GSList *tags = NULL;
 
   parser = json_parser_new ();
@@ -76,43 +122,10 @@ package_get_tags_from_snd_metadata (GByteArray *metadata)
       goto cleanup_parser;
     }
 
-  if (!json_reader_read_member (reader, METADATA_TAG_SAMPLE_REFS))
-    {
-      debug_print (1, "Member '%s' not found\n", METADATA_TAG_SAMPLE_REFS);
-      goto cleanup_reader;
-    }
+  tags = package_get_tags_from_snd_metadata_reader (reader);
 
-  if (!json_reader_is_array (reader))
-    {
-      error_print ("Member '%s' is not an array. Continuing...\n",
-		   METADATA_TAG_SAMPLE_REFS);
-      goto cleanup_reader;
-    }
-
-  elements = json_reader_count_elements (reader);
-  if (!elements)
-    {
-      debug_print (1, "No tags found\n");
-      goto cleanup_reader;
-    }
-
-  for (gint i = 0; i < elements; i++)
-    {
-      const gchar *tag;
-
-      if (!json_reader_read_element (reader, i))
-	{
-	  error_print ("Cannot read element %d. Continuing...\n", i);
-	  continue;
-	}
-
-      tag = json_reader_get_string_value (reader);
-      tags = g_slist_append (tags, strdup (tag));
-      json_reader_end_element (reader);
-    }
-
-cleanup_reader:
   g_object_unref (reader);
+
 cleanup_parser:
   g_object_unref (parser);
 
