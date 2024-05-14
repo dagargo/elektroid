@@ -268,27 +268,23 @@ phatty_next_preset_dentry (struct item_iterator *iter)
 
 static gint
 phatty_read_dir (struct backend *backend, struct item_iterator *iter,
-		 const gchar *path, gchar **extensions)
+		 const gchar *dir, gchar **extensions)
 {
   gint err = 0;
 
-  if (!strcmp (path, "/"))
+  if (!strcmp (dir, "/"))
     {
       guint *id = g_malloc (sizeof (guint));
       *id = 0;
-      iter->data = id;
-      iter->next = phatty_next_root_dentry;
-      iter->free = g_free;
+      init_item_iterator (iter, dir, id, phatty_next_root_dentry, g_free);
     }
-  else if (!strcmp (path, PHATTY_PRESETS_DIR))
+  else if (!strcmp (dir, PHATTY_PRESETS_DIR))
     {
       struct phatty_iter_data *data =
 	g_malloc (sizeof (struct phatty_iter_data));
       data->next = 0;
       data->backend = backend;
-      iter->data = data;
-      iter->next = phatty_next_preset_dentry;
-      iter->free = g_free;
+      init_item_iterator (iter, dir, data, phatty_next_preset_dentry, g_free);
     }
   else
     {

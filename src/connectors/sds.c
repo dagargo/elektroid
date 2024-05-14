@@ -987,11 +987,11 @@ sds_next_sample_dentry (struct item_iterator *iter)
 
 static gint
 sds_read_dir (struct backend *backend, struct item_iterator *iter,
-	      const gchar *path, gchar **extensions)
+	      const gchar *dir, gchar **extensions)
 {
   struct sds_iterator_data *data;
 
-  if (strcmp (path, "/"))
+  if (strcmp (dir, "/"))
     {
       return -ENOTDIR;
     }
@@ -999,9 +999,8 @@ sds_read_dir (struct backend *backend, struct item_iterator *iter,
   data = g_malloc (sizeof (struct sds_iterator_data));
   data->next = 0;
   data->backend = backend;
-  iter->data = data;
-  iter->next = sds_next_sample_dentry;
-  iter->free = g_free;
+
+  init_item_iterator (iter, dir, data, sds_next_sample_dentry, g_free);
 
   return 0;
 }

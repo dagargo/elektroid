@@ -312,9 +312,9 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
 }
 
 static gint
-elektron_init_iterator (struct item_iterator *iter, GByteArray *msg,
-			iterator_next next, enum elektron_iterator_mode mode,
-			gint32 max_slots)
+elektron_init_iterator (struct item_iterator *iter, const gchar *dir,
+			GByteArray *msg, iterator_next next,
+			enum elektron_iterator_mode mode, gint32 max_slots)
 {
   struct elektron_iterator_data *data =
     g_malloc (sizeof (struct elektron_iterator_data));
@@ -325,11 +325,8 @@ elektron_init_iterator (struct item_iterator *iter, GByteArray *msg,
   data->mode = mode;
   data->max_slots = max_slots;
 
-  iter->data = data;
-  iter->next = next;
-  iter->free = elektron_free_iterator_data;
-  iter->item.id = 0;
-  iter->item.type = ELEKTROID_NONE;
+  init_item_iterator (iter, dir, data, next, elektron_free_iterator_data);
+  iter->item.id = 0;		//This is needed in case the response when reading a directory is empty
 
   return 0;
 }
@@ -941,8 +938,8 @@ elektron_read_common_dir (struct backend *backend,
       return -ENOTDIR;
     }
 
-  return elektron_init_iterator (iter, rx_msg, elektron_next_smplrw_entry,
-				 mode, -1);
+  return elektron_init_iterator (iter, dir, rx_msg,
+				 elektron_next_smplrw_entry, mode, -1);
 }
 
 static gint
@@ -1925,7 +1922,7 @@ elektron_read_data_dir_prefix (struct backend *backend,
       return -ENOTDIR;
     }
 
-  return elektron_init_iterator (iter, rx_msg, elektron_next_data_entry,
+  return elektron_init_iterator (iter, dir, rx_msg, elektron_next_data_entry,
 				 ITER_MODE_DATA, max_slots);
 }
 

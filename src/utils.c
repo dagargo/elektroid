@@ -228,6 +228,16 @@ get_filename (guint32 fs_options, struct item *item)
   return strdup (item->name);
 }
 
+void
+init_item_iterator (struct item_iterator *iter, const gchar *dir, void *data,
+		    iterator_next next, iterator_free free)
+{
+  iter->dir = strdup (dir);
+  iter->data = data;
+  iter->next = next;
+  iter->free = free;
+}
+
 gint
 next_item_iterator (struct item_iterator *iter)
 {
@@ -237,6 +247,7 @@ next_item_iterator (struct item_iterator *iter)
 void
 free_item_iterator (struct item_iterator *iter)
 {
+  g_free (iter->dir);
   if (iter->free)
     {
       iter->free (iter->data);

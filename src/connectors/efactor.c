@@ -172,14 +172,14 @@ efactor_next_dentry (struct item_iterator *iter)
 
 static gint
 efactor_read_dir (struct backend *backend, struct item_iterator *iter,
-		  const gchar *path, gchar **extensions)
+		  const gchar *dir, gchar **extensions)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   struct efactor_iter_data *iter_data;
   struct efactor_data *data = backend->data;
 
-  if (strcmp (path, "/"))
+  if (strcmp (dir, "/"))
     {
       return -ENOTDIR;
     }
@@ -211,9 +211,8 @@ efactor_read_dir (struct backend *backend, struct item_iterator *iter,
     g_strsplit ((gchar *) & rx_msg->data[EFACTOR_PRESET_DUMP_OFFSET],
 		EFACTOR_PRESET_LINE_SEPARATOR, -1);
   free_msg (rx_msg);
-  iter->data = iter_data;
-  iter->next = efactor_next_dentry;
-  iter->free = g_free;
+
+  init_item_iterator (iter, dir, iter_data, efactor_next_dentry, g_free);
 
   return 0;
 }

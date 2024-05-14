@@ -85,6 +85,7 @@ struct item
 
 struct item_iterator
 {
+  gchar *dir;
   iterator_next next;
   iterator_free free;
   void *data;
@@ -272,9 +273,12 @@ void free_msg (gpointer);
  */
 gchar *get_filename (guint32 options, struct item *item);
 
-gint next_item_iterator (struct item_iterator *);
+void init_item_iterator (struct item_iterator *iter, const gchar * dir,
+			 void *data, iterator_next next, iterator_free free);
 
-void free_item_iterator (struct item_iterator *);
+gint next_item_iterator (struct item_iterator *iter);
+
+void free_item_iterator (struct item_iterator *iter);
 
 gint copy_item_iterator (struct item_iterator *, struct item_iterator *,
 			 gboolean);

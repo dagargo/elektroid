@@ -244,12 +244,12 @@ microfreak_get_category_name (GByteArray *rx_msg)
 
 static gint
 microfreak_common_read_dir (struct backend *backend,
-			    struct item_iterator *iter, const gchar *path,
+			    struct item_iterator *iter, const gchar *dir,
 			    iterator_next next)
 {
   struct microfreak_iter_data *data;
 
-  if (strcmp (path, "/"))
+  if (strcmp (dir, "/"))
     {
       return -ENOTDIR;
     }
@@ -257,9 +257,8 @@ microfreak_common_read_dir (struct backend *backend,
   data = g_malloc (sizeof (struct microfreak_iter_data));
   data->next = 1;
   data->backend = backend;
-  iter->data = data;
-  iter->next = next;
-  iter->free = g_free;
+
+  init_item_iterator (iter, dir, data, next, g_free);
 
   return 0;
 }

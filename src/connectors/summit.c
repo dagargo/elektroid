@@ -248,22 +248,21 @@ summit_patch_next_dentry_root (struct item_iterator *iter)
 
 static gint
 summit_patch_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *path, enum summit_fs fs)
+		       const gchar *dir, enum summit_fs fs)
 {
   guint bank;
 
-  if (!strcmp (path, "/"))
+  if (!strcmp (dir, "/"))
     {
       guint *next = g_malloc (sizeof (guint));
       *next = 0;
-      iter->data = next;
-      iter->next = summit_patch_next_dentry_root;
-      iter->free = g_free;
+      init_item_iterator (iter, dir, next, summit_patch_next_dentry_root,
+			  g_free);
       return 0;
     }
 
-  bank = SUMMIT_GET_BANK_ID_FROM_DIR (path);
-  if (strlen (path) == 2 && bank >= 1 && bank <= 4)
+  bank = SUMMIT_GET_BANK_ID_FROM_DIR (dir);
+  if (strlen (dir) == 2 && bank >= 1 && bank <= 4)
     {
       struct summit_bank_iterator_data *data =
 	g_malloc (sizeof (struct summit_bank_iterator_data));
@@ -271,9 +270,7 @@ summit_patch_read_dir (struct backend *backend, struct item_iterator *iter,
       data->fs = fs;
       data->bank = bank;
       data->backend = backend;
-      iter->data = data;
-      iter->next = summit_patch_next_dentry;
-      iter->free = g_free;
+      init_item_iterator (iter, dir, data, summit_patch_next_dentry, g_free);
       return 0;
     }
 
@@ -282,9 +279,9 @@ summit_patch_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 summit_single_read_dir (struct backend *backend, struct item_iterator *iter,
-			const gchar *path, gchar **extensions)
+			const gchar *dir, gchar **extensions)
 {
-  return summit_patch_read_dir (backend, iter, path, FS_SUMMIT_SINGLE_PATCH);
+  return summit_patch_read_dir (backend, iter, dir, FS_SUMMIT_SINGLE_PATCH);
 }
 
 static gint

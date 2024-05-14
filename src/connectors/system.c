@@ -32,7 +32,6 @@
 struct system_iterator_data
 {
   GDir *dir;
-  gchar *path;
   gchar **extensions;
 };
 
@@ -145,7 +144,6 @@ system_free_iterator_data (void *iter_data)
 {
   struct system_iterator_data *data = iter_data;
   g_dir_close (data->dir);
-  g_free (data->path);
   g_free (data);
 }
 
@@ -164,7 +162,7 @@ system_next_dentry (struct item_iterator *iter, gboolean sample_info)
 	  continue;
 	}
 
-      full_path = path_chain (PATH_SYSTEM, data->path, name);
+      full_path = path_chain (PATH_SYSTEM, iter->dir, name);
       enum item_type type;
       if (g_file_test (full_path, G_FILE_TEST_IS_DIR))
 	{
@@ -219,25 +217,22 @@ system_next_dentry_with_sample_info (struct item_iterator *iter)
 
 static gint
 system_read_dir_opts (struct backend *backend, struct item_iterator *iter,
-		      const gchar *path, gchar **extensions,
+		      const gchar *dir, gchar **extensions,
 		      iterator_next next)
 {
-  GDir *dir;
+  GDir *gdir;
   struct system_iterator_data *data;
 
-  if (!(dir = g_dir_open (path, 0, NULL)))
+  if (!(gdir = g_dir_open (dir, 0, NULL)))
     {
       return -errno;
     }
 
   data = g_malloc (sizeof (struct system_iterator_data));
-  data->dir = dir;
-  data->path = strdup (path);
+  data->dir = gdir;
   data->extensions = extensions;
 
-  iter->data = data;
-  iter->next = next;
-  iter->free = system_free_iterator_data;
+  init_item_iterator (iter, dir, data, next, system_free_iterator_data);
 
   return 0;
 }

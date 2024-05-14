@@ -213,11 +213,11 @@ microbrute_get_download_path (struct backend *backend,
 
 static gint
 microbrute_read_dir (struct backend *backend, struct item_iterator *iter,
-		     const gchar *path, gchar **extensions)
+		     const gchar *dir, gchar **extensions)
 {
   struct common_simple_read_dir_data *data;
 
-  if (strcmp (path, "/"))
+  if (strcmp (dir, "/"))
     {
       return -ENOTDIR;
     }
@@ -225,9 +225,8 @@ microbrute_read_dir (struct backend *backend, struct item_iterator *iter,
   data = g_malloc (sizeof (struct common_simple_read_dir_data));
   data->next = 1;
   data->max = MICROBRUTE_MAX_SEQS + 1;
-  iter->data = data;
-  iter->next = common_simple_next_dentry;
-  iter->free = g_free;
+
+  init_item_iterator (iter, dir, data, common_simple_next_dentry, g_free);
 
   return 0;
 }
