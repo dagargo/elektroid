@@ -2567,8 +2567,7 @@ elektron_get_download_name (struct backend *backend,
   struct item_iterator iter;
   struct elektron_iterator_data *data;
 
-  if (ops->id == FS_SAMPLES || ops->id == FS_SAMPLES_STEREO ||
-      ops->id == FS_RAW_ALL || ops->id == FS_RAW_PRESETS)
+  if (ops->id == FS_RAW_ALL || ops->id == FS_RAW_PRESETS)
     {
       return g_path_get_basename (src_path);
     }
@@ -2725,20 +2724,13 @@ elektron_get_download_path_sample (struct backend *backend,
 				   const gchar *src_path, GByteArray *data)
 {
   gchar *path;
-  gchar *name = elektron_get_download_name (backend, ops, src_path);
+  gchar *name = g_path_get_basename (src_path);
+  GString *filename = g_string_new (NULL);
 
-  if (name)
-    {
-      GString *filename = g_string_new (NULL);
-      g_string_append_printf (filename, "%s.wav", name);
-      path = path_chain (PATH_SYSTEM, dst_dir, filename->str);
-      g_free (name);
-      g_string_free (filename, TRUE);
-    }
-  else
-    {
-      path = NULL;
-    }
+  g_string_append_printf (filename, "%s.wav", name);
+  path = path_chain (PATH_SYSTEM, dst_dir, filename->str);
+  g_free (name);
+  g_string_free (filename, TRUE);
 
   return path;
 }
