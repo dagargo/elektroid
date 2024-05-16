@@ -30,7 +30,7 @@
 #define SAMPLE_SIZE(format) ((format & SF_FORMAT_SUBMASK) == SF_FORMAT_PCM_16 ? 2 : 4)
 #define FRAME_SIZE(channels,format) ((channels) * SAMPLE_SIZE(format))
 #define SAMPLE_INFO_FRAME_SIZE(sample_info) ((sample_info)->channels * SAMPLE_SIZE((sample_info)->format))
-#define MULTICHANNEL_MIX_GAIN(channels) (1.0 / sqrt (channels))
+#define MONO_MIX_GAIN(channels) (channels == 2 ? 0.5 : 1.0 / sqrt (channels))
 
 typedef void (*sample_load_cb) (struct job_control *, gdouble, gpointer);
 

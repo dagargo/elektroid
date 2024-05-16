@@ -36,7 +36,7 @@ audio_mix_channels (gint16 **src, guint channels)
     {
       mix += **src;
     }
-  return (gint16) (mix * MULTICHANNEL_MIX_GAIN (channels));
+  return (gint16) (mix * MONO_MIX_GAIN (channels));
 }
 
 static inline void
