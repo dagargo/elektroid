@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <glib/gi18n.h>
 #include "audio.h"
 
 void audio_finish_recording (struct audio *);
@@ -316,10 +317,10 @@ audio_server_info_callback (pa_context *context, const pa_server_info *info,
 
   pa_proplist_set (props, PA_PROP_APPLICATION_ICON_NAME, PACKAGE,
 		   sizeof (PACKAGE));
-  audio->playback_stream = pa_stream_new_with_proplist (context, PACKAGE,
+  audio->playback_stream = pa_stream_new_with_proplist (context, _("Output"),
 							&audio->sample_spec,
 							NULL, props);
-  audio->record_stream = pa_stream_new_with_proplist (context, PACKAGE,
+  audio->record_stream = pa_stream_new_with_proplist (context, _("Input"),
 						      &audio->sample_spec,
 						      NULL, props);
   pa_proplist_free (props);
@@ -336,9 +337,9 @@ audio_server_info_callback (pa_context *context, const pa_server_info *info,
 			    stream_flags);
 
   pa_context_set_subscribe_callback (audio->context, audio_notify, audio);
-  operation =
-    pa_context_subscribe (audio->context, PA_SUBSCRIPTION_MASK_SINK_INPUT,
-			  NULL, NULL);
+  operation = pa_context_subscribe (audio->context,
+				    PA_SUBSCRIPTION_MASK_SINK_INPUT, NULL,
+				    NULL);
   if (operation != NULL)
     {
       pa_operation_unref (operation);
@@ -380,7 +381,7 @@ audio_init_int (struct audio *audio)
     }
 
   api = pa_threaded_mainloop_get_api (audio->mainloop);
-  audio->context = pa_context_new (api, PACKAGE);
+  audio->context = pa_context_new (api, APP_NAME);
 
   if (pa_context_connect (audio->context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
     {

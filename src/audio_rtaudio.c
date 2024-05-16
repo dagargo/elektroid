@@ -25,7 +25,7 @@ void audio_finish_recording (struct audio *);
 static struct rtaudio_stream_options STREAM_OPTIONS = {
   .flags = 0,
   .priority = 99,
-  .name = PACKAGE
+  .name = APP_NAME
 };
 
 void

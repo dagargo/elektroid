@@ -30,6 +30,8 @@
 
 #define CONF_DIR "/.config/" PACKAGE
 
+#define APP_NAME "Elektroid"
+
 #define LABEL_MAX 256
 
 #define MAX_BACKEND_STORAGE (sizeof (gint32) * 8)

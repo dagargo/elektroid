@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2024-04-02 06:56+0200\n"
+"POT-Creation-Date: 2024-05-16 21:31+0200\n"
 "PO-Revision-Date: 2023-12-16 11:18+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
@@ -17,144 +17,144 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:294 src/editor.c:1255
+#: src/elektroid.c:249 src/elektroid.c:255 src/editor.c:1251
 msgid "Audio"
 msgstr ""
 
-#: src/elektroid.c:370 src/elektroid.c:3175
+#: src/elektroid.c:339 src/elektroid.c:3031
 msgid "Not connected"
 msgstr "Non connecté"
 
-#: src/elektroid.c:510
+#: src/elektroid.c:466
 msgid "Receive SysEx"
 msgstr "Réception de SysEx"
 
-#: src/elektroid.c:535
+#: src/elektroid.c:491
 msgid "Save SysEx"
 msgstr "Sauvegarde de SysEx"
 
-#: src/elektroid.c:538 src/elektroid.c:669 src/elektroid.c:874
-#: src/elektroid.c:1448 src/editor.c:1140 res/gui.glade:957 res/gui.glade:3013
-#: res/gui.glade:3118 res/gui.glade:3204
+#: src/elektroid.c:494 src/elektroid.c:625 src/elektroid.c:830
+#: src/elektroid.c:1379 src/editor.c:1145 res/gui.glade:957 res/gui.glade:3014
+#: res/gui.glade:3119 res/gui.glade:3205
 msgid "_Cancel"
 msgstr "_Annuler"
 
-#: src/elektroid.c:540 res/gui.glade:3027
+#: src/elektroid.c:496 res/gui.glade:3028
 msgid "_Save"
 msgstr "_Sauvegarder"
 
-#: src/elektroid.c:544
+#: src/elektroid.c:500
 msgid "Received SysEx"
 msgstr "SysEx reçu"
 
-#: src/elektroid.c:549 src/elektroid.c:675
+#: src/elektroid.c:505 src/elektroid.c:631
 msgid "SysEx Files"
 msgstr "Fichiers SysEx"
 
-#: src/elektroid.c:583
+#: src/elektroid.c:539
 #, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Erreur lors de la sauvegarde de « %s » : %s."
 
-#: src/elektroid.c:605
+#: src/elektroid.c:561
 #, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Erreur lors du chargement de « %s » : %s."
 
-#: src/elektroid.c:666
+#: src/elektroid.c:622
 msgid "Open SysEx"
 msgstr "Ouvrir SysEx"
 
-#: src/elektroid.c:671
+#: src/elektroid.c:627
 msgid "_Open"
 msgstr "_Ouvrir"
 
-#: src/elektroid.c:686
+#: src/elektroid.c:642
 msgid "Sending SysEx"
 msgstr "Envoi SysEx"
 
-#: src/elektroid.c:873
+#: src/elektroid.c:829
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Souhaitez-vous vraiment supprimer les éléments sélectionnés ?"
 
-#: src/elektroid.c:875
+#: src/elektroid.c:831
 msgid "_Delete"
 msgstr "_Supprimer"
 
-#: src/elektroid.c:886
+#: src/elektroid.c:842
 msgid "Deleting Files"
 msgstr "Suppression des fichiers"
 
-#: src/elektroid.c:887
+#: src/elektroid.c:843
 msgid "Deleting..."
 msgstr "Suppression..."
 
-#: src/elektroid.c:921 res/gui.glade:209 res/gui.glade:845
+#: src/elektroid.c:876 res/gui.glade:209 res/gui.glade:845
 msgid "Rename"
 msgstr "Renommer"
 
-#: src/elektroid.c:945
+#: src/elektroid.c:900
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Erreur lors du renommage de « %s » : %s."
 
-#: src/elektroid.c:1322 res/gui.glade:1695 res/gui.glade:2059
+#: src/elektroid.c:1247 res/gui.glade:1695 res/gui.glade:2059
 msgid "Add Directory"
 msgstr "Ajout d'un répertoire"
 
-#: src/elektroid.c:1329
+#: src/elektroid.c:1254
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Erreur lors de la création du répertoire « %s » : %s."
 
-#: src/elektroid.c:1445 src/editor.c:1137
+#: src/elektroid.c:1376 src/editor.c:1142
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Remplacer le fichier “%s”?"
 
-#: src/elektroid.c:1449
+#: src/elektroid.c:1380
 msgid "_Skip"
 msgstr "Pa_sser"
 
-#: src/elektroid.c:1450 src/editor.c:1141
+#: src/elektroid.c:1381 src/editor.c:1146
 msgid "_Replace"
 msgstr "_Remplacer"
 
-#: src/elektroid.c:1454
+#: src/elektroid.c:1385
 msgid "Apply this action to all files"
 msgstr "Appliquer cette action à tous les fichiers"
 
-#: src/elektroid.c:1762 src/elektroid.c:1998 src/elektroid.c:2716
+#: src/elektroid.c:1688 src/elektroid.c:1908 src/elektroid.c:2572
 msgid "Preparing Tasks"
 msgstr "Préparation des tâches"
 
-#: src/elektroid.c:1763 src/elektroid.c:1998 src/elektroid.c:2717
+#: src/elektroid.c:1689 src/elektroid.c:1908 src/elektroid.c:2573
 #: src/progress.c:106
 msgid "Waiting..."
 msgstr "En attente..."
 
-#: src/elektroid.c:2399
+#: src/elektroid.c:2269
 msgid "Connecting to Device"
 msgstr "Connexion au périphérique"
 
-#: src/elektroid.c:2399
+#: src/elektroid.c:2269
 msgid "Connecting..."
 msgstr "Connexion..."
 
-#: src/elektroid.c:2405
+#: src/elektroid.c:2275
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Périphérique “%s” non reconnu : %s"
 
-#: src/elektroid.c:2703
+#: src/elektroid.c:2559
 msgid "Moving Files"
 msgstr "Déplacement des fichiers"
 
-#: src/elektroid.c:2704
+#: src/elektroid.c:2560
 msgid "Moving..."
 msgstr "Déplacement..."
 
-#: src/editor.c:1259
+#: src/editor.c:1257
 msgid "Save Sample"
 msgstr "Sauvegarde d'échantillon"
 
@@ -190,9 +190,17 @@ msgstr "Téléversement"
 msgid "Download"
 msgstr "Téléchargement"
 
-#: src/browser.c:314
+#: src/browser.c:307
 msgid "min."
 msgstr "min."
+
+#: src/audio_pa.c:319
+msgid "Output"
+msgstr ""
+
+#: src/audio_pa.c:322
+msgid "Input"
+msgstr ""
 
 #: src/menu_actions/backend.c:61
 msgid "OS _Upgrade"
@@ -254,15 +262,15 @@ msgstr "Gauche"
 msgid "Right"
 msgstr "Droite"
 
-#: src/connectors/sds.c:1403
+#: src/connectors/sds.c:1388
 msgid "SDS sampler"
 msgstr "Échantillonneur SDS"
 
-#: src/connectors/default.c:85
+#: src/connectors/default.c:84
 msgid "MIDI device"
 msgstr "Périphérique MIDI"
 
-#: src/connectors/system.c:743
+#: src/connectors/system.c:717
 msgid "System"
 msgstr "Système"
 
@@ -336,17 +344,17 @@ msgctxt "Auto Sampler"
 msgid "Channel"
 msgstr "Canal"
 
-#: res/gui.glade:1217 res/gui.glade:1845 res/gui.glade:2187 res/gui.glade:3058
+#: res/gui.glade:1217 res/gui.glade:1845 res/gui.glade:2187 res/gui.glade:3059
 msgid "Name"
 msgstr "Nom"
 
 #. Audio channels
-#: res/gui.glade:1242 res/gui.glade:1872 res/gui.glade:2212 res/gui.glade:3253
+#: res/gui.glade:1242 res/gui.glade:1872 res/gui.glade:2212 res/gui.glade:3254
 msgid "Channels"
 msgstr "Canaux"
 
 #. Input audio monitor
-#: res/gui.glade:1273 res/gui.glade:3284
+#: res/gui.glade:1273 res/gui.glade:3285
 msgid "Monitor"
 msgstr "Moniteur"
 
@@ -442,43 +450,43 @@ msgstr ""
 "Lecture\n"
 "automatique"
 
-#: res/gui.glade:2716
+#: res/gui.glade:2717
 msgid "Status"
 msgstr "État"
 
-#: res/gui.glade:2727
+#: res/gui.glade:2728
 msgid "Type"
 msgstr "Type"
 
-#: res/gui.glade:2748
+#: res/gui.glade:2749
 msgid "Source"
 msgstr "Source"
 
-#: res/gui.glade:2762
+#: res/gui.glade:2763
 msgid "Destination"
 msgstr "Destination"
 
-#: res/gui.glade:2777
+#: res/gui.glade:2778
 msgid "Progress"
 msgstr "Progrès"
 
-#: res/gui.glade:2809
+#: res/gui.glade:2810
 msgid "Cancel Tasks"
 msgstr "Annuler les tâches"
 
-#: res/gui.glade:2830
+#: res/gui.glade:2831
 msgid "Remove Queued Tasks"
 msgstr "Supprimer les tâches dans la file d'attente"
 
-#: res/gui.glade:2851
+#: res/gui.glade:2852
 msgid "Clear Finished Tasks"
 msgstr "Nettoyer les tâches terminées"
 
-#: res/gui.glade:3183
+#: res/gui.glade:3184
 msgid "Record Channels"
 msgstr "Canaux enregistrés"
 
-#: res/gui.glade:3218
+#: res/gui.glade:3219
 msgid "_Record"
 msgstr "E_nregistrement"
 
