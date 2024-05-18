@@ -39,8 +39,6 @@
 #include "menu_action.h"
 #include "progress.h"
 
-#define EDITOR_VISIBLE (remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE)
-
 #define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : backend_get_path_type (&backend))
 
 #define TEXT_URI_LIST_STD "text/uri-list"
@@ -2039,6 +2037,7 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
   GtkTreeIter iter;
   GValue fsv = G_VALUE_INIT;
   gint fs;
+  gboolean editor_visible;
 
   if (!gtk_combo_box_get_active_iter (GTK_COMBO_BOX (fs_combo), &iter))
     {
@@ -2061,8 +2060,10 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
   g_value_unset (&fsv);
 
   remote_browser.fs_ops = backend_get_fs_operations_by_id (&backend, fs);
+  editor_visible = remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR ?
+    TRUE : FALSE;
 
-  if (EDITOR_VISIBLE)
+  if (editor_visible)
     {
       local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
     }
@@ -2090,7 +2091,7 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
       remote_browser.dir = strdup ("/");
     }
 
-  gtk_widget_set_visible (editor.box, EDITOR_VISIBLE);
+  gtk_widget_set_visible (editor.box, editor_visible);
 
   gtk_drag_source_unset ((GtkWidget *) remote_browser.view);
   gtk_drag_dest_unset ((GtkWidget *) remote_browser.view);
