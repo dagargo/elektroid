@@ -37,7 +37,6 @@
 #define BE_MAX_TX_LEN BE_KB	//With a higher value than 4 KB, functions behave erratically.
 #define BE_INT_BUF_LEN (32 * BE_KB)	//Max length of a SysEx message for Elektroid
 #define BE_DEV_RING_BUF_LEN (256 * BE_KB)
-#define BE_DEVICE_NAME "hw:%d,%d,%d"
 #define BE_TMP_BUFF_LEN (64 * BE_KB)	//This size is required by RtMidi as it needs enough space for the messages.
 
 #define BE_FILE_ICON_WAVE "elektroid-wave-symbolic"

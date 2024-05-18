@@ -20,6 +20,8 @@
 
 #include "backend.h"
 
+#define ALSA_DEVICE_NAME "hw:%d,%d"
+
 void
 backend_destroy_int (struct backend *backend)
 {
@@ -292,9 +294,8 @@ backend_get_system_subdevices (snd_ctl_t *ctl, int card, int device,
   snd_rawmidi_info_t *info;
   const gchar *name;
   const gchar *sub_name;
-  int subs, subs_in, subs_out;
-  int sub;
-  int err;
+  gint subs, subs_in, subs_out;
+  gint err;
   struct backend_device *backend_device;
 
   snd_rawmidi_info_alloca (&info);
@@ -332,45 +333,40 @@ backend_get_system_subdevices (snd_ctl_t *ctl, int card, int device,
       return;
     }
 
-  for (sub = 0; sub < subs; sub++)
+  snd_rawmidi_info_set_subdevice (info, 0);
+
+  snd_rawmidi_info_set_stream (info, SND_RAWMIDI_STREAM_INPUT);
+  err = snd_ctl_rawmidi_info (ctl, info);
+  if (err < 0)
     {
-      snd_rawmidi_info_set_subdevice (info, sub);
-
-      snd_rawmidi_info_set_stream (info, SND_RAWMIDI_STREAM_INPUT);
-      err = snd_ctl_rawmidi_info (ctl, info);
-      if (err < 0)
-	{
-	  debug_print (1,
-		       "Cannot get rawmidi input information %d:%d:%d: %s\n",
-		       card, device, sub, snd_strerror (err));
-	  continue;
-	}
-
-      snd_rawmidi_info_set_stream (info, SND_RAWMIDI_STREAM_OUTPUT);
-      err = snd_ctl_rawmidi_info (ctl, info);
-      if (err < 0)
-	{
-	  debug_print (1,
-		       "Cannot get rawmidi output information %d:%d:%d: %s\n",
-		       card, device, sub, snd_strerror (err));
-	  continue;
-	}
-
-      name = snd_rawmidi_info_get_name (info);
-      sub_name = snd_rawmidi_info_get_subdevice_name (info);
-
-      debug_print (1, "Adding hw:%d (name '%s', subname '%s')...\n", card,
-		   name, sub_name);
-      backend_device = g_malloc (sizeof (struct backend_device));
-      backend_device->type = BE_TYPE_MIDI;
-      snprintf (backend_device->id, LABEL_MAX, BE_DEVICE_NAME, card, device,
-		sub);
-      snprintf (backend_device->name, LABEL_MAX, BE_DEVICE_NAME ": %s%s%s",
-		card, device, sub, name, strlen (sub_name) ? ", " : "",
-		sub_name);
-
-      g_array_append_vals (devices, backend_device, 1);
+      debug_print (1,
+		   "Cannot get rawmidi input information %d:%d:%d: %s\n",
+		   card, device, 0, snd_strerror (err));
+      return;
     }
+
+  snd_rawmidi_info_set_stream (info, SND_RAWMIDI_STREAM_OUTPUT);
+  err = snd_ctl_rawmidi_info (ctl, info);
+  if (err < 0)
+    {
+      debug_print (1,
+		   "Cannot get rawmidi output information %d:%d:%d: %s\n",
+		   card, device, 0, snd_strerror (err));
+      return;
+    }
+
+  name = snd_rawmidi_info_get_name (info);
+  sub_name = snd_rawmidi_info_get_subdevice_name (info);
+
+  debug_print (1, "Adding hw:%d (name '%s', subname '%s')...\n", card,
+	       name, sub_name);
+  backend_device = g_malloc (sizeof (struct backend_device));
+  backend_device->type = BE_TYPE_MIDI;
+  snprintf (backend_device->id, LABEL_MAX, ALSA_DEVICE_NAME, card, device);
+  snprintf (backend_device->name, LABEL_MAX, ALSA_DEVICE_NAME ": %s%s%s",
+	    card, device, name, strlen (sub_name) ? ", " : "", sub_name);
+
+  g_array_append_vals (devices, backend_device, 1);
 }
 
 static void
