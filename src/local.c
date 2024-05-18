@@ -22,7 +22,6 @@
 #include "connectors/system.h"
 
 const struct fs_operations FS_LOCAL_GENERIC_OPERATIONS = {
-  .id = 0,
   .options = FS_OPTION_SORT_BY_NAME | FS_OPTION_ALLOW_SEARCH,
   .name = "local",
   .gui_name = "localhost",
@@ -37,7 +36,6 @@ const struct fs_operations FS_LOCAL_GENERIC_OPERATIONS = {
 };
 
 const struct fs_operations FS_LOCAL_SAMPLE_OPERATIONS = {
-  .id = 0,
   .options = FS_OPTION_MONO | FS_OPTION_STEREO | FS_OPTION_SORT_BY_NAME |
     FS_OPTION_SHOW_SAMPLE_COLUMNS | FS_OPTION_ALLOW_SEARCH,
   .name = "local",
