@@ -239,17 +239,17 @@ system_read_dir_opts (struct backend *backend, struct item_iterator *iter,
 
 gint
 system_read_dir (struct backend *backend, struct item_iterator *iter,
-		 const gchar *path, gchar **extensions)
+		 const gchar *dir, gchar **extensions)
 {
-  return system_read_dir_opts (backend, iter, path, extensions,
+  return system_read_dir_opts (backend, iter, dir, extensions,
 			       system_next_dentry_without_sample_info);
 }
 
 gint
 system_samples_read_dir (struct backend *backend, struct item_iterator *iter,
-			 const gchar *path, gchar **extensions)
+			 const gchar *dir, gchar **extensions)
 {
-  return system_read_dir_opts (backend, iter, path, extensions,
+  return system_read_dir_opts (backend, iter, dir, extensions,
 			       system_next_dentry_with_sample_info);
 }
 
