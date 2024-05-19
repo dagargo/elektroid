@@ -554,17 +554,18 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
   gchar *child_dir, *child_rel_dir;
   struct item_iterator child_iter;
   gboolean loading = TRUE;
+  enum path_type type = backend_get_path_type (browser->backend);
 
   while (loading && !next_item_iterator (iter))
     {
-      child_rel_dir = path_chain (PATH_SYSTEM, rel_dir, iter->item.name);
+      child_rel_dir = path_chain (type, rel_dir, iter->item.name);
 
       browser_iterate_dir_add (browser, iter, icon, &iter->item,
 			       strdup (child_rel_dir));
 
       if (iter->item.type == ELEKTROID_DIR)
 	{
-	  child_dir = path_chain (PATH_SYSTEM, browser->dir, child_rel_dir);
+	  child_dir = path_chain (type, browser->dir, child_rel_dir);
 	  err = browser->fs_ops->readdir (browser->backend, &child_iter,
 					  child_dir, extensions);
 	  if (!err)
