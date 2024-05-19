@@ -583,6 +583,37 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
   free_item_iterator (iter);
 }
 
+static gchar **
+browser_get_remote_browser_exts ()
+{
+  gchar **exts;
+  if (remote_browser.fs_ops->get_exts)
+    {
+      exts = remote_browser.fs_ops->get_exts (remote_browser.backend,
+					      remote_browser.fs_ops);
+    }
+  else
+    {
+      exts = new_ext_array (remote_browser.fs_ops->ext);
+    }
+  return exts;
+}
+
+static const gchar *
+browser_get_icon_for_local_browser ()
+{
+  const gchar *icon;
+  if (remote_browser.fs_ops->upload)
+    {
+      icon = remote_browser.fs_ops->gui_icon;
+    }
+  else
+    {
+      icon = local_browser.fs_ops->gui_icon;
+    }
+  return icon;
+}
+
 static gpointer
 browser_load_dir_runner (gpointer data)
 {
@@ -590,26 +621,28 @@ browser_load_dir_runner (gpointer data)
   struct browser *browser = data;
   struct item_iterator iter;
   gchar **exts;
-  const gchar *icon = browser->fs_ops->gui_icon;
+  const gchar *icon;
   gboolean search_mode;
 
-  if (remote_browser.fs_ops)
+  if (browser == &remote_browser)
     {
-      if (remote_browser.fs_ops->get_exts)
-	{
-	  exts = remote_browser.fs_ops->get_exts (remote_browser.backend,
-						  remote_browser.fs_ops);
-	}
-      else
-	{
-	  exts = new_ext_array (remote_browser.fs_ops->ext);
-	}
+      exts = browser_get_remote_browser_exts (remote_browser.fs_ops->ext);
+      icon = remote_browser.fs_ops->gui_icon;
     }
   else
     {
-      //If !remote_browser.fs_ops, only FS_LOCAL_SAMPLE_OPERATIONS is used, which implements get_exts.
-      exts = local_browser.fs_ops->get_exts (remote_browser.backend,
-					     remote_browser.fs_ops);
+      if (remote_browser.fs_ops)
+	{
+	  exts = browser_get_remote_browser_exts ();
+	  icon = browser_get_icon_for_local_browser ();
+	}
+      else
+	{
+	  //If !remote_browser.fs_ops, only FS_LOCAL_SAMPLE_OPERATIONS is used, which implements get_exts.
+	  exts = local_browser.fs_ops->get_exts (remote_browser.backend,
+						 remote_browser.fs_ops);
+	  icon = local_browser.fs_ops->gui_icon;
+	}
     }
 
   g_idle_add (browser_load_dir_runner_show_spinner_and_lock_browser, browser);
