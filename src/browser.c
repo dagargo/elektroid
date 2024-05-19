@@ -542,7 +542,6 @@ browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
       loading = browser->loading;
       g_mutex_unlock (&browser->mutex);
     }
-  free_item_iterator (iter);
 }
 
 static void
@@ -572,6 +571,7 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
 	    {
 	      browser_iterate_dir_recursive (browser, child_rel_dir,
 					     &child_iter, icon, extensions);
+	      free_item_iterator (&child_iter);
 	    }
 	  g_free (child_dir);
 	}
@@ -581,7 +581,6 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
       loading = browser->loading;
       g_mutex_unlock (&browser->mutex);
     }
-  free_item_iterator (iter);
 }
 
 static gchar **
@@ -667,6 +666,8 @@ browser_load_dir_runner (gpointer data)
     {
       browser_iterate_dir (browser, &iter, icon);
     }
+
+  free_item_iterator (&iter);
 
 end:
   g_idle_add (browser_load_dir_runner_update_ui, browser);
