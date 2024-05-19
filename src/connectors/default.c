@@ -50,18 +50,18 @@ default_next_dentry (struct item_iterator *iter)
 
 static gint
 default_read_dir (struct backend *backend, struct item_iterator *iter,
-		  const gchar *path, gchar **extensions)
+		  const gchar *dir, gchar **extensions)
 {
-  if (strcmp (path, "/"))
+  if (strcmp (dir, "/"))
     {
       return -ENOTDIR;
     }
 
   guint *data = g_malloc (sizeof (guint));
   *data = 0;
-  iter->data = data;
-  iter->next = default_next_dentry;
-  iter->free = g_free;
+
+  init_item_iterator (iter, dir, data, default_next_dentry, g_free);
+
   return 0;
 }
 
