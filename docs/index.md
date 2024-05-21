@@ -12,7 +12,7 @@ These are the supported devices:
 
 * Elektron Model:Samples
 * Elektron Model:Cycles
-* Elektron Digitakt
+* Elektron Digitakt I and II
 * Elektron Digitone and Digitone Keys
 * Elektron Syntakt
 * Elektron Analog Rytm MKI and MKII

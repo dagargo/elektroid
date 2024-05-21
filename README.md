@@ -13,7 +13,7 @@ These are the supported devices:
 
 * Elektron Model:Samples
 * Elektron Model:Cycles
-* Elektron Digitakt
+* Elektron Digitakt I and II
 * Elektron Digitone and Digitone Keys
 * Elektron Syntakt
 * Elektron Analog Rytm MKI and MKII
@@ -374,4 +374,4 @@ In order to run a test, proceed as follows. The variable `TEST_DEVICE` must cont
 $ TEST_DEVICE=0 TEST_CONNECTOR_FILESYSTEM=efactor_preset make check
 ```
 
-Running `make check` without setting any of these variables will succeed and no test will be ran.
+Running `make check` without setting any of these variables will run some system integration tests together with a few unit tests.
