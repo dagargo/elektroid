@@ -78,11 +78,8 @@ struct item
   gint32 id;
   gint64 size;
   //Optionally filled up by sample filesystems
-  union
-  {
-    struct sample_info sample_info;
-    gchar object_info[LABEL_MAX];
-  };
+  struct sample_info sample_info;
+  gchar object_info[LABEL_MAX];
 };
 
 struct item_iterator
