@@ -982,11 +982,14 @@ browser_check_and_load_sample (struct browser *browser, gint count)
 	{
 	  enum path_type type = backend_get_path_type (browser->backend);
 	  gchar *sample_path = path_chain (type, browser->dir, item.name);
-	  browser_clear_other_browser_if_system (browser);
-	  editor_reset (&editor, browser);
-	  g_free (editor.audio.path);
-	  editor.audio.path = sample_path;
-	  editor_start_load_thread (&editor);
+	  if (!editor.audio.path || strcmp (editor.audio.path, sample_path))
+	    {
+	      browser_clear_other_browser_if_system (browser);
+	      editor_reset (&editor, browser);
+	      g_free (editor.audio.path);
+	      editor.audio.path = sample_path;
+	      editor_start_load_thread (&editor);
+	    }
 
 	  return;
 	}
