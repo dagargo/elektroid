@@ -57,6 +57,9 @@
 #define MICROFREAK_ALPHABET " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
 #define MICROFREAK_DEFAULT_CHAR '.'
 
+#define MICROFREAK_PPRESET_EXT "mfp"
+#define MICROFREAK_ZPRESET_EXT "mfpz"
+
 #define MICROFREAK_WAVETABLE_EMPTY 0x08
 
 static const guint8 MICROFREAK_REQUEST_HEADER[] =
@@ -68,8 +71,9 @@ static const guint8 MODEL_ID[] = { 0x6, 0x1 };
 
 enum microfreak_fs
 {
-  FS_MICROFREAK_PRESET,
-  FS_MICROFREAK_ZPRESET,
+  FS_MICROFREAK_PPRESET,	//Plain presets
+  FS_MICROFREAK_ZPRESET,	//Zipped presets
+  FS_MICROFREAK_PRESET,		//Loads ppreset and zpreset and stores zpreset
   FS_MICROFREAK_SAMPLE,
   FS_MICROFREAK_WAVETABLE
 };
@@ -142,6 +146,7 @@ microfreak_get_download_preset_path (struct backend *backend,
   next++;
   memcpy (name, next, len);
   name[len] = 0;
+
   return common_get_download_path_with_params (backend, ops, dst_dir, id, 3,
 					       name);
 }
@@ -758,14 +763,12 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
   return 0;
 }
 
-static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
-  .id = FS_MICROFREAK_PRESET,
+static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
+  .id = FS_MICROFREAK_PPRESET,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
-    FS_OPTION_ALLOW_SEARCH,
-  .name = "preset",
-  .ext = "syx",
+    FS_OPTION_SLOT_STORAGE,
+  .name = "ppreset",
+  .ext = MICROFREAK_PPRESET_EXT,
   .max_name_len = MICROFREAK_PRESET_NAME_LEN,
   .readdir = microfreak_preset_read_dir,
   .print_item = common_print_item,
@@ -776,11 +779,10 @@ static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
   .load = load_file,
   .save = save_file,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = microfreak_get_download_preset_path,
-  .select_item = microfreak_midi_program_change
+  .get_download_path = microfreak_get_download_preset_path
 };
 
-gint
+static gint
 microfreak_zpreset_save (const gchar *path, GByteArray *array,
 			 struct job_control *control)
 {
@@ -836,7 +838,7 @@ end:
   return err;
 }
 
-gint
+static gint
 microfreak_zpreset_load (const char *path, GByteArray *array,
 			 struct job_control *control)
 {
@@ -890,13 +892,9 @@ end:
 static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .id = FS_MICROFREAK_ZPRESET,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
-    FS_OPTION_ALLOW_SEARCH,
+    FS_OPTION_SLOT_STORAGE,
   .name = "zpreset",
-  .gui_name = "Presets",
-  .gui_icon = BE_FILE_ICON_SND,
-  .ext = "mfpz",
+  .ext = MICROFREAK_ZPRESET_EXT,
   .max_name_len = MICROFREAK_PRESET_NAME_LEN,
   .readdir = microfreak_preset_read_dir,
   .print_item = common_print_item,
@@ -906,6 +904,53 @@ static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .upload = microfreak_preset_upload,
   .load = microfreak_zpreset_load,
   .save = microfreak_zpreset_save,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = microfreak_get_download_preset_path
+};
+
+static gint
+microfreak_preset_load (const char *path, GByteArray *array,
+			struct job_control *control)
+{
+  const gchar *ext = get_file_ext (path);
+  if (strcmp (ext, MICROFREAK_PPRESET_EXT))
+    {
+      return microfreak_zpreset_load (path, array, control);
+    }
+  else
+    {
+      return load_file (path, array, control);
+    }
+}
+
+static GSList *
+microfreak_preset_get_exts (struct backend *backend,
+			    const struct fs_operations *ops)
+{
+  GSList *exts = g_slist_append (NULL, strdup (MICROFREAK_PPRESET_EXT));
+  return g_slist_append (exts, strdup (MICROFREAK_ZPRESET_EXT));
+}
+
+static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
+  .id = FS_MICROFREAK_PRESET,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
+  .name = "preset",
+  .gui_name = "Presets",
+  .gui_icon = BE_FILE_ICON_SND,
+  .ext = MICROFREAK_ZPRESET_EXT,
+  .max_name_len = MICROFREAK_PRESET_NAME_LEN,
+  .readdir = microfreak_preset_read_dir,
+  .print_item = common_print_item,
+  .get_slot = microfreak_get_object_id_as_slot,
+  .rename = microfreak_preset_rename,
+  .download = microfreak_preset_download,
+  .upload = microfreak_preset_upload,
+  .load = microfreak_preset_load,
+  .save = microfreak_zpreset_save,
+  .get_exts = microfreak_preset_get_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microfreak_get_download_preset_path,
   .select_item = microfreak_midi_program_change
@@ -1964,8 +2009,9 @@ microfreak_handshake (struct backend *backend)
 	}
     }
 
-  backend_fill_fs_ops (backend, &FS_MICROFREAK_PRESET_OPERATIONS,
+  backend_fill_fs_ops (backend, &FS_MICROFREAK_PPRESET_OPERATIONS,
 		       &FS_MICROFREAK_ZPRESET_OPERATIONS,
+		       &FS_MICROFREAK_PRESET_OPERATIONS,
 		       &FS_MICROFREAK_SAMPLE_OPERATIONS,
 		       &FS_MICROFREAK_WAVETABLE_OPERATIONS, NULL);
   backend->destroy_data = backend_destroy_data;
