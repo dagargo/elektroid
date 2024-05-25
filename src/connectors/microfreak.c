@@ -503,6 +503,7 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
   if (init)
     {
       control->parts = 1;
+      control->part = 0;
       set_job_control_progress (control, 1.0);
       goto end;
     }
