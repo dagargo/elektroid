@@ -53,7 +53,7 @@ gint sample_load_from_file_with_cb (const gchar *, GByteArray *,
 
 gint sample_load_sample_info (const gchar *, struct sample_info *);
 
-gchar **sample_get_sample_extensions ();
+GSList *sample_get_sample_extensions ();
 
 void sample_check_and_fix_loop_points (struct sample_info *);
 

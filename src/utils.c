@@ -407,10 +407,10 @@ set_sample_progress_no_sync (struct job_control *control, gdouble p,
 }
 
 gboolean
-file_matches_extensions (const gchar *name, gchar **extensions)
+file_matches_extensions (const gchar *name, const GSList *extensions)
 {
   const gchar *extension;
-  gchar **e = extensions;
+  const GSList *e = extensions;
 
   if (!e)
     {
@@ -423,13 +423,13 @@ file_matches_extensions (const gchar *name, gchar **extensions)
       return FALSE;
     }
 
-  while (*e)
+  while (e)
     {
-      if (!strcasecmp (extension, *e))
+      if (!strcasecmp (extension, e->data))
 	{
 	  return TRUE;
 	}
-      e++;
+      e = e->next;
     }
 
   return FALSE;
@@ -437,7 +437,7 @@ file_matches_extensions (const gchar *name, gchar **extensions)
 
 gboolean
 iter_is_dir_or_matches_extensions (struct item_iterator *iter,
-				   gchar **extensions)
+				   const GSList *extensions)
 {
   if (iter->item.type == ELEKTROID_DIR)
     {
@@ -535,37 +535,4 @@ path_filename_to_uri (enum path_type type, gchar *filename)
   gchar *escaped_uri = g_uri_escape_string (uri, ":/", FALSE);
   g_free (uri);
   return escaped_uri;
-}
-
-gchar **
-new_ext_array (const gchar *ext)
-{
-  if (ext)
-    {
-      gchar **exts = g_malloc (sizeof (gchar *) * 2);
-      exts[0] = strdup (ext);
-      exts[1] = NULL;
-      return exts;
-    }
-  else
-    {
-      return NULL;
-    }
-}
-
-void
-free_ext_array (gchar **array)
-{
-  if (!array)
-    {
-      return;
-    }
-
-  gchar **e = array;
-  while (*e)
-    {
-      g_free (*e);
-      e++;
-    }
-  g_free (array);
 }

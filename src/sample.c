@@ -949,20 +949,17 @@ sample_load_from_file (const gchar *path, GByteArray *sample,
 					set_sample_progress_no_sync, NULL);
 }
 
-gchar **
+GSList *
 sample_get_sample_extensions ()
 {
-  gchar **copy = g_malloc (sizeof (ELEKTROID_AUDIO_LOCAL_EXTS));
-  const gchar **src = ELEKTROID_AUDIO_LOCAL_EXTS;
-  gchar **dst = copy;
-  while (*src)
+  GSList *exts = NULL;
+  const gchar **e = ELEKTROID_AUDIO_LOCAL_EXTS;
+  while (*e)
     {
-      *dst = strdup (*src);
-      src++;
-      dst++;
+      exts = g_slist_append (exts, strdup (*e));
+      e++;
     }
-  *dst = NULL;
-  return copy;
+  return exts;
 }
 
 const gchar *

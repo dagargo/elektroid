@@ -987,7 +987,7 @@ sds_next_sample_dentry (struct item_iterator *iter)
 
 static gint
 sds_read_dir (struct backend *backend, struct item_iterator *iter,
-	      const gchar *dir, gchar **extensions)
+	      const gchar *dir, GSList *extensions)
 {
   struct sds_iterator_data *data;
 

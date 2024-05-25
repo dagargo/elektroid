@@ -141,7 +141,7 @@ enum path_type
 struct fs_operations;
 
 typedef gint (*fs_init_iter_func) (struct backend *, struct item_iterator *,
-				   const gchar *, gchar **);
+				   const gchar *, GSList *);
 
 typedef gint (*fs_path_func) (struct backend *, const gchar *);
 
@@ -156,7 +156,7 @@ typedef gchar *(*fs_get_item_slot) (struct item *, struct backend *);
 typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
 				  struct job_control *);
 
-typedef gchar **(*fs_get_exts) (struct backend *,
+typedef GSList *(*fs_get_exts) (struct backend *,
 				const struct fs_operations *);
 
 typedef gchar *(*fs_get_upload_path) (struct backend *,
@@ -294,9 +294,11 @@ void set_job_control_progress (struct job_control *, gdouble);
 
 void set_sample_progress_no_sync (struct job_control *, gdouble, gpointer);
 
-gboolean file_matches_extensions (const gchar *, gchar **);
+gboolean file_matches_extensions (const gchar * name,
+				  const GSList * extensions);
 
-gboolean iter_is_dir_or_matches_extensions (struct item_iterator *, gchar **);
+gboolean iter_is_dir_or_matches_extensions (struct item_iterator *iter,
+					    const GSList * extensions);
 
 //Use a backslash for the system backend on WSYS2.
 
@@ -307,9 +309,5 @@ gchar *path_translate (enum path_type, const gchar *);
 gchar *path_filename_from_uri (enum path_type, gchar *);
 
 gchar *path_filename_to_uri (enum path_type, gchar *);
-
-gchar **new_ext_array (const gchar *);
-
-void free_ext_array (gchar **);
 
 #endif

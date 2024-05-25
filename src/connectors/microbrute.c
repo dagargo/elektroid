@@ -213,7 +213,7 @@ microbrute_get_download_path (struct backend *backend,
 
 static gint
 microbrute_read_dir (struct backend *backend, struct item_iterator *iter,
-		     const gchar *dir, gchar **extensions)
+		     const gchar *dir, GSList *extensions)
 {
   struct common_simple_read_dir_data *data;
 

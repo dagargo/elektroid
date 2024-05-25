@@ -21,11 +21,12 @@
 #include "backend.h"
 #include "utils.h"
 
-gint system_read_dir (struct backend *, struct item_iterator *, const gchar *,
-		      gchar **);
+gint system_read_dir (struct backend *backend, struct item_iterator *iter,
+		      const gchar * dir, GSList * extensions);
 
-gint system_samples_read_dir (struct backend *, struct item_iterator *,
-			      const gchar *, gchar **);
+gint system_samples_read_dir (struct backend *backend,
+			      struct item_iterator *iter, const gchar * dir,
+			      GSList * extensions);
 
 gboolean system_file_exists (struct backend *, const gchar *);
 

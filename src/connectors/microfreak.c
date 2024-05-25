@@ -310,7 +310,7 @@ end:
 static gint
 microfreak_preset_read_dir (struct backend *backend,
 			    struct item_iterator *iter, const gchar *path,
-			    gchar **extensions)
+			    GSList *extensions)
 {
   return microfreak_common_read_dir (backend, iter, path,
 				     microfreak_next_preset_dentry);
@@ -977,7 +977,7 @@ end:
 static gint
 microfreak_sample_read_dir (struct backend *backend,
 			    struct item_iterator *iter, const gchar *path,
-			    gchar **extensions)
+			    GSList *extensions)
 {
   return microfreak_common_read_dir (backend, iter, path,
 				     microfreak_next_sample_dentry);
@@ -1408,7 +1408,7 @@ end:
 static gint
 microfreak_wavetable_read_dir (struct backend *backend,
 			       struct item_iterator *iter, const gchar *path,
-			       gchar **extensions)
+			       GSList *extensions)
 {
   return microfreak_common_read_dir (backend, iter, path,
 				     microfreak_next_wavetable_dentry);

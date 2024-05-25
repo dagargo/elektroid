@@ -955,7 +955,7 @@ elektron_read_common_dir (struct backend *backend,
 static gint
 elektron_read_samples_dir (struct backend *backend,
 			   struct item_iterator *iter, const gchar *dir,
-			   gchar **extensions)
+			   GSList *extensions)
 {
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_SAMPLE_READ_DIR_REQUEST,
@@ -967,7 +967,7 @@ elektron_read_samples_dir (struct backend *backend,
 
 static gint
 elektron_read_raw_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *dir, gchar **extensions)
+		       const gchar *dir, GSList *extensions)
 {
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_RAW_READ_DIR_REQUEST,
@@ -1979,7 +1979,7 @@ elektron_read_data_dir_prefix (struct backend *backend,
 static gint
 elektron_read_data_dir_any (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
-			    gchar **extensions)
+			    GSList *extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir, NULL,
 					ITER_MODE_DATA, -1);
@@ -1988,7 +1988,7 @@ elektron_read_data_dir_any (struct backend *backend,
 static gint
 elektron_read_data_dir_prj (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
-			    gchar **extensions)
+			    GSList *extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_PRJ_PREFIX, ITER_MODE_DATA,
@@ -1998,7 +1998,7 @@ elektron_read_data_dir_prj (struct backend *backend,
 static gint
 elektron_read_data_dir_snd (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
-			    gchar **extensions)
+			    GSList *extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_SND_PREFIX,
@@ -2008,7 +2008,7 @@ elektron_read_data_dir_snd (struct backend *backend,
 static gint
 elektron_read_data_dir_pst (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
-			    gchar **extensions)
+			    GSList *extensions)
 {
   struct elektron_data *data = backend->data;
   gint32 slots = data->device_desc.id == 32 ? 512 : 128;	//Analog Heat +FX has 512 presets
@@ -2928,69 +2928,46 @@ elektron_upload_pkg (struct backend *backend, const gchar *path,
   return ret;
 }
 
-static gchar **
+static GSList *
 elektron_get_dev_exts (struct backend *backend,
 		       const struct fs_operations *ops)
 {
   gchar *ext = elektron_get_dev_ext (backend, ops);
-  gchar **array = new_ext_array (ext);
-  g_free (ext);
-  return array;
+  return g_slist_append (NULL, ext);
 }
 
-static gchar **
+static GSList *
 elektron_get_dev_exts_pst (struct backend *backend,
 			   const struct fs_operations *ops)
 {
   struct elektron_data *data = backend->data;
+  GSList *exts = elektron_get_dev_exts (backend, ops);
   if (data->device_desc.id == 32)	//AH +FX
     {
-      gchar *ext = elektron_get_dev_ext (backend, ops);
-      gchar **exts = g_malloc (sizeof (gchar *) * 3);
-      exts[0] = strdup (ext);
-      exts[1] = strdup ("ahpst");
-      exts[2] = NULL;
-      g_free (ext);
-      return exts;
+      exts = g_slist_append (exts, strdup ("ahpst"));
     }
-  else
-    {
-      return elektron_get_dev_exts (backend, ops);
-    }
+  return exts;
 }
 
-static gchar **
+static GSList *
 elektron_get_dev_exts_prj (struct backend *backend,
 			   const struct fs_operations *ops)
 {
   struct elektron_data *data = backend->data;
+  GSList *exts = elektron_get_dev_exts (backend, ops);
   if (data->device_desc.id == 42)	//Digitakt II
     {
-      gchar *ext = elektron_get_dev_ext (backend, ops);
-      gchar **exts = g_malloc (sizeof (gchar *) * 3);
-      exts[0] = strdup (ext);
-      exts[1] = strdup ("dtprj");
-      exts[2] = NULL;
-      g_free (ext);
-      return exts;
+      exts = g_slist_append (exts, strdup ("dtprj"));
     }
-  else
-    {
-      return elektron_get_dev_exts (backend, ops);
-    }
+  return exts;
 }
 
-static gchar **
+static GSList *
 elektron_get_dt2_pst_exts (struct backend *backend,
 			   const struct fs_operations *ops)
 {
-  gchar *ext = elektron_get_dev_ext (backend, ops);
-  gchar **exts = g_malloc (sizeof (gchar *) * 3);
-  exts[0] = strdup (ext);
-  exts[1] = strdup ("dtsnd");
-  exts[2] = NULL;
-  g_free (ext);
-  return exts;
+  GSList *exts = elektron_get_dev_exts (backend, ops);
+  return g_slist_append (exts, strdup ("dtsnd"));
 }
 
 gint

@@ -268,7 +268,7 @@ phatty_next_preset_dentry (struct item_iterator *iter)
 
 static gint
 phatty_read_dir (struct backend *backend, struct item_iterator *iter,
-		 const gchar *dir, gchar **extensions)
+		 const gchar *dir, GSList *exts)
 {
   gint err = 0;
 
@@ -443,7 +443,7 @@ static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
 
 static gint
 phatty_scale_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *path, gchar **extensions)
+		       const gchar *path, GSList *extensions)
 {
   struct common_simple_read_dir_data *data;
 

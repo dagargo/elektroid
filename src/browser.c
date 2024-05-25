@@ -547,7 +547,7 @@ browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
 static void
 browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
 			       struct item_iterator *iter, const gchar *icon,
-			       gchar **extensions)
+			       GSList *extensions)
 {
   gint err;
   gchar *child_dir, *child_rel_dir;
@@ -583,10 +583,10 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
     }
 }
 
-static gchar **
+static GSList *
 browser_get_remote_browser_exts ()
 {
-  gchar **exts;
+  GSList *exts;
   if (remote_browser.fs_ops->get_exts)
     {
       exts = remote_browser.fs_ops->get_exts (remote_browser.backend,
@@ -594,7 +594,7 @@ browser_get_remote_browser_exts ()
     }
   else
     {
-      exts = new_ext_array (remote_browser.fs_ops->ext);
+      exts = g_slist_append (NULL, strdup (remote_browser.fs_ops->ext));
     }
   return exts;
 }
@@ -620,7 +620,7 @@ browser_load_dir_runner (gpointer data)
   gint err;
   struct browser *browser = data;
   struct item_iterator iter;
-  gchar **exts;
+  GSList *exts;
   const gchar *icon;
   gboolean search_mode;
 
@@ -671,7 +671,7 @@ browser_load_dir_runner (gpointer data)
 
 end:
   g_idle_add (browser_load_dir_runner_update_ui, browser);
-  free_ext_array (exts);
+  g_slist_free_full (exts, g_free);
   return NULL;
 }
 
