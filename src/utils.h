@@ -294,6 +294,8 @@ void set_job_control_progress (struct job_control *, gdouble);
 
 void set_sample_progress_no_sync (struct job_control *, gdouble, gpointer);
 
+//This function is declared here por testing purposes only.
+
 gboolean file_matches_extensions (const gchar * name,
 				  const GSList * extensions);
 

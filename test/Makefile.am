@@ -14,7 +14,7 @@ endif
 
 AM_CPPFLAGS = -Wall -DSCALA_TEST_DIR='"$(srcdir)/res/scala"' -DDATADIR='"../res"'
 
-check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron
+check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils
 
 tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip zlib $(BE_LIBS)
 
@@ -78,6 +78,14 @@ tests_elektron_SOURCES = \
 	../src/connectors/package.h \
 	../src/connectors/elektron.c \
 	../src/connectors/elektron.h
+
+tests_utils_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` -pthread
+tests_utils_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(MSYS2_LIBS)
+
+tests_utils_SOURCES = \
+        tests_utils.c \
+	../src/utils.c \
+        ../src/utils.h
 
 TESTS = integration/test.sh integration/system_all_fs_tests.sh $(check_PROGRAMS)
 

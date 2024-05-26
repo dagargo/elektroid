@@ -121,7 +121,7 @@ main (int argc, char *argv[])
     {
       goto cleanup;
     }
-  CU_pSuite suite = CU_add_suite ("common connector tests", 0, 0);
+  CU_pSuite suite = CU_add_suite ("Elektroid common connector tests", 0, 0);
   if (!suite)
     {
       goto cleanup;
