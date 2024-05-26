@@ -12,11 +12,11 @@ BE_LIBS = alsa
 BE_SOURCES = ../src/backend_alsa.c
 endif
 
-AM_CPPFLAGS = -Wall -DSCALA_TEST_DIR='"$(srcdir)/res/scala"'
+AM_CPPFLAGS = -Wall -DSCALA_TEST_DIR='"$(srcdir)/res/scala"' -DDATADIR='"../res"'
 
-check_PROGRAMS = tests_scala tests_common tests_microfreak
+check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron
 
-tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip $(BE_LIBS)
+tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip zlib $(BE_LIBS)
 
 tests_scala_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` -pthread
 tests_scala_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(MSYS2_LIBS)
@@ -59,6 +59,25 @@ tests_microfreak_SOURCES = \
         ../src/sample.h \
 	../src/connectors/microfreak.c \
 	../src/connectors/microfreak.h
+
+tests_elektron_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -pthread
+tests_elektron_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
+
+tests_elektron_SOURCES = \
+        tests_elektron.c \
+	../src/utils.c \
+        ../src/utils.h \
+	../src/backend.c \
+        ../src/backend.h \
+	$(BE_SOURCES) \
+        ../src/connectors/common.c \
+	../src/connectors/common.h \
+	../src/sample.c \
+        ../src/sample.h \
+	../src/connectors/package.c \
+	../src/connectors/package.h \
+	../src/connectors/elektron.c \
+	../src/connectors/elektron.h
 
 TESTS = integration/test.sh integration/system_all_fs_tests.sh $(check_PROGRAMS)
 

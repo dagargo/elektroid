@@ -2928,7 +2928,7 @@ elektron_upload_pkg (struct backend *backend, const gchar *path,
   return ret;
 }
 
-static GSList *
+GSList *
 elektron_get_dev_exts (struct backend *backend,
 		       const struct fs_operations *ops)
 {
@@ -2936,7 +2936,7 @@ elektron_get_dev_exts (struct backend *backend,
   return g_slist_append (NULL, ext);
 }
 
-static GSList *
+GSList *
 elektron_get_dev_exts_pst (struct backend *backend,
 			   const struct fs_operations *ops)
 {
@@ -2949,7 +2949,7 @@ elektron_get_dev_exts_pst (struct backend *backend,
   return exts;
 }
 
-static GSList *
+GSList *
 elektron_get_dev_exts_prj (struct backend *backend,
 			   const struct fs_operations *ops)
 {
@@ -2962,7 +2962,7 @@ elektron_get_dev_exts_prj (struct backend *backend,
   return exts;
 }
 
-static GSList *
+GSList *
 elektron_get_dt2_pst_exts (struct backend *backend,
 			   const struct fs_operations *ops)
 {

@@ -49,4 +49,18 @@ gint elektron_handshake (struct backend *);
 
 gint elektron_sample_save (const gchar *, GByteArray *, struct job_control *);
 
+//The following declarations are just for testing purposes.
+
+GSList *elektron_get_dev_exts (struct backend *backend,
+			       const struct fs_operations *ops);
+
+GSList *elektron_get_dev_exts_pst (struct backend *backend,
+				   const struct fs_operations *ops);
+
+GSList *elektron_get_dev_exts_prj (struct backend *backend,
+				   const struct fs_operations *ops);
+
+GSList *elektron_get_dt2_pst_exts (struct backend *backend,
+				   const struct fs_operations *ops);
+
 #endif
