@@ -612,8 +612,12 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
     {
       return err;
     }
-  //TODO: add check
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
   free_msg (rx_msg);
+  if (err)
+    {
+      return err;
+    }
 
   usleep (MICROFREAK_REST_TIME_US);
 
@@ -623,8 +627,12 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
     {
       return err;
     }
-  //TODO: add check
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
   free_msg (rx_msg);
+  if (err)
+    {
+      return err;
+    }
 
   usleep (MICROFREAK_REST_TIME_US);
 
