@@ -19,12 +19,9 @@ test_serialization_deserialization ()
 
   memcpy (mfp_src.header, HEADER_PAYLOAD, MICROFREAK_PRESET_HEADER_MSG_LEN);
   mfp_src.parts = MICROFREAK_PRESET_PARTS;
-  for (gint i = 0; i < mfp_src.parts; i++)
+  for (guint i = 0; i < MICROFREAK_PRESET_DATALEN; i++)
     {
-      for (gint j = 0; j < MICROFREAK_PRESET_PART_LEN; j++)
-	{
-	  mfp_src.part[i][j] = g_random_int () & 0x7f;
-	}
+      mfp_src.data[i] = g_random_int () & 0x7f;
     }
 
   err = microfreak_serialize_preset (serialized, &mfp_src);
@@ -39,12 +36,8 @@ test_serialization_deserialization ()
 
   CU_ASSERT_EQUAL (mfp_dst.parts, mfp_src.parts);
 
-  for (gint i = 0; i < mfp_dst.parts; i++)
-    {
-      err = memcmp (mfp_src.part[i], mfp_dst.part[i],
-		    MICROFREAK_PRESET_PART_LEN);
-      CU_ASSERT_EQUAL (err, 0);
-    }
+  err = memcmp (mfp_src.data, mfp_dst.data, MICROFREAK_PRESET_DATALEN);
+  CU_ASSERT_EQUAL (err, 0);
 }
 
 void
