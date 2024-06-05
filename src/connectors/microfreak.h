@@ -35,6 +35,11 @@
 #define MICROFREAK_WAVE_MSG_SIZE (MICROFREAK_WAVE_BLK_SIZE * 8 / 7)	//32
 #define MICROFREAK_WAVETABLE_NAME_LEN 16
 #define MICROFREAK_PRESET_DATALEN (MICROFREAK_PRESET_PARTS * MICROFREAK_PRESET_PART_LEN)
+#define MICROFREAK_WAVETABLE_SAMPLE_LEN 256
+#define MICROFREAK_WAVETABLE_CYCLES 32
+#define MICROFREAK_WAVETABLE_LEN (MICROFREAK_WAVETABLE_SAMPLE_LEN * MICROFREAK_WAVETABLE_CYCLES)
+#define MICROFREAK_WAVETABLE_SIZE (MICROFREAK_WAVETABLE_LEN * MICROFREAK_SAMPLE_SIZE)
+#define MICROFREAK_WAVETABLE_HEADER "22 serialization::archive 10 0 4 8 DEVBUILD"
 
 struct microfreak_preset
 {
@@ -75,6 +80,12 @@ gint microfreak_serialize_preset (GByteArray * output,
 
 gint microfreak_deserialize_preset (struct microfreak_preset *mfp,
 				    GByteArray * input);
+
+gint microfreak_serialize_wavetable (GByteArray * output,
+				     GByteArray * sample);
+
+gint microfreak_deserialize_wavetable (GByteArray * sample,
+				       GByteArray * input);
 
 void microfreak_midi_msg_to_8bit_msg (guint8 *, guint8 *);
 

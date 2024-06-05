@@ -8,7 +8,7 @@
 #define HEADER_PAYLOAD "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x10\x4e\x65\x72\x76\x6f\x75\x73\x4b\x65\x79\x73\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 
 void
-test_serialization_deserialization ()
+test_serialization_deserialization_preset ()
 {
   struct microfreak_preset mfp_src;
   struct microfreak_preset mfp_dst;
@@ -41,7 +41,7 @@ test_serialization_deserialization ()
 }
 
 void
-test_serialization_deserialization_init ()
+test_serialization_deserialization_preset_init ()
 {
   struct microfreak_preset mfp_src;
   struct microfreak_preset mfp_dst;
@@ -65,6 +65,48 @@ test_serialization_deserialization_init ()
   CU_ASSERT_EQUAL (err, 0);
 
   CU_ASSERT_EQUAL (mfp_dst.parts, mfp_src.parts);
+}
+
+void
+test_serialization_deserialization_wavetable ()
+{
+  gint err;
+  gint8 *v;
+  GByteArray *src = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
+  GByteArray *dst = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
+  GByteArray *serialized = g_byte_array_new ();
+  gchar *text;
+
+  printf ("\n");
+
+  v = (gint8 *) src->data;
+  src->len = MICROFREAK_WAVETABLE_SIZE;
+  for (guint i = 0; i < MICROFREAK_WAVETABLE_SIZE; i++, v++)
+    {
+      *v = (g_random_int () & 0xff) - 128;
+    }
+
+  err = microfreak_serialize_wavetable (serialized, src);
+  CU_ASSERT_EQUAL (err, 0);
+
+  err = microfreak_deserialize_wavetable (dst, serialized);
+  CU_ASSERT_EQUAL (err, 0);
+  CU_ASSERT_EQUAL (dst->len, MICROFREAK_WAVETABLE_SIZE);
+
+  text = debug_get_hex_data (debug_level, src->data, src->len);
+  debug_print (0, "src (%d): %s\n", src->len, text);
+  g_free (text);
+
+  text = debug_get_hex_data (debug_level, dst->data, dst->len);
+  debug_print (0, "dst (%d): %s\n", dst->len, text);
+  g_free (text);
+
+  err = memcmp (src->data, dst->data, MICROFREAK_WAVETABLE_SIZE);
+  CU_ASSERT_EQUAL (err, 0);
+
+  g_byte_array_free (src, TRUE);
+  g_byte_array_free (dst, TRUE);
+  g_byte_array_free (serialized, TRUE);
 }
 
 void
@@ -119,14 +161,20 @@ main (int argc, char *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "test_serialization_deserialization",
-		    test_serialization_deserialization))
+  if (!CU_add_test (suite, "test_serialization_deserialization_preset",
+		    test_serialization_deserialization_preset))
     {
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "test_serialization_deserialization_init",
-		    test_serialization_deserialization_init))
+  if (!CU_add_test (suite, "test_serialization_deserialization_preset_init",
+		    test_serialization_deserialization_preset_init))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "test_serialization_deserialization_wavetable",
+		    test_serialization_deserialization_wavetable))
     {
       goto cleanup;
     }

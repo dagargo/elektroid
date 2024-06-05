@@ -35,10 +35,6 @@
 #define MICROFREAK_SAMPLE_BATCH_LEN (MICROFREAK_SAMPLE_BATCH_SIZE / MICROFREAK_SAMPLE_SIZE)
 #define MICROFREAK_SAMPLE_BATCH_PACKETS 147
 #define MICROFREAK_MAX_WAVETABLES 16
-#define MICROFREAK_WAVETABLE_SAMPLE_LEN 256
-#define MICROFREAK_WAVETABLE_CYCLES 32
-#define MICROFREAK_WAVETABLE_LEN (MICROFREAK_WAVETABLE_SAMPLE_LEN * MICROFREAK_WAVETABLE_CYCLES)
-#define MICROFREAK_WAVETABLE_SIZE (MICROFREAK_WAVETABLE_LEN * MICROFREAK_SAMPLE_SIZE)
 #define MICROFREAK_WAVETABLE_PARTS 4
 #define MICROFREAK_WAVETABLE_FRAMES_PER_BATCH (MICROFREAK_SAMPLE_BATCH_SIZE / (MICROFREAK_WAVETABLE_CYCLES * MICROFREAK_SAMPLE_SIZE))
 
@@ -324,7 +320,7 @@ microfreak_preset_read_dir (struct backend *backend,
 static gint
 microfreak_deserialize_object (GByteArray *input, gchar *header,
 			       guint headerlen, gchar *name, guint8 *p0,
-			       guint8 *init, guint8 *p1, guint8 *data,
+			       guint8 *p3, guint8 *p5, guint8 *data,
 			       guint *datalen)
 {
   guint64 v;
@@ -374,7 +370,7 @@ microfreak_deserialize_object (GByteArray *input, gchar *header,
   p += 19;
 
   v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
-  *init = v ? 0x08 : 0;
+  *p3 = v;
 
   v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
   if (v != 0)
@@ -383,7 +379,7 @@ microfreak_deserialize_object (GByteArray *input, gchar *header,
     }
 
   v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
-  *p1 = v;
+  *p5 = v;
 
   *datalen = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
 
@@ -408,7 +404,7 @@ microfreak_deserialize_preset (struct microfreak_preset *mfp,
   guint8 *category = MICROFREAK_GET_CATEGORY_FROM_HEADER (mfp->header);
   guint8 *init = MICROFREAK_GET_INIT_FROM_HEADER (mfp->header);
   guint8 *p1 = MICROFREAK_GET_P1_FROM_HEADER (mfp->header);
-  guint datalen;
+  guint datalen = 0;
   gint err;
 
   memset (mfp, 0, sizeof (struct microfreak_preset));
@@ -416,6 +412,7 @@ microfreak_deserialize_preset (struct microfreak_preset *mfp,
 				       sizeof (MICROFREAK_PRESET_HEADER) - 1,
 				       name, category, init, p1, mfp->data,
 				       &datalen);
+  *init = *init ? 0x08 : 0;
   mfp->parts = datalen / MICROFREAK_PRESET_PART_LEN;
   return err;
 }
@@ -423,12 +420,12 @@ microfreak_deserialize_preset (struct microfreak_preset *mfp,
 static gint
 microfreak_serialize_object (GByteArray *output, gchar *header,
 			     guint headerlen, const gchar *name,
-			     guint8 p0, guint8 init, guint8 p1,
+			     guint8 p0, guint8 p3, guint8 p5,
 			     guint8 *data, guint datalen)
 {
   gchar aux[LABEL_MAX];
   guint namelen = strlen (name);
-  guint8 *v;
+  gint8 *v;
 
   g_byte_array_append (output, (guint8 *) header, headerlen);
 
@@ -443,21 +440,22 @@ microfreak_serialize_object (GByteArray *output, gchar *header,
   g_byte_array_append (output, (guint8 *) aux, strlen (aux));
   snprintf (aux, LABEL_MAX, " %d", 0);
   g_byte_array_append (output, (guint8 *) aux, strlen (aux));
+
   snprintf (aux, LABEL_MAX, " %d", 18);
   g_byte_array_append (output, (guint8 *) aux, strlen (aux));
-
   g_byte_array_append (output, (guint8 *) " 000000000000000000", 19);
 
-  snprintf (aux, LABEL_MAX, " %d", init & 0x08 ? 1 : 0);
+  snprintf (aux, LABEL_MAX, " %d", p3);
   g_byte_array_append (output, (guint8 *) aux, strlen (aux));
   snprintf (aux, LABEL_MAX, " %d", 0);
   g_byte_array_append (output, (guint8 *) aux, strlen (aux));
-  snprintf (aux, LABEL_MAX, " %d", p1);
+  snprintf (aux, LABEL_MAX, " %d", p5);
   g_byte_array_append (output, (guint8 *) aux, strlen (aux));
+
   snprintf (aux, LABEL_MAX, " %d", datalen);
   g_byte_array_append (output, (guint8 *) aux, strlen (aux));
 
-  v = data;
+  v = (gint8 *) data;
   for (guint i = 0; i < datalen; i++, v++)
     {
       snprintf (aux, LABEL_MAX, " %d", *v);
@@ -478,6 +476,7 @@ microfreak_serialize_preset (GByteArray *output,
   guint8 init = *MICROFREAK_GET_INIT_FROM_HEADER (mfp->header);
   guint8 p1 = *MICROFREAK_GET_P1_FROM_HEADER (mfp->header);
 
+  init = init & 0x08 ? 1 : 0;
   return microfreak_serialize_object (output, MICROFREAK_PRESET_HEADER,
 				      sizeof (MICROFREAK_PRESET_HEADER) - 1,
 				      name, category, init, p1, mfp->data,
@@ -1967,6 +1966,37 @@ microfreak_get_download_wavetable_path (struct backend *backend,
 
   return common_get_download_path_with_params (backend, ops, dst_dir, id, 2,
 					       NULL);
+}
+
+gint
+microfreak_deserialize_wavetable (GByteArray *sample, GByteArray *input)
+{
+  gchar name[MICROFREAK_WAVETABLE_NAME_LEN];
+  guint8 p0, p3, p5;
+  guint datalen = 0;
+  gint err;
+
+  g_byte_array_set_size (sample, MICROFREAK_WAVETABLE_SIZE);
+  err = microfreak_deserialize_object (input, MICROFREAK_WAVETABLE_HEADER,
+				       sizeof (MICROFREAK_WAVETABLE_HEADER) -
+				       1, name, &p0, &p3, &p5, sample->data,
+				       &datalen);
+  if (datalen != MICROFREAK_WAVETABLE_SIZE)
+    {
+      err = -EINVAL;
+    }
+  sample->len = MICROFREAK_WAVETABLE_SIZE;
+
+  return err;
+}
+
+gint
+microfreak_serialize_wavetable (GByteArray *output, GByteArray *sample)
+{
+  return microfreak_serialize_object (output, MICROFREAK_WAVETABLE_HEADER,
+				      sizeof (MICROFREAK_WAVETABLE_HEADER) -
+				      1, "wavetable", 1, 0, 1, sample->data,
+				      MICROFREAK_WAVETABLE_SIZE);
 }
 
 static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
