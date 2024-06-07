@@ -56,6 +56,9 @@
 #define MICROFREAK_PPRESET_EXT "mfp"
 #define MICROFREAK_ZPRESET_EXT "mfpz"
 
+#define MICROFREAK_PWAVETABLE_EXT "mfw"
+#define MICROFREAK_ZWAVETABLE_EXT "mfwz"
+
 #define MICROFREAK_WAVETABLE_EMPTY 0x08
 
 static const guint8 MICROFREAK_REQUEST_HEADER[] =
@@ -71,7 +74,9 @@ enum microfreak_fs
   FS_MICROFREAK_ZPRESET,	//Zipped presets
   FS_MICROFREAK_PRESET,		//Loads ppreset and zpreset and stores zpreset
   FS_MICROFREAK_SAMPLE,
-  FS_MICROFREAK_WAVETABLE
+  FS_MICROFREAK_PWAVETABLE,	//Plain wavetables
+  FS_MICROFREAK_ZWAVETABLE,	//Zipped wavetables
+  FS_MICROFREAK_WAVETABLE	//Loads pwavetable, zwavetable and audio files and stores wav files
 };
 
 struct microfreak_iter_data
@@ -802,8 +807,7 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
 
 static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
   .id = FS_MICROFREAK_PPRESET,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE,
+  .options = FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE,
   .name = "ppreset",
   .ext = MICROFREAK_PPRESET_EXT,
   .max_name_len = MICROFREAK_PRESET_NAME_LEN,
@@ -820,8 +824,8 @@ static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
 };
 
 static gint
-microfreak_zpreset_save (const gchar *path, GByteArray *array,
-			 struct job_control *control)
+microfreak_zobject_save (const gchar *path, GByteArray *array,
+			 struct job_control *control, const gchar *name)
 {
   gint err = 0, index;
   zip_t *archive;
@@ -850,7 +854,7 @@ microfreak_zpreset_save (const gchar *path, GByteArray *array,
     }
 
   //Any name works as long as its a number, an underscore and additional characters without spaces.
-  index = zip_file_add (archive, "0_preset", source, ZIP_FL_OVERWRITE);
+  index = zip_file_add (archive, name, source, ZIP_FL_OVERWRITE);
   if (index < 0)
     {
       error_print ("Error while adding to file: %s\n",
@@ -876,7 +880,14 @@ end:
 }
 
 static gint
-microfreak_zpreset_load (const char *path, GByteArray *array,
+microfreak_zpreset_save (const gchar *path, GByteArray *array,
+			 struct job_control *control)
+{
+  return microfreak_zobject_save (path, array, control, "0_preset");
+}
+
+static gint
+microfreak_zobject_load (const char *path, GByteArray *array,
 			 struct job_control *control)
 {
   gint err = 0;
@@ -928,8 +939,7 @@ end:
 
 static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .id = FS_MICROFREAK_ZPRESET,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE,
+  .options = FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE,
   .name = "zpreset",
   .ext = MICROFREAK_ZPRESET_EXT,
   .max_name_len = MICROFREAK_PRESET_NAME_LEN,
@@ -939,7 +949,7 @@ static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .rename = microfreak_preset_rename,
   .download = microfreak_preset_download,
   .upload = microfreak_preset_upload,
-  .load = microfreak_zpreset_load,
+  .load = microfreak_zobject_load,
   .save = microfreak_zpreset_save,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microfreak_get_download_preset_path
@@ -952,7 +962,7 @@ microfreak_preset_load (const char *path, GByteArray *array,
   const gchar *ext = get_file_ext (path);
   if (strcmp (ext, MICROFREAK_PPRESET_EXT))
     {
-      return microfreak_zpreset_load (path, array, control);
+      return microfreak_zobject_load (path, array, control);
     }
   else
     {
@@ -1498,8 +1508,8 @@ microfreak_wavetable_read_dir (struct backend *backend,
 }
 
 static gint
-microfreak_wavetable_load (const gchar *path, GByteArray *sample,
-			   struct job_control *control)
+microfreak_wavetable_load_sample (const gchar *path, GByteArray *sample,
+				  struct job_control *control)
 {
   gint err = common_sample_load (path, sample, control, 0, 1,
 				 SF_FORMAT_PCM_16);
@@ -1526,14 +1536,6 @@ microfreak_wavetable_load (const gchar *path, GByteArray *sample,
     }
 
   return err;
-}
-
-static gint
-microfreak_wavetable_save (const gchar *path, GByteArray *sample,
-			   struct job_control *control)
-{
-  return sample_save_to_file (path, sample, control,
-			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
 }
 
 static gint
@@ -1999,6 +2001,158 @@ microfreak_serialize_wavetable (GByteArray *output, GByteArray *sample)
 				      MICROFREAK_WAVETABLE_SIZE);
 }
 
+static gint
+microfreak_pwavetable_load (const gchar *path, GByteArray *input,
+			    struct job_control *control)
+{
+  gint err;
+  GByteArray *serialized = g_byte_array_new ();
+
+  err = load_file (path, serialized, control);
+  if (err)
+    {
+      goto cleanup;
+    }
+
+  err = microfreak_deserialize_wavetable (input, serialized);
+
+cleanup:
+  g_byte_array_free (serialized, TRUE);
+  return err;
+}
+
+static gint
+microfreak_pwavetable_save (const gchar *path, GByteArray *array,
+			    struct job_control *control)
+{
+  gint err;
+  GByteArray *serialized = g_byte_array_new ();
+
+  err = microfreak_serialize_wavetable (serialized, array);
+  if (err)
+    {
+      goto cleanup;
+    }
+
+  err = save_file (path, serialized, control);
+
+cleanup:
+  g_byte_array_free (serialized, TRUE);
+  return err;
+}
+
+static const struct fs_operations FS_MICROFREAK_PWAVETABLE_OPERATIONS = {
+  .id = FS_MICROFREAK_PWAVETABLE,
+  .options = FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE,
+  .name = "pwavetable",
+  .ext = MICROFREAK_PWAVETABLE_EXT,
+  .max_name_len = MICROFREAK_WAVETABLE_NAME_LEN,
+  .readdir = microfreak_wavetable_read_dir,
+  .print_item = common_print_item,
+  .get_slot = microfreak_get_object_id_as_slot,
+  .clear = microfreak_wavetable_clear,
+  .download = microfreak_wavetable_download,
+  .upload = microfreak_wavetable_upload,
+  .load = microfreak_pwavetable_load,
+  .save = microfreak_pwavetable_save,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = microfreak_get_download_wavetable_path
+};
+
+static gint
+microfreak_zwavetable_load (const gchar *path, GByteArray *input,
+			    struct job_control *control)
+{
+  gint err;
+  GByteArray *serialized = g_byte_array_new ();
+
+  err = microfreak_zobject_load (path, serialized, control);
+  if (err)
+    {
+      goto cleanup;
+    }
+
+  err = microfreak_deserialize_wavetable (input, serialized);
+
+cleanup:
+  g_byte_array_free (serialized, TRUE);
+  return err;
+}
+
+static gint
+microfreak_zwavetable_save (const gchar *path, GByteArray *array,
+			    struct job_control *control)
+{
+  gint err;
+  GByteArray *serialized = g_byte_array_new ();
+
+  err = microfreak_serialize_wavetable (serialized, array);
+  if (err)
+    {
+      goto cleanup;
+    }
+
+  err = microfreak_zobject_save (path, serialized, control, "0_wavetable");
+
+cleanup:
+  g_byte_array_free (serialized, TRUE);
+  return err;
+}
+
+static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
+  .id = FS_MICROFREAK_ZWAVETABLE,
+  .options = FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE,
+  .name = "zwavetable",
+  .ext = MICROFREAK_ZWAVETABLE_EXT,
+  .max_name_len = MICROFREAK_WAVETABLE_NAME_LEN,
+  .readdir = microfreak_wavetable_read_dir,
+  .print_item = common_print_item,
+  .get_slot = microfreak_get_object_id_as_slot,
+  .clear = microfreak_wavetable_clear,
+  .download = microfreak_wavetable_download,
+  .upload = microfreak_wavetable_upload,
+  .load = microfreak_zwavetable_load,
+  .save = microfreak_zwavetable_save,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = microfreak_get_download_wavetable_path
+};
+
+static gint
+microfreak_wavetable_load (const gchar *path, GByteArray *sample,
+			   struct job_control *control)
+{
+  const gchar *ext = get_file_ext (path);
+  if (strcmp (ext, MICROFREAK_PWAVETABLE_EXT))
+    {
+      return microfreak_pwavetable_load (path, sample, control);
+    }
+  else if (strcmp (ext, MICROFREAK_ZWAVETABLE_EXT))
+    {
+      return microfreak_zwavetable_load (path, sample, control);
+    }
+  else
+    {
+      return microfreak_wavetable_load_sample (path, sample, control);
+    }
+}
+
+static gint
+microfreak_wavetable_save (const gchar *path, GByteArray *sample,
+			   struct job_control *control)
+{
+  return sample_save_to_file (path, sample, control,
+			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+}
+
+static GSList *
+microfreak_wavetable_get_exts (struct backend *backend,
+			       const struct fs_operations *ops)
+{
+  GSList *exts = backend_get_audio_exts (backend, ops);
+  exts = g_slist_append (exts, strdup (MICROFREAK_PWAVETABLE_EXT));
+  return g_slist_append (exts, strdup (MICROFREAK_ZWAVETABLE_EXT));
+}
+
 static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
   .id = FS_MICROFREAK_WAVETABLE,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
@@ -2019,6 +2173,7 @@ static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
   .upload = microfreak_wavetable_upload,
   .load = microfreak_wavetable_load,
   .save = microfreak_wavetable_save,
+  .get_exts = microfreak_wavetable_get_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microfreak_get_download_wavetable_path
 };
@@ -2081,6 +2236,8 @@ microfreak_handshake (struct backend *backend)
 		       &FS_MICROFREAK_ZPRESET_OPERATIONS,
 		       &FS_MICROFREAK_PRESET_OPERATIONS,
 		       &FS_MICROFREAK_SAMPLE_OPERATIONS,
+		       &FS_MICROFREAK_PWAVETABLE_OPERATIONS,
+		       &FS_MICROFREAK_ZWAVETABLE_OPERATIONS,
 		       &FS_MICROFREAK_WAVETABLE_OPERATIONS, NULL);
   backend->destroy_data = backend_destroy_data;
   backend->get_storage_stats = microfreak_get_storage_stats;
