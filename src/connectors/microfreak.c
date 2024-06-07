@@ -2035,7 +2035,7 @@ microfreak_handshake_int (struct backend *backend)
 
   if (backend->midi_info.version[0] != 5)
     {
-      error_print ("MicroFreak firmware version must be 5");
+      error_print ("MicroFreak firmware version 5 required");
       return -ENODEV;
     }
 
