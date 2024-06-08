@@ -48,6 +48,9 @@
 #define MICROFREAK_GET_P1_FROM_HEADER(header) (&header[11])
 #define MICROFREAK_GET_NAME_FROM_HEADER(header) ((gchar*)&header[12])
 
+// To store the wavetable name, we append it to the end of the sample.
+#define MICROFREAK_WAVETABLE_GET_NAME(w) ((gchar *)(&(w)->data[(w)->len - MICROFREAK_WAVETABLE_NAME_LEN]))
+
 #define MICROFREAK_CHECK_OP_LEN(msg,op,len) (MICROFREAK_GET_MSG_OP(msg) == op && MICROFREAK_GET_MSG_PAYLOAD_LEN(msg) == len ? 0 : -EIO)
 
 #define MICROFREAK_ALPHABET " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
@@ -153,7 +156,7 @@ microfreak_get_download_preset_path (struct backend *backend,
 }
 
 static void
-microfreak_get_preset_name (gchar *preset_name, GByteArray *preset_rx)
+microfreak_preset_get_name (gchar *preset_name, GByteArray *preset_rx)
 {
   guint8 *payload = MICROFREAK_GET_MSG_PAYLOAD (preset_rx);
   gchar *name = MICROFREAK_GET_NAME_FROM_HEADER (payload);
@@ -297,7 +300,7 @@ microfreak_next_preset_dentry (struct item_iterator *iter)
       goto end;
     }
 
-  microfreak_get_preset_name (preset_name, rx_msg);
+  microfreak_preset_get_name (preset_name, rx_msg);
   snprintf (iter->item.name, LABEL_MAX, "%s", preset_name);
 
   iter->item.id = data->next;
@@ -1626,12 +1629,15 @@ end:
 
 static gint
 microfreak_wavetable_download (struct backend *backend, const gchar *path,
-			       GByteArray *output,
+			       GByteArray *wavetable,
 			       struct job_control *control)
 {
   guint id;
   guint err = 0;
   struct sample_info *sample_info;
+  struct item_iterator iter;
+  gboolean found;
+  gchar name[MICROFREAK_WAVETABLE_NAME_LEN];
 
   err = common_slot_get_id_name_from_path (path, &id, NULL);
   if (err)
@@ -1645,6 +1651,29 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
+  err = microfreak_wavetable_read_dir (backend, &iter, "/", NULL);
+  if (err)
+    {
+      return err;
+    }
+
+  name[0] = 0;
+  found = FALSE;
+  while (!next_item_iterator (&iter))
+    {
+      if (iter.item.id - 1 == id)
+	{
+	  memcpy (name, iter.item.name, MICROFREAK_WAVETABLE_NAME_LEN);
+	  found = TRUE;
+	}
+    }
+  free_item_iterator (&iter);
+
+  if (!found)
+    {
+      return -EINVAL;
+    }
+
   sample_info = g_malloc (sizeof (struct sample_info));
   sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
   sample_info->rate = MICROFREAK_SAMPLERATE;
@@ -1654,7 +1683,8 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
   sample_info->midi_note = 0;
   sample_info->channels = 1;
 
-  g_byte_array_set_size (output, MICROFREAK_WAVETABLE_SIZE);
+  g_byte_array_set_size (wavetable, MICROFREAK_WAVETABLE_SIZE +
+			 MICROFREAK_WAVETABLE_NAME_LEN);
 
   control->parts = (MICROFREAK_SAMPLE_BATCH_PACKETS + 1) *
     MICROFREAK_WAVETABLE_PARTS;
@@ -1663,9 +1693,12 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
 
   for (guint8 part = 0; part < MICROFREAK_WAVETABLE_PARTS && !err; part++)
     {
-      err = microfreak_wavetable_download_part (backend, output, control,
+      err = microfreak_wavetable_download_part (backend, wavetable, control,
 						id, part);
     }
+
+  memcpy (&wavetable->data[MICROFREAK_WAVETABLE_SIZE], name,
+	  MICROFREAK_WAVETABLE_NAME_LEN);
 
   if (err)
     {
@@ -1874,18 +1907,12 @@ microfreak_wavetable_rename (struct backend *backend, const gchar *src,
 }
 
 static gint
-microfreak_wavetable_upload (struct backend *backend, const gchar *path,
-			     GByteArray *input, struct job_control *control)
+microfreak_wavetable_upload_id_name (struct backend *backend,
+				     const gchar *path, GByteArray *wavetable,
+				     struct job_control *control, guint id,
+				     const gchar *name)
 {
   gint err;
-  guint id;
-  gchar *name;
-
-  err = common_slot_get_id_name_from_path (path, &id, &name);
-  if (err)
-    {
-      return err;
-    }
 
   id--;
   if (id >= MICROFREAK_MAX_WAVETABLES)
@@ -1898,7 +1925,6 @@ microfreak_wavetable_upload (struct backend *backend, const gchar *path,
   set_job_control_progress (control, 0.0);
 
   err = microfreak_wavetable_set_entry (backend, id, name, 0);
-  g_free (name);
   if (err)
     {
       return err;
@@ -1920,11 +1946,51 @@ microfreak_wavetable_upload (struct backend *backend, const gchar *path,
 	  return -ECANCELED;
 	}
 
-      err = microfreak_wavetable_upload_part (backend, input, id, part);
+      err = microfreak_wavetable_upload_part (backend, wavetable, id, part);
       set_job_control_progress (control, 1.0);
       control->part++;
     }
 
+  return err;
+}
+
+static gint
+microfreak_xwavetable_upload (struct backend *backend, const gchar *path,
+			      GByteArray *wavetable,
+			      struct job_control *control)
+{
+  gint err;
+  guint id;
+  gchar *name = MICROFREAK_WAVETABLE_GET_NAME (wavetable);
+
+  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  if (err)
+    {
+      return err;
+    }
+
+  return microfreak_wavetable_upload_id_name (backend, path, wavetable,
+					      control, id, name);
+}
+
+static gint
+microfreak_wavetable_upload (struct backend *backend, const gchar *path,
+			     GByteArray *wavetable,
+			     struct job_control *control)
+{
+  gint err;
+  guint id;
+  gchar *name;
+
+  err = common_slot_get_id_name_from_path (path, &id, &name);
+  if (err)
+    {
+      return err;
+    }
+
+  err = microfreak_wavetable_upload_id_name (backend, path, wavetable,
+					     control, id, name);
+  g_free (name);
   return err;
 }
 
@@ -1975,6 +2041,7 @@ microfreak_get_download_wavetable_path (struct backend *backend,
 					GByteArray *wavetable)
 {
   guint id;
+  gchar *name;
 
   if (!wavetable)
     {
@@ -1986,38 +2053,46 @@ microfreak_get_download_wavetable_path (struct backend *backend,
       return NULL;
     }
 
+  name = MICROFREAK_WAVETABLE_GET_NAME (wavetable);
   return common_get_download_path_with_params (backend, ops, dst_dir, id, 2,
-					       NULL);
+					       name);
 }
 
 gint
-microfreak_deserialize_wavetable (GByteArray *sample, GByteArray *input)
+microfreak_deserialize_wavetable (GByteArray *wavetable, GByteArray *input)
 {
   gchar name[MICROFREAK_WAVETABLE_NAME_LEN];
   guint8 p0, p3, p5;
   guint datalen = 0;
   gint err;
 
-  g_byte_array_set_size (sample, MICROFREAK_WAVETABLE_SIZE);
+  g_byte_array_set_size (wavetable, MICROFREAK_WAVETABLE_SIZE +
+			 MICROFREAK_WAVETABLE_NAME_LEN);
   err = microfreak_deserialize_object (input, MICROFREAK_WAVETABLE_HEADER,
 				       sizeof (MICROFREAK_WAVETABLE_HEADER) -
-				       1, name, &p0, &p3, &p5, sample->data,
-				       &datalen);
-  if (datalen != MICROFREAK_WAVETABLE_SIZE)
+				       1, name, &p0, &p3, &p5,
+				       wavetable->data, &datalen);
+  if (datalen == MICROFREAK_WAVETABLE_SIZE)
+    {
+      memcpy (&wavetable->data[MICROFREAK_WAVETABLE_SIZE], (guint8 *) name,
+	      MICROFREAK_WAVETABLE_NAME_LEN);
+    }
+  else
     {
       err = -EINVAL;
     }
-  sample->len = MICROFREAK_WAVETABLE_SIZE;
 
   return err;
 }
 
 gint
-microfreak_serialize_wavetable (GByteArray *output, GByteArray *sample)
+microfreak_serialize_wavetable (GByteArray *output, GByteArray *wavetable)
 {
+  gchar *name = MICROFREAK_WAVETABLE_GET_NAME (wavetable);
   return microfreak_serialize_object (output, MICROFREAK_WAVETABLE_HEADER,
 				      sizeof (MICROFREAK_WAVETABLE_HEADER) -
-				      1, "wavetable", 1, 0, 1, sample->data,
+				      1, name, 1, 0, 1,
+				      wavetable->data,
 				      MICROFREAK_WAVETABLE_SIZE);
 }
 
@@ -2073,7 +2148,7 @@ static const struct fs_operations FS_MICROFREAK_PWAVETABLE_OPERATIONS = {
   .clear = microfreak_wavetable_clear,
   .rename = microfreak_wavetable_rename,
   .download = microfreak_wavetable_download,
-  .upload = microfreak_wavetable_upload,
+  .upload = microfreak_xwavetable_upload,
   .load = microfreak_pwavetable_load,
   .save = microfreak_pwavetable_save,
   .get_upload_path = common_slot_get_upload_path,
@@ -2132,7 +2207,7 @@ static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
   .clear = microfreak_wavetable_clear,
   .rename = microfreak_wavetable_rename,
   .download = microfreak_wavetable_download,
-  .upload = microfreak_wavetable_upload,
+  .upload = microfreak_xwavetable_upload,
   .load = microfreak_zwavetable_load,
   .save = microfreak_zwavetable_save,
   .get_upload_path = common_slot_get_upload_path,
@@ -2159,10 +2234,11 @@ microfreak_wavetable_load (const gchar *path, GByteArray *sample,
 }
 
 static gint
-microfreak_wavetable_save (const gchar *path, GByteArray *sample,
+microfreak_wavetable_save (const gchar *path, GByteArray *wavetable,
 			   struct job_control *control)
 {
-  return sample_save_to_file (path, sample, control,
+  wavetable->len -= MICROFREAK_WAVETABLE_NAME_LEN;
+  return sample_save_to_file (path, wavetable, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
 }
 
