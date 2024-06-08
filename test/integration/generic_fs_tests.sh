@@ -91,7 +91,11 @@ if $download; then
   [ $? -ne 0 ] && exitWithError 1
   FILE=$(echo "$srcdir/$DEVICE_NAME $FS"*)
   [ ! -f "$FILE" ] && exitWithError 1
-  [ $(cksum "$FILE" | awk '{print $1}') != $(cksum "$FILE_UPLOADED_BACK" | awk '{print $1}') ] && exitWithError 1
+  cksum_act=$(cksum "$FILE" | awk '{print $1}')
+  cksum_exp=$(cksum "$FILE_UPLOADED_BACK" | awk '{print $1}')
+  echo "Actual cksum: $cksum_act"
+  echo "Expected cksum: $cksum_exp"
+  [ $cksum_act != $cksum_exp ] && exitWithError 1
 fi
 
 exitWithError 0

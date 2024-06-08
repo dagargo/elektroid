@@ -345,8 +345,9 @@ microfreak_deserialize_object (GByteArray *input, gchar *header,
 
   v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
   p++;
-  debug_print (2, "Deserializing object '%.*s'...\n", (gint) v, p);
   memcpy (name, p, v);
+  name[v] = 0;
+  debug_print (2, "Deserializing object '%s'...\n", name);
 
   p += v;
   v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
@@ -437,7 +438,7 @@ microfreak_serialize_object (GByteArray *output, gchar *header,
 
   g_byte_array_append (output, (guint8 *) header, headerlen);
 
-  debug_print (2, "Serializing object '%.*s'...\n", (gint) namelen, name);
+  debug_print (2, "Serializing object '%s'...\n", name);
   snprintf (aux, LABEL_MAX, " %d ", namelen);
   g_byte_array_append (output, (guint8 *) aux, strlen (aux));
   g_byte_array_append (output, (guint8 *) name, namelen);
@@ -1663,8 +1664,13 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
     {
       if (iter.item.id - 1 == id)
 	{
-	  memcpy (name, iter.item.name, MICROFREAK_WAVETABLE_NAME_LEN);
-	  found = TRUE;
+	  err = snprintf (name, MICROFREAK_WAVETABLE_NAME_LEN, "%s",
+			  iter.item.name);
+	  //If truncation happen, it is not marked as found and it will eventually lead to an error.
+	  if (err < MICROFREAK_WAVETABLE_NAME_LEN)
+	    {
+	      found = TRUE;
+	    }
 	}
     }
   free_item_iterator (&iter);
@@ -1691,6 +1697,7 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
+  err = 0;
   for (guint8 part = 0; part < MICROFREAK_WAVETABLE_PARTS && !err; part++)
     {
       err = microfreak_wavetable_download_part (backend, wavetable, control,
