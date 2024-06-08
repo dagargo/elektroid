@@ -1838,13 +1838,14 @@ microfreak_wavetable_reset (struct backend *backend, guint id,
 }
 
 static gint
-microfreak_wavetable_set_name (struct backend *backend, guint id,
-			       const gchar *name)
+microfreak_wavetable_set_entry (struct backend *backend, guint id,
+				const gchar *name, guint8 status)
 {
   struct microfreak_wavetable_header header;
   memset (&header, 0, sizeof (header));
   header.id0 = id;
   header.id1 = id;
+  header.status0 = status;
   header.status1 = 1;
   header.status2 = 1;
   snprintf (header.name, MICROFREAK_WAVETABLE_NAME_LEN, "%s", name);
@@ -1869,7 +1870,7 @@ microfreak_wavetable_rename (struct backend *backend, const gchar *src,
       return -EINVAL;
     }
 
-  return microfreak_wavetable_set_name (backend, id, dst);
+  return microfreak_wavetable_set_entry (backend, id, dst, 0);
 }
 
 static gint
@@ -1896,7 +1897,7 @@ microfreak_wavetable_upload (struct backend *backend, const gchar *path,
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
-  err = microfreak_wavetable_set_name (backend, id, name);
+  err = microfreak_wavetable_set_entry (backend, id, name, 0);
   g_free (name);
   if (err)
     {
@@ -1932,7 +1933,6 @@ microfreak_wavetable_clear (struct backend *backend, const gchar *path)
 {
   gint err;
   guint id;
-  struct microfreak_wavetable_header header;
   GByteArray *data;
 
   err = common_slot_get_id_name_from_path (path, &id, NULL);
@@ -1947,14 +1947,8 @@ microfreak_wavetable_clear (struct backend *backend, const gchar *path)
       return -EINVAL;
     }
 
-  memset (&header, 0, sizeof (header));
-  header.id0 = id;
-  header.status0 = MICROFREAK_WAVETABLE_EMPTY;
-  header.id1 = id;
-  header.status1 = 1;
-  header.status2 = 1;
-
-  err = microfreak_wavetable_reset (backend, id, &header);
+  err = microfreak_wavetable_set_entry (backend, id, "",
+					MICROFREAK_WAVETABLE_EMPTY);
   if (err)
     {
       return err;
