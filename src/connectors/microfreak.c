@@ -2143,6 +2143,13 @@ cleanup:
   return err;
 }
 
+static gchar *
+microfreak_get_wavetable_id_as_slot (struct item *item,
+				     struct backend *backend)
+{
+  return common_get_id_as_slot_padded (item, backend, 2);
+}
+
 static const struct fs_operations FS_MICROFREAK_PWAVETABLE_OPERATIONS = {
   .id = FS_MICROFREAK_PWAVETABLE,
   .options = FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE,
@@ -2151,7 +2158,7 @@ static const struct fs_operations FS_MICROFREAK_PWAVETABLE_OPERATIONS = {
   .max_name_len = MICROFREAK_WAVETABLE_NAME_LEN - 1,
   .readdir = microfreak_wavetable_read_dir,
   .print_item = common_print_item,
-  .get_slot = microfreak_get_object_id_as_slot,
+  .get_slot = microfreak_get_wavetable_id_as_slot,
   .clear = microfreak_wavetable_clear,
   .rename = microfreak_wavetable_rename,
   .download = microfreak_wavetable_download,
@@ -2210,7 +2217,7 @@ static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
   .max_name_len = MICROFREAK_WAVETABLE_NAME_LEN - 1,
   .readdir = microfreak_wavetable_read_dir,
   .print_item = common_print_item,
-  .get_slot = microfreak_get_object_id_as_slot,
+  .get_slot = microfreak_get_wavetable_id_as_slot,
   .clear = microfreak_wavetable_clear,
   .rename = microfreak_wavetable_rename,
   .download = microfreak_wavetable_download,
@@ -2271,7 +2278,7 @@ static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
   .max_name_len = MICROFREAK_WAVETABLE_NAME_LEN - 1,
   .readdir = microfreak_wavetable_read_dir,
   .print_item = common_print_item,
-  .get_slot = microfreak_get_object_id_as_slot,
+  .get_slot = microfreak_get_wavetable_id_as_slot,
   .delete = microfreak_wavetable_clear,
   .clear = microfreak_wavetable_clear,
   .rename = microfreak_wavetable_rename,
