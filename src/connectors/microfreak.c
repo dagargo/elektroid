@@ -900,7 +900,7 @@ microfreak_zobject_load (const char *path, GByteArray *array,
   if (!archive)
     {
       zip_error_init_with_code (&zerror, err);
-      error_print ("Error while saving zip file: %s\n",
+      error_print ("Error while opening zip file: %s\n",
 		   zip_error_strerror (&zerror));
       zip_error_fini (&zerror);
       return -EIO;
@@ -960,7 +960,7 @@ microfreak_preset_load (const char *path, GByteArray *array,
 			struct job_control *control)
 {
   const gchar *ext = get_file_ext (path);
-  if (strcmp (ext, MICROFREAK_PPRESET_EXT))
+  if (strcmp (ext, MICROFREAK_ZPRESET_EXT) == 0)
     {
       return microfreak_zobject_load (path, array, control);
     }
@@ -1838,13 +1838,47 @@ microfreak_wavetable_reset (struct backend *backend, guint id,
 }
 
 static gint
+microfreak_wavetable_set_name (struct backend *backend, guint id,
+			       const gchar *name)
+{
+  struct microfreak_wavetable_header header;
+  memset (&header, 0, sizeof (header));
+  header.id0 = id;
+  header.id1 = id;
+  header.status1 = 1;
+  header.status2 = 1;
+  snprintf (header.name, MICROFREAK_WAVETABLE_NAME_LEN, "%s", name);
+
+  return microfreak_wavetable_reset (backend, id, &header);
+}
+
+static gint
+microfreak_wavetable_rename (struct backend *backend, const gchar *src,
+			     const gchar *dst)
+{
+  guint id;
+
+  if (common_slot_get_id_name_from_path (src, &id, NULL))
+    {
+      return -EINVAL;
+    }
+
+  id--;
+  if (id >= MICROFREAK_MAX_WAVETABLES)
+    {
+      return -EINVAL;
+    }
+
+  return microfreak_wavetable_set_name (backend, id, dst);
+}
+
+static gint
 microfreak_wavetable_upload (struct backend *backend, const gchar *path,
 			     GByteArray *input, struct job_control *control)
 {
   gint err;
   guint id;
   gchar *name;
-  struct microfreak_wavetable_header header;
 
   err = common_slot_get_id_name_from_path (path, &id, &name);
   if (err)
@@ -1858,19 +1892,12 @@ microfreak_wavetable_upload (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  memset (&header, 0, sizeof (header));
-  header.id0 = id;
-  header.id1 = id;
-  header.status1 = 1;
-  header.status2 = 1;
-  snprintf (header.name, MICROFREAK_WAVETABLE_NAME_LEN, "%s", name);
-  g_free (name);
-
   control->parts = 1 + MICROFREAK_WAVETABLE_PARTS;
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
-  err = microfreak_wavetable_reset (backend, id, &header);
+  err = microfreak_wavetable_set_name (backend, id, name);
+  g_free (name);
   if (err)
     {
       return err;
@@ -1895,7 +1922,6 @@ microfreak_wavetable_upload (struct backend *backend, const gchar *path,
       err = microfreak_wavetable_upload_part (backend, input, id, part);
       set_job_control_progress (control, 1.0);
       control->part++;
-
     }
 
   return err;
@@ -2051,6 +2077,7 @@ static const struct fs_operations FS_MICROFREAK_PWAVETABLE_OPERATIONS = {
   .print_item = common_print_item,
   .get_slot = microfreak_get_object_id_as_slot,
   .clear = microfreak_wavetable_clear,
+  .rename = microfreak_wavetable_rename,
   .download = microfreak_wavetable_download,
   .upload = microfreak_wavetable_upload,
   .load = microfreak_pwavetable_load,
@@ -2109,6 +2136,7 @@ static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
   .print_item = common_print_item,
   .get_slot = microfreak_get_object_id_as_slot,
   .clear = microfreak_wavetable_clear,
+  .rename = microfreak_wavetable_rename,
   .download = microfreak_wavetable_download,
   .upload = microfreak_wavetable_upload,
   .load = microfreak_zwavetable_load,
@@ -2122,11 +2150,11 @@ microfreak_wavetable_load (const gchar *path, GByteArray *sample,
 			   struct job_control *control)
 {
   const gchar *ext = get_file_ext (path);
-  if (strcmp (ext, MICROFREAK_PWAVETABLE_EXT))
+  if (strcmp (ext, MICROFREAK_PWAVETABLE_EXT) == 0)
     {
       return microfreak_pwavetable_load (path, sample, control);
     }
-  else if (strcmp (ext, MICROFREAK_ZWAVETABLE_EXT))
+  else if (strcmp (ext, MICROFREAK_ZWAVETABLE_EXT) == 0)
     {
       return microfreak_zwavetable_load (path, sample, control);
     }
@@ -2169,6 +2197,7 @@ static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
   .get_slot = microfreak_get_object_id_as_slot,
   .delete = microfreak_wavetable_clear,
   .clear = microfreak_wavetable_clear,
+  .rename = microfreak_wavetable_rename,
   .download = microfreak_wavetable_download,
   .upload = microfreak_wavetable_upload,
   .load = microfreak_wavetable_load,
