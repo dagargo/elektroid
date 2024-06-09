@@ -1019,6 +1019,9 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
       goto end;
     }
 
+  control->part++;
+  job_control_set_progress (control, 1.0);
+
   usleep (MICROFREAK_REST_TIME_US);
 
   guint32 total = 0;
