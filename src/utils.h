@@ -51,7 +51,7 @@ struct sample_info
   guint32 frames;
   guint32 loop_start;
   guint32 loop_end;
-  guint32 loop_type;
+  guint32 loop_type;		// 0 = forward loop
   guint32 rate;
   guint32 format;		// Used as in libsndfile.
   guint32 channels;
