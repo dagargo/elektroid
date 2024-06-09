@@ -170,32 +170,28 @@ get_mem_type (const gchar *name)
 
 static gint
 cz_read_dir (struct backend *backend, struct item_iterator *iter,
-	     const gchar *path, GSList *extensions)
+	     const gchar *dir, GSList *extensions)
 {
   gint mem_type;
 
-  if (!strcmp (path, "/"))
+  if (!strcmp (dir, "/"))
     {
       struct cz_type_iterator_data *data =
 	g_malloc (sizeof (struct cz_type_iterator_data));
       data->next = 0;
       data->type = -1;
       data->backend = backend;
-      iter->data = data;
-      iter->next = cz_next_dentry_root;
-      iter->free = g_free;
+      init_item_iterator (iter, dir, data, cz_next_dentry_root, g_free);
       return 0;
     }
-  else if ((mem_type = get_mem_type (&path[1])) >= 0)
+  else if ((mem_type = get_mem_type (&dir[1])) >= 0)
     {
       struct cz_type_iterator_data *data =
 	g_malloc (sizeof (struct cz_type_iterator_data));
       data->next = 0;
       data->type = mem_type;
       data->backend = backend;
-      iter->data = data;
-      iter->next = cz_next_dentry;
-      iter->free = g_free;
+      init_item_iterator (iter, dir, data, cz_next_dentry, g_free);
       return 0;
     }
   else
