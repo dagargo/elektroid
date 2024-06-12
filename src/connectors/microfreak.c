@@ -914,6 +914,23 @@ microfreak_sample_clear (struct backend *backend, const gchar *path)
   return microfreak_sample_reset (backend, id, &header);
 }
 
+//This function does NOT work as the assumed to be cksum member in the microfreak_sample_header struct.
+
+static guint16
+microfreak_sample_get_cksum (GByteArray *input)
+{
+  guint16 cksum = 0, *v;
+
+  v = (guint16 *) input->data;
+  for (gint i = 0; i < input->len; i += 2, v++)
+    {
+      cksum += *v;
+    }
+  debug_print (2, "SUM: %0x\n", cksum);
+
+  return cksum;
+}
+
 static gint
 microfreak_sample_upload (struct backend *backend, const gchar *path,
 			  struct idata *sample, struct job_control *control)
@@ -985,6 +1002,7 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
 
   memset (&header, 0, sizeof (header));
   header.size = GINT32_TO_LE (input->len);
+  header.cksum = microfreak_sample_get_cksum (input);
   snprintf (header.name, MICROFREAK_SAMPLE_NAME_LEN, "%s", sanitized);
   header.id = id;
 

@@ -46,7 +46,7 @@ struct microfreak_sample_header
 {
   guint8 start[4];
   guint32 size;
-  guint8 pad[2];
+  guint16 cksum;
   gchar name[MICROFREAK_SAMPLE_NAME_LEN];
   guint8 id;
   guint8 end[4];
