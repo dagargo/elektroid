@@ -124,7 +124,7 @@ static gchar *
 efactor_get_download_path (struct backend *backend,
 			   const struct fs_operations *ops,
 			   const gchar *dst_dir, const gchar *src_path,
-			   GByteArray *preset)
+			   struct idata *preset)
 {
   guint id;
   gchar *path, *name, **lines;
@@ -139,8 +139,9 @@ efactor_get_download_path (struct backend *backend,
       return NULL;
     }
 
-  lines = g_strsplit ((gchar *) & preset->data[EFACTOR_PRESET_DUMP_OFFSET],
-		      EFACTOR_PRESET_LINE_SEPARATOR, -1);
+  lines =
+    g_strsplit ((gchar *) & preset->content->data[EFACTOR_PRESET_DUMP_OFFSET],
+		EFACTOR_PRESET_LINE_SEPARATOR, -1);
   name = lines[6];
   path = common_get_download_path_with_params (backend, ops, dst_dir, id, 2,
 					       name);
@@ -219,7 +220,7 @@ efactor_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 efactor_download (struct backend *backend, const gchar *src_path,
-		  GByteArray *output, struct job_control *control)
+		  struct idata *preset, struct job_control *control)
 {
   gint err = 0, id;
   gchar *name;
@@ -227,6 +228,7 @@ efactor_download (struct backend *backend, const gchar *src_path,
   gchar **lines;
   struct item_iterator iter;
   struct efactor_data *data = backend->data;
+  GByteArray *output;
 
   control->parts = 1;
   control->part = 0;
@@ -250,6 +252,8 @@ efactor_download (struct backend *backend, const gchar *src_path,
       return -EINVAL;
     }
 
+  output = g_byte_array_sized_new (1024);
+  preset->content = output;
   g_byte_array_append (output, EFACTOR_REQUEST_HEADER,
 		       sizeof (EFACTOR_REQUEST_HEADER));
   g_byte_array_append (output, (guint8 *) "\x49", 1);	// EFACTOR_OP_PRESETS_DUMP
@@ -282,13 +286,14 @@ efactor_download (struct backend *backend, const gchar *src_path,
 
 static gint
 efactor_upload (struct backend *backend, const gchar *path,
-		GByteArray *input, struct job_control *control)
+		struct idata *preset, struct job_control *control)
 {
   gint err = 0, i, id, num;
   gchar *name, *b;
   GByteArray *tx_msg;
   gchar id_tag[EFACTOR_MAX_ID_TAG_LEN];
   struct efactor_data *data = backend->data;
+  GByteArray *input = preset->content;
 
   name = g_path_get_basename (path);
   id = atoi (name);		//This stops at the ':'.
@@ -352,20 +357,21 @@ efactor_rename (struct backend *backend, const gchar *src, const gchar *dst)
   gint err, len;
   struct job_control control;
   gchar **lines, **line, *sanitized;
+  struct idata idata;
+
   debug_print (1, "Renaming from %s to %s...\n", src, dst);
 
-  preset = g_byte_array_new ();
   //The control initialization is needed.
   control.active = TRUE;
   control.callback = NULL;
   g_mutex_init (&control.mutex);
-  err = efactor_download (backend, src, preset, &control);
+  err = efactor_download (backend, src, &idata, &control);
   if (err)
     {
-      free_msg (preset);
       return err;
     }
 
+  preset = idata.content;
   lines = g_strsplit ((gchar *) & preset->data[EFACTOR_PRESET_DUMP_OFFSET],
 		      EFACTOR_PRESET_LINE_SEPARATOR, -1);
   g_free (lines[6]);

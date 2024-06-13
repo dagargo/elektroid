@@ -155,7 +155,7 @@ static gchar *
 phatty_get_download_path (struct backend *backend,
 			  const struct fs_operations *ops,
 			  const gchar *dst_dir, const gchar *src_path,
-			  GByteArray *preset)
+			  struct idata *preset)
 {
   gchar preset_name[MOOG_NAME_LEN + 1];
   gchar *path, *name;
@@ -180,7 +180,7 @@ phatty_get_download_path (struct backend *backend,
     }
   else
     {
-      phatty_get_preset_name (preset->data, preset_name);
+      phatty_get_preset_name (preset->content->data, preset_name);
       path = common_get_download_path_with_params (backend, ops, dst_dir, id,
 						   2, preset_name);
     }
@@ -311,7 +311,7 @@ phatty_get_id_as_slot (struct item *item, struct backend *backend)
 
 static gint
 phatty_download (struct backend *backend, const gchar *path,
-		 GByteArray *output, struct job_control *control)
+		 struct idata *preset, struct job_control *control)
 {
   guint8 id;
   gint err = 0;
@@ -345,7 +345,8 @@ phatty_download (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
-  g_byte_array_append (output, rx_msg->data, rx_msg->len);
+  preset->content = g_byte_array_new ();
+  g_byte_array_append (preset->content, rx_msg->data, rx_msg->len);
 
 cleanup:
   free_msg (rx_msg);
@@ -355,11 +356,11 @@ end:
 
 static gint
 phatty_upload (struct backend *backend, const gchar *path,
-	       GByteArray *input, struct job_control *control)
+	       struct idata *preset, struct job_control *control)
 {
   guint id;
 
-  if (input->len != PHATTY_PROGRAM_SIZE)
+  if (preset->content->len != PHATTY_PROGRAM_SIZE)
     {
       return -EINVAL;
     }
@@ -379,8 +380,8 @@ phatty_upload (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  input->data[PHATTY_PRESET_ID_OFFSET] = id;
-  return common_data_tx (backend, input, control);
+  preset->content->data[PHATTY_PRESET_ID_OFFSET] = id;
+  return common_data_tx (backend, preset->content, control);
 }
 
 static gint
@@ -390,6 +391,7 @@ phatty_rename (struct backend *backend, const gchar *src, const gchar *dst)
   gint err;
   struct job_control control;
   struct sysex_transfer transfer;
+  struct idata preset;
 
   debug_print (1, "Renaming preset...\n");
   err = common_slot_get_id_name_from_path (src, &id, NULL);
@@ -398,22 +400,22 @@ phatty_rename (struct backend *backend, const gchar *src, const gchar *dst)
       return err;
     }
 
-  transfer.raw = g_byte_array_new ();
   //The control initialization is needed.
   control.active = TRUE;
   control.callback = NULL;
   g_mutex_init (&control.mutex);
-  err = phatty_download (backend, src, transfer.raw, &control);
+  err = phatty_download (backend, src, &preset, &control);
   if (err)
     {
       goto end;
     }
 
-  phatty_set_preset_name (transfer.raw->data, dst);
+  phatty_set_preset_name (preset.content->data, dst);
+  transfer.raw = preset.content;
   err = backend_tx_sysex (backend, &transfer);
+  idata_free (&preset);
 
 end:
-  free_msg (transfer.raw);
   return err;
 }
 
@@ -464,9 +466,10 @@ phatty_scale_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 phatty_scale_upload (struct backend *backend, const gchar *path,
-		     GByteArray *input, struct job_control *control)
+		     struct idata *scale, struct job_control *control)
 {
   guint id;
+  GByteArray *input = scale->content;
 
   if (common_slot_get_id_name_from_path (path, &id, NULL))
     {

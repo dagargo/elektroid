@@ -138,6 +138,11 @@ enum path_type
   PATH_SYSTEM			// Slash or backslash depending on the system
 };
 
+struct idata
+{
+  GByteArray *content;
+};
+
 struct fs_operations;
 
 typedef gint (*fs_init_iter_func) (struct backend *, struct item_iterator *,
@@ -149,11 +154,11 @@ typedef gint (*fs_src_dst_func) (struct backend *, const gchar *,
 				 const gchar *);
 
 typedef gint (*fs_remote_file_op) (struct backend *, const gchar *,
-				   GByteArray *, struct job_control *);
+				   struct idata *, struct job_control *);
 
 typedef gchar *(*fs_get_item_slot) (struct item *, struct backend *);
 
-typedef gint (*fs_local_file_op) (const gchar *, GByteArray *,
+typedef gint (*fs_local_file_op) (const gchar *, struct idata *,
 				  struct job_control *);
 
 typedef GSList *(*fs_get_exts) (struct backend *,
@@ -166,10 +171,11 @@ typedef gchar *(*fs_get_upload_path) (struct backend *,
 //This function will be called before the download (with sysex NULL) and after the download (with sysex containing the download).
 //If the fs needs the SysEx data to determine the download path it must return NULL if sysex is NULL.
 
-typedef gchar *(*fs_get_download_path) (struct backend *,
-					const struct fs_operations *,
-					const gchar *, const gchar *,
-					GByteArray * sysex);
+typedef gchar *(*fs_get_download_path) (struct backend * backend,
+					const struct fs_operations * ops,
+					const gchar * dst_dir,
+					const gchar * src_path,
+					struct idata * idata);
 
 typedef void (*fs_select_item) (struct backend *, const gchar *,
 				struct item *);
@@ -279,12 +285,11 @@ gint next_item_iterator (struct item_iterator *iter);
 
 void free_item_iterator (struct item_iterator *iter);
 
-gint copy_item_iterator (struct item_iterator *, struct item_iterator *,
-			 gboolean);
+gint load_file (const char *path, struct idata *idata,
+		struct job_control *control);
 
-gint load_file (const char *, GByteArray *, struct job_control *);
-
-gint save_file (const char *, GByteArray *, struct job_control *);
+gint save_file (const char *path, struct idata *idata,
+		struct job_control *control);
 
 gint save_file_char (const gchar *, const guint8 *, ssize_t);
 
@@ -311,5 +316,7 @@ gchar *path_translate (enum path_type, const gchar *);
 gchar *path_filename_from_uri (enum path_type, gchar *);
 
 gchar *path_filename_to_uri (enum path_type, gchar *);
+
+void idata_free (struct idata *file);
 
 #endif

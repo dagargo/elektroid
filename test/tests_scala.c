@@ -92,15 +92,14 @@ void
 test_success ()
 {
   struct scala scala;
-  GByteArray *data;
+  struct idata idata;
   gint err;
 
   printf ("\n");
 
-  data = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
-  load_file (SCALA_TEST_DIR "/success.scl", data, NULL);
-  err = scl_init_scala_from_bytes (&scala, data);
-  g_byte_array_free (data, TRUE);
+  load_file (SCALA_TEST_DIR "/success.scl", &idata, NULL);
+  err = scl_init_scala_from_bytes (&scala, idata.content);
+  idata_free (&idata);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_STRING_EQUAL (scala.desc, "5-limit just intonation");
@@ -123,15 +122,14 @@ void
 test_success_perfect_5th ()
 {
   struct scala scala;
-  GByteArray *data;
+  struct idata idata;
   gint err;
 
   printf ("\n");
 
-  data = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
-  load_file (SCALA_TEST_DIR "/perfect_5th.scl", data, NULL);
-  err = scl_init_scala_from_bytes (&scala, data);
-  g_byte_array_free (data, TRUE);
+  load_file (SCALA_TEST_DIR "/perfect_5th.scl", &idata, NULL);
+  err = scl_init_scala_from_bytes (&scala, idata.content);
+  idata_free (&idata);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_STRING_EQUAL (scala.desc, "Perfect 5th");
@@ -160,104 +158,96 @@ void
 test_too_many_notes ()
 {
   struct scala scala;
-  GByteArray *data;
+  struct idata idata;
   gint err;
 
   printf ("\n");
 
-  data = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
-  load_file (SCALA_TEST_DIR "/too_many_notes.scl", data, NULL);
-  err = scl_init_scala_from_bytes (&scala, data);
+  load_file (SCALA_TEST_DIR "/too_many_notes.scl", &idata, NULL);
+  err = scl_init_scala_from_bytes (&scala, idata.content);
 
   CU_ASSERT_EQUAL (err, -ERANGE);
 
-  g_byte_array_free (data, TRUE);
+  idata_free (&idata);
 }
 
 void
 test_no_notes ()
 {
   struct scala scala;
-  GByteArray *data;
+  struct idata idata;
   gint err;
 
   printf ("\n");
 
-  data = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
-  load_file (SCALA_TEST_DIR "/no_notes.scl", data, NULL);
-  err = scl_init_scala_from_bytes (&scala, data);
+  load_file (SCALA_TEST_DIR "/no_notes.scl", &idata, NULL);
+  err = scl_init_scala_from_bytes (&scala, idata.content);
 
   CU_ASSERT_EQUAL (err, -ERANGE);
 
-  g_byte_array_free (data, TRUE);
+  idata_free (&idata);
 }
 
 void
 test_unmatching_notes ()
 {
   struct scala scala;
-  GByteArray *data;
+  struct idata idata;
   gint err;
 
   printf ("\n");
 
-  data = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
-  load_file (SCALA_TEST_DIR "/unmatching_notes.scl", data, NULL);
-  err = scl_init_scala_from_bytes (&scala, data);
+  load_file (SCALA_TEST_DIR "/unmatching_notes.scl", &idata, NULL);
+  err = scl_init_scala_from_bytes (&scala, idata.content);
 
   CU_ASSERT_EQUAL (err, -EINVAL);
 
-  g_byte_array_free (data, TRUE);
+  idata_free (&idata);
 }
 
 void
 test_get_2_byte_octave_midi_message ()
 {
-  GByteArray *msg;
+  struct idata idata;
   gint err;
 
   printf ("\n");
 
-  msg = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
   err = scl_get_2_byte_octave_tuning_msg_from_scala_file (SCALA_TEST_DIR
-							  "/success.scl", msg,
-							  NULL);
+							  "/success.scl",
+							  &idata, NULL);
 
   CU_ASSERT_EQUAL (err, 0);
-  CU_ASSERT_EQUAL (msg->len, sizeof (SUCCESS_OCTAVE_MIDI_MSG));
-  CU_ASSERT_EQUAL (memcmp
-		   (msg->data, SUCCESS_OCTAVE_MIDI_MSG,
-		    sizeof (SUCCESS_OCTAVE_MIDI_MSG)), 0);
+  CU_ASSERT_EQUAL (idata.content->len, sizeof (SUCCESS_OCTAVE_MIDI_MSG));
+  CU_ASSERT_EQUAL (memcmp (idata.content->data, SUCCESS_OCTAVE_MIDI_MSG,
+			   sizeof (SUCCESS_OCTAVE_MIDI_MSG)), 0);
 
-  g_byte_array_free (msg, TRUE);
+  idata_free (&idata);
 }
 
 void
 test_get_bulk_tuning_midi_message ()
 {
   gint err;
-  GByteArray *msg;
+  struct idata idata;
   guint8 *b, *f_data;
 
   printf ("\n");
 
-  msg = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
   err = scl_get_key_based_tuning_msg_from_scala_file (SCALA_TEST_DIR
-						      "/success.scl", msg,
-						      NULL);
+						      "/success.scl",
+						      &idata, NULL);
 
   CU_ASSERT_EQUAL (err, 0);
-  CU_ASSERT_EQUAL (msg->len, SCALA_TUNING_BANK_SIZE);
+  CU_ASSERT_EQUAL (idata.content->len, SCALA_TUNING_BANK_SIZE);
 
-  CU_ASSERT_EQUAL (memcmp
-		   (msg->data, SUCCESS_BULK_MIDI_MSG_HEADER,
-		    sizeof (SUCCESS_BULK_MIDI_MSG_HEADER)), 0);
+  CU_ASSERT_EQUAL (memcmp (idata.content->data, SUCCESS_BULK_MIDI_MSG_HEADER,
+			   sizeof (SUCCESS_BULK_MIDI_MSG_HEADER)), 0);
 
   //Test the first octave.
-  f_data = msg->data + sizeof (SUCCESS_BULK_MIDI_MSG_HEADER);
-  CU_ASSERT_EQUAL (memcmp
-		   (f_data, SUCCESS_BULK_MIDI_MSG_OCTAVE_DATA,
-		    sizeof (SUCCESS_BULK_MIDI_MSG_OCTAVE_DATA)), 0);
+  f_data = idata.content->data + sizeof (SUCCESS_BULK_MIDI_MSG_HEADER);
+  CU_ASSERT_EQUAL (memcmp (f_data, SUCCESS_BULK_MIDI_MSG_OCTAVE_DATA,
+			   sizeof (SUCCESS_BULK_MIDI_MSG_OCTAVE_DATA)), 0);
 
   //Test the nots above the first octave by comparing them to the notes in the first one.
   b = f_data + 12 * 3;
@@ -270,32 +260,30 @@ test_get_bulk_tuning_midi_message ()
       CU_ASSERT_EQUAL (*(b + 2), *(f_data + offset + 2));
     }
 
-  CU_ASSERT_EQUAL (msg->data[406], 0x03);
-  CU_ASSERT_EQUAL (msg->data[407], 0xf7);
+  CU_ASSERT_EQUAL (idata.content->data[406], 0x03);
+  CU_ASSERT_EQUAL (idata.content->data[407], 0xf7);
 
-  g_byte_array_free (msg, TRUE);
+  idata_free (&idata);
 }
 
 void
 test_get_2_byte_octave_midi_message_tet ()
 {
-  GByteArray *msg;
+  struct idata idata;
   gint err;
 
   printf ("\n");
 
-  msg = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
-  err =
-    scl_get_2_byte_octave_tuning_msg_from_scala_file (SCALA_TEST_DIR
-						      "/TET.scl", msg, NULL);
+  err = scl_get_2_byte_octave_tuning_msg_from_scala_file (SCALA_TEST_DIR
+							  "/TET.scl", &idata,
+							  NULL);
 
   CU_ASSERT_EQUAL (err, 0);
-  CU_ASSERT_EQUAL (msg->len, sizeof (SUCCESS_OCTAVE_MIDI_MSG_TET));
-  CU_ASSERT_EQUAL (memcmp
-		   (msg->data, SUCCESS_OCTAVE_MIDI_MSG_TET,
-		    sizeof (SUCCESS_OCTAVE_MIDI_MSG_TET)), 0);
+  CU_ASSERT_EQUAL (idata.content->len, sizeof (SUCCESS_OCTAVE_MIDI_MSG_TET));
+  CU_ASSERT_EQUAL (memcmp (idata.content->data, SUCCESS_OCTAVE_MIDI_MSG_TET,
+			   sizeof (SUCCESS_OCTAVE_MIDI_MSG_TET)), 0);
 
-  g_byte_array_free (msg, TRUE);
+  idata_free (&idata);
 }
 
 void
@@ -303,22 +291,22 @@ test_get_bulk_tuning_midi_message_tet ()
 {
   gint err;
   guint8 *b;
-  GByteArray *msg;
+  struct idata idata;
 
   printf ("\n");
 
-  msg = g_byte_array_sized_new (TEST_MAX_FILE_LEN);
   err = scl_get_key_based_tuning_msg_from_scala_file (SCALA_TEST_DIR
-						      "/TET.scl", msg, NULL);
+						      "/TET.scl", &idata,
+						      NULL);
 
   CU_ASSERT_EQUAL (err, 0);
-  CU_ASSERT_EQUAL (msg->len, SCALA_TUNING_BANK_SIZE);
+  CU_ASSERT_EQUAL (idata.content->len, SCALA_TUNING_BANK_SIZE);
 
-  CU_ASSERT_EQUAL (memcmp
-		   (msg->data, SUCCESS_BULK_MIDI_MSG_HEADER_TET,
-		    sizeof (SUCCESS_BULK_MIDI_MSG_HEADER_TET)), 0);
+  CU_ASSERT_EQUAL (memcmp (idata.content->data,
+			   SUCCESS_BULK_MIDI_MSG_HEADER_TET,
+			   sizeof (SUCCESS_BULK_MIDI_MSG_HEADER_TET)), 0);
 
-  b = msg->data + sizeof (SUCCESS_BULK_MIDI_MSG_HEADER_TET);
+  b = idata.content->data + sizeof (SUCCESS_BULK_MIDI_MSG_HEADER_TET);
   for (guint8 i = 0; i < SCALA_MIDI_NOTES; i++, b += 3)
     {
       CU_ASSERT_EQUAL (*b, i);
@@ -326,10 +314,10 @@ test_get_bulk_tuning_midi_message_tet ()
       CU_ASSERT_EQUAL (*(b + 2), 0);
     }
 
-  CU_ASSERT_EQUAL (msg->data[406], 0x6d);
-  CU_ASSERT_EQUAL (msg->data[407], 0xf7);
+  CU_ASSERT_EQUAL (idata.content->data[406], 0x6d);
+  CU_ASSERT_EQUAL (idata.content->data[407], 0xf7);
 
-  g_byte_array_free (msg, TRUE);
+  idata_free (&idata);
 }
 
 gint
@@ -379,30 +367,26 @@ main (gint argc, gchar *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test
-      (suite, "test_get_2_byte_octave_midi_message",
-       test_get_2_byte_octave_midi_message))
+  if (!CU_add_test (suite, "test_get_2_byte_octave_midi_message",
+		    test_get_2_byte_octave_midi_message))
     {
       goto cleanup;
     }
 
-  if (!CU_add_test
-      (suite, "test_get_bulk_tuning_midi_message",
-       test_get_bulk_tuning_midi_message))
+  if (!CU_add_test (suite, "test_get_bulk_tuning_midi_message",
+		    test_get_bulk_tuning_midi_message))
     {
       goto cleanup;
     }
 
-  if (!CU_add_test
-      (suite, "test_get_2_byte_octave_midi_message_tet",
-       test_get_2_byte_octave_midi_message_tet))
+  if (!CU_add_test (suite, "test_get_2_byte_octave_midi_message_tet",
+		    test_get_2_byte_octave_midi_message_tet))
     {
       goto cleanup;
     }
 
-  if (!CU_add_test
-      (suite, "test_get_bulk_tuning_midi_message_tet",
-       test_get_bulk_tuning_midi_message_tet))
+  if (!CU_add_test (suite, "test_get_bulk_tuning_midi_message_tet",
+		    test_get_bulk_tuning_midi_message_tet))
     {
       goto cleanup;
     }

@@ -424,6 +424,7 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
   gint err;
   const gchar *src_path;
   const gchar *device_path;
+  struct idata idata;
 
   if (*optind == argc)
     {
@@ -458,21 +459,21 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
       return EXIT_FAILURE;
     }
 
-  sysex_transfer.raw = g_byte_array_new ();
-  err = load_file (src_path, sysex_transfer.raw, NULL);
+  err = load_file (src_path, &idata, NULL);
   if (err)
     {
       error_print ("Error while loading '%s'.\n", src_path);
     }
   else
     {
+      sysex_transfer.raw = idata.content;
       sysex_transfer.active = TRUE;
       sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
       CHECK_FS_OPS_FUNC (backend.upgrade_os);
       err = backend.upgrade_os (&backend, &sysex_transfer);
+      idata_free (&idata);
     }
 
-  g_byte_array_free (sysex_transfer.raw, TRUE);
   return err;
 }
 
@@ -482,7 +483,7 @@ cli_download (int argc, gchar *argv[], int *optind)
   const gchar *src_path;
   gchar *device_src_path, *download_path;
   gint err;
-  GByteArray *array;
+  struct idata idata;
 
   if (*optind == argc)
     {
@@ -504,28 +505,28 @@ cli_download (int argc, gchar *argv[], int *optind)
   src_path = cli_get_path (device_src_path);
 
   control.active = TRUE;
-  array = g_byte_array_new ();
   CHECK_FS_OPS_FUNC (fs_ops->download);
-  err = fs_ops->download (&backend, src_path, array, &control);
+  err = fs_ops->download (&backend, src_path, &idata, &control);
   if (err)
     {
       goto end;
     }
 
   download_path = fs_ops->get_download_path (&backend, fs_ops, ".", src_path,
-					     array);
+					     &idata);
   if (!download_path)
     {
       err = -EINVAL;
-      goto end;
+      goto cleanup;
     }
 
-  err = fs_ops->save (download_path, array, &control);
+  err = fs_ops->save (download_path, &idata, &control);
   g_free (download_path);
   g_free (control.data);
 
+cleanup:
+  idata_free (&idata);
 end:
-  g_byte_array_free (array, TRUE);
   return err;
 }
 
@@ -535,7 +536,7 @@ cli_upload (int argc, gchar *argv[], int *optind)
   const gchar *dst_path;
   gchar *src_path, *device_dst_path, *upload_path;
   gint err;
-  GByteArray *array;
+  struct idata idata;
 
   if (*optind == argc)
     {
@@ -570,21 +571,20 @@ cli_upload (int argc, gchar *argv[], int *optind)
   upload_path = fs_ops->get_upload_path (&backend, fs_ops, dst_path,
 					 src_path);
 
-  array = g_byte_array_new ();
   control.active = TRUE;
-  err = fs_ops->load (src_path, array, &control);
+  err = fs_ops->load (src_path, &idata, &control);
   if (err)
     {
       goto cleanup;
     }
 
   CHECK_FS_OPS_FUNC (fs_ops->upload);
-  err = fs_ops->upload (&backend, upload_path, array, &control);
+  err = fs_ops->upload (&backend, upload_path, &idata, &control);
   g_free (control.data);
+  idata_free (&idata);
 
 cleanup:
   g_free (upload_path);
-  g_byte_array_free (array, TRUE);
   return err;
 }
 
@@ -593,6 +593,7 @@ cli_send (int argc, gchar *argv[], int *optind)
 {
   gint err;
   const gchar *device_dst_path, *src_file;
+  struct idata idata;
 
   if (*optind == argc)
     {
@@ -628,18 +629,16 @@ cli_send (int argc, gchar *argv[], int *optind)
       return EXIT_FAILURE;
     }
 
-  sysex_transfer.active = TRUE;
-  sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
-  sysex_transfer.raw = g_byte_array_new ();
-
-  err = load_file (src_file, sysex_transfer.raw, NULL);
-
+  err = load_file (src_file, &idata, NULL);
   if (!err)
     {
+      sysex_transfer.active = TRUE;
+      sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
+      sysex_transfer.raw = idata.content;
       err = backend_tx_sysex (&backend, &sysex_transfer);
+      idata_free (&idata);
     }
 
-  free_msg (sysex_transfer.raw);
   return err;
 }
 
@@ -691,7 +690,9 @@ cli_receive (int argc, gchar *argv[], int *optind)
   err = backend_rx_sysex (&backend, &sysex_transfer);
   if (!err)
     {
-      err = save_file (dst_file, sysex_transfer.raw, NULL);
+      struct idata idata;
+      idata.content = sysex_transfer.raw;
+      err = save_file (dst_file, &idata, NULL);
     }
 
   free_msg (sysex_transfer.raw);

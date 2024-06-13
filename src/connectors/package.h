@@ -86,8 +86,10 @@ struct package
 
 GSList *package_get_tags_from_snd_metadata (GByteArray * metadata);
 
-gint package_begin (struct package *, gchar *, const gchar *,
-		    const struct device_desc *, enum package_type);
+gint package_begin (struct package *pkg, gchar * name,
+		    const gchar * fw_version,
+		    const struct device_desc *device_desc,
+		    enum package_type type);
 
 gint package_receive_pkg_resources (struct package *pkg,
 				    const gchar * payload_path,
@@ -97,17 +99,19 @@ gint package_receive_pkg_resources (struct package *pkg,
 				    fs_remote_file_op download_sample,
 				    enum package_type type);
 
-gint package_end (struct package *, GByteArray *);
+gint package_end (struct package *pkg, struct idata *idata);
 
-void package_destroy (struct package *);
+void package_destroy (struct package *pkg);
 
-gint package_open (struct package *, GByteArray *,
-		   const struct device_desc *);
+gint package_open (struct package *pkg, struct idata *idata,
+		   const struct device_desc *device_desc);
 
-gint package_send_pkg_resources (struct package *, const gchar *,
-				 struct job_control *, struct backend *,
-				 fs_remote_file_op);
+gint package_send_pkg_resources (struct package *pkg,
+				 const gchar * payload_path,
+				 struct job_control *control,
+				 struct backend *backend,
+				 fs_remote_file_op upload_data);
 
-void package_close (struct package *);
+void package_close (struct package *pkg);
 
 #endif

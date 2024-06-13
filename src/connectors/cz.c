@@ -57,7 +57,7 @@ struct cz_type_iterator_data
 static gchar *
 cz_get_download_path (struct backend *backend,
 		      const struct fs_operations *ops, const gchar *dst_dir,
-		      const gchar *src_path, GByteArray *program)
+		      const gchar *src_path, struct idata *preset)
 {
   gchar *path;
   if (strcmp (src_path, CZ_PANEL_PATH))
@@ -202,12 +202,13 @@ cz_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 cz_download (struct backend *backend, const gchar *path,
-	     GByteArray *output, struct job_control *control)
+	     struct idata *program, struct job_control *control)
 {
   guint8 id;
   gint len, type, err = 0;
   GByteArray *tx_msg, *rx_msg;
   gchar *dir, *name;
+  GByteArray *output;
 
   if (strcmp (path, CZ_PANEL_PATH))
     {
@@ -250,6 +251,8 @@ cz_download (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
+  output = g_byte_array_sized_new (512);
+  program->content = output;
   g_byte_array_append (output, CZ_PROGRAM_HEADER, sizeof (CZ_PROGRAM_HEADER));
   g_byte_array_append (output, &rx_msg->data[CZ_PROGRAM_HEADER_OFFSET],
 		       CZ_PROGRAM_LEN - CZ_PROGRAM_HEADER_OFFSET);
@@ -262,13 +265,14 @@ end:
 }
 
 static gint
-cz_upload (struct backend *backend, const gchar *path, GByteArray *input,
+cz_upload (struct backend *backend, const gchar *path, struct idata *program,
 	   struct job_control *control)
 {
   guint8 id;
   GByteArray *msg;
   gchar *dir, *name;
   gint type, err = 0;
+  GByteArray *input = program->content;
 
   if (input->len != CZ_PROGRAM_LEN_FIXED)
     {

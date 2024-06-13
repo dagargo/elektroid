@@ -255,45 +255,49 @@ free_item_iterator (struct item_iterator *iter)
 }
 
 gint
-load_file (const char *path, GByteArray *array, struct job_control *control)
+load_file (const char *path, struct idata *idata, struct job_control *control)
 {
-  FILE *file;
+  FILE *f;
   size_t size;
   gint res;
+  GByteArray *array;
 
-  file = fopen (path, "rb");
+  f = fopen (path, "rb");
 
-  if (!file)
+  if (!f)
     {
       return -errno;
     }
 
   res = 0;
 
-  if (fseek (file, 0, SEEK_END))
+  if (fseek (f, 0, SEEK_END))
     {
       error_print ("Unexpected value\n");
       res = -errno;
       goto end;
     }
 
-  size = ftell (file);
-  rewind (file);
+  size = ftell (f);
+  rewind (f);
 
-  g_byte_array_set_size (array, size);
+  array = g_byte_array_sized_new (size);
+  array->len = size;
 
-  if (fread (array->data, 1, size, file) == size)
+  if (fread (array->data, 1, size, f) == size)
     {
       debug_print (1, "%zu B read\n", size);
+      idata->content = array;
     }
   else
     {
       error_print ("Error while reading from file %s\n", path);
+      g_byte_array_free (array, TRUE);
       res = -errno;
     }
 
 end:
-  fclose (file);
+  fclose (f);
   return res;
 }
 
@@ -331,9 +335,10 @@ save_file_char (const gchar *path, const guint8 *data, ssize_t len)
 }
 
 gint
-save_file (const gchar *path, GByteArray *array, struct job_control *control)
+save_file (const gchar *path, struct idata *idata,
+	   struct job_control *control)
 {
-  return save_file_char (path, array->data, array->len);
+  return save_file_char (path, idata->content->data, idata->content->len);
 }
 
 gchar *
@@ -535,4 +540,14 @@ path_filename_to_uri (enum path_type type, gchar *filename)
   gchar *escaped_uri = g_uri_escape_string (uri, ":/", FALSE);
   g_free (uri);
   return escaped_uri;
+}
+
+void
+idata_free (struct idata *idata)
+{
+  if (idata->content)
+    {
+      g_byte_array_free (idata->content, TRUE);
+      idata->content = NULL;
+    }
 }

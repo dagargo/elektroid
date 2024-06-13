@@ -81,15 +81,16 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 
   dst = buffer;
 
-  src = (gint16 *) & audio->sample->data[audio->pos * bytes_per_frame];
+  src =
+    (gint16 *) & audio->sample.content->data[audio->pos * bytes_per_frame];
   for (gint i = 0; i < frames; i++)
     {
       if (audio->pos == audio->sample_info.loop_end + 1 && audio->loop)
 	{
 	  debug_print (2, "Sample reset\n");
 	  audio->pos = audio->sample_info.loop_start;
-	  src = (gint16 *) & audio->sample->data[audio->pos *
-						 bytes_per_frame];
+	  src = (gint16 *) & audio->sample.content->data[audio->pos *
+							 bytes_per_frame];
 	}
       else if (audio->pos == len)
 	{
@@ -99,7 +100,7 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 	    }
 	  debug_print (2, "Sample reset\n");
 	  audio->pos = audio->sel_len ? audio->sel_start : 0;
-	  src = (gint16 *) audio->sample->data;
+	  src = (gint16 *) audio->sample.content->data;
 	}
 
       if (audio->mono_mix)
@@ -147,7 +148,7 @@ audio_read_from_input (struct audio *audio, void *buffer, gint frames)
   debug_print (2, "Reading %d frames (recording = %d)...\n", frames, record);
 
   g_mutex_lock (&audio->control.mutex);
-  recorded_frames = audio->sample->len / bytes_per_frame;
+  recorded_frames = audio->sample.content->len / bytes_per_frame;
   remaining_frames = audio->sample_info.frames - recorded_frames;
   recording_frames = remaining_frames > frames ? frames : remaining_frames;
 
@@ -155,7 +156,7 @@ audio_read_from_input (struct audio *audio, void *buffer, gint frames)
     {
       if (record)
 	{
-	  g_byte_array_append (audio->sample, buffer,
+	  g_byte_array_append (audio->sample.content, buffer,
 			       recording_frames * bytes_per_frame);
 	}
       data = buffer;
@@ -178,7 +179,7 @@ audio_read_from_input (struct audio *audio, void *buffer, gint frames)
 	{
 	  if (record)
 	    {
-	      g_byte_array_append (audio->sample, (guint8 *) data,
+	      g_byte_array_append (audio->sample.content, (guint8 *) data,
 				   sizeof (gint16));
 	    }
 	  if (*data > level)
@@ -208,6 +209,7 @@ audio_reset_record_buffer (struct audio *audio, guint record_options,
 			   void (*monitor) (void *, gdouble),
 			   void *monitor_data)
 {
+  g_mutex_lock (&audio->control.mutex);
   audio->sample_info.channels = (record_options & RECORD_STEREO) == 3 ? 2 : 1;
   audio->sample_info.frames = audio->sample_info.rate * MAX_RECORDING_TIME_S;
   audio->sample_info.loop_start = audio->sample_info.frames - 1;
@@ -215,12 +217,13 @@ audio_reset_record_buffer (struct audio *audio, guint record_options,
   audio->sample_info.format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
   guint size =
     audio->sample_info.frames * SAMPLE_INFO_FRAME_SIZE (&audio->sample_info);
-  g_byte_array_set_size (audio->sample, size);
-  audio->sample->len = 0;
+  idata_free (&audio->sample);
+  audio->sample.content = g_byte_array_sized_new (size);
   audio->pos = 0;
   audio->record_options = record_options;
   audio->monitor = monitor;
   audio->monitor_data = monitor_data;
+  g_mutex_unlock (&audio->control.mutex);
 }
 
 void
@@ -230,7 +233,7 @@ audio_init (struct audio *audio,
 {
   debug_print (1, "Initializing audio (%s %s)...\n", audio_name (),
 	       audio_version ());
-  audio->sample = g_byte_array_new ();
+  idata_free (&audio->sample);
   audio->sample_info.frames = 0;
   audio->sample_info.rate = 0;
   audio->sample_info.channels = 0;
@@ -261,8 +264,6 @@ audio_destroy (struct audio *audio)
   audio_destroy_int (audio);
 
   g_free (audio->control.data);
-  g_byte_array_free (audio->sample, TRUE);
-  audio->sample = NULL;
 
   g_mutex_unlock (&audio->control.mutex);
 }
@@ -272,7 +273,7 @@ audio_reset_sample (struct audio *audio)
 {
   g_mutex_lock (&audio->control.mutex);
   debug_print (1, "Resetting sample...\n");
-  g_byte_array_set_size (audio->sample, 0);
+  idata_free (&audio->sample);
   audio->sample_info.frames = 0;
   audio->pos = 0;
   g_free (audio->path);
@@ -297,7 +298,7 @@ guint
 audio_detect_start (struct audio *audio)
 {
   guint start_frame = 0;
-  gint16 *data = (gint16 *) audio->sample->data;
+  gint16 *data = (gint16 *) audio->sample.content->data;
 
 //Searching for audio data...
   for (gint i = 0; i < audio->sample_info.frames; i++)
@@ -329,7 +330,7 @@ search_last_zero:
     }
 
 end:
-  data = (gint16 *) & audio->sample->data[start_frame];
+  data = (gint16 *) & audio->sample.content->data[start_frame];
   for (gint j = 0; j < audio->sample_info.channels; j++, data++)
     {
       *data = 0;
@@ -355,7 +356,7 @@ audio_delete_range (struct audio *audio, guint start_frame, guint frames)
 
   debug_print (2, "Deleting range from %d with len %d...\n", index, len);
 
-  g_byte_array_remove_range (audio->sample, index, len);
+  g_byte_array_remove_range (audio->sample.content, index, len);
 
   audio->sample_info.frames -= (guint32) frames;
 
@@ -395,9 +396,9 @@ audio_normalize (struct audio *audio)
 {
   gdouble ratio, ratiop, ration;
   gint16 *data, maxp = 1, minn = -1;
-  guint samples = audio->sample->len / SAMPLE_SIZE (SF_FORMAT_PCM_16);
+  guint samples = audio->sample.content->len / SAMPLE_SIZE (SF_FORMAT_PCM_16);
 
-  data = (gint16 *) audio->sample->data;
+  data = (gint16 *) audio->sample.content->data;
   for (gint i = 0; i < samples; i++, data++)
     {
       gint16 v = *data;
@@ -422,7 +423,7 @@ audio_normalize (struct audio *audio)
 
   debug_print (1, "Normalizing to %f...\n", ratio);
 
-  data = (gint16 *) audio->sample->data;
+  data = (gint16 *) audio->sample.content->data;
   for (gint i = 0; i < samples; i++, data++)
     {
       *data = (gint16) (*data * ratio);
@@ -438,7 +439,7 @@ audio_finish_recording (struct audio *audio)
   g_mutex_lock (&audio->control.mutex);
   audio->status = AUDIO_STATUS_STOPPED;
   audio->sample_info.frames =
-    audio->sample->len / SAMPLE_INFO_FRAME_SIZE (&audio->sample_info);
+    audio->sample.content->len / SAMPLE_INFO_FRAME_SIZE (&audio->sample_info);
   audio->sample_info.loop_start = audio->sample_info.frames - 1;
   audio->sample_info.loop_end = audio->sample_info.loop_start;
   memcpy (sample_info, &audio->sample_info, sizeof (struct sample_info));

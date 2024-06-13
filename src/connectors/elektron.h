@@ -37,17 +37,19 @@ enum elektron_fs
   FS_DATA_DT2_PST = 0x100
 };
 
-gchar *elektron_get_sample_path_from_hash_size (struct backend *, guint32,
-						guint32);
+gchar *elektron_get_sample_path_from_hash_size (struct backend *backend,
+						guint32 hash, guint32 size);
 
-gint elektron_upload_sample_part (struct backend *, const gchar *,
-				  GByteArray *, struct job_control *);
+gint elektron_upload_sample_part (struct backend *backend, const gchar * path,
+				  struct idata *sample,
+				  struct job_control *control);
 
-GByteArray *elektron_ping (struct backend *);
+GByteArray *elektron_ping (struct backend *backend);
 
-gint elektron_handshake (struct backend *);
+gint elektron_handshake (struct backend *backend);
 
-gint elektron_sample_save (const gchar *, GByteArray *, struct job_control *);
+gint elektron_sample_save (const gchar * path, struct idata *sample,
+			   struct job_control *control);
 
 //The following declarations are just for testing purposes.
 

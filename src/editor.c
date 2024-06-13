@@ -207,8 +207,19 @@ editor_loading_completed_no_lock (struct editor *editor,
 {
   gboolean completed;
   guint32 actual;
-  gint bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (&editor->audio.sample_info);
-  actual = bytes_per_frame ? editor->audio.sample->len / bytes_per_frame : 0;
+  gint bytes_per_frame;
+
+  if (!editor->audio.sample.content)
+    {
+      if (actual_frames)
+	{
+	  *actual_frames = 0;
+	}
+      return FALSE;
+    }
+
+  bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (&editor->audio.sample_info);
+  actual = editor->audio.sample.content->len / bytes_per_frame;
   completed = actual == editor->audio.sample_info.frames && actual;
   if (actual_frames)
     {
@@ -380,8 +391,9 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 	      continue;
 	    }
 
-	  if (!editor_get_y_frame (audio->sample, audio->sample_info.channels,
-				   x_frame, x_count, &y_frame_state))
+	  if (!editor_get_y_frame
+	      (audio->sample.content, audio->sample_info.channels, x_frame,
+	       x_count, &y_frame_state))
 	    {
 	      debug_print (3,
 			   "Last available frame before the sample end. Stopping...\n");
@@ -518,7 +530,7 @@ editor_load_sample_runner (gpointer data)
   g_mutex_unlock (&audio->control.mutex);
 
   sample_load_from_file_with_cb
-    (audio->path, audio->sample, &audio->control,
+    (audio->path, &audio->sample, &audio->control,
      &audio->sample_info, editor_load_sample_cb, editor);
 
   g_mutex_lock (&audio->control.mutex);
@@ -1000,7 +1012,14 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
   struct sample_info *sample_info_src = audio->control.data;
-  gint16 *samples = (gint16 *) editor->audio.sample->data;
+  gint16 *samples;
+
+  if (!editor->audio.sample.content)
+    {
+      return FALSE;
+    }
+
+  samples = (gint16 *) editor->audio.sample.content->data;
 
   editor_get_frame_at_position (editor, event->x, &cursor_frame, NULL);
 
@@ -1158,7 +1177,7 @@ editor_file_exists_no_overwrite (const gchar *filename)
 
 static gint
 editor_save_with_format (struct editor *editor, gchar *name,
-			 GByteArray *sample, guint32 format_dst)
+			 struct idata *sample, guint32 format_dst)
 {
   gint err;
   struct sample_info *sample_info_src = editor->audio.control.data;
@@ -1178,11 +1197,13 @@ editor_save_with_format (struct editor *editor, gchar *name,
   else
     {
       GByteArray *resampled = g_byte_array_new ();
-      err = sample_resample (sample, resampled, sample_info_src->channels,
-			     ratio);
+      err = sample_resample (sample->content, resampled,
+			     sample_info_src->channels, ratio);
       if (!err)
 	{
-	  err = sample_save_to_file (name, resampled, &editor->audio.control,
+	  struct idata aux;
+	  aux.content = resampled;
+	  err = sample_save_to_file (name, &aux, &editor->audio.control,
 				     format_dst);
 	}
       g_byte_array_free (resampled, TRUE);
@@ -1197,7 +1218,7 @@ editor_save_with_format (struct editor *editor, gchar *name,
 }
 
 static gint
-editor_save (struct editor *editor, gchar *name, GByteArray *sample)
+editor_save (struct editor *editor, gchar *name, struct idata *sample)
 {
   struct sample_info *sample_info_src = editor->audio.control.data;
   return editor_save_with_format (editor, name, sample,
@@ -1228,7 +1249,7 @@ editor_save_clicked (GtkWidget *object, gpointer data)
       debug_print (2, "Saving changes to %s...\n", editor->audio.path);
 
       g_mutex_lock (&editor->audio.control.mutex);
-      editor_save (editor, editor->audio.path, editor->audio.sample);
+      editor_save (editor, editor->audio.path, &editor->audio.sample);
     }
   else
     {
@@ -1240,7 +1261,8 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	  guint fsize = SAMPLE_INFO_FRAME_SIZE (&editor->audio.sample_info);
 	  guint start = editor->audio.sel_start * fsize;
 	  guint len = editor->audio.sel_len * fsize;
-	  g_byte_array_append (sample, &editor->audio.sample->data[start],
+	  g_byte_array_append (sample,
+			       &editor->audio.sample.content->data[start],
 			       len);
 	  snprintf (suggestion, PATH_MAX, "%s", "Sample.wav");
 	}
@@ -1271,13 +1293,15 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 
 	  if (editor->audio.sel_len)
 	    {
-	      editor_save_with_format (editor, name, sample, SF_FORMAT_WAV |
+	      struct idata aux;
+	      aux.content = sample;
+	      editor_save_with_format (editor, name, &aux, SF_FORMAT_WAV |
 				       SF_FORMAT_PCM_16);
 	    }
 	  else
 	    {
 	      editor->audio.path = name;
-	      editor_save (editor, editor->audio.path, editor->audio.sample);
+	      editor_save (editor, editor->audio.path, &editor->audio.sample);
 	    }
 	}
 

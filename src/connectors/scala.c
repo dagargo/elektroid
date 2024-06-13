@@ -213,22 +213,22 @@ scl_get_cksum (guint8 *b, gint len)
 
 gint
 scl_get_2_byte_octave_tuning_msg_from_scala_file (const char *path,
-						  GByteArray *msg,
+						  struct idata *idata,
 						  struct job_control *control)
 {
   gint err = 0;
-  GByteArray *input;
+  struct idata input;
   guint8 cksum, msb, lsb;
   struct scala scala;
+  GByteArray *msg;
 
-  input = g_byte_array_sized_new (512);
-  err = load_file (path, input, control);
+  err = load_file (path, &input, control);
   if (err)
     {
-      goto end;
+      return err;
     }
 
-  err = scl_init_scala_from_bytes (&scala, input);
+  err = scl_init_scala_from_bytes (&scala, input.content);
   if (err)
     {
       goto end;
@@ -240,6 +240,7 @@ scl_get_2_byte_octave_tuning_msg_from_scala_file (const char *path,
       goto end;
     }
 
+  msg = g_byte_array_new ();
   g_byte_array_append (msg, SCALA_MIDI_OCTAVE_TUNING_HEADER,
 		       sizeof (SCALA_MIDI_OCTAVE_TUNING_HEADER));
 
@@ -272,33 +273,34 @@ scl_get_2_byte_octave_tuning_msg_from_scala_file (const char *path,
   cksum = scl_get_cksum (&msg->data[1], 46);
   g_byte_array_append (msg, &cksum, 1);
   g_byte_array_append (msg, (guint8 *) "\xf7", 1);
+  idata->content = msg;
 
 end:
-  free_msg (input);
+  idata_free (&input);
   return err;
 }
 
 gint
 scl_get_key_based_tuning_msg_from_scala_file (const char *path,
-					      GByteArray *msg,
+					      struct idata *scale,
 					      struct job_control *control)
 {
   gint err = 0;
   guint8 cksum;
-  GByteArray *input;
+  struct idata input;
+  GByteArray *msg;
   struct scala scala;
   guint8 note[SCALA_OCTAVE_NOTES];
   guint8 msb[SCALA_OCTAVE_NOTES];
   guint8 lsb[SCALA_OCTAVE_NOTES];
 
-  input = g_byte_array_sized_new (512);
-  err = load_file (path, input, control);
+  err = load_file (path, &input, control);
   if (err)
     {
-      goto end;
+      return err;
     }
 
-  err = scl_init_scala_from_bytes (&scala, input);
+  err = scl_init_scala_from_bytes (&scala, input.content);
   if (err)
     {
       goto end;
@@ -310,6 +312,7 @@ scl_get_key_based_tuning_msg_from_scala_file (const char *path,
       goto end;
     }
 
+  msg = g_byte_array_new ();
   g_byte_array_append (msg, SCALA_MIDI_BULK_TUNING_HEADER,
 		       sizeof (SCALA_MIDI_BULK_TUNING_HEADER));
 
@@ -353,8 +356,9 @@ scl_get_key_based_tuning_msg_from_scala_file (const char *path,
   cksum = scl_get_cksum (&msg->data[1], 405);
   g_byte_array_append (msg, &cksum, 1);
   g_byte_array_append (msg, (guint8 *) "\xf7", 1);
+  scale->content = msg;
 
 end:
-  free_msg (input);
+  idata_free (&input);
   return err;
 }

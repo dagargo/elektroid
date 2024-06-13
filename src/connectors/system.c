@@ -37,7 +37,7 @@ struct system_iterator_data
 
 static gint
 system_download (struct backend *backend, const gchar *path,
-		 GByteArray *output, struct job_control *control)
+		 struct idata *idata, struct job_control *control)
 {
   gint err;
   gboolean active;
@@ -46,7 +46,7 @@ system_download (struct backend *backend, const gchar *path,
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
-  err = load_file (path, output, control);
+  err = load_file (path, idata, control);
 
   g_mutex_lock (&control->mutex);
   active = control->active;
@@ -57,6 +57,7 @@ system_download (struct backend *backend, const gchar *path,
     }
   else
     {
+      idata_free (idata);
       err = -ECANCELED;
     }
 
@@ -67,7 +68,7 @@ static gchar *
 system_get_download_path (struct backend *backend,
 			  const struct fs_operations *ops,
 			  const gchar *dst_dir, const gchar *src_path,
-			  GByteArray *content)
+			  struct idata *content)
 {
   gchar *name = g_path_get_basename (src_path);
   GString *name_with_ext = g_string_new (NULL);
@@ -254,7 +255,7 @@ system_samples_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
-system_load_custom (const gchar *path, GByteArray *sample,
+system_load_custom (const gchar *path, struct idata *sample,
 		    struct job_control *control,
 		    struct sample_info *sample_info_dst)
 {
@@ -269,7 +270,7 @@ system_load_custom (const gchar *path, GByteArray *sample,
 }
 
 static gint
-system_load_48_16_stereo (const gchar *path, GByteArray *sample,
+system_load_48_16_stereo (const gchar *path, struct idata *sample,
 			  struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -281,14 +282,14 @@ system_load_48_16_stereo (const gchar *path, GByteArray *sample,
 
 gint
 system_upload (struct backend *backend, const gchar *path,
-	       GByteArray *input, struct job_control *control)
+	       struct idata *sample, struct job_control *control)
 {
-  return sample_save_to_file (path, input, control,
+  return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
 }
 
 static gint
-system_load_48_16_mono (const gchar *path, GByteArray *sample,
+system_load_48_16_mono (const gchar *path, struct idata *sample,
 			struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -299,7 +300,7 @@ system_load_48_16_mono (const gchar *path, GByteArray *sample,
 }
 
 static gint
-system_load_441_16_stereo (const gchar *path, GByteArray *sample,
+system_load_441_16_stereo (const gchar *path, struct idata *sample,
 			   struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -310,7 +311,7 @@ system_load_441_16_stereo (const gchar *path, GByteArray *sample,
 }
 
 static gint
-system_load_441_16_mono (const gchar *path, GByteArray *sample,
+system_load_441_16_mono (const gchar *path, struct idata *sample,
 			 struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -321,7 +322,7 @@ system_load_441_16_mono (const gchar *path, GByteArray *sample,
 }
 
 static gint
-system_load_441_24_stereo (const gchar *path, GByteArray *sample,
+system_load_441_24_stereo (const gchar *path, struct idata *sample,
 			   struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -333,14 +334,14 @@ system_load_441_24_stereo (const gchar *path, GByteArray *sample,
 
 static gint
 system_upload_24_bits (struct backend *backend, const gchar *path,
-		       GByteArray *input, struct job_control *control)
+		       struct idata *sample, struct job_control *control)
 {
-  return sample_save_to_file (path, input, control,
+  return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_24);
 }
 
 static gint
-system_load_441_24_mono (const gchar *path, GByteArray *sample,
+system_load_441_24_mono (const gchar *path, struct idata *sample,
 			 struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -351,7 +352,7 @@ system_load_441_24_mono (const gchar *path, GByteArray *sample,
 }
 
 static gint
-system_load_441_8_stereo (const gchar *path, GByteArray *sample,
+system_load_441_8_stereo (const gchar *path, struct idata *sample,
 			  struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -363,14 +364,14 @@ system_load_441_8_stereo (const gchar *path, GByteArray *sample,
 
 static gint
 system_upload_8_bits (struct backend *backend, const gchar *path,
-		      GByteArray *input, struct job_control *control)
+		      struct idata *sample, struct job_control *control)
 {
-  return sample_save_to_file (path, input, control,
+  return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_U8);
 }
 
 static gint
-system_load_441_8_mono (const gchar *path, GByteArray *sample,
+system_load_441_8_mono (const gchar *path, struct idata *sample,
 			struct job_control *control)
 {
   struct sample_info sample_info_dst;
@@ -381,7 +382,7 @@ system_load_441_8_mono (const gchar *path, GByteArray *sample,
 }
 
 static gint
-system_load_32_16_mono (const gchar *path, GByteArray *sample,
+system_load_32_16_mono (const gchar *path, struct idata *sample,
 			struct job_control *control)
 {
   struct sample_info sample_info_dst;

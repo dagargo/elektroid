@@ -112,28 +112,32 @@ typedef gint (*elektron_src_dst_func) (struct backend *, const gchar *,
 				       const gchar *);
 
 static gint elektron_download_data_snd (struct backend *, const gchar *,
-					GByteArray *, struct job_control *);
+					struct idata *, struct job_control *);
 
 static gint elektron_download_data_snd_pkg (struct backend *, const gchar *,
-					    GByteArray *,
+					    struct idata *,
 					    struct job_control *);
 static gint elektron_download_data_prj_pkg (struct backend *, const gchar *,
-					    GByteArray *,
+					    struct idata *,
 					    struct job_control *);
 static gint elektron_download_data_pst_pkg (struct backend *, const gchar *,
-					    GByteArray *,
+					    struct idata *,
 					    struct job_control *);
 static gint elektron_download_raw_pst_pkg (struct backend *, const gchar *,
-					   GByteArray *,
+					   struct idata *,
 					   struct job_control *);
 static gint elektron_upload_data_prj_pkg (struct backend *, const gchar *,
-					  GByteArray *, struct job_control *);
+					  struct idata *,
+					  struct job_control *);
 static gint elektron_upload_data_snd_pkg (struct backend *, const gchar *,
-					  GByteArray *, struct job_control *);
+					  struct idata *,
+					  struct job_control *);
 static gint elektron_upload_data_pst_pkg (struct backend *, const gchar *,
-					  GByteArray *, struct job_control *);
+					  struct idata *,
+					  struct job_control *);
 static gint elektron_upload_raw_pst_pkg (struct backend *, const gchar *,
-					 GByteArray *, struct job_control *);
+					 struct idata *,
+					 struct job_control *);
 
 static gboolean elektron_sample_file_exists (struct backend *, const gchar *);
 static gboolean elektron_raw_file_exists (struct backend *, const gchar *);
@@ -1307,7 +1311,7 @@ elektron_delete_raw_item (struct backend *backend, const gchar *path)
 
 static gint
 elektron_upload_smplrw (struct backend *backend, const gchar *path,
-			GByteArray *input, struct job_control *control,
+			struct idata *smplrw, struct job_control *control,
 			elektron_msg_path_len_func new_msg_open_write,
 			elektron_msg_write_blk_func new_msg_write_blk,
 			elektron_msg_id_len_func new_msg_close_write)
@@ -1319,6 +1323,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
   int i;
   gboolean active;
   gint res = 0;
+  GByteArray *input = smplrw->content;
 
   //If the file already exists the device makes no difference between creating a new file and creating an already existent file.
   //Also, the new file would be discarded if an upload is not completed.
@@ -1400,7 +1405,8 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
 
 gint
 elektron_upload_sample_part (struct backend *backend, const gchar *path,
-			     GByteArray *sample, struct job_control *control)
+			     struct idata *sample,
+			     struct job_control *control)
 {
   return elektron_upload_smplrw (backend, path, sample, control,
 				 elektron_new_msg_open_sample_write,
@@ -1410,18 +1416,18 @@ elektron_upload_sample_part (struct backend *backend, const gchar *path,
 
 static gint
 elektron_upload_sample (struct backend *backend, const gchar *path,
-			GByteArray *input, struct job_control *control)
+			struct idata *sample, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
-  return elektron_upload_sample_part (backend, path, input, control);
+  return elektron_upload_sample_part (backend, path, sample, control);
 }
 
 static gint
 elektron_upload_raw (struct backend *backend, const gchar *path,
-		     GByteArray *sample, struct job_control *control)
+		     struct idata *raw, struct job_control *control)
 {
-  return elektron_upload_smplrw (backend, path, sample, control,
+  return elektron_upload_smplrw (backend, path, raw, control,
 				 elektron_new_msg_open_raw_write,
 				 elektron_new_msg_write_raw_blk,
 				 elektron_new_msg_close_raw_write);
@@ -1466,7 +1472,7 @@ elektron_copy_raw_data (GByteArray *input, GByteArray *output)
 
 static gint
 elektron_download_smplrw (struct backend *backend, const gchar *path,
-			  GByteArray *output, struct job_control *control,
+			  struct idata *smplrw, struct job_control *control,
 			  elektron_msg_path_func new_msg_open_read,
 			  guint read_offset,
 			  elektron_msg_read_blk_func new_msg_read_blk,
@@ -1475,9 +1481,8 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 {
   struct sample_info *sample_info;
   struct elektron_sample_header *elektron_sample_header;
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
-  GByteArray *array;
+  GByteArray *tx_msg, *rx_msg;
+  GByteArray *array, *output;
   guint32 id;
   guint frames;
   guint next_block_start;
@@ -1513,6 +1518,7 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
   active = control->active;
   g_mutex_unlock (&control->mutex);
 
+  output = g_byte_array_new ();
   array = g_byte_array_new ();
   res = 0;
   next_block_start = 0;
@@ -1590,15 +1596,23 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 
 cleanup:
   free_msg (array);
+  if (res)
+    {
+      g_byte_array_free (output, TRUE);
+    }
+  else
+    {
+      smplrw->content = output;
+    }
   return res;
 }
 
 static gint
 elektron_download_sample_part (struct backend *backend, const gchar *path,
-			       GByteArray *output,
+			       struct idata *sample,
 			       struct job_control *control)
 {
-  return elektron_download_smplrw (backend, path, output, control,
+  return elektron_download_smplrw (backend, path, sample, control,
 				   elektron_new_msg_open_sample_read,
 				   sizeof (struct elektron_sample_header),
 				   elektron_new_msg_read_sample_blk,
@@ -1608,20 +1622,20 @@ elektron_download_sample_part (struct backend *backend, const gchar *path,
 
 static gint
 elektron_download_sample (struct backend *backend, const gchar *path,
-			  GByteArray *output, struct job_control *control)
+			  struct idata *file, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
-  return elektron_download_sample_part (backend, path, output, control);
+  return elektron_download_sample_part (backend, path, file, control);
 }
 
 static gint
 elektron_download_raw (struct backend *backend, const gchar *path,
-		       GByteArray *output, struct job_control *control)
+		       struct idata *file, struct job_control *control)
 {
   gint ret;
   gchar *path_with_ext = elektron_add_ext_to_mc_snd (path);
-  ret = elektron_download_smplrw (backend, path_with_ext, output, control,
+  ret = elektron_download_smplrw (backend, path_with_ext, file, control,
 				  elektron_new_msg_open_raw_read,
 				  0, elektron_new_msg_read_raw_blk,
 				  elektron_new_msg_close_raw_read,
@@ -1873,18 +1887,19 @@ elektron_next_data_entry (struct item_iterator *iter)
 	  data->mode == ITER_MODE_DATA_SND)
 	{
 	  gchar metadata_path[PATH_MAX];
-	  GByteArray *output = g_byte_array_new ();
+	  struct idata output;
 
 	  snprintf (metadata_path, PATH_MAX, "%s/%d/%s", iter->dir,
 		    iter->item.id, FS_DATA_METADATA_FILE);
 	  debug_print (2, "Reading metadata from %s...\n", metadata_path);
 	  if (!elektron_download_data_snd (data->backend, metadata_path,
-					   output, NULL))
+					   &output, NULL))
 	    {
 	      gchar *s;
 	      gboolean first = TRUE;
 	      GString *info = g_string_new (NULL);
-	      GSList *tags = package_get_tags_from_snd_metadata (output);
+	      GSList *tags =
+		package_get_tags_from_snd_metadata (output.content);
 	      GSList *e = tags;
 
 	      while (e)
@@ -1900,9 +1915,8 @@ elektron_next_data_entry (struct item_iterator *iter)
 	      snprintf (iter->item.object_info, LABEL_MAX, "%s", s);
 	      g_free (s);
 	      g_slist_free_full (tags, g_free);
+	      idata_free (&output);
 	    }
-
-	  g_byte_array_free (output, TRUE);
 	}
 
       break;
@@ -2387,7 +2401,7 @@ elektron_close_datum (struct backend *backend,
 
 static gint
 elektron_download_data_prefix (struct backend *backend, const gchar *path,
-			       GByteArray *output,
+			       struct idata *data,
 			       struct job_control *control,
 			       const gchar *prefix)
 {
@@ -2404,8 +2418,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
   guint32 jidbe;
   guint32 data_size;
   gboolean active;
-  GByteArray *rx_msg;
-  GByteArray *tx_msg;
+  GByteArray *rx_msg, *tx_msg, *content;
   gchar *path_w_prefix, *basename;
 
   basename = g_path_get_basename (path);
@@ -2430,6 +2443,8 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
     }
 
   usleep (BE_REST_TIME_US);
+
+  content = g_byte_array_new ();
 
   if (control)
     {
@@ -2493,7 +2508,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
 		       "Read datum info: job id: %d; last: %d; seq: %d; status: %d; hash: 0x%08x\n",
 		       r_jid, last, r_seq, status, hash);
 
-	  g_byte_array_append (output, (guint8 *) & rx_msg->data[27],
+	  g_byte_array_append (content, (guint8 *) & rx_msg->data[27],
 			       data_size);
 	}
       else
@@ -2519,9 +2534,17 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
       usleep (BE_REST_TIME_US);
     }
 
-  if (control && active)
+  if (active)
     {
-      set_job_control_progress (control, 1.0);
+      if (control)
+	{
+	  set_job_control_progress (control, 1.0);
+	}
+      data->content = content;
+    }
+  else
+    {
+      g_byte_array_free (content, TRUE);
     }
 
   return elektron_close_datum (backend, jid, O_RDONLY, 0);
@@ -2529,34 +2552,34 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
 
 static gint
 elektron_download_data_any (struct backend *backend, const gchar *path,
-			    GByteArray *output, struct job_control *control)
+			    struct idata *any, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
-  return elektron_download_data_prefix (backend, path, output, control, NULL);
+  return elektron_download_data_prefix (backend, path, any, control, NULL);
 }
 
 static gint
 elektron_download_data_prj (struct backend *backend, const gchar *path,
-			    GByteArray *output, struct job_control *control)
+			    struct idata *prj, struct job_control *control)
 {
-  return elektron_download_data_prefix (backend, path, output, control,
+  return elektron_download_data_prefix (backend, path, prj, control,
 					FS_DATA_PRJ_PREFIX);
 }
 
 static gint
 elektron_download_data_snd (struct backend *backend, const gchar *path,
-			    GByteArray *output, struct job_control *control)
+			    struct idata *snd, struct job_control *control)
 {
-  return elektron_download_data_prefix (backend, path, output, control,
+  return elektron_download_data_prefix (backend, path, snd, control,
 					FS_DATA_SND_PREFIX);
 }
 
 static gint
 elektron_download_data_pst (struct backend *backend, const gchar *path,
-			    GByteArray *output, struct job_control *control)
+			    struct idata *pst, struct job_control *control)
 {
-  return elektron_download_data_prefix (backend, path, output, control,
+  return elektron_download_data_prefix (backend, path, pst, control,
 					FS_DATA_PST_PREFIX);
 }
 
@@ -2607,7 +2630,7 @@ elektron_get_download_name (struct backend *backend,
 
 static gint
 elektron_download_pkg (struct backend *backend, const gchar *path,
-		       GByteArray *output, struct job_control *control,
+		       struct idata *output, struct job_control *control,
 		       enum package_type type,
 		       const struct fs_operations *ops,
 		       fs_remote_file_op download)
@@ -2680,7 +2703,7 @@ static gchar *
 elektron_get_download_path (struct backend *backend,
 			    const struct fs_operations *ops,
 			    const gchar *dst_dir, const gchar *src_path,
-			    GByteArray *data)
+			    struct idata *any)
 {
   gchar *path, *name, *dl_ext, *src_fpath;
   const gchar *md_ext, *ext = get_file_ext (src_path);
@@ -2725,7 +2748,8 @@ static gchar *
 elektron_get_download_path_sample (struct backend *backend,
 				   const struct fs_operations *ops,
 				   const gchar *dst_dir,
-				   const gchar *src_path, GByteArray *data)
+				   const gchar *src_path,
+				   struct idata *sample)
 {
   gchar *path;
   gchar *name = g_path_get_basename (src_path);
@@ -2741,7 +2765,7 @@ elektron_get_download_path_sample (struct backend *backend,
 
 static gint
 elektron_upload_data_prefix (struct backend *backend, const gchar *path,
-			     GByteArray *array,
+			     struct idata *data,
 			     struct job_control *control, const gchar *prefix)
 {
   gint err;
@@ -2761,6 +2785,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
   GByteArray *rx_msg;
   GByteArray *tx_msg;
   gchar *path_w_prefix;
+  GByteArray *array = data->content;
 
   err = common_slot_get_id_name_from_path (path, &id, NULL);
   if (err)
@@ -2882,40 +2907,40 @@ end:
 
 static gint
 elektron_upload_data_any (struct backend *backend, const gchar *path,
-			  GByteArray *array, struct job_control *control)
+			  struct idata *any, struct job_control *control)
 {
   control->parts = 1;
   control->part = 0;
-  return elektron_upload_data_prefix (backend, path, array, control, NULL);
+  return elektron_upload_data_prefix (backend, path, any, control, NULL);
 }
 
 static gint
 elektron_upload_data_prj (struct backend *backend, const gchar *path,
-			  GByteArray *array, struct job_control *control)
+			  struct idata *prj, struct job_control *control)
 {
-  return elektron_upload_data_prefix (backend, path, array, control,
+  return elektron_upload_data_prefix (backend, path, prj, control,
 				      FS_DATA_PRJ_PREFIX);
 }
 
 static gint
 elektron_upload_data_snd (struct backend *backend, const gchar *path,
-			  GByteArray *array, struct job_control *control)
+			  struct idata *snd, struct job_control *control)
 {
-  return elektron_upload_data_prefix (backend, path, array, control,
+  return elektron_upload_data_prefix (backend, path, snd, control,
 				      FS_DATA_SND_PREFIX);
 }
 
 static gint
 elektron_upload_data_pst (struct backend *backend, const gchar *path,
-			  GByteArray *array, struct job_control *control)
+			  struct idata *pst, struct job_control *control)
 {
-  return elektron_upload_data_prefix (backend, path, array, control,
+  return elektron_upload_data_prefix (backend, path, pst, control,
 				      FS_DATA_PST_PREFIX);
 }
 
 static gint
 elektron_upload_pkg (struct backend *backend, const gchar *path,
-		     GByteArray *input, struct job_control *control,
+		     struct idata *input, struct job_control *control,
 		     guint8 type, const struct fs_operations *ops,
 		     fs_remote_file_op upload)
 {
@@ -2975,7 +3000,7 @@ elektron_get_dt2_pst_exts (struct backend *backend,
 }
 
 gint
-elektron_sample_load (const gchar *path, GByteArray *sample,
+elektron_sample_load (const gchar *path, struct idata *sample,
 		      struct job_control *control)
 {
   return common_sample_load (path, sample, control, ELEKTRON_SAMPLE_RATE, 1,
@@ -2983,7 +3008,7 @@ elektron_sample_load (const gchar *path, GByteArray *sample,
 }
 
 gint
-elektron_sample_stereo_load (const gchar *path, GByteArray *sample,
+elektron_sample_stereo_load (const gchar *path, struct idata *sample,
 			     struct job_control *control)
 {
   struct sample_info *sample_info;
@@ -2997,7 +3022,7 @@ elektron_sample_stereo_load (const gchar *path, GByteArray *sample,
   sample_info = control->data;
   if (sample_info->channels > 2)
     {
-      g_byte_array_free (sample, TRUE);
+      idata_free (sample);
       err = -EINVAL;
     }
 
@@ -3039,7 +3064,7 @@ elektron_get_sample_path_from_hash_size (struct backend *backend,
 }
 
 gint
-elektron_sample_save (const gchar *path, GByteArray *sample,
+elektron_sample_save (const gchar *path, struct idata *sample,
 		      struct job_control *control)
 {
   return sample_save_to_file (path, sample, control,
@@ -3541,10 +3566,10 @@ elektron_handshake (struct backend *backend)
 
 static gint
 elektron_download_data_snd_pkg (struct backend *backend,
-				const gchar *path, GByteArray *output,
+				const gchar *path, struct idata *pkg,
 				struct job_control *control)
 {
-  return elektron_download_pkg (backend, path, output, control,
+  return elektron_download_pkg (backend, path, pkg, control,
 				PKG_FILE_TYPE_DATA_SOUND,
 				&FS_DATA_SND_OPERATIONS,
 				elektron_download_data_snd);
@@ -3552,10 +3577,10 @@ elektron_download_data_snd_pkg (struct backend *backend,
 
 static gint
 elektron_download_data_prj_pkg (struct backend *backend,
-				const gchar *path, GByteArray *output,
+				const gchar *path, struct idata *pkg,
 				struct job_control *control)
 {
-  return elektron_download_pkg (backend, path, output, control,
+  return elektron_download_pkg (backend, path, pkg, control,
 				PKG_FILE_TYPE_DATA_PROJECT,
 				&FS_DATA_PRJ_OPERATIONS,
 				elektron_download_data_prj);
@@ -3563,10 +3588,10 @@ elektron_download_data_prj_pkg (struct backend *backend,
 
 static gint
 elektron_download_data_pst_pkg (struct backend *backend,
-				const gchar *path, GByteArray *output,
+				const gchar *path, struct idata *pkg,
 				struct job_control *control)
 {
-  return elektron_download_pkg (backend, path, output, control,
+  return elektron_download_pkg (backend, path, pkg, control,
 				PKG_FILE_TYPE_DATA_PRESET,
 				&FS_DATA_PST_OPERATIONS,
 				elektron_download_data_pst);
@@ -3574,10 +3599,9 @@ elektron_download_data_pst_pkg (struct backend *backend,
 
 static gint
 elektron_download_raw_pst_pkg (struct backend *backend, const gchar *path,
-			       GByteArray *output,
-			       struct job_control *control)
+			       struct idata *pkg, struct job_control *control)
 {
-  return elektron_download_pkg (backend, path, output, control,
+  return elektron_download_pkg (backend, path, pkg, control,
 				PKG_FILE_TYPE_RAW_PRESET,
 				&FS_RAW_ANY_OPERATIONS,
 				elektron_download_raw);
@@ -3585,9 +3609,9 @@ elektron_download_raw_pst_pkg (struct backend *backend, const gchar *path,
 
 static gint
 elektron_upload_data_snd_pkg (struct backend *backend, const gchar *path,
-			      GByteArray *input, struct job_control *control)
+			      struct idata *pkg, struct job_control *control)
 {
-  return elektron_upload_pkg (backend, path, input, control,
+  return elektron_upload_pkg (backend, path, pkg, control,
 			      PKG_FILE_TYPE_DATA_SOUND,
 			      &FS_DATA_SND_OPERATIONS,
 			      elektron_upload_data_snd);
@@ -3595,9 +3619,9 @@ elektron_upload_data_snd_pkg (struct backend *backend, const gchar *path,
 
 static gint
 elektron_upload_data_prj_pkg (struct backend *backend, const gchar *path,
-			      GByteArray *input, struct job_control *control)
+			      struct idata *pkg, struct job_control *control)
 {
-  return elektron_upload_pkg (backend, path, input, control,
+  return elektron_upload_pkg (backend, path, pkg, control,
 			      PKG_FILE_TYPE_DATA_PROJECT,
 			      &FS_DATA_PRJ_OPERATIONS,
 			      elektron_upload_data_prj);
@@ -3605,9 +3629,9 @@ elektron_upload_data_prj_pkg (struct backend *backend, const gchar *path,
 
 static gint
 elektron_upload_data_pst_pkg (struct backend *backend, const gchar *path,
-			      GByteArray *input, struct job_control *control)
+			      struct idata *pkg, struct job_control *control)
 {
-  return elektron_upload_pkg (backend, path, input, control,
+  return elektron_upload_pkg (backend, path, pkg, control,
 			      PKG_FILE_TYPE_DATA_PRESET,
 			      &FS_DATA_PST_OPERATIONS,
 			      elektron_upload_data_pst);
@@ -3615,9 +3639,9 @@ elektron_upload_data_pst_pkg (struct backend *backend, const gchar *path,
 
 static gint
 elektron_upload_raw_pst_pkg (struct backend *backend, const gchar *path,
-			     GByteArray *input, struct job_control *control)
+			     struct idata *pkg, struct job_control *control)
 {
-  return elektron_upload_pkg (backend, path, input, control,
+  return elektron_upload_pkg (backend, path, pkg, control,
 			      PKG_FILE_TYPE_RAW_PRESET,
 			      &FS_RAW_ANY_OPERATIONS, elektron_upload_raw);
 }

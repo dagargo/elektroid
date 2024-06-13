@@ -121,7 +121,7 @@ static gchar *
 summit_get_patch_download_path (struct backend *backend,
 				const struct fs_operations *ops,
 				const gchar *dst_dir, const gchar *src_path,
-				GByteArray *patch)
+				struct idata *patch)
 {
   guint id;
   gchar *path;
@@ -137,7 +137,7 @@ summit_get_patch_download_path (struct backend *backend,
       return NULL;
     }
 
-  memcpy (name, SUMMIT_GET_NAME_FROM_MSG (patch, ops->id),
+  memcpy (name, SUMMIT_GET_NAME_FROM_MSG (patch->content, ops->id),
 	  SUMMIT_PATCH_NAME_LEN);
   name[SUMMIT_PATCH_NAME_LEN] = 0;
   summit_truncate_name_at_last_useful_char (&name[SUMMIT_PATCH_NAME_LEN - 1]);
@@ -312,7 +312,7 @@ summit_get_bank_and_id_from_path (const gchar *path, guint8 *bank, guint8 *id)
 
 static gint
 summit_patch_download (struct backend *backend, const gchar *path,
-		       GByteArray *output, struct job_control *control,
+		       struct idata *patch, struct job_control *control,
 		       enum summit_fs fs)
 {
   guint8 id, bank;
@@ -338,7 +338,8 @@ summit_patch_download (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
-  g_byte_array_append (output, rx_msg->data, rx_msg->len);
+  patch->content = rx_msg;
+  goto end;
 
 cleanup:
   free_msg (rx_msg);
@@ -349,17 +350,17 @@ end:
 
 static gint
 summit_single_download (struct backend *backend, const gchar *path,
-			GByteArray *output, struct job_control *control)
+			struct idata *patch, struct job_control *control)
 {
-  return summit_patch_download (backend, path, output, control,
+  return summit_patch_download (backend, path, patch, control,
 				FS_SUMMIT_SINGLE_PATCH);
 }
 
 static gint
 summit_multi_download (struct backend *backend, const gchar *path,
-		       GByteArray *output, struct job_control *control)
+		       struct idata *patch, struct job_control *control)
 {
-  return summit_patch_download (backend, path, output, control,
+  return summit_patch_download (backend, path, patch, control,
 				FS_SUMMIT_MULTI_PATCH);
 }
 
@@ -397,33 +398,34 @@ end:
 
 static gint
 summit_single_upload (struct backend *backend, const gchar *path,
-		      GByteArray *input, struct job_control *control)
+		      struct idata *patch, struct job_control *control)
 {
-  if (input->len != SUMMIT_SINGLE_LEN)
+  if (patch->content->len != SUMMIT_SINGLE_LEN)
     {
       return -EINVAL;
     }
 
-  return summit_patch_upload (backend, path, input, control);
+  return summit_patch_upload (backend, path, patch->content, control);
 }
 
 static gint
 summit_multi_upload (struct backend *backend, const gchar *path,
-		     GByteArray *input, struct job_control *control)
+		     struct idata *patch, struct job_control *control)
 {
-  if (input->len != SUMMIT_MULTI_LEN)
+  if (patch->content->len != SUMMIT_MULTI_LEN)
     {
       return -EINVAL;
     }
 
-  return summit_patch_upload (backend, path, input, control);
+  return summit_patch_upload (backend, path, patch->content, control);
 }
 
 static gint
 summit_patch_rename (struct backend *backend, const gchar *src,
 		     const gchar *dst, enum summit_fs fs)
 {
-  GByteArray *preset, *rx_msg;
+  struct idata preset;
+  GByteArray *rx_msg;
   gint err, len;
   guint8 *name;
   gchar *sanitized;
@@ -435,17 +437,15 @@ summit_patch_rename (struct backend *backend, const gchar *src,
   control.callback = NULL;
   g_mutex_init (&control.mutex);
 
-  preset = g_byte_array_sized_new (1024);
-  err = summit_patch_download (backend, src, preset, &control, fs);
+  err = summit_patch_download (backend, src, &preset, &control, fs);
   if (err)
     {
-      free_msg (preset);
       return err;
     }
 
   usleep (SUMMIT_REST_TIME_US);
 
-  name = SUMMIT_GET_NAME_FROM_MSG (preset, fs);
+  name = SUMMIT_GET_NAME_FROM_MSG (preset.content, fs);
   sanitized = common_get_sanitized_name (dst, SUMMIT_ALPHABET,
 					 SUMMIT_DEFAULT_CHAR);
   len = strlen (sanitized);
@@ -454,7 +454,7 @@ summit_patch_rename (struct backend *backend, const gchar *src,
   g_free (sanitized);
   memset (name + len, ' ', SUMMIT_PATCH_NAME_LEN - len);
 
-  rx_msg = backend_tx_and_rx_sysex (backend, preset, 100);	//There must be no response.
+  rx_msg = backend_tx_and_rx_sysex (backend, preset.content, 100);	//There must be no response.
   if (rx_msg)
     {
       err = -EIO;
@@ -613,9 +613,10 @@ summit_scale_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 summit_tuning_upload (struct backend *backend, const gchar *path,
-		      GByteArray *input, struct job_control *control)
+		      struct idata *tuning, struct job_control *control)
 {
   guint id;
+  GByteArray *input = tuning->content;
 
   if (common_slot_get_id_name_from_path (path, &id, NULL))
     {
@@ -654,7 +655,7 @@ static const struct fs_operations FS_SUMMIT_SCALE_OPERATIONS = {
 
 static gint
 summit_tuning_download (struct backend *backend, const gchar *path,
-			GByteArray *output, struct job_control *control)
+			struct idata *tuning, struct job_control *control)
 {
   guint32 id;
   gint err = 0;
@@ -684,7 +685,8 @@ summit_tuning_download (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
-  g_byte_array_append (output, rx_msg->data, rx_msg->len);
+  tuning->content = rx_msg;
+  return 0;
 
 cleanup:
   free_msg (rx_msg);
@@ -795,11 +797,12 @@ summit_wavetable_read_dir (struct backend *backend,
 
 static gint
 summit_wavetable_download (struct backend *backend, const gchar *path,
-			   GByteArray *output, struct job_control *control)
+			   struct idata *wavetable,
+			   struct job_control *control)
 {
   guint32 id;
   gint err = 0;
-  GByteArray *tx_msg, *rx_msg;
+  GByteArray *tx_msg, *rx_msg, *output;
 
   if (common_slot_get_id_name_from_path (path, &id, NULL))
     {
@@ -812,6 +815,8 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
 
   control->parts = 6;
   control->part = 0;
+
+  output = g_byte_array_new ();
 
   //Header
   tx_msg = summit_get_wavetable_header_dump_msg (id + 64);
@@ -853,9 +858,11 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
       usleep (SUMMIT_REST_TIME_US);
     }
 
+  wavetable->content = output;
   return 0;
 
 err:
+  g_byte_array_free (output, TRUE);
   free_msg (rx_msg);
   usleep (SUMMIT_REST_TIME_US);
   return err;
@@ -865,18 +872,24 @@ static gchar *
 summit_get_wavetable_download_path (struct backend *backend,
 				    const struct fs_operations *ops,
 				    const gchar *dst_dir,
-				    const gchar *src_path, GByteArray *patch)
+				    const gchar *src_path,
+				    struct idata *patch)
 {
   guint id;
   gchar *path;
   gchar name[SUMMIT_PATCH_NAME_LEN + 1];
+
+  if (!patch)
+    {
+      return NULL;
+    }
 
   if (common_slot_get_id_name_from_path (src_path, &id, NULL))
     {
       return NULL;
     }
 
-  memcpy (name, &patch->data[15], SUMMIT_WAVETABLE_NAME_LEN);
+  memcpy (name, &patch->content->data[15], SUMMIT_WAVETABLE_NAME_LEN);
   name[SUMMIT_WAVETABLE_NAME_LEN] = 0;
   summit_truncate_name_at_last_useful_char (&name
 					    [SUMMIT_WAVETABLE_NAME_LEN - 1]);
@@ -887,9 +900,10 @@ summit_get_wavetable_download_path (struct backend *backend,
 
 static gint
 summit_wavetable_upload (struct backend *backend, const gchar *path,
-			 GByteArray *input, struct job_control *control)
+			 struct idata *wavetable, struct job_control *control)
 {
   guint id;
+  GByteArray *input = wavetable->content;
 
   if (common_slot_get_id_name_from_path (path, &id, NULL))
     {

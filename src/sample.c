@@ -309,17 +309,20 @@ sample_get_audio_file_data_from_array (GByteArray *sample, GByteArray *wave,
 }
 
 gint
-sample_save_to_file (const gchar *path, GByteArray *sample,
+sample_save_to_file (const gchar *path, struct idata *sample,
 		     struct job_control *control, guint32 format)
 {
-  GByteArray *wave = g_byte_array_new ();
-  gint ret = sample_get_audio_file_data_from_array (sample, wave, control,
+  struct idata wave;
+  GByteArray *wave_content = g_byte_array_new ();
+  gint ret = sample_get_audio_file_data_from_array (sample->content,
+						    wave_content, control,
 						    format);
   if (!ret)
     {
-      ret = save_file (path, wave, control);
+      wave.content = wave_content;
+      ret = save_file (path, &wave, control);
     }
-  g_byte_array_free (wave, TRUE);
+  g_byte_array_free (wave_content, TRUE);
   return ret;
 }
 
@@ -540,7 +543,7 @@ sample_check_and_fix_loop_points (struct sample_info *sample_info)
 
 static gint
 sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
-		 struct job_control *control, GByteArray *sample,
+		 struct job_control *control, struct idata *idata,
 		 struct sample_info *sample_info_dst, sample_load_cb cb,
 		 gpointer cb_data)
 {
@@ -561,16 +564,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   struct sample_info *sample_info_src;
   guint bytes_per_sample, bytes_per_frame;
   guint32 f, actual_frames = 0;
-
-  if (control)
-    {
-      g_mutex_lock (&control->mutex);
-    }
-  g_byte_array_set_size (sample, 0);
-  if (control)
-    {
-      g_mutex_unlock (&control->mutex);
-    }
+  GByteArray *sample;
 
   sf_info.format = 0;
   sndfile = sf_open_virtual (sf_virtual_io, SFM_READ, &sf_info, data);
@@ -579,6 +573,9 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       error_print ("%s\n", sf_strerror (sndfile));
       return -1;
     }
+
+  sample = g_byte_array_new ();
+  idata->content = sample;
 
   sample_info_src = control->data;
   if (!sample_info_src)
@@ -905,13 +902,14 @@ cleanup:
       if (!control->data)
 	{
 	  g_free (sample_info_src);
+	  g_byte_array_free (sample, TRUE);
 	}
       return -1;
     }
 }
 
 gint
-sample_load_from_array (GByteArray *wave, GByteArray *sample,
+sample_load_from_array (GByteArray *wave, struct idata *sample,
 			struct job_control *control,
 			struct sample_info *sample_info_dst)
 {
@@ -923,7 +921,7 @@ sample_load_from_array (GByteArray *wave, GByteArray *sample,
 }
 
 gint
-sample_load_from_file_with_cb (const gchar *path, GByteArray *sample,
+sample_load_from_file_with_cb (const gchar *path, struct idata *sample,
 			       struct job_control *control,
 			       struct sample_info *sample_info_dst,
 			       sample_load_cb cb, gpointer cb_data)
@@ -940,7 +938,7 @@ sample_load_from_file_with_cb (const gchar *path, GByteArray *sample,
 }
 
 gint
-sample_load_from_file (const gchar *path, GByteArray *sample,
+sample_load_from_file (const gchar *path, struct idata *sample,
 		       struct job_control *control,
 		       struct sample_info *sample_info_dst)
 {

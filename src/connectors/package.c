@@ -361,7 +361,7 @@ package_add_manifest (struct package *pkg)
 }
 
 gint
-package_end (struct package *pkg, GByteArray *out)
+package_end (struct package *pkg, struct idata *out)
 {
   int ret = 0;
   zip_stat_t zstat;
@@ -385,8 +385,9 @@ package_end (struct package *pkg, GByteArray *out)
   debug_print (1, "%" PRIu64 " B written to package\n", zstat.comp_size);
 
   zip_source_open (pkg->zip_source);
-  g_byte_array_set_size (out, zstat.comp_size);
-  zip_source_read (pkg->zip_source, out->data, zstat.comp_size);
+  out->content = g_byte_array_sized_new (zstat.comp_size);
+  out->content->len = zstat.comp_size;
+  zip_source_read (pkg->zip_source, out->content->data, zstat.comp_size);
   zip_source_close (pkg->zip_source);
 
   return 0;
@@ -411,13 +412,14 @@ package_destroy (struct package *pkg)
 }
 
 gint
-package_open (struct package *pkg, GByteArray *data,
+package_open (struct package *pkg, struct idata *idata,
 	      const struct device_desc *device_desc)
 {
-  gint ret;
+  gint err;
   zip_error_t zerror;
   zip_file_t *manifest_file;
   zip_stat_t zstat;
+  GByteArray *data = idata->content;
 
   debug_print (1, "Opening zip stream...\n");
 
@@ -442,8 +444,8 @@ package_open (struct package *pkg, GByteArray *data,
       return -1;
     }
 
-  ret = zip_stat (pkg->zip, MANIFEST_FILENAME, ZIP_FL_ENC_STRICT, &zstat);
-  if (ret)
+  err = zip_stat (pkg->zip, MANIFEST_FILENAME, ZIP_FL_ENC_STRICT, &zstat);
+  if (err)
     {
       error_print ("Error while loading '%s': %s\n", MANIFEST_FILENAME,
 		   zip_error_strerror (&zerror));
@@ -469,7 +471,7 @@ package_open (struct package *pkg, GByteArray *data,
   pkg->fw_version = NULL;
   pkg->device_desc = device_desc;
 
-  return ret;
+  return 0;
 }
 
 void
@@ -507,17 +509,18 @@ package_receive_pkg_resources (struct package *pkg,
   GError *error;
   gchar *sample_path, *metadata_path;
   struct package_resource *pkg_resource;
-  GByteArray *wave, *payload, *metadata, *sample;
+  GByteArray *wave;
   GString *package_resource_path;
+  struct idata metadata_file, payload_file, sample_file;
 
   metadata_path = path_chain (PATH_INTERNAL, payload_path,
 			      FS_DATA_METADATA_FILE);
   debug_print (1, "Getting metadata from %s...\n", metadata_path);
-  metadata = g_byte_array_new ();
   control->parts = 2 + packaget_get_pkg_sample_slots (backend);	// main, metadata and sample slots.
   control->part = 0;
   set_job_control_progress (control, 0.0);
-  ret = download_data (backend, metadata_path, metadata, control);
+
+  ret = download_data (backend, metadata_path, &metadata_file, control);
   if (ret)
     {
       debug_print (1, "Metadata file not available\n");
@@ -528,8 +531,9 @@ package_receive_pkg_resources (struct package *pkg,
   control->part++;
 
   parser = json_parser_new ();
-  if (!json_parser_load_from_data
-      (parser, (gchar *) metadata->data, metadata->len, &error))
+  if (!json_parser_load_from_data (parser,
+				   (gchar *) metadata_file.content->data,
+				   metadata_file.content->len, &error))
     {
       error_print ("Unable to parse stream: %s. Continuing...",
 		   error->message);
@@ -578,7 +582,6 @@ package_receive_pkg_resources (struct package *pkg,
       goto cleanup_reader;
     }
 
-  sample = g_byte_array_new ();
   control->parts = 2 + elements;
   set_job_control_progress (control, 0.0);
   for (i = 0; i < elements; i++, control->part++)
@@ -619,8 +622,8 @@ package_receive_pkg_resources (struct package *pkg,
       debug_print (1, "Hash: %" PRIu64 "; size: %" PRIu64 "; path: %s\n",
 		   hash, size, sample_path);
       debug_print (1, "Getting sample %s...\n", sample_path);
-      g_byte_array_set_size (sample, 0);
-      if (download_sample (backend, sample_path, sample, control))
+
+      if (download_sample (backend, sample_path, &sample_file, control))
 	{
 	  g_free (sample_path);
 	  error_print ("Error while downloading sample. Continuing...\n");
@@ -628,8 +631,8 @@ package_receive_pkg_resources (struct package *pkg,
 	}
 
       wave = g_byte_array_new ();
-      ret = sample_get_audio_file_data_from_array (sample, wave, control,
-						   SF_FORMAT_WAV |
+      ret = sample_get_audio_file_data_from_array (sample_file.content, wave,
+						   control, SF_FORMAT_WAV |
 						   SF_FORMAT_PCM_16);
       if (ret)
 	{
@@ -655,18 +658,18 @@ package_receive_pkg_resources (struct package *pkg,
 	  error_print ("Error while packaging sample\n");
 	  continue;
 	}
+
+      idata_free (&sample_file);
     }
 
-  g_byte_array_free (sample, TRUE);
 cleanup_reader:
   g_object_unref (reader);
 cleanup_parser:
   g_object_unref (parser);
 get_payload:
-  g_byte_array_free (metadata, TRUE);
+  idata_free (&metadata_file);
   debug_print (1, "Getting payload from %s...\n", payload_path);
-  payload = g_byte_array_new ();
-  ret = download_data (backend, payload_path, payload, control);
+  ret = download_data (backend, payload_path, &payload_file, control);
   if (ret)
     {
       error_print ("Error while downloading payload\n");
@@ -676,7 +679,7 @@ get_payload:
     {
       pkg_resource = g_malloc (sizeof (struct package_resource));
       pkg_resource->type = PKG_RES_TYPE_PAYLOAD;
-      pkg_resource->data = payload;
+      pkg_resource->data = payload_file.content;
       pkg_resource->path = strdup (pkg->name);
       if (package_add_resource (pkg, pkg_resource, TRUE))
 	{
@@ -703,8 +706,9 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
   zip_stat_t zstat;
   zip_error_t zerror;
   zip_file_t *zip_file;
-  GByteArray *wave, *raw;
+  GByteArray *wave;
   struct package_resource *pkg_resource;
+  struct idata file, raw;
 
   zip_error_init (&zerror);
 
@@ -757,7 +761,8 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
   control->parts = 1 + packaget_get_pkg_sample_slots (backend);	// main and sample slots
   control->part = 0;
-  ret = upload_data (backend, payload_path, pkg_resource->data, control);
+  file.content = pkg_resource->data;
+  ret = upload_data (backend, payload_path, &file, control);
   if (ret)
     {
       error_print ("Error while uploading payload to '%s'\n", payload_path);
@@ -850,7 +855,6 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
     }
 
   wave = g_byte_array_sized_new (zstat.size);
-  raw = g_byte_array_sized_new (MAX_PACKAGE_LEN);
   elements = json_reader_count_elements (reader);
   control->parts = elements + 1;
   control->part = 1;
@@ -881,8 +885,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       wave->len = zstat.size;
       zip_fclose (zip_file);
 
-      raw->len = 0;
-      if (sample_load_from_array (wave, raw, control, &sample_info_dst))
+      if (sample_load_from_array (wave, &raw, control, &sample_info_dst))
 	{
 	  error_print ("Error while loading '%s': %s\n",
 		       sample_path, zip_error_strerror (&zerror));
@@ -891,9 +894,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
       pkg_resource = g_malloc (sizeof (struct package_resource));
       pkg_resource->type = PKG_RES_TYPE_SAMPLE;
-      pkg_resource->data = g_byte_array_sized_new (raw->len);
-      pkg_resource->data->len = raw->len;
-      memcpy (pkg_resource->data->data, raw->data, raw->len);
+      pkg_resource->data = raw.content;
       pkg_resource->path = strdup (sample_path);
 
       pkg->resources = g_list_append (pkg->resources, pkg_resource);
@@ -903,9 +904,10 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       //... And the extension.
       remove_ext (dev_sample_path);
       ret = elektron_upload_sample_part (backend, dev_sample_path,
-					 pkg_resource->data, control);
+					 &raw, control);
       g_free (dev_sample_path);
       g_free (control->data);
+      //raw.content is stolen so no need to free the raw struct
       control->data = NULL;
       if (ret)
 	{
@@ -916,7 +918,6 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
     }
 
   g_byte_array_free (wave, TRUE);
-  g_byte_array_free (raw, TRUE);
 
 cleanup_reader:
   g_object_unref (reader);

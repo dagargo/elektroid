@@ -97,7 +97,7 @@ sds_get_sample_name (struct backend *backend, gint index)
 static gchar *
 sds_get_download_path (struct backend *backend,
 		       const struct fs_operations *ops, const gchar *dst_dir,
-		       const gchar *src_path, GByteArray *data)
+		       const gchar *src_path, struct idata *sample)
 {
   GString *str = g_string_new (NULL);
   gchar *path;
@@ -599,9 +599,11 @@ end:
 
 static gint
 sds_download (struct backend *backend, const gchar *path,
-	      GByteArray *output, struct job_control *control)
+	      struct idata *sample, struct job_control *control)
 {
   gint err;
+  GByteArray *output = g_byte_array_new ();
+
   for (gint i = 0; i < SDS_MAX_RETRIES; i++)
     {
       err = sds_download_try (backend, path, output, control);
@@ -615,6 +617,15 @@ sds_download (struct backend *backend, const gchar *path,
 	{
 	  break;
 	}
+    }
+
+  if (err)
+    {
+      g_byte_array_free (output, TRUE);
+    }
+  else
+    {
+      sample->content = output;
     }
   return err;
 }
@@ -761,7 +772,7 @@ sds_rename (struct backend *backend, const gchar *src, const gchar *dst)
 }
 
 static gint
-sds_upload (struct backend *backend, const gchar *path, GByteArray *input,
+sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
 	    struct job_control *control, guint bits)
 {
   gchar *name;
@@ -773,6 +784,7 @@ sds_upload (struct backend *backend, const gchar *path, GByteArray *input,
   gint err = 0, word_size;
   struct sds_data *sds_data = backend->data;
   struct sample_info *sample_info = control->data;
+  GByteArray *input = sample->content;
 
   control->parts = 1;
   control->part = 0;
@@ -928,30 +940,30 @@ cleanup:
 
 static gint
 sds_upload_8b (struct backend *backend, const gchar *path,
-	       GByteArray *input, struct job_control *control)
+	       struct idata *sample, struct job_control *control)
 {
-  return sds_upload (backend, path, input, control, 8);
+  return sds_upload (backend, path, sample, control, 8);
 }
 
 static gint
 sds_upload_12b (struct backend *backend, const gchar *path,
-		GByteArray *input, struct job_control *control)
+		struct idata *sample, struct job_control *control)
 {
-  return sds_upload (backend, path, input, control, 12);
+  return sds_upload (backend, path, sample, control, 12);
 }
 
 static gint
 sds_upload_14b (struct backend *backend, const gchar *path,
-		GByteArray *input, struct job_control *control)
+		struct idata *sample, struct job_control *control)
 {
-  return sds_upload (backend, path, input, control, 14);
+  return sds_upload (backend, path, sample, control, 14);
 }
 
 static gint
 sds_upload_16b (struct backend *backend, const gchar *path,
-		GByteArray *input, struct job_control *control)
+		struct idata *sample, struct job_control *control)
 {
-  return sds_upload (backend, path, input, control, 16);
+  return sds_upload (backend, path, sample, control, 16);
 }
 
 static gint
@@ -1006,7 +1018,7 @@ sds_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
-sds_sample_load_common (const gchar *path, GByteArray *sample,
+sds_sample_load_common (const gchar *path, struct idata *sample,
 			struct job_control *control, gint32 rate)
 {
   return common_sample_load (path, sample, control, rate, SDS_SAMPLE_CHANNELS,
@@ -1014,42 +1026,42 @@ sds_sample_load_common (const gchar *path, GByteArray *sample,
 }
 
 static gint
-sds_sample_load (const gchar *path, GByteArray *sample,
+sds_sample_load (const gchar *path, struct idata *sample,
 		 struct job_control *control)
 {
   return sds_sample_load_common (path, sample, control, 0);	// Any sample rate is valid.
 }
 
 static gint
-sds_sample_load_441 (const gchar *path, GByteArray *sample,
+sds_sample_load_441 (const gchar *path, struct idata *sample,
 		     struct job_control *control)
 {
   return sds_sample_load_common (path, sample, control, 44100);
 }
 
 static gint
-sds_sample_load_32 (const gchar *path, GByteArray *sample,
+sds_sample_load_32 (const gchar *path, struct idata *sample,
 		    struct job_control *control)
 {
   return sds_sample_load_common (path, sample, control, 32000);
 }
 
 static gint
-sds_sample_load_16 (const gchar *path, GByteArray *sample,
+sds_sample_load_16 (const gchar *path, struct idata *sample,
 		    struct job_control *control)
 {
   return sds_sample_load_common (path, sample, control, 16000);
 }
 
 static gint
-sds_sample_load_8 (const gchar *path, GByteArray *sample,
+sds_sample_load_8 (const gchar *path, struct idata *sample,
 		   struct job_control *control)
 {
   return sds_sample_load_common (path, sample, control, 8000);
 }
 
 static gint
-sds_sample_save (const gchar *path, GByteArray *sample,
+sds_sample_save (const gchar *path, struct idata *sample,
 		 struct job_control *control)
 {
   return sample_save_to_file (path, sample, control,

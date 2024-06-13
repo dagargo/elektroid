@@ -531,7 +531,9 @@ elektroid_rx_sysex ()
 
   if (filename != NULL)
     {
-      *res = save_file (filename, sysex_transfer.raw, NULL);
+      struct idata idata;
+      idata.content = sysex_transfer.raw;
+      *res = save_file (filename, &idata, NULL);
       if (*res)
 	{
 	  show_error_msg (_("Error while saving “%s”: %s."),
@@ -549,10 +551,13 @@ elektroid_rx_sysex ()
 static gint
 elektroid_send_sysex_file (const gchar *filename, t_sysex_transfer f)
 {
-  gint err = load_file (filename, sysex_transfer.raw, NULL);
+  struct idata idata;
+  gint err = load_file (filename, &idata, NULL);
   if (!err)
     {
+      sysex_transfer.raw = idata.content;
       err = f (&backend, &sysex_transfer);
+      idata_free (&idata);
     }
   if (err && err != -ECANCELED)
     {
@@ -567,7 +572,6 @@ elektroid_tx_sysex_files_runner (gpointer data)
 {
   GSList *filenames = data;
   gint *err = g_malloc (sizeof (gint));
-  sysex_transfer.raw = g_byte_array_new ();
   sysex_transfer.active = TRUE;
   sysex_transfer.status = SENDING;
 
@@ -576,7 +580,6 @@ elektroid_tx_sysex_files_runner (gpointer data)
   *err = 0;
   while (*err != -ECANCELED && filenames)
     {
-      g_byte_array_set_size (sysex_transfer.raw, 0);
       *err = elektroid_send_sysex_file (filenames->data,
 					backend_tx_sysex_no_status);
       filenames = filenames->next;
@@ -586,7 +589,6 @@ elektroid_tx_sysex_files_runner (gpointer data)
     }
   progress_response (GTK_RESPONSE_CANCEL);	//Any response is OK.
 
-  free_msg (sysex_transfer.raw);
   return err;
 }
 
@@ -595,7 +597,6 @@ elektroid_tx_upgrade_os_runner (gpointer data)
 {
   GSList *filenames = data;
   gint *err = g_malloc (sizeof (gint));
-  sysex_transfer.raw = g_byte_array_new ();
   sysex_transfer.active = TRUE;
   sysex_transfer.status = SENDING;
   sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
@@ -605,7 +606,6 @@ elektroid_tx_upgrade_os_runner (gpointer data)
   *err = elektroid_send_sysex_file (filenames->data, backend.upgrade_os);
   progress_response (GTK_RESPONSE_CANCEL);	//Any response is OK.
 
-  free_msg (sysex_transfer.raw);
   return err;
 }
 
@@ -1459,7 +1459,7 @@ static gpointer
 elektroid_upload_task_runner (gpointer data)
 {
   gint res;
-  GByteArray *array;
+  struct idata idata;
   gchar *dst_dir, *upload_path;
 
   debug_print (1, "Local path: %s\n", tasks.transfer.src);
@@ -1475,14 +1475,13 @@ elektroid_upload_task_runner (gpointer data)
       return NULL;
     }
 
-  array = g_byte_array_new ();
-  res = tasks.transfer.fs_ops->load (tasks.transfer.src, array,
+  res = tasks.transfer.fs_ops->load (tasks.transfer.src, &idata,
 				     &tasks.transfer.control);
   if (res)
     {
       error_print ("Error while loading file\n");
       tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
-      goto end_cleanup;
+      goto end;
     }
 
   debug_print (1, "Writing from file %s (filesystem %s)...\n",
@@ -1505,12 +1504,12 @@ elektroid_upload_task_runner (gpointer data)
       g_mutex_unlock (&tasks.transfer.control.mutex);
       if (tasks.transfer.status == TASK_STATUS_CANCELED)
 	{
-	  goto end_cleanup;
+	  goto cleanup;
 	}
     }
 
   res = tasks.transfer.fs_ops->upload (remote_browser.backend,
-				       upload_path, array,
+				       upload_path, &idata,
 				       &tasks.transfer.control);
   g_free (tasks.transfer.control.data);
   tasks.transfer.control.data = NULL;
@@ -1540,8 +1539,9 @@ elektroid_upload_task_runner (gpointer data)
   g_free (upload_path);
   g_free (dst_dir);
 
-end_cleanup:
-  g_byte_array_free (array, TRUE);
+cleanup:
+  idata_free (&idata);
+end:
   g_idle_add (tasks_complete_current, &tasks);
   g_idle_add (elektroid_run_next, NULL);
   return NULL;
@@ -1691,7 +1691,7 @@ static gpointer
 elektroid_download_task_runner (gpointer userdata)
 {
   gint res;
-  GByteArray *array;
+  struct idata idata;
   gchar *dst_path;
 
   debug_print (1, "Remote path: %s\n", tasks.transfer.src);
@@ -1718,9 +1718,8 @@ elektroid_download_task_runner (gpointer userdata)
       goto end_with_no_download;
     }
 
-  array = g_byte_array_new ();
   res = tasks.transfer.fs_ops->download (remote_browser.backend,
-					 tasks.transfer.src, array,
+					 tasks.transfer.src, &idata,
 					 &tasks.transfer.control);
 
   g_mutex_lock (&tasks.transfer.control.mutex);
@@ -1743,15 +1742,15 @@ elektroid_download_task_runner (gpointer userdata)
 							   remote_browser.fs_ops,
 							   tasks.transfer.dst,
 							   tasks.transfer.src,
-							   array);
+							   &idata);
       elektroid_check_file_and_wait (dst_path, &local_browser);
     }
 
   if (tasks.transfer.status != TASK_STATUS_CANCELED)
     {
       debug_print (1, "Writing %d bytes to file %s (filesystem %s)...\n",
-		   array->len, dst_path, tasks.transfer.fs_ops->name);
-      res = tasks.transfer.fs_ops->save (dst_path, array,
+		   idata.content->len, dst_path, tasks.transfer.fs_ops->name);
+      res = tasks.transfer.fs_ops->save (dst_path, &idata,
 					 &tasks.transfer.control);
       if (!res)
 	{
@@ -1762,7 +1761,7 @@ elektroid_download_task_runner (gpointer userdata)
   g_free (dst_path);
 
 end_canceled_transfer:
-  g_byte_array_free (array, TRUE);
+  idata_free (&idata);
   g_free (tasks.transfer.control.data);
   tasks.transfer.control.data = NULL;
 

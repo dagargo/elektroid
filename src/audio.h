@@ -70,7 +70,7 @@ struct audio
   pa_cvolume volume;
   pa_sample_spec sample_spec;
 #endif
-  GByteArray *sample;
+  struct idata sample;
   struct sample_info sample_info;
   gboolean loop;
   guint32 pos;

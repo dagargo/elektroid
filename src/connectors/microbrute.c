@@ -203,7 +203,7 @@ static gchar *
 microbrute_get_download_path (struct backend *backend,
 			      const struct fs_operations *ops,
 			      const gchar *dst_dir, const gchar *src_path,
-			      GByteArray *sequence)
+			      struct idata *sequence)
 {
   guint id;
   common_slot_get_id_name_from_path (src_path, &id, NULL);
@@ -288,11 +288,12 @@ microbrute_download_seq_data (struct backend *backend, guint seqnum,
 
 static gint
 microbrute_download (struct backend *backend, const gchar *src_path,
-		     GByteArray *sequence, struct job_control *control)
+		     struct idata *sequence, struct job_control *control)
 {
   gint err;
   guint seqnum;
   gboolean active;
+  GByteArray *data;
 
   err = common_slot_get_id_name_from_path (src_path, &seqnum, NULL);
   if (err)
@@ -310,33 +311,38 @@ microbrute_download (struct backend *backend, const gchar *src_path,
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
-  err = microbrute_download_seq_data (backend, seqnum, 0, sequence);
+  data = g_byte_array_new ();
+  err = microbrute_download_seq_data (backend, seqnum, 0, data);
   if (err)
     {
-      return err;
+      goto err;
     }
 
   set_job_control_progress (control, 0.5);
 
-  err = microbrute_download_seq_data (backend, seqnum, 0x20, sequence);
+  err = microbrute_download_seq_data (backend, seqnum, 0x20, data);
   if (err)
     {
-      return err;
+      goto err;
     }
 
   g_mutex_lock (&control->mutex);
   active = control->active;
   g_mutex_unlock (&control->mutex);
-  if (active)
+  if (!active)
     {
-      set_job_control_progress (control, 1.0);
-    }
-  else
-    {
-      return -ECANCELED;
+      err = -ECANCELED;
+      goto err;
     }
 
+  set_job_control_progress (control, 1.0);
+  sequence->content = data;
+
   return 0;
+
+err:
+  g_byte_array_free (data, TRUE);
+  return err;
 }
 
 static GByteArray *
@@ -428,8 +434,9 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
 
 static gint
 microbrute_upload (struct backend *backend, const gchar *path,
-		   GByteArray *input, struct job_control *control)
+		   struct idata *sequence, struct job_control *control)
 {
+  GByteArray *input = sequence->content;
   gchar *token = (gchar *) & input->data[MICROBRUTE_SEQ_TXT_POS];
   gint pos = MICROBRUTE_SEQ_TXT_POS;
   guint seqnum;

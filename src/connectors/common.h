@@ -78,13 +78,13 @@ gchar *common_get_download_path_with_params (struct backend *backend,
 gchar *common_get_download_path (struct backend *backend,
 				 const struct fs_operations *ops,
 				 const gchar * dst_dir,
-				 const gchar * src_path, GByteArray * sysex);
+				 const gchar * src_path, struct idata *idata);
 
 void common_remove_slot_name_from_path (gchar * path);
 
 gchar *common_get_sanitized_name (const gchar * name, const gchar * alphabet,
 				  gchar defchar);
 
-gint common_sample_load (const gchar * path, GByteArray * sample,
+gint common_sample_load (const gchar * path, struct idata *sample,
 			 struct job_control *control, guint32 rate,
 			 guint32 channels, guint32 format);
