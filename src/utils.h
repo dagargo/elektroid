@@ -200,7 +200,7 @@ struct fs_operations
   const gchar *gui_icon;
   const gchar *ext;
   guint32 max_name_len;
-  fs_init_iter_func readdir;	//This function runs on its own thread so it can take as long as needed in order to make calls to next_item_iterator not to wait for IO.
+  fs_init_iter_func readdir;	//This function runs on its own thread so it can take as long as needed in order to make calls to item_iterator_next not to wait for IO.
   fs_file_exists file_exists;
   fs_print_item print_item;
   fs_path_func mkdir;
@@ -281,7 +281,7 @@ gchar *get_filename (guint32 options, struct item *item);
 void init_item_iterator (struct item_iterator *iter, const gchar * dir,
 			 void *data, iterator_next next, iterator_free free);
 
-gint next_item_iterator (struct item_iterator *iter);
+gint item_iterator_next (struct item_iterator *iter);
 
 void item_iterator_free (struct item_iterator *iter);
 

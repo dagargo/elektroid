@@ -239,7 +239,7 @@ init_item_iterator (struct item_iterator *iter, const gchar *dir, void *data,
 }
 
 gint
-next_item_iterator (struct item_iterator *iter)
+item_iterator_next (struct item_iterator *iter)
 {
   return iter->next (iter);
 }

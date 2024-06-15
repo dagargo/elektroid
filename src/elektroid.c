@@ -725,7 +725,7 @@ elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
 	  goto end;
 	}
 
-      while (!next_item_iterator (&iter))
+      while (!item_iterator_next (&iter))
 	{
 	  elektroid_delete_file (browser, path, &iter.item);
 
@@ -1602,7 +1602,7 @@ elektroid_add_upload_task_path (const gchar *rel_path, const gchar *src_dir,
       goto cleanup_iter;
     }
 
-  while (!next_item_iterator (&iter))
+  while (!item_iterator_next (&iter))
     {
       path = path_chain (PATH_INTERNAL, rel_path, iter.item.name);
       elektroid_add_upload_task_path (path, src_dir, dst_dir);
@@ -1814,7 +1814,7 @@ elektroid_add_download_task_path (const gchar *rel_path,
       goto cleanup;
     }
 
-  while (!next_item_iterator (&iter))
+  while (!item_iterator_next (&iter))
     {
       filename = get_filename (remote_browser.fs_ops->options, &iter.item);
       path = path_chain (PATH_INTERNAL, rel_path, filename);

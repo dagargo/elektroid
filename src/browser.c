@@ -533,7 +533,7 @@ browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
 {
   gboolean loading = TRUE;
 
-  while (loading && !next_item_iterator (iter))
+  while (loading && !item_iterator_next (iter))
     {
       browser_iterate_dir_add (browser, iter, icon, &iter->item,
 			       strdup (iter->item.name));
@@ -555,7 +555,7 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
   gboolean loading = TRUE;
   enum path_type type = backend_get_path_type (browser->backend);
 
-  while (loading && !next_item_iterator (iter))
+  while (loading && !item_iterator_next (iter))
     {
       child_rel_dir = path_chain (type, rel_dir, iter->item.name);
 

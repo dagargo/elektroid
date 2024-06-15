@@ -1692,7 +1692,7 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
 
   name[0] = 0;
   found = FALSE;
-  while (!next_item_iterator (&iter))
+  while (!item_iterator_next (&iter))
     {
       if (iter.item.id - 1 == id)
 	{

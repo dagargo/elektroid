@@ -143,7 +143,7 @@ cli_list (int argc, gchar *argv[], int *optind)
       return err;
     }
 
-  while (!next_item_iterator (&iter))
+  while (!item_iterator_next (&iter))
     {
       fs_ops->print_item (&iter, &backend, fs_ops);
     }

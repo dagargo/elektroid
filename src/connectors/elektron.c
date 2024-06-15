@@ -903,7 +903,7 @@ elektron_get_path_type (struct backend *backend, const gchar *path,
   res = ELEKTROID_NONE;
   if (!init_iter (backend, &iter, dir, NULL))
     {
-      while (!next_item_iterator (&iter))
+      while (!item_iterator_next (&iter))
 	{
 	  if (strcmp (name, iter.item.name) == 0)
 	    {
@@ -1083,7 +1083,7 @@ elektron_move_common_item (struct backend *backend, const gchar *src,
 	}
       if (!init_iter (backend, &iter, src, NULL))
 	{
-	  while (!next_item_iterator (&iter) && !res)
+	  while (!item_iterator_next (&iter) && !res)
 	    {
 	      src_plus = path_chain (PATH_INTERNAL, src, iter.item.name);
 	      dst_plus = path_chain (PATH_INTERNAL, dst, iter.item.name);
@@ -1274,7 +1274,7 @@ elektron_delete_common_item (struct backend *backend, const gchar *path,
       else
 	{
 	  res = 0;
-	  while (!res && !next_item_iterator (&iter))
+	  while (!res && !item_iterator_next (&iter))
 	    {
 	      new_path = path_chain (PATH_INTERNAL, path, iter.item.name);
 	      res = res || elektron_delete_common_item (backend, new_path,
@@ -2614,7 +2614,7 @@ elektron_get_download_name (struct backend *backend,
   name = NULL;
   data = iter.data;
   data->load_metadata = FALSE;
-  while (!next_item_iterator (&iter))
+  while (!item_iterator_next (&iter))
     {
       if (iter.item.id == id)
 	{
