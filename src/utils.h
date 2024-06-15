@@ -278,7 +278,7 @@ void free_msg (gpointer);
  */
 gchar *get_filename (guint32 options, struct item *item);
 
-void init_item_iterator (struct item_iterator *iter, const gchar * dir,
+void item_iterator_init (struct item_iterator *iter, const gchar * dir,
 			 void *data, iterator_next next, iterator_free free);
 
 gint item_iterator_next (struct item_iterator *iter);

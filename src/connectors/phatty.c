@@ -276,7 +276,7 @@ phatty_read_dir (struct backend *backend, struct item_iterator *iter,
     {
       guint *id = g_malloc (sizeof (guint));
       *id = 0;
-      init_item_iterator (iter, dir, id, phatty_next_root_dentry, g_free);
+      item_iterator_init (iter, dir, id, phatty_next_root_dentry, g_free);
     }
   else if (!strcmp (dir, PHATTY_PRESETS_DIR))
     {
@@ -284,7 +284,7 @@ phatty_read_dir (struct backend *backend, struct item_iterator *iter,
 	g_malloc (sizeof (struct phatty_iter_data));
       data->next = 0;
       data->backend = backend;
-      init_item_iterator (iter, dir, data, phatty_next_preset_dentry, g_free);
+      item_iterator_init (iter, dir, data, phatty_next_preset_dentry, g_free);
     }
   else
     {

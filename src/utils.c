@@ -229,7 +229,7 @@ get_filename (guint32 fs_options, struct item *item)
 }
 
 void
-init_item_iterator (struct item_iterator *iter, const gchar *dir, void *data,
+item_iterator_init (struct item_iterator *iter, const gchar *dir, void *data,
 		    iterator_next next, iterator_free free)
 {
   iter->dir = strdup (dir);

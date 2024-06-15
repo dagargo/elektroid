@@ -226,7 +226,7 @@ microbrute_read_dir (struct backend *backend, struct item_iterator *iter,
   data->next = 1;
   data->max = MICROBRUTE_MAX_SEQS + 1;
 
-  init_item_iterator (iter, dir, data, common_simple_next_dentry, g_free);
+  item_iterator_init (iter, dir, data, common_simple_next_dentry, g_free);
 
   return 0;
 }

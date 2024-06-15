@@ -181,7 +181,7 @@ cz_read_dir (struct backend *backend, struct item_iterator *iter,
       data->next = 0;
       data->type = -1;
       data->backend = backend;
-      init_item_iterator (iter, dir, data, cz_next_dentry_root, g_free);
+      item_iterator_init (iter, dir, data, cz_next_dentry_root, g_free);
       return 0;
     }
   else if ((mem_type = get_mem_type (&dir[1])) >= 0)
@@ -191,7 +191,7 @@ cz_read_dir (struct backend *backend, struct item_iterator *iter,
       data->next = 0;
       data->type = mem_type;
       data->backend = backend;
-      init_item_iterator (iter, dir, data, cz_next_dentry, g_free);
+      item_iterator_init (iter, dir, data, cz_next_dentry, g_free);
       return 0;
     }
   else

@@ -267,7 +267,7 @@ microfreak_common_read_dir (struct backend *backend,
   data->next = 1;
   data->backend = backend;
 
-  init_item_iterator (iter, dir, data, next, g_free);
+  item_iterator_init (iter, dir, data, next, g_free);
 
   return 0;
 }

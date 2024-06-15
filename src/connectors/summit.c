@@ -256,7 +256,7 @@ summit_patch_read_dir (struct backend *backend, struct item_iterator *iter,
     {
       guint *next = g_malloc (sizeof (guint));
       *next = 0;
-      init_item_iterator (iter, dir, next, summit_patch_next_dentry_root,
+      item_iterator_init (iter, dir, next, summit_patch_next_dentry_root,
 			  g_free);
       return 0;
     }
@@ -270,7 +270,7 @@ summit_patch_read_dir (struct backend *backend, struct item_iterator *iter,
       data->fs = fs;
       data->bank = bank;
       data->backend = backend;
-      init_item_iterator (iter, dir, data, summit_patch_next_dentry, g_free);
+      item_iterator_init (iter, dir, data, summit_patch_next_dentry, g_free);
       return 0;
     }
 
@@ -592,11 +592,11 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
 
 static gint
 summit_scale_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *path, GSList *extensions)
+		       const gchar *dir, GSList *extensions)
 {
   struct common_simple_read_dir_data *data;
 
-  if (strcmp (path, "/"))
+  if (strcmp (dir, "/"))
     {
       return -ENOTDIR;
     }
@@ -604,9 +604,8 @@ summit_scale_read_dir (struct backend *backend, struct item_iterator *iter,
   data = g_malloc (sizeof (struct common_simple_read_dir_data));
   data->next = 0;
   data->max = SUMMIT_MAX_TUNINGS;
-  iter->data = data;
-  iter->next = common_simple_next_dentry;
-  iter->free = g_free;
+
+  item_iterator_init (iter, dir, data, common_simple_next_dentry, g_free);
 
   return 0;
 }
@@ -777,18 +776,17 @@ summit_get_wavetable_id_as_slot (struct item *item, struct backend *backend)
 
 static gint
 summit_wavetable_read_dir (struct backend *backend,
-			   struct item_iterator *iter, const gchar *path,
+			   struct item_iterator *iter, const gchar *dir,
 			   GSList *extensions)
 {
-  if (!strcmp (path, "/"))
+  if (!strcmp (dir, "/"))
     {
       struct summit_wavetable_iterator_data *data =
 	g_malloc (sizeof (struct summit_wavetable_iterator_data));
       data->next = 0;
       data->backend = backend;
-      iter->data = data;
-      iter->next = summit_wavetable_next_dentry;
-      iter->free = g_free;
+      item_iterator_init (iter, dir, data, summit_wavetable_next_dentry,
+			  g_free);
       return 0;
     }
 

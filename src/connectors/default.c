@@ -60,7 +60,7 @@ default_read_dir (struct backend *backend, struct item_iterator *iter,
   guint *data = g_malloc (sizeof (guint));
   *data = 0;
 
-  init_item_iterator (iter, dir, data, default_next_dentry, g_free);
+  item_iterator_init (iter, dir, data, default_next_dentry, g_free);
 
   return 0;
 }

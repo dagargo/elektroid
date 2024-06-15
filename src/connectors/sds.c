@@ -1012,7 +1012,7 @@ sds_read_dir (struct backend *backend, struct item_iterator *iter,
   data->next = 0;
   data->backend = backend;
 
-  init_item_iterator (iter, dir, data, sds_next_sample_dentry, g_free);
+  item_iterator_init (iter, dir, data, sds_next_sample_dentry, g_free);
 
   return 0;
 }

@@ -213,7 +213,7 @@ efactor_read_dir (struct backend *backend, struct item_iterator *iter,
 		EFACTOR_PRESET_LINE_SEPARATOR, -1);
   free_msg (rx_msg);
 
-  init_item_iterator (iter, dir, iter_data, efactor_next_dentry, g_free);
+  item_iterator_init (iter, dir, iter_data, efactor_next_dentry, g_free);
 
   return 0;
 }

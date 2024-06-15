@@ -234,7 +234,7 @@ system_read_dir_opts (struct backend *backend, struct item_iterator *iter,
   data->dir = gdir;
   data->extensions = extensions;
 
-  init_item_iterator (iter, dir, data, next, system_free_iterator_data);
+  item_iterator_init (iter, dir, data, next, system_free_iterator_data);
 
   return 0;
 }
