@@ -594,7 +594,14 @@ browser_get_remote_browser_exts ()
     }
   else
     {
-      exts = g_slist_append (NULL, strdup (remote_browser.fs_ops->ext));
+      if (remote_browser.fs_ops->ext)
+	{
+	  exts = g_slist_append (NULL, strdup (remote_browser.fs_ops->ext));
+	}
+      else
+	{
+	  exts = NULL;
+	}
     }
   return exts;
 }
