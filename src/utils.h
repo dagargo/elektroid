@@ -304,8 +304,10 @@ void set_sample_progress_no_sync (struct job_control *, gdouble, gpointer);
 gboolean file_matches_extensions (const gchar * name,
 				  const GSList * extensions);
 
-gboolean iter_is_dir_or_matches_extensions (struct item_iterator *iter,
-					    const GSList * extensions);
+gboolean item_iterator_is_dir_or_matches_extensions (struct item_iterator
+						     *iter,
+						     const GSList *
+						     extensions);
 
 //Use a backslash for the system backend on WSYS2.
 

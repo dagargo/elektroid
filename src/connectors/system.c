@@ -186,7 +186,8 @@ system_next_dentry (struct item_iterator *iter, gboolean sample_info)
 	  iter->item.size = st.st_size;
 	  iter->item.id = -1;
 
-	  if (iter_is_dir_or_matches_extensions (iter, data->extensions))
+	  if (item_iterator_is_dir_or_matches_extensions (iter,
+							  data->extensions))
 	    {
 	      if (iter->item.type == ELEKTROID_FILE && sample_info)
 		{

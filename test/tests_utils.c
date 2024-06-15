@@ -23,7 +23,7 @@ test_file_matches_extensions ()
 }
 
 void
-test_iter_is_dir_or_matches_extensions ()
+test_item_iterator_is_dir_or_matches_extensions ()
 {
   GSList *exts = NULL;
   struct item_iterator iter;
@@ -31,12 +31,14 @@ test_iter_is_dir_or_matches_extensions ()
   printf ("\n");
 
   iter.item.type = ELEKTROID_DIR;
-  CU_ASSERT_EQUAL (iter_is_dir_or_matches_extensions (&iter, exts), TRUE);
+  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, exts),
+		   TRUE);
 
   iter.item.type = ELEKTROID_FILE;
   snprintf (iter.item.name, LABEL_MAX, "%s", "file.ext1");
   exts = g_slist_append (exts, "ext2");
-  CU_ASSERT_EQUAL (iter_is_dir_or_matches_extensions (&iter, exts), FALSE);
+  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, exts),
+		   FALSE);
 
   g_slist_free (exts);		//Extensions in this test are not duplicated
 }
@@ -64,8 +66,8 @@ main (gint argc, gchar *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "iter_is_dir_or_matches_extensions",
-		    test_iter_is_dir_or_matches_extensions))
+  if (!CU_add_test (suite, "item_iterator_is_dir_or_matches_extensions",
+		    test_item_iterator_is_dir_or_matches_extensions))
     {
       goto cleanup;
     }
