@@ -2233,11 +2233,11 @@ microfreak_wavetable_load (const gchar *path, GByteArray *sample,
 			   struct job_control *control)
 {
   const gchar *ext = get_file_ext (path);
-  if (strcmp (ext, MICROFREAK_PWAVETABLE_EXT) == 0)
+  if (ext != NULL && strcmp (ext, MICROFREAK_PWAVETABLE_EXT) == 0)
     {
       return microfreak_pwavetable_load (path, sample, control);
     }
-  else if (strcmp (ext, MICROFREAK_ZWAVETABLE_EXT) == 0)
+  else if (ext != NULL && strcmp (ext, MICROFREAK_ZWAVETABLE_EXT) == 0)
     {
       return microfreak_zwavetable_load (path, sample, control);
     }
