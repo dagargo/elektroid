@@ -40,7 +40,6 @@ system_download (struct backend *backend, const gchar *path,
 		 struct idata *idata, struct job_control *control)
 {
   gint err;
-  gboolean active;
 
   control->parts = 1;
   control->part = 0;
@@ -48,17 +47,9 @@ system_download (struct backend *backend, const gchar *path,
 
   err = file_load (path, idata, control);
 
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-  if (active)
+  if (!err)
     {
       set_job_control_progress (control, 1.0);
-    }
-  else
-    {
-      idata_free (idata);
-      err = -ECANCELED;
     }
 
   return err;

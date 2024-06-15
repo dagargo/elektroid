@@ -72,45 +72,48 @@ test_serialization_deserialization_wavetable ()
 {
   gint err;
   gint8 *v;
-  GByteArray *src = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE +
-					    MICROFREAK_WAVETABLE_NAME_LEN);
-  GByteArray *dst = g_byte_array_new ();
-  GByteArray *serialized = g_byte_array_new ();
+  struct idata src, dst, serialized;
   gchar *text;
 
   printf ("\n");
 
-  v = (gint8 *) src->data;
-  src->len = MICROFREAK_WAVETABLE_SIZE + MICROFREAK_WAVETABLE_NAME_LEN;
+  src.name = strdup ("0123456789abcde");
+  src.content = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
+  src.content->len = MICROFREAK_WAVETABLE_SIZE;
+  v = (gint8 *) src.content->data;
   for (guint i = 0; i < MICROFREAK_WAVETABLE_SIZE; i++, v++)
     {
       *v = (g_random_int () & 0xff) - 128;
     }
-  memcpy (v, (guint8 *) "0123456789abcde", MICROFREAK_WAVETABLE_NAME_LEN);
 
-  err = microfreak_serialize_wavetable (serialized, src);
-  CU_ASSERT_EQUAL (err, 0);
-
-  err = microfreak_deserialize_wavetable (dst, serialized);
-  CU_ASSERT_EQUAL (err, 0);
-  CU_ASSERT_EQUAL (dst->len, MICROFREAK_WAVETABLE_SIZE +
-		   MICROFREAK_WAVETABLE_NAME_LEN);
-
-  text = debug_get_hex_data (debug_level, src->data, src->len);
-  debug_print (0, "src (%d): %s\n", src->len, text);
+  text = debug_get_hex_data (debug_level, src.content->data,
+			     src.content->len);
+  debug_print (0, "src (%d): %s\n", src.content->len, text);
   g_free (text);
 
-  text = debug_get_hex_data (debug_level, dst->data, dst->len);
-  debug_print (0, "dst (%d): %s\n", dst->len, text);
-  g_free (text);
-
-  err = memcmp (src->data, dst->data, MICROFREAK_WAVETABLE_SIZE +
-		MICROFREAK_WAVETABLE_NAME_LEN);
+  err = microfreak_serialize_wavetable (&serialized, &src);
   CU_ASSERT_EQUAL (err, 0);
 
-  g_byte_array_free (src, TRUE);
-  g_byte_array_free (dst, TRUE);
-  g_byte_array_free (serialized, TRUE);
+  debug_print (0, "src (%d): %.*s\n", serialized.content->len,
+	       serialized.content->len, serialized.content->data);
+
+  err = microfreak_deserialize_wavetable (&dst, &serialized);
+  CU_ASSERT_EQUAL (err, 0);
+  CU_ASSERT_EQUAL (dst.content->len, MICROFREAK_WAVETABLE_SIZE);
+  CU_ASSERT_EQUAL (strcmp (dst.name, "0123456789abcde"), 0);
+
+  text = debug_get_hex_data (debug_level, dst.content->data,
+			     dst.content->len);
+  debug_print (0, "dst (%d): %s\n", dst.content->len, text);
+  g_free (text);
+
+  err = memcmp (src.content->data, dst.content->data,
+		MICROFREAK_WAVETABLE_SIZE);
+  CU_ASSERT_EQUAL (err, 0);
+
+  idata_free (&src);
+  idata_free (&dst);
+  idata_free (&serialized);
 }
 
 void

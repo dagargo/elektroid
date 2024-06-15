@@ -269,7 +269,7 @@ test_get_bulk_tuning_midi_message ()
 }
 
 void
-test_get_2_byte_octave_midi_message_tet ()
+test_get_2_byte_octave_midi_message_test ()
 {
   struct idata idata;
   gint err;
@@ -381,8 +381,8 @@ main (gint argc, gchar *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "test_get_2_byte_octave_midi_message_tet",
-		    test_get_2_byte_octave_midi_message_tet))
+  if (!CU_add_test (suite, "test_get_2_byte_octave_midi_message_test",
+		    test_get_2_byte_octave_midi_message_test))
     {
       goto cleanup;
     }

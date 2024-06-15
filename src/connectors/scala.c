@@ -274,7 +274,7 @@ scl_load_2_byte_octave_tuning_msg_from_scala_file (const char *path,
   cksum = scl_get_cksum (&msg->data[1], 46);
   g_byte_array_append (msg, &cksum, 1);
   g_byte_array_append (msg, (guint8 *) "\xf7", 1);
-  idata->content = msg;
+  idata_init (idata, msg, NULL);
 
 end:
   idata_free (&input);
@@ -357,7 +357,7 @@ scl_load_key_based_tuning_msg_from_scala_file (const char *path,
   cksum = scl_get_cksum (&msg->data[1], 405);
   g_byte_array_append (msg, &cksum, 1);
   g_byte_array_append (msg, (guint8 *) "\xf7", 1);
-  scale->content = msg;
+  idata_init (scale, msg, NULL);
 
 end:
   idata_free (&input);

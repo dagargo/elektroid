@@ -54,7 +54,7 @@ echo "Testing mv..."
 $ecli elektron-sample-mv $TEST_DEVICE:/$TEST_NAME/square $TEST_DEVICE:/$TEST_NAME/sample
 [ $? -ne 0 ] && exit 1
 
-echo "Testing mv..."
+echo "Testing mv (nonexistent file)..."
 $ecli elektron-sample-mv $TEST_DEVICE:/$TEST_NAME/foo $TEST_DEVICE:/$TEST_NAME/sample
 [ $? -eq 0 ] && exit 1
 

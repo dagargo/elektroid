@@ -29,7 +29,7 @@
 #define SUMMIT_REST_TIME_US 10000
 #define SUMMIT_MSG_BANK_POS 12
 #define SUMMIT_MSG_PATCH_POS 13
-#define SUMMIT_MAX_TUNINGS 17	// Tuning 0 is stored but can't be changed form the UI.
+#define SUMMIT_MAX_TUNINGS 17	// Tuning 0 is stored but can't be changed from the UI.
 #define SUMMIT_MAX_WAVETABLES 10
 #define SUMMIT_WAVETABLE_NAME_LEN 7	//In the device there are 8 available characters in the wavetable names but the wavetable messages only contain the first 7 characters.
 #define SUMMIT_WAVETABLE_HEADER_LEN 23
@@ -338,7 +338,7 @@ summit_patch_download (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
-  patch->content = rx_msg;
+  idata_init (patch, rx_msg, NULL);
   goto end;
 
 cleanup:
@@ -684,7 +684,7 @@ summit_tuning_download (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
-  tuning->content = rx_msg;
+  idata_init (tuning, rx_msg, NULL);
   return 0;
 
 cleanup:
@@ -856,7 +856,7 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
       usleep (SUMMIT_REST_TIME_US);
     }
 
-  wavetable->content = output;
+  idata_init (wavetable, output, NULL);
   return 0;
 
 err:

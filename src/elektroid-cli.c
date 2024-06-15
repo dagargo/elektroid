@@ -509,7 +509,7 @@ cli_download (int argc, gchar *argv[], int *optind)
   err = fs_ops->download (&backend, src_path, &idata, &control);
   if (err)
     {
-      goto end;
+      return err;
     }
 
   download_path = fs_ops->get_download_path (&backend, fs_ops, ".", src_path,
@@ -526,7 +526,6 @@ cli_download (int argc, gchar *argv[], int *optind)
 
 cleanup:
   idata_free (&idata);
-end:
   return err;
 }
 

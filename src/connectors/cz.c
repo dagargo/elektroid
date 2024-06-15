@@ -252,11 +252,11 @@ cz_download (struct backend *backend, const gchar *path,
     }
 
   output = g_byte_array_sized_new (512);
-  program->content = output;
   g_byte_array_append (output, CZ_PROGRAM_HEADER, sizeof (CZ_PROGRAM_HEADER));
   g_byte_array_append (output, &rx_msg->data[CZ_PROGRAM_HEADER_OFFSET],
 		       CZ_PROGRAM_LEN - CZ_PROGRAM_HEADER_OFFSET);
   output->data[CZ_PROGRAM_HEADER_ID] = id;
+  idata_init (program, output, NULL);
 
 cleanup:
   free_msg (rx_msg);

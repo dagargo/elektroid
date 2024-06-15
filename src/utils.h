@@ -141,6 +141,7 @@ enum path_type
 struct idata
 {
   GByteArray *content;
+  gchar *name;			//Optional field to store a name
 };
 
 struct fs_operations;
@@ -319,6 +320,9 @@ gchar *path_filename_from_uri (enum path_type, gchar *);
 
 gchar *path_filename_to_uri (enum path_type, gchar *);
 
-void idata_free (struct idata *file);
+void idata_init (struct idata *idata, GByteArray * content,
+		 const gchar * name);
+
+void idata_free (struct idata *idata);
 
 #endif

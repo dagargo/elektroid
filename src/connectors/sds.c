@@ -625,7 +625,7 @@ sds_download (struct backend *backend, const gchar *path,
     }
   else
     {
-      sample->content = output;
+      idata_init (sample, output, NULL);
     }
   return err;
 }

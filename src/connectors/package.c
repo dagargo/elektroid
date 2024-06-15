@@ -365,6 +365,7 @@ package_end (struct package *pkg, struct idata *out)
 {
   int ret = 0;
   zip_stat_t zstat;
+  GByteArray *content;
 
   ret = package_add_manifest (pkg);
   if (ret)
@@ -385,10 +386,12 @@ package_end (struct package *pkg, struct idata *out)
   debug_print (1, "%" PRIu64 " B written to package\n", zstat.comp_size);
 
   zip_source_open (pkg->zip_source);
-  out->content = g_byte_array_sized_new (zstat.comp_size);
-  out->content->len = zstat.comp_size;
-  zip_source_read (pkg->zip_source, out->content->data, zstat.comp_size);
+  content = g_byte_array_sized_new (zstat.comp_size);
+  content->len = zstat.comp_size;
+  zip_source_read (pkg->zip_source, content->data, zstat.comp_size);
   zip_source_close (pkg->zip_source);
+
+  idata_init (out, content, NULL);
 
   return 0;
 }

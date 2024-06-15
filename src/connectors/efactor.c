@@ -224,7 +224,6 @@ efactor_download (struct backend *backend, const gchar *src_path,
 {
   gint err = 0, id;
   gchar *name;
-  gboolean active;
   gchar **lines;
   struct item_iterator iter;
   struct efactor_data *data = backend->data;
@@ -253,7 +252,6 @@ efactor_download (struct backend *backend, const gchar *src_path,
     }
 
   output = g_byte_array_sized_new (1024);
-  preset->content = output;
   g_byte_array_append (output, EFACTOR_REQUEST_HEADER,
 		       sizeof (EFACTOR_REQUEST_HEADER));
   g_byte_array_append (output, (guint8 *) "\x49", 1);	// EFACTOR_OP_PRESETS_DUMP
@@ -266,18 +264,8 @@ efactor_download (struct backend *backend, const gchar *src_path,
     }
   g_byte_array_append (output, (guint8 *) "\0\xf7", 2);
 
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-
-  if (active)
-    {
-      set_job_control_progress (control, 1.0);
-    }
-  else
-    {
-      err = -ECANCELED;
-    }
+  set_job_control_progress (control, 1.0);
+  idata_init (preset, output, NULL);
 
   sleep (1);
 

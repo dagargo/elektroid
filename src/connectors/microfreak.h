@@ -81,11 +81,11 @@ gint microfreak_serialize_preset (GByteArray * output,
 gint microfreak_deserialize_preset (struct microfreak_preset *mfp,
 				    GByteArray * input);
 
-gint microfreak_serialize_wavetable (GByteArray * output,
-				     GByteArray * sample);
+gint microfreak_serialize_wavetable (struct idata *serialized,
+				     struct idata *wavetable);
 
-gint microfreak_deserialize_wavetable (GByteArray * sample,
-				       GByteArray * input);
+gint microfreak_deserialize_wavetable (struct idata *wavetable,
+				       struct idata *serialized);
 
 void microfreak_midi_msg_to_8bit_msg (guint8 *, guint8 *);
 

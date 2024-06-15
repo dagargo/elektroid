@@ -345,8 +345,8 @@ phatty_download (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
-  preset->content = g_byte_array_new ();
-  g_byte_array_append (preset->content, rx_msg->data, rx_msg->len);
+  idata_init (preset, rx_msg, NULL);
+  return 0;
 
 cleanup:
   free_msg (rx_msg);

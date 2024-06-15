@@ -218,7 +218,7 @@ audio_reset_record_buffer (struct audio *audio, guint record_options,
   guint size =
     audio->sample_info.frames * SAMPLE_INFO_FRAME_SIZE (&audio->sample_info);
   idata_free (&audio->sample);
-  audio->sample.content = g_byte_array_sized_new (size);
+  idata_init (&audio->sample, g_byte_array_sized_new (size), NULL);
   audio->pos = 0;
   audio->record_options = record_options;
   audio->monitor = monitor;
@@ -233,7 +233,7 @@ audio_init (struct audio *audio,
 {
   debug_print (1, "Initializing audio (%s %s)...\n", audio_name (),
 	       audio_version ());
-  idata_free (&audio->sample);
+  idata_init (&audio->sample, NULL, NULL);
   audio->sample_info.frames = 0;
   audio->sample_info.rate = 0;
   audio->sample_info.channels = 0;

@@ -28,6 +28,8 @@
 #define JUNK_CHUNK_ID "JUNK"
 #define SMPL_CHUNK_ID "smpl"
 
+#define DEFAULT_SAMPLE_SIZE (1024 * 1024)
+
 static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
 #if !defined(__linux__) || HAVE_SNDFILE_MP3
 { "wav", "ogg", "aiff", "flac", "mp3", NULL };
@@ -574,8 +576,8 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       return -1;
     }
 
-  sample = g_byte_array_new ();
-  idata->content = sample;
+  sample = g_byte_array_sized_new (DEFAULT_SAMPLE_SIZE);
+  idata_init (idata, sample, NULL);
 
   sample_info_src = control->data;
   if (!sample_info_src)
@@ -902,7 +904,7 @@ cleanup:
       if (!control->data)
 	{
 	  g_free (sample_info_src);
-	  g_byte_array_free (sample, TRUE);
+	  idata_free (idata);
 	}
       return -1;
     }

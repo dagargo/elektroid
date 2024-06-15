@@ -292,7 +292,6 @@ microbrute_download (struct backend *backend, const gchar *src_path,
 {
   gint err;
   guint seqnum;
-  gboolean active;
   GByteArray *data;
 
   err = common_slot_get_id_name_from_path (src_path, &seqnum, NULL);
@@ -326,18 +325,8 @@ microbrute_download (struct backend *backend, const gchar *src_path,
       goto err;
     }
 
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-  if (!active)
-    {
-      err = -ECANCELED;
-      goto err;
-    }
-
   set_job_control_progress (control, 1.0);
-  sequence->content = data;
-
+  idata_init (sequence, data, NULL);
   return 0;
 
 err:

@@ -287,7 +287,7 @@ file_load (const char *path, struct idata *idata, struct job_control *control)
   if (fread (array->data, 1, size, f) == size)
     {
       debug_print (1, "%zu B read\n", size);
-      idata->content = array;
+      idata_init (idata, array, NULL);
     }
   else
     {
@@ -543,6 +543,13 @@ path_filename_to_uri (enum path_type type, gchar *filename)
 }
 
 void
+idata_init (struct idata *idata, GByteArray *content, const gchar *name)
+{
+  idata->content = content;
+  idata->name = name ? strdup (name) : NULL;
+}
+
+void
 idata_free (struct idata *idata)
 {
   if (idata->content)
@@ -550,4 +557,6 @@ idata_free (struct idata *idata)
       g_byte_array_free (idata->content, TRUE);
       idata->content = NULL;
     }
+  g_free (idata->name);
+  idata->name = NULL;
 }
