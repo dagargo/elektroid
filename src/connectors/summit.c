@@ -648,7 +648,7 @@ static const struct fs_operations FS_SUMMIT_SCALE_OPERATIONS = {
   .readdir = summit_scale_read_dir,
   .print_item = common_print_item,
   .upload = summit_tuning_upload,
-  .load = scl_get_key_based_tuning_msg_from_scala_file,
+  .load = scl_load_key_based_tuning_msg_from_scala_file,
   .get_upload_path = common_slot_get_upload_path
 };
 

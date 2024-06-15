@@ -33,14 +33,12 @@ struct scala
   gdouble pitches[SCALA_NOTES_MAX];
 };
 
-gint scl_init_scala_from_bytes (struct scala *scala, GByteArray * input);
+gint scl_load_2_byte_octave_tuning_msg_from_scala_file (const char *path,
+							struct idata *idata,
+							struct job_control
+							*control);
 
-gint scl_get_2_byte_octave_tuning_msg_from_scala_file (const char *path,
-						       struct idata *idata,
-						       struct job_control
-						       *control);
-
-gint scl_get_key_based_tuning_msg_from_scala_file (const char *path,
-						   struct idata *idata,
-						   struct job_control
-						   *control);
+gint scl_load_key_based_tuning_msg_from_scala_file (const char *path,
+						    struct idata *idata,
+						    struct job_control
+						    *control);
