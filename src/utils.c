@@ -255,7 +255,7 @@ free_item_iterator (struct item_iterator *iter)
 }
 
 gint
-load_file (const char *path, struct idata *idata, struct job_control *control)
+file_load (const char *path, struct idata *idata, struct job_control *control)
 {
   FILE *f;
   size_t size;

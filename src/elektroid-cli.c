@@ -459,7 +459,7 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
       return EXIT_FAILURE;
     }
 
-  err = load_file (src_path, &idata, NULL);
+  err = file_load (src_path, &idata, NULL);
   if (err)
     {
       error_print ("Error while loading '%s'.\n", src_path);
@@ -629,7 +629,7 @@ cli_send (int argc, gchar *argv[], int *optind)
       return EXIT_FAILURE;
     }
 
-  err = load_file (src_file, &idata, NULL);
+  err = file_load (src_file, &idata, NULL);
   if (!err)
     {
       sysex_transfer.active = TRUE;

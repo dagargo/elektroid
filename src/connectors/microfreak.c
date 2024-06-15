@@ -830,7 +830,7 @@ static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
   .rename = microfreak_preset_rename,
   .download = microfreak_preset_download,
   .upload = microfreak_preset_upload,
-  .load = load_file,
+  .load = file_load,
   .save = save_file,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microfreak_get_download_preset_path
@@ -992,7 +992,7 @@ microfreak_preset_load (const char *path, struct idata *preset,
     }
   else
     {
-      return load_file (path, preset, control);
+      return file_load (path, preset, control);
     }
 }
 
@@ -2143,7 +2143,7 @@ microfreak_pwavetable_load (const gchar *path, struct idata *wavetable,
   gint err;
   struct idata aux;
 
-  err = load_file (path, &aux, control);
+  err = file_load (path, &aux, control);
   if (err)
     {
       return err;

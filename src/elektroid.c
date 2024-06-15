@@ -552,7 +552,7 @@ static gint
 elektroid_send_sysex_file (const gchar *filename, t_sysex_transfer f)
 {
   struct idata idata;
-  gint err = load_file (filename, &idata, NULL);
+  gint err = file_load (filename, &idata, NULL);
   if (!err)
     {
       sysex_transfer.raw = idata.content;

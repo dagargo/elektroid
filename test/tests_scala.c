@@ -97,7 +97,7 @@ test_success ()
 
   printf ("\n");
 
-  load_file (SCALA_TEST_DIR "/success.scl", &idata, NULL);
+  file_load (SCALA_TEST_DIR "/success.scl", &idata, NULL);
   err = scl_init_scala_from_bytes (&scala, idata.content);
   idata_free (&idata);
 
@@ -127,7 +127,7 @@ test_success_perfect_5th ()
 
   printf ("\n");
 
-  load_file (SCALA_TEST_DIR "/perfect_5th.scl", &idata, NULL);
+  file_load (SCALA_TEST_DIR "/perfect_5th.scl", &idata, NULL);
   err = scl_init_scala_from_bytes (&scala, idata.content);
   idata_free (&idata);
 
@@ -163,7 +163,7 @@ test_too_many_notes ()
 
   printf ("\n");
 
-  load_file (SCALA_TEST_DIR "/too_many_notes.scl", &idata, NULL);
+  file_load (SCALA_TEST_DIR "/too_many_notes.scl", &idata, NULL);
   err = scl_init_scala_from_bytes (&scala, idata.content);
 
   CU_ASSERT_EQUAL (err, -ERANGE);
@@ -180,7 +180,7 @@ test_no_notes ()
 
   printf ("\n");
 
-  load_file (SCALA_TEST_DIR "/no_notes.scl", &idata, NULL);
+  file_load (SCALA_TEST_DIR "/no_notes.scl", &idata, NULL);
   err = scl_init_scala_from_bytes (&scala, idata.content);
 
   CU_ASSERT_EQUAL (err, -ERANGE);
@@ -197,7 +197,7 @@ test_unmatching_notes ()
 
   printf ("\n");
 
-  load_file (SCALA_TEST_DIR "/unmatching_notes.scl", &idata, NULL);
+  file_load (SCALA_TEST_DIR "/unmatching_notes.scl", &idata, NULL);
   err = scl_init_scala_from_bytes (&scala, idata.content);
 
   CU_ASSERT_EQUAL (err, -EINVAL);

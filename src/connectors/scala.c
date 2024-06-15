@@ -222,7 +222,7 @@ scl_get_2_byte_octave_tuning_msg_from_scala_file (const char *path,
   struct scala scala;
   GByteArray *msg;
 
-  err = load_file (path, &input, control);
+  err = file_load (path, &input, control);
   if (err)
     {
       return err;
@@ -294,7 +294,7 @@ scl_get_key_based_tuning_msg_from_scala_file (const char *path,
   guint8 msb[SCALA_OCTAVE_NOTES];
   guint8 lsb[SCALA_OCTAVE_NOTES];
 
-  err = load_file (path, &input, control);
+  err = file_load (path, &input, control);
   if (err)
     {
       return err;

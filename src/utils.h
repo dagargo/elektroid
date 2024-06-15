@@ -285,7 +285,7 @@ gint next_item_iterator (struct item_iterator *iter);
 
 void free_item_iterator (struct item_iterator *iter);
 
-gint load_file (const char *path, struct idata *idata,
+gint file_load (const char *path, struct idata *idata,
 		struct job_control *control);
 
 gint save_file (const char *path, struct idata *idata,

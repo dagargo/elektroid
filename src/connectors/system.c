@@ -46,7 +46,7 @@ system_download (struct backend *backend, const gchar *path,
   control->part = 0;
   set_job_control_progress (control, 0.0);
 
-  err = load_file (path, idata, control);
+  err = file_load (path, idata, control);
 
   g_mutex_lock (&control->mutex);
   active = control->active;
