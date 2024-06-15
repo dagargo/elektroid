@@ -245,7 +245,7 @@ next_item_iterator (struct item_iterator *iter)
 }
 
 void
-free_item_iterator (struct item_iterator *iter)
+item_iterator_free (struct item_iterator *iter)
 {
   g_free (iter->dir);
   if (iter->free)

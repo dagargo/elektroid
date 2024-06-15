@@ -241,7 +241,7 @@ efactor_download (struct backend *backend, const gchar *src_path,
 	{
 	  return err;
 	}
-      free_item_iterator (&iter);
+      item_iterator_free (&iter);
     }
 
   name = g_path_get_basename (src_path);

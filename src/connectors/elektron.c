@@ -911,7 +911,7 @@ elektron_get_path_type (struct backend *backend, const gchar *path,
 	      break;
 	    }
 	}
-      free_item_iterator (&iter);
+      item_iterator_free (&iter);
     }
 
   g_free (name);
@@ -1092,7 +1092,7 @@ elektron_move_common_item (struct backend *backend, const gchar *src,
 	      g_free (src_plus);
 	      g_free (dst_plus);
 	    }
-	  free_item_iterator (&iter);
+	  item_iterator_free (&iter);
 	}
       if (!res)
 	{
@@ -1281,7 +1281,7 @@ elektron_delete_common_item (struct backend *backend, const gchar *path,
 							init_iter, rmdir, rm);
 	      g_free (new_path);
 	    }
-	  free_item_iterator (&iter);
+	  item_iterator_free (&iter);
 	}
       return res || rmdir (backend, path);
     }
@@ -2623,7 +2623,7 @@ elektron_get_download_name (struct backend *backend,
 	}
     }
 
-  free_item_iterator (&iter);
+  item_iterator_free (&iter);
 
   return name;
 }

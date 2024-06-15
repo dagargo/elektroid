@@ -735,14 +735,14 @@ elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
 
 	  if (!active)
 	    {
-	      free_item_iterator (&iter);
+	      item_iterator_free (&iter);
 	      err = -ECANCELED;
 	      goto end;
 	    }
 	}
 
       browser->fs_ops->delete (browser->backend, path);
-      free_item_iterator (&iter);
+      item_iterator_free (&iter);
     }
 
 end:
@@ -1610,7 +1610,7 @@ elektroid_add_upload_task_path (const gchar *rel_path, const gchar *src_dir,
     }
 
 cleanup_iter:
-  free_item_iterator (&iter);
+  item_iterator_free (&iter);
 cleanup:
   g_free (src_abs_path);
 }
@@ -1825,7 +1825,7 @@ elektroid_add_download_task_path (const gchar *rel_path,
       debug_print (1, "next\n");
     }
 
-  free_item_iterator (&iter);
+  item_iterator_free (&iter);
 cleanup:
   g_free (src_abs_path);
 }

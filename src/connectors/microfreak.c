@@ -1705,7 +1705,7 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
 	    }
 	}
     }
-  free_item_iterator (&iter);
+  item_iterator_free (&iter);
 
   if (!found)
     {

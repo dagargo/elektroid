@@ -283,7 +283,7 @@ void init_item_iterator (struct item_iterator *iter, const gchar * dir,
 
 gint next_item_iterator (struct item_iterator *iter);
 
-void free_item_iterator (struct item_iterator *iter);
+void item_iterator_free (struct item_iterator *iter);
 
 gint file_load (const char *path, struct idata *idata,
 		struct job_control *control);

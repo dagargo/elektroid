@@ -571,7 +571,7 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
 	    {
 	      browser_iterate_dir_recursive (browser, child_rel_dir,
 					     &child_iter, icon, extensions);
-	      free_item_iterator (&child_iter);
+	      item_iterator_free (&child_iter);
 	    }
 	  g_free (child_dir);
 	}
@@ -674,7 +674,7 @@ browser_load_dir_runner (gpointer data)
       browser_iterate_dir (browser, &iter, icon);
     }
 
-  free_item_iterator (&iter);
+  item_iterator_free (&iter);
 
 end:
   g_idle_add (browser_load_dir_runner_update_ui, browser);

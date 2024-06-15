@@ -148,7 +148,7 @@ cli_list (int argc, gchar *argv[], int *optind)
       fs_ops->print_item (&iter, &backend, fs_ops);
     }
 
-  free_item_iterator (&iter);
+  item_iterator_free (&iter);
 
   return EXIT_SUCCESS;
 }
