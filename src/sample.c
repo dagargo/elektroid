@@ -320,7 +320,7 @@ sample_save_to_file (const gchar *path, struct idata *sample,
   if (!ret)
     {
       wave.content = wave_content;
-      ret = save_file (path, &wave, control);
+      ret = file_save (path, &wave, control);
     }
   g_byte_array_free (wave_content, TRUE);
   return ret;

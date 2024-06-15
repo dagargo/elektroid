@@ -91,7 +91,7 @@ preferences_save (struct preferences *preferences)
   json_generator_set_root (gen, root);
   json = json_generator_to_data (gen, NULL);
 
-  save_file_char (preferences_path, (guint8 *) json, strlen (json));
+  file_save_data (preferences_path, (guint8 *) json, strlen (json));
 
   g_free (json);
   json_node_free (root);

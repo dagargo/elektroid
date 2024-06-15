@@ -692,7 +692,7 @@ cli_receive (int argc, gchar *argv[], int *optind)
     {
       struct idata idata;
       idata.content = sysex_transfer.raw;
-      err = save_file (dst_file, &idata, NULL);
+      err = file_save (dst_file, &idata, NULL);
     }
 
   free_msg (sysex_transfer.raw);

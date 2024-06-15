@@ -302,7 +302,7 @@ end:
 }
 
 gint
-save_file_char (const gchar *path, const guint8 *data, ssize_t len)
+file_save_data (const gchar *path, const guint8 *data, ssize_t len)
 {
   gint res;
   size_t bytes;
@@ -335,10 +335,10 @@ save_file_char (const gchar *path, const guint8 *data, ssize_t len)
 }
 
 gint
-save_file (const gchar *path, struct idata *idata,
+file_save (const gchar *path, struct idata *idata,
 	   struct job_control *control)
 {
-  return save_file_char (path, idata->content->data, idata->content->len);
+  return file_save_data (path, idata->content->data, idata->content->len);
 }
 
 gchar *

@@ -497,7 +497,7 @@ static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .download = microbrute_download,
   .upload = microbrute_upload,
   .load = file_load,
-  .save = save_file,
+  .save = file_save,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microbrute_get_download_path
 };

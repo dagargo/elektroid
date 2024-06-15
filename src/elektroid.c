@@ -533,7 +533,7 @@ elektroid_rx_sysex ()
     {
       struct idata idata;
       idata.content = sysex_transfer.raw;
-      *res = save_file (filename, &idata, NULL);
+      *res = file_save (filename, &idata, NULL);
       if (*res)
 	{
 	  show_error_msg (_("Error while saving “%s”: %s."),

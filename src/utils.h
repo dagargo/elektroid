@@ -288,10 +288,10 @@ void free_item_iterator (struct item_iterator *iter);
 gint file_load (const char *path, struct idata *idata,
 		struct job_control *control);
 
-gint save_file (const char *path, struct idata *idata,
+gint file_save (const char *path, struct idata *idata,
 		struct job_control *control);
 
-gint save_file_char (const gchar *, const guint8 *, ssize_t);
+gint file_save_data (const gchar * path, const guint8 * data, ssize_t len);
 
 gchar *get_human_size (gint64, gboolean);
 

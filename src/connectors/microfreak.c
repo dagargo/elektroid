@@ -831,7 +831,7 @@ static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
   .download = microfreak_preset_download,
   .upload = microfreak_preset_upload,
   .load = file_load,
-  .save = save_file,
+  .save = file_save,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microfreak_get_download_preset_path
 };
@@ -2174,7 +2174,7 @@ microfreak_pwavetable_save (const gchar *path, struct idata *wavetable,
       goto cleanup;
     }
 
-  err = save_file (path, &aux, control);
+  err = file_save (path, &aux, control);
 
 cleanup:
   g_byte_array_free (aux.content, TRUE);
