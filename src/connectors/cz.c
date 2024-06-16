@@ -312,6 +312,14 @@ cz_upload (struct backend *backend, const gchar *path, GByteArray *input,
   return err;
 }
 
+static gchar *
+cz_get_slot (struct item *item, struct backend *backend)
+{
+  gchar *slot = g_malloc (LABEL_MAX);
+  snprintf (slot, LABEL_MAX, "%4d", item->id);
+  return slot;
+}
+
 //As program X in preset storage and program X in internal staorage have different IDs
 //it won't work with the id as the filename so the item name must be used.
 
@@ -325,6 +333,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .ext = "syx",
   .readdir = cz_read_dir,
   .print_item = common_print_item,
+  .get_slot = cz_get_slot,
   .download = cz_download,
   .upload = cz_upload,
   .load = load_file,
