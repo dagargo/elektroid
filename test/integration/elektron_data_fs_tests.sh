@@ -81,8 +81,8 @@ $ecli elektron-data-ul $srcdir/res/connectors/SOUND.dtdata $TEST_DEVICE:/soundba
 echo "Testing upload..."
 $ecli elektron-data-ul $srcdir/res/connectors/SOUND.dtdata $TEST_DEVICE:/soundbanks/H/256
 [ $? -ne 0 ] && cleanupAndExit 1
-id=$($ecli elektron-data-ls $TEST_DEVICE:/soundbanks/H | tail -n 1 | grep 'SOUND$' | awk '{print $6}')
-[ $id != 256 ] && cleanupAndExit 1
+id=$($ecli elektron-data-ls $TEST_DEVICE:/soundbanks/H | tail -n 1 | grep SOUND | awk '{print $6}')
+[ "$id" != 256 ] && cleanupAndExit 1
 
 echo "Testing data clear..."
 $ecli elektron-data-cl $TEST_DEVICE:/soundbanks/H/256
