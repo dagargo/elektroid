@@ -37,60 +37,70 @@ struct connector
   const gchar *name;
   //If the backend device name matches this regex, the handshake will be run before than the connectors that didn't match.
   const gchar *regex;
+  gboolean standard;
 };
 
 static const struct connector CONNECTOR_ELEKTRON = {
   .handshake = elektron_handshake,
   .name = "elektron",
-  .regex = ".*Elektron.*"
+  .regex = ".*Elektron.*",
+  .standard = FALSE,
 };
 
 static const struct connector CONNECTOR_MICROBRUTE = {
   .handshake = microbrute_handshake,
   .name = MICROBRUTE_NAME,
-  .regex = ".*MicroBrute.*"
+  .regex = ".*MicroBrute.*",
+  .standard = TRUE
 };
 
 static const struct connector CONNECTOR_MICROFREAK = {
   .handshake = microfreak_handshake,
   .name = "microfreak",
-  .regex = ".*MicroFreak.*"
+  .regex = ".*MicroFreak.*",
+  .standard = TRUE
 };
 
 static const struct connector CONNECTOR_CZ = {
   .handshake = cz_handshake,
   .name = "cz",
-  .regex = NULL
+  .regex = NULL,
+  .standard = FALSE
 };
 
 static const struct connector CONNECTOR_SDS = {
   .handshake = sds_handshake,
   .name = "sds",
-  .regex = NULL
+  .regex = NULL,
+  .standard = FALSE
 };
 
 static const struct connector CONNECTOR_EFACTOR = {
   .handshake = efactor_handshake,
   .name = "efactor",
-  .regex = ".*Factor Pedal.*"
+  .regex = ".*Factor Pedal.*",
+  .standard = FALSE
 };
 
 static const struct connector CONNECTOR_PHATTY = {
   .handshake = phatty_handshake,
   .name = "phatty",
-  .regex = ".*Phatty.*"
+  .regex = ".*Phatty.*",
+  .standard = TRUE
 };
 
 static const struct connector CONNECTOR_SUMMIT = {
   .handshake = summit_handshake,
   .name = "summit",
   .regex = ".*(Peak|Summit).*",
+  .standard = TRUE
 };
 
 static const struct connector CONNECTOR_DEFAULT = {
   .handshake = default_handshake,
   .name = "default",
-  .regex = NULL
+  .regex = NULL,
+  .standard = FALSE
 };
 
 static const struct connector *CONNECTORS[] = {
@@ -153,6 +163,11 @@ connector_init_backend (struct backend *backend,
       connector++;
     }
 
+  if (!conn_name)
+    {
+      backend_midi_handshake (backend);
+    }
+
   err = -ENODEV;
   for (iterator = list; iterator; iterator = iterator->next)
     {
@@ -171,11 +186,17 @@ connector_init_backend (struct backend *backend,
 	  goto end;
 	}
 
+      debug_print (1, "Testing %s connector (%sstandard handshake)...\n",
+		   c->name, c->standard ? "" : "non ");
+
       if (conn_name)
 	{
 	  if (!strcmp (conn_name, c->name))
 	    {
-	      debug_print (1, "Testing %s connector...\n", c->name);
+	      if (c->standard)
+		{
+		  backend_midi_handshake (backend);
+		}
 	      err = c->handshake (backend);
 	      if (!err)
 		{
@@ -187,7 +208,6 @@ connector_init_backend (struct backend *backend,
 	}
       else
 	{
-	  debug_print (1, "Testing %s connector...\n", c->name);
 	  err = c->handshake (backend);
 	  if (err && err != -ENODEV)
 	    {

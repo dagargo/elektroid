@@ -321,8 +321,6 @@ backend_init (struct backend *backend, const gchar *id)
     }
   usleep (BE_REST_TIME_US);
 
-  backend_midi_handshake (backend);
-
   return err;
 }
 

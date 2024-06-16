@@ -112,9 +112,8 @@ backend_init_int (struct backend *backend, const gchar *id)
       goto cleanup_params;
     }
 
-  err =
-    snd_rawmidi_params_set_buffer_size (backend->inputp, params,
-					BE_DEV_RING_BUF_LEN);
+  err = snd_rawmidi_params_set_buffer_size (backend->inputp, params,
+					    BE_DEV_RING_BUF_LEN);
   if (err)
     {
       goto cleanup_params;
