@@ -37,16 +37,18 @@ typedef void (*sample_load_cb) (struct job_control *, gdouble, gpointer);
 gint sample_save_to_file (const gchar * path, struct idata *sample,
 			  struct job_control *control, guint32 format);
 
-gint sample_load_from_array (GByteArray * array, struct idata *sample,
-			     struct job_control *control,
-			     struct sample_info *sample_info);
+gint sample_load_from_memfile (struct idata *memfile, struct idata *sample,
+			       struct job_control *control,
+			       struct sample_info *sample_info);
 
 gint sample_load_from_file (const gchar * path, struct idata *sample,
 			    struct job_control *control,
 			    struct sample_info *sample_info);
 
-gint sample_get_audio_file_data_from_array (GByteArray *, GByteArray *,
-					    struct job_control *, guint32);
+gint sample_get_memfile_from_sample (struct idata *sample,
+				     struct idata *file,
+				     struct job_control *control,
+				     guint32 format);
 
 gint sample_load_from_file_with_cb (const gchar * path, struct idata *sample,
 				    struct job_control *control,

@@ -512,9 +512,8 @@ package_receive_pkg_resources (struct package *pkg,
   GError *error;
   gchar *sample_path, *metadata_path;
   struct package_resource *pkg_resource;
-  GByteArray *wave;
   GString *package_resource_path;
-  struct idata metadata_file, payload_file, sample_file;
+  struct idata metadata_file, payload_file, sample_file, file;
 
   metadata_path = path_chain (PATH_INTERNAL, payload_path,
 			      FS_DATA_METADATA_FILE);
@@ -633,22 +632,19 @@ package_receive_pkg_resources (struct package *pkg,
 	  continue;
 	}
 
-      wave = g_byte_array_new ();
-      ret = sample_get_audio_file_data_from_array (sample_file.content, wave,
-						   control, SF_FORMAT_WAV |
-						   SF_FORMAT_PCM_16);
+      ret = sample_get_memfile_from_sample (&sample_file, &file, control,
+					    SF_FORMAT_WAV | SF_FORMAT_PCM_16);
       if (ret)
 	{
 	  error_print
 	    ("Error while converting sample to wave file. Continuing...\n");
-	  g_byte_array_free (wave, TRUE);
 	  g_free (sample_path);
 	  continue;
 	}
 
       pkg_resource = g_malloc (sizeof (struct package_resource));
       pkg_resource->type = PKG_RES_TYPE_SAMPLE;
-      pkg_resource->data = wave;
+      pkg_resource->data = file.content;	//Content stealing
       pkg_resource->hash = hash;
       pkg_resource->size = size;
       package_resource_path = g_string_new (NULL);
@@ -709,9 +705,8 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
   zip_stat_t zstat;
   zip_error_t zerror;
   zip_file_t *zip_file;
-  GByteArray *wave;
   struct package_resource *pkg_resource;
-  struct idata file, raw;
+  struct idata file, sample, sample_file;
 
   zip_error_init (&zerror);
 
@@ -857,7 +852,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       goto cleanup_reader;
     }
 
-  wave = g_byte_array_sized_new (zstat.size);
+  idata_init (&sample_file, g_byte_array_sized_new (zstat.size), NULL);
   elements = json_reader_count_elements (reader);
   control->parts = elements + 1;
   control->part = 1;
@@ -882,13 +877,14 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 	  continue;
 	}
 
-      g_byte_array_set_size (wave, zstat.size);
+      g_byte_array_set_size (sample_file.content, zstat.size);
       zip_file = zip_fopen (pkg->zip, sample_path, 0);
-      zip_fread (zip_file, wave->data, zstat.size);
-      wave->len = zstat.size;
+      zip_fread (zip_file, sample_file.content->data, zstat.size);
+      sample_file.content->len = zstat.size;
       zip_fclose (zip_file);
 
-      if (sample_load_from_array (wave, &raw, control, &sample_info_dst))
+      if (sample_load_from_memfile (&sample_file, &sample, control,
+				    &sample_info_dst))
 	{
 	  error_print ("Error while loading '%s': %s\n",
 		       sample_path, zip_error_strerror (&zerror));
@@ -897,7 +893,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
       pkg_resource = g_malloc (sizeof (struct package_resource));
       pkg_resource->type = PKG_RES_TYPE_SAMPLE;
-      pkg_resource->data = raw.content;
+      pkg_resource->data = sample.content;	//Content stealing
       pkg_resource->path = strdup (sample_path);
 
       pkg->resources = g_list_append (pkg->resources, pkg_resource);
@@ -907,10 +903,9 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       //... And the extension.
       remove_ext (dev_sample_path);
       ret = elektron_upload_sample_part (backend, dev_sample_path,
-					 &raw, control);
+					 &sample, control);
       g_free (dev_sample_path);
       g_free (control->data);
-      //raw.content is stolen so no need to free the raw struct
       control->data = NULL;
       if (ret)
 	{
@@ -920,7 +915,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 	}
     }
 
-  g_byte_array_free (wave, TRUE);
+  idata_free (&sample_file);
 
 cleanup_reader:
   g_object_unref (reader);

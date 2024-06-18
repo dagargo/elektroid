@@ -203,7 +203,7 @@ static SF_VIRTUAL_IO FILE_IO = {
 };
 
 static gint
-sample_get_audio_file_data (GByteArray *sample, struct job_control *control,
+sample_get_audio_file_data (struct idata *idata, struct job_control *control,
 			    struct g_byte_array_io_data *wave, guint32 format)
 {
   SF_INFO sf_info;
@@ -212,6 +212,7 @@ sample_get_audio_file_data (GByteArray *sample, struct job_control *control,
   struct SF_CHUNK_INFO junk_chunk_info;
   struct SF_CHUNK_INFO smpl_chunk_info;
   struct smpl_chunk_data smpl_chunk_data;
+  GByteArray *sample = idata->content;
   struct sample_info *sample_info = control->data;
 
   g_byte_array_set_size (wave->array, sample->len + 4096);	//We need space for the headers.
@@ -300,32 +301,44 @@ sample_get_audio_file_data (GByteArray *sample, struct job_control *control,
 }
 
 gint
-sample_get_audio_file_data_from_array (GByteArray *sample, GByteArray *wave,
-				       struct job_control *control,
-				       guint32 format)
+sample_get_memfile_from_sample (struct idata *sample, struct idata *file,
+				struct job_control *control, guint32 format)
 {
+  gint err;
   struct g_byte_array_io_data data;
+  GByteArray *content;
+
+  content = g_byte_array_sized_new (sample->content->len * 4 + 4096);
+  idata_init (file, content, NULL);
   data.pos = 0;
-  data.array = wave;
-  return sample_get_audio_file_data (sample, control, &data, format);
+  data.array = content;
+
+  err = sample_get_audio_file_data (sample, control, &data, format);
+  if (err)
+    {
+      idata_free (file);
+    }
+
+  return err;
 }
 
 gint
 sample_save_to_file (const gchar *path, struct idata *sample,
 		     struct job_control *control, guint32 format)
 {
-  struct idata wave;
-  GByteArray *wave_content = g_byte_array_new ();
-  gint ret = sample_get_audio_file_data_from_array (sample->content,
-						    wave_content, control,
-						    format);
-  if (!ret)
+  gint err;
+  struct idata file;
+
+  err = sample_get_memfile_from_sample (sample, &file, control, format);
+  if (err)
     {
-      wave.content = wave_content;
-      ret = file_save (path, &wave, control);
+      return err;
     }
-  g_byte_array_free (wave_content, TRUE);
-  return ret;
+
+  err = file_save (path, &file, control);
+  idata_free (&file);
+
+  return err;
 }
 
 static void
@@ -911,13 +924,13 @@ cleanup:
 }
 
 gint
-sample_load_from_array (GByteArray *wave, struct idata *sample,
-			struct job_control *control,
-			struct sample_info *sample_info_dst)
+sample_load_from_memfile (struct idata *memfile, struct idata *sample,
+			  struct job_control *control,
+			  struct sample_info *sample_info_dst)
 {
   struct g_byte_array_io_data data;
   data.pos = 0;
-  data.array = wave;
+  data.array = memfile->content;
   return sample_load_raw (&data, &G_BYTE_ARRAY_IO, control, sample,
 			  sample_info_dst, set_sample_progress_no_sync, NULL);
 }
