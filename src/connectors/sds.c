@@ -365,11 +365,11 @@ sds_download_get_header (struct backend *backend, guint id)
 
 static gint
 sds_download_try (struct backend *backend, const gchar *path,
-		  GByteArray *output, struct job_control *control)
+		  struct idata *sample, struct job_control *control)
 {
   guint id, words, word_size, read_bytes, bytes_per_word, total_words, err,
     retries, packets, packet, exp_packet, rx_packets, bits;
-  gint16 sample;
+  gint16 s;
   GByteArray *tx_msg, *rx_msg;
   gchar *name;
   guint8 *dataptr;
@@ -378,6 +378,7 @@ sds_download_try (struct backend *backend, const gchar *path,
   struct sample_info *sample_info;
   struct sysex_transfer transfer;
   struct sds_data *sds_data = backend->data;
+  GByteArray *output = g_byte_array_new ();
 
   name = g_path_get_basename (path);
   id = atoi (name);
@@ -548,9 +549,8 @@ sds_download_try (struct backend *backend, const gchar *path,
       dataptr = &rx_msg->data[5];
       while (read_bytes < SDS_DATA_PACKET_PAYLOAD_LEN && total_words < words)
 	{
-	  sample = sds_get_gint16_value_left_just (dataptr, bytes_per_word,
-						   bits);
-	  g_byte_array_append (output, (guint8 *) & sample, sizeof (sample));
+	  s = sds_get_gint16_value_left_just (dataptr, bytes_per_word, bits);
+	  g_byte_array_append (output, (guint8 *) & s, sizeof (gint16));
 	  dataptr += bytes_per_word;
 	  read_bytes += bytes_per_word;
 	  total_words++;
@@ -585,11 +585,13 @@ end:
     {
       debug_print (1, "%d frames received\n", total_words);
       set_job_control_progress (control, 1.0);
+      idata_init (sample, output, NULL);
     }
   else
     {
       debug_print (1, "Cancelling SDS download...\n");
       sds_tx_handshake (backend, SDS_CANCEL, packet % 0x80);
+      g_byte_array_free (output, TRUE);
     }
 
   usleep (sds_data->rest_time);
@@ -602,16 +604,14 @@ sds_download (struct backend *backend, const gchar *path,
 	      struct idata *sample, struct job_control *control)
 {
   gint err;
-  GByteArray *output = g_byte_array_new ();
 
   for (gint i = 0; i < SDS_MAX_RETRIES; i++)
     {
-      err = sds_download_try (backend, path, output, control);
+      err = sds_download_try (backend, path, sample, control);
       if (err == -EBADMSG)
 	{
 	  //We retry the whole download to fix a downloading error with an E-Mu ESI-2000 as it occasionally doesn't send the last packet.
 	  debug_print (2, "Bug detected. Retrying download...\n");
-	  g_byte_array_set_size (output, 0);
 	}
       else
 	{
@@ -619,14 +619,6 @@ sds_download (struct backend *backend, const gchar *path,
 	}
     }
 
-  if (err)
-    {
-      g_byte_array_free (output, TRUE);
-    }
-  else
-    {
-      idata_init (sample, output, NULL);
-    }
   return err;
 }
 
