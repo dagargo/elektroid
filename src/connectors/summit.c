@@ -338,7 +338,7 @@ summit_patch_download (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
-  idata_init (patch, rx_msg, NULL);
+  idata_init (patch, rx_msg, NULL, NULL);
   goto end;
 
 cleanup:
@@ -684,7 +684,7 @@ summit_tuning_download (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
-  idata_init (tuning, rx_msg, NULL);
+  idata_init (tuning, rx_msg, NULL, NULL);
   return 0;
 
 cleanup:
@@ -856,7 +856,7 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
       usleep (SUMMIT_REST_TIME_US);
     }
 
-  idata_init (wavetable, output, NULL);
+  idata_init (wavetable, output, NULL, NULL);
   return 0;
 
 err:

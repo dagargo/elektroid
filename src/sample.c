@@ -309,7 +309,7 @@ sample_get_memfile_from_sample (struct idata *sample, struct idata *file,
   GByteArray *content;
 
   content = g_byte_array_sized_new (sample->content->len * 4 + 4096);
-  idata_init (file, content, NULL);
+  idata_init (file, content, NULL, NULL);
   data.pos = 0;
   data.array = content;
 
@@ -590,7 +590,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
     }
 
   sample = g_byte_array_sized_new (DEFAULT_SAMPLE_SIZE);
-  idata_init (idata, sample, NULL);
+  idata_init (idata, sample, NULL, NULL);
 
   sample_info_src = control->data;
   if (!sample_info_src)

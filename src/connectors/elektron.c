@@ -1602,7 +1602,7 @@ cleanup:
     }
   else
     {
-      idata_init (smplrw, output, NULL);
+      idata_init (smplrw, output, NULL, NULL);
     }
   return res;
 }
@@ -2540,7 +2540,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
 	{
 	  set_job_control_progress (control, 1.0);
 	}
-      idata_init (data, content, NULL);
+      idata_init (data, content, NULL, NULL);
     }
   else
     {

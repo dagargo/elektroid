@@ -391,7 +391,7 @@ package_end (struct package *pkg, struct idata *out)
   zip_source_read (pkg->zip_source, content->data, zstat.comp_size);
   zip_source_close (pkg->zip_source);
 
-  idata_init (out, content, NULL);
+  idata_init (out, content, NULL, NULL);
 
   return 0;
 }
@@ -852,7 +852,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       goto cleanup_reader;
     }
 
-  idata_init (&sample_file, g_byte_array_sized_new (zstat.size), NULL);
+  idata_init (&sample_file, g_byte_array_sized_new (zstat.size), NULL, NULL);
   elements = json_reader_count_elements (reader);
   control->parts = elements + 1;
   control->part = 1;

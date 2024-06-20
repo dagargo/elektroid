@@ -585,7 +585,7 @@ end:
     {
       debug_print (1, "%d frames received\n", total_words);
       set_job_control_progress (control, 1.0);
-      idata_init (sample, output, NULL);
+      idata_init (sample, output, NULL, NULL);
     }
   else
     {

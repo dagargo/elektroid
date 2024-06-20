@@ -142,6 +142,7 @@ struct idata
 {
   GByteArray *content;
   gchar *name;			//Optional field to store a name
+  void *info;
 };
 
 struct fs_operations;
@@ -321,7 +322,7 @@ gchar *path_filename_from_uri (enum path_type, gchar *);
 gchar *path_filename_to_uri (enum path_type, gchar *);
 
 void idata_init (struct idata *idata, GByteArray * content,
-		 const gchar * name);
+		 const gchar * name, void *info);
 
 void idata_free (struct idata *idata);
 

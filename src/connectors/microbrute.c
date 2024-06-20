@@ -326,7 +326,7 @@ microbrute_download (struct backend *backend, const gchar *src_path,
     }
 
   set_job_control_progress (control, 1.0);
-  idata_init (sequence, data, NULL);
+  idata_init (sequence, data, NULL, NULL);
   return 0;
 
 err:

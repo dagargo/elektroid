@@ -345,7 +345,7 @@ phatty_download (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
-  idata_init (preset, rx_msg, NULL);
+  idata_init (preset, rx_msg, NULL, NULL);
   return 0;
 
 cleanup:

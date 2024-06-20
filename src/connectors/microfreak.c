@@ -607,7 +607,7 @@ end:
   else
     {
       microfreak_serialize_preset (output, &mfp);
-      idata_init (preset, output, NULL);
+      idata_init (preset, output, NULL, NULL);
     }
   usleep (MICROFREAK_REST_TIME_LONG_US);	//Additional rest
   return err;
@@ -954,7 +954,7 @@ end:
     }
   else
     {
-      idata_init (zobject, array, NULL);
+      idata_init (zobject, array, NULL, NULL);
     }
 
   return err;
@@ -1545,7 +1545,7 @@ microfreak_wavetable_load_sample (const gchar *path, struct idata *wavetable,
 
   if (aux.content->len == MICROFREAK_WAVETABLE_SIZE)
     {
-      idata_init (wavetable, aux.content, NULL);	//content stealing
+      idata_init (wavetable, aux.content, NULL, NULL);	//content stealing
       return 0;
     }
   else
@@ -1564,7 +1564,7 @@ microfreak_wavetable_load_sample (const gchar *path, struct idata *wavetable,
       else
 	{
 	  sample_info->frames = MICROFREAK_WAVETABLE_LEN;
-	  idata_init (wavetable, resampled, NULL);
+	  idata_init (wavetable, resampled, NULL, NULL);
 	}
 
       idata_free (&aux);
@@ -1720,7 +1720,7 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
   sample_info->channels = 1;
 
   idata_init (wavetable, g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE),
-	      name);
+	      name, NULL);
   wavetable->content->len = MICROFREAK_WAVETABLE_SIZE;
 
   control->parts = (MICROFREAK_SAMPLE_BATCH_PACKETS + 1) *
@@ -2109,7 +2109,7 @@ microfreak_deserialize_wavetable (struct idata *wavetable,
 				       data->data, &datalen);
   if (datalen == MICROFREAK_WAVETABLE_SIZE)
     {
-      idata_init (wavetable, data, name);
+      idata_init (wavetable, data, name, NULL);
     }
   else
     {
@@ -2139,7 +2139,7 @@ microfreak_serialize_wavetable (struct idata *serialized,
     }
   else
     {
-      idata_init (serialized, data, NULL);
+      idata_init (serialized, data, NULL, NULL);
     }
 
   return err;
