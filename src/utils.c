@@ -28,8 +28,6 @@
 #define DEBUG_SHORT_HEX_LEN 64
 #define DEBUG_FULL_HEX_THRES 5
 
-#define KIB 1024
-
 gint debug_level;
 
 static guint

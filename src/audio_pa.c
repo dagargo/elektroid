@@ -58,7 +58,14 @@ static void
 audio_read_callback (pa_stream *stream, size_t size, void *data)
 {
   const void *buffer;
+  size_t frame_size;
   struct audio *audio = data;
+  struct sample_info *sample_info = audio->sample.info;
+
+  if (!sample_info)
+    {
+      return;
+    }
 
   if (pa_stream_peek (stream, &buffer, &size) < 0)
     {
@@ -66,22 +73,29 @@ audio_read_callback (pa_stream *stream, size_t size, void *data)
       return;
     }
 
-  audio_read_from_input (audio, (void *) buffer,
-			 size / FRAME_SIZE (AUDIO_CHANNELS,
-					    SF_FORMAT_PCM_16));
+  frame_size = SAMPLE_INFO_FRAME_SIZE (sample_info);
+
+  audio_read_from_input (audio, (void *) buffer, size / frame_size);
   pa_stream_drop (stream);
 }
 
 static void
 audio_write_callback (pa_stream *stream, size_t size, void *data)
 {
-  struct audio *audio = data;
   void *buffer;
+  size_t frame_size;
+  struct audio *audio = data;
+  struct sample_info *sample_info = audio->sample.info;
+
+  if (!sample_info)
+    {
+      return;
+    }
+
+  frame_size = SAMPLE_INFO_FRAME_SIZE (sample_info);
 
   pa_stream_begin_write (stream, &buffer, &size);
-  audio_write_to_output (audio, buffer,
-			 size / FRAME_SIZE (AUDIO_CHANNELS,
-					    SF_FORMAT_PCM_16));
+  audio_write_to_output (audio, buffer, size / frame_size);
   pa_stream_write (stream, buffer, size, NULL, 0, PA_SEEK_RELATIVE);
 }
 
@@ -167,6 +181,8 @@ audio_start_playback (struct audio *audio)
 void
 audio_stop_recording (struct audio *audio)
 {
+  struct sample_info *sample_info = audio->sample.info;
+
   if (!audio->record_stream)
     {
       return;
@@ -189,7 +205,7 @@ audio_stop_recording (struct audio *audio)
       audio_finish_recording (audio);
 
       debug_print (1, "Stopping recording (%d frames read)...\n",
-		   audio->sample_info.frames);
+		   sample_info->frames);
       audio_stop_and_flush_stream (audio, audio->record_stream);
     }
   else
@@ -211,6 +227,7 @@ audio_start_recording (struct audio *audio, guint options,
 		       void *monitor_data)
 {
   pa_operation *operation;
+  struct sample_info *sample_info;
 
   if (!audio->record_stream)
     {
@@ -221,8 +238,9 @@ audio_start_recording (struct audio *audio, guint options,
   audio_reset_record_buffer (audio, options, monitor_notifier, monitor_data);
   audio_prepare (audio, AUDIO_STATUS_PREPARING_RECORD);
 
+  sample_info = audio->sample.info;
   debug_print (1, "Starting recording (max %d frames)...\n",
-	       audio->sample_info.frames);
+	       sample_info->frames);
 
   pa_threaded_mainloop_lock (audio->mainloop);
   operation = pa_stream_cork (audio->record_stream, 0, audio_success_cb,
@@ -308,12 +326,12 @@ audio_server_info_callback (pa_context *context, const pa_server_info *info,
     PA_STREAM_NOT_MONOTONIC | PA_STREAM_AUTO_TIMING_UPDATE;
   pa_proplist *props = pa_proplist_new ();
 
-  audio->sample_info.rate = info->sample_spec.rate;
+  audio->rate = info->sample_spec.rate;
   audio->sample_spec.format = PA_SAMPLE_S16LE;
   audio->sample_spec.channels = AUDIO_CHANNELS;
-  audio->sample_spec.rate = audio->sample_info.rate;
+  audio->sample_spec.rate = audio->rate;
 
-  debug_print (1, "Using %d Hz sample rate...\n", audio->sample_info.rate);
+  debug_print (1, "Using %d Hz sample rate...\n", audio->rate);
 
   pa_proplist_set (props, PA_PROP_APPLICATION_ICON_NAME, PACKAGE,
 		   sizeof (PACKAGE));

@@ -69,6 +69,7 @@ autosampler_runner (gpointer user_data)
   GValue value = G_VALUE_INIT;
   gdouble fract;
   gchar filename[LABEL_MAX];
+  struct sample_info *sample_info;
 
   sysex_transfer.active = TRUE;
   progress_set_fraction (0.0);
@@ -82,7 +83,6 @@ autosampler_runner (gpointer user_data)
 				&data->iter, 0, &value);
       note = g_value_get_string (&value);
       debug_print (1, "Recording note %s (%d)...\n", note, i);
-      editor.audio.sample_info.midi_note = i;
 
       audio_start_recording (&editor.audio, data->channel_mask, NULL, NULL);
       backend_send_note_on (data->backend, data->channel, i, data->velocity);
@@ -92,12 +92,15 @@ autosampler_runner (gpointer user_data)
       usleep (data->release * 1000000);
       audio_stop_recording (&editor.audio);
 
+      sample_info = editor.audio.sample.info;
+      sample_info->midi_note = i;
+
       //Remove the heading silent frames.
       guint start = audio_detect_start (&editor.audio);
       audio_delete_range (&editor.audio, 0, start);
       //Cut off the frames after the requested time.
-      start = (data->press + data->release) * editor.audio.sample_info.rate;
-      guint len = editor.audio.sample_info.frames - start;
+      start = (data->press + data->release) * editor.audio.rate;
+      guint len = sample_info->frames - start;
       audio_delete_range (&editor.audio, start, len);
 
       gchar *dir = path_chain (PATH_SYSTEM, local_browser.dir, data->name);

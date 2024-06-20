@@ -70,8 +70,9 @@ struct audio
   pa_cvolume volume;
   pa_sample_spec sample_spec;
 #endif
+  guint32 rate;
   struct idata sample;
-  struct sample_info sample_info;
+  struct sample_info sample_info_src;
   gboolean loop;
   guint32 pos;
   void (*volume_change_callback) (gpointer, gdouble);

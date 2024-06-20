@@ -438,7 +438,6 @@ sds_download_try (struct backend *backend, const gchar *path,
   control->parts = 1;
   control->part = 0;
   set_job_control_progress (control, 0.0);
-  control->data = sample_info;
 
   debug_print (1, "Receiving dump data...\n");
 
@@ -585,7 +584,7 @@ end:
     {
       debug_print (1, "%d frames received\n", total_words);
       set_job_control_progress (control, 1.0);
-      idata_init (sample, output, NULL, NULL);
+      idata_init (sample, output, NULL, sample_info);
     }
   else
     {
@@ -775,7 +774,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
     0, w, bytes_per_word;
   gint err = 0, word_size;
   struct sds_data *sds_data = backend->data;
-  struct sample_info *sample_info = control->data;
+  struct sample_info *sample_info = sample->info;
   GByteArray *input = sample->content;
 
   control->parts = 1;

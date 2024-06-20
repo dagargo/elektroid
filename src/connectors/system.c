@@ -249,16 +249,13 @@ system_samples_read_dir (struct backend *backend, struct item_iterator *iter,
 static gint
 system_load_custom (const gchar *path, struct idata *sample,
 		    struct job_control *control,
-		    struct sample_info *sample_info_dst)
+		    const struct sample_info *sample_info_req)
 {
+  struct sample_info sample_info_src;
   control->parts = 1;
   control->part = 0;
-  gint res = sample_load_from_file (path, sample, control, sample_info_dst);
-  if (!res)
-    {
-      memcpy (control->data, sample_info_dst, sizeof (struct sample_info));
-    }
-  return res;
+  return sample_load_from_file (path, sample, control, sample_info_req,
+				&sample_info_src);
 }
 
 static gint

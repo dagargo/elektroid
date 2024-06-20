@@ -23,12 +23,14 @@
 #include <errno.h>
 #include "sample.h"
 
-#define LOAD_BUFFER_LEN (32 * 1024)
+#define LOAD_BUFFER_LEN (32 * KIB)
 
 #define JUNK_CHUNK_ID "JUNK"
 #define SMPL_CHUNK_ID "smpl"
 
-#define DEFAULT_SAMPLE_SIZE (1024 * 1024)
+#define DEFAULT_SAMPLE_SIZE (KIB * KIB)
+
+#define HEADERS_SPACE 4096	//Gross estimation for the sample (WAV) headers
 
 static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
 #if !defined(__linux__) || HAVE_SNDFILE_MP3
@@ -213,10 +215,7 @@ sample_get_audio_file_data (struct idata *idata, struct job_control *control,
   struct SF_CHUNK_INFO smpl_chunk_info;
   struct smpl_chunk_data smpl_chunk_data;
   GByteArray *sample = idata->content;
-  struct sample_info *sample_info = control->data;
-
-  g_byte_array_set_size (wave->array, sample->len + 4096);	//We need space for the headers.
-  wave->array->len = 0;
+  struct sample_info *sample_info = idata->info;
 
   frames = sample->len / SAMPLE_INFO_FRAME_SIZE (sample_info);
   debug_print (1, "Frames: %" PRIu64 "; sample rate: %d; channels: %d\n",
@@ -308,7 +307,7 @@ sample_get_memfile_from_sample (struct idata *sample, struct idata *file,
   struct g_byte_array_io_data data;
   GByteArray *content;
 
-  content = g_byte_array_sized_new (sample->content->len * 4 + 4096);
+  content = g_byte_array_sized_new (sample->content->len * 4 + HEADERS_SPACE);
   idata_init (file, content, NULL, NULL);
   data.pos = 0;
   data.array = content;
@@ -559,7 +558,8 @@ sample_check_and_fix_loop_points (struct sample_info *sample_info)
 static gint
 sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 		 struct job_control *control, struct idata *idata,
-		 struct sample_info *sample_info_dst, sample_load_cb cb,
+		 const struct sample_info *sample_info_req,
+		 struct sample_info *sample_info_src, sample_load_cb cb,
 		 gpointer cb_data)
 {
   SF_INFO sf_info;
@@ -576,10 +576,10 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   gint err, resampled_buffer_len, frames_read;
   gboolean active, rounding_fix;
   gdouble ratio;
-  struct sample_info *sample_info_src;
   guint bytes_per_sample, bytes_per_frame;
   guint32 f, actual_frames = 0;
   GByteArray *sample;
+  struct sample_info *sample_info;
 
   sf_info.format = 0;
   sndfile = sf_open_virtual (sf_virtual_io, SFM_READ, &sf_info, data);
@@ -589,41 +589,36 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       return -1;
     }
 
+  sample_info = g_malloc (sizeof (struct sample_info));
   sample = g_byte_array_sized_new (DEFAULT_SAMPLE_SIZE);
-  idata_init (idata, sample, NULL, NULL);
-
-  sample_info_src = control->data;
-  if (!sample_info_src)
-    {
-      sample_info_src = g_malloc (sizeof (struct sample_info));
-    }
+  idata_init (idata, sample, NULL, sample_info);
 
   if (control)
     {
       g_mutex_lock (&control->mutex);
     }
 
-  sample_info_dst->channels = sample_info_dst->channels ?
-    sample_info_dst->channels : sf_info.channels;
-  sample_info_dst->rate = sample_info_dst->rate ? sample_info_dst->rate :
-    sf_info.samplerate;
-  sample_info_dst->format =
-    sample_info_dst->format ? sample_info_dst->format : SF_FORMAT_PCM_16;
+  sample_info->channels =
+    sample_info_req->channels ? sample_info_req->channels : sf_info.channels;
+  sample_info->rate =
+    sample_info_req->rate ? sample_info_req->rate : sf_info.samplerate;
+  sample_info->format =
+    sample_info_req->format ? sample_info_req->format : SF_FORMAT_PCM_16;
 
-  if (sample_info_dst->format != SF_FORMAT_PCM_16 &&
-      sample_info_dst->format != SF_FORMAT_PCM_32 &&
-      sample_info_dst->format != SF_FORMAT_FLOAT)
+  if (sample_info_req->format != SF_FORMAT_PCM_16 &&
+      sample_info_req->format != SF_FORMAT_PCM_32 &&
+      sample_info_req->format != SF_FORMAT_FLOAT)
     {
       error_print ("Invalid sample format. Using short...\n");
-      sample_info_dst->format = SF_FORMAT_PCM_16;
+      sample_info->format = SF_FORMAT_PCM_16;
     }
 
-  bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info_dst);
-  bytes_per_sample = SAMPLE_SIZE (sample_info_dst->format);
+  bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
+  bytes_per_sample = SAMPLE_SIZE (sample_info->format);
 
   sample_set_sample_info (sample_info_src, sndfile, &sf_info);
-  sample_info_dst->midi_note = sample_info_src->midi_note;
-  sample_info_dst->loop_type = sample_info_src->loop_type;
+  sample_info->midi_note = sample_info_src->midi_note;
+  sample_info->loop_type = sample_info_src->loop_type;
 
   if (control)
     {
@@ -641,21 +636,21 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 
   buffer_input_multi = g_malloc (LOAD_BUFFER_LEN *
 				 FRAME_SIZE (sample_info_src->channels,
-					     sample_info_dst->format));
+					     sample_info->format));
   buffer_input_mono = g_malloc (LOAD_BUFFER_LEN * bytes_per_sample);
   buffer_input_stereo = g_malloc (LOAD_BUFFER_LEN * 2 * bytes_per_sample);
 
-  ratio = sample_info_dst->rate / (double) sample_info_src->rate;
+  ratio = sample_info->rate / (double) sample_info_src->rate;
   src_data.src_ratio = ratio;
 
   src_data.output_frames = ceil (LOAD_BUFFER_LEN * src_data.src_ratio);
-  resampled_buffer_len = src_data.output_frames * sample_info_dst->channels;
+  resampled_buffer_len = src_data.output_frames * sample_info->channels;
   buffer_i = g_malloc (resampled_buffer_len * bytes_per_sample);
   src_data.data_out = g_malloc (resampled_buffer_len * sizeof (gfloat));
-  if (sample_info_dst->format == SF_FORMAT_PCM_16 ||
-      sample_info_dst->format == SF_FORMAT_PCM_32)
+  if (sample_info->format == SF_FORMAT_PCM_16 ||
+      sample_info->format == SF_FORMAT_PCM_32)
     {
-      buffer_f = g_malloc (LOAD_BUFFER_LEN * sample_info_dst->channels *
+      buffer_f = g_malloc (LOAD_BUFFER_LEN * sample_info->channels *
 			   sizeof (gfloat));
       src_data.data_in = buffer_f;
       buffer_output = buffer_i;
@@ -666,8 +661,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       buffer_output = src_data.data_out;
     }
 
-  src_state = src_new (SRC_SINC_BEST_QUALITY, sample_info_dst->channels,
-		       &err);
+  src_state = src_new (SRC_SINC_BEST_QUALITY, sample_info->channels, &err);
   if (err)
     {
       goto cleanup;
@@ -677,10 +671,10 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
     {
       g_mutex_lock (&control->mutex);
     }
-  sample_info_dst->frames = floor (sample_info_src->frames * ratio);	//Lower bound estimation. The actual amount is updated later.
-  sample_info_dst->loop_start = round (sample_info_src->loop_start * ratio);
-  sample_info_dst->loop_end = round (sample_info_src->loop_end * ratio);
-  sample_check_and_fix_loop_points (sample_info_dst);
+  sample_info->frames = floor (sample_info_src->frames * ratio);	//Lower bound estimation. The actual amount is updated later.
+  sample_info->loop_start = round (sample_info_src->loop_start * ratio);
+  sample_info->loop_end = round (sample_info_src->loop_end * ratio);
+  sample_check_and_fix_loop_points (sample_info);
   if (control)
     {
       g_mutex_unlock (&control->mutex);
@@ -703,15 +697,15 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   while (f < sample_info_src->frames && active)
     {
       debug_print (2, "Loading %d channels buffer...\n",
-		   sample_info_dst->channels);
+		   sample_info->channels);
 
-      if (sample_info_dst->format == SF_FORMAT_FLOAT)
+      if (sample_info->format == SF_FORMAT_FLOAT)
 	{
 	  frames_read = sf_readf_float (sndfile,
 					(gfloat *) buffer_input_multi,
 					LOAD_BUFFER_LEN);
 	}
-      else if (sample_info_dst->format == SF_FORMAT_PCM_32)
+      else if (sample_info->format == SF_FORMAT_PCM_32)
 	{
 	  frames_read = sf_readf_int (sndfile,
 				      (gint32 *) buffer_input_multi,
@@ -725,20 +719,20 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	}
       f += frames_read;
 
-      if (sample_info_dst->channels == sample_info_src->channels)
+      if (sample_info->channels == sample_info_src->channels)
 	{
 	  buffer_input = buffer_input_multi;
 	}
       else
 	{
-	  if (sample_info_dst->format == SF_FORMAT_FLOAT)
+	  if (sample_info->format == SF_FORMAT_FLOAT)
 	    {
 	      audio_multichannel_to_mono_float (buffer_input_multi,
 						buffer_input_mono,
 						frames_read,
 						sample_info_src->channels);
 	    }
-	  else if (sample_info_dst->format == SF_FORMAT_PCM_32)
+	  else if (sample_info->format == SF_FORMAT_PCM_32)
 	    {
 	      audio_multichannel_to_mono_int (buffer_input_multi,
 					      buffer_input_mono,
@@ -752,19 +746,19 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 						frames_read,
 						sample_info_src->channels);
 	    }
-	  if (sample_info_dst->channels == 1)
+	  if (sample_info->channels == 1)
 	    {
 	      buffer_input = buffer_input_mono;
 	    }
 	  else
 	    {
-	      if (sample_info_dst->format == SF_FORMAT_FLOAT)
+	      if (sample_info->format == SF_FORMAT_FLOAT)
 		{
 		  audio_mono_to_stereo_float (buffer_input_mono,
 					      buffer_input_stereo,
 					      frames_read);
 		}
-	      else if (sample_info_dst->format == SF_FORMAT_PCM_32)
+	      else if (sample_info->format == SF_FORMAT_PCM_32)
 		{
 		  audio_mono_to_stereo_int (buffer_input_mono,
 					    buffer_input_stereo, frames_read);
@@ -779,7 +773,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	    }
 	}
 
-      if (sample_info_dst->rate == sample_info_src->rate)
+      if (sample_info->rate == sample_info_src->rate)
 	{
 	  if (control)
 	    {
@@ -798,23 +792,23 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	  src_data.end_of_input = frames_read < LOAD_BUFFER_LEN ? SF_TRUE : 0;
 	  src_data.input_frames = frames_read;
 
-	  if (sample_info_dst->format == SF_FORMAT_FLOAT)
+	  if (sample_info->format == SF_FORMAT_FLOAT)
 	    {
 	      src_data.data_in = buffer_input;
 	    }
-	  else if (sample_info_dst->format == SF_FORMAT_PCM_32)
+	  else if (sample_info->format == SF_FORMAT_PCM_32)
 	    {
 	      src_int_to_float_array (buffer_input, buffer_f, frames_read *
-				      sample_info_dst->channels);
+				      sample_info->channels);
 	    }
 	  else
 	    {
 	      src_short_to_float_array (buffer_input, buffer_f, frames_read *
-					sample_info_dst->channels);
+					sample_info->channels);
 	    }
 
 	  debug_print (2, "Resampling %d channels with ratio %f...\n",
-		       sample_info_dst->channels, src_data.src_ratio);
+		       sample_info->channels, src_data.src_ratio);
 	  err = src_process (src_state, &src_data);
 	  if (err)
 	    {
@@ -829,17 +823,17 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	      g_mutex_lock (&control->mutex);
 	    }
 
-	  if (sample_info_dst->format == SF_FORMAT_PCM_32)
+	  if (sample_info->format == SF_FORMAT_PCM_32)
 	    {
 	      src_float_to_int_array (src_data.data_out, buffer_i,
 				      src_data.output_frames_gen *
-				      sample_info_dst->channels);
+				      sample_info->channels);
 	    }
-	  if (sample_info_dst->format == SF_FORMAT_PCM_16)
+	  if (sample_info->format == SF_FORMAT_PCM_16)
 	    {
 	      src_float_to_short_array (src_data.data_out, buffer_i,
 					src_data.output_frames_gen *
-					sample_info_dst->channels);
+					sample_info->channels);
 	    }
 	  g_byte_array_append (sample, (guint8 *) buffer_output,
 			       src_data.output_frames_gen * bytes_per_frame);
@@ -876,8 +870,8 @@ cleanup:
   g_free (buffer_input_mono);
   g_free (buffer_input_stereo);
   g_free (buffer_i);
-  if (sample_info_dst->format == SF_FORMAT_PCM_16 ||
-      sample_info_dst->format == SF_FORMAT_PCM_32)
+  if (sample_info->format == SF_FORMAT_PCM_16 ||
+      sample_info->format == SF_FORMAT_PCM_32)
     {
       g_free (buffer_f);
     }
@@ -887,20 +881,15 @@ cleanup:
 
   if (sample->len)
     {
-      if (!control->data)
-	{
-	  control->data = sample_info_src;
-	}
       if (control)
 	{
 	  g_mutex_lock (&control->mutex);
 	}
       // This removes the additional samples added by the resampler due to rounding.
-      rounding_fix = sample_info_dst->frames != actual_frames;
-      sample_info_dst->frames = actual_frames;
-      sample_check_and_fix_loop_points (sample_info_dst);
-      g_byte_array_set_size (sample,
-			     sample_info_dst->frames * bytes_per_frame);
+      rounding_fix = sample_info->frames != actual_frames;
+      sample_info->frames = actual_frames;
+      sample_check_and_fix_loop_points (sample_info);
+      g_byte_array_set_size (sample, sample_info->frames * bytes_per_frame);
       if (control)
 	{
 	  //It there was a rounding fix in the previous lines, the call is needed to detect the end of the loading process.
@@ -914,11 +903,7 @@ cleanup:
     }
   else
     {
-      if (!control->data)
-	{
-	  g_free (sample_info_src);
-	  idata_free (idata);
-	}
+      idata_free (idata);
       return -1;
     }
 }
@@ -926,19 +911,22 @@ cleanup:
 gint
 sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 			  struct job_control *control,
-			  struct sample_info *sample_info_dst)
+			  const struct sample_info *sample_info_req,
+			  struct sample_info *sample_info_src)
 {
   struct g_byte_array_io_data data;
   data.pos = 0;
   data.array = memfile->content;
   return sample_load_raw (&data, &G_BYTE_ARRAY_IO, control, sample,
-			  sample_info_dst, set_sample_progress_no_sync, NULL);
+			  sample_info_req, sample_info_src,
+			  set_sample_progress_no_sync, NULL);
 }
 
 gint
 sample_load_from_file_with_cb (const gchar *path, struct idata *sample,
 			       struct job_control *control,
-			       struct sample_info *sample_info_dst,
+			       const struct sample_info *sample_info_req,
+			       struct sample_info *sample_info_src,
 			       sample_load_cb cb, gpointer cb_data)
 {
   FILE *file = fopen (path, "rb");
@@ -947,7 +935,7 @@ sample_load_from_file_with_cb (const gchar *path, struct idata *sample,
       return -errno;
     }
   gint err = sample_load_raw (file, &FILE_IO, control, sample,
-			      sample_info_dst, cb, cb_data);
+			      sample_info_req, sample_info_src, cb, cb_data);
   fclose (file);
   return err;
 }
@@ -955,10 +943,11 @@ sample_load_from_file_with_cb (const gchar *path, struct idata *sample,
 gint
 sample_load_from_file (const gchar *path, struct idata *sample,
 		       struct job_control *control,
-		       struct sample_info *sample_info_dst)
+		       const struct sample_info *sample_info_req,
+		       struct sample_info *sample_info_src)
 {
   return sample_load_from_file_with_cb (path, sample, control,
-					sample_info_dst,
+					sample_info_req, sample_info_src,
 					set_sample_progress_no_sync, NULL);
 }
 
@@ -1039,7 +1028,7 @@ sample_resample (GByteArray *input, GByteArray *output, gint channels,
   data.data_out = outputf;
   data.src_ratio = ratio;
 
-  src_short_to_float_array ((gshort *) input->data, inputf,
+  src_short_to_float_array ((gint16 *) input->data, inputf,
 			    data.input_frames * channels);
   err = src_simple (&data, SRC_SINC_BEST_QUALITY, channels);
   if (!err)

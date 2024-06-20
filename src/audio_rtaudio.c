@@ -62,6 +62,7 @@ audio_start_playback (struct audio *audio)
 void
 audio_stop_recording (struct audio *audio)
 {
+  struct sample_info *sample_info = audio->sample.info;
   enum audio_status status;
 
   g_mutex_lock (&audio->control.mutex);
@@ -80,7 +81,7 @@ audio_stop_recording (struct audio *audio)
   audio_finish_recording (audio);
 
   debug_print (1, "Stopping recording (%d frames read)...\n",
-	       audio->sample_info.frames);
+	       sample_info->frames);
   rtaudio_abort_stream (audio->record_rtaudio);	//Stop and flush buffer
 }
 
@@ -89,11 +90,12 @@ audio_start_recording (struct audio *audio, guint options,
 		       audio_monitor_notifier monitor_notifier,
 		       void *monitor_data)
 {
+  struct sample_info *sample_info = audio->sample.info;
   audio_stop_recording (audio);
   audio_reset_record_buffer (audio, options, monitor_notifier, monitor_data);
   audio_prepare (audio, AUDIO_STATUS_RECORDING);
   debug_print (1, "Starting recording (max %d frames)...\n",
-	       audio->sample_info.frames);
+	       sample_info->frames);
   rtaudio_start_stream (audio->record_rtaudio);
 }
 
@@ -187,11 +189,11 @@ audio_init_int (struct audio *audio)
   };
 
   dev_info = rtaudio_get_device_info (audio->playback_rtaudio, dev_id);
-  audio->sample_info.rate = dev_info.preferred_sample_rate;
+  audio->rate = dev_info.preferred_sample_rate;
   buffer_frames = AUDIO_BUF_FRAMES;
   err = rtaudio_open_stream (audio->playback_rtaudio, &playback_stream_params,
 			     NULL, RTAUDIO_FORMAT_SINT16,
-			     audio->sample_info.rate, &buffer_frames,
+			     audio->rate, &buffer_frames,
 			     audio_playback_cb, audio, &STREAM_OPTIONS,
 			     audio_error_cb);
   if (err || !rtaudio_is_stream_open (audio->playback_rtaudio))
@@ -204,7 +206,7 @@ audio_init_int (struct audio *audio)
 
   debug_print (1,
 	       "Using %s for playback with %d Hz sample rate and %d frames...\n",
-	       dev_info.name, audio->sample_info.rate, buffer_frames);
+	       dev_info.name, audio->rate, buffer_frames);
 
   audio->volume = 1.0;
   audio->volume_change_callback (audio->callback_data, audio->volume);
@@ -235,7 +237,7 @@ audio_init_int (struct audio *audio)
   buffer_frames = AUDIO_BUF_FRAMES;
   err = rtaudio_open_stream (audio->record_rtaudio, NULL,
 			     &record_stream_params, RTAUDIO_FORMAT_SINT16,
-			     audio->sample_info.rate, &buffer_frames,
+			     audio->rate, &buffer_frames,
 			     audio_record_cb, audio, &STREAM_OPTIONS,
 			     audio_error_cb);
   if (err || !rtaudio_is_stream_open (audio->record_rtaudio))
@@ -248,7 +250,7 @@ audio_init_int (struct audio *audio)
 
   debug_print (1,
 	       "Using %s for recording with %d Hz sample rate and %d frames...\n",
-	       dev_info.name, audio->sample_info.rate, buffer_frames);
+	       dev_info.name, audio->rate, buffer_frames);
 
   goto end;
 

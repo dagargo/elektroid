@@ -155,7 +155,9 @@ editor_reset (struct editor *editor, struct browser *browser)
 static void
 editor_set_start_frame (struct editor *editor, gint start)
 {
-  gint max = editor->audio.sample_info.frames - 1;
+  struct sample_info *sample_info = editor->audio.sample.info;
+  gint max = sample_info->frames - 1;
+
   start = start < 0 ? 0 : start;
   start = start > max ? max : start;
 
@@ -166,7 +168,7 @@ editor_set_start_frame (struct editor *editor, gint start)
 					 (editor->waveform_scrolled_window));
   gdouble upper = widget_w * editor->zoom - 3;	//Base 0 and 2 border pixels
   gdouble lower = 0;
-  gdouble value = upper * start / (double) editor->audio.sample_info.frames;
+  gdouble value = upper * start / (double) sample_info->frames;
 
   debug_print (1, "Setting waveform scrollbar to %f [%f, %f]...\n", value,
 	       lower, upper);
@@ -178,22 +180,24 @@ editor_set_start_frame (struct editor *editor, gint start)
 static guint
 editor_get_start_frame (struct editor *editor)
 {
+  struct sample_info *sample_info = editor->audio.sample.info;
   GtkAdjustment *adj =
     gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW
 					 (editor->waveform_scrolled_window));
-  return editor->audio.sample_info.frames * gtk_adjustment_get_value (adj) /
+  return sample_info->frames * gtk_adjustment_get_value (adj) /
     (gdouble) gtk_adjustment_get_upper (adj);
 }
 
 void
 editor_set_audio_mono_mix (struct editor *editor)
 {
-  if (editor->audio.sample_info.frames > 0)
+  struct sample_info *sample_info = editor->audio.sample.info;
+  if (sample_info && sample_info->frames > 0)
     {
       gboolean remote_mono = remote_browser.fs_ops &&
 	!(remote_browser.fs_ops->options & FS_OPTION_STEREO);
       gboolean mono_mix = (editor->preferences->mix && remote_mono) ||
-	editor->audio.sample_info.channels != 2;
+	sample_info->channels != 2;
 
       g_mutex_lock (&editor->audio.control.mutex);
       editor->audio.mono_mix = mono_mix;
@@ -208,8 +212,9 @@ editor_loading_completed_no_lock (struct editor *editor,
   gboolean completed;
   guint32 actual;
   gint bytes_per_frame;
+  struct sample_info *sample_info = editor->audio.sample.info;
 
-  if (!editor->audio.sample.content)
+  if (!sample_info)
     {
       if (actual_frames)
 	{
@@ -218,9 +223,9 @@ editor_loading_completed_no_lock (struct editor *editor,
       return FALSE;
     }
 
-  bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (&editor->audio.sample_info);
+  bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
   actual = editor->audio.sample.content->len / bytes_per_frame;
-  completed = actual == editor->audio.sample_info.frames && actual;
+  completed = actual == sample_info->frames && actual;
   if (actual_frames)
     {
       *actual_frames = actual;
@@ -320,23 +325,30 @@ static gdouble
 editor_get_x_ratio (struct editor *editor)
 {
   guint layout_width;
-  struct audio *audio = &editor->audio;
+  struct sample_info *sample_info = editor->audio.sample.info;
   gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &layout_width, NULL);
-  return audio->sample_info.frames / (gdouble) layout_width;
+  return sample_info->frames / (gdouble) layout_width;
 }
 
 gboolean
 editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 {
   GdkRGBA color, bgcolor;
-  guint width, height, x_count, c_height, c_height_half;
+  guint width, height, x_count, c_height, c_height_half, start;
   guint32 loop_start, loop_end;
   GtkStyleContext *context;
   gdouble x_ratio, x_frame, x_frame_next, y_scale, value;
   struct editor_y_frame_state y_frame_state;
   struct editor *editor = data;
+  struct sample_info *sample_info = editor->audio.sample.info;
   struct audio *audio = &editor->audio;
-  guint start = editor_get_start_frame (editor);
+
+  if (!sample_info)
+    {
+      return FALSE;
+    }
+
+  start = editor_get_start_frame (editor);
 
   debug_print (3, "Drawing waveform from %d with %f.2x zoom...\n",
 	       start, editor->zoom);
@@ -349,20 +361,20 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 
   g_mutex_lock (&audio->control.mutex);
 
-  loop_start = audio->sample_info.loop_start;
-  loop_end = audio->sample_info.loop_end;
+  loop_start = sample_info->loop_start;
+  loop_end = sample_info->loop_end;
   x_ratio = editor_get_x_ratio (editor);
 
   y_scale = height / (double) SHRT_MIN;
-  y_scale /= (gdouble) audio->sample_info.channels * 2;
-  c_height = height / (gdouble) audio->sample_info.channels;
+  y_scale /= (gdouble) sample_info->channels * 2;
+  c_height = height / (gdouble) sample_info->channels;
   c_height_half = c_height / 2;
 
-  editor_init_y_frame_state (&y_frame_state, audio->sample_info.channels);
+  editor_init_y_frame_state (&y_frame_state, sample_info->channels);
 
   cairo_set_line_width (cr, x_ratio < 1.0 ? 1.0 / x_ratio : 1);
 
-  if (audio->sample_info.frames)
+  if (sample_info->frames)
     {
       GtkStateFlags state = gtk_style_context_get_state (context);
       gtk_style_context_get_color (context, state, &color);
@@ -391,9 +403,9 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 	      continue;
 	    }
 
-	  if (!editor_get_y_frame
-	      (audio->sample.content, audio->sample_info.channels, x_frame,
-	       x_count, &y_frame_state))
+	  if (!editor_get_y_frame (audio->sample.content,
+				   sample_info->channels, x_frame, x_count,
+				   &y_frame_state))
 	    {
 	      debug_print (3,
 			   "Last available frame before the sample end. Stopping...\n");
@@ -401,7 +413,7 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 	    }
 
 	  gdouble mid_c = c_height_half;
-	  for (gint j = 0; j < audio->sample_info.channels; j++)
+	  for (gint j = 0; j < sample_info->channels; j++)
 	    {
 	      value = mid_c + y_frame_state.wp[j] * y_scale;
 	      cairo_move_to (cr, i + 0.5, value);
@@ -417,7 +429,7 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 
   cairo_set_line_width (cr, 1);
 
-  if (audio->sample_info.frames)
+  if (sample_info->frames)
     {
       context = gtk_widget_get_style_context (editor->play_menuitem);	//Any text widget is valid
       gtk_style_context_get_color (context, GTK_STATE_FLAG_NORMAL, &color);
@@ -448,7 +460,7 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 	  color.alpha = 0.25;
 	  gdk_cairo_set_source_rgba (cr, &color);
 
-	  gdouble grid_inc = audio->sample_info.frames /
+	  gdouble grid_inc = sample_info->frames /
 	    (gdouble) editor->preferences->grid_length;
 	  for (gint i = 1; i < editor->preferences->grid_length; i++)
 	    {
@@ -515,6 +527,7 @@ editor_load_sample_runner (gpointer data)
 {
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
+  struct sample_info sample_info_req;
 
   editor->dirty = FALSE;
   editor->ready = FALSE;
@@ -522,16 +535,17 @@ editor_load_sample_runner (gpointer data)
   editor->audio.sel_start = 0;
   editor->audio.sel_len = 0;
 
-  audio->sample_info.channels = 0;	//Automatic
-  audio->sample_info.format = SF_FORMAT_PCM_16;
+  sample_info_req.channels = 0;	//Automatic
+  sample_info_req.format = SF_FORMAT_PCM_16;
+  sample_info_req.rate = audio->rate;
 
   g_mutex_lock (&audio->control.mutex);
   audio->control.active = TRUE;
   g_mutex_unlock (&audio->control.mutex);
 
-  sample_load_from_file_with_cb
-    (audio->path, &audio->sample, &audio->control,
-     &audio->sample_info, editor_load_sample_cb, editor);
+  sample_load_from_file_with_cb (audio->path, &audio->sample, &audio->control,
+				 &sample_info_req, &audio->sample_info_src,
+				 editor_load_sample_cb, editor);
 
   g_mutex_lock (&audio->control.mutex);
   audio->control.active = FALSE;
@@ -739,21 +753,24 @@ editor_get_frame_at_position (struct editor *editor, gdouble x,
 {
   guint lw;
   guint start = editor_get_start_frame (editor);
+  struct sample_info *sample_info = editor->audio.sample.info;
+
   gtk_layout_get_size (GTK_LAYOUT (editor->waveform), &lw, NULL);
   x = x > lw ? lw : x < 0.0 ? 0.0 : x;
-  *cursor_frame = (editor->audio.sample_info.frames - 1) * (x / (gdouble) lw);
+  *cursor_frame = (sample_info->frames - 1) * (x / (gdouble) lw);
   if (rel_pos)
     {
       *rel_pos = (*cursor_frame - start) /
-	(editor->audio.sample_info.frames / (double) editor->zoom);
+	(sample_info->frames / (double) editor->zoom);
     }
 }
 
 static gdouble
 editor_get_max_zoom (struct editor *editor)
 {
+  struct sample_info *sample_info = editor->audio.sample.info;
   guint w = gtk_widget_get_allocated_width (editor->waveform_scrolled_window);
-  gdouble max_zoom = editor->audio.sample_info.frames / (double) w;
+  gdouble max_zoom = sample_info->frames / (double) w;
   return max_zoom < 1 ? 1 : max_zoom;
 }
 
@@ -763,6 +780,12 @@ editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
   gdouble rel_pos;
   guint start, cursor_frame;
   gboolean ctrl = ((event->state) & GDK_CONTROL_MASK) != 0;
+  struct sample_info *sample_info = editor->audio.sample.info;
+
+  if (!sample_info)
+    {
+      return FALSE;
+    }
 
   if (!ctrl)
     {
@@ -807,7 +830,7 @@ editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
 
   debug_print (1, "Setting zoom to %f.2x...\n", editor->zoom);
 
-  start = cursor_frame - rel_pos * editor->audio.sample_info.frames /
+  start = cursor_frame - rel_pos * sample_info->frames /
     (gdouble) editor->zoom;
   editor_set_layout_width (editor);
   editor_set_start_frame (editor, start);
@@ -838,7 +861,9 @@ static void
 editor_on_size_allocate (GtkWidget *self, GtkAllocation *allocation,
 			 struct editor *editor)
 {
-  if (editor->audio.sample_info.frames == 0)
+  struct sample_info *sample_info = editor->audio.sample.info;
+
+  if (!sample_info || sample_info->frames == 0)
     {
       return;
     }
@@ -884,6 +909,7 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
   guint cursor_frame;
   struct editor *editor = data;
+  struct sample_info *sample_info = editor->audio.sample.info;
 
   if (!editor_loading_completed (editor))
     {
@@ -895,16 +921,14 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
     {
       debug_print (2, "Pressing at frame %d...\n", cursor_frame);
       if (editor_cursor_frame_over_frame (editor, cursor_frame,
-					  editor->audio.
-					  sample_info.loop_start))
+					  sample_info->loop_start))
 	{
 	  debug_print (2, "Clicking on loop start...\n");
 	  editor->operation = EDITOR_OP_MOVE_LOOP_START;
 	  editor_set_cursor (editor, "col-resize");
 	}
       else if (editor_cursor_frame_over_frame (editor, cursor_frame,
-					       editor->audio.
-					       sample_info.loop_end))
+					       sample_info->loop_end))
 	{
 	  debug_print (2, "Clicking on loop end...\n");
 	  editor->operation = EDITOR_OP_MOVE_LOOP_END;
@@ -1009,10 +1033,11 @@ static gboolean
 editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 {
   guint cursor_frame;
+  gint16 *samples;
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
-  struct sample_info *sample_info_src = audio->control.data;
-  gint16 *samples;
+  struct sample_info *sample_info = audio->sample.info;
+  struct sample_info *sample_info_src = &editor->audio.sample_info_src;
 
   if (!editor->audio.sample.content)
     {
@@ -1032,29 +1057,25 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
     }
   else if (editor->operation == EDITOR_OP_MOVE_LOOP_START)
     {
-      gdouble r = sample_info_src->frames /
-	(gdouble) editor->audio.sample_info.frames;
-      editor->audio.sample_info.loop_start = cursor_frame;
+      gdouble r = sample_info_src->frames / (gdouble) sample_info->frames;
+      sample_info->loop_start = cursor_frame;
       sample_info_src->loop_start = cursor_frame * r;
       debug_print (2,
 		   "Setting loop start to %d frame and %d value (%d file frame)...\n",
-		   editor->audio.sample_info.loop_start,
-		   samples[editor->audio.sample_info.loop_start *
-			   editor->audio.sample_info.channels],
+		   sample_info->loop_start,
+		   samples[sample_info->loop_start * sample_info->channels],
 		   sample_info_src->loop_start);
       editor->dirty = TRUE;
     }
   else if (editor->operation == EDITOR_OP_MOVE_LOOP_END)
     {
-      gdouble r = sample_info_src->frames /
-	(gdouble) editor->audio.sample_info.frames;
-      editor->audio.sample_info.loop_end = cursor_frame;
+      gdouble r = sample_info_src->frames / (gdouble) sample_info->frames;
+      sample_info->loop_end = cursor_frame;
       sample_info_src->loop_end = cursor_frame * r;
       debug_print (2,
 		   "Setting loop end to %d frame and %d value (%d file frame)...\n",
-		   editor->audio.sample_info.loop_end,
-		   samples[editor->audio.sample_info.loop_end *
-			   editor->audio.sample_info.channels],
+		   sample_info->loop_end,
+		   samples[sample_info->loop_end * sample_info->channels],
 		   sample_info_src->loop_end);
       editor->dirty = TRUE;
     }
@@ -1073,14 +1094,12 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
   else
     {
       if (editor_cursor_frame_over_frame (editor, cursor_frame,
-					  editor->audio.
-					  sample_info.loop_start))
+					  sample_info->loop_start))
 	{
 	  editor_set_cursor (editor, "col-resize");
 	}
       else if (editor_cursor_frame_over_frame (editor, cursor_frame,
-					       editor->audio.
-					       sample_info.loop_end))
+					       sample_info->loop_end))
 	{
 	  editor_set_cursor (editor, "col-resize");
 	}
@@ -1177,59 +1196,57 @@ editor_file_exists_no_overwrite (const gchar *filename)
 
 static gint
 editor_save_with_format (struct editor *editor, gchar *name,
-			 struct idata *sample, guint32 format_dst)
+			 struct idata *sample)
 {
   gint err;
-  struct sample_info *sample_info_src = editor->audio.control.data;
-  struct sample_info *sample_info_dst = &editor->audio.sample_info;
-  gdouble ratio = sample_info_src->rate / (gdouble) sample_info_dst->rate;
+  struct sample_info *sample_info_src = &editor->audio.sample_info_src;
+  struct sample_info *sample_info = editor->audio.sample.info;
+  gdouble ratio = sample_info_src->rate / (gdouble) sample_info->rate;
+  guint32 format = sample_info_src->format;
+  size_t fsize = FRAME_SIZE (sample_info_src->channels,
+			     format & SF_FORMAT_SUBMASK);
 
-  //Control format needs to be set to internal sample format but format
-  //destination is needed to ensure the same file type and sample type is
-  //used when saving.
-  sample_info_src->format =
-    (sample_info_src->format & SF_FORMAT_TYPEMASK) | SF_FORMAT_PCM_16;
   if (ratio == 1.0)
     {
       err = sample_save_to_file (name, sample, &editor->audio.control,
-				 format_dst);
+				 format);
     }
   else
     {
       GByteArray *resampled = g_byte_array_new ();
       err = sample_resample (sample->content, resampled,
 			     sample_info_src->channels, ratio);
-      if (!err)
+      if (err)
 	{
-	  struct idata aux;
-	  aux.content = resampled;
-	  err = sample_save_to_file (name, &aux, &editor->audio.control,
-				     format_dst);
+	  g_byte_array_free (resampled, TRUE);
+	  return err;
 	}
-      g_byte_array_free (resampled, TRUE);
-    }
 
-  //This needs to be restored. If not, following calls will loose the format.
-  sample_info_src->format = format_dst;
+      struct idata aux;
+      struct sample_info *si = g_malloc (sizeof (struct sample_info));
+      memcpy (si, &editor->audio.sample_info_src,
+	      sizeof (struct sample_info));
+      si->frames = resampled->len / fsize;
+      si->loop_start = si->frames - 1;
+      si->loop_end = si->loop_start;
+
+      idata_init (&aux, resampled, NULL, si);
+      err = sample_save_to_file (name, &aux, &editor->audio.control, format);
+      idata_free (&aux);
+    }
 
   browser_load_dir_if_needed (editor->browser);
 
   return err;
 }
 
-static gint
-editor_save (struct editor *editor, gchar *name, struct idata *sample)
-{
-  struct sample_info *sample_info_src = editor->audio.control.data;
-  return editor_save_with_format (editor, name, sample,
-				  sample_info_src->format);
-}
-
 static void
 editor_save_clicked (GtkWidget *object, gpointer data)
 {
   gchar *name;
+  GByteArray *sample = NULL;
   struct editor *editor = data;
+  struct sample_info *sample_info = editor->audio.sample.info;
 
   if (!editor_loading_completed (editor))
     {
@@ -1243,22 +1260,22 @@ editor_save_clicked (GtkWidget *object, gpointer data)
       g_mutex_unlock (&editor->audio.control.mutex);
       if (editor_file_exists_no_overwrite (editor->audio.path))
 	{
-	  return;
+	  goto end;
 	}
+      g_mutex_lock (&editor->audio.control.mutex);
 
       debug_print (2, "Saving changes to %s...\n", editor->audio.path);
 
-      g_mutex_lock (&editor->audio.control.mutex);
-      editor_save (editor, editor->audio.path, &editor->audio.sample);
+      editor_save_with_format (editor, editor->audio.path,
+			       &editor->audio.sample);
     }
   else
     {
       gchar suggestion[PATH_MAX];
-      GByteArray *sample = NULL;
       if (editor->audio.sel_len)
 	{
 	  sample = g_byte_array_new ();
-	  guint fsize = SAMPLE_INFO_FRAME_SIZE (&editor->audio.sample_info);
+	  guint fsize = SAMPLE_INFO_FRAME_SIZE (sample_info);
 	  guint start = editor->audio.sel_start * fsize;
 	  guint len = editor->audio.sel_len * fsize;
 	  g_byte_array_append (sample,
@@ -1284,34 +1301,42 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	  g_mutex_unlock (&editor->audio.control.mutex);
 	  if (editor_file_exists_no_overwrite (name))
 	    {
-	      return;
+	      goto end;
 	    }
+	  g_mutex_lock (&editor->audio.control.mutex);
 
 	  debug_print (2, "Saving recording to %s...\n", name);
-
-	  g_mutex_lock (&editor->audio.control.mutex);
 
 	  if (editor->audio.sel_len)
 	    {
 	      struct idata aux;
-	      aux.content = sample;
-	      editor_save_with_format (editor, name, &aux, SF_FORMAT_WAV |
-				       SF_FORMAT_PCM_16);
+	      struct sample_info *si = g_malloc (sizeof (struct sample_info));
+	      memcpy (si, &editor->audio.sample_info_src,
+		      sizeof (struct sample_info));
+	      si->frames = editor->audio.sel_len;
+	      si->loop_start = editor->audio.sel_len - 1;
+	      si->loop_end = si->loop_start;
+	      idata_init (&aux, sample, NULL, si);
+	      editor_save_with_format (editor, name, &aux);
+	      idata_free (&aux);
+	      sample = NULL;
 	    }
 	  else
 	    {
 	      editor->audio.path = name;
-	      editor_save (editor, editor->audio.path, &editor->audio.sample);
+	      editor_save_with_format (editor, editor->audio.path,
+				       &editor->audio.sample);
 	    }
-	}
-
-      if (sample)
-	{
-	  g_byte_array_free (sample, TRUE);
 	}
     }
 
   g_mutex_unlock (&editor->audio.control.mutex);
+
+end:
+  if (sample)
+    {
+      g_byte_array_free (sample, TRUE);
+    }
 }
 
 static gboolean

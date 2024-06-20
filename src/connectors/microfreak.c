@@ -1553,7 +1553,7 @@ microfreak_wavetable_load_sample (const gchar *path, struct idata *wavetable,
       debug_print (1, "Resampling to get a valid wavetable...\n");
       GByteArray *resampled =
 	g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
-      struct sample_info *sample_info = control->data;
+      struct sample_info *sample_info = aux.info;
       gdouble r = MICROFREAK_WAVETABLE_LEN / (gdouble) sample_info->frames;
       err = sample_resample (wavetable->content, resampled,
 			     sample_info->channels, r);
@@ -1721,7 +1721,6 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
   sample_info->channels = 1;
 
   content = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
-  idata_init (wavetable, content, name, NULL);
   content->len = MICROFREAK_WAVETABLE_SIZE;
 
   control->parts = (MICROFREAK_SAMPLE_BATCH_PACKETS + 1) *
@@ -1738,11 +1737,12 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
 
   if (err)
     {
+      g_free (content);
       g_free (sample_info);
     }
   else
     {
-      control->data = sample_info;
+      idata_init (wavetable, content, name, sample_info);
     }
 
   return err;

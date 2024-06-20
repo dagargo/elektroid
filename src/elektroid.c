@@ -246,7 +246,7 @@ elektroid_update_audio_status (gboolean status)
     {
       snprintf (msg, LABEL_MAX, "%s: %s %s, %.5g kHz %s", _("Audio"),
 		audio_name (), audio_version (),
-		editor.audio.sample_info.rate / 1000.f, BACKEND_PLAYING);
+		editor.audio.rate / 1000.f, BACKEND_PLAYING);
     }
   else
     {
@@ -1511,8 +1511,6 @@ elektroid_upload_task_runner (gpointer data)
   res = tasks.transfer.fs_ops->upload (remote_browser.backend,
 				       upload_path, &idata,
 				       &tasks.transfer.control);
-  g_free (tasks.transfer.control.data);
-  tasks.transfer.control.data = NULL;
 
   if (res && tasks.transfer.control.active)
     {
@@ -1762,8 +1760,6 @@ elektroid_download_task_runner (gpointer userdata)
 
 end_canceled_transfer:
   idata_free (&idata);
-  g_free (tasks.transfer.control.data);
-  tasks.transfer.control.data = NULL;
 
 end_with_download_error:
   g_mutex_unlock (&tasks.transfer.control.mutex);
@@ -1919,6 +1915,7 @@ elektroid_common_key_press (GtkWidget *widget, GdkEventKey *event,
   GtkAllocation allocation;
   GdkWindow *gdk_window;
   struct browser *browser = data;
+  struct sample_info *sample_info = editor.audio.sample.info;
 
   if (event->keyval == GDK_KEY_Menu)
     {
@@ -1930,7 +1927,7 @@ elektroid_common_key_press (GtkWidget *widget, GdkEventKey *event,
 			      NULL);
       return TRUE;
     }
-  else if (event->keyval == GDK_KEY_space && editor.audio.sample_info.frames)
+  else if (event->keyval == GDK_KEY_space && sample_info->frames)
     {
       editor_play_clicked (NULL, &editor);
       return TRUE;

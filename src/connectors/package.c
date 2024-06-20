@@ -858,9 +858,9 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
   control->part = 1;
   for (i = 0; i < elements; i++, control->part++)
     {
-      struct sample_info sample_info_dst;
-      sample_info_dst.rate = ELEKTRON_SAMPLE_RATE;
-      sample_info_dst.channels = 0;	//Automatic
+      struct sample_info sample_info_req, sample_info_src;
+      sample_info_req.rate = ELEKTRON_SAMPLE_RATE;
+      sample_info_req.channels = 0;	//Automatic
 
       json_reader_read_element (reader, i);
       json_reader_read_member (reader, PKG_TAG_FILE_NAME);
@@ -884,19 +884,12 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       zip_fclose (zip_file);
 
       if (sample_load_from_memfile (&sample_file, &sample, control,
-				    &sample_info_dst))
+				    &sample_info_req, &sample_info_src))
 	{
 	  error_print ("Error while loading '%s': %s\n",
 		       sample_path, zip_error_strerror (&zerror));
 	  continue;
 	}
-
-      pkg_resource = g_malloc (sizeof (struct package_resource));
-      pkg_resource->type = PKG_RES_TYPE_SAMPLE;
-      pkg_resource->data = idata_steal (&sample);
-      pkg_resource->path = strdup (sample_path);
-
-      pkg->resources = g_list_append (pkg->resources, pkg_resource);
 
       //We remove the "Samples" at the beggining of the full zip path...
       dev_sample_path = strdup (&sample_path[7]);
@@ -905,8 +898,14 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       ret = elektron_upload_sample_part (backend, dev_sample_path,
 					 &sample, control);
       g_free (dev_sample_path);
-      g_free (control->data);
-      control->data = NULL;
+
+      pkg_resource = g_malloc (sizeof (struct package_resource));
+      pkg_resource->type = PKG_RES_TYPE_SAMPLE;
+      pkg_resource->data = idata_steal (&sample);
+      pkg_resource->path = strdup (sample_path);
+
+      pkg->resources = g_list_append (pkg->resources, pkg_resource);
+
       if (ret)
 	{
 	  error_print ("Error while uploading sample to '%s'\n",

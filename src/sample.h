@@ -32,6 +32,8 @@
 #define SAMPLE_INFO_FRAME_SIZE(sample_info) ((sample_info)->channels * SAMPLE_SIZE((sample_info)->format))
 #define MONO_MIX_GAIN(channels) (channels == 2 ? 0.5 : 1.0 / sqrt (channels))
 
+#define SAMPLE_GET_FILE_FORMAT(sample_info, sample_format) (((sample_info)->format & SF_FORMAT_TYPEMASK) | sample_format)
+
 typedef void (*sample_load_cb) (struct job_control * control,
 				gdouble progress, gpointer data);
 
@@ -40,11 +42,13 @@ gint sample_save_to_file (const gchar * path, struct idata *sample,
 
 gint sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 			       struct job_control *control,
-			       struct sample_info *sample_info);
+			       const struct sample_info *sample_info_req,
+			       struct sample_info *sample_info_src);
 
 gint sample_load_from_file (const gchar * path, struct idata *sample,
 			    struct job_control *control,
-			    struct sample_info *sample_info);
+			    const struct sample_info *sample_info_req,
+			    struct sample_info *sample_info_src);
 
 gint sample_get_memfile_from_sample (struct idata *sample,
 				     struct idata *file,
@@ -53,7 +57,8 @@ gint sample_get_memfile_from_sample (struct idata *sample,
 
 gint sample_load_from_file_with_cb (const gchar * path, struct idata *sample,
 				    struct job_control *control,
-				    struct sample_info *sample_info,
+				    const struct sample_info *sample_info_req,
+				    struct sample_info *sample_info_src,
 				    sample_load_cb callback, gpointer data);
 
 gint sample_load_sample_info (const gchar * path,

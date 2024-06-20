@@ -522,7 +522,6 @@ cli_download (int argc, gchar *argv[], int *optind)
 
   err = fs_ops->save (download_path, &idata, &control);
   g_free (download_path);
-  g_free (control.data);
 
 cleanup:
   idata_free (&idata);
@@ -579,7 +578,6 @@ cli_upload (int argc, gchar *argv[], int *optind)
 
   CHECK_FS_OPS_FUNC (fs_ops->upload);
   err = fs_ops->upload (&backend, upload_path, &idata, &control);
-  g_free (control.data);
   idata_free (&idata);
 
 cleanup:

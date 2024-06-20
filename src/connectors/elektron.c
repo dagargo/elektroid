@@ -1360,7 +1360,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
 
   while (transferred < input->len && active)
     {
-      tx_msg = new_msg_write_blk (id, input, &transferred, i, control->data);
+      tx_msg = new_msg_write_blk (id, input, &transferred, i, smplrw->info);
       rx_msg = elektron_tx_and_rx (backend, tx_msg);
       if (!rx_msg)
 	{
@@ -1479,7 +1479,7 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 			  elektron_msg_id_func new_msg_close_read,
 			  elektron_copy_array copy_array)
 {
-  struct sample_info *sample_info;
+  struct sample_info *sample_info = NULL;
   struct elektron_sample_header *elektron_sample_header;
   GByteArray *tx_msg, *rx_msg;
   GByteArray *array, *output;
@@ -1523,7 +1523,6 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
   res = 0;
   next_block_start = 0;
   offset = read_offset;
-  control->data = NULL;
   while (next_block_start < frames && active)
     {
       req_size =
@@ -1558,7 +1557,6 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 	  sample_info->midi_note = 0;
 	  sample_info->channels = elektron_sample_header->stereo + 1;
 	  sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
-	  control->data = sample_info;
 	  debug_print (2, "Loop start at %d, loop end at %d\n",
 		       sample_info->loop_start, sample_info->loop_end);
 	}
@@ -1599,10 +1597,11 @@ cleanup:
   if (res)
     {
       g_byte_array_free (output, TRUE);
+      g_free (sample_info);
     }
   else
     {
-      idata_init (smplrw, output, NULL, NULL);
+      idata_init (smplrw, output, NULL, sample_info);
     }
   return res;
 }
@@ -2448,7 +2447,6 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
 
   if (control)
     {
-      control->data = NULL;
       g_mutex_lock (&control->mutex);
       active = control->active;
       g_mutex_unlock (&control->mutex);
@@ -2810,7 +2808,6 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
 
   seq = 0;
   offset = 0;
-  control->data = NULL;
   if (control)
     {
       g_mutex_lock (&control->mutex);
@@ -3019,7 +3016,7 @@ elektron_sample_stereo_load (const gchar *path, struct idata *sample,
       return err;
     }
 
-  sample_info = control->data;
+  sample_info = sample->info;
   if (sample_info->channels > 2)
     {
       idata_free (sample);

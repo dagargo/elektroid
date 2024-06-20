@@ -36,6 +36,8 @@
 
 #define MAX_BACKEND_STORAGE (sizeof (gint32) * 8)
 
+#define KIB 1024
+
 #define debug_print(level, format, ...) if (level <= debug_level) fprintf(stderr, "DEBUG:" __FILE__ ":%d:(%s): " format, __LINE__, __FUNCTION__, ## __VA_ARGS__)
 #define error_print(format, ...) fprintf(stderr, "%sERROR:" __FILE__ ":%d:(%s): " format "%s", isatty(fileno(stderr)) ? "\x1b[31m" : "", __LINE__, __FUNCTION__, ## __VA_ARGS__, isatty(fileno(stderr)) ? "\x1b[m" : "")
 
@@ -109,7 +111,6 @@ struct job_control
   gint parts;
   gint part;
   gdouble progress;
-  void *data;
 };
 
 enum sysex_transfer_status
