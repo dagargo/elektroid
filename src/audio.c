@@ -260,11 +260,8 @@ audio_destroy (struct audio *audio)
   audio_reset_sample (audio);
 
   g_mutex_lock (&audio->control.mutex);
-
   audio_destroy_int (audio);
-
   g_free (audio->control.data);
-
   g_mutex_unlock (&audio->control.mutex);
 }
 

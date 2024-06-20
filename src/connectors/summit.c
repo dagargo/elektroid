@@ -685,11 +685,12 @@ summit_tuning_download (struct backend *backend, const gchar *path,
     }
 
   idata_init (tuning, rx_msg, NULL, NULL);
-  return 0;
+  goto end;
 
 cleanup:
   free_msg (rx_msg);
 end:
+  usleep (SUMMIT_REST_TIME_US);
   return err;
 }
 
@@ -857,11 +858,12 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
     }
 
   idata_init (wavetable, output, NULL, NULL);
-  return 0;
+  goto end;
 
 err:
   g_byte_array_free (output, TRUE);
   free_msg (rx_msg);
+end:
   usleep (SUMMIT_REST_TIME_US);
   return err;
 }

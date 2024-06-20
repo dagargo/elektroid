@@ -644,7 +644,7 @@ package_receive_pkg_resources (struct package *pkg,
 
       pkg_resource = g_malloc (sizeof (struct package_resource));
       pkg_resource->type = PKG_RES_TYPE_SAMPLE;
-      pkg_resource->data = file.content;	//Content stealing
+      pkg_resource->data = idata_steal (&file);
       pkg_resource->hash = hash;
       pkg_resource->size = size;
       package_resource_path = g_string_new (NULL);
@@ -678,7 +678,7 @@ get_payload:
     {
       pkg_resource = g_malloc (sizeof (struct package_resource));
       pkg_resource->type = PKG_RES_TYPE_PAYLOAD;
-      pkg_resource->data = payload_file.content;
+      pkg_resource->data = idata_steal (&payload_file);
       pkg_resource->path = strdup (pkg->name);
       if (package_add_resource (pkg, pkg_resource, TRUE))
 	{
@@ -893,7 +893,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
       pkg_resource = g_malloc (sizeof (struct package_resource));
       pkg_resource->type = PKG_RES_TYPE_SAMPLE;
-      pkg_resource->data = sample.content;	//Content stealing
+      pkg_resource->data = idata_steal (&sample);
       pkg_resource->path = strdup (sample_path);
 
       pkg->resources = g_list_append (pkg->resources, pkg_resource);

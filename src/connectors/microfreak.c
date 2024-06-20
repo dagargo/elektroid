@@ -1545,7 +1545,7 @@ microfreak_wavetable_load_sample (const gchar *path, struct idata *wavetable,
 
   if (aux.content->len == MICROFREAK_WAVETABLE_SIZE)
     {
-      idata_init (wavetable, aux.content, NULL, NULL);	//content stealing
+      idata_init (wavetable, idata_steal (&aux), NULL, NULL);
       return 0;
     }
   else
@@ -1669,6 +1669,7 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
   struct item_iterator iter;
   gboolean found;
   gchar name[MICROFREAK_WAVETABLE_NAME_LEN];
+  GByteArray *content;
 
   err = common_slot_get_id_name_from_path (path, &id, NULL);
   if (err)
@@ -1719,9 +1720,9 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
   sample_info->midi_note = 0;
   sample_info->channels = 1;
 
-  idata_init (wavetable, g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE),
-	      name, NULL);
-  wavetable->content->len = MICROFREAK_WAVETABLE_SIZE;
+  content = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
+  idata_init (wavetable, content, name, NULL);
+  content->len = MICROFREAK_WAVETABLE_SIZE;
 
   control->parts = (MICROFREAK_SAMPLE_BATCH_PACKETS + 1) *
     MICROFREAK_WAVETABLE_PARTS;
@@ -1731,8 +1732,8 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
   err = 0;
   for (guint8 part = 0; part < MICROFREAK_WAVETABLE_PARTS && !err; part++)
     {
-      err = microfreak_wavetable_download_part (backend, wavetable->content,
-						control, id, part);
+      err = microfreak_wavetable_download_part (backend, content, control, id,
+						part);
     }
 
   if (err)
@@ -1743,6 +1744,7 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
     {
       control->data = sample_info;
     }
+
   return err;
 }
 
@@ -2127,8 +2129,7 @@ microfreak_serialize_wavetable (struct idata *serialized,
   gint err;
   GByteArray *data = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE * 8);
 
-  err = microfreak_serialize_object (data,
-				     MICROFREAK_WAVETABLE_HEADER,
+  err = microfreak_serialize_object (data, MICROFREAK_WAVETABLE_HEADER,
 				     sizeof (MICROFREAK_WAVETABLE_HEADER) -
 				     1, wavetable->name, 1, 0, 1,
 				     wavetable->content->data,

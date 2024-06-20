@@ -564,3 +564,11 @@ idata_free (struct idata *idata)
   g_free (idata->info);
   idata->info = NULL;
 }
+
+GByteArray *
+idata_steal (struct idata *idata)
+{
+  g_free (idata->name);
+  g_free (idata->info);
+  return idata->content;
+}

@@ -326,4 +326,6 @@ void idata_init (struct idata *idata, GByteArray * content,
 
 void idata_free (struct idata *idata);
 
+GByteArray *idata_steal (struct idata *idata);
+
 #endif
