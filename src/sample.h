@@ -32,7 +32,8 @@
 #define SAMPLE_INFO_FRAME_SIZE(sample_info) ((sample_info)->channels * SAMPLE_SIZE((sample_info)->format))
 #define MONO_MIX_GAIN(channels) (channels == 2 ? 0.5 : 1.0 / sqrt (channels))
 
-typedef void (*sample_load_cb) (struct job_control *, gdouble, gpointer);
+typedef void (*sample_load_cb) (struct job_control * control,
+				gdouble progress, gpointer data);
 
 gint sample_save_to_file (const gchar * path, struct idata *sample,
 			  struct job_control *control, guint32 format);
@@ -55,16 +56,18 @@ gint sample_load_from_file_with_cb (const gchar * path, struct idata *sample,
 				    struct sample_info *sample_info,
 				    sample_load_cb callback, gpointer data);
 
-gint sample_load_sample_info (const gchar *, struct sample_info *);
+gint sample_load_sample_info (const gchar * path,
+			      struct sample_info *sample_info);
 
 GSList *sample_get_sample_extensions ();
 
-void sample_check_and_fix_loop_points (struct sample_info *);
+void sample_check_and_fix_loop_points (struct sample_info *sample_info);
 
-const gchar *sample_get_format (struct sample_info *);
+const gchar *sample_get_format (struct sample_info *sample_info);
 
-const gchar *sample_get_subtype (struct sample_info *);
+const gchar *sample_get_subtype (struct sample_info *sample_info);
 
-gint sample_resample (GByteArray *, GByteArray *, gint, gdouble);
+gint sample_resample (GByteArray * input, GByteArray * output, gint channels,
+		      gdouble ratio);
 
 #endif
