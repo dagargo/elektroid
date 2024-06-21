@@ -41,10 +41,10 @@ test_iter_is_dir_or_matches_extensions ()
   g_slist_free (exts);		//Extensions in this test are not duplicated
 }
 
-int
-main (int argc, char *argv[])
+gint
+main (gint argc, gchar *argv[])
 {
-  int err = 0;
+  gint err = 0;
 
   debug_level = 5;
 

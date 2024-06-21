@@ -332,10 +332,10 @@ test_get_bulk_tuning_midi_message_tet ()
   g_byte_array_free (msg, TRUE);
 }
 
-int
-main (int argc, char *argv[])
+gint
+main (gint argc, gchar *argv[])
 {
-  int err = 0;
+  gint err = 0;
 
   debug_level = 5;
 

@@ -110,10 +110,10 @@ test_common_get_sanitized_name ()
   g_free (str);
 }
 
-int
-main (int argc, char *argv[])
+gint
+main (gint argc, gchar *argv[])
 {
-  int err = 0;
+  gint err = 0;
 
   debug_level = 5;
 

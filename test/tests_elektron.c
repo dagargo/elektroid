@@ -108,10 +108,10 @@ test_elektron_get_dt2_pst_exts ()
   g_slist_free_full (exts, g_free);
 }
 
-int
-main (int argc, char *argv[])
+gint
+main (gint argc, gchar *argv[])
 {
-  int err = 0;
+  gint err = 0;
 
   debug_level = 5;
 

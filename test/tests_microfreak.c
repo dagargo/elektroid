@@ -148,10 +148,10 @@ test_8bit_header_conversions ()
   CU_ASSERT_EQUAL (memcmp (&src, &dst, sizeof (src)), 0);
 }
 
-int
-main (int argc, char *argv[])
+gint
+main (gint argc, gchar *argv[])
 {
-  int err = 0;
+  gint err = 0;
 
   debug_level = 5;
 
