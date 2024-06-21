@@ -336,7 +336,8 @@ elektron_init_iterator (struct backend *backend, struct item_iterator *iter,
   data->load_metadata = TRUE;
 
   init_item_iterator (iter, dir, data, next, elektron_free_iterator_data);
-  iter->item.id = 0;		//This is needed in case the response when reading a directory is empty
+  iter->item.id = 0;		//This is needed to point to the next item id
+  iter->item.type = ELEKTROID_NONE;	//This is needed in case the response when reading a directory is empty
 
   return 0;
 }
