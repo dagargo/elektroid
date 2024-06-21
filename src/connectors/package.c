@@ -711,9 +711,9 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
   zip_error_init (&zerror);
 
   parser = json_parser_new ();
-  if (!json_parser_load_from_data
-      (parser, (gchar *) pkg->manifest->data->data, pkg->manifest->data->len,
-       &error))
+  if (!json_parser_load_from_data (parser,
+				   (gchar *) pkg->manifest->data->data,
+				   pkg->manifest->data->len, &error))
     {
       error_print ("Unable to parse stream: %s", error->message);
       g_clear_error (&error);
@@ -759,7 +759,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
   control->parts = 1 + packaget_get_pkg_sample_slots (backend);	// main and sample slots
   control->part = 0;
-  file.content = pkg_resource->data;
+  idata_init (&file, pkg_resource->data, NULL, NULL);
   ret = upload_data (backend, payload_path, &file, control);
   if (ret)
     {
@@ -861,6 +861,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       struct sample_info sample_info_req, sample_info_src;
       sample_info_req.rate = ELEKTRON_SAMPLE_RATE;
       sample_info_req.channels = 0;	//Automatic
+      sample_info_req.format = SF_FORMAT_PCM_16;
 
       json_reader_read_element (reader, i);
       json_reader_read_member (reader, PKG_TAG_FILE_NAME);

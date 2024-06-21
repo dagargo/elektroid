@@ -28,7 +28,7 @@
 #define JUNK_CHUNK_ID "JUNK"
 #define SMPL_CHUNK_ID "smpl"
 
-#define DEFAULT_SAMPLE_SIZE (KIB * KIB)
+#define DEFAULT_SAMPLE_SIZE MIB
 
 #define HEADERS_SPACE 4096	//Gross estimation for the sample (WAV) headers
 
