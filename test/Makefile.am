@@ -12,9 +12,9 @@ BE_LIBS = alsa
 BE_SOURCES = ../src/backend_alsa.c
 endif
 
-AM_CPPFLAGS = -Wall -DSCALA_TEST_DIR='"$(srcdir)/res/scala"' -DDATADIR='"../res"'
+AM_CPPFLAGS = -Wall -DTEST_DATA_DIR='"$(srcdir)/res"' -DDATADIR='"../res"'
 
-check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils
+check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample
 
 tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip zlib $(BE_LIBS)
 
@@ -86,6 +86,16 @@ tests_utils_SOURCES = \
         tests_utils.c \
 	../src/utils.c \
         ../src/utils.h
+
+tests_sample_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -pthread
+tests_sample_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
+
+tests_sample_SOURCES = \
+        tests_sample.c \
+	../src/utils.c \
+        ../src/utils.h \
+	../src/sample.c \
+        ../src/sample.h
 
 TESTS = integration/test.sh integration/system_all_fs_tests.sh $(check_PROGRAMS)
 
