@@ -201,8 +201,8 @@ RAM                            64MiB              0B           64MiB      0.00%
 * `send` and `receive` work with a batch of SysEx messages. These are useful when working with generic devices, which have no filesystems implemented buf offer options to receive or send data.
 
 ```
-$ elektroid-cli send file.syx 1:/
-$ elektroid-cli receive 1:/
+$ elektroid-cli send file.syx 1
+$ elektroid-cli receive 1 file.syx
 ```
 
 * `upgrade`, upgrade firmware
