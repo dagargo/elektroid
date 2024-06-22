@@ -68,12 +68,6 @@ struct editor_set_volume_data
   gdouble volume;
 };
 
-struct editor_record_clicked_data
-{
-  struct editor *editor;
-  struct browser *browser;
-};
-
 gchar *elektroid_ask_name (const gchar * title, const gchar * value,
 			   struct browser *browser, gint start_pos,
 			   gint end_pos);
@@ -591,11 +585,9 @@ static gboolean
 editor_reset_for_recording (gpointer data)
 {
   guint options;
-  struct editor_record_clicked_data *record_data = data;
-  struct editor *editor = record_data->editor;
-  struct browser *browser = record_data->browser;
+  struct editor *editor = data;
 
-  editor_reset (editor, browser ? browser : &local_browser);
+  editor_reset (editor, &local_browser);
 
   guirecorder_set_channels_masks (&editor->guirecorder,
 				  editor->browser->fs_ops->options);
@@ -617,10 +609,6 @@ editor_record_clicked (GtkWidget *object, gpointer data)
   gint res;
   guint options;
   struct editor *editor = data;
-  static struct editor_record_clicked_data record_data;
-
-  record_data.browser = editor->browser;
-  record_data.editor = editor;
 
   browser_clear_selection (&local_browser);
   browser_clear_selection (&remote_browser);
@@ -629,7 +617,7 @@ editor_record_clicked (GtkWidget *object, gpointer data)
   //editor_reset and clear the browser member.
   //If using g_idle_add, a call to editor_reset will happen always later than
   //those. All these calls will happen at the time the dialog is shown.
-  g_idle_add (editor_reset_for_recording, &record_data);
+  g_idle_add (editor_reset_for_recording, editor);
 
   res = gtk_dialog_run (editor->record_dialog);
   gtk_widget_hide (GTK_WIDGET (editor->record_dialog));
