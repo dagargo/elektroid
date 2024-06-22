@@ -22,6 +22,7 @@ These are the supported devices:
 * All samplers implementing MIDI SDS
 * Casio CZ-101
 * Arturia MicroBrute
+* Arturia MicroFreak
 * Eventide ModFactor, PitchFactor, TimeFactor, Space and H9
 * Moog Little Phatty and Slim Phatty
 * Novation Summit and Peak
