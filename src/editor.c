@@ -598,14 +598,14 @@ editor_reset_for_recording (gpointer data)
   editor_reset (editor, browser ? browser : &local_browser);
 
   guirecorder_set_channels_masks (&editor->guirecorder,
-				  editor->browser->fs_ops);
+				  editor->browser->fs_ops->options);
 
   editor->ready = FALSE;
   editor->dirty = TRUE;
   editor->zoom = 1;
   editor->audio.sel_start = 0;
   editor->audio.sel_len = 0;
-  options = guirecorder_get_channel_mask (editor->guirecorder.channels_combo);
+  options = guirecorder_get_channel_mask (&editor->guirecorder);
   audio_start_recording (&editor->audio, options | RECORD_MONITOR_ONLY,
 			 guirecorder_monitor_notifier, &editor->guirecorder);
   return FALSE;
@@ -641,7 +641,7 @@ editor_record_clicked (GtkWidget *object, gpointer data)
     }
 
   gtk_widget_set_sensitive (editor->stop_button, TRUE);
-  options = guirecorder_get_channel_mask (editor->guirecorder.channels_combo);
+  options = guirecorder_get_channel_mask (&editor->guirecorder);
   audio_start_recording (&editor->audio, options,
 			 editor_update_ui_on_record, data);
 }

@@ -40,10 +40,10 @@ struct guirecorder
 
 void guirecorder_monitor_notifier (void *, gdouble);
 
-guint guirecorder_get_channel_mask (GtkWidget *);
+guint guirecorder_get_channel_mask (struct guirecorder *guirecorder);
 
-void guirecorder_set_channels_masks (struct guirecorder *,
-				     const struct fs_operations *);
+void guirecorder_set_channels_masks (struct guirecorder *guirecorder,
+				     guint32);
 
 void guirecorder_channels_changed (GtkWidget *, gpointer);
 

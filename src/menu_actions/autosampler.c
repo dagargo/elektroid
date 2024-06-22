@@ -152,10 +152,14 @@ static void
 autosampler_callback (GtkWidget *object, gpointer user_data)
 {
   gint res;
+  guint options;
   struct autosampler_data *data = g_malloc (sizeof (struct autosampler_data));
   data->backend = user_data;
-  guint options =
-    guirecorder_get_channel_mask (autosampler_guirecorder.channels_combo) |
+
+  guirecorder_set_channels_masks (&autosampler_guirecorder,
+				  FS_OPTION_STEREO | FS_OPTION_MONO);
+
+  options = guirecorder_get_channel_mask (&autosampler_guirecorder) |
     RECORD_MONITOR_ONLY;
 
   audio_stop_playback (&editor.audio);
@@ -175,7 +179,7 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
     }
 
   data->channel_mask =
-    guirecorder_get_channel_mask (autosampler_guirecorder.channels_combo);
+    guirecorder_get_channel_mask (&autosampler_guirecorder);
   data->name = gtk_entry_get_text (autosampler_dialog_name_entry);
   data->channel =
     gtk_spin_button_get_value (GTK_SPIN_BUTTON
@@ -228,6 +232,9 @@ autosampler_configure_gui (struct backend *backend, GtkBuilder *builder)
   autosampler_guirecorder.channels_combo =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "autosampler_dialog_channels_combo"));
+  autosampler_guirecorder.channels_list_store =
+    GTK_LIST_STORE (gtk_builder_get_object
+		    (builder, "autosampler_dialog_channels_list_store"));
   autosampler_guirecorder.monitor_levelbar =
     GTK_LEVEL_BAR (gtk_builder_get_object
 		   (builder, "autosampler_dialog_monitor_levelbar"));
