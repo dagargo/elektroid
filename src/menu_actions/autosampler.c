@@ -238,6 +238,8 @@ autosampler_configure_gui (struct backend *backend, GtkBuilder *builder)
   autosampler_guirecorder.monitor_levelbar =
     GTK_LEVEL_BAR (gtk_builder_get_object
 		   (builder, "autosampler_dialog_monitor_levelbar"));
+  autosampler_guirecorder.audio = &editor.audio;
+
   autosampler_dialog_channel_spin =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "autosampler_dialog_channel_spin"));
@@ -268,7 +270,8 @@ autosampler_configure_gui (struct backend *backend, GtkBuilder *builder)
   g_signal_connect (autosampler_dialog_name_entry, "changed",
 		    G_CALLBACK (autosampler_dialog_name_changed), NULL);
   g_signal_connect (autosampler_guirecorder.channels_combo, "changed",
-		    G_CALLBACK (guirecorder_channels_changed), &editor.audio);
+		    G_CALLBACK (guirecorder_channels_changed),
+		    &autosampler_guirecorder);
 }
 
 struct menu_action *

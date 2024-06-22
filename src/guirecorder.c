@@ -22,8 +22,6 @@
 #include "guirecorder.h"
 #include "audio.h"
 
-struct guirecorder guirecorder;
-
 static gboolean
 guirecorder_set_monitor_level (gpointer data)
 {
@@ -49,7 +47,8 @@ guirecorder_get_channel_mask (struct guirecorder *guirecorder)
   GtkTreeModel *model = gtk_combo_box_get_model (combo);
   if (gtk_combo_box_get_active_iter (combo, &iter))
     {
-      gtk_tree_model_get (model, &iter, 1, &channel_mask, -1);
+      gtk_tree_model_get (model, &iter, CHANNELS_LIST_STORE_ID_FIELD,
+			  &channel_mask, -1);
     }
   return channel_mask;
 }
@@ -58,6 +57,8 @@ void
 guirecorder_set_channels_masks (struct guirecorder *guirecorder, guint32 opts)
 {
   gtk_list_store_clear (guirecorder->channels_list_store);
+  gtk_combo_box_set_active (GTK_COMBO_BOX (guirecorder->channels_combo), -1);
+
   if (opts & FS_OPTION_STEREO)
     {
       gtk_list_store_insert_with_values (guirecorder->channels_list_store,
@@ -85,15 +86,17 @@ guirecorder_set_channels_masks (struct guirecorder *guirecorder, guint32 opts)
 					 CHANNELS_LIST_STORE_ID_FIELD,
 					 RECORD_RIGHT, -1);
     }
+
   gtk_combo_box_set_active (GTK_COMBO_BOX (guirecorder->channels_combo), 0);
 }
 
 void
 guirecorder_channels_changed (GtkWidget *object, gpointer data)
 {
-  struct audio *audio = data;
-  guint options =
-    guirecorder_get_channel_mask (&guirecorder) | RECORD_MONITOR_ONLY;
+  struct guirecorder *guirecorder = data;
+  struct audio *audio = guirecorder->audio;
+  guint options = guirecorder_get_channel_mask (guirecorder) |
+    RECORD_MONITOR_ONLY;
   g_mutex_lock (&audio->control.mutex);
   audio->record_options = options;
   g_mutex_unlock (&audio->control.mutex);

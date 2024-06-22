@@ -1429,6 +1429,7 @@ editor_init (struct editor *editor, GtkBuilder *builder)
   editor->guirecorder.monitor_levelbar =
     GTK_LEVEL_BAR (gtk_builder_get_object
 		   (builder, "record_dialog_monitor_levelbar"));
+  editor->guirecorder.audio = &editor->audio;
 
   g_signal_connect (editor->waveform, "draw",
 		    G_CALLBACK (editor_draw_waveform), editor);
@@ -1491,7 +1492,7 @@ editor_init (struct editor *editor, GtkBuilder *builder)
 
   g_signal_connect (editor->guirecorder.channels_combo, "changed",
 		    G_CALLBACK (guirecorder_channels_changed),
-		    &editor->audio);
+		    &editor->guirecorder);
 
   audio_init (&editor->audio, editor_set_volume_callback,
 	      editor_update_audio_status, editor);

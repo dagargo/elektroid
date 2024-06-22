@@ -23,6 +23,7 @@
 
 #include <gtk/gtk.h>
 #include "utils.h"
+#include "audio.h"
 
 enum channels_list_store_columns
 {
@@ -35,6 +36,7 @@ struct guirecorder
   GtkWidget *channels_combo;
   GtkListStore *channels_list_store;
   GtkLevelBar *monitor_levelbar;
+  struct audio *audio;
   gdouble level;
 };
 
