@@ -71,7 +71,7 @@ autosampler_runner (gpointer user_data)
   gchar filename[LABEL_MAX];
   struct sample_info *sample_info;
 
-  sysex_transfer.active = TRUE;
+  progress.sysex_transfer.active = TRUE;
   progress_set_fraction (0.0);
 
   total = ((data->last - data->first) / data->semitones) + 1;
@@ -131,9 +131,9 @@ autosampler_runner (gpointer user_data)
 	  break;
 	}
 
-      g_mutex_lock (&sysex_transfer.mutex);
-      active = sysex_transfer.active;
-      g_mutex_unlock (&sysex_transfer.mutex);
+      g_mutex_lock (&progress.sysex_transfer.mutex);
+      active = progress.sysex_transfer.active;
+      g_mutex_unlock (&progress.sysex_transfer.mutex);
 
       if (!active)
 	{

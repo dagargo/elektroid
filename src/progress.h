@@ -21,7 +21,19 @@
 #include <gtk/gtk.h>
 #include "utils.h"
 
-extern struct sysex_transfer sysex_transfer;
+#ifndef PROGRESS_H
+#define PROGRESS_H
+
+struct progress
+{
+  struct sysex_transfer sysex_transfer;
+  GtkDialog *dialog;
+  GtkWidget *bar;
+  GtkWidget *label;
+  GThread *thread;
+};
+
+extern struct progress progress;
 
 void progress_stop_thread ();
 
@@ -39,3 +51,5 @@ gpointer progress_run (GThreadFunc f, gpointer user_data, const gchar * name,
 void progress_init (GtkBuilder * builder);
 
 void progress_response (gint response);
+
+#endif

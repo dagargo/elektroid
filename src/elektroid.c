@@ -418,24 +418,24 @@ elektroid_rx_sysex_runner (gpointer data)
   gint *res = g_malloc (sizeof (gint));
   gchar *text;
 
-  sysex_transfer.status = WAITING;
-  sysex_transfer.active = TRUE;
-  sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
-  sysex_transfer.batch = TRUE;
+  progress.sysex_transfer.status = WAITING;
+  progress.sysex_transfer.active = TRUE;
+  progress.sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
+  progress.sysex_transfer.batch = TRUE;
 
   g_timeout_add (100, progress_update, NULL);
 
   //This doesn't need to be synchronized because the GUI doesn't allow concurrent access when receiving SysEx in batch mode.
   backend_rx_drain (&backend);
 
-  if (sysex_transfer.active)
+  if (progress.sysex_transfer.active)
     {
-      *res = backend_rx_sysex (&backend, &sysex_transfer);
+      *res = backend_rx_sysex (&backend, &progress.sysex_transfer);
       if (!*res)
 	{
-	  text = debug_get_hex_msg (sysex_transfer.raw);
+	  text = debug_get_hex_msg (progress.sysex_transfer.raw);
 	  debug_print (1, "SysEx message received (%d): %s\n",
-		       sysex_transfer.raw->len, text);
+		       progress.sysex_transfer.raw->len, text);
 	  g_free (text);
 	}
     }
@@ -465,7 +465,7 @@ elektroid_rx_sysex ()
 		      "", &dres);
   if (!res)			//Signal captured while running the dialog.
     {
-      g_byte_array_free (sysex_transfer.raw, TRUE);
+      g_byte_array_free (progress.sysex_transfer.raw, TRUE);
       return;
     }
 
@@ -473,7 +473,7 @@ elektroid_rx_sysex ()
     {
       if (!*res)
 	{
-	  g_byte_array_free (sysex_transfer.raw, TRUE);
+	  g_byte_array_free (progress.sysex_transfer.raw, TRUE);
 	}
       g_free (res);
       return;
@@ -533,14 +533,14 @@ elektroid_rx_sysex ()
   if (filename != NULL)
     {
       struct idata idata;
-      idata.content = sysex_transfer.raw;
+      idata.content = progress.sysex_transfer.raw;
       *res = file_save (filename, &idata, NULL);
       if (*res)
 	{
 	  show_error_msg (_("Error while saving “%s”: %s."),
 			  filename, g_strerror (-*res));
 	}
-      g_byte_array_free (sysex_transfer.raw, TRUE);
+      g_byte_array_free (progress.sysex_transfer.raw, TRUE);
       g_free (res);
       g_free (filename);
     }
@@ -556,8 +556,8 @@ elektroid_send_sysex_file (const gchar *filename, t_sysex_transfer f)
   gint err = file_load (filename, &idata, NULL);
   if (!err)
     {
-      sysex_transfer.raw = idata.content;
-      err = f (&backend, &sysex_transfer);
+      progress.sysex_transfer.raw = idata.content;
+      err = f (&backend, &progress.sysex_transfer);
       idata_free (&idata);
     }
   if (err && err != -ECANCELED)
@@ -573,8 +573,8 @@ elektroid_tx_sysex_files_runner (gpointer data)
 {
   GSList *filenames = data;
   gint *err = g_malloc (sizeof (gint));
-  sysex_transfer.active = TRUE;
-  sysex_transfer.status = SENDING;
+  progress.sysex_transfer.active = TRUE;
+  progress.sysex_transfer.status = SENDING;
 
   g_timeout_add (100, progress_update, NULL);
 
@@ -598,9 +598,9 @@ elektroid_tx_upgrade_os_runner (gpointer data)
 {
   GSList *filenames = data;
   gint *err = g_malloc (sizeof (gint));
-  sysex_transfer.active = TRUE;
-  sysex_transfer.status = SENDING;
-  sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
+  progress.sysex_transfer.active = TRUE;
+  progress.sysex_transfer.status = SENDING;
+  progress.sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
 
   g_timeout_add (100, progress_update, NULL);
 
@@ -730,9 +730,9 @@ elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
 	{
 	  elektroid_delete_file (browser, path, &iter.item);
 
-	  g_mutex_lock (&sysex_transfer.mutex);
-	  active = sysex_transfer.active;
-	  g_mutex_unlock (&sysex_transfer.mutex);
+	  g_mutex_lock (&progress.sysex_transfer.mutex);
+	  active = progress.sysex_transfer.active;
+	  g_mutex_unlock (&progress.sysex_transfer.mutex);
 
 	  if (!active)
 	    {
@@ -760,7 +760,7 @@ elektroid_delete_files_runner (gpointer data)
   struct browser *browser = data;
   gint64 start = g_get_monotonic_time ();
 
-  sysex_transfer.active = TRUE;
+  progress.sysex_transfer.active = TRUE;
   g_timeout_add (100, progress_pulse, NULL);
 
   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
@@ -797,9 +797,9 @@ elektroid_delete_files_runner (gpointer data)
 	  error_print ("Error while deleting file\n");
 	}
 
-      g_mutex_lock (&sysex_transfer.mutex);
-      active = sysex_transfer.active;
-      g_mutex_unlock (&sysex_transfer.mutex);
+      g_mutex_lock (&progress.sysex_transfer.mutex);
+      active = progress.sysex_transfer.active;
+      g_mutex_unlock (&progress.sysex_transfer.mutex);
 
       if (!active)
 	{
@@ -1555,9 +1555,9 @@ elektroid_add_upload_task_path (const gchar *rel_path, const gchar *src_dir,
   gchar *path, *upload_path, *src_abs_path, *rel_path_trans;
   enum path_type type = backend_get_path_type (&backend);
 
-  g_mutex_lock (&sysex_transfer.mutex);
-  active = sysex_transfer.active;
-  g_mutex_unlock (&sysex_transfer.mutex);
+  g_mutex_lock (&progress.sysex_transfer.mutex);
+  active = progress.sysex_transfer.active;
+  g_mutex_unlock (&progress.sysex_transfer.mutex);
 
   if (!active)
     {
@@ -1624,7 +1624,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
   GtkTreeSelection *selection;
   guint64 start = g_get_monotonic_time ();
 
-  sysex_transfer.active = TRUE;
+  progress.sysex_transfer.active = TRUE;
   g_timeout_add (100, progress_pulse, NULL);
 
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
@@ -1646,9 +1646,9 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
       elektroid_add_upload_task_path (item.name, local_browser.dir,
 				      remote_browser.dir);
 
-      g_mutex_lock (&sysex_transfer.mutex);
-      active = sysex_transfer.active;
-      g_mutex_unlock (&sysex_transfer.mutex);
+      g_mutex_lock (&progress.sysex_transfer.mutex);
+      active = progress.sysex_transfer.active;
+      g_mutex_unlock (&progress.sysex_transfer.mutex);
 
       if (!active)
 	{
@@ -1782,9 +1782,9 @@ elektroid_add_download_task_path (const gchar *rel_path,
   gchar *path, *filename, *src_abs_path, *rel_path_trans;
   enum path_type type = backend_get_path_type (&backend);
 
-  g_mutex_lock (&sysex_transfer.mutex);
-  active = sysex_transfer.active;
-  g_mutex_unlock (&sysex_transfer.mutex);
+  g_mutex_lock (&progress.sysex_transfer.mutex);
+  active = progress.sysex_transfer.active;
+  g_mutex_unlock (&progress.sysex_transfer.mutex);
 
   if (!active)
     {
@@ -1837,7 +1837,7 @@ elektroid_add_download_tasks_runner (gpointer data)
   GtkTreeSelection *selection;
   gint64 start = g_get_monotonic_time ();
 
-  sysex_transfer.active = TRUE;
+  progress.sysex_transfer.active = TRUE;
   g_timeout_add (100, progress_pulse, NULL);
 
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (remote_browser.view));
@@ -1862,9 +1862,9 @@ elektroid_add_download_tasks_runner (gpointer data)
 					local_browser.dir);
       g_free (filename);
 
-      g_mutex_lock (&sysex_transfer.mutex);
-      active = sysex_transfer.active;
-      g_mutex_unlock (&sysex_transfer.mutex);
+      g_mutex_lock (&progress.sysex_transfer.mutex);
+      active = progress.sysex_transfer.active;
+      g_mutex_unlock (&progress.sysex_transfer.mutex);
 
       if (!active)
 	{
@@ -2210,10 +2210,11 @@ elektroid_set_device_runner (gpointer data)
   struct backend_device *be_sys_device = data;
   gint64 start = g_get_monotonic_time ();
 
-  sysex_transfer.active = TRUE;
+  progress.sysex_transfer.active = TRUE;
   g_timeout_add (100, progress_pulse, NULL);
-  sysex_transfer.err = connector_init_backend (&backend, be_sys_device, NULL,
-					       &sysex_transfer);
+  progress.sysex_transfer.err = connector_init_backend (&backend,
+							be_sys_device, NULL,
+							&progress.sysex_transfer);
   elektroid_update_midi_status ();
   elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
   progress_response (backend_check (&backend) ? GTK_RESPONSE_ACCEPT
@@ -2266,13 +2267,14 @@ elektroid_set_device (GtkWidget *object, gpointer data)
       progress_run (elektroid_set_device_runner, &be_sys_device,
 		    _("Connecting to Device"), _("Connecting..."), &dres);
 
-      if (sysex_transfer.err && sysex_transfer.err != -ECANCELED)
+      if (progress.sysex_transfer.err &&
+	  progress.sysex_transfer.err != -ECANCELED)
 	{
 	  error_print ("Error while connecting: %s\n",
-		       g_strerror (-sysex_transfer.err));
+		       g_strerror (-progress.sysex_transfer.err));
 	  show_error_msg (_("Device “%s” not recognized: %s"),
 			  be_sys_device.name,
-			  g_strerror (-sysex_transfer.err));
+			  g_strerror (-progress.sysex_transfer.err));
 	}
 
       elektroid_check_backend_bg (NULL);
@@ -2398,7 +2400,7 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
   struct elektroid_dnd_data *dnd_data = data;
   GtkWidget *widget = dnd_data->widget;
 
-  sysex_transfer.active = TRUE;
+  progress.sysex_transfer.active = TRUE;
 
   if (dialog)
     {
@@ -2411,9 +2413,9 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 
   for (gint i = 0; dnd_data->uris[i] != NULL; i++)
     {
-      g_mutex_lock (&sysex_transfer.mutex);
-      active = sysex_transfer.active;
-      g_mutex_unlock (&sysex_transfer.mutex);
+      g_mutex_lock (&progress.sysex_transfer.mutex);
+      active = progress.sysex_transfer.active;
+      g_mutex_unlock (&progress.sysex_transfer.mutex);
 
       if (!active)
 	{
