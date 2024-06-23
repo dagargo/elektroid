@@ -64,7 +64,6 @@ autosampler_runner (gpointer user_data)
 {
   struct autosampler_data *data = user_data;
   const gchar *note;
-  gboolean active;
   gint s, total, i;
   GValue value = G_VALUE_INIT;
   gdouble fract;
@@ -131,11 +130,7 @@ autosampler_runner (gpointer user_data)
 	  break;
 	}
 
-      g_mutex_lock (&progress.sysex_transfer.mutex);
-      active = progress.sysex_transfer.active;
-      g_mutex_unlock (&progress.sysex_transfer.mutex);
-
-      if (!active)
+      if (!progress_is_active ())
 	{
 	  break;
 	}

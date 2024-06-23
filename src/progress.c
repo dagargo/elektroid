@@ -75,7 +75,7 @@ progress_set_fraction (gdouble fraction)
 }
 
 gboolean
-progress_pulse (gpointer data)
+progress_is_active ()
 {
   gboolean active;
 
@@ -83,9 +83,15 @@ progress_pulse (gpointer data)
   active = progress.sysex_transfer.active;
   g_mutex_unlock (&progress.sysex_transfer.mutex);
 
+  return active;
+}
+
+gboolean
+progress_pulse (gpointer data)
+{
   gtk_progress_bar_pulse (GTK_PROGRESS_BAR (progress.bar));
 
-  return active;
+  return progress_is_active ();
 }
 
 gboolean
@@ -157,13 +163,14 @@ progress_run (GThreadFunc f, gpointer user_data, const gchar *name,
   progress.start = g_get_monotonic_time ();
   gtk_window_set_title (GTK_WINDOW (progress.dialog), name);
   gtk_label_set_text (GTK_LABEL (progress.label), text);
+
   dres = gtk_dialog_run (progress.dialog);
   if (res)
     {
       *res = dres;
     }
   //Without these lines below, the progress.label is not updated.
-  //This happens because when the dialog is closed the gtk main thread to blocked
+  //This happens because when the dialog is closed the gtk main thread is blocked
   //when joining the thread which ultimately causes pending widget updates to
   //not be performed.
   usleep (100000);

@@ -702,7 +702,6 @@ elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
     }
   else if (item->type == ELEKTROID_DIR)
     {
-      gboolean active;
       struct item_iterator iter;
       if (browser->fs_ops->readdir (browser->backend, &iter, path, NULL))
 	{
@@ -714,11 +713,7 @@ elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
 	{
 	  elektroid_delete_file (browser, path, &iter.item);
 
-	  g_mutex_lock (&progress.sysex_transfer.mutex);
-	  active = progress.sysex_transfer.active;
-	  g_mutex_unlock (&progress.sysex_transfer.mutex);
-
-	  if (!active)
+	  if (!progress_is_active ())
 	    {
 	      item_iterator_free (&iter);
 	      err = -ECANCELED;
@@ -767,7 +762,6 @@ elektroid_delete_files_runner (gpointer data)
   list = ref_list;
   while (list)
     {
-      gboolean active;
       GtkTreeIter iter;
       struct item item;
       GtkTreePath *tree_path = gtk_tree_row_reference_get_path (list->data);
@@ -780,11 +774,7 @@ elektroid_delete_files_runner (gpointer data)
 	  error_print ("Error while deleting file\n");
 	}
 
-      g_mutex_lock (&progress.sysex_transfer.mutex);
-      active = progress.sysex_transfer.active;
-      g_mutex_unlock (&progress.sysex_transfer.mutex);
-
-      if (!active)
+      if (!progress_is_active ())
 	{
 	  break;
 	}
@@ -1532,16 +1522,11 @@ static void
 elektroid_add_upload_task_path (const gchar *rel_path, const gchar *src_dir,
 				const gchar *dst_dir)
 {
-  gboolean active;
   struct item_iterator iter;
   gchar *path, *upload_path, *src_abs_path, *rel_path_trans;
   enum path_type type = backend_get_path_type (&backend);
 
-  g_mutex_lock (&progress.sysex_transfer.mutex);
-  active = progress.sysex_transfer.active;
-  g_mutex_unlock (&progress.sysex_transfer.mutex);
-
-  if (!active)
+  if (!progress_is_active ())
     {
       return;
     }
@@ -1601,7 +1586,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
 {
   GtkTreeIter iter;
   GList *selected_rows;
-  gboolean queued_before, queued_after, active;
+  gboolean queued_before, queued_after;
   GtkTreeModel *model;
   GtkTreeSelection *selection;
 
@@ -1627,11 +1612,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
       elektroid_add_upload_task_path (item.name, local_browser.dir,
 				      remote_browser.dir);
 
-      g_mutex_lock (&progress.sysex_transfer.mutex);
-      active = progress.sysex_transfer.active;
-      g_mutex_unlock (&progress.sysex_transfer.mutex);
-
-      if (!active)
+      if (!progress_is_active ())
 	{
 	  break;
 	}
@@ -1757,16 +1738,11 @@ static void
 elektroid_add_download_task_path (const gchar *rel_path,
 				  const gchar *src_dir, const gchar *dst_dir)
 {
-  gboolean active;
   struct item_iterator iter;
   gchar *path, *filename, *src_abs_path, *rel_path_trans;
   enum path_type type = backend_get_path_type (&backend);
 
-  g_mutex_lock (&progress.sysex_transfer.mutex);
-  active = progress.sysex_transfer.active;
-  g_mutex_unlock (&progress.sysex_transfer.mutex);
-
-  if (!active)
+  if (!progress_is_active ())
     {
       return;
     }
@@ -1812,7 +1788,7 @@ elektroid_add_download_tasks_runner (gpointer data)
 {
   GtkTreeIter iter;
   GList *selected_rows;
-  gboolean queued_before, queued_after, active;
+  gboolean queued_before, queued_after;
   GtkTreeModel *model;
   GtkTreeSelection *selection;
 
@@ -1841,11 +1817,7 @@ elektroid_add_download_tasks_runner (gpointer data)
 					local_browser.dir);
       g_free (filename);
 
-      g_mutex_lock (&progress.sysex_transfer.mutex);
-      active = progress.sysex_transfer.active;
-      g_mutex_unlock (&progress.sysex_transfer.mutex);
-
-      if (!active)
+      if (!progress_is_active ())
 	{
 	  break;
 	}
@@ -2371,7 +2343,7 @@ static gpointer
 elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 {
   GtkTreeIter iter;
-  gboolean queued_before, queued_after, active;
+  gboolean queued_before, queued_after;
   struct elektroid_dnd_data *dnd_data = data;
   GtkWidget *widget = dnd_data->widget;
 
@@ -2387,11 +2359,7 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 
   for (gint i = 0; dnd_data->uris[i] != NULL; i++)
     {
-      g_mutex_lock (&progress.sysex_transfer.mutex);
-      active = progress.sysex_transfer.active;
-      g_mutex_unlock (&progress.sysex_transfer.mutex);
-
-      if (!active)
+      if (!progress_is_active ())
 	{
 	  goto end;
 	}

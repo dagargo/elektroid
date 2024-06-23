@@ -42,6 +42,8 @@ void progress_dialog_close (gpointer data);
 
 void progress_set_fraction (gdouble fraction);
 
+gboolean progress_is_active ();
+
 gboolean progress_pulse (gpointer data);
 
 gboolean progress_update (gpointer data);
