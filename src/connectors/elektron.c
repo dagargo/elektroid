@@ -3334,8 +3334,6 @@ elektron_configure_device (struct backend *backend, guint8 id)
       g_free (devices_filename);
       devices_filename = strdup (DATADIR DEVICES_FILE);
 
-      debug_print (1, "Falling back to %s...\n", devices_filename);
-
       if (!json_parser_load_from_file (parser, devices_filename, &error))
 	{
 	  error_print ("%s", error->message);
@@ -3344,6 +3342,8 @@ elektron_configure_device (struct backend *backend, guint8 id)
 	  goto cleanup_parser;
 	}
     }
+
+  debug_print (1, "Using %s...\n", devices_filename);
 
   reader = json_reader_new (json_parser_get_root (parser));
   if (!reader)
