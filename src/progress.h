@@ -44,12 +44,10 @@ void progress_set_fraction (gdouble fraction);
 
 gboolean progress_is_active ();
 
-gboolean progress_pulse (gpointer data);
-
 gboolean progress_update (gpointer data);
 
-gpointer progress_run (GThreadFunc f, gpointer user_data, const gchar * name,
-		       const gchar * text, gint * res);
+gpointer progress_run (GThreadFunc f, gboolean pulse, gpointer user_data,
+		       const gchar * name, const gchar * text, gint * res);
 
 void progress_init (GtkBuilder * builder);
 

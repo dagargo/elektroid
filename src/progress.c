@@ -22,6 +22,7 @@
 #include "progress.h"
 
 #define MIN_TIME_UNTIL_DIALOG_RESPONSE 1e6
+#define PROGRESS_BAR_PULSE_TIME 100
 
 struct progress progress;
 
@@ -29,6 +30,7 @@ struct progress_progress_thread_data
 {
   GThreadFunc f;
   gpointer data;
+  gboolean pulse;
 };
 
 static gpointer
@@ -45,6 +47,8 @@ progress_join_thread ()
 
   return output;
 }
+
+//This function is called from gtk_dialog_response in progress_response. See the "response" signal handler.
 
 static void
 progress_stop_running_sysex (GtkDialog *dialog, gint response_id,
@@ -86,7 +90,7 @@ progress_is_active ()
   return active;
 }
 
-gboolean
+static gboolean
 progress_pulse (gpointer data)
 {
   gtk_progress_bar_pulse (GTK_PROGRESS_BAR (progress.bar));
@@ -143,14 +147,18 @@ elektroid_new_progress_thread_gsourcefunc (gpointer user_data)
   struct progress_progress_thread_data *data = user_data;
   debug_print (1, "Creating SysEx thread...\n");
   progress.thread = g_thread_new ("progress thread", data->f, data->data);
+  if (data->pulse)
+    {
+      g_timeout_add (PROGRESS_BAR_PULSE_TIME, progress_pulse, NULL);
+    }
   g_free (data);
   return FALSE;
 }
 
 //Using this before a call to gtk_dialog_run ensures that the threads starts after the dialog is being run.
 gpointer
-progress_run (GThreadFunc f, gpointer user_data, const gchar *name,
-	      const gchar *text, gint *res)
+progress_run (GThreadFunc f, gboolean pulse, gpointer user_data,
+	      const gchar *name, const gchar *text, gint *res)
 {
   gpointer v;
   gint dres;
@@ -158,6 +166,7 @@ progress_run (GThreadFunc f, gpointer user_data, const gchar *name,
     g_malloc (sizeof (struct progress_progress_thread_data));
   data->f = f;
   data->data = user_data;
+  data->pulse = pulse;
   g_idle_add (elektroid_new_progress_thread_gsourcefunc, data);
 
   progress.start = g_get_monotonic_time ();
