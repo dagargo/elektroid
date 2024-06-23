@@ -21,6 +21,8 @@
 #include <glib/gi18n.h>
 #include "progress.h"
 
+#define MIN_TIME_UNTIL_DIALOG_RESPONSE 1e6
+
 struct progress progress;
 
 struct progress_progress_thread_data
@@ -152,6 +154,7 @@ progress_run (GThreadFunc f, gpointer user_data, const gchar *name,
   data->data = user_data;
   g_idle_add (elektroid_new_progress_thread_gsourcefunc, data);
 
+  progress.start = g_get_monotonic_time ();
   gtk_window_set_title (GTK_WINDOW (progress.dialog), name);
   gtk_label_set_text (GTK_LABEL (progress.label), text);
   dres = gtk_dialog_run (progress.dialog);
@@ -173,8 +176,23 @@ progress_run (GThreadFunc f, gpointer user_data, const gchar *name,
   return v;
 }
 
+/**
+ * This function guarantees that the time since start is at least the timeout.
+ * This is needed when controlling a dialog from a thread because the dialog needs to be showed before the response is sent from the thread.
+ */
+static void
+progress_usleep_since (gint64 timeout, gint64 start)
+{
+  gint64 diff = g_get_monotonic_time () - start;
+  if (diff < timeout)
+    {
+      usleep (timeout - diff);
+    }
+}
+
 void
 progress_response (gint response)
 {
+  progress_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, progress.start);
   gtk_dialog_response (GTK_DIALOG (progress.dialog), response);
 }

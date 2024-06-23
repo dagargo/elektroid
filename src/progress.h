@@ -31,6 +31,7 @@ struct progress
   GtkWidget *bar;
   GtkWidget *label;
   GThread *thread;
+  gint64 start;
 };
 
 extern struct progress progress;

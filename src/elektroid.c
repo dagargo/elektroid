@@ -46,8 +46,6 @@
 
 #define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping...\n"
 
-#define MIN_TIME_UNTIL_DIALOG_RESPONSE 1e6
-
 #define TREEVIEW_SCROLL_LINES 2
 #define TREEVIEW_EDGE_SIZE 20
 
@@ -162,20 +160,6 @@ static GtkListStore *devices_list_store;
 static GtkWidget *devices_combo;
 static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
-
-/**
- * This function guarantees that the time since start is at least the timeout.
- * This is needed when controlling a dialog from a thread because the dialog needs to be showed before the response is sent from the thread.
- */
-static void
-elektroid_usleep_since (gint64 timeout, gint64 start)
-{
-  gint64 diff = g_get_monotonic_time () - start;
-  if (diff < timeout)
-    {
-      usleep (timeout - diff);
-    }
-}
 
 static void
 show_error_msg (const char *format, ...)
@@ -758,7 +742,6 @@ elektroid_delete_files_runner (gpointer data)
   GtkTreeSelection *selection;
   GtkTreeModel *model;
   struct browser *browser = data;
-  gint64 start = g_get_monotonic_time ();
 
   progress.sysex_transfer.active = TRUE;
   g_timeout_add (100, progress_pulse, NULL);
@@ -811,7 +794,6 @@ elektroid_delete_files_runner (gpointer data)
   g_list_free_full (ref_list, (GDestroyNotify) gtk_tree_row_reference_free);
   g_mutex_unlock (&browser->mutex);
 
-  elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
   progress_response (GTK_RESPONSE_ACCEPT);
   return NULL;
 }
@@ -1622,7 +1604,6 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
   gboolean queued_before, queued_after, active;
   GtkTreeModel *model;
   GtkTreeSelection *selection;
-  guint64 start = g_get_monotonic_time ();
 
   progress.sysex_transfer.active = TRUE;
   g_timeout_add (100, progress_pulse, NULL);
@@ -1666,7 +1647,6 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
       g_idle_add (elektroid_run_next, NULL);
     }
 
-  elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
   progress_response (GTK_RESPONSE_ACCEPT);
   return NULL;
 }
@@ -1835,7 +1815,6 @@ elektroid_add_download_tasks_runner (gpointer data)
   gboolean queued_before, queued_after, active;
   GtkTreeModel *model;
   GtkTreeSelection *selection;
-  gint64 start = g_get_monotonic_time ();
 
   progress.sysex_transfer.active = TRUE;
   g_timeout_add (100, progress_pulse, NULL);
@@ -1882,7 +1861,6 @@ elektroid_add_download_tasks_runner (gpointer data)
       g_idle_add (elektroid_run_next, NULL);
     }
 
-  elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
   progress_response (GTK_RESPONSE_ACCEPT);
   return NULL;
 }
@@ -2208,7 +2186,6 @@ static gpointer
 elektroid_set_device_runner (gpointer data)
 {
   struct backend_device *be_sys_device = data;
-  gint64 start = g_get_monotonic_time ();
 
   progress.sysex_transfer.active = TRUE;
   g_timeout_add (100, progress_pulse, NULL);
@@ -2216,7 +2193,6 @@ elektroid_set_device_runner (gpointer data)
 							be_sys_device, NULL,
 							&progress.sysex_transfer);
   elektroid_update_midi_status ();
-  elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
   progress_response (backend_check (&backend) ? GTK_RESPONSE_ACCEPT
 		     : GTK_RESPONSE_CANCEL);
   return NULL;
@@ -2394,7 +2370,6 @@ elektroid_add_upload_task_slot (const gchar *name,
 static gpointer
 elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 {
-  gint64 start;
   GtkTreeIter iter;
   gboolean queued_before, queued_after, active;
   struct elektroid_dnd_data *dnd_data = data;
@@ -2404,7 +2379,6 @@ elektroid_dnd_received_runner_dialog (gpointer data, gboolean dialog)
 
   if (dialog)
     {
-      start = g_get_monotonic_time ();
       g_timeout_add (100, progress_pulse, NULL);
     }
 
@@ -2475,7 +2449,6 @@ end:
   if (dialog)
     {
       // As we start to run the next task before sleeping, this has no impact.
-      elektroid_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
       progress_response (GTK_RESPONSE_ACCEPT);
     }
 
