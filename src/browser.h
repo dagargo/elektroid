@@ -29,8 +29,6 @@
 
 #define SIZE_LABEL_LEN 16
 
-#define DIR_ICON "folder-visiting-symbolic"
-
 //Common columns
 #define BROWSER_LIST_STORE_ICON_FIELD 0
 #define BROWSER_LIST_STORE_NAME_FIELD 1	//This is the value returned by the funciton se in the get_item_key member in struct fs_operations. It's the filename.

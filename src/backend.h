@@ -43,7 +43,7 @@
 #define BE_FILE_ICON_SEQ "elektroid-sequence-symbolic"
 #define BE_FILE_ICON_PRJ "elektroid-project-symbolic"
 #define BE_FILE_ICON_SND "elektroid-sound-symbolic"
-#define BE_FILE_ICON_GENERIC "text-x-generic-symbolic"
+#define BE_FILE_ICON_GENERIC "elektroid-file-symbolic"
 
 #define BE_REST_TIME_US 50000
 #define BE_SYSEX_TIMEOUT_MS 5000

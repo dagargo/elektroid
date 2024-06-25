@@ -29,6 +29,8 @@
 
 #define DND_TIMEOUT 800
 
+#define DIR_ICON "elektroid-folder-symbolic"
+
 struct browser local_browser;
 struct browser remote_browser;
 extern struct editor editor;
