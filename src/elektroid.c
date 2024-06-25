@@ -2403,11 +2403,7 @@ end:
       g_idle_add (elektroid_run_next, NULL);
     }
 
-  if (dialog)
-    {
-      // As we start to run the next task before sleeping, this has no impact.
-      progress_response (GTK_RESPONSE_ACCEPT);
-    }
+  progress_response (GTK_RESPONSE_ACCEPT);
 
   g_free (dnd_data->type_name);
   g_strfreev (dnd_data->uris);
