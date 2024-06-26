@@ -73,7 +73,7 @@ audio_read_callback (pa_stream *stream, size_t size, void *data)
       return;
     }
 
-  frame_size = SAMPLE_INFO_FRAME_SIZE (sample_info);
+  frame_size = FRAME_SIZE (AUDIO_CHANNELS, SF_FORMAT_PCM_16);
 
   audio_read_from_input (audio, (void *) buffer, size / frame_size);
   pa_stream_drop (stream);
