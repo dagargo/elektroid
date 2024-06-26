@@ -92,7 +92,7 @@ audio_write_callback (pa_stream *stream, size_t size, void *data)
       return;
     }
 
-  frame_size = SAMPLE_INFO_FRAME_SIZE (sample_info);
+  frame_size = FRAME_SIZE (AUDIO_CHANNELS, SF_FORMAT_PCM_16);
 
   pa_stream_begin_write (stream, &buffer, &size);
   audio_write_to_output (audio, buffer, size / frame_size);
