@@ -29,7 +29,7 @@
 
 #define SAMPLE_SIZE(format) ((format & SF_FORMAT_SUBMASK) == SF_FORMAT_PCM_16 ? 2 : 4)
 #define FRAME_SIZE(channels,format) ((channels) * SAMPLE_SIZE(format))
-#define SAMPLE_INFO_FRAME_SIZE(sample_info) ((sample_info)->channels * SAMPLE_SIZE((sample_info)->format))
+#define SAMPLE_INFO_FRAME_SIZE(sample_info) FRAME_SIZE((sample_info)->channels, (sample_info)->format)
 #define MONO_MIX_GAIN(channels) (channels == 2 ? 0.5 : 1.0 / sqrt (channels))
 
 #define SAMPLE_GET_FILE_FORMAT(sample_info, sample_format) (((sample_info)->format & SF_FORMAT_TYPEMASK) | sample_format)

@@ -573,11 +573,11 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   void *buffer_i;		//For gint16 or gint32
   gfloat *buffer_f;
   void *buffer_output;
-  gint err, resampled_buffer_len, frames_read;
+  gint err, resampled_buffer_len, frames;
   gboolean active, rounding_fix;
   gdouble ratio;
   guint bytes_per_sample, bytes_per_frame;
-  guint32 f, actual_frames = 0;
+  guint32 read_frames, actual_frames = 0;
   GByteArray *sample;
   struct sample_info *sample_info;
 
@@ -598,16 +598,19 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       g_mutex_lock (&control->mutex);
     }
 
-  sample_info->channels =
-    sample_info_req->channels ? sample_info_req->channels : sf_info.channels;
-  sample_info->rate =
-    sample_info_req->rate ? sample_info_req->rate : sf_info.samplerate;
-  sample_info->format =
-    sample_info_req->format ? sample_info_req->format : SF_FORMAT_PCM_16;
+  sample_set_sample_info (sample_info_src, sndfile, &sf_info);
 
-  if (sample_info_req->format != SF_FORMAT_PCM_16 &&
-      sample_info_req->format != SF_FORMAT_PCM_32 &&
-      sample_info_req->format != SF_FORMAT_FLOAT)
+  sample_info->midi_note = sample_info_src->midi_note;
+  sample_info->loop_type = sample_info_src->loop_type;
+  sample_info->channels = sample_info_req->channels ?
+    sample_info_req->channels : sample_info_src->channels;
+  sample_info->rate = sample_info_req->rate ? sample_info_req->rate :
+    sample_info_src->rate;
+  sample_info->format = sample_info_req->format ? sample_info_req->format :
+    SF_FORMAT_PCM_16;
+  if (sample_info->format != SF_FORMAT_PCM_16 &&
+      sample_info->format != SF_FORMAT_PCM_32 &&
+      sample_info->format != SF_FORMAT_FLOAT)
     {
       error_print ("Invalid sample format. Using short...\n");
       sample_info->format = SF_FORMAT_PCM_16;
@@ -616,18 +619,14 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
   bytes_per_sample = SAMPLE_SIZE (sample_info->format);
 
-  sample_set_sample_info (sample_info_src, sndfile, &sf_info);
-  sample_info->midi_note = sample_info_src->midi_note;
-  sample_info->loop_type = sample_info_src->loop_type;
-
   if (control)
     {
       g_mutex_unlock (&control->mutex);
     }
 
   //Set scale factor. See http://www.mega-nerd.com/libsndfile/api.html#note2
-  if ((sf_info.format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||
-      (sf_info.format & SF_FORMAT_DOUBLE) == SF_FORMAT_DOUBLE)
+  if ((sample_info_src->format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||
+      (sample_info_src->format & SF_FORMAT_DOUBLE) == SF_FORMAT_DOUBLE)
     {
       debug_print (2,
 		   "Setting scale factor to ensure correct integer readings...\n");
@@ -647,6 +646,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   resampled_buffer_len = src_data.output_frames * sample_info->channels;
   buffer_i = g_malloc (resampled_buffer_len * bytes_per_sample);
   src_data.data_out = g_malloc (resampled_buffer_len * sizeof (gfloat));
+
   if (sample_info->format == SF_FORMAT_PCM_16 ||
       sample_info->format == SF_FORMAT_PCM_32)
     {
@@ -693,31 +693,28 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       active = TRUE;
     }
 
-  f = 0;
-  while (f < sample_info_src->frames && active)
+  read_frames = 0;
+  while (read_frames < sample_info_src->frames && active)
     {
       debug_print (2, "Loading %d channels buffer...\n",
 		   sample_info->channels);
 
       if (sample_info->format == SF_FORMAT_FLOAT)
 	{
-	  frames_read = sf_readf_float (sndfile,
-					(gfloat *) buffer_input_multi,
-					LOAD_BUFFER_LEN);
+	  frames = sf_readf_float (sndfile, (gfloat *) buffer_input_multi,
+				   LOAD_BUFFER_LEN);
 	}
       else if (sample_info->format == SF_FORMAT_PCM_32)
 	{
-	  frames_read = sf_readf_int (sndfile,
-				      (gint32 *) buffer_input_multi,
-				      LOAD_BUFFER_LEN);
+	  frames = sf_readf_int (sndfile, (gint32 *) buffer_input_multi,
+				 LOAD_BUFFER_LEN);
 	}
       else
 	{
-	  frames_read = sf_readf_short (sndfile,
-					(gint16 *) buffer_input_multi,
-					LOAD_BUFFER_LEN);
+	  frames = sf_readf_short (sndfile, (gint16 *) buffer_input_multi,
+				   LOAD_BUFFER_LEN);
 	}
-      f += frames_read;
+      read_frames += frames;
 
       if (sample_info->channels == sample_info_src->channels)
 	{
@@ -729,23 +726,24 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	    {
 	      audio_multichannel_to_mono_float (buffer_input_multi,
 						buffer_input_mono,
-						frames_read,
+						frames,
 						sample_info_src->channels);
 	    }
 	  else if (sample_info->format == SF_FORMAT_PCM_32)
 	    {
 	      audio_multichannel_to_mono_int (buffer_input_multi,
 					      buffer_input_mono,
-					      frames_read,
+					      frames,
 					      sample_info_src->channels);
 	    }
 	  else
 	    {
 	      audio_multichannel_to_mono_short (buffer_input_multi,
 						buffer_input_mono,
-						frames_read,
+						frames,
 						sample_info_src->channels);
 	    }
+
 	  if (sample_info->channels == 1)
 	    {
 	      buffer_input = buffer_input_mono;
@@ -755,19 +753,17 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	      if (sample_info->format == SF_FORMAT_FLOAT)
 		{
 		  audio_mono_to_stereo_float (buffer_input_mono,
-					      buffer_input_stereo,
-					      frames_read);
+					      buffer_input_stereo, frames);
 		}
 	      else if (sample_info->format == SF_FORMAT_PCM_32)
 		{
 		  audio_mono_to_stereo_int (buffer_input_mono,
-					    buffer_input_stereo, frames_read);
+					    buffer_input_stereo, frames);
 		}
 	      else
 		{
 		  audio_mono_to_stereo_short (buffer_input_mono,
-					      buffer_input_stereo,
-					      frames_read);
+					      buffer_input_stereo, frames);
 		}
 	      buffer_input = buffer_input_stereo;
 	    }
@@ -780,8 +776,8 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	      g_mutex_lock (&control->mutex);
 	    }
 	  g_byte_array_append (sample, (guint8 *) buffer_input,
-			       frames_read * bytes_per_frame);
-	  actual_frames += frames_read;
+			       frames * bytes_per_frame);
+	  actual_frames += frames;
 	  if (control)
 	    {
 	      g_mutex_unlock (&control->mutex);
@@ -789,8 +785,11 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	}
       else
 	{
-	  src_data.end_of_input = frames_read < LOAD_BUFFER_LEN ? SF_TRUE : 0;
-	  src_data.input_frames = frames_read;
+	  debug_print (2, "Resampling %d channels with ratio %f...\n",
+		       sample_info->channels, src_data.src_ratio);
+
+	  src_data.end_of_input = frames < LOAD_BUFFER_LEN ? SF_TRUE : 0;
+	  src_data.input_frames = frames;
 
 	  if (sample_info->format == SF_FORMAT_FLOAT)
 	    {
@@ -798,17 +797,15 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	    }
 	  else if (sample_info->format == SF_FORMAT_PCM_32)
 	    {
-	      src_int_to_float_array (buffer_input, buffer_f, frames_read *
+	      src_int_to_float_array (buffer_input, buffer_f, frames *
 				      sample_info->channels);
 	    }
 	  else
 	    {
-	      src_short_to_float_array (buffer_input, buffer_f, frames_read *
+	      src_short_to_float_array (buffer_input, buffer_f, frames *
 					sample_info->channels);
 	    }
 
-	  debug_print (2, "Resampling %d channels with ratio %f...\n",
-		       sample_info->channels, src_data.src_ratio);
 	  err = src_process (src_state, &src_data);
 	  if (err)
 	    {
@@ -847,7 +844,7 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       if (control)
 	{
 	  g_mutex_lock (&control->mutex);
-	  cb (control, f * 1.0 / sample_info_src->frames, cb_data);
+	  cb (control, read_frames * 1.0 / sample_info_src->frames, cb_data);
 	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
 	}
