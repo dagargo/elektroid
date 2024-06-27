@@ -698,6 +698,7 @@ browser_load_dir (gpointer data)
     }
   else
     {
+      browser->last_selected_id = -1;
       browser->loading = TRUE;
     }
   g_mutex_unlock (&browser->mutex);
@@ -973,83 +974,63 @@ browser_clear_other_browser_if_system (struct browser *browser)
 }
 
 static void
-browser_check_and_load_sample (struct browser *browser, gint count)
+browser_check_selection (gpointer data)
 {
   struct item item;
   GtkTreeIter iter;
   GtkTreeModel *model;
-  gboolean sample_editor = !remote_browser.fs_ops
-    || (remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR);
-
-  if (count == 1)
-    {
-      browser_set_selected_row_iter (browser, &iter);
-      model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
-      browser_set_item (model, &iter, &item);
-
-      if (item.type == ELEKTROID_FILE && sample_editor)
-	{
-	  enum path_type type = backend_get_path_type (browser->backend);
-	  gchar *sample_path = path_chain (type, browser->dir, item.name);
-	  if (!editor.audio.path || strcmp (editor.audio.path, sample_path))
-	    {
-	      browser_clear_other_browser_if_system (browser);
-	      editor_reset (&editor, browser);
-	      g_free (editor.audio.path);
-	      editor.audio.path = sample_path;
-	      editor_start_load_thread (&editor);
-	    }
-
-	  return;
-	}
-    }
-
-  browser_clear_other_browser_if_system (browser);
-  editor_reset (&editor, NULL);
-}
-
-static gboolean
-browser_local_check_selection (gpointer data)
-{
-  struct browser *browser = data;
-  gint count = browser_get_selected_items_count (browser);
-  gboolean editor_impl = browser->fs_ops
-    && browser->fs_ops->options && FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE;
-
-  if (editor_impl)
-    {
-      browser_check_and_load_sample (browser, count);
-    }
-
-  return FALSE;
-}
-
-static gboolean
-browser_remote_check_selection (gpointer data)
-{
   struct browser *browser = data;
   gint count = browser_get_selected_items_count (browser);
   gboolean sel_impl = browser->fs_ops
     && browser->fs_ops->select_item ? TRUE : FALSE;
+  gboolean editor_opt = browser->fs_ops
+    && browser->fs_ops->options && FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE;
 
-  if (browser->backend->type == BE_TYPE_SYSTEM)
+  if (count != 1)
     {
-      browser_local_check_selection (browser);
+      browser_clear_other_browser_if_system (browser);
+      editor_reset (&editor, NULL);
+      browser->last_selected_id = -1;
+      return;
     }
 
-  if (count == 1 && sel_impl)
+  browser_set_selected_row_iter (browser, &iter);
+  model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
+  browser_set_item (model, &iter, &item);
+
+  if (item.type == ELEKTROID_DIR)
     {
-      GtkTreeIter iter;
-      GtkTreeModel *model;
-      struct item item;
-      browser_set_selected_row_iter (browser, &iter);
-      model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
-      browser_set_item (model, &iter, &item);
-      remote_browser.fs_ops->select_item (browser->backend, browser->dir,
-					  &item);
+      return;
     }
 
-  return FALSE;
+  if (item.id == browser->last_selected_id)
+    {
+      return;
+    }
+
+  browser->last_selected_id = item.id;
+
+  if (editor_opt)
+    {
+      enum path_type type = backend_get_path_type (browser->backend);
+      gchar *sample_path = path_chain (type, browser->dir, item.name);
+
+      editor_reset (&editor, browser);
+      g_free (editor.audio.path);
+      editor.audio.path = sample_path;
+      editor_start_load_thread (&editor);
+    }
+
+  if (!sel_impl)
+    {
+      return;
+    }
+
+  if (count == 1)
+    {
+      remote_browser.fs_ops->select_item (browser->backend,
+					  browser->dir, &item);
+    }
 }
 
 void
@@ -1160,7 +1141,7 @@ void
 browser_selection_changed (GtkTreeSelection *selection, gpointer data)
 {
   struct browser *browser = data;
-  browser->check_selection (data);
+  browser_check_selection (browser);
   browser_setup_popup_sensitivity (browser);
 }
 
@@ -1187,7 +1168,6 @@ browser_local_init (struct browser *browser, GtkBuilder *builder,
     GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry"));
   browser->menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu"));
   browser->dir = local_dir;
-  browser->check_selection = browser_local_check_selection;
   browser->fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
   browser->backend = NULL;
   browser->check_callback = NULL;
@@ -1286,7 +1266,6 @@ browser_remote_init (struct browser *browser,
     GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry"));
   browser->menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu"));
   browser->dir = NULL;
-  browser->check_selection = browser_remote_check_selection;
   browser->fs_ops = NULL;
   browser->backend = backend;
   browser->check_callback = elektroid_check_backend;

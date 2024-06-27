@@ -79,9 +79,9 @@ struct item
 {
   enum item_type type;
   gchar name[LABEL_MAX];
-  gint32 id;
+  gint32 id;			//For standard (non slot) filesystems, it is enough to be a sequential number for the current directory. Required to select items.
   gint64 size;
-  //Optionally filled up by sample filesystems
+  //Optionally filled up structs by filesystems. Filesystem options must indicate if these are in use.
   struct sample_info sample_info;
   gchar object_info[LABEL_MAX];
 };

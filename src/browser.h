@@ -49,7 +49,6 @@
 struct browser
 {
   const gchar *name;
-  GSourceFunc check_selection;
   GtkTreeView *view;
   GtkWidget *buttons_stack;
   GtkWidget *up_button;
@@ -80,6 +79,7 @@ struct browser
   gboolean dirty;
   gboolean search_mode;
   const gchar *filter;
+  gint64 last_selected_id;	//This needs space for struct item id and none.
   //Menu
   GtkWidget *transfer_menuitem;
   GtkWidget *play_separator;
