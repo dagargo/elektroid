@@ -119,15 +119,16 @@ editor_set_widget_source (GtkWidget *widget, gpointer data)
   gtk_style_context_add_class (context, class);
 }
 
-void
-editor_reset (struct editor *editor, struct browser *browser)
+static void
+editor_reset_audio (struct editor *editor, struct browser *browser)
 {
+  editor->browser = browser;
+
   editor_set_layout_width_to_val (editor, 1);
+
   audio_stop_playback (&editor->audio);
   audio_stop_recording (&editor->audio);
-  editor_stop_load_thread (editor);
   audio_reset_sample (&editor->audio);
-  editor->browser = browser;
 
   gtk_widget_queue_draw (editor->waveform);
 
@@ -144,6 +145,13 @@ editor_reset (struct editor *editor, struct browser *browser)
   gtk_widget_set_sensitive (editor->play_button, FALSE);
   gtk_widget_set_sensitive (editor->stop_button, FALSE);
   gtk_widget_set_sensitive (editor->loop_button, FALSE);
+}
+
+void
+editor_reset (struct editor *editor, struct browser *browser)
+{
+  editor_stop_load_thread (editor);
+  editor_reset_audio (editor, browser);
 }
 
 static void
@@ -334,18 +342,8 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
   gdouble x_ratio, x_frame, x_frame_next, y_scale, value;
   struct editor_y_frame_state y_frame_state;
   struct editor *editor = data;
-  struct sample_info *sample_info = editor->audio.sample.info;
+  struct sample_info *sample_info;
   struct audio *audio = &editor->audio;
-
-  if (!sample_info)
-    {
-      return FALSE;
-    }
-
-  start = editor_get_start_frame (editor);
-
-  debug_print (3, "Drawing waveform from %d with %f.2x zoom...\n",
-	       start, editor->zoom);
 
   width = gtk_widget_get_allocated_width (widget);
   height = gtk_widget_get_allocated_height (widget);
@@ -354,6 +352,17 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
   gtk_render_background (context, cr, 0, 0, width, height);
 
   g_mutex_lock (&audio->control.mutex);
+
+  sample_info = editor->audio.sample.info;
+  if (!sample_info)
+    {
+      goto end;
+    }
+
+  start = editor_get_start_frame (editor);
+
+  debug_print (3, "Drawing waveform from %d with %f.2x zoom...\n",
+	       start, editor->zoom);
 
   loop_start = sample_info->loop_start;
   loop_end = sample_info->loop_end;
@@ -419,8 +428,6 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 	}
     }
 
-  g_mutex_unlock (&audio->control.mutex);
-
   cairo_set_line_width (cr, 1);
 
   if (sample_info->frames)
@@ -468,6 +475,8 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 
   editor_destroy_y_frame_state (&y_frame_state);
 
+end:
+  g_mutex_unlock (&audio->control.mutex);
   return FALSE;
 }
 
@@ -486,6 +495,10 @@ editor_join_load_thread (gpointer data)
   if (editor->thread)
     {
       g_thread_join (editor->thread);
+      if (!editor->audio.sample.content)
+	{
+	  editor_reset_audio (editor, NULL);
+	}
       editor->thread = NULL;
     }
   return FALSE;
@@ -510,10 +523,6 @@ editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
 	  editor->ready = TRUE;
 	}
     }
-  if (completed)
-    {
-      g_idle_add (editor_join_load_thread, data);
-    }
 }
 
 static gpointer
@@ -522,6 +531,7 @@ editor_load_sample_runner (gpointer data)
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
   struct sample_info sample_info_req;
+  gint err;
 
   editor->dirty = FALSE;
   editor->ready = FALSE;
@@ -537,13 +547,19 @@ editor_load_sample_runner (gpointer data)
   audio->control.active = TRUE;
   g_mutex_unlock (&audio->control.mutex);
 
-  sample_load_from_file_with_cb (audio->path, &audio->sample, &audio->control,
-				 &sample_info_req, &audio->sample_info_src,
-				 editor_load_sample_cb, editor);
+  err = sample_load_from_file_with_cb (audio->path, &audio->sample,
+				       &audio->control, &sample_info_req,
+				       &audio->sample_info_src,
+				       editor_load_sample_cb, editor);
 
   g_mutex_lock (&audio->control.mutex);
   audio->control.active = FALSE;
   g_mutex_unlock (&audio->control.mutex);
+
+  if (err)
+    {
+      g_idle_add (editor_join_load_thread, data);
+    }
 
   return NULL;
 }
@@ -820,8 +836,8 @@ editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
 
   start = cursor_frame - rel_pos * sample_info->frames /
     (gdouble) editor->zoom;
-  editor_set_layout_width (editor);
   editor_set_start_frame (editor, start);
+  editor_set_layout_width (editor);
 
 end:
   g_mutex_unlock (&editor->audio.control.mutex);
@@ -849,16 +865,22 @@ static void
 editor_on_size_allocate (GtkWidget *self, GtkAllocation *allocation,
 			 struct editor *editor)
 {
-  struct sample_info *sample_info = editor->audio.sample.info;
+  struct sample_info *sample_info;
+  guint start;
 
-  if (!sample_info || sample_info->frames == 0)
+  g_mutex_lock (&editor->audio.control.mutex);
+  sample_info = editor->audio.sample.info;
+  if (!sample_info)
     {
-      return;
+      goto end;
     }
 
-  guint start = editor_get_start_frame (editor);
-  editor_set_layout_width (editor);
+  start = editor_get_start_frame (editor);
   editor_set_start_frame (editor, start);
+  editor_set_layout_width (editor);
+
+end:
+  g_mutex_unlock (&editor->audio.control.mutex);
 }
 
 static gboolean
@@ -897,11 +919,19 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
   guint cursor_frame;
   struct editor *editor = data;
-  struct sample_info *sample_info = editor->audio.sample.info;
+  struct sample_info *sample_info;
 
-  if (!editor_loading_completed (editor))
+  g_mutex_lock (&editor->audio.control.mutex);
+
+  if (!editor_loading_completed_no_lock (editor, NULL))
     {
-      return FALSE;
+      goto end;
+    }
+
+  sample_info = editor->audio.sample.info;
+  if (!sample_info)
+    {
+      goto end;
     }
 
   editor_get_frame_at_position (editor, event->x, &cursor_frame, NULL);
@@ -941,7 +971,9 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 	}
       else
 	{
+	  g_mutex_unlock (&editor->audio.control.mutex);
 	  audio_stop_playback (&editor->audio);
+	  g_mutex_lock (&editor->audio.control.mutex);
 	  editor->operation = EDITOR_OP_SELECT;
 	  editor->audio.sel_len = 0;
 	  gtk_widget_grab_focus (editor->waveform_scrolled_window);
@@ -966,6 +998,8 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
       gtk_menu_popup_at_pointer (editor->menu, (GdkEvent *) event);
     }
 
+end:
+  g_mutex_unlock (&editor->audio.control.mutex);
   return FALSE;
 }
 
@@ -1024,13 +1058,18 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
   gint16 *samples;
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
-  struct sample_info *sample_info = audio->sample.info;
-  struct sample_info *sample_info_src = &editor->audio.sample_info_src;
+  struct sample_info *sample_info;
+  struct sample_info *sample_info_src;
 
-  if (!editor->audio.sample.content)
+  g_mutex_lock (&editor->audio.control.mutex);
+
+  sample_info = audio->sample.info;
+  if (!sample_info)
     {
-      return FALSE;
+      goto end;
     }
+
+  sample_info_src = &editor->audio.sample_info_src;
 
   samples = (gint16 *) editor->audio.sample.content->data;
 
@@ -1112,6 +1151,8 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 
   g_idle_add (editor_queue_draw, data);
 
+end:
+  g_mutex_unlock (&editor->audio.control.mutex);
   return FALSE;
 }
 
@@ -1234,21 +1275,27 @@ editor_save_clicked (GtkWidget *object, gpointer data)
   gchar *name;
   GByteArray *sample = NULL;
   struct editor *editor = data;
-  struct sample_info *sample_info = editor->audio.sample.info;
-
-  if (!editor_loading_completed (editor))
-    {
-      return;
-    }
+  struct sample_info *sample_info;
 
   g_mutex_lock (&editor->audio.control.mutex);
+
+  if (!editor_loading_completed_no_lock (editor, NULL))
+    {
+      goto end;
+    }
+
+  sample_info = editor->audio.sample.info;
+  if (!sample_info)
+    {
+      goto end;
+    }
 
   if (editor->audio.path && !editor->audio.sel_len)
     {
       g_mutex_unlock (&editor->audio.control.mutex);
       if (editor_file_exists_no_overwrite (editor->audio.path))
 	{
-	  goto end;
+	  goto cleanup;
 	}
       g_mutex_lock (&editor->audio.control.mutex);
 
@@ -1289,7 +1336,7 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	  g_mutex_unlock (&editor->audio.control.mutex);
 	  if (editor_file_exists_no_overwrite (name))
 	    {
-	      goto end;
+	      goto cleanup;
 	    }
 	  g_mutex_lock (&editor->audio.control.mutex);
 
@@ -1318,9 +1365,10 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	}
     }
 
+end:
   g_mutex_unlock (&editor->audio.control.mutex);
 
-end:
+cleanup:
   if (sample)
     {
       g_byte_array_free (sample, TRUE);

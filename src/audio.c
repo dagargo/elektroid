@@ -52,18 +52,30 @@ audio_copy_sample (gint16 *dst, gint16 *src, struct audio *audio)
 void
 audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 {
+  guint32 len;
+  size_t size;
   gint16 *dst, *src;
-  struct sample_info *sample_info = audio->sample.info;
-  guint32 len =
-    audio->sel_len ? audio->sel_start + audio->sel_len : sample_info->frames;
-  guint bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
-  size_t size = frames * FRAME_SIZE (AUDIO_CHANNELS, SF_FORMAT_PCM_16);
+  guint bytes_per_frame;
+  gboolean stopping = FALSE;
+  struct sample_info *sample_info;
 
   debug_print (2, "Writing %d frames...\n", frames);
 
-  memset (buffer, 0, size);
-
   g_mutex_lock (&audio->control.mutex);
+
+  sample_info = audio->sample.info;
+
+  if (!sample_info)
+    {
+      goto end;
+    }
+
+  len = audio->sel_len ? audio->sel_start + audio->sel_len :
+    sample_info->frames;
+  bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
+  size = frames * FRAME_SIZE (AUDIO_CHANNELS, SF_FORMAT_PCM_16);
+
+  memset (buffer, 0, size);
 
   if ((audio->pos == len && !audio->loop) ||
       audio->status == AUDIO_STATUS_PREPARING_PLAYBACK ||
@@ -75,7 +87,7 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 	}
       else			//Stopping...
 	{
-	  audio->release_frames += frames;
+	  stopping = TRUE;
 	}
       goto end;
     }
@@ -126,6 +138,11 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
     }
 
 end:
+  if (!sample_info || stopping)
+    {
+      audio->release_frames += frames;
+    }
+
   g_mutex_unlock (&audio->control.mutex);
 
   if (audio->release_frames > AUDIO_BUF_FRAMES)

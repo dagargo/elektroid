@@ -661,6 +661,8 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       buffer_output = src_data.data_out;
     }
 
+  active = TRUE;
+
   src_state = src_new (SRC_SINC_BEST_QUALITY, sample_info->channels, &err);
   if (err)
     {
@@ -687,10 +689,6 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       g_mutex_lock (&control->mutex);
       active = control->active;
       g_mutex_unlock (&control->mutex);
-    }
-  else
-    {
-      active = TRUE;
     }
 
   read_frames = 0;
@@ -852,16 +850,6 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 
   src_delete (src_state);
 
-  if (control)
-    {
-      g_mutex_lock (&control->mutex);
-      if (!control->active)
-	{
-	  g_byte_array_set_size (sample, 0);
-	}
-      g_mutex_unlock (&control->mutex);
-    }
-
 cleanup:
   g_free (buffer_input_multi);
   g_free (buffer_input_mono);
@@ -876,33 +864,32 @@ cleanup:
 
   sf_close (sndfile);
 
-  if (sample->len)
+  if (control)
     {
-      if (control)
-	{
-	  g_mutex_lock (&control->mutex);
-	}
-      // This removes the additional samples added by the resampler due to rounding.
-      rounding_fix = sample_info->frames != actual_frames;
-      sample_info->frames = actual_frames;
-      sample_check_and_fix_loop_points (sample_info);
-      g_byte_array_set_size (sample, sample_info->frames * bytes_per_frame);
-      if (control)
-	{
-	  //It there was a rounding fix in the previous lines, the call is needed to detect the end of the loading process.
-	  if (rounding_fix)
-	    {
-	      cb (control, 1.0, cb_data);
-	    }
-	  g_mutex_unlock (&control->mutex);
-	}
-      return 0;
+      g_mutex_lock (&control->mutex);
     }
-  else
+  if (!active || !sample_info->frames)
     {
       idata_free (idata);
+      g_mutex_unlock (&control->mutex);
       return -1;
     }
+  // This removes the additional samples added by the resampler due to rounding.
+  rounding_fix = sample_info->frames != actual_frames;
+  sample_info->frames = actual_frames;
+  sample_check_and_fix_loop_points (sample_info);
+  g_byte_array_set_size (sample, sample_info->frames * bytes_per_frame);
+  if (control)
+    {
+      //It there was a rounding fix in the previous lines, the call is needed to detect the end of the loading process.
+      if (rounding_fix)
+	{
+	  cb (control, 1.0, cb_data);
+	}
+      g_mutex_unlock (&control->mutex);
+    }
+
+  return 0;
 }
 
 gint
