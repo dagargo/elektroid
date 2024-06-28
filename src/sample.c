@@ -28,8 +28,6 @@
 #define JUNK_CHUNK_ID "JUNK"
 #define SMPL_CHUNK_ID "smpl"
 
-#define DEFAULT_SAMPLE_SIZE MIB
-
 #define HEADERS_SPACE 4096	//Gross estimation for the sample (WAV) headers
 
 static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
@@ -573,12 +571,12 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   void *buffer_i;		//For gint16 or gint32
   gfloat *buffer_f;
   void *buffer_output;
-  gint err, resampled_buffer_len, frames;
+  gint err = 0, resampled_buffer_len, frames;
   gboolean active, rounding_fix;
   gdouble ratio;
   guint bytes_per_sample, bytes_per_frame;
   guint32 read_frames, actual_frames = 0;
-  GByteArray *sample;
+  GByteArray *sample = NULL;
   struct sample_info *sample_info;
 
   sf_info.format = 0;
@@ -589,16 +587,9 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       return -1;
     }
 
-  sample_info = g_malloc (sizeof (struct sample_info));
-  sample = g_byte_array_sized_new (DEFAULT_SAMPLE_SIZE);
-  idata_init (idata, sample, NULL, sample_info);
-
-  if (control)
-    {
-      g_mutex_lock (&control->mutex);
-    }
-
   sample_set_sample_info (sample_info_src, sndfile, &sf_info);
+
+  sample_info = g_malloc (sizeof (struct sample_info));
 
   sample_info->midi_note = sample_info_src->midi_note;
   sample_info->loop_type = sample_info_src->loop_type;
@@ -618,11 +609,6 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 
   bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
   bytes_per_sample = SAMPLE_SIZE (sample_info->format);
-
-  if (control)
-    {
-      g_mutex_unlock (&control->mutex);
-    }
 
   //Set scale factor. See http://www.mega-nerd.com/libsndfile/api.html#note2
   if ((sample_info_src->format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||
@@ -666,6 +652,8 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   src_state = src_new (SRC_SINC_BEST_QUALITY, sample_info->channels, &err);
   if (err)
     {
+      error_print ("Error while creating the resampler: %s\n",
+		   src_strerror (err));
       goto cleanup;
     }
 
@@ -673,10 +661,13 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
     {
       g_mutex_lock (&control->mutex);
     }
-  sample_info->frames = floor (sample_info_src->frames * ratio);	//Lower bound estimation. The actual amount is updated later.
+  sample_info->frames = ceil (sample_info_src->frames * ratio);	//Upper bound estimation. The actual amount is updated later.
   sample_info->loop_start = round (sample_info_src->loop_start * ratio);
   sample_info->loop_end = round (sample_info_src->loop_end * ratio);
   sample_check_and_fix_loop_points (sample_info);
+
+  sample = g_byte_array_sized_new (sample_info->frames * bytes_per_frame);
+  idata_init (idata, sample, NULL, sample_info);
   if (control)
     {
       g_mutex_unlock (&control->mutex);
@@ -807,7 +798,6 @@ sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	  err = src_process (src_state, &src_data);
 	  if (err)
 	    {
-	      g_byte_array_set_size (sample, 0);
 	      error_print ("Error while resampling: %s\n",
 			   src_strerror (err));
 	      break;
@@ -864,21 +854,30 @@ cleanup:
 
   sf_close (sndfile);
 
+  if (!sample)
+    {
+      g_free (sample_info);
+      return err;
+    }
+
   if (control)
     {
       g_mutex_lock (&control->mutex);
     }
-  if (!active || !sample_info->frames)
+  if (!active || !sample_info->frames || err)
     {
       idata_free (idata);
       g_mutex_unlock (&control->mutex);
       return -1;
     }
-  // This removes the additional samples added by the resampler due to rounding.
-  rounding_fix = sample_info->frames != actual_frames;
-  sample_info->frames = actual_frames;
-  sample_check_and_fix_loop_points (sample_info);
-  g_byte_array_set_size (sample, sample_info->frames * bytes_per_frame);
+  // This removes the additional samples added by the estimation above.
+  if (sample_info->frames > actual_frames)
+    {
+      rounding_fix = TRUE;
+      sample_info->frames = actual_frames;
+      sample_check_and_fix_loop_points (sample_info);
+      sample->len = sample_info->frames * bytes_per_frame;
+    }
   if (control)
     {
       //It there was a rounding fix in the previous lines, the call is needed to detect the end of the loading process.
