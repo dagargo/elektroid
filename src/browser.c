@@ -26,6 +26,9 @@
 #include "sample.h"
 
 #define OTHER_BROWSER(b) (b == &local_browser ? &remote_browser : &local_browser)
+#define BROWSER_IS_SYSTEM(b) (!(b)->backend || (b)->backend->type == BE_TYPE_SYSTEM)
+#define BROWSER_HAS_EDITOR(b) ((b)->fs_ops && (b)->fs_ops->options & FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE)
+#define EDITOR_IS_AVAILABLE BROWSER_HAS_EDITOR(&local_browser)
 
 #define DND_TIMEOUT 800
 
@@ -119,16 +122,21 @@ browser_set_item (GtkTreeModel *model, GtkTreeIter *iter, struct item *item)
   g_free (name);
 }
 
-void
+gint
 browser_set_selected_row_iter (struct browser *browser, GtkTreeIter *iter)
 {
+  gint index, *indices;
   GtkTreeModel *model;
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
   GList *paths = gtk_tree_selection_get_selected_rows (selection, &model);
+  GtkTreePath *row = g_list_nth_data (paths, 0);
 
-  gtk_tree_model_get_iter (model, iter, g_list_nth_data (paths, 0));
+  indices = gtk_tree_path_get_indices (row);
+  index = *indices;
+  gtk_tree_model_get_iter (model, iter, row);
   g_list_free_full (paths, (GDestroyNotify) gtk_tree_path_free);
+  return index;
 }
 
 static void
@@ -219,6 +227,7 @@ browser_clear_selection (struct browser *browser)
   g_signal_handlers_unblock_by_func (selection,
 				     G_CALLBACK (browser_selection_changed),
 				     browser);
+  browser->last_selected_index = -1;
 }
 
 gchar *
@@ -429,8 +438,7 @@ browser_load_dir_runner_update_ui (gpointer data)
   struct browser *browser = data;
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
-  gboolean active = (!browser->backend
-		     || browser->backend->type == BE_TYPE_SYSTEM);
+  gboolean active = BROWSER_IS_SYSTEM (browser);
 
   browser_wait (browser);
 
@@ -698,7 +706,7 @@ browser_load_dir (gpointer data)
     }
   else
     {
-      browser->last_selected_id = -1;
+      browser->last_selected_index = -1;
       browser->loading = TRUE;
     }
   g_mutex_unlock (&browser->mutex);
@@ -962,20 +970,19 @@ browser_search_changed (GtkSearchEntry *entry, gpointer data)
 }
 
 static void
-browser_clear_other_browser_if_system (struct browser *browser)
+browser_clear_other_browser_selection_if_system (struct browser *browser)
 {
-  if ((browser == &local_browser
-       && (remote_browser.backend
-	   && remote_browser.backend->type == BE_TYPE_SYSTEM))
-      || browser == &remote_browser)
+  struct browser *other = OTHER_BROWSER (browser);
+  if (BROWSER_IS_SYSTEM (other))
     {
-      browser_clear_selection (OTHER_BROWSER (browser));
+      browser_clear_selection (other);
     }
 }
 
 static void
 browser_check_selection (gpointer data)
 {
+  gint index;
   struct item item;
   GtkTreeIter iter;
   GtkTreeModel *model;
@@ -983,18 +990,22 @@ browser_check_selection (gpointer data)
   gint count = browser_get_selected_items_count (browser);
   gboolean sel_impl = browser->fs_ops
     && browser->fs_ops->select_item ? TRUE : FALSE;
-  gboolean editor_opt = browser->fs_ops
-    && browser->fs_ops->options && FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE;
 
   if (count != 1)
     {
-      browser_clear_other_browser_if_system (browser);
-      editor_reset (&editor, NULL);
-      browser->last_selected_id = -1;
+      if (EDITOR_IS_AVAILABLE && BROWSER_IS_SYSTEM (browser))
+	{
+	  browser_clear_other_browser_selection_if_system (browser);
+	  editor_reset (&editor, NULL);
+	}
+      else
+	{
+	  browser->last_selected_index = -1;
+	}
       return;
     }
 
-  browser_set_selected_row_iter (browser, &iter);
+  index = browser_set_selected_row_iter (browser, &iter);
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
   browser_set_item (model, &iter, &item);
 
@@ -1003,18 +1014,19 @@ browser_check_selection (gpointer data)
       return;
     }
 
-  if (item.id == browser->last_selected_id)
+  if (index == browser->last_selected_index)
     {
       return;
     }
 
-  browser->last_selected_id = item.id;
+  browser->last_selected_index = index;
 
-  if (editor_opt)
+  if (EDITOR_IS_AVAILABLE && BROWSER_IS_SYSTEM (browser))
     {
       enum path_type type = backend_get_path_type (browser->backend);
       gchar *sample_path = path_chain (type, browser->dir, item.name);
 
+      browser_clear_other_browser_selection_if_system (browser);
       editor_reset (&editor, browser);
       g_free (editor.audio.path);
       editor.audio.path = sample_path;
@@ -1026,11 +1038,7 @@ browser_check_selection (gpointer data)
       return;
     }
 
-  if (count == 1)
-    {
-      remote_browser.fs_ops->select_item (browser->backend,
-					  browser->dir, &item);
-    }
+  remote_browser.fs_ops->select_item (browser->backend, browser->dir, &item);
 }
 
 void

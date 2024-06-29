@@ -79,7 +79,7 @@ struct browser
   gboolean dirty;
   gboolean search_mode;
   const gchar *filter;
-  gint64 last_selected_id;	//This needs space for struct item id and none.
+  gint64 last_selected_index;	//This needs space for gint and -1
   //Menu
   GtkWidget *transfer_menuitem;
   GtkWidget *play_separator;
@@ -110,7 +110,7 @@ gint browser_get_selected_items_count (struct browser *);
 
 void browser_clear_selection (struct browser *);
 
-void browser_set_selected_row_iter (struct browser *, GtkTreeIter *);
+gint browser_set_selected_row_iter (struct browser *, GtkTreeIter *);
 
 void browser_selection_changed (GtkTreeSelection *, gpointer);
 

@@ -31,7 +31,6 @@
 
 struct system_iterator_data
 {
-  guint32 next;
   GDir *dir;
   const GSList *extensions;
 };
@@ -176,8 +175,7 @@ system_next_dentry (struct item_iterator *iter, gboolean sample_info)
 	  snprintf (iter->item.name, LABEL_MAX, "%s", name);
 	  iter->item.type = type;
 	  iter->item.size = st.st_size;
-	  iter->item.id = data->next;
-	  data->next++;
+	  iter->item.id = -1;
 
 	  if (item_iterator_is_dir_or_matches_extensions (iter,
 							  data->extensions))
@@ -224,7 +222,6 @@ system_read_dir_opts (struct backend *backend, struct item_iterator *iter,
     }
 
   data = g_malloc (sizeof (struct system_iterator_data));
-  data->next = 0;
   data->dir = gdir;
   data->extensions = extensions;
 
