@@ -1271,9 +1271,7 @@ elektroid_run_next (gpointer data)
 					  &fs, &batch_id, &mode);
   const gchar *status_human = tasks_get_human_status (TASK_STATUS_RUNNING);
 
-  g_mutex_lock (&tasks.transfer.control.mutex);
-  transfer_active = tasks.transfer.control.active;
-  g_mutex_unlock (&tasks.transfer.control.mutex);
+  transfer_active = job_control_get_active_lock (&tasks.transfer.control);
 
   if (!transfer_active && found)
     {
@@ -1507,10 +1505,9 @@ elektroid_upload_task_runner (gpointer data)
     }
   else
     {
-      g_mutex_lock (&tasks.transfer.control.mutex);
-      tasks.transfer.status = tasks.transfer.control.active ?
+      tasks.transfer.status =
+	job_control_get_active_lock (&tasks.transfer.control) ?
 	TASK_STATUS_COMPLETED_OK : TASK_STATUS_CANCELED;
-      g_mutex_unlock (&tasks.transfer.control.mutex);
     }
 
   dst_dir = g_path_get_dirname (upload_path);

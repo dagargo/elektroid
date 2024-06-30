@@ -512,3 +512,23 @@ idata_steal (struct idata *idata)
   g_free (idata->info);
   return idata->content;
 }
+
+gboolean
+job_control_get_active_lock (struct job_control *control)
+{
+  gboolean active;
+
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
+
+  return active;
+}
+
+void
+job_control_set_active_lock (struct job_control *control, gboolean active)
+{
+  g_mutex_lock (&control->mutex);
+  control->active = active;
+  g_mutex_unlock (&control->mutex);
+}

@@ -131,4 +131,9 @@ void idata_free (struct idata *idata);
 
 GByteArray *idata_steal (struct idata *idata);
 
+gboolean job_control_get_active_lock (struct job_control *control);
+
+void job_control_set_active_lock (struct job_control *control,
+				  gboolean active);
+
 #endif

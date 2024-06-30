@@ -732,9 +732,7 @@ set_conn_fs_op_from_command (const gchar *cmd)
 static void
 cli_end (int sig)
 {
-  g_mutex_lock (&control.mutex);
-  control.active = FALSE;
-  g_mutex_unlock (&control.mutex);
+  job_control_set_active_lock (&control, FALSE);
 
   g_mutex_lock (&sysex_transfer.mutex);
   sysex_transfer.active = FALSE;

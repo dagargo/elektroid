@@ -725,8 +725,6 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       buffer_output = src_data.data_out;
     }
 
-  active = TRUE;
-
   src_state = src_new (SRC_SINC_BEST_QUALITY, sample_info->channels, &err);
   if (err)
     {
@@ -735,9 +733,11 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       goto cleanup;
     }
 
+  active = TRUE;
   if (control)
     {
       g_mutex_lock (&control->mutex);
+      active = control->active;
     }
   sample_info->frames = ceil (sample_info_src->frames * ratio);	//Upper bound estimation. The actual amount is updated later.
   sample_info->loop_start = round (sample_info_src->loop_start * ratio);
@@ -752,13 +752,6 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
     }
 
   debug_print (2, "Loading sample (%d frames)...\n", sample_info_src->frames);
-
-  if (control)
-    {
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
-    }
 
   read_frames = 0;
   while (read_frames < sample_info_src->frames && active)
@@ -909,10 +902,8 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 
       if (control)
 	{
-	  g_mutex_lock (&control->mutex);
 	  cb (control, read_frames * 1.0 / sample_info_src->frames, cb_data);
-	  active = control->active;
-	  g_mutex_unlock (&control->mutex);
+	  active = job_control_get_active_lock (control);
 	}
     }
 

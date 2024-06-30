@@ -61,9 +61,7 @@ static void
 tasks_stop_current (GtkWidget *object, gpointer data)
 {
   struct tasks *tasks = data;
-  g_mutex_lock (&tasks->transfer.control.mutex);
-  tasks->transfer.control.active = FALSE;
-  g_mutex_unlock (&tasks->transfer.control.mutex);
+  job_control_set_active_lock (&tasks->transfer.control, FALSE);
 }
 
 void
@@ -386,11 +384,7 @@ void
 tasks_stop_thread (struct tasks *tasks)
 {
   debug_print (1, "Stopping task thread...\n");
-
-  g_mutex_lock (&tasks->transfer.control.mutex);
-  tasks->transfer.control.active = FALSE;
-  g_mutex_unlock (&tasks->transfer.control.mutex);
-
+  job_control_set_active_lock (&tasks->transfer.control, FALSE);
   tasks_join_thread (tasks);
 }
 

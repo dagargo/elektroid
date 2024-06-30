@@ -173,7 +173,6 @@ common_data_tx (struct backend *backend, GByteArray *msg,
 		struct job_control *control)
 {
   gint err = 0;
-  gboolean active;
   struct sysex_transfer transfer;
 
   g_mutex_lock (&backend->mutex);
@@ -189,10 +188,7 @@ common_data_tx (struct backend *backend, GByteArray *msg,
       goto cleanup;
     }
 
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-  if (active)
+  if (job_control_get_active_lock (control))
     {
       job_control_set_progress (control, 1.0);
     }
@@ -211,7 +207,6 @@ common_data_tx_and_rx_part (struct backend *backend, GByteArray *tx_msg,
 			    GByteArray **rx_msg, struct job_control *control)
 {
   gint err = 0;
-  gboolean active;
 
   job_control_set_progress (control, 0.0);
 
@@ -222,10 +217,7 @@ common_data_tx_and_rx_part (struct backend *backend, GByteArray *tx_msg,
       goto cleanup;
     }
 
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-  if (active)
+  if (job_control_get_active_lock (control))
     {
       job_control_set_progress (control, 1.0);
     }

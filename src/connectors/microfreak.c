@@ -431,14 +431,9 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
 
   for (gint i = 0; i < mfp.parts; i++)
     {
-      gboolean active;
       guint8 op = i == mfp.parts - 1 ? 0x17 : 0x16;
 
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
-
-      if (!active)
+      if (!job_control_get_active_lock (control))
 	{
 	  err = -ECANCELED;
 	  goto end;
@@ -562,13 +557,7 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
 
   for (gint i = 0; i < mfp.parts; i++)
     {
-      gboolean active;
-
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
-
-      if (!active)
+      if (!job_control_get_active_lock (control))
 	{
 	  err = -ECANCELED;
 	  break;
@@ -1076,13 +1065,8 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
 	  guint len;
 	  gint16 blk[MICROFREAK_WAVE_BLK_SHRT];
 	  gint16 *dst = blk;
-	  gboolean active;
 
-	  g_mutex_lock (&control->mutex);
-	  active = control->active;
-	  g_mutex_unlock (&control->mutex);
-
-	  if (!active)
+	  if (!job_control_get_active_lock (control))
 	    {
 	      err = -ECANCELED;
 	      goto end;
@@ -1324,13 +1308,8 @@ microfreak_wavetable_download_part (struct backend *backend,
     {
       guint8 op;
       guint len;
-      gboolean active;
 
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
-
-      if (!active)
+      if (!job_control_get_active_lock (control))
 	{
 	  return -ECANCELED;
 	}
@@ -1686,13 +1665,7 @@ microfreak_wavetable_upload_id_name (struct backend *backend,
 
   for (guint8 part = 0; part < MICROFREAK_WAVETABLE_PARTS && !err; part++)
     {
-      gboolean active;
-
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
-
-      if (!active)
+      if (!job_control_get_active_lock (control))
 	{
 	  return -ECANCELED;
 	}
