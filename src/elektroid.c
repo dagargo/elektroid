@@ -492,7 +492,7 @@ elektroid_rx_sysex ()
   while (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
     {
       filename = gtk_file_chooser_get_filename (chooser);
-      ext = get_file_ext (filename);
+      ext = filename_get_ext (filename);
 
       if (ext == NULL || strcmp (ext, "syx") != 0)
 	{
@@ -828,7 +828,7 @@ elektroid_rename_item (GtkWidget *object, gpointer data)
   old_path = browser_get_item_path (browser, &item);
 
   sel_len = strlen (item.name);
-  ext = get_file_ext (item.name);
+  ext = filename_get_ext (item.name);
   if (ext)
     {
       sel_len -= strlen (ext) + 1;

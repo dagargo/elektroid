@@ -265,7 +265,7 @@ gchar *debug_get_hex_msg (const GByteArray *);
 
 void remove_ext (gchar *);
 
-const gchar *get_file_ext (const gchar *);
+const gchar *filename_get_ext (const gchar *);
 
 gchar get_type_from_inventory_icon (const gchar *);
 

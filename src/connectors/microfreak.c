@@ -982,7 +982,7 @@ static gint
 microfreak_preset_load (const char *path, struct idata *preset,
 			struct job_control *control)
 {
-  const gchar *ext = get_file_ext (path);
+  const gchar *ext = filename_get_ext (path);
   if (strcmp (ext, MICROFREAK_ZPRESET_EXT) == 0)
     {
       return microfreak_zobject_load (path, preset, control);
@@ -2273,7 +2273,7 @@ static gint
 microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
 			   struct job_control *control)
 {
-  const gchar *ext = get_file_ext (path);
+  const gchar *ext = filename_get_ext (path);
   if (ext != NULL && strcmp (ext, MICROFREAK_PWAVETABLE_EXT) == 0)
     {
       return microfreak_pwavetable_load (path, wavetable, control);

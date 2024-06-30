@@ -2704,7 +2704,7 @@ elektron_get_download_path (struct backend *backend,
 			    struct idata *any)
 {
   gchar *path, *name, *dl_ext, *src_fpath;
-  const gchar *md_ext, *ext = get_file_ext (src_path);
+  const gchar *md_ext, *ext = filename_get_ext (src_path);
 
   // Examples:
   // 0:/project0
