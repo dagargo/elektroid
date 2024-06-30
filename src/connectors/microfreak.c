@@ -2111,7 +2111,17 @@ microfreak_deserialize_wavetable (struct idata *wavetable,
 				       data->data, &datalen);
   if (datalen == MICROFREAK_WAVETABLE_SIZE)
     {
-      idata_init (wavetable, data, name, NULL);
+      struct sample_info *sample_info =
+	g_malloc (sizeof (struct sample_info));
+      sample_info->midi_note = 0;
+      sample_info->loop_type = 0;
+      sample_info->channels = 1;
+      sample_info->rate = MICROFREAK_SAMPLERATE;
+      sample_info->format = SF_FORMAT_PCM_16;
+      sample_info->frames = MICROFREAK_WAVETABLE_LEN;
+      sample_info->loop_start = 0;
+      sample_info->loop_end = MICROFREAK_WAVETABLE_LEN - 1;
+      idata_init (wavetable, data, name, sample_info);
     }
   else
     {
