@@ -7,6 +7,22 @@
 
 #define HEADER_PAYLOAD "\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x10\x4e\x65\x72\x76\x6f\x75\x73\x4b\x65\x79\x73\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00"
 
+gint microfreak_serialize_preset (GByteArray * output,
+				  struct microfreak_preset *mfp);
+
+gint microfreak_deserialize_preset (struct microfreak_preset *mfp,
+				    GByteArray * input);
+
+gint microfreak_serialize_wavetable (struct idata *serialized,
+				     struct idata *wavetable);
+
+gint microfreak_deserialize_wavetable (struct idata *wavetable,
+				       struct idata *serialized);
+
+void microfreak_midi_msg_to_8bit_msg (guint8 *, guint8 *);
+
+void microfreak_8bit_msg_to_midi_msg (guint8 *, guint8 *);
+
 void
 test_serialization_deserialization_preset ()
 {

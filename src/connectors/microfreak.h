@@ -75,20 +75,4 @@ struct microfreak_wavetable_header
 
 gint microfreak_handshake (struct backend *);
 
-gint microfreak_serialize_preset (GByteArray * output,
-				  struct microfreak_preset *mfp);
-
-gint microfreak_deserialize_preset (struct microfreak_preset *mfp,
-				    GByteArray * input);
-
-gint microfreak_serialize_wavetable (struct idata *serialized,
-				     struct idata *wavetable);
-
-gint microfreak_deserialize_wavetable (struct idata *wavetable,
-				       struct idata *serialized);
-
-void microfreak_midi_msg_to_8bit_msg (guint8 *, guint8 *);
-
-void microfreak_8bit_msg_to_midi_msg (guint8 *, guint8 *);
-
 #endif
