@@ -41,7 +41,9 @@ tests_common_SOURCES = \
         ../src/connectors/common.c \
 	../src/connectors/common.h \
 	../src/sample.c \
-        ../src/sample.h
+        ../src/sample.h \
+	../src/connectors/microfreak_utils.c \
+	../src/connectors/microfreak_utils.h
 
 tests_microfreak_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -pthread
 tests_microfreak_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
@@ -55,10 +57,10 @@ tests_microfreak_SOURCES = \
 	$(BE_SOURCES) \
         ../src/connectors/common.c \
 	../src/connectors/common.h \
-	../src/sample.c \
-        ../src/sample.h \
 	../src/connectors/microfreak_utils.c \
 	../src/connectors/microfreak_utils.h \
+	../src/sample.c \
+        ../src/sample.h \
 	../src/connectors/microfreak.c \
 	../src/connectors/microfreak.h
 
@@ -74,6 +76,8 @@ tests_elektron_SOURCES = \
 	$(BE_SOURCES) \
         ../src/connectors/common.c \
 	../src/connectors/common.h \
+	../src/connectors/microfreak_utils.c \
+	../src/connectors/microfreak_utils.h \
 	../src/sample.c \
         ../src/sample.h \
 	../src/connectors/package.c \
@@ -96,6 +100,8 @@ tests_sample_SOURCES = \
         tests_sample.c \
 	../src/utils.c \
         ../src/utils.h \
+	../src/connectors/microfreak_utils.c \
+	../src/connectors/microfreak_utils.h \
 	../src/sample.c \
         ../src/sample.h
 

@@ -22,6 +22,7 @@
 #include <math.h>
 #include <errno.h>
 #include "sample.h"
+#include "connectors/microfreak_utils.h"
 
 #define LOAD_BUFFER_LEN (32 * KIB)
 
@@ -31,11 +32,13 @@
 #define HEADERS_SPACE 4096	//Gross estimation for the sample (WAV) headers
 
 static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
+  { "wav", "ogg", "aiff", "flac", MICROFREAK_PWAVETABLE_EXT,
+  MICROFREAK_ZWAVETABLE_EXT,
 #if !defined(__linux__) || HAVE_SNDFILE_MP3
-{ "wav", "ogg", "aiff", "flac", "mp3", NULL };
-#else
-{ "wav", "ogg", "aiff", "flac", NULL };
+  "mp3",
 #endif
+  NULL
+};
 
 struct smpl_chunk_data
 {
@@ -203,8 +206,9 @@ static SF_VIRTUAL_IO FILE_IO = {
 };
 
 static gint
-sample_get_audio_file_data (struct idata *idata, struct job_control *control,
-			    struct g_byte_array_io_data *wave, guint32 format)
+sample_get_audio_file_data (struct idata *idata,
+			    struct g_byte_array_io_data *wave,
+			    struct job_control *control, guint32 format)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -310,7 +314,7 @@ sample_get_memfile_from_sample (struct idata *sample, struct idata *file,
   data.pos = 0;
   data.array = content;
 
-  err = sample_get_audio_file_data (sample, control, &data, format);
+  err = sample_get_audio_file_data (sample, &data, control, format);
   if (err)
     {
       idata_free (file);
@@ -508,14 +512,14 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
 	       sample_info->loop_start, sample_info->loop_end);
 }
 
-gint
-sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
+static gint
+sample_load_sample_info_libsndfile (const gchar *path,
+				    struct sample_info *sample_info)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
   FILE *file;
-
-  memset (sample_info, 0, sizeof (struct sample_info));
+  gint err = 0;
 
   file = fopen (path, "rb");
   if (!file)
@@ -528,13 +532,56 @@ sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
     {
       error_print ("Error while reading %s: %s\n", path,
 		   sf_strerror (sndfile));
-      return -1;
+      err = -1;
+      goto end;
     }
 
   sample_set_sample_info (sample_info, sndfile, &sf_info);
 
+end:
   fclose (file);
-  return 0;
+  return err;
+}
+
+gint
+sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
+{
+  const gchar *ext = filename_get_ext (path);
+
+  memset (sample_info, 0, sizeof (struct sample_info));
+
+  if (strcmp (MICROFREAK_PWAVETABLE_EXT, ext) == 0 ||
+      strcmp (MICROFREAK_ZWAVETABLE_EXT, ext) == 0)
+    {
+      struct idata aux;
+      gint err;
+      struct job_control control;
+
+      control.active = TRUE;
+      g_mutex_init (&control.mutex);
+
+      if (strcmp (MICROFREAK_PWAVETABLE_EXT, ext) == 0)
+	{
+	  err = microfreak_pwavetable_load (path, &aux, &control);
+	}
+      else
+	{
+	  err = microfreak_zwavetable_load (path, &aux, &control);
+	}
+      if (err)
+	{
+	  return err;
+	}
+
+      memcpy (sample_info, aux.info, sizeof (struct sample_info));
+      idata_free (&aux);
+
+      return 0;
+    }
+  else
+    {
+      return sample_load_sample_info_libsndfile (path, sample_info);
+    }
 }
 
 void
@@ -551,11 +598,11 @@ sample_check_and_fix_loop_points (struct sample_info *sample_info)
 }
 
 static gint
-sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
-		 struct job_control *control, struct idata *idata,
-		 const struct sample_info *sample_info_req,
-		 struct sample_info *sample_info_src, sample_load_cb cb,
-		 gpointer cb_data)
+sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
+			struct job_control *control, struct idata *idata,
+			const struct sample_info *sample_info_req,
+			struct sample_info *sample_info_src,
+			sample_load_cb cb, gpointer cb_data)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -897,9 +944,9 @@ sample_load_from_memfile (struct idata *memfile, struct idata *sample,
   struct g_byte_array_io_data data;
   data.pos = 0;
   data.array = memfile->content;
-  return sample_load_raw (&data, &G_BYTE_ARRAY_IO, control, sample,
-			  sample_info_req, sample_info_src,
-			  set_sample_progress_no_sync, NULL);
+  return sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, sample,
+				 sample_info_req, sample_info_src,
+				 set_sample_progress_no_sync, NULL);
 }
 
 gint
@@ -909,15 +956,59 @@ sample_load_from_file_with_cb (const gchar *path, struct idata *sample,
 			       struct sample_info *sample_info_src,
 			       sample_load_cb cb, gpointer cb_data)
 {
-  FILE *file = fopen (path, "rb");
-  if (!file)
+  const gchar *ext = filename_get_ext (path);
+
+  if (strcmp (MICROFREAK_PWAVETABLE_EXT, ext) == 0 ||
+      strcmp (MICROFREAK_ZWAVETABLE_EXT, ext) == 0)
     {
-      return -errno;
+      struct idata aux1, aux2;
+      gint err;
+
+      if (strcmp (MICROFREAK_PWAVETABLE_EXT, ext) == 0)
+	{
+	  err = microfreak_pwavetable_load (path, &aux1, control);
+	}
+      else
+	{
+	  err = microfreak_zwavetable_load (path, &aux1, control);
+	}
+      if (err)
+	{
+	  return err;
+	}
+
+      err = sample_get_memfile_from_sample (&aux1, &aux2, control,
+					    SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+      idata_free (&aux1);
+      if (err)
+	{
+	  return err;
+	}
+      struct g_byte_array_io_data data;
+      data.pos = 0;
+      data.array = aux2.content;
+      err = sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, sample,
+				    sample_info_req, sample_info_src,
+				    cb, cb_data);
+      idata_free (&aux2);
+
+      sample_info_src->format &= SF_FORMAT_SUBMASK;	//Needed to remove the SF_FORMAT_WAV that will be set in the previous step
+
+      return err;
     }
-  gint err = sample_load_raw (file, &FILE_IO, control, sample,
-			      sample_info_req, sample_info_src, cb, cb_data);
-  fclose (file);
-  return err;
+  else
+    {
+      FILE *file = fopen (path, "rb");
+      if (!file)
+	{
+	  return -errno;
+	}
+      gint err = sample_load_libsndfile (file, &FILE_IO, control, sample,
+					 sample_info_req, sample_info_src, cb,
+					 cb_data);
+      fclose (file);
+      return err;
+    }
 }
 
 gint

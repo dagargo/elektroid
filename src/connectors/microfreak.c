@@ -1250,8 +1250,8 @@ microfreak_wavetable_read_dir (struct backend *backend,
 }
 
 static gint
-microfreak_wavetable_load_sample (const gchar *path, struct idata *wavetable,
-				  struct job_control *control)
+microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
+			   struct job_control *control)
 {
   struct idata aux;
   gint err = common_sample_load (path, &aux, control, 0, 1,
@@ -1943,25 +1943,6 @@ static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microfreak_get_download_wavetable_path
 };
-
-static gint
-microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
-			   struct job_control *control)
-{
-  const gchar *ext = filename_get_ext (path);
-  if (ext != NULL && strcmp (ext, MICROFREAK_PWAVETABLE_EXT) == 0)
-    {
-      return microfreak_pwavetable_load (path, wavetable, control);
-    }
-  else if (ext != NULL && strcmp (ext, MICROFREAK_ZWAVETABLE_EXT) == 0)
-    {
-      return microfreak_zwavetable_load (path, wavetable, control);
-    }
-  else
-    {
-      return microfreak_wavetable_load_sample (path, wavetable, control);
-    }
-}
 
 static gint
 microfreak_wavetable_save (const gchar *path, struct idata *wavetable,
