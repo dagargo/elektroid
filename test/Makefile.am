@@ -57,6 +57,8 @@ tests_microfreak_SOURCES = \
 	../src/connectors/common.h \
 	../src/sample.c \
         ../src/sample.h \
+	../src/connectors/microfreak_utils.c \
+	../src/connectors/microfreak_utils.h \
 	../src/connectors/microfreak.c \
 	../src/connectors/microfreak.h
 
