@@ -550,9 +550,6 @@ sample_check_and_fix_loop_points (struct sample_info *sample_info)
     }
 }
 
-// If control->data is NULL, then a new struct sample_info * is created and control->data points to it.
-// In case of failure, if control->data is NULL is freed.
-
 static gint
 sample_load_raw (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 		 struct job_control *control, struct idata *idata,
