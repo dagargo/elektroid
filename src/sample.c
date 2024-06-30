@@ -33,7 +33,8 @@
 
 static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
   { "wav", "ogg", "aiff", "flac", MICROFREAK_PWAVETABLE_EXT,
-  MICROFREAK_ZWAVETABLE_EXT,
+  MICROFREAK_ZWAVETABLE_EXT, MICROFREAK_PSAMPLE_EXT,
+  MICROFREAK_ZSAMPLE_EXT,
 #if !defined(__linux__) || HAVE_SNDFILE_MP3
   "mp3",
 #endif
@@ -543,31 +544,64 @@ end:
   return err;
 }
 
-gint
-sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
+static gint
+sample_load_microfreak_sample (const gchar *path, struct idata *sample,
+			       struct job_control *control)
+{
+  gint err;
+  const gchar *ext = filename_get_ext (path);
+
+  if (!strcmp (MICROFREAK_PWAVETABLE_EXT, ext))
+    {
+      err = microfreak_pwavetable_load (path, sample, control);
+    }
+  else if (!strcmp (MICROFREAK_ZWAVETABLE_EXT, ext))
+    {
+      err = microfreak_zwavetable_load (path, sample, control);
+    }
+  else if (!strcmp (MICROFREAK_PSAMPLE_EXT, ext))
+    {
+      err = microfreak_psample_load (path, sample, control);
+    }
+  else if (!strcmp (MICROFREAK_ZSAMPLE_EXT, ext))
+    {
+      err = microfreak_zsample_load (path, sample, control);
+    }
+  else
+    {
+      err = -1;
+    }
+
+  return err;
+}
+
+static gboolean
+sample_microfreak_filename (const gchar *path)
 {
   const gchar *ext = filename_get_ext (path);
 
+  return !strcmp (MICROFREAK_PWAVETABLE_EXT, ext) ||
+    !strcmp (MICROFREAK_ZWAVETABLE_EXT, ext) ||
+    !strcmp (MICROFREAK_PSAMPLE_EXT, ext) ||
+    !strcmp (MICROFREAK_ZSAMPLE_EXT, ext);
+}
+
+gint
+sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
+{
+  gint err;
+
   memset (sample_info, 0, sizeof (struct sample_info));
 
-  if (strcmp (MICROFREAK_PWAVETABLE_EXT, ext) == 0 ||
-      strcmp (MICROFREAK_ZWAVETABLE_EXT, ext) == 0)
+  if (sample_microfreak_filename (path))
     {
       struct idata aux;
-      gint err;
       struct job_control control;
 
       control.active = TRUE;
       g_mutex_init (&control.mutex);
 
-      if (strcmp (MICROFREAK_PWAVETABLE_EXT, ext) == 0)
-	{
-	  err = microfreak_pwavetable_load (path, &aux, &control);
-	}
-      else
-	{
-	  err = microfreak_zwavetable_load (path, &aux, &control);
-	}
+      err = sample_load_microfreak_sample (path, &aux, &control);
       if (err)
 	{
 	  return err;
@@ -575,13 +609,13 @@ sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
 
       memcpy (sample_info, aux.info, sizeof (struct sample_info));
       idata_free (&aux);
-
-      return 0;
     }
   else
     {
-      return sample_load_sample_info_libsndfile (path, sample_info);
+      err = sample_load_sample_info_libsndfile (path, sample_info);
     }
+
+  return err;
 }
 
 void
@@ -956,22 +990,12 @@ sample_load_from_file_with_cb (const gchar *path, struct idata *sample,
 			       struct sample_info *sample_info_src,
 			       sample_load_cb cb, gpointer cb_data)
 {
-  const gchar *ext = filename_get_ext (path);
-
-  if (strcmp (MICROFREAK_PWAVETABLE_EXT, ext) == 0 ||
-      strcmp (MICROFREAK_ZWAVETABLE_EXT, ext) == 0)
+  gint err;
+  if (sample_microfreak_filename (path))
     {
       struct idata aux1, aux2;
-      gint err;
 
-      if (strcmp (MICROFREAK_PWAVETABLE_EXT, ext) == 0)
-	{
-	  err = microfreak_pwavetable_load (path, &aux1, control);
-	}
-      else
-	{
-	  err = microfreak_zwavetable_load (path, &aux1, control);
-	}
+      err = sample_load_microfreak_sample (path, &aux1, control);
       if (err)
 	{
 	  return err;
@@ -984,17 +1008,16 @@ sample_load_from_file_with_cb (const gchar *path, struct idata *sample,
 	{
 	  return err;
 	}
+
       struct g_byte_array_io_data data;
       data.pos = 0;
       data.array = aux2.content;
       err = sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, sample,
-				    sample_info_req, sample_info_src,
-				    cb, cb_data);
+				    sample_info_req, sample_info_src, cb,
+				    cb_data);
       idata_free (&aux2);
 
       sample_info_src->format &= SF_FORMAT_SUBMASK;	//Needed to remove the SF_FORMAT_WAV that will be set in the previous step
-
-      return err;
     }
   else
     {
@@ -1003,12 +1026,13 @@ sample_load_from_file_with_cb (const gchar *path, struct idata *sample,
 	{
 	  return -errno;
 	}
-      gint err = sample_load_libsndfile (file, &FILE_IO, control, sample,
-					 sample_info_req, sample_info_src, cb,
-					 cb_data);
+      err = sample_load_libsndfile (file, &FILE_IO, control, sample,
+				    sample_info_req, sample_info_src, cb,
+				    cb_data);
       fclose (file);
-      return err;
     }
+
+  return err;
 }
 
 gint

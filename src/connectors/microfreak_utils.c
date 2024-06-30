@@ -23,7 +23,7 @@
 #include "microfreak_utils.h"
 
 gint
-microfreak_serialize_object (GByteArray *output, gchar *header,
+microfreak_serialize_object (GByteArray *output, const gchar *header,
 			     guint headerlen, const gchar *name,
 			     guint8 p0, guint8 p3, guint8 p5,
 			     guint8 *data, guint datalen)
@@ -73,7 +73,7 @@ microfreak_serialize_object (GByteArray *output, gchar *header,
 }
 
 gint
-microfreak_deserialize_object (GByteArray *input, gchar *header,
+microfreak_deserialize_object (GByteArray *input, const gchar *header,
 			       guint headerlen, gchar *name, guint8 *p0,
 			       guint8 *p3, guint8 *p5, guint8 *data,
 			       gint64 *datalen)
@@ -168,8 +168,8 @@ microfreak_new_sample_info (guint32 frames)
 }
 
 gint
-microfreak_deserialize_sample (struct idata *wavetable,
-			       struct idata *serialized)
+microfreak_deserialize_sample (struct idata *sample, struct idata *serialized,
+			       const gchar *header, guint headerlen)
 {
   gchar name[MICROFREAK_WAVETABLE_NAME_LEN];
   guint8 p0, p3, p5;
@@ -178,10 +178,8 @@ microfreak_deserialize_sample (struct idata *wavetable,
   struct sample_info *sample_info;
   GByteArray *data = g_byte_array_sized_new (2 * MIB);	//Enough for 24 s samples or wavetables
 
-  err = microfreak_deserialize_object (serialized->content,
-				       MICROFREAK_WAVETABLE_HEADER,
-				       sizeof (MICROFREAK_WAVETABLE_HEADER) -
-				       1, name, &p0, &p3, &p5,
+  err = microfreak_deserialize_object (serialized->content, header,
+				       headerlen - 1, name, &p0, &p3, &p5,
 				       data->data, &datalen);
   if (err)
     {
@@ -192,7 +190,7 @@ microfreak_deserialize_sample (struct idata *wavetable,
   data->len = datalen;
 
   sample_info = microfreak_new_sample_info (datalen / 2);
-  idata_init (wavetable, data, name, sample_info);
+  idata_init (sample, data, name, sample_info);
 
   return 0;
 }
@@ -330,7 +328,8 @@ microfreak_zsample_load (const gchar *path, struct idata *sample,
       return err;
     }
 
-  err = microfreak_deserialize_sample (sample, &aux);
+  err = microfreak_deserialize_sample (sample, &aux, MICROFREAK_SAMPLE_HEADER,
+				       sizeof (MICROFREAK_SAMPLE_HEADER));
 
   idata_free (&aux);
   return err;
@@ -349,7 +348,8 @@ microfreak_psample_load (const gchar *path, struct idata *sample,
       return err;
     }
 
-  err = microfreak_deserialize_sample (sample, &aux);
+  err = microfreak_deserialize_sample (sample, &aux, MICROFREAK_SAMPLE_HEADER,
+				       sizeof (MICROFREAK_SAMPLE_HEADER));
 
   idata_free (&aux);
   return err;
@@ -360,7 +360,11 @@ microfreak_deserialize_wavetable (struct idata *wavetable,
 				  struct idata *serialized)
 {
   struct sample_info *sample_info;
-  gint err = microfreak_deserialize_sample (wavetable, serialized);
+  gint err;
+
+  err = microfreak_deserialize_sample (wavetable, serialized,
+				       MICROFREAK_WAVETABLE_HEADER,
+				       sizeof (MICROFREAK_WAVETABLE_HEADER));
   if (err)
     {
       return err;
@@ -377,17 +381,17 @@ microfreak_deserialize_wavetable (struct idata *wavetable,
 }
 
 gint
-microfreak_serialize_wavetable (struct idata *serialized,
-				struct idata *wavetable)
+microfreak_serialize_sample (struct idata *serialized,
+			     struct idata *wavetable, const gchar *header,
+			     guint headerlen)
 {
   gint err;
   GByteArray *data = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE * 8);
 
-  err = microfreak_serialize_object (data, MICROFREAK_WAVETABLE_HEADER,
-				     sizeof (MICROFREAK_WAVETABLE_HEADER) -
-				     1, wavetable->name, 1, 0, 1,
+  err = microfreak_serialize_object (data, header, headerlen - 1,
+				     wavetable->name, 1, 0, 1,
 				     wavetable->content->data,
-				     MICROFREAK_WAVETABLE_SIZE);
+				     wavetable->content->len);
   if (err)
     {
       g_byte_array_free (data, TRUE);

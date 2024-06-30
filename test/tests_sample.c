@@ -139,7 +139,7 @@ test_load_sample_no_control_no_resampling ()
 }
 
 static void
-test_load_microfreak_sample (const gchar *path)
+test_load_microfreak_wavetable (const gchar *path)
 {
   gint err;
   struct idata sample;
@@ -190,15 +190,79 @@ test_load_microfreak_sample (const gchar *path)
 }
 
 static void
-test_load_microfreak_sample_mfw ()
+test_load_microfreak_mfw ()
 {
-  test_load_microfreak_sample (TEST_DATA_DIR "/connectors/microfreak.mfw");
+  test_load_microfreak_wavetable (TEST_DATA_DIR "/connectors/microfreak.mfw");
 }
 
 static void
-test_load_microfreak_sample_mfwz ()
+test_load_microfreak_mfwz ()
 {
-  test_load_microfreak_sample (TEST_DATA_DIR "/connectors/microfreak.mfwz");
+  test_load_microfreak_wavetable (TEST_DATA_DIR
+				  "/connectors/microfreak.mfwz");
+}
+
+static void
+test_load_microfreak_sample (const gchar *path)
+{
+  gint err;
+  struct idata sample;
+  struct sample_info sample_info_req;
+  struct sample_info sample_info_src;
+  struct sample_info *sample_info;
+
+  printf ("\n");
+
+  sample_info_req.channels = 1;
+  sample_info_req.rate = 48000;
+  sample_info_req.format = SF_FORMAT_PCM_16;
+
+  err = sample_load_from_file (path, &sample, NULL, &sample_info_req,
+			       &sample_info_src);
+
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  CU_ASSERT_EQUAL (sample_info_src.frames, 800);
+  CU_ASSERT_EQUAL (sample_info_src.loop_start, 0);
+  CU_ASSERT_EQUAL (sample_info_src.loop_end, 799);
+  CU_ASSERT_EQUAL (sample_info_src.loop_type, 0);
+  CU_ASSERT_EQUAL (sample_info_src.rate, 32000);
+  CU_ASSERT_EQUAL (sample_info_src.format, SF_FORMAT_PCM_16);
+  CU_ASSERT_EQUAL (sample_info_src.channels, 1);
+  CU_ASSERT_EQUAL (sample_info_src.midi_note, 0);
+
+  sample_info = sample.info;
+  CU_ASSERT_EQUAL (sample_info->frames, 1200);
+  CU_ASSERT_EQUAL (sample_info->loop_start, 0);
+  CU_ASSERT_EQUAL (sample_info->loop_end, 1199);
+  CU_ASSERT_EQUAL (sample_info->loop_type, 0);
+  CU_ASSERT_EQUAL (sample_info->rate, 48000);
+  CU_ASSERT_EQUAL (sample_info->format, SF_FORMAT_PCM_16);
+  CU_ASSERT_EQUAL (sample_info->channels, 1);
+  CU_ASSERT_EQUAL (sample_info->midi_note, 0);
+
+  CU_ASSERT_EQUAL (sample.content->len, sample_info->frames * 2);
+
+  CU_ASSERT_EQUAL (0, memcmp (sample.content->data,
+			      "\xc9\x4c\xe3\x56\x61\x49\xce\x4c", 8));
+
+  idata_free (&sample);
+}
+
+static void
+test_load_microfreak_mfs ()
+{
+  test_load_microfreak_sample (TEST_DATA_DIR "/connectors/microfreak.mfs");
+}
+
+static void
+test_load_microfreak_mfsz ()
+{
+  test_load_microfreak_sample (TEST_DATA_DIR "/connectors/microfreak.mfsz");
 }
 
 gint
@@ -242,14 +306,22 @@ main (gint argc, gchar *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "load_microfreak_sample_mfw",
-		    test_load_microfreak_sample_mfw))
+  if (!CU_add_test (suite, "load_microfreak_mfw", test_load_microfreak_mfw))
     {
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "load_microfreak_sample_mfwz",
-		    test_load_microfreak_sample_mfwz))
+  if (!CU_add_test (suite, "load_microfreak_mfwz", test_load_microfreak_mfwz))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "load_microfreak_mfs", test_load_microfreak_mfs))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "load_microfreak_mfsz", test_load_microfreak_mfsz))
     {
       goto cleanup;
     }
