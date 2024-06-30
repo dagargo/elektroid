@@ -59,6 +59,9 @@
 #define MICROFREAK_PWAVETABLE_EXT "mfw"
 #define MICROFREAK_ZWAVETABLE_EXT "mfwz"
 
+#define MICROFREAK_PSAMPLE_EXT "mfs"
+#define MICROFREAK_ZSAMPLE_EXT "mfsz"
+
 #define MICROFREAK_WAVETABLE_EMPTY 0x08
 
 static const guint8 MICROFREAK_REQUEST_HEADER[] =
@@ -326,7 +329,7 @@ static gint
 microfreak_deserialize_object (GByteArray *input, gchar *header,
 			       guint headerlen, gchar *name, guint8 *p0,
 			       guint8 *p3, guint8 *p5, guint8 *data,
-			       guint *datalen)
+			       gint64 *datalen)
 {
   guint64 v;
   guint8 *p;
@@ -410,7 +413,7 @@ microfreak_deserialize_preset (struct microfreak_preset *mfp,
   guint8 *category = MICROFREAK_GET_CATEGORY_FROM_HEADER (mfp->header);
   guint8 *init = MICROFREAK_GET_INIT_FROM_HEADER (mfp->header);
   guint8 *p1 = MICROFREAK_GET_P1_FROM_HEADER (mfp->header);
-  guint datalen = 0;
+  gint64 datalen = 0;
   gint err;
 
   memset (mfp, 0, sizeof (struct microfreak_preset));
@@ -1441,34 +1444,6 @@ err:
 }
 
 static gint
-microfreak_sample_load (const gchar *path, struct idata *sample,
-			struct job_control *control)
-{
-  return common_sample_load (path, sample, control, MICROFREAK_SAMPLERATE, 1,
-			     SF_FORMAT_PCM_16);
-}
-
-static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
-  .id = FS_MICROFREAK_SAMPLE,
-  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_SIZE_COLUMN |
-    FS_OPTION_ALLOW_SEARCH,
-  .name = "sample",
-  .gui_name = "Samples",
-  .gui_icon = BE_FILE_ICON_WAVE,
-  .readdir = microfreak_sample_read_dir,
-  .print_item = common_print_item,
-  .get_slot = microfreak_get_object_id_as_slot,
-  .delete = microfreak_sample_clear,
-  .clear = microfreak_sample_clear,
-  .upload = microfreak_sample_upload,
-  .load = microfreak_sample_load,
-  .get_exts = backend_get_audio_exts,
-  .get_upload_path = common_slot_get_upload_path
-};
-
-static gint
 microfreak_next_wavetable_dentry (struct item_iterator *iter)
 {
   gint err;
@@ -1531,6 +1506,21 @@ microfreak_wavetable_read_dir (struct backend *backend,
 				     microfreak_next_wavetable_dentry);
 }
 
+static struct sample_info *
+microfreak_new_sample_info (guint32 frames)
+{
+  struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
+  sample_info->midi_note = 0;
+  sample_info->loop_type = 0;
+  sample_info->channels = 1;
+  sample_info->rate = MICROFREAK_SAMPLERATE;
+  sample_info->format = SF_FORMAT_PCM_16;
+  sample_info->frames = frames;
+  sample_info->loop_start = 0;
+  sample_info->loop_end = sample_info->frames - 1;
+  return sample_info;
+}
+
 static gint
 microfreak_wavetable_load_sample (const gchar *path, struct idata *wavetable,
 				  struct job_control *control)
@@ -1545,7 +1535,9 @@ microfreak_wavetable_load_sample (const gchar *path, struct idata *wavetable,
 
   if (aux.content->len == MICROFREAK_WAVETABLE_SIZE)
     {
-      idata_init (wavetable, idata_steal (&aux), NULL, NULL);
+      struct sample_info *sample_info =
+	microfreak_new_sample_info (MICROFREAK_WAVETABLE_LEN);
+      idata_init (wavetable, idata_steal (&aux), NULL, sample_info);
       return 0;
     }
   else
@@ -1563,8 +1555,9 @@ microfreak_wavetable_load_sample (const gchar *path, struct idata *wavetable,
 	}
       else
 	{
-	  sample_info->frames = MICROFREAK_WAVETABLE_LEN;
-	  idata_init (wavetable, resampled, NULL, NULL);
+	  struct sample_info *sample_info =
+	    microfreak_new_sample_info (MICROFREAK_WAVETABLE_LEN);
+	  idata_init (wavetable, resampled, NULL, sample_info);
 	}
 
       idata_free (&aux);
@@ -1711,14 +1704,7 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  sample_info = g_malloc (sizeof (struct sample_info));
-  sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
-  sample_info->rate = MICROFREAK_SAMPLERATE;
-  sample_info->loop_start = 0;
-  sample_info->loop_end = MICROFREAK_WAVETABLE_LEN - 1;
-  sample_info->loop_type = 0;
-  sample_info->midi_note = 0;
-  sample_info->channels = 1;
+  sample_info = microfreak_new_sample_info (MICROFREAK_WAVETABLE_LEN);
 
   content = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
   content->len = MICROFREAK_WAVETABLE_SIZE;
@@ -2094,42 +2080,144 @@ microfreak_get_download_wavetable_path (struct backend *backend,
 }
 
 gint
-microfreak_deserialize_wavetable (struct idata *wavetable,
-				  struct idata *serialized)
+microfreak_deserialize_sample (struct idata *wavetable,
+			       struct idata *serialized)
 {
   gchar name[MICROFREAK_WAVETABLE_NAME_LEN];
   guint8 p0, p3, p5;
-  guint datalen;
+  gint64 datalen;
   gint err;
-  GByteArray *data = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
+  struct sample_info *sample_info;
+  GByteArray *data = g_byte_array_sized_new (2 * MIB);	//Enough for 24 s samples or wavetables
 
-  data->len = MICROFREAK_WAVETABLE_SIZE;
   err = microfreak_deserialize_object (serialized->content,
 				       MICROFREAK_WAVETABLE_HEADER,
 				       sizeof (MICROFREAK_WAVETABLE_HEADER) -
 				       1, name, &p0, &p3, &p5,
 				       data->data, &datalen);
-  if (datalen == MICROFREAK_WAVETABLE_SIZE)
+  if (err)
     {
-      struct sample_info *sample_info =
-	g_malloc (sizeof (struct sample_info));
-      sample_info->midi_note = 0;
-      sample_info->loop_type = 0;
-      sample_info->channels = 1;
-      sample_info->rate = MICROFREAK_SAMPLERATE;
-      sample_info->format = SF_FORMAT_PCM_16;
-      sample_info->frames = MICROFREAK_WAVETABLE_LEN;
-      sample_info->loop_start = 0;
-      sample_info->loop_end = MICROFREAK_WAVETABLE_LEN - 1;
-      idata_init (wavetable, data, name, sample_info);
+      g_byte_array_free (data, TRUE);
+      return err;
+    }
+
+  data->len = datalen;
+
+  sample_info = microfreak_new_sample_info (datalen / 2);
+  idata_init (wavetable, data, name, sample_info);
+
+  return 0;
+}
+
+static gint
+microfreak_zsample_load (const gchar *path, struct idata *sample,
+			 struct job_control *control)
+{
+  gint err;
+  struct idata aux;
+
+  err = microfreak_zobject_load (path, &aux, control);
+  if (err)
+    {
+      return err;
+    }
+
+  err = microfreak_deserialize_sample (sample, &aux);
+
+  idata_free (&aux);
+  return err;
+}
+
+static gint
+microfreak_psample_load (const gchar *path, struct idata *sample,
+			 struct job_control *control)
+{
+  gint err;
+  struct idata aux;
+
+  err = file_load (path, &aux, control);
+  if (err)
+    {
+      return err;
+    }
+
+  err = microfreak_deserialize_sample (sample, &aux);
+
+  idata_free (&aux);
+  return err;
+}
+
+static gint
+microfreak_sample_load (const gchar *path, struct idata *sample,
+			struct job_control *control)
+{
+  const gchar *ext = filename_get_ext (path);
+
+  if (strcmp (MICROFREAK_PSAMPLE_EXT, ext) == 0)
+    {
+      return microfreak_psample_load (path, sample, control);
+    }
+  else if (strcmp (MICROFREAK_ZSAMPLE_EXT, ext) == 0)
+    {
+      return microfreak_zsample_load (path, sample, control);
     }
   else
     {
-      g_byte_array_free (wavetable->content, TRUE);
-      err = -EINVAL;
+      return common_sample_load (path, sample, control, MICROFREAK_SAMPLERATE,
+				 1, SF_FORMAT_PCM_16);
+    }
+}
+
+static GSList *
+microfreak_get_audio_exts (struct backend *backend,
+			   const struct fs_operations *ops)
+{
+  GSList *exts = backend_get_audio_exts (backend, ops);
+  exts = g_slist_append (exts, strdup (MICROFREAK_ZSAMPLE_EXT));
+  exts = g_slist_append (exts, strdup (MICROFREAK_ZSAMPLE_EXT));
+  exts = g_slist_append (exts, strdup (MICROFREAK_PWAVETABLE_EXT));
+  return g_slist_append (exts, strdup (MICROFREAK_ZWAVETABLE_EXT));
+}
+
+static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
+  .id = FS_MICROFREAK_SAMPLE,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
+    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_SIZE_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
+  .name = "sample",
+  .gui_name = "Samples",
+  .gui_icon = BE_FILE_ICON_WAVE,
+  .readdir = microfreak_sample_read_dir,
+  .print_item = common_print_item,
+  .get_slot = microfreak_get_object_id_as_slot,
+  .delete = microfreak_sample_clear,
+  .clear = microfreak_sample_clear,
+  .upload = microfreak_sample_upload,
+  .load = microfreak_sample_load,
+  .get_exts = microfreak_get_audio_exts,
+  .get_upload_path = common_slot_get_upload_path
+};
+
+gint
+microfreak_deserialize_wavetable (struct idata *wavetable,
+				  struct idata *serialized)
+{
+  struct sample_info *sample_info;
+  gint err = microfreak_deserialize_sample (wavetable, serialized);
+  if (err)
+    {
+      return err;
     }
 
-  return err;
+  sample_info = wavetable->info;
+  if (sample_info->frames != MICROFREAK_WAVETABLE_LEN)
+    {
+      idata_free (wavetable);
+      return -EINVAL;
+    }
+
+  return 0;
 }
 
 gint
@@ -2306,15 +2394,6 @@ microfreak_wavetable_save (const gchar *path, struct idata *wavetable,
 			      SF_FORMAT_PCM_16);
 }
 
-static GSList *
-microfreak_wavetable_get_exts (struct backend *backend,
-			       const struct fs_operations *ops)
-{
-  GSList *exts = backend_get_audio_exts (backend, ops);
-  exts = g_slist_append (exts, strdup (MICROFREAK_PWAVETABLE_EXT));
-  return g_slist_append (exts, strdup (MICROFREAK_ZWAVETABLE_EXT));
-}
-
 static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
   .id = FS_MICROFREAK_WAVETABLE,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
@@ -2336,7 +2415,7 @@ static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
   .upload = microfreak_wavetable_upload,
   .load = microfreak_wavetable_load,
   .save = microfreak_wavetable_save,
-  .get_exts = microfreak_wavetable_get_exts,
+  .get_exts = microfreak_get_audio_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microfreak_get_download_wavetable_path
 };
