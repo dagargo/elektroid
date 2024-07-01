@@ -11,10 +11,18 @@ BAD_FILE_PATHS=$5
 FILE_PATH=$6
 FILE_UPLOAD_NAME=$7
 FILE_NEW_NAME=$8
+FILE_RESTORE_NAME=$9
 FILE_TO_UPLOAD=$srcdir/res/connectors/${CONN}_${FS}.data
 FILE_UPLOADED_BACK="$FILE_TO_UPLOAD.back"
 if [ ! -f "$FILE_UPLOADED_BACK" ]; then
   FILE_UPLOADED_BACK="$FILE_TO_UPLOAD"
+fi
+
+! [ -n "$FILE_UPLOAD_NAME" ]; TEST_FILE_UPLOAD_NAME=$?
+! [ -n "$FILE_RESTORE_NAME" ]; TEST_FILE_RESTORE_NAME=$?
+if [ $TEST_FILE_UPLOAD_NAME -ne $TEST_FILE_RESTORE_NAME ]; then
+  echo "FILE_UPLOAD_NAME xor FILE_RESTORE_NAME is true"
+  exit 1
 fi
 
 BACKUP_PREFIX="Backup - "
@@ -22,7 +30,11 @@ BACKUP_PREFIX="Backup - "
 function exitWithError() {
   if [ -n "$FILE_BACKUP" ]; then
     echo "Restoring..."
-    $ecli ${CONN}-${FS}-ul "$FILE_BACKUP" $TEST_DEVICE:$FILE_PATH
+    if [ -n "$FILE_RESTORE_NAME" ]; then
+      $ecli ${CONN}-${FS}-ul "$FILE_BACKUP" "$TEST_DEVICE:$FILE_PATH:$FILE_RESTORE_NAME"
+    else
+      $ecli ${CONN}-${FS}-ul "$FILE_BACKUP" $TEST_DEVICE:$FILE_PATH
+    fi
   fi
   rm -f "$FILE"
   rm -f "$FILE_BACKUP"
