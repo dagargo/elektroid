@@ -1,5 +1,5 @@
 /*
- *   microfreak_utils.c
+ *   microfreak_sample.c
  *   Copyright (C) 2024 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
@@ -20,7 +20,7 @@
 
 #include <zip.h>
 #include "utils.h"
-#include "microfreak_utils.h"
+#include "microfreak_sample.h"
 
 #define MICROFREAK_SERIALIZATION_TAG "serialization::archive"
 #define MICROFREAK_ZEROS "000000000000000000"

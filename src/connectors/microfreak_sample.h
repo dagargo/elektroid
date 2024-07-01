@@ -1,5 +1,5 @@
 /*
- *   microfreak_utils.h
+ *   microfreak_sample.h
  *   Copyright (C) 2024 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.

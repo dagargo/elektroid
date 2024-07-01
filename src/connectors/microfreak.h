@@ -22,7 +22,7 @@
 #define MICROFREAK_H
 
 #include "backend.h"
-#include "microfreak_utils.h"
+#include "microfreak_sample.h"
 
 #define MICROFREAK_PRESET_HEADER_MSG_LEN 0x23
 #define MICROFREAK_PRESET_PARTS 146

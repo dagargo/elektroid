@@ -22,7 +22,7 @@
 #include <math.h>
 #include <errno.h>
 #include "sample.h"
-#include "connectors/microfreak_utils.h"
+#include "connectors/microfreak_sample.h"
 
 #define LOAD_BUFFER_LEN (32 * KIB)
 
