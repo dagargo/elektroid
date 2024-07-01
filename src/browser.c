@@ -26,7 +26,6 @@
 #include "sample.h"
 
 #define OTHER_BROWSER(b) (b == &local_browser ? &remote_browser : &local_browser)
-#define BROWSER_IS_SYSTEM(b) (!(b)->backend || (b)->backend->type == BE_TYPE_SYSTEM)
 #define BROWSER_HAS_EDITOR(b) ((b)->fs_ops && (b)->fs_ops->options & FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE)
 #define EDITOR_IS_AVAILABLE BROWSER_HAS_EDITOR(&local_browser)
 

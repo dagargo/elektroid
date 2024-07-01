@@ -49,6 +49,8 @@
 #define TREEVIEW_SCROLL_LINES 2
 #define TREEVIEW_EDGE_SIZE 20
 
+#define PROGRESS_DELETE_THRESHOLD 25
+
 #define BACKEND_PLAYING "\u23f5"
 #define BACKEND_STOPPED "\u23f9"
 
@@ -788,6 +790,8 @@ static void
 elektroid_delete_files (GtkWidget *object, gpointer data)
 {
   gint res;
+  struct browser *browser = data;
+
   dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
 				   GTK_DIALOG_MODAL,
 				   GTK_MESSAGE_ERROR,
@@ -806,8 +810,17 @@ elektroid_delete_files (GtkWidget *object, gpointer data)
       return;
     }
 
-  progress_run (elektroid_delete_files_runner, TRUE, data,
-		_("Deleting Files"), _("Deleting..."), NULL);
+  if (BROWSER_IS_SYSTEM (browser) &&
+      browser_get_selected_items_count (browser) <= PROGRESS_DELETE_THRESHOLD)
+    {
+      elektroid_delete_files_runner (browser);
+    }
+  else
+    {
+      progress_run (elektroid_delete_files_runner, TRUE, browser,
+		    _("Deleting Files"), _("Deleting..."), NULL);
+    }
+
   browser_load_dir_if_needed (data);
 }
 

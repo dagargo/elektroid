@@ -46,6 +46,8 @@
 //Remote columns
 #define BROWSER_LIST_STORE_SLOT_FIELD 13	//This is an optional map of the id (number) to some string like "A1", "001" or "[A:001]" to mimic the device way of numbering the items.
 
+#define BROWSER_IS_SYSTEM(b) (!(b)->backend || (b)->backend->type == BE_TYPE_SYSTEM)
+
 struct browser
 {
   const gchar *name;
