@@ -31,8 +31,6 @@
 #define MICROFREAK_WAVETABLE_SIZE (MICROFREAK_WAVETABLE_LEN * MICROFREAK_SAMPLE_SIZE)
 
 #define MICROFREAK_WAVETABLE_NAME_LEN 16
-#define MICROFREAK_WAVETABLE_HEADER "22 serialization::archive 10 0 4 8 DEVBUILD"
-#define MICROFREAK_SAMPLE_HEADER "22 serialization::archive 10 0 4 2 94"
 
 #define MICROFREAK_PWAVETABLE_EXT "mfw"
 #define MICROFREAK_ZWAVETABLE_EXT "mfwz"
@@ -41,24 +39,15 @@
 #define MICROFREAK_ZSAMPLE_EXT "mfsz"
 
 gint microfreak_serialize_object (GByteArray * output, const gchar * header,
-				  guint headerlen, const gchar * name,
-				  guint8 p0, guint8 p3, guint8 p5,
-				  guint8 * data, guint datalen);
+				  const gchar * name, guint8 p0, guint8 p3,
+				  guint8 p5, guint8 * data, guint datalen);
 
 gint microfreak_deserialize_object (GByteArray * input, const gchar * header,
-				    guint headerlen, gchar * name,
-				    guint8 * p0, guint8 * p3, guint8 * p5,
-				    guint8 * data, gint64 * datalen);
+				    gchar * name, guint8 * p0, guint8 * p3,
+				    guint8 * p5, guint8 * data,
+				    gint64 * datalen);
 
 struct sample_info *microfreak_new_sample_info (guint32 frames);
-
-gint microfreak_serialize_sample (struct idata *serialized,
-				  struct idata *wavetable,
-				  const gchar * header, guint headerlen);
-
-gint microfreak_deserialize_sample (struct idata *wavetable,
-				    struct idata *serialized,
-				    const gchar * header, guint headerlen);
 
 gint microfreak_zobject_save (const gchar * path, struct idata *zobject,
 			      struct job_control *control,
@@ -77,6 +66,12 @@ gint microfreak_pwavetable_load (const gchar * path, struct idata *wavetable,
 				 struct job_control *control);
 
 gint microfreak_zwavetable_load (const gchar * path, struct idata *wavetable,
+				 struct job_control *control);
+
+gint microfreak_pwavetable_save (const gchar * path, struct idata *wavetable,
+				 struct job_control *control);
+
+gint microfreak_zwavetable_save (const gchar * path, struct idata *wavetable,
 				 struct job_control *control);
 
 #endif

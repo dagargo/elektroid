@@ -37,6 +37,8 @@
 #define MICROFREAK_WAVETABLE_PARTS 4
 #define MICROFREAK_WAVETABLE_FRAMES_PER_BATCH (MICROFREAK_SAMPLE_BATCH_SIZE / (MICROFREAK_WAVETABLE_CYCLES * MICROFREAK_SAMPLE_SIZE))
 
+#define MICROFREAK_PRESET_HEADER "174"
+
 #define MICROFREAK_GET_MSG_PAYLOAD_LEN(msg) (msg->data[7])
 #define MICROFREAK_GET_MSG_OP(msg) (msg->data[8])
 #define MICROFREAK_GET_MSG_PAYLOAD(msg) (&msg->data[9])
@@ -331,7 +333,6 @@ microfreak_deserialize_preset (struct microfreak_preset *mfp,
 
   memset (mfp, 0, sizeof (struct microfreak_preset));
   err = microfreak_deserialize_object (input, MICROFREAK_PRESET_HEADER,
-				       sizeof (MICROFREAK_PRESET_HEADER) - 1,
 				       name, category, init, p1, mfp->data,
 				       &datalen);
   *init = *init ? 0x08 : 0;
@@ -350,7 +351,6 @@ microfreak_serialize_preset (GByteArray *output,
 
   init = init & 0x08 ? 1 : 0;
   return microfreak_serialize_object (output, MICROFREAK_PRESET_HEADER,
-				      sizeof (MICROFREAK_PRESET_HEADER) - 1,
 				      name, category, init, p1, mfp->data,
 				      mfp->parts *
 				      MICROFREAK_PRESET_PART_LEN);
@@ -1846,36 +1846,6 @@ static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
   .get_upload_path = common_slot_get_upload_path
 };
 
-gint
-microfreak_serialize_wavetable (struct idata *serialized,
-				struct idata *wavetable)
-{
-
-  return microfreak_serialize_sample (serialized, wavetable,
-				      MICROFREAK_WAVETABLE_HEADER,
-				      sizeof (MICROFREAK_WAVETABLE_HEADER));
-}
-
-static gint
-microfreak_pwavetable_save (const gchar *path, struct idata *wavetable,
-			    struct job_control *control)
-{
-  gint err;
-  struct idata aux;
-
-  err = microfreak_serialize_wavetable (&aux, wavetable);
-  if (err)
-    {
-      goto cleanup;
-    }
-
-  err = file_save (path, &aux, control);
-
-cleanup:
-  idata_free (&aux);
-  return err;
-}
-
 static gchar *
 microfreak_get_wavetable_id_as_slot (struct item *item,
 				     struct backend *backend)
@@ -1901,28 +1871,6 @@ static const struct fs_operations FS_MICROFREAK_PWAVETABLE_OPERATIONS = {
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microfreak_get_download_wavetable_path
 };
-
-static gint
-microfreak_zwavetable_save (const gchar *path, struct idata *wavetable,
-			    struct job_control *control)
-{
-  gint err;
-  struct idata aux;
-
-  err = microfreak_serialize_sample (&aux, wavetable,
-				     MICROFREAK_WAVETABLE_HEADER,
-				     sizeof (MICROFREAK_WAVETABLE_HEADER));
-  if (err)
-    {
-      goto cleanup;
-    }
-
-  err = microfreak_zobject_save (path, &aux, control, "0_wavetable");
-
-cleanup:
-  idata_free (&aux);
-  return err;
-}
 
 static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
   .id = FS_MICROFREAK_ZWAVETABLE,
