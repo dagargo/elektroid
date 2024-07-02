@@ -931,19 +931,6 @@ elektroid_drag_begin (GtkWidget *widget, GdkDragContext *context,
 }
 
 static gboolean
-elektroid_drag_end (GtkWidget *widget, GdkDragContext *context, gpointer data)
-{
-  struct browser *browser = data;
-
-  debug_print (1, "Drag end\n");
-
-  g_string_free (browser->dnd_data, TRUE);
-  browser->dnd = FALSE;
-
-  return FALSE;
-}
-
-static gboolean
 elektroid_selection_function_true (GtkTreeSelection *selection,
 				   GtkTreeModel *model,
 				   GtkTreePath *path,
@@ -960,6 +947,28 @@ elektroid_selection_function_false (GtkTreeSelection *selection,
 				    gboolean path_currently_selected,
 				    gpointer data)
 {
+  return FALSE;
+}
+
+static gboolean
+elektroid_drag_end (GtkWidget *widget, GdkDragContext *context, gpointer data)
+{
+  GtkTreeSelection *selection;
+  struct browser *browser = data;
+
+  debug_print (1, "Drag end\n");
+
+  g_string_free (browser->dnd_data, TRUE);
+  browser->dnd = FALSE;
+
+  //Performing a DND that was ending in the same browser and directory has no
+  //effect. But the selection function was disabled on the button press and
+  //never enabled again as there is no button release signal.
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+  gtk_tree_selection_set_select_function (selection,
+					  elektroid_selection_function_true,
+					  NULL, NULL);
+
   return FALSE;
 }
 
@@ -2485,7 +2494,6 @@ elektroid_dnd_received (GtkWidget *widget, GdkDragContext *context,
       if (!strcmp (src_dir, dst_dir))
 	{
 	  debug_print (1, MSG_WARN_SAME_SRC_DST);
-
 	  goto end;
 	}
 
