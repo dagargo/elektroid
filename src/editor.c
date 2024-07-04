@@ -21,6 +21,7 @@
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
 #include <glib/gstdio.h>
+#include <math.h>
 #include "editor.h"
 #include "sample.h"
 #include "connectors/system.h"
@@ -1229,7 +1230,7 @@ editor_save_with_format (struct editor *editor, gchar *name,
 {
   gint err;
   struct sample_info *sample_info_src = &editor->audio.sample_info_src;
-  struct sample_info *sample_info = editor->audio.sample.info;
+  struct sample_info *sample_info = sample->info;
   gdouble ratio = sample_info_src->rate / (gdouble) sample_info->rate;
   guint32 format = sample_info_src->format;
   size_t fsize = FRAME_SIZE (sample_info_src->channels,
@@ -1253,11 +1254,10 @@ editor_save_with_format (struct editor *editor, gchar *name,
 
       struct idata aux;
       struct sample_info *si = g_malloc (sizeof (struct sample_info));
-      memcpy (si, &editor->audio.sample_info_src,
-	      sizeof (struct sample_info));
+      memcpy (si, sample_info_src, sizeof (struct sample_info));
       si->frames = resampled->len / fsize;
-      si->loop_start = si->frames - 1;
-      si->loop_end = si->loop_start;
+      si->loop_start = floor (si->loop_start * ratio);
+      si->loop_end = floor (si->loop_end * ratio);
 
       idata_init (&aux, resampled, NULL, si);
       err = sample_save_to_file (name, &aux, &editor->audio.control, format);
