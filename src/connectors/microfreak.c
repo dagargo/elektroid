@@ -914,7 +914,7 @@ microfreak_sample_clear (struct backend *backend, const gchar *path)
   return microfreak_sample_reset (backend, id, &header);
 }
 
-//This function does NOT work as the assumed to be cksum member in the microfreak_sample_header struct.
+//This function does NOT provide the same value as Arturia MIDI Control Center. This does not seem to
 
 static guint16
 microfreak_sample_get_cksum (GByteArray *input)
@@ -1882,6 +1882,52 @@ microfreak_sample_load (const gchar *path, struct idata *sample,
 			     1, SF_FORMAT_PCM_16);
 }
 
+static gint
+microfreak_sample_rename (struct backend *backend, const gchar *src,
+			  const gchar *dst)
+{
+  gint err;
+  guint id;
+  gchar *sanitized;
+  struct item_iterator iter;
+  struct microfreak_sample_header header;
+
+  if (common_slot_get_id_name_from_path (src, &id, NULL))
+    {
+      return -EINVAL;
+    }
+
+  id--;
+  if (id >= MICROFREAK_MAX_SAMPLES)
+    {
+      return -EINVAL;
+    }
+
+  err = microfreak_sample_read_dir (backend, &iter, "/", NULL);
+  if (err)
+    {
+      return err;
+    }
+
+  memset (&header, 0, sizeof (header));
+  while (!item_iterator_next (&iter))
+    {
+      if (iter.item.id == id + 1)	// A microfreak sample item id is starts at 1
+	{
+	  header.size = GINT32_TO_LE (iter.item.size);
+	  header.id = id;
+	  //cksum is lost. This does not seem to be important.
+	}
+    }
+
+  sanitized = common_get_sanitized_name (dst, MICROFREAK_ALPHABET,
+					 MICROFREAK_DEFAULT_CHAR);
+  snprintf (header.name, MICROFREAK_SAMPLE_NAME_LEN, "%s", sanitized);
+  g_free (sanitized);
+
+  return microfreak_sample_reset (backend, id, &header);
+}
+
 static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
   .id = FS_MICROFREAK_SAMPLE,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
@@ -1891,11 +1937,13 @@ static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
   .name = "sample",
   .gui_name = "Samples",
   .gui_icon = FS_ICON_WAVE,
+  .max_name_len = MICROFREAK_SAMPLE_NAME_LEN - 1,
   .readdir = microfreak_sample_read_dir,
   .print_item = common_print_item,
   .get_slot = microfreak_get_object_id_as_slot,
   .delete = microfreak_sample_clear,
   .clear = microfreak_sample_clear,
+  .rename = microfreak_sample_rename,
   .upload = microfreak_sample_upload,
   .load = microfreak_sample_load,
   .get_exts = sample_get_sample_extensions,
