@@ -983,6 +983,34 @@ sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 				 set_sample_progress_no_sync, NULL);
 }
 
+static gint
+sample_reload (struct idata *input, struct idata *output,
+	       struct job_control *control,
+	       const struct sample_info *sample_info_req, sample_load_cb cb,
+	       gpointer cb_data)
+{
+  gint err;
+  struct idata aux;
+  struct sample_info sample_info_src;
+  struct g_byte_array_io_data data;
+
+  err = sample_get_memfile_from_sample (input, &aux, NULL,
+					SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+  if (err)
+    {
+      return err;
+    }
+
+  data.pos = 0;
+  data.array = aux.content;
+  err = sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, output,
+				sample_info_req, &sample_info_src, cb,
+				cb_data);
+  idata_free (&aux);
+
+  return err;
+}
+
 gint
 sample_load_from_file_with_cb (const gchar *path, struct idata *sample,
 			       struct job_control *control,
@@ -993,31 +1021,18 @@ sample_load_from_file_with_cb (const gchar *path, struct idata *sample,
   gint err;
   if (sample_microfreak_filename (path))
     {
-      struct idata aux1, aux2;
+      struct idata aux;
 
-      err = sample_load_microfreak_sample (path, &aux1, control);
+      err = sample_load_microfreak_sample (path, &aux, control);
       if (err)
 	{
 	  return err;
 	}
 
-      err = sample_get_memfile_from_sample (&aux1, &aux2, control,
-					    SF_FORMAT_WAV | SF_FORMAT_PCM_16);
-      idata_free (&aux1);
-      if (err)
-	{
-	  return err;
-	}
-
-      struct g_byte_array_io_data data;
-      data.pos = 0;
-      data.array = aux2.content;
-      err = sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, sample,
-				    sample_info_req, sample_info_src, cb,
-				    cb_data);
-      idata_free (&aux2);
-
-      sample_info_src->format &= SF_FORMAT_SUBMASK;	//Needed to remove the SF_FORMAT_WAV that will be set in the previous step
+      memcpy (sample_info_src, aux.info, sizeof (struct sample_info));
+      err = sample_reload (&aux, sample, control, sample_info_req, cb,
+			   cb_data);
+      idata_free (&aux);
     }
   else
     {
