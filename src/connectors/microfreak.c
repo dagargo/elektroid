@@ -967,6 +967,7 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
     }
 
   control->parts = 5 + batches * (2 + MICROFREAK_SAMPLE_BATCH_PACKETS);
+  control->parts += 2 + MICROFREAK_SAMPLE_BATCH_PACKETS;	//This is for the last unknown phase
   control->part = 0;
   job_control_set_progress (control, 0.0);
 
@@ -1146,6 +1147,63 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
 
 	  usleep (MICROFREAK_REST_TIME_LONG_US);
 	}
+    }
+
+  //This phase happens after the upload. It is unknown that the purpose is.
+
+  tx_msg = microfreak_get_wave_op_msg (backend, 0x5b, id, 0, 1);
+  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
+  if (err)
+    {
+      goto end;
+    }
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0);	//This means this phase does NOT need to be run.
+  if (!err)
+    {
+      free_msg (rx_msg);
+      control->part += 1 + MICROFREAK_SAMPLE_BATCH_PACKETS;
+      job_control_set_progress (control, 1.0);
+      goto end;
+    }
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);	//This means this phase does need to be run.
+  free_msg (rx_msg);
+  if (err)
+    {
+      goto end;
+    }
+
+  usleep (MICROFREAK_REST_TIME_US);
+
+  tx_msg = g_byte_array_new ();	//This is an empty message
+  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
+  if (err)
+    {
+      goto end;
+    }
+  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0);
+  free_msg (rx_msg);
+  if (err)
+    {
+      goto end;
+    }
+
+  for (gint p = 1; p <= MICROFREAK_SAMPLE_BATCH_PACKETS; p++)
+    {
+      guint8 op = p < MICROFREAK_SAMPLE_BATCH_PACKETS ? 0x16 : 0x17;
+      tx_msg = microfreak_get_msg (backend, 0x18, "\x00", 1);
+      err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
+      if (err)
+	{
+	  goto end;
+	}
+      err = MICROFREAK_CHECK_OP_LEN (rx_msg, op, 0x20);
+      free_msg (rx_msg);
+      if (err)
+	{
+	  goto end;
+	}
+
+      usleep (MICROFREAK_REST_TIME_US);
     }
 
 end:
