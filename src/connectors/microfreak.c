@@ -827,7 +827,7 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
   snprintf (iter->item.name, LABEL_MAX, "%s", header.name);
   iter->item.id = data->next;
   iter->item.type = ELEKTROID_FILE;
-  iter->item.size = iter->item.size != 0 ? GINT32_FROM_LE (header.size) : 0;
+  iter->item.size = GINT32_FROM_LE (header.size);
   (data->next)++;
 
 end:
