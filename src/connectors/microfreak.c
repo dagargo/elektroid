@@ -1635,14 +1635,19 @@ static gint
 microfreak_wavetable_set_entry (struct backend *backend, guint id,
 				const gchar *name, guint8 status)
 {
+  gchar *sanitized;
   struct microfreak_wavetable_header header;
+
   memset (&header, 0, sizeof (header));
   header.id0 = id;
   header.id1 = id;
   header.status0 = status;
   header.status1 = 1;
   header.status2 = 1;
-  snprintf (header.name, MICROFREAK_WAVETABLE_NAME_LEN, "%s", name);
+  sanitized = common_get_sanitized_name (name, MICROFREAK_ALPHABET,
+					 MICROFREAK_DEFAULT_CHAR);
+  snprintf (header.name, MICROFREAK_WAVETABLE_NAME_LEN, "%s", sanitized);
+  g_free (sanitized);
 
   return microfreak_wavetable_reset (backend, id, &header);
 }
