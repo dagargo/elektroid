@@ -56,6 +56,54 @@ machinedrum_read_dir (struct backend *backend, struct item_iterator *iter,
   return 0;
 }
 
+static gint
+machinedrum_rename (struct backend *backend, const gchar *src,
+		    const gchar *dst)
+{
+  guint id;
+  gint err;
+
+  err = common_slot_get_id_from_path (src, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  return sds_rename_by_id (backend, id - 1, dst);
+}
+
+static gint
+machinedrum_upload (struct backend *backend, const gchar *path,
+		    struct idata *sample, struct job_control *control)
+{
+  gint err;
+  guint id;
+
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  return sds_upload_by_id_name (backend, id - 1, sample, control, 16);
+}
+
+static gint
+machinedrum_download (struct backend *backend, const gchar *path,
+		      struct idata *sample, struct job_control *control)
+{
+  gint err;
+  guint id;
+
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  return sds_download_by_id (backend, id - 1, sample, control);
+}
+
 static const struct fs_operations FS_MACHINEDRUM_SAMPLE_OPERATIONS = {
   .id = FS_SAMPLE_MACHINEDRUM,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
@@ -66,9 +114,9 @@ static const struct fs_operations FS_MACHINEDRUM_SAMPLE_OPERATIONS = {
   .max_name_len = MACHINEDRUM_SAMPLE_NAME_MAX_LEN,
   .readdir = machinedrum_read_dir,
   .print_item = common_print_item,
-  .rename = sds_rename,
-  .download = sds_download,
-  .upload = sds_upload_16b,
+  .rename = machinedrum_rename,
+  .download = machinedrum_download,
+  .upload = machinedrum_upload,
   .load = sds_sample_load,
   .save = sds_sample_save,
   .get_exts = sample_get_sample_extensions,

@@ -38,17 +38,27 @@ struct sds_iterator_data
   struct backend *backend;
 };
 
+gint sds_download_by_id (struct backend *backend, guint id,
+			 struct idata *sample, struct job_control *control);
+
 gint sds_download (struct backend *backend, const gchar * path,
 		   struct idata *sample, struct job_control *control);
 
-gint sds_upload_16b (struct backend *backend, const gchar * path,
-		     struct idata *sample, struct job_control *control);
+gint sds_upload_by_id_name (struct backend *backend, guint id,
+			    struct idata *sample, struct job_control *control,
+			    guint bits);
+
+gint sds_upload (struct backend *backend, const gchar * path,
+		 struct idata *sample, struct job_control *control,
+		 guint bits);
 
 gint sds_sample_load (const gchar * path, struct idata *sample,
 		      struct job_control *control);
 
 gint sds_sample_save (const gchar * path, struct idata *sample,
 		      struct job_control *control);
+
+gint sds_rename_by_id (struct backend *backend, guint id, const gchar * dst);
 
 gint sds_rename (struct backend *backend, const gchar * src,
 		 const gchar * dst);
