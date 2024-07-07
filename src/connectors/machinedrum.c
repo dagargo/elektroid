@@ -110,7 +110,7 @@ machinedrum_handshake (struct backend *backend)
 
   sds_data = g_malloc (sizeof (struct sds_data));
   sds_data->rest_time = MACHINEDRUM_REST_TIME_DEFAULT;
-  sds_data->name_extension = FALSE;
+  sds_data->name_extension = TRUE;
 
   gslist_fill (&backend->fs_ops, &FS_MACHINEDRUM_SAMPLE_OPERATIONS, NULL);
   backend->data = sds_data;
