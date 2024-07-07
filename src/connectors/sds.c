@@ -318,15 +318,16 @@ sds_download_get_header (struct backend *backend, guint id)
   return NULL;
 }
 
-static gint
-sds_download_try (struct backend *backend, const gchar *path,
-		  struct idata *sample, struct job_control *control)
+gint
+sds_download_by_id (struct backend *backend, guint id,
+		    struct idata *sample, struct job_control *control)
 {
-  guint id, words, word_size, read_bytes, bytes_per_word, total_words, err,
-    retries, packets, packet, exp_packet, rx_packets, bits;
+  gint err;
+  guint words, word_size, read_bytes, bytes_per_word, total_words, retries,
+    packets, packet, exp_packet, rx_packets, bits;
   gint16 s;
   GByteArray *tx_msg, *rx_msg;
-  gchar *name, *basename;
+  gchar *name;
   guint8 *dataptr;
   gboolean active, first;
   gboolean last_packet_ack;
@@ -334,10 +335,6 @@ sds_download_try (struct backend *backend, const gchar *path,
   struct sysex_transfer transfer;
   struct sds_data *sds_data = backend->data;
   GByteArray *output = g_byte_array_new ();
-
-  basename = g_path_get_basename (path);
-  id = atoi (basename);
-  g_free (basename);
 
   debug_print (1, "Sending dump request...");
   packet = 0;
@@ -568,10 +565,26 @@ sds_download (struct backend *backend, const gchar *path,
 	      struct idata *sample, struct job_control *control)
 {
   gint err;
+  guint id;
+
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  return sds_download_by_id (backend, id, sample, control);
+}
+
+static gint
+sds_download_with_retry (struct backend *backend, const gchar *path,
+			 struct idata *sample, struct job_control *control)
+{
+  gint err;
 
   for (gint i = 0; i < SDS_MAX_RETRIES; i++)
     {
-      err = sds_download_try (backend, path, sample, control);
+      err = sds_download (backend, path, sample, control);
       if (err == -EBADMSG)
 	{
 	  //We retry the whole download to fix a downloading error with an E-Mu ESI-2000 as it occasionally doesn't send the last packet.
@@ -704,17 +717,12 @@ sds_get_rename_sample_msg (guint id, const gchar *name)
 }
 
 gint
-sds_rename (struct backend *backend, const gchar *src, const gchar *dst)
+sds_rename_by_id (struct backend *backend, guint id, const gchar *dst)
 {
   GByteArray *tx_msg, *rx_msg;
-  guint id;
   gint err;
+
   debug_print (1, "Sending rename request...");
-  err = common_slot_get_id_from_path (src, &id);
-  if (err)
-    {
-      return err;
-    }
 
   g_mutex_lock (&backend->mutex);
   backend_rx_drain (backend);
@@ -732,14 +740,30 @@ sds_rename (struct backend *backend, const gchar *src, const gchar *dst)
   return err;
 }
 
-static gint
-sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
-	    struct job_control *control, guint bits)
+gint
+sds_rename (struct backend *backend, const gchar *src, const gchar *dst)
+{
+  guint id;
+  gint err;
+
+  err = common_slot_get_id_from_path (src, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  return sds_rename_by_id (backend, id, dst);
+}
+
+gint
+sds_upload_by_id_name (struct backend *backend, guint id,
+		       struct idata *sample, struct job_control *control,
+		       guint bits)
 {
   GByteArray *tx_msg;
   gint16 *frame, *f;
   gboolean active, open_loop = FALSE;
-  guint word, words, words_per_packet, id, packet = 0, packets, retries =
+  guint word, words, words_per_packet, packet = 0, packets, retries =
     0, w, bytes_per_word;
   gint err = 0, word_size;
   struct sds_data *sds_data = backend->data;
@@ -749,11 +773,6 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
   control->parts = 1;
   control->part = 0;
   job_control_set_progress (control, 0.0);
-
-  if (common_slot_get_id_from_path (path, &id))
-    {
-      return -EINVAL;
-    }
 
   g_mutex_lock (&backend->mutex);
   backend_rx_drain (backend);
@@ -878,7 +897,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
 
   if (active && sds_data->name_extension)
     {
-      sds_rename (backend, path, sample->name);
+      sds_rename_by_id (backend, id, sample->name);
     }
 
 end:
@@ -894,6 +913,22 @@ end:
     }
 
   return err;
+}
+
+gint
+sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
+	    struct job_control *control, guint bits)
+{
+  gint err;
+  guint id;
+
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  return sds_upload_by_id_name (backend, id, sample, control, bits);
 }
 
 static gint
@@ -1051,7 +1086,7 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .readdir = sds_read_dir,
   .print_item = common_print_item,
   .rename = sds_rename,
-  .download = sds_download,
+  .download = sds_download_with_retry,
   .upload = sds_upload_8b,
   .load = sds_sample_load,
   .save = sds_sample_save,
@@ -1072,7 +1107,7 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .readdir = sds_read_dir,
   .print_item = common_print_item,
   .rename = sds_rename,
-  .download = sds_download,
+  .download = sds_download_with_retry,
   .upload = sds_upload_12b,
   .load = sds_sample_load,
   .save = sds_sample_save,
@@ -1093,7 +1128,7 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .readdir = sds_read_dir,
   .print_item = common_print_item,
   .rename = sds_rename,
-  .download = sds_download,
+  .download = sds_download_with_retry,
   .upload = sds_upload_14b,
   .load = sds_sample_load,
   .save = sds_sample_save,
@@ -1114,7 +1149,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .readdir = sds_read_dir,
   .print_item = common_print_item,
   .rename = sds_rename,
-  .download = sds_download,
+  .download = sds_download_with_retry,
   .upload = sds_upload_16b,
   .load = sds_sample_load,
   .save = sds_sample_save,
@@ -1135,7 +1170,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_441_OPERATIONS = {
   .readdir = sds_read_dir,
   .print_item = common_print_item,
   .rename = sds_rename,
-  .download = sds_download,
+  .download = sds_download_with_retry,
   .upload = sds_upload_16b,
   .load = sds_sample_load_441,
   .save = sds_sample_save,
@@ -1156,7 +1191,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_32_OPERATIONS = {
   .readdir = sds_read_dir,
   .print_item = common_print_item,
   .rename = sds_rename,
-  .download = sds_download,
+  .download = sds_download_with_retry,
   .upload = sds_upload_16b,
   .load = sds_sample_load_32,
   .save = sds_sample_save,
@@ -1177,7 +1212,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_16_OPERATIONS = {
   .readdir = sds_read_dir,
   .print_item = common_print_item,
   .rename = sds_rename,
-  .download = sds_download,
+  .download = sds_download_with_retry,
   .upload = sds_upload_16b,
   .load = sds_sample_load_16,
   .save = sds_sample_save,
@@ -1198,7 +1233,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_8_OPERATIONS = {
   .readdir = sds_read_dir,
   .print_item = common_print_item,
   .rename = sds_rename,
-  .download = sds_download,
+  .download = sds_download_with_retry,
   .upload = sds_upload_16b,
   .load = sds_sample_load_8,
   .save = sds_sample_save,
