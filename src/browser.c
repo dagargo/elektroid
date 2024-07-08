@@ -486,6 +486,7 @@ browser_load_dir_runner_update_ui (gpointer data)
 	  gtk_tree_view_scroll_to_cell (browser->view, first, NULL, FALSE, 0,
 					0);
 	  gtk_tree_path_free (first);
+	  gtk_widget_grab_focus (GTK_WIDGET (browser->view));
 	}
       //If editor.audio.path is empty is a recording buffer.
       if (editor.browser == browser && editor.audio.path)
