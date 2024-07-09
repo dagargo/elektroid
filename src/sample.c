@@ -983,7 +983,9 @@ sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 				 set_sample_progress_no_sync, NULL);
 }
 
-static gint
+// Reloads the input into the output following all the requirements.
+
+gint
 sample_reload (struct idata *input, struct idata *output,
 	       struct job_control *control,
 	       const struct sample_info *sample_info_req, sample_load_cb cb,
@@ -1120,37 +1122,4 @@ sample_get_subtype (struct sample_info *sample_info)
     default:
       return "?";
     }
-}
-
-gint
-sample_resample (GByteArray *input, GByteArray *output, gint channels,
-		 gdouble ratio)
-{
-  gint err;
-  SRC_DATA data;
-  gfloat *inputf, *outputf;
-
-  data.input_frames = input->len / (channels * sizeof (gshort));
-  data.output_frames = ceil (data.input_frames * ratio);
-  inputf = g_malloc (data.input_frames * sizeof (gfloat) * channels);
-  outputf = g_malloc (data.output_frames * sizeof (gfloat) * channels);
-  data.data_in = inputf;
-  data.data_out = outputf;
-  data.src_ratio = ratio;
-
-  src_short_to_float_array ((gint16 *) input->data, inputf,
-			    data.input_frames * channels);
-  err = src_simple (&data, SRC_SINC_BEST_QUALITY, channels);
-  if (!err)
-    {
-      guint samples = data.output_frames_gen * channels;
-      guint len = samples * sizeof (gshort);
-      g_byte_array_set_size (output, len);
-      src_float_to_short_array (outputf, (gshort *) output->data, samples);
-    }
-
-  g_free (inputf);
-  g_free (outputf);
-
-  return err;
 }

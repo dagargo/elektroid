@@ -203,10 +203,9 @@ microfreak_deserialize_object (GByteArray *input, const gchar *header,
   return 0;
 }
 
-struct sample_info *
-microfreak_new_sample_info (guint32 frames)
+void
+microfreak_init_sample_info (struct sample_info *sample_info, guint32 frames)
 {
-  struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
   sample_info->midi_note = 0;
   sample_info->loop_type = 0;
   sample_info->channels = 1;
@@ -215,6 +214,13 @@ microfreak_new_sample_info (guint32 frames)
   sample_info->frames = frames;
   sample_info->loop_start = 0;
   sample_info->loop_end = sample_info->frames - 1;
+}
+
+struct sample_info *
+microfreak_new_sample_info (guint32 frames)
+{
+  struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
+  microfreak_init_sample_info (sample_info, frames);
   return sample_info;
 }
 

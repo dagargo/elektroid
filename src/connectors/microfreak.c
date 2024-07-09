@@ -1271,24 +1271,24 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
   else
     {
       debug_print (1, "Resampling to get a valid wavetable...\n");
-      GByteArray *resampled =
-	g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
-      struct sample_info *sample_info = aux.info;
-      gdouble r = MICROFREAK_WAVETABLE_LEN / (gdouble) sample_info->frames;
-      err = sample_resample (wavetable->content, resampled,
-			     sample_info->channels, r);
-      if (err)
-	{
-	  g_byte_array_free (resampled, TRUE);
-	}
-      else
-	{
-	  struct sample_info *sample_info =
-	    microfreak_new_sample_info (MICROFREAK_WAVETABLE_LEN);
-	  idata_init (wavetable, resampled, NULL, sample_info);
-	}
-
+      struct sample_info *si = aux.info;
+      struct sample_info si_req;
+      GByteArray *a;
+      microfreak_init_sample_info (&si_req, MICROFREAK_WAVETABLE_LEN);
+      si_req.rate = si->rate * MICROFREAK_WAVETABLE_LEN / si->frames;
+      err = sample_reload (&aux, wavetable, NULL, &si_req,
+			   set_sample_progress_no_sync, NULL);
       idata_free (&aux);
+      a = wavetable->content;
+      debug_print (2, "Resulting size: %d\n", a->len);
+      if (a->len < MICROFREAK_WAVETABLE_SIZE)
+	{
+	  for (gint i = a->len; i < MICROFREAK_WAVETABLE_SIZE; i += 2)
+	    {
+	      g_byte_array_append (a, (guint8 *) "\x00\x00", 2);
+	    }
+	  debug_print (2, "Resulting fixed size: %d\n", a->len);
+	}
       return err;
     }
 }

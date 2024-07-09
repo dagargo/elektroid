@@ -1231,37 +1231,24 @@ editor_save_with_format (struct editor *editor, gchar *name,
   gint err;
   struct sample_info *sample_info_src = &editor->audio.sample_info_src;
   struct sample_info *sample_info = sample->info;
-  gdouble ratio = sample_info_src->rate / (gdouble) sample_info->rate;
-  guint32 format = sample_info_src->format;
-  size_t fsize = FRAME_SIZE (sample_info_src->channels,
-			     format & SF_FORMAT_SUBMASK);
 
-  if (ratio == 1.0)
+  if (sample_info->rate == sample_info_src->rate)
     {
-      err = sample_save_to_file (name, sample, &editor->audio.control,
-				 format);
+      err = sample_save_to_file (name, sample, NULL, sample_info_src->format);
     }
   else
     {
-      GByteArray *resampled = g_byte_array_new ();
-      err = sample_resample (sample->content, resampled,
-			     sample_info_src->channels, ratio);
+      struct idata resampled;
+      err = sample_reload (sample, &resampled, NULL, sample_info_src,
+			   set_sample_progress_no_sync, NULL);
       if (err)
 	{
-	  g_byte_array_free (resampled, TRUE);
 	  return err;
 	}
 
-      struct idata aux;
-      struct sample_info *si = g_malloc (sizeof (struct sample_info));
-      memcpy (si, sample_info_src, sizeof (struct sample_info));
-      si->frames = resampled->len / fsize;
-      si->loop_start = floor (si->loop_start * ratio);
-      si->loop_end = floor (si->loop_end * ratio);
-
-      idata_init (&aux, resampled, NULL, si);
-      err = sample_save_to_file (name, &aux, &editor->audio.control, format);
-      idata_free (&aux);
+      err = sample_save_to_file (name, &resampled, NULL,
+				 sample_info_src->format);
+      idata_free (&resampled);
     }
 
   browser_load_dir_if_needed (editor->browser);

@@ -47,6 +47,9 @@ gint microfreak_deserialize_object (GByteArray * input, const gchar * header,
 				    guint8 * p5, guint8 * data,
 				    gint64 * datalen);
 
+void microfreak_init_sample_info (struct sample_info *sample_info,
+				  guint32 frames);
+
 struct sample_info *microfreak_new_sample_info (guint32 frames);
 
 gint microfreak_zobject_save (const gchar * path, struct idata *zobject,

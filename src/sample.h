@@ -72,7 +72,9 @@ const gchar *sample_get_format (struct sample_info *sample_info);
 
 const gchar *sample_get_subtype (struct sample_info *sample_info);
 
-gint sample_resample (GByteArray * input, GByteArray * output, gint channels,
-		      gdouble ratio);
+gint sample_reload (struct idata *input, struct idata *output,
+		    struct job_control *control,
+		    const struct sample_info *sample_info_req,
+		    sample_load_cb cb, gpointer cb_data);
 
 #endif
