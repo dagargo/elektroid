@@ -120,15 +120,11 @@ editor_set_widget_source (struct editor *editor, GtkWidget *widget)
 }
 
 static void
-editor_reset_audio (struct editor *editor, struct browser *browser)
+editor_reset_browser (struct editor *editor, struct browser *browser)
 {
   editor->browser = browser;
 
   editor_set_layout_width_to_val (editor, 1);
-
-  audio_stop_playback (&editor->audio);
-  audio_stop_recording (&editor->audio);
-  audio_reset_sample (&editor->audio);
 
   gtk_widget_queue_draw (editor->waveform);
 
@@ -151,7 +147,10 @@ void
 editor_reset (struct editor *editor, struct browser *browser)
 {
   editor_stop_load_thread (editor);
-  editor_reset_audio (editor, browser);
+  audio_stop_playback (&editor->audio);
+  audio_stop_recording (&editor->audio);
+  audio_reset_sample (&editor->audio);
+  editor_reset_browser (editor, browser);
 }
 
 static void
@@ -495,10 +494,6 @@ editor_join_load_thread (gpointer data)
   if (editor->thread)
     {
       g_thread_join (editor->thread);
-      if (!editor->audio.sample.content)
-	{
-	  editor_reset_audio (editor, NULL);
-	}
       editor->thread = NULL;
     }
   return FALSE;
@@ -523,6 +518,11 @@ editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
 	  editor->ready = TRUE;
 	}
     }
+  //If the call to sample_load_from_file_with_cb fails, we reset the browser.
+  if (!completed && !actual_frames)
+    {
+      editor_reset_browser (editor, NULL);
+    }
 }
 
 static gpointer
@@ -531,7 +531,6 @@ editor_load_sample_runner (gpointer data)
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
   struct sample_info sample_info_req;
-  gint err;
 
   editor->dirty = FALSE;
   editor->ready = FALSE;
@@ -543,24 +542,11 @@ editor_load_sample_runner (gpointer data)
   sample_info_req.format = SF_FORMAT_PCM_16;
   sample_info_req.rate = audio->rate;
 
-  g_mutex_lock (&audio->control.mutex);
   audio->control.active = TRUE;
-  g_mutex_unlock (&audio->control.mutex);
-
-  err = sample_load_from_file_with_cb (audio->path, &audio->sample,
-				       &audio->control, &sample_info_req,
-				       &audio->sample_info_src,
-				       editor_load_sample_cb, editor);
-
-  g_mutex_lock (&audio->control.mutex);
-  audio->control.active = FALSE;
-  g_mutex_unlock (&audio->control.mutex);
-
-  if (err)
-    {
-      g_idle_add (editor_join_load_thread, data);
-    }
-
+  sample_load_from_file_with_cb (audio->path, &audio->sample,
+				 &audio->control, &sample_info_req,
+				 &audio->sample_info_src,
+				 editor_load_sample_cb, editor);
   return NULL;
 }
 
@@ -685,11 +671,6 @@ editor_stop_load_thread (struct editor *editor)
   audio->control.active = FALSE;
   g_mutex_unlock (&audio->control.mutex);
   editor_join_load_thread (editor);
-  //Wait for every pending call to editor_join_load_thread scheduled from editor_load_sample_cb
-  while (gtk_events_pending ())
-    {
-      gtk_main_iteration ();
-    }
 }
 
 static gboolean
