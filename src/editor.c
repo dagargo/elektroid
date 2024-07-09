@@ -90,10 +90,9 @@ editor_set_layout_width (struct editor *editor)
 }
 
 static void
-editor_set_widget_source (GtkWidget *widget, gpointer data)
+editor_set_widget_source (struct editor *editor, GtkWidget *widget)
 {
   const char *class;
-  struct editor *editor = data;
   GtkStyleContext *context = gtk_widget_get_style_context (widget);
   GList *classes, *list = gtk_style_context_list_classes (context);
 
@@ -133,15 +132,15 @@ editor_reset_audio (struct editor *editor, struct browser *browser)
 
   gtk_widget_queue_draw (editor->waveform);
 
-  editor_set_widget_source (editor->autoplay_switch, editor);
-  editor_set_widget_source (editor->mix_switch, editor);
-  editor_set_widget_source (editor->play_button, editor);
-  editor_set_widget_source (editor->stop_button, editor);
-  editor_set_widget_source (editor->loop_button, editor);
-  editor_set_widget_source (editor->record_button, editor);
-  editor_set_widget_source (editor->volume_button, editor);
-  editor_set_widget_source (editor->show_grid_switch, editor);
-  editor_set_widget_source (editor->waveform, editor);
+  editor_set_widget_source (editor, editor->autoplay_switch);
+  editor_set_widget_source (editor, editor->mix_switch);
+  editor_set_widget_source (editor, editor->play_button);
+  editor_set_widget_source (editor, editor->stop_button);
+  editor_set_widget_source (editor, editor->loop_button);
+  editor_set_widget_source (editor, editor->record_button);
+  editor_set_widget_source (editor, editor->volume_button);
+  editor_set_widget_source (editor, editor->show_grid_switch);
+  editor_set_widget_source (editor, editor->waveform);
 
   gtk_widget_set_sensitive (editor->play_button, FALSE);
   gtk_widget_set_sensitive (editor->stop_button, FALSE);
