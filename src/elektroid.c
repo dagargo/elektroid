@@ -1056,8 +1056,7 @@ elektroid_button_release (GtkWidget *treeview, GdkEventButton *event,
 
       if (path)
 	{
-	  selection =
-	    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+	  selection = gtk_tree_view_get_selection (browser->view);
 
 	  if (gtk_tree_selection_path_is_selected (selection, path))
 	    {
