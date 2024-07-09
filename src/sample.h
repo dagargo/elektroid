@@ -55,11 +55,11 @@ gint sample_get_memfile_from_sample (struct idata *sample,
 				     struct job_control *control,
 				     guint32 format);
 
-gint sample_load_from_file_with_cb (const gchar * path, struct idata *sample,
-				    struct job_control *control,
-				    const struct sample_info *sample_info_req,
-				    struct sample_info *sample_info_src,
-				    sample_load_cb callback, gpointer data);
+gint sample_load_from_file_full (const gchar * path, struct idata *sample,
+				 struct job_control *control,
+				 const struct sample_info *sample_info_req,
+				 struct sample_info *sample_info_src,
+				 sample_load_cb callback, gpointer data);
 
 gint sample_load_sample_info (const gchar * path,
 			      struct sample_info *sample_info);

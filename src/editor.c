@@ -518,7 +518,7 @@ editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
 	  editor->ready = TRUE;
 	}
     }
-  //If the call to sample_load_from_file_with_cb fails, we reset the browser.
+  //If the call to sample_load_from_file_full fails, we reset the browser.
   if (!completed && !actual_frames)
     {
       editor_reset_browser (editor, NULL);
@@ -543,10 +543,10 @@ editor_load_sample_runner (gpointer data)
   sample_info_req.rate = audio->rate;
 
   audio->control.active = TRUE;
-  sample_load_from_file_with_cb (audio->path, &audio->sample,
-				 &audio->control, &sample_info_req,
-				 &audio->sample_info_src,
-				 editor_load_sample_cb, editor);
+  sample_load_from_file_full (audio->path, &audio->sample,
+			      &audio->control, &sample_info_req,
+			      &audio->sample_info_src,
+			      editor_load_sample_cb, editor);
   return NULL;
 }
 

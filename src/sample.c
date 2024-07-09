@@ -1015,11 +1015,11 @@ sample_reload (struct idata *input, struct idata *output,
 }
 
 gint
-sample_load_from_file_with_cb (const gchar *path, struct idata *sample,
-			       struct job_control *control,
-			       const struct sample_info *sample_info_req,
-			       struct sample_info *sample_info_src,
-			       sample_load_cb cb, gpointer cb_data)
+sample_load_from_file_full (const gchar *path, struct idata *sample,
+			    struct job_control *control,
+			    const struct sample_info *sample_info_req,
+			    struct sample_info *sample_info_src,
+			    sample_load_cb cb, gpointer cb_data)
 {
   gint err;
   if (sample_microfreak_filename (path))
@@ -1059,9 +1059,9 @@ sample_load_from_file (const gchar *path, struct idata *sample,
 		       const struct sample_info *sample_info_req,
 		       struct sample_info *sample_info_src)
 {
-  return sample_load_from_file_with_cb (path, sample, control,
-					sample_info_req, sample_info_src,
-					set_sample_progress_no_sync, NULL);
+  return sample_load_from_file_full (path, sample, control,
+				     sample_info_req, sample_info_src,
+				     set_sample_progress_no_sync, NULL);
 }
 
 GSList *
