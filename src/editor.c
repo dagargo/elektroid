@@ -668,9 +668,10 @@ editor_autoplay_clicked (GtkWidget *object, gboolean state, gpointer data)
 }
 
 void
-editor_start_load_thread (struct editor *editor)
+editor_start_load_thread (struct editor *editor, gchar *sample_path)
 {
   debug_print (1, "Creating load thread...\n");
+  editor->audio.path = sample_path;
   editor->thread = g_thread_new ("load_sample", editor_load_sample_runner,
 				 editor);
 }

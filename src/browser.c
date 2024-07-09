@@ -1028,8 +1028,7 @@ browser_check_selection (gpointer data)
 
       browser_clear_other_browser_selection_if_system (browser);
       editor_reset (&editor, browser);
-      editor.audio.path = sample_path;
-      editor_start_load_thread (&editor);
+      editor_start_load_thread (&editor, sample_path);
     }
 
   if (!sel_impl)

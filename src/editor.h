@@ -63,7 +63,7 @@ void editor_reset (struct editor *editor, struct browser *browser);
 
 void editor_play_clicked (GtkWidget * object, gpointer data);
 
-void editor_start_load_thread (struct editor *editor);
+void editor_start_load_thread (struct editor *editor, gchar * sample_path);
 
 void editor_stop_load_thread (struct editor *editor);
 
