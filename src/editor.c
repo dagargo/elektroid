@@ -378,10 +378,11 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
       gtk_style_context_get_color (context, state, &bgcolor);
       bgcolor.alpha = 0.25;
 
-      guint32 sel_len = editor->audio.sel_end - editor->audio.sel_start;
+      guint32 sel_len = AUDIO_SEL_LEN (&editor->audio);
       if (sel_len)
 	{
 	  gdouble x_len = sel_len / x_ratio;
+	  x_len = x_len < 1 ? 1 : x_len;
 	  gdouble x_start =
 	    (editor->audio.sel_start - (gdouble) start) / x_ratio;
 	  gdk_cairo_set_source_rgba (cr, &bgcolor);
