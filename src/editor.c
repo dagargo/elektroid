@@ -761,14 +761,10 @@ static gboolean
 editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
 {
   gdouble rel_pos;
+  gboolean err = TRUE;
   guint start, cursor_frame;
+  struct sample_info *sample_info;
   gboolean ctrl = ((event->state) & GDK_CONTROL_MASK) != 0;
-  struct sample_info *sample_info = editor->audio.sample.info;
-
-  if (!sample_info)
-    {
-      return FALSE;
-    }
 
   if (!ctrl)
     {
@@ -781,6 +777,13 @@ editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
     }
 
   g_mutex_lock (&editor->audio.control.mutex);
+
+  sample_info = editor->audio.sample.info;
+  if (!sample_info)
+    {
+      err = FALSE;
+      goto end;
+    }
 
   editor_get_frame_at_position (editor, event->x, &cursor_frame, &rel_pos);
   debug_print (1, "Zooming at frame %d...\n", cursor_frame);
@@ -821,7 +824,7 @@ editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
 end:
   g_mutex_unlock (&editor->audio.control.mutex);
 
-  return TRUE;
+  return err;
 }
 
 gboolean
