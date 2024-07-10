@@ -618,8 +618,8 @@ sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
   return err;
 }
 
-void
-sample_check_and_fix_loop_points (struct sample_info *sample_info)
+static void
+sample_info_fix_frame_values (struct sample_info *sample_info)
 {
   if (sample_info->loop_start >= sample_info->frames)
     {
@@ -742,7 +742,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sample_info->frames = ceil (sample_info_src->frames * ratio);	//Upper bound estimation. The actual amount is updated later.
   sample_info->loop_start = round (sample_info_src->loop_start * ratio);
   sample_info->loop_end = round (sample_info_src->loop_end * ratio);
-  sample_check_and_fix_loop_points (sample_info);
+  sample_info_fix_frame_values (sample_info);
 
   sample = g_byte_array_sized_new (sample_info->frames * bytes_per_frame);
   idata_init (idata, sample, NULL, sample_info);
@@ -954,7 +954,7 @@ cleanup:
     {
       rounding_fix = TRUE;
       sample_info->frames = actual_frames;
-      sample_check_and_fix_loop_points (sample_info);
+      sample_info_fix_frame_values (sample_info);
       sample->len = sample_info->frames * bytes_per_frame;
     }
   if (control)

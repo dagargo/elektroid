@@ -364,10 +364,7 @@ end:
 void
 audio_delete_range (struct audio *audio, guint start_frame, guint frames)
 {
-  gdouble r;
-  guint bytes_per_frame;
-  guint index;
-  guint len;
+  guint bytes_per_frame, index, len;
   struct sample_info *sample_info = audio->sample.info;
 
   g_mutex_lock (&audio->control.mutex);
@@ -404,11 +401,6 @@ audio_delete_range (struct audio *audio, guint start_frame, guint frames)
   audio->sel_start = 0;
   audio->sel_len = 0;
 
-  r = audio->sample_info_src.rate / (double) sample_info->rate;
-  audio->sample_info_src.frames = floor (sample_info->frames * r);
-  audio->sample_info_src.loop_start = round (sample_info->loop_start * r);
-  audio->sample_info_src.loop_end = round (sample_info->loop_end * r);
-  sample_check_and_fix_loop_points (&audio->sample_info_src);
   g_mutex_unlock (&audio->control.mutex);
 }
 

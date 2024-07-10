@@ -1034,7 +1034,6 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
   struct editor *editor = data;
   struct audio *audio = &editor->audio;
   struct sample_info *sample_info;
-  struct sample_info *sample_info_src;
 
   g_mutex_lock (&editor->audio.control.mutex);
 
@@ -1043,8 +1042,6 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
     {
       goto end;
     }
-
-  sample_info_src = &editor->audio.sample_info_src;
 
   samples = (gint16 *) editor->audio.sample.content->data;
 
@@ -1059,26 +1056,18 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
     }
   else if (editor->operation == EDITOR_OP_MOVE_LOOP_START)
     {
-      gdouble r = sample_info_src->frames / (gdouble) sample_info->frames;
       sample_info->loop_start = cursor_frame;
-      sample_info_src->loop_start = cursor_frame * r;
-      debug_print (2,
-		   "Setting loop start to %d frame and %d value (%d file frame)...\n",
+      debug_print (2, "Setting loop start to %d frame and %d value...\n",
 		   sample_info->loop_start,
-		   samples[sample_info->loop_start * sample_info->channels],
-		   sample_info_src->loop_start);
+		   samples[sample_info->loop_start * sample_info->channels]);
       editor->dirty = TRUE;
     }
   else if (editor->operation == EDITOR_OP_MOVE_LOOP_END)
     {
-      gdouble r = sample_info_src->frames / (gdouble) sample_info->frames;
       sample_info->loop_end = cursor_frame;
-      sample_info_src->loop_end = cursor_frame * r;
-      debug_print (2,
-		   "Setting loop end to %d frame and %d value (%d file frame)...\n",
+      debug_print (2, "Setting loop end to %d frame and %d value...\n",
 		   sample_info->loop_end,
-		   samples[sample_info->loop_end * sample_info->channels],
-		   sample_info_src->loop_end);
+		   samples[sample_info->loop_end * sample_info->channels]);
       editor->dirty = TRUE;
     }
   else if (editor->operation == EDITOR_OP_MOVE_SEL_START)
