@@ -58,6 +58,7 @@ struct editor
   GtkMenu *menu;
   GtkWidget *play_menuitem;
   GtkWidget *delete_menuitem;
+  GtkWidget *undo_menuitem;
   GtkWidget *save_menuitem;
   GtkDialog *record_dialog;
   struct guirecorder guirecorder;

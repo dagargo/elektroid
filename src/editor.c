@@ -977,6 +977,7 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 	  editor->audio.sel_end = -1;
 	}
       gtk_widget_set_sensitive (editor->delete_menuitem, sel_len > 0);
+      gtk_widget_set_sensitive (editor->undo_menuitem, editor->dirty);
       gtk_widget_set_sensitive (editor->save_menuitem, editor->dirty ||
 				cursor_on_sel);
       gtk_menu_popup_at_pointer (editor->menu, (GdkEvent *) event);
@@ -1171,6 +1172,14 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
     }
 }
 
+static void
+editor_undo_clicked (GtkWidget *object, gpointer data)
+{
+  struct editor *editor = data;
+  //As there is only one undo level, it's enough to reload the sample.
+  editor_start_load_thread (editor, editor->audio.path);
+}
+
 static gboolean
 editor_file_exists_no_overwrite (const gchar *filename)
 {
@@ -1360,8 +1369,13 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
     {
       editor_delete_clicked (NULL, editor);
     }
-  else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_s
-	   && editor->dirty)
+  else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_z &&
+	   editor->dirty)
+    {
+      editor_undo_clicked (NULL, editor);
+    }
+  else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_s &&
+	   editor->dirty)
     {
       editor_save_clicked (NULL, editor);
     }
@@ -1418,6 +1432,8 @@ editor_init (struct editor *editor, GtkBuilder *builder)
     GTK_WIDGET (gtk_builder_get_object (builder, "editor_play_menuitem"));
   editor->delete_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "editor_delete_menuitem"));
+  editor->undo_menuitem =
+    GTK_WIDGET (gtk_builder_get_object (builder, "editor_undo_menuitem"));
   editor->save_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "editor_save_menuitem"));
 
@@ -1479,6 +1495,8 @@ editor_init (struct editor *editor, GtkBuilder *builder)
 		    G_CALLBACK (editor_play_clicked), editor);
   g_signal_connect (editor->delete_menuitem, "activate",
 		    G_CALLBACK (editor_delete_clicked), editor);
+  g_signal_connect (editor->undo_menuitem, "activate",
+		    G_CALLBACK (editor_undo_clicked), editor);
   g_signal_connect (editor->save_menuitem, "activate",
 		    G_CALLBACK (editor_save_clicked), editor);
 
