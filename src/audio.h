@@ -36,6 +36,7 @@ typedef void (*audio_monitor_notifier) (gpointer, gdouble);
 #define AUDIO_BUF_FRAMES 256
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
 #define AUDIO_BUF_BYTES (AUDIO_BUF_FRAMES * FRAME_SIZE (AUDIO_CHANNELS,SF_FORMAT_PCM_16))
+#define AUDIO_SEL_LEN(a) ((a)->sel_start == -1 && (a)->sel_end == -1 ? 0 : (a)->sel_end - (a)->sel_start + 1)
 
 #define RECORD_LEFT 0x1
 #define RECORD_RIGHT 0x2
@@ -82,8 +83,8 @@ struct audio
   struct job_control control;	//Used to synchronize access to sample, frames, loop and pos members.
   gchar *path;
   enum audio_status status;
-  guint32 sel_start;
-  gint64 sel_len;
+  gint64 sel_start;		//Space for guint32 and -1
+  gint64 sel_end;		//Space for guint32 and -1
   gboolean mono_mix;
   guint record_options;
   void (*monitor) (void *, gdouble);

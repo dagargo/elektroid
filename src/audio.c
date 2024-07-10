@@ -52,12 +52,13 @@ audio_copy_sample (gint16 *dst, gint16 *src, struct audio *audio)
 void
 audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 {
-  guint32 len;
+  guint32 start, end;
   size_t size;
   gint16 *dst, *src;
   guint bytes_per_frame;
   gboolean stopping = FALSE;
   struct sample_info *sample_info;
+  guint8 *data;
 
   debug_print (2, "Writing %d frames...\n", frames);
 
@@ -70,14 +71,25 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
       goto end;
     }
 
-  len = audio->sel_len ? audio->sel_start + audio->sel_len :
-    sample_info->frames;
+  data = audio->sample.content->data;
+
+  if (AUDIO_SEL_LEN (audio))
+    {
+      start = audio->sel_start;
+      end = audio->sel_end;
+    }
+  else
+    {
+      start = sample_info->loop_start;
+      end = sample_info->loop_end;
+    }
+
   bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
   size = frames * FRAME_SIZE (AUDIO_CHANNELS, SF_FORMAT_PCM_16);
 
   memset (buffer, 0, size);
 
-  if ((audio->pos == len && !audio->loop) ||
+  if ((audio->pos == sample_info->frames && !audio->loop) ||
       audio->status == AUDIO_STATUS_PREPARING_PLAYBACK ||
       audio->status == AUDIO_STATUS_STOPPING_PLAYBACK)
     {
@@ -94,26 +106,22 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 
   dst = buffer;
 
-  src =
-    (gint16 *) & audio->sample.content->data[audio->pos * bytes_per_frame];
+  src = (gint16 *) & data[audio->pos * bytes_per_frame];
   for (gint i = 0; i < frames; i++)
     {
-      if (audio->pos == sample_info->loop_end + 1 && audio->loop)
-	{
-	  debug_print (2, "Sample reset\n");
-	  audio->pos = sample_info->loop_start;
-	  src = (gint16 *) & audio->sample.content->data[audio->pos *
-							 bytes_per_frame];
-	}
-      else if (audio->pos == len)
+      //Using "audio->pos >" instead of "audio->pos ==" improves the playback
+      //of the selection while changing it because it's possible that an audio
+      //iteration might be in the middle of 2 selection changes and in this
+      //case the equality might not have a change.
+      if (audio->pos == sample_info->frames || audio->pos > end + 1)
 	{
 	  if (!audio->loop)
 	    {
 	      break;
 	    }
 	  debug_print (2, "Sample reset\n");
-	  audio->pos = audio->sel_len ? audio->sel_start : 0;
-	  src = (gint16 *) audio->sample.content->data;
+	  audio->pos = start;
+	  src = (gint16 *) & data[audio->pos * bytes_per_frame];
 	}
 
       if (audio->mono_mix)
@@ -271,7 +279,8 @@ audio_init (struct audio *audio,
   audio->ready_callback = audio_ready_callback;
   audio->callback_data = data;
   audio->control.callback = NULL;
-  audio->sel_len = 0;
+  audio->sel_start = -1;
+  audio->sel_end = -1;
 
   audio_init_int (audio);
 }
@@ -309,7 +318,7 @@ void
 audio_prepare (struct audio *audio, enum audio_status status)
 {
   g_mutex_lock (&audio->control.mutex);
-  audio->pos = audio->sel_len ? audio->sel_start : 0;
+  audio->pos = audio->sel_end - audio->sel_start ? audio->sel_start : 0;
   audio->release_frames = 0;
   audio->status = status;
   g_mutex_unlock (&audio->control.mutex);
@@ -378,28 +387,28 @@ audio_delete_range (struct audio *audio, guint start_frame, guint frames)
 
   sample_info->frames -= (guint32) frames;
 
-  if (sample_info->loop_start >= audio->sel_start + audio->sel_len)
+  if (sample_info->loop_start >= audio->sel_end)
     {
-      sample_info->loop_start -= (guint32) audio->sel_len;
+      sample_info->loop_start = audio->sel_end;
     }
   else if (sample_info->loop_start >= audio->sel_start &&
-	   sample_info->loop_start < audio->sel_start + audio->sel_len)
+	   sample_info->loop_start < audio->sel_end)
     {
       sample_info->loop_start = 0;
     }
 
-  if (sample_info->loop_end >= audio->sel_start + audio->sel_len)
+  if (sample_info->loop_end >= audio->sel_end)
     {
-      sample_info->loop_end -= (guint32) audio->sel_len;
+      sample_info->loop_end = audio->sel_end;
     }
   else if (sample_info->loop_end >= audio->sel_start &&
-	   sample_info->loop_end < audio->sel_start + audio->sel_len)
+	   sample_info->loop_end < audio->sel_end)
     {
       sample_info->loop_end = sample_info->frames - 1;
     }
 
   audio->sel_start = 0;
-  audio->sel_len = 0;
+  audio->sel_end = 0;
 
   g_mutex_unlock (&audio->control.mutex);
 }
