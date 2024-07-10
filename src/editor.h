@@ -26,6 +26,16 @@
 #include "guirecorder.h"
 #include "preferences.h"
 
+enum editor_operation
+{
+  EDITOR_OP_NONE,
+  EDITOR_OP_SELECT,
+  EDITOR_OP_MOVE_LOOP_START,
+  EDITOR_OP_MOVE_LOOP_END,
+  EDITOR_OP_MOVE_SEL_START,
+  EDITOR_OP_MOVE_SEL_END
+};
+
 struct editor
 {
   struct audio audio;
@@ -53,7 +63,7 @@ struct editor
   GtkDialog *record_dialog;
   struct guirecorder guirecorder;
   gdouble zoom;
-  guint operation;
+  enum editor_operation operation;
   gboolean dirty;
   gboolean ready;
   struct browser *browser;
