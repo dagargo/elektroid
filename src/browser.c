@@ -998,10 +998,7 @@ browser_check_selection (gpointer data)
 	  browser_clear_other_browser_selection_if_system (browser);
 	  editor_reset (&editor, NULL);
 	}
-      else
-	{
-	  browser->last_selected_index = -1;
-	}
+      browser->last_selected_index = -1;
       return;
     }
 
