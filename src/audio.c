@@ -371,35 +371,35 @@ end:
 }
 
 void
-audio_delete_range (struct audio *audio, guint start_frame, guint frames)
+audio_delete_range (struct audio *audio, guint32 start, guint32 length)
 {
   guint bytes_per_frame, index, len;
   struct sample_info *sample_info = audio->sample.info;
 
   g_mutex_lock (&audio->control.mutex);
+
   bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
-  index = start_frame * bytes_per_frame;
-  len = frames * bytes_per_frame;
+  index = start * bytes_per_frame;
+  len = length * bytes_per_frame;
 
   debug_print (2, "Deleting range from %d with len %d...\n", index, len);
-
   g_byte_array_remove_range (audio->sample.content, index, len);
 
-  sample_info->frames -= (guint32) frames;
+  sample_info->frames -= length;
 
   if (sample_info->loop_start >= audio->sel_end)
     {
-      sample_info->loop_start = audio->sel_end;
+      sample_info->loop_start -= length;
     }
   else if (sample_info->loop_start >= audio->sel_start &&
 	   sample_info->loop_start < audio->sel_end)
     {
-      sample_info->loop_start = 0;
+      sample_info->loop_start = sample_info->frames - 1;
     }
 
   if (sample_info->loop_end >= audio->sel_end)
     {
-      sample_info->loop_end = audio->sel_end;
+      sample_info->loop_end -= length;
     }
   else if (sample_info->loop_end >= audio->sel_start &&
 	   sample_info->loop_end < audio->sel_end)

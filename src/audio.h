@@ -122,7 +122,7 @@ void audio_read_from_input (struct audio *, void *, gint);
 
 void audio_prepare (struct audio *, enum audio_status);
 
-void audio_delete_range (struct audio *, guint, guint);
+void audio_delete_range (struct audio *, guint32, guint32);
 
 guint audio_detect_start (struct audio *);
 
