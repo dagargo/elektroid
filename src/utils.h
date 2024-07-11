@@ -146,7 +146,7 @@ struct idata
 {
   GByteArray *content;
   gchar *name;			//Optional field to store a name
-  void *info;
+  void *info;			//Optional field to store information about the content
 };
 
 struct fs_operations;
@@ -255,6 +255,16 @@ enum fs_options
   FS_OPTION_SORT_BY_NAME = 0x1000,
   //This requires the function readdir to be relatively fast because canceling the search will block the GUI.
   FS_OPTION_ALLOW_SEARCH = 0x2000
+};
+
+struct connector
+{
+  const gchar *name;
+    gint (*handshake) (struct backend * backend);
+  //Used to indicate if the handshake requires a MIDI identity request
+  gboolean standard;
+  //If the backend device name matches this regex, the handshake will be run before than the connectors that didn't match.
+  const gchar *regex;
 };
 
 extern int debug_level;

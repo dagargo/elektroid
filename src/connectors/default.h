@@ -21,10 +21,10 @@
 #ifndef DEFAULT_H
 #define DEFAULT_H
 
-#include "backend.h"
+#include "utils.h"
 
 extern const struct fs_operations FS_PROGRAM_DEFAULT_OPERATIONS;
 
-gint default_handshake (struct backend *);
+extern const struct connector CONNECTOR_DEFAULT;
 
 #endif

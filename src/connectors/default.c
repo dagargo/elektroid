@@ -77,10 +77,17 @@ const struct fs_operations FS_PROGRAM_DEFAULT_OPERATIONS = {
   .select_item = common_midi_program_change
 };
 
-gint
+static gint
 default_handshake (struct backend *backend)
 {
   backend_fill_fs_ops (backend, &FS_PROGRAM_DEFAULT_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "%s", _("MIDI device"));
   return 0;
 }
+
+const struct connector CONNECTOR_DEFAULT = {
+  .name = "default",
+  .handshake = default_handshake,
+  .standard = FALSE,
+  .regex = NULL
+};

@@ -1925,7 +1925,7 @@ static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
   .get_download_path = microfreak_get_download_wavetable_path
 };
 
-gint
+static gint
 microfreak_handshake_int (struct backend *backend)
 {
   if (memcmp (backend->midi_info.company, ARTURIA_ID, sizeof (ARTURIA_ID)) ||
@@ -1944,7 +1944,7 @@ microfreak_handshake_int (struct backend *backend)
   return 0;
 }
 
-gint
+static gint
 microfreak_handshake (struct backend *backend)
 {
   gint err;
@@ -1993,3 +1993,10 @@ microfreak_handshake (struct backend *backend)
 
   return 0;
 }
+
+const struct connector CONNECTOR_MICROFREAK = {
+  .name = "microfreak",
+  .handshake = microfreak_handshake,
+  .standard = TRUE,
+  .regex = ".*MicroFreak.*"
+};

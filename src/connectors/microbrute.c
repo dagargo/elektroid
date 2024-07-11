@@ -617,3 +617,10 @@ microbrute_set_parameter (struct backend *backend,
 
   return err;
 }
+
+const struct connector CONNECTOR_MICROBRUTE = {
+  .name = MICROBRUTE_NAME,
+  .handshake = microbrute_handshake,
+  .standard = TRUE,
+  .regex = ".*MicroBrute.*"
+};

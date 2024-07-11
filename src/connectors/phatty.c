@@ -497,7 +497,7 @@ static const struct fs_operations FS_PHATTY_SCALE_OPERATIONS = {
   .get_upload_path = common_slot_get_upload_path
 };
 
-gint
+static gint
 phatty_handshake (struct backend *backend)
 {
   if (memcmp (backend->midi_info.company, MOOG_ID, sizeof (MOOG_ID)) ||
@@ -513,3 +513,10 @@ phatty_handshake (struct backend *backend)
 
   return 0;
 }
+
+const struct connector CONNECTOR_PHATTY = {
+  .name = "phatty",
+  .handshake = phatty_handshake,
+  .standard = TRUE,
+  .regex = ".*Phatty.*"
+};

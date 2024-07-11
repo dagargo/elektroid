@@ -21,7 +21,7 @@
 #ifndef MICROBRUTE_H
 #define MICROBRUTE_H
 
-#include "backend.h"
+#include "utils.h"
 
 #define MICROBRUTE_NAME "microbrute"
 
@@ -54,5 +54,7 @@ gint microbrute_get_parameter (struct backend *, enum microbrute_param,
 
 gint microbrute_set_parameter (struct backend *, enum microbrute_param,
 			       guint8, guint8, gboolean);
+
+extern const struct connector CONNECTOR_MICROBRUTE;
 
 #endif

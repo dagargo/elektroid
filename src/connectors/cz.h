@@ -21,8 +21,8 @@
 #ifndef CZ_H
 #define CZ_H
 
-#include "backend.h"
+#include "utils.h"
 
-gint cz_handshake (struct backend *);
+extern const struct connector CONNECTOR_CZ;
 
 #endif

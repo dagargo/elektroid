@@ -21,8 +21,8 @@
 #ifndef EFACTOR_H
 #define EFACTOR_H
 
-#include "backend.h"
+#include "utils.h"
 
-gint efactor_handshake (struct backend *);
+extern const struct connector CONNECTOR_EFACTOR;
 
 #endif

@@ -21,8 +21,8 @@
 #ifndef PEAK_H
 #define PEAK_H
 
-#include "backend.h"
+#include "utils.h"
 
-gint summit_handshake (struct backend *);
+extern const struct connector CONNECTOR_SUMMIT;
 
 #endif

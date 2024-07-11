@@ -437,7 +437,7 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .select_item = common_midi_program_change
 };
 
-void
+static void
 efactor_destroy_data (struct backend *backend)
 {
   struct efactor_data *data = backend->data;
@@ -449,7 +449,7 @@ efactor_destroy_data (struct backend *backend)
 }
 
 //The MIDI Identity Request follows the standard but the Identity Reply does not.
-gint
+static gint
 efactor_handshake (struct backend *backend)
 {
   gint swlen, max, min, presets, id;
@@ -572,3 +572,10 @@ efactor_handshake (struct backend *backend)
 
   return 0;
 }
+
+const struct connector CONNECTOR_EFACTOR = {
+  .handshake = efactor_handshake,
+  .name = "efactor",
+  .standard = FALSE,
+  .regex = ".*Factor Pedal.*"
+};

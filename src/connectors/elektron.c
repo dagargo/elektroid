@@ -3490,7 +3490,7 @@ elektron_ping (struct backend *backend)
   return rx_msg;
 }
 
-gint
+static gint
 elektron_handshake (struct backend *backend)
 {
   guint8 id;
@@ -3642,3 +3642,10 @@ elektron_upload_raw_pst_pkg (struct backend *backend, const gchar *path,
 			      PKG_FILE_TYPE_RAW_PRESET,
 			      &FS_RAW_ANY_OPERATIONS, elektron_upload_raw);
 }
+
+const struct connector CONNECTOR_ELEKTRON = {
+  .handshake = elektron_handshake,
+  .name = "elektron",
+  .standard = FALSE,
+  .regex = ".*Elektron.*"
+};

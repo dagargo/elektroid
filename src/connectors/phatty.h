@@ -21,8 +21,8 @@
 #ifndef PHATTY_H
 #define PHATTY_H
 
-#include "backend.h"
+#include "utils.h"
 
-gint phatty_handshake (struct backend *);
+extern const struct connector CONNECTOR_PHATTY;
 
 #endif

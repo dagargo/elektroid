@@ -21,7 +21,7 @@
 #ifndef MICROFREAK_H
 #define MICROFREAK_H
 
-#include "backend.h"
+#include "utils.h"
 #include "microfreak_sample.h"
 
 #define MICROFREAK_PRESET_HEADER_MSG_LEN 0x23
@@ -66,6 +66,6 @@ struct microfreak_wavetable_header
   gchar name[MICROFREAK_WAVETABLE_NAME_LEN];
 };
 
-gint microfreak_handshake (struct backend *);
+extern const struct connector CONNECTOR_MICROFREAK;
 
 #endif

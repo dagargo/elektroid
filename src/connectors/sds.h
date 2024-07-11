@@ -21,8 +21,8 @@
 #ifndef SDS_H
 #define SDS_H
 
-#include "backend.h"
+#include "utils.h"
 
-gint sds_handshake (struct backend *);
+extern const struct connector CONNECTOR_SDS;
 
 #endif

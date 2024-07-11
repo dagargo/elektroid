@@ -347,7 +347,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .select_item = common_midi_program_change
 };
 
-gint
+static gint
 cz_handshake (struct backend *backend)
 {
   gint len, err = 0;
@@ -374,3 +374,10 @@ end:
   free_msg (rx_msg);
   return err;
 }
+
+const struct connector CONNECTOR_CZ = {
+  .name = "cz",
+  .handshake = cz_handshake,
+  .standard = FALSE,
+  .regex = NULL
+};

@@ -1239,7 +1239,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_8_OPERATIONS = {
   .get_download_path = sds_get_download_path
 };
 
-gint
+static gint
 sds_handshake_elektron (struct backend *backend)
 {
   //Elektron devices support SDS so we need to be sure it is not.
@@ -1393,3 +1393,10 @@ end:
 
   return 0;
 }
+
+const struct connector CONNECTOR_SDS = {
+  .name = "sds",
+  .handshake = sds_handshake,
+  .standard = FALSE,
+  .regex = NULL
+};

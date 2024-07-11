@@ -22,7 +22,6 @@
 #define ELEKTRON_H
 
 #include "utils.h"
-#include "backend.h"
 
 enum elektron_fs
 {
@@ -37,6 +36,8 @@ enum elektron_fs
   FS_DATA_DT2_PST = 0x100
 };
 
+extern const struct connector CONNECTOR_ELEKTRON;
+
 gchar *elektron_get_sample_path_from_hash_size (struct backend *backend,
 						guint32 hash, guint32 size);
 
@@ -45,8 +46,6 @@ gint elektron_upload_sample_part (struct backend *backend, const gchar * path,
 				  struct job_control *control);
 
 GByteArray *elektron_ping (struct backend *backend);
-
-gint elektron_handshake (struct backend *backend);
 
 gint elektron_sample_save (const gchar * path, struct idata *sample,
 			   struct job_control *control);
