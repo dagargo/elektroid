@@ -333,7 +333,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
     FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "program",
   .gui_name = "Programs",
-  .gui_icon = FILE_ICON_SND,
+  .gui_icon = FS_ICON_SND,
   .ext = "syx",
   .readdir = cz_read_dir,
   .print_item = common_print_item,

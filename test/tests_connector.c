@@ -10,11 +10,11 @@ test_item_iterator_is_dir_or_matches_extensions ()
 
   printf ("\n");
 
-  iter.item.type = ELEKTROID_DIR;
+  iter.item.type = ITEM_TYPE_DIR;
   CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, exts),
 		   TRUE);
 
-  iter.item.type = ELEKTROID_FILE;
+  iter.item.type = ITEM_TYPE_FILE;
   snprintf (iter.item.name, LABEL_MAX, "%s", "file.ext1");
   exts = g_slist_append (exts, "ext2");
   CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, exts),

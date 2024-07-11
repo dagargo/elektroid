@@ -479,7 +479,7 @@ static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_NAME,
   .name = "sequence",
   .gui_name = "Sequences",
-  .gui_icon = FILE_ICON_SEQ,
+  .gui_icon = FS_ICON_SEQ,
   .ext = "mbseq",
   .readdir = microbrute_read_dir,
   .print_item = common_print_item,
