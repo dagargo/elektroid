@@ -970,6 +970,18 @@ cleanup:
   return 0;
 }
 
+void
+job_control_set_sample_progress_no_sync (struct job_control *control,
+					 gdouble p, gpointer data)
+{
+  job_control_set_progress_value (control, p);
+
+  if (control->callback)
+    {
+      control->callback (control);
+    }
+}
+
 gint
 sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 			  struct job_control *control,
@@ -981,7 +993,8 @@ sample_load_from_memfile (struct idata *memfile, struct idata *sample,
   data.array = memfile->content;
   return sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, sample,
 				 sample_info_req, sample_info_src,
-				 set_sample_progress_no_sync, NULL);
+				 job_control_set_sample_progress_no_sync,
+				 NULL);
 }
 
 // Reloads the input into the output following all the requirements.
@@ -1061,7 +1074,8 @@ sample_load_from_file (const gchar *path, struct idata *sample,
 {
   return sample_load_from_file_full (path, sample, control,
 				     sample_info_req, sample_info_src,
-				     set_sample_progress_no_sync, NULL);
+				     job_control_set_sample_progress_no_sync,
+				     NULL);
 }
 
 GSList *

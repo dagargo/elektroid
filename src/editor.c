@@ -503,7 +503,7 @@ editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
   gboolean completed, ready_to_play;
   struct editor *editor = data;
 
-  set_sample_progress_no_sync (control, p, NULL);
+  job_control_set_sample_progress_no_sync (control, p, NULL);
   g_idle_add (editor_queue_draw, data);
   completed = editor_loading_completed_no_lock (editor, &actual_frames);
   if (!editor->ready)
@@ -1226,7 +1226,7 @@ editor_save_with_format (struct editor *editor, gchar *name,
     {
       struct idata resampled;
       err = sample_reload (sample, &resampled, NULL, sample_info_src,
-			   set_sample_progress_no_sync, NULL);
+			   job_control_set_sample_progress_no_sync, NULL);
       if (err)
 	{
 	  return err;

@@ -37,6 +37,9 @@
 typedef void (*sample_load_cb) (struct job_control * control,
 				gdouble progress, gpointer data);
 
+void job_control_set_sample_progress_no_sync (struct job_control *control,
+					      gdouble p, gpointer data);
+
 gint sample_save_to_file (const gchar * path, struct idata *sample,
 			  struct job_control *control, guint32 format);
 
