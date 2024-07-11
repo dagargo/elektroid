@@ -71,7 +71,7 @@ const struct fs_operations FS_PROGRAM_DEFAULT_OPERATIONS = {
     FS_OPTION_SORT_BY_ID,
   .name = "program",
   .gui_name = "Programs",
-  .gui_icon = BE_FILE_ICON_SND,
+  .gui_icon = FILE_ICON_SND,
   .readdir = default_read_dir,
   .print_item = common_print_item,
   .select_item = common_midi_program_change

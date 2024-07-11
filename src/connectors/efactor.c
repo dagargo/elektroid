@@ -421,7 +421,7 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
     FS_OPTION_SHOW_SLOT_COLUMN,
   .name = "preset",
   .gui_name = "Presets",
-  .gui_icon = BE_FILE_ICON_SND,
+  .gui_icon = FILE_ICON_SND,
   .ext = "syx",
   .max_name_len = EFACTOR_MAX_NAME_LEN,
   .readdir = efactor_read_dir,

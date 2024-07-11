@@ -39,12 +39,6 @@
 #define BE_DEV_RING_BUF_LEN (256 * BE_KB)
 #define BE_TMP_BUFF_LEN (64 * BE_KB)	//This size is required by RtMidi as it needs enough space for the messages.
 
-#define BE_FILE_ICON_WAVE "elektroid-wave-symbolic"
-#define BE_FILE_ICON_SEQ "elektroid-sequence-symbolic"
-#define BE_FILE_ICON_PRJ "elektroid-project-symbolic"
-#define BE_FILE_ICON_SND "elektroid-sound-symbolic"
-#define BE_FILE_ICON_GENERIC "elektroid-file-symbolic"
-
 #define BE_REST_TIME_US 50000
 #define BE_SYSEX_TIMEOUT_MS 5000
 #define BE_SYSEX_TIMEOUT_GUESS_MS 1000	//When the request is not implemented, 5 s is too much.

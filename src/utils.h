@@ -28,6 +28,12 @@
 #include <inttypes.h>
 #include "../config.h"
 
+#define FILE_ICON_WAVE "elektroid-wave-symbolic"
+#define FILE_ICON_SEQ "elektroid-sequence-symbolic"
+#define FILE_ICON_PRJ "elektroid-project-symbolic"
+#define FILE_ICON_SND "elektroid-sound-symbolic"
+#define FILE_ICON_GENERIC "elektroid-file-symbolic"
+
 #define CONF_DIR "/.config/" PACKAGE
 
 #define APP_NAME "Elektroid"
