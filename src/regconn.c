@@ -32,7 +32,7 @@
 #include "connectors/default.h"
 
 void
-regconn_fill ()
+regconn_register ()
 {
   system_connector = &CONNECTOR_SYSTEM;
   g_slist_fill (&connectors, &CONNECTOR_ELEKTRON, &CONNECTOR_MICROBRUTE,
@@ -42,7 +42,7 @@ regconn_fill ()
 }
 
 void
-regconn_clean ()
+regconn_unregister ()
 {
   g_slist_free (connectors);
   connectors = NULL;

@@ -20,6 +20,6 @@
 
 #include "connector.h"
 
-void regconn_fill ();
+void regconn_register ();
 
-void regconn_clean ();
+void regconn_unregister ();

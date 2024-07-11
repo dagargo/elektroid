@@ -28,7 +28,7 @@ struct maction *microbrute_maction_cal_builder (struct maction_context *);
 struct maction *autosampler_maction_builder (struct maction_context *);
 
 void
-regma_fill ()
+regma_register ()
 {
   g_slist_fill (&mactions, microbrute_maction_conf_builder,
 		microbrute_maction_cal_builder,
@@ -41,7 +41,7 @@ regma_fill ()
 }
 
 void
-regma_clean ()
+regma_unregister ()
 {
   g_slist_free (mactions);
   mactions = NULL;

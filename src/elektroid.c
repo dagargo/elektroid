@@ -3105,16 +3105,16 @@ main (int argc, char *argv[])
     }
   editor.preferences = &preferences;
 
-  regconn_fill ();
-  regma_fill ();
+  regconn_register ();
+  regma_register ();
 
   ret = elektroid_run (argc, argv);
 
   preferences_save (&preferences);
   preferences_free (&preferences);
 
-  regconn_clean ();
-  regma_clean ();
+  regconn_unregister ();
+  regma_unregister ();
 
   return ret;
 }

@@ -20,6 +20,6 @@
 
 #include "maction.h"
 
-void regma_fill ();
+void regma_register ();
 
-void regma_clean ();
+void regma_unregister ();

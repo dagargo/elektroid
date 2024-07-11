@@ -796,7 +796,7 @@ main (int argc, gchar *argv[])
       exit (EXIT_FAILURE);
     }
 
-  regconn_fill ();
+  regconn_register ();
 
   if (!strcmp (command, "ld") || !strcmp (command, "list-devices"))
     {
@@ -897,7 +897,7 @@ end:
       error_print ("Error: %s\n", g_strerror (-err));
     }
 
-  regconn_clean ();
+  regconn_unregister ();
 
   usleep (BE_REST_TIME_US * 2);
   return err ? EXIT_FAILURE : EXIT_SUCCESS;
