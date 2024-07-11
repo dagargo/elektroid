@@ -3088,7 +3088,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .upload = elektron_upload_sample,
   .load = elektron_sample_load,
   .save = elektron_sample_save,
-  .get_exts = backend_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .get_upload_path = elektron_get_upload_path_smplrw,
   .get_download_path = elektron_get_download_path_sample
 };
@@ -3262,7 +3262,7 @@ static const struct fs_operations FS_SAMPLES_STEREO_OPERATIONS = {
   .upload = elektron_upload_sample,
   .load = elektron_sample_stereo_load,
   .save = elektron_sample_save,
-  .get_exts = backend_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .get_upload_path = elektron_get_upload_path_smplrw,
   .get_download_path = elektron_get_download_path_sample
 };

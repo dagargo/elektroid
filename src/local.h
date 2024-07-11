@@ -22,7 +22,7 @@
 #define LOCAL_H
 
 #include "backend.h"
-#include "utils.h"
+#include "sample.h"
 
 extern const struct fs_operations FS_LOCAL_GENERIC_OPERATIONS;
 extern const struct fs_operations FS_LOCAL_SAMPLE_OPERATIONS;

@@ -421,7 +421,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .save = file_save,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .get_exts = backend_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
 
@@ -447,7 +447,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .save = file_save,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .get_exts = backend_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
 
@@ -473,7 +473,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .save = file_save,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .get_exts = backend_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
 
@@ -502,7 +502,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .save = file_save,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .get_exts = backend_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
 
@@ -527,7 +527,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_24_STEREO_OPERATIONS = {
   .save = file_save,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .get_exts = backend_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
 
@@ -555,7 +555,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_24_MONO_OPERATIONS = {
   .save = file_save,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .get_exts = backend_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
 
@@ -580,7 +580,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_STEREO_OPERATIONS = {
   .save = file_save,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .get_exts = backend_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
 
@@ -608,7 +608,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_MONO_OPERATIONS = {
   .save = file_save,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .get_exts = backend_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
 
@@ -636,7 +636,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_32_16_MONO_OPERATIONS = {
   .save = file_save,
   .get_upload_path = system_get_upload_path,
   .get_download_path = system_get_download_path,
-  .get_exts = backend_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
 

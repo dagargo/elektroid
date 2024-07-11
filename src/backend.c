@@ -668,10 +668,3 @@ backend_fill_fs_ops (struct backend *backend, ...)
     }
   va_end (argptr);
 }
-
-GSList *
-backend_get_audio_exts (struct backend *backend,
-			const struct fs_operations *ops)
-{
-  return sample_get_sample_extensions ();
-}

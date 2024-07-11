@@ -1815,17 +1815,6 @@ microfreak_sample_load (const gchar *path, struct idata *sample,
 			     1, SF_FORMAT_PCM_16);
 }
 
-static GSList *
-microfreak_get_audio_exts (struct backend *backend,
-			   const struct fs_operations *ops)
-{
-  GSList *exts = backend_get_audio_exts (backend, ops);
-  exts = g_slist_append (exts, strdup (MICROFREAK_ZSAMPLE_EXT));
-  exts = g_slist_append (exts, strdup (MICROFREAK_ZSAMPLE_EXT));
-  exts = g_slist_append (exts, strdup (MICROFREAK_PWAVETABLE_EXT));
-  return g_slist_append (exts, strdup (MICROFREAK_ZWAVETABLE_EXT));
-}
-
 static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
   .id = FS_MICROFREAK_SAMPLE,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
@@ -1842,7 +1831,7 @@ static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
   .clear = microfreak_sample_clear,
   .upload = microfreak_sample_upload,
   .load = microfreak_sample_load,
-  .get_exts = microfreak_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .get_upload_path = common_slot_get_upload_path
 };
 
@@ -1920,7 +1909,7 @@ static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
   .upload = microfreak_wavetable_upload,
   .load = microfreak_wavetable_load,
   .save = microfreak_wavetable_save,
-  .get_exts = microfreak_get_audio_exts,
+  .get_exts = sample_get_sample_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = microfreak_get_download_wavetable_path
 };

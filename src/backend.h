@@ -189,7 +189,4 @@ const gchar *backend_name ();
 
 void backend_fill_fs_ops (struct backend *backend, ...);
 
-GSList *backend_get_audio_exts (struct backend *,
-				const struct fs_operations *);
-
 #endif

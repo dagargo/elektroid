@@ -18,8 +18,8 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "backend.h"
 #include "utils.h"
+#include "sample.h"
 
 gint system_read_dir (struct backend *backend, struct item_iterator *iter,
 		      const gchar * dir, GSList * extensions);
