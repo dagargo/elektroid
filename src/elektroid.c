@@ -443,7 +443,7 @@ elektroid_rx_sysex ()
   gint *res;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
-  res = progress_run (elektroid_rx_sysex_runner, TRUE, NULL,
+  res = progress_run (elektroid_rx_sysex_runner, PROGRESS_TYPE_UPDATE, NULL,
 		      _("Receive SysEx"), "", &dres);
   if (!res)			//Signal captured while running the dialog.
     {
@@ -618,8 +618,8 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
     {
       gtk_widget_hide (GTK_WIDGET (dialog));
       filenames = gtk_file_chooser_get_filenames (chooser);
-      err =
-	progress_run (func, TRUE, filenames, _("Sending SysEx"), "", NULL);
+      err = progress_run (func, PROGRESS_TYPE_UPDATE, filenames,
+			  _("Sending SysEx"), "", NULL);
       g_slist_free_full (g_steal_pointer (&filenames), g_free);
 
       if (!err)			//Signal captured while running the dialog.
@@ -815,8 +815,8 @@ elektroid_delete_files (GtkWidget *object, gpointer data)
     }
   else
     {
-      progress_run (elektroid_delete_files_runner, TRUE, browser,
-		    _("Deleting Files"), _("Deleting..."), NULL);
+      progress_run (elektroid_delete_files_runner, PROGRESS_TYPE_PULSE,
+		    browser, _("Deleting Files"), _("Deleting..."), NULL);
     }
 
   browser_load_dir_if_needed (data);
@@ -1657,7 +1657,7 @@ elektroid_add_upload_tasks (GtkWidget *object, gpointer data)
       return;
     }
 
-  progress_run (elektroid_add_upload_tasks_runner, TRUE, NULL,
+  progress_run (elektroid_add_upload_tasks_runner, PROGRESS_TYPE_PULSE, NULL,
 		_("Preparing Tasks"), _("Waiting..."), NULL);
 }
 
@@ -1861,8 +1861,8 @@ elektroid_add_download_tasks (GtkWidget *object, gpointer data)
       return;
     }
 
-  progress_run (elektroid_add_download_tasks_runner, TRUE, NULL,
-		_("Preparing Tasks"), _("Waiting..."), NULL);
+  progress_run (elektroid_add_download_tasks_runner, PROGRESS_TYPE_PULSE,
+		NULL, _("Preparing Tasks"), _("Waiting..."), NULL);
 }
 
 static void
@@ -2225,8 +2225,9 @@ elektroid_set_device (GtkWidget *object, gpointer data)
     }
   else
     {
-      progress_run (elektroid_set_device_runner, TRUE, &be_sys_device,
-		    _("Connecting to Device"), _("Connecting..."), &dres);
+      progress_run (elektroid_set_device_runner, PROGRESS_TYPE_PULSE,
+		    &be_sys_device, _("Connecting to Device"),
+		    _("Connecting..."), &dres);
 
       if (progress.sysex_transfer.err &&
 	  progress.sysex_transfer.err != -ECANCELED)
@@ -2513,8 +2514,8 @@ elektroid_dnd_received (GtkWidget *widget, GdkDragContext *context,
 
   if (blocking)
     {
-      progress_run (elektroid_dnd_received_runner_dialog, TRUE, dnd_data,
-		    title, text, NULL);
+      progress_run (elektroid_dnd_received_runner_dialog, PROGRESS_TYPE_PULSE,
+		    dnd_data, title, text, NULL);
       batch_id++;
     }
   else

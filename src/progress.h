@@ -24,6 +24,13 @@
 #ifndef PROGRESS_H
 #define PROGRESS_H
 
+enum progress_type
+{
+  PROGRESS_TYPE_NONE,
+  PROGRESS_TYPE_PULSE,
+  PROGRESS_TYPE_UPDATE
+};
+
 struct progress
 {
   struct sysex_transfer sysex_transfer;
@@ -44,10 +51,9 @@ void progress_set_fraction (gdouble fraction);
 
 gboolean progress_is_active ();
 
-gboolean progress_update (gpointer data);
-
-gpointer progress_run (GThreadFunc f, gboolean pulse, gpointer user_data,
-		       const gchar * name, const gchar * text, gint * res);
+gpointer progress_run (GThreadFunc f, enum progress_type type,
+		       gpointer user_data, const gchar * name,
+		       const gchar * text, gint * res);
 
 void progress_init (GtkBuilder * builder);
 
