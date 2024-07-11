@@ -196,7 +196,7 @@ browser_item_activated (GtkTreeView *view, GtkTreePath *path,
   gtk_tree_model_get_iter (model, &iter, path);
   browser_set_item (model, &iter, &item);
 
-  if (item.type == ELEKTROID_DIR)
+  if (item.type == ITEM_TYPE_DIR)
     {
       enum path_type type = backend_get_path_type (browser->backend);
       gchar *new_dir = path_chain (type, browser->dir, item.name);
@@ -264,7 +264,7 @@ browser_add_dentry_item (gpointer data)
   gtk_list_store_insert_with_values (list_store, &iter, -1,
 				     BROWSER_LIST_STORE_ICON_FIELD,
 				     item->type ==
-				     ELEKTROID_DIR ? DIR_ICON :
+				     ITEM_TYPE_DIR ? DIR_ICON :
 				     add_data->icon,
 				     BROWSER_LIST_STORE_NAME_FIELD,
 				     add_data->rel_path,
@@ -292,7 +292,7 @@ browser_add_dentry_item (gpointer data)
 	}
     }
 
-  if (item->type == ELEKTROID_FILE &&
+  if (item->type == ITEM_TYPE_FILE &&
       browser->fs_ops->options & FS_OPTION_SHOW_SAMPLE_COLUMNS &&
       item->sample_info.frames)
     {
@@ -366,7 +366,7 @@ browser_add_dentry_item (gpointer data)
       g_value_unset (&v);
     }
 
-  if (item->type == ELEKTROID_FILE &&
+  if (item->type == ITEM_TYPE_FILE &&
       browser->fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN)
     {
       g_value_init (&v, G_TYPE_STRING);
@@ -572,7 +572,7 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
       browser_iterate_dir_add (browser, iter, icon, &iter->item,
 			       strdup (child_rel_dir));
 
-      if (iter->item.type == ELEKTROID_DIR)
+      if (iter->item.type == ITEM_TYPE_DIR)
 	{
 	  child_dir = path_chain (type, browser->dir, child_rel_dir);
 	  err = browser->fs_ops->readdir (browser->backend, &child_iter,
@@ -1006,7 +1006,7 @@ browser_check_selection (gpointer data)
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
   browser_set_item (model, &iter, &item);
 
-  if (item.type == ELEKTROID_DIR)
+  if (item.type == ITEM_TYPE_DIR)
     {
       return;
     }
@@ -1127,7 +1127,7 @@ browser_setup_popup_sensitivity (struct browser *browser)
     {
       browser_set_selected_row_iter (browser, &iter);
       browser_set_item (model, &iter, &item);
-      file = item.type == ELEKTROID_FILE;
+      file = item.type == ITEM_TYPE_FILE;
     }
 
   if (browser == &local_browser)

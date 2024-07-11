@@ -50,7 +50,7 @@ gboolean
 item_iterator_is_dir_or_matches_extensions (struct item_iterator *iter,
 					    const GSList *extensions)
 {
-  if (iter->item.type == ELEKTROID_DIR)
+  if (iter->item.type == ITEM_TYPE_DIR)
     {
       return TRUE;
     }
@@ -61,7 +61,7 @@ item_iterator_is_dir_or_matches_extensions (struct item_iterator *iter,
 gchar *
 get_filename (guint32 fs_options, struct item *item)
 {
-  if (fs_options & FS_OPTION_ID_AS_FILENAME && item->type == ELEKTROID_FILE)
+  if (fs_options & FS_OPTION_ID_AS_FILENAME && item->type == ITEM_TYPE_FILE)
     {
       gchar *dir = g_path_get_dirname (item->name);
       gboolean no_dir = strcmp (dir, ".") == 0;

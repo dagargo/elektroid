@@ -98,7 +98,7 @@ cz_next_dentry_root (struct item_iterator *iter)
     {
       iter->item.id = 0x1000 + data->next;	//Unique id
       snprintf (iter->item.name, LABEL_MAX, "%s", CZ_MEM_TYPES[data->next]);
-      iter->item.type = ELEKTROID_DIR;
+      iter->item.type = ITEM_TYPE_DIR;
       iter->item.size = -1;
 
       if (data->next == 2)
@@ -124,7 +124,7 @@ cz_next_dentry_root (struct item_iterator *iter)
     {
       iter->item.id = CZ_PANEL_ID;
       snprintf (iter->item.name, LABEL_MAX, "panel");
-      iter->item.type = ELEKTROID_FILE;
+      iter->item.type = ITEM_TYPE_FILE;
       iter->item.size = CZ_PROGRAM_LEN_FIXED;
       data->next++;
       return 0;
@@ -147,7 +147,7 @@ cz_next_dentry (struct item_iterator *iter)
 
   iter->item.id = data->next + data->type * CZ_MEM_TYPE_OFFSET;
   snprintf (iter->item.name, LABEL_MAX, "%d", data->next + 1);
-  iter->item.type = ELEKTROID_FILE;
+  iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = CZ_PROGRAM_LEN_FIXED;
   data->next++;
 

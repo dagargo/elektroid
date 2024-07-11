@@ -158,11 +158,11 @@ system_next_dentry (struct item_iterator *iter, gboolean sample_info)
       enum item_type type;
       if (g_file_test (full_path, G_FILE_TEST_IS_DIR))
 	{
-	  type = ELEKTROID_DIR;
+	  type = ITEM_TYPE_DIR;
 	}
       else if (g_file_test (full_path, G_FILE_TEST_IS_REGULAR))
 	{
-	  type = ELEKTROID_FILE;
+	  type = ITEM_TYPE_FILE;
 	}
       else
 	{
@@ -180,7 +180,7 @@ system_next_dentry (struct item_iterator *iter, gboolean sample_info)
 	  if (item_iterator_is_dir_or_matches_extensions (iter,
 							  data->extensions))
 	    {
-	      if (iter->item.type == ELEKTROID_FILE && sample_info)
+	      if (iter->item.type == ITEM_TYPE_FILE && sample_info)
 		{
 		  sample_load_sample_info (full_path,
 					   &iter->item.sample_info);

@@ -969,7 +969,7 @@ sds_next_sample_dentry (struct item_iterator *iter)
     }
 
   iter->item.id = iterator_data->next;
-  iter->item.type = ELEKTROID_FILE;
+  iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = -1;
   (iterator_data->next)++;
 

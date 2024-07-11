@@ -299,7 +299,7 @@ microfreak_next_preset_dentry (struct item_iterator *iter)
   snprintf (iter->item.name, LABEL_MAX, "%s", preset_name);
 
   iter->item.id = data->next;
-  iter->item.type = ELEKTROID_FILE;
+  iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = -1;
   category = microfreak_get_category_name (rx_msg);
   snprintf (iter->item.object_info, LABEL_MAX, "%s", category);
@@ -826,7 +826,7 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
 				   (guint8 *) & header);
   snprintf (iter->item.name, LABEL_MAX, "%s", header.name);
   iter->item.id = data->next;
-  iter->item.type = ELEKTROID_FILE;
+  iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = GINT32_FROM_LE (header.size);
   (data->next)++;
 
@@ -1229,7 +1229,7 @@ microfreak_next_wavetable_dentry (struct item_iterator *iter)
 				   (guint8 *) & header);
   snprintf (iter->item.name, LABEL_MAX, "%s", header.name);
   iter->item.id = data->next;
-  iter->item.type = ELEKTROID_FILE;
+  iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = header.status0 == MICROFREAK_WAVETABLE_EMPTY ?
     0 : MICROFREAK_WAVETABLE_SIZE;
   (data->next)++;

@@ -161,7 +161,7 @@ common_simple_next_dentry (struct item_iterator *iter)
 
   snprintf (iter->item.name, LABEL_MAX, "%.*d", digits, data->next);
   iter->item.id = data->next;
-  iter->item.type = ELEKTROID_FILE;
+  iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = -1;
   data->next++;
 

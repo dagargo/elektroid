@@ -684,7 +684,7 @@ elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
 
   debug_print (1, "Deleting %s...\n", path);
 
-  if (item->type == ELEKTROID_FILE)
+  if (item->type == ITEM_TYPE_FILE)
     {
       gchar *filename = get_filename (browser->fs_ops->options, item);
       gchar *id_path = path_chain (type, dir, filename);
@@ -697,7 +697,7 @@ elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
 	}
       g_free (id_path);
     }
-  else if (item->type == ELEKTROID_DIR)
+  else if (item->type == ITEM_TYPE_DIR)
     {
       struct item_iterator iter;
       if (browser->fs_ops->readdir (browser->backend, &iter, path, NULL))
@@ -2650,7 +2650,7 @@ elektroid_drag_motion_list (GtkWidget *widget,
 	  gtk_tree_model_get_iter (model, &iter, path);
 	  browser_set_item (model, &iter, &item);
 
-	  if (item.type == ELEKTROID_DIR && (!browser->dnd_motion_path ||
+	  if (item.type == ITEM_TYPE_DIR && (!browser->dnd_motion_path ||
 					     (browser->dnd_motion_path
 					      &&
 					      gtk_tree_path_compare

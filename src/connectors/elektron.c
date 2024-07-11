@@ -310,7 +310,7 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
 
       name_cp1252 = (gchar *) & data->msg->data[data->pos];
       elektron_get_utf8 (iter->item.name, name_cp1252);
-      if (data->mode == ITER_MODE_RAW && iter->item.type == ELEKTROID_FILE)
+      if (data->mode == ITER_MODE_RAW && iter->item.type == ITEM_TYPE_FILE)
 	{
 	  //This eliminates the extension ".mc-snd" that the device provides.
 	  iter->item.name[strlen (iter->item.name) - 7] = 0;
@@ -341,7 +341,7 @@ elektron_init_iterator (struct backend *backend, struct item_iterator *iter,
 
   item_iterator_init (iter, dir, data, next, elektron_free_iterator_data);
   iter->item.id = 0;		//This is needed to point to the next item id
-  iter->item.type = ELEKTROID_NONE;	//This is needed in case the response when reading a directory is empty
+  iter->item.type = ITEM_TYPE_NONE;	//This is needed in case the response when reading a directory is empty
 
   return 0;
 }
@@ -895,12 +895,12 @@ elektron_get_path_type (struct backend *backend, const gchar *path,
 
   if (strcmp (path, "/") == 0)
     {
-      return ELEKTROID_DIR;
+      return ITEM_TYPE_DIR;
     }
 
   name = g_path_get_basename (path);
   dir = g_path_get_dirname (path);
-  res = ELEKTROID_NONE;
+  res = ITEM_TYPE_NONE;
   if (!init_iter (backend, &iter, dir, NULL))
     {
       while (!item_iterator_next (&iter))
@@ -950,7 +950,7 @@ elektron_read_common_dir (struct backend *backend,
     }
 
   if (rx_msg->len == 5 &&
-      elektron_get_path_type (backend, dir, init_iter) != ELEKTROID_DIR)
+      elektron_get_path_type (backend, dir, init_iter) != ITEM_TYPE_DIR)
     {
       free_msg (rx_msg);
       return -ENOTDIR;
@@ -1070,11 +1070,11 @@ elektron_move_common_item (struct backend *backend, const gchar *src,
   debug_print (1, "Renaming remotely from %s to %s...\n", src, dst);
 
   type = elektron_get_path_type (backend, src, init_iter);
-  if (type == ELEKTROID_FILE)
+  if (type == ITEM_TYPE_FILE)
     {
       return mv (backend, src, dst);
     }
-  else if (type == ELEKTROID_DIR)
+  else if (type == ITEM_TYPE_DIR)
     {
       res = mkdir (backend, dst);
       if (res)
@@ -1258,11 +1258,11 @@ elektron_delete_common_item (struct backend *backend, const gchar *path,
   gint res;
 
   type = elektron_get_path_type (backend, path, init_iter);
-  if (type == ELEKTROID_FILE)
+  if (type == ITEM_TYPE_FILE)
     {
       return rm (backend, path);
     }
-  else if (type == ELEKTROID_DIR)
+  else if (type == ITEM_TYPE_DIR)
     {
       debug_print (1, "Deleting %s samples dir...\n", path);
 
@@ -1819,7 +1819,7 @@ elektron_next_data_entry (struct item_iterator *iter)
     {
       //A data directory only contains either files or directories.
       //If the last visited item was a directory, there are no more slots to visit.
-      if (iter->item.type == ELEKTROID_DIR
+      if (iter->item.type == ITEM_TYPE_DIR
 	  || iter->item.id >= data->max_slots)
 	{
 	  return -ENOENT;
@@ -1830,7 +1830,7 @@ elektron_next_data_entry (struct item_iterator *iter)
 
   name_cp1252 = (gchar *) & data->msg->data[data->pos];
 
-  if (data->max_slots != -1 && iter->item.type != ELEKTROID_DIR)
+  if (data->max_slots != -1 && iter->item.type != ITEM_TYPE_DIR)
     {
       guint32 pos = data->pos + strlen (name_cp1252) + 3;
       data32 = (guint32 *) & data->msg->data[pos];
@@ -1851,7 +1851,7 @@ elektron_next_data_entry (struct item_iterator *iter)
   switch (type)
     {
     case 1:
-      iter->item.type = ELEKTROID_DIR;
+      iter->item.type = ITEM_TYPE_DIR;
       data->pos += sizeof (guint32);	// child entries
       iter->item.size = 0;
       iter->item.id = -1;
@@ -1861,7 +1861,7 @@ elektron_next_data_entry (struct item_iterator *iter)
       iter->item.object_info[0] = 0;
       break;
     case 2:
-      iter->item.type = has_children ? ELEKTROID_DIR : ELEKTROID_FILE;
+      iter->item.type = has_children ? ITEM_TYPE_DIR : ITEM_TYPE_FILE;
 
       data32 = (guint32 *) & data->msg->data[data->pos];
       iter->item.id = has_children ? -1 : g_ntohl (*data32);
@@ -1927,7 +1927,7 @@ elektron_next_data_entry (struct item_iterator *iter)
   return 0;
 
 not_found:
-  iter->item.type = ELEKTROID_FILE;
+  iter->item.type = ITEM_TYPE_FILE;
   iter->item.name[0] = 0;
   iter->item.size = -1;
   iter->item.id++;

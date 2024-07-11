@@ -41,7 +41,7 @@ default_next_dentry (struct item_iterator *iter)
 
   iter->item.id = *data;
   snprintf (iter->item.name, LABEL_MAX, "%d", *data);
-  iter->item.type = ELEKTROID_FILE;
+  iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = -1;
   (*data)++;
 

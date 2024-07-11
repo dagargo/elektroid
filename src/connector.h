@@ -31,9 +31,9 @@
 
 enum item_type
 {
-  ELEKTROID_NONE = 0,
-  ELEKTROID_FILE = 'F',
-  ELEKTROID_DIR = 'D'
+  ITEM_TYPE_NONE = 0,
+  ITEM_TYPE_FILE = 'F',
+  ITEM_TYPE_DIR = 'D'
 };
 
 //name must be filled up always. If no name is available, this can be a string representation of the ID without padding. See set_item_name_from_id function.
