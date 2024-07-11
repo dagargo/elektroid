@@ -22,7 +22,7 @@
 #define TASKS_H
 
 #include <gtk/gtk.h>
-#include "utils.h"
+#include "connector.h"
 
 enum task_list_store_columns
 {

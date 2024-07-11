@@ -21,7 +21,7 @@
 #ifndef MICROBRUTE_H
 #define MICROBRUTE_H
 
-#include "utils.h"
+#include "connector.h"
 
 #define MICROBRUTE_NAME "microbrute"
 

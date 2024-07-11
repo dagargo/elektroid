@@ -28,7 +28,7 @@
 #include <inttypes.h>
 #include <stddef.h>
 #include "backend.h"
-#include "connector.h"
+#include "regconn.h"
 #include "utils.h"
 
 #define COMMAND_NOT_IN_SYSTEM_FS "Command not available in system backend\n"
@@ -796,6 +796,8 @@ main (int argc, gchar *argv[])
       exit (EXIT_FAILURE);
     }
 
+  regconn_fill ();
+
   if (!strcmp (command, "ld") || !strcmp (command, "list-devices"))
     {
       err = cli_ld ();
@@ -894,6 +896,8 @@ end:
     {
       error_print ("Error: %s\n", g_strerror (-err));
     }
+
+  regconn_clean ();
 
   usleep (BE_REST_TIME_US * 2);
   return err ? EXIT_FAILURE : EXIT_SUCCESS;

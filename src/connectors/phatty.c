@@ -507,8 +507,8 @@ phatty_handshake (struct backend *backend)
       return -ENODEV;
     }
 
-  backend_fill_fs_ops (backend, &FS_PHATTY_PRESET_OPERATIONS,
-		       &FS_PHATTY_SCALE_OPERATIONS, NULL);
+  g_slist_fill (&backend->fs_ops, &FS_PHATTY_PRESET_OPERATIONS,
+		&FS_PHATTY_SCALE_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "Moog Little Phatty");
 
   return 0;

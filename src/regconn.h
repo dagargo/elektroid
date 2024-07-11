@@ -1,6 +1,6 @@
 /*
- *   summit.h
- *   Copyright (C) 2022 David García Goñi <dagargo@gmail.com>
+ *   regconn.h
+ *   Copyright (C) 2024 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
  *
@@ -18,11 +18,8 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PEAK_H
-#define PEAK_H
-
 #include "connector.h"
 
-extern const struct connector CONNECTOR_SUMMIT;
+void regconn_fill ();
 
-#endif
+void regconn_clean ();

@@ -45,6 +45,7 @@ endif
 
 elektroid_common_sources = local.c local.h \
 connector.c connector.h \
+regconn.c regconn.h\
 sample.c sample.h \
 utils.c utils.h \
 backend.c backend.h $(elektroid_backend_sources) \
@@ -69,6 +70,7 @@ elektroid_SOURCES = $(elektroid_common_sources) \
 audio.h audio.c $(elektroid_audio_sources) \
 browser.c browser.h notifier.c notifier.h \
 preferences.c preferences.h \
+regma.c regma.h\
 menu_action.c menu_action.h \
 menu_actions/backend.c menu_actions/microbrute.c menu_actions/autosampler.c\
 editor.c editor.h \

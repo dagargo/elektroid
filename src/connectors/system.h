@@ -18,8 +18,10 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "utils.h"
+#include "connector.h"
 #include "sample.h"
+
+extern struct connector CONNECTOR_SYSTEM;
 
 gint system_read_dir (struct backend *backend, struct item_iterator *iter,
 		      const gchar * dir, GSList * extensions);
@@ -38,5 +40,3 @@ gint system_rename (struct backend *, const gchar *, const gchar *);
 
 gint system_upload (struct backend *, const gchar *, GByteArray *,
 		    struct job_control *);
-
-gint system_init_backend (struct backend *, const gchar *);

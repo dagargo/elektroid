@@ -27,16 +27,14 @@
 #include <glib/gi18n.h>
 #include <glib/gprintf.h>
 #include <getopt.h>
-#include "backend.h"
-#include "connector.h"
+#include "regconn.h"
+#include "regma.h"
 #include "browser.h"
 #include "editor.h"
 #include "tasks.h"
 #include "sample.h"
-#include "utils.h"
 #include "local.h"
 #include "preferences.h"
-#include "menu_action.h"
 #include "progress.h"
 
 #define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : backend_get_path_type (&backend))
@@ -3106,10 +3104,16 @@ main (int argc, char *argv[])
     }
   editor.preferences = &preferences;
 
+  regconn_fill ();
+  regma_fill ();
+
   ret = elektroid_run (argc, argv);
 
   preferences_save (&preferences);
   preferences_free (&preferences);
+
+  regconn_clean ();
+  regma_clean ();
 
   return ret;
 }

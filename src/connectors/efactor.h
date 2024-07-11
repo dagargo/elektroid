@@ -21,7 +21,7 @@
 #ifndef EFACTOR_H
 #define EFACTOR_H
 
-#include "utils.h"
+#include "connector.h"
 
 extern const struct connector CONNECTOR_EFACTOR;
 

@@ -14,7 +14,7 @@ endif
 
 AM_CPPFLAGS = -Wall -DTEST_DATA_DIR='"$(srcdir)/res"' -DDATADIR='"../res"'
 
-check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample
+check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample tests_connector
 
 tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip zlib $(BE_LIBS)
 
@@ -37,6 +37,8 @@ tests_common_SOURCES = \
         ../src/utils.h \
 	../src/backend.c \
         ../src/backend.h \
+	../src/connector.c \
+        ../src/connector.h \
 	$(BE_SOURCES) \
         ../src/connectors/common.c \
 	../src/connectors/common.h \
@@ -54,6 +56,8 @@ tests_microfreak_SOURCES = \
         ../src/utils.h \
 	../src/backend.c \
         ../src/backend.h \
+	../src/connector.c \
+        ../src/connector.h \
 	$(BE_SOURCES) \
         ../src/connectors/common.c \
 	../src/connectors/common.h \
@@ -73,6 +77,8 @@ tests_elektron_SOURCES = \
         ../src/utils.h \
 	../src/backend.c \
         ../src/backend.h \
+	../src/connector.c \
+        ../src/connector.h \
 	$(BE_SOURCES) \
         ../src/connectors/common.c \
 	../src/connectors/common.h \
@@ -104,6 +110,19 @@ tests_sample_SOURCES = \
 	../src/connectors/microfreak_sample.h \
 	../src/sample.c \
         ../src/sample.h
+
+tests_connector_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` -pthread
+tests_connector_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(MSYS2_LIBS)
+
+tests_connector_SOURCES = \
+        tests_connector.c \
+	../src/utils.c \
+        ../src/utils.h \
+	../src/backend.c \
+        ../src/backend.h \
+	../src/connector.c \
+        ../src/connector.h \
+	$(BE_SOURCES)
 
 TESTS = integration/test.sh integration/system_all_fs_tests.sh $(check_PROGRAMS)
 

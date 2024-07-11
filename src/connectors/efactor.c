@@ -564,7 +564,7 @@ efactor_handshake (struct backend *backend)
   data->type = type;
   data->lines = NULL;
 
-  backend_fill_fs_ops (backend, &FS_EFACTOR_OPERATIONS, NULL);
+  g_slist_fill (&backend->fs_ops, &FS_EFACTOR_OPERATIONS, NULL);
   backend->destroy_data = efactor_destroy_data;
   backend->data = data;
 

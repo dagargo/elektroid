@@ -20,7 +20,7 @@
 
 #include <glib.h>
 #include <zip.h>
-#include "backend.h"
+#include "connector.h"
 
 #ifndef PACKAGE_H
 #define PACKAGE_H

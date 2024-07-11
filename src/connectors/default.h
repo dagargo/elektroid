@@ -21,7 +21,7 @@
 #ifndef DEFAULT_H
 #define DEFAULT_H
 
-#include "utils.h"
+#include "connector.h"
 
 extern const struct fs_operations FS_PROGRAM_DEFAULT_OPERATIONS;
 

@@ -21,7 +21,7 @@
 #ifndef LOCAL_H
 #define LOCAL_H
 
-#include "backend.h"
+#include "connector.h"
 #include "sample.h"
 
 extern const struct fs_operations FS_LOCAL_GENERIC_OPERATIONS;

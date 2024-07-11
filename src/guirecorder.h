@@ -22,7 +22,7 @@
 #define GUIRECORDER_H
 
 #include <gtk/gtk.h>
-#include "utils.h"
+#include "connector.h"
 #include "audio.h"
 
 enum channels_list_store_columns

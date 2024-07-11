@@ -21,7 +21,7 @@
 #ifndef SDS_H
 #define SDS_H
 
-#include "utils.h"
+#include "connector.h"
 
 extern const struct connector CONNECTOR_SDS;
 

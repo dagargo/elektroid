@@ -506,7 +506,7 @@ microbrute_handshake (struct backend *backend)
   seq = g_malloc (sizeof (guint8));
   *seq = 0;
 
-  backend_fill_fs_ops (backend, &FS_MICROBRUTE_OPERATIONS, NULL);
+  g_slist_fill (&backend->fs_ops, &FS_MICROBRUTE_OPERATIONS, NULL);
   backend->destroy_data = backend_destroy_data;
   backend->data = seq;
 

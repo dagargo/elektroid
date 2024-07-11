@@ -997,11 +997,11 @@ summit_handshake (struct backend *backend)
       return -ENODEV;
     }
 
-  backend_fill_fs_ops (backend, &FS_SUMMIT_SINGLE_OPERATIONS,
-		       &FS_SUMMIT_MULTI_OPERATIONS,
-		       &FS_SUMMIT_WAVETABLE_OPERATIONS,
-		       &FS_SUMMIT_SCALE_OPERATIONS,
-		       &FS_SUMMIT_BULK_TUNING_OPERATIONS, NULL);
+  g_slist_fill (&backend->fs_ops, &FS_SUMMIT_SINGLE_OPERATIONS,
+		&FS_SUMMIT_MULTI_OPERATIONS,
+		&FS_SUMMIT_WAVETABLE_OPERATIONS,
+		&FS_SUMMIT_SCALE_OPERATIONS,
+		&FS_SUMMIT_BULK_TUNING_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "Novation Summit");
 
   return 0;

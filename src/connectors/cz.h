@@ -21,7 +21,7 @@
 #ifndef CZ_H
 #define CZ_H
 
-#include "utils.h"
+#include "connector.h"
 
 extern const struct connector CONNECTOR_CZ;
 

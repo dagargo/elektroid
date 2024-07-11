@@ -21,7 +21,7 @@
 #ifndef ELEKTRON_H
 #define ELEKTRON_H
 
-#include "utils.h"
+#include "connector.h"
 
 enum elektron_fs
 {

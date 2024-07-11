@@ -50,12 +50,17 @@
 
 #define BE_SYSTEM_ID "SYSTEM_ID"
 
+extern GSList *connectors;
+extern struct connector *system_connector;
+
 struct backend_storage_stats
 {
   gchar name[LABEL_MAX];
   guint64 bsize;
   guint64 bfree;
 };
+
+struct backend;
 
 typedef void (*t_destroy_data) (struct backend *);
 
@@ -77,6 +82,28 @@ enum backend_type
   BE_TYPE_SYSTEM,
   BE_TYPE_MIDI
 };
+
+enum sysex_transfer_status
+{
+  WAITING,
+  SENDING,
+  RECEIVING,
+  FINISHED
+};
+
+struct sysex_transfer
+{
+  gboolean active;
+  GMutex mutex;
+  enum sysex_transfer_status status;
+  gint timeout;			//Measured in ms. -1 is infinite.
+  gint time;
+  gboolean batch;
+  GByteArray *raw;
+  gint err;
+};
+
+typedef gint (*t_sysex_transfer) (struct backend *, struct sysex_transfer *);
 
 struct backend
 {
@@ -114,7 +141,7 @@ struct backend_device
   gchar id[LABEL_MAX];
 };
 
-gint backend_init (struct backend *, const gchar *);
+gint backend_init (struct backend *, struct backend_device *);
 
 void backend_destroy (struct backend *);
 

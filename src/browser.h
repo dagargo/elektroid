@@ -22,7 +22,7 @@
 #include "utils.h"
 #include "notifier.h"
 #include "preferences.h"
-#include "backend.h"
+#include "connector.h"
 
 #ifndef BROWSER_H
 #define BROWSER_H

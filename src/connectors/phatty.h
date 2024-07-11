@@ -21,7 +21,7 @@
 #ifndef PHATTY_H
 #define PHATTY_H
 
-#include "utils.h"
+#include "connector.h"
 
 extern const struct connector CONNECTOR_PHATTY;
 

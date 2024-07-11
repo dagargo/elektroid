@@ -18,7 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "backend.h"
+#include "connector.h"
 #include "sample.h"
 
 #define DEFAULT_MAX_NAME_LEN 32

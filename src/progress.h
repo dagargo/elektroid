@@ -19,7 +19,7 @@
  */
 
 #include <gtk/gtk.h>
-#include "utils.h"
+#include "connector.h"
 
 #ifndef PROGRESS_H
 #define PROGRESS_H

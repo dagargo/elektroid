@@ -203,55 +203,6 @@ free_msg (gpointer msg)
   g_byte_array_free ((GByteArray *) msg, TRUE);
 }
 
-gchar *
-get_filename (guint32 fs_options, struct item *item)
-{
-  if (fs_options & FS_OPTION_ID_AS_FILENAME && item->type == ELEKTROID_FILE)
-    {
-      gchar *dir = g_path_get_dirname (item->name);
-      gboolean no_dir = strcmp (dir, ".") == 0;
-      gchar *id = g_malloc (LABEL_MAX);
-      if (no_dir)
-	{
-	  snprintf (id, LABEL_MAX, "%d", item->id);
-	}
-      else
-	{
-	  // If FS_OPTION_ID_AS_FILENAME is used, then the path separator is always '/'.
-	  snprintf (id, LABEL_MAX, "%s/%d", dir, item->id);
-	}
-      g_free (dir);
-      return id;
-    }
-  return strdup (item->name);
-}
-
-void
-item_iterator_init (struct item_iterator *iter, const gchar *dir, void *data,
-		    iterator_next next, iterator_free free)
-{
-  iter->dir = strdup (dir);
-  iter->data = data;
-  iter->next = next;
-  iter->free = free;
-}
-
-gint
-item_iterator_next (struct item_iterator *iter)
-{
-  return iter->next (iter);
-}
-
-void
-item_iterator_free (struct item_iterator *iter)
-{
-  g_free (iter->dir);
-  if (iter->free)
-    {
-      iter->free (iter->data);
-    }
-}
-
 gint
 file_load (const char *path, struct idata *idata, struct job_control *control)
 {
@@ -426,18 +377,6 @@ file_matches_extensions (const gchar *name, const GSList *extensions)
   return FALSE;
 }
 
-gboolean
-item_iterator_is_dir_or_matches_extensions (struct item_iterator *iter,
-					    const GSList *extensions)
-{
-  if (iter->item.type == ELEKTROID_DIR)
-    {
-      return TRUE;
-    }
-
-  return file_matches_extensions (iter->item.name, extensions);
-}
-
 static inline const gchar *
 path_get_separator (enum path_type type)
 {
@@ -526,6 +465,21 @@ path_filename_to_uri (enum path_type type, gchar *filename)
   gchar *escaped_uri = g_uri_escape_string (uri, ":/", FALSE);
   g_free (uri);
   return escaped_uri;
+}
+
+void
+g_slist_fill (GSList **list, ...)
+{
+  gpointer v;
+  va_list argptr;
+
+  *list = NULL;
+  va_start (argptr, list);
+  while ((v = va_arg (argptr, gpointer)))
+    {
+      *list = g_slist_append (*list, v);
+    }
+  va_end (argptr);
 }
 
 void

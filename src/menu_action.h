@@ -45,6 +45,8 @@ struct ma_data
   gboolean separator;		//This does not need to be initialized as it's used internally.
 };
 
+extern GSList *menu_actions;
+
 typedef struct menu_action *(*t_menu_action_initializer) (struct backend *,
 							  GtkBuilder *,
 							  GtkWindow *);
@@ -52,5 +54,9 @@ typedef struct menu_action *(*t_menu_action_initializer) (struct backend *,
 void ma_clear_device_menu_actions (GtkWidget *);
 
 void ma_set_device_menu_actions (struct ma_data *, GtkWindow *);
+
+struct menu_action *menu_action_separator (struct backend *backend,
+					   GtkBuilder * builder,
+					   GtkWindow * parent);
 
 #endif

@@ -686,34 +686,33 @@ system_get_storage_stats (struct backend *backend, guint8 type,
 }
 #endif
 
-gint
-system_init_backend (struct backend *backend, const gchar *id)
+static gint
+system_handshake (struct backend *backend)
 {
-  if (strcmp (id, BE_SYSTEM_ID))
-    {
-      return -ENODEV;
-    }
-
-  backend->type = BE_TYPE_SYSTEM;
-  backend_fill_fs_ops (backend, &FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS,
-		       &FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS,
-		       &FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS,
-		       &FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS,
-		       &FS_SYSTEM_SAMPLES_441_24_STEREO_OPERATIONS,
-		       &FS_SYSTEM_SAMPLES_441_24_MONO_OPERATIONS,
-		       &FS_SYSTEM_SAMPLES_441_8_STEREO_OPERATIONS,
-		       &FS_SYSTEM_SAMPLES_441_8_MONO_OPERATIONS,
-		       &FS_SYSTEM_SAMPLES_32_16_MONO_OPERATIONS, NULL, NULL);
+  g_slist_fill (&backend->fs_ops, &FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS,
+		&FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS,
+		&FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS,
+		&FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS,
+		&FS_SYSTEM_SAMPLES_441_24_STEREO_OPERATIONS,
+		&FS_SYSTEM_SAMPLES_441_24_MONO_OPERATIONS,
+		&FS_SYSTEM_SAMPLES_441_8_STEREO_OPERATIONS,
+		&FS_SYSTEM_SAMPLES_441_8_MONO_OPERATIONS,
+		&FS_SYSTEM_SAMPLES_32_16_MONO_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "%s", _("System"));
-  *backend->version = 0;
-  *backend->description = 0;
-  backend->conn_name = "system";
-  backend->destroy_data = NULL;
-  backend->upgrade_os = NULL;
+
+  backend->get_storage_stats =
 #if defined (__linux__)
-  backend->get_storage_stats = system_get_storage_stats;
+    system_get_storage_stats;
 #else
-  backend->get_storage_stats = NULL;
+    NULL;
 #endif
+
   return 0;
 }
+
+const struct connector CONNECTOR_SYSTEM = {
+  .handshake = system_handshake,
+  .name = "system",
+  .standard = FALSE,
+  .regex = NULL
+};

@@ -23,22 +23,8 @@
 #include "local.h"
 #include "sample.h"
 
-#include "connectors/system.h"
-#include "connectors/elektron.h"
-#include "connectors/microbrute.h"
-#include "connectors/microfreak.h"
-#include "connectors/cz.h"
-#include "connectors/sds.h"
-#include "connectors/efactor.h"
-#include "connectors/phatty.h"
-#include "connectors/summit.h"
-#include "connectors/default.h"
-
-static const struct connector *CONNECTORS[] = {
-  &CONNECTOR_ELEKTRON, &CONNECTOR_MICROBRUTE, &CONNECTOR_MICROFREAK,
-  &CONNECTOR_PHATTY, &CONNECTOR_SUMMIT, &CONNECTOR_CZ, &CONNECTOR_SDS,
-  &CONNECTOR_EFACTOR, &CONNECTOR_DEFAULT, NULL
-};
+struct connector *system_connector = NULL;
+GSList *connectors = NULL;
 
 // When sending a batch of SysEx messages we want the trasfer status to be controlled outside this function.
 // This is what the update parameter is for.
@@ -318,7 +304,7 @@ backend_send_rpn (struct backend *backend, guint8 channel,
 }
 
 gint
-backend_init (struct backend *backend, const gchar *id)
+backend_init_midi (struct backend *backend, const gchar *id)
 {
   debug_print (1, "Initializing backend (%s) to '%s'...\n",
 	       backend_name (), id);
@@ -671,21 +657,6 @@ backend_get_devices ()
   return devices;
 }
 
-void
-backend_fill_fs_ops (struct backend *backend, ...)
-{
-  gpointer v;
-  va_list argptr;
-
-  backend->fs_ops = NULL;
-  va_start (argptr, backend);
-  while ((v = va_arg (argptr, gpointer)))
-    {
-      backend->fs_ops = g_slist_append (backend->fs_ops, v);
-    }
-  va_end (argptr);
-}
-
 // A handshake function might return these values:
 // 0, the device matches the connector.
 // -ENODEV, the device does not match the connector but we can continue with the next connector.
@@ -700,44 +671,46 @@ backend_init_connector (struct backend *backend,
   gint err;
   GSList *list = NULL, *iterator;
   gboolean active = TRUE;
-  const struct connector **connector;
+  GSList *c;
 
-  if (device->type == BE_TYPE_SYSTEM &&
-      !system_init_backend (backend, device->id))
+  if (device->type == BE_TYPE_SYSTEM)
     {
-      return 0;
+      backend->conn_name = system_connector->name;
+      backend->type = BE_TYPE_SYSTEM;
+      return system_connector->handshake (backend);
     }
 
-  err = backend_init (backend, device->id);
+  err = backend_init_midi (backend, device->id);
   if (err)
     {
       return err;
     }
 
-  connector = CONNECTORS;
-  while (*connector)
+  c = connectors;
+  while (c)
     {
-      if ((*connector)->regex)
+      struct connector *connector = c->data;
+      if (connector->regex)
 	{
-	  GRegex *regex = g_regex_new ((*connector)->regex, G_REGEX_CASELESS,
+	  GRegex *regex = g_regex_new (connector->regex, G_REGEX_CASELESS,
 				       0, NULL);
 	  if (g_regex_match (regex, device->name, 0, NULL))
 	    {
 	      debug_print (1, "Connector %s matches the device\n",
-			   (*connector)->name);
-	      list = g_slist_prepend (list, (void *) *connector);
+			   connector->name);
+	      list = g_slist_prepend (list, (void *) connector);
 	    }
 	  else
 	    {
-	      list = g_slist_append (list, (void *) *connector);
+	      list = g_slist_append (list, (void *) connector);
 	    }
 	  g_regex_unref (regex);
 	}
       else
 	{
-	  list = g_slist_append (list, (void *) *connector);
+	  list = g_slist_append (list, (void *) connector);
 	}
-      connector++;
+      c = c->next;
     }
 
   if (!conn_name)

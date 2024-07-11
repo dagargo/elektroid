@@ -21,7 +21,7 @@
 #ifndef MICROFREAK_H
 #define MICROFREAK_H
 
-#include "utils.h"
+#include "connector.h"
 #include "microfreak_sample.h"
 
 #define MICROFREAK_PRESET_HEADER_MSG_LEN 0x23
