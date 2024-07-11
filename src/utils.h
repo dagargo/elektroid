@@ -317,7 +317,7 @@ gint file_save_data (const gchar * path, const guint8 * data, ssize_t len);
 
 gchar *get_human_size (gint64, gboolean);
 
-void set_job_control_progress (struct job_control *, gdouble);
+void job_control_set_progress (struct job_control *, gdouble);
 
 void set_sample_progress_no_sync (struct job_control *, gdouble, gpointer);
 

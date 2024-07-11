@@ -437,7 +437,7 @@ sds_download_try (struct backend *backend, const gchar *path,
   g_mutex_unlock (&control->mutex);
   control->parts = 1;
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   debug_print (1, "Receiving dump data...\n");
 
@@ -555,7 +555,7 @@ sds_download_try (struct backend *backend, const gchar *path,
 	  total_words++;
 	}
 
-      set_job_control_progress (control, rx_packets / (double) packets);
+      job_control_set_progress (control, rx_packets / (double) packets);
 
       g_mutex_lock (&control->mutex);
       active = control->active;
@@ -583,7 +583,7 @@ end:
   if (active && !err && rx_packets == packets)
     {
       debug_print (1, "%d frames received\n", total_words);
-      set_job_control_progress (control, 1.0);
+      job_control_set_progress (control, 1.0);
       idata_init (sample, output, NULL, sample_info);
     }
   else
@@ -779,7 +779,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
 
   control->parts = 1;
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   if (common_slot_get_id_name_from_path (path, &id, &name))
     {
@@ -893,7 +893,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
 	  goto end;
 	}
 
-      set_job_control_progress (control, packet / (gdouble) packets);
+      job_control_set_progress (control, packet / (gdouble) packets);
       g_mutex_lock (&control->mutex);
       active = control->active;
       g_mutex_unlock (&control->mutex);
@@ -915,7 +915,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
 end:
   if (active && packet == packets)
     {
-      set_job_control_progress (control, 1.0);
+      job_control_set_progress (control, 1.0);
     }
   else
     {

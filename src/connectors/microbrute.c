@@ -308,7 +308,7 @@ microbrute_download (struct backend *backend, const gchar *src_path,
 
   control->parts = 1;
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   data = g_byte_array_new ();
   err = microbrute_download_seq_data (backend, seqnum, 0, data);
@@ -317,7 +317,7 @@ microbrute_download (struct backend *backend, const gchar *src_path,
       goto err;
     }
 
-  set_job_control_progress (control, 0.5);
+  job_control_set_progress (control, 0.5);
 
   err = microbrute_download_seq_data (backend, seqnum, 0x20, data);
   if (err)
@@ -325,7 +325,7 @@ microbrute_download (struct backend *backend, const gchar *src_path,
       goto err;
     }
 
-  set_job_control_progress (control, 1.0);
+  job_control_set_progress (control, 1.0);
   idata_init (sequence, data, NULL, NULL);
   return 0;
 
@@ -447,7 +447,7 @@ microbrute_upload (struct backend *backend, const gchar *path,
 
   control->parts = 1;
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   steps = microbrute_send_seq_msg (backend, seqnum, 0, &token, &pos,
 				   input->len);
@@ -457,7 +457,7 @@ microbrute_upload (struct backend *backend, const gchar *path,
     }
   else if (pos < input->len)
     {
-      set_job_control_progress (control, 0.5);
+      job_control_set_progress (control, 0.5);
       steps = microbrute_send_seq_msg (backend, seqnum, 0x20, &token, &pos,
 				       input->len);
       if (steps < 0)
@@ -466,7 +466,7 @@ microbrute_upload (struct backend *backend, const gchar *path,
 	}
     }
 
-  set_job_control_progress (control, 1.0);
+  job_control_set_progress (control, 1.0);
 
 end:
   g_mutex_unlock (&backend->mutex);

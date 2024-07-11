@@ -520,7 +520,7 @@ package_receive_pkg_resources (struct package *pkg,
   debug_print (1, "Getting metadata from %s...\n", metadata_path);
   control->parts = 2 + packaget_get_pkg_sample_slots (backend);	// main, metadata and sample slots.
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   ret = download_data (backend, metadata_path, &metadata_file, control);
   if (ret)
@@ -585,7 +585,7 @@ package_receive_pkg_resources (struct package *pkg,
     }
 
   control->parts = 2 + elements;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
   for (i = 0; i < elements; i++, control->part++)
     {
       if (!json_reader_read_element (reader, i))
@@ -840,7 +840,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
     {
       control->parts = 1;	// Only payload and it's done.
       control->part = 0;
-      set_job_control_progress (control, 1.0);
+      job_control_set_progress (control, 1.0);
       goto cleanup_reader;
     }
 

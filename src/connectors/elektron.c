@@ -1374,7 +1374,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
       free_msg (rx_msg);
       i++;
 
-      set_job_control_progress (control, transferred / (double) input->len);
+      job_control_set_progress (control, transferred / (double) input->len);
       g_mutex_lock (&control->mutex);
       active = control->active;
       g_mutex_unlock (&control->mutex);
@@ -1563,7 +1563,7 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 
       free_msg (rx_msg);
 
-      set_job_control_progress (control, next_block_start / (double) frames);
+      job_control_set_progress (control, next_block_start / (double) frames);
       g_mutex_lock (&control->mutex);
       active = control->active;
       g_mutex_unlock (&control->mutex);
@@ -2523,7 +2523,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
 
       if (control)
 	{
-	  set_job_control_progress (control, status / 1000.0);
+	  job_control_set_progress (control, status / 1000.0);
 	  g_mutex_lock (&control->mutex);
 	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
@@ -2536,7 +2536,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
     {
       if (control)
 	{
-	  set_job_control_progress (control, 1.0);
+	  job_control_set_progress (control, 1.0);
 	}
       idata_init (data, content, NULL, NULL);
     }
@@ -2888,7 +2888,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
 	     total, offset);
 	}
 
-      set_job_control_progress (control, offset / (gdouble) array->len);
+      job_control_set_progress (control, offset / (gdouble) array->len);
       g_mutex_lock (&control->mutex);
       active = control->active;
       g_mutex_unlock (&control->mutex);

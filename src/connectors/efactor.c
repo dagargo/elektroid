@@ -231,7 +231,7 @@ efactor_download (struct backend *backend, const gchar *src_path,
 
   control->parts = 1;
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   if (!data->lines)
     {
@@ -264,7 +264,7 @@ efactor_download (struct backend *backend, const gchar *src_path,
     }
   g_byte_array_append (output, (guint8 *) "\0\xf7", 2);
 
-  set_job_control_progress (control, 1.0);
+  job_control_set_progress (control, 1.0);
   idata_init (preset, output, NULL, NULL);
 
   sleep (1);

@@ -180,7 +180,7 @@ common_data_tx (struct backend *backend, GByteArray *msg,
 
   control->parts = 1;
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   transfer.raw = msg;
   err = backend_tx_sysex (backend, &transfer);
@@ -194,7 +194,7 @@ common_data_tx (struct backend *backend, GByteArray *msg,
   g_mutex_unlock (&control->mutex);
   if (active)
     {
-      set_job_control_progress (control, 1.0);
+      job_control_set_progress (control, 1.0);
     }
   else
     {
@@ -213,7 +213,7 @@ common_data_tx_and_rx_part (struct backend *backend, GByteArray *tx_msg,
   gint err = 0;
   gboolean active;
 
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   *rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!*rx_msg)
@@ -227,7 +227,7 @@ common_data_tx_and_rx_part (struct backend *backend, GByteArray *tx_msg,
   g_mutex_unlock (&control->mutex);
   if (active)
     {
-      set_job_control_progress (control, 1.0);
+      job_control_set_progress (control, 1.0);
     }
   else
     {

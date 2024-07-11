@@ -381,7 +381,7 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
   output = g_byte_array_new ();
   control->parts = 2 + MICROFREAK_PRESET_PARTS;	//Worst case
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   tx_msg = microfreak_get_preset_op_msg (backend, 0x19, id, 0);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
@@ -409,7 +409,7 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
     {
       control->parts = 1;
       control->part = 0;
-      set_job_control_progress (control, 1.0);
+      job_control_set_progress (control, 1.0);
       goto end;
     }
 
@@ -509,7 +509,7 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
 
   control->parts = 3 + mfp.parts;
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   mfp.header[0] = COMMON_GET_MIDI_BANK (id);
   mfp.header[1] = COMMON_GET_MIDI_PRESET (id);
@@ -952,7 +952,7 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
   batches += (input->len % MICROFREAK_SAMPLE_BATCH_SIZE) ? 1 : 0;
   control->parts = 5 + batches * (2 + MICROFREAK_SAMPLE_BATCH_PACKETS);
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   tx_msg = microfreak_get_wave_op_msg (backend, 0x5d, id, 0, 0);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
@@ -1440,7 +1440,7 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
   control->parts = (MICROFREAK_SAMPLE_BATCH_PACKETS + 1) *
     MICROFREAK_WAVETABLE_PARTS;
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   err = 0;
   for (guint8 part = 0; part < MICROFREAK_WAVETABLE_PARTS && !err; part++)
@@ -1673,7 +1673,7 @@ microfreak_wavetable_upload_id_name (struct backend *backend,
 
   control->parts = 1 + MICROFREAK_WAVETABLE_PARTS;
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   err = microfreak_wavetable_set_entry (backend, id, name, 0);
   if (err)
@@ -1682,7 +1682,7 @@ microfreak_wavetable_upload_id_name (struct backend *backend,
     }
 
   control->part++;
-  set_job_control_progress (control, 1.0);
+  job_control_set_progress (control, 1.0);
 
   for (guint8 part = 0; part < MICROFREAK_WAVETABLE_PARTS && !err; part++)
     {
@@ -1698,7 +1698,7 @@ microfreak_wavetable_upload_id_name (struct backend *backend,
 	}
 
       err = microfreak_wavetable_upload_part (backend, wavetable, id, part);
-      set_job_control_progress (control, 1.0);
+      job_control_set_progress (control, 1.0);
       control->part++;
     }
 

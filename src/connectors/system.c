@@ -43,13 +43,13 @@ system_download (struct backend *backend, const gchar *path,
 
   control->parts = 1;
   control->part = 0;
-  set_job_control_progress (control, 0.0);
+  job_control_set_progress (control, 0.0);
 
   err = file_load (path, idata, control);
 
   if (!err)
     {
-      set_job_control_progress (control, 1.0);
+      job_control_set_progress (control, 1.0);
     }
 
   return err;

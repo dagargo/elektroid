@@ -1302,7 +1302,7 @@ elektroid_run_next (gpointer data)
       tasks.transfer.control.callback = elektroid_update_progress;
       tasks.transfer.control.parts = 1000;	//Any reasonable high number is enough to make the progress monotonic.
       tasks.transfer.control.part = 0;
-      set_job_control_progress (&tasks.transfer.control, 0.0);
+      job_control_set_progress (&tasks.transfer.control, 0.0);
       tasks.transfer.src = src;
       tasks.transfer.dst = dst;
       tasks.transfer.fs_ops = ops;
