@@ -283,8 +283,6 @@ void remove_ext (gchar *);
 
 const gchar *filename_get_ext (const gchar *);
 
-gchar get_type_from_inventory_icon (const gchar *);
-
 gchar *get_user_dir (const gchar *);
 
 gchar *get_system_startup_path (const gchar *);
@@ -319,7 +317,7 @@ gchar *get_human_size (gint64, gboolean);
 
 void job_control_set_progress_value (struct job_control *control, gdouble p);
 
-void job_control_set_progress (struct job_control * control, gdouble);
+void job_control_set_progress (struct job_control *control, gdouble);
 
 //This function is declared here por testing purposes only.
 
