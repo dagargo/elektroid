@@ -19,7 +19,7 @@
  */
 
 #include <glib/gi18n.h>
-#include "menu_action.h"
+#include "maction.h"
 
 //This is a bit of a hack as the backend function are implemented inside
 //elektroid.c. However, as these actions depend on the backend initialization,
@@ -49,45 +49,42 @@ rx_sysex_callback (GtkWidget *object, gpointer data)
   elektroid_rx_sysex ();
 }
 
-struct menu_action *
-os_upgrade_init (struct backend *backend, GtkBuilder *builder,
-		 GtkWindow *parent)
+struct maction *
+backend_maction_os_upgrade_builder (struct maction_context *context)
 {
-  struct menu_action *ma = NULL;
-  if (backend->upgrade_os)
+  struct maction *ma = NULL;
+  if (context->backend->upgrade_os)
     {
-      ma = g_malloc (sizeof (struct menu_action));
-      ma->type = MENU_ACTION_ITEM;
+      ma = g_malloc (sizeof (struct maction));
+      ma->type = MACTION_BUTTON;
       ma->name = _("OS _Upgrade");
       ma->callback = G_CALLBACK (os_upgrade_callback);
     }
   return ma;
 }
 
-struct menu_action *
-rx_sysex_init (struct backend *backend, GtkBuilder *builder,
-	       GtkWindow *parent)
+struct maction *
+backend_maction_rx_sysex_builder (struct maction_context *context)
 {
-  struct menu_action *ma = NULL;
-  if (backend->type == BE_TYPE_MIDI)
+  struct maction *ma = NULL;
+  if (context->backend->type == BE_TYPE_MIDI)
     {
-      ma = g_malloc (sizeof (struct menu_action));
-      ma->type = MENU_ACTION_ITEM;
+      ma = g_malloc (sizeof (struct maction));
+      ma->type = MACTION_BUTTON;
       ma->name = _("_Receive SysEx");
       ma->callback = G_CALLBACK (rx_sysex_callback);
     }
   return ma;
 }
 
-struct menu_action *
-tx_sysex_init (struct backend *backend, GtkBuilder *builder,
-	       GtkWindow *parent)
+struct maction *
+backend_maction_tx_sysex_builder (struct maction_context *context)
 {
-  struct menu_action *ma = NULL;
-  if (backend->type == BE_TYPE_MIDI)
+  struct maction *ma = NULL;
+  if (context->backend->type == BE_TYPE_MIDI)
     {
-      ma = g_malloc (sizeof (struct menu_action));
-      ma->type = MENU_ACTION_ITEM;
+      ma = g_malloc (sizeof (struct maction));
+      ma->type = MACTION_BUTTON;
       ma->name = _("_Send SysEx");
       ma->callback = G_CALLBACK (tx_sysex_callback);
     }

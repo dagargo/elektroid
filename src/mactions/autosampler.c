@@ -20,7 +20,7 @@
 
 #include <glib/gi18n.h>
 #include <string.h>
-#include "menu_action.h"
+#include "maction.h"
 #include "editor.h"
 #include "audio.h"
 #include "sample.h"
@@ -269,21 +269,20 @@ autosampler_configure_gui (struct backend *backend, GtkBuilder *builder)
 		    &autosampler_guirecorder);
 }
 
-struct menu_action *
-autosampler_init (struct backend *backend, GtkBuilder *builder,
-		  GtkWindow *parent)
+struct maction *
+autosampler_maction_builder (struct maction_context *context)
 {
-  struct menu_action *ma = NULL;
+  struct maction *ma = NULL;
 
-  if (backend->type == BE_TYPE_MIDI)
+  if (context->backend->type == BE_TYPE_MIDI)
     {
-      ma = g_malloc (sizeof (struct menu_action));
-      ma->type = MENU_ACTION_ITEM;
+      ma = g_malloc (sizeof (struct maction));
+      ma->type = MACTION_BUTTON;
       ma->name = _("_Auto Sampler");
       ma->callback = G_CALLBACK (autosampler_callback);
     }
 
-  autosampler_configure_gui (backend, builder);
+  autosampler_configure_gui (context->backend, context->builder);
 
   return ma;
 }

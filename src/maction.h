@@ -1,5 +1,5 @@
 /*
- *   actions.h
+ *   maction.h
  *   Copyright (C) 2022 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
@@ -18,45 +18,44 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MENU_ACTION_H
-#define MENU_ACTION_H
+#ifndef MACTION_H
+#define MACTION_H
 
 #include <gtk/gtk.h>
 #include "backend.h"
 
-enum menu_action_type
+enum maction_type
 {
-  MENU_ACTION_ITEM,
-  MENU_ACTION_SEPARATOR
+  MACTION_BUTTON,
+  MACTION_SEPARATOR
 };
 
-struct menu_action
+struct maction
 {
-  enum menu_action_type type;
+  enum maction_type type;
   const gchar *name;
   GCallback callback;
 };
 
-struct ma_data
+struct maction_context
 {
   GtkWidget *box;
   struct backend *backend;
   GtkBuilder *builder;
+  GtkWindow *parent;
   gboolean separator;		//This does not need to be initialized as it's used internally.
 };
 
-extern GSList *menu_actions;
+extern GSList *mactions;
 
-typedef struct menu_action *(*t_menu_action_initializer) (struct backend *,
-							  GtkBuilder *,
-							  GtkWindow *);
+typedef struct maction *(*t_maction_builder) (struct maction_context *
+					      context);
 
-void ma_clear_device_menu_actions (GtkWidget *);
+void maction_menu_clear (struct maction_context *context);
 
-void ma_set_device_menu_actions (struct ma_data *, GtkWindow *);
+void maction_menu_setup (struct maction_context *context);
 
-struct menu_action *menu_action_separator (struct backend *backend,
-					   GtkBuilder * builder,
-					   GtkWindow * parent);
+struct maction *maction_separator_builder (struct maction_context *context);
+
 
 #endif

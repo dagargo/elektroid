@@ -71,8 +71,8 @@ audio.h audio.c $(elektroid_audio_sources) \
 browser.c browser.h notifier.c notifier.h \
 preferences.c preferences.h \
 regma.c regma.h\
-menu_action.c menu_action.h \
-menu_actions/backend.c menu_actions/microbrute.c menu_actions/autosampler.c\
+maction.c maction.h \
+mactions/backend.c mactions/microbrute.c mactions/autosampler.c\
 editor.c editor.h \
 tasks.c tasks.h \
 guirecorder.c guirecorder.h \

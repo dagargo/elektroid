@@ -135,7 +135,7 @@ extern struct browser remote_browser;
 
 static struct backend backend;
 static struct preferences preferences;
-static struct ma_data ma_data;
+static struct maction_context maction_context;
 
 static guint batch_id;
 
@@ -384,7 +384,7 @@ elektroid_refresh_devices (gboolean startup)
     {
       elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (&backend);
-      ma_clear_device_menu_actions (ma_data.box);
+      maction_menu_clear (&maction_context);
       browser_reset (&remote_browser);
     }
   elektroid_check_backend (startup);	//This triggers the actual devices refresh if there is no backend
@@ -1284,7 +1284,7 @@ elektroid_run_next (gpointer data)
 	  gtk_widget_set_sensitive (remote_box, FALSE);
 	  gtk_widget_set_sensitive (fs_combo, FALSE);
 	}
-      gtk_widget_set_sensitive (ma_data.box, FALSE);
+      gtk_widget_set_sensitive (maction_context.box, FALSE);
 
       gtk_list_store_set (tasks.list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, TASK_STATUS_RUNNING,
@@ -1339,7 +1339,7 @@ elektroid_run_next (gpointer data)
 	      g_idle_add (browser_load_dir_if_needed, &remote_browser);
 	    }
 	}
-      gtk_widget_set_sensitive (ma_data.box, TRUE);
+      gtk_widget_set_sensitive (maction_context.box, TRUE);
     }
 
   tasks_check_buttons (&tasks);
@@ -2215,7 +2215,7 @@ elektroid_set_device (GtkWidget *object, gpointer data)
   g_free (id);
   g_free (name);
 
-  ma_clear_device_menu_actions (ma_data.box);
+  maction_menu_clear (&maction_context);
 
   if (be_sys_device.type == BE_TYPE_SYSTEM)
     {
@@ -2249,7 +2249,7 @@ elektroid_set_device (GtkWidget *object, gpointer data)
   else
     {
       elektroid_fill_fs_combo_bg (NULL);
-      ma_set_device_menu_actions (&ma_data, GTK_WINDOW (main_window));
+      maction_menu_setup (&maction_context);
     }
 }
 
@@ -2786,7 +2786,7 @@ elektroid_run (int argc, char *argv[])
   name_dialog_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "name_dialog_entry"));
 
-  ma_data.box =
+  maction_context.box =
     GTK_WIDGET (gtk_builder_get_object (builder, "menu_actions_box"));
 
   main_popover =
@@ -2983,8 +2983,9 @@ elektroid_run (int argc, char *argv[])
 
   gtk_widget_set_sensitive (remote_box, FALSE);
 
-  ma_data.backend = &backend;
-  ma_data.builder = builder;
+  maction_context.backend = &backend;
+  maction_context.builder = builder;
+  maction_context.parent = GTK_WINDOW (main_window);
 
   elektroid_show_remote (preferences.show_remote);	//This triggers both browsers initializations.
 

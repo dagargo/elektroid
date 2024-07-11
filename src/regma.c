@@ -20,32 +20,29 @@
 
 #include "regma.h"
 
-struct menu_action *os_upgrade_init (struct backend *, GtkBuilder *,
-				     GtkWindow *);
-struct menu_action *rx_sysex_init (struct backend *, GtkBuilder *,
-				   GtkWindow *);
-struct menu_action *tx_sysex_init (struct backend *, GtkBuilder *,
-				   GtkWindow *);
-struct menu_action *microbrute_configuration_init (struct backend *,
-						   GtkBuilder *, GtkWindow *);
-struct menu_action *microbrute_calibration_init (struct backend *,
-						 GtkBuilder *, GtkWindow *);
-struct menu_action *autosampler_init (struct backend *, GtkBuilder *,
-				      GtkWindow *);
+struct maction *backend_maction_os_upgrade_builder (struct maction_context *);
+struct maction *backend_maction_rx_sysex_builder (struct maction_context *);
+struct maction *backend_maction_tx_sysex_builder (struct maction_context *);
+struct maction *microbrute_maction_conf_builder (struct maction_context *);
+struct maction *microbrute_maction_cal_builder (struct maction_context *);
+struct maction *autosampler_maction_builder (struct maction_context *);
 
 void
 regma_fill ()
 {
-  g_slist_fill (&menu_actions,
-		microbrute_configuration_init, microbrute_calibration_init,
-		menu_action_separator, rx_sysex_init, tx_sysex_init,
-		menu_action_separator, os_upgrade_init, menu_action_separator,
-		autosampler_init, menu_action_separator, NULL);
+  g_slist_fill (&mactions, microbrute_maction_conf_builder,
+		microbrute_maction_cal_builder,
+		maction_separator_builder,
+		backend_maction_rx_sysex_builder,
+		backend_maction_tx_sysex_builder,
+		maction_separator_builder,
+		backend_maction_os_upgrade_builder,
+		maction_separator_builder, autosampler_maction_builder, NULL);
 }
 
 void
 regma_clean ()
 {
-  g_slist_free (menu_actions);
-  menu_actions = NULL;
+  g_slist_free (mactions);
+  mactions = NULL;
 }

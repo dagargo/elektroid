@@ -19,7 +19,7 @@
  */
 
 #include <glib/gi18n.h>
-#include "menu_action.h"
+#include "maction.h"
 #include "connectors/microbrute.h"
 #include "utils.h"
 
@@ -375,21 +375,21 @@ microbrute_configure_gui (struct backend *backend, GtkWindow *parent)
   g_object_unref (G_OBJECT (builder));
 }
 
-struct menu_action *
-microbrute_configuration_init (struct backend *backend, GtkBuilder *builder,
-			       GtkWindow *parent)
+struct maction *
+microbrute_maction_conf_builder (struct maction_context *context)
 {
-  struct menu_action *ma;
+  struct maction *ma;
 
-  if (!backend->conn_name || strcmp (backend->conn_name, MICROBRUTE_NAME))
+  if (!context->backend->conn_name ||
+      strcmp (context->backend->conn_name, MICROBRUTE_NAME))
     {
       return NULL;
     }
 
-  microbrute_configure_gui (backend, parent);
+  microbrute_configure_gui (context->backend, context->parent);
 
-  ma = g_malloc (sizeof (struct menu_action));
-  ma->type = MENU_ACTION_ITEM;
+  ma = g_malloc (sizeof (struct maction));
+  ma->type = MACTION_BUTTON;
   ma->name = _("_Configuration");
   ma->callback = G_CALLBACK (microbrute_configure_callback);
 
@@ -403,21 +403,21 @@ microbrute_calibration_callback (GtkWidget *object, gpointer data)
 }
 
 
-struct menu_action *
-microbrute_calibration_init (struct backend *backend, GtkBuilder *builder,
-			     GtkWindow *parent)
+struct maction *
+microbrute_maction_cal_builder (struct maction_context *context)
 {
-  struct menu_action *ma;
+  struct maction *ma;
 
-  if (!backend->conn_name || strcmp (backend->conn_name, MICROBRUTE_NAME))
+  if (!context->backend->conn_name ||
+      strcmp (context->backend->conn_name, MICROBRUTE_NAME))
     {
       return NULL;
     }
 
-  microbrute_configure_gui (backend, parent);
+  microbrute_configure_gui (context->backend, context->parent);
 
-  ma = g_malloc (sizeof (struct menu_action));
-  ma->type = MENU_ACTION_ITEM;
+  ma = g_malloc (sizeof (struct maction));
+  ma->type = MACTION_BUTTON;
   ma->name = _("_Calibration");
   ma->callback = G_CALLBACK (microbrute_calibration_callback);
 

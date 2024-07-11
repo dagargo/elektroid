@@ -18,7 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "menu_action.h"
+#include "maction.h"
 
 void regma_fill ();
 
