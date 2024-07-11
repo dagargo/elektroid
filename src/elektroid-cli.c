@@ -92,7 +92,7 @@ cli_connect (const gchar *device_path)
     }
 
   device = g_array_index (devices, struct backend_device, id);
-  err = connector_init_backend (&backend, &device, connector, NULL);
+  err = backend_init_connector (&backend, &device, connector, NULL);
   g_array_free (devices, TRUE);
 
   if (!err && fs)

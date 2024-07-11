@@ -2176,7 +2176,7 @@ elektroid_set_device_runner (gpointer data)
 
   progress.sysex_transfer.active = TRUE;
 
-  progress.sysex_transfer.err = connector_init_backend (&backend,
+  progress.sysex_transfer.err = backend_init_connector (&backend,
 							be_sys_device, NULL,
 							&progress.sysex_transfer);
   elektroid_update_midi_status ();
@@ -2221,7 +2221,7 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 
   if (be_sys_device.type == BE_TYPE_SYSTEM)
     {
-      connector_init_backend (&backend, &be_sys_device, NULL, NULL);
+      backend_init_connector (&backend, &be_sys_device, NULL, NULL);
       elektroid_update_midi_status ();
       err = 0;
     }

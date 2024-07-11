@@ -18,14 +18,9 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "utils.h"
+#include "backend.h"
 
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
-
-gint connector_init_backend (struct backend *backend,
-			     struct backend_device *device,
-			     const gchar * name,
-			     struct sysex_transfer *sysex_transfer);
 
 #endif

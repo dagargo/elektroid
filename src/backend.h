@@ -183,4 +183,9 @@ const gchar *backend_name ();
 
 void backend_fill_fs_ops (struct backend *backend, ...);
 
+gint backend_init_connector (struct backend *backend,
+			     struct backend_device *device,
+			     const gchar * name,
+			     struct sysex_transfer *sysex_transfer);
+
 #endif
