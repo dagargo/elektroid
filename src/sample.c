@@ -207,9 +207,9 @@ static SF_VIRTUAL_IO FILE_IO = {
 };
 
 static gint
-sample_get_audio_file_data (struct idata *idata,
-			    struct g_byte_array_io_data *wave,
-			    struct job_control *control, guint32 format)
+sample_write_audio_file_data (struct idata *idata,
+			      struct g_byte_array_io_data *wave,
+			      struct job_control *control, guint32 format)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -307,15 +307,19 @@ sample_get_memfile_from_sample (struct idata *sample, struct idata *file,
 				struct job_control *control, guint32 format)
 {
   gint err;
-  struct g_byte_array_io_data data;
   GByteArray *content;
+  struct g_byte_array_io_data data;
+  struct sample_info *sample_info = sample->info;
+  guint frame_size = FRAME_SIZE (sample_info->channels,
+				 format & SF_FORMAT_SUBMASK);
 
-  content = g_byte_array_sized_new (sample->content->len * 4 + HEADERS_SPACE);
+  content = g_byte_array_sized_new (sample->content->len * frame_size +
+				    HEADERS_SPACE);
   idata_init (file, content, NULL, NULL);
   data.pos = 0;
   data.array = content;
 
-  err = sample_get_audio_file_data (sample, &data, control, format);
+  err = sample_write_audio_file_data (sample, &data, control, format);
   if (err)
     {
       idata_free (file);
