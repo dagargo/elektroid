@@ -90,12 +90,16 @@ audio_start_recording (struct audio *audio, guint options,
 		       audio_monitor_notifier monitor_notifier,
 		       void *monitor_data)
 {
-  struct sample_info *sample_info = audio->sample.info;
+  struct sample_info *sample_info;
+
   audio_stop_recording (audio);
   audio_reset_record_buffer (audio, options, monitor_notifier, monitor_data);
   audio_prepare (audio, AUDIO_STATUS_RECORDING);
+
+  sample_info = audio->sample.info;
   debug_print (1, "Starting recording (max %d frames)...\n",
 	       sample_info->frames);
+
   rtaudio_start_stream (audio->record_rtaudio);
 }
 
