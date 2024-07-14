@@ -391,6 +391,7 @@ microbrute_maction_conf_builder (struct maction_context *context)
   ma = g_malloc (sizeof (struct maction));
   ma->type = MACTION_BUTTON;
   ma->name = _("_Configuration");
+  ma->sensitive = TRUE;
   ma->callback = G_CALLBACK (microbrute_configure_callback);
 
   return ma;
@@ -419,6 +420,7 @@ microbrute_maction_cal_builder (struct maction_context *context)
   ma = g_malloc (sizeof (struct maction));
   ma->type = MACTION_BUTTON;
   ma->name = _("_Calibration");
+  ma->sensitive = TRUE;
   ma->callback = G_CALLBACK (microbrute_calibration_callback);
 
   return ma;

@@ -58,6 +58,7 @@ backend_maction_os_upgrade_builder (struct maction_context *context)
       ma = g_malloc (sizeof (struct maction));
       ma->type = MACTION_BUTTON;
       ma->name = _("OS _Upgrade");
+      ma->sensitive = TRUE;
       ma->callback = G_CALLBACK (os_upgrade_callback);
     }
   return ma;
@@ -72,6 +73,7 @@ backend_maction_rx_sysex_builder (struct maction_context *context)
       ma = g_malloc (sizeof (struct maction));
       ma->type = MACTION_BUTTON;
       ma->name = _("_Receive SysEx");
+      ma->sensitive = TRUE;
       ma->callback = G_CALLBACK (rx_sysex_callback);
     }
   return ma;
@@ -86,6 +88,7 @@ backend_maction_tx_sysex_builder (struct maction_context *context)
       ma = g_malloc (sizeof (struct maction));
       ma->type = MACTION_BUTTON;
       ma->name = _("_Send SysEx");
+      ma->sensitive = TRUE;
       ma->callback = G_CALLBACK (tx_sysex_callback);
     }
   return ma;

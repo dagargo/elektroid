@@ -34,6 +34,7 @@ struct maction
 {
   enum maction_type type;
   const gchar *name;
+  gboolean sensitive;
   GCallback callback;
 };
 

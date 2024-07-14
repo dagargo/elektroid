@@ -78,6 +78,7 @@ maction_add (gpointer data, gpointer user_data)
       context->separator = TRUE;
       GtkWidget *button = gtk_model_button_new ();
       g_object_set (button, "text", ma->name, NULL);
+      gtk_widget_set_sensitive (button, ma->sensitive);
       gtk_widget_show (button);
       gtk_container_add (GTK_CONTAINER (context->box), button);
       g_signal_connect (button, "clicked", ma->callback, context->backend);
