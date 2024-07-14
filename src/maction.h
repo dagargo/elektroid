@@ -23,6 +23,7 @@
 
 #include <gtk/gtk.h>
 #include "backend.h"
+#include "audio.h"
 
 enum maction_type
 {
@@ -42,6 +43,7 @@ struct maction_context
 {
   GtkWidget *box;
   struct backend *backend;
+  struct audio *audio;
   GtkBuilder *builder;
   GtkWindow *parent;
   gboolean separator;		//This does not need to be initialized as it's used internally.

@@ -2982,6 +2982,7 @@ elektroid_run (int argc, char *argv[])
   gtk_widget_set_sensitive (remote_box, FALSE);
 
   maction_context.backend = &backend;
+  maction_context.audio = &editor.audio;
   maction_context.builder = builder;
   maction_context.parent = GTK_WINDOW (main_window);
 

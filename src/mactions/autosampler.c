@@ -279,7 +279,7 @@ autosampler_maction_builder (struct maction_context *context)
       ma = g_malloc (sizeof (struct maction));
       ma->type = MACTION_BUTTON;
       ma->name = _("_Auto Sampler");
-      ma->sensitive = TRUE;
+      ma->sensitive = audio_check (context->audio);
       ma->callback = G_CALLBACK (autosampler_callback);
     }
 
