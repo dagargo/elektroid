@@ -1,13 +1,11 @@
-src/connector.c
 src/elektroid.c
 src/editor.c
 src/tasks.c
 src/browser.c
 src/audio_pa.c
-src/menu_actions/backend.c
-src/menu_actions/microbrute.c
-src/menu_actions/autosampler.c
-src/local.c
+src/mactions/backend.c
+src/mactions/microbrute.c
+src/mactions/autosampler.c
 src/progress.c
 src/guirecorder.c
 src/connectors/sds.c
