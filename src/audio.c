@@ -407,8 +407,8 @@ audio_delete_range (struct audio *audio, guint32 start, guint32 length)
       sample_info->loop_end = sample_info->frames - 1;
     }
 
-  audio->sel_start = 0;
-  audio->sel_end = 0;
+  audio->sel_start = -1;
+  audio->sel_end = -1;
 
   g_mutex_unlock (&audio->control.mutex);
 }
