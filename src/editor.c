@@ -1176,8 +1176,17 @@ static void
 editor_undo_clicked (GtkWidget *object, gpointer data)
 {
   struct editor *editor = data;
-  //As there is only one undo level, it's enough to reload the sample.
-  editor_start_load_thread (editor, editor->audio.path);
+
+  if (editor->audio.path)
+    {
+      //As there is only one undo level, it's enough to reload the sample.
+      editor_start_load_thread (editor, editor->audio.path);
+    }
+  else
+    {
+      //This is a recording
+      editor_reset (editor, NULL);
+    }
 }
 
 static gboolean
