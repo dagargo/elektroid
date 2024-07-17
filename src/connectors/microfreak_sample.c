@@ -95,51 +95,101 @@ microfreak_serialize_object (GByteArray *output, const gchar *version,
   return 0;
 }
 
+static gint
+microfreak_deserialize_read_value (guint8 **position, gint64 *value)
+{
+  gchar *p = (gchar *) * position;
+  gchar *endp;
+
+  *value = g_ascii_strtoll (p, &endp, 10);
+  if (p == endp)
+    {
+      return -EINVAL;
+    }
+
+  *position = (guint8 *) endp;
+  return 0;
+}
+
+static gint
+microfreak_deserialize_check_value (guint8 **position, gint64 test)
+{
+  gint64 value;
+  gint err = microfreak_deserialize_read_value (position, &value);
+  if (err || value != test)
+    {
+      return -EINVAL;
+    }
+  return 0;
+}
+
 gint
 microfreak_deserialize_object (GByteArray *input, const gchar *header,
 			       gchar *name, guint8 *p0, guint8 *p3,
 			       guint8 *p5, guint8 *data, gint64 *datalen)
 {
-  guint64 v;
+  gint64 v;
   gint err;
   guint len;
-  guint8 *p = input->data;
+  guint8 *p;
+  GByteArray *safe;
+
+  //As this relies on string readings, the input data needs to be NULL
+  //terminated to handle errors properly.
+
+  len = input->len + 1;
+  safe = g_byte_array_sized_new (len);
+  g_byte_array_append (safe, input->data, input->len);
+  g_byte_array_append (safe, (guint8 *) "\x00", 1);
+  p = safe->data;
 
   len = strlen (MICROFREAK_SERIALIZATION_TAG);
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
-  if (v != len)
+  err = microfreak_deserialize_check_value (&p, len);
+  if (err)
     {
-      return -EINVAL;
+      goto end;
     }
 
   p++;
   err = memcmp (p, (guint8 *) MICROFREAK_SERIALIZATION_TAG, len);
   if (err)
     {
-      return -EINVAL;
+      err = -EINVAL;
+      goto end;
     }
+
   p += len;
-
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
-  if (v != 10)
+  err = microfreak_deserialize_check_value (&p, 10);
+  if (err)
     {
-      return -EINVAL;
-    }
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
-  if (v != 0)
-    {
-      return -EINVAL;
-    }
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
-  if (v != 4)
-    {
-      return -EINVAL;
+      goto end;
     }
 
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
+  err = microfreak_deserialize_check_value (&p, 0);
+  if (err)
+    {
+      goto end;
+    }
+
+  err = microfreak_deserialize_check_value (&p, 4);
+  if (err)
+    {
+      goto end;
+    }
+
+  err = microfreak_deserialize_read_value (&p, &v);
+  if (err)
+    {
+      goto end;
+    }
+
   p += v + 1;
+  err = microfreak_deserialize_read_value (&p, &v);
+  if (err)
+    {
+      goto end;
+    }
 
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
   p++;
   memcpy (name, p, v);
   name[v] = 0;
@@ -147,60 +197,93 @@ microfreak_deserialize_object (GByteArray *input, const gchar *header,
   debug_print (2, "Deserializing object '%s'...\n", name);
 
   p += v;
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
+  err = microfreak_deserialize_read_value (&p, &v);
+  if (err)
+    {
+      goto end;
+    }
   *p0 = v;
 
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
-  if (v != 0)
+  err = microfreak_deserialize_check_value (&p, 0);
+  if (err)
     {
-      return -EINVAL;
+      goto end;
     }
 
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
-  if (v != 0)
+  err = microfreak_deserialize_check_value (&p, 0);
+  if (err)
     {
-      return -EINVAL;
+      goto end;
     }
 
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
-  if (v != 18)
+  err = microfreak_deserialize_check_value (&p, 18);
+  if (err)
     {
-      return -EINVAL;
+      goto end;
     }
 
   p++;
   len = strlen (MICROFREAK_ZEROS);
   if (memcmp (p, (guint8 *) MICROFREAK_ZEROS, len))
     {
-      return -EINVAL;
+      err = -EINVAL;
+      goto end;
     }
-  p += len + 1;
 
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
+  p += len + 1;
+  err = microfreak_deserialize_read_value (&p, &v);
+  if (err)
+    {
+      goto end;
+    }
   *p3 = v;
 
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
-  if (v != 0)
+  err = microfreak_deserialize_check_value (&p, 0);
+  if (err)
     {
-      return -EINVAL;
+      goto end;
     }
 
-  v = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
+  err = microfreak_deserialize_read_value (&p, &v);
+  if (err)
+    {
+      goto end;
+    }
   *p5 = v;
 
-  *datalen = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
+  err = microfreak_deserialize_read_value (&p, &v);
+  if (err)
+    {
+      goto end;
+    }
+  *datalen = v;
 
   for (guint i = 0; i < *datalen; i++, data++)
     {
-      *data = g_ascii_strtoll ((gchar *) p, (gchar **) & p, 10);
+      err = microfreak_deserialize_read_value (&p, &v);
+      if (err)
+	{
+	  goto end;
+	}
+      *data = v;
     }
 
+  //A byte 0x0d appears in wavetables and samples when exported from Arturia
+  //MIDI Control Center but not when downloading wavetables.
+  if (*p == 0x0d)
+    {
+      p++;
+    }
+
+  //A byte 0x0a is always present at the end.
   if (*p != 0x0a)
     {
-      return -EINVAL;
+      err = -EINVAL;
     }
 
-  return 0;
+end:
+  g_byte_array_free (safe, TRUE);
+  return err;
 }
 
 void
