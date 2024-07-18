@@ -1,28 +1,45 @@
 if ELEKTROID_CLI_ONLY
-res_DATA =
-desktop_DATA =
-metainfo_DATA =
-svgicon_DATA =
-microbrute_DATA =
+  res_DATA =
+  desktop_DATA =
+  metainfo_DATA =
+  svgicon_DATA =
+  microbrute_DATA =
+  ico_DATA =
 else
-res_DATA = gui.glade gui.css
-desktop_DATA = elektroid.desktop
-metainfo_DATA = elektroid.appdata.xml
-svgicon_DATA = elektroid.svg \
-	elektroid-symbolic.svg \
-	elektroid-wave-symbolic.svg \
-	elektroid-sequence-symbolic.svg \
-	elektroid-project-symbolic.svg \
-	elektroid-sound-symbolic.svg \
-	elektroid-folder-symbolic.svg \
-	elektroid-file-symbolic.svg
-microbrute_DATA = microbrute/gui.glade
+  res_DATA = gui.glade gui.css
+  svgicon_DATA = elektroid.svg \
+                 elektroid-symbolic.svg \
+                 elektroid-wave-symbolic.svg \
+                 elektroid-sequence-symbolic.svg \
+                 elektroid-project-symbolic.svg \
+                 elektroid-sound-symbolic.svg \
+                 elektroid-folder-symbolic.svg \
+                 elektroid-file-symbolic.svg
+  microbrute_DATA = microbrute/gui.glade
+
+  # System dependent resources
+
+if MINGW
+    ico_DATA = res/elektroid.ico
+else
+    ico_DATA =
+endif
+
+if OPENDESKTOP
+    desktop_DATA = elektroid.desktop
+    metainfo_DATA = elektroid.appdata.xml
+else
+    desktop_DATA =
+    metainfo_DATA =
+endif
+
 endif
 
 elektron_DATA = elektron/devices.json
 
 # Elektroid data dirs
 resdir = $(datadir)/elektroid
+icodir = $(datadir)/elektroid
 desktopdir = $(datadir)/applications
 metainfodir= $(datadir)/metainfo
 svgicondir = $(datarootdir)/icons/hicolor/scalable/apps
@@ -42,7 +59,7 @@ update-icon-cache:
 		echo "Updating Gtk icon cache."; \
 		$(gtk_update_icon_cache); \
 	else \
-		echo "*** Icon cache not updated.  After (un)install, run this:"; \
+		echo "*** Icon cache not updated. After (un)install, run this:"; \
 		echo "***   $(gtk_update_icon_cache)"; \
 	fi
 
@@ -52,4 +69,5 @@ EXTRA_DIST = \
         $(metainfo_DATA) \
         $(svgicon_DATA) \
         $(elektron_DATA) \
-        $(microbrute_DATA)
+        $(microbrute_DATA) \
+        $(ico_DATA)

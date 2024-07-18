@@ -21,19 +21,28 @@ AC_CANONICAL_HOST
 
 case "${host_os}" in
   linux*)
+    SYSTEM=opendesktop
     ;;
   *mingw*)
-    MINGW=yes
+    SYSTEM=mingw
+    RTMIDI=yes
+    RTAUDIO=yes
+    ;;
+  darwin*)
+    SYSTEM=darwin
     RTMIDI=yes
     RTAUDIO=yes
     ;;
   *)
+    SYSTEM=opendesktop
     RTMIDI=yes
     RTAUDIO=yes
     ;;
 esac
 
-AM_CONDITIONAL([MINGW], [test "${MINGW}" == yes])
+AM_CONDITIONAL([MINGW], [test "${SYSTEM}" == mingw])
+AM_CONDITIONAL([DARWIN], [test "${SYSTEM}" == darwin])
+AM_CONDITIONAL([OPENDESKTOP], [test "${SYSTEM}" == opendesktop])
 
 AM_CONDITIONAL([ELEKTROID_RTMIDI], [test "${RTMIDI}" == yes])
 AS_IF([test "${RTMIDI}" == yes], [AC_DEFINE([ELEKTROID_RTMIDI], [1], ["Use RtMidi"])])
