@@ -1694,17 +1694,18 @@ elektroid_download_task_runner (gpointer userdata)
 					 &tasks.transfer.control);
 
   g_mutex_lock (&tasks.transfer.control.mutex);
-  if (res && tasks.transfer.control.active)
+  if (res)
     {
-      error_print ("Error while downloading\n");
-      tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
+      if (tasks.transfer.control.active)
+	{
+	  error_print ("Error while downloading\n");
+	  tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
+	}
+      else
+	{
+	  tasks.transfer.status = TASK_STATUS_CANCELED;
+	}
       goto end_with_download_error;
-    }
-
-  if (!tasks.transfer.control.active)
-    {
-      tasks.transfer.status = TASK_STATUS_CANCELED;
-      goto end_canceled_transfer;
     }
 
   if (!dst_path)
@@ -1731,7 +1732,6 @@ elektroid_download_task_runner (gpointer userdata)
     }
   g_free (dst_path);
 
-end_canceled_transfer:
   idata_free (&idata);
 
 end_with_download_error:
