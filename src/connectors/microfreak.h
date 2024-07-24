@@ -27,7 +27,12 @@
 #define MICROFREAK_PRESET_HEADER_MSG_LEN 0x23
 #define MICROFREAK_PRESET_PARTS 146
 #define MICROFREAK_PRESET_PART_LEN 0x20
-#define MICROFREAK_SAMPLE_NAME_LEN 13
+#define MICROFREAK_SAMPLE_NAME_LEN 13	//Includes a NUL at the end
+#define MICROFREAK_SAMPLE_BLOCK_SIZE 4096
+#define MICROFREAK_SAMPLE_ITEM_MAX_TIME_S 24	// 375 blocks
+#define MICROFREAK_SAMPLE_TOTAL_MAX_TIME_MS 209920	// Closest value to 210 s being multiple of MICROFREAK_SAMPLE_BLOCK_SIZE (3280 blocks)
+#define MICROFREAK_SAMPLE_SIZE_PER_S (MICROFREAK_SAMPLERATE * MICROFREAK_SAMPLE_SIZE)	// at 32 kHz 16 bits
+#define MICROFREAK_SAMPLE_MEM_SIZE ((uint32_t)(MICROFREAK_SAMPLE_TOTAL_MAX_TIME_MS * MICROFREAK_SAMPLE_SIZE_PER_S / 1000))
 #define MICROFREAK_WAVE_BLK_SHRT 14
 #define MICROFREAK_WAVE_BLK_LAST_SHRT 4
 #define MICROFREAK_WAVE_BLK_SIZE (MICROFREAK_WAVE_BLK_SHRT * MICROFREAK_SAMPLE_SIZE)
@@ -41,10 +46,21 @@ struct microfreak_preset
   guint parts;
 };
 
+//Sample memory seems to start at 0x00281000. Addressing block size is MICROFREAK_SAMPLE_BLOCK_SIZE.
+//When an upload is performed, the MicroFreak tries to find a gap in the address space.
+//* If there is a big enough gap, it will be used; otherwise, the new sample is appended after the last used block.
+//* If there is no space for a sample, no error is thrown and the process runs. Sometimes, an error is thrown and -ENOMEM is returned.
+//This scheme may lead to fragmentation (the sum of the space in the gaps is enough for a sample but it does not fit at the end).
+//Arturia MIDI Control Cernter provides this option when defragmentation is detected but Elektroid does not.
+//This is totally independent of the slot used.
+//Samples larger than MICROFREAK_SAMPLE_ITEM_MAX_TIME_S are handled by this connector by truncating the size when loading the sample. See microfreak_sample_load.
+//If a sample does not fit, the MicroFreak returns an error which is handled by this connector with a -ENOMEM. See microfreak_sample_upload.
+//Theoretical sample limit space is MICROFREAK_SAMPLE_MEM_SIZE (0x00cd0000) or 3280 blocks of MICROFREAK_SAMPLE_BLOCK_SIZE or roughly 210 s.
+
 // The size of this structure is 28 bytes and matches MICROFREAK_WAVE_BLK_SIZE.
 struct microfreak_sample_header
 {
-  guint8 start[4];
+  guint32 address;		//Only used when reading the samples directory. Set to 0 when uploading.
   guint32 size;
   guint16 cksum;		//Values stored here do not seem to be important.
   gchar name[MICROFREAK_SAMPLE_NAME_LEN];
