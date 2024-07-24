@@ -27,19 +27,15 @@
 #define MICROFREAK_MAX_SAMPLES 128
 #define MICROFREAK_REST_TIME_US 5000
 #define MICROFREAK_REST_TIME_LONG_US 20000
-#define MICROFREAK_SAMPLE_TIME_S 210
-#define MICROFREAK_SAMPLE_SIZE_PER_S (MICROFREAK_SAMPLERATE * MICROFREAK_SAMPLE_SIZE)	// at 32 kHz 16 bits
-#define MICROFREAK_SAMPLE_MEM_SIZE (MICROFREAK_SAMPLE_TIME_S * MICROFREAK_SAMPLE_SIZE_PER_S)
-#define MICROFREAK_SAMPLE_BATCH_SIZE 4096	// 147 packets (146 * 28 + 8)
+#define MICROFREAK_SAMPLE_BATCH_SIZE MICROFREAK_SAMPLE_BLOCK_SIZE	// 147 packets (146 * 28 + 8)
 #define MICROFREAK_SAMPLE_BATCH_LEN (MICROFREAK_SAMPLE_BATCH_SIZE / MICROFREAK_SAMPLE_SIZE)
 #define MICROFREAK_SAMPLE_BATCH_PACKETS 147
 #define MICROFREAK_MAX_WAVETABLES 16
 #define MICROFREAK_WAVETABLE_PARTS 4
 #define MICROFREAK_WAVETABLE_FRAMES_PER_BATCH (MICROFREAK_SAMPLE_BATCH_SIZE / (MICROFREAK_WAVETABLE_CYCLES * MICROFREAK_SAMPLE_SIZE))
-#define MICROFREAK_SAMPLE_MAX_TIME_S 24
-#define MICROFREAK_SAMPLE_MAX_LEN (MICROFREAK_SAMPLERATE * MICROFREAK_SAMPLE_MAX_TIME_S)
-#define MICROFREAK_SAMPLE_MAX_SIZE (MICROFREAK_SAMPLE_MAX_LEN * MICROFREAK_SAMPLE_SIZE)
-#define MICROFREAK_SAMPLE_MAX_BATCHES (MICROFREAK_SAMPLE_MAX_SIZE / MICROFREAK_SAMPLE_BATCH_SIZE)
+#define MICROFREAK_SAMPLE_ITEM_MAX_LEN (MICROFREAK_SAMPLERATE * MICROFREAK_SAMPLE_ITEM_MAX_TIME_S)
+#define MICROFREAK_SAMPLE_ITEM_MAX_SIZE (MICROFREAK_SAMPLE_ITEM_MAX_LEN * MICROFREAK_SAMPLE_SIZE)
+#define MICROFREAK_SAMPLE_MAX_BATCHES (MICROFREAK_SAMPLE_ITEM_MAX_SIZE / MICROFREAK_SAMPLE_BATCH_SIZE)
 
 #define MICROFREAK_PRESET_HEADER "174"
 
@@ -794,7 +790,8 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
   rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
-      return -EIO;
+      err = -EIO;
+      goto end;
     }
   err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0);
   free_msg (rx_msg);
@@ -807,11 +804,13 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
   rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
-      return -EIO;
+      err = -EIO;
+      goto end;
     }
   err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x16, MICROFREAK_WAVE_MSG_SIZE);
   if (err)
     {
+      free_msg (rx_msg);
       goto end;
     }
 
@@ -822,9 +821,9 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = GINT32_FROM_LE (header.size);
   (data->next)++;
+  free_msg (rx_msg);
 
 end:
-  free_msg (rx_msg);
   usleep (MICROFREAK_REST_TIME_LONG_US);
   return err;
 }
@@ -914,7 +913,8 @@ microfreak_sample_clear (struct backend *backend, const gchar *path)
   return microfreak_sample_reset (backend, id, &header);
 }
 
-//This function does NOT provide the same value as Arturia MIDI Control Center. This does not seem to
+//This function provides the same value as Arturia MIDI Control Center most of the time.
+//Perhaps, the differences appear due to sample transformations like normalization or the like.
 
 static guint16
 microfreak_sample_get_cksum (GByteArray *input)
@@ -926,7 +926,7 @@ microfreak_sample_get_cksum (GByteArray *input)
     {
       cksum += *v;
     }
-  debug_print (2, "SUM: %0x\n", cksum);
+  debug_print (2, "sum: %0x\n", cksum);
 
   return cksum;
 }
@@ -1017,11 +1017,14 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
   err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x16, 1);
   if (!err)
     {
-      err = *MICROFREAK_GET_MSG_PAYLOAD (rx_msg) == 1 ? 0 : -EIO;
+      err = *MICROFREAK_GET_MSG_PAYLOAD (rx_msg) == 1 ? 0 : -ENOMEM;	// No space on the device for more samples
     }
   free_msg (rx_msg);
   if (err)
     {
+      tx_msg = g_byte_array_new ();	//This is an empty message
+      common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
+      free_msg (rx_msg);
       goto end;
     }
 
@@ -1048,8 +1051,8 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
       goto end;
     }
 
-  control->part++;
   job_control_set_progress (control, 1.0);
+  control->part++;
 
   usleep (MICROFREAK_REST_TIME_US);
 
@@ -1217,16 +1220,16 @@ static guint64
 microfreak_get_bfree_from_msg (GByteArray *rx_msg)
 {
   guint8 *payload, lsb, msb;
-  gfloat tused, tfree, used;
+  gfloat tused_ms, tfree_ms, used_ms;
 
   payload = MICROFREAK_GET_MSG_PAYLOAD (rx_msg);
   lsb = payload[6] | (payload[2] & 0x08 ? 0x80 : 0);
   msb = payload[7] | (payload[2] & 0x04 ? 0x80 : 0);
-  tused = (((msb << 8) | lsb) << 2) / 1000.0;
+  tused_ms = (((msb << 8) | lsb) << 2);
 
-  tfree = MICROFREAK_SAMPLE_TIME_S - tused;
-  used = tfree / (gdouble) MICROFREAK_SAMPLE_TIME_S;
-  return MICROFREAK_SAMPLE_MEM_SIZE * used;
+  tfree_ms = MICROFREAK_SAMPLE_TOTAL_MAX_TIME_MS - tused_ms;
+  used_ms = tfree_ms / MICROFREAK_SAMPLE_TOTAL_MAX_TIME_MS;
+  return MICROFREAK_SAMPLE_MEM_SIZE * used_ms;
 }
 
 static gint
@@ -1754,8 +1757,8 @@ microfreak_wavetable_upload_id_name (struct backend *backend,
       return err;
     }
 
-  control->part++;
   job_control_set_progress (control, 1.0);
+  control->part++;
 
   for (guint8 part = 0; part < MICROFREAK_WAVETABLE_PARTS && !err; part++)
     {
@@ -1878,8 +1881,13 @@ static gint
 microfreak_sample_load (const gchar *path, struct idata *sample,
 			struct job_control *control)
 {
-  return common_sample_load (path, sample, control, MICROFREAK_SAMPLERATE,
-			     1, SF_FORMAT_PCM_16);
+  gint err = common_sample_load (path, sample, control, MICROFREAK_SAMPLERATE,
+				 1, SF_FORMAT_PCM_16);
+  if (!err && sample->content->len > MICROFREAK_SAMPLE_ITEM_MAX_SIZE)
+    {
+      sample->content->len = MICROFREAK_SAMPLE_ITEM_MAX_SIZE;
+    }
+  return err;
 }
 
 static gint
