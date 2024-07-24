@@ -20,7 +20,7 @@ else
   # System dependent resources
 
 if MINGW
-    ico_DATA = res/elektroid.ico
+    ico_DATA = elektroid.ico
 else
     ico_DATA =
 endif
