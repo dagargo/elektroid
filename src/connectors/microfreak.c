@@ -931,6 +931,52 @@ microfreak_sample_get_cksum (GByteArray *input)
   return cksum;
 }
 
+static guint64
+microfreak_get_bfree_from_msg (GByteArray *rx_msg)
+{
+  guint8 *payload, lsb, msb;
+  gfloat tused_ms, tfree_ms, used_ms;
+
+  payload = MICROFREAK_GET_MSG_PAYLOAD (rx_msg);
+  lsb = payload[6] | (payload[2] & 0x08 ? 0x80 : 0);
+  msb = payload[7] | (payload[2] & 0x04 ? 0x80 : 0);
+  tused_ms = (((msb << 8) | lsb) << 2);
+
+  tfree_ms = MICROFREAK_SAMPLE_TOTAL_MAX_TIME_MS - tused_ms;
+  used_ms = tfree_ms / MICROFREAK_SAMPLE_TOTAL_MAX_TIME_MS;
+  return MICROFREAK_SAMPLE_MEM_SIZE * used_ms;
+}
+
+static gint
+microfreak_get_storage_stats (struct backend *backend, guint8 type,
+			      struct backend_storage_stats *statfs,
+			      const gchar *path)
+{
+  gint err = 0;
+  GByteArray *tx_msg, *rx_msg;
+
+  tx_msg = microfreak_get_msg (backend, 0x47, "\x0a", 1);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x48, 9))
+    {
+      err = -EIO;
+      goto err;
+    }
+
+  snprintf (statfs->name, LABEL_MAX, "%s", "sample");
+  statfs->bfree = microfreak_get_bfree_from_msg (rx_msg);
+  statfs->bsize = MICROFREAK_SAMPLE_MEM_SIZE;
+
+err:
+  free_msg (rx_msg);
+  usleep (MICROFREAK_REST_TIME_LONG_US);
+  return err;
+}
+
 static gint
 microfreak_sample_upload (struct backend *backend, const gchar *path,
 			  struct idata *sample, struct job_control *control)
@@ -938,6 +984,7 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
   gint err;
   guint id, batches;
   gchar *name, *sanitized;
+  struct backend_storage_stats statfs;
   struct microfreak_sample_header header;
   GByteArray *tx_msg, *rx_msg;
   GByteArray *input = sample->content;
@@ -966,10 +1013,17 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
       batches = MICROFREAK_SAMPLE_MAX_BATCHES;
     }
 
-  control->parts = 5 + batches * (2 + MICROFREAK_SAMPLE_BATCH_PACKETS);
+  control->parts = 6 + batches * (2 + MICROFREAK_SAMPLE_BATCH_PACKETS);
   control->parts += 2 + MICROFREAK_SAMPLE_BATCH_PACKETS;	//This is for the last unknown phase
   control->part = 0;
   job_control_set_progress (control, 0.0);
+
+  //This is called by Arturia MIDI Control Center before uploading a sample.
+  //Perhaps this does more than just retrieving the statistics.
+  microfreak_get_storage_stats (backend, 0, &statfs, NULL);
+
+  job_control_set_progress (control, 1.0);
+  control->part++;
 
   tx_msg = microfreak_get_wave_op_msg (backend, 0x5d, id, 0, 0);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
@@ -1212,52 +1266,6 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
 end:
   g_free (name);
   g_free (sanitized);
-  usleep (MICROFREAK_REST_TIME_LONG_US);
-  return err;
-}
-
-static guint64
-microfreak_get_bfree_from_msg (GByteArray *rx_msg)
-{
-  guint8 *payload, lsb, msb;
-  gfloat tused_ms, tfree_ms, used_ms;
-
-  payload = MICROFREAK_GET_MSG_PAYLOAD (rx_msg);
-  lsb = payload[6] | (payload[2] & 0x08 ? 0x80 : 0);
-  msb = payload[7] | (payload[2] & 0x04 ? 0x80 : 0);
-  tused_ms = (((msb << 8) | lsb) << 2);
-
-  tfree_ms = MICROFREAK_SAMPLE_TOTAL_MAX_TIME_MS - tused_ms;
-  used_ms = tfree_ms / MICROFREAK_SAMPLE_TOTAL_MAX_TIME_MS;
-  return MICROFREAK_SAMPLE_MEM_SIZE * used_ms;
-}
-
-static gint
-microfreak_get_storage_stats (struct backend *backend, guint8 type,
-			      struct backend_storage_stats *statfs,
-			      const gchar *path)
-{
-  gint err = 0;
-  GByteArray *tx_msg, *rx_msg;
-
-  tx_msg = microfreak_get_msg (backend, 0x47, "\x0a", 1);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-  if (!rx_msg)
-    {
-      return -EIO;
-    }
-  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x48, 9))
-    {
-      err = -EIO;
-      goto err;
-    }
-
-  snprintf (statfs->name, LABEL_MAX, "%s", "sample");
-  statfs->bfree = microfreak_get_bfree_from_msg (rx_msg);
-  statfs->bsize = MICROFREAK_SAMPLE_MEM_SIZE;
-
-err:
-  free_msg (rx_msg);
   usleep (MICROFREAK_REST_TIME_LONG_US);
   return err;
 }
