@@ -217,11 +217,9 @@ common_data_tx_and_rx_part (struct backend *backend, GByteArray *tx_msg,
       goto cleanup;
     }
 
-  if (job_control_get_active_lock (control))
-    {
-      job_control_set_progress (control, 1.0);
-    }
-  else
+  job_control_set_progress (control, 1.0);
+
+  if (!job_control_get_active_lock (control))
     {
       free_msg (*rx_msg);
       *rx_msg = NULL;

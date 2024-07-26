@@ -39,9 +39,9 @@
 
 #define MICROFREAK_PRESET_HEADER "174"
 
-#define MICROFREAK_GET_MSG_PAYLOAD_LEN(msg) (msg->data[7])
-#define MICROFREAK_GET_MSG_OP(msg) (msg->data[8])
-#define MICROFREAK_GET_MSG_PAYLOAD(msg) (&msg->data[9])
+#define MICROFREAK_GET_MSG_PAYLOAD_LEN(msg) ((msg)->data[7])
+#define MICROFREAK_GET_MSG_OP(msg) ((msg)->data[8])
+#define MICROFREAK_GET_MSG_PAYLOAD(msg) (&(msg)->data[9])
 #define MICROFREAK_GET_ID_FROM_HEADER(header) ((header[0] << 7) | header[1])
 #define MICROFREAK_GET_ID_IN_BANK_FROM_HEADER(header) (&header[8])	// Equals to header[1]
 #define MICROFREAK_GET_INIT_FROM_HEADER(header) (&header[3])
@@ -884,7 +884,7 @@ microfreak_sample_reset (struct backend *backend, guint id,
   err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
   free_msg (rx_msg);
 
-  usleep (MICROFREAK_REST_TIME_US);
+  usleep (MICROFREAK_REST_TIME_LONG_US);
 
   return err;
 }
@@ -977,6 +977,42 @@ err:
   return err;
 }
 
+//This function handles out of order packages.
+
+static gint
+microfreak_sample_upload_tx_and_rx (struct backend *backend,
+				    GByteArray *tx_msg,
+				    GByteArray **rx_msg,
+				    struct job_control *control)
+{
+  guint8 seq = tx_msg->data[sizeof (MICROFREAK_REQUEST_HEADER)];
+  gint err = common_data_tx_and_rx_part (backend, tx_msg, rx_msg, control);
+  if (err)
+    {
+      if (err == -EIO)
+	{
+	  control->part++;
+	}
+      err = 0;			//The response will be out of order.
+    }
+  else
+    {
+      //Note that there are some packets are just not sent sometimes.
+      while (seq != (*rx_msg)->data[sizeof (MICROFREAK_REQUEST_HEADER)])
+	{
+	  free_msg (*rx_msg);
+	  GByteArray *aux = g_byte_array_new ();	//This is an empty message
+	  *rx_msg = backend_tx_and_rx_sysex (backend, aux, -1);
+	  if (!*rx_msg)
+	    {
+	      err = -EIO;
+	      break;
+	    }
+	}
+    }
+  return err;
+}
+
 static gint
 microfreak_sample_upload (struct backend *backend, const gchar *path,
 			  struct idata *sample, struct job_control *control)
@@ -1014,7 +1050,7 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
     }
 
   control->parts = 6 + batches * (2 + MICROFREAK_SAMPLE_BATCH_PACKETS);
-  control->parts += 2 + MICROFREAK_SAMPLE_BATCH_PACKETS;	//This is for the last unknown phase
+  control->parts += 1 + MICROFREAK_SAMPLE_BATCH_PACKETS;	//This is for the last unknown phase
   control->part = 0;
   job_control_set_progress (control, 0.0);
 
@@ -1117,34 +1153,40 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
       //Starting packets
 
       tx_msg = microfreak_get_wave_op_msg (backend, 0x58, id, 0, 1);
-      err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
+      err = microfreak_sample_upload_tx_and_rx (backend, tx_msg, &rx_msg,
+						control);
       if (err)
 	{
 	  goto end;
 	}
-      err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
-      free_msg (rx_msg);
-      if (err)
+      if (rx_msg)
 	{
-	  goto end;
+	  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+	  free_msg (rx_msg);
+	  if (err)
+	    {
+	      goto end;
+	    }
 	}
 
       usleep (MICROFREAK_REST_TIME_US);
 
       tx_msg = microfreak_get_msg (backend, 0x15, NULL, 0);
-      err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
+      err = microfreak_sample_upload_tx_and_rx (backend, tx_msg, &rx_msg,
+						control);
       if (err)
 	{
 	  goto end;
 	}
-      err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
-      free_msg (rx_msg);
-      if (err)
+      if (rx_msg)
 	{
-	  goto end;
+	  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+	  free_msg (rx_msg);
+	  if (err)
+	    {
+	      goto end;
+	    }
 	}
-
-      usleep (MICROFREAK_REST_TIME_US);
 
       //Data packets
 
@@ -1186,63 +1228,51 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
 	      dst++;
 	    }
 
+	  usleep (MICROFREAK_REST_TIME_US);
+
 	  microfreak_8bit_msg_to_midi_msg ((guint8 *) blk, midi_msg);
 	  tx_msg = microfreak_get_msg (backend, op, midi_msg,
 				       MICROFREAK_WAVE_MSG_SIZE);
-	  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg,
-					    control);
+	  err = microfreak_sample_upload_tx_and_rx (backend, tx_msg, &rx_msg,
+						    control);
 	  if (err)
 	    {
 	      goto end;
 	    }
-	  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
-	  free_msg (rx_msg);
-	  if (err)
+	  if (rx_msg)
 	    {
-	      goto end;
+	      err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
+	      free_msg (rx_msg);
+	      if (err)
+		{
+		  goto end;
+		}
 	    }
-
-	  usleep (MICROFREAK_REST_TIME_LONG_US);
 	}
+
+      usleep (MICROFREAK_REST_TIME_US);
     }
 
   //This phase happens after the upload. It is unknown that the purpose is.
 
   tx_msg = microfreak_get_wave_op_msg (backend, 0x5b, id, 0, 1);
-  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
+  err = microfreak_sample_upload_tx_and_rx (backend, tx_msg, &rx_msg,
+					    control);
   if (err)
     {
       goto end;
     }
-  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0);	//This means this phase does NOT need to be run.
-  if (!err)
+  if (rx_msg)
     {
+      err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0);
       free_msg (rx_msg);
-      control->part += 1 + MICROFREAK_SAMPLE_BATCH_PACKETS;
-      job_control_set_progress (control, 1.0);
-      goto end;
-    }
-  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);	//This means this phase does need to be run.
-  free_msg (rx_msg);
-  if (err)
-    {
-      goto end;
+      if (err)
+	{
+	  goto end;
+	}
     }
 
   usleep (MICROFREAK_REST_TIME_US);
-
-  tx_msg = g_byte_array_new ();	//This is an empty message
-  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
-  if (err)
-    {
-      goto end;
-    }
-  err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x15, 0);
-  free_msg (rx_msg);
-  if (err)
-    {
-      goto end;
-    }
 
   for (gint p = 1; p <= MICROFREAK_SAMPLE_BATCH_PACKETS; p++)
     {
@@ -1262,6 +1292,9 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
 
       usleep (MICROFREAK_REST_TIME_US);
     }
+
+  //Arturia MIDI Control Center sends an additional 0x18 message as the latest above
+  //but looks like it is not actualy needed.
 
 end:
   g_free (name);
