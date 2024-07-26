@@ -329,8 +329,8 @@ job_control_set_progress_value (struct job_control *control, gdouble p)
     (control->part / (double) control->parts) + (p / (double) control->parts);
 }
 
-static void
-job_control_set_progress_with_cb (struct job_control *control, gdouble p)
+void
+job_control_set_progress (struct job_control *control, gdouble p)
 {
   g_mutex_lock (&control->mutex);
   job_control_set_progress_value (control, p);
@@ -340,12 +340,6 @@ job_control_set_progress_with_cb (struct job_control *control, gdouble p)
     {
       control->callback (control);
     }
-}
-
-void
-job_control_set_progress (struct job_control *control, gdouble p)
-{
-  job_control_set_progress_with_cb (control, p);
 }
 
 gboolean
