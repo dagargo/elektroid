@@ -77,7 +77,7 @@ microbrute_configure_callback (GtkWidget *object, gpointer data)
   guint8 v;
   struct backend *backend = data;
 
-  debug_print (2, "Configuring %s...\n", backend->name);
+  debug_print (2, "Configuring %s...", backend->name);
   loading = TRUE;
   microbrute_get_parameter (backend, MICROBRUTE_NOTE_PRIORITY, &v);
   microbrute_set_combo_value (note_priority, v);

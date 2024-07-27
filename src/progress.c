@@ -38,7 +38,7 @@ progress_join_thread ()
 {
   gpointer output = NULL;
 
-  debug_print (1, "Stopping SysEx thread...\n");
+  debug_print (1, "Stopping SysEx thread...");
   if (progress.thread)
     {
       output = g_thread_join (progress.thread);
@@ -59,7 +59,7 @@ progress_stop_running_sysex (GtkDialog *dialog, gint response_id,
       gtk_label_set_text (GTK_LABEL (progress.label), _("Cancelling..."));
     }
 
-  debug_print (1, "Stopping SysEx transfer...\n");
+  debug_print (1, "Stopping SysEx transfer...");
   g_mutex_lock (&progress.sysex_transfer.mutex);
   progress.sysex_transfer.active = FALSE;
   g_mutex_unlock (&progress.sysex_transfer.mutex);
@@ -145,7 +145,7 @@ static gboolean
 elektroid_new_progress_thread_gsourcefunc (gpointer user_data)
 {
   struct progress_progress_thread_data *data = user_data;
-  debug_print (1, "Creating SysEx thread...\n");
+  debug_print (1, "Creating SysEx thread...");
   progress.thread = g_thread_new ("progress thread", data->f, data->data);
   if (data->type == PROGRESS_TYPE_PULSE)
     {

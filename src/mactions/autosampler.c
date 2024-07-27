@@ -81,7 +81,7 @@ autosampler_runner (gpointer user_data)
       gtk_tree_model_get_value (GTK_TREE_MODEL (notes_list_store),
 				&data->iter, 0, &value);
       note = g_value_get_string (&value);
-      debug_print (1, "Recording note %s (%d)...\n", note, i);
+      debug_print (1, "Recording note %s (%d)...", note, i);
 
       audio_start_recording (&editor.audio, data->channel_mask, NULL, NULL);
       backend_send_note_on (data->backend, data->channel, i, data->velocity);
@@ -107,7 +107,7 @@ autosampler_runner (gpointer user_data)
       //We add the note number to ensure lexicographical order.
       snprintf (filename, LABEL_MAX, "%03d %s %s.wav", s, data->name, note);
       gchar *path = path_chain (PATH_SYSTEM, dir, filename);
-      debug_print (1, "Saving sample to %s...\n", path);
+      debug_print (1, "Saving sample to %s...", path);
       sample_save_to_file (path, &editor.audio.sample, &editor.audio.control,
 			   SF_FORMAT_WAV | SF_FORMAT_PCM_16);
       g_free (dir);

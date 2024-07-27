@@ -366,7 +366,7 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
     {
       if (*token < 0x20)
 	{
-	  error_print ("Invalid character\n");
+	  error_print ("Invalid character");
 	  token++;
 	  (*pos)++;
 	  continue;
@@ -388,7 +388,7 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
 	  *step = 0x7f;
 	  token++;
 	  (*pos)++;
-	  debug_print (2, "Note: -\n");
+	  debug_print (2, "Note: -");
 	}
       else
 	{
@@ -398,14 +398,14 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
 	  *step = *step < 12 ? 0x7f : *step;
 	  if (*step == 0 && token == rem)
 	    {
-	      error_print ("Error while reading note\n");
+	      error_print ("Error while reading note");
 	      token++;
 	      (*pos)++;
 	      continue;
 	    }
 	  token = rem;
 	  *pos += (*step >= 100) ? 3 : (*step >= 10) ? 2 : 1;
-	  debug_print (2, "Note: 0x%02x (%d)\n", *step, *step);
+	  debug_print (2, "Note: 0x%02x (%d)", *step, *step);
 	}
       steps++;
       step++;
@@ -547,17 +547,17 @@ microbrute_get_parameter (struct backend *backend,
 
   if (rx_msg->data[6] != counter)
     {
-      error_print ("Bad sequence number byte\n");
+      error_print ("Bad sequence number byte");
       return -EIO;
     }
   if (rx_msg->data[7] != 1)
     {
-      error_print ("Bad client byte\n");
+      error_print ("Bad client byte");
       return -EIO;
     }
   if (rx_msg->data[8] != op)
     {
-      error_print ("Bad parameter byte\n");
+      error_print ("Bad parameter byte");
       return -EIO;
     }
 
@@ -600,7 +600,7 @@ microbrute_set_parameter (struct backend *backend,
       if (MICROBRUTE_PARAMS[param].ctl == MICROBRUTE_NOP ||
 	  !MICROBRUTE_PARAMS[param].value_map)
 	{
-	  error_print ("Bad parameter\n");
+	  error_print ("Bad parameter");
 	  return -EINVAL;
 	}
       if (param == MICROBRUTE_BEND_RANGE)

@@ -88,7 +88,7 @@ system_mkdir (struct backend *backend, const gchar *name)
     }
   else
     {
-      error_print ("Error while creating dir %s\n", name);
+      error_print ("Error while creating dir %s", name);
       res = -errno;
     }
 
@@ -103,7 +103,7 @@ system_delete (struct backend *backend, const gchar *path)
 
   if ((dir = g_dir_open (path, 0, NULL)))
     {
-      debug_print (1, "Deleting local %s dir...\n", path);
+      debug_print (1, "Deleting local %s dir...", path);
 
       const gchar *name;
       while ((name = g_dir_read_name (dir)) != NULL)
@@ -119,7 +119,7 @@ system_delete (struct backend *backend, const gchar *path)
     }
   else
     {
-      debug_print (1, "Deleting local %s file...\n", path);
+      debug_print (1, "Deleting local %s file...", path);
       return g_unlink (path);
     }
 }
@@ -127,7 +127,7 @@ system_delete (struct backend *backend, const gchar *path)
 gint
 system_rename (struct backend *backend, const gchar *old, const gchar *new)
 {
-  debug_print (1, "Renaming locally from %s to %s...\n", old, new);
+  debug_print (1, "Renaming locally from %s to %s...", old, new);
   return rename (old, new);
 }
 
@@ -166,7 +166,7 @@ system_next_dentry (struct item_iterator *iter, gboolean sample_info)
 	}
       else
 	{
-	  error_print ("'%s' is neither file nor directory\n", full_path);
+	  error_print ("'%s' is neither file nor directory", full_path);
 	  continue;
 	}
 

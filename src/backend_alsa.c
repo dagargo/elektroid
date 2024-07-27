@@ -33,7 +33,7 @@ backend_destroy_int (struct backend *backend)
       err = snd_rawmidi_close (backend->inputp);
       if (err)
 	{
-	  error_print ("Error while closing MIDI port: %s\n",
+	  error_print ("Error while closing MIDI port: %s",
 		       snd_strerror (err));
 	}
       backend->inputp = NULL;
@@ -44,7 +44,7 @@ backend_destroy_int (struct backend *backend)
       err = snd_rawmidi_close (backend->outputp);
       if (err)
 	{
-	  error_print ("Error while closing MIDI port: %s\n",
+	  error_print ("Error while closing MIDI port: %s",
 		       snd_strerror (err));
 	}
       backend->outputp = NULL;
@@ -80,19 +80,19 @@ backend_init_int (struct backend *backend, const gchar *id)
   if ((err = snd_rawmidi_open (&backend->inputp, &backend->outputp, id,
 			       SND_RAWMIDI_NONBLOCK | SND_RAWMIDI_SYNC)) < 0)
     {
-      error_print ("Error while opening MIDI port: %s\n", g_strerror (-err));
+      error_print ("Error while opening MIDI port: %s", g_strerror (-err));
       goto cleanup;
     }
 
-  debug_print (1, "Setting blocking mode...\n");
+  debug_print (1, "Setting blocking mode...");
   if ((err = snd_rawmidi_nonblock (backend->outputp, 0)) < 0)
     {
-      error_print ("Error while setting blocking mode\n");
+      error_print ("Error while setting blocking mode");
       goto cleanup;
     }
   if ((err = snd_rawmidi_nonblock (backend->inputp, 1)) < 0)
     {
-      error_print ("Error while setting blocking mode\n");
+      error_print ("Error while setting blocking mode");
       goto cleanup;
     }
 
@@ -143,7 +143,7 @@ backend_tx_raw (struct backend *backend, guint8 *data, guint len)
 
   if (!backend->outputp)
     {
-      error_print ("Output port is NULL\n");
+      error_print ("Output port is NULL");
       return -ENOTCONN;
     }
 
@@ -152,7 +152,7 @@ backend_tx_raw (struct backend *backend, guint8 *data, guint len)
   tx_len = snd_rawmidi_write (backend->outputp, data, len);
   if (tx_len < 0)
     {
-      error_print ("Error while writing to device: %s\n",
+      error_print ("Error while writing to device: %s",
 		   snd_strerror (tx_len));
     }
   return tx_len;
@@ -203,8 +203,7 @@ backend_tx_sysex_internal (struct backend *backend,
     {
       gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
 					transfer->raw->len);
-      debug_print (2, "Raw message sent (%d): %s\n", transfer->raw->len,
-		   text);
+      debug_print (2, "Raw message sent (%d): %s", transfer->raw->len, text);
       g_free (text);
     }
 
@@ -229,7 +228,7 @@ backend_rx_raw (struct backend *backend, guint8 *buffer, guint len)
   ssize_t rx_len;
   unsigned short revents;
 
-  debug_print (6, "Polling...\n");
+  debug_print (6, "Polling...");
   err = poll (backend->pfds, backend->npfds, BE_POLL_TIMEOUT_MS);
   if (err == 0)
     {
@@ -238,7 +237,7 @@ backend_rx_raw (struct backend *backend, guint8 *buffer, guint len)
 
   if (err < 0)
     {
-      error_print ("Error while polling. %s.\n", g_strerror (errno));
+      error_print ("Error while polling. %s.", g_strerror (errno));
       if (errno == EINTR)
 	{
 	  return -ECANCELED;
@@ -251,7 +250,7 @@ backend_rx_raw (struct backend *backend, guint8 *buffer, guint len)
 						   backend->npfds,
 						   &revents)) < 0)
     {
-      error_print ("Error while getting poll events. %s.\n",
+      error_print ("Error while getting poll events. %s.",
 		   snd_strerror (err));
       return err;
     }
@@ -274,7 +273,7 @@ backend_rx_raw (struct backend *backend, guint8 *buffer, guint len)
 
   if (rx_len < 0)
     {
-      error_print ("Error while reading from device: %s\n",
+      error_print ("Error while reading from device: %s",
 		   snd_strerror (rx_len));
     }
 
@@ -347,8 +346,7 @@ backend_get_system_subdevices (snd_ctl_t *ctl, int card, int device,
       err = snd_ctl_rawmidi_info (ctl, info);
       if (err < 0)
 	{
-	  debug_print (1,
-		       "Cannot get rawmidi input information %d:%d:%d: %s\n",
+	  debug_print (1, "Cannot get rawmidi input information %d:%d:%d: %s",
 		       card, device, sub, snd_strerror (err));
 	  continue;
 	}
@@ -360,7 +358,7 @@ backend_get_system_subdevices (snd_ctl_t *ctl, int card, int device,
       if (err < 0)
 	{
 	  debug_print (1,
-		       "Cannot get rawmidi output information %d:%d:%d: %s\n",
+		       "Cannot get rawmidi output information %d:%d:%d: %s",
 		       card, device, sub, snd_strerror (err));
 	  continue;
 	}
@@ -368,7 +366,7 @@ backend_get_system_subdevices (snd_ctl_t *ctl, int card, int device,
       name = snd_rawmidi_info_get_name (info);
       sub_name = snd_rawmidi_info_get_subdevice_name (info);
 
-      debug_print (1, "Adding hw:%d (name '%s', subname '%s')...\n", card,
+      debug_print (1, "Adding hw:%d (name '%s', subname '%s')...", card,
 		   name, sub_name);
       backend_device = g_malloc (sizeof (struct backend_device));
       backend_device->type = BE_TYPE_MIDI;
@@ -407,7 +405,7 @@ backend_fill_card_devices (gint card, GArray *devices)
   sprintf (name, "hw:%d", card);
   if ((err = snd_ctl_open (&ctl, name, 0)) < 0)
     {
-      error_print ("Cannot open control for card %d: %s\n",
+      error_print ("Cannot open control for card %d: %s",
 		   card, snd_strerror (err));
       return;
     }
@@ -418,7 +416,7 @@ backend_fill_card_devices (gint card, GArray *devices)
     }
   if (device >= 0 && err < 0)
     {
-      error_print ("Cannot determine device number %d: %s\n", device,
+      error_print ("Cannot determine device number %d: %s", device,
 		   snd_strerror (err));
     }
   snd_ctl_close (ctl);
@@ -435,7 +433,7 @@ backend_fill_devices_array (GArray *devices)
     }
   if (card >= 0 && err < 0)
     {
-      error_print ("Cannot determine card number %d: %s\n", card,
+      error_print ("Cannot determine card number %d: %s", card,
 		   snd_strerror (err));
     }
 }

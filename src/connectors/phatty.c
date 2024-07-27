@@ -393,7 +393,7 @@ phatty_rename (struct backend *backend, const gchar *src, const gchar *dst)
   struct sysex_transfer transfer;
   struct idata preset;
 
-  debug_print (1, "Renaming preset...\n");
+  debug_print (1, "Renaming preset...");
   err = common_slot_get_id_name_from_path (src, &id, NULL);
   if (err)
     {

@@ -221,9 +221,9 @@ sample_write_audio_file_data (struct idata *idata,
   struct sample_info *sample_info = idata->info;
 
   frames = sample->len / SAMPLE_INFO_FRAME_SIZE (sample_info);
-  debug_print (1, "Frames: %" PRIu64 "; sample rate: %d; channels: %d\n",
+  debug_print (1, "Frames: %" PRIu64 "; sample rate: %d; channels: %d",
 	       frames, sample_info->rate, sample_info->channels);
-  debug_print (1, "Loop start at %d; loop end at %d\n",
+  debug_print (1, "Loop start at %d; loop end at %d",
 	       sample_info->loop_start, sample_info->loop_end);
 
   memset (&sf_info, 0, sizeof (sf_info));
@@ -234,7 +234,7 @@ sample_write_audio_file_data (struct idata *idata,
   sndfile = sf_open_virtual (&G_BYTE_ARRAY_IO, SFM_WRITE, &sf_info, wave);
   if (!sndfile)
     {
-      error_print ("%s\n", sf_strerror (sndfile));
+      error_print ("%s", sf_strerror (sndfile));
       return -1;
     }
 
@@ -244,7 +244,7 @@ sample_write_audio_file_data (struct idata *idata,
   junk_chunk_info.data = (void *) JUNK_CHUNK_DATA;
   if (sf_set_chunk (sndfile, &junk_chunk_info) != SF_ERR_NO_ERROR)
     {
-      error_print ("%s\n", sf_strerror (sndfile));
+      error_print ("%s", sf_strerror (sndfile));
     }
 
   smpl_chunk_data.manufacturer = 0;
@@ -269,7 +269,7 @@ sample_write_audio_file_data (struct idata *idata,
   smpl_chunk_info.data = &smpl_chunk_data;
   if (sf_set_chunk (sndfile, &smpl_chunk_info) != SF_ERR_NO_ERROR)
     {
-      error_print ("%s\n", sf_strerror (sndfile));
+      error_print ("%s", sf_strerror (sndfile));
     }
 
   if ((sample_info->format & SF_FORMAT_SUBMASK) == SF_FORMAT_PCM_16)
@@ -286,7 +286,7 @@ sample_write_audio_file_data (struct idata *idata,
     }
   else
     {
-      error_print ("Invalid sample format. Using short...\n");
+      error_print ("Invalid sample format. Using short...");
       total = sf_writef_short (sndfile, (gint16 *) sample->data, frames);
     }
 
@@ -295,7 +295,7 @@ sample_write_audio_file_data (struct idata *idata,
   if (total != frames)
     {
       error_print ("Unexpected frames while writing to file (%" PRIu64 " != %"
-		   PRIu64 ")\n", total, frames);
+		   PRIu64 ")", total, frames);
       return -1;
     }
 
@@ -353,7 +353,7 @@ audio_multichannel_to_mono_short (gshort *input, gshort *output, gint size,
 {
   gint32 i, j, v;
 
-  debug_print (2, "Converting short values to mono...\n");
+  debug_print (2, "Converting short values to mono...");
 
   for (i = 0; i < size; i++)
     {
@@ -374,7 +374,7 @@ audio_multichannel_to_mono_float (gfloat *input, gfloat *output, gint size,
   gfloat v;
   gint i, j;
 
-  debug_print (2, "Converting float values to mono...\n");
+  debug_print (2, "Converting float values to mono...");
 
   for (i = 0; i < size; i++)
     {
@@ -395,7 +395,7 @@ audio_multichannel_to_mono_int (gint32 *input, gint32 *output, gint size,
   gint32 v;
   gint i, j;
 
-  debug_print (2, "Converting int values to mono...\n");
+  debug_print (2, "Converting int values to mono...");
 
   for (i = 0; i < size; i++)
     {
@@ -412,7 +412,7 @@ audio_multichannel_to_mono_int (gint32 *input, gint32 *output, gint size,
 static void
 audio_mono_to_stereo_short (gshort *input, gshort *output, gint size)
 {
-  debug_print (2, "Converting short values to stereo...\n");
+  debug_print (2, "Converting short values to stereo...");
 
   for (gint i = 0; i < size; i++, input++)
     {
@@ -426,7 +426,7 @@ audio_mono_to_stereo_short (gshort *input, gshort *output, gint size)
 static void
 audio_mono_to_stereo_float (gfloat *input, gfloat *output, gint size)
 {
-  debug_print (2, "Converting float values to stereo...\n");
+  debug_print (2, "Converting float values to stereo...");
 
   for (gint i = 0; i < size; i++, input++)
     {
@@ -440,7 +440,7 @@ audio_mono_to_stereo_float (gfloat *input, gfloat *output, gint size)
 static void
 audio_mono_to_stereo_int (gint32 *input, gint32 *output, gint size)
 {
-  debug_print (2, "Converting int values to stereo...\n");
+  debug_print (2, "Converting int values to stereo...");
 
   for (gint i = 0; i < size; i++, input++)
     {
@@ -473,7 +473,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
     {
       chunk_info.datalen = sizeof (struct smpl_chunk_data);
       memset (&smpl_chunk_data, 0, chunk_info.datalen);
-      debug_print (2, "%s chunk found (%d B)\n", SMPL_CHUNK_ID,
+      debug_print (2, "%s chunk found (%d B)", SMPL_CHUNK_ID,
 		   chunk_info.datalen);
       chunk_info.data = &smpl_chunk_data;
       sf_get_chunk_data (chunk_iter, &chunk_info);
@@ -487,12 +487,12 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
 	GUINT32_FROM_LE (smpl_chunk_data.midi_unity_note);
       if (sample_info->loop_start >= sample_info->frames)
 	{
-	  debug_print (2, "Bad loop start\n");
+	  debug_print (2, "Bad loop start");
 	  disable_loop = TRUE;
 	}
       if (sample_info->loop_end >= sample_info->frames)
 	{
-	  debug_print (2, "Bad loop end\n");
+	  debug_print (2, "Bad loop end");
 	  disable_loop = TRUE;
 	}
 
@@ -513,7 +513,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
       sample_info->loop_type = 0;
     }
 
-  debug_print (2, "Loop start at %d, loop end at %d\n",
+  debug_print (2, "Loop start at %d, loop end at %d",
 	       sample_info->loop_start, sample_info->loop_end);
 }
 
@@ -535,8 +535,7 @@ sample_load_sample_info_libsndfile (const gchar *path,
   sndfile = sf_open_virtual (&FILE_IO, SFM_READ, &sf_info, file);
   if (!sndfile)
     {
-      error_print ("Error while reading %s: %s\n", path,
-		   sf_strerror (sndfile));
+      error_print ("Error while reading %s: %s", path, sf_strerror (sndfile));
       err = -1;
       goto end;
     }
@@ -665,7 +664,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sndfile = sf_open_virtual (sf_virtual_io, SFM_READ, &sf_info, data);
   if (!sndfile)
     {
-      error_print ("%s\n", sf_strerror (sndfile));
+      error_print ("%s", sf_strerror (sndfile));
       return -1;
     }
 
@@ -685,7 +684,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       sample_info->format != SF_FORMAT_PCM_32 &&
       sample_info->format != SF_FORMAT_FLOAT)
     {
-      error_print ("Invalid sample format. Using short...\n");
+      error_print ("Invalid sample format. Using short...");
       sample_info->format = SF_FORMAT_PCM_16;
     }
 
@@ -697,7 +696,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       (sample_info_src->format & SF_FORMAT_DOUBLE) == SF_FORMAT_DOUBLE)
     {
       debug_print (2,
-		   "Setting scale factor to ensure correct integer readings...\n");
+		   "Setting scale factor to ensure correct integer readings...");
       sf_command (sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
     }
 
@@ -732,7 +731,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   src_state = src_new (SRC_SINC_BEST_QUALITY, sample_info->channels, &err);
   if (err)
     {
-      error_print ("Error while creating the resampler: %s\n",
+      error_print ("Error while creating the resampler: %s",
 		   src_strerror (err));
       goto cleanup;
     }
@@ -755,13 +754,12 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       g_mutex_unlock (&control->mutex);
     }
 
-  debug_print (2, "Loading sample (%d frames)...\n", sample_info_src->frames);
+  debug_print (2, "Loading sample (%d frames)...", sample_info_src->frames);
 
   read_frames = 0;
   while (read_frames < sample_info_src->frames && active)
     {
-      debug_print (2, "Loading %d channels buffer...\n",
-		   sample_info->channels);
+      debug_print (2, "Loading %d channels buffer...", sample_info->channels);
 
       if (sample_info->format == SF_FORMAT_FLOAT)
 	{
@@ -849,7 +847,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	}
       else
 	{
-	  debug_print (2, "Resampling %d channels with ratio %f...\n",
+	  debug_print (2, "Resampling %d channels with ratio %f...",
 		       sample_info->channels, src_data.src_ratio);
 
 	  src_data.end_of_input = frames < LOAD_BUFFER_LEN ? SF_TRUE : 0;
@@ -873,8 +871,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	  err = src_process (src_state, &src_data);
 	  if (err)
 	    {
-	      error_print ("Error while resampling: %s\n",
-			   src_strerror (err));
+	      error_print ("Error while resampling: %s", src_strerror (err));
 	      break;
 	    }
 

@@ -166,7 +166,7 @@ editor_set_start_frame (struct editor *editor, gint start)
   gdouble lower = 0;
   gdouble value = upper * start / (double) sample_info->frames;
 
-  debug_print (1, "Setting waveform scrollbar to %f [%f, %f]...\n", value,
+  debug_print (1, "Setting waveform scrollbar to %f [%f, %f]...", value,
 	       lower, upper);
   gtk_adjustment_set_lower (adj, 0);
   gtk_adjustment_set_upper (adj, upper);
@@ -355,7 +355,7 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 
   start = editor_get_start_frame (editor);
 
-  debug_print (3, "Drawing waveform from %d with %f.2x zoom...\n",
+  debug_print (3, "Drawing waveform from %d with %f.2x zoom...",
 	       start, editor->zoom);
 
   loop_start = sample_info->loop_start;
@@ -407,7 +407,7 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 				   &y_frame_state))
 	    {
 	      debug_print (3,
-			   "Last available frame before the sample end. Stopping...\n");
+			   "Last available frame before the sample end. Stopping...");
 	      break;
 	    }
 
@@ -652,7 +652,7 @@ editor_autoplay_clicked (GtkWidget *object, gboolean state, gpointer data)
 void
 editor_start_load_thread (struct editor *editor, gchar *sample_path)
 {
-  debug_print (1, "Creating load thread...\n");
+  debug_print (1, "Creating load thread...");
   editor->audio.path = sample_path;
   editor->thread = g_thread_new ("load_sample", editor_load_sample_runner,
 				 editor);
@@ -663,7 +663,7 @@ editor_stop_load_thread (struct editor *editor)
 {
   struct audio *audio = &editor->audio;
 
-  debug_print (1, "Stopping load thread...\n");
+  debug_print (1, "Stopping load thread...");
   g_mutex_lock (&audio->control.mutex);
   audio->control.active = FALSE;
   g_mutex_unlock (&audio->control.mutex);
@@ -693,7 +693,7 @@ editor_set_volume_callback_bg (gpointer user_data)
   struct editor *editor = data->editor;
   gdouble volume = data->volume;
   g_free (data);
-  debug_print (1, "Setting volume to %f...\n", volume);
+  debug_print (1, "Setting volume to %f...", volume);
   g_signal_handler_block (editor->volume_button,
 			  editor->volume_changed_handler);
   gtk_scale_button_set_value (GTK_SCALE_BUTTON (editor->volume_button),
@@ -786,7 +786,7 @@ editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
     }
 
   editor_get_frame_at_position (editor, event->x, &cursor_frame, &rel_pos);
-  debug_print (1, "Zooming at frame %d...\n", cursor_frame);
+  debug_print (1, "Zooming at frame %d...", cursor_frame);
 
   if (dy == -1.0)
     {
@@ -814,7 +814,7 @@ editor_zoom (struct editor *editor, GdkEventScroll *event, gdouble dy)
 	}
     }
 
-  debug_print (1, "Setting zoom to %f.2x...\n", editor->zoom);
+  debug_print (1, "Setting zoom to %f.2x...", editor->zoom);
 
   start = cursor_frame - rel_pos * sample_info->frames /
     (gdouble) editor->zoom;
@@ -923,18 +923,18 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
   editor_get_frame_at_position (editor, event->x, &cursor_frame, NULL);
   if (event->button == GDK_BUTTON_PRIMARY)
     {
-      debug_print (2, "Pressing at frame %d...\n", cursor_frame);
+      debug_print (2, "Pressing at frame %d...", cursor_frame);
       if (editor_cursor_frame_over_frame (editor, cursor_frame,
 					  sample_info->loop_start))
 	{
-	  debug_print (2, "Clicking on loop start...\n");
+	  debug_print (2, "Clicking on loop start...");
 	  editor->operation = EDITOR_OP_MOVE_LOOP_START;
 	  editor_set_cursor (editor, "col-resize");
 	}
       else if (editor_cursor_frame_over_frame (editor, cursor_frame,
 					       sample_info->loop_end))
 	{
-	  debug_print (2, "Clicking on loop end...\n");
+	  debug_print (2, "Clicking on loop end...");
 	  editor->operation = EDITOR_OP_MOVE_LOOP_END;
 	  editor_set_cursor (editor, "col-resize");
 	}
@@ -942,7 +942,7 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 					       editor->audio.sel_start) &&
 	       sel_len)
 	{
-	  debug_print (2, "Clicking on selection start...\n");
+	  debug_print (2, "Clicking on selection start...");
 	  editor->operation = EDITOR_OP_MOVE_SEL_START;
 	  editor_set_cursor (editor, "col-resize");
 	}
@@ -950,7 +950,7 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 					       editor->audio.sel_end) &&
 	       sel_len)
 	{
-	  debug_print (2, "Clicking on selection end...\n");
+	  debug_print (2, "Clicking on selection end...");
 	  editor->operation = EDITOR_OP_MOVE_SEL_END;
 	  editor_set_cursor (editor, "col-resize");
 	}
@@ -1006,14 +1006,14 @@ editor_button_release (GtkWidget *widget, GdkEventButton *event,
 
       if (press_event_x == event->x)
 	{
-	  debug_print (2, "Cleaning selection...\n");
+	  debug_print (2, "Cleaning selection...");
 	  editor->audio.sel_start = -1;
 	  editor->audio.sel_end = -1;
 	  g_idle_add (editor_queue_draw, editor);
 	}
       else
 	{
-	  debug_print (2, "Selected range: [%" PRId64 " to %" PRId64 "]...\n",
+	  debug_print (2, "Selected range: [%" PRId64 " to %" PRId64 "]...",
 		       editor->audio.sel_start, editor->audio.sel_end);
 
 	  if (AUDIO_SEL_LEN (&editor->audio))
@@ -1065,7 +1065,7 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 	  editor->audio.sel_end = editor->audio.sel_start;
 	  editor->audio.sel_start = cursor_frame;
 	}
-      debug_print (2, "Setting selection to [%" PRId64 ", %" PRId64 "]...\n",
+      debug_print (2, "Setting selection to [%" PRId64 ", %" PRId64 "]...",
 		   editor->audio.sel_start, editor->audio.sel_end);
     }
   else if (editor->operation == EDITOR_OP_MOVE_SEL_START)
@@ -1080,20 +1080,20 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 	  editor->audio.sel_start = editor->audio.sel_end;
 	  editor->audio.sel_end = cursor_frame;
 	}
-      debug_print (2, "Setting selection to [%" PRId64 ", %" PRId64 "]...\n",
+      debug_print (2, "Setting selection to [%" PRId64 ", %" PRId64 "]...",
 		   editor->audio.sel_start, editor->audio.sel_end);
     }
   else if (editor->operation == EDITOR_OP_MOVE_LOOP_START)
     {
       sample_info->loop_start = cursor_frame;
-      debug_print (2, "Setting loop to [%d, %d]...\n",
+      debug_print (2, "Setting loop to [%d, %d]...",
 		   sample_info->loop_start, sample_info->loop_end);
       editor->dirty = TRUE;
     }
   else if (editor->operation == EDITOR_OP_MOVE_LOOP_END)
     {
       sample_info->loop_end = cursor_frame;
-      debug_print (2, "Setting loop to [%d, %d]...\n",
+      debug_print (2, "Setting loop to [%d, %d]...",
 		   sample_info->loop_start, sample_info->loop_end);
       editor->dirty = TRUE;
     }
@@ -1284,7 +1284,7 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	}
       g_mutex_lock (&editor->audio.control.mutex);
 
-      debug_print (2, "Saving changes to %s...\n", editor->audio.path);
+      debug_print (2, "Saving changes to %s...", editor->audio.path);
 
       editor_save_with_format (editor, editor->audio.path,
 			       &editor->audio.sample);
@@ -1325,7 +1325,7 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	    }
 	  g_mutex_lock (&editor->audio.control.mutex);
 
-	  debug_print (2, "Saving recording to %s...\n", name);
+	  debug_print (2, "Saving recording to %s...", name);
 
 	  if (sel_len)
 	    {

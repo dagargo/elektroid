@@ -182,7 +182,7 @@ get_system_startup_path (const gchar *local_dir)
 	}
       else
 	{
-	  error_print ("Unable to open dir '%s'\n", local_dir);
+	  error_print ("Unable to open dir '%s'", local_dir);
 	}
       closedir (dir);
     }
@@ -192,7 +192,7 @@ get_system_startup_path (const gchar *local_dir)
       startup_path = get_user_dir (NULL);
     }
 
-  debug_print (1, "Using '%s' as local dir...\n", startup_path);
+  debug_print (1, "Using '%s' as local dir...", startup_path);
 
   return startup_path;
 }
@@ -222,7 +222,7 @@ file_load (const char *path, struct idata *idata, struct job_control *control)
 
   if (fseek (f, 0, SEEK_END))
     {
-      error_print ("Unexpected value\n");
+      error_print ("Unexpected value");
       res = -errno;
       goto end;
     }
@@ -235,12 +235,12 @@ file_load (const char *path, struct idata *idata, struct job_control *control)
 
   if (fread (array->data, 1, size, f) == size)
     {
-      debug_print (1, "%zu B read\n", size);
+      debug_print (1, "%zu B read", size);
       idata_init (idata, array, NULL, NULL);
     }
   else
     {
-      error_print ("Error while reading from file %s\n", path);
+      error_print ("Error while reading from file %s", path);
       g_byte_array_free (array, TRUE);
       res = -errno;
     }
@@ -264,17 +264,17 @@ file_save_data (const gchar *path, const guint8 *data, ssize_t len)
       return -errno;
     }
 
-  debug_print (1, "Saving file %s...\n", path);
+  debug_print (1, "Saving file %s...", path);
 
   res = 0;
   bytes = fwrite (data, 1, len, file);
   if (bytes == len)
     {
-      debug_print (1, "%zu B written\n", bytes);
+      debug_print (1, "%zu B written", bytes);
     }
   else
     {
-      error_print ("Error while writing to file %s\n", path);
+      error_print ("Error while writing to file %s", path);
       res = -EIO;
     }
 

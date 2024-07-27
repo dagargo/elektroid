@@ -31,7 +31,7 @@
 #include "regconn.h"
 #include "utils.h"
 
-#define COMMAND_NOT_IN_SYSTEM_FS "Command not available in system backend\n"
+#define COMMAND_NOT_IN_SYSTEM_FS "Command not available in system backend"
 
 #define GET_FS_OPS_OFFSET(member) offsetof(struct fs_operations, member)
 #define GET_FS_OPS_FUNC(type,fs,offset) (*(((type *) (((gchar *) fs) + offset))))
@@ -87,7 +87,7 @@ cli_connect (const gchar *device_path)
 
   if (!devices->len || id >= devices->len)
     {
-      error_print ("Invalid device %d\n", id);
+      error_print ("Invalid device %d", id);
       return -ENODEV;
     }
 
@@ -100,7 +100,7 @@ cli_connect (const gchar *device_path)
       fs_ops = backend_get_fs_operations_by_name (&backend, fs);
       if (!fs_ops)
 	{
-	  error_print ("Invalid filesystem '%s'\n", fs);
+	  error_print ("Invalid filesystem '%s'", fs);
 	  return -EINVAL;
 	}
     }
@@ -118,7 +118,7 @@ cli_list (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Remote path missing\n");
+      error_print ("Remote path missing");
       return -EINVAL;
     }
   else
@@ -163,7 +163,7 @@ cli_command_path (int argc, gchar *argv[], int *optind, ssize_t member_offset)
 
   if (*optind == argc)
     {
-      error_print ("Remote path missing\n");
+      error_print ("Remote path missing");
       return -EINVAL;
     }
   else
@@ -197,7 +197,7 @@ cli_command_src_dst (int argc, gchar *argv[], int *optind,
 
   if (*optind == argc)
     {
-      error_print ("Remote path source missing\n");
+      error_print ("Remote path source missing");
       return -EINVAL;
     }
   else
@@ -208,7 +208,7 @@ cli_command_src_dst (int argc, gchar *argv[], int *optind,
 
   if (*optind == argc)
     {
-      error_print ("Remote path destination missing\n");
+      error_print ("Remote path destination missing");
       return -EINVAL;
     }
   else
@@ -221,7 +221,7 @@ cli_command_src_dst (int argc, gchar *argv[], int *optind,
   dst_card = atoi (device_dst_path);
   if (src_card != dst_card)
     {
-      error_print ("Source and destination device must be the same\n");
+      error_print ("Source and destination device must be the same");
       return -EINVAL;
     }
 
@@ -249,7 +249,7 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Remote path source missing\n");
+      error_print ("Remote path source missing");
       return -EINVAL;
     }
   else
@@ -260,7 +260,7 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Remote path destination missing\n");
+      error_print ("Remote path destination missing");
       return -EINVAL;
     }
   else
@@ -285,7 +285,7 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
       dst_card = atoi (device_dst_path);
       if (src_card != dst_card)
 	{
-	  error_print ("Source and destination device must be the same\n");
+	  error_print ("Source and destination device must be the same");
 	  return -EINVAL;
 	}
       dst_path = cli_get_path (device_dst_path);
@@ -311,7 +311,7 @@ cli_info (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Device missing\n");
+      error_print ("Device missing");
       return -EINVAL;
     }
   else
@@ -363,7 +363,7 @@ cli_df (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Device missing\n");
+      error_print ("Device missing");
       return -EINVAL;
     }
   else
@@ -428,7 +428,7 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Local path missing\n");
+      error_print ("Local path missing");
       return EXIT_FAILURE;
     }
   else
@@ -439,7 +439,7 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Remote path missing\n");
+      error_print ("Remote path missing");
       return EXIT_FAILURE;
     }
   else
@@ -462,7 +462,7 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
   err = file_load (src_path, &idata, NULL);
   if (err)
     {
-      error_print ("Error while loading '%s'.\n", src_path);
+      error_print ("Error while loading '%s'.", src_path);
     }
   else
     {
@@ -487,7 +487,7 @@ cli_download (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Remote path missing\n");
+      error_print ("Remote path missing");
       return EXIT_FAILURE;
     }
   else
@@ -538,7 +538,7 @@ cli_upload (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Local path missing\n");
+      error_print ("Local path missing");
       return EXIT_FAILURE;
     }
   else
@@ -549,7 +549,7 @@ cli_upload (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Remote path missing\n");
+      error_print ("Remote path missing");
       return EXIT_FAILURE;
     }
   else
@@ -594,7 +594,7 @@ cli_send (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Source file missing\n");
+      error_print ("Source file missing");
       return -EINVAL;
     }
   else
@@ -605,7 +605,7 @@ cli_send (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Remote device missing\n");
+      error_print ("Remote device missing");
       return -EINVAL;
     }
   else
@@ -647,7 +647,7 @@ cli_receive (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Remote device missing\n");
+      error_print ("Remote device missing");
       return -EINVAL;
     }
   else
@@ -658,7 +658,7 @@ cli_receive (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Destination file missing\n");
+      error_print ("Destination file missing");
       return -EINVAL;
     }
   else
@@ -829,7 +829,7 @@ main (int argc, gchar *argv[])
 	}
 
       debug_print (1,
-		   "Connector: \"%s\"; filesystem: \"%s\"; operation: \"%s\"\n",
+		   "Connector: \"%s\"; filesystem: \"%s\"; operation: \"%s\"",
 		   connector, fs, op);
 
       if (!strcmp (op, "ls") || !strcmp (op, "list"))
@@ -875,7 +875,7 @@ main (int argc, gchar *argv[])
 	}
       else
 	{
-	  error_print ("Command '%s' not recognized\n", command);
+	  error_print ("Command '%s' not recognized", command);
 	  err = EXIT_FAILURE;
 	}
 
@@ -892,7 +892,7 @@ main (int argc, gchar *argv[])
 end:
   if (err && err != EXIT_FAILURE)
     {
-      error_print ("Error: %s\n", g_strerror (-err));
+      error_print ("Error: %s", g_strerror (-err));
     }
 
   regconn_unregister ();

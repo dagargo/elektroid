@@ -770,7 +770,7 @@ elektron_tx (struct backend *backend, const GByteArray *msg)
   if (!res)
     {
       text = debug_get_hex_msg (msg);
-      debug_print (1, "Message sent (%d): %s\n", msg->len, text);
+      debug_print (1, "Message sent (%d): %s", msg->len, text);
       g_free (text);
     }
 
@@ -804,7 +804,7 @@ elektron_rx (struct backend *backend, gint timeout)
       if (debug_level > 1)
 	{
 	  text = debug_get_hex_msg (transfer.raw);
-	  debug_print (2, "Message skipped (%d): %s\n", transfer.raw->len,
+	  debug_print (2, "Message skipped (%d): %s", transfer.raw->len,
 		       text);
 	  g_free (text);
 	}
@@ -815,7 +815,7 @@ elektron_rx (struct backend *backend, gint timeout)
   if (msg)
     {
       text = debug_get_hex_msg (msg);
-      debug_print (1, "Message received (%d): %s\n", msg->len, text);
+      debug_print (1, "Message received (%d): %s", msg->len, text);
       g_free (text);
     }
 
@@ -857,14 +857,14 @@ elektron_tx_and_rx_timeout (struct backend *backend,
       guint16 exp_seq = g_ntohs (*((guint16 *) & rx_msg->data[2]));
       if (seq != exp_seq)
 	{
-	  error_print ("Unexpected sequence in response. Skipping...\n");
+	  error_print ("Unexpected sequence in response. Skipping...");
 	  free_msg (rx_msg);
 	  continue;
 	}
 
       if (rx_msg->data[4] != msg_type)
 	{
-	  error_print ("Illegal message type in response. Skipping...\n");
+	  error_print ("Illegal message type in response. Skipping...");
 	  free_msg (rx_msg);
 	  rx_msg = NULL;
 	  break;
@@ -1027,7 +1027,7 @@ elektron_src_dst_common (struct backend *backend,
   else
     {
       res = -EPERM;
-      error_print ("%s (%s)\n", backend_strerror (backend, res),
+      error_print ("%s (%s)", backend_strerror (backend, res),
 		   elektron_get_msg_string (rx_msg));
     }
   free_msg (rx_msg);
@@ -1067,7 +1067,7 @@ elektron_move_common_item (struct backend *backend, const gchar *src,
 
   //Renaming is not implemented for directories so we need to implement it.
 
-  debug_print (1, "Renaming remotely from %s to %s...\n", src, dst);
+  debug_print (1, "Renaming remotely from %s to %s...", src, dst);
 
   type = elektron_get_path_type (backend, src, init_iter);
   if (type == ITEM_TYPE_FILE)
@@ -1133,7 +1133,7 @@ elektron_path_common (struct backend *backend, const gchar *path,
   else
     {
       res = -EPERM;
-      debug_print (1, "Error: %s\n", elektron_get_msg_string (rx_msg));
+      debug_print (1, "Error: %s", elektron_get_msg_string (rx_msg));
     }
   free_msg (rx_msg);
 
@@ -1264,11 +1264,11 @@ elektron_delete_common_item (struct backend *backend, const gchar *path,
     }
   else if (type == ITEM_TYPE_DIR)
     {
-      debug_print (1, "Deleting %s samples dir...\n", path);
+      debug_print (1, "Deleting %s samples dir...", path);
 
       if (init_iter (backend, &iter, path, NULL))
 	{
-	  error_print ("Error while opening samples dir %s dir\n", path);
+	  error_print ("Error while opening samples dir %s dir", path);
 	  res = -EINVAL;
 	}
       else
@@ -1344,7 +1344,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
   res = elektron_get_smplrw_info_from_msg (rx_msg, &id, NULL);
   if (res)
     {
-      error_print ("%s (%s)\n", backend_strerror (backend, res),
+      error_print ("%s (%s)", backend_strerror (backend, res),
 		   elektron_get_msg_string (rx_msg));
       free_msg (rx_msg);
       return res;
@@ -1369,7 +1369,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
       //Response: x, x, x, x, 0xc2, [0 (error), 1 (success)]...
       if (!elektron_get_msg_status (rx_msg))
 	{
-	  error_print ("Unexpected status\n");
+	  error_print ("Unexpected status");
 	}
       free_msg (rx_msg);
       i++;
@@ -1382,7 +1382,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
       usleep (BE_REST_TIME_US);
     }
 
-  debug_print (2, "%d bytes sent\n", transferred);
+  debug_print (2, "%d bytes sent", transferred);
 
   if (active)
     {
@@ -1395,7 +1395,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
       //Response: x, x, x, x, 0xc1, [0 (error), 1 (success)]...
       if (!elektron_get_msg_status (rx_msg))
 	{
-	  error_print ("Unexpected status\n");
+	  error_print ("Unexpected status");
 	}
       free_msg (rx_msg);
     }
@@ -1505,14 +1505,14 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
   res = elektron_get_smplrw_info_from_msg (rx_msg, &id, &frames);
   if (res)
     {
-      error_print ("%s (%s)\n", backend_strerror (backend, res),
+      error_print ("%s (%s)", backend_strerror (backend, res),
 		   elektron_get_msg_string (rx_msg));
       free_msg (rx_msg);
       return res;
     }
   free_msg (rx_msg);
 
-  debug_print (2, "%d frames to download\n", frames);
+  debug_print (2, "%d frames to download", frames);
 
   g_mutex_lock (&control->mutex);
   active = control->active;
@@ -1557,7 +1557,7 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 	  sample_info->midi_note = 0;
 	  sample_info->channels = elektron_sample_header->stereo + 1;
 	  sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
-	  debug_print (2, "Loop start at %d, loop end at %d\n",
+	  debug_print (2, "Loop start at %d, loop end at %d",
 		       sample_info->loop_start, sample_info->loop_end);
 	}
 
@@ -1571,7 +1571,7 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
       usleep (BE_REST_TIME_US);
     }
 
-  debug_print (2, "%d bytes received\n", next_block_start);
+  debug_print (2, "%d bytes received", next_block_start);
 
   if (active)
     {
@@ -1674,7 +1674,7 @@ elektron_new_msg_upgrade_os_write (GByteArray *os_data, gint *offset)
 
   crc = crc32 (0xffffffff, &os_data->data[*offset], len);
 
-  debug_print (2, "CRC: %0x\n", crc);
+  debug_print (2, "CRC: %0x", crc);
 
   aux32 = g_htonl (crc);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
@@ -1713,7 +1713,7 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
   if (op)
     {
       res = -EIO;
-      error_print ("%s (%s)\n", backend_strerror (backend, res),
+      error_print ("%s (%s)", backend_strerror (backend, res),
 		   elektron_get_msg_string (rx_msg));
       free_msg (rx_msg);
       goto end;
@@ -1741,7 +1741,7 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
       else if (op > 1)
 	{
 	  res = -EIO;
-	  error_print ("%s (%s)\n", backend_strerror (backend, res),
+	  error_print ("%s (%s)", backend_strerror (backend, res),
 		       elektron_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
 	  break;
@@ -1787,7 +1787,7 @@ elektron_get_storage_stats (struct backend *backend, guint8 type,
   op = elektron_get_msg_status (rx_msg);
   if (!op)
     {
-      error_print ("%s (%s)\n", backend_strerror (backend, -EIO),
+      error_print ("%s (%s)", backend_strerror (backend, -EIO),
 		   elektron_get_msg_string (rx_msg));
       free_msg (rx_msg);
       return -EIO;
@@ -1890,7 +1890,7 @@ elektron_next_data_entry (struct item_iterator *iter)
 
 	  snprintf (metadata_path, PATH_MAX, "%s/%d/%s", iter->dir,
 		    iter->item.id, FS_DATA_METADATA_FILE);
-	  debug_print (2, "Reading metadata from %s...\n", metadata_path);
+	  debug_print (2, "Reading metadata from %s...", metadata_path);
 	  if (!elektron_download_data_snd (data->backend, metadata_path,
 					   &output, NULL))
 	    {
@@ -1920,7 +1920,7 @@ elektron_next_data_entry (struct item_iterator *iter)
 
       break;
     default:
-      error_print ("Unrecognized data entry: %d\n", iter->item.type);
+      error_print ("Unrecognized data entry: %d", iter->item.type);
       break;
     }
 
@@ -2286,7 +2286,7 @@ elektron_open_datum (struct backend *backend, const gchar *path,
   if (!elektron_get_msg_status (rx_msg))
     {
       res = -EPERM;
-      error_print ("%s (%s)\n", backend_strerror (backend, res),
+      error_print ("%s (%s)", backend_strerror (backend, res),
 		   elektron_get_msg_string (rx_msg));
       free_msg (rx_msg);
       goto cleanup;
@@ -2303,13 +2303,13 @@ elektron_open_datum (struct backend *backend, const gchar *path,
       compression = rx_msg->data[14];
 
       debug_print (1,
-		   "Open datum info: job id: %d; chunk size: %d; compression: %d\n",
+		   "Open datum info: job id: %d; chunk size: %d; compression: %d",
 		   *jid, chunk_size, compression);
     }
 
   if (mode == O_WRONLY)
     {
-      debug_print (1, "Open datum info: job id: %d\n", *jid);
+      debug_print (1, "Open datum info: job id: %d", *jid);
     }
 
   free_msg (rx_msg);
@@ -2371,7 +2371,7 @@ elektron_close_datum (struct backend *backend,
 
   if (!elektron_get_msg_status (rx_msg))
     {
-      error_print ("%s (%s)\n", backend_strerror (backend, -EPERM),
+      error_print ("%s (%s)", backend_strerror (backend, -EPERM),
 		   elektron_get_msg_string (rx_msg));
       free_msg (rx_msg);
       return -EPERM;
@@ -2383,14 +2383,14 @@ elektron_close_datum (struct backend *backend,
   data32 = (guint32 *) & rx_msg->data[10];
   asize = g_ntohl (*data32);
 
-  debug_print (1, "Close datum info: job id: %d; size: %d\n", r_jid, asize);
+  debug_print (1, "Close datum info: job id: %d; size: %d", r_jid, asize);
 
   free_msg (rx_msg);
 
   if (mode == O_WRONLY && asize != wsize)
     {
       error_print
-	("Actual download bytes (%d) differs from expected ones (%d)\n",
+	("Actual download bytes (%d) differs from expected ones (%d)",
 	 asize, wsize);
       return -EINVAL;
     }
@@ -2477,7 +2477,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
       if (!elektron_get_msg_status (rx_msg))
 	{
 	  err = -EPERM;
-	  error_print ("%s (%s)\n", backend_strerror (backend, err),
+	  error_print ("%s (%s)", backend_strerror (backend, err),
 		       elektron_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
 	  break;
@@ -2503,7 +2503,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
       if (data_size)
 	{
 	  debug_print (1,
-		       "Read datum info: job id: %d; last: %d; seq: %d; status: %d; hash: 0x%08x\n",
+		       "Read datum info: job id: %d; last: %d; seq: %d; status: %d; hash: 0x%08x",
 		       r_jid, last, r_seq, status, hash);
 
 	  g_byte_array_append (content, (guint8 *) & rx_msg->data[27],
@@ -2513,7 +2513,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
 	{
 	  // Sometimes, the first message returns 0 data size and the rest of the parameters are not initialized.
 	  debug_print (1,
-		       "Read datum info: job id: %d; last: %d, hash: 0x%08x\n",
+		       "Read datum info: job id: %d; last: %d, hash: 0x%08x",
 		       r_jid, last, hash);
 	  status = 0;
 	}
@@ -2857,7 +2857,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
       if (!elektron_get_msg_status (rx_msg))
 	{
 	  err = -EPERM;
-	  error_print ("%s (%s)\n", backend_strerror (backend, err),
+	  error_print ("%s (%s)", backend_strerror (backend, err),
 		       elektron_get_msg_string (rx_msg));
 	  free_msg (rx_msg);
 	  break;
@@ -2875,7 +2875,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
       free_msg (rx_msg);
 
       debug_print (1,
-		   "Write datum info: job id: %d; seq: %d; total: %d\n",
+		   "Write datum info: job id: %d; seq: %d; total: %d",
 		   r_jid, r_seq, total);
 
       seq++;
@@ -2884,7 +2884,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
       if (total != offset)
 	{
 	  error_print
-	    ("Actual upload bytes (%d) differs from expected ones (%d)\n",
+	    ("Actual upload bytes (%d) differs from expected ones (%d)",
 	     total, offset);
 	}
 
@@ -2894,7 +2894,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
       g_mutex_unlock (&control->mutex);
     }
 
-  debug_print (2, "%d bytes sent\n", offset);
+  debug_print (2, "%d bytes sent", offset);
 
   err = elektron_close_datum (backend, jid, O_WRONLY, array->len);
 
@@ -3328,7 +3328,7 @@ elektron_configure_device (struct backend *backend, guint8 id)
 
   if (!json_parser_load_from_file (parser, devices_filename, &error))
     {
-      debug_print (1, "%s\n", error->message);
+      debug_print (1, "%s", error->message);
       g_clear_error (&error);
 
       g_free (devices_filename);
@@ -3343,7 +3343,7 @@ elektron_configure_device (struct backend *backend, guint8 id)
 	}
     }
 
-  debug_print (1, "Using %s...\n", devices_filename);
+  debug_print (1, "Using %s...", devices_filename);
 
   reader = json_reader_new (json_parser_get_root (parser));
   if (!reader)
@@ -3355,7 +3355,7 @@ elektron_configure_device (struct backend *backend, guint8 id)
 
   if (!json_reader_is_array (reader))
     {
-      error_print ("Not an array\n");
+      error_print ("Not an array");
       err = -ENODEV;
       goto cleanup_reader;
     }
@@ -3363,7 +3363,7 @@ elektron_configure_device (struct backend *backend, guint8 id)
   devices = json_reader_count_elements (reader);
   if (!devices)
     {
-      debug_print (1, "No devices found\n");
+      debug_print (1, "No devices found");
       err = -ENODEV;
       goto cleanup_reader;
     }
@@ -3373,14 +3373,13 @@ elektron_configure_device (struct backend *backend, guint8 id)
     {
       if (!json_reader_read_element (reader, i))
 	{
-	  error_print ("Cannot read element %d. Continuing...\n", i);
+	  error_print ("Cannot read element %d. Continuing...", i);
 	  continue;
 	}
 
       if (!json_reader_read_member (reader, DEV_TAG_ID))
 	{
-	  error_print ("Cannot read member '%s'. Continuing...\n",
-		       DEV_TAG_ID);
+	  error_print ("Cannot read member '%s'. Continuing...", DEV_TAG_ID);
 	  continue;
 	}
       data->device_desc.id = json_reader_get_int_value (reader);
@@ -3393,12 +3392,11 @@ elektron_configure_device (struct backend *backend, guint8 id)
 	}
 
       err = 0;
-      debug_print (1, "Device %d found\n", id);
+      debug_print (1, "Device %d found", id);
 
       if (!json_reader_read_member (reader, DEV_TAG_ALIAS))
 	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
-		       DEV_TAG_ALIAS);
+	  error_print ("Cannot read member '%s'. Stopping...", DEV_TAG_ALIAS);
 	  json_reader_end_element (reader);
 	  err = -ENODEV;
 	  break;
@@ -3409,8 +3407,7 @@ elektron_configure_device (struct backend *backend, guint8 id)
 
       if (!json_reader_read_member (reader, DEV_TAG_NAME))
 	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
-		       DEV_TAG_NAME);
+	  error_print ("Cannot read member '%s'. Stopping...", DEV_TAG_NAME);
 	  json_reader_end_element (reader);
 	  err = -ENODEV;
 	  break;
@@ -3421,7 +3418,7 @@ elektron_configure_device (struct backend *backend, guint8 id)
 
       if (!json_reader_read_member (reader, DEV_TAG_FILESYSTEMS))
 	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
+	  error_print ("Cannot read member '%s'. Stopping...",
 		       DEV_TAG_FILESYSTEMS);
 	  json_reader_end_element (reader);
 	  err = -ENODEV;
@@ -3432,7 +3429,7 @@ elektron_configure_device (struct backend *backend, guint8 id)
 
       if (!json_reader_read_member (reader, DEV_TAG_STORAGE))
 	{
-	  error_print ("Cannot read member '%s'. Stopping...\n",
+	  error_print ("Cannot read member '%s'. Stopping...",
 		       DEV_TAG_STORAGE);
 	  json_reader_end_element (reader);
 	  err = -ENODEV;
@@ -3542,7 +3539,7 @@ elektron_handshake (struct backend *backend)
       rx_msg = elektron_tx_and_rx (backend, tx_msg);
       if (rx_msg)
 	{
-	  debug_print (1, "UID: %x\n", *((guint32 *) & rx_msg->data[5]));
+	  debug_print (1, "UID: %x", *((guint32 *) & rx_msg->data[5]));
 	  free_msg (rx_msg);
 	}
 

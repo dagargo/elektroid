@@ -158,8 +158,7 @@ backend_tx_sysex_internal (struct backend *backend,
     {
       gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
 					transfer->raw->len);
-      debug_print (2, "Raw message sent (%d): %s\n", transfer->raw->len,
-		   text);
+      debug_print (2, "Raw message sent (%d): %s", transfer->raw->len, text);
       g_free (text);
     }
 
@@ -262,7 +261,7 @@ backend_fill_devices_array (GArray *devices)
 	    {
 	      goto cleanup_output;
 	    }
-	  debug_print (3, "Checking I/O availability (%s == %s)...\n",
+	  debug_print (3, "Checking I/O availability (%s == %s)...",
 		       iportname, oportname);
 #if defined(__linux__)
 	  if (!strcmp (iportname, oportname))
