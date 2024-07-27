@@ -60,13 +60,13 @@ package_get_tags_from_snd_metadata_int (JsonReader *reader)
 
   if (!json_reader_read_member (reader, METADATA_TAG_SAMPLE_REFS))
     {
-      debug_print (1, "Member '%s' not found\n", METADATA_TAG_SAMPLE_REFS);
+      debug_print (1, "Member '%s' not found", METADATA_TAG_SAMPLE_REFS);
       return NULL;
     }
 
   if (!json_reader_is_array (reader))
     {
-      error_print ("Member '%s' is not an array. Continuing...\n",
+      error_print ("Member '%s' is not an array. Continuing...",
 		   METADATA_TAG_SAMPLE_REFS);
       goto end;
     }
@@ -74,7 +74,7 @@ package_get_tags_from_snd_metadata_int (JsonReader *reader)
   elements = json_reader_count_elements (reader);
   if (!elements)
     {
-      debug_print (1, "No tags found\n");
+      debug_print (1, "No tags found");
       return NULL;
     }
 
@@ -84,7 +84,7 @@ package_get_tags_from_snd_metadata_int (JsonReader *reader)
 
       if (!json_reader_read_element (reader, i))
 	{
-	  error_print ("Cannot read element %d. Continuing...\n", i);
+	  error_print ("Cannot read element %d. Continuing...", i);
 	  continue;
 	}
 
@@ -142,14 +142,14 @@ package_add_resource (struct package *pkg,
   zip_int64_t index;
   zip_error_t zerror;
 
-  debug_print (1, "Adding file %s to zip (%d B)...\n", pkg_resource->path,
+  debug_print (1, "Adding file %s to zip (%d B)...", pkg_resource->path,
 	       pkg_resource->data->len);
   sample_source = zip_source_buffer_create (pkg_resource->data->data,
 					    pkg_resource->data->len, 0,
 					    &zerror);
   if (!sample_source)
     {
-      error_print ("Error while creating file source: %s\n",
+      error_print ("Error while creating file source: %s",
 		   zip_error_strerror (&zerror));
       zip_error_fini (&zerror);
       return -1;
@@ -159,7 +159,7 @@ package_add_resource (struct package *pkg,
 			ZIP_FL_OVERWRITE | ZIP_FL_ENC_UTF_8);
   if (index < 0)
     {
-      error_print ("Error while adding file: %s\n",
+      error_print ("Error while adding file: %s",
 		   zip_error_strerror (zip_get_error (pkg->zip)));
       zip_source_free (sample_source);
       return -1;
@@ -186,14 +186,14 @@ package_begin (struct package *pkg, gchar *name, const gchar *fw_version,
   pkg->device_desc = device_desc;
   pkg->type = type;
 
-  debug_print (1, "Creating zip buffer...\n");
+  debug_print (1, "Creating zip buffer...");
 
   zip_error_init (&zerror);
   pkg->zip_source = zip_source_buffer_create (pkg->buff, MAX_PACKAGE_LEN, 0,
 					      &zerror);
   if (!pkg->zip_source)
     {
-      error_print ("Error while creating zip source: %s\n",
+      error_print ("Error while creating zip source: %s",
 		   zip_error_strerror (&zerror));
       zip_error_fini (&zerror);
       g_free (pkg->buff);
@@ -203,7 +203,7 @@ package_begin (struct package *pkg, gchar *name, const gchar *fw_version,
   pkg->zip = zip_open_from_source (pkg->zip_source, ZIP_TRUNCATE, &zerror);
   if (!pkg->zip)
     {
-      error_print ("Error while creating in memory zip: %s\n",
+      error_print ("Error while creating in memory zip: %s",
 		   zip_error_strerror (&zerror));
       zip_error_fini (&zerror);
       zip_source_free (pkg->zip_source);
@@ -370,20 +370,20 @@ package_end (struct package *pkg, struct idata *out)
   ret = package_add_manifest (pkg);
   if (ret)
     {
-      error_print ("Error while formatting %s\n", MANIFEST_FILENAME);
+      error_print ("Error while formatting %s", MANIFEST_FILENAME);
       return ret;
     }
 
-  debug_print (1, "Writing zip to buffer...\n");
+  debug_print (1, "Writing zip to buffer...");
   if (zip_close (pkg->zip))
     {
-      error_print ("Error while creating in memory zip: %s\n",
+      error_print ("Error while creating in memory zip: %s",
 		   zip_error_strerror (zip_get_error (pkg->zip)));
       return -1;
     }
 
   zip_source_stat (pkg->zip_source, &zstat);
-  debug_print (1, "%" PRIu64 " B written to package\n", zstat.comp_size);
+  debug_print (1, "%" PRIu64 " B written to package", zstat.comp_size);
 
   zip_source_open (pkg->zip_source);
   content = g_byte_array_sized_new (zstat.comp_size);
@@ -424,14 +424,14 @@ package_open (struct package *pkg, struct idata *idata,
   zip_stat_t zstat;
   GByteArray *data = idata->content;
 
-  debug_print (1, "Opening zip stream...\n");
+  debug_print (1, "Opening zip stream...");
 
   zip_error_init (&zerror);
   pkg->zip_source = zip_source_buffer_create (data->data, data->len, 0,
 					      &zerror);
   if (!pkg->zip_source)
     {
-      error_print ("Error while creating zip source: %s\n",
+      error_print ("Error while creating zip source: %s",
 		   zip_error_strerror (&zerror));
       zip_error_fini (&zerror);
       return -1;
@@ -440,7 +440,7 @@ package_open (struct package *pkg, struct idata *idata,
   pkg->zip = zip_open_from_source (pkg->zip_source, ZIP_RDONLY, &zerror);
   if (!pkg->zip)
     {
-      error_print ("Error while creating in memory zip: %s\n",
+      error_print ("Error while creating in memory zip: %s",
 		   zip_error_strerror (&zerror));
       zip_error_fini (&zerror);
       zip_source_free (pkg->zip_source);
@@ -450,7 +450,7 @@ package_open (struct package *pkg, struct idata *idata,
   err = zip_stat (pkg->zip, MANIFEST_FILENAME, ZIP_FL_ENC_STRICT, &zstat);
   if (err)
     {
-      error_print ("Error while loading '%s': %s\n", MANIFEST_FILENAME,
+      error_print ("Error while loading '%s': %s", MANIFEST_FILENAME,
 		   zip_error_strerror (&zerror));
       zip_error_fini (&zerror);
       zip_source_free (pkg->zip_source);
@@ -517,7 +517,7 @@ package_receive_pkg_resources (struct package *pkg,
 
   metadata_path = path_chain (PATH_INTERNAL, payload_path,
 			      FS_DATA_METADATA_FILE);
-  debug_print (1, "Getting metadata from %s...\n", metadata_path);
+  debug_print (1, "Getting metadata from %s...", metadata_path);
   control->parts = 2 + packaget_get_pkg_sample_slots (backend);	// main, metadata and sample slots.
   control->part = 0;
   job_control_set_progress (control, 0.0);
@@ -525,7 +525,7 @@ package_receive_pkg_resources (struct package *pkg,
   ret = download_data (backend, metadata_path, &metadata_file, control);
   if (ret)
     {
-      debug_print (1, "Metadata file not available\n");
+      debug_print (1, "Metadata file not available");
       control->parts = 1;
       goto get_payload;
     }
@@ -563,14 +563,14 @@ package_receive_pkg_resources (struct package *pkg,
 
   if (!json_reader_read_member (reader, MAN_TAG_SAMPLE_REFS))
     {
-      debug_print (1, "Member '%s' not found\n", MAN_TAG_SAMPLE_REFS);
+      debug_print (1, "Member '%s' not found", MAN_TAG_SAMPLE_REFS);
       control->parts = 2;
       goto cleanup_reader;
     }
 
   if (!json_reader_is_array (reader))
     {
-      error_print ("Member '%s' is not an array. Continuing...\n",
+      error_print ("Member '%s' is not an array. Continuing...",
 		   MAN_TAG_SAMPLE_REFS);
       control->parts = 2;
       goto cleanup_reader;
@@ -579,7 +579,7 @@ package_receive_pkg_resources (struct package *pkg,
   elements = json_reader_count_elements (reader);
   if (!elements)
     {
-      debug_print (1, "No samples found\n");
+      debug_print (1, "No samples found");
       control->parts = 2;
       goto cleanup_reader;
     }
@@ -590,12 +590,12 @@ package_receive_pkg_resources (struct package *pkg,
     {
       if (!json_reader_read_element (reader, i))
 	{
-	  error_print ("Cannot read element %d. Continuing...\n", i);
+	  error_print ("Cannot read element %d. Continuing...", i);
 	  continue;
 	}
       if (!json_reader_read_member (reader, MAN_TAG_HASH))
 	{
-	  error_print ("Cannot read member '%s'. Continuing...\n",
+	  error_print ("Cannot read member '%s'. Continuing...",
 		       MAN_TAG_HASH);
 	  continue;
 	}
@@ -604,7 +604,7 @@ package_receive_pkg_resources (struct package *pkg,
 
       if (!json_reader_read_member (reader, MAN_TAG_SIZE))
 	{
-	  error_print ("Cannot read member '%s'. Continuing...\n",
+	  error_print ("Cannot read member '%s'. Continuing...",
 		       MAN_TAG_SIZE);
 	  continue;
 	}
@@ -617,18 +617,18 @@ package_receive_pkg_resources (struct package *pkg,
 							     size);
       if (!sample_path)
 	{
-	  debug_print (1, "Sample not found. Skipping...\n");
+	  debug_print (1, "Sample not found. Skipping...");
 	  continue;
 	}
 
-      debug_print (1, "Hash: %" PRIu64 "; size: %" PRIu64 "; path: %s\n",
+      debug_print (1, "Hash: %" PRIu64 "; size: %" PRIu64 "; path: %s",
 		   hash, size, sample_path);
-      debug_print (1, "Getting sample %s...\n", sample_path);
+      debug_print (1, "Getting sample %s...", sample_path);
 
       if (download_sample (backend, sample_path, &sample_file, control))
 	{
 	  g_free (sample_path);
-	  error_print ("Error while downloading sample. Continuing...\n");
+	  error_print ("Error while downloading sample. Continuing...");
 	  continue;
 	}
 
@@ -637,7 +637,7 @@ package_receive_pkg_resources (struct package *pkg,
       if (ret)
 	{
 	  error_print
-	    ("Error while converting sample to wave file. Continuing...\n");
+	    ("Error while converting sample to wave file. Continuing...");
 	  g_free (sample_path);
 	  continue;
 	}
@@ -654,7 +654,7 @@ package_receive_pkg_resources (struct package *pkg,
       if (package_add_resource (pkg, pkg_resource, TRUE))
 	{
 	  package_free_package_resource (pkg_resource);
-	  error_print ("Error while packaging sample\n");
+	  error_print ("Error while packaging sample");
 	  continue;
 	}
 
@@ -667,11 +667,11 @@ cleanup_parser:
   g_object_unref (parser);
 get_payload:
   idata_free (&metadata_file);
-  debug_print (1, "Getting payload from %s...\n", payload_path);
+  debug_print (1, "Getting payload from %s...", payload_path);
   ret = download_data (backend, payload_path, &payload_file, control);
   if (ret)
     {
-      error_print ("Error while downloading payload\n");
+      error_print ("Error while downloading payload");
       ret = -1;
     }
   else
@@ -730,7 +730,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
   if (!json_reader_read_member (reader, PKG_TAG_PAYLOAD))
     {
-      error_print ("No '%s' found\n", PKG_TAG_PAYLOAD);
+      error_print ("No '%s' found", PKG_TAG_PAYLOAD);
       ret = -1;
       goto cleanup_reader;
     }
@@ -739,7 +739,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
   if (zip_stat (pkg->zip, pkg->name, ZIP_FL_ENC_STRICT, &zstat))
     {
-      error_print ("Error while loading '%s': %s\n", MANIFEST_FILENAME,
+      error_print ("Error while loading '%s': %s", MANIFEST_FILENAME,
 		   zip_error_strerror (&zerror));
       zip_error_fini (&zerror);
       ret = -1;
@@ -763,14 +763,14 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
   ret = upload_data (backend, payload_path, &file, control);
   if (ret)
     {
-      error_print ("Error while uploading payload to '%s'\n", payload_path);
+      error_print ("Error while uploading payload to '%s'", payload_path);
       goto cleanup_reader;
     }
   control->part++;
 
   if (!json_reader_read_member (reader, PKG_TAG_FIRMWARE_VERSION))
     {
-      error_print ("No '%s' found\n", PKG_TAG_FIRMWARE_VERSION);
+      error_print ("No '%s' found", PKG_TAG_FIRMWARE_VERSION);
       ret = -1;
       goto cleanup_reader;
     }
@@ -779,7 +779,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
   if (!json_reader_read_member (reader, PKG_TAG_FILE_TYPE))
     {
-      error_print ("No '%s' found\n", PKG_TAG_FILE_TYPE);
+      error_print ("No '%s' found", PKG_TAG_FILE_TYPE);
       ret = -1;
       goto cleanup_reader;
     }
@@ -801,24 +801,24 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
   else
     {
       pkg->type = PKG_FILE_TYPE_NONE;
-      debug_print (1, "Invalid '%s': %s\n", PKG_TAG_FILE_TYPE, file_type);
+      debug_print (1, "Invalid '%s': %s", PKG_TAG_FILE_TYPE, file_type);
     }
 
   if (!json_reader_read_member (reader, PKG_TAG_PRODUCT_TYPE))
     {
-      error_print ("No '%s' found\n", PKG_TAG_PRODUCT_TYPE);
+      error_print ("No '%s' found", PKG_TAG_PRODUCT_TYPE);
       ret = 0;
       goto cleanup_reader;
     }
   if (!json_reader_is_array (reader))
     {
-      error_print ("Member '%s' is not an array\n", PKG_TAG_PRODUCT_TYPE);
+      error_print ("Member '%s' is not an array", PKG_TAG_PRODUCT_TYPE);
       ret = -1;
       goto cleanup_reader;
     }
   if (!json_reader_count_elements (reader))
     {
-      error_print ("No product types found\n");
+      error_print ("No product types found");
       ret = 0;
       goto cleanup_reader;
     }
@@ -828,10 +828,10 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       goto cleanup_reader;
     }
   product_type = atoi (json_reader_get_string_value (reader));
-  debug_print (1, "ProductType: %" PRId64 "\n", product_type);
+  debug_print (1, "ProductType: %" PRId64 "", product_type);
   if (pkg->device_desc->id != product_type)
     {
-      debug_print (1, "Incompatible product type. Continuing...\n");
+      debug_print (1, "Incompatible product type. Continuing...");
     }
   json_reader_end_element (reader);
   json_reader_end_element (reader);
@@ -846,7 +846,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
   if (!json_reader_is_array (reader))
     {
-      error_print ("Member '%s' is not an array. Skipping samples...\n",
+      error_print ("Member '%s' is not an array. Skipping samples...",
 		   PKG_TAG_SAMPLES);
       ret = -1;
       goto cleanup_reader;
@@ -871,7 +871,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
       if (zip_stat (pkg->zip, sample_path, ZIP_FL_ENC_STRICT, &zstat))
 	{
-	  error_print ("Error while loading '%s': %s\n",
+	  error_print ("Error while loading '%s': %s",
 		       MANIFEST_FILENAME, zip_error_strerror (&zerror));
 	  zip_error_fini (&zerror);
 	  ret = -1;
@@ -887,7 +887,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       if (sample_load_from_memfile (&sample_file, &sample, control,
 				    &sample_info_req, &sample_info_src))
 	{
-	  error_print ("Error while loading '%s': %s\n",
+	  error_print ("Error while loading '%s': %s",
 		       sample_path, zip_error_strerror (&zerror));
 	  continue;
 	}
@@ -909,7 +909,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
       if (ret)
 	{
-	  error_print ("Error while uploading sample to '%s'\n",
+	  error_print ("Error while uploading sample to '%s'",
 		       &sample_path[7]);
 	  continue;
 	}

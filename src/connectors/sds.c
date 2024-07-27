@@ -194,7 +194,7 @@ sds_get_bytes_per_word (gint32 bits, guint *word_size, guint *bytes_per_word)
   *word_size = (guint) ceil (bits / 8.0);
   if (*word_size != 2)
     {
-      error_print ("%d bits resolution not supported\n", bits);
+      error_print ("%d bits resolution not supported", bits);
       return -1;
     }
 
@@ -334,11 +334,11 @@ sds_debug_print_sample_data (guint bits, guint bytes_per_word,
 			     guint packets)
 {
   debug_print (1,
-	       "Resolution: %d bits; %d bytes per word; word size %d bytes.\n",
+	       "Resolution: %d bits; %d bytes per word; word size %d bytes.",
 	       bits, bytes_per_word, word_size);
-  debug_print (1, "Sample rate: %d Hz\n", sample_rate);
-  debug_print (1, "Words: %d\n", words);
-  debug_print (1, "Packets: %d\n", packets);
+  debug_print (1, "Sample rate: %d Hz", sample_rate);
+  debug_print (1, "Words: %d", words);
+  debug_print (1, "Packets: %d", packets);
 }
 
 static GByteArray *
@@ -358,7 +358,7 @@ sds_download_get_header (struct backend *backend, guint id)
       return rx_msg;
     }
 
-  debug_print (1, "Bad dump header\n");
+  debug_print (1, "Bad dump header");
 
   return NULL;
 }
@@ -384,7 +384,7 @@ sds_download_try (struct backend *backend, const gchar *path,
   id = atoi (name);
   g_free (name);
 
-  debug_print (1, "Sending dump request...\n");
+  debug_print (1, "Sending dump request...");
   packet = 0;
 
   retries = 0;
@@ -439,7 +439,7 @@ sds_download_try (struct backend *backend, const gchar *path,
   control->part = 0;
   job_control_set_progress (control, 0.0);
 
-  debug_print (1, "Receiving dump data...\n");
+  debug_print (1, "Receiving dump data...");
 
   tx_msg = g_byte_array_new ();
   total_words = 0;
@@ -453,7 +453,7 @@ sds_download_try (struct backend *backend, const gchar *path,
     {
       if (retries == SDS_MAX_RETRIES)
 	{
-	  debug_print (1, "Too many retries\n");
+	  debug_print (1, "Too many retries");
 	  err = -EIO;
 	  break;
 	}
@@ -492,13 +492,13 @@ sds_download_try (struct backend *backend, const gchar *path,
       else if (err == -ETIMEDOUT)
 	{
 	  debug_print (2,
-		       "Packet not received. Remaining packets: %d; remaining samples: %d\n",
+		       "Packet not received. Remaining packets: %d; remaining samples: %d",
 		       packets - rx_packets, words - total_words);
 	  //This is a hack to fix a downloading error with an E-Mu ESI-2000 as it never sends the last packet when there is only 1 sample.
 	  if ((rx_packets == packets - 1) && (total_words == words - 1))
 	    {
 	      debug_print (2,
-			   "Skipping last packet as it has only one sample...\n");
+			   "Skipping last packet as it has only one sample...");
 	      rx_packets++;
 
 	      //We cancel the upload.
@@ -519,14 +519,14 @@ sds_download_try (struct backend *backend, const gchar *path,
 
       if (rx_msg->len != SDS_DATA_PACKET_LEN)
 	{
-	  debug_print (2, "Invalid length\n");
+	  debug_print (2, "Invalid length");
 	  goto retry;
 	}
 
       guint exp_packet_id = exp_packet % 0x80;
       if (rx_msg->data[4] != exp_packet_id)
 	{
-	  debug_print (2, "Invalid packet number (%d != %d)\n",
+	  debug_print (2, "Invalid packet number (%d != %d)",
 		       rx_msg->data[4], exp_packet_id);
 	  goto retry;
 	}
@@ -534,7 +534,7 @@ sds_download_try (struct backend *backend, const gchar *path,
       if (sds_checksum (rx_msg->data) !=
 	  rx_msg->data[SDS_DATA_PACKET_CKSUM_POS])
 	{
-	  debug_print (2, "Invalid cksum\n");
+	  debug_print (2, "Invalid cksum");
 	  goto retry;
 	}
 
@@ -566,7 +566,7 @@ sds_download_try (struct backend *backend, const gchar *path,
       continue;
 
     retry:
-      debug_print (2, "Retrying packet...\n");
+      debug_print (2, "Retrying packet...");
       if (rx_msg)
 	{
 	  free_msg (rx_msg);
@@ -582,13 +582,13 @@ sds_download_try (struct backend *backend, const gchar *path,
 end:
   if (active && !err && rx_packets == packets)
     {
-      debug_print (1, "%d frames received\n", total_words);
+      debug_print (1, "%d frames received", total_words);
       job_control_set_progress (control, 1.0);
       idata_init (sample, output, NULL, sample_info);
     }
   else
     {
-      debug_print (1, "Cancelling SDS download...\n");
+      debug_print (1, "Cancelling SDS download...");
       sds_tx_handshake (backend, SDS_CANCEL, packet % 0x80);
       g_byte_array_free (output, TRUE);
     }
@@ -610,7 +610,7 @@ sds_download (struct backend *backend, const gchar *path,
       if (err == -EBADMSG)
 	{
 	  //We retry the whole download to fix a downloading error with an E-Mu ESI-2000 as it occasionally doesn't send the last packet.
-	  debug_print (2, "Bug detected. Retrying download...\n");
+	  debug_print (2, "Bug detected. Retrying download...");
 	}
       else
 	{
@@ -644,7 +644,7 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray *tx_msg,
 
       if (!memcmp (rx_msg->data, SDS_WAIT, sizeof (SDS_WAIT)) && !waiting)
 	{
-	  debug_print (2, "WAIT received. Waiting for an ACK...\n");
+	  debug_print (2, "WAIT received. Waiting for an ACK...");
 	  t = SDS_NO_SPEC_TIMEOUT;
 	  waiting = TRUE;
 	}
@@ -739,7 +739,7 @@ sds_rename (struct backend *backend, const gchar *src, const gchar *dst)
   GByteArray *tx_msg, *rx_msg;
   guint id;
   gint err;
-  debug_print (1, "Sending rename request...\n");
+  debug_print (1, "Sending rename request...");
   err = common_slot_get_id_name_from_path (src, &id, NULL);
   if (err)
     {
@@ -794,7 +794,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
   active = control->active;
   g_mutex_unlock (&control->mutex);
 
-  debug_print (1, "Sending dump header...\n");
+  debug_print (1, "Sending dump header...");
 
   words = input->len >> 1;	//bytes to words (frames)
   word_size = (gint) ceil (bits / 8.0);
@@ -808,12 +808,12 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
 			     SDS_NO_SPEC_TIMEOUT);
   if (err == -ENOMSG)
     {
-      debug_print (2, "No packet received after a WAIT. Continuing...\n");
+      debug_print (2, "No packet received after a WAIT. Continuing...");
     }
   else if (err == -ETIMEDOUT)
     {
       //In case of no response, we can assume an open loop.
-      debug_print (1, "Assuming open loop...\n");
+      debug_print (1, "Assuming open loop...");
       open_loop = TRUE;
     }
   else if (err)
@@ -821,7 +821,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
       goto cleanup;
     }
 
-  debug_print (1, "Sending dump data...\n");
+  debug_print (1, "Sending dump data...");
 
   word = 0;
   sds_debug_print_sample_data (bits, bytes_per_word,
@@ -836,7 +836,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
 
       if (retries == SDS_MAX_RETRIES)
 	{
-	  debug_print (1, "Too many retries\n");
+	  debug_print (1, "Too many retries");
 	  break;
 	}
 
@@ -859,37 +859,37 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
 
       if (err == -EBADMSG)
 	{
-	  debug_print (2, "NAK received. Retrying...\n");
+	  debug_print (2, "NAK received. Retrying...");
 	  retries++;
 	  continue;
 	}
       else if (err == -ENOMSG)
 	{
-	  debug_print (2, "No packet received after a WAIT. Continuing...\n");
+	  debug_print (2, "No packet received after a WAIT. Continuing...");
 	  g_mutex_lock (&backend->mutex);
 	  backend_rx_drain (backend);
 	  g_mutex_unlock (&backend->mutex);
 	}
       else if (err == -EINVAL)
 	{
-	  debug_print (2, "Unexpected packet number. Retrying...\n");
+	  debug_print (2, "Unexpected packet number. Retrying...");
 	  retries++;
 	  continue;
 	}
       else if (err == -ETIMEDOUT)
 	{
-	  debug_print (2, "No response. Retrying...\n");
+	  debug_print (2, "No response. Retrying...");
 	  retries++;
 	  continue;
 	}
       else if (err == -ECANCELED)
 	{
-	  debug_print (2, "Cancelled by device. Stopping...\n");
+	  debug_print (2, "Cancelled by device. Stopping...");
 	  goto end;
 	}
       else if (err)
 	{
-	  error_print ("Unhandled error\n");
+	  error_print ("Unhandled error");
 	  goto end;
 	}
 
@@ -919,7 +919,7 @@ end:
     }
   else
     {
-      debug_print (2, "Cancelling SDS upload...\n");
+      debug_print (2, "Cancelling SDS upload...");
       sds_tx_handshake (backend, SDS_CANCEL, packet % 0x80);
       err = -ECANCELED;
     }
@@ -1366,7 +1366,7 @@ sds_handshake (struct backend *backend)
     }
 
 end:
-  debug_print (1, "Name extension: %s\n", name_extension ? "yes" : "no");
+  debug_print (1, "Name extension: %s", name_extension ? "yes" : "no");
 
   //The remaining code is meant to set up different devices. These are the default values.
 

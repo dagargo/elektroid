@@ -301,7 +301,7 @@ efactor_upload (struct backend *backend, const gchar *path,
       || input->data[sizeof (EFACTOR_REQUEST_HEADER)] !=
       EFACTOR_OP_PRESETS_DUMP)
     {
-      error_print ("Bad preset\n");
+      error_print ("Bad preset");
       err = -EBADMSG;
       goto end;
     }
@@ -347,7 +347,7 @@ efactor_rename (struct backend *backend, const gchar *src, const gchar *dst)
   gchar **lines, **line, *sanitized;
   struct idata idata;
 
-  debug_print (1, "Renaming from %s to %s...\n", src, dst);
+  debug_print (1, "Renaming from %s to %s...", src, dst);
 
   //The control initialization is needed.
   control.active = TRUE;
@@ -491,16 +491,16 @@ efactor_handshake (struct backend *backend)
 		    backend->midi_info.version[1],
 		    backend->midi_info.version[2],
 		    backend->midi_info.version[3]);
-	  debug_print (1, "XML version:\n%s\n", &rx_msg->data[14]);
+	  debug_print (1, "XML version:\n%s", &rx_msg->data[14]);
 	}
       else
 	{
-	  debug_print (1, "Illegal MIDI identity reply length\n");
+	  debug_print (1, "Illegal MIDI identity reply length");
 	}
     }
   else
     {
-      debug_print (1, "Illegal SUB-ID2\n");
+      debug_print (1, "Illegal SUB-ID2");
     }
 
   free_msg (rx_msg);
@@ -515,47 +515,47 @@ efactor_handshake (struct backend *backend)
   tx_msg = efactor_new_get_msg (EFACTOR_MSG_TYPE_OBJECT, "0000");	//tj_version_key
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   id = rx_msg->data[sizeof (EFACTOR_REQUEST_HEADER) - 1];
-  debug_print (1, "Version: %s\n", &rx_msg->data[7]);
+  debug_print (1, "Version: %s", &rx_msg->data[7]);
   free_msg (rx_msg);
 
   tx_msg = efactor_new_get_msg (EFACTOR_MSG_TYPE_VALUE, "0001");	//tj_switch_key
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-  debug_print (1, "Switches: %s\n", &rx_msg->data[7]);
+  debug_print (1, "Switches: %s", &rx_msg->data[7]);
   swlen = strlen ((gchar *) & rx_msg->data[7]) - 2;	//Remove single quotes
   free_msg (rx_msg);
 
   tx_msg = efactor_new_get_msg (EFACTOR_MSG_TYPE_OBJECT, "0206");	//sp_num_banks_lo
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-  debug_print (1, "Minimum value: %s\n", &rx_msg->data[7]);
+  debug_print (1, "Minimum value: %s", &rx_msg->data[7]);
   min = atoi ((gchar *) & rx_msg->data[9]);
   free_msg (rx_msg);
 
   tx_msg = efactor_new_get_msg (EFACTOR_MSG_TYPE_OBJECT, "020A");	//sp_num_banks
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-  debug_print (1, "Maximum value: %s\n", &rx_msg->data[7]);
+  debug_print (1, "Maximum value: %s", &rx_msg->data[7]);
   max = atoi ((gchar *) & rx_msg->data[9]);
   free_msg (rx_msg);
 
   if (swlen == EFACTOR_FACTOR_SW_LEN)
     {
-      debug_print (1, "Factor pedal detected\n");
+      debug_print (1, "Factor pedal detected");
       min = 2 * min;
       max = 2 * (max + 1);
       type = EFACTOR_FACTOR;
     }
   else if (swlen == EFACTOR_H9_SW_LEN)
     {
-      debug_print (1, "H9 pedal detected\n");
+      debug_print (1, "H9 pedal detected");
       type = EFACTOR_H9;
     }
   else
     {
-      error_print ("Illegal switches number %d\n", swlen);
+      error_print ("Illegal switches number %d", swlen);
       return -ENODEV;
     }
 
   presets = max - min;
-  debug_print (1, "Total presets: %d [%d, %d]\n", presets, min, max - 1);
+  debug_print (1, "Total presets: %d [%d, %d]", presets, min, max - 1);
 
   data = g_malloc (sizeof (struct efactor_data));
   data->id = id;

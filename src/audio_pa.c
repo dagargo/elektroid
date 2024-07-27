@@ -45,7 +45,7 @@ audio_wait_success (struct audio *audio, pa_operation *operation)
 {
   if (!operation)
     {
-      debug_print (2, "No operation. Skipping wait...\n");
+      debug_print (2, "No operation. Skipping wait...");
       return;
     }
   while (pa_operation_get_state (operation) != PA_OPERATION_DONE)
@@ -139,7 +139,7 @@ audio_stop_playback (struct audio *audio)
       audio->status = AUDIO_STATUS_STOPPING_PLAYBACK;
       g_mutex_unlock (&audio->control.mutex);
 
-      debug_print (1, "Stopping playback...\n");
+      debug_print (1, "Stopping playback...");
 
       audio_stop_and_flush_stream (audio, audio->playback_stream);
 
@@ -167,7 +167,7 @@ audio_start_playback (struct audio *audio)
 
   audio_stop_playback (audio);
 
-  debug_print (1, "Starting playback...\n");
+  debug_print (1, "Starting playback...");
 
   audio_prepare (audio, AUDIO_STATUS_PREPARING_PLAYBACK);
 
@@ -204,7 +204,7 @@ audio_stop_recording (struct audio *audio)
 
       audio_finish_recording (audio);
 
-      debug_print (1, "Stopping recording (%d frames read)...\n",
+      debug_print (1, "Stopping recording (%d frames read)...",
 		   sample_info->frames);
       audio_stop_and_flush_stream (audio, audio->record_stream);
     }
@@ -239,7 +239,7 @@ audio_start_recording (struct audio *audio, guint options,
   audio_prepare (audio, AUDIO_STATUS_PREPARING_RECORD);
 
   sample_info = audio->sample.info;
-  debug_print (1, "Starting recording (max %d frames)...\n",
+  debug_print (1, "Starting recording (max %d frames)...",
 	       sample_info->frames);
 
   pa_threaded_mainloop_lock (audio->mainloop);
@@ -258,7 +258,7 @@ audio_set_sink_volume (pa_context *context, const pa_sink_input_info *info,
   if (info && pa_cvolume_valid (&info->volume))
     {
       gdouble v = pa_sw_volume_to_linear (pa_cvolume_avg (&info->volume));
-      debug_print (1, "Setting volume to %f...\n", v);
+      debug_print (1, "Setting volume to %f...", v);
       audio->volume_change_callback (audio->callback_data, v);
     }
 }
@@ -296,7 +296,7 @@ audio_connect_playback_stream_callback (pa_stream *stream, void *data)
     {
       pa_stream_set_write_callback (stream, audio_write_callback, audio);
       audio->playback_index = pa_stream_get_index (audio->playback_stream);
-      debug_print (2, "Sink index: %d\n", audio->playback_index);
+      debug_print (2, "Sink index: %d", audio->playback_index);
       pa_context_get_sink_input_info (audio->context, audio->playback_index,
 				      audio_set_sink_volume, audio);
     }
@@ -311,7 +311,7 @@ audio_connect_record_stream_callback (pa_stream *stream, void *data)
     {
       pa_stream_set_read_callback (stream, audio_read_callback, audio);
       audio->record_index = pa_stream_get_index (audio->record_stream);
-      debug_print (2, "Sink index: %d\n", audio->record_index);
+      debug_print (2, "Sink index: %d", audio->record_index);
     }
 }
 
@@ -331,7 +331,7 @@ audio_server_info_callback (pa_context *context, const pa_server_info *info,
   audio->sample_spec.channels = AUDIO_CHANNELS;
   audio->sample_spec.rate = audio->rate;
 
-  debug_print (1, "Using %d Hz sample rate...\n", audio->rate);
+  debug_print (1, "Using %d Hz sample rate...", audio->rate);
 
   pa_proplist_set (props, PA_PROP_APPLICATION_ICON_NAME, PACKAGE,
 		   sizeof (PACKAGE));
@@ -455,7 +455,7 @@ audio_set_volume (struct audio *audio, gdouble volume)
 
   if (audio->playback_index != PA_INVALID_INDEX)
     {
-      debug_print (1, "Setting volume to %f...\n", volume);
+      debug_print (1, "Setting volume to %f...", volume);
       v = pa_sw_volume_from_linear (volume);
       pa_cvolume_set (&audio->volume, AUDIO_CHANNELS, v);
 

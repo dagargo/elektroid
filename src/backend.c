@@ -102,7 +102,7 @@ backend_midi_handshake (struct backend *backend)
 				    BE_SYSEX_TIMEOUT_GUESS_MS);
   if (!rx_msg)
     {
-      debug_print (1, "No MIDI identity reply\n");
+      debug_print (1, "No MIDI identity reply");
       return;
     }
 
@@ -134,17 +134,17 @@ backend_midi_handshake (struct backend *backend)
 		    backend->midi_info.version[1],
 		    backend->midi_info.version[2],
 		    backend->midi_info.version[3]);
-	  debug_print (1, "Detected device: %s %s\n", backend->name,
+	  debug_print (1, "Detected device: %s %s", backend->name,
 		       backend->version);
 	}
       else
 	{
-	  debug_print (1, "Illegal MIDI identity reply length\n");
+	  debug_print (1, "Illegal MIDI identity reply length");
 	}
     }
   else
     {
-      debug_print (1, "Illegal SUB-ID2\n");
+      debug_print (1, "Illegal SUB-ID2");
     }
 
   free_msg (rx_msg);
@@ -223,7 +223,7 @@ backend_tx_and_rx_sysex (struct backend *backend, GByteArray *tx_msg,
 void
 backend_destroy_data (struct backend *backend)
 {
-  debug_print (1, "Destroying backend data...\n");
+  debug_print (1, "Destroying backend data...");
   g_free (backend->data);
   backend->data = NULL;
 }
@@ -238,7 +238,7 @@ backend_program_change (struct backend *backend, guint8 channel,
   msg[0] = 0xc0 | (channel & 0xf);
   msg[1] = program & 0x7f;
 
-  debug_print (1, "Sending MIDI program %d...\n", msg[1]);
+  debug_print (1, "Sending MIDI program %d...", msg[1]);
 
   if ((size = backend_tx_raw (backend, msg, 2)) < 0)
     {
@@ -258,7 +258,7 @@ backend_send_3_byte_message (struct backend *backend, guint8 msg_type,
   msg[1] = d1 & 0x7f;
   msg[2] = d2 & 0x7f;
 
-  debug_print (1, "Sending MIDI message: status %08x; data %d, %d...\n",
+  debug_print (1, "Sending MIDI message: status %08x; data %d, %d...",
 	       msg[0], msg[1], msg[2]);
 
   if ((size = backend_tx_raw (backend, msg, 3)) < 0)
@@ -306,7 +306,7 @@ backend_send_rpn (struct backend *backend, guint8 channel,
 gint
 backend_init_midi (struct backend *backend, const gchar *id)
 {
-  debug_print (1, "Initializing backend (%s) to '%s'...\n",
+  debug_print (1, "Initializing backend (%s) to '%s'...",
 	       backend_name (), id);
   backend->type = BE_TYPE_MIDI;
   gint err = backend_init_int (backend, id);
@@ -317,10 +317,10 @@ backend_init_midi (struct backend *backend, const gchar *id)
       g_mutex_unlock (&backend->mutex);
     }
 
-  debug_print (1, "Stopping device...\n");
+  debug_print (1, "Stopping device...");
   if (backend_tx_raw (backend, (guint8 *) "\xfc", 1) < 0)
     {
-      error_print ("Error while stopping device\n");
+      error_print ("Error while stopping device");
     }
   usleep (BE_REST_TIME_US);
 
@@ -330,7 +330,7 @@ backend_init_midi (struct backend *backend, const gchar *id)
 void
 backend_destroy (struct backend *backend)
 {
-  debug_print (1, "Destroying backend...\n");
+  debug_print (1, "Destroying backend...");
 
   if (backend->destroy_data)
     {
@@ -373,11 +373,11 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
 
   if (!backend->inputp)
     {
-      error_print ("Input port is NULL\n");
+      error_print ("Input port is NULL");
       return -ENOTCONN;
     }
 
-  debug_print (4, "Reading data...\n");
+  debug_print (4, "Reading data...");
 
   while (1)
     {
@@ -386,17 +386,17 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
 	  return -ECANCELED;
 	}
 
-      debug_print (6, "Checking timeout (%d ms, %d ms, %s mode)...\n",
+      debug_print (6, "Checking timeout (%d ms, %d ms, %s mode)...",
 		   transfer->time, transfer->timeout,
 		   transfer->batch ? "batch" : "single");
       if (((transfer->batch && transfer->status == RECEIVING)
 	   || !transfer->batch) && transfer->timeout > -1
 	  && transfer->time >= transfer->timeout)
 	{
-	  debug_print (1, "Timeout (%d)\n", transfer->timeout);
+	  debug_print (1, "Timeout (%d)", transfer->timeout);
 	  gchar *text = debug_get_hex_data (debug_level, backend->buffer,
 					    backend->rx_len);
-	  debug_print (4, "Internal buffer data (%zd): %s\n", backend->rx_len,
+	  debug_print (4, "Internal buffer data (%zd): %s", backend->rx_len,
 		       text);
 	  g_free (text);
 	  return -ETIMEDOUT;
@@ -424,7 +424,7 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
 	  if (debug_level >= 4)
 	    {
 	      gchar *text = debug_get_hex_data (debug_level, tmp, rx_len);
-	      debug_print (4, "Skipping non SysEx data (%zd): %s\n", rx_len,
+	      debug_print (4, "Skipping non SysEx data (%zd): %s", rx_len,
 			   text);
 	      g_free (text);
 	    }
@@ -463,7 +463,7 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
   if (debug_level >= 3)
     {
       text = debug_get_hex_data (debug_level, data, rx_len);
-      debug_print (3, "Queued data (%zu): %s\n", rx_len, text);
+      debug_print (3, "Queued data (%zu): %s", rx_len, text);
       g_free (text);
     }
 
@@ -490,7 +490,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
     {
       if (backend->rx_len == next_check)
 	{
-	  debug_print (4, "Reading from MIDI device...\n");
+	  debug_print (4, "Reading from MIDI device...");
 	  if (transfer->batch)
 	    {
 	      transfer->time = 0;
@@ -518,7 +518,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	}
       else
 	{
-	  debug_print (4, "Reading from internal buffer...\n");
+	  debug_print (4, "Reading from internal buffer...");
 	}
 
       transfer->status = RECEIVING;
@@ -545,11 +545,11 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	    {
 	      gchar *text = debug_get_hex_data (debug_level, backend->buffer,
 						i);
-	      debug_print (4, "Skipping non SysEx data in buffer (%d): %s\n",
+	      debug_print (4, "Skipping non SysEx data in buffer (%d): %s",
 			   i, text);
 	      g_free (text);
 	    }
-	  debug_print (3, "Copying %d bytes...\n", len - i);
+	  debug_print (3, "Copying %d bytes...", len - i);
 	  g_byte_array_append (transfer->raw, b, len - i);
 
 	  backend->rx_len -= len;
@@ -562,7 +562,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	  if (transfer->raw->len == 2
 	      && !memcmp (transfer->raw->data, "\xf0\xf7", 2))
 	    {
-	      debug_print (4, "Removing empty message...\n");
+	      debug_print (4, "Removing empty message...");
 	      g_byte_array_remove_range (transfer->raw, 0, 2);
 	      continue;
 	    }
@@ -572,14 +572,14 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	      gchar *text =
 		debug_get_hex_data (debug_level, transfer->raw->data,
 				    transfer->raw->len);
-	      debug_print (4, "Queued data (%d): %s\n",
+	      debug_print (4, "Queued data (%d): %s",
 			   transfer->raw->len, text);
 	      g_free (text);
 	    }
 	}
       else
 	{
-	  debug_print (4, "No message in the queue. Continuing...\n");
+	  debug_print (4, "No message in the queue. Continuing...");
 	}
 
       if (transfer->raw->len && !transfer->batch)
@@ -604,7 +604,7 @@ end:
 	{
 	  gchar *text = debug_get_hex_data (debug_level, transfer->raw->data,
 					    transfer->raw->len);
-	  debug_print (2, "Raw message received (%d): %s\n",
+	  debug_print (2, "Raw message received (%d): %s",
 		       transfer->raw->len, text);
 	  g_free (text);
 	}
@@ -624,7 +624,7 @@ backend_rx_drain (struct backend *backend)
   transfer.timeout = 1000;
   transfer.batch = FALSE;
 
-  debug_print (2, "Draining buffers...\n");
+  debug_print (2, "Draining buffers...");
   backend->rx_len = 0;
   backend_rx_drain_int (backend);
   while (!backend_rx_sysex (backend, &transfer))
@@ -696,7 +696,7 @@ backend_init_connector (struct backend *backend,
 				       0, NULL);
 	  if (g_regex_match (regex, device->name, 0, NULL))
 	    {
-	      debug_print (1, "Connector %s matches the device\n",
+	      debug_print (1, "Connector %s matches the device",
 			   connector->name);
 	      list = g_slist_prepend (list, (void *) connector);
 	    }
@@ -736,7 +736,7 @@ backend_init_connector (struct backend *backend,
 	  goto end;
 	}
 
-      debug_print (1, "Testing %s connector (%sstandard handshake)...\n",
+      debug_print (1, "Testing %s connector (%sstandard handshake)...",
 		   c->name, c->standard ? "" : "non ");
 
       if (conn_name)
@@ -750,7 +750,7 @@ backend_init_connector (struct backend *backend,
 	      err = c->handshake (backend);
 	      if (!err)
 		{
-		  debug_print (1, "Using %s connector...\n", c->name);
+		  debug_print (1, "Using %s connector...", c->name);
 		  backend->conn_name = c->name;
 		}
 	      goto end;
@@ -766,14 +766,14 @@ backend_init_connector (struct backend *backend,
 
 	  if (!err)
 	    {
-	      debug_print (1, "Using %s connector...\n", c->name);
+	      debug_print (1, "Using %s connector...", c->name);
 	      backend->conn_name = c->name;
 	      goto end;
 	    }
 	}
     }
 
-  error_print ("No device recognized\n");
+  error_print ("No device recognized");
 
 end:
   g_slist_free (list);

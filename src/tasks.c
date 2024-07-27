@@ -133,7 +133,7 @@ tasks_complete_current (gpointer data)
     }
   else
     {
-      debug_print (1, "No task running. Skipping...\n");
+      debug_print (1, "No task running. Skipping...");
     }
 
   return FALSE;
@@ -367,7 +367,7 @@ tasks_add (struct tasks *tasks, enum task_type type,
 static void
 tasks_join_thread (struct tasks *tasks)
 {
-  debug_print (2, "Joining task thread...\n");
+  debug_print (2, "Joining task thread...");
 
   g_mutex_lock (&tasks->transfer.control.mutex);
   g_cond_signal (&tasks->transfer.control.cond);
@@ -383,7 +383,7 @@ tasks_join_thread (struct tasks *tasks)
 void
 tasks_stop_thread (struct tasks *tasks)
 {
-  debug_print (1, "Stopping task thread...\n");
+  debug_print (1, "Stopping task thread...");
   job_control_set_active_lock (&tasks->transfer.control, FALSE);
   tasks_join_thread (tasks);
 }

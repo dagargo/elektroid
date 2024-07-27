@@ -38,7 +38,7 @@ microfreak_serialize_object (GByteArray *output, const gchar *version,
   gint8 *v;
   guint len;
 
-  debug_print (2, "Serializing object '%s'...\n", name);
+  debug_print (2, "Serializing object '%s'...", name);
 
   len = strlen (MICROFREAK_SERIALIZATION_TAG);
   snprintf (aux, LABEL_MAX, "%d ", len);
@@ -194,7 +194,7 @@ microfreak_deserialize_object (GByteArray *input, const gchar *header,
   memcpy (name, p, v);
   name[v] = 0;
 
-  debug_print (2, "Deserializing object '%s'...\n", name);
+  debug_print (2, "Deserializing object '%s'...", name);
 
   p += v;
   err = microfreak_deserialize_read_value (&p, &v);
@@ -350,7 +350,7 @@ microfreak_zobject_save (const gchar *path, struct idata *zobject,
   if (!archive)
     {
       zip_error_init_with_code (&zerror, err);
-      error_print ("Error while saving zip file: %s\n",
+      error_print ("Error while saving zip file: %s",
 		   zip_error_strerror (&zerror));
       zip_error_fini (&zerror);
       return -EIO;
@@ -359,7 +359,7 @@ microfreak_zobject_save (const gchar *path, struct idata *zobject,
   source = zip_source_buffer (archive, array->data, array->len, 0);
   if (!source)
     {
-      error_print ("Error while creating source buffer: %s\n",
+      error_print ("Error while creating source buffer: %s",
 		   zip_strerror (archive));
       err = -EIO;
       goto end;
@@ -369,15 +369,14 @@ microfreak_zobject_save (const gchar *path, struct idata *zobject,
   index = zip_file_add (archive, name, source, ZIP_FL_OVERWRITE);
   if (index < 0)
     {
-      error_print ("Error while adding to file: %s\n",
-		   zip_strerror (archive));
+      error_print ("Error while adding to file: %s", zip_strerror (archive));
       err = -EIO;
       goto end;
     }
 
   if (zip_close (archive))
     {
-      error_print ("Error while saving zip file: %s\n",
+      error_print ("Error while saving zip file: %s",
 		   zip_error_strerror (&zerror));
       zip_error_fini (&zerror);
       err = -EIO;
@@ -406,7 +405,7 @@ microfreak_zobject_load (const char *path, struct idata *zobject,
   if (!archive)
     {
       zip_error_init_with_code (&zerror, err);
-      error_print ("Error while opening zip file: %s\n",
+      error_print ("Error while opening zip file: %s",
 		   zip_error_strerror (&zerror));
       zip_error_fini (&zerror);
       return -EIO;

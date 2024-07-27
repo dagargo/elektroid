@@ -34,7 +34,7 @@ notifier_set_dir (struct notifier *notifier)
 {
   if (!notifier->dir || strcmp (notifier->browser->dir, notifier->dir))
     {
-      debug_print (1, "Changing %s browser path to '%s'...\n",
+      debug_print (1, "Changing %s browser path to '%s'...",
 		   notifier->browser->name, notifier->browser->dir);
       if (notifier->dir)
 	{
@@ -67,7 +67,7 @@ notifier_run (gpointer data)
   gboolean reload = FALSE;
   struct notifier *notifier = data;
 
-  debug_print (1, "%s notifier running...\n", notifier->browser->name);
+  debug_print (1, "%s notifier running...", notifier->browser->name);
 
   while (1)
     {
@@ -78,7 +78,7 @@ notifier_run (gpointer data)
 	    {
 	      if (reload)
 		{
-		  debug_print (1, "Adding browser load function...\n");
+		  debug_print (1, "Adding browser load function...");
 		  g_idle_add (browser_load_dir, notifier->browser);
 		  reload = FALSE;
 		}
@@ -104,18 +104,18 @@ notifier_run (gpointer data)
 		   || notifier->event->mask & IN_MOVE_SELF
 		   || notifier->event->mask & IN_MOVED_TO)
 	    {
-	      debug_print (1, "Loading parent dir...\n");
+	      debug_print (1, "Loading parent dir...");
 	      g_idle_add (notifier_go_up, notifier->browser);
 	      goto end;		//There is no directory to be nofified of.
 	    }
 	  else if ((notifier->event->mask & IN_IGNORED))	// inotify_rm_watch called
 	    {
-	      debug_print (1, "Finishing notifier...\n");
+	      debug_print (1, "Finishing notifier...");
 	      goto end;
 	    }
 	  else
 	    {
-	      error_print ("Unexpected event: %d\n", notifier->event->mask);
+	      error_print ("Unexpected event: %d", notifier->event->mask);
 	    }
 	}
     }
@@ -154,8 +154,7 @@ notifier_set_active (struct notifier *notifier, gboolean active)
       notifier_set_dir (notifier);
       if (!notifier->thread)
 	{
-	  debug_print (1, "Starting %s notifier...\n",
-		       notifier->browser->name);
+	  debug_print (1, "Starting %s notifier...", notifier->browser->name);
 	  notifier->thread = g_thread_new ("notifier", notifier_run,
 					   notifier);
 	}
@@ -164,8 +163,7 @@ notifier_set_active (struct notifier *notifier, gboolean active)
     {
       if (notifier->thread)
 	{
-	  debug_print (1, "Stopping %s notifier...\n",
-		       notifier->browser->name);
+	  debug_print (1, "Stopping %s notifier...", notifier->browser->name);
 	  inotify_rm_watch (notifier->fd, notifier->wd);
 	  g_thread_join (notifier->thread);
 	  notifier->thread = NULL;

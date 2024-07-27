@@ -46,7 +46,7 @@ audio_stop_playback (struct audio *audio)
   audio->status = AUDIO_STATUS_STOPPED;
   g_mutex_unlock (&audio->control.mutex);
 
-  debug_print (1, "Stopping playback...\n");
+  debug_print (1, "Stopping playback...");
   rtaudio_abort_stream (audio->playback_rtaudio);	//Stop and flush buffer
 }
 
@@ -55,7 +55,7 @@ audio_start_playback (struct audio *audio)
 {
   audio_stop_playback (audio);
   audio_prepare (audio, AUDIO_STATUS_PLAYING);
-  debug_print (1, "Starting playback...\n");
+  debug_print (1, "Starting playback...");
   rtaudio_start_stream (audio->playback_rtaudio);
 }
 
@@ -80,7 +80,7 @@ audio_stop_recording (struct audio *audio)
 
   audio_finish_recording (audio);
 
-  debug_print (1, "Stopping recording (%d frames read)...\n",
+  debug_print (1, "Stopping recording (%d frames read)...",
 	       sample_info->frames);
   rtaudio_abort_stream (audio->record_rtaudio);	//Stop and flush buffer
 }
@@ -97,7 +97,7 @@ audio_start_recording (struct audio *audio, guint options,
   audio_prepare (audio, AUDIO_STATUS_RECORDING);
 
   sample_info = audio->sample.info;
-  debug_print (1, "Starting recording (max %d frames)...\n",
+  debug_print (1, "Starting recording (max %d frames)...",
 	       sample_info->frames);
 
   rtaudio_start_stream (audio->record_rtaudio);
@@ -123,7 +123,7 @@ audio_playback_cb (void *out, void *in, unsigned int frames,
 void
 audio_error_cb (rtaudio_error_t err, const char *msg)
 {
-  error_print ("Audio error: %s\n", msg);
+  error_print ("Audio error: %s", msg);
 }
 
 void
@@ -142,7 +142,7 @@ audio_init_int (struct audio *audio)
 
   for (i = 0; i < api_count; i++)
     {
-      debug_print (2, "Testing %s API...\n", rtaudio_api_name (apis[i]));
+      debug_print (2, "Testing %s API...", rtaudio_api_name (apis[i]));
 #if defined(__linux__)
       if (apis[i] == RTAUDIO_API_LINUX_PULSE)
 	{
@@ -173,14 +173,14 @@ audio_init_int (struct audio *audio)
   audio->playback_rtaudio = rtaudio_create (apis[i]);
   if (rtaudio_error (audio->playback_rtaudio))
     {
-      error_print ("Error while initilizing playback RtAudio: %s\n",
+      error_print ("Error while initilizing playback RtAudio: %s",
 		   rtaudio_error (audio->playback_rtaudio));
       return;
     }
 
   if (!rtaudio_device_count (audio->playback_rtaudio))
     {
-      error_print ("No devices found\n");
+      error_print ("No devices found");
       goto error_playback;
     }
 
@@ -203,13 +203,13 @@ audio_init_int (struct audio *audio)
   if (err || !rtaudio_is_stream_open (audio->playback_rtaudio))
     {
       error_print
-	("Error occurred while opening the playback RtAudio stream: %s\n",
+	("Error occurred while opening the playback RtAudio stream: %s",
 	 rtaudio_error (audio->playback_rtaudio));
       goto error_playback;
     }
 
   debug_print (1,
-	       "Using %s for playback with %d Hz sample rate and %d frames...\n",
+	       "Using %s for playback with %d Hz sample rate and %d frames...",
 	       dev_info.name, audio->rate, buffer_frames);
 
   audio->volume = 1.0;
@@ -218,14 +218,14 @@ audio_init_int (struct audio *audio)
   audio->record_rtaudio = rtaudio_create (apis[i]);
   if (rtaudio_error (audio->record_rtaudio))
     {
-      error_print ("Error while initilizing recording RtAudio: %s\n",
+      error_print ("Error while initilizing recording RtAudio: %s",
 		   rtaudio_error (audio->record_rtaudio));
       goto error_playback;
     }
 
   if (!rtaudio_device_count (audio->record_rtaudio))
     {
-      error_print ("No devices found\n");
+      error_print ("No devices found");
       goto error_record;
     }
 
@@ -247,13 +247,13 @@ audio_init_int (struct audio *audio)
   if (err || !rtaudio_is_stream_open (audio->record_rtaudio))
     {
       error_print
-	("Error occurred while opening the recording RtAudio stream: %s\n",
+	("Error occurred while opening the recording RtAudio stream: %s",
 	 rtaudio_error (audio->record_rtaudio));
       goto error_record;
     }
 
   debug_print (1,
-	       "Using %s for recording with %d Hz sample rate and %d frames...\n",
+	       "Using %s for recording with %d Hz sample rate and %d frames...",
 	       dev_info.name, audio->rate, buffer_frames);
 
   goto end;

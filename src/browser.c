@@ -235,7 +235,7 @@ browser_get_item_path (struct browser *browser, struct item *item)
   gchar *filename = get_filename (browser->fs_ops->options, item);
   enum path_type type = backend_get_path_type (browser->backend);
   gchar *path = path_chain (type, browser->dir, filename);
-  debug_print (1, "Using %s path for item %s (id %d)...\n", path, item->name,
+  debug_print (1, "Using %s path for item %s (id %d)...", path, item->name,
 	       item->id);
   g_free (filename);
   return path;
@@ -668,7 +668,7 @@ browser_load_dir_runner (gpointer data)
   g_idle_add (browser_load_dir_runner_hide_spinner, browser);
   if (err)
     {
-      error_print ("Error while opening '%s' dir\n", browser->dir);
+      error_print ("Error while opening '%s' dir", browser->dir);
       goto end;
     }
 
@@ -701,7 +701,7 @@ browser_load_dir (gpointer data)
   if (browser->loading)
     {
       g_mutex_unlock (&browser->mutex);
-      debug_print (1, "Browser already loading. Skipping load...\n");
+      debug_print (1, "Browser already loading. Skipping load...");
       return FALSE;
     }
   else

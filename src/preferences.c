@@ -50,14 +50,14 @@ preferences_save (struct preferences *preferences)
 			    S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH |
 			    S_IXOTH))
     {
-      error_print ("Error wile creating directory `%s'\n", preferences_path);
+      error_print ("Error wile creating directory `%s'", preferences_path);
       return 1;
     }
 
   g_free (preferences_path);
   preferences_path = get_user_dir (CONF_DIR PREFERENCES_FILE);
 
-  debug_print (1, "Saving preferences to '%s'...\n", preferences_path);
+  debug_print (1, "Saving preferences to '%s'...", preferences_path);
 
   builder = json_builder_new ();
 
@@ -114,7 +114,7 @@ preferences_load (struct preferences *preferences)
   json_parser_load_from_file (parser, preferences_file, &error);
   if (error)
     {
-      debug_print (1, "Error wile loading preferences from `%s': %s\n",
+      debug_print (1, "Error wile loading preferences from `%s': %s",
 		   preferences_file, error->message);
       g_error_free (error);
       g_object_unref (parser);
@@ -129,7 +129,7 @@ preferences_load (struct preferences *preferences)
       return 0;
     }
 
-  debug_print (1, "Loading preferences from '%s'...\n", preferences_file);
+  debug_print (1, "Loading preferences from '%s'...", preferences_file);
 
   reader = json_reader_new (json_parser_get_root (parser));
 

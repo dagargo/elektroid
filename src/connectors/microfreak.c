@@ -604,7 +604,7 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
   guint8 *header_payload, len;
   GByteArray *tx_msg, *rx_msg;
 
-  debug_print (1, "Renaming preset...\n");
+  debug_print (1, "Renaming preset...");
   err = common_slot_get_id_name_from_path (src, &id, NULL);
   if (err)
     {
@@ -926,7 +926,7 @@ microfreak_sample_get_cksum (GByteArray *input)
     {
       cksum += *v;
     }
-  debug_print (2, "sum: %0x\n", cksum);
+  debug_print (2, "sum: %0x", cksum);
 
   return cksum;
 }
@@ -1387,7 +1387,7 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
     }
   else
     {
-      debug_print (1, "Resampling to get a valid wavetable...\n");
+      debug_print (1, "Resampling to get a valid wavetable...");
       struct sample_info *si = aux.info;
       struct sample_info si_req;
       GByteArray *a;
@@ -1397,14 +1397,14 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
 			   job_control_set_sample_progress_no_sync, NULL);
       idata_free (&aux);
       a = wavetable->content;
-      debug_print (2, "Resulting size: %d\n", a->len);
+      debug_print (2, "Resulting size: %d", a->len);
       if (a->len < MICROFREAK_WAVETABLE_SIZE)
 	{
 	  for (gint i = a->len; i < MICROFREAK_WAVETABLE_SIZE; i += 2)
 	    {
 	      g_byte_array_append (a, (guint8 *) "\x00\x00", 2);
 	    }
-	  debug_print (2, "Resulting fixed size: %d\n", a->len);
+	  debug_print (2, "Resulting fixed size: %d", a->len);
 	}
       return err;
     }

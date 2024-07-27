@@ -58,7 +58,7 @@ common_slot_get_id_name_from_path (const char *path, guint *id, gchar **name)
     {
       if (name)
 	{
-	  error_print ("Path name not provided properly\n");
+	  error_print ("Path name not provided properly");
 	  err = -EINVAL;
 	  goto end;
 	}

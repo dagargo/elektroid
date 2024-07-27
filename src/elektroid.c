@@ -42,7 +42,7 @@
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
 
-#define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping...\n"
+#define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping..."
 
 #define TREEVIEW_SCROLL_LINES 2
 #define TREEVIEW_EDGE_SIZE 20
@@ -188,7 +188,7 @@ elektroid_load_devices (gboolean auto_select)
   GArray *devices = backend_get_devices ();
   struct backend_device device;
 
-  debug_print (1, "Loading devices...\n");
+  debug_print (1, "Loading devices...");
 
   if (editor.browser == &remote_browser)
     {
@@ -213,7 +213,7 @@ elektroid_load_devices (gboolean auto_select)
   g_array_free (devices, TRUE);
 
   device_index = auto_select && i == 1 ? 0 : -1;
-  debug_print (1, "Selecting device %d...\n", device_index);
+  debug_print (1, "Selecting device %d...", device_index);
   gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), device_index);
   if (device_index == -1)
     {
@@ -416,7 +416,7 @@ elektroid_rx_sysex_runner (gpointer data)
       if (!*res)
 	{
 	  text = debug_get_hex_msg (progress.sysex_transfer.raw);
-	  debug_print (1, "SysEx message received (%d): %s\n",
+	  debug_print (1, "SysEx message received (%d): %s",
 		       progress.sysex_transfer.raw->len, text);
 	  g_free (text);
 	}
@@ -682,7 +682,7 @@ elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
 
   path = path_chain (type, dir, item->name);
 
-  debug_print (1, "Deleting %s...\n", path);
+  debug_print (1, "Deleting %s...", path);
 
   if (item->type == ITEM_TYPE_FILE)
     {
@@ -692,7 +692,7 @@ elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
       err = browser->fs_ops->delete (browser->backend, id_path);
       if (err)
 	{
-	  error_print ("Error while deleting “%s”: %s.\n", path,
+	  error_print ("Error while deleting “%s”: %s.", path,
 		       g_strerror (-err));
 	}
       g_free (id_path);
@@ -767,7 +767,7 @@ elektroid_delete_files_runner (gpointer data)
 
       if (elektroid_delete_file (browser, browser->dir, &item))
 	{
-	  error_print ("Error while deleting file\n");
+	  error_print ("Error while deleting file");
 	}
 
       if (!progress_is_active ())
@@ -923,7 +923,7 @@ elektroid_drag_begin (GtkWidget *widget, GdkDragContext *context,
   g_list_free_full (tree_path_list, (GDestroyNotify) gtk_tree_path_free);
   browser->dnd = TRUE;
 
-  debug_print (1, "Drag begin data:\n%s\n", browser->dnd_data->str);
+  debug_print (1, "Drag begin data:\n%s", browser->dnd_data->str);
 
   return FALSE;
 }
@@ -954,7 +954,7 @@ elektroid_drag_end (GtkWidget *widget, GdkDragContext *context, gpointer data)
   GtkTreeSelection *selection;
   struct browser *browser = data;
 
-  debug_print (1, "Drag end\n");
+  debug_print (1, "Drag end");
 
   g_string_free (browser->dnd_data, TRUE);
   browser->dnd = FALSE;
@@ -1304,8 +1304,7 @@ elektroid_run_next (gpointer data)
       tasks.transfer.fs_ops = ops;
       tasks.transfer.batch_id = batch_id;
       tasks.transfer.mode = mode;
-      debug_print (1,
-		   "Running task type %d from %s to %s (filesystem %s)...\n",
+      debug_print (1, "Running task type %d from %s to %s (filesystem %s)...",
 		   type, tasks.transfer.src, tasks.transfer.dst,
 		   tasks.transfer.fs_ops->name);
 
@@ -1448,15 +1447,14 @@ elektroid_upload_task_runner (gpointer data)
   struct idata idata;
   gchar *dst_dir, *upload_path;
 
-  debug_print (1, "Local path: %s\n", tasks.transfer.src);
-  debug_print (1, "Remote path: %s\n", tasks.transfer.dst);
+  debug_print (1, "Local path: %s", tasks.transfer.src);
+  debug_print (1, "Remote path: %s", tasks.transfer.dst);
 
   if (remote_browser.fs_ops->mkdir
       && remote_browser.fs_ops->mkdir (remote_browser.backend,
 				       tasks.transfer.dst))
     {
-      error_print ("Error while creating remote %s dir\n",
-		   tasks.transfer.dst);
+      error_print ("Error while creating remote %s dir", tasks.transfer.dst);
       tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
       return NULL;
     }
@@ -1465,12 +1463,12 @@ elektroid_upload_task_runner (gpointer data)
 				     &tasks.transfer.control);
   if (res)
     {
-      error_print ("Error while loading file\n");
+      error_print ("Error while loading file");
       tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
       goto end;
     }
 
-  debug_print (1, "Writing from file %s (filesystem %s)...\n",
+  debug_print (1, "Writing from file %s (filesystem %s)...",
 	       tasks.transfer.src, tasks.transfer.fs_ops->name);
 
   if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
@@ -1500,7 +1498,7 @@ elektroid_upload_task_runner (gpointer data)
 
   if (res && tasks.transfer.control.active)
     {
-      error_print ("Error while uploading\n");
+      error_print ("Error while uploading");
       tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
     }
   else
@@ -1665,12 +1663,12 @@ elektroid_download_task_runner (gpointer userdata)
   struct idata idata;
   gchar *dst_path;
 
-  debug_print (1, "Remote path: %s\n", tasks.transfer.src);
-  debug_print (1, "Local dir: %s\n", tasks.transfer.dst);
+  debug_print (1, "Remote path: %s", tasks.transfer.src);
+  debug_print (1, "Local dir: %s", tasks.transfer.dst);
 
   if (local_browser.fs_ops->mkdir (local_browser.backend, tasks.transfer.dst))
     {
-      error_print ("Error while creating local %s dir\n", tasks.transfer.dst);
+      error_print ("Error while creating local %s dir", tasks.transfer.dst);
       tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
       goto end_no_dir;
     }
@@ -1698,7 +1696,7 @@ elektroid_download_task_runner (gpointer userdata)
     {
       if (tasks.transfer.control.active)
 	{
-	  error_print ("Error while downloading\n");
+	  error_print ("Error while downloading");
 	  tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
 	}
       else
@@ -1720,7 +1718,7 @@ elektroid_download_task_runner (gpointer userdata)
 
   if (tasks.transfer.status != TASK_STATUS_CANCELED)
     {
-      debug_print (1, "Writing %d bytes to file %s (filesystem %s)...\n",
+      debug_print (1, "Writing %d bytes to file %s (filesystem %s)...",
 		   idata.content->len, dst_path, tasks.transfer.fs_ops->name);
       res = tasks.transfer.fs_ops->save (dst_path, &idata,
 					 &tasks.transfer.control);
@@ -1783,10 +1781,10 @@ elektroid_add_download_task_path (const gchar *rel_path,
       filename = get_filename (remote_browser.fs_ops->options, &iter.item);
       path = path_chain (PATH_INTERNAL, rel_path, filename);
       elektroid_add_download_task_path (path, src_dir, dst_dir);
-      debug_print (1, "name: %s\n", filename);
+      debug_print (1, "name: %s", filename);
       g_free (path);
       g_free (filename);
-      debug_print (1, "next\n");
+      debug_print (1, "next");
     }
 
   item_iterator_free (&iter);
@@ -2157,7 +2155,7 @@ elektroid_fill_fs_combo_bg (gpointer data)
 
   if (any)
     {
-      debug_print (1, "Selecting first filesystem...\n");
+      debug_print (1, "Selecting first filesystem...");
       gtk_combo_box_set_active (GTK_COMBO_BOX (fs_combo), 0);
     }
 
@@ -2229,7 +2227,7 @@ elektroid_set_device (GtkWidget *object, gpointer data)
       if (progress.sysex_transfer.err &&
 	  progress.sysex_transfer.err != -ECANCELED)
 	{
-	  error_print ("Error while connecting: %s\n",
+	  error_print ("Error while connecting: %s",
 		       g_strerror (-progress.sysex_transfer.err));
 	  show_error_msg (_("Device “%s” not recognized: %s"),
 			  be_sys_device.name,
@@ -2265,7 +2263,7 @@ elektroid_dnd_received_system (const gchar *dir, const gchar *name,
       res = browser->fs_ops->move (browser->backend, filename, dst_path);
       if (res)
 	{
-	  error_print ("Error while moving from “%s” to “%s”: %s.\n",
+	  error_print ("Error while moving from “%s” to “%s”: %s.",
 		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
@@ -2295,7 +2293,7 @@ elektroid_dnd_received_remote (const gchar *dir, const gchar *name,
 					 filename, dst_path);
       if (res)
 	{
-	  error_print ("Error while moving from “%s” to “%s”: %s.\n",
+	  error_print ("Error while moving from “%s” to “%s”: %s.",
 		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
@@ -2445,7 +2443,7 @@ elektroid_dnd_received (GtkWidget *widget, GdkDragContext *context,
   if (!gtk_selection_data_get_length (selection_data))
     {
       gtk_drag_finish (context, TRUE, TRUE, time);
-      error_print ("DND invalid data\n");
+      error_print ("DND invalid data");
       return;
     }
 
@@ -2456,7 +2454,7 @@ elektroid_dnd_received (GtkWidget *widget, GdkDragContext *context,
   dnd_data->type_name = gdk_atom_name (type);
 
   data = (gchar *) gtk_selection_data_get_data (selection_data);
-  debug_print (1, "DND received batch %d data (%s):\n%s\n", batch_id,
+  debug_print (1, "DND received batch %d data (%s):\n%s", batch_id,
 	       dnd_data->type_name, data);
 
   dnd_data->uris = g_uri_list_extract_uris (data);
@@ -2532,7 +2530,7 @@ elektroid_dnd_get (GtkWidget *widget,
 		   guint info, guint time, gpointer user_data)
 {
   struct browser *browser = user_data;
-  debug_print (1, "Creating DND data...\n");
+  debug_print (1, "Creating DND data...");
   gtk_selection_data_set (selection_data,
 			  gtk_selection_data_get_target
 			  (selection_data), 8,
@@ -2547,7 +2545,7 @@ elektroid_drag_list_timeout (gpointer user_data)
   gchar *spath;
 
   spath = gtk_tree_path_to_string (browser->dnd_motion_path);
-  debug_print (2, "Getting into path: %s...\n", spath);
+  debug_print (2, "Getting into path: %s...", spath);
   g_free (spath);
 
   browser_item_activated (browser->view, browser->dnd_motion_path, NULL,
@@ -2564,7 +2562,7 @@ elektroid_drag_scroll_up_timeout (gpointer user_data)
 {
   GtkTreePath *start;
   struct browser *browser = user_data;
-  debug_print (2, "Scrolling up...\n");
+  debug_print (2, "Scrolling up...");
   gtk_tree_view_get_visible_range (browser->view, &start, NULL);
   for (guint i = 0; i < TREEVIEW_SCROLL_LINES; i++)
     {
@@ -2581,7 +2579,7 @@ elektroid_drag_scroll_down_timeout (gpointer user_data)
 {
   GtkTreePath *end;
   struct browser *browser = user_data;
-  debug_print (2, "Scrolling down...\n");
+  debug_print (2, "Scrolling down...");
   gtk_tree_view_get_visible_range (browser->view, NULL, &end);
   for (guint i = 0; i < TREEVIEW_SCROLL_LINES; i++)
     {
@@ -2623,7 +2621,7 @@ elektroid_drag_motion_list (GtkWidget *widget,
       if (column == browser->tree_view_name_column)
 	{
 	  spath = gtk_tree_path_to_string (path);
-	  debug_print (2, "Drag motion path: %s\n", spath);
+	  debug_print (2, "Drag motion path: %s", spath);
 	  g_free (spath);
 
 	  if (slot)
@@ -2741,7 +2739,7 @@ elektroid_quit ()
 
   editor_destroy (&editor);
 
-  debug_print (1, "Quitting GTK+...\n");
+  debug_print (1, "Quitting GTK+...");
   gtk_main_quit ();
 }
 

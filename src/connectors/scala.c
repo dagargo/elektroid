@@ -112,7 +112,7 @@ scl_init_scala_from_bytes (struct scala *scala, GByteArray *input)
       goto end;
     }
   snprintf (scala->desc, SCALA_DESC_MAX_LEN, "%s", *line);
-  debug_print (2, "Scala description: %s\n", scala->desc);
+  debug_print (2, "Scala description: %s", scala->desc);
 
   line++;
   line = scl_parser_get_next_line (line);
@@ -128,7 +128,7 @@ scl_init_scala_from_bytes (struct scala *scala, GByteArray *input)
       err = -ERANGE;
       goto end;
     }
-  debug_print (2, "Scala notes: %" G_GUINT64_FORMAT "\n", scala->notes);
+  debug_print (2, "Scala notes: %" G_GUINT64_FORMAT, scala->notes);
 
   notes = 0;
   for (gint i = 0; i < scala->notes; i++)
@@ -145,7 +145,7 @@ scl_init_scala_from_bytes (struct scala *scala, GByteArray *input)
 	{
 	  goto end;
 	}
-      debug_print (2, "Scala pitch %d: %f\n", i, scala->pitches[i]);
+      debug_print (2, "Scala pitch %d: %f", i, scala->pitches[i]);
       notes++;
     }
 

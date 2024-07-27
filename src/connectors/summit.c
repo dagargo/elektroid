@@ -430,7 +430,7 @@ summit_patch_rename (struct backend *backend, const gchar *src,
   guint8 *name;
   gchar *sanitized;
   struct job_control control;
-  debug_print (1, "Renaming from %s to %s...\n", src, dst);
+  debug_print (1, "Renaming from %s to %s...", src, dst);
 
   //The control initialization is needed.
   control.active = TRUE;
@@ -949,7 +949,7 @@ summit_wavetable_rename (struct backend *backend, const gchar *src,
       return -EINVAL;
     }
 
-  debug_print (1, "Renaming from %s to %s...\n", src, dst);
+  debug_print (1, "Renaming from %s to %s...", src, dst);
 
   tx_msg = g_byte_array_sized_new (23);
   g_byte_array_append (tx_msg, SUMMIT_GENERIC_REQ,
