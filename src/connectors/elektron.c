@@ -3141,7 +3141,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
 };
 
 static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
-  .id = FS_DATA_ALL,
+  .id = FS_DATA_ANY,
   .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
     FS_OPTION_SLOT_STORAGE,
   .name = "data",
