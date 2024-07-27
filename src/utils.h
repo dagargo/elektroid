@@ -116,9 +116,10 @@ gint file_save_data (const gchar * path, const guint8 * data, ssize_t len);
 
 gchar *get_human_size (gint64, gboolean);
 
-void job_control_set_progress_value (struct job_control *control, gdouble p);
+void job_control_set_progress_no_sync (struct job_control *control,
+				       gdouble progress);
 
-void job_control_set_progress (struct job_control *control, gdouble);
+void job_control_set_progress (struct job_control *control, gdouble progress);
 
 gboolean file_matches_extensions (const gchar * name,
 				  const GSList * extensions);

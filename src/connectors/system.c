@@ -252,6 +252,7 @@ system_load_custom (const gchar *path, struct idata *sample,
 		    const struct sample_info *sample_info_req)
 {
   struct sample_info sample_info_src;
+  //Typically, control parts are set not here but in this case makes more sense.
   control->parts = 1;
   control->part = 0;
   return sample_load_from_file (path, sample, control, sample_info_req,
@@ -273,6 +274,7 @@ gint
 system_upload (struct backend *backend, const gchar *path,
 	       struct idata *sample, struct job_control *control)
 {
+  //Typically, control parts are set here but in this case makes more sense do it in the load functions.
   return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
 }

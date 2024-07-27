@@ -347,7 +347,7 @@ tasks_add (struct tasks *tasks, enum task_type type,
 				     TASK_LIST_STORE_TYPE_FIELD, type,
 				     TASK_LIST_STORE_SRC_FIELD, src,
 				     TASK_LIST_STORE_DST_FIELD, dst,
-				     TASK_LIST_STORE_PROGRESS_FIELD, 0.0,
+				     TASK_LIST_STORE_PROGRESS_FIELD, 0,
 				     TASK_LIST_STORE_STATUS_HUMAN_FIELD,
 				     status_human,
 				     TASK_LIST_STORE_TYPE_HUMAN_FIELD,
@@ -394,6 +394,7 @@ tasks_update_current_progress (gpointer data)
   struct tasks *tasks = data;
   GtkTreeIter iter;
   gdouble progress;
+  gint percent;
 
   if (tasks_get_current (tasks, &iter))
     {
@@ -401,9 +402,10 @@ tasks_update_current_progress (gpointer data)
       progress = tasks->transfer.control.progress;
       g_mutex_unlock (&tasks->transfer.control.mutex);
 
+      percent = (gint) (100.0 * progress);
+
       gtk_list_store_set (tasks->list_store, &iter,
-			  TASK_LIST_STORE_PROGRESS_FIELD,
-			  100.0 * progress, -1);
+			  TASK_LIST_STORE_PROGRESS_FIELD, percent, -1);
     }
 
   return FALSE;

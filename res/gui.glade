@@ -891,7 +891,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <!-- column-name dst -->
       <column type="gchararray"/>
       <!-- column-name progress -->
-      <column type="gdouble"/>
+      <column type="gint"/>
       <!-- column-name status_human -->
       <column type="gchararray"/>
       <!-- column-name type_human -->
