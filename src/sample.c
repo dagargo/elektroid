@@ -962,18 +962,6 @@ cleanup:
   return 0;
 }
 
-void
-job_control_set_sample_progress_no_sync (struct job_control *control,
-					 gdouble p, gpointer data)
-{
-  job_control_set_progress_value (control, p);
-
-  if (control->callback)
-    {
-      control->callback (control);
-    }
-}
-
 gint
 sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 			  struct job_control *control,

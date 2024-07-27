@@ -1296,9 +1296,9 @@ elektroid_run_next (gpointer data)
       tasks.transfer.status = TASK_STATUS_RUNNING;
       tasks.transfer.control.active = TRUE;
       tasks.transfer.control.callback = elektroid_update_progress;
-      tasks.transfer.control.parts = 1000;	//Any reasonable high number is enough to make the progress monotonic.
+      tasks.transfer.control.parts = 0;
       tasks.transfer.control.part = 0;
-      job_control_set_progress (&tasks.transfer.control, 0.0);
+      tasks.transfer.control.progress = 0.0;
       tasks.transfer.src = src;
       tasks.transfer.dst = dst;
       tasks.transfer.fs_ops = ops;
@@ -1307,6 +1307,8 @@ elektroid_run_next (gpointer data)
       debug_print (1, "Running task type %d from %s to %s (filesystem %s)...",
 		   type, tasks.transfer.src, tasks.transfer.dst,
 		   tasks.transfer.fs_ops->name);
+
+      tasks_update_current_progress (&tasks);
 
       if (type == TASK_TYPE_UPLOAD)
 	{

@@ -322,11 +322,38 @@ get_human_size (gint64 size, gboolean with_space)
   return label;
 }
 
-inline void
+static inline void
 job_control_set_progress_value (struct job_control *control, gdouble p)
 {
-  control->progress =
-    (control->part / (double) control->parts) + (p / (double) control->parts);
+  if (control->parts)
+    {
+      if (control->part == control->parts)
+	{
+	  control->progress = 1.0;
+	}
+      else
+	{
+	  control->progress =
+	    (control->part / (double) control->parts) +
+	    (p / (double) control->parts);
+	}
+    }
+  else
+    {
+      control->progress = 0.0;
+    }
+}
+
+void
+job_control_set_sample_progress_no_sync (struct job_control *control,
+					 gdouble p, gpointer data)
+{
+  job_control_set_progress_value (control, p);
+
+  if (control->callback)
+    {
+      control->callback (control);
+    }
 }
 
 void
