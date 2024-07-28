@@ -340,13 +340,6 @@ elektroid_check_backend (gboolean startup)
   return connected;
 }
 
-static gboolean
-elektroid_check_backend_bg (gpointer data)
-{
-  elektroid_check_backend (FALSE);
-  return FALSE;
-}
-
 static void
 elektroid_cancel_all_tasks_and_wait ()
 {
@@ -2237,7 +2230,7 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 			  g_strerror (-progress.sysex_transfer.err));
 	}
 
-      elektroid_check_backend_bg (NULL);
+      elektroid_check_backend (FALSE);
       err = dres == GTK_RESPONSE_ACCEPT ? 0 : 1;
     }
 
