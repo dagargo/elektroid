@@ -437,7 +437,7 @@ elektroid_rx_sysex ()
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
   res = progress_run (elektroid_rx_sysex_runner, PROGRESS_TYPE_UPDATE, NULL,
-		      _("Receive SysEx"), "", TRUE, &dres);
+		      _("Receiving SysEx"), "", TRUE, &dres);
   if (!res)			//Signal captured while running the dialog.
     {
       g_byte_array_free (progress.sysex_transfer.raw, TRUE);
