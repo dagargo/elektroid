@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2024-07-10 12:59+0200\n"
+"POT-Creation-Date: 2024-07-28 14:55+0200\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: Spanish\n"
@@ -17,144 +17,144 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/elektroid.c:233 src/elektroid.c:239 src/editor.c:1300
+#: src/elektroid.c:231 src/elektroid.c:237 src/editor.c:1310
 msgid "Audio"
 msgstr ""
 
-#: src/elektroid.c:323 src/elektroid.c:2971
+#: src/elektroid.c:321 src/elektroid.c:2961
 msgid "Not connected"
 msgstr "No conectado"
 
-#: src/elektroid.c:449
-msgid "Receive SysEx"
-msgstr "Recibir SysEx"
+#: src/elektroid.c:440
+msgid "Receiving SysEx"
+msgstr "Recibiendo SysEx"
 
-#: src/elektroid.c:473
+#: src/elektroid.c:464
 msgid "Save SysEx"
 msgstr "Guardar SysEx"
 
-#: src/elektroid.c:476 src/elektroid.c:606 src/elektroid.c:801
-#: src/elektroid.c:1367 src/editor.c:1198 res/gui.glade:980 res/gui.glade:3038
+#: src/elektroid.c:467 src/elektroid.c:597 src/elektroid.c:792
+#: src/elektroid.c:1358 src/editor.c:1208 res/gui.glade:980 res/gui.glade:3038
 #: res/gui.glade:3143 res/gui.glade:3229
 msgid "_Cancel"
 msgstr "_Cancelar"
 
-#: src/elektroid.c:478 res/gui.glade:3052
+#: src/elektroid.c:469 res/gui.glade:3052
 msgid "_Save"
 msgstr "_Guardar"
 
-#: src/elektroid.c:482
+#: src/elektroid.c:473
 msgid "Received SysEx"
 msgstr "SysEx recibido"
 
-#: src/elektroid.c:487 src/elektroid.c:612
+#: src/elektroid.c:478 src/elektroid.c:603
 msgid "SysEx Files"
 msgstr "Archivos SysEx"
 
-#: src/elektroid.c:524
+#: src/elektroid.c:515
 #, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Error al guardar «%s»: %s."
 
-#: src/elektroid.c:549
+#: src/elektroid.c:540
 #, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Error al cargar «%s»: %s."
 
-#: src/elektroid.c:603
+#: src/elektroid.c:594
 msgid "Open SysEx"
 msgstr "Abrir SysEx"
 
-#: src/elektroid.c:608
+#: src/elektroid.c:599
 msgid "_Open"
 msgstr "_Abrir"
 
-#: src/elektroid.c:624
+#: src/elektroid.c:615
 msgid "Sending SysEx"
 msgstr "Enviando SysEx"
 
-#: src/elektroid.c:800
+#: src/elektroid.c:791
 msgid "Are you sure you want to delete the selected items?"
 msgstr "¿Está seguro de que quiere eliminar los elementos seleccionados?"
 
-#: src/elektroid.c:802
+#: src/elektroid.c:793
 msgid "_Delete"
 msgstr "_Eliminar"
 
-#: src/elektroid.c:821
+#: src/elektroid.c:812
 msgid "Deleting Files"
 msgstr "Eliminando archivos"
 
-#: src/elektroid.c:821
+#: src/elektroid.c:812
 msgid "Deleting..."
 msgstr "Eliminando..."
 
-#: src/elektroid.c:856 res/gui.glade:232 res/gui.glade:868
+#: src/elektroid.c:848 res/gui.glade:232 res/gui.glade:868
 msgid "Rename"
 msgstr "Renombrar"
 
-#: src/elektroid.c:880
+#: src/elektroid.c:872
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Error al renombrar a «%s»: %s."
 
-#: src/elektroid.c:1235 res/gui.glade:1718 res/gui.glade:2083
+#: src/elektroid.c:1227 res/gui.glade:1718 res/gui.glade:2083
 msgid "Add Directory"
 msgstr "Añadir directorio"
 
-#: src/elektroid.c:1242
+#: src/elektroid.c:1234
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Error al crear el directorio «%s»: %s."
 
-#: src/elektroid.c:1364 src/editor.c:1195
+#: src/elektroid.c:1355 src/editor.c:1205
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "¿Reemplazar el archivo «%s»?"
 
-#: src/elektroid.c:1368
+#: src/elektroid.c:1359
 msgid "_Skip"
 msgstr "_Omitir"
 
-#: src/elektroid.c:1369 src/editor.c:1199
+#: src/elektroid.c:1360 src/editor.c:1209
 msgid "_Replace"
 msgstr "_Reemplazar"
 
-#: src/elektroid.c:1373
+#: src/elektroid.c:1364
 msgid "Apply this action to all files"
 msgstr "Aplicar esta acción a todos los archivos"
 
-#: src/elektroid.c:1663 src/elektroid.c:1867 src/elektroid.c:2512
+#: src/elektroid.c:1652 src/elektroid.c:1856 src/elektroid.c:2502
 msgid "Preparing Tasks"
 msgstr "Preparando tareas"
 
-#: src/elektroid.c:1663 src/elektroid.c:1867 src/elektroid.c:2513
-#: src/progress.c:114
+#: src/elektroid.c:1652 src/elektroid.c:1856 src/elektroid.c:2503
+#: src/progress.c:107
 msgid "Waiting..."
 msgstr "Esperando..."
 
-#: src/elektroid.c:2231
+#: src/elektroid.c:2220
 msgid "Connecting to Device"
 msgstr "Conectando con el dispositivo"
 
-#: src/elektroid.c:2231
+#: src/elektroid.c:2221
 msgid "Connecting..."
 msgstr "Conectando..."
 
-#: src/elektroid.c:2238
+#: src/elektroid.c:2228
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Dispositivo «%s» no reconocido: %s"
 
-#: src/elektroid.c:2499
+#: src/elektroid.c:2489
 msgid "Moving Files"
 msgstr "Moviendo archivos"
 
-#: src/elektroid.c:2500
+#: src/elektroid.c:2490
 msgid "Moving..."
 msgstr "Moviendo..."
 
-#: src/editor.c:1306
+#: src/editor.c:1316
 msgid "Save Sample"
 msgstr "Guardar muestra"
 
@@ -190,7 +190,7 @@ msgstr "Carga"
 msgid "Download"
 msgstr "Descarga"
 
-#: src/browser.c:317
+#: src/browser.c:323
 msgid "min."
 msgstr "min."
 
@@ -202,48 +202,48 @@ msgstr "Salida"
 msgid "Input"
 msgstr "Entrada"
 
-#: src/menu_actions/backend.c:61
+#: src/mactions/backend.c:60
 msgid "OS _Upgrade"
 msgstr "Actualizar _SO"
 
-#: src/menu_actions/backend.c:76
+#: src/mactions/backend.c:75
 msgid "_Receive SysEx"
 msgstr "_Recibir SysEx"
 
-#: src/menu_actions/backend.c:91
+#: src/mactions/backend.c:90
 msgid "_Send SysEx"
 msgstr "_Enviar SysEx"
 
-#: src/menu_actions/microbrute.c:393
+#: src/mactions/microbrute.c:393
 msgid "_Configuration"
 msgstr "_Configuración"
 
-#: src/menu_actions/microbrute.c:421
+#: src/mactions/microbrute.c:421
 msgid "_Calibration"
 msgstr "_Calibración"
 
 #. This should only be translated if a non latin alphabet is used
-#: src/menu_actions/autosampler.c:203 res/gui.glade:959
+#: src/mactions/autosampler.c:204 res/gui.glade:959
 msgid "Auto Sampler"
 msgstr ""
 
-#: src/menu_actions/autosampler.c:204
+#: src/mactions/autosampler.c:204
 msgid "Recording..."
 msgstr "Grabando..."
 
-#: src/menu_actions/autosampler.c:282
+#: src/mactions/autosampler.c:281
 msgid "_Auto Sampler"
 msgstr ""
 
-#: src/progress.c:59
+#: src/progress.c:52
 msgid "Cancelling..."
 msgstr "Cancelando..."
 
-#: src/progress.c:117
+#: src/progress.c:110
 msgid "Sending..."
 msgstr "Enviando..."
 
-#: src/progress.c:120
+#: src/progress.c:113
 msgid "Receiving..."
 msgstr "Recibiendo..."
 
@@ -270,7 +270,7 @@ msgstr "Sampler SDS"
 msgid "MIDI device"
 msgstr "Dispositivo MIDI"
 
-#: src/connectors/system.c:707
+#: src/connectors/system.c:703
 msgid "System"
 msgstr "Sistema"
 
