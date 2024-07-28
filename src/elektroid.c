@@ -132,10 +132,10 @@ struct editor editor;
 struct tasks tasks;
 extern struct browser local_browser;
 extern struct browser remote_browser;
+extern struct maction_context maction_context;
 
 static struct backend backend;
 static struct preferences preferences;
-static struct maction_context maction_context;
 
 static guint batch_id;
 
