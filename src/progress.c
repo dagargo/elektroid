@@ -26,13 +26,6 @@
 
 struct progress progress;
 
-struct progress_progress_thread_data
-{
-  GThreadFunc f;
-  gpointer data;
-  enum progress_type type;
-};
-
 static gpointer
 progress_join_thread ()
 {
@@ -133,45 +126,50 @@ progress_init (GtkBuilder *builder)
   progress.dialog =
     GTK_DIALOG (gtk_builder_get_object (builder, "progress_dialog"));
   progress.bar =
-    GTK_WIDGET (gtk_builder_get_object (builder, "progress_bar"));
+    GTK_WIDGET (gtk_builder_get_object (builder, "progress_dialog_bar"));
   progress.label =
-    GTK_WIDGET (gtk_builder_get_object (builder, "progress_label"));
+    GTK_WIDGET (gtk_builder_get_object (builder, "progress_dialog_label"));
+  progress.cancel_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "progress_dialog_cancel_button"));
 
   g_signal_connect (progress.dialog, "response",
 		    G_CALLBACK (progress_stop_running_sysex), NULL);
 }
 
-static gboolean
-elektroid_new_progress_thread_gsourcefunc (gpointer user_data)
+static void
+progress_start_thread_gsourcefunc ()
 {
-  struct progress_progress_thread_data *data = user_data;
-  debug_print (1, "Creating SysEx thread...");
-  progress.thread = g_thread_new ("progress thread", data->f, data->data);
-  if (data->type == PROGRESS_TYPE_PULSE)
+  if (progress.type == PROGRESS_TYPE_PULSE)
     {
       g_timeout_add (PROGRESS_BAR_UPDATE_TIME, progress_pulse, NULL);
     }
-  else if (data->type == PROGRESS_TYPE_UPDATE)
+  else if (progress.type == PROGRESS_TYPE_UPDATE)
     {
       g_timeout_add (PROGRESS_BAR_UPDATE_TIME, progress_update, NULL);
     }
-  g_free (data);
-  return FALSE;
+  else
+    {
+      error_print ("Illegal progress type");
+    }
 }
 
 //Using this before a call to gtk_dialog_run ensures that the threads starts after the dialog is being run.
 gpointer
 progress_run (GThreadFunc f, enum progress_type type, gpointer user_data,
-	      const gchar *name, const gchar *text, gint *res)
+	      const gchar *name, const gchar *text, gboolean cancellable,
+	      gint *res)
 {
   gpointer v;
   gint dres;
-  struct progress_progress_thread_data *data =
-    g_malloc (sizeof (struct progress_progress_thread_data));
-  data->f = f;
-  data->data = user_data;
-  data->type = type;
-  g_idle_add (elektroid_new_progress_thread_gsourcefunc, data);
+
+  gtk_widget_set_visible (progress.cancel_button, cancellable);
+
+  debug_print (1, "Creating progress thread...");
+  progress.thread = g_thread_new ("progress thread", f, user_data);
+
+  progress.type = type;
+  progress_start_thread_gsourcefunc ();
 
   progress.start = g_get_monotonic_time ();
   gtk_window_set_title (GTK_WINDOW (progress.dialog), name);

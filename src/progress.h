@@ -37,8 +37,10 @@ struct progress
   GtkDialog *dialog;
   GtkWidget *bar;
   GtkWidget *label;
+  GtkWidget *cancel_button;
   GThread *thread;
   gint64 start;
+  enum progress_type type;
 };
 
 extern struct progress progress;
@@ -53,7 +55,7 @@ gboolean progress_is_active ();
 
 gpointer progress_run (GThreadFunc f, enum progress_type type,
 		       gpointer user_data, const gchar * name,
-		       const gchar * text, gint * res);
+		       const gchar * text, gboolean cancellable, gint * res);
 
 void progress_init (GtkBuilder * builder);
 
