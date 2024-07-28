@@ -139,9 +139,10 @@ static struct maction_context maction_context;
 
 static guint batch_id;
 
-static GtkWidget *main_window;
+GtkWidget *main_window;
+GtkWidget *dialog;
+
 static GtkAboutDialog *about_dialog;
-static GtkWidget *dialog;
 static GtkDialog *name_dialog;
 static GtkEntry *name_dialog_entry;
 static GtkWidget *name_dialog_accept_button;
@@ -344,7 +345,7 @@ static void
 elektroid_cancel_all_tasks_and_wait ()
 {
   tasks_cancel_all (NULL, &tasks);
-  //In this case, the active waiting can not be avoided as the user has cancelled the operation.
+  //In this case, the active waiting can not be avoided as the user has canceled the operation.
   while (tasks.transfer.status == TASK_STATUS_RUNNING)
     {
       usleep (50000);

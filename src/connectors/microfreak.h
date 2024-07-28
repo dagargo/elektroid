@@ -24,6 +24,8 @@
 #include "connector.h"
 #include "microfreak_sample.h"
 
+#define MICROFREAK_NAME "microfreak"
+
 #define MICROFREAK_PRESET_HEADER_MSG_LEN 0x23
 #define MICROFREAK_PRESET_PARTS 146
 #define MICROFREAK_PRESET_PART_LEN 0x20
@@ -83,5 +85,7 @@ struct microfreak_wavetable_header
 };
 
 extern const struct connector CONNECTOR_MICROFREAK;
+
+gint microfreak_sample_defragment (struct backend *backend);
 
 #endif

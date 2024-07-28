@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2024-07-28 14:55+0200\n"
+"POT-Creation-Date: 2024-07-28 15:53+0200\n"
 "PO-Revision-Date: 2023-01-16 19:47+0100\n"
 "Last-Translator: Dennis Braun <snd@debian.org>\n"
 "Language-Team: German\n"
@@ -17,141 +17,141 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:231 src/elektroid.c:237 src/editor.c:1310
+#: src/elektroid.c:232 src/elektroid.c:238 src/editor.c:1310
 msgid "Audio"
 msgstr ""
 
-#: src/elektroid.c:321 src/elektroid.c:2961
+#: src/elektroid.c:322 src/elektroid.c:2962
 msgid "Not connected"
 msgstr "Nicht verbunden"
 
-#: src/elektroid.c:440
+#: src/elektroid.c:441
 #, fuzzy
 msgid "Receiving SysEx"
 msgstr "Empfange SysEx"
 
-#: src/elektroid.c:464
+#: src/elektroid.c:465
 msgid "Save SysEx"
 msgstr "Speichere SysEx"
 
-#: src/elektroid.c:467 src/elektroid.c:597 src/elektroid.c:792
-#: src/elektroid.c:1358 src/editor.c:1208 res/gui.glade:980 res/gui.glade:3038
-#: res/gui.glade:3143 res/gui.glade:3229
+#: src/elektroid.c:468 src/elektroid.c:598 src/elektroid.c:793
+#: src/elektroid.c:1359 src/editor.c:1208 src/mactions/microfreak.c:53
+#: res/gui.glade:980 res/gui.glade:3038 res/gui.glade:3143 res/gui.glade:3229
 msgid "_Cancel"
 msgstr "_Abbrechen"
 
-#: src/elektroid.c:469 res/gui.glade:3052
+#: src/elektroid.c:470 res/gui.glade:3052
 msgid "_Save"
 msgstr "_Speichern"
 
-#: src/elektroid.c:473
+#: src/elektroid.c:474
 msgid "Received SysEx"
 msgstr "SysEx empfangen"
 
-#: src/elektroid.c:478 src/elektroid.c:603
+#: src/elektroid.c:479 src/elektroid.c:604
 msgid "SysEx Files"
 msgstr "SysEx Dateien"
 
-#: src/elektroid.c:515
+#: src/elektroid.c:516
 #, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Fehler beim Speichern von »%s«: %s."
 
-#: src/elektroid.c:540
+#: src/elektroid.c:541
 #, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Fehler beim Laden von »%s«: %s."
 
-#: src/elektroid.c:594
+#: src/elektroid.c:595
 msgid "Open SysEx"
 msgstr "Öffne SysEx"
 
-#: src/elektroid.c:599
+#: src/elektroid.c:600
 msgid "_Open"
 msgstr "_Öffnen"
 
-#: src/elektroid.c:615
+#: src/elektroid.c:616
 msgid "Sending SysEx"
 msgstr "Sende SysEx"
 
-#: src/elektroid.c:791
+#: src/elektroid.c:792
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Bist du sicher das du die ausgewählten Dateien löschen möchtest?"
 
-#: src/elektroid.c:793
+#: src/elektroid.c:794
 msgid "_Delete"
 msgstr "_Löschen"
 
-#: src/elektroid.c:812
+#: src/elektroid.c:813
 msgid "Deleting Files"
 msgstr "Entferne Dateien"
 
-#: src/elektroid.c:812
+#: src/elektroid.c:813
 msgid "Deleting..."
 msgstr "Lösche..."
 
-#: src/elektroid.c:848 res/gui.glade:232 res/gui.glade:868
+#: src/elektroid.c:849 res/gui.glade:232 res/gui.glade:868
 msgid "Rename"
 msgstr "Umbenennen"
 
-#: src/elektroid.c:872
+#: src/elektroid.c:873
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Fehler beim Umbenennen von »%s«: %s."
 
-#: src/elektroid.c:1227 res/gui.glade:1718 res/gui.glade:2083
+#: src/elektroid.c:1228 res/gui.glade:1718 res/gui.glade:2083
 msgid "Add Directory"
 msgstr "Verzeichnis hinzufügen"
 
-#: src/elektroid.c:1234
+#: src/elektroid.c:1235
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Fehler beim Erstellen des Verzeichnisses »%s«: %s."
 
-#: src/elektroid.c:1355 src/editor.c:1205
+#: src/elektroid.c:1356 src/editor.c:1205
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Ersetze Datei “%s”?"
 
-#: src/elektroid.c:1359
+#: src/elektroid.c:1360
 msgid "_Skip"
 msgstr "_Überspringe"
 
-#: src/elektroid.c:1360 src/editor.c:1209
+#: src/elektroid.c:1361 src/editor.c:1209
 msgid "_Replace"
 msgstr "_Ersetze"
 
-#: src/elektroid.c:1364
+#: src/elektroid.c:1365
 msgid "Apply this action to all files"
 msgstr "Diese Aktion auf alle Dateien anwenden"
 
-#: src/elektroid.c:1652 src/elektroid.c:1856 src/elektroid.c:2502
+#: src/elektroid.c:1653 src/elektroid.c:1857 src/elektroid.c:2503
 msgid "Preparing Tasks"
 msgstr "Aufgaben werden vorbereitet"
 
-#: src/elektroid.c:1652 src/elektroid.c:1856 src/elektroid.c:2503
+#: src/elektroid.c:1653 src/elektroid.c:1857 src/elektroid.c:2504
 #: src/progress.c:107
 msgid "Waiting..."
 msgstr "Warte..."
 
-#: src/elektroid.c:2220
+#: src/elektroid.c:2221
 msgid "Connecting to Device"
 msgstr "Verbindung zum Gerät wird hergestellt"
 
-#: src/elektroid.c:2221
+#: src/elektroid.c:2222
 msgid "Connecting..."
 msgstr "Verbinde..."
 
-#: src/elektroid.c:2228
+#: src/elektroid.c:2229
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Gerät “%s” nicht erkannt: %s"
 
-#: src/elektroid.c:2489
+#: src/elektroid.c:2490
 msgid "Moving Files"
 msgstr "Verschiebe Dateien"
 
-#: src/elektroid.c:2490
+#: src/elektroid.c:2491
 msgid "Moving..."
 msgstr "Verschiebe..."
 
@@ -203,6 +203,19 @@ msgstr "Ausgabe"
 msgid "Input"
 msgstr "Eingabe"
 
+#. This should only be translated if a non latin alphabet is used
+#: src/mactions/autosampler.c:204 res/gui.glade:959
+msgid "Auto Sampler"
+msgstr ""
+
+#: src/mactions/autosampler.c:204
+msgid "Recording..."
+msgstr "Aufnahme..."
+
+#: src/mactions/autosampler.c:281
+msgid "_Auto Sampler"
+msgstr ""
+
 #: src/mactions/backend.c:60
 msgid "OS _Upgrade"
 msgstr "OS _Aktualisierung"
@@ -223,17 +236,18 @@ msgstr "_Konfiguration"
 msgid "_Calibration"
 msgstr "_Kalibrierung"
 
-#. This should only be translated if a non latin alphabet is used
-#: src/mactions/autosampler.c:204 res/gui.glade:959
-msgid "Auto Sampler"
+#: src/mactions/microfreak.c:52
+msgid ""
+"The defragmentation process could take several minutes and could not be "
+"canceled. Are you sure you want to defragment the sample memory?"
 msgstr ""
 
-#: src/mactions/autosampler.c:204
-msgid "Recording..."
-msgstr "Aufnahme..."
+#: src/mactions/microfreak.c:54 src/mactions/microfreak.c:85
+msgid "_Defragment"
+msgstr ""
 
-#: src/mactions/autosampler.c:281
-msgid "_Auto Sampler"
+#: src/mactions/microfreak.c:67
+msgid "Defragmenting Sample Memory"
 msgstr ""
 
 #: src/progress.c:52

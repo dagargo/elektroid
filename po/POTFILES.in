@@ -3,9 +3,10 @@ src/editor.c
 src/tasks.c
 src/browser.c
 src/audio_pa.c
+src/mactions/autosampler.c
 src/mactions/backend.c
 src/mactions/microbrute.c
-src/mactions/autosampler.c
+src/mactions/microfreak.c
 src/progress.c
 src/guirecorder.c
 src/connectors/sds.c
