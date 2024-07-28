@@ -45,7 +45,13 @@ struct browser_add_dentry_item_data
   gchar *rel_path;
 };
 
-gboolean elektroid_check_backend ();
+gboolean elektroid_check_backend (gboolean);
+
+static gboolean
+browser_check_backend ()
+{
+  return elektroid_check_backend (FALSE);
+}
 
 static void
 browser_widget_set_sensitive (gpointer widget, gpointer data)
@@ -1271,7 +1277,7 @@ browser_remote_init (struct browser *browser,
   browser->dir = NULL;
   browser->fs_ops = NULL;
   browser->backend = backend;
-  browser->check_callback = elektroid_check_backend;
+  browser->check_callback = browser_check_backend;
   browser->set_popup_menuitems_visibility =
     browser_remote_set_popup_visibility;
   browser->set_columns_visibility = browser_remote_set_columns_visibility;
