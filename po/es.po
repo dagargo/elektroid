@@ -75,7 +75,7 @@ msgstr "Enviando SysEx"
 
 #: src/elektroid.c:791
 msgid "Are you sure you want to delete the selected items?"
-msgstr "¿Está seguro de que quiere eliminar los elementos seleccionados?"
+msgstr "¿Realmente desea eliminar los elementos seleccionados?"
 
 #: src/elektroid.c:793
 msgid "_Delete"
