@@ -1,5 +1,5 @@
 /*
- *   microbrute_actions.c
+ *   microbrute.c
  *   Copyright (C) 2023 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
@@ -402,7 +402,6 @@ microbrute_calibration_callback (GtkWidget *object, gpointer data)
 {
   gtk_widget_show (calibration_assistant);
 }
-
 
 struct maction *
 microbrute_maction_cal_builder (struct maction_context *context)
