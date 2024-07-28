@@ -24,6 +24,7 @@
 #include "local.h"
 #include "backend.h"
 #include "sample.h"
+#include "maction.h"
 
 #define OTHER_BROWSER(b) (b == &local_browser ? &remote_browser : &local_browser)
 #define BROWSER_HAS_EDITOR(b) ((b)->fs_ops && (b)->fs_ops->options & FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE)
@@ -1330,6 +1331,8 @@ browser_remote_init (struct browser *browser,
     g_slist_append (browser->sensitive_widgets, browser->refresh_button);
   browser->sensitive_widgets =
     g_slist_append (browser->sensitive_widgets, browser->search_button);
+  browser->sensitive_widgets =
+    g_slist_append (browser->sensitive_widgets, maction_context.box);
 
   browser->tree_view_id_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object

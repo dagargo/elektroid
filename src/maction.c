@@ -21,6 +21,7 @@
 #include "maction.h"
 
 GSList *mactions = NULL;
+struct maction_context maction_context;
 
 struct maction *
 maction_separator_builder (struct maction_context *context)

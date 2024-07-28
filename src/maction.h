@@ -50,6 +50,7 @@ struct maction_context
 };
 
 extern GSList *mactions;
+extern struct maction_context maction_context;
 
 typedef struct maction *(*t_maction_builder) (struct maction_context *
 					      context);
