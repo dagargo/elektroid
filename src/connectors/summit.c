@@ -118,7 +118,7 @@ summit_truncate_name_at_last_useful_char (gchar *c)
 }
 
 static gchar *
-summit_get_patch_download_path (struct backend *backend,
+summit_patch_get_download_path (struct backend *backend,
 				const struct fs_operations *ops,
 				const gchar *dst_dir, const gchar *src_path,
 				struct idata *patch)
@@ -562,7 +562,7 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .load = file_load,
   .save = file_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = summit_get_patch_download_path,
+  .get_download_path = summit_patch_get_download_path,
   .select_item = summit_single_patch_change
 };
 
@@ -586,7 +586,7 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .load = file_load,
   .save = file_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = summit_get_patch_download_path,
+  .get_download_path = summit_patch_get_download_path,
   .select_item = summit_multi_patch_change
 };
 
@@ -869,7 +869,7 @@ end:
 }
 
 static gchar *
-summit_get_wavetable_download_path (struct backend *backend,
+summit_wavetable_get_download_path (struct backend *backend,
 				    const struct fs_operations *ops,
 				    const gchar *dst_dir,
 				    const gchar *src_path,
@@ -984,7 +984,7 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .get_slot = summit_get_wavetable_id_as_slot,
   .load = file_load,
   .save = file_save,
-  .get_download_path = summit_get_wavetable_download_path,
+  .get_download_path = summit_wavetable_get_download_path,
   .get_upload_path = common_slot_get_upload_path
 };
 
