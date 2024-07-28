@@ -2097,6 +2097,28 @@ microfreak_handshake_int (struct backend *backend)
   return 0;
 }
 
+gint
+microfreak_sample_defragment (struct backend *backend)
+{
+  gint err = 0;
+  GByteArray *tx_msg, *rx_msg;
+
+  tx_msg = microfreak_get_msg (backend, 0x49, "\x09\x7f\x00", 3);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, 3600000);	// 1 hour
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+  if (MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0))
+    {
+      err = -EIO;
+    }
+
+  free_msg (rx_msg);
+  usleep (MICROFREAK_REST_TIME_LONG_US);
+  return err;
+}
+
 static gint
 microfreak_handshake (struct backend *backend)
 {
@@ -2148,7 +2170,7 @@ microfreak_handshake (struct backend *backend)
 }
 
 const struct connector CONNECTOR_MICROFREAK = {
-  .name = "microfreak",
+  .name = MICROFREAK_NAME,
   .handshake = microfreak_handshake,
   .standard = TRUE,
   .regex = ".*MicroFreak.*"

@@ -70,9 +70,12 @@ elektroid_SOURCES = $(elektroid_common_sources) \
 audio.h audio.c $(elektroid_audio_sources) \
 browser.c browser.h notifier.c notifier.h \
 preferences.c preferences.h \
-regma.c regma.h\
+regma.c regma.h \
 maction.c maction.h \
-mactions/backend.c mactions/microbrute.c mactions/autosampler.c\
+mactions/autosampler.c \
+mactions/backend.c \
+mactions/microbrute.c \
+mactions/microfreak.c \
 editor.c editor.h \
 tasks.c tasks.h \
 guirecorder.c guirecorder.h \
