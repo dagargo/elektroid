@@ -76,7 +76,7 @@ sds_get_sample_name (struct backend *backend, gint index)
   GByteArray *tx_msg, *rx_msg;
   gchar *name = NULL;
 
-  tx_msg = g_byte_array_new ();
+  tx_msg = g_byte_array_sized_new (sizeof (SDS_SAMPLE_NAME_REQUEST));
   g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_REQUEST,
 		       sizeof (SDS_SAMPLE_NAME_REQUEST));
   tx_msg->data[5] = index % 0x80;

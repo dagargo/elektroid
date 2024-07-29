@@ -354,8 +354,8 @@ elektron_decode_payload (const GByteArray *src)
   unsigned int shift;
 
   dst_len = src->len - ceill (src->len / 8.0);
-  dst = g_byte_array_new ();
-  g_byte_array_set_size (dst, dst_len);
+  dst = g_byte_array_sized_new (dst_len);
+  dst->len = dst_len;
 
   for (i = 0, j = 0; i < src->len; i += 8, j += 7)
     {
@@ -379,8 +379,8 @@ elektron_encode_payload (const GByteArray *src)
   unsigned int accum;
 
   dst_len = src->len + ceill (src->len / 7.0);
-  dst = g_byte_array_new ();
-  g_byte_array_set_size (dst, dst_len);
+  dst = g_byte_array_sized_new (dst_len);
+  dst->len = dst_len;
 
   for (i = 0, j = 0; j < src->len; i += 8, j += 7)
     {
@@ -406,16 +406,16 @@ elektron_encode_payload (const GByteArray *src)
 static GByteArray *
 elektron_msg_to_raw (const GByteArray *msg)
 {
-  GByteArray *encoded;
-  GByteArray *sysex = g_byte_array_new ();
+  GByteArray *encoded = elektron_encode_payload (msg);
+  guint total = sizeof (MSG_HEADER) + encoded->len + 1;
+  GByteArray *raw = g_byte_array_sized_new (total);
 
-  g_byte_array_append (sysex, MSG_HEADER, sizeof (MSG_HEADER));
-  encoded = elektron_encode_payload (msg);
-  g_byte_array_append (sysex, encoded->data, encoded->len);
+  g_byte_array_append (raw, MSG_HEADER, sizeof (MSG_HEADER));
+  g_byte_array_append (raw, encoded->data, encoded->len);
+  g_byte_array_append (raw, (guint8 *) "\xf7", 1);
   free_msg (encoded);
-  g_byte_array_append (sysex, (guint8 *) "\xf7", 1);
 
-  return sysex;
+  return raw;
 }
 
 static gint
@@ -735,11 +735,11 @@ elektron_raw_to_msg (GByteArray *sysex)
 {
   GByteArray *msg;
   GByteArray *payload;
-  gint len = sysex->len - sizeof (MSG_HEADER) - 1;
+  guint len = sysex->len - sizeof (MSG_HEADER) - 1;
 
   if (len > 0)
     {
-      payload = g_byte_array_new ();
+      payload = g_byte_array_sized_new (len);
       g_byte_array_append (payload, &sysex->data[sizeof (MSG_HEADER)], len);
       msg = elektron_decode_payload (payload);
       free_msg (payload);

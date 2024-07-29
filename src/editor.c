@@ -1288,10 +1288,10 @@ editor_save_clicked (GtkWidget *object, gpointer data)
       gchar suggestion[PATH_MAX];
       if (sel_len)
 	{
-	  sample = g_byte_array_new ();
 	  guint fsize = SAMPLE_INFO_FRAME_SIZE (sample_info);
 	  guint start = editor->audio.sel_start * fsize;
 	  guint len = sel_len * fsize;
+	  sample = g_byte_array_sized_new (len);
 	  g_byte_array_append (sample,
 			       &editor->audio.sample.content->data[start],
 			       len);
