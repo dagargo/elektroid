@@ -718,17 +718,22 @@ sds_get_data_packet_msg (gint packet, guint words, guint *word,
 static inline GByteArray *
 sds_get_rename_sample_msg (guint id, const gchar *name)
 {
-  GByteArray *tx_msg = g_byte_array_new ();
+  GByteArray *tx_msg;
   gchar *sanitized = common_get_sanitized_name (name, NULL, 0);
-  guint len = strlen (sanitized);
+  size_t len = strlen (sanitized);
+  guint8 total;
+
   len = len > SDS_SAMPLE_NAME_MAX_LEN ? SDS_SAMPLE_NAME_MAX_LEN : len;
+  total = sizeof (SDS_SAMPLE_NAME_HEADER) + 2 + len;
+  tx_msg = g_byte_array_sized_new (total);
   g_byte_array_append (tx_msg, SDS_SAMPLE_NAME_HEADER,
 		       sizeof (SDS_SAMPLE_NAME_HEADER));
   tx_msg->data[5] = id % 0x80;
   tx_msg->data[6] = id / 0x80;
   g_byte_array_append (tx_msg, (guint8 *) & len, 1);
-  g_byte_array_append (tx_msg, (guint8 *) name, len);
+  g_byte_array_append (tx_msg, (guint8 *) sanitized, len);
   g_byte_array_append (tx_msg, (guint8 *) "\xf7", 1);
+
   g_free (sanitized);
   return tx_msg;
 }
