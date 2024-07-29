@@ -190,11 +190,14 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
 
   g_mutex_lock (&backend->mutex);
 
-  backend_tx_sysex (backend, transfer);
-  if (free)
+  if (transfer->raw)
     {
-      free_msg (transfer->raw);
-      transfer->raw = NULL;
+      backend_tx_sysex (backend, transfer);
+      if (free)
+	{
+	  free_msg (transfer->raw);
+	  transfer->raw = NULL;
+	}
     }
   if (!transfer->err)
     {

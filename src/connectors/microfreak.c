@@ -1002,8 +1002,7 @@ microfreak_sample_upload_tx_and_rx (struct backend *backend,
       while (seq != (*rx_msg)->data[sizeof (MICROFREAK_REQUEST_HEADER)])
 	{
 	  free_msg (*rx_msg);
-	  GByteArray *aux = g_byte_array_new ();	//This is an empty message
-	  *rx_msg = backend_tx_and_rx_sysex (backend, aux, -1);
+	  *rx_msg = backend_tx_and_rx_sysex (backend, NULL, -1);
 	  if (!*rx_msg)
 	    {
 	      err = -EIO;
@@ -1113,16 +1112,14 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
   free_msg (rx_msg);
   if (err)
     {
-      tx_msg = g_byte_array_new ();	//This is an empty message
-      common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
+      common_data_tx_and_rx_part (backend, NULL, &rx_msg, control);
       free_msg (rx_msg);
       goto end;
     }
 
   usleep (MICROFREAK_REST_TIME_US);
 
-  tx_msg = g_byte_array_new ();	//This is an empty message
-  err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
+  err = common_data_tx_and_rx_part (backend, NULL, &rx_msg, control);
   if (err)
     {
       goto end;
