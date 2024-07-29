@@ -53,7 +53,6 @@ struct microfreak_preset
 //* If there is a big enough gap, it will be used; otherwise, the new sample is appended after the last used block.
 //* If there is no space for a sample, no error is thrown and the process runs. Sometimes, an error is thrown and -ENOMEM is returned.
 //This scheme may lead to fragmentation (the sum of the space in the gaps is enough for a sample but it does not fit at the end).
-//Arturia MIDI Control Cernter provides this option when defragmentation is detected but Elektroid does not.
 //This is totally independent of the slot used.
 //Samples larger than MICROFREAK_SAMPLE_ITEM_MAX_TIME_S are handled by this connector by truncating the size when loading the sample. See microfreak_sample_load.
 //If a sample does not fit, the MicroFreak returns an error which is handled by this connector with a -ENOMEM. See microfreak_sample_upload.
