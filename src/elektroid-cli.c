@@ -115,6 +115,7 @@ cli_list (int argc, gchar *argv[], int *optind)
   const gchar *path;
   struct item_iterator iter;
   const gchar *device_path;
+  gboolean active;
 
   if (*optind == argc)
     {
@@ -137,15 +138,22 @@ cli_list (int argc, gchar *argv[], int *optind)
 
   CHECK_FS_OPS_FUNC (fs_ops->readdir);
 
+  active = TRUE;
+  sysex_transfer.active = TRUE;
+
   err = fs_ops->readdir (&backend, &iter, path, NULL);
   if (err)
     {
       return err;
     }
 
-  while (!item_iterator_next (&iter))
+  while (!item_iterator_next (&iter) && active)
     {
       fs_ops->print_item (&iter, &backend, fs_ops);
+
+      g_mutex_lock (&sysex_transfer.mutex);
+      active = sysex_transfer.active;
+      g_mutex_unlock (&sysex_transfer.mutex);
     }
 
   item_iterator_free (&iter);
