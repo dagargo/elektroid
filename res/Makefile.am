@@ -14,7 +14,8 @@ else
                  elektroid-project-symbolic.svg \
                  elektroid-sound-symbolic.svg \
                  elektroid-folder-symbolic.svg \
-                 elektroid-file-symbolic.svg
+                 elektroid-file-symbolic.svg \
+                 elektroid-wavetable-symbolic.svg
   microbrute_DATA = microbrute/gui.glade
 
   # System dependent resources
