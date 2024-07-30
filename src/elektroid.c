@@ -153,6 +153,8 @@ static GtkWidget *local_name_entry;
 static GtkWidget *local_box;
 static GtkWidget *remote_devices_box;
 static GtkWidget *remote_box;
+static GtkWidget *local_side;
+static GtkWidget *remote_side;
 static GtkWidget *tasks_box;
 static GtkLabel *backend_status_label;
 static GtkLabel *host_audio_status_label;
@@ -639,9 +641,9 @@ elektroid_show_remote (gboolean active)
 {
   elektroid_refresh_devices (TRUE);
   gtk_widget_set_visible (local_name_entry, active);
-  gtk_widget_set_visible (remote_box, active);
+  gtk_widget_set_visible (remote_side, active);
+  gtk_widget_set_margin_end (local_side, active ? 6 : 0);
   gtk_widget_set_visible (tasks_box, active);
-  gtk_widget_set_visible (remote_devices_box, active);
   gtk_widget_set_visible (editor.mix_switch_box, active);
 }
 
@@ -2792,11 +2794,14 @@ elektroid_run (int argc, char *argv[])
   about_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "about_button"));
 
-  local_name_entry = GTK_WIDGET (gtk_builder_get_object (builder, "local_name_entry"));
+  local_name_entry =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_name_entry"));
   remote_devices_box =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_devices_box"));
   local_box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box"));
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
+  local_side = GTK_WIDGET (gtk_builder_get_object (builder, "local_side"));
+  remote_side = GTK_WIDGET (gtk_builder_get_object (builder, "remote_side"));
   tasks_box = GTK_WIDGET (gtk_builder_get_object (builder, "tasks_box"));
   backend_status_label =
     GTK_LABEL (gtk_builder_get_object (builder, "backend_status_label"));
