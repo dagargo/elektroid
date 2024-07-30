@@ -49,3 +49,8 @@
 #remote_tree_view:selected {
 	background-color: @remote_color;
 }
+
+#local_name_entry {
+	border-color: transparent;
+	background-color: transparent;
+}
