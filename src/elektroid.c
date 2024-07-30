@@ -149,7 +149,7 @@ static GtkWidget *name_dialog_accept_button;
 static GtkPopover *main_popover;
 static GtkWidget *show_remote_button;
 static GtkWidget *about_button;
-static GtkWidget *local_label;
+static GtkWidget *local_name_entry;
 static GtkWidget *local_box;
 static GtkWidget *remote_devices_box;
 static GtkWidget *remote_box;
@@ -638,7 +638,7 @@ static void
 elektroid_show_remote (gboolean active)
 {
   elektroid_refresh_devices (TRUE);
-  gtk_widget_set_visible (local_label, active);
+  gtk_widget_set_visible (local_name_entry, active);
   gtk_widget_set_visible (remote_box, active);
   gtk_widget_set_visible (tasks_box, active);
   gtk_widget_set_visible (remote_devices_box, active);
@@ -2792,7 +2792,7 @@ elektroid_run (int argc, char *argv[])
   about_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "about_button"));
 
-  local_label = GTK_WIDGET (gtk_builder_get_object (builder, "local_label"));
+  local_name_entry = GTK_WIDGET (gtk_builder_get_object (builder, "local_name_entry"));
   remote_devices_box =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_devices_box"));
   local_box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box"));
@@ -2983,7 +2983,7 @@ elektroid_run (int argc, char *argv[])
 
   elektroid_show_remote (preferences.show_remote);	//This triggers both browsers initializations.
 
-  gtk_label_set_text (GTK_LABEL (local_label), hostname);
+  gtk_entry_set_text (GTK_ENTRY (local_name_entry), hostname);
 
   gtk_widget_show (main_window);
 
