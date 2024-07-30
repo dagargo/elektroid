@@ -580,11 +580,10 @@ editor_stop_clicked (GtkWidget *object, gpointer data)
   audio_stop_recording (&editor->audio);
 }
 
-static gboolean
-editor_reset_for_recording (gpointer data)
+static void
+editor_reset_for_recording (struct editor *editor)
 {
   guint options;
-  struct editor *editor = data;
 
   editor_reset (editor, &local_browser);
 
@@ -599,7 +598,6 @@ editor_reset_for_recording (gpointer data)
   options = guirecorder_get_channel_mask (&editor->guirecorder);
   audio_start_recording (&editor->audio, options | RECORD_MONITOR_ONLY,
 			 guirecorder_monitor_notifier, &editor->guirecorder);
-  return FALSE;
 }
 
 static void
@@ -611,12 +609,8 @@ editor_record_clicked (GtkWidget *object, gpointer data)
 
   browser_clear_selection (&local_browser);
   browser_clear_selection (&remote_browser);
-  //Running editor_reset_for_recording asynchronously is needed as calling
-  //browser_clear_selection might raise some signals that will eventually call
-  //editor_reset and clear the browser member.
-  //If using g_idle_add, a call to editor_reset will happen always later than
-  //those. All these calls will happen at the time the dialog is shown.
-  g_idle_add (editor_reset_for_recording, editor);
+
+  editor_reset_for_recording (editor);
 
   res = gtk_dialog_run (editor->record_dialog);
   gtk_widget_hide (GTK_WIDGET (editor->record_dialog));
