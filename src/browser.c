@@ -804,16 +804,16 @@ browser_init (struct browser *browser)
 void
 browser_destroy (struct browser *browser)
 {
-  notifier_destroy (browser->notifier);
   if (browser->thread)
     {
-      browser_wait (browser);
+      browser_reset (&remote_browser);	// This waits too.
     }
+  notifier_destroy (browser->notifier);
   g_slist_free (browser->sensitive_widgets);
 }
 
 static void
-browser_reset_search (struct browser *browser)
+browser_cancel_search (struct browser *browser)
 {
   gtk_stack_set_visible_child_name (GTK_STACK (browser->buttons_stack),
 				    "buttons");
@@ -831,11 +831,11 @@ browser_reset_search (struct browser *browser)
 void
 browser_reset (struct browser *browser)
 {
+  browser_cancel_search (browser);	//This cancels load too.
   browser->fs_ops = NULL;
   g_free (browser->dir);
   browser->dir = NULL;
   browser_clear (browser);
-  browser_reset_search (browser);
 }
 
 void
@@ -943,7 +943,7 @@ void
 browser_close_search (GtkSearchEntry *entry, gpointer data)
 {
   struct browser *browser = data;
-  browser_reset_search (browser);
+  browser_cancel_search (browser);
   browser_update_fs_sorting_options (browser);
   browser_refresh (NULL, browser);
 }
