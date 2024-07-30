@@ -2060,7 +2060,7 @@ static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
     FS_OPTION_ALLOW_SEARCH,
   .name = "wavetable",
   .gui_name = "Wavetables",
-  .gui_icon = FS_ICON_WAVE,
+  .gui_icon = FS_ICON_WAVETABLE,
   .ext = "wav",
   .max_name_len = MICROFREAK_WAVETABLE_NAME_LEN - 1,
   .readdir = microfreak_wavetable_read_dir,

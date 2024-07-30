@@ -973,7 +973,7 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN,
   .name = "wavetable",
   .gui_name = "Wavetables",
-  .gui_icon = FS_ICON_WAVE,
+  .gui_icon = FS_ICON_WAVETABLE,
   .ext = "syx",
   .max_name_len = SUMMIT_WAVETABLE_NAME_LEN,
   .readdir = summit_wavetable_read_dir,

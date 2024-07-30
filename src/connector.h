@@ -24,6 +24,7 @@
 #define CONNECTOR_H
 
 #define FS_ICON_WAVE "elektroid-wave-symbolic"
+#define FS_ICON_WAVETABLE "elektroid-wavetable-symbolic"
 #define FS_ICON_SEQ "elektroid-sequence-symbolic"
 #define FS_ICON_PRJ "elektroid-project-symbolic"
 #define FS_ICON_SND "elektroid-sound-symbolic"
