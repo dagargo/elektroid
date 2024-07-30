@@ -435,6 +435,11 @@ browser_wait (struct browser *browser)
     {
       g_thread_join (browser->thread);
       browser->thread = NULL;
+      //Wait for every pending call to browser_add_dentry_item scheduled from the thread
+      while (gtk_events_pending ())
+	{
+	  gtk_main_iteration ();
+	}
     }
 }
 
@@ -463,12 +468,6 @@ browser_load_dir_runner_update_ui (gpointer data)
   //Unlock browser
   g_slist_foreach (browser->sensitive_widgets, browser_widget_set_sensitive,
 		   NULL);
-
-  //Wait for every pending call to browser_add_dentry_item scheduled from the thread
-  while (gtk_events_pending ())
-    {
-      gtk_main_iteration ();
-    }
 
   if (browser_get_selected_items_count (browser))
     {
@@ -958,13 +957,6 @@ browser_search_changed (GtkSearchEntry *entry, gpointer data)
   browser->loading = FALSE;
   g_mutex_unlock (&browser->mutex);
   browser_wait (browser);
-
-  //Wait for every pending call to browser_add_dentry_item scheduled from the thread
-  while (gtk_events_pending ())
-    {
-      gtk_main_iteration ();
-    }
-
   browser_clear (browser);
 
   usleep (250000);
