@@ -2132,6 +2132,9 @@ elektroid_fill_fs_combo_bg (gpointer data)
   GSList *e;
   gboolean any = FALSE;
 
+  g_signal_handlers_block_by_func (fs_combo, G_CALLBACK (elektroid_set_fs),
+				   NULL);
+
   gtk_list_store_clear (fs_list_store);
 
   e = backend.fs_ops;
@@ -2151,6 +2154,9 @@ elektroid_fill_fs_combo_bg (gpointer data)
 	}
       e = e->next;
     }
+
+  g_signal_handlers_unblock_by_func (fs_combo, G_CALLBACK (elektroid_set_fs),
+				     NULL);
 
   if (any)
     {
