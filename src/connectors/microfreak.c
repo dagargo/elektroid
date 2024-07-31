@@ -81,7 +81,6 @@ struct microfreak_iter_data
 {
   guint next;
   struct backend *backend;
-  guint8 header[MICROFREAK_WAVE_BLK_SIZE];	//Only used in microfreak_next_sample_dentry for sample renaming
 };
 
 void
@@ -778,7 +777,7 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
 {
   gint err;
   GByteArray *tx_msg, *rx_msg;
-  struct microfreak_sample_header *header;
+  struct microfreak_sample_header header;
   struct microfreak_iter_data *data = iter->data;
 
   if (data->next > MICROFREAK_MAX_SAMPLES)
@@ -816,12 +815,11 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
     }
 
   microfreak_midi_msg_to_8bit_msg (MICROFREAK_GET_MSG_PAYLOAD (rx_msg),
-				   data->header);
-  header = (struct microfreak_sample_header *) data->header;
-  snprintf (iter->item.name, LABEL_MAX, "%s", header->name);
+				   (guint8 *) & header);
+  snprintf (iter->item.name, LABEL_MAX, "%s", header.name);
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
-  iter->item.size = GINT32_FROM_LE (header->size);
+  iter->item.size = GINT32_FROM_LE (header.size);
   iter->item.size = iter->item.size ? iter->item.size : -1;
   (data->next)++;
   free_msg (rx_msg);
@@ -1934,54 +1932,6 @@ microfreak_sample_load (const gchar *path, struct idata *sample,
   return err;
 }
 
-static gint
-microfreak_sample_rename (struct backend *backend, const gchar *src,
-			  const gchar *dst)
-{
-  gint err;
-  guint id;
-  gchar *sanitized;
-  struct item_iterator iter;
-  struct microfreak_sample_header new_header, *old_header;
-
-  if (common_slot_get_id_name_from_path (src, &id, NULL))
-    {
-      return -EINVAL;
-    }
-
-  id--;
-  if (id >= MICROFREAK_MAX_SAMPLES)
-    {
-      return -EINVAL;
-    }
-
-  err = microfreak_sample_read_dir (backend, &iter, "/", NULL);
-  if (err)
-    {
-      return err;
-    }
-
-  memset (&new_header, 0, sizeof (struct microfreak_sample_header));
-  while (!item_iterator_next (&iter))
-    {
-      if (iter.item.id == id + 1)	// A microfreak sample item id is starts at 1
-	{
-	  struct microfreak_iter_data *iter_data = iter.data;
-	  old_header = (struct microfreak_sample_header *) iter_data->header;
-	  new_header.size = GINT32_TO_LE (iter.item.size);
-	  new_header.id = id;
-	  new_header.cksum = old_header->cksum;
-	}
-    }
-
-  sanitized = common_get_sanitized_name (dst, MICROFREAK_ALPHABET,
-					 MICROFREAK_DEFAULT_CHAR);
-  snprintf (new_header.name, MICROFREAK_SAMPLE_NAME_LEN, "%s", sanitized);
-  g_free (sanitized);
-
-  return microfreak_sample_reset (backend, id, &new_header);
-}
-
 static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
   .id = FS_MICROFREAK_SAMPLE,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
@@ -1997,7 +1947,6 @@ static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
   .get_slot = microfreak_get_object_id_as_slot,
   .delete = microfreak_sample_clear,
   .clear = microfreak_sample_clear,
-  .rename = microfreak_sample_rename,
   .upload = microfreak_sample_upload,
   .load = microfreak_sample_load,
   .get_exts = sample_get_sample_extensions,
