@@ -827,7 +827,7 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
   free_msg (rx_msg);
 
 end:
-  usleep (MICROFREAK_REST_TIME_LONG_US);
+  usleep (MICROFREAK_REST_TIME_US);
   return err;
 }
 
@@ -887,7 +887,7 @@ microfreak_sample_reset (struct backend *backend, guint id,
   err = MICROFREAK_CHECK_OP_LEN (rx_msg, 0x18, 0);
   free_msg (rx_msg);
 
-  usleep (MICROFREAK_REST_TIME_LONG_US);
+  usleep (MICROFREAK_REST_TIME_US);
 
   return err;
 }
@@ -976,7 +976,7 @@ microfreak_get_storage_stats (struct backend *backend, guint8 type,
 
 err:
   free_msg (rx_msg);
-  usleep (MICROFREAK_REST_TIME_LONG_US);
+  usleep (MICROFREAK_REST_TIME_US);
   return err;
 }
 
@@ -1302,7 +1302,7 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
 end:
   g_free (name);
   g_free (sanitized);
-  usleep (MICROFREAK_REST_TIME_LONG_US);
+  usleep (MICROFREAK_REST_TIME_US);
   return err;
 }
 
