@@ -205,10 +205,8 @@ microbrute_get_download_path (struct backend *backend,
 			      const gchar *dst_dir, const gchar *src_path,
 			      struct idata *sequence)
 {
-  guint id;
-  common_slot_get_id_name_from_path (src_path, &id, NULL);
-  return common_get_download_path_with_params (backend, ops, dst_dir,
-					       id, 1, NULL);
+  return common_get_download_path_with_digits (backend, ops, dst_dir,
+					       src_path, sequence, 1);
 }
 
 static gint

@@ -69,16 +69,23 @@ gint common_data_tx_and_rx_part (struct backend *backend, GByteArray * tx_msg,
 				 GByteArray ** rx_msg,
 				 struct job_control *control);
 
-gchar *common_get_download_path_with_params (struct backend *backend,
-					     const struct fs_operations *ops,
-					     const gchar * dst_dir,
-					     guint id, guint digits,
-					     const gchar * name);
+// gchar *common_get_download_path_with_params (struct backend *backend,
+//                                           const struct fs_operations *ops,
+//                                           const gchar * dst_dir,
+//                                           guint id, guint digits,
+//                                           const gchar * name);
 
 gchar *common_get_download_path (struct backend *backend,
 				 const struct fs_operations *ops,
 				 const gchar * dst_dir,
 				 const gchar * src_path, struct idata *idata);
+
+gchar *common_get_download_path_with_digits (struct backend *backend,
+					     const struct fs_operations *ops,
+					     const gchar * dst_dir,
+					     const gchar * src_path,
+					     struct idata *idata,
+					     guint digits);
 
 void common_remove_slot_name_from_path (gchar * path);
 

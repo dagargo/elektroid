@@ -126,27 +126,8 @@ efactor_get_download_path (struct backend *backend,
 			   const gchar *dst_dir, const gchar *src_path,
 			   struct idata *preset)
 {
-  guint id;
-  gchar *path, *name, **lines;
-
-  if (!preset)
-    {
-      return NULL;
-    }
-
-  if (common_slot_get_id_name_from_path (src_path, &id, NULL))
-    {
-      return NULL;
-    }
-
-  lines =
-    g_strsplit ((gchar *) & preset->content->data[EFACTOR_PRESET_DUMP_OFFSET],
-		EFACTOR_PRESET_LINE_SEPARATOR, -1);
-  name = lines[6];
-  path = common_get_download_path_with_params (backend, ops, dst_dir, id, 2,
-					       name);
-  g_strfreev (lines);
-  return path;
+  return common_get_download_path_with_digits (backend, ops, dst_dir,
+					       src_path, preset, 2);
 }
 
 static gint
@@ -255,7 +236,10 @@ efactor_download (struct backend *backend, const gchar *src_path,
   g_byte_array_append (output, EFACTOR_REQUEST_HEADER,
 		       sizeof (EFACTOR_REQUEST_HEADER));
   g_byte_array_append (output, (guint8 *) "\x49", 1);	// EFACTOR_OP_PRESETS_DUMP
+
   lines = &data->lines[(id - data->min) * 7];
+  name = lines[6];
+
   for (gint i = 0; i < 7; i++, lines++)
     {
       g_byte_array_append (output, (guint8 *) * lines, strlen (*lines));
@@ -265,7 +249,8 @@ efactor_download (struct backend *backend, const gchar *src_path,
   g_byte_array_append (output, (guint8 *) "\0\xf7", 2);
 
   job_control_set_progress (control, 1.0);
-  idata_init (preset, output, NULL, NULL);
+
+  idata_init (preset, output, name, NULL);
 
   sleep (1);
 

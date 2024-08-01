@@ -59,23 +59,9 @@ cz_get_download_path (struct backend *backend,
 		      const struct fs_operations *ops, const gchar *dst_dir,
 		      const gchar *src_path, struct idata *preset)
 {
-  gchar *path;
-  if (strcmp (src_path, CZ_PANEL_PATH))
-    {
-      gchar *filename = g_path_get_basename (src_path);
-      gint id = atoi (filename);
-      path = common_get_download_path_with_params (backend, ops, dst_dir, id,
-						   2, NULL);
-    }
-  else
-    {
-      GString *str = g_string_new (NULL);
-      g_string_append_printf (str, "%s %s panel.syx", backend->name,
-			      ops->name);
-      path = path_chain (PATH_SYSTEM, dst_dir, str->str);
-      g_string_free (str, TRUE);
-    }
-  return path;
+  guint digits = preset->name ? 0 : 2;
+  return common_get_download_path_with_digits (backend, ops, dst_dir,
+					       src_path, preset, digits);
 }
 
 static GByteArray *
@@ -123,7 +109,7 @@ cz_next_dentry_root (struct item_iterator *iter)
   if (data->next == 3)
     {
       iter->item.id = CZ_PANEL_ID;
-      snprintf (iter->item.name, LABEL_MAX, "panel");
+      snprintf (iter->item.name, LABEL_MAX, CZ_PANEL);
       iter->item.type = ITEM_TYPE_FILE;
       iter->item.size = CZ_PROGRAM_LEN_FIXED;
       data->next++;
@@ -256,7 +242,7 @@ cz_download (struct backend *backend, const gchar *path,
   g_byte_array_append (output, &rx_msg->data[CZ_PROGRAM_HEADER_OFFSET],
 		       CZ_PROGRAM_LEN - CZ_PROGRAM_HEADER_OFFSET);
   output->data[CZ_PROGRAM_HEADER_ID] = id;
-  idata_init (program, output, NULL, NULL);
+  idata_init (program, output, id == CZ_PANEL_ID ? CZ_PANEL : NULL, NULL);
 
 cleanup:
   free_msg (rx_msg);

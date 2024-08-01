@@ -99,27 +99,24 @@ sds_get_download_path (struct backend *backend,
 		       const struct fs_operations *ops, const gchar *dst_dir,
 		       const gchar *src_path, struct idata *sample)
 {
-  GString *str = g_string_new (NULL);
+  guint id;
   gchar *path;
-  gchar *name = g_path_get_basename (src_path);
-  gint index = atoi (name);
-  gboolean use_id = TRUE;
-  struct sds_data *sds_data = backend->data;
+  GString *str;
 
-  if (sds_data->name_extension)
+  if (common_slot_get_id_name_from_path (src_path, &id, NULL))
     {
-      gchar *sample_name = sds_get_sample_name (backend, index);
-      if (sample_name)
-	{
-	  g_string_append_printf (str, "%s.wav", sample_name);
-	  g_free (name);
-	  use_id = FALSE;
-	}
+      return NULL;
     }
 
-  if (use_id)
+  str = g_string_new (NULL);
+
+  if (sample->name)
     {
-      g_string_append_printf (str, "%03d.wav", index);
+      g_string_append_printf (str, "%s.wav", sample->name);
+    }
+  else
+    {
+      g_string_append_printf (str, "%03d.wav", id);
     }
 
   path = path_chain (PATH_SYSTEM, dst_dir, str->str);
@@ -371,7 +368,7 @@ sds_download_try (struct backend *backend, const gchar *path,
     retries, packets, packet, exp_packet, rx_packets, bits;
   gint16 s;
   GByteArray *tx_msg, *rx_msg;
-  gchar *name;
+  gchar *name, *basename;
   guint8 *dataptr;
   gboolean active, first;
   gboolean last_packet_ack;
@@ -380,9 +377,9 @@ sds_download_try (struct backend *backend, const gchar *path,
   struct sds_data *sds_data = backend->data;
   GByteArray *output = g_byte_array_new ();
 
-  name = g_path_get_basename (path);
-  id = atoi (name);
-  g_free (name);
+  basename = g_path_get_basename (path);
+  id = atoi (basename);
+  g_free (basename);
 
   debug_print (1, "Sending dump request...");
   packet = 0;
@@ -584,7 +581,11 @@ end:
     {
       debug_print (1, "%d frames received", total_words);
       job_control_set_progress (control, 1.0);
-      idata_init (sample, output, NULL, sample_info);
+
+      name = sds_data->name_extension ? sds_get_sample_name (backend, id) :
+	NULL;
+      idata_init (sample, output, name, sample_info);
+      g_free (name);
     }
   else
     {

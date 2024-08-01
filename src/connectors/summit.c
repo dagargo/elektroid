@@ -101,8 +101,10 @@ summit_get_patch_dump_msg (gint bank, gint id, enum summit_fs fs)
   return tx_msg;
 }
 
+//This function truncates the name to the last useful char ignoring the trailing spaces.
+
 static void
-summit_truncate_name_at_last_useful_char (gchar *c)
+summit_truncate_name (gchar *c)
 {
   for (int i = SUMMIT_PATCH_NAME_LEN - 1; i >= 0; i--, c--)
     {
@@ -115,36 +117,6 @@ summit_truncate_name_at_last_useful_char (gchar *c)
 	  break;
 	}
     }
-}
-
-static gchar *
-summit_patch_get_download_path (struct backend *backend,
-				const struct fs_operations *ops,
-				const gchar *dst_dir, const gchar *src_path,
-				struct idata *patch)
-{
-  guint id;
-  gchar *path;
-  gchar name[SUMMIT_PATCH_NAME_LEN + 1];
-
-  if (!patch)
-    {
-      return NULL;
-    }
-
-  if (common_slot_get_id_name_from_path (src_path, &id, NULL))
-    {
-      return NULL;
-    }
-
-  memcpy (name, SUMMIT_GET_NAME_FROM_MSG (patch->content, ops->id),
-	  SUMMIT_PATCH_NAME_LEN);
-  name[SUMMIT_PATCH_NAME_LEN] = 0;
-  summit_truncate_name_at_last_useful_char (&name[SUMMIT_PATCH_NAME_LEN - 1]);
-  path = common_get_download_path_with_params (backend, ops, dst_dir, id, 3,
-					       name);
-
-  return path;
 }
 
 static const gchar *
@@ -209,7 +181,7 @@ summit_patch_next_dentry (struct item_iterator *iter)
 	  SUMMIT_PATCH_NAME_LEN);
   iter->item.name[SUMMIT_PATCH_NAME_LEN] = 0;
   gchar *c = &iter->item.name[SUMMIT_PATCH_NAME_LEN - 1];
-  summit_truncate_name_at_last_useful_char (c);
+  summit_truncate_name (c);
   if (data->fs == FS_SUMMIT_SINGLE_PATCH)
     {
       const gchar *category = summit_get_category_name (rx_msg);
@@ -318,6 +290,7 @@ summit_patch_download (struct backend *backend, const gchar *path,
   guint8 id, bank;
   gint len, err;
   GByteArray *tx_msg, *rx_msg;
+  gchar name[SUMMIT_PATCH_NAME_LEN + 1];
 
   err = summit_get_bank_and_id_from_path (path, &bank, &id);
   if (err)
@@ -338,7 +311,11 @@ summit_patch_download (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
-  idata_init (patch, rx_msg, NULL, NULL);
+  memcpy (name, SUMMIT_GET_NAME_FROM_MSG (rx_msg, fs), SUMMIT_PATCH_NAME_LEN);
+  name[SUMMIT_PATCH_NAME_LEN] = 0;
+  summit_truncate_name (&name[SUMMIT_PATCH_NAME_LEN - 1]);
+
+  idata_init (patch, rx_msg, name, NULL);
   goto end;
 
 cleanup:
@@ -562,7 +539,7 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .load = file_load,
   .save = file_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = summit_patch_get_download_path,
+  .get_download_path = common_get_download_path,
   .select_item = summit_single_patch_change
 };
 
@@ -586,7 +563,7 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .load = file_load,
   .save = file_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = summit_patch_get_download_path,
+  .get_download_path = common_get_download_path,
   .select_item = summit_multi_patch_change
 };
 
@@ -756,7 +733,7 @@ summit_wavetable_next_dentry (struct item_iterator *iter)
   memcpy (iter->item.name, &rx_msg->data[15], SUMMIT_WAVETABLE_NAME_LEN);
   iter->item.name[SUMMIT_WAVETABLE_NAME_LEN] = 0;
   gchar *c = &iter->item.name[SUMMIT_WAVETABLE_NAME_LEN - 1];
-  summit_truncate_name_at_last_useful_char (c);
+  summit_truncate_name (c);
   free_msg (rx_msg);
 
   iter->item.id = data->next;
@@ -801,6 +778,7 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
 {
   guint32 id;
   gint err = 0;
+  gchar name[SUMMIT_PATCH_NAME_LEN + 1];
   GByteArray *tx_msg, *rx_msg, *output;
 
   if (common_slot_get_id_name_from_path (path, &id, NULL))
@@ -857,7 +835,11 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
       usleep (SUMMIT_REST_TIME_US);
     }
 
-  idata_init (wavetable, output, NULL, NULL);
+  memcpy (name, &output->data[15], SUMMIT_WAVETABLE_NAME_LEN);
+  name[SUMMIT_WAVETABLE_NAME_LEN] = 0;
+  summit_truncate_name (&name[SUMMIT_WAVETABLE_NAME_LEN - 1]);
+
+  idata_init (wavetable, output, name, NULL);
   goto end;
 
 err:
@@ -873,29 +855,10 @@ summit_wavetable_get_download_path (struct backend *backend,
 				    const struct fs_operations *ops,
 				    const gchar *dst_dir,
 				    const gchar *src_path,
-				    struct idata *patch)
+				    struct idata *wavetable)
 {
-  guint id;
-  gchar *path;
-  gchar name[SUMMIT_PATCH_NAME_LEN + 1];
-
-  if (!patch)
-    {
-      return NULL;
-    }
-
-  if (common_slot_get_id_name_from_path (src_path, &id, NULL))
-    {
-      return NULL;
-    }
-
-  memcpy (name, &patch->content->data[15], SUMMIT_WAVETABLE_NAME_LEN);
-  name[SUMMIT_WAVETABLE_NAME_LEN] = 0;
-  summit_truncate_name_at_last_useful_char (&name
-					    [SUMMIT_WAVETABLE_NAME_LEN - 1]);
-  path = common_get_download_path_with_params (backend, ops, dst_dir, id, 2,
-					       name);
-  return path;
+  return common_get_download_path_with_digits (backend, ops, dst_dir,
+					       src_path, wavetable, 2);
 }
 
 static gint

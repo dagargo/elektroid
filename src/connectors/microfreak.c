@@ -119,37 +119,6 @@ microfreak_8bit_msg_to_midi_msg (guint8 *msg_8bit, guint8 *msg_midi)
     }
 }
 
-static gchar *
-microfreak_get_download_preset_path (struct backend *backend,
-				     const struct fs_operations *ops,
-				     const gchar *dst_dir,
-				     const gchar *src_path,
-				     struct idata *preset)
-{
-  guint id;
-  gint64 len;
-  gchar *next;
-  gchar name[MICROFREAK_PRESET_NAME_LEN + 1];
-
-  if (!preset)
-    {
-      return NULL;
-    }
-
-  if (common_slot_get_id_name_from_path (src_path, &id, NULL))
-    {
-      return NULL;
-    }
-
-  len = g_ascii_strtoll ((gchar *) & preset->content->data[38], &next, 10);
-  next++;
-  memcpy (name, next, len);
-  name[len] = 0;
-
-  return common_get_download_path_with_params (backend, ops, dst_dir, id, 3,
-					       name);
-}
-
 static void
 microfreak_preset_get_name (gchar *preset_name, GByteArray *preset_rx)
 {
@@ -467,8 +436,18 @@ end:
     }
   else
     {
+      gint64 len;
+      gchar *next;
+      gchar name[MICROFREAK_PRESET_NAME_LEN + 1];
+
       microfreak_serialize_preset (output, &mfp);
-      idata_init (preset, output, NULL, NULL);
+
+      len = g_ascii_strtoll ((gchar *) & output->data[38], &next, 10);
+      next++;
+      memcpy (name, next, len);
+      name[len] = 0;
+
+      idata_init (preset, output, name, NULL);
     }
   usleep (MICROFREAK_REST_TIME_LONG_US);	//Additional rest
   return err;
@@ -685,7 +664,7 @@ static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
   .load = file_load,
   .save = file_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = microfreak_get_download_preset_path
+  .get_download_path = common_get_download_path
 };
 
 static gint
@@ -710,7 +689,7 @@ static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .load = microfreak_zobject_load,
   .save = microfreak_zpreset_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = microfreak_get_download_preset_path
+  .get_download_path = common_get_download_path
 };
 
 static gint
@@ -757,7 +736,7 @@ static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
   .save = microfreak_zpreset_save,
   .get_exts = microfreak_preset_get_exts,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = microfreak_get_download_preset_path,
+  .get_download_path = common_get_download_path,
   .select_item = microfreak_midi_program_change
 };
 
@@ -1900,20 +1879,8 @@ microfreak_get_download_wavetable_path (struct backend *backend,
 					const gchar *src_path,
 					struct idata *wavetable)
 {
-  guint id;
-
-  if (!wavetable)
-    {
-      return NULL;
-    }
-
-  if (common_slot_get_id_name_from_path (src_path, &id, NULL))
-    {
-      return NULL;
-    }
-
-  return common_get_download_path_with_params (backend, ops, dst_dir, id, 2,
-					       wavetable->name);
+  return common_get_download_path_with_digits (backend, ops, dst_dir,
+					       src_path, wavetable, 2);
 }
 
 static gint

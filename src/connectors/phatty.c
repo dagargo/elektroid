@@ -157,35 +157,17 @@ phatty_get_download_path (struct backend *backend,
 			  const gchar *dst_dir, const gchar *src_path,
 			  struct idata *preset)
 {
-  gchar preset_name[MOOG_NAME_LEN + 1];
-  gchar *path, *name;
-  gint id;
+  guint id;
+  guint digits;
 
-  if (!preset)
+  if (common_slot_get_id_name_from_path (src_path, &id, NULL))
     {
       return NULL;
     }
 
-  name = g_path_get_basename (src_path);
-  id = atoi (name);
-  g_free (name);
-
-  if (id == PHATTY_PANEL_ID)
-    {
-      GString *str = g_string_new (NULL);
-      g_string_append_printf (str, "%s %s %s.%s", backend->name, ops->name,
-			      PHATTY_PANEL, ops->ext);
-      path = path_chain (PATH_SYSTEM, dst_dir, str->str);
-      g_string_free (str, TRUE);
-    }
-  else
-    {
-      phatty_get_preset_name (preset->content->data, preset_name);
-      path = common_get_download_path_with_params (backend, ops, dst_dir, id,
-						   2, preset_name);
-    }
-
-  return path;
+  digits = id == PHATTY_PANEL_ID ? 0 : 2;
+  return common_get_download_path_with_digits (backend, ops, dst_dir,
+					       src_path, preset, digits);
 }
 
 static GByteArray *
@@ -315,23 +297,26 @@ phatty_download (struct backend *backend, const gchar *path,
 {
   guint8 id;
   gint err = 0;
-  gchar *name;
+  gboolean panel;
   GByteArray *tx_msg, *rx_msg;
+  gchar name[MOOG_NAME_LEN + 1], *basename;
 
   if (strcmp (path, PHATTY_PANEL_PATH))
     {
-      name = g_path_get_basename (path);
-      id = atoi (name);
-      g_free (name);
+      basename = g_path_get_basename (path);
+      id = atoi (basename);
+      g_free (basename);
       if (id >= PHATTY_MAX_PRESETS)
 	{
 	  return -EINVAL;
 	}
       tx_msg = phatty_get_preset_dump_msg (id);
+      panel = FALSE;
     }
   else
     {
       tx_msg = phatty_get_panel_dump_msg ();
+      panel = TRUE;
     }
 
   err = common_data_tx_and_rx (backend, tx_msg, &rx_msg, control);
@@ -345,7 +330,11 @@ phatty_download (struct backend *backend, const gchar *path,
       goto cleanup;
     }
 
-  idata_init (preset, rx_msg, NULL, NULL);
+  if (!panel)
+    {
+      phatty_get_preset_name (rx_msg->data, name);
+    }
+  idata_init (preset, rx_msg, panel ? PHATTY_PANEL : name, NULL);
   return 0;
 
 cleanup:
