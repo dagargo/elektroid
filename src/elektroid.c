@@ -892,17 +892,16 @@ elektroid_drag_begin (GtkWidget *widget, GdkDragContext *context,
 		      gpointer data)
 {
   GtkTreeIter iter;
-  GtkTreeSelection *selection;
-  GtkTreeModel *model;
   GList *tree_path_list;
   GList *list;
   gchar *uri, *path;
   struct item item;
   struct browser *browser = data;
   enum path_type type = backend_get_path_type (browser->backend);
+  GtkTreeView *view = GTK_TREE_VIEW (widget);
+  GtkTreeModel *model = gtk_tree_view_get_model (view);
+  GtkTreeSelection *selection = gtk_tree_view_get_selection (view);
 
-  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (widget));
-  model = GTK_TREE_MODEL (gtk_tree_view_get_model (GTK_TREE_VIEW (widget)));
   tree_path_list = gtk_tree_selection_get_selected_rows (selection, &model);
 
   browser->dnd_data = g_string_new ("");
@@ -2598,17 +2597,17 @@ elektroid_drag_motion_list (GtkWidget *widget,
   struct item item;
   struct browser *browser = user_data;
 
-  slot = widget == GTK_WIDGET (remote_browser.view)
-    && remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE;
+  slot = GTK_TREE_VIEW (widget) == remote_browser.view &&
+    remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE;
 
-  gtk_tree_view_convert_widget_to_bin_window_coords
-    (GTK_TREE_VIEW (widget), wx, wy, &tx, &ty);
+  gtk_tree_view_convert_widget_to_bin_window_coords (browser->view, wx, wy,
+						     &tx, &ty);
 
-  if (gtk_tree_view_get_path_at_pos (GTK_TREE_VIEW (widget), tx, ty,
-				     &path, &column, NULL, NULL))
+  if (gtk_tree_view_get_path_at_pos (browser->view, tx, ty, &path, &column,
+				     NULL, NULL))
     {
       GtkAllocation allocation;
-      gtk_widget_get_allocation (GTK_WIDGET (browser->view), &allocation);
+      gtk_widget_get_allocation (widget, &allocation);
       if (column == browser->tree_view_name_column)
 	{
 	  spath = gtk_tree_path_to_string (path);
@@ -2617,14 +2616,12 @@ elektroid_drag_motion_list (GtkWidget *widget,
 
 	  if (slot)
 	    {
-	      gtk_tree_view_set_drag_dest_row (remote_browser.view,
-					       path,
+	      gtk_tree_view_set_drag_dest_row (remote_browser.view, path,
 					       GTK_TREE_VIEW_DROP_INTO_OR_BEFORE);
 	    }
 	  else
 	    {
-	      selection =
-		gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+	      selection = gtk_tree_view_get_selection (browser->view);
 	      if (gtk_tree_selection_path_is_selected (selection, path))
 		{
 		  browser_clear_dnd_function (browser);
@@ -2632,14 +2629,12 @@ elektroid_drag_motion_list (GtkWidget *widget,
 		}
 	    }
 
-	  model =
-	    GTK_TREE_MODEL (gtk_tree_view_get_model (GTK_TREE_VIEW (widget)));
+	  model = gtk_tree_view_get_model (browser->view);
 	  gtk_tree_model_get_iter (model, &iter, path);
 	  browser_set_item (model, &iter, &item);
 
 	  if (item.type == ITEM_TYPE_DIR && (!browser->dnd_motion_path ||
-					     (browser->dnd_motion_path
-					      &&
+					     (browser->dnd_motion_path &&
 					      gtk_tree_path_compare
 					      (browser->dnd_motion_path,
 					       path))))
