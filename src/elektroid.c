@@ -1596,19 +1596,15 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
   GtkTreeIter iter;
   GList *selected_rows;
   gboolean queued_before, queued_after;
-  GtkTreeModel *model;
-  GtkTreeSelection *selection;
+  GtkTreeModel *model = gtk_tree_view_get_model (local_browser.view);
+  GtkTreeSelection *sel = gtk_tree_view_get_selection (local_browser.view);
 
   progress.sysex_transfer.active = TRUE;
-
-  model = GTK_TREE_MODEL (gtk_tree_view_get_model (local_browser.view));
-  selection =
-    gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.view));
 
   queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
 
-  selected_rows = gtk_tree_selection_get_selected_rows (selection, NULL);
+  selected_rows = gtk_tree_selection_get_selected_rows (sel, NULL);
   while (selected_rows)
     {
       struct item item;
@@ -1643,10 +1639,9 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
 static void
 elektroid_add_upload_tasks (GtkWidget *object, gpointer data)
 {
-  GtkTreeSelection *selection =
-    gtk_tree_view_get_selection (GTK_TREE_VIEW (local_browser.view));
+  GtkTreeSelection *sel = gtk_tree_view_get_selection (local_browser.view);
 
-  if (!gtk_tree_selection_count_selected_rows (selection))
+  if (!gtk_tree_selection_count_selected_rows (sel))
     {
       return;
     }
@@ -1797,19 +1792,15 @@ elektroid_add_download_tasks_runner (gpointer data)
   GtkTreeIter iter;
   GList *selected_rows;
   gboolean queued_before, queued_after;
-  GtkTreeModel *model;
-  GtkTreeSelection *selection;
+  GtkTreeModel *model = gtk_tree_view_get_model (remote_browser.view);
+  GtkTreeSelection *sel = gtk_tree_view_get_selection (remote_browser.view);
 
   progress.sysex_transfer.active = TRUE;
-
-  model = GTK_TREE_MODEL (gtk_tree_view_get_model (remote_browser.view));
-  selection =
-    gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
 
   queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
 
-  selected_rows = gtk_tree_selection_get_selected_rows (selection, NULL);
+  selected_rows = gtk_tree_selection_get_selected_rows (sel, NULL);
   while (selected_rows)
     {
       gchar *filename;
@@ -1847,10 +1838,9 @@ elektroid_add_download_tasks_runner (gpointer data)
 static void
 elektroid_add_download_tasks (GtkWidget *object, gpointer data)
 {
-  GtkTreeSelection *selection =
-    gtk_tree_view_get_selection (GTK_TREE_VIEW (remote_browser.view));
+  GtkTreeSelection *sel = gtk_tree_view_get_selection (remote_browser.view);
 
-  if (!gtk_tree_selection_count_selected_rows (selection))
+  if (!gtk_tree_selection_count_selected_rows (sel))
     {
       return;
     }
@@ -2315,14 +2305,10 @@ elektroid_add_upload_task_slot (const gchar *name,
 				const gchar *src_file_path, gint slot)
 {
   GtkTreeIter iter;
-  GtkTreeModel *model;
   struct item item;
   gchar *dst_file_path, *name_wo_ext, *filename;
   GString *str;
-
-  model =
-    GTK_TREE_MODEL (gtk_tree_view_get_model
-		    (GTK_TREE_VIEW (remote_browser.view)));
+  GtkTreeModel *model = gtk_tree_view_get_model (remote_browser.view);
 
   if (gtk_tree_model_get_iter (model, &iter, remote_browser.dnd_motion_path))
     {
