@@ -1666,20 +1666,6 @@ elektroid_download_task_runner (gpointer userdata)
       goto end_no_dir;
     }
 
-  dst_path = remote_browser.fs_ops->get_download_path (&backend,
-						       remote_browser.fs_ops,
-						       tasks.transfer.dst,
-						       tasks.transfer.src,
-						       NULL);
-  g_mutex_lock (&tasks.transfer.control.mutex);
-  elektroid_check_file_and_wait (dst_path, &local_browser);
-  g_mutex_unlock (&tasks.transfer.control.mutex);
-
-  if (tasks.transfer.status == TASK_STATUS_CANCELED)
-    {
-      goto end_with_no_download;
-    }
-
   res = tasks.transfer.fs_ops->download (remote_browser.backend,
 					 tasks.transfer.src, &idata,
 					 &tasks.transfer.control);
@@ -1699,15 +1685,12 @@ elektroid_download_task_runner (gpointer userdata)
       goto end_with_download_error;
     }
 
-  if (!dst_path)
-    {
-      dst_path = remote_browser.fs_ops->get_download_path (&backend,
-							   remote_browser.fs_ops,
-							   tasks.transfer.dst,
-							   tasks.transfer.src,
-							   &idata);
-      elektroid_check_file_and_wait (dst_path, &local_browser);
-    }
+  dst_path = remote_browser.fs_ops->get_download_path (&backend,
+						       remote_browser.fs_ops,
+						       tasks.transfer.dst,
+						       tasks.transfer.src,
+						       &idata);
+  elektroid_check_file_and_wait (dst_path, &local_browser);
 
   if (tasks.transfer.status != TASK_STATUS_CANCELED)
     {
@@ -1728,7 +1711,6 @@ elektroid_download_task_runner (gpointer userdata)
 end_with_download_error:
   g_mutex_unlock (&tasks.transfer.control.mutex);
 
-end_with_no_download:
   g_idle_add (tasks_complete_current, &tasks);
   g_idle_add (elektroid_run_next, NULL);
 
