@@ -329,7 +329,7 @@ microfreak_deserialize_sample (struct idata *sample, struct idata *serialized,
   data->len = datalen;
 
   sample_info = microfreak_new_sample_info (datalen / 2);
-  idata_init (sample, data, name, sample_info);
+  idata_init (sample, data, strdup (name), sample_info);
 
   return 0;
 }

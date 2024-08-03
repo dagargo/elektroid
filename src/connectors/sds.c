@@ -585,7 +585,6 @@ end:
       name = sds_data->name_extension ? sds_get_sample_name (backend, id) :
 	NULL;
       idata_init (sample, output, name, sample_info);
-      g_free (name);
     }
   else
     {

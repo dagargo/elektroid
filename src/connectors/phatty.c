@@ -334,7 +334,7 @@ phatty_download (struct backend *backend, const gchar *path,
     {
       phatty_get_preset_name (rx_msg->data, name);
     }
-  idata_init (preset, rx_msg, panel ? PHATTY_PANEL : name, NULL);
+  idata_init (preset, rx_msg, strdup (panel ? PHATTY_PANEL : name), NULL);
   return 0;
 
 cleanup:

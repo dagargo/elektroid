@@ -504,11 +504,10 @@ g_slist_fill (GSList **list, ...)
 }
 
 void
-idata_init (struct idata *idata, GByteArray *content, const gchar *name,
-	    void *info)
+idata_init (struct idata *idata, GByteArray *content, gchar *name, void *info)
 {
   idata->content = content;
-  idata->name = name ? strdup (name) : NULL;
+  idata->name = name;
   idata->info = info;
 }
 

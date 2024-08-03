@@ -447,7 +447,7 @@ end:
       memcpy (name, next, len);
       name[len] = 0;
 
-      idata_init (preset, output, name, NULL);
+      idata_init (preset, output, strdup (name), NULL);
     }
   usleep (MICROFREAK_REST_TIME_LONG_US);	//Additional rest
   return err;
@@ -1545,7 +1545,7 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
     }
   else
     {
-      idata_init (wavetable, content, name, sample_info);
+      idata_init (wavetable, content, strdup (name), sample_info);
     }
 
   return err;

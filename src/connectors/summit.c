@@ -315,7 +315,7 @@ summit_patch_download (struct backend *backend, const gchar *path,
   name[SUMMIT_PATCH_NAME_LEN] = 0;
   summit_truncate_name (&name[SUMMIT_PATCH_NAME_LEN - 1]);
 
-  idata_init (patch, rx_msg, name, NULL);
+  idata_init (patch, rx_msg, strdup (name), NULL);
   goto end;
 
 cleanup:
@@ -839,7 +839,7 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
   name[SUMMIT_WAVETABLE_NAME_LEN] = 0;
   summit_truncate_name (&name[SUMMIT_WAVETABLE_NAME_LEN - 1]);
 
-  idata_init (wavetable, output, name, NULL);
+  idata_init (wavetable, output, strdup (name), NULL);
   goto end;
 
 err:

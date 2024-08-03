@@ -135,7 +135,7 @@ gchar *path_filename_to_uri (enum path_type, gchar *);
 void g_slist_fill (GSList ** list, ...);
 
 void idata_init (struct idata *idata, GByteArray * content,
-		 const gchar * name, void *info);
+		 gchar * name, void *info);
 
 void idata_free (struct idata *idata);
 

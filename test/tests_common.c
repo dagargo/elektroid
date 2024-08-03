@@ -123,7 +123,7 @@ test_common_slot_get_download_path ()
   ops.name = "fsname";
   ops.ext = "ext";
 
-  idata_init (&idata, NULL, "name", NULL);
+  idata_init (&idata, NULL, strdup ("name"), NULL);
 
   path = common_slot_get_download_path_n (&backend, &ops, "/dst_dir", "/1",
 					  &idata);

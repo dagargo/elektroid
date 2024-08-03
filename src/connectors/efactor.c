@@ -240,7 +240,7 @@ efactor_download (struct backend *backend, const gchar *src_path,
 
   job_control_set_progress (control, 1.0);
 
-  idata_init (preset, output, name, NULL);
+  idata_init (preset, output, strdup (name), NULL);
 
   sleep (1);
 
