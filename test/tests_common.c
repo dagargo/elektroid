@@ -67,10 +67,11 @@ test_common_slot_get_id_name_from_path ()
   CU_ASSERT_TRUE (err == -EINVAL);
 
   err = common_slot_get_id_name_from_path ("/1:", &id, &str);
-  CU_ASSERT_TRUE (err == -EINVAL);
+  CU_ASSERT_TRUE (err == 0);
+  CU_ASSERT_TRUE (str == NULL);
 
   err = common_slot_get_id_name_from_path ("/:a", &id, &str);
-  CU_ASSERT_TRUE (id == -EINVAL);
+  CU_ASSERT_TRUE (err == -EINVAL);
 
   err = common_slot_get_id_name_from_path ("/p/1:a", &id, NULL);
   CU_ASSERT_TRUE (err == 0);
@@ -134,7 +135,7 @@ main (gint argc, gchar *argv[])
     }
 
   if (!CU_add_test (suite, "common_slot_get_id_name_from_path",
-		    test_common_remove_slot_name_from_path))
+		    test_common_slot_get_id_name_from_path))
     {
       goto cleanup;
     }
