@@ -97,6 +97,8 @@ typedef gchar *(*fs_get_upload_path) (struct backend *,
 				      const struct fs_operations *,
 				      const gchar *, const gchar *);
 
+// In this function, src_path has always the for "/path/id" and never contains the path separator and the slot name.
+
 typedef gchar *(*fs_get_download_path) (struct backend * backend,
 					const struct fs_operations * ops,
 					const gchar * dst_dir,

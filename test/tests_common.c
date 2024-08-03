@@ -111,6 +111,53 @@ test_common_get_sanitized_name ()
   g_free (str);
 }
 
+void
+test_common_slot_get_download_path ()
+{
+  struct backend backend;
+  struct fs_operations ops;
+  gchar *path;
+  struct idata idata;
+
+  snprintf (backend.name, LABEL_MAX, "Dev Name");
+  ops.name = "fsname";
+  ops.ext = "ext";
+
+  idata_init (&idata, NULL, "name", NULL);
+
+  path = common_slot_get_download_path_n (&backend, &ops, "/dst_dir", "/1",
+					  &idata);
+  CU_ASSERT_STRING_EQUAL ("/dst_dir/Dev Name fsname 1 - name.ext", path);
+  g_free (path);
+
+  path = common_slot_get_download_path_nn (&backend, &ops, "/dst_dir", "/1",
+					   &idata);
+  CU_ASSERT_STRING_EQUAL ("/dst_dir/Dev Name fsname 01 - name.ext", path);
+  g_free (path);
+
+  path = common_slot_get_download_path_nnn (&backend, &ops, "/dst_dir", "/1",
+					    &idata);
+  CU_ASSERT_STRING_EQUAL ("/dst_dir/Dev Name fsname 001 - name.ext", path);
+  g_free (path);
+
+  path = common_slot_get_download_path (&backend, &ops, "/dst_dir", "/1",
+					&idata, 0);
+  printf ("%s\n", path);
+  CU_ASSERT_STRING_EQUAL ("/dst_dir/Dev Name fsname - name.ext", path);
+  g_free (path);
+
+  idata_free (&idata);
+
+  idata_init (&idata, NULL, NULL, NULL);
+
+  path = common_slot_get_download_path_n (&backend, &ops, "/dst_dir", "/1",
+					  &idata);
+  CU_ASSERT_STRING_EQUAL ("/dst_dir/Dev Name fsname 1.ext", path);
+  g_free (path);
+
+  idata_free (&idata);
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -142,6 +189,12 @@ main (gint argc, gchar *argv[])
 
   if (!CU_add_test (suite, "common_get_sanitized_name",
 		    test_common_get_sanitized_name))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "common_slot_get_download_path",
+		    test_common_slot_get_download_path))
     {
       goto cleanup;
     }

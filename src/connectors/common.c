@@ -250,13 +250,20 @@ common_slot_get_download_path_id_name (struct backend *backend,
 {
   gchar *path;
   GString *str = g_string_new (NULL);
-  g_string_append_printf (str, "%s %s %.*d", backend->name, ops->name,
-			  digits, id);
+
+  g_string_append_printf (str, "%s %s", backend->name, ops->name);
+
+  if (digits)
+    {
+      g_string_append_printf (str, " %.*d", digits, id);
+    }
+
   if (name)
     {
       g_string_append (str, " - ");
       g_string_append (str, name);
     }
+
   g_string_append (str, ".");
   g_string_append (str, ops->ext);
 
