@@ -664,7 +664,7 @@ static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
   .load = file_load,
   .save = file_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = common_get_download_path
+  .get_download_path = common_slot_get_download_path_nnn
 };
 
 static gint
@@ -689,7 +689,7 @@ static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .load = microfreak_zobject_load,
   .save = microfreak_zpreset_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = common_get_download_path
+  .get_download_path = common_slot_get_download_path_nnn
 };
 
 static gint
@@ -736,7 +736,7 @@ static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
   .save = microfreak_zpreset_save,
   .get_exts = microfreak_preset_get_exts,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = common_get_download_path,
+  .get_download_path = common_slot_get_download_path_nnn,
   .select_item = microfreak_midi_program_change
 };
 
@@ -1872,17 +1872,6 @@ microfreak_wavetable_clear (struct backend *backend, const gchar *path)
   return err;
 }
 
-static gchar *
-microfreak_get_download_wavetable_path (struct backend *backend,
-					const struct fs_operations *ops,
-					const gchar *dst_dir,
-					const gchar *src_path,
-					struct idata *wavetable)
-{
-  return common_get_download_path_with_digits (backend, ops, dst_dir,
-					       src_path, wavetable, 2);
-}
-
 static gint
 microfreak_sample_load (const gchar *path, struct idata *sample,
 			struct job_control *control)
@@ -1940,7 +1929,7 @@ static const struct fs_operations FS_MICROFREAK_PWAVETABLE_OPERATIONS = {
   .load = microfreak_pwavetable_load,
   .save = microfreak_pwavetable_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = microfreak_get_download_wavetable_path
+  .get_download_path = common_slot_get_download_path_nn
 };
 
 static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
@@ -1959,7 +1948,7 @@ static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
   .load = microfreak_zwavetable_load,
   .save = microfreak_zwavetable_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = microfreak_get_download_wavetable_path
+  .get_download_path = common_slot_get_download_path_nn
 };
 
 static gint
@@ -1993,7 +1982,7 @@ static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
   .save = microfreak_wavetable_save,
   .get_exts = sample_get_sample_extensions,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = microfreak_get_download_wavetable_path
+  .get_download_path = common_slot_get_download_path_nn
 };
 
 static gint

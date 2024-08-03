@@ -60,8 +60,8 @@ cz_get_download_path (struct backend *backend,
 		      const gchar *src_path, struct idata *preset)
 {
   guint digits = preset->name ? 0 : 2;
-  return common_get_download_path_with_digits (backend, ops, dst_dir,
-					       src_path, preset, digits);
+  return common_slot_get_download_path (backend, ops, dst_dir, src_path,
+					preset, digits);
 }
 
 static GByteArray *

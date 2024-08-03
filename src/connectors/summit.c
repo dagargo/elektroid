@@ -539,7 +539,7 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .load = file_load,
   .save = file_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = common_get_download_path,
+  .get_download_path = common_slot_get_download_path_nnn,
   .select_item = summit_single_patch_change
 };
 
@@ -563,7 +563,7 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .load = file_load,
   .save = file_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = common_get_download_path,
+  .get_download_path = common_slot_get_download_path_nnn,
   .select_item = summit_multi_patch_change
 };
 
@@ -685,7 +685,7 @@ static const struct fs_operations FS_SUMMIT_BULK_TUNING_OPERATIONS = {
   .upload = summit_tuning_upload,
   .load = file_load,
   .save = file_save,
-  .get_download_path = common_get_download_path,
+  .get_download_path = common_slot_get_download_path_nn,
   .get_upload_path = common_slot_get_upload_path
 };
 
@@ -850,17 +850,6 @@ end:
   return err;
 }
 
-static gchar *
-summit_wavetable_get_download_path (struct backend *backend,
-				    const struct fs_operations *ops,
-				    const gchar *dst_dir,
-				    const gchar *src_path,
-				    struct idata *wavetable)
-{
-  return common_get_download_path_with_digits (backend, ops, dst_dir,
-					       src_path, wavetable, 2);
-}
-
 static gint
 summit_wavetable_upload (struct backend *backend, const gchar *path,
 			 struct idata *wavetable, struct job_control *control)
@@ -947,7 +936,7 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .get_slot = summit_get_wavetable_id_as_slot,
   .load = file_load,
   .save = file_save,
-  .get_download_path = summit_wavetable_get_download_path,
+  .get_download_path = common_slot_get_download_path_nn,
   .get_upload_path = common_slot_get_upload_path
 };
 

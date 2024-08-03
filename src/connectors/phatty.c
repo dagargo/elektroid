@@ -166,8 +166,8 @@ phatty_get_download_path (struct backend *backend,
     }
 
   digits = id == PHATTY_PANEL_ID ? 0 : 2;
-  return common_get_download_path_with_digits (backend, ops, dst_dir,
-					       src_path, preset, digits);
+  return common_slot_get_download_path (backend, ops, dst_dir, src_path,
+					preset, digits);
 }
 
 static GByteArray *

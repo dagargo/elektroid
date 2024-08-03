@@ -120,16 +120,6 @@ efactor_new_get_msg (guint8 type, const gchar *key)
   return tx_msg;
 }
 
-static gchar *
-efactor_get_download_path (struct backend *backend,
-			   const struct fs_operations *ops,
-			   const gchar *dst_dir, const gchar *src_path,
-			   struct idata *preset)
-{
-  return common_get_download_path_with_digits (backend, ops, dst_dir,
-					       src_path, preset, 2);
-}
-
 static gint
 efactor_next_dentry (struct item_iterator *iter)
 {
@@ -418,7 +408,7 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .load = file_load,
   .save = file_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = efactor_get_download_path,
+  .get_download_path = common_slot_get_download_path_nn,
   .select_item = common_midi_program_change
 };
 

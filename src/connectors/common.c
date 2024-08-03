@@ -242,11 +242,11 @@ common_data_tx_and_rx (struct backend *backend, GByteArray *tx_msg,
 }
 
 static gchar *
-common_get_download_path_with_params (struct backend *backend,
-				      const struct fs_operations *ops,
-				      const gchar *dst_dir,
-				      guint id, guint digits,
-				      const gchar *name)
+common_slot_get_download_path_id_name (struct backend *backend,
+				       const struct fs_operations *ops,
+				       const gchar *dst_dir,
+				       guint id, guint digits,
+				       const gchar *name)
 {
   gchar *path;
   GString *str = g_string_new (NULL);
@@ -267,29 +267,49 @@ common_get_download_path_with_params (struct backend *backend,
 }
 
 gchar *
-common_get_download_path_with_digits (struct backend *backend,
-				      const struct fs_operations *ops,
-				      const gchar *dst_dir,
-				      const gchar *src_path,
-				      struct idata *idata, guint digits)
+common_slot_get_download_path (struct backend *backend,
+			       const struct fs_operations *ops,
+			       const gchar *dst_dir,
+			       const gchar *src_path,
+			       struct idata *idata, guint digits)
 {
   guint id;
   if (common_slot_get_id_name_from_path (src_path, &id, NULL))
     {
       return NULL;
     }
-  return common_get_download_path_with_params (backend, ops, dst_dir,
-					       id, digits, idata->name);
+  return common_slot_get_download_path_id_name (backend, ops, dst_dir,
+						id, digits, idata->name);
 }
 
 gchar *
-common_get_download_path (struct backend *backend,
-			  const struct fs_operations *ops,
-			  const gchar *dst_dir, const gchar *src_path,
-			  struct idata *idata)
+common_slot_get_download_path_n (struct backend *backend,
+				 const struct fs_operations *ops,
+				 const gchar *dst_dir,
+				 const gchar *src_path, struct idata *idata)
 {
-  return common_get_download_path_with_digits (backend, ops, dst_dir,
-					       src_path, idata, 3);
+  return common_slot_get_download_path (backend, ops, dst_dir, src_path,
+					idata, 1);
+}
+
+gchar *
+common_slot_get_download_path_nn (struct backend *backend,
+				  const struct fs_operations *ops,
+				  const gchar *dst_dir,
+				  const gchar *src_path, struct idata *idata)
+{
+  return common_slot_get_download_path (backend, ops, dst_dir, src_path,
+					idata, 2);
+}
+
+gchar *
+common_slot_get_download_path_nnn (struct backend *backend,
+				   const struct fs_operations *ops,
+				   const gchar *dst_dir,
+				   const gchar *src_path, struct idata *idata)
+{
+  return common_slot_get_download_path (backend, ops, dst_dir, src_path,
+					idata, 3);
 }
 
 void

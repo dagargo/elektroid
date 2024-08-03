@@ -199,16 +199,6 @@ microbrute_get_counter (struct backend *backend)
   return value;
 }
 
-static gchar *
-microbrute_get_download_path (struct backend *backend,
-			      const struct fs_operations *ops,
-			      const gchar *dst_dir, const gchar *src_path,
-			      struct idata *sequence)
-{
-  return common_get_download_path_with_digits (backend, ops, dst_dir,
-					       src_path, sequence, 1);
-}
-
 static gint
 microbrute_read_dir (struct backend *backend, struct item_iterator *iter,
 		     const gchar *dir, GSList *extensions)
@@ -486,7 +476,7 @@ static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .load = file_load,
   .save = file_save,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = microbrute_get_download_path
+  .get_download_path = common_slot_get_download_path_n
 };
 
 gint
