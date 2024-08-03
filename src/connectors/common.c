@@ -25,9 +25,10 @@
 gchar *
 common_slot_get_upload_path (struct backend *backend,
 			     const struct fs_operations *ops,
-			     const gchar *dst_path, const gchar *src_path)
+			     const gchar *dst_path, const gchar *src_path,
+			     struct idata *content)
 {
-  //In SLOT mode, dst_path includes the index, ':' and the item name.
+  //In SLOT mode, dst_path points to a slot not to a directory
   return strdup (dst_path);
 }
 
@@ -386,4 +387,27 @@ common_sample_load (const gchar *path, struct idata *sample,
   sample_info_req.format = format;
   return sample_load_from_file (path, sample, control, &sample_info_req,
 				&sample_info_src);
+}
+
+gchar *
+common_system_get_download_path (struct backend *backend,
+				 const struct fs_operations *ops,
+				 const gchar *dst_dir, const gchar *src_path,
+				 struct idata *idata)
+{
+  GString *name_with_ext = g_string_new (NULL);
+  g_string_append_printf (name_with_ext, "%s.%s", idata->name, ops->ext);
+  gchar *path = path_chain (PATH_SYSTEM, dst_dir, name_with_ext->str);
+  g_string_free (name_with_ext, TRUE);
+  return path;
+}
+
+gchar *
+common_system_get_upload_path (struct backend *backend,
+			       const struct fs_operations *ops,
+			       const gchar *dst_dir,
+			       const gchar *src_path, struct idata *content)
+{
+  return common_system_get_download_path (backend, ops, dst_dir, src_path,
+					  content);
 }

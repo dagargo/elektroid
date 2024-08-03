@@ -35,8 +35,9 @@ struct common_simple_read_dir_data
 
 gchar *common_slot_get_upload_path (struct backend *backend,
 				    const struct fs_operations *ops,
-				    const gchar * dst_path,
-				    const gchar * src_path);
+				    const gchar * dst_dir,
+				    const gchar * src_path,
+				    struct idata *idata);
 
 gint common_slot_get_id_name_from_path (const char *path, guint * id,
 					gchar ** name);
@@ -101,3 +102,15 @@ gchar *common_get_sanitized_name (const gchar * name, const gchar * alphabet,
 gint common_sample_load (const gchar * path, struct idata *sample,
 			 struct job_control *control, guint32 rate,
 			 guint32 channels, guint32 format);
+
+gchar *common_system_get_download_path (struct backend *backend,
+					const struct fs_operations *ops,
+					const gchar * dst_dir,
+					const gchar * src_path,
+					struct idata *content);
+
+gchar *common_system_get_upload_path (struct backend *backend,
+				      const struct fs_operations *ops,
+				      const gchar * dst_dir,
+				      const gchar * src_path,
+				      struct idata *content);

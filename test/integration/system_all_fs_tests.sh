@@ -14,6 +14,7 @@ for f in $($ecli info 0 | grep Filesystems | awk '{print $2}' | sed 's/,/ /g'); 
   [ $? -ne 0 ] && err=1 && continue
   cksum $actf
   cksum $expf
+  ls -l $tmpdir
   act=$(cksum $actf | awk '{print $1 " " $2}')
   exp=$(cksum $expf | awk '{print $1 " " $2}')
   [ "$act" != "$exp" ] && echo "Unexpected cksum for $f" && err=1

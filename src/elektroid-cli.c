@@ -574,22 +574,22 @@ cli_upload (int argc, gchar *argv[], int *optind)
 
   dst_path = cli_get_path (device_dst_path);
 
-  upload_path = fs_ops->get_upload_path (&backend, fs_ops, dst_path,
-					 src_path);
-
   control.active = TRUE;
   err = fs_ops->load (src_path, &idata, &control);
   if (err)
     {
-      goto cleanup;
+      return err;
     }
+
+  upload_path = fs_ops->get_upload_path (&backend, fs_ops, dst_path,
+					 src_path, &idata);
 
   CHECK_FS_OPS_FUNC (fs_ops->upload);
   err = fs_ops->upload (&backend, upload_path, &idata, &control);
   idata_free (&idata);
 
-cleanup:
   g_free (upload_path);
+
   return err;
 }
 

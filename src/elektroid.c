@@ -1469,25 +1469,17 @@ elektroid_upload_task_runner (gpointer data)
   debug_print (1, "Writing from file %s (filesystem %s)...",
 	       tasks.transfer.src, tasks.transfer.fs_ops->name);
 
-  if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+  upload_path = remote_browser.fs_ops->get_upload_path (&backend,
+							remote_browser.fs_ops,
+							tasks.transfer.dst,
+							tasks.transfer.src,
+							&idata);
+  g_mutex_lock (&tasks.transfer.control.mutex);
+  elektroid_check_file_and_wait (upload_path, &remote_browser);
+  g_mutex_unlock (&tasks.transfer.control.mutex);
+  if (tasks.transfer.status == TASK_STATUS_CANCELED)
     {
-      upload_path = strdup (tasks.transfer.dst);
-    }
-  else
-    {
-      upload_path = remote_browser.fs_ops->get_upload_path (&backend,
-							    remote_browser.fs_ops,
-							    tasks.
-							    transfer.dst,
-							    tasks.
-							    transfer.src);
-      g_mutex_lock (&tasks.transfer.control.mutex);
-      elektroid_check_file_and_wait (upload_path, &remote_browser);
-      g_mutex_unlock (&tasks.transfer.control.mutex);
-      if (tasks.transfer.status == TASK_STATUS_CANCELED)
-	{
-	  goto cleanup;
-	}
+      goto cleanup;
     }
 
   res = tasks.transfer.fs_ops->upload (remote_browser.backend,
@@ -1531,7 +1523,7 @@ elektroid_add_upload_task_path (const gchar *rel_path, const gchar *src_dir,
 				const gchar *dst_dir)
 {
   struct item_iterator iter;
-  gchar *path, *upload_path, *src_abs_path, *rel_path_trans;
+  gchar *path, *src_abs_path, *rel_path_trans;
   enum path_type type = backend_get_path_type (&backend);
 
   if (!progress_is_active ())
@@ -1551,22 +1543,8 @@ elektroid_add_upload_task_path (const gchar *rel_path, const gchar *src_dir,
       g_free (rel_path_trans);
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
-      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
-	{
-	  upload_path = remote_browser.fs_ops->get_upload_path (&backend,
-								remote_browser.fs_ops,
-								dst_abs_dir,
-								src_abs_path);
-	}
-      else
-	{
-	  //We can delay the path calculation to the moment the upload runs.
-	  upload_path = strdup (dst_abs_dir);
-	}
-      tasks_add (&tasks, TASK_TYPE_UPLOAD, src_abs_path, upload_path,
+      tasks_add (&tasks, TASK_TYPE_UPLOAD, src_abs_path, dst_abs_dir,
 		 remote_browser.fs_ops->id, &backend);
-      g_free (upload_path);
-      g_free (dst_abs_dir);
       g_free (dst_abs_path);
       goto cleanup;
     }
@@ -2226,8 +2204,9 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 }
 
 static void
-elektroid_dnd_received_system (const gchar *dir, const gchar *name,
-			       const gchar *filename, struct browser *browser)
+elektroid_dnd_received_browser (const gchar *dir, const gchar *name,
+				const gchar *filename,
+				struct browser *browser)
 {
   gchar *dst_path;
   gint res;
@@ -2243,37 +2222,7 @@ elektroid_dnd_received_system (const gchar *dir, const gchar *name,
 		       filename, dst_path, g_strerror (-res));
 	}
       g_free (dst_path);
-      g_idle_add (browser_load_dir_if_needed, &local_browser);
-    }
-  else
-    {
-      debug_print (1, MSG_WARN_SAME_SRC_DST);
-    }
-}
-
-static void
-elektroid_dnd_received_remote (const gchar *dir, const gchar *name,
-			       const gchar *filename)
-{
-  gchar *dst_path;
-  gint res;
-
-  if (strcmp (dir, remote_browser.dir))
-    {
-      dst_path = remote_browser.fs_ops->get_upload_path (&backend,
-							 remote_browser.fs_ops,
-							 remote_browser.dir,
-							 name);
-
-      res = remote_browser.fs_ops->move (remote_browser.backend,
-					 filename, dst_path);
-      if (res)
-	{
-	  error_print ("Error while moving from “%s” to “%s”: %s.",
-		       filename, dst_path, g_strerror (-res));
-	}
-      g_free (dst_path);
-      g_idle_add (browser_load_dir_if_needed, &remote_browser);
+      g_idle_add (browser_load_dir_if_needed, browser);
     }
   else
     {
@@ -2341,16 +2290,16 @@ elektroid_dnd_received_runner_dialog (gpointer data)
 	}
 
       enum path_type type = PATH_TYPE_FROM_DND_TYPE (dnd_data->type_name);
-      gchar *filename = path_filename_from_uri (type, dnd_data->uris[i]);
-      gchar *name = g_path_get_basename (filename);
-      gchar *dir = g_path_get_dirname (filename);
+      gchar *src_path = path_filename_from_uri (type, dnd_data->uris[i]);
+      gchar *name = g_path_get_basename (src_path);
+      gchar *dir = g_path_get_dirname (src_path);
 
       if (widget == GTK_WIDGET (local_browser.view))
 	{
 	  if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD))
 	    {
-	      elektroid_dnd_received_system (dir, name, filename,
-					     &local_browser);
+	      elektroid_dnd_received_browser (dir, name, src_path,
+					      &local_browser);
 	    }
 	  else if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID))
 	    {
@@ -2361,13 +2310,14 @@ elektroid_dnd_received_runner_dialog (gpointer data)
 	{
 	  if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID))
 	    {
-	      elektroid_dnd_received_remote (dir, name, filename);
+	      elektroid_dnd_received_browser (dir, name, src_path,
+					      &remote_browser);
 	    }
 	  else if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD))
 	    {
 	      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 		{
-		  elektroid_add_upload_task_slot (name, filename, i);
+		  elektroid_add_upload_task_slot (name, src_path, i);
 		}
 	      else
 		{
@@ -2379,7 +2329,7 @@ elektroid_dnd_received_runner_dialog (gpointer data)
 
       g_free (name);
       g_free (dir);
-      g_free (filename);
+      g_free (src_path);
     }
 
 end:

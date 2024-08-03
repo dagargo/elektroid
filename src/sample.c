@@ -303,7 +303,7 @@ sample_write_audio_file_data (struct idata *idata,
 }
 
 gint
-sample_get_memfile_from_sample (struct idata *sample, struct idata *file,
+sample_get_memfile_from_sample (struct idata *sample, struct idata *memfile,
 				struct job_control *control, guint32 format)
 {
   gint err;
@@ -315,14 +315,14 @@ sample_get_memfile_from_sample (struct idata *sample, struct idata *file,
 
   content = g_byte_array_sized_new (sample->content->len * frame_size +
 				    HEADERS_SPACE);
-  idata_init (file, content, NULL, NULL);
+  idata_init (memfile, content, strdup (sample->name), NULL);
   data.pos = 0;
   data.array = content;
 
   err = sample_write_audio_file_data (sample, &data, control, format);
   if (err)
     {
-      idata_free (file);
+      idata_free (memfile);
     }
 
   return err;
@@ -639,7 +639,8 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 			struct job_control *control, struct idata *idata,
 			const struct sample_info *sample_info_req,
 			struct sample_info *sample_info_src,
-			sample_load_cb cb, gpointer cb_data)
+			sample_load_cb cb, gpointer cb_data,
+			const gchar *name)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -748,7 +749,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sample_info_fix_frame_values (sample_info);
 
   sample = g_byte_array_sized_new (sample_info->frames * bytes_per_frame);
-  idata_init (idata, sample, NULL, sample_info);
+  idata_init (idata, sample, strdup (name), sample_info);
   if (control)
     {
       g_mutex_unlock (&control->mutex);
@@ -974,7 +975,7 @@ sample_load_from_memfile (struct idata *memfile, struct idata *sample,
   return sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, sample,
 				 sample_info_req, sample_info_src,
 				 job_control_set_sample_progress_no_sync,
-				 NULL);
+				 NULL, memfile->name);
 }
 
 // Reloads the input into the output following all the requirements.
@@ -1001,7 +1002,7 @@ sample_reload (struct idata *input, struct idata *output,
   data.array = aux.content;
   err = sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, output,
 				sample_info_req, &sample_info_src, cb,
-				cb_data);
+				cb_data, input->name);
   idata_free (&aux);
 
   return err;
@@ -1032,14 +1033,18 @@ sample_load_from_file_full (const gchar *path, struct idata *sample,
     }
   else
     {
+      gchar *name;
       FILE *file = fopen (path, "rb");
       if (!file)
 	{
 	  return -errno;
 	}
+      name = g_path_get_basename (path);
+      remove_ext (name);
       err = sample_load_libsndfile (file, &FILE_IO, control, sample,
 				    sample_info_req, sample_info_src, cb,
-				    cb_data);
+				    cb_data, name);
+      g_free (name);
       fclose (file);
     }
 

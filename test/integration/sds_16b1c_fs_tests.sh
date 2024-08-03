@@ -11,10 +11,6 @@ echo '[...]'
 
 echo "Testing upload..."
 $ecli sds-16b1c-ul $srcdir/res/connectors/silence.wav $TEST_DEVICE:/1
-[ $? -ne 1 ] && exit 1
-
-echo "Testing upload with name..."
-$ecli sds-16b1c-ul $srcdir/res/connectors/silence.wav $TEST_DEVICE:/1:silence
 [ $? -ne 0 ] && exit 1
 
 # If renaming is not implemented, this will fail.

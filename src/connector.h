@@ -93,17 +93,10 @@ typedef gint (*fs_local_file_op) (const gchar *, struct idata *,
 typedef GSList *(*fs_get_exts) (struct backend *,
 				const struct fs_operations *);
 
-typedef gchar *(*fs_get_upload_path) (struct backend *,
-				      const struct fs_operations *,
-				      const gchar *, const gchar *);
-
-// In this function, src_path has always the for "/path/id" and never contains the path separator and the slot name.
-
-typedef gchar *(*fs_get_download_path) (struct backend * backend,
-					const struct fs_operations * ops,
-					const gchar * dst_dir,
-					const gchar * src_path,
-					struct idata * idata);
+typedef gchar *(*fs_get_path) (struct backend * backend,
+			       const struct fs_operations * ops,
+			       const gchar * dst_dir, const gchar * src_path,
+			       struct idata * idata);
 
 typedef void (*fs_select_item) (struct backend *, const gchar *,
 				struct item *);
@@ -114,7 +107,7 @@ typedef gboolean (*fs_file_exists) (struct backend *, const gchar *);
 // errno values are recommended as will provide the user with a meaningful message. In particular,
 // ENOSYS could be used when a particular device does not support a feature that other devices implementing the same filesystem do.
 
-// rename and move are different operations. If move is implemented, rename must behave the same way. However, t's perfectly
+// rename and move are different operations. If move is implemented, rename must behave the same way. However, it's perfectly
 // possible to implement rename without implementing move. This is the case in slot mode filesystems.
 
 struct fs_operations
@@ -142,8 +135,8 @@ struct fs_operations
   fs_local_file_op load;	//Load a file from the OS storage into memory. Typically used before upload.
   fs_get_item_slot get_slot;
   fs_get_exts get_exts;		//If present, this is used; if not, type_ext is used.
-  fs_get_upload_path get_upload_path;
-  fs_get_download_path get_download_path;
+  fs_get_path get_upload_path;
+  fs_get_path get_download_path;
   fs_select_item select_item;
 };
 

@@ -55,29 +55,6 @@ system_download (struct backend *backend, const gchar *path,
   return err;
 }
 
-static gchar *
-system_get_download_path (struct backend *backend,
-			  const struct fs_operations *ops,
-			  const gchar *dst_dir, const gchar *src_path,
-			  struct idata *content)
-{
-  gchar *name = g_path_get_basename (src_path);
-  GString *name_with_ext = g_string_new (NULL);
-  remove_ext (name);
-  g_string_append_printf (name_with_ext, "%s.wav", name);
-  gchar *path = path_chain (PATH_SYSTEM, dst_dir, name_with_ext->str);
-  g_string_free (name_with_ext, TRUE);
-  return path;
-}
-
-static gchar *
-system_get_upload_path (struct backend *backend,
-			const struct fs_operations *ops,
-			const gchar *dst_dir, const gchar *src_path)
-{
-  return system_get_download_path (backend, ops, dst_dir, src_path, NULL);
-}
-
 gint
 system_mkdir (struct backend *backend, const gchar *name)
 {
@@ -410,6 +387,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .name = "wav48k16b2c",
   .gui_name = "WAV 48 KHz 16 bits stereo",
   .gui_icon = FS_ICON_WAVE,
+  .ext = "wav",
   .readdir = system_samples_read_dir,
   .print_item = common_print_item,
   .file_exists = system_file_exists,
@@ -421,8 +399,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .upload = system_upload,
   .load = system_load_48_16_stereo,
   .save = file_save,
-  .get_upload_path = system_get_upload_path,
-  .get_download_path = system_get_download_path,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
   .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
@@ -436,6 +414,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .name = "wav48k16b1c",
   .gui_name = "WAV 48 KHz 16 bits mono",
   .gui_icon = FS_ICON_WAVE,
+  .ext = "wav",
   .readdir = system_samples_read_dir,
   .print_item = common_print_item,
   .file_exists = system_file_exists,
@@ -447,8 +426,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .upload = system_upload,
   .load = system_load_48_16_mono,
   .save = file_save,
-  .get_upload_path = system_get_upload_path,
-  .get_download_path = system_get_download_path,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
   .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
@@ -462,6 +441,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .name = "wav44.1k16b2c",
   .gui_name = "WAV 44.1 KHz 16 bits stereo",
   .gui_icon = FS_ICON_WAVE,
+  .ext = "wav",
   .readdir = system_samples_read_dir,
   .print_item = common_print_item,
   .file_exists = system_file_exists,
@@ -473,8 +453,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .upload = system_upload,
   .load = system_load_441_16_stereo,
   .save = file_save,
-  .get_upload_path = system_get_upload_path,
-  .get_download_path = system_get_download_path,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
   .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
@@ -488,6 +468,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .name = "wav44.1k16b1c",
   .gui_name = "WAV 44.1 KHz 16 bits mono",
   .gui_icon = FS_ICON_WAVE,
+  .ext = "wav",
   .readdir = system_samples_read_dir,
   .print_item = common_print_item,
   .file_exists = system_file_exists,
@@ -502,8 +483,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .upload = system_upload,
   .load = system_load_441_16_mono,
   .save = file_save,
-  .get_upload_path = system_get_upload_path,
-  .get_download_path = system_get_download_path,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
   .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
@@ -517,6 +498,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_24_STEREO_OPERATIONS = {
   .name = "wav44.1k24b2c",
   .gui_name = "WAV 44.1 KHz 24 bits stereo",
   .gui_icon = FS_ICON_WAVE,
+  .ext = "wav",
   .readdir = system_samples_read_dir,
   .file_exists = system_file_exists,
   .mkdir = system_mkdir,
@@ -527,8 +509,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_24_STEREO_OPERATIONS = {
   .upload = system_upload_24_bits,
   .load = system_load_441_24_stereo,
   .save = file_save,
-  .get_upload_path = system_get_upload_path,
-  .get_download_path = system_get_download_path,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
   .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
@@ -542,6 +524,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_24_MONO_OPERATIONS = {
   .name = "wav44.1k24b1c",
   .gui_name = "WAV 44.1 KHz 24 bits mono",
   .gui_icon = FS_ICON_WAVE,
+  .ext = "wav",
   .readdir = system_samples_read_dir,
   .file_exists = system_file_exists,
   .mkdir = system_mkdir,
@@ -555,8 +538,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_24_MONO_OPERATIONS = {
   .upload = system_upload_24_bits,
   .load = system_load_441_24_mono,
   .save = file_save,
-  .get_upload_path = system_get_upload_path,
-  .get_download_path = system_get_download_path,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
   .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
@@ -570,6 +553,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_STEREO_OPERATIONS = {
   .name = "wav44.1k8b2c",
   .gui_name = "WAV 44.1 KHz 8 bits stereo",
   .gui_icon = FS_ICON_WAVE,
+  .ext = "wav",
   .readdir = system_samples_read_dir,
   .file_exists = system_file_exists,
   .mkdir = system_mkdir,
@@ -580,8 +564,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_STEREO_OPERATIONS = {
   .upload = system_upload_8_bits,
   .load = system_load_441_8_stereo,
   .save = file_save,
-  .get_upload_path = system_get_upload_path,
-  .get_download_path = system_get_download_path,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
   .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
@@ -595,6 +579,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_MONO_OPERATIONS = {
   .name = "wav44.1k8b1c",
   .gui_name = "WAV 44.1 KHz 8 bits mono",
   .gui_icon = FS_ICON_WAVE,
+  .ext = "wav",
   .readdir = system_samples_read_dir,
   .file_exists = system_file_exists,
   .mkdir = system_mkdir,
@@ -608,8 +593,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_MONO_OPERATIONS = {
   .upload = system_upload_8_bits,
   .load = system_load_441_8_mono,
   .save = file_save,
-  .get_upload_path = system_get_upload_path,
-  .get_download_path = system_get_download_path,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
   .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };
@@ -623,6 +608,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_32_16_MONO_OPERATIONS = {
   .name = "wav32k8b1c",
   .gui_name = "WAV 32 KHz 16 bits mono",
   .gui_icon = FS_ICON_WAVE,
+  .ext = "wav",
   .readdir = system_samples_read_dir,
   .file_exists = system_file_exists,
   .mkdir = system_mkdir,
@@ -636,8 +622,8 @@ const struct fs_operations FS_SYSTEM_SAMPLES_32_16_MONO_OPERATIONS = {
   .upload = system_upload,
   .load = system_load_32_16_mono,
   .save = file_save,
-  .get_upload_path = system_get_upload_path,
-  .get_download_path = system_get_download_path,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
   .get_exts = sample_get_sample_extensions,
   .max_name_len = 255
 };

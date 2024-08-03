@@ -998,19 +998,19 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
 {
   gint err;
   guint id, batches;
-  gchar *name, *sanitized;
+  gchar *sanitized;
   struct backend_storage_stats statfs;
   struct microfreak_sample_header header;
   GByteArray *tx_msg, *rx_msg;
   GByteArray *input = sample->content;
 
-  err = common_slot_get_id_name_from_path (path, &id, &name);
+  err = common_slot_get_id_name_from_path (path, &id, NULL);
   if (err)
     {
       return err;
     }
 
-  sanitized = common_get_sanitized_name (name, MICROFREAK_ALPHABET,
+  sanitized = common_get_sanitized_name (sample->name, MICROFREAK_ALPHABET,
 					 MICROFREAK_DEFAULT_CHAR);
 
   id--;
@@ -1274,7 +1274,6 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
   //but looks like it is not actualy needed.
 
 end:
-  g_free (name);
   g_free (sanitized);
   usleep (MICROFREAK_REST_TIME_US);
   return err;
@@ -1359,7 +1358,8 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
     {
       struct sample_info *sample_info =
 	microfreak_new_sample_info (MICROFREAK_WAVETABLE_LEN);
-      idata_init (wavetable, idata_steal (&aux), NULL, sample_info);
+      gchar *name = strdup (aux.name);
+      idata_init (wavetable, idata_steal (&aux), name, sample_info);
       return 0;
     }
   else
@@ -1818,18 +1818,16 @@ microfreak_wavetable_upload (struct backend *backend, const gchar *path,
 {
   gint err;
   guint id;
-  gchar *name;
   GByteArray *wavetable = idata->content;
 
-  err = common_slot_get_id_name_from_path (path, &id, &name);
+  err = common_slot_get_id_name_from_path (path, &id, NULL);
   if (err)
     {
       return err;
     }
 
   err = microfreak_wavetable_upload_id_name (backend, path, wavetable,
-					     control, id, name);
-  g_free (name);
+					     control, id, idata->name);
   return err;
 }
 
