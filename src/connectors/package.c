@@ -852,10 +852,13 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       goto cleanup_reader;
     }
 
+  //We are reusing the same sample_file. Let's be careful.
   idata_init (&sample_file, g_byte_array_sized_new (zstat.size), NULL, NULL);
+
   elements = json_reader_count_elements (reader);
   control->parts = elements + 1;
   control->part = 1;
+
   for (i = 0; i < elements; i++, control->part++)
     {
       struct sample_info sample_info_req, sample_info_src;
@@ -869,6 +872,8 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       json_reader_end_element (reader);
       json_reader_end_element (reader);
 
+      debug_print (2, "Uploading %s...", sample_path);
+
       if (zip_stat (pkg->zip, sample_path, ZIP_FL_ENC_STRICT, &zstat))
 	{
 	  error_print ("Error while loading '%s': %s",
@@ -877,6 +882,12 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 	  ret = -1;
 	  continue;
 	}
+
+      //We remove the "Samples" at the beggining of the full zip path...
+      dev_sample_path = strdup (&sample_path[7]);
+      //... And the extension.
+      remove_ext (dev_sample_path);
+      sample_file.name = g_path_get_basename (dev_sample_path);
 
       g_byte_array_set_size (sample_file.content, zstat.size);
       zip_file = zip_fopen (pkg->zip, sample_path, 0);
@@ -889,30 +900,29 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 	{
 	  error_print ("Error while loading '%s': %s",
 		       sample_path, zip_error_strerror (&zerror));
-	  continue;
 	}
-
-      //We remove the "Samples" at the beggining of the full zip path...
-      dev_sample_path = strdup (&sample_path[7]);
-      //... And the extension.
-      remove_ext (dev_sample_path);
-      ret = elektron_upload_sample_part (backend, dev_sample_path,
-					 &sample, control);
-      g_free (dev_sample_path);
-
-      pkg_resource = g_malloc (sizeof (struct package_resource));
-      pkg_resource->type = PKG_RES_TYPE_SAMPLE;
-      pkg_resource->data = idata_steal (&sample);
-      pkg_resource->path = strdup (sample_path);
-
-      pkg->resources = g_list_append (pkg->resources, pkg_resource);
-
-      if (ret)
+      else
 	{
-	  error_print ("Error while uploading sample to '%s'",
-		       &sample_path[7]);
-	  continue;
+	  ret = elektron_upload_sample_part (backend, dev_sample_path,
+					     &sample, control);
+
+	  if (ret)
+	    {
+	      error_print ("Error while uploading sample to '%s'",
+			   &sample_path[7]);
+	    }
+
+	  pkg_resource = g_malloc (sizeof (struct package_resource));
+	  pkg_resource->type = PKG_RES_TYPE_SAMPLE;
+	  pkg_resource->data = idata_steal (&sample);
+	  pkg_resource->path = strdup (sample_path);
+
+	  pkg->resources = g_list_append (pkg->resources, pkg_resource);
 	}
+
+      g_free (dev_sample_path);
+      g_free (sample_file.name);
+      sample_file.name = NULL;
     }
 
   idata_free (&sample_file);

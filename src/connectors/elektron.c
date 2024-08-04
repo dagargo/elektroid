@@ -1601,7 +1601,7 @@ cleanup:
     }
   else
     {
-      idata_init (smplrw, output, NULL, sample_info);
+      idata_init (smplrw, output, g_path_get_basename (path), sample_info);
     }
   return res;
 }
@@ -2662,7 +2662,8 @@ elektron_download_pkg (struct backend *backend, const gchar *path,
 static gchar *
 elektron_get_upload_path_smplrw (struct backend *backend,
 				 const struct fs_operations *ops,
-				 const gchar *dst_dir, const gchar *src_path)
+				 const gchar *dst_dir, const gchar *src_path,
+				 struct idata *smplrw)
 {
   gchar *path, *name, *aux;
 
@@ -2738,25 +2739,6 @@ elektron_get_download_path (struct backend *backend,
     {
       path = NULL;
     }
-
-  return path;
-}
-
-static gchar *
-elektron_get_download_path_sample (struct backend *backend,
-				   const struct fs_operations *ops,
-				   const gchar *dst_dir,
-				   const gchar *src_path,
-				   struct idata *sample)
-{
-  gchar *path;
-  gchar *name = g_path_get_basename (src_path);
-  GString *filename = g_string_new (NULL);
-
-  g_string_append_printf (filename, "%s.wav", name);
-  path = path_chain (PATH_SYSTEM, dst_dir, filename->str);
-  g_free (name);
-  g_string_free (filename, TRUE);
 
   return path;
 }
@@ -3090,7 +3072,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .save = elektron_sample_save,
   .get_exts = sample_get_sample_extensions,
   .get_upload_path = elektron_get_upload_path_smplrw,
-  .get_download_path = elektron_get_download_path_sample
+  .get_download_path = common_system_get_download_path
 };
 
 static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
@@ -3264,7 +3246,7 @@ static const struct fs_operations FS_SAMPLES_STEREO_OPERATIONS = {
   .save = elektron_sample_save,
   .get_exts = sample_get_sample_extensions,
   .get_upload_path = elektron_get_upload_path_smplrw,
-  .get_download_path = elektron_get_download_path_sample
+  .get_download_path = common_system_get_download_path
 };
 
 static const struct fs_operations FS_DATA_DT2_PST_OPERATIONS = {
