@@ -190,10 +190,10 @@ static gint
 cz_download (struct backend *backend, const gchar *path,
 	     struct idata *program, struct job_control *control)
 {
-  guint8 id;
+  guint id;
   gint len, type, err = 0;
   GByteArray *tx_msg, *rx_msg;
-  gchar *dir, *name;
+  gchar *dir;
   GByteArray *output;
 
   if (strcmp (path, CZ_PANEL_PATH))
@@ -203,19 +203,19 @@ cz_download (struct backend *backend, const gchar *path,
       g_free (dir);
       if (type < 0)
 	{
-	  err = -EINVAL;
-	  goto end;
+	  return -EINVAL;
 	}
 
-      name = g_path_get_basename (path);
-      id = atoi (name);
-      g_free (name);
+      err = common_slot_get_id_from_path (path, &id);
+      if (err)
+	{
+	  return err;
+	}
 
       id--;
       if (id >= CZ_MAX_PROGRAMS)
 	{
-	  err = -EINVAL;
-	  goto end;
+	  return -EINVAL;
 	}
       id += type * CZ_MEM_TYPE_OFFSET;
     }
@@ -228,7 +228,7 @@ cz_download (struct backend *backend, const gchar *path,
   err = common_data_tx_and_rx (backend, tx_msg, &rx_msg, control);
   if (err)
     {
-      goto end;
+      return err;
     }
   len = rx_msg->len;
   if (len != CZ_PROGRAM_LEN)
@@ -248,7 +248,6 @@ cz_download (struct backend *backend, const gchar *path,
 
 cleanup:
   free_msg (rx_msg);
-end:
   return err;
 }
 
@@ -256,9 +255,9 @@ static gint
 cz_upload (struct backend *backend, const gchar *path, struct idata *program,
 	   struct job_control *control)
 {
-  guint8 id;
+  guint id;
   GByteArray *msg;
-  gchar *dir, *name;
+  gchar *dir;
   gint type, err = 0;
   GByteArray *input = program->content;
 
@@ -272,9 +271,12 @@ cz_upload (struct backend *backend, const gchar *path, struct idata *program,
   g_free (dir);
   if (type >= 0)
     {
-      name = g_path_get_basename (path);
-      id = atoi (name);
-      g_free (name);
+      err = common_slot_get_id_from_path (path, &id);
+      if (err)
+	{
+	  return err;
+	}
+
       id--;
       if (id >= CZ_MAX_PROGRAMS)
 	{

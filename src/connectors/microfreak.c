@@ -335,7 +335,7 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
   GByteArray *tx_msg, *rx_msg, *output;
   struct microfreak_preset mfp;
 
-  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  err = common_slot_get_id_from_path (path, &id);
   if (err)
     {
       return err;
@@ -463,7 +463,7 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
   gint err;
   GByteArray *input = preset->content;
 
-  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  err = common_slot_get_id_from_path (path, &id);
   if (err)
     {
       return err;
@@ -584,7 +584,7 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
   GByteArray *tx_msg, *rx_msg;
 
   debug_print (1, "Renaming preset...");
-  err = common_slot_get_id_name_from_path (src, &id, NULL);
+  err = common_slot_get_id_from_path (src, &id);
   if (err)
     {
       return err;
@@ -876,7 +876,7 @@ microfreak_sample_clear (struct backend *backend, const gchar *path)
   guint id;
   struct microfreak_sample_header header;
 
-  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  err = common_slot_get_id_from_path (path, &id);
   if (err)
     {
       return err;
@@ -1004,7 +1004,7 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
   GByteArray *tx_msg, *rx_msg;
   GByteArray *input = sample->content;
 
-  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  err = common_slot_get_id_from_path (path, &id);
   if (err)
     {
       return err;
@@ -1481,7 +1481,7 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
   gchar name[MICROFREAK_WAVETABLE_NAME_LEN];
   GByteArray *content;
 
-  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  err = common_slot_get_id_from_path (path, &id);
   if (err)
     {
       return err;
@@ -1737,7 +1737,7 @@ microfreak_wavetable_rename (struct backend *backend, const gchar *src,
 {
   guint id;
 
-  if (common_slot_get_id_name_from_path (src, &id, NULL))
+  if (common_slot_get_id_from_path (src, &id))
     {
       return -EINVAL;
     }
@@ -1802,7 +1802,7 @@ microfreak_xwavetable_upload (struct backend *backend, const gchar *path,
   guint id;
   GByteArray *wavetable = idata->content;
 
-  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  err = common_slot_get_id_from_path (path, &id);
   if (err)
     {
       return err;
@@ -1820,7 +1820,7 @@ microfreak_wavetable_upload (struct backend *backend, const gchar *path,
   guint id;
   GByteArray *wavetable = idata->content;
 
-  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  err = common_slot_get_id_from_path (path, &id);
   if (err)
     {
       return err;
@@ -1838,7 +1838,7 @@ microfreak_wavetable_clear (struct backend *backend, const gchar *path)
   guint id;
   GByteArray *data;
 
-  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  err = common_slot_get_id_from_path (path, &id);
   if (err)
     {
       return err;

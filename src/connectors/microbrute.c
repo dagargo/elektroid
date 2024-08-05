@@ -282,7 +282,7 @@ microbrute_download (struct backend *backend, const gchar *src_path,
   guint seqnum;
   GByteArray *data;
 
-  err = common_slot_get_id_name_from_path (src_path, &seqnum, NULL);
+  err = common_slot_get_id_from_path (src_path, &seqnum);
   if (err)
     {
       return err;
@@ -419,7 +419,7 @@ microbrute_upload (struct backend *backend, const gchar *path,
   guint seqnum;
   gint steps, err;
 
-  err = common_slot_get_id_name_from_path (path, &seqnum, NULL);
+  err = common_slot_get_id_from_path (path, &seqnum);
   if (err)
     {
       return err;

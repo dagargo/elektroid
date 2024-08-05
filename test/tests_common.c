@@ -6,81 +6,26 @@
 #include "../src/connectors/common.h"
 
 void
-test_common_remove_slot_name_from_path ()
+test_common_slot_get_id_from_path ()
 {
-  gchar *str;
-
-  printf ("\n");
-
-  str = strdup ("/a/b:asdf");
-  common_remove_slot_name_from_path (str);
-  CU_ASSERT_STRING_EQUAL (str, "/a/b");
-  g_free (str);
-
-  str = strdup ("/a/b");
-  common_remove_slot_name_from_path (str);
-  CU_ASSERT_STRING_EQUAL (str, "/a/b");
-  g_free (str);
-
-  str = strdup ("/a/");
-  common_remove_slot_name_from_path (str);
-  CU_ASSERT_STRING_EQUAL (str, "/a/");
-  g_free (str);
-
-  str = strdup ("/");
-  common_remove_slot_name_from_path (str);
-  CU_ASSERT_STRING_EQUAL (str, "/");
-  g_free (str);
-
-  str = strdup ("");
-  common_remove_slot_name_from_path (str);
-  CU_ASSERT_STRING_EQUAL (str, "");
-  g_free (str);
-}
-
-void
-test_common_slot_get_id_name_from_path ()
-{
-  gchar *str;
   guint id;
   gint err;
 
   printf ("\n");
 
-  err = common_slot_get_id_name_from_path ("", &id, &str);
+  err = common_slot_get_id_from_path ("", &id);
   CU_ASSERT_TRUE (err == -EINVAL);
 
-  err = common_slot_get_id_name_from_path ("/", &id, &str);
+  err = common_slot_get_id_from_path ("/", &id);
   CU_ASSERT_TRUE (err == -EINVAL);
 
-  err = common_slot_get_id_name_from_path ("/1", &id, NULL);
-  CU_ASSERT_TRUE (err == 0);
-  CU_ASSERT_TRUE (id == 1);
-  g_free (str);
-
-  err = common_slot_get_id_name_from_path ("/p/1", &id, NULL);
-  CU_ASSERT_TRUE (err == 0);
-  CU_ASSERT_TRUE (id == 1);
-  g_free (str);
-
-  err = common_slot_get_id_name_from_path ("/p/1", &id, &str);
-  CU_ASSERT_TRUE (err == -EINVAL);
-
-  err = common_slot_get_id_name_from_path ("/1:", &id, &str);
-  CU_ASSERT_TRUE (err == 0);
-  CU_ASSERT_TRUE (str == NULL);
-
-  err = common_slot_get_id_name_from_path ("/:a", &id, &str);
-  CU_ASSERT_TRUE (err == -EINVAL);
-
-  err = common_slot_get_id_name_from_path ("/p/1:a", &id, NULL);
+  err = common_slot_get_id_from_path ("/1", &id);
   CU_ASSERT_TRUE (err == 0);
   CU_ASSERT_TRUE (id == 1);
 
-  err = common_slot_get_id_name_from_path ("/p/1:a", &id, &str);
+  err = common_slot_get_id_from_path ("/p/1", &id);
   CU_ASSERT_TRUE (err == 0);
   CU_ASSERT_TRUE (id == 1);
-  CU_ASSERT_STRING_EQUAL (str, "a");
 }
 
 void
@@ -175,14 +120,8 @@ main (gint argc, gchar *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "common_remove_slot_name_from_path",
-		    test_common_remove_slot_name_from_path))
-    {
-      goto cleanup;
-    }
-
-  if (!CU_add_test (suite, "common_slot_get_id_name_from_path",
-		    test_common_slot_get_id_name_from_path))
+  if (!CU_add_test (suite, "common_slot_get_id_from_path",
+		    test_common_slot_get_id_from_path))
     {
       goto cleanup;
     }

@@ -160,7 +160,7 @@ phatty_get_download_path (struct backend *backend,
   guint id;
   guint digits;
 
-  if (common_slot_get_id_name_from_path (src_path, &id, NULL))
+  if (common_slot_get_id_from_path (src_path, &id))
     {
       return NULL;
     }
@@ -354,7 +354,7 @@ phatty_upload (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  if (common_slot_get_id_name_from_path (path, &id, NULL))
+  if (common_slot_get_id_from_path (path, &id))
     {
       return -EINVAL;
     }
@@ -383,7 +383,7 @@ phatty_rename (struct backend *backend, const gchar *src, const gchar *dst)
   struct idata preset;
 
   debug_print (1, "Renaming preset...");
-  err = common_slot_get_id_name_from_path (src, &id, NULL);
+  err = common_slot_get_id_from_path (src, &id);
   if (err)
     {
       return err;
@@ -460,7 +460,7 @@ phatty_scale_upload (struct backend *backend, const gchar *path,
   guint id;
   GByteArray *input = scale->content;
 
-  if (common_slot_get_id_name_from_path (path, &id, NULL))
+  if (common_slot_get_id_from_path (path, &id))
     {
       return -EINVAL;
     }

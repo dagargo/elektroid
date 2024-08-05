@@ -39,8 +39,7 @@ gchar *common_slot_get_upload_path (struct backend *backend,
 				    const gchar * src_path,
 				    struct idata *idata);
 
-gint common_slot_get_id_name_from_path (const char *path, guint * id,
-					gchar ** name);
+gint common_slot_get_id_from_path (const char *path, guint * id);
 
 gchar *common_get_id_as_slot (struct item *item, struct backend *backend);
 
@@ -93,8 +92,6 @@ gchar *common_slot_get_download_path_nnn (struct backend *backend,
 					  *ops, const gchar * dst_dir,
 					  const gchar * src_path,
 					  struct idata *idata);
-
-void common_remove_slot_name_from_path (gchar * path);
 
 gchar *common_get_sanitized_name (const gchar * name, const gchar * alphabet,
 				  gchar defchar);

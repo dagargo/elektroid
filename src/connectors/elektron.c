@@ -2426,7 +2426,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
   if (err)
     {
       guint id;
-      err = common_slot_get_id_name_from_path (path, &id, NULL);
+      err = common_slot_get_id_from_path (path, &id);
       if (err)
 	{
 	  return err;
@@ -2767,14 +2767,13 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
   gchar *path_w_prefix;
   GByteArray *array = data->content;
 
-  err = common_slot_get_id_name_from_path (path, &id, NULL);
+  err = common_slot_get_id_from_path (path, &id);
   if (err)
     {
       return err;
     }
 
   path_w_prefix = elektron_add_prefix_to_path (path, prefix);
-  common_remove_slot_name_from_path (path_w_prefix);	//The slot name is not used with Elektron devices
 
   err = elektron_open_datum (backend, path_w_prefix, &jid, O_WRONLY,
 			     array->len);

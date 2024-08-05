@@ -722,7 +722,7 @@ sds_rename (struct backend *backend, const gchar *src, const gchar *dst)
   guint id;
   gint err;
   debug_print (1, "Sending rename request...");
-  err = common_slot_get_id_name_from_path (src, &id, NULL);
+  err = common_slot_get_id_from_path (src, &id);
   if (err)
     {
       return err;
@@ -762,7 +762,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
   control->part = 0;
   job_control_set_progress (control, 0.0);
 
-  if (common_slot_get_id_name_from_path (path, &id, NULL))
+  if (common_slot_get_id_from_path (path, &id))
     {
       return -EINVAL;
     }

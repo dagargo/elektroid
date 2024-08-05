@@ -594,7 +594,7 @@ summit_tuning_upload (struct backend *backend, const gchar *path,
   guint id;
   GByteArray *input = tuning->content;
 
-  if (common_slot_get_id_name_from_path (path, &id, NULL))
+  if (common_slot_get_id_from_path (path, &id))
     {
       return -EINVAL;
     }
@@ -637,7 +637,7 @@ summit_tuning_download (struct backend *backend, const gchar *path,
   gint err = 0;
   GByteArray *tx_msg, *rx_msg;
 
-  if (common_slot_get_id_name_from_path (path, &id, NULL))
+  if (common_slot_get_id_from_path (path, &id))
     {
       return -EINVAL;
     }
@@ -781,7 +781,7 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
   gchar name[SUMMIT_PATCH_NAME_LEN + 1];
   GByteArray *tx_msg, *rx_msg, *output;
 
-  if (common_slot_get_id_name_from_path (path, &id, NULL))
+  if (common_slot_get_id_from_path (path, &id))
     {
       return -EINVAL;
     }
@@ -857,7 +857,7 @@ summit_wavetable_upload (struct backend *backend, const gchar *path,
   guint id;
   GByteArray *input = wavetable->content;
 
-  if (common_slot_get_id_name_from_path (path, &id, NULL))
+  if (common_slot_get_id_from_path (path, &id))
     {
       return -EINVAL;
     }
@@ -892,7 +892,7 @@ summit_wavetable_rename (struct backend *backend, const gchar *src,
   guint id, len;
   gchar *sanitized;
 
-  if (common_slot_get_id_name_from_path (src, &id, NULL))
+  if (common_slot_get_id_from_path (src, &id))
     {
       return -EINVAL;
     }

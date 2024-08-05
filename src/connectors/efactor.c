@@ -190,12 +190,12 @@ efactor_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
-efactor_download (struct backend *backend, const gchar *src_path,
+efactor_download (struct backend *backend, const gchar *path,
 		  struct idata *preset, struct job_control *control)
 {
-  gint err = 0, id;
-  gchar *name;
-  gchar **lines;
+  gint err = 0;
+  guint id;
+  gchar *name, **lines;
   struct item_iterator iter;
   struct efactor_data *data = backend->data;
   GByteArray *output;
@@ -214,9 +214,12 @@ efactor_download (struct backend *backend, const gchar *src_path,
       item_iterator_free (&iter);
     }
 
-  name = g_path_get_basename (src_path);
-  id = atoi (name);
-  g_free (name);
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
+    {
+      return err;
+    }
+
   if (id < data->min || id >= data->presets)
     {
       return -EINVAL;
@@ -251,18 +254,21 @@ static gint
 efactor_upload (struct backend *backend, const gchar *path,
 		struct idata *preset, struct job_control *control)
 {
-  gint err = 0, i, id, num;
-  gchar *name, *b;
+  gint err = 0, i, num;
+  guint id;
+  gchar *b;
   GByteArray *tx_msg;
   gchar id_tag[EFACTOR_MAX_ID_TAG_LEN];
   struct efactor_data *data = backend->data;
   GByteArray *input = preset->content;
 
-  name = g_path_get_basename (path);
-  id = atoi (name);		//This stops at the ':'.
-  g_free (name);
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
+    {
+      return err;
+    }
 
-  if (id >= EFACTOR_MAX_PRESETS)
+  if (id < data->min || id >= data->presets)
     {
       return -EINVAL;
     }

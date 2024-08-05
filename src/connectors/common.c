@@ -33,7 +33,7 @@ common_slot_get_upload_path (struct backend *backend,
 }
 
 gint
-common_slot_get_id_name_from_path (const char *path, guint *id, gchar **name)
+common_slot_get_id_from_path (const char *path, guint *id)
 {
   gint err = 0;
   gchar *basename, *remainder;
@@ -48,33 +48,6 @@ common_slot_get_id_name_from_path (const char *path, guint *id, gchar **name)
   if (!id && errno)
     {
       err = -errno;
-      goto end;
-    }
-
-  if (*remainder == G_SEARCHPATH_SEPARATOR)
-    {
-      remainder++;		//Skip ':'
-    }
-  else
-    {
-      if (name)
-	{
-	  error_print ("Path name not provided properly");
-	  err = -EINVAL;
-	  goto end;
-	}
-    }
-
-  if (name)
-    {
-      if (*remainder)
-	{
-	  *name = strdup (remainder);
-	}
-      else
-	{
-	  *name = NULL;
-	}
     }
 
 end:
@@ -282,7 +255,7 @@ common_slot_get_download_path (struct backend *backend,
 			       struct idata *idata, guint digits)
 {
   guint id;
-  if (common_slot_get_id_name_from_path (src_path, &id, NULL))
+  if (common_slot_get_id_from_path (src_path, &id))
     {
       return NULL;
     }
@@ -318,29 +291,6 @@ common_slot_get_download_path_nnn (struct backend *backend,
 {
   return common_slot_get_download_path (backend, ops, dst_dir, src_path,
 					idata, 3);
-}
-
-void
-common_remove_slot_name_from_path (gchar *path)
-{
-  gchar *c;
-  gint i, len = strlen (path);
-  if (len == 0)
-    {
-      return;
-    }
-  i = len - 1;
-  c = path + i;
-  while (i >= 0 && *c != '/')
-    {
-      if (*c == ':')
-	{
-	  *c = 0;
-	  break;
-	}
-      c--;
-      i--;
-    }
 }
 
 gchar *
