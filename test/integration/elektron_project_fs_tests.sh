@@ -27,7 +27,7 @@ if [ $err -eq 0 ]; then
 fi
 
 if [ $err -eq 0 ]; then
-  $srcdir/integration/generic_fs_tests.sh --no-download elektron project / 128 "/0 /129" /128 "" ""
+  $srcdir/integration/generic_fs_tests.sh --no-download elektron project / 128 "/0 /129" /128 ""
   [ $? -ne 0 ] && err=1
 fi
 

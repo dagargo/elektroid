@@ -37,7 +37,7 @@ if [ $err -eq 0 ]; then
 fi
 
 if [ $err -eq 0 ]; then
-  $srcdir/integration/generic_fs_tests.sh --no-download elektron sound /H 256 "/H/0 /H/257" /H/256 "" ""
+  $srcdir/integration/generic_fs_tests.sh --no-download elektron sound /H 256 "/H/0 /H/257" /H/256 ""
   [ $? -ne 0 ] && err=1
 fi
 

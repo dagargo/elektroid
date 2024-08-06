@@ -8,7 +8,7 @@ PANEL_FILE="Casio CZ-101 program panel.syx"
 
 function exitWithError() {
   echo "Restoring..."
-  $ecli cz-program-ul "$INTERNAL_FILE_BACKUP" $TEST_DEVICE:/internal/1:foo
+  $ecli cz-program-ul "$INTERNAL_FILE_BACKUP" $TEST_DEVICE:/internal/1
   rm -f "$PANEL_FILE" "$PRESET_FILE" "$INTERNAL_FILE" "$INTERNAL_FILE_BACKUP"
   exit $1
 }
@@ -28,6 +28,6 @@ $ecli cz-program-download $TEST_DEVICE:/panel
 [ ! -f "$PANEL_FILE" ] && exitWithError 1
 [ $(cksum "$PANEL_FILE" | awk '{print $1}') != $(cksum "$PANEL_SRC_FILE" | awk '{print $1}') ] && exitWithError 1
 
-$srcdir/integration/generic_fs_tests.sh cz program /internal 16 "/internal/0 /internal/17" /internal/16 "" ""
+$srcdir/integration/generic_fs_tests.sh cz program /internal 16 "/internal/0 /internal/17" /internal/16 ""
 
 exit $?

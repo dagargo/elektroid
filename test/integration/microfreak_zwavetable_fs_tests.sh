@@ -9,7 +9,7 @@ FILE=$(echo "$srcdir/Arturia MicroFreak pwavetable 16"*.mfw)
 BACKUP=$srcdir/backup.mfw
 mv "$FILE" $srcdir/backup.mfw
 
-$srcdir/integration/generic_fs_tests.sh --no-download microfreak zwavetable / 16 "/0 /17" /16 "" ""
+$srcdir/integration/generic_fs_tests.sh --no-download microfreak zwavetable / 16 "/0 /17" /16 ""
 [ $? -ne 0 ] && exit 1
 
 echo "Testing download..."

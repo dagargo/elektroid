@@ -9,7 +9,7 @@ FILE=$(echo "$srcdir/Arturia MicroFreak ppreset 512"*.mfp)
 BACKUP=$srcdir/backup.mfp
 mv "$FILE" $srcdir/backup.mfp
 
-$srcdir/integration/generic_fs_tests.sh --no-download microfreak zpreset / 512 "/0 /513" /512 "" ""
+$srcdir/integration/generic_fs_tests.sh --no-download microfreak zpreset / 512 "/0 /513" /512 ""
 [ $? -ne 0 ] && exit 1
 
 echo "Testing download..."
