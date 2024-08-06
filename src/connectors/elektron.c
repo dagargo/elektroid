@@ -2712,15 +2712,15 @@ elektron_get_download_path (struct backend *backend,
   // 0:/soundbanks/A/1
   // 0:/soundbanks/A/1/.metadata
 
-  if (ext && strcmp (ext, FS_DATA_METADATA_EXT) == 0)
-    {
-      src_fpath = g_path_get_dirname (src_path);
-      md_ext = FS_DATA_METADATA_FILE;
-    }
-  else
+  if (strcmp (ext, FS_DATA_METADATA_EXT))
     {
       src_fpath = strdup (src_path);
       md_ext = "";
+    }
+  else
+    {
+      src_fpath = g_path_get_dirname (src_path);
+      md_ext = FS_DATA_METADATA_FILE;
     }
 
   name = elektron_get_download_name (backend, ops, src_fpath);

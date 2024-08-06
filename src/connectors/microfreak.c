@@ -697,13 +697,13 @@ microfreak_preset_load (const char *path, struct idata *preset,
 			struct job_control *control)
 {
   const gchar *ext = filename_get_ext (path);
-  if (strcmp (ext, MICROFREAK_ZPRESET_EXT) == 0)
+  if (strcmp (ext, MICROFREAK_ZPRESET_EXT))
     {
-      return microfreak_zobject_load (path, preset, control);
+      return file_load (path, preset, control);
     }
   else
     {
-      return file_load (path, preset, control);
+      return microfreak_zobject_load (path, preset, control);
     }
 }
 

@@ -136,24 +136,20 @@ remove_ext (char *name)
 const gchar *
 filename_get_ext (const gchar *name)
 {
-  int namelen = strlen (name) - 1;
-  int i = namelen;
-  const gchar *ext = &name[namelen];
+  int namelen = strlen (name);
+  const gchar *ext = &name[namelen], *p = name;
 
-  while (i > 0 && *(ext - 1) != '.')
+  for (guint i = 0; i < namelen; i++, p++)
     {
-      ext--;
-      i--;
+      if (*p == '.')
+	{
+	  i++;
+	  p++;
+	  ext = p;
+	}
     }
 
-  if (i == 0 && name[0] != '.')
-    {
-      return NULL;
-    }
-  else
-    {
-      return ext;
-    }
+  return ext;
 }
 
 gchar *
@@ -384,7 +380,7 @@ file_matches_extensions (const gchar *name, const GSList *extensions)
     }
 
   extension = filename_get_ext (name);
-  if (!extension)
+  if (!*extension)
     {
       return FALSE;
     }

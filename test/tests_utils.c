@@ -22,6 +22,16 @@ test_file_matches_extensions ()
   g_slist_free (exts);		//Extensions in this test are not duplicated
 }
 
+void
+test_filename_get_ext ()
+{
+  printf ("\n");
+
+  CU_ASSERT_STRING_EQUAL ("", filename_get_ext ("file"));
+  CU_ASSERT_STRING_EQUAL ("", filename_get_ext ("file."));
+  CU_ASSERT_STRING_EQUAL ("ext1", filename_get_ext ("file.ext2.ext1"));
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -41,6 +51,11 @@ main (gint argc, gchar *argv[])
 
   if (!CU_add_test (suite, "file_matches_extensions",
 		    test_file_matches_extensions))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "filename_get_ext", test_filename_get_ext))
     {
       goto cleanup;
     }

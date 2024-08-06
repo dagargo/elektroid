@@ -490,7 +490,7 @@ elektroid_rx_sysex ()
       filename = gtk_file_chooser_get_filename (chooser);
       ext = filename_get_ext (filename);
 
-      if (ext == NULL || strcmp (ext, "syx") != 0)
+      if (strcmp (ext, "syx") != 0)
 	{
 	  filename_w_ext = g_strconcat (filename, ".syx", NULL);
 	  g_free (filename);
@@ -837,10 +837,7 @@ elektroid_rename_item (GtkWidget *object, gpointer data)
 
   sel_len = strlen (item.name);
   ext = filename_get_ext (item.name);
-  if (ext)
-    {
-      sel_len -= strlen (ext) + 1;
-    }
+  sel_len -= strlen (ext) + 1;
 
   gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
   gtk_entry_set_text (name_dialog_entry, item.name);
