@@ -27,13 +27,13 @@
 #define PHATTY_MAX_PRESETS 100
 #define PHATTY_PROGRAM_SIZE 193
 
+#define PHATTY_PRESET_TYPE_OFFSET 3	// 0x04 is panel; 0x05 is preset
 #define PHATTY_PRESET_ID_OFFSET 5
 
 #define MOOG_NAME_LEN 13
 
 #define PHATTY_PRESETS_DIR "/presets"
 #define PHATTY_PANEL "panel"
-#define PHATTY_PANEL_PATH "/" PHATTY_PANEL
 #define PHATTY_PANEL_ID 0x100
 #define PHATTY_MAX_SCALES 32
 
@@ -157,15 +157,13 @@ phatty_get_download_path (struct backend *backend,
 			  const gchar *dst_dir, const gchar *src_path,
 			  struct idata *preset)
 {
-  guint id;
-  guint digits;
 
+  guint id = 0;
   if (common_slot_get_id_from_path (src_path, &id))
     {
       return NULL;
     }
-
-  digits = id == PHATTY_PANEL_ID ? 0 : 2;
+  guint digits = id == PHATTY_PANEL_ID ? 0 : 2;
   return common_slot_get_download_path (backend, ops, dst_dir, src_path,
 					preset, digits);
 }
@@ -203,7 +201,7 @@ phatty_next_root_dentry (struct item_iterator *iter)
     }
   else if (*next == 1)
     {
-      snprintf (iter->item.name, LABEL_MAX, "%s", "panel");
+      snprintf (iter->item.name, LABEL_MAX, "%s", PHATTY_PANEL);
       iter->item.id = PHATTY_PANEL_ID;
       iter->item.type = ITEM_TYPE_FILE;
       iter->item.size = -1;
@@ -276,6 +274,9 @@ phatty_read_dir (struct backend *backend, struct item_iterator *iter,
   return err;
 }
 
+//This ommits the slot id for the panel. As it is a made up number, this is better
+//than showing the ID column.
+
 gchar *
 phatty_get_id_as_slot (struct item *item, struct backend *backend)
 {
@@ -295,17 +296,25 @@ static gint
 phatty_download (struct backend *backend, const gchar *path,
 		 struct idata *preset, struct job_control *control)
 {
-  guint8 id;
+  guint id;
   gint err = 0;
   gboolean panel;
   GByteArray *tx_msg, *rx_msg;
-  gchar name[MOOG_NAME_LEN + 1], *basename;
+  gchar name[MOOG_NAME_LEN + 1];
 
-  if (strcmp (path, PHATTY_PANEL_PATH))
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
     {
-      basename = g_path_get_basename (path);
-      id = atoi (basename);
-      g_free (basename);
+      return err;
+    }
+
+  if (id == PHATTY_PANEL_ID)
+    {
+      tx_msg = phatty_get_panel_dump_msg ();
+      panel = TRUE;
+    }
+  else
+    {
       if (id >= PHATTY_MAX_PRESETS)
 	{
 	  return -EINVAL;
@@ -313,16 +322,11 @@ phatty_download (struct backend *backend, const gchar *path,
       tx_msg = phatty_get_preset_dump_msg (id);
       panel = FALSE;
     }
-  else
-    {
-      tx_msg = phatty_get_panel_dump_msg ();
-      panel = TRUE;
-    }
 
   err = common_data_tx_and_rx (backend, tx_msg, &rx_msg, control);
   if (err)
     {
-      goto end;
+      return err;
     }
   if (rx_msg->len != PHATTY_PROGRAM_SIZE)
     {
@@ -339,7 +343,6 @@ phatty_download (struct backend *backend, const gchar *path,
 
 cleanup:
   free_msg (rx_msg);
-end:
   return err;
 }
 
@@ -347,6 +350,7 @@ static gint
 phatty_upload (struct backend *backend, const gchar *path,
 	       struct idata *preset, struct job_control *control)
 {
+  gint err;
   guint id;
 
   if (preset->content->len != PHATTY_PROGRAM_SIZE)
@@ -354,22 +358,28 @@ phatty_upload (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  if (common_slot_get_id_from_path (path, &id))
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
     {
-      return -EINVAL;
+      return err;
     }
 
-  if (id >= PHATTY_MAX_PRESETS && id != PHATTY_PANEL_ID)
+  if (id == PHATTY_PANEL_ID)
     {
-      return -EINVAL;
+      preset->content->data[PHATTY_PRESET_TYPE_OFFSET] = 0x04;
+      preset->content->data[PHATTY_PRESET_ID_OFFSET] = 0x01;
+    }
+  else
+    {
+      if (id >= PHATTY_MAX_PRESETS)
+	{
+	  return -EINVAL;
+	}
+
+      preset->content->data[PHATTY_PRESET_TYPE_OFFSET] = 0x05;
+      preset->content->data[PHATTY_PRESET_ID_OFFSET] = id;
     }
 
-  if (!strcmp (path, PHATTY_PANEL_PATH))
-    {
-      return -EINVAL;
-    }
-
-  preset->content->data[PHATTY_PRESET_ID_OFFSET] = id;
   return common_data_tx (backend, preset->content, control);
 }
 
