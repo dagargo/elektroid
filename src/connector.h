@@ -133,7 +133,7 @@ struct fs_operations
   fs_remote_file_op upload;	//Upload a resource from memory to the filesystem.
   fs_local_file_op save;	//Write a file from memory to the OS storage. Typically used after download.
   fs_local_file_op load;	//Load a file from the OS storage into memory. Typically used before upload.
-  fs_get_item_slot get_slot;
+  fs_get_item_slot get_slot;	//Optionally used by slot filesystems to show a custom slot name column such `A01` or `[P-01]`. Needs FS_OPTION_SHOW_SLOT_COLUMN.
   fs_get_exts get_exts;		//If present, this is used; if not, type_ext is used.
   fs_get_path get_upload_path;
   fs_get_path get_download_path;
@@ -150,24 +150,21 @@ enum fs_options
   FS_OPTION_STEREO = 0x4,
   //Every operation will block the remote browser.
   FS_OPTION_SINGLE_OP = 0x8,
-  //Filename is the ID instead of the name. Useful when the device allows different items to have the same name.
-  FS_OPTION_ID_AS_FILENAME = 0x10,
-  //In slot mode, dst_path passed to t_get_upload_path includes the ID, a colon (':') and the system filename.
-  //Also, as every destination slot is always used, drop is only possible over a concrete slot.
+  //In slot storage mode, the item name in dst_path passed to get_upload_path is the ID.
+  //DND is only possible over a concrete slot.
   //A DND operation of several items over a slot will behave as dropping the first item over the destination slot and the rest over the following ones.
-  //Typically used together with FS_OPTION_ID_AS_FILENAME but not necessary.
-  FS_OPTION_SLOT_STORAGE = 0x20,
+  FS_OPTION_SLOT_STORAGE = 0x10,
   //Show column options. Name column is always showed.
-  FS_OPTION_SHOW_ID_COLUMN = 0x40,
-  FS_OPTION_SHOW_SIZE_COLUMN = 0x80,
-  FS_OPTION_SHOW_SLOT_COLUMN = 0x100,
-  FS_OPTION_SHOW_INFO_COLUMN = 0x200,
-  FS_OPTION_SHOW_SAMPLE_COLUMNS = 0x400,
+  FS_OPTION_SHOW_ID_COLUMN = 0x20,
+  FS_OPTION_SHOW_SIZE_COLUMN = 0x40,
+  FS_OPTION_SHOW_SLOT_COLUMN = 0x80,
+  FS_OPTION_SHOW_INFO_COLUMN = 0x100,
+  FS_OPTION_SHOW_SAMPLE_COLUMNS = 0x200,
   //Sort items options.
-  FS_OPTION_SORT_BY_ID = 0x800,
-  FS_OPTION_SORT_BY_NAME = 0x1000,
+  FS_OPTION_SORT_BY_ID = 0x400,
+  FS_OPTION_SORT_BY_NAME = 0x800,
   //This requires the function readdir to be relatively fast because canceling the search will block the GUI.
-  FS_OPTION_ALLOW_SEARCH = 0x2000
+  FS_OPTION_ALLOW_SEARCH = 0x1000
 };
 
 struct connector

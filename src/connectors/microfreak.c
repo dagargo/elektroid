@@ -651,7 +651,7 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
 
 static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
   .id = FS_MICROFREAK_PPRESET,
-  .options = FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE,
+  .options = FS_OPTION_SLOT_STORAGE,
   .name = "ppreset",
   .ext = MICROFREAK_PPRESET_EXT,
   .max_name_len = MICROFREAK_PRESET_NAME_LEN,
@@ -676,7 +676,7 @@ microfreak_zpreset_save (const gchar *path, struct idata *zpreset,
 
 static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .id = FS_MICROFREAK_ZPRESET,
-  .options = FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE,
+  .options = FS_OPTION_SLOT_STORAGE,
   .name = "zpreset",
   .ext = MICROFREAK_ZPRESET_EXT,
   .max_name_len = MICROFREAK_PRESET_NAME_LEN,
@@ -717,10 +717,9 @@ microfreak_preset_get_exts (struct backend *backend,
 
 static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
   .id = FS_MICROFREAK_PRESET,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
-    FS_OPTION_ALLOW_SEARCH,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SLOT_COLUMN |
+    FS_OPTION_SHOW_INFO_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = FS_ICON_SND,
@@ -1886,7 +1885,7 @@ microfreak_sample_load (const gchar *path, struct idata *sample,
 static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
   .id = FS_MICROFREAK_SAMPLE,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_SIZE_COLUMN |
     FS_OPTION_ALLOW_SEARCH,
   .name = "sample",
@@ -1913,7 +1912,7 @@ microfreak_get_wavetable_id_as_slot (struct item *item,
 
 static const struct fs_operations FS_MICROFREAK_PWAVETABLE_OPERATIONS = {
   .id = FS_MICROFREAK_PWAVETABLE,
-  .options = FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE,
+  .options = FS_OPTION_SLOT_STORAGE,
   .name = "pwavetable",
   .ext = MICROFREAK_PWAVETABLE_EXT,
   .max_name_len = MICROFREAK_WAVETABLE_NAME_LEN - 1,
@@ -1932,7 +1931,7 @@ static const struct fs_operations FS_MICROFREAK_PWAVETABLE_OPERATIONS = {
 
 static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
   .id = FS_MICROFREAK_ZWAVETABLE,
-  .options = FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE,
+  .options = FS_OPTION_SLOT_STORAGE,
   .name = "zwavetable",
   .ext = MICROFREAK_ZWAVETABLE_EXT,
   .max_name_len = MICROFREAK_WAVETABLE_NAME_LEN - 1,
@@ -1960,7 +1959,7 @@ microfreak_wavetable_save (const gchar *path, struct idata *wavetable,
 static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
   .id = FS_MICROFREAK_WAVETABLE,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_ID_AS_FILENAME | FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_SIZE_COLUMN |
     FS_OPTION_ALLOW_SEARCH,
   .name = "wavetable",

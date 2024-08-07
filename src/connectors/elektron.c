@@ -3123,8 +3123,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .id = FS_DATA_ANY,
-  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_SLOT_STORAGE,
   .name = "data",
   .ext = "data",
   .readdir = elektron_read_data_dir_any,
@@ -3146,9 +3145,9 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .id = FS_DATA_PRJ,
-  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
   .name = "project",
   .gui_name = "Projects",
   .gui_icon = FS_ICON_PRJ,
@@ -3172,10 +3171,9 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .id = FS_DATA_SND,
-  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
-    FS_OPTION_ALLOW_SEARCH,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
+    FS_OPTION_SHOW_INFO_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "sound",
   .gui_name = "Sounds",
   .gui_icon = FS_ICON_SND,
@@ -3199,9 +3197,9 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_PST_OPERATIONS = {
   .id = FS_DATA_PST,
-  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = FS_ICON_SND,
@@ -3250,10 +3248,9 @@ static const struct fs_operations FS_SAMPLES_STEREO_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_DT2_PST_OPERATIONS = {
   .id = FS_DATA_DT2_PST,
-  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
-    FS_OPTION_ALLOW_SEARCH,
+  .options = FS_OPTION_SORT_BY_ID | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
+    FS_OPTION_SHOW_INFO_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = FS_ICON_SND,

@@ -463,8 +463,8 @@ end:
 
 static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .id = FS_MICROBRUTE_SEQUENCE,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_NAME,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SORT_BY_NAME,
   .name = "sequence",
   .gui_name = "Sequences",
   .gui_icon = FS_ICON_SEQ,

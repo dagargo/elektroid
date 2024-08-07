@@ -521,10 +521,10 @@ summit_multi_patch_change (struct backend *backend, const gchar *dir,
 
 static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .id = FS_SUMMIT_SINGLE_PATCH,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
-    FS_OPTION_SHOW_INFO_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SIZE_COLUMN |
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
   .name = "single",
   .gui_name = "Single",
   .gui_icon = FS_ICON_SND,
@@ -545,10 +545,9 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
 
 static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .id = FS_SUMMIT_MULTI_PATCH,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
-    FS_OPTION_ALLOW_SEARCH,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SIZE_COLUMN |
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "multi",
   .gui_name = "Multi",
   .gui_icon = FS_ICON_SND,
@@ -616,8 +615,8 @@ summit_tuning_upload (struct backend *backend, const gchar *path,
 
 static const struct fs_operations FS_SUMMIT_SCALE_OPERATIONS = {
   .id = FS_SUMMIT_SCALE,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SORT_BY_ID,
   .name = "scale",
   .gui_name = "Scales",
   .gui_icon = FS_ICON_SND,
@@ -673,8 +672,8 @@ end:
 
 static const struct fs_operations FS_SUMMIT_BULK_TUNING_OPERATIONS = {
   .id = FS_SUMMIT_BULK_TUNING,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SORT_BY_ID,
   .name = "tuning",
   .gui_name = "Tunings",
   .gui_icon = FS_ICON_SND,
@@ -920,9 +919,9 @@ summit_wavetable_rename (struct backend *backend, const gchar *src,
 
 static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .id = FS_SUMMIT_WAVETABLE,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SIZE_COLUMN |
+    FS_OPTION_SHOW_SLOT_COLUMN,
   .name = "wavetable",
   .gui_name = "Wavetables",
   .gui_icon = FS_ICON_WAVETABLE,

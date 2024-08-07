@@ -61,22 +61,12 @@ item_iterator_is_dir_or_matches_extensions (struct item_iterator *iter,
 gchar *
 get_filename (guint32 fs_options, struct item *item)
 {
-  if (fs_options & FS_OPTION_ID_AS_FILENAME && item->type == ITEM_TYPE_FILE)
+  if (fs_options & FS_OPTION_SLOT_STORAGE && item->type == ITEM_TYPE_FILE)
     {
-      gchar *dir = g_path_get_dirname (item->name);
-      gboolean no_dir = strcmp (dir, ".") == 0;
       gchar *id = g_malloc (LABEL_MAX);
-      if (no_dir)
-	{
-	  snprintf (id, LABEL_MAX, "%d", item->id);
-	}
-      else
-	{
-	  // If FS_OPTION_ID_AS_FILENAME is used, then the path separator is always '/'.
-	  snprintf (id, LABEL_MAX, "%s/%d", dir, item->id);
-	}
-      g_free (dir);
+      snprintf (id, LABEL_MAX, "%d", item->id);
       return id;
     }
+
   return strdup (item->name);
 }
