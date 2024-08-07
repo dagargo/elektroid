@@ -31,7 +31,6 @@
 #define CZ_PANEL_ID 0x60
 #define CZ_FIRST_CARTRIDGE_ID 0x40
 #define CZ_PANEL "panel"
-#define CZ_PANEL_PATH "/" CZ_PANEL
 
 static const char *CZ_MEM_TYPES[] =
   { "preset", "internal", "cartridge", NULL };
@@ -108,7 +107,7 @@ cz_next_dentry_root (struct item_iterator *iter)
 
   if (data->next == 3)
     {
-      iter->item.id = CZ_PANEL_ID;
+      iter->item.id = CZ_PANEL_ID + 1;	//1 based
       snprintf (iter->item.name, LABEL_MAX, CZ_PANEL);
       iter->item.type = ITEM_TYPE_FILE;
       iter->item.size = CZ_PROGRAM_LEN_FIXED;
@@ -187,41 +186,56 @@ cz_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
-cz_download (struct backend *backend, const gchar *path,
-	     struct idata *program, struct job_control *control)
+cz_get_id_from_path (const gchar *path, guint8 *id)
 {
-  guint id;
-  gint len, type, err = 0;
-  GByteArray *tx_msg, *rx_msg;
+  guint idl;
   gchar *dir;
-  GByteArray *output;
+  gint err, type;
 
-  if (strcmp (path, CZ_PANEL_PATH))
+  err = common_slot_get_id_from_path (path, &idl);
+  if (err)
+    {
+      return err;
+    }
+
+  *id = idl;
+  (*id)--;
+
+  if (*id != CZ_PANEL_ID)
     {
       dir = g_path_get_dirname (path);
       type = get_mem_type (&dir[1]);
       g_free (dir);
+
       if (type < 0)
 	{
 	  return -EINVAL;
 	}
 
-      err = common_slot_get_id_from_path (path, &id);
-      if (err)
-	{
-	  return err;
-	}
-
-      id--;
-      if (id >= CZ_MAX_PROGRAMS)
+      if (*id >= CZ_MAX_PROGRAMS)
 	{
 	  return -EINVAL;
 	}
-      id += type * CZ_MEM_TYPE_OFFSET;
+
+      *id += type * CZ_MEM_TYPE_OFFSET;
     }
-  else
+
+  return 0;
+}
+
+static gint
+cz_download (struct backend *backend, const gchar *path,
+	     struct idata *program, struct job_control *control)
+{
+  guint8 id;
+  gint len, err;
+  GByteArray *tx_msg, *rx_msg;
+  GByteArray *output;
+
+  err = cz_get_id_from_path (path, &id);
+  if (err)
     {
-      id = CZ_PANEL_ID;
+      return err;
     }
 
   tx_msg = cz_get_program_dump_msg (id);
@@ -255,45 +269,15 @@ static gint
 cz_upload (struct backend *backend, const gchar *path, struct idata *program,
 	   struct job_control *control)
 {
-  guint id;
+  guint8 id;
+  gint err;
   GByteArray *msg;
-  gchar *dir;
-  gint type, err = 0;
   GByteArray *input = program->content;
 
-  if (input->len != CZ_PROGRAM_LEN_FIXED)
+  err = cz_get_id_from_path (path, &id);
+  if (err)
     {
-      return -EINVAL;
-    }
-
-  dir = g_path_get_dirname (path);
-  type = get_mem_type (&dir[1]);
-  g_free (dir);
-  if (type >= 0)
-    {
-      err = common_slot_get_id_from_path (path, &id);
-      if (err)
-	{
-	  return err;
-	}
-
-      id--;
-      if (id >= CZ_MAX_PROGRAMS)
-	{
-	  return -EINVAL;
-	}
-      id += type * CZ_MEM_TYPE_OFFSET;
-    }
-  else
-    {
-      if (strncmp (path, CZ_PANEL_PATH, strlen (CZ_PANEL_PATH)))
-	{
-	  return -EIO;
-	}
-      else
-	{
-	  id = CZ_PANEL_ID;
-	}
+      return err;
     }
 
   msg = g_byte_array_sized_new (input->len);
@@ -306,28 +290,19 @@ cz_upload (struct backend *backend, const gchar *path, struct idata *program,
   return err;
 }
 
-static gchar *
-cz_get_slot (struct item *item, struct backend *backend)
-{
-  gchar *slot = g_malloc (LABEL_MAX);
-  snprintf (slot, LABEL_MAX, "%4d", item->id);
-  return slot;
-}
-
-//As program X in preset storage and program X in internal staorage have different IDs
-//it won't work with the id as the filename so the item name must be used.
+//Neither the slot or the ID are shown because there is no name and therefore the ID is used as such.
 
 static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .id = FS_PROGRAM_CZ,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SIZE_COLUMN,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_ID_AS_FILENAME |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
+    FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "program",
   .gui_name = "Programs",
   .gui_icon = FS_ICON_SND,
   .ext = "syx",
   .readdir = cz_read_dir,
   .print_item = common_print_item,
-  .get_slot = cz_get_slot,
   .download = cz_download,
   .upload = cz_upload,
   .load = file_load,
