@@ -745,12 +745,6 @@ summit_wavetable_next_dentry (struct item_iterator *iter)
   return 0;
 }
 
-static gchar *
-summit_get_wavetable_id_as_slot (struct item *item, struct backend *backend)
-{
-  return summit_get_id_as_slot (item, backend, 2);
-}
-
 static gint
 summit_wavetable_read_dir (struct backend *backend,
 			   struct item_iterator *iter, const gchar *dir,
@@ -920,8 +914,8 @@ summit_wavetable_rename (struct backend *backend, const gchar *src,
 static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .id = FS_SUMMIT_WAVETABLE,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SIZE_COLUMN |
-    FS_OPTION_SHOW_SLOT_COLUMN,
+    FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_ID_COLUMN |
+    FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "wavetable",
   .gui_name = "Wavetables",
   .gui_icon = FS_ICON_WAVETABLE,
@@ -932,10 +926,9 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .rename = summit_wavetable_rename,
   .download = summit_wavetable_download,
   .upload = summit_wavetable_upload,
-  .get_slot = summit_get_wavetable_id_as_slot,
   .load = file_load,
   .save = file_save,
-  .get_download_path = common_slot_get_download_path_nn,
+  .get_download_path = common_slot_get_download_path_n,
   .get_upload_path = common_slot_get_upload_path
 };
 

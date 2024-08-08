@@ -155,7 +155,7 @@ enum fs_options
   //A DND operation of several items over a slot will behave as dropping the first item over the destination slot and the rest over the following ones.
   FS_OPTION_SLOT_STORAGE = 0x10,
   //Show column options. Name column is always showed.
-  FS_OPTION_SHOW_ID_COLUMN = 0x20,
+  FS_OPTION_SHOW_ID_COLUMN = 0x20,	// Not 0 padded. For a 0 padded value use FS_OPTION_SHOW_SLOT_COLUMN and a custom get_slot function.
   FS_OPTION_SHOW_SIZE_COLUMN = 0x40,
   FS_OPTION_SHOW_SLOT_COLUMN = 0x80,
   FS_OPTION_SHOW_INFO_COLUMN = 0x100,
