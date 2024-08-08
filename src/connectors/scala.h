@@ -26,6 +26,8 @@
 #define SCALA_MIDI_NOTES 128
 #define SCALA_TUNING_BANK_SIZE 408
 
+#define SCALA_EXT "scl"
+
 struct scala
 {
   gchar desc[SCALA_DESC_MAX_LEN];

@@ -59,7 +59,6 @@ enum summit_fs
   FS_SUMMIT_SINGLE_PATCH,
   FS_SUMMIT_MULTI_PATCH,
   FS_SUMMIT_WAVETABLE,
-  FS_SUMMIT_SCALE,
   FS_SUMMIT_BULK_TUNING
 };
 
@@ -567,8 +566,8 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
 };
 
 static gint
-summit_scale_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *dir, GSList *extensions)
+summit_tuning_read_dir (struct backend *backend, struct item_iterator *iter,
+			const gchar *dir, GSList *extensions)
 {
   struct common_simple_read_dir_data *data;
 
@@ -613,21 +612,6 @@ summit_tuning_upload (struct backend *backend, const gchar *path,
   return common_data_tx (backend, input, control);
 }
 
-static const struct fs_operations FS_SUMMIT_SCALE_OPERATIONS = {
-  .id = FS_SUMMIT_SCALE,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SORT_BY_ID,
-  .name = "scale",
-  .gui_name = "Scales",
-  .gui_icon = FS_ICON_SND,
-  .ext = "scl",
-  .readdir = summit_scale_read_dir,
-  .print_item = common_print_item,
-  .upload = summit_tuning_upload,
-  .load = scl_load_key_based_tuning_msg_from_scala_file,
-  .get_upload_path = common_slot_get_upload_path
-};
-
 static gint
 summit_tuning_download (struct backend *backend, const gchar *path,
 			struct idata *tuning, struct job_control *control)
@@ -670,20 +654,47 @@ end:
   return err;
 }
 
+static gint
+summit_tuning_load (const gchar *path, struct idata *tuning,
+		    struct job_control *control)
+{
+  gint err;
+  gchar *filename = g_path_get_basename (path);
+  if (strcmp (filename_get_ext (filename), SCALA_EXT))
+    {
+      err = file_load (path, tuning, control);
+    }
+  else
+    {
+      err = scl_load_key_based_tuning_msg_from_scala_file (path, tuning,
+							   control);
+    }
+  g_free (filename);
+  return err;
+}
+
+static GSList *
+summit_tunning_get_extensions ()
+{
+  GSList *exts = g_slist_append (NULL, strdup (SCALA_EXT));
+  return g_slist_append (exts, strdup ("syx"));
+}
+
 static const struct fs_operations FS_SUMMIT_BULK_TUNING_OPERATIONS = {
   .id = FS_SUMMIT_BULK_TUNING,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
     FS_OPTION_SORT_BY_ID,
   .name = "tuning",
-  .gui_name = "Tunings",
+  .gui_name = "Tuning Tables",
   .gui_icon = FS_ICON_SND,
   .ext = "syx",
-  .readdir = summit_scale_read_dir,
+  .readdir = summit_tuning_read_dir,
   .print_item = common_print_item,
   .download = summit_tuning_download,
   .upload = summit_tuning_upload,
-  .load = file_load,
+  .load = summit_tuning_load,
   .save = file_save,
+  .get_exts = summit_tunning_get_extensions,
   .get_download_path = common_slot_get_download_path_nn,
   .get_upload_path = common_slot_get_upload_path
 };
@@ -944,7 +955,6 @@ summit_handshake (struct backend *backend)
   g_slist_fill (&backend->fs_ops, &FS_SUMMIT_SINGLE_OPERATIONS,
 		&FS_SUMMIT_MULTI_OPERATIONS,
 		&FS_SUMMIT_WAVETABLE_OPERATIONS,
-		&FS_SUMMIT_SCALE_OPERATIONS,
 		&FS_SUMMIT_BULK_TUNING_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "Novation Summit");
 
