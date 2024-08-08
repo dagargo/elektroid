@@ -115,7 +115,7 @@ debug_get_hex_msg (const GByteArray *msg)
 }
 
 void
-remove_ext (char *name)
+filename_remove_ext (char *name)
 {
   gint namelen = strlen (name);
   gchar *dot = &name[namelen - 1];
@@ -232,7 +232,7 @@ file_load (const char *path, struct idata *idata, struct job_control *control)
   if (fread (array->data, 1, size, f) == size)
     {
       gchar *name = g_path_get_basename (path);
-      remove_ext (name);
+      filename_remove_ext (name);
       idata_init (idata, array, strdup (name), NULL);
       g_free (name);
       debug_print (1, "%zu B read", size);

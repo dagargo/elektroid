@@ -886,7 +886,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       //We remove the "Samples" at the beggining of the full zip path...
       dev_sample_path = strdup (&sample_path[7]);
       //... And the extension.
-      remove_ext (dev_sample_path);
+      filename_remove_ext (dev_sample_path);
       sample_file.name = g_path_get_basename (dev_sample_path);
 
       g_byte_array_set_size (sample_file.content, zstat.size);

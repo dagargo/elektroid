@@ -96,7 +96,7 @@ gchar *debug_get_hex_data (gint, guint8 *, guint);
 
 gchar *debug_get_hex_msg (const GByteArray *);
 
-void remove_ext (gchar *);
+void filename_remove_ext (gchar *);
 
 const gchar *filename_get_ext (const gchar *);
 

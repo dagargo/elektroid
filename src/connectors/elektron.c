@@ -2668,7 +2668,7 @@ elektron_get_upload_path_smplrw (struct backend *backend,
   gchar *path, *name, *aux;
 
   name = g_path_get_basename (src_path);
-  remove_ext (name);
+  filename_remove_ext (name);
   aux = path_chain (PATH_INTERNAL, dst_dir, name);
   g_free (name);
 

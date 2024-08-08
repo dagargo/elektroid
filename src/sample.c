@@ -1040,7 +1040,7 @@ sample_load_from_file_full (const gchar *path, struct idata *sample,
 	  return -errno;
 	}
       name = g_path_get_basename (path);
-      remove_ext (name);
+      filename_remove_ext (name);
       err = sample_load_libsndfile (file, &FILE_IO, control, sample,
 				    sample_info_req, sample_info_src, cb,
 				    cb_data, name);
