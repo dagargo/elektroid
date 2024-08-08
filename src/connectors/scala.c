@@ -265,7 +265,7 @@ scl_load_2_byte_octave_tuning_msg_from_scala_file (const char *path,
       msb = (value >> 7) & 0x7f;
       lsb = value & 0x7f;
       debug_print (2,
-		   "Note %d (pitch %.6f, cents %.2f, diff %.2f, value %d, MSB %02x, LSB %02x)...\n",
+		   "Note %d (pitch %.6f, cents %.2f, diff %.2f, value %d, MSB %02x, LSB %02x)...",
 		   i, pitch, cents, diff, value, msb, lsb);
       g_byte_array_append (msg, (guint8 *) & msb, 1);
       g_byte_array_append (msg, (guint8 *) & lsb, 1);
@@ -339,7 +339,7 @@ scl_load_key_based_tuning_msg_from_scala_file (const char *path,
       msb[i] = (value >> 7) & 0x7f;
       lsb[i] = value & 0x7f;
       debug_print (2,
-		   "Note %d (pitch %.6f, note %d, cents %.2f, value %d, MSB %02x, LSB %02x)...\n",
+		   "Note %d (pitch %.6f, note %d, cents %.2f, value %d, MSB %02x, LSB %02x)...",
 		   i, pitch, note[i], cents, value, msb[i], lsb[i]);
     }
 
