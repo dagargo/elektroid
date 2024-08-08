@@ -31,15 +31,15 @@ struct maction *microfreak_maction_defrag_builder (struct maction_context *);
 void
 regma_register ()
 {
-  g_slist_fill (&mactions, microbrute_maction_conf_builder,
-		microbrute_maction_cal_builder,
-		microfreak_maction_defrag_builder,
-		maction_separator_builder,
-		backend_maction_rx_sysex_builder,
-		backend_maction_tx_sysex_builder,
-		maction_separator_builder,
-		backend_maction_os_upgrade_builder,
-		maction_separator_builder, autosampler_maction_builder, NULL);
+  gslist_fill (&mactions, microbrute_maction_conf_builder,
+	       microbrute_maction_cal_builder,
+	       microfreak_maction_defrag_builder,
+	       maction_separator_builder,
+	       backend_maction_rx_sysex_builder,
+	       backend_maction_tx_sysex_builder,
+	       maction_separator_builder,
+	       backend_maction_os_upgrade_builder,
+	       maction_separator_builder, autosampler_maction_builder, NULL);
 }
 
 void

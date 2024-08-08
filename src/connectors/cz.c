@@ -331,7 +331,7 @@ cz_handshake (struct backend *backend)
       goto end;
     }
 
-  g_slist_fill (&backend->fs_ops, &FS_PROGRAM_CZ_OPERATIONS, NULL);
+  gslist_fill (&backend->fs_ops, &FS_PROGRAM_CZ_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "Casio CZ-101");
 
 end:

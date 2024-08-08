@@ -80,7 +80,7 @@ const struct fs_operations FS_PROGRAM_DEFAULT_OPERATIONS = {
 static gint
 default_handshake (struct backend *backend)
 {
-  g_slist_fill (&backend->fs_ops, &FS_PROGRAM_DEFAULT_OPERATIONS, NULL);
+  gslist_fill (&backend->fs_ops, &FS_PROGRAM_DEFAULT_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "%s", _("MIDI device"));
   return 0;
 }

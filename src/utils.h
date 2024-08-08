@@ -132,7 +132,7 @@ gchar *path_filename_from_uri (enum path_type, gchar *);
 
 gchar *path_filename_to_uri (enum path_type, gchar *);
 
-void g_slist_fill (GSList ** list, ...);
+void gslist_fill (GSList ** list, ...);
 
 void idata_init (struct idata *idata, GByteArray * content,
 		 gchar * name, void *info);

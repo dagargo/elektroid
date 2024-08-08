@@ -488,7 +488,7 @@ path_filename_to_uri (enum path_type type, gchar *filename)
 }
 
 void
-g_slist_fill (GSList **list, ...)
+gslist_fill (GSList **list, ...)
 {
   gpointer v;
   va_list argptr;
