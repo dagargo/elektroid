@@ -1873,13 +1873,8 @@ static gint
 microfreak_sample_load (const gchar *path, struct idata *sample,
 			struct job_control *control)
 {
-  gint err = common_sample_load (path, sample, control, MICROFREAK_SAMPLERATE,
-				 1, SF_FORMAT_PCM_16);
-  if (!err && sample->content->len > MICROFREAK_SAMPLE_ITEM_MAX_SIZE)
-    {
-      sample->content->len = MICROFREAK_SAMPLE_ITEM_MAX_SIZE;
-    }
-  return err;
+  return common_sample_load (path, sample, control, MICROFREAK_SAMPLERATE,
+			     1, SF_FORMAT_PCM_16);
 }
 
 static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
