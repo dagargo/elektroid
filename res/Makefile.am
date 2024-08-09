@@ -8,13 +8,14 @@ if ELEKTROID_CLI_ONLY
 else
   res_DATA = gui.glade gui.css
   svgicon_DATA = elektroid.svg \
+                 elektroid-file-symbolic.svg \
+                 elektroid-folder-symbolic.svg \
+                 elektroid-keys-symbolic.svg \
+                 elektroid-project-symbolic.svg \
+                 elektroid-sequence-symbolic.svg \
+                 elektroid-sound-symbolic.svg \
                  elektroid-symbolic.svg \
                  elektroid-wave-symbolic.svg \
-                 elektroid-sequence-symbolic.svg \
-                 elektroid-project-symbolic.svg \
-                 elektroid-sound-symbolic.svg \
-                 elektroid-folder-symbolic.svg \
-                 elektroid-file-symbolic.svg \
                  elektroid-wavetable-symbolic.svg
   microbrute_DATA = microbrute/gui.glade
 

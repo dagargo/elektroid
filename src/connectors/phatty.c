@@ -486,7 +486,7 @@ static const struct fs_operations FS_PHATTY_SCALE_OPERATIONS = {
     FS_OPTION_SORT_BY_ID,
   .name = "scale",
   .gui_name = "Scales",
-  .gui_icon = FS_ICON_SND,
+  .gui_icon = FS_ICON_KEYS,
   .ext = "scl",
   .readdir = phatty_scale_read_dir,
   .print_item = common_print_item,

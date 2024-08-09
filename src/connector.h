@@ -29,6 +29,7 @@
 #define FS_ICON_PRJ "elektroid-project-symbolic"
 #define FS_ICON_SND "elektroid-sound-symbolic"
 #define FS_ICON_GENERIC "elektroid-file-symbolic"
+#define FS_ICON_KEYS "elektroid-keys-symbolic"
 
 enum item_type
 {

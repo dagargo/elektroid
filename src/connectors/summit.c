@@ -686,7 +686,7 @@ static const struct fs_operations FS_SUMMIT_BULK_TUNING_OPERATIONS = {
     FS_OPTION_SORT_BY_ID,
   .name = "tuning",
   .gui_name = "Tuning Tables",
-  .gui_icon = FS_ICON_SND,
+  .gui_icon = FS_ICON_KEYS,
   .ext = BE_SYSEX_EXT,
   .readdir = summit_tuning_read_dir,
   .print_item = common_print_item,
