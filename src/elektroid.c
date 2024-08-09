@@ -52,6 +52,8 @@
 #define BACKEND_PLAYING "\u23f5"
 #define BACKEND_STOPPED "\u23f9"
 
+#define SYSEX_FILTER "*." BE_SYSEX_EXT
+
 enum device_list_store_columns
 {
   DEVICES_LIST_STORE_TYPE_FIELD,
@@ -479,7 +481,7 @@ elektroid_rx_sysex ()
 
   filter = gtk_file_filter_new ();
   gtk_file_filter_set_name (filter, _("SysEx Files"));
-  gtk_file_filter_add_pattern (filter, "*.syx");
+  gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
   gtk_file_chooser_add_filter (chooser, filter);
   gtk_file_chooser_set_current_folder (chooser, getenv ("HOME"));
 
@@ -490,9 +492,9 @@ elektroid_rx_sysex ()
       filename = gtk_file_chooser_get_filename (chooser);
       ext = filename_get_ext (filename);
 
-      if (strcmp (ext, "syx") != 0)
+      if (strcmp (ext, BE_SYSEX_EXT) != 0)
 	{
-	  filename_w_ext = g_strconcat (filename, ".syx", NULL);
+	  filename_w_ext = g_strconcat (filename, SYSEX_FILTER, NULL);
 	  g_free (filename);
 	  filename = filename_w_ext;
 
@@ -604,7 +606,7 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
   chooser = GTK_FILE_CHOOSER (dialog);
   filter = gtk_file_filter_new ();
   gtk_file_filter_set_name (filter, _("SysEx Files"));
-  gtk_file_filter_add_pattern (filter, "*.syx");
+  gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
   gtk_file_chooser_add_filter (chooser, filter);
   gtk_file_chooser_set_current_folder (chooser, getenv ("HOME"));
   gtk_file_chooser_set_select_multiple (chooser, multiple);

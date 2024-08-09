@@ -50,6 +50,8 @@
 
 #define BE_SYSTEM_ID "SYSTEM_ID"
 
+#define BE_SYSEX_EXT "syx"
+
 extern GSList *connectors;
 extern struct connector *system_connector;
 

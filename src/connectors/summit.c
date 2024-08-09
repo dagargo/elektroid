@@ -527,7 +527,7 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .name = "single",
   .gui_name = "Single",
   .gui_icon = FS_ICON_SND,
-  .ext = "syx",
+  .ext = BE_SYSEX_EXT,
   .max_name_len = SUMMIT_PATCH_NAME_LEN,
   .readdir = summit_single_read_dir,
   .print_item = common_print_item,
@@ -550,7 +550,7 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .name = "multi",
   .gui_name = "Multi",
   .gui_icon = FS_ICON_SND,
-  .ext = "syx",
+  .ext = BE_SYSEX_EXT,
   .max_name_len = SUMMIT_PATCH_NAME_LEN,
   .readdir = summit_multi_read_dir,
   .print_item = common_print_item,
@@ -677,7 +677,7 @@ static GSList *
 summit_tunning_get_extensions ()
 {
   GSList *exts = g_slist_append (NULL, strdup (SCALA_EXT));
-  return g_slist_append (exts, strdup ("syx"));
+  return g_slist_append (exts, strdup (BE_SYSEX_EXT));
 }
 
 static const struct fs_operations FS_SUMMIT_BULK_TUNING_OPERATIONS = {
@@ -687,7 +687,7 @@ static const struct fs_operations FS_SUMMIT_BULK_TUNING_OPERATIONS = {
   .name = "tuning",
   .gui_name = "Tuning Tables",
   .gui_icon = FS_ICON_SND,
-  .ext = "syx",
+  .ext = BE_SYSEX_EXT,
   .readdir = summit_tuning_read_dir,
   .print_item = common_print_item,
   .download = summit_tuning_download,
@@ -930,7 +930,7 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .name = "wavetable",
   .gui_name = "Wavetables",
   .gui_icon = FS_ICON_WAVETABLE,
-  .ext = "syx",
+  .ext = BE_SYSEX_EXT,
   .max_name_len = SUMMIT_WAVETABLE_NAME_LEN,
   .readdir = summit_wavetable_read_dir,
   .print_item = common_print_item,
