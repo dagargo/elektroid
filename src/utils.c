@@ -152,15 +152,24 @@ filename_get_ext (const gchar *name)
   return ext;
 }
 
+//The returned value is owned by the caller.
+//As this is used from the code, rel_dir uses '/' always and needs to be converted.
+
 gchar *
-get_user_dir (const char *rel_conf_path)
+get_user_dir (const char *rel_dir)
 {
-  const gchar *home = getenv ("HOME");
-  gchar *input = rel_conf_path ? g_strconcat (home, rel_conf_path, NULL) :
-    strdup (home);
-  gchar *output = path_translate (PATH_SYSTEM, input);
-  g_free (input);
-  return output;
+  const gchar *home = g_get_home_dir ();
+  if (rel_dir)
+    {
+      gchar *rel_dir_conv = path_translate (PATH_SYSTEM, rel_dir);
+      gchar *dir = path_chain (PATH_SYSTEM, home, rel_dir_conv);
+      g_free (rel_dir_conv);
+      return dir;
+    }
+  else
+    {
+      return strdup (home);
+    }
 }
 
 char *

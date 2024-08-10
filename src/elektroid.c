@@ -483,7 +483,7 @@ elektroid_rx_sysex ()
   gtk_file_filter_set_name (filter, _("SysEx Files"));
   gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
   gtk_file_chooser_add_filter (chooser, filter);
-  gtk_file_chooser_set_current_folder (chooser, getenv ("HOME"));
+  gtk_file_chooser_set_current_folder (chooser, g_get_home_dir ());
 
   gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (dialog), filter);
 
@@ -608,7 +608,7 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
   gtk_file_filter_set_name (filter, _("SysEx Files"));
   gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
   gtk_file_chooser_add_filter (chooser, filter);
-  gtk_file_chooser_set_current_folder (chooser, getenv ("HOME"));
+  gtk_file_chooser_set_current_folder (chooser, g_get_home_dir ());
   gtk_file_chooser_set_select_multiple (chooser, multiple);
 
   res = gtk_dialog_run (GTK_DIALOG (dialog));
