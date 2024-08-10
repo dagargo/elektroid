@@ -578,7 +578,7 @@ summit_tuning_read_dir (struct backend *backend, struct item_iterator *iter,
 
   data = g_malloc (sizeof (struct common_simple_read_dir_data));
   data->next = 0;
-  data->max = SUMMIT_MAX_TUNINGS;
+  data->last = SUMMIT_MAX_TUNINGS - 1;
 
   item_iterator_init (iter, dir, data, common_simple_next_dentry, g_free);
 

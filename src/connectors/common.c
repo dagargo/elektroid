@@ -126,9 +126,9 @@ gint
 common_simple_next_dentry (struct item_iterator *iter)
 {
   struct common_simple_read_dir_data *data = iter->data;
-  guint digits = floor (log10 (data->max));
+  guint digits = ((guint) floor (log10 (data->last))) + 1;
 
-  if (data->next >= data->max)
+  if (data->next > data->last)
     {
       return -ENOENT;
     }

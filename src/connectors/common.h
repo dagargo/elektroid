@@ -29,8 +29,7 @@
 struct common_simple_read_dir_data
 {
   guint32 next;
-  guint32 max;
-  gboolean index;
+  guint32 last;
 };
 
 gchar *common_slot_get_upload_path (struct backend *backend,

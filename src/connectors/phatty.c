@@ -454,7 +454,7 @@ phatty_scale_read_dir (struct backend *backend, struct item_iterator *iter,
 
   data = g_malloc (sizeof (struct common_simple_read_dir_data));
   data->next = 0;
-  data->max = PHATTY_MAX_SCALES;
+  data->last = PHATTY_MAX_SCALES - 1;
   iter->data = data;
   iter->next = common_simple_next_dentry;
   iter->free = g_free;

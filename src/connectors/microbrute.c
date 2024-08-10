@@ -212,7 +212,7 @@ microbrute_read_dir (struct backend *backend, struct item_iterator *iter,
 
   data = g_malloc (sizeof (struct common_simple_read_dir_data));
   data->next = 1;
-  data->max = MICROBRUTE_MAX_SEQS + 1;
+  data->last = MICROBRUTE_MAX_SEQS;
 
   item_iterator_init (iter, dir, data, common_simple_next_dentry, g_free);
 
