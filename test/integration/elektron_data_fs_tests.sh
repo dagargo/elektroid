@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-export ELEKTROID_ELEKTRON_JSON=$srcdir/res/connectors/devices.json
-
 function cleanupAndExit () {
   for s in 1 62 63 64 256; do
     if [ -f $s.dtdata.bak ]; then

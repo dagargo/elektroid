@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-export ELEKTROID_ELEKTRON_JSON=$srcdir/res/connectors/devices.json
-
 TEST_NAME=auto-test
 
 echo "Using device $TEST_DEVICE..."

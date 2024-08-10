@@ -3288,21 +3288,11 @@ elektron_configure_device (struct backend *backend, guint8 id)
   JsonReader *reader;
   gchar *devices_filename;
   GError *error = NULL;
-  const gchar *elektroid_elektron_json;
   struct elektron_data *data = backend->data;
 
   parser = json_parser_new ();
 
-  elektroid_elektron_json = getenv ("ELEKTROID_ELEKTRON_JSON");
-
-  if (elektroid_elektron_json)
-    {
-      devices_filename = strdup (elektroid_elektron_json);
-    }
-  else
-    {
-      devices_filename = get_user_dir (CONF_DIR DEVICES_FILE);
-    }
+  devices_filename = get_user_dir (CONF_DIR DEVICES_FILE);
 
   if (!json_parser_load_from_file (parser, devices_filename, &error))
     {
