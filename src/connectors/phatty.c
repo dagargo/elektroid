@@ -443,11 +443,11 @@ static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
 
 static gint
 phatty_scale_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *path, GSList *extensions)
+		       const gchar *dir, GSList *extensions)
 {
   struct common_simple_read_dir_data *data;
 
-  if (strcmp (path, "/"))
+  if (strcmp (dir, "/"))
     {
       return -ENOTDIR;
     }
@@ -455,9 +455,8 @@ phatty_scale_read_dir (struct backend *backend, struct item_iterator *iter,
   data = g_malloc (sizeof (struct common_simple_read_dir_data));
   data->next = 0;
   data->last = PHATTY_MAX_SCALES - 1;
-  iter->data = data;
-  iter->next = common_simple_next_dentry;
-  iter->free = g_free;
+
+  item_iterator_init (iter, dir, data, common_simple_next_dentry, g_free);
 
   return 0;
 }
