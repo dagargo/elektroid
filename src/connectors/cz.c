@@ -295,7 +295,7 @@ cz_upload (struct backend *backend, const gchar *path, struct idata *program,
 static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .id = FS_PROGRAM_CZ,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SIZE_COLUMN,
+    FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "program",
   .gui_name = "Programs",
   .gui_icon = FS_ICON_SND,

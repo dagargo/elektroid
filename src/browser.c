@@ -746,20 +746,10 @@ browser_update_fs_sorting_options (struct browser *browser)
 {
   GtkTreeSortable *sortable =
     GTK_TREE_SORTABLE (gtk_tree_view_get_model (browser->view));
+  gboolean slot = browser->fs_ops &&
+    browser->fs_ops->options & FS_OPTION_SLOT_STORAGE;
 
-  if (!browser->search_mode && browser->fs_ops
-      && browser->fs_ops->options & FS_OPTION_SORT_BY_ID)
-    {
-      gtk_tree_sortable_set_sort_func (sortable,
-				       BROWSER_LIST_STORE_ID_FIELD,
-				       browser_sort_by_id, NULL, NULL);
-      gtk_tree_sortable_set_sort_column_id (sortable,
-					    BROWSER_LIST_STORE_ID_FIELD,
-					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
-    }
-  else if (browser->search_mode || (browser->fs_ops
-				    && browser->
-				    fs_ops->options & FS_OPTION_SORT_BY_NAME))
+  if (browser->search_mode || !slot)
     {
       gtk_tree_sortable_set_sort_func (sortable,
 				       BROWSER_LIST_STORE_NAME_FIELD,

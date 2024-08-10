@@ -718,8 +718,8 @@ microfreak_preset_get_exts (struct backend *backend,
 static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
   .id = FS_MICROFREAK_PRESET,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SORT_BY_ID | FS_OPTION_SHOW_SLOT_COLUMN |
-    FS_OPTION_SHOW_INFO_COLUMN | FS_OPTION_ALLOW_SEARCH,
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = FS_ICON_SND,
@@ -1880,9 +1880,8 @@ microfreak_sample_load (const gchar *path, struct idata *sample,
 static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
   .id = FS_MICROFREAK_SAMPLE,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_SIZE_COLUMN |
-    FS_OPTION_ALLOW_SEARCH,
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_SLOT_COLUMN |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "sample",
   .gui_name = "Samples",
   .gui_icon = FS_ICON_WAVE,
@@ -1954,9 +1953,8 @@ microfreak_wavetable_save (const gchar *path, struct idata *wavetable,
 static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
   .id = FS_MICROFREAK_WAVETABLE,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
-    FS_OPTION_SLOT_STORAGE | FS_OPTION_SORT_BY_ID |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_SIZE_COLUMN |
-    FS_OPTION_ALLOW_SEARCH,
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_SLOT_COLUMN |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "wavetable",
   .gui_name = "Wavetables",
   .gui_icon = FS_ICON_WAVETABLE,
