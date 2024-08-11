@@ -2610,7 +2610,6 @@ audio-volume-medium-symbolic</property>
                                     <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Mix depending
 on remote</property>
                                     <property name="justify">right</property>
-                                    <property name="wrap">True</property>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
@@ -2663,7 +2662,6 @@ on remote</property>
                                     <property name="halign">end</property>
                                     <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Auto play</property>
                                     <property name="justify">right</property>
-                                    <property name="wrap">True</property>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
