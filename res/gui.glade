@@ -1515,6 +1515,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     </child>
   </object>
   <object class="GtkWindow" id="main_window">
+    <property name="width-request">800</property>
+    <property name="height-request">600</property>
     <property name="can-focus">False</property>
     <property name="icon-name">elektroid</property>
     <child>
@@ -1726,7 +1728,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                 <property name="vexpand">True</property>
                                 <child>
                                   <object class="GtkScrolledWindow">
-                                    <property name="height-request">250</property>
+                                    <property name="height-request">100</property>
                                     <property name="visible">True</property>
                                     <property name="can-focus">True</property>
                                     <property name="hexpand">True</property>
@@ -2170,7 +2172,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                 <property name="vexpand">True</property>
                                 <child>
                                   <object class="GtkScrolledWindow">
-                                    <property name="height-request">250</property>
+                                    <property name="height-request">100</property>
                                     <property name="visible">True</property>
                                     <property name="can-focus">True</property>
                                     <property name="hexpand">True</property>
@@ -2745,7 +2747,7 @@ on remote</property>
                     </child>
                   </object>
                   <packing>
-                    <property name="resize">True</property>
+                    <property name="resize">False</property>
                     <property name="shrink">False</property>
                   </packing>
                 </child>
@@ -2943,7 +2945,7 @@ on remote</property>
                 </child>
               </object>
               <packing>
-                <property name="resize">True</property>
+                <property name="resize">False</property>
                 <property name="shrink">False</property>
               </packing>
             </child>
