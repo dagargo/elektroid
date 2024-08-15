@@ -315,7 +315,8 @@ sample_get_memfile_from_sample (struct idata *sample, struct idata *memfile,
 
   content = g_byte_array_sized_new (sample->content->len * frame_size +
 				    HEADERS_SPACE);
-  idata_init (memfile, content, strdup (sample->name), NULL);
+  idata_init (memfile, content, sample->name ? strdup (sample->name) : NULL,
+	      NULL);
   data.pos = 0;
   data.array = content;
 
