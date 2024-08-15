@@ -2623,6 +2623,23 @@ elektroid_drag_leave_up (GtkWidget *widget,
 }
 
 static void
+elektroid_set_window_size ()
+{
+  GdkRectangle geometry;
+  GdkDisplay *display = gdk_display_get_default ();
+  GdkMonitor *monitor = gdk_display_get_monitor (display, 0);
+  gdk_monitor_get_geometry (monitor, &geometry);
+  if (geometry.height >= 800)
+    {
+      gtk_window_resize (main_window, 1024, 768);
+    }
+  else
+    {
+      gtk_window_maximize (main_window);
+    }
+}
+
+static void
 elektroid_quit ()
 {
   gtk_dialog_response (GTK_DIALOG (about_dialog), GTK_RESPONSE_CANCEL);
@@ -2891,6 +2908,8 @@ elektroid_run (int argc, char *argv[])
   elektroid_show_remote (preferences.show_remote);	//This triggers both browsers initializations.
 
   gtk_entry_set_text (GTK_ENTRY (local_name_entry), hostname);
+
+  elektroid_set_window_size ();
 
   gtk_widget_show (GTK_WIDGET (main_window));
 
