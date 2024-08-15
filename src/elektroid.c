@@ -141,7 +141,7 @@ static struct preferences preferences;
 
 static guint batch_id;
 
-GtkWidget *main_window;
+GtkWindow *main_window;
 GtkWidget *dialog;
 
 static GtkAboutDialog *about_dialog;
@@ -174,8 +174,7 @@ show_error_msg (const char *format, ...)
 
   va_start (args, format);
   g_vasprintf (&msg, format, args);
-  dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
-				   GTK_DIALOG_MODAL,
+  dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL,
 				   GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
 				   "%s", msg);
   gtk_dialog_run (GTK_DIALOG (dialog));
@@ -466,13 +465,10 @@ elektroid_rx_sysex ()
       return;
     }
 
-  dialog = gtk_file_chooser_dialog_new (_("Save SysEx"),
-					GTK_WINDOW (main_window),
-					action,
-					_("_Cancel"),
-					GTK_RESPONSE_CANCEL,
-					_("_Save"),
-					GTK_RESPONSE_ACCEPT, NULL);
+  dialog = gtk_file_chooser_dialog_new (_("Save SysEx"), main_window, action,
+					_("_Cancel"), GTK_RESPONSE_CANCEL,
+					_("_Save"), GTK_RESPONSE_ACCEPT,
+					NULL);
   chooser = GTK_FILE_CHOOSER (dialog);
   gtk_file_chooser_set_do_overwrite_confirmation (chooser, TRUE);
   gtk_file_chooser_set_current_name (chooser, _("Received SysEx"));
@@ -596,13 +592,11 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
   gint res, *err;
   GSList *filenames;
 
-  dialog = gtk_file_chooser_dialog_new (_("Open SysEx"),
-					GTK_WINDOW (main_window),
+  dialog = gtk_file_chooser_dialog_new (_("Open SysEx"), main_window,
 					GTK_FILE_CHOOSER_ACTION_OPEN,
-					_("_Cancel"),
-					GTK_RESPONSE_CANCEL,
-					_("_Open"),
-					GTK_RESPONSE_ACCEPT, NULL);
+					_("_Cancel"), GTK_RESPONSE_CANCEL,
+					_("_Open"), GTK_RESPONSE_ACCEPT,
+					NULL);
   chooser = GTK_FILE_CHOOSER (dialog);
   filter = gtk_file_filter_new ();
   gtk_file_filter_set_name (filter, _("SysEx Files"));
@@ -788,10 +782,8 @@ elektroid_delete_files (GtkWidget *object, gpointer data)
   gint res;
   struct browser *browser = data;
 
-  dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
-				   GTK_DIALOG_MODAL,
-				   GTK_MESSAGE_ERROR,
-				   GTK_BUTTONS_NONE,
+  dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL,
+				   GTK_MESSAGE_ERROR, GTK_BUTTONS_NONE,
 				   _
 				   ("Are you sure you want to delete the selected items?"));
   gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
@@ -1173,8 +1165,7 @@ gint
 elektroid_run_dialog_and_destroy (GtkWidget *custom_dialog)
 {
   dialog = custom_dialog;
-  gtk_window_set_transient_for (GTK_WINDOW (dialog),
-				GTK_WINDOW (main_window));
+  gtk_window_set_transient_for (GTK_WINDOW (dialog), main_window);
   gint result = gtk_dialog_run (GTK_DIALOG (dialog));
   gtk_widget_destroy (dialog);
   dialog = NULL;
@@ -1348,17 +1339,15 @@ elektroid_show_task_overwrite_dialog (gpointer data)
   gboolean apply_to_all;
   GtkWidget *container, *checkbutton;
 
-  dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
-				   GTK_DIALOG_MODAL |
+  dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL |
 				   GTK_DIALOG_USE_HEADER_BAR,
-				   GTK_MESSAGE_WARNING,
-				   GTK_BUTTONS_NONE,
+				   GTK_MESSAGE_WARNING, GTK_BUTTONS_NONE,
 				   _("Replace file “%s”?"),
 				   (gchar *) data);
-  gtk_dialog_add_buttons (GTK_DIALOG (dialog),
-			  _("_Cancel"), GTK_RESPONSE_CANCEL,
-			  _("_Skip"), GTK_RESPONSE_REJECT,
-			  _("_Replace"), GTK_RESPONSE_ACCEPT, NULL);
+  gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
+			  GTK_RESPONSE_CANCEL, _("_Skip"),
+			  GTK_RESPONSE_REJECT, _("_Replace"),
+			  GTK_RESPONSE_ACCEPT, NULL);
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
   container = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
   checkbutton =
@@ -2681,8 +2670,7 @@ elektroid_run (int argc, char *argv[])
 					     (css_provider),
 					     GTK_STYLE_PROVIDER_PRIORITY_USER);
 
-  main_window = GTK_WIDGET (gtk_builder_get_object (builder, "main_window"));
-  gtk_window_resize (GTK_WINDOW (main_window), 1, 1);
+  main_window = GTK_WINDOW (gtk_builder_get_object (builder, "main_window"));
 
   about_dialog =
     GTK_ABOUT_DIALOG (gtk_builder_get_object (builder, "about_dialog"));
@@ -2724,7 +2712,7 @@ elektroid_run (int argc, char *argv[])
   host_midi_status_label =
     GTK_LABEL (gtk_builder_get_object (builder, "host_midi_status_label"));
 
-  g_signal_connect (main_window, "delete-event",
+  g_signal_connect (GTK_WIDGET (main_window), "delete-event",
 		    G_CALLBACK (elektroid_delete_window), NULL);
 
   g_signal_connect (show_remote_button, "clicked",
@@ -2898,13 +2886,13 @@ elektroid_run (int argc, char *argv[])
   maction_context.backend = &backend;
   maction_context.audio = &editor.audio;
   maction_context.builder = builder;
-  maction_context.parent = GTK_WINDOW (main_window);
+  maction_context.parent = main_window;
 
   elektroid_show_remote (preferences.show_remote);	//This triggers both browsers initializations.
 
   gtk_entry_set_text (GTK_ENTRY (local_name_entry), hostname);
 
-  gtk_widget_show (main_window);
+  gtk_widget_show (GTK_WIDGET (main_window));
 
   gtk_main ();
 
