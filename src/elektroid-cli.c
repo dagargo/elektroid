@@ -29,6 +29,7 @@
 #include <stddef.h>
 #include "backend.h"
 #include "regconn.h"
+#include "regpref.h"
 #include "utils.h"
 
 #define COMMAND_NOT_IN_SYSTEM_FS "Command not available in system backend"
@@ -803,6 +804,8 @@ main (int argc, gchar *argv[])
     }
 
   regconn_register ();
+  regpref_register ();
+  preferences_load ();
 
   if (!strcmp (command, "ld") || !strcmp (command, "list-devices"))
     {
@@ -904,6 +907,7 @@ end:
     }
 
   regconn_unregister ();
+  regpref_unregister ();
 
   usleep (BE_REST_TIME_US * 2);
   return err ? EXIT_FAILURE : EXIT_SUCCESS;

@@ -29,6 +29,7 @@
 #include <getopt.h>
 #include "regconn.h"
 #include "regma.h"
+#include "regpref.h"
 #include "browser.h"
 #include "editor.h"
 #include "tasks.h"
@@ -3013,15 +3014,16 @@ main (int argc, char *argv[])
 
   hostname = g_get_host_name ();
 
+  regconn_register ();
+  regma_register ();
+  regpref_register ();
+
   preferences_load ();
   if (local_dir)
     {
       preferences_set_string (PREF_KEY_LOCAL_DIR,
 			      get_system_startup_path (local_dir));
     }
-
-  regconn_register ();
-  regma_register ();
 
   ret = elektroid_run (argc, argv);
 
@@ -3030,6 +3032,7 @@ main (int argc, char *argv[])
 
   regconn_unregister ();
   regma_unregister ();
+  regpref_unregister ();
 
   return ret;
 }

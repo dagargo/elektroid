@@ -45,7 +45,9 @@ endif
 
 elektroid_common_sources = local.c local.h \
 connector.c connector.h \
+preferences.c preferences.h \
 regconn.c regconn.h\
+regpref.c regpref.h\
 sample.c sample.h \
 utils.c utils.h \
 backend.c backend.h $(elektroid_backend_sources) \
@@ -69,7 +71,6 @@ elektroid_cli_SOURCES = $(elektroid_common_sources) elektroid-cli.c
 elektroid_SOURCES = $(elektroid_common_sources) \
 audio.h audio.c $(elektroid_audio_sources) \
 browser.c browser.h notifier.c notifier.h \
-preferences.c preferences.h \
 regma.c regma.h \
 maction.c maction.h \
 mactions/autosampler.c \

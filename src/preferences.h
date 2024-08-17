@@ -23,13 +23,39 @@
 
 #include <glib.h>
 
-#define PREF_KEY_AUTOPLAY "autoplay"
-#define PREF_KEY_MIX "mix"
+//Preferences need to be here as need to be available from the CLI even though some are not accessible from the CLI.
 #define PREF_KEY_LOCAL_DIR "localDir"
 #define PREF_KEY_REMOTE_DIR "remoteDir"	//Only used in system filesystems.
 #define PREF_KEY_SHOW_REMOTE "showRemote"
+#define PREF_KEY_AUTOPLAY "autoplay"
+#define PREF_KEY_MIX "mix"
 #define PREF_KEY_SHOW_GRID "showGrid"
 #define PREF_KEY_GRID_LENGTH "gridLength"
+
+enum preference_type
+{
+  PREFERENCE_TYPE_BOOLEAN,
+  PREFERENCE_TYPE_INT,
+  PREFERENCE_TYPE_STRING
+};
+
+typedef gpointer (*preference_get_value_f) (const gpointer);
+
+struct preference
+{
+  gchar *key;
+  enum preference_type type;
+  preference_get_value_f get_value;
+};
+
+extern GSList *preferences;
+
+gpointer preferences_get_boolean_value_true (const gpointer b);
+
+gpointer preferences_get_boolean_value_false (const gpointer b);
+
+gpointer preferences_get_int_value (const gpointer in, gint max, gint min,
+				    gint def);
 
 gint preferences_save ();
 
