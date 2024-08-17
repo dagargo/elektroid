@@ -23,21 +23,30 @@
 
 #include <glib.h>
 
-struct preferences
-{
-  gboolean autoplay;
-  gboolean mix;
-  gboolean show_remote;
-  gchar *local_dir;
-  gchar *remote_dir;
-  gboolean show_grid;
-  gint grid_length;
-};
+#define PREF_KEY_AUTOPLAY "autoplay"
+#define PREF_KEY_MIX "mix"
+#define PREF_KEY_LOCAL_DIR "localDir"
+#define PREF_KEY_REMOTE_DIR "remoteDir"	//Only used in system filesystems.
+#define PREF_KEY_SHOW_REMOTE "showRemote"
+#define PREF_KEY_SHOW_GRID "showGrid"
+#define PREF_KEY_GRID_LENGTH "gridLength"
 
-gint preferences_save (struct preferences *);
+gint preferences_save ();
 
-gint preferences_load (struct preferences *);
+gint preferences_load ();
 
-void preferences_free (struct preferences *);
+void preferences_free ();
+
+gboolean preferences_get_boolean (const gchar * key);
+
+gint preferences_get_int (const gchar * key);
+
+const gchar *preferences_get_string (const gchar * key);
+
+void preferences_set_boolean (const gchar * key, gboolean v);
+
+void preferences_set_int (const gchar * key, gint v);
+
+void preferences_set_string (const gchar * key, gchar * s);
 
 #endif

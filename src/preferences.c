@@ -26,24 +26,170 @@
 
 #define PREFERENCES_FILE "/preferences.json"
 
-#define MEMBER_AUTOPLAY "autoplay"
-#define MEMBER_MIX "mix"
-#define MEMBER_LOCAL_DIR "localDir"
-#define MEMBER_REMOTE_DIR "remoteDir"	//Only used in system filesystems.
-#define MEMBER_SHOW_REMOTE "showRemote"
-#define MEMBER_SHOW_GRID "showGrid"
-#define MEMBER_GRID_LENGTH "gridLength"
+#define PREF_DEFAULT_GRID_LENGTH 16
+#define PREF_MAX_GRID_LENGTH 64
+#define PREF_MIN_GRID_LENGTH 2
 
-#define DEFAULT_GRID_LENGHT 16
+static GHashTable *preferences;
+
+enum preference_type
+{
+  PREFERENCE_TYPE_BOOLEAN,
+  PREFERENCE_TYPE_INT,
+  PREFERENCE_TYPE_STRING
+};
+
+typedef gpointer (*preference_get_value_f) (const gpointer);
+
+struct preference
+{
+  gchar *key;
+  enum preference_type type;
+  preference_get_value_f get_value;
+};
+
+static gpointer
+preferences_get_boolean_value (const gpointer in, gboolean def_value)
+{
+  gboolean *out = g_malloc (sizeof (gboolean));
+  if (in)
+    {
+      *out = *(gboolean *) in;
+    }
+  else
+    {
+      *out = def_value;
+    }
+  return out;
+}
+
+gpointer
+preferences_get_boolean_value_true (const gpointer b)
+{
+  return preferences_get_boolean_value (b, TRUE);
+}
+
+gpointer
+preferences_get_boolean_value_false (const gpointer b)
+{
+  return preferences_get_boolean_value (b, FALSE);
+}
+
+static gpointer
+preferences_get_home (const gpointer home)
+{
+  return home ? g_strdup (home) : get_user_dir (NULL);
+}
+
+static gpointer
+preferences_get_int_value (const gpointer in, gint max, gint min, gint def)
+{
+  gint *out = g_malloc (sizeof (gint));
+  if (in)
+    {
+      *out = *(gint *) in;
+      if (*out > max || *out < min)
+	{
+	  *out = def;
+	}
+    }
+  else
+    {
+      *out = def;
+    }
+  return out;
+}
+
+gpointer
+preferences_get_grid (const gpointer grid)
+{
+  return preferences_get_int_value (grid, PREF_MAX_GRID_LENGTH,
+				    PREF_MIN_GRID_LENGTH,
+				    PREF_DEFAULT_GRID_LENGTH);
+}
+
+static const struct preference PREF_AUTOPLAY = {
+  .key = PREF_KEY_AUTOPLAY,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_true
+};
+
+static const struct preference PREF_MIX = {
+  .key = PREF_KEY_MIX,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_false
+};
+
+static const struct preference PREF_LOCAL_DIR = {
+  .key = PREF_KEY_LOCAL_DIR,
+  .type = PREFERENCE_TYPE_STRING,
+  .get_value = preferences_get_home
+};
+
+static const struct preference PREF_REMOTE_DIR = {
+  .key = PREF_KEY_REMOTE_DIR,
+  .type = PREFERENCE_TYPE_STRING,
+  .get_value = preferences_get_home
+};
+
+static const struct preference PREF_SHOW_REMOTE = {
+  .key = PREF_KEY_SHOW_REMOTE,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_true
+};
+
+static const struct preference PREF_SHOW_GRID = {
+  .key = PREF_KEY_SHOW_GRID,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_false
+};
+
+static const struct preference PREF_GRID_LENGTH = {
+  .key = PREF_KEY_GRID_LENGTH,
+  .type = PREFERENCE_TYPE_INT,
+  .get_value = preferences_get_grid
+};
+
+static const struct preference *PREFERENCES[] = {
+  &PREF_AUTOPLAY, &PREF_MIX, &PREF_LOCAL_DIR, &PREF_REMOTE_DIR,
+  &PREF_SHOW_REMOTE, &PREF_SHOW_GRID, &PREF_GRID_LENGTH, NULL
+};
+
+static void
+preferences_set_value (const struct preference *p, JsonBuilder *builder)
+{
+  gpointer v = g_hash_table_lookup (preferences, p->key);
+
+  json_builder_set_member_name (builder, p->key);
+
+  if (p->type == PREFERENCE_TYPE_BOOLEAN)
+    {
+      json_builder_add_boolean_value (builder, *(gboolean *) v);
+    }
+  else if (p->type == PREFERENCE_TYPE_INT)
+    {
+      json_builder_add_int_value (builder, *(gint *) v);
+    }
+  else if (p->type == PREFERENCE_TYPE_STRING)
+    {
+      json_builder_add_string_value (builder, (gchar *) v);
+    }
+  else
+    {
+      error_print ("Illegal type");
+      json_builder_add_null_value (builder);
+    }
+}
 
 gint
-preferences_save (struct preferences *preferences)
+preferences_save ()
 {
   gchar *preferences_path;
   JsonBuilder *builder;
   JsonGenerator *gen;
   JsonNode *root;
   gchar *json;
+  const struct preference **p;
 
   preferences_path = get_user_dir (CONF_DIR);
   if (g_mkdir_with_parents (preferences_path,
@@ -63,26 +209,13 @@ preferences_save (struct preferences *preferences)
 
   json_builder_begin_object (builder);
 
-  json_builder_set_member_name (builder, MEMBER_AUTOPLAY);
-  json_builder_add_boolean_value (builder, preferences->autoplay);
+  p = PREFERENCES;
 
-  json_builder_set_member_name (builder, MEMBER_MIX);
-  json_builder_add_boolean_value (builder, preferences->mix);
-
-  json_builder_set_member_name (builder, MEMBER_SHOW_REMOTE);
-  json_builder_add_boolean_value (builder, preferences->show_remote);
-
-  json_builder_set_member_name (builder, MEMBER_LOCAL_DIR);
-  json_builder_add_string_value (builder, preferences->local_dir);
-
-  json_builder_set_member_name (builder, MEMBER_REMOTE_DIR);
-  json_builder_add_string_value (builder, preferences->remote_dir);
-
-  json_builder_set_member_name (builder, MEMBER_SHOW_GRID);
-  json_builder_add_boolean_value (builder, preferences->show_grid);
-
-  json_builder_set_member_name (builder, MEMBER_GRID_LENGTH);
-  json_builder_add_int_value (builder, preferences->grid_length);
+  while (*p)
+    {
+      preferences_set_value (*p, builder);
+      p++;
+    }
 
   json_builder_end_object (builder);
 
@@ -102,13 +235,55 @@ preferences_save (struct preferences *preferences)
   return 0;
 }
 
+static gpointer
+preferences_get_value (const struct preference *p, JsonReader *reader)
+{
+  gpointer v;
+
+  if (json_reader_read_member (reader, p->key))
+    {
+      if (p->type == PREFERENCE_TYPE_BOOLEAN)
+	{
+	  gboolean b = json_reader_get_boolean_value (reader);
+	  v = p->get_value (&b);
+	}
+      else if (p->type == PREFERENCE_TYPE_INT)
+	{
+	  gint i = json_reader_get_int_value (reader);
+	  v = p->get_value (&i);
+	}
+      else if (p->type == PREFERENCE_TYPE_STRING)
+	{
+	  gchar *s = (gchar *) json_reader_get_string_value (reader);
+	  v = p->get_value (s);
+	}
+      else
+	{
+	  error_print ("Illegal type");
+	  v = NULL;
+	}
+    }
+  else
+    {
+      v = NULL;
+    }
+  json_reader_end_member (reader);
+
+  return v;
+}
+
 gint
-preferences_load (struct preferences *preferences)
+preferences_load ()
 {
   GError *error;
   JsonReader *reader;
+  const struct preference **p;
   JsonParser *parser = json_parser_new ();
   gchar *preferences_file = get_user_dir (CONF_DIR PREFERENCES_FILE);
+
+  //Keys need to be static constants defined only in one place
+  preferences = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL,
+				       g_free);
 
   error = NULL;
   json_parser_load_from_file (parser, preferences_file, &error);
@@ -119,13 +294,15 @@ preferences_load (struct preferences *preferences)
       g_error_free (error);
       g_object_unref (parser);
       g_free (preferences_file);
-      preferences->autoplay = TRUE;
-      preferences->mix = TRUE;
-      preferences->show_remote = TRUE;
-      preferences->local_dir = get_user_dir (NULL);
-      preferences->remote_dir = get_user_dir (NULL);
-      preferences->show_grid = FALSE;
-      preferences->grid_length = DEFAULT_GRID_LENGHT;
+
+      p = PREFERENCES;
+      while (*p)
+	{
+	  gpointer v = (*p)->get_value (NULL);
+	  g_hash_table_insert (preferences, (*p)->key, v);
+	  p++;
+	}
+
       return 0;
     }
 
@@ -133,85 +310,13 @@ preferences_load (struct preferences *preferences)
 
   reader = json_reader_new (json_parser_get_root (parser));
 
-  if (json_reader_read_member (reader, MEMBER_AUTOPLAY))
+  p = PREFERENCES;
+  while (*p)
     {
-      preferences->autoplay = json_reader_get_boolean_value (reader);
+      gpointer v = preferences_get_value (*p, reader);
+      g_hash_table_insert (preferences, (*p)->key, v);
+      p++;
     }
-  else
-    {
-      preferences->autoplay = TRUE;
-    }
-  json_reader_end_member (reader);
-
-  if (json_reader_read_member (reader, MEMBER_MIX))
-    {
-      preferences->mix = json_reader_get_boolean_value (reader);
-    }
-  else
-    {
-      preferences->mix = TRUE;
-    }
-  json_reader_end_member (reader);
-
-  if (json_reader_read_member (reader, MEMBER_SHOW_REMOTE))
-    {
-      preferences->show_remote = json_reader_get_boolean_value (reader);
-    }
-  else
-    {
-      preferences->show_remote = TRUE;
-    }
-  json_reader_end_member (reader);
-
-  if (json_reader_read_member (reader, MEMBER_LOCAL_DIR) &&
-      g_file_test (json_reader_get_string_value (reader),
-		   (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
-    {
-      preferences->local_dir =
-	g_strdup (json_reader_get_string_value (reader));
-    }
-  else
-    {
-      preferences->local_dir = get_user_dir (NULL);
-    }
-  json_reader_end_member (reader);
-
-  if (json_reader_read_member (reader, MEMBER_REMOTE_DIR) &&
-      g_file_test (json_reader_get_string_value (reader),
-		   (G_FILE_TEST_EXISTS | G_FILE_TEST_IS_DIR)))
-    {
-      preferences->remote_dir =
-	g_strdup (json_reader_get_string_value (reader));
-    }
-  else
-    {
-      preferences->remote_dir = get_user_dir (NULL);
-    }
-  json_reader_end_member (reader);
-
-  if (json_reader_read_member (reader, MEMBER_SHOW_GRID))
-    {
-      preferences->show_grid = json_reader_get_boolean_value (reader);
-    }
-  else
-    {
-      preferences->show_grid = FALSE;
-    }
-  json_reader_end_member (reader);
-
-  if (json_reader_read_member (reader, MEMBER_GRID_LENGTH))
-    {
-      preferences->grid_length = json_reader_get_int_value (reader);
-      if (preferences->grid_length > 64 || preferences->grid_length < 2)
-	{
-	  preferences->grid_length = DEFAULT_GRID_LENGHT;
-	}
-    }
-  else
-    {
-      preferences->grid_length = DEFAULT_GRID_LENGHT;
-    }
-  json_reader_end_member (reader);
 
   g_object_unref (reader);
   g_object_unref (parser);
@@ -222,7 +327,49 @@ preferences_load (struct preferences *preferences)
 }
 
 void
-preferences_free (struct preferences *preferences)
+preferences_free ()
 {
-  g_free (preferences->local_dir);
+  g_hash_table_unref (preferences);
+}
+
+gboolean
+preferences_get_boolean (const gchar *key)
+{
+  gboolean *v = g_hash_table_lookup (preferences, key);
+  return *v;
+}
+
+gint
+preferences_get_int (const gchar *key)
+{
+  gint *v = g_hash_table_lookup (preferences, key);
+  return *v;
+}
+
+const gchar *
+preferences_get_string (const gchar *key)
+{
+  return (gchar *) g_hash_table_lookup (preferences, key);
+}
+
+void
+preferences_set_boolean (const gchar *key, gboolean v)
+{
+  gboolean *p = g_malloc (sizeof (gint));
+  *p = v;
+  g_hash_table_insert (preferences, (gpointer) key, p);
+}
+
+void
+preferences_set_int (const gchar *key, gint v)
+{
+  gint *p = g_malloc (sizeof (gint));
+  *p = v;
+  g_hash_table_insert (preferences, (gpointer) key, p);
+}
+
+void
+preferences_set_string (const char *key, gchar *v)
+{
+  g_hash_table_insert (preferences, (gpointer) key, v);
 }

@@ -137,7 +137,6 @@ extern struct browser remote_browser;
 extern struct maction_context maction_context;
 
 static struct backend backend;
-static struct preferences preferences;
 
 static guint batch_id;
 
@@ -362,12 +361,8 @@ elektroid_set_preferences_remote_dir ()
     {
       if (remote_browser.dir)
 	{
-	  gchar *dir = strdup (remote_browser.dir);
-	  if (preferences.remote_dir)
-	    {
-	      g_free (preferences.remote_dir);
-	    }
-	  preferences.remote_dir = dir;
+	  preferences_set_string (PREF_KEY_REMOTE_DIR,
+				  strdup (remote_browser.dir));
 	}
     }
 }
@@ -650,7 +645,7 @@ elektroid_show_remote_clicked (GtkWidget *object, gpointer data)
 
   g_object_get (G_OBJECT (show_remote_button), "active", &active, NULL);
   active = !active;
-  preferences.show_remote = active;
+  preferences_set_boolean (PREF_KEY_SHOW_REMOTE, active);
   g_object_set (G_OBJECT (show_remote_button), "active", active, NULL);
 
   gtk_widget_hide (GTK_WIDGET (main_popover));
@@ -1970,7 +1965,8 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
     {
       if (!remote_browser.dir)
 	{
-	  remote_browser.dir = strdup (preferences.remote_dir);
+	  gchar *dir = strdup (preferences_get_string (PREF_KEY_REMOTE_DIR));
+	  remote_browser.dir = dir;
 	}
     }
   else
@@ -2756,8 +2752,8 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (remote_browser.delete_menuitem, "activate",
 		    G_CALLBACK (elektroid_delete_files), &remote_browser);
 
-  browser_local_init (&local_browser, builder, preferences.local_dir);
-  preferences.local_dir = NULL;
+  browser_local_init (&local_browser, builder,
+		      strdup (preferences_get_string (PREF_KEY_LOCAL_DIR)));
 
   g_signal_connect (local_browser.transfer_menuitem, "activate",
 		    G_CALLBACK (elektroid_add_upload_tasks), NULL);
@@ -2896,7 +2892,7 @@ elektroid_run (int argc, char *argv[])
   progress_init (builder);
 
   g_object_set (G_OBJECT (show_remote_button), "active",
-		preferences.show_remote, NULL);
+		preferences_get_boolean (PREF_KEY_SHOW_REMOTE), NULL);
 
   gtk_widget_set_sensitive (remote_box, FALSE);
 
@@ -2905,7 +2901,7 @@ elektroid_run (int argc, char *argv[])
   maction_context.builder = builder;
   maction_context.parent = main_window;
 
-  elektroid_show_remote (preferences.show_remote);	//This triggers both browsers initializations.
+  elektroid_show_remote (preferences_get_boolean (PREF_KEY_SHOW_REMOTE));	//This triggers both browsers initializations.
 
   gtk_entry_set_text (GTK_ENTRY (local_name_entry), hostname);
 
@@ -2915,7 +2911,7 @@ elektroid_run (int argc, char *argv[])
 
   gtk_main ();
 
-  preferences.local_dir = local_browser.dir;
+  preferences_set_string (PREF_KEY_LOCAL_DIR, strdup (local_browser.dir));
   elektroid_set_preferences_remote_dir ();
 
   if (backend_check (&backend))
@@ -3017,21 +3013,20 @@ main (int argc, char *argv[])
 
   hostname = g_get_host_name ();
 
-  preferences_load (&preferences);
+  preferences_load ();
   if (local_dir)
     {
-      g_free (preferences.local_dir);
-      preferences.local_dir = get_system_startup_path (local_dir);
+      preferences_set_string (PREF_KEY_LOCAL_DIR,
+			      get_system_startup_path (local_dir));
     }
-  editor.preferences = &preferences;
 
   regconn_register ();
   regma_register ();
 
   ret = elektroid_run (argc, argv);
 
-  preferences_save (&preferences);
-  preferences_free (&preferences);
+  preferences_save ();
+  preferences_free ();
 
   regconn_unregister ();
   regma_unregister ();

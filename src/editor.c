@@ -192,8 +192,8 @@ editor_set_audio_mono_mix (struct editor *editor)
     {
       gboolean remote_mono = remote_browser.fs_ops &&
 	!(remote_browser.fs_ops->options & FS_OPTION_STEREO);
-      gboolean mono_mix = (editor->preferences->mix && remote_mono) ||
-	sample_info->channels != 2;
+      gboolean mono_mix = (preferences_get_boolean (PREF_KEY_MIX) &&
+			   remote_mono) || sample_info->channels != 2;
 
       g_mutex_lock (&editor->audio.control.mutex);
       editor->audio.mono_mix = mono_mix;
@@ -242,7 +242,7 @@ editor_update_ui_on_load (gpointer data)
       gtk_widget_set_sensitive (editor->play_button, TRUE);
       gtk_widget_set_sensitive (editor->stop_button, TRUE);
       gtk_widget_set_sensitive (editor->loop_button, TRUE);
-      if (editor->preferences->autoplay)
+      if (preferences_get_boolean (PREF_KEY_AUTOPLAY))
 	{
 	  audio_start_playback (&editor->audio);
 	}
@@ -452,14 +452,14 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
       cairo_line_to (cr, value, EDITOR_LOOP_MARKER_FULL_HEIGHT);
       cairo_fill (cr);
 
-      if (editor->preferences->show_grid)
+      if (preferences_get_boolean (PREF_KEY_SHOW_GRID))
 	{
+	  gint grid_length = preferences_get_int (PREF_KEY_GRID_LENGTH);
 	  color.alpha = 0.25;
 	  gdk_cairo_set_source_rgba (cr, &color);
 
-	  gdouble grid_inc = sample_info->frames /
-	    (gdouble) editor->preferences->grid_length;
-	  for (gint i = 1; i < editor->preferences->grid_length; i++)
+	  gdouble grid_inc = sample_info->frames / (gdouble) grid_length;
+	  for (gint i = 1; i < grid_length; i++)
 	    {
 	      value = ((gint) ((i * grid_inc) - start) / x_ratio) + .5;
 	      cairo_move_to (cr, value, 0);
@@ -638,8 +638,7 @@ editor_loop_clicked (GtkWidget *object, gpointer data)
 static gboolean
 editor_autoplay_clicked (GtkWidget *object, gboolean state, gpointer data)
 {
-  struct editor *editor = data;
-  editor->preferences->autoplay = state;
+  preferences_set_boolean (PREF_KEY_AUTOPLAY, state);
   return FALSE;
 }
 
@@ -668,7 +667,7 @@ static gboolean
 editor_mix_clicked (GtkWidget *object, gboolean state, gpointer data)
 {
   struct editor *editor = data;
-  editor->preferences->mix = state;
+  preferences_set_boolean (PREF_KEY_MIX, state);
   editor_set_audio_mono_mix (editor);
   return FALSE;
 }
@@ -711,17 +710,18 @@ static gboolean
 editor_show_grid_clicked (GtkWidget *object, gboolean state, gpointer data)
 {
   struct editor *editor = data;
-  editor->preferences->show_grid = state;
-  g_idle_add (editor_queue_draw, data);
+  preferences_set_boolean (PREF_KEY_SHOW_GRID, state);
+  g_idle_add (editor_queue_draw, editor);
   return FALSE;
 }
 
 static void
-editor_grid_length_changed (GtkSpinButton *self, gpointer data)
+editor_grid_length_changed (GtkSpinButton *object, gpointer data)
 {
   struct editor *editor = data;
-  editor->preferences->grid_length = gtk_spin_button_get_value (self);
-  g_idle_add (editor_queue_draw, data);
+  preferences_set_boolean (PREF_KEY_GRID_LENGTH,
+			   gtk_spin_button_get_value (object));
+  g_idle_add (editor_queue_draw, editor);
 }
 
 static void
@@ -1013,7 +1013,7 @@ editor_button_release (GtkWidget *widget, GdkEventButton *event,
 	  if (AUDIO_SEL_LEN (&editor->audio))
 	    {
 	      gtk_widget_set_sensitive (editor->delete_menuitem, TRUE);
-	      if (editor->preferences->autoplay)
+	      if (preferences_get_boolean (PREF_KEY_AUTOPLAY))
 		{
 		  audio_start_playback (&editor->audio);
 		}
@@ -1467,7 +1467,7 @@ editor_init (struct editor *editor, GtkBuilder *builder)
   g_signal_connect (editor->record_button, "clicked",
 		    G_CALLBACK (editor_record_clicked), editor);
   g_signal_connect (editor->autoplay_switch, "state-set",
-		    G_CALLBACK (editor_autoplay_clicked), editor);
+		    G_CALLBACK (editor_autoplay_clicked), NULL);
   g_signal_connect (editor->mix_switch, "state-set",
 		    G_CALLBACK (editor_mix_clicked), editor);
   g_signal_connect (editor->grid_length_spin, "value-changed",
@@ -1505,14 +1505,14 @@ editor_init (struct editor *editor, GtkBuilder *builder)
 
   editor_loop_clicked (editor->loop_button, editor);
   gtk_switch_set_active (GTK_SWITCH (editor->autoplay_switch),
-			 editor->preferences->autoplay);
+			 preferences_get_boolean (PREF_KEY_AUTOPLAY));
   gtk_switch_set_active (GTK_SWITCH (editor->mix_switch),
-			 editor->preferences->mix);
+			 preferences_get_boolean (PREF_KEY_MIX));
   gtk_switch_set_active (GTK_SWITCH (editor->show_grid_switch),
-			 editor->preferences->show_grid);
+			 preferences_get_boolean (PREF_KEY_SHOW_GRID));
 
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (editor->grid_length_spin),
-			     editor->preferences->grid_length);
+			     preferences_get_int (PREF_KEY_GRID_LENGTH));
 
   g_signal_connect (editor->guirecorder.channels_combo, "changed",
 		    G_CALLBACK (guirecorder_channels_changed),
