@@ -22,6 +22,7 @@
 #include "backend.h"
 #include "local.h"
 #include "sample.h"
+#include "preferences.h"
 
 struct connector *system_connector = NULL;
 GSList *connectors = NULL;
@@ -320,12 +321,15 @@ backend_init_midi (struct backend *backend, const gchar *id)
       g_mutex_unlock (&backend->mutex);
     }
 
-  debug_print (1, "Stopping device...");
-  if (backend_tx_raw (backend, (guint8 *) "\xfc", 1) < 0)
+  if (preferences_get_boolean (PREF_KEY_BE_STOP_WHEN_CONNECTING))
     {
-      error_print ("Error while stopping device");
+      debug_print (1, "Stopping device...");
+      if (backend_tx_raw (backend, (guint8 *) "\xfc", 1) < 0)
+	{
+	  error_print ("Error while stopping device");
+	}
+      usleep (BE_REST_TIME_US);
     }
-  usleep (BE_REST_TIME_US);
 
   return err;
 }
@@ -786,3 +790,9 @@ end:
     }
   return err;
 }
+
+const struct preference PREF_BE_STOP_WHEN_CONNECTING = {
+  .key = PREF_KEY_BE_STOP_WHEN_CONNECTING,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_true
+};

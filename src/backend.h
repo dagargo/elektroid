@@ -52,6 +52,8 @@
 
 #define BE_SYSEX_EXT "syx"
 
+#define PREF_KEY_BE_STOP_WHEN_CONNECTING "backendStopWhenConnecting"
+
 extern GSList *connectors;
 extern struct connector *system_connector;
 
@@ -142,6 +144,8 @@ struct backend_device
   gchar name[LABEL_MAX];
   gchar id[LABEL_MAX];
 };
+
+extern const struct preference PREF_BE_STOP_WHEN_CONNECTING;
 
 gint backend_init (struct backend *, struct backend_device *);
 
