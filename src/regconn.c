@@ -44,6 +44,5 @@ regconn_register ()
 void
 regconn_unregister ()
 {
-  g_slist_free (connectors);
-  connectors = NULL;
+  g_slist_free (g_steal_pointer (&connectors));
 }

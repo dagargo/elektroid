@@ -45,6 +45,5 @@ regma_register ()
 void
 regma_unregister ()
 {
-  g_slist_free (mactions);
-  mactions = NULL;
+  g_slist_free (g_steal_pointer (&mactions));
 }
