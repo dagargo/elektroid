@@ -20,6 +20,7 @@
 
 #include "regpref.h"
 #include "backend.h"
+#include "connectors/elektron.h"
 
 #define PREF_DEFAULT_GRID_LENGTH 16
 #define PREF_MAX_GRID_LENGTH 64
@@ -86,7 +87,8 @@ regpref_register ()
 {
   gslist_fill (&preferences, &PREF_LOCAL_DIR, &PREF_REMOTE_DIR,
 	       &PREF_SHOW_REMOTE, &PREF_AUTOPLAY, &PREF_MIX, &PREF_SHOW_GRID,
-	       &PREF_GRID_LENGTH, &PREF_BE_STOP_WHEN_CONNECTING, NULL);
+	       &PREF_GRID_LENGTH, &PREF_BE_STOP_WHEN_CONNECTING,
+	       &PREF_ELEKTRON_LOAD_SOUND_TAGS, NULL);
 }
 
 void

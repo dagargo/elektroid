@@ -55,6 +55,8 @@ static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 #define ELEKTRON_LOOP_TYPE_FWD 0
 #define ELEKTRON_LOOP_TYPE_NO 0x7f
 
+#define PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS "elektronLoadSoundTags"
+
 struct elektron_sample_header
 {
   guint8 type;
@@ -1883,7 +1885,8 @@ elektron_next_data_entry (struct item_iterator *iter)
 
       iter->item.object_info[0] = 0;
       if (data->load_metadata && data->has_metadata &&
-	  data->mode == ITER_MODE_DATA_SND)
+	  data->mode == ITER_MODE_DATA_SND &&
+	  preferences_get_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS))
 	{
 	  gchar metadata_path[PATH_MAX];
 	  struct idata output;
@@ -1914,6 +1917,7 @@ elektron_next_data_entry (struct item_iterator *iter)
 	      snprintf (iter->item.object_info, LABEL_MAX, "%s", s);
 	      g_free (s);
 	      g_slist_free_full (tags, g_free);
+
 	      idata_free (&output);
 	    }
 	}
@@ -3610,4 +3614,10 @@ const struct connector CONNECTOR_ELEKTRON = {
   .name = "elektron",
   .standard = FALSE,
   .regex = ".*Elektron.*"
+};
+
+const struct preference PREF_ELEKTRON_LOAD_SOUND_TAGS = {
+  .key = PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_true
 };

@@ -22,6 +22,7 @@
 #define ELEKTRON_H
 
 #include "connector.h"
+#include "preferences.h"
 
 enum elektron_fs
 {
@@ -37,6 +38,8 @@ enum elektron_fs
 };
 
 extern const struct connector CONNECTOR_ELEKTRON;
+
+extern const struct preference PREF_ELEKTRON_LOAD_SOUND_TAGS;
 
 gchar *elektron_get_sample_path_from_hash_size (struct backend *backend,
 						guint32 hash, guint32 size);
