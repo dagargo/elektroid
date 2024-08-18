@@ -148,8 +148,14 @@ static GtkAboutDialog *about_dialog;
 static GtkDialog *name_dialog;
 static GtkEntry *name_dialog_entry;
 static GtkWidget *name_dialog_accept_button;
+static GtkDialog *preferences_dialog;
+static GtkWidget *play_sample_while_loading_switch;
+static GtkWidget *audio_buffer_length_combo;
+static GtkWidget *stop_device_when_connecting_switch;
+static GtkWidget *elektron_load_sound_tags_switch;
 static GtkPopover *main_popover;
 static GtkWidget *show_remote_button;
+static GtkWidget *preferences_button;
 static GtkWidget *about_button;
 static GtkWidget *local_name_entry;
 static GtkWidget *local_box;
@@ -652,6 +658,73 @@ elektroid_show_remote_clicked (GtkWidget *object, gpointer data)
   gtk_widget_hide (GTK_WIDGET (main_popover));
 
   elektroid_show_remote (active);
+}
+
+static void
+elektroid_show_preferences (GtkWidget *object, gpointer data)
+{
+  gint res, i, prev, post;
+  gboolean v;
+  GtkTreeIter iter;
+  GValue x = G_VALUE_INIT;
+  GtkTreeModel *model =
+    gtk_combo_box_get_model (GTK_COMBO_BOX (audio_buffer_length_combo));
+
+  v = preferences_get_boolean (PREF_KEY_PLAY_WHILE_LOADING);
+  gtk_switch_set_active (GTK_SWITCH (play_sample_while_loading_switch), v);
+  v = preferences_get_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING);
+  gtk_switch_set_active (GTK_SWITCH (stop_device_when_connecting_switch), v);
+  v = preferences_get_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS);
+  gtk_switch_set_active (GTK_SWITCH (elektron_load_sound_tags_switch), v);
+
+  prev = preferences_get_int (PREF_KEY_AUDIO_BUFFER_LEN);
+  gtk_tree_model_get_iter_first (model, &iter);
+
+  i = 0;
+  do
+    {
+      gtk_tree_model_get_value (model, &iter, 0, &x);
+      if (g_value_get_int (&x) == prev)
+	{
+	  gtk_combo_box_set_active (GTK_COMBO_BOX (audio_buffer_length_combo),
+				    i);
+	}
+      i++;
+      g_value_unset (&x);
+    }
+  while (gtk_tree_model_iter_next (model, &iter));
+
+  res = gtk_dialog_run (GTK_DIALOG (preferences_dialog));
+  gtk_widget_hide (GTK_WIDGET (preferences_dialog));
+
+  if (res != GTK_RESPONSE_ACCEPT)
+    {
+      return;
+    }
+
+  v = gtk_switch_get_active (GTK_SWITCH (play_sample_while_loading_switch));
+  preferences_set_boolean (PREF_KEY_PLAY_WHILE_LOADING, v);
+  v = gtk_switch_get_active (GTK_SWITCH (stop_device_when_connecting_switch));
+  preferences_set_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING, v);
+  v = gtk_switch_get_active (GTK_SWITCH (elektron_load_sound_tags_switch));
+  preferences_set_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS, v);
+
+  i = gtk_combo_box_get_active (GTK_COMBO_BOX (audio_buffer_length_combo));
+
+  gtk_tree_model_get_iter_first (model, &iter);
+  for (gint j = 0; j < i; j++)
+    {
+      gtk_tree_model_iter_next (model, &iter);
+    }
+  gtk_tree_model_get_value (model, &iter, 0, &x);
+  post = g_value_get_int (&x);
+  preferences_set_int (PREF_KEY_AUDIO_BUFFER_LEN, post);
+  g_value_unset (&x);
+
+  if (prev != post)
+    {
+      editor_reset_audio (&editor);
+    }
 }
 
 static void
@@ -2697,6 +2770,21 @@ elektroid_run (int argc, char *argv[])
   name_dialog_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "name_dialog_entry"));
 
+  preferences_dialog =
+    GTK_DIALOG (gtk_builder_get_object (builder, "preferences_dialog"));
+  play_sample_while_loading_switch =
+    GTK_WIDGET (gtk_builder_get_object (builder,
+					"play_sample_while_loading_switch"));
+  audio_buffer_length_combo =
+    GTK_WIDGET (gtk_builder_get_object (builder,
+					"audio_buffer_length_combo"));
+  stop_device_when_connecting_switch =
+    GTK_WIDGET (gtk_builder_get_object (builder,
+					"stop_device_when_connecting_switch"));
+  elektron_load_sound_tags_switch =
+    GTK_WIDGET (gtk_builder_get_object (builder,
+					"elektron_load_sound_tags_switch"));
+
   maction_context.box =
     GTK_WIDGET (gtk_builder_get_object (builder, "menu_actions_box"));
 
@@ -2707,6 +2795,8 @@ elektroid_run (int argc, char *argv[])
     GTK_WIDGET (gtk_builder_get_object (builder, "show_remote_button"));
   g_object_set (G_OBJECT (show_remote_button), "role",
 		GTK_BUTTON_ROLE_CHECK, NULL);
+  preferences_button =
+    GTK_WIDGET (gtk_builder_get_object (builder, "preferences_button"));
   about_button =
     GTK_WIDGET (gtk_builder_get_object (builder, "about_button"));
 
@@ -2731,6 +2821,9 @@ elektroid_run (int argc, char *argv[])
 
   g_signal_connect (show_remote_button, "clicked",
 		    G_CALLBACK (elektroid_show_remote_clicked), NULL);
+
+  g_signal_connect (preferences_button, "clicked",
+		    G_CALLBACK (elektroid_show_preferences), NULL);
 
   g_signal_connect (about_button, "clicked",
 		    G_CALLBACK (elektroid_show_about), NULL);

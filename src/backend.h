@@ -33,11 +33,10 @@
 #define BE_MAX_MIDI_PROGRAMS 128
 
 #define BE_POLL_TIMEOUT_MS 20
-#define BE_KB 1024
-#define BE_MAX_TX_LEN BE_KB	//With a higher value than 4 KB, functions behave erratically.
-#define BE_INT_BUF_LEN (32 * BE_KB)	//Max length of a SysEx message for Elektroid
-#define BE_DEV_RING_BUF_LEN (256 * BE_KB)
-#define BE_TMP_BUFF_LEN (64 * BE_KB)	//This size is required by RtMidi as it needs enough space for the messages.
+#define BE_MAX_TX_LEN KI	//With a higher value than 4 KB, functions behave erratically.
+#define BE_INT_BUF_LEN (32 * KI)	//Max length of a SysEx message for Elektroid
+#define BE_DEV_RING_BUF_LEN (256 * KI)
+#define BE_TMP_BUFF_LEN (64 * KI)	//This size is required by RtMidi as it needs enough space for the messages.
 
 #define BE_REST_TIME_US 50000
 #define BE_SYSEX_TIMEOUT_MS 5000
@@ -52,7 +51,7 @@
 
 #define BE_SYSEX_EXT "syx"
 
-#define PREF_KEY_BE_STOP_WHEN_CONNECTING "backendStopWhenConnecting"
+#define PREF_KEY_STOP_DEVICE_WHEN_CONNECTING "stopDeviceWhenConnecting"
 
 extern GSList *connectors;
 extern struct connector *system_connector;
@@ -144,8 +143,6 @@ struct backend_device
   gchar name[LABEL_MAX];
   gchar id[LABEL_MAX];
 };
-
-extern const struct preference PREF_BE_STOP_WHEN_CONNECTING;
 
 gint backend_init (struct backend *, struct backend_device *);
 

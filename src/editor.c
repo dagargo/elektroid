@@ -1530,3 +1530,16 @@ editor_destroy (struct editor *editor)
 {
   audio_destroy (&editor->audio);
 }
+
+void
+editor_reset_audio (struct editor *editor)
+{
+  audio_destroy (&editor->audio);
+  audio_init (&editor->audio, editor_set_volume_callback,
+	      editor_update_audio_status, editor);
+  editor_reset (editor, NULL);
+  //Resetting the audio causes the edited sample to be cleared so that these are
+  //needed to keep the selection consistent with the editor.
+  browser_clear_selection (&local_browser);
+  browser_clear_selection (&remote_browser);
+}

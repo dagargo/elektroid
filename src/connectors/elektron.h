@@ -24,6 +24,8 @@
 #include "connector.h"
 #include "preferences.h"
 
+#define PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS "elektronLoadSoundTags"
+
 enum elektron_fs
 {
   FS_SAMPLES = 0x1,
@@ -38,8 +40,6 @@ enum elektron_fs
 };
 
 extern const struct connector CONNECTOR_ELEKTRON;
-
-extern const struct preference PREF_ELEKTRON_LOAD_SOUND_TAGS;
 
 gchar *elektron_get_sample_path_from_hash_size (struct backend *backend,
 						guint32 hash, guint32 size);

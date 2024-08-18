@@ -142,6 +142,7 @@ preferences_save ()
   gen = json_generator_new ();
   root = json_builder_get_root (builder);
   json_generator_set_root (gen, root);
+  json_generator_set_pretty (gen, TRUE);
   json = json_generator_to_data (gen, NULL);
 
   file_save_data (preferences_path, (guint8 *) json, strlen (json));

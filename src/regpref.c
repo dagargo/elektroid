@@ -19,8 +19,6 @@
  */
 
 #include "regpref.h"
-#include "backend.h"
-#include "connectors/elektron.h"
 
 #define PREF_DEFAULT_GRID_LENGTH 16
 #define PREF_MAX_GRID_LENGTH 64
@@ -39,11 +37,32 @@ regpref_get_grid (const gpointer grid)
 }
 
 static gpointer
-regpref_get_audio_buffer_length (const gpointer grid)
+regpref_get_audio_buffer_length (const gpointer len)
 {
-  return preferences_get_int_value (grid, PREF_MAX_AUDIO_BUF_LENGTH,
-				    PREF_MIN_AUDIO_BUF_LENGTH,
-				    PREF_DEFAULT_AUDIO_BUF_LENGTH);
+  gpointer p = preferences_get_int_value (len, PREF_MAX_AUDIO_BUF_LENGTH,
+					  PREF_MIN_AUDIO_BUF_LENGTH,
+					  PREF_DEFAULT_AUDIO_BUF_LENGTH);
+  gint v = *(gint *) p;
+  if (v > 256 && v < 512)
+    {
+      v = 256;
+    }
+  else if (v > 512 && v < 1024)
+    {
+      v = 512;
+    }
+  else if (v > 1024 && v < 2048)
+    {
+      v = 1024;
+    }
+  else if (v > 2048 && v < 4096)
+    {
+      v = 2048;
+    }
+
+  *(gint *) p = v;
+
+  return p;
 }
 
 static gpointer
@@ -106,13 +125,25 @@ static const struct preference PREF_AUDIO_BUFFER_LEN = {
   .get_value = regpref_get_audio_buffer_length
 };
 
+const struct preference PREF_STOP_DEVICE_WHEN_CONNECTING = {
+  .key = PREF_KEY_STOP_DEVICE_WHEN_CONNECTING,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_true
+};
+
+const struct preference PREF_ELEKTRON_LOAD_SOUND_TAGS = {
+  .key = PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_true
+};
+
 void
 regpref_register ()
 {
   gslist_fill (&preferences, &PREF_LOCAL_DIR, &PREF_REMOTE_DIR,
 	       &PREF_SHOW_REMOTE, &PREF_AUTOPLAY, &PREF_MIX, &PREF_SHOW_GRID,
 	       &PREF_GRID_LENGTH, &PREF_PLAY_WHILE_LOADING,
-	       &PREF_AUDIO_BUFFER_LEN, &PREF_BE_STOP_WHEN_CONNECTING,
+	       &PREF_AUDIO_BUFFER_LEN, &PREF_STOP_DEVICE_WHEN_CONNECTING,
 	       &PREF_ELEKTRON_LOAD_SOUND_TAGS, NULL);
 }
 

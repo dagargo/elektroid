@@ -321,7 +321,7 @@ backend_init_midi (struct backend *backend, const gchar *id)
       g_mutex_unlock (&backend->mutex);
     }
 
-  if (preferences_get_boolean (PREF_KEY_BE_STOP_WHEN_CONNECTING))
+  if (preferences_get_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING))
     {
       debug_print (1, "Stopping device...");
       if (backend_tx_raw (backend, (guint8 *) "\xfc", 1) < 0)
@@ -790,9 +790,3 @@ end:
     }
   return err;
 }
-
-const struct preference PREF_BE_STOP_WHEN_CONNECTING = {
-  .key = PREF_KEY_BE_STOP_WHEN_CONNECTING,
-  .type = PREFERENCE_TYPE_BOOLEAN,
-  .get_value = preferences_get_boolean_value_true
-};

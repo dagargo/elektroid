@@ -55,8 +55,6 @@ static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
 #define ELEKTRON_LOOP_TYPE_FWD 0
 #define ELEKTRON_LOOP_TYPE_NO 0x7f
 
-#define PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS "elektronLoadSoundTags"
-
 struct elektron_sample_header
 {
   guint8 type;
@@ -3614,10 +3612,4 @@ const struct connector CONNECTOR_ELEKTRON = {
   .name = "elektron",
   .standard = FALSE,
   .regex = ".*Elektron.*"
-};
-
-const struct preference PREF_ELEKTRON_LOAD_SOUND_TAGS = {
-  .key = PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS,
-  .type = PREFERENCE_TYPE_BOOLEAN,
-  .get_value = preferences_get_boolean_value_true
 };

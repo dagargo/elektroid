@@ -31,7 +31,7 @@
 #define PREF_KEY_MIX "mix"
 #define PREF_KEY_SHOW_GRID "showGrid"
 #define PREF_KEY_GRID_LENGTH "gridLength"
-#define PREF_KEY_PLAY_WHILE_LOADING "playWhileLoading"
+#define PREF_KEY_PLAY_WHILE_LOADING "playSampleWhileLoading"
 #define PREF_KEY_AUDIO_BUFFER_LEN "audioBufferLength"
 
 enum preference_type

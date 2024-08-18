@@ -82,4 +82,6 @@ void editor_destroy (struct editor *);
 
 void editor_set_audio_mono_mix (struct editor *editor);
 
+void editor_reset_audio (struct editor *editor);
+
 #endif

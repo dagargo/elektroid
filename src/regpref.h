@@ -19,6 +19,8 @@
  */
 
 #include "preferences.h"
+#include "backend.h"
+#include "connectors/elektron.h"
 
 void regpref_register ();
 
