@@ -316,7 +316,7 @@ microfreak_deserialize_sample (struct idata *sample, struct idata *serialized,
   gint64 datalen;
   gint err;
   struct sample_info *sample_info;
-  GByteArray *data = g_byte_array_sized_new (2 * MIB);	//Enough for 24 s samples or wavetables
+  GByteArray *data = g_byte_array_sized_new (2 * MI);	//Enough for 24 s samples or wavetables
 
   err = microfreak_deserialize_object (serialized->content, header, name, &p0,
 				       &p3, &p5, data->data, &datalen);

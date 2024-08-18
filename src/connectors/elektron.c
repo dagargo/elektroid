@@ -2447,7 +2447,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
 
   usleep (BE_REST_TIME_US);
 
-  content = g_byte_array_sized_new (4 * MIB);
+  content = g_byte_array_sized_new (4 * MI);
 
   if (control)
     {

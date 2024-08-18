@@ -308,23 +308,21 @@ get_human_size (gint64 size, gboolean with_space)
     {
       *label = 0;
     }
-  else if (size < KIB)
+  else if (size < KI)
     {
       snprintf (label, LABEL_MAX, "%" PRId64 "%sB", size, space);
     }
-  else if (size < KIB * KIB)
+  else if (size < MI)
     {
-      snprintf (label, LABEL_MAX, "%.4g%sKiB", size / (double) KIB, space);
+      snprintf (label, LABEL_MAX, "%.4g%sKiB", size / (double) KI, space);
     }
-  else if (size < KIB * KIB * KIB)
+  else if (size < GI)
     {
-      snprintf (label, LABEL_MAX, "%.4g%sMiB", size / (double) (KIB * KIB),
-		space);
+      snprintf (label, LABEL_MAX, "%.4g%sMiB", size / (double) MI, space);
     }
   else
     {
-      snprintf (label, LABEL_MAX, "%.4g%sGiB",
-		size / (double) (KIB * KIB * KIB), space);
+      snprintf (label, LABEL_MAX, "%.4g%sGiB", size / (double) GI, space);
     }
 
   return label;

@@ -34,9 +34,9 @@
 
 #define LABEL_MAX 256
 
-#define KIB 1024
-
-#define MIB (KIB * KIB)
+#define KI 1024
+#define MI (KI * KI)
+#define GI (KI * MI)
 
 #define debug_print(level, format, ...) {\
   if (level <= debug_level) \

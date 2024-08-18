@@ -24,7 +24,7 @@
 #include "sample.h"
 #include "connectors/microfreak_sample.h"
 
-#define LOAD_BUFFER_LEN (32 * KIB)
+#define LOAD_BUFFER_LEN (32 * KI)
 
 #define JUNK_CHUNK_ID "JUNK"
 #define SMPL_CHUNK_ID "smpl"
