@@ -25,14 +25,6 @@ void audio_finish_recording (struct audio *);
 
 #define WAIT_TIME_TO_STOP_US 10000
 
-static const pa_buffer_attr BUFFER_ATTR = {
-  .maxlength = AUDIO_BUF_BYTES,
-  .tlength = -1,
-  .prebuf = 0,
-  .minreq = AUDIO_BUF_BYTES,
-  .fragsize = AUDIO_BUF_BYTES
-};
-
 static void
 audio_success_cb (pa_stream *stream, int success, void *data)
 {
@@ -325,6 +317,13 @@ audio_server_info_callback (pa_context *context, const pa_server_info *info,
     PA_STREAM_START_CORKED | PA_STREAM_INTERPOLATE_TIMING |
     PA_STREAM_NOT_MONOTONIC | PA_STREAM_AUTO_TIMING_UPDATE;
   pa_proplist *props = pa_proplist_new ();
+  pa_buffer_attr buffer_attr = {
+    .maxlength = AUDIO_BUF_BYTES,
+    .tlength = -1,
+    .prebuf = 0,
+    .minreq = AUDIO_BUF_BYTES,
+    .fragsize = AUDIO_BUF_BYTES
+  };
 
   audio->rate = info->sample_spec.rate;
   audio->sample_spec.format = PA_SAMPLE_S16LE;
@@ -346,12 +345,12 @@ audio_server_info_callback (pa_context *context, const pa_server_info *info,
   pa_stream_set_state_callback (audio->playback_stream,
 				audio_connect_playback_stream_callback,
 				audio);
-  pa_stream_connect_playback (audio->playback_stream, NULL, &BUFFER_ATTR,
+  pa_stream_connect_playback (audio->playback_stream, NULL, &buffer_attr,
 			      stream_flags, NULL, NULL);
 
   pa_stream_set_state_callback (audio->record_stream,
 				audio_connect_record_stream_callback, audio);
-  pa_stream_connect_record (audio->record_stream, NULL, &BUFFER_ATTR,
+  pa_stream_connect_record (audio->record_stream, NULL, &buffer_attr,
 			    stream_flags);
 
   pa_context_set_subscribe_callback (audio->context, audio_notify, audio);

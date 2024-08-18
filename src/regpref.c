@@ -26,12 +26,24 @@
 #define PREF_MAX_GRID_LENGTH 64
 #define PREF_MIN_GRID_LENGTH 2
 
+#define PREF_DEFAULT_AUDIO_BUF_LENGTH 256
+#define PREF_MAX_AUDIO_BUF_LENGTH 4096
+#define PREF_MIN_AUDIO_BUF_LENGTH 256
+
 static gpointer
 regpref_get_grid (const gpointer grid)
 {
   return preferences_get_int_value (grid, PREF_MAX_GRID_LENGTH,
 				    PREF_MIN_GRID_LENGTH,
 				    PREF_DEFAULT_GRID_LENGTH);
+}
+
+static gpointer
+regpref_get_audio_buffer_length (const gpointer grid)
+{
+  return preferences_get_int_value (grid, PREF_MAX_AUDIO_BUF_LENGTH,
+				    PREF_MIN_AUDIO_BUF_LENGTH,
+				    PREF_DEFAULT_AUDIO_BUF_LENGTH);
 }
 
 static gpointer
@@ -88,14 +100,20 @@ static const struct preference PREF_PLAY_WHILE_LOADING = {
   .get_value = preferences_get_boolean_value_true
 };
 
+static const struct preference PREF_AUDIO_BUFFER_LEN = {
+  .key = PREF_KEY_AUDIO_BUFFER_LEN,
+  .type = PREFERENCE_TYPE_INT,
+  .get_value = regpref_get_audio_buffer_length
+};
+
 void
 regpref_register ()
 {
   gslist_fill (&preferences, &PREF_LOCAL_DIR, &PREF_REMOTE_DIR,
 	       &PREF_SHOW_REMOTE, &PREF_AUTOPLAY, &PREF_MIX, &PREF_SHOW_GRID,
 	       &PREF_GRID_LENGTH, &PREF_PLAY_WHILE_LOADING,
-	       &PREF_BE_STOP_WHEN_CONNECTING, &PREF_ELEKTRON_LOAD_SOUND_TAGS,
-	       NULL);
+	       &PREF_AUDIO_BUFFER_LEN, &PREF_BE_STOP_WHEN_CONNECTING,
+	       &PREF_ELEKTRON_LOAD_SOUND_TAGS, NULL);
 }
 
 void

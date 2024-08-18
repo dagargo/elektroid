@@ -24,6 +24,7 @@
 #include <glib.h>
 #include "sample.h"
 #include "utils.h"
+#include "preferences.h"
 #if defined(ELEKTROID_RTAUDIO)
 #include "rtaudio_c.h"
 #else
@@ -33,8 +34,8 @@
 typedef void (*audio_monitor_notifier) (gpointer, gdouble);
 
 #define MAX_RECORDING_TIME_S 30
-#define AUDIO_BUF_FRAMES 256
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
+#define AUDIO_BUF_FRAMES (preferences_get_int (PREF_KEY_AUDIO_BUFFER_LEN))
 #define AUDIO_BUF_BYTES (AUDIO_BUF_FRAMES * FRAME_SIZE (AUDIO_CHANNELS,SF_FORMAT_PCM_16))
 #define AUDIO_SEL_LEN(a) ((a)->sel_start == -1 && (a)->sel_end == -1 ? 0 : (a)->sel_end - (a)->sel_start + 1)
 
