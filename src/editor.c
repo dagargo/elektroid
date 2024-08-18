@@ -508,7 +508,8 @@ editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
   completed = editor_loading_completed_no_lock (editor, &actual_frames);
   if (!editor->ready)
     {
-      ready_to_play = completed || actual_frames >= FRAMES_TO_PLAY;
+      ready_to_play = (preferences_get_boolean (PREF_KEY_PLAY_WHILE_LOADING)
+		       && actual_frames >= FRAMES_TO_PLAY) || completed;
       if (ready_to_play)
 	{
 	  g_idle_add (editor_update_ui_on_load, data);

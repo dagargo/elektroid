@@ -31,6 +31,7 @@
 #define PREF_KEY_MIX "mix"
 #define PREF_KEY_SHOW_GRID "showGrid"
 #define PREF_KEY_GRID_LENGTH "gridLength"
+#define PREF_KEY_PLAY_WHILE_LOADING "playWhileLoading"
 
 enum preference_type
 {

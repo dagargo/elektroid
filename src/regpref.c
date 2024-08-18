@@ -82,13 +82,20 @@ static const struct preference PREF_GRID_LENGTH = {
   .get_value = regpref_get_grid
 };
 
+static const struct preference PREF_PLAY_WHILE_LOADING = {
+  .key = PREF_KEY_PLAY_WHILE_LOADING,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_true
+};
+
 void
 regpref_register ()
 {
   gslist_fill (&preferences, &PREF_LOCAL_DIR, &PREF_REMOTE_DIR,
 	       &PREF_SHOW_REMOTE, &PREF_AUTOPLAY, &PREF_MIX, &PREF_SHOW_GRID,
-	       &PREF_GRID_LENGTH, &PREF_BE_STOP_WHEN_CONNECTING,
-	       &PREF_ELEKTRON_LOAD_SOUND_TAGS, NULL);
+	       &PREF_GRID_LENGTH, &PREF_PLAY_WHILE_LOADING,
+	       &PREF_BE_STOP_WHEN_CONNECTING, &PREF_ELEKTRON_LOAD_SOUND_TAGS,
+	       NULL);
 }
 
 void
