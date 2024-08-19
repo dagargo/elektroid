@@ -162,7 +162,7 @@ test_load_microfreak_wavetable (const gchar *path)
       return;
     }
 
-  CU_ASSERT_EQUAL (sample_info_src.frames, 8 * KIB);
+  CU_ASSERT_EQUAL (sample_info_src.frames, 8 * KI);
   CU_ASSERT_EQUAL (sample_info_src.loop_start, 0);
   CU_ASSERT_EQUAL (sample_info_src.loop_end, 8191);
   CU_ASSERT_EQUAL (sample_info_src.loop_type, 0);

@@ -35,6 +35,8 @@ tests_common_SOURCES = \
         tests_common.c \
 	../src/utils.c \
         ../src/utils.h \
+	../src/preferences.c \
+	../src/preferences.h \
 	../src/backend.c \
         ../src/backend.h \
 	../src/connector.c \
@@ -54,6 +56,8 @@ tests_microfreak_SOURCES = \
         tests_microfreak.c \
 	../src/utils.c \
         ../src/utils.h \
+	../src/preferences.c \
+	../src/preferences.h \
 	../src/backend.c \
         ../src/backend.h \
 	../src/connector.c \
@@ -75,6 +79,8 @@ tests_elektron_SOURCES = \
         tests_elektron.c \
 	../src/utils.c \
         ../src/utils.h \
+	../src/preferences.c \
+	../src/preferences.h \
 	../src/backend.c \
         ../src/backend.h \
 	../src/connector.c \
@@ -118,6 +124,8 @@ tests_connector_SOURCES = \
         tests_connector.c \
 	../src/utils.c \
         ../src/utils.h \
+	../src/preferences.c \
+	../src/preferences.h \
 	../src/backend.c \
         ../src/backend.h \
 	../src/connector.c \
