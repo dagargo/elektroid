@@ -24,7 +24,7 @@ These are the available commands:
 
 Keep in mind that not every filesystem implements all the commands. For instance, Elektron samples can not be swapped.
 
-Provided paths must always be prepended with the device id and a colon (e.g., `0:/incoming`). In slot mode filesystems, (these are the most typically used), items are addressed by number and destination paths take the form `path:name` (e.g., `0:/0:bass`) when uploading.
+Provided paths must always be prepended with the device id and a colon (e.g., `0:/incoming`).
 
 ### Device commands
 
