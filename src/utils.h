@@ -47,7 +47,7 @@
 
 #define error_print(format, ...) { \
   gboolean tty = isatty(fileno(stderr)); \
-  fprintf(stderr, "%sERROR:" __FILE__ ":%d:(%s): " format "%s\n", tty ? "\x1b[31m" : "", __LINE__, __FUNCTION__, ## __VA_ARGS__, tty ? "\x1b[m" : ""); \
+  fprintf(stderr, "%sERROR:" __FILE__ ":%d:%s: " format "%s\n", tty ? "\x1b[31m" : "", __LINE__, __FUNCTION__, ## __VA_ARGS__, tty ? "\x1b[m" : ""); \
 }
 
 struct sample_info
