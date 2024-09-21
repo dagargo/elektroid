@@ -203,9 +203,8 @@ preferences_load ()
   gchar *preferences_file = get_user_dir (CONF_DIR PREFERENCES_FILE);
 
   //Keys need to be static constants defined only in one place
-  preferences_hashtable = g_hash_table_new_full (g_direct_hash,
-						 g_direct_equal, NULL,
-						 g_free);
+  preferences_hashtable = g_hash_table_new_full (g_str_hash, g_str_equal,
+						 NULL, g_free);
 
   error = NULL;
   json_parser_load_from_file (parser, preferences_file, &error);
