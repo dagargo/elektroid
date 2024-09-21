@@ -154,11 +154,7 @@ audio_init_int (struct audio *audio)
 	  break;
 	}
 #elif defined(_WIN32)
-      if (apis[i] == RTAUDIO_API_WINDOWS_WASAPI)
-	{
-	  break;
-	}
-      else if (apis[i] == RTAUDIO_API_WINDOWS_DS)
+      if (apis[i] == RTAUDIO_API_WINDOWS_DS)
 	{
 	  break;
 	}
