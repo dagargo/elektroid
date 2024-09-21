@@ -1,14 +1,14 @@
 # French GUI translation for Elektroid.
-# Copyright (C) 2019-2023 Olivier Humbert
+# Copyright (C) 2019-2024 Olivier Humbert
 # This file is distributed under the same license as the Elektroid package.
-# Olivier Humbert <trebmuh@tuxfamily.org>, 2019-2023.
+# Olivier Humbert <trebmuh@tuxfamily.org>, 2019-2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2024-08-19 15:30+0200\n"
-"PO-Revision-Date: 2023-12-16 11:18+0100\n"
+"PO-Revision-Date: 2024-09-21 11:57+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
 "Language: fr\n"
@@ -26,7 +26,6 @@ msgid "Not connected"
 msgstr "Non connecté"
 
 #: src/elektroid.c:446
-#, fuzzy
 msgid "Receiving SysEx"
 msgstr "Réception de SysEx"
 
@@ -198,11 +197,11 @@ msgstr "min."
 
 #: src/audio_pa.c:337
 msgid "Output"
-msgstr ""
+msgstr "Sortie"
 
 #: src/audio_pa.c:340
 msgid "Input"
-msgstr ""
+msgstr "Entrée"
 
 #. This should only be translated if a non latin alphabet is used
 #: src/mactions/autosampler.c:204 res/gui.glade:982
@@ -242,14 +241,17 @@ msgid ""
 "The defragmentation process could take several minutes and could not be "
 "canceled. Are you sure you want to defragment the sample memory?"
 msgstr ""
+"Le processus de défragmentation peut prendre plusieurs minutes et ne "
+"peut pas être annulé. Êtes-vous sûr de vouloir défragmenter la mémoire "
+"de l'échantillon ?"
 
 #: src/mactions/microfreak.c:54 src/mactions/microfreak.c:85
 msgid "_Defragment"
-msgstr ""
+msgstr "_Défragmentation"
 
 #: src/mactions/microfreak.c:67
 msgid "Defragmenting Sample Memory"
-msgstr ""
+msgstr "Défragmentation de la mémoire des échantillons"
 
 #: src/progress.c:52
 msgid "Cancelling..."
@@ -300,7 +302,7 @@ msgstr "Supprimer"
 
 #: res/gui.glade:128
 msgid "Undo"
-msgstr ""
+msgstr "Défaire"
 
 #: res/gui.glade:143
 msgid "Save"
@@ -399,13 +401,12 @@ msgid "Channel"
 msgstr "Canal"
 
 #: res/gui.glade:1508
-#, fuzzy
 msgid "Show _Remote"
-msgstr "Affichage distant"
+msgstr "A_ffichage distant"
 
 #: res/gui.glade:1532
 msgid "_Preferences "
-msgstr ""
+msgstr "_Préférences "
 
 #: res/gui.glade:1556
 msgid "_About"
@@ -509,24 +510,24 @@ msgstr "Nettoyer les tâches terminées"
 
 #: res/gui.glade:3224
 msgid "Preferences"
-msgstr ""
+msgstr "Préférences"
 
 #: res/gui.glade:3314
 msgid "Play sample while loading"
-msgstr ""
+msgstr "Lecture de l'échantillon pendant le chargement"
 
 #: res/gui.glade:3342
 msgid "Buffer length"
-msgstr ""
+msgstr "Taille du tampon"
 
 #: res/gui.glade:3418
 msgid "Stop device when connecting"
-msgstr ""
+msgstr "Arrêter le périphérique lors de la connexion"
 
 #. Sound is a type of data in Elektron devices so it is better not to translate these words or quote them.
 #: res/gui.glade:3488
 msgid "Load sound and preset tags"
-msgstr ""
+msgstr "Charger des tags de sons et de préréglages"
 
 #: res/gui.glade:3631
 msgid "Record Channels"
