@@ -18,39 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <unistd.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <errno.h>
 #include "notifier.h"
-#include "utils.h"
-
-#define NOTIFIER_BATCH_EVENTS 256
-#define NOTIFIER_REST_TIME_US 250000
-
-#if defined(__linux__)
-static void
-notifier_set_dir (struct notifier *notifier)
-{
-  if (!notifier->dir || strcmp (notifier->browser->dir, notifier->dir))
-    {
-      debug_print (1, "Changing %s browser path to '%s'...",
-		   notifier->browser->name, notifier->browser->dir);
-      if (notifier->dir)
-	{
-	  g_free (notifier->dir);
-	  inotify_rm_watch (notifier->fd, notifier->wd);
-	  g_thread_join (notifier->thread);
-	  notifier->thread = NULL;
-	}
-      notifier->dir = strdup (notifier->browser->dir);
-      notifier->wd = inotify_add_watch (notifier->fd, notifier->dir,
-					IN_CREATE | IN_DELETE | IN_MOVED_FROM
-					| IN_DELETE_SELF | IN_MOVE_SELF
-					| IN_MOVED_TO | IN_IGNORED |
-					IN_ATTRIB | IN_MODIFY);
-    }
-}
 
 static gboolean
 notifier_go_up (gpointer data)
@@ -60,126 +28,75 @@ notifier_go_up (gpointer data)
   return FALSE;
 }
 
-static gpointer
-notifier_run (gpointer data)
+static void
+notifier_changed (GFileMonitor *self, GFile *file, GFile *other_file,
+		  GFileMonitorEvent event_type, gpointer user_data)
 {
-  ssize_t size;
-  gboolean reload = FALSE;
-  struct notifier *notifier = data;
+  struct notifier *notifier = user_data;
+  gchar *p1 = g_file_get_path (notifier->dir);
+  gchar *p2 = g_file_get_path (file);
+  gboolean itself = strcmp (p1, p2) == 0;
 
-  debug_print (1, "%s notifier running...", notifier->browser->name);
+  g_free (p1);
+  g_free (p2);
 
-  while (1)
+  debug_print (1, "Processing notifier change...");
+
+  if (event_type == G_FILE_MONITOR_EVENT_DELETED && itself)
     {
-      size = read (notifier->fd, notifier->event, notifier->event_size);
-      if (size == -1)
-	{
-	  if (errno == EAGAIN)
-	    {
-	      if (reload)
-		{
-		  debug_print (1, "Adding browser load function...");
-		  g_idle_add (browser_load_dir, notifier->browser);
-		  reload = FALSE;
-		}
-	      usleep (NOTIFIER_REST_TIME_US);
-	      continue;
-	    }
-	  break;
-	}
-
-      struct inotify_event *e = notifier->event;
-      for (gint i = 0; i < NOTIFIER_BATCH_EVENTS; i++, e++)
-	{
-	  if (notifier->event->mask & IN_CREATE
-	      || notifier->event->mask & IN_DELETE
-	      || notifier->event->mask & IN_MOVED_FROM
-	      || notifier->event->mask & IN_MOVED_TO
-	      || notifier->event->mask & IN_ATTRIB
-	      || notifier->event->mask & IN_MODIFY)
-	    {
-	      reload = TRUE;
-	    }
-	  else if (notifier->event->mask & IN_DELETE_SELF
-		   || notifier->event->mask & IN_MOVE_SELF
-		   || notifier->event->mask & IN_MOVED_TO)
-	    {
-	      debug_print (1, "Loading parent dir...");
-	      g_idle_add (notifier_go_up, notifier->browser);
-	      goto end;		//There is no directory to be nofified of.
-	    }
-	  else if ((notifier->event->mask & IN_IGNORED))	// inotify_rm_watch called
-	    {
-	      debug_print (1, "Finishing notifier...");
-	      goto end;
-	    }
-	  else
-	    {
-	      error_print ("Unexpected event: %d", notifier->event->mask);
-	    }
-	}
+      g_idle_add (notifier_go_up, notifier->browser);
     }
-
-end:
-  return NULL;
+  else
+    {
+      g_idle_add (browser_load_dir, notifier->browser);
+    }
 }
-#endif
 
 void
 notifier_init (struct notifier **notifier, struct browser *browser)
 {
-#if defined(__linux__)
   struct notifier *n = g_malloc (sizeof (struct notifier));
-  n->fd = inotify_init1 (IN_NONBLOCK);
-  n->event_size =
-    (sizeof (struct inotify_event) + NAME_MAX + 1) * NOTIFIER_BATCH_EVENTS;
-  n->event = g_malloc (n->event_size);
+  n->monitor = NULL;
   n->browser = browser;
-  n->thread = NULL;
-  n->dir = NULL;
-  g_mutex_init (&n->mutex);
   *notifier = n;
-#else
-  *notifier = NULL;
-#endif
 }
 
 void
-notifier_set_active (struct notifier *notifier, gboolean active)
+notifier_update_dir (struct notifier *notifier, gboolean active)
 {
-#if defined(__linux__)
-  g_mutex_lock (&notifier->mutex);
+  debug_print (1, "Changing %s browser path to '%s'...",
+	       notifier->browser->name, notifier->browser->dir);
+
+  if (notifier->monitor)
+    {
+      g_object_unref (notifier->monitor);
+      g_object_unref (notifier->dir);
+    }
+
   if (active)
     {
-      notifier_set_dir (notifier);
-      if (!notifier->thread)
-	{
-	  debug_print (1, "Starting %s notifier...", notifier->browser->name);
-	  notifier->thread = g_thread_new ("notifier", notifier_run,
-					   notifier);
-	}
+      notifier->dir = g_file_new_for_path (notifier->browser->dir);
+      notifier->monitor = g_file_monitor_directory (notifier->dir,
+						    G_FILE_MONITOR_NONE, NULL,
+						    NULL);
+      g_file_monitor_set_rate_limit (notifier->monitor, 200);
+      g_signal_connect (notifier->monitor, "changed",
+			G_CALLBACK (notifier_changed), notifier);
     }
   else
     {
-      if (notifier->thread)
-	{
-	  debug_print (1, "Stopping %s notifier...", notifier->browser->name);
-	  inotify_rm_watch (notifier->fd, notifier->wd);
-	  g_thread_join (notifier->thread);
-	  notifier->thread = NULL;
-	  close (notifier->fd);
-	}
+      notifier->monitor = NULL;
     }
-  g_mutex_unlock (&notifier->mutex);
-#endif
 }
 
 void
 notifier_destroy (struct notifier *notifier)
 {
-#if defined(__linux__)
-  notifier_set_active (notifier, FALSE);
-  g_free (notifier->event);
+  if (notifier->monitor)
+    {
+      g_object_unref (notifier->monitor);
+      g_object_unref (notifier->dir);
+    }
+
   g_free (notifier);
-#endif
 }

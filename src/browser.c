@@ -462,7 +462,7 @@ browser_load_dir_runner_update_ui (gpointer data)
   if (!browser->search_mode)
     {
       gtk_widget_grab_focus (GTK_WIDGET (browser->view));
-      notifier_set_active (browser->notifier, active);
+      notifier_update_dir (browser->notifier, active);
     }
 
   //Unlock browser
@@ -734,7 +734,7 @@ browser_load_dir_if_needed (gpointer data)
 {
   struct browser *browser = data;
   if ((browser->backend && browser->backend->type == BE_TYPE_MIDI) ||
-      !browser->notifier)
+      !browser->notifier->monitor)
     {
       browser_load_dir (browser);
     }
