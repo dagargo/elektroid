@@ -1,14 +1,14 @@
 # German translations for Elektroid package.
-# Copyright (C) 2020-2023 Dennis Braun
+# Copyright (C) 2020-2024 Dennis Braun
 # This file is distributed under the same license as the Elektroid package.
-# Dennis Braun <snd@debian.org>, 2023.
+# Dennis Braun <snd@debian.org>, 2024.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2024-08-19 15:30+0200\n"
-"PO-Revision-Date: 2023-01-16 19:47+0100\n"
+"PO-Revision-Date: 2024-09-22 15:18+0200\n"
 "Last-Translator: Dennis Braun <snd@debian.org>\n"
 "Language-Team: German\n"
 "Language: de\n"
@@ -242,14 +242,17 @@ msgid ""
 "The defragmentation process could take several minutes and could not be "
 "canceled. Are you sure you want to defragment the sample memory?"
 msgstr ""
+"Der Defragmentierungsprozess könnte mehrere Minuten dauern und kann "
+"nicht abgebrochen werden. Sind Sie sicher, dass Sie den Sample Speicher "
+"defragmentieren möchten?"
 
 #: src/mactions/microfreak.c:54 src/mactions/microfreak.c:85
 msgid "_Defragment"
-msgstr ""
+msgstr "_Defragmentieren"
 
 #: src/mactions/microfreak.c:67
 msgid "Defragmenting Sample Memory"
-msgstr ""
+msgstr "Defragmentiere Sample Speicher"
 
 #: src/progress.c:52
 msgid "Cancelling..."
@@ -405,7 +408,7 @@ msgstr "Zeige Remote"
 
 #: res/gui.glade:1532
 msgid "_Preferences "
-msgstr ""
+msgstr "_Einstellungen "
 
 #: res/gui.glade:1556
 msgid "_About"
@@ -507,24 +510,24 @@ msgstr "Abgeschlossene Aufgaben aufräumen"
 
 #: res/gui.glade:3224
 msgid "Preferences"
-msgstr ""
+msgstr "Einstellungen"
 
 #: res/gui.glade:3314
 msgid "Play sample while loading"
-msgstr ""
+msgstr "Abspielen vom Sample während des Ladens"
 
 #: res/gui.glade:3342
 msgid "Buffer length"
-msgstr ""
+msgstr "Pufferlänge"
 
 #: res/gui.glade:3418
 msgid "Stop device when connecting"
-msgstr ""
+msgstr "Stoppe das Gerät beim Verbinden"
 
 #. Sound is a type of data in Elektron devices so it is better not to translate these words or quote them.
 #: res/gui.glade:3488
 msgid "Load sound and preset tags"
-msgstr ""
+msgstr "Lade Sound und Preset Tags"
 
 #: res/gui.glade:3631
 msgid "Record Channels"
