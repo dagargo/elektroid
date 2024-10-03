@@ -55,6 +55,7 @@
 #define MICROFREAK_DEFAULT_CHAR '.'
 
 #define MICROFREAK_PPRESET_EXT "mfp"
+#define MICROFREAK_PPRESET_EXT_2 "mbp" //This extension is used in the files inside the mfprojz files (zip files).
 #define MICROFREAK_ZPRESET_EXT "mfpz"
 
 #define MICROFREAK_WAVETABLE_EMPTY 0x08
@@ -712,6 +713,7 @@ microfreak_preset_get_exts (struct backend *backend,
 			    const struct fs_operations *ops)
 {
   GSList *exts = g_slist_append (NULL, strdup (MICROFREAK_PPRESET_EXT));
+  exts = g_slist_append (NULL, strdup (MICROFREAK_PPRESET_EXT_2));
   return g_slist_append (exts, strdup (MICROFREAK_ZPRESET_EXT));
 }
 
