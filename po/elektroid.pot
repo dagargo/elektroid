@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.1\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2024-08-19 15:30+0200\n"
+"POT-Creation-Date: 2024-10-06 12:25+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "Audio"
 msgstr ""
 
-#: src/elektroid.c:331 src/elektroid.c:2973
+#: src/elektroid.c:331 src/elektroid.c:2976
 msgid "Not connected"
 msgstr ""
 
@@ -33,8 +33,8 @@ msgstr ""
 msgid "Save SysEx"
 msgstr ""
 
-#: src/elektroid.c:471 src/elektroid.c:599 src/elektroid.c:855
-#: src/elektroid.c:1413 src/editor.c:1203 src/mactions/microfreak.c:53
+#: src/elektroid.c:471 src/elektroid.c:599 src/elektroid.c:858
+#: src/elektroid.c:1416 src/editor.c:1203 src/mactions/microfreak.c:53
 #: res/gui.glade:1003 res/gui.glade:3139 res/gui.glade:3245 res/gui.glade:3566
 #: res/gui.glade:3652
 msgid "_Cancel"
@@ -74,84 +74,84 @@ msgstr ""
 msgid "Sending SysEx"
 msgstr ""
 
-#: src/elektroid.c:854
+#: src/elektroid.c:857
 msgid "Are you sure you want to delete the selected items?"
 msgstr ""
 
-#: src/elektroid.c:856
+#: src/elektroid.c:859
 msgid "_Delete"
 msgstr ""
 
-#: src/elektroid.c:875
+#: src/elektroid.c:878
 msgid "Deleting Files"
 msgstr ""
 
-#: src/elektroid.c:875
+#: src/elektroid.c:878
 msgid "Deleting..."
 msgstr ""
 
-#: src/elektroid.c:908 res/gui.glade:255 res/gui.glade:891
+#: src/elektroid.c:911 res/gui.glade:255 res/gui.glade:891
 msgid "Rename"
 msgstr ""
 
-#: src/elektroid.c:932
+#: src/elektroid.c:935
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr ""
 
-#: src/elektroid.c:1285 res/gui.glade:1688 res/gui.glade:2132
+#: src/elektroid.c:1288 res/gui.glade:1688 res/gui.glade:2132
 msgid "Add Directory"
 msgstr ""
 
-#: src/elektroid.c:1292
+#: src/elektroid.c:1295
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr ""
 
-#: src/elektroid.c:1411 src/editor.c:1200
+#: src/elektroid.c:1414 src/editor.c:1200
 #, c-format
 msgid "Replace file “%s”?"
 msgstr ""
 
-#: src/elektroid.c:1414
+#: src/elektroid.c:1417
 msgid "_Skip"
 msgstr ""
 
-#: src/elektroid.c:1415 src/editor.c:1204
+#: src/elektroid.c:1418 src/editor.c:1204
 msgid "_Replace"
 msgstr ""
 
-#: src/elektroid.c:1420
+#: src/elektroid.c:1423
 msgid "Apply this action to all files"
 msgstr ""
 
-#: src/elektroid.c:1681 src/elektroid.c:1862 src/elektroid.c:2479
+#: src/elektroid.c:1684 src/elektroid.c:1865 src/elektroid.c:2482
 msgid "Preparing Tasks"
 msgstr ""
 
-#: src/elektroid.c:1681 src/elektroid.c:1862 src/elektroid.c:2480
+#: src/elektroid.c:1684 src/elektroid.c:1865 src/elektroid.c:2483
 #: src/progress.c:107
 msgid "Waiting..."
 msgstr ""
 
-#: src/elektroid.c:2233
+#: src/elektroid.c:2236
 msgid "Connecting to Device"
 msgstr ""
 
-#: src/elektroid.c:2234
+#: src/elektroid.c:2237
 msgid "Connecting..."
 msgstr ""
 
-#: src/elektroid.c:2241
+#: src/elektroid.c:2244
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr ""
 
-#: src/elektroid.c:2466
+#: src/elektroid.c:2469
 msgid "Moving Files"
 msgstr ""
 
-#: src/elektroid.c:2467
+#: src/elektroid.c:2470
 msgid "Moving..."
 msgstr ""
 
