@@ -29,6 +29,10 @@
   <release version="1.4" date="2021-07-18" />
   <release version="1.3" date="2021-02-07" />
  </releases>
+ <branding>
+   <color type="primary" scheme_preference="light">#c0bfbc</color>
+   <color type="primary" scheme_preference="dark">#3d3846</color>
+ </branding>
  <screenshots>
   <screenshot type="default">
    <image>https://dagargo.github.io/elektroid/images/screenshot.png</image>
