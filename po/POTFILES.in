@@ -12,5 +12,5 @@ src/guirecorder.c
 src/connectors/sds.c
 src/connectors/default.c
 src/connectors/system.c
-res/gui.glade
+res/elektroid.ui
 res/microbrute/gui.glade

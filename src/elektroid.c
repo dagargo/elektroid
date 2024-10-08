@@ -2748,7 +2748,7 @@ elektroid_run (int argc, char *argv[])
 
   gtk_init (&argc, &argv);
   builder = gtk_builder_new ();
-  gtk_builder_add_from_file (builder, DATADIR "/gui.glade", NULL);
+  gtk_builder_add_from_file (builder, DATADIR "/elektroid.ui", NULL);
 
   css_provider = gtk_css_provider_new ();
   gtk_css_provider_load_from_path (css_provider, DATADIR "/gui.css", NULL);

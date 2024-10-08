@@ -6,7 +6,7 @@ if ELEKTROID_CLI_ONLY
   microbrute_DATA =
   ico_DATA =
 else
-  res_DATA = gui.glade gui.css
+  res_DATA = elektroid.ui gui.css
   svgicon_DATA = elektroid.svg \
                  elektroid-file-symbolic.svg \
                  elektroid-folder-symbolic.svg \
