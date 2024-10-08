@@ -31,17 +31,18 @@
 extern struct editor editor;
 extern struct browser local_browser;
 
-static GtkDialog *autosampler_dialog;
-static GtkEntry *autosampler_dialog_name_entry;
+static GtkDialog *autosampler_window;
+static GtkEntry *autosampler_window_name_entry;
 static struct guirecorder autosampler_guirecorder;
-static GtkWidget *autosampler_dialog_channel_spin;
-static GtkWidget *autosampler_dialog_start_combo;
-static GtkWidget *autosampler_dialog_end_combo;
-static GtkWidget *autosampler_dialog_distance_spin;
-static GtkWidget *autosampler_dialog_velocity_spin;
-static GtkWidget *autosampler_dialog_press_spin;
-static GtkWidget *autosampler_dialog_release_spin;
-static GtkWidget *autosampler_dialog_start_button;
+static GtkWidget *autosampler_window_channel_spin;
+static GtkWidget *autosampler_window_start_combo;
+static GtkWidget *autosampler_window_end_combo;
+static GtkWidget *autosampler_window_distance_spin;
+static GtkWidget *autosampler_window_velocity_spin;
+static GtkWidget *autosampler_window_press_spin;
+static GtkWidget *autosampler_window_release_spin;
+static GtkWidget *autosampler_window_start_button;
+static GtkWidget *autosampler_window_cancel_button;
 static GtkListStore *notes_list_store;
 
 struct autosampler_data
@@ -146,10 +147,7 @@ autosampler_runner (gpointer user_data)
 static void
 autosampler_callback (GtkWidget *object, gpointer user_data)
 {
-  gint res;
   guint options;
-  struct autosampler_data *data = g_malloc (sizeof (struct autosampler_data));
-  data->backend = user_data;
 
   guirecorder_set_channels_masks (&autosampler_guirecorder,
 				  FS_OPTION_STEREO | FS_OPTION_MONO);
@@ -162,111 +160,140 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
   audio_start_recording (&editor.audio, options, guirecorder_monitor_notifier,
 			 &autosampler_guirecorder);
 
-  gtk_entry_set_text (autosampler_dialog_name_entry, "");
-  gtk_widget_grab_focus (GTK_WIDGET (autosampler_dialog_name_entry));
-  gtk_widget_set_sensitive (autosampler_dialog_start_button, FALSE);
-  res = gtk_dialog_run (GTK_DIALOG (autosampler_dialog));
-  gtk_widget_hide (GTK_WIDGET (autosampler_dialog));
+  gtk_entry_set_text (autosampler_window_name_entry, "");
+  gtk_widget_grab_focus (GTK_WIDGET (autosampler_window_name_entry));
+  gtk_widget_set_sensitive (autosampler_window_start_button, FALSE);
+  gtk_widget_show (GTK_WIDGET (autosampler_window));
+}
+
+static void
+autosampler_window_cancel (GtkWidget *object, gpointer user_data)
+{
+  gtk_widget_hide (GTK_WIDGET (autosampler_window));
   audio_stop_recording (&editor.audio);
-  if (res != GTK_RESPONSE_ACCEPT)
-    {
-      return;
-    }
+}
+
+static void
+autosampler_window_start (GtkWidget *object, gpointer user_data)
+{
+  struct autosampler_data *data = g_malloc (sizeof (struct autosampler_data));
+
+  autosampler_window_cancel (autosampler_window_cancel_button, NULL);
+
+  data->backend = user_data;
 
   data->channel_mask =
     guirecorder_get_channel_mask (&autosampler_guirecorder);
-  data->name = gtk_entry_get_text (autosampler_dialog_name_entry);
+  data->name = gtk_entry_get_text (autosampler_window_name_entry);
   data->channel =
     gtk_spin_button_get_value (GTK_SPIN_BUTTON
-			       (autosampler_dialog_channel_spin));
+			       (autosampler_window_channel_spin));
   data->velocity =
     gtk_spin_button_get_value (GTK_SPIN_BUTTON
-			       (autosampler_dialog_velocity_spin));
+			       (autosampler_window_velocity_spin));
   data->first =
-    gtk_combo_box_get_active (GTK_COMBO_BOX (autosampler_dialog_start_combo));
+    gtk_combo_box_get_active (GTK_COMBO_BOX (autosampler_window_start_combo));
   data->last =
-    gtk_combo_box_get_active (GTK_COMBO_BOX (autosampler_dialog_end_combo));
+    gtk_combo_box_get_active (GTK_COMBO_BOX (autosampler_window_end_combo));
   data->semitones =
     gtk_spin_button_get_value (GTK_SPIN_BUTTON
-			       (autosampler_dialog_distance_spin));
+			       (autosampler_window_distance_spin));
   data->press =
     gtk_spin_button_get_value (GTK_SPIN_BUTTON
-			       (autosampler_dialog_press_spin));
+			       (autosampler_window_press_spin));
   data->release =
     gtk_spin_button_get_value (GTK_SPIN_BUTTON
-			       (autosampler_dialog_release_spin));
+			       (autosampler_window_release_spin));
 
   gtk_combo_box_get_active_iter (GTK_COMBO_BOX
-				 (autosampler_dialog_start_combo),
+				 (autosampler_window_start_combo),
 				 &data->iter);
 
   progress_run (autosampler_runner, PROGRESS_TYPE_NONE, data,
 		_("Auto Sampler"), _("Recording..."), TRUE, NULL);
 }
 
-static void
-autosampler_dialog_name_changed (GtkWidget *object, gpointer data)
+static gboolean
+autosampler_window_delete (GtkWidget *widget, GdkEvent *event, gpointer data)
 {
-  size_t len = strlen (gtk_entry_get_text (autosampler_dialog_name_entry));
-  gtk_widget_set_sensitive (autosampler_dialog_start_button, len > 0);
+  autosampler_window_cancel (autosampler_window_cancel_button, NULL);
+  return TRUE;
+}
+
+static void
+autosampler_window_name_changed (GtkWidget *object, gpointer data)
+{
+  size_t len = strlen (gtk_entry_get_text (autosampler_window_name_entry));
+  gtk_widget_set_sensitive (autosampler_window_start_button, len > 0);
 }
 
 static void
 autosampler_configure_gui (struct backend *backend, GtkBuilder *builder)
 {
-  if (autosampler_dialog)
+  if (autosampler_window)
     {
       return;
     }
 
-  autosampler_dialog =
-    GTK_DIALOG (gtk_builder_get_object (builder, "autosampler_dialog"));
-  autosampler_dialog_name_entry =
+  autosampler_window =
+    GTK_DIALOG (gtk_builder_get_object (builder, "autosampler_window"));
+  autosampler_window_name_entry =
     GTK_ENTRY (gtk_builder_get_object
-	       (builder, "autosampler_dialog_name_entry"));
+	       (builder, "autosampler_window_name_entry"));
   autosampler_guirecorder.channels_combo =
     GTK_WIDGET (gtk_builder_get_object
-		(builder, "autosampler_dialog_channels_combo"));
+		(builder, "autosampler_window_channels_combo"));
   autosampler_guirecorder.channels_list_store =
     GTK_LIST_STORE (gtk_builder_get_object
-		    (builder, "autosampler_dialog_channels_list_store"));
+		    (builder, "autosampler_window_channels_list_store"));
   autosampler_guirecorder.monitor_levelbar =
     GTK_LEVEL_BAR (gtk_builder_get_object
-		   (builder, "autosampler_dialog_monitor_levelbar"));
+		   (builder, "autosampler_window_monitor_levelbar"));
   autosampler_guirecorder.audio = &editor.audio;
 
-  autosampler_dialog_channel_spin =
+  autosampler_window_channel_spin =
     GTK_WIDGET (gtk_builder_get_object
-		(builder, "autosampler_dialog_channel_spin"));
-  autosampler_dialog_start_combo =
+		(builder, "autosampler_window_channel_spin"));
+  autosampler_window_start_combo =
     GTK_WIDGET (gtk_builder_get_object
-		(builder, "autosampler_dialog_start_combo"));
-  autosampler_dialog_end_combo =
+		(builder, "autosampler_window_start_combo"));
+  autosampler_window_end_combo =
     GTK_WIDGET (gtk_builder_get_object
-		(builder, "autosampler_dialog_end_combo"));
-  autosampler_dialog_distance_spin =
+		(builder, "autosampler_window_end_combo"));
+  autosampler_window_distance_spin =
     GTK_WIDGET (gtk_builder_get_object
-		(builder, "autosampler_dialog_distance_spin"));
-  autosampler_dialog_velocity_spin =
+		(builder, "autosampler_window_distance_spin"));
+  autosampler_window_velocity_spin =
     GTK_WIDGET (gtk_builder_get_object
-		(builder, "autosampler_dialog_velocity_spin"));
-  autosampler_dialog_press_spin =
+		(builder, "autosampler_window_velocity_spin"));
+  autosampler_window_press_spin =
     GTK_WIDGET (gtk_builder_get_object
-		(builder, "autosampler_dialog_press_spin"));
-  autosampler_dialog_release_spin =
+		(builder, "autosampler_window_press_spin"));
+  autosampler_window_release_spin =
     GTK_WIDGET (gtk_builder_get_object
-		(builder, "autosampler_dialog_release_spin"));
-  autosampler_dialog_start_button =
+		(builder, "autosampler_window_release_spin"));
+  autosampler_window_start_button =
     GTK_WIDGET (gtk_builder_get_object
-		(builder, "autosampler_dialog_start_button"));
+		(builder, "autosampler_window_start_button"));
+  autosampler_window_cancel_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "autosampler_window_cancel_button"));
   notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
 
-  g_signal_connect (autosampler_dialog_name_entry, "changed",
-		    G_CALLBACK (autosampler_dialog_name_changed), NULL);
+  g_signal_connect (autosampler_window_name_entry, "changed",
+		    G_CALLBACK (autosampler_window_name_changed), NULL);
   g_signal_connect (autosampler_guirecorder.channels_combo, "changed",
 		    G_CALLBACK (guirecorder_channels_changed),
 		    &autosampler_guirecorder);
+
+  g_signal_connect (autosampler_window_start_button, "clicked",
+		    G_CALLBACK (autosampler_window_start), backend);
+  g_signal_connect (autosampler_window_cancel_button, "clicked",
+		    G_CALLBACK (autosampler_window_cancel), NULL);
+
+  g_signal_connect (GTK_WIDGET (autosampler_window), "delete-event",
+		    G_CALLBACK (autosampler_window_delete), NULL);
 }
 
 struct maction *
