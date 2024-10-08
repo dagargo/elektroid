@@ -6,7 +6,7 @@ if ELEKTROID_CLI_ONLY
   microbrute_DATA =
   ico_DATA =
 else
-  res_DATA = gui.glade gui.css THANKS
+  res_DATA = elektroid.ui elektroid.css THANKS
   svgicon_DATA = io.github.dagargo.Elektroid.svg \
                  io.github.dagargo.Elektroid-symbolic.svg \
                  elektroid-file-symbolic.svg \
