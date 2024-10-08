@@ -13,4 +13,4 @@ src/connectors/sds.c
 src/connectors/default.c
 src/connectors/system.c
 res/elektroid.ui
-res/microbrute/gui.glade
+res/microbrute/microbrute.ui

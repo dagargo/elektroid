@@ -285,7 +285,8 @@ microbrute_configure_gui (struct backend *backend, GtkWindow *parent)
     }
 
   GtkBuilder *builder = gtk_builder_new ();
-  gtk_builder_add_from_file (builder, DATADIR "/microbrute/gui.glade", NULL);
+  gtk_builder_add_from_file (builder, DATADIR "/microbrute/microbrute.ui",
+			     NULL);
   config_window = GTK_WIDGET (gtk_builder_get_object (builder,
 						      "config_window"));
   gtk_window_resize (GTK_WINDOW (config_window), 1, 1);
