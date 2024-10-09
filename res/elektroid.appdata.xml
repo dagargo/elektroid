@@ -45,7 +45,9 @@
   </keywords>
   <url type="homepage">https://dagargo.github.io/elektroid/</url>
   <url type="donation">https://liberapay.com/dagargo</url>
-  <developer_name>David García Goñi</developer_name>
+  <developer id="io.github.dagargo">
+    <name>David García Goñi</name>
+  </developer>
   <update_contact>dagargo@gmail.com</update_contact>
   <content_rating type="oars-1.0"/>
 </component>
