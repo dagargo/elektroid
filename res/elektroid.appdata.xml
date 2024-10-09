@@ -1,51 +1,51 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2020 Dennis Braun <snd@debian.org> -->
 <component type="desktop">
- <id>elektroid.desktop</id>
- <metadata_license>FSFAP</metadata_license>
- <project_license>GPL-3.0+</project_license>
- <name>Elektroid</name>
- <summary>Sample and MIDI device manager</summary>
- <description>
-  <p>Elektroid is a sample and MIDI device manager.</p>
-  <p>With Elektroid you can easily upload and download audio files and manage different types of data on different MIDI devices, such as presets, projects or tunings.</p>
-  <p>It can also be used to send and receive SysEx MIDI files.</p>
- </description>
- <launchable type="desktop-id">elektroid.desktop</launchable>
- <provides>
-  <binary>elektroid</binary>
- </provides>
- <releases>
-  <release version="3.1" date="2024-10-06" />
-  <release version="3.0.1" date="2024-01-26" />
-  <release version="3.0" date="2024-01-19" />
-  <release version="2.5.2" date="2023-04-22" />
-  <release version="2.5.1" date="2023-04-19" />
-  <release version="2.4.1" date="2023-02-10" />
-  <release version="2.3" date="2022-12-04" />
-  <release version="2.2" date="2022-11-20" />
-  <release version="2.1" date="2022-06-03" />
-  <release version="2.0" date="2022-01-12" />
-  <release version="1.4" date="2021-07-18" />
-  <release version="1.3" date="2021-02-07" />
- </releases>
- <branding>
-   <color type="primary" scheme_preference="light">#c0bfbc</color>
-   <color type="primary" scheme_preference="dark">#3d3846</color>
- </branding>
- <screenshots>
-  <screenshot type="default">
-   <image>https://dagargo.github.io/elektroid/images/screenshot.png</image>
-   <caption>The main window showing the application in action</caption>
-  </screenshot>
- </screenshots>
- <keywords>
-  <keyword>Sample</keyword>
-  <keyword>MIDI</keyword>
- </keywords>
- <url type="homepage">https://dagargo.github.io/elektroid/</url>
- <url type="donation">https://liberapay.com/dagargo</url>
- <developer_name>David García Goñi</developer_name>
- <update_contact>dagargo@gmail.com</update_contact>
- <content_rating type="oars-1.0" />
+  <id>elektroid.desktop</id>
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>GPL-3.0+</project_license>
+  <name>Elektroid</name>
+  <summary>Sample and MIDI device manager</summary>
+  <description>
+    <p>Elektroid is a sample and MIDI device manager.</p>
+    <p>With Elektroid you can easily upload and download audio files and manage different types of data on different MIDI devices, such as presets, projects or tunings.</p>
+    <p>It can also be used to send and receive SysEx MIDI files.</p>
+  </description>
+  <launchable type="desktop-id">elektroid.desktop</launchable>
+  <provides>
+    <binary>elektroid</binary>
+  </provides>
+  <releases>
+    <release version="3.1" date="2024-10-06"/>
+    <release version="3.0.1" date="2024-01-26"/>
+    <release version="3.0" date="2024-01-19"/>
+    <release version="2.5.2" date="2023-04-22"/>
+    <release version="2.5.1" date="2023-04-19"/>
+    <release version="2.4.1" date="2023-02-10"/>
+    <release version="2.3" date="2022-12-04"/>
+    <release version="2.2" date="2022-11-20"/>
+    <release version="2.1" date="2022-06-03"/>
+    <release version="2.0" date="2022-01-12"/>
+    <release version="1.4" date="2021-07-18"/>
+    <release version="1.3" date="2021-02-07"/>
+  </releases>
+  <branding>
+    <color type="primary" scheme_preference="light">#c0bfbc</color>
+    <color type="primary" scheme_preference="dark">#3d3846</color>
+  </branding>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://dagargo.github.io/elektroid/images/screenshot.png</image>
+      <caption>The main window showing the application in action</caption>
+    </screenshot>
+  </screenshots>
+  <keywords>
+    <keyword>Sample</keyword>
+    <keyword>MIDI</keyword>
+  </keywords>
+  <url type="homepage">https://dagargo.github.io/elektroid/</url>
+  <url type="donation">https://liberapay.com/dagargo</url>
+  <developer_name>David García Goñi</developer_name>
+  <update_contact>dagargo@gmail.com</update_contact>
+  <content_rating type="oars-1.0"/>
 </component>
