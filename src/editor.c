@@ -25,6 +25,7 @@
 #include "editor.h"
 #include "sample.h"
 #include "connectors/system.h"
+#include "name.h"
 
 #define EDITOR_LOOP_MARKER_WIDTH 7
 #define EDITOR_LOOP_MARKER_HALF_HEIGHT 4
@@ -63,10 +64,6 @@ struct editor_set_volume_data
   struct editor *editor;
   gdouble volume;
 };
-
-gchar *elektroid_ask_name (const gchar * title, const gchar * value,
-			   struct browser *browser, gint start_pos,
-			   gint end_pos);
 
 static void
 editor_set_layout_width_to_val (struct editor *editor, guint w)
@@ -1215,7 +1212,7 @@ editor_file_exists_no_overwrite (const gchar *filename)
 //editor_save_clicked which already provides this.
 
 static gint
-editor_save_with_format (struct editor *editor, gchar *name,
+editor_save_with_format (struct editor *editor, const gchar *name,
 			 struct idata *sample)
 {
   gint err;
@@ -1247,11 +1244,58 @@ editor_save_with_format (struct editor *editor, gchar *name,
 }
 
 static void
+editor_save_accept (gpointer source, const gchar *name, gpointer data)
+{
+  gchar *path;
+  guint32 sel_len;
+  GByteArray *sample = data;
+  struct editor *editor = source;
+  struct browser *browser = editor->browser;
+
+  if (editor_file_exists_no_overwrite (name))
+    {
+      return;
+    }
+
+  g_mutex_lock (&editor->audio.control.mutex);
+
+  debug_print (2, "Saving recording to %s...", name);
+
+  enum path_type type = backend_get_path_type (browser->backend);
+  path = path_chain (type, browser->dir, name);
+
+  sel_len = AUDIO_SEL_LEN (&editor->audio);
+
+  if (sel_len)
+    {
+      struct idata aux;
+      struct sample_info *si = g_malloc (sizeof (struct sample_info));
+      memcpy (si, &editor->audio.sample_info_src,
+	      sizeof (struct sample_info));
+      si->frames = sel_len;
+      si->loop_start = sel_len - 1;
+      si->loop_end = si->loop_start;
+      idata_init (&aux, sample, NULL, si);
+      editor_save_with_format (editor, path, &aux);
+      idata_free (&aux);
+      g_free (path);
+    }
+  else
+    {
+      g_free (editor->audio.path);
+      editor->audio.path = path;
+
+      editor_save_with_format (editor, editor->audio.path,
+			       &editor->audio.sample);
+    }
+
+  g_mutex_unlock (&editor->audio.control.mutex);
+}
+
+static void
 editor_save_clicked (GtkWidget *object, gpointer data)
 {
-  gchar *name;
   guint32 sel_len;
-  GByteArray *sample = NULL;
   struct editor *editor = data;
   struct sample_info *sample_info;
 
@@ -1275,7 +1319,7 @@ editor_save_clicked (GtkWidget *object, gpointer data)
       g_mutex_unlock (&editor->audio.control.mutex);
       if (editor_file_exists_no_overwrite (editor->audio.path))
 	{
-	  goto cleanup;
+	  return;
 	}
       g_mutex_lock (&editor->audio.control.mutex);
 
@@ -1286,7 +1330,9 @@ editor_save_clicked (GtkWidget *object, gpointer data)
     }
   else
     {
+      GByteArray *sample;
       gchar suggestion[PATH_MAX];
+
       if (sel_len)
 	{
 	  guint fsize = SAMPLE_INFO_FRAME_SIZE (sample_info);
@@ -1305,54 +1351,17 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	  snprintf (suggestion, PATH_MAX, "%s %s.wav", _("Audio"), s);
 	  g_free (s);
 	  g_date_time_unref (dt);
+	  sample = NULL;
 	}
 
-      g_mutex_unlock (&editor->audio.control.mutex);
-      name = elektroid_ask_name (_("Save Sample"), suggestion,
-				 editor->browser, 0, strlen (suggestion) - 4);
-      g_mutex_lock (&editor->audio.control.mutex);
-      if (name)
-	{
-	  g_mutex_unlock (&editor->audio.control.mutex);
-	  if (editor_file_exists_no_overwrite (name))
-	    {
-	      goto cleanup;
-	    }
-	  g_mutex_lock (&editor->audio.control.mutex);
-
-	  debug_print (2, "Saving recording to %s...", name);
-
-	  if (sel_len)
-	    {
-	      struct idata aux;
-	      struct sample_info *si = g_malloc (sizeof (struct sample_info));
-	      memcpy (si, &editor->audio.sample_info_src,
-		      sizeof (struct sample_info));
-	      si->frames = sel_len;
-	      si->loop_start = sel_len - 1;
-	      si->loop_end = si->loop_start;
-	      idata_init (&aux, sample, NULL, si);
-	      editor_save_with_format (editor, name, &aux);
-	      idata_free (&aux);
-	      sample = NULL;
-	    }
-	  else
-	    {
-	      editor->audio.path = name;
-	      editor_save_with_format (editor, editor->audio.path,
-				       &editor->audio.sample);
-	    }
-	}
+      name_edit_text (editor, _("Save Sample"),
+		      editor->browser->fs_ops->max_name_len, suggestion, 0,
+		      strlen (suggestion) - 4, TRUE, editor_save_accept,
+		      sample);
     }
 
 end:
   g_mutex_unlock (&editor->audio.control.mutex);
-
-cleanup:
-  if (sample)
-    {
-      g_byte_array_free (sample, TRUE);
-    }
 }
 
 static gboolean

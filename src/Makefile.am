@@ -81,6 +81,7 @@ editor.c editor.h \
 tasks.c tasks.h \
 guirecorder.c guirecorder.h \
 progress.c progress.h \
+name.c name.h \
 elektroid.c
 
 SNDFILE_CFLAGS = @SNDFILE_CFLAGS@

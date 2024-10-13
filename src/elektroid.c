@@ -37,6 +37,7 @@
 #include "local.h"
 #include "preferences.h"
 #include "progress.h"
+#include "name.h"
 
 #define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : backend_get_path_type (&backend))
 
@@ -145,10 +146,6 @@ GtkWindow *main_window;
 GtkWidget *dialog;
 
 static GtkAboutDialog *about_dialog;
-static GtkWindow *name_window;
-static GtkEntry *name_window_entry;
-static GtkWidget *name_window_accept_button;
-static GtkWidget *name_window_cancel_button;
 static GtkDialog *preferences_dialog;
 static GtkWidget *play_sample_while_loading_switch;
 static GtkWidget *audio_buffer_length_combo;
@@ -173,10 +170,7 @@ static GtkWidget *devices_combo;
 static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
 
-static gchar *name_window_old_path;
-static struct browser *name_window_browser;
-
-static void
+void
 show_error_msg (const char *format, ...)
 {
   gchar *msg;
@@ -887,71 +881,25 @@ elektroid_delete_files (GtkWidget *object, gpointer data)
 }
 
 static void
-elektroid_name_window_show (GtkWidget *object, gpointer data)
-{
-  const gchar *ext;
-  gint sel_len;
-  GtkTreeIter iter;
-  struct item item;
-  name_window_browser = data;
-  GtkTreeModel *model =
-    GTK_TREE_MODEL (gtk_tree_view_get_model (name_window_browser->view));
-
-  browser_set_selected_row_iter (name_window_browser, &iter);
-  browser_set_item (model, &iter, &item);
-  name_window_old_path = browser_get_item_path (name_window_browser, &item);
-
-  sel_len = strlen (item.name);
-  ext = filename_get_ext (item.name);
-  sel_len -= strlen (ext) + 1;
-
-  gtk_entry_set_max_length (name_window_entry,
-			    name_window_browser->fs_ops->max_name_len);
-  gtk_entry_set_text (name_window_entry, item.name);
-  gtk_widget_grab_focus (GTK_WIDGET (name_window_entry));
-  gtk_editable_select_region (GTK_EDITABLE (name_window_entry), 0, sel_len);
-  gtk_widget_set_sensitive (name_window_accept_button, FALSE);
-
-  gtk_window_set_title (name_window, _("Rename"));
-
-  gtk_widget_show (GTK_WIDGET (name_window));
-}
-
-static void
-elektroid_name_window_cancel (GtkWidget *object, gpointer data)
-{
-  g_free (name_window_old_path);
-  gtk_widget_hide (GTK_WIDGET (name_window));
-}
-
-static gboolean
-elektroid_name_window_delete (GtkWidget *widget, GdkEvent *event,
+elektroid_name_change_accept (gpointer source, const gchar *name,
 			      gpointer data)
 {
-  elektroid_name_window_cancel (name_window_cancel_button, NULL);
-  return TRUE;
-}
-
-static void
-elektroid_name_window_accept (GtkWidget *object, gpointer data)
-{
-  gchar *new_path;
   gint err;
+  gchar *new_path;
+  gchar *old_path = data;
+  struct browser *browser = source;
 
-  if (name_window_browser->fs_ops->options & FS_OPTION_SLOT_STORAGE)
+  if (browser->fs_ops->options & FS_OPTION_SLOT_STORAGE)
     {
-      new_path = strdup (gtk_entry_get_text (name_window_entry));
+      new_path = strdup (name);
     }
   else
     {
-      enum path_type type =
-	backend_get_path_type (name_window_browser->backend);
-      new_path = path_chain (type, name_window_browser->dir,
-			     gtk_entry_get_text (name_window_entry));
+      enum path_type type = backend_get_path_type (browser->backend);
+      new_path = path_chain (type, browser->dir, name);
     }
 
-  err = name_window_browser->fs_ops->rename (&backend, name_window_old_path,
-					     new_path);
+  err = browser->fs_ops->rename (browser->backend, old_path, new_path);
   if (err)
     {
       show_error_msg (_("Error while renaming to “%s”: %s."),
@@ -959,12 +907,35 @@ elektroid_name_window_accept (GtkWidget *object, gpointer data)
     }
   else
     {
-      browser_load_dir_if_needed (name_window_browser);
+      browser_load_dir_if_needed (browser);
     }
 
   g_free (new_path);
+  g_free (old_path);
+}
 
-  elektroid_name_window_cancel (name_window_cancel_button, NULL);
+static void
+elektroid_name_change (GtkWidget *object, gpointer data)
+{
+  struct browser *browser = data;
+  const gchar *ext;
+  gint sel_len;
+  GtkTreeIter iter;
+  struct item item;
+  GtkTreeModel *model =
+    GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
+
+  browser_set_selected_row_iter (browser, &iter);
+  browser_set_item (model, &iter, &item);
+
+  sel_len = strlen (item.name);
+  ext = filename_get_ext (item.name);
+  sel_len -= strlen (ext) + 1;
+
+  name_edit_text (browser, _("Rename"),
+		  browser->fs_ops->max_name_len, item.name, 0, sel_len,
+		  FALSE, elektroid_name_change_accept,
+		  browser_get_item_path (browser, &item));
 }
 
 static gboolean
@@ -1261,74 +1232,34 @@ elektroid_run_dialog_and_destroy (GtkWidget *custom_dialog)
   return result;
 }
 
-gchar *
-elektroid_ask_name (const gchar *title, const gchar *value,
-		    struct browser *browser, gint start_pos, gint end_pos)
+static void
+elektroid_add_dir_accept (gpointer source, const gchar *name, gpointer data)
 {
-  char *pathname = NULL;
-  int result;
   gint err;
+  struct browser *browser = source;
   enum path_type type = backend_get_path_type (browser->backend);
+  gchar *dir = path_chain (type, browser->dir, name);
 
-  gtk_entry_set_text (name_window_entry, value);
-  gtk_entry_set_max_length (name_window_entry, browser->fs_ops->max_name_len);
-  gtk_widget_grab_focus (GTK_WIDGET (name_window_entry));
-  gtk_editable_select_region (GTK_EDITABLE (name_window_entry), start_pos,
-			      end_pos);
-  gtk_widget_set_sensitive (name_window_accept_button, strlen (value) > 0);
-
-  gtk_window_set_title (name_window, title);
-
-  result = GTK_RESPONSE_ACCEPT;
-
-  err = -1;
-  while (err < 0 && result == GTK_RESPONSE_ACCEPT)
+  err = browser->fs_ops->mkdir (browser->backend, dir);
+  if (err)
     {
-      result = gtk_dialog_run (GTK_DIALOG (name_window));
-
-      if (result == GTK_RESPONSE_ACCEPT)
-	{
-	  pathname = path_chain (type, browser->dir,
-				 gtk_entry_get_text (name_window_entry));
-	  break;
-	}
+      show_error_msg (_("Error while creating dir “%s”: %s."),
+		      dir, g_strerror (-err));
+    }
+  else
+    {
+      browser_load_dir_if_needed (browser);
     }
 
-  gtk_widget_hide (GTK_WIDGET (name_window));
-
-  return pathname;
+  g_free (dir);
 }
 
 static void
 elektroid_add_dir (GtkWidget *object, gpointer data)
 {
-  char *pathname;
   struct browser *browser = data;
-
-  pathname = elektroid_ask_name (_("Add Directory"), "", browser, 0, 0);
-  if (pathname)
-    {
-      gint err = browser->fs_ops->mkdir (&backend, pathname);
-
-      if (err)
-	{
-	  show_error_msg (_("Error while creating dir “%s”: %s."),
-			  pathname, g_strerror (-err));
-	}
-      else
-	{
-	  browser_load_dir_if_needed (browser);
-	}
-
-      g_free (pathname);
-    }
-}
-
-static void
-elektroid_name_window_entry_changed (GtkWidget *object, gpointer data)
-{
-  size_t len = strlen (gtk_entry_get_text (name_window_entry));
-  gtk_widget_set_sensitive (name_window_accept_button, len > 0);
+  name_new_text (browser, _("Add Directory"), browser->fs_ops->max_name_len,
+		 elektroid_add_dir_accept);
 }
 
 static gboolean
@@ -1921,7 +1852,7 @@ elektroid_common_key_press (GtkWidget *widget, GdkEventKey *event,
       count = browser_get_selected_items_count (browser);
       if (count == 1 && browser->fs_ops->rename)
 	{
-	  elektroid_name_window_show (NULL, browser);
+	  elektroid_name_change (NULL, browser);
 	}
       return TRUE;
     }
@@ -2784,16 +2715,6 @@ elektroid_run (int argc, char *argv[])
     GTK_ABOUT_DIALOG (gtk_builder_get_object (builder, "about_dialog"));
   gtk_about_dialog_set_version (about_dialog, PACKAGE_VERSION);
 
-  name_window = GTK_WINDOW (gtk_builder_get_object (builder, "name_window"));
-  name_window_accept_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "name_window_accept_button"));
-  name_window_cancel_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "name_window_cancel_button"));
-  name_window_entry =
-    GTK_ENTRY (gtk_builder_get_object (builder, "name_window_entry"));
-
   preferences_dialog =
     GTK_DIALOG (gtk_builder_get_object (builder, "preferences_dialog"));
   play_sample_while_loading_switch =
@@ -2852,15 +2773,6 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (about_button, "clicked",
 		    G_CALLBACK (elektroid_show_about), NULL);
 
-  g_signal_connect (name_window_entry, "changed",
-		    G_CALLBACK (elektroid_name_window_entry_changed), NULL);
-  g_signal_connect (name_window_accept_button, "clicked",
-		    G_CALLBACK (elektroid_name_window_accept), NULL);
-  g_signal_connect (name_window_cancel_button, "clicked",
-		    G_CALLBACK (elektroid_name_window_cancel), NULL);
-  g_signal_connect (GTK_WIDGET (name_window), "delete-event",
-		    G_CALLBACK (elektroid_name_window_delete), NULL);
-
   browser_remote_init (&remote_browser, builder, &backend);
 
   g_signal_connect (remote_browser.transfer_menuitem, "activate",
@@ -2872,7 +2784,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (remote_browser.show_menuitem, "activate",
 		    G_CALLBACK (elektroid_show_clicked), &remote_browser);
   g_signal_connect (remote_browser.rename_menuitem, "activate",
-		    G_CALLBACK (elektroid_name_window_show), &remote_browser);
+		    G_CALLBACK (elektroid_name_change), &remote_browser);
   g_signal_connect (remote_browser.delete_menuitem, "activate",
 		    G_CALLBACK (elektroid_delete_files), &remote_browser);
 
@@ -2888,7 +2800,7 @@ elektroid_run (int argc, char *argv[])
   g_signal_connect (local_browser.show_menuitem, "activate",
 		    G_CALLBACK (elektroid_show_clicked), &local_browser);
   g_signal_connect (local_browser.rename_menuitem, "activate",
-		    G_CALLBACK (elektroid_name_window_show), &local_browser);
+		    G_CALLBACK (elektroid_name_change), &local_browser);
   g_signal_connect (local_browser.delete_menuitem, "activate",
 		    G_CALLBACK (elektroid_delete_files), &local_browser);
 
@@ -3014,6 +2926,7 @@ elektroid_run (int argc, char *argv[])
   elektroid_update_midi_status ();
   tasks_init (&tasks, builder);
   progress_init (builder);
+  name_init (builder);
 
   g_object_set (G_OBJECT (show_remote_button), "active",
 		preferences_get_boolean (PREF_KEY_SHOW_REMOTE), NULL);
