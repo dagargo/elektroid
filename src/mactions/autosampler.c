@@ -71,7 +71,6 @@ autosampler_runner (gpointer user_data)
   gchar filename[LABEL_MAX];
   struct sample_info *sample_info;
 
-  progress.sysex_transfer.active = TRUE;
   progress_set_fraction (0.0);
 
   total = ((data->last - data->first) / data->semitones) + 1;
@@ -140,7 +139,7 @@ autosampler_runner (gpointer user_data)
     }
 
   g_free (data);
-  progress_response (GTK_RESPONSE_ACCEPT);
+  progress_end ();
   return NULL;
 }
 

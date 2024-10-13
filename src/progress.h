@@ -31,34 +31,35 @@ enum progress_type
   PROGRESS_TYPE_UPDATE
 };
 
+typedef void (*progress_end_cb) (gpointer user_data, gpointer func_value,
+				 gboolean completed);
+
 struct progress
 {
   struct sysex_transfer sysex_transfer;
-  GtkDialog *dialog;
+  GtkWindow *window;
   GtkWidget *bar;
   GtkWidget *label;
   GtkWidget *cancel_button;
   GThread *thread;
   gint64 start;
+  gpointer data;
   enum progress_type type;
+  progress_end_cb end_cb;
 };
 
 extern struct progress progress;
-
-void progress_stop_thread ();
-
-void progress_dialog_close (gpointer data);
 
 void progress_set_fraction (gdouble fraction);
 
 gboolean progress_is_active ();
 
-gpointer progress_run (GThreadFunc f, enum progress_type type,
-		       gpointer user_data, const gchar * name,
-		       const gchar * text, gboolean cancellable, gint * res);
+void progress_run (GThreadFunc f, enum progress_type type, gpointer user_data,
+		   const gchar * name, const gchar * text,
+		   gboolean cancellable, progress_end_cb end_cb);
 
 void progress_init (GtkBuilder * builder);
 
-void progress_response (gint response);
+void progress_end ();
 
 #endif

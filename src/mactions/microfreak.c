@@ -28,13 +28,21 @@ extern GtkWidget *main_window;
 extern GtkWidget *dialog;
 extern struct browser remote_browser;
 
+static gboolean
+microfreak_refresh (gpointer data)
+{
+  browser_refresh (NULL, &remote_browser);
+  return FALSE;
+}
+
 static gpointer
 microfreak_defragment_runner (gpointer data)
 {
   struct backend *backend = data;
   progress.sysex_transfer.active = TRUE;
   microfreak_sample_defragment (backend);
-  progress_response (GTK_RESPONSE_ACCEPT);
+  progress_end ();
+  g_idle_add (microfreak_refresh, NULL);
   return NULL;
 }
 
@@ -65,8 +73,6 @@ microfreak_defragment_callback (GtkWidget *object, gpointer data)
 
   progress_run (microfreak_defragment_runner, PROGRESS_TYPE_PULSE,
 		backend, _("Defragmenting Sample Memory"), NULL, FALSE, NULL);
-
-  browser_refresh (NULL, &remote_browser);
 }
 
 struct maction *
