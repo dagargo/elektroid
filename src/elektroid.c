@@ -667,7 +667,6 @@ elektroid_preferences_cancel (GtkWidget *object, gpointer user_data)
   gtk_widget_hide (GTK_WIDGET (preferences_window));
 }
 
-
 static gboolean
 elektroid_preferences_window_delete (GtkWidget *widget, GdkEvent *event,
 				     gpointer data)

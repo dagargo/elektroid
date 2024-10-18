@@ -59,7 +59,9 @@ struct editor
   GtkWidget *delete_menuitem;
   GtkWidget *undo_menuitem;
   GtkWidget *save_menuitem;
-  GtkDialog *record_dialog;
+  GtkWindow *record_window;
+  GtkWidget *record_window_record_button;
+  GtkWidget *record_window_cancel_button;
   struct guirecorder guirecorder;
   gdouble zoom;
   enum editor_operation operation;
