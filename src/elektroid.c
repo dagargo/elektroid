@@ -1108,7 +1108,16 @@ elektroid_button_press (GtkWidget *treeview, GdkEventButton *event,
 
       if (event->button == GDK_BUTTON_SECONDARY)
 	{
-	  gtk_menu_popup_at_pointer (browser->menu, (GdkEvent *) event);
+	  GdkRectangle r;
+	  r.width = 1;
+	  r.height = 1;
+
+	  gtk_tree_view_convert_bin_window_to_widget_coords (browser->view,
+							     event->x,
+							     event->y, &r.x,
+							     &r.y);
+	  gtk_popover_set_pointing_to (GTK_POPOVER (browser->popover), &r);
+	  gtk_popover_popup (GTK_POPOVER (browser->popover));
 	}
     }
 
@@ -1864,19 +1873,15 @@ elektroid_common_key_press (GtkWidget *widget, GdkEventKey *event,
 			    gpointer data)
 {
   gint count;
-  GtkAllocation allocation;
-  GdkWindow *gdk_window;
   struct browser *browser = data;
   struct sample_info *sample_info = editor.audio.sample.info;
 
   if (event->keyval == GDK_KEY_Menu)
     {
-      count = browser_get_selected_items_count (browser);
-      gtk_widget_get_allocation (GTK_WIDGET (browser->view), &allocation);
-      gdk_window = gtk_widget_get_window (GTK_WIDGET (browser->view));
-      gtk_menu_popup_at_rect (browser->menu, gdk_window, &allocation,
-			      GDK_GRAVITY_CENTER, GDK_GRAVITY_NORTH_WEST,
-			      NULL);
+      GdkRectangle r;
+      gtk_widget_get_allocation (GTK_WIDGET (browser->view), &r);
+      gtk_popover_set_pointing_to (GTK_POPOVER (browser->popover), &r);
+      gtk_popover_popup (GTK_POPOVER (browser->popover));
       return TRUE;
     }
   else if (event->keyval == GDK_KEY_space && sample_info->frames)
@@ -2837,33 +2842,33 @@ elektroid_run (int argc, char *argv[])
 
   browser_remote_init (&remote_browser, builder, &backend);
 
-  g_signal_connect (remote_browser.transfer_menuitem, "activate",
+  g_signal_connect (remote_browser.popover_transfer_button, "clicked",
 		    G_CALLBACK (elektroid_add_download_tasks), NULL);
-  g_signal_connect (remote_browser.play_menuitem, "activate",
+  g_signal_connect (remote_browser.popover_play_button, "clicked",
 		    G_CALLBACK (editor_play_clicked), &editor);
-  g_signal_connect (remote_browser.open_menuitem, "activate",
+  g_signal_connect (remote_browser.popover_open_button, "clicked",
 		    G_CALLBACK (elektroid_open_clicked), &remote_browser);
-  g_signal_connect (remote_browser.show_menuitem, "activate",
+  g_signal_connect (remote_browser.popover_show_button, "clicked",
 		    G_CALLBACK (elektroid_show_clicked), &remote_browser);
-  g_signal_connect (remote_browser.rename_menuitem, "activate",
+  g_signal_connect (remote_browser.popover_rename_button, "clicked",
 		    G_CALLBACK (elektroid_name_change), &remote_browser);
-  g_signal_connect (remote_browser.delete_menuitem, "activate",
+  g_signal_connect (remote_browser.popover_delete_button, "clicked",
 		    G_CALLBACK (elektroid_delete_files), &remote_browser);
 
   browser_local_init (&local_browser, builder,
 		      strdup (preferences_get_string (PREF_KEY_LOCAL_DIR)));
 
-  g_signal_connect (local_browser.transfer_menuitem, "activate",
+  g_signal_connect (local_browser.popover_transfer_button, "clicked",
 		    G_CALLBACK (elektroid_add_upload_tasks), NULL);
-  g_signal_connect (local_browser.play_menuitem, "activate",
+  g_signal_connect (local_browser.popover_play_button, "clicked",
 		    G_CALLBACK (editor_play_clicked), &editor);
-  g_signal_connect (local_browser.open_menuitem, "activate",
+  g_signal_connect (local_browser.popover_open_button, "clicked",
 		    G_CALLBACK (elektroid_open_clicked), &local_browser);
-  g_signal_connect (local_browser.show_menuitem, "activate",
+  g_signal_connect (local_browser.popover_show_button, "clicked",
 		    G_CALLBACK (elektroid_show_clicked), &local_browser);
-  g_signal_connect (local_browser.rename_menuitem, "activate",
+  g_signal_connect (local_browser.popover_rename_button, "clicked",
 		    G_CALLBACK (elektroid_name_change), &local_browser);
-  g_signal_connect (local_browser.delete_menuitem, "activate",
+  g_signal_connect (local_browser.popover_delete_button, "clicked",
 		    G_CALLBACK (elektroid_delete_files), &local_browser);
 
   g_signal_connect (gtk_tree_view_get_selection (remote_browser.view),

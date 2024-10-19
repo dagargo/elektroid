@@ -781,7 +781,7 @@ browser_update_fs_options (struct browser *browser)
 
   browser_update_fs_sorting_options (browser);
   browser->set_columns_visibility ();
-  browser->set_popup_menuitems_visibility ();
+  browser->set_popover_buttons_visibility ();
 }
 
 static void
@@ -1026,7 +1026,7 @@ browser_check_selection (gpointer data)
 }
 
 void
-browser_local_set_popup_visibility ()
+browser_local_set_popover_visibility ()
 {
   gboolean ul_avail = remote_browser.fs_ops &&
     !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
@@ -1034,31 +1034,33 @@ browser_local_set_popup_visibility ()
   gboolean edit_avail =
     local_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR;
 
-  gtk_widget_set_visible (local_browser.transfer_menuitem, ul_avail);
-  gtk_widget_set_visible (local_browser.play_separator, ul_avail);
-  gtk_widget_set_visible (local_browser.play_menuitem, edit_avail);
-  gtk_widget_set_visible (local_browser.options_separator, edit_avail);
+  gtk_widget_set_visible (local_browser.popover_transfer_button, ul_avail);
+  gtk_widget_set_visible (local_browser.popover_play_separator, ul_avail);
+  gtk_widget_set_visible (local_browser.popover_play_button, edit_avail);
+  gtk_widget_set_visible (local_browser.popover_options_separator,
+			  edit_avail);
 }
 
 static void
-browser_local_set_popup_sensitivity (gint count, gboolean file)
+browser_local_set_popover_sensitivity (gint count, gboolean file)
 {
   gboolean ul_avail = remote_browser.fs_ops &&
     !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
     && remote_browser.fs_ops->upload;
   gboolean editing = editor.browser == &local_browser;
 
-  gtk_widget_set_sensitive (local_browser.transfer_menuitem, count > 0
+  gtk_widget_set_sensitive (local_browser.popover_transfer_button, count > 0
 			    && ul_avail);
-  gtk_widget_set_sensitive (local_browser.play_menuitem, file && editing);
-  gtk_widget_set_sensitive (local_browser.open_menuitem, file);
-  gtk_widget_set_sensitive (local_browser.show_menuitem, count <= 1);
-  gtk_widget_set_sensitive (local_browser.rename_menuitem, count == 1);
-  gtk_widget_set_sensitive (local_browser.delete_menuitem, count > 0);
+  gtk_widget_set_sensitive (local_browser.popover_play_button, file
+			    && editing);
+  gtk_widget_set_sensitive (local_browser.popover_open_button, file);
+  gtk_widget_set_sensitive (local_browser.popover_show_button, count <= 1);
+  gtk_widget_set_sensitive (local_browser.popover_rename_button, count == 1);
+  gtk_widget_set_sensitive (local_browser.popover_delete_button, count > 0);
 }
 
 void
-browser_remote_set_popup_visibility ()
+browser_remote_set_popover_visibility ()
 {
   gboolean dl_impl = remote_browser.fs_ops
     && remote_browser.fs_ops->download ? TRUE : FALSE;
@@ -1067,18 +1069,19 @@ browser_remote_set_popup_visibility ()
   gboolean system = remote_browser.fs_ops
     && remote_browser.backend->type == BE_TYPE_SYSTEM;
 
-  gtk_widget_set_visible (remote_browser.transfer_menuitem, dl_impl);
-  gtk_widget_set_visible (remote_browser.play_separator, dl_impl);
-  gtk_widget_set_visible (remote_browser.play_menuitem, system && edit_avail);
-  gtk_widget_set_visible (remote_browser.options_separator, system
+  gtk_widget_set_visible (remote_browser.popover_transfer_button, dl_impl);
+  gtk_widget_set_visible (remote_browser.popover_play_separator, dl_impl);
+  gtk_widget_set_visible (remote_browser.popover_play_button, system
 			  && edit_avail);
-  gtk_widget_set_visible (remote_browser.open_menuitem, system);
-  gtk_widget_set_visible (remote_browser.show_menuitem, system);
-  gtk_widget_set_visible (remote_browser.actions_separator, system);
+  gtk_widget_set_visible (remote_browser.popover_options_separator, system
+			  && edit_avail);
+  gtk_widget_set_visible (remote_browser.popover_open_button, system);
+  gtk_widget_set_visible (remote_browser.popover_show_button, system);
+  gtk_widget_set_visible (remote_browser.popover_actions_separator, system);
 }
 
 static void
-browser_remote_set_popup_sensitivity (gint count, gboolean file)
+browser_remote_set_popover_sensitivity (gint count, gboolean file)
 {
   gboolean dl_impl = remote_browser.fs_ops
     && remote_browser.fs_ops->download ? TRUE : FALSE;
@@ -1090,20 +1093,21 @@ browser_remote_set_popup_sensitivity (gint count, gboolean file)
   gboolean system = remote_browser.fs_ops
     && remote_browser.backend->type == BE_TYPE_SYSTEM;
 
-  gtk_widget_set_sensitive (remote_browser.transfer_menuitem, count > 0
+  gtk_widget_set_sensitive (remote_browser.popover_transfer_button, count > 0
 			    && dl_impl);
-  gtk_widget_set_sensitive (remote_browser.play_menuitem, file && editing);
-  gtk_widget_set_sensitive (remote_browser.open_menuitem, file);
-  gtk_widget_set_sensitive (remote_browser.show_menuitem, count <= 1
+  gtk_widget_set_sensitive (remote_browser.popover_play_button, file
+			    && editing);
+  gtk_widget_set_sensitive (remote_browser.popover_open_button, file);
+  gtk_widget_set_sensitive (remote_browser.popover_show_button, count <= 1
 			    && system);
-  gtk_widget_set_sensitive (remote_browser.rename_menuitem, count == 1
+  gtk_widget_set_sensitive (remote_browser.popover_rename_button, count == 1
 			    && ren_impl);
-  gtk_widget_set_sensitive (remote_browser.delete_menuitem, count > 0
+  gtk_widget_set_sensitive (remote_browser.popover_delete_button, count > 0
 			    && del_impl);
 }
 
 static void
-browser_setup_popup_sensitivity (struct browser *browser)
+browser_setup_popover_sensitivity (struct browser *browser)
 {
   struct item item;
   GtkTreeIter iter;
@@ -1121,11 +1125,11 @@ browser_setup_popup_sensitivity (struct browser *browser)
 
   if (browser == &local_browser)
     {
-      browser_local_set_popup_sensitivity (count, file);
+      browser_local_set_popover_sensitivity (count, file);
     }
   else
     {
-      browser_remote_set_popup_sensitivity (count, file);
+      browser_remote_set_popover_sensitivity (count, file);
     }
 }
 
@@ -1134,7 +1138,7 @@ browser_selection_changed (GtkTreeSelection *selection, gpointer data)
 {
   struct browser *browser = data;
   browser_check_selection (browser);
-  browser_setup_popup_sensitivity (browser);
+  browser_setup_popover_sensitivity (browser);
 }
 
 void
@@ -1158,35 +1162,48 @@ browser_local_init (struct browser *browser, GtkBuilder *builder,
     GTK_WIDGET (gtk_builder_get_object (builder, "local_search_entry"));
   browser->dir_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry"));
-  browser->menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu"));
   browser->dir = local_dir;
   browser->fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
   browser->backend = NULL;
   browser->check_callback = NULL;
-  browser->set_popup_menuitems_visibility =
-    browser_local_set_popup_visibility;
+  browser->set_popover_buttons_visibility =
+    browser_local_set_popover_visibility;
   browser->set_columns_visibility = browser_local_set_columns_visibility;
   browser->sensitive_widgets = NULL;
   browser->list_stack =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_list_stack"));
   browser->spinner =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_spinner"));
-  browser->transfer_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "upload_menuitem"));
-  browser->play_separator =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_play_separator"));
-  browser->play_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_play_menuitem"));
-  browser->options_separator =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_options_separator"));
-  browser->open_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_open_menuitem"));
-  browser->show_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_show_menuitem"));
-  browser->rename_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_rename_menuitem"));
-  browser->delete_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "local_delete_menuitem"));
+
+  browser->popover =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_popover"));
+  browser->popover_transfer_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "local_popover_upload_button"));
+  browser->popover_play_separator =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "local_popover_play_separator"));
+  browser->popover_play_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "local_popover_play_button"));
+  browser->popover_options_separator =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "local_popover_options_separator"));
+  browser->popover_open_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "local_popover_open_button"));
+  browser->popover_show_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "local_popover_show_button"));
+  browser->popover_actions_separator =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "local_popover_actions_separator"));
+  browser->popover_rename_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "local_popover_rename_button"));
+  browser->popover_delete_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "local_popover_delete_button"));
   browser->tree_view_name_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_name_column"));
@@ -1256,37 +1273,48 @@ browser_remote_init (struct browser *browser,
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_search_entry"));
   browser->dir_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry"));
-  browser->menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu"));
   browser->dir = NULL;
   browser->fs_ops = NULL;
   browser->backend = backend;
   browser->check_callback = browser_check_backend;
-  browser->set_popup_menuitems_visibility =
-    browser_remote_set_popup_visibility;
+  browser->set_popover_buttons_visibility =
+    browser_remote_set_popover_visibility;
   browser->set_columns_visibility = browser_remote_set_columns_visibility;
   browser->sensitive_widgets = NULL;
   browser->list_stack =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_list_stack"));
   browser->spinner =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_spinner"));
-  browser->transfer_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "download_menuitem"));
-  browser->play_separator =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_play_separator"));
-  browser->play_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_play_menuitem"));
-  browser->options_separator =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_options_separator"));
-  browser->open_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_open_menuitem"));
-  browser->show_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_show_menuitem"));
-  browser->actions_separator =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_actions_separator"));
-  browser->rename_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_rename_menuitem"));
-  browser->delete_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_delete_menuitem"));
+
+  browser->popover =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_popover"));
+  browser->popover_transfer_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "remote_popover_download_button"));
+  browser->popover_play_separator =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "remote_popover_play_separator"));
+  browser->popover_play_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "remote_popover_play_button"));
+  browser->popover_options_separator =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "remote_popover_options_separator"));
+  browser->popover_open_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "remote_popover_open_button"));
+  browser->popover_show_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "remote_popover_show_button"));
+  browser->popover_actions_separator =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "remote_popover_actions_separator"));
+  browser->popover_rename_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "remote_popover_rename_button"));
+  browser->popover_delete_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "remote_popover_delete_button"));
   browser->tree_view_name_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_name_column"));
