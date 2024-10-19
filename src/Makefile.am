@@ -12,7 +12,7 @@ else
 CLI_LIBS = alsa $(CLI_LIBS_BASE)
 endif
 
-GUI_LIBS_BASE = $(CLI_LIBS) gtk+-3.0
+GUI_LIBS_BASE = $(CLI_LIBS) gtk4
 
 if ELEKTROID_RTAUDIO
 GUI_LIBS = rtaudio $(GUI_LIBS_BASE)
@@ -20,7 +20,7 @@ else
 GUI_LIBS = libpulse libpulse-mainloop-glib $(GUI_LIBS_BASE)
 endif
 
-elektroid_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(GUI_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -D_GNU_SOURCE
+elektroid_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(GUI_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -D_GNU_SOURCE -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 elektroid_LDFLAGS = `$(PKG_CONFIG) --libs $(GUI_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
 elektroid_cli_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(CLI_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -D_GNU_SOURCE
 elektroid_cli_LDFLAGS = `$(PKG_CONFIG) --libs $(CLI_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
@@ -69,19 +69,21 @@ connectors/default.c connectors/default.h
 elektroid_cli_SOURCES = $(elektroid_common_sources) elektroid-cli.c
 
 elektroid_SOURCES = $(elektroid_common_sources) \
-audio.h audio.c $(elektroid_audio_sources) \
-browser.c browser.h notifier.c notifier.h \
+audio.h audio.c \
+$(elektroid_audio_sources) \
+browser.c browser.h \
+notifier.c notifier.h \
 regma.c regma.h \
 maction.c maction.h \
 mactions/autosampler.c \
 mactions/backend.c \
 mactions/microbrute.c \
 mactions/microfreak.c \
-editor.c editor.h \
 tasks.c tasks.h \
 guirecorder.c guirecorder.h \
 progress.c progress.h \
 name.c name.h \
+editor.c editor.h \
 elektroid.c
 
 SNDFILE_CFLAGS = @SNDFILE_CFLAGS@

@@ -53,7 +53,7 @@ AS_IF([test "${RTAUDIO}" == yes], [AC_DEFINE([ELEKTROID_RTAUDIO], [1], ["Use RtA
 # Checks for libraries.
 PKG_CHECK_MODULES(zlib, zlib >= 1.1.8)
 PKG_CHECK_MODULES(libzip, libzip >= 1.1.2)
-AM_COND_IF(ELEKTROID_CLI_ONLY, [], [PKG_CHECK_MODULES([GTK], [gtk+-3.0])])
+AM_COND_IF(ELEKTROID_CLI_ONLY, [], [PKG_CHECK_MODULES(GTK4, gtk4 >= 4.12)])
 
 PKG_CHECK_MODULES(SNDFILE, sndfile >= 1.0.2)
 PKG_CHECK_MODULES(SNDFILE_MP3, sndfile >= 1.1.0, ac_cv_sndfile_mp3=1, ac_cv_sndfile_mp3=0)
