@@ -54,11 +54,11 @@ struct editor
   GtkWidget *show_grid_switch;
   gulong volume_changed_handler;
   GtkListStore *notes_list_store;
-  GtkMenu *menu;
-  GtkWidget *play_menuitem;
-  GtkWidget *delete_menuitem;
-  GtkWidget *undo_menuitem;
-  GtkWidget *save_menuitem;
+  GtkWidget *popover;
+  GtkWidget *popover_play_button;
+  GtkWidget *popover_delete_button;
+  GtkWidget *popover_undo_button;
+  GtkWidget *popover_save_button;
   GtkWindow *record_window;
   GtkWidget *record_window_record_button;
   GtkWidget *record_window_cancel_button;

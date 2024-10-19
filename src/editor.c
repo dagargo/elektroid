@@ -425,7 +425,7 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
 
   if (sample_info->frames)
     {
-      context = gtk_widget_get_style_context (editor->play_menuitem);	//Any text widget is valid
+      context = gtk_widget_get_style_context (editor->popover_play_button);	//Any text widget is valid
       gtk_style_context_get_color (context, GTK_STATE_FLAG_NORMAL, &color);
       gdk_cairo_set_source_rgba (cr, &color);
 
@@ -980,19 +980,28 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
     }
   else if (event->button == GDK_BUTTON_SECONDARY)
     {
+      GdkRectangle r;
       gboolean cursor_on_sel = sel_len > 0 &&
 	cursor_frame >= editor->audio.sel_start &&
 	cursor_frame < editor->audio.sel_end;
+
       if (!cursor_on_sel)
 	{
 	  editor->audio.sel_start = -1;
 	  editor->audio.sel_end = -1;
 	}
-      gtk_widget_set_sensitive (editor->delete_menuitem, sel_len > 0);
-      gtk_widget_set_sensitive (editor->undo_menuitem, editor->dirty);
-      gtk_widget_set_sensitive (editor->save_menuitem, editor->dirty ||
+
+      gtk_widget_set_sensitive (editor->popover_delete_button, sel_len > 0);
+      gtk_widget_set_sensitive (editor->popover_undo_button, editor->dirty);
+      gtk_widget_set_sensitive (editor->popover_save_button, editor->dirty ||
 				cursor_on_sel);
-      gtk_menu_popup_at_pointer (editor->menu, (GdkEvent *) event);
+
+      r.x = event->x;
+      r.y = event->y;
+      r.width = 1;
+      r.height = 1;
+      gtk_popover_set_pointing_to (GTK_POPOVER (editor->popover), &r);
+      gtk_popover_popup (GTK_POPOVER (editor->popover));
     }
 
 end:
@@ -1030,7 +1039,7 @@ editor_button_release (GtkWidget *widget, GdkEventButton *event,
 
 	  if (AUDIO_SEL_LEN (&editor->audio))
 	    {
-	      gtk_widget_set_sensitive (editor->delete_menuitem, TRUE);
+	      gtk_widget_set_sensitive (editor->popover_delete_button, TRUE);
 	      if (preferences_get_boolean (PREF_KEY_AUTOPLAY))
 		{
 		  audio_start_playback (&editor->audio);
@@ -1460,15 +1469,20 @@ editor_init (struct editor *editor, GtkBuilder *builder)
   editor->notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
 
-  editor->menu = GTK_MENU (gtk_builder_get_object (builder, "editor_menu"));
-  editor->play_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "editor_play_menuitem"));
-  editor->delete_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "editor_delete_menuitem"));
-  editor->undo_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "editor_undo_menuitem"));
-  editor->save_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "editor_save_menuitem"));
+  editor->popover =
+    GTK_WIDGET (gtk_builder_get_object (builder, "editor_popover"));
+  editor->popover_play_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "editor_popover_play_button"));
+  editor->popover_delete_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "editor_popover_delete_button"));
+  editor->popover_undo_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "editor_popover_undo_button"));
+  editor->popover_save_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "editor_popover_save_button"));
 
   editor->record_window =
     GTK_WINDOW (gtk_builder_get_object (builder, "record_window"));
@@ -1530,13 +1544,13 @@ editor_init (struct editor *editor, GtkBuilder *builder)
   g_signal_connect (editor->waveform_scrolled_window, "key-press-event",
 		    G_CALLBACK (editor_key_press), editor);
 
-  g_signal_connect (editor->play_menuitem, "activate",
+  g_signal_connect (editor->popover_play_button, "clicked",
 		    G_CALLBACK (editor_play_clicked), editor);
-  g_signal_connect (editor->delete_menuitem, "activate",
+  g_signal_connect (editor->popover_delete_button, "clicked",
 		    G_CALLBACK (editor_delete_clicked), editor);
-  g_signal_connect (editor->undo_menuitem, "activate",
+  g_signal_connect (editor->popover_undo_button, "clicked",
 		    G_CALLBACK (editor_undo_clicked), editor);
-  g_signal_connect (editor->save_menuitem, "activate",
+  g_signal_connect (editor->popover_save_button, "clicked",
 		    G_CALLBACK (editor_save_clicked), editor);
 
   editor_loop_clicked (editor->loop_button, editor);
