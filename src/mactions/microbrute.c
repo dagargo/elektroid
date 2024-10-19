@@ -100,7 +100,7 @@ microbrute_configure_callback (GtkWidget *object, gpointer data)
   elektroid_combo_box_set_value (GTK_COMBO_BOX (synchronization), v);
   loading = FALSE;
 
-  gtk_widget_show (config_window);
+  gtk_widget_set_visible (config_window, TRUE);
 }
 
 static void
@@ -226,7 +226,14 @@ microbrute_step_length_changed (GtkComboBox *combo, gpointer data)
 static void
 microbrute_assistant_close (GtkWidget *assistant, gpointer data)
 {
-  gtk_widget_hide (assistant);
+  gtk_widget_set_visible (assistant, FALSE);
+}
+
+static gboolean
+microbrute_close (GtkWindow *window, gpointer data)
+{
+  gtk_widget_set_visible (config_window, FALSE);
+  return TRUE;
 }
 
 static void
@@ -255,29 +262,38 @@ microbrute_assistant_prepare (GtkAssistant *assistant, GtkWidget *page,
     }
 }
 
-static gboolean
-microbrute_window_key_press (GtkWidget *widget, GdkEventKey *event,
-			     gpointer data)
-{
-  if (event->keyval == GDK_KEY_Escape)
-    {
-      gtk_widget_hide (widget);
-      return TRUE;
-    }
-  return FALSE;
-}
+// static gboolean
+// microbrute_window_key_press (GtkWidget *widget, GdkEventKey *event,
+//                           gpointer data)
+// {
+//   if (event->keyval == GDK_KEY_Escape)
+//     {
+//       gtk_widget_set_visible (widget, FALSE);
+//       return TRUE;
+//     }
+//   return FALSE;
+// }
 
 void
 microbrute_init ()
 {
+  GError *error;
   GtkBuilder *builder = gtk_builder_new ();
   gchar *mb_ui_path = g_build_filename (get_data_dir (), "microbrute",
 					"microbrute.ui", NULL);
-  gtk_builder_add_from_file (builder, mb_ui_path, NULL);
+  error = NULL;
+  gtk_builder_add_from_file (builder, mb_ui_path, &error);
   g_free (mb_ui_path);
+  if (error)
+    {
+      error_print ("%s\n", error->message);
+      g_error_free (error);
+      exit (1);
+    }
+
   config_window = GTK_WIDGET (gtk_builder_get_object (builder,
 						      "config_window"));
-  gtk_window_set_transient_for (GTK_WINDOW (config_window), main_window);
+  gtk_window_set_transient_for (GTK_WINDOW (config_window), main_window);	//TODO
 
   note_priority =
     GTK_WIDGET (gtk_builder_get_object (builder, "note_priority"));
@@ -340,11 +356,11 @@ microbrute_init ()
   g_signal_connect (step_length, "changed",
 		    G_CALLBACK (microbrute_step_length_changed), NULL);
 
-  g_signal_connect (config_window, "delete-event",
-		    G_CALLBACK (gtk_widget_hide_on_delete), NULL);
+  g_signal_connect (config_window, "close-request",
+		    G_CALLBACK (microbrute_close), NULL);
 
-  g_signal_connect (config_window, "key_press_event",
-		    G_CALLBACK (microbrute_window_key_press), NULL);
+  // g_signal_connect (config_window, "key_press_event",
+  //     G_CALLBACK (microbrute_window_key_press), NULL);
 
   //Assistant
 
@@ -369,8 +385,8 @@ void
 microbrute_destroy ()
 {
   debug_print (1, "Destroying microbrute...");
-  gtk_widget_destroy (calibration_assistant);
-  gtk_widget_destroy (GTK_WIDGET (config_window));
+  gtk_window_destroy (GTK_WINDOW (calibration_assistant));
+  gtk_window_destroy (GTK_WINDOW (config_window));
 }
 
 struct maction *
@@ -396,7 +412,7 @@ microbrute_maction_conf_builder (struct maction_context *context)
 static void
 microbrute_calibration_callback (GtkWidget *object, gpointer data)
 {
-  gtk_widget_show (calibration_assistant);
+  gtk_widget_set_visible (calibration_assistant, TRUE);
 }
 
 struct maction *

@@ -31,28 +31,28 @@ static record_window_record_cb record_cb;
 static record_window_cancel_cb cancel_cb;
 
 static void
-record_window_close ()
+record_window_stop_and_close ()
 {
   if (gtk_widget_get_visible (GTK_WIDGET (window)))
     {
       audio_stop_recording ();	//Stop monitoring
-      while (gtk_events_pending ())
+      while (g_main_context_pending (NULL))
 	{
-	  gtk_main_iteration_do (TRUE);	//Wait for drawings
+	  g_main_context_iteration (NULL, TRUE);	//Wait for drawings
 	}
     }
-  gtk_widget_hide (GTK_WIDGET (window));
+  gtk_widget_set_visible (GTK_WIDGET (window), FALSE);
 }
 
 static void
 record_window_cancel (GtkWidget *object, gpointer data)
 {
   cancel_cb ();
-  record_window_close ();
+  record_window_stop_and_close ();
 }
 
 static gboolean
-record_window_delete (GtkWidget *widget, GdkEvent *event, gpointer data)
+record_window_close (GtkWindow *window, gpointer data)
 {
   record_window_cancel (NULL, NULL);
   return FALSE;
@@ -62,18 +62,21 @@ static void
 record_window_record (GtkWidget *object, gpointer data)
 {
   guint channel_mask = guirecorder_get_channel_mask (&guirecorder);
-  record_window_close ();
+  record_window_stop_and_close ();
   record_cb (channel_mask);
 }
 
 static gboolean
-record_window_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
+record_window_on_key_pressed (GtkEventControllerKey *controller,
+			      guint keyval, guint keycode,
+			      GdkModifierType state, gpointer user_data)
 {
-  if (event->keyval == GDK_KEY_Escape)
+  if (keyval == GDK_KEY_Escape)
     {
       record_window_cancel (NULL, NULL);
       return TRUE;
     }
+
   return FALSE;
 }
 
@@ -91,7 +94,7 @@ record_window_open (guint32 fs_options, record_window_record_cb record_cb_,
   audio_start_recording (options | RECORD_MONITOR_ONLY,
 			 guirecorder_monitor_notifier, &guirecorder);
 
-  gtk_widget_show (GTK_WIDGET (window));
+  gtk_widget_set_visible (GTK_WIDGET (window), TRUE);
 }
 
 void
@@ -122,19 +125,21 @@ record_window_init (GtkBuilder *builder)
 		    G_CALLBACK (record_window_record), NULL);
   g_signal_connect (cancel_button, "clicked",
 		    G_CALLBACK (record_window_cancel), NULL);
-  g_signal_connect (GTK_WIDGET (window), "delete-event",
-		    G_CALLBACK (record_window_delete), NULL);
-  g_signal_connect (GTK_WIDGET (window), "key_press_event",
-		    G_CALLBACK (record_window_key_press), NULL);
-
+  g_signal_connect (GTK_WIDGET (window), "close-request",
+		    G_CALLBACK (record_window_close), NULL);
   g_signal_connect (guirecorder.channels_combo, "changed",
 		    G_CALLBACK (guirecorder_channels_changed), &guirecorder);
+
+  GtkEventController *key_controller = gtk_event_controller_key_new ();
+  g_signal_connect (key_controller, "key-pressed",
+		    G_CALLBACK (record_window_on_key_pressed), window);
+  gtk_widget_add_controller (GTK_WIDGET (window), key_controller);
 }
 
 void
 record_window_destroy ()
 {
   debug_print (1, "Destroying record window...");
-  record_window_close ();
-  gtk_widget_destroy (GTK_WIDGET (window));
+  record_window_stop_and_close ();
+  gtk_window_destroy (GTK_WINDOW (window));
 }
