@@ -38,6 +38,4 @@ void tags_window_destroy ();
 
 GtkWidget *tags_label_new (const gchar * name, enum tag_source tag_source);
 
-void tags_clear_container (GtkWidget * container);
-
 #endif

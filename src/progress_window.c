@@ -152,21 +152,23 @@ progress_window_update_sysex_transfer ()
 }
 
 static gboolean
-progress_window_delete (GtkWidget *widget, GdkEvent *event, gpointer data)
+progress_window_close (GtkWindow *window, gpointer data)
 {
   progress_window_cancel ();
   return TRUE;
 }
 
 static gboolean
-progress_window_key_press (GtkWidget *widget, GdkEventKey *event,
-			   gpointer data)
+progress_window_on_key_pressed (GtkEventControllerKey *controller,
+				guint keyval, guint keycode,
+				GdkModifierType state, gpointer user_data)
 {
-  if (event->keyval == GDK_KEY_Escape)
+  if (keyval == GDK_KEY_Escape)
     {
       progress_window_cancel ();
       return TRUE;
     }
+
   return FALSE;
 }
 
@@ -181,12 +183,15 @@ progress_window_init (GtkBuilder *builder)
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "progress_window_cancel_button"));
 
-  g_signal_connect (GTK_WIDGET (window), "delete-event",
-		    G_CALLBACK (progress_window_delete), NULL);
-  g_signal_connect (GTK_WIDGET (window), "key_press_event",
-		    G_CALLBACK (progress_window_key_press), NULL);
+  g_signal_connect (GTK_WIDGET (window), "close-request",
+		    G_CALLBACK (progress_window_close), NULL);
   g_signal_connect (cancel_button, "clicked",
 		    G_CALLBACK (progress_window_cancel_clicked), NULL);
+
+  GtkEventController *key_controller = gtk_event_controller_key_new ();
+  g_signal_connect (key_controller, "key-pressed",
+		    G_CALLBACK (progress_window_on_key_pressed), window);
+  gtk_widget_add_controller (GTK_WIDGET (window), key_controller);
 }
 
 //This is used to avoiding the window to be opened a closed too fast.
@@ -294,8 +299,8 @@ progress_window_destroy ()
       //The thread will be joined by the main iteration as the thread runner idle-add a function for this.
       while (thread)
 	{
-	  gtk_main_iteration_do (TRUE);
+	  g_main_context_iteration (NULL, TRUE);
 	}
     }
-  gtk_widget_destroy (GTK_WIDGET (window));
+  gtk_window_destroy (GTK_WINDOW (window));
 }

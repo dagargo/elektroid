@@ -91,12 +91,11 @@ extern struct maction_context maction_context;
 
 #define BACKEND (remote_browser.backend)
 
+static GtkApplication *app;
+
 GtkWindow *main_window;
 static GtkAboutDialog *about_dialog;
 static GtkPopover *main_popover;
-static GtkWidget *show_remote_button;
-static GtkWidget *preferences_button;
-static GtkWidget *about_button;
 static GtkWidget *local_name_entry;
 static GtkWidget *local_box;
 static GtkWidget *remote_devices_box;
@@ -161,7 +160,7 @@ static void
 elektroid_show_error_msg_response (GtkDialog *dialog, gint response_id,
 				   gpointer user_data)
 {
-  gtk_widget_destroy (GTK_WIDGET (dialog));
+  gtk_window_destroy (GTK_WINDOW (dialog));
 }
 
 void
@@ -192,7 +191,7 @@ elektroid_ask_user_to_continue_response (GtkDialog *dialog, gint response_id,
   struct common_ask_user_data *data = user_data;
   controllable_set_active (data->controllable,
 			   response_id == GTK_RESPONSE_ACCEPT);
-  gtk_widget_destroy (data->dialog);
+  gtk_window_destroy (GTK_WINDOW (data->dialog));
   g_main_loop_quit (data->loop);
 }
 
@@ -479,7 +478,7 @@ elektroid_refresh_devices_clicked (GtkWidget *widget, gpointer data)
 }
 
 static void
-elektroid_show_remote (gboolean active)
+elektroid_enable_remote (gboolean active)
 {
   elektroid_refresh_devices_int (TRUE);
   gtk_widget_set_visible (local_name_entry, active);
@@ -489,31 +488,27 @@ elektroid_show_remote (gboolean active)
 }
 
 static void
-elektroid_show_remote_clicked (GtkWidget *object, gpointer data)
+elektroid_show_remote (GSimpleAction *simple_action, GVariant *parameter,
+		       gpointer data)
 {
-  gboolean active;
-
-  g_object_get (G_OBJECT (show_remote_button), "active", &active, NULL);
-  active = !active;
-  preferences_set_boolean (PREF_KEY_SHOW_REMOTE, active);
-  g_object_set (G_OBJECT (show_remote_button), "active", active, NULL);
-
-  gtk_widget_hide (GTK_WIDGET (main_popover));
-
-  elektroid_show_remote (active);
+  gboolean show_remote = g_variant_get_boolean (parameter);
+  g_simple_action_set_state (simple_action, parameter);
+  elektroid_enable_remote (show_remote);
+  preferences_set_boolean (PREF_KEY_SHOW_REMOTE, show_remote);
 }
 
 static void
-elektroid_open_preferences (GtkWidget *object, gpointer data)
+elektroid_open_preferences (GSimpleAction *simple_action, GVariant *parameter,
+			    gpointer data)
 {
   preferences_window_open ();
 }
 
 static void
-elektroid_show_about (GtkWidget *object, gpointer data)
+elektroid_open_about (GSimpleAction *simple_action, GVariant *parameter,
+		      gpointer data)
 {
-  gtk_dialog_run (GTK_DIALOG (about_dialog));
-  gtk_widget_hide (GTK_WIDGET (about_dialog));
+  gtk_widget_set_visible (GTK_WIDGET (about_dialog), TRUE);
 }
 
 static gint
@@ -781,7 +776,7 @@ elektroid_show_task_overwrite_dialog_response (GtkDialog *dialog,
       break;
     }
 
-  gtk_widget_destroy (GTK_WIDGET (dialog));
+  gtk_window_destroy (GTK_WINDOW (dialog));
 
   g_mutex_lock (&tasks.transfer.control.controllable.mutex);
   g_cond_signal (&tasks.transfer.control.cond);
@@ -809,8 +804,8 @@ elektroid_show_task_overwrite_dialog (gpointer data)
     gtk_check_button_new_with_label (_("Apply this action to all files"));
   gtk_widget_set_hexpand (checkbutton, TRUE);
   gtk_widget_set_halign (checkbutton, GTK_ALIGN_CENTER);
-  gtk_widget_show (checkbutton);
-  gtk_container_add (GTK_CONTAINER (container), checkbutton);
+  gtk_widget_set_visible (checkbutton, TRUE);
+  // gtk_container_add (GTK_CONTAINER (container), checkbutton);
 
   gtk_widget_set_visible (dialog, TRUE);
   g_signal_connect (dialog, "response",
@@ -1597,7 +1592,7 @@ elektroid_exit ()
       backend_destroy (BACKEND);
     }
 
-  gtk_widget_destroy (GTK_WIDGET (main_window));
+  gtk_window_destroy (GTK_WINDOW (main_window));
 }
 
 #if defined(__APPLE__)
@@ -1619,14 +1614,12 @@ static void
 elektroid_about_action (GSimpleAction *action, GVariant *parameter,
 			gpointer user_data)
 {
-  gtk_dialog_run (GTK_DIALOG (about_dialog));
-  gtk_widget_hide (GTK_WIDGET (about_dialog));
+  gtk_widget_set_visible (GTK_WIDGET (about_dialog), TRUE);
 }
 #endif
 
 static gboolean
-elektroid_delete_main_window (GtkWidget *widget, GdkEvent *event,
-			      gpointer data)
+elektroid_close_main_window (GtkWindow *widget, gpointer data)
 {
   elektroid_exit ();
   return FALSE;
@@ -1682,12 +1675,19 @@ elektroid_about_add_credit_section (const gchar *section_name,
     }
 }
 
+const GActionEntry APP_ENTRIES[] = {
+  {"show_remote", NULL, NULL, "false", elektroid_show_remote},
+  {"open_preferences", elektroid_open_preferences, NULL, NULL, NULL},
+  {"open_about", elektroid_open_about, NULL, NULL, NULL}
+};
+
 static void
 elektroid_startup (GApplication *gapp, gpointer *user_data)
 {
+  GError *error;
+  GtkBuilder *builder;
   GtkCssProvider *css_provider;
   GtkWidget *refresh_devices_button;
-  GtkBuilder *builder;
 
   if (local_dir)
     {
@@ -1701,19 +1701,28 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
 
   builder = gtk_builder_new ();
   gchar *ui_path = g_build_filename (get_data_dir (), "elektroid.ui", NULL);
-  gtk_builder_add_from_file (builder, ui_path, NULL);
+  error = NULL;
+  gtk_builder_add_from_file (builder, ui_path, &error);
   g_free (ui_path);
+  if (error)
+    {
+      error_print ("%s\n", error->message);
+      g_error_free (error);
+      exit (1);
+    }
 
   css_provider = gtk_css_provider_new ();
   gchar *css_path = g_build_filename (get_data_dir (), "elektroid.css", NULL);
-  gtk_css_provider_load_from_path (css_provider, css_path, NULL);
+  gtk_css_provider_load_from_path (css_provider, css_path);
   g_free (css_path);
-  gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
-					     GTK_STYLE_PROVIDER
-					     (css_provider),
-					     GTK_STYLE_PROVIDER_PRIORITY_USER);
+  gtk_style_context_add_provider_for_display (gdk_display_get_default (),
+					      GTK_STYLE_PROVIDER
+					      (css_provider),
+					      GTK_STYLE_PROVIDER_PRIORITY_USER);
 
   main_window = GTK_WINDOW (gtk_builder_get_object (builder, "main_window"));
+  gtk_application_add_window (GTK_APPLICATION (gapp),
+			      GTK_WINDOW (main_window));
 
   about_dialog =
     GTK_ABOUT_DIALOG (gtk_builder_get_object (builder, "about_dialog"));
@@ -1733,20 +1742,8 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   elektroid_about_add_credit_section (_("Acknowledgements"), thanks_path);
   g_free (thanks_path);
 
-  maction_context.box =
-    GTK_WIDGET (gtk_builder_get_object (builder, "menu_actions_box"));
-
   main_popover =
     GTK_POPOVER (gtk_builder_get_object (builder, "main_popover"));
-  gtk_popover_set_constrain_to (main_popover, GTK_POPOVER_CONSTRAINT_NONE);
-  show_remote_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "show_remote_button"));
-  g_object_set (G_OBJECT (show_remote_button), "role",
-		GTK_BUTTON_ROLE_CHECK, NULL);
-  preferences_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "preferences_button"));
-  about_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "about_button"));
 
   local_name_entry =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_name_entry"));
@@ -1764,17 +1761,8 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   host_midi_status_label =
     GTK_LABEL (gtk_builder_get_object (builder, "host_midi_status_label"));
 
-  g_signal_connect (GTK_WIDGET (main_window), "delete-event",
-		    G_CALLBACK (elektroid_delete_main_window), NULL);
-
-  g_signal_connect (show_remote_button, "clicked",
-		    G_CALLBACK (elektroid_show_remote_clicked), NULL);
-
-  g_signal_connect (preferences_button, "clicked",
-		    G_CALLBACK (elektroid_open_preferences), NULL);
-
-  g_signal_connect (about_button, "clicked",
-		    G_CALLBACK (elektroid_show_about), NULL);
+  g_signal_connect (GTK_WIDGET (main_window), "close-request",
+		    G_CALLBACK (elektroid_close_main_window), NULL);
 
   devices_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "devices_list_store"));
@@ -1804,18 +1792,18 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   tasks_init (builder);
   progress_window_init (builder);
 
-  microbrute_init ();
-  autosampler_init (builder);
-
-  g_object_set (G_OBJECT (show_remote_button), "active",
-		preferences_get_boolean (PREF_KEY_SHOW_REMOTE), NULL);
-
   gtk_widget_set_sensitive (remote_box, FALSE);
 
-  elektroid_show_remote (preferences_get_boolean (PREF_KEY_SHOW_REMOTE));	//This triggers both browsers initializations.
+  g_action_map_add_action_entries (G_ACTION_MAP (app), APP_ENTRIES,
+				   G_N_ELEMENTS (APP_ENTRIES), app);
 
-  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (local_name_entry));
-  gtk_entry_buffer_set_text (buf, g_get_host_name (), -1);
+  GAction *a = g_action_map_lookup_action (G_ACTION_MAP (app), "show_remote");
+  GVariant *v =
+    g_variant_new_boolean (preferences_get_boolean (PREF_KEY_SHOW_REMOTE));
+  g_action_change_state (a, v);
+  elektroid_enable_remote (preferences_get_boolean (PREF_KEY_SHOW_REMOTE));	//This triggers both browsers initializations.
+
+  gtk_editable_set_text (GTK_EDITABLE (local_name_entry), g_get_host_name ());
 
 #if defined(__APPLE__)
   GSimpleAction *quit_action = g_simple_action_new ("quit", NULL);
@@ -1844,6 +1832,9 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   g_action_map_add_action (G_ACTION_MAP (gapp), G_ACTION (about_action));
 #endif
 
+  microbrute_init ();
+  autosampler_init (builder);
+
   g_object_unref (builder);
 }
 
@@ -1859,8 +1850,6 @@ elektroid_signal_handler (gpointer data)
 static void
 elektroid_activate (GApplication *gapp, gpointer *user_data)
 {
-  gtk_application_add_window (GTK_APPLICATION (gapp),
-			      GTK_WINDOW (main_window));
   gtk_window_present (GTK_WINDOW (main_window));
 }
 
@@ -1900,7 +1889,6 @@ int
 main (int argc, char *argv[])
 {
   gint err;
-  GtkApplication *app;
 
 #if defined(__linux__)
   g_unix_signal_add (SIGHUP, elektroid_signal_handler, NULL);

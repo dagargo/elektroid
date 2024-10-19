@@ -245,7 +245,6 @@ static void
 autosampler_callback (GtkWidget *object, gpointer user_data)
 {
   guint options;
-  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (name_entry));
 
   guirecorder_set_channels_masks (&guirecorder,
 				  FS_OPTION_STEREO | FS_OPTION_MONO);
@@ -256,11 +255,11 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
   audio_stop_recording ();
   audio_start_recording (options, guirecorder_monitor_notifier, &guirecorder);
 
-  gtk_entry_buffer_set_text (buf, "", -1);
+  gtk_editable_set_text (GTK_EDITABLE (name_entry), "");
   gtk_widget_grab_focus (GTK_WIDGET (name_entry));
   gtk_widget_set_sensitive (start_button, FALSE);
 
-  gtk_widget_show (GTK_WIDGET (window));
+  gtk_widget_set_visible (GTK_WIDGET (window), TRUE);
 }
 
 static void
@@ -269,31 +268,30 @@ autosampler_cancel (GtkWidget *object, gpointer data)
   if (gtk_widget_get_visible (GTK_WIDGET (window)))
     {
       audio_stop_recording ();	//Stop monitoring
-      while (gtk_events_pending ())
+      while (g_main_context_pending (NULL))
 	{
-	  gtk_main_iteration_do (TRUE);	//Wait for drawings
+	  g_main_context_iteration (NULL, TRUE);	//Wait for drawings
 	}
     }
-  gtk_widget_hide (GTK_WIDGET (window));
+  gtk_widget_set_visible (GTK_WIDGET (window), FALSE);
 }
 
-static gboolean
-autosampler_window_key_press (GtkWidget *widget, GdkEventKey *event,
-			      gpointer data)
-{
-  if (event->keyval == GDK_KEY_Escape)
-    {
-      autosampler_cancel (NULL, NULL);
-      return TRUE;
-    }
-  return FALSE;
-}
+// static gboolean
+// autosampler_window_key_press (GtkWidget *widget, GdkEventKey *event,
+//                            gpointer data)
+// {
+//   if (event->keyval == GDK_KEY_Escape)
+//     {
+//       autosampler_cancel (NULL, NULL);
+//       return TRUE;
+//     }
+//   return FALSE;
+// }
 
 static void
 autosampler_start (GtkWidget *object, gpointer data)
 {
   struct autosampler_data *autosampler_data;
-  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (name_entry));
 
   autosampler_cancel (NULL, NULL);
 
@@ -301,7 +299,7 @@ autosampler_start (GtkWidget *object, gpointer data)
 
   autosampler_data->channel_mask =
     guirecorder_get_channel_mask (&guirecorder);
-  autosampler_data->name = gtk_entry_buffer_get_text (buf);
+  autosampler_data->name = gtk_editable_get_text (GTK_EDITABLE (name_entry));
   autosampler_data->normalize =
     gtk_switch_get_active (GTK_SWITCH (normalize_switch));
 
@@ -335,8 +333,8 @@ autosampler_start (GtkWidget *object, gpointer data)
 static void
 name_changed (GtkWidget *object, gpointer data)
 {
-  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (name_entry));
-  gsize len = strlen (gtk_entry_buffer_get_text (buf));
+  const gchar *text = gtk_editable_get_text (GTK_EDITABLE (name_entry));
+  gsize len = strlen (text);
   gtk_widget_set_sensitive (start_button, len > 0);
 }
 
@@ -406,8 +404,8 @@ autosampler_init (GtkBuilder *builder)
   g_signal_connect (cancel_button, "clicked",
 		    G_CALLBACK (autosampler_cancel), NULL);
 
-  g_signal_connect (window, "key_press_event",
-		    G_CALLBACK (autosampler_window_key_press), NULL);
+  // g_signal_connect (window, "key_press_event",
+  //     G_CALLBACK (autosampler_window_key_press), NULL);
 }
 
 void
@@ -415,7 +413,7 @@ autosampler_destroy ()
 {
   debug_print (1, "Destroying autosampler...");
   autosampler_cancel (NULL, NULL);
-  gtk_widget_destroy (GTK_WIDGET (window));
+  gtk_window_destroy (GTK_WINDOW (window));
 }
 
 struct maction *

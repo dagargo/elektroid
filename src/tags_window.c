@@ -50,7 +50,7 @@ tags_window_cancel (GtkWidget *object, gpointer data)
       g_hash_table_unref (tags);
       tags = NULL;
     }
-  gtk_widget_hide (GTK_WIDGET (window));
+  gtk_widget_set_visible (GTK_WIDGET (window), FALSE);
 }
 
 static void
@@ -75,20 +75,23 @@ tags_window_save (GtkWidget *object, gpointer data)
 }
 
 static gboolean
-tags_window_delete (GtkWidget *widget, GdkEvent *event, gpointer data)
+tags_window_close (GtkWindow *window, gpointer data)
 {
   tags_window_cancel (NULL, NULL);
   return TRUE;
 }
 
 static gboolean
-tags_window_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
+tags_window_on_key_pressed (GtkEventControllerKey *controller,
+			    guint keyval, guint keycode,
+			    GdkModifierType state, gpointer user_data)
 {
-  if (event->keyval == GDK_KEY_Escape)
+  if (keyval == GDK_KEY_Escape)
     {
       tags_window_cancel (NULL, NULL);
       return TRUE;
     }
+
   return FALSE;
 }
 
@@ -144,10 +147,13 @@ tags_window_init (GtkBuilder *builder)
 		    G_CALLBACK (tags_window_save), NULL);
   g_signal_connect (cancel_button, "clicked",
 		    G_CALLBACK (tags_window_cancel), NULL);
-  g_signal_connect (GTK_WIDGET (window), "delete-event",
-		    G_CALLBACK (tags_window_delete), NULL);
-  g_signal_connect (GTK_WIDGET (window), "key_press_event",
-		    G_CALLBACK (tags_window_key_press), NULL);
+  g_signal_connect (GTK_WIDGET (window), "close-request",
+		    G_CALLBACK (tags_window_close), NULL);
+
+  GtkEventController *key_controller = gtk_event_controller_key_new ();
+  g_signal_connect (key_controller, "key-pressed",
+		    G_CALLBACK (tags_window_on_key_pressed), window);
+  gtk_widget_add_controller (GTK_WIDGET (window), key_controller);
 }
 
 static gchar *
@@ -199,7 +205,7 @@ tags_toggle_data_closure_notify (gpointer data, GClosure *closure)
 }
 
 static void
-tags_toggle_button_clicked (GtkWidget *button, gpointer data)
+tags_toggle_button_toggled (GtkToggleButton *button, gpointer data)
 {
   gchar *tag = data;
   gboolean active = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (button));
@@ -226,8 +232,8 @@ tags_toggle_new (const gchar *tag, enum tag_source tag_source)
   gtk_widget_set_valign (toggle, GTK_ALIGN_CENTER);
   gtk_style_context_add_class (context, class);
 
-  g_signal_connect_data (toggle, "clicked",
-			 G_CALLBACK (tags_toggle_button_clicked),
+  g_signal_connect_data (toggle, "toggled",
+			 G_CALLBACK (tags_toggle_button_toggled),
 			 strdup (tag),
 			 tags_toggle_data_closure_notify, G_CONNECT_DEFAULT);
 
@@ -242,7 +248,7 @@ tags_window_add_category (GtkWidget *category_label,
   GList *tag;
   GList *keys;
 
-  tags_clear_container (category_flow_box);
+  gtk_flow_box_remove_all (GTK_FLOW_BOX(category_flow_box));
 
   if (g_hash_table_size (category_tags) == 0)
     {
@@ -332,7 +338,7 @@ tags_window_open (enum tag_source tag_source_)
   g_hash_table_unref (subjective_chars_tags);
   g_hash_table_unref (sample_tags);
 
-  gtk_widget_show (GTK_WIDGET (window));
+  gtk_widget_set_visible (GTK_WIDGET (window), TRUE);
 }
 
 void
@@ -340,18 +346,5 @@ tags_window_destroy ()
 {
   debug_print (1, "Destroying tags window...");
   tags_window_cancel (NULL, NULL);
-  gtk_widget_destroy (GTK_WIDGET (window));
-}
-
-static void
-utils_gtk_container_remove (GtkWidget *widget, gpointer data)
-{
-  gtk_container_remove (GTK_CONTAINER (data), widget);
-}
-
-void
-tags_clear_container (GtkWidget *container)
-{
-  gtk_container_foreach (GTK_CONTAINER (container),
-			 utils_gtk_container_remove, container);
+  gtk_window_destroy (GTK_WINDOW (window));
 }

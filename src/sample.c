@@ -770,7 +770,8 @@ sample_load_libsndfile_sample_info (const gchar *path,
   sndfile = sf_open_virtual (&FILE_IO, SFM_READ, &sf_info, file);
   if (!sndfile)
     {
-      error_print ("Error while reading %s: %s", path, sf_strerror (sndfile));
+      error_print ("Error while reading \"%s\": %s", path,
+		   sf_strerror (sndfile));
       err = -1;
       goto end;
     }
