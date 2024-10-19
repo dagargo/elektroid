@@ -155,24 +155,24 @@ backend_tx_sysex_common_response (GtkDialog *dialog, gint response_id,
 {
   struct backend_tx_sysex_common_funcs *funcs = user_data;
 
-  if (response_id == GTK_RESPONSE_ACCEPT)
-    {
-      GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
-      struct backend_tx_sysex_common_data *data =
-	g_malloc (sizeof (struct backend_tx_sysex_common_data));
+  //  if (response_id == GTK_RESPONSE_ACCEPT)
+  //    {
+  //      GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
+  //      struct backend_tx_sysex_common_data *data =
+  // g_malloc (sizeof (struct backend_tx_sysex_common_data));
 
-      controllable_init (&data->controllable);
+  //      controllable_init (&data->controllable);
 
-      data->filenames = gtk_file_chooser_get_filenames (chooser);
+  //      data->filenames = gtk_file_chooser_get_filenames (chooser);
 
-      progress_window_open (funcs->runner, funcs->consumer,
-			    backend_tx_sysex_cancel, data,
-			    PROGRESS_TYPE_SYSEX_TRANSFER, _("Sending SysEx"),
-			    "", TRUE);
-    }
+  //      progress_window_open (funcs->runner, funcs->consumer,
+  //                  backend_tx_sysex_cancel, data,
+  //                  PROGRESS_TYPE_SYSEX_TRANSFER, _("Sending SysEx"),
+  //                  "", TRUE);
+  //    }
 
-  gtk_widget_destroy (GTK_WIDGET (dialog));
-  g_free (funcs);
+  //  gtk_window_destroy (GTK_WINDOW (dialog));
+  //  g_free (funcs);
 }
 
 
@@ -181,7 +181,7 @@ backend_tx_sysex_common (progress_window_runner runner,
 			 progress_window_consumer consumer, gboolean multiple)
 {
   GtkWidget *dialog;
-  GtkFileChooser *chooser;
+//  GtkFileChooser *chooser;
   GtkFileFilter *filter;
   struct backend_tx_sysex_common_funcs *funcs =
     g_malloc (sizeof (struct backend_tx_sysex_common_funcs));
@@ -189,24 +189,24 @@ backend_tx_sysex_common (progress_window_runner runner,
   funcs->runner = runner;
   funcs->consumer = consumer;
 
-  dialog = gtk_file_chooser_dialog_new (_("Open SysEx"), main_window,
-					GTK_FILE_CHOOSER_ACTION_OPEN,
-					_("_Cancel"),
-					GTK_RESPONSE_CANCEL,
-					_("_Open"),
-					GTK_RESPONSE_ACCEPT, NULL);
-  chooser = GTK_FILE_CHOOSER (dialog);
-  filter = gtk_file_filter_new ();
-  gtk_file_filter_set_name (filter, _("SysEx Files"));
-  gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
-  gtk_file_chooser_add_filter (chooser, filter);
-  gtk_file_chooser_set_current_folder (chooser, g_get_home_dir ());
-  gtk_file_chooser_set_select_multiple (chooser, multiple);
+  // dialog = gtk_file_chooser_dialog_new (_("Open SysEx"), main_window,
+  //                      GTK_FILE_CHOOSER_ACTION_OPEN,
+  //                      _("_Cancel"),
+  //                      GTK_RESPONSE_CANCEL,
+  //                      _("_Open"),
+  //                      GTK_RESPONSE_ACCEPT, NULL);
+  // chooser = GTK_FILE_CHOOSER (dialog);
+  // filter = gtk_file_filter_new ();
+  // gtk_file_filter_set_name (filter, _("SysEx Files"));
+  // gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
+  // gtk_file_chooser_add_filter (chooser, filter);
+  // gtk_file_chooser_set_current_folder (chooser, g_get_home_dir ());
+  // gtk_file_chooser_set_select_multiple (chooser, multiple);
 
-  g_signal_connect (dialog, "response",
-		    G_CALLBACK (backend_tx_sysex_common_response), funcs);
+  // g_signal_connect (dialog, "response",
+  //     G_CALLBACK (backend_tx_sysex_common_response), funcs);
 
-  gtk_widget_set_visible (dialog, TRUE);
+  // gtk_widget_set_visible (dialog, TRUE);
 }
 
 static void
@@ -222,46 +222,46 @@ backend_rx_sysex_consumer_response (GtkDialog *dialog, gint response_id,
 
   if (response_id == GTK_RESPONSE_ACCEPT)
     {
-      GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
+      //      GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
 
-      filename = gtk_file_chooser_get_filename (chooser);
-      ext = filename_get_ext (filename);
+      //      filename = gtk_file_chooser_get_filename (chooser);
+      //      ext = filename_get_ext (filename);
 
-      if (strcmp (ext, BE_SYSEX_EXT) != 0)
-	{
-	  filename_w_ext = g_strconcat (filename, "." BE_SYSEX_EXT, NULL);
-	  g_free (filename);
-	  filename = filename_w_ext;
+      //      if (strcmp (ext, BE_SYSEX_EXT) != 0)
+      // {
+      //   filename_w_ext = g_strconcat (filename, "." BE_SYSEX_EXT, NULL);
+      //   g_free (filename);
+      //   filename = filename_w_ext;
 
-	  if (g_file_test (filename, G_FILE_TEST_EXISTS))
-	    {
-	      gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (chooser),
-					     filename);
-	      g_free (filename);
-	      filename = NULL;
-	      return;
-	    }
-	}
+      //   if (g_file_test (filename, G_FILE_TEST_EXISTS))
+      //     {
+      //       gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (chooser),
+      //                                   filename);
+      //       g_free (filename);
+      //       filename = NULL;
+      //       return;
+      //     }
+      // }
 
-      idata_init (&idata, sysex_transfer_steal (&data->sysex_transfer), NULL,
-		  NULL, NULL);
+      //      idata_init (&idata, sysex_transfer_steal (&data->sysex_transfer), NULL,
+      //        NULL, NULL);
 
-      err = file_save (filename, &idata, NULL);
-      if (err)
-	{
-	  elektroid_show_error_msg (_("Error while saving “%s”: %s."),
-				    filename, g_strerror (-err));
-	}
+      //      err = file_save (filename, &idata, NULL);
+      //      if (err)
+      // {
+      //   elektroid_show_error_msg (_("Error while saving “%s”: %s."),
+      //                          filename, g_strerror (-err));
+      // }
 
-      idata_clear (&idata);
-      g_free (filename);
+      //      idata_clear (&idata);
+      //      g_free (filename);
     }
   else
     {
       sysex_transfer_clear (&data->sysex_transfer);
     }
 
-  gtk_widget_destroy (GTK_WIDGET (dialog));
+  gtk_window_destroy (GTK_WINDOW (dialog));
 
   controllable_clear (&data->controllable);
   g_free (data);
@@ -270,7 +270,7 @@ backend_rx_sysex_consumer_response (GtkDialog *dialog, gint response_id,
 static void
 backend_rx_sysex_consumer (gpointer user_data)
 {
-  GtkWidget *dialog;
+  GtkFileDialog *dialog;
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
   struct backend_rx_sysex_data *data = user_data;
@@ -278,29 +278,29 @@ backend_rx_sysex_consumer (gpointer user_data)
 
   if (!data->sysex_transfer.err)
     {
-      dialog = gtk_file_chooser_dialog_new (_("Save SysEx"), main_window,
-					    action, _("_Cancel"),
-					    GTK_RESPONSE_CANCEL, _("_Save"),
-					    GTK_RESPONSE_ACCEPT, NULL);
-      chooser = GTK_FILE_CHOOSER (dialog);
-      gtk_file_chooser_set_do_overwrite_confirmation (chooser, TRUE);
-      gtk_file_chooser_set_current_name (chooser, _("Received SysEx"));
+      //    dialog = gtk_file_chooser_dialog_new (_("Save SysEx"), main_window,
+      //                  action, _("_Cancel"),
+      //                  GTK_RESPONSE_CANCEL, _("_Save"),
+      //                  GTK_RESPONSE_ACCEPT, NULL);
+      //    chooser = GTK_FILE_CHOOSER (dialog);
+      //    gtk_file_chooser_set_do_overwrite_confirmation (chooser, TRUE);
+      //    gtk_file_chooser_set_current_name (chooser, _("Received SysEx"));
 
-      gtk_file_chooser_set_create_folders (chooser, TRUE);
+      //    gtk_file_chooser_set_create_folders (chooser, TRUE);
 
-      filter = gtk_file_filter_new ();
-      gtk_file_filter_set_name (filter, _("SysEx Files"));
-      gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
-      gtk_file_chooser_add_filter (chooser, filter);
-      gtk_file_chooser_set_current_folder (chooser, g_get_home_dir ());
+      //    filter = gtk_file_filter_new ();
+      //    gtk_file_filter_set_name (filter, _("SysEx Files"));
+      //    gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
+      //    gtk_file_chooser_add_filter (chooser, filter);
+      //    gtk_file_chooser_set_current_folder (chooser, g_get_home_dir ());
 
-      gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (dialog), filter);
+      //    gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (dialog), filter);
 
-      g_signal_connect (dialog, "response",
-			G_CALLBACK (backend_rx_sysex_consumer_response),
-			data);
+      //    g_signal_connect (dialog, "response",
+      // G_CALLBACK (backend_rx_sysex_consumer_response),
+      // data);
 
-      gtk_widget_set_visible (dialog, TRUE);
+      //    gtk_widget_set_visible (dialog, TRUE);
     }
   else
     {

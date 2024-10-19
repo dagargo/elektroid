@@ -59,7 +59,7 @@ microfreak_defragment_callback_response (GtkDialog *dialog, gint response_id,
       microfreak_defragment_window_open ();
     }
 
-  gtk_widget_destroy (GTK_WIDGET (dialog));
+  gtk_window_destroy (GTK_WINDOW (dialog));
 }
 
 static void
