@@ -1111,13 +1111,11 @@ elektroid_button_press (GtkWidget *treeview, GdkEventButton *event,
 	  GdkRectangle r;
 	  r.width = 1;
 	  r.height = 1;
-
 	  gtk_tree_view_convert_bin_window_to_widget_coords (browser->view,
 							     event->x,
 							     event->y, &r.x,
 							     &r.y);
-	  gtk_popover_set_pointing_to (GTK_POPOVER (browser->popover), &r);
-	  gtk_popover_popup (GTK_POPOVER (browser->popover));
+	  browser_popover_popup (browser, &r);
 	}
     }
 
@@ -1880,8 +1878,7 @@ elektroid_common_key_press (GtkWidget *widget, GdkEventKey *event,
     {
       GdkRectangle r;
       gtk_widget_get_allocation (GTK_WIDGET (browser->view), &r);
-      gtk_popover_set_pointing_to (GTK_POPOVER (browser->popover), &r);
-      gtk_popover_popup (GTK_POPOVER (browser->popover));
+      browser_popover_popup (browser, &r);
       return TRUE;
     }
   else if (event->keyval == GDK_KEY_space && sample_info->frames)

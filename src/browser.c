@@ -1134,11 +1134,18 @@ browser_setup_popover_sensitivity (struct browser *browser)
 }
 
 void
+browser_popover_popup (struct browser *browser, GdkRectangle *rectangle)
+{
+  browser_setup_popover_sensitivity (browser);
+  gtk_popover_set_pointing_to (GTK_POPOVER (browser->popover), rectangle);
+  gtk_popover_popup (GTK_POPOVER (browser->popover));
+}
+
+void
 browser_selection_changed (GtkTreeSelection *selection, gpointer data)
 {
   struct browser *browser = data;
   browser_check_selection (browser);
-  browser_setup_popover_sensitivity (browser);
 }
 
 void

@@ -149,4 +149,7 @@ void browser_close_search (GtkSearchEntry *, gpointer);
 
 void browser_search_changed (GtkSearchEntry *, gpointer);
 
+void browser_popover_popup (struct browser *browser,
+			    GdkRectangle * rectangle);
+
 #endif
