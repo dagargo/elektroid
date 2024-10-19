@@ -2703,7 +2703,7 @@ elektroid_set_window_size ()
   gdk_monitor_get_geometry (monitor, &geometry);
   if (geometry.height >= 800)
     {
-      gtk_window_resize (main_window, 1024, 768);
+      gtk_widget_set_size_request (GTK_WIDGET (main_window), 1024, 768);
     }
   else
     {
