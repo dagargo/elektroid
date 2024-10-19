@@ -1422,7 +1422,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       </object>
     </child>
   </object>
-  <object class="GtkPopoverMenu" id="editor_popover_menu">
+  <object class="GtkPopoverMenu" id="editor_popover">
     <property name="can-focus">False</property>
     <property name="relative-to">waveform_scrolled_window</property>
     <property name="position">bottom</property>

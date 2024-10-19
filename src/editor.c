@@ -908,6 +908,21 @@ editor_set_cursor (struct editor *editor, const gchar *cursor_name)
   g_object_unref (cursor);
 }
 
+static void
+editor_popover_popup (struct editor *editor, GdkRectangle *rectangle,
+		      gboolean cursor_on_sel)
+{
+  guint32 sel_len = AUDIO_SEL_LEN (&editor->audio);
+
+  gtk_widget_set_sensitive (editor->popover_delete_button, sel_len > 0);
+  gtk_widget_set_sensitive (editor->popover_undo_button, editor->dirty);
+  gtk_widget_set_sensitive (editor->popover_save_button, editor->dirty ||
+			    cursor_on_sel);
+
+  gtk_popover_set_pointing_to (GTK_POPOVER (editor->popover), rectangle);
+  gtk_popover_popup (GTK_POPOVER (editor->popover));
+}
+
 static gboolean
 editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 {
@@ -933,6 +948,7 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 
   press_event_x = event->x;
   editor_get_frame_at_position (editor, event->x, &cursor_frame, NULL);
+
   if (event->button == GDK_BUTTON_PRIMARY)
     {
       debug_print (2, "Pressing at frame %d...", cursor_frame);
@@ -981,6 +997,7 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
   else if (event->button == GDK_BUTTON_SECONDARY)
     {
       GdkRectangle r;
+
       gboolean cursor_on_sel = sel_len > 0 &&
 	cursor_frame >= editor->audio.sel_start &&
 	cursor_frame < editor->audio.sel_end;
@@ -991,17 +1008,11 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 	  editor->audio.sel_end = -1;
 	}
 
-      gtk_widget_set_sensitive (editor->popover_delete_button, sel_len > 0);
-      gtk_widget_set_sensitive (editor->popover_undo_button, editor->dirty);
-      gtk_widget_set_sensitive (editor->popover_save_button, editor->dirty ||
-				cursor_on_sel);
-
       r.x = event->x;
       r.y = event->y;
       r.width = 1;
       r.height = 1;
-      gtk_popover_set_pointing_to (GTK_POPOVER (editor->popover), &r);
-      gtk_popover_popup (GTK_POPOVER (editor->popover));
+      editor_popover_popup (editor, &r, cursor_on_sel);
     }
 
 end:
@@ -1403,7 +1414,13 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
       return FALSE;
     }
 
-  if (event->keyval == GDK_KEY_space)
+  if (event->keyval == GDK_KEY_Menu)
+    {
+      GdkRectangle r;
+      gtk_widget_get_allocation (editor->waveform, &r);
+      editor_popover_popup (editor, &r, FALSE);
+    }
+  else if (event->keyval == GDK_KEY_space)
     {
       editor_play_clicked (NULL, editor);
     }
