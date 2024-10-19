@@ -44,11 +44,11 @@ static GtkWidget *cancel_button;
 static void
 preferences_window_cancel (GtkWidget *object, gpointer data)
 {
-  gtk_widget_hide (GTK_WIDGET (window));
+  gtk_widget_set_visible (GTK_WIDGET (window), FALSE);
 }
 
 static gboolean
-preferences_window_delete (GtkWidget *widget, GdkEvent *event, gpointer data)
+preferences_window_close (GtkWindow *window, gpointer data)
 {
   preferences_window_cancel (NULL, NULL);
   return TRUE;
@@ -133,14 +133,16 @@ preferences_window_save (GtkWidget *object, gpointer data)
 }
 
 static gboolean
-preferences_window_key_press (GtkWidget *widget, GdkEventKey *event,
-			      gpointer data)
+preferences_window_on_key_pressed (GtkEventControllerKey *controller,
+				   guint keyval, guint keycode,
+				   GdkModifierType state, gpointer user_data)
 {
-  if (event->keyval == GDK_KEY_Escape)
+  if (keyval == GDK_KEY_Escape)
     {
       preferences_window_cancel (NULL, NULL);
       return TRUE;
     }
+
   return FALSE;
 }
 
@@ -205,7 +207,7 @@ preferences_window_open ()
   tags = preferences_get_string (PREF_KEY_TAGS_SUBJECTIVE_CHARS);
   gtk_text_buffer_set_text (buf, tags, -1);
 
-  gtk_widget_show (GTK_WIDGET (window));
+  gtk_widget_set_visible (GTK_WIDGET (window), TRUE);
 }
 
 void
@@ -264,10 +266,13 @@ preferences_window_init (GtkBuilder *builder)
 		    "clicked", G_CALLBACK (preferences_window_save), NULL);
   g_signal_connect (cancel_button, "clicked",
 		    G_CALLBACK (preferences_window_cancel), NULL);
-  g_signal_connect (GTK_WIDGET (window), "delete-event",
-		    G_CALLBACK (preferences_window_delete), NULL);
-  g_signal_connect (GTK_WIDGET (window), "key_press_event",
-		    G_CALLBACK (preferences_window_key_press), NULL);
+  g_signal_connect (GTK_WIDGET (window), "close-request",
+		    G_CALLBACK (preferences_window_close), NULL);
+
+  GtkEventController *key_controller = gtk_event_controller_key_new ();
+  g_signal_connect (key_controller, "key-pressed",
+		    G_CALLBACK (preferences_window_on_key_pressed), window);
+  gtk_widget_add_controller (GTK_WIDGET (window), key_controller);
 }
 
 void
@@ -275,5 +280,5 @@ preferences_window_destroy ()
 {
   debug_print (1, "Destroying preferences window...");
   preferences_window_cancel (NULL, NULL);
-  gtk_widget_destroy (GTK_WIDGET (window));
+  gtk_window_destroy (GTK_WINDOW (window));
 }

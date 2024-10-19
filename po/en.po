@@ -525,15 +525,15 @@ msgid "Show in File Manager"
 msgstr ""
 
 #: res/elektroid.ui:1861
-msgid "Show _Remote"
+msgid "Show Remote"
 msgstr ""
 
 #: res/elektroid.ui:1874
-msgid "_Preferences "
+msgid "Preferences"
 msgstr ""
 
 #: res/elektroid.ui:1898
-msgid "_About"
+msgid "About"
 msgstr ""
 
 #: res/elektroid.ui:2005 res/elektroid.ui:2469
@@ -647,10 +647,6 @@ msgstr ""
 
 #: res/elektroid.ui:3601
 msgid "Clear Finished Tasks"
-msgstr ""
-
-#: res/elektroid.ui:3844
-msgid "Preferences"
 msgstr ""
 
 #: res/elektroid.ui:3896
