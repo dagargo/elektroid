@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
+<!-- Created with Cambalache 1.0.3 -->
+<cambalache-project version="1.0.0" target_tk="gtk-4.0">
+  <ui filename="microbrute.ui" sha256="2ac61c3d93a600e788ae369c72e62685083ab11cacbeb43a77d3b6a9f6f487a9"/>
+</cambalache-project>

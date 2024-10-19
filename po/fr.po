@@ -529,16 +529,16 @@ msgid "Show in File Manager"
 msgstr "Afficher dans un ge_stionnaire de fichier"
 
 #: res/elektroid.ui:1861
-msgid "Show _Remote"
-msgstr "A_ffichage distant"
+msgid "Show Remote"
+msgstr "Affichage distant"
 
 #: res/elektroid.ui:1874
-msgid "_Preferences "
-msgstr "_Préférences "
+msgid "Preferences"
+msgstr "Préférences"
 
 #: res/elektroid.ui:1898
-msgid "_About"
-msgstr "À _propos"
+msgid "About"
+msgstr "À propos"
 
 #: res/elektroid.ui:2005 res/elektroid.ui:2469
 msgid "Go to Parent Directory"
@@ -656,10 +656,6 @@ msgstr "Supprimer les tâches dans la file d'attente"
 #: res/elektroid.ui:3601
 msgid "Clear Finished Tasks"
 msgstr "Nettoyer les tâches terminées"
-
-#: res/elektroid.ui:3844
-msgid "Preferences"
-msgstr "Préférences"
 
 #: res/elektroid.ui:3896
 msgid "Play sample while loading"

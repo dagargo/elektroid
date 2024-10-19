@@ -533,16 +533,16 @@ msgstr "Im Dateimanager _Anzeigen"
 
 #: res/elektroid.ui:1861
 #, fuzzy
-msgid "Show _Remote"
+msgid "Show Remote"
 msgstr "Zeige Remote"
 
 #: res/elektroid.ui:1874
-msgid "_Preferences "
-msgstr "_Einstellungen "
+msgid "Preferences"
+msgstr "Einstellungen"
 
 #: res/elektroid.ui:1898
-msgid "_About"
-msgstr "_Info"
+msgid "About"
+msgstr "Info"
 
 #: res/elektroid.ui:2005 res/elektroid.ui:2469
 msgid "Go to Parent Directory"
@@ -659,10 +659,6 @@ msgstr "Lösche Aufgaben in der Warteschlange"
 #: res/elektroid.ui:3601
 msgid "Clear Finished Tasks"
 msgstr "Abgeschlossene Aufgaben aufräumen"
-
-#: res/elektroid.ui:3844
-msgid "Preferences"
-msgstr "Einstellungen"
 
 #: res/elektroid.ui:3896
 msgid "Play sample while loading"

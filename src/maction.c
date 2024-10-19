@@ -59,7 +59,7 @@ maction_context_build_all (struct maction_context *context)
 void
 maction_menu_clear (struct maction_context *context)
 {
-  tags_clear_container (context->box);
+//  tags_clear_container (context->box); //TODO
 }
 
 static void
@@ -70,11 +70,11 @@ maction_add (gpointer data, gpointer user_data)
   if (ma->type == MACTION_BUTTON)
     {
       context->separator = TRUE;
-      GtkWidget *button = gtk_model_button_new ();
-      g_object_set (button, "text", ma->name, NULL);
+      GtkWidget *button = gtk_button_new ();
+      g_object_set (button, "label", ma->name, NULL);
       gtk_widget_set_sensitive (button, ma->sensitive);
-      gtk_widget_show (button);
-      gtk_container_add (GTK_CONTAINER (context->box), button);
+      gtk_widget_set_visible (button, TRUE);
+      gtk_box_append (GTK_BOX (context->box), button);
       g_signal_connect (button, "clicked", ma->callback, context);
     }
   else
@@ -83,8 +83,8 @@ maction_add (gpointer data, gpointer user_data)
 	{
 	  GtkWidget *separator =
 	    gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
-	  gtk_container_add (GTK_CONTAINER (context->box), separator);
-	  gtk_widget_show (separator);
+	  gtk_box_append (GTK_BOX (context->box), separator);
+	  gtk_widget_set_visible (separator, TRUE);
 	}
       context->separator = FALSE;
     }
