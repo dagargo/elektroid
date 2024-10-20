@@ -24,7 +24,7 @@
 #include "utils.h"
 
 static guint8 channel;
-static GtkWidget *config_window = NULL;
+static GtkWidget *config_window;
 static GtkWidget *calibration_assistant;
 static GtkWidget *note_priority;
 static GtkWidget *vel_response;
@@ -276,6 +276,13 @@ microbrute_assistant_prepare (GtkAssistant *assistant, GtkWidget *page,
     }
 }
 
+static gboolean
+microbrute_hide_on_delete (GtkWidget *widget, GdkEvent *event, gpointer data)
+{
+  gtk_widget_hide (config_window);
+  return TRUE;
+}
+
 static void
 microbrute_configure_gui (struct backend *backend, GtkWindow *parent)
 {
@@ -355,7 +362,7 @@ microbrute_configure_gui (struct backend *backend, GtkWindow *parent)
 		    G_CALLBACK (microbrute_step_length_changed), backend);
 
   g_signal_connect (config_window, "delete-event",
-		    G_CALLBACK (gtk_widget_hide_on_delete), NULL);
+		    G_CALLBACK (microbrute_hide_on_delete), NULL);
 
   //Assistant
 
