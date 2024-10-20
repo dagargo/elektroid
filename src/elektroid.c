@@ -3004,7 +3004,8 @@ elektroid_run (int argc, char *argv[])
 
   elektroid_show_remote (preferences_get_boolean (PREF_KEY_SHOW_REMOTE));	//This triggers both browsers initializations.
 
-  gtk_entry_set_text (GTK_ENTRY (local_name_entry), hostname);
+  gtk_entry_buffer_set_text (gtk_entry_get_buffer
+			     (GTK_ENTRY (local_name_entry)), hostname, -1);
 
   elektroid_set_window_size ();
 

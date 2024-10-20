@@ -43,7 +43,7 @@ name_window_show (const gchar *title, gint max_len, const gchar *text,
   gtk_window_set_title (name.window, title);
 
   gtk_entry_set_max_length (name.entry, max_len);
-  gtk_entry_set_text (name.entry, text);
+  gtk_entry_buffer_set_text (gtk_entry_get_buffer (name.entry), text, -1);
   gtk_widget_grab_focus (GTK_WIDGET (name.entry));
   gtk_editable_select_region (GTK_EDITABLE (name.entry), sel_start, sel_end);
   gtk_widget_set_sensitive (name.accept_button, sensitive);
@@ -91,7 +91,8 @@ name_window_delete (GtkWidget *widget, GdkEvent *event, gpointer data)
 static void
 name_window_accept (GtkWidget *object, gpointer data)
 {
-  const gchar *text = gtk_entry_get_text (name.entry);
+  GtkEntryBuffer *buf = gtk_entry_get_buffer (name.entry);
+  const gchar *text = gtk_entry_buffer_get_text (buf);
   name.accept_cb (name.source, text, name.cb_data);
   name_window_cancel (name.cancel_button, NULL);
 }
@@ -99,7 +100,9 @@ name_window_accept (GtkWidget *object, gpointer data)
 static void
 name_window_entry_changed (GtkWidget *object, gpointer data)
 {
-  size_t len = strlen (gtk_entry_get_text (name.entry));
+  GtkEntryBuffer *buf = gtk_entry_get_buffer (name.entry);
+  const gchar *text = gtk_entry_buffer_get_text (buf);
+  size_t len = strlen (text);
   gtk_widget_set_sensitive (name.accept_button, len > 0);
 }
 
