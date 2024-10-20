@@ -437,9 +437,9 @@ browser_wait (struct browser *browser)
       g_thread_join (browser->thread);
       browser->thread = NULL;
       //Wait for every pending call to browser_add_dentry_item scheduled from the thread
-      while (gtk_events_pending ())
+      while (g_main_context_pending (NULL))
 	{
-	  gtk_main_iteration ();
+	  g_main_context_iteration (NULL, TRUE);
 	}
     }
 }
