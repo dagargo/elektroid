@@ -59,14 +59,18 @@ static void
 maction_remove_widget (GtkWidget *widget, gpointer data)
 {
   struct maction_context *context = data;
-  gtk_container_remove (GTK_CONTAINER (context->box), widget);
+  gtk_box_remove (GTK_BOX (context->box), widget);
 }
 
 void
 maction_menu_clear (struct maction_context *context)
 {
-  gtk_container_foreach (GTK_CONTAINER (context->box), maction_remove_widget,
-			 context);
+  GtkWidget *child = gtk_widget_get_first_child (context->box);
+  while (child)
+    {
+      gtk_box_remove (GTK_BOX (context->box), child);
+      child = gtk_widget_get_first_child (context->box);
+    }
 }
 
 static void
@@ -77,11 +81,11 @@ maction_add (gpointer data, gpointer user_data)
   if (ma->type == MACTION_BUTTON)
     {
       context->separator = TRUE;
-      GtkWidget *button = gtk_model_button_new ();
-      g_object_set (button, "text", ma->name, NULL);
+      GtkWidget *button = gtk_button_new ();
+      g_object_set (button, "label", ma->name, NULL);
       gtk_widget_set_sensitive (button, ma->sensitive);
       gtk_widget_show (button);
-      gtk_container_add (GTK_CONTAINER (context->box), button);
+      gtk_box_append (GTK_BOX (context->box), button);
       g_signal_connect (button, "clicked", ma->callback, context->backend);
     }
   else
@@ -90,7 +94,7 @@ maction_add (gpointer data, gpointer user_data)
 	{
 	  GtkWidget *separator =
 	    gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
-	  gtk_container_add (GTK_CONTAINER (context->box), separator);
+	  gtk_box_append (GTK_BOX (context->box), separator);
 	  gtk_widget_show (separator);
 	}
       context->separator = FALSE;
