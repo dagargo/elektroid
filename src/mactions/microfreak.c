@@ -25,7 +25,6 @@
 #include "connectors/microfreak.h"
 
 extern GtkWidget *main_window;
-extern GtkWidget *dialog;
 extern struct browser remote_browser;
 
 static gboolean
@@ -47,32 +46,33 @@ microfreak_defragment_runner (gpointer data)
 }
 
 static void
+microfreak_defragment_callback_defragment (GObject *source_object,
+					   GAsyncResult *res, gpointer data)
+{
+  struct backend *backend = data;
+  GtkAlertDialog *dialog = GTK_ALERT_DIALOG (source_object);
+  int button = gtk_alert_dialog_choose_finish (dialog, res, NULL);
+
+  g_object_unref (source_object);
+
+  if (button == 1)
+    {
+      progress_run (microfreak_defragment_runner, PROGRESS_TYPE_PULSE,
+		    backend, _("Defragmenting Sample Memory"), NULL, FALSE,
+		    NULL);
+    }
+}
+
+static void
 microfreak_defragment_callback (GtkWidget *object, gpointer data)
 {
-  gint res;
-  struct backend *backend = data;
-
-  dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
-				   GTK_DIALOG_MODAL,
-				   GTK_MESSAGE_ERROR,
-				   GTK_BUTTONS_NONE,
-				   _
-				   ("The defragmentation process could take several minutes and could not be canceled. Are you sure you want to defragment the sample memory?"));
-  gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
-			  GTK_RESPONSE_CANCEL, _("_Defragment"),
-			  GTK_RESPONSE_ACCEPT, NULL);
-  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
-  res = gtk_dialog_run (GTK_DIALOG (dialog));
-  gtk_widget_destroy (dialog);
-  dialog = NULL;
-
-  if (res != GTK_RESPONSE_ACCEPT)
-    {
-      return;
-    }
-
-  progress_run (microfreak_defragment_runner, PROGRESS_TYPE_PULSE,
-		backend, _("Defragmenting Sample Memory"), NULL, FALSE, NULL);
+  const char *buttons[] = { "_Cancel", "_Defragment", NULL };
+  GtkAlertDialog *dialog =
+    gtk_alert_dialog_new (_
+			  ("The defragmentation process could take several minutes and could not be canceled. Are you sure you want to defragment the sample memory?"));
+  gtk_alert_dialog_set_buttons (dialog, buttons);
+  gtk_alert_dialog_choose (dialog, GTK_WINDOW (main_window), NULL,
+			   microfreak_defragment_callback_defragment, data);
 }
 
 struct maction *
