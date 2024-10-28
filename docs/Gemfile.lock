@@ -54,12 +54,10 @@ GEM
     rb-fsevent (0.11.2)
     rb-inotify (0.10.1)
       ffi (~> 1.0)
-    rexml (3.3.6)
-      strscan
+    rexml (3.3.9)
     rouge (3.30.0)
     safe_yaml (1.0.5)
     sass (3.7.4)
-    strscan (3.1.0)
 
 PLATFORMS
   x86_64-linux
