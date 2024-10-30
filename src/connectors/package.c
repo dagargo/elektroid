@@ -104,7 +104,7 @@ package_get_tags_from_snd_metadata (GByteArray *metadata)
 {
   JsonParser *parser;
   JsonReader *reader;
-  GError *error;
+  GError *error = NULL;
   GSList *tags = NULL;
 
   parser = json_parser_new ();
@@ -509,7 +509,7 @@ package_receive_pkg_resources (struct package *pkg,
   JsonParser *parser;
   JsonReader *reader;
   gint64 hash, size;
-  GError *error;
+  GError *error = NULL;
   gchar *sample_path, *metadata_path;
   struct package_resource *pkg_resource;
   GString *package_resource_path;
@@ -701,7 +701,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
   gint64 product_type;
   JsonParser *parser;
   JsonReader *reader;
-  GError *error;
+  GError *error = NULL;
   zip_stat_t zstat;
   zip_error_t zerror;
   zip_file_t *zip_file;
