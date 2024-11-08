@@ -675,8 +675,8 @@ cleanup_reader:
   g_object_unref (reader);
 cleanup_parser:
   g_object_unref (parser);
-get_payload:
   idata_free (&metadata_file);
+get_payload:
   debug_print (1, "Getting payload from %s...", payload_path);
   ret = download_data (backend, payload_path, &payload_file, control);
   if (ret)

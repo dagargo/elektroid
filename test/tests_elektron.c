@@ -27,11 +27,19 @@ test_elektron_get_dev_exts ()
 }
 
 void
-test_elektron_get_dev_exts_pst_ah ()
+test_elektron_get_dev_exts_pst ()
 {
   GSList *exts;
 
   printf ("\n");
+
+  data.device_desc.id = 0;
+  exts = elektron_get_dev_exts_pst (&backend, &ops);
+
+  CU_ASSERT_EQUAL (g_slist_length (exts), 1);
+  CU_ASSERT_EQUAL (strcmp (exts->data, "aliasextension"), 0);
+
+  g_slist_free_full (exts, g_free);
 
   data.device_desc.id = 32;
   exts = elektron_get_dev_exts_pst (&backend, &ops);
@@ -44,27 +52,19 @@ test_elektron_get_dev_exts_pst_ah ()
 }
 
 void
-test_elektron_get_dev_exts_pst_other ()
+test_elektron_get_dev_exts_prj ()
 {
   GSList *exts;
 
   printf ("\n");
 
   data.device_desc.id = 0;
-  exts = elektron_get_dev_exts_pst (&backend, &ops);
+  exts = elektron_get_dev_exts_prj (&backend, &ops);
 
   CU_ASSERT_EQUAL (g_slist_length (exts), 1);
   CU_ASSERT_EQUAL (strcmp (exts->data, "aliasextension"), 0);
 
   g_slist_free_full (exts, g_free);
-}
-
-void
-test_elektron_get_dev_exts_prj_dt2 ()
-{
-  GSList *exts;
-
-  printf ("\n");
 
   data.device_desc.id = 42;
   exts = elektron_get_dev_exts_prj (&backend, &ops);
@@ -74,36 +74,47 @@ test_elektron_get_dev_exts_prj_dt2 ()
   CU_ASSERT_EQUAL (strcmp (exts->next->data, "dtprj"), 0);
 
   g_slist_free_full (exts, g_free);
+
+  data.device_desc.id = 43;
+  exts = elektron_get_dev_exts_prj (&backend, &ops);
+
+  CU_ASSERT_EQUAL (g_slist_length (exts), 2);
+  CU_ASSERT_EQUAL (strcmp (exts->data, "aliasextension"), 0);
+  CU_ASSERT_EQUAL (strcmp (exts->next->data, "dnprj"), 0);
+
+  g_slist_free_full (exts, g_free);
 }
 
 void
-test_elektron_get_dev_exts_prj_other ()
+test_elektron_get_takt_ii_pst_exts ()
 {
   GSList *exts;
 
   printf ("\n");
 
   data.device_desc.id = 0;
-  exts = elektron_get_dev_exts_prj (&backend, &ops);
+  exts = elektron_get_takt_ii_pst_exts (&backend, &ops);
 
   CU_ASSERT_EQUAL (g_slist_length (exts), 1);
   CU_ASSERT_EQUAL (strcmp (exts->data, "aliasextension"), 0);
 
   g_slist_free_full (exts, g_free);
-}
 
-void
-test_elektron_get_dt2_pst_exts ()
-{
-  GSList *exts;
-
-  printf ("\n");
-
-  exts = elektron_get_dt2_pst_exts (&backend, &ops);
+  data.device_desc.id = 42;
+  exts = elektron_get_takt_ii_pst_exts (&backend, &ops);
 
   CU_ASSERT_EQUAL (g_slist_length (exts), 2);
   CU_ASSERT_EQUAL (strcmp (exts->data, "aliasextension"), 0);
   CU_ASSERT_EQUAL (strcmp (exts->next->data, "dtsnd"), 0);
+
+  g_slist_free_full (exts, g_free);
+
+  data.device_desc.id = 43;
+  exts = elektron_get_takt_ii_pst_exts (&backend, &ops);
+
+  CU_ASSERT_EQUAL (g_slist_length (exts), 2);
+  CU_ASSERT_EQUAL (strcmp (exts->data, "aliasextension"), 0);
+  CU_ASSERT_EQUAL (strcmp (exts->next->data, "dnsnd"), 0);
 
   g_slist_free_full (exts, g_free);
 }
@@ -136,31 +147,19 @@ main (gint argc, gchar *argv[])
     }
 
   if (!CU_add_test (suite, "elektron_get_dev_exts_pst",
-		    test_elektron_get_dev_exts_pst_ah))
-    {
-      goto cleanup;
-    }
-
-  if (!CU_add_test (suite, "elektron_get_dev_exts_pst",
-		    test_elektron_get_dev_exts_pst_other))
+		    test_elektron_get_dev_exts_pst))
     {
       goto cleanup;
     }
 
   if (!CU_add_test (suite, "elektron_get_dev_exts_prj",
-		    test_elektron_get_dev_exts_prj_dt2))
+		    test_elektron_get_dev_exts_prj))
     {
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "elektron_get_dev_exts_prj",
-		    test_elektron_get_dev_exts_prj_other))
-    {
-      goto cleanup;
-    }
-
-  if (!CU_add_test (suite, "elektron_get_dt2_pst_exts",
-		    test_elektron_get_dt2_pst_exts))
+  if (!CU_add_test (suite, "elektron_get_takt_ii_pst_exts",
+		    test_elektron_get_takt_ii_pst_exts))
     {
       goto cleanup;
     }
