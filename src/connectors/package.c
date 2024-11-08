@@ -514,6 +514,16 @@ package_receive_pkg_resources (struct package *pkg,
   struct package_resource *pkg_resource;
   GString *package_resource_path;
   struct idata metadata_file, payload_file, sample_file, file;
+  struct elektron_data *data = backend->data;
+
+  //Analog Rytm, Digitakt, Analog Rytm MKII, Model:Samples and Digitakt II
+  if (type == PKG_FILE_TYPE_DATA_PROJECT && data->device_desc.id != 8 &&
+      data->device_desc.id != 12 && data->device_desc.id != 16 &&
+      data->device_desc.id != 25 && data->device_desc.id != 42)
+    {
+      ret = 0;
+      goto get_payload;
+    }
 
   metadata_path = path_chain (PATH_INTERNAL, payload_path,
 			      FS_DATA_METADATA_FILE);
@@ -672,7 +682,6 @@ get_payload:
   if (ret)
     {
       error_print ("Error while downloading payload");
-      ret = -1;
     }
   else
     {
@@ -686,6 +695,7 @@ get_payload:
 	  ret = -1;
 	}
     }
+
   return ret;
 }
 
