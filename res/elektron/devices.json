@@ -88,4 +88,10 @@
 	"alias": "dt2",
 	"filesystems": 408,
 	"storage": 2
+}, {
+	"id": 43,
+	"name": "Elektron Digitone II",
+	"alias": "dn2",
+	"filesystems": 280,
+	"storage": 0
 }]

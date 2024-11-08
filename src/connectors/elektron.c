@@ -2964,19 +2964,34 @@ elektron_get_dev_exts_prj (struct backend *backend,
 {
   struct elektron_data *data = backend->data;
   GSList *exts = elektron_get_dev_exts (backend, ops);
-  if (data->device_desc.id == 42)	//Digitakt II
+  switch (data->device_desc.id)
     {
+    case 42:			//Digitakt II
       exts = g_slist_append (exts, strdup ("dtprj"));
+      break;
+    case 43:			//Digitone II
+      exts = g_slist_append (exts, strdup ("dnprj"));
+      break;
     }
   return exts;
 }
 
 GSList *
-elektron_get_dt2_pst_exts (struct backend *backend,
-			   const struct fs_operations *ops)
+elektron_get_takt_ii_pst_exts (struct backend *backend,
+			       const struct fs_operations *ops)
 {
+  struct elektron_data *data = backend->data;
   GSList *exts = elektron_get_dev_exts (backend, ops);
-  return g_slist_append (exts, strdup ("dtsnd"));
+  switch (data->device_desc.id)
+    {
+    case 42:			//Digitakt II
+      exts = g_slist_append (exts, strdup ("dtsnd"));
+      break;
+    case 43:			//Digitone II
+      exts = g_slist_append (exts, strdup ("dnsnd"));
+      break;
+    }
+  return exts;
 }
 
 gint
@@ -3245,8 +3260,8 @@ static const struct fs_operations FS_SAMPLES_STEREO_OPERATIONS = {
   .get_download_path = common_system_get_download_path
 };
 
-static const struct fs_operations FS_DATA_DT2_PST_OPERATIONS = {
-  .id = FS_DATA_DT2_PST,
+static const struct fs_operations FS_DATA_TAKT_II_PST_OPERATIONS = {
+  .id = FS_DATA_TAKT_II_PST,
   .options = FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_SIZE_COLUMN |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
     FS_OPTION_ALLOW_SEARCH,
@@ -3266,7 +3281,7 @@ static const struct fs_operations FS_DATA_DT2_PST_OPERATIONS = {
   .get_slot = elektron_get_id_as_slot,
   .load = file_load,
   .save = file_save,
-  .get_exts = elektron_get_dt2_pst_exts,	//Backwards compatible Digitakt I
+  .get_exts = elektron_get_takt_ii_pst_exts,	//Backwards compatible with takt I devices
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
@@ -3275,7 +3290,7 @@ static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
   &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
   &FS_DATA_PST_OPERATIONS, &FS_SAMPLES_STEREO_OPERATIONS,
-  &FS_DATA_DT2_PST_OPERATIONS, NULL
+  &FS_DATA_TAKT_II_PST_OPERATIONS, NULL
 };
 
 static gint

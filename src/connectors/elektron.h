@@ -36,7 +36,7 @@ enum elektron_fs
   FS_DATA_SND = 0x20,
   FS_DATA_PST = 0x40,
   FS_SAMPLES_STEREO = 0x80,
-  FS_DATA_DT2_PST = 0x100
+  FS_DATA_TAKT_II_PST = 0x100
 };
 
 extern const struct connector CONNECTOR_ELEKTRON;
@@ -64,7 +64,7 @@ GSList *elektron_get_dev_exts_pst (struct backend *backend,
 GSList *elektron_get_dev_exts_prj (struct backend *backend,
 				   const struct fs_operations *ops);
 
-GSList *elektron_get_dt2_pst_exts (struct backend *backend,
-				   const struct fs_operations *ops);
+GSList *elektron_get_takt_ii_pst_exts (struct backend *backend,
+				       const struct fs_operations *ops);
 
 #endif
