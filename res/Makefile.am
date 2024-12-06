@@ -1,12 +1,12 @@
 if ELEKTROID_CLI_ONLY
-  res_DATA =
+  res_DATA = THANKS
   desktop_DATA =
   metainfo_DATA =
   svgicon_DATA =
   microbrute_DATA =
   ico_DATA =
 else
-  res_DATA = gui.glade gui.css
+  res_DATA = gui.glade gui.css THANKS
   svgicon_DATA = elektroid.svg \
                  elektroid-file-symbolic.svg \
                  elektroid-folder-symbolic.svg \
@@ -72,4 +72,5 @@ EXTRA_DIST = \
         $(svgicon_DATA) \
         $(elektron_DATA) \
         $(microbrute_DATA) \
-        $(ico_DATA)
+        $(ico_DATA) \
+	THANKS

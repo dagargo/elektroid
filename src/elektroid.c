@@ -2745,6 +2745,7 @@ elektroid_run (int argc, char *argv[])
   GtkBuilder *builder;
   GtkCssProvider *css_provider;
   GtkWidget *refresh_devices_button;
+  gchar * thanks;
 
   gtk_init (&argc, &argv);
   builder = gtk_builder_new ();
@@ -2762,6 +2763,18 @@ elektroid_run (int argc, char *argv[])
   about_dialog =
     GTK_ABOUT_DIALOG (gtk_builder_get_object (builder, "about_dialog"));
   gtk_about_dialog_set_version (about_dialog, PACKAGE_VERSION);
+
+  if (g_file_get_contents (DATADIR "/THANKS", &thanks, NULL, NULL))
+    {
+      gchar *last_new_line = strrchr (thanks, '\n');
+      *last_new_line = 0;
+      gchar **lines = g_strsplit (thanks, "\n", 0);
+      gtk_about_dialog_add_credit_section (about_dialog,
+					   _("Acknowledgements"),
+					   (const gchar **) lines);
+      g_free (thanks);
+      g_strfreev (lines);
+    }
 
   name_dialog = GTK_DIALOG (gtk_builder_get_object (builder, "name_dialog"));
   name_dialog_accept_button =
