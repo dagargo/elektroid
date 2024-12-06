@@ -34,7 +34,7 @@
 #define DEV_TAG_FILESYSTEMS "filesystems"
 #define DEV_TAG_STORAGE "storage"
 
-static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM" };
+static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM", NULL };
 
 #define DATA_TRANSF_BLOCK_BYTES 0x2000
 #define OS_TRANSF_BLOCK_BYTES 0x800
@@ -1774,10 +1774,18 @@ elektron_get_storage_stats (struct backend *backend, guint8 type,
   gint8 op;
   guint64 *v;
   gint res = 0;
+  guint8 fsid;
   struct elektron_data *data = backend->data;
 
+  if (!(type & data->device_desc.storage))
+    {
+      return -EINVAL;
+    }
+
+  fsid = log2l (type);
+
   tx_msg = elektron_new_msg_uint8 (STORAGEINFO_REQUEST,
-				   sizeof (STORAGEINFO_REQUEST), type + 1);
+				   sizeof (STORAGEINFO_REQUEST), fsid + 1);
   rx_msg = elektron_tx_and_rx (backend, tx_msg);
   if (!rx_msg)
     {
@@ -1793,7 +1801,7 @@ elektron_get_storage_stats (struct backend *backend, guint8 type,
       return -EIO;
     }
 
-  snprintf (statfs->name, LABEL_MAX, "%s", FS_TYPE_NAMES[type]);
+  snprintf (statfs->name, LABEL_MAX, "%s", FS_TYPE_NAMES[fsid]);
   v = (guint64 *) & rx_msg->data[6];
   statfs->bfree = GUINT64_FROM_BE (*v);
   v = (guint64 *) & rx_msg->data[14];
@@ -1801,7 +1809,7 @@ elektron_get_storage_stats (struct backend *backend, guint8 type,
 
   free_msg (rx_msg);
 
-  return res ? res : (type < data->storage - 1);
+  return res ? res : type << 1 < data->device_desc.storage;
 }
 
 static gint
@@ -3296,7 +3304,7 @@ static const struct fs_operations *FS_OPERATIONS[] = {
 static gint
 elektron_configure_device (struct backend *backend, guint8 id)
 {
-  gint err, devices;
+  gint err, devices, storage;
   guint32 filesystems = 0;
   JsonParser *parser;
   JsonReader *reader;
@@ -3417,8 +3425,32 @@ elektron_configure_device (struct backend *backend, guint8 id)
 	  err = -ENODEV;
 	  break;
 	}
-      data->storage = json_reader_get_int_value (reader);
-      json_reader_end_member (reader);
+      data->device_desc.storage = 0;
+      storage = json_reader_count_elements (reader);
+      if (storage > ELEKTRON_MAX_STORAGE)
+	{
+	  error_print ("Too many storage (%d)", storage);
+	  storage = ELEKTRON_MAX_STORAGE;
+	}
+      for (guint i = 0; i < storage; i++)
+	{
+	  json_reader_read_element (reader, i);
+	  const gchar *storage_name = json_reader_get_string_value (reader);
+	  const gchar **name = FS_TYPE_NAMES;
+	  guint id = 1;
+	  while (*name)
+	    {
+	      if (strcmp (*name, storage_name) == 0)
+		{
+		  data->device_desc.storage |= id;
+		  break;
+		}
+	      name++;
+	      id <<= 1;
+	    }
+	  json_reader_end_element (reader);
+	}
+      json_reader_end_element (reader);
 
       break;
     }
@@ -3534,8 +3566,8 @@ elektron_handshake (struct backend *backend)
 
   backend->destroy_data = backend_destroy_data;
   backend->upgrade_os = elektron_upgrade_os;
-  backend->get_storage_stats = data->storage ? elektron_get_storage_stats :
-    NULL;
+  backend->get_storage_stats =
+    data->device_desc.storage ? elektron_get_storage_stats : NULL;
 
   return 0;
 }

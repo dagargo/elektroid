@@ -55,7 +55,7 @@
 #define MICROFREAK_DEFAULT_CHAR '.'
 
 #define MICROFREAK_PPRESET_EXT "mfp"
-#define MICROFREAK_PPRESET_EXT_2 "mbp" //This extension is used in the files inside the mfprojz files (zip files).
+#define MICROFREAK_PPRESET_EXT_2 "mbp"	//This extension is used in the files inside the mfprojz files (zip files).
 #define MICROFREAK_ZPRESET_EXT "mfpz"
 
 #define MICROFREAK_WAVETABLE_EMPTY 0x08

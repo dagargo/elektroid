@@ -3,95 +3,95 @@
 	"name": "Elektron Analog Four",
 	"alias": "af",
 	"filesystems": 56,
-	"storage": 0
+	"storage": []
 }, {
 	"id": 6,
 	"name": "Elektron Analog Keys",
 	"alias": "ak",
 	"filesystems": 56,
-	"storage": 0
+	"storage": []
 }, {
 	"id": 8,
 	"name": "Elektron Analog Rytm",
 	"alias": "ar",
 	"filesystems": 57,
-	"storage": 2
+	"storage": [ "+Drive", "RAM" ]
 }, {
 	"id": 10,
 	"name": "Elektron Analog Heat",
 	"alias": "ah",
 	"filesystems": 72,
-	"storage": 0
+	"storage": []
 }, {
 	"id": 12,
 	"name": "Elektron Digitakt",
 	"alias": "dt",
 	"filesystems": 57,
-	"storage": 2
+	"storage": [ "+Drive", "RAM" ]
 }, {
 	"id": 14,
 	"name": "Elektron Analog Four MKII",
 	"alias": "af",
 	"filesystems": 56,
-	"storage": 0
+	"storage": []
 }, {
 	"id": 16,
 	"name": "Elektron Analog Rytm MKII",
 	"alias": "ar",
 	"filesystems": 57,
-	"storage": 2
+	"storage": [ "+Drive", "RAM" ]
 }, {
 	"id": 20,
 	"name": "Elektron Digitone",
 	"alias": "dn",
 	"filesystems": 56,
-	"storage": 0
+	"storage": []
 }, {
 	"id": 22,
 	"name": "Elektron Analog Heat MKII",
 	"alias": "ah",
 	"filesystems": 72,
-	"storage": 0
+	"storage": []
 }, {
 	"id": 28,
 	"name": "Elektron Digitone Keys",
 	"alias": "dn",
 	"filesystems": 56,
-	"storage": 0
+	"storage": []
 }, {
 	"id": 25,
 	"name": "Elektron Model:Samples",
 	"alias": "ms",
 	"filesystems": 57,
-	"storage": 2
+	"storage": [ "+Drive", "RAM" ]
 }, {
 	"id": 27,
 	"name": "Elektron Model:Cycles",
 	"alias": "mc",
 	"filesystems": 30,
-	"storage": 1
+	"storage": [ "+Drive" ]
 }, {
 	"id": 30,
 	"name": "Elektron Syntakt",
 	"alias": "st",
 	"filesystems": 56,
-	"storage": 0
+	"storage": []
 }, {
 	"id": 32,
 	"name": "Elektron Analog Heat +FX",
 	"alias": "ahfx",
 	"filesystems": 72,
-	"storage": 0
+	"storage": []
 }, {
 	"id": 42,
 	"name": "Elektron Digitakt II",
 	"alias": "dt2",
 	"filesystems": 408,
-	"storage": 2
+	"storage": [ "+Drive", "RAM" ]
 }, {
 	"id": 43,
 	"name": "Elektron Digitone II",
 	"alias": "dn2",
 	"filesystems": 280,
-	"storage": 0
+	"storage": []
 }]
