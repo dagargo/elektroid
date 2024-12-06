@@ -2745,7 +2745,7 @@ elektroid_run (int argc, char *argv[])
   GtkBuilder *builder;
   GtkCssProvider *css_provider;
   GtkWidget *refresh_devices_button;
-  gchar * thanks;
+  gchar *thanks;
 
   gtk_init (&argc, &argv);
   builder = gtk_builder_new ();
