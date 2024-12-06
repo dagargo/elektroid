@@ -402,7 +402,7 @@ cli_df (int argc, gchar *argv[], int *optind)
 	  "Used", "Available", "Use%");
 
   err = 0;
-  for (guint8 i = 0; i < G_MAXUINT8; i++)
+  for (guint i = 1; i < G_MAXUINT8; i <<= 1)
     {
       gint v = backend.get_storage_stats (&backend, i, &statfs, path);
       if (v >= 0)

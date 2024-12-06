@@ -27,6 +27,8 @@
 
 #define ELEKTRON_SAMPLE_RATE 48000
 
+#define ELEKTRON_MAX_STORAGE 8	//Limited to 8 by guint8 in t_get_storage_stats
+
 #define FS_DATA_METADATA_EXT "metadata"
 #define FS_DATA_METADATA_FILE "." FS_DATA_METADATA_EXT
 
@@ -60,6 +62,7 @@ enum package_type
 struct device_desc
 {
   guint32 id;
+  guint8 storage;
   gchar name[LABEL_MAX];
   gchar alias[LABEL_MAX];
 };
@@ -67,7 +70,6 @@ struct device_desc
 struct elektron_data
 {
   guint16 seq;
-  guint8 storage;
   struct device_desc device_desc;
 };
 

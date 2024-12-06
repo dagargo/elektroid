@@ -273,7 +273,7 @@ elektroid_update_backend_status ()
       statfss = g_string_new (NULL);
       if (backend.get_storage_stats)
 	{
-	  for (guint8 i = 0; i < G_MAXUINT8; i++)
+	  for (guint i = 1; i < G_MAXUINT8; i <<= 1)
 	    {
 	      gint v = backend.get_storage_stats (&backend, i, &statfs,
 						  remote_browser.dir);
