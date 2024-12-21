@@ -1,3 +1,20 @@
+<style>
+  #fmogr {
+    @include media-query($on-desktop) {
+      display: none;
+    }
+    position: fixed;
+    top:0;
+    right:0;
+    z-index: 99999;
+  }
+  #custom-logo {
+    height: 32px;
+    width: 32px;
+    vertical-align: text-bottom;
+  }
+</style>
+
 <a id="fmogr" href="https://github.com/dagargo/elektroid">
   <img decoding="async" loading="lazy" width="149" height="149" src="https://github.blog/wp-content/uploads/2008/12/forkme_right_darkblue_121621.png?resize=149%2C149" class="attachment-full size-full" alt="Fork me on GitHub" data-recalc-dims="1">
 </a>
@@ -6,7 +23,7 @@
   <div class="wrapper">
     {%- assign default_paths = site.pages | map: "path" -%}
     {%- assign page_paths = site.header_pages | default: default_paths -%}
-    <a class="site-title" rel="author" href="{{ "/" | relative_url }}">{{ site.title | escape }}</a>
+    <a class="site-title" rel="author" href="{{ "/" | relative_url }}"><img id="custom-logo" src="{{ "/images/logo.png" | relative_url }}">{{ site.title | escape }}</a>
 
     {%- if page_paths -%}
       <nav class="site-nav">
