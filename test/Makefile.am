@@ -14,7 +14,7 @@ endif
 
 AM_CPPFLAGS = -Wall -DTEST_DATA_DIR='"$(srcdir)/res"' -DDATADIR='"../res"'
 
-check_PROGRAMS = tests_scala tests_common tests_microfreak tests_utils tests_sample tests_connector
+check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample tests_connector
 
 tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip zlib $(BE_LIBS)
 

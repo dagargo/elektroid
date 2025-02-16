@@ -21,7 +21,7 @@
 #include <math.h>
 #include <string.h>
 #include <glib/gi18n.h>
-// #include "elektron.h"
+#include "elektron.h"
 #include "sds.h"
 #include "default.h"
 #include "common.h"
@@ -1210,24 +1210,24 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_8_OPERATIONS = {
   .get_download_path = common_system_get_download_path
 };
 
-// static gint
-// sds_handshake_elektron (struct backend *backend)
-// {
-//   //Elektron devices support SDS so we need to be sure it is not.
-//   GByteArray *rx_msg = elektron_ping (backend);
-//   if (rx_msg)
-//     {
-//       free_msg (rx_msg);     //This is filled up by elektron_ping.
-//       g_free (backend->data);
-//       return -ENODEV;
-//     }
-//
-//   g_mutex_lock (&backend->mutex);
-//   backend_rx_drain (backend);
-//   g_mutex_unlock (&backend->mutex);
-//
-//   return 0;
-// }
+static gint
+sds_handshake_elektron (struct backend *backend)
+{
+  //Elektron devices support SDS so we need to be sure it is not.
+  GByteArray *rx_msg = elektron_ping (backend);
+  if (rx_msg)
+    {
+      free_msg (rx_msg);	//This is filled up by elektron_ping.
+      g_free (backend->data);
+      return -ENODEV;
+    }
+
+  g_mutex_lock (&backend->mutex);
+  backend_rx_drain (backend);
+  g_mutex_unlock (&backend->mutex);
+
+  return 0;
+}
 
 gint
 sds_handshake_name (struct backend *backend)
@@ -1307,11 +1307,11 @@ sds_handshake (struct backend *backend)
   sds_tx_handshake (backend, SDS_CANCEL, 0);
   usleep (SDS_REST_TIME_DEFAULT);
 
-  // err = sds_handshake_elektron (backend);
-  // if (err)
-  //   {
-  //     return err;
-  //   }
+  err = sds_handshake_elektron (backend);
+  if (err)
+    {
+      return err;
+    }
 
   err = sds_handshake_name (backend);
   if (err)

@@ -30,11 +30,13 @@
 
 #define DEV_TAG_ID "id"
 #define DEV_TAG_NAME "name"
-#define DEV_TAG_ALIAS "alias"
 #define DEV_TAG_FILESYSTEMS "filesystems"
 #define DEV_TAG_STORAGE "storage"
 
 static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM", NULL };
+
+static const gchar *FS_RAW_ANY_EXTS[] = { "raw", NULL };
+static const gchar *FS_DATA_ANY_EXTS[] = { "data", NULL };
 
 #define DATA_TRANSF_BLOCK_BYTES 0x2000
 #define OS_TRANSF_BLOCK_BYTES 0x800
@@ -141,6 +143,8 @@ static gint elektron_upload_raw_pst_pkg (struct backend *, const gchar *,
 
 static gboolean elektron_sample_file_exists (struct backend *, const gchar *);
 static gboolean elektron_raw_file_exists (struct backend *, const gchar *);
+const gchar **elektron_get_dev_exts (struct backend *,
+				     const struct fs_operations *);
 
 static const guint8 MSG_HEADER[] = { 0xf0, 0, 0x20, 0x3c, 0x10, 0 };
 
@@ -963,7 +967,7 @@ elektron_read_common_dir (struct backend *backend,
 static gint
 elektron_read_samples_dir (struct backend *backend,
 			   struct item_iterator *iter, const gchar *dir,
-			   GSList *extensions)
+			   const gchar **extensions)
 {
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_SAMPLE_READ_DIR_REQUEST,
@@ -975,7 +979,7 @@ elektron_read_samples_dir (struct backend *backend,
 
 static gint
 elektron_read_raw_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *dir, GSList *extensions)
+		       const gchar *dir, const gchar **extensions)
 {
   return elektron_read_common_dir (backend, iter, dir,
 				   FS_RAW_READ_DIR_REQUEST,
@@ -2006,7 +2010,7 @@ elektron_read_data_dir_prefix (struct backend *backend,
 static gint
 elektron_read_data_dir_any (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
-			    GSList *extensions)
+			    const gchar **extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir, NULL,
 					ITER_MODE_DATA, -1);
@@ -2015,7 +2019,7 @@ elektron_read_data_dir_any (struct backend *backend,
 static gint
 elektron_read_data_dir_prj (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
-			    GSList *extensions)
+			    const gchar **extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_PRJ_PREFIX, ITER_MODE_DATA,
@@ -2025,7 +2029,7 @@ elektron_read_data_dir_prj (struct backend *backend,
 static gint
 elektron_read_data_dir_snd (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
-			    GSList *extensions)
+			    const gchar **extensions)
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_SND_PREFIX,
@@ -2035,7 +2039,7 @@ elektron_read_data_dir_snd (struct backend *backend,
 static gint
 elektron_read_data_dir_pst (struct backend *backend,
 			    struct item_iterator *iter, const gchar *dir,
-			    GSList *extensions)
+			    const gchar **extensions)
 {
   struct elektron_data *data = backend->data;
   gint32 slots = data->device_desc.id == 32 ? 512 : 128;	//Analog Heat +FX has 512 presets
@@ -2694,16 +2698,6 @@ elektron_get_upload_path_smplrw (struct backend *backend,
   return path;
 }
 
-static gchar *
-elektron_get_dev_ext (struct backend *backend,
-		      const struct fs_operations *ops)
-{
-  struct elektron_data *data = backend->data;
-  gchar *ext = g_malloc (LABEL_MAX);
-  snprintf (ext, LABEL_MAX, "%s%s", data->device_desc.alias, ops->ext);
-  return ext;
-}
-
 // As Elektron devices provide their own file extension and the file content is
 // not just SysEx, it is not needed to indicate in the filename the type of
 // device, filesystem or id.
@@ -2714,7 +2708,7 @@ elektron_get_download_path (struct backend *backend,
 			    const gchar *dst_dir, const gchar *src_path,
 			    struct idata *any)
 {
-  gchar *path, *name, *dl_ext, *src_fpath;
+  gchar *path, *name, *src_fpath;
   const gchar *md_ext, *ext = filename_get_ext (src_path);
 
   // Examples:
@@ -2738,11 +2732,10 @@ elektron_get_download_path (struct backend *backend,
   if (name)
     {
       GString *filename = g_string_new (NULL);
-      dl_ext = elektron_get_dev_ext (backend, ops);
+      const gchar *dl_ext = ops->get_exts (backend, ops)[0];
       g_string_append_printf (filename, "%s.%s%s", name, dl_ext, md_ext);
       path = path_chain (PATH_SYSTEM, dst_dir, filename->str);
       g_free (name);
-      g_free (dl_ext);
       g_string_free (filename, TRUE);
     }
   else
@@ -2945,61 +2938,37 @@ elektron_upload_pkg (struct backend *backend, const gchar *path,
   return ret;
 }
 
-GSList *
+const gchar **
 elektron_get_dev_exts (struct backend *backend,
 		       const struct fs_operations *ops)
 {
-  gchar *ext = elektron_get_dev_ext (backend, ops);
-  return g_slist_append (NULL, ext);
+  struct elektron_data *data = backend->data;
+  struct fs_desc *fs_desc = data->device_desc.fs_descs;
+
+  for (guint i = 0; i < data->device_desc.fs_descs_len; i++)
+    {
+      if (!strcmp (fs_desc->name, ops->name))
+	{
+	  return (const gchar **) fs_desc->extensions;
+	}
+      fs_desc++;
+    }
+
+  return NULL;
 }
 
-GSList *
-elektron_get_dev_exts_pst (struct backend *backend,
+const gchar **
+elektron_get_data_any_exts (struct backend *backend,
+			    const struct fs_operations *ops)
+{
+  return FS_DATA_ANY_EXTS;
+}
+
+const gchar **
+elektron_get_raw_any_exts (struct backend *backend,
 			   const struct fs_operations *ops)
 {
-  struct elektron_data *data = backend->data;
-  GSList *exts = elektron_get_dev_exts (backend, ops);
-  if (data->device_desc.id == 32)	//AH +FX
-    {
-      exts = g_slist_append (exts, strdup ("ahpst"));
-    }
-  return exts;
-}
-
-GSList *
-elektron_get_dev_exts_prj (struct backend *backend,
-			   const struct fs_operations *ops)
-{
-  struct elektron_data *data = backend->data;
-  GSList *exts = elektron_get_dev_exts (backend, ops);
-  switch (data->device_desc.id)
-    {
-    case 42:			//Digitakt II
-      exts = g_slist_append (exts, strdup ("dtprj"));
-      break;
-    case 43:			//Digitone II
-      exts = g_slist_append (exts, strdup ("dnprj"));
-      break;
-    }
-  return exts;
-}
-
-GSList *
-elektron_get_takt_ii_pst_exts (struct backend *backend,
-			       const struct fs_operations *ops)
-{
-  struct elektron_data *data = backend->data;
-  GSList *exts = elektron_get_dev_exts (backend, ops);
-  switch (data->device_desc.id)
-    {
-    case 42:			//Digitakt II
-      exts = g_slist_append (exts, strdup ("dtsnd"));
-      break;
-    case 43:			//Digitone II
-      exts = g_slist_append (exts, strdup ("dnsnd"));
-      break;
-    }
-  return exts;
+  return FS_RAW_ANY_EXTS;
 }
 
 gint
@@ -3066,7 +3035,7 @@ elektron_get_sample_path_from_hash_size (struct backend *backend,
   return path;
 }
 
-gint
+static gint
 elektron_sample_save (const gchar *path, struct idata *sample,
 		      struct job_control *control)
 {
@@ -3081,7 +3050,6 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .name = "sample",
   .gui_name = "Samples",
   .gui_icon = FS_ICON_WAVE,
-  .ext = "wav",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_samples_dir,
   .file_exists = elektron_sample_file_exists,
@@ -3103,7 +3071,6 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .id = FS_RAW_ALL,
   .options = 0,
   .name = "raw",
-  .ext = "raw",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_raw_dir,
   .file_exists = elektron_raw_file_exists,
@@ -3116,7 +3083,7 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .upload = elektron_upload_raw,
   .load = file_load,
   .save = file_save,
-  .get_exts = elektron_get_dev_exts,
+  .get_exts = elektron_get_raw_any_exts,
   .get_upload_path = elektron_get_upload_path_smplrw,
   .get_download_path = elektron_get_download_path
 };
@@ -3124,10 +3091,9 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
 static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .id = FS_RAW_PRESETS,
   .options = FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
-  .name = "preset",
+  .name = "preset-raw",
   .gui_name = "Presets",
   .gui_icon = FS_ICON_SND,
-  .ext = "pst",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_raw_dir,
   .file_exists = elektron_raw_file_exists,
@@ -3149,7 +3115,6 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .id = FS_DATA_ANY,
   .options = FS_OPTION_SLOT_STORAGE,
   .name = "data",
-  .ext = "data",
   .readdir = elektron_read_data_dir_any,
   .print_item = elektron_print_data,
   .delete = elektron_clear_data_item_any,
@@ -3162,7 +3127,7 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .get_slot = elektron_get_id_as_slot,
   .load = file_load,
   .save = file_save,
-  .get_exts = elektron_get_dev_exts,
+  .get_exts = elektron_get_data_any_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
@@ -3174,7 +3139,6 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .name = "project",
   .gui_name = "Projects",
   .gui_icon = FS_ICON_PRJ,
-  .ext = "prj",
   .readdir = elektron_read_data_dir_prj,
   .print_item = elektron_print_data,
   .delete = elektron_clear_data_item_prj,
@@ -3187,7 +3151,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .get_slot = elektron_get_id_as_slot,
   .load = file_load,
   .save = file_save,
-  .get_exts = elektron_get_dev_exts_prj,
+  .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
@@ -3200,7 +3164,6 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .name = "sound",
   .gui_name = "Sounds",
   .gui_icon = FS_ICON_SND,
-  .ext = "snd",
   .readdir = elektron_read_data_dir_snd,
   .print_item = elektron_print_data,
   .delete = elektron_clear_data_item_snd,
@@ -3225,7 +3188,6 @@ static const struct fs_operations FS_DATA_PST_OPERATIONS = {
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = FS_ICON_SND,
-  .ext = "pst",
   .readdir = elektron_read_data_dir_pst,
   .print_item = elektron_print_data,
   .delete = elektron_clear_data_item_pst,
@@ -3238,7 +3200,7 @@ static const struct fs_operations FS_DATA_PST_OPERATIONS = {
   .get_slot = elektron_get_id_as_slot,
   .load = file_load,
   .save = file_save,
-  .get_exts = elektron_get_dev_exts_pst,
+  .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
@@ -3247,10 +3209,9 @@ static const struct fs_operations FS_SAMPLES_STEREO_OPERATIONS = {
   .id = FS_SAMPLES_STEREO,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
-  .name = "sample",
+  .name = "sample-stereo",
   .gui_name = "Samples",
   .gui_icon = FS_ICON_WAVE,
-  .ext = "wav",
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_samples_dir,
   .file_exists = elektron_sample_file_exists,
@@ -3273,10 +3234,9 @@ static const struct fs_operations FS_DATA_TAKT_II_PST_OPERATIONS = {
   .options = FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_SIZE_COLUMN |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
     FS_OPTION_ALLOW_SEARCH,
-  .name = "preset",
+  .name = "preset-takt-ii",
   .gui_name = "Presets",
   .gui_icon = FS_ICON_SND,
-  .ext = "pst",
   .readdir = elektron_read_data_dir_snd,
   .print_item = elektron_print_data,
   .delete = elektron_clear_data_item_snd,
@@ -3289,7 +3249,7 @@ static const struct fs_operations FS_DATA_TAKT_II_PST_OPERATIONS = {
   .get_slot = elektron_get_id_as_slot,
   .load = file_load,
   .save = file_save,
-  .get_exts = elektron_get_takt_ii_pst_exts,	//Backwards compatible with takt I devices
+  .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
 };
@@ -3301,39 +3261,29 @@ static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_DATA_TAKT_II_PST_OPERATIONS, NULL
 };
 
-static gint
-elektron_configure_device (struct backend *backend, guint8 id)
+gint
+elektron_configure_device_from_file (struct backend *backend, guint8 id,
+				     const gchar *filename)
 {
   gint err, devices, storage;
-  guint32 filesystems = 0;
   JsonParser *parser;
   JsonReader *reader;
-  gchar *devices_filename;
+  gchar **members;
+  gchar **name;
   GError *error = NULL;
   struct elektron_data *data = backend->data;
 
   parser = json_parser_new ();
 
-  devices_filename = get_user_dir (CONF_DIR DEVICES_FILE);
-
-  if (!json_parser_load_from_file (parser, devices_filename, &error))
+  if (!json_parser_load_from_file (parser, filename, &error))
     {
       debug_print (1, "%s", error->message);
       g_clear_error (&error);
-
-      g_free (devices_filename);
-      devices_filename = strdup (DATADIR DEVICES_FILE);
-
-      if (!json_parser_load_from_file (parser, devices_filename, &error))
-	{
-	  error_print ("%s", error->message);
-	  g_clear_error (&error);
-	  err = -ENODEV;
-	  goto cleanup_parser;
-	}
+      err = -ENODEV;
+      goto cleanup_parser;
     }
 
-  debug_print (1, "Using %s...", devices_filename);
+  debug_print (1, "Parsing %s...", filename);
 
   reader = json_reader_new (json_parser_get_root (parser));
   if (!reader)
@@ -3359,7 +3309,7 @@ elektron_configure_device (struct backend *backend, guint8 id)
     }
 
   err = -ENODEV;
-  for (int i = 0; i < devices; i++)
+  for (guint i = 0; i < devices; i++)
     {
       if (!json_reader_read_element (reader, i))
 	{
@@ -3384,17 +3334,6 @@ elektron_configure_device (struct backend *backend, guint8 id)
       err = 0;
       debug_print (1, "Device %d found", id);
 
-      if (!json_reader_read_member (reader, DEV_TAG_ALIAS))
-	{
-	  error_print ("Cannot read member '%s'. Stopping...", DEV_TAG_ALIAS);
-	  json_reader_end_element (reader);
-	  err = -ENODEV;
-	  break;
-	}
-      snprintf (data->device_desc.alias, LABEL_MAX, "%s",
-		json_reader_get_string_value (reader));
-      json_reader_end_member (reader);
-
       if (!json_reader_read_member (reader, DEV_TAG_NAME))
 	{
 	  error_print ("Cannot read member '%s'. Stopping...", DEV_TAG_NAME);
@@ -3414,7 +3353,72 @@ elektron_configure_device (struct backend *backend, guint8 id)
 	  err = -ENODEV;
 	  break;
 	}
-      filesystems = json_reader_get_int_value (reader);
+      members = json_reader_list_members (reader);
+      name = members;
+      data->device_desc.fs_descs_len = 0;
+      backend->fs_ops = NULL;
+      while (*name)
+	{
+	  const struct fs_operations **fs_ops = FS_OPERATIONS;
+	  while (*fs_ops)
+	    {
+	      const gchar *fs_name = (*fs_ops)->name;
+	      if (!strcmp (fs_name, *name))
+		{
+		  debug_print (2, "Reading '%s' filesystem...", fs_name);
+		  backend->fs_ops = g_slist_append (backend->fs_ops,
+						    (gpointer) * fs_ops);
+		  break;
+		}
+	      fs_ops++;
+	    }
+
+	  if (*fs_ops)
+	    {
+	      if (data->device_desc.fs_descs_len == ELEKTRON_MAX_FS)
+		{
+		  error_print ("Too many filesystems");
+		  break;
+		}
+	      struct fs_desc *fs_desc =
+		&data->device_desc.fs_descs[data->device_desc.fs_descs_len];
+	      snprintf (fs_desc->name, LABEL_MAX, "%s", *name);
+	      data->device_desc.fs_descs_len++;
+
+	      json_reader_read_member (reader, *name);
+
+	      gint j = 0;
+
+	      if (!json_reader_get_null_value (reader))
+		{
+		  gint extensions = json_reader_count_elements (reader);
+		  for (; j < extensions && j < ELEKTRON_MAX_EXTENSIONS - 1;
+		       j++)
+		    {
+		      json_reader_read_element (reader, j);
+
+		      const gchar *ext_name =
+			json_reader_get_string_value (reader);
+		      debug_print (2, "Adding '%s' extension...", ext_name);
+		      fs_desc->extensions[j] = strdup (ext_name);
+
+		      json_reader_end_element (reader);
+		    }
+		}
+
+	      fs_desc->extensions[j] = NULL;
+
+	      json_reader_end_member (reader);
+	    }
+	  else
+	    {
+	      error_print ("Filesystem '%s' not found", *name);
+	    }
+
+	  name++;
+	}
+
+      g_strfreev (members);
       json_reader_end_member (reader);
 
       if (!json_reader_read_member (reader, DEV_TAG_STORAGE))
@@ -3432,20 +3436,20 @@ elektron_configure_device (struct backend *backend, guint8 id)
 	  error_print ("Too many storage (%d)", storage);
 	  storage = ELEKTRON_MAX_STORAGE;
 	}
-      for (guint i = 0; i < storage; i++)
+      for (guint j = 0; j < storage; j++)
 	{
-	  json_reader_read_element (reader, i);
+	  json_reader_read_element (reader, j);
 	  const gchar *storage_name = json_reader_get_string_value (reader);
-	  const gchar **name = FS_TYPE_NAMES;
+	  const gchar **stname = FS_TYPE_NAMES;
 	  guint id = 1;
-	  while (*name)
+	  while (*stname)
 	    {
-	      if (strcmp (*name, storage_name) == 0)
+	      if (strcmp (*stname, storage_name) == 0)
 		{
 		  data->device_desc.storage |= id;
 		  break;
 		}
-	      name++;
+	      stname++;
 	      id <<= 1;
 	    }
 	  json_reader_end_element (reader);
@@ -3455,27 +3459,32 @@ elektron_configure_device (struct backend *backend, guint8 id)
       break;
     }
 
-  backend->fs_ops = NULL;
-  const struct fs_operations **fs_ops = FS_OPERATIONS;
-  while (*fs_ops)
-    {
-      if ((*fs_ops)->id & filesystems)
-	{
-	  backend->fs_ops = g_slist_append (backend->fs_ops,
-					    (gpointer) * fs_ops);
-	}
-      fs_ops++;
-    }
-
 cleanup_reader:
   g_object_unref (reader);
 cleanup_parser:
   g_object_unref (parser);
-  g_free (devices_filename);
   if (err)
     {
       data->device_desc.id = -1;
     }
+  return err;
+}
+
+static gint
+elektron_configure_device (struct backend *backend, guint8 id)
+{
+
+  gchar *filename = get_user_dir (CONF_DIR DEVICES_FILE);
+  gint err = elektron_configure_device_from_file (backend, id, filename);
+  g_free (filename);
+
+  if (err)
+    {
+      filename = strdup (DATADIR DEVICES_FILE);
+      err = elektron_configure_device_from_file (backend, id, filename);
+      g_free (filename);
+    }
+
   return err;
 }
 
@@ -3499,6 +3508,36 @@ elektron_ping (struct backend *backend)
 
 
   return rx_msg;
+}
+
+void
+elektron_destroy_data (struct backend *backend)
+{
+  struct elektron_data *data = backend->data;
+  struct device_desc *device_desc = &data->device_desc;
+  struct fs_desc *fs_desc = device_desc->fs_descs;
+
+  debug_print (1, "Destroying backend elektron data...");
+
+
+  for (guint i = 0; i < device_desc->fs_descs_len; i++)
+    {
+      gchar **ext = fs_desc->extensions;
+      for (guint j = 0; j < ELEKTRON_MAX_EXTENSIONS; j++)
+	{
+	  if (!*ext)
+	    {
+	      break;
+	    }
+
+	  g_free (*ext);
+	  ext++;
+	}
+      fs_desc++;
+    }
+
+  g_free (backend->data);
+  backend->data = NULL;
 }
 
 static gint
@@ -3564,7 +3603,7 @@ elektron_handshake (struct backend *backend)
 
   g_free (overbridge_name);
 
-  backend->destroy_data = backend_destroy_data;
+  backend->destroy_data = elektron_destroy_data;
   backend->upgrade_os = elektron_upgrade_os;
   backend->get_storage_stats =
     data->device_desc.storage ? elektron_get_storage_stats : NULL;

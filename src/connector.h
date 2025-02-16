@@ -116,7 +116,7 @@ typedef gboolean (*fs_file_exists) (struct backend *, const gchar *);
 
 struct fs_operations
 {
-  gint32 id;
+  guint32 id;
   guint32 options;
   const gchar *name;
   const gchar *gui_name;
