@@ -31,6 +31,8 @@
 #define FS_ICON_GENERIC "elektroid-file-symbolic"
 #define FS_ICON_KEYS "elektroid-keys-symbolic"
 
+#define GET_SAVE_EXT(ops,backend) (ops->get_exts(backend, ops)[0])
+
 enum item_type
 {
   ITEM_TYPE_NONE = 0,
@@ -75,8 +77,9 @@ struct fs_operations;
 typedef void (*fs_print_item) (struct item_iterator *, struct backend *,
 			       const struct fs_operations *);
 
-typedef gint (*fs_init_iter_func) (struct backend *, struct item_iterator *,
-				   const gchar *, GSList *);
+typedef gint (*fs_init_iter_func) (struct backend * backend,
+				   struct item_iterator * iter,
+				   const gchar * dir, const gchar ** exts);
 
 typedef gint (*fs_path_func) (struct backend *, const gchar *);
 
@@ -91,8 +94,8 @@ typedef gchar *(*fs_get_item_slot) (struct item *, struct backend *);
 typedef gint (*fs_local_file_op) (const gchar *, struct idata *,
 				  struct job_control *);
 
-typedef GSList *(*fs_get_exts) (struct backend *,
-				const struct fs_operations *);
+typedef const gchar **(*fs_get_exts) (struct backend *,
+				      const struct fs_operations *);
 
 typedef gchar *(*fs_get_path) (struct backend * backend,
 			       const struct fs_operations * ops,
@@ -118,7 +121,6 @@ struct fs_operations
   const gchar *name;
   const gchar *gui_name;
   const gchar *gui_icon;
-  const gchar *ext;
   guint32 max_name_len;
   fs_init_iter_func readdir;	//This function runs on its own thread so it can take as long as needed in order to make calls to item_iterator_next not to wait for IO.
   fs_file_exists file_exists;
@@ -135,7 +137,7 @@ struct fs_operations
   fs_local_file_op save;	//Write a file from memory to the OS storage. Typically used after download.
   fs_local_file_op load;	//Load a file from the OS storage into memory. Typically used before upload.
   fs_get_item_slot get_slot;	//Optionally used by slot filesystems to show a custom slot name column such `A01` or `[P-01]`. Needs FS_OPTION_SHOW_SLOT_COLUMN.
-  fs_get_exts get_exts;		//If present, this is used; if not, type_ext is used.
+  fs_get_exts get_exts;		//Length must be one at least. First element will be used as file extension and all will be used as loading extensions.
   fs_get_path get_upload_path;
   fs_get_path get_download_path;
   fs_select_item select_item;
@@ -184,7 +186,7 @@ void item_iterator_free (struct item_iterator *iter);
 
 gboolean item_iterator_is_dir_or_matches_extensions (struct item_iterator
 						     *iter,
-						     const GSList *
+						     const gchar **
 						     extensions);
 
 /**

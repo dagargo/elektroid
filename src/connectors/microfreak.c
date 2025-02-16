@@ -60,6 +60,22 @@
 
 #define MICROFREAK_WAVETABLE_EMPTY 0x08
 
+static const gchar *MICROFREAK_PRESET_EXTS[] =
+  { MICROFREAK_ZPRESET_EXT, MICROFREAK_PPRESET_EXT, MICROFREAK_PPRESET_EXT_2
+};
+
+static const gchar *MICROFREAK_PPRESET_EXTS[] =
+  { MICROFREAK_PPRESET_EXT, NULL };
+
+static const gchar *MICROFREAK_ZPRESET_EXTS[] =
+  { MICROFREAK_ZPRESET_EXT, NULL };
+
+static const gchar *MICROFREAK_PWAVETABLE_EXTS[] =
+  { MICROFREAK_PWAVETABLE_EXT, NULL };
+
+static const gchar *MICROFREAK_ZWAVETABLE_EXTS[] =
+  { MICROFREAK_ZWAVETABLE_EXT, NULL };
+
 static const guint8 MICROFREAK_REQUEST_HEADER[] =
   { 0xf0, 0, 0x20, 0x6b, 7, 1 };
 
@@ -284,7 +300,7 @@ end:
 static gint
 microfreak_preset_read_dir (struct backend *backend,
 			    struct item_iterator *iter, const gchar *path,
-			    GSList *extensions)
+			    const gchar **extensions)
 {
   return microfreak_common_read_dir (backend, iter, path,
 				     microfreak_next_preset_dentry);
@@ -650,11 +666,16 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
   return 0;
 }
 
+static const gchar **
+microfreak_ppreset_get_extensions ()
+{
+  return MICROFREAK_PPRESET_EXTS;
+}
+
 static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
   .id = FS_MICROFREAK_PPRESET,
   .options = FS_OPTION_SLOT_STORAGE,
   .name = "ppreset",
-  .ext = MICROFREAK_PPRESET_EXT,
   .max_name_len = MICROFREAK_PRESET_NAME_LEN,
   .readdir = microfreak_preset_read_dir,
   .print_item = common_print_item,
@@ -664,6 +685,7 @@ static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
   .upload = microfreak_preset_upload,
   .load = file_load,
   .save = file_save,
+  .get_exts = microfreak_ppreset_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_nnn
 };
@@ -675,11 +697,16 @@ microfreak_zpreset_save (const gchar *path, struct idata *zpreset,
   return microfreak_zobject_save (path, zpreset, control, "0_preset");
 }
 
+static const gchar **
+microfreak_zpreset_get_extensions ()
+{
+  return MICROFREAK_ZPRESET_EXTS;
+}
+
 static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .id = FS_MICROFREAK_ZPRESET,
   .options = FS_OPTION_SLOT_STORAGE,
   .name = "zpreset",
-  .ext = MICROFREAK_ZPRESET_EXT,
   .max_name_len = MICROFREAK_PRESET_NAME_LEN,
   .readdir = microfreak_preset_read_dir,
   .print_item = common_print_item,
@@ -689,6 +716,7 @@ static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
   .upload = microfreak_preset_upload,
   .load = microfreak_zobject_load,
   .save = microfreak_zpreset_save,
+  .get_exts = microfreak_zpreset_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_nnn
 };
@@ -708,13 +736,11 @@ microfreak_preset_load (const char *path, struct idata *preset,
     }
 }
 
-static GSList *
+static const gchar **
 microfreak_preset_get_exts (struct backend *backend,
 			    const struct fs_operations *ops)
 {
-  GSList *exts = g_slist_append (NULL, strdup (MICROFREAK_PPRESET_EXT));
-  exts = g_slist_append (NULL, strdup (MICROFREAK_PPRESET_EXT_2));
-  return g_slist_append (exts, strdup (MICROFREAK_ZPRESET_EXT));
+  return MICROFREAK_PRESET_EXTS;
 }
 
 static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
@@ -725,7 +751,6 @@ static const struct fs_operations FS_MICROFREAK_PRESET_OPERATIONS = {
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = FS_ICON_SND,
-  .ext = MICROFREAK_ZPRESET_EXT,
   .max_name_len = MICROFREAK_PRESET_NAME_LEN,
   .readdir = microfreak_preset_read_dir,
   .print_item = common_print_item,
@@ -812,7 +837,7 @@ end:
 static gint
 microfreak_sample_read_dir (struct backend *backend,
 			    struct item_iterator *iter, const gchar *path,
-			    GSList *extensions)
+			    const gchar **extensions)
 {
   return microfreak_common_read_dir (backend, iter, path,
 				     microfreak_next_sample_dentry);
@@ -1337,7 +1362,7 @@ end:
 static gint
 microfreak_wavetable_read_dir (struct backend *backend,
 			       struct item_iterator *iter, const gchar *path,
-			       GSList *extensions)
+			       const gchar **extensions)
 {
   return microfreak_common_read_dir (backend, iter, path,
 				     microfreak_next_wavetable_dentry);
@@ -1906,11 +1931,16 @@ microfreak_get_wavetable_id_as_slot (struct item *item,
   return common_get_id_as_slot_padded (item, backend, 2);
 }
 
+static const gchar **
+microfreak_pwavetable_get_extensions ()
+{
+  return MICROFREAK_PWAVETABLE_EXTS;
+}
+
 static const struct fs_operations FS_MICROFREAK_PWAVETABLE_OPERATIONS = {
   .id = FS_MICROFREAK_PWAVETABLE,
   .options = FS_OPTION_SLOT_STORAGE,
   .name = "pwavetable",
-  .ext = MICROFREAK_PWAVETABLE_EXT,
   .max_name_len = MICROFREAK_WAVETABLE_NAME_LEN - 1,
   .readdir = microfreak_wavetable_read_dir,
   .print_item = common_print_item,
@@ -1921,15 +1951,21 @@ static const struct fs_operations FS_MICROFREAK_PWAVETABLE_OPERATIONS = {
   .upload = microfreak_xwavetable_upload,
   .load = microfreak_pwavetable_load,
   .save = microfreak_pwavetable_save,
+  .get_exts = microfreak_pwavetable_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_nn
 };
+
+static const gchar **
+microfreak_zwavetable_get_extensions ()
+{
+  return MICROFREAK_ZWAVETABLE_EXTS;
+}
 
 static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
   .id = FS_MICROFREAK_ZWAVETABLE,
   .options = FS_OPTION_SLOT_STORAGE,
   .name = "zwavetable",
-  .ext = MICROFREAK_ZWAVETABLE_EXT,
   .max_name_len = MICROFREAK_WAVETABLE_NAME_LEN - 1,
   .readdir = microfreak_wavetable_read_dir,
   .print_item = common_print_item,
@@ -1940,6 +1976,7 @@ static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
   .upload = microfreak_xwavetable_upload,
   .load = microfreak_zwavetable_load,
   .save = microfreak_zwavetable_save,
+  .get_exts = microfreak_zwavetable_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_nn
 };
@@ -1960,7 +1997,6 @@ static const struct fs_operations FS_MICROFREAK_WAVETABLE_OPERATIONS = {
   .name = "wavetable",
   .gui_name = "Wavetables",
   .gui_icon = FS_ICON_WAVETABLE,
-  .ext = "wav",
   .max_name_len = MICROFREAK_WAVETABLE_NAME_LEN - 1,
   .readdir = microfreak_wavetable_read_dir,
   .print_item = common_print_item,

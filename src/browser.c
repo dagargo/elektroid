@@ -563,7 +563,7 @@ browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
 static void
 browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
 			       struct item_iterator *iter, const gchar *icon,
-			       GSList *extensions)
+			       const gchar **extensions)
 {
   gint err;
   gchar *child_dir, *child_rel_dir;
@@ -599,65 +599,36 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
     }
 }
 
-static GSList *
-browser_get_remote_browser_exts ()
-{
-  GSList *exts;
-  if (remote_browser.fs_ops->get_exts)
-    {
-      exts = remote_browser.fs_ops->get_exts (remote_browser.backend,
-					      remote_browser.fs_ops);
-    }
-  else
-    {
-      if (remote_browser.fs_ops->ext)
-	{
-	  exts = g_slist_append (NULL, strdup (remote_browser.fs_ops->ext));
-	}
-      else
-	{
-	  exts = NULL;
-	}
-    }
-  return exts;
-}
-
-static const gchar *
-browser_get_icon_for_local_browser ()
-{
-  const gchar *icon;
-  if (remote_browser.fs_ops->upload)
-    {
-      icon = remote_browser.fs_ops->gui_icon;
-    }
-  else
-    {
-      icon = local_browser.fs_ops->gui_icon;
-    }
-  return icon;
-}
-
 static gpointer
 browser_load_dir_runner (gpointer data)
 {
   gint err;
   struct browser *browser = data;
   struct item_iterator iter;
-  GSList *exts;
+  const gchar **exts;
   const gchar *icon;
   gboolean search_mode;
 
   if (browser == &remote_browser)
     {
-      exts = browser_get_remote_browser_exts (remote_browser.fs_ops->ext);
+      exts = remote_browser.fs_ops->get_exts (remote_browser.backend,
+					      remote_browser.fs_ops);
       icon = remote_browser.fs_ops->gui_icon;
     }
   else
     {
       if (remote_browser.fs_ops)
 	{
-	  exts = browser_get_remote_browser_exts ();
-	  icon = browser_get_icon_for_local_browser ();
+	  exts = remote_browser.fs_ops->get_exts (remote_browser.backend,
+						  remote_browser.fs_ops);
+	  if (remote_browser.fs_ops->upload)
+	    {
+	      icon = remote_browser.fs_ops->gui_icon;
+	    }
+	  else
+	    {
+	      icon = local_browser.fs_ops->gui_icon;
+	    }
 	}
       else
 	{
@@ -694,7 +665,6 @@ browser_load_dir_runner (gpointer data)
 
 end:
   g_idle_add (browser_load_dir_runner_update_ui, browser);
-  g_slist_free_full (exts, g_free);
   return NULL;
 }
 

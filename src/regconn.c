@@ -35,7 +35,7 @@ void
 regconn_register ()
 {
   system_connector = &CONNECTOR_SYSTEM;
-  gslist_fill (&connectors, &CONNECTOR_ELEKTRON, &CONNECTOR_MICROBRUTE,
+  gslist_fill (&connectors, &CONNECTOR_MICROBRUTE,
 	       &CONNECTOR_MICROFREAK, &CONNECTOR_PHATTY, &CONNECTOR_SUMMIT,
 	       &CONNECTOR_CZ, &CONNECTOR_SDS, &CONNECTOR_EFACTOR,
 	       &CONNECTOR_DEFAULT, NULL);

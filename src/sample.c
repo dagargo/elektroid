@@ -1064,17 +1064,10 @@ sample_load_from_file (const gchar *path, struct idata *sample,
 				     NULL);
 }
 
-GSList *
+const gchar **
 sample_get_sample_extensions ()
 {
-  GSList *exts = NULL;
-  const gchar **e = ELEKTROID_AUDIO_LOCAL_EXTS;
-  while (*e)
-    {
-      exts = g_slist_append (exts, strdup (*e));
-      e++;
-    }
-  return exts;
+  return ELEKTROID_AUDIO_LOCAL_EXTS;
 }
 
 const gchar *

@@ -32,7 +32,7 @@
 struct system_iterator_data
 {
   GDir *dir;
-  const GSList *extensions;
+  const gchar **extensions;
 };
 
 static gint
@@ -187,7 +187,7 @@ system_next_dentry_with_sample_info (struct item_iterator *iter)
 
 static gint
 system_read_dir_opts (struct backend *backend, struct item_iterator *iter,
-		      const gchar *dir, GSList *extensions,
+		      const gchar *dir, const gchar **extensions,
 		      iterator_next next)
 {
   GDir *gdir;
@@ -209,7 +209,7 @@ system_read_dir_opts (struct backend *backend, struct item_iterator *iter,
 
 gint
 system_read_dir (struct backend *backend, struct item_iterator *iter,
-		 const gchar *dir, GSList *extensions)
+		 const gchar *dir, const gchar **extensions)
 {
   return system_read_dir_opts (backend, iter, dir, extensions,
 			       system_next_dentry_without_sample_info);
@@ -217,7 +217,7 @@ system_read_dir (struct backend *backend, struct item_iterator *iter,
 
 gint
 system_samples_read_dir (struct backend *backend, struct item_iterator *iter,
-			 const gchar *dir, GSList *extensions)
+			 const gchar *dir, const gchar **extensions)
 {
   return system_read_dir_opts (backend, iter, dir, extensions,
 			       system_next_dentry_with_sample_info);
@@ -387,7 +387,6 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .name = "wav48k16b2c",
   .gui_name = "WAV 48 KHz 16 bits stereo",
   .gui_icon = FS_ICON_WAVE,
-  .ext = "wav",
   .readdir = system_samples_read_dir,
   .print_item = common_print_item,
   .file_exists = system_file_exists,
@@ -413,7 +412,6 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .name = "wav48k16b1c",
   .gui_name = "WAV 48 KHz 16 bits mono",
   .gui_icon = FS_ICON_WAVE,
-  .ext = "wav",
   .readdir = system_samples_read_dir,
   .print_item = common_print_item,
   .file_exists = system_file_exists,
@@ -439,7 +437,6 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .name = "wav44.1k16b2c",
   .gui_name = "WAV 44.1 KHz 16 bits stereo",
   .gui_icon = FS_ICON_WAVE,
-  .ext = "wav",
   .readdir = system_samples_read_dir,
   .print_item = common_print_item,
   .file_exists = system_file_exists,
@@ -465,7 +462,6 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .name = "wav44.1k16b1c",
   .gui_name = "WAV 44.1 KHz 16 bits mono",
   .gui_icon = FS_ICON_WAVE,
-  .ext = "wav",
   .readdir = system_samples_read_dir,
   .print_item = common_print_item,
   .file_exists = system_file_exists,
@@ -494,7 +490,6 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_24_STEREO_OPERATIONS = {
   .name = "wav44.1k24b2c",
   .gui_name = "WAV 44.1 KHz 24 bits stereo",
   .gui_icon = FS_ICON_WAVE,
-  .ext = "wav",
   .readdir = system_samples_read_dir,
   .file_exists = system_file_exists,
   .mkdir = system_mkdir,
@@ -519,7 +514,6 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_24_MONO_OPERATIONS = {
   .name = "wav44.1k24b1c",
   .gui_name = "WAV 44.1 KHz 24 bits mono",
   .gui_icon = FS_ICON_WAVE,
-  .ext = "wav",
   .readdir = system_samples_read_dir,
   .file_exists = system_file_exists,
   .mkdir = system_mkdir,
@@ -547,7 +541,6 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_STEREO_OPERATIONS = {
   .name = "wav44.1k8b2c",
   .gui_name = "WAV 44.1 KHz 8 bits stereo",
   .gui_icon = FS_ICON_WAVE,
-  .ext = "wav",
   .readdir = system_samples_read_dir,
   .file_exists = system_file_exists,
   .mkdir = system_mkdir,
@@ -572,7 +565,6 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_MONO_OPERATIONS = {
   .name = "wav44.1k8b1c",
   .gui_name = "WAV 44.1 KHz 8 bits mono",
   .gui_icon = FS_ICON_WAVE,
-  .ext = "wav",
   .readdir = system_samples_read_dir,
   .file_exists = system_file_exists,
   .mkdir = system_mkdir,
@@ -600,7 +592,6 @@ const struct fs_operations FS_SYSTEM_SAMPLES_32_16_MONO_OPERATIONS = {
   .name = "wav32k8b1c",
   .gui_name = "WAV 32 KHz 16 bits mono",
   .gui_icon = FS_ICON_WAVE,
-  .ext = "wav",
   .readdir = system_samples_read_dir,
   .file_exists = system_file_exists,
   .mkdir = system_mkdir,

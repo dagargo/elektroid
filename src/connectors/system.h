@@ -24,11 +24,11 @@
 extern struct connector CONNECTOR_SYSTEM;
 
 gint system_read_dir (struct backend *backend, struct item_iterator *iter,
-		      const gchar * dir, GSList * extensions);
+		      const gchar * dir, const gchar ** extensions);
 
 gint system_samples_read_dir (struct backend *backend,
 			      struct item_iterator *iter, const gchar * dir,
-			      GSList * extensions);
+			      const gchar ** extensions);
 
 gboolean system_file_exists (struct backend *, const gchar *);
 

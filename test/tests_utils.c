@@ -5,21 +5,21 @@
 void
 test_file_matches_extensions ()
 {
-  GSList *exts = NULL;
+  const gchar *exts0[] = { NULL };
+  const gchar *exts1[] = { "ext1", NULL };
+  const gchar *exts2[] = { "ext1", "ext2", NULL };
 
   printf ("\n");
 
-  CU_ASSERT_EQUAL (file_matches_extensions ("file.ext1", exts), TRUE);
+  CU_ASSERT_EQUAL (file_matches_extensions ("file.ext1", NULL), TRUE);
 
-  exts = g_slist_append (exts, "ext1");
-  CU_ASSERT_EQUAL (file_matches_extensions ("file", exts), FALSE);
-  CU_ASSERT_EQUAL (file_matches_extensions ("file.ext1", exts), TRUE);
+  CU_ASSERT_EQUAL (file_matches_extensions ("file.ext1", exts0), FALSE);
 
-  exts = g_slist_append (exts, "ext2");
-  CU_ASSERT_EQUAL (file_matches_extensions ("file.ext2", exts), TRUE);
-  CU_ASSERT_EQUAL (file_matches_extensions ("file.eXt2", exts), TRUE);
+  CU_ASSERT_EQUAL (file_matches_extensions ("file", exts1), FALSE);
+  CU_ASSERT_EQUAL (file_matches_extensions ("file.ext1", exts1), TRUE);
 
-  g_slist_free (exts);		//Extensions in this test are not duplicated
+  CU_ASSERT_EQUAL (file_matches_extensions ("file.ext2", exts2), TRUE);
+  CU_ASSERT_EQUAL (file_matches_extensions ("file.eXt2", exts2), TRUE);
 }
 
 void

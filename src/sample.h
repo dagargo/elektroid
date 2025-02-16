@@ -67,7 +67,7 @@ gint sample_load_from_file_full (const gchar * path, struct idata *sample,
 gint sample_load_sample_info (const gchar * path,
 			      struct sample_info *sample_info);
 
-GSList *sample_get_sample_extensions ();
+const gchar **sample_get_sample_extensions ();
 
 void sample_check_and_fix_loop_points (struct sample_info *sample_info);
 

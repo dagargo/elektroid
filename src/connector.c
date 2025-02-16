@@ -48,7 +48,7 @@ item_iterator_free (struct item_iterator *iter)
 
 gboolean
 item_iterator_is_dir_or_matches_extensions (struct item_iterator *iter,
-					    const GSList *extensions)
+					    const gchar **extensions)
 {
   if (iter->item.type == ITEM_TYPE_DIR)
     {
