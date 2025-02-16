@@ -50,7 +50,7 @@ default_next_dentry (struct item_iterator *iter)
 
 static gint
 default_read_dir (struct backend *backend, struct item_iterator *iter,
-		  const gchar *dir, GSList *extensions)
+		  const gchar *dir, const gchar **extensions)
 {
   if (strcmp (dir, "/"))
     {

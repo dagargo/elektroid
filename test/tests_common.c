@@ -56,6 +56,14 @@ test_common_get_sanitized_name ()
   g_free (str);
 }
 
+static const gchar *EXTS[] = { "ext", NULL };
+
+static const gchar **
+get_exts ()
+{
+  return EXTS;
+}
+
 void
 test_common_slot_get_download_path ()
 {
@@ -66,7 +74,7 @@ test_common_slot_get_download_path ()
 
   snprintf (backend.name, LABEL_MAX, "Dev Name");
   ops.name = "fsname";
-  ops.ext = "ext";
+  ops.get_exts = get_exts;
 
   idata_init (&idata, NULL, strdup ("name"), NULL);
 

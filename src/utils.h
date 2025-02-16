@@ -122,7 +122,7 @@ void job_control_set_progress_no_sync (struct job_control *control,
 void job_control_set_progress (struct job_control *control, gdouble progress);
 
 gboolean file_matches_extensions (const gchar * name,
-				  const GSList * extensions);
+				  const gchar ** extensions);
 
 gchar *path_chain (enum path_type, const gchar *, const gchar *);
 

@@ -37,6 +37,8 @@
 #define PHATTY_PANEL_ID 0x100
 #define PHATTY_MAX_SCALES 32
 
+static const gchar *PHATTY_SCALE_EXTS[] = { "scl", NULL };
+
 static const guint8 MOOG_ID[] = { 0x04 };
 static const guint8 FAMILY_ID[] = { 0x0, 0x5 };
 static const guint8 MODEL_ID[] = { 0x0, 0x1 };
@@ -248,7 +250,7 @@ phatty_next_preset_dentry (struct item_iterator *iter)
 
 static gint
 phatty_read_dir (struct backend *backend, struct item_iterator *iter,
-		 const gchar *dir, GSList *exts)
+		 const gchar *dir, const gchar **extensions)
 {
   gint err = 0;
 
@@ -426,7 +428,6 @@ static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
   .name = "preset",
   .gui_name = "Presets",
   .gui_icon = FS_ICON_SND,
-  .ext = BE_SYSEX_EXT,
   .max_name_len = MOOG_NAME_LEN,
   .readdir = phatty_read_dir,
   .print_item = common_print_item,
@@ -436,6 +437,7 @@ static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
   .get_slot = phatty_get_id_as_slot,
   .load = file_load,
   .save = file_save,
+  .get_exts = common_sysex_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = phatty_get_download_path,
   .select_item = common_midi_program_change
@@ -443,7 +445,7 @@ static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
 
 static gint
 phatty_scale_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *dir, GSList *extensions)
+		       const gchar *dir, const gchar **extensions)
 {
   struct common_simple_read_dir_data *data;
 
@@ -479,17 +481,23 @@ phatty_scale_upload (struct backend *backend, const gchar *path,
   return common_data_tx (backend, input, control);
 }
 
+static const gchar **
+phatty_scale_get_extensions ()
+{
+  return PHATTY_SCALE_EXTS;
+}
+
 static const struct fs_operations FS_PHATTY_SCALE_OPERATIONS = {
   .id = FS_PHATTY_SCALE,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE,
   .name = "scale",
   .gui_name = "Scales",
   .gui_icon = FS_ICON_KEYS,
-  .ext = "scl",
   .readdir = phatty_scale_read_dir,
   .print_item = common_print_item,
   .upload = phatty_scale_upload,
   .load = scl_load_2_byte_octave_tuning_msg_from_scala_file,
+  .get_exts = phatty_scale_get_extensions,
   .get_upload_path = common_slot_get_upload_path
 };
 

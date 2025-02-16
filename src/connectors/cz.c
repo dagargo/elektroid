@@ -155,7 +155,7 @@ get_mem_type (const gchar *name)
 
 static gint
 cz_read_dir (struct backend *backend, struct item_iterator *iter,
-	     const gchar *dir, GSList *extensions)
+	     const gchar *dir, const gchar **extensions)
 {
   gint mem_type;
 
@@ -299,13 +299,13 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .name = "program",
   .gui_name = "Programs",
   .gui_icon = FS_ICON_SND,
-  .ext = BE_SYSEX_EXT,
   .readdir = cz_read_dir,
   .print_item = common_print_item,
   .download = cz_download,
   .upload = cz_upload,
   .load = file_load,
   .save = file_save,
+  .get_exts = common_sysex_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = cz_get_download_path,
   .select_item = common_midi_program_change

@@ -45,6 +45,8 @@
 #define SUMMIT_ALPHABET " ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}"
 #define SUMMIT_DEFAULT_CHAR '?'
 
+static const gchar *SUMMIT_TUNING_EXTS[] = { BE_SYSEX_EXT, SCALA_EXT, NULL };
+
 static const guint8 NOVATION_ID[] = { 0x0, 0x20, 0x29 };
 static const guint8 SUMMIT_ID[] = { 0x33, 1, 0, 0 };
 
@@ -250,14 +252,14 @@ summit_patch_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 summit_single_read_dir (struct backend *backend, struct item_iterator *iter,
-			const gchar *dir, GSList *extensions)
+			const gchar *dir, const gchar **extensions)
 {
   return summit_patch_read_dir (backend, iter, dir, FS_SUMMIT_SINGLE_PATCH);
 }
 
 static gint
 summit_multi_read_dir (struct backend *backend, struct item_iterator *iter,
-		       const gchar *path, GSList *extensions)
+		       const gchar *path, const gchar **extensions)
 {
   return summit_patch_read_dir (backend, iter, path, FS_SUMMIT_MULTI_PATCH);
 }
@@ -526,7 +528,6 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .name = "single",
   .gui_name = "Single",
   .gui_icon = FS_ICON_SND,
-  .ext = BE_SYSEX_EXT,
   .max_name_len = SUMMIT_PATCH_NAME_LEN,
   .readdir = summit_single_read_dir,
   .print_item = common_print_item,
@@ -536,6 +537,7 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .get_slot = summit_get_patch_id_as_slot,
   .load = file_load,
   .save = file_save,
+  .get_exts = common_sysex_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_nnn,
   .select_item = summit_single_patch_change
@@ -549,7 +551,6 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .name = "multi",
   .gui_name = "Multi",
   .gui_icon = FS_ICON_SND,
-  .ext = BE_SYSEX_EXT,
   .max_name_len = SUMMIT_PATCH_NAME_LEN,
   .readdir = summit_multi_read_dir,
   .print_item = common_print_item,
@@ -559,6 +560,7 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .get_slot = summit_get_patch_id_as_slot,
   .load = file_load,
   .save = file_save,
+  .get_exts = common_sysex_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_nnn,
   .select_item = summit_multi_patch_change
@@ -566,7 +568,7 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
 
 static gint
 summit_tuning_read_dir (struct backend *backend, struct item_iterator *iter,
-			const gchar *dir, GSList *extensions)
+			const gchar *dir, const gchar **extensions)
 {
   struct common_simple_read_dir_data *data;
 
@@ -672,11 +674,10 @@ summit_tuning_load (const gchar *path, struct idata *tuning,
   return err;
 }
 
-static GSList *
-summit_tunning_get_extensions ()
+static const gchar **
+summit_tuning_get_extensions ()
 {
-  GSList *exts = g_slist_append (NULL, strdup (SCALA_EXT));
-  return g_slist_append (exts, strdup (BE_SYSEX_EXT));
+  return SUMMIT_TUNING_EXTS;
 }
 
 static const struct fs_operations FS_SUMMIT_BULK_TUNING_OPERATIONS = {
@@ -685,14 +686,13 @@ static const struct fs_operations FS_SUMMIT_BULK_TUNING_OPERATIONS = {
   .name = "tuning",
   .gui_name = "Tuning Tables",
   .gui_icon = FS_ICON_KEYS,
-  .ext = BE_SYSEX_EXT,
   .readdir = summit_tuning_read_dir,
   .print_item = common_print_item,
   .download = summit_tuning_download,
   .upload = summit_tuning_upload,
   .load = summit_tuning_load,
   .save = file_save,
-  .get_exts = summit_tunning_get_extensions,
+  .get_exts = summit_tuning_get_extensions,
   .get_download_path = common_slot_get_download_path_nn,
   .get_upload_path = common_slot_get_upload_path
 };
@@ -757,7 +757,7 @@ summit_wavetable_next_dentry (struct item_iterator *iter)
 static gint
 summit_wavetable_read_dir (struct backend *backend,
 			   struct item_iterator *iter, const gchar *dir,
-			   GSList *extensions)
+			   const gchar **extensions)
 {
   if (!strcmp (dir, "/"))
     {
@@ -927,7 +927,6 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .name = "wavetable",
   .gui_name = "Wavetables",
   .gui_icon = FS_ICON_WAVETABLE,
-  .ext = BE_SYSEX_EXT,
   .max_name_len = SUMMIT_WAVETABLE_NAME_LEN,
   .readdir = summit_wavetable_read_dir,
   .print_item = common_print_item,
@@ -936,6 +935,7 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .upload = summit_wavetable_upload,
   .load = file_load,
   .save = file_save,
+  .get_exts = common_sysex_get_extensions,
   .get_download_path = common_slot_get_download_path_n,
   .get_upload_path = common_slot_get_upload_path
 };

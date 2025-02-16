@@ -5,22 +5,26 @@
 void
 test_item_iterator_is_dir_or_matches_extensions ()
 {
-  GSList *exts = NULL;
+  const gchar *exts0[] = { NULL };
+  const gchar *exts1[] = { "ext1", NULL };
+  const gchar *exts2[] = { "ext2", NULL };
+
   struct item_iterator iter;
 
   printf ("\n");
 
   iter.item.type = ITEM_TYPE_DIR;
-  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, exts),
+  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, NULL),
+		   TRUE);
+  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, exts0),
 		   TRUE);
 
   iter.item.type = ITEM_TYPE_FILE;
   snprintf (iter.item.name, LABEL_MAX, "%s", "file.ext1");
-  exts = g_slist_append (exts, "ext2");
-  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, exts),
+  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, exts1),
+		   TRUE);
+  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, exts2),
 		   FALSE);
-
-  g_slist_free (exts);		//Extensions in this test are not duplicated
 }
 
 gint

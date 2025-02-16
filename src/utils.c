@@ -376,10 +376,10 @@ job_control_set_progress (struct job_control *control, gdouble p)
 }
 
 gboolean
-file_matches_extensions (const gchar *name, const GSList *extensions)
+file_matches_extensions (const gchar *name, const gchar **extensions)
 {
   const gchar *extension;
-  const GSList *e = extensions;
+  const gchar **e = extensions;
 
   if (!e)
     {
@@ -392,13 +392,13 @@ file_matches_extensions (const gchar *name, const GSList *extensions)
       return FALSE;
     }
 
-  while (e)
+  while (*e)
     {
-      if (!strcasecmp (extension, e->data))
+      if (!strcasecmp (extension, *e))
 	{
 	  return TRUE;
 	}
-      e = e->next;
+      e++;
     }
 
   return FALSE;

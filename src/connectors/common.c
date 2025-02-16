@@ -22,6 +22,14 @@
 #include "common.h"
 #include "sample.h"
 
+static const gchar *SYSEX_EXTS[] = { "syx", NULL };
+
+const gchar **
+common_sysex_get_extensions ()
+{
+  return SYSEX_EXTS;
+}
+
 gchar *
 common_slot_get_upload_path (struct backend *backend,
 			     const struct fs_operations *ops,
@@ -223,6 +231,7 @@ common_slot_get_download_path_id_name (struct backend *backend,
 				       const gchar *name)
 {
   gchar *path;
+  const gchar *ext = GET_SAVE_EXT (ops, backend);
   GString *str = g_string_new (NULL);
 
   g_string_append_printf (str, "%s %s", backend->name, ops->name);
@@ -239,7 +248,7 @@ common_slot_get_download_path_id_name (struct backend *backend,
     }
 
   g_string_append (str, ".");
-  g_string_append (str, ops->ext);
+  g_string_append (str, ext);
 
   path = path_chain (PATH_SYSTEM, dst_dir, str->str);
   g_string_free (str, TRUE);
@@ -345,8 +354,9 @@ common_system_get_download_path (struct backend *backend,
 				 const gchar *dst_dir, const gchar *src_path,
 				 struct idata *idata)
 {
+  const gchar *ext = GET_SAVE_EXT (ops, backend);
   GString *name_with_ext = g_string_new (NULL);
-  g_string_append_printf (name_with_ext, "%s.%s", idata->name, ops->ext);
+  g_string_append_printf (name_with_ext, "%s.%s", idata->name, ext);
   gchar *path = path_chain (PATH_SYSTEM, dst_dir, name_with_ext->str);
   g_string_free (name_with_ext, TRUE);
   return path;

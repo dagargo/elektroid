@@ -69,6 +69,8 @@
 
 #define MICROBRUTE_NOP 0xff
 
+static const gchar *MICROBRUTE_EXTS[] = { "mbseq", NULL };
+
 static const guint8 ARTURIA_ID[] = { 0x0, 0x20, 0x6b };
 static const guint8 FAMILY_ID[] = { 0x4, 0x0 };
 static const guint8 MODEL_ID[] = { 0x2, 0x1 };
@@ -201,7 +203,7 @@ microbrute_get_counter (struct backend *backend)
 
 static gint
 microbrute_read_dir (struct backend *backend, struct item_iterator *iter,
-		     const gchar *dir, GSList *extensions)
+		     const gchar *dir, const gchar **extensions)
 {
   struct common_simple_read_dir_data *data;
 
@@ -461,19 +463,25 @@ end:
   return steps < 0 ? steps : 0;
 }
 
+static const gchar **
+microbrute_get_extensions ()
+{
+  return MICROBRUTE_EXTS;
+}
+
 static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .id = FS_MICROBRUTE_SEQUENCE,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE,
   .name = "sequence",
   .gui_name = "Sequences",
   .gui_icon = FS_ICON_SEQ,
-  .ext = "mbseq",
   .readdir = microbrute_read_dir,
   .print_item = common_print_item,
   .download = microbrute_download,
   .upload = microbrute_upload,
   .load = file_load,
   .save = file_save,
+  .get_exts = microbrute_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_n
 };
