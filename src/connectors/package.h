@@ -27,7 +27,9 @@
 
 #define ELEKTRON_SAMPLE_RATE 48000
 
-#define ELEKTRON_MAX_STORAGE 8	//Limited to 8 by guint8 in t_get_storage_stats
+#define ELEKTRON_MAX_STORAGE 8	//Limited to 8 by guint8 type in t_get_storage_stats
+#define ELEKTRON_MAX_FS 32	//Limiter to 32 by guint32 id in fs_operations
+#define ELEKTRON_MAX_EXTENSIONS 32
 
 #define FS_DATA_METADATA_EXT "metadata"
 #define FS_DATA_METADATA_FILE "." FS_DATA_METADATA_EXT
@@ -59,12 +61,19 @@ enum package_type
   PKG_FILE_TYPE_RAW_PRESET
 };
 
+struct fs_desc
+{
+  gchar name[LABEL_MAX];
+  gchar *extensions[ELEKTRON_MAX_EXTENSIONS];
+};
+
 struct device_desc
 {
   guint32 id;
-  guint8 storage;
   gchar name[LABEL_MAX];
-  gchar alias[LABEL_MAX];
+  guint8 storage;
+  guint fs_descs_len;
+  struct fs_desc fs_descs[ELEKTRON_MAX_FS];
 };
 
 struct elektron_data

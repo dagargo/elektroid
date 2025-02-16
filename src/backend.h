@@ -65,11 +65,11 @@ struct backend_storage_stats
 
 struct backend;
 
-typedef void (*t_destroy_data) (struct backend *);
+typedef void (*t_destroy_data) (struct backend * backend);
 
-typedef gint (*t_get_storage_stats) (struct backend *, guint8,
-				     struct backend_storage_stats *,
-				     const gchar *);
+typedef gint (*t_get_storage_stats) (struct backend * backend, guint8 type,
+				     struct backend_storage_stats * stats,
+				     const gchar * path);
 
 struct backend_midi_info
 {

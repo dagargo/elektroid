@@ -50,21 +50,4 @@ gint elektron_upload_sample_part (struct backend *backend, const gchar * path,
 
 GByteArray *elektron_ping (struct backend *backend);
 
-gint elektron_sample_save (const gchar * path, struct idata *sample,
-			   struct job_control *control);
-
-//The following declarations are just for testing purposes.
-
-GSList *elektron_get_dev_exts (struct backend *backend,
-			       const struct fs_operations *ops);
-
-GSList *elektron_get_dev_exts_pst (struct backend *backend,
-				   const struct fs_operations *ops);
-
-GSList *elektron_get_dev_exts_prj (struct backend *backend,
-				   const struct fs_operations *ops);
-
-GSList *elektron_get_takt_ii_pst_exts (struct backend *backend,
-				       const struct fs_operations *ops);
-
 #endif
