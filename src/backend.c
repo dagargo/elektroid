@@ -70,7 +70,7 @@ static gint
 backend_get_fs_operations_name_comparator (gconstpointer a, gconstpointer b)
 {
   const struct fs_operations *ops = a;
-  return strcmp (ops->name, (gchar *) b);
+  return strcmp (GET_CLI_NAME (ops), (gchar *) b);
 }
 
 const struct fs_operations *

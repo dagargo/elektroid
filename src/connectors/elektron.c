@@ -3092,6 +3092,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .id = FS_RAW_PRESETS,
   .options = FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "preset-raw",
+  .cli_name = "preset",
   .gui_name = "Presets",
   .gui_icon = FS_ICON_SND,
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
@@ -3210,6 +3211,7 @@ static const struct fs_operations FS_SAMPLES_STEREO_OPERATIONS = {
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "sample-stereo",
+  .cli_name = "sample",
   .gui_name = "Samples",
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
@@ -3235,6 +3237,7 @@ static const struct fs_operations FS_DATA_TAKT_II_PST_OPERATIONS = {
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
     FS_OPTION_ALLOW_SEARCH,
   .name = "preset-takt-ii",
+  .cli_name = "preset",
   .gui_name = "Presets",
   .gui_icon = FS_ICON_SND,
   .readdir = elektron_read_data_dir_snd,

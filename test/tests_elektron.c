@@ -147,7 +147,7 @@ test_elektron_special_exts ()
   exts = ops->get_exts (&backend, ops);
   CU_ASSERT_EQUAL (compare_exts (exts, DTII_PRJ), 0);
 
-  ops = backend_get_fs_operations_by_name (&backend, "preset-takt-ii");
+  ops = backend_get_fs_operations_by_name (&backend, "preset");
   exts = ops->get_exts (&backend, ops);
   CU_ASSERT_EQUAL (compare_exts (exts, DTII_PST), 0);
 
@@ -165,7 +165,7 @@ test_elektron_special_exts ()
   exts = ops->get_exts (&backend, ops);
   CU_ASSERT_EQUAL (compare_exts (exts, DNII_PRJ), 0);
 
-  ops = backend_get_fs_operations_by_name (&backend, "preset-takt-ii");
+  ops = backend_get_fs_operations_by_name (&backend, "preset");
   exts = ops->get_exts (&backend, ops);
   CU_ASSERT_EQUAL (compare_exts (exts, DNII_PST), 0);
 
