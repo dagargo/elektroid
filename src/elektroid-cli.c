@@ -347,7 +347,7 @@ cli_info (int argc, gchar *argv[], int *optind)
   while (e)
     {
       const struct fs_operations *fs_ops = e->data;
-      const gchar *name = fs_ops->name;
+      const gchar *name = GET_CLI_NAME (fs_ops);
       gboolean cli_only = fs_ops->gui_name == NULL;
       printf ("%s%s%s", first ? "" : ", ", name,
 	      cli_only ? " (CLI only)" : "");

@@ -33,6 +33,8 @@
 
 #define GET_SAVE_EXT(ops,backend) (ops->get_exts(backend, ops)[0])
 
+#define GET_CLI_NAME(ops) (ops->cli_name ? ops->cli_name : ops->name)
+
 enum item_type
 {
   ITEM_TYPE_NONE = 0,
@@ -118,8 +120,9 @@ struct fs_operations
 {
   guint32 id;
   guint32 options;
-  const gchar *name;
+  const gchar *name;		// This needs to be unique among all the filesystems of a given connector. Used to address filesystems. Using spaces is not recommended and hyphen is the suggested replacement.
   const gchar *gui_name;
+  const gchar *cli_name;	//Optional. Used to determine the fs_operations name if set. If not, name is used. This can be duplicated among all the filesystems of a given connector but not for a connected device.
   const gchar *gui_icon;
   guint32 max_name_len;
   fs_init_iter_func readdir;	//This function runs on its own thread so it can take as long as needed in order to make calls to item_iterator_next not to wait for IO.
