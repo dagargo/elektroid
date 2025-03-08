@@ -1900,12 +1900,17 @@ elektron_next_data_entry (struct item_iterator *iter)
 	{
 	  gchar metadata_path[PATH_MAX];
 	  struct idata output;
+	  struct job_control control;
+
+	  control.active = TRUE;
+	  control.callback = NULL;
+	  g_mutex_init (&control.mutex);
 
 	  snprintf (metadata_path, PATH_MAX, "%s/%d/%s", iter->dir,
 		    iter->item.id, FS_DATA_METADATA_FILE);
 	  debug_print (2, "Reading metadata from %s...", metadata_path);
 	  if (!elektron_download_data_snd (data->backend, metadata_path,
-					   &output, NULL))
+					   &output, &control))
 	    {
 	      gchar *s;
 	      gboolean first = TRUE;
@@ -2459,16 +2464,9 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
 
   content = g_byte_array_sized_new (4 * MI);
 
-  if (control)
-    {
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
-    }
-  else
-    {
-      active = TRUE;
-    }
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
 
   jidbe = g_htonl (jid);
   err = 0;
@@ -2535,23 +2533,17 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
       free_msg (rx_msg);
       seq++;
 
-      if (control)
-	{
-	  job_control_set_progress (control, status / 1000.0);
-	  g_mutex_lock (&control->mutex);
-	  active = control->active;
-	  g_mutex_unlock (&control->mutex);
-	}
+      job_control_set_progress (control, status / 1000.0);
+      g_mutex_lock (&control->mutex);
+      active = control->active;
+      g_mutex_unlock (&control->mutex);
 
       usleep (BE_REST_TIME_US);
     }
 
   if (active)
     {
-      if (control)
-	{
-	  job_control_set_progress (control, 1.0);
-	}
+      job_control_set_progress (control, 1.0);
       idata_init (data, content, NULL, NULL);
     }
   else
@@ -2792,16 +2784,10 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
 
   seq = 0;
   offset = 0;
-  if (control)
-    {
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
-    }
-  else
-    {
-      active = TRUE;
-    }
+
+  g_mutex_lock (&control->mutex);
+  active = control->active;
+  g_mutex_unlock (&control->mutex);
 
   while (offset < array->len && active)
     {
