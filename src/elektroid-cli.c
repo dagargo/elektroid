@@ -44,6 +44,24 @@ static struct sysex_transfer sysex_transfer;
 static gchar *connector, *fs, *op;
 const struct fs_operations *fs_ops;
 
+static void
+print_progress (struct job_control *control)
+{
+  static gboolean initialized = FALSE;
+  gboolean tty = isatty (fileno (stderr));
+  gint progress;
+
+  progress = control->progress * 100;
+
+  if (!debug_level && tty && initialized)
+    {
+      fprintf (stderr, "\x1b[1F");
+    }
+  fprintf (stderr, "Progress: %3d %%\n", progress);
+
+  initialized = TRUE;
+}
+
 static const gchar *
 cli_get_path (const gchar *device_path)
 {
@@ -532,6 +550,7 @@ cli_download (int argc, gchar *argv[], int *optind)
   src_path = cli_get_path (device_src_path);
 
   control.active = TRUE;
+  control.callback = print_progress;
   CHECK_FS_OPS_FUNC (fs_ops->download);
   err = fs_ops->download (&backend, src_path, &idata, &control);
   if (err)
@@ -594,6 +613,7 @@ cli_upload (int argc, gchar *argv[], int *optind)
   dst_path = cli_get_path (device_dst_path);
 
   control.active = TRUE;
+  control.callback = print_progress;
   err = fs_ops->load (src_path, &idata, &control);
   if (err)
     {
