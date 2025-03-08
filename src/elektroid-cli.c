@@ -64,11 +64,10 @@ cli_get_path (const gchar *device_path)
 static gint
 cli_ld ()
 {
-  gint i;
   struct backend_device device;
   GArray *devices = backend_get_devices ();
 
-  for (i = 0; i < devices->len; i++)
+  for (gint i = 0; i < devices->len; i++)
     {
       device = g_array_index (devices, struct backend_device, i);
       printf ("%d: id: %s; name: %s\n", i, device.id, device.name);
@@ -82,19 +81,36 @@ cli_ld ()
 static gint
 cli_connect (const gchar *device_path)
 {
-  gint err, id = (gint) atoi (device_path);
   struct backend_device device;
   GArray *devices = backend_get_devices ();
+  gint err, id;
+  gchar *rem;
 
-  if (!devices->len || id >= devices->len)
+  if (!devices->len)
     {
-      error_print ("Invalid device %d", id);
-      return -ENODEV;
+      error_print ("No devices found");
+      err = -ENODEV;
+      goto end;
+    }
+
+  errno = 0;
+  id = (gint) g_ascii_strtoll (device_path, &rem, 10);
+  if (errno || device_path == rem)
+    {
+      error_print ("Device not provided properly in '%s'", device_path);
+      err = -ENODEV;
+      goto end;
+    }
+
+  if (id >= devices->len)
+    {
+      error_print ("Invalid device '%d'", id);
+      err = -ENODEV;
+      goto end;
     }
 
   device = g_array_index (devices, struct backend_device, id);
   err = backend_init_connector (&backend, &device, connector, NULL);
-  g_array_free (devices, TRUE);
 
   if (!err && fs)
     {
@@ -102,10 +118,12 @@ cli_connect (const gchar *device_path)
       if (!fs_ops)
 	{
 	  error_print ("Invalid filesystem '%s'", fs);
-	  return -EINVAL;
+	  err = -EINVAL;
 	}
     }
 
+end:
+  g_array_free (devices, TRUE);
   return err;
 }
 
