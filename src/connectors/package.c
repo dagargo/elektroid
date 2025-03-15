@@ -291,7 +291,7 @@ package_add_manifest (struct package *pkg)
 	}
     }
 
-  if (pkg->manifest->tags)	// PKG_FILE_TYPE_DATA_SOUND or PKG_FILE_TYPE_DATA_PRESET
+  if (pkg->manifest->tags)	// PKG_FILE_TYPE_DATA_SOUND
     {
       json_builder_set_member_name (builder, PKG_TAG_METAINFO);
       json_builder_begin_object (builder);
@@ -516,15 +516,16 @@ package_receive_pkg_resources (struct package *pkg,
   struct idata metadata_file, payload_file, sample_file, file;
   struct elektron_data *data = backend->data;
 
-  //Analog Rytm, Digitakt, Analog Rytm MKII, Model:Samples and Digitakt II
-  if (type == PKG_FILE_TYPE_DATA_PROJECT &&
+  pkg->manifest->tags = NULL;
+
+  if ((type == PKG_FILE_TYPE_DATA_PROJECT &&
       data->device_desc.id != ELEKTRON_ANALOG_RYTM_ID &&
       data->device_desc.id != ELEKTRON_DIGITAKT_ID &&
       data->device_desc.id != ELEKTRON_ANALOG_RYTM_MKII_ID &&
       data->device_desc.id != ELEKTRON_MODEL_SAMPLES_ID &&
-      data->device_desc.id != ELEKTRON_DIGITAKT_II_ID)
+      data->device_desc.id != ELEKTRON_DIGITAKT_II_ID) ||
+      type == PKG_FILE_TYPE_DATA_PRESET)
     {
-      ret = 0;
       goto get_payload;
     }
 
@@ -565,7 +566,7 @@ package_receive_pkg_resources (struct package *pkg,
       goto cleanup_parser;
     }
 
-  if (type == PKG_FILE_TYPE_DATA_SOUND || type == PKG_FILE_TYPE_DATA_PRESET)
+  if (type == PKG_FILE_TYPE_DATA_SOUND)
     {
       pkg->manifest->tags = package_get_tags_from_snd_metadata_int (reader);
     }

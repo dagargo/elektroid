@@ -2761,7 +2761,6 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
     }
 
   path_w_prefix = elektron_add_prefix_to_path (path, prefix);
-
   err = elektron_open_datum (backend, path_w_prefix, &jid, O_WRONLY,
 			     array->len);
   g_free (path_w_prefix);
