@@ -48,7 +48,7 @@
 
 #define METADATA_TAG_SAMPLE_REFS "sound_tags"
 
-#define MAX_PACKAGE_LEN (64 * 1024 * 1024)
+#define MAX_PACKAGE_LEN (512 * 1024 * 1024)
 #define MAX_MANIFEST_LEN (128 * 1024)
 #define MANIFEST_FILENAME "manifest.json"
 
