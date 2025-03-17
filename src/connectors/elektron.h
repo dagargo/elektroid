@@ -55,6 +55,10 @@ gint elektron_upload_sample_part (struct backend *backend, const gchar * path,
 				  struct idata *sample,
 				  struct job_control *control);
 
+gint elektron_download_sample_part (struct backend *backend,
+				    const gchar * path, struct idata *sample,
+				    struct job_control *control);
+
 GByteArray *elektron_ping (struct backend *backend);
 
 #endif

@@ -107,7 +107,6 @@ gint package_receive_pkg_resources (struct package *pkg,
 				    struct job_control *control,
 				    struct backend *backend,
 				    fs_remote_file_op download_data,
-				    fs_remote_file_op download_sample,
 				    enum package_type type);
 
 gint package_end (struct package *pkg, struct idata *idata);

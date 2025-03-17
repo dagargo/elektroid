@@ -1610,7 +1610,7 @@ cleanup:
   return res;
 }
 
-static gint
+gint
 elektron_download_sample_part (struct backend *backend, const gchar *path,
 			       struct idata *sample,
 			       struct job_control *control)
@@ -2650,7 +2650,7 @@ elektron_download_pkg (struct backend *backend, const gchar *path,
     }
 
   ret = package_receive_pkg_resources (&pkg, path, control, backend, download,
-				       elektron_download_sample_part, type);
+				       type);
   ret = ret || package_end (&pkg, output);
 
   package_destroy (&pkg);

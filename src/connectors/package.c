@@ -502,7 +502,6 @@ package_receive_pkg_resources (struct package *pkg,
 			       struct job_control *control,
 			       struct backend *backend,
 			       fs_remote_file_op download_data,
-			       fs_remote_file_op download_sample,
 			       enum package_type type)
 {
   gint ret, i, elements;
@@ -639,7 +638,8 @@ package_receive_pkg_resources (struct package *pkg,
 		   hash, size, sample_path);
       debug_print (1, "Getting sample %s...", sample_path);
 
-      if (download_sample (backend, sample_path, &sample_file, control))
+      if (elektron_download_sample_part (backend, sample_path, &sample_file,
+					 control))
 	{
 	  g_free (sample_path);
 	  error_print ("Error while downloading sample. Continuing...");
