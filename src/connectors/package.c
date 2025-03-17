@@ -517,9 +517,12 @@ package_receive_pkg_resources (struct package *pkg,
   struct elektron_data *data = backend->data;
 
   //Analog Rytm, Digitakt, Analog Rytm MKII, Model:Samples and Digitakt II
-  if (type == PKG_FILE_TYPE_DATA_PROJECT && data->device_desc.id != 8 &&
-      data->device_desc.id != 12 && data->device_desc.id != 16 &&
-      data->device_desc.id != 25 && data->device_desc.id != 42)
+  if (type == PKG_FILE_TYPE_DATA_PROJECT &&
+      data->device_desc.id != ELEKTRON_ANALOG_RYTM_ID &&
+      data->device_desc.id != ELEKTRON_DIGITAKT_ID &&
+      data->device_desc.id != ELEKTRON_ANALOG_RYTM_MKII_ID &&
+      data->device_desc.id != ELEKTRON_MODEL_SAMPLES_ID &&
+      data->device_desc.id != ELEKTRON_DIGITAKT_II_ID)
     {
       ret = 0;
       goto get_payload;

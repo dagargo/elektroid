@@ -2047,7 +2047,7 @@ elektron_read_data_dir_pst (struct backend *backend,
 			    const gchar **extensions)
 {
   struct elektron_data *data = backend->data;
-  gint32 slots = data->device_desc.id == 32 ? 512 : 128;	//Analog Heat +FX has 512 presets
+  gint32 slots = data->device_desc.id == ELEKTRON_AH_FX_ID ? 512 : 128;	//Analog Heat +FX has 512 presets
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_PST_PREFIX,
 					ITER_MODE_DATA, slots);

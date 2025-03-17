@@ -24,6 +24,13 @@
 #include "connector.h"
 #include "preferences.h"
 
+#define ELEKTRON_ANALOG_RYTM_ID 8
+#define ELEKTRON_DIGITAKT_ID 12
+#define ELEKTRON_ANALOG_RYTM_MKII_ID 16
+#define ELEKTRON_MODEL_SAMPLES_ID 25
+#define ELEKTRON_DIGITAKT_II_ID 42
+#define ELEKTRON_AH_FX_ID 32
+
 #define PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS "elektronLoadSoundTags"
 
 enum elektron_fs
