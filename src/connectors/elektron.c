@@ -2270,10 +2270,6 @@ elektron_open_datum (struct backend *backend, const gchar *path,
     }
 
   tx_msg = elektron_new_msg (data, len);
-  if (!tx_msg)
-    {
-      return -ENOMEM;
-    }
 
   path_cp1252 = elektron_get_cp1252 (path);
 
@@ -2368,10 +2364,6 @@ elektron_close_datum (struct backend *backend,
     }
 
   tx_msg = elektron_new_msg (data, len);
-  if (!tx_msg)
-    {
-      return -ENOMEM;
-    }
 
   jidbe = g_htonl (jid);
   g_byte_array_append (tx_msg, (guchar *) & jidbe, sizeof (guint32));
