@@ -517,23 +517,26 @@ package_receive_pkg_resources (struct package *pkg,
 
   pkg->manifest->tags = NULL;
 
+  control->parts = 1;		//payload
+  control->part = 0;
+  job_control_set_progress (control, 0.0);
+
   if ((type == PKG_FILE_TYPE_DATA_PROJECT &&
-      data->device_desc.id != ELEKTRON_ANALOG_RYTM_ID &&
-      data->device_desc.id != ELEKTRON_DIGITAKT_ID &&
-      data->device_desc.id != ELEKTRON_ANALOG_RYTM_MKII_ID &&
-      data->device_desc.id != ELEKTRON_MODEL_SAMPLES_ID &&
-      data->device_desc.id != ELEKTRON_DIGITAKT_II_ID) ||
+       data->device_desc.id != ELEKTRON_ANALOG_RYTM_ID &&
+       data->device_desc.id != ELEKTRON_DIGITAKT_ID &&
+       data->device_desc.id != ELEKTRON_ANALOG_RYTM_MKII_ID &&
+       data->device_desc.id != ELEKTRON_MODEL_SAMPLES_ID &&
+       data->device_desc.id != ELEKTRON_DIGITAKT_II_ID) ||
       type == PKG_FILE_TYPE_DATA_PRESET)
     {
       goto get_payload;
     }
 
+  control->parts += 1 + packaget_get_pkg_sample_slots (backend);	// ... plus metadata and sample slots.
+
   metadata_path = path_chain (PATH_INTERNAL, payload_path,
 			      FS_DATA_METADATA_FILE);
   debug_print (1, "Getting metadata from %s...", metadata_path);
-  control->parts = 2 + packaget_get_pkg_sample_slots (backend);	// main, metadata and sample slots.
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
 
   ret = download_data (backend, metadata_path, &metadata_file, control);
   if (ret)
