@@ -484,16 +484,15 @@ package_close (struct package *pkg)
   package_destroy (pkg);
 }
 
+//This function is just used as the upper bound estimation.
 static gint
-packaget_get_pkg_sample_slots (struct backend *backend)
+package_get_max_sample_slots (struct backend *backend)
 {
   struct elektron_data *data = backend->data;
-  gint slots = 127;		// slot 0 is never used
-  if (data->device_desc.id == 42)	// Digitakt II has 8 banks (1026)
-    {
-      slots *= 8;
-    }
-  return slots;
+  // Slot 0 is never used.
+  // Digitakt and similar devices have 128 slots.
+  // Digitakt II has 8 banks (1024).
+  return data->device_desc.id == ELEKTRON_DIGITAKT_II_ID ? 1023 : 127;
 }
 
 gint
@@ -532,7 +531,7 @@ package_receive_pkg_resources (struct package *pkg,
       goto get_payload;
     }
 
-  control->parts += 1 + packaget_get_pkg_sample_slots (backend);	// ... plus metadata and sample slots.
+  control->parts += 1 + package_get_max_sample_slots (backend);	// ... plus metadata and sample slots.
 
   metadata_path = path_chain (PATH_INTERNAL, payload_path,
 			      FS_DATA_METADATA_FILE);
@@ -774,7 +773,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
   pkg->resources = g_list_append (pkg->resources, pkg_resource);
 
-  control->parts = 1 + packaget_get_pkg_sample_slots (backend);	// main and sample slots
+  control->parts = 1 + package_get_max_sample_slots (backend);	// main and sample slots
   control->part = 0;
   idata_init (&file, pkg_resource->data, NULL, NULL);
   ret = upload_data (backend, payload_path, &file, control);
