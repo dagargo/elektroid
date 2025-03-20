@@ -7,14 +7,14 @@ if ELEKTROID_CLI_ONLY
   ico_DATA =
 else
   res_DATA = gui.glade gui.css THANKS
-  svgicon_DATA = elektroid.svg \
+  svgicon_DATA = io.github.dagargo.Elektroid.svg \
+                 io.github.dagargo.Elektroid-symbolic.svg \
                  elektroid-file-symbolic.svg \
                  elektroid-folder-symbolic.svg \
                  elektroid-keys-symbolic.svg \
                  elektroid-project-symbolic.svg \
                  elektroid-sequence-symbolic.svg \
                  elektroid-sound-symbolic.svg \
-                 elektroid-symbolic.svg \
                  elektroid-wave-symbolic.svg \
                  elektroid-wavetable-symbolic.svg
   microbrute_DATA = microbrute/gui.glade
@@ -28,8 +28,8 @@ else
 endif
 
 if OPENDESKTOP
-    desktop_DATA = elektroid.desktop
-    metainfo_DATA = elektroid.appdata.xml
+    desktop_DATA = io.github.dagargo.Elektroid.desktop
+    metainfo_DATA = io.github.dagargo.Elektroid.appdata.xml
 else
     desktop_DATA =
     metainfo_DATA =

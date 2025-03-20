@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Copyright 2020 Dennis Braun <snd@debian.org> -->
 <component type="desktop">
-  <id>elektroid.desktop</id>
+  <id>io.github.dagargo.Elektroid</id>
   <metadata_license>FSFAP</metadata_license>
   <project_license>GPL-3.0+</project_license>
   <name>Elektroid</name>
@@ -11,7 +11,7 @@
     <p>With Elektroid you can easily upload and download audio files and manage different types of data on different MIDI devices, such as presets, projects or tunings.</p>
     <p>It can also be used to send and receive SysEx MIDI files.</p>
   </description>
-  <launchable type="desktop-id">elektroid.desktop</launchable>
+  <launchable type="desktop-id">io.github.dagargo.Elektroid.desktop</launchable>
   <provides>
     <binary>elektroid</binary>
   </provides>

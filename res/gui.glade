@@ -24,7 +24,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
   <!-- interface-css-provider-path gui.css -->
   <!-- interface-license-type gplv3 -->
   <!-- interface-name Elektroid -->
-  <!-- interface-description GNU/Linux transfer application for Elektron devices -->
+  <!-- interface-description Sample and MIDI device manager -->
   <!-- interface-copyright David Garc\303\255a Go\303\261i -->
   <object class="GtkListStore" id="audio_buffer_length_list_store">
     <columns>
@@ -946,7 +946,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     <property name="website">https://dagargo.github.io/elektroid/</property>
     <property name="authors">David García Goñi&lt;dagargo@gmail.com&gt;</property>
     <property name="translator-credits" translatable="yes">translator-credits</property>
-    <property name="logo-icon-name">elektroid</property>
+    <property name="logo-icon-name">io.github.dagargo.Elektroid</property>
     <property name="license-type">gpl-3-0</property>
     <child internal-child="vbox">
       <object class="GtkBox">

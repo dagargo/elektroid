@@ -10,5 +10,5 @@ Comment[pt_BR]=Gerenciador de amostras e dispositivos MIDI
 Categories=Music;AudioVideo;X-Sound;Audio;X-Alsa
 Keywords=music;alsa;realtime;standalone;
 Exec=elektroid
-Icon=elektroid
+Icon=io.github.dagargo.Elektroid
 Terminal=false
