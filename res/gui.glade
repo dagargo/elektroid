@@ -1572,7 +1572,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     <property name="width-request">800</property>
     <property name="height-request">600</property>
     <property name="can-focus">False</property>
-    <property name="icon-name">elektroid</property>
+    <property name="icon-name">io.github.dagargo.Elektroid</property>
     <child>
       <object class="GtkBox">
         <property name="visible">True</property>

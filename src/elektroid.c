@@ -144,6 +144,7 @@ static guint batch_id;
 GtkWindow *main_window;
 GtkWidget *dialog;
 
+static GtkBuilder *builder;
 static GtkAboutDialog *about_dialog;
 static GtkDialog *name_dialog;
 static GtkEntry *name_dialog_entry;
@@ -2710,7 +2711,7 @@ elektroid_set_window_size ()
 }
 
 static void
-elektroid_quit ()
+elektroid_exit ()
 {
   gtk_dialog_response (GTK_DIALOG (about_dialog), GTK_RESPONSE_CANCEL);
   progress_response (GTK_RESPONSE_CANCEL);
@@ -2728,26 +2729,29 @@ elektroid_quit ()
 
   editor_destroy (&editor);
 
-  debug_print (1, "Quitting GTK+...");
-  gtk_main_quit ();
+  if (backend_check (&backend))
+    {
+      backend_destroy (&backend);
+    }
+
+  gtk_widget_destroy (GTK_WIDGET (main_window));
+  g_object_unref (builder);
 }
 
 static gboolean
 elektroid_delete_window (GtkWidget *widget, GdkEvent *event, gpointer data)
 {
-  elektroid_quit ();
+  elektroid_exit ();
   return FALSE;
 }
 
-static int
-elektroid_run (int argc, char *argv[])
+static void
+build_ui ()
 {
-  GtkBuilder *builder;
   GtkCssProvider *css_provider;
   GtkWidget *refresh_devices_button;
   gchar *thanks;
 
-  gtk_init (&argc, &argv);
   builder = gtk_builder_new ();
   gtk_builder_add_from_file (builder, DATADIR "/gui.glade", NULL);
 
@@ -3013,29 +3017,13 @@ elektroid_run (int argc, char *argv[])
   gtk_entry_set_text (GTK_ENTRY (local_name_entry), hostname);
 
   elektroid_set_window_size ();
-
-  gtk_widget_show (GTK_WIDGET (main_window));
-
-  gtk_main ();
-
-  preferences_set_string (PREF_KEY_LOCAL_DIR, strdup (local_browser.dir));
-  elektroid_set_preferences_remote_dir ();
-
-  if (backend_check (&backend))
-    {
-      backend_destroy (&backend);
-    }
-
-  g_object_unref (G_OBJECT (builder));
-
-  return EXIT_SUCCESS;
 }
 
 #if defined(__linux__)
 static gboolean
-elektroid_end (gpointer data)
+elektroid_signal_handler (gpointer data)
 {
-  elektroid_quit ();
+  elektroid_exit ();
   return FALSE;
 }
 #endif
@@ -3064,6 +3052,20 @@ elektroid_print_help (gchar *executable_path)
   g_free (exec_name);
 }
 
+static void
+elektroid_startup (GApplication *gapp, gpointer *user_data)
+{
+  build_ui ();
+  gtk_application_add_window (GTK_APPLICATION (gapp),
+			      GTK_WINDOW (main_window));
+}
+
+static void
+elektroid_activate (GApplication *gapp, gpointer *user_data)
+{
+  gtk_window_present (GTK_WINDOW (main_window));
+}
+
 int
 main (int argc, char *argv[])
 {
@@ -3071,11 +3073,12 @@ main (int argc, char *argv[])
   gchar *local_dir = NULL;
   gint vflg = 0, dflg = 0, errflg = 0;
   int long_index = 0;
+  GtkApplication *app;
 
 #if defined(__linux__)
-  g_unix_signal_add (SIGHUP, elektroid_end, NULL);
-  g_unix_signal_add (SIGINT, elektroid_end, NULL);
-  g_unix_signal_add (SIGTERM, elektroid_end, NULL);
+  g_unix_signal_add (SIGHUP, elektroid_signal_handler, NULL);
+  g_unix_signal_add (SIGINT, elektroid_signal_handler, NULL);
+  g_unix_signal_add (SIGTERM, elektroid_signal_handler, NULL);
 #endif
 
   setlocale (LC_ALL, "");
@@ -3131,7 +3134,19 @@ main (int argc, char *argv[])
 			      get_system_startup_path (local_dir));
     }
 
-  ret = elektroid_run (argc, argv);
+  app = gtk_application_new ("io.github.dagargo.Elektroid",
+			     G_APPLICATION_DEFAULT_FLAGS |
+			     G_APPLICATION_NON_UNIQUE);
+
+  g_signal_connect (app, "startup", G_CALLBACK (elektroid_startup), NULL);
+  g_signal_connect (app, "activate", G_CALLBACK (elektroid_activate), NULL);
+
+  ret = g_application_run (G_APPLICATION (app), 0, NULL);
+
+  g_object_unref (app);
+
+  preferences_set_string (PREF_KEY_LOCAL_DIR, strdup (local_browser.dir));
+  elektroid_set_preferences_remote_dir ();
 
   preferences_save ();
   preferences_free ();
