@@ -85,13 +85,6 @@ static gpointer elektroid_upload_task_runner (gpointer);
 static gpointer elektroid_download_task_runner (gpointer);
 static void elektroid_update_progress (struct job_control *);
 
-static const struct option ELEKTROID_OPTIONS[] = {
-  {"local-directory", 1, NULL, 'l'},
-  {"verbose", 0, NULL, 'v'},
-  {"help", 0, NULL, 'h'},
-  {NULL, 0, NULL, 0}
-};
-
 static const GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
   {TEXT_URI_LIST_STD, 0, TARGET_STRING},
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
@@ -130,6 +123,7 @@ static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
 };
 
 static const gchar *hostname;
+static gchar *local_dir;
 
 struct editor editor;
 struct tasks tasks;
@@ -3029,32 +3023,15 @@ elektroid_signal_handler (gpointer data)
 #endif
 
 static void
-elektroid_print_help (gchar *executable_path)
-{
-  gchar *exec_name;
-  const struct option *option;
-
-  fprintf (stderr, "%s\n", PACKAGE_STRING);
-  exec_name = g_path_get_basename (executable_path);
-  fprintf (stderr, "Usage: %s [options]\n", exec_name);
-  fprintf (stderr, "Options:\n");
-  option = ELEKTROID_OPTIONS;
-  while (option->name)
-    {
-      fprintf (stderr, "  --%s, -%c", option->name, option->val);
-      if (option->has_arg)
-	{
-	  fprintf (stderr, " value");
-	}
-      fprintf (stderr, "\n");
-      option++;
-    }
-  g_free (exec_name);
-}
-
-static void
 elektroid_startup (GApplication *gapp, gpointer *user_data)
 {
+  if (local_dir)
+    {
+      preferences_set_string (PREF_KEY_LOCAL_DIR,
+			      get_system_startup_path (local_dir));
+      g_free (local_dir);
+    }
+
   build_ui ();
   gtk_application_add_window (GTK_APPLICATION (gapp),
 			      GTK_WINDOW (main_window));
@@ -3066,13 +3043,42 @@ elektroid_activate (GApplication *gapp, gpointer *user_data)
   gtk_window_present (GTK_WINDOW (main_window));
 }
 
+static gboolean
+elektroid_increment_debug_level (const gchar *option_name,
+				 const gchar *value,
+				 gpointer data, GError **error)
+{
+  debug_level++;
+  return TRUE;
+}
+
+const GOptionEntry CMD_PARAMS[] = {
+  {
+   .long_name = "verbosity",
+   .short_name = 'v',
+   .flags = G_OPTION_FLAG_NO_ARG,
+   .arg = G_OPTION_ARG_CALLBACK,
+   .arg_data = elektroid_increment_debug_level,
+   .description =
+   "Increase verbosity. For more verbosity use it more than once.",
+   .arg_description = NULL,
+   },
+  {
+   .long_name = "local-directory",
+   .short_name = 'l',
+   .flags = G_OPTION_FLAG_NONE,
+   .arg = G_OPTION_ARG_FILENAME,
+   .arg_data = &local_dir,
+   .description = "Local directory at startup",
+   .arg_description = "DIRECTORY",
+   },
+  {NULL}
+};
+
 int
 main (int argc, char *argv[])
 {
-  gint opt, ret;
-  gchar *local_dir = NULL;
-  gint vflg = 0, dflg = 0, errflg = 0;
-  int long_index = 0;
+  gint err;
   GtkApplication *app;
 
 #if defined(__linux__)
@@ -3085,42 +3091,6 @@ main (int argc, char *argv[])
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
 
-  while ((opt = getopt_long (argc, argv, "l:vh", ELEKTROID_OPTIONS,
-			     &long_index)) != -1)
-    {
-      switch (opt)
-	{
-	case 'l':
-	  local_dir = optarg;
-	  dflg++;
-	  break;
-	case 'v':
-	  vflg++;
-	  break;
-	case 'h':
-	  elektroid_print_help (argv[0]);
-	  exit (EXIT_SUCCESS);
-	case '?':
-	  errflg++;
-	}
-    }
-
-  if (dflg > 1)
-    {
-      errflg++;
-    }
-
-  if (vflg)
-    {
-      debug_level = vflg;
-    }
-
-  if (errflg > 0)
-    {
-      elektroid_print_help (argv[0]);
-      exit (EXIT_FAILURE);
-    }
-
   hostname = g_get_host_name ();
 
   regconn_register ();
@@ -3128,20 +3098,16 @@ main (int argc, char *argv[])
   regpref_register ();
 
   preferences_load ();
-  if (local_dir)
-    {
-      preferences_set_string (PREF_KEY_LOCAL_DIR,
-			      get_system_startup_path (local_dir));
-    }
 
   app = gtk_application_new ("io.github.dagargo.Elektroid",
-			     G_APPLICATION_DEFAULT_FLAGS |
 			     G_APPLICATION_NON_UNIQUE);
 
   g_signal_connect (app, "startup", G_CALLBACK (elektroid_startup), NULL);
   g_signal_connect (app, "activate", G_CALLBACK (elektroid_activate), NULL);
 
-  ret = g_application_run (G_APPLICATION (app), 0, NULL);
+  g_application_add_main_option_entries (G_APPLICATION (app), CMD_PARAMS);
+
+  err = g_application_run (G_APPLICATION (app), argc, argv);
 
   g_object_unref (app);
 
@@ -3155,5 +3121,5 @@ main (int argc, char *argv[])
   regma_unregister ();
   regpref_unregister ();
 
-  return ret;
+  return err;
 }
