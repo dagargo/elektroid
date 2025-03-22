@@ -12,3 +12,4 @@ Keywords=music;alsa;realtime;standalone;
 Exec=elektroid
 Icon=io.github.dagargo.Elektroid
 Terminal=false
+SingleMainWindow=false
