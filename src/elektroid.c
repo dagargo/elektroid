@@ -882,7 +882,7 @@ elektroid_rename_item (GtkWidget *object, gpointer data)
 {
   gchar *old_path, *new_path;
   const gchar *ext;
-  gint result, err, sel_len;
+  gint result, err, sel_len, ext_len;
   GtkTreeIter iter;
   struct item item;
   struct browser *browser = data;
@@ -895,7 +895,11 @@ elektroid_rename_item (GtkWidget *object, gpointer data)
 
   sel_len = strlen (item.name);
   ext = filename_get_ext (item.name);
-  sel_len -= strlen (ext) + 1;
+  ext_len = strlen (ext);
+  if (ext_len)
+    {
+      sel_len -= ext_len + 1;
+    }
 
   gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
   gtk_entry_set_text (name_dialog_entry, item.name);
