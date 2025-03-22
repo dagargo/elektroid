@@ -75,7 +75,8 @@ static void
 microbrute_configure_callback (GtkWidget *object, gpointer data)
 {
   guint8 v;
-  struct backend *backend = data;
+  struct maction_context *context = data;
+  struct backend *backend = context->backend;
 
   debug_print (2, "Configuring %s...", backend->name);
   loading = TRUE;

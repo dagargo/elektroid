@@ -82,7 +82,7 @@ maction_add (gpointer data, gpointer user_data)
       gtk_widget_set_sensitive (button, ma->sensitive);
       gtk_widget_show (button);
       gtk_container_add (GTK_CONTAINER (context->box), button);
-      g_signal_connect (button, "clicked", ma->callback, context->backend);
+      g_signal_connect (button, "clicked", ma->callback, context);
     }
   else
     {

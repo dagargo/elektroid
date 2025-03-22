@@ -135,9 +135,9 @@ static struct backend backend;
 
 static guint batch_id;
 
-GtkWindow *main_window;
 GtkWidget *dialog;
 
+static GtkWindow *main_window;
 static GtkBuilder *builder;
 static GtkAboutDialog *about_dialog;
 static GtkDialog *name_dialog;

@@ -148,8 +148,9 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
 {
   gint res;
   guint options;
+  struct maction_context *context = user_data;
   struct autosampler_data *data = g_malloc (sizeof (struct autosampler_data));
-  data->backend = user_data;
+  data->backend = context->backend;
 
   guirecorder_set_channels_masks (&autosampler_guirecorder,
 				  FS_OPTION_STEREO | FS_OPTION_MONO);
