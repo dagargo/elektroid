@@ -92,7 +92,7 @@ progress_pulse (gpointer data)
 }
 
 static gboolean
-progress_update (gpointer data)
+progress_sysex_transfer (gpointer data)
 {
   gchar *text;
   enum sysex_transfer_status status;
@@ -144,13 +144,9 @@ progress_start_thread_gsourcefunc ()
     {
       g_timeout_add (PROGRESS_BAR_UPDATE_TIME, progress_pulse, NULL);
     }
-  else if (progress.type == PROGRESS_TYPE_UPDATE)
+  else if (progress.type == PROGRESS_TYPE_SYSEX_TRANSFER)
     {
-      g_timeout_add (PROGRESS_BAR_UPDATE_TIME, progress_update, NULL);
-    }
-  else
-    {
-      error_print ("Illegal progress type");
+      g_timeout_add (PROGRESS_BAR_UPDATE_TIME, progress_sysex_transfer, NULL);
     }
 }
 

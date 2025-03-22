@@ -26,9 +26,9 @@
 
 enum progress_type
 {
-  PROGRESS_TYPE_NONE,
-  PROGRESS_TYPE_PULSE,
-  PROGRESS_TYPE_UPDATE
+  PROGRESS_TYPE_NO_AUTO,	//Progress must be set by calling progress_set_fraction.
+  PROGRESS_TYPE_PULSE,		//Progress pulses.
+  PROGRESS_TYPE_SYSEX_TRANSFER	//Progress pulses and the label tracks the sysex transfer status.
 };
 
 struct progress

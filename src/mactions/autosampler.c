@@ -201,7 +201,7 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
 				 (autosampler_dialog_start_combo),
 				 &data->iter);
 
-  progress_run (autosampler_runner, PROGRESS_TYPE_NONE, data,
+  progress_run (autosampler_runner, PROGRESS_TYPE_NO_AUTO, data,
 		_("Auto Sampler"), _("Recording..."), TRUE, NULL);
 }
 

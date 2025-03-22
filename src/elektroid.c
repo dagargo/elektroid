@@ -437,8 +437,9 @@ elektroid_rx_sysex ()
   gint *res;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
-  res = progress_run (elektroid_rx_sysex_runner, PROGRESS_TYPE_UPDATE, NULL,
-		      _("Receiving SysEx"), "", TRUE, &dres);
+  res =
+    progress_run (elektroid_rx_sysex_runner, PROGRESS_TYPE_SYSEX_TRANSFER,
+		  NULL, _("Receiving SysEx"), "", TRUE, &dres);
   if (!res)			//Signal captured while running the dialog.
     {
       g_byte_array_free (progress.sysex_transfer.raw, TRUE);
@@ -607,7 +608,7 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
     {
       gtk_widget_hide (GTK_WIDGET (dialog));
       filenames = gtk_file_chooser_get_filenames (chooser);
-      err = progress_run (func, PROGRESS_TYPE_UPDATE, filenames,
+      err = progress_run (func, PROGRESS_TYPE_SYSEX_TRANSFER, filenames,
 			  _("Sending SysEx"), "", TRUE, NULL);
       g_slist_free_full (g_steal_pointer (&filenames), g_free);
 
