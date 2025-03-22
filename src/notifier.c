@@ -78,6 +78,7 @@ notifier_init (struct notifier **notifier, struct browser *browser)
 {
   struct notifier *n = g_malloc (sizeof (struct notifier));
   n->monitor = NULL;
+  n->parent_monitor = NULL;
   n->browser = browser;
   *notifier = n;
 }
@@ -92,9 +93,13 @@ notifier_update_dir (struct notifier *notifier, gboolean active)
 
   if (notifier->monitor)
     {
-      g_object_unref (notifier->parent_monitor);
       g_object_unref (notifier->monitor);
       g_object_unref (notifier->dir);
+    }
+
+  if (notifier->parent_monitor)
+    {
+      g_object_unref (notifier->parent_monitor);
     }
 
   if (active)
@@ -108,14 +113,21 @@ notifier_update_dir (struct notifier *notifier, gboolean active)
 			G_CALLBACK (notifier_changed), notifier);
 
       parent = g_file_get_parent (notifier->dir);
-      notifier->parent_monitor = g_file_monitor_directory (parent,
-							   G_FILE_MONITOR_NONE,
-							   NULL, NULL);
-      g_file_monitor_set_rate_limit (notifier->parent_monitor,
-				     NOTIFIER_RATE_LIMIT);
-      g_signal_connect (notifier->parent_monitor, "changed",
-			G_CALLBACK (notifier_parent_changed), notifier);
-      g_object_unref (parent);
+      if (parent)
+	{
+	  notifier->parent_monitor = g_file_monitor_directory (parent,
+							       G_FILE_MONITOR_NONE,
+							       NULL, NULL);
+	  g_file_monitor_set_rate_limit (notifier->parent_monitor,
+					 NOTIFIER_RATE_LIMIT);
+	  g_signal_connect (notifier->parent_monitor, "changed",
+			    G_CALLBACK (notifier_parent_changed), notifier);
+	  g_object_unref (parent);
+	}
+      else
+	{
+	  notifier->parent_monitor = NULL;
+	}
     }
   else
     {
@@ -129,9 +141,13 @@ notifier_destroy (struct notifier *notifier)
 {
   if (notifier->monitor)
     {
-      g_object_unref (notifier->parent_monitor);
       g_object_unref (notifier->monitor);
       g_object_unref (notifier->dir);
+    }
+
+  if (notifier->parent_monitor)
+    {
+      g_object_unref (notifier->parent_monitor);
     }
 
   g_free (notifier);
