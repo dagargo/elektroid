@@ -190,8 +190,6 @@ common_data_tx_and_rx_part (struct backend *backend, GByteArray *tx_msg,
 {
   gint err = 0;
 
-  job_control_set_progress (control, 0.0);
-
   *rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!*rx_msg)
     {
@@ -220,6 +218,7 @@ common_data_tx_and_rx (struct backend *backend, GByteArray *tx_msg,
 {
   control->parts = 1;
   control->part = 0;
+  job_control_set_progress (control, 0.0);
   return common_data_tx_and_rx_part (backend, tx_msg, rx_msg, control);
 }
 
