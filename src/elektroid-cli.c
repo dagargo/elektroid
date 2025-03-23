@@ -42,24 +42,36 @@ static struct backend backend;
 static struct job_control control;
 static struct sysex_transfer sysex_transfer;
 static gchar *connector, *fs, *op;
+
 const struct fs_operations *fs_ops;
+const gchar *current_path_progress;
+gboolean same_line_progress;
+
+static void
+complete_progress ()
+{
+  if (same_line_progress)
+    {
+      fprintf (stderr, "\n");
+    }
+}
 
 static void
 print_progress (struct job_control *control)
 {
-  static gboolean initialized = FALSE;
-  gboolean tty = isatty (fileno (stderr));
-  gint progress;
-
-  progress = control->progress * 100;
-
-  if (!debug_level && tty && initialized)
+  gint progress = control->progress * 100;
+  const gchar *end = same_line_progress ? "\r" : "\n";
+  fprintf (stderr, "%s: %3d %%%s", current_path_progress, progress, end);
+  if (same_line_progress)
     {
-      fprintf (stderr, "\x1b[1F");
+      fflush (stderr);
     }
-  fprintf (stderr, "Progress: %3d %%\n", progress);
+}
 
-  initialized = TRUE;
+static void
+set_progress_type ()
+{
+  same_line_progress = !debug_level && isatty (fileno (stderr));
 }
 
 static const gchar *
@@ -536,6 +548,7 @@ cli_download_item (const gchar *src_path)
 
   control.active = TRUE;
   control.callback = print_progress;
+  current_path_progress = src_path;
 
   err = fs_ops->download (&backend, src_path, &idata, &control);
   if (err)
@@ -556,6 +569,9 @@ cli_download_item (const gchar *src_path)
 
 cleanup:
   idata_free (&idata);
+
+  complete_progress ();
+
   return err;
 }
 
@@ -601,6 +617,7 @@ cli_upload_item (const gchar *src_path, const gchar *dst_path)
 
   control.active = TRUE;
   control.callback = print_progress;
+  current_path_progress = src_path;
 
   err = fs_ops->load (src_path, &idata, &control);
   if (err)
@@ -615,6 +632,8 @@ cli_upload_item (const gchar *src_path, const gchar *dst_path)
   idata_free (&idata);
 
   g_free (upload_path);
+
+  complete_progress ();
 
   return err;
 }
@@ -821,6 +840,7 @@ main (int argc, gchar *argv[])
   gint err;
   gchar *command;
   gint vflg = 0, errflg = 0;
+
 #if defined(__linux__)
   struct sigaction action;
 
@@ -867,6 +887,8 @@ main (int argc, gchar *argv[])
       fprintf (stderr, "Usage: %s [options] command\n", exec_name);
       exit (EXIT_FAILURE);
     }
+
+  set_progress_type ();
 
   regconn_register ();
   regpref_register ();
