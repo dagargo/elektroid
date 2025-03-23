@@ -200,9 +200,7 @@ efactor_download (struct backend *backend, const gchar *path,
   struct efactor_data *data = backend->data;
   GByteArray *output;
 
-  control->parts = 1;
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control, 1);
 
   if (!data->lines)
     {

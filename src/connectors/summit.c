@@ -793,9 +793,7 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  control->parts = 6;
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control, 6);
 
   output = g_byte_array_new ();
 

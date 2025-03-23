@@ -41,9 +41,7 @@ system_download (struct backend *backend, const gchar *path,
 {
   gint err;
 
-  control->parts = 1;
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control, 1);
 
   err = file_load (path, idata, control);
 

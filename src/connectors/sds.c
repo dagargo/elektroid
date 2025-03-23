@@ -402,9 +402,8 @@ sds_download_try (struct backend *backend, const gchar *path,
   g_mutex_lock (&control->mutex);
   active = control->active;
   g_mutex_unlock (&control->mutex);
-  control->parts = 1;
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+
+  job_control_reset (control, 1);
 
   debug_print (1, "Receiving dump data...");
 
@@ -758,9 +757,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
   struct sample_info *sample_info = sample->info;
   GByteArray *input = sample->content;
 
-  control->parts = 1;
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control, 1);
 
   if (common_slot_get_id_from_path (path, &id))
     {

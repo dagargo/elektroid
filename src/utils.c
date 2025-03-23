@@ -558,3 +558,11 @@ job_control_set_active_lock (struct job_control *control, gboolean active)
   control->active = active;
   g_mutex_unlock (&control->mutex);
 }
+
+void
+job_control_reset (struct job_control *control, gint parts)
+{
+  control->parts = parts;
+  control->part = 0;
+  job_control_set_progress (control, 0.0);
+}

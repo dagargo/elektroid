@@ -146,4 +146,6 @@ gboolean job_control_get_active_lock (struct job_control *control);
 void job_control_set_active_lock (struct job_control *control,
 				  gboolean active);
 
+void job_control_reset (struct job_control *control, gint parts);
+
 #endif
