@@ -24,6 +24,28 @@
 
 static const gchar *SYSEX_EXTS[] = { "syx", NULL };
 
+static void
+common_replace_chars (gchar *str, gchar x, gchar y)
+{
+  gchar *c = str;
+  while (*c)
+    {
+      if (*c == x)
+	{
+	  *c = y;
+	}
+      c++;
+    }
+}
+
+//These conversions depend on the OS but its safer and simpler to apply this restrictions to all of them.
+void
+common_to_os_sanitized_name (gchar *name)
+{
+  common_replace_chars (name, '/', '?');
+  common_replace_chars (name, '\\', '?');
+}
+
 const gchar **
 common_sysex_get_extensions ()
 {
@@ -239,8 +261,13 @@ common_slot_get_download_path_id_name (struct backend *backend,
 
   if (name)
     {
+      gchar *sanitized_name = strdup (name);
+      common_to_os_sanitized_name (sanitized_name);
+
       g_string_append (str, " - ");
-      g_string_append (str, name);
+      g_string_append (str, sanitized_name);
+
+      g_free (sanitized_name);
     }
 
   g_string_append (str, ".");
