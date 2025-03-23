@@ -94,6 +94,8 @@ gchar *common_slot_get_download_path_nnn (struct backend *backend,
 					  const gchar * src_path,
 					  struct idata *idata);
 
+void common_to_os_sanitized_name (gchar * name);
+
 gchar *common_get_sanitized_name (const gchar * name, const gchar * alphabet,
 				  gchar defchar);
 

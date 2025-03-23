@@ -56,6 +56,18 @@ test_common_get_sanitized_name ()
   g_free (str);
 }
 
+void
+test_common_to_os_sanitized_name ()
+{
+  gchar *str = strdup ("\\^/");
+
+  printf ("\n");
+
+  common_to_os_sanitized_name (str);
+  CU_ASSERT_STRING_EQUAL (str, "?^?");
+  g_free (str);
+}
+
 static const gchar *EXTS[] = { "ext", NULL };
 
 static const gchar **
@@ -136,6 +148,12 @@ main (gint argc, gchar *argv[])
 
   if (!CU_add_test (suite, "common_get_sanitized_name",
 		    test_common_get_sanitized_name))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "test_common_to_os_sanitized_name",
+		    test_common_to_os_sanitized_name))
     {
       goto cleanup;
     }
