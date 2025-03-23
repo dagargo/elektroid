@@ -36,7 +36,7 @@
 
 #define GET_FS_OPS_OFFSET(member) offsetof(struct fs_operations, member)
 #define GET_FS_OPS_FUNC(type,fs,offset) (*(((type *) (((gchar *) fs) + offset))))
-#define CHECK_FS_OPS_FUNC(f) if (!(f)) {return -ENOSYS;}
+#define RETURN_IF_NULL(f) if (!(f)) {return -ENOSYS;}
 
 static struct backend backend;
 static struct job_control control;
@@ -171,13 +171,13 @@ cli_list (int argc, gchar *argv[], int *optind)
       return err;
     }
 
-  path = cli_get_path (device_path);
-
-  CHECK_FS_OPS_FUNC (fs_ops->readdir);
+  RETURN_IF_NULL (fs_ops->readdir);
+  RETURN_IF_NULL (fs_ops->print_item);
 
   active = TRUE;
   sysex_transfer.active = TRUE;
 
+  path = cli_get_path (device_path);
   err = fs_ops->readdir (&backend, &iter, path, NULL);
   if (err)
     {
@@ -223,12 +223,11 @@ cli_command_path (int argc, gchar *argv[], int *optind, ssize_t member_offset)
       return err;
     }
 
-  path = cli_get_path (device_path);
-
   f = GET_FS_OPS_FUNC (fs_path_func, fs_ops, member_offset);
-  CHECK_FS_OPS_FUNC (f);
-  err = f (&backend, path);
-  return err;
+  RETURN_IF_NULL (f);
+
+  path = cli_get_path (device_path);
+  return f (&backend, path);
 }
 
 static gint
@@ -277,11 +276,11 @@ cli_command_src_dst (int argc, gchar *argv[], int *optind,
     }
 
   f = GET_FS_OPS_FUNC (fs_src_dst_func, fs_ops, member_offset);
-  CHECK_FS_OPS_FUNC (f);
+  RETURN_IF_NULL (f);
+
   src_path = cli_get_path (device_src_path);
   dst_path = cli_get_path (device_dst_path);
-  err = f (&backend, src_path, dst_path);
-  return err;
+  return f (&backend, src_path, dst_path);
 }
 
 static gint
@@ -323,8 +322,8 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
   src_card = atoi (device_src_path);
   src_path = cli_get_path (device_src_path);
 
-  // If move is implemented, rename must behave the same way.
   f = fs_ops->move;
+  // If move is implemented, rename must behave the same way.
   if (f)
     {
       dst_card = atoi (device_dst_path);
@@ -338,12 +337,12 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
   else
     {
       f = fs_ops->rename;
+      RETURN_IF_NULL (f);
+
       dst_path = device_dst_path;
     }
 
-  CHECK_FS_OPS_FUNC (f);
-  err = f (&backend, src_path, dst_path);
-  return err;
+  return f (&backend, src_path, dst_path);
 }
 
 static int
@@ -504,6 +503,8 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
       return EXIT_FAILURE;
     }
 
+  RETURN_IF_NULL (backend.upgrade_os);
+
   err = file_load (src_path, &idata, NULL);
   if (err)
     {
@@ -514,7 +515,7 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
       sysex_transfer.raw = idata.content;
       sysex_transfer.active = TRUE;
       sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
-      CHECK_FS_OPS_FUNC (backend.upgrade_os);
+
       err = backend.upgrade_os (&backend, &sysex_transfer);
       idata_free (&idata);
     }
@@ -547,11 +548,14 @@ cli_download (int argc, gchar *argv[], int *optind)
       return err;
     }
 
-  src_path = cli_get_path (device_src_path);
+  RETURN_IF_NULL (fs_ops->download);
+  RETURN_IF_NULL (fs_ops->get_download_path);
+  RETURN_IF_NULL (fs_ops->save);
 
   control.active = TRUE;
   control.callback = print_progress;
-  CHECK_FS_OPS_FUNC (fs_ops->download);
+
+  src_path = cli_get_path (device_src_path);
   err = fs_ops->download (&backend, src_path, &idata, &control);
   if (err)
     {
@@ -610,10 +614,14 @@ cli_upload (int argc, gchar *argv[], int *optind)
       return err;
     }
 
-  dst_path = cli_get_path (device_dst_path);
+  RETURN_IF_NULL (fs_ops->load);
+  RETURN_IF_NULL (fs_ops->get_upload_path);
+  RETURN_IF_NULL (fs_ops->upload);
 
   control.active = TRUE;
   control.callback = print_progress;
+
+  dst_path = cli_get_path (device_dst_path);
   err = fs_ops->load (src_path, &idata, &control);
   if (err)
     {
@@ -623,7 +631,6 @@ cli_upload (int argc, gchar *argv[], int *optind)
   upload_path = fs_ops->get_upload_path (&backend, fs_ops, dst_path,
 					 src_path, &idata);
 
-  CHECK_FS_OPS_FUNC (fs_ops->upload);
   err = fs_ops->upload (&backend, upload_path, &idata, &control);
   idata_free (&idata);
 
