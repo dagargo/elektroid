@@ -212,6 +212,7 @@ summit_patch_next_dentry_root (struct item_iterator *iter)
       snprintf (iter->item.name, LABEL_MAX, "%c", 0x41 + iter->item.id);
       iter->item.type = ITEM_TYPE_DIR;
       iter->item.size = -1;
+      iter->item.object_info[0] = 0;
       (*next)++;
       return 0;
     }
