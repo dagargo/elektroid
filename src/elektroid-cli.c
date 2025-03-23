@@ -27,6 +27,8 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <stddef.h>
+#include <glib.h>
+#include <glib/gstdio.h>
 #include "backend.h"
 #include "regconn.h"
 #include "regpref.h"
@@ -536,7 +538,7 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
 }
 
 static gint
-cli_download_item (const gchar *src_path)
+cli_download_item (const gchar *src_path, const gchar *dst_path)
 {
   gint err;
   gchar *download_path;
@@ -556,8 +558,8 @@ cli_download_item (const gchar *src_path)
       return err;
     }
 
-  download_path = fs_ops->get_download_path (&backend, fs_ops, ".", src_path,
-					     &idata);
+  download_path = fs_ops->get_download_path (&backend, fs_ops, dst_path,
+					     src_path, &idata);
   if (!download_path)
     {
       err = -EINVAL;
@@ -576,7 +578,68 @@ cleanup:
 }
 
 static gint
-cli_download (int argc, gchar *argv[], int *optind)
+cli_download_dir (const gchar *src_path, const gchar *dst_path)
+{
+  gint err;
+  gboolean active;
+  struct item_iterator iter;
+
+  RETURN_IF_NULL (fs_ops->readdir);
+
+  active = TRUE;
+  sysex_transfer.active = TRUE;
+
+  err = fs_ops->readdir (&backend, &iter, src_path, NULL);
+  if (err)
+    {
+      return err;
+    }
+
+  while (!item_iterator_next (&iter) && active && !err)
+    {
+      gchar *rsrc_path;
+      gchar *filename = get_filename (fs_ops->options, &iter.item);
+      rsrc_path = path_chain (PATH_INTERNAL, src_path, filename);
+      g_free (filename);
+
+      if (iter.item.type == ITEM_TYPE_FILE)
+	{
+	  err = cli_download_item (rsrc_path, dst_path);
+	}
+      else if (iter.item.type == ITEM_TYPE_DIR)
+	{
+	  gchar *rdst_path = path_chain (PATH_SYSTEM, dst_path,
+					 iter.item.name);
+
+	  err = g_mkdir (rdst_path, 0755);
+	  if (err)
+	    {
+	      error_print
+		("Error while creating directory '%s'. Continuing...",
+		 rdst_path);
+	    }
+	  else
+	    {
+	      err = cli_download_dir (rsrc_path, rdst_path);
+	    }
+
+	  g_free (rdst_path);
+	}
+
+      g_free (rsrc_path);
+
+      g_mutex_lock (&sysex_transfer.mutex);
+      active = sysex_transfer.active;
+      g_mutex_unlock (&sysex_transfer.mutex);
+    }
+
+  item_iterator_free (&iter);
+
+  return active ? err : -ECANCELED;
+}
+
+static gint
+cli_download (int argc, gchar *argv[], int *optind, gint recursive)
 {
   const gchar *src_path;
   gchar *device_src_path;
@@ -601,7 +664,34 @@ cli_download (int argc, gchar *argv[], int *optind)
 
   src_path = cli_get_path (device_src_path);
 
-  return cli_download_item (src_path);
+  if (recursive)
+    {
+      if (strcmp (src_path, "/"))
+	{
+	  gchar *dst_path = g_path_get_basename (src_path);
+	  debug_print (1, "Creating directory '%s'...", dst_path);
+	  err = g_mkdir (dst_path, 0755);
+	  if (err)
+	    {
+	      error_print ("Error while creating directory '%s'", dst_path);
+	    }
+	  else
+	    {
+	      err = cli_download_dir (src_path, dst_path);
+	    }
+
+	  g_free (dst_path);
+	  return err;
+	}
+      else
+	{
+	  return cli_download_dir (src_path, ".");
+	}
+    }
+  else
+    {
+      return cli_download_item (src_path, ".");
+    }
 }
 
 static gint
@@ -946,7 +1036,12 @@ main (int argc, gchar *argv[])
 	}
       else if (!strcmp (op, "download") || !strcmp (op, "dl"))
 	{
-	  err = cli_download (argc, argv, &optind);
+	  err = cli_download (argc, argv, &optind, 0);
+	}
+      else if (!strcmp (op, "rdownload") || !strcmp (op, "rdl") ||
+	       !strcmp (op, "backup"))
+	{
+	  err = cli_download (argc, argv, &optind, 1);
 	}
       else if (!strcmp (op, "upload") || !strcmp (op, "ul"))
 	{

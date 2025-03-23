@@ -21,6 +21,7 @@ These are the available commands:
 * `sw`, swap items
 * `ul` or `upload`
 * `dl` or `download`
+* `rdl` or `rdownload` or `backup`
 
 Keep in mind that not every filesystem implements all the commands. For instance, Elektron samples can not be swapped.
 
