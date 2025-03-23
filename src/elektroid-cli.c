@@ -198,7 +198,7 @@ cli_list (int argc, gchar *argv[], int *optind)
   return EXIT_SUCCESS;
 }
 
-static int
+static gint
 cli_command_path (int argc, gchar *argv[], int *optind, ssize_t member_offset)
 {
   const gchar *path;
@@ -345,7 +345,7 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
   return f (&backend, src_path, dst_path);
 }
 
-static int
+static gint
 cli_info (int argc, gchar *argv[], int *optind)
 {
   const gchar *device_path;
@@ -394,7 +394,7 @@ cli_info (int argc, gchar *argv[], int *optind)
   return EXIT_SUCCESS;
 }
 
-static int
+static gint
 cli_df (int argc, gchar *argv[], int *optind)
 {
   const gchar *device_path;
@@ -462,7 +462,7 @@ cli_df (int argc, gchar *argv[], int *optind)
   return err;
 }
 
-static int
+static gint
 cli_upgrade_os (int argc, gchar *argv[], int *optind)
 {
   gint err;
@@ -523,30 +523,12 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
   return err;
 }
 
-static int
-cli_download (int argc, gchar *argv[], int *optind)
+static gint
+cli_download_item (const gchar *src_path)
 {
-  const gchar *src_path;
-  gchar *device_src_path, *download_path;
   gint err;
+  gchar *download_path;
   struct idata idata;
-
-  if (*optind == argc)
-    {
-      error_print ("Remote path missing");
-      return EXIT_FAILURE;
-    }
-  else
-    {
-      device_src_path = argv[*optind];
-      (*optind)++;
-    }
-
-  err = cli_connect (device_src_path);
-  if (err)
-    {
-      return err;
-    }
 
   RETURN_IF_NULL (fs_ops->download);
   RETURN_IF_NULL (fs_ops->get_download_path);
@@ -555,7 +537,6 @@ cli_download (int argc, gchar *argv[], int *optind)
   control.active = TRUE;
   control.callback = print_progress;
 
-  src_path = cli_get_path (device_src_path);
   err = fs_ops->download (&backend, src_path, &idata, &control);
   if (err)
     {
@@ -578,13 +559,72 @@ cleanup:
   return err;
 }
 
-static int
+static gint
+cli_download (int argc, gchar *argv[], int *optind)
+{
+  const gchar *src_path;
+  gchar *device_src_path;
+  gint err;
+
+  if (*optind == argc)
+    {
+      error_print ("Remote path missing");
+      return EXIT_FAILURE;
+    }
+  else
+    {
+      device_src_path = argv[*optind];
+      (*optind)++;
+    }
+
+  err = cli_connect (device_src_path);
+  if (err)
+    {
+      return err;
+    }
+
+  src_path = cli_get_path (device_src_path);
+
+  return cli_download_item (src_path);
+}
+
+static gint
+cli_upload_item (const gchar *src_path, const gchar *dst_path)
+{
+  gint err;
+  gchar *upload_path;
+  struct idata idata;
+
+  RETURN_IF_NULL (fs_ops->load);
+  RETURN_IF_NULL (fs_ops->get_upload_path);
+  RETURN_IF_NULL (fs_ops->upload);
+
+  control.active = TRUE;
+  control.callback = print_progress;
+
+  err = fs_ops->load (src_path, &idata, &control);
+  if (err)
+    {
+      return err;
+    }
+
+  upload_path = fs_ops->get_upload_path (&backend, fs_ops, dst_path,
+					 src_path, &idata);
+
+  err = fs_ops->upload (&backend, upload_path, &idata, &control);
+  idata_free (&idata);
+
+  g_free (upload_path);
+
+  return err;
+}
+
+static gint
 cli_upload (int argc, gchar *argv[], int *optind)
 {
-  const gchar *dst_path;
-  gchar *src_path, *device_dst_path, *upload_path;
   gint err;
-  struct idata idata;
+  const gchar *dst_path;
+  gchar *src_path, *device_dst_path;
 
   if (*optind == argc)
     {
@@ -614,32 +654,12 @@ cli_upload (int argc, gchar *argv[], int *optind)
       return err;
     }
 
-  RETURN_IF_NULL (fs_ops->load);
-  RETURN_IF_NULL (fs_ops->get_upload_path);
-  RETURN_IF_NULL (fs_ops->upload);
-
-  control.active = TRUE;
-  control.callback = print_progress;
-
   dst_path = cli_get_path (device_dst_path);
-  err = fs_ops->load (src_path, &idata, &control);
-  if (err)
-    {
-      return err;
-    }
 
-  upload_path = fs_ops->get_upload_path (&backend, fs_ops, dst_path,
-					 src_path, &idata);
-
-  err = fs_ops->upload (&backend, upload_path, &idata, &control);
-  idata_free (&idata);
-
-  g_free (upload_path);
-
-  return err;
+  return cli_upload_item (src_path, dst_path);
 }
 
-static int
+static gint
 cli_send (int argc, gchar *argv[], int *optind)
 {
   gint err;
@@ -693,7 +713,7 @@ cli_send (int argc, gchar *argv[], int *optind)
   return err;
 }
 
-static int
+static gint
 cli_receive (int argc, gchar *argv[], int *optind)
 {
   gint err;
