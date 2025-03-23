@@ -241,7 +241,8 @@ elektron_print_data (struct item_iterator *iter,
   gchar *hsize = get_human_size (iter->item.size, FALSE);
   gchar *slot = iter->item.id > 0 ?
     elektron_get_id_as_slot (&iter->item, backend) : strdup (" -1");
-  gboolean info = fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN;
+  gboolean info = (fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN) &&
+    *iter->item.object_info;
 
   printf ("%c %04x %d %d %10s %s %-*s%s%s%s\n", iter->item.type,
 	  data->operations, data->has_valid_data, data->has_metadata,

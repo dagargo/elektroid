@@ -88,7 +88,8 @@ common_print_item (struct item_iterator *iter, struct backend *backend,
   gchar *hsize = get_human_size (iter->item.size, FALSE);
   gint max_name_len = fs_ops->max_name_len ? fs_ops->max_name_len :
     DEFAULT_MAX_NAME_LEN;
-  gboolean info = (fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN) != 0;
+  gboolean info = (fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN) &&
+    *iter->item.object_info;
 
   if (fs_ops->options & FS_OPTION_SLOT_STORAGE)
     {
