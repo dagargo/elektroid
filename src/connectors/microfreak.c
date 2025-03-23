@@ -365,9 +365,8 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
     }
 
   output = g_byte_array_new ();
-  control->parts = 2 + MICROFREAK_PRESET_PARTS;	//Worst case
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+
+  job_control_reset (control, 2 + MICROFREAK_PRESET_PARTS);	//Worst case
 
   tx_msg = microfreak_get_preset_op_msg (backend, 0x19, id, 0);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
@@ -498,9 +497,7 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
       return err;
     }
 
-  control->parts = 3 + mfp.parts;
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control, 3 + mfp.parts);
 
   mfp.header[0] = COMMON_GET_MIDI_BANK (id);
   mfp.header[1] = COMMON_GET_MIDI_PRESET (id);
@@ -1054,10 +1051,9 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
       batches = MICROFREAK_SAMPLE_MAX_BATCHES;
     }
 
-  control->parts = 6 + batches * (2 + MICROFREAK_SAMPLE_BATCH_PACKETS);
-  control->parts += 1 + MICROFREAK_SAMPLE_BATCH_PACKETS;	//This is for the last unknown phase
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control,
+		     6 + batches * (2 + MICROFREAK_SAMPLE_BATCH_PACKETS) + 1 +
+		     MICROFREAK_SAMPLE_BATCH_PACKETS);
 
   //This is called by Arturia MIDI Control Center before uploading a sample.
   //Perhaps this does more than just retrieving the statistics.
@@ -1552,10 +1548,8 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
   content = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
   content->len = MICROFREAK_WAVETABLE_SIZE;
 
-  control->parts = (MICROFREAK_SAMPLE_BATCH_PACKETS + 1) *
-    MICROFREAK_WAVETABLE_PARTS;
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control, (MICROFREAK_SAMPLE_BATCH_PACKETS + 1) *
+		     MICROFREAK_WAVETABLE_PARTS);
 
   err = 0;
   for (guint8 part = 0; part < MICROFREAK_WAVETABLE_PARTS && !err; part++)
@@ -1791,9 +1785,7 @@ microfreak_wavetable_upload_id_name (struct backend *backend,
       return -EINVAL;
     }
 
-  control->parts = 1 + MICROFREAK_WAVETABLE_PARTS;
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control, 1 + MICROFREAK_WAVETABLE_PARTS);
 
   err = microfreak_wavetable_set_entry (backend, id, name, 0);
   if (err)

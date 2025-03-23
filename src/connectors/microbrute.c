@@ -296,9 +296,7 @@ microbrute_download (struct backend *backend, const gchar *src_path,
       return -EINVAL;
     }
 
-  control->parts = 1;
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control, 1);
 
   data = g_byte_array_new ();
   err = microbrute_download_seq_data (backend, seqnum, 0, data);
@@ -435,9 +433,7 @@ microbrute_upload (struct backend *backend, const gchar *path,
 
   g_mutex_lock (&backend->mutex);
 
-  control->parts = 1;
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control, 1);
 
   steps = microbrute_send_seq_msg (backend, seqnum, 0, &token, &pos,
 				   input->len);

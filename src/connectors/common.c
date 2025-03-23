@@ -160,9 +160,7 @@ common_data_tx (struct backend *backend, GByteArray *msg,
 
   g_mutex_lock (&backend->mutex);
 
-  control->parts = 1;
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control, 1);
 
   transfer.raw = msg;
   err = backend_tx_sysex (backend, &transfer);
@@ -217,9 +215,7 @@ gint
 common_data_tx_and_rx (struct backend *backend, GByteArray *tx_msg,
 		       GByteArray **rx_msg, struct job_control *control)
 {
-  control->parts = 1;
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control, 1);
   return common_data_tx_and_rx_part (backend, tx_msg, rx_msg, control);
 }
 

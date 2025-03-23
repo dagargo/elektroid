@@ -516,9 +516,7 @@ package_receive_pkg_resources (struct package *pkg,
 
   pkg->manifest->tags = NULL;
 
-  control->parts = 1;		//payload
-  control->part = 0;
-  job_control_set_progress (control, 0.0);
+  job_control_reset (control, 1);	//payload
 
   if ((type == PKG_FILE_TYPE_DATA_PROJECT &&
        data->device_desc.id != ELEKTRON_ANALOG_RYTM_ID &&
