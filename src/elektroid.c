@@ -743,7 +743,7 @@ elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
 
   if (item->type == ITEM_TYPE_FILE)
     {
-      gchar *filename = get_filename (browser->fs_ops->options, item);
+      gchar *filename = item_get_filename (item, browser->fs_ops->options);
       gchar *id_path = path_chain (type, dir, filename);
       g_free (filename);
       err = browser->fs_ops->delete (browser->backend, id_path);
@@ -1788,7 +1788,8 @@ elektroid_add_download_task_path (const gchar *rel_path,
 
   while (!item_iterator_next (&iter))
     {
-      filename = get_filename (remote_browser.fs_ops->options, &iter.item);
+      filename = item_get_filename (&iter.item,
+				    remote_browser.fs_ops->options);
       path = path_chain (PATH_INTERNAL, rel_path, filename);
       elektroid_add_download_task_path (path, src_dir, dst_dir);
       debug_print (1, "name: %s", filename);
@@ -1826,7 +1827,7 @@ elektroid_add_download_tasks_runner (gpointer data)
 
       gtk_tree_model_get_iter (model, &path_iter, path);
       browser_set_item (model, &path_iter, &item);
-      filename = get_filename (remote_browser.fs_ops->options, &item);
+      filename = item_get_filename (&item, remote_browser.fs_ops->options);
       elektroid_add_download_task_path (filename, remote_browser.dir,
 					local_browser.dir);
       g_free (filename);
@@ -2310,7 +2311,7 @@ elektroid_add_upload_task_slot (const gchar *name,
 
       browser_set_item (model, &iter, &item);
 
-      filename = get_filename (remote_browser.fs_ops->options, &item);
+      filename = item_get_filename (&item, remote_browser.fs_ops->options);
       str = g_string_new (NULL);
       g_string_append_printf (str, "%s%s%s", remote_browser.dir,
 			      strcmp (remote_browser.dir, "/") ?

@@ -59,7 +59,7 @@ item_iterator_is_dir_or_matches_extensions (struct item_iterator *iter,
 }
 
 gchar *
-get_filename (guint32 fs_options, struct item *item)
+item_get_filename (struct item *item, guint32 fs_options)
 {
   if (fs_options & FS_OPTION_SLOT_STORAGE && item->type == ITEM_TYPE_FILE)
     {

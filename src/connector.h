@@ -199,6 +199,6 @@ gboolean item_iterator_is_dir_or_matches_extensions (struct item_iterator
  * @param options The options member in the fs_operations struct.
  * @param item
  */
-gchar *get_filename (guint32 options, struct item *item);
+gchar *item_get_filename (struct item *item, guint32 options);
 
 #endif

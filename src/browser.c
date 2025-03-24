@@ -239,7 +239,7 @@ browser_clear_selection (struct browser *browser)
 gchar *
 browser_get_item_path (struct browser *browser, struct item *item)
 {
-  gchar *filename = get_filename (browser->fs_ops->options, item);
+  gchar *filename = item_get_filename (item, browser->fs_ops->options);
   enum path_type type = backend_get_path_type (browser->backend);
   gchar *path = path_chain (type, browser->dir, filename);
   debug_print (1, "Using %s path for item %s (id %d)...", path, item->name,
