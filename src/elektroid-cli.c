@@ -598,7 +598,7 @@ cli_download_dir (const gchar *src_path, const gchar *dst_path)
   while (!item_iterator_next (&iter) && active && !err)
     {
       gchar *rsrc_path;
-      gchar *filename = get_filename (fs_ops->options, &iter.item);
+      gchar *filename = item_get_filename (&iter.item, fs_ops->options);
       rsrc_path = path_chain (PATH_INTERNAL, src_path, filename);
       g_free (filename);
 
