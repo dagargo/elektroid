@@ -125,10 +125,11 @@ common_print_item (struct item_iterator *iter, struct backend *backend,
 	}
     }
 
-  printf ("%c %10s %.*s%s%-*s%s%s%s\n", iter->item.type, hsize, slot ? 10 : 0,
-	  slot, slot ? " " : "", max_name_len, iter->item.name,
-	  info ? " [ " : "", info ? iter->item.object_info : "",
-	  info ? " ]" : "");
+  printf ("%c %10s %.*s%s%-*s%s%s%s\n", iter->item.type, hsize,
+	  slot ? 10 : 0, slot, slot ? " " : "",
+	  info ? max_name_len : (gint) strlen (iter->item.name),
+	  iter->item.name, info ? " [ " : "",
+	  info ? iter->item.object_info : "", info ? " ]" : "");
 
   g_free (hsize);
   g_free (slot);
