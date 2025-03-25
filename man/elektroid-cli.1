@@ -22,7 +22,7 @@ Elektron Model:Cycles
 .IP \[bu]
 Elektron Digitakt I and II
 .IP \[bu]
-Elektron Digitone and Digitone Keys
+Elektron Digitone I and II and Digitone Keys
 .IP \[bu]
 Elektron Syntakt
 .IP \[bu]
@@ -86,10 +86,10 @@ Create a directory and its parent directories as needed
 Delete a directory recursively
 .TP
 [ \fBul\fR | \fBupload\fR ] file device_number:path_to_file_or_directory
-Upload a file. If the path does not exist it will be created. For the sample filesystem, the supported audio file formats are aiff, flac, ogg and wav.
+Upload a file. If the path does not exist it will be created.
 .TP
-[ \fBdl\fR | \fBdownload\fR ] device_number:path_to_file_or_directory
-Download a file into the current directory. For the sample filesystem, samples will be stored locally as 16-bit, 48kHz wav files.
+[ \fBdl\fR | \fBdownload\fR | \fBrdownload\fR | \fBrdl\fR | \fBbackup\fR ] device_number:path_to_file_or_directory [ destination ]
+Download a file into the destination directory or the current directory if not provided.
 .TP
 \fBmv\fR device_number:path_to_file_or_directory device_number:path_to_file_or_directory
 Move a file. If the destination path does not exist, it will be created.
@@ -128,7 +128,7 @@ downloads a mono 16 bits sample from an SDS sampler.
 lists Novation Summit single patches in bank A.
 
 .SH "SEE ALSO"
-The GitHub page provides some examples: <https://github.com/dagargo/elektroid>
+The GitHub page provides some examples: <https://dagargo.github.io/elektroid/>
 
 .SH "AUTHOR"
 elektroid-cli was written by David García Goñi <dagargo@gmail.com>.
