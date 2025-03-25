@@ -642,6 +642,7 @@ static gint
 cli_download (int argc, gchar *argv[], int *optind, gint recursive)
 {
   const gchar *src_path;
+  const gchar *dst_path;
   gchar *device_src_path;
   gint err;
 
@@ -664,33 +665,45 @@ cli_download (int argc, gchar *argv[], int *optind, gint recursive)
 
   src_path = cli_get_path (device_src_path);
 
+  if (*optind == argc)
+    {
+      dst_path = ".";
+    }
+  else
+    {
+      dst_path = argv[*optind];
+    }
+
   if (recursive)
     {
       if (strcmp (src_path, "/"))
 	{
-	  gchar *dst_path = g_path_get_basename (src_path);
-	  debug_print (1, "Creating directory '%s'...", dst_path);
-	  err = g_mkdir (dst_path, 0755);
+	  gchar *new_dir = g_path_get_basename (src_path);
+	  gchar *full_dst_path = path_chain (PATH_SYSTEM, src_path, new_dir);
+	  debug_print (1, "Creating directory '%s'...", full_dst_path);
+	  err = g_mkdir (full_dst_path, 0755);
 	  if (err)
 	    {
-	      error_print ("Error while creating directory '%s'", dst_path);
+	      error_print ("Error while creating directory '%s'",
+			   full_dst_path);
 	    }
 	  else
 	    {
-	      err = cli_download_dir (src_path, dst_path);
+	      err = cli_download_dir (src_path, full_dst_path);
 	    }
 
-	  g_free (dst_path);
+	  g_free (full_dst_path);
+	  g_free (new_dir);
 	  return err;
 	}
       else
 	{
-	  return cli_download_dir (src_path, ".");
+	  return cli_download_dir (src_path, dst_path);
 	}
     }
   else
     {
-      return cli_download_item (src_path, ".");
+      return cli_download_item (src_path, dst_path);
     }
 }
 
