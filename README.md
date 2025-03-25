@@ -351,6 +351,8 @@ F   2 0012 1 1       160B KICK
 
 ```
 $ elektroid-cli elektron-data-dl 0:/soundbanks/D/1
+
+$ elektroid-cli elektron-data-dl 0:/soundbanks/D/1 dir
 ```
 
 * `elektron-data-ul`
