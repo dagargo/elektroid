@@ -32,6 +32,11 @@
 
 #define APP_NAME "Elektroid"
 
+//Used to identify the local topmost directory.
+//As they are different and the TOPMOST_DIR_WINDOWS is not a "real" directory, it can be used as a special case.
+#define TOPMOST_DIR_UNIX "/"
+#define TOPMOST_DIR_WINDOWS ""
+
 #define LABEL_MAX 256
 
 #define KI 1024

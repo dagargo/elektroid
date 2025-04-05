@@ -170,24 +170,57 @@ browser_refresh (GtkWidget *object, gpointer data)
   browser_load_dir (browser);
 }
 
+gchar *
+path_dir_get_parent (const gchar *dir)
+{
+#if defined(__MINGW32__) | defined(__MINGW64__)
+  if (!strcmp (dir, TOPMOST_DIR_WINDOWS))
+    {
+      return NULL;
+    }
+#else
+  if (!strcmp (dir, TOPMOST_DIR_UNIX))
+    {
+      return NULL;
+    }
+#endif
+
+  gchar *parent = g_path_get_dirname (dir);
+
+#if defined(__MINGW32__) | defined(__MINGW64__)
+  if (!strcmp (dir, parent))
+    {
+      g_free (parent);
+      return strdup (TOPMOST_DIR_WINDOWS);
+    }
+#endif
+
+  return parent;
+}
+
 void
 browser_go_up (GtkWidget *object, gpointer data)
 {
   struct browser *browser = data;
+  gboolean reload = FALSE;
 
   g_mutex_lock (&browser->mutex);
   if (!browser->loading)
     {
-      if (strcmp (browser->dir, "/"))
+      gchar *new_path = path_dir_get_parent (browser->dir);
+      if (new_path)
 	{
-	  gchar *new_path = g_path_get_dirname (browser->dir);
 	  strcpy (browser->dir, new_path);
 	  g_free (new_path);
+	  reload = TRUE;
 	}
     }
   g_mutex_unlock (&browser->mutex);
 
-  browser_load_dir (browser);
+  if (reload || !browser->notifier)
+    {
+      browser_load_dir (browser);
+    }
 }
 
 void

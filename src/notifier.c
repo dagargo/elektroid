@@ -102,7 +102,7 @@ notifier_update_dir (struct notifier *notifier, gboolean active)
       g_object_unref (notifier->parent_monitor);
     }
 
-  if (active)
+  if (active && strcmp (notifier->browser->dir, TOPMOST_DIR_WINDOWS))
     {
       notifier->dir = g_file_new_for_path (notifier->browser->dir);
       notifier->monitor = g_file_monitor_directory (notifier->dir,

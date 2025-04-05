@@ -183,19 +183,77 @@ system_next_dentry_with_sample_info (struct item_iterator *iter)
   return system_next_dentry (iter, TRUE);
 }
 
+#if defined(__MINGW32__) | defined(__MINGW64__)
+struct windows_drive_iterator_data
+{
+  GList *mounts;
+  GList *next;
+};
+
+static int
+windows_drive_next_dentry (struct item_iterator *iter)
+{
+  struct windows_drive_iterator_data *data = iter->data;
+
+  if (!data->next)
+    {
+      return -ENOENT;
+    }
+
+  GMount *gmount = data->next->data;
+  GFile *gfile = g_mount_get_root (gmount);
+  gchar *name = g_file_get_path (gfile);
+  g_object_unref (gfile);
+  snprintf (iter->item.name, LABEL_MAX, "%s", name);
+  g_free (name);
+  iter->item.type = ITEM_TYPE_DIR;
+  iter->item.size = -1;
+  iter->item.id = -1;
+
+  data->next = data->next->next;
+
+  return 0;
+}
+
+static void
+windows_drive_free_iterator_data (void *iter_data)
+{
+  struct windows_drive_iterator_data *data = iter_data;
+  g_list_free_full (data->mounts, g_object_unref);
+  g_free (data);
+}
+#endif
+
 static gint
 system_read_dir_opts (struct backend *backend, struct item_iterator *iter,
 		      const gchar *dir, const gchar **extensions,
 		      iterator_next next)
 {
+#if defined(__MINGW32__) | defined(__MINGW64__)
+  if (!strcmp (dir, TOPMOST_DIR_WINDOWS))
+    {
+      GVolumeMonitor *monitor = g_volume_monitor_get ();
+      struct windows_drive_iterator_data *data;
+
+      data = g_malloc (sizeof (struct windows_drive_iterator_data));
+      data->mounts = g_volume_monitor_get_mounts (monitor);
+      data->next = data->mounts;
+
+      item_iterator_init (iter, dir, data, windows_drive_next_dentry,
+			  windows_drive_free_iterator_data);
+
+      return 0;
+    }
+#endif
+
   GDir *gdir;
-  struct system_iterator_data *data;
 
   if (!(gdir = g_dir_open (dir, 0, NULL)))
     {
       return -errno;
     }
 
+  struct system_iterator_data *data;
   data = g_malloc (sizeof (struct system_iterator_data));
   data->dir = gdir;
   data->extensions = extensions;
