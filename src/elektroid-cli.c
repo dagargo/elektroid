@@ -679,7 +679,7 @@ cli_download (int argc, gchar *argv[], int *optind, gint recursive)
       if (strcmp (src_path, "/"))
 	{
 	  gchar *new_dir = g_path_get_basename (src_path);
-	  gchar *full_dst_path = path_chain (PATH_SYSTEM, src_path, new_dir);
+	  gchar *full_dst_path = path_chain (PATH_SYSTEM, dst_path, new_dir);
 	  debug_print (1, "Creating directory '%s'...", full_dst_path);
 	  err = g_mkdir (full_dst_path, 0755);
 	  if (err)
