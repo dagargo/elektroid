@@ -672,6 +672,14 @@ cli_download (int argc, gchar *argv[], int *optind, gint recursive)
   else
     {
       dst_path = argv[*optind];
+
+      debug_print (1, "Creating directory '%s'...", dst_path);
+      err = g_mkdir_with_parents (dst_path, 0755);
+      if (err)
+	{
+	  error_print ("Error while creating directory '%s'", dst_path);
+	  return err;
+	}
     }
 
   if (recursive)
