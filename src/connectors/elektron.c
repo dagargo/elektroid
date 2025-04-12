@@ -1949,7 +1949,7 @@ elektron_next_data_entry (struct item_iterator *iter)
 not_found:
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.name[0] = 0;
-  iter->item.size = -1;
+  iter->item.size = 0;
   iter->item.id++;
   data->operations = 0;
   data->has_valid_data = 0;
