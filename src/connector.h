@@ -45,7 +45,11 @@ enum item_type
 //name must be filled up always. If no name is available, this can be a string representation of the ID without padding. See set_item_name_from_id function.
 //In slot mode, id needs to be filled up and will typically be the MIDI preset number (the id is the filename).
 //In default mode (not slot mode), id can be used for any or no purpose. It's still possible to use the id as the filename by using the FS_OPTION_ID_AS_FILENAME option.
-//A value of -1 in size will show nothing on the interface. If the size column is not used at all, do not use FS_OPTION_SHOW_SIZE_COLUMN.
+//A -1 size (unknown) will show no size in either the GUI or the CLI.
+//A 0 size item will be skipped by the `backup` command for efficiency purposes. It depends on the connector if this can be determined.
+//A download on an item of size 0 is still possible and the actual size might be different than 0 as an empty slot might contain an initialized item.
+//However, the GUI must list all the items always as the slot destination is always needed and the `ls` command will list them as well.
+//If the size column is not used at all, do not use FS_OPTION_SHOW_SIZE_COLUMN.
 
 struct item
 {

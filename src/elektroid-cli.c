@@ -602,7 +602,7 @@ cli_download_dir (const gchar *src_path, const gchar *dst_path)
       rsrc_path = path_chain (PATH_INTERNAL, src_path, filename);
       g_free (filename);
 
-      if (iter.item.type == ITEM_TYPE_FILE)
+      if (iter.item.type == ITEM_TYPE_FILE && iter.item.size != 0)	//File and non empty slot
 	{
 	  err = cli_download_item (rsrc_path, dst_path);
 	}
