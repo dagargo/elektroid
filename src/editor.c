@@ -1215,7 +1215,7 @@ editor_file_exists_no_overwrite (const gchar *filename)
 //editor_save_clicked which already provides this.
 
 static gint
-editor_save_with_format (struct editor *editor, gchar *name,
+editor_save_with_format (struct editor *editor, const gchar *name,
 			 struct idata *sample)
 {
   gint err;
@@ -1334,6 +1334,7 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	      idata_init (&aux, sample, NULL, si);
 	      editor_save_with_format (editor, name, &aux);
 	      idata_free (&aux);
+	      g_free (name);
 	      sample = NULL;
 	    }
 	  else
