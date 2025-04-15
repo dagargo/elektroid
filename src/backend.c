@@ -188,6 +188,7 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
 				  gboolean free)
 {
   transfer->batch = FALSE;
+  transfer->err = 0;
 
   g_mutex_lock (&backend->mutex);
 
@@ -200,6 +201,7 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
 	  transfer->raw = NULL;
 	}
     }
+
   if (!transfer->err)
     {
       backend_rx_sysex (backend, transfer);
