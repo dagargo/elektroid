@@ -822,7 +822,6 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = GINT32_FROM_LE (header.size);
-  iter->item.size = iter->item.size ? iter->item.size : -1;
   (data->next)++;
   free_msg (rx_msg);
 
