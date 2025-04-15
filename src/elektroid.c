@@ -1242,8 +1242,9 @@ elektroid_run_dialog_and_destroy (GtkWidget *custom_dialog)
 }
 
 gchar *
-elektroid_ask_name (const gchar *title, const gchar *value,
-		    struct browser *browser, gint start_pos, gint end_pos)
+elektroid_ask_name_get_path (const gchar *title, const gchar *value,
+			     struct browser *browser, gint start_pos,
+			     gint end_pos)
 {
   char *pathname = NULL;
   int result;
@@ -1285,7 +1286,8 @@ elektroid_add_dir (GtkWidget *object, gpointer data)
   char *pathname;
   struct browser *browser = data;
 
-  pathname = elektroid_ask_name (_("Add Directory"), "", browser, 0, 0);
+  pathname = elektroid_ask_name_get_path (_("Add Directory"), "", browser, 0,
+					  0);
   if (pathname)
     {
       gint err = browser->fs_ops->mkdir (&backend, pathname);

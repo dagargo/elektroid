@@ -64,9 +64,9 @@ struct editor_set_volume_data
   gdouble volume;
 };
 
-gchar *elektroid_ask_name (const gchar * title, const gchar * value,
-			   struct browser *browser, gint start_pos,
-			   gint end_pos);
+gchar *elektroid_ask_name_get_path (const gchar * title, const gchar * value,
+				    struct browser *browser, gint start_pos,
+				    gint end_pos);
 
 static void
 editor_set_layout_width_to_val (struct editor *editor, guint w)
@@ -1208,14 +1208,14 @@ editor_file_exists_no_overwrite (const gchar *filename)
       res = elektroid_run_dialog_and_destroy (dialog);
     }
 
-  return res == GTK_RESPONSE_CANCEL;
+  return res != GTK_RESPONSE_ACCEPT;
 }
 
 //This function does not need synchronized access as it is only called from
 //editor_save_clicked which already provides this.
 
 static gint
-editor_save_with_format (struct editor *editor, const gchar *name,
+editor_save_with_format (struct editor *editor, const gchar *dst_path,
 			 struct idata *sample)
 {
   gint err;
@@ -1224,7 +1224,8 @@ editor_save_with_format (struct editor *editor, const gchar *name,
 
   if (sample_info->rate == sample_info_src->rate)
     {
-      err = sample_save_to_file (name, sample, NULL, sample_info_src->format);
+      err = sample_save_to_file (dst_path, sample, NULL,
+				 sample_info_src->format);
     }
   else
     {
@@ -1236,7 +1237,7 @@ editor_save_with_format (struct editor *editor, const gchar *name,
 	  return err;
 	}
 
-      err = sample_save_to_file (name, &resampled, NULL,
+      err = sample_save_to_file (dst_path, &resampled, NULL,
 				 sample_info_src->format);
       idata_free (&resampled);
     }
@@ -1249,9 +1250,13 @@ editor_save_with_format (struct editor *editor, const gchar *name,
 static void
 editor_save_clicked (GtkWidget *object, gpointer data)
 {
-  gchar *name;
-  guint32 sel_len;
-  GByteArray *sample = NULL;
+  gchar *path;
+  const gchar *ext;
+  guint32 sel_len, sugg_sel_len, ext_len;
+  struct idata aux;
+  GByteArray *selection = NULL;
+  struct sample_info *aux_si;
+  gchar suggestion[PATH_MAX];
   struct editor *editor = data;
   struct sample_info *sample_info;
 
@@ -1270,33 +1275,32 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 
   sel_len = AUDIO_SEL_LEN (&editor->audio);
 
-  if (editor->audio.path && !sel_len)
+  if (sel_len)
     {
-      g_mutex_unlock (&editor->audio.control.mutex);
-      if (editor_file_exists_no_overwrite (editor->audio.path))
-	{
-	  goto cleanup;
-	}
-      g_mutex_lock (&editor->audio.control.mutex);
+      guint fsize = SAMPLE_INFO_FRAME_SIZE (sample_info);
+      guint start = editor->audio.sel_start * fsize;
+      guint len = sel_len * fsize;
+      selection = g_byte_array_sized_new (len);
+      g_byte_array_append (selection,
+			   &editor->audio.sample.content->data[start], len);
 
-      debug_print (2, "Saving changes to %s...", editor->audio.path);
+      aux_si = g_malloc (sizeof (struct sample_info));
+      memcpy (aux_si, editor->audio.sample.info, sizeof (struct sample_info));
+      aux_si->frames = sel_len;
+      aux_si->loop_start = sel_len - 1;
+      aux_si->loop_end = aux_si->loop_start;
 
-      editor_save_with_format (editor, editor->audio.path,
-			       &editor->audio.sample);
+      idata_init (&aux, selection, NULL, aux_si);
+
+      snprintf (suggestion, PATH_MAX, "%s", "Sample.wav");
     }
   else
     {
-      gchar suggestion[PATH_MAX];
-      if (sel_len)
+      if (editor->audio.path)
 	{
-	  guint fsize = SAMPLE_INFO_FRAME_SIZE (sample_info);
-	  guint start = editor->audio.sel_start * fsize;
-	  guint len = sel_len * fsize;
-	  sample = g_byte_array_sized_new (len);
-	  g_byte_array_append (sample,
-			       &editor->audio.sample.content->data[start],
-			       len);
-	  snprintf (suggestion, PATH_MAX, "%s", "Sample.wav");
+	  gchar *basename = g_path_get_basename (editor->audio.path);
+	  snprintf (suggestion, PATH_MAX, "%s", basename);
+	  g_free (basename);
 	}
       else
 	{
@@ -1306,55 +1310,68 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	  g_free (s);
 	  g_date_time_unref (dt);
 	}
+    }
 
-      g_mutex_unlock (&editor->audio.control.mutex);
-      name = elektroid_ask_name (_("Save Sample"), suggestion,
-				 editor->browser, 0, strlen (suggestion) - 4);
-      g_mutex_lock (&editor->audio.control.mutex);
-      if (name)
+  g_mutex_unlock (&editor->audio.control.mutex);
+
+  sugg_sel_len = strlen (suggestion);
+  ext = filename_get_ext (suggestion);
+  ext_len = strlen (ext);
+  if (ext_len)
+    {
+      sugg_sel_len -= ext_len + 1;
+    }
+
+  path = elektroid_ask_name_get_path (_("Save Sample"), suggestion,
+				      editor->browser, 0, sugg_sel_len);
+  if (path == NULL || editor_file_exists_no_overwrite (path))
+    {
+      goto cleanup;
+    }
+
+  g_mutex_lock (&editor->audio.control.mutex);
+
+  if (editor->audio.path)
+    {
+      if (sel_len)
 	{
-	  g_mutex_unlock (&editor->audio.control.mutex);
-	  if (editor_file_exists_no_overwrite (name))
-	    {
-	      goto cleanup;
-	    }
-	  g_mutex_lock (&editor->audio.control.mutex);
+	  debug_print (2, "Saving selection to %s...", path);
+	  aux.name = g_path_get_basename (path);
+	  editor_save_with_format (editor, path, &aux);
+	}
+      else
+	{
+	  debug_print (2, "Saving changes to %s...", path);
 
-	  debug_print (2, "Saving recording to %s...", name);
+	  g_free (editor->audio.path);
+	  g_free (editor->audio.sample.name);
+	  editor->audio.path = path;
+	  editor->audio.sample.name = g_path_get_basename (path);
+	  editor_save_with_format (editor, editor->audio.path,
+				   &editor->audio.sample);
+	}
+    }
+  else
+    {
+      memcpy (&editor->audio.sample_info_src,
+	      editor->audio.sample.info, sizeof (struct sample_info));
+      editor->audio.sample_info_src.format |= SF_FORMAT_WAV;
 
-	  if (sel_len)
-	    {
-	      //This does not set anything and leaves everything as if no sample would have been loaded.
-	      struct idata aux;
-	      struct sample_info *si = g_malloc (sizeof (struct sample_info));
-
-	      memcpy (si, editor->audio.sample.info,
-		      sizeof (struct sample_info));
-	      si->frames = sel_len;
-	      si->loop_start = sel_len - 1;
-	      si->loop_end = si->loop_start;
-
-	      memcpy (&editor->audio.sample_info_src,
-		      editor->audio.sample.info, sizeof (struct sample_info));
-	      editor->audio.sample_info_src.format |= SF_FORMAT_WAV;
-
-	      idata_init (&aux, sample, NULL, si);
-	      editor_save_with_format (editor, name, &aux);
-	      idata_free (&aux);
-	      g_free (name);
-	      sample = NULL;
-	    }
-	  else
-	    {
-	      //This sets everything as if a sample would have been loaded.
-	      editor->audio.path = name;
-	      editor->audio.sample.name = strdup (name);
-	      memcpy (&editor->audio.sample_info_src,
-		      editor->audio.sample.info, sizeof (struct sample_info));
-	      editor->audio.sample_info_src.format |= SF_FORMAT_WAV;
-	      editor_save_with_format (editor, editor->audio.path,
-				       &editor->audio.sample);
-	    }
+      if (sel_len)
+	{
+	  //This does not set anything and leaves everything as if no sample would have been loaded.
+	  debug_print (2, "Saving recorded selection to %s...", path);
+	  aux.name = g_path_get_basename (path);
+	  editor_save_with_format (editor, path, &aux);
+	}
+      else
+	{
+	  //This sets everything as if a sample would have been loaded.
+	  debug_print (2, "Saving recording to %s...", path);
+	  editor->audio.path = path;
+	  editor->audio.sample.name = g_path_get_basename (path);
+	  editor_save_with_format (editor, editor->audio.path,
+				   &editor->audio.sample);
 	}
     }
 
@@ -1362,9 +1379,9 @@ end:
   g_mutex_unlock (&editor->audio.control.mutex);
 
 cleanup:
-  if (sample)
+  if (selection)
     {
-      g_byte_array_free (sample, TRUE);
+      idata_free (&aux);
     }
 }
 
