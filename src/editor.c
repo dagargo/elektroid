@@ -1324,13 +1324,20 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 
 	  if (sel_len)
 	    {
+	      //This does not set anything and leaves everything as if no sample would have been loaded.
 	      struct idata aux;
 	      struct sample_info *si = g_malloc (sizeof (struct sample_info));
-	      memcpy (si, &editor->audio.sample_info_src,
+
+	      memcpy (si, editor->audio.sample.info,
 		      sizeof (struct sample_info));
 	      si->frames = sel_len;
 	      si->loop_start = sel_len - 1;
 	      si->loop_end = si->loop_start;
+
+	      memcpy (&editor->audio.sample_info_src,
+		      editor->audio.sample.info, sizeof (struct sample_info));
+	      editor->audio.sample_info_src.format |= SF_FORMAT_WAV;
+
 	      idata_init (&aux, sample, NULL, si);
 	      editor_save_with_format (editor, name, &aux);
 	      idata_free (&aux);
@@ -1339,7 +1346,12 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	    }
 	  else
 	    {
+	      //This sets everything as if a sample would have been loaded.
 	      editor->audio.path = name;
+	      editor->audio.sample.name = strdup (name);
+	      memcpy (&editor->audio.sample_info_src,
+		      editor->audio.sample.info, sizeof (struct sample_info));
+	      editor->audio.sample_info_src.format |= SF_FORMAT_WAV;
 	      editor_save_with_format (editor, editor->audio.path,
 				       &editor->audio.sample);
 	    }
