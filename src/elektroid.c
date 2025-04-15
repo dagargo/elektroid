@@ -2771,7 +2771,10 @@ build_ui ()
   if (g_file_get_contents (DATADIR "/THANKS", &thanks, NULL, NULL))
     {
       gchar *last_new_line = strrchr (thanks, '\n');
-      *last_new_line = 0;
+      if (last_new_line != NULL)
+	{
+	  *last_new_line = 0;
+	}
       gchar **lines = g_strsplit (thanks, "\n", 0);
       gtk_about_dialog_add_credit_section (about_dialog,
 					   _("Acknowledgements"),
