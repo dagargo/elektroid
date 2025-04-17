@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2024-10-06 12:25+0200\n"
+"POT-Creation-Date: 2025-04-17 19:54+0200\n"
 "PO-Revision-Date: 2024-09-22 15:18+0200\n"
 "Last-Translator: Dennis Braun <snd@debian.org>\n"
 "Language-Team: German\n"
@@ -17,77 +17,77 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:241 src/elektroid.c:247 src/editor.c:1305
+#: src/elektroid.c:236 src/elektroid.c:242 src/editor.c:1309
 msgid "Audio"
 msgstr ""
 
-#: src/elektroid.c:331 src/elektroid.c:2976
+#: src/elektroid.c:326 src/elektroid.c:2998
 msgid "Not connected"
 msgstr "Nicht verbunden"
 
-#: src/elektroid.c:446
+#: src/elektroid.c:442
 #, fuzzy
 msgid "Receiving SysEx"
 msgstr "Empfange SysEx"
 
-#: src/elektroid.c:470
+#: src/elektroid.c:466
 msgid "Save SysEx"
 msgstr "Speichere SysEx"
 
-#: src/elektroid.c:471 src/elektroid.c:599 src/elektroid.c:858
-#: src/elektroid.c:1416 src/editor.c:1203 src/mactions/microfreak.c:53
+#: src/elektroid.c:467 src/elektroid.c:595 src/elektroid.c:854
+#: src/elektroid.c:1418 src/editor.c:1203 src/mactions/microfreak.c:52
 #: res/gui.glade:1003 res/gui.glade:3139 res/gui.glade:3245 res/gui.glade:3566
 #: res/gui.glade:3652
 msgid "_Cancel"
 msgstr "_Abbrechen"
 
-#: src/elektroid.c:472 res/gui.glade:3153 res/gui.glade:3259
+#: src/elektroid.c:468 res/gui.glade:3153 res/gui.glade:3259
 msgid "_Save"
 msgstr "_Speichern"
 
-#: src/elektroid.c:476
+#: src/elektroid.c:472
 msgid "Received SysEx"
 msgstr "SysEx empfangen"
 
-#: src/elektroid.c:481 src/elektroid.c:604
+#: src/elektroid.c:477 src/elektroid.c:600
 msgid "SysEx Files"
 msgstr "SysEx Dateien"
 
-#: src/elektroid.c:518
+#: src/elektroid.c:514
 #, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Fehler beim Speichern von »%s«: %s."
 
-#: src/elektroid.c:543
+#: src/elektroid.c:539
 #, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Fehler beim Laden von »%s«: %s."
 
-#: src/elektroid.c:597
+#: src/elektroid.c:593
 msgid "Open SysEx"
 msgstr "Öffne SysEx"
 
-#: src/elektroid.c:600
+#: src/elektroid.c:596
 msgid "_Open"
 msgstr "_Öffnen"
 
-#: src/elektroid.c:616
+#: src/elektroid.c:612
 msgid "Sending SysEx"
 msgstr "Sende SysEx"
 
-#: src/elektroid.c:857
+#: src/elektroid.c:853
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Bist du sicher das du die ausgewählten Dateien löschen möchtest?"
 
-#: src/elektroid.c:859
+#: src/elektroid.c:855
 msgid "_Delete"
 msgstr "_Löschen"
 
-#: src/elektroid.c:878
+#: src/elektroid.c:874
 msgid "Deleting Files"
 msgstr "Entferne Dateien"
 
-#: src/elektroid.c:878
+#: src/elektroid.c:874
 msgid "Deleting..."
 msgstr "Lösche..."
 
@@ -100,63 +100,67 @@ msgstr "Umbenennen"
 msgid "Error while renaming to “%s”: %s."
 msgstr "Fehler beim Umbenennen von »%s«: %s."
 
-#: src/elektroid.c:1288 res/gui.glade:1688 res/gui.glade:2132
+#: src/elektroid.c:1289 res/gui.glade:1688 res/gui.glade:2132
 msgid "Add Directory"
 msgstr "Verzeichnis hinzufügen"
 
-#: src/elektroid.c:1295
+#: src/elektroid.c:1297
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Fehler beim Erstellen des Verzeichnisses »%s«: %s."
 
-#: src/elektroid.c:1414 src/editor.c:1200
+#: src/elektroid.c:1416 src/editor.c:1200
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Ersetze Datei “%s”?"
 
-#: src/elektroid.c:1417
+#: src/elektroid.c:1419
 msgid "_Skip"
 msgstr "_Überspringe"
 
-#: src/elektroid.c:1418 src/editor.c:1204
+#: src/elektroid.c:1420 src/editor.c:1204
 msgid "_Replace"
 msgstr "_Ersetze"
 
-#: src/elektroid.c:1423
+#: src/elektroid.c:1425
 msgid "Apply this action to all files"
 msgstr "Diese Aktion auf alle Dateien anwenden"
 
-#: src/elektroid.c:1684 src/elektroid.c:1865 src/elektroid.c:2482
+#: src/elektroid.c:1686 src/elektroid.c:1868 src/elektroid.c:2485
 msgid "Preparing Tasks"
 msgstr "Aufgaben werden vorbereitet"
 
-#: src/elektroid.c:1684 src/elektroid.c:1865 src/elektroid.c:2483
+#: src/elektroid.c:1686 src/elektroid.c:1868 src/elektroid.c:2486
 #: src/progress.c:107
 msgid "Waiting..."
 msgstr "Warte..."
 
-#: src/elektroid.c:2236
+#: src/elektroid.c:2239
 msgid "Connecting to Device"
 msgstr "Verbindung zum Gerät wird hergestellt"
 
-#: src/elektroid.c:2237
+#: src/elektroid.c:2240
 msgid "Connecting..."
 msgstr "Verbinde..."
 
-#: src/elektroid.c:2244
+#: src/elektroid.c:2247
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Gerät “%s” nicht erkannt: %s"
 
-#: src/elektroid.c:2469
+#: src/elektroid.c:2472
 msgid "Moving Files"
 msgstr "Verschiebe Dateien"
 
-#: src/elektroid.c:2470
+#: src/elektroid.c:2473
 msgid "Moving..."
 msgstr "Verschiebe..."
 
-#: src/editor.c:1311
+#: src/elektroid.c:2782
+msgid "Acknowledgements"
+msgstr ""
+
+#: src/editor.c:1325
 msgid "Save Sample"
 msgstr "Speichere Sample"
 
@@ -205,15 +209,15 @@ msgid "Input"
 msgstr "Eingabe"
 
 #. This should only be translated if a non latin alphabet is used
-#: src/mactions/autosampler.c:204 res/gui.glade:982
+#: src/mactions/autosampler.c:205 res/gui.glade:982
 msgid "Auto Sampler"
 msgstr ""
 
-#: src/mactions/autosampler.c:204
+#: src/mactions/autosampler.c:205
 msgid "Recording..."
 msgstr "Aufnahme..."
 
-#: src/mactions/autosampler.c:281
+#: src/mactions/autosampler.c:282
 msgid "_Auto Sampler"
 msgstr ""
 
@@ -229,15 +233,15 @@ msgstr "_Empfange SysEx"
 msgid "_Send SysEx"
 msgstr "_Sende SysEx"
 
-#: src/mactions/microbrute.c:393
+#: src/mactions/microbrute.c:394
 msgid "_Configuration"
 msgstr "_Konfiguration"
 
-#: src/mactions/microbrute.c:421
+#: src/mactions/microbrute.c:422
 msgid "_Calibration"
 msgstr "_Kalibrierung"
 
-#: src/mactions/microfreak.c:52
+#: src/mactions/microfreak.c:51
 msgid ""
 "The defragmentation process could take several minutes and could not be "
 "canceled. Are you sure you want to defragment the sample memory?"
@@ -246,11 +250,11 @@ msgstr ""
 "abgebrochen werden. Sind Sie sicher, dass Sie den Sample Speicher "
 "defragmentieren möchten?"
 
-#: src/mactions/microfreak.c:54 src/mactions/microfreak.c:85
+#: src/mactions/microfreak.c:53 src/mactions/microfreak.c:85
 msgid "_Defragment"
 msgstr "_Defragmentieren"
 
-#: src/mactions/microfreak.c:67
+#: src/mactions/microfreak.c:66
 msgid "Defragmenting Sample Memory"
 msgstr "Defragmentiere Sample Speicher"
 
@@ -281,7 +285,7 @@ msgstr "Links"
 msgid "Right"
 msgstr "Rechts"
 
-#: src/connectors/sds.c:1370
+#: src/connectors/sds.c:1359
 msgid "SDS sampler"
 msgstr ""
 
@@ -289,7 +293,7 @@ msgstr ""
 msgid "MIDI device"
 msgstr "MIDI Gerät"
 
-#: src/connectors/system.c:681
+#: src/connectors/system.c:670
 msgid "System"
 msgstr ""
 

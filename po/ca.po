@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2024-10-06 12:25+0200\n"
+"POT-Creation-Date: 2025-04-17 19:54+0200\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: Catalan\n"
@@ -17,76 +17,76 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/elektroid.c:241 src/elektroid.c:247 src/editor.c:1305
+#: src/elektroid.c:236 src/elektroid.c:242 src/editor.c:1309
 msgid "Audio"
 msgstr ""
 
-#: src/elektroid.c:331 src/elektroid.c:2976
+#: src/elektroid.c:326 src/elektroid.c:2998
 msgid "Not connected"
 msgstr "No connectat"
 
-#: src/elektroid.c:446
+#: src/elektroid.c:442
 msgid "Receiving SysEx"
 msgstr "Rebent SysEx"
 
-#: src/elektroid.c:470
+#: src/elektroid.c:466
 msgid "Save SysEx"
 msgstr "Alça SysEx"
 
-#: src/elektroid.c:471 src/elektroid.c:599 src/elektroid.c:858
-#: src/elektroid.c:1416 src/editor.c:1203 src/mactions/microfreak.c:53
+#: src/elektroid.c:467 src/elektroid.c:595 src/elektroid.c:854
+#: src/elektroid.c:1418 src/editor.c:1203 src/mactions/microfreak.c:52
 #: res/gui.glade:1003 res/gui.glade:3139 res/gui.glade:3245 res/gui.glade:3566
 #: res/gui.glade:3652
 msgid "_Cancel"
 msgstr "_Cancel·la"
 
-#: src/elektroid.c:472 res/gui.glade:3153 res/gui.glade:3259
+#: src/elektroid.c:468 res/gui.glade:3153 res/gui.glade:3259
 msgid "_Save"
 msgstr "_Alça"
 
-#: src/elektroid.c:476
+#: src/elektroid.c:472
 msgid "Received SysEx"
 msgstr "SysEx rebut"
 
-#: src/elektroid.c:481 src/elektroid.c:604
+#: src/elektroid.c:477 src/elektroid.c:600
 msgid "SysEx Files"
 msgstr "Fitxers SysEx"
 
-#: src/elektroid.c:518
+#: src/elektroid.c:514
 #, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Error al guardar «%s»: %s."
 
-#: src/elektroid.c:543
+#: src/elektroid.c:539
 #, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Error al carregar «%s»: %s."
 
-#: src/elektroid.c:597
+#: src/elektroid.c:593
 msgid "Open SysEx"
 msgstr "Obri SysEx"
 
-#: src/elektroid.c:600
+#: src/elektroid.c:596
 msgid "_Open"
 msgstr "_Obri"
 
-#: src/elektroid.c:616
+#: src/elektroid.c:612
 msgid "Sending SysEx"
 msgstr "Enviant SysEx"
 
-#: src/elektroid.c:857
+#: src/elektroid.c:853
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Realmente desitja eliminar els elements seleccionats?"
 
-#: src/elektroid.c:859
+#: src/elektroid.c:855
 msgid "_Delete"
 msgstr "_Elimina"
 
-#: src/elektroid.c:878
+#: src/elektroid.c:874
 msgid "Deleting Files"
 msgstr "Eliminant fitxers"
 
-#: src/elektroid.c:878
+#: src/elektroid.c:874
 msgid "Deleting..."
 msgstr "Eliminant..."
 
@@ -99,63 +99,67 @@ msgstr "Canvia el nom"
 msgid "Error while renaming to “%s”: %s."
 msgstr "Error al canviar el nom a «%s»: %s."
 
-#: src/elektroid.c:1288 res/gui.glade:1688 res/gui.glade:2132
+#: src/elektroid.c:1289 res/gui.glade:1688 res/gui.glade:2132
 msgid "Add Directory"
 msgstr "Afig directori"
 
-#: src/elektroid.c:1295
+#: src/elektroid.c:1297
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Error al crear el directori «%s»: %s."
 
-#: src/elektroid.c:1414 src/editor.c:1200
+#: src/elektroid.c:1416 src/editor.c:1200
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Voleu reemplaçar el fitxer «%s»?"
 
-#: src/elektroid.c:1417
+#: src/elektroid.c:1419
 msgid "_Skip"
 msgstr "_Omet"
 
-#: src/elektroid.c:1418 src/editor.c:1204
+#: src/elektroid.c:1420 src/editor.c:1204
 msgid "_Replace"
 msgstr "_Reemplaça"
 
-#: src/elektroid.c:1423
+#: src/elektroid.c:1425
 msgid "Apply this action to all files"
 msgstr "Aplica aquesta acció a tots els fitxers"
 
-#: src/elektroid.c:1684 src/elektroid.c:1865 src/elektroid.c:2482
+#: src/elektroid.c:1686 src/elektroid.c:1868 src/elektroid.c:2485
 msgid "Preparing Tasks"
 msgstr "Preparant tasques..."
 
-#: src/elektroid.c:1684 src/elektroid.c:1865 src/elektroid.c:2483
+#: src/elektroid.c:1686 src/elektroid.c:1868 src/elektroid.c:2486
 #: src/progress.c:107
 msgid "Waiting..."
 msgstr "Esperant..."
 
-#: src/elektroid.c:2236
+#: src/elektroid.c:2239
 msgid "Connecting to Device"
 msgstr "Connectant amb el dispositiu"
 
-#: src/elektroid.c:2237
+#: src/elektroid.c:2240
 msgid "Connecting..."
 msgstr "Conectant..."
 
-#: src/elektroid.c:2244
+#: src/elektroid.c:2247
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Dispositiu «%s» no reconegut: %s"
 
-#: src/elektroid.c:2469
+#: src/elektroid.c:2472
 msgid "Moving Files"
 msgstr "Movent fitxers"
 
-#: src/elektroid.c:2470
+#: src/elektroid.c:2473
 msgid "Moving..."
 msgstr "Movent..."
 
-#: src/editor.c:1311
+#: src/elektroid.c:2782
+msgid "Acknowledgements"
+msgstr ""
+
+#: src/editor.c:1325
 msgid "Save Sample"
 msgstr "Alça mostra"
 
@@ -204,15 +208,15 @@ msgid "Input"
 msgstr "Entrada"
 
 #. This should only be translated if a non latin alphabet is used
-#: src/mactions/autosampler.c:204 res/gui.glade:982
+#: src/mactions/autosampler.c:205 res/gui.glade:982
 msgid "Auto Sampler"
 msgstr ""
 
-#: src/mactions/autosampler.c:204
+#: src/mactions/autosampler.c:205
 msgid "Recording..."
 msgstr "Gravant..."
 
-#: src/mactions/autosampler.c:281
+#: src/mactions/autosampler.c:282
 msgid "_Auto Sampler"
 msgstr ""
 
@@ -228,15 +232,15 @@ msgstr "_Rep SysEx"
 msgid "_Send SysEx"
 msgstr "_Envia SysEx"
 
-#: src/mactions/microbrute.c:393
+#: src/mactions/microbrute.c:394
 msgid "_Configuration"
 msgstr "_Configuració"
 
-#: src/mactions/microbrute.c:421
+#: src/mactions/microbrute.c:422
 msgid "_Calibration"
 msgstr "_Calibratge"
 
-#: src/mactions/microfreak.c:52
+#: src/mactions/microfreak.c:51
 msgid ""
 "The defragmentation process could take several minutes and could not be "
 "canceled. Are you sure you want to defragment the sample memory?"
@@ -244,11 +248,11 @@ msgstr ""
 "El procés de defragmentació podria llevar uns quants minuts i no es podria "
 "cancel·lar. Realment desitja defragmentar la memòria de mostres?"
 
-#: src/mactions/microfreak.c:54 src/mactions/microfreak.c:85
+#: src/mactions/microfreak.c:53 src/mactions/microfreak.c:85
 msgid "_Defragment"
 msgstr "_Defragmenta"
 
-#: src/mactions/microfreak.c:67
+#: src/mactions/microfreak.c:66
 msgid "Defragmenting Sample Memory"
 msgstr "Defragmentando memòria de mostres"
 
@@ -279,7 +283,7 @@ msgstr "Esquerre"
 msgid "Right"
 msgstr "Dret"
 
-#: src/connectors/sds.c:1370
+#: src/connectors/sds.c:1359
 msgid "SDS sampler"
 msgstr "Mostrador SDS"
 
@@ -287,7 +291,7 @@ msgstr "Mostrador SDS"
 msgid "MIDI device"
 msgstr "Dispositiu MIDI"
 
-#: src/connectors/system.c:681
+#: src/connectors/system.c:670
 msgid "System"
 msgstr "Sistema"
 
