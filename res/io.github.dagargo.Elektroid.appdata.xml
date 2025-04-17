@@ -16,7 +16,7 @@
     <binary>elektroid</binary>
   </provides>
   <releases>
-    <release version="3.2.1" date="2025-04-17"/>
+    <release version="3.2.2" date="2025-04-17"/>
     <release version="3.2" date="2025-04-13"/>
     <release version="3.1" date="2024-10-06"/>
     <release version="3.0.1" date="2024-01-26"/>
