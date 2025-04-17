@@ -38,9 +38,15 @@ For Fedora, run `sudo dnf install autoconf libtool alsa-lib-devel zlib-devel lib
 
 For Arch Linux, run `sudo pacman -S base-devel autoconf libtool alsa-lib zlib libzip gtk3 libsndfile gettext libsamplerate json-glib` to install the build dependencies.
 
+For OSX (Homebrew), run `homebrew install automake bltool pkg-config gtk+3 libsndfile libsamplerate gettext zlib json-glib libzip rtaudio rtmidi`.
+
 For MSYS2 (UCRT64), run `pacman -S mingw-w64-x86_64-toolchain gettext gettext-devel libtool pkg-config mingw-w64-x86_64-autotools mingw-w64-x86_64-gcc mingw-w64-ucrt-x86_64-zlib mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtk3 mingw-w64-x86_64-json-glib mingw-w64-ucrt-x86_64-libsndfile mingw-w64-ucrt-x86_64-rtmidi mingw-w64-ucrt-x86_64-rtaudio mingw-w64-ucrt-x86_64-libsamplerate` to install the build dependencies.
 
-For OSX (Homebrew), run `homebrew install automake bltool pkg-config gtk+3 libsndfile libsamplerate gettext zlib json-glib libzip rtaudio rtmidi`.
+#### Additional notes on MSYS2 (UCRT64)
+
+* Repository must be cloned with `-c core.symlinks=true` option for the included symbolic links to work.
+* `LANG` environmente variable must be set as in `LANG=es_ES.UTF-8` depending on your installed locales.
+* A shortcut could be manually created and use the `ico` file included in the installation for this purpose. It is recommended to set the `target` property to `C:\msys64\usr\bin\mintty.exe -w hide /bin/env MSYSTEM=UCRT64 LANG=es_ES.UTF-8 /bin/bash -l -i -c /ucrt64/bin/elektroid.exe` and the `start in` property to `C:\msys64\usr\bin` or the equivalent directories in your installation.
 
 ### MIDI backend
 
