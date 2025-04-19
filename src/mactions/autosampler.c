@@ -109,7 +109,7 @@ autosampler_runner (gpointer user_data)
       gchar *path = path_chain (PATH_SYSTEM, dir, filename);
       debug_print (1, "Saving sample to %s...", path);
       sample_save_to_file (path, &editor.audio.sample, &editor.audio.control,
-			   SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+			   SF_FORMAT_WAV | sample_get_internal_format ());
       g_free (dir);
       g_free (path);
 

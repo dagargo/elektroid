@@ -33,6 +33,7 @@
 #define PREF_KEY_GRID_LENGTH "gridLength"
 #define PREF_KEY_PLAY_WHILE_LOADING "playSampleWhileLoading"
 #define PREF_KEY_AUDIO_BUFFER_LEN "audioBufferLength"
+#define PREF_KEY_AUDIO_USE_FLOAT "audioUseFloat"
 
 enum preference_type
 {
@@ -51,6 +52,7 @@ struct preference
 };
 
 extern GSList *preferences;
+extern GHashTable *preferences_hashtable;
 
 gpointer preferences_get_boolean_value_true (const gpointer b);
 

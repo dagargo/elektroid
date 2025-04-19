@@ -144,6 +144,7 @@ static GtkDialog *name_dialog;
 static GtkEntry *name_dialog_entry;
 static GtkWidget *name_dialog_accept_button;
 static GtkDialog *preferences_dialog;
+static GtkWidget *audio_use_float_switch;
 static GtkWidget *play_sample_while_loading_switch;
 static GtkWidget *audio_buffer_length_combo;
 static GtkWidget *stop_device_when_connecting_switch;
@@ -233,9 +234,11 @@ elektroid_update_audio_status (gboolean status)
   gchar msg[LABEL_MAX];
   if (status)
     {
-      snprintf (msg, LABEL_MAX, "%s: %s %s, %.5g kHz %s", _("Audio"),
+      snprintf (msg, LABEL_MAX, "%s: %s %s, %.5g kHz %s %s", _("Audio"),
 		audio_name (), audio_version (),
-		editor.audio.rate / 1000.f, BACKEND_PLAYING);
+		editor.audio.rate / 1000.f,
+		preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ?
+		SF_FORMAT_FLOAT_STR : SF_FORMAT_PCM_16_STR, BACKEND_PLAYING);
     }
   else
     {
@@ -659,36 +662,42 @@ elektroid_show_remote_clicked (GtkWidget *object, gpointer data)
 static void
 elektroid_show_preferences (GtkWidget *object, gpointer data)
 {
-  gint res, i, prev, post;
-  gboolean v;
+  gint res, i, j, prev, post;
+  gboolean b;
   GtkTreeIter iter;
   GValue x = G_VALUE_INIT;
   GtkTreeModel *model =
     gtk_combo_box_get_model (GTK_COMBO_BOX (audio_buffer_length_combo));
 
-  v = preferences_get_boolean (PREF_KEY_PLAY_WHILE_LOADING);
-  gtk_switch_set_active (GTK_SWITCH (play_sample_while_loading_switch), v);
-  v = preferences_get_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING);
-  gtk_switch_set_active (GTK_SWITCH (stop_device_when_connecting_switch), v);
-  v = preferences_get_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS);
-  gtk_switch_set_active (GTK_SWITCH (elektron_load_sound_tags_switch), v);
+  b = preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT);
+  gtk_switch_set_active (GTK_SWITCH (audio_use_float_switch), b);
+  b = preferences_get_boolean (PREF_KEY_PLAY_WHILE_LOADING);
+  gtk_switch_set_active (GTK_SWITCH (play_sample_while_loading_switch), b);
+  b = preferences_get_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING);
+  gtk_switch_set_active (GTK_SWITCH (stop_device_when_connecting_switch), b);
+  b = preferences_get_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS);
+  gtk_switch_set_active (GTK_SWITCH (elektron_load_sound_tags_switch), b);
 
-  prev = preferences_get_int (PREF_KEY_AUDIO_BUFFER_LEN);
+  i = preferences_get_int (PREF_KEY_AUDIO_BUFFER_LEN);
+
   gtk_tree_model_get_iter_first (model, &iter);
 
-  i = 0;
+  j = 0;
   do
     {
       gtk_tree_model_get_value (model, &iter, 0, &x);
-      if (g_value_get_int (&x) == prev)
+      if (g_value_get_int (&x) == i)
 	{
 	  gtk_combo_box_set_active (GTK_COMBO_BOX (audio_buffer_length_combo),
-				    i);
+				    j);
 	}
-      i++;
+      j++;
       g_value_unset (&x);
     }
   while (gtk_tree_model_iter_next (model, &iter));
+
+  prev = (preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ? 0x10000 : 0) +
+    i;
 
   res = gtk_dialog_run (GTK_DIALOG (preferences_dialog));
   gtk_widget_hide (GTK_WIDGET (preferences_dialog));
@@ -698,24 +707,31 @@ elektroid_show_preferences (GtkWidget *object, gpointer data)
       return;
     }
 
-  v = gtk_switch_get_active (GTK_SWITCH (play_sample_while_loading_switch));
-  preferences_set_boolean (PREF_KEY_PLAY_WHILE_LOADING, v);
-  v = gtk_switch_get_active (GTK_SWITCH (stop_device_when_connecting_switch));
-  preferences_set_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING, v);
-  v = gtk_switch_get_active (GTK_SWITCH (elektron_load_sound_tags_switch));
-  preferences_set_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS, v);
+  b = gtk_switch_get_active (GTK_SWITCH (audio_use_float_switch));
+  preferences_set_boolean (PREF_KEY_AUDIO_USE_FLOAT, b);
+  b = gtk_switch_get_active (GTK_SWITCH (play_sample_while_loading_switch));
+  preferences_set_boolean (PREF_KEY_PLAY_WHILE_LOADING, b);
+  b = gtk_switch_get_active (GTK_SWITCH (stop_device_when_connecting_switch));
+  preferences_set_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING, b);
+  b = gtk_switch_get_active (GTK_SWITCH (elektron_load_sound_tags_switch));
+  preferences_set_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS, b);
 
   i = gtk_combo_box_get_active (GTK_COMBO_BOX (audio_buffer_length_combo));
 
   gtk_tree_model_get_iter_first (model, &iter);
-  for (gint j = 0; j < i; j++)
+  for (j = 0; j < i; j++)
     {
       gtk_tree_model_iter_next (model, &iter);
     }
   gtk_tree_model_get_value (model, &iter, 0, &x);
-  post = g_value_get_int (&x);
-  preferences_set_int (PREF_KEY_AUDIO_BUFFER_LEN, post);
+
+  i = g_value_get_int (&x);
+
+  preferences_set_int (PREF_KEY_AUDIO_BUFFER_LEN, i);
   g_value_unset (&x);
+
+  post = (preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ? 0x10000 : 0) +
+    i;
 
   if (prev != post)
     {
@@ -1578,8 +1594,8 @@ end:
 }
 
 static void
-elektroid_add_upload_task_path (const gchar *rel_path, const gchar *src_dir,
-				const gchar *dst_dir)
+elektroid_add_upload_task_path (const gchar *rel_path,
+				const gchar *src_dir, const gchar *dst_dir)
 {
   struct item_iterator iter;
   gchar *path, *src_abs_path, *rel_path_trans;
@@ -2801,6 +2817,8 @@ build_ui ()
 
   preferences_dialog =
     GTK_DIALOG (gtk_builder_get_object (builder, "preferences_dialog"));
+  audio_use_float_switch =
+    GTK_WIDGET (gtk_builder_get_object (builder, "audio_use_float_switch"));
   play_sample_while_loading_switch =
     GTK_WIDGET (gtk_builder_get_object (builder,
 					"play_sample_while_loading_switch"));

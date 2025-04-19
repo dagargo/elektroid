@@ -23,6 +23,7 @@
 #include <glib/gstdio.h>
 #include <math.h>
 #include "editor.h"
+#include "preferences.h"
 #include "sample.h"
 #include "connectors/system.h"
 
@@ -273,9 +274,9 @@ static gboolean
 editor_get_y_frame (GByteArray *sample, guint channels, guint frame,
 		    guint len, struct editor_y_frame_state *state)
 {
-  guint loaded_frames = sample->len / FRAME_SIZE (channels, SF_FORMAT_PCM_16);
-  gshort *data = (gshort *) sample->data;
-  gshort *s = &data[frame * channels];
+  guint frame_size = FRAME_SIZE (channels, sample_get_internal_format ());
+  guint loaded_frames = sample->len / frame_size;
+  guint8 *s = &sample->data[frame * frame_size];
   len = len < MAX_FRAMES_PER_PIXEL ? len : MAX_FRAMES_PER_PIXEL;
 
   for (guint i = 0; i < channels; i++)
@@ -293,16 +294,28 @@ editor_get_y_frame (GByteArray *sample, guint channels, guint frame,
 	  return FALSE;
 	}
 
-      for (guint j = 0; j < channels; j++, s++)
+      for (guint j = 0; j < channels; j++)
 	{
-	  if (*s > 0)
+	  gdouble v;
+	  if (preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT))
 	    {
-	      state->wp[j] += *s;
+	      v = *((gfloat *) s);
+	      s += sizeof (gfloat);
+	    }
+	  else
+	    {
+	      v = *((gint16 *) s);
+	      s += sizeof (gint16);
+	    }
+
+	  if (v > 0)
+	    {
+	      state->wp[j] += v;
 	      state->wpc[j]++;
 	    }
 	  else
 	    {
-	      state->wn[j] += *s;
+	      state->wn[j] += v;
 	      state->wnc[j]++;
 	    }
 	}
@@ -362,7 +375,8 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
   loop_end = sample_info->loop_end;
   x_ratio = editor_get_x_ratio (editor);
 
-  y_scale = height / (double) SHRT_MIN;
+  y_scale = height / (preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ?
+		      -1.0 : (double) SHRT_MIN);
   y_scale /= (gdouble) sample_info->channels * 2;
   c_height = height / (gdouble) sample_info->channels;
   c_height_half = c_height / 2;
@@ -537,7 +551,7 @@ editor_load_sample_runner (gpointer data)
   editor->audio.sel_end = -1;
 
   sample_info_req.channels = 0;	//Automatic
-  sample_info_req.format = SF_FORMAT_PCM_16;
+  sample_info_req.format = sample_get_internal_format ();
   sample_info_req.rate = audio->rate;
 
   audio->control.active = TRUE;

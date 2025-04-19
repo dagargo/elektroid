@@ -36,7 +36,7 @@ typedef void (*audio_monitor_notifier) (gpointer, gdouble);
 #define MAX_RECORDING_TIME_S 30
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
 #define AUDIO_BUF_FRAMES (preferences_get_int (PREF_KEY_AUDIO_BUFFER_LEN))
-#define AUDIO_BUF_BYTES (AUDIO_BUF_FRAMES * FRAME_SIZE (AUDIO_CHANNELS,SF_FORMAT_PCM_16))
+#define AUDIO_BUF_BYTES (AUDIO_BUF_FRAMES * FRAME_SIZE (AUDIO_CHANNELS,sample_get_internal_format ()))
 #define AUDIO_SEL_LEN(a) ((a)->sel_start == -1 && (a)->sel_end == -1 ? 0 : (a)->sel_end - (a)->sel_start + 1)
 
 #define RECORD_LEFT 0x1
@@ -72,6 +72,7 @@ struct audio
   pa_cvolume volume;
   pa_sample_spec sample_spec;
 #endif
+  gboolean float_mode;
   guint32 rate;
   struct idata sample;
   struct sample_info sample_info_src;

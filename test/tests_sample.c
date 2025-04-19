@@ -1,6 +1,7 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
 #include "../src/sample.h"
+#include "../src/preferences.h"
 
 static void
 test_load_sample_resampling (struct job_control *control)
@@ -265,6 +266,56 @@ test_load_microfreak_mfsz ()
   test_load_microfreak_sample (TEST_DATA_DIR "/connectors/microfreak.mfsz");
 }
 
+static gint
+run_tests (CU_pSuite suite)
+{
+  if (!CU_add_test (suite, "load_sample_control_resampling",
+		    test_load_sample_control_resampling))
+    {
+      return -1;
+    }
+
+  if (!CU_add_test (suite, "load_sample_no_control_resampling",
+		    test_load_sample_no_control_resampling))
+    {
+      return -1;
+    }
+
+  if (!CU_add_test (suite, "load_sample_control_no_resampling",
+		    test_load_sample_control_no_resampling))
+    {
+      return -1;
+    }
+
+  if (!CU_add_test (suite, "load_sample_no_control_no_resampling",
+		    test_load_sample_no_control_no_resampling))
+    {
+      return -1;
+    }
+
+  if (!CU_add_test (suite, "load_microfreak_mfw", test_load_microfreak_mfw))
+    {
+      return -1;
+    }
+
+  if (!CU_add_test (suite, "load_microfreak_mfwz", test_load_microfreak_mfwz))
+    {
+      return -1;
+    }
+
+  if (!CU_add_test (suite, "load_microfreak_mfs", test_load_microfreak_mfs))
+    {
+      return -1;
+    }
+
+  if (!CU_add_test (suite, "load_microfreak_mfsz", test_load_microfreak_mfsz))
+    {
+      return -1;
+    }
+
+  return 0;
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -282,46 +333,18 @@ main (gint argc, gchar *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "load_sample_control_resampling",
-		    test_load_sample_control_resampling))
+  preferences_hashtable = g_hash_table_new_full (g_str_hash, g_str_equal,
+						 NULL, g_free);
+  preferences_set_boolean (PREF_KEY_AUDIO_USE_FLOAT, TRUE);
+
+  if (run_tests (suite))
     {
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "load_sample_no_control_resampling",
-		    test_load_sample_no_control_resampling))
-    {
-      goto cleanup;
-    }
+  preferences_set_boolean (PREF_KEY_AUDIO_USE_FLOAT, FALSE);
 
-  if (!CU_add_test (suite, "load_sample_control_no_resampling",
-		    test_load_sample_control_no_resampling))
-    {
-      goto cleanup;
-    }
-
-  if (!CU_add_test (suite, "load_sample_no_control_no_resampling",
-		    test_load_sample_no_control_no_resampling))
-    {
-      goto cleanup;
-    }
-
-  if (!CU_add_test (suite, "load_microfreak_mfw", test_load_microfreak_mfw))
-    {
-      goto cleanup;
-    }
-
-  if (!CU_add_test (suite, "load_microfreak_mfwz", test_load_microfreak_mfwz))
-    {
-      goto cleanup;
-    }
-
-  if (!CU_add_test (suite, "load_microfreak_mfs", test_load_microfreak_mfs))
-    {
-      goto cleanup;
-    }
-
-  if (!CU_add_test (suite, "load_microfreak_mfsz", test_load_microfreak_mfsz))
+  if (run_tests (suite))
     {
       goto cleanup;
     }
@@ -332,6 +355,7 @@ main (gint argc, gchar *argv[])
   err = CU_get_number_of_tests_failed ();
 
 cleanup:
+  preferences_free ();
   CU_cleanup_registry ();
   return err || CU_get_error ();
 }

@@ -125,6 +125,12 @@ static const struct preference PREF_AUDIO_BUFFER_LEN = {
   .get_value = regpref_get_audio_buffer_length
 };
 
+static const struct preference PREF_AUDIO_USE_FLOAT = {
+  .key = PREF_KEY_AUDIO_USE_FLOAT,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_true
+};
+
 const struct preference PREF_STOP_DEVICE_WHEN_CONNECTING = {
   .key = PREF_KEY_STOP_DEVICE_WHEN_CONNECTING,
   .type = PREFERENCE_TYPE_BOOLEAN,
@@ -143,7 +149,8 @@ regpref_register ()
   gslist_fill (&preferences, &PREF_LOCAL_DIR, &PREF_REMOTE_DIR,
 	       &PREF_SHOW_REMOTE, &PREF_AUTOPLAY, &PREF_MIX, &PREF_SHOW_GRID,
 	       &PREF_GRID_LENGTH, &PREF_PLAY_WHILE_LOADING,
-	       &PREF_AUDIO_BUFFER_LEN, &PREF_STOP_DEVICE_WHEN_CONNECTING,
+	       &PREF_AUDIO_BUFFER_LEN, &PREF_AUDIO_USE_FLOAT,
+	       &PREF_STOP_DEVICE_WHEN_CONNECTING,
 	       &PREF_ELEKTRON_LOAD_SOUND_TAGS, NULL);
 }
 

@@ -27,7 +27,7 @@
 #define PREFERENCES_FILE "/preferences.json"
 
 GSList *preferences;
-static GHashTable *preferences_hashtable;
+GHashTable *preferences_hashtable;
 
 static gpointer
 preferences_get_boolean_value (const gpointer in, gboolean def_value)

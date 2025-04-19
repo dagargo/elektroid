@@ -65,7 +65,7 @@ audio_read_callback (pa_stream *stream, size_t size, void *data)
       return;
     }
 
-  frame_size = FRAME_SIZE (AUDIO_CHANNELS, SF_FORMAT_PCM_16);
+  frame_size = FRAME_SIZE (AUDIO_CHANNELS, sample_get_internal_format ());
 
   audio_read_from_input (audio, (void *) buffer, size / frame_size);
   pa_stream_drop (stream);
@@ -84,7 +84,7 @@ audio_write_callback (pa_stream *stream, size_t size, void *data)
       return;
     }
 
-  frame_size = FRAME_SIZE (AUDIO_CHANNELS, SF_FORMAT_PCM_16);
+  frame_size = FRAME_SIZE (AUDIO_CHANNELS, sample_get_internal_format ());
 
   pa_stream_begin_write (stream, &buffer, &size);
   audio_write_to_output (audio, buffer, size / frame_size);
@@ -231,8 +231,8 @@ audio_start_recording (struct audio *audio, guint options,
   audio_prepare (audio, AUDIO_STATUS_PREPARING_RECORD);
 
   sample_info = audio->sample.info;
-  debug_print (1, "Starting recording (max %d frames)...",
-	       sample_info->frames);
+  debug_print (1, "Starting recording (max %d frames, format %04lx)...",
+	       sample_info->frames, sample_info->format);
 
   pa_threaded_mainloop_lock (audio->mainloop);
   operation = pa_stream_cork (audio->record_stream, 0, audio_success_cb,
@@ -326,7 +326,8 @@ audio_server_info_callback (pa_context *context, const pa_server_info *info,
   };
 
   audio->rate = info->sample_spec.rate;
-  audio->sample_spec.format = PA_SAMPLE_S16LE;
+  audio->sample_spec.format =
+    audio->float_mode ? PA_SAMPLE_FLOAT32NE : PA_SAMPLE_S16LE;
   audio->sample_spec.channels = AUDIO_CHANNELS;
   audio->sample_spec.rate = audio->rate;
 

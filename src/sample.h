@@ -27,12 +27,19 @@
 #ifndef SAMPLE_H
 #define SAMPLE_H
 
+#define SF_FORMAT_PCM_S8_STR "s8"
+#define SF_FORMAT_PCM_16_STR "s16"
+#define SF_FORMAT_PCM_24_STR "s24"
+#define SF_FORMAT_PCM_32_STR "s32"
+#define SF_FORMAT_PCM_U8_STR "u8"
+#define SF_FORMAT_FLOAT_STR "f32"
+#define SF_FORMAT_DOUBLE_STR "f64"
+#define SF_FORMAT_UNKNOWN "?"
+
 #define SAMPLE_SIZE(format) ((format & SF_FORMAT_SUBMASK) == SF_FORMAT_PCM_16 ? 2 : 4)
 #define FRAME_SIZE(channels,format) ((channels) * SAMPLE_SIZE(format))
 #define SAMPLE_INFO_FRAME_SIZE(sample_info) FRAME_SIZE((sample_info)->channels, (sample_info)->format)
 #define MONO_MIX_GAIN(channels) (channels == 2 ? 0.5 : 1.0 / sqrt (channels))
-
-#define SAMPLE_GET_FILE_FORMAT(sample_info, sample_format) (((sample_info)->format & SF_FORMAT_TYPEMASK) | sample_format)
 
 typedef void (*sample_load_cb) (struct job_control * control,
 				gdouble progress, gpointer data);
@@ -79,5 +86,7 @@ gint sample_reload (struct idata *input, struct idata *output,
 		    struct job_control *control,
 		    const struct sample_info *sample_info_req,
 		    sample_load_cb cb, gpointer cb_data);
+
+guint32 sample_get_internal_format ();
 
 #endif

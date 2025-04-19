@@ -112,6 +112,8 @@ tests_sample_SOURCES = \
         tests_sample.c \
 	../src/utils.c \
         ../src/utils.h \
+	../src/preferences.c \
+	../src/preferences.h \
 	../src/connectors/microfreak_sample.c \
 	../src/connectors/microfreak_sample.h \
 	../src/sample.c \

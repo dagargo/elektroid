@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include "audio.h"
+#include "preferences.h"
 
 #define FRAMES_TO_MONITOR 10000
 
@@ -28,8 +29,19 @@ void audio_destroy_int (struct audio *);
 const gchar *audio_name ();
 const gchar *audio_version ();
 
+static inline gfloat
+audio_mix_channels_f32 (gfloat **src, guint channels)
+{
+  gdouble mix = 0;
+  for (gint i = 0; i < channels; i++, (*src)++)
+    {
+      mix += **src;
+    }
+  return mix * MONO_MIX_GAIN (channels);
+}
+
 static inline gint16
-audio_mix_channels (gint16 **src, guint channels)
+audio_mix_channels_s16 (gint16 **src, guint channels)
 {
   gdouble mix = 0;
   for (gint i = 0; i < channels; i++, (*src)++)
@@ -40,7 +52,17 @@ audio_mix_channels (gint16 **src, guint channels)
 }
 
 static inline void
-audio_copy_sample (gint16 *dst, gint16 *src, struct audio *audio)
+audio_copy_sample_f32 (gfloat *dst, gfloat *src, struct audio *audio)
+{
+#if defined(ELEKTROID_RTAUDIO)
+  *dst = (gfloat) (*src * audio->volume);
+#else
+  *dst = *src;
+#endif
+}
+
+static inline void
+audio_copy_sample_s16 (gint16 *dst, gint16 *src, struct audio *audio)
 {
 #if defined(ELEKTROID_RTAUDIO)
   *dst = (gint16) (*src * audio->volume);
@@ -54,7 +76,7 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 {
   guint32 start, end;
   size_t size;
-  gint16 *dst, *src;
+  guint8 *dst, *src;
   guint bytes_per_frame;
   gboolean stopping = FALSE;
   struct sample_info *sample_info;
@@ -85,7 +107,7 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
     }
 
   bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
-  size = frames * FRAME_SIZE (AUDIO_CHANNELS, SF_FORMAT_PCM_16);
+  size = frames * FRAME_SIZE (AUDIO_CHANNELS, sample_get_internal_format ());
 
   memset (buffer, 0, size);
 
@@ -105,8 +127,8 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
     }
 
   dst = buffer;
+  src = &data[audio->pos * bytes_per_frame];
 
-  src = (gint16 *) & data[audio->pos * bytes_per_frame];
   for (gint i = 0; i < frames; i++)
     {
       //Using "audio->pos >" instead of "audio->pos ==" improves the playback
@@ -121,25 +143,51 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 	    }
 	  debug_print (2, "Sample reset");
 	  audio->pos = start;
-	  src = (gint16 *) & data[audio->pos * bytes_per_frame];
+	  src = &data[audio->pos * bytes_per_frame];
 	}
 
       if (audio->mono_mix)
 	{
-	  gint16 mix = audio_mix_channels (&src, sample_info->channels);
-	  audio_copy_sample (dst, &mix, audio);
-	  dst++;
-	  audio_copy_sample (dst, &mix, audio);
-	  dst++;
+	  if (audio->float_mode)
+	    {
+	      gfloat mix = audio_mix_channels_f32 ((gfloat **) & src,
+						   sample_info->channels);
+	      audio_copy_sample_f32 ((gfloat *) dst, &mix, audio);
+	      dst += sizeof (gfloat);
+	      audio_copy_sample_f32 ((gfloat *) dst, &mix, audio);
+	      dst += sizeof (gfloat);
+	    }
+	  else
+	    {
+	      gint16 mix = audio_mix_channels_s16 ((gint16 **) & src,
+						   sample_info->channels);
+	      audio_copy_sample_s16 ((gint16 *) dst, &mix, audio);
+	      dst += sizeof (gint16);
+	      audio_copy_sample_s16 ((gint16 *) dst, &mix, audio);
+	      dst += sizeof (gint16);
+	    }
 	}
       else
 	{
-	  audio_copy_sample (dst, src, audio);
-	  src++;
-	  dst++;
-	  audio_copy_sample (dst, src, audio);
-	  src++;
-	  dst++;
+	  if (audio->float_mode)
+	    {
+	      audio_copy_sample_f32 ((gfloat *) dst, (gfloat *) src, audio);
+	      src += sizeof (gfloat);
+	      dst += sizeof (gfloat);
+	      audio_copy_sample_f32 ((gfloat *) dst, (gfloat *) src, audio);
+	      src += sizeof (gfloat);
+	      dst += sizeof (gfloat);
+	    }
+	  else
+	    {
+	      audio_copy_sample_s16 ((gint16 *) dst, (gint16 *) src, audio);
+	      src += sizeof (gint16);
+	      dst += sizeof (gint16);
+	      audio_copy_sample_s16 ((gint16 *) dst, (gint16 *) src, audio);
+	      src += sizeof (gint16);
+	      dst += sizeof (gint16);
+	    }
+
 	}
 
       audio->pos++;
@@ -163,12 +211,13 @@ void
 audio_read_from_input (struct audio *audio, void *buffer, gint frames)
 {
   static gint monitor_frames = 0;
-  static gint16 level = 0;
-  gint16 *data;
+  static gdouble monitor_level = 0;
+  guint8 *data;
   guint recorded_frames, remaining_frames, recording_frames;
   guint channels =
     (audio->record_options & RECORD_STEREO) == RECORD_STEREO ? 2 : 1;
-  guint bytes_per_frame = FRAME_SIZE (channels, SF_FORMAT_PCM_16);
+  guint bytes_per_frame =
+    FRAME_SIZE (channels, sample_get_internal_format ());
   guint record = !(audio->record_options & RECORD_MONITOR_ONLY);
   struct sample_info *sample_info = audio->sample.info;
 
@@ -187,11 +236,22 @@ audio_read_from_input (struct audio *audio, void *buffer, gint frames)
 			       recording_frames * bytes_per_frame);
 	}
       data = buffer;
-      for (gint i = 0; i < frames * 2; i++, data++)
+      for (gint i = 0; i < recording_frames * 2; i++)
 	{
-	  if (*data > level)
+	  gdouble v;
+	  if (audio->float_mode)
 	    {
-	      level = *data;
+	      v = *((gfloat *) data);
+	      data += sizeof (gfloat);
+	    }
+	  else
+	    {
+	      v = *((gint16 *) data);
+	      data += sizeof (gint16);
+	    }
+	  if (v > monitor_level)
+	    {
+	      monitor_level = v;
 	    }
 	}
     }
@@ -200,18 +260,44 @@ audio_read_from_input (struct audio *audio, void *buffer, gint frames)
       data = buffer;
       if (audio->record_options & RECORD_RIGHT)
 	{
-	  data++;
-	}
-      for (gint i = 0; i < recording_frames; i++, data += 2)
-	{
-	  if (record)
+	  if (audio->float_mode)
 	    {
-	      g_byte_array_append (audio->sample.content, (guint8 *) data,
-				   sizeof (gint16));
+	      data += sizeof (gfloat);
 	    }
-	  if (*data > level)
+	  else
 	    {
-	      level = *data;
+	      data += sizeof (gint16);
+	    }
+	}
+      for (gint i = 0; i < recording_frames; i++)
+	{
+	  gdouble v;
+	  if (audio->float_mode)
+	    {
+	      gfloat s = *((gfloat *) data);
+	      data += sizeof (gfloat) * 2;
+	      v = s;
+	      if (record)
+		{
+		  g_byte_array_append (audio->sample.content, (guint8 *) & s,
+				       sizeof (gfloat));
+		}
+	    }
+	  else
+	    {
+	      gfloat s = *((gint16 *) data);
+	      data += sizeof (gint16) * 2;
+	      v = s;
+	      if (record)
+		{
+		  g_byte_array_append (audio->sample.content, (guint8 *) & s,
+				       sizeof (gint16));
+		}
+	    }
+
+	  if (v > monitor_level)
+	    {
+	      monitor_level = v;
 	    }
 	}
     }
@@ -219,9 +305,17 @@ audio_read_from_input (struct audio *audio, void *buffer, gint frames)
   monitor_frames += frames;
   if (audio->monitor && monitor_frames >= FRAMES_TO_MONITOR)
     {
-      audio->monitor (audio->monitor_data, level / (gdouble) SHRT_MAX);
-      level = 0;
+      if (audio->float_mode)
+	{
+	  audio->monitor (audio->monitor_data, monitor_level);
+	}
+      else
+	{
+	  audio->monitor (audio->monitor_data,
+			  monitor_level / (gdouble) SHRT_MAX);
+	}
       monitor_frames -= FRAMES_TO_MONITOR;
+      monitor_level = 0;
     }
   g_mutex_unlock (&audio->control.mutex);
 
@@ -246,7 +340,7 @@ audio_reset_record_buffer (struct audio *audio, guint record_options,
   si->frames = audio->rate * MAX_RECORDING_TIME_S;
   si->loop_start = si->frames - 1;
   si->loop_end = si->loop_start;
-  si->format = SF_FORMAT_PCM_16;
+  si->format = audio->float_mode ? SF_FORMAT_FLOAT : SF_FORMAT_PCM_16;
   si->rate = audio->rate;
   si->midi_note = 0;
   si->loop_type = 0;
@@ -271,6 +365,7 @@ audio_init (struct audio *audio,
 {
   debug_print (1, "Initializing audio (%s %s)...", audio_name (),
 	       audio_version ());
+  audio->float_mode = preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT);
   idata_init (&audio->sample, NULL, NULL, NULL);
   audio->loop = FALSE;
   audio->path = NULL;
@@ -416,14 +511,27 @@ audio_delete_range (struct audio *audio, guint32 start, guint32 length)
 static void
 audio_normalize (struct audio *audio)
 {
-  gdouble ratio, ratiop, ration;
-  gint16 *data, maxp = 1, minn = -1;
-  guint samples = audio->sample.content->len / SAMPLE_SIZE (SF_FORMAT_PCM_16);
+  gdouble ratio, ratiop, ration, maxp = 0, minn = 0;
+  void *data;
+  guint samples =
+    audio->sample.content->len / SAMPLE_SIZE (sample_get_internal_format ());
 
-  data = (gint16 *) audio->sample.content->data;
-  for (gint i = 0; i < samples; i++, data++)
+  data = audio->sample.content->data;
+  for (gint i = 0; i < samples; i++)
     {
-      gint16 v = *data;
+      gdouble v;
+
+      if (audio->float_mode)
+	{
+	  v = *((gfloat *) data);
+	  data += sizeof (gfloat);
+	}
+      else
+	{
+	  v = *((gint16 *) data);
+	  data += sizeof (gint16);
+	}
+
       if (v >= 0)
 	{
 	  if (v > maxp)
@@ -439,16 +547,35 @@ audio_normalize (struct audio *audio)
 	    }
 	}
     }
-  ratiop = SHRT_MAX / (gdouble) maxp;
-  ration = SHRT_MIN / (gdouble) minn;
+
+  if (audio->float_mode)
+    {
+      ratiop = 1.0 / maxp;
+      ration = -1.0 / minn;
+    }
+  else
+    {
+      ratiop = SHRT_MAX / maxp;
+      ration = SHRT_MIN / minn;
+    }
+
   ratio = ratiop < ration ? ratiop : ration;
 
   debug_print (1, "Normalizing to %f...", ratio);
 
-  data = (gint16 *) audio->sample.content->data;
-  for (gint i = 0; i < samples; i++, data++)
+  data = audio->sample.content->data;
+  for (gint i = 0; i < samples; i++)
     {
-      *data = (gint16) (*data * ratio);
+      if (audio->float_mode)
+	{
+	  *((gfloat *) data) = (gfloat) (*((gfloat *) data) * ratio);
+	  data += sizeof (gfloat);
+	}
+      else
+	{
+	  *((gint16 *) data) = (gint16) (*((gint16 *) data) * ratio);
+	  data += sizeof (gint16);
+	}
     }
 }
 

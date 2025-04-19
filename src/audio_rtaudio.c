@@ -136,6 +136,8 @@ audio_init_int (struct audio *audio)
     record_stream_params;
   const rtaudio_api_t *apis = rtaudio_compiled_api ();
   gint api_count = rtaudio_get_num_compiled_apis ();
+  rtaudio_format_t format =
+    audio->float_mode ? RTAUDIO_FORMAT_FLOAT32 : RTAUDIO_FORMAT_SINT16;
 
   audio->playback_rtaudio = NULL;
   audio->record_rtaudio = NULL;
@@ -192,8 +194,7 @@ audio_init_int (struct audio *audio)
   audio->rate = dev_info.preferred_sample_rate;
   buffer_frames = AUDIO_BUF_FRAMES;
   err = rtaudio_open_stream (audio->playback_rtaudio, &playback_stream_params,
-			     NULL, RTAUDIO_FORMAT_SINT16,
-			     audio->rate, &buffer_frames,
+			     NULL, format, audio->rate, &buffer_frames,
 			     audio_playback_cb, audio, &STREAM_OPTIONS,
 			     audio_error_cb);
   if (err || !rtaudio_is_stream_open (audio->playback_rtaudio))
@@ -236,10 +237,9 @@ audio_init_int (struct audio *audio)
   dev_info = rtaudio_get_device_info (audio->record_rtaudio, dev_id);
   buffer_frames = AUDIO_BUF_FRAMES;
   err = rtaudio_open_stream (audio->record_rtaudio, NULL,
-			     &record_stream_params, RTAUDIO_FORMAT_SINT16,
-			     audio->rate, &buffer_frames,
-			     audio_record_cb, audio, &STREAM_OPTIONS,
-			     audio_error_cb);
+			     &record_stream_params, format, audio->rate,
+			     &buffer_frames, audio_record_cb, audio,
+			     &STREAM_OPTIONS, audio_error_cb);
   if (err || !rtaudio_is_stream_open (audio->record_rtaudio))
     {
       error_print

@@ -22,6 +22,7 @@
 #include <math.h>
 #include <errno.h>
 #include "sample.h"
+#include "preferences.h"
 #include "connectors/microfreak_sample.h"
 
 #define LOAD_BUFFER_LEN (32 * KI)
@@ -519,7 +520,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
 }
 
 static gint
-sample_load_sample_info_libsndfile (const gchar *path,
+sample_load_libsndfile_sample_info (const gchar *path,
 				    struct sample_info *sample_info)
 {
   SF_INFO sf_info;
@@ -549,8 +550,8 @@ end:
 }
 
 static gint
-sample_load_microfreak_sample (const gchar *path, struct idata *sample,
-			       struct job_control *control)
+sample_load_microfreak (const gchar *path, struct idata *sample,
+			struct job_control *control)
 {
   gint err;
   const gchar *ext = filename_get_ext (path);
@@ -579,6 +580,29 @@ sample_load_microfreak_sample (const gchar *path, struct idata *sample,
   return err;
 }
 
+static gint
+sample_load_microfreak_sample_info (const gchar *path,
+				    struct sample_info *sample_info)
+{
+  gint err;
+  struct idata aux;
+  struct job_control control;
+
+  control.active = TRUE;
+  g_mutex_init (&control.mutex);
+
+  err = sample_load_microfreak (path, &aux, &control);
+  if (err)
+    {
+      return err;
+    }
+
+  memcpy (sample_info, aux.info, sizeof (struct sample_info));
+  idata_free (&aux);
+
+  return 0;
+}
+
 static gboolean
 sample_microfreak_filename (const gchar *path)
 {
@@ -599,24 +623,11 @@ sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
 
   if (sample_microfreak_filename (path))
     {
-      struct idata aux;
-      struct job_control control;
-
-      control.active = TRUE;
-      g_mutex_init (&control.mutex);
-
-      err = sample_load_microfreak_sample (path, &aux, &control);
-      if (err)
-	{
-	  return err;
-	}
-
-      memcpy (sample_info, aux.info, sizeof (struct sample_info));
-      idata_free (&aux);
+      err = sample_load_microfreak_sample_info (path, sample_info);
     }
   else
     {
-      err = sample_load_sample_info_libsndfile (path, sample_info);
+      err = sample_load_libsndfile_sample_info (path, sample_info);
     }
 
   return err;
@@ -681,7 +692,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sample_info->rate = sample_info_req->rate ? sample_info_req->rate :
     sample_info_src->rate;
   sample_info->format = sample_info_req->format ? sample_info_req->format :
-    SF_FORMAT_PCM_16;
+    sample_get_internal_format ();
   if (sample_info->format != SF_FORMAT_PCM_16 &&
       sample_info->format != SF_FORMAT_PCM_32 &&
       sample_info->format != SF_FORMAT_FLOAT)
@@ -992,8 +1003,10 @@ sample_reload (struct idata *input, struct idata *output,
   struct sample_info sample_info_src;
   struct g_byte_array_io_data data;
 
+  memcpy (&sample_info_src, input->info, sizeof (struct sample_info));
   err = sample_get_memfile_from_sample (input, &aux, NULL,
-					SF_FORMAT_WAV | SF_FORMAT_PCM_16);
+					SF_FORMAT_WAV |
+					sample_info_src.format);
   if (err)
     {
       return err;
@@ -1021,7 +1034,7 @@ sample_load_from_file_full (const gchar *path, struct idata *sample,
     {
       struct idata aux;
 
-      err = sample_load_microfreak_sample (path, &aux, control);
+      err = sample_load_microfreak (path, &aux, control);
       if (err)
 	{
 	  return err;
@@ -1090,7 +1103,7 @@ sample_get_format (struct sample_info *sample_info)
       return "MPEG";
 #endif
     default:
-      return "?";
+      return SF_FORMAT_UNKNOWN;
     }
 }
 
@@ -1100,20 +1113,27 @@ sample_get_subtype (struct sample_info *sample_info)
   switch (sample_info->format & SF_FORMAT_SUBMASK)
     {
     case SF_FORMAT_PCM_S8:
-      return "s8";
+      return SF_FORMAT_PCM_S8_STR;
     case SF_FORMAT_PCM_16:
-      return "s16";
+      return SF_FORMAT_PCM_16_STR;
     case SF_FORMAT_PCM_24:
-      return "s24";
+      return SF_FORMAT_PCM_24_STR;
     case SF_FORMAT_PCM_32:
-      return "s32";
+      return SF_FORMAT_PCM_32_STR;
     case SF_FORMAT_PCM_U8:
-      return "u8";
+      return SF_FORMAT_PCM_U8_STR;
     case SF_FORMAT_FLOAT:
-      return "f32";
+      return SF_FORMAT_FLOAT_STR;
     case SF_FORMAT_DOUBLE:
-      return "f64";
+      return SF_FORMAT_DOUBLE_STR;
     default:
-      return "?";
+      return SF_FORMAT_UNKNOWN;
     }
+}
+
+guint32
+sample_get_internal_format ()
+{
+  return preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ?
+    SF_FORMAT_FLOAT : SF_FORMAT_PCM_16;
 }
