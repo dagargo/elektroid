@@ -293,7 +293,7 @@ microfreak_init_sample_info (struct sample_info *sample_info, guint32 frames)
   sample_info->loop_type = 0;
   sample_info->channels = 1;
   sample_info->rate = MICROFREAK_SAMPLERATE;
-  sample_info->format = SF_FORMAT_PCM_16;
+  sample_info->format = ELEKTROID_SAMPLE_FORMAT_MICROFREAK | SF_FORMAT_PCM_16;
   sample_info->frames = frames;
   sample_info->loop_start = 0;
   sample_info->loop_end = sample_info->frames - 1;

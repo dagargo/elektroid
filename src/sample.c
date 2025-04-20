@@ -1086,24 +1086,38 @@ sample_get_sample_extensions ()
 const gchar *
 sample_get_format (struct sample_info *sample_info)
 {
-  switch (sample_info->format & SF_FORMAT_TYPEMASK)
+  guint64 format = sample_info->format & ELEKTROID_SAMPLE_FORMAT_MASK;
+  if (format)
     {
-    case SF_FORMAT_WAV:
-      return "WAV";
-    case SF_FORMAT_AIFF:
-      return "AIFF";
-    case SF_FORMAT_AU:
-      return "Au";
-    case SF_FORMAT_FLAC:
-      return "FLAC";
-    case SF_FORMAT_OGG:
-      return "Ogg";
+      switch (format)
+	{
+	case ELEKTROID_SAMPLE_FORMAT_MICROFREAK:
+	  return "MicroFreak";
+	default:
+	  return SF_FORMAT_UNKNOWN;
+	}
+    }
+  else
+    {
+      switch (sample_info->format & SF_FORMAT_TYPEMASK)
+	{
+	case SF_FORMAT_WAV:
+	  return "WAV";
+	case SF_FORMAT_AIFF:
+	  return "AIFF";
+	case SF_FORMAT_AU:
+	  return "Au";
+	case SF_FORMAT_FLAC:
+	  return "FLAC";
+	case SF_FORMAT_OGG:
+	  return "Ogg";
 #if !defined(__linux__) || HAVE_SNDFILE_MP3
-    case SF_FORMAT_MPEG:
-      return "MPEG";
+	case SF_FORMAT_MPEG:
+	  return "MPEG";
 #endif
-    default:
-      return SF_FORMAT_UNKNOWN;
+	default:
+	  return SF_FORMAT_UNKNOWN;
+	}
     }
 }
 

@@ -168,7 +168,8 @@ test_load_microfreak_wavetable (const gchar *path)
   CU_ASSERT_EQUAL (sample_info_src.loop_end, 8191);
   CU_ASSERT_EQUAL (sample_info_src.loop_type, 0);
   CU_ASSERT_EQUAL (sample_info_src.rate, 32000);
-  CU_ASSERT_EQUAL (sample_info_src.format, SF_FORMAT_PCM_16);
+  CU_ASSERT_EQUAL (sample_info_src.format,
+		   ELEKTROID_SAMPLE_FORMAT_MICROFREAK | SF_FORMAT_PCM_16);
   CU_ASSERT_EQUAL (sample_info_src.channels, 1);
   CU_ASSERT_EQUAL (sample_info_src.midi_note, 0);
 
@@ -232,7 +233,8 @@ test_load_microfreak_sample (const gchar *path)
   CU_ASSERT_EQUAL (sample_info_src.loop_end, 799);
   CU_ASSERT_EQUAL (sample_info_src.loop_type, 0);
   CU_ASSERT_EQUAL (sample_info_src.rate, 32000);
-  CU_ASSERT_EQUAL (sample_info_src.format, SF_FORMAT_PCM_16);
+  CU_ASSERT_EQUAL (sample_info_src.format,
+		   ELEKTROID_SAMPLE_FORMAT_MICROFREAK | SF_FORMAT_PCM_16);
   CU_ASSERT_EQUAL (sample_info_src.channels, 1);
   CU_ASSERT_EQUAL (sample_info_src.midi_note, 0);
 

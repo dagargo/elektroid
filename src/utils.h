@@ -62,7 +62,7 @@ struct sample_info
   guint32 loop_end;
   guint32 loop_type;		// 0 = forward loop
   guint32 rate;
-  guint32 format;		// Used as in libsndfile.
+  guint64 format;		// Use 32 lower bits as in libsndfile and upper 32 bits for extended file formats.
   guint32 channels;
   guint32 midi_note;
 };

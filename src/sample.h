@@ -36,6 +36,9 @@
 #define SF_FORMAT_DOUBLE_STR "f64"
 #define SF_FORMAT_UNKNOWN "?"
 
+#define ELEKTROID_SAMPLE_FORMAT_MASK       0xffffffff00000000
+#define ELEKTROID_SAMPLE_FORMAT_MICROFREAK 0x0000000100000000
+
 #define SAMPLE_SIZE(format) ((format & SF_FORMAT_SUBMASK) == SF_FORMAT_PCM_16 ? 2 : 4)
 #define FRAME_SIZE(channels,format) ((channels) * SAMPLE_SIZE(format))
 #define SAMPLE_INFO_FRAME_SIZE(sample_info) FRAME_SIZE((sample_info)->channels, (sample_info)->format)
