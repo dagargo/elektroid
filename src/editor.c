@@ -491,14 +491,6 @@ end:
 }
 
 static gboolean
-editor_queue_draw (gpointer data)
-{
-  struct editor *editor = data;
-  gtk_widget_queue_draw (editor->waveform);
-  return FALSE;
-}
-
-static gboolean
 editor_join_load_thread (gpointer data)
 {
   struct editor *editor = data;
@@ -518,7 +510,7 @@ editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
   struct editor *editor = data;
 
   job_control_set_sample_progress_no_sync (control, p, NULL);
-  g_idle_add (editor_queue_draw, data);
+  gtk_widget_queue_draw (editor->waveform);
   completed = editor_loading_completed_no_lock (editor, &actual_frames);
   if (!editor->ready)
     {
@@ -579,7 +571,7 @@ editor_update_ui_on_record (gpointer data, gdouble value)
 {
   struct editor *editor = data;
 
-  g_idle_add (editor_queue_draw, data);
+  gtk_widget_queue_draw (editor->waveform);
   if (!editor->ready && editor_loading_completed_no_lock (data, NULL))
     {
       g_idle_add (editor_update_ui_on_load, data);
@@ -726,7 +718,7 @@ editor_show_grid_clicked (GtkWidget *object, gboolean state, gpointer data)
 {
   struct editor *editor = data;
   preferences_set_boolean (PREF_KEY_SHOW_GRID, state);
-  g_idle_add (editor_queue_draw, editor);
+  gtk_widget_queue_draw (editor->waveform);
   return FALSE;
 }
 
@@ -736,7 +728,7 @@ editor_grid_length_changed (GtkSpinButton *object, gpointer data)
   struct editor *editor = data;
   preferences_set_boolean (PREF_KEY_GRID_LENGTH,
 			   gtk_spin_button_get_value (object));
-  g_idle_add (editor_queue_draw, editor);
+  gtk_widget_queue_draw (editor->waveform);
 }
 
 static void
@@ -840,13 +832,15 @@ gboolean
 editor_waveform_scroll (GtkWidget *widget, GdkEventScroll *event,
 			gpointer data)
 {
+  struct editor *editor = data;
+
   if (event->direction == GDK_SCROLL_SMOOTH)
     {
       gdouble dx, dy;
       gdk_event_get_scroll_deltas ((GdkEvent *) event, &dx, &dy);
       if (editor_zoom (data, event, dy))
 	{
-	  g_idle_add (editor_queue_draw, data);
+	  gtk_widget_queue_draw (editor->waveform);
 	}
     }
   return FALSE;
@@ -972,7 +966,7 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 	  editor->audio.sel_start = cursor_frame;
 	  editor->audio.sel_end = cursor_frame;
 	  gtk_widget_grab_focus (editor->waveform_scrolled_window);
-	  g_idle_add (editor_queue_draw, editor);
+	  gtk_widget_queue_draw (editor->waveform);
 	}
     }
   else if (event->button == GDK_BUTTON_SECONDARY)
@@ -1018,7 +1012,7 @@ editor_button_release (GtkWidget *widget, GdkEventButton *event,
 	  debug_print (2, "Cleaning selection...");
 	  editor->audio.sel_start = -1;
 	  editor->audio.sel_end = -1;
-	  g_idle_add (editor_queue_draw, editor);
+	  gtk_widget_queue_draw (editor->waveform);
 	}
       else
 	{
@@ -1136,7 +1130,7 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 	}
     }
 
-  g_idle_add (editor_queue_draw, data);
+  gtk_widget_queue_draw (editor->waveform);
 
 end:
   g_mutex_unlock (&editor->audio.control.mutex);
@@ -1173,7 +1167,7 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
 
   audio_delete_range (&editor->audio, editor->audio.sel_start, sel_len);
   editor->dirty = TRUE;
-  g_idle_add (editor_queue_draw, data);
+  gtk_widget_queue_draw (editor->waveform);
 
   if (status == AUDIO_STATUS_PLAYING)
     {
