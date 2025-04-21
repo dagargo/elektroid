@@ -73,7 +73,8 @@ const struct fs_operations FS_PROGRAM_DEFAULT_OPERATIONS = {
   .gui_icon = FS_ICON_SND,
   .readdir = default_read_dir,
   .print_item = common_print_item,
-  .select_item = common_midi_program_change
+  .select_item = common_midi_program_change,
+  .get_exts = common_get_all_extensions
 };
 
 static gint

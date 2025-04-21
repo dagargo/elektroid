@@ -52,6 +52,12 @@ common_sysex_get_extensions ()
   return SYSEX_EXTS;
 }
 
+const gchar **
+common_get_all_extensions ()
+{
+  return NULL;
+}
+
 gchar *
 common_slot_get_upload_path (struct backend *backend,
 			     const struct fs_operations *ops,
