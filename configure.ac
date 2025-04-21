@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.71])
-AC_INIT([elektroid],[3.2.2],[dagargo@gmail.com])
+AC_INIT([elektroid],[3.2.3],[dagargo@gmail.com])
 AC_CONFIG_SRCDIR([src])
 AC_CONFIG_HEADERS([config.h])
 LT_INIT
