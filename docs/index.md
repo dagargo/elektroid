@@ -22,6 +22,7 @@ These are the supported devices:
 * Elektron Model:Samples
 * Elektron Syntakt
 * Eventide ModFactor, PitchFactor, TimeFactor, Space and H9
+* KORG padKONTROL
 * Moog Little Phatty and Slim Phatty
 * Novation Summit and Peak
 * Samplers implementing MIDI SDS

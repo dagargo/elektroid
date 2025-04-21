@@ -52,19 +52,20 @@ sample.c sample.h \
 utils.c utils.h \
 backend.c backend.h $(elektroid_backend_sources) \
 connectors/common.c connectors/common.h \
-connectors/system.c connectors/system.h \
-connectors/elektron.c connectors/elektron.h \
-connectors/package.c connectors/package.h \
-connectors/microbrute.c connectors/microbrute.h \
-connectors/microfreak_sample.c connectors/microfreak_sample.h \
-connectors/microfreak.c connectors/microfreak.h \
 connectors/cz.c connectors/cz.h \
-connectors/sds.c connectors/sds.h \
+connectors/default.c connectors/default.h \
 connectors/efactor.c connectors/efactor.h \
+connectors/elektron.c connectors/elektron.h \
+connectors/microbrute.c connectors/microbrute.h \
+connectors/microfreak.c connectors/microfreak.h \
+connectors/microfreak_sample.c connectors/microfreak_sample.h \
+connectors/package.c connectors/package.h \
+connectors/padkontrol.c connectors/padkontrol.h \
 connectors/phatty.c connectors/phatty.h \
-connectors/summit.c connectors/summit.h \
 connectors/scala.c connectors/scala.h \
-connectors/default.c connectors/default.h
+connectors/sds.c connectors/sds.h \
+connectors/summit.c connectors/summit.h \
+connectors/system.c connectors/system.h
 
 elektroid_cli_SOURCES = $(elektroid_common_sources) elektroid-cli.c
 

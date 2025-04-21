@@ -1,5 +1,5 @@
 /*
- *   cz.h
+ *   microbrute.h
  *   Copyright (C) 2022 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.

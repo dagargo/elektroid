@@ -20,16 +20,17 @@
 
 #include "regconn.h"
 
-#include "connectors/system.h"
+#include "connectors/cz.h"
+#include "connectors/default.h"
+#include "connectors/efactor.h"
 #include "connectors/elektron.h"
 #include "connectors/microbrute.h"
 #include "connectors/microfreak.h"
-#include "connectors/cz.h"
-#include "connectors/sds.h"
-#include "connectors/efactor.h"
+#include "connectors/padkontrol.h"
 #include "connectors/phatty.h"
+#include "connectors/sds.h"
 #include "connectors/summit.h"
-#include "connectors/default.h"
+#include "connectors/system.h"
 
 void
 regconn_register ()
@@ -37,8 +38,8 @@ regconn_register ()
   system_connector = &CONNECTOR_SYSTEM;
   gslist_fill (&connectors, &CONNECTOR_ELEKTRON, &CONNECTOR_MICROBRUTE,
 	       &CONNECTOR_MICROFREAK, &CONNECTOR_PHATTY, &CONNECTOR_SUMMIT,
-	       &CONNECTOR_CZ, &CONNECTOR_SDS, &CONNECTOR_EFACTOR,
-	       &CONNECTOR_DEFAULT, NULL);
+	       &CONNECTOR_CZ, &CONNECTOR_PADKONTROL, &CONNECTOR_SDS,
+	       &CONNECTOR_EFACTOR, &CONNECTOR_DEFAULT, NULL);
 }
 
 void

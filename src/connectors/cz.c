@@ -228,7 +228,7 @@ cz_download (struct backend *backend, const gchar *path,
 	     struct idata *program, struct job_control *control)
 {
   guint8 id;
-  gint len, err;
+  gint err;
   GByteArray *tx_msg, *rx_msg;
   GByteArray *output;
 
@@ -244,8 +244,7 @@ cz_download (struct backend *backend, const gchar *path,
     {
       return err;
     }
-  len = rx_msg->len;
-  if (len != CZ_PROGRAM_LEN)
+  if (rx_msg->len != CZ_PROGRAM_LEN)
     {
       err = -EINVAL;
       goto cleanup;

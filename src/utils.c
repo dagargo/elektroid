@@ -339,9 +339,7 @@ job_control_set_progress_value (struct job_control *control, gdouble p)
 	}
       else
 	{
-	  control->progress =
-	    (control->part / (double) control->parts) +
-	    (p / (double) control->parts);
+	  control->progress = (control->part + p) / (double) control->parts;
 	}
     }
   else
