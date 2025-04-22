@@ -276,21 +276,12 @@ phatty_read_dir (struct backend *backend, struct item_iterator *iter,
   return err;
 }
 
-//This ommits the slot id for the panel. As it is a made up number, this is better
-//than showing the ID column.
-
-gchar *
+static gchar *
 phatty_get_id_as_slot (struct item *item, struct backend *backend)
 {
   gchar *slot = g_malloc (LABEL_MAX);
-  if (item->id >= PHATTY_MAX_PRESETS)
-    {
-      slot[0] = 0;
-    }
-  else
-    {
-      snprintf (slot, LABEL_MAX, "%.2d", item->id);
-    }
+  snprintf (slot, LABEL_MAX, "%0*d", item->id == PHATTY_PANEL_ID ? 4 : 2,
+	    item->id);
   return slot;
 }
 

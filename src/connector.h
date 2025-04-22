@@ -42,8 +42,9 @@ enum item_type
   ITEM_TYPE_DIR = 'D'
 };
 
-//name must be filled up always. If no name is available, this can be a string representation of the ID without padding. See set_item_name_from_id function.
-//In slot mode, id needs to be filled up and will typically be the MIDI preset number (the id is the filename).
+//name must be filled up always. If no name is available, this can be a string representation of the id without padding. See set_item_name_from_id function.
+//In slot mode, id needs to be filled up and will typically be the MIDI preset number.
+//As the id is used to address items, it is recommended to follow the same user naming convention as the device regardless of its internal meaning or representation.
 //In default mode (not slot mode), id can be used for any or no purpose. It's still possible to use the id as the filename by using the FS_OPTION_ID_AS_FILENAME option.
 //A -1 size (unknown) will show no size in either the GUI or the CLI.
 //A 0 size item will be skipped by the `backup` command for efficiency purposes. It depends on the connector if this can be determined.

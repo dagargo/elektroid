@@ -130,7 +130,7 @@ cz_next_dentry (struct item_iterator *iter)
       return -ENOENT;
     }
 
-  iter->item.id = data->next + data->type * CZ_MEM_TYPE_OFFSET;
+  iter->item.id = data->next + 1 + data->type * CZ_MEM_TYPE_OFFSET;
   snprintf (iter->item.name, LABEL_MAX, "%d", data->next + 1);
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = CZ_PROGRAM_LEN_FIXED;
@@ -290,7 +290,14 @@ cz_upload (struct backend *backend, const gchar *path, struct idata *program,
   return err;
 }
 
-//Neither the slot or the ID are shown because there is no name and therefore the ID is used as such.
+static gchar *
+cz_get_id_as_slot (struct item *item, struct backend *backend)
+{
+  gchar *slot = g_malloc (LABEL_MAX);
+  snprintf (slot, LABEL_MAX, "%0*d", item->id == CZ_PANEL_ID + 1 ? 4 : 2,
+	    item->id);
+  return slot;
+}
 
 static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .id = FS_PROGRAM_CZ,
@@ -303,6 +310,7 @@ static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .print_item = common_print_item,
   .download = cz_download,
   .upload = cz_upload,
+  .get_slot = cz_get_id_as_slot,
   .load = file_load,
   .save = file_save,
   .get_exts = common_sysex_get_extensions,

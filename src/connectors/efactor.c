@@ -383,12 +383,13 @@ efactor_get_slot (struct item *item, struct backend *backend)
   struct efactor_data *data = backend->data;
   if (data->type == EFACTOR_FACTOR)
     {
-      snprintf (slot, LABEL_MAX, "[%d:%d]", (item->id / 2) + 1,
-		(item->id % 2) + 1);
+      //This is a bit of a hack since not only are we showing the ID but also the bank-preset pair.
+      snprintf (slot, LABEL_MAX, "%02d [%d:%d]", item->id,
+		(item->id / 2) + 1, (item->id % 2) + 1);
     }
   else
     {
-      snprintf (slot, LABEL_MAX, "%d", item->id + 1);
+      snprintf (slot, LABEL_MAX, "%02d", item->id + 1);
     }
   return slot;
 }

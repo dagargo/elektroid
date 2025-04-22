@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 
-#root and panel id (1 based)
-#The cksum will not match because the downloaded panel data will not match the preset used for tests
-$srcdir/integration/generic_fs_tests.sh cz program / 3 "" /97 ""
-#No error check
+#ls /
+[ $($ecli cz-program-ls $TEST_DEVICE:/ | wc -l) -ne 3 ] && exit 1
+
+#panel id (1 based)
+$ecli cz-program-dl $TEST_DEVICE:/97
+err=$?
+rm *.syx
+[ $err -ne 0 ] && exit $err
 
 $srcdir/integration/generic_fs_tests.sh cz program /internal 16 "/internal/0 /internal/17" /internal/16 ""
 
