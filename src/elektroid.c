@@ -2426,6 +2426,15 @@ elektroid_dnd_received (GtkWidget *widget, GdkDragContext *context,
       return;
     }
 
+  if (widget == GTK_WIDGET (remote_browser.view) &&
+      (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE) &&
+      remote_browser.dnd_motion_path == NULL)
+    {
+      gtk_drag_finish (context, TRUE, TRUE, time);
+      error_print ("DND destination needs a slot");
+      return;
+    }
+
   dnd_data = g_malloc (sizeof (struct elektroid_dnd_data));
   dnd_data->widget = widget;
 
