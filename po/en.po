@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2025-04-17 19:54+0200\n"
+"POT-Creation-Date: 2025-04-22 19:10+0200\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: English\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "Audio"
 msgstr ""
 
-#: src/elektroid.c:326 src/elektroid.c:2998
+#: src/elektroid.c:326 src/elektroid.c:3005
 msgid "Not connected"
 msgstr ""
 
@@ -125,11 +125,11 @@ msgstr ""
 msgid "Apply this action to all files"
 msgstr ""
 
-#: src/elektroid.c:1686 src/elektroid.c:1868 src/elektroid.c:2485
+#: src/elektroid.c:1686 src/elektroid.c:1868 src/elektroid.c:2494
 msgid "Preparing Tasks"
 msgstr ""
 
-#: src/elektroid.c:1686 src/elektroid.c:1868 src/elektroid.c:2486
+#: src/elektroid.c:1686 src/elektroid.c:1868 src/elektroid.c:2495
 #: src/progress.c:107
 msgid "Waiting..."
 msgstr ""
@@ -147,15 +147,15 @@ msgstr ""
 msgid "Device “%s” not recognized: %s"
 msgstr ""
 
-#: src/elektroid.c:2472
+#: src/elektroid.c:2481
 msgid "Moving Files"
 msgstr ""
 
-#: src/elektroid.c:2473
+#: src/elektroid.c:2482
 msgid "Moving..."
 msgstr ""
 
-#: src/elektroid.c:2782
+#: src/elektroid.c:2789
 msgid "Acknowledgements"
 msgstr ""
 
@@ -285,7 +285,7 @@ msgstr ""
 msgid "SDS sampler"
 msgstr ""
 
-#: src/connectors/default.c:83
+#: src/connectors/default.c:84
 msgid "MIDI device"
 msgstr ""
 

@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2025-04-17 19:54+0200\n"
+"POT-Creation-Date: 2025-04-22 19:10+0200\n"
 "PO-Revision-Date: 2024-09-21 11:57+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
@@ -21,7 +21,7 @@ msgstr ""
 msgid "Audio"
 msgstr ""
 
-#: src/elektroid.c:326 src/elektroid.c:2998
+#: src/elektroid.c:326 src/elektroid.c:3005
 msgid "Not connected"
 msgstr "Non connecté"
 
@@ -125,11 +125,11 @@ msgstr "_Remplacer"
 msgid "Apply this action to all files"
 msgstr "Appliquer cette action à tous les fichiers"
 
-#: src/elektroid.c:1686 src/elektroid.c:1868 src/elektroid.c:2485
+#: src/elektroid.c:1686 src/elektroid.c:1868 src/elektroid.c:2494
 msgid "Preparing Tasks"
 msgstr "Préparation des tâches"
 
-#: src/elektroid.c:1686 src/elektroid.c:1868 src/elektroid.c:2486
+#: src/elektroid.c:1686 src/elektroid.c:1868 src/elektroid.c:2495
 #: src/progress.c:107
 msgid "Waiting..."
 msgstr "En attente..."
@@ -147,15 +147,15 @@ msgstr "Connexion..."
 msgid "Device “%s” not recognized: %s"
 msgstr "Périphérique “%s” non reconnu : %s"
 
-#: src/elektroid.c:2472
+#: src/elektroid.c:2481
 msgid "Moving Files"
 msgstr "Déplacement des fichiers"
 
-#: src/elektroid.c:2473
+#: src/elektroid.c:2482
 msgid "Moving..."
 msgstr "Déplacement..."
 
-#: src/elektroid.c:2782
+#: src/elektroid.c:2789
 msgid "Acknowledgements"
 msgstr ""
 
@@ -288,7 +288,7 @@ msgstr "Droite"
 msgid "SDS sampler"
 msgstr "Échantillonneur SDS"
 
-#: src/connectors/default.c:83
+#: src/connectors/default.c:84
 msgid "MIDI device"
 msgstr "Périphérique MIDI"
 
