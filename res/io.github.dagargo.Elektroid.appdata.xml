@@ -7,9 +7,26 @@
   <name>Elektroid</name>
   <summary>Sample and MIDI device manager</summary>
   <description>
-    <p>Elektroid is a sample and MIDI device manager.</p>
-    <p>With Elektroid you can easily upload and download audio files and manage different types of data on different MIDI devices, such as presets, projects or tunings.</p>
-    <p>It can also be used to send and receive SysEx MIDI files.</p>
+    <p>Elektroid is a sample and MIDI device manager. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.</p>
+    <p>Elektroid started as a FLOSS Elektron Transfer alternative and it has ended up supporting other devices from different vendors in the same fashion.</p>
+    <p>These are the supported devices:</p>
+    <ul>
+      <li>Arturia MicroBrute</li>
+      <li>Arturia MicroFreak</li>
+      <li>Casio CZ-101</li>
+      <li>Elektron Analog Four MKI, MKII and Keys</li>
+      <li>Elektron Analog Heat MKI, MKII and +FX</li>
+      <li>Elektron Analog Rytm MKI and MKII</li>
+      <li>Elektron Digitakt I and II</li>
+      <li>Elektron Digitone I and II and Digitone Keys</li>
+      <li>Elektron Model:Cycles</li>
+      <li>Elektron Model:Samples</li>
+      <li>Elektron Syntakt</li>
+      <li>Eventide ModFactor, PitchFactor, TimeFactor, Space and H9</li>
+      <li>Moog Little Phatty and Slim Phatty</li>
+      <li>Novation Summit and Peak</li>
+      <li>Samplers implementing MIDI SDS</li>
+    </ul>
   </description>
   <launchable type="desktop-id">io.github.dagargo.Elektroid.desktop</launchable>
   <provides>
