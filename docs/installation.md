@@ -30,17 +30,41 @@ The package dependencies for Debian-based distributions are:
 - libjson-glib-dev
 - libzip-dev
 
-You can easily install them by running `sudo apt install automake libtool build-essential libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev autopoint gettext zlib1g-dev libjson-glib-dev libzip-dev`.
+You can easily install them by running this.
 
-If you are only compiling the CLI, install the dependencies with `sudo apt install automake libtool build-essential libasound2-dev libglib2.0-dev libsndfile1-dev libsamplerate0-dev autopoint libtool zlib1g-dev libjson-glib-dev libzip-dev`.
+```
+sudo apt install automake libtool build-essential libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev autopoint gettext zlib1g-dev libjson-glib-dev libzip-dev`
+```
 
-For Fedora, run `sudo dnf install autoconf libtool alsa-lib-devel zlib-devel libzip-devel gtk3-devel libsndfile-devel gettext-devel libsamplerate-devel pulseaudio-libs-devel json-glib-devel` to install the build dependencies.
+If you are only compiling the CLI, install the dependencies with this.
 
-For Arch Linux, run `sudo pacman -S base-devel autoconf libtool alsa-lib zlib libzip gtk3 libsndfile gettext libsamplerate json-glib` to install the build dependencies.
+```
+sudo apt install automake libtool build-essential libasound2-dev libglib2.0-dev libsndfile1-dev libsamplerate0-dev autopoint libtool zlib1g-dev libjson-glib-dev libzip-dev
+```
 
-For OSX (Homebrew), run `homebrew install automake bltool pkg-config gtk+3 libsndfile libsamplerate gettext zlib json-glib libzip rtaudio rtmidi`.
+For Fedora, run this to install the build dependencies.
 
-For MSYS2 (UCRT64), run `pacman -S mingw-w64-x86_64-toolchain gettext gettext-devel libtool pkg-config mingw-w64-x86_64-autotools mingw-w64-x86_64-gcc mingw-w64-ucrt-x86_64-zlib mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtk3 mingw-w64-x86_64-json-glib mingw-w64-ucrt-x86_64-libsndfile mingw-w64-ucrt-x86_64-rtmidi mingw-w64-ucrt-x86_64-rtaudio mingw-w64-ucrt-x86_64-libsamplerate` to install the build dependencies.
+```
+sudo dnf install autoconf libtool alsa-lib-devel zlib-devel libzip-devel gtk3-devel libsndfile-devel gettext-devel libsamplerate-devel pulseaudio-libs-devel json-glib-devel
+```
+
+For Arch Linux, run this to install the build dependencies.
+
+```
+sudo pacman -S base-devel autoconf libtool alsa-lib zlib libzip gtk3 libsndfile gettext libsamplerate json-glib`
+```
+
+For OSX (Homebrew), run this to install the build dependencies.
+
+```
+homebrew install automake bltool pkg-config gtk+3 libsndfile libsamplerate gettext zlib json-glib libzip rtaudio rtmidi
+```
+
+For MSYS2 (UCRT64), run this to install the build dependencies.
+
+```
+pacman -S mingw-w64-x86_64-toolchain gettext gettext-devel libtool pkg-config mingw-w64-x86_64-autotools mingw-w64-x86_64-gcc mingw-w64-ucrt-x86_64-zlib mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtk3 mingw-w64-x86_64-json-glib mingw-w64-ucrt-x86_64-libsndfile mingw-w64-ucrt-x86_64-rtmidi mingw-w64-ucrt-x86_64-rtaudio mingw-w64-ucrt-x86_64-libsamplerate
+```
 
 #### Additional notes on MSYS2 (UCRT64)
 
