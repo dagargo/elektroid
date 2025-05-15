@@ -28,6 +28,15 @@ These are the supported devices:
 * Novation Summit and Peak
 * Samplers implementing MIDI SDS
 
+Other interesting features are:
+
+* Autosampler
+* Sample loop points edition
+* Sample playback, recording and basic edition
+* Sample zoom
+* Search within devices
+* SysEx transmission and reception
+
 While Elektroid is already available in some GNU/Linux distributions such as Debian or Ubuntu, it can also be easily installed on other distributions via Flatpak.
 
 ## Installation
@@ -102,49 +111,38 @@ pacman -S mingw-w64-x86_64-toolchain gettext gettext-devel libtool pkg-config mi
 
 By default, Elektroid uses ALSA as the MIDI backend on Linux and RtMidi on other OSs. To use RtMidi on Linux, pass `RTMIDI=yes` to `./configure`. In this case, the RtMidi development package will be needed (`librtmidi-dev` on Debian).
 
-### Audio server
+### Audio backend
 
 By default, Elektroid uses PulseAudio as the audio server on Linux and RtAudio on other OSs. To use RtAudio on Linux, pass `RTAUDIO=yes` to `./configure`. In this case, the RtAudio development package will be needed (`librtaudio-dev` on Debian).
 
 ### Adding and reconfiguring Elektron devices
 
-Since version 2.1, it is possible to add and reconfigure devices without recompiling as the device definitions are stored in a JSON file. Hopefully, this approach will make it easier for users to modify and add devices and new releases will only be needed if new funcionalities are actually added.
+It is possible to add and reconfigure Elektron devices without recompiling as the device definitions are first searched within the `~/.config/elektroid/elektron/devices.json` JSON file. If the file is not found, the installed one will be used. Hopefully, this approach will make it easier for users to modify and add devices and new releases will only be needed if new funcionalities are actually added.
 
 This is a device definition from `res/elektron/devices.json`.
 
 ```
-}, {
-        "id": 12,
-        "name": "Digitakt",
-        "alias": "dt",
-        "filesystems": 57,
-        "storage": 3
-}, {
+  {
+    "id": 12,
+    "name": "Elektron Digitakt",
+    "filesystems": {
+      "sample": null,
+      "data": null,
+      "project": [
+        "dtprj"
+      ],
+      "sound": [
+        "dtsnd"
+      ]
+    },
+    "storage": [
+      "+Drive",
+      "RAM"
+    ]
+  }
 ```
 
-Properties `filesystems` and `storage` are based on the definitions found in `src/connectors/elektron.h` and are the bitwise OR result of all the supported filesystems and storage types.
-
-```
-enum connector_fs
-{
-  FS_SAMPLES = 0x1,
-  FS_RAW_ALL = 0x2,
-  FS_RAW_PRESETS = 0x4,
-  FS_DATA_ALL = 0x8,
-  FS_DATA_PRJ = 0x10,
-  FS_DATA_SND = 0x20,
-};
-```
-
-```
-enum connector_storage
-{
-  STORAGE_PLUS_DRIVE = 0x1,
-  STORAGE_RAM = 0x2
-};
-```
-
-If the file `~/.config/elektroid/elektron/devices.json` is found, it will take precedence over the installed one.
+The list represents the allowed file extensions for the given filesystem.
 
 ## Packaging
 
@@ -394,11 +392,21 @@ $ elektroid-cli elektron-data-ul sound 0:/soundbanks/D
 
 ## API
 
-Elektroid, although statically compiled, is extensible through three extension points.
+Elektroid, although statically compiled, is extensible through three extension points: connector, menu action and preference.
 
-* Connectors, which are a set of filesystems, each providing operations over MIDI and the computer native filesystem to implement uploading, downloading, renaming and the like. The API is defined in `src/connector.h`. Connectors are defined in the `src/connectors` directory and need to be configured in the connector registry in `src/regconn.c`.
-* Menu actions (GUI only), which are device related buttons in the application menu that provide the user with some configuration window or launch device configuration processes. The API is defined in `src/maction.h`. Menu actions are defined in the `src/mactions` directory and need to be configured in the menu action registry in `src/regma.c`.
-* Preferences, which are single configuration elements that are stored in the configuration JSON file and can be recalled from anywhere in the code. The API is defined in `src/preferences.h`. Preferences can be defined anywhere but need to be configured in the preferences registry in `src/regpref.c`.
+### Connector
+
+Connectors are a set of filesystems, each providing operations over MIDI and the computer native filesystem to implement uploading, downloading, renaming and the like. The API is defined in [src/connector.h](src/connector.h). Connectors are defined in the [src/connectors](src/connectors) directory and need to be configured in the connector registry in [src/regconn.c](src/regconn.c).
+
+A simple example of this extension can be seen in [src/connectors/padkontrol.c](src/connectors/padkontrol.c).
+
+### Menu action
+
+Menu actions (GUI only) are device related buttons in the application menu that provide the user with some configuration window or launch device configuration processes. The API is defined in [src/maction.h](src/maction.h). Menu actions are defined in the [src/mactions](src/mactions) directory and need to be configured in the menu action registry in [src/regma.c](src/regma.c).
+
+### Preference
+
+Preferences are single configuration elements that are stored in the configuration JSON file and can be recalled from anywhere in the code. The API is defined in [src/preferences.h](src/preferences.h). Preferences can be defined anywhere but need to be configured in the preferences registry in [src/regpref.c](src/regpref.c).
 
 ## Tests
 

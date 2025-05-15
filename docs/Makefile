@@ -11,5 +11,5 @@ $(README): index.md installation.md packaging.md cli.md api.md tests.md
 	tail -n +6 installation.md >> $(README)
 	tail -n +6 packaging.md >> $(README)
 	tail -n +6 cli.md >> $(README)
-	tail -n +6 api.md >> $(README)
+	tail -n +6 api.md | sed "s^https://github.com/dagargo/elektroid/tree/master/^^g" >> $(README)
 	tail -n +6 tests.md >> $(README)

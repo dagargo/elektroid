@@ -76,46 +76,35 @@ pacman -S mingw-w64-x86_64-toolchain gettext gettext-devel libtool pkg-config mi
 
 By default, Elektroid uses ALSA as the MIDI backend on Linux and RtMidi on other OSs. To use RtMidi on Linux, pass `RTMIDI=yes` to `./configure`. In this case, the RtMidi development package will be needed (`librtmidi-dev` on Debian).
 
-### Audio server
+### Audio backend
 
 By default, Elektroid uses PulseAudio as the audio server on Linux and RtAudio on other OSs. To use RtAudio on Linux, pass `RTAUDIO=yes` to `./configure`. In this case, the RtAudio development package will be needed (`librtaudio-dev` on Debian).
 
 ### Adding and reconfiguring Elektron devices
 
-Since version 2.1, it is possible to add and reconfigure devices without recompiling as the device definitions are stored in a JSON file. Hopefully, this approach will make it easier for users to modify and add devices and new releases will only be needed if new funcionalities are actually added.
+It is possible to add and reconfigure Elektron devices without recompiling as the device definitions are first searched within the `~/.config/elektroid/elektron/devices.json` JSON file. If the file is not found, the installed one will be used. Hopefully, this approach will make it easier for users to modify and add devices and new releases will only be needed if new funcionalities are actually added.
 
 This is a device definition from `res/elektron/devices.json`.
 
 ```
-}, {
-        "id": 12,
-        "name": "Digitakt",
-        "alias": "dt",
-        "filesystems": 57,
-        "storage": 3
-}, {
+  {
+    "id": 12,
+    "name": "Elektron Digitakt",
+    "filesystems": {
+      "sample": null,
+      "data": null,
+      "project": [
+        "dtprj"
+      ],
+      "sound": [
+        "dtsnd"
+      ]
+    },
+    "storage": [
+      "+Drive",
+      "RAM"
+    ]
+  }
 ```
 
-Properties `filesystems` and `storage` are based on the definitions found in `src/connectors/elektron.h` and are the bitwise OR result of all the supported filesystems and storage types.
-
-```
-enum connector_fs
-{
-  FS_SAMPLES = 0x1,
-  FS_RAW_ALL = 0x2,
-  FS_RAW_PRESETS = 0x4,
-  FS_DATA_ALL = 0x8,
-  FS_DATA_PRJ = 0x10,
-  FS_DATA_SND = 0x20,
-};
-```
-
-```
-enum connector_storage
-{
-  STORAGE_PLUS_DRIVE = 0x1,
-  STORAGE_RAM = 0x2
-};
-```
-
-If the file `~/.config/elektroid/elektron/devices.json` is found, it will take precedence over the installed one.
+The list represents the allowed file extensions for the given filesystem.

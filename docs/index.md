@@ -27,4 +27,13 @@ These are the supported devices:
 * Novation Summit and Peak
 * Samplers implementing MIDI SDS
 
+Other interesting features are:
+
+* Autosampler
+* Sample loop points edition
+* Sample playback, recording and basic edition
+* Sample zoom
+* Search within devices
+* SysEx transmission and reception
+
 While Elektroid is already available in some GNU/Linux distributions such as Debian or Ubuntu, it can also be easily installed on other distributions via Flatpak.
