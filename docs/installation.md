@@ -2,6 +2,7 @@
 layout: base
 title: Installation
 permalink: /installation/
+order: 1
 ---
 
 ## Installation

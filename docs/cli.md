@@ -2,6 +2,7 @@
 layout: base
 title: CLI
 permalink: /cli/
+order: 3
 ---
 
 ## CLI

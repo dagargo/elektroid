@@ -14,7 +14,9 @@ plugins:
 minima:
   skin: auto
   social_links:
-    - { platform: github,  user_url: "https://github.com/dagargo" }
+    - title: GitHub
+      icon: github
+      url: "https://github.com/dagargo"
 
 header_pages:
   - installation.md
