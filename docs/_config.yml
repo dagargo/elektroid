@@ -13,6 +13,7 @@ plugins:
 
 minima:
   skin: auto
+  hide_site_feed_link: true
   social_links:
     - title: GitHub
       icon: github
