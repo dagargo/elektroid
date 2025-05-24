@@ -168,6 +168,32 @@ static GtkWidget *devices_combo;
 static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
 
+gint
+elektroid_ask_for_remote_op (const gchar *msg, fs_remote_file_op op,
+			     struct backend *backend,
+			     const gchar *path, struct idata *data,
+			     struct job_control *control)
+{
+  gint res;
+
+  dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL,
+				   GTK_MESSAGE_WARNING, GTK_BUTTONS_NONE,
+				   msg);
+  gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
+			  GTK_RESPONSE_CANCEL, _("_Continue"),
+			  GTK_RESPONSE_ACCEPT, NULL);
+  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
+  res = gtk_dialog_run (GTK_DIALOG (dialog));
+  gtk_widget_destroy (dialog);
+  dialog = NULL;
+  if (res != GTK_RESPONSE_ACCEPT)
+    {
+      return -ECANCELED;
+    }
+
+  return op (backend, path, data, control);
+}
+
 static void
 show_error_msg (const char *format, ...)
 {
@@ -864,7 +890,7 @@ elektroid_delete_files (GtkWidget *object, gpointer data)
   struct browser *browser = data;
 
   dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL,
-				   GTK_MESSAGE_ERROR, GTK_BUTTONS_NONE,
+				   GTK_MESSAGE_WARNING, GTK_BUTTONS_NONE,
 				   _
 				   ("Are you sure you want to delete the selected items?"));
   gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
@@ -1426,8 +1452,7 @@ elektroid_show_task_overwrite_dialog (gpointer data)
   gboolean apply_to_all;
   GtkWidget *container, *checkbutton;
 
-  dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL |
-				   GTK_DIALOG_USE_HEADER_BAR,
+  dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL,
 				   GTK_MESSAGE_WARNING, GTK_BUTTONS_NONE,
 				   _("Replace file “%s”?"),
 				   (gchar *) data);
@@ -1560,11 +1585,17 @@ elektroid_upload_task_runner (gpointer data)
   res = tasks.transfer.fs_ops->upload (remote_browser.backend,
 				       upload_path, &idata,
 				       &tasks.transfer.control);
-
-  if (res && tasks.transfer.control.active)
+  if (res)
     {
-      error_print ("Error while uploading");
-      tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
+      if (tasks.transfer.control.active && res != -ECANCELED)
+	{
+	  error_print ("Error while uploading");
+	  tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
+	}
+      else
+	{
+	  tasks.transfer.status = TASK_STATUS_CANCELED;
+	}
     }
   else
     {
@@ -1677,6 +1708,8 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
     }
   g_list_free_full (selected_rows, (GDestroyNotify) gtk_tree_path_free);
 
+  progress_response (GTK_RESPONSE_ACCEPT);
+
   queued_after = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					NULL, NULL, NULL);
   if (!queued_before && queued_after)
@@ -1684,7 +1717,6 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
       g_idle_add (elektroid_run_next, NULL);
     }
 
-  progress_response (GTK_RESPONSE_ACCEPT);
   return NULL;
 }
 
@@ -1726,7 +1758,7 @@ elektroid_download_task_runner (gpointer userdata)
   g_mutex_lock (&tasks.transfer.control.mutex);
   if (res)
     {
-      if (tasks.transfer.control.active)
+      if (tasks.transfer.control.active && res != -ECANCELED)
 	{
 	  error_print ("Error while downloading");
 	  tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
@@ -1859,6 +1891,8 @@ elektroid_add_download_tasks_runner (gpointer data)
     }
   g_list_free_full (selected_rows, (GDestroyNotify) gtk_tree_path_free);
 
+  progress_response (GTK_RESPONSE_ACCEPT);
+
   queued_after = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					NULL, NULL, NULL);
   if (!queued_before && queued_after)
@@ -1866,7 +1900,6 @@ elektroid_add_download_tasks_runner (gpointer data)
       g_idle_add (elektroid_run_next, NULL);
     }
 
-  progress_response (GTK_RESPONSE_ACCEPT);
   return NULL;
 }
 
@@ -2406,14 +2439,14 @@ elektroid_dnd_received_runner_dialog (gpointer data)
     }
 
 end:
+  progress_response (GTK_RESPONSE_ACCEPT);
+
   queued_after = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
 					NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
       g_idle_add (elektroid_run_next, NULL);
     }
-
-  progress_response (GTK_RESPONSE_ACCEPT);
 
   g_free (dnd_data->type_name);
   g_strfreev (dnd_data->uris);

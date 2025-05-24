@@ -12,5 +12,6 @@ src/guirecorder.c
 src/connectors/sds.c
 src/connectors/default.c
 src/connectors/system.c
+src/connectors/machinedrum.c
 res/gui.glade
 res/microbrute/gui.glade

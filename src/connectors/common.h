@@ -116,3 +116,8 @@ gchar *common_system_get_upload_path (struct backend *backend,
 				      const gchar * dst_dir,
 				      const gchar * src_path,
 				      struct idata *content);
+
+gint elektroid_ask_for_remote_op (const gchar * msg, fs_remote_file_op op,
+				  struct backend *backend,
+				  const gchar * path, struct idata *data,
+				  struct job_control *control);

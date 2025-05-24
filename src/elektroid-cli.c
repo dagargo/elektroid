@@ -49,6 +49,37 @@ const struct fs_operations *fs_ops;
 const gchar *current_path_progress;
 gboolean same_line_progress;
 
+gint
+elektroid_ask_for_remote_op (const gchar *msg, fs_remote_file_op op,
+			     struct backend *backend,
+			     const gchar *path, struct idata *data,
+			     struct job_control *control)
+{
+  gchar buf, *remain;
+  gsize bytes_read;
+  GIOChannel *channel = g_io_channel_unix_new (STDIN_FILENO);
+
+  printf ("%s\n", msg);
+  while (1)
+    {
+      printf ("Do you want to continue? [y/n]\n");
+      g_io_channel_read_chars (channel, &buf, 1, &bytes_read, NULL);
+      if (buf == 'y' || buf == 'n')
+	{
+	  break;
+	}
+      g_io_channel_read_line (channel, &remain, &bytes_read, NULL, NULL);
+      g_free (remain);
+    }
+  g_io_channel_unref (channel);
+  if (buf != 'y')
+    {
+      return -ECANCELED;
+    }
+
+  return op (backend, path, data, control);
+}
+
 static void
 complete_progress ()
 {
@@ -1104,7 +1135,7 @@ main (int argc, gchar *argv[])
     }
 
 end:
-  if (err && err != EXIT_FAILURE)
+  if (err && err != EXIT_FAILURE && err != -ECANCELED)
     {
       error_print ("Error: %s", g_strerror (-err));
     }
