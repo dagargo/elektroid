@@ -691,11 +691,13 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
     sample_info_req->channels : sample_info_src->channels;
   sample_info->rate = sample_info_req->rate ? sample_info_req->rate :
     sample_info_src->rate;
-  sample_info->format = sample_info_req->format ? sample_info_req->format :
+  //Only the sample format is needed. If the file format is provided, it must be ignored.
+  sample_info->format = sample_info_req->format ?
+    (sample_info_req->format & SF_FORMAT_SUBMASK) :
     sample_get_internal_format ();
-  if (sample_info->format != SF_FORMAT_PCM_16 &&
-      sample_info->format != SF_FORMAT_PCM_32 &&
-      sample_info->format != SF_FORMAT_FLOAT)
+  if (sample_info->format != SF_FORMAT_PCM_16
+      && sample_info->format != SF_FORMAT_PCM_32
+      && sample_info->format != SF_FORMAT_FLOAT)
     {
       error_print ("Invalid sample format. Using short...");
       sample_info->format = SF_FORMAT_PCM_16;
