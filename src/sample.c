@@ -659,6 +659,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   SRC_DATA src_data;
   SRC_STATE *src_state;
   void *buffer_input;
+  void *buffer_input_float;
   void *buffer_input_multi;
   void *buffer_input_mono;
   void *buffer_input_stereo;
@@ -706,15 +707,9 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
   bytes_per_sample = SAMPLE_SIZE (sample_info->format);
 
-  //Set scale factor. See http://www.mega-nerd.com/libsndfile/api.html#note2
-  if ((sample_info_src->format & SF_FORMAT_FLOAT) == SF_FORMAT_FLOAT ||
-      (sample_info_src->format & SF_FORMAT_DOUBLE) == SF_FORMAT_DOUBLE)
-    {
-      debug_print (2,
-		   "Setting scale factor to ensure correct integer readings...");
-      sf_command (sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
-    }
-
+  buffer_input_float = g_malloc (LOAD_BUFFER_LEN *
+				 FRAME_SIZE (sample_info_src->channels,
+					     SF_FORMAT_FLOAT));
   buffer_input_multi = g_malloc (LOAD_BUFFER_LEN *
 				 FRAME_SIZE (sample_info_src->channels,
 					     sample_info->format));
@@ -783,13 +778,48 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	}
       else if (sample_info->format == SF_FORMAT_PCM_32)
 	{
-	  frames = sf_readf_int (sndfile, (gint32 *) buffer_input_multi,
-				 LOAD_BUFFER_LEN);
+	  if ((sample_info_src->format & SF_FORMAT_SUBMASK) ==
+	      SF_FORMAT_FLOAT)
+	    {
+	      frames = sf_readf_float (sndfile, (gfloat *) buffer_input_float,
+				       LOAD_BUFFER_LEN);
+	      gint32 *v = buffer_input_multi;
+	      gfloat *f = buffer_input_float;
+	      for (int i = 0; i < frames * sample_info_src->channels; i++)
+		{
+		  *v = *f * G_MAXINT32;
+		  v++;
+		  f++;
+		}
+	    }
+	  else
+	    {
+	      frames = sf_readf_int (sndfile, (gint32 *) buffer_input_multi,
+				     LOAD_BUFFER_LEN);
+	    }
 	}
       else
 	{
-	  frames = sf_readf_short (sndfile, (gint16 *) buffer_input_multi,
-				   LOAD_BUFFER_LEN);
+	  if ((sample_info_src->format & SF_FORMAT_SUBMASK) ==
+	      SF_FORMAT_FLOAT)
+	    {
+	      debug_print (0, "WTF!!!");
+	      frames = sf_readf_float (sndfile, (gfloat *) buffer_input_float,
+				       LOAD_BUFFER_LEN);
+	      gint16 *v = buffer_input_multi;
+	      gfloat *f = buffer_input_float;
+	      for (int i = 0; i < frames * sample_info_src->channels; i++)
+		{
+		  *v = *f * G_MAXINT16;
+		  v++;
+		  f++;
+		}
+	    }
+	  else
+	    {
+	      frames = sf_readf_short (sndfile, (gint16 *) buffer_input_multi,
+				       LOAD_BUFFER_LEN);
+	    }
 	}
       read_frames += frames;
 
@@ -926,6 +956,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   src_delete (src_state);
 
 cleanup:
+  g_free (buffer_input_float);
   g_free (buffer_input_multi);
   g_free (buffer_input_mono);
   g_free (buffer_input_stereo);
@@ -1006,8 +1037,7 @@ sample_reload (struct idata *input, struct idata *output,
   struct g_byte_array_io_data data;
 
   memcpy (&sample_info_src, input->info, sizeof (struct sample_info));
-  err = sample_get_memfile_from_sample (input, &aux, NULL,
-					SF_FORMAT_WAV |
+  err = sample_get_memfile_from_sample (input, &aux, NULL, SF_FORMAT_WAV |
 					sample_info_src.format);
   if (err)
     {
