@@ -676,7 +676,8 @@ summit_tuning_load (const gchar *path, struct idata *tuning,
 }
 
 static const gchar **
-summit_tuning_get_extensions ()
+summit_tuning_get_extensions (struct backend *backend,
+			      const struct fs_operations *ops)
 {
   return SUMMIT_TUNING_EXTS;
 }

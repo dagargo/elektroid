@@ -47,13 +47,15 @@ common_to_os_sanitized_name (gchar *name)
 }
 
 const gchar **
-common_sysex_get_extensions ()
+common_sysex_get_extensions (struct backend *backend,
+			     const struct fs_operations *ops)
 {
   return SYSEX_EXTS;
 }
 
 const gchar **
-common_get_all_extensions ()
+common_get_all_extensions (struct backend *backend,
+			   const struct fs_operations *ops)
 {
   return NULL;
 }

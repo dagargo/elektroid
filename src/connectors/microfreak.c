@@ -664,7 +664,8 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
 }
 
 static const gchar **
-microfreak_ppreset_get_extensions ()
+microfreak_ppreset_get_extensions (struct backend *backend,
+				   const struct fs_operations *ops)
 {
   return MICROFREAK_PPRESET_EXTS;
 }
@@ -695,7 +696,8 @@ microfreak_zpreset_save (const gchar *path, struct idata *zpreset,
 }
 
 static const gchar **
-microfreak_zpreset_get_extensions ()
+microfreak_zpreset_get_extensions (struct backend *backend,
+				   const struct fs_operations *ops)
 {
   return MICROFREAK_ZPRESET_EXTS;
 }
@@ -1923,7 +1925,8 @@ microfreak_get_wavetable_id_as_slot (struct item *item,
 }
 
 static const gchar **
-microfreak_pwavetable_get_extensions ()
+microfreak_pwavetable_get_extensions (struct backend *backend,
+				      const struct fs_operations *ops)
 {
   return MICROFREAK_PWAVETABLE_EXTS;
 }
@@ -1948,7 +1951,8 @@ static const struct fs_operations FS_MICROFREAK_PWAVETABLE_OPERATIONS = {
 };
 
 static const gchar **
-microfreak_zwavetable_get_extensions ()
+microfreak_zwavetable_get_extensions (struct backend *backend,
+				      const struct fs_operations *ops)
 {
   return MICROFREAK_ZWAVETABLE_EXTS;
 }

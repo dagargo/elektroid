@@ -460,7 +460,8 @@ end:
 }
 
 static const gchar **
-microbrute_get_extensions ()
+microbrute_get_extensions (struct backend *backend,
+			   const struct fs_operations *ops)
 {
   return MICROBRUTE_EXTS;
 }

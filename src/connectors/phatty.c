@@ -473,7 +473,8 @@ phatty_scale_upload (struct backend *backend, const gchar *path,
 }
 
 static const gchar **
-phatty_scale_get_extensions ()
+phatty_scale_get_extensions (struct backend *backend,
+			     const struct fs_operations *ops)
 {
   return PHATTY_SCALE_EXTS;
 }

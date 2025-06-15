@@ -77,6 +77,9 @@ static const guint8 JUNK_CHUNK_DATA[] = {
   0, 0, 0, 0
 };
 
+struct backend;
+struct fs_operations;
+
 static sf_count_t
 get_filelen_byte_array_io (void *user_data)
 {
@@ -1110,7 +1113,8 @@ sample_load_from_file (const gchar *path, struct idata *sample,
 }
 
 const gchar **
-sample_get_sample_extensions ()
+sample_get_sample_extensions (struct backend *backend,
+			      const struct fs_operations *ops)
 {
   return ELEKTROID_AUDIO_LOCAL_EXTS;
 }
