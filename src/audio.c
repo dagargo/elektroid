@@ -74,13 +74,13 @@ audio_copy_sample_s16 (gint16 *dst, gint16 *src, struct audio *audio)
 void
 audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 {
-  guint32 start, end;
   size_t size;
   guint8 *dst, *src;
   guint bytes_per_frame;
   gboolean stopping = FALSE;
   struct sample_info *sample_info;
   guint8 *data;
+  gboolean selection_mode;
 
   debug_print (2, "Writing %d frames...", frames);
 
@@ -97,13 +97,11 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 
   if (AUDIO_SEL_LEN (audio))
     {
-      start = audio->sel_start;
-      end = audio->sel_end;
+      selection_mode = TRUE;
     }
   else
     {
-      start = sample_info->loop_start;
-      end = sample_info->loop_end;
+      selection_mode = FALSE;
     }
 
   bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
@@ -131,19 +129,36 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 
   for (gint i = 0; i < frames; i++)
     {
-      //Using "audio->pos >" instead of "audio->pos ==" improves the playback
-      //of the selection while changing it because it's possible that an audio
-      //iteration might be in the middle of 2 selection changes and in this
-      //case the equality might not have a change.
-      if (audio->pos == sample_info->frames || audio->pos > end + 1)
+      if (audio->loop)
 	{
-	  if (!audio->loop)
+	  //Using "audio->pos >" instead of "audio->pos ==" improves the playback
+	  //of the selection while changing it because it's possible that an audio
+	  //iteration might be in the middle of 2 selection changes and in this
+	  //case the equality might not have a change.
+	  if (selection_mode)
+	    {
+	      if (audio->pos > audio->sel_end)
+		{
+		  debug_print (2, "Selection loop");
+		  audio->pos = audio->sel_start;
+		}
+	    }
+	  else
+	    {
+	      if (audio->pos > sample_info->loop_end)
+		{
+		  debug_print (2, "Sample loop");
+		  audio->pos = sample_info->loop_start;
+		}
+	    }
+	  src = &data[audio->pos * bytes_per_frame];
+	}
+      else
+	{
+	  if (audio->pos == sample_info->frames)
 	    {
 	      break;
 	    }
-	  debug_print (2, "Sample reset");
-	  audio->pos = start;
-	  src = &data[audio->pos * bytes_per_frame];
 	}
 
       if (audio->mono_mix)
