@@ -32,9 +32,11 @@ struct common_simple_read_dir_data
   guint32 last;
 };
 
-const gchar **common_sysex_get_extensions ();
+const gchar **common_sysex_get_extensions (struct backend *backend,
+					   const struct fs_operations *ops);
 
-const gchar **common_get_all_extensions ();
+const gchar **common_get_all_extensions (struct backend *backend,
+					 const struct fs_operations *ops);
 
 gchar *common_slot_get_upload_path (struct backend *backend,
 				    const struct fs_operations *ops,

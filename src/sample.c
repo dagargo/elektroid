@@ -77,9 +77,6 @@ static const guint8 JUNK_CHUNK_DATA[] = {
   0, 0, 0, 0
 };
 
-struct backend;
-struct fs_operations;
-
 static sf_count_t
 get_filelen_byte_array_io (void *user_data)
 {

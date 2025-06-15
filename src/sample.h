@@ -44,6 +44,9 @@
 #define SAMPLE_INFO_FRAME_SIZE(sample_info) FRAME_SIZE((sample_info)->channels, (sample_info)->format)
 #define MONO_MIX_GAIN(channels) (channels == 2 ? 0.5 : 1.0 / sqrt (channels))
 
+struct backend;
+struct fs_operations;
+
 typedef void (*sample_load_cb) (struct job_control * control,
 				gdouble progress, gpointer data);
 
@@ -77,7 +80,8 @@ gint sample_load_from_file_full (const gchar * path, struct idata *sample,
 gint sample_load_sample_info (const gchar * path,
 			      struct sample_info *sample_info);
 
-const gchar **sample_get_sample_extensions ();
+const gchar **sample_get_sample_extensions (struct backend *backend,
+					    const struct fs_operations *ops);
 
 void sample_check_and_fix_loop_points (struct sample_info *sample_info);
 
