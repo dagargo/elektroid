@@ -250,12 +250,12 @@ sample_write_audio_file_data (struct idata *idata,
 
   smpl_chunk_data.manufacturer = 0;
   smpl_chunk_data.product = 0;
-  smpl_chunk_data.sample_period = 1e9 / sample_info->rate;
+  smpl_chunk_data.sample_period = GUINT32_TO_LE (1e9 / sample_info->rate);
   smpl_chunk_data.midi_unity_note = GUINT32_TO_LE (sample_info->midi_note);
   smpl_chunk_data.midi_pitch_fraction = 0;
   smpl_chunk_data.smpte_format = 0;
   smpl_chunk_data.smpte_offset = 0;
-  smpl_chunk_data.num_sampler_loops = 1;
+  smpl_chunk_data.num_sampler_loops = GUINT32_TO_LE (1);
   smpl_chunk_data.sampler_data = 0;
   smpl_chunk_data.sample_loop.cue_point_id = 0;
   smpl_chunk_data.sample_loop.type = GUINT32_TO_LE (sample_info->loop_type);
