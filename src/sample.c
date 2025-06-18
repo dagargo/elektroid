@@ -803,7 +803,6 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	  if ((sample_info_src->format & SF_FORMAT_SUBMASK) ==
 	      SF_FORMAT_FLOAT)
 	    {
-	      debug_print (0, "WTF!!!");
 	      frames = sf_readf_float (sndfile, (gfloat *) buffer_input_float,
 				       LOAD_BUFFER_LEN);
 	      gint16 *v = buffer_input_multi;
@@ -988,11 +987,16 @@ cleanup:
       return -1;
     }
   // This removes the additional samples added by the estimation above.
-  if (sample_info->frames > actual_frames)
+  if (sample_info->frames != actual_frames)
     {
-      rounding_fix = TRUE;
-      sample_info->frames = actual_frames;
-      sample_info_fix_frame_values (sample_info);
+      // If actual_frames > sample_info->frames (upper bound), we ignore the additional generated frames as they are over the upper bound.
+      // In some cases, libsamplerate generates an additional frame in stereo while it does not do that in mono.
+      if (actual_frames < sample_info->frames)
+	{
+	  rounding_fix = TRUE;
+	  sample_info->frames = actual_frames;
+	  sample_info_fix_frame_values (sample_info);
+	}
       sample->len = sample_info->frames * bytes_per_frame;
     }
   if (control)
