@@ -115,6 +115,14 @@ editor_set_widget_source (struct editor *editor, GtkWidget *widget)
   gtk_style_context_add_class (context, class);
 }
 
+static gboolean
+editor_queue_draw (gpointer data)
+{
+  struct editor *editor = data;
+  gtk_widget_queue_draw (editor->waveform);
+  return FALSE;
+}
+
 static void
 editor_reset_browser (struct editor *editor, struct browser *browser)
 {
@@ -122,7 +130,7 @@ editor_reset_browser (struct editor *editor, struct browser *browser)
 
   editor_set_layout_width_to_val (editor, 1);
 
-  gtk_widget_queue_draw (editor->waveform);
+  g_idle_add (editor_queue_draw, editor);
 
   editor_set_widget_source (editor, editor->autoplay_switch);
   editor_set_widget_source (editor, editor->mix_switch);
@@ -510,7 +518,7 @@ editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
   struct editor *editor = data;
 
   job_control_set_sample_progress_no_sync (control, p, NULL);
-  gtk_widget_queue_draw (editor->waveform);
+  g_idle_add (editor_queue_draw, data);
   completed = editor_loading_completed_no_lock (editor, &actual_frames);
   if (!editor->ready)
     {
@@ -571,7 +579,7 @@ editor_update_ui_on_record (gpointer data, gdouble value)
 {
   struct editor *editor = data;
 
-  gtk_widget_queue_draw (editor->waveform);
+  g_idle_add (editor_queue_draw, data);
   if (!editor->ready && editor_loading_completed_no_lock (data, NULL))
     {
       g_idle_add (editor_update_ui_on_load, data);
@@ -828,7 +836,7 @@ end:
   return err;
 }
 
-gboolean
+static gboolean
 editor_waveform_scroll (GtkWidget *widget, GdkEventScroll *event,
 			gpointer data)
 {
