@@ -123,14 +123,14 @@ editor_queue_draw (gpointer data)
   return FALSE;
 }
 
-static void
-editor_reset_browser (struct editor *editor, struct browser *browser)
+static gboolean
+editor_reset_browser (gpointer data)
 {
-  editor->browser = browser;
+  struct editor *editor = data;
 
   editor_set_layout_width_to_val (editor, 1);
 
-  g_idle_add (editor_queue_draw, editor);
+  editor_queue_draw (editor);
 
   editor_set_widget_source (editor, editor->autoplay_switch);
   editor_set_widget_source (editor, editor->mix_switch);
@@ -145,6 +145,8 @@ editor_reset_browser (struct editor *editor, struct browser *browser)
   gtk_widget_set_sensitive (editor->play_button, FALSE);
   gtk_widget_set_sensitive (editor->stop_button, FALSE);
   gtk_widget_set_sensitive (editor->loop_button, FALSE);
+
+  return FALSE;
 }
 
 void
@@ -154,7 +156,8 @@ editor_reset (struct editor *editor, struct browser *browser)
   audio_stop_playback (&editor->audio);
   audio_stop_recording (&editor->audio);
   audio_reset_sample (&editor->audio);
-  editor_reset_browser (editor, browser);
+  editor->browser = browser;
+  g_idle_add (editor_reset_browser, editor);
 }
 
 static void
@@ -533,7 +536,8 @@ editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
   //If the call to sample_load_from_file_full fails, we reset the browser.
   if (!completed && !actual_frames)
     {
-      editor_reset_browser (editor, NULL);
+      editor->browser = NULL;
+      g_idle_add (editor_reset_browser, editor);
     }
 }
 
