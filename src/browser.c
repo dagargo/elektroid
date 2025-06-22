@@ -400,6 +400,16 @@ browser_add_dentry_item (gpointer data)
 	  g_value_init (&v, G_TYPE_STRING);
 	  g_value_set_string (&v, "-");
 	}
+      if (item->sample_info.note_tuning)
+	{
+	  gchar note[LABEL_MAX];
+	  snprintf (note, LABEL_MAX, "%s +%d %s", g_value_get_string (&v),
+		    (guint32) (item->sample_info.note_tuning * 100.0) / 255,
+		    _("cents"));
+	  g_value_unset (&v);
+	  g_value_init (&v, G_TYPE_STRING);
+	  g_value_set_string (&v, note);
+	}
       gtk_list_store_set_value (list_store, &iter,
 				BROWSER_LIST_STORE_SAMPLE_MIDI_NOTE_FIELD,
 				&v);

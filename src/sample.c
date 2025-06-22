@@ -252,7 +252,8 @@ sample_write_audio_file_data (struct idata *idata,
   smpl_chunk_data.product = 0;
   smpl_chunk_data.sample_period = GUINT32_TO_LE (1e9 / sample_info->rate);
   smpl_chunk_data.midi_unity_note = GUINT32_TO_LE (sample_info->midi_note);
-  smpl_chunk_data.midi_pitch_fraction = 0;
+  smpl_chunk_data.midi_pitch_fraction =
+    GUINT32_TO_LE (sample_info->note_tuning);
   smpl_chunk_data.smpte_format = 0;
   smpl_chunk_data.smpte_offset = 0;
   smpl_chunk_data.num_sampler_loops = GUINT32_TO_LE (1);
@@ -487,6 +488,8 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
 	GUINT32_FROM_LE (smpl_chunk_data.sample_loop.type);
       sample_info->midi_note =
 	GUINT32_FROM_LE (smpl_chunk_data.midi_unity_note);
+      sample_info->note_tuning =
+	GUINT32_FROM_LE (smpl_chunk_data.midi_pitch_fraction);
       if (sample_info->loop_start >= sample_info->frames)
 	{
 	  debug_print (2, "Bad loop start");

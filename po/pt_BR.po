@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2025-05-01 07:08+0200\n"
+"POT-Creation-Date: 2025-06-22 09:46+0200\n"
 "PO-Revision-Date: 2023-03-26 11:30-0300\n"
 "Last-Translator: Gustavo Costa <xfgusta@gmail.com>\n"
 "Language-Team: \n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Poedit 3.2.2\n"
 
-#: src/elektroid.c:237 src/elektroid.c:245 src/editor.c:1317
+#: src/elektroid.c:237 src/elektroid.c:245 src/editor.c:1329
 msgid "Audio"
 msgstr ""
 
@@ -36,7 +36,7 @@ msgid "Save SysEx"
 msgstr "Salvar SysEx"
 
 #: src/elektroid.c:470 src/elektroid.c:598 src/elektroid.c:870
-#: src/elektroid.c:1434 src/editor.c:1211 src/mactions/microfreak.c:52
+#: src/elektroid.c:1434 src/editor.c:1223 src/mactions/microfreak.c:52
 #: res/gui.glade:1003 res/gui.glade:3139 res/gui.glade:3245 res/gui.glade:3594
 #: res/gui.glade:3680
 msgid "_Cancel"
@@ -110,7 +110,7 @@ msgstr "Adicionar diretório"
 msgid "Error while creating dir “%s”: %s."
 msgstr "Erro ao criar diretório \"%s\": %s."
 
-#: src/elektroid.c:1432 src/editor.c:1208
+#: src/elektroid.c:1432 src/editor.c:1220
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Substituir o arquivo \"%s\"?"
@@ -119,7 +119,7 @@ msgstr "Substituir o arquivo \"%s\"?"
 msgid "_Skip"
 msgstr "_Pular"
 
-#: src/elektroid.c:1436 src/editor.c:1212
+#: src/elektroid.c:1436 src/editor.c:1224
 msgid "_Replace"
 msgstr "_Substituir"
 
@@ -161,7 +161,7 @@ msgstr "Movendo..."
 msgid "Acknowledgements"
 msgstr ""
 
-#: src/editor.c:1333
+#: src/editor.c:1345
 msgid "Save Sample"
 msgstr "Salvar amostra"
 
@@ -197,9 +197,13 @@ msgstr "Upload"
 msgid "Download"
 msgstr "Download"
 
-#: src/browser.c:324
+#: src/browser.c:357
 msgid "min."
 msgstr "min."
+
+#: src/browser.c:408
+msgid "cents"
+msgstr ""
 
 #: src/audio_pa.c:338
 msgid "Output"
@@ -291,7 +295,7 @@ msgstr "Sampler SDS"
 msgid "MIDI device"
 msgstr "Dispositivo MIDI"
 
-#: src/connectors/system.c:670
+#: src/connectors/system.c:728
 msgid "System"
 msgstr "Sistema"
 

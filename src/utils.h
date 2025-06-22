@@ -65,6 +65,7 @@ struct sample_info
   guint64 format;		// Use 32 lower bits as in libsndfile and upper 32 bits for extended file formats.
   guint32 channels;
   guint32 midi_note;
+  guint32 note_tuning;
 };
 
 struct job_control;
