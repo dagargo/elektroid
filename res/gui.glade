@@ -79,6 +79,11 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     <property name="step-increment">1</property>
     <property name="page-increment">12</property>
   </object>
+  <object class="GtkAdjustment" id="autosampler_tuning_adj">
+    <property name="upper">100</property>
+    <property name="step-increment">1</property>
+    <property name="page-increment">10</property>
+  </object>
   <object class="GtkAdjustment" id="autosampler_velocity_adj">
     <property name="upper">127</property>
     <property name="step-increment">1</property>
@@ -997,6 +1002,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
         <child internal-child="action_area">
           <object class="GtkButtonBox">
             <property name="can-focus">False</property>
+            <property name="margin-top">6</property>
             <property name="layout-style">end</property>
             <child>
               <object class="GtkButton" id="autosampler_dialog_cancel_button">
@@ -1047,6 +1053,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
                 <property name="orientation">vertical</property>
                 <property name="spacing">6</property>
                 <child>
@@ -1142,7 +1149,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkLevelBar" id="autosampler_dialog_monitor_levelbar">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="valign">center</property>
                             <property name="vexpand">True</property>
                           </object>
                           <packing>
@@ -1167,6 +1173,21 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                     <property name="expand">False</property>
                     <property name="fill">True</property>
                     <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
                   </packing>
                 </child>
                 <child>
@@ -1259,7 +1280,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                   <packing>
                     <property name="expand">False</property>
                     <property name="fill">True</property>
-                    <property name="position">1</property>
+                    <property name="position">2</property>
                   </packing>
                 </child>
               </object>
@@ -1273,23 +1294,20 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
               <object class="GtkFrame">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="valign">start</property>
                 <property name="hexpand">True</property>
                 <property name="label-xalign">0</property>
                 <property name="shadow-type">in</property>
                 <child>
-                  <!-- n-columns=2 n-rows=5 -->
+                  <!-- n-columns=2 n-rows=6 -->
                   <object class="GtkGrid">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="valign">start</property>
                     <property name="margin-left">6</property>
                     <property name="margin-right">6</property>
                     <property name="margin-start">6</property>
                     <property name="margin-end">6</property>
                     <property name="margin-top">6</property>
                     <property name="margin-bottom">6</property>
-                    <property name="vexpand">False</property>
                     <property name="row-spacing">6</property>
                     <property name="column-spacing">6</property>
                     <property name="row-homogeneous">True</property>
@@ -1440,13 +1458,41 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <property name="top-attach">3</property>
                       </packing>
                     </child>
+                    <child>
+                      <object class="GtkLabel">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="halign">start</property>
+                        <property name="label" translatable="yes" context="Auto Sampler" comments="Device tuning in positive cents to be stored in the sample file">Tuning</property>
+                        <property name="wrap">True</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">0</property>
+                        <property name="top-attach">5</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkSpinButton" id="autosampler_dialog_tuning_spin">
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="valign">end</property>
+                        <property name="hexpand">True</property>
+                        <property name="text" translatable="yes">0</property>
+                        <property name="adjustment">autosampler_tuning_adj</property>
+                        <property name="climb-rate">1</property>
+                      </object>
+                      <packing>
+                        <property name="left-attach">1</property>
+                        <property name="top-attach">5</property>
+                      </packing>
+                    </child>
                   </object>
                 </child>
                 <child type="label">
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label">MIDI</property>
+                    <property name="label" comments="Musical note">Note</property>
                     <attributes>
                       <attribute name="weight" value="bold"/>
                     </attributes>
@@ -3129,7 +3175,7 @@ on remote</property>
         <property name="margin-top">6</property>
         <property name="margin-bottom">6</property>
         <property name="orientation">vertical</property>
-        <property name="spacing">6</property>
+        <property name="spacing">12</property>
         <child internal-child="action_area">
           <object class="GtkButtonBox">
             <property name="can-focus">False</property>
@@ -3175,7 +3221,6 @@ on remote</property>
           <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="margin-bottom">6</property>
             <property name="spacing">6</property>
             <child>
               <object class="GtkLabel">
@@ -3235,7 +3280,7 @@ on remote</property>
         <property name="margin-top">6</property>
         <property name="margin-bottom">6</property>
         <property name="orientation">vertical</property>
-        <property name="spacing">2</property>
+        <property name="spacing">12</property>
         <child internal-child="action_area">
           <object class="GtkButtonBox">
             <property name="can-focus">False</property>
@@ -3281,7 +3326,6 @@ on remote</property>
           <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="margin-bottom">6</property>
             <property name="orientation">vertical</property>
             <property name="spacing">6</property>
             <child>
@@ -3584,7 +3628,7 @@ on remote</property>
         <property name="margin-top">6</property>
         <property name="margin-bottom">6</property>
         <property name="orientation">vertical</property>
-        <property name="spacing">6</property>
+        <property name="spacing">12</property>
         <child internal-child="action_area">
           <object class="GtkButtonBox">
             <property name="can-focus">False</property>
@@ -3614,7 +3658,6 @@ on remote</property>
           <object class="GtkBox">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="margin-bottom">6</property>
             <property name="orientation">vertical</property>
             <property name="spacing">6</property>
             <child>
@@ -3670,7 +3713,7 @@ on remote</property>
         <property name="margin-top">6</property>
         <property name="margin-bottom">6</property>
         <property name="orientation">vertical</property>
-        <property name="spacing">6</property>
+        <property name="spacing">12</property>
         <child internal-child="action_area">
           <object class="GtkButtonBox">
             <property name="can-focus">False</property>
@@ -3717,7 +3760,6 @@ on remote</property>
           <object class="GtkGrid">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="margin-bottom">6</property>
             <property name="row-spacing">6</property>
             <property name="column-spacing">6</property>
             <property name="row-homogeneous">True</property>
@@ -3768,7 +3810,6 @@ on remote</property>
               <object class="GtkLevelBar" id="record_dialog_monitor_levelbar">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="valign">center</property>
                 <property name="vexpand">True</property>
               </object>
               <packing>

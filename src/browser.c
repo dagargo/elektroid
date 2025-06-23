@@ -19,6 +19,7 @@
  */
 
 #include <glib/gi18n.h>
+#include <math.h>
 #include "browser.h"
 #include "editor.h"
 #include "local.h"
@@ -404,7 +405,7 @@ browser_add_dentry_item (gpointer data)
 	{
 	  gchar note[LABEL_MAX];
 	  snprintf (note, LABEL_MAX, "%s +%d %s", g_value_get_string (&v),
-		    (guint32) (item->sample_info.note_tuning * 100.0) / 255,
+		    (guint32) round(item->sample_info.note_tuning * 100.0 / G_MAXUINT8),
 		    _("cents"));
 	  g_value_unset (&v);
 	  g_value_init (&v, G_TYPE_STRING);

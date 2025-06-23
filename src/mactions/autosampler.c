@@ -20,6 +20,7 @@
 
 #include <glib/gi18n.h>
 #include <string.h>
+#include <math.h>
 #include "maction.h"
 #include "editor.h"
 #include "audio.h"
@@ -39,6 +40,7 @@ static GtkWidget *autosampler_dialog_start_combo;
 static GtkWidget *autosampler_dialog_end_combo;
 static GtkWidget *autosampler_dialog_distance_spin;
 static GtkWidget *autosampler_dialog_velocity_spin;
+static GtkWidget *autosampler_dialog_tuning_spin;
 static GtkWidget *autosampler_dialog_press_spin;
 static GtkWidget *autosampler_dialog_release_spin;
 static GtkWidget *autosampler_dialog_start_button;
@@ -49,10 +51,11 @@ struct autosampler_data
   const gchar *name;
   guint channel_mask;
   gint channel;
-  gint first;
-  gint last;
+  gint start;
+  gint end;
   gint semitones;
   gint velocity;
+  gint tuning;
   gdouble press;
   gdouble release;
   struct backend *backend;
@@ -73,9 +76,9 @@ autosampler_runner (gpointer user_data)
   progress.sysex_transfer.active = TRUE;
   progress_set_fraction (0.0);
 
-  total = ((data->last - data->first) / data->semitones) + 1;
+  total = ((data->end - data->start) / data->semitones) + 1;
   s = 0;
-  i = data->first;
+  i = data->start;
   while (1)
     {
       gtk_tree_model_get_value (GTK_TREE_MODEL (notes_list_store),
@@ -93,6 +96,7 @@ autosampler_runner (gpointer user_data)
 
       sample_info = editor.audio.sample.info;
       sample_info->midi_note = i;
+      sample_info->note_tuning = round(data->tuning * G_MAXUINT8 / 100.0);
 
       //Remove the heading silent frames.
       guint start = audio_detect_start (&editor.audio);
@@ -125,7 +129,7 @@ autosampler_runner (gpointer user_data)
       fract = s / (gdouble) total;
       progress_set_fraction (fract);
 
-      if (i > data->last)
+      if (i > data->end)
 	{
 	  break;
 	}
@@ -183,13 +187,18 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
   data->velocity =
     gtk_spin_button_get_value (GTK_SPIN_BUTTON
 			       (autosampler_dialog_velocity_spin));
-  data->first =
+  data->tuning =
+    gtk_spin_button_get_value (GTK_SPIN_BUTTON
+			       (autosampler_dialog_tuning_spin));
+
+  data->start =
     gtk_combo_box_get_active (GTK_COMBO_BOX (autosampler_dialog_start_combo));
-  data->last =
+  data->end =
     gtk_combo_box_get_active (GTK_COMBO_BOX (autosampler_dialog_end_combo));
   data->semitones =
     gtk_spin_button_get_value (GTK_SPIN_BUTTON
 			       (autosampler_dialog_distance_spin));
+
   data->press =
     gtk_spin_button_get_value (GTK_SPIN_BUTTON
 			       (autosampler_dialog_press_spin));
@@ -251,6 +260,9 @@ autosampler_configure_gui (struct backend *backend, GtkBuilder *builder)
   autosampler_dialog_velocity_spin =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "autosampler_dialog_velocity_spin"));
+  autosampler_dialog_tuning_spin =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "autosampler_dialog_tuning_spin"));
   autosampler_dialog_press_spin =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "autosampler_dialog_press_spin"));
