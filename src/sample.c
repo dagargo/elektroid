@@ -510,6 +510,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
     {
       disable_loop = TRUE;
       sample_info->midi_note = 0;
+      sample_info->note_tuning = 0;
     }
   if (disable_loop)
     {
@@ -690,6 +691,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sample_info = g_malloc (sizeof (struct sample_info));
 
   sample_info->midi_note = sample_info_src->midi_note;
+  sample_info->note_tuning = sample_info_src->note_tuning;
   sample_info->loop_type = sample_info_src->loop_type;
   sample_info->channels = sample_info_req->channels ?
     sample_info_req->channels : sample_info_src->channels;

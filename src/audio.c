@@ -358,6 +358,7 @@ audio_reset_record_buffer (struct audio *audio, guint record_options,
   si->format = audio->float_mode ? SF_FORMAT_FLOAT : SF_FORMAT_PCM_16;
   si->rate = audio->rate;
   si->midi_note = 0;
+  si->note_tuning = 0;
   si->loop_type = 0;
 
   size = si->frames * SAMPLE_INFO_FRAME_SIZE (si);
