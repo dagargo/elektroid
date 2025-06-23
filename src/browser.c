@@ -401,11 +401,11 @@ browser_add_dentry_item (gpointer data)
 	  g_value_init (&v, G_TYPE_STRING);
 	  g_value_set_string (&v, "-");
 	}
-      if (item->sample_info.note_tuning)
+      if (item->sample_info.midi_fraction)
 	{
 	  gchar note[LABEL_MAX];
 	  snprintf (note, LABEL_MAX, "%s +%d %s", g_value_get_string (&v),
-		    (guint32) round(item->sample_info.note_tuning * 100.0 / G_MAXUINT8),
+		    midi_fraction_to_cents (item->sample_info.midi_fraction),
 		    _("cents"));
 	  g_value_unset (&v);
 	  g_value_init (&v, G_TYPE_STRING);

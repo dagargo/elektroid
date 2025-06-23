@@ -253,7 +253,7 @@ sample_write_audio_file_data (struct idata *idata,
   smpl_chunk_data.sample_period = GUINT32_TO_LE (1e9 / sample_info->rate);
   smpl_chunk_data.midi_unity_note = GUINT32_TO_LE (sample_info->midi_note);
   smpl_chunk_data.midi_pitch_fraction =
-    GUINT32_TO_LE (sample_info->note_tuning);
+    GUINT32_TO_LE (sample_info->midi_fraction);
   smpl_chunk_data.smpte_format = 0;
   smpl_chunk_data.smpte_offset = 0;
   smpl_chunk_data.num_sampler_loops = GUINT32_TO_LE (1);
@@ -488,7 +488,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
 	GUINT32_FROM_LE (smpl_chunk_data.sample_loop.type);
       sample_info->midi_note =
 	GUINT32_FROM_LE (smpl_chunk_data.midi_unity_note);
-      sample_info->note_tuning =
+      sample_info->midi_fraction =
 	GUINT32_FROM_LE (smpl_chunk_data.midi_pitch_fraction);
       if (sample_info->loop_start >= sample_info->frames)
 	{
@@ -510,7 +510,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
     {
       disable_loop = TRUE;
       sample_info->midi_note = 0;
-      sample_info->note_tuning = 0;
+      sample_info->midi_fraction = 0;
     }
   if (disable_loop)
     {
@@ -691,7 +691,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sample_info = g_malloc (sizeof (struct sample_info));
 
   sample_info->midi_note = sample_info_src->midi_note;
-  sample_info->note_tuning = sample_info_src->note_tuning;
+  sample_info->midi_fraction = sample_info_src->midi_fraction;
   sample_info->loop_type = sample_info_src->loop_type;
   sample_info->channels = sample_info_req->channels ?
     sample_info_req->channels : sample_info_src->channels;

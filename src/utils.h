@@ -65,7 +65,7 @@ struct sample_info
   guint64 format;		// Use 32 lower bits as in libsndfile and upper 32 bits for extended file formats.
   guint32 channels;
   guint32 midi_note;
-  guint32 note_tuning;
+  guint32 midi_fraction;
 };
 
 struct job_control;
@@ -153,5 +153,9 @@ void job_control_set_active_lock (struct job_control *control,
 				  gboolean active);
 
 void job_control_reset (struct job_control *control, gint parts);
+
+guint32 cents_to_midi_fraction (guint32);
+
+guint32 midi_fraction_to_cents (guint32);
 
 #endif

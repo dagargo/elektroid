@@ -23,6 +23,7 @@
 #include <dirent.h>
 #endif
 #include <errno.h>
+#include <math.h>
 #include "utils.h"
 
 #define DEBUG_SHORT_HEX_LEN 64
@@ -563,4 +564,16 @@ job_control_reset (struct job_control *control, gint parts)
   control->parts = parts;
   control->part = 0;
   job_control_set_progress (control, 0.0);
+}
+
+guint32
+cents_to_midi_fraction (guint32 cents)
+{
+  return (guint32) round (cents * 256 / 100.0);
+}
+
+guint32
+midi_fraction_to_cents (guint32 midi_fraction)
+{
+  return (guint32) round (midi_fraction * 100 / 256.0);
 }

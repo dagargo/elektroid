@@ -80,7 +80,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     <property name="page-increment">12</property>
   </object>
   <object class="GtkAdjustment" id="autosampler_tuning_adj">
-    <property name="upper">100</property>
+    <property name="upper">99</property>
     <property name="step-increment">1</property>
     <property name="page-increment">10</property>
   </object>
