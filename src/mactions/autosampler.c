@@ -153,6 +153,7 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
   gint res;
   guint options;
   struct maction_context *context = user_data;
+  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (autosampler_dialog_name_entry));
   struct autosampler_data *data = g_malloc (sizeof (struct autosampler_data));
   data->backend = context->backend;
 
@@ -167,7 +168,7 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
   audio_start_recording (&editor.audio, options, guirecorder_monitor_notifier,
 			 &autosampler_guirecorder);
 
-  gtk_entry_set_text (autosampler_dialog_name_entry, "");
+  gtk_entry_buffer_set_text (buf, "", -1);
   gtk_widget_grab_focus (GTK_WIDGET (autosampler_dialog_name_entry));
   gtk_widget_set_sensitive (autosampler_dialog_start_button, FALSE);
   res = gtk_dialog_run (GTK_DIALOG (autosampler_dialog));
@@ -180,7 +181,7 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
 
   data->channel_mask =
     guirecorder_get_channel_mask (&autosampler_guirecorder);
-  data->name = gtk_entry_get_text (autosampler_dialog_name_entry);
+  data->name = gtk_entry_buffer_get_text (buf);
   data->channel =
     gtk_spin_button_get_value (GTK_SPIN_BUTTON
 			       (autosampler_dialog_channel_spin));
@@ -217,7 +218,8 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
 static void
 autosampler_dialog_name_changed (GtkWidget *object, gpointer data)
 {
-  size_t len = strlen (gtk_entry_get_text (autosampler_dialog_name_entry));
+  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (autosampler_dialog_name_entry));
+  size_t len = strlen (gtk_entry_buffer_get_text (buf));
   gtk_widget_set_sensitive (autosampler_dialog_start_button, len > 0);
 }
 

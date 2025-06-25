@@ -153,8 +153,9 @@ browser_clear (struct browser *browser)
     GTK_LIST_STORE (gtk_tree_view_get_model (browser->view));
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (browser->dir_entry));
 
-  gtk_entry_set_text (browser->dir_entry, browser->dir ? browser->dir : "");
+  gtk_entry_buffer_set_text (buf, browser->dir ? browser->dir : "", -1);
   g_signal_handlers_block_by_func (selection,
 				   G_CALLBACK (browser_selection_changed),
 				   browser);
@@ -818,6 +819,8 @@ browser_destroy (struct browser *browser)
 static void
 browser_cancel_search (struct browser *browser)
 {
+  GtkEntryBuffer *buf =
+    gtk_entry_get_buffer (GTK_ENTRY (browser->search_entry));
   gtk_stack_set_visible_child_name (GTK_STACK (browser->buttons_stack),
 				    "buttons");
 
@@ -827,7 +830,7 @@ browser_cancel_search (struct browser *browser)
   g_mutex_unlock (&browser->mutex);
   browser_wait (browser);
 
-  gtk_entry_set_text (GTK_ENTRY (browser->search_entry), "");
+  gtk_entry_buffer_set_text (buf, "", -1);
   browser->filter = NULL;
 }
 
@@ -955,7 +958,8 @@ void
 browser_search_changed (GtkSearchEntry *entry, gpointer data)
 {
   struct browser *browser = data;
-  const gchar *filter = gtk_entry_get_text (GTK_ENTRY (entry));
+  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (entry));
+  const gchar *filter = gtk_entry_buffer_get_text (buf);
 
   g_mutex_lock (&browser->mutex);
   browser->loading = FALSE;

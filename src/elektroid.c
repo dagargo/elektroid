@@ -905,6 +905,7 @@ elektroid_rename_item (GtkWidget *object, gpointer data)
   struct browser *browser = data;
   GtkTreeModel *model =
     GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
+  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (name_dialog_entry));
 
   browser_set_selected_row_iter (browser, &iter);
   browser_set_item (model, &iter, &item);
@@ -919,7 +920,7 @@ elektroid_rename_item (GtkWidget *object, gpointer data)
     }
 
   gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
-  gtk_entry_set_text (name_dialog_entry, item.name);
+  gtk_entry_buffer_set_text (buf, item.name, -1);
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
   gtk_editable_select_region (GTK_EDITABLE (name_dialog_entry), 0, sel_len);
   gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
@@ -937,13 +938,13 @@ elektroid_rename_item (GtkWidget *object, gpointer data)
 	{
 	  if (browser->fs_ops->options & FS_OPTION_SLOT_STORAGE)
 	    {
-	      new_path = strdup (gtk_entry_get_text (name_dialog_entry));
+	      new_path = strdup (gtk_entry_buffer_get_text (buf));
 	    }
 	  else
 	    {
 	      enum path_type type = backend_get_path_type (browser->backend);
 	      new_path = path_chain (type, browser->dir,
-				     gtk_entry_get_text (name_dialog_entry));
+				     gtk_entry_buffer_get_text (buf));
 	    }
 	  err = browser->fs_ops->rename (&backend, old_path, new_path);
 	  if (err)
@@ -1266,8 +1267,9 @@ elektroid_ask_name_get_path (const gchar *title, const gchar *value,
   int result;
   gint err;
   enum path_type type = backend_get_path_type (browser->backend);
+  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (name_dialog_entry));
 
-  gtk_entry_set_text (name_dialog_entry, value);
+  gtk_entry_buffer_set_text (buf, value, -1);
   gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
   gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
   gtk_editable_select_region (GTK_EDITABLE (name_dialog_entry), start_pos,
@@ -1286,7 +1288,7 @@ elektroid_ask_name_get_path (const gchar *title, const gchar *value,
       if (result == GTK_RESPONSE_ACCEPT)
 	{
 	  pathname = path_chain (type, browser->dir,
-				 gtk_entry_get_text (name_dialog_entry));
+				 gtk_entry_buffer_get_text (buf));
 	  break;
 	}
     }
@@ -1325,7 +1327,8 @@ elektroid_add_dir (GtkWidget *object, gpointer data)
 static void
 elektroid_name_dialog_entry_changed (GtkWidget *object, gpointer data)
 {
-  size_t len = strlen (gtk_entry_get_text (name_dialog_entry));
+  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (name_dialog_entry));
+  size_t len = strlen (gtk_entry_buffer_get_text (buf));
   gtk_widget_set_sensitive (name_dialog_accept_button, len > 0);
 }
 
@@ -3045,7 +3048,8 @@ build_ui ()
 
   elektroid_show_remote (preferences_get_boolean (PREF_KEY_SHOW_REMOTE));	//This triggers both browsers initializations.
 
-  gtk_entry_set_text (GTK_ENTRY (local_name_entry), hostname);
+  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (local_name_entry));
+  gtk_entry_buffer_set_text (buf, hostname, -1);
 
   elektroid_set_window_size ();
 }
