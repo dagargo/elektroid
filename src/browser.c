@@ -1803,6 +1803,7 @@ browser_drag_motion_list (GtkWidget *widget,
   gchar *spath;
   gint tx, ty;
   gboolean slot;
+  GtkTreeViewColumn *column;
   GtkTreeSelection *selection;
   struct item item;
   struct browser *browser = user_data;
@@ -1813,7 +1814,7 @@ browser_drag_motion_list (GtkWidget *widget,
   gtk_tree_view_convert_widget_to_bin_window_coords (browser->view, wx, wy,
 						     &tx, &ty);
 
-  if (gtk_tree_view_get_path_at_pos (browser->view, tx, ty, &path, NULL,
+  if (gtk_tree_view_get_path_at_pos (browser->view, tx, ty, &path, &column,
 				     NULL, NULL))
     {
       GtkAllocation allocation;
@@ -1842,22 +1843,29 @@ browser_drag_motion_list (GtkWidget *widget,
       gtk_tree_model_get_iter (model, &iter, path);
       browser_set_item (model, &iter, &item);
 
-      if (item.type == ITEM_TYPE_DIR && (!browser->dnd_motion_path ||
-					 (browser->dnd_motion_path &&
-					  gtk_tree_path_compare
-					  (browser->dnd_motion_path, path))))
+      if (column == browser->tree_view_name_column)
 	{
-	  browser_set_dnd_function (browser, browser_drag_list_timeout);
+	  if (item.type == ITEM_TYPE_DIR && (!browser->dnd_motion_path ||
+					     (browser->dnd_motion_path &&
+					      gtk_tree_path_compare
+					      (browser->dnd_motion_path,
+					       path))))
+	    {
+	      browser_set_dnd_function (browser, browser_drag_list_timeout);
+	    }
 	}
-
-      if (ty < TREEVIEW_EDGE_SIZE)
+      else
 	{
-	  browser_set_dnd_function (browser, browser_drag_scroll_up_timeout);
-	}
-      else if (wy > allocation.height - TREEVIEW_EDGE_SIZE)
-	{
-	  browser_set_dnd_function (browser,
-				    browser_drag_scroll_down_timeout);
+	  if (ty < TREEVIEW_EDGE_SIZE)
+	    {
+	      browser_set_dnd_function (browser,
+					browser_drag_scroll_up_timeout);
+	    }
+	  else if (wy > allocation.height - TREEVIEW_EDGE_SIZE)
+	    {
+	      browser_set_dnd_function (browser,
+					browser_drag_scroll_down_timeout);
+	    }
 	}
     }
   else
