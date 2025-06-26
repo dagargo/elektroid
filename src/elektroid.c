@@ -1894,14 +1894,18 @@ elektroid_update_progress (struct job_control *control)
 }
 
 static gboolean
-elektroid_common_key_press (GtkWidget *widget, GdkEventKey *event,
-			    gpointer data)
+elektroid_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
   gint count;
   GtkAllocation allocation;
   GdkWindow *gdk_window;
   struct browser *browser = data;
   struct sample_info *sample_info = editor.audio.sample.info;
+
+  if (event->type != GDK_KEY_PRESS)
+    {
+      return FALSE;
+    }
 
   if (event->keyval == GDK_KEY_Menu)
     {
@@ -1955,62 +1959,39 @@ elektroid_common_key_press (GtkWidget *widget, GdkEventKey *event,
       elektroid_add_dir (NULL, browser);
       return TRUE;
     }
+  else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_Right)
+    {
+      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
+	{
+	  //Slot mode needs a slot destination.
+	  return FALSE;
+	}
+
+      if (!remote_browser.fs_ops->upload)
+	{
+	  return FALSE;
+	}
+
+      elektroid_add_upload_tasks (NULL, NULL);
+
+      return TRUE;
+    }
+  else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_Left)
+    {
+
+      if (!remote_browser.fs_ops->download)
+	{
+	  return FALSE;
+	}
+
+      elektroid_add_download_tasks (NULL, NULL);
+
+      return TRUE;
+    }
   else
     {
       return FALSE;
     }
-}
-
-static gboolean
-elektroid_remote_key_press (GtkWidget *widget, GdkEventKey *event,
-			    gpointer data)
-{
-  if (event->type != GDK_KEY_PRESS)
-    {
-      return FALSE;
-    }
-
-  if (!(event->state & GDK_CONTROL_MASK) || event->keyval != GDK_KEY_Left)
-    {
-      return elektroid_common_key_press (widget, event, data);
-    }
-
-  if (!remote_browser.fs_ops->download)
-    {
-      return FALSE;
-    }
-
-  elektroid_add_download_tasks (NULL, NULL);
-  return TRUE;
-}
-
-static gboolean
-elektroid_local_key_press (GtkWidget *widget, GdkEventKey *event,
-			   gpointer data)
-{
-  if (event->type != GDK_KEY_PRESS)
-    {
-      return FALSE;
-    }
-
-  if (!(event->state & GDK_CONTROL_MASK) || event->keyval != GDK_KEY_Right)
-    {
-      return elektroid_common_key_press (widget, event, data);
-    }
-
-  if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
-    {
-      //Slot mode needs a slot destination.
-      return FALSE;
-    }
-
-  if (!remote_browser.fs_ops->upload)
-    {
-      return FALSE;
-    }
-
-  elektroid_add_upload_tasks (NULL, NULL);
-  return TRUE;
 }
 
 static void
@@ -2935,7 +2916,7 @@ build_ui ()
   g_signal_connect (remote_browser.view, "button-release-event",
 		    G_CALLBACK (elektroid_button_release), &remote_browser);
   g_signal_connect (remote_browser.view, "key-press-event",
-		    G_CALLBACK (elektroid_remote_key_press), &remote_browser);
+		    G_CALLBACK (elektroid_key_press), &remote_browser);
   g_signal_connect (remote_browser.view, "drag-begin",
 		    G_CALLBACK (elektroid_drag_begin), &remote_browser);
   g_signal_connect (remote_browser.view, "drag-end",
@@ -2981,7 +2962,7 @@ build_ui ()
   g_signal_connect (local_browser.view, "button-release-event",
 		    G_CALLBACK (elektroid_button_release), &local_browser);
   g_signal_connect (local_browser.view, "key-press-event",
-		    G_CALLBACK (elektroid_local_key_press), &local_browser);
+		    G_CALLBACK (elektroid_key_press), &local_browser);
   g_signal_connect (local_browser.view, "drag-begin",
 		    G_CALLBACK (elektroid_drag_begin), &local_browser);
   g_signal_connect (local_browser.view, "drag-end",
