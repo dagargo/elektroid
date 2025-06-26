@@ -22,6 +22,7 @@
 #include <string.h>
 #include <math.h>
 #include "maction.h"
+#include "browser.h"
 #include "editor.h"
 #include "audio.h"
 #include "sample.h"
@@ -31,6 +32,7 @@
 
 extern struct editor editor;
 extern struct browser local_browser;
+extern struct browser remote_browser;
 
 static GtkDialog *autosampler_dialog;
 static GtkEntry *autosampler_dialog_name_entry;
@@ -58,7 +60,6 @@ struct autosampler_data
   gint tuning;
   gdouble press;
   gdouble release;
-  struct backend *backend;
   GtkTreeIter iter;
 };
 
@@ -87,10 +88,12 @@ autosampler_runner (gpointer user_data)
       debug_print (1, "Recording note %s (%d)...", note, i);
 
       audio_start_recording (&editor.audio, data->channel_mask, NULL, NULL);
-      backend_send_note_on (data->backend, data->channel, i, data->velocity);
+      backend_send_note_on (remote_browser.backend, data->channel, i,
+			    data->velocity);
       //Add some extra time to deal with runtime delays.
       usleep ((data->press + 0.25) * 1000000);
-      backend_send_note_off (data->backend, data->channel, i, data->velocity);
+      backend_send_note_off (remote_browser.backend, data->channel, i,
+			     data->velocity);
       usleep (data->release * 1000000);
       audio_stop_recording (&editor.audio);
 
@@ -152,10 +155,9 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
 {
   gint res;
   guint options;
-  struct maction_context *context = user_data;
-  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (autosampler_dialog_name_entry));
+  GtkEntryBuffer *buf =
+    gtk_entry_get_buffer (GTK_ENTRY (autosampler_dialog_name_entry));
   struct autosampler_data *data = g_malloc (sizeof (struct autosampler_data));
-  data->backend = context->backend;
 
   guirecorder_set_channels_masks (&autosampler_guirecorder,
 				  FS_OPTION_STEREO | FS_OPTION_MONO);
@@ -218,13 +220,14 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
 static void
 autosampler_dialog_name_changed (GtkWidget *object, gpointer data)
 {
-  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (autosampler_dialog_name_entry));
+  GtkEntryBuffer *buf =
+    gtk_entry_get_buffer (GTK_ENTRY (autosampler_dialog_name_entry));
   size_t len = strlen (gtk_entry_buffer_get_text (buf));
   gtk_widget_set_sensitive (autosampler_dialog_start_button, len > 0);
 }
 
 static void
-autosampler_configure_gui (struct backend *backend, GtkBuilder *builder)
+autosampler_configure_gui (GtkBuilder *builder)
 {
   if (autosampler_dialog)
     {
@@ -289,7 +292,7 @@ autosampler_maction_builder (struct maction_context *context)
 {
   struct maction *ma = NULL;
 
-  if (context->backend->type == BE_TYPE_MIDI)
+  if (remote_browser.backend && remote_browser.backend->type == BE_TYPE_MIDI)
     {
       ma = g_malloc (sizeof (struct maction));
       ma->type = MACTION_BUTTON;
@@ -298,7 +301,7 @@ autosampler_maction_builder (struct maction_context *context)
       ma->callback = G_CALLBACK (autosampler_callback);
     }
 
-  autosampler_configure_gui (context->backend, context->builder);
+  autosampler_configure_gui (context->builder);
 
   return ma;
 }

@@ -19,8 +19,10 @@
  */
 
 #include <glib/gi18n.h>
-#include <math.h>
 #include "browser.h"
+#include "progress.h"
+#include "backend.h"
+#include "preferences.h"
 #include "editor.h"
 #include "local.h"
 #include "backend.h"
@@ -37,6 +39,7 @@
 
 struct browser local_browser;
 struct browser remote_browser;
+static struct backend backend;
 extern struct editor editor;
 
 struct browser_add_dentry_item_data
@@ -1156,8 +1159,7 @@ browser_selection_changed (GtkTreeSelection *selection, gpointer data)
 }
 
 void
-browser_local_init (struct browser *browser, GtkBuilder *builder,
-		    gchar *local_dir)
+browser_local_init (struct browser *browser, GtkBuilder *builder)
 {
   browser->name = "local";
   browser->view =
@@ -1177,7 +1179,7 @@ browser_local_init (struct browser *browser, GtkBuilder *builder,
   browser->dir_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry"));
   browser->menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu"));
-  browser->dir = local_dir;
+  browser->dir = strdup (preferences_get_string (PREF_KEY_LOCAL_DIR));
   browser->fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
   browser->backend = NULL;
   browser->check_callback = NULL;
@@ -1254,8 +1256,7 @@ browser_local_init (struct browser *browser, GtkBuilder *builder,
 }
 
 void
-browser_remote_init (struct browser *browser,
-		     GtkBuilder *builder, struct backend *backend)
+browser_remote_init (struct browser *browser, GtkBuilder *builder)
 {
   browser->name = "remote";
   browser->view =
@@ -1277,7 +1278,7 @@ browser_remote_init (struct browser *browser,
   browser->menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu"));
   browser->dir = NULL;
   browser->fs_ops = NULL;
-  browser->backend = backend;
+  browser->backend = &backend;
   browser->check_callback = browser_check_backend;
   browser->set_popup_menuitems_visibility =
     browser_remote_set_popup_visibility;

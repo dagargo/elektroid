@@ -20,8 +20,11 @@
 
 #include <glib/gi18n.h>
 #include "maction.h"
+#include "browser.h"
 #include "connectors/microbrute.h"
 #include "utils.h"
+
+extern struct browser remote_browser;
 
 static guint8 channel;
 static GtkWidget *config_window = NULL;
@@ -75,43 +78,51 @@ static void
 microbrute_configure_callback (GtkWidget *object, gpointer data)
 {
   guint8 v;
-  struct maction_context *context = data;
-  struct backend *backend = context->backend;
 
-  debug_print (2, "Configuring %s...", backend->name);
   loading = TRUE;
-  microbrute_get_parameter (backend, MICROBRUTE_NOTE_PRIORITY, &v);
+  microbrute_get_parameter (remote_browser.backend, MICROBRUTE_NOTE_PRIORITY,
+			    &v);
   microbrute_set_combo_value (note_priority, v);
-  microbrute_get_parameter (backend, MICROBRUTE_VEL_RESPONSE, &v);
+  microbrute_get_parameter (remote_browser.backend, MICROBRUTE_VEL_RESPONSE,
+			    &v);
   microbrute_set_combo_value (vel_response, v);
 
-  microbrute_get_parameter (backend, MICROBRUTE_LFO_KEY_RETRIGGER, &v);
+  microbrute_get_parameter (remote_browser.backend,
+			    MICROBRUTE_LFO_KEY_RETRIGGER, &v);
   gtk_switch_set_state (GTK_SWITCH (lfo_key_retrigger), v);
   gtk_switch_set_active (GTK_SWITCH (lfo_key_retrigger), v);
-  microbrute_get_parameter (backend, MICROBRUTE_ENVELOPE_LEGATO, &v);
+  microbrute_get_parameter (remote_browser.backend,
+			    MICROBRUTE_ENVELOPE_LEGATO, &v);
   gtk_switch_set_state (GTK_SWITCH (envelope_legato), v);
   gtk_switch_set_active (GTK_SWITCH (envelope_legato), v);
-  microbrute_get_parameter (backend, MICROBRUTE_BEND_RANGE, &v);
+  microbrute_get_parameter (remote_browser.backend, MICROBRUTE_BEND_RANGE,
+			    &v);
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (bend_range), v);
-  microbrute_get_parameter (backend, MICROBRUTE_STEP_LENGTH, &v);
+  microbrute_get_parameter (remote_browser.backend, MICROBRUTE_STEP_LENGTH,
+			    &v);
   microbrute_set_combo_value (step_length, v);
-  microbrute_get_parameter (backend, MICROBRUTE_GATE_LENGTH, &v);
+  microbrute_get_parameter (remote_browser.backend, MICROBRUTE_GATE_LENGTH,
+			    &v);
   microbrute_set_combo_value (gate_length, v);
 
-  microbrute_get_parameter (backend, MICROBRUTE_TX_CHANNEL, &v);
+  microbrute_get_parameter (remote_browser.backend, MICROBRUTE_TX_CHANNEL,
+			    &v);
   microbrute_set_combo_value (tx_channel, v);
-  microbrute_get_parameter (backend, MICROBRUTE_RX_CHANNEL, &channel);
+  microbrute_get_parameter (remote_browser.backend, MICROBRUTE_RX_CHANNEL,
+			    &channel);
   microbrute_set_combo_value (rx_channel, channel);
 
-  microbrute_get_parameter (backend, MICROBRUTE_PLAY_ON, &v);
+  microbrute_get_parameter (remote_browser.backend, MICROBRUTE_PLAY_ON, &v);
   microbrute_set_combo_value (play, v);
-  microbrute_get_parameter (backend, MICROBRUTE_RETRIGGERING, &v);
+  microbrute_get_parameter (remote_browser.backend, MICROBRUTE_RETRIGGERING,
+			    &v);
   microbrute_set_combo_value (retriggering, v);
-  microbrute_get_parameter (backend, MICROBRUTE_NEXT_SEQUENCE, &v);
+  microbrute_get_parameter (remote_browser.backend, MICROBRUTE_NEXT_SEQUENCE,
+			    &v);
   microbrute_set_combo_value (next_sequence, v);
-  microbrute_get_parameter (backend, MICROBRUTE_STEP_ON, &v);
+  microbrute_get_parameter (remote_browser.backend, MICROBRUTE_STEP_ON, &v);
   microbrute_set_combo_value (step_on, v);
-  microbrute_get_parameter (backend, MICROBRUTE_SYNC, &v);
+  microbrute_get_parameter (remote_browser.backend, MICROBRUTE_SYNC, &v);
   microbrute_set_combo_value (synchronization, v);
   loading = FALSE;
 
@@ -119,8 +130,7 @@ microbrute_configure_callback (GtkWidget *object, gpointer data)
 }
 
 static void
-microbrute_combo_changed (GtkComboBox *combo, struct backend *backend,
-			  guint8 param)
+microbrute_combo_changed (GtkComboBox *combo, guint8 param)
 {
   guint value;
   GtkTreeIter iter;
@@ -132,19 +142,20 @@ microbrute_combo_changed (GtkComboBox *combo, struct backend *backend,
       sysex = gtk_switch_get_active (GTK_SWITCH (persistent_changes));
       gtk_combo_box_get_active_iter (combo, &iter);
       gtk_tree_model_get (model, &iter, 1, &value, -1);
-      microbrute_set_parameter (backend, param, value, channel, sysex);
+      microbrute_set_parameter (remote_browser.backend, param, value, channel,
+				sysex);
     }
 }
 
 static gboolean
-microbrute_switch_state_set (struct backend *backend, guint8 param,
-			     guint8 state)
+microbrute_switch_state_set (guint8 param, guint8 state)
 {
   gboolean sysex;
   if (!loading)
     {
       sysex = gtk_switch_get_active (GTK_SWITCH (persistent_changes));
-      microbrute_set_parameter (backend, param, state, channel, sysex);
+      microbrute_set_parameter (remote_browser.backend, param, state, channel,
+				sysex);
     }
   return FALSE;
 }
@@ -152,29 +163,27 @@ microbrute_switch_state_set (struct backend *backend, guint8 param,
 static void
 microbrute_note_priority_changed (GtkComboBox *combo, gpointer data)
 {
-  microbrute_combo_changed (combo, data, MICROBRUTE_NOTE_PRIORITY);
+  microbrute_combo_changed (combo, MICROBRUTE_NOTE_PRIORITY);
 }
 
 static void
 microbrute_vel_response_changed (GtkComboBox *combo, gpointer data)
 {
-  microbrute_combo_changed (combo, data, MICROBRUTE_VEL_RESPONSE);
+  microbrute_combo_changed (combo, MICROBRUTE_VEL_RESPONSE);
 }
 
 static gboolean
 microbrute_lfo_key_retrigger_state_set (GtkSwitch *s, gboolean state,
 					gpointer data)
 {
-  return microbrute_switch_state_set (data, MICROBRUTE_LFO_KEY_RETRIGGER,
-				      state);
+  return microbrute_switch_state_set (MICROBRUTE_LFO_KEY_RETRIGGER, state);
 }
 
 static gboolean
 microbrute_envelope_legato_state_set (GtkSwitch *s, gboolean state,
 				      gpointer data)
 {
-  return microbrute_switch_state_set (data, MICROBRUTE_ENVELOPE_LEGATO,
-				      state);
+  return microbrute_switch_state_set (MICROBRUTE_ENVELOPE_LEGATO, state);
 }
 
 static void
@@ -186,63 +195,63 @@ microbrute_bend_range_value_changed (GtkSpinButton *spin, gpointer data)
     {
       sysex = gtk_switch_get_active (GTK_SWITCH (persistent_changes));
       value = gtk_spin_button_get_value (spin);
-      microbrute_set_parameter (data, MICROBRUTE_BEND_RANGE, value, channel,
-				sysex);
+      microbrute_set_parameter (remote_browser.backend, MICROBRUTE_BEND_RANGE,
+				value, channel, sysex);
     }
 }
 
 static void
 microbrute_gate_length_changed (GtkComboBox *combo, gpointer data)
 {
-  microbrute_combo_changed (combo, data, MICROBRUTE_GATE_LENGTH);
+  microbrute_combo_changed (combo, MICROBRUTE_GATE_LENGTH);
 }
 
 static void
 microbrute_synchronization_changed (GtkComboBox *combo, gpointer data)
 {
-  microbrute_combo_changed (combo, data, MICROBRUTE_SYNC);
+  microbrute_combo_changed (combo, MICROBRUTE_SYNC);
 }
 
 static void
 microbrute_tx_channel_changed (GtkComboBox *combo, gpointer data)
 {
-  microbrute_combo_changed (combo, data, MICROBRUTE_TX_CHANNEL);
+  microbrute_combo_changed (combo, MICROBRUTE_TX_CHANNEL);
 }
 
 static void
 microbrute_rx_channel_changed (GtkComboBox *combo, gpointer data)
 {
-  microbrute_combo_changed (combo, data, MICROBRUTE_RX_CHANNEL);
+  microbrute_combo_changed (combo, MICROBRUTE_RX_CHANNEL);
 }
 
 static void
 microbrute_play_changed (GtkComboBox *combo, gpointer data)
 {
-  microbrute_combo_changed (combo, data, MICROBRUTE_PLAY_ON);
+  microbrute_combo_changed (combo, MICROBRUTE_PLAY_ON);
 }
 
 static void
 microbrute_retriggering_changed (GtkComboBox *combo, gpointer data)
 {
-  microbrute_combo_changed (combo, data, MICROBRUTE_RETRIGGERING);
+  microbrute_combo_changed (combo, MICROBRUTE_RETRIGGERING);
 }
 
 static void
 microbrute_next_sequence_changed (GtkComboBox *combo, gpointer data)
 {
-  microbrute_combo_changed (combo, data, MICROBRUTE_NEXT_SEQUENCE);
+  microbrute_combo_changed (combo, MICROBRUTE_NEXT_SEQUENCE);
 }
 
 static void
 microbrute_step_on_changed (GtkComboBox *combo, gpointer data)
 {
-  microbrute_combo_changed (combo, data, MICROBRUTE_STEP_ON);
+  microbrute_combo_changed (combo, MICROBRUTE_STEP_ON);
 }
 
 static void
 microbrute_step_length_changed (GtkComboBox *combo, gpointer data)
 {
-  microbrute_combo_changed (combo, data, MICROBRUTE_STEP_LENGTH);
+  microbrute_combo_changed (combo, MICROBRUTE_STEP_LENGTH);
 }
 
 static void
@@ -255,30 +264,30 @@ static void
 microbrute_assistant_prepare (GtkAssistant *assistant, GtkWidget *page,
 			      gpointer data)
 {
-  struct backend *backend = data;
   gint npage = gtk_assistant_get_current_page (assistant);
   switch (npage)
     {
     case 2:
-      microbrute_set_parameter (backend, MICROBRUTE_CALIB_PB_CENTER, 0,
-				channel, TRUE);
+      microbrute_set_parameter (remote_browser.backend,
+				MICROBRUTE_CALIB_PB_CENTER, 0, channel, TRUE);
       break;
     case 3:
-      microbrute_set_parameter (backend, MICROBRUTE_CALIB_BOTH_BOTTOM, 0,
-				channel, TRUE);
+      microbrute_set_parameter (remote_browser.backend,
+				MICROBRUTE_CALIB_BOTH_BOTTOM, 0, channel,
+				TRUE);
       break;
     case 4:
-      microbrute_set_parameter (backend, MICROBRUTE_CALIB_BOTH_TOP, 0,
-				channel, TRUE);
+      microbrute_set_parameter (remote_browser.backend,
+				MICROBRUTE_CALIB_BOTH_TOP, 0, channel, TRUE);
       sleep (1);
-      microbrute_set_parameter (backend, MICROBRUTE_CALIB_END, 0, channel,
-				TRUE);
+      microbrute_set_parameter (remote_browser.backend, MICROBRUTE_CALIB_END,
+				0, channel, TRUE);
       break;
     }
 }
 
 static void
-microbrute_configure_gui (struct backend *backend, GtkWindow *parent)
+microbrute_configure_gui (GtkWindow *parent)
 {
   if (config_window)
     {
@@ -322,39 +331,37 @@ microbrute_configure_gui (struct backend *backend, GtkWindow *parent)
     GTK_WIDGET (gtk_builder_get_object (builder, "persistent_changes"));
 
   g_signal_connect (note_priority, "changed",
-		    G_CALLBACK (microbrute_note_priority_changed), backend);
+		    G_CALLBACK (microbrute_note_priority_changed), NULL);
   g_signal_connect (note_priority, "changed",
-		    G_CALLBACK (microbrute_vel_response_changed), backend);
+		    G_CALLBACK (microbrute_vel_response_changed), NULL);
 
   g_signal_connect (lfo_key_retrigger, "state-set",
 		    G_CALLBACK (microbrute_lfo_key_retrigger_state_set),
-		    backend);
+		    NULL);
   g_signal_connect (envelope_legato, "state-set",
-		    G_CALLBACK (microbrute_envelope_legato_state_set),
-		    backend);
+		    G_CALLBACK (microbrute_envelope_legato_state_set), NULL);
   g_signal_connect (bend_range, "value-changed",
-		    G_CALLBACK (microbrute_bend_range_value_changed),
-		    backend);
+		    G_CALLBACK (microbrute_bend_range_value_changed), NULL);
   g_signal_connect (gate_length, "changed",
-		    G_CALLBACK (microbrute_gate_length_changed), backend);
+		    G_CALLBACK (microbrute_gate_length_changed), NULL);
   g_signal_connect (synchronization, "changed",
-		    G_CALLBACK (microbrute_synchronization_changed), backend);
+		    G_CALLBACK (microbrute_synchronization_changed), NULL);
 
   g_signal_connect (tx_channel, "changed",
-		    G_CALLBACK (microbrute_tx_channel_changed), backend);
+		    G_CALLBACK (microbrute_tx_channel_changed), NULL);
   g_signal_connect (rx_channel, "changed",
-		    G_CALLBACK (microbrute_rx_channel_changed), backend);
+		    G_CALLBACK (microbrute_rx_channel_changed), NULL);
 
   g_signal_connect (play, "changed",
-		    G_CALLBACK (microbrute_play_changed), backend);
+		    G_CALLBACK (microbrute_play_changed), NULL);
   g_signal_connect (retriggering, "changed",
-		    G_CALLBACK (microbrute_retriggering_changed), backend);
+		    G_CALLBACK (microbrute_retriggering_changed), NULL);
   g_signal_connect (next_sequence, "changed",
-		    G_CALLBACK (microbrute_next_sequence_changed), backend);
+		    G_CALLBACK (microbrute_next_sequence_changed), NULL);
   g_signal_connect (step_on, "changed",
-		    G_CALLBACK (microbrute_step_on_changed), backend);
+		    G_CALLBACK (microbrute_step_on_changed), NULL);
   g_signal_connect (step_length, "changed",
-		    G_CALLBACK (microbrute_step_length_changed), backend);
+		    G_CALLBACK (microbrute_step_length_changed), NULL);
 
   g_signal_connect (config_window, "delete-event",
 		    G_CALLBACK (gtk_widget_hide_on_delete), NULL);
@@ -366,13 +373,13 @@ microbrute_configure_gui (struct backend *backend, GtkWindow *parent)
   gtk_window_set_transient_for (GTK_WINDOW (calibration_assistant), parent);
 
   g_signal_connect (calibration_assistant, "close",
-		    G_CALLBACK (microbrute_assistant_close), backend);
+		    G_CALLBACK (microbrute_assistant_close), NULL);
   g_signal_connect (calibration_assistant, "cancel",
-		    G_CALLBACK (microbrute_assistant_close), backend);
+		    G_CALLBACK (microbrute_assistant_close), NULL);
   g_signal_connect (calibration_assistant, "escape",
-		    G_CALLBACK (microbrute_assistant_close), backend);
+		    G_CALLBACK (microbrute_assistant_close), NULL);
   g_signal_connect (calibration_assistant, "prepare",
-		    G_CALLBACK (microbrute_assistant_prepare), backend);
+		    G_CALLBACK (microbrute_assistant_prepare), NULL);
 
   g_object_unref (G_OBJECT (builder));
 }
@@ -382,13 +389,13 @@ microbrute_maction_conf_builder (struct maction_context *context)
 {
   struct maction *ma;
 
-  if (!context->backend->conn_name ||
-      strcmp (context->backend->conn_name, MICROBRUTE_NAME))
+  if (!remote_browser.backend->conn_name ||
+      strcmp (remote_browser.backend->conn_name, MICROBRUTE_NAME))
     {
       return NULL;
     }
 
-  microbrute_configure_gui (context->backend, context->parent);
+  microbrute_configure_gui (context->parent);
 
   ma = g_malloc (sizeof (struct maction));
   ma->type = MACTION_BUTTON;
@@ -410,13 +417,13 @@ microbrute_maction_cal_builder (struct maction_context *context)
 {
   struct maction *ma;
 
-  if (!context->backend->conn_name ||
-      strcmp (context->backend->conn_name, MICROBRUTE_NAME))
+  if (!remote_browser.backend->conn_name ||
+      strcmp (remote_browser.backend->conn_name, MICROBRUTE_NAME))
     {
       return NULL;
     }
 
-  microbrute_configure_gui (context->backend, context->parent);
+  microbrute_configure_gui (context->parent);
 
   ma = g_malloc (sizeof (struct maction));
   ma->type = MACTION_BUTTON;

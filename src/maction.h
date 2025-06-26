@@ -42,7 +42,6 @@ struct maction
 struct maction_context
 {
   GtkWidget *box;
-  struct backend *backend;
   struct audio *audio;
   GtkBuilder *builder;
   GtkWindow *parent;

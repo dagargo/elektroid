@@ -38,7 +38,7 @@
 #include "preferences.h"
 #include "progress.h"
 
-#define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : backend_get_path_type (&backend))
+#define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : backend_get_path_type (BACKEND))
 
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
@@ -131,7 +131,7 @@ extern struct browser local_browser;
 extern struct browser remote_browser;
 extern struct maction_context maction_context;
 
-static struct backend backend;
+#define BACKEND (remote_browser.backend)
 
 static guint batch_id;
 
@@ -252,7 +252,7 @@ static void
 elektroid_update_midi_status ()
 {
   gchar msg[LABEL_MAX];
-  const gchar *v = backend.type == BE_TYPE_MIDI ? BACKEND_PLAYING :
+  const gchar *v = BACKEND->type == BE_TYPE_MIDI ? BACKEND_PLAYING :
     BACKEND_STOPPED;
   snprintf (msg, LABEL_MAX, "MIDI: %s %s", backend_name (), v);
   gtk_label_set_text (host_midi_status_label, msg);
@@ -266,15 +266,15 @@ elektroid_update_backend_status ()
   struct backend_storage_stats statfs;
   GString *statfss;
 
-  if (backend_check (&backend))
+  if (backend_check (BACKEND))
     {
       statfss = g_string_new (NULL);
-      if (backend.get_storage_stats)
+      if (BACKEND->get_storage_stats)
 	{
 	  for (guint i = 1; i < G_MAXUINT8; i <<= 1)
 	    {
-	      gint v = backend.get_storage_stats (&backend, i, &statfs,
-						  remote_browser.dir);
+	      gint v = BACKEND->get_storage_stats (BACKEND, i, &statfs,
+						   remote_browser.dir);
 	      if (v >= 0)
 		{
 		  g_string_append_printf (statfss, " %s %.2f%%", statfs.name,
@@ -292,22 +292,22 @@ elektroid_update_backend_status ()
       statfss_str = g_string_free (statfss, FALSE);
       status = g_malloc (LABEL_MAX);
 
-      if (strlen (backend.name))
+      if (strlen (BACKEND->name))
 	{
-	  snprintf (status, LABEL_MAX, "%s", backend.name);
-	  if (*backend.version)
+	  snprintf (status, LABEL_MAX, "%s", BACKEND->name);
+	  if (*BACKEND->version)
 	    {
 	      strncat (status, " ", LABEL_MAX - sizeof (status) - 2);
-	      strncat (status, backend.version,
+	      strncat (status, BACKEND->version,
 		       LABEL_MAX - sizeof (status) -
-		       strlen (backend.version) - 1);
+		       strlen (BACKEND->version) - 1);
 	    }
-	  if (*backend.description)
+	  if (*BACKEND->description)
 	    {
 	      strncat (status, " (", LABEL_MAX - sizeof (status) - 3);
-	      strncat (status, backend.description,
+	      strncat (status, BACKEND->description,
 		       LABEL_MAX - sizeof (status) -
-		       strlen (backend.description) - 1);
+		       strlen (BACKEND->description) - 1);
 	      strncat (status, ")", LABEL_MAX - sizeof (status) - 2);
 	    }
 	  if (statfss_str)
@@ -333,7 +333,7 @@ elektroid_update_backend_status ()
 gboolean
 elektroid_check_backend (gboolean startup)
 {
-  gboolean connected = backend_check (&backend);
+  gboolean connected = backend_check (BACKEND);
 
   gtk_widget_set_sensitive (remote_box, connected);
 
@@ -362,7 +362,7 @@ elektroid_cancel_all_tasks_and_wait ()
 static void
 elektroid_set_preferences_remote_dir ()
 {
-  if (backend.type == BE_TYPE_SYSTEM)
+  if (BACKEND->type == BE_TYPE_SYSTEM)
     {
       if (remote_browser.dir)
 	{
@@ -377,10 +377,10 @@ elektroid_refresh_devices (gboolean startup)
 {
   elektroid_set_preferences_remote_dir ();
 
-  if (backend_check (&backend))
+  if (backend_check (BACKEND))
     {
       elektroid_cancel_all_tasks_and_wait ();
-      backend_destroy (&backend);
+      backend_destroy (BACKEND);
       maction_menu_clear (&maction_context);
       browser_reset (&remote_browser);
     }
@@ -405,11 +405,11 @@ elektroid_rx_sysex_runner (gpointer data)
   progress.sysex_transfer.batch = TRUE;
 
   //This doesn't need to be synchronized because the GUI doesn't allow concurrent access when receiving SysEx in batch mode.
-  backend_rx_drain (&backend);
+  backend_rx_drain (BACKEND);
 
   if (progress.sysex_transfer.active)
     {
-      *res = backend_rx_sysex (&backend, &progress.sysex_transfer);
+      *res = backend_rx_sysex (BACKEND, &progress.sysex_transfer);
       if (!*res)
 	{
 	  text = debug_get_hex_msg (progress.sysex_transfer.raw);
@@ -534,7 +534,7 @@ elektroid_send_sysex_file (const gchar *filename, t_sysex_transfer f)
   if (!err)
     {
       progress.sysex_transfer.raw = idata.content;
-      err = f (&backend, &progress.sysex_transfer);
+      err = f (BACKEND, &progress.sysex_transfer);
       idata_free (&idata);
     }
   if (err && err != -ECANCELED)
@@ -561,7 +561,7 @@ elektroid_tx_sysex_files_runner (gpointer data)
 					backend_tx_sysex_no_status);
       filenames = filenames->next;
       //The device may have sent some messages in response so we skip all these.
-      backend_rx_drain (&backend);
+      backend_rx_drain (BACKEND);
       usleep (BE_REST_TIME_US);
     }
   progress_response (GTK_RESPONSE_CANCEL);	//Any response is OK.
@@ -579,7 +579,7 @@ elektroid_tx_upgrade_os_runner (gpointer data)
   progress.sysex_transfer.status = SENDING;
   progress.sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
 
-  *err = elektroid_send_sysex_file (filenames->data, backend.upgrade_os);
+  *err = elektroid_send_sysex_file (filenames->data, BACKEND->upgrade_os);
   progress_response (GTK_RESPONSE_CANCEL);	//Any response is OK.
 
   return err;
@@ -946,7 +946,7 @@ elektroid_rename_item (GtkWidget *object, gpointer data)
 	      new_path = path_chain (type, browser->dir,
 				     gtk_entry_buffer_get_text (buf));
 	    }
-	  err = browser->fs_ops->rename (&backend, old_path, new_path);
+	  err = browser->fs_ops->rename (BACKEND, old_path, new_path);
 	  if (err)
 	    {
 	      show_error_msg (_("Error while renaming to “%s”: %s."),
@@ -1308,7 +1308,7 @@ elektroid_add_dir (GtkWidget *object, gpointer data)
 					  0);
   if (pathname)
     {
-      gint err = browser->fs_ops->mkdir (&backend, pathname);
+      gint err = browser->fs_ops->mkdir (BACKEND, pathname);
 
       if (err)
 	{
@@ -1352,7 +1352,7 @@ elektroid_run_next (gpointer data)
   if (!transfer_active && found)
     {
       const struct fs_operations *ops =
-	backend_get_fs_operations_by_id (&backend, fs);
+	backend_get_fs_operations_by_id (BACKEND, fs);
       if (ops->options & FS_OPTION_SINGLE_OP)
 	{
 	  gtk_widget_set_sensitive (remote_box, FALSE);
@@ -1497,9 +1497,8 @@ elektroid_close_progress_dialog (gpointer data)
 static void
 elektroid_check_file_and_wait (gchar *path, struct browser *browser)
 {
-  struct backend *backend = browser->backend;
   const struct fs_operations *fs_ops = browser->fs_ops;
-  if (fs_ops->file_exists && fs_ops->file_exists (backend, path))
+  if (fs_ops->file_exists && fs_ops->file_exists (browser->backend, path))
     {
       switch (tasks.transfer.mode)
 	{
@@ -1527,8 +1526,7 @@ elektroid_upload_task_runner (gpointer data)
   debug_print (1, "Remote path: %s", tasks.transfer.dst);
 
   if (remote_browser.fs_ops->mkdir
-      && remote_browser.fs_ops->mkdir (remote_browser.backend,
-				       tasks.transfer.dst))
+      && remote_browser.fs_ops->mkdir (BACKEND, tasks.transfer.dst))
     {
       error_print ("Error while creating remote %s dir", tasks.transfer.dst);
       tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
@@ -1547,7 +1545,7 @@ elektroid_upload_task_runner (gpointer data)
   debug_print (1, "Writing from file %s (filesystem %s)...",
 	       tasks.transfer.src, tasks.transfer.fs_ops->name);
 
-  upload_path = remote_browser.fs_ops->get_upload_path (&backend,
+  upload_path = remote_browser.fs_ops->get_upload_path (BACKEND,
 							remote_browser.fs_ops,
 							tasks.transfer.dst,
 							tasks.transfer.src,
@@ -1560,7 +1558,7 @@ elektroid_upload_task_runner (gpointer data)
       goto cleanup;
     }
 
-  res = tasks.transfer.fs_ops->upload (remote_browser.backend,
+  res = tasks.transfer.fs_ops->upload (BACKEND,
 				       upload_path, &idata,
 				       &tasks.transfer.control);
 
@@ -1602,7 +1600,7 @@ elektroid_add_upload_task_path (const gchar *rel_path,
 {
   struct item_iterator iter;
   gchar *path, *src_abs_path, *rel_path_trans;
-  enum path_type type = backend_get_path_type (&backend);
+  enum path_type type = backend_get_path_type (BACKEND);
 
   if (!progress_is_active ())
     {
@@ -1622,7 +1620,7 @@ elektroid_add_upload_task_path (const gchar *rel_path,
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
       tasks_add (&tasks, TASK_TYPE_UPLOAD, src_abs_path, dst_abs_dir,
-		 remote_browser.fs_ops->id, &backend);
+		 remote_browser.fs_ops->id, BACKEND);
       g_free (dst_abs_path);
       goto cleanup;
     }
@@ -1722,7 +1720,7 @@ elektroid_download_task_runner (gpointer userdata)
       goto end_no_dir;
     }
 
-  res = tasks.transfer.fs_ops->download (remote_browser.backend,
+  res = tasks.transfer.fs_ops->download (BACKEND,
 					 tasks.transfer.src, &idata,
 					 &tasks.transfer.control);
 
@@ -1741,7 +1739,7 @@ elektroid_download_task_runner (gpointer userdata)
       goto end_with_download_error;
     }
 
-  dst_path = remote_browser.fs_ops->get_download_path (&backend,
+  dst_path = remote_browser.fs_ops->get_download_path (BACKEND,
 						       remote_browser.fs_ops,
 						       tasks.transfer.dst,
 						       tasks.transfer.src,
@@ -1780,7 +1778,7 @@ elektroid_add_download_task_path (const gchar *rel_path,
 {
   struct item_iterator iter;
   gchar *path, *filename, *src_abs_path, *rel_path_trans;
-  enum path_type type = backend_get_path_type (&backend);
+  enum path_type type = backend_get_path_type (BACKEND);
 
   if (!progress_is_active ())
     {
@@ -1792,8 +1790,7 @@ elektroid_add_download_task_path (const gchar *rel_path,
   g_free (rel_path_trans);
 
   //Check if the item is a dir. If error, it's not.
-  if (remote_browser.
-      fs_ops->readdir (remote_browser.backend, &iter, src_abs_path, NULL))
+  if (remote_browser.fs_ops->readdir (BACKEND, &iter, src_abs_path, NULL))
     {
       rel_path_trans = path_translate (PATH_SYSTEM, rel_path);
       gchar *dst_abs_path = path_chain (PATH_SYSTEM, dst_dir, rel_path_trans);
@@ -1801,7 +1798,7 @@ elektroid_add_download_task_path (const gchar *rel_path,
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
       tasks_add (&tasks, TASK_TYPE_DOWNLOAD, src_abs_path, dst_abs_dir,
-		 remote_browser.fs_ops->id, &backend);
+		 remote_browser.fs_ops->id, BACKEND);
       g_free (dst_abs_dir);
       g_free (dst_abs_path);
       goto cleanup;
@@ -2022,7 +2019,7 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
   fs = g_value_get_uint (&fsv);
   g_value_unset (&fsv);
 
-  remote_browser.fs_ops = backend_get_fs_operations_by_id (&backend, fs);
+  remote_browser.fs_ops = backend_get_fs_operations_by_id (BACKEND, fs);
   editor_visible = remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR ?
     TRUE : FALSE;
 
@@ -2038,7 +2035,7 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
 
   editor_set_audio_mono_mix (&editor);
 
-  if (backend.type == BE_TYPE_SYSTEM)
+  if (BACKEND->type == BE_TYPE_SYSTEM)
     {
       if (!remote_browser.dir)
 	{
@@ -2062,7 +2059,7 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
 
   if (remote_browser.fs_ops->upload)
     {
-      if (backend.type == BE_TYPE_SYSTEM)
+      if (BACKEND->type == BE_TYPE_SYSTEM)
 	{
 	  gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
 			     GTK_DEST_DEFAULT_ALL,
@@ -2096,7 +2093,7 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
 
   if (remote_browser.fs_ops->download)
     {
-      if (backend.type == BE_TYPE_SYSTEM)
+      if (BACKEND->type == BE_TYPE_SYSTEM)
 	{
 	  gtk_drag_source_set ((GtkWidget *) remote_browser.view,
 			       GDK_BUTTON1_MASK,
@@ -2147,7 +2144,7 @@ elektroid_fill_fs_combo_bg (gpointer data)
 
   gtk_list_store_clear (fs_list_store);
 
-  e = backend.fs_ops;
+  e = BACKEND->fs_ops;
   while (e)
     {
       fs_ops = e->data;
@@ -2184,12 +2181,12 @@ elektroid_set_device_runner (gpointer data)
 
   progress.sysex_transfer.active = TRUE;
 
-  progress.sysex_transfer.err = backend_init_connector (&backend,
+  progress.sysex_transfer.err = backend_init_connector (BACKEND,
 							be_sys_device, NULL,
 							&progress.sysex_transfer);
   elektroid_update_midi_status ();
-  progress_response (backend_check (&backend) ? GTK_RESPONSE_ACCEPT
-		     : GTK_RESPONSE_CANCEL);
+  progress_response (backend_check (BACKEND) ?
+		     GTK_RESPONSE_ACCEPT : GTK_RESPONSE_CANCEL);
   return NULL;
 }
 
@@ -2210,9 +2207,9 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 
   elektroid_set_preferences_remote_dir ();
 
-  if (backend_check (&backend))
+  if (backend_check (BACKEND))
     {
-      backend_destroy (&backend);
+      backend_destroy (BACKEND);
     }
 
   gtk_tree_model_get (GTK_TREE_MODEL (devices_list_store), &iter,
@@ -2229,7 +2226,7 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 
   if (be_sys_device.type == BE_TYPE_SYSTEM)
     {
-      backend_init_connector (&backend, &be_sys_device, NULL, NULL);
+      backend_init_connector (BACKEND, &be_sys_device, NULL, NULL);
       elektroid_update_midi_status ();
       err = 0;
     }
@@ -2322,7 +2319,7 @@ elektroid_add_upload_task_slot (const gchar *name,
       dst_file_path = g_string_free (str, FALSE);
 
       tasks_add (&tasks, TASK_TYPE_UPLOAD, src_file_path, dst_file_path,
-		 remote_browser.fs_ops->id, &backend);
+		 remote_browser.fs_ops->id, BACKEND);
     }
 }
 
@@ -2483,7 +2480,7 @@ elektroid_dnd_received (GtkWidget *widget, GdkDragContext *context,
 
       if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD) ||
 	  (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID) &&
-	   backend.type == BE_TYPE_SYSTEM))
+	   BACKEND->type == BE_TYPE_SYSTEM))
 	{
 	  //Moving inside the local browser takes no time.
 	  blocking = FALSE;
@@ -2738,9 +2735,9 @@ elektroid_exit ()
 
   editor_destroy (&editor);
 
-  if (backend_check (&backend))
+  if (backend_check (BACKEND))
     {
-      backend_destroy (&backend);
+      backend_destroy (BACKEND);
     }
 
   gtk_widget_destroy (GTK_WIDGET (main_window));
@@ -2863,23 +2860,9 @@ build_ui ()
   g_signal_connect (name_dialog_entry, "changed",
 		    G_CALLBACK (elektroid_name_dialog_entry_changed), NULL);
 
-  browser_remote_init (&remote_browser, builder, &backend);
+  browser_remote_init (&remote_browser, builder);
 
-  g_signal_connect (remote_browser.transfer_menuitem, "activate",
-		    G_CALLBACK (elektroid_add_download_tasks), NULL);
-  g_signal_connect (remote_browser.play_menuitem, "activate",
-		    G_CALLBACK (editor_play_clicked), &editor);
-  g_signal_connect (remote_browser.open_menuitem, "activate",
-		    G_CALLBACK (elektroid_open_clicked), &remote_browser);
-  g_signal_connect (remote_browser.show_menuitem, "activate",
-		    G_CALLBACK (elektroid_show_clicked), &remote_browser);
-  g_signal_connect (remote_browser.rename_menuitem, "activate",
-		    G_CALLBACK (elektroid_rename_item), &remote_browser);
-  g_signal_connect (remote_browser.delete_menuitem, "activate",
-		    G_CALLBACK (elektroid_delete_files), &remote_browser);
-
-  browser_local_init (&local_browser, builder,
-		      strdup (preferences_get_string (PREF_KEY_LOCAL_DIR)));
+  browser_local_init (&local_browser, builder);
 
   g_signal_connect (local_browser.transfer_menuitem, "activate",
 		    G_CALLBACK (elektroid_add_upload_tasks), NULL);
@@ -3022,7 +3005,6 @@ build_ui ()
 
   gtk_widget_set_sensitive (remote_box, FALSE);
 
-  maction_context.backend = &backend;
   maction_context.audio = &editor.audio;
   maction_context.builder = builder;
   maction_context.parent = main_window;

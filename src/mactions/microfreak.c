@@ -63,8 +63,8 @@ microfreak_defragment_callback (GtkWidget *object, gpointer data)
     }
 
   progress_run (microfreak_defragment_runner, PROGRESS_TYPE_PULSE,
-		context->backend, _("Defragmenting Sample Memory"), NULL,
-		FALSE, NULL);
+		remote_browser.backend, _("Defragmenting Sample Memory"),
+		NULL, FALSE, NULL);
 
   browser_refresh (NULL, &remote_browser);
 }
@@ -74,8 +74,8 @@ microfreak_maction_defrag_builder (struct maction_context *context)
 {
   struct maction *ma;
 
-  if (!context->backend->conn_name ||
-      strcmp (context->backend->conn_name, MICROFREAK_NAME))
+  if (!remote_browser.backend->conn_name ||
+      strcmp (remote_browser.backend->conn_name, MICROFREAK_NAME))
     {
       return NULL;
     }

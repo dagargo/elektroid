@@ -20,6 +20,9 @@
 
 #include <glib/gi18n.h>
 #include "maction.h"
+#include "browser.h"
+
+extern struct browser remote_browser;
 
 //This is a bit of a hack as the backend function are implemented inside
 //elektroid.c. However, as these actions depend on the backend initialization,
@@ -53,7 +56,7 @@ struct maction *
 backend_maction_os_upgrade_builder (struct maction_context *context)
 {
   struct maction *ma = NULL;
-  if (context->backend->upgrade_os)
+  if (remote_browser.backend->upgrade_os)
     {
       ma = g_malloc (sizeof (struct maction));
       ma->type = MACTION_BUTTON;
@@ -68,7 +71,7 @@ struct maction *
 backend_maction_rx_sysex_builder (struct maction_context *context)
 {
   struct maction *ma = NULL;
-  if (context->backend->type == BE_TYPE_MIDI)
+  if (remote_browser.backend->type == BE_TYPE_MIDI)
     {
       ma = g_malloc (sizeof (struct maction));
       ma->type = MACTION_BUTTON;
@@ -83,7 +86,7 @@ struct maction *
 backend_maction_tx_sysex_builder (struct maction_context *context)
 {
   struct maction *ma = NULL;
-  if (context->backend->type == BE_TYPE_MIDI)
+  if (remote_browser.backend->type == BE_TYPE_MIDI)
     {
       ma = g_malloc (sizeof (struct maction));
       ma->type = MACTION_BUTTON;
