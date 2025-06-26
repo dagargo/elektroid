@@ -48,6 +48,13 @@
 
 #define BROWSER_IS_SYSTEM(b) (!(b)->backend || (b)->backend->type == BE_TYPE_SYSTEM)
 
+#define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : backend_get_path_type (remote_browser.backend))
+
+#define TEXT_URI_LIST_STD "text/uri-list"
+#define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
+
+#define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping..."
+
 struct browser
 {
   const gchar *name;
@@ -106,24 +113,23 @@ struct browser
   GtkTreeViewColumn *tree_view_size_column;
 };
 
+struct browser_dnd_data
+{
+  GtkWidget *widget;
+  gchar **uris;
+  gchar *type_name;
+};
+
+extern struct browser local_browser;
+extern struct browser remote_browser;
+
 void browser_set_item (GtkTreeModel *, GtkTreeIter *, struct item *);
 
-gint browser_get_selected_items_count (struct browser *);
-
 void browser_clear_selection (struct browser *);
-
-gint browser_set_selected_row_iter (struct browser *, GtkTreeIter *);
-
-void browser_selection_changed (GtkTreeSelection *, gpointer);
 
 void browser_refresh (GtkWidget *, gpointer);
 
 void browser_go_up (GtkWidget *, gpointer);
-
-void browser_item_activated (GtkTreeView *, GtkTreePath *,
-			     GtkTreeViewColumn *, gpointer);
-
-gchar *browser_get_item_path (struct browser *, struct item *);
 
 gboolean browser_load_dir (gpointer);
 
@@ -131,22 +137,18 @@ gboolean browser_load_dir_if_needed (gpointer);
 
 void browser_update_fs_options (struct browser *);
 
-void browser_local_init (struct browser *, GtkBuilder *);
-
-void browser_remote_init (struct browser *, GtkBuilder *);
-
-void browser_destroy (struct browser *);
-
 void browser_reset (struct browser *);
 
-void browser_clear_dnd_function (struct browser *);
-
-void browser_set_dnd_function (struct browser *, GSourceFunc);
-
-void browser_open_search (GtkWidget *, gpointer);
+void browser_remote_reset_dnd ();
 
 void browser_close_search (GtkSearchEntry *, gpointer);
 
-void browser_search_changed (GtkSearchEntry *, gpointer);
+void browser_init_all (GtkBuilder *);
+
+void browser_destroy_all ();
+
+gchar *browser_ask_name_get_path (const gchar * title, const gchar * value,
+				  struct browser *browser, gint start_pos,
+				  gint end_pos);
 
 #endif

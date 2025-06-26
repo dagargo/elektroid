@@ -65,10 +65,6 @@ struct editor_set_volume_data
   gdouble volume;
 };
 
-gchar *elektroid_ask_name_get_path (const gchar * title, const gchar * value,
-				    struct browser *browser, gint start_pos,
-				    gint end_pos);
-
 static void
 editor_set_layout_width_to_val (struct editor *editor, guint w)
 {
@@ -1342,8 +1338,8 @@ editor_save_clicked (GtkWidget *object, gpointer data)
       sugg_sel_len -= ext_len + 1;
     }
 
-  path = elektroid_ask_name_get_path (_("Save Sample"), suggestion,
-				      editor->browser, 0, sugg_sel_len);
+  path = browser_ask_name_get_path (_("Save Sample"), suggestion,
+				    editor->browser, 0, sugg_sel_len);
   if (path == NULL || editor_file_exists_no_overwrite (path))
     {
       goto cleanup;
