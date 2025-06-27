@@ -125,6 +125,8 @@ extern struct browser remote_browser;
 
 void browser_set_item (GtkTreeModel *, GtkTreeIter *, struct item *);
 
+gchar *browser_get_name_path (struct browser *browser, const gchar * name);
+
 void browser_clear_selection (struct browser *);
 
 void browser_refresh (GtkWidget *, gpointer);
@@ -146,9 +148,5 @@ void browser_close_search (GtkSearchEntry *, gpointer);
 void browser_init_all (GtkBuilder *);
 
 void browser_destroy_all ();
-
-gchar *browser_ask_name_get_path (const gchar * title, const gchar * value,
-				  struct browser *browser, gint start_pos,
-				  gint end_pos);
 
 #endif

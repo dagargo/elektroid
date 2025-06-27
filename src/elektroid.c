@@ -27,16 +27,17 @@
 #include <glib/gi18n.h>
 #include <glib/gprintf.h>
 #include <getopt.h>
+#include "browser.h"
+#include "editor.h"
+#include "local.h"
+#include "name_window.h"
+#include "preferences.h"
+#include "progress.h"
 #include "regconn.h"
 #include "regma.h"
 #include "regpref.h"
-#include "browser.h"
-#include "editor.h"
-#include "tasks.h"
 #include "sample.h"
-#include "local.h"
-#include "preferences.h"
-#include "progress.h"
+#include "tasks.h"
 
 #define BACKEND_PLAYING "\u23f5"
 #define BACKEND_STOPPED "\u23f9"
@@ -72,8 +73,6 @@ extern struct maction_context maction_context;
 
 guint batch_id;
 
-GtkWidget *dialog;
-
 GtkWindow *main_window;
 static GtkBuilder *builder;
 static GtkAboutDialog *about_dialog;
@@ -107,6 +106,7 @@ elektroid_show_error_msg (const char *format, ...)
 {
   gchar *msg;
   va_list args;
+  GtkWidget *dialog;
 
   va_start (args, format);
   g_vasprintf (&msg, format, args);
@@ -115,7 +115,6 @@ elektroid_show_error_msg (const char *format, ...)
 				   "%s", msg);
   gtk_dialog_run (GTK_DIALOG (dialog));
   gtk_widget_destroy (dialog);
-  dialog = NULL;
   g_free (msg);
   va_end (args);
 }
@@ -365,6 +364,7 @@ elektroid_rx_sysex_runner (gpointer data)
 void
 elektroid_rx_sysex ()
 {
+  GtkWidget *dialog;
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
   gint dres;
@@ -374,9 +374,9 @@ elektroid_rx_sysex ()
   gint *res;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
-  res =
-    progress_run (elektroid_rx_sysex_runner, PROGRESS_TYPE_SYSEX_TRANSFER,
-		  NULL, _("Receiving SysEx"), "", TRUE, &dres);
+  res = progress_run (elektroid_rx_sysex_runner,
+		      PROGRESS_TYPE_SYSEX_TRANSFER, NULL,
+		      _("Receiving SysEx"), "", TRUE, &dres);
   if (!res)			//Signal captured while running the dialog.
     {
       g_byte_array_free (progress.sysex_transfer.raw, TRUE);
@@ -457,7 +457,6 @@ elektroid_rx_sysex ()
     }
 
   gtk_widget_destroy (dialog);
-  dialog = NULL;
 }
 
 static gint
@@ -522,6 +521,7 @@ elektroid_tx_upgrade_os_runner (gpointer data)
 void
 elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
 {
+  GtkWidget *dialog;
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
   gint res, *err;
@@ -564,7 +564,6 @@ elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
 
 cleanup:
   gtk_widget_destroy (dialog);
-  dialog = NULL;
 }
 
 static void
@@ -792,13 +791,11 @@ elektroid_delete_items_runner (gpointer data)
 }
 
 gint
-elektroid_run_dialog_and_destroy (GtkWidget *custom_dialog)
+elektroid_run_dialog_and_destroy (GtkWidget *dialog)
 {
-  dialog = custom_dialog;
   gtk_window_set_transient_for (GTK_WINDOW (dialog), main_window);
   gint result = gtk_dialog_run (GTK_DIALOG (dialog));
   gtk_widget_destroy (dialog);
-  dialog = NULL;
   return result;
 }
 
@@ -896,6 +893,7 @@ static gboolean
 elektroid_show_task_overwrite_dialog (gpointer data)
 {
   gint res;
+  GtkWidget *dialog;
   gboolean apply_to_all;
   GtkWidget *container, *checkbutton;
 
@@ -947,7 +945,6 @@ elektroid_show_task_overwrite_dialog (gpointer data)
     }
 
   gtk_widget_destroy (dialog);
-  dialog = NULL;
 
   g_mutex_lock (&tasks.transfer.control.mutex);
   g_cond_signal (&tasks.transfer.control.cond);
@@ -1726,10 +1723,6 @@ elektroid_exit ()
 {
   gtk_dialog_response (GTK_DIALOG (about_dialog), GTK_RESPONSE_CANCEL);
   progress_response (GTK_RESPONSE_CANCEL);
-  if (dialog)
-    {
-      gtk_dialog_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
-    }
 
   progress_stop_thread ();
   tasks_stop_thread (&tasks);
@@ -1744,7 +1737,9 @@ elektroid_exit ()
       backend_destroy (BACKEND);
     }
 
+  name_window_destroy ();
   gtk_widget_destroy (GTK_WIDGET (main_window));
+
   g_object_unref (builder);
 }
 
@@ -1854,7 +1849,6 @@ build_ui ()
   g_signal_connect (about_button, "clicked",
 		    G_CALLBACK (elektroid_show_about), NULL);
 
-  browser_init_all (builder);
 
   devices_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "devices_list_store"));
@@ -1874,6 +1868,8 @@ build_ui ()
   fs_combo = GTK_WIDGET (gtk_builder_get_object (builder, "fs_combo"));
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
 
+  browser_init_all (builder);
+  name_window_init (builder);
   editor_init (&editor, builder);
   elektroid_update_midi_status ();
   tasks_init (&tasks, builder);

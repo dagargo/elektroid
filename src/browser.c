@@ -19,13 +19,13 @@
  */
 
 #include <glib/gi18n.h>
-#include "browser.h"
-#include "progress.h"
 #include "backend.h"
-#include "preferences.h"
+#include "browser.h"
 #include "editor.h"
 #include "local.h"
-#include "backend.h"
+#include "name_window.h"
+#include "preferences.h"
+#include "progress.h"
 #include "sample.h"
 #include "maction.h"
 
@@ -85,12 +85,7 @@ static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
 };
 
 extern guint batch_id;
-extern GtkWidget *dialog;
 extern GtkWindow *main_window;
-
-static GtkDialog *name_dialog;
-static GtkEntry *name_dialog_entry;
-static GtkWidget *name_dialog_accept_button;
 
 struct browser local_browser;
 struct browser remote_browser;
@@ -508,50 +503,11 @@ browser_go_up (GtkWidget *object, gpointer data)
     }
 }
 
-gchar *
-browser_ask_name_get_path (const gchar *title, const gchar *value,
-			   struct browser *browser, gint start_pos,
-			   gint end_pos)
-{
-  char *pathname = NULL;
-  int result;
-  gint err;
-  enum path_type type = backend_get_path_type (browser->backend);
-  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (name_dialog_entry));
-
-  gtk_entry_buffer_set_text (buf, value, -1);
-  gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
-  gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
-  gtk_editable_select_region (GTK_EDITABLE (name_dialog_entry), start_pos,
-			      end_pos);
-  gtk_widget_set_sensitive (name_dialog_accept_button, strlen (value) > 0);
-
-  gtk_window_set_title (GTK_WINDOW (name_dialog), title);
-
-  result = GTK_RESPONSE_ACCEPT;
-
-  err = -1;
-  while (err < 0 && result == GTK_RESPONSE_ACCEPT)
-    {
-      result = gtk_dialog_run (GTK_DIALOG (name_dialog));
-
-      if (result == GTK_RESPONSE_ACCEPT)
-	{
-	  pathname = path_chain (type, browser->dir,
-				 gtk_entry_buffer_get_text (buf));
-	  break;
-	}
-    }
-
-  gtk_widget_hide (GTK_WIDGET (name_dialog));
-
-  return pathname;
-}
-
 static void
 browser_delete_items (GtkWidget *object, gpointer data)
 {
   gint res;
+  GtkWidget *dialog;
   struct browser *browser = data;
 
   dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL,
@@ -564,7 +520,6 @@ browser_delete_items (GtkWidget *object, gpointer data)
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
   res = gtk_dialog_run (GTK_DIALOG (dialog));
   gtk_widget_destroy (dialog);
-  dialog = NULL;
   if (res != GTK_RESPONSE_ACCEPT)
     {
       return;
@@ -597,22 +552,72 @@ browser_get_item_path (struct browser *browser, struct item *item)
   return path;
 }
 
+gchar *
+browser_get_name_path (struct browser *browser, const gchar *name)
+{
+  if (browser->fs_ops->options & FS_OPTION_SLOT_STORAGE)
+    {
+      return strdup (name);
+    }
+  else
+    {
+      enum path_type type = backend_get_path_type (browser->backend);
+      return path_chain (type, browser->dir, name);
+    }
+}
+
+static gchar *
+browser_get_selected_item_path (struct browser *browser)
+{
+  GtkTreeIter iter;
+  struct item item;
+  GtkTreeModel *model;
+
+  browser_set_selected_row_iter (browser, &iter);
+  model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
+  browser_set_item (model, &iter, &item);
+
+  return browser_get_item_path (browser, &item);
+}
+
+static void
+browser_rename_accept (gpointer source, const gchar *name)
+{
+  gint err;
+  gchar *old_path, *new_path;
+  struct browser *browser = source;
+
+  old_path = browser_get_selected_item_path (browser);
+  new_path = browser_get_name_path (browser, name);
+
+  err = browser->fs_ops->rename (browser->backend, old_path, new_path);
+  if (err)
+    {
+      elektroid_show_error_msg (_("Error while renaming to “%s”: %s."),
+				new_path, g_strerror (-err));
+    }
+  else
+    {
+      browser_load_dir_if_needed (browser);
+    }
+
+  g_free (new_path);
+  g_free (old_path);
+}
+
 static void
 browser_rename_item (GtkWidget *object, gpointer data)
 {
-  gchar *old_path, *new_path;
   const gchar *ext;
-  gint result, err, sel_len, ext_len;
+  gint sel_len, ext_len;
   GtkTreeIter iter;
   struct item item;
   struct browser *browser = data;
   GtkTreeModel *model =
     GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
-  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (name_dialog_entry));
 
   browser_set_selected_row_iter (browser, &iter);
   browser_set_item (model, &iter, &item);
-  old_path = browser_get_item_path (browser, &item);
 
   sel_len = strlen (item.name);
   ext = filename_get_ext (item.name);
@@ -622,51 +627,9 @@ browser_rename_item (GtkWidget *object, gpointer data)
       sel_len -= ext_len + 1;
     }
 
-  gtk_entry_set_max_length (name_dialog_entry, browser->fs_ops->max_name_len);
-  gtk_entry_buffer_set_text (buf, item.name, -1);
-  gtk_widget_grab_focus (GTK_WIDGET (name_dialog_entry));
-  gtk_editable_select_region (GTK_EDITABLE (name_dialog_entry), 0, sel_len);
-  gtk_widget_set_sensitive (name_dialog_accept_button, FALSE);
-
-  gtk_window_set_title (GTK_WINDOW (name_dialog), _("Rename"));
-
-  result = GTK_RESPONSE_ACCEPT;
-
-  err = -1;
-  while (err < 0 && result == GTK_RESPONSE_ACCEPT)
-    {
-      result = gtk_dialog_run (GTK_DIALOG (name_dialog));
-
-      if (result == GTK_RESPONSE_ACCEPT)
-	{
-	  if (browser->fs_ops->options & FS_OPTION_SLOT_STORAGE)
-	    {
-	      new_path = strdup (gtk_entry_buffer_get_text (buf));
-	    }
-	  else
-	    {
-	      enum path_type type = backend_get_path_type (browser->backend);
-	      new_path = path_chain (type, browser->dir,
-				     gtk_entry_buffer_get_text (buf));
-	    }
-	  err =
-	    browser->fs_ops->rename (browser->backend, old_path, new_path);
-	  if (err)
-	    {
-	      elektroid_show_error_msg (_
-					("Error while renaming to “%s”: %s."),
-					new_path, g_strerror (-err));
-	    }
-	  else
-	    {
-	      browser_load_dir_if_needed (browser);
-	    }
-	  g_free (new_path);
-	}
-    }
-
-  g_free (old_path);
-  gtk_widget_hide (GTK_WIDGET (name_dialog));
+  name_window_edit_text (_("Rename"),
+			 browser->fs_ops->max_name_len, item.name, 0,
+			 sel_len, browser_rename_accept, browser);
 }
 
 static void
@@ -1285,20 +1248,12 @@ browser_show_clicked (GtkWidget *object, gpointer data)
 static void
 browser_open_clicked (GtkWidget *object, gpointer data)
 {
-  GtkTreeIter iter;
-  GtkTreeModel *model;
   gchar *path;
   gchar *uri;
   GFile *file;
-  struct item item;
   struct browser *browser = data;
-  enum path_type type = backend_get_path_type (browser->backend);
 
-  browser_set_selected_row_iter (browser, &iter);
-  model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
-  browser_set_item (model, &iter, &item);
-  path = path_chain (type, browser->dir, item.name);
-
+  path = browser_get_selected_item_path (browser);
   file = g_file_new_for_path (path);
   g_free (path);
   uri = g_file_get_uri (file);
@@ -1309,30 +1264,33 @@ browser_open_clicked (GtkWidget *object, gpointer data)
 }
 
 static void
+browser_add_dir_accept (gpointer source, const gchar *name)
+{
+  struct browser *browser = source;
+  gchar *path = browser_get_name_path (browser, name);
+  gint err = browser->fs_ops->mkdir (browser->backend, path);
+
+  if (err)
+    {
+      elektroid_show_error_msg (_("Error while creating dir “%s”: %s."),
+				name, g_strerror (-err));
+    }
+  else
+    {
+      browser_load_dir_if_needed (browser);
+    }
+
+  g_free (path);
+}
+
+static void
 browser_add_dir (GtkWidget *object, gpointer data)
 {
-  char *pathname;
   struct browser *browser = data;
 
-  pathname = browser_ask_name_get_path (_("Add Directory"), "", browser, 0,
-					0);
-  if (pathname)
-    {
-      gint err = browser->fs_ops->mkdir (browser->backend, pathname);
-
-      if (err)
-	{
-	  elektroid_show_error_msg (_
-				    ("Error while creating dir “%s”: %s."),
-				    pathname, g_strerror (-err));
-	}
-      else
-	{
-	  browser_load_dir_if_needed (browser);
-	}
-
-      g_free (pathname);
-    }
+  name_window_new_text (_("Add Directory"),
+			browser->fs_ops->max_name_len,
+			browser_add_dir_accept, browser);
 }
 
 static gboolean
@@ -2456,28 +2414,9 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder)
   browser_init (browser);
 }
 
-static void
-browser_name_dialog_entry_changed (GtkWidget *object, gpointer data)
-{
-  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (name_dialog_entry));
-  size_t len = strlen (gtk_entry_buffer_get_text (buf));
-  gtk_widget_set_sensitive (name_dialog_accept_button, len > 0);
-}
-
 void
 browser_init_all (GtkBuilder *builder)
 {
-  name_dialog = GTK_DIALOG (gtk_builder_get_object (builder, "name_dialog"));
-  name_dialog_accept_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "name_dialog_accept_button"));
-  name_dialog_entry =
-    GTK_ENTRY (gtk_builder_get_object (builder, "name_dialog_entry"));
-
-  g_signal_connect (name_dialog_entry, "changed",
-		    G_CALLBACK (browser_name_dialog_entry_changed), NULL);
-
   browser_local_init (&local_browser, builder);
   browser_remote_init (&remote_browser, builder);
-
 }

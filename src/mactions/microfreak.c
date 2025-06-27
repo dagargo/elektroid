@@ -24,7 +24,6 @@
 #include "../browser.h"
 #include "connectors/microfreak.h"
 
-extern GtkWidget *dialog;
 extern struct browser remote_browser;
 
 static gpointer
@@ -41,6 +40,7 @@ static void
 microfreak_defragment_callback (GtkWidget *object, gpointer data)
 {
   gint res;
+  GtkWidget *dialog;
   struct maction_context *context = data;
 
   dialog = gtk_message_dialog_new (GTK_WINDOW (context->parent),
@@ -55,7 +55,6 @@ microfreak_defragment_callback (GtkWidget *object, gpointer data)
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
   res = gtk_dialog_run (GTK_DIALOG (dialog));
   gtk_widget_destroy (dialog);
-  dialog = NULL;
 
   if (res != GTK_RESPONSE_ACCEPT)
     {

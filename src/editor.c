@@ -22,10 +22,12 @@
 #include <glib/gi18n.h>
 #include <glib/gstdio.h>
 #include <math.h>
+#include "connectors/system.h"
 #include "editor.h"
+#include "name_window.h"
 #include "preferences.h"
 #include "sample.h"
-#include "connectors/system.h"
+#include "utils.h"
 
 #define EDITOR_LOOP_MARKER_WIDTH 7
 #define EDITOR_LOOP_MARKER_HALF_HEIGHT 4
@@ -44,6 +46,8 @@
 
 extern struct browser local_browser;
 extern struct browser remote_browser;
+
+extern GtkWindow *main_window;
 
 static double press_event_x;
 
@@ -1208,7 +1212,7 @@ editor_file_exists_no_overwrite (const gchar *filename)
 
   if (g_file_test (filename, G_FILE_TEST_EXISTS))
     {
-      dialog = gtk_message_dialog_new (NULL,
+      dialog = gtk_message_dialog_new (main_window,
 				       GTK_DIALOG_MODAL |
 				       GTK_DIALOG_USE_HEADER_BAR,
 				       GTK_MESSAGE_WARNING,
@@ -1228,7 +1232,7 @@ editor_file_exists_no_overwrite (const gchar *filename)
 }
 
 //This function does not need synchronized access as it is only called from
-//editor_save_clicked which already provides this.
+//editor_save which already provides this.
 
 static gint
 editor_save_with_format (struct editor *editor, const gchar *dst_path,
@@ -1264,32 +1268,32 @@ editor_save_with_format (struct editor *editor, const gchar *dst_path,
 }
 
 static void
-editor_save_clicked (GtkWidget *object, gpointer data)
+editor_save_accept (gpointer source, const gchar *name)
 {
   gchar *path;
-  const gchar *ext;
-  guint32 sel_len, sugg_sel_len, ext_len;
+  guint32 sel_len;
   struct idata aux;
   GByteArray *selection = NULL;
   struct sample_info *aux_si;
-  gchar suggestion[PATH_MAX];
-  struct editor *editor = data;
-  struct sample_info *sample_info;
+  struct editor *editor = source;
+  struct browser *browser = editor->browser;
+  struct sample_info *sample_info = editor->audio.sample.info;
 
-  g_mutex_lock (&editor->audio.control.mutex);
+  path = browser_get_name_path (browser, name);
 
-  if (!editor_loading_completed_no_lock (editor, NULL))
+  if (editor_file_exists_no_overwrite (path))
     {
-      goto end;
-    }
+      gint name_sel_len = filename_get_lenght_without_ext (name);
 
-  sample_info = editor->audio.sample.info;
-  if (!sample_info)
-    {
-      goto end;
+      name_window_edit_text (_("Save Sample"),
+			     editor->browser->fs_ops->max_name_len, name, 0,
+			     name_sel_len, editor_save_accept, editor);
+      return;
     }
 
   sel_len = AUDIO_SEL_LEN (&editor->audio);
+
+  debug_print (2, "Saving recording to %s...", path);
 
   if (sel_len)
     {
@@ -1307,52 +1311,15 @@ editor_save_clicked (GtkWidget *object, gpointer data)
       aux_si->loop_end = aux_si->loop_start;
 
       idata_init (&aux, selection, NULL, aux_si);
-
-      snprintf (suggestion, PATH_MAX, "%s", "Sample.wav");
     }
-  else
-    {
-      if (editor->audio.path)
-	{
-	  gchar *basename = g_path_get_basename (editor->audio.path);
-	  snprintf (suggestion, PATH_MAX, "%s", basename);
-	  g_free (basename);
-	}
-      else
-	{
-	  GDateTime *dt = g_date_time_new_now_local ();
-	  gchar *s = g_date_time_format (dt, DATE_TIME_FILENAME_FORMAT);
-	  snprintf (suggestion, PATH_MAX, "%s %s.wav", _("Audio"), s);
-	  g_free (s);
-	  g_date_time_unref (dt);
-	}
-    }
-
-  g_mutex_unlock (&editor->audio.control.mutex);
-
-  sugg_sel_len = strlen (suggestion);
-  ext = filename_get_ext (suggestion);
-  ext_len = strlen (ext);
-  if (ext_len)
-    {
-      sugg_sel_len -= ext_len + 1;
-    }
-
-  path = browser_ask_name_get_path (_("Save Sample"), suggestion,
-				    editor->browser, 0, sugg_sel_len);
-  if (path == NULL || editor_file_exists_no_overwrite (path))
-    {
-      goto cleanup;
-    }
-
-  g_mutex_lock (&editor->audio.control.mutex);
 
   if (editor->audio.path)
     {
       if (sel_len)
 	{
 	  debug_print (2, "Saving selection to %s...", path);
-	  aux.name = g_path_get_basename (path);
+
+	  aux.name = strdup (name);
 	  editor_save_with_format (editor, path, &aux);
 	}
       else
@@ -1391,14 +1358,59 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 	}
     }
 
-end:
-  g_mutex_unlock (&editor->audio.control.mutex);
-
-cleanup:
-  if (selection)
+  if (sel_len)
     {
       idata_free (&aux);
     }
+}
+
+static void
+editor_save (GtkWidget *object, gpointer data)
+{
+  guint32 sel_len;
+  gint name_sel_len;
+  gchar name[PATH_MAX];
+  struct editor *editor = data;
+
+  g_mutex_lock (&editor->audio.control.mutex);
+
+  if (!editor_loading_completed_no_lock (editor, NULL))
+    {
+      goto end;
+    }
+
+  sel_len = AUDIO_SEL_LEN (&editor->audio);
+
+  if (sel_len)
+    {
+      snprintf (name, PATH_MAX, "%s", "Sample.wav");
+    }
+  else
+    {
+      if (editor->audio.path)
+	{
+	  gchar *basename = g_path_get_basename (editor->audio.path);
+	  snprintf (name, PATH_MAX, "%s", basename);
+	  g_free (basename);
+	}
+      else
+	{
+	  GDateTime *dt = g_date_time_new_now_local ();
+	  gchar *s = g_date_time_format (dt, DATE_TIME_FILENAME_FORMAT);
+	  snprintf (name, PATH_MAX, "%s %s.wav", _("Audio"), s);
+	  g_free (s);
+	  g_date_time_unref (dt);
+	}
+    }
+
+  name_sel_len = filename_get_lenght_without_ext (name);
+
+  name_window_edit_text (_("Save Sample"),
+			 editor->browser->fs_ops->max_name_len, name, 0,
+			 name_sel_len, editor_save_accept, editor);
+
+end:
+  g_mutex_unlock (&editor->audio.control.mutex);
 }
 
 static gboolean
@@ -1427,7 +1439,7 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
   else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_s &&
 	   editor->dirty)
     {
-      editor_save_clicked (NULL, editor);
+      editor_save (NULL, editor);
     }
 
   return TRUE;
@@ -1548,7 +1560,7 @@ editor_init (struct editor *editor, GtkBuilder *builder)
   g_signal_connect (editor->undo_menuitem, "activate",
 		    G_CALLBACK (editor_undo_clicked), editor);
   g_signal_connect (editor->save_menuitem, "activate",
-		    G_CALLBACK (editor_save_clicked), editor);
+		    G_CALLBACK (editor_save), editor);
 
   editor_loop_clicked (editor->loop_button, editor);
   gtk_switch_set_active (GTK_SWITCH (editor->autoplay_switch),

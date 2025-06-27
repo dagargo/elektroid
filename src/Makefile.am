@@ -71,17 +71,19 @@ elektroid_cli_SOURCES = $(elektroid_common_sources) elektroid-cli.c
 
 elektroid_SOURCES = $(elektroid_common_sources) \
 audio.h audio.c $(elektroid_audio_sources) \
-browser.c browser.h notifier.c notifier.h \
-regma.c regma.h \
+browser.c browser.h \
+editor.c editor.h \
+guirecorder.c guirecorder.h \
+name_window.c name_window.h \
+notifier.c notifier.h \
 maction.c maction.h \
 mactions/autosampler.c \
 mactions/backend.c \
 mactions/microbrute.c \
 mactions/microfreak.c \
-editor.c editor.h \
-tasks.c tasks.h \
-guirecorder.c guirecorder.h \
 progress.c progress.h \
+regma.c regma.h \
+tasks.c tasks.h \
 elektroid.c
 
 SNDFILE_CFLAGS = @SNDFILE_CFLAGS@

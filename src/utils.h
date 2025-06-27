@@ -106,6 +106,8 @@ void filename_remove_ext (gchar *);
 
 const gchar *filename_get_ext (const gchar *);
 
+gint filename_get_lenght_without_ext (const gchar * name);
+
 gchar *get_user_dir (const gchar *);
 
 gchar *get_system_startup_path (const gchar *);

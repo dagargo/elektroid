@@ -153,6 +153,20 @@ filename_get_ext (const gchar *name)
   return ext;
 }
 
+gint
+filename_get_lenght_without_ext (const gchar *name)
+{
+  gint sugg_sel_len = strlen (name);
+  const gchar *ext = filename_get_ext (name);
+  gint ext_len = strlen (ext);
+  if (ext_len)
+    {
+      sugg_sel_len -= ext_len + 1;
+    }
+
+  return sugg_sel_len;
+}
+
 //The returned value is owned by the caller.
 //As this is used from the code, rel_dir uses '/' always and needs to be converted.
 
