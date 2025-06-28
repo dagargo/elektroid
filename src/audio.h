@@ -37,7 +37,7 @@ typedef void (*audio_monitor_notifier) (gpointer, gdouble);
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
 #define AUDIO_BUF_FRAMES (preferences_get_int (PREF_KEY_AUDIO_BUFFER_LEN))
 #define AUDIO_BUF_BYTES (AUDIO_BUF_FRAMES * FRAME_SIZE (AUDIO_CHANNELS,sample_get_internal_format ()))
-#define AUDIO_SEL_LEN(a) ((a)->sel_start == -1 && (a)->sel_end == -1 ? 0 : (a)->sel_end - (a)->sel_start + 1)
+#define AUDIO_SEL_LEN (audio.sel_start == -1 && audio.sel_end == -1 ? 0 : audio.sel_end - audio.sel_start + 1)
 
 #define RECORD_LEFT 0x1
 #define RECORD_RIGHT 0x2
@@ -78,9 +78,8 @@ struct audio
   struct sample_info sample_info_src;
   gboolean loop;
   guint32 pos;
-  void (*volume_change_callback) (gpointer, gdouble);
-  void (*ready_callback) (gpointer);
-  gpointer callback_data;
+  void (*volume_change_callback) (gdouble);
+  void (*ready_callback) ();
   guint32 release_frames;
   struct job_control control;	//Used to synchronize access to sample, frames, loop and pos members.
   gchar *path;
@@ -93,40 +92,39 @@ struct audio
   void *monitor_data;
 };
 
-void audio_start_playback (struct audio *);
+extern struct audio audio;
 
-void audio_stop_playback (struct audio *);
+void audio_start_playback ();
 
-void audio_start_recording (struct audio *, guint, audio_monitor_notifier,
-			    void *);
+void audio_stop_playback ();
 
-void audio_stop_recording (struct audio *);
+void audio_start_recording (guint, audio_monitor_notifier, void *);
 
-gboolean audio_check (struct audio *);
+void audio_stop_recording ();
 
-void audio_reset_record_buffer (struct audio *, guint, audio_monitor_notifier,
-				void *);
+gboolean audio_check ();
 
-void audio_init (struct audio *, void (*)(gpointer, gdouble),
-		 void (*)(gpointer), gpointer);
+void audio_reset_record_buffer (guint, audio_monitor_notifier, void *);
 
-gint audio_run (struct audio *);
+void audio_init (void (*)(gdouble), void (*)(), gpointer);
 
-void audio_destroy (struct audio *);
+gint audio_run ();
 
-void audio_reset_sample (struct audio *);
+void audio_destroy ();
 
-void audio_set_volume (struct audio *, gdouble);
+void audio_reset_sample ();
 
-void audio_write_to_output (struct audio *, void *, gint);
+void audio_set_volume (gdouble);
 
-void audio_read_from_input (struct audio *, void *, gint);
+void audio_write_to_output (void *, gint);
 
-void audio_prepare (struct audio *, enum audio_status);
+void audio_read_from_input (void *, gint);
 
-void audio_delete_range (struct audio *, guint32, guint32);
+void audio_prepare (enum audio_status);
 
-guint audio_detect_start (struct audio *);
+void audio_delete_range (guint32, guint32);
+
+guint audio_detect_start ();
 
 const gchar *audio_name ();
 

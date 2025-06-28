@@ -37,7 +37,6 @@ enum editor_operation
 
 struct editor
 {
-  struct audio audio;
   GThread *thread;
   GtkWidget *box;
   GtkWidget *waveform_scrolled_window;

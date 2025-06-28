@@ -30,13 +30,10 @@
 #include "connectors/system.h"
 #include "guirecorder.h"
 
-extern struct editor editor;
-extern struct browser local_browser;
-extern struct browser remote_browser;
+static struct guirecorder autosampler_guirecorder;
 
 static GtkDialog *autosampler_dialog;
 static GtkEntry *autosampler_dialog_name_entry;
-static struct guirecorder autosampler_guirecorder;
 static GtkWidget *autosampler_dialog_channel_spin;
 static GtkWidget *autosampler_dialog_start_combo;
 static GtkWidget *autosampler_dialog_end_combo;
@@ -87,7 +84,7 @@ autosampler_runner (gpointer user_data)
       note = g_value_get_string (&value);
       debug_print (1, "Recording note %s (%d)...", note, i);
 
-      audio_start_recording (&editor.audio, data->channel_mask, NULL, NULL);
+      audio_start_recording (data->channel_mask, NULL, NULL);
       backend_send_note_on (remote_browser.backend, data->channel, i,
 			    data->velocity);
       //Add some extra time to deal with runtime delays.
@@ -95,19 +92,19 @@ autosampler_runner (gpointer user_data)
       backend_send_note_off (remote_browser.backend, data->channel, i,
 			     data->velocity);
       usleep (data->release * 1000000);
-      audio_stop_recording (&editor.audio);
+      audio_stop_recording ();
 
-      sample_info = editor.audio.sample.info;
+      sample_info = audio.sample.info;
       sample_info->midi_note = i;
       sample_info->midi_fraction = cents_to_midi_fraction (data->tuning);
 
       //Remove the heading silent frames.
-      guint start = audio_detect_start (&editor.audio);
-      audio_delete_range (&editor.audio, 0, start);
+      guint start = audio_detect_start ();
+      audio_delete_range (0, start);
       //Cut off the frames after the requested time.
-      start = (data->press + data->release) * editor.audio.rate;
+      start = (data->press + data->release) * audio.rate;
       guint len = sample_info->frames - start;
-      audio_delete_range (&editor.audio, start, len);
+      audio_delete_range (start, len);
 
       gchar *dir = path_chain (PATH_SYSTEM, local_browser.dir, data->name);
       system_mkdir (NULL, dir);
@@ -115,7 +112,7 @@ autosampler_runner (gpointer user_data)
       snprintf (filename, LABEL_MAX, "%03d %s %s.wav", s, data->name, note);
       gchar *path = path_chain (PATH_SYSTEM, dir, filename);
       debug_print (1, "Saving sample to %s...", path);
-      sample_save_to_file (path, &editor.audio.sample, &editor.audio.control,
+      sample_save_to_file (path, &audio.sample, &audio.control,
 			   SF_FORMAT_WAV | sample_get_internal_format ());
       g_free (dir);
       g_free (path);
@@ -165,9 +162,9 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
   options = guirecorder_get_channel_mask (&autosampler_guirecorder) |
     RECORD_MONITOR_ONLY;
 
-  audio_stop_playback (&editor.audio);
-  audio_stop_recording (&editor.audio);
-  audio_start_recording (&editor.audio, options, guirecorder_monitor_notifier,
+  audio_stop_playback ();
+  audio_stop_recording ();
+  audio_start_recording (options, guirecorder_monitor_notifier,
 			 &autosampler_guirecorder);
 
   gtk_entry_buffer_set_text (buf, "", -1);
@@ -175,7 +172,7 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
   gtk_widget_set_sensitive (autosampler_dialog_start_button, FALSE);
   res = gtk_dialog_run (GTK_DIALOG (autosampler_dialog));
   gtk_widget_hide (GTK_WIDGET (autosampler_dialog));
-  audio_stop_recording (&editor.audio);
+  audio_stop_recording ();
   if (res != GTK_RESPONSE_ACCEPT)
     {
       return;
@@ -248,7 +245,6 @@ autosampler_configure_gui (GtkBuilder *builder)
   autosampler_guirecorder.monitor_levelbar =
     GTK_LEVEL_BAR (gtk_builder_get_object
 		   (builder, "autosampler_dialog_monitor_levelbar"));
-  autosampler_guirecorder.audio = &editor.audio;
 
   autosampler_dialog_channel_spin =
     GTK_WIDGET (gtk_builder_get_object
@@ -297,7 +293,7 @@ autosampler_maction_builder (struct maction_context *context)
       ma = g_malloc (sizeof (struct maction));
       ma->type = MACTION_BUTTON;
       ma->name = _("_Auto Sampler");
-      ma->sensitive = audio_check (context->audio);
+      ma->sensitive = audio_check ();
       ma->callback = G_CALLBACK (autosampler_callback);
     }
 

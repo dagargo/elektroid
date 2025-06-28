@@ -168,8 +168,7 @@ elektroid_update_audio_status (gboolean status)
   if (status)
     {
       snprintf (msg, LABEL_MAX, "%s: %s %s, %.5g kHz %s %s", _("Audio"),
-		audio_name (), audio_version (),
-		editor.audio.rate / 1000.f,
+		audio_name (), audio_version (), audio.rate / 1000.f,
 		preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ?
 		SF_FORMAT_FLOAT_STR : SF_FORMAT_PCM_16_STR, BACKEND_PLAYING);
     }
@@ -1931,7 +1930,6 @@ build_ui ()
 
   gtk_widget_set_sensitive (remote_box, FALSE);
 
-  maction_context.audio = &editor.audio;
   maction_context.builder = builder;
   maction_context.parent = main_window;
 

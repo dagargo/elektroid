@@ -36,7 +36,6 @@ struct guirecorder
   GtkWidget *channels_combo;
   GtkListStore *channels_list_store;
   GtkLevelBar *monitor_levelbar;
-  struct audio *audio;
   gdouble level;
 };
 

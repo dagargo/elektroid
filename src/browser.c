@@ -800,10 +800,10 @@ browser_add_dentry_item (gpointer data)
       g_value_unset (&v);
     }
 
-  if (editor.audio.path && editor.browser == browser)
+  if (audio.path && editor.browser == browser)
     {
       name = path_chain (PATH_SYSTEM, browser->dir, add_data->rel_path);
-      if (!strcmp (editor.audio.path, name))
+      if (!strcmp (audio.path, name))
 	{
 	  g_signal_handlers_block_by_func (selection,
 					   G_CALLBACK
@@ -911,8 +911,8 @@ browser_load_dir_runner_update_ui (gpointer data)
 	  gtk_tree_path_free (first);
 	  gtk_widget_grab_focus (GTK_WIDGET (browser->view));
 	}
-      //If editor.audio.path is empty is a recording buffer.
-      if (editor.browser == browser && editor.audio.path)
+      //If audio.path is empty is a recording buffer.
+      if (editor.browser == browser && audio.path)
 	{
 	  editor_reset (NULL);
 	}
@@ -1424,7 +1424,7 @@ browser_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
   GtkAllocation allocation;
   GdkWindow *gdk_window;
   struct browser *browser = data;
-  struct sample_info *sample_info = editor.audio.sample.info;
+  struct sample_info *sample_info = audio.sample.info;
 
   if (event->type != GDK_KEY_PRESS)
     {

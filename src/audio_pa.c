@@ -21,19 +21,18 @@
 #include <glib/gi18n.h>
 #include "audio.h"
 
-void audio_finish_recording (struct audio *);
+void audio_finish_recording ();
 
 #define WAIT_TIME_TO_STOP_US 10000
 
 static void
 audio_success_cb (pa_stream *stream, int success, void *data)
 {
-  struct audio *audio = data;
-  pa_threaded_mainloop_signal (audio->mainloop, 0);
+  pa_threaded_mainloop_signal (audio.mainloop, 0);
 }
 
 static void
-audio_wait_success (struct audio *audio, pa_operation *operation)
+audio_wait_success (pa_operation *operation)
 {
   if (!operation)
     {
@@ -42,7 +41,7 @@ audio_wait_success (struct audio *audio, pa_operation *operation)
     }
   while (pa_operation_get_state (operation) != PA_OPERATION_DONE)
     {
-      pa_threaded_mainloop_wait (audio->mainloop);
+      pa_threaded_mainloop_wait (audio.mainloop);
     }
 }
 
@@ -51,8 +50,7 @@ audio_read_callback (pa_stream *stream, size_t size, void *data)
 {
   const void *buffer;
   size_t frame_size;
-  struct audio *audio = data;
-  struct sample_info *sample_info = audio->sample.info;
+  struct sample_info *sample_info = audio.sample.info;
 
   if (!sample_info)
     {
@@ -67,7 +65,7 @@ audio_read_callback (pa_stream *stream, size_t size, void *data)
 
   frame_size = FRAME_SIZE (AUDIO_CHANNELS, sample_get_internal_format ());
 
-  audio_read_from_input (audio, (void *) buffer, size / frame_size);
+  audio_read_from_input ((void *) buffer, size / frame_size);
   pa_stream_drop (stream);
 }
 
@@ -76,8 +74,7 @@ audio_write_callback (pa_stream *stream, size_t size, void *data)
 {
   void *buffer;
   size_t frame_size;
-  struct audio *audio = data;
-  struct sample_info *sample_info = audio->sample.info;
+  struct sample_info *sample_info = audio.sample.info;
 
   if (!sample_info)
     {
@@ -87,171 +84,168 @@ audio_write_callback (pa_stream *stream, size_t size, void *data)
   frame_size = FRAME_SIZE (AUDIO_CHANNELS, sample_get_internal_format ());
 
   pa_stream_begin_write (stream, &buffer, &size);
-  audio_write_to_output (audio, buffer, size / frame_size);
+  audio_write_to_output (buffer, size / frame_size);
   pa_stream_write (stream, buffer, size, NULL, 0, PA_SEEK_RELATIVE);
 }
 
 void
-audio_stop_and_flush_stream (struct audio *audio, pa_stream *stream)
+audio_stop_and_flush_stream (pa_stream *stream)
 {
   pa_operation *operation;
 
-  if (pa_threaded_mainloop_in_thread (audio->mainloop))
+  if (pa_threaded_mainloop_in_thread (audio.mainloop))
     {
       pa_stream_flush (stream, NULL, NULL);
       pa_stream_cork (stream, 1, NULL, NULL);
     }
   else
     {
-      pa_threaded_mainloop_lock (audio->mainloop);
+      pa_threaded_mainloop_lock (audio.mainloop);
 
-      operation = pa_stream_flush (stream, audio_success_cb, audio);
-      audio_wait_success (audio, operation);
+      operation = pa_stream_flush (stream, audio_success_cb, NULL);
+      audio_wait_success (operation);
 
-      operation = pa_stream_cork (stream, 1, audio_success_cb, audio);
-      audio_wait_success (audio, operation);
+      operation = pa_stream_cork (stream, 1, audio_success_cb, NULL);
+      audio_wait_success (operation);
 
-      pa_threaded_mainloop_unlock (audio->mainloop);
+      pa_threaded_mainloop_unlock (audio.mainloop);
     }
 }
 
 void
-audio_stop_playback (struct audio *audio)
+audio_stop_playback ()
 {
-  g_mutex_lock (&audio->control.mutex);
-  if (audio->status == AUDIO_STATUS_PREPARING_RECORD ||
-      audio->status == AUDIO_STATUS_RECORDING ||
-      audio->status == AUDIO_STATUS_STOPPING_RECORD)
+  g_mutex_lock (&audio.control.mutex);
+  if (audio.status == AUDIO_STATUS_PREPARING_RECORD ||
+      audio.status == AUDIO_STATUS_RECORDING ||
+      audio.status == AUDIO_STATUS_STOPPING_RECORD)
     {
-      g_mutex_unlock (&audio->control.mutex);
+      g_mutex_unlock (&audio.control.mutex);
     }
-  else if (audio->status == AUDIO_STATUS_PREPARING_PLAYBACK ||
-	   audio->status == AUDIO_STATUS_PLAYING)
+  else if (audio.status == AUDIO_STATUS_PREPARING_PLAYBACK ||
+	   audio.status == AUDIO_STATUS_PLAYING)
     {
-      audio->status = AUDIO_STATUS_STOPPING_PLAYBACK;
-      g_mutex_unlock (&audio->control.mutex);
+      audio.status = AUDIO_STATUS_STOPPING_PLAYBACK;
+      g_mutex_unlock (&audio.control.mutex);
 
       debug_print (1, "Stopping playback...");
 
-      audio_stop_and_flush_stream (audio, audio->playback_stream);
+      audio_stop_and_flush_stream (audio.playback_stream);
 
-      g_mutex_lock (&audio->control.mutex);
-      audio->status = AUDIO_STATUS_STOPPED;
-      g_mutex_unlock (&audio->control.mutex);
+      g_mutex_lock (&audio.control.mutex);
+      audio.status = AUDIO_STATUS_STOPPED;
+      g_mutex_unlock (&audio.control.mutex);
     }
   else
     {
-      while (audio->status != AUDIO_STATUS_STOPPED &&
-	     !pa_threaded_mainloop_in_thread (audio->mainloop))
+      while (audio.status != AUDIO_STATUS_STOPPED &&
+	     !pa_threaded_mainloop_in_thread (audio.mainloop))
 	{
-	  g_mutex_unlock (&audio->control.mutex);
+	  g_mutex_unlock (&audio.control.mutex);
 	  usleep (WAIT_TIME_TO_STOP_US);
-	  g_mutex_lock (&audio->control.mutex);
+	  g_mutex_lock (&audio.control.mutex);
 	}
-      g_mutex_unlock (&audio->control.mutex);
+      g_mutex_unlock (&audio.control.mutex);
     }
 }
 
 void
-audio_start_playback (struct audio *audio)
+audio_start_playback ()
 {
   pa_operation *operation;
 
-  audio_stop_playback (audio);
+  audio_stop_playback ();
 
   debug_print (1, "Starting playback...");
 
-  audio_prepare (audio, AUDIO_STATUS_PREPARING_PLAYBACK);
+  audio_prepare (AUDIO_STATUS_PREPARING_PLAYBACK);
 
-  pa_threaded_mainloop_lock (audio->mainloop);
-  operation =
-    pa_stream_cork (audio->playback_stream, 0, audio_success_cb, audio);
-  audio_wait_success (audio, operation);
-  pa_threaded_mainloop_unlock (audio->mainloop);
+  pa_threaded_mainloop_lock (audio.mainloop);
+  operation = pa_stream_cork (audio.playback_stream, 0, audio_success_cb,
+			      NULL);
+  audio_wait_success (operation);
+  pa_threaded_mainloop_unlock (audio.mainloop);
 }
 
 void
-audio_stop_recording (struct audio *audio)
+audio_stop_recording ()
 {
-  struct sample_info *sample_info = audio->sample.info;
+  struct sample_info *sample_info = audio.sample.info;
 
-  if (!audio->record_stream)
+  if (!audio.record_stream)
     {
       return;
     }
 
-  g_mutex_lock (&audio->control.mutex);
+  g_mutex_lock (&audio.control.mutex);
 
-  if (audio->status == AUDIO_STATUS_PREPARING_PLAYBACK ||
-      audio->status == AUDIO_STATUS_PLAYING ||
-      audio->status == AUDIO_STATUS_STOPPING_PLAYBACK)
+  if (audio.status == AUDIO_STATUS_PREPARING_PLAYBACK ||
+      audio.status == AUDIO_STATUS_PLAYING ||
+      audio.status == AUDIO_STATUS_STOPPING_PLAYBACK)
     {
-      g_mutex_unlock (&audio->control.mutex);
+      g_mutex_unlock (&audio.control.mutex);
     }
-  else if (audio->status == AUDIO_STATUS_PREPARING_RECORD ||
-	   audio->status == AUDIO_STATUS_RECORDING)
+  else if (audio.status == AUDIO_STATUS_PREPARING_RECORD ||
+	   audio.status == AUDIO_STATUS_RECORDING)
     {
-      audio->status = AUDIO_STATUS_STOPPING_RECORD;
-      g_mutex_unlock (&audio->control.mutex);
+      audio.status = AUDIO_STATUS_STOPPING_RECORD;
+      g_mutex_unlock (&audio.control.mutex);
 
-      audio_finish_recording (audio);
+      audio_finish_recording ();
 
       debug_print (1, "Stopping recording (%d frames read)...",
 		   sample_info->frames);
-      audio_stop_and_flush_stream (audio, audio->record_stream);
+      audio_stop_and_flush_stream (audio.record_stream);
     }
   else
     {
-      while (audio->status != AUDIO_STATUS_STOPPED &&
-	     !pa_threaded_mainloop_in_thread (audio->mainloop))
+      while (audio.status != AUDIO_STATUS_STOPPED &&
+	     !pa_threaded_mainloop_in_thread (audio.mainloop))
 	{
-	  g_mutex_unlock (&audio->control.mutex);
+	  g_mutex_unlock (&audio.control.mutex);
 	  usleep (WAIT_TIME_TO_STOP_US);
-	  g_mutex_lock (&audio->control.mutex);
+	  g_mutex_lock (&audio.control.mutex);
 	}
-      g_mutex_unlock (&audio->control.mutex);
+      g_mutex_unlock (&audio.control.mutex);
     }
 }
 
 void
-audio_start_recording (struct audio *audio, guint options,
+audio_start_recording (guint options,
 		       audio_monitor_notifier monitor_notifier,
 		       void *monitor_data)
 {
   pa_operation *operation;
   struct sample_info *sample_info;
 
-  if (!audio->record_stream)
+  if (!audio.record_stream)
     {
       return;
     }
 
-  audio_stop_recording (audio);
-  audio_reset_record_buffer (audio, options, monitor_notifier, monitor_data);
-  audio_prepare (audio, AUDIO_STATUS_PREPARING_RECORD);
+  audio_stop_recording ();
+  audio_reset_record_buffer (options, monitor_notifier, monitor_data);
+  audio_prepare (AUDIO_STATUS_PREPARING_RECORD);
 
-  sample_info = audio->sample.info;
+  sample_info = audio.sample.info;
   debug_print (1, "Starting recording (max %d frames, format %04lx)...",
 	       sample_info->frames, sample_info->format);
 
-  pa_threaded_mainloop_lock (audio->mainloop);
-  operation = pa_stream_cork (audio->record_stream, 0, audio_success_cb,
-			      audio);
-  audio_wait_success (audio, operation);
-  pa_threaded_mainloop_unlock (audio->mainloop);
+  pa_threaded_mainloop_lock (audio.mainloop);
+  operation = pa_stream_cork (audio.record_stream, 0, audio_success_cb, NULL);
+  audio_wait_success (operation);
+  pa_threaded_mainloop_unlock (audio.mainloop);
 }
 
 static void
 audio_set_sink_volume (pa_context *context, const pa_sink_input_info *info,
 		       int eol, void *data)
 {
-  struct audio *audio = data;
-
   if (info && pa_cvolume_valid (&info->volume))
     {
       gdouble v = pa_sw_volume_to_linear (pa_cvolume_avg (&info->volume));
       debug_print (1, "Setting volume to %f...", v);
-      audio->volume_change_callback (audio->callback_data, v);
+      audio.volume_change_callback (v);
     }
 }
 
@@ -259,9 +253,7 @@ static void
 audio_notify (pa_context *context, pa_subscription_event_type_t type,
 	      uint32_t index, void *data)
 {
-  struct audio *audio = data;
-
-  if (audio->context != context)
+  if (audio.context != context)
     {
       return;
     }
@@ -272,9 +264,9 @@ audio_notify (pa_context *context, pa_subscription_event_type_t type,
       if ((type & PA_SUBSCRIPTION_EVENT_TYPE_MASK) ==
 	  PA_SUBSCRIPTION_EVENT_CHANGE)
 	{
-	  pa_context_get_sink_input_info (audio->context,
-					  audio->playback_index,
-					  audio_set_sink_volume, audio);
+	  pa_context_get_sink_input_info (audio.context,
+					  audio.playback_index,
+					  audio_set_sink_volume, NULL);
 	}
     }
 }
@@ -282,28 +274,24 @@ audio_notify (pa_context *context, pa_subscription_event_type_t type,
 static void
 audio_connect_playback_stream_callback (pa_stream *stream, void *data)
 {
-  struct audio *audio = data;
-
   if (pa_stream_get_state (stream) == PA_STREAM_READY)
     {
-      pa_stream_set_write_callback (stream, audio_write_callback, audio);
-      audio->playback_index = pa_stream_get_index (audio->playback_stream);
-      debug_print (2, "Sink index: %d", audio->playback_index);
-      pa_context_get_sink_input_info (audio->context, audio->playback_index,
-				      audio_set_sink_volume, audio);
+      pa_stream_set_write_callback (stream, audio_write_callback, NULL);
+      audio.playback_index = pa_stream_get_index (audio.playback_stream);
+      debug_print (2, "Sink index: %d", audio.playback_index);
+      pa_context_get_sink_input_info (audio.context, audio.playback_index,
+				      audio_set_sink_volume, NULL);
     }
 }
 
 static void
 audio_connect_record_stream_callback (pa_stream *stream, void *data)
 {
-  struct audio *audio = data;
-
   if (pa_stream_get_state (stream) == PA_STREAM_READY)
     {
-      pa_stream_set_read_callback (stream, audio_read_callback, audio);
-      audio->record_index = pa_stream_get_index (audio->record_stream);
-      debug_print (2, "Sink index: %d", audio->record_index);
+      pa_stream_set_read_callback (stream, audio_read_callback, NULL);
+      audio.record_index = pa_stream_get_index (audio.record_stream);
+      debug_print (2, "Sink index: %d", audio.record_index);
     }
 }
 
@@ -311,7 +299,6 @@ void
 audio_server_info_callback (pa_context *context, const pa_server_info *info,
 			    void *data)
 {
-  struct audio *audio = data;
   pa_operation *operation;
   pa_stream_flags_t stream_flags =
     PA_STREAM_START_CORKED | PA_STREAM_INTERPOLATE_TIMING |
@@ -325,37 +312,36 @@ audio_server_info_callback (pa_context *context, const pa_server_info *info,
     .fragsize = AUDIO_BUF_BYTES
   };
 
-  audio->rate = info->sample_spec.rate;
-  audio->sample_spec.format =
-    audio->float_mode ? PA_SAMPLE_FLOAT32NE : PA_SAMPLE_S16LE;
-  audio->sample_spec.channels = AUDIO_CHANNELS;
-  audio->sample_spec.rate = audio->rate;
+  audio.rate = info->sample_spec.rate;
+  audio.sample_spec.format =
+    audio.float_mode ? PA_SAMPLE_FLOAT32NE : PA_SAMPLE_S16LE;
+  audio.sample_spec.channels = AUDIO_CHANNELS;
+  audio.sample_spec.rate = audio.rate;
 
-  debug_print (1, "Using %d Hz sample rate...", audio->rate);
+  debug_print (1, "Using %d Hz sample rate...", audio.rate);
 
   pa_proplist_set (props, PA_PROP_APPLICATION_ICON_NAME, PACKAGE,
 		   sizeof (PACKAGE));
-  audio->playback_stream = pa_stream_new_with_proplist (context, _("Output"),
-							&audio->sample_spec,
-							NULL, props);
-  audio->record_stream = pa_stream_new_with_proplist (context, _("Input"),
-						      &audio->sample_spec,
-						      NULL, props);
+  audio.playback_stream = pa_stream_new_with_proplist (context, _("Output"),
+						       &audio.sample_spec,
+						       NULL, props);
+  audio.record_stream = pa_stream_new_with_proplist (context, _("Input"),
+						     &audio.sample_spec,
+						     NULL, props);
   pa_proplist_free (props);
 
-  pa_stream_set_state_callback (audio->playback_stream,
-				audio_connect_playback_stream_callback,
-				audio);
-  pa_stream_connect_playback (audio->playback_stream, NULL, &buffer_attr,
+  pa_stream_set_state_callback (audio.playback_stream,
+				audio_connect_playback_stream_callback, NULL);
+  pa_stream_connect_playback (audio.playback_stream, NULL, &buffer_attr,
 			      stream_flags, NULL, NULL);
 
-  pa_stream_set_state_callback (audio->record_stream,
-				audio_connect_record_stream_callback, audio);
-  pa_stream_connect_record (audio->record_stream, NULL, &buffer_attr,
+  pa_stream_set_state_callback (audio.record_stream,
+				audio_connect_record_stream_callback, NULL);
+  pa_stream_connect_record (audio.record_stream, NULL, &buffer_attr,
 			    stream_flags);
 
-  pa_context_set_subscribe_callback (audio->context, audio_notify, audio);
-  operation = pa_context_subscribe (audio->context,
+  pa_context_set_subscribe_callback (audio.context, audio_notify, NULL);
+  operation = pa_context_subscribe (audio.context,
 				    PA_SUBSCRIPTION_MASK_SINK_INPUT, NULL,
 				    NULL);
   if (operation != NULL)
@@ -363,105 +349,104 @@ audio_server_info_callback (pa_context *context, const pa_server_info *info,
       pa_operation_unref (operation);
     }
 
-  audio->ready_callback (audio);
+  audio.ready_callback ();
 }
 
 static void
 audio_context_callback (pa_context *context, void *data)
 {
-  struct audio *audio = data;
   if (pa_context_get_state (context) == PA_CONTEXT_READY)
     {
-      pa_context_get_server_info (context, audio_server_info_callback, audio);
+      pa_context_get_server_info (context, audio_server_info_callback, NULL);
     }
   else
     {
-      audio->ready_callback (audio);
+      audio.ready_callback ();
     }
 }
 
 void
-audio_init_int (struct audio *audio)
+audio_init_int ()
 {
   pa_mainloop_api *api;
 
-  audio->playback_stream = NULL;
-  audio->playback_index = PA_INVALID_INDEX;
+  audio.playback_stream = NULL;
+  audio.playback_index = PA_INVALID_INDEX;
 
-  audio->record_stream = NULL;
-  audio->record_index = PA_INVALID_INDEX;
+  audio.record_stream = NULL;
+  audio.record_index = PA_INVALID_INDEX;
 
-  audio->mainloop = pa_threaded_mainloop_new ();
-  if (!audio->mainloop)
+  audio.mainloop = pa_threaded_mainloop_new ();
+  if (!audio.mainloop)
     {
-      audio->ready_callback (audio->callback_data);
+      audio.ready_callback ();
       return;
     }
 
-  api = pa_threaded_mainloop_get_api (audio->mainloop);
-  audio->context = pa_context_new (api, APP_NAME);
+  api = pa_threaded_mainloop_get_api (audio.mainloop);
+  audio.context = pa_context_new (api, APP_NAME);
 
-  if (pa_context_connect (audio->context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
+  if (pa_context_connect (audio.context, NULL, PA_CONTEXT_NOFLAGS, NULL) < 0)
     {
-      pa_context_unref (audio->context);
-      pa_threaded_mainloop_free (audio->mainloop);
-      audio->mainloop = NULL;
-      audio->ready_callback (audio->callback_data);
+      pa_context_unref (audio.context);
+      pa_threaded_mainloop_free (audio.mainloop);
+      audio.mainloop = NULL;
+      audio.ready_callback ();
       return;
     }
   else
     {
-      pa_context_set_state_callback (audio->context, audio_context_callback,
-				     audio);
-      pa_threaded_mainloop_start (audio->mainloop);
-      pa_threaded_mainloop_wait (audio->mainloop);
+      pa_context_set_state_callback (audio.context, audio_context_callback,
+				     NULL);
+      pa_threaded_mainloop_start (audio.mainloop);
+      pa_threaded_mainloop_wait (audio.mainloop);
     }
 }
 
 void
-audio_destroy_int (struct audio *audio)
+audio_destroy_int ()
 {
-  if (audio->mainloop)
+  if (audio.mainloop)
     {
-      pa_threaded_mainloop_stop (audio->mainloop);
-      pa_context_disconnect (audio->context);
-      pa_context_unref (audio->context);
-      if (audio->playback_stream)
+      pa_threaded_mainloop_stop (audio.mainloop);
+      pa_context_disconnect (audio.context);
+      pa_context_unref (audio.context);
+      if (audio.playback_stream)
 	{
-	  pa_stream_unref (audio->playback_stream);
-	  audio->playback_stream = NULL;
+	  pa_stream_unref (audio.playback_stream);
+	  audio.playback_stream = NULL;
 	}
-      if (audio->record_stream)
+      if (audio.record_stream)
 	{
-	  pa_stream_unref (audio->record_stream);
-	  audio->record_stream = NULL;
+	  pa_stream_unref (audio.record_stream);
+	  audio.record_stream = NULL;
 	}
-      pa_threaded_mainloop_free (audio->mainloop);
-      audio->mainloop = NULL;
+      pa_threaded_mainloop_free (audio.mainloop);
+      audio.mainloop = NULL;
     }
 }
 
 gboolean
-audio_check (struct audio *audio)
+audio_check ()
 {
-  return audio->mainloop ? TRUE : FALSE;
+  return audio.mainloop ? TRUE : FALSE;
 }
 
 void
-audio_set_volume (struct audio *audio, gdouble volume)
+audio_set_volume (gdouble volume)
 {
   pa_operation *operation;
   pa_volume_t v;
 
-  if (audio->playback_index != PA_INVALID_INDEX)
+  if (audio.playback_index != PA_INVALID_INDEX)
     {
       debug_print (1, "Setting volume to %f...", volume);
       v = pa_sw_volume_from_linear (volume);
-      pa_cvolume_set (&audio->volume, AUDIO_CHANNELS, v);
+      pa_cvolume_set (&audio.volume, AUDIO_CHANNELS, v);
 
-      operation = pa_context_set_sink_input_volume (audio->context,
-						    audio->playback_index,
-						    &audio->volume, NULL,
+      operation = pa_context_set_sink_input_volume (audio.context,
+						    audio.playback_index,
+						    &audio.volume, NULL,
 						    NULL);
       if (operation != NULL)
 	{
