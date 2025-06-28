@@ -270,9 +270,14 @@ elektron_get_utf8 (gchar *dst, const gchar *s)
 }
 
 static inline gchar *
-elektron_get_cp1252 (const gchar *s)
+elektron_get_cp1252 (const gchar *i)
 {
-  return g_convert (s, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+  gchar *o = g_convert (i, -1, "CP1252", "UTF8", NULL, NULL, NULL);
+  if (!o)
+    {
+      error_print ("Error while converting “%s” to CP1252", i);
+    }
+  return o;
 }
 
 static inline guint8
@@ -526,6 +531,11 @@ elektron_new_msg_open_common_write (const guint8 *data, guint len,
   guint32 aux32;
   GByteArray *msg = elektron_new_msg_path (data, len, path);
 
+  if (!msg)
+    {
+      return NULL;
+    }
+
   aux32 = g_htonl (bytes);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
 
@@ -564,6 +574,11 @@ elektron_new_msg_list (const gchar *path, int32_t start_index,
   GByteArray *msg = elektron_new_msg_path (DATA_LIST_REQUEST,
 					   sizeof (DATA_LIST_REQUEST),
 					   path);
+
+  if (!msg)
+    {
+      return NULL;
+    }
 
   aux32 = g_htonl (start_index);
   g_byte_array_append (msg, (guchar *) & aux32, sizeof (guint32));
@@ -2273,6 +2288,10 @@ elektron_open_datum (struct backend *backend, const gchar *path,
   tx_msg = elektron_new_msg (data, len);
 
   path_cp1252 = elektron_get_cp1252 (path);
+  if (!path_cp1252)
+    {
+      return -EINVAL;
+    }
 
   if (mode == O_RDONLY)
     {
