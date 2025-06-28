@@ -84,9 +84,11 @@ struct tasks
   GtkWidget *clear_tasks_button;
 };
 
-void tasks_init (struct tasks *tasks, GtkBuilder * builder);
+extern struct tasks tasks;
 
-gboolean tasks_get_next_queued (struct tasks *tasks, GtkTreeIter * iter,
+void tasks_init (GtkBuilder * builder);
+
+gboolean tasks_get_next_queued (GtkTreeIter * iter,
 				enum task_type *type, gchar ** src,
 				gchar ** dst, gint * fs, guint * batch_id,
 				guint * mode);
@@ -95,25 +97,21 @@ gboolean tasks_complete_current (gpointer data);
 
 void tasks_cancel_all (GtkWidget * object, gpointer data);
 
-void tasks_visitor_set_batch_canceled (struct tasks *tasks,
-				       GtkTreeIter * iter);
+void tasks_visitor_set_batch_canceled (GtkTreeIter * iter);
 
-void tasks_batch_visitor_set_skip (struct tasks *tasks, GtkTreeIter * iter);
+void tasks_batch_visitor_set_skip (GtkTreeIter * iter);
 
-void tasks_batch_visitor_set_replace (struct tasks *tasks,
-				      GtkTreeIter * iter);
+void tasks_batch_visitor_set_replace (GtkTreeIter * iter);
 
-void tasks_stop_thread (struct tasks *tasks);
+void tasks_stop_thread ();
 
 const gchar *tasks_get_human_status (enum task_status status);
 
-gboolean tasks_check_buttons (gpointer data);
+void tasks_check_buttons ();
 
-void tasks_visit_pending (struct tasks *tasks,
-			  void (*visitor) (struct tasks * tasks,
-					   GtkTreeIter * iter));
+void tasks_visit_pending (void (*visitor) (GtkTreeIter * iter));
 
-void tasks_add (struct tasks *tasks, enum task_type type,
+void tasks_add (enum task_type type,
 		const char *src, const char *dst, gint remote_fs_id,
 		struct backend *backend);
 

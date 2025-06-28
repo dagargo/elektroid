@@ -65,7 +65,6 @@ static void elektroid_update_progress (struct job_control *);
 static const gchar *hostname;
 static gchar *local_dir;
 
-struct tasks tasks;
 extern struct maction_context maction_context;
 
 #define BACKEND (remote_browser.backend)
@@ -844,7 +843,7 @@ elektroid_run_next (gpointer data)
   guint batch_id, mode;
   GtkTreePath *path;
   gboolean transfer_active;
-  gboolean found = tasks_get_next_queued (&tasks, &iter, &type, &src, &dst,
+  gboolean found = tasks_get_next_queued (&iter, &type, &src, &dst,
 					  &fs, &batch_id, &mode);
   const gchar *status_human = tasks_get_human_status (TASK_STATUS_RUNNING);
 
@@ -885,7 +884,7 @@ elektroid_run_next (gpointer data)
 		   type, tasks.transfer.src, tasks.transfer.dst,
 		   tasks.transfer.fs_ops->name);
 
-      tasks_update_current_progress (&tasks);
+      tasks_update_current_progress (NULL);
 
       if (type == TASK_TYPE_UPLOAD)
 	{
@@ -918,7 +917,7 @@ elektroid_run_next (gpointer data)
       gtk_widget_set_sensitive (maction_context.box, TRUE);
     }
 
-  tasks_check_buttons (&tasks);
+  tasks_check_buttons ();
 
   return FALSE;
 }
@@ -958,7 +957,7 @@ elektroid_show_task_overwrite_dialog (gpointer data)
       //Cancel current task.
       tasks.transfer.status = TASK_STATUS_CANCELED;
       //Cancel all tasks belonging to the same batch.
-      tasks_visit_pending (&tasks, tasks_visitor_set_batch_canceled);
+      tasks_visit_pending (tasks_visitor_set_batch_canceled);
       break;
     case GTK_RESPONSE_REJECT:
       //Cancel current task.
@@ -966,14 +965,14 @@ elektroid_show_task_overwrite_dialog (gpointer data)
       if (apply_to_all)
 	{
 	  //Mark pending tasks as SKIP.
-	  tasks_visit_pending (&tasks, tasks_batch_visitor_set_skip);
+	  tasks_visit_pending (tasks_batch_visitor_set_skip);
 	}
       break;
     case GTK_RESPONSE_ACCEPT:
-      //Mark pending tasks as REPLACE.
       if (apply_to_all)
 	{
-	  tasks_visit_pending (&tasks, tasks_batch_visitor_set_replace);
+	  //Mark pending tasks as REPLACE.
+	  tasks_visit_pending (tasks_batch_visitor_set_replace);
 	}
       break;
     }
@@ -1120,7 +1119,7 @@ elektroid_add_upload_task_path (const gchar *rel_path,
       g_free (rel_path_trans);
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
-      tasks_add (&tasks, TASK_TYPE_UPLOAD, src_abs_path, dst_abs_dir,
+      tasks_add (TASK_TYPE_UPLOAD, src_abs_path, dst_abs_dir,
 		 remote_browser.fs_ops->id, BACKEND);
       g_free (dst_abs_path);
       goto cleanup;
@@ -1155,7 +1154,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
 
   progress.sysex_transfer.active = TRUE;
 
-  queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+  queued_before = tasks_get_next_queued (&iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
 
   selected_rows = gtk_tree_selection_get_selected_rows (sel, NULL);
@@ -1179,7 +1178,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
     }
   g_list_free_full (selected_rows, (GDestroyNotify) gtk_tree_path_free);
 
-  queued_after = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+  queued_after = tasks_get_next_queued (&iter, NULL, NULL, NULL,
 					NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
@@ -1298,7 +1297,7 @@ elektroid_add_download_task_path (const gchar *rel_path,
       g_free (rel_path_trans);
 
       gchar *dst_abs_dir = g_path_get_dirname (dst_abs_path);
-      tasks_add (&tasks, TASK_TYPE_DOWNLOAD, src_abs_path, dst_abs_dir,
+      tasks_add (TASK_TYPE_DOWNLOAD, src_abs_path, dst_abs_dir,
 		 remote_browser.fs_ops->id, BACKEND);
       g_free (dst_abs_dir);
       g_free (dst_abs_path);
@@ -1333,7 +1332,7 @@ elektroid_add_download_tasks_runner (gpointer data)
 
   progress.sysex_transfer.active = TRUE;
 
-  queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+  queued_before = tasks_get_next_queued (&iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
 
   selected_rows = gtk_tree_selection_get_selected_rows (sel, NULL);
@@ -1360,7 +1359,7 @@ elektroid_add_download_tasks_runner (gpointer data)
     }
   g_list_free_full (selected_rows, (GDestroyNotify) gtk_tree_path_free);
 
-  queued_after = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+  queued_after = tasks_get_next_queued (&iter, NULL, NULL, NULL,
 					NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
@@ -1388,7 +1387,7 @@ elektroid_add_download_tasks (GtkWidget *object, gpointer data)
 static void
 elektroid_update_progress (struct job_control *control)
 {
-  g_idle_add (tasks_update_current_progress, &tasks);
+  g_idle_add (tasks_update_current_progress, NULL);
 }
 
 static void
@@ -1650,7 +1649,7 @@ elektroid_add_upload_task_slot (const gchar *name,
       g_free (filename);
       dst_file_path = g_string_free (str, FALSE);
 
-      tasks_add (&tasks, TASK_TYPE_UPLOAD, src_file_path, dst_file_path,
+      tasks_add (TASK_TYPE_UPLOAD, src_file_path, dst_file_path,
 		 remote_browser.fs_ops->id, BACKEND);
     }
 }
@@ -1665,7 +1664,7 @@ elektroid_drag_data_received_runner_dialog (gpointer data)
 
   progress.sysex_transfer.active = TRUE;
 
-  queued_before = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+  queued_before = tasks_get_next_queued (&iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
 
   for (gint i = 0; dnd_data->uris[i] != NULL; i++)
@@ -1719,7 +1718,7 @@ elektroid_drag_data_received_runner_dialog (gpointer data)
     }
 
 end:
-  queued_after = tasks_get_next_queued (&tasks, &iter, NULL, NULL, NULL,
+  queued_after = tasks_get_next_queued (&iter, NULL, NULL, NULL,
 					NULL, NULL, NULL);
   if (!queued_before && queued_after)
     {
@@ -1759,7 +1758,7 @@ elektroid_exit ()
   progress_response (GTK_RESPONSE_CANCEL);
 
   progress_stop_thread ();
-  tasks_stop_thread (&tasks);
+  tasks_stop_thread ();
   editor_stop_load_thread ();
 
   browser_destroy_all ();
@@ -1924,7 +1923,7 @@ build_ui ()
   name_window_init (builder);
   editor_init (builder);
   elektroid_update_midi_status ();
-  tasks_init (&tasks, builder);
+  tasks_init (builder);
   progress_init (builder);
 
   g_object_set (G_OBJECT (show_remote_button), "active",
