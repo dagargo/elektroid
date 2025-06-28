@@ -257,7 +257,7 @@ browser_check_selection (gpointer data)
       if (EDITOR_IS_AVAILABLE && BROWSER_IS_SYSTEM (browser))
 	{
 	  browser_clear_other_browser_selection_if_system (browser);
-	  editor_reset (&editor, NULL);
+	  editor_reset (NULL);
 	}
       browser->last_selected_index = -1;
       return;
@@ -285,8 +285,8 @@ browser_check_selection (gpointer data)
       gchar *sample_path = path_chain (type, browser->dir, item.name);
 
       browser_clear_other_browser_selection_if_system (browser);
-      editor_reset (&editor, browser);
-      editor_start_load_thread (&editor, sample_path);
+      editor_reset (browser);
+      editor_start_load_thread (sample_path);
     }
 
   if (!sel_impl)
@@ -914,7 +914,7 @@ browser_load_dir_runner_update_ui (gpointer data)
       //If editor.audio.path is empty is a recording buffer.
       if (editor.browser == browser && editor.audio.path)
 	{
-	  editor_reset (&editor, NULL);
+	  editor_reset (NULL);
 	}
     }
 

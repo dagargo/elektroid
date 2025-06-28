@@ -68,20 +68,22 @@ struct editor
   struct browser *browser;
 };
 
-void editor_reset (struct editor *editor, struct browser *browser);
+extern struct editor editor;
+
+void editor_reset (struct browser *browser);
 
 void editor_play_clicked (GtkWidget * object, gpointer data);
 
-void editor_start_load_thread (struct editor *editor, gchar * sample_path);
+void editor_start_load_thread (gchar * sample_path);
 
-void editor_stop_load_thread (struct editor *editor);
+void editor_stop_load_thread ();
 
-void editor_init (struct editor *editor, GtkBuilder * builder);
+void editor_init (GtkBuilder * builder);
 
-void editor_destroy (struct editor *);
+void editor_destroy ();
 
-void editor_set_audio_mono_mix (struct editor *editor);
+void editor_set_audio_mono_mix ();
 
-void editor_reset_audio (struct editor *editor);
+void editor_reset_audio ();
 
 #endif

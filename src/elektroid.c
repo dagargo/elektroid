@@ -65,7 +65,6 @@ static void elektroid_update_progress (struct job_control *);
 static const gchar *hostname;
 static gchar *local_dir;
 
-struct editor editor;
 struct tasks tasks;
 extern struct maction_context maction_context;
 
@@ -133,7 +132,7 @@ elektroid_load_devices (gboolean auto_select)
 
   if (editor.browser == &remote_browser)
     {
-      editor_reset (&editor, NULL);
+      editor_reset (NULL);
     }
 
   gtk_list_store_clear (fs_list_store);
@@ -649,7 +648,7 @@ elektroid_preferences_window_accept (GtkWidget *object, gpointer data)
 
   if (buffer_len_prev != buffer_len_post || float_prev != float_post)
     {
-      editor_reset_audio (&editor);
+      editor_reset_audio ();
     }
 
   elektroid_preferences_window_cancel (NULL, NULL);
@@ -1410,7 +1409,7 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
       browser_update_fs_options (&remote_browser);
 
       gtk_widget_set_visible (editor.box, TRUE);
-      editor_set_audio_mono_mix (&editor);
+      editor_set_audio_mono_mix ();
 
       return;
     }
@@ -1431,10 +1430,10 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
   else
     {
       local_browser.fs_ops = &FS_LOCAL_GENERIC_OPERATIONS;
-      editor_reset (&editor, NULL);
+      editor_reset (NULL);
     }
 
-  editor_set_audio_mono_mix (&editor);
+  editor_set_audio_mono_mix ();
 
   if (BACKEND->type == BE_TYPE_SYSTEM)
     {
@@ -1761,11 +1760,10 @@ elektroid_exit ()
 
   progress_stop_thread ();
   tasks_stop_thread (&tasks);
-  editor_stop_load_thread (&editor);
+  editor_stop_load_thread ();
 
   browser_destroy_all ();
-
-  editor_destroy (&editor);
+  editor_destroy ();
 
   if (backend_check (BACKEND))
     {
@@ -1924,7 +1922,7 @@ build_ui ()
 
   browser_init_all (builder);
   name_window_init (builder);
-  editor_init (&editor, builder);
+  editor_init (builder);
   elektroid_update_midi_status ();
   tasks_init (&tasks, builder);
   progress_init (builder);
