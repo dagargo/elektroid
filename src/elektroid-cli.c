@@ -50,9 +50,9 @@ const gchar *current_path_progress;
 gboolean same_line_progress;
 
 static void
-complete_progress ()
+complete_progress (gint err)
 {
-  if (same_line_progress)
+  if (same_line_progress && !err)
     {
       fprintf (stderr, "\n");
     }
@@ -572,7 +572,7 @@ cli_download_item (const gchar *src_path, const gchar *dst_path)
 cleanup:
   idata_free (&idata);
 
-  complete_progress ();
+  complete_progress (err);
 
   return err;
 }
@@ -744,7 +744,7 @@ cli_upload_item (const gchar *src_path, const gchar *dst_path)
 
   g_free (upload_path);
 
-  complete_progress ();
+  complete_progress (err);
 
   return err;
 }
