@@ -55,7 +55,7 @@ item_iterator_is_dir_or_matches_extensions (struct item_iterator *iter,
       return TRUE;
     }
 
-  return file_matches_extensions (iter->item.name, extensions);
+  return filename_matches_exts (iter->item.name, extensions);
 }
 
 gchar *

@@ -3,7 +3,7 @@
 #include "../src/utils.h"
 
 void
-test_file_matches_extensions ()
+test_filename_matches_exts ()
 {
   const gchar *exts0[] = { NULL };
   const gchar *exts1[] = { "ext1", NULL };
@@ -11,15 +11,15 @@ test_file_matches_extensions ()
 
   printf ("\n");
 
-  CU_ASSERT_EQUAL (file_matches_extensions ("file.ext1", NULL), TRUE);
+  CU_ASSERT_EQUAL (filename_matches_exts ("file.ext1", NULL), TRUE);
 
-  CU_ASSERT_EQUAL (file_matches_extensions ("file.ext1", exts0), FALSE);
+  CU_ASSERT_EQUAL (filename_matches_exts ("file.ext1", exts0), FALSE);
 
-  CU_ASSERT_EQUAL (file_matches_extensions ("file", exts1), FALSE);
-  CU_ASSERT_EQUAL (file_matches_extensions ("file.ext1", exts1), TRUE);
+  CU_ASSERT_EQUAL (filename_matches_exts ("file", exts1), FALSE);
+  CU_ASSERT_EQUAL (filename_matches_exts ("file.ext1", exts1), TRUE);
 
-  CU_ASSERT_EQUAL (file_matches_extensions ("file.ext2", exts2), TRUE);
-  CU_ASSERT_EQUAL (file_matches_extensions ("file.eXt2", exts2), TRUE);
+  CU_ASSERT_EQUAL (filename_matches_exts ("file.ext2", exts2), TRUE);
+  CU_ASSERT_EQUAL (filename_matches_exts ("file.eXt2", exts2), TRUE);
 }
 
 void
@@ -49,8 +49,8 @@ main (gint argc, gchar *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "file_matches_extensions",
-		    test_file_matches_extensions))
+  if (!CU_add_test (suite, "filename_matches_exts",
+		    test_filename_matches_exts))
     {
       goto cleanup;
     }
