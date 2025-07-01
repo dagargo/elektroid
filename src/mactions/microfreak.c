@@ -63,8 +63,8 @@ microfreak_defragment_callback (GtkWidget *object, gpointer data)
     }
 
   progress_run (microfreak_defragment_runner, PROGRESS_TYPE_PULSE,
-                context->backend, _("Defragmenting Sample Memory"), NULL,
-                FALSE, NULL);
+		context->backend, _("Defragmenting Sample Memory"), NULL,
+		FALSE, NULL);
 
   browser_refresh (NULL, &remote_browser);
 }

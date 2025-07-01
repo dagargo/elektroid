@@ -77,7 +77,7 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
   size_t size;
   guint8 *dst, *src;
   guint bytes_per_frame;
-  gboolean stopping = FALSE;
+  gboolean end, stopping = FALSE;
   struct sample_info *sample_info;
   guint8 *data;
   gboolean selection_mode;
@@ -109,9 +109,18 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 
   memset (buffer, 0, size);
 
-  if ((audio->pos == sample_info->frames && !audio->loop) ||
-      audio->status == AUDIO_STATUS_PREPARING_PLAYBACK ||
-      audio->status == AUDIO_STATUS_STOPPING_PLAYBACK)
+  if (selection_mode)
+    {
+      end = audio->pos > audio->sel_end;
+    }
+  else
+    {
+      end = audio->pos == sample_info->frames;
+    }
+
+  if (audio->status == AUDIO_STATUS_PREPARING_PLAYBACK ||
+      audio->status == AUDIO_STATUS_STOPPING_PLAYBACK ||
+      (end && !audio->loop))
     {
       if (audio->status == AUDIO_STATUS_PREPARING_PLAYBACK)
 	{
@@ -155,9 +164,19 @@ audio_write_to_output (struct audio *audio, void *buffer, gint frames)
 	}
       else
 	{
-	  if (audio->pos == sample_info->frames)
+	  if (selection_mode)
 	    {
-	      break;
+	      if (audio->pos > audio->sel_end)
+		{
+		  break;
+		}
+	    }
+	  else
+	    {
+	      if (audio->pos == sample_info->frames)
+		{
+		  break;
+		}
 	    }
 	}
 

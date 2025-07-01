@@ -96,7 +96,7 @@ autosampler_runner (gpointer user_data)
 
       sample_info = editor.audio.sample.info;
       sample_info->midi_note = i;
-      sample_info->midi_fraction = cents_to_midi_fraction(data->tuning);
+      sample_info->midi_fraction = cents_to_midi_fraction (data->tuning);
 
       //Remove the heading silent frames.
       guint start = audio_detect_start (&editor.audio);
