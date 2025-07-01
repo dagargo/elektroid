@@ -54,16 +54,9 @@ extern GtkWindow *main_window;
 static double press_event_x;
 
 void elektroid_update_audio_status (gboolean);
-
 gint elektroid_run_dialog_and_destroy (GtkWidget *);
 
-struct editor_y_frame_state
-{
-  gdouble *wp;
-  gdouble *wn;
-  guint *wpc;
-  guint *wnc;
-};
+static void editor_set_waveform_data ();
 
 static void
 editor_set_layout_width_to_val (guint w)
@@ -122,12 +115,28 @@ editor_queue_draw ()
   return FALSE;
 }
 
+static void
+editor_clear_waveform_data_no_sync ()
+{
+  debug_print (1, "Clearing waveform data...");
+  editor.waveform_width = gtk_widget_get_allocated_width (editor.waveform);
+  g_free (editor.waveform_data);
+  editor.waveform_data = NULL;
+}
+
+static void
+editor_clear_waveform_data ()
+{
+  g_mutex_lock (&editor.mutex);
+  editor_clear_waveform_data_no_sync ();
+  g_mutex_unlock (&editor.mutex);
+}
+
 static gboolean
 editor_reset_browser (gpointer data)
 {
-  editor_set_layout_width_to_val (1);
-
-  editor_queue_draw ();
+  editor_set_layout_width ();
+  gtk_widget_queue_draw (editor.waveform);
 
   editor_set_widget_source (editor.autoplay_switch);
   editor_set_widget_source (editor.mix_switch);
@@ -150,10 +159,15 @@ void
 editor_reset (struct browser *browser)
 {
   editor_stop_load_thread ();
+
   audio_stop_playback ();
   audio_stop_recording ();
   audio_reset_sample ();
+
   editor.browser = browser;
+
+  editor_clear_waveform_data ();
+
   g_idle_add (editor_reset_browser, NULL);
 }
 
@@ -258,38 +272,39 @@ editor_update_ui_on_load (gpointer data)
 }
 
 static void
-editor_init_y_frame_state (struct editor_y_frame_state *state, guint channels)
+editor_reset_frame_state (guint channels)
 {
-  state->wp = g_malloc (sizeof (gdouble) * channels);
-  state->wn = g_malloc (sizeof (gdouble) * channels);
-  state->wpc = g_malloc (sizeof (guint) * channels);
-  state->wnc = g_malloc (sizeof (guint) * channels);
-}
-
-static void
-editor_destroy_y_frame_state (struct editor_y_frame_state *state)
-{
-  g_free (state->wp);
-  g_free (state->wn);
-  g_free (state->wpc);
-  g_free (state->wnc);
+  g_free (editor.frame_state.wp);
+  g_free (editor.frame_state.wn);
+  g_free (editor.frame_state.wpc);
+  g_free (editor.frame_state.wnc);
+  editor.frame_state.wp = g_malloc (sizeof (gdouble) * channels);
+  editor.frame_state.wn = g_malloc (sizeof (gdouble) * channels);
+  editor.frame_state.wpc = g_malloc (sizeof (guint) * channels);
+  editor.frame_state.wnc = g_malloc (sizeof (guint) * channels);
 }
 
 static gboolean
-editor_get_y_frame (GByteArray *sample, guint channels, guint frame,
-		    guint len, struct editor_y_frame_state *state)
+editor_get_y_frame (GByteArray *sample, guint channels, guint32 frame,
+		    guint32 len)
 {
+  gdouble y_scale;
   guint frame_size = FRAME_SIZE (channels, sample_get_internal_format ());
   guint loaded_frames = sample->len / frame_size;
   guint8 *s = &sample->data[frame * frame_size];
+
   len = len < MAX_FRAMES_PER_PIXEL ? len : MAX_FRAMES_PER_PIXEL;
+
+  y_scale = (preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ?
+	     -1.0 : 1.0 / (double) SHRT_MIN);
+  y_scale /= channels * 2.0;
 
   for (guint i = 0; i < channels; i++)
     {
-      state->wp[i] = 0.0;
-      state->wn[i] = 0.0;
-      state->wpc[i] = 0;
-      state->wnc[i] = 0;
+      editor.frame_state.wp[i] = 0.0;
+      editor.frame_state.wn[i] = 0.0;
+      editor.frame_state.wpc[i] = 0;
+      editor.frame_state.wnc[i] = 0;
     }
 
   for (guint i = 0, f = frame; i < len; i++, f++)
@@ -315,21 +330,25 @@ editor_get_y_frame (GByteArray *sample, guint channels, guint frame,
 
 	  if (v > 0)
 	    {
-	      state->wp[j] += v;
-	      state->wpc[j]++;
+	      editor.frame_state.wp[j] += v;
+	      editor.frame_state.wpc[j]++;
 	    }
 	  else
 	    {
-	      state->wn[j] += v;
-	      state->wnc[j]++;
+	      editor.frame_state.wn[j] += v;
+	      editor.frame_state.wnc[j]++;
 	    }
 	}
     }
 
   for (guint i = 0; i < channels; i++)
     {
-      state->wp[i] = state->wpc[i] == 0 ? 0.0 : state->wp[i] / state->wpc[i];
-      state->wn[i] = state->wnc[i] == 0 ? 0.0 : state->wn[i] / state->wnc[i];
+      editor.frame_state.wp[i] =
+	editor.frame_state.wpc[i] == 0 ? 0.0 :
+	editor.frame_state.wp[i] * y_scale / editor.frame_state.wpc[i];
+      editor.frame_state.wn[i] =
+	editor.frame_state.wnc[i] == 0 ? 0.0 :
+	editor.frame_state.wn[i] * y_scale / editor.frame_state.wnc[i];
     }
 
   return TRUE;
@@ -338,10 +357,8 @@ editor_get_y_frame (GByteArray *sample, guint channels, guint frame,
 static gdouble
 editor_get_x_ratio ()
 {
-  guint layout_width;
   struct sample_info *sample_info = audio.sample.info;
-  gtk_layout_get_size (GTK_LAYOUT (editor.waveform), &layout_width, NULL);
-  return sample_info->frames / (gdouble) layout_width;
+  return sample_info->frames / (gdouble) editor.waveform_width;
 }
 
 static void
@@ -369,7 +386,7 @@ editor_draw_loop_points (cairo_t *cr, guint start, guint height,
 
   gdk_cairo_set_source_rgba (cr, &color);
 
-  cairo_set_line_width (cr, x_ratio < 1.0 ? 1.0 / x_ratio : 1);
+  cairo_set_line_width (cr, 1);
 
   value = ((gint) ((loop_start - start) / x_ratio)) + .5;
   cairo_move_to (cr, value, 0);
@@ -410,7 +427,7 @@ editor_draw_grid (cairo_t *cr, guint start, guint height, double x_ratio)
       grid_length = preferences_get_int (PREF_KEY_GRID_LENGTH);
       grid_inc = sample_info->frames / (gdouble) grid_length;
 
-      cairo_set_line_width (cr, x_ratio < 1.0 ? 1.0 / x_ratio : 1);
+      cairo_set_line_width (cr, 1);
 
       for (gint i = 1; i < grid_length; i++)
 	{
@@ -452,101 +469,150 @@ editor_draw_selection (cairo_t *cr, guint start, guint height, double x_ratio)
 }
 
 static void
-editor_draw_waveform (cairo_t *cr, guint start, guint height, guint width,
-		      double x_ratio)
+editor_set_waveform_data_no_sync ()
 {
-  GdkRGBA color;
-  GtkStyleContext *context;
-  guint x_count, c_height, c_height_half;
-  gdouble x_frame, x_frame_next, y_scale, value;
-  struct editor_y_frame_state y_frame_state;
+  guint i, start, x_count;
+  gdouble x_ratio, x_frame, x_frame_next, *v;
   struct sample_info *sample_info = audio.sample.info;
 
-  editor_init_y_frame_state (&y_frame_state, sample_info->channels);
+  debug_print (1, "Setting waveform data...");
 
-  context = gtk_widget_get_style_context (editor.waveform);
-  gtk_render_background (context, cr, 0, 0, width, height);
+  if (!sample_info)
+    {
+      return;
+    }
 
-  debug_print (3, "Drawing waveform from %d with %f.2x zoom...",
-	       start, editor.zoom);
+  g_mutex_lock (&editor.mutex);
 
-  y_scale = height / (preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ?
-		      -1.0 : (double) SHRT_MIN);
-  y_scale /= (gdouble) sample_info->channels * 2;
-  c_height = height / (gdouble) sample_info->channels;
-  c_height_half = c_height / 2;
+  if (!editor.waveform_data)
+    {
+      gsize size = sizeof (gdouble) * editor.waveform_width * sample_info->channels * 2;	//Positive and negative values
+      editor.waveform_data = g_malloc (size);
+      memset (editor.waveform_data, 0, size);
+      editor.waveform_len = 0;
+      editor_reset_frame_state (sample_info->channels);
+    }
 
-  GtkStateFlags state = gtk_style_context_get_state (context);
-  gtk_style_context_get_color (context, state, &color);
+  start = editor_get_start_frame ();
+  x_ratio = editor_get_x_ratio () / editor.zoom;
 
-  gdk_cairo_set_source_rgba (cr, &color);
-
-  for (gint i = 0; i < width; i++)
+  v = editor.waveform_data;
+  for (i = 0; i < editor.waveform_width; i++)
     {
       x_frame = start + i * x_ratio;
       x_frame_next = x_frame + x_ratio;
       x_count = x_frame_next - (guint) x_frame;
-      if (!x_count)
-	{
-	  continue;
-	}
+      x_count = x_count ? x_count : 1;
 
       if (!editor_get_y_frame (audio.sample.content,
-			       sample_info->channels, x_frame, x_count,
-			       &y_frame_state))
+			       sample_info->channels, x_frame, x_count))
 	{
-	  debug_print (3,
-		       "Last available frame before the sample end. Stopping...");
 	  break;
 	}
 
-      gdouble mid_c = c_height_half;
       for (gint j = 0; j < sample_info->channels; j++)
 	{
-	  value = mid_c + y_frame_state.wp[j] * y_scale;
-	  cairo_move_to (cr, i + 0.5, value);
-	  value = mid_c + y_frame_state.wn[j] * y_scale;
-	  cairo_line_to (cr, i + 0.5, value);
-	  cairo_stroke (cr);
-	  mid_c += c_height;
+	  *v = editor.frame_state.wp[j];
+	  v++;
+	  *v = editor.frame_state.wn[j];
+	  v++;
 	}
     }
 
-  editor_destroy_y_frame_state (&y_frame_state);
+  editor.waveform_len = i;
+
+  g_mutex_unlock (&editor.mutex);
+}
+
+static void
+editor_set_waveform_data ()
+{
+  g_mutex_lock (&audio.control.mutex);
+  editor_set_waveform_data_no_sync ();
+  g_mutex_unlock (&audio.control.mutex);
+}
+
+static void
+editor_draw_waveform (cairo_t *cr, guint start, guint height, double x_ratio)
+{
+  gdouble *v, mid_c, x;
+  guint c_height, c_height_half;
+  GdkRGBA color;
+  GtkStateFlags state;
+  GtkStyleContext *context;
+  struct sample_info *sample_info = audio.sample.info;
+
+  debug_print (1, "Drawing waveform from %d with %.2f zoom...",
+	       start, editor.zoom);
+
+  context = gtk_widget_get_style_context (editor.waveform);
+
+  state = gtk_style_context_get_state (context);
+  gtk_style_context_get_color (context, state, &color);
+  gdk_cairo_set_source_rgba (cr, &color);
+
+  cairo_set_line_width (cr, x_ratio < 1.0 ? 1.0 / x_ratio : 1);
+
+  c_height = height / (gdouble) sample_info->channels;
+  c_height_half = c_height / 2;
+
+  if (editor.waveform_data)
+    {
+      v = editor.waveform_data;
+
+      x = -0.5;
+      for (gint i = 0; i < editor.waveform_len; i++)
+	{
+	  mid_c = c_height_half;
+	  for (gint j = 0; j < sample_info->channels; j++)
+	    {
+	      cairo_move_to (cr, x, *v * height + mid_c);
+	      v++;
+	      cairo_line_to (cr, x, *v * height + mid_c);
+	      v++;
+	      cairo_stroke (cr);
+	      mid_c += c_height;
+	    }
+	  x += 1.0;
+	}
+    }
 }
 
 static gboolean
 editor_draw (GtkWidget *widget, cairo_t *cr, gpointer data)
 {
-  guint width, height, start;
   gdouble x_ratio;
+  guint height, width, start;
+  GtkStyleContext *context;
   struct sample_info *sample_info;
 
   g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&editor.mutex);
 
   sample_info = audio.sample.info;
-  if (!sample_info)
+
+  height = gtk_widget_get_allocated_height (widget);
+  width = gtk_widget_get_allocated_height (widget);
+  context = gtk_widget_get_style_context (editor.waveform);
+  gtk_render_background (context, cr, 0, 0, width, height);
+
+  if (!sample_info || !editor.waveform_data)
     {
       goto end;
     }
 
-  if (sample_info->frames)
-    {
-      start = editor_get_start_frame ();
+  start = editor_get_start_frame ();
+  x_ratio = editor_get_x_ratio () / editor.zoom;
 
-      width = gtk_widget_get_allocated_width (widget);
-      height = gtk_widget_get_allocated_height (widget);
-
-      x_ratio = editor_get_x_ratio ();
-
-      editor_draw_loop_points (cr, start, height, x_ratio);
-      editor_draw_grid (cr, start, height, x_ratio);
-      editor_draw_selection (cr, start, height, x_ratio);
-      editor_draw_waveform (cr, start, height, width, x_ratio);
-    }
+  editor_draw_grid (cr, start, height, x_ratio);
+  editor_draw_selection (cr, start, height, x_ratio);
+  editor_draw_waveform (cr, start, height, x_ratio);
+  editor_draw_loop_points (cr, start, height, x_ratio);
 
 end:
+  g_mutex_unlock (&editor.mutex);
   g_mutex_unlock (&audio.control.mutex);
+
   return FALSE;
 }
 
@@ -562,12 +628,14 @@ editor_join_load_thread (gpointer data)
 }
 
 static void
-editor_load_sample_cb (struct job_control *control, gdouble p, gpointer data)
+editor_update_on_load_cb (struct job_control *control, gdouble p,
+			  gpointer data)
 {
   guint32 actual_frames;
   gboolean completed, ready_to_play;
 
   job_control_set_sample_progress_no_sync (control, p, NULL);
+  editor_set_waveform_data_no_sync ();
   g_idle_add (editor_queue_draw, data);
   completed = editor_loading_completed_no_lock (&actual_frames);
   if (!editor.ready)
@@ -607,7 +675,7 @@ editor_load_sample_runner (gpointer data)
   sample_load_from_file_full (audio.path, &audio.sample,
 			      &audio.control, &sample_info_req,
 			      &audio.sample_info_src,
-			      editor_load_sample_cb, NULL);
+			      editor_update_on_load_cb, NULL);
   return NULL;
 }
 
@@ -622,8 +690,9 @@ editor_play_clicked (GtkWidget *object, gpointer data)
 }
 
 static void
-editor_update_ui_on_record (gpointer data, gdouble value)
+editor_update_on_record_cb (gpointer data, gdouble value)
 {
+  editor_set_waveform_data_no_sync ();
   g_idle_add (editor_queue_draw, data);
   if (!editor.ready && editor_loading_completed_no_lock (NULL))
     {
@@ -681,7 +750,7 @@ editor_record_clicked (GtkWidget *object, gpointer data)
 
   gtk_widget_set_sensitive (editor.stop_button, TRUE);
   options = guirecorder_get_channel_mask (&editor.guirecorder);
-  audio_start_recording (options, editor_update_ui_on_record, NULL);
+  audio_start_recording (options, editor_update_on_record_cb, NULL);
 }
 
 static void
@@ -847,14 +916,14 @@ editor_zoom (GdkEventScroll *event, gdouble dy)
 	{
 	  goto end;
 	}
-      editor.zoom = editor.zoom / 2.0;
+      editor.zoom = editor.zoom * 0.5;
       if (editor.zoom < 1.0)
 	{
 	  editor.zoom = 1.0;
 	}
     }
 
-  debug_print (1, "Setting zoom to %f.2x...", editor.zoom);
+  debug_print (1, "Setting zoom to %.2f...", editor.zoom);
 
   start = cursor_frame - rel_pos * sample_info->frames /
     (gdouble) editor.zoom;
@@ -877,6 +946,8 @@ editor_waveform_scroll (GtkWidget *widget, GdkEventScroll *event,
       gdk_event_get_scroll_deltas ((GdkEvent *) event, &dx, &dy);
       if (editor_zoom (event, dy))
 	{
+	  editor_clear_waveform_data ();
+	  editor_set_waveform_data ();
 	  gtk_widget_queue_draw (editor.waveform);
 	}
     }
@@ -900,6 +971,7 @@ editor_on_size_allocate (GtkWidget *self, GtkAllocation *allocation,
   start = editor_get_start_frame ();
   editor_set_start_frame (start);
   editor_set_layout_width ();
+  editor_set_waveform_data_no_sync ();
 
 end:
   g_mutex_unlock (&audio.control.mutex);
@@ -1192,6 +1264,8 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
 
   audio_delete_range (audio.sel_start, sel_len);
   editor.dirty = TRUE;
+
+  editor_set_waveform_data ();
   gtk_widget_queue_draw (editor.waveform);
 
   if (status == AUDIO_STATUS_PLAYING)
@@ -1460,6 +1534,31 @@ editor_update_audio_status (gpointer data)
   elektroid_update_audio_status (status);
 }
 
+static void
+editor_size_allocate (GtkWidget *self, GtkAllocation *allocation,
+		      gpointer user_data)
+{
+  guint width;
+  gboolean needs_refresh;
+
+  debug_print (1, "Allocating waveform size...");
+
+  g_mutex_lock (&editor.mutex);
+  width = gtk_widget_get_allocated_width (editor.waveform);
+  needs_refresh = editor.waveform_width != width;
+  if (needs_refresh)
+    {
+      editor_clear_waveform_data_no_sync ();
+    }
+  g_mutex_unlock (&editor.mutex);
+
+  if (needs_refresh)
+    {
+      editor_set_waveform_data ();
+      gtk_widget_queue_draw (editor.waveform);
+    }
+}
+
 void
 editor_init (GtkBuilder *builder)
 {
@@ -1552,6 +1651,8 @@ editor_init (GtkBuilder *builder)
 		    G_CALLBACK (editor_motion_notify), NULL);
   g_signal_connect (editor.waveform_scrolled_window, "key-press-event",
 		    G_CALLBACK (editor_key_press), NULL);
+  g_signal_connect (editor.waveform, "size-allocate",
+		    G_CALLBACK (editor_size_allocate), NULL);
 
   g_signal_connect (editor.play_menuitem, "activate",
 		    G_CALLBACK (editor_play_clicked), NULL);
@@ -1579,12 +1680,14 @@ editor_init (GtkBuilder *builder)
 
   audio_init (editor_set_volume_callback, editor_update_audio_status, NULL);
 
+  g_mutex_init (&editor.mutex);
   editor_reset (NULL);
 }
 
 void
 editor_destroy ()
 {
+  editor_clear_waveform_data ();
   audio_destroy ();
 }
 

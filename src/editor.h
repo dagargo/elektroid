@@ -35,6 +35,14 @@ enum editor_operation
   EDITOR_OP_MOVE_SEL_END
 };
 
+struct frame_state
+{
+  gdouble *wp;
+  gdouble *wn;
+  guint *wpc;
+  guint *wnc;
+};
+
 struct editor
 {
   GThread *thread;
@@ -65,6 +73,12 @@ struct editor
   gboolean dirty;
   gboolean ready;
   struct browser *browser;
+  //waveform drawing
+  GMutex mutex;
+  gdouble *waveform_data;
+  guint waveform_width;
+  guint waveform_len;		//Loaded frames available in waveform_data
+  struct frame_state frame_state;
 };
 
 extern struct editor editor;

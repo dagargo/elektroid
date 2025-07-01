@@ -952,8 +952,10 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 
       if (control)
 	{
+	  g_mutex_lock (&control->mutex);
 	  cb (control, read_frames * 1.0 / sample_info_src->frames, cb_data);
-	  active = job_control_get_active_lock (control);
+	  active = control->active;
+	  g_mutex_unlock (&control->mutex);
 	}
     }
 
