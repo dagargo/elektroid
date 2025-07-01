@@ -77,7 +77,11 @@ static void
 editor_set_layout_width ()
 {
   guint w = gtk_widget_get_allocated_width (editor.waveform_scrolled_window);
-  w = w * editor.zoom - 2;	//2 border pixels
+  w = w * editor.zoom;
+  if (w)
+    {
+      w -= 2;			//2 border pixels
+    }
   editor_set_layout_width_to_val (w);
 }
 
@@ -340,22 +344,183 @@ editor_get_x_ratio ()
   return sample_info->frames / (gdouble) layout_width;
 }
 
-gboolean
-editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
+static void
+editor_set_text_color (GdkRGBA *color)
 {
-  GdkRGBA color, bgcolor;
-  guint width, height, x_count, c_height, c_height_half, start;
-  guint32 loop_start, loop_end;
   GtkStyleContext *context;
-  gdouble x_ratio, x_frame, x_frame_next, y_scale, value;
+
+  context = gtk_widget_get_style_context (editor.play_menuitem);	//Any text widget is valid
+  gtk_style_context_get_color (context, GTK_STATE_FLAG_NORMAL, color);
+}
+
+static void
+editor_draw_loop_points (cairo_t *cr, guint start, guint height,
+			 double x_ratio)
+{
+  gdouble value;
+  GdkRGBA color;
+  guint32 loop_start, loop_end;
+  struct sample_info *sample_info = audio.sample.info;
+
+  loop_start = sample_info->loop_start;
+  loop_end = sample_info->loop_end;
+
+  editor_set_text_color (&color);
+
+  gdk_cairo_set_source_rgba (cr, &color);
+
+  cairo_set_line_width (cr, x_ratio < 1.0 ? 1.0 / x_ratio : 1);
+
+  value = ((gint) ((loop_start - start) / x_ratio)) + .5;
+  cairo_move_to (cr, value, 0);
+  cairo_line_to (cr, value, height - 1);
+  cairo_stroke (cr);
+  cairo_move_to (cr, value, 0);
+  cairo_line_to (cr, value + EDITOR_LOOP_MARKER_WIDTH,
+		 EDITOR_LOOP_MARKER_HALF_HEIGHT);
+  cairo_line_to (cr, value, EDITOR_LOOP_MARKER_FULL_HEIGHT);
+  cairo_fill (cr);
+
+  value = ((gint) ((loop_end - start) / x_ratio)) + .5;
+  cairo_move_to (cr, value, 0);
+  cairo_line_to (cr, value, height - 1);
+  cairo_stroke (cr);
+  cairo_move_to (cr, value, 0);
+  cairo_line_to (cr, value - EDITOR_LOOP_MARKER_WIDTH,
+		 EDITOR_LOOP_MARKER_HALF_HEIGHT);
+  cairo_line_to (cr, value, EDITOR_LOOP_MARKER_FULL_HEIGHT);
+  cairo_fill (cr);
+}
+
+static void
+editor_draw_grid (cairo_t *cr, guint start, guint height, double x_ratio)
+{
+  GdkRGBA color;
+  gint grid_length;
+  gdouble value, grid_inc;
+  struct sample_info *sample_info = audio.sample.info;
+
+  if (preferences_get_boolean (PREF_KEY_SHOW_GRID))
+    {
+      editor_set_text_color (&color);
+      color.alpha = 0.25;
+
+      gdk_cairo_set_source_rgba (cr, &color);
+
+      grid_length = preferences_get_int (PREF_KEY_GRID_LENGTH);
+      grid_inc = sample_info->frames / (gdouble) grid_length;
+
+      cairo_set_line_width (cr, x_ratio < 1.0 ? 1.0 / x_ratio : 1);
+
+      for (gint i = 1; i < grid_length; i++)
+	{
+	  value = ((gint) ((i * grid_inc) - start) / x_ratio) + .5;
+	  cairo_move_to (cr, value, 0);
+	  cairo_line_to (cr, value, height - 1);
+	  cairo_stroke (cr);
+	}
+    }
+}
+
+static void
+editor_draw_selection (cairo_t *cr, guint start, guint height, double x_ratio)
+{
+  guint32 sel_len;
+  gdouble x_len, x_start;
+  GdkRGBA color;
+  GtkStateFlags state;
+  GtkStyleContext *context;
+
+  context = gtk_widget_get_style_context (editor.waveform);
+  state = gtk_style_context_get_state (context);
+  gtk_style_context_get_color (context, state, &color);
+
+  sel_len = AUDIO_SEL_LEN;
+  if (sel_len)
+    {
+      x_len = sel_len / x_ratio;
+      x_len = x_len < 1 ? 1 : x_len;
+      x_start = (audio.sel_start - (gdouble) start) / x_ratio;
+
+      gtk_style_context_get_color (context, state, &color);
+      color.alpha = 0.25;
+      gdk_cairo_set_source_rgba (cr, &color);
+
+      cairo_rectangle (cr, x_start, 0, x_len, height);
+      cairo_fill (cr);
+    }
+}
+
+static void
+editor_draw_waveform (cairo_t *cr, guint start, guint height, guint width,
+		      double x_ratio)
+{
+  GdkRGBA color;
+  GtkStyleContext *context;
+  guint x_count, c_height, c_height_half;
+  gdouble x_frame, x_frame_next, y_scale, value;
   struct editor_y_frame_state y_frame_state;
-  struct sample_info *sample_info;
+  struct sample_info *sample_info = audio.sample.info;
 
-  width = gtk_widget_get_allocated_width (widget);
-  height = gtk_widget_get_allocated_height (widget);
+  editor_init_y_frame_state (&y_frame_state, sample_info->channels);
 
-  context = gtk_widget_get_style_context (widget);
+  context = gtk_widget_get_style_context (editor.waveform);
   gtk_render_background (context, cr, 0, 0, width, height);
+
+  debug_print (3, "Drawing waveform from %d with %f.2x zoom...",
+	       start, editor.zoom);
+
+  y_scale = height / (preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ?
+		      -1.0 : (double) SHRT_MIN);
+  y_scale /= (gdouble) sample_info->channels * 2;
+  c_height = height / (gdouble) sample_info->channels;
+  c_height_half = c_height / 2;
+
+  GtkStateFlags state = gtk_style_context_get_state (context);
+  gtk_style_context_get_color (context, state, &color);
+
+  gdk_cairo_set_source_rgba (cr, &color);
+
+  for (gint i = 0; i < width; i++)
+    {
+      x_frame = start + i * x_ratio;
+      x_frame_next = x_frame + x_ratio;
+      x_count = x_frame_next - (guint) x_frame;
+      if (!x_count)
+	{
+	  continue;
+	}
+
+      if (!editor_get_y_frame (audio.sample.content,
+			       sample_info->channels, x_frame, x_count,
+			       &y_frame_state))
+	{
+	  debug_print (3,
+		       "Last available frame before the sample end. Stopping...");
+	  break;
+	}
+
+      gdouble mid_c = c_height_half;
+      for (gint j = 0; j < sample_info->channels; j++)
+	{
+	  value = mid_c + y_frame_state.wp[j] * y_scale;
+	  cairo_move_to (cr, i + 0.5, value);
+	  value = mid_c + y_frame_state.wn[j] * y_scale;
+	  cairo_line_to (cr, i + 0.5, value);
+	  cairo_stroke (cr);
+	  mid_c += c_height;
+	}
+    }
+
+  editor_destroy_y_frame_state (&y_frame_state);
+}
+
+static gboolean
+editor_draw (GtkWidget *widget, cairo_t *cr, gpointer data)
+{
+  guint width, height, start;
+  gdouble x_ratio;
+  struct sample_info *sample_info;
 
   g_mutex_lock (&audio.control.mutex);
 
@@ -365,123 +530,20 @@ editor_draw_waveform (GtkWidget *widget, cairo_t *cr, gpointer data)
       goto end;
     }
 
-  start = editor_get_start_frame ();
-
-  debug_print (3, "Drawing waveform from %d with %f.2x zoom...",
-	       start, editor.zoom);
-
-  loop_start = sample_info->loop_start;
-  loop_end = sample_info->loop_end;
-  x_ratio = editor_get_x_ratio ();
-
-  y_scale = height / (preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ?
-		      -1.0 : (double) SHRT_MIN);
-  y_scale /= (gdouble) sample_info->channels * 2;
-  c_height = height / (gdouble) sample_info->channels;
-  c_height_half = c_height / 2;
-
-  editor_init_y_frame_state (&y_frame_state, sample_info->channels);
-
-  cairo_set_line_width (cr, x_ratio < 1.0 ? 1.0 / x_ratio : 1);
-
   if (sample_info->frames)
     {
-      GtkStateFlags state = gtk_style_context_get_state (context);
-      gtk_style_context_get_color (context, state, &color);
-      gtk_style_context_get_color (context, state, &bgcolor);
-      bgcolor.alpha = 0.25;
+      start = editor_get_start_frame ();
 
-      guint32 sel_len = AUDIO_SEL_LEN;
-      if (sel_len)
-	{
-	  gdouble x_len = sel_len / x_ratio;
-	  x_len = x_len < 1 ? 1 : x_len;
-	  gdouble x_start = (audio.sel_start - (gdouble) start) / x_ratio;
-	  gdk_cairo_set_source_rgba (cr, &bgcolor);
-	  cairo_rectangle (cr, x_start, 0, x_len, height);
-	  cairo_fill (cr);
-	}
+      width = gtk_widget_get_allocated_width (widget);
+      height = gtk_widget_get_allocated_height (widget);
 
-      gdk_cairo_set_source_rgba (cr, &color);
+      x_ratio = editor_get_x_ratio ();
 
-      for (gint i = 0; i < width; i++)
-	{
-	  x_frame = start + i * x_ratio;
-	  x_frame_next = x_frame + x_ratio;
-	  x_count = x_frame_next - (guint) x_frame;
-	  if (!x_count)
-	    {
-	      continue;
-	    }
-
-	  if (!editor_get_y_frame (audio.sample.content,
-				   sample_info->channels, x_frame, x_count,
-				   &y_frame_state))
-	    {
-	      debug_print (3,
-			   "Last available frame before the sample end. Stopping...");
-	      break;
-	    }
-
-	  gdouble mid_c = c_height_half;
-	  for (gint j = 0; j < sample_info->channels; j++)
-	    {
-	      value = mid_c + y_frame_state.wp[j] * y_scale;
-	      cairo_move_to (cr, i + 0.5, value);
-	      value = mid_c + y_frame_state.wn[j] * y_scale;
-	      cairo_line_to (cr, i + 0.5, value);
-	      cairo_stroke (cr);
-	      mid_c += c_height;
-	    }
-	}
+      editor_draw_loop_points (cr, start, height, x_ratio);
+      editor_draw_grid (cr, start, height, x_ratio);
+      editor_draw_selection (cr, start, height, x_ratio);
+      editor_draw_waveform (cr, start, height, width, x_ratio);
     }
-
-  cairo_set_line_width (cr, 1);
-
-  if (sample_info->frames)
-    {
-      context = gtk_widget_get_style_context (editor.play_menuitem);	//Any text widget is valid
-      gtk_style_context_get_color (context, GTK_STATE_FLAG_NORMAL, &color);
-      gdk_cairo_set_source_rgba (cr, &color);
-
-      value = ((gint) ((loop_start - start) / x_ratio)) + .5;
-      cairo_move_to (cr, value, 0);
-      cairo_line_to (cr, value, height - 1);
-      cairo_stroke (cr);
-      cairo_move_to (cr, value, 0);
-      cairo_line_to (cr, value + EDITOR_LOOP_MARKER_WIDTH,
-		     EDITOR_LOOP_MARKER_HALF_HEIGHT);
-      cairo_line_to (cr, value, EDITOR_LOOP_MARKER_FULL_HEIGHT);
-      cairo_fill (cr);
-
-      value = ((gint) ((loop_end - start) / x_ratio)) + .5;
-      cairo_move_to (cr, value, 0);
-      cairo_line_to (cr, value, height - 1);
-      cairo_stroke (cr);
-      cairo_move_to (cr, value, 0);
-      cairo_line_to (cr, value - EDITOR_LOOP_MARKER_WIDTH,
-		     EDITOR_LOOP_MARKER_HALF_HEIGHT);
-      cairo_line_to (cr, value, EDITOR_LOOP_MARKER_FULL_HEIGHT);
-      cairo_fill (cr);
-
-      if (preferences_get_boolean (PREF_KEY_SHOW_GRID))
-	{
-	  gint grid_length = preferences_get_int (PREF_KEY_GRID_LENGTH);
-	  color.alpha = 0.25;
-	  gdk_cairo_set_source_rgba (cr, &color);
-
-	  gdouble grid_inc = sample_info->frames / (gdouble) grid_length;
-	  for (gint i = 1; i < grid_length; i++)
-	    {
-	      value = ((gint) ((i * grid_inc) - start) / x_ratio) + .5;
-	      cairo_move_to (cr, value, 0);
-	      cairo_line_to (cr, value, height - 1);
-	      cairo_stroke (cr);
-	    }
-	}
-    }
-
-  editor_destroy_y_frame_state (&y_frame_state);
 
 end:
   g_mutex_unlock (&audio.control.mutex);
@@ -709,8 +771,8 @@ editor_grid_length_changed (GtkSpinButton *object, gpointer data)
 }
 
 static void
-editor_get_frame_at_position (gdouble x,
-			      guint *cursor_frame, gdouble *rel_pos)
+editor_get_frame_at_position (gdouble x, guint *cursor_frame,
+			      gdouble *rel_pos)
 {
   guint lw;
   guint start = editor_get_start_frame ();
@@ -1451,8 +1513,7 @@ editor_init (GtkBuilder *builder)
     GTK_LEVEL_BAR (gtk_builder_get_object
 		   (builder, "record_dialog_monitor_levelbar"));
 
-  g_signal_connect (editor.waveform, "draw",
-		    G_CALLBACK (editor_draw_waveform), NULL);
+  g_signal_connect (editor.waveform, "draw", G_CALLBACK (editor_draw), NULL);
   gtk_widget_add_events (editor.waveform, GDK_SCROLL_MASK);
   g_signal_connect (editor.waveform, "scroll-event",
 		    G_CALLBACK (editor_waveform_scroll), NULL);
