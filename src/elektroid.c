@@ -62,7 +62,6 @@ static gpointer elektroid_upload_task_runner (gpointer);
 static gpointer elektroid_download_task_runner (gpointer);
 static void elektroid_update_progress (struct job_control *);
 
-static const gchar *hostname;
 static gchar *local_dir;
 
 extern struct maction_context maction_context;
@@ -1936,7 +1935,7 @@ build_ui ()
   elektroid_show_remote (preferences_get_boolean (PREF_KEY_SHOW_REMOTE));	//This triggers both browsers initializations.
 
   GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (local_name_entry));
-  gtk_entry_buffer_set_text (buf, hostname, -1);
+  gtk_entry_buffer_set_text (buf, g_get_host_name (), -1);
 
   elektroid_set_window_size ();
 }
@@ -2020,8 +2019,6 @@ main (int argc, char *argv[])
   setlocale (LC_ALL, "");
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
-
-  hostname = g_get_host_name ();
 
   regconn_register ();
   regma_register ();
