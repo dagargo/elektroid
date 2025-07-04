@@ -30,6 +30,8 @@
 #include "connectors/system.h"
 #include "guirecorder.h"
 
+extern GtkWindow *main_window;
+
 static struct guirecorder autosampler_guirecorder;
 
 static GtkDialog *autosampler_dialog;
@@ -223,14 +225,9 @@ autosampler_dialog_name_changed (GtkWidget *object, gpointer data)
   gtk_widget_set_sensitive (autosampler_dialog_start_button, len > 0);
 }
 
-static void
-autosampler_configure_gui (GtkBuilder *builder)
+void
+autosampler_init (GtkBuilder *builder)
 {
-  if (autosampler_dialog)
-    {
-      return;
-    }
-
   autosampler_dialog =
     GTK_DIALOG (gtk_builder_get_object (builder, "autosampler_dialog"));
   autosampler_dialog_name_entry =
@@ -296,8 +293,6 @@ autosampler_maction_builder (struct maction_context *context)
       ma->sensitive = audio_check ();
       ma->callback = G_CALLBACK (autosampler_callback);
     }
-
-  autosampler_configure_gui (context->builder);
 
   return ma;
 }

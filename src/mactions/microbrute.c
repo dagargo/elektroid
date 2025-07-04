@@ -24,10 +24,11 @@
 #include "connectors/microbrute.h"
 #include "utils.h"
 
+extern GtkWindow *main_window;
 extern struct browser remote_browser;
 
 static guint8 channel;
-static GtkWidget *config_window = NULL;
+static GtkWidget *config_window;
 static GtkWidget *calibration_assistant;
 static GtkWidget *note_priority;
 static GtkWidget *vel_response;
@@ -286,21 +287,16 @@ microbrute_assistant_prepare (GtkAssistant *assistant, GtkWidget *page,
     }
 }
 
-static void
-microbrute_configure_gui (GtkWindow *parent)
+void
+microbrute_init ()
 {
-  if (config_window)
-    {
-      return;
-    }
-
   GtkBuilder *builder = gtk_builder_new ();
   gtk_builder_add_from_file (builder, DATADIR "/microbrute/microbrute.ui",
 			     NULL);
   config_window = GTK_WIDGET (gtk_builder_get_object (builder,
 						      "config_window"));
   gtk_window_resize (GTK_WINDOW (config_window), 1, 1);
-  gtk_window_set_transient_for (GTK_WINDOW (config_window), parent);
+  gtk_window_set_transient_for (GTK_WINDOW (config_window), main_window);
 
   note_priority =
     GTK_WIDGET (gtk_builder_get_object (builder, "note_priority"));
@@ -370,7 +366,8 @@ microbrute_configure_gui (GtkWindow *parent)
 
   calibration_assistant = GTK_WIDGET (gtk_builder_get_object (builder,
 							      "calibration_assistant"));
-  gtk_window_set_transient_for (GTK_WINDOW (calibration_assistant), parent);
+  gtk_window_set_transient_for (GTK_WINDOW (calibration_assistant),
+				main_window);
 
   g_signal_connect (calibration_assistant, "close",
 		    G_CALLBACK (microbrute_assistant_close), NULL);
@@ -394,8 +391,6 @@ microbrute_maction_conf_builder (struct maction_context *context)
     {
       return NULL;
     }
-
-  microbrute_configure_gui (context->parent);
 
   ma = g_malloc (sizeof (struct maction));
   ma->type = MACTION_BUTTON;
@@ -422,8 +417,6 @@ microbrute_maction_cal_builder (struct maction_context *context)
     {
       return NULL;
     }
-
-  microbrute_configure_gui (context->parent);
 
   ma = g_malloc (sizeof (struct maction));
   ma->type = MACTION_BUTTON;

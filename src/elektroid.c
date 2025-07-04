@@ -62,6 +62,9 @@ static gpointer elektroid_upload_task_runner (gpointer);
 static gpointer elektroid_download_task_runner (gpointer);
 static void elektroid_update_progress (struct job_control *);
 
+void autosampler_init (GtkBuilder * builder);
+void microbrute_init ();
+
 static gchar *local_dir;
 
 extern struct maction_context maction_context;
@@ -1924,13 +1927,13 @@ build_ui ()
   tasks_init (builder);
   progress_init (builder);
 
+  microbrute_init ();
+  autosampler_init (builder);
+
   g_object_set (G_OBJECT (show_remote_button), "active",
 		preferences_get_boolean (PREF_KEY_SHOW_REMOTE), NULL);
 
   gtk_widget_set_sensitive (remote_box, FALSE);
-
-  maction_context.builder = builder;
-  maction_context.parent = main_window;
 
   elektroid_show_remote (preferences_get_boolean (PREF_KEY_SHOW_REMOTE));	//This triggers both browsers initializations.
 
@@ -1962,13 +1965,13 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
     }
 
   build_ui ();
-  gtk_application_add_window (GTK_APPLICATION (gapp),
-			      GTK_WINDOW (main_window));
 }
 
 static void
 elektroid_activate (GApplication *gapp, gpointer *user_data)
 {
+  gtk_application_add_window (GTK_APPLICATION (gapp),
+			      GTK_WINDOW (main_window));
   gtk_window_present (GTK_WINDOW (main_window));
 }
 

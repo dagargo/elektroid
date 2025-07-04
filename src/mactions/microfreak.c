@@ -24,6 +24,7 @@
 #include "../browser.h"
 #include "connectors/microfreak.h"
 
+extern GtkWindow *main_window;
 extern struct browser remote_browser;
 
 static gpointer
@@ -41,9 +42,8 @@ microfreak_defragment_callback (GtkWidget *object, gpointer data)
 {
   gint res;
   GtkWidget *dialog;
-  struct maction_context *context = data;
 
-  dialog = gtk_message_dialog_new (GTK_WINDOW (context->parent),
+  dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
 				   GTK_DIALOG_MODAL,
 				   GTK_MESSAGE_ERROR,
 				   GTK_BUTTONS_NONE,

@@ -42,8 +42,6 @@ struct maction
 struct maction_context
 {
   GtkWidget *box;
-  GtkBuilder *builder;
-  GtkWindow *parent;
   gboolean separator;		//This does not need to be initialized as it's used internally.
 };
 
