@@ -77,6 +77,17 @@ static const guint8 JUNK_CHUNK_DATA[] = {
   0, 0, 0, 0
 };
 
+void
+job_control_set_sample_progress (struct job_control *control, gdouble p)
+{
+  job_control_set_progress_no_sync (control, p);
+
+  if (control->callback)
+    {
+      control->callback (control);
+    }
+}
+
 static sf_count_t
 get_filelen_byte_array_io (void *user_data)
 {
@@ -655,8 +666,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 			struct job_control *control, struct idata *idata,
 			const struct sample_info *sample_info_req,
 			struct sample_info *sample_info_src,
-			sample_load_cb cb, gpointer cb_data,
-			const gchar *name)
+			job_control_progress_callback cb, const gchar *name)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -953,7 +963,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       if (control)
 	{
 	  g_mutex_lock (&control->mutex);
-	  cb (control, read_frames * 1.0 / sample_info_src->frames, cb_data);
+	  cb (control, read_frames * 1.0 / sample_info_src->frames);
 	  active = control->active;
 	  g_mutex_unlock (&control->mutex);
 	}
@@ -989,7 +999,7 @@ cleanup:
   if (!active || !sample_info->frames || err)
     {
       idata_free (idata);
-      cb (control, 0, cb_data);
+      cb (control, 0);
       g_mutex_unlock (&control->mutex);
       return -1;
     }
@@ -1011,7 +1021,7 @@ cleanup:
       //It there was a rounding fix in the previous lines, the call is needed to detect the end of the loading process.
       if (rounding_fix)
 	{
-	  cb (control, 1.0, cb_data);
+	  cb (control, 1.0);
 	}
       g_mutex_unlock (&control->mutex);
     }
@@ -1030,8 +1040,8 @@ sample_load_from_memfile (struct idata *memfile, struct idata *sample,
   data.array = memfile->content;
   return sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, sample,
 				 sample_info_req, sample_info_src,
-				 job_control_set_sample_progress_no_sync,
-				 NULL, memfile->name);
+				 job_control_set_sample_progress,
+				 memfile->name);
 }
 
 // Reloads the input into the output following all the requirements.
@@ -1039,8 +1049,8 @@ sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 gint
 sample_reload (struct idata *input, struct idata *output,
 	       struct job_control *control,
-	       const struct sample_info *sample_info_req, sample_load_cb cb,
-	       gpointer cb_data)
+	       const struct sample_info *sample_info_req,
+	       job_control_progress_callback cb)
 {
   gint err;
   struct idata aux;
@@ -1059,7 +1069,7 @@ sample_reload (struct idata *input, struct idata *output,
   data.array = aux.content;
   err = sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, output,
 				sample_info_req, &sample_info_src, cb,
-				cb_data, input->name);
+				input->name);
   idata_free (&aux);
 
   return err;
@@ -1070,7 +1080,7 @@ sample_load_from_file_full (const gchar *path, struct idata *sample,
 			    struct job_control *control,
 			    const struct sample_info *sample_info_req,
 			    struct sample_info *sample_info_src,
-			    sample_load_cb cb, gpointer cb_data)
+			    job_control_progress_callback cb)
 {
   gint err;
   if (sample_microfreak_filename (path))
@@ -1084,8 +1094,7 @@ sample_load_from_file_full (const gchar *path, struct idata *sample,
 	}
 
       memcpy (sample_info_src, aux.info, sizeof (struct sample_info));
-      err = sample_reload (&aux, sample, control, sample_info_req, cb,
-			   cb_data);
+      err = sample_reload (&aux, sample, control, sample_info_req, cb);
       idata_free (&aux);
     }
   else
@@ -1100,7 +1109,7 @@ sample_load_from_file_full (const gchar *path, struct idata *sample,
       filename_remove_ext (name);
       err = sample_load_libsndfile (file, &FILE_IO, control, sample,
 				    sample_info_req, sample_info_src, cb,
-				    cb_data, name);
+				    name);
       g_free (name);
       fclose (file);
     }
@@ -1116,8 +1125,7 @@ sample_load_from_file (const gchar *path, struct idata *sample,
 {
   return sample_load_from_file_full (path, sample, control,
 				     sample_info_req, sample_info_src,
-				     job_control_set_sample_progress_no_sync,
-				     NULL);
+				     job_control_set_sample_progress);
 }
 
 const gchar **

@@ -638,15 +638,14 @@ editor_join_load_thread (gpointer data)
 }
 
 static void
-editor_update_on_load_cb (struct job_control *control, gdouble p,
-			  gpointer data)
+editor_update_on_load_cb (struct job_control *control, gdouble p)
 {
   guint32 actual_frames;
   gboolean completed, ready_to_play;
 
-  job_control_set_sample_progress_no_sync (control, p, NULL);
+  job_control_set_sample_progress (control, p);
   editor_set_waveform_data_no_sync ();
-  g_idle_add (editor_queue_draw, data);
+  g_idle_add (editor_queue_draw, NULL);
   completed = editor_loading_completed_no_lock (&actual_frames);
   if (!editor.ready)
     {
@@ -654,7 +653,7 @@ editor_update_on_load_cb (struct job_control *control, gdouble p,
 		       && actual_frames >= FRAMES_TO_PLAY) || completed;
       if (ready_to_play)
 	{
-	  g_idle_add (editor_update_ui_on_load, data);
+	  g_idle_add (editor_update_ui_on_load, NULL);
 	  editor.ready = TRUE;
 	}
     }
@@ -685,7 +684,7 @@ editor_load_sample_runner (gpointer data)
   sample_load_from_file_full (audio.path, &audio.sample,
 			      &audio.control, &sample_info_req,
 			      &audio.sample_info_src,
-			      editor_update_on_load_cb, NULL);
+			      editor_update_on_load_cb);
   return NULL;
 }
 
@@ -1345,7 +1344,7 @@ editor_save_with_format (const gchar *dst_path, struct idata *sample)
     {
       struct idata resampled;
       err = sample_reload (sample, &resampled, NULL, sample_info_src,
-			   job_control_set_sample_progress_no_sync, NULL);
+			   job_control_set_sample_progress);
       if (err)
 	{
 	  return err;

@@ -71,6 +71,7 @@ struct sample_info
 struct job_control;
 
 typedef void (*job_control_callback) (struct job_control *);
+typedef void (*job_control_progress_callback) (struct job_control *, gdouble);
 
 struct job_control
 {
@@ -125,7 +126,7 @@ gint file_save_data (const gchar * path, const guint8 * data, ssize_t len);
 gchar *get_human_size (gint64, gboolean);
 
 void job_control_set_progress_no_sync (struct job_control *control,
-				       gdouble progress);
+				       gdouble p);
 
 void job_control_set_progress (struct job_control *control, gdouble progress);
 

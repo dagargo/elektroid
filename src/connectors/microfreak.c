@@ -1394,7 +1394,7 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
       microfreak_init_sample_info (&si_req, MICROFREAK_WAVETABLE_LEN);
       si_req.rate = si->rate * MICROFREAK_WAVETABLE_LEN / si->frames;
       err = sample_reload (&aux, wavetable, NULL, &si_req,
-			   job_control_set_sample_progress_no_sync, NULL);
+			   job_control_set_sample_progress);
       idata_free (&aux);
       a = wavetable->content;
       debug_print (2, "Resulting size: %d", a->len);
