@@ -471,7 +471,7 @@ editor_draw_selection (cairo_t *cr, guint start, guint height, double x_ratio)
 static void
 editor_set_waveform_data_no_sync ()
 {
-  guint i, start, x_count;
+  guint i, last_frame, start, x_count;
   gdouble x_ratio, x_frame, x_frame_next, *v;
   struct sample_info *sample_info = audio.sample.info;
 
@@ -496,8 +496,18 @@ editor_set_waveform_data_no_sync ()
   start = editor_get_start_frame ();
   x_ratio = editor_get_x_ratio () / editor.zoom;
 
-  v = editor.waveform_data;
-  for (i = 0; i < editor.waveform_width; i++)
+  //Loading is still going on
+  if (editor.waveform_len < editor.waveform_width)
+    {
+      last_frame = editor.waveform_len;
+    }
+  else
+    {
+      last_frame = 0;
+    }
+
+  v = &editor.waveform_data[last_frame * sample_info->channels * 2];	//Positive and negative values
+  for (i = last_frame; i < editor.waveform_width; i++)
     {
       x_frame = start + i * x_ratio;
       x_frame_next = x_frame + x_ratio;
