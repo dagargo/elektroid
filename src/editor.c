@@ -1002,7 +1002,7 @@ editor_loading_completed ()
 static gboolean
 editor_cursor_frame_over_frame (guint cursor_frame, guint frame)
 {
-  gdouble x_ratio = editor_get_x_ratio ();
+  gdouble x_ratio = editor_get_x_ratio () / editor.zoom;
   gdouble shift = x_ratio < 2 ? 2 : x_ratio * 2;
   return cursor_frame >= frame - shift && cursor_frame <= frame + shift;
 }
