@@ -290,6 +290,7 @@ void
 microfreak_init_sample_info (struct sample_info *sample_info, guint32 frames)
 {
   sample_info->midi_note = 0;
+  sample_info->midi_fraction = 0;
   sample_info->loop_type = 0;
   sample_info->channels = 1;
   sample_info->rate = MICROFREAK_SAMPLERATE;

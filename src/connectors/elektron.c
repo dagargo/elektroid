@@ -1575,6 +1575,7 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 	  sample_info->loop_type = elektron_sample_header->loop_type;
 	  sample_info->rate = g_ntohl (elektron_sample_header->rate);	//In the case of the RAW filesystem is not used and it is harmless.
 	  sample_info->midi_note = 0;
+	  sample_info->midi_fraction = 0;
 	  sample_info->channels = elektron_sample_header->stereo + 1;
 	  sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
 	  debug_print (2, "Loop start at %d, loop end at %d",
