@@ -262,10 +262,10 @@ elektron_free_iterator_data (void *iter_data)
 }
 
 static inline void
-elektron_get_utf8 (gchar *dst, const gchar *s)
+elektron_item_set_name (struct item *item, const gchar *name)
 {
-  gchar *aux = g_convert (s, -1, "UTF8", "CP1252", NULL, NULL, NULL);
-  snprintf (dst, LABEL_MAX, "%s", aux);
+  gchar *aux = g_convert (name, -1, "UTF8", "CP1252", NULL, NULL, NULL);
+  item_set_name (item, aux);
   g_free (aux);
 }
 
@@ -322,7 +322,7 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
       data->pos++;
 
       name_cp1252 = (gchar *) & data->msg->data[data->pos];
-      elektron_get_utf8 (iter->item.name, name_cp1252);
+      elektron_item_set_name (&iter->item, name_cp1252);
       if (data->mode == ITER_MODE_RAW && iter->item.type == ITEM_TYPE_FILE)
 	{
 	  //This eliminates the extension ".mc-snd" that the device provides.
@@ -1824,7 +1824,7 @@ elektron_next_data_entry (struct item_iterator *iter)
 	}
     }
 
-  elektron_get_utf8 (iter->item.name, name_cp1252);
+  elektron_item_set_name (&iter->item, name_cp1252);
   data->pos += strlen (name_cp1252) + 1;
   has_children = data->msg->data[data->pos];
   data->pos++;

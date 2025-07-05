@@ -200,9 +200,11 @@ gboolean item_iterator_is_dir_or_matches_exts (struct item_iterator
  * Returns the filename for an item, which is a string that uniquely idenfifies an item.
  * In a PC, filenames are typically strings but in embedded devices this could be just a number (in string format).
  * Typically, in these systems, several slots can have the same name but the id is an address to a memory slot.
- * @param options The options member in the fs_operations struct.
  * @param item
+ * @param options The options member in the fs_operations struct.
  */
 gchar *item_get_filename (struct item *item, guint32 options);
+
+void item_set_name (struct item *item, const gchar * name);
 
 #endif

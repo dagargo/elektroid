@@ -70,3 +70,9 @@ item_get_filename (struct item *item, guint32 fs_options)
 
   return strdup (item->name);
 }
+
+void
+item_set_name (struct item *item, const gchar *name)
+{
+  snprintf (item->name, LABEL_MAX, "%s", name);
+}

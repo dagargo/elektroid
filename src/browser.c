@@ -141,7 +141,7 @@ browser_set_item (GtkTreeModel *model, GtkTreeIter *iter, struct item *item)
 		      BROWSER_LIST_STORE_NAME_FIELD, &name,
 		      BROWSER_LIST_STORE_SIZE_FIELD, &item->size,
 		      BROWSER_LIST_STORE_ID_FIELD, &item->id, -1);
-  snprintf (item->name, LABEL_MAX, "%s", name);
+  item_set_name (item, name);
   g_free (name);
 }
 
@@ -172,7 +172,7 @@ browser_sort_by_name (GtkTreeModel *model,
   return ret;
 }
 
-gint
+static gint
 browser_sort_by_id (GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b,
 		    gpointer data)
 {
