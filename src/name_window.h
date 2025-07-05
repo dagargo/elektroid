@@ -1,5 +1,5 @@
 /*
- *   name.h
+ *   name_window.h
  *   Copyright (C) 2024 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
@@ -19,22 +19,21 @@
  */
 
 #include <gtk/gtk.h>
-#include "editor.h"
 
 #ifndef NAME_WINDOW_H
 #define NAME_WINDOW_H
 
-typedef void (*name_accept_cb) (gpointer source, const gchar * name);
+typedef void (*name_window_accept_cb) (gpointer source, const gchar * name);
 
 void name_window_init (GtkBuilder * builder);
 
 void name_window_edit_text (const gchar * title,
 			    gint max_len, const gchar * text, gint sel_start,
-			    gint sel_end, name_accept_cb accept_cb,
+			    gint sel_end, name_window_accept_cb accept_cb,
 			    gpointer source);
 
 void name_window_new_text (const gchar * title, gint max_len,
-			   name_accept_cb accept_cb, gpointer source);
+			   name_window_accept_cb accept_cb, gpointer source);
 
 void name_window_destroy ();
 

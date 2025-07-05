@@ -1,5 +1,5 @@
 /*
- *   name.c
+ *   name_window.c
  *   Copyright (C) 2024 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
@@ -25,12 +25,12 @@ static GtkEntry *entry;
 static GtkWidget *accept_button;
 static GtkWidget *cancel_button;
 static gpointer source;
-static name_accept_cb accept_cb;
+static name_window_accept_cb accept_cb;
 
 static void
 name_window_show (const gchar *title, gint max_len, const gchar *text,
 		  gint sel_start, gint sel_end, gboolean sensitive,
-		  name_accept_cb accept_cb_, gpointer source_)
+		  name_window_accept_cb accept_cb_, gpointer source_)
 {
   accept_cb = accept_cb_;
   source = source_;
@@ -48,8 +48,8 @@ name_window_show (const gchar *title, gint max_len, const gchar *text,
 
 void
 name_window_edit_text (const gchar *title, gint max_len, const gchar *text,
-		       gint sel_start, gint sel_end, name_accept_cb accept_cb,
-		       gpointer source)
+		       gint sel_start, gint sel_end,
+		       name_window_accept_cb accept_cb, gpointer source)
 {
   name_window_show (title, max_len, text, sel_start, sel_end, TRUE, accept_cb,
 		    source);
@@ -57,7 +57,7 @@ name_window_edit_text (const gchar *title, gint max_len, const gchar *text,
 
 void
 name_window_new_text (const gchar *title, gint max_len,
-		      name_accept_cb accept_cb, gpointer source)
+		      name_window_accept_cb accept_cb, gpointer source)
 {
   name_window_show (title, max_len, "", 0, 0, FALSE, accept_cb, source);
 }
