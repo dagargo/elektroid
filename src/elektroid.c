@@ -32,6 +32,7 @@
 #include "local.h"
 #include "name_window.h"
 #include "preferences.h"
+#include "preferences_window.h"
 #include "progress.h"
 #include "regconn.h"
 #include "regma.h"
@@ -78,14 +79,6 @@ guint batch_id;
 GtkWindow *main_window;
 static GtkBuilder *builder;
 static GtkAboutDialog *about_dialog;
-static GtkWindow *preferences_window;
-static GtkWidget *preferences_window_accept_button;
-static GtkWidget *preferences_window_cancel_button;
-static GtkWidget *audio_use_float_switch;
-static GtkWidget *play_sample_while_loading_switch;
-static GtkWidget *audio_buffer_length_combo;
-static GtkWidget *stop_device_when_connecting_switch;
-static GtkWidget *elektron_load_sound_tags_switch;
 static GtkPopover *main_popover;
 static GtkWidget *show_remote_button;
 static GtkWidget *preferences_button;
@@ -596,116 +589,9 @@ elektroid_show_remote_clicked (GtkWidget *object, gpointer data)
 }
 
 static void
-elektroid_preferences_window_cancel (GtkWidget *object, gpointer data)
+elektroid_open_preferences (GtkWidget *object, gpointer data)
 {
-  gtk_widget_hide (GTK_WIDGET (preferences_window));
-}
-
-static gboolean
-elektroid_preferences_window_delete (GtkWidget *widget, GdkEvent *event,
-				     gpointer data)
-{
-  elektroid_preferences_window_cancel (NULL, NULL);
-  return FALSE;
-}
-
-static void
-elektroid_preferences_window_accept (GtkWidget *object, gpointer data)
-{
-  GtkTreeIter iter;
-  GValue x = G_VALUE_INIT;
-  gboolean b, float_prev, float_post;
-  gint i, j, buffer_len_prev, buffer_len_post;
-  GtkTreeModel *model =
-    gtk_combo_box_get_model (GTK_COMBO_BOX (audio_buffer_length_combo));
-
-  buffer_len_prev = preferences_get_int (PREF_KEY_AUDIO_BUFFER_LEN);
-  float_prev = preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT);
-
-  b = gtk_switch_get_active (GTK_SWITCH (audio_use_float_switch));
-  preferences_set_boolean (PREF_KEY_AUDIO_USE_FLOAT, b);
-  b = gtk_switch_get_active (GTK_SWITCH (play_sample_while_loading_switch));
-  preferences_set_boolean (PREF_KEY_PLAY_WHILE_LOADING, b);
-  b = gtk_switch_get_active (GTK_SWITCH (stop_device_when_connecting_switch));
-  preferences_set_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING, b);
-  b = gtk_switch_get_active (GTK_SWITCH (elektron_load_sound_tags_switch));
-  preferences_set_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS, b);
-
-  i = gtk_combo_box_get_active (GTK_COMBO_BOX (audio_buffer_length_combo));
-
-  gtk_tree_model_get_iter_first (model, &iter);
-  for (j = 0; j < i; j++)
-    {
-      gtk_tree_model_iter_next (model, &iter);
-    }
-
-  gtk_tree_model_get_value (model, &iter, 0, &x);
-
-  buffer_len_post = g_value_get_int (&x);
-
-  preferences_set_int (PREF_KEY_AUDIO_BUFFER_LEN, buffer_len_post);
-  g_value_unset (&x);
-
-  float_post = preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT);
-
-  if (buffer_len_prev != buffer_len_post || float_prev != float_post)
-    {
-      editor_reset_audio ();
-    }
-
-  elektroid_preferences_window_cancel (NULL, NULL);
-}
-
-static gboolean
-elektroid_preferences_window_key_press (GtkWidget *widget, GdkEventKey *event,
-					gpointer data)
-{
-  if (event->keyval == GDK_KEY_Escape)
-    {
-      elektroid_preferences_window_cancel (NULL, NULL);
-      return TRUE;
-    }
-  return FALSE;
-}
-
-static void
-elektroid_show_preferences (GtkWidget *object, gpointer data)
-{
-  gboolean b;
-  GtkTreeIter iter;
-  gint i, buffer_len;
-  GValue x = G_VALUE_INIT;
-  GtkTreeModel *model =
-    gtk_combo_box_get_model (GTK_COMBO_BOX (audio_buffer_length_combo));
-
-  b = preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT);
-  gtk_switch_set_active (GTK_SWITCH (audio_use_float_switch), b);
-  b = preferences_get_boolean (PREF_KEY_PLAY_WHILE_LOADING);
-  gtk_switch_set_active (GTK_SWITCH (play_sample_while_loading_switch), b);
-  b = preferences_get_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING);
-  gtk_switch_set_active (GTK_SWITCH (stop_device_when_connecting_switch), b);
-  b = preferences_get_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS);
-  gtk_switch_set_active (GTK_SWITCH (elektron_load_sound_tags_switch), b);
-
-  buffer_len = preferences_get_int (PREF_KEY_AUDIO_BUFFER_LEN);
-
-  gtk_tree_model_get_iter_first (model, &iter);
-
-  i = 0;
-  do
-    {
-      gtk_tree_model_get_value (model, &iter, 0, &x);
-      if (g_value_get_int (&x) == buffer_len)
-	{
-	  gtk_combo_box_set_active (GTK_COMBO_BOX (audio_buffer_length_combo),
-				    i);
-	}
-      i++;
-      g_value_unset (&x);
-    }
-  while (gtk_tree_model_iter_next (model, &iter));
-
-  gtk_widget_show (GTK_WIDGET (preferences_window));
+  preferences_window_open ();
 }
 
 static void
@@ -1776,7 +1662,7 @@ elektroid_exit ()
   autosampler_destroy ();
 
   name_window_destroy ();
-  gtk_widget_destroy (GTK_WIDGET (preferences_window));
+  preferences_window_destroy ();
   gtk_widget_destroy (GTK_WIDGET (main_window));
 
   g_object_unref (builder);
@@ -1829,40 +1715,6 @@ build_ui ()
       g_strfreev (lines);
     }
 
-  preferences_window =
-    GTK_WINDOW (gtk_builder_get_object (builder, "preferences_window"));
-  preferences_window_accept_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "preferences_window_accept_button"));
-  preferences_window_cancel_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "preferences_window_cancel_button"));
-
-  g_signal_connect (preferences_window_accept_button, "clicked",
-		    G_CALLBACK (elektroid_preferences_window_accept), NULL);
-  g_signal_connect (preferences_window_cancel_button, "clicked",
-		    G_CALLBACK (elektroid_preferences_window_cancel), NULL);
-  g_signal_connect (GTK_WIDGET (preferences_window), "delete-event",
-		    G_CALLBACK (elektroid_preferences_window_delete), NULL);
-  g_signal_connect (GTK_WIDGET (preferences_window), "key_press_event",
-		    G_CALLBACK (elektroid_preferences_window_key_press),
-		    NULL);
-
-  audio_use_float_switch =
-    GTK_WIDGET (gtk_builder_get_object (builder, "audio_use_float_switch"));
-  play_sample_while_loading_switch =
-    GTK_WIDGET (gtk_builder_get_object (builder,
-					"play_sample_while_loading_switch"));
-  audio_buffer_length_combo =
-    GTK_WIDGET (gtk_builder_get_object (builder,
-					"audio_buffer_length_combo"));
-  stop_device_when_connecting_switch =
-    GTK_WIDGET (gtk_builder_get_object (builder,
-					"stop_device_when_connecting_switch"));
-  elektron_load_sound_tags_switch =
-    GTK_WIDGET (gtk_builder_get_object (builder,
-					"elektron_load_sound_tags_switch"));
-
   maction_context.box =
     GTK_WIDGET (gtk_builder_get_object (builder, "menu_actions_box"));
 
@@ -1901,7 +1753,7 @@ build_ui ()
 		    G_CALLBACK (elektroid_show_remote_clicked), NULL);
 
   g_signal_connect (preferences_button, "clicked",
-		    G_CALLBACK (elektroid_show_preferences), NULL);
+		    G_CALLBACK (elektroid_open_preferences), NULL);
 
   g_signal_connect (about_button, "clicked",
 		    G_CALLBACK (elektroid_show_about), NULL);
@@ -1927,6 +1779,7 @@ build_ui ()
 
   browser_init_all (builder);
   name_window_init (builder);
+  preferences_window_init (builder);
   editor_init (builder);
   elektroid_update_midi_status ();
   tasks_init (builder);

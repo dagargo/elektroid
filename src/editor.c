@@ -21,7 +21,6 @@
 #include <gtk/gtk.h>
 #include <glib/gi18n.h>
 #include <glib/gstdio.h>
-#include <math.h>
 #include "connectors/system.h"
 #include "editor.h"
 #include "name_window.h"

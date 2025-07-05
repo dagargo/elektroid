@@ -74,13 +74,14 @@ audio.h audio.c $(elektroid_audio_sources) \
 browser.c browser.h \
 editor.c editor.h \
 guirecorder.c guirecorder.h \
-name_window.c name_window.h \
-notifier.c notifier.h \
 maction.c maction.h \
 mactions/autosampler.c \
 mactions/backend.c \
 mactions/microbrute.c \
 mactions/microfreak.c \
+name_window.c name_window.h \
+notifier.c notifier.h \
+preferences_window.c preferences_window.h \
 progress.c progress.h \
 regma.c regma.h \
 tasks.c tasks.h \

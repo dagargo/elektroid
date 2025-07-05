@@ -3575,7 +3575,7 @@ on remote</property>
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="preferences_window_accept_button">
+              <object class="GtkButton" id="preferences_window_save_button">
                 <property name="label" translatable="yes">_Save</property>
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
