@@ -23,6 +23,7 @@
 #include "scala.h"
 
 #define PHATTY_ALPHABET " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz!#$%&()*?@"
+#define PHATTY_DEFAULT_CHAR '?'
 
 #define PHATTY_MAX_PRESETS 100
 #define PHATTY_PROGRAM_SIZE 193
@@ -75,7 +76,7 @@ phatty_decode_char (guint8 *data, gint position)
     }
   if (index >= strlen (PHATTY_ALPHABET))
     {
-      return '?';
+      return PHATTY_DEFAULT_CHAR;
     }
   else
     {
@@ -119,7 +120,9 @@ void
 phatty_set_preset_name (guint8 *preset, const gchar *preset_name)
 {
   gint i;
-  const gchar *c = preset_name;
+  gchar *sanitized = common_get_sanitized_name (preset_name, PHATTY_ALPHABET,
+						PHATTY_DEFAULT_CHAR);
+  const gchar *c = sanitized;
   for (i = 0; i < strlen (preset_name); i++, c++)
     {
       phatty_encode_char (preset, *c, i);
@@ -128,6 +131,7 @@ phatty_set_preset_name (guint8 *preset, const gchar *preset_name)
     {
       phatty_encode_char (preset, ' ', i);
     }
+  g_free (sanitized);
 }
 
 void
