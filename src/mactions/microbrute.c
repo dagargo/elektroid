@@ -381,6 +381,13 @@ microbrute_init ()
   g_object_unref (G_OBJECT (builder));
 }
 
+void
+microbrute_destroy ()
+{
+  gtk_widget_destroy (calibration_assistant);
+  gtk_widget_destroy (GTK_WIDGET (config_window));
+}
+
 struct maction *
 microbrute_maction_conf_builder (struct maction_context *context)
 {

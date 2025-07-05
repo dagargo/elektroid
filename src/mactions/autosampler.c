@@ -301,6 +301,12 @@ autosampler_init (GtkBuilder *builder)
 		    G_CALLBACK (name_window_key_press), NULL);
 }
 
+void
+autosampler_destroy ()
+{
+  gtk_widget_destroy (GTK_WIDGET (window));
+}
+
 struct maction *
 autosampler_maction_builder (struct maction_context *context)
 {

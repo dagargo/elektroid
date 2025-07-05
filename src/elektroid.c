@@ -62,7 +62,9 @@ static gpointer elektroid_upload_task_runner (gpointer);
 static gpointer elektroid_download_task_runner (gpointer);
 static void elektroid_update_progress (struct job_control *);
 
+void autosampler_destroy ();
 void autosampler_init (GtkBuilder * builder);
+void microbrute_destroy ();
 void microbrute_init ();
 
 static gchar *local_dir;
@@ -1769,6 +1771,9 @@ elektroid_exit ()
     {
       backend_destroy (BACKEND);
     }
+
+  microbrute_destroy ();
+  autosampler_destroy ();
 
   name_window_destroy ();
   gtk_widget_destroy (GTK_WIDGET (preferences_window));
