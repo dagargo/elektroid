@@ -275,7 +275,10 @@ elektron_get_cp1252 (const gchar *i)
   gchar *o = g_convert (i, -1, "CP1252", "UTF8", NULL, NULL, NULL);
   if (!o)
     {
-      error_print ("Error while converting “%s” to CP1252", i);
+      debug_print (0,
+		   "Error while converting “%s” to CP1252. Sanitizing...",
+		   i);
+      o = common_get_sanitized_name (i, NULL, 0);
     }
   return o;
 }
@@ -481,11 +484,6 @@ elektron_new_msg_path (const guint8 *data, guint len, const gchar *path)
   GByteArray *msg;
   gchar *path_cp1252 = elektron_get_cp1252 (path);
 
-  if (!path_cp1252)
-    {
-      return NULL;
-    }
-
   msg = elektron_new_msg (data, len);
   g_byte_array_append (msg, (guchar *) path_cp1252, strlen (path_cp1252) + 1);
   g_free (path_cp1252);
@@ -531,11 +529,6 @@ elektron_new_msg_open_common_write (const guint8 *data, guint len,
   guint32 aux32;
   GByteArray *msg = elektron_new_msg_path (data, len, path);
 
-  if (!msg)
-    {
-      return NULL;
-    }
-
   aux32 = g_htonl (bytes);
   memcpy (&msg->data[5], &aux32, sizeof (guint32));
 
@@ -574,11 +567,6 @@ elektron_new_msg_list (const gchar *path, int32_t start_index,
   GByteArray *msg = elektron_new_msg_path (DATA_LIST_REQUEST,
 					   sizeof (DATA_LIST_REQUEST),
 					   path);
-
-  if (!msg)
-    {
-      return NULL;
-    }
 
   aux32 = g_htonl (start_index);
   g_byte_array_append (msg, (guchar *) & aux32, sizeof (guint32));
@@ -964,11 +952,6 @@ elektron_read_common_dir (struct backend *backend,
     }
 
   tx_msg = elektron_new_msg_path (msg, size, dir);
-  if (!tx_msg)
-    {
-      return -EINVAL;
-    }
-
   rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
   if (!rx_msg)
     {
@@ -1018,19 +1001,8 @@ elektron_src_dst_common (struct backend *backend,
   gint res;
   GByteArray *rx_msg;
   GByteArray *tx_msg = elektron_new_msg (data, len);
-
   gchar *dst_cp1252 = elektron_get_cp1252 (dst);
-  if (!dst_cp1252)
-    {
-      return -EINVAL;
-    }
-
   gchar *src_cp1252 = elektron_get_cp1252 (src);
-  if (!src_cp1252)
-    {
-      g_free (dst_cp1252);
-      return -EINVAL;
-    }
 
   g_byte_array_append (tx_msg, (guchar *) src_cp1252,
 		       strlen (src_cp1252) + 1);
@@ -1141,11 +1113,6 @@ elektron_path_common (struct backend *backend, const gchar *path,
   GByteArray *tx_msg;
 
   tx_msg = elektron_new_msg_path (template, size, path);
-  if (!tx_msg)
-    {
-      return -EINVAL;
-    }
-
   rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
   if (!rx_msg)
     {
@@ -1355,11 +1322,6 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
   //Also, the new file would be discarded if an upload is not completed.
 
   tx_msg = new_msg_open_write (path, input->len);
-  if (!tx_msg)
-    {
-      return -EINVAL;
-    }
-
   rx_msg = elektron_tx_and_rx (backend, tx_msg, &control->controllable);
   if (!rx_msg)
     {
@@ -1515,11 +1477,6 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
   gint res;
 
   tx_msg = new_msg_open_read (path);
-  if (!tx_msg)
-    {
-      return -EINVAL;
-    }
-
   rx_msg = elektron_tx_and_rx (backend, tx_msg, &control->controllable);
   if (!rx_msg)
     {
@@ -2005,11 +1962,6 @@ elektron_read_data_dir_prefix (struct backend *backend,
 
   tx_msg = elektron_new_msg_list (dir_w_prefix, 0, 0, 1);
   g_free (dir_w_prefix);
-  if (!tx_msg)
-    {
-      return -EINVAL;
-    }
-
   rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
   if (!rx_msg)
     {
@@ -2287,10 +2239,6 @@ elektron_open_datum (struct backend *backend, const gchar *path,
   tx_msg = elektron_new_msg (data, len);
 
   path_cp1252 = elektron_get_cp1252 (path);
-  if (!path_cp1252)
-    {
-      return -EINVAL;
-    }
 
   if (mode == O_RDONLY)
     {
