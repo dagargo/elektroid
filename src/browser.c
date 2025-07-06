@@ -406,7 +406,6 @@ browser_selection_changed (GtkTreeSelection *selection, gpointer data)
 {
   struct browser *browser = data;
   browser_check_selection (browser);
-  browser_setup_popup_sensitivity (browser);
 }
 
 void
@@ -1370,6 +1369,7 @@ browser_button_press (GtkWidget *treeview, GdkEventButton *event,
 
       if (event->button == GDK_BUTTON_SECONDARY)
 	{
+	  browser_setup_popup_sensitivity (browser);
 	  gtk_menu_popup_at_pointer (browser->menu, (GdkEvent *) event);
 	}
     }
@@ -1420,9 +1420,6 @@ browser_button_release (GtkWidget *treeview, GdkEventButton *event,
 static gboolean
 browser_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
-  gint count;
-  GtkAllocation allocation;
-  GdkWindow *gdk_window;
   struct browser *browser = data;
   struct sample_info *sample_info = audio.sample.info;
 
@@ -1433,9 +1430,12 @@ browser_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
 
   if (event->keyval == GDK_KEY_Menu)
     {
-      count = browser_get_selected_items_count (browser);
+      GtkAllocation allocation;
+      GdkWindow *gdk_window;
+
       gtk_widget_get_allocation (GTK_WIDGET (browser->view), &allocation);
       gdk_window = gtk_widget_get_window (GTK_WIDGET (browser->view));
+      browser_setup_popup_sensitivity (browser);
       gtk_menu_popup_at_rect (browser->menu, gdk_window, &allocation,
 			      GDK_GRAVITY_CENTER, GDK_GRAVITY_NORTH_WEST,
 			      NULL);
@@ -1448,8 +1448,8 @@ browser_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
     }
   else if (event->keyval == GDK_KEY_F2)
     {
-      count = browser_get_selected_items_count (browser);
-      if (count == 1 && browser->fs_ops->rename)
+      if (browser_get_selected_items_count (browser) == 1 &&
+	  browser->fs_ops->rename)
 	{
 	  browser_rename_item (NULL, browser);
 	}
