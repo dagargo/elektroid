@@ -19,37 +19,304 @@
  */
 
 #include <glib/gi18n.h>
-#include "maction.h"
 #include "browser.h"
+#include "maction.h"
+#include "progress_window.h"
 
+#define SYSEX_FILTER "*." BE_SYSEX_EXT
+
+struct backend_tx_sysex_common_data
+{
+  struct sysex_transfer sysex_transfer;
+  GSList *filenames;
+};
+
+extern GtkWindow *main_window;
 extern struct browser remote_browser;
 
-//This is a bit of a hack as the backend function are implemented inside
-//elektroid.c. However, as these actions depend on the backend initialization,
-//it's convenient to implement the menus this way.
-extern gpointer elektroid_tx_upgrade_os_runner (gpointer data);
-extern gpointer elektroid_tx_sysex_files_runner (gpointer data);
-extern void elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple);
-extern void elektroid_rx_sysex ();
-extern void elektroid_refresh_devices (gboolean startup);
+void elektroid_show_error_msg (const char *format, ...);
+gboolean elektroid_check_backend ();
+void elektroid_refresh_devices ();
+
+static gint
+backend_send_sysex_file (struct sysex_transfer *sysex_transfer,
+			 const gchar *filename, t_sysex_transfer f)
+{
+  gint err;
+  struct idata idata;
+
+  err = file_load (filename, &idata, NULL);
+  if (!err)
+    {
+      sysex_transfer->raw = idata.content;
+      err = f (remote_browser.backend, sysex_transfer);
+      idata_free (&idata);
+    }
+  if (err && err != -ECANCELED)
+    {
+      elektroid_show_error_msg (_("Error while loading “%s”: %s."),
+				filename, g_strerror (-err));
+    }
+  return err;
+}
+
+static void
+backend_tx_sysex_files_runner (gpointer data_)
+{
+  gint err;
+  GSList *filename;
+  struct backend_tx_sysex_common_data *data = data_;
+
+  err = 0;
+  filename = data->filenames;
+  while (err != -ECANCELED && filename)
+    {
+      err = backend_send_sysex_file (&data->sysex_transfer, filename->data,
+				     backend_tx_sysex_no_status);
+      filename = filename->next;
+      //The device may have sent some messages in response so we skip all these.
+      backend_rx_drain (remote_browser.backend);
+      usleep (BE_REST_TIME_US);
+    }
+}
+
+static void
+backend_upgrade_os_runner (gpointer data_)
+{
+  gint err;
+  struct backend_tx_sysex_common_data *data = data_;
+  GSList *filenames = data->filenames;
+
+  err = backend_send_sysex_file (&data->sysex_transfer, filenames->data,
+				 remote_browser.backend->upgrade_os);
+  if (err < 0)
+    {
+      elektroid_check_backend ();
+    }
+}
+
+static void
+backend_tx_sysex_consumer (gpointer data_)
+{
+  struct backend_tx_sysex_common_data *data = data_;
+  g_slist_free_full (g_steal_pointer (&data->filenames), g_free);
+  //runners already free sysex_transfer->raw
+  g_mutex_clear (&data->sysex_transfer.mutex);
+  g_free (data);
+}
+
+static void
+backend_upgrade_os_consumer (gpointer data)
+{
+  backend_tx_sysex_consumer (data);
+  elektroid_refresh_devices (FALSE);
+}
+
+static void
+backend_tx_sysex_cancel (gpointer data_)
+{
+  struct backend_tx_sysex_common_data *data = data_;
+  sysex_transfer_cancel (&data->sysex_transfer);
+}
+
+static void
+backend_tx_sysex_common (progress_window_runner runner,
+			 progress_window_consumer consumer, gboolean multiple)
+{
+  GtkWidget *dialog;
+  GtkFileChooser *chooser;
+  GtkFileFilter *filter;
+  gint res;
+
+  dialog = gtk_file_chooser_dialog_new (_("Open SysEx"), main_window,
+					GTK_FILE_CHOOSER_ACTION_OPEN,
+					_("_Cancel"), GTK_RESPONSE_CANCEL,
+					_("_Open"), GTK_RESPONSE_ACCEPT,
+					NULL);
+  chooser = GTK_FILE_CHOOSER (dialog);
+  filter = gtk_file_filter_new ();
+  gtk_file_filter_set_name (filter, _("SysEx Files"));
+  gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
+  gtk_file_chooser_add_filter (chooser, filter);
+  gtk_file_chooser_set_current_folder (chooser, g_get_home_dir ());
+  gtk_file_chooser_set_select_multiple (chooser, multiple);
+
+  res = gtk_dialog_run (GTK_DIALOG (dialog));
+  if (res == GTK_RESPONSE_ACCEPT)
+    {
+      struct backend_tx_sysex_common_data *data =
+	g_malloc (sizeof (struct backend_tx_sysex_common_data));
+
+      g_mutex_init (&data->sysex_transfer.mutex);
+      data->sysex_transfer.active = TRUE;
+      data->sysex_transfer.status = SENDING;
+      data->sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
+
+      data->filenames = gtk_file_chooser_get_filenames (chooser);
+
+      progress_window_open (runner, consumer,
+			    backend_tx_sysex_cancel, data,
+			    PROGRESS_TYPE_SYSEX_TRANSFER, _("Sending SysEx"),
+			    "", TRUE);
+    }
+
+  gtk_widget_hide (GTK_WIDGET (dialog));
+  gtk_widget_destroy (dialog);
+}
+
+static void
+backend_rx_sysex_consumer (gpointer data)
+{
+  GtkWidget *dialog;
+  GtkFileChooser *chooser;
+  GtkFileFilter *filter;
+  gchar *filename;
+  gchar *filename_w_ext;
+  const gchar *ext;
+  struct sysex_transfer *sysex_transfer = data;
+  GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
+
+  if (!sysex_transfer->err)
+    {
+      dialog = gtk_file_chooser_dialog_new (_("Save SysEx"), main_window,
+					    action, _("_Cancel"),
+					    GTK_RESPONSE_CANCEL, _("_Save"),
+					    GTK_RESPONSE_ACCEPT, NULL);
+      chooser = GTK_FILE_CHOOSER (dialog);
+      gtk_file_chooser_set_do_overwrite_confirmation (chooser, TRUE);
+      gtk_file_chooser_set_current_name (chooser, _("Received SysEx"));
+
+      gtk_file_chooser_set_create_folders (chooser, TRUE);
+
+      filter = gtk_file_filter_new ();
+      gtk_file_filter_set_name (filter, _("SysEx Files"));
+      gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
+      gtk_file_chooser_add_filter (chooser, filter);
+      gtk_file_chooser_set_current_folder (chooser, g_get_home_dir ());
+
+      gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (dialog), filter);
+
+      filename = NULL;
+      while (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
+	{
+	  filename = gtk_file_chooser_get_filename (chooser);
+	  ext = filename_get_ext (filename);
+
+	  if (strcmp (ext, BE_SYSEX_EXT) != 0)
+	    {
+	      filename_w_ext = g_strconcat (filename, "." BE_SYSEX_EXT, NULL);
+	      g_free (filename);
+	      filename = filename_w_ext;
+
+	      if (g_file_test (filename, G_FILE_TEST_EXISTS))
+		{
+		  gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (chooser),
+						 filename);
+		  g_free (filename);
+		  filename = NULL;
+		  continue;
+		}
+	    }
+	  break;
+	}
+
+      if (filename != NULL)
+	{
+	  gint err;
+	  struct idata idata;
+
+	  idata.content = sysex_transfer->raw;
+
+	  err = file_save (filename, &idata, NULL);
+	  if (err)
+	    {
+	      elektroid_show_error_msg (_("Error while saving “%s”: %s."),
+					filename, g_strerror (-err));
+	    }
+
+	  g_free (filename);
+	}
+
+      gtk_widget_destroy (dialog);
+
+      g_byte_array_free (sysex_transfer->raw, TRUE);
+    }
+
+  g_mutex_clear (&sysex_transfer->mutex);
+  g_free (sysex_transfer);
+}
+
+static void
+backend_rx_sysex_runner (gpointer data)
+{
+  gint err;
+  gchar *text;
+  struct sysex_transfer *sysex_transfer = data;
+
+  //This needs to be initialized to an error as the cancelation might happend before it's set.
+  sysex_transfer->err = -ECANCELED;
+
+  //This doesn't need to be synchronized because the GUI doesn't allow concurrent access when receiving SysEx in batch mode.
+
+  backend_rx_drain (remote_browser.backend);
+
+  //This is needed as the call to backend_rx_drain might have been the one being cancelled.
+  if (!sysex_transfer_is_active (sysex_transfer))
+    {
+      return;
+    }
+
+  err = backend_rx_sysex (remote_browser.backend, sysex_transfer);
+  if (err)
+    {
+      elektroid_check_backend (FALSE);
+    }
+  else
+    {
+      text = debug_get_hex_msg (sysex_transfer->raw);
+      debug_print (1, "SysEx message received (%d): %s",
+		   sysex_transfer->raw->len, text);
+      g_free (text);
+    }
+}
 
 static void
 os_upgrade_callback (GtkWidget *object, gpointer data)
 {
-  elektroid_tx_sysex_common (elektroid_tx_upgrade_os_runner, FALSE);
-  elektroid_refresh_devices (FALSE);
+  backend_tx_sysex_common (backend_upgrade_os_runner,
+			   backend_upgrade_os_consumer, FALSE);
 }
 
 static void
 tx_sysex_callback (GtkWidget *object, gpointer data)
 {
-  elektroid_tx_sysex_common (elektroid_tx_sysex_files_runner, TRUE);
+  backend_tx_sysex_common (backend_tx_sysex_files_runner,
+			   backend_tx_sysex_consumer, TRUE);
 }
 
 static void
-rx_sysex_callback (GtkWidget *object, gpointer data)
+backend_rx_sysex_cancel (gpointer data)
 {
-  elektroid_rx_sysex ();
+  struct sysex_transfer *sysex_transfer = data;
+  sysex_transfer_cancel (sysex_transfer);
+}
+
+static void
+backend_rx_sysex_callback (GtkWidget *object, gpointer data)
+{
+  struct sysex_transfer *sysex_transfer =
+    g_malloc (sizeof (struct sysex_transfer));
+
+  g_mutex_init (&sysex_transfer->mutex);
+  sysex_transfer->status = WAITING;
+  sysex_transfer->active = TRUE;
+  sysex_transfer->timeout = BE_SYSEX_TIMEOUT_MS;
+  sysex_transfer->batch = TRUE;
+
+  progress_window_open (backend_rx_sysex_runner, backend_rx_sysex_consumer,
+			backend_rx_sysex_cancel, sysex_transfer,
+			PROGRESS_TYPE_SYSEX_TRANSFER, _("Receiving SysEx"),
+			"", TRUE);
 }
 
 struct maction *
@@ -77,7 +344,7 @@ backend_maction_rx_sysex_builder (struct maction_context *context)
       ma->type = MACTION_BUTTON;
       ma->name = _("_Receive SysEx");
       ma->sensitive = TRUE;
-      ma->callback = G_CALLBACK (rx_sysex_callback);
+      ma->callback = G_CALLBACK (backend_rx_sysex_callback);
     }
   return ma;
 }

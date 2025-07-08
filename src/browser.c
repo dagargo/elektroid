@@ -25,7 +25,7 @@
 #include "local.h"
 #include "name_window.h"
 #include "preferences.h"
-#include "progress.h"
+#include "progress_window.h"
 #include "sample.h"
 #include "maction.h"
 
@@ -100,18 +100,12 @@ struct browser_add_dentry_item_data
   gchar *rel_path;
 };
 
-gboolean elektroid_check_backend (gboolean);
+gboolean elektroid_check_backend ();
 void elektroid_add_upload_tasks (GtkWidget * object, gpointer data);
 void elektroid_add_download_tasks (GtkWidget * object, gpointer data);
-gpointer elektroid_drag_data_received_runner_dialog (gpointer data);
-gpointer elektroid_delete_items_runner (gpointer data);
+void elektroid_browser_drag_data_received_runner (gpointer data);
+void elektroid_delete_items_runner (gpointer data);
 void elektroid_show_error_msg (const char *format, ...);
-
-static gboolean
-browser_check_backend ()
-{
-  return elektroid_check_backend (FALSE);
-}
 
 static void
 browser_clear_dnd_function (struct browser *browser)
@@ -508,6 +502,7 @@ browser_delete_items (GtkWidget *object, gpointer data)
   gint res;
   GtkWidget *dialog;
   struct browser *browser = data;
+  struct browser_delete_items_data *delete_data;
 
   dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL,
 				   GTK_MESSAGE_ERROR, GTK_BUTTONS_NONE,
@@ -524,19 +519,24 @@ browser_delete_items (GtkWidget *object, gpointer data)
       return;
     }
 
+  delete_data = g_malloc (sizeof (struct browser_delete_items_data));
+  delete_data->browser = browser;
+
+
   if (BROWSER_IS_SYSTEM (browser) &&
       browser_get_selected_items_count (browser) <= PROGRESS_DELETE_THRESHOLD)
     {
-      elektroid_delete_items_runner (browser);
+      delete_data->has_progress_window = FALSE;
+      elektroid_delete_items_runner (delete_data);
+      browser_load_dir_if_needed (browser);
     }
   else
     {
-      progress_run (elektroid_delete_items_runner, PROGRESS_TYPE_PULSE,
-		    browser, _("Deleting Files"), _("Deleting..."), TRUE,
-		    NULL);
+      delete_data->has_progress_window = TRUE;
+      progress_window_open (elektroid_delete_items_runner, NULL, NULL,
+			    delete_data, PROGRESS_TYPE_PULSE,
+			    _("Deleting Files"), _("Deleting..."), TRUE);
     }
-
-  browser_load_dir_if_needed (data);
 }
 
 static gchar *
@@ -1592,17 +1592,16 @@ browser_dnd_get (GtkWidget *widget,
 }
 
 static void
-browser_drag_data_received (GtkWidget *widget, GdkDragContext *context,
-			    gint x, gint y,
-			    GtkSelectionData *selection_data,
-			    guint info, guint time, gpointer userdata)
+browser_drag_data_received_data (GtkWidget *widget, GdkDragContext *context,
+				 gint x, gint y,
+				 GtkSelectionData *selection_data,
+				 guint info, guint time, gpointer userdata)
 {
   gchar *data;
   GdkAtom type;
   const gchar *title, *text;
-  gboolean blocking = TRUE;
   gchar *filename, *src_dir, *dst_dir = NULL;
-  struct browser_dnd_data *dnd_data;
+  struct browser_drag_data_received_data *drag_data;
 
   if (!gtk_selection_data_get_length (selection_data))
     {
@@ -1620,34 +1619,35 @@ browser_drag_data_received (GtkWidget *widget, GdkDragContext *context,
       return;
     }
 
-  dnd_data = g_malloc (sizeof (struct browser_dnd_data));
-  dnd_data->widget = widget;
+  drag_data = g_malloc (sizeof (struct browser_drag_data_received_data));
+  drag_data->has_progress_window = TRUE;
+  drag_data->widget = widget;
 
   type = gtk_selection_data_get_data_type (selection_data);
-  dnd_data->type_name = gdk_atom_name (type);
+  drag_data->type_name = gdk_atom_name (type);
 
   data = (gchar *) gtk_selection_data_get_data (selection_data);
   debug_print (1, "DND received batch %d data (%s):\n%s", batch_id,
-	       dnd_data->type_name, data);
+	       drag_data->type_name, data);
 
-  dnd_data->uris = g_uri_list_extract_uris (data);
+  drag_data->uris = g_uri_list_extract_uris (data);
 
   gtk_drag_finish (context, TRUE, TRUE, time);
 
-  enum path_type path_type = PATH_TYPE_FROM_DND_TYPE (dnd_data->type_name);
-  filename = path_filename_from_uri (path_type, dnd_data->uris[0]);
+  enum path_type path_type = PATH_TYPE_FROM_DND_TYPE (drag_data->type_name);
+  filename = path_filename_from_uri (path_type, drag_data->uris[0]);
   src_dir = g_path_get_dirname (filename);
 
   //Checking if it's a local move.
   if (widget == GTK_WIDGET (local_browser.view) &&
-      !strcmp (dnd_data->type_name, TEXT_URI_LIST_STD))
+      !strcmp (drag_data->type_name, TEXT_URI_LIST_STD))
     {
       dst_dir = local_browser.dir;	//Move
     }
 
   //Checking if it's a remote move.
   if (widget == GTK_WIDGET (remote_browser.view)
-      && !strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID))
+      && !strcmp (drag_data->type_name, TEXT_URI_LIST_ELEKTROID))
     {
       dst_dir = remote_browser.dir;	//Move
     }
@@ -1666,12 +1666,12 @@ browser_drag_data_received (GtkWidget *widget, GdkDragContext *context,
       title = _("Moving Files");
       text = _("Moving...");
 
-      if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD) ||
-	  (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID) &&
+      if (!strcmp (drag_data->type_name, TEXT_URI_LIST_STD) ||
+	  (!strcmp (drag_data->type_name, TEXT_URI_LIST_ELEKTROID) &&
 	   remote_browser.backend->type == BE_TYPE_SYSTEM))
 	{
 	  //Moving inside the local browser takes no time.
-	  blocking = FALSE;
+	  drag_data->has_progress_window = FALSE;
 	}
     }
   else
@@ -1680,15 +1680,16 @@ browser_drag_data_received (GtkWidget *widget, GdkDragContext *context,
       text = _("Waiting...");
     }
 
-  if (blocking)
+  if (drag_data->has_progress_window)
     {
-      progress_run (elektroid_drag_data_received_runner_dialog,
-		    PROGRESS_TYPE_PULSE, dnd_data, title, text, TRUE, NULL);
+      progress_window_open (elektroid_browser_drag_data_received_runner,
+			    NULL, NULL, drag_data, PROGRESS_TYPE_PULSE, title,
+			    text, TRUE);
       batch_id++;
     }
   else
     {
-      elektroid_drag_data_received_runner_dialog (dnd_data);
+      elektroid_browser_drag_data_received_runner (drag_data);
     }
 
 end:
@@ -2159,7 +2160,7 @@ browser_init (struct browser *browser)
   g_signal_connect (browser->view, "drag-data-get",
 		    G_CALLBACK (browser_dnd_get), browser);
   g_signal_connect (browser->view, "drag-data-received",
-		    G_CALLBACK (browser_drag_data_received), NULL);
+		    G_CALLBACK (browser_drag_data_received_data), NULL);
   g_signal_connect (browser->view, "drag-motion",
 		    G_CALLBACK (browser_drag_motion_list), browser);
   g_signal_connect (browser->view, "drag-leave",
@@ -2310,7 +2311,7 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder)
   browser->dir = NULL;
   browser->fs_ops = NULL;
   browser->backend = &backend;
-  browser->check_callback = browser_check_backend;
+  browser->check_callback = elektroid_check_backend;
   browser->set_popup_menuitems_visibility =
     browser_remote_set_popup_visibility;
   browser->set_columns_visibility = browser_remote_set_columns_visibility;

@@ -20,13 +20,13 @@
 
 #include <glib/gi18n.h>
 #include <string.h>
-#include "maction.h"
-#include "browser.h"
 #include "audio.h"
-#include "sample.h"
-#include "progress.h"
+#include "browser.h"
 #include "connectors/system.h"
 #include "guirecorder.h"
+#include "maction.h"
+#include "progress_window.h"
+#include "sample.h"
 
 extern GtkWindow *main_window;
 
@@ -61,7 +61,7 @@ struct autosampler_data
   GtkTreeIter iter;
 };
 
-static gpointer
+static void
 autosampler_runner (gpointer user_data)
 {
   struct autosampler_data *data = user_data;
@@ -69,11 +69,10 @@ autosampler_runner (gpointer user_data)
   gint s, total, i;
   GValue value = G_VALUE_INIT;
   gdouble fract;
-  gchar filename[LABEL_MAX];
+  gchar filename[LABEL_MAX], *path;
   struct sample_info *sample_info;
 
-  progress.sysex_transfer.active = TRUE;
-  progress_set_fraction (0.0);
+  progress_window_set_fraction (0.0);
 
   total = ((data->end - data->start) / data->semitones) + 1;
   s = 0;
@@ -84,6 +83,9 @@ autosampler_runner (gpointer user_data)
 				&data->iter, 0, &value);
       note = g_value_get_string (&value);
       debug_print (1, "Recording note %s (%d)...", note, i);
+
+      snprintf (filename, LABEL_MAX, "%03d %s %s.wav", s, data->name, note);
+      progress_window_set_label (filename);
 
       audio_start_recording (data->channel_mask, NULL, NULL);
       backend_send_note_on (remote_browser.backend, data->channel, i,
@@ -110,8 +112,7 @@ autosampler_runner (gpointer user_data)
       gchar *dir = path_chain (PATH_SYSTEM, local_browser.dir, data->name);
       system_mkdir (NULL, dir);
       //We add the note number to ensure lexicographical order.
-      snprintf (filename, LABEL_MAX, "%03d %s %s.wav", s, data->name, note);
-      gchar *path = path_chain (PATH_SYSTEM, dir, filename);
+      path = path_chain (PATH_SYSTEM, dir, filename);
       debug_print (1, "Saving sample to %s...", path);
       sample_save_to_file (path, &audio.sample, &audio.control,
 			   SF_FORMAT_WAV | sample_get_internal_format ());
@@ -128,14 +129,14 @@ autosampler_runner (gpointer user_data)
 
       s++;
       fract = s / (gdouble) total;
-      progress_set_fraction (fract);
+      progress_window_set_fraction (fract);
 
       if (i > data->end)
 	{
 	  break;
 	}
 
-      if (!progress_is_active ())
+      if (!progress_window_is_active ())
 	{
 	  break;
 	}
@@ -146,8 +147,6 @@ autosampler_runner (gpointer user_data)
   audio_reset_sample ();
 
   g_free (data);
-  progress_response (GTK_RESPONSE_ACCEPT);
-  return NULL;
 }
 
 static void
@@ -225,8 +224,9 @@ autosampler_start (GtkWidget *object, gpointer data)
   gtk_combo_box_get_active_iter (GTK_COMBO_BOX
 				 (start_combo), &autosampler_data->iter);
 
-  progress_run (autosampler_runner, PROGRESS_TYPE_NO_AUTO, autosampler_data,
-		_("Auto Sampler"), _("Recording..."), TRUE, NULL);
+  progress_window_open (autosampler_runner, NULL, NULL, autosampler_data,
+			PROGRESS_TYPE_NO_AUTO, _("Auto Sampler"),
+			_("Recording..."), TRUE);
 }
 
 static void

@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "notifier.h"
 #include <limits.h>
 #include <locale.h>
 #include <gtk/gtk.h>
@@ -33,7 +34,7 @@
 #include "name_window.h"
 #include "preferences.h"
 #include "preferences_window.h"
-#include "progress.h"
+#include "progress_window.h"
 #include "regconn.h"
 #include "regma.h"
 #include "regpref.h"
@@ -42,8 +43,6 @@
 
 #define BACKEND_PLAYING "\u23f5"
 #define BACKEND_STOPPED "\u23f9"
-
-#define SYSEX_FILTER "*." BE_SYSEX_EXT
 
 enum device_list_store_columns
 {
@@ -71,6 +70,8 @@ void microbrute_init ();
 static gchar *local_dir;
 
 extern struct maction_context maction_context;
+
+static struct sysex_transfer sysex_transfer;
 
 #define BACKEND (remote_browser.backend)
 
@@ -259,8 +260,8 @@ elektroid_update_backend_status ()
     }
 }
 
-gboolean
-elektroid_check_backend (gboolean startup)
+static gboolean
+elektroid_check_backend_int (gboolean startup)
 {
   gboolean connected = backend_check (BACKEND);
 
@@ -275,6 +276,12 @@ elektroid_check_backend (gboolean startup)
   elektroid_update_backend_status ();
 
   return connected;
+}
+
+gboolean
+elektroid_check_backend ()
+{
+  return elektroid_check_backend_int (FALSE);
 }
 
 static void
@@ -301,8 +308,8 @@ elektroid_set_preferences_remote_dir ()
     }
 }
 
-void
-elektroid_refresh_devices (gboolean startup)
+static void
+elektroid_refresh_devices_int (gboolean startup)
 {
   elektroid_set_preferences_remote_dir ();
 
@@ -313,259 +320,25 @@ elektroid_refresh_devices (gboolean startup)
       maction_menu_clear (&maction_context);
       browser_reset (&remote_browser);
     }
-  elektroid_check_backend (startup);	//This triggers the actual devices refresh if there is no backend
+  elektroid_check_backend_int (startup);	//This triggers the actual devices refresh if there is no backend
+}
+
+void
+elektroid_refresh_devices ()
+{
+  elektroid_refresh_devices_int (FALSE);
 }
 
 static void
-elektroid_refresh_devices_int (GtkWidget *widget, gpointer data)
+elektroid_refresh_devices_clicked (GtkWidget *widget, gpointer data)
 {
-  elektroid_refresh_devices (FALSE);
-}
-
-static gpointer
-elektroid_rx_sysex_runner (gpointer data)
-{
-  gint *res = g_malloc (sizeof (gint));
-  gchar *text;
-
-  progress.sysex_transfer.status = WAITING;
-  progress.sysex_transfer.active = TRUE;
-  progress.sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
-  progress.sysex_transfer.batch = TRUE;
-
-  //This doesn't need to be synchronized because the GUI doesn't allow concurrent access when receiving SysEx in batch mode.
-  backend_rx_drain (BACKEND);
-
-  if (progress.sysex_transfer.active)
-    {
-      *res = backend_rx_sysex (BACKEND, &progress.sysex_transfer);
-      if (!*res)
-	{
-	  text = debug_get_hex_msg (progress.sysex_transfer.raw);
-	  debug_print (1, "SysEx message received (%d): %s",
-		       progress.sysex_transfer.raw->len, text);
-	  g_free (text);
-	}
-    }
-  else
-    {
-      *res = -ECANCELED;
-    }
-
-  progress_response (GTK_RESPONSE_ACCEPT);
-
-  return res;
-}
-
-void
-elektroid_rx_sysex ()
-{
-  GtkWidget *dialog;
-  GtkFileChooser *chooser;
-  GtkFileFilter *filter;
-  gint dres;
-  gchar *filename;
-  gchar *filename_w_ext;
-  const gchar *ext;
-  gint *res;
-  GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
-
-  res = progress_run (elektroid_rx_sysex_runner,
-		      PROGRESS_TYPE_SYSEX_TRANSFER, NULL,
-		      _("Receiving SysEx"), "", TRUE, &dres);
-  if (!res)			//Signal captured while running the dialog.
-    {
-      g_byte_array_free (progress.sysex_transfer.raw, TRUE);
-      return;
-    }
-
-  if (dres != GTK_RESPONSE_ACCEPT)
-    {
-      if (!*res)
-	{
-	  g_byte_array_free (progress.sysex_transfer.raw, TRUE);
-	}
-      g_free (res);
-      return;
-    }
-
-  if (*res)
-    {
-      elektroid_check_backend (FALSE);
-      g_free (res);
-      return;
-    }
-
-  dialog = gtk_file_chooser_dialog_new (_("Save SysEx"), main_window, action,
-					_("_Cancel"), GTK_RESPONSE_CANCEL,
-					_("_Save"), GTK_RESPONSE_ACCEPT,
-					NULL);
-  chooser = GTK_FILE_CHOOSER (dialog);
-  gtk_file_chooser_set_do_overwrite_confirmation (chooser, TRUE);
-  gtk_file_chooser_set_current_name (chooser, _("Received SysEx"));
-
-  gtk_file_chooser_set_create_folders (chooser, TRUE);
-
-  filter = gtk_file_filter_new ();
-  gtk_file_filter_set_name (filter, _("SysEx Files"));
-  gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
-  gtk_file_chooser_add_filter (chooser, filter);
-  gtk_file_chooser_set_current_folder (chooser, g_get_home_dir ());
-
-  gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (dialog), filter);
-
-  while (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
-    {
-      filename = gtk_file_chooser_get_filename (chooser);
-      ext = filename_get_ext (filename);
-
-      if (strcmp (ext, BE_SYSEX_EXT) != 0)
-	{
-	  filename_w_ext = g_strconcat (filename, SYSEX_FILTER, NULL);
-	  g_free (filename);
-	  filename = filename_w_ext;
-
-	  if (g_file_test (filename, G_FILE_TEST_EXISTS))
-	    {
-	      gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (chooser),
-					     filename);
-	      g_free (filename);
-	      filename = NULL;
-	      continue;
-	    }
-	}
-      break;
-    }
-
-  if (filename != NULL)
-    {
-      struct idata idata;
-      idata.content = progress.sysex_transfer.raw;
-      *res = file_save (filename, &idata, NULL);
-      if (*res)
-	{
-	  elektroid_show_error_msg (_("Error while saving “%s”: %s."),
-				    filename, g_strerror (-*res));
-	}
-      g_byte_array_free (progress.sysex_transfer.raw, TRUE);
-      g_free (res);
-      g_free (filename);
-    }
-
-  gtk_widget_destroy (dialog);
-}
-
-static gint
-elektroid_send_sysex_file (const gchar *filename, t_sysex_transfer f)
-{
-  struct idata idata;
-  gint err = file_load (filename, &idata, NULL);
-  if (!err)
-    {
-      progress.sysex_transfer.raw = idata.content;
-      err = f (BACKEND, &progress.sysex_transfer);
-      idata_free (&idata);
-    }
-  if (err && err != -ECANCELED)
-    {
-      elektroid_show_error_msg (_("Error while loading “%s”: %s."),
-				filename, g_strerror (-err));
-    }
-  return err;
-}
-
-gpointer
-elektroid_tx_sysex_files_runner (gpointer data)
-{
-  GSList *filenames = data;
-  gint *err = g_malloc (sizeof (gint));
-
-  progress.sysex_transfer.active = TRUE;
-  progress.sysex_transfer.status = SENDING;
-
-  *err = 0;
-  while (*err != -ECANCELED && filenames)
-    {
-      *err = elektroid_send_sysex_file (filenames->data,
-					backend_tx_sysex_no_status);
-      filenames = filenames->next;
-      //The device may have sent some messages in response so we skip all these.
-      backend_rx_drain (BACKEND);
-      usleep (BE_REST_TIME_US);
-    }
-  progress_response (GTK_RESPONSE_CANCEL);	//Any response is OK.
-
-  return err;
-}
-
-gpointer
-elektroid_tx_upgrade_os_runner (gpointer data)
-{
-  GSList *filenames = data;
-  gint *err = g_malloc (sizeof (gint));
-
-  progress.sysex_transfer.active = TRUE;
-  progress.sysex_transfer.status = SENDING;
-  progress.sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
-
-  *err = elektroid_send_sysex_file (filenames->data, BACKEND->upgrade_os);
-  progress_response (GTK_RESPONSE_CANCEL);	//Any response is OK.
-
-  return err;
-}
-
-void
-elektroid_tx_sysex_common (GThreadFunc func, gboolean multiple)
-{
-  GtkWidget *dialog;
-  GtkFileChooser *chooser;
-  GtkFileFilter *filter;
-  gint res, *err;
-  GSList *filenames;
-
-  dialog = gtk_file_chooser_dialog_new (_("Open SysEx"), main_window,
-					GTK_FILE_CHOOSER_ACTION_OPEN,
-					_("_Cancel"), GTK_RESPONSE_CANCEL,
-					_("_Open"), GTK_RESPONSE_ACCEPT,
-					NULL);
-  chooser = GTK_FILE_CHOOSER (dialog);
-  filter = gtk_file_filter_new ();
-  gtk_file_filter_set_name (filter, _("SysEx Files"));
-  gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
-  gtk_file_chooser_add_filter (chooser, filter);
-  gtk_file_chooser_set_current_folder (chooser, g_get_home_dir ());
-  gtk_file_chooser_set_select_multiple (chooser, multiple);
-
-  res = gtk_dialog_run (GTK_DIALOG (dialog));
-  if (res == GTK_RESPONSE_ACCEPT)
-    {
-      gtk_widget_hide (GTK_WIDGET (dialog));
-      filenames = gtk_file_chooser_get_filenames (chooser);
-      err = progress_run (func, PROGRESS_TYPE_SYSEX_TRANSFER, filenames,
-			  _("Sending SysEx"), "", TRUE, NULL);
-      g_slist_free_full (g_steal_pointer (&filenames), g_free);
-
-      if (!err)			//Signal captured while running the dialog.
-	{
-	  goto cleanup;
-	}
-
-      if (*err < 0)
-	{
-	  elektroid_check_backend (FALSE);
-	}
-
-      g_free (err);
-    }
-
-cleanup:
-  gtk_widget_destroy (dialog);
+  elektroid_refresh_devices_int (FALSE);
 }
 
 static void
 elektroid_show_remote (gboolean active)
 {
-  elektroid_refresh_devices (TRUE);
+  elektroid_refresh_devices_int (TRUE);
   gtk_widget_set_visible (local_name_entry, active);
   gtk_widget_set_visible (remote_side, active);
   gtk_widget_set_margin_end (local_side, active ? 6 : 0);
@@ -638,7 +411,7 @@ elektroid_delete_file (struct browser *browser, gchar *dir, struct item *item)
 	{
 	  elektroid_delete_file (browser, path, &iter.item);
 
-	  if (!progress_is_active ())
+	  if (!progress_window_is_active ())
 	    {
 	      item_iterator_free (&iter);
 	      err = -ECANCELED;
@@ -655,15 +428,14 @@ end:
   return err;
 }
 
-gpointer
+void
 elektroid_delete_items_runner (gpointer data)
 {
   GList *list, *tree_path_list, *ref_list;
   GtkTreeSelection *selection;
   GtkTreeModel *model;
-  struct browser *browser = data;
-
-  progress.sysex_transfer.active = TRUE;
+  struct browser_delete_items_data *delete_data = data;
+  struct browser *browser = delete_data->browser;
 
   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
   model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
@@ -698,7 +470,7 @@ elektroid_delete_items_runner (gpointer data)
 	  error_print ("Error while deleting file");
 	}
 
-      if (!progress_is_active ())
+      if (delete_data->has_progress_window && !progress_window_is_active ())
 	{
 	  break;
 	}
@@ -708,8 +480,9 @@ elektroid_delete_items_runner (gpointer data)
   g_list_free_full (ref_list, (GDestroyNotify) gtk_tree_row_reference_free);
   g_mutex_unlock (&browser->mutex);
 
-  progress_response (GTK_RESPONSE_ACCEPT);
-  return NULL;
+  g_free (delete_data);
+
+  g_idle_add (browser_load_dir_if_needed, browser);
 }
 
 gint
@@ -877,9 +650,9 @@ elektroid_show_task_overwrite_dialog (gpointer data)
 
 //Close the preparing tasks progress dialog if it is open.
 static gboolean
-elektroid_close_progress_dialog (gpointer data)
+elektroid_close_progress_window_dialog (gpointer data)
 {
-  progress_response (GTK_RESPONSE_CANCEL);
+  progress_window_cancel ();
   return FALSE;
 }
 
@@ -892,7 +665,7 @@ elektroid_check_file_and_wait (gchar *path, struct browser *browser)
       switch (tasks.transfer.mode)
 	{
 	case TASK_MODE_ASK:
-	  g_idle_add (elektroid_close_progress_dialog, NULL);
+	  g_idle_add (elektroid_close_progress_window_dialog, NULL);
 	  g_idle_add (elektroid_show_task_overwrite_dialog, path);
 	  g_cond_wait (&tasks.transfer.control.cond,
 		       &tasks.transfer.control.mutex);
@@ -991,7 +764,7 @@ elektroid_add_upload_task_path (const gchar *rel_path,
   gchar *path, *src_abs_path, *rel_path_trans;
   enum path_type type = backend_get_path_type (BACKEND);
 
-  if (!progress_is_active ())
+  if (!progress_window_is_active ())
     {
       return;
     }
@@ -1032,16 +805,14 @@ cleanup:
   g_free (src_abs_path);
 }
 
-static gpointer
-elektroid_add_upload_tasks_runner (gpointer userdata)
+static void
+elektroid_add_upload_tasks_runner (gpointer data)
 {
   GtkTreeIter iter;
   GList *selected_rows;
   gboolean queued_before, queued_after;
   GtkTreeModel *model = gtk_tree_view_get_model (local_browser.view);
   GtkTreeSelection *sel = gtk_tree_view_get_selection (local_browser.view);
-
-  progress.sysex_transfer.active = TRUE;
 
   queued_before = tasks_get_next_queued (&iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
@@ -1058,7 +829,7 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
       elektroid_add_upload_task_path (item.name, local_browser.dir,
 				      remote_browser.dir);
 
-      if (!progress_is_active ())
+      if (!progress_window_is_active ())
 	{
 	  break;
 	}
@@ -1073,9 +844,6 @@ elektroid_add_upload_tasks_runner (gpointer userdata)
     {
       g_idle_add (elektroid_run_next, NULL);
     }
-
-  progress_response (GTK_RESPONSE_ACCEPT);
-  return NULL;
 }
 
 void
@@ -1088,8 +856,9 @@ elektroid_add_upload_tasks (GtkWidget *object, gpointer data)
       return;
     }
 
-  progress_run (elektroid_add_upload_tasks_runner, PROGRESS_TYPE_PULSE, NULL,
-		_("Preparing Tasks"), _("Waiting..."), TRUE, NULL);
+  progress_window_open (elektroid_add_upload_tasks_runner, NULL, NULL, NULL,
+			PROGRESS_TYPE_PULSE, _("Preparing Tasks"),
+			_("Waiting..."), TRUE);
 }
 
 static gpointer
@@ -1169,7 +938,7 @@ elektroid_add_download_task_path (const gchar *rel_path,
   gchar *path, *filename, *src_abs_path, *rel_path_trans;
   enum path_type type = backend_get_path_type (BACKEND);
 
-  if (!progress_is_active ())
+  if (!progress_window_is_active ())
     {
       return;
     }
@@ -1210,7 +979,7 @@ cleanup:
   g_free (src_abs_path);
 }
 
-static gpointer
+static void
 elektroid_add_download_tasks_runner (gpointer data)
 {
   GtkTreeIter iter;
@@ -1218,8 +987,6 @@ elektroid_add_download_tasks_runner (gpointer data)
   gboolean queued_before, queued_after;
   GtkTreeModel *model = gtk_tree_view_get_model (remote_browser.view);
   GtkTreeSelection *sel = gtk_tree_view_get_selection (remote_browser.view);
-
-  progress.sysex_transfer.active = TRUE;
 
   queued_before = tasks_get_next_queued (&iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
@@ -1239,7 +1006,7 @@ elektroid_add_download_tasks_runner (gpointer data)
 					local_browser.dir);
       g_free (filename);
 
-      if (!progress_is_active ())
+      if (!progress_window_is_active ())
 	{
 	  break;
 	}
@@ -1254,9 +1021,6 @@ elektroid_add_download_tasks_runner (gpointer data)
     {
       g_idle_add (elektroid_run_next, NULL);
     }
-
-  progress_response (GTK_RESPONSE_ACCEPT);
-  return NULL;
 }
 
 void
@@ -1269,8 +1033,9 @@ elektroid_add_download_tasks (GtkWidget *object, gpointer data)
       return;
     }
 
-  progress_run (elektroid_add_download_tasks_runner, PROGRESS_TYPE_PULSE,
-		NULL, _("Preparing Tasks"), _("Waiting..."), TRUE, NULL);
+  progress_window_open (elektroid_add_download_tasks_runner, NULL, NULL, NULL,
+			PROGRESS_TYPE_PULSE, _("Preparing Tasks"),
+			_("Waiting..."), TRUE);
 }
 
 static void
@@ -1393,20 +1158,52 @@ elektroid_fill_fs_combo_bg (gpointer data)
   return FALSE;
 }
 
-static gpointer
+static void
+elektroid_set_device_consumer (gpointer data)
+{
+  struct backend_device *backend_device = data;
+
+  if (sysex_transfer.err)
+    {
+      if (sysex_transfer.err != -ECANCELED)
+	{
+	  error_print ("Error while connecting: %s",
+		       g_strerror (-sysex_transfer.err));
+	  elektroid_show_error_msg (_("Device “%s” not recognized: %s"),
+				    backend_device->name,
+				    g_strerror (-sysex_transfer.err));
+
+	  gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), -1);
+	  elektroid_check_backend_int (FALSE);
+	}
+
+      gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), -1);
+      elektroid_check_backend_int (FALSE);
+    }
+  else
+    {
+      elektroid_fill_fs_combo_bg (NULL);
+      maction_menu_setup (&maction_context);
+    }
+
+  g_free (backend_device);
+}
+
+static void
 elektroid_set_device_runner (gpointer data)
 {
-  struct backend_device *be_sys_device = data;
+  struct backend_device *backend_device = data;
 
-  progress.sysex_transfer.active = TRUE;
-
-  progress.sysex_transfer.err = backend_init_connector (BACKEND,
-							be_sys_device, NULL,
-							&progress.sysex_transfer);
+  sysex_transfer.err = backend_init_connector (BACKEND,
+					       backend_device, NULL,
+					       &sysex_transfer);
   elektroid_update_midi_status ();
-  progress_response (backend_check (BACKEND) ?
-		     GTK_RESPONSE_ACCEPT : GTK_RESPONSE_CANCEL);
-  return NULL;
+}
+
+static void
+elektroid_set_device_cancel (gpointer data)
+{
+  sysex_transfer_cancel (&sysex_transfer);
 }
 
 static void
@@ -1414,8 +1211,8 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 {
   GtkTreeIter iter;
   gchar *id, *name;
-  gint dres, err;
-  struct backend_device be_sys_device;
+  struct backend_device *backend_device =
+    g_malloc (sizeof (struct backend_device));
 
   elektroid_cancel_all_tasks_and_wait ();
 
@@ -1432,52 +1229,34 @@ elektroid_set_device (GtkWidget *object, gpointer data)
     }
 
   gtk_tree_model_get (GTK_TREE_MODEL (devices_list_store), &iter,
-		      DEVICES_LIST_STORE_TYPE_FIELD, &be_sys_device.type,
+		      DEVICES_LIST_STORE_TYPE_FIELD, &backend_device->type,
 		      DEVICES_LIST_STORE_ID_FIELD, &id,
 		      DEVICES_LIST_STORE_NAME_FIELD, &name, -1);
 
-  strcpy (be_sys_device.id, id);
-  strcpy (be_sys_device.name, name);
+  strcpy (backend_device->id, id);
+  strcpy (backend_device->name, name);
   g_free (id);
   g_free (name);
 
   maction_menu_clear (&maction_context);
 
-  if (be_sys_device.type == BE_TYPE_SYSTEM)
+  if (backend_device->type == BE_TYPE_SYSTEM)
     {
-      backend_init_connector (BACKEND, &be_sys_device, NULL, NULL);
+      backend_init_connector (BACKEND, backend_device, NULL, NULL);
       elektroid_update_midi_status ();
-      err = 0;
-    }
-  else
-    {
-      progress_run (elektroid_set_device_runner, PROGRESS_TYPE_PULSE,
-		    &be_sys_device, _("Connecting to Device"),
-		    _("Connecting..."), TRUE, &dres);
-
-      if (progress.sysex_transfer.err &&
-	  progress.sysex_transfer.err != -ECANCELED)
-	{
-	  error_print ("Error while connecting: %s",
-		       g_strerror (-progress.sysex_transfer.err));
-	  elektroid_show_error_msg (_("Device “%s” not recognized: %s"),
-				    be_sys_device.name,
-				    g_strerror (-progress.
-						sysex_transfer.err));
-	}
-
-      elektroid_check_backend (FALSE);
-      err = dres == GTK_RESPONSE_ACCEPT ? 0 : 1;
-    }
-
-  if (err)
-    {
-      gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), -1);
-    }
-  else
-    {
       elektroid_fill_fs_combo_bg (NULL);
       maction_menu_setup (&maction_context);
+      g_free (backend_device);
+    }
+  else
+    {
+      sysex_transfer.active = TRUE;
+      progress_window_open (elektroid_set_device_runner,
+			    elektroid_set_device_consumer,
+			    elektroid_set_device_cancel, backend_device,
+			    PROGRESS_TYPE_PULSE, _("Connecting to Device"),
+			    _("Connecting..."), TRUE);
+
     }
 }
 
@@ -1543,22 +1322,20 @@ elektroid_add_upload_task_slot (const gchar *name,
     }
 }
 
-gpointer
-elektroid_drag_data_received_runner_dialog (gpointer data)
+void
+elektroid_browser_drag_data_received_runner (gpointer data)
 {
   GtkTreeIter iter;
   gboolean queued_before, queued_after;
-  struct browser_dnd_data *dnd_data = data;
+  struct browser_drag_data_received_data *dnd_data = data;
   GtkWidget *widget = dnd_data->widget;
-
-  progress.sysex_transfer.active = TRUE;
 
   queued_before = tasks_get_next_queued (&iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
 
   for (gint i = 0; dnd_data->uris[i] != NULL; i++)
     {
-      if (!progress_is_active ())
+      if (dnd_data->has_progress_window && !progress_window_is_active ())
 	{
 	  goto end;
 	}
@@ -1614,13 +1391,9 @@ end:
       g_idle_add (elektroid_run_next, NULL);
     }
 
-  progress_response (GTK_RESPONSE_ACCEPT);
-
   g_free (dnd_data->type_name);
   g_strfreev (dnd_data->uris);
   g_free (dnd_data);
-
-  return NULL;
 }
 
 static void
@@ -1644,9 +1417,7 @@ static void
 elektroid_exit ()
 {
   gtk_dialog_response (GTK_DIALOG (about_dialog), GTK_RESPONSE_CANCEL);
-  progress_response (GTK_RESPONSE_CANCEL);
 
-  progress_stop_thread ();
   tasks_stop_thread ();
   editor_stop_load_thread ();
 
@@ -1661,11 +1432,14 @@ elektroid_exit ()
   microbrute_destroy ();
   autosampler_destroy ();
 
+  progress_window_destroy ();
   name_window_destroy ();
   preferences_window_destroy ();
   gtk_widget_destroy (GTK_WIDGET (main_window));
 
   g_object_unref (builder);
+
+  g_mutex_clear (&sysex_transfer.mutex);
 }
 
 static gboolean
@@ -1768,7 +1542,7 @@ build_ui ()
   g_signal_connect (devices_combo, "changed",
 		    G_CALLBACK (elektroid_set_device), NULL);
   g_signal_connect (refresh_devices_button, "clicked",
-		    G_CALLBACK (elektroid_refresh_devices_int), NULL);
+		    G_CALLBACK (elektroid_refresh_devices_clicked), NULL);
 
   gtk_label_set_text (backend_status_label, _("Not connected"));
 
@@ -1783,7 +1557,7 @@ build_ui ()
   editor_init (builder);
   elektroid_update_midi_status ();
   tasks_init (builder);
-  progress_init (builder);
+  progress_window_init (builder);
 
   microbrute_init ();
   autosampler_init (builder);
@@ -1799,6 +1573,8 @@ build_ui ()
   gtk_entry_buffer_set_text (buf, g_get_host_name (), -1);
 
   elektroid_set_window_size ();
+
+  g_mutex_init (&sysex_transfer.mutex);
 }
 
 #if defined(__linux__)

@@ -113,11 +113,18 @@ struct browser
   GtkTreeViewColumn *tree_view_size_column;
 };
 
-struct browser_dnd_data
+struct browser_drag_data_received_data
 {
   GtkWidget *widget;
   gchar **uris;
   gchar *type_name;
+  gboolean has_progress_window;
+};
+
+struct browser_delete_items_data
+{
+  struct browser *browser;
+  gboolean has_progress_window;
 };
 
 extern struct browser local_browser;

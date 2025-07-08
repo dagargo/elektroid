@@ -82,7 +82,7 @@ mactions/microfreak.c \
 name_window.c name_window.h \
 notifier.c notifier.h \
 preferences_window.c preferences_window.h \
-progress.c progress.h \
+progress_window.c progress_window.h \
 record_window.c record_window.h \
 regma.c regma.h \
 tasks.c tasks.h \

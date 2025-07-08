@@ -218,4 +218,8 @@ gint backend_init_connector (struct backend *backend,
 			     const gchar * name,
 			     struct sysex_transfer *sysex_transfer);
 
+void sysex_transfer_cancel (struct sysex_transfer *sysex_transfer);
+
+gboolean sysex_transfer_is_active (struct sysex_transfer *sysex_transfer);
+
 #endif

@@ -7,7 +7,7 @@ src/mactions/autosampler.c
 src/mactions/backend.c
 src/mactions/microbrute.c
 src/mactions/microfreak.c
-src/progress.c
+src/progress_window.c
 src/guirecorder.c
 src/connectors/sds.c
 src/connectors/default.c

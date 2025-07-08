@@ -792,3 +792,22 @@ end:
     }
   return err;
 }
+
+void
+sysex_transfer_cancel (struct sysex_transfer *sysex_transfer)
+{
+  debug_print (1, "Stopping SysEx transfer...");
+  g_mutex_lock (&sysex_transfer->mutex);
+  sysex_transfer->active = FALSE;
+  g_mutex_unlock (&sysex_transfer->mutex);
+}
+
+gboolean
+sysex_transfer_is_active (struct sysex_transfer *sysex_transfer)
+{
+  gboolean active;
+  g_mutex_lock (&sysex_transfer->mutex);
+  active = sysex_transfer->active;
+  g_mutex_unlock (&sysex_transfer->mutex);
+  return active;
+}

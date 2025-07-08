@@ -19,22 +19,19 @@
  */
 
 #include <glib/gi18n.h>
-#include "maction.h"
-#include "../progress.h"
-#include "../browser.h"
+#include "browser.h"
 #include "connectors/microfreak.h"
+#include "maction.h"
+#include "progress_window.h"
 
 extern GtkWindow *main_window;
 extern struct browser remote_browser;
 
-static gpointer
+static void
 microfreak_defragment_runner (gpointer data)
 {
-  struct backend *backend = data;
-  progress.sysex_transfer.active = TRUE;
-  microfreak_sample_defragment (backend);
-  progress_response (GTK_RESPONSE_ACCEPT);
-  return NULL;
+  microfreak_sample_defragment (remote_browser.backend);
+  browser_refresh (NULL, &remote_browser);
 }
 
 static void
@@ -61,11 +58,9 @@ microfreak_defragment_callback (GtkWidget *object, gpointer data)
       return;
     }
 
-  progress_run (microfreak_defragment_runner, PROGRESS_TYPE_PULSE,
-		remote_browser.backend, _("Defragmenting Sample Memory"),
-		NULL, FALSE, NULL);
-
-  browser_refresh (NULL, &remote_browser);
+  progress_window_open (microfreak_defragment_runner, NULL, NULL, NULL,
+			PROGRESS_TYPE_PULSE, _("Defragmenting Sample Memory"),
+			"", FALSE);
 }
 
 struct maction *
