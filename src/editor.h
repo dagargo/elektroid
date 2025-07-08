@@ -23,7 +23,6 @@
 
 #include "audio.h"
 #include "browser.h"
-#include "guirecorder.h"
 #include "preferences.h"
 
 enum editor_operation
@@ -67,7 +66,6 @@ struct editor
   GtkWidget *undo_menuitem;
   GtkWidget *save_menuitem;
   GtkDialog *record_dialog;
-  struct guirecorder guirecorder;
   gdouble zoom;
   enum editor_operation operation;
   gboolean dirty;

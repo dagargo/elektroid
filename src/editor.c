@@ -25,6 +25,7 @@
 #include "editor.h"
 #include "name_window.h"
 #include "preferences.h"
+#include "record_window.h"
 #include "sample.h"
 #include "utils.h"
 
@@ -717,48 +718,35 @@ editor_stop_clicked (GtkWidget *object, gpointer data)
 }
 
 static void
-editor_reset_for_recording ()
+editor_record_window_record_cb (guint channel_mask)
 {
-  guint options;
+  gtk_widget_set_sensitive (editor.stop_button, TRUE);
+  audio_start_recording (channel_mask, editor_update_on_record_cb, NULL);
+}
+
+static void
+editor_record_window_cancel_cb ()
+{
+  editor_reset (NULL);
+}
+
+static void
+editor_record_clicked (GtkWidget *object, gpointer data)
+{
+  browser_clear_selection (&local_browser);
+  browser_clear_selection (&remote_browser);
 
   editor_reset (&local_browser);
-
-  guirecorder_set_channels_masks (&editor.guirecorder,
-				  editor.browser->fs_ops->options);
 
   editor.ready = FALSE;
   editor.dirty = TRUE;
   editor.zoom = 1;
   audio.sel_start = -1;
   audio.sel_end = -1;
-  options = guirecorder_get_channel_mask (&editor.guirecorder);
-  audio_start_recording (options | RECORD_MONITOR_ONLY,
-			 guirecorder_monitor_notifier, &editor.guirecorder);
-}
 
-static void
-editor_record_clicked (GtkWidget *object, gpointer data)
-{
-  gint res;
-  guint options;
-
-  browser_clear_selection (&local_browser);
-  browser_clear_selection (&remote_browser);
-
-  editor_reset_for_recording ();
-
-  res = gtk_dialog_run (editor.record_dialog);
-  gtk_widget_hide (GTK_WIDGET (editor.record_dialog));
-  if (res != GTK_RESPONSE_ACCEPT)
-    {
-      audio_stop_recording ();
-      editor_reset (NULL);
-      return;
-    }
-
-  gtk_widget_set_sensitive (editor.stop_button, TRUE);
-  options = guirecorder_get_channel_mask (&editor.guirecorder);
-  audio_start_recording (options, editor_update_on_record_cb, NULL);
+  record_window_open (editor.browser->fs_ops->options,
+		      editor_record_window_record_cb,
+		      editor_record_window_cancel_cb);
 }
 
 static void
@@ -1608,18 +1596,6 @@ editor_init (GtkBuilder *builder)
   editor.save_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "editor_save_menuitem"));
 
-  editor.record_dialog =
-    GTK_DIALOG (gtk_builder_get_object (builder, "record_dialog"));
-  editor.guirecorder.channels_combo =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "record_dialog_channels_combo"));
-  editor.guirecorder.channels_list_store =
-    GTK_LIST_STORE (gtk_builder_get_object
-		    (builder, "record_dialog_channels_list_store"));
-  editor.guirecorder.monitor_levelbar =
-    GTK_LEVEL_BAR (gtk_builder_get_object
-		   (builder, "record_dialog_monitor_levelbar"));
-
   g_signal_connect (editor.waveform, "draw", G_CALLBACK (editor_draw), NULL);
   gtk_widget_add_events (editor.waveform, GDK_SCROLL_MASK);
   g_signal_connect (editor.waveform, "scroll-event",
@@ -1682,11 +1658,9 @@ editor_init (GtkBuilder *builder)
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (editor.grid_length_spin),
 			     preferences_get_int (PREF_KEY_GRID_LENGTH));
 
-  g_signal_connect (editor.guirecorder.channels_combo, "changed",
-		    G_CALLBACK (guirecorder_channels_changed),
-		    &editor.guirecorder);
-
   audio_init (editor_set_volume_callback, editor_update_audio_status, NULL);
+
+  record_window_init (builder);
 
   g_mutex_init (&editor.mutex);
   editor_reset (NULL);
@@ -1695,6 +1669,7 @@ editor_init (GtkBuilder *builder)
 void
 editor_destroy ()
 {
+  record_window_destroy ();
   editor_clear_waveform_data ();
   audio_destroy ();
 }
