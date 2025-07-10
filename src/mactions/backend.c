@@ -31,6 +31,12 @@ struct backend_tx_sysex_common_data
   GSList *filenames;
 };
 
+struct backend_tx_sysex_common_funcs
+{
+  progress_window_runner runner;
+  progress_window_consumer consumer;
+};
+
 extern GtkWindow *main_window;
 extern struct browser remote_browser;
 
@@ -120,30 +126,14 @@ backend_tx_sysex_cancel (gpointer data_)
 }
 
 static void
-backend_tx_sysex_common (progress_window_runner runner,
-			 progress_window_consumer consumer, gboolean multiple)
+backend_tx_sysex_common_response (GtkDialog *dialog, gint response_id,
+				  gpointer user_data)
 {
-  GtkWidget *dialog;
-  GtkFileChooser *chooser;
-  GtkFileFilter *filter;
-  gint res;
+  struct backend_tx_sysex_common_funcs *funcs = user_data;
 
-  dialog = gtk_file_chooser_dialog_new (_("Open SysEx"), main_window,
-					GTK_FILE_CHOOSER_ACTION_OPEN,
-					_("_Cancel"), GTK_RESPONSE_CANCEL,
-					_("_Open"), GTK_RESPONSE_ACCEPT,
-					NULL);
-  chooser = GTK_FILE_CHOOSER (dialog);
-  filter = gtk_file_filter_new ();
-  gtk_file_filter_set_name (filter, _("SysEx Files"));
-  gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
-  gtk_file_chooser_add_filter (chooser, filter);
-  gtk_file_chooser_set_current_folder (chooser, g_get_home_dir ());
-  gtk_file_chooser_set_select_multiple (chooser, multiple);
-
-  res = gtk_dialog_run (GTK_DIALOG (dialog));
-  if (res == GTK_RESPONSE_ACCEPT)
+  if (response_id == GTK_RESPONSE_ACCEPT)
     {
+      GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
       struct backend_tx_sysex_common_data *data =
 	g_malloc (sizeof (struct backend_tx_sysex_common_data));
 
@@ -154,14 +144,48 @@ backend_tx_sysex_common (progress_window_runner runner,
 
       data->filenames = gtk_file_chooser_get_filenames (chooser);
 
-      progress_window_open (runner, consumer,
+      progress_window_open (funcs->runner, funcs->consumer,
 			    backend_tx_sysex_cancel, data,
 			    PROGRESS_TYPE_SYSEX_TRANSFER, _("Sending SysEx"),
 			    "", TRUE);
     }
 
-  gtk_widget_hide (GTK_WIDGET (dialog));
-  gtk_widget_destroy (dialog);
+  gtk_widget_destroy (GTK_WIDGET (dialog));
+  g_free (funcs);
+}
+
+
+static void
+backend_tx_sysex_common (progress_window_runner runner,
+			 progress_window_consumer consumer, gboolean multiple)
+{
+  GtkWidget *dialog;
+  GtkFileChooser *chooser;
+  GtkFileFilter *filter;
+  struct backend_tx_sysex_common_funcs *funcs =
+    g_malloc (sizeof (struct backend_tx_sysex_common_funcs));
+
+  funcs->runner = runner;
+  funcs->consumer = consumer;
+
+  dialog = gtk_file_chooser_dialog_new (_("Open SysEx"), main_window,
+					GTK_FILE_CHOOSER_ACTION_OPEN,
+					_("_Cancel"),
+					GTK_RESPONSE_CANCEL,
+					_("_Open"),
+					GTK_RESPONSE_ACCEPT, NULL);
+  chooser = GTK_FILE_CHOOSER (dialog);
+  filter = gtk_file_filter_new ();
+  gtk_file_filter_set_name (filter, _("SysEx Files"));
+  gtk_file_filter_add_pattern (filter, SYSEX_FILTER);
+  gtk_file_chooser_add_filter (chooser, filter);
+  gtk_file_chooser_set_current_folder (chooser, g_get_home_dir ());
+  gtk_file_chooser_set_select_multiple (chooser, multiple);
+
+  g_signal_connect (dialog, "response",
+		    G_CALLBACK (backend_tx_sysex_common_response), funcs);
+
+  gtk_widget_set_visible (dialog, TRUE);
 }
 
 static void
