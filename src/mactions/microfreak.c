@@ -35,32 +35,38 @@ microfreak_defragment_runner (gpointer data)
 }
 
 static void
+microfreak_defragment_callback_response (GtkDialog *dialog, gint response_id,
+					 gpointer user_data)
+{
+  if (response_id == GTK_RESPONSE_ACCEPT)
+    {
+      progress_window_open (microfreak_defragment_runner, NULL, NULL, NULL,
+			    PROGRESS_TYPE_PULSE,
+			    _("Defragmenting Sample Memory"), "", FALSE);
+    }
+
+  gtk_widget_destroy (GTK_WIDGET (dialog));
+}
+
+static void
 microfreak_defragment_callback (GtkWidget *object, gpointer data)
 {
-  gint res;
-  GtkWidget *dialog;
-
-  dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
-				   GTK_DIALOG_MODAL,
-				   GTK_MESSAGE_ERROR,
-				   GTK_BUTTONS_NONE,
-				   _
-				   ("The defragmentation process could take several minutes and could not be canceled. Are you sure you want to defragment the sample memory?"));
+  GtkWidget *dialog = gtk_message_dialog_new (GTK_WINDOW (main_window),
+					      GTK_DIALOG_MODAL,
+					      GTK_MESSAGE_ERROR,
+					      GTK_BUTTONS_NONE,
+					      _
+					      ("The defragmentation process could take several minutes and could not be canceled. Are you sure you want to defragment the sample memory?"));
   gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
 			  GTK_RESPONSE_CANCEL, _("_Defragment"),
 			  GTK_RESPONSE_ACCEPT, NULL);
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_CANCEL);
-  res = gtk_dialog_run (GTK_DIALOG (dialog));
-  gtk_widget_destroy (dialog);
 
-  if (res != GTK_RESPONSE_ACCEPT)
-    {
-      return;
-    }
+  g_signal_connect (dialog, "response",
+		    G_CALLBACK (microfreak_defragment_callback_response),
+		    NULL);
 
-  progress_window_open (microfreak_defragment_runner, NULL, NULL, NULL,
-			PROGRESS_TYPE_PULSE, _("Defragmenting Sample Memory"),
-			"", FALSE);
+  gtk_widget_set_visible (dialog, TRUE);
 }
 
 struct maction *

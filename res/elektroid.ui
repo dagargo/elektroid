@@ -1115,6 +1115,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
     <property name="title" translatable="yes" comments="This should only be translated if a non latin alphabet is used">Auto Sampler</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
+    <property name="destroy-with-parent">True</property>
     <property name="transient-for">main_window</property>
     <child>
       <object class="GtkBox">
@@ -3286,6 +3287,7 @@ on remote</property>
     <property name="can-focus">False</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
+    <property name="destroy-with-parent">True</property>
     <property name="transient-for">main_window</property>
     <child>
       <object class="GtkBox">
@@ -3387,6 +3389,7 @@ on remote</property>
     <property name="title" translatable="yes">Preferences</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
+    <property name="destroy-with-parent">True</property>
     <property name="transient-for">main_window</property>
     <child>
       <object class="GtkBox">
@@ -3733,6 +3736,7 @@ on remote</property>
     <property name="can-focus">False</property>
     <property name="resizable">False</property>
     <property name="modal">True</property>
+    <property name="destroy-with-parent">True</property>
     <property name="transient-for">main_window</property>
     <child>
       <object class="GtkBox">
