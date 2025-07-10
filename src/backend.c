@@ -31,8 +31,7 @@ GSList *connectors = NULL;
 // When sending a batch of SysEx messages we want the trasfer status to be controlled outside this function.
 // This is what the update parameter is for.
 
-gint backend_tx_sysex_internal (struct backend *, struct sysex_transfer *,
-				gboolean);
+gint backend_tx_sysex_int (struct backend *, struct sysex_transfer *);
 
 void backend_rx_drain_int (struct backend *);
 void backend_destroy_int (struct backend *);
@@ -155,16 +154,9 @@ backend_midi_handshake (struct backend *backend)
 }
 
 gint
-backend_tx_sysex_no_status (struct backend *backend,
-			    struct sysex_transfer *transfer)
-{
-  return backend_tx_sysex_internal (backend, transfer, FALSE);
-}
-
-gint
 backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 {
-  return backend_tx_sysex_internal (backend, transfer, TRUE);
+  return backend_tx_sysex_int (backend, transfer);
 }
 
 //Synchronized

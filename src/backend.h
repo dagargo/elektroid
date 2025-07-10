@@ -152,8 +152,6 @@ ssize_t backend_rx_raw (struct backend *, guint8 *, guint);
 
 ssize_t backend_tx_raw (struct backend *, guint8 *, guint);
 
-gint backend_tx_sysex_no_status (struct backend *, struct sysex_transfer *);
-
 gint backend_tx_sysex (struct backend *, struct sysex_transfer *);
 
 gint backend_rx_sysex (struct backend *, struct sysex_transfer *);

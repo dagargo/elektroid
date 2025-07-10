@@ -140,15 +140,12 @@ cleanup_input:
 }
 
 gint
-backend_tx_sysex_internal (struct backend *backend,
-			   struct sysex_transfer *transfer, gboolean update)
+backend_tx_sysex_int (struct backend *backend,
+		      struct sysex_transfer *transfer)
 {
-  if (update)
-    {
-      transfer->err = 0;
-      transfer->active = TRUE;
-      transfer->status = SENDING;
-    }
+  transfer->err = 0;
+  transfer->active = TRUE;
+  transfer->status = SENDING;
 
   rtmidi_out_send_message (backend->outputp, transfer->raw->data,
 			   transfer->raw->len);
@@ -162,11 +159,9 @@ backend_tx_sysex_internal (struct backend *backend,
       g_free (text);
     }
 
-  if (update)
-    {
-      transfer->active = FALSE;
-      transfer->status = FINISHED;
-    }
+  transfer->active = FALSE;
+  transfer->status = FINISHED;
+
   return transfer->err;
 }
 
@@ -176,7 +171,7 @@ backend_tx_raw (struct backend *backend, guint8 *data, guint len)
   struct sysex_transfer transfer;
   transfer.raw = g_byte_array_sized_new (len);
   g_byte_array_append (transfer.raw, data, len);
-  backend_tx_sysex_internal (backend, &transfer, TRUE);
+  backend_tx_sysex_int (backend, &transfer);
   return transfer.err ? transfer.err : len;
 }
 

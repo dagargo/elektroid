@@ -37,12 +37,29 @@ struct backend_tx_sysex_common_funcs
   progress_window_consumer consumer;
 };
 
+struct backend_send_sysex_file_data
+{
+  gchar *filename;
+  gint err;
+};
+
 extern GtkWindow *main_window;
 extern struct browser remote_browser;
 
 void elektroid_show_error_msg (const char *format, ...);
 gboolean elektroid_check_backend ();
 void elektroid_refresh_devices ();
+
+static gboolean
+backend_send_sysex_file_show_error (gpointer user_data)
+{
+  struct backend_send_sysex_file_data *data = user_data;
+  elektroid_show_error_msg (_("Error while loading “%s”: %s."),
+			    data->filename, g_strerror (-data->err));
+  g_free (data->filename);
+  g_free (data);
+  return FALSE;
+}
 
 static gint
 backend_send_sysex_file (struct sysex_transfer *sysex_transfer,
@@ -55,30 +72,34 @@ backend_send_sysex_file (struct sysex_transfer *sysex_transfer,
   if (!err)
     {
       sysex_transfer->raw = idata.content;
+      //If the trasfer is too fast, there is not time to cancel it.
       err = f (remote_browser.backend, sysex_transfer);
       idata_free (&idata);
     }
   if (err && err != -ECANCELED)
     {
-      elektroid_show_error_msg (_("Error while loading “%s”: %s."),
-				filename, g_strerror (-err));
+      struct backend_send_sysex_file_data *data =
+	g_malloc (sizeof (struct backend_send_sysex_file_data));
+      data->filename = strdup (filename);
+      data->err = err;
+      g_idle_add (backend_send_sysex_file_show_error, data);
     }
   return err;
 }
 
 static void
-backend_tx_sysex_files_runner (gpointer data_)
+backend_tx_sysex_files_runner (gpointer user_data)
 {
   gint err;
   GSList *filename;
-  struct backend_tx_sysex_common_data *data = data_;
+  struct backend_tx_sysex_common_data *data = user_data;
 
   err = 0;
   filename = data->filenames;
   while (err != -ECANCELED && filename)
     {
       err = backend_send_sysex_file (&data->sysex_transfer, filename->data,
-				     backend_tx_sysex_no_status);
+				     backend_tx_sysex);
       filename = filename->next;
       //The device may have sent some messages in response so we skip all these.
       backend_rx_drain (remote_browser.backend);
@@ -87,10 +108,10 @@ backend_tx_sysex_files_runner (gpointer data_)
 }
 
 static void
-backend_upgrade_os_runner (gpointer data_)
+backend_upgrade_os_runner (gpointer user_data)
 {
   gint err;
-  struct backend_tx_sysex_common_data *data = data_;
+  struct backend_tx_sysex_common_data *data = user_data;
   GSList *filenames = data->filenames;
 
   err = backend_send_sysex_file (&data->sysex_transfer, filenames->data,
@@ -102,9 +123,9 @@ backend_upgrade_os_runner (gpointer data_)
 }
 
 static void
-backend_tx_sysex_consumer (gpointer data_)
+backend_tx_sysex_consumer (gpointer user_data)
 {
-  struct backend_tx_sysex_common_data *data = data_;
+  struct backend_tx_sysex_common_data *data = user_data;
   g_slist_free_full (g_steal_pointer (&data->filenames), g_free);
   //runners already free sysex_transfer->raw
   g_mutex_clear (&data->sysex_transfer.mutex);
@@ -119,9 +140,9 @@ backend_upgrade_os_consumer (gpointer data)
 }
 
 static void
-backend_tx_sysex_cancel (gpointer data_)
+backend_tx_sysex_cancel (gpointer user_data)
 {
-  struct backend_tx_sysex_common_data *data = data_;
+  struct backend_tx_sysex_common_data *data = user_data;
   sysex_transfer_cancel (&data->sysex_transfer);
 }
 
@@ -189,14 +210,63 @@ backend_tx_sysex_common (progress_window_runner runner,
 }
 
 static void
+backend_rx_sysex_consumer_response (GtkDialog *dialog, gint response_id,
+				    gpointer user_data)
+{
+  gint err;
+  struct idata idata;
+  gchar *filename;
+  gchar *filename_w_ext;
+  const gchar *ext;
+  struct sysex_transfer *sysex_transfer = user_data;
+
+  if (response_id == GTK_RESPONSE_ACCEPT)
+    {
+      GtkFileChooser *chooser = GTK_FILE_CHOOSER (dialog);
+
+      filename = gtk_file_chooser_get_filename (chooser);
+      ext = filename_get_ext (filename);
+
+      if (strcmp (ext, BE_SYSEX_EXT) != 0)
+	{
+	  filename_w_ext = g_strconcat (filename, "." BE_SYSEX_EXT, NULL);
+	  g_free (filename);
+	  filename = filename_w_ext;
+
+	  if (g_file_test (filename, G_FILE_TEST_EXISTS))
+	    {
+	      gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (chooser),
+					     filename);
+	      g_free (filename);
+	      filename = NULL;
+	      return;
+	    }
+	}
+
+      idata.content = sysex_transfer->raw;
+
+      err = file_save (filename, &idata, NULL);
+      if (err)
+	{
+	  elektroid_show_error_msg (_("Error while saving “%s”: %s."),
+				    filename, g_strerror (-err));
+	}
+
+      g_free (filename);
+    }
+
+  gtk_widget_destroy (GTK_WIDGET (dialog));
+  g_byte_array_free (sysex_transfer->raw, TRUE);
+  g_mutex_clear (&sysex_transfer->mutex);
+  g_free (sysex_transfer);
+}
+
+static void
 backend_rx_sysex_consumer (gpointer data)
 {
   GtkWidget *dialog;
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
-  gchar *filename;
-  gchar *filename_w_ext;
-  const gchar *ext;
   struct sysex_transfer *sysex_transfer = data;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
@@ -220,54 +290,17 @@ backend_rx_sysex_consumer (gpointer data)
 
       gtk_file_chooser_set_filter (GTK_FILE_CHOOSER (dialog), filter);
 
-      filename = NULL;
-      while (gtk_dialog_run (GTK_DIALOG (dialog)) == GTK_RESPONSE_ACCEPT)
-	{
-	  filename = gtk_file_chooser_get_filename (chooser);
-	  ext = filename_get_ext (filename);
+      g_signal_connect (dialog, "response",
+			G_CALLBACK (backend_rx_sysex_consumer_response),
+			sysex_transfer);
 
-	  if (strcmp (ext, BE_SYSEX_EXT) != 0)
-	    {
-	      filename_w_ext = g_strconcat (filename, "." BE_SYSEX_EXT, NULL);
-	      g_free (filename);
-	      filename = filename_w_ext;
-
-	      if (g_file_test (filename, G_FILE_TEST_EXISTS))
-		{
-		  gtk_file_chooser_set_filename (GTK_FILE_CHOOSER (chooser),
-						 filename);
-		  g_free (filename);
-		  filename = NULL;
-		  continue;
-		}
-	    }
-	  break;
-	}
-
-      if (filename != NULL)
-	{
-	  gint err;
-	  struct idata idata;
-
-	  idata.content = sysex_transfer->raw;
-
-	  err = file_save (filename, &idata, NULL);
-	  if (err)
-	    {
-	      elektroid_show_error_msg (_("Error while saving “%s”: %s."),
-					filename, g_strerror (-err));
-	    }
-
-	  g_free (filename);
-	}
-
-      gtk_widget_destroy (dialog);
-
-      g_byte_array_free (sysex_transfer->raw, TRUE);
+      gtk_widget_set_visible (dialog, TRUE);
     }
-
-  g_mutex_clear (&sysex_transfer->mutex);
-  g_free (sysex_transfer);
+  else
+    {
+      g_mutex_clear (&sysex_transfer->mutex);
+      g_free (sysex_transfer);
+    }
 }
 
 static void

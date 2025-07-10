@@ -159,20 +159,17 @@ backend_tx_raw (struct backend *backend, guint8 *data, guint len)
 }
 
 gint
-backend_tx_sysex_internal (struct backend *backend,
-			   struct sysex_transfer *transfer, gboolean update)
+backend_tx_sysex_int (struct backend *backend,
+		      struct sysex_transfer *transfer)
 {
   ssize_t tx_len;
   guint total;
   guint len;
   guchar *b;
 
-  if (update)
-    {
-      transfer->err = 0;
-      transfer->active = TRUE;
-      transfer->status = SENDING;
-    }
+  transfer->err = 0;
+  transfer->active = TRUE;
+  transfer->status = SENDING;
 
   b = transfer->raw->data;
   total = 0;
@@ -207,11 +204,9 @@ backend_tx_sysex_internal (struct backend *backend,
       g_free (text);
     }
 
-  if (update)
-    {
-      transfer->active = FALSE;
-      transfer->status = FINISHED;
-    }
+  transfer->active = FALSE;
+  transfer->status = FINISHED;
+
   return transfer->err;
 }
 
