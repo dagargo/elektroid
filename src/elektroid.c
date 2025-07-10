@@ -58,6 +58,13 @@ enum fs_list_store_columns
   FS_LIST_STORE_NAME_FIELD
 };
 
+struct elektroid_set_device_data
+{
+  struct backend_device backend_device;
+  struct controllable controllable;
+  gint err;
+};
+
 static gpointer elektroid_upload_task_runner (gpointer);
 static gpointer elektroid_download_task_runner (gpointer);
 static void elektroid_update_progress (struct job_control *);
@@ -70,8 +77,6 @@ void microbrute_init ();
 static gchar *local_dir;
 
 extern struct maction_context maction_context;
-
-static struct sysex_transfer sysex_transfer;
 
 #define BACKEND (remote_browser.backend)
 
@@ -856,8 +861,8 @@ elektroid_add_upload_tasks (GtkWidget *object, gpointer data)
       return;
     }
 
-  progress_window_open (elektroid_add_upload_tasks_runner, NULL, NULL, NULL,
-			PROGRESS_TYPE_PULSE, _("Preparing Tasks"),
+  progress_window_open (elektroid_add_upload_tasks_runner, NULL, NULL,
+			NULL, PROGRESS_TYPE_PULSE, _("Preparing Tasks"),
 			_("Waiting..."), TRUE);
 }
 
@@ -1033,8 +1038,8 @@ elektroid_add_download_tasks (GtkWidget *object, gpointer data)
       return;
     }
 
-  progress_window_open (elektroid_add_download_tasks_runner, NULL, NULL, NULL,
-			PROGRESS_TYPE_PULSE, _("Preparing Tasks"),
+  progress_window_open (elektroid_add_download_tasks_runner, NULL, NULL,
+			NULL, PROGRESS_TYPE_PULSE, _("Preparing Tasks"),
 			_("Waiting..."), TRUE);
 }
 
@@ -1161,17 +1166,17 @@ elektroid_fill_fs_combo_bg (gpointer data)
 static void
 elektroid_set_device_consumer (gpointer data)
 {
-  struct backend_device *backend_device = data;
+  struct elektroid_set_device_data *set_device_data = data;
 
-  if (sysex_transfer.err)
+  if (set_device_data->err)
     {
-      if (sysex_transfer.err != -ECANCELED)
+      if (set_device_data->err != -ECANCELED)
 	{
 	  error_print ("Error while connecting: %s",
-		       g_strerror (-sysex_transfer.err));
+		       g_strerror (-set_device_data->err));
 	  elektroid_show_error_msg (_("Device “%s” not recognized: %s"),
-				    backend_device->name,
-				    g_strerror (-sysex_transfer.err));
+				    set_device_data->backend_device.name,
+				    g_strerror (-set_device_data->err));
 
 	  gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), -1);
 	  elektroid_check_backend_int (FALSE);
@@ -1186,24 +1191,26 @@ elektroid_set_device_consumer (gpointer data)
       maction_menu_setup (&maction_context);
     }
 
-  g_free (backend_device);
+  controllable_clear (&set_device_data->controllable);
+  g_free (set_device_data);
 }
 
 static void
 elektroid_set_device_runner (gpointer data)
 {
-  struct backend_device *backend_device = data;
-
-  sysex_transfer.err = backend_init_connector (BACKEND,
-					       backend_device, NULL,
-					       &sysex_transfer);
+  struct elektroid_set_device_data *set_device_data = data;
+  set_device_data->err = backend_init_connector (BACKEND,
+						 &set_device_data->backend_device,
+						 NULL,
+						 &set_device_data->controllable);
   elektroid_update_midi_status ();
 }
 
 static void
 elektroid_set_device_cancel (gpointer data)
 {
-  sysex_transfer_cancel (&sysex_transfer);
+  struct elektroid_set_device_data *set_device_data = data;
+  controllable_set_active (&set_device_data->controllable, FALSE);
 }
 
 static void
@@ -1211,8 +1218,8 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 {
   GtkTreeIter iter;
   gchar *id, *name;
-  struct backend_device *backend_device =
-    g_malloc (sizeof (struct backend_device));
+  struct elektroid_set_device_data *set_device_data =
+    g_malloc (sizeof (struct elektroid_set_device_data));
 
   elektroid_cancel_all_tasks_and_wait ();
 
@@ -1229,31 +1236,33 @@ elektroid_set_device (GtkWidget *object, gpointer data)
     }
 
   gtk_tree_model_get (GTK_TREE_MODEL (devices_list_store), &iter,
-		      DEVICES_LIST_STORE_TYPE_FIELD, &backend_device->type,
+		      DEVICES_LIST_STORE_TYPE_FIELD,
+		      &set_device_data->backend_device.type,
 		      DEVICES_LIST_STORE_ID_FIELD, &id,
 		      DEVICES_LIST_STORE_NAME_FIELD, &name, -1);
 
-  strcpy (backend_device->id, id);
-  strcpy (backend_device->name, name);
+  strcpy (set_device_data->backend_device.id, id);
+  strcpy (set_device_data->backend_device.name, name);
   g_free (id);
   g_free (name);
 
   maction_menu_clear (&maction_context);
 
-  if (backend_device->type == BE_TYPE_SYSTEM)
+  if (set_device_data->backend_device.type == BE_TYPE_SYSTEM)
     {
-      backend_init_connector (BACKEND, backend_device, NULL, NULL);
+      backend_init_connector (BACKEND, &set_device_data->backend_device, NULL,
+			      NULL);
       elektroid_update_midi_status ();
       elektroid_fill_fs_combo_bg (NULL);
       maction_menu_setup (&maction_context);
-      g_free (backend_device);
+      g_free (set_device_data);
     }
   else
     {
-      sysex_transfer.active = TRUE;
+      controllable_init (&set_device_data->controllable);
       progress_window_open (elektroid_set_device_runner,
 			    elektroid_set_device_consumer,
-			    elektroid_set_device_cancel, backend_device,
+			    elektroid_set_device_cancel, set_device_data,
 			    PROGRESS_TYPE_PULSE, _("Connecting to Device"),
 			    _("Connecting..."), TRUE);
 
@@ -1438,8 +1447,6 @@ elektroid_exit ()
   gtk_widget_destroy (GTK_WIDGET (main_window));
 
   g_object_unref (builder);
-
-  g_mutex_clear (&sysex_transfer.mutex);
 }
 
 static gboolean
@@ -1573,8 +1580,6 @@ build_ui ()
   gtk_entry_buffer_set_text (buf, g_get_host_name (), -1);
 
   elektroid_set_window_size ();
-
-  g_mutex_init (&sysex_transfer.mutex);
 }
 
 #if defined(__linux__)

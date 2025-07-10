@@ -579,3 +579,34 @@ midi_fraction_to_cents (guint32 midi_fraction)
 {
   return (guint32) round (midi_fraction * 100 / 256.0);
 }
+
+void
+controllable_init (struct controllable *controllable)
+{
+  g_mutex_init (&controllable->mutex);
+  controllable->active = TRUE;
+}
+
+void
+controllable_clear (struct controllable *controllable)
+{
+  g_mutex_clear (&controllable->mutex);
+}
+
+void
+controllable_set_active (struct controllable *controllable, gboolean active)
+{
+  g_mutex_lock (&controllable->mutex);
+  controllable->active = active;
+  g_mutex_unlock (&controllable->mutex);
+}
+
+gboolean
+controllable_is_active (struct controllable *controllable)
+{
+  gboolean active;
+  g_mutex_lock (&controllable->mutex);
+  active = controllable->active;
+  g_mutex_unlock (&controllable->mutex);
+  return active;
+}

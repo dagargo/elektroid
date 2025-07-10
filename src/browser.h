@@ -152,6 +152,8 @@ void browser_remote_reset_dnd ();
 
 void browser_close_search (GtkSearchEntry *, gpointer);
 
+gboolean browser_no_progress_needed (struct browser *browser);
+
 void browser_init_all (GtkBuilder *);
 
 void browser_destroy_all ();

@@ -23,6 +23,7 @@
 #include "local.h"
 #include "sample.h"
 #include "preferences.h"
+#include "utils.h"
 
 struct connector *system_connector = NULL;
 GSList *connectors = NULL;
@@ -675,7 +676,7 @@ gint
 backend_init_connector (struct backend *backend,
 			struct backend_device *device,
 			const gchar *conn_name,
-			struct sysex_transfer *sysex_transfer)
+			struct controllable *controllable)
 {
   gint err;
   GSList *list = NULL, *iterator;
@@ -732,11 +733,9 @@ backend_init_connector (struct backend *backend,
     {
       const struct connector *c = iterator->data;
 
-      if (sysex_transfer)
+      if (controllable)
 	{
-	  g_mutex_lock (&sysex_transfer->mutex);
-	  active = sysex_transfer->active;
-	  g_mutex_unlock (&sysex_transfer->mutex);
+	  active = controllable_is_active (controllable);
 	}
 
       if (!active)

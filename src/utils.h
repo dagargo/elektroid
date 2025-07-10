@@ -73,6 +73,12 @@ struct job_control;
 typedef void (*job_control_callback) (struct job_control *);
 typedef void (*job_control_progress_callback) (struct job_control *, gdouble);
 
+struct controllable
+{
+  gboolean active;
+  GMutex mutex;
+};
+
 struct job_control
 {
   gboolean active;
@@ -160,5 +166,14 @@ void job_control_reset (struct job_control *control, gint parts);
 guint32 cents_to_midi_fraction (guint32);
 
 guint32 midi_fraction_to_cents (guint32);
+
+void controllable_init (struct controllable *controllable);
+
+void controllable_clear (struct controllable *controllable);
+
+void controllable_set_active (struct controllable *controllable,
+			      gboolean active);
+
+gboolean controllable_is_active (struct controllable *controllable);
 
 #endif

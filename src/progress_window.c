@@ -23,7 +23,7 @@
 #include "utils.h"
 #include "progress_window.h"
 
-#define MIN_TIME_UNTIL_DIALOG_RESPONSE 1e6
+#define MIN_TIME_UNTIL_DIALOG_RESPONSE_US 1000000
 #define PROGRESS_BAR_UPDATE_TIME_MS 100
 #define PROGRESS_WAIT_TO_END_REFRESH_TIME_US (PROGRESS_BAR_UPDATE_TIME_MS * 2 * 1000)
 
@@ -32,8 +32,7 @@ static GtkWidget *bar;
 static GtkWidget *label;
 static GtkWidget *cancel_button;
 static GThread *thread;
-static gboolean active;
-static GMutex mutex;
+static struct controllable controllable;
 static progress_window_runner runner;
 static progress_window_consumer consumer;
 static progress_window_cancel_cb cancel_cb;
@@ -46,37 +45,29 @@ static enum progress_type type;
 void
 progress_window_set_fraction (gdouble fraction_)
 {
-  g_mutex_lock (&mutex);
+  g_mutex_lock (&controllable.mutex);
   fraction = fraction_;
-  g_mutex_unlock (&mutex);
+  g_mutex_unlock (&controllable.mutex);
 }
 
 void
 progress_window_set_label (const gchar *label_text_)
 {
-  g_mutex_lock (&mutex);
+  g_mutex_lock (&controllable.mutex);
   label_text = label_text_;
-  g_mutex_unlock (&mutex);
+  g_mutex_unlock (&controllable.mutex);
 }
 
 void
-progress_window_set_active (gboolean active_)
+progress_window_set_active (gboolean active)
 {
-  g_mutex_lock (&mutex);
-  active = active_;
-  g_mutex_unlock (&mutex);
+  controllable_set_active (&controllable, active);
 }
 
 gboolean
 progress_window_is_active ()
 {
-  gboolean active_;
-
-  g_mutex_lock (&mutex);
-  active_ = active;
-  g_mutex_unlock (&mutex);
-
-  return active_;
+  return controllable_is_active (&controllable);
 }
 
 static void
@@ -94,18 +85,17 @@ progress_window_join_thread ()
 void
 progress_window_cancel ()
 {
-  gboolean active_;
+  gboolean active;
 
-  g_mutex_lock (&mutex);
-  active_ = active;
-  active = FALSE;
-  g_mutex_unlock (&mutex);
+  g_mutex_lock (&controllable.mutex);
+  active = controllable.active;
+  controllable.active = FALSE;
+  g_mutex_unlock (&controllable.mutex);
 
-  if (active_)
+  if (active)
     {
       debug_print (1, "Cancelling progress window...");
       usleep (PROGRESS_WAIT_TO_END_REFRESH_TIME_US);	//Needed to ensure refresh has ended and will not interfere with the cancelling label.
-      progress_window_set_active (FALSE);
       gtk_label_set_text (GTK_LABEL (label), _("Cancelling..."));
       if (cancel_cb)
 	{
@@ -194,17 +184,14 @@ progress_window_init (GtkBuilder *builder)
 		    G_CALLBACK (progress_window_cancel_clicked), NULL);
 }
 
-/**
- * This function guarantees that the time since start is at least the timeout.
- * This is needed when controlling a dialog from a thread because the dialog needs to be showed before the response is sent from the thread.
- */
+//This is used to avoiding the window to be opened a closed too fast.
 static void
-progress_window_usleep_since (gint64 timeout, gint64 start)
+progress_window_sleep_until_min_time ()
 {
   gint64 diff = g_get_monotonic_time () - start;
-  if (diff < timeout)
+  if (diff < MIN_TIME_UNTIL_DIALOG_RESPONSE_US)
     {
-      usleep (timeout - diff);
+      usleep (MIN_TIME_UNTIL_DIALOG_RESPONSE_US - diff);
     }
 }
 
@@ -224,11 +211,11 @@ progress_window_run_refresh ()
       progress_window_update_sysex_transfer ();	//This sets the label and it's read and used later.
     }
 
-  g_mutex_lock (&mutex);
-  active_ = active;
+  g_mutex_lock (&controllable.mutex);
+  active_ = controllable.active;
   label_text_ = label_text;
   fraction_ = fraction;
-  g_mutex_unlock (&mutex);
+  g_mutex_unlock (&controllable.mutex);
 
   gtk_label_set_text (GTK_LABEL (label), label_text_);
 
@@ -266,7 +253,7 @@ static gpointer
 progress_window_thread_runner (gpointer data_)
 {
   runner (data);
-  progress_window_usleep_since (MIN_TIME_UNTIL_DIALOG_RESPONSE, start);
+  progress_window_sleep_until_min_time ();
   progress_window_set_active (FALSE);
   g_idle_add (progress_window_end, NULL);
   return NULL;
@@ -288,7 +275,7 @@ progress_window_open (progress_window_runner runner_,
   label_text = label_text_;
   start = g_get_monotonic_time ();
 
-  active = TRUE;
+  controllable.active = TRUE;
 
   progress_window_start_refresh ();
 

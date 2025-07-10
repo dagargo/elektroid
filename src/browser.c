@@ -496,6 +496,14 @@ browser_go_up (GtkWidget *object, gpointer data)
     }
 }
 
+gboolean
+browser_no_progress_needed (struct browser *browser)
+{
+  return (BROWSER_IS_SYSTEM (browser) &&
+	  browser_get_selected_items_count (browser) <=
+	  PROGRESS_DELETE_THRESHOLD);
+}
+
 static void
 browser_delete_items (GtkWidget *object, gpointer data)
 {
@@ -512,6 +520,7 @@ browser_delete_items (GtkWidget *object, gpointer data)
 			  GTK_RESPONSE_CANCEL, _("_Delete"),
 			  GTK_RESPONSE_ACCEPT, NULL);
   gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
+
   res = gtk_dialog_run (GTK_DIALOG (dialog));
   gtk_widget_destroy (dialog);
   if (res != GTK_RESPONSE_ACCEPT)
@@ -522,9 +531,7 @@ browser_delete_items (GtkWidget *object, gpointer data)
   delete_data = g_malloc (sizeof (struct browser_delete_items_data));
   delete_data->browser = browser;
 
-
-  if (BROWSER_IS_SYSTEM (browser) &&
-      browser_get_selected_items_count (browser) <= PROGRESS_DELETE_THRESHOLD)
+  if (browser_no_progress_needed (browser))
     {
       delete_data->has_progress_window = FALSE;
       elektroid_delete_items_runner (delete_data);

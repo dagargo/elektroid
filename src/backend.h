@@ -216,7 +216,7 @@ void backend_fill_fs_ops (struct backend *backend, ...);
 gint backend_init_connector (struct backend *backend,
 			     struct backend_device *device,
 			     const gchar * name,
-			     struct sysex_transfer *sysex_transfer);
+			     struct controllable *controllable);
 
 void sysex_transfer_cancel (struct sysex_transfer *sysex_transfer);
 
