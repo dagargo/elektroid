@@ -62,8 +62,9 @@ struct frame_state
   guint *wnc;
 };
 
-void elektroid_update_audio_status (gboolean);
-gint elektroid_run_dialog_and_destroy (GtkWidget *);
+void elektroid_update_audio_status (gboolean status);
+
+static void editor_save_accept (gpointer source, const gchar * name);
 
 static void editor_set_waveform_data ();
 
@@ -1334,33 +1335,6 @@ editor_undo_clicked (GtkWidget *object, gpointer data)
     }
 }
 
-static gboolean
-editor_file_exists_no_overwrite (const gchar *filename)
-{
-  gint res = GTK_RESPONSE_ACCEPT;
-  GtkWidget *dialog;
-
-  if (g_file_test (filename, G_FILE_TEST_EXISTS))
-    {
-      dialog = gtk_message_dialog_new (main_window,
-				       GTK_DIALOG_MODAL |
-				       GTK_DIALOG_USE_HEADER_BAR,
-				       GTK_MESSAGE_WARNING,
-				       GTK_BUTTONS_NONE,
-				       _("Replace file “%s”?"),
-				       (gchar *) filename);
-      gtk_dialog_add_buttons (GTK_DIALOG (dialog),
-			      _("_Cancel"), GTK_RESPONSE_CANCEL,
-			      _("_Replace"), GTK_RESPONSE_ACCEPT, NULL);
-      gtk_dialog_set_default_response (GTK_DIALOG (dialog),
-				       GTK_RESPONSE_ACCEPT);
-
-      res = elektroid_run_dialog_and_destroy (dialog);
-    }
-
-  return res != GTK_RESPONSE_ACCEPT;
-}
-
 //This function does not need synchronized access as it is only called from
 //editor_save which already provides this.
 
@@ -1397,7 +1371,7 @@ editor_save_with_format (const gchar *dst_path, struct idata *sample)
 }
 
 static void
-editor_save_accept (gpointer source, const gchar *name)
+editor_save (const gchar *name)
 {
   gchar *path;
   guint32 sel_len;
@@ -1407,16 +1381,6 @@ editor_save_accept (gpointer source, const gchar *name)
   struct sample_info *sample_info = audio.sample.info;
 
   path = browser_get_name_path (browser, name);
-
-  if (editor_file_exists_no_overwrite (path))
-    {
-      gint name_sel_len = filename_get_lenght_without_ext (name);
-
-      name_window_edit_text (_("Save Sample"),
-			     browser->fs_ops->max_name_len, name, 0,
-			     name_sel_len, editor_save_accept, NULL);
-      return;
-    }
 
   sel_len = AUDIO_SEL_LEN;
 
@@ -1490,7 +1454,61 @@ editor_save_accept (gpointer source, const gchar *name)
 }
 
 static void
-editor_save (GtkWidget *object, gpointer data)
+editor_save_accept_response (GtkDialog *dialog, gint response_id,
+			     gpointer user_data)
+{
+  const gchar *name = user_data;
+
+  gtk_widget_destroy (GTK_WIDGET (dialog));
+
+  if (response_id == GTK_RESPONSE_ACCEPT)
+    {
+      editor_save (name);
+    }
+  else
+    {
+      gint name_sel_len = filename_get_lenght_without_ext (name);
+
+      name_window_edit_text (_("Save Sample"),
+			     browser->fs_ops->max_name_len, name, 0,
+			     name_sel_len, editor_save_accept, NULL);
+    }
+}
+
+static void
+editor_save_accept (gpointer source, const gchar *name)
+{
+  GtkWidget *dialog;
+  gchar *path = browser_get_name_path (browser, name);
+
+  if (g_file_test (path, G_FILE_TEST_EXISTS))
+    {
+      dialog = gtk_message_dialog_new (main_window,
+				       GTK_DIALOG_MODAL |
+				       GTK_DIALOG_USE_HEADER_BAR,
+				       GTK_MESSAGE_WARNING,
+				       GTK_BUTTONS_NONE,
+				       _("Replace file “%s”?"), path);
+      gtk_dialog_add_buttons (GTK_DIALOG (dialog),
+			      _("_Cancel"), GTK_RESPONSE_CANCEL,
+			      _("_Replace"), GTK_RESPONSE_ACCEPT, NULL);
+      gtk_dialog_set_default_response (GTK_DIALOG (dialog),
+				       GTK_RESPONSE_ACCEPT);
+      g_signal_connect (dialog, "response",
+			G_CALLBACK (editor_save_accept_response),
+			(gpointer) name);
+      gtk_widget_set_visible (dialog, TRUE);
+    }
+  else
+    {
+      editor_save (name);
+    }
+
+  g_free (path);
+}
+
+static void
+editor_save_clicked (GtkWidget *object, gpointer data)
 {
   guint32 sel_len;
   gint name_sel_len;
@@ -1561,7 +1579,7 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
   else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_s &&
 	   dirty)
     {
-      editor_save (NULL, NULL);
+      editor_save_clicked (NULL, NULL);
     }
 
   return TRUE;
@@ -1688,7 +1706,7 @@ editor_init (GtkBuilder *builder)
   g_signal_connect (undo_menuitem, "activate",
 		    G_CALLBACK (editor_undo_clicked), NULL);
   g_signal_connect (save_menuitem, "activate",
-		    G_CALLBACK (editor_save), NULL);
+		    G_CALLBACK (editor_save_clicked), NULL);
 
   editor_loop_clicked (loop_button, NULL);
   gtk_switch_set_active (GTK_SWITCH (autoplay_switch),

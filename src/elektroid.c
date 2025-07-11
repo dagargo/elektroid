@@ -502,15 +502,6 @@ elektroid_delete_items_runner (gpointer data)
   g_idle_add (browser_load_dir_if_needed, browser);
 }
 
-gint
-elektroid_run_dialog_and_destroy (GtkWidget *dialog)
-{
-  gtk_window_set_transient_for (GTK_WINDOW (dialog), main_window);
-  gint result = gtk_dialog_run (GTK_DIALOG (dialog));
-  gtk_widget_destroy (dialog);
-  return result;
-}
-
 static gboolean
 elektroid_run_next (gpointer data)
 {
