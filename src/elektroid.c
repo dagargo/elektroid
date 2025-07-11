@@ -1474,8 +1474,6 @@ elektroid_set_window_size ()
 static void
 elektroid_exit ()
 {
-  gtk_dialog_response (GTK_DIALOG (about_dialog), GTK_RESPONSE_CANCEL);
-
   tasks_stop_thread ();
   editor_stop_load_thread ();
 
