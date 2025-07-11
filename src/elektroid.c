@@ -104,6 +104,13 @@ static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
 static GtkWidget *editor_box;
 
+static void
+elektroid_show_error_msg_response (GtkDialog *dialog, gint response_id,
+				   gpointer user_data)
+{
+  gtk_widget_destroy (GTK_WIDGET (dialog));
+}
+
 void
 elektroid_show_error_msg (const char *format, ...)
 {
@@ -116,8 +123,11 @@ elektroid_show_error_msg (const char *format, ...)
   dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL,
 				   GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE,
 				   "%s", msg);
-  gtk_dialog_run (GTK_DIALOG (dialog));
-  gtk_widget_destroy (dialog);
+  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
+  g_signal_connect (dialog, "response",
+		    G_CALLBACK (elektroid_show_error_msg_response), NULL);
+  gtk_widget_set_visible (dialog, TRUE);
+
   g_free (msg);
   va_end (args);
 }
