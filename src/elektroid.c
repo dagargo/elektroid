@@ -1635,11 +1635,19 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
 {
   if (local_dir)
     {
+      //Check the directory passed by `-l`
       gchar *abs_local_dir = g_canonicalize_filename (local_dir, NULL);
       g_free (local_dir);
       preferences_set_string (PREF_KEY_LOCAL_DIR,
 			      get_system_startup_path (abs_local_dir));
       g_free (abs_local_dir);
+    }
+  else
+    {
+      //Check the directory in the preferences
+      const gchar *aux = preferences_get_string (PREF_KEY_LOCAL_DIR);
+      preferences_set_string (PREF_KEY_LOCAL_DIR,
+			      get_system_startup_path (aux));
     }
 
   build_ui ();
