@@ -1612,11 +1612,13 @@ static void
 browser_drag_data_received_data (GtkWidget *widget, GdkDragContext *context,
 				 gint x, gint y,
 				 GtkSelectionData *selection_data,
-				 guint info, guint time, gpointer userdata)
+				 guint info, guint time, gpointer user_data)
 {
   gchar *data;
   GdkAtom type;
   const gchar *title, *text;
+  struct browser *browser = user_data;
+  struct browser *other = OTHER_BROWSER (browser);
   gchar *filename, *src_dir, *dst_dir = NULL;
   struct browser_drag_data_received_data *drag_data;
 
@@ -1627,7 +1629,7 @@ browser_drag_data_received_data (GtkWidget *widget, GdkDragContext *context,
       return;
     }
 
-  if (widget == GTK_WIDGET (remote_browser.view) &&
+  if (browser == &remote_browser &&
       (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE) &&
       remote_browser.dnd_motion_path == NULL)
     {
@@ -1637,7 +1639,7 @@ browser_drag_data_received_data (GtkWidget *widget, GdkDragContext *context,
     }
 
   drag_data = g_malloc (sizeof (struct browser_drag_data_received_data));
-  drag_data->has_progress_window = TRUE;
+  drag_data->has_progress_window = !browser_no_progress_needed (other);
   drag_data->widget = widget;
 
   type = gtk_selection_data_get_data_type (selection_data);
@@ -1655,15 +1657,15 @@ browser_drag_data_received_data (GtkWidget *widget, GdkDragContext *context,
   src_dir = g_path_get_dirname (filename);
 
   //Checking if it's a local move.
-  if (widget == GTK_WIDGET (local_browser.view) &&
+  if (browser == &local_browser &&
       !strcmp (drag_data->type_name, TEXT_URI_LIST_STD))
     {
       dst_dir = local_browser.dir;	//Move
     }
 
   //Checking if it's a remote move.
-  if (widget == GTK_WIDGET (remote_browser.view)
-      && !strcmp (drag_data->type_name, TEXT_URI_LIST_ELEKTROID))
+  if (browser == &remote_browser &&
+      !strcmp (drag_data->type_name, TEXT_URI_LIST_ELEKTROID))
     {
       dst_dir = remote_browser.dir;	//Move
     }
@@ -2175,7 +2177,7 @@ browser_init (struct browser *browser)
   g_signal_connect (browser->view, "drag-data-get",
 		    G_CALLBACK (browser_dnd_get), browser);
   g_signal_connect (browser->view, "drag-data-received",
-		    G_CALLBACK (browser_drag_data_received_data), NULL);
+		    G_CALLBACK (browser_drag_data_received_data), browser);
   g_signal_connect (browser->view, "drag-motion",
 		    G_CALLBACK (browser_drag_motion_list), browser);
   g_signal_connect (browser->view, "drag-leave",
