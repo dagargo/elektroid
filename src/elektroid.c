@@ -102,6 +102,7 @@ static GtkListStore *devices_list_store;
 static GtkWidget *devices_combo;
 static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
+static GtkWidget *editor_box;
 
 void
 elektroid_show_error_msg (const char *format, ...)
@@ -131,7 +132,7 @@ elektroid_load_devices (gboolean auto_select)
 
   debug_print (1, "Loading devices...");
 
-  if (editor.browser == &remote_browser)
+  if (editor_get_browser () == &remote_browser)
     {
       editor_reset (NULL);
     }
@@ -347,7 +348,6 @@ elektroid_show_remote (gboolean active)
   gtk_widget_set_visible (remote_side, active);
   gtk_widget_set_margin_end (local_side, active ? 6 : 0);
   gtk_widget_set_visible (tasks_box, active);
-  gtk_widget_set_visible (editor.mix_switch_box, active);
 }
 
 static void
@@ -1100,7 +1100,7 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
       browser_reset (&remote_browser);
       browser_update_fs_options (&remote_browser);
 
-      gtk_widget_set_visible (editor.box, TRUE);
+      gtk_widget_set_visible (editor_box, TRUE);
       editor_set_audio_mono_mix ();
 
       return;
@@ -1144,7 +1144,7 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
       remote_browser.dir = strdup ("/");
     }
 
-  gtk_widget_set_visible (editor.box, editor_visible);
+  gtk_widget_set_visible (editor_box, editor_visible);
 
   browser_remote_reset_dnd ();
 
@@ -1577,7 +1577,6 @@ build_ui ()
   g_signal_connect (about_button, "clicked",
 		    G_CALLBACK (elektroid_show_about), NULL);
 
-
   devices_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "devices_list_store"));
   devices_combo =
@@ -1595,6 +1594,8 @@ build_ui ()
     GTK_LIST_STORE (gtk_builder_get_object (builder, "fs_list_store"));
   fs_combo = GTK_WIDGET (gtk_builder_get_object (builder, "fs_combo"));
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
+
+  editor_box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
 
   browser_init_all (builder);
   name_window_init (builder);

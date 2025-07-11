@@ -21,65 +21,9 @@
 #ifndef EDITOR_H
 #define EDITOR_H
 
-#include "audio.h"
 #include "browser.h"
-#include "preferences.h"
 
-enum editor_operation
-{
-  EDITOR_OP_NONE,
-  EDITOR_OP_MOVE_LOOP_START,
-  EDITOR_OP_MOVE_LOOP_END,
-  EDITOR_OP_MOVE_SEL_START,
-  EDITOR_OP_MOVE_SEL_END
-};
-
-struct frame_state
-{
-  gdouble *wp;
-  gdouble *wn;
-  guint *wpc;
-  guint *wnc;
-};
-
-struct editor
-{
-  GThread *thread;
-  GtkWidget *box;
-  GtkWidget *waveform_scrolled_window;
-  GtkWidget *waveform;
-  GtkWidget *play_button;
-  GtkWidget *stop_button;
-  GtkWidget *loop_button;
-  GtkWidget *record_button;
-  GtkWidget *autoplay_switch;
-  GtkWidget *mix_switch;
-  GtkWidget *volume_button;
-  GtkWidget *mix_switch_box;
-  GtkWidget *grid_length_spin;
-  GtkWidget *show_grid_switch;
-  gulong volume_changed_handler;
-  GtkListStore *notes_list_store;
-  GtkMenu *menu;
-  GtkWidget *play_menuitem;
-  GtkWidget *delete_menuitem;
-  GtkWidget *undo_menuitem;
-  GtkWidget *save_menuitem;
-  GtkDialog *record_dialog;
-  gdouble zoom;
-  enum editor_operation operation;
-  gboolean dirty;
-  gboolean ready;
-  struct browser *browser;
-  //waveform drawing
-  GMutex mutex;
-  gdouble *waveform_data;
-  guint waveform_width;
-  guint waveform_len;		//Loaded frames available in waveform_data
-  struct frame_state frame_state;
-};
-
-extern struct editor editor;
+struct browser *editor_get_browser ();
 
 void editor_reset (struct browser *browser);
 

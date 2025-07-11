@@ -90,7 +90,8 @@ extern GtkWindow *main_window;
 struct browser local_browser;
 struct browser remote_browser;
 static struct backend backend;
-extern struct editor editor;
+
+static GtkListStore *notes_list_store;
 
 struct browser_add_dentry_item_data
 {
@@ -312,7 +313,7 @@ browser_local_set_popup_sensitivity (gint count, gboolean file)
   gboolean ul_avail = remote_browser.fs_ops &&
     !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
     && remote_browser.fs_ops->upload;
-  gboolean editing = editor.browser == &local_browser;
+  gboolean editing = editor_get_browser () == &local_browser;
 
   gtk_widget_set_sensitive (local_browser.transfer_menuitem, count > 0
 			    && ul_avail);
@@ -352,7 +353,7 @@ browser_remote_set_popup_sensitivity (gint count, gboolean file)
     && remote_browser.fs_ops->rename ? TRUE : FALSE;
   gboolean del_impl = remote_browser.fs_ops
     && remote_browser.fs_ops->delete ? TRUE : FALSE;
-  gboolean editing = editor.browser == &remote_browser;
+  gboolean editing = editor_get_browser () == &remote_browser;
   gboolean system = remote_browser.fs_ops
     && remote_browser.backend->type == BE_TYPE_SYSTEM;
 
@@ -772,17 +773,16 @@ browser_add_dentry_item (gpointer data)
 				BROWSER_LIST_STORE_SAMPLE_CHANNELS_FIELD, &v);
       g_value_unset (&v);
 
-      gtk_tree_model_get_iter_first (GTK_TREE_MODEL (editor.notes_list_store),
+      gtk_tree_model_get_iter_first (GTK_TREE_MODEL (notes_list_store),
 				     &note_iter);
       if (item->sample_info.midi_note <= 127)
 	{
 	  for (gint i = 0; i < item->sample_info.midi_note; i++)
 	    {
-	      gtk_tree_model_iter_next (GTK_TREE_MODEL
-					(editor.notes_list_store),
+	      gtk_tree_model_iter_next (GTK_TREE_MODEL (notes_list_store),
 					&note_iter);
 	    }
-	  gtk_tree_model_get_value (GTK_TREE_MODEL (editor.notes_list_store),
+	  gtk_tree_model_get_value (GTK_TREE_MODEL (notes_list_store),
 				    &note_iter, 0, &v);
 	}
       else
@@ -816,7 +816,7 @@ browser_add_dentry_item (gpointer data)
       g_value_unset (&v);
     }
 
-  if (audio.path && editor.browser == browser)
+  if (audio.path && editor_get_browser () == browser)
     {
       name = path_chain (PATH_SYSTEM, browser->dir, add_data->rel_path);
       if (!strcmp (audio.path, name))
@@ -928,7 +928,7 @@ browser_load_dir_runner_update_ui (gpointer data)
 	  gtk_widget_grab_focus (GTK_WIDGET (browser->view));
 	}
       //If audio.path is empty is a recording buffer.
-      if (editor.browser == browser && audio.path)
+      if (editor_get_browser () == browser && audio.path)
 	{
 	  editor_reset (NULL);
 	}
@@ -1460,7 +1460,7 @@ browser_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
     }
   else if (event->keyval == GDK_KEY_space && sample_info->frames)
     {
-      editor_play_clicked (NULL, &editor);
+      editor_play_clicked (NULL, NULL);
       return TRUE;
     }
   else if (event->keyval == GDK_KEY_F2)
@@ -1914,6 +1914,8 @@ browser_destroy_all ()
 {
   browser_destroy (&local_browser);
   browser_destroy (&remote_browser);
+
+  g_object_unref (G_OBJECT (notes_list_store));
 }
 
 static void
@@ -2137,7 +2139,7 @@ static void
 browser_init (struct browser *browser)
 {
   g_signal_connect (browser->play_menuitem, "activate",
-		    G_CALLBACK (editor_play_clicked), &editor);
+		    G_CALLBACK (editor_play_clicked), NULL);
   g_signal_connect (browser->open_menuitem, "activate",
 		    G_CALLBACK (browser_open_clicked), browser);
   g_signal_connect (browser->show_menuitem, "activate",
@@ -2437,4 +2439,8 @@ browser_init_all (GtkBuilder *builder)
 {
   browser_local_init (&local_browser, builder);
   browser_remote_init (&remote_browser, builder);
+
+  notes_list_store =
+    GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
+  g_object_ref (G_OBJECT (notes_list_store));
 }
