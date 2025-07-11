@@ -1657,6 +1657,7 @@ editor_init (GtkBuilder *builder)
     GTK_WIDGET (gtk_builder_get_object (builder, "editor_undo_menuitem"));
   save_menuitem =
     GTK_WIDGET (gtk_builder_get_object (builder, "editor_save_menuitem"));
+  g_object_ref (G_OBJECT (menu));
 
   g_signal_connect (waveform, "draw", G_CALLBACK (editor_draw), NULL);
   gtk_widget_add_events (waveform, GDK_SCROLL_MASK);
@@ -1735,6 +1736,7 @@ editor_destroy ()
   editor_free_frame_state ();
   audio_destroy ();
   g_object_unref (G_OBJECT (notes_list_store));
+  g_object_unref (G_OBJECT (menu));
 }
 
 void

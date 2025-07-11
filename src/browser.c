@@ -1907,6 +1907,7 @@ browser_destroy (struct browser *browser)
     }
   notifier_destroy (browser->notifier);
   g_slist_free (browser->sensitive_widgets);
+  g_object_unref (G_OBJECT (browser->menu));
 }
 
 void
@@ -2214,6 +2215,7 @@ browser_local_init (struct browser *browser, GtkBuilder *builder)
   browser->dir_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry"));
   browser->menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu"));
+  g_object_ref (G_OBJECT (browser->menu));
   browser->dir = strdup (preferences_get_string (PREF_KEY_LOCAL_DIR));
   browser->fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
   browser->backend = NULL;
@@ -2328,6 +2330,7 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder)
   browser->dir_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry"));
   browser->menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu"));
+  g_object_ref (G_OBJECT (browser->menu));
   browser->dir = NULL;
   browser->fs_ops = NULL;
   browser->backend = &backend;

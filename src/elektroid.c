@@ -82,7 +82,6 @@ extern struct maction_context maction_context;
 #define BACKEND (remote_browser.backend)
 
 GtkWindow *main_window;
-static GtkBuilder *builder;
 static GtkAboutDialog *about_dialog;
 static GtkPopover *main_popover;
 static GtkWidget *show_remote_button;
@@ -1492,8 +1491,6 @@ elektroid_exit ()
   name_window_destroy ();
   preferences_window_destroy ();
   gtk_widget_destroy (GTK_WIDGET (main_window));
-
-  g_object_unref (builder);
 }
 
 static gboolean
@@ -1509,6 +1506,7 @@ build_ui ()
 {
   GtkCssProvider *css_provider;
   GtkWidget *refresh_devices_button;
+  GtkBuilder *builder;
   gchar *thanks;
 
   builder = gtk_builder_new ();
@@ -1628,6 +1626,8 @@ build_ui ()
   gtk_entry_buffer_set_text (buf, g_get_host_name (), -1);
 
   elektroid_set_window_size ();
+
+  g_object_unref (builder);
 }
 
 #if defined(__linux__)
