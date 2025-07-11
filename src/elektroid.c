@@ -601,36 +601,15 @@ elektroid_run_next (gpointer data)
   return FALSE;
 }
 
-static gboolean
-elektroid_show_task_overwrite_dialog (gpointer data)
+static void
+elektroid_show_task_overwrite_dialog_response (GtkDialog *dialog,
+					       gint response_id,
+					       gpointer user_data)
 {
-  gint res;
-  GtkWidget *dialog;
-  gboolean apply_to_all;
-  GtkWidget *container, *checkbutton;
-
-  dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL |
-				   GTK_DIALOG_USE_HEADER_BAR,
-				   GTK_MESSAGE_WARNING, GTK_BUTTONS_NONE,
-				   _("Replace file “%s”?"),
-				   (gchar *) data);
-  gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
-			  GTK_RESPONSE_CANCEL, _("_Skip"),
-			  GTK_RESPONSE_REJECT, _("_Replace"),
-			  GTK_RESPONSE_ACCEPT, NULL);
-  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
-  container = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
-  checkbutton =
-    gtk_check_button_new_with_label (_("Apply this action to all files"));
-  gtk_widget_set_hexpand (checkbutton, TRUE);
-  gtk_widget_set_halign (checkbutton, GTK_ALIGN_CENTER);
-  gtk_widget_show (checkbutton);
-  gtk_container_add (GTK_CONTAINER (container), checkbutton);
-
-  res = gtk_dialog_run (GTK_DIALOG (dialog));
-  apply_to_all =
+  GtkWidget *checkbutton = user_data;
+  gboolean apply_to_all =
     gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (checkbutton));
-  switch (res)
+  switch (response_id)
     {
     case GTK_RESPONSE_CANCEL:
       //Cancel current task.
@@ -656,11 +635,42 @@ elektroid_show_task_overwrite_dialog (gpointer data)
       break;
     }
 
-  gtk_widget_destroy (dialog);
+  gtk_widget_destroy (GTK_WIDGET (dialog));
 
   g_mutex_lock (&tasks.transfer.control.mutex);
   g_cond_signal (&tasks.transfer.control.cond);
   g_mutex_unlock (&tasks.transfer.control.mutex);
+}
+
+static gboolean
+elektroid_show_task_overwrite_dialog (gpointer data)
+{
+  GtkWidget *dialog;
+  GtkWidget *container, *checkbutton;
+
+  dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL |
+				   GTK_DIALOG_USE_HEADER_BAR,
+				   GTK_MESSAGE_WARNING, GTK_BUTTONS_NONE,
+				   _("Replace file “%s”?"),
+				   (gchar *) data);
+  gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
+			  GTK_RESPONSE_CANCEL, _("_Skip"),
+			  GTK_RESPONSE_REJECT, _("_Replace"),
+			  GTK_RESPONSE_ACCEPT, NULL);
+  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
+  container = gtk_dialog_get_content_area (GTK_DIALOG (dialog));
+  checkbutton =
+    gtk_check_button_new_with_label (_("Apply this action to all files"));
+  gtk_widget_set_hexpand (checkbutton, TRUE);
+  gtk_widget_set_halign (checkbutton, GTK_ALIGN_CENTER);
+  gtk_widget_show (checkbutton);
+  gtk_container_add (GTK_CONTAINER (container), checkbutton);
+
+  gtk_widget_set_visible (dialog, TRUE);
+  g_signal_connect (dialog, "response",
+		    G_CALLBACK
+		    (elektroid_show_task_overwrite_dialog_response),
+		    checkbutton);
 
   return FALSE;
 }
