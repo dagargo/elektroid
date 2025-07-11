@@ -1918,8 +1918,9 @@ browser_destroy_all ()
   g_object_unref (G_OBJECT (notes_list_store));
 }
 
-static void
-browser_cancel_search (struct browser *browser)
+//This cancels search and load.
+void
+browser_cancel (struct browser *browser)
 {
   GtkEntryBuffer *buf =
     gtk_entry_get_buffer (GTK_ENTRY (browser->search_entry));
@@ -1939,7 +1940,7 @@ browser_cancel_search (struct browser *browser)
 void
 browser_reset (struct browser *browser)
 {
-  browser_cancel_search (browser);	//This cancels load too.
+  browser_cancel (browser);
   browser->fs_ops = NULL;
   g_free (browser->dir);
   browser->dir = NULL;
@@ -2033,7 +2034,7 @@ void
 browser_close_search (GtkSearchEntry *entry, gpointer data)
 {
   struct browser *browser = data;
-  browser_cancel_search (browser);
+  browser_cancel (browser);
   browser_update_fs_sorting_options (browser);
   browser_refresh (NULL, browser);
 }

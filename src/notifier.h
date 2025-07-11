@@ -28,7 +28,6 @@ struct notifier
 {
   GFile *dir;
   GFileMonitor *monitor;
-  GFileMonitor *parent_monitor;
   struct browser *browser;
 };
 
