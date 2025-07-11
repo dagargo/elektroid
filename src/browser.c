@@ -1644,8 +1644,7 @@ browser_drag_data_received_data (GtkWidget *widget, GdkDragContext *context,
   drag_data->type_name = gdk_atom_name (type);
 
   data = (gchar *) gtk_selection_data_get_data (selection_data);
-  debug_print (1, "DND received batch %d data (%s):\n%s", batch_id,
-	       drag_data->type_name, data);
+  debug_print (1, "DND received data (%s):\n%s", drag_data->type_name, data);
 
   drag_data->uris = g_uri_list_extract_uris (data);
 
@@ -1702,7 +1701,6 @@ browser_drag_data_received_data (GtkWidget *widget, GdkDragContext *context,
       progress_window_open (elektroid_browser_drag_data_received_runner,
 			    NULL, NULL, drag_data, PROGRESS_TYPE_PULSE, title,
 			    text, TRUE);
-      batch_id++;
     }
   else
     {

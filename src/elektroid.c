@@ -18,7 +18,6 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "notifier.h"
 #include <limits.h>
 #include <locale.h>
 #include <gtk/gtk.h>
@@ -32,6 +31,7 @@
 #include "editor.h"
 #include "local.h"
 #include "name_window.h"
+#include "notifier.h"
 #include "preferences.h"
 #include "preferences_window.h"
 #include "progress_window.h"
@@ -75,12 +75,11 @@ void microbrute_destroy ();
 void microbrute_init ();
 
 static gchar *local_dir;
+static guint batch_id;
 
 extern struct maction_context maction_context;
 
 #define BACKEND (remote_browser.backend)
-
-guint batch_id;
 
 GtkWindow *main_window;
 static GtkBuilder *builder;
@@ -1403,6 +1402,8 @@ end:
   g_free (dnd_data->type_name);
   g_strfreev (dnd_data->uris);
   g_free (dnd_data);
+
+  batch_id++;
 }
 
 static void
