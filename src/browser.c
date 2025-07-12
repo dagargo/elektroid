@@ -879,6 +879,7 @@ browser_wait (struct browser *browser)
 static gboolean
 browser_load_dir_runner_update_ui (gpointer data)
 {
+  guint pending_req;
   struct browser *browser = data;
   GtkTreeSelection *selection =
     gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
@@ -936,7 +937,14 @@ browser_load_dir_runner_update_ui (gpointer data)
 
   g_mutex_lock (&browser->mutex);
   browser->loading = FALSE;
+  pending_req = browser->pending_req;
   g_mutex_unlock (&browser->mutex);
+
+  if (pending_req)
+    {
+      debug_print (1, "Processing pending requests...");
+      browser_load_dir (browser);
+    }
 
   return FALSE;
 }
@@ -1109,14 +1117,18 @@ browser_load_dir (gpointer data)
   g_mutex_lock (&browser->mutex);
   if (browser->loading)
     {
+      browser->pending_req++;
+      debug_print (1,
+		   "Browser already loading. %d pending requests. Skipping load...",
+		   browser->pending_req);
       g_mutex_unlock (&browser->mutex);
-      debug_print (1, "Browser already loading. Skipping load...");
       return FALSE;
     }
   else
     {
       browser->last_selected_index = -1;
       browser->loading = TRUE;
+      browser->pending_req = 0;
     }
   g_mutex_unlock (&browser->mutex);
 
@@ -1945,6 +1957,7 @@ browser_reset (struct browser *browser)
   browser->fs_ops = NULL;
   g_free (browser->dir);
   browser->dir = NULL;
+  browser->pending_req = 0;
   browser_clear (browser);
 }
 
@@ -2037,7 +2050,7 @@ browser_close_search (GtkSearchEntry *entry, gpointer data)
   struct browser *browser = data;
   browser_cancel (browser);
   browser_update_fs_sorting_options (browser);
-  browser_refresh (NULL, browser);
+  browser_load_dir (browser);
 }
 
 static void
@@ -2058,7 +2071,7 @@ browser_search_changed (GtkSearchEntry *entry, gpointer data)
   if (strlen (filter))
     {
       browser->filter = filter;
-      browser_refresh (NULL, browser);
+      browser_load_dir (browser);
     }
 }
 

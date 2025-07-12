@@ -70,7 +70,7 @@ struct browser
   GtkMenu *menu;
   gboolean dnd;
   GtkTreePath *dnd_motion_path;
-  gint dnd_timeout_function_id;
+  guint dnd_timeout_function_id;
   GString *dnd_data;
   const struct fs_operations *fs_ops;
   struct backend *backend;
@@ -85,6 +85,7 @@ struct browser
   GThread *thread;
   GMutex mutex;
   gboolean loading;
+  guint pending_req;
   gboolean dirty;
   gboolean search_mode;
   const gchar *filter;
