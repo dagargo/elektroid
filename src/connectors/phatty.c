@@ -396,10 +396,9 @@ phatty_rename (struct backend *backend, const gchar *src, const gchar *dst)
       return err;
     }
 
-  //The control initialization is needed.
-  control.active = TRUE;
+  controllable_init (&control.controllable);
   control.callback = NULL;
-  g_mutex_init (&control.mutex);
+
   err = phatty_download (backend, src, &preset, &control);
   if (err)
     {
@@ -412,6 +411,7 @@ phatty_rename (struct backend *backend, const gchar *src, const gchar *dst)
   idata_free (&preset);
 
 end:
+  controllable_clear (&control.controllable);
   return err;
 }
 

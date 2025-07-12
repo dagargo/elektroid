@@ -86,7 +86,7 @@ audio_write_to_output (void *buffer, gint frames)
 
   debug_print (2, "Writing %d frames...", frames);
 
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
 
   sample_info = audio.sample.info;
 
@@ -234,7 +234,7 @@ end:
       audio.release_frames += frames;
     }
 
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 
   if (audio.release_frames > AUDIO_BUF_FRAMES)
     {
@@ -258,7 +258,7 @@ audio_read_from_input (void *buffer, gint frames)
 
   debug_print (2, "Reading %d frames (recording = %d)...", frames, record);
 
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
   recorded_frames = audio.sample.content->len / bytes_per_frame;
   remaining_frames = sample_info->frames - recorded_frames;
   recording_frames = remaining_frames > frames ? frames : remaining_frames;
@@ -352,7 +352,7 @@ audio_read_from_input (void *buffer, gint frames)
       monitor_frames -= FRAMES_TO_MONITOR;
       monitor_level = 0;
     }
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 
   if (recording_frames < frames)
     {
@@ -384,14 +384,14 @@ audio_reset_record_buffer (guint record_options,
   size = si->frames * SAMPLE_INFO_FRAME_SIZE (si);
   content = g_byte_array_sized_new (size);
 
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
   idata_free (&audio.sample);
   idata_init (&audio.sample, content, NULL, si);
   audio.pos = 0;
   audio.record_options = record_options;
   audio.monitor = monitor;
   audio.monitor_data = monitor_data;
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 }
 
 void
@@ -407,6 +407,7 @@ audio_init (void (*volume_change_callback) (gdouble),
   audio.status = AUDIO_STATUS_STOPPED;
   audio.volume_change_callback = volume_change_callback;
   audio.ready_callback = audio_ready_callback;
+  controllable_init (&audio.control.controllable);
   audio.control.callback = NULL;
   audio.sel_start = -1;
   audio.sel_end = -1;
@@ -423,9 +424,11 @@ audio_destroy ()
   audio_stop_recording ();
   audio_reset_sample ();
 
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
   audio_destroy_int ();
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
+
+  controllable_clear (&audio.control.controllable);
 }
 
 void
@@ -433,24 +436,24 @@ audio_reset_sample ()
 {
   debug_print (1, "Resetting sample...");
 
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
   idata_free (&audio.sample);
   audio.pos = 0;
   g_free (audio.path);
   audio.path = NULL;
   audio.release_frames = 0;
   audio.status = AUDIO_STATUS_STOPPED;
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 }
 
 void
 audio_prepare (enum audio_status status)
 {
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
   audio.pos = audio.sel_end - audio.sel_start ? audio.sel_start : 0;
   audio.release_frames = 0;
   audio.status = status;
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 }
 
 guint
@@ -505,7 +508,7 @@ audio_delete_range (guint32 start, guint32 length)
   guint bytes_per_frame, index, len;
   struct sample_info *sample_info = audio.sample.info;
 
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
 
   bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
   index = start * bytes_per_frame;
@@ -539,7 +542,7 @@ audio_delete_range (guint32 start, guint32 length)
   audio.sel_start = -1;
   audio.sel_end = -1;
 
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 }
 
 static void
@@ -619,7 +622,7 @@ audio_finish_recording ()
   struct sample_info *sample_info = audio.sample.info;
   guint record = !(audio.record_options & RECORD_MONITOR_ONLY);
 
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
   audio.status = AUDIO_STATUS_STOPPED;
   sample_info->frames =
     audio.sample.content->len / SAMPLE_INFO_FRAME_SIZE (sample_info);
@@ -633,5 +636,5 @@ audio_finish_recording ()
     {
       audio.monitor (audio.monitor_data, 0.0);
     }
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 }

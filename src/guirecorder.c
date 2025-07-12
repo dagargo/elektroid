@@ -96,7 +96,7 @@ guirecorder_channels_changed (GtkWidget *object, gpointer data)
   struct guirecorder *guirecorder = data;
   guint options = guirecorder_get_channel_mask (guirecorder) |
     RECORD_MONITOR_ONLY;
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
   audio.record_options = options;
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 }

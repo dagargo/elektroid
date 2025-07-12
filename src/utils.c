@@ -366,9 +366,9 @@ job_control_set_progress_no_sync (struct job_control *control, gdouble p)
 void
 job_control_set_progress (struct job_control *control, gdouble p)
 {
-  g_mutex_lock (&control->mutex);
+  g_mutex_lock (&control->controllable.mutex);
   job_control_set_progress_no_sync (control, p);
-  g_mutex_unlock (&control->mutex);
+  g_mutex_unlock (&control->controllable.mutex);
 
   if (control->callback)
     {
@@ -545,26 +545,6 @@ idata_free (struct idata *idata)
     {
       g_byte_array_free (content, TRUE);
     }
-}
-
-gboolean
-job_control_get_active_lock (struct job_control *control)
-{
-  gboolean active;
-
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
-
-  return active;
-}
-
-void
-job_control_set_active_lock (struct job_control *control, gboolean active)
-{
-  g_mutex_lock (&control->mutex);
-  control->active = active;
-  g_mutex_unlock (&control->mutex);
 }
 
 void

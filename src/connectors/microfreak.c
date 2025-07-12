@@ -418,7 +418,7 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
     {
       guint8 op = i == mfp.parts - 1 ? 0x17 : 0x16;
 
-      if (!job_control_get_active_lock (control))
+      if (!controllable_is_active (&control->controllable))
 	{
 	  err = -ECANCELED;
 	  goto end;
@@ -550,7 +550,7 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
 
   for (gint i = 0; i < mfp.parts; i++)
     {
-      if (!job_control_get_active_lock (control))
+      if (!controllable_is_active (&control->controllable))
 	{
 	  err = -ECANCELED;
 	  break;
@@ -1197,7 +1197,7 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
 	  gint16 blk[MICROFREAK_WAVE_BLK_SHRT];
 	  gint16 *dst = blk;
 
-	  if (!job_control_get_active_lock (control))
+	  if (!controllable_is_active (&control->controllable))
 	    {
 	      err = -ECANCELED;
 	      goto end;
@@ -1442,7 +1442,7 @@ microfreak_wavetable_download_part (struct backend *backend,
       guint8 op;
       guint len;
 
-      if (!job_control_get_active_lock (control))
+      if (!controllable_is_active (&control->controllable))
 	{
 	  return -ECANCELED;
 	}
@@ -1799,7 +1799,7 @@ microfreak_wavetable_upload_id_name (struct backend *backend,
 
   for (guint8 part = 0; part < MICROFREAK_WAVETABLE_PARTS && !err; part++)
     {
-      if (!job_control_get_active_lock (control))
+      if (!controllable_is_active (&control->controllable))
 	{
 	  return -ECANCELED;
 	}

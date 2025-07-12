@@ -22,6 +22,7 @@
 #include "tasks.h"
 #include "backend.h"
 #include "browser.h"
+#include "utils.h"
 
 struct tasks tasks;
 
@@ -62,7 +63,7 @@ tasks_get_human_type (enum task_type type)
 static void
 tasks_stop_current (GtkWidget *object, gpointer data)
 {
-  job_control_set_active_lock (&tasks.transfer.control, FALSE);
+  controllable_set_active (&tasks.transfer.control.controllable, FALSE);
 }
 
 void
@@ -361,9 +362,9 @@ tasks_join_thread ()
 {
   debug_print (2, "Joining task thread...");
 
-  g_mutex_lock (&tasks.transfer.control.mutex);
+  g_mutex_lock (&tasks.transfer.control.controllable.mutex);
   g_cond_signal (&tasks.transfer.control.cond);
-  g_mutex_unlock (&tasks.transfer.control.mutex);
+  g_mutex_unlock (&tasks.transfer.control.controllable.mutex);
 
   if (tasks.thread)
     {
@@ -376,7 +377,7 @@ void
 tasks_stop_thread ()
 {
   debug_print (1, "Stopping task thread...");
-  job_control_set_active_lock (&tasks.transfer.control, FALSE);
+  controllable_set_active (&tasks.transfer.control.controllable, FALSE);
   tasks_join_thread ();
 }
 
@@ -389,9 +390,9 @@ tasks_update_current_progress (gpointer data)
 
   if (tasks_get_current (&iter))
     {
-      g_mutex_lock (&tasks.transfer.control.mutex);
+      g_mutex_lock (&tasks.transfer.control.controllable.mutex);
       progress = tasks.transfer.control.progress;
-      g_mutex_unlock (&tasks.transfer.control.mutex);
+      g_mutex_unlock (&tasks.transfer.control.controllable.mutex);
 
       percent = (gint) (100.0 * progress);
 

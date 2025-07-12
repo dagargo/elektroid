@@ -328,14 +328,13 @@ efactor_rename (struct backend *backend, const gchar *src, const gchar *dst)
 
   debug_print (1, "Renaming from %s to %s...", src, dst);
 
-  //The control initialization is needed.
-  control.active = TRUE;
+  controllable_init (&control.controllable);
   control.callback = NULL;
-  g_mutex_init (&control.mutex);
+
   err = efactor_download (backend, src, &idata, &control);
   if (err)
     {
-      return err;
+      goto end;
     }
 
   preset = idata.content;
@@ -373,6 +372,8 @@ efactor_rename (struct backend *backend, const gchar *src, const gchar *dst)
 
   sleep (1);
 
+end:
+  controllable_clear (&control.controllable);
   return err;
 }
 

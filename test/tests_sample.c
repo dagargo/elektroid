@@ -58,11 +58,11 @@ test_load_sample_resampling (struct job_control *control)
 static void
 test_load_sample_control_resampling ()
 {
-  struct job_control control;
-  control.active = TRUE;
-  control.callback = NULL;
-  g_mutex_init (&control.mutex);
-  test_load_sample_resampling (&control);
+  struct job_control job_control;
+  controllable_init (&job_control.controllable);
+  job_control.callback = NULL;
+  test_load_sample_resampling (&job_control);
+  controllable_clear (&job_control.controllable);
 }
 
 static void
@@ -126,11 +126,11 @@ test_load_sample_no_resampling (struct job_control *control)
 static void
 test_load_sample_control_no_resampling ()
 {
-  struct job_control control;
-  control.active = TRUE;
-  control.callback = NULL;
-  g_mutex_init (&control.mutex);
-  test_load_sample_no_resampling (&control);
+  struct job_control job_control;
+  controllable_init (&job_control.controllable);
+  job_control.callback = NULL;
+  test_load_sample_no_resampling (&job_control);
+  controllable_clear (&job_control.controllable);
 }
 
 static void

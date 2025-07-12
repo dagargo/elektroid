@@ -516,7 +516,8 @@ elektroid_run_next (gpointer data)
 					  &fs, &batch_id, &mode);
   const gchar *status_human = tasks_get_human_status (TASK_STATUS_RUNNING);
 
-  transfer_active = job_control_get_active_lock (&tasks.transfer.control);
+  transfer_active =
+    controllable_is_active (&tasks.transfer.control.controllable);
 
   if (!transfer_active && found)
     {
@@ -539,7 +540,7 @@ elektroid_run_next (gpointer data)
 				FALSE);
       gtk_tree_path_free (path);
       tasks.transfer.status = TASK_STATUS_RUNNING;
-      tasks.transfer.control.active = TRUE;
+      tasks.transfer.control.controllable.active = TRUE;
       tasks.transfer.control.callback = elektroid_update_progress;
       tasks.transfer.control.parts = 0;
       tasks.transfer.control.part = 0;
@@ -627,9 +628,9 @@ elektroid_show_task_overwrite_dialog_response (GtkDialog *dialog,
 
   gtk_widget_destroy (GTK_WIDGET (dialog));
 
-  g_mutex_lock (&tasks.transfer.control.mutex);
+  g_mutex_lock (&tasks.transfer.control.controllable.mutex);
   g_cond_signal (&tasks.transfer.control.cond);
-  g_mutex_unlock (&tasks.transfer.control.mutex);
+  g_mutex_unlock (&tasks.transfer.control.controllable.mutex);
 }
 
 static gboolean
@@ -685,7 +686,7 @@ elektroid_check_file_and_wait (gchar *path, struct browser *browser)
 	  g_idle_add (elektroid_close_progress_window_dialog, NULL);
 	  g_idle_add (elektroid_show_task_overwrite_dialog, path);
 	  g_cond_wait (&tasks.transfer.control.cond,
-		       &tasks.transfer.control.mutex);
+		       &tasks.transfer.control.controllable.mutex);
 	  break;
 	case TASK_MODE_SKIP:
 	  tasks.transfer.status = TASK_STATUS_CANCELED;
@@ -698,6 +699,7 @@ static gpointer
 elektroid_upload_task_runner (gpointer data)
 {
   gint res;
+  gboolean active;
   struct idata idata;
   gchar *dst_dir, *upload_path;
 
@@ -729,9 +731,9 @@ elektroid_upload_task_runner (gpointer data)
 							tasks.transfer.dst,
 							tasks.transfer.src,
 							&idata);
-  g_mutex_lock (&tasks.transfer.control.mutex);
+  g_mutex_lock (&tasks.transfer.control.controllable.mutex);
   elektroid_check_file_and_wait (upload_path, &remote_browser);
-  g_mutex_unlock (&tasks.transfer.control.mutex);
+  g_mutex_unlock (&tasks.transfer.control.controllable.mutex);
   if (tasks.transfer.status == TASK_STATUS_CANCELED)
     {
       goto cleanup;
@@ -741,15 +743,15 @@ elektroid_upload_task_runner (gpointer data)
 				       upload_path, &idata,
 				       &tasks.transfer.control);
 
-  if (res && tasks.transfer.control.active)
+  active = controllable_is_active (&tasks.transfer.control.controllable);
+  if (res && active)
     {
       error_print ("Error while uploading");
       tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
     }
   else
     {
-      tasks.transfer.status =
-	job_control_get_active_lock (&tasks.transfer.control) ?
+      tasks.transfer.status = active ?
 	TASK_STATUS_COMPLETED_OK : TASK_STATUS_CANCELED;
     }
 
@@ -915,10 +917,10 @@ elektroid_download_task_runner (gpointer userdata)
 					 tasks.transfer.src, &idata,
 					 &tasks.transfer.control);
 
-  g_mutex_lock (&tasks.transfer.control.mutex);
+  g_mutex_lock (&tasks.transfer.control.controllable.mutex);
   if (res)
     {
-      if (tasks.transfer.control.active)
+      if (tasks.transfer.control.controllable.active)
 	{
 	  error_print ("Error while downloading");
 	  tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
@@ -954,7 +956,7 @@ elektroid_download_task_runner (gpointer userdata)
   idata_free (&idata);
 
 end_with_download_error:
-  g_mutex_unlock (&tasks.transfer.control.mutex);
+  g_mutex_unlock (&tasks.transfer.control.controllable.mutex);
 
   g_idle_add (tasks_complete_current, &tasks);
   g_idle_add (elektroid_run_next, NULL);

@@ -200,7 +200,7 @@ common_data_tx (struct backend *backend, GByteArray *msg,
       goto cleanup;
     }
 
-  if (job_control_get_active_lock (control))
+  if (controllable_is_active (&control->controllable))
     {
       job_control_set_progress (control, 1.0);
     }
@@ -229,7 +229,7 @@ common_data_tx_and_rx_part (struct backend *backend, GByteArray *tx_msg,
 
   job_control_set_progress (control, 1.0);
 
-  if (!job_control_get_active_lock (control))
+  if (!controllable_is_active (&control->controllable))
     {
       free_msg (*rx_msg);
       *rx_msg = NULL;

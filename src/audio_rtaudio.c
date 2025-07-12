@@ -33,18 +33,18 @@ audio_stop_playback ()
 {
   enum audio_status status;
 
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
   status = audio.status;
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 
   if (status != AUDIO_STATUS_PLAYING)
     {
       return;
     }
 
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
   audio.status = AUDIO_STATUS_STOPPED;
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 
   debug_print (1, "Stopping playback...");
   rtaudio_abort_stream (audio.playback_rtaudio);	//Stop and flush buffer
@@ -65,18 +65,18 @@ audio_stop_recording ()
   struct sample_info *sample_info = audio.sample.info;
   enum audio_status status;
 
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
   status = audio.status;
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 
   if (status != AUDIO_STATUS_RECORDING)
     {
       return;
     }
 
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
   audio.status = AUDIO_STATUS_STOPPING_RECORD;
-  g_mutex_unlock (&audio.control.mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 
   audio_finish_recording ();
 

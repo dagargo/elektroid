@@ -21,9 +21,9 @@
 #include <samplerate.h>
 #include <math.h>
 #include <errno.h>
-#include "sample.h"
-#include "preferences.h"
 #include "connectors/microfreak_sample.h"
+#include "preferences.h"
+#include "sample.h"
 
 #define LOAD_BUFFER_LEN (32 * KI)
 
@@ -603,8 +603,8 @@ sample_load_microfreak_sample_info (const gchar *path,
   struct idata aux;
   struct job_control control;
 
-  control.active = TRUE;
-  g_mutex_init (&control.mutex);
+  controllable_init (&control.controllable);
+  control.callback = NULL;
 
   err = sample_load_microfreak (path, &aux, &control);
   if (err)
@@ -614,6 +614,8 @@ sample_load_microfreak_sample_info (const gchar *path,
 
   memcpy (sample_info, aux.info, sizeof (struct sample_info));
   idata_free (&aux);
+
+  controllable_clear (&control.controllable);
 
   return 0;
 }
@@ -764,8 +766,8 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   active = TRUE;
   if (control)
     {
-      g_mutex_lock (&control->mutex);
-      active = control->active;
+      g_mutex_lock (&control->controllable.mutex);
+      active = control->controllable.active;
     }
   sample_info->frames = ceil (sample_info_src->frames * ratio);	//Upper bound estimation. The actual amount is updated later.
   sample_info->loop_start = round (sample_info_src->loop_start * ratio);
@@ -776,7 +778,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   idata_init (idata, sample, strdup (name), sample_info);
   if (control)
     {
-      g_mutex_unlock (&control->mutex);
+      g_mutex_unlock (&control->controllable.mutex);
     }
 
   debug_print (2, "Loading sample (%d frames)...", sample_info_src->frames);
@@ -894,14 +896,14 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	{
 	  if (control)
 	    {
-	      g_mutex_lock (&control->mutex);
+	      g_mutex_lock (&control->controllable.mutex);
 	    }
 	  g_byte_array_append (sample, (guint8 *) buffer_input,
 			       frames * bytes_per_frame);
 	  actual_frames += frames;
 	  if (control)
 	    {
-	      g_mutex_unlock (&control->mutex);
+	      g_mutex_unlock (&control->controllable.mutex);
 	    }
 	}
       else
@@ -936,7 +938,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 
 	  if (control)
 	    {
-	      g_mutex_lock (&control->mutex);
+	      g_mutex_lock (&control->controllable.mutex);
 	    }
 
 	  if (sample_info->format == SF_FORMAT_PCM_32)
@@ -956,16 +958,16 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 	  actual_frames += src_data.output_frames_gen;
 	  if (control)
 	    {
-	      g_mutex_unlock (&control->mutex);
+	      g_mutex_unlock (&control->controllable.mutex);
 	    }
 	}
 
       if (control)
 	{
-	  g_mutex_lock (&control->mutex);
+	  g_mutex_lock (&control->controllable.mutex);
 	  cb (control, read_frames * 1.0 / sample_info_src->frames);
-	  active = control->active;
-	  g_mutex_unlock (&control->mutex);
+	  active = control->controllable.active;
+	  g_mutex_unlock (&control->controllable.mutex);
 	}
     }
 
@@ -994,13 +996,13 @@ cleanup:
 
   if (control)
     {
-      g_mutex_lock (&control->mutex);
+      g_mutex_lock (&control->controllable.mutex);
     }
   if (!active || !sample_info->frames || err)
     {
       idata_free (idata);
       cb (control, 0);
-      g_mutex_unlock (&control->mutex);
+      g_mutex_unlock (&control->controllable.mutex);
       return -1;
     }
   // This removes the additional samples added by the estimation above.
@@ -1023,7 +1025,7 @@ cleanup:
 	{
 	  cb (control, 1.0);
 	}
-      g_mutex_unlock (&control->mutex);
+      g_mutex_unlock (&control->controllable.mutex);
     }
 
   return 0;

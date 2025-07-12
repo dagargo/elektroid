@@ -548,7 +548,6 @@ cli_download_item (const gchar *src_path, const gchar *dst_path)
   RETURN_IF_NULL (fs_ops->get_download_path);
   RETURN_IF_NULL (fs_ops->save);
 
-  control.active = TRUE;
   control.callback = print_progress;
   current_path_progress = src_path;
 
@@ -726,7 +725,6 @@ cli_upload_item (const gchar *src_path, const gchar *dst_path)
   RETURN_IF_NULL (fs_ops->get_upload_path);
   RETURN_IF_NULL (fs_ops->upload);
 
-  control.active = TRUE;
   control.callback = print_progress;
   current_path_progress = src_path;
 
@@ -936,7 +934,7 @@ set_conn_fs_op_from_command (const gchar *cmd)
 static void
 cli_end (int sig)
 {
-  job_control_set_active_lock (&control, FALSE);
+  controllable_set_active (&control.controllable, FALSE);
 
   g_mutex_lock (&sysex_transfer.mutex);
   sysex_transfer.active = FALSE;
@@ -1004,6 +1002,8 @@ main (int argc, gchar *argv[])
   regconn_register ();
   regpref_register ();
   preferences_load ();
+
+  controllable_init (&control.controllable);
 
   if (!strcmp (command, "ld") || !strcmp (command, "list-devices"))
     {
@@ -1108,6 +1108,8 @@ end:
     {
       error_print ("Error: %s", g_strerror (-err));
     }
+
+  controllable_clear (&control.controllable);
 
   regconn_unregister ();
   regpref_unregister ();

@@ -81,8 +81,7 @@ struct controllable
 
 struct job_control
 {
-  gboolean active;
-  GMutex mutex;
+  struct controllable controllable;
   GCond cond;			//This can be used by the calling threads. It requires to call g_cond_init and g_cond_clear.
   job_control_callback callback;
   gint parts;
@@ -158,11 +157,6 @@ void idata_init (struct idata *idata, GByteArray * content,
 void idata_free (struct idata *idata);
 
 GByteArray *idata_steal (struct idata *idata);
-
-gboolean job_control_get_active_lock (struct job_control *control);
-
-void job_control_set_active_lock (struct job_control *control,
-				  gboolean active);
 
 void job_control_reset (struct job_control *control, gint parts);
 

@@ -357,9 +357,7 @@ sds_download_try (struct backend *backend, const gchar *path,
   retries = 0;
   while (1)
     {
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
+      active = controllable_is_active (&control->controllable);
 
       if (!active)
 	{
@@ -399,9 +397,7 @@ sds_download_try (struct backend *backend, const gchar *path,
   sds_debug_print_sample_data (bits, bytes_per_word, word_size,
 			       sample_info->rate, words, packets);
 
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
+  active = controllable_is_active (&control->controllable);
 
   job_control_reset (control, 1);
 
@@ -523,9 +519,7 @@ sds_download_try (struct backend *backend, const gchar *path,
 
       job_control_set_progress (control, rx_packets / (double) packets);
 
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
+      active = controllable_is_active (&control->controllable);
 
       free_msg (rx_msg);
 
@@ -768,9 +762,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
   backend_rx_drain (backend);
   g_mutex_unlock (&backend->mutex);
 
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
+  active = controllable_is_active (&control->controllable);
 
   debug_print (1, "Sending dump header...");
 
@@ -872,9 +864,8 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
 	}
 
       job_control_set_progress (control, packet / (gdouble) packets);
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
+
+      active = controllable_is_active (&control->controllable);
 
       word = w;
       frame = f;

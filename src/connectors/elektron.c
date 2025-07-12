@@ -1374,9 +1374,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
   transferred = 0;
   i = 0;
 
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
+  active = controllable_is_active (&control->controllable);
 
   while (transferred < input->len && active)
     {
@@ -1395,9 +1393,8 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
       i++;
 
       job_control_set_progress (control, transferred / (double) input->len);
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
+
+      active = controllable_is_active (&control->controllable);
 
       usleep (BE_REST_TIME_US);
     }
@@ -1534,9 +1531,7 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 
   debug_print (2, "%d frames to download", frames);
 
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
+  active = controllable_is_active (&control->controllable);
 
   output = g_byte_array_new ();
   array = g_byte_array_new ();
@@ -1585,9 +1580,8 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
       free_msg (rx_msg);
 
       job_control_set_progress (control, next_block_start / (double) frames);
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
+
+      active = controllable_is_active (&control->controllable);
 
       usleep (BE_REST_TIME_US);
     }
@@ -1919,9 +1913,8 @@ elektron_next_data_entry (struct item_iterator *iter)
 	  struct idata output;
 	  struct job_control control;
 
-	  control.active = TRUE;
+	  controllable_init (&control.controllable);
 	  control.callback = NULL;
-	  g_mutex_init (&control.mutex);
 
 	  snprintf (metadata_path, PATH_MAX, "%s/%d/%s", iter->dir,
 		    iter->item.id, FS_DATA_METADATA_FILE);
@@ -1952,6 +1945,8 @@ elektron_next_data_entry (struct item_iterator *iter)
 
 	      idata_free (&output);
 	    }
+
+	  controllable_clear (&control.controllable);
 	}
 
       break;
@@ -2477,9 +2472,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
 
   content = g_byte_array_sized_new (4 * MI);
 
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
+  active = controllable_is_active (&control->controllable);
 
   jidbe = g_htonl (jid);
   err = 0;
@@ -2547,9 +2540,8 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
       seq++;
 
       job_control_set_progress (control, status / 1000.0);
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
+
+      active = controllable_is_active (&control->controllable);
 
       usleep (BE_REST_TIME_US);
     }
@@ -2797,9 +2789,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
   seq = 0;
   offset = 0;
 
-  g_mutex_lock (&control->mutex);
-  active = control->active;
-  g_mutex_unlock (&control->mutex);
+  active = controllable_is_active (&control->controllable);
 
   while (offset < array->len && active)
     {
@@ -2871,9 +2861,8 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
 	}
 
       job_control_set_progress (control, offset / (gdouble) array->len);
-      g_mutex_lock (&control->mutex);
-      active = control->active;
-      g_mutex_unlock (&control->mutex);
+
+      active = controllable_is_active (&control->controllable);
     }
 
   debug_print (2, "%d bytes sent", offset);

@@ -411,15 +411,13 @@ summit_patch_rename (struct backend *backend, const gchar *src,
   struct job_control control;
   debug_print (1, "Renaming from %s to %s...", src, dst);
 
-  //The control initialization is needed.
-  control.active = TRUE;
+  controllable_init (&control.controllable);
   control.callback = NULL;
-  g_mutex_init (&control.mutex);
 
   err = summit_patch_download (backend, src, &preset, &control, fs);
   if (err)
     {
-      return err;
+      goto end;
     }
 
   usleep (SUMMIT_REST_TIME_US);
@@ -442,6 +440,8 @@ summit_patch_rename (struct backend *backend, const gchar *src,
 
   usleep (SUMMIT_REST_TIME_US);
 
+end:
+  controllable_clear (&control.controllable);
   return err;
 }
 

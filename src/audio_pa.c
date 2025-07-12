@@ -115,37 +115,37 @@ audio_stop_and_flush_stream (pa_stream *stream)
 void
 audio_stop_playback ()
 {
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
   if (audio.status == AUDIO_STATUS_PREPARING_RECORD ||
       audio.status == AUDIO_STATUS_RECORDING ||
       audio.status == AUDIO_STATUS_STOPPING_RECORD)
     {
-      g_mutex_unlock (&audio.control.mutex);
+      g_mutex_unlock (&audio.control.controllable.mutex);
     }
   else if (audio.status == AUDIO_STATUS_PREPARING_PLAYBACK ||
 	   audio.status == AUDIO_STATUS_PLAYING)
     {
       audio.status = AUDIO_STATUS_STOPPING_PLAYBACK;
-      g_mutex_unlock (&audio.control.mutex);
+      g_mutex_unlock (&audio.control.controllable.mutex);
 
       debug_print (1, "Stopping playback...");
 
       audio_stop_and_flush_stream (audio.playback_stream);
 
-      g_mutex_lock (&audio.control.mutex);
+      g_mutex_lock (&audio.control.controllable.mutex);
       audio.status = AUDIO_STATUS_STOPPED;
-      g_mutex_unlock (&audio.control.mutex);
+      g_mutex_unlock (&audio.control.controllable.mutex);
     }
   else
     {
       while (audio.status != AUDIO_STATUS_STOPPED &&
 	     !pa_threaded_mainloop_in_thread (audio.mainloop))
 	{
-	  g_mutex_unlock (&audio.control.mutex);
+	  g_mutex_unlock (&audio.control.controllable.mutex);
 	  usleep (WAIT_TIME_TO_STOP_US);
-	  g_mutex_lock (&audio.control.mutex);
+	  g_mutex_lock (&audio.control.controllable.mutex);
 	}
-      g_mutex_unlock (&audio.control.mutex);
+      g_mutex_unlock (&audio.control.controllable.mutex);
     }
 }
 
@@ -177,19 +177,19 @@ audio_stop_recording ()
       return;
     }
 
-  g_mutex_lock (&audio.control.mutex);
+  g_mutex_lock (&audio.control.controllable.mutex);
 
   if (audio.status == AUDIO_STATUS_PREPARING_PLAYBACK ||
       audio.status == AUDIO_STATUS_PLAYING ||
       audio.status == AUDIO_STATUS_STOPPING_PLAYBACK)
     {
-      g_mutex_unlock (&audio.control.mutex);
+      g_mutex_unlock (&audio.control.controllable.mutex);
     }
   else if (audio.status == AUDIO_STATUS_PREPARING_RECORD ||
 	   audio.status == AUDIO_STATUS_RECORDING)
     {
       audio.status = AUDIO_STATUS_STOPPING_RECORD;
-      g_mutex_unlock (&audio.control.mutex);
+      g_mutex_unlock (&audio.control.controllable.mutex);
 
       audio_finish_recording ();
 
@@ -202,11 +202,11 @@ audio_stop_recording ()
       while (audio.status != AUDIO_STATUS_STOPPED &&
 	     !pa_threaded_mainloop_in_thread (audio.mainloop))
 	{
-	  g_mutex_unlock (&audio.control.mutex);
+	  g_mutex_unlock (&audio.control.controllable.mutex);
 	  usleep (WAIT_TIME_TO_STOP_US);
-	  g_mutex_lock (&audio.control.mutex);
+	  g_mutex_lock (&audio.control.controllable.mutex);
 	}
-      g_mutex_unlock (&audio.control.mutex);
+      g_mutex_unlock (&audio.control.controllable.mutex);
     }
 }
 
