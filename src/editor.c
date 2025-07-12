@@ -327,8 +327,6 @@ editor_free_frame_state ()
 {
   g_free (frame_state.wp);
   g_free (frame_state.wn);
-  g_free (frame_state.wpc);
-  g_free (frame_state.wnc);
 }
 
 static void
@@ -337,16 +335,16 @@ editor_reset_frame_state (guint channels)
   editor_free_frame_state ();
   frame_state.wp = g_malloc (sizeof (gdouble) * channels);
   frame_state.wn = g_malloc (sizeof (gdouble) * channels);
-  frame_state.wpc = g_malloc (sizeof (guint) * channels);
-  frame_state.wnc = g_malloc (sizeof (guint) * channels);
 }
 
 static gboolean
-editor_get_y_frame (GByteArray *sample, guint channels, guint32 frame,
-		    guint32 len)
+editor_get_y_frame (guint32 frame, guint32 len)
 {
   gdouble y_scale;
-  guint frame_size = FRAME_SIZE (channels, sample_get_internal_format ());
+  GByteArray *sample = audio.sample.content;
+  struct sample_info *sample_info = audio.sample.info;
+  guint frame_size =
+    FRAME_SIZE (sample_info->channels, sample_get_internal_format ());
   guint loaded_frames = sample->len / frame_size;
   guint8 *s = &sample->data[frame * frame_size];
 
@@ -354,24 +352,22 @@ editor_get_y_frame (GByteArray *sample, guint channels, guint32 frame,
 
   y_scale = (preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ?
 	     -1.0 : 1.0 / (double) SHRT_MIN);
-  y_scale /= channels * 2.0;
+  y_scale /= sample_info->channels * 2.0;
 
-  for (guint i = 0; i < channels; i++)
+  for (guint i = 0; i < sample_info->channels; i++)
     {
       frame_state.wp[i] = 0.0;
       frame_state.wn[i] = 0.0;
-      frame_state.wpc[i] = 0;
-      frame_state.wnc[i] = 0;
     }
 
   for (guint i = 0, f = frame; i < len; i++, f++)
     {
-      if (f >= loaded_frames)
+      if (f == loaded_frames)
 	{
-	  return FALSE;
+	  return f == sample_info->frames;
 	}
 
-      for (guint j = 0; j < channels; j++)
+      for (guint j = 0; j < sample_info->channels; j++)
 	{
 	  gdouble v;
 	  if (preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT))
@@ -387,25 +383,25 @@ editor_get_y_frame (GByteArray *sample, guint channels, guint32 frame,
 
 	  if (v > 0)
 	    {
-	      frame_state.wp[j] += v;
-	      frame_state.wpc[j]++;
+	      if (v > frame_state.wp[j])
+		{
+		  frame_state.wp[j] = v;
+		}
 	    }
 	  else
 	    {
-	      frame_state.wn[j] += v;
-	      frame_state.wnc[j]++;
+	      if (v < frame_state.wn[j])
+		{
+		  frame_state.wn[j] = v;
+		}
 	    }
 	}
     }
 
-  for (guint i = 0; i < channels; i++)
+  for (guint i = 0; i < sample_info->channels; i++)
     {
-      frame_state.wp[i] =
-	frame_state.wpc[i] == 0 ? 0.0 :
-	frame_state.wp[i] * y_scale / frame_state.wpc[i];
-      frame_state.wn[i] =
-	frame_state.wnc[i] == 0 ? 0.0 :
-	frame_state.wn[i] * y_scale / frame_state.wnc[i];
+      frame_state.wp[i] *= y_scale;
+      frame_state.wn[i] *= y_scale;
     }
 
   return TRUE;
@@ -571,8 +567,7 @@ editor_set_waveform_data_no_sync ()
       x_count = x_frame_next - (guint) x_frame;
       x_count = x_count ? x_count : 1;
 
-      if (!editor_get_y_frame (audio.sample.content,
-			       sample_info->channels, x_frame, x_count))
+      if (!editor_get_y_frame (x_frame, x_count))
 	{
 	  break;
 	}
