@@ -405,6 +405,13 @@ filename_matches_exts (const gchar *name, const gchar **exts)
   return FALSE;
 }
 
+gboolean
+filename_is_dir_or_matches_exts (const gchar *name, const gchar **exts)
+{
+  return g_file_test (name, G_FILE_TEST_IS_DIR) ||
+    filename_matches_exts (name, exts);
+}
+
 static inline const gchar *
 path_get_separator (enum path_type type)
 {

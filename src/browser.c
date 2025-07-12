@@ -1040,28 +1040,19 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
     }
 }
 
-static gpointer
-browser_load_dir_runner (gpointer data)
+const gchar *
+browser_get_icon (struct browser *browser)
 {
-  gint err;
-  struct browser *browser = data;
-  struct item_iterator iter;
-  const gchar **exts;
   const gchar *icon;
-  gboolean search_mode;
 
   if (browser == &remote_browser)
     {
-      exts = remote_browser.fs_ops->get_exts (remote_browser.backend,
-					      remote_browser.fs_ops);
       icon = remote_browser.fs_ops->gui_icon;
     }
   else
     {
       if (remote_browser.fs_ops)
 	{
-	  exts = remote_browser.fs_ops->get_exts (remote_browser.backend,
-						  remote_browser.fs_ops);
 	  if (remote_browser.fs_ops->upload)
 	    {
 	      icon = remote_browser.fs_ops->gui_icon;
@@ -1073,12 +1064,53 @@ browser_load_dir_runner (gpointer data)
 	}
       else
 	{
-	  //If !remote_browser.fs_ops, only FS_LOCAL_SAMPLE_OPERATIONS is used, which implements get_exts.
-	  exts = local_browser.fs_ops->get_exts (remote_browser.backend,
-						 remote_browser.fs_ops);
 	  icon = local_browser.fs_ops->gui_icon;
 	}
     }
+
+  return icon;
+}
+
+const gchar **
+browser_get_exts (struct browser *browser)
+{
+  const gchar **exts;
+
+  if (browser == &remote_browser)
+    {
+      exts = remote_browser.fs_ops->get_exts (remote_browser.backend,
+					      remote_browser.fs_ops);
+    }
+  else
+    {
+      if (remote_browser.fs_ops)
+	{
+	  exts = remote_browser.fs_ops->get_exts (remote_browser.backend,
+						  remote_browser.fs_ops);
+	}
+      else
+	{
+	  //If !remote_browser.fs_ops, only FS_LOCAL_SAMPLE_OPERATIONS is used, which implements get_exts.
+	  exts = local_browser.fs_ops->get_exts (remote_browser.backend,
+						 remote_browser.fs_ops);
+	}
+    }
+
+  return exts;
+}
+
+static gpointer
+browser_load_dir_runner (gpointer data)
+{
+  gint err;
+  struct browser *browser = data;
+  struct item_iterator iter;
+  const gchar **exts;
+  const gchar *icon;
+  gboolean search_mode;
+
+  exts = browser_get_exts (browser);
+  icon = browser_get_icon (browser);
 
   g_idle_add (browser_load_dir_runner_show_spinner_and_lock_browser, browser);
   err = browser->fs_ops->readdir (browser->backend, &iter, browser->dir,

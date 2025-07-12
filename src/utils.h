@@ -139,6 +139,9 @@ void job_control_set_progress (struct job_control *control, gdouble progress);
 gboolean filename_matches_exts (const gchar * name,
 				const gchar ** extensions);
 
+gboolean filename_is_dir_or_matches_exts (const gchar * name,
+					  const gchar ** exts);
+
 gchar *path_chain (enum path_type, const gchar *, const gchar *);
 
 gchar *path_translate (enum path_type, const gchar *);

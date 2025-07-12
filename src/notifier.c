@@ -37,12 +37,10 @@ notifier_changed (GFileMonitor *self, GFile *file, GFile *other_file,
 		  GFileMonitorEvent event_type, gpointer user_data)
 {
   struct notifier *notifier = user_data;
-  gchar *p1 = g_file_get_path (notifier->dir);
-  gchar *p2 = g_file_get_path (file);
-  gboolean itself = strcmp (p1, p2) == 0;
-
-  g_free (p1);
-  g_free (p2);
+  struct browser *browser = notifier->browser;
+  gchar *path_dir = g_file_get_path (notifier->dir);
+  gchar *path_file = g_file_get_path (file);
+  gboolean itself = strcmp (path_dir, path_file) == 0;
 
   debug_print (2, "Processing notifier change (itself =?= %d)...", itself);
 
@@ -51,18 +49,27 @@ notifier_changed (GFileMonitor *self, GFile *file, GFile *other_file,
       if (event_type == G_FILE_MONITOR_EVENT_DELETED)
 	{
 	  debug_print (1, "Processing notifier deleted dir...");
-	  g_idle_add (notifier_reset, notifier->browser);
+	  g_idle_add (notifier_reset, browser);
 	}
     }
   else
     {
-      if (event_type == G_FILE_MONITOR_EVENT_DELETED ||
-	  event_type == G_FILE_MONITOR_EVENT_CREATED)
+      const gchar **exts = browser_get_exts (browser);
+
+      if ((event_type == G_FILE_MONITOR_EVENT_DELETED ||
+	   event_type == G_FILE_MONITOR_EVENT_CREATED ||
+	   event_type == G_FILE_MONITOR_EVENT_CHANGED ||
+	   event_type == G_FILE_MONITOR_EVENT_ATTRIBUTE_CHANGED) &&
+	  (!g_file_test (path_file, G_FILE_TEST_EXISTS) ||
+	   filename_is_dir_or_matches_exts (path_file, exts)))
 	{
 	  debug_print (1, "Processing notifier reload...");
-	  g_idle_add (browser_load_dir, notifier->browser);
+	  g_idle_add (browser_load_dir, browser);
 	}
     }
+
+  g_free (path_dir);
+  g_free (path_file);
 }
 
 void

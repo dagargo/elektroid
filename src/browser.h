@@ -141,6 +141,10 @@ void browser_refresh (GtkWidget *, gpointer);
 
 void browser_go_up (GtkWidget *, gpointer);
 
+const gchar *browser_get_icon (struct browser *browser);
+
+const gchar **browser_get_exts (struct browser *browser);
+
 gboolean browser_load_dir (gpointer);
 
 gboolean browser_load_dir_if_needed (gpointer);
