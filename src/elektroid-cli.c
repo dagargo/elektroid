@@ -41,8 +41,9 @@
 #define RETURN_IF_NULL(f) if (!(f)) {return -ENOSYS;}
 
 static struct backend backend;
-static struct job_control control;
+static struct job_control job_control;
 static struct sysex_transfer sysex_transfer;
+static struct controllable controllable;	//Used for CLI control for operations that do not use job_control or sysex_transfer.
 static gchar *connector, *fs, *op;
 
 const struct fs_operations *fs_ops;
@@ -59,9 +60,9 @@ complete_progress (gint err)
 }
 
 static void
-print_progress (struct job_control *control)
+print_progress (struct job_control *job_control)
 {
-  gint progress = control->progress * 100;
+  gint progress = job_control->progress * 100;
   const gchar *end = same_line_progress ? "\r" : "\n";
   fprintf (stderr, "%s: %3d %%%s", current_path_progress, progress, end);
   if (same_line_progress)
@@ -548,10 +549,11 @@ cli_download_item (const gchar *src_path, const gchar *dst_path)
   RETURN_IF_NULL (fs_ops->get_download_path);
   RETURN_IF_NULL (fs_ops->save);
 
-  control.callback = print_progress;
+  controllable_set_active (&job_control.controllable, TRUE);
+  job_control.callback = print_progress;
   current_path_progress = src_path;
 
-  err = fs_ops->download (&backend, src_path, &idata, &control);
+  err = fs_ops->download (&backend, src_path, &idata, &job_control);
   if (err)
     {
       return err;
@@ -565,7 +567,7 @@ cli_download_item (const gchar *src_path, const gchar *dst_path)
       goto cleanup;
     }
 
-  err = fs_ops->save (download_path, &idata, &control);
+  err = fs_ops->save (download_path, &idata, &job_control);
   g_free (download_path);
 
 cleanup:
@@ -725,10 +727,11 @@ cli_upload_item (const gchar *src_path, const gchar *dst_path)
   RETURN_IF_NULL (fs_ops->get_upload_path);
   RETURN_IF_NULL (fs_ops->upload);
 
-  control.callback = print_progress;
+  controllable_set_active (&job_control.controllable, TRUE);
+  job_control.callback = print_progress;
   current_path_progress = src_path;
 
-  err = fs_ops->load (src_path, &idata, &control);
+  err = fs_ops->load (src_path, &idata, &job_control);
   if (err)
     {
       return err;
@@ -737,7 +740,7 @@ cli_upload_item (const gchar *src_path, const gchar *dst_path)
   upload_path = fs_ops->get_upload_path (&backend, fs_ops, dst_path,
 					 src_path, &idata);
 
-  err = fs_ops->upload (&backend, upload_path, &idata, &control);
+  err = fs_ops->upload (&backend, upload_path, &idata, &job_control);
   idata_free (&idata);
 
   g_free (upload_path);
@@ -934,7 +937,8 @@ set_conn_fs_op_from_command (const gchar *cmd)
 static void
 cli_end (int sig)
 {
-  controllable_set_active (&control.controllable, FALSE);
+  controllable_set_active (&controllable, FALSE);
+  controllable_set_active (&job_control.controllable, FALSE);
 
   g_mutex_lock (&sysex_transfer.mutex);
   sysex_transfer.active = FALSE;
@@ -949,6 +953,9 @@ main (int argc, gchar *argv[])
   gint err;
   gchar *command;
   gint vflg = 0, errflg = 0;
+
+  controllable_init (&controllable);
+  controllable_init (&job_control.controllable);
 
 #if defined(__linux__)
   struct sigaction action;
@@ -1002,8 +1009,6 @@ main (int argc, gchar *argv[])
   regconn_register ();
   regpref_register ();
   preferences_load ();
-
-  controllable_init (&control.controllable);
 
   if (!strcmp (command, "ld") || !strcmp (command, "list-devices"))
     {
@@ -1109,7 +1114,7 @@ end:
       error_print ("Error: %s", g_strerror (-err));
     }
 
-  controllable_clear (&control.controllable);
+  controllable_clear (&controllable);
 
   regconn_unregister ();
   regpref_unregister ();
