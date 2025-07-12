@@ -525,26 +525,26 @@ idata_init (struct idata *idata, GByteArray *content, gchar *name, void *info)
   idata->info = info;
 }
 
-void
-idata_free (struct idata *idata)
+GByteArray *
+idata_steal (struct idata *idata)
 {
-  if (idata->content)
-    {
-      g_byte_array_free (idata->content, TRUE);
-      idata->content = NULL;
-    }
+  GByteArray *content = idata->content;
+  idata->content = NULL;
   g_free (idata->name);
   idata->name = NULL;
   g_free (idata->info);
   idata->info = NULL;
+  return content;
 }
 
-GByteArray *
-idata_steal (struct idata *idata)
+void
+idata_free (struct idata *idata)
 {
-  g_free (idata->name);
-  g_free (idata->info);
-  return idata->content;
+  GByteArray *content = idata_steal (idata);
+  if (content)
+    {
+      g_byte_array_free (content, TRUE);
+    }
 }
 
 gboolean
