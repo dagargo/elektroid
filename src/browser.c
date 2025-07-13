@@ -1482,7 +1482,6 @@ static gboolean
 browser_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
 {
   struct browser *browser = data;
-  struct sample_info *sample_info = audio.sample.info;
 
   if (event->type != GDK_KEY_PRESS)
     {
@@ -1502,7 +1501,7 @@ browser_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
 			      NULL);
       return TRUE;
     }
-  else if (event->keyval == GDK_KEY_space && sample_info->frames)
+  else if (event->keyval == GDK_KEY_space)
     {
       editor_play_clicked (NULL, NULL);
       return TRUE;
