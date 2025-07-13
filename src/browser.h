@@ -66,6 +66,7 @@ struct browser
   GtkWidget *search_button;
   GtkWidget *search_entry;
   GtkEntry *dir_entry;
+  const gchar *pref_key_dir;
   gchar *dir;
   GtkMenu *menu;
   gboolean dnd;
@@ -130,6 +131,8 @@ struct browser_delete_items_data
 
 extern struct browser local_browser;
 extern struct browser remote_browser;
+
+void browser_remote_set_fs_operations (const struct fs_operations *fs_ops);
 
 void browser_set_item (GtkTreeModel *, GtkTreeIter *, struct item *);
 

@@ -24,6 +24,7 @@
 #include "editor.h"
 #include "local.h"
 #include "name_window.h"
+#include "notifier.h"
 #include "preferences.h"
 #include "progress_window.h"
 #include "sample.h"
@@ -472,6 +473,86 @@ path_dir_get_parent (const gchar *dir)
   return parent;
 }
 
+static void
+browser_load_preferences_dir (struct browser *browser)
+{
+  const gchar *aux = preferences_get_string (browser->pref_key_dir);
+  preferences_set_string (browser->pref_key_dir,
+			  get_system_startup_path (aux));
+  browser->dir = strdup (preferences_get_string (browser->pref_key_dir));
+}
+
+static void
+browser_save_preferences_dir (struct browser *browser)
+{
+  if (BROWSER_IS_SYSTEM (browser))
+    {
+      preferences_set_string (browser->pref_key_dir, strdup (browser->dir));
+    }
+}
+
+void
+browser_remote_set_fs_operations (const struct fs_operations *fs_ops)
+{
+  gboolean editor_visible;
+
+  if (fs_ops)
+    {
+      editor_visible =
+	fs_ops->options & FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE;
+
+      remote_browser.fs_ops = fs_ops;
+
+      if (editor_visible)
+	{
+	  local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
+	}
+      else
+	{
+	  local_browser.fs_ops = &FS_LOCAL_GENERIC_OPERATIONS;
+	  editor_reset (NULL);
+	}
+
+      if (remote_browser.backend->type == BE_TYPE_SYSTEM)
+	{
+	  if (!remote_browser.dir)
+	    {
+	      remote_browser.dir =
+		strdup (preferences_get_string (PREF_KEY_REMOTE_DIR));
+	    }
+	}
+      else
+	{
+	  if (remote_browser.dir)
+	    {
+	      g_free (remote_browser.dir);
+	    }
+	  remote_browser.dir = strdup ("/");
+	}
+
+      browser_remote_reset_dnd ();
+
+      browser_close_search (NULL, &local_browser);	//This triggers a refresh
+      browser_update_fs_options (&local_browser);
+
+      browser_close_search (NULL, &remote_browser);	//This triggers a refresh
+      browser_update_fs_options (&remote_browser);
+    }
+  else
+    {
+      editor_visible = TRUE;
+      local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
+      browser_update_fs_options (&local_browser);
+      browser_load_dir (&local_browser);
+
+      browser_reset (&remote_browser);
+      browser_update_fs_options (&remote_browser);
+
+    }
+
+  editor_set_visible (editor_visible);
+}
+
 void
 browser_go_up (GtkWidget *object, gpointer data)
 {
@@ -484,8 +565,9 @@ browser_go_up (GtkWidget *object, gpointer data)
       gchar *new_path = path_dir_get_parent (browser->dir);
       if (new_path)
 	{
-	  strcpy (browser->dir, new_path);
-	  g_free (new_path);
+	  g_free (browser->dir);
+	  browser->dir = new_path;
+	  browser_save_preferences_dir (browser);
 	  reload = TRUE;
 	}
     }
@@ -668,6 +750,7 @@ browser_item_activated (GtkTreeView *view, GtkTreePath *path,
       gchar *new_dir = path_chain (type, browser->dir, item.name);
       g_free (browser->dir);
       browser->dir = new_dir;
+      browser_save_preferences_dir (browser);
       browser_close_search (NULL, browser);	//This triggers a refresh
     }
 }
@@ -2266,7 +2349,7 @@ browser_local_init (struct browser *browser, GtkBuilder *builder)
     GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry"));
   browser->menu = GTK_MENU (gtk_builder_get_object (builder, "local_menu"));
   g_object_ref (G_OBJECT (browser->menu));
-  browser->dir = strdup (preferences_get_string (PREF_KEY_LOCAL_DIR));
+  browser->pref_key_dir = PREF_KEY_LOCAL_DIR;
   browser->fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
   browser->backend = NULL;
   browser->check_callback = NULL;
@@ -2356,6 +2439,8 @@ browser_local_init (struct browser *browser, GtkBuilder *builder)
 		     G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST),
 		     GDK_ACTION_COPY | GDK_ACTION_MOVE);
 
+  browser_load_preferences_dir (browser);
+
   browser_init (browser);
 }
 
@@ -2381,6 +2466,7 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder)
     GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry"));
   browser->menu = GTK_MENU (gtk_builder_get_object (builder, "remote_menu"));
   g_object_ref (G_OBJECT (browser->menu));
+  browser->pref_key_dir = PREF_KEY_REMOTE_DIR;
   browser->dir = NULL;
   browser->fs_ops = NULL;
   browser->backend = &backend;

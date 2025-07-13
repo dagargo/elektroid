@@ -73,6 +73,7 @@ extern struct browser remote_browser;
 extern GtkWindow *main_window;
 
 static GThread *thread;
+static GtkWidget *editor_box;
 static GtkWidget *waveform_scrolled_window;
 static GtkWidget *waveform;
 static GtkWidget *play_button;
@@ -258,7 +259,7 @@ editor_get_start_frame ()
     (gdouble) gtk_adjustment_get_upper (adj);
 }
 
-void
+static void
 editor_set_audio_mono_mix ()
 {
   struct sample_info *sample_info = audio.sample.info;
@@ -1621,8 +1622,16 @@ editor_size_allocate (GtkWidget *self, GtkAllocation *allocation,
 }
 
 void
+editor_set_visible (gboolean visible)
+{
+  gtk_widget_set_visible (editor_box, visible);
+  editor_set_audio_mono_mix ();
+}
+
+void
 editor_init (GtkBuilder *builder)
 {
+  editor_box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
   waveform_scrolled_window =
     GTK_WIDGET (gtk_builder_get_object (builder, "waveform_scrolled_window"));
   waveform = GTK_WIDGET (gtk_builder_get_object (builder, "waveform"));

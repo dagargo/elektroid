@@ -37,7 +37,7 @@ void editor_init (GtkBuilder * builder);
 
 void editor_destroy ();
 
-void editor_set_audio_mono_mix ();
+void editor_set_visible (gboolean visible);
 
 void editor_reset_audio ();
 

@@ -101,7 +101,6 @@ static GtkListStore *devices_list_store;
 static GtkWidget *devices_combo;
 static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
-static GtkWidget *editor_box;
 
 static void
 elektroid_show_error_msg_response (GtkDialog *dialog, gint response_id,
@@ -310,23 +309,8 @@ elektroid_cancel_all_tasks_and_wait ()
 }
 
 static void
-elektroid_set_preferences_remote_dir ()
-{
-  if (BACKEND->type == BE_TYPE_SYSTEM)
-    {
-      if (remote_browser.dir)
-	{
-	  preferences_set_string (PREF_KEY_REMOTE_DIR,
-				  strdup (remote_browser.dir));
-	}
-    }
-}
-
-static void
 elektroid_refresh_devices_int (gboolean startup)
 {
-  elektroid_set_preferences_remote_dir ();
-
   if (backend_check (BACKEND))
     {
       elektroid_cancel_all_tasks_and_wait ();
@@ -1101,20 +1085,11 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
   GtkTreeIter iter;
   GValue fsv = G_VALUE_INIT;
   gint fs;
-  gboolean editor_visible;
+  const struct fs_operations *fs_ops;
 
   if (!gtk_combo_box_get_active_iter (GTK_COMBO_BOX (fs_combo), &iter))
     {
-      local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
-      browser_update_fs_options (&local_browser);
-      browser_load_dir (&local_browser);
-
-      browser_reset (&remote_browser);
-      browser_update_fs_options (&remote_browser);
-
-      gtk_widget_set_visible (editor_box, TRUE);
-      editor_set_audio_mono_mix ();
-
+      browser_remote_set_fs_operations (NULL);
       return;
     }
 
@@ -1123,48 +1098,8 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
   fs = g_value_get_uint (&fsv);
   g_value_unset (&fsv);
 
-  remote_browser.fs_ops = backend_get_fs_operations_by_id (BACKEND, fs);
-  editor_visible = remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR ?
-    TRUE : FALSE;
-
-  if (editor_visible)
-    {
-      local_browser.fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
-    }
-  else
-    {
-      local_browser.fs_ops = &FS_LOCAL_GENERIC_OPERATIONS;
-      editor_reset (NULL);
-    }
-
-  editor_set_audio_mono_mix ();
-
-  if (BACKEND->type == BE_TYPE_SYSTEM)
-    {
-      if (!remote_browser.dir)
-	{
-	  gchar *dir = strdup (preferences_get_string (PREF_KEY_REMOTE_DIR));
-	  remote_browser.dir = dir;
-	}
-    }
-  else
-    {
-      if (remote_browser.dir)
-	{
-	  g_free (remote_browser.dir);
-	}
-      remote_browser.dir = strdup ("/");
-    }
-
-  gtk_widget_set_visible (editor_box, editor_visible);
-
-  browser_remote_reset_dnd ();
-
-  browser_close_search (NULL, &local_browser);	//This triggers a refresh
-  browser_update_fs_options (&local_browser);
-
-  browser_close_search (NULL, &remote_browser);	//This triggers a refresh
-  browser_update_fs_options (&remote_browser);
+  fs_ops = backend_get_fs_operations_by_id (BACKEND, fs);
+  browser_remote_set_fs_operations (fs_ops);
 }
 
 static gboolean
@@ -1273,8 +1208,6 @@ elektroid_set_device (GtkWidget *object, gpointer data)
     {
       return;
     }
-
-  elektroid_set_preferences_remote_dir ();
 
   if (backend_check (BACKEND))
     {
@@ -1504,12 +1437,22 @@ elektroid_delete_main_window (GtkWidget *widget, GdkEvent *event,
 }
 
 static void
-build_ui ()
+elektroid_startup (GApplication *gapp, gpointer *user_data)
 {
   GtkCssProvider *css_provider;
   GtkWidget *refresh_devices_button;
   GtkBuilder *builder;
   gchar *thanks;
+
+  if (local_dir)
+    {
+      //Check the directory passed by `-l`
+      gchar *abs_local_dir = g_canonicalize_filename (local_dir, NULL);
+      g_free (local_dir);
+      preferences_set_string (PREF_KEY_LOCAL_DIR,
+			      get_system_startup_path (abs_local_dir));
+      g_free (abs_local_dir);
+    }
 
   builder = gtk_builder_new ();
   gtk_builder_add_from_file (builder, DATADIR "/elektroid.ui", NULL);
@@ -1604,8 +1547,6 @@ build_ui ()
   fs_combo = GTK_WIDGET (gtk_builder_get_object (builder, "fs_combo"));
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
 
-  editor_box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
-
   browser_init_all (builder);
   name_window_init (builder);
   preferences_window_init (builder);
@@ -1640,29 +1581,6 @@ elektroid_signal_handler (gpointer data)
   return FALSE;
 }
 #endif
-
-static void
-elektroid_startup (GApplication *gapp, gpointer *user_data)
-{
-  if (local_dir)
-    {
-      //Check the directory passed by `-l`
-      gchar *abs_local_dir = g_canonicalize_filename (local_dir, NULL);
-      g_free (local_dir);
-      preferences_set_string (PREF_KEY_LOCAL_DIR,
-			      get_system_startup_path (abs_local_dir));
-      g_free (abs_local_dir);
-    }
-  else
-    {
-      //Check the directory in the preferences
-      const gchar *aux = preferences_get_string (PREF_KEY_LOCAL_DIR);
-      preferences_set_string (PREF_KEY_LOCAL_DIR,
-			      get_system_startup_path (aux));
-    }
-
-  build_ui ();
-}
 
 static void
 elektroid_activate (GApplication *gapp, gpointer *user_data)
@@ -1737,9 +1655,6 @@ main (int argc, char *argv[])
   err = g_application_run (G_APPLICATION (app), argc, argv);
 
   g_object_unref (app);
-
-  preferences_set_string (PREF_KEY_LOCAL_DIR, strdup (local_browser.dir));
-  elektroid_set_preferences_remote_dir ();
 
   preferences_save ();
   preferences_free ();
