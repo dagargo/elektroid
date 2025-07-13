@@ -1306,6 +1306,12 @@ browser_show_clicked (GtkWidget *object, gpointer data)
 }
 
 static void
+browser_play_clicked (GtkWidget *object, gpointer data)
+{
+  editor_play ();
+}
+
+static void
 browser_open_clicked (GtkWidget *object, gpointer data)
 {
   gchar *path;
@@ -1503,7 +1509,7 @@ browser_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
     }
   else if (event->keyval == GDK_KEY_space)
     {
-      editor_play_clicked (NULL, NULL);
+      editor_play ();
       return TRUE;
     }
   else if (event->keyval == GDK_KEY_F2)
@@ -2185,7 +2191,7 @@ static void
 browser_init (struct browser *browser)
 {
   g_signal_connect (browser->play_menuitem, "activate",
-		    G_CALLBACK (editor_play_clicked), NULL);
+		    G_CALLBACK (browser_play_clicked), NULL);
   g_signal_connect (browser->open_menuitem, "activate",
 		    G_CALLBACK (browser_open_clicked), browser);
   g_signal_connect (browser->show_menuitem, "activate",

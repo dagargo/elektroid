@@ -111,23 +111,23 @@ editor_get_browser ()
 }
 
 static void
-editor_set_layout_width_to_val (guint w)
+editor_set_waveform_width (guint width)
 {
-  guint h;
-  gtk_layout_get_size (GTK_LAYOUT (waveform), NULL, &h);
-  gtk_layout_set_size (GTK_LAYOUT (waveform), w, h);
+  guint height;
+  gtk_layout_get_size (GTK_LAYOUT (waveform), NULL, &height);
+  gtk_layout_set_size (GTK_LAYOUT (waveform), width, height);
 }
 
 static void
-editor_set_layout_width ()
+editor_reset_waveform_width ()
 {
-  guint w = gtk_widget_get_allocated_width (waveform_scrolled_window);
-  w = w * zoom;
-  if (w)
+  guint width = gtk_widget_get_allocated_width (waveform_scrolled_window);
+  width *= zoom;
+  if (width >= 2)
     {
-      w -= 2;			//2 border pixels
+      width -= 2;		//2 border pixels
     }
-  editor_set_layout_width_to_val (w);
+  editor_set_waveform_width (width);
 }
 
 static void
@@ -186,7 +186,7 @@ editor_clear_waveform_data ()
 static gboolean
 editor_reset_browser (gpointer data)
 {
-  editor_set_layout_width ();
+  editor_reset_waveform_width ();
   gtk_widget_queue_draw (waveform);
 
   editor_set_widget_source (autoplay_switch);
@@ -306,7 +306,7 @@ static gboolean
 editor_update_ui_on_load (gpointer data)
 {
   editor_set_audio_mono_mix ();
-  editor_set_layout_width ();
+  editor_reset_waveform_width ();
 
   if (audio_check ())
     {
@@ -740,13 +740,19 @@ editor_load_sample_runner (gpointer data)
 }
 
 void
-editor_play_clicked (GtkWidget *object, gpointer data)
+editor_play ()
 {
   if (audio_check ())
     {
       audio_stop_recording ();
       audio_start_playback ();
     }
+}
+
+static void
+editor_play_clicked (GtkWidget *object, gpointer data)
+{
+  editor_play ();
 }
 
 static void
@@ -884,13 +890,13 @@ static void
 editor_get_frame_at_position (gdouble x, guint *cursor_frame,
 			      gdouble *rel_pos)
 {
-  guint lw;
+  guint width;
   guint start = editor_get_start_frame ();
   struct sample_info *sample_info = audio.sample.info;
 
-  gtk_layout_get_size (GTK_LAYOUT (waveform), &lw, NULL);
-  x = x > lw ? lw : x < 0.0 ? 0.0 : x;
-  *cursor_frame = (sample_info->frames - 1) * (x / (gdouble) lw);
+  gtk_layout_get_size (GTK_LAYOUT (waveform), &width, NULL);
+  x = x > width ? width : x < 0.0 ? 0.0 : x;
+  *cursor_frame = (sample_info->frames - 1) * (x / (gdouble) width);
   if (rel_pos)
     {
       *rel_pos = (*cursor_frame - start) /
@@ -968,7 +974,7 @@ editor_zoom (GdkEventScroll *event, gdouble dy)
 
   start = cursor_frame - rel_pos * sample_info->frames / (gdouble) zoom;
   editor_set_start_frame (start);
-  editor_set_layout_width ();
+  editor_reset_waveform_width ();
 
 end:
   g_mutex_unlock (&audio.control.controllable.mutex);
@@ -1010,7 +1016,7 @@ editor_on_size_allocate (GtkWidget *self, GtkAllocation *allocation,
 
   start = editor_get_start_frame ();
   editor_set_start_frame (start);
-  editor_set_layout_width ();
+  editor_reset_waveform_width ();
   editor_set_waveform_data_no_sync ();
 
 end:

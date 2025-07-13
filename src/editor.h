@@ -27,7 +27,7 @@ struct browser *editor_get_browser ();
 
 void editor_reset (struct browser *browser);
 
-void editor_play_clicked (GtkWidget * object, gpointer data);
+void editor_play ();
 
 void editor_start_load_thread (gchar * sample_path);
 
