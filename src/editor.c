@@ -1563,7 +1563,18 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
       return FALSE;
     }
 
-  if (event->keyval == GDK_KEY_space)
+  if (event->keyval == GDK_KEY_Menu)
+    {
+      GtkAllocation allocation;
+      GdkWindow *gdk_window;
+
+      gtk_widget_get_allocation (GTK_WIDGET (waveform), &allocation);
+      gdk_window = gtk_widget_get_window (GTK_WIDGET (waveform));
+      gtk_menu_popup_at_rect (menu, gdk_window, &allocation,
+			      GDK_GRAVITY_CENTER, GDK_GRAVITY_NORTH_WEST,
+			      NULL);
+    }
+  else if (event->keyval == GDK_KEY_space)
     {
       editor_play_clicked (NULL, NULL);
     }
