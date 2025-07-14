@@ -403,7 +403,6 @@ sds_download_try (struct backend *backend, const gchar *path,
 
   debug_print (1, "Receiving dump data...");
 
-  tx_msg = g_byte_array_new ();
   total_words = 0;
   retries = 0;
   last_packet_ack = TRUE;
@@ -420,7 +419,7 @@ sds_download_try (struct backend *backend, const gchar *path,
 	  break;
 	}
 
-      g_byte_array_set_size (tx_msg, 0);
+      tx_msg = g_byte_array_new ();
       if (last_packet_ack)
 	{
 	  g_byte_array_append (tx_msg, SDS_ACK, sizeof (SDS_ACK));
@@ -446,7 +445,7 @@ sds_download_try (struct backend *backend, const gchar *path,
       tx_msg->data[10] = (packet) % 0x80;
       transfer.raw = tx_msg;
       transfer.timeout = SDS_INCOMPLETE_PACKET_TIMEOUT;	//This is enough to detect incomplete packets.
-      err = backend_tx_and_rx_sysex_transfer (backend, &transfer, FALSE);
+      err = backend_tx_and_rx_sysex_transfer (backend, &transfer);
       if (err == -ECANCELED)
 	{
 	  break;
@@ -536,8 +535,6 @@ sds_download_try (struct backend *backend, const gchar *path,
       retries++;
       continue;
     }
-
-  free_msg (tx_msg);
 
 end:
   if (active && !err && rx_packets == packets)

@@ -177,8 +177,7 @@ backend_tx (struct backend *backend, GByteArray *tx_msg)
 
 gint
 backend_tx_and_rx_sysex_transfer (struct backend *backend,
-				  struct sysex_transfer *transfer,
-				  gboolean free)
+				  struct sysex_transfer *transfer)
 {
   transfer->batch = FALSE;
   transfer->err = 0;
@@ -188,11 +187,8 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
   if (transfer->raw)
     {
       backend_tx_sysex (backend, transfer);
-      if (free)
-	{
-	  free_msg (transfer->raw);
-	  transfer->raw = NULL;
-	}
+      free_msg (transfer->raw);
+      transfer->raw = NULL;
     }
 
   if (!transfer->err)
@@ -215,7 +211,7 @@ backend_tx_and_rx_sysex (struct backend *backend, GByteArray *tx_msg,
   struct sysex_transfer transfer;
   transfer.raw = tx_msg;
   transfer.timeout = timeout < 0 ? BE_SYSEX_TIMEOUT_MS : timeout;
-  backend_tx_and_rx_sysex_transfer (backend, &transfer, TRUE);
+  backend_tx_and_rx_sysex_transfer (backend, &transfer);
   return transfer.raw;
 }
 

@@ -159,7 +159,7 @@ gint backend_rx_sysex (struct backend *, struct sysex_transfer *);
 gint backend_tx (struct backend *, GByteArray *);
 
 gint backend_tx_and_rx_sysex_transfer (struct backend *,
-				       struct sysex_transfer *, gboolean);
+				       struct sysex_transfer *);
 
 GByteArray *backend_tx_and_rx_sysex (struct backend *, GByteArray *, gint);
 
