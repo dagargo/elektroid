@@ -31,7 +31,9 @@ GSList *connectors = NULL;
 // When sending a batch of SysEx messages we want the trasfer status to be controlled outside this function.
 // This is what the update parameter is for.
 
-gint backend_tx_sysex_int (struct backend *, struct sysex_transfer *);
+gint backend_tx_sysex_int (struct backend *backend,
+			   struct sysex_transfer *sysex_transfer,
+			   struct controllable *controllable);
 
 void backend_rx_drain_int (struct backend *);
 void backend_destroy_int (struct backend *);
@@ -153,10 +155,13 @@ backend_midi_handshake (struct backend *backend)
   usleep (BE_REST_TIME_US);
 }
 
+//Not synchronized
+
 gint
-backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer)
+backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer,
+		  struct controllable *controllable)
 {
-  return backend_tx_sysex_int (backend, transfer);
+  return backend_tx_sysex_int (backend, transfer, controllable);
 }
 
 //Synchronized
@@ -167,7 +172,7 @@ backend_tx (struct backend *backend, GByteArray *tx_msg)
   struct sysex_transfer transfer;
   transfer.raw = tx_msg;
   g_mutex_lock (&backend->mutex);
-  backend_tx_sysex (backend, &transfer);
+  backend_tx_sysex (backend, &transfer, NULL);
   g_mutex_unlock (&backend->mutex);
   free_msg (tx_msg);
   return transfer.err;
@@ -177,8 +182,10 @@ backend_tx (struct backend *backend, GByteArray *tx_msg)
 
 gint
 backend_tx_and_rx_sysex_transfer (struct backend *backend,
-				  struct sysex_transfer *transfer)
+				  struct sysex_transfer *transfer,
+				  struct controllable *controllable)
 {
+
   transfer->batch = FALSE;
   transfer->err = 0;
 
@@ -186,14 +193,14 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
 
   if (transfer->raw)
     {
-      backend_tx_sysex (backend, transfer);
+      backend_tx_sysex (backend, transfer, controllable);
       free_msg (transfer->raw);
       transfer->raw = NULL;
     }
 
   if (!transfer->err)
     {
-      backend_rx_sysex (backend, transfer);
+      backend_rx_sysex (backend, transfer, controllable);
     }
 
   g_mutex_unlock (&backend->mutex);
@@ -202,7 +209,7 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
 }
 
 //Synchronized
-//A timeout of 0 means infinity; a negative timeout means the default timeout.
+//A timeout of 0 means infinity; a timeout of -1 means the default timeout.
 
 GByteArray *
 backend_tx_and_rx_sysex (struct backend *backend, GByteArray *tx_msg,
@@ -210,8 +217,8 @@ backend_tx_and_rx_sysex (struct backend *backend, GByteArray *tx_msg,
 {
   struct sysex_transfer transfer;
   transfer.raw = tx_msg;
-  transfer.timeout = timeout < 0 ? BE_SYSEX_TIMEOUT_MS : timeout;
-  backend_tx_and_rx_sysex_transfer (backend, &transfer);
+  transfer.timeout = timeout == -1 ? BE_SYSEX_TIMEOUT_MS : timeout;
+  backend_tx_and_rx_sysex_transfer (backend, &transfer, NULL);
   return transfer.raw;
 }
 
@@ -362,7 +369,8 @@ backend_check (struct backend *backend)
 }
 
 static ssize_t
-backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
+backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer,
+		     struct controllable *controllable)
 {
   ssize_t rx_len, rx_len_msg;
   gchar *text;
@@ -379,7 +387,7 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
 
   while (1)
     {
-      if (!transfer->active)
+      if (!CONTROLLABLE_IS_NULL_OR_ACTIVE (controllable))
 	{
 	  return -ECANCELED;
 	}
@@ -473,7 +481,8 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
 //Access to this function must be synchronized.
 
 gint
-backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
+backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer,
+		  struct controllable *controllable)
 {
   gint next_check, len, i;
   guint8 *b;
@@ -481,7 +490,6 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 
   transfer->err = 0;
   transfer->time = 0;
-  transfer->active = TRUE;
   transfer->status = SYSEX_TRANSFER_STATUS_WAITING;
   transfer->raw = g_byte_array_sized_new (BE_INT_BUF_LEN);
 
@@ -495,7 +503,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	    {
 	      transfer->time = 0;
 	    }
-	  rx_len = backend_rx_raw_loop (backend, transfer);
+	  rx_len = backend_rx_raw_loop (backend, transfer, controllable);
 
 	  if (rx_len == -ENODATA || rx_len == -ETIMEDOUT
 	      || rx_len == -ECANCELED)
@@ -610,8 +618,8 @@ end:
 	}
 
     }
-  transfer->active = FALSE;
   transfer->status = SYSEX_TRANSFER_STATUS_FINISHED;
+
   return transfer->err;
 }
 
@@ -627,7 +635,7 @@ backend_rx_drain (struct backend *backend)
   debug_print (2, "Draining buffers...");
   backend->rx_len = 0;
   backend_rx_drain_int (backend);
-  while (!backend_rx_sysex (backend, &transfer))
+  while (!backend_rx_sysex (backend, &transfer, NULL))
     {
       free_msg (transfer.raw);
     }
@@ -780,23 +788,4 @@ end:
       backend_destroy (backend);
     }
   return err;
-}
-
-void
-sysex_transfer_cancel (struct sysex_transfer *sysex_transfer)
-{
-  debug_print (1, "Stopping SysEx transfer...");
-  g_mutex_lock (&sysex_transfer->mutex);
-  sysex_transfer->active = FALSE;
-  g_mutex_unlock (&sysex_transfer->mutex);
-}
-
-gboolean
-sysex_transfer_is_active (struct sysex_transfer *sysex_transfer)
-{
-  gboolean active;
-  g_mutex_lock (&sysex_transfer->mutex);
-  active = sysex_transfer->active;
-  g_mutex_unlock (&sysex_transfer->mutex);
-  return active;
 }

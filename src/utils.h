@@ -43,6 +43,8 @@
 #define MI (KI * KI)
 #define GI (KI * MI)
 
+#define CONTROLLABLE_IS_NULL_OR_ACTIVE(c) (!c || controllable_is_active(c))
+
 #define debug_print(level, format, ...) {\
   if (level <= debug_level) \
     { \

@@ -160,7 +160,8 @@ backend_tx_raw (struct backend *backend, guint8 *data, guint len)
 
 gint
 backend_tx_sysex_int (struct backend *backend,
-		      struct sysex_transfer *transfer)
+		      struct sysex_transfer *transfer,
+		      struct controllable *controllable)
 {
   ssize_t tx_len;
   guint total;
@@ -168,12 +169,12 @@ backend_tx_sysex_int (struct backend *backend,
   guchar *b;
 
   transfer->err = 0;
-  transfer->active = TRUE;
   transfer->status = SYSEX_TRANSFER_STATUS_SENDING;
 
   b = transfer->raw->data;
   total = 0;
-  while (total < transfer->raw->len && transfer->active)
+  while (total < transfer->raw->len &&
+	 CONTROLLABLE_IS_NULL_OR_ACTIVE (controllable))
     {
       len = transfer->raw->len - total;
       if (len > BE_MAX_TX_LEN)
@@ -191,7 +192,7 @@ backend_tx_sysex_int (struct backend *backend,
       total += len;
     }
 
-  if (!transfer->active)
+  if (!CONTROLLABLE_IS_NULL_OR_ACTIVE (controllable))
     {
       transfer->err = -ECANCELED;
     }
@@ -204,7 +205,6 @@ backend_tx_sysex_int (struct backend *backend,
       g_free (text);
     }
 
-  transfer->active = FALSE;
   transfer->status = SYSEX_TRANSFER_STATUS_FINISHED;
 
   return transfer->err;

@@ -18,8 +18,8 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <rtmidi_c.h>
 #include "backend.h"
-#include "rtmidi_c.h"
 
 #if defined(__linux__)
 #define ELEKTROID_RTMIDI_API RTMIDI_API_LINUX_ALSA
@@ -141,10 +141,10 @@ cleanup_input:
 
 gint
 backend_tx_sysex_int (struct backend *backend,
-		      struct sysex_transfer *transfer)
+		      struct sysex_transfer *transfer,
+		      struct controllable *controllable)
 {
   transfer->err = 0;
-  transfer->active = TRUE;
   transfer->status = SYSEX_TRANSFER_STATUS_SENDING;
 
   rtmidi_out_send_message (backend->outputp, transfer->raw->data,
@@ -159,7 +159,6 @@ backend_tx_sysex_int (struct backend *backend,
       g_free (text);
     }
 
-  transfer->active = FALSE;
   transfer->status = SYSEX_TRANSFER_STATUS_FINISHED;
 
   return transfer->err;
@@ -171,7 +170,7 @@ backend_tx_raw (struct backend *backend, guint8 *data, guint len)
   struct sysex_transfer transfer;
   transfer.raw = g_byte_array_sized_new (len);
   g_byte_array_append (transfer.raw, data, len);
-  backend_tx_sysex_int (backend, &transfer);
+  backend_tx_sysex_int (backend, &transfer, NULL);
   return transfer.err ? transfer.err : len;
 }
 

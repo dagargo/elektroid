@@ -194,7 +194,7 @@ common_data_tx (struct backend *backend, GByteArray *msg,
   job_control_reset (control, 1);
 
   transfer.raw = msg;
-  err = backend_tx_sysex (backend, &transfer);
+  err = backend_tx_sysex (backend, &transfer, &control->controllable);
   if (err < 0)
     {
       goto cleanup;

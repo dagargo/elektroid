@@ -407,7 +407,7 @@ phatty_rename (struct backend *backend, const gchar *src, const gchar *dst)
 
   phatty_set_preset_name (preset.content->data, dst);
   transfer.raw = preset.content;
-  err = backend_tx_sysex (backend, &transfer);
+  err = backend_tx_sysex (backend, &transfer, NULL);
   idata_free (&preset);
 
 end:

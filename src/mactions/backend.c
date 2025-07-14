@@ -29,6 +29,7 @@ struct backend_tx_sysex_common_data
 {
   struct sysex_transfer sysex_transfer;
   GSList *filenames;
+  struct controllable controllable;
 };
 
 struct backend_tx_sysex_common_funcs
@@ -41,6 +42,12 @@ struct backend_send_sysex_file_data
 {
   gchar *filename;
   gint err;
+};
+
+struct backend_rx_sysex_data
+{
+  struct sysex_transfer sysex_transfer;
+  struct controllable controllable;
 };
 
 extern GtkWindow *main_window;
@@ -63,7 +70,8 @@ backend_send_sysex_file_show_error (gpointer user_data)
 
 static gint
 backend_send_sysex_file (struct sysex_transfer *sysex_transfer,
-			 const gchar *filename, t_sysex_transfer f)
+			 const gchar *filename, t_sysex_transfer f,
+			 struct controllable *controllable)
 {
   gint err;
   struct idata idata;
@@ -73,7 +81,7 @@ backend_send_sysex_file (struct sysex_transfer *sysex_transfer,
     {
       sysex_transfer->raw = idata.content;
       //If the trasfer is too fast, there is not time to cancel it.
-      err = f (remote_browser.backend, sysex_transfer);
+      err = f (remote_browser.backend, sysex_transfer, controllable);
       idata_free (&idata);
     }
   if (err && err != -ECANCELED)
@@ -99,7 +107,7 @@ backend_tx_sysex_files_runner (gpointer user_data)
   while (err != -ECANCELED && filename)
     {
       err = backend_send_sysex_file (&data->sysex_transfer, filename->data,
-				     backend_tx_sysex);
+				     backend_tx_sysex, &data->controllable);
       filename = filename->next;
       //The device may have sent some messages in response so we skip all these.
       backend_rx_drain (remote_browser.backend);
@@ -112,10 +120,10 @@ backend_upgrade_os_runner (gpointer user_data)
 {
   gint err;
   struct backend_tx_sysex_common_data *data = user_data;
-  GSList *filenames = data->filenames;
 
-  err = backend_send_sysex_file (&data->sysex_transfer, filenames->data,
-				 remote_browser.backend->upgrade_os);
+  err = backend_send_sysex_file (&data->sysex_transfer, data->filenames->data,
+				 remote_browser.backend->upgrade_os,
+				 &data->controllable);
   if (err < 0)
     {
       elektroid_check_backend ();
@@ -128,7 +136,7 @@ backend_tx_sysex_consumer (gpointer user_data)
   struct backend_tx_sysex_common_data *data = user_data;
   g_slist_free_full (g_steal_pointer (&data->filenames), g_free);
   //runners already free sysex_transfer->raw
-  g_mutex_clear (&data->sysex_transfer.mutex);
+  controllable_clear (&data->controllable);
   g_free (data);
 }
 
@@ -143,7 +151,7 @@ static void
 backend_tx_sysex_cancel (gpointer user_data)
 {
   struct backend_tx_sysex_common_data *data = user_data;
-  sysex_transfer_cancel (&data->sysex_transfer);
+  controllable_set_active (&data->controllable, FALSE);
 }
 
 static void
@@ -158,9 +166,8 @@ backend_tx_sysex_common_response (GtkDialog *dialog, gint response_id,
       struct backend_tx_sysex_common_data *data =
 	g_malloc (sizeof (struct backend_tx_sysex_common_data));
 
-      g_mutex_init (&data->sysex_transfer.mutex);
-      data->sysex_transfer.active = TRUE;
-      data->sysex_transfer.status = SYSEX_TRANSFER_STATUS_SENDING;
+      controllable_init (&data->controllable);
+
       data->sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
 
       data->filenames = gtk_file_chooser_get_filenames (chooser);
@@ -218,7 +225,7 @@ backend_rx_sysex_consumer_response (GtkDialog *dialog, gint response_id,
   gchar *filename;
   gchar *filename_w_ext;
   const gchar *ext;
-  struct sysex_transfer *sysex_transfer = user_data;
+  struct backend_rx_sysex_data *data = user_data;
 
   if (response_id == GTK_RESPONSE_ACCEPT)
     {
@@ -243,7 +250,7 @@ backend_rx_sysex_consumer_response (GtkDialog *dialog, gint response_id,
 	    }
 	}
 
-      idata.content = sysex_transfer->raw;
+      idata.content = data->sysex_transfer.raw;
 
       err = file_save (filename, &idata, NULL);
       if (err)
@@ -256,21 +263,21 @@ backend_rx_sysex_consumer_response (GtkDialog *dialog, gint response_id,
     }
 
   gtk_widget_destroy (GTK_WIDGET (dialog));
-  g_byte_array_free (sysex_transfer->raw, TRUE);
-  g_mutex_clear (&sysex_transfer->mutex);
-  g_free (sysex_transfer);
+  g_byte_array_free (data->sysex_transfer.raw, TRUE);
+  controllable_clear (&data->controllable);
+  g_free (data);
 }
 
 static void
-backend_rx_sysex_consumer (gpointer data)
+backend_rx_sysex_consumer (gpointer user_data)
 {
   GtkWidget *dialog;
   GtkFileChooser *chooser;
   GtkFileFilter *filter;
-  struct sysex_transfer *sysex_transfer = data;
+  struct backend_rx_sysex_data *data = user_data;
   GtkFileChooserAction action = GTK_FILE_CHOOSER_ACTION_SAVE;
 
-  if (!sysex_transfer->err)
+  if (!data->sysex_transfer.err)
     {
       dialog = gtk_file_chooser_dialog_new (_("Save SysEx"), main_window,
 					    action, _("_Cancel"),
@@ -292,47 +299,42 @@ backend_rx_sysex_consumer (gpointer data)
 
       g_signal_connect (dialog, "response",
 			G_CALLBACK (backend_rx_sysex_consumer_response),
-			sysex_transfer);
+			data);
 
       gtk_widget_set_visible (dialog, TRUE);
     }
   else
     {
-      g_mutex_clear (&sysex_transfer->mutex);
-      g_free (sysex_transfer);
+      controllable_clear (&data->controllable);
+      g_free (data);
     }
 }
 
 static void
-backend_rx_sysex_runner (gpointer data)
+backend_rx_sysex_runner (gpointer user_data)
 {
   gint err;
   gchar *text;
-  struct sysex_transfer *sysex_transfer = data;
+  struct backend_rx_sysex_data *data = user_data;
 
   //This needs to be initialized to an error as the cancelation might happend before it's set.
-  sysex_transfer->err = -ECANCELED;
+  data->sysex_transfer.err = -ECANCELED;
 
   //This doesn't need to be synchronized because the GUI doesn't allow concurrent access when receiving SysEx in batch mode.
 
   backend_rx_drain (remote_browser.backend);
 
-  //This is needed as the call to backend_rx_drain might have been the one being cancelled.
-  if (!sysex_transfer_is_active (sysex_transfer))
-    {
-      return;
-    }
-
-  err = backend_rx_sysex (remote_browser.backend, sysex_transfer);
+  err = backend_rx_sysex (remote_browser.backend, &data->sysex_transfer,
+			  &data->controllable);
   if (err)
     {
       elektroid_check_backend (FALSE);
     }
   else
     {
-      text = debug_get_hex_msg (sysex_transfer->raw);
+      text = debug_get_hex_msg (data->sysex_transfer.raw);
       debug_print (1, "SysEx message received (%d): %s",
-		   sysex_transfer->raw->len, text);
+		   data->sysex_transfer.raw->len, text);
       g_free (text);
     }
 }
@@ -352,26 +354,25 @@ tx_sysex_callback (GtkWidget *object, gpointer data)
 }
 
 static void
-backend_rx_sysex_cancel (gpointer data)
+backend_rx_sysex_cancel (gpointer user_data)
 {
-  struct sysex_transfer *sysex_transfer = data;
-  sysex_transfer_cancel (sysex_transfer);
+  struct backend_rx_sysex_data *data = user_data;
+  controllable_set_active (&data->controllable, FALSE);
 }
 
 static void
-backend_rx_sysex_callback (GtkWidget *object, gpointer data)
+backend_rx_sysex_callback (GtkWidget *object, gpointer user_data)
 {
-  struct sysex_transfer *sysex_transfer =
-    g_malloc (sizeof (struct sysex_transfer));
+  struct backend_rx_sysex_data *data =
+    g_malloc (sizeof (struct backend_rx_sysex_data));
 
-  g_mutex_init (&sysex_transfer->mutex);
-  sysex_transfer->status = SYSEX_TRANSFER_STATUS_WAITING;
-  sysex_transfer->active = TRUE;
-  sysex_transfer->timeout = BE_SYSEX_TIMEOUT_MS;
-  sysex_transfer->batch = TRUE;
+  controllable_init (&data->controllable);
+
+  data->sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
+  data->sysex_transfer.batch = TRUE;
 
   progress_window_open (backend_rx_sysex_runner, backend_rx_sysex_consumer,
-			backend_rx_sysex_cancel, sysex_transfer,
+			backend_rx_sysex_cancel, data,
 			PROGRESS_TYPE_SYSEX_TRANSFER, _("Receiving SysEx"),
 			"", TRUE);
 }

@@ -773,7 +773,8 @@ elektron_raw_to_msg (GByteArray *sysex)
 }
 
 static gint
-elektron_tx (struct backend *backend, const GByteArray *msg)
+elektron_tx (struct backend *backend, const GByteArray *msg,
+	     struct controllable *controllable)
 {
   gint res;
   guint16 aux;
@@ -786,7 +787,7 @@ elektron_tx (struct backend *backend, const GByteArray *msg)
   data->seq++;
 
   transfer.raw = elektron_msg_to_raw (msg);
-  res = backend_tx_sysex (backend, &transfer);
+  res = backend_tx_sysex (backend, &transfer, controllable);
   if (!res)
     {
       text = debug_get_hex_msg (msg);
@@ -799,7 +800,8 @@ elektron_tx (struct backend *backend, const GByteArray *msg)
 }
 
 static GByteArray *
-elektron_rx (struct backend *backend, gint timeout)
+elektron_rx (struct backend *backend, gint timeout,
+	     struct controllable *controllable)
 {
   gchar *text;
   GByteArray *msg;
@@ -810,7 +812,7 @@ elektron_rx (struct backend *backend, gint timeout)
 
   while (1)
     {
-      if (backend_rx_sysex (backend, &transfer))
+      if (backend_rx_sysex (backend, &transfer, controllable))
 	{
 	  return NULL;
 	}
@@ -847,7 +849,8 @@ elektron_rx (struct backend *backend, gint timeout)
 
 static GByteArray *
 elektron_tx_and_rx_timeout (struct backend *backend,
-			    GByteArray *tx_msg, gint timeout)
+			    GByteArray *tx_msg, gint timeout,
+			    struct controllable *controllable)
 {
   ssize_t len;
   guint16 seq;
@@ -859,7 +862,7 @@ elektron_tx_and_rx_timeout (struct backend *backend,
   g_mutex_lock (&backend->mutex);
 
   seq = data->seq;
-  len = elektron_tx (backend, tx_msg);
+  len = elektron_tx (backend, tx_msg, controllable);
   if (len < 0)
     {
       rx_msg = NULL;
@@ -868,7 +871,7 @@ elektron_tx_and_rx_timeout (struct backend *backend,
 
   while (1)
     {
-      rx_msg = elektron_rx (backend, t);
+      rx_msg = elektron_rx (backend, t, controllable);
       if (!rx_msg)
 	{
 	  break;
@@ -900,9 +903,10 @@ cleanup:
 }
 
 static GByteArray *
-elektron_tx_and_rx (struct backend *backend, GByteArray *tx_msg)
+elektron_tx_and_rx (struct backend *backend, GByteArray *tx_msg,
+		    struct controllable *controllable)
 {
-  return elektron_tx_and_rx_timeout (backend, tx_msg, -1);
+  return elektron_tx_and_rx_timeout (backend, tx_msg, -1, controllable);
 }
 
 static enum item_type
@@ -963,7 +967,7 @@ elektron_read_common_dir (struct backend *backend,
       return -EINVAL;
     }
 
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
   if (!rx_msg)
     {
       return -EIO;
@@ -1034,7 +1038,7 @@ elektron_src_dst_common (struct backend *backend,
   g_free (src_cp1252);
   g_free (dst_cp1252);
 
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
   if (!rx_msg)
     {
       return -EIO;
@@ -1140,7 +1144,7 @@ elektron_path_common (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
   if (!rx_msg)
     {
       return -EIO;
@@ -1354,7 +1358,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, &control->controllable);
   if (!rx_msg)
     {
       return -EIO;
@@ -1379,7 +1383,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
   while (transferred < input->len && active)
     {
       tx_msg = new_msg_write_blk (id, input, &transferred, i, smplrw->info);
-      rx_msg = elektron_tx_and_rx (backend, tx_msg);
+      rx_msg = elektron_tx_and_rx (backend, tx_msg, &control->controllable);
       if (!rx_msg)
 	{
 	  return -EIO;
@@ -1404,7 +1408,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
   if (active)
     {
       tx_msg = new_msg_close_write (id, transferred);
-      rx_msg = elektron_tx_and_rx (backend, tx_msg);
+      rx_msg = elektron_tx_and_rx (backend, tx_msg, &control->controllable);
       if (!rx_msg)
 	{
 	  return -EIO;
@@ -1514,7 +1518,7 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, &control->controllable);
   if (!rx_msg)
     {
       return -EIO;
@@ -1545,7 +1549,7 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 	DATA_TRANSF_BLOCK_BYTES ? DATA_TRANSF_BLOCK_BYTES : frames -
 	next_block_start;
       tx_msg = new_msg_read_blk (id, next_block_start, req_size);
-      rx_msg = elektron_tx_and_rx (backend, tx_msg);
+      rx_msg = elektron_tx_and_rx (backend, tx_msg, &control->controllable);
       if (!rx_msg)
 	{
 	  res = -EIO;
@@ -1598,7 +1602,7 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
     }
 
   tx_msg = new_msg_close_read (id);
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, &control->controllable);
   if (!rx_msg)
     {
       res = -EIO;
@@ -1706,17 +1710,17 @@ elektron_new_msg_upgrade_os_write (GByteArray *os_data, gint *offset)
 }
 
 static gint
-elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
+elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer,
+		     struct controllable *controllable)
 {
   GByteArray *tx_msg;
   GByteArray *rx_msg;
   gint8 op;
   gint offset;
   gint res = 0;
-  gboolean active;
 
   tx_msg = elektron_new_msg_upgrade_os_start (transfer->raw->len);
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, controllable);
 
   if (!rx_msg)
     {
@@ -1740,7 +1744,7 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
   while (offset < transfer->raw->len)
     {
       tx_msg = elektron_new_msg_upgrade_os_write (transfer->raw, &offset);
-      rx_msg = elektron_tx_and_rx (backend, tx_msg);
+      rx_msg = elektron_tx_and_rx (backend, tx_msg, controllable);
 
       if (!rx_msg)
 	{
@@ -1766,10 +1770,7 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer)
 
       usleep (BE_REST_TIME_US);
 
-      g_mutex_lock (&transfer->mutex);
-      active = transfer->active;
-      g_mutex_unlock (&transfer->mutex);
-      if (!active)
+      if (!controllable_is_active (controllable))
 	{
 	  res = -ECANCELED;
 	  goto end;
@@ -1801,7 +1802,7 @@ elektron_get_storage_stats (struct backend *backend, guint8 type,
 
   tx_msg = elektron_new_msg_uint8 (STORAGEINFO_REQUEST,
 				   sizeof (STORAGEINFO_REQUEST), fsid + 1);
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
   if (!rx_msg)
     {
       return -EIO;
@@ -2007,7 +2008,7 @@ elektron_read_data_dir_prefix (struct backend *backend,
       return -EINVAL;
     }
 
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
   if (!rx_msg)
     {
       return -EIO;
@@ -2307,7 +2308,7 @@ elektron_open_datum (struct backend *backend, const gchar *path,
 			   strlen (path_cp1252) + 1);
     }
 
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
   if (!rx_msg)
     {
       res = -EIO;
@@ -2390,7 +2391,7 @@ elektron_close_datum (struct backend *backend,
       g_byte_array_append (tx_msg, (guchar *) & wsizebe, sizeof (guint32));
     }
 
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
   if (!rx_msg)
     {
       return -EIO;
@@ -2485,7 +2486,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
       g_byte_array_append (tx_msg, (guint8 *) & jidbe, sizeof (guint32));
       seqbe = g_htonl (seq);
       g_byte_array_append (tx_msg, (guint8 *) & seqbe, sizeof (guint32));
-      rx_msg = elektron_tx_and_rx (backend, tx_msg);
+      rx_msg = elektron_tx_and_rx (backend, tx_msg, &control->controllable);
       if (!rx_msg)
 	{
 	  err = -EIO;
@@ -2817,7 +2818,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
 
       g_byte_array_append (tx_msg, &array->data[offset], len);
 
-      rx_msg = elektron_tx_and_rx (backend, tx_msg);
+      rx_msg = elektron_tx_and_rx (backend, tx_msg, &control->controllable);
       if (!rx_msg)
 	{
 	  err = -EIO;
@@ -3004,7 +3005,7 @@ elektron_get_sample_path_from_hash_size (struct backend *backend,
   aux32 = g_htonl (size);
   memcpy (&tx_msg->data[9], &aux32, sizeof (guint32));
 
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
   if (!rx_msg)
     {
       return NULL;
@@ -3489,7 +3490,7 @@ elektron_ping (struct backend *backend)
 
   tx_msg = elektron_new_msg (PING_REQUEST, sizeof (PING_REQUEST));
   rx_msg = elektron_tx_and_rx_timeout (backend, tx_msg,
-				       BE_SYSEX_TIMEOUT_GUESS_MS);
+				       BE_SYSEX_TIMEOUT_GUESS_MS, NULL);
   if (!rx_msg)
     {
       backend->data = NULL;
@@ -3562,7 +3563,7 @@ elektron_handshake (struct backend *backend)
 
   tx_msg = elektron_new_msg (SOFTWARE_VERSION_REQUEST,
 			     sizeof (SOFTWARE_VERSION_REQUEST));
-  rx_msg = elektron_tx_and_rx (backend, tx_msg);
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
   if (!rx_msg)
     {
       backend->data = NULL;
@@ -3579,7 +3580,7 @@ elektron_handshake (struct backend *backend)
     {
       tx_msg = elektron_new_msg (DEVICEUID_REQUEST,
 				 sizeof (DEVICEUID_REQUEST));
-      rx_msg = elektron_tx_and_rx (backend, tx_msg);
+      rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
       if (rx_msg)
 	{
 	  debug_print (1, "UID: %x", *((guint32 *) & rx_msg->data[5]));

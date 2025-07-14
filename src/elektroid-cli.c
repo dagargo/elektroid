@@ -42,7 +42,6 @@
 
 static struct backend backend;
 static struct job_control job_control;
-static struct sysex_transfer sysex_transfer;
 static struct controllable controllable;	//Used for CLI control for operations that do not use job_control or sysex_transfer.
 static gchar *connector, *fs, *op;
 
@@ -167,7 +166,6 @@ cli_list (int argc, gchar *argv[], int *optind)
   const gchar *path;
   struct item_iterator iter;
   const gchar *device_path;
-  gboolean active;
 
   if (*optind == argc)
     {
@@ -189,9 +187,6 @@ cli_list (int argc, gchar *argv[], int *optind)
   RETURN_IF_NULL (fs_ops->readdir);
   RETURN_IF_NULL (fs_ops->print_item);
 
-  active = TRUE;
-  sysex_transfer.active = TRUE;
-
   path = cli_get_path (device_path);
   err = fs_ops->readdir (&backend, &iter, path, NULL);
   if (err)
@@ -199,18 +194,15 @@ cli_list (int argc, gchar *argv[], int *optind)
       return err;
     }
 
-  while (!item_iterator_next (&iter) && active)
+  while (!item_iterator_next (&iter) &&
+	 controllable_is_active (&controllable))
     {
       fs_ops->print_item (&iter, &backend, fs_ops);
-
-      g_mutex_lock (&sysex_transfer.mutex);
-      active = sysex_transfer.active;
-      g_mutex_unlock (&sysex_transfer.mutex);
     }
 
   item_iterator_free (&iter);
 
-  return EXIT_SUCCESS;
+  return controllable_is_active (&controllable) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 static gint
@@ -484,6 +476,7 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
   const gchar *src_path;
   const gchar *device_path;
   struct idata idata;
+  struct sysex_transfer sysex_transfer;
 
   if (*optind == argc)
     {
@@ -528,10 +521,9 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
   else
     {
       sysex_transfer.raw = idata.content;
-      sysex_transfer.active = TRUE;
       sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
 
-      err = backend.upgrade_os (&backend, &sysex_transfer);
+      err = backend.upgrade_os (&backend, &sysex_transfer, &controllable);
       idata_free (&idata);
     }
 
@@ -582,13 +574,9 @@ static gint
 cli_download_dir (const gchar *src_path, const gchar *dst_path)
 {
   gint err;
-  gboolean active;
   struct item_iterator iter;
 
   RETURN_IF_NULL (fs_ops->readdir);
-
-  active = TRUE;
-  sysex_transfer.active = TRUE;
 
   err = fs_ops->readdir (&backend, &iter, src_path, NULL);
   if (err)
@@ -596,7 +584,8 @@ cli_download_dir (const gchar *src_path, const gchar *dst_path)
       return err;
     }
 
-  while (!item_iterator_next (&iter) && active && !err)
+  while (!item_iterator_next (&iter) && controllable_is_active (&controllable)
+	 && !err)
     {
       gchar *rsrc_path;
       gchar *filename = item_get_filename (&iter.item, fs_ops->options);
@@ -628,15 +617,11 @@ cli_download_dir (const gchar *src_path, const gchar *dst_path)
 	}
 
       g_free (rsrc_path);
-
-      g_mutex_lock (&sysex_transfer.mutex);
-      active = sysex_transfer.active;
-      g_mutex_unlock (&sysex_transfer.mutex);
     }
 
   item_iterator_free (&iter);
 
-  return active ? err : -ECANCELED;
+  return controllable_is_active (&controllable) ? err : -ECANCELED;
 }
 
 static gint
@@ -796,6 +781,7 @@ cli_send (int argc, gchar *argv[], int *optind)
   gint err;
   const gchar *device_dst_path, *src_file;
   struct idata idata;
+  struct sysex_transfer sysex_transfer;
 
   if (*optind == argc)
     {
@@ -834,10 +820,9 @@ cli_send (int argc, gchar *argv[], int *optind)
   err = file_load (src_file, &idata, NULL);
   if (!err)
     {
-      sysex_transfer.active = TRUE;
       sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
       sysex_transfer.raw = idata.content;
-      err = backend_tx_sysex (&backend, &sysex_transfer);
+      err = backend_tx_sysex (&backend, &sysex_transfer, &controllable);
       idata_free (&idata);
     }
 
@@ -849,6 +834,7 @@ cli_receive (int argc, gchar *argv[], int *optind)
 {
   gint err;
   const gchar *device_src_path, *dst_file;
+  struct sysex_transfer sysex_transfer;
 
   if (*optind == argc)
     {
@@ -889,7 +875,7 @@ cli_receive (int argc, gchar *argv[], int *optind)
 
   backend_rx_drain (&backend);
   //This doesn't need to be synchronized because the CLI is not multithreaded.
-  err = backend_rx_sysex (&backend, &sysex_transfer);
+  err = backend_rx_sysex (&backend, &sysex_transfer, &controllable);
   if (!err)
     {
       struct idata idata;
@@ -939,10 +925,6 @@ cli_end (int sig)
 {
   controllable_set_active (&controllable, FALSE);
   controllable_set_active (&job_control.controllable, FALSE);
-
-  g_mutex_lock (&sysex_transfer.mutex);
-  sysex_transfer.active = FALSE;
-  g_mutex_unlock (&sysex_transfer.mutex);
 }
 #endif
 

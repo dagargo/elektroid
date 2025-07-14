@@ -96,8 +96,6 @@ enum sysex_transfer_status
 
 struct sysex_transfer
 {
-  gboolean active;
-  GMutex mutex;
   enum sysex_transfer_status status;
   gint timeout;			//Measured in ms. -1 is infinite.
   gint time;
@@ -106,7 +104,8 @@ struct sysex_transfer
   gint err;
 };
 
-typedef gint (*t_sysex_transfer) (struct backend *, struct sysex_transfer *);
+typedef gint (*t_sysex_transfer) (struct backend *, struct sysex_transfer *,
+				  struct controllable * controllable);
 
 struct backend
 {
@@ -152,14 +151,19 @@ ssize_t backend_rx_raw (struct backend *, guint8 *, guint);
 
 ssize_t backend_tx_raw (struct backend *, guint8 *, guint);
 
-gint backend_tx_sysex (struct backend *, struct sysex_transfer *);
+gint backend_tx_sysex (struct backend *backend,
+		       struct sysex_transfer *sysex_transfer,
+		       struct controllable *controllable);
 
-gint backend_rx_sysex (struct backend *, struct sysex_transfer *);
+gint backend_rx_sysex (struct backend *backend,
+		       struct sysex_transfer *sysex_transfer,
+		       struct controllable *controllable);
 
 gint backend_tx (struct backend *, GByteArray *);
 
-gint backend_tx_and_rx_sysex_transfer (struct backend *,
-				       struct sysex_transfer *);
+gint backend_tx_and_rx_sysex_transfer (struct backend *backend,
+				       struct sysex_transfer *sysex_transfer,
+				       struct controllable *controllable);
 
 GByteArray *backend_tx_and_rx_sysex (struct backend *, GByteArray *, gint);
 
@@ -215,9 +219,5 @@ gint backend_init_connector (struct backend *backend,
 			     struct backend_device *device,
 			     const gchar * name,
 			     struct controllable *controllable);
-
-void sysex_transfer_cancel (struct sysex_transfer *sysex_transfer);
-
-gboolean sysex_transfer_is_active (struct sysex_transfer *sysex_transfer);
 
 #endif
