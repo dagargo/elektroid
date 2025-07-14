@@ -129,13 +129,13 @@ progress_window_update_sysex_transfer ()
 
   switch (status)
     {
-    case WAITING:
+    case SYSEX_TRANSFER_STATUS_WAITING:
       text = _("Waiting...");
       break;
-    case SENDING:
+    case SYSEX_TRANSFER_STATUS_SENDING:
       text = _("Sending...");
       break;
-    case RECEIVING:
+    case SYSEX_TRANSFER_STATUS_RECEIVING:
       text = _("Receiving...");
       break;
     default:

@@ -169,7 +169,7 @@ backend_tx_sysex_int (struct backend *backend,
 
   transfer->err = 0;
   transfer->active = TRUE;
-  transfer->status = SENDING;
+  transfer->status = SYSEX_TRANSFER_STATUS_SENDING;
 
   b = transfer->raw->data;
   total = 0;
@@ -205,7 +205,7 @@ backend_tx_sysex_int (struct backend *backend,
     }
 
   transfer->active = FALSE;
-  transfer->status = FINISHED;
+  transfer->status = SYSEX_TRANSFER_STATUS_FINISHED;
 
   return transfer->err;
 }

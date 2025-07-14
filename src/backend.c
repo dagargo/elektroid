@@ -387,7 +387,8 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
       debug_print (6, "Checking timeout (%d ms, %d ms, %s mode)...",
 		   transfer->time, transfer->timeout,
 		   transfer->batch ? "batch" : "single");
-      if (((transfer->batch && transfer->status == RECEIVING)
+      if (((transfer->batch &&
+	    transfer->status == SYSEX_TRANSFER_STATUS_RECEIVING)
 	   || !transfer->batch) && transfer->timeout > -1
 	  && transfer->time >= transfer->timeout)
 	{
@@ -407,7 +408,8 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer)
 	}
       if (rx_len == 0)
 	{
-	  if ((transfer->batch && transfer->status == RECEIVING)
+	  if ((transfer->batch &&
+	       transfer->status == SYSEX_TRANSFER_STATUS_RECEIVING)
 	      || !transfer->batch)
 	    {
 	      transfer->time += BE_POLL_TIMEOUT_MS;
@@ -480,7 +482,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
   transfer->err = 0;
   transfer->time = 0;
   transfer->active = TRUE;
-  transfer->status = WAITING;
+  transfer->status = SYSEX_TRANSFER_STATUS_WAITING;
   transfer->raw = g_byte_array_sized_new (BE_INT_BUF_LEN);
 
   next_check = 0;
@@ -519,7 +521,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer)
 	  debug_print (4, "Reading from internal buffer...");
 	}
 
-      transfer->status = RECEIVING;
+      transfer->status = SYSEX_TRANSFER_STATUS_RECEIVING;
       len = -1;
       b = backend->buffer + next_check;
       for (; next_check < backend->rx_len; next_check++, b++)
@@ -609,7 +611,7 @@ end:
 
     }
   transfer->active = FALSE;
-  transfer->status = FINISHED;
+  transfer->status = SYSEX_TRANSFER_STATUS_FINISHED;
   return transfer->err;
 }
 

@@ -160,7 +160,7 @@ backend_tx_sysex_common_response (GtkDialog *dialog, gint response_id,
 
       g_mutex_init (&data->sysex_transfer.mutex);
       data->sysex_transfer.active = TRUE;
-      data->sysex_transfer.status = SENDING;
+      data->sysex_transfer.status = SYSEX_TRANSFER_STATUS_SENDING;
       data->sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
 
       data->filenames = gtk_file_chooser_get_filenames (chooser);
@@ -365,7 +365,7 @@ backend_rx_sysex_callback (GtkWidget *object, gpointer data)
     g_malloc (sizeof (struct sysex_transfer));
 
   g_mutex_init (&sysex_transfer->mutex);
-  sysex_transfer->status = WAITING;
+  sysex_transfer->status = SYSEX_TRANSFER_STATUS_WAITING;
   sysex_transfer->active = TRUE;
   sysex_transfer->timeout = BE_SYSEX_TIMEOUT_MS;
   sysex_transfer->batch = TRUE;
