@@ -786,7 +786,8 @@ elektron_tx (struct backend *backend, const GByteArray *msg,
   memcpy (msg->data, &aux, sizeof (guint16));
   data->seq++;
 
-  transfer.raw = elektron_msg_to_raw (msg);
+  sysex_transfer_init_tx (&transfer, elektron_msg_to_raw (msg));
+
   res = backend_tx_sysex (backend, &transfer, controllable);
   if (!res)
     {
@@ -795,7 +796,8 @@ elektron_tx (struct backend *backend, const GByteArray *msg,
       g_free (text);
     }
 
-  free_msg (transfer.raw);
+  sysex_transfer_free (&transfer);
+
   return res;
 }
 
@@ -807,8 +809,7 @@ elektron_rx (struct backend *backend, gint timeout,
   GByteArray *msg;
   struct sysex_transfer transfer;
 
-  transfer.timeout = timeout;
-  transfer.batch = FALSE;
+  sysex_transfer_init_rx (&transfer, timeout, FALSE);
 
   while (1)
     {
@@ -830,7 +831,7 @@ elektron_rx (struct backend *backend, gint timeout,
 		       text);
 	  g_free (text);
 	}
-      free_msg (transfer.raw);
+      sysex_transfer_free (&transfer);
     }
 
   msg = elektron_raw_to_msg (transfer.raw);
@@ -841,7 +842,8 @@ elektron_rx (struct backend *backend, gint timeout,
       g_free (text);
     }
 
-  free_msg (transfer.raw);
+  sysex_transfer_free (&transfer);
+
   return msg;
 }
 

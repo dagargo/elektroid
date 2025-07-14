@@ -88,6 +88,7 @@ enum backend_type
 
 enum sysex_transfer_status
 {
+  SYSEX_TRANSFER_STATUS_INIT,
   SYSEX_TRANSFER_STATUS_WAITING,
   SYSEX_TRANSFER_STATUS_SENDING,
   SYSEX_TRANSFER_STATUS_RECEIVING,
@@ -161,6 +162,9 @@ gint backend_rx_sysex (struct backend *backend,
 
 gint backend_tx (struct backend *, GByteArray *);
 
+GByteArray *backend_rx (struct backend *backend, gint timeout,
+			struct controllable *controllable);
+
 gint backend_tx_and_rx_sysex_transfer (struct backend *backend,
 				       struct sysex_transfer *sysex_transfer,
 				       struct controllable *controllable);
@@ -223,5 +227,18 @@ gint backend_init_connector (struct backend *backend,
 enum sysex_transfer_status
 sysex_transfer_get_status (struct sysex_transfer *sysex_transfer,
 			   struct controllable *controllable);
+
+void sysex_transfer_init_tx (struct sysex_transfer *sysex_transfer,
+			     GByteArray * data);
+
+void sysex_transfer_init_rx (struct sysex_transfer *sysex_transfer,
+			     gint timeout, gboolean batch);
+
+void sysex_transfer_init_tx_and_rx (struct sysex_transfer *sysex_transfer,
+				    gint timeout, GByteArray * data);
+
+GByteArray *sysex_transfer_steal (struct sysex_transfer *sysex_transfer);
+
+void sysex_transfer_free (struct sysex_transfer *sysex_transfer);
 
 #endif

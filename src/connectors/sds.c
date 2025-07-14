@@ -270,19 +270,6 @@ sds_get_dump_msg (guint id, guint frames, struct sample_info *sample_info,
   return tx_msg;
 }
 
-static GByteArray *
-sds_rx (struct backend *backend, gint timeout,
-	struct controllable *controllable)
-{
-  struct sysex_transfer transfer;
-  transfer.timeout = timeout;
-  transfer.batch = FALSE;
-  g_mutex_lock (&backend->mutex);
-  backend_rx_sysex (backend, &transfer, controllable);
-  g_mutex_unlock (&backend->mutex);
-  return transfer.raw;
-}
-
 static void
 sds_download_inc_packet (gboolean *first, guint *packet)
 {
@@ -444,11 +431,12 @@ sds_download_try (struct backend *backend, const gchar *path,
 
       g_byte_array_append (tx_msg, SDS_WAIT, sizeof (SDS_WAIT));
       tx_msg->data[10] = (packet) % 0x80;
-      transfer.raw = tx_msg;
-      transfer.timeout = SDS_INCOMPLETE_PACKET_TIMEOUT;	//This is enough to detect incomplete packets.
-      err =
-	backend_tx_and_rx_sysex_transfer (backend, &transfer,
-					  &control->controllable);
+
+      sysex_transfer_init_tx_and_rx (&transfer, SDS_INCOMPLETE_PACKET_TIMEOUT,
+				     tx_msg);
+
+      err = backend_tx_and_rx_sysex_transfer (backend, &transfer,
+					      &control->controllable);
       if (err == -ECANCELED)
 	{
 	  break;
@@ -478,7 +466,7 @@ sds_download_try (struct backend *backend, const gchar *path,
 	}
       else
 	{
-	  rx_msg = transfer.raw;
+	  rx_msg = sysex_transfer_steal (&transfer);
 	}
 
       if (rx_msg->len != SDS_DATA_PACKET_LEN)
@@ -646,7 +634,7 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray *tx_msg,
 	}
 
       free_msg (rx_msg);
-      rx_msg = sds_rx (backend, t, controllable);
+      rx_msg = backend_rx (backend, t, controllable);
       if (!rx_msg)
 	{
 	  return -ENOMSG;

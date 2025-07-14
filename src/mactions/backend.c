@@ -27,7 +27,6 @@
 
 struct backend_tx_sysex_common_data
 {
-  struct sysex_transfer sysex_transfer;
   GSList *filenames;
   struct controllable controllable;
 };
@@ -69,20 +68,19 @@ backend_send_sysex_file_show_error (gpointer user_data)
 }
 
 static gint
-backend_send_sysex_file (struct sysex_transfer *sysex_transfer,
-			 const gchar *filename, t_sysex_transfer f,
+backend_send_sysex_file (const gchar *filename, t_sysex_transfer f,
 			 struct controllable *controllable)
 {
   gint err;
   struct idata idata;
+  struct sysex_transfer sysex_transfer;
 
   err = file_load (filename, &idata, NULL);
   if (!err)
     {
-      sysex_transfer->raw = idata.content;
-      //If the trasfer is too fast, there is not time to cancel it.
-      err = f (remote_browser.backend, sysex_transfer, controllable);
-      idata_free (&idata);
+      sysex_transfer_init_tx (&sysex_transfer, idata_steal (&idata));
+      err = f (remote_browser.backend, &sysex_transfer, controllable);
+      sysex_transfer_free (&sysex_transfer);
     }
   if (err && err != -ECANCELED)
     {
@@ -106,8 +104,8 @@ backend_tx_sysex_files_runner (gpointer user_data)
   filename = data->filenames;
   while (err != -ECANCELED && filename)
     {
-      err = backend_send_sysex_file (&data->sysex_transfer, filename->data,
-				     backend_tx_sysex, &data->controllable);
+      err = backend_send_sysex_file (filename->data, backend_tx_sysex,
+				     &data->controllable);
       filename = filename->next;
       //The device may have sent some messages in response so we skip all these.
       backend_rx_drain (remote_browser.backend);
@@ -121,7 +119,7 @@ backend_upgrade_os_runner (gpointer user_data)
   gint err;
   struct backend_tx_sysex_common_data *data = user_data;
 
-  err = backend_send_sysex_file (&data->sysex_transfer, data->filenames->data,
+  err = backend_send_sysex_file (data->filenames->data,
 				 remote_browser.backend->upgrade_os,
 				 &data->controllable);
   if (err < 0)
@@ -167,8 +165,6 @@ backend_tx_sysex_common_response (GtkDialog *dialog, gint response_id,
 	g_malloc (sizeof (struct backend_tx_sysex_common_data));
 
       controllable_init (&data->controllable);
-
-      data->sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
 
       data->filenames = gtk_file_chooser_get_filenames (chooser);
 
@@ -250,7 +246,8 @@ backend_rx_sysex_consumer_response (GtkDialog *dialog, gint response_id,
 	    }
 	}
 
-      idata.content = data->sysex_transfer.raw;
+      idata_init (&idata, sysex_transfer_steal (&data->sysex_transfer), NULL,
+		  NULL);
 
       err = file_save (filename, &idata, NULL);
       if (err)
@@ -259,11 +256,16 @@ backend_rx_sysex_consumer_response (GtkDialog *dialog, gint response_id,
 				    filename, g_strerror (-err));
 	}
 
+      idata_free (&idata);
       g_free (filename);
+    }
+  else
+    {
+      sysex_transfer_free (&data->sysex_transfer);
     }
 
   gtk_widget_destroy (GTK_WIDGET (dialog));
-  g_byte_array_free (data->sysex_transfer.raw, TRUE);
+
   controllable_clear (&data->controllable);
   g_free (data);
 }
@@ -306,6 +308,7 @@ backend_rx_sysex_consumer (gpointer user_data)
   else
     {
       controllable_clear (&data->controllable);
+      sysex_transfer_free (&data->sysex_transfer);
       g_free (data);
     }
 }
@@ -317,11 +320,7 @@ backend_rx_sysex_runner (gpointer user_data)
   gchar *text;
   struct backend_rx_sysex_data *data = user_data;
 
-  //This needs to be initialized to an error as the cancelation might happend before it's set.
-  data->sysex_transfer.err = -ECANCELED;
-
   //This doesn't need to be synchronized because the GUI doesn't allow concurrent access when receiving SysEx in batch mode.
-
   backend_rx_drain (remote_browser.backend);
 
   err = backend_rx_sysex (remote_browser.backend, &data->sysex_transfer,
@@ -367,9 +366,7 @@ backend_rx_sysex_callback (GtkWidget *object, gpointer user_data)
     g_malloc (sizeof (struct backend_rx_sysex_data));
 
   controllable_init (&data->controllable);
-
-  data->sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
-  data->sysex_transfer.batch = TRUE;
+  sysex_transfer_init_rx (&data->sysex_transfer, BE_SYSEX_TIMEOUT_MS, TRUE);
 
   progress_window_open (backend_rx_sysex_runner, backend_rx_sysex_consumer,
 			backend_rx_sysex_cancel, data,

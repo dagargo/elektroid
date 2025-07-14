@@ -189,11 +189,12 @@ common_data_tx (struct backend *backend, GByteArray *msg,
   gint err = 0;
   struct sysex_transfer transfer;
 
+  sysex_transfer_init_tx (&transfer, msg);
+
   g_mutex_lock (&backend->mutex);
 
   job_control_reset (control, 1);
 
-  transfer.raw = msg;
   err = backend_tx_sysex (backend, &transfer, &control->controllable);
   if (err < 0)
     {
@@ -211,6 +212,7 @@ common_data_tx (struct backend *backend, GByteArray *msg,
 
 cleanup:
   g_mutex_unlock (&backend->mutex);
+  sysex_transfer_steal (&transfer);
   return err;
 }
 

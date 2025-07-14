@@ -75,6 +75,57 @@ sysex_transfer_get_status (struct sysex_transfer *sysex_transfer,
   return status;
 }
 
+static void
+sysex_transfer_init (struct sysex_transfer *sysex_transfer, gint timeout,
+		     GByteArray *data, gboolean batch)
+{
+  sysex_transfer->status = SYSEX_TRANSFER_STATUS_INIT;
+  sysex_transfer->timeout = timeout;
+  sysex_transfer->time = 0;
+  sysex_transfer->batch = batch;
+  sysex_transfer->raw = data;
+  sysex_transfer->err = 0;
+}
+
+void
+sysex_transfer_init_tx (struct sysex_transfer *sysex_transfer,
+			GByteArray *data)
+{
+  sysex_transfer_init (sysex_transfer, -1, data, FALSE);
+}
+
+void
+sysex_transfer_init_rx (struct sysex_transfer *sysex_transfer, gint timeout,
+			gboolean batch)
+{
+  sysex_transfer_init (sysex_transfer, timeout, NULL, batch);
+}
+
+void
+sysex_transfer_init_tx_and_rx (struct sysex_transfer *sysex_transfer,
+			       gint timeout, GByteArray *data)
+{
+  sysex_transfer_init (sysex_transfer, timeout, data, FALSE);
+}
+
+GByteArray *
+sysex_transfer_steal (struct sysex_transfer *sysex_transfer)
+{
+  GByteArray *raw = sysex_transfer->raw;
+  sysex_transfer->raw = NULL;
+  return raw;
+}
+
+void
+sysex_transfer_free (struct sysex_transfer *sysex_transfer)
+{
+  GByteArray *raw = sysex_transfer_steal (sysex_transfer);
+  if (raw)
+    {
+      g_byte_array_free (raw, TRUE);
+    }
+}
+
 gdouble
 backend_get_storage_stats_percent (struct backend_storage_stats *statfs)
 {
@@ -198,12 +249,31 @@ gint
 backend_tx (struct backend *backend, GByteArray *tx_msg)
 {
   struct sysex_transfer transfer;
-  transfer.raw = tx_msg;
+
+  sysex_transfer_init_tx (&transfer, tx_msg);
+
   g_mutex_lock (&backend->mutex);
   backend_tx_sysex (backend, &transfer, NULL);
   g_mutex_unlock (&backend->mutex);
-  free_msg (tx_msg);
+
+  sysex_transfer_free (&transfer);
+
   return transfer.err;
+}
+
+GByteArray *
+backend_rx (struct backend *backend, gint timeout,
+	    struct controllable *controllable)
+{
+  struct sysex_transfer transfer;
+
+  sysex_transfer_init_rx (&transfer, timeout, FALSE);
+
+  g_mutex_lock (&backend->mutex);
+  backend_rx_sysex (backend, &transfer, controllable);
+  g_mutex_unlock (&backend->mutex);
+
+  return sysex_transfer_steal (&transfer);
 }
 
 //Synchronized
@@ -213,17 +283,12 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
 				  struct sysex_transfer *transfer,
 				  struct controllable *controllable)
 {
-
-  transfer->batch = FALSE;
-  transfer->err = 0;
-
   g_mutex_lock (&backend->mutex);
 
   if (transfer->raw)
     {
       backend_tx_sysex (backend, transfer, controllable);
-      free_msg (transfer->raw);
-      transfer->raw = NULL;
+      sysex_transfer_free (transfer);
     }
 
   if (!transfer->err)
@@ -244,10 +309,10 @@ backend_tx_and_rx_sysex (struct backend *backend, GByteArray *tx_msg,
 			 gint timeout)
 {
   struct sysex_transfer transfer;
-  transfer.raw = tx_msg;
-  transfer.timeout = timeout == -1 ? BE_SYSEX_TIMEOUT_MS : timeout;
+  gint t = timeout == -1 ? BE_SYSEX_TIMEOUT_MS : timeout;
+  sysex_transfer_init_tx_and_rx (&transfer, t, tx_msg);
   backend_tx_and_rx_sysex_transfer (backend, &transfer, NULL);
-  return transfer.raw;
+  return sysex_transfer_steal (&transfer);
 }
 
 void
@@ -661,15 +726,15 @@ void
 backend_rx_drain (struct backend *backend)
 {
   struct sysex_transfer transfer;
-  transfer.timeout = 1000;
-  transfer.batch = FALSE;
+
+  sysex_transfer_init_rx (&transfer, 1000, FALSE);
 
   debug_print (2, "Draining buffers...");
   backend->rx_len = 0;
   backend_rx_drain_int (backend);
   while (!backend_rx_sysex (backend, &transfer, NULL))
     {
-      free_msg (transfer.raw);
+      sysex_transfer_free (&transfer);
     }
 }
 

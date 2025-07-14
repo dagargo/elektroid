@@ -4,7 +4,7 @@
 [ $($ecli phatty-preset-ls $TEST_DEVICE:/ | wc -l) -ne 2 ] && exit 1
 
 #panel id
-$ecli phatty-preset-dl $TEST_DEVICE:/256 && exit 1
+$ecli phatty-preset-dl $TEST_DEVICE:/256
 err=$?
 rm *.syx
 [ $err -ne 0 ] && exit $err

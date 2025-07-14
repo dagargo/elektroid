@@ -520,11 +520,9 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
     }
   else
     {
-      sysex_transfer.raw = idata.content;
-      sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
-
+      sysex_transfer_init_tx (&sysex_transfer, idata_steal (&idata));
       err = backend.upgrade_os (&backend, &sysex_transfer, &controllable);
-      idata_free (&idata);
+      sysex_transfer_free (&sysex_transfer);
     }
 
   return err;
@@ -818,12 +816,15 @@ cli_send (int argc, gchar *argv[], int *optind)
     }
 
   err = file_load (src_file, &idata, NULL);
-  if (!err)
+  if (err)
     {
-      sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
-      sysex_transfer.raw = idata.content;
+      error_print ("Error while loading '%s'.", src_file);
+    }
+  else
+    {
+      sysex_transfer_init_tx (&sysex_transfer, idata_steal (&idata));
       err = backend_tx_sysex (&backend, &sysex_transfer, &controllable);
-      idata_free (&idata);
+      sysex_transfer_free (&sysex_transfer);
     }
 
   return err;
@@ -834,6 +835,7 @@ cli_receive (int argc, gchar *argv[], int *optind)
 {
   gint err;
   const gchar *device_src_path, *dst_file;
+  struct idata idata;
   struct sysex_transfer sysex_transfer;
 
   if (*optind == argc)
@@ -870,20 +872,22 @@ cli_receive (int argc, gchar *argv[], int *optind)
       return EXIT_FAILURE;
     }
 
-  sysex_transfer.timeout = BE_SYSEX_TIMEOUT_MS;
-  sysex_transfer.batch = TRUE;
-
   backend_rx_drain (&backend);
+
   //This doesn't need to be synchronized because the CLI is not multithreaded.
+  sysex_transfer_init_rx (&sysex_transfer, BE_SYSEX_TIMEOUT_MS, TRUE);
   err = backend_rx_sysex (&backend, &sysex_transfer, &controllable);
-  if (!err)
+  if (err)
     {
-      struct idata idata;
-      idata.content = sysex_transfer.raw;
+      error_print ("Error while downloading.");
+    }
+  else
+    {
+      idata_init (&idata, sysex_transfer_steal (&sysex_transfer), NULL, NULL);
       err = file_save (dst_file, &idata, NULL);
+      idata_free (&idata);
     }
 
-  free_msg (sysex_transfer.raw);
   return err;
 }
 

@@ -342,15 +342,16 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
 			 struct controllable *controllable)
 {
   struct sysex_transfer transfer;
+  GByteArray *msg;
   guint8 steps = 0;
   gchar *token = *tokens;
   gint err;
   guint8 *step;
 
-  transfer.raw = microbrute_set_sequence_request_msg (backend, seqnum,
-						      offset);
+  msg = microbrute_set_sequence_request_msg (backend, seqnum, offset);
 
-  step = &transfer.raw->data[MICROBRUTE_SEQ_RPLY_DATA_POS];
+
+  step = &msg->data[MICROBRUTE_SEQ_RPLY_DATA_POS];
   while (steps < 32 && *pos < total)
     {
       if (*token < 0x20)
@@ -399,11 +400,13 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
       steps++;
       step++;
     }
-  transfer.raw->data[MICROBRUTE_SEQ_RPLY_LEN_POS] = steps;
+  msg->data[MICROBRUTE_SEQ_RPLY_LEN_POS] = steps;
+
+  sysex_transfer_init_tx (&transfer, msg);
 
   //This doesn't need synchronized access as the caller provices this already.
   err = backend_tx_sysex (backend, &transfer, controllable);
-  free_msg (transfer.raw);
+  sysex_transfer_free (&transfer);
 
   *tokens = token;
 
@@ -581,12 +584,14 @@ microbrute_set_parameter (struct backend *backend,
 			  guint8 channel, gboolean sysex)
 {
   gint err;
+
   if (sysex)
     {
       struct sysex_transfer transfer;
-      transfer.raw = microbrute_set_parameter_msg (backend, param, value);
+      GByteArray *msg = microbrute_set_parameter_msg (backend, param, value);
+      sysex_transfer_init_tx (&transfer, msg);
       err = backend_tx_sysex (backend, &transfer, NULL);
-      free_msg (transfer.raw);
+      sysex_transfer_free (&transfer);
     }
   else
     {

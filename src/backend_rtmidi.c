@@ -174,10 +174,16 @@ backend_tx_sysex_int (struct backend *backend,
 ssize_t
 backend_tx_raw (struct backend *backend, guint8 *data, guint len)
 {
+  GByteArray *msg;
   struct sysex_transfer transfer;
-  transfer.raw = g_byte_array_sized_new (len);
-  g_byte_array_append (transfer.raw, data, len);
+
+  msg = g_byte_array_sized_new (len);
+  g_byte_array_append (msg, data, len);
+
+  sysex_transfer_init_tx (&transfer, msg);
   backend_tx_sysex_int (backend, &transfer, NULL);
+  sysex_transfer_free (&transfer);
+
   return transfer.err ? transfer.err : len;
 }
 
