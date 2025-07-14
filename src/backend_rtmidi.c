@@ -35,6 +35,11 @@
 #define INPUT_OUTPUT_SEPARATOR " :: "
 
 void
+sysex_transfer_set_status (struct sysex_transfer *sysex_transfer,
+			   struct controllable *controllable,
+			   enum sysex_transfer_status status);
+
+void
 backend_destroy_int (struct backend *backend)
 {
   if (backend->inputp)
@@ -145,7 +150,8 @@ backend_tx_sysex_int (struct backend *backend,
 		      struct controllable *controllable)
 {
   transfer->err = 0;
-  transfer->status = SYSEX_TRANSFER_STATUS_SENDING;
+  sysex_transfer_set_status (transfer, controllable,
+			     SYSEX_TRANSFER_STATUS_SENDING);
 
   rtmidi_out_send_message (backend->outputp, transfer->raw->data,
 			   transfer->raw->len);
@@ -159,7 +165,8 @@ backend_tx_sysex_int (struct backend *backend,
       g_free (text);
     }
 
-  transfer->status = SYSEX_TRANSFER_STATUS_FINISHED;
+  sysex_transfer_set_status (transfer, controllable,
+			     SYSEX_TRANSFER_STATUS_FINISHED);
 
   return transfer->err;
 }

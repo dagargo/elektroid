@@ -24,6 +24,11 @@
 #define BE_DEVICE_NAME_SUB "hw:%d,%d,%d"
 
 void
+sysex_transfer_set_status (struct sysex_transfer *sysex_transfer,
+			   struct controllable *controllable,
+			   enum sysex_transfer_status status);
+
+void
 backend_destroy_int (struct backend *backend)
 {
   gint err;
@@ -169,7 +174,8 @@ backend_tx_sysex_int (struct backend *backend,
   guchar *b;
 
   transfer->err = 0;
-  transfer->status = SYSEX_TRANSFER_STATUS_SENDING;
+  sysex_transfer_set_status (transfer, controllable,
+			     SYSEX_TRANSFER_STATUS_SENDING);
 
   b = transfer->raw->data;
   total = 0;
@@ -205,7 +211,8 @@ backend_tx_sysex_int (struct backend *backend,
       g_free (text);
     }
 
-  transfer->status = SYSEX_TRANSFER_STATUS_FINISHED;
+  sysex_transfer_set_status (transfer, controllable,
+			     SYSEX_TRANSFER_STATUS_FINISHED);
 
   return transfer->err;
 }

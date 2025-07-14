@@ -123,9 +123,7 @@ progress_window_update_sysex_transfer ()
   enum sysex_transfer_status status;
   struct sysex_transfer *sysex_transfer = data;
 
-  g_mutex_lock (&controllable.mutex);
-  status = sysex_transfer->status;
-  g_mutex_unlock (&controllable.mutex);
+  status = sysex_transfer_get_status (sysex_transfer, &controllable);
 
   switch (status)
     {

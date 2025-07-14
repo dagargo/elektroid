@@ -47,6 +47,34 @@ void backend_fill_devices_array (GArray *);
 static const guint8 BE_MIDI_IDENTITY_REQUEST[] =
   { 0xf0, 0x7e, 0x7f, 6, 1, 0xf7 };
 
+void
+sysex_transfer_set_status (struct sysex_transfer *sysex_transfer,
+			   struct controllable *controllable,
+			   enum sysex_transfer_status status)
+{
+  if (controllable)
+    {
+      g_mutex_lock (&controllable->mutex);
+      sysex_transfer->status = status;
+      g_mutex_unlock (&controllable->mutex);
+    }
+  else
+    {
+      sysex_transfer->status = status;
+    }
+}
+
+enum sysex_transfer_status
+sysex_transfer_get_status (struct sysex_transfer *sysex_transfer,
+			   struct controllable *controllable)
+{
+  enum sysex_transfer_status status;
+  g_mutex_lock (&controllable->mutex);
+  status = sysex_transfer->status;
+  g_mutex_unlock (&controllable->mutex);
+  return status;
+}
+
 gdouble
 backend_get_storage_stats_percent (struct backend_storage_stats *statfs)
 {
@@ -490,8 +518,9 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer,
 
   transfer->err = 0;
   transfer->time = 0;
-  transfer->status = SYSEX_TRANSFER_STATUS_WAITING;
   transfer->raw = g_byte_array_sized_new (BE_INT_BUF_LEN);
+  sysex_transfer_set_status (transfer, controllable,
+			     SYSEX_TRANSFER_STATUS_WAITING);
 
   next_check = 0;
   while (1)
@@ -529,7 +558,8 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer,
 	  debug_print (4, "Reading from internal buffer...");
 	}
 
-      transfer->status = SYSEX_TRANSFER_STATUS_RECEIVING;
+      sysex_transfer_set_status (transfer, controllable,
+				 SYSEX_TRANSFER_STATUS_RECEIVING);
       len = -1;
       b = backend->buffer + next_check;
       for (; next_check < backend->rx_len; next_check++, b++)
@@ -618,7 +648,9 @@ end:
 	}
 
     }
-  transfer->status = SYSEX_TRANSFER_STATUS_FINISHED;
+
+  sysex_transfer_set_status (transfer, controllable,
+			     SYSEX_TRANSFER_STATUS_FINISHED);
 
   return transfer->err;
 }

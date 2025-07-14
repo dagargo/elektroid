@@ -220,4 +220,8 @@ gint backend_init_connector (struct backend *backend,
 			     const gchar * name,
 			     struct controllable *controllable);
 
+enum sysex_transfer_status
+sysex_transfer_get_status (struct sysex_transfer *sysex_transfer,
+			   struct controllable *controllable);
+
 #endif
