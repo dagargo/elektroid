@@ -3,7 +3,7 @@
 #include "../src/connector.h"
 
 void
-test_item_iterator_is_dir_or_matches_extensions ()
+test_item_iterator_is_dir_or_matches_exts ()
 {
   const gchar *exts0[] = { NULL };
   const gchar *exts1[] = { "ext1", NULL };
@@ -14,16 +14,13 @@ test_item_iterator_is_dir_or_matches_extensions ()
   printf ("\n");
 
   iter.item.type = ITEM_TYPE_DIR;
-  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, NULL),
-		   TRUE);
-  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, exts0),
-		   TRUE);
+  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_exts (&iter, NULL), TRUE);
+  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_exts (&iter, exts0), TRUE);
 
   iter.item.type = ITEM_TYPE_FILE;
   snprintf (iter.item.name, LABEL_MAX, "%s", "file.ext1");
-  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, exts1),
-		   TRUE);
-  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_extensions (&iter, exts2),
+  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_exts (&iter, exts1), TRUE);
+  CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_exts (&iter, exts2),
 		   FALSE);
 }
 
@@ -44,8 +41,8 @@ main (gint argc, gchar *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "item_iterator_is_dir_or_matches_extensions",
-		    test_item_iterator_is_dir_or_matches_extensions))
+  if (!CU_add_test (suite, "item_iterator_is_dir_or_matches_exts",
+		    test_item_iterator_is_dir_or_matches_exts))
     {
       goto cleanup;
     }

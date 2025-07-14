@@ -192,10 +192,9 @@ gint item_iterator_next (struct item_iterator *iter);
 
 void item_iterator_free (struct item_iterator *iter);
 
-gboolean item_iterator_is_dir_or_matches_extensions (struct item_iterator
-						     *iter,
-						     const gchar **
-						     extensions);
+gboolean item_iterator_is_dir_or_matches_exts (struct item_iterator
+					       *iter,
+					       const gchar ** extensions);
 
 /**
  * Returns the filename for an item, which is a string that uniquely idenfifies an item.
