@@ -39,7 +39,6 @@ static progress_window_cancel_cb cancel_cb;
 static gpointer data;
 static gint64 start;
 static gdouble fraction;
-static const gchar *label_text;
 static enum progress_type type;
 
 void
@@ -50,12 +49,19 @@ progress_window_set_fraction (gdouble fraction_)
   g_mutex_unlock (&controllable.mutex);
 }
 
-void
-progress_window_set_label (const gchar *label_text_)
+static gboolean
+progress_window_set_label_cb (gpointer data)
 {
-  g_mutex_lock (&controllable.mutex);
-  label_text = label_text_;
-  g_mutex_unlock (&controllable.mutex);
+  gchar *label_text = data;
+  gtk_label_set_text (GTK_LABEL (label), label_text);
+  g_free (label_text);
+  return FALSE;
+}
+
+void
+progress_window_set_label (const gchar *label_text)
+{
+  g_idle_add (progress_window_set_label_cb, strdup (label_text));
 }
 
 void
@@ -139,7 +145,8 @@ progress_window_update_sysex_transfer ()
     default:
       text = "";
     }
-  progress_window_set_label (text);
+
+  gtk_label_set_text (GTK_LABEL (label), text);
 
   progress_window_update_pulse ();
 }
@@ -197,7 +204,6 @@ static gboolean
 progress_window_run_refresh ()
 {
   gboolean active_;
-  const gchar *label_text_;
   gdouble fraction_;
 
   if (type == PROGRESS_TYPE_PULSE)
@@ -211,11 +217,8 @@ progress_window_run_refresh ()
 
   g_mutex_lock (&controllable.mutex);
   active_ = controllable.active;
-  label_text_ = label_text;
   fraction_ = fraction;
   g_mutex_unlock (&controllable.mutex);
-
-  gtk_label_set_text (GTK_LABEL (label), label_text_);
 
   if (type == PROGRESS_TYPE_NO_AUTO)
     {
@@ -262,7 +265,7 @@ progress_window_open (progress_window_runner runner_,
 		      progress_window_consumer consumer_,
 		      progress_window_cancel_cb cancel_cb_,
 		      gpointer data_, enum progress_type type_,
-		      const gchar *name, const gchar *label_text_,
+		      const gchar *name, const gchar *label_text,
 		      gboolean cancellable)
 {
   runner = runner_;
@@ -270,7 +273,6 @@ progress_window_open (progress_window_runner runner_,
   cancel_cb = cancel_cb_;
   data = data_;
   type = type_;
-  label_text = label_text_;
   start = g_get_monotonic_time ();
 
   controllable.active = TRUE;
@@ -278,6 +280,7 @@ progress_window_open (progress_window_runner runner_,
   progress_window_start_refresh ();
 
   gtk_window_set_title (window, name);
+  gtk_label_set_text (GTK_LABEL (label), label_text);
   gtk_widget_set_visible (cancel_button, cancellable);
   gtk_widget_set_visible (GTK_WIDGET (window), TRUE);
 
