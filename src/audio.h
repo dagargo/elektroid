@@ -124,8 +124,6 @@ void audio_prepare (enum audio_status);
 
 void audio_delete_range (guint32, guint32);
 
-guint audio_detect_start ();
-
 const gchar *audio_name ();
 
 const gchar *audio_version ();

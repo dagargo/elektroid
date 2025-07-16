@@ -67,6 +67,7 @@ autosampler_runner (gpointer user_data)
   struct autosampler_data *data = user_data;
   const gchar *note;
   gint s, total, i;
+  guint32 start;
   GValue value = G_VALUE_INIT;
   gdouble fract;
   gchar filename[LABEL_MAX], *path;
@@ -95,15 +96,13 @@ autosampler_runner (gpointer user_data)
       backend_send_note_off (remote_browser.backend, data->channel, i,
 			     data->velocity);
       usleep (data->release * 1000000);
+
       audio_stop_recording ();
 
       sample_info = audio.sample.info;
       sample_info->midi_note = i;
       sample_info->midi_fraction = cents_to_midi_fraction (data->tuning);
 
-      //Remove the heading silent frames.
-      guint start = audio_detect_start ();
-      audio_delete_range (0, start);
       //Cut off the frames after the requested time.
       start = (data->press + data->release) * audio.rate;
       guint len = sample_info->frames - start;
