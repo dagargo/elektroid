@@ -24,7 +24,9 @@
 
 struct audio audio;
 
-#define FRAMES_TO_MONITOR 10000
+#define AUDIO_FRAMES_TO_MONITOR 10000
+#define AUDIO_SILENCE_THRESHOLD 0.01
+#define AUDIO_SAMPLE_SIZE (audio.float_mode ? sizeof(gfloat) : sizeof(gint16))
 
 void audio_init_int ();
 void audio_destroy_int ();
@@ -338,7 +340,7 @@ audio_read_from_input (void *buffer, gint frames)
     }
 
   monitor_frames += frames;
-  if (audio.monitor && monitor_frames >= FRAMES_TO_MONITOR)
+  if (audio.monitor && monitor_frames >= AUDIO_FRAMES_TO_MONITOR)
     {
       if (audio.float_mode)
 	{
@@ -349,7 +351,7 @@ audio_read_from_input (void *buffer, gint frames)
 	  audio.monitor (audio.monitor_data,
 			 monitor_level / (gdouble) SHRT_MAX);
 	}
-      monitor_frames -= FRAMES_TO_MONITOR;
+      monitor_frames -= AUDIO_FRAMES_TO_MONITOR;
       monitor_level = 0;
     }
   g_mutex_unlock (&audio.control.controllable.mutex);
@@ -459,46 +461,87 @@ audio_prepare (enum audio_status status)
 guint
 audio_detect_start ()
 {
-  guint start_frame = 0;
+  guint32 start_frame = 0;
+  guint8 *data, *prev_data;
   struct sample_info *sample_info = audio.sample.info;
-  gint16 *data = (gint16 *) audio.sample.content->data;
 
-//Searching for audio data...
-  for (gint i = 0; i < sample_info->frames; i++)
+//Search audio data
+  data = audio.sample.content->data;
+  for (guint32 i = 0; i < sample_info->frames; i++)
     {
-      for (gint j = 0; j < sample_info->channels; j++, data++)
+      for (gint j = 0; j < sample_info->channels; j++)
 	{
-	  if (!start_frame && abs (*data) >= SHRT_MAX * 0.01)
+	  gboolean above_threshold;
+	  if (audio.float_mode)
+	    {
+	      gfloat v = *((gfloat *) data);
+	      above_threshold = fabsf (v) >= AUDIO_SILENCE_THRESHOLD;
+	    }
+	  else
+	    {
+	      gint16 v = *((gint16 *) data);
+	      above_threshold =
+		fabsf (v) >= SHRT_MAX * AUDIO_SILENCE_THRESHOLD;
+	    }
+	  if (above_threshold)
 	    {
 	      start_frame = i;
-	      data -= j + 1;
-	      goto search_last_zero;
+	      debug_print (1, "Detected signal at %d", start_frame);
+	      goto search_previous_zero;
 	    }
+	  data += AUDIO_SAMPLE_SIZE;
 	}
     }
 
-search_last_zero:
-  for (gint i = start_frame - 1; i >= 1; i--)
+search_previous_zero:
+  data = audio.sample.content->data +
+    start_frame * SAMPLE_INFO_FRAME_SIZE (sample_info);
+  prev_data = data - SAMPLE_INFO_FRAME_SIZE (sample_info);
+  for (guint32 i = start_frame; i >= 1; i--)
     {
-      for (gint j = 0; j < sample_info->channels; j++, data--)
+      for (gint j = 0; j < sample_info->channels; j++)
 	{
-	  gint16 curr = *data;
-	  gint16 prev = *(data - sample_info->channels);
+	  gfloat curr, prev;
+	  if (audio.float_mode)
+	    {
+	      curr = *((gfloat *) data);
+	      prev = *((gfloat *) prev_data);
+	    }
+	  else
+	    {
+	      curr = *((gint16 *) data);
+	      prev = *((gint16 *) prev_data);
+	    }
 	  if ((curr > 0 && prev < 0) || (curr < 0 && prev > 0))
 	    {
 	      start_frame = i - 1;
 	      goto end;
 	    }
+	  data += AUDIO_SAMPLE_SIZE;
+	  prev_data += AUDIO_SAMPLE_SIZE;
 	}
+      data -= SAMPLE_INFO_FRAME_SIZE (sample_info);
+      prev_data -= SAMPLE_INFO_FRAME_SIZE (sample_info);
     }
 
 end:
-  data = (gint16 *) & audio.sample.content->data[start_frame];
-  for (gint j = 0; j < sample_info->channels; j++, data++)
+  data = audio.sample.content->data +
+    start_frame * SAMPLE_INFO_FRAME_SIZE (sample_info);
+  for (gint j = 0; j < sample_info->channels; j++)
     {
-      *data = 0;
+      if (audio.float_mode)
+	{
+	  *((gfloat *) data) = 0;
+	}
+      else
+	{
+	  *((gint16 *) data) = 0;
+	}
+      data += AUDIO_SAMPLE_SIZE;
     }
+
   debug_print (1, "Detected start at frame %d", start_frame);
+
   return start_frame;
 }
 
