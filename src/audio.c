@@ -247,6 +247,7 @@ end:
 void
 audio_read_from_input (void *buffer, gint frames)
 {
+  gdouble v;
   static gint monitor_frames = 0;
   static gdouble monitor_level = 0;
   guint8 *data;
@@ -275,7 +276,6 @@ audio_read_from_input (void *buffer, gint frames)
       data = buffer;
       for (gint i = 0; i < recording_frames * 2; i++)
 	{
-	  gdouble v;
 	  if (audio.float_mode)
 	    {
 	      v = *((gfloat *) data);
@@ -308,7 +308,6 @@ audio_read_from_input (void *buffer, gint frames)
 	}
       for (gint i = 0; i < recording_frames; i++)
 	{
-	  gdouble v;
 	  if (audio.float_mode)
 	    {
 	      gfloat s = *((gfloat *) data);
@@ -322,7 +321,7 @@ audio_read_from_input (void *buffer, gint frames)
 	    }
 	  else
 	    {
-	      gfloat s = *((gint16 *) data);
+	      gint16 s = *((gint16 *) data);
 	      data += sizeof (gint16) * 2;
 	      v = s;
 	      if (record)
@@ -595,16 +594,14 @@ audio_delete_range (guint32 start, guint32 length)
 static void
 audio_normalize ()
 {
-  gdouble ratio, ratiop, ration, maxp = 0, minn = 0;
-  void *data;
-  guint samples =
-    audio.sample.content->len / SAMPLE_SIZE (sample_get_internal_format ());
+  guint8 *data;
+  gdouble v, ratio, ratiop, ration, maxp = 0, minn = 0;
+  struct sample_info *sample_info = audio.sample.info;
+  guint32 samples = sample_info->frames * sample_info->channels;
 
   data = audio.sample.content->data;
   for (gint i = 0; i < samples; i++)
     {
-      gdouble v;
-
       if (audio.float_mode)
 	{
 	  v = *((gfloat *) data);
