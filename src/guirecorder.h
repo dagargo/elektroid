@@ -35,17 +35,19 @@ struct guirecorder
 {
   GtkWidget *channels_combo;
   GtkListStore *channels_list_store;
-  GtkLevelBar *monitor_levelbar;
-  gdouble level;
+  GtkLevelBar *monitor_levelbar_l;
+  GtkLevelBar *monitor_levelbar_r;
+  gdouble level_l;
+  gdouble level_r;
 };
 
-void guirecorder_monitor_notifier (void *, gdouble);
+void guirecorder_monitor_notifier (void *guirecorder, gdouble l, gdouble r);
 
 guint guirecorder_get_channel_mask (struct guirecorder *guirecorder);
 
 void guirecorder_set_channels_masks (struct guirecorder *guirecorder,
 				     guint32);
 
-void guirecorder_channels_changed (GtkWidget *, gpointer);
+void guirecorder_channels_changed (GtkWidget * widget, gpointer user_data);
 
 #endif

@@ -24,7 +24,7 @@
 
 struct audio audio;
 
-#define AUDIO_FRAMES_TO_MONITOR 10000
+#define AUDIO_FRAMES_TO_MONITOR (audio.rate / 10)
 #define AUDIO_SILENCE_THRESHOLD 0.01
 #define AUDIO_SAMPLE_SIZE (audio.float_mode ? sizeof(gfloat) : sizeof(gint16))
 
@@ -259,13 +259,13 @@ end:
 void
 audio_read_from_input (void *buffer, gint frames)
 {
-  gdouble v;
-  guint8 *data;
+  gboolean last;
+  guint8 *src, *dst;
+  gint16 ls16, rs16;
+  gfloat lm, rm, lf32, rf32;
   struct sample_info *sample_info;
   static gint monitor_frames = 0;
-  static gdouble monitor_level = 0;
-  guint recorded_frames, remaining_frames, recording_frames, bytes_per_frame,
-    buffer_size;
+  guint recorded_frames, remaining_frames, recording_frames, bytes_per_frame;
   guint channels =
     (audio.record_options & RECORD_STEREO) == RECORD_STEREO ? 2 : 1;
 
@@ -279,86 +279,91 @@ audio_read_from_input (void *buffer, gint frames)
       bytes_per_frame = FRAME_SIZE (channels, sample_get_internal_format ());
       recorded_frames = audio.sample.content->len / bytes_per_frame;
       remaining_frames = sample_info->frames - recorded_frames;
-      recording_frames =
-	remaining_frames > frames ? frames : remaining_frames;
-      buffer_size = recording_frames * bytes_per_frame;
+      if (remaining_frames <= frames)
+	{
+	  last = TRUE;
+	  recording_frames = remaining_frames;
+	}
+      else
+	{
+	  last = FALSE;
+	  recording_frames = frames;
+	}
+
+      dst = audio.sample.content->data + audio.sample.content->len;
+      audio.sample.content->len += recording_frames * bytes_per_frame;
     }
   else
     {
       debug_print (2, "Reading %d frames (monitoring)...", frames);
 
-      buffer_size = 0;
       recording_frames = frames;
+      dst = NULL;
+      last = FALSE;
     }
 
-  if (channels == 2)
+  src = buffer;
+  for (gint i = 0; i < recording_frames; i++)
     {
-      if (audio_is_recording (audio.record_options))
+      if (audio.float_mode)
 	{
-	  g_byte_array_append (audio.sample.content, buffer, buffer_size);
-	}
-      data = buffer;
-      for (gint i = 0; i < recording_frames * 2; i++)
-	{
-	  if (audio.float_mode)
-	    {
-	      v = *((gfloat *) data);
-	      data += sizeof (gfloat);
-	    }
-	  else
-	    {
-	      v = *((gint16 *) data);
-	      data += sizeof (gint16);
-	    }
-	  if (v > monitor_level)
-	    {
-	      monitor_level = v;
-	    }
-	}
-    }
-  else if (channels == 1)
-    {
-      data = buffer;
-      if (audio.record_options & RECORD_RIGHT)
-	{
-	  if (audio.float_mode)
-	    {
-	      data += sizeof (gfloat);
-	    }
-	  else
-	    {
-	      data += sizeof (gint16);
-	    }
-	}
-      for (gint i = 0; i < recording_frames; i++)
-	{
-	  if (audio.float_mode)
-	    {
-	      gfloat s = *((gfloat *) data);
-	      data += sizeof (gfloat) * 2;
-	      v = s;
-	      if (audio_is_recording (audio.record_options))
-		{
-		  g_byte_array_append (audio.sample.content, (guint8 *) & s,
-				       sizeof (gfloat));
-		}
-	    }
-	  else
-	    {
-	      gint16 s = *((gint16 *) data);
-	      data += sizeof (gint16) * 2;
-	      v = s;
-	      if (audio_is_recording (audio.record_options))
-		{
-		  g_byte_array_append (audio.sample.content, (guint8 *) & s,
-				       sizeof (gint16));
-		}
-	    }
+	  lf32 = *((gfloat *) src);
+	  src += sizeof (gfloat);
 
-	  if (v > monitor_level)
+	  rf32 = *((gfloat *) src);
+	  src += sizeof (gfloat);
+
+	  lm = lf32;
+	  rm = rf32;
+
+	  if (audio_is_recording (audio.record_options))
 	    {
-	      monitor_level = v;
+	      if (audio.record_options & RECORD_LEFT)
+		{
+		  *((gfloat *) dst) = lf32;
+		  dst += sizeof (gfloat);
+		}
+	      if (audio.record_options & RECORD_RIGHT)
+		{
+		  *((gfloat *) dst) = rf32;
+		  dst += sizeof (gfloat);
+		}
 	    }
+	}
+      else
+	{
+	  ls16 = *((gint16 *) src);
+	  src += sizeof (gint16);
+
+	  rs16 = *((gint16 *) src);
+	  src += sizeof (gint16);
+
+	  lm = ls16;
+	  rm = rs16;
+
+	  if (audio_is_recording (audio.record_options))
+	    {
+	      if (audio.record_options & RECORD_LEFT)
+		{
+		  *((gint16 *) dst) = ls16;
+		  dst += sizeof (gint16);
+		}
+	      if (audio.record_options & RECORD_RIGHT)
+		{
+		  *((gint16 *) dst) = rs16;
+		  dst += sizeof (gint16);
+		}
+	    }
+	}
+
+      if (lm > audio.monitor_level_l)
+	{
+	  audio.monitor_level_l = lm;
+	}
+
+      if (rm > audio.monitor_level_l)
+	{
+	  audio.monitor_level_r = rm;
 	}
     }
 
@@ -367,19 +372,22 @@ audio_read_from_input (void *buffer, gint frames)
     {
       if (audio.float_mode)
 	{
-	  audio.monitor (audio.monitor_data, monitor_level);
+	  audio.monitor (audio.monitor_data, audio.monitor_level_l,
+			 audio.monitor_level_r);
 	}
       else
 	{
 	  audio.monitor (audio.monitor_data,
-			 monitor_level / (gdouble) SHRT_MAX);
+			 -audio.monitor_level_l / (gdouble) SHRT_MIN,
+			 -audio.monitor_level_r / (gdouble) SHRT_MIN);
 	}
       monitor_frames -= AUDIO_FRAMES_TO_MONITOR;
-      monitor_level = 0;
+      audio.monitor_level_l = 0;
+      audio.monitor_level_r = 0;
     }
   g_mutex_unlock (&audio.control.controllable.mutex);
 
-  if (recording_frames < frames)
+  if (last)
     {
       audio_stop_recording (audio);
     }
@@ -387,8 +395,7 @@ audio_read_from_input (void *buffer, gint frames)
 
 void
 audio_reset_record_buffer (guint record_options,
-			   void (*monitor) (void *, gdouble),
-			   void *monitor_data)
+			   audio_monitor_notifier monitor, void *monitor_data)
 {
   guint size;
   GByteArray *content;
@@ -425,6 +432,8 @@ audio_reset_record_buffer (guint record_options,
   audio.record_options = record_options;
   audio.monitor = monitor;
   audio.monitor_data = monitor_data;
+  audio.monitor_level_l = 0;
+  audio.monitor_level_r = 0;
   g_mutex_unlock (&audio.control.controllable.mutex);
 }
 
@@ -722,7 +731,7 @@ audio_finish_recording ()
     }
   if (audio.monitor)
     {
-      audio.monitor (audio.monitor_data, 0.0);
+      audio.monitor (audio.monitor_data, 0, 0);
     }
   g_mutex_unlock (&audio.control.controllable.mutex);
 }

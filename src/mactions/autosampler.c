@@ -28,8 +28,6 @@
 #include "progress_window.h"
 #include "sample.h"
 
-extern GtkWindow *main_window;
-
 static struct guirecorder guirecorder;
 
 static GtkWindow *window;
@@ -250,9 +248,12 @@ autosampler_init (GtkBuilder *builder)
   guirecorder.channels_list_store =
     GTK_LIST_STORE (gtk_builder_get_object
 		    (builder, "autosampler_window_channels_list_store"));
-  guirecorder.monitor_levelbar =
+  guirecorder.monitor_levelbar_l =
     GTK_LEVEL_BAR (gtk_builder_get_object
-		   (builder, "autosampler_window_monitor_levelbar"));
+		   (builder, "autosampler_window_monitor_levelbar_l"));
+  guirecorder.monitor_levelbar_r =
+    GTK_LEVEL_BAR (gtk_builder_get_object
+		   (builder, "autosampler_window_monitor_levelbar_r"));
 
   channel_spin =
     GTK_WIDGET (gtk_builder_get_object

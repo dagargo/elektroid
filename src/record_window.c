@@ -104,9 +104,12 @@ record_window_init (GtkBuilder *builder)
   guirecorder.channels_list_store =
     GTK_LIST_STORE (gtk_builder_get_object
 		    (builder, "record_window_channels_list_store"));
-  guirecorder.monitor_levelbar =
+  guirecorder.monitor_levelbar_l =
     GTK_LEVEL_BAR (gtk_builder_get_object
-		   (builder, "record_window_monitor_levelbar"));
+		   (builder, "record_window_monitor_levelbar_l"));
+  guirecorder.monitor_levelbar_r =
+    GTK_LEVEL_BAR (gtk_builder_get_object
+		   (builder, "record_window_monitor_levelbar_r"));
 
   g_signal_connect (record_button, "clicked",
 		    G_CALLBACK (record_window_record), NULL);

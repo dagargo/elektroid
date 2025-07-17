@@ -760,7 +760,7 @@ editor_play_clicked (GtkWidget *object, gpointer data)
 }
 
 static void
-editor_update_on_record_cb (gpointer data, gdouble value)
+editor_update_on_record_cb (gpointer data, gdouble l, gdouble r)
 {
   editor_set_waveform_data_no_sync ();
   g_idle_add (editor_queue_draw, data);

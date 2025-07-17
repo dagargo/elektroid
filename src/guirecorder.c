@@ -26,15 +26,19 @@ static gboolean
 guirecorder_set_monitor_level (gpointer data)
 {
   struct guirecorder *guirecorder = data;
-  gtk_level_bar_set_value (guirecorder->monitor_levelbar, guirecorder->level);
+  gtk_level_bar_set_value (guirecorder->monitor_levelbar_l,
+			   guirecorder->level_l);
+  gtk_level_bar_set_value (guirecorder->monitor_levelbar_r,
+			   guirecorder->level_r);
   return FALSE;
 }
 
 void
-guirecorder_monitor_notifier (gpointer recorder, gdouble value)
+guirecorder_monitor_notifier (gpointer recorder, gdouble l, gdouble r)
 {
   struct guirecorder *guirecorder = recorder;
-  guirecorder->level = value;
+  guirecorder->level_l = l;
+  guirecorder->level_r = r;
   g_idle_add (guirecorder_set_monitor_level, guirecorder);
 }
 
