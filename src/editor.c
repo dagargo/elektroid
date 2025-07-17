@@ -226,20 +226,20 @@ editor_reset (struct browser *browser_)
 static void
 editor_set_start_frame (gint start)
 {
+  GtkAdjustment *adj;
+  gdouble widget_w, upper, lower, value;
   struct sample_info *sample_info = audio.sample.info;
   gint max = sample_info->frames - 1;
 
   start = start < 0 ? 0 : start;
   start = start > max ? max : start;
 
-  gdouble widget_w =
-    gtk_widget_get_allocated_width (waveform_scrolled_window);
-  GtkAdjustment *adj =
-    gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW
-					 (waveform_scrolled_window));
-  gdouble upper = widget_w * zoom - 3;	//Base 0 and 2 border pixels
-  gdouble lower = 0;
-  gdouble value = upper * start / (double) sample_info->frames;
+  widget_w = gtk_widget_get_allocated_width (waveform_scrolled_window);
+  adj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW
+					     (waveform_scrolled_window));
+  upper = widget_w * zoom - 3;	//Base 0 and 2 border pixels
+  lower = 0;
+  value = upper * start / (double) sample_info->frames;
 
   debug_print (1, "Setting waveform scrollbar to %f [%f, %f]...", value,
 	       lower, upper);
@@ -540,6 +540,9 @@ editor_set_waveform_data_no_sync ()
 
   if (!waveform_data)
     {
+      debug_print (1,
+		   "Initializing waveform data (%d pixels, %d channels)...",
+		   waveform_width, sample_info->channels);
       gsize size = sizeof (gdouble) * waveform_width * sample_info->channels * 2;	//Positive and negative values
       waveform_data = g_malloc (size);
       memset (waveform_data, 0, size);
@@ -778,6 +781,7 @@ editor_stop_clicked (GtkWidget *object, gpointer data)
 static void
 editor_record_window_record_cb (guint channel_mask)
 {
+  editor_clear_waveform_data ();	//Channels might have changed
   gtk_widget_set_sensitive (stop_button, TRUE);
   audio_start_recording (channel_mask, editor_update_on_record_cb, NULL);
 }

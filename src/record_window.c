@@ -31,11 +31,17 @@ static record_window_record_cb record_cb;
 static record_window_cancel_cb cancel_cb;
 
 static void
-record_window_cancel (GtkWidget *object, gpointer data)
+record_window_close ()
 {
   audio_stop_recording ();	//Stop monitoring
-  cancel_cb ();
   gtk_widget_hide (GTK_WIDGET (window));
+}
+
+static void
+record_window_cancel (GtkWidget *object, gpointer data)
+{
+  cancel_cb ();
+  record_window_close ();
 }
 
 static gboolean
@@ -49,7 +55,7 @@ static void
 record_window_record (GtkWidget *object, gpointer data)
 {
   guint channel_mask = guirecorder_get_channel_mask (&guirecorder);
-  gtk_widget_hide (GTK_WIDGET (window));
+  record_window_close ();
   record_cb (channel_mask);
 }
 

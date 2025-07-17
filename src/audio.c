@@ -384,6 +384,7 @@ audio_reset_record_buffer (guint record_options,
 
   size = si->frames * SAMPLE_INFO_FRAME_SIZE (si);
   content = g_byte_array_sized_new (size);
+  memset (content->data, 0, size);	//Needed for the recording drawing
 
   g_mutex_lock (&audio.control.controllable.mutex);
   idata_free (&audio.sample);
