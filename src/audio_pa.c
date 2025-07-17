@@ -50,12 +50,6 @@ audio_read_callback (pa_stream *stream, size_t size, void *data)
 {
   const void *buffer;
   size_t frame_size;
-  struct sample_info *sample_info = audio.sample.info;
-
-  if (!sample_info)
-    {
-      return;
-    }
 
   if (pa_stream_peek (stream, &buffer, &size) < 0)
     {
@@ -74,12 +68,6 @@ audio_write_callback (pa_stream *stream, size_t size, void *data)
 {
   void *buffer;
   size_t frame_size;
-  struct sample_info *sample_info = audio.sample.info;
-
-  if (!sample_info)
-    {
-      return;
-    }
 
   frame_size = FRAME_SIZE (AUDIO_CHANNELS, sample_get_internal_format ());
 
@@ -170,8 +158,6 @@ audio_start_playback ()
 void
 audio_stop_recording ()
 {
-  struct sample_info *sample_info = audio.sample.info;
-
   if (!audio.record_stream)
     {
       return;
@@ -192,9 +178,6 @@ audio_stop_recording ()
       g_mutex_unlock (&audio.control.controllable.mutex);
 
       audio_finish_recording ();
-
-      debug_print (1, "Stopping recording (%d frames read)...",
-		   sample_info->frames);
       audio_stop_and_flush_stream (audio.record_stream);
     }
   else
@@ -216,7 +199,6 @@ audio_start_recording (guint options,
 		       void *monitor_data)
 {
   pa_operation *operation;
-  struct sample_info *sample_info;
 
   if (!audio.record_stream)
     {
@@ -227,9 +209,7 @@ audio_start_recording (guint options,
   audio_reset_record_buffer (options, monitor_notifier, monitor_data);
   audio_prepare (AUDIO_STATUS_PREPARING_RECORD);
 
-  sample_info = audio.sample.info;
-  debug_print (1, "Starting recording (max %d frames, format %04lx)...",
-	       sample_info->frames, sample_info->format);
+  debug_print (1, "Starting recording...");
 
   pa_threaded_mainloop_lock (audio.mainloop);
   operation = pa_stream_cork (audio.record_stream, 0, audio_success_cb, NULL);

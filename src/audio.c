@@ -33,6 +33,18 @@ void audio_destroy_int ();
 const gchar *audio_name ();
 const gchar *audio_version ();
 
+static inline gboolean
+audio_is_recording (guint record_options)
+{
+  return (record_options & RECORD_MONITOR_ONLY) == 0;
+}
+
+static inline gboolean
+audio_is_monitoring (guint record_options)
+{
+  return !audio_is_recording (record_options);
+}
+
 static inline gfloat
 audio_mix_channels_f32 (gfloat **src, guint channels)
 {
@@ -248,30 +260,42 @@ void
 audio_read_from_input (void *buffer, gint frames)
 {
   gdouble v;
+  guint8 *data;
+  struct sample_info *sample_info;
   static gint monitor_frames = 0;
   static gdouble monitor_level = 0;
-  guint8 *data;
-  guint recorded_frames, remaining_frames, recording_frames;
+  guint recorded_frames, remaining_frames, recording_frames, bytes_per_frame,
+    buffer_size;
   guint channels =
     (audio.record_options & RECORD_STEREO) == RECORD_STEREO ? 2 : 1;
-  guint bytes_per_frame =
-    FRAME_SIZE (channels, sample_get_internal_format ());
-  guint record = !(audio.record_options & RECORD_MONITOR_ONLY);
-  struct sample_info *sample_info = audio.sample.info;
-
-  debug_print (2, "Reading %d frames (recording = %d)...", frames, record);
 
   g_mutex_lock (&audio.control.controllable.mutex);
-  recorded_frames = audio.sample.content->len / bytes_per_frame;
-  remaining_frames = sample_info->frames - recorded_frames;
-  recording_frames = remaining_frames > frames ? frames : remaining_frames;
+
+  if (audio_is_recording (audio.record_options))
+    {
+      debug_print (2, "Reading %d frames (recording)...", frames);
+
+      sample_info = audio.sample.info;
+      bytes_per_frame = FRAME_SIZE (channels, sample_get_internal_format ());
+      recorded_frames = audio.sample.content->len / bytes_per_frame;
+      remaining_frames = sample_info->frames - recorded_frames;
+      recording_frames =
+	remaining_frames > frames ? frames : remaining_frames;
+      buffer_size = recording_frames * bytes_per_frame;
+    }
+  else
+    {
+      debug_print (2, "Reading %d frames (monitoring)...", frames);
+
+      buffer_size = 0;
+      recording_frames = frames;
+    }
 
   if (channels == 2)
     {
-      if (record)
+      if (audio_is_recording (audio.record_options))
 	{
-	  g_byte_array_append (audio.sample.content, buffer,
-			       recording_frames * bytes_per_frame);
+	  g_byte_array_append (audio.sample.content, buffer, buffer_size);
 	}
       data = buffer;
       for (gint i = 0; i < recording_frames * 2; i++)
@@ -313,7 +337,7 @@ audio_read_from_input (void *buffer, gint frames)
 	      gfloat s = *((gfloat *) data);
 	      data += sizeof (gfloat) * 2;
 	      v = s;
-	      if (record)
+	      if (audio_is_recording (audio.record_options))
 		{
 		  g_byte_array_append (audio.sample.content, (guint8 *) & s,
 				       sizeof (gfloat));
@@ -324,7 +348,7 @@ audio_read_from_input (void *buffer, gint frames)
 	      gint16 s = *((gint16 *) data);
 	      data += sizeof (gint16) * 2;
 	      v = s;
-	      if (record)
+	      if (audio_is_recording (audio.record_options))
 		{
 		  g_byte_array_append (audio.sample.content, (guint8 *) & s,
 				       sizeof (gint16));
@@ -368,24 +392,32 @@ audio_reset_record_buffer (guint record_options,
 {
   guint size;
   GByteArray *content;
-  struct sample_info *si = g_malloc (sizeof (struct sample_info));
+  struct sample_info *si;
 
-  debug_print (1, "Resetting record buffer...");
+  if (audio_is_recording (record_options))
+    {
+      debug_print (1, "Resetting record buffer...");
 
-  si->channels = (record_options & RECORD_STEREO) == 3 ? 2 : 1;
-  si->frames = audio.rate * MAX_RECORDING_TIME_S;
-  si->loop_start = si->frames - 1;
-  si->loop_end = si->loop_start;
-  si->format = audio.float_mode ? SF_FORMAT_FLOAT : SF_FORMAT_PCM_16;
-  si->rate = audio.rate;
-  si->midi_note = 0;
-  si->midi_fraction = 0;
-  si->loop_type = 0;
+      si = g_malloc (sizeof (struct sample_info));
+      si->channels = (record_options & RECORD_STEREO) == 3 ? 2 : 1;
+      si->frames = audio.rate * MAX_RECORDING_TIME_S;
+      si->loop_start = si->frames - 1;
+      si->loop_end = si->loop_start;
+      si->format = audio.float_mode ? SF_FORMAT_FLOAT : SF_FORMAT_PCM_16;
+      si->rate = audio.rate;
+      si->midi_note = 0;
+      si->midi_fraction = 0;
+      si->loop_type = 0;
 
-  size = si->frames * SAMPLE_INFO_FRAME_SIZE (si);
-  content = g_byte_array_sized_new (size);
-  memset (content->data, 0, size);	//Needed for the recording drawing
-
+      size = si->frames * SAMPLE_INFO_FRAME_SIZE (si);
+      content = g_byte_array_sized_new (size);
+      memset (content->data, 0, size);	//Needed for the recording drawing
+    }
+  else
+    {
+      content = NULL;
+      si = NULL;
+    }
   g_mutex_lock (&audio.control.controllable.mutex);
   idata_free (&audio.sample);
   idata_init (&audio.sample, content, NULL, si);
@@ -665,20 +697,28 @@ void
 audio_finish_recording ()
 {
   guint32 start;
-  struct sample_info *sample_info = audio.sample.info;
-  guint record = !(audio.record_options & RECORD_MONITOR_ONLY);
+  struct sample_info *sample_info;
 
   g_mutex_lock (&audio.control.controllable.mutex);
   audio.status = AUDIO_STATUS_STOPPED;
-  sample_info->frames =
-    audio.sample.content->len / SAMPLE_INFO_FRAME_SIZE (sample_info);
-  sample_info->loop_start = sample_info->frames - 1;
-  sample_info->loop_end = sample_info->loop_start;
-  if (record)
+  if (audio_is_recording (audio.record_options))
     {
+      sample_info = audio.sample.info;
+      sample_info->frames =
+	audio.sample.content->len / SAMPLE_INFO_FRAME_SIZE (sample_info);
+      sample_info->loop_start = sample_info->frames - 1;
+      sample_info->loop_end = sample_info->loop_start;
+
+      debug_print (1, "Finishing recording (%d frames read)...",
+		   sample_info->frames);
+
       audio_normalize ();
       start = audio_detect_start ();
       audio_delete_range_no_lock (0, start);
+    }
+  else
+    {
+      debug_print (1, "Finishing monitoring...");
     }
   if (audio.monitor)
     {
