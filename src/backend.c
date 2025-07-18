@@ -398,7 +398,7 @@ backend_send_rpn (struct backend *backend, guint8 channel,
   return err;
 }
 
-gint
+static gint
 backend_init_midi (struct backend *backend, const gchar *id)
 {
   debug_print (1, "Initializing backend (%s) to '%s'...",
@@ -775,7 +775,6 @@ backend_init_connector (struct backend *backend,
 {
   gint err;
   GSList *list = NULL, *iterator;
-  gboolean active = TRUE;
   GSList *c;
 
   if (device->type == BE_TYPE_SYSTEM)
@@ -818,6 +817,12 @@ backend_init_connector (struct backend *backend,
       c = c->next;
     }
 
+  if (!CONTROLLABLE_IS_NULL_OR_ACTIVE (controllable))
+    {
+      err = -ECANCELED;
+      goto end;
+    }
+
   if (!conn_name)
     {
       backend_midi_handshake (backend);
@@ -828,12 +833,7 @@ backend_init_connector (struct backend *backend,
     {
       const struct connector *c = iterator->data;
 
-      if (controllable)
-	{
-	  active = controllable_is_active (controllable);
-	}
-
-      if (!active)
+      if (!CONTROLLABLE_IS_NULL_OR_ACTIVE (controllable))
 	{
 	  err = -ECANCELED;
 	  goto end;
