@@ -296,7 +296,11 @@ progress_window_destroy ()
   if (thread)
     {
       progress_window_cancel ();
-      gtk_main_iteration_do (TRUE);
+      //The thread will be joined by the main iteration as the thread runner idle-add a function for this.
+      while (thread)
+	{
+	  gtk_main_iteration_do (TRUE);
+	}
     }
   gtk_widget_destroy (GTK_WIDGET (window));
 }

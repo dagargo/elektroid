@@ -1410,13 +1410,13 @@ elektroid_exit ()
 {
   tasks_stop_thread ();
 
+  progress_window_destroy ();
+
   browser_destroy_all ();
   editor_destroy ();
 
   microbrute_destroy ();
   autosampler_destroy ();
-
-  progress_window_destroy ();
 
   if (backend_check (BACKEND))
     {

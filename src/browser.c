@@ -947,7 +947,7 @@ browser_load_dir_runner_show_spinner_and_lock_browser (gpointer data)
 static void
 browser_wait (struct browser *browser)
 {
-  if (browser->thread)
+  while (browser->thread)
     {
       g_thread_join (browser->thread);
       browser->thread = NULL;
@@ -1019,8 +1019,8 @@ browser_load_dir_runner_update_ui (gpointer data)
     }
 
   g_mutex_lock (&browser->mutex);
-  browser->loading = FALSE;
   pending_req = browser->pending_req;
+  browser->loading = FALSE;
   g_mutex_unlock (&browser->mutex);
 
   if (pending_req)
@@ -2033,10 +2033,12 @@ browser_drag_leave_up (GtkWidget *widget,
 static void
 browser_destroy (struct browser *browser)
 {
-  if (browser->thread)
+  while (browser->thread)
     {
       browser_reset (&remote_browser);	// This waits too.
+      gtk_main_iteration_do (TRUE);
     }
+
   notifier_destroy (browser->notifier);
   g_slist_free (browser->sensitive_widgets);
   g_object_unref (G_OBJECT (browser->menu));
