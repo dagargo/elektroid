@@ -1409,22 +1409,23 @@ static void
 elektroid_exit ()
 {
   tasks_stop_thread ();
-  editor_stop_load_thread ();
 
   browser_destroy_all ();
   editor_destroy ();
+
+  microbrute_destroy ();
+  autosampler_destroy ();
+
+  progress_window_destroy ();
 
   if (backend_check (BACKEND))
     {
       backend_destroy (BACKEND);
     }
 
-  microbrute_destroy ();
-  autosampler_destroy ();
-
-  progress_window_destroy ();
   name_window_destroy ();
   preferences_window_destroy ();
+
   gtk_widget_destroy (GTK_WIDGET (main_window));
 }
 

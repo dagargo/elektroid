@@ -110,8 +110,6 @@ void audio_reset_record_buffer (guint, audio_monitor_notifier, void *);
 
 void audio_init (void (*)(gdouble), void (*)(), gpointer);
 
-gint audio_run ();
-
 void audio_destroy ();
 
 void audio_reset_sample ();

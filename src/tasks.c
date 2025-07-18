@@ -406,6 +406,8 @@ tasks_update_current_progress (gpointer data)
 void
 tasks_init (GtkBuilder *builder)
 {
+  tasks.thread = NULL;
+
   tasks.list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "task_list_store"));
   tasks.tree_view =

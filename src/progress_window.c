@@ -292,8 +292,11 @@ progress_window_open (progress_window_runner runner_,
 void
 progress_window_destroy ()
 {
+  debug_print (1, "Destroying progress window...");
   if (thread)
     {
       progress_window_cancel ();
+      gtk_main_iteration_do (TRUE);
     }
+  gtk_widget_destroy (GTK_WIDGET (window));
 }

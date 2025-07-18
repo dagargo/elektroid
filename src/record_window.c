@@ -34,6 +34,7 @@ static void
 record_window_close ()
 {
   audio_stop_recording ();	//Stop monitoring
+  gtk_main_iteration_do (gtk_widget_get_visible (GTK_WIDGET (window)));	//Wait for guirecorder
   gtk_widget_hide (GTK_WIDGET (window));
 }
 
@@ -127,5 +128,7 @@ record_window_init (GtkBuilder *builder)
 void
 record_window_destroy ()
 {
+  debug_print (1, "Destroying record window...");
+  record_window_close ();
   gtk_widget_destroy (GTK_WIDGET (window));
 }

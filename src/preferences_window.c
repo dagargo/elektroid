@@ -185,5 +185,6 @@ preferences_window_init (GtkBuilder *builder)
 void
 preferences_window_destroy ()
 {
+  debug_print (1, "Destroying preferences window...");
   gtk_widget_destroy (GTK_WIDGET (window));
 }

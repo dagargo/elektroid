@@ -1754,10 +1754,23 @@ editor_init (GtkBuilder *builder)
 void
 editor_destroy ()
 {
+  gboolean loading_completed;
+
+  debug_print (1, "Destroying editor...");
+
   record_window_destroy ();
+
+  loading_completed = editor_loading_completed ();
+
+  editor_stop_clicked (NULL, NULL);
+  editor_stop_load_thread ();
+
+  audio_destroy ();
+  gtk_main_iteration_do (!loading_completed);	//Wait for drawings
+
   editor_clear_waveform_data ();
   editor_free_frame_state ();
-  audio_destroy ();
+
   g_object_unref (G_OBJECT (notes_list_store));
   g_object_unref (G_OBJECT (menu));
 }

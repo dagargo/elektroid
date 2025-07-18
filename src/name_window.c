@@ -19,6 +19,7 @@
  */
 
 #include "name_window.h"
+#include "utils.h"
 
 static GtkWindow *window;
 static GtkEntry *entry;
@@ -130,5 +131,6 @@ name_window_init (GtkBuilder *builder)
 void
 name_window_destroy ()
 {
+  debug_print (1, "Destroying name window...");
   gtk_widget_destroy (GTK_WIDGET (window));
 }
