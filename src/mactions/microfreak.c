@@ -27,11 +27,19 @@
 extern GtkWindow *main_window;
 extern struct browser remote_browser;
 
+void elektroid_refresh_devices ();
+
 static void
 microfreak_defragment_runner (gpointer data)
 {
   microfreak_sample_defragment (remote_browser.backend);
-  browser_refresh (NULL, &remote_browser);
+}
+
+static void
+microfreak_defragment_consumer (gpointer data)
+{
+  //Some operations fail unless everything is initiated again.
+  elektroid_refresh_devices ();
 }
 
 static void
@@ -40,7 +48,8 @@ microfreak_defragment_callback_response (GtkDialog *dialog, gint response_id,
 {
   if (response_id == GTK_RESPONSE_ACCEPT)
     {
-      progress_window_open (microfreak_defragment_runner, NULL, NULL, NULL,
+      progress_window_open (microfreak_defragment_runner,
+			    microfreak_defragment_consumer, NULL, NULL,
 			    PROGRESS_TYPE_PULSE,
 			    _("Defragmenting Sample Memory"), "", FALSE);
     }
