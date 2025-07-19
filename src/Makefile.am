@@ -86,7 +86,7 @@ progress_window.c progress_window.h \
 record_window.c record_window.h \
 regma.c regma.h \
 tasks.c tasks.h \
-elektroid.c
+elektroid.c elektroid.h
 
 SNDFILE_CFLAGS = @SNDFILE_CFLAGS@
 SNDFILE_LIBS = @SNDFILE_LIBS@
