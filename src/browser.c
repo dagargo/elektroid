@@ -22,6 +22,7 @@
 #include "backend.h"
 #include "browser.h"
 #include "editor.h"
+#include "elektroid.h"
 #include "local.h"
 #include "name_window.h"
 #include "notifier.h"
@@ -101,13 +102,6 @@ struct browser_add_dentry_item_data
   const gchar *icon;
   gchar *rel_path;
 };
-
-gboolean elektroid_check_backend ();
-void elektroid_add_upload_tasks (GtkWidget * object, gpointer data);
-void elektroid_add_download_tasks (GtkWidget * object, gpointer data);
-void elektroid_browser_drag_data_received_runner (gpointer data);
-void elektroid_delete_items_runner (gpointer data);
-void elektroid_show_error_msg (const char *format, ...);
 
 static void
 browser_clear_dnd_function (struct browser *browser)

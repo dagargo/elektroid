@@ -21,13 +21,12 @@
 #include <glib/gi18n.h>
 #include "browser.h"
 #include "connectors/microfreak.h"
+#include "elektroid.h"
 #include "maction.h"
 #include "progress_window.h"
 
 extern GtkWindow *main_window;
 extern struct browser remote_browser;
-
-void elektroid_refresh_devices ();
 
 static void
 microfreak_defragment_runner (gpointer data)

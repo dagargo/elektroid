@@ -24,6 +24,7 @@
 #include "audio.h"
 #include "connectors/system.h"
 #include "editor.h"
+#include "elektroid.h"
 #include "name_window.h"
 #include "preferences.h"
 #include "record_window.h"
@@ -61,8 +62,6 @@ struct frame_state
   guint *wpc;
   guint *wnc;
 };
-
-void elektroid_update_audio_status (gboolean status);
 
 static void editor_save_accept (gpointer source, const gchar * name);
 

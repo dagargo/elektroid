@@ -20,10 +20,14 @@
 
 #include <glib/gi18n.h>
 #include "browser.h"
+#include "elektroid.h"
 #include "maction.h"
 #include "progress_window.h"
 
 #define SYSEX_FILTER "*." BE_SYSEX_EXT
+
+extern GtkWindow *main_window;
+extern struct browser remote_browser;
 
 struct backend_tx_sysex_common_data
 {
@@ -48,13 +52,6 @@ struct backend_rx_sysex_data
   struct sysex_transfer sysex_transfer;
   struct controllable controllable;
 };
-
-extern GtkWindow *main_window;
-extern struct browser remote_browser;
-
-void elektroid_show_error_msg (const char *format, ...);
-gboolean elektroid_check_backend ();
-void elektroid_refresh_devices ();
 
 static gboolean
 backend_send_sysex_file_show_error (gpointer user_data)
