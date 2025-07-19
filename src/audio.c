@@ -123,6 +123,11 @@ audio_write_to_output (void *buffer, gint frames)
   bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
   size = frames * FRAME_SIZE (AUDIO_CHANNELS, sample_get_internal_format ());
 
+  if (audio.cursor_notifier)
+    {
+      audio.cursor_notifier (audio.pos);
+    }
+
   memset (buffer, 0, size);
 
   if (selection_mode)
@@ -246,6 +251,10 @@ end:
   if (!sample_info || stopping)
     {
       audio.release_frames += frames;
+      if (audio.cursor_notifier)
+	{
+	  audio.cursor_notifier (-1);
+	}
     }
 
   g_mutex_unlock (&audio.control.controllable.mutex);
@@ -368,18 +377,19 @@ audio_read_from_input (void *buffer, gint frames)
     }
 
   monitor_frames += frames;
-  if (audio.monitor && monitor_frames >= AUDIO_FRAMES_TO_MONITOR)
+  if (audio.monitor_notifier && monitor_frames >= AUDIO_FRAMES_TO_MONITOR)
     {
       if (audio.float_mode)
 	{
-	  audio.monitor (audio.monitor_data, audio.monitor_level_l,
-			 audio.monitor_level_r);
+	  audio.monitor_notifier (audio.monitor_data, audio.monitor_level_l,
+				  audio.monitor_level_r);
 	}
       else
 	{
-	  audio.monitor (audio.monitor_data,
-			 -audio.monitor_level_l / (gdouble) SHRT_MIN,
-			 -audio.monitor_level_r / (gdouble) SHRT_MIN);
+	  audio.monitor_notifier (audio.monitor_data,
+				  -audio.monitor_level_l / (gdouble) SHRT_MIN,
+				  -audio.monitor_level_r /
+				  (gdouble) SHRT_MIN);
 	}
       monitor_frames -= AUDIO_FRAMES_TO_MONITOR;
       audio.monitor_level_l = 0;
@@ -395,7 +405,8 @@ audio_read_from_input (void *buffer, gint frames)
 
 void
 audio_reset_record_buffer (guint record_options,
-			   audio_monitor_notifier monitor, void *monitor_data)
+			   audio_monitor_notifier monitor_notifier,
+			   void *monitor_data)
 {
   guint size;
   GByteArray *content;
@@ -430,7 +441,7 @@ audio_reset_record_buffer (guint record_options,
   idata_init (&audio.sample, content, NULL, si);
   audio.pos = 0;
   audio.record_options = record_options;
-  audio.monitor = monitor;
+  audio.monitor_notifier = monitor_notifier;
   audio.monitor_data = monitor_data;
   audio.monitor_level_l = 0;
   audio.monitor_level_r = 0;
@@ -729,9 +740,9 @@ audio_finish_recording ()
     {
       debug_print (1, "Finishing monitoring...");
     }
-  if (audio.monitor)
+  if (audio.monitor_notifier)
     {
-      audio.monitor (audio.monitor_data, 0, 0);
+      audio.monitor_notifier (audio.monitor_data, 0, 0);
     }
   g_mutex_unlock (&audio.control.controllable.mutex);
 }

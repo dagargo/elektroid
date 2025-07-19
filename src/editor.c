@@ -103,6 +103,7 @@ static guint waveform_width;
 static guint waveform_len;	//Loaded frames available in waveform_data
 static double press_event_x;
 static struct frame_state frame_state;
+static gint64 playback_cursor;	// guint32 plus -1 (invisible)
 
 struct browser *
 editor_get_browser ()
@@ -302,6 +303,14 @@ editor_loading_completed_no_lock (guint32 *actual_frames)
   return completed;
 }
 
+static void
+editor_playback_cursor_notifier (gint64 position)
+{
+  debug_print (3, "Setting cursor at %ld...", position);
+  playback_cursor = position;
+  g_idle_add (editor_queue_draw, NULL);
+}
+
 static gboolean
 editor_update_ui_on_load (gpointer data)
 {
@@ -315,7 +324,7 @@ editor_update_ui_on_load (gpointer data)
       gtk_widget_set_sensitive (loop_button, TRUE);
       if (preferences_get_boolean (PREF_KEY_AUTOPLAY))
 	{
-	  audio_start_playback ();
+	  audio_start_playback (editor_playback_cursor_notifier);
 	}
     }
 
@@ -423,7 +432,7 @@ editor_set_text_color (GdkRGBA *color)
   gtk_style_context_get_color (context, GTK_STATE_FLAG_NORMAL, color);
 }
 
-static void
+static inline void
 editor_draw_loop_points (cairo_t *cr, guint start, guint height,
 			 double x_ratio)
 {
@@ -462,7 +471,30 @@ editor_draw_loop_points (cairo_t *cr, guint start, guint height,
   cairo_fill (cr);
 }
 
-static void
+static inline void
+editor_draw_playback_cursor (cairo_t *cr, guint start, guint height,
+			     double x_ratio)
+{
+  GdkRGBA color;
+  guint32 x;
+
+  if (playback_cursor < 0)
+    {
+      return;
+    }
+
+  x = (playback_cursor - start) / x_ratio;
+
+  editor_set_text_color (&color);
+
+  gdk_cairo_set_source_rgba (cr, &color);
+  cairo_set_line_width (cr, 1);
+  cairo_move_to (cr, x - 0.5, 0);
+  cairo_line_to (cr, x - 0.5, height - 1);
+  cairo_stroke (cr);
+}
+
+static inline void
 editor_draw_grid (cairo_t *cr, guint start, guint height, double x_ratio)
 {
   GdkRGBA color;
@@ -492,7 +524,7 @@ editor_draw_grid (cairo_t *cr, guint start, guint height, double x_ratio)
     }
 }
 
-static void
+static inline void
 editor_draw_selection (cairo_t *cr, guint start, guint height, double x_ratio)
 {
   guint32 sel_len;
@@ -597,7 +629,7 @@ editor_set_waveform_data ()
   g_mutex_unlock (&audio.control.controllable.mutex);
 }
 
-static void
+static inline void
 editor_draw_waveform (cairo_t *cr, guint start, guint height, double x_ratio)
 {
   gdouble *v, mid_c, x;
@@ -672,6 +704,7 @@ editor_draw (GtkWidget *widget, cairo_t *cr, gpointer data)
   editor_draw_selection (cr, start, height, x_ratio);
   editor_draw_waveform (cr, start, height, x_ratio);
   editor_draw_loop_points (cr, start, height, x_ratio);
+  editor_draw_playback_cursor (cr, start, height, x_ratio);
 
 end:
   g_mutex_unlock (&mutex);
@@ -748,7 +781,7 @@ editor_play ()
   if (audio_check ())
     {
       audio_stop_recording ();
-      audio_start_playback ();
+      audio_start_playback (editor_playback_cursor_notifier);
     }
 }
 
@@ -1175,7 +1208,7 @@ editor_button_release (GtkWidget *widget, GdkEventButton *event,
 	      gtk_widget_set_sensitive (delete_menuitem, TRUE);
 	      if (preferences_get_boolean (PREF_KEY_AUTOPLAY))
 		{
-		  audio_start_playback ();
+		  audio_start_playback (editor_playback_cursor_notifier);
 		}
 	    }
 	}
@@ -1319,7 +1352,7 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
 
   if (status == AUDIO_STATUS_PLAYING)
     {
-      audio_start_playback ();
+      audio_start_playback (editor_playback_cursor_notifier);
     }
 }
 

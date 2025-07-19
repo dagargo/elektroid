@@ -138,11 +138,15 @@ audio_stop_playback ()
 }
 
 void
-audio_start_playback ()
+audio_start_playback (audio_playback_cursor_notifier cursor_notifier)
 {
   pa_operation *operation;
 
   audio_stop_playback ();
+
+  g_mutex_lock (&audio.control.controllable.mutex);
+  audio.cursor_notifier = cursor_notifier;
+  g_mutex_unlock (&audio.control.controllable.mutex);
 
   debug_print (1, "Starting playback...");
 

@@ -42,20 +42,32 @@ audio_stop_playback ()
       return;
     }
 
+  debug_print (1, "Stopping playback...");
+
   g_mutex_lock (&audio.control.controllable.mutex);
   audio.status = AUDIO_STATUS_STOPPED;
+  if (audio.cursor_notifier)
+    {
+      audio.cursor_notifier (-1);
+    }
   g_mutex_unlock (&audio.control.controllable.mutex);
 
-  debug_print (1, "Stopping playback...");
   rtaudio_abort_stream (audio.playback_rtaudio);	//Stop and flush buffer
 }
 
 void
-audio_start_playback ()
+audio_start_playback (audio_playback_cursor_notifier cursor_notifier)
 {
   audio_stop_playback ();
-  audio_prepare (AUDIO_STATUS_PLAYING);
+
+  g_mutex_lock (&audio.control.controllable.mutex);
+  audio.cursor_notifier = cursor_notifier;
+  g_mutex_unlock (&audio.control.controllable.mutex);
+
   debug_print (1, "Starting playback...");
+
+  audio_prepare (AUDIO_STATUS_PLAYING);
+
   rtaudio_start_stream (audio.playback_rtaudio);
 }
 
