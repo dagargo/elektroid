@@ -173,29 +173,6 @@ browser_sort_by_name (GtkTreeModel *model,
 }
 
 static gint
-browser_sort_by_id (GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b,
-		    gpointer data)
-{
-  struct item itema;
-  struct item itemb;
-  gint ret = 0;
-
-  browser_set_item (model, a, &itema);
-  browser_set_item (model, b, &itemb);
-
-  if (itema.type == itemb.type)
-    {
-      ret = itema.id > itemb.id;
-    }
-  else
-    {
-      ret = itema.type > itemb.type;
-    }
-
-  return ret;
-}
-
-static gint
 browser_set_selected_row_iter (struct browser *browser, GtkTreeIter *iter)
 {
   gint index, *indices;
