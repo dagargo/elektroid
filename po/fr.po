@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2025-06-22 09:46+0200\n"
+"POT-Creation-Date: 2025-07-19 10:22+0200\n"
 "PO-Revision-Date: 2024-09-21 11:57+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@tuxfamily.org>\n"
 "Language-Team: French\n"
@@ -17,234 +17,238 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:237 src/elektroid.c:245 src/editor.c:1329
+#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1546
 msgid "Audio"
 msgstr ""
 
-#: src/elektroid.c:329 src/elektroid.c:3023
+#: src/elektroid.c:272 src/elektroid.c:1544
 msgid "Not connected"
 msgstr "Non connecté"
 
-#: src/elektroid.c:445
-msgid "Receiving SysEx"
-msgstr "Réception de SysEx"
-
-#: src/elektroid.c:469
-msgid "Save SysEx"
-msgstr "Sauvegarde de SysEx"
-
-#: src/elektroid.c:470 src/elektroid.c:598 src/elektroid.c:870
-#: src/elektroid.c:1434 src/editor.c:1223 src/mactions/microfreak.c:52
-#: res/gui.glade:1003 res/gui.glade:3139 res/gui.glade:3245 res/gui.glade:3594
-#: res/gui.glade:3680
-msgid "_Cancel"
-msgstr "_Annuler"
-
-#: src/elektroid.c:471 res/gui.glade:3153 res/gui.glade:3259
-msgid "_Save"
-msgstr "_Sauvegarder"
-
-#: src/elektroid.c:475
-msgid "Received SysEx"
-msgstr "SysEx reçu"
-
-#: src/elektroid.c:480 src/elektroid.c:603
-msgid "SysEx Files"
-msgstr "Fichiers SysEx"
-
-#: src/elektroid.c:517
-#, c-format
-msgid "Error while saving “%s”: %s."
-msgstr "Erreur lors de la sauvegarde de « %s » : %s."
-
-#: src/elektroid.c:542
-#, c-format
-msgid "Error while loading “%s”: %s."
-msgstr "Erreur lors du chargement de « %s » : %s."
-
-#: src/elektroid.c:596
-msgid "Open SysEx"
-msgstr "Ouvrir SysEx"
-
-#: src/elektroid.c:599
-msgid "_Open"
-msgstr "_Ouvrir"
-
-#: src/elektroid.c:615
-msgid "Sending SysEx"
-msgstr "Envoi SysEx"
-
-#: src/elektroid.c:869
-msgid "Are you sure you want to delete the selected items?"
-msgstr "Souhaitez-vous vraiment supprimer les éléments sélectionnés ?"
-
-#: src/elektroid.c:871
-msgid "_Delete"
-msgstr "_Supprimer"
-
-#: src/elektroid.c:890
-msgid "Deleting Files"
-msgstr "Suppression des fichiers"
-
-#: src/elektroid.c:890
-msgid "Deleting..."
-msgstr "Suppression..."
-
-#: src/elektroid.c:927 res/gui.glade:255 res/gui.glade:891
-msgid "Rename"
-msgstr "Renommer"
-
-#: src/elektroid.c:951
-#, c-format
-msgid "Error while renaming to “%s”: %s."
-msgstr "Erreur lors du renommage de « %s » : %s."
-
-#: src/elektroid.c:1305 res/gui.glade:1688 res/gui.glade:2132
-msgid "Add Directory"
-msgstr "Ajout d'un répertoire"
-
-#: src/elektroid.c:1313
-#, c-format
-msgid "Error while creating dir “%s”: %s."
-msgstr "Erreur lors de la création du répertoire « %s » : %s."
-
-#: src/elektroid.c:1432 src/editor.c:1220
+#: src/elektroid.c:629 src/editor.c:1495
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Remplacer le fichier “%s”?"
 
-#: src/elektroid.c:1435
+#: src/elektroid.c:631 src/editor.c:1497 src/browser.c:631
+#: src/mactions/backend.c:197 src/mactions/backend.c:285
+#: src/mactions/microfreak.c:60 res/elektroid.ui:1505 res/elektroid.ui:3245
+#: res/elektroid.ui:3593 res/elektroid.ui:3692 res/elektroid.ui:3834
+msgid "_Cancel"
+msgstr "_Annuler"
+
+#: src/elektroid.c:632
 msgid "_Skip"
 msgstr "Pa_sser"
 
-#: src/elektroid.c:1436 src/editor.c:1224
+#: src/elektroid.c:633 src/editor.c:1498
 msgid "_Replace"
 msgstr "_Remplacer"
 
-#: src/elektroid.c:1441
+#: src/elektroid.c:638
 msgid "Apply this action to all files"
 msgstr "Appliquer cette action à tous les fichiers"
 
-#: src/elektroid.c:1702 src/elektroid.c:1884 src/elektroid.c:2510
+#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1829
 msgid "Preparing Tasks"
 msgstr "Préparation des tâches"
 
-#: src/elektroid.c:1702 src/elektroid.c:1884 src/elektroid.c:2511
-#: src/progress.c:107
+#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1830
+#: src/progress_window.c:137
 msgid "Waiting..."
 msgstr "En attente..."
 
-#: src/elektroid.c:2255
-msgid "Connecting to Device"
-msgstr "Connexion au périphérique"
-
-#: src/elektroid.c:2256
-msgid "Connecting..."
-msgstr "Connexion..."
-
-#: src/elektroid.c:2263
+#: src/elektroid.c:1158
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Périphérique “%s” non reconnu : %s"
 
-#: src/elektroid.c:2497
-msgid "Moving Files"
-msgstr "Déplacement des fichiers"
+#: src/elektroid.c:1245
+msgid "Connecting to Device"
+msgstr "Connexion au périphérique"
 
-#: src/elektroid.c:2498
-msgid "Moving..."
-msgstr "Déplacement..."
+#: src/elektroid.c:1246
+msgid "Connecting..."
+msgstr "Connexion..."
 
-#: src/elektroid.c:2805
+#: src/elektroid.c:1484
 msgid "Acknowledgements"
 msgstr ""
 
-#: src/editor.c:1345
+#: src/editor.c:1476 src/editor.c:1554
 msgid "Save Sample"
 msgstr "Sauvegarde d'échantillon"
 
-#: src/tasks.c:32
+#: src/tasks.c:35
 msgid "Queued"
 msgstr "Mise en file d'attente"
 
-#: src/tasks.c:34
+#: src/tasks.c:37
 msgid "Running"
 msgstr "En cours"
 
-#: src/tasks.c:36
+#: src/tasks.c:39
 msgid "Completed"
 msgstr "Terminé"
 
-#: src/tasks.c:38
+#: src/tasks.c:41
 msgid "Terminated with errors"
 msgstr "Terminé avec des erreurs"
 
-#: src/tasks.c:40
+#: src/tasks.c:43
 msgid "Canceled"
 msgstr "Annulé"
 
-#: src/tasks.c:42 src/tasks.c:56
+#: src/tasks.c:45 src/tasks.c:59
 msgid "Undefined"
 msgstr "Indéfini"
 
-#: src/tasks.c:52
+#: src/tasks.c:55
 msgid "Upload"
 msgstr "Téléversement"
 
-#: src/tasks.c:54
+#: src/tasks.c:57
 msgid "Download"
 msgstr "Téléchargement"
 
-#: src/browser.c:357
+#: src/browser.c:616
+msgid "Deleting Files"
+msgstr "Suppression des fichiers"
+
+#: src/browser.c:616
+msgid "Deleting..."
+msgstr "Suppression..."
+
+#: src/browser.c:630
+msgid "Are you sure you want to delete the selected items?"
+msgstr "Souhaitez-vous vraiment supprimer les éléments sélectionnés ?"
+
+#: src/browser.c:632
+msgid "_Delete"
+msgstr "_Supprimer"
+
+#: src/browser.c:695
+#, c-format
+msgid "Error while renaming to “%s”: %s."
+msgstr "Erreur lors du renommage de « %s » : %s."
+
+#: src/browser.c:729 res/elektroid.ui:260 res/elektroid.ui:896
+msgid "Rename"
+msgstr "Renommer"
+
+#: src/browser.c:831
 msgid "min."
 msgstr "min."
 
-#: src/browser.c:408
+#: src/browser.c:881
 msgid "cents"
 msgstr ""
 
-#: src/audio_pa.c:338
+#: src/browser.c:1424
+#, c-format
+msgid "Error while creating dir “%s”: %s."
+msgstr "Erreur lors de la création du répertoire « %s » : %s."
+
+#: src/browser.c:1440 res/elektroid.ui:1754 res/elektroid.ui:2198
+msgid "Add Directory"
+msgstr "Ajout d'un répertoire"
+
+#: src/browser.c:1816
+msgid "Moving Files"
+msgstr "Déplacement des fichiers"
+
+#: src/browser.c:1817
+msgid "Moving..."
+msgstr "Déplacement..."
+
+#: src/audio_pa.c:305
 msgid "Output"
 msgstr "Sortie"
 
-#: src/audio_pa.c:341
+#: src/audio_pa.c:308
 msgid "Input"
 msgstr "Entrée"
 
 #. This should only be translated if a non latin alphabet is used
-#: src/mactions/autosampler.c:205 res/gui.glade:982
+#: src/mactions/autosampler.c:225 res/elektroid.ui:987
 msgid "Auto Sampler"
 msgstr ""
 
-#: src/mactions/autosampler.c:205
+#: src/mactions/autosampler.c:226
 msgid "Recording..."
 msgstr "Enregistre..."
 
-#: src/mactions/autosampler.c:282
+#: src/mactions/autosampler.c:321
 msgid "_Auto Sampler"
 msgstr "Échantillonneur _automatique"
 
-#: src/mactions/backend.c:60
+#: src/mactions/backend.c:63
+#, c-format
+msgid "Error while loading “%s”: %s."
+msgstr "Erreur lors du chargement de « %s » : %s."
+
+#: src/mactions/backend.c:173
+msgid "Sending SysEx"
+msgstr "Envoi SysEx"
+
+#: src/mactions/backend.c:195
+msgid "Open SysEx"
+msgstr "Ouvrir SysEx"
+
+#: src/mactions/backend.c:199
+msgid "_Open"
+msgstr "_Ouvrir"
+
+#: src/mactions/backend.c:203 src/mactions/backend.c:295
+msgid "SysEx Files"
+msgstr "Fichiers SysEx"
+
+#: src/mactions/backend.c:255
+#, c-format
+msgid "Error while saving “%s”: %s."
+msgstr "Erreur lors de la sauvegarde de « %s » : %s."
+
+#: src/mactions/backend.c:284
+msgid "Save SysEx"
+msgstr "Sauvegarde de SysEx"
+
+#: src/mactions/backend.c:286 res/elektroid.ui:3259 res/elektroid.ui:3607
+msgid "_Save"
+msgstr "_Sauvegarder"
+
+#: src/mactions/backend.c:290
+msgid "Received SysEx"
+msgstr "SysEx reçu"
+
+#: src/mactions/backend.c:373
+msgid "Receiving SysEx"
+msgstr "Réception de SysEx"
+
+#: src/mactions/backend.c:385
 msgid "OS _Upgrade"
 msgstr "Mise à jo_ur SE"
 
-#: src/mactions/backend.c:75
+#: src/mactions/backend.c:400
 msgid "_Receive SysEx"
 msgstr "_Réception de SysEx"
 
-#: src/mactions/backend.c:90
+#: src/mactions/backend.c:415
 msgid "_Send SysEx"
 msgstr "Envoi de _Sysex"
 
-#: src/mactions/microbrute.c:394
+#: src/mactions/microbrute.c:404
 msgid "_Configuration"
 msgstr "_Configuration"
 
-#: src/mactions/microbrute.c:422
+#: src/mactions/microbrute.c:430
 msgid "_Calibration"
 msgstr "_Calibration"
 
-#: src/mactions/microfreak.c:51
+#: src/mactions/microfreak.c:45
+msgid "Defragmenting Sample Memory"
+msgstr "Défragmentation de la mémoire des échantillons"
+
+#: src/mactions/microfreak.c:59
 msgid ""
 "The defragmentation process could take several minutes and could not be "
 "canceled. Are you sure you want to defragment the sample memory?"
@@ -253,42 +257,38 @@ msgstr ""
 "pas être annulé. Êtes-vous sûr de vouloir défragmenter la mémoire de "
 "l'échantillon ?"
 
-#: src/mactions/microfreak.c:53 src/mactions/microfreak.c:85
+#: src/mactions/microfreak.c:61 src/mactions/microfreak.c:85
 msgid "_Defragment"
 msgstr "_Défragmentation"
 
-#: src/mactions/microfreak.c:66
-msgid "Defragmenting Sample Memory"
-msgstr "Défragmentation de la mémoire des échantillons"
-
-#: src/progress.c:52
+#: src/progress_window.c:105
 msgid "Cancelling..."
 msgstr "Annulation..."
 
-#: src/progress.c:110
+#: src/progress_window.c:140
 msgid "Sending..."
 msgstr "Envoi en cours..."
 
-#: src/progress.c:113
+#: src/progress_window.c:143
 msgid "Receiving..."
 msgstr "Réception en cours..."
 
 #. TRANSLATORS: Stereo recording
-#: src/guirecorder.c:68
+#: src/guirecorder.c:72
 msgid "Stereo"
 msgstr "Stéréo"
 
 #. TRANSLATORS: Mono recording from left channel
-#: src/guirecorder.c:78
+#: src/guirecorder.c:82
 msgid "Left"
 msgstr "Gauche"
 
 #. TRANSLATORS: Mono recording from right channel
-#: src/guirecorder.c:85
+#: src/guirecorder.c:89
 msgid "Right"
 msgstr "Droite"
 
-#: src/connectors/sds.c:1359
+#: src/connectors/sds.c:1340
 msgid "SDS sampler"
 msgstr "Échantillonneur SDS"
 
@@ -296,187 +296,195 @@ msgstr "Échantillonneur SDS"
 msgid "MIDI device"
 msgstr "Périphérique MIDI"
 
-#: src/connectors/system.c:728
+#: src/connectors/system.c:727
 msgid "System"
 msgstr "Système"
 
-#: res/gui.glade:104 res/gui.glade:218 res/gui.glade:854
+#: res/elektroid.ui:109 res/elektroid.ui:223 res/elektroid.ui:859
 msgid "Play"
 msgstr "Lecture"
 
-#: res/gui.glade:119 res/gui.glade:264 res/gui.glade:900
+#: res/elektroid.ui:124 res/elektroid.ui:269 res/elektroid.ui:905
 msgid "Delete"
 msgstr "Supprimer"
 
-#: res/gui.glade:128
+#: res/elektroid.ui:133
 msgid "Undo"
 msgstr "Défaire"
 
-#: res/gui.glade:143
+#: res/elektroid.ui:148
 msgid "Save"
 msgstr "Sauvegarder"
 
-#: res/gui.glade:203
+#: res/elektroid.ui:208
 msgid "Upload Selection"
 msgstr "Téléversement de la sélection"
 
-#: res/gui.glade:233 res/gui.glade:869
+#: res/elektroid.ui:238 res/elektroid.ui:874
 msgid "Open With External Editor"
 msgstr "Ouvrir avec un éditeur externe"
 
-#: res/gui.glade:241 res/gui.glade:877
+#: res/elektroid.ui:246 res/elektroid.ui:882
 msgid "Show in File Manager"
 msgstr "Afficher dans un ge_stionnaire de fichier"
 
-#: res/gui.glade:839
+#: res/elektroid.ui:844
 msgid "Download Selection"
 msgstr "Téléchargement de la sélection"
 
-#: res/gui.glade:945
+#: res/elektroid.ui:951
 msgid "Sample and MIDI device manager"
 msgstr "Gestionnaire d'échantillons et de périphériques MIDI"
 
-#: res/gui.glade:948
+#: res/elektroid.ui:954
 msgid "translator-credits"
 msgstr "Olivier Humbert <trebmuh@tuxfamily.org>"
 
-#: res/gui.glade:1017
-msgid "_Start"
-msgstr "_Démarrage"
-
-#: res/gui.glade:1077 res/gui.glade:1819 res/gui.glade:2285 res/gui.glade:3184
+#: res/elektroid.ui:1042 res/elektroid.ui:1885 res/elektroid.ui:2351
+#: res/elektroid.ui:3208
 msgid "Name"
 msgstr "Nom"
 
 #. Audio channels
-#: res/gui.glade:1103 res/gui.glade:1844 res/gui.glade:2312 res/gui.glade:3729
+#: res/elektroid.ui:1068 res/elektroid.ui:1910 res/elektroid.ui:2378
+#: res/elektroid.ui:3745
 msgid "Channels"
 msgstr "Canaux"
 
 #. Input audio monitor
-#: res/gui.glade:1134 res/gui.glade:3760
+#: res/elektroid.ui:1099 res/elektroid.ui:3776
 msgid "Monitor"
 msgstr "Moniteur"
 
-#: res/gui.glade:1159
+#: res/elektroid.ui:1148
 msgid "Global"
 msgstr ""
 
 #. Press key time
-#: res/gui.glade:1196
+#: res/elektroid.ui:1200
 msgctxt "Auto Sampler"
 msgid "Press"
 msgstr "Appui"
 
 #. As the R in ADSR
-#: res/gui.glade:1209
+#: res/elektroid.ui:1213
 msgctxt "Auto Sampler"
 msgid "Release"
 msgstr "Relâche"
 
-#: res/gui.glade:1252 res/gui.glade:1866 res/gui.glade:2336
+#: res/elektroid.ui:1256 res/elektroid.ui:1932 res/elektroid.ui:2402
 msgid "Duration"
 msgstr "Durée"
 
 #. Start MIDI key (note)
-#: res/gui.glade:1301
+#: res/elektroid.ui:1302
 msgctxt "Auto Sampler"
 msgid "Start"
 msgstr "Démarrer"
 
 #. End MIDI key (note)
-#: res/gui.glade:1333
+#: res/elektroid.ui:1334
 msgctxt "Auto Sampler"
 msgid "End"
 msgstr "Fin"
 
 #. Distance between different samples
-#: res/gui.glade:1365
+#: res/elektroid.ui:1366
 msgctxt "Auto Sampler"
 msgid "Distance"
 msgstr ""
 
 #. As in MIDI velocity
-#: res/gui.glade:1378
+#: res/elektroid.ui:1379
 msgctxt "Auto Sampler"
 msgid "Velocity"
 msgstr "Vélocité"
 
 #. MIDI channel
-#: res/gui.glade:1421
+#: res/elektroid.ui:1422
 msgctxt "Auto Sampler"
 msgid "Channel"
 msgstr "Canal"
 
-#: res/gui.glade:1508
+#. Device tuning in positive cents to be stored in the sample file
+#: res/elektroid.ui:1449
+msgctxt "Auto Sampler"
+msgid "Tuning"
+msgstr ""
+
+#: res/elektroid.ui:1519
+msgid "_Start"
+msgstr "_Démarrage"
+
+#: res/elektroid.ui:1574
 msgid "Show _Remote"
 msgstr "A_ffichage distant"
 
-#: res/gui.glade:1532
+#: res/elektroid.ui:1598
 msgid "_Preferences "
 msgstr "_Préférences "
 
-#: res/gui.glade:1556
+#: res/elektroid.ui:1622
 msgid "_About"
 msgstr "À _propos"
 
-#: res/gui.glade:1667 res/gui.glade:2111
+#: res/elektroid.ui:1733 res/elektroid.ui:2177
 msgid "Go to Parent Directory"
 msgstr "Aller au répertoire parent"
 
-#: res/gui.glade:1709 res/gui.glade:2153
+#: res/elektroid.ui:1775 res/elektroid.ui:2219
 msgid "Refresh Directory"
 msgstr "Rafraîchir le répertoire"
 
-#: res/gui.glade:1730 res/gui.glade:2174
+#: res/elektroid.ui:1796 res/elektroid.ui:2240
 msgid "Search"
 msgstr "Recherche"
 
-#: res/gui.glade:1833 res/gui.glade:2300
+#: res/elektroid.ui:1899 res/elektroid.ui:2366
 msgid "Format"
 msgstr ""
 
-#: res/gui.glade:1855 res/gui.glade:2324
+#: res/elektroid.ui:1921 res/elektroid.ui:2390
 msgid "MIDI Note"
 msgstr "Note MIDI"
 
-#: res/gui.glade:1877 res/gui.glade:2348
+#: res/elektroid.ui:1943 res/elektroid.ui:2414
 msgid "Rate"
 msgstr "Taux"
 
-#: res/gui.glade:1888 res/gui.glade:2360
+#: res/elektroid.ui:1954 res/elektroid.ui:2426
 msgid "Samples"
 msgstr "Échantillons"
 
-#: res/gui.glade:1899 res/gui.glade:2372
+#: res/elektroid.ui:1965 res/elektroid.ui:2438
 msgid "Information"
 msgstr "Informations"
 
-#: res/gui.glade:1912 res/gui.glade:2387
+#: res/elektroid.ui:1978 res/elektroid.ui:2453
 msgid "Size"
 msgstr "Taille"
 
-#: res/gui.glade:2008
+#: res/elektroid.ui:2074
 msgid "Refresh Devices"
 msgstr "Rafraîchir les périphériques"
 
 #. It is recommended to split the text in two lines if it is too long
-#: res/gui.glade:2617
+#: res/elektroid.ui:2683
 msgid "Auto play"
 msgstr ""
 "Lecture\n"
 "automatique"
 
-#: res/gui.glade:2669
+#: res/elektroid.ui:2735
 msgid "Grid"
 msgstr "Grille"
 
-#: res/gui.glade:2729
+#: res/elektroid.ui:2795
 msgid "Playing mix depends on the remote channels"
 msgstr "Le mixage de lecture dépend des canaux de destination"
 
 #. It is recommended to split the text in two lines if it is too long
-#: res/gui.glade:2731
+#: res/elektroid.ui:2797
 msgid ""
 "Mix depending\n"
 "on remote"
@@ -484,85 +492,85 @@ msgstr ""
 "Mélange selon\n"
 "la destination"
 
-#: res/gui.glade:2842
+#: res/elektroid.ui:2908
 msgid "Status"
 msgstr "État"
 
-#: res/gui.glade:2853
+#: res/elektroid.ui:2919
 msgid "Type"
 msgstr "Type"
 
-#: res/gui.glade:2874
+#: res/elektroid.ui:2940
 msgid "Source"
 msgstr "Source"
 
-#: res/gui.glade:2888
+#: res/elektroid.ui:2954
 msgid "Destination"
 msgstr "Destination"
 
-#: res/gui.glade:2903
+#: res/elektroid.ui:2969
 msgid "Progress"
 msgstr "Progrès"
 
-#: res/gui.glade:2935
+#: res/elektroid.ui:3001
 msgid "Cancel Tasks"
 msgstr "Annuler les tâches"
 
-#: res/gui.glade:2956
+#: res/elektroid.ui:3022
 msgid "Remove Queued Tasks"
 msgstr "Supprimer les tâches dans la file d'attente"
 
-#: res/gui.glade:2977
+#: res/elektroid.ui:3043
 msgid "Clear Finished Tasks"
 msgstr "Nettoyer les tâches terminées"
 
-#: res/gui.glade:3224
+#: res/elektroid.ui:3286
 msgid "Preferences"
 msgstr "Préférences"
 
-#: res/gui.glade:3314
+#: res/elektroid.ui:3335
 msgid "Play sample while loading"
 msgstr "Lecture de l'échantillon pendant le chargement"
 
-#: res/gui.glade:3342
+#: res/elektroid.ui:3363
 msgid "Use floating point samples"
 msgstr ""
 
-#: res/gui.glade:3370
+#: res/elektroid.ui:3391
 msgid "Buffer length"
 msgstr "Taille du tampon"
 
-#: res/gui.glade:3446
+#: res/elektroid.ui:3467
 msgid "Stop device when connecting"
 msgstr "Arrêter le périphérique lors de la connexion"
 
 #. Sound is a type of data in Elektron devices so it is better not to translate these words or quote them.
-#: res/gui.glade:3516
+#: res/elektroid.ui:3537
 msgid "Load sound and preset tags"
 msgstr "Charger des tags de sons et de préréglages"
 
-#: res/gui.glade:3659
+#: res/elektroid.ui:3717
 msgid "Record Channels"
 msgstr "Canaux enregistrés"
 
-#: res/gui.glade:3694
+#: res/elektroid.ui:3848
 msgid "_Record"
 msgstr "E_nregistrement"
 
-#: res/microbrute/gui.glade:35
+#: res/microbrute/microbrute.ui:35
 msgid "Calibration assistant"
 msgstr "Assistant de calibration"
 
-#: res/microbrute/gui.glade:42
+#: res/microbrute/microbrute.ui:42
 msgid "This procedure calibrates the pitch bend and modulation wheels."
 msgstr ""
 "Cette procédure permet de calibrer les roues de pitch bend et de modulation."
 
-#: res/microbrute/gui.glade:46
+#: res/microbrute/microbrute.ui:46
 msgid "Start"
 msgstr "Démarrer"
 
-#: res/microbrute/gui.glade:54
+#: res/microbrute/microbrute.ui:54
 msgid ""
 "Let the pitch bend wheel rest at the neutral position and click on the next "
 "button."
@@ -570,221 +578,221 @@ msgstr ""
 "Laisser la roulette de bend reposer en position neutre et cliquer sur le "
 "bouton suivant"
 
-#: res/microbrute/gui.glade:59
+#: res/microbrute/microbrute.ui:59
 msgid "Step 1"
 msgstr "Étape 1"
 
-#: res/microbrute/gui.glade:67
+#: res/microbrute/microbrute.ui:67
 msgid "While setting both wheels at the bottom click on the next button."
 msgstr "En réglant les deux roulettes en bas, cliquez sur le bouton suivant"
 
-#: res/microbrute/gui.glade:72
+#: res/microbrute/microbrute.ui:72
 msgid "Step 2"
 msgstr "Étape 2"
 
-#: res/microbrute/gui.glade:80
+#: res/microbrute/microbrute.ui:80
 msgid "While setting both wheels at the top click on the next button."
 msgstr "En réglant les deux roulettes en haut, cliquez sur le bouton suivant"
 
-#: res/microbrute/gui.glade:85
+#: res/microbrute/microbrute.ui:85
 msgid "Step 3"
 msgstr "Étape 3"
 
-#: res/microbrute/gui.glade:93
+#: res/microbrute/microbrute.ui:93
 msgid "Calibration completed"
 msgstr "Calibration complétée"
 
-#: res/microbrute/gui.glade:98
+#: res/microbrute/microbrute.ui:98
 msgid "End"
 msgstr "Fin"
 
-#: res/microbrute/gui.glade:117
+#: res/microbrute/microbrute.ui:117
 msgctxt "Gate Length"
 msgid "Short"
 msgstr "Court"
 
-#: res/microbrute/gui.glade:121
+#: res/microbrute/microbrute.ui:121
 msgctxt "Gate Length"
 msgid "Medium"
 msgstr "Médium"
 
-#: res/microbrute/gui.glade:125
+#: res/microbrute/microbrute.ui:125
 msgctxt "Gate Length"
 msgid "Long"
 msgstr "Long"
 
-#: res/microbrute/gui.glade:139
+#: res/microbrute/microbrute.ui:139
 msgctxt "Key Priority"
 msgid "Last"
 msgstr "Dernier"
 
-#: res/microbrute/gui.glade:143
+#: res/microbrute/microbrute.ui:143
 msgctxt "Key Priority"
 msgid "Low"
 msgstr "Bas"
 
-#: res/microbrute/gui.glade:147
+#: res/microbrute/microbrute.ui:147
 msgctxt "Key Priority"
 msgid "High"
 msgstr "Haut"
 
-#: res/microbrute/gui.glade:161
+#: res/microbrute/microbrute.ui:161
 msgctxt "Play Mode"
 msgid "Hold"
 msgstr "Maintien"
 
-#: res/microbrute/gui.glade:165
+#: res/microbrute/microbrute.ui:165
 msgctxt "Play Mode"
 msgid "Note On"
 msgstr "Note on"
 
-#: res/microbrute/gui.glade:179
+#: res/microbrute/microbrute.ui:179
 msgctxt "Receive Channel"
 msgid "Any"
 msgstr "Tous"
 
-#: res/microbrute/gui.glade:257
+#: res/microbrute/microbrute.ui:257
 msgctxt "Sequence Change"
 msgid "At End"
 msgstr "À la fin"
 
-#: res/microbrute/gui.glade:261
+#: res/microbrute/microbrute.ui:261
 msgctxt "Sequence Change"
 msgid "Instant Reset"
 msgstr "Réinitialisation instantanée"
 
-#: res/microbrute/gui.glade:265
+#: res/microbrute/microbrute.ui:265
 msgctxt "Sequence Change"
 msgid "Instant Continuation"
 msgstr "Continuation instantanée"
 
-#: res/microbrute/gui.glade:279
+#: res/microbrute/microbrute.ui:279
 msgctxt "Sequence Retrigger"
 msgid "Reset"
 msgstr "Réinitialisation"
 
-#: res/microbrute/gui.glade:283
+#: res/microbrute/microbrute.ui:283
 msgctxt "Sequence Retrigger"
 msgid "Reset But Legato"
 msgstr "Réinitialisation sauf le légato"
 
-#: res/microbrute/gui.glade:287
+#: res/microbrute/microbrute.ui:287
 msgctxt "Sequence Retrigger"
 msgid "None"
 msgstr "Aucun"
 
-#: res/microbrute/gui.glade:327
+#: res/microbrute/microbrute.ui:327
 msgctxt "Step On"
 msgid "Clock"
 msgstr "Horloge"
 
-#: res/microbrute/gui.glade:331
+#: res/microbrute/microbrute.ui:331
 msgctxt "Step On"
 msgid "Gate"
 msgstr "Gate"
 
-#: res/microbrute/gui.glade:345
+#: res/microbrute/microbrute.ui:345
 msgctxt "Synchronization"
 msgid "Auto"
 msgstr "Auto"
 
-#: res/microbrute/gui.glade:349
+#: res/microbrute/microbrute.ui:349
 msgctxt "Synchronization"
 msgid "Internal"
 msgstr "Interne"
 
-#: res/microbrute/gui.glade:353
+#: res/microbrute/microbrute.ui:353
 msgctxt "Synchronization"
 msgid "External"
 msgstr "Externe"
 
-#: res/microbrute/gui.glade:441
+#: res/microbrute/microbrute.ui:441
 msgctxt "Velocity Response"
 msgid "Linear"
 msgstr "Linéaire"
 
-#: res/microbrute/gui.glade:445
+#: res/microbrute/microbrute.ui:445
 msgctxt "Velocity Response"
 msgid "Logarithmic"
 msgstr "Logarítmique"
 
-#: res/microbrute/gui.glade:449
+#: res/microbrute/microbrute.ui:449
 msgctxt "Velocity Response"
 msgid "Exponential"
 msgstr "Exponentiel"
 
-#: res/microbrute/gui.glade:456
+#: res/microbrute/microbrute.ui:456
 msgid "MicroBrute Configuration"
 msgstr "Contiguration du MicroBrute"
 
-#: res/microbrute/gui.glade:480
+#: res/microbrute/microbrute.ui:480
 msgid "Persistent changes"
 msgstr "Changements persistants"
 
-#: res/microbrute/gui.glade:547
+#: res/microbrute/microbrute.ui:547
 msgid "Transmit Channel"
 msgstr "Canal de transmission"
 
-#: res/microbrute/gui.glade:559
+#: res/microbrute/microbrute.ui:559
 msgid "Receive Channel"
 msgstr "Canal de réception"
 
-#: res/microbrute/gui.glade:650
+#: res/microbrute/microbrute.ui:650
 msgid "Key Priority"
 msgstr "Priorité de note"
 
-#: res/microbrute/gui.glade:662
+#: res/microbrute/microbrute.ui:662
 msgid "Velocity Response"
 msgstr "Réponse de vélocité"
 
-#: res/microbrute/gui.glade:715
+#: res/microbrute/microbrute.ui:715
 msgid "Keyboard Parameters"
 msgstr "Paramètres du clavier"
 
-#: res/microbrute/gui.glade:753
+#: res/microbrute/microbrute.ui:753
 msgid "Play Mode"
 msgstr "Mode de lecture"
 
-#: res/microbrute/gui.glade:765
+#: res/microbrute/microbrute.ui:765
 msgid "Sequence Retrigger"
 msgstr "Déclencheur de séquence"
 
-#: res/microbrute/gui.glade:777
+#: res/microbrute/microbrute.ui:777
 msgid "Sequence Change"
 msgstr "Changement de séquence"
 
-#: res/microbrute/gui.glade:789
+#: res/microbrute/microbrute.ui:789
 msgid "Next Step On"
 msgstr "Pas suivante on"
 
-#: res/microbrute/gui.glade:801
+#: res/microbrute/microbrute.ui:801
 msgid "Step Length"
 msgstr "Durée du pas"
 
-#: res/microbrute/gui.glade:914
+#: res/microbrute/microbrute.ui:914
 msgid "Sequencer Control"
 msgstr "Contrôle de séquence"
 
-#: res/microbrute/gui.glade:952
+#: res/microbrute/microbrute.ui:952
 msgid "LFO Key Retrigger"
 msgstr "Déclencheur de clé LFO"
 
-#: res/microbrute/gui.glade:964
+#: res/microbrute/microbrute.ui:964
 msgid "Envelope Legato"
 msgstr "Enveloppe Légato"
 
-#: res/microbrute/gui.glade:976
+#: res/microbrute/microbrute.ui:976
 msgid "Bend Range"
 msgstr "Plage de courbure"
 
-#: res/microbrute/gui.glade:988
+#: res/microbrute/microbrute.ui:988
 msgid "Gate Length"
 msgstr "Durée de gate"
 
-#: res/microbrute/gui.glade:1000
+#: res/microbrute/microbrute.ui:1000
 msgid "Synchronization"
 msgstr "Synchronisation"
 
-#: res/microbrute/gui.glade:1094
+#: res/microbrute/microbrute.ui:1094
 msgid "Module Parameters"
 msgstr "Paramètre du module"
