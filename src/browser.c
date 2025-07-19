@@ -489,7 +489,8 @@ browser_remote_set_fs_operations (const struct fs_operations *fs_ops)
 	  if (!remote_browser.dir)
 	    {
 	      remote_browser.dir =
-		strdup (preferences_get_string (PREF_KEY_REMOTE_DIR));
+		strdup (get_system_startup_path
+			(preferences_get_string (PREF_KEY_REMOTE_DIR)));
 	    }
 	}
       else
