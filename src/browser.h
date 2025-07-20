@@ -68,7 +68,7 @@ struct browser
   GtkEntry *dir_entry;
   const gchar *pref_key_dir;
   gchar *dir;
-  GtkMenu *menu;
+  GtkPopoverMenu *popover;
   gboolean dnd;
   GtkTreePath *dnd_motion_path;
   guint dnd_timeout_function_id;
@@ -77,7 +77,7 @@ struct browser
   struct backend *backend;
     gboolean (*check_callback) ();
   void (*set_columns_visibility) ();
-  void (*set_popup_menuitems_visibility) ();
+  void (*set_popup_buttons_visibility) ();
   struct notifier *notifier;
   //Background loading members
   GSList *sensitive_widgets;
@@ -92,15 +92,15 @@ struct browser
   const gchar *filter;
   gint64 last_selected_index;	//This needs space for gint and -1
   //Menu
-  GtkWidget *transfer_menuitem;
-  GtkWidget *play_separator;
-  GtkWidget *play_menuitem;
-  GtkWidget *options_separator;
-  GtkWidget *open_menuitem;
-  GtkWidget *show_menuitem;
-  GtkWidget *actions_separator;
-  GtkWidget *rename_menuitem;
-  GtkWidget *delete_menuitem;
+  GtkWidget *popover_transfer_button;
+  GtkWidget *popover_play_separator;
+  GtkWidget *popover_play_button;
+  GtkWidget *popover_options_separator;
+  GtkWidget *popover_open_button;
+  GtkWidget *popover_show_button;
+  GtkWidget *popover_actions_separator;
+  GtkWidget *popover_rename_button;
+  GtkWidget *popover_delete_button;
   GtkTreeViewColumn *tree_view_name_column;
   GtkTreeViewColumn *tree_view_info_column;
   GtkTreeViewColumn *tree_view_sample_frames_column;
