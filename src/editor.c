@@ -55,17 +55,13 @@ enum editor_operation
   EDITOR_OP_MOVE_SEL_END
 };
 
-struct frame_state
+struct waveform_state
 {
   gdouble *wp;
   gdouble *wn;
-  guint *wpc;
-  guint *wnc;
 };
 
 static void editor_save_accept (gpointer source, const gchar * name);
-
-static void editor_set_waveform_data ();
 
 extern struct browser local_browser;
 extern struct browser remote_browser;
@@ -102,7 +98,7 @@ static gdouble *waveform_data;
 static guint waveform_width;
 static guint waveform_len;	//Loaded frames available in waveform_data
 static double press_event_x;
-static struct frame_state frame_state;
+static struct waveform_state waveform_state;
 static gint64 playback_cursor;	// guint32 plus -1 (invisible)
 
 struct browser *
@@ -174,6 +170,7 @@ editor_clear_waveform_data_no_sync ()
   waveform_width = gtk_widget_get_allocated_width (waveform);
   g_free (waveform_data);
   waveform_data = NULL;
+  waveform_len = 0;
 }
 
 static void
@@ -345,54 +342,78 @@ editor_update_ui_on_load (gpointer data)
 }
 
 static void
-editor_free_frame_state ()
+editor_free_waveform_state ()
 {
-  g_free (frame_state.wp);
-  g_free (frame_state.wn);
+  g_free (waveform_state.wp);
+  g_free (waveform_state.wn);
 }
 
 static void
-editor_reset_frame_state (guint channels)
+editor_reset_waveform_state (guint channels)
 {
-  editor_free_frame_state ();
-  frame_state.wp = g_malloc (sizeof (gdouble) * channels);
-  frame_state.wn = g_malloc (sizeof (gdouble) * channels);
+  editor_free_waveform_state ();
+  waveform_state.wp = g_malloc (sizeof (gdouble) * channels);
+  waveform_state.wn = g_malloc (sizeof (gdouble) * channels);
+}
+
+static gdouble
+editor_get_x_ratio ()
+{
+  struct sample_info *sample_info = audio.sample.info;
+  return sample_info->frames / (gdouble) waveform_width;
 }
 
 static gboolean
-editor_get_y_frame (guint32 frame, guint32 len)
+editor_set_waveform_state (guint32 x)
 {
-  gdouble y_scale;
+  guint8 *s;
+  guint32 start, frame_start, count;
+  gdouble y_scale, x_ratio, x_frame, x_frame_next, x_count;
   GByteArray *sample = audio.sample.content;
   struct sample_info *sample_info = audio.sample.info;
   guint frame_size =
     FRAME_SIZE (sample_info->channels, sample_get_internal_format ());
   guint loaded_frames = sample->len / frame_size;
-  guint8 *s = &sample->data[frame * frame_size];
+  gboolean use_float = preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT);
 
-  len = len < MAX_FRAMES_PER_PIXEL ? len : MAX_FRAMES_PER_PIXEL;
+  start = editor_get_start_frame ();
+  x_ratio = editor_get_x_ratio () / zoom;
 
-  y_scale = (preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ?
-	     -1.0 : 1.0 / (double) SHRT_MIN);
+  x_frame = start + x * x_ratio;
+  frame_start = x_frame;
+  x_frame_next = x_frame + x_ratio;
+  x_count = x_frame_next - frame_start;
+  count = x_count > 1 ? x_count : 1;
+
+  y_scale = use_float ? -1.0 : 1.0 / (double) SHRT_MIN;
   y_scale /= sample_info->channels * 2.0;
 
   for (guint i = 0; i < sample_info->channels; i++)
     {
-      frame_state.wp[i] = 0.0;
-      frame_state.wn[i] = 0.0;
+      waveform_state.wp[i] = 0.0;
+      waveform_state.wn[i] = 0.0;
     }
 
-  for (guint i = 0, f = frame; i < len; i++, f++)
+  debug_print (3, "Calculating %d state from [ %d, %d [ (%d frames)...", x,
+	       frame_start, frame_start + count, loaded_frames);
+
+  s = &sample->data[frame_start * frame_size];
+  for (guint i = 0, f = frame_start; i < count; i++, f++)
     {
       if (f == loaded_frames)
 	{
 	  return f == sample_info->frames;
 	}
 
+      if (i > MAX_FRAMES_PER_PIXEL)
+	{
+	  continue;
+	}
+
       for (guint j = 0; j < sample_info->channels; j++)
 	{
 	  gdouble v;
-	  if (preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT))
+	  if (use_float)
 	    {
 	      v = *((gfloat *) s);
 	      s += sizeof (gfloat);
@@ -405,16 +426,16 @@ editor_get_y_frame (guint32 frame, guint32 len)
 
 	  if (v > 0)
 	    {
-	      if (v > frame_state.wp[j])
+	      if (v > waveform_state.wp[j])
 		{
-		  frame_state.wp[j] = v;
+		  waveform_state.wp[j] = v;
 		}
 	    }
 	  else
 	    {
-	      if (v < frame_state.wn[j])
+	      if (v < waveform_state.wn[j])
 		{
-		  frame_state.wn[j] = v;
+		  waveform_state.wn[j] = v;
 		}
 	    }
 	}
@@ -422,18 +443,11 @@ editor_get_y_frame (guint32 frame, guint32 len)
 
   for (guint i = 0; i < sample_info->channels; i++)
     {
-      frame_state.wp[i] *= y_scale;
-      frame_state.wn[i] *= y_scale;
+      waveform_state.wp[i] *= y_scale;
+      waveform_state.wn[i] *= y_scale;
     }
 
   return TRUE;
-}
-
-static gdouble
-editor_get_x_ratio ()
-{
-  struct sample_info *sample_info = audio.sample.info;
-  return sample_info->frames / (gdouble) waveform_width;
 }
 
 static void
@@ -569,8 +583,8 @@ editor_draw_selection (cairo_t *cr, guint start, guint height, double x_ratio)
 static void
 editor_set_waveform_data_no_sync ()
 {
-  guint i, last_frame, start, x_count;
-  gdouble x_ratio, x_frame, x_frame_next, *v;
+  guint i;
+  gdouble *v;
   struct sample_info *sample_info = audio.sample.info;
 
   debug_print (1, "Setting waveform data...");
@@ -591,45 +605,34 @@ editor_set_waveform_data_no_sync ()
       waveform_data = g_malloc (size);
       memset (waveform_data, 0, size);
       waveform_len = 0;
-      editor_reset_frame_state (sample_info->channels);
+      editor_reset_waveform_state (sample_info->channels);
     }
-
-  start = editor_get_start_frame ();
-  x_ratio = editor_get_x_ratio () / zoom;
 
   //Loading is still going on
   if (waveform_len < waveform_width)
     {
-      last_frame = waveform_len;
-    }
-  else
-    {
-      last_frame = 0;
-    }
-
-  v = &waveform_data[last_frame * sample_info->channels * 2];	//Positive and negative values
-  for (i = last_frame; i < waveform_width; i++)
-    {
-      x_frame = start + i * x_ratio;
-      x_frame_next = x_frame + x_ratio;
-      x_count = x_frame_next - (guint) x_frame;
-      x_count = x_count ? x_count : 1;
-
-      if (!editor_get_y_frame (x_frame, x_count))
+      debug_print (1, "Calculating waveform [ %d, %d [", waveform_len,
+		   waveform_width);
+      v = &waveform_data[waveform_len * sample_info->channels * 2];	//Positive and negative values
+      for (i = waveform_len; i < waveform_width; i++)
 	{
-	  break;
+	  if (!editor_set_waveform_state (i))
+	    {
+	      debug_print (3, "Waveform limit reached at %d", i);
+	      break;
+	    }
+
+	  for (gint j = 0; j < sample_info->channels; j++)
+	    {
+	      *v = waveform_state.wp[j];
+	      v++;
+	      *v = waveform_state.wn[j];
+	      v++;
+	    }
 	}
 
-      for (gint j = 0; j < sample_info->channels; j++)
-	{
-	  *v = frame_state.wp[j];
-	  v++;
-	  *v = frame_state.wn[j];
-	  v++;
-	}
+      waveform_len = i;
     }
-
-  waveform_len = i;
 
   g_mutex_unlock (&mutex);
 }
@@ -652,7 +655,8 @@ editor_draw_waveform (cairo_t *cr, guint start, guint height, double x_ratio)
   GtkStyleContext *context;
   struct sample_info *sample_info = audio.sample.info;
 
-  debug_print (1, "Drawing waveform from %d with %.2f zoom...", start, zoom);
+  debug_print (1, "Drawing waveform from %d with %.2f zoom (%d)...", start,
+	       zoom, waveform_len);
 
   context = gtk_widget_get_style_context (waveform);
 
@@ -660,7 +664,7 @@ editor_draw_waveform (cairo_t *cr, guint start, guint height, double x_ratio)
   gtk_style_context_get_color (context, state, &color);
   gdk_cairo_set_source_rgba (cr, &color);
 
-  cairo_set_line_width (cr, x_ratio < 1.0 ? 1.0 / x_ratio : 1);
+  cairo_set_line_width (cr, 1);
 
   c_height = height / (gdouble) sample_info->channels;
   c_height_half = c_height / 2;
@@ -668,7 +672,6 @@ editor_draw_waveform (cairo_t *cr, guint start, guint height, double x_ratio)
   if (waveform_data)
     {
       v = waveform_data;
-
       x = -0.5;
       for (gint i = 0; i < waveform_len; i++)
 	{
@@ -700,26 +703,24 @@ editor_draw (GtkWidget *widget, cairo_t *cr, gpointer data)
 
   sample_info = audio.sample.info;
 
-  height = gtk_widget_get_allocated_height (widget);
-  width = gtk_widget_get_allocated_height (widget);
+  height = gtk_widget_get_allocated_height (waveform);
+  width = gtk_widget_get_allocated_width (waveform);
+
   context = gtk_widget_get_style_context (waveform);
   gtk_render_background (context, cr, 0, 0, width, height);
 
-  if (!sample_info || !waveform_data)
+  if (sample_info && waveform_data)
     {
-      goto end;
+      start = editor_get_start_frame ();
+      x_ratio = editor_get_x_ratio () / zoom;
+
+      editor_draw_grid (cr, start, height, x_ratio);
+      editor_draw_selection (cr, start, height, x_ratio);
+      editor_draw_waveform (cr, start, height, x_ratio);
+      editor_draw_loop_points (cr, start, height, x_ratio);
+      editor_draw_playback_cursor (cr, start, height, x_ratio);
     }
 
-  start = editor_get_start_frame ();
-  x_ratio = editor_get_x_ratio () / zoom;
-
-  editor_draw_grid (cr, start, height, x_ratio);
-  editor_draw_selection (cr, start, height, x_ratio);
-  editor_draw_waveform (cr, start, height, x_ratio);
-  editor_draw_loop_points (cr, start, height, x_ratio);
-  editor_draw_playback_cursor (cr, start, height, x_ratio);
-
-end:
   g_mutex_unlock (&mutex);
   g_mutex_unlock (&audio.control.controllable.mutex);
 
@@ -1818,7 +1819,7 @@ editor_destroy ()
   gtk_main_iteration_do (!loading_completed);	//Wait for drawings
 
   editor_clear_waveform_data ();
-  editor_free_frame_state ();
+  editor_free_waveform_state ();
 
   g_object_unref (G_OBJECT (notes_list_store));
 }
