@@ -384,6 +384,7 @@ microbrute_init ()
 void
 microbrute_destroy ()
 {
+  debug_print (1, "Destroying microbrute...");
   gtk_widget_destroy (calibration_assistant);
   gtk_widget_destroy (GTK_WIDGET (config_window));
 }

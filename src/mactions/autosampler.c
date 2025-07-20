@@ -304,6 +304,7 @@ autosampler_init (GtkBuilder *builder)
 void
 autosampler_destroy ()
 {
+  debug_print (1, "Destroying autosampler...");
   autosampler_cancel (NULL, NULL);
   gtk_main_iteration_do (TRUE);	//Wait for guirecorder
   gtk_widget_destroy (GTK_WIDGET (window));
