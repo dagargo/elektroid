@@ -36,9 +36,9 @@
 #define EDITOR_LOOP_MARKER_FULL_HEIGHT (EDITOR_LOOP_MARKER_HALF_HEIGHT * 2)
 
 #if defined(__linux__)
-#define FRAMES_TO_PLAY (16 * 1024)
+#define FRAMES_TO_PLAY (16 * KI)
 #else
-#define FRAMES_TO_PLAY (64 * 1024)
+#define FRAMES_TO_PLAY (64 * KI)
 #endif
 
 //Some OSs do not allow ':' in the name. Same format used by the GNOME screenshot tool.
