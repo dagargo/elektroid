@@ -87,6 +87,16 @@ audio_copy_sample_s16 (gint16 *dst, gint16 *src)
 #endif
 }
 
+gboolean
+audio_is_stopped ()
+{
+  enum audio_status s;
+  g_mutex_lock (&audio.control.controllable.mutex);
+  s = audio.status;
+  g_mutex_unlock (&audio.control.controllable.mutex);
+  return s == AUDIO_STATUS_STOPPED;
+}
+
 void
 audio_write_to_output (void *buffer, gint frames)
 {

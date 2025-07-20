@@ -1219,7 +1219,8 @@ editor_button_release (GtkWidget *widget, GdkEventButton *event,
 	  if (AUDIO_SEL_LEN)
 	    {
 	      gtk_widget_set_sensitive (delete_menuitem, TRUE);
-	      if (preferences_get_boolean (PREF_KEY_AUTOPLAY))
+	      if (preferences_get_boolean (PREF_KEY_AUTOPLAY) &&
+		  audio_is_stopped ())
 		{
 		  editor_start_playback ();
 		}

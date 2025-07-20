@@ -99,6 +99,8 @@ struct audio
 
 extern struct audio audio;
 
+gboolean audio_is_stopped ();
+
 void audio_start_playback ();
 
 void audio_stop_playback ();
