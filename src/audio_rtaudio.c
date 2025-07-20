@@ -74,7 +74,6 @@ audio_start_playback (audio_playback_cursor_notifier cursor_notifier)
 void
 audio_stop_recording ()
 {
-  struct sample_info *sample_info = audio.sample.info;
   enum audio_status status;
 
   g_mutex_lock (&audio.control.controllable.mutex);
@@ -92,8 +91,6 @@ audio_stop_recording ()
 
   audio_finish_recording ();
 
-  debug_print (1, "Stopping recording (%d frames read)...",
-	       sample_info->frames);
   rtaudio_abort_stream (audio.record_rtaudio);	//Stop and flush buffer
 }
 
@@ -102,15 +99,11 @@ audio_start_recording (guint options,
 		       audio_monitor_notifier monitor_notifier,
 		       void *monitor_data)
 {
-  struct sample_info *sample_info;
-
   audio_stop_recording ();
   audio_reset_record_buffer (options, monitor_notifier, monitor_data);
   audio_prepare (AUDIO_STATUS_RECORDING);
 
-  sample_info = audio.sample.info;
-  debug_print (1, "Starting recording (max %d frames)...",
-	       sample_info->frames);
+  debug_print (1, "Starting recording...");
 
   rtaudio_start_stream (audio.record_rtaudio);
 }
