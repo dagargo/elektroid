@@ -87,11 +87,11 @@ static GtkWidget *grid_length_spin;
 static GtkWidget *show_grid_switch;
 static gulong volume_changed_handler;
 static GtkListStore *notes_list_store;
-static GtkMenu *menu;
-static GtkWidget *play_menuitem;
-static GtkWidget *delete_menuitem;
-static GtkWidget *undo_menuitem;
-static GtkWidget *save_menuitem;
+static GtkPopoverMenu *popover;
+static GtkWidget *popover_play_button;
+static GtkWidget *popover_delete_button;
+static GtkWidget *popover_undo_button;
+static GtkWidget *popover_save_button;
 static gdouble zoom;
 static enum editor_operation operation;
 static gboolean dirty;
@@ -441,7 +441,7 @@ editor_set_text_color (GdkRGBA *color)
 {
   GtkStyleContext *context;
 
-  context = gtk_widget_get_style_context (play_menuitem);	//Any text widget is valid
+  context = gtk_widget_get_style_context (popover_play_button);	//Any text widget is valid
   gtk_style_context_get_color (context, GTK_STATE_FLAG_NORMAL, color);
 }
 
@@ -1172,6 +1172,7 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
     }
   else if (event->button == GDK_BUTTON_SECONDARY)
     {
+      GdkRectangle r;
       gboolean cursor_on_sel = sel_len > 0 &&
 	cursor_frame >= audio.sel_start && cursor_frame < audio.sel_end;
       if (!cursor_on_sel)
@@ -1179,10 +1180,15 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 	  audio.sel_start = -1;
 	  audio.sel_end = -1;
 	}
-      gtk_widget_set_sensitive (delete_menuitem, sel_len > 0);
-      gtk_widget_set_sensitive (undo_menuitem, dirty);
-      gtk_widget_set_sensitive (save_menuitem, dirty || cursor_on_sel);
-      gtk_menu_popup_at_pointer (menu, (GdkEvent *) event);
+      gtk_widget_set_sensitive (popover_delete_button, sel_len > 0);
+      gtk_widget_set_sensitive (popover_undo_button, dirty);
+      gtk_widget_set_sensitive (popover_save_button, dirty || cursor_on_sel);
+      r.x = event->x;
+      r.y = event->y;
+      r.width = 1;
+      r.height = 1;
+      gtk_popover_set_pointing_to (GTK_POPOVER (popover), &r);
+      gtk_popover_popup (GTK_POPOVER (popover));
     }
 
 end:
@@ -1218,7 +1224,7 @@ editor_button_release (GtkWidget *widget, GdkEventButton *event,
 
 	  if (AUDIO_SEL_LEN)
 	    {
-	      gtk_widget_set_sensitive (delete_menuitem, TRUE);
+	      gtk_widget_set_sensitive (popover_delete_button, TRUE);
 	      if (preferences_get_boolean (PREF_KEY_AUTOPLAY) &&
 		  audio_is_stopped ())
 		{
@@ -1615,14 +1621,7 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
 
   if (event->keyval == GDK_KEY_Menu)
     {
-      GtkAllocation allocation;
-      GdkWindow *gdk_window;
-
-      gtk_widget_get_allocation (GTK_WIDGET (waveform), &allocation);
-      gdk_window = gtk_widget_get_window (GTK_WIDGET (waveform));
-      gtk_menu_popup_at_rect (menu, gdk_window, &allocation,
-			      GDK_GRAVITY_CENTER, GDK_GRAVITY_NORTH_WEST,
-			      NULL);
+      gtk_popover_popup (GTK_POPOVER (popover));
     }
   else if (event->keyval == GDK_KEY_space)
     {
@@ -1717,16 +1716,20 @@ editor_init (GtkBuilder *builder)
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
   g_object_ref (G_OBJECT (notes_list_store));
 
-  menu = GTK_MENU (gtk_builder_get_object (builder, "editor_menu"));
-  play_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "editor_play_menuitem"));
-  delete_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "editor_delete_menuitem"));
-  undo_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "editor_undo_menuitem"));
-  save_menuitem =
-    GTK_WIDGET (gtk_builder_get_object (builder, "editor_save_menuitem"));
-  g_object_ref (G_OBJECT (menu));
+  popover =
+    GTK_POPOVER_MENU (gtk_builder_get_object (builder, "editor_popover"));
+  popover_play_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "editor_popover_play_button"));
+  popover_delete_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "editor_popover_delete_button"));
+  popover_undo_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "editor_popover_undo_button"));
+  popover_save_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "editor_popover_save_button"));
 
   g_signal_connect (waveform, "draw", G_CALLBACK (editor_draw), NULL);
   gtk_widget_add_events (waveform, GDK_SCROLL_MASK);
@@ -1769,13 +1772,13 @@ editor_init (GtkBuilder *builder)
   g_signal_connect (waveform, "size-allocate",
 		    G_CALLBACK (editor_size_allocate), NULL);
 
-  g_signal_connect (play_menuitem, "activate",
+  g_signal_connect (popover_play_button, "clicked",
 		    G_CALLBACK (editor_play_clicked), NULL);
-  g_signal_connect (delete_menuitem, "activate",
+  g_signal_connect (popover_delete_button, "clicked",
 		    G_CALLBACK (editor_delete_clicked), NULL);
-  g_signal_connect (undo_menuitem, "activate",
+  g_signal_connect (popover_undo_button, "clicked",
 		    G_CALLBACK (editor_undo_clicked), NULL);
-  g_signal_connect (save_menuitem, "activate",
+  g_signal_connect (popover_save_button, "clicked",
 		    G_CALLBACK (editor_save_clicked), NULL);
 
   editor_loop_clicked (loop_button, NULL);
@@ -1818,7 +1821,6 @@ editor_destroy ()
   editor_free_frame_state ();
 
   g_object_unref (G_OBJECT (notes_list_store));
-  g_object_unref (G_OBJECT (menu));
 }
 
 void
