@@ -311,6 +311,19 @@ editor_playback_cursor_notifier (gint64 position)
   g_idle_add (editor_queue_draw, NULL);
 }
 
+static void
+editor_start_playback ()
+{
+  if (preferences_get_boolean (PREF_KEY_SHOW_PLAYBACK_CURSOR))
+    {
+      audio_start_playback (editor_playback_cursor_notifier);
+    }
+  else
+    {
+      audio_start_playback (NULL);
+    }
+}
+
 static gboolean
 editor_update_ui_on_load (gpointer data)
 {
@@ -324,7 +337,7 @@ editor_update_ui_on_load (gpointer data)
       gtk_widget_set_sensitive (loop_button, TRUE);
       if (preferences_get_boolean (PREF_KEY_AUTOPLAY))
 	{
-	  audio_start_playback (editor_playback_cursor_notifier);
+	  editor_start_playback ();
 	}
     }
 
@@ -781,7 +794,7 @@ editor_play ()
   if (audio_check ())
     {
       audio_stop_recording ();
-      audio_start_playback (editor_playback_cursor_notifier);
+      editor_start_playback ();
     }
 }
 
@@ -1208,7 +1221,7 @@ editor_button_release (GtkWidget *widget, GdkEventButton *event,
 	      gtk_widget_set_sensitive (delete_menuitem, TRUE);
 	      if (preferences_get_boolean (PREF_KEY_AUTOPLAY))
 		{
-		  audio_start_playback (editor_playback_cursor_notifier);
+		  editor_start_playback ();
 		}
 	    }
 	}
@@ -1352,7 +1365,7 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
 
   if (status == AUDIO_STATUS_PLAYING)
     {
-      audio_start_playback (editor_playback_cursor_notifier);
+      editor_start_playback ();
     }
 }
 

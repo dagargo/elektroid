@@ -34,6 +34,7 @@
 #define PREF_KEY_PLAY_WHILE_LOADING "playSampleWhileLoading"
 #define PREF_KEY_AUDIO_BUFFER_LEN "audioBufferLength"
 #define PREF_KEY_AUDIO_USE_FLOAT "audioUseFloat"
+#define PREF_KEY_SHOW_PLAYBACK_CURSOR "showPlaybackCursor"
 
 enum preference_type
 {

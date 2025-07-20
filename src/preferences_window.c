@@ -25,9 +25,10 @@
 #include "regpref.h"
 
 static GtkWindow *window;
+static GtkWidget *audio_buffer_length_combo;
 static GtkWidget *audio_use_float_switch;
 static GtkWidget *play_sample_while_loading_switch;
-static GtkWidget *audio_buffer_length_combo;
+static GtkWidget *show_playback_cursor_switch;
 static GtkWidget *stop_device_when_connecting_switch;
 static GtkWidget *elektron_load_sound_tags_switch;
 static GtkWidget *save_button;
@@ -63,6 +64,8 @@ preferences_window_save (GtkWidget *object, gpointer data)
   preferences_set_boolean (PREF_KEY_AUDIO_USE_FLOAT, b);
   b = gtk_switch_get_active (GTK_SWITCH (play_sample_while_loading_switch));
   preferences_set_boolean (PREF_KEY_PLAY_WHILE_LOADING, b);
+  b = gtk_switch_get_active (GTK_SWITCH (show_playback_cursor_switch));
+  preferences_set_boolean (PREF_KEY_SHOW_PLAYBACK_CURSOR, b);
   b = gtk_switch_get_active (GTK_SWITCH (stop_device_when_connecting_switch));
   preferences_set_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING, b);
   b = gtk_switch_get_active (GTK_SWITCH (elektron_load_sound_tags_switch));
@@ -119,6 +122,8 @@ preferences_window_open ()
   gtk_switch_set_active (GTK_SWITCH (audio_use_float_switch), b);
   b = preferences_get_boolean (PREF_KEY_PLAY_WHILE_LOADING);
   gtk_switch_set_active (GTK_SWITCH (play_sample_while_loading_switch), b);
+  b = preferences_get_boolean (PREF_KEY_SHOW_PLAYBACK_CURSOR);
+  gtk_switch_set_active (GTK_SWITCH (show_playback_cursor_switch), b);
   b = preferences_get_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING);
   gtk_switch_set_active (GTK_SWITCH (stop_device_when_connecting_switch), b);
   b = preferences_get_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS);
@@ -157,14 +162,17 @@ preferences_window_init (GtkBuilder *builder)
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "preferences_window_cancel_button"));
 
+  audio_buffer_length_combo =
+    GTK_WIDGET (gtk_builder_get_object (builder,
+					"audio_buffer_length_combo"));
   audio_use_float_switch =
     GTK_WIDGET (gtk_builder_get_object (builder, "audio_use_float_switch"));
   play_sample_while_loading_switch =
     GTK_WIDGET (gtk_builder_get_object (builder,
 					"play_sample_while_loading_switch"));
-  audio_buffer_length_combo =
+  show_playback_cursor_switch =
     GTK_WIDGET (gtk_builder_get_object (builder,
-					"audio_buffer_length_combo"));
+					"show_playback_cursor_switch"));
   stop_device_when_connecting_switch =
     GTK_WIDGET (gtk_builder_get_object (builder,
 					"stop_device_when_connecting_switch"));

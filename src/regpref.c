@@ -131,6 +131,12 @@ static const struct preference PREF_AUDIO_USE_FLOAT = {
   .get_value = preferences_get_boolean_value_true
 };
 
+static const struct preference PREF_SHOW_PLAYBACK_CURSOR = {
+  .key = PREF_KEY_SHOW_PLAYBACK_CURSOR,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_true
+};
+
 const struct preference PREF_STOP_DEVICE_WHEN_CONNECTING = {
   .key = PREF_KEY_STOP_DEVICE_WHEN_CONNECTING,
   .type = PREFERENCE_TYPE_BOOLEAN,
@@ -150,7 +156,7 @@ regpref_register ()
 	       &PREF_SHOW_REMOTE, &PREF_AUTOPLAY, &PREF_MIX, &PREF_SHOW_GRID,
 	       &PREF_GRID_LENGTH, &PREF_PLAY_WHILE_LOADING,
 	       &PREF_AUDIO_BUFFER_LEN, &PREF_AUDIO_USE_FLOAT,
-	       &PREF_STOP_DEVICE_WHEN_CONNECTING,
+	       &PREF_SHOW_PLAYBACK_CURSOR, &PREF_STOP_DEVICE_WHEN_CONNECTING,
 	       &PREF_ELEKTRON_LOAD_SOUND_TAGS, NULL);
 }
 

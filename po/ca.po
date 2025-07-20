@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2025-07-19 10:22+0200\n"
+"POT-Creation-Date: 2025-07-20 08:12+0200\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: Catalan\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1546
+#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1591
 msgid "Audio"
 msgstr ""
 
@@ -25,15 +25,15 @@ msgstr ""
 msgid "Not connected"
 msgstr "No connectat"
 
-#: src/elektroid.c:629 src/editor.c:1495
+#: src/elektroid.c:629 src/editor.c:1540
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Voleu reemplaçar el fitxer «%s»?"
 
-#: src/elektroid.c:631 src/editor.c:1497 src/browser.c:631
-#: src/mactions/backend.c:197 src/mactions/backend.c:285
-#: src/mactions/microfreak.c:60 res/elektroid.ui:1505 res/elektroid.ui:3245
-#: res/elektroid.ui:3593 res/elektroid.ui:3692 res/elektroid.ui:3834
+#: src/elektroid.c:631 src/editor.c:1542 src/browser.c:603
+#: src/mactions/backend.c:194 src/mactions/backend.c:282
+#: src/mactions/microfreak.c:68 res/elektroid.ui:1505 res/elektroid.ui:3245
+#: res/elektroid.ui:3621 res/elektroid.ui:3720 res/elektroid.ui:3862
 msgid "_Cancel"
 msgstr "_Cancel·la"
 
@@ -41,7 +41,7 @@ msgstr "_Cancel·la"
 msgid "_Skip"
 msgstr "_Omet"
 
-#: src/elektroid.c:633 src/editor.c:1498
+#: src/elektroid.c:633 src/editor.c:1543
 msgid "_Replace"
 msgstr "_Reemplaça"
 
@@ -49,11 +49,11 @@ msgstr "_Reemplaça"
 msgid "Apply this action to all files"
 msgstr "Aplica aquesta acció a tots els fitxers"
 
-#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1829
+#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1801
 msgid "Preparing Tasks"
 msgstr "Preparant tasques..."
 
-#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1830
+#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1802
 #: src/progress_window.c:137
 msgid "Waiting..."
 msgstr "Esperant..."
@@ -75,7 +75,7 @@ msgstr "Conectant..."
 msgid "Acknowledgements"
 msgstr ""
 
-#: src/editor.c:1476 src/editor.c:1554
+#: src/editor.c:1521 src/editor.c:1599
 msgid "Save Sample"
 msgstr "Alça mostra"
 
@@ -111,61 +111,61 @@ msgstr "Càrrega"
 msgid "Download"
 msgstr "Descàrrega"
 
-#: src/browser.c:616
+#: src/browser.c:588
 msgid "Deleting Files"
 msgstr "Eliminant fitxers"
 
-#: src/browser.c:616
+#: src/browser.c:588
 msgid "Deleting..."
 msgstr "Eliminant..."
 
-#: src/browser.c:630
+#: src/browser.c:602
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Realmente desitja eliminar els elements seleccionats?"
 
-#: src/browser.c:632
+#: src/browser.c:604
 msgid "_Delete"
 msgstr "_Elimina"
 
-#: src/browser.c:695
+#: src/browser.c:667
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Error al canviar el nom a «%s»: %s."
 
-#: src/browser.c:729 res/elektroid.ui:260 res/elektroid.ui:896
+#: src/browser.c:701 res/elektroid.ui:260 res/elektroid.ui:896
 msgid "Rename"
 msgstr "Canvia el nom"
 
-#: src/browser.c:831
+#: src/browser.c:803
 msgid "min."
 msgstr "min."
 
-#: src/browser.c:881
+#: src/browser.c:853
 msgid "cents"
 msgstr "cents"
 
-#: src/browser.c:1424
+#: src/browser.c:1396
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Error al crear el directori «%s»: %s."
 
-#: src/browser.c:1440 res/elektroid.ui:1754 res/elektroid.ui:2198
+#: src/browser.c:1412 res/elektroid.ui:1754 res/elektroid.ui:2198
 msgid "Add Directory"
 msgstr "Afig directori"
 
-#: src/browser.c:1816
+#: src/browser.c:1788
 msgid "Moving Files"
 msgstr "Movent fitxers"
 
-#: src/browser.c:1817
+#: src/browser.c:1789
 msgid "Moving..."
 msgstr "Movent..."
 
-#: src/audio_pa.c:305
+#: src/audio_pa.c:309
 msgid "Output"
 msgstr "Eixida"
 
-#: src/audio_pa.c:308
+#: src/audio_pa.c:312
 msgid "Input"
 msgstr "Entrada"
 
@@ -182,57 +182,57 @@ msgstr "Gravant..."
 msgid "_Auto Sampler"
 msgstr ""
 
-#: src/mactions/backend.c:63
+#: src/mactions/backend.c:60
 #, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Error al carregar «%s»: %s."
 
-#: src/mactions/backend.c:173
+#: src/mactions/backend.c:170
 msgid "Sending SysEx"
 msgstr "Enviant SysEx"
 
-#: src/mactions/backend.c:195
+#: src/mactions/backend.c:192
 msgid "Open SysEx"
 msgstr "Obri SysEx"
 
-#: src/mactions/backend.c:199
+#: src/mactions/backend.c:196
 msgid "_Open"
 msgstr "_Obri"
 
-#: src/mactions/backend.c:203 src/mactions/backend.c:295
+#: src/mactions/backend.c:200 src/mactions/backend.c:292
 msgid "SysEx Files"
 msgstr "Fitxers SysEx"
 
-#: src/mactions/backend.c:255
+#: src/mactions/backend.c:252
 #, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Error al guardar «%s»: %s."
 
-#: src/mactions/backend.c:284
+#: src/mactions/backend.c:281
 msgid "Save SysEx"
 msgstr "Alça SysEx"
 
-#: src/mactions/backend.c:286 res/elektroid.ui:3259 res/elektroid.ui:3607
+#: src/mactions/backend.c:283 res/elektroid.ui:3259 res/elektroid.ui:3635
 msgid "_Save"
 msgstr "_Alça"
 
-#: src/mactions/backend.c:290
+#: src/mactions/backend.c:287
 msgid "Received SysEx"
 msgstr "SysEx rebut"
 
-#: src/mactions/backend.c:373
+#: src/mactions/backend.c:370
 msgid "Receiving SysEx"
 msgstr "Rebent SysEx"
 
-#: src/mactions/backend.c:385
+#: src/mactions/backend.c:382
 msgid "OS _Upgrade"
 msgstr "_Actualitza el SO"
 
-#: src/mactions/backend.c:400
+#: src/mactions/backend.c:397
 msgid "_Receive SysEx"
 msgstr "_Rep SysEx"
 
-#: src/mactions/backend.c:415
+#: src/mactions/backend.c:412
 msgid "_Send SysEx"
 msgstr "_Envia SysEx"
 
@@ -244,11 +244,11 @@ msgstr "_Configuració"
 msgid "_Calibration"
 msgstr "_Calibratge"
 
-#: src/mactions/microfreak.c:45
+#: src/mactions/microfreak.c:53
 msgid "Defragmenting Sample Memory"
 msgstr "Defragmentando memòria de mostres"
 
-#: src/mactions/microfreak.c:59
+#: src/mactions/microfreak.c:67
 msgid ""
 "The defragmentation process could take several minutes and could not be "
 "canceled. Are you sure you want to defragment the sample memory?"
@@ -256,7 +256,7 @@ msgstr ""
 "El procés de defragmentació podria llevar uns quants minuts i no es podria "
 "cancel·lar. Realment desitja defragmentar la memòria de mostres?"
 
-#: src/mactions/microfreak.c:61 src/mactions/microfreak.c:85
+#: src/mactions/microfreak.c:69 src/mactions/microfreak.c:93
 msgid "_Defragment"
 msgstr "_Defragmenta"
 
@@ -346,12 +346,12 @@ msgstr "Nom"
 
 #. Audio channels
 #: res/elektroid.ui:1068 res/elektroid.ui:1910 res/elektroid.ui:2378
-#: res/elektroid.ui:3745
+#: res/elektroid.ui:3773
 msgid "Channels"
 msgstr "Canals"
 
 #. Input audio monitor
-#: res/elektroid.ui:1099 res/elektroid.ui:3776
+#: res/elektroid.ui:1099 res/elektroid.ui:3804
 msgid "Monitor"
 msgstr ""
 
@@ -533,26 +533,30 @@ msgstr "Reproduïx mostra al carregar"
 
 #: res/elektroid.ui:3363
 msgid "Use floating point samples"
-msgstr "Usar mostres en coma flotant"
+msgstr "Usa mostres en coma flotant"
 
 #: res/elektroid.ui:3391
 msgid "Buffer length"
 msgstr "Llargària del buffer"
 
-#: res/elektroid.ui:3467
+#: res/elektroid.ui:3425
+msgid "Show playback cursor"
+msgstr "Mostra cursor de reproducció"
+
+#: res/elektroid.ui:3495
 msgid "Stop device when connecting"
 msgstr "Para dispositiu al conectar"
 
 #. Sound is a type of data in Elektron devices so it is better not to translate these words or quote them.
-#: res/elektroid.ui:3537
+#: res/elektroid.ui:3565
 msgid "Load sound and preset tags"
 msgstr "Carrega etiquetes de sounds i presets"
 
-#: res/elektroid.ui:3717
+#: res/elektroid.ui:3745
 msgid "Record Channels"
 msgstr "Canals de gravació"
 
-#: res/elektroid.ui:3848
+#: res/elektroid.ui:3876
 msgid "_Record"
 msgstr "_Gravar"
 

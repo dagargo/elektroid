@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2025-07-19 10:22+0200\n"
+"POT-Creation-Date: 2025-07-20 08:12+0200\n"
 "PO-Revision-Date: 2023-03-26 11:30-0300\n"
 "Last-Translator: Gustavo Costa <xfgusta@gmail.com>\n"
 "Language-Team: \n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Poedit 3.2.2\n"
 
-#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1546
+#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1591
 msgid "Audio"
 msgstr ""
 
@@ -26,15 +26,15 @@ msgstr ""
 msgid "Not connected"
 msgstr "Não conectado"
 
-#: src/elektroid.c:629 src/editor.c:1495
+#: src/elektroid.c:629 src/editor.c:1540
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Substituir o arquivo \"%s\"?"
 
-#: src/elektroid.c:631 src/editor.c:1497 src/browser.c:631
-#: src/mactions/backend.c:197 src/mactions/backend.c:285
-#: src/mactions/microfreak.c:60 res/elektroid.ui:1505 res/elektroid.ui:3245
-#: res/elektroid.ui:3593 res/elektroid.ui:3692 res/elektroid.ui:3834
+#: src/elektroid.c:631 src/editor.c:1542 src/browser.c:603
+#: src/mactions/backend.c:194 src/mactions/backend.c:282
+#: src/mactions/microfreak.c:68 res/elektroid.ui:1505 res/elektroid.ui:3245
+#: res/elektroid.ui:3621 res/elektroid.ui:3720 res/elektroid.ui:3862
 msgid "_Cancel"
 msgstr "_Cancelar"
 
@@ -42,7 +42,7 @@ msgstr "_Cancelar"
 msgid "_Skip"
 msgstr "_Pular"
 
-#: src/elektroid.c:633 src/editor.c:1498
+#: src/elektroid.c:633 src/editor.c:1543
 msgid "_Replace"
 msgstr "_Substituir"
 
@@ -50,11 +50,11 @@ msgstr "_Substituir"
 msgid "Apply this action to all files"
 msgstr "Aplicar esta ação a todos os arquivos"
 
-#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1829
+#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1801
 msgid "Preparing Tasks"
 msgstr "Preparando tarefas"
 
-#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1830
+#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1802
 #: src/progress_window.c:137
 msgid "Waiting..."
 msgstr "Esperando..."
@@ -76,7 +76,7 @@ msgstr "Conectando..."
 msgid "Acknowledgements"
 msgstr ""
 
-#: src/editor.c:1476 src/editor.c:1554
+#: src/editor.c:1521 src/editor.c:1599
 msgid "Save Sample"
 msgstr "Salvar amostra"
 
@@ -112,61 +112,61 @@ msgstr "Upload"
 msgid "Download"
 msgstr "Download"
 
-#: src/browser.c:616
+#: src/browser.c:588
 msgid "Deleting Files"
 msgstr "Excluindo arquivos"
 
-#: src/browser.c:616
+#: src/browser.c:588
 msgid "Deleting..."
 msgstr "Excluindo..."
 
-#: src/browser.c:630
+#: src/browser.c:602
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Tem certeza de que deseja excluir os itens selecionados?"
 
-#: src/browser.c:632
+#: src/browser.c:604
 msgid "_Delete"
 msgstr "_Excluir"
 
-#: src/browser.c:695
+#: src/browser.c:667
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Erro ao renomear para \"%s\": %s."
 
-#: src/browser.c:729 res/elektroid.ui:260 res/elektroid.ui:896
+#: src/browser.c:701 res/elektroid.ui:260 res/elektroid.ui:896
 msgid "Rename"
 msgstr "Renomar"
 
-#: src/browser.c:831
+#: src/browser.c:803
 msgid "min."
 msgstr "min."
 
-#: src/browser.c:881
+#: src/browser.c:853
 msgid "cents"
 msgstr ""
 
-#: src/browser.c:1424
+#: src/browser.c:1396
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Erro ao criar diretório \"%s\": %s."
 
-#: src/browser.c:1440 res/elektroid.ui:1754 res/elektroid.ui:2198
+#: src/browser.c:1412 res/elektroid.ui:1754 res/elektroid.ui:2198
 msgid "Add Directory"
 msgstr "Adicionar diretório"
 
-#: src/browser.c:1816
+#: src/browser.c:1788
 msgid "Moving Files"
 msgstr "Movendo arquivos"
 
-#: src/browser.c:1817
+#: src/browser.c:1789
 msgid "Moving..."
 msgstr "Movendo..."
 
-#: src/audio_pa.c:305
+#: src/audio_pa.c:309
 msgid "Output"
 msgstr ""
 
-#: src/audio_pa.c:308
+#: src/audio_pa.c:312
 msgid "Input"
 msgstr ""
 
@@ -183,58 +183,58 @@ msgstr ""
 msgid "_Auto Sampler"
 msgstr ""
 
-#: src/mactions/backend.c:63
+#: src/mactions/backend.c:60
 #, c-format
 msgid "Error while loading “%s”: %s."
 msgstr "Erro ao carregar \"%s\": %s."
 
-#: src/mactions/backend.c:173
+#: src/mactions/backend.c:170
 msgid "Sending SysEx"
 msgstr "Enviando SysEx"
 
-#: src/mactions/backend.c:195
+#: src/mactions/backend.c:192
 msgid "Open SysEx"
 msgstr "Abrir SysEx"
 
-#: src/mactions/backend.c:199
+#: src/mactions/backend.c:196
 msgid "_Open"
 msgstr "_Abrir"
 
-#: src/mactions/backend.c:203 src/mactions/backend.c:295
+#: src/mactions/backend.c:200 src/mactions/backend.c:292
 msgid "SysEx Files"
 msgstr "Arquivos SysEx"
 
-#: src/mactions/backend.c:255
+#: src/mactions/backend.c:252
 #, c-format
 msgid "Error while saving “%s”: %s."
 msgstr "Erro ao salvar \"%s\": %s."
 
-#: src/mactions/backend.c:284
+#: src/mactions/backend.c:281
 msgid "Save SysEx"
 msgstr "Salvar SysEx"
 
-#: src/mactions/backend.c:286 res/elektroid.ui:3259 res/elektroid.ui:3607
+#: src/mactions/backend.c:283 res/elektroid.ui:3259 res/elektroid.ui:3635
 msgid "_Save"
 msgstr "_Salvar"
 
-#: src/mactions/backend.c:290
+#: src/mactions/backend.c:287
 msgid "Received SysEx"
 msgstr "SysEx recebido"
 
-#: src/mactions/backend.c:373
+#: src/mactions/backend.c:370
 #, fuzzy
 msgid "Receiving SysEx"
 msgstr "Receber SysEx"
 
-#: src/mactions/backend.c:385
+#: src/mactions/backend.c:382
 msgid "OS _Upgrade"
 msgstr "Atualizar _OS"
 
-#: src/mactions/backend.c:400
+#: src/mactions/backend.c:397
 msgid "_Receive SysEx"
 msgstr "_Receber SysEx"
 
-#: src/mactions/backend.c:415
+#: src/mactions/backend.c:412
 msgid "_Send SysEx"
 msgstr "_Enviar SysEx"
 
@@ -246,17 +246,17 @@ msgstr "_Configuração"
 msgid "_Calibration"
 msgstr "_Calibração"
 
-#: src/mactions/microfreak.c:45
+#: src/mactions/microfreak.c:53
 msgid "Defragmenting Sample Memory"
 msgstr ""
 
-#: src/mactions/microfreak.c:59
+#: src/mactions/microfreak.c:67
 msgid ""
 "The defragmentation process could take several minutes and could not be "
 "canceled. Are you sure you want to defragment the sample memory?"
 msgstr ""
 
-#: src/mactions/microfreak.c:61 src/mactions/microfreak.c:85
+#: src/mactions/microfreak.c:69 src/mactions/microfreak.c:93
 msgid "_Defragment"
 msgstr ""
 
@@ -346,12 +346,12 @@ msgstr "Nome"
 
 #. Audio channels
 #: res/elektroid.ui:1068 res/elektroid.ui:1910 res/elektroid.ui:2378
-#: res/elektroid.ui:3745
+#: res/elektroid.ui:3773
 msgid "Channels"
 msgstr "Canais"
 
 #. Input audio monitor
-#: res/elektroid.ui:1099 res/elektroid.ui:3776
+#: res/elektroid.ui:1099 res/elektroid.ui:3804
 msgid "Monitor"
 msgstr ""
 
@@ -540,20 +540,24 @@ msgstr ""
 msgid "Buffer length"
 msgstr ""
 
-#: res/elektroid.ui:3467
+#: res/elektroid.ui:3425
+msgid "Show playback cursor"
+msgstr ""
+
+#: res/elektroid.ui:3495
 msgid "Stop device when connecting"
 msgstr ""
 
 #. Sound is a type of data in Elektron devices so it is better not to translate these words or quote them.
-#: res/elektroid.ui:3537
+#: res/elektroid.ui:3565
 msgid "Load sound and preset tags"
 msgstr ""
 
-#: res/elektroid.ui:3717
+#: res/elektroid.ui:3745
 msgid "Record Channels"
 msgstr ""
 
-#: res/elektroid.ui:3848
+#: res/elektroid.ui:3876
 msgid "_Record"
 msgstr ""
 
