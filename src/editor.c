@@ -303,7 +303,7 @@ editor_loading_completed_no_lock (guint32 *actual_frames)
 static void
 editor_playback_cursor_notifier (gint64 position)
 {
-  debug_print (3, "Setting cursor at %ld...", position);
+  debug_print (3, "Setting cursor at %" PRIu64 "...", position);
   playback_cursor = position;
   g_idle_add (editor_queue_draw, NULL);
 }
