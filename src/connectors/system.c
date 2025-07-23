@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#define _FILE_OFFSET_BITS 64
 #include <errno.h>
 #include <glib/gi18n.h>
 #include <glib/gstdio.h>
