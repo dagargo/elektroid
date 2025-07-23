@@ -33,8 +33,14 @@ static record_window_cancel_cb cancel_cb;
 static void
 record_window_close ()
 {
-  audio_stop_recording ();	//Stop monitoring
-  gtk_main_iteration_do (gtk_widget_get_visible (GTK_WIDGET (window)));	//Wait for guirecorder
+  if (gtk_widget_get_visible (GTK_WIDGET (window)))
+    {
+      audio_stop_recording ();	//Stop monitoring
+      while (gtk_events_pending ())
+	{
+	  gtk_main_iteration_do (TRUE);	//Wait for drawings
+	}
+    }
   gtk_widget_hide (GTK_WIDGET (window));
 }
 

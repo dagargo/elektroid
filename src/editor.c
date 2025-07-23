@@ -303,7 +303,7 @@ editor_loading_completed_no_lock (guint32 *actual_frames)
 static void
 editor_playback_cursor_notifier (gint64 position)
 {
-  debug_print (3, "Setting cursor at %" PRIu64 "...", position);
+  debug_print (3, "Setting cursor at %" PRId64 "...", position);
   playback_cursor = position;
   g_idle_add (editor_queue_draw, NULL);
 }
@@ -1804,19 +1804,25 @@ editor_init (GtkBuilder *builder)
 void
 editor_destroy ()
 {
-  gboolean loading_completed;
+  gboolean wait;
 
   debug_print (1, "Destroying editor...");
 
   record_window_destroy ();
 
-  loading_completed = editor_loading_completed ();
+  wait = !editor_loading_completed () || !audio_is_stopped ();
 
   editor_stop_clicked (NULL, NULL);
   editor_stop_load_thread ();
 
   audio_destroy ();
-  gtk_main_iteration_do (!loading_completed);	//Wait for drawings
+  if (wait)
+    {
+      while (gtk_events_pending ())
+	{
+	  gtk_main_iteration_do (TRUE);	//Wait for drawings
+	}
+    }
 
   editor_clear_waveform_data ();
   editor_free_waveform_state ();

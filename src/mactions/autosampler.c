@@ -171,7 +171,14 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
 static void
 autosampler_cancel (GtkWidget *object, gpointer data)
 {
-  audio_stop_recording ();	//Stop monitoring
+  if (gtk_widget_get_visible (GTK_WIDGET (window)))
+    {
+      audio_stop_recording ();	//Stop monitoring
+      while (gtk_events_pending ())
+	{
+	  gtk_main_iteration_do (TRUE);	//Wait for drawings
+	}
+    }
   gtk_widget_hide (GTK_WIDGET (window));
 }
 
@@ -306,7 +313,6 @@ autosampler_destroy ()
 {
   debug_print (1, "Destroying autosampler...");
   autosampler_cancel (NULL, NULL);
-  gtk_main_iteration_do (TRUE);	//Wait for guirecorder
   gtk_widget_destroy (GTK_WIDGET (window));
 }
 

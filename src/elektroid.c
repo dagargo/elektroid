@@ -1411,20 +1411,18 @@ elektroid_exit ()
   tasks_stop_thread ();
 
   progress_window_destroy ();
+  microbrute_destroy ();
+  autosampler_destroy ();
+  preferences_window_destroy ();
+  name_window_destroy ();
 
   browser_destroy_all ();
   editor_destroy ();
-
-  microbrute_destroy ();
-  autosampler_destroy ();
 
   if (backend_check (BACKEND))
     {
       backend_destroy (BACKEND);
     }
-
-  name_window_destroy ();
-  preferences_window_destroy ();
 
   gtk_widget_destroy (GTK_WIDGET (main_window));
 }
