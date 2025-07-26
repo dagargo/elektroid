@@ -48,6 +48,8 @@
 
 #define WAVEFORM_SCROLLED_BORDER_SIZE 2
 
+#define X_BORDER_SELECTION 3
+
 enum editor_operation
 {
   EDITOR_OP_NONE,
@@ -1104,7 +1106,8 @@ static gboolean
 editor_cursor_frame_over_frame (guint cursor_frame, guint frame)
 {
   gdouble x_ratio = editor_get_x_ratio () / zoom;
-  gdouble shift = x_ratio < 2 ? 2 : x_ratio * 2;
+  gdouble shift = x_ratio < X_BORDER_SELECTION ? X_BORDER_SELECTION :
+    x_ratio * X_BORDER_SELECTION;
   return cursor_frame >= frame - shift && cursor_frame <= frame + shift;
 }
 
