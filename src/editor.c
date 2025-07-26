@@ -234,7 +234,7 @@ editor_set_start_frame (gint start)
   widget_w = gtk_widget_get_allocated_width (waveform_scrolled_window);
   adj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW
 					     (waveform_scrolled_window));
-  upper = widget_w * zoom - 3;	//Base 0 and 2 border pixels
+  upper = widget_w * zoom - 1;	//Base 0
   lower = 0;
   value = upper * start / (double) sample_info->frames;
 
