@@ -364,20 +364,17 @@ editor_get_x_ratio ()
 }
 
 static gboolean
-editor_set_waveform_state (guint32 x)
+editor_set_waveform_state (guint32 x, guint32 start, gdouble x_ratio)
 {
   guint8 *s;
-  guint32 start, frame_start, count;
-  gdouble y_scale, x_ratio, x_frame, x_frame_next, x_count;
+  guint32 frame_start, count;
+  gdouble y_scale, x_frame, x_frame_next, x_count;
   GByteArray *sample = audio.sample.content;
   struct sample_info *sample_info = audio.sample.info;
   guint frame_size =
     FRAME_SIZE (sample_info->channels, sample_get_internal_format ());
   guint loaded_frames = sample->len / frame_size;
   gboolean use_float = preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT);
-
-  start = editor_get_start_frame ();
-  x_ratio = editor_get_x_ratio () / zoom;
 
   x_frame = start + x * x_ratio;
   frame_start = x_frame;
@@ -583,11 +580,9 @@ editor_draw_selection (cairo_t *cr, guint start, guint height, double x_ratio)
 static void
 editor_set_waveform_data_no_sync ()
 {
-  guint i;
-  gdouble *v;
+  guint32 i, start;
+  gdouble *v, x_ratio;
   struct sample_info *sample_info = audio.sample.info;
-
-  debug_print (1, "Setting waveform data...");
 
   if (!sample_info)
     {
@@ -595,6 +590,12 @@ editor_set_waveform_data_no_sync ()
     }
 
   g_mutex_lock (&mutex);
+
+  start = editor_get_start_frame ();
+  x_ratio = editor_get_x_ratio () / zoom;
+
+  debug_print (1, "Setting waveform from %d with %.2f zoom (%d)...", start,
+	       zoom, waveform_len);
 
   if (!waveform_data)
     {
@@ -616,7 +617,7 @@ editor_set_waveform_data_no_sync ()
       v = &waveform_data[waveform_len * sample_info->channels * 2];	//Positive and negative values
       for (i = waveform_len; i < waveform_width; i++)
 	{
-	  if (!editor_set_waveform_state (i))
+	  if (!editor_set_waveform_state (i, start, x_ratio))
 	    {
 	      debug_print (3, "Waveform limit reached at %d", i);
 	      break;
