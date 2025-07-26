@@ -373,7 +373,8 @@ editor_set_waveform_state (guint32 x, guint32 start, gdouble x_ratio)
   guint frame_size =
     FRAME_SIZE (sample_info->channels, sample_get_internal_format ());
   guint loaded_frames = sample->len / frame_size;
-  gboolean use_float = preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT);
+  gboolean end, use_float =
+    preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT);
 
   x_frame = start + x * x_ratio;
   frame_start = x_frame;
@@ -393,17 +394,24 @@ editor_set_waveform_state (guint32 x, guint32 start, gdouble x_ratio)
   debug_print (3, "Calculating %d state from [ %d, %d [ (%d frames)...", x,
 	       frame_start, frame_start + count, loaded_frames);
 
+  end = TRUE;
   s = &sample->data[frame_start * frame_size];
   for (i = 0, f = frame_start; i < count; i++, f++)
     {
       if (f == loaded_frames)
 	{
-	  return f == sample_info->frames;
+	  end = f == sample_info->frames;
+	  break;
 	}
 
       if (i > MAX_FRAMES_PER_PIXEL)
 	{
-	  continue;
+	  guint32 last = frame_start + count - 1;
+	  if (last >= loaded_frames)
+	    {
+	      end = last >= sample_info->frames;
+	    }
+	  break;
 	}
 
       for (guint j = 0; j < sample_info->channels; j++)
@@ -443,7 +451,7 @@ editor_set_waveform_state (guint32 x, guint32 start, gdouble x_ratio)
       waveform_state.wn[j] *= y_scale;
     }
 
-  return TRUE;
+  return end;
 }
 
 static void
