@@ -682,12 +682,12 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   void *buffer_i;		//For gint16 or gint32
   gfloat *buffer_f;
   void *buffer_output;
-  gint err = 0, resampled_buffer_len, frames;
+  gint err, resampled_buffer_len, frames;
   gboolean active, rounding_fix;
   gdouble ratio;
   guint bytes_per_sample, bytes_per_frame;
-  guint32 read_frames, actual_frames = 0;
-  GByteArray *sample = NULL;
+  guint32 read_frames, actual_frames;
+  GByteArray *sample;
   struct sample_info *sample_info;
 
   sf_info.format = 0;
@@ -697,6 +697,11 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       error_print ("%s", sf_strerror (sndfile));
       return -1;
     }
+
+  err = 0;
+  actual_frames = 0;
+  rounding_fix = FALSE;
+  sample = NULL;
 
   sample_set_sample_info (sample_info_src, sndfile, &sf_info);
 
@@ -1023,6 +1028,7 @@ cleanup:
       //It there was a rounding fix in the previous lines, the call is needed to detect the end of the loading process.
       if (rounding_fix)
 	{
+	  debug_print (2, "Applying rounding fix...");
 	  cb (control, 1.0);
 	}
       g_mutex_unlock (&control->controllable.mutex);
