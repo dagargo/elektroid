@@ -367,7 +367,7 @@ static gboolean
 editor_set_waveform_state (guint32 x, guint32 start, gdouble x_ratio)
 {
   guint8 *s;
-  guint32 frame_start, count;
+  guint32 i, f, frame_start, count;
   gdouble y_scale, x_frame, x_frame_next, x_count;
   GByteArray *sample = audio.sample.content;
   struct sample_info *sample_info = audio.sample.info;
@@ -385,17 +385,17 @@ editor_set_waveform_state (guint32 x, guint32 start, gdouble x_ratio)
   y_scale = use_float ? -1.0 : 1.0 / (double) SHRT_MIN;
   y_scale /= sample_info->channels * 2.0;
 
-  for (guint i = 0; i < sample_info->channels; i++)
+  for (guint j = 0; j < sample_info->channels; j++)
     {
-      waveform_state.wp[i] = 0.0;
-      waveform_state.wn[i] = 0.0;
+      waveform_state.wp[j] = 0.0;
+      waveform_state.wn[j] = 0.0;
     }
 
   debug_print (3, "Calculating %d state from [ %d, %d [ (%d frames)...", x,
 	       frame_start, frame_start + count, loaded_frames);
 
   s = &sample->data[frame_start * frame_size];
-  for (guint i = 0, f = frame_start; i < count; i++, f++)
+  for (i = 0, f = frame_start; i < count; i++, f++)
     {
       if (f == loaded_frames)
 	{
@@ -438,10 +438,10 @@ editor_set_waveform_state (guint32 x, guint32 start, gdouble x_ratio)
 	}
     }
 
-  for (guint i = 0; i < sample_info->channels; i++)
+  for (guint j = 0; j < sample_info->channels; j++)
     {
-      waveform_state.wp[i] *= y_scale;
-      waveform_state.wn[i] *= y_scale;
+      waveform_state.wp[j] *= y_scale;
+      waveform_state.wn[j] *= y_scale;
     }
 
   return TRUE;
