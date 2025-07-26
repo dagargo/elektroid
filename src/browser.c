@@ -2326,7 +2326,7 @@ browser_local_init (struct browser *browser, GtkBuilder *builder)
   browser->dir_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry"));
   browser->popover =
-    GTK_POPOVER_MENU (gtk_builder_get_object (builder, "local_popover"));
+    GTK_POPOVER (gtk_builder_get_object (builder, "local_popover"));
   browser->pref_key_dir = PREF_KEY_LOCAL_DIR;
   browser->fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
   browser->backend = NULL;
@@ -2453,7 +2453,7 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder)
   browser->dir_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry"));
   browser->popover =
-    GTK_POPOVER_MENU (gtk_builder_get_object (builder, "remote_popover"));
+    GTK_POPOVER (gtk_builder_get_object (builder, "remote_popover"));
   browser->pref_key_dir = PREF_KEY_REMOTE_DIR;
   browser->dir = NULL;
   browser->fs_ops = NULL;

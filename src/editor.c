@@ -87,7 +87,7 @@ static GtkWidget *grid_length_spin;
 static GtkWidget *show_grid_switch;
 static gulong volume_changed_handler;
 static GtkListStore *notes_list_store;
-static GtkPopoverMenu *popover;
+static GtkPopover *popover;
 static GtkWidget *popover_play_button;
 static GtkWidget *popover_delete_button;
 static GtkWidget *popover_undo_button;
@@ -1736,8 +1736,7 @@ editor_init (GtkBuilder *builder)
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
   g_object_ref (G_OBJECT (notes_list_store));
 
-  popover =
-    GTK_POPOVER_MENU (gtk_builder_get_object (builder, "editor_popover"));
+  popover = GTK_POPOVER (gtk_builder_get_object (builder, "editor_popover"));
   popover_play_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "editor_popover_play_button"));

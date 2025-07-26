@@ -1339,7 +1339,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       </object>
     </child>
   </object>
-  <object class="GtkPopoverMenu" id="editor_popover">
+  <object class="GtkPopover" id="editor_popover">
     <property name="can-focus">False</property>
     <property name="relative-to">waveform_scrolled_window</property>
     <child>
@@ -1426,13 +1426,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           </packing>
         </child>
       </object>
-      <packing>
-        <property name="submenu">main</property>
-        <property name="position">1</property>
-      </packing>
     </child>
   </object>
-  <object class="GtkPopoverMenu" id="local_popover">
+  <object class="GtkPopover" id="local_popover">
     <property name="can-focus">False</property>
     <property name="relative-to">local_scrolled_window</property>
     <property name="position">bottom</property>
@@ -1557,13 +1553,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           </packing>
         </child>
       </object>
-      <packing>
-        <property name="submenu">main</property>
-        <property name="position">1</property>
-      </packing>
     </child>
   </object>
-  <object class="GtkPopoverMenu" id="main_popover">
+  <object class="GtkPopover" id="main_popover">
     <property name="can-focus">False</property>
     <property name="relative-to">menu_button</property>
     <child>
@@ -1652,10 +1644,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           </packing>
         </child>
       </object>
-      <packing>
-        <property name="submenu">main</property>
-        <property name="position">1</property>
-      </packing>
     </child>
   </object>
   <object class="GtkWindow" id="main_window">
@@ -3921,7 +3909,7 @@ on remote</property>
       </object>
     </child>
   </object>
-  <object class="GtkPopoverMenu" id="remote_popover">
+  <object class="GtkPopover" id="remote_popover">
     <property name="can-focus">False</property>
     <property name="relative-to">remote_tree_view</property>
     <property name="position">bottom</property>
@@ -4046,10 +4034,6 @@ on remote</property>
           </packing>
         </child>
       </object>
-      <packing>
-        <property name="submenu">main</property>
-        <property name="position">1</property>
-      </packing>
     </child>
   </object>
 </interface>

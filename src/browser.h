@@ -68,7 +68,7 @@ struct browser
   GtkEntry *dir_entry;
   const gchar *pref_key_dir;
   gchar *dir;
-  GtkPopoverMenu *popover;
+  GtkPopover *popover;
   gboolean dnd;
   GtkTreePath *dnd_motion_path;
   guint dnd_timeout_function_id;
