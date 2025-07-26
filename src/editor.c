@@ -46,6 +46,8 @@
 
 #define MAX_FRAMES_PER_PIXEL 300
 
+#define WAVEFORM_SCROLLED_BORDER_SIZE 2
+
 enum editor_operation
 {
   EDITOR_OP_NONE,
@@ -120,9 +122,9 @@ editor_reset_waveform_width ()
 {
   guint width = gtk_widget_get_allocated_width (waveform_scrolled_window);
   width *= zoom;
-  if (width >= 2)
+  if (width >= WAVEFORM_SCROLLED_BORDER_SIZE)
     {
-      width -= 2;		//2 border pixels
+      width -= WAVEFORM_SCROLLED_BORDER_SIZE;
     }
   editor_set_waveform_width (width);
 }
@@ -233,7 +235,7 @@ editor_set_scrollbar (guint32 start, guint32 frames)
   widget_w = gtk_widget_get_allocated_width (waveform_scrolled_window);
   adj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW
 					     (waveform_scrolled_window));
-  upper = widget_w * zoom - 2;	//2 border pixels
+  upper = widget_w * zoom - WAVEFORM_SCROLLED_BORDER_SIZE;
   lower = 0;
   value = frames ? upper * start / (double) frames : 0;
 
