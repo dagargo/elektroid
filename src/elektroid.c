@@ -1177,13 +1177,14 @@ elektroid_set_device_consumer (gpointer data)
 }
 
 static void
-elektroid_set_device_runner (gpointer data)
+elektroid_set_device_runner (gpointer user_data)
 {
-  struct elektroid_set_device_data *set_device_data = data;
-  set_device_data->err = backend_init_connector (BACKEND,
-						 &set_device_data->backend_device,
-						 NULL,
-						 &set_device_data->controllable);
+  struct elektroid_set_device_data *data = user_data;
+  struct backend_device *backend_device = &data->backend_device;
+  struct controllable *controllable = &data->controllable;
+
+  data->err = backend_init_connector (BACKEND, backend_device, NULL,
+				      controllable);
   elektroid_update_midi_status ();
 }
 
@@ -1311,49 +1312,50 @@ elektroid_add_upload_task_slot (const gchar *name,
 }
 
 void
-elektroid_browser_drag_data_received_runner (gpointer data)
+elektroid_browser_drag_data_received_runner (gpointer user_data)
 {
   GtkTreeIter iter;
   gboolean queued_before, queued_after;
-  struct browser_drag_data_received_data *dnd_data = data;
-  GtkWidget *widget = dnd_data->widget;
+  struct browser_drag_data_received_data *data = user_data;
+  gboolean has_progress_window = data->has_progress_window;
+  GtkWidget *widget = data->widget;
 
   queued_before = tasks_get_next_queued (&iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
 
-  for (gint i = 0; dnd_data->uris[i] != NULL; i++)
+  for (gint i = 0; data->uris[i] != NULL; i++)
     {
-      if (dnd_data->has_progress_window && !progress_window_is_active ())
+      if (has_progress_window && !progress_window_is_active ())
 	{
 	  goto end;
 	}
 
-      enum path_type type = PATH_TYPE_FROM_DND_TYPE (dnd_data->type_name);
-      gchar *src_path = path_filename_from_uri (type, dnd_data->uris[i]);
+      enum path_type type = PATH_TYPE_FROM_DND_TYPE (data->type_name);
+      gchar *src_path = path_filename_from_uri (type, data->uris[i]);
       gchar *name = g_path_get_basename (src_path);
       gchar *dir = g_path_get_dirname (src_path);
 
       if (widget == GTK_WIDGET (local_browser.view))
 	{
-	  if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD))
+	  if (!strcmp (data->type_name, TEXT_URI_LIST_STD))
 	    {
 	      elektroid_dnd_received_browser (dir, name, src_path,
 					      &local_browser);
 	    }
-	  else if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID))
+	  else if (!strcmp (data->type_name, TEXT_URI_LIST_ELEKTROID))
 	    {
 	      elektroid_add_download_task_path (name, dir, local_browser.dir,
-						dnd_data->has_progress_window);
+						has_progress_window);
 	    }
 	}
       else if (widget == GTK_WIDGET (remote_browser.view))
 	{
-	  if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_ELEKTROID))
+	  if (!strcmp (data->type_name, TEXT_URI_LIST_ELEKTROID))
 	    {
 	      elektroid_dnd_received_browser (dir, name, src_path,
 					      &remote_browser);
 	    }
-	  else if (!strcmp (dnd_data->type_name, TEXT_URI_LIST_STD))
+	  else if (!strcmp (data->type_name, TEXT_URI_LIST_STD))
 	    {
 	      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 		{
@@ -1363,7 +1365,7 @@ elektroid_browser_drag_data_received_runner (gpointer data)
 		{
 		  elektroid_add_upload_task_path (name, dir,
 						  remote_browser.dir,
-						  dnd_data->has_progress_window);
+						  has_progress_window);
 		}
 	    }
 	}
@@ -1381,9 +1383,9 @@ end:
       g_idle_add (elektroid_run_next, NULL);
     }
 
-  g_free (dnd_data->type_name);
-  g_strfreev (dnd_data->uris);
-  g_free (dnd_data);
+  g_free (data->type_name);
+  g_strfreev (data->uris);
+  g_free (data);
 
   batch_id++;
 }
