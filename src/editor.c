@@ -221,12 +221,11 @@ editor_reset (struct browser *browser_)
 }
 
 static void
-editor_set_start_frame (gint start)
+editor_set_scrollbar (guint32 start, guint32 frames)
 {
   GtkAdjustment *adj;
   gdouble widget_w, upper, lower, value;
-  struct sample_info *sample_info = audio.sample.info;
-  gint max = sample_info->frames - 1;
+  gint max = frames - 1;
 
   start = start < 0 ? 0 : start;
   start = start > max ? max : start;
@@ -236,7 +235,7 @@ editor_set_start_frame (gint start)
 					     (waveform_scrolled_window));
   upper = widget_w * zoom - 2;	//2 border pixels
   lower = 0;
-  value = upper * start / (double) sample_info->frames;
+  value = frames ? upper * start / (double) frames : 0;
 
   debug_print (1, "Setting waveform scrollbar to %f [%f, %f]...", value,
 	       lower, upper);
@@ -580,7 +579,7 @@ editor_draw_selection (cairo_t *cr, guint start, guint height, double x_ratio)
 static void
 editor_set_waveform_data_no_sync ()
 {
-  guint32 i, start;
+  guint32 i, start, calc_start;
   gdouble *v, x_ratio;
   struct sample_info *sample_info = audio.sample.info;
 
@@ -591,12 +590,6 @@ editor_set_waveform_data_no_sync ()
 
   g_mutex_lock (&mutex);
 
-  start = editor_get_start_frame ();
-  x_ratio = editor_get_x_ratio () / zoom;
-
-  debug_print (1, "Setting waveform from %d with %.2f zoom (%d)...", start,
-	       zoom, waveform_len);
-
   if (!waveform_data)
     {
       debug_print (1,
@@ -605,33 +598,40 @@ editor_set_waveform_data_no_sync ()
       gsize size = sizeof (gdouble) * waveform_width * sample_info->channels * 2;	//Positive and negative values
       waveform_data = g_malloc (size);
       memset (waveform_data, 0, size);
-      waveform_len = 0;
       editor_reset_waveform_state (sample_info->channels);
     }
 
-  //Loading is still going on
-  if (waveform_len < waveform_width)
-    {
-      debug_print (1, "Calculating waveform [ %d, %d [", waveform_len,
-		   waveform_width);
-      v = &waveform_data[waveform_len * sample_info->channels * 2];	//Positive and negative values
-      for (i = waveform_len; i < waveform_width; i++)
-	{
-	  if (!editor_set_waveform_state (i, start, x_ratio))
-	    {
-	      debug_print (3, "Waveform limit reached at %d", i);
-	      break;
-	    }
+  start = editor_get_start_frame ();
+  x_ratio = editor_get_x_ratio () / zoom;
 
-	  for (gint j = 0; j < sample_info->channels; j++)
-	    {
-	      *v = waveform_state.wp[j];
-	      v++;
-	      *v = waveform_state.wn[j];
-	      v++;
-	    }
+  debug_print (1, "Setting waveform from %d with %.2f zoom (%d)...", start,
+	       zoom, waveform_len);
+
+  //waveform_len < waveform_width means the loading is still going on
+  calc_start = waveform_len < waveform_width ? waveform_len : 0;
+
+  debug_print (1, "Calculating waveform [ %d, %d [", calc_start,
+	       waveform_width);
+  v = &waveform_data[calc_start * sample_info->channels * 2];	//Positive and negative values
+  for (i = calc_start; i < waveform_width; i++)
+    {
+      if (!editor_set_waveform_state (i, start, x_ratio))
+	{
+	  debug_print (3, "Waveform limit reached at %d", i);
+	  break;
 	}
 
+      for (gint j = 0; j < sample_info->channels; j++)
+	{
+	  *v = waveform_state.wp[j];
+	  v++;
+	  *v = waveform_state.wn[j];
+	  v++;
+	}
+    }
+
+  if (waveform_len < waveform_width)
+    {
       waveform_len = i;
     }
 
@@ -777,6 +777,7 @@ editor_load_sample_runner (gpointer data)
   zoom = 1;
   audio.sel_start = -1;
   audio.sel_end = -1;
+  editor_set_scrollbar (0, 0);
 
   sample_info_req.channels = 0;	//Automatic
   sample_info_req.format = sample_get_internal_format ();
@@ -1025,7 +1026,7 @@ editor_zoom (GdkEventScroll *event, gdouble dy)
   debug_print (1, "Setting zoom to %.2f...", zoom);
 
   start = cursor_frame - rel_pos * sample_info->frames / (gdouble) zoom;
-  editor_set_start_frame (start);
+  editor_set_scrollbar (start, sample_info->frames);
   editor_reset_waveform_width ();
 
 end:
@@ -1067,7 +1068,7 @@ editor_on_size_allocate (GtkWidget *self, GtkAllocation *allocation,
     }
 
   start = editor_get_start_frame ();
-  editor_set_start_frame (start);
+  editor_set_scrollbar (start, sample_info->frames);
   editor_reset_waveform_width ();
   editor_set_waveform_data_no_sync ();
 
