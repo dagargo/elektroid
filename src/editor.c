@@ -1140,6 +1140,7 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 
   press_event_x = event->x;
   editor_get_frame_at_position (event->x, &cursor_frame, NULL);
+
   if (event->button == GDK_BUTTON_PRIMARY)
     {
       debug_print (2, "Pressing at frame %d...", cursor_frame);
@@ -1196,7 +1197,8 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
       gtk_widget_set_sensitive (popover_delete_button, sel_len > 0);
       gtk_widget_set_sensitive (popover_undo_button, dirty);
       gtk_widget_set_sensitive (popover_save_button, dirty || cursor_on_sel);
-      r.x = event->x;
+      r.x = (cursor_frame - editor_get_start_frame ()) * zoom /
+	(gdouble) editor_get_x_ratio ();
       r.y = event->y;
       r.width = 1;
       r.height = 1;
