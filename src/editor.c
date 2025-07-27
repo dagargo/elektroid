@@ -98,6 +98,8 @@ static gboolean dirty;
 static gboolean ready;
 static struct browser *browser;
 static GMutex mutex;
+static guint waveform_scrolled_window_width;
+static guint waveform_scrolled_window_start;
 static gdouble *waveform_data;
 static guint waveform_width;
 static guint waveform_len;	//Loaded frames available in waveform_data
@@ -112,11 +114,14 @@ editor_get_browser ()
 }
 
 static void
-editor_set_waveform_width (guint width)
+editor_update_waveform_width (guint width)
 {
-  guint height;
-  gtk_layout_get_size (GTK_LAYOUT (waveform), NULL, &height);
-  gtk_layout_set_size (GTK_LAYOUT (waveform), width, height);
+  guint prev_width, height;
+  gtk_layout_get_size (GTK_LAYOUT (waveform), &prev_width, &height);
+  if (width != prev_width)
+    {
+      gtk_layout_set_size (GTK_LAYOUT (waveform), width, height);
+    }
 }
 
 static void
@@ -128,7 +133,7 @@ editor_reset_waveform_width ()
     {
       width -= WAVEFORM_SCROLLED_BORDER_SIZE;
     }
-  editor_set_waveform_width (width);
+  editor_update_waveform_width (width);
 }
 
 static void
@@ -1068,11 +1073,12 @@ editor_waveform_scroll (GtkWidget *widget, GdkEventScroll *event,
 }
 
 static void
-editor_on_size_allocate (GtkWidget *self, GtkAllocation *allocation,
-			 gpointer data)
+editor_scrolled_window_size_allocate (GtkWidget *self,
+				      GtkAllocation *allocation,
+				      gpointer data)
 {
   struct sample_info *sample_info;
-  guint start;
+  guint start, width;
 
   g_mutex_lock (&audio.control.controllable.mutex);
   sample_info = audio.sample.info;
@@ -1081,10 +1087,17 @@ editor_on_size_allocate (GtkWidget *self, GtkAllocation *allocation,
       goto end;
     }
 
+  width = gtk_widget_get_allocated_width (waveform_scrolled_window);
   start = editor_get_start_frame ();
-  editor_set_scrollbar (start, sample_info->frames);
-  editor_reset_waveform_width ();
-  editor_set_waveform_data_no_sync ();
+  if (width != waveform_scrolled_window_width ||
+      start != waveform_scrolled_window_start)
+    {
+      editor_set_scrollbar (start, sample_info->frames);
+      editor_reset_waveform_width ();
+      editor_set_waveform_data_no_sync ();
+    }
+  waveform_scrolled_window_width = width;
+  waveform_scrolled_window_start = start;
 
 end:
   g_mutex_unlock (&audio.control.controllable.mutex);
@@ -1677,8 +1690,8 @@ editor_update_audio_status (gpointer data)
 }
 
 static void
-editor_size_allocate (GtkWidget *self, GtkAllocation *allocation,
-		      gpointer user_data)
+editor_waveform_size_allocate (GtkWidget *self, GtkAllocation *allocation,
+			       gpointer user_data)
 {
   guint width;
   gboolean needs_refresh;
@@ -1776,7 +1789,7 @@ editor_init (GtkBuilder *builder)
 					     (editor_set_volume), NULL);
 
   g_signal_connect (waveform_scrolled_window, "size-allocate",
-		    G_CALLBACK (editor_on_size_allocate), NULL);
+		    G_CALLBACK (editor_scrolled_window_size_allocate), NULL);
   gtk_widget_add_events (waveform, GDK_BUTTON_PRESS_MASK);
   g_signal_connect (waveform, "button-press-event",
 		    G_CALLBACK (editor_button_press), NULL);
@@ -1789,7 +1802,7 @@ editor_init (GtkBuilder *builder)
   g_signal_connect (waveform_scrolled_window, "key-press-event",
 		    G_CALLBACK (editor_key_press), NULL);
   g_signal_connect (waveform, "size-allocate",
-		    G_CALLBACK (editor_size_allocate), NULL);
+		    G_CALLBACK (editor_waveform_size_allocate), NULL);
 
   g_signal_connect (popover_play_button, "clicked",
 		    G_CALLBACK (editor_play_clicked), NULL);
