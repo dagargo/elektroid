@@ -65,7 +65,7 @@ autosampler_runner (gpointer user_data)
   struct autosampler_data *data = user_data;
   const gchar *note;
   gint s, total, i;
-  guint32 start;
+  guint32 start, length;
   GValue value = G_VALUE_INIT;
   gdouble fract;
   gchar filename[LABEL_MAX], *path;
@@ -101,10 +101,12 @@ autosampler_runner (gpointer user_data)
       sample_info->midi_note = i;
       sample_info->midi_fraction = cents_to_midi_fraction (data->tuning);
 
+      g_mutex_lock (&audio.control.controllable.mutex);
       //Cut off the frames after the requested time.
       start = (data->press + data->release) * audio.rate;
-      guint len = sample_info->frames - start;
-      audio_delete_range (start, len);
+      length = sample_info->frames - start;
+      audio_delete_range (start, length);
+      g_mutex_unlock (&audio.control.controllable.mutex);
 
       gchar *dir = path_chain (PATH_SYSTEM, local_browser.dir, data->name);
       system_mkdir (NULL, dir);

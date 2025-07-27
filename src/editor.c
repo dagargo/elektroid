@@ -1431,7 +1431,10 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
       audio_stop_playback ();
     }
 
+  g_mutex_lock (&audio.control.controllable.mutex);
   audio_delete_range (audio.sel_start, sel_len);
+  g_mutex_unlock (&audio.control.controllable.mutex);
+
   dirty = TRUE;
 
   editor_set_waveform_data ();
@@ -1644,8 +1647,10 @@ static void
 editor_normalize_clicked (GtkWidget *object, gpointer data)
 {
   guint32 start, length;
+  g_mutex_lock (&audio.control.controllable.mutex);
   editor_get_operation_range (&start, &length);
   audio_normalize (start, length);
+  g_mutex_unlock (&audio.control.controllable.mutex);
   editor_set_waveform_data_no_sync ();
   editor_queue_draw ();
   dirty = TRUE;

@@ -607,8 +607,8 @@ end:
   return start_frame;
 }
 
-static void
-audio_delete_range_no_lock (guint32 start, guint32 length)
+void
+audio_delete_range (guint32 start, guint32 length)
 {
   guint bytes_per_frame, index, len;
   struct sample_info *sample_info = audio.sample.info;
@@ -647,15 +647,7 @@ audio_delete_range_no_lock (guint32 start, guint32 length)
 }
 
 void
-audio_delete_range (guint32 start, guint32 length)
-{
-  g_mutex_lock (&audio.control.controllable.mutex);
-  audio_delete_range_no_lock (start, length);
-  g_mutex_unlock (&audio.control.controllable.mutex);
-}
-
-static void
-audio_normalize_no_lock (guint32 start, guint32 length)
+audio_normalize (guint32 start, guint32 length)
 {
   guint8 *data;
   gdouble v, ratio, ratiop, ration, maxp = 0, minn = 0;
@@ -726,14 +718,6 @@ audio_normalize_no_lock (guint32 start, guint32 length)
 }
 
 void
-audio_normalize (guint32 start, guint32 length)
-{
-  g_mutex_lock (&audio.control.controllable.mutex);
-  audio_normalize_no_lock (start, length);
-  g_mutex_unlock (&audio.control.controllable.mutex);
-}
-
-void
 audio_finish_recording ()
 {
   guint32 start;
@@ -752,9 +736,9 @@ audio_finish_recording ()
       debug_print (1, "Finishing recording (%d frames read)...",
 		   sample_info->frames);
 
-      audio_normalize_no_lock (0, sample_info->frames);
+      audio_normalize (0, sample_info->frames);
       start = audio_detect_start ();
-      audio_delete_range_no_lock (0, start);
+      audio_delete_range (0, start);
     }
   else
     {
