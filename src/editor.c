@@ -89,7 +89,7 @@ static GtkWidget *grid_length_spin;
 static GtkWidget *show_grid_switch;
 static gulong volume_changed_handler;
 static GtkListStore *notes_list_store;
-static GtkPopover *popover;
+static GtkPopoverMenu *popover_menu;
 static GtkWidget *popover_play_button;
 static GtkWidget *popover_delete_button;
 static GtkWidget *popover_undo_button;
@@ -1172,14 +1172,14 @@ editor_show_popover_at (guint x, guint y, gboolean cursor_on_sel)
   r.height = 1;
   r.x = x;
   r.y = y;
-  gtk_popover_set_pointing_to (GTK_POPOVER (popover), &r);
+  gtk_popover_set_pointing_to (GTK_POPOVER (popover_menu), &r);
 
   gtk_widget_set_sensitive (popover_delete_button, sel_len > 0);
   gtk_widget_set_sensitive (popover_undo_button, dirty);
   gtk_widget_set_sensitive (popover_split_button, sample_info->channels > 1);
   gtk_widget_set_sensitive (popover_save_button, dirty || cursor_on_sel);
 
-  gtk_popover_popup (GTK_POPOVER (popover));
+  gtk_popover_popup (GTK_POPOVER (popover_menu));
 }
 
 static gboolean
@@ -1934,7 +1934,9 @@ editor_init (GtkBuilder *builder)
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
   g_object_ref (G_OBJECT (notes_list_store));
 
-  popover = GTK_POPOVER (gtk_builder_get_object (builder, "editor_popover"));
+  popover_menu =
+    GTK_POPOVER_MENU (gtk_builder_get_object
+		      (builder, "editor_popover_menu"));
   popover_play_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "editor_popover_play_button"));
