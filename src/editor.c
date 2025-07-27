@@ -1414,6 +1414,7 @@ editor_undo_clicked (GtkWidget *object, gpointer data)
 {
   if (audio.path)
     {
+      editor_clear_waveform_data ();
       //As there is only one undo level, it's enough to reload the sample.
       editor_start_load_thread (audio.path);
     }
