@@ -254,7 +254,20 @@ editor_set_scrollbar (guint32 start, guint32 frames)
   gtk_adjustment_set_value (adj, value);
 }
 
-static guint
+static gdouble
+editor_get_x_ratio ()
+{
+  struct sample_info *sample_info = audio.sample.info;
+  return sample_info->frames / (gdouble) waveform_width;
+}
+
+static inline guint
+editor_frame_to_waveform_coord (guint32 frame)
+{
+  return frame * zoom / (gdouble) editor_get_x_ratio ();
+}
+
+static guint32
 editor_get_start_frame ()
 {
   struct sample_info *sample_info = audio.sample.info;
@@ -263,6 +276,21 @@ editor_get_start_frame ()
 					 (waveform_scrolled_window));
   return sample_info->frames * gtk_adjustment_get_value (adj) /
     (gdouble) gtk_adjustment_get_upper (adj);
+}
+
+static inline guint32
+editor_get_last_frame ()
+{
+  return editor_get_start_frame () +
+    gtk_widget_get_allocated_width (waveform) * editor_get_x_ratio () / zoom
+    - 1;
+}
+
+static inline guint32
+editor_get_selection_middle_frame ()
+{
+  return audio.sel_start + (audio.sel_end - audio.sel_start) / 2 -
+    editor_get_start_frame ();
 }
 
 static void
@@ -363,13 +391,6 @@ editor_reset_waveform_state (guint channels)
   editor_free_waveform_state ();
   waveform_state.wp = g_malloc (sizeof (gdouble) * channels);
   waveform_state.wn = g_malloc (sizeof (gdouble) * channels);
-}
-
-static gdouble
-editor_get_x_ratio ()
-{
-  struct sample_info *sample_info = audio.sample.info;
-  return sample_info->frames / (gdouble) waveform_width;
 }
 
 static gboolean
@@ -715,7 +736,8 @@ static gboolean
 editor_draw (GtkWidget *widget, cairo_t *cr, gpointer data)
 {
   gdouble x_ratio;
-  guint height, width, start;
+  guint height, width;
+  guint32 start;
   GtkStyleContext *context;
   struct sample_info *sample_info;
 
@@ -964,7 +986,7 @@ editor_get_frame_at_position (gdouble x, guint *cursor_frame,
 			      gdouble *rel_pos)
 {
   guint width;
-  guint start = editor_get_start_frame ();
+  guint32 start = editor_get_start_frame ();
   struct sample_info *sample_info = audio.sample.info;
 
   gtk_layout_get_size (GTK_LAYOUT (waveform), &width, NULL);
@@ -1079,7 +1101,8 @@ editor_scrolled_window_size_allocate (GtkWidget *self,
 				      gpointer data)
 {
   struct sample_info *sample_info;
-  guint start, width;
+  guint32 start;
+  guint width;
 
   g_mutex_lock (&audio.control.controllable.mutex);
   sample_info = audio.sample.info;
@@ -1133,6 +1156,25 @@ editor_set_cursor (const gchar *cursor_name)
 						cursor_name);
   gdk_window_set_cursor (gtk_widget_get_window (waveform), cursor);
   g_object_unref (cursor);
+}
+
+static void
+editor_show_popover_at (guint x, guint y, gboolean cursor_on_sel)
+{
+  GdkRectangle r;
+  guint32 sel_len = AUDIO_SEL_LEN;
+
+  r.width = 1;
+  r.height = 1;
+  r.x = x;
+  r.y = y;
+  gtk_popover_set_pointing_to (GTK_POPOVER (popover), &r);
+
+  gtk_widget_set_sensitive (popover_delete_button, sel_len > 0);
+  gtk_widget_set_sensitive (popover_undo_button, dirty);
+  gtk_widget_set_sensitive (popover_save_button, dirty || cursor_on_sel);
+
+  gtk_popover_popup (GTK_POPOVER (popover));
 }
 
 static gboolean
@@ -1205,7 +1247,6 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
     }
   else if (event->button == GDK_BUTTON_SECONDARY)
     {
-      GdkRectangle r;
       gboolean cursor_on_sel = sel_len > 0 &&
 	cursor_frame >= audio.sel_start && cursor_frame < audio.sel_end;
       if (!cursor_on_sel)
@@ -1213,16 +1254,9 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 	  audio.sel_start = -1;
 	  audio.sel_end = -1;
 	}
-      gtk_widget_set_sensitive (popover_delete_button, sel_len > 0);
-      gtk_widget_set_sensitive (popover_undo_button, dirty);
-      gtk_widget_set_sensitive (popover_save_button, dirty || cursor_on_sel);
-      r.x = (cursor_frame - editor_get_start_frame ()) * zoom /
-	(gdouble) editor_get_x_ratio ();
-      r.y = event->y;
-      r.width = 1;
-      r.height = 1;
-      gtk_popover_set_pointing_to (GTK_POPOVER (popover), &r);
-      gtk_popover_popup (GTK_POPOVER (popover));
+      guint x = editor_frame_to_waveform_coord (cursor_frame -
+						editor_get_start_frame ());
+      editor_show_popover_at (x, event->y, cursor_on_sel);
     }
 
 end:
@@ -1258,7 +1292,6 @@ editor_button_release (GtkWidget *widget, GdkEventButton *event,
 
 	  if (AUDIO_SEL_LEN)
 	    {
-	      gtk_widget_set_sensitive (popover_delete_button, TRUE);
 	      if (preferences_get_boolean (PREF_KEY_AUTOPLAY) &&
 		  audio_is_stopped ())
 		{
@@ -1673,7 +1706,41 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
 
   if (event->keyval == GDK_KEY_Menu)
     {
-      gtk_popover_popup (GTK_POPOVER (popover));
+      guint x, y;
+
+      g_mutex_lock (&audio.control.controllable.mutex);
+
+      y = gtk_widget_get_allocated_height (waveform) / 2;
+
+      if (AUDIO_SEL_LEN)
+	{
+
+	  guint32 f = editor_get_selection_middle_frame ();
+	  guint32 start_frame = editor_get_start_frame ();
+	  guint32 last_frame = editor_get_last_frame ();
+
+	  x = editor_frame_to_waveform_coord (f);
+
+	  //If the popover is outside the waveform, reset the view.
+	  if (x < editor_frame_to_waveform_coord (start_frame) ||
+	      x > editor_frame_to_waveform_coord (last_frame))
+	    {
+	      struct sample_info *sample_info = audio.sample.info;
+	      zoom = 1.0;
+	      editor_set_scrollbar (0, sample_info->frames);
+	      f = editor_get_selection_middle_frame ();
+	    }
+
+	  x = editor_frame_to_waveform_coord (f);
+	}
+      else
+	{
+	  x = gtk_widget_get_allocated_width (waveform) / 2;
+	}
+
+      g_mutex_unlock (&audio.control.controllable.mutex);
+
+      editor_show_popover_at (x, y, AUDIO_SEL_LEN > 0);
     }
   else if (event->keyval == GDK_KEY_space)
     {
