@@ -91,6 +91,7 @@ static GtkPopover *popover;
 static GtkWidget *popover_play_button;
 static GtkWidget *popover_delete_button;
 static GtkWidget *popover_undo_button;
+static GtkWidget *popover_normalize_button;
 static GtkWidget *popover_save_button;
 static gdouble zoom;
 static enum editor_operation operation;
@@ -1598,9 +1599,28 @@ editor_save_accept (gpointer source, const gchar *name)
 }
 
 static void
+editor_get_operation_range (guint32 *start, guint32 *length)
+{
+  struct sample_info *sample_info = audio.sample.info;
+  guint32 sel_len = AUDIO_SEL_LEN;
+  *start = sel_len ? audio.sel_start : 0;
+  *length = sel_len ? sel_len : sample_info->frames;
+}
+
+static void
+editor_normalize_clicked (GtkWidget *object, gpointer data)
+{
+  guint32 start, length;
+  editor_get_operation_range (&start, &length);
+  audio_normalize (start, length);
+  editor_set_waveform_data_no_sync ();
+  editor_queue_draw ();
+  dirty = TRUE;
+}
+
+static void
 editor_save_clicked (GtkWidget *object, gpointer data)
 {
-  guint32 sel_len;
   gint name_sel_len;
   gchar name[PATH_MAX];
 
@@ -1611,9 +1631,7 @@ editor_save_clicked (GtkWidget *object, gpointer data)
       goto end;
     }
 
-  sel_len = AUDIO_SEL_LEN;
-
-  if (sel_len)
+  if (AUDIO_SEL_LEN)
     {
       snprintf (name, PATH_MAX, "%s", "Sample.wav");
     }
@@ -1760,6 +1778,9 @@ editor_init (GtkBuilder *builder)
   popover_undo_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "editor_popover_undo_button"));
+  popover_normalize_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "editor_popover_normalize_button"));
   popover_save_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "editor_popover_save_button"));
@@ -1811,6 +1832,8 @@ editor_init (GtkBuilder *builder)
 		    G_CALLBACK (editor_delete_clicked), NULL);
   g_signal_connect (popover_undo_button, "clicked",
 		    G_CALLBACK (editor_undo_clicked), NULL);
+  g_signal_connect (popover_normalize_button, "clicked",
+		    G_CALLBACK (editor_normalize_clicked), NULL);
   g_signal_connect (popover_save_button, "clicked",
 		    G_CALLBACK (editor_save_clicked), NULL);
 

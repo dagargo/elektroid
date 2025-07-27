@@ -127,7 +127,9 @@ void audio_read_from_input (void *, gint);
 
 void audio_prepare (enum audio_status);
 
-void audio_delete_range (guint32, guint32);
+void audio_delete_range (guint32 start, guint32 length);
+
+void audio_normalize (guint32 start, guint32 length);
 
 const gchar *audio_name ();
 

@@ -655,14 +655,15 @@ audio_delete_range (guint32 start, guint32 length)
 }
 
 static void
-audio_normalize ()
+audio_normalize_no_lock (guint32 start, guint32 length)
 {
   guint8 *data;
   gdouble v, ratio, ratiop, ration, maxp = 0, minn = 0;
   struct sample_info *sample_info = audio.sample.info;
-  guint32 samples = sample_info->frames * sample_info->channels;
+  guint32 samples = length * sample_info->channels;
 
-  data = audio.sample.content->data;
+  data = audio.sample.content->data +
+    start * AUDIO_SAMPLE_SIZE * sample_info->channels;
   for (gint i = 0; i < samples; i++)
     {
       if (audio.float_mode)
@@ -707,7 +708,8 @@ audio_normalize ()
 
   debug_print (1, "Normalizing to %f...", ratio);
 
-  data = audio.sample.content->data;
+  data = audio.sample.content->data +
+    start * AUDIO_SAMPLE_SIZE * sample_info->channels;
   for (gint i = 0; i < samples; i++)
     {
       if (audio.float_mode)
@@ -721,6 +723,14 @@ audio_normalize ()
 	  data += sizeof (gint16);
 	}
     }
+}
+
+void
+audio_normalize (guint32 start, guint32 length)
+{
+  g_mutex_lock (&audio.control.controllable.mutex);
+  audio_normalize_no_lock (start, length);
+  g_mutex_unlock (&audio.control.controllable.mutex);
 }
 
 void
@@ -742,7 +752,7 @@ audio_finish_recording ()
       debug_print (1, "Finishing recording (%d frames read)...",
 		   sample_info->frames);
 
-      audio_normalize ();
+      audio_normalize_no_lock (0, sample_info->frames);
       start = audio_detect_start ();
       audio_delete_range_no_lock (0, start);
     }

@@ -1413,6 +1413,30 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           </packing>
         </child>
         <child>
+          <object class="GtkModelButton" id="editor_popover_normalize_button">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="text" translatable="yes">Normalize</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">5</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">6</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkModelButton" id="editor_popover_save_button">
             <property name="visible">True</property>
             <property name="can-focus">True</property>
@@ -1422,7 +1446,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">5</property>
+            <property name="position">7</property>
           </packing>
         </child>
       </object>
