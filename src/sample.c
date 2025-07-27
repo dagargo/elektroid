@@ -780,7 +780,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sample_info_fix_frame_values (sample_info);
 
   sample = g_byte_array_sized_new (sample_info->frames * bytes_per_frame);
-  idata_init (idata, sample, strdup (name), sample_info);
+  idata_init (idata, sample, name ? strdup (name) : NULL, sample_info);
   if (control)
     {
       g_mutex_unlock (&control->controllable.mutex);
@@ -1052,7 +1052,7 @@ sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 				 memfile->name);
 }
 
-// Reloads the input into the output following all the requirements.
+// Reloads the input into the output fulfilling all the requirements.
 
 gint
 sample_reload (struct idata *input, struct idata *output,

@@ -41,6 +41,8 @@ typedef void (*audio_playback_cursor_notifier) (gint64 position);
 #define AUDIO_BUF_BYTES (AUDIO_BUF_FRAMES * FRAME_SIZE (AUDIO_CHANNELS,sample_get_internal_format ()))
 #define AUDIO_SEL_LEN (audio.sel_start == -1 && audio.sel_end == -1 ? 0 : audio.sel_end - audio.sel_start + 1)
 
+#define AUDIO_SAMPLE_SIZE (audio.float_mode ? sizeof(gfloat) : sizeof(gint16))
+
 #define RECORD_LEFT 0x1
 #define RECORD_RIGHT 0x2
 #define RECORD_STEREO (RECORD_LEFT | RECORD_RIGHT)

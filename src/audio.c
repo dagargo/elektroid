@@ -26,7 +26,6 @@ struct audio audio;
 
 #define AUDIO_FRAMES_TO_MONITOR (audio.rate / 10)
 #define AUDIO_SILENCE_THRESHOLD 0.01
-#define AUDIO_SAMPLE_SIZE (audio.float_mode ? sizeof(gfloat) : sizeof(gint16))
 
 void audio_init_int ();
 void audio_destroy_int ();

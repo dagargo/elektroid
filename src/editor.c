@@ -50,6 +50,8 @@
 
 #define X_BORDER_SELECTION 3
 
+#define CHANNEL_NAME_MAX 16
+
 enum editor_operation
 {
   EDITOR_OP_NONE,
@@ -92,6 +94,7 @@ static GtkWidget *popover_play_button;
 static GtkWidget *popover_delete_button;
 static GtkWidget *popover_undo_button;
 static GtkWidget *popover_normalize_button;
+static GtkWidget *popover_split_button;
 static GtkWidget *popover_save_button;
 static gdouble zoom;
 static enum editor_operation operation;
@@ -1163,6 +1166,7 @@ editor_show_popover_at (guint x, guint y, gboolean cursor_on_sel)
 {
   GdkRectangle r;
   guint32 sel_len = AUDIO_SEL_LEN;
+  struct sample_info *sample_info = audio.sample.info;
 
   r.width = 1;
   r.height = 1;
@@ -1172,6 +1176,7 @@ editor_show_popover_at (guint x, guint y, gboolean cursor_on_sel)
 
   gtk_widget_set_sensitive (popover_delete_button, sel_len > 0);
   gtk_widget_set_sensitive (popover_undo_button, dirty);
+  gtk_widget_set_sensitive (popover_split_button, sample_info->channels > 1);
   gtk_widget_set_sensitive (popover_save_button, dirty || cursor_on_sel);
 
   gtk_popover_popup (GTK_POPOVER (popover));
@@ -1645,9 +1650,104 @@ editor_normalize_clicked (GtkWidget *object, gpointer data)
   editor_get_operation_range (&start, &length);
   audio_normalize (start, length);
   g_mutex_unlock (&audio.control.controllable.mutex);
-  editor_set_waveform_data_no_sync ();
+  editor_set_waveform_data ();
   editor_queue_draw ();
   dirty = TRUE;
+}
+
+static void
+editor_split_clicked (GtkWidget *object, gpointer user_data)
+{
+  struct sample_info *sample_info, sample_info_req;
+  struct idata *idatas, *idata;
+  GByteArray *content;
+  gchar *basename, *dirname, *path;
+  const gchar *ext;
+  gchar name[NAME_MAX], channel_name[CHANNEL_NAME_MAX];
+  guint len;
+  guint8 *data;
+
+  g_mutex_lock (&audio.control.controllable.mutex);
+
+  sample_info = audio.sample.info;
+  memcpy (&sample_info_req, &audio.sample_info_src,
+	  sizeof (struct sample_info));
+  sample_info_req.channels = 1;
+
+  ext = filename_get_ext (audio.path);
+
+  dirname = g_path_get_dirname (audio.path);
+  basename = g_path_get_basename (audio.path);
+  filename_remove_ext (basename);
+
+  len = AUDIO_SAMPLE_SIZE * sample_info->frames;
+
+  idatas = malloc (sizeof (struct idata) * sample_info->channels);
+  idata = idatas;
+  for (guint c = 0; c < sample_info->channels; c++)
+    {
+      struct sample_info *si = malloc (sizeof (struct sample_info));
+      memcpy (si, sample_info, sizeof (struct sample_info));
+      si->channels = 1;
+
+      content = g_byte_array_sized_new (len);
+      idata_init (idata, content, NULL, si);
+
+      idata++;
+    }
+
+  data = audio.sample.content->data;
+  for (guint32 f = 0; f < sample_info->frames; f++)
+    {
+      idata = idatas;
+      for (guint32 c = 0; c < sample_info->channels; c++)
+	{
+	  if (audio.float_mode)
+	    {
+	      gfloat v = *((gfloat *) data);
+	      data += sizeof (gfloat);
+	      g_byte_array_append (idata->content, (guint8 *) & v,
+				   sizeof (gfloat));
+	    }
+	  else
+	    {
+	      gint16 v = *((gint16 *) data);
+	      data += sizeof (gint16);
+	      g_byte_array_append (idata->content, (guint8 *) & v,
+				   sizeof (gint16));
+	    }
+	  idata++;
+	}
+    }
+
+  idata = idatas;
+  for (guint c = 0; c < sample_info->channels; c++)
+    {
+      if (sample_info->channels == 2)
+	{
+	  snprintf (channel_name, CHANNEL_NAME_MAX, "%s",
+		    c == 1 ? _("Left") : _("Right"));
+	}
+      else
+	{
+	  snprintf (channel_name, CHANNEL_NAME_MAX, "%d", c + 1);
+	}
+      snprintf (name, NAME_MAX, "%s-%s.%s", basename, channel_name, ext);
+      path = path_chain (PATH_SYSTEM, dirname, name);
+
+      editor_save_with_format (path, idata, &sample_info_req);
+
+      idata_free (idata);
+      g_free (path);
+
+      idata++;
+    }
+
+  g_free (dirname);
+  g_free (basename);
+  g_free (idatas);
+
+  g_mutex_unlock (&audio.control.controllable.mutex);
 }
 
 static void
@@ -1737,9 +1837,9 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
 	  x = gtk_widget_get_allocated_width (waveform) / 2;
 	}
 
-      g_mutex_unlock (&audio.control.controllable.mutex);
-
       editor_show_popover_at (x, y, AUDIO_SEL_LEN > 0);
+
+      g_mutex_unlock (&audio.control.controllable.mutex);
     }
   else if (event->keyval == GDK_KEY_space)
     {
@@ -1847,6 +1947,9 @@ editor_init (GtkBuilder *builder)
   popover_normalize_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "editor_popover_normalize_button"));
+  popover_split_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "editor_popover_split_button"));
   popover_save_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "editor_popover_save_button"));
@@ -1900,6 +2003,8 @@ editor_init (GtkBuilder *builder)
 		    G_CALLBACK (editor_undo_clicked), NULL);
   g_signal_connect (popover_normalize_button, "clicked",
 		    G_CALLBACK (editor_normalize_clicked), NULL);
+  g_signal_connect (popover_split_button, "clicked",
+		    G_CALLBACK (editor_split_clicked), NULL);
   g_signal_connect (popover_save_button, "clicked",
 		    G_CALLBACK (editor_save_clicked), NULL);
 
