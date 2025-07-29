@@ -1466,21 +1466,21 @@ editor_undo_clicked (GtkWidget *object, gpointer data)
 //editor_save which already provides this.
 
 static gint
-editor_save_with_format (const gchar *dst_path, struct idata *sample)
+editor_save_with_format (const gchar *dst_path, struct idata *sample,
+			 struct sample_info *sample_info_req)
 {
   gint err;
-  struct sample_info *sample_info_src = &audio.sample_info_src;
   struct sample_info *sample_info = sample->info;
 
-  if (sample_info->rate == sample_info_src->rate)
+  if (sample_info->rate == sample_info_req->rate)
     {
       err = sample_save_to_file (dst_path, sample, NULL,
-				 sample_info_src->format);
+				 sample_info_req->format);
     }
   else
     {
       struct idata resampled;
-      err = sample_reload (sample, &resampled, NULL, sample_info_src,
+      err = sample_reload (sample, &resampled, NULL, sample_info_req,
 			   job_control_set_sample_progress);
       if (err)
 	{
@@ -1488,7 +1488,7 @@ editor_save_with_format (const gchar *dst_path, struct idata *sample)
 	}
 
       err = sample_save_to_file (dst_path, &resampled, NULL,
-				 sample_info_src->format);
+				 sample_info_req->format);
       idata_free (&resampled);
     }
 
@@ -1538,7 +1538,7 @@ editor_save (const gchar *name)
 	  debug_print (2, "Saving selection to %s...", path);
 
 	  aux.name = strdup (name);
-	  editor_save_with_format (path, &aux);
+	  editor_save_with_format (path, &aux, &audio.sample_info_src);
 	}
       else
 	{
@@ -1548,7 +1548,8 @@ editor_save (const gchar *name)
 	  g_free (audio.sample.name);
 	  audio.path = path;
 	  audio.sample.name = g_path_get_basename (path);
-	  editor_save_with_format (audio.path, &audio.sample);
+	  editor_save_with_format (audio.path, &audio.sample,
+				   &audio.sample_info_src);
 	}
     }
   else
@@ -1562,7 +1563,7 @@ editor_save (const gchar *name)
 	  //This does not set anything and leaves everything as if no sample would have been loaded.
 	  debug_print (2, "Saving recorded selection to %s...", path);
 	  aux.name = g_path_get_basename (path);
-	  editor_save_with_format (path, &aux);
+	  editor_save_with_format (path, &aux, &audio.sample_info_src);
 	}
       else
 	{
@@ -1570,7 +1571,8 @@ editor_save (const gchar *name)
 	  debug_print (2, "Saving recording to %s...", path);
 	  audio.path = path;
 	  audio.sample.name = g_path_get_basename (path);
-	  editor_save_with_format (audio.path, &audio.sample);
+	  editor_save_with_format (audio.path, &audio.sample,
+				   &audio.sample_info_src);
 	}
     }
 
