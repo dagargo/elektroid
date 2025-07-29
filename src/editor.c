@@ -1470,27 +1470,19 @@ editor_save_with_format (const gchar *dst_path, struct idata *sample,
 			 struct sample_info *sample_info_req)
 {
   gint err;
-  struct sample_info *sample_info = sample->info;
+  struct idata resampled;
 
-  if (sample_info->rate == sample_info_req->rate)
+  //Not only does this perform rate conversion but also sample format conversion.
+  err = sample_reload (sample, &resampled, NULL, sample_info_req,
+		       job_control_set_sample_progress);
+  if (err)
     {
-      err = sample_save_to_file (dst_path, sample, NULL,
-				 sample_info_req->format);
+      return err;
     }
-  else
-    {
-      struct idata resampled;
-      err = sample_reload (sample, &resampled, NULL, sample_info_req,
-			   job_control_set_sample_progress);
-      if (err)
-	{
-	  return err;
-	}
 
-      err = sample_save_to_file (dst_path, &resampled, NULL,
-				 sample_info_req->format);
-      idata_free (&resampled);
-    }
+  err = sample_save_to_file (dst_path, &resampled, NULL,
+			     sample_info_req->format);
+  idata_free (&resampled);
 
   browser_load_dir_if_needed (browser);
 
