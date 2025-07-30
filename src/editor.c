@@ -27,6 +27,7 @@
 #include "elektroid.h"
 #include "name_window.h"
 #include "preferences.h"
+#include "progress_window.h"
 #include "record_window.h"
 #include "sample.h"
 #include "utils.h"
@@ -50,7 +51,8 @@
 
 #define X_BORDER_SELECTION 3
 
-#define CHANNEL_NAME_MAX 16
+#define SPLIT_DIFF_RATE_FRAMES_LIMIT_PROGRESS (audio.rate)	// 1 s
+#define SPLIT_SAME_RATE_FRAMES_LIMIT_PROGRESS (SPLIT_DIFF_RATE_FRAMES_LIMIT_PROGRESS * 10)
 
 enum editor_operation
 {
@@ -1656,18 +1658,20 @@ editor_normalize_clicked (GtkWidget *object, gpointer data)
 }
 
 static void
-editor_split_clicked (GtkWidget *object, gpointer user_data)
+editor_split_runner (gpointer user_data)
 {
+  gboolean *has_progress_window = user_data;
   struct sample_info *sample_info, sample_info_req;
   struct idata *idatas, *idata;
   GByteArray *content;
   gchar *basename, *dirname, *path;
   const gchar *ext;
-  gchar name[NAME_MAX], channel_name[CHANNEL_NAME_MAX];
-  guint len;
+  gchar *name, channel_name[LABEL_MAX];
+  guint32 len, parts, channels;
   guint8 *data;
 
   g_mutex_lock (&audio.control.controllable.mutex);
+  g_mutex_lock (&mutex);
 
   sample_info = audio.sample.info;
   memcpy (&sample_info_req, &audio.sample_info_src,
@@ -1681,10 +1685,18 @@ editor_split_clicked (GtkWidget *object, gpointer user_data)
   filename_remove_ext (basename);
 
   len = AUDIO_SAMPLE_SIZE * sample_info->frames;
+  channels = sample_info->channels;
 
-  idatas = malloc (sizeof (struct idata) * sample_info->channels);
+  parts = 1 + channels;
+
+  if (*has_progress_window)
+    {
+      progress_window_set_label (_("Calculating..."));
+    }
+
+  idatas = malloc (sizeof (struct idata) * channels);
   idata = idatas;
-  for (guint c = 0; c < sample_info->channels; c++)
+  for (guint c = 0; c < channels; c++)
     {
       struct sample_info *si = malloc (sizeof (struct sample_info));
       memcpy (si, sample_info, sizeof (struct sample_info));
@@ -1700,7 +1712,7 @@ editor_split_clicked (GtkWidget *object, gpointer user_data)
   for (guint32 f = 0; f < sample_info->frames; f++)
     {
       idata = idatas;
-      for (guint32 c = 0; c < sample_info->channels; c++)
+      for (guint32 c = 0; c < channels; c++)
 	{
 	  if (audio.float_mode)
 	    {
@@ -1716,38 +1728,105 @@ editor_split_clicked (GtkWidget *object, gpointer user_data)
 	      g_byte_array_append (idata->content, (guint8 *) & v,
 				   sizeof (gint16));
 	    }
+
+	  if (*has_progress_window && !progress_window_is_active ())
+	    {
+	      goto cleanup;
+	    }
+
 	  idata++;
 	}
     }
 
-  idata = idatas;
-  for (guint c = 0; c < sample_info->channels; c++)
+  g_mutex_unlock (&mutex);
+  g_mutex_unlock (&audio.control.controllable.mutex);
+
+  if (*has_progress_window)
     {
-      if (sample_info->channels == 2)
+      progress_window_set_fraction (1 / (gdouble) parts);
+    }
+
+  idata = idatas;
+  for (guint c = 0; c < channels; c++)
+    {
+      if (channels == 2)
 	{
-	  snprintf (channel_name, CHANNEL_NAME_MAX, "%s",
+	  snprintf (channel_name, LABEL_MAX, "%s",
 		    c == 1 ? _("Left") : _("Right"));
 	}
       else
 	{
-	  snprintf (channel_name, CHANNEL_NAME_MAX, "%d", c + 1);
+	  snprintf (channel_name, LABEL_MAX, "%d", c + 1);
 	}
-      snprintf (name, NAME_MAX, "%s-%s.%s", basename, channel_name, ext);
+      name = g_strdup_printf ("%s-%s.%s", basename, channel_name, ext);
+
+      if (*has_progress_window)
+	{
+	  gchar *msg = g_strdup_printf (_("Saving channel %d to “%s”..."),
+					c + 1, name);
+	  progress_window_set_label (msg);
+	  g_free (msg);
+	}
+
       path = path_chain (PATH_SYSTEM, dirname, name);
-
+      g_free (name);
       editor_save_with_format (path, idata, &sample_info_req);
-
-      idata_free (idata);
       g_free (path);
 
       idata++;
+
+      if (*has_progress_window)
+	{
+	  progress_window_set_fraction ((2 + c) / (gdouble) parts);
+
+	  if (!progress_window_is_active ())
+	    {
+	      goto cleanup;
+	    }
+	}
+    }
+
+cleanup:
+  idata = idatas;
+  for (guint c = 0; c < channels; c++)
+    {
+      idata_free (idata);
     }
 
   g_free (dirname);
   g_free (basename);
   g_free (idatas);
+  g_free (has_progress_window);
+}
 
-  g_mutex_unlock (&audio.control.controllable.mutex);
+static gboolean
+editor_saving_needs_progress ()
+{
+  struct sample_info *sample_info = audio.sample.info;
+  guint64 total_frames = sample_info->frames * sample_info->channels;
+
+  return (sample_info->rate != audio.sample_info_src.rate &&
+	  total_frames > SPLIT_DIFF_RATE_FRAMES_LIMIT_PROGRESS) ||
+    total_frames > SPLIT_SAME_RATE_FRAMES_LIMIT_PROGRESS;
+}
+
+static void
+editor_split_clicked (GtkWidget *object, gpointer user_data)
+{
+  gboolean *has_progress_window = g_malloc (sizeof (gboolean));
+
+  if (editor_saving_needs_progress ())
+    {
+      *has_progress_window = TRUE;
+      progress_window_open (editor_split_runner, NULL, NULL,
+			    has_progress_window, PROGRESS_TYPE_NO_AUTO,
+			    _("Splitting channels"), "", TRUE);
+    }
+  else
+    {
+      *has_progress_window = FALSE;
+      editor_split_runner (has_progress_window);
+    }
 }
 
 static void

@@ -228,13 +228,6 @@ progress_window_run_refresh ()
   return active_;
 }
 
-static void
-progress_window_start_refresh ()
-{
-  g_timeout_add (PROGRESS_BAR_UPDATE_TIME_MS, progress_window_run_refresh,
-		 NULL);
-}
-
 static gboolean
 progress_window_end ()
 {
@@ -273,11 +266,13 @@ progress_window_open (progress_window_runner runner_,
   cancel_cb = cancel_cb_;
   data = data_;
   type = type_;
+  fraction = 0;
   start = g_get_monotonic_time ();
 
   controllable.active = TRUE;
 
-  progress_window_start_refresh ();
+  g_timeout_add (PROGRESS_BAR_UPDATE_TIME_MS, progress_window_run_refresh,
+		 NULL);
 
   gtk_window_set_title (window, name);
   gtk_label_set_text (GTK_LABEL (label), label_text);
