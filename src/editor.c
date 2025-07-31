@@ -69,6 +69,13 @@ struct waveform_state
   gdouble *wn;
 };
 
+struct editor_save_data
+{
+  gchar *path;
+  struct idata *sample;
+  gboolean new_take;
+};
+
 static void editor_save_accept (gpointer source, const gchar * name);
 
 extern struct browser local_browser;
@@ -1496,12 +1503,56 @@ editor_save_with_format (const gchar *dst_path, struct idata *sample,
   return err;
 }
 
+static gboolean
+editor_saving_needs_progress (struct sample_info *sample_info)
+{
+  guint64 total_frames = sample_info->frames * sample_info->channels;
+
+  return (sample_info->rate != audio.sample_info_src.rate &&
+	  total_frames > SPLIT_DIFF_RATE_FRAMES_LIMIT_PROGRESS) ||
+    total_frames > SPLIT_SAME_RATE_FRAMES_LIMIT_PROGRESS;
+}
+
+static void
+editor_save_runner (gpointer user_data)
+{
+  struct editor_save_data *data = user_data;
+  editor_save_with_format (data->path, data->sample, &audio.sample_info_src);
+  if (data->new_take)
+    {
+      g_free (data->path);
+      idata_free (data->sample);
+      g_free (data->sample);
+    }
+  g_free (data);
+}
+
+static void
+editor_save_with_progress (gchar *dst_path, struct idata *sample,
+			   gboolean new_take)
+{
+  struct editor_save_data *data = g_malloc (sizeof (struct editor_save_data));
+  data->path = dst_path;
+  data->sample = sample;
+  data->new_take = new_take;
+
+  if (editor_saving_needs_progress (sample->info))
+    {
+      progress_window_open (editor_save_runner, NULL, NULL,
+			    data, PROGRESS_TYPE_PULSE,
+			    _("Saving sample"), "", FALSE);
+    }
+  else
+    {
+      editor_save_runner (data);
+    }
+}
+
 static void
 editor_save (const gchar *name)
 {
   gchar *path;
   guint32 sel_len;
-  struct idata aux;
   GByteArray *selection = NULL;
   struct sample_info *aux_si;
   struct sample_info *sample_info = audio.sample.info;
@@ -1526,18 +1577,17 @@ editor_save (const gchar *name)
       aux_si->frames = sel_len;
       aux_si->loop_start = sel_len - 1;
       aux_si->loop_end = aux_si->loop_start;
-
-      idata_init (&aux, selection, NULL, aux_si);
     }
 
   if (audio.path)
     {
       if (sel_len)
 	{
+	  struct idata *aux = g_malloc (sizeof (struct idata));
 	  debug_print (2, "Saving selection to %s...", path);
-
-	  aux.name = strdup (name);
-	  editor_save_with_format (path, &aux, &audio.sample_info_src);
+	  idata_init (aux, selection, NULL, aux_si);
+	  aux->name = strdup (name);
+	  editor_save_with_progress (path, aux, TRUE);
 	}
       else
 	{
@@ -1547,8 +1597,7 @@ editor_save (const gchar *name)
 	  g_free (audio.sample.name);
 	  audio.path = path;
 	  audio.sample.name = g_path_get_basename (path);
-	  editor_save_with_format (audio.path, &audio.sample,
-				   &audio.sample_info_src);
+	  editor_save_with_progress (audio.path, &audio.sample, FALSE);
 	}
     }
   else
@@ -1560,9 +1609,14 @@ editor_save (const gchar *name)
       if (sel_len)
 	{
 	  //This does not set anything and leaves everything as if no sample would have been loaded.
+	  struct idata aux;
+	  idata_init (&aux, selection, NULL, aux_si);
 	  debug_print (2, "Saving recorded selection to %s...", path);
 	  aux.name = g_path_get_basename (path);
+	  //This is a selection of a recording, so no resample is needed and, therefore, this is fast.
 	  editor_save_with_format (path, &aux, &audio.sample_info_src);
+	  idata_free (&aux);
+	  g_free (path);
 	}
       else
 	{
@@ -1570,14 +1624,10 @@ editor_save (const gchar *name)
 	  debug_print (2, "Saving recording to %s...", path);
 	  audio.path = path;
 	  audio.sample.name = g_path_get_basename (path);
+	  //This is a recording, so no resample is needed and, therefore, this is fast.
 	  editor_save_with_format (audio.path, &audio.sample,
 				   &audio.sample_info_src);
 	}
-    }
-
-  if (sel_len)
-    {
-      idata_free (&aux);
     }
 }
 
@@ -1799,23 +1849,12 @@ cleanup:
   g_free (has_progress_window);
 }
 
-static gboolean
-editor_saving_needs_progress ()
-{
-  struct sample_info *sample_info = audio.sample.info;
-  guint64 total_frames = sample_info->frames * sample_info->channels;
-
-  return (sample_info->rate != audio.sample_info_src.rate &&
-	  total_frames > SPLIT_DIFF_RATE_FRAMES_LIMIT_PROGRESS) ||
-    total_frames > SPLIT_SAME_RATE_FRAMES_LIMIT_PROGRESS;
-}
-
 static void
 editor_split_clicked (GtkWidget *object, gpointer user_data)
 {
   gboolean *has_progress_window = g_malloc (sizeof (gboolean));
 
-  if (editor_saving_needs_progress ())
+  if (editor_saving_needs_progress (audio.sample.info))
     {
       *has_progress_window = TRUE;
       progress_window_open (editor_split_runner, NULL, NULL,
