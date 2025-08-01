@@ -1,5 +1,5 @@
 /*
- *   c
+ *   editor.c
  *   Copyright (C) 2023 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
@@ -74,6 +74,7 @@ struct editor_save_data
   gchar *path;
   struct idata *sample;
   gboolean new_take;
+  gboolean has_progress_window;
 };
 
 static void editor_save_accept (gpointer source, const gchar * name);
@@ -1481,13 +1482,14 @@ editor_undo_clicked (GtkWidget *object, gpointer data)
 
 static gint
 editor_save_with_format (const gchar *dst_path, struct idata *sample,
-			 struct sample_info *sample_info_req)
+			 struct sample_info *sample_info_req,
+			 struct job_control *control)
 {
   gint err;
   struct idata resampled;
 
   //Not only does this perform rate conversion but also sample format conversion.
-  err = sample_reload (sample, &resampled, NULL, sample_info_req,
+  err = sample_reload (sample, &resampled, control, sample_info_req,
 		       job_control_set_sample_progress);
   if (err)
     {
@@ -1514,16 +1516,42 @@ editor_saving_needs_progress (struct sample_info *sample_info)
 }
 
 static void
+editor_progress_control_cb (struct job_control *control)
+{
+  progress_window_set_fraction (control->progress);
+  control->controllable.active = progress_window_is_active ();
+}
+
+static void
 editor_save_runner (gpointer user_data)
 {
   struct editor_save_data *data = user_data;
-  editor_save_with_format (data->path, data->sample, &audio.sample_info_src);
+  struct job_control control;
+
+  if (data->has_progress_window)
+    {
+      control.callback = editor_progress_control_cb;
+    }
+  else
+    {
+      //This is required because editor_progress_control_cb would call progress_window_is_active () and would cancel the job_control.
+      control.callback = NULL;
+    }
+  controllable_init (&control.controllable);
+  job_control_reset (&control, 1);
+
+  editor_save_with_format (data->path, data->sample, &audio.sample_info_src,
+			   &control);
+
   if (data->new_take)
     {
       g_free (data->path);
       idata_free (data->sample);
       g_free (data->sample);
     }
+
+  controllable_clear (&control.controllable);
+
   g_free (data);
 }
 
@@ -1538,12 +1566,18 @@ editor_save_with_progress (gchar *dst_path, struct idata *sample,
 
   if (editor_saving_needs_progress (sample->info))
     {
+      data->has_progress_window = TRUE;
+      gchar *basename = g_path_get_basename (dst_path);
+      gchar *msg = g_strdup_printf (_("Saving “%s”..."), basename);
       progress_window_open (editor_save_runner, NULL, NULL,
-			    data, PROGRESS_TYPE_PULSE,
-			    _("Saving sample"), "", FALSE);
+			    data, PROGRESS_TYPE_NO_AUTO,
+			    _("Saving sample"), msg, TRUE);
+      g_free (basename);
+      g_free (msg);
     }
   else
     {
+      data->has_progress_window = FALSE;
       editor_save_runner (data);
     }
 }
@@ -1614,7 +1648,7 @@ editor_save (const gchar *name)
 	  debug_print (2, "Saving recorded selection to %s...", path);
 	  aux.name = g_path_get_basename (path);
 	  //This is a selection of a recording, so no resample is needed and, therefore, this is fast.
-	  editor_save_with_format (path, &aux, &audio.sample_info_src);
+	  editor_save_with_format (path, &aux, &audio.sample_info_src, NULL);
 	  idata_free (&aux);
 	  g_free (path);
 	}
@@ -1626,7 +1660,7 @@ editor_save (const gchar *name)
 	  audio.sample.name = g_path_get_basename (path);
 	  //This is a recording, so no resample is needed and, therefore, this is fast.
 	  editor_save_with_format (audio.path, &audio.sample,
-				   &audio.sample_info_src);
+				   &audio.sample_info_src, NULL);
 	}
     }
 }
@@ -1711,13 +1745,14 @@ static void
 editor_split_runner (gpointer user_data)
 {
   gboolean *has_progress_window = user_data;
+  struct job_control control;
   struct sample_info *sample_info, sample_info_req;
   struct idata *idatas, *idata;
   GByteArray *content;
   gchar *basename, *dirname, *path;
   const gchar *ext;
   gchar *name, channel_name[LABEL_MAX];
-  guint32 len, parts, channels;
+  guint32 len, channels;
   guint8 *data;
 
   g_mutex_lock (&audio.control.controllable.mutex);
@@ -1737,12 +1772,19 @@ editor_split_runner (gpointer user_data)
   len = AUDIO_SAMPLE_SIZE * sample_info->frames;
   channels = sample_info->channels;
 
-  parts = 1 + channels;
-
   if (*has_progress_window)
     {
       progress_window_set_label (_("Calculating..."));
+      control.callback = editor_progress_control_cb;
     }
+  else
+    {
+      //This is required because editor_progress_control_cb would call progress_window_is_active () and would cancel the job_control.
+      control.callback = NULL;
+    }
+
+  controllable_init (&control.controllable);
+  job_control_reset (&control, channels);
 
   idatas = malloc (sizeof (struct idata) * channels);
   idata = idatas;
@@ -1791,11 +1833,6 @@ editor_split_runner (gpointer user_data)
   g_mutex_unlock (&mutex);
   g_mutex_unlock (&audio.control.controllable.mutex);
 
-  if (*has_progress_window)
-    {
-      progress_window_set_fraction (1 / (gdouble) parts);
-    }
-
   idata = idatas;
   for (guint c = 0; c < channels; c++)
     {
@@ -1820,14 +1857,16 @@ editor_split_runner (gpointer user_data)
 
       path = path_chain (PATH_SYSTEM, dirname, name);
       g_free (name);
-      editor_save_with_format (path, idata, &sample_info_req);
+      editor_save_with_format (path, idata, &sample_info_req, &control);
       g_free (path);
 
       idata++;
 
       if (*has_progress_window)
 	{
-	  progress_window_set_fraction ((2 + c) / (gdouble) parts);
+	  g_mutex_lock (&control.controllable.mutex);
+	  control.part++;
+	  g_mutex_unlock (&control.controllable.mutex);
 
 	  if (!progress_window_is_active ())
 	    {
@@ -1842,6 +1881,8 @@ cleanup:
     {
       idata_free (idata);
     }
+
+  controllable_clear (&control.controllable);
 
   g_free (dirname);
   g_free (basename);

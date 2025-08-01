@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.3\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2025-08-01 21:26+0200\n"
+"POT-Creation-Date: 2025-08-01 21:38+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1861
+#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1941
 msgid "Audio"
 msgstr ""
 
@@ -25,12 +25,12 @@ msgstr ""
 msgid "Not connected"
 msgstr ""
 
-#: src/elektroid.c:629 src/editor.c:1619
+#: src/elektroid.c:629 src/editor.c:1703
 #, c-format
 msgid "Replace file “%s”?"
 msgstr ""
 
-#: src/elektroid.c:631 src/editor.c:1621 src/browser.c:607
+#: src/elektroid.c:631 src/editor.c:1705 src/browser.c:607
 #: src/mactions/backend.c:194 src/mactions/backend.c:282
 #: src/mactions/microfreak.c:68 res/elektroid.ui:1305 res/elektroid.ui:3342
 #: res/elektroid.ui:3718 res/elektroid.ui:3817 res/elektroid.ui:3959
@@ -41,7 +41,7 @@ msgstr ""
 msgid "_Skip"
 msgstr ""
 
-#: src/elektroid.c:633 src/editor.c:1622
+#: src/elektroid.c:633 src/editor.c:1706
 msgid "_Replace"
 msgstr ""
 
@@ -75,30 +75,39 @@ msgstr ""
 msgid "Acknowledgements"
 msgstr ""
 
-#: src/editor.c:1600 src/editor.c:1869
+#: src/editor.c:1571
+#, c-format
+msgid "Saving “%s”..."
+msgstr ""
+
+#: src/editor.c:1574
+msgid "Saving sample"
+msgstr ""
+
+#: src/editor.c:1684 src/editor.c:1949
 msgid "Save Sample"
 msgstr ""
 
-#: src/editor.c:1694
+#: src/editor.c:1777
 msgid "Calculating..."
 msgstr ""
 
 #. TRANSLATORS: Mono recording from left channel
-#: src/editor.c:1755 src/guirecorder.c:82
+#: src/editor.c:1842 src/guirecorder.c:82
 msgid "Left"
 msgstr ""
 
 #. TRANSLATORS: Mono recording from right channel
-#: src/editor.c:1755 src/guirecorder.c:89
+#: src/editor.c:1842 src/guirecorder.c:89
 msgid "Right"
 msgstr ""
 
-#: src/editor.c:1765
+#: src/editor.c:1852
 #, c-format
 msgid "Saving channel %d to “%s”..."
 msgstr ""
 
-#: src/editor.c:1823
+#: src/editor.c:1903
 msgid "Splitting channels"
 msgstr ""
 
