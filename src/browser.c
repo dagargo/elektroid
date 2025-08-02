@@ -977,16 +977,20 @@ browser_load_dir_runner_update_ui (gpointer data)
     }
   else
     {
-      GtkTreeModel *model =
-	GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
-      if (gtk_tree_model_iter_n_children (model, NULL))
+      if (!browser->search_mode)
 	{
-	  GtkTreePath *first = gtk_tree_path_new_first ();
-	  gtk_tree_view_scroll_to_cell (browser->view, first, NULL, FALSE, 0,
-					0);
-	  gtk_tree_path_free (first);
-	  gtk_widget_grab_focus (GTK_WIDGET (browser->view));
+	  GtkTreeModel *model =
+	    GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
+	  if (gtk_tree_model_iter_n_children (model, NULL))
+	    {
+	      GtkTreePath *first = gtk_tree_path_new_first ();
+	      gtk_tree_view_scroll_to_cell (browser->view, first, NULL, FALSE,
+					    0, 0);
+	      gtk_tree_path_free (first);
+	      gtk_widget_grab_focus (GTK_WIDGET (browser->view));
+	    }
 	}
+
       //If audio.path is empty is a recording buffer.
       if (editor_get_browser () == browser && audio.path)
 	{
