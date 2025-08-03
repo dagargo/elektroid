@@ -1022,6 +1022,7 @@ browser_iterate_dir_add (struct browser *browser, struct item_iterator *iter,
       if (browser->fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN)
 	{
 	  if (!g_str_match_string (browser->filter, iter->item.name, TRUE) &&
+	      !g_str_match_string (browser->filter, rel_path, TRUE) &&
 	      !g_str_match_string (browser->filter, iter->item.object_info,
 				   TRUE))
 	    {
@@ -1030,7 +1031,8 @@ browser_iterate_dir_add (struct browser *browser, struct item_iterator *iter,
 	}
       else
 	{
-	  if (!g_str_match_string (browser->filter, iter->item.name, TRUE))
+	  if (!g_str_match_string (browser->filter, iter->item.name, TRUE) &&
+	      !g_str_match_string (browser->filter, rel_path, TRUE))
 	    {
 	      return;
 	    }
