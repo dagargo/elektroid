@@ -1012,36 +1012,64 @@ browser_load_dir_runner_update_ui (gpointer data)
   return FALSE;
 }
 
+static gboolean
+browser_values_match_filter (gchar **search_tokens, const gchar *name,
+			     const gchar *rel_path, const gchar *object_info)
+{
+  gboolean matched = TRUE;
+
+  for (guint i = 0; search_tokens[i]; i++)
+    {
+      if (token_is_in_text (search_tokens[i], name))
+	{
+	  goto found;
+	}
+
+      if (token_is_in_text (search_tokens[i], rel_path))
+	{
+	  goto found;
+	}
+
+      if (object_info)
+	{
+	  if (token_is_in_text (search_tokens[i], object_info))
+	    {
+	      goto found;
+	    }
+	}
+
+      matched = FALSE;
+      break;
+
+    found:
+      continue;
+    }
+
+  return matched;
+}
+
 static void
-browser_iterate_dir_add (struct browser *browser, struct item_iterator *iter,
+browser_iterate_dir_add (struct browser *browser,
+			 struct item_iterator *iter,
 			 const gchar *icon, struct item *item,
 			 gchar *rel_path)
 {
-  if (browser->filter)
-    {
-      if (browser->fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN)
-	{
-	  if (!g_str_match_string (browser->filter, iter->item.name, TRUE) &&
-	      !g_str_match_string (browser->filter, rel_path, TRUE) &&
-	      !g_str_match_string (browser->filter, iter->item.object_info,
-				   TRUE))
-	    {
-	      return;
-	    }
-	}
-      else
-	{
-	  if (!g_str_match_string (browser->filter, iter->item.name, TRUE) &&
-	      !g_str_match_string (browser->filter, rel_path, TRUE))
-	    {
-	      return;
-	    }
-	}
+  const gchar *object_info;
+  struct browser_add_dentry_item_data *data;
 
+  if (browser->search_tokens)
+    {
+      object_info = browser->fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN ?
+	iter->item.object_info : NULL;
+      if (!browser_values_match_filter (browser->search_tokens,
+					iter->item.name, rel_path,
+					object_info))
+	{
+	  return;
+	}
     }
 
-  struct browser_add_dentry_item_data *data =
-    g_malloc (sizeof (struct browser_add_dentry_item_data));
+  data = g_malloc (sizeof (struct browser_add_dentry_item_data));
   data->browser = browser;
   memcpy (&data->item, &iter->item, sizeof (struct item));
   data->icon = icon;
@@ -2051,7 +2079,9 @@ browser_cancel (struct browser *browser)
   browser_wait (browser);
 
   gtk_entry_buffer_set_text (buf, "", -1);
-  browser->filter = NULL;
+
+  g_strfreev (browser->search_tokens);
+  browser->search_tokens = NULL;
 }
 
 void
@@ -2174,7 +2204,7 @@ browser_search_changed (GtkSearchEntry *entry, gpointer data)
 
   if (strlen (filter))
     {
-      browser->filter = filter;
+      browser->search_tokens = g_str_tokenize_and_fold (filter, NULL, NULL);
       browser_load_dir (browser);
     }
 }

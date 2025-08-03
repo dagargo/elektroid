@@ -89,7 +89,7 @@ struct browser
   guint pending_req;
   gboolean dirty;
   gboolean search_mode;
-  const gchar *filter;
+  gchar **search_tokens;
   gint64 last_selected_index;	//This needs space for gint and -1
   //Menu
   GtkWidget *popover_transfer_button;

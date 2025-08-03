@@ -175,4 +175,6 @@ void controllable_set_active (struct controllable *controllable,
 
 gboolean controllable_is_active (struct controllable *controllable);
 
+gboolean token_is_in_text (const gchar * token, const gchar * text);
+
 #endif

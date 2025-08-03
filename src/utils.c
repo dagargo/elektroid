@@ -597,3 +597,36 @@ controllable_is_active (struct controllable *controllable)
   g_mutex_unlock (&controllable->mutex);
   return active;
 }
+
+gboolean
+token_is_in_any_token (const gchar *token, gchar **tokens)
+{
+  for (guint j = 0; tokens[j]; j++)
+    {
+      if (g_strstr_len (tokens[j], -1, token) != NULL)
+	{
+	  return TRUE;
+	}
+    }
+  return FALSE;
+}
+
+gboolean
+token_is_in_text (const gchar *token, const gchar *text)
+{
+  gboolean found;
+  gchar **tokens;
+  gchar **alternates;
+
+  tokens = g_str_tokenize_and_fold (text, NULL, &alternates);
+  found = token_is_in_any_token (token, tokens);
+  if (!found)
+    {
+      found = token_is_in_any_token (token, alternates);
+    }
+
+  g_strfreev (tokens);
+  g_strfreev (alternates);
+
+  return found;
+}

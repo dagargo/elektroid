@@ -32,6 +32,25 @@ test_filename_get_ext ()
   CU_ASSERT_STRING_EQUAL ("ext1", filename_get_ext ("file.ext2.ext1"));
 }
 
+void
+test_token_is_in_text ()
+{
+  printf ("\n");
+
+  CU_ASSERT_FALSE (token_is_in_text ("foo", "drum_loop"));
+
+  CU_ASSERT_TRUE (token_is_in_text ("drum", "drum_loop"));
+  CU_ASSERT_TRUE (token_is_in_text ("loop", "drum loop"));
+  CU_ASSERT_TRUE (token_is_in_text ("loop", "drumloop"));
+
+  CU_ASSERT_TRUE (token_is_in_text ("drum", "DRUM_LOOP"));
+  CU_ASSERT_TRUE (token_is_in_text ("loop", "DRUM LOOP"));
+  CU_ASSERT_TRUE (token_is_in_text ("loop", "DRUMLOOP"));
+
+  CU_ASSERT_TRUE (token_is_in_text ("drum", "drüm"));
+  CU_ASSERT_TRUE (token_is_in_text ("drum", "DRÜM"));
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -56,6 +75,11 @@ main (gint argc, gchar *argv[])
     }
 
   if (!CU_add_test (suite, "filename_get_ext", test_filename_get_ext))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "token_is_in_text", test_token_is_in_text))
     {
       goto cleanup;
     }
