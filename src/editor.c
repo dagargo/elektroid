@@ -78,6 +78,7 @@ struct editor_save_data
 };
 
 static void editor_save_accept (gpointer source, const gchar * name);
+static void editor_set_waveform_data ();
 
 extern struct browser local_browser;
 extern struct browser remote_browser;
@@ -389,6 +390,15 @@ editor_update_ui_on_load (gpointer data)
     }
 
   return FALSE;
+}
+
+static gboolean
+editor_update_ui_on_record (gpointer data)
+{
+  // Redrawing is needed due to audio normalization
+  editor_clear_waveform_data ();
+  editor_set_waveform_data ();
+  return editor_update_ui_on_load (data);
 }
 
 static void
@@ -869,7 +879,7 @@ editor_update_on_record_cb (gpointer data, gdouble l, gdouble r)
   g_idle_add (editor_queue_draw, data);
   if (!ready && editor_loading_completed_no_lock (NULL))
     {
-      g_idle_add (editor_update_ui_on_load, data);
+      g_idle_add (editor_update_ui_on_record, NULL);
       ready = TRUE;
     }
 }
