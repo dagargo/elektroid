@@ -34,7 +34,7 @@ The package dependencies for Debian-based distributions are:
 You can easily install them by running this.
 
 ```
-sudo apt install automake libtool build-essential libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev autopoint gettext zlib1g-dev libjson-glib-dev libzip-dev`
+sudo apt install automake libtool build-essential libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev autopoint gettext zlib1g-dev libjson-glib-dev libzip-dev
 ```
 
 If you are only compiling the CLI, install the dependencies with this.
