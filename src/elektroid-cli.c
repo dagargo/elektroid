@@ -49,6 +49,33 @@ const struct fs_operations *fs_ops;
 const gchar *current_path_progress;
 gboolean same_line_progress;
 
+gboolean
+elektroid_ask_user_to_continue (const gchar *msg,
+				struct controllable *controllable)
+{
+  gchar buf, *remain;
+  gsize bytes_read;
+  GIOChannel *channel = g_io_channel_unix_new (STDIN_FILENO);
+
+  printf ("%s\n", msg);
+  while (1)
+    {
+      printf ("Do you want to continue? [y/n]\n");
+      g_io_channel_read_chars (channel, &buf, 1, &bytes_read, NULL);
+      if (buf == 'y' || buf == 'n')
+	{
+	  break;
+	}
+      g_io_channel_read_line (channel, &remain, &bytes_read, NULL, NULL);
+      g_free (remain);
+    }
+  g_io_channel_unref (channel);
+
+  controllable_set_active (controllable, buf == 'y');
+
+  return controllable->active;
+}
+
 static void
 complete_progress (gint err)
 {
@@ -1095,7 +1122,7 @@ main (int argc, gchar *argv[])
     }
 
 end:
-  if (err && err != EXIT_FAILURE)
+  if (err && err != EXIT_FAILURE && err != -ECANCELED)
     {
       error_print ("Error: %s", g_strerror (-err));
     }

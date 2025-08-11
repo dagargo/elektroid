@@ -118,3 +118,6 @@ gchar *common_system_get_upload_path (struct backend *backend,
 				      const gchar * dst_dir,
 				      const gchar * src_path,
 				      struct idata *content);
+
+gboolean elektroid_ask_user_to_continue (const gchar * msg,
+					 struct controllable *controllable);

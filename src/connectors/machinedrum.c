@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <glib/gi18n.h>
 #include "machinedrum.h"
 #include "common.h"
 #include "sds.h"
@@ -89,6 +90,35 @@ machinedrum_upload (struct backend *backend, const gchar *path,
 }
 
 static gint
+machinedrum_ask_upload (struct backend *backend, const gchar *path,
+			struct idata *sample, struct job_control *control)
+{
+  gint err;
+  guint id;
+  gchar msg[LABEL_MAX];
+
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  snprintf (msg, LABEL_MAX,
+	    _
+	    ("Sending sample “%.4s” to slot %d. Set “RECV” mode in the sample manager menu."),
+	    sample->name, id);
+
+  if (elektroid_ask_user_to_continue (msg, &control->controllable))
+    {
+      return machinedrum_upload (backend, path, sample, control);
+    }
+  else
+    {
+      return -ECANCELED;
+    }
+}
+
+static gint
 machinedrum_download (struct backend *backend, const gchar *path,
 		      struct idata *sample, struct job_control *control)
 {
@@ -104,6 +134,34 @@ machinedrum_download (struct backend *backend, const gchar *path,
   return sds_download_by_id (backend, id - 1, sample, control);
 }
 
+static gint
+machinedrum_ask_download (struct backend *backend, const gchar *path,
+			  struct idata *sample, struct job_control *control)
+{
+  gint err;
+  guint id;
+  gchar msg[LABEL_MAX];
+
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  snprintf (msg, LABEL_MAX,
+	    _("Receiving sample from slot %d. Send sample from the device."),
+	    id);
+
+  if (elektroid_ask_user_to_continue (msg, &control->controllable))
+    {
+      return machinedrum_download (backend, path, sample, control);
+    }
+  else
+    {
+      return -ECANCELED;
+    }
+}
+
 static const struct fs_operations FS_MACHINEDRUM_SAMPLE_OPERATIONS = {
   .id = FS_SAMPLE_MACHINEDRUM,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
@@ -115,8 +173,8 @@ static const struct fs_operations FS_MACHINEDRUM_SAMPLE_OPERATIONS = {
   .readdir = machinedrum_read_dir,
   .print_item = common_print_item,
   .rename = machinedrum_rename,
-  .download = machinedrum_download,
-  .upload = machinedrum_upload,
+  .download = machinedrum_ask_download,
+  .upload = machinedrum_ask_upload,
   .load = sds_sample_load,
   .save = sds_sample_save,
   .get_exts = sample_get_sample_extensions,

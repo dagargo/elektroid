@@ -40,6 +40,7 @@
 #include "regpref.h"
 #include "sample.h"
 #include "tasks.h"
+#include "utils.h"
 
 #define BACKEND_PLAYING "\u23f5"
 #define BACKEND_STOPPED "\u23f9"
@@ -63,6 +64,14 @@ struct elektroid_set_device_data
   struct backend_device backend_device;
   struct controllable controllable;
   gint err;
+};
+
+struct common_ask_user_data
+{
+  struct controllable *controllable;
+  GMainLoop *loop;
+  const gchar *msg;
+  GtkWidget *dialog;
 };
 
 static gpointer elektroid_upload_task_runner (gpointer);
@@ -128,6 +137,59 @@ elektroid_show_error_msg (const char *format, ...)
 
   g_free (msg);
   va_end (args);
+}
+
+static void
+elektroid_ask_user_to_continue_response (GtkDialog *dialog, gint response_id,
+					 gpointer user_data)
+{
+  struct common_ask_user_data *data = user_data;
+  controllable_set_active (data->controllable,
+			   response_id == GTK_RESPONSE_ACCEPT);
+  gtk_widget_destroy (data->dialog);
+  g_main_loop_quit (data->loop);
+}
+
+gboolean
+elektroid_ask_user_to_continue_show (gpointer user_data)
+{
+  struct common_ask_user_data *data = user_data;
+
+  data->dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL,
+					 GTK_MESSAGE_WARNING,
+					 GTK_BUTTONS_NONE, data->msg);
+  gtk_dialog_add_buttons (GTK_DIALOG (data->dialog), _("_Cancel"),
+			  GTK_RESPONSE_CANCEL, _("_Continue"),
+			  GTK_RESPONSE_ACCEPT, NULL);
+  gtk_dialog_set_default_response (GTK_DIALOG (data->dialog),
+				   GTK_RESPONSE_CANCEL);
+  g_signal_connect (data->dialog, "response",
+		    G_CALLBACK (elektroid_ask_user_to_continue_response),
+		    data);
+  gtk_widget_set_visible (data->dialog, TRUE);
+
+  return FALSE;
+}
+
+//This function needs to block the GUI. As the blocking dialogs have been removed from GTK4, this needs to be implemented.
+
+gboolean
+elektroid_ask_user_to_continue (const gchar *msg,
+				struct controllable *controllable)
+{
+  struct common_ask_user_data data;
+
+  data.controllable = controllable;
+  data.loop = g_main_loop_new (NULL, FALSE);
+  data.msg = msg;
+
+  g_idle_add (elektroid_ask_user_to_continue_show, &data);
+
+  g_main_loop_run (data.loop);
+
+  g_main_loop_unref (data.loop);
+
+  return controllable_is_active(controllable);
 }
 
 static void
@@ -682,7 +744,7 @@ elektroid_check_file_and_wait (gchar *path, struct browser *browser)
 static gpointer
 elektroid_upload_task_runner (gpointer data)
 {
-  gint res;
+  gint err;
   gboolean active;
   struct idata idata;
   gchar *dst_dir, *upload_path;
@@ -698,9 +760,9 @@ elektroid_upload_task_runner (gpointer data)
       return NULL;
     }
 
-  res = tasks.transfer.fs_ops->load (tasks.transfer.src, &idata,
+  err = tasks.transfer.fs_ops->load (tasks.transfer.src, &idata,
 				     &tasks.transfer.control);
-  if (res)
+  if (err)
     {
       error_print ("Error while loading file");
       tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
@@ -723,15 +785,22 @@ elektroid_upload_task_runner (gpointer data)
       goto cleanup;
     }
 
-  res = tasks.transfer.fs_ops->upload (BACKEND,
+  err = tasks.transfer.fs_ops->upload (BACKEND,
 				       upload_path, &idata,
 				       &tasks.transfer.control);
 
   active = controllable_is_active (&tasks.transfer.control.controllable);
-  if (res && active)
+  if (err)
     {
-      error_print ("Error while uploading");
-      tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
+      if (active && err != -ECANCELED)
+	{
+	  error_print ("Error while uploading");
+	  tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
+	}
+      else
+	{
+	  tasks.transfer.status = TASK_STATUS_CANCELED;
+	}
     }
   else
     {
@@ -740,7 +809,7 @@ elektroid_upload_task_runner (gpointer data)
     }
 
   dst_dir = g_path_get_dirname (upload_path);
-  if (!res && tasks.transfer.fs_ops == remote_browser.fs_ops &&
+  if (!err && tasks.transfer.fs_ops == remote_browser.fs_ops &&
       !strncmp (dst_dir, remote_browser.dir,
 		strlen (remote_browser.dir))
       && !(tasks.transfer.fs_ops->options & FS_OPTION_SINGLE_OP))
@@ -883,7 +952,7 @@ elektroid_add_upload_tasks (GtkWidget *object, gpointer data)
 static gpointer
 elektroid_download_task_runner (gpointer userdata)
 {
-  gint res;
+  gint err;
   struct idata idata;
   gchar *dst_path;
 
@@ -897,14 +966,14 @@ elektroid_download_task_runner (gpointer userdata)
       goto end_no_dir;
     }
 
-  res = tasks.transfer.fs_ops->download (BACKEND,
+  err = tasks.transfer.fs_ops->download (BACKEND,
 					 tasks.transfer.src, &idata,
 					 &tasks.transfer.control);
 
   g_mutex_lock (&tasks.transfer.control.controllable.mutex);
-  if (res)
+  if (err)
     {
-      if (tasks.transfer.control.controllable.active)
+      if (tasks.transfer.control.controllable.active && err != -ECANCELED)
 	{
 	  error_print ("Error while downloading");
 	  tasks.transfer.status = TASK_STATUS_COMPLETED_ERROR;
@@ -927,9 +996,9 @@ elektroid_download_task_runner (gpointer userdata)
     {
       debug_print (1, "Writing %d bytes to file %s (filesystem %s)...",
 		   idata.content->len, dst_path, tasks.transfer.fs_ops->name);
-      res = tasks.transfer.fs_ops->save (dst_path, &idata,
+      err = tasks.transfer.fs_ops->save (dst_path, &idata,
 					 &tasks.transfer.control);
-      if (!res)
+      if (!err)
 	{
 	  tasks.transfer.status = TASK_STATUS_COMPLETED_OK;
 	  g_idle_add (browser_load_dir_if_needed, &local_browser);
@@ -1245,7 +1314,6 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 			    elektroid_set_device_cancel, set_device_data,
 			    PROGRESS_TYPE_PULSE, _("Connecting to Device"),
 			    _("Connecting..."), TRUE);
-
     }
 }
 

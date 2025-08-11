@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2025-08-11 11:39+0200\n"
+"POT-Creation-Date: 2025-08-12 16:46+0200\n"
 "PO-Revision-Date: 2024-09-22 15:18+0200\n"
 "Last-Translator: Dennis Braun <snd@debian.org>\n"
 "Language-Team: German\n"
@@ -17,61 +17,66 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1953
-msgid "Audio"
-msgstr ""
-
-#: src/elektroid.c:272 src/elektroid.c:1544
-msgid "Not connected"
-msgstr "Nicht verbunden"
-
-#: src/elektroid.c:629 src/editor.c:1713
-#, c-format
-msgid "Replace file “%s”?"
-msgstr "Ersetze Datei “%s”?"
-
-#: src/elektroid.c:631 src/editor.c:1715 src/browser.c:607
+#: src/elektroid.c:161 src/elektroid.c:692 src/editor.c:1715 src/browser.c:607
 #: src/mactions/backend.c:194 src/mactions/backend.c:282
 #: src/mactions/microfreak.c:68 res/elektroid.ui:1305 res/elektroid.ui:3342
 #: res/elektroid.ui:3718 res/elektroid.ui:3817 res/elektroid.ui:3959
 msgid "_Cancel"
 msgstr "_Abbrechen"
 
-#: src/elektroid.c:632
+#: src/elektroid.c:162
+#, fuzzy
+msgid "_Continue"
+msgstr "_Konfiguration"
+
+#: src/elektroid.c:242 src/elektroid.c:249 src/editor.c:1953
+msgid "Audio"
+msgstr ""
+
+#: src/elektroid.c:333 src/elektroid.c:1611
+msgid "Not connected"
+msgstr "Nicht verbunden"
+
+#: src/elektroid.c:690 src/editor.c:1713
+#, c-format
+msgid "Replace file “%s”?"
+msgstr "Ersetze Datei “%s”?"
+
+#: src/elektroid.c:693
 msgid "_Skip"
 msgstr "_Überspringe"
 
-#: src/elektroid.c:633 src/editor.c:1716
+#: src/elektroid.c:694 src/editor.c:1716
 msgid "_Replace"
 msgstr "_Ersetze"
 
-#: src/elektroid.c:638
+#: src/elektroid.c:699
 msgid "Apply this action to all files"
 msgstr "Diese Aktion auf alle Dateien anwenden"
 
-#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1840
+#: src/elektroid.c:947 src/elektroid.c:1140 src/browser.c:1840
 msgid "Preparing Tasks"
 msgstr "Aufgaben werden vorbereitet"
 
-#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1841
+#: src/elektroid.c:947 src/elektroid.c:1140 src/browser.c:1841
 #: src/progress_window.c:137
 msgid "Waiting..."
 msgstr "Warte..."
 
-#: src/elektroid.c:1158
+#: src/elektroid.c:1226
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Gerät “%s” nicht erkannt: %s"
 
-#: src/elektroid.c:1246
+#: src/elektroid.c:1314
 msgid "Connecting to Device"
 msgstr "Verbindung zum Gerät wird hergestellt"
 
-#: src/elektroid.c:1247
+#: src/elektroid.c:1315
 msgid "Connecting..."
 msgstr "Verbinde..."
 
-#: src/elektroid.c:1484
+#: src/elektroid.c:1551
 msgid "Acknowledgements"
 msgstr ""
 
@@ -318,13 +323,24 @@ msgctxt "Recording channels"
 msgid "Stereo"
 msgstr ""
 
-#: src/connectors/sds.c:1340
+#: src/connectors/sds.c:1364
 msgid "SDS sampler"
 msgstr ""
 
 #: src/connectors/default.c:84
 msgid "MIDI device"
 msgstr "MIDI Gerät"
+
+#: src/connectors/machinedrum.c:108
+#, c-format
+msgid ""
+"Sending sample “%.4s” to slot %d. Set “RECV” mode in the sample manager menu."
+msgstr ""
+
+#: src/connectors/machinedrum.c:152
+#, c-format
+msgid "Receiving sample from slot %d. Send sample from the device."
+msgstr ""
 
 #: src/connectors/system.c:728
 msgid "System"
