@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2025-08-11 11:29+0200\n"
+"POT-Creation-Date: 2025-08-11 11:39+0200\n"
 "PO-Revision-Date: 2024-09-22 15:18+0200\n"
 "Last-Translator: Dennis Braun <snd@debian.org>\n"
 "Language-Team: German\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1952
+#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1953
 msgid "Audio"
 msgstr ""
 
@@ -85,7 +85,7 @@ msgstr ""
 msgid "Saving sample"
 msgstr "Speichere Sample"
 
-#: src/editor.c:1694 src/editor.c:1960
+#: src/editor.c:1694 src/editor.c:1961
 msgid "Save Sample"
 msgstr "Speichere Sample"
 
@@ -103,12 +103,18 @@ msgctxt "Recording channels"
 msgid "Right"
 msgstr "Rechts"
 
-#: src/editor.c:1863
+#: src/editor.c:1858
+#, fuzzy
+msgctxt "Audio file"
+msgid "Channel"
+msgstr "Kanäle"
+
+#: src/editor.c:1864
 #, c-format
 msgid "Saving channel %d to “%s”..."
 msgstr ""
 
-#: src/editor.c:1914
+#: src/editor.c:1915
 msgid "Splitting channels"
 msgstr ""
 

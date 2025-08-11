@@ -1854,9 +1854,10 @@ editor_split_runner (gpointer user_data)
 	}
       else
 	{
-	  snprintf (channel_name, LABEL_MAX, "%d", c + 1);
+	  snprintf (channel_name, LABEL_MAX, "%s %d",
+		    C_ ("Audio file", "Channel"), c + 1);
 	}
-      name = g_strdup_printf ("%s-%s.%s", basename, channel_name, ext);
+      name = g_strdup_printf ("%s - %s.%s", basename, channel_name, ext);
 
       if (*has_progress_window)
 	{

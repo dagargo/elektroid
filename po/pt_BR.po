@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2025-08-11 11:29+0200\n"
+"POT-Creation-Date: 2025-08-11 11:39+0200\n"
 "PO-Revision-Date: 2023-03-26 11:30-0300\n"
 "Last-Translator: Gustavo Costa <xfgusta@gmail.com>\n"
 "Language-Team: \n"
@@ -18,7 +18,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Poedit 3.2.2\n"
 
-#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1952
+#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1953
 msgid "Audio"
 msgstr ""
 
@@ -85,7 +85,7 @@ msgstr ""
 msgid "Saving sample"
 msgstr ""
 
-#: src/editor.c:1694 src/editor.c:1960
+#: src/editor.c:1694 src/editor.c:1961
 msgid "Save Sample"
 msgstr "Salvar amostra"
 
@@ -103,12 +103,18 @@ msgctxt "Recording channels"
 msgid "Right"
 msgstr ""
 
-#: src/editor.c:1863
+#: src/editor.c:1858
+#, fuzzy
+msgctxt "Audio file"
+msgid "Channel"
+msgstr "Canais"
+
+#: src/editor.c:1864
 #, c-format
 msgid "Saving channel %d to “%s”..."
 msgstr ""
 
-#: src/editor.c:1914
+#: src/editor.c:1915
 msgid "Splitting channels"
 msgstr ""
 
