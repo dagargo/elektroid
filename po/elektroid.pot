@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.3.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2026-05-07 19:37+0200\n"
+"POT-Creation-Date: 2026-05-24 21:20+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,66 +17,70 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: src/elektroid.c:228 src/elektroid.c:235 src/editor.c:2381
-msgid "Audio"
-msgstr ""
-
-#: src/elektroid.c:319 src/elektroid.c:1656
-msgid "Not connected"
-msgstr ""
-
-#: src/elektroid.c:702 src/editor.c:2123
-#, c-format
-msgid "Replace file “%s”?"
-msgstr ""
-
-#: src/elektroid.c:704 src/editor.c:2125 src/browser.c:658
+#: src/elektroid.c:206 src/elektroid.c:766 src/editor.c:2125 src/browser.c:658
 #: src/mactions/backend.c:194 src/mactions/backend.c:282
-#: src/mactions/microfreak.c:68 res/elektroid.ui:1465 res/elektroid.ui:3804
+#: src/mactions/microfreak.c:76 res/elektroid.ui:1465 res/elektroid.ui:3804
 #: res/elektroid.ui:4484 res/elektroid.ui:4583 res/elektroid.ui:4725
 #: res/elektroid.ui:5096
 msgid "_Cancel"
 msgstr ""
 
-#: src/elektroid.c:705
+#: src/elektroid.c:207
+msgid "_Continue"
+msgstr ""
+
+#: src/elektroid.c:290 src/elektroid.c:297 src/editor.c:2381
+msgid "Audio"
+msgstr ""
+
+#: src/elektroid.c:381 src/elektroid.c:1724
+msgid "Not connected"
+msgstr ""
+
+#: src/elektroid.c:764 src/editor.c:2123
+#, c-format
+msgid "Replace file “%s”?"
+msgstr ""
+
+#: src/elektroid.c:767
 msgid "_Skip"
 msgstr ""
 
-#: src/elektroid.c:706 src/editor.c:2126
+#: src/elektroid.c:768 src/editor.c:2126
 msgid "_Replace"
 msgstr ""
 
-#: src/elektroid.c:711
+#: src/elektroid.c:773
 msgid "Apply this action to all files"
 msgstr ""
 
-#: src/elektroid.c:952 src/elektroid.c:1145 src/browser.c:2192
+#: src/elektroid.c:1021 src/elektroid.c:1214 src/browser.c:2192
 msgid "Preparing Tasks"
 msgstr ""
 
-#: src/elektroid.c:952 src/elektroid.c:1145 src/browser.c:2193
+#: src/elektroid.c:1021 src/elektroid.c:1214 src/browser.c:2193
 #: src/progress_window.c:137
 msgid "Waiting..."
 msgstr ""
 
-#: src/elektroid.c:1237
+#: src/elektroid.c:1306
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr ""
 
-#: src/elektroid.c:1326
+#: src/elektroid.c:1395
 msgid "Connecting to Device"
 msgstr ""
 
-#: src/elektroid.c:1327
+#: src/elektroid.c:1396
 msgid "Connecting..."
 msgstr ""
 
-#: src/elektroid.c:1593
+#: src/elektroid.c:1661
 msgid "Libraries"
 msgstr ""
 
-#: src/elektroid.c:1597
+#: src/elektroid.c:1665
 msgid "Acknowledgements"
 msgstr ""
 
@@ -312,17 +316,17 @@ msgstr ""
 msgid "_Calibration"
 msgstr ""
 
-#: src/mactions/microfreak.c:53
+#: src/mactions/microfreak.c:50
 msgid "Defragmenting Sample Memory"
 msgstr ""
 
-#: src/mactions/microfreak.c:67
+#: src/mactions/microfreak.c:75
 msgid ""
 "The defragmentation process could take several minutes and could not be "
 "canceled. Are you sure you want to defragment the sample memory?"
 msgstr ""
 
-#: src/mactions/microfreak.c:69 src/mactions/microfreak.c:93
+#: src/mactions/microfreak.c:77 src/mactions/microfreak.c:107
 msgid "_Defragment"
 msgstr ""
 
@@ -343,12 +347,23 @@ msgctxt "Recording channels"
 msgid "Stereo"
 msgstr ""
 
-#: src/connectors/sds.c:1351
+#: src/connectors/sds.c:1375
 msgid "SDS sampler"
 msgstr ""
 
 #: src/connectors/default.c:85
 msgid "MIDI device"
+msgstr ""
+
+#: src/connectors/machinedrum.c:108
+#, c-format
+msgid ""
+"Sending sample “%.4s” to slot %d. Set “RECV” mode in the sample manager menu."
+msgstr ""
+
+#: src/connectors/machinedrum.c:152
+#, c-format
+msgid "Receiving sample from slot %d. Send sample from the device."
 msgstr ""
 
 #: src/connectors/system.c:907

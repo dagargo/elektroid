@@ -162,3 +162,6 @@ gint common_load_key_based_tuning_msg (struct backend *backend,
 				       const char *path,
 				       struct idata *idata,
 				       struct task_control *control);
+
+gboolean elektroid_ask_user_to_continue (const gchar * msg,
+					 struct controllable *controllable);
