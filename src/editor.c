@@ -1849,7 +1849,8 @@ editor_split_runner (gpointer user_data)
       if (channels == 2)
 	{
 	  snprintf (channel_name, LABEL_MAX, "%s",
-		    c == 1 ? _("Left") : _("Right"));
+		    c == 1 ? C_ ("Recording channels", "Left") :
+		    C_ ("Recording channels", "Right"));
 	}
       else
 	{

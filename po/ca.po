@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2025-08-01 21:38+0200\n"
+"POT-Creation-Date: 2025-08-11 11:29+0200\n"
 "PO-Revision-Date: 2020-04-26 13:00+0100\n"
 "Last-Translator: David García Goñi <dagargo@gmail.com>\n"
 "Language-Team: Catalan\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1941
+#: src/elektroid.c:181 src/elektroid.c:188 src/editor.c:1952
 msgid "Audio"
 msgstr ""
 
@@ -25,12 +25,12 @@ msgstr ""
 msgid "Not connected"
 msgstr "No connectat"
 
-#: src/elektroid.c:629 src/editor.c:1703
+#: src/elektroid.c:629 src/editor.c:1713
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Voleu reemplaçar el fitxer «%s»?"
 
-#: src/elektroid.c:631 src/editor.c:1705 src/browser.c:607
+#: src/elektroid.c:631 src/editor.c:1715 src/browser.c:607
 #: src/mactions/backend.c:194 src/mactions/backend.c:282
 #: src/mactions/microfreak.c:68 res/elektroid.ui:1305 res/elektroid.ui:3342
 #: res/elektroid.ui:3718 res/elektroid.ui:3817 res/elektroid.ui:3959
@@ -41,7 +41,7 @@ msgstr "_Cancel·la"
 msgid "_Skip"
 msgstr "_Omet"
 
-#: src/elektroid.c:633 src/editor.c:1706
+#: src/elektroid.c:633 src/editor.c:1716
 msgid "_Replace"
 msgstr "_Reemplaça"
 
@@ -49,11 +49,11 @@ msgstr "_Reemplaça"
 msgid "Apply this action to all files"
 msgstr "Aplica aquesta acció a tots els fitxers"
 
-#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1806
+#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1840
 msgid "Preparing Tasks"
 msgstr "Preparant tasques..."
 
-#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1807
+#: src/elektroid.c:879 src/elektroid.c:1072 src/browser.c:1841
 #: src/progress_window.c:137
 msgid "Waiting..."
 msgstr "Esperant..."
@@ -75,39 +75,39 @@ msgstr "Conectant..."
 msgid "Acknowledgements"
 msgstr ""
 
-#: src/editor.c:1571
+#: src/editor.c:1581
 #, c-format
 msgid "Saving “%s”..."
 msgstr "Alçant «%s»..."
 
-#: src/editor.c:1574
+#: src/editor.c:1584
 msgid "Saving sample"
 msgstr "Alçant mostra"
 
-#: src/editor.c:1684 src/editor.c:1949
+#: src/editor.c:1694 src/editor.c:1960
 msgid "Save Sample"
 msgstr "Alça mostra"
 
-#: src/editor.c:1777
+#: src/editor.c:1787
 msgid "Calculating..."
 msgstr "Calculant..."
 
-#. TRANSLATORS: Mono recording from left channel
-#: src/editor.c:1842 src/guirecorder.c:82
+#: src/editor.c:1852 src/guirecorder.c:80
+msgctxt "Recording channels"
 msgid "Left"
 msgstr "Esquerre"
 
-#. TRANSLATORS: Mono recording from right channel
-#: src/editor.c:1842 src/guirecorder.c:89
+#: src/editor.c:1853 src/guirecorder.c:87
+msgctxt "Recording channels"
 msgid "Right"
 msgstr "Dret"
 
-#: src/editor.c:1852
+#: src/editor.c:1863
 #, c-format
 msgid "Saving channel %d to “%s”..."
 msgstr "Alçant canal %d en «%s»..."
 
-#: src/editor.c:1903
+#: src/editor.c:1914
 msgid "Splitting channels"
 msgstr "Separant els canals"
 
@@ -176,20 +176,20 @@ msgstr "min."
 msgid "cents"
 msgstr "cents"
 
-#: src/browser.c:1400
+#: src/browser.c:1434
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Error al crear el directori «%s»: %s."
 
-#: src/browser.c:1416 res/elektroid.ui:1851 res/elektroid.ui:2295
+#: src/browser.c:1450 res/elektroid.ui:1851 res/elektroid.ui:2295
 msgid "Add Directory"
 msgstr "Afig directori"
 
-#: src/browser.c:1793
+#: src/browser.c:1827
 msgid "Moving Files"
 msgstr "Movent fitxers"
 
-#: src/browser.c:1794
+#: src/browser.c:1828
 msgid "Moving..."
 msgstr "Movent..."
 
@@ -304,8 +304,8 @@ msgstr "Enviant..."
 msgid "Receiving..."
 msgstr "Rebent..."
 
-#. TRANSLATORS: Stereo recording
-#: src/guirecorder.c:72
+#: src/guirecorder.c:71
+msgctxt "Recording channels"
 msgid "Stereo"
 msgstr "Estéreo"
 

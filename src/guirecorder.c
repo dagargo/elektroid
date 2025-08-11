@@ -68,8 +68,7 @@ guirecorder_set_channels_masks (struct guirecorder *guirecorder, guint32 opts)
       gtk_list_store_insert_with_values (guirecorder->channels_list_store,
 					 NULL, -1,
 					 CHANNELS_LIST_STORE_CAPTION_FIELD,
-/* TRANSLATORS: Stereo recording */
-					 _("Stereo"),
+					 C_ ("Recording channels", "Stereo"),
 					 CHANNELS_LIST_STORE_ID_FIELD,
 					 RECORD_STEREO, -1);
     }
@@ -78,15 +77,14 @@ guirecorder_set_channels_masks (struct guirecorder *guirecorder, guint32 opts)
       gtk_list_store_insert_with_values (guirecorder->channels_list_store,
 					 NULL, -1,
 					 CHANNELS_LIST_STORE_CAPTION_FIELD,
-/* TRANSLATORS: Mono recording from left channel */
-					 _("Left"),
+					 C_ ("Recording channels", "Left"),
 					 CHANNELS_LIST_STORE_ID_FIELD,
 					 RECORD_LEFT, -1);
+
       gtk_list_store_insert_with_values (guirecorder->channels_list_store,
 					 NULL, -1,
 					 CHANNELS_LIST_STORE_CAPTION_FIELD,
-/* TRANSLATORS: Mono recording from right channel */
-					 _("Right"),
+					 C_ ("Recording channels", "Right"),
 					 CHANNELS_LIST_STORE_ID_FIELD,
 					 RECORD_RIGHT, -1);
     }
