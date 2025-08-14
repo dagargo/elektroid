@@ -154,25 +154,25 @@ struct fs_operations
 enum fs_options
 {
   //Show the audio player.
-  FS_OPTION_SAMPLE_EDITOR = 0x1,
+  FS_OPTION_SAMPLE_EDITOR = 1,
   //Allow mono samples. Only useful if used together with FS_OPTION_SAMPLE_EDITOR
-  FS_OPTION_MONO = 0x2,
+  FS_OPTION_MONO = (1 << 1),
   //Allow stereo samples. Only useful if used together with FS_OPTION_SAMPLE_EDITOR
-  FS_OPTION_STEREO = 0x4,
+  FS_OPTION_STEREO = (1 << 2),
   //Every operation will block the remote browser.
-  FS_OPTION_SINGLE_OP = 0x8,
+  FS_OPTION_SINGLE_OP = (1 << 3),
   //In slot storage mode, the item name in dst_path passed to get_upload_path is the ID.
   //DND is only possible over a concrete slot.
   //A DND operation of several items over a slot will behave as dropping the first item over the destination slot and the rest over the following ones.
-  FS_OPTION_SLOT_STORAGE = 0x10,
+  FS_OPTION_SLOT_STORAGE = (1 << 4),
   //Show column options. Name column is always showed.
-  FS_OPTION_SHOW_ID_COLUMN = 0x20,	// Not 0 padded. For a 0 padded value use FS_OPTION_SHOW_SLOT_COLUMN and a custom get_slot function.
-  FS_OPTION_SHOW_SIZE_COLUMN = 0x40,
-  FS_OPTION_SHOW_SLOT_COLUMN = 0x80,
-  FS_OPTION_SHOW_INFO_COLUMN = 0x100,
-  FS_OPTION_SHOW_SAMPLE_COLUMNS = 0x200,
+  FS_OPTION_SHOW_ID_COLUMN = (1 << 5),	// Not 0 padded. For a 0 padded value use FS_OPTION_SHOW_SLOT_COLUMN and a custom get_slot function.
+  FS_OPTION_SHOW_SIZE_COLUMN = (1 << 6),
+  FS_OPTION_SHOW_SLOT_COLUMN = (1 << 7),
+  FS_OPTION_SHOW_INFO_COLUMN = (1 << 8),
+  FS_OPTION_SHOW_SAMPLE_COLUMNS = (1 << 9),
   //This requires the function readdir to be relatively fast because canceling the search will block the GUI.
-  FS_OPTION_ALLOW_SEARCH = 0x400
+  FS_OPTION_ALLOW_SEARCH = (1 << 10)
 };
 
 struct connector
