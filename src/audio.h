@@ -103,7 +103,7 @@ extern struct audio audio;
 
 gboolean audio_is_stopped ();
 
-void audio_start_playback ();
+void audio_start_playback (audio_playback_cursor_notifier cursor_notifier);
 
 void audio_stop_playback ();
 
