@@ -2,7 +2,7 @@
 layout: base
 title: Packaging
 permalink: /packaging/
-order: 2
+order: 3
 ---
 
 ## Packaging

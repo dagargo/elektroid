@@ -416,6 +416,17 @@ system_load_mono_32k_16b (const gchar *path, struct idata *sample,
   return system_load_custom (path, sample, control, &sample_info_dst);
 }
 
+static gint
+system_load_mono_31k25_16b (const gchar *path, struct idata *sample,
+			    struct job_control *control)
+{
+  struct sample_info sample_info_dst;
+  sample_info_dst.rate = 31250;
+  sample_info_dst.channels = 1;
+  sample_info_dst.format = SF_FORMAT_PCM_16;
+  return system_load_custom (path, sample, control, &sample_info_dst);
+}
+
 gboolean
 system_file_exists (struct backend *backend, const gchar *path)
 {
@@ -432,7 +443,8 @@ enum system_fs
   FS_SYSTEM_SAMPLES_MONO_44K1_24B,
   FS_SYSTEM_SAMPLES_STEREO_441K_8B,
   FS_SYSTEM_SAMPLES_MONO_44K1_8B,
-  FS_SYSTEM_SAMPLES_MONO_32K_16B
+  FS_SYSTEM_SAMPLES_MONO_32K_16B,
+  FS_SYSTEM_SAMPLES_MONO_31K25_16B
 };
 
 const struct fs_operations FS_SYSTEM_SAMPLES_STEREO_48K_16B_OPERATIONS = {
@@ -663,6 +675,31 @@ const struct fs_operations FS_SYSTEM_SAMPLES_MONO_32K_16B_OPERATIONS = {
   .max_name_len = 255
 };
 
+const struct fs_operations FS_SYSTEM_SAMPLES_MONO_31K25_16B_OPERATIONS = {
+  .id = FS_SYSTEM_SAMPLES_MONO_31K25_16B,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
+    FS_OPTION_ALLOW_SEARCH,
+  .name = "wav-mono-31k25-16b",
+  .gui_name = "WAV mono 31.25 KHz 16 bits",
+  .gui_icon = FS_ICON_WAVE,
+  .readdir = system_samples_read_dir,
+  .print_item = common_print_item,
+  .file_exists = system_file_exists,
+  .mkdir = system_mkdir,
+  .delete = system_delete,
+  .rename = system_rename,
+  .move = system_rename,
+  .download = system_download,
+  .upload = system_upload,
+  .load = system_load_mono_31k25_16b,
+  .save = file_save,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
+  .get_exts = sample_get_sample_extensions,
+  .max_name_len = 255
+};
+
 #if defined (__linux__)
 static gint
 system_get_storage_stats (struct backend *backend, guint8 type,
@@ -720,7 +757,8 @@ system_handshake (struct backend *backend)
 	       &FS_SYSTEM_SAMPLES_MONO_44K1_24B_OPERATIONS,
 	       &FS_SYSTEM_SAMPLES_STEREO_441K_8B_OPERATIONS,
 	       &FS_SYSTEM_SAMPLES_MONO_44K1_8B_OPERATIONS,
-	       &FS_SYSTEM_SAMPLES_MONO_32K_16B_OPERATIONS, NULL);
+	       &FS_SYSTEM_SAMPLES_MONO_32K_16B_OPERATIONS,
+	       &FS_SYSTEM_SAMPLES_MONO_31K25_16B_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "%s", _("System"));
 
   backend->get_storage_stats =

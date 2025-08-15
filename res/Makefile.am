@@ -1,12 +1,15 @@
+res_DATA = libraries.html \
+	THANKS \
+	volca_sample_sdk-COPYING
+
 if ELEKTROID_CLI_ONLY
-  res_DATA = THANKS
   desktop_DATA =
   metainfo_DATA =
   svgicon_DATA =
   microbrute_DATA =
   ico_DATA =
 else
-  res_DATA = elektroid.ui elektroid.css THANKS
+  res_DATA += elektroid.ui elektroid.css
   svgicon_DATA = io.github.dagargo.Elektroid.svg \
                  io.github.dagargo.Elektroid-symbolic.svg \
                  elektroid-file-symbolic.svg \

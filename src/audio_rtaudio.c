@@ -215,7 +215,11 @@ audio_init_int ()
 	       dev_info.name, audio.rate, buffer_frames);
 
   audio.volume = 1.0;
-  audio.volume_change_callback (audio.volume);
+
+  if (audio.volume_change_callback)
+    {
+      audio.volume_change_callback (audio.volume);
+    }
 
   audio.record_rtaudio = rtaudio_create (apis[i]);
   if (rtaudio_error (audio.record_rtaudio))

@@ -836,7 +836,7 @@ backend_init_connector (struct backend *backend,
 	    {
 	      if (conn_name && strcmp (c->name, conn_name))
 		{
-		  error_print ("Usexpected connector");
+		  error_print ("Unexpected connector");
 		  return -ENODEV;
 		}
 
