@@ -21,11 +21,15 @@
 #include <math.h>
 #include "audio.h"
 #include "preferences.h"
+#include "utils.h"
 
 struct audio audio;
+static struct controllable audio_initializing_controllable;
 
 #define AUDIO_FRAMES_TO_MONITOR (audio.rate / 10)
 #define AUDIO_SILENCE_THRESHOLD 0.01
+
+#define AUDIO_SLEEP_US 200000
 
 void audio_init_int ();
 void audio_destroy_int ();
@@ -458,8 +462,8 @@ audio_reset_record_buffer (guint record_options,
 }
 
 void
-audio_init (void (*volume_change_callback) (gdouble),
-	    void (*audio_ready_callback) (), gpointer data)
+audio_init (audio_ready_callback ready_callback,
+	    audio_volume_change_callback volume_change_callback)
 {
   debug_print (1, "Initializing audio (%s %s)...", audio_name (),
 	       audio_version ());
@@ -468,8 +472,8 @@ audio_init (void (*volume_change_callback) (gdouble),
   audio.loop = FALSE;
   audio.path = NULL;
   audio.status = AUDIO_STATUS_STOPPED;
+  audio.ready_callback = ready_callback;
   audio.volume_change_callback = volume_change_callback;
-  audio.ready_callback = audio_ready_callback;
   controllable_init (&audio.control.controllable);
   audio.control.callback = NULL;
   audio.sel_start = -1;
@@ -506,6 +510,23 @@ audio_reset_sample ()
   audio.path = NULL;
   audio.release_frames = 0;
   audio.status = AUDIO_STATUS_STOPPED;
+  g_mutex_unlock (&audio.control.controllable.mutex);
+}
+
+static void
+audio_set_sample (struct idata *sample)
+{
+  struct sample_info *sample_info;
+
+  audio_reset_sample ();
+
+  g_mutex_lock (&audio.control.controllable.mutex);
+  sample_info = sample->info;
+  sample->info = NULL;
+  idata_init (&audio.sample, idata_steal (sample), NULL, sample_info);
+  audio.control.callback = NULL;
+  audio.sel_start = -1;
+  audio.sel_end = -1;
   g_mutex_unlock (&audio.control.controllable.mutex);
 }
 
@@ -748,4 +769,51 @@ audio_finish_recording ()
       audio.monitor_notifier (audio.monitor_data, 0, 0);
     }
   g_mutex_unlock (&audio.control.controllable.mutex);
+}
+
+void
+audio_init_ready_callback ()
+{
+  controllable_set_active (&audio_initializing_controllable, FALSE);
+}
+
+void
+audio_init_and_wait ()
+{
+  controllable_init (&audio_initializing_controllable);
+  controllable_set_active (&audio_initializing_controllable, TRUE);
+  audio_init (audio_init_ready_callback, NULL);
+  while (controllable_is_active (&audio_initializing_controllable))
+    {
+      usleep (AUDIO_SLEEP_US);
+    }
+  controllable_clear (&audio_initializing_controllable);
+}
+
+void
+audio_set_play_and_wait (struct idata *sample, struct job_control *control)
+{
+  guint32 pos;
+  gboolean active = TRUE;
+  struct sample_info *sample_info;
+
+  audio_set_sample (sample);
+
+  sample_info = audio.sample.info;
+
+  audio_start_playback (NULL);
+
+  while (!audio_is_stopped () && active)
+    {
+      usleep (AUDIO_SLEEP_US);
+      if (control)
+	{
+	  g_mutex_lock (&audio.control.controllable.mutex);
+	  pos = audio.pos;
+	  g_mutex_unlock (&audio.control.controllable.mutex);
+	  job_control_set_progress (control,
+				    pos / (gdouble) sample_info->frames);
+	  active = controllable_is_active (&control->controllable);
+	}
+    }
 }

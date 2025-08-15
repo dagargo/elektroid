@@ -224,7 +224,7 @@ padkontrol_get_id_as_slot (struct item *item, struct backend *backend)
   return slot;
 }
 
-static const struct fs_operations FS_PADKONTROL_OPERATIONS = {
+static const struct fs_operations FS_PADKONTROL_SCENE_OPERATIONS = {
   .id = FS_PADKONTROL_SCENE,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
     FS_OPTION_SHOW_SIZE_COLUMN,
@@ -253,7 +253,7 @@ padkontrol_handshake (struct backend *backend)
       return -ENODEV;
     }
 
-  gslist_fill (&backend->fs_ops, &FS_PADKONTROL_OPERATIONS, NULL);
+  gslist_fill (&backend->fs_ops, &FS_PADKONTROL_SCENE_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "KORG padKONTROL");
 
   return 0;

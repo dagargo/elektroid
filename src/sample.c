@@ -715,9 +715,9 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sample_info->rate = sample_info_req->rate ? sample_info_req->rate :
     sample_info_src->rate;
   //Only the sample format is needed. If the file format is provided, it must be ignored.
-  sample_info->format = sample_info_req->format ?
+  sample_info->format = (sample_info_req->format & SF_FORMAT_SUBMASK) ?
     (sample_info_req->format & SF_FORMAT_SUBMASK) :
-    sample_get_internal_format ();
+    (sample_info_src->format & SF_FORMAT_SUBMASK);
   if (sample_info->format != SF_FORMAT_PCM_16
       && sample_info->format != SF_FORMAT_PCM_32
       && sample_info->format != SF_FORMAT_FLOAT)
