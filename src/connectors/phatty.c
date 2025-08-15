@@ -517,6 +517,6 @@ phatty_handshake (struct backend *backend)
 const struct connector CONNECTOR_PHATTY = {
   .name = "phatty",
   .handshake = phatty_handshake,
-  .standard = TRUE,
+  .options = 0,
   .regex = ".*Phatty.*"
 };

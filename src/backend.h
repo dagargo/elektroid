@@ -83,7 +83,8 @@ enum backend_type
 {
   BE_TYPE_NONE,
   BE_TYPE_SYSTEM,
-  BE_TYPE_MIDI
+  BE_TYPE_MIDI,
+  BE_TYPE_NO_MIDI
 };
 
 enum sysex_transfer_status

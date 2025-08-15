@@ -740,6 +740,6 @@ system_handshake (struct backend *backend)
 const struct connector CONNECTOR_SYSTEM = {
   .handshake = system_handshake,
   .name = "system",
-  .standard = FALSE,
+  .options = CONNECTOR_OPTION_CUSTOM_HANDSHAKE,
   .regex = NULL
 };

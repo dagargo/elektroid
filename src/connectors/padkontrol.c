@@ -262,6 +262,6 @@ padkontrol_handshake (struct backend *backend)
 const struct connector CONNECTOR_PADKONTROL = {
   .name = "padkontrol",
   .handshake = padkontrol_handshake,
-  .standard = TRUE,
+  .options = 0,
   .regex = ".*padKONTROL.*"
 };

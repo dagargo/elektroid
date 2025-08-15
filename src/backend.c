@@ -18,7 +18,6 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <stdarg.h>
 #include "backend.h"
 #include "local.h"
 #include "sample.h"
@@ -455,6 +454,7 @@ backend_check (struct backend *backend)
     case BE_TYPE_MIDI:
       return backend_check_int (backend);
     case BE_TYPE_SYSTEM:
+    case BE_TYPE_NO_MIDI:
       return TRUE;
     default:
       return FALSE;
@@ -745,20 +745,63 @@ backend_get_path_type (struct backend *backend)
     PATH_INTERNAL;
 }
 
+static gint
+be_device_compare (gconstpointer a, gconstpointer b)
+{
+  const struct backend_device *da = a;
+  const struct backend_device *db = b;
+
+  if (da->type == db->type)
+    {
+      return strcmp (da->name, db->name);
+    }
+  else
+    {
+      return da->type < db->type ? -1 : da->type > db->type ? +1 : 0;
+    }
+}
+
 GArray *
 backend_get_devices ()
 {
+  guint id;
+  GSList *c;
+  GArray *devices;
   struct backend_device *backend_device;
-  GArray *devices =
-    g_array_new (FALSE, FALSE, sizeof (struct backend_device));
 
+  devices = g_array_new (FALSE, FALSE, sizeof (struct backend_device));
+
+  //System
   backend_device = g_malloc (sizeof (struct backend_device));
   backend_device->type = BE_TYPE_SYSTEM;
   snprintf (backend_device->id, LABEL_MAX, "%s", BE_SYSTEM_ID);
   snprintf (backend_device->name, LABEL_MAX, "%s", g_get_host_name ());
   g_array_append_vals (devices, backend_device, 1);
 
+  //Actually present devices
   backend_fill_devices_array (devices);
+
+  //Devices that need a manual handshake. These may or may not be a present device.
+  id = 0;
+  c = connectors;
+  while (c)
+    {
+      struct connector *connector = c->data;
+      if (connector->options & CONNECTOR_OPTION_NO_MIDI)
+	{
+	  backend_device = g_malloc (sizeof (struct backend_device));
+	  backend_device->type = BE_TYPE_NO_MIDI;
+	  snprintf (backend_device->id, LABEL_MAX, "%s", connector->name);
+	  snprintf (backend_device->name, LABEL_MAX, "%s",
+		    connector->device_name);
+	  g_array_append_vals (devices, backend_device, 1);
+	  id++;
+	}
+      c = c->next;
+    }
+
+  g_array_sort (devices, be_device_compare);
+
   return devices;
 }
 
@@ -782,6 +825,29 @@ backend_init_connector (struct backend *backend,
       backend->conn_name = system_connector->name;
       backend->type = BE_TYPE_SYSTEM;
       return system_connector->handshake (backend);
+    }
+
+  if (device->type == BE_TYPE_NO_MIDI)
+    {
+      for (iterator = connectors; iterator; iterator = iterator->next)
+	{
+	  const struct connector *c = iterator->data;
+	  if (!strcmp (c->name, device->id))
+	    {
+	      if (conn_name && strcmp (c->name, conn_name))
+		{
+		  error_print ("Usexpected connector");
+		  return -ENODEV;
+		}
+
+	      if (!c->handshake (backend))
+		{
+		  backend->conn_name = c->name;
+		  backend->type = BE_TYPE_NO_MIDI;
+		  return 0;
+		}
+	    }
+	}
     }
 
   err = backend_init_midi (backend, device->id);
@@ -839,14 +905,14 @@ backend_init_connector (struct backend *backend,
 	  goto end;
 	}
 
-      debug_print (1, "Testing %s connector (%sstandard handshake)...",
-		   c->name, c->standard ? "" : "non ");
+      debug_print (1, "Testing %s connector (options 0x%08x)...",
+		   c->name, c->options);
 
       if (conn_name)
 	{
 	  if (!strcmp (conn_name, c->name))
 	    {
-	      if (c->standard)
+	      if (!(c->options & CONNECTOR_OPTION_NO_MIDI))
 		{
 		  backend_midi_handshake (backend);
 		}

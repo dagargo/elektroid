@@ -1228,7 +1228,8 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 
   maction_menu_clear (&maction_context);
 
-  if (set_device_data->backend_device.type == BE_TYPE_SYSTEM)
+  if (set_device_data->backend_device.type == BE_TYPE_SYSTEM ||
+      set_device_data->backend_device.type == BE_TYPE_NO_MIDI)
     {
       backend_init_connector (BACKEND, &set_device_data->backend_device, NULL,
 			      NULL);

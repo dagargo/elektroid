@@ -962,6 +962,6 @@ summit_handshake (struct backend *backend)
 const struct connector CONNECTOR_SUMMIT = {
   .handshake = summit_handshake,
   .name = "summit",
-  .standard = TRUE,
+  .options = 0,
   .regex = ".*(Peak|Summit).*"
 };

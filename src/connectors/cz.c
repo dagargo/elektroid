@@ -349,6 +349,6 @@ end:
 const struct connector CONNECTOR_CZ = {
   .name = "cz",
   .handshake = cz_handshake,
-  .standard = FALSE,
+  .options = CONNECTOR_OPTION_CUSTOM_HANDSHAKE,
   .regex = NULL
 };

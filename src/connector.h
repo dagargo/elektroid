@@ -180,9 +180,18 @@ struct connector
   const gchar *name;
     gint (*handshake) (struct backend * backend);
   //Used to indicate if the handshake requires a MIDI identity request
-  gboolean standard;
+  guint32 options;
+  const gchar *device_name;	//Only used for non MIDI devices when a virtual device is created.
   //If the backend device name matches this regex, the handshake will be run before than the connectors that didn't match.
   const gchar *regex;
+};
+
+enum connector_options
+{
+  CONNECTOR_OPTION_CUSTOM_HANDSHAKE = 1,
+  //This could be useful for non MIDI devices that use some other type of physical link,
+  //such as old samplers with serial ports or the KORG Volca Sample (audio).
+  CONNECTOR_OPTION_NO_MIDI = (1 << 1)
 };
 
 void item_iterator_init (struct item_iterator *iter, const gchar * dir,

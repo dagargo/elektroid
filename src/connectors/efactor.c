@@ -556,6 +556,6 @@ efactor_handshake (struct backend *backend)
 const struct connector CONNECTOR_EFACTOR = {
   .handshake = efactor_handshake,
   .name = "efactor",
-  .standard = FALSE,
+  .options = CONNECTOR_OPTION_CUSTOM_HANDSHAKE,
   .regex = ".*Factor Pedal.*"
 };
