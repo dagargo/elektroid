@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "audio.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -33,6 +34,8 @@
 #include "regconn.h"
 #include "regpref.h"
 #include "utils.h"
+
+#define CLI_SLEEP_US 200000
 
 #define COMMAND_NOT_IN_SYSTEM_FS "Command not available in system backend"
 
@@ -352,6 +355,22 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
   return f (&backend, src_path, dst_path);
 }
 
+static const gchar *
+cli_get_backend_type_name ()
+{
+  switch (backend.type)
+    {
+    case BE_TYPE_SYSTEM:
+      return "SYSTEM";
+    case BE_TYPE_MIDI:
+      return "MIDI";
+    case BE_TYPE_NO_MIDI:
+      return "NO-MIDI";
+    default:
+      return "UNKNOWN";
+    }
+}
+
 static gint
 cli_fs_compare (gconstpointer a, gconstpointer b)
 {
@@ -385,7 +404,7 @@ cli_info (int argc, gchar *argv[], int *optind)
       return err;
     }
 
-  printf ("Type: %s\n", backend.type == BE_TYPE_SYSTEM ? "SYSTEM" : "MIDI");
+  printf ("Type: %s\n", cli_get_backend_type_name ());
   printf ("Device name: %s\n", backend.name);
   printf ("Device version: %s\n", backend.version);
   printf ("Device description: %s\n", backend.description);
@@ -976,6 +995,8 @@ main (int argc, gchar *argv[])
   regpref_register ();
   preferences_load ();
 
+  audio_init_and_wait ();
+
   if (!strcmp (command, "ld") || !strcmp (command, "list-devices"))
     {
       err = cli_ld ();
@@ -1081,6 +1102,8 @@ end:
     }
 
   controllable_clear (&controllable);
+
+  audio_destroy ();
 
   regconn_unregister ();
   regpref_unregister ();

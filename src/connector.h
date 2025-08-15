@@ -169,7 +169,9 @@ enum fs_options
   FS_OPTION_SHOW_INFO_COLUMN = (1 << 8),
   FS_OPTION_SHOW_SAMPLE_COLUMNS = (1 << 9),
   //This requires the function readdir to be relatively fast because canceling the search will block the GUI.
-  FS_OPTION_ALLOW_SEARCH = (1 << 10)
+  FS_OPTION_ALLOW_SEARCH = (1 << 10),
+  //This blocks the editor as the transfers are done with audio.
+  FS_OPTION_AUDIO_LINK = (1 << 11)
 };
 
 typedef gint (*connector_handshake) (struct backend * backend);

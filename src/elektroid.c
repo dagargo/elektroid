@@ -101,6 +101,7 @@ static GtkListStore *devices_list_store;
 static GtkWidget *devices_combo;
 static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
+static GtkWidget *editor_box;
 
 static void
 elektroid_show_error_msg_response (GtkDialog *dialog, gint response_id,
@@ -507,11 +508,22 @@ elektroid_run_next (gpointer data)
     {
       const struct fs_operations *ops =
 	backend_get_fs_operations_by_id (BACKEND, fs);
+
       if (ops->options & FS_OPTION_SINGLE_OP)
 	{
 	  gtk_widget_set_sensitive (remote_box, FALSE);
 	  gtk_widget_set_sensitive (fs_combo, FALSE);
 	}
+
+      if (ops->options & FS_OPTION_AUDIO_LINK)
+	{
+	  browser_clear_selection (&local_browser);
+	  browser_set_selection_active (&local_browser, FALSE);
+	  editor_reset (NULL);
+	  editor_set_active (FALSE);
+	  audio.loop = FALSE;
+	}
+
       gtk_widget_set_sensitive (maction_context.box, FALSE);
 
       gtk_list_store_set (tasks.list_store, &iter,
@@ -568,6 +580,14 @@ elektroid_run_next (gpointer data)
 	      g_idle_add (browser_load_dir_if_needed, &remote_browser);
 	    }
 	}
+
+      if (remote_browser.fs_ops->options & FS_OPTION_AUDIO_LINK)
+	{
+	  editor_set_active (TRUE);
+	  browser_set_selection_active (&local_browser, TRUE);
+	  audio.loop = editor_is_loop_active ();
+	}
+
       gtk_widget_set_sensitive (maction_context.box, TRUE);
     }
 
@@ -1452,12 +1472,38 @@ elektroid_delete_main_window (GtkWidget *widget, GdkEvent *event,
 }
 
 static void
+elektroid_about_add_credit_section (const gchar *section_name,
+				    const gchar *file)
+{
+  gchar *thanks;
+
+  if (g_file_get_contents (file, &thanks, NULL, NULL))
+    {
+      gchar **lines;
+      gchar *last_new_line = strrchr (thanks, '\n');
+
+      if (last_new_line != NULL)
+	{
+	  *last_new_line = 0;
+	}
+
+      lines = g_strsplit (thanks, "\n", 0);
+
+      gtk_about_dialog_add_credit_section (about_dialog,
+					   section_name,
+					   (const gchar **) lines);
+
+      g_free (thanks);
+      g_strfreev (lines);
+    }
+}
+
+static void
 elektroid_startup (GApplication *gapp, gpointer *user_data)
 {
   GtkCssProvider *css_provider;
   GtkWidget *refresh_devices_button;
   GtkBuilder *builder;
-  gchar *thanks;
 
   if (local_dir)
     {
@@ -1486,20 +1532,11 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
     GTK_ABOUT_DIALOG (gtk_builder_get_object (builder, "about_dialog"));
   gtk_about_dialog_set_version (about_dialog, PACKAGE_VERSION);
 
-  if (g_file_get_contents (DATADIR "/THANKS", &thanks, NULL, NULL))
-    {
-      gchar *last_new_line = strrchr (thanks, '\n');
-      if (last_new_line != NULL)
-	{
-	  *last_new_line = 0;
-	}
-      gchar **lines = g_strsplit (thanks, "\n", 0);
-      gtk_about_dialog_add_credit_section (about_dialog,
-					   _("Acknowledgements"),
-					   (const gchar **) lines);
-      g_free (thanks);
-      g_strfreev (lines);
-    }
+  elektroid_about_add_credit_section (_("Libraries"),
+				      DATADIR "/libraries.html");
+
+  elektroid_about_add_credit_section (_("Acknowledgements"),
+				      DATADIR "/THANKS");
 
   maction_context.box =
     GTK_WIDGET (gtk_builder_get_object (builder, "menu_actions_box"));
@@ -1554,6 +1591,8 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
 		    G_CALLBACK (elektroid_set_device), NULL);
   g_signal_connect (refresh_devices_button, "clicked",
 		    G_CALLBACK (elektroid_refresh_devices_clicked), NULL);
+
+  editor_box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
 
   gtk_label_set_text (backend_status_label, _("Not connected"));
 

@@ -1,7 +1,7 @@
 # Elektroid
 
 [//]: # (Do not modify this file manually.)
-[//]: # (This file is generated from the docs directory by executing `make`.)
+[//]: # (This file is generated from the docs directory by executing `make clean; make`.)
 
 Elektroid is a sample and MIDI device manager. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.
 
@@ -24,6 +24,7 @@ These are the supported devices:
 * Elektron Syntakt
 * Eventide ModFactor, PitchFactor, TimeFactor, Space and H9
 * KORG padKONTROL
+* KORG Volca Sample
 * Moog Little Phatty and Slim Phatty
 * Novation Summit and Peak
 * Samplers implementing MIDI SDS
@@ -38,6 +39,16 @@ Other interesting features are:
 * SysEx transmission and reception
 
 While Elektroid is already available in some GNU/Linux distributions such as Debian or Ubuntu, it can also be easily installed on other distributions via Flatpak.
+
+## License
+
+Elektroid is open source software licensed GPLv3.
+
+### Included libraries
+
+Elektroid includes the following libraries:
+
+* [volca sample SDK](https://github.com/korginc/volcasample)
 
 ## Installation
 

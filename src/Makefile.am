@@ -15,13 +15,13 @@ else
 CLI_LIBS = alsa $(CLI_LIBS_BASE)
 endif
 
-GUI_LIBS_BASE = $(CLI_LIBS) gtk+-3.0
-
 if ELEKTROID_RTAUDIO
-GUI_LIBS = rtaudio $(GUI_LIBS_BASE)
+CLI_LIBS += rtaudio
 else
-GUI_LIBS = libpulse libpulse-mainloop-glib $(GUI_LIBS_BASE)
+CLI_LIBS += libpulse libpulse-mainloop-glib
 endif
+
+GUI_LIBS = $(CLI_LIBS) gtk+-3.0
 
 elektroid_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(GUI_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -D_GNU_SOURCE $(AM_CFLAGS)
 elektroid_LDFLAGS = `$(PKG_CONFIG) --libs $(GUI_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
@@ -46,8 +46,9 @@ else
 elektroid_audio_sources = audio_pa.c
 endif
 
-elektroid_common_sources = local.c local.h \
+elektroid_common_sources = audio.c audio.h \
 connector.c connector.h \
+local.c local.h \
 preferences.c preferences.h \
 regconn.c regconn.h\
 regpref.c regpref.h\
@@ -68,12 +69,19 @@ connectors/phatty.c connectors/phatty.h \
 connectors/scala.c connectors/scala.h \
 connectors/sds.c connectors/sds.h \
 connectors/summit.c connectors/summit.h \
-connectors/system.c connectors/system.h
+connectors/system.c connectors/system.h \
+connectors/volca_sample.c connectors/volca_sample.h \
+connectors/volca_sample_sdk/korg_syro_comp.c connectors/volca_sample_sdk/korg_syro_comp.h \
+connectors/volca_sample_sdk/korg_syro_func.c connectors/volca_sample_sdk/korg_syro_func.h \
+connectors/volca_sample_sdk/korg_syro_volcasample.c connectors/volca_sample_sdk/korg_syro_volcasample.h \
+connectors/volca_sample_sdk/korg_syro_type.h
 
-elektroid_cli_SOURCES = $(elektroid_common_sources) elektroid-cli.c
+elektroid_cli_SOURCES = $(elektroid_common_sources) \
+$(elektroid_audio_sources) \
+elektroid-cli.c
 
 elektroid_SOURCES = $(elektroid_common_sources) \
-audio.h audio.c $(elektroid_audio_sources) \
+$(elektroid_audio_sources) \
 browser.c browser.h \
 editor.c editor.h \
 guirecorder.c guirecorder.h \

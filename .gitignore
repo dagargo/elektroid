@@ -57,6 +57,7 @@ test/tests_elektron
 test/tests_utils
 test/tests_sample
 test/tests_connector
+test/tests_volca_sample
 config.guess
 config.sub
 ltmain.sh
