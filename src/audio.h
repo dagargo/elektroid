@@ -34,6 +34,8 @@
 typedef void (*audio_monitor_notifier) (gpointer user_data, gdouble monitor_l,
 					gdouble monitor_r);
 typedef void (*audio_playback_cursor_notifier) (gint64 position);
+typedef void (*audio_ready_callback) ();
+typedef void (*audio_volume_change_callback) (gdouble);
 
 #define MAX_RECORDING_TIME_S 30
 #define AUDIO_CHANNELS 2	// Audio system is always stereo
@@ -82,8 +84,8 @@ struct audio
   struct sample_info sample_info_src;
   gboolean loop;
   guint32 pos;
-  void (*volume_change_callback) (gdouble);
-  void (*ready_callback) ();
+  audio_ready_callback ready_callback;
+  audio_volume_change_callback volume_change_callback;
   guint32 release_frames;
   struct job_control control;	//Used to synchronize access to sample
   gchar *path;
@@ -115,7 +117,8 @@ gboolean audio_check ();
 
 void audio_reset_record_buffer (guint, audio_monitor_notifier, void *);
 
-void audio_init (void (*)(gdouble), void (*)(), gpointer);
+void audio_init (audio_ready_callback ready_callback,
+		 audio_volume_change_callback volume_change_callback);
 
 void audio_destroy ();
 
@@ -136,5 +139,10 @@ void audio_normalize (guint32 start, guint32 length);
 const gchar *audio_name ();
 
 const gchar *audio_version ();
+
+void audio_init_and_wait ();
+
+void audio_set_play_and_wait (struct idata *sample,
+			      struct job_control *control);
 
 #endif

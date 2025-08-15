@@ -225,7 +225,8 @@ static void
 audio_set_sink_volume (pa_context *context, const pa_sink_input_info *info,
 		       int eol, void *data)
 {
-  if (info && pa_cvolume_valid (&info->volume))
+  if (info && pa_cvolume_valid (&info->volume)
+      && audio.volume_change_callback)
     {
       gdouble v = pa_sw_volume_to_linear (pa_cvolume_avg (&info->volume));
       debug_print (1, "Setting volume to %f...", v);

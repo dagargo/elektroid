@@ -671,3 +671,18 @@ command_set_parts (const gchar *cmd, gchar **connector, gchar **fs,
   return command_set_parts_with_separator (cmd, strchr (cmd, ':') ? ':' : '-',
 					   connector, fs, op);
 }
+
+void
+sample_info_init_load (struct sample_info *sample_info, guint32 channels,
+		       guint32 rate, guint32 format)
+{
+  sample_info->channels = channels;
+  sample_info->rate = rate;
+  sample_info->format = format;
+}
+
+void
+sample_info_init_load_direct (struct sample_info *sample_info)
+{
+  sample_info_init_load (sample_info, 0, 0, 0);
+}

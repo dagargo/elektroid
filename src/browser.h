@@ -91,6 +91,7 @@ struct browser
   gboolean search_mode;
   gchar **search_tokens;
   gint64 last_selected_index;	//This needs space for gint and -1
+  gboolean selection_active;
   //Menu
   GtkWidget *popover_transfer_button;
   GtkWidget *popover_play_separator;
@@ -167,5 +168,8 @@ gboolean browser_no_progress_needed (struct browser *browser);
 void browser_init_all (GtkBuilder *);
 
 void browser_destroy_all ();
+
+void browser_set_selection_active (struct browser *browser,
+				   gboolean selection_active);
 
 #endif

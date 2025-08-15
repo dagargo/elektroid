@@ -121,6 +121,7 @@ static guint waveform_len;	//Loaded frames available in waveform_data
 static double press_event_x;
 static struct waveform_state waveform_state;
 static gint64 playback_cursor;	// guint32 plus -1 (invisible)
+static gboolean active;
 
 struct browser *
 editor_get_browser ()
@@ -764,6 +765,11 @@ editor_draw (GtkWidget *widget, cairo_t *cr, gpointer data)
   GtkStyleContext *context;
   struct sample_info *sample_info;
 
+  if (!active)
+    {
+      return FALSE;
+    }
+
   g_mutex_lock (&audio.control.controllable.mutex);
   g_mutex_lock (&mutex);
 
@@ -924,10 +930,16 @@ editor_record_clicked (GtkWidget *object, gpointer data)
 		      editor_record_window_cancel_cb);
 }
 
+gboolean
+editor_is_loop_active ()
+{
+  return gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (loop_button));
+}
+
 static void
 editor_loop_clicked (GtkWidget *object, gpointer data)
 {
-  audio.loop = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (object));
+  audio.loop = editor_is_loop_active ();
 }
 
 static gboolean
@@ -2192,12 +2204,13 @@ editor_init (GtkBuilder *builder)
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (grid_length_spin),
 			     preferences_get_int (PREF_KEY_GRID_LENGTH));
 
-  audio_init (editor_set_volume_callback, editor_update_audio_status, NULL);
+  audio_init (editor_update_audio_status, editor_set_volume_callback);
 
   record_window_init (builder);
 
   g_mutex_init (&mutex);
   editor_reset (NULL);
+  active = TRUE;
 }
 
 void
@@ -2233,10 +2246,17 @@ void
 editor_reset_audio ()
 {
   audio_destroy ();
-  audio_init (editor_set_volume_callback, editor_update_audio_status, NULL);
+  audio_init (editor_update_audio_status, editor_set_volume_callback);
   editor_reset (NULL);
   //Resetting the audio causes the edited sample to be cleared so that these are
   //needed to keep the selection consistent with the
   browser_clear_selection (&local_browser);
   browser_clear_selection (&remote_browser);
+}
+
+void
+editor_set_active (gboolean active_)
+{
+  active = active_;
+  gtk_widget_set_sensitive (editor_box, active);
 }

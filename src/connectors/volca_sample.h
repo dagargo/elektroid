@@ -1,6 +1,6 @@
 /*
- *   editor.h
- *   Copyright (C) 2023 David García Goñi <dagargo@gmail.com>
+ *   volca_sample.h
+ *   Copyright (C) 2025 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
  *
@@ -18,31 +18,11 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EDITOR_H
-#define EDITOR_H
+#ifndef VOLCA_SAMPLE_H
+#define VOLCA_SAMPLE_H
 
-#include "browser.h"
+#include "connector.h"
 
-struct browser *editor_get_browser ();
-
-void editor_reset (struct browser *browser);
-
-void editor_play ();
-
-gboolean editor_is_loop_active ();
-
-void editor_start_load_thread (gchar * sample_path);
-
-void editor_stop_load_thread ();
-
-void editor_init (GtkBuilder * builder);
-
-void editor_destroy ();
-
-void editor_set_visible (gboolean visible);
-
-void editor_reset_audio ();
-
-void editor_set_active (gboolean active);
+extern const struct connector CONNECTOR_VOLCA_SAMPLE;
 
 #endif

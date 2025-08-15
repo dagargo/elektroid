@@ -219,6 +219,11 @@ browser_check_selection (gpointer data)
   gboolean sel_impl = browser->fs_ops
     && browser->fs_ops->select_item ? TRUE : FALSE;
 
+  if (!browser->selection_active)
+    {
+      return;
+    }
+
   if (count != 1)
     {
       if (EDITOR_IS_AVAILABLE && BROWSER_IS_SYSTEM (browser))
@@ -2338,6 +2343,8 @@ browser_init (struct browser *browser)
   g_signal_connect (browser->up_button, "drag-leave",
 		    G_CALLBACK (browser_drag_leave_up), browser);
 
+  browser->selection_active = TRUE;
+
   notifier_init (&browser->notifier, browser);
 }
 
@@ -2615,4 +2622,15 @@ browser_init_all (GtkBuilder *builder)
   notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
   g_object_ref (G_OBJECT (notes_list_store));
+}
+
+void
+browser_set_selection_active (struct browser *browser,
+			      gboolean selection_active)
+{
+  browser->selection_active = selection_active;
+  if (selection_active)
+    {
+      browser_check_selection (browser);
+    }
 }

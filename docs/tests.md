@@ -2,7 +2,7 @@
 layout: base
 title: Tests
 permalink: /tests/
-order: 5
+order: 6
 ---
 
 ## Tests
