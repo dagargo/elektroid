@@ -630,3 +630,44 @@ token_is_in_text (const gchar *token, const gchar *text)
 
   return found;
 }
+
+static gint
+command_set_parts_with_separator (const gchar *cmd, gchar separator,
+				  gchar **connector, gchar **fs, gchar **op)
+{
+  gchar *aux;
+
+  *connector = strdup (cmd);
+  aux = strchr (*connector, separator);
+  if (!aux)
+    {
+      g_free (*connector);
+      return -EINVAL;
+    }
+  *aux = 0;
+  aux++;
+
+  *fs = strdup (aux);
+  aux = strchr (*fs, separator);
+  if (!aux)
+    {
+      g_free (*connector);
+      g_free (*fs);
+      return -EINVAL;
+    }
+
+  *aux = 0;
+  aux++;
+
+  *op = strdup (aux);
+
+  return 0;
+}
+
+gint
+command_set_parts (const gchar *cmd, gchar **connector, gchar **fs,
+		   gchar **op)
+{
+  return command_set_parts_with_separator (cmd, strchr (cmd, ':') ? ':' : '-',
+					   connector, fs, op);
+}

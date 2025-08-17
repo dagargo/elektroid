@@ -51,6 +51,35 @@ test_token_is_in_text ()
   CU_ASSERT_TRUE (token_is_in_text ("drum", "DRÜM"));
 }
 
+void
+test_command_set_parts ()
+{
+  gchar *conn, *fs, *op;
+
+  printf ("\n");
+
+  CU_ASSERT_EQUAL (command_set_parts ("a", &conn, &fs, &op), -EINVAL);
+
+  CU_ASSERT_EQUAL (command_set_parts ("a-b", &conn, &fs, &op), -EINVAL);
+
+  CU_ASSERT_EQUAL (command_set_parts ("a-b-c", &conn, &fs, &op), 0);
+  CU_ASSERT_STRING_EQUAL (conn, "a");
+  CU_ASSERT_STRING_EQUAL (fs, "b");
+  CU_ASSERT_STRING_EQUAL (op, "c");
+
+  //This test is just here to document the issue with the hyphen as the parts separator.
+  //No workaround is possible as both the connector and the filesystem might use a hyphen.
+  CU_ASSERT_EQUAL (command_set_parts ("a-b-c-d", &conn, &fs, &op), 0);
+  CU_ASSERT_STRING_EQUAL (conn, "a");
+  CU_ASSERT_STRING_EQUAL (fs, "b");
+  CU_ASSERT_STRING_EQUAL (op, "c-d");
+
+  CU_ASSERT_EQUAL (command_set_parts ("a-a:b:c", &conn, &fs, &op), 0);
+  CU_ASSERT_STRING_EQUAL (conn, "a-a");
+  CU_ASSERT_STRING_EQUAL (fs, "b");
+  CU_ASSERT_STRING_EQUAL (op, "c");
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -80,6 +109,11 @@ main (gint argc, gchar *argv[])
     }
 
   if (!CU_add_test (suite, "token_is_in_text", test_token_is_in_text))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "command_set_parts", test_command_set_parts))
     {
       goto cleanup;
     }

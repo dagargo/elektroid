@@ -177,4 +177,7 @@ gboolean controllable_is_active (struct controllable *controllable);
 
 gboolean token_is_in_text (const gchar * token, const gchar * text);
 
+gint command_set_parts (const gchar * cmd, gchar ** connector, gchar ** fs,
+			gchar ** op);
+
 #endif

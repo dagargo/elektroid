@@ -891,38 +891,6 @@ cli_receive (int argc, gchar *argv[], int *optind)
   return err;
 }
 
-static gint
-set_conn_fs_op_from_command (const gchar *cmd)
-{
-  gchar *aux;
-
-  connector = strdup (cmd);
-  aux = strchr (connector, '-');
-  if (!aux)
-    {
-      g_free (connector);
-      return -EINVAL;
-    }
-  *aux = 0;
-  aux++;
-
-  fs = strdup (aux);
-  aux = strchr (fs, '-');
-  if (!aux)
-    {
-      g_free (connector);
-      g_free (fs);
-      return -EINVAL;
-    }
-
-  *aux = 0;
-  aux++;
-
-  op = strdup (aux);
-
-  return 0;
-}
-
 #if defined(__linux__)
 static void
 cli_end (int sig)
@@ -1022,7 +990,7 @@ main (int argc, gchar *argv[])
     }
   else
     {
-      err = set_conn_fs_op_from_command (command);
+      err = command_set_parts (command, &connector, &fs, &op);
       if (err)
 	{
 	  goto end;

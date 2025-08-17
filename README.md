@@ -172,7 +172,7 @@ From that repository, building and installing the Flatpak can be done with `flat
 
 `elektroid-cli` brings the same filesystem related functionality to the terminal.
 
-There are device commands and filesystem commands. The latter have the form `a-b-c` where `a` is a connector, `b` is a filesystem and `c` is the command, (e.g., `elektron-project-ls`, `cz-program-upload`, `sds-sample-download`). Notice that the filesystem is always in the singular form. As of version 2.2, **older command forms have been removed**.
+There are device commands and filesystem commands. The latter have the form `a:b:c` where `a` is a connector, `b` is a filesystem and `c` is the command, (e.g., `elektron:project:ls`, `cz:program:upload`, `sds:sample:download`). Notice that the filesystem is always in the singular form. Using a hyphen (`-`) instead of a semicolon (`:`) is allowed but should be avoided.
 
 These are the available commands:
 
@@ -246,7 +246,7 @@ $ elektroid-cli upgrade Digitakt_OS1.30.syx 1
 The first connector is always a system (local computer) one used to convert sample formats. It can be used like any other connector.
 
 ```
-$ elektroid-cli system-wav48k16b2c-ul square.wav 0:/home/user/samples
+$ elektroid-cli system:wav48k16b2c:ul square.wav 0:/home/user/samples
 ```
 
 ### Elektron conector
@@ -264,51 +264,51 @@ Raw and data are intended to interface directly with the filesystems provided by
 
 #### Sample, raw and preset commands
 
-* `elektron-sample-ls`
+* `elektron:sample:ls`
 
 It only works for directories. Notice that the first column is the file type, the second is the size, the third is an internal cksum and the last one is the sample name.
 
 ```
-$ elektroid-cli elektron-sample-ls 0:/
+$ elektroid-cli elektron:sample:ls 0:/
 D              0B 00000000 drum machines
 F       630.34KiB f8711cd9 saw
 F         1.29MiB 0bbc22bd square
 ```
 
-* `elektron-sample-mkdir`
+* `elektron:sample:mkdir`
 
 ```
-$ elektroid-cli elektron-sample-mkdir 0:/samples
+$ elektroid-cli elektron:sample:mkdir 0:/samples
 ```
 
-* `elektron-sample-rmdir`
+* `elektron:sample:rmdir`
 
 ```
-$ elektroid-cli elektron-sample-rmdir 0:/samples
+$ elektroid-cli elektron:sample:rmdir 0:/samples
 ```
 
-* `elektron-sample-ul`
+* `elektron:sample:ul`
 
 ```
-$ elektroid-cli elektron-sample-ul square.wav 0:/
+$ elektroid-cli elektron:sample:ul square.wav 0:/
 ```
 
-* `elektron-sample-dl`
+* `elektron:sample:dl`
 
 ```
-$ elektroid-cli elektron-sample-dl 0:/square
+$ elektroid-cli elektron:sample:dl 0:/square
 ```
 
-* `elektron-sample-mv`
+* `elektron:sample:mv`
 
 ```
-$ elektroid-cli elektron-sample-mv 0:/square 0:/sample
+$ elektroid-cli elektron:sample:mv 0:/square 0:/sample
 ```
 
-* `elektron-sample-rm`
+* `elektron:sample:rm`
 
 ```
-$ elektroid-cli elektron-sample-rm 0:/sample
+$ elektroid-cli elektron:sample:rm 0:/sample
 ```
 
 #### Data, sound and project commands
@@ -321,73 +321,73 @@ There are a few things to clarify first.
 
 Here are the commands.
 
-* `elektron-data-ls`
+* `elektron:data:ls`
 
 It only works for directories. Notice that the first column is the file type, the second is the index, the third is the permissons in hexadecimal, the fourth indicates if the data in valid, the fifth indicates if it has metadatam, the sixth is the size and the last one is the item name.
 
 Permissions are 16 bits values but only 6 are used from bit 2 to bit 7 both included. From LSB to MSB, this permissions are read, write, clear, copy, swap, and move.
 
 ```
-$ elektroid-cli elektron-data-ls 0:/
+$ elektroid-cli elektron:data:ls 0:/
 D  -1 0000 0 0         0B projects
 D  -1 0000 0 0         0B soundbanks
 ```
 
 ```
-$ elektroid-cli elektron-data-ls 0:/soundbanks/D
+$ elektroid-cli elektron:data:ls 0:/soundbanks/D
 F   1 0012 1 1       160B KICK
 F   2 0012 1 1       160B SNARE
 ```
 
-* `elektron-data-cp`
+* `elektron:data:cp`
 
 ```
-$ elektroid-cli elektron-data-cp 0:/soundbanks/D/1 0:/soundbanks/D/3
-$ elektroid-cli elektron-data-ls 0:/soundbanks/D
+$ elektroid-cli elektron:data:cp 0:/soundbanks/D/1 0:/soundbanks/D/3
+$ elektroid-cli elektron:data:ls 0:/soundbanks/D
 F   1 0012 1 1       160B KICK
 F   2 0012 1 1       160B SNARE
 F   3 0012 1 1       160B KICK
 ```
 
-* `elektron-data-sw`
+* `elektron:data:sw`
 
 ```
-$ elektroid-cli elektron-data-sw 0:/soundbanks/D/2 0:/soundbanks/D/3
-$ elektroid-cli elektron-data-ls 0:/soundbanks/D
+$ elektroid-cli elektron:data:sw 0:/soundbanks/D/2 0:/soundbanks/D/3
+$ elektroid-cli elektron:data:ls 0:/soundbanks/D
 F   1 0012 1 1       160B KICK
 F   2 0012 1 1       160B KICK
 F   3 0012 1 1       160B SNARE
 ```
 
-* `elektron-data-mv`
+* `elektron:data:mv`
 
 ```
-$ elektroid-cli elektron-data-mv 0:/soundbanks/D/3 0:/soundbanks/D/1
-$ elektroid-cli elektron-data-ls 0:/soundbanks/D
+$ elektroid-cli elektron:data:mv 0:/soundbanks/D/3 0:/soundbanks/D/1
+$ elektroid-cli elektron:data:ls 0:/soundbanks/D
 F   1 0012 1 1       160B SNARE
 F   2 0012 1 1       160B KICK
 ```
 
-* `elektron-data-cl`
+* `elektron:data:cl`
 
 ```
-$ elektroid-cli elektron-data-cl 0:/soundbanks/D/1
-$ elektroid-cli elektron-data-ls 0:/soundbanks/D
+$ elektroid-cli elektron:data:cl 0:/soundbanks/D/1
+$ elektroid-cli elektron:data:ls 0:/soundbanks/D
 F   2 0012 1 1       160B KICK
 ```
 
-* `elektron-data-dl`
+* `elektron:data:dl`
 
 ```
-$ elektroid-cli elektron-data-dl 0:/soundbanks/D/1
+$ elektroid-cli elektron:data:dl 0:/soundbanks/D/1
 
-$ elektroid-cli elektron-data-dl 0:/soundbanks/D/1 dir
+$ elektroid-cli elektron:data:dl 0:/soundbanks/D/1 dir
 ```
 
-* `elektron-data-ul`
+* `elektron:data:ul`
 
 ```
-$ elektroid-cli elektron-data-ul sound 0:/soundbanks/D
+$ elektroid-cli elektron:data:ul sound 0:/soundbanks/D
 ```
 
 ## API

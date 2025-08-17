@@ -68,9 +68,11 @@ Receive MIDI data file from device
 Upgrade the device
 
 .SH FILESYSTEM COMMANDS
-Different filesystem operations are implemented on different connectors so a command has the following form:
-.TP
-\tconnector, hyphen ('-'), filesystem name, hyphen ('-'), and the operation itself
+Different filesystem operations are implemented on different connectors so a command has one of the following forms:
+.IP \[bu] 2
+connector, colon (':'), filesystem name, colon (':'), and the operation itself. This is the preferred way.
+.IP \[bu]
+connector, hyphen ('-'), filesystem name, hyphen ('-'), and the operation itself. This should be avoided.
 .TP
 Provided paths must always be prepended with the device id and a colon (':'), e.g. 0:/samples. Paths pointing to a data, sound or project file use the index of a file instead of its name.
 .TP
@@ -118,13 +120,13 @@ lists the available devices.
 \fBelektroid-cli info 0\fR
 shows information about the device, including the connector and the available filesystems.
 .TP
-\fBelektroid-cli elektron-sample-ul square.wav 0:/waveforms\fR
+\fBelektroid-cli elektron:sample:ul square.wav 0:/waveforms\fR
 uploads a sample to an Elektron device.
 .TP
-\fBelektroid-cli sds-mono16-dl 0:/1\fR
+\fBelektroid-cli sds:mono16:dl 0:/1\fR
 downloads a mono 16 bits sample from an SDS sampler.
 .TP
-\fBelektroid-cli summit-single-ls 0:/A\fR
+\fBelektroid-cli summit:single:ls 0:/A\fR
 lists Novation Summit single patches in bank A.
 
 .SH "SEE ALSO"
