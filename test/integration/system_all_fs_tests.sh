@@ -22,9 +22,9 @@ done
 
 echo "Runnning test from 1 to 2 channels on $tmpdir..."
 
-actf=$tmpdir/square-wav48k16b1c.wav
-expf=$srcdir/res/connectors/square-wav48k16b2c.wav
-$ecli system:wav48k16b2c:ul $srcdir/res/connectors/square-wav48k16b1c.wav 0:$tmpdir
+actf=$tmpdir/square-wav-48k-16b-1c.wav
+expf=$srcdir/res/connectors/square-wav-48k-16b-2c.wav
+$ecli system:wav-48k-16b-2c:ul $srcdir/res/connectors/square-wav-48k-16b-1c.wav 0:$tmpdir
 if [ $? -eq 0 ]; then
   cksum $actf
   cksum $expf
@@ -37,9 +37,9 @@ fi
 
 echo "Runnning test from 2 to 1 channels on $tmpdir..."
 
-act=$tmpdir/square-wav48k16b2c.wav
-exp=$srcdir/res/connectors/square-wav48k16b1c.wav
-$ecli system:wav48k16b1c:ul $srcdir/res/connectors/square-wav48k16b2c.wav 0:$tmpdir
+act=$tmpdir/square-wav-48k-16b-2c.wav
+exp=$srcdir/res/connectors/square-wav-48k-16b-1c.wav
+$ecli system:wav-48k-16b-1c:ul $srcdir/res/connectors/square-wav-48k-16b-2c.wav 0:$tmpdir
 if [ $? -eq 0 ]; then
   cksum $actf
   cksum $expf

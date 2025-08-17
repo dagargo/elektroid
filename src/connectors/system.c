@@ -440,7 +440,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_STEREO_OPERATIONS = {
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_STEREO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
     FS_OPTION_ALLOW_SEARCH,
-  .name = "wav48k16b2c",
+  .name = "wav-48k-16b-2c",
   .gui_name = "WAV 48 KHz 16 bits stereo",
   .gui_icon = FS_ICON_WAVE,
   .readdir = system_samples_read_dir,
@@ -465,7 +465,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_48_16_MONO_OPERATIONS = {
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
     FS_OPTION_ALLOW_SEARCH,
-  .name = "wav48k16b1c",
+  .name = "wav-48k-16b-1c",
   .gui_name = "WAV 48 KHz 16 bits mono",
   .gui_icon = FS_ICON_WAVE,
   .readdir = system_samples_read_dir,
@@ -490,7 +490,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_STEREO_OPERATIONS = {
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_STEREO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
     FS_OPTION_ALLOW_SEARCH,
-  .name = "wav44.1k16b2c",
+  .name = "wav-44k1-16b-2c",
   .gui_name = "WAV 44.1 KHz 16 bits stereo",
   .gui_icon = FS_ICON_WAVE,
   .readdir = system_samples_read_dir,
@@ -515,7 +515,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_16_MONO_OPERATIONS = {
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
     FS_OPTION_ALLOW_SEARCH,
-  .name = "wav44.1k16b1c",
+  .name = "wav-44k1-16b-1c",
   .gui_name = "WAV 44.1 KHz 16 bits mono",
   .gui_icon = FS_ICON_WAVE,
   .readdir = system_samples_read_dir,
@@ -543,7 +543,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_24_STEREO_OPERATIONS = {
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_STEREO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
     FS_OPTION_ALLOW_SEARCH,
-  .name = "wav44.1k24b2c",
+  .name = "wav-44k1-24b-2c",
   .gui_name = "WAV 44.1 KHz 24 bits stereo",
   .gui_icon = FS_ICON_WAVE,
   .readdir = system_samples_read_dir,
@@ -567,7 +567,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_24_MONO_OPERATIONS = {
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
     FS_OPTION_ALLOW_SEARCH,
-  .name = "wav44.1k24b1c",
+  .name = "wav-44k1-24b-1c",
   .gui_name = "WAV 44.1 KHz 24 bits mono",
   .gui_icon = FS_ICON_WAVE,
   .readdir = system_samples_read_dir,
@@ -594,7 +594,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_STEREO_OPERATIONS = {
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_STEREO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
     FS_OPTION_ALLOW_SEARCH,
-  .name = "wav44.1k8b2c",
+  .name = "wav-44k1-8b-2c",
   .gui_name = "WAV 44.1 KHz 8 bits stereo",
   .gui_icon = FS_ICON_WAVE,
   .readdir = system_samples_read_dir,
@@ -618,7 +618,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_441_8_MONO_OPERATIONS = {
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
     FS_OPTION_ALLOW_SEARCH,
-  .name = "wav44.1k8b1c",
+  .name = "wav-44k1-8b-1c",
   .gui_name = "WAV 44.1 KHz 8 bits mono",
   .gui_icon = FS_ICON_WAVE,
   .readdir = system_samples_read_dir,
@@ -645,7 +645,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_32_16_MONO_OPERATIONS = {
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
     FS_OPTION_ALLOW_SEARCH,
-  .name = "wav32k8b1c",
+  .name = "wav-32k-8b-1c",
   .gui_name = "WAV 32 KHz 16 bits mono",
   .gui_icon = FS_ICON_WAVE,
   .readdir = system_samples_read_dir,
