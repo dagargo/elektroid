@@ -3,12 +3,12 @@
 err=0
 
 echo "Cleaning up sample..."
-$ecli elektron-sample-rm $TEST_DEVICE:/auto-test/square
-$ecli elektron-sample-rmdir $TEST_DEVICE:/auto-test
+$ecli elektron:sample:rm $TEST_DEVICE:/auto-test/square
+$ecli elektron:sample:rmdir $TEST_DEVICE:/auto-test
 
 echo "Preparing tests..."
-$ecli elektron-sound-ul $srcdir/res/connectors/elektron_sound.data $TEST_DEVICE:/H/256
-$ecli elektron-sound-dl $TEST_DEVICE:/H/256
+$ecli elektron:sound:ul $srcdir/res/connectors/elektron_sound.data $TEST_DEVICE:/H/256
+$ecli elektron:sound:dl $TEST_DEVICE:/H/256
 
 src_content=$(unzip -l $srcdir/res/connectors/elektron_sound.data | tail -n +4 | head -n -2 | awk '{print $1" "$4}')
 dst_content=$(unzip -l $srcdir/SOUND.dtsnd | tail -n +4 | head -n -2 | awk '{print $1" "$4}')
@@ -32,7 +32,7 @@ echo "$dst_manifest_content"
 
 if [ $err -eq 0 ]; then
   echo "Looking for sample..."
-  $ecli elektron-sample-dl $TEST_DEVICE:/auto-test/square
+  $ecli elektron:sample:dl $TEST_DEVICE:/auto-test/square
   [ $? -ne 0 ] && err=1
 fi
 
@@ -44,8 +44,8 @@ fi
 echo "Cleaning up..."
 rm -f $srcdir/SOUND.dtsnd
 rm -f $srcdir/square.wav
-$ecli elektron-sound-rm $TEST_DEVICE:/H/256
-$ecli elektron-sample-rm $TEST_DEVICE:/auto-test/square
-$ecli elektron-sample-rmdir $TEST_DEVICE:/auto-test
+$ecli elektron:sound:rm $TEST_DEVICE:/H/256
+$ecli elektron:sample:rm $TEST_DEVICE:/auto-test/square
+$ecli elektron:sample:rmdir $TEST_DEVICE:/auto-test
 
 exit $err

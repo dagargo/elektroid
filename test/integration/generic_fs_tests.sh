@@ -21,7 +21,7 @@ BACKUP_PREFIX="Backup - "
 function exitWithError() {
   if [ -n "$FILE_BACKUP" ]; then
     echo "Restoring..."
-    $ecli ${CONN}-${FS}-ul "$FILE_BACKUP" $TEST_DEVICE:$FILE_PATH
+    $ecli ${CONN}:${FS}:ul "$FILE_BACKUP" $TEST_DEVICE:$FILE_PATH
   fi
   rm -f "$FILE"
   rm -f "$FILE_BACKUP"
@@ -37,7 +37,7 @@ rm -f "$srcdir/$DEVICE_NAME $FS"*
 rm -f "$srcdir/$BACKUP_PREFIX$DEVICE_NAME $FS"*
 
 echo "Testing ls..."
-files=$($ecli ${CONN}-${FS}-ls $TEST_DEVICE:$DIR_PATH)
+files=$($ecli ${CONN}:${FS}:ls $TEST_DEVICE:$DIR_PATH)
 [ $? -ne 0 ] && exit 1
 echo "$files" | head
 [ $(echo "$files" | wc -l) -ne $LS_ROWS ] && exit 1
@@ -45,12 +45,12 @@ echo "$files" | head
 if $download; then
   for p in $BAD_FILE_PATHS; do
     echo "Testing download with bad path $p..."
-    $ecli ${CONN}-${FS}-dl $TEST_DEVICE:$p
+    $ecli ${CONN}:${FS}:dl $TEST_DEVICE:$p
     [ $? -eq 0 ] && exit 1
   done
 
   echo "Testing download with path $FILE_PATH..."
-  $ecli ${CONN}-${FS}-dl $TEST_DEVICE:$FILE_PATH
+  $ecli ${CONN}:${FS}:dl $TEST_DEVICE:$FILE_PATH
   [ $? -ne 0 ] && exit 1
   FILE=$(echo "$srcdir/$DEVICE_NAME $FS"*)
   [ ! -f "$FILE" ] && exit 1
@@ -60,27 +60,27 @@ fi
 
 for p in $BAD_FILE_PATHS; do
   echo "Testing upload with bad path $p..."
-  $ecli ${CONN}-${FS}-ul $FILE_TO_UPLOAD $TEST_DEVICE:$p
+  $ecli ${CONN}:${FS}:ul $FILE_TO_UPLOAD $TEST_DEVICE:$p
   [ $? -eq 0 ] && exitWithError 1
 done
 
 echo "Testing upload with non existing file to $FILE_PATH..."
-$ecli ${CONN}-${FS}-ul foo $TEST_DEVICE:$FILE_PATH
+$ecli ${CONN}:${FS}:ul foo $TEST_DEVICE:$FILE_PATH
 [ $? -eq 0 ] && exitWithError 1
 
 echo "Testing upload with path $FILE_PATH..."
-$ecli ${CONN}-${FS}-ul $FILE_TO_UPLOAD $TEST_DEVICE:$FILE_PATH
+$ecli ${CONN}:${FS}:ul $FILE_TO_UPLOAD $TEST_DEVICE:$FILE_PATH
 [ $? -ne 0 ] && exitWithError 1
 
 if [ -n "$FILE_NEW_NAME" ]; then
   echo "Testing mv of $FILE_PATH to $FILE_NEW_NAME..."
-  $ecli ${CONN}-${FS}-mv $TEST_DEVICE:$FILE_PATH "$FILE_NEW_NAME"
+  $ecli ${CONN}:${FS}:mv $TEST_DEVICE:$FILE_PATH "$FILE_NEW_NAME"
   [ $? -ne 0 ] && exitWithError 1
 fi
 
 if $download; then
   echo "Testing data changes..."
-  $ecli ${CONN}-${FS}-dl $TEST_DEVICE:$FILE_PATH
+  $ecli ${CONN}:${FS}:dl $TEST_DEVICE:$FILE_PATH
   [ $? -ne 0 ] && exitWithError 1
   FILE=$(echo "$srcdir/$DEVICE_NAME $FS"*)
   [ ! -f "$FILE" ] && exitWithError 1
