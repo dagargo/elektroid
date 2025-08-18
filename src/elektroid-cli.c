@@ -33,6 +33,7 @@
 #include "backend.h"
 #include "regconn.h"
 #include "regpref.h"
+#include "sample.h"
 #include "utils.h"
 
 #define CLI_SLEEP_US 200000
@@ -923,12 +924,92 @@ cli_receive (int argc, gchar *argv[], int *optind)
   return err;
 }
 
+static gint
+cli_play (int argc, gchar *argv[], int *optind)
+{
+  gint err;
+  struct idata sample;
+  const gchar *audio_file;
+  struct sample_info sample_info_req, sample_info_src;
+
+  if (*optind == argc)
+    {
+      error_print ("Source file missing");
+      return -EINVAL;
+    }
+  else
+    {
+      audio_file = argv[*optind];
+      (*optind)++;
+    }
+
+  controllable_set_active (&job_control.controllable, TRUE);
+  job_control.callback = print_progress;
+  current_path_progress = audio_file;
+
+  job_control_reset (&job_control, 1);
+
+  sample_info_init_load (&sample_info_req, 2, audio.rate,
+			 sample_get_internal_format ());
+
+  err = sample_load_from_file (audio_file, &sample, NULL,
+			       &sample_info_req, &sample_info_src);
+  if (err)
+    {
+      error_print ("Error while loading '%s'.", audio_file);
+    }
+  else
+    {
+      audio_set_play_and_wait (&sample, &job_control);
+      job_control.part++;
+    }
+
+  complete_progress (err);
+
+  return err;
+}
+
+static gint
+cli_record (int argc, gchar *argv[], int *optind)
+{
+  const gchar *audio_file;
+
+  if (*optind == argc)
+    {
+      error_print ("Source file missing");
+      return -EINVAL;
+    }
+  else
+    {
+      audio_file = argv[*optind];
+      (*optind)++;
+    }
+
+  controllable_set_active (&job_control.controllable, TRUE);
+  job_control.callback = print_progress;
+  current_path_progress = audio_file;
+
+  job_control_reset (&job_control, 1);
+
+  audio_record_and_wait (RECORD_STEREO, &job_control);
+
+  job_control.part++;
+  complete_progress (0);
+
+  sample_save_to_file (audio_file, &audio.sample, NULL,
+		       SF_FORMAT_WAV | sample_get_internal_format ());
+
+  return 0;
+}
+
 #if defined(__linux__)
 static void
 cli_end (int sig)
 {
   controllable_set_active (&controllable, FALSE);
   controllable_set_active (&job_control.controllable, FALSE);
+  audio_stop_playback ();
+  audio_stop_recording ();
 }
 #endif
 
@@ -1022,6 +1103,14 @@ main (int argc, gchar *argv[])
   else if (!strcmp (command, "upgrade"))
     {
       err = cli_upgrade_os (argc, argv, &optind);
+    }
+  else if (!strcmp (command, "play"))
+    {
+      err = cli_play (argc, argv, &optind);
+    }
+  else if (!strcmp (command, "record"))
+    {
+      err = cli_record (argc, argv, &optind);
     }
   else
     {
