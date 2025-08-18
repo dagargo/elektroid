@@ -278,6 +278,19 @@ end:
     }
 }
 
+guint32
+audio_get_used_frames (guint32 *bytes_per_frame)
+{
+  guint32 bpf;
+  struct sample_info *sample_info = audio.sample.info;
+  bpf = SAMPLE_INFO_FRAME_SIZE (sample_info);
+  if (bytes_per_frame)
+    {
+      *bytes_per_frame = bpf;
+    }
+  return audio.sample.content->len / bpf;
+}
+
 void
 audio_read_from_input (void *buffer, gint frames)
 {
@@ -285,11 +298,10 @@ audio_read_from_input (void *buffer, gint frames)
   guint8 *src, *dst;
   gint16 ls16, rs16;
   gfloat lm, rm, lf32, rf32;
-  struct sample_info *sample_info;
   static gint monitor_frames = 0;
-  guint recorded_frames, remaining_frames, recording_frames, bytes_per_frame;
-  guint channels =
-    (audio.record_options & RECORD_STEREO) == RECORD_STEREO ? 2 : 1;
+  guint32 recorded_frames, remaining_frames, recording_frames,
+    bytes_per_frame;
+  struct sample_info *sample_info;
 
   g_mutex_lock (&audio.control.controllable.mutex);
 
@@ -298,8 +310,7 @@ audio_read_from_input (void *buffer, gint frames)
       debug_print (2, "Reading %d frames (recording)...", frames);
 
       sample_info = audio.sample.info;
-      bytes_per_frame = FRAME_SIZE (channels, sample_get_internal_format ());
-      recorded_frames = audio.sample.content->len / bytes_per_frame;
+      recorded_frames = audio_get_used_frames (&bytes_per_frame);
       remaining_frames = sample_info->frames - recorded_frames;
       if (remaining_frames <= frames)
 	{
@@ -794,15 +805,15 @@ void
 audio_set_play_and_wait (struct idata *sample, struct job_control *control)
 {
   guint32 pos;
+  gdouble progress;
   gboolean active = TRUE;
   struct sample_info *sample_info;
 
   audio_set_sample (sample);
 
-  sample_info = audio.sample.info;
-
   audio_start_playback (NULL);
 
+  sample_info = audio.sample.info;
   while (!audio_is_stopped () && active)
     {
       usleep (AUDIO_SLEEP_US);
@@ -811,9 +822,33 @@ audio_set_play_and_wait (struct idata *sample, struct job_control *control)
 	  g_mutex_lock (&audio.control.controllable.mutex);
 	  pos = audio.pos;
 	  g_mutex_unlock (&audio.control.controllable.mutex);
-	  job_control_set_progress (control,
-				    pos / (gdouble) sample_info->frames);
+	  progress = pos / (gdouble) sample_info->frames;
+	  job_control_set_progress (control, progress);
 	  active = controllable_is_active (&control->controllable);
+	}
+    }
+}
+
+void
+audio_record_and_wait (guint32 options, struct job_control *control)
+{
+  guint32 frames;
+  gdouble progress;
+  struct sample_info *sample_info;
+
+  audio_start_recording (options, NULL, NULL);
+
+  sample_info = audio.sample.info;
+  while (!audio_is_stopped ())
+    {
+      usleep (AUDIO_SLEEP_US);
+      if (control)
+	{
+	  g_mutex_lock (&audio.control.controllable.mutex);
+	  frames = audio_get_used_frames (NULL);
+	  g_mutex_unlock (&audio.control.controllable.mutex);
+	  progress = frames / (gdouble) sample_info->frames;
+	  job_control_set_progress (control, progress);
 	}
     }
 }
