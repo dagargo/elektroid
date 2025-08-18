@@ -198,7 +198,7 @@ audio_stop_recording ()
 }
 
 void
-audio_start_recording (guint options,
+audio_start_recording (guint32 options,
 		       audio_monitor_notifier monitor_notifier,
 		       void *monitor_data)
 {

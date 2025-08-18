@@ -330,7 +330,6 @@ editor_loading_completed_no_lock (guint32 *actual_frames)
 {
   gboolean completed;
   guint32 actual;
-  gint bytes_per_frame;
   struct sample_info *sample_info = audio.sample.info;
 
   if (!sample_info)
@@ -342,8 +341,7 @@ editor_loading_completed_no_lock (guint32 *actual_frames)
       return FALSE;
     }
 
-  bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
-  actual = audio.sample.content->len / bytes_per_frame;
+  actual = audio_get_used_frames (NULL);
   completed = actual == sample_info->frames && actual;
   if (actual_frames)
     {

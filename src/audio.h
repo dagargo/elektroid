@@ -142,7 +142,11 @@ const gchar *audio_version ();
 
 void audio_init_and_wait ();
 
+guint32 audio_get_used_frames (guint32 * bytes_per_frame);
+
 void audio_set_play_and_wait (struct idata *sample,
 			      struct job_control *control);
+
+void audio_record_and_wait (guint32 options, struct job_control *control);
 
 #endif

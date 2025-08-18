@@ -183,7 +183,7 @@ From that repository, building and installing the Flatpak can be done with `flat
 
 `elektroid-cli` brings the same filesystem related functionality to the terminal.
 
-There are device commands and filesystem commands. The latter have the form `a:b:c` where `a` is a connector, `b` is a filesystem and `c` is the command, (e.g., `elektron:project:ls`, `cz:program:upload`, `sds:sample:download`). Notice that the filesystem is always in the singular form. Using a hyphen (`-`) instead of a semicolon (`:`) is allowed but should be avoided.
+There are filesystem commands and non-filesystem commands. The former have the form `a:b:c` where `a` is a connector, `b` is a filesystem and `c` is the command, (e.g., `elektron:project:ls`, `cz:program:upload`, `sds:sample:download`). Notice that the filesystem is always in the singular form. Using a hyphen (`-`) instead of a semicolon (`:`) is allowed but should be avoided.
 
 These are the available commands:
 
@@ -202,7 +202,7 @@ Keep in mind that not every filesystem implements all the commands. For instance
 
 Provided paths must always be prepended with the device id and a colon (e.g., `0:/incoming`).
 
-### Device commands
+### Non-filesystem commands
 
 * `ld` or `ls-devices`, list all MIDI devices with input and output
 
@@ -250,6 +250,13 @@ $ elektroid-cli receive 1 file.syx
 
 ```
 $ elektroid-cli upgrade Digitakt_OS1.30.syx 1
+```
+
+* `play` and `record` work with stereo audio, the native sampling rate and the configured sample format.
+
+```
+$ elektroid-cli play audio.wav
+$ elektroid-cli record audio.wav
 ```
 
 ### System connector
