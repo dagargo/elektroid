@@ -270,7 +270,7 @@ end:
 
   if (audio.release_frames > AUDIO_BUF_FRAMES)
     {
-      audio_stop_playback (audio);
+      audio_stop_playback ();
     }
 }
 
@@ -408,7 +408,7 @@ audio_read_from_input (void *buffer, gint frames)
 
   if (last)
     {
-      audio_stop_recording (audio);
+      audio_stop_recording ();
     }
 }
 

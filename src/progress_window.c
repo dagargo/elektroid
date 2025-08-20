@@ -201,7 +201,7 @@ progress_window_sleep_until_min_time ()
 }
 
 static gboolean
-progress_window_run_refresh ()
+progress_window_run_refresh (gpointer user_data)
 {
   gboolean active_;
   gdouble fraction_;
@@ -229,7 +229,7 @@ progress_window_run_refresh ()
 }
 
 static gboolean
-progress_window_end ()
+progress_window_end (gpointer user_data)
 {
   progress_window_join_thread ();
 

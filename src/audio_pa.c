@@ -53,7 +53,7 @@ audio_read_callback (pa_stream *stream, size_t size, void *data)
 
   if (pa_stream_peek (stream, &buffer, &size) < 0)
     {
-      audio_stop_recording (audio);
+      audio_stop_recording ();
       return;
     }
 

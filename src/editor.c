@@ -181,7 +181,7 @@ editor_set_widget_source (GtkWidget *widget)
 }
 
 static gboolean
-editor_queue_draw ()
+editor_queue_draw (gpointer user_data)
 {
   gtk_widget_queue_draw (waveform);
   return FALSE;
@@ -1747,7 +1747,7 @@ editor_normalize_clicked (GtkWidget *object, gpointer data)
   audio_normalize (start, length);
   g_mutex_unlock (&audio.control.controllable.mutex);
   editor_set_waveform_data ();
-  editor_queue_draw ();
+  editor_queue_draw (NULL);
   dirty = TRUE;
 }
 
@@ -2035,7 +2035,7 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
 }
 
 static void
-editor_update_audio_status (gpointer data)
+editor_update_audio_status ()
 {
   gboolean status = audio_check ();
 

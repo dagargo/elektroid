@@ -71,7 +71,7 @@ test_common_to_os_sanitized_name ()
 static const gchar *EXTS[] = { "ext", NULL };
 
 static const gchar **
-get_exts ()
+get_exts (struct backend *backend, const struct fs_operations *ops)
 {
   return EXTS;
 }

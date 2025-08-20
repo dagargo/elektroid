@@ -139,7 +139,7 @@ static void
 backend_upgrade_os_consumer (gpointer data)
 {
   backend_tx_sysex_consumer (data);
-  elektroid_refresh_devices (FALSE);
+  elektroid_refresh_devices ();
 }
 
 static void
@@ -324,7 +324,7 @@ backend_rx_sysex_runner (gpointer user_data)
 			  &data->controllable);
   if (err)
     {
-      elektroid_check_backend (FALSE);
+      elektroid_check_backend ();
     }
   else
     {

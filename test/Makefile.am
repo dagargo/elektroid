@@ -12,7 +12,7 @@ BE_LIBS = alsa
 BE_SOURCES = ../src/backend_alsa.c
 endif
 
-AM_CPPFLAGS = -Wall -DTEST_DATA_DIR='"$(srcdir)/res"' -DDATADIR='"../res"'
+AM_CPPFLAGS = -Wall --std=gnu23 -DTEST_DATA_DIR='"$(srcdir)/res"' -DDATADIR='"../res"'
 
 check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample tests_connector
 
