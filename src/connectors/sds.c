@@ -988,22 +988,22 @@ sds_sample_load_44k1 (const gchar *path, struct idata *sample,
 }
 
 static gint
-sds_sample_load_32 (const gchar *path, struct idata *sample,
-		    struct job_control *control)
+sds_sample_load_32k_16b (const gchar *path, struct idata *sample,
+			 struct job_control *control)
 {
   return sds_sample_load_common (path, sample, control, 32000);
 }
 
 static gint
-sds_sample_load_16 (const gchar *path, struct idata *sample,
-		    struct job_control *control)
+sds_sample_load_16k_16b (const gchar *path, struct idata *sample,
+			 struct job_control *control)
 {
   return sds_sample_load_common (path, sample, control, 16000);
 }
 
 static gint
-sds_sample_load_8 (const gchar *path, struct idata *sample,
-		   struct job_control *control)
+sds_sample_load_8k_16b (const gchar *path, struct idata *sample,
+			struct job_control *control)
 {
   return sds_sample_load_common (path, sample, control, 8000);
 }
@@ -1018,22 +1018,22 @@ sds_sample_save (const gchar *path, struct idata *sample,
 
 enum sds_fs
 {
-  FS_SAMPLES_SDS_16_B = 1,	//SDS devices also include FS_PROGRAM_DEFAULT_OPERATIONS as the first filesystem.
-  FS_SAMPLES_SDS_14_B,
-  FS_SAMPLES_SDS_12_B,
-  FS_SAMPLES_SDS_8_B,
-  FS_SAMPLES_SDS_16_B_441,
-  FS_SAMPLES_SDS_16_B_32,
-  FS_SAMPLES_SDS_16_B_16,
-  FS_SAMPLES_SDS_16_B_8
+  FS_SDS_SAMPLES_MONO_16B = 1,	//SDS devices also include FS_PROGRAM_DEFAULT_OPERATIONS as the first filesystem.
+  FS_SDS_SAMPLES_MONO_14B,
+  FS_SDS_SAMPLES_MONO_12B,
+  FS_SDS_SAMPLES_MONO_8B,
+  FS_SDS_SAMPLES_MONO_44K1_16B,
+  FS_SDS_SAMPLES_MONO_32K_16B,
+  FS_SDS_SAMPLES_MONO_16K_16B,
+  FS_SDS_SAMPLES_MONO_8K_16B
 };
 
-static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
-  .id = FS_SAMPLES_SDS_8_B,
+static const struct fs_operations FS_SDS_SAMPLES_MONO_8B_OPERATIONS = {
+  .id = FS_SDS_SAMPLES_MONO_8B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_ID_COLUMN,
-  .name = "8b1c",
-  .gui_name = "8 bits mono",
+  .name = "mono-8b",
+  .gui_name = "mono 8 bits",
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
@@ -1048,12 +1048,12 @@ static const struct fs_operations FS_SAMPLES_SDS_8B_OPERATIONS = {
   .get_download_path = common_system_get_download_path
 };
 
-static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
-  .id = FS_SAMPLES_SDS_12_B,
+static const struct fs_operations FS_SDS_SAMPLES_MONO_12B_OPERATIONS = {
+  .id = FS_SDS_SAMPLES_MONO_12B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_ID_COLUMN,
-  .name = "12b-1c",
-  .gui_name = "12 bits mono",
+  .name = "mono-12b",
+  .gui_name = "mono-12 bits",
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
@@ -1068,12 +1068,12 @@ static const struct fs_operations FS_SAMPLES_SDS_12B_OPERATIONS = {
   .get_download_path = common_system_get_download_path
 };
 
-static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
-  .id = FS_SAMPLES_SDS_14_B,
+static const struct fs_operations FS_SDS_SAMPLES_MONO_14B_OPERATIONS = {
+  .id = FS_SDS_SAMPLES_MONO_14B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_ID_COLUMN,
-  .name = "14b-1c",
-  .gui_name = "14 bits mono",
+  .name = "mono-14b",
+  .gui_name = "mono 14 bits",
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
@@ -1088,12 +1088,12 @@ static const struct fs_operations FS_SAMPLES_SDS_14B_OPERATIONS = {
   .get_download_path = common_system_get_download_path
 };
 
-static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
-  .id = FS_SAMPLES_SDS_16_B,
+static const struct fs_operations FS_SDS_SAMPLES_MONO_16B_OPERATIONS = {
+  .id = FS_SDS_SAMPLES_MONO_16B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_ID_COLUMN,
-  .name = "16b-1c",
-  .gui_name = "16 bits mono",
+  .name = "mono-16b",
+  .gui_name = "mono 16 bits",
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
@@ -1108,12 +1108,12 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_OPERATIONS = {
   .get_download_path = common_system_get_download_path
 };
 
-static const struct fs_operations FS_SAMPLES_SDS_16B_441_OPERATIONS = {
-  .id = FS_SAMPLES_SDS_16_B_441,
+static const struct fs_operations FS_SDS_SAMPLES_MONO_44K1_16B_OPERATIONS = {
+  .id = FS_SDS_SAMPLES_MONO_44K1_16B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_ID_COLUMN,
-  .name = "44k1-16b-1c",
-  .gui_name = "44.1 KHz 16 bits mono",
+  .name = "mono-44k1-16b",
+  .gui_name = "mono 44.1 kHz 16 bits",
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
@@ -1128,12 +1128,12 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_441_OPERATIONS = {
   .get_download_path = common_system_get_download_path
 };
 
-static const struct fs_operations FS_SAMPLES_SDS_16B_32_OPERATIONS = {
-  .id = FS_SAMPLES_SDS_16_B_32,
+static const struct fs_operations FS_SDS_SAMPLES_MONO_32K_16B_OPERATIONS = {
+  .id = FS_SDS_SAMPLES_MONO_32K_16B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_ID_COLUMN,
-  .name = "32k-16b-1c",
-  .gui_name = "32 KHz 16 bits mono",
+  .name = "mono-32k-16b",
+  .gui_name = "mono 32 kHz 16 bits",
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
@@ -1141,19 +1141,19 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_32_OPERATIONS = {
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_16b,
-  .load = sds_sample_load_32,
+  .load = sds_sample_load_32k_16b,
   .save = sds_sample_save,
   .get_exts = sample_get_sample_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_system_get_download_path
 };
 
-static const struct fs_operations FS_SAMPLES_SDS_16B_16_OPERATIONS = {
-  .id = FS_SAMPLES_SDS_16_B_16,
+static const struct fs_operations FS_SDS_SAMPLES_MONO_16K_16B_OPERATIONS = {
+  .id = FS_SDS_SAMPLES_MONO_16K_16B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_ID_COLUMN,
-  .name = "16k-16b-1c",
-  .gui_name = "16 KHz 16 bits mono",
+  .name = "mono-16k-16b",
+  .gui_name = "mono 16 kHz 16 bits",
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
@@ -1161,19 +1161,19 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_16_OPERATIONS = {
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_16b,
-  .load = sds_sample_load_16,
+  .load = sds_sample_load_16k_16b,
   .save = sds_sample_save,
   .get_exts = sample_get_sample_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_system_get_download_path
 };
 
-static const struct fs_operations FS_SAMPLES_SDS_16B_8_OPERATIONS = {
-  .id = FS_SAMPLES_SDS_16_B_8,
+static const struct fs_operations FS_SDS_SAMPLES_MONO_8K_16B_OPERATIONS = {
+  .id = FS_SDS_SAMPLES_MONO_8K_16B,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_ID_COLUMN,
-  .name = "8k-16b-1c",
-  .gui_name = "8 KHz 16 bits mono",
+  .name = "mono-8k-16b",
+  .gui_name = "mono 8 kHz 16 bits",
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
@@ -1181,7 +1181,7 @@ static const struct fs_operations FS_SAMPLES_SDS_16B_8_OPERATIONS = {
   .rename = sds_rename,
   .download = sds_download,
   .upload = sds_upload_16b,
-  .load = sds_sample_load_8,
+  .load = sds_sample_load_8k_16b,
   .save = sds_sample_save,
   .get_exts = sample_get_sample_extensions,
   .get_upload_path = common_slot_get_upload_path,
@@ -1324,14 +1324,14 @@ end:
   sds_data->name_extension = name_extension;
 
   gslist_fill (&backend->fs_ops, &FS_PROGRAM_DEFAULT_OPERATIONS,
-	       &FS_SAMPLES_SDS_8B_OPERATIONS,
-	       &FS_SAMPLES_SDS_12B_OPERATIONS,
-	       &FS_SAMPLES_SDS_14B_OPERATIONS,
-	       &FS_SAMPLES_SDS_16B_OPERATIONS,
-	       &FS_SAMPLES_SDS_16B_441_OPERATIONS,
-	       &FS_SAMPLES_SDS_16B_32_OPERATIONS,
-	       &FS_SAMPLES_SDS_16B_16_OPERATIONS,
-	       &FS_SAMPLES_SDS_16B_8_OPERATIONS, NULL);
+	       &FS_SDS_SAMPLES_MONO_8B_OPERATIONS,
+	       &FS_SDS_SAMPLES_MONO_12B_OPERATIONS,
+	       &FS_SDS_SAMPLES_MONO_14B_OPERATIONS,
+	       &FS_SDS_SAMPLES_MONO_16B_OPERATIONS,
+	       &FS_SDS_SAMPLES_MONO_44K1_16B_OPERATIONS,
+	       &FS_SDS_SAMPLES_MONO_32K_16B_OPERATIONS,
+	       &FS_SDS_SAMPLES_MONO_16K_16B_OPERATIONS,
+	       &FS_SDS_SAMPLES_MONO_8K_16B_OPERATIONS, NULL);
   backend->destroy_data = backend_destroy_data;
   backend->data = sds_data;
 

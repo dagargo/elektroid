@@ -19,7 +19,7 @@ test_load_sample_resampling (struct job_control *control)
   sample_info_req.format = SF_FORMAT_PCM_16;
 
   err = sample_load_from_file (TEST_DATA_DIR
-			       "/connectors/square-wav-44k1-8b-2c.wav",
+			       "/connectors/square-wav-stereo-44k1-8b.wav",
 			       &sample, control, &sample_info_req,
 			       &sample_info_src);
 
@@ -88,7 +88,7 @@ test_load_sample_no_resampling (struct job_control *control)
   sample_info_req.format = SF_FORMAT_PCM_16;
 
   err = sample_load_from_file (TEST_DATA_DIR
-			       "/connectors/square-wav-48k-16b-1c.wav",
+			       "/connectors/square-wav-mono-48k-16b.wav",
 			       &sample, control, &sample_info_req,
 			       &sample_info_src);
 
