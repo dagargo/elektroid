@@ -30,7 +30,7 @@ typedef long int32_t;
 
 #endif	// #ifndef _MSC_VER
 
-#ifndef __cplusplus
+#if !defined(__cplusplus) && (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 202000)
 #ifndef bool
 typedef int bool;
 #endif
@@ -40,7 +40,6 @@ typedef int bool;
 #ifndef false
 #define false (0)
 #endif
-#endif	// #ifndef __cplusplus
+#endif	// !defined(__cplusplus) && (!defined(__STDC_VERSION__) || __STDC_VERSION__ < 202000)
 
 #endif	// #ifndef KORG_SYRO_VOLCASAMPLE_H__
-
