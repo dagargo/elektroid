@@ -1102,11 +1102,19 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
   browser_remote_set_fs_operations (fs_ops);
 }
 
+static gint
+elektroid_fs_compare (gconstpointer a, gconstpointer b)
+{
+  const struct fs_operations *fsa = a;
+  const struct fs_operations *fsb = b;
+  return g_strcmp0 (fsa->gui_name, fsb->gui_name);
+}
+
 static gboolean
 elektroid_fill_fs_combo_bg (gpointer data)
 {
   const struct fs_operations *fs_ops;
-  GSList *e;
+  GSList *e, *sorted;
   gboolean any = FALSE;
 
   g_signal_handlers_block_by_func (fs_combo, G_CALLBACK (elektroid_set_fs),
@@ -1114,7 +1122,10 @@ elektroid_fill_fs_combo_bg (gpointer data)
 
   gtk_list_store_clear (fs_list_store);
 
-  e = BACKEND->fs_ops;
+  sorted = g_slist_copy (BACKEND->fs_ops);
+  sorted = g_slist_sort (sorted, elektroid_fs_compare);
+
+  e = sorted;
   while (e)
     {
       fs_ops = e->data;
@@ -1140,6 +1151,8 @@ elektroid_fill_fs_combo_bg (gpointer data)
       debug_print (1, "Selecting first filesystem...");
       gtk_combo_box_set_active (GTK_COMBO_BOX (fs_combo), 0);
     }
+
+  g_slist_free (g_steal_pointer (&sorted));
 
   return FALSE;
 }
