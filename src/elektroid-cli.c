@@ -353,12 +353,20 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
 }
 
 static gint
+cli_fs_compare (gconstpointer a, gconstpointer b)
+{
+  const struct fs_operations *fsa = a;
+  const struct fs_operations *fsb = b;
+  return strcmp (fsa->name, fsb->name);
+}
+
+static gint
 cli_info (int argc, gchar *argv[], int *optind)
 {
   const gchar *device_path;
   gint err;
   gboolean first;
-  GSList *e;
+  GSList *e, *sorted;
 
   if (*optind == argc)
     {
@@ -384,7 +392,10 @@ cli_info (int argc, gchar *argv[], int *optind)
   printf ("Connector name: %s\n", backend.conn_name);
   printf ("Filesystems: ");
 
-  e = backend.fs_ops;
+  sorted = g_slist_copy (backend.fs_ops);
+  sorted = g_slist_sort (sorted, cli_fs_compare);
+
+  e = sorted;
   first = TRUE;
   while (e)
     {
@@ -396,6 +407,8 @@ cli_info (int argc, gchar *argv[], int *optind)
       e = e->next;
     }
   printf ("\n");
+
+  g_slist_free (g_steal_pointer (&sorted));
 
   return EXIT_SUCCESS;
 }

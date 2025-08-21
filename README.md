@@ -246,7 +246,7 @@ $ elektroid-cli upgrade Digitakt_OS1.30.syx 1
 The first connector is always a system (local computer) one used to convert sample formats. It can be used like any other connector.
 
 ```
-$ elektroid-cli system:wav48k16b2c:ul square.wav 0:/home/user/samples
+$ elektroid-cli system:wav-stereo-48k-16b:ul square.wav 0:/home/user/samples
 ```
 
 ### Elektron conector
