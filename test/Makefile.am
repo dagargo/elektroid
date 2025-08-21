@@ -1,5 +1,8 @@
 PKG_CONFIG ?= pkg-config
 
+AM_CFLAGS = -Wall
+AM_CPPFLAGS = -DTEST_DATA_DIR='"$(srcdir)/res"' -DDATADIR='"../res"'
+
 if MINGW
   MSYS2_LIBS = -lws2_32
 endif
@@ -12,13 +15,11 @@ BE_LIBS = alsa
 BE_SOURCES = ../src/backend_alsa.c
 endif
 
-AM_CPPFLAGS = -Wall -DTEST_DATA_DIR='"$(srcdir)/res"' -DDATADIR='"../res"'
-
 check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample tests_connector
 
 tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip zlib $(BE_LIBS)
 
-tests_scala_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` -pthread
+tests_scala_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(AM_CFLAGS)
 tests_scala_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(MSYS2_LIBS)
 
 tests_scala_SOURCES = \
@@ -28,7 +29,7 @@ tests_scala_SOURCES = \
         ../src/connectors/scala.c \
 	../src/connectors/scala.h
 
-tests_common_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -pthread
+tests_common_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) $(AM_CFLAGS)
 tests_common_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
 
 tests_common_SOURCES = \
@@ -49,7 +50,7 @@ tests_common_SOURCES = \
 	../src/connectors/microfreak_sample.c \
 	../src/connectors/microfreak_sample.h
 
-tests_microfreak_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -pthread
+tests_microfreak_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) $(AM_CFLAGS)
 tests_microfreak_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
 
 tests_microfreak_SOURCES = \
@@ -72,7 +73,7 @@ tests_microfreak_SOURCES = \
 	../src/connectors/microfreak.c \
 	../src/connectors/microfreak.h
 
-tests_elektron_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -pthread
+tests_elektron_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) $(AM_CFLAGS)
 tests_elektron_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
 
 tests_elektron_SOURCES = \
@@ -97,7 +98,7 @@ tests_elektron_SOURCES = \
 	../src/connectors/elektron.c \
 	../src/connectors/elektron.h
 
-tests_utils_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` -pthread
+tests_utils_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(AM_CFLAGS)
 tests_utils_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(MSYS2_LIBS)
 
 tests_utils_SOURCES = \
@@ -105,7 +106,7 @@ tests_utils_SOURCES = \
 	../src/utils.c \
         ../src/utils.h
 
-tests_sample_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -pthread
+tests_sample_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) $(AM_CFLAGS)
 tests_sample_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
 
 tests_sample_SOURCES = \
@@ -119,7 +120,7 @@ tests_sample_SOURCES = \
 	../src/sample.c \
         ../src/sample.h
 
-tests_connector_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` -pthread
+tests_connector_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(AM_CFLAGS)
 tests_connector_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(MSYS2_LIBS)
 
 tests_connector_SOURCES = \
