@@ -172,10 +172,12 @@ enum fs_options
   FS_OPTION_ALLOW_SEARCH = (1 << 10)
 };
 
+typedef gint (*connector_handshake) (struct backend * backend);
+
 struct connector
 {
   const gchar *name;		// This needs to be unique among all the connectors. Using spaces is discouraged and hyphen is the suggested replacement.
-    gint (*handshake) (struct backend * backend);
+  connector_handshake handshake;
   //Used to indicate if the handshake requires a MIDI identity request
   guint32 options;
   const gchar *device_name;	//Only used for non MIDI devices when a virtual device is created.
