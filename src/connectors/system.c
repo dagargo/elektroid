@@ -645,7 +645,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_MONO_32K_16B_OPERATIONS = {
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
     FS_OPTION_ALLOW_SEARCH,
-  .name = "wav-mono-32k-8b",
+  .name = "wav-mono-32k-16b",
   .gui_name = "WAV mono 32 kHz 16 bits",
   .gui_icon = FS_ICON_WAVE,
   .readdir = system_samples_read_dir,

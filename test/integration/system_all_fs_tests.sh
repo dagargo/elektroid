@@ -7,7 +7,7 @@ tmpdir=$(mktemp -d)
 echo "Runnning tests on $tmpdir..."
 
 actf=$tmpdir/square.wav
-for f in $($ecli info 0 | grep Filesystems | awk '{print $2}' | sed 's/,/ /g'); do
+for f in $($ecli info 0 | grep Filesystems | awk -F": " '{print $2}' | sed 's/,/ /g'); do
   expf=$srcdir/res/connectors/square-$f.wav
   [ ! -f $expf ] && echo "$expf test file not found" && err=1 && continue
   $ecli system:$f:ul $srcdir/res/connectors/square.wav 0:$tmpdir
