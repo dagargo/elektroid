@@ -249,7 +249,7 @@ The first connector is always a system (local computer) one used to convert samp
 $ elektroid-cli system:wav-stereo-48k-16b:ul square.wav 0:/home/user/samples
 ```
 
-### Elektron conector
+### Elektron connector
 
 These are the available filesystems for the elektron connector:
 
