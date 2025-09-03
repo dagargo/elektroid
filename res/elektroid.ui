@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.40.0 
+<!-- Generated with glade 3.40.0
 
 Copyright (C) David García Goñi
 
@@ -1959,6 +1959,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                         <property name="hexpand">True</property>
                                         <property name="vexpand">True</property>
                                         <property name="model">local_list_store</property>
+                                        <property name="enable-search">False</property>
                                         <property name="search-column">1</property>
                                         <child internal-child="selection">
                                           <object class="GtkTreeSelection">
@@ -2403,6 +2404,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                         <property name="hexpand">True</property>
                                         <property name="vexpand">True</property>
                                         <property name="model">remote_list_store</property>
+                                        <property name="enable-search">False</property>
                                         <property name="search-column">1</property>
                                         <child internal-child="selection">
                                           <object class="GtkTreeSelection">
