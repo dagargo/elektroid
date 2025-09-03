@@ -44,7 +44,7 @@ static gboolean
 preferences_window_delete (GtkWidget *widget, GdkEvent *event, gpointer data)
 {
   preferences_window_cancel (NULL, NULL);
-  return FALSE;
+  return TRUE;
 }
 
 static void
