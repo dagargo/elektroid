@@ -916,7 +916,8 @@ cli_receive (int argc, gchar *argv[], int *optind)
     }
   else
     {
-      idata_init (&idata, sysex_transfer_steal (&sysex_transfer), NULL, NULL);
+      idata_init (&idata, sysex_transfer_steal (&sysex_transfer), NULL, NULL,
+		  NULL);
       err = file_save (dst_file, &idata, NULL);
       idata_free (&idata);
     }
@@ -951,7 +952,7 @@ cli_play (int argc, gchar *argv[], int *optind)
   task_control_reset (&task_control, 1);
 
   sample_load_opts_init (&sample_load_opts, 2, audio.rate,
-			 sample_get_internal_format ());
+			 sample_get_internal_format (), FALSE);
 
   err = sample_load_from_file (audio_file, &sample, NULL, &sample_load_opts,
 			       &sample_info_src);

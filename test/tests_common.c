@@ -88,7 +88,7 @@ test_common_slot_get_download_path ()
   ops.name = "fsname";
   ops.get_exts = get_exts;
 
-  idata_init (&idata, NULL, strdup ("name"), NULL);
+  idata_init (&idata, NULL, strdup ("name"), NULL, NULL);
 
   path = common_slot_get_download_path_n (&backend, &ops, "/dst_dir", "/1",
 					  &idata);
@@ -113,7 +113,7 @@ test_common_slot_get_download_path ()
 
   idata_free (&idata);
 
-  idata_init (&idata, NULL, NULL, NULL);
+  idata_init (&idata, NULL, NULL, NULL, NULL);
 
   path = common_slot_get_download_path_n (&backend, &ops, "/dst_dir", "/1",
 					  &idata);

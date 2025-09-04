@@ -192,6 +192,18 @@ sds_get_download_info (GByteArray *header, struct sample_info *sample_info,
 		       guint *bytes_per_word)
 {
   *bits = header->data[6];
+  if (sds_get_bytes_per_word (*bits, word_size, bytes_per_word))
+    {
+      return -1;
+    }
+
+  sample_info->loop_start =
+    sds_get_bytes_value_right_just (&header->data[13], SDS_BYTES_PER_WORD);
+  sample_info->loop_end =
+    sds_get_bytes_value_right_just (&header->data[16], SDS_BYTES_PER_WORD);
+  sample_info->loop_type = header->data[19];
+  sample_info->rate = 1.0e9 /
+    sds_get_bytes_value_right_just (&header->data[7], SDS_BYTES_PER_WORD);
   if (*bits == 8)
     {
       sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_U8;
@@ -200,22 +212,15 @@ sds_get_download_info (GByteArray *header, struct sample_info *sample_info,
     {
       sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
     }
-  if (sds_get_bytes_per_word (*bits, word_size, bytes_per_word))
-    {
-      return -1;
-    }
-  sample_info->rate = 1.0e9 /
-    sds_get_bytes_value_right_just (&header->data[7], SDS_BYTES_PER_WORD);
-  *words =
-    sds_get_bytes_value_right_just (&header->data[10], SDS_BYTES_PER_WORD);
-  sample_info->loop_start =
-    sds_get_bytes_value_right_just (&header->data[13], SDS_BYTES_PER_WORD);
-  sample_info->loop_end =
-    sds_get_bytes_value_right_just (&header->data[16], SDS_BYTES_PER_WORD);
-  sample_info->loop_type = header->data[19];
+
+  sample_info->channels = 1;
   sample_info->midi_note = 0;
   sample_info->midi_fraction = 0;
-  sample_info->channels = 1;
+  sample_info->tags = NULL;
+
+  *words = sds_get_bytes_value_right_just (&header->data[10],
+					   SDS_BYTES_PER_WORD);
+
   return 0;
 }
 
@@ -543,7 +548,7 @@ end:
 	  name = g_malloc (LABEL_MAX);
 	  snprintf (name, LABEL_MAX, "%03d", id);
 	}
-      idata_init (sample, output, name, sample_info);
+      idata_init (sample, output, name, sample_info, sample_info_free);
     }
   else
     {
@@ -971,7 +976,7 @@ sds_sample_load_common (const gchar *path, struct idata *sample,
 			struct task_control *control, gint32 rate)
 {
   return common_sample_load (path, sample, control, SDS_SAMPLE_CHANNELS, rate,
-			     SF_FORMAT_PCM_16);
+			     SF_FORMAT_PCM_16, FALSE);
 }
 
 static gint

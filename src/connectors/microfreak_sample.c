@@ -289,15 +289,16 @@ end:
 void
 microfreak_init_sample_info (struct sample_info *sample_info, guint32 frames)
 {
-  sample_info->midi_note = 0;
-  sample_info->midi_fraction = 0;
-  sample_info->loop_type = 0;
-  sample_info->channels = 1;
-  sample_info->rate = MICROFREAK_SAMPLERATE;
-  sample_info->format = ELEKTROID_SAMPLE_FORMAT_MICROFREAK | SF_FORMAT_PCM_16;
   sample_info->frames = frames;
   sample_info->loop_start = 0;
   sample_info->loop_end = sample_info->frames - 1;
+  sample_info->loop_type = 0;
+  sample_info->rate = MICROFREAK_SAMPLERATE;
+  sample_info->format = ELEKTROID_SAMPLE_FORMAT_MICROFREAK | SF_FORMAT_PCM_16;
+  sample_info->channels = 1;
+  sample_info->midi_note = 0;
+  sample_info->midi_fraction = 0;
+  sample_info->tags = NULL;
 }
 
 struct sample_info *
@@ -330,7 +331,7 @@ microfreak_deserialize_sample (struct idata *sample, struct idata *serialized,
   data->len = datalen;
 
   sample_info = microfreak_new_sample_info (datalen / 2);
-  idata_init (sample, data, strdup (name), sample_info);
+  idata_init (sample, data, strdup (name), sample_info, sample_info_free);
 
   return 0;
 }
@@ -448,7 +449,7 @@ end:
     }
   else
     {
-      idata_init (zobject, array, NULL, NULL);
+      idata_init (zobject, array, NULL, NULL, NULL);
     }
 
   return err;
@@ -510,7 +511,7 @@ microfreak_serialize_sample (struct idata *serialized,
     }
   else
     {
-      idata_init (serialized, data, NULL, NULL);
+      idata_init (serialized, data, NULL, NULL, NULL);
     }
 
   return err;

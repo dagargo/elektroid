@@ -234,6 +234,7 @@ volca_sample_2_sample_info_init (guint32 frames)
   sample_info->frames = frames;
   sample_info->loop_start = sample_info->frames - 1;
   sample_info->loop_end = sample_info->loop_start;
+  sample_info->tags = NULL;
   return sample_info;
 }
 
@@ -280,7 +281,7 @@ volca_sample_2_sample_download (struct backend *backend, const gchar *path,
   sample_info = volca_sample_2_sample_info_init (header.frames);
   snprintf (name, VOLCA_SAMPLE_2_SAMPLE_NAME_LEN + 1, "%.*s",
 	    VOLCA_SAMPLE_2_SAMPLE_NAME_LEN, header.name);
-  idata_init (sample, data, g_strdup (name), sample_info);
+  idata_init (sample, data, g_strdup (name), sample_info, sample_info_free);
 
   task_control_set_progress (control, 1.0);
   control->part++;
@@ -308,7 +309,7 @@ volca_sample_2_sample_load (const gchar *path, struct idata *sample,
 			    struct task_control *control)
 {
   return common_sample_load (path, sample, control, 1, VOLCA_SAMPLE_2_RATE,
-			     SF_FORMAT_PCM_16);
+			     SF_FORMAT_PCM_16, FALSE);
 }
 
 static gint
@@ -494,7 +495,7 @@ volca_sample_2_slice_load (const gchar *path, struct idata *sample,
   guint sample_len, slice_len, sample_size, slice_size;
 
   err = common_sample_load (path, sample, control, 1, VOLCA_SAMPLE_2_RATE,
-			    SF_FORMAT_PCM_16);
+			    SF_FORMAT_PCM_16, FALSE);
   if (err)
     {
       return err;
@@ -632,7 +633,7 @@ volca_sample_2_pattern_download_by_id (struct backend *backend, guint8 id,
   pattern_name = (gchar *) & content->data[VOLCA_SAMPLE_2_PATTERN_NAME_POS];
   snprintf (name, VOLCA_SAMPLE_2_PATTERN_NAME_LEN + 1, "%.*s",
 	    VOLCA_SAMPLE_2_PATTERN_NAME_LEN, pattern_name);
-  idata_init (pattern, content, strdup (name), NULL);
+  idata_init (pattern, content, strdup (name), NULL, NULL);
   free_msg (rx_msg);
 
   if (control)

@@ -43,8 +43,9 @@
 #define BROWSER_LIST_STORE_SAMPLE_FORMAT_FIELD 10
 #define BROWSER_LIST_STORE_SAMPLE_CHANNELS_FIELD 11
 #define BROWSER_LIST_STORE_SAMPLE_MIDI_NOTE_FIELD 12
+#define BROWSER_LIST_STORE_SAMPLE_TAGS_FIELD 13
 //Remote columns
-#define BROWSER_LIST_STORE_SLOT_FIELD 13	//This is an optional map of the id (number) to some string like "A1", "001" or "[A:001]" to mimic the device way of numbering the items.
+#define BROWSER_LIST_STORE_SLOT_FIELD 14	//This is an optional map of the id (number) to some string like "A1", "001" or "[A:001]" to mimic the device way of numbering the items.
 
 #define BROWSER_IS_SYSTEM(b) (!(b)->backend || (b)->backend->type == BE_TYPE_SYSTEM)
 
@@ -108,8 +109,9 @@ struct browser
   GtkTreeViewColumn *tree_view_sample_rate_column;
   GtkTreeViewColumn *tree_view_sample_duration_column;
   GtkTreeViewColumn *tree_view_sample_channels_column;
-  GtkTreeViewColumn *tree_view_sample_bits_column;
+  GtkTreeViewColumn *tree_view_sample_format_column;
   GtkTreeViewColumn *tree_view_sample_midi_note_column;
+  GtkTreeViewColumn *tree_view_sample_tags_column;
   //Only present in the remote browser
   GtkTreeViewColumn *tree_view_id_column;
   GtkTreeViewColumn *tree_view_slot_column;

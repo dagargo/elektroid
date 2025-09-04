@@ -244,7 +244,7 @@ backend_rx_sysex_consumer_response (GtkDialog *dialog, gint response_id,
 	}
 
       idata_init (&idata, sysex_transfer_steal (&data->sysex_transfer), NULL,
-		  NULL);
+		  NULL, NULL);
 
       err = file_save (filename, &idata, NULL);
       if (err)

@@ -1533,10 +1533,11 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 	  sample_info->loop_end = g_ntohl (elektron_sample_header->loop_end);
 	  sample_info->loop_type = elektron_sample_header->loop_type;
 	  sample_info->rate = g_ntohl (elektron_sample_header->rate);	//In the case of the RAW filesystem is not used and it is harmless.
+	  sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
+	  sample_info->channels = elektron_sample_header->stereo + 1;
 	  sample_info->midi_note = 0;
 	  sample_info->midi_fraction = 0;
-	  sample_info->channels = elektron_sample_header->stereo + 1;
-	  sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
+	  sample_info->tags = NULL;
 	  debug_print (2, "Loop start at %d, loop end at %d",
 		       sample_info->loop_start, sample_info->loop_end);
 	}
@@ -1580,7 +1581,8 @@ cleanup:
     }
   else
     {
-      idata_init (smplrw, output, g_path_get_basename (path), sample_info);
+      idata_init (smplrw, output, g_path_get_basename (path), sample_info,
+		  sample_info_free);
     }
   return res;
 }
@@ -2501,7 +2503,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
   if (active)
     {
       task_control_set_progress (control, 1.0);
-      idata_init (data, content, NULL, NULL);
+      idata_init (data, content, NULL, NULL, NULL);
     }
   else
     {
@@ -2916,7 +2918,7 @@ elektron_sample_load (const gchar *path, struct idata *sample,
 		      struct task_control *control)
 {
   return common_sample_load (path, sample, control, 1, ELEKTRON_SAMPLE_RATE,
-			     SF_FORMAT_PCM_16);
+			     SF_FORMAT_PCM_16, FALSE);
 }
 
 gint
@@ -2925,7 +2927,8 @@ elektron_sample_stereo_load (const gchar *path, struct idata *sample,
 {
   struct sample_info *sample_info;
   gint err = common_sample_load (path, sample, control, 0,
-				 ELEKTRON_SAMPLE_RATE, SF_FORMAT_PCM_16);
+				 ELEKTRON_SAMPLE_RATE, SF_FORMAT_PCM_16,
+				 FALSE);
   if (err)
     {
       return err;

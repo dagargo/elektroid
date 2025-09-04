@@ -111,7 +111,7 @@ gchar *common_get_sanitized_name (const gchar * name, const gchar * alphabet,
 
 gint common_sample_load (const gchar * path, struct idata *sample,
 			 struct task_control *control, guint32 channels,
-			 guint32 rate, guint32 format);
+			 guint32 rate, guint32 format, gboolean tags);
 
 gchar *common_system_get_download_path (struct backend *backend,
 					const struct fs_operations *ops,

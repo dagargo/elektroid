@@ -77,7 +77,7 @@ volca_sample_send_syro (struct idata *syro, struct task_control *control)
   //Native samplerate and sample type conversion
 
   sample_load_opts_init (&opts, VOLCA_SAMPLE_SYRO_CHANNELS, audio.rate,
-			 sample_get_internal_format ());
+			 sample_get_internal_format (), FALSE);
 
   err = sample_reload (syro, &sample, control, &opts,
 		       task_control_set_sample_progress);
@@ -136,11 +136,12 @@ volca_sample_get_syro_op (SyroData *data, struct idata *syro_op,
   syro_si->channels = VOLCA_SAMPLE_SYRO_CHANNELS;
   syro_si->midi_note = 0;
   syro_si->midi_fraction = 0;
+  syro_si->tags = NULL;
 
   content = g_byte_array_sized_new (frames * VOLCA_SAMPLE_SYRO_CHANNELS *
 				    sizeof (gint16));
 
-  idata_init (syro_op, content, NULL, syro_si);
+  idata_init (syro_op, content, NULL, syro_si, sample_info_free);
 
   i = 0;
   j = 0;
@@ -309,7 +310,7 @@ volca_sample_load (const gchar *path, struct idata *sample,
   // Resampling is not needed but doing it here makes results repeatable and testable as the syro resampler is avoided.
   // 16 bits is required.
   err = common_sample_load (path, sample, control, VOLCA_SAMPLE_CHANNELS,
-			    VOLCA_SAMPLE_RATE, SF_FORMAT_PCM_16);
+			    VOLCA_SAMPLE_RATE, SF_FORMAT_PCM_16, FALSE);
   if (err)
     {
       return err;

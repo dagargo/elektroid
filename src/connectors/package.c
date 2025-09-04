@@ -391,7 +391,7 @@ package_end (struct package *pkg, struct idata *out)
   zip_source_read (pkg->zip_source, content->data, zstat.comp_size);
   zip_source_close (pkg->zip_source);
 
-  idata_init (out, content, NULL, NULL);
+  idata_init (out, content, NULL, NULL, NULL);
 
   return 0;
 }
@@ -773,7 +773,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
   control->parts = 1 + package_get_max_sample_slots (backend);	// main and sample slots
   control->part = 0;
-  idata_init (&file, pkg_resource->data, NULL, NULL);
+  idata_init (&file, pkg_resource->data, NULL, NULL, NULL);
   ret = upload_data (backend, payload_path, &file, control);
   if (ret)
     {
@@ -867,7 +867,8 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
     }
 
   //We are reusing the same sample_file. Let's be careful.
-  idata_init (&sample_file, g_byte_array_sized_new (zstat.size), NULL, NULL);
+  idata_init (&sample_file, g_byte_array_sized_new (zstat.size), NULL, NULL,
+	      NULL);
 
   elements = json_reader_count_elements (reader);
   control->parts = elements + 1;
@@ -879,7 +880,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       struct sample_load_opts sample_load_opts;
 
       sample_load_opts_init (&sample_load_opts, 0, ELEKTRON_SAMPLE_RATE,
-			     SF_FORMAT_PCM_16);
+			     SF_FORMAT_PCM_16, FALSE);
 
       json_reader_read_element (reader, i);
       json_reader_read_member (reader, PKG_TAG_FILE_NAME);

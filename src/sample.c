@@ -23,14 +23,21 @@
 #include <errno.h>
 #include "connectors/microfreak_sample.h"
 #include "preferences.h"
+#include "utils.h"
 #include "sample.h"
 
 #define LOAD_BUFFER_LEN (32 * KI)
 
+#define LIST_CHUNK_ID "LIST"
 #define JUNK_CHUNK_ID "JUNK"
 #define SMPL_CHUNK_ID "smpl"
 
-#define HEADERS_SPACE 4096	//Gross estimation for the sample (WAV) headers
+#define LIST_CHUNK_INFO_SECTION_ID "INFO"
+
+#define CHUNK_SIZE 4
+#define SUBCHUNK_SIZE 4
+
+#define HEADERS_SPACE (128 * KI)	//Gross estimation for the sample (WAV) headers
 
 static const gchar *ELEKTROID_AUDIO_LOCAL_EXTS[] =
   { "wav", "ogg", "aiff", "flac", MICROFREAK_PWAVETABLE_EXT,
@@ -68,6 +75,13 @@ struct g_byte_array_io_data
 {
   GByteArray *array;
   guint pos;
+};
+
+struct list_info_chunk
+{
+  gchar chunk[CHUNK_SIZE];
+  guint32 size;
+  gchar data[];
 };
 
 static const guint8 JUNK_CHUNK_DATA[] = {
@@ -226,8 +240,7 @@ sample_write_audio_file_data (struct idata *idata,
   SF_INFO sf_info;
   SNDFILE *sndfile;
   sf_count_t frames, total;
-  struct SF_CHUNK_INFO junk_chunk_info;
-  struct SF_CHUNK_INFO smpl_chunk_info;
+  struct SF_CHUNK_INFO chunk_info;
   struct smpl_chunk_data smpl_chunk_data;
   GByteArray *sample = idata->content;
   struct sample_info *sample_info = idata->info;
@@ -250,11 +263,11 @@ sample_write_audio_file_data (struct idata *idata,
       return -1;
     }
 
-  strcpy (junk_chunk_info.id, JUNK_CHUNK_ID);
-  junk_chunk_info.id_size = strlen (JUNK_CHUNK_ID);
-  junk_chunk_info.datalen = sizeof (JUNK_CHUNK_DATA);
-  junk_chunk_info.data = (void *) JUNK_CHUNK_DATA;
-  if (sf_set_chunk (sndfile, &junk_chunk_info) != SF_ERR_NO_ERROR)
+  strcpy (chunk_info.id, JUNK_CHUNK_ID);
+  chunk_info.id_size = CHUNK_SIZE;
+  chunk_info.datalen = sizeof (JUNK_CHUNK_DATA);
+  chunk_info.data = (void *) JUNK_CHUNK_DATA;
+  if (sf_set_chunk (sndfile, &chunk_info) != SF_ERR_NO_ERROR)
     {
       error_print ("%s", sf_strerror (sndfile));
     }
@@ -276,13 +289,63 @@ sample_write_audio_file_data (struct idata *idata,
   smpl_chunk_data.sample_loop.fraction = 0;
   smpl_chunk_data.sample_loop.play_count = 0;
 
-  strcpy (smpl_chunk_info.id, SMPL_CHUNK_ID);
-  smpl_chunk_info.id_size = strlen (SMPL_CHUNK_ID);
-  smpl_chunk_info.datalen = sizeof (struct smpl_chunk_data);
-  smpl_chunk_info.data = &smpl_chunk_data;
-  if (sf_set_chunk (sndfile, &smpl_chunk_info) != SF_ERR_NO_ERROR)
+  strcpy (chunk_info.id, SMPL_CHUNK_ID);
+  chunk_info.id_size = CHUNK_SIZE;
+  chunk_info.datalen = sizeof (struct smpl_chunk_data);
+  chunk_info.data = &smpl_chunk_data;
+  if (sf_set_chunk (sndfile, &chunk_info) != SF_ERR_NO_ERROR)
     {
       error_print ("%s", sf_strerror (sndfile));
+    }
+
+  // If there are no tags, it's better not having the LIST chunk
+  if (sample_info->tags && g_hash_table_size (sample_info->tags) > 0)
+    {
+      GList *keys, *e;
+      GByteArray *list_info_content = g_byte_array_sized_new (64 * KI);
+
+      g_byte_array_append (list_info_content, (guint8 *) "INFO",
+			   SUBCHUNK_SIZE);
+
+      keys = g_hash_table_get_keys (sample_info->tags);
+      e = keys;
+      while (e)
+	{
+	  guint32 size, len, sizele;
+	  gchar *buff;
+	  gchar *k = (gchar *) e->data;
+	  gchar *v = g_hash_table_lookup (sample_info->tags, k);
+	  size = strlen (k);
+	  g_byte_array_append (list_info_content, (guint8 *) k, size);
+	  len = strlen (v);
+	  size = len + 1;
+	  //The size must be a multiple of the word length (4 or sizeof (guint32))
+	  size = (size / sizeof (guint32)) +
+	    (size % sizeof (guint32) ? 1 : 0);
+	  size *= sizeof (guint32);
+	  sizele = htole32 (size);
+	  g_byte_array_append (list_info_content, (guint8 *) & sizele,
+			       sizeof (guint32));
+	  buff = g_malloc (size);
+	  memset (buff, 0, size);
+	  memcpy (buff, v, len);
+	  g_byte_array_append (list_info_content, (guint8 *) buff, size);
+	  g_free (buff);
+	  e = e->next;
+	}
+
+      strcpy (chunk_info.id, LIST_CHUNK_ID);
+      chunk_info.id_size = CHUNK_SIZE;
+      chunk_info.datalen = list_info_content->len;
+      chunk_info.data = list_info_content->data;
+      if (sf_set_chunk (sndfile, &chunk_info) != SF_ERR_NO_ERROR)
+	{
+	  error_print ("%s", sf_strerror (sndfile));
+	}
+
+      g_list_free (keys);
+
+      g_byte_array_free (list_info_content, TRUE);
     }
 
   if ((sample_info->format & SF_FORMAT_SUBMASK) == SF_FORMAT_PCM_16)
@@ -329,7 +392,7 @@ sample_get_memfile_from_sample (struct idata *sample, struct idata *memfile,
   content = g_byte_array_sized_new (sample->content->len * frame_size +
 				    HEADERS_SPACE);
   idata_init (memfile, content, sample->name ? strdup (sample->name) : NULL,
-	      NULL);
+	      NULL, NULL);
   data.pos = 0;
   data.array = content;
 
@@ -467,7 +530,7 @@ audio_mono_to_stereo_int (gint32 *input, gint32 *output, gint size)
 
 static void
 sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
-			SF_INFO *sf_info)
+			SF_INFO *sf_info, gboolean tags)
 {
   struct SF_CHUNK_INFO chunk_info;
   SF_CHUNK_ITERATOR *chunk_iter;
@@ -480,7 +543,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
   sample_info->format = sf_info->format;
 
   strcpy (chunk_info.id, SMPL_CHUNK_ID);
-  chunk_info.id_size = strlen (SMPL_CHUNK_ID);
+  chunk_info.id_size = CHUNK_SIZE;
   chunk_iter = sf_get_chunk_iterator (sndfile, &chunk_info);
 
   if (chunk_iter)
@@ -532,6 +595,59 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
 
   debug_print (2, "Loop start at %d, loop end at %d",
 	       sample_info->loop_start, sample_info->loop_end);
+
+  // tags are not required to be initialized when setting the sample_info
+  sample_info->tags = NULL;
+  if (tags)
+    {
+      strcpy (chunk_info.id, LIST_CHUNK_ID);
+      chunk_info.id_size = CHUNK_SIZE;
+      chunk_iter = sf_get_chunk_iterator (sndfile, &chunk_info);
+
+      if (chunk_iter &&
+	  sf_get_chunk_size (chunk_iter, &chunk_info) == SF_ERR_NO_ERROR &&
+	  chunk_info.datalen > 0)
+	{
+	  guint8 *raw;
+	  guint32 read;
+	  struct list_info_chunk *subchunk;
+
+	  raw = g_malloc (chunk_info.datalen);
+	  chunk_info.data = raw;
+	  sf_get_chunk_data (chunk_iter, &chunk_info);
+
+	  subchunk = (struct list_info_chunk *) chunk_info.data;
+	  if (!strncmp (subchunk->chunk, LIST_CHUNK_INFO_SECTION_ID,
+			CHUNK_SIZE))
+	    {
+	      sample_info->tags = sample_info_tags_new ();
+
+	      read = CHUNK_SIZE;
+	      while (read < chunk_info.datalen)
+		{
+		  gchar *k, *v;
+		  subchunk = (struct list_info_chunk *) &raw[read];
+
+		  k = g_malloc (CHUNK_SIZE + 1);
+		  memcpy (k, subchunk->chunk, CHUNK_SIZE);
+		  k[CHUNK_SIZE] = 0;
+		  v = g_strdup (subchunk->data);
+		  debug_print (3, "Found tag '%s' with '%s' value", k, v);
+		  g_hash_table_insert (sample_info->tags, k, v);
+
+		  read += sizeof (struct list_info_chunk) +
+		    le32toh (subchunk->size);
+		}
+	    }
+
+	  g_free (raw);
+
+	  while (chunk_iter)
+	    {
+	      chunk_iter = sf_next_chunk_iterator (chunk_iter);
+	    }
+	}
+    }
 }
 
 static gint
@@ -557,7 +673,7 @@ sample_load_libsndfile_sample_info (const gchar *path,
       goto end;
     }
 
-  sample_set_sample_info (sample_info, sndfile, &sf_info);
+  sample_set_sample_info (sample_info, sndfile, &sf_info, TRUE);
 
 end:
   fclose (file);
@@ -612,7 +728,9 @@ sample_load_microfreak_sample_info (const gchar *path,
       return err;
     }
 
+  //All microfreak format set sample_info.tags to NULL so there is no need for g_hash_table_ref.
   memcpy (sample_info, aux.info, sizeof (struct sample_info));
+
   idata_free (&aux);
 
   controllable_clear (&control.controllable);
@@ -690,6 +808,8 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   GByteArray *sample;
   struct sample_info *sample_info;
 
+  debug_print (1, "Loading sample...");
+
   sf_info.format = 0;
   sndfile = sf_open_virtual (sf_virtual_io, SFM_READ, &sf_info, data);
   if (!sndfile)
@@ -703,26 +823,39 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   rounding_fix = FALSE;
   sample = NULL;
 
-  sample_set_sample_info (sample_info_src, sndfile, &sf_info);
+  sample_set_sample_info (sample_info_src, sndfile, &sf_info,
+			  sample_load_opts->tags);
 
   sample_info = g_malloc (sizeof (struct sample_info));
 
-  sample_info->midi_note = sample_info_src->midi_note;
-  sample_info->midi_fraction = sample_info_src->midi_fraction;
   sample_info->loop_type = sample_info_src->loop_type;
-  sample_info->channels = sample_load_opts->channels ?
-    sample_load_opts->channels : sample_info_src->channels;
   sample_info->rate = sample_load_opts->rate ? sample_load_opts->rate :
     sample_info_src->rate;
   //Only the sample format is needed. If the file format is provided, it must be ignored.
   sample_info->format = sample_load_opts->format ?
     sample_load_opts->format : (sample_info_src->format & SF_FORMAT_SUBMASK);
-  if (sample_info->format != SF_FORMAT_PCM_16
-      && sample_info->format != SF_FORMAT_PCM_32
-      && sample_info->format != SF_FORMAT_FLOAT)
+  if (sample_info->format != SF_FORMAT_PCM_16 &&
+      sample_info->format != SF_FORMAT_PCM_32 &&
+      sample_info->format != SF_FORMAT_FLOAT)
     {
       error_print ("Invalid sample format. Using short...");
       sample_info->format = SF_FORMAT_PCM_16;
+    }
+
+  sample_info->channels = sample_load_opts->channels ?
+    sample_load_opts->channels : sample_info_src->channels;
+  sample_info->midi_note = sample_info_src->midi_note;
+  sample_info->midi_fraction = sample_info_src->midi_fraction;
+
+  // tags are required to be initialized when loading a sample
+  if (sample_info_src->tags)
+    {
+      sample_info->tags = sample_info_src->tags;	// Only the format is needed in sample_info_src, so it is safe to steal the tags.
+      sample_info_src->tags = NULL;
+    }
+  else
+    {
+      sample_info->tags = sample_info_tags_new ();
     }
 
   bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
@@ -779,7 +912,8 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sample_info_fix_frame_values (sample_info);
 
   sample = g_byte_array_sized_new (sample_info->frames * bytes_per_frame);
-  idata_init (idata, sample, name ? strdup (name) : NULL, sample_info);
+  idata_init (idata, sample, name ? strdup (name) : NULL, sample_info,
+	      sample_info_free);
   if (control)
     {
       g_mutex_unlock (&control->controllable.mutex);
@@ -1064,6 +1198,11 @@ sample_reload (struct idata *input, struct idata *output,
   struct g_byte_array_io_data data;
 
   memcpy (&sample_info_src, input->info, sizeof (struct sample_info));
+  if (sample_info_src.tags)
+    {
+      g_hash_table_ref (sample_info_src.tags);
+    }
+
   err = sample_get_memfile_from_sample (input, &aux, NULL, SF_FORMAT_WAV |
 					sample_info_src.format);
   if (err)
@@ -1212,25 +1351,52 @@ sample_get_internal_format ()
 
 void
 sample_load_opts_init (struct sample_load_opts *opts, guint32 channels,
-		       guint32 rate, guint32 format)
+		       guint32 rate, guint32 format, gboolean tags)
 {
   opts->channels = channels;
   opts->rate = rate;
   opts->format = format;
+  opts->tags = tags;
 }
 
 void
-sample_load_opts_init_direct (struct sample_load_opts *opts)
+sample_load_opts_init_direct (struct sample_load_opts *opts, gboolean tags)
 {
-  sample_load_opts_init (opts, 0, 0, 0);
+  sample_load_opts_init (opts, 0, 0, 0, tags);
 }
 
 void
 sample_load_opts_init_from_sample_info (struct sample_load_opts *opts,
-					struct sample_info *sample_info)
+					struct sample_info *sample_info,
+					gboolean tags)
 {
   sample_load_opts_init (opts, sample_info->channels, sample_info->rate,
-			 sample_info->format & SF_FORMAT_SUBMASK);
+			 sample_info->format & SF_FORMAT_SUBMASK, tags);
+}
+
+GHashTable *
+sample_info_tags_new ()
+{
+  return g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+}
+
+const gchar *
+sample_info_get_tag (const struct sample_info *sample_info, const gchar *tag)
+{
+  return g_hash_table_lookup (sample_info->tags, tag);
+}
+
+void
+sample_info_set_tag (const struct sample_info *sample_info,
+		     const gchar *tag, gchar *value)
+{
+  if (strlen (tag) != SUBCHUNK_SIZE)
+    {
+      error_print ("LIST chunk INFO tag '%s' is not %d B long. Skipping...",
+		   tag, SUBCHUNK_SIZE);
+      return;
+    }
+  g_hash_table_insert (sample_info->tags, strdup (tag), value);
 }
 
 // Only saving to sample formats allowing all the features is allowed.

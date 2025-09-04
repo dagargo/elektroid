@@ -257,7 +257,7 @@ cz_download (struct backend *backend, const gchar *path,
   output->data[CZ_PROGRAM_HEADER_ID] = id;
 
   idata_init (program, output, id == CZ_PANEL_ID ? strdup (CZ_PANEL) : NULL,
-	      NULL);
+	      NULL, NULL);
 
 cleanup:
   free_msg (rx_msg);

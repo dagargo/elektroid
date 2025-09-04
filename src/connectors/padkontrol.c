@@ -151,7 +151,7 @@ padkontrol_download (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  idata_init (scene, rx_msg, NULL, NULL);
+  idata_init (scene, rx_msg, NULL, NULL, NULL);
 
   usleep (PADKONTROL_REST_TIME_US);
 

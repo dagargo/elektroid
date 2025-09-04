@@ -439,7 +439,7 @@ end:
       memcpy (name, next, len);
       name[len] = 0;
 
-      idata_init (preset, output, strdup (name), NULL);
+      idata_init (preset, output, strdup (name), NULL, NULL);
     }
   usleep (MICROFREAK_REST_TIME_LONG_US);	//Additional rest
   return err;
@@ -1347,7 +1347,7 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
 {
   struct idata aux;
   gint err = common_sample_load (path, &aux, control, 1, 0,
-				 SF_FORMAT_PCM_16);
+				 SF_FORMAT_PCM_16, FALSE);
   if (err)
     {
       return -EINVAL;
@@ -1358,7 +1358,8 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
       struct sample_info *sample_info =
 	microfreak_new_sample_info (MICROFREAK_WAVETABLE_LEN);
       gchar *name = strdup (aux.name);
-      idata_init (wavetable, idata_steal (&aux), name, sample_info);
+      idata_init (wavetable, idata_steal (&aux), name, sample_info,
+		  sample_info_free);
       return 0;
     }
   else
@@ -1368,7 +1369,7 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
       struct sample_load_opts opts;
       GByteArray *a;
       sample_load_opts_init (&opts, 1, MICROFREAK_SAMPLERATE,
-			     SF_FORMAT_PCM_16);
+			     SF_FORMAT_PCM_16, FALSE);
       opts.rate = si->rate * MICROFREAK_WAVETABLE_LEN / si->frames;
       err = sample_reload (&aux, wavetable, NULL, &opts,
 			   task_control_set_sample_progress);
@@ -1543,7 +1544,8 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
     }
   else
     {
-      idata_init (wavetable, content, strdup (name), sample_info);
+      idata_init (wavetable, content, strdup (name), sample_info,
+		  sample_info_free);
     }
 
   return err;
@@ -1872,7 +1874,7 @@ microfreak_sample_load (const gchar *path, struct idata *sample,
 			struct task_control *control)
 {
   return common_sample_load (path, sample, control, 1, MICROFREAK_SAMPLERATE,
-			     SF_FORMAT_PCM_16);
+			     SF_FORMAT_PCM_16, FALSE);
 }
 
 static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {

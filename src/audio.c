@@ -447,15 +447,16 @@ audio_reset_record_buffer (guint record_options,
       debug_print (1, "Resetting record buffer...");
 
       si = g_malloc (sizeof (struct sample_info));
-      si->channels = (record_options & RECORD_STEREO) == 3 ? 2 : 1;
       si->frames = audio.rate * MAX_RECORDING_TIME_S;
       si->loop_start = si->frames - 1;
       si->loop_end = si->loop_start;
-      si->format = audio.float_mode ? SF_FORMAT_FLOAT : SF_FORMAT_PCM_16;
+      si->loop_type = 0;
       si->rate = audio.rate;
+      si->format = audio.float_mode ? SF_FORMAT_FLOAT : SF_FORMAT_PCM_16;
+      si->channels = (record_options & RECORD_STEREO) == 3 ? 2 : 1;
       si->midi_note = 0;
       si->midi_fraction = 0;
-      si->loop_type = 0;
+      si->tags = sample_info_tags_new ();
 
       size = si->frames * SAMPLE_INFO_FRAME_SIZE (si);
       content = g_byte_array_sized_new (size);
@@ -468,7 +469,8 @@ audio_reset_record_buffer (guint record_options,
     }
   g_mutex_lock (&audio.control.controllable.mutex);
   idata_free (&audio.sample);
-  idata_init (&audio.sample, content, NULL, si);
+  idata_init (&audio.sample, content, NULL, si,
+	      si == NULL ? NULL : sample_info_free);
   audio.pos = 0;
   audio.record_options = record_options;
   audio.monitor_notifier = monitor_notifier;
@@ -485,7 +487,7 @@ audio_init (audio_ready_callback ready_callback,
   debug_print (1, "Initializing audio (%s %s)...", audio_name (),
 	       audio_version ());
   audio.float_mode = preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT);
-  idata_init (&audio.sample, NULL, NULL, NULL);
+  idata_init (&audio.sample, NULL, NULL, NULL, NULL);
   audio.loop = FALSE;
   audio.path = NULL;
   audio.status = AUDIO_STATUS_STOPPED;
@@ -792,6 +794,8 @@ audio_init_and_wait ()
   debug_print (1, "Audio initialized");
 }
 
+// This consumes the sample parameter.
+
 void
 audio_set_play_and_wait (struct idata *sample, struct task_control *control)
 {
@@ -799,13 +803,18 @@ audio_set_play_and_wait (struct idata *sample, struct task_control *control)
   gdouble progress;
   gboolean active = TRUE;
   struct sample_info *sample_info;
+  GDestroyNotify free_info;
 
   audio_reset_sample ();
 
   g_mutex_lock (&audio.control.controllable.mutex);
+  // Full steal of sample
   sample_info = sample->info;
   sample->info = NULL;
-  idata_init (&audio.sample, idata_steal (sample), NULL, sample_info);
+  free_info = sample->free_info;
+  sample->free_info = NULL;
+  idata_init (&audio.sample, idata_steal (sample), NULL, sample_info,
+	      free_info);
   audio.control.callback = NULL;
   audio.sel_start = -1;
   audio.sel_end = -1;

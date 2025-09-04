@@ -258,7 +258,7 @@ file_load (const char *path, struct idata *idata,
     {
       gchar *name = g_path_get_basename (path);
       filename_remove_ext (name);
-      idata_init (idata, array, strdup (name), NULL);
+      idata_init (idata, array, strdup (name), NULL, NULL);
       g_free (name);
       debug_print (1, "%zu B read", size);
     }
@@ -519,22 +519,36 @@ gslist_fill (GSList **list, ...)
 }
 
 void
-idata_init (struct idata *idata, GByteArray *content, gchar *name, void *info)
+idata_init (struct idata *idata, GByteArray *content, gchar *name, void *info,
+	    GDestroyNotify free_info)
 {
+  if (info != NULL && free_info == NULL)
+    {
+      error_print ("idata info provided but free_info is null");
+    }
   idata->content = content;
   idata->name = name;
   idata->info = info;
+  idata->free_info = free_info;
 }
 
 GByteArray *
 idata_steal (struct idata *idata)
 {
   GByteArray *content = idata->content;
-  idata->content = NULL;
-  g_free (idata->name);
-  idata->name = NULL;
-  g_free (idata->info);
-  idata->info = NULL;
+  if (content != NULL)
+    {
+      idata->content = NULL;
+
+      g_free (idata->name);
+      idata->name = NULL;
+
+      if (idata->free_info)
+	{
+	  idata->free_info (idata->info);
+	}
+      idata->info = NULL;
+    }
   return content;
 }
 
@@ -671,4 +685,15 @@ command_set_parts (const gchar *cmd, gchar **connector, gchar **fs,
 {
   return command_set_parts_with_separator (cmd, strchr (cmd, ':') ? ':' : '-',
 					   connector, fs, op);
+}
+
+void
+sample_info_free (gpointer data)
+{
+  struct sample_info *sample_info = data;
+  if (sample_info->tags)
+    {
+      g_hash_table_unref (sample_info->tags);
+    }
+  g_free (sample_info);
 }

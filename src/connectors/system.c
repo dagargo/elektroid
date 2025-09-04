@@ -299,7 +299,7 @@ system_load_custom (const gchar *path, struct idata *sample,
 {
   struct sample_info sample_info_src;
   struct sample_load_opts opts;
-  sample_load_opts_init (&opts, channels, rate, format);
+  sample_load_opts_init (&opts, channels, rate, format, FALSE);
   //Typically, control parts are set not here but in this case makes more sense.
   control->parts = 1;
   control->part = 0;

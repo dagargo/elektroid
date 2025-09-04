@@ -96,7 +96,7 @@ test_serialization_deserialization_wavetable ()
 
   src_content = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
   src_content->len = MICROFREAK_WAVETABLE_SIZE;
-  idata_init (&src, src_content, strdup ("0123456789abcde"), NULL);
+  idata_init (&src, src_content, strdup ("0123456789abcde"), NULL, NULL);
   v = (gint8 *) src.content->data;
   for (guint i = 0; i < MICROFREAK_WAVETABLE_SIZE; i++, v++)
     {
@@ -143,7 +143,7 @@ test_bad_deserialization_wavetable ()
   printf ("\n");
 
   serialized_content = g_byte_array_new ();
-  idata_init (&serialized, serialized_content, NULL, NULL);
+  idata_init (&serialized, serialized_content, NULL, NULL, NULL);
 
   err = microfreak_deserialize_wavetable (&dst, &serialized);
   CU_ASSERT_NOT_EQUAL (err, 0);

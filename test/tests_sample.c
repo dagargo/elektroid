@@ -1,5 +1,6 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
+#include <glib/gstdio.h>
 #include "../src/sample.h"
 #include "../src/preferences.h"
 
@@ -13,7 +14,8 @@ test_load_sample_resampling (struct task_control *control)
 
   printf ("\n");
 
-  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16);
+  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16,
+			 FALSE);
 
   err = sample_load_from_file (TEST_DATA_DIR
 			       "/connectors/square-wav-stereo-44k1-8b.wav",
@@ -79,7 +81,8 @@ test_load_sample_no_resampling (struct task_control *control)
 
   printf ("\n");
 
-  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16);
+  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16,
+			 FALSE);
 
   err = sample_load_from_file (TEST_DATA_DIR
 			       "/connectors/square-wav-mono-48k-16b.wav",
@@ -145,7 +148,8 @@ test_load_microfreak_wavetable (const gchar *path)
 
   printf ("\n");
 
-  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16);
+  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16,
+			 FALSE);
 
   err = sample_load_from_file (path, &sample, NULL, &sample_load_opts,
 			       &sample_info_src);
@@ -207,7 +211,8 @@ test_load_microfreak_sample (const gchar *path)
 
   printf ("\n");
 
-  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16);
+  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16,
+			 FALSE);
 
   err = sample_load_from_file (path, &sample, NULL, &sample_load_opts,
 			       &sample_info_src);
@@ -258,6 +263,128 @@ test_load_microfreak_mfsz ()
   test_load_microfreak_sample (TEST_DATA_DIR "/connectors/microfreak.mfsz");
 }
 
+// This test checks for transparency. No changes in the file even when loading the tags as there are none.
+
+static void
+test_load_and_save_no_tags ()
+{
+  gint err;
+  struct idata sample, f1, f2;
+  struct sample_info sample_info_src;
+  struct sample_load_opts sample_load_opts;
+  const gchar *dst = "foo.wav";
+
+  printf ("\n");
+
+  err = file_load (TEST_DATA_DIR "/connectors/square.wav", &f1, NULL);
+
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16, TRUE);
+
+  err = sample_load_from_file (TEST_DATA_DIR
+			       "/connectors/square.wav",
+			       &sample, NULL, &sample_load_opts,
+			       &sample_info_src);
+
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      goto free_f1;
+    }
+
+  err = sample_save_to_file (dst, &sample, NULL, sample_info_src.format);
+
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      goto free_sample;
+    }
+
+
+  err = file_load (dst, &f2, NULL);
+
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      goto unlink_dst;
+    }
+
+  CU_ASSERT_EQUAL (f1.content->len, f2.content->len);
+  CU_ASSERT_EQUAL (0, memcmp (f1.content->data, f2.content->data,
+			      f1.content->len));
+
+  idata_free (&f2);
+unlink_dst:
+  g_unlink (dst);
+free_sample:
+  idata_free (&sample);
+free_f1:
+  idata_free (&f1);
+}
+
+static void
+test_load_save_with_tag_and_reload ()
+{
+  gint err;
+  struct idata s1, s2;
+  struct sample_info *sample_info, sample_info_src;
+  struct sample_load_opts sample_load_opts;
+  const gchar *dst = "foo.wav";
+
+  printf ("\n");
+
+  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16, TRUE);
+
+  err = sample_load_from_file (TEST_DATA_DIR
+			       "/connectors/square.wav",
+			       &s1, NULL, &sample_load_opts,
+			       &sample_info_src);
+
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  sample_info = s1.info;
+  sample_info_set_tag (sample_info, "IKEY", strdup ("loop; FX"));
+  sample_info_set_tag (sample_info, "key", strdup ("x"));	//This does not work as keys need to be 4 byte long
+
+  err = sample_save_to_file (dst, &s1, NULL, sample_info_src.format);
+
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      goto free_s1;
+    }
+
+  err = sample_load_from_file (dst, &s2, NULL, &sample_load_opts,
+			       &sample_info_src);
+
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      goto unlink_dst;
+    }
+
+  sample_info = s2.info;
+  CU_ASSERT_NOT_EQUAL (sample_info->tags, NULL);
+  CU_ASSERT_STRING_EQUAL (sample_info_get_tag (sample_info, "IKEY"),
+			  "loop; FX");
+  CU_ASSERT_EQUAL (sample_info_get_tag (sample_info, "key"), NULL);
+
+  idata_free (&s2);
+unlink_dst:
+  g_unlink (dst);
+free_s1:
+  idata_free (&s1);
+}
+
 static gint
 run_tests (CU_pSuite suite)
 {
@@ -301,6 +428,18 @@ run_tests (CU_pSuite suite)
     }
 
   if (!CU_add_test (suite, "load_microfreak_mfsz", test_load_microfreak_mfsz))
+    {
+      return -1;
+    }
+
+  if (!CU_add_test (suite, "load_and_save_no_tags",
+		    test_load_and_save_no_tags))
+    {
+      return -1;
+    }
+
+  if (!CU_add_test (suite, "load_save_with_tag_and_reload",
+		    test_load_save_with_tag_and_reload))
     {
       return -1;
     }

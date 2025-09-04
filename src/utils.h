@@ -37,11 +37,11 @@
 #define TOPMOST_DIR_UNIX "/"
 #define TOPMOST_DIR_WINDOWS ""
 
-#define LABEL_MAX 256
-
 #define KI 1024
 #define MI (KI * KI)
 #define GI (KI * MI)
+
+#define LABEL_MAX 256
 
 #define CONTROLLABLE_IS_NULL_OR_ACTIVE(c) (!c || controllable_is_active(c))
 
@@ -71,6 +71,7 @@ struct sample_info
   guint32 channels;
   guint32 midi_note;
   guint32 midi_fraction;
+  GHashTable *tags;
 };
 
 struct task_control;
@@ -106,6 +107,7 @@ struct idata
   GByteArray *content;
   gchar *name;			//Optional field to store a name
   void *info;			//Optional field to store information about the content
+  GDestroyNotify free_info;	//If set, called to destroy info
 };
 
 extern int debug_level;
@@ -159,7 +161,7 @@ gchar *path_filename_to_uri (enum path_type, gchar *);
 void gslist_fill (GSList ** list, ...);
 
 void idata_init (struct idata *idata, GByteArray * content,
-		 gchar * name, void *info);
+		 gchar * name, void *info, GDestroyNotify free_info);
 
 void idata_free (struct idata *idata);
 
@@ -184,5 +186,7 @@ gboolean token_is_in_text (const gchar * token, const gchar * text);
 
 gint command_set_parts (const gchar * cmd, gchar ** connector, gchar ** fs,
 			gchar ** op);
+
+void sample_info_free (gpointer sample_info);
 
 #endif

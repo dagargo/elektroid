@@ -30,10 +30,11 @@
 #include "progress_window.h"
 #include "sample.h"
 #include "maction.h"
+#include "utils.h"
 
 #define OTHER_BROWSER(b) (b == &local_browser ? &remote_browser : &local_browser)
-#define BROWSER_HAS_EDITOR(b) ((b)->fs_ops && (b)->fs_ops->options & FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE)
-#define EDITOR_IS_AVAILABLE BROWSER_HAS_EDITOR(&local_browser)
+#define EDITOR_IS_AVAILABLE (local_browser.fs_ops && \
+                             local_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR ? TRUE : FALSE)
 
 #define DND_TIMEOUT 800
 
@@ -43,6 +44,12 @@
 #define PROGRESS_DELETE_THRESHOLD 25
 
 #define DIR_ICON "elektroid-folder-symbolic"
+
+// ITEM_TYPE_DIR do not have an initialized sample_info.
+// The remote editor might not have tags even though the filesystem is an editor.
+#define ITEM_HAS_TAGS(i,b) ((i)->type == ITEM_TYPE_FILE && \
+                            ((b)->fs_ops->options & FS_OPTION_SHOW_SAMPLE_COLUMNS) && \
+                             (i)->sample_info.tags != NULL)
 
 enum
 {
@@ -736,6 +743,58 @@ browser_item_activated (GtkTreeView *view, GtkTreePath *path,
     }
 }
 
+static void
+item_ref_tags_if_avail (struct item *item, struct browser *browser)
+{
+  if (ITEM_HAS_TAGS (item, browser))
+    {
+      g_hash_table_ref (item->sample_info.tags);
+    }
+}
+
+static void
+item_unref_tags_if_avail (struct item *item, struct browser *browser)
+{
+  if (ITEM_HAS_TAGS (item, browser))
+    {
+      g_hash_table_unref (item->sample_info.tags);
+    }
+}
+
+static gchar *
+browser_get_tags (const struct sample_info *sample_info)
+{
+  const gchar *ikey;
+  gchar **tags, **t;
+  GString *tagss;
+
+  if (!sample_info->tags)
+    {
+      return NULL;
+    }
+
+  ikey = sample_info_get_tag (sample_info, SAMPLE_INFO_TAG_IKEY);
+  if (!ikey)
+    {
+      return NULL;
+    }
+
+  tags = g_strsplit (ikey, "; ", 0);
+  tagss = g_string_new (NULL);
+  t = tags;
+  while (*t)
+    {
+      g_string_append_printf (tagss,
+			      "<span bgcolor=\"gray\" bgalpha=\"20%%\" weight=\"bold\">%s</span>%s",
+			      *t, *(t + 1) ? "  " : "");
+      t++;
+    }
+
+  g_strfreev (tags);
+
+  return g_string_free_and_steal (tagss);
+}
+
 static gint
 browser_add_dentry_item (gpointer data)
 {
@@ -788,8 +847,8 @@ browser_add_dentry_item (gpointer data)
     }
 
   if (item->type == ITEM_TYPE_FILE &&
-      browser->fs_ops->options & FS_OPTION_SHOW_SAMPLE_COLUMNS &&
-      item->sample_info.frames)
+      item->sample_info.frames &&
+      browser->fs_ops->options & FS_OPTION_SHOW_SAMPLE_COLUMNS)
     {
       snprintf (label, LABEL_MAX, "%u", item->sample_info.frames);
       g_value_init (&v, G_TYPE_STRING);
@@ -868,6 +927,17 @@ browser_add_dentry_item (gpointer data)
 				BROWSER_LIST_STORE_SAMPLE_MIDI_NOTE_FIELD,
 				&v);
       g_value_unset (&v);
+
+      gchar *tags = browser_get_tags (&item->sample_info);
+      if (tags)
+	{
+	  g_value_init (&v, G_TYPE_STRING);
+	  g_value_set_string (&v, tags);
+	  gtk_list_store_set_value (list_store, &iter,
+				    BROWSER_LIST_STORE_SAMPLE_TAGS_FIELD, &v);
+	  g_value_unset (&v);
+	  g_free (tags);
+	}
     }
 
   if (item->type == ITEM_TYPE_FILE &&
@@ -897,6 +967,8 @@ browser_add_dentry_item (gpointer data)
 	}
       g_free (name);
     }
+
+  item_unref_tags_if_avail (item, browser);
 
   g_free (add_data->rel_path);
   g_free (add_data);
@@ -1019,7 +1091,8 @@ browser_load_dir_runner_update_ui (gpointer data)
 
 static gboolean
 browser_values_match_filter (gchar **search_tokens, const gchar *name,
-			     const gchar *rel_path, const gchar *object_info)
+			     const gchar *rel_path, const gchar *object_info,
+			     const struct sample_info *sample_info)
 {
   gboolean matched = TRUE;
 
@@ -1043,6 +1116,16 @@ browser_values_match_filter (gchar **search_tokens, const gchar *name,
 	    }
 	}
 
+      if (sample_info && sample_info->tags)
+	{
+	  const gchar *ikey = sample_info_get_tag (sample_info,
+						   SAMPLE_INFO_TAG_IKEY);
+	  if (ikey && token_is_in_text (search_tokens[i], ikey))
+	    {
+	      goto found;
+	    }
+	}
+
       matched = FALSE;
       break;
 
@@ -1060,15 +1143,29 @@ browser_iterate_dir_add (struct browser *browser,
 			 gchar *rel_path)
 {
   const gchar *object_info;
+  const struct sample_info *sample_info;
   struct browser_add_dentry_item_data *data;
 
   if (browser->search_tokens)
     {
-      object_info = browser->fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN ?
-	iter->item.object_info : NULL;
+      if (iter->item.type == ITEM_TYPE_FILE)
+	{
+	  object_info =
+	    browser->fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN ?
+	    iter->item.object_info : NULL;
+	  sample_info =
+	    browser->fs_ops->options & FS_OPTION_SAMPLE_EDITOR ?
+	    &iter->item.sample_info : NULL;
+	}
+      else
+	{
+	  object_info = NULL;
+	  sample_info = NULL;
+	}
+
       if (!browser_values_match_filter (browser->search_tokens,
 					iter->item.name, rel_path,
-					object_info))
+					object_info, sample_info))
 	{
 	  return;
 	}
@@ -1077,6 +1174,7 @@ browser_iterate_dir_add (struct browser *browser,
   data = g_malloc (sizeof (struct browser_add_dentry_item_data));
   data->browser = browser;
   memcpy (&data->item, &iter->item, sizeof (struct item));
+  item_ref_tags_if_avail (&iter->item, browser);
   data->icon = icon;
   data->rel_path = rel_path;
   g_idle_add (browser_add_dentry_item, data);
@@ -1092,6 +1190,8 @@ browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
     {
       browser_iterate_dir_add (browser, iter, icon, &iter->item,
 			       strdup (iter->item.name));
+
+      item_unref_tags_if_avail (&iter->item, browser);
 
       g_mutex_lock (&browser->mutex);
       loading = browser->loading;
@@ -2127,9 +2227,11 @@ browser_set_columns_visibility (struct browser *browser)
   gtk_tree_view_column_set_visible
     (browser->tree_view_sample_channels_column, sample_columns);
   gtk_tree_view_column_set_visible
-    (browser->tree_view_sample_bits_column, sample_columns);
+    (browser->tree_view_sample_format_column, sample_columns);
   gtk_tree_view_column_set_visible
     (browser->tree_view_sample_midi_note_column, sample_columns);
+  gtk_tree_view_column_set_visible
+    (browser->tree_view_sample_tags_column, sample_columns);
   gtk_tree_view_column_set_visible
     (browser->tree_view_info_column, info_column);
 }
@@ -2437,13 +2539,16 @@ browser_local_init (struct browser *browser, GtkBuilder *builder)
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "local_tree_view_sample_channels_column"));
-  browser->tree_view_sample_bits_column =
+  browser->tree_view_sample_format_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder, "local_tree_view_sample_bits_column"));
+			  (builder, "local_tree_view_sample_format_column"));
   browser->tree_view_sample_midi_note_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "local_tree_view_sample_midi_note_column"));
+  browser->tree_view_sample_tags_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "local_tree_view_sample_tags_column"));
 
   browser->tree_view_info_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
@@ -2589,13 +2694,16 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder)
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "remote_tree_view_sample_channels_column"));
-  browser->tree_view_sample_bits_column =
+  browser->tree_view_sample_format_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder, "remote_tree_view_sample_bits_column"));
+			  (builder, "remote_tree_view_sample_format_column"));
   browser->tree_view_sample_midi_note_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder,
 			   "remote_tree_view_sample_midi_note_column"));
+  browser->tree_view_sample_tags_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "remote_tree_view_sample_tags_column"));
 
   browser->tree_view_info_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object

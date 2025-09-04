@@ -144,6 +144,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
       <!-- column-name sample_midi_note -->
       <column type="gchararray"/>
+      <!-- column-name sample_tags -->
+      <column type="gchararray"/>
     </columns>
   </object>
   <object class="GtkListStore" id="notes_list_store">
@@ -703,6 +705,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <!-- column-name sample_channels -->
       <column type="gchararray"/>
       <!-- column-name sample_midi_note -->
+      <column type="gchararray"/>
+      <!-- column-name sample_tags -->
       <column type="gchararray"/>
       <!-- column-name slot -->
       <column type="gchararray"/>
@@ -2007,6 +2011,22 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                           </object>
                                         </child>
                                         <child>
+                                          <object class="GtkTreeViewColumn" id="local_tree_view_sample_tags_column">
+                                            <property name="resizable">True</property>
+                                            <property name="min-width">100</property>
+                                            <property name="title" translatable="yes">Tags</property>
+                                            <property name="expand">True</property>
+                                            <child>
+                                              <object class="GtkCellRendererText">
+                                                <property name="ellipsize">end</property>
+                                              </object>
+                                              <attributes>
+                                                <attribute name="markup">13</attribute>
+                                              </attributes>
+                                            </child>
+                                          </object>
+                                        </child>
+                                        <child>
                                           <object class="GtkTreeViewColumn" id="local_tree_view_sample_duration_column">
                                             <property name="title" translatable="yes">Duration</property>
                                             <child>
@@ -2040,7 +2060,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                           </object>
                                         </child>
                                         <child>
-                                          <object class="GtkTreeViewColumn" id="local_tree_view_sample_bits_column">
+                                          <object class="GtkTreeViewColumn" id="local_tree_view_sample_format_column">
                                             <property name="title" translatable="yes">Format</property>
                                             <child>
                                               <object class="GtkCellRendererText"/>
@@ -2474,6 +2494,22 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                           </object>
                                         </child>
                                         <child>
+                                          <object class="GtkTreeViewColumn" id="remote_tree_view_sample_tags_column">
+                                            <property name="resizable">True</property>
+                                            <property name="min-width">100</property>
+                                            <property name="title" translatable="yes">Tags</property>
+                                            <property name="expand">True</property>
+                                            <child>
+                                              <object class="GtkCellRendererText">
+                                                <property name="ellipsize">end</property>
+                                              </object>
+                                              <attributes>
+                                                <attribute name="markup">13</attribute>
+                                              </attributes>
+                                            </child>
+                                          </object>
+                                        </child>
+                                        <child>
                                           <object class="GtkTreeViewColumn" id="remote_tree_view_sample_duration_column">
                                             <property name="visible">False</property>
                                             <property name="title" translatable="yes">Duration</property>
@@ -2510,7 +2546,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                           </object>
                                         </child>
                                         <child>
-                                          <object class="GtkTreeViewColumn" id="remote_tree_view_sample_bits_column">
+                                          <object class="GtkTreeViewColumn" id="remote_tree_view_sample_format_column">
                                             <property name="visible">False</property>
                                             <property name="title" translatable="yes">Format</property>
                                             <child>

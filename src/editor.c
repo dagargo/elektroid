@@ -870,7 +870,7 @@ editor_load_sample_runner (gpointer data)
   editor_set_scrollbar (0, 0);
 
   sample_load_opts_init (&sample_info_opts, 0, audio.rate,
-			 sample_get_internal_format ());
+			 sample_get_internal_format (), TRUE);
 
   audio.control.controllable.active = TRUE;
   sample_load_from_file_full (audio.path, &audio.sample,
@@ -1582,7 +1582,7 @@ editor_save_runner (gpointer user_data)
   task_control_reset (&control, 1);
 
   sample_load_opts_init_from_sample_info (&sample_load_opts,
-					  &audio.sample_info_src);
+					  &audio.sample_info_src, TRUE);
   editor_save_with_format (data->path, data->sample, &sample_load_opts,
 			   audio.sample_info_src.format, &control);
 
@@ -1643,7 +1643,7 @@ editor_save_selection_init_data (struct idata *selection, gchar *name,
   aux_si->loop_start = sel_len - 1;
   aux_si->loop_end = aux_si->loop_start;
 
-  idata_init (selection, data, name, aux_si);
+  idata_init (selection, data, name, aux_si, sample_info_free);
 }
 
 static void
@@ -1687,7 +1687,7 @@ editor_save (const gchar *name)
       audio.sample_info_src.format |= SF_FORMAT_WAV;
 
       sample_load_opts_init_from_sample_info (&sample_load_opts,
-					      &audio.sample_info_src);
+					      &audio.sample_info_src, FALSE);
 
       if (sel_len)
 	{
@@ -1845,7 +1845,7 @@ editor_split_runner (gpointer user_data)
       si->channels = 1;
 
       content = g_byte_array_sized_new (len);
-      idata_init (idata, content, NULL, si);
+      idata_init (idata, content, NULL, si, sample_info_free);
 
       idata++;
     }
@@ -1911,7 +1911,7 @@ editor_split_runner (gpointer user_data)
       g_free (name);
 
       sample_load_opts_init_from_sample_info (&sample_load_opts,
-					      &audio.sample_info_src);
+					      &audio.sample_info_src, FALSE);
       sample_load_opts.channels = 1;
 
       editor_save_with_format (path, idata, &sample_load_opts,
