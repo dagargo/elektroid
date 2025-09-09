@@ -343,10 +343,6 @@ audio_context_callback (pa_context *context, void *data)
     {
       pa_context_get_server_info (context, audio_server_info_callback, NULL);
     }
-  else
-    {
-      audio.ready_callback ();
-    }
 }
 
 void
