@@ -111,8 +111,6 @@ audio_write_to_output (void *buffer, gint frames)
   guint8 *data;
   gboolean selection_mode;
 
-  debug_print (2, "Writing %d frames...", frames);
-
   g_mutex_lock (&audio.control.controllable.mutex);
 
   sample_info = audio.sample.info;
@@ -121,6 +119,8 @@ audio_write_to_output (void *buffer, gint frames)
     {
       goto end;
     }
+
+  debug_print (2, "Writing %d frames...", frames);
 
   data = audio.sample.content->data;
 
@@ -305,11 +305,17 @@ audio_read_from_input (void *buffer, gint frames)
 
   g_mutex_lock (&audio.control.controllable.mutex);
 
+  sample_info = audio.sample.info;
+
+  if (!sample_info)
+    {
+      g_mutex_unlock (&audio.control.controllable.mutex);
+      return;
+    }
+
   if (audio_is_recording (audio.record_options))
     {
       debug_print (2, "Reading %d frames (recording)...", frames);
-
-      sample_info = audio.sample.info;
       recorded_frames = audio_get_used_frames (&bytes_per_frame);
       remaining_frames = sample_info->frames - recorded_frames;
       if (remaining_frames <= frames)
@@ -799,6 +805,7 @@ audio_init_and_wait ()
       usleep (AUDIO_SLEEP_US);
     }
   controllable_clear (&audio_initializing_controllable);
+  debug_print (1, "Audio initialized");
 }
 
 void
