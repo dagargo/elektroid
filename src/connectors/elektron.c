@@ -2915,7 +2915,7 @@ gint
 elektron_sample_load (const gchar *path, struct idata *sample,
 		      struct task_control *control)
 {
-  return common_sample_load (path, sample, control, ELEKTRON_SAMPLE_RATE, 1,
+  return common_sample_load (path, sample, control, 1, ELEKTRON_SAMPLE_RATE,
 			     SF_FORMAT_PCM_16);
 }
 
@@ -2924,8 +2924,8 @@ elektron_sample_stereo_load (const gchar *path, struct idata *sample,
 			     struct task_control *control)
 {
   struct sample_info *sample_info;
-  gint err = common_sample_load (path, sample, control, ELEKTRON_SAMPLE_RATE,
-				 0, SF_FORMAT_PCM_16);
+  gint err = common_sample_load (path, sample, control, 0,
+				 ELEKTRON_SAMPLE_RATE, SF_FORMAT_PCM_16);
   if (err)
     {
       return err;

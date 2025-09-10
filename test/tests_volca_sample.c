@@ -18,13 +18,12 @@ test_volca_sample_compare_to (struct idata *actual, const gchar *path)
 {
   gint err, cmp;
   struct idata expected;
-  struct sample_info *actual_si;
-  struct sample_info sample_info_req;
-  struct sample_info sample_info_src;
+  struct sample_info *actual_si, sample_info_src;
+  struct sample_load_opts sample_info_opts;
 
-  sample_info_init_load_direct (&sample_info_req);
+  sample_load_opts_init_direct (&sample_info_opts);
 
-  err = sample_load_from_file (path, &expected, NULL, &sample_info_req,
+  err = sample_load_from_file (path, &expected, NULL, &sample_info_opts,
 			       &sample_info_src);
   CU_ASSERT_EQUAL (err, 0);
   if (err)
@@ -88,7 +87,7 @@ test_volca_sample_get_update_params (const gchar *path, guint id,
 
   //Same audio file as in the
   err = common_sample_load (TEST_DATA_DIR "/connectors/square.wav",
-			    &sample, NULL, 31250, 1, SF_FORMAT_PCM_16);
+			    &sample, NULL, 1, 31250, SF_FORMAT_PCM_16);
   CU_ASSERT_EQUAL (err, 0);
   if (err)
     {

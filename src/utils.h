@@ -182,9 +182,4 @@ gboolean token_is_in_text (const gchar * token, const gchar * text);
 gint command_set_parts (const gchar * cmd, gchar ** connector, gchar ** fs,
 			gchar ** op);
 
-void sample_info_init_load (struct sample_info *sample_info, guint32 channels,
-			    guint32 rate, guint32 format);
-
-void sample_info_init_load_direct (struct sample_info *sample_info);
-
 #endif

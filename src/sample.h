@@ -44,6 +44,13 @@
 #define SAMPLE_INFO_FRAME_SIZE(sample_info) FRAME_SIZE((sample_info)->channels, (sample_info)->format)
 #define MONO_MIX_GAIN(channels) (channels == 2 ? 0.5 : 1.0 / sqrt (channels))
 
+struct sample_load_opts
+{
+  guint32 channels;
+  guint32 rate;
+  guint32 format;		// Used as in libsndfile
+};
+
 struct backend;
 struct fs_operations;
 
@@ -55,12 +62,13 @@ gint sample_save_to_file (const gchar * path, struct idata *sample,
 
 gint sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 			       struct task_control *control,
-			       const struct sample_info *sample_info_req,
+			       const struct sample_load_opts
+			       *sample_load_opts,
 			       struct sample_info *sample_info_src);
 
 gint sample_load_from_file (const gchar * path, struct idata *sample,
 			    struct task_control *control,
-			    const struct sample_info *sample_info_req,
+			    const struct sample_load_opts *sample_load_opts,
 			    struct sample_info *sample_info_src);
 
 gint sample_get_memfile_from_sample (struct idata *sample,
@@ -70,7 +78,8 @@ gint sample_get_memfile_from_sample (struct idata *sample,
 
 gint sample_load_from_file_full (const gchar * path, struct idata *sample,
 				 struct task_control *control,
-				 const struct sample_info *sample_info_req,
+				 const struct sample_load_opts
+				 *sample_load_opts,
 				 struct sample_info *sample_info_src,
 				 task_control_progress_callback cb);
 
@@ -88,9 +97,17 @@ const gchar *sample_get_subtype (struct sample_info *sample_info);
 
 gint sample_reload (struct idata *input, struct idata *output,
 		    struct task_control *control,
-		    const struct sample_info *sample_info_req,
+		    const struct sample_load_opts *sample_load_opts,
 		    task_control_progress_callback cb);
 
 guint32 sample_get_internal_format ();
+
+void sample_load_opts_init (struct sample_load_opts *opts, guint32 channels,
+			    guint32 rate, guint32 format);
+
+void sample_load_opts_init_direct (struct sample_load_opts *opts);
+
+void sample_load_opts_init_from_sample_info (struct sample_load_opts *opts,
+					     struct sample_info *sample_info);
 
 #endif

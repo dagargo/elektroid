@@ -666,7 +666,7 @@ sample_info_fix_frame_values (struct sample_info *sample_info)
 static gint
 sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 			struct task_control *control, struct idata *idata,
-			const struct sample_info *sample_info_req,
+			const struct sample_load_opts *sample_load_opts,
 			struct sample_info *sample_info_src,
 			task_control_progress_callback cb, const gchar *name)
 {
@@ -710,14 +710,13 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sample_info->midi_note = sample_info_src->midi_note;
   sample_info->midi_fraction = sample_info_src->midi_fraction;
   sample_info->loop_type = sample_info_src->loop_type;
-  sample_info->channels = sample_info_req->channels ?
-    sample_info_req->channels : sample_info_src->channels;
-  sample_info->rate = sample_info_req->rate ? sample_info_req->rate :
+  sample_info->channels = sample_load_opts->channels ?
+    sample_load_opts->channels : sample_info_src->channels;
+  sample_info->rate = sample_load_opts->rate ? sample_load_opts->rate :
     sample_info_src->rate;
   //Only the sample format is needed. If the file format is provided, it must be ignored.
-  sample_info->format = (sample_info_req->format & SF_FORMAT_SUBMASK) ?
-    (sample_info_req->format & SF_FORMAT_SUBMASK) :
-    (sample_info_src->format & SF_FORMAT_SUBMASK);
+  sample_info->format = sample_load_opts->format ?
+    sample_load_opts->format : (sample_info_src->format & SF_FORMAT_SUBMASK);
   if (sample_info->format != SF_FORMAT_PCM_16
       && sample_info->format != SF_FORMAT_PCM_32
       && sample_info->format != SF_FORMAT_FLOAT)
@@ -1040,14 +1039,14 @@ cleanup:
 gint
 sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 			  struct task_control *control,
-			  const struct sample_info *sample_info_req,
+			  const struct sample_load_opts *sample_load_opts,
 			  struct sample_info *sample_info_src)
 {
   struct g_byte_array_io_data data;
   data.pos = 0;
   data.array = memfile->content;
   return sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, sample,
-				 sample_info_req, sample_info_src,
+				 sample_load_opts, sample_info_src,
 				 task_control_set_sample_progress,
 				 memfile->name);
 }
@@ -1057,7 +1056,7 @@ sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 gint
 sample_reload (struct idata *input, struct idata *output,
 	       struct task_control *control,
-	       const struct sample_info *sample_info_req,
+	       const struct sample_load_opts *sample_load_opts,
 	       task_control_progress_callback cb)
 {
   gint err;
@@ -1076,7 +1075,7 @@ sample_reload (struct idata *input, struct idata *output,
   data.pos = 0;
   data.array = aux.content;
   err = sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, output,
-				sample_info_req, &sample_info_src, cb,
+				sample_load_opts, &sample_info_src, cb,
 				input->name);
   idata_free (&aux);
 
@@ -1086,7 +1085,7 @@ sample_reload (struct idata *input, struct idata *output,
 gint
 sample_load_from_file_full (const gchar *path, struct idata *sample,
 			    struct task_control *control,
-			    const struct sample_info *sample_info_req,
+			    const struct sample_load_opts *sample_load_opts,
 			    struct sample_info *sample_info_src,
 			    task_control_progress_callback cb)
 {
@@ -1102,7 +1101,7 @@ sample_load_from_file_full (const gchar *path, struct idata *sample,
 	}
 
       memcpy (sample_info_src, aux.info, sizeof (struct sample_info));
-      err = sample_reload (&aux, sample, control, sample_info_req, cb);
+      err = sample_reload (&aux, sample, control, sample_load_opts, cb);
       idata_free (&aux);
     }
   else
@@ -1116,7 +1115,7 @@ sample_load_from_file_full (const gchar *path, struct idata *sample,
       name = g_path_get_basename (path);
       filename_remove_ext (name);
       err = sample_load_libsndfile (file, &FILE_IO, control, sample,
-				    sample_info_req, sample_info_src, cb,
+				    sample_load_opts, sample_info_src, cb,
 				    name);
       g_free (name);
       fclose (file);
@@ -1128,11 +1127,11 @@ sample_load_from_file_full (const gchar *path, struct idata *sample,
 gint
 sample_load_from_file (const gchar *path, struct idata *sample,
 		       struct task_control *control,
-		       const struct sample_info *sample_info_req,
+		       const struct sample_load_opts *sample_load_opts,
 		       struct sample_info *sample_info_src)
 {
   return sample_load_from_file_full (path, sample, control,
-				     sample_info_req, sample_info_src,
+				     sample_load_opts, sample_info_src,
 				     task_control_set_sample_progress);
 }
 
@@ -1210,4 +1209,27 @@ sample_get_internal_format ()
 {
   return preferences_get_boolean (PREF_KEY_AUDIO_USE_FLOAT) ?
     SF_FORMAT_FLOAT : SF_FORMAT_PCM_16;
+}
+
+void
+sample_load_opts_init (struct sample_load_opts *opts, guint32 channels,
+		       guint32 rate, guint32 format)
+{
+  opts->channels = channels;
+  opts->rate = rate;
+  opts->format = format;
+}
+
+void
+sample_load_opts_init_direct (struct sample_load_opts *opts)
+{
+  sample_load_opts_init (opts, 0, 0, 0);
+}
+
+void
+sample_load_opts_init_from_sample_info (struct sample_load_opts *opts,
+					struct sample_info *sample_info)
+{
+  sample_load_opts_init (opts, sample_info->channels, sample_info->rate,
+			 sample_info->format & SF_FORMAT_SUBMASK);
 }

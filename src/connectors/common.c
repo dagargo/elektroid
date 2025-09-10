@@ -371,15 +371,13 @@ common_get_sanitized_name (const gchar *name, const gchar *alphabet,
 
 gint
 common_sample_load (const gchar *path, struct idata *sample,
-		    struct task_control *control, guint32 rate,
-		    guint32 channels, guint32 format)
+		    struct task_control *control, guint32 channels,
+		    guint32 rate, guint32 format)
 {
-  struct sample_info sample_info_req, sample_info_src;
-  sample_info_req.rate = rate;
-  sample_info_req.channels = channels;
-  sample_info_req.format = format;
-  return sample_load_from_file (path, sample, control, &sample_info_req,
-				&sample_info_src);
+  struct sample_info sample_info;
+  struct sample_load_opts opts;
+  sample_load_opts_init (&opts, channels, rate, format);
+  return sample_load_from_file (path, sample, control, &opts, &sample_info);
 }
 
 gchar *
