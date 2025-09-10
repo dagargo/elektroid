@@ -68,7 +68,7 @@ volca_sample_read_dir (struct backend *backend, struct item_iterator *iter,
 }
 
 static gint
-volca_sample_send_syro (struct idata *syro, struct job_control *control)
+volca_sample_send_syro (struct idata *syro, struct task_control *control)
 {
   gint err;
   struct idata sample;
@@ -80,7 +80,7 @@ volca_sample_send_syro (struct idata *syro, struct job_control *control)
 			 sample_get_internal_format ());
 
   err = sample_reload (syro, &sample, control, &native_si,
-		       job_control_set_sample_progress);
+		       task_control_set_sample_progress);
   if (err)
     {
       return err;
@@ -109,7 +109,7 @@ volca_sample_send_syro (struct idata *syro, struct job_control *control)
 
 gint
 volca_sample_get_syro_op (SyroData *data, struct idata *syro_op,
-			  struct job_control *control)
+			  struct task_control *control)
 {
   guint32 i, j, update_frames, frames;
   gint16 left, right;
@@ -158,7 +158,7 @@ volca_sample_get_syro_op (SyroData *data, struct idata *syro_op,
 
       if (control && j == update_frames)
 	{
-	  job_control_set_progress (control, i / (gdouble) frames);
+	  task_control_set_progress (control, i / (gdouble) frames);
 	  update_frames = 0;
 	}
     }
@@ -182,7 +182,7 @@ volca_sample_get_syro_op (SyroData *data, struct idata *syro_op,
 
 gint
 volca_sample_get_upload (guint id, struct idata *input, struct idata *syro_op,
-			 guint32 quality, struct job_control *control)
+			 guint32 quality, struct task_control *control)
 {
   SyroData data;
   struct sample_info *sample_info = input->info;
@@ -201,7 +201,7 @@ volca_sample_get_upload (guint id, struct idata *input, struct idata *syro_op,
 
 static gint
 volca_sample_dump_syro (struct idata *syro_op, guint id,
-			struct job_control *control)
+			struct task_control *control)
 {
   gint err;
   gchar name[LABEL_MAX];
@@ -213,14 +213,14 @@ volca_sample_dump_syro (struct idata *syro_op, guint id,
 
   control->part += 2;
 
-  job_control_set_progress (control, 1);
+  task_control_set_progress (control, 1);
 
   return err;
 }
 
 static gint
 volca_sample_upload_quality (const gchar *path, struct idata *sample,
-			     guint32 quality, struct job_control *control,
+			     guint32 quality, struct task_control *control,
 			     gboolean upload)
 {
   guint id;
@@ -258,53 +258,53 @@ volca_sample_upload_quality (const gchar *path, struct idata *sample,
 
 static gint
 volca_sample_upload (struct backend *backend, const gchar *path,
-		     struct idata *sample, struct job_control *control)
+		     struct idata *sample, struct task_control *control)
 {
   return volca_sample_upload_quality (path, sample, 0, control, TRUE);
 }
 
 static gint
 volca_sample_upload_16b (struct backend *backend, const gchar *path,
-			 struct idata *sample, struct job_control *control)
+			 struct idata *sample, struct task_control *control)
 {
   return volca_sample_upload_quality (path, sample, 16, control, TRUE);
 }
 
 static gint
 volca_sample_upload_8b (struct backend *backend, const gchar *path,
-			struct idata *sample, struct job_control *control)
+			struct idata *sample, struct task_control *control)
 {
   return volca_sample_upload_quality (path, sample, 8, control, TRUE);
 }
 
 static gint
 volca_sample_dump (struct backend *backend, const gchar *path,
-		   struct idata *sample, struct job_control *control)
+		   struct idata *sample, struct task_control *control)
 {
   return volca_sample_upload_quality (path, sample, 0, control, FALSE);
 }
 
 static gint
 volca_sample_dump_16b (struct backend *backend, const gchar *path,
-		       struct idata *sample, struct job_control *control)
+		       struct idata *sample, struct task_control *control)
 {
   return volca_sample_upload_quality (path, sample, 16, control, FALSE);
 }
 
 static gint
 volca_sample_dump_8b (struct backend *backend, const gchar *path,
-		      struct idata *sample, struct job_control *control)
+		      struct idata *sample, struct task_control *control)
 {
   return volca_sample_upload_quality (path, sample, 8, control, FALSE);
 }
 
 static gint
 volca_sample_load (const gchar *path, struct idata *sample,
-		   struct job_control *control)
+		   struct task_control *control)
 {
   gint err;
 
-  job_control_reset (control, VOLCA_SAMPLE_UPLOAD_STAGES);
+  task_control_reset (control, VOLCA_SAMPLE_UPLOAD_STAGES);
 
   // Resampling is not needed but doing it here makes results repeatable and testable as the syro resampler is avoided.
   // 16 bits is required.

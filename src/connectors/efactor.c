@@ -191,7 +191,7 @@ efactor_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 efactor_download (struct backend *backend, const gchar *path,
-		  struct idata *preset, struct job_control *control)
+		  struct idata *preset, struct task_control *control)
 {
   gint err = 0;
   guint id;
@@ -200,7 +200,7 @@ efactor_download (struct backend *backend, const gchar *path,
   struct efactor_data *data = backend->data;
   GByteArray *output;
 
-  job_control_reset (control, 1);
+  task_control_reset (control, 1);
 
   if (!data->lines)
     {
@@ -239,7 +239,7 @@ efactor_download (struct backend *backend, const gchar *path,
     }
   g_byte_array_append (output, (guint8 *) "\0\xf7", 2);
 
-  job_control_set_progress (control, 1.0);
+  task_control_set_progress (control, 1.0);
 
   idata_init (preset, output, strdup (name), NULL);
 
@@ -250,7 +250,7 @@ efactor_download (struct backend *backend, const gchar *path,
 
 static gint
 efactor_upload (struct backend *backend, const gchar *path,
-		struct idata *preset, struct job_control *control)
+		struct idata *preset, struct task_control *control)
 {
   gint err = 0, i, num;
   guint id;
@@ -322,7 +322,7 @@ efactor_rename (struct backend *backend, const gchar *src, const gchar *dst)
 {
   GByteArray *preset, *rx_msg;
   gint err, len;
-  struct job_control control;
+  struct task_control control;
   gchar **lines, **line, *sanitized;
   struct idata idata;
 

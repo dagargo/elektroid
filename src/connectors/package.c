@@ -498,7 +498,7 @@ package_get_max_sample_slots (struct backend *backend)
 gint
 package_receive_pkg_resources (struct package *pkg,
 			       const gchar *payload_path,
-			       struct job_control *control,
+			       struct task_control *control,
 			       struct backend *backend,
 			       fs_remote_file_op download_data,
 			       enum package_type type)
@@ -516,7 +516,7 @@ package_receive_pkg_resources (struct package *pkg,
 
   pkg->manifest->tags = NULL;
 
-  job_control_reset (control, 1);	//payload
+  task_control_reset (control, 1);	//payload
 
   if ((type == PKG_FILE_TYPE_DATA_PROJECT &&
        data->device_desc.id != ELEKTRON_ANALOG_RYTM_ID &&
@@ -598,7 +598,7 @@ package_receive_pkg_resources (struct package *pkg,
     }
 
   control->parts = 2 + elements;
-  job_control_set_progress (control, 0.0);
+  task_control_set_progress (control, 0.0);
   for (i = 0; i < elements; i++, control->part++)
     {
       if (!json_reader_read_element (reader, i))
@@ -705,7 +705,7 @@ get_payload:
 
 gint
 package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
-			    struct job_control *control,
+			    struct task_control *control,
 			    struct backend *backend,
 			    fs_remote_file_op upload_data)
 {
@@ -854,7 +854,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
     {
       control->parts = 1;	// Only payload and it's done.
       control->part = 0;
-      job_control_set_progress (control, 1.0);
+      task_control_set_progress (control, 1.0);
       goto cleanup_reader;
     }
 

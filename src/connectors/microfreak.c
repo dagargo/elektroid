@@ -344,7 +344,8 @@ microfreak_serialize_preset (GByteArray *output,
 
 static gint
 microfreak_preset_download (struct backend *backend, const gchar *path,
-			    struct idata *preset, struct job_control *control)
+			    struct idata *preset,
+			    struct task_control *control)
 {
   guint id;
   gint err;
@@ -366,7 +367,7 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
 
   output = g_byte_array_new ();
 
-  job_control_reset (control, 2 + MICROFREAK_PRESET_PARTS);	//Worst case
+  task_control_reset (control, 2 + MICROFREAK_PRESET_PARTS);	//Worst case
 
   tx_msg = microfreak_get_preset_op_msg (backend, 0x19, id, 0);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
@@ -394,7 +395,7 @@ microfreak_preset_download (struct backend *backend, const gchar *path,
     {
       control->parts = 1;
       control->part = 0;
-      job_control_set_progress (control, 1.0);
+      task_control_set_progress (control, 1.0);
       goto end;
     }
 
@@ -471,7 +472,7 @@ end:
 
 static gint
 microfreak_preset_upload (struct backend *backend, const gchar *path,
-			  struct idata *preset, struct job_control *control)
+			  struct idata *preset, struct task_control *control)
 {
   struct microfreak_preset mfp;
   GByteArray *tx_msg, *rx_msg;
@@ -497,7 +498,7 @@ microfreak_preset_upload (struct backend *backend, const gchar *path,
       return err;
     }
 
-  job_control_reset (control, 3 + mfp.parts);
+  task_control_reset (control, 3 + mfp.parts);
 
   mfp.header[0] = COMMON_GET_MIDI_BANK (id);
   mfp.header[1] = COMMON_GET_MIDI_PRESET (id);
@@ -690,7 +691,7 @@ static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
 
 static gint
 microfreak_zpreset_save (const gchar *path, struct idata *zpreset,
-			 struct job_control *control)
+			 struct task_control *control)
 {
   return microfreak_zobject_save (path, zpreset, control, "0_preset");
 }
@@ -722,7 +723,7 @@ static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
 
 static gint
 microfreak_preset_load (const char *path, struct idata *preset,
-			struct job_control *control)
+			struct task_control *control)
 {
   const gchar *ext = filename_get_ext (path);
   if (strcmp (ext, MICROFREAK_ZPRESET_EXT))
@@ -987,7 +988,7 @@ static gint
 microfreak_sample_upload_tx_and_rx (struct backend *backend,
 				    GByteArray *tx_msg,
 				    GByteArray **rx_msg,
-				    struct job_control *control)
+				    struct task_control *control)
 {
   guint8 seq = tx_msg->data[sizeof (MICROFREAK_REQUEST_HEADER)];
   gint err = common_data_tx_and_rx_part (backend, tx_msg, rx_msg, control);
@@ -1018,7 +1019,7 @@ microfreak_sample_upload_tx_and_rx (struct backend *backend,
 
 static gint
 microfreak_sample_upload (struct backend *backend, const gchar *path,
-			  struct idata *sample, struct job_control *control)
+			  struct idata *sample, struct task_control *control)
 {
   gint err;
   guint id, batches;
@@ -1052,15 +1053,15 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
       batches = MICROFREAK_SAMPLE_MAX_BATCHES;
     }
 
-  job_control_reset (control,
-		     6 + batches * (2 + MICROFREAK_SAMPLE_BATCH_PACKETS) + 1 +
-		     MICROFREAK_SAMPLE_BATCH_PACKETS);
+  task_control_reset (control,
+		      6 + batches * (2 + MICROFREAK_SAMPLE_BATCH_PACKETS) +
+		      1 + MICROFREAK_SAMPLE_BATCH_PACKETS);
 
   //This is called by Arturia MIDI Control Center before uploading a sample.
   //Perhaps this does more than just retrieving the statistics.
   microfreak_get_storage_stats (backend, 0, &statfs, NULL);
 
-  job_control_set_progress (control, 1.0);
+  task_control_set_progress (control, 1.0);
   control->part++;
 
   tx_msg = microfreak_get_wave_op_msg (backend, 0x5d, id, 0, 0);
@@ -1141,7 +1142,7 @@ microfreak_sample_upload (struct backend *backend, const gchar *path,
       goto end;
     }
 
-  job_control_set_progress (control, 1.0);
+  task_control_set_progress (control, 1.0);
   control->part++;
 
   usleep (MICROFREAK_REST_TIME_US);
@@ -1367,7 +1368,7 @@ microfreak_wavetable_read_dir (struct backend *backend,
 
 static gint
 microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
-			   struct job_control *control)
+			   struct task_control *control)
 {
   struct idata aux;
   gint err = common_sample_load (path, &aux, control, 0, 1,
@@ -1394,7 +1395,7 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
       microfreak_init_sample_info (&si_req, MICROFREAK_WAVETABLE_LEN);
       si_req.rate = si->rate * MICROFREAK_WAVETABLE_LEN / si->frames;
       err = sample_reload (&aux, wavetable, NULL, &si_req,
-			   job_control_set_sample_progress);
+			   task_control_set_sample_progress);
       idata_free (&aux);
       a = wavetable->content;
       debug_print (2, "Resulting size: %d", a->len);
@@ -1413,7 +1414,7 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
 static gint
 microfreak_wavetable_download_part (struct backend *backend,
 				    GByteArray *output,
-				    struct job_control *control, guint8 id,
+				    struct task_control *control, guint8 id,
 				    guint8 part)
 {
   gint err;
@@ -1494,7 +1495,7 @@ end:
 static gint
 microfreak_wavetable_download (struct backend *backend, const gchar *path,
 			       struct idata *wavetable,
-			       struct job_control *control)
+			       struct task_control *control)
 {
   guint id;
   guint err = 0;
@@ -1549,8 +1550,8 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
   content = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
   content->len = MICROFREAK_WAVETABLE_SIZE;
 
-  job_control_reset (control, (MICROFREAK_SAMPLE_BATCH_PACKETS + 1) *
-		     MICROFREAK_WAVETABLE_PARTS);
+  task_control_reset (control, (MICROFREAK_SAMPLE_BATCH_PACKETS + 1) *
+		      MICROFREAK_WAVETABLE_PARTS);
 
   err = 0;
   for (guint8 part = 0; part < MICROFREAK_WAVETABLE_PARTS && !err; part++)
@@ -1775,7 +1776,7 @@ microfreak_wavetable_rename (struct backend *backend, const gchar *src,
 static gint
 microfreak_wavetable_upload_id_name (struct backend *backend,
 				     const gchar *path, GByteArray *wavetable,
-				     struct job_control *control, guint id,
+				     struct task_control *control, guint id,
 				     const gchar *name)
 {
   gint err;
@@ -1786,7 +1787,7 @@ microfreak_wavetable_upload_id_name (struct backend *backend,
       return -EINVAL;
     }
 
-  job_control_reset (control, 1 + MICROFREAK_WAVETABLE_PARTS);
+  task_control_reset (control, 1 + MICROFREAK_WAVETABLE_PARTS);
 
   err = microfreak_wavetable_set_entry (backend, id, name, 0);
   if (err)
@@ -1794,7 +1795,7 @@ microfreak_wavetable_upload_id_name (struct backend *backend,
       return err;
     }
 
-  job_control_set_progress (control, 1.0);
+  task_control_set_progress (control, 1.0);
   control->part++;
 
   for (guint8 part = 0; part < MICROFREAK_WAVETABLE_PARTS && !err; part++)
@@ -1805,7 +1806,7 @@ microfreak_wavetable_upload_id_name (struct backend *backend,
 	}
 
       err = microfreak_wavetable_upload_part (backend, wavetable, id, part);
-      job_control_set_progress (control, 1.0);
+      task_control_set_progress (control, 1.0);
       control->part++;
     }
 
@@ -1815,7 +1816,7 @@ microfreak_wavetable_upload_id_name (struct backend *backend,
 static gint
 microfreak_xwavetable_upload (struct backend *backend, const gchar *path,
 			      struct idata *idata,
-			      struct job_control *control)
+			      struct task_control *control)
 {
   gint err;
   guint id;
@@ -1833,7 +1834,8 @@ microfreak_xwavetable_upload (struct backend *backend, const gchar *path,
 
 static gint
 microfreak_wavetable_upload (struct backend *backend, const gchar *path,
-			     struct idata *idata, struct job_control *control)
+			     struct idata *idata,
+			     struct task_control *control)
 {
   gint err;
   guint id;
@@ -1891,7 +1893,7 @@ microfreak_wavetable_clear (struct backend *backend, const gchar *path)
 
 static gint
 microfreak_sample_load (const gchar *path, struct idata *sample,
-			struct job_control *control)
+			struct task_control *control)
 {
   return common_sample_load (path, sample, control, MICROFREAK_SAMPLERATE,
 			     1, SF_FORMAT_PCM_16);
@@ -1978,7 +1980,7 @@ static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
 
 static gint
 microfreak_wavetable_save (const gchar *path, struct idata *wavetable,
-			   struct job_control *control)
+			   struct task_control *control)
 {
   return sample_save_to_file (path, wavetable, control, SF_FORMAT_WAV |
 			      SF_FORMAT_PCM_16);

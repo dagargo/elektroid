@@ -11,7 +11,7 @@ gint volca_sample_get_delete (guint id, struct idata *delete_audio);
 
 gint volca_sample_get_upload (guint id, struct idata *input,
 			      struct idata *syro_op, guint32 quality,
-			      struct job_control *control);
+			      struct task_control *control);
 
 static void
 test_volca_sample_compare_to (struct idata *actual, const gchar *path)
@@ -77,14 +77,14 @@ test_volca_sample_get_update_params (const gchar *path, guint id,
   gint err;
   struct idata sample;
   struct idata actual;
-  struct job_control control;
+  struct task_control control;
 
   printf ("\n");
 
   controllable_init (&control.controllable);
   controllable_set_active (&control.controllable, TRUE);
   control.callback = NULL;
-  job_control_reset (&control, 1);
+  task_control_reset (&control, 1);
 
   //Same audio file as in the
   err = common_sample_load (TEST_DATA_DIR "/connectors/square.wav",

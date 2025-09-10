@@ -64,15 +64,15 @@ common_midi_program_change_int (struct backend *backend, const gchar * dir,
 gint common_simple_next_dentry (struct item_iterator *iter);
 
 gint common_data_tx (struct backend *backend, GByteArray * msg,
-		     struct job_control *control);
+		     struct task_control *control);
 
 gint common_data_tx_and_rx (struct backend *backend, GByteArray * tx_msg,
 			    GByteArray ** rx_msg,
-			    struct job_control *control);
+			    struct task_control *control);
 
 gint common_data_tx_and_rx_part (struct backend *backend, GByteArray * tx_msg,
 				 GByteArray ** rx_msg,
-				 struct job_control *control);
+				 struct task_control *control);
 
 gchar *common_slot_get_download_path (struct backend *backend,
 				      const struct fs_operations *ops,
@@ -104,7 +104,7 @@ gchar *common_get_sanitized_name (const gchar * name, const gchar * alphabet,
 				  gchar defchar);
 
 gint common_sample_load (const gchar * path, struct idata *sample,
-			 struct job_control *control, guint32 rate,
+			 struct task_control *control, guint32 rate,
 			 guint32 channels, guint32 format);
 
 gchar *common_system_get_download_path (struct backend *backend,

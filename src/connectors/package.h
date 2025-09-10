@@ -104,7 +104,7 @@ gint package_begin (struct package *pkg, gchar * name,
 
 gint package_receive_pkg_resources (struct package *pkg,
 				    const gchar * payload_path,
-				    struct job_control *control,
+				    struct task_control *control,
 				    struct backend *backend,
 				    fs_remote_file_op download_data,
 				    enum package_type type);
@@ -118,7 +118,7 @@ gint package_open (struct package *pkg, struct idata *idata,
 
 gint package_send_pkg_resources (struct package *pkg,
 				 const gchar * payload_path,
-				 struct job_control *control,
+				 struct task_control *control,
 				 struct backend *backend,
 				 fs_remote_file_op upload_data);
 

@@ -70,10 +70,11 @@ struct sample_info
   guint32 midi_fraction;
 };
 
-struct job_control;
+struct task_control;
 
-typedef void (*job_control_callback) (struct job_control *);
-typedef void (*job_control_progress_callback) (struct job_control *, gdouble);
+typedef void (*task_control_callback) (struct task_control *);
+typedef void (*task_control_progress_callback) (struct task_control *,
+						gdouble);
 
 struct controllable
 {
@@ -81,11 +82,11 @@ struct controllable
   GMutex mutex;
 };
 
-struct job_control
+struct task_control
 {
   struct controllable controllable;
   GCond cond;			//This can be used by the calling threads. It requires to call g_cond_init and g_cond_clear.
-  job_control_callback callback;
+  task_control_callback callback;
   gint parts;
   gint part;
   gdouble progress;
@@ -123,19 +124,20 @@ gchar *get_system_startup_path (const gchar *);
 void free_msg (gpointer);
 
 gint file_load (const char *path, struct idata *idata,
-		struct job_control *control);
+		struct task_control *control);
 
 gint file_save (const char *path, struct idata *idata,
-		struct job_control *control);
+		struct task_control *control);
 
 gint file_save_data (const gchar * path, const guint8 * data, ssize_t len);
 
 gchar *get_human_size (gint64, gboolean);
 
-void job_control_set_progress_no_sync (struct job_control *control,
-				       gdouble p);
+void task_control_set_progress_no_sync (struct task_control *control,
+					gdouble p);
 
-void job_control_set_progress (struct job_control *control, gdouble progress);
+void task_control_set_progress (struct task_control *control,
+				gdouble progress);
 
 gboolean filename_matches_exts (const gchar * name,
 				const gchar ** extensions);
@@ -160,7 +162,7 @@ void idata_free (struct idata *idata);
 
 GByteArray *idata_steal (struct idata *idata);
 
-void job_control_reset (struct job_control *control, gint parts);
+void task_control_reset (struct task_control *control, gint parts);
 
 guint32 cents_to_midi_fraction (guint32);
 

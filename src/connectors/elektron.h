@@ -53,11 +53,11 @@ gchar *elektron_get_sample_path_from_hash_size (struct backend *backend,
 
 gint elektron_upload_sample_part (struct backend *backend, const gchar * path,
 				  struct idata *sample,
-				  struct job_control *control);
+				  struct task_control *control);
 
 gint elektron_download_sample_part (struct backend *backend,
 				    const gchar * path, struct idata *sample,
-				    struct job_control *control);
+				    struct task_control *control);
 
 GByteArray *elektron_ping (struct backend *backend);
 

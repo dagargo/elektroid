@@ -810,7 +810,7 @@ audio_init_and_wait ()
 }
 
 void
-audio_set_play_and_wait (struct idata *sample, struct job_control *control)
+audio_set_play_and_wait (struct idata *sample, struct task_control *control)
 {
   guint32 pos;
   gdouble progress;
@@ -831,14 +831,14 @@ audio_set_play_and_wait (struct idata *sample, struct job_control *control)
 	  pos = audio.pos;
 	  g_mutex_unlock (&audio.control.controllable.mutex);
 	  progress = pos / (gdouble) sample_info->frames;
-	  job_control_set_progress (control, progress);
+	  task_control_set_progress (control, progress);
 	  active = controllable_is_active (&control->controllable);
 	}
     }
 }
 
 void
-audio_record_and_wait (guint32 options, struct job_control *control)
+audio_record_and_wait (guint32 options, struct task_control *control)
 {
   guint32 frames;
   gdouble progress;
@@ -856,7 +856,7 @@ audio_record_and_wait (guint32 options, struct job_control *control)
 	  frames = audio_get_used_frames (NULL);
 	  g_mutex_unlock (&audio.control.controllable.mutex);
 	  progress = frames / (gdouble) sample_info->frames;
-	  job_control_set_progress (control, progress);
+	  task_control_set_progress (control, progress);
 	}
     }
 }

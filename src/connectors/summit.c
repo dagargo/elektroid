@@ -286,7 +286,7 @@ summit_get_bank_and_id_from_path (const gchar *path, guint8 *bank, guint8 *id)
 
 static gint
 summit_patch_download (struct backend *backend, const gchar *path,
-		       struct idata *patch, struct job_control *control,
+		       struct idata *patch, struct task_control *control,
 		       enum summit_fs fs)
 {
   guint8 id, bank;
@@ -329,7 +329,7 @@ end:
 
 static gint
 summit_single_download (struct backend *backend, const gchar *path,
-			struct idata *patch, struct job_control *control)
+			struct idata *patch, struct task_control *control)
 {
   return summit_patch_download (backend, path, patch, control,
 				FS_SUMMIT_SINGLE_PATCH);
@@ -337,7 +337,7 @@ summit_single_download (struct backend *backend, const gchar *path,
 
 static gint
 summit_multi_download (struct backend *backend, const gchar *path,
-		       struct idata *patch, struct job_control *control)
+		       struct idata *patch, struct task_control *control)
 {
   return summit_patch_download (backend, path, patch, control,
 				FS_SUMMIT_MULTI_PATCH);
@@ -345,7 +345,7 @@ summit_multi_download (struct backend *backend, const gchar *path,
 
 static gint
 summit_patch_upload (struct backend *backend, const gchar *path,
-		     GByteArray *input, struct job_control *control)
+		     GByteArray *input, struct task_control *control)
 {
   guint8 id, bank;
   gint err;
@@ -377,7 +377,7 @@ end:
 
 static gint
 summit_single_upload (struct backend *backend, const gchar *path,
-		      struct idata *patch, struct job_control *control)
+		      struct idata *patch, struct task_control *control)
 {
   if (patch->content->len != SUMMIT_SINGLE_LEN)
     {
@@ -389,7 +389,7 @@ summit_single_upload (struct backend *backend, const gchar *path,
 
 static gint
 summit_multi_upload (struct backend *backend, const gchar *path,
-		     struct idata *patch, struct job_control *control)
+		     struct idata *patch, struct task_control *control)
 {
   if (patch->content->len != SUMMIT_MULTI_LEN)
     {
@@ -408,7 +408,7 @@ summit_patch_rename (struct backend *backend, const gchar *src,
   gint err, len;
   guint8 *name;
   gchar *sanitized;
-  struct job_control control;
+  struct task_control control;
   debug_print (1, "Renaming from %s to %s...", src, dst);
 
   controllable_init (&control.controllable);
@@ -589,7 +589,7 @@ summit_tuning_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 summit_tuning_upload (struct backend *backend, const gchar *path,
-		      struct idata *tuning, struct job_control *control)
+		      struct idata *tuning, struct task_control *control)
 {
   guint id;
   GByteArray *input = tuning->content;
@@ -616,7 +616,7 @@ summit_tuning_upload (struct backend *backend, const gchar *path,
 
 static gint
 summit_tuning_download (struct backend *backend, const gchar *path,
-			struct idata *tuning, struct job_control *control)
+			struct idata *tuning, struct task_control *control)
 {
   guint32 id;
   gint err = 0;
@@ -658,7 +658,7 @@ end:
 
 static gint
 summit_tuning_load (const gchar *path, struct idata *tuning,
-		    struct job_control *control)
+		    struct task_control *control)
 {
   gint err;
   gchar *filename = g_path_get_basename (path);
@@ -778,7 +778,7 @@ summit_wavetable_read_dir (struct backend *backend,
 static gint
 summit_wavetable_download (struct backend *backend, const gchar *path,
 			   struct idata *wavetable,
-			   struct job_control *control)
+			   struct task_control *control)
 {
   guint32 id;
   gint err = 0;
@@ -794,7 +794,7 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  job_control_reset (control, 6);
+  task_control_reset (control, 6);
 
   output = g_byte_array_new ();
 
@@ -855,7 +855,8 @@ end:
 
 static gint
 summit_wavetable_upload (struct backend *backend, const gchar *path,
-			 struct idata *wavetable, struct job_control *control)
+			 struct idata *wavetable,
+			 struct task_control *control)
 {
   guint id;
   GByteArray *input = wavetable->content;

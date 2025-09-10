@@ -38,17 +38,17 @@ struct system_iterator_data
 
 static gint
 system_download (struct backend *backend, const gchar *path,
-		 struct idata *idata, struct job_control *control)
+		 struct idata *idata, struct task_control *control)
 {
   gint err;
 
-  job_control_reset (control, 1);
+  task_control_reset (control, 1);
 
   err = file_load (path, idata, control);
 
   if (!err)
     {
-      job_control_set_progress (control, 1.0);
+      task_control_set_progress (control, 1.0);
     }
 
   return err;
@@ -281,7 +281,7 @@ system_samples_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 system_load_custom (const gchar *path, struct idata *sample,
-		    struct job_control *control,
+		    struct task_control *control,
 		    const struct sample_info *sample_info_req)
 {
   struct sample_info sample_info_src;
@@ -294,7 +294,7 @@ system_load_custom (const gchar *path, struct idata *sample,
 
 static gint
 system_load_stereo_48k_16b (const gchar *path, struct idata *sample,
-			    struct job_control *control)
+			    struct task_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 48000;
@@ -305,7 +305,7 @@ system_load_stereo_48k_16b (const gchar *path, struct idata *sample,
 
 gint
 system_upload (struct backend *backend, const gchar *path,
-	       struct idata *sample, struct job_control *control)
+	       struct idata *sample, struct task_control *control)
 {
   //Typically, control parts are set here but in this case makes more sense do it in the load functions.
   return sample_save_to_file (path, sample, control,
@@ -314,7 +314,7 @@ system_upload (struct backend *backend, const gchar *path,
 
 static gint
 system_load_mono_48k_16b (const gchar *path, struct idata *sample,
-			  struct job_control *control)
+			  struct task_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 48000;
@@ -325,7 +325,7 @@ system_load_mono_48k_16b (const gchar *path, struct idata *sample,
 
 static gint
 system_load_stereo_44k1_16b (const gchar *path, struct idata *sample,
-			     struct job_control *control)
+			     struct task_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 44100;
@@ -336,7 +336,7 @@ system_load_stereo_44k1_16b (const gchar *path, struct idata *sample,
 
 static gint
 system_load_mono_44k1_16b (const gchar *path, struct idata *sample,
-			   struct job_control *control)
+			   struct task_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 44100;
@@ -347,7 +347,7 @@ system_load_mono_44k1_16b (const gchar *path, struct idata *sample,
 
 static gint
 system_load_stereo_44k1_24b (const gchar *path, struct idata *sample,
-			     struct job_control *control)
+			     struct task_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 44100;
@@ -358,7 +358,7 @@ system_load_stereo_44k1_24b (const gchar *path, struct idata *sample,
 
 static gint
 system_upload_24_bits (struct backend *backend, const gchar *path,
-		       struct idata *sample, struct job_control *control)
+		       struct idata *sample, struct task_control *control)
 {
   return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_24);
@@ -366,7 +366,7 @@ system_upload_24_bits (struct backend *backend, const gchar *path,
 
 static gint
 system_load_mono_44k1_24b (const gchar *path, struct idata *sample,
-			   struct job_control *control)
+			   struct task_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 44100;
@@ -377,7 +377,7 @@ system_load_mono_44k1_24b (const gchar *path, struct idata *sample,
 
 static gint
 system_load_stereo_44k1_8b (const gchar *path, struct idata *sample,
-			    struct job_control *control)
+			    struct task_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 44100;
@@ -388,7 +388,7 @@ system_load_stereo_44k1_8b (const gchar *path, struct idata *sample,
 
 static gint
 system_upload_8_bits (struct backend *backend, const gchar *path,
-		      struct idata *sample, struct job_control *control)
+		      struct idata *sample, struct task_control *control)
 {
   return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_U8);
@@ -396,7 +396,7 @@ system_upload_8_bits (struct backend *backend, const gchar *path,
 
 static gint
 system_load_mono_44k1_8b (const gchar *path, struct idata *sample,
-			  struct job_control *control)
+			  struct task_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 44100;
@@ -407,7 +407,7 @@ system_load_mono_44k1_8b (const gchar *path, struct idata *sample,
 
 static gint
 system_load_mono_32k_16b (const gchar *path, struct idata *sample,
-			  struct job_control *control)
+			  struct task_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 32000;
@@ -418,7 +418,7 @@ system_load_mono_32k_16b (const gchar *path, struct idata *sample,
 
 static gint
 system_load_mono_31k25_16b (const gchar *path, struct idata *sample,
-			    struct job_control *control)
+			    struct task_control *control)
 {
   struct sample_info sample_info_dst;
   sample_info_dst.rate = 31250;

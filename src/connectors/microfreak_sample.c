@@ -337,7 +337,7 @@ microfreak_deserialize_sample (struct idata *sample, struct idata *serialized,
 
 gint
 microfreak_zobject_save (const gchar *path, struct idata *zobject,
-			 struct job_control *control, const gchar *name)
+			 struct task_control *control, const gchar *name)
 {
   gint err = 0, index;
   zip_t *archive;
@@ -393,7 +393,7 @@ end:
 
 gint
 microfreak_zobject_load (const char *path, struct idata *zobject,
-			 struct job_control *control)
+			 struct task_control *control)
 {
   gint err = 0;
   zip_t *archive;
@@ -456,7 +456,7 @@ end:
 
 gint
 microfreak_zsample_load (const gchar *path, struct idata *sample,
-			 struct job_control *control)
+			 struct task_control *control)
 {
   gint err;
   struct idata aux;
@@ -476,7 +476,7 @@ microfreak_zsample_load (const gchar *path, struct idata *sample,
 
 gint
 microfreak_psample_load (const gchar *path, struct idata *sample,
-			 struct job_control *control)
+			 struct task_control *control)
 {
   gint err;
   struct idata aux;
@@ -551,7 +551,7 @@ microfreak_deserialize_wavetable (struct idata *wavetable,
 
 gint
 microfreak_pwavetable_load (const gchar *path, struct idata *wavetable,
-			    struct job_control *control)
+			    struct task_control *control)
 {
   gint err;
   struct idata aux;
@@ -570,7 +570,7 @@ microfreak_pwavetable_load (const gchar *path, struct idata *wavetable,
 
 gint
 microfreak_zwavetable_load (const gchar *path, struct idata *wavetable,
-			    struct job_control *control)
+			    struct task_control *control)
 {
   gint err;
   struct idata aux;
@@ -589,7 +589,7 @@ microfreak_zwavetable_load (const gchar *path, struct idata *wavetable,
 
 gint
 microfreak_pwavetable_save (const gchar *path, struct idata *wavetable,
-			    struct job_control *control)
+			    struct task_control *control)
 {
   gint err;
   struct idata aux;
@@ -609,7 +609,7 @@ cleanup:
 
 gint
 microfreak_zwavetable_save (const gchar *path, struct idata *wavetable,
-			    struct job_control *control)
+			    struct task_control *control)
 {
   gint err;
   struct idata aux;

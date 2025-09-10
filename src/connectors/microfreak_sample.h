@@ -53,28 +53,28 @@ void microfreak_init_sample_info (struct sample_info *sample_info,
 struct sample_info *microfreak_new_sample_info (guint32 frames);
 
 gint microfreak_zobject_save (const gchar * path, struct idata *zobject,
-			      struct job_control *control,
+			      struct task_control *control,
 			      const gchar * name);
 
 gint microfreak_zobject_load (const char *path, struct idata *zobject,
-			      struct job_control *control);
+			      struct task_control *control);
 
 gint microfreak_zsample_load (const gchar * path, struct idata *sample,
-			      struct job_control *control);
+			      struct task_control *control);
 
 gint microfreak_psample_load (const gchar * path, struct idata *sample,
-			      struct job_control *control);
+			      struct task_control *control);
 
 gint microfreak_pwavetable_load (const gchar * path, struct idata *wavetable,
-				 struct job_control *control);
+				 struct task_control *control);
 
 gint microfreak_zwavetable_load (const gchar * path, struct idata *wavetable,
-				 struct job_control *control);
+				 struct task_control *control);
 
 gint microfreak_pwavetable_save (const gchar * path, struct idata *wavetable,
-				 struct job_control *control);
+				 struct task_control *control);
 
 gint microfreak_zwavetable_save (const gchar * path, struct idata *wavetable,
-				 struct job_control *control);
+				 struct task_control *control);
 
 #endif

@@ -184,7 +184,7 @@ common_simple_next_dentry (struct item_iterator *iter)
 
 gint
 common_data_tx (struct backend *backend, GByteArray *msg,
-		struct job_control *control)
+		struct task_control *control)
 {
   gint err = 0;
   struct sysex_transfer transfer;
@@ -193,7 +193,7 @@ common_data_tx (struct backend *backend, GByteArray *msg,
 
   g_mutex_lock (&backend->mutex);
 
-  job_control_reset (control, 1);
+  task_control_reset (control, 1);
 
   err = backend_tx_sysex (backend, &transfer, &control->controllable);
   if (err < 0)
@@ -203,7 +203,7 @@ common_data_tx (struct backend *backend, GByteArray *msg,
 
   if (controllable_is_active (&control->controllable))
     {
-      job_control_set_progress (control, 1.0);
+      task_control_set_progress (control, 1.0);
     }
   else
     {
@@ -218,7 +218,7 @@ cleanup:
 
 gint
 common_data_tx_and_rx_part (struct backend *backend, GByteArray *tx_msg,
-			    GByteArray **rx_msg, struct job_control *control)
+			    GByteArray **rx_msg, struct task_control *control)
 {
   gint err = 0;
 
@@ -229,7 +229,7 @@ common_data_tx_and_rx_part (struct backend *backend, GByteArray *tx_msg,
       goto cleanup;
     }
 
-  job_control_set_progress (control, 1.0);
+  task_control_set_progress (control, 1.0);
 
   if (!controllable_is_active (&control->controllable))
     {
@@ -246,9 +246,9 @@ cleanup:
 
 gint
 common_data_tx_and_rx (struct backend *backend, GByteArray *tx_msg,
-		       GByteArray **rx_msg, struct job_control *control)
+		       GByteArray **rx_msg, struct task_control *control)
 {
-  job_control_reset (control, 1);
+  task_control_reset (control, 1);
   return common_data_tx_and_rx_part (backend, tx_msg, rx_msg, control);
 }
 
@@ -371,7 +371,7 @@ common_get_sanitized_name (const gchar *name, const gchar *alphabet,
 
 gint
 common_sample_load (const gchar *path, struct idata *sample,
-		    struct job_control *control, guint32 rate,
+		    struct task_control *control, guint32 rate,
 		    guint32 channels, guint32 format)
 {
   struct sample_info sample_info_req, sample_info_src;

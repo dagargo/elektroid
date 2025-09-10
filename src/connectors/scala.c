@@ -214,7 +214,7 @@ scl_get_cksum (guint8 *b, gint len)
 gint
 scl_load_2_byte_octave_tuning_msg_from_scala_file (const char *path,
 						   struct idata *idata,
-						   struct job_control
+						   struct task_control
 						   *control)
 {
   gint err = 0;
@@ -284,7 +284,7 @@ end:
 gint
 scl_load_key_based_tuning_msg_from_scala_file (const char *path,
 					       struct idata *scale,
-					       struct job_control *control)
+					       struct task_control *control)
 {
   gint err = 0;
   guint8 cksum;

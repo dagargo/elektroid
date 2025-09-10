@@ -320,7 +320,7 @@ sds_download_get_header (struct backend *backend, guint id)
 
 static gint
 sds_download_try (struct backend *backend, const gchar *path,
-		  struct idata *sample, struct job_control *control)
+		  struct idata *sample, struct task_control *control)
 {
   guint id, words, word_size, read_bytes, bytes_per_word, total_words, err,
     retries, packets, packet, exp_packet, rx_packets, bits;
@@ -387,7 +387,7 @@ sds_download_try (struct backend *backend, const gchar *path,
 
   active = controllable_is_active (&control->controllable);
 
-  job_control_reset (control, 1);
+  task_control_reset (control, 1);
 
   debug_print (1, "Receiving dump data...");
 
@@ -507,7 +507,7 @@ sds_download_try (struct backend *backend, const gchar *path,
 	  total_words++;
 	}
 
-      job_control_set_progress (control, rx_packets / (double) packets);
+      task_control_set_progress (control, rx_packets / (double) packets);
 
       active = controllable_is_active (&control->controllable);
 
@@ -531,7 +531,7 @@ end:
   if (active && !err && rx_packets == packets)
     {
       debug_print (1, "%d frames received", total_words);
-      job_control_set_progress (control, 1.0);
+      task_control_set_progress (control, 1.0);
 
       if (sds_data->name_extension)
 	{
@@ -558,7 +558,7 @@ end:
 
 static gint
 sds_download (struct backend *backend, const gchar *path,
-	      struct idata *sample, struct job_control *control)
+	      struct idata *sample, struct task_control *control)
 {
   gint err;
 
@@ -728,7 +728,7 @@ sds_rename (struct backend *backend, const gchar *src, const gchar *dst)
 
 static gint
 sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
-	    struct job_control *control, guint bits)
+	    struct task_control *control, guint bits)
 {
   GByteArray *tx_msg;
   gint16 *frame, *f;
@@ -740,7 +740,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
   struct sample_info *sample_info = sample->info;
   GByteArray *input = sample->content;
 
-  job_control_reset (control, 1);
+  task_control_reset (control, 1);
 
   if (common_slot_get_id_from_path (path, &id))
     {
@@ -853,7 +853,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
 	  goto end;
 	}
 
-      job_control_set_progress (control, packet / (gdouble) packets);
+      task_control_set_progress (control, packet / (gdouble) packets);
 
       active = controllable_is_active (&control->controllable);
 
@@ -874,7 +874,7 @@ sds_upload (struct backend *backend, const gchar *path, struct idata *sample,
 end:
   if (active && packet == packets)
     {
-      job_control_set_progress (control, 1.0);
+      task_control_set_progress (control, 1.0);
     }
   else
     {
@@ -888,28 +888,28 @@ end:
 
 static gint
 sds_upload_8b (struct backend *backend, const gchar *path,
-	       struct idata *sample, struct job_control *control)
+	       struct idata *sample, struct task_control *control)
 {
   return sds_upload (backend, path, sample, control, 8);
 }
 
 static gint
 sds_upload_12b (struct backend *backend, const gchar *path,
-		struct idata *sample, struct job_control *control)
+		struct idata *sample, struct task_control *control)
 {
   return sds_upload (backend, path, sample, control, 12);
 }
 
 static gint
 sds_upload_14b (struct backend *backend, const gchar *path,
-		struct idata *sample, struct job_control *control)
+		struct idata *sample, struct task_control *control)
 {
   return sds_upload (backend, path, sample, control, 14);
 }
 
 static gint
 sds_upload_16b (struct backend *backend, const gchar *path,
-		struct idata *sample, struct job_control *control)
+		struct idata *sample, struct task_control *control)
 {
   return sds_upload (backend, path, sample, control, 16);
 }
@@ -967,7 +967,7 @@ sds_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 sds_sample_load_common (const gchar *path, struct idata *sample,
-			struct job_control *control, gint32 rate)
+			struct task_control *control, gint32 rate)
 {
   return common_sample_load (path, sample, control, rate, SDS_SAMPLE_CHANNELS,
 			     SF_FORMAT_PCM_16);
@@ -975,42 +975,42 @@ sds_sample_load_common (const gchar *path, struct idata *sample,
 
 static gint
 sds_sample_load (const gchar *path, struct idata *sample,
-		 struct job_control *control)
+		 struct task_control *control)
 {
   return sds_sample_load_common (path, sample, control, 0);	// Any sample rate is valid.
 }
 
 static gint
 sds_sample_load_44k1 (const gchar *path, struct idata *sample,
-		      struct job_control *control)
+		      struct task_control *control)
 {
   return sds_sample_load_common (path, sample, control, 44100);
 }
 
 static gint
 sds_sample_load_32k_16b (const gchar *path, struct idata *sample,
-			 struct job_control *control)
+			 struct task_control *control)
 {
   return sds_sample_load_common (path, sample, control, 32000);
 }
 
 static gint
 sds_sample_load_16k_16b (const gchar *path, struct idata *sample,
-			 struct job_control *control)
+			 struct task_control *control)
 {
   return sds_sample_load_common (path, sample, control, 16000);
 }
 
 static gint
 sds_sample_load_8k_16b (const gchar *path, struct idata *sample,
-			struct job_control *control)
+			struct task_control *control)
 {
   return sds_sample_load_common (path, sample, control, 8000);
 }
 
 static gint
 sds_sample_save (const gchar *path, struct idata *sample,
-		 struct job_control *control)
+		 struct task_control *control)
 {
   return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);

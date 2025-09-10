@@ -224,7 +224,8 @@ free_msg (gpointer msg)
 }
 
 gint
-file_load (const char *path, struct idata *idata, struct job_control *control)
+file_load (const char *path, struct idata *idata,
+	   struct task_control *control)
 {
   FILE *f;
   size_t size;
@@ -308,7 +309,7 @@ file_save_data (const gchar *path, const guint8 *data, ssize_t len)
 
 gint
 file_save (const gchar *path, struct idata *idata,
-	   struct job_control *control)
+	   struct task_control *control)
 {
   return file_save_data (path, idata->content->data, idata->content->len);
 }
@@ -344,7 +345,7 @@ get_human_size (gint64 size, gboolean with_space)
 }
 
 void
-job_control_set_progress_no_sync (struct job_control *control, gdouble p)
+task_control_set_progress_no_sync (struct task_control *control, gdouble p)
 {
   if (control->parts)
     {
@@ -364,10 +365,10 @@ job_control_set_progress_no_sync (struct job_control *control, gdouble p)
 }
 
 void
-job_control_set_progress (struct job_control *control, gdouble p)
+task_control_set_progress (struct task_control *control, gdouble p)
 {
   g_mutex_lock (&control->controllable.mutex);
-  job_control_set_progress_no_sync (control, p);
+  task_control_set_progress_no_sync (control, p);
   g_mutex_unlock (&control->controllable.mutex);
 
   if (control->callback)
@@ -548,11 +549,11 @@ idata_free (struct idata *idata)
 }
 
 void
-job_control_reset (struct job_control *control, gint parts)
+task_control_reset (struct task_control *control, gint parts)
 {
   control->parts = parts;
   control->part = 0;
-  job_control_set_progress (control, 0.0);
+  task_control_set_progress (control, 0.0);
 }
 
 guint32
