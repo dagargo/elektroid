@@ -67,7 +67,7 @@ struct elektroid_set_device_data
 
 static gpointer elektroid_upload_task_runner (gpointer);
 static gpointer elektroid_download_task_runner (gpointer);
-static void elektroid_update_progress (struct job_control *);
+static void elektroid_update_progress (struct task_control *);
 
 void autosampler_destroy ();
 void autosampler_init (GtkBuilder * builder);
@@ -1101,7 +1101,7 @@ elektroid_add_download_tasks (GtkWidget *object, gpointer data)
 }
 
 static void
-elektroid_update_progress (struct job_control *control)
+elektroid_update_progress (struct task_control *control)
 {
   g_idle_add (tasks_update_current_progress, NULL);
 }

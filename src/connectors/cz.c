@@ -225,7 +225,7 @@ cz_get_id_from_path (const gchar *path, guint8 *id)
 
 static gint
 cz_download (struct backend *backend, const gchar *path,
-	     struct idata *program, struct job_control *control)
+	     struct idata *program, struct task_control *control)
 {
   guint8 id;
   gint err;
@@ -266,7 +266,7 @@ cleanup:
 
 static gint
 cz_upload (struct backend *backend, const gchar *path, struct idata *program,
-	   struct job_control *control)
+	   struct task_control *control)
 {
   guint8 id;
   gint err;

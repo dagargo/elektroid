@@ -278,7 +278,7 @@ microbrute_download_seq_data (struct backend *backend, guint seqnum,
 
 static gint
 microbrute_download (struct backend *backend, const gchar *src_path,
-		     struct idata *sequence, struct job_control *control)
+		     struct idata *sequence, struct task_control *control)
 {
   gint err;
   guint seqnum;
@@ -296,7 +296,7 @@ microbrute_download (struct backend *backend, const gchar *src_path,
       return -EINVAL;
     }
 
-  job_control_reset (control, 1);
+  task_control_reset (control, 1);
 
   data = g_byte_array_new ();
   err = microbrute_download_seq_data (backend, seqnum, 0, data);
@@ -305,7 +305,7 @@ microbrute_download (struct backend *backend, const gchar *src_path,
       goto err;
     }
 
-  job_control_set_progress (control, 0.5);
+  task_control_set_progress (control, 0.5);
 
   err = microbrute_download_seq_data (backend, seqnum, 0x20, data);
   if (err)
@@ -313,7 +313,7 @@ microbrute_download (struct backend *backend, const gchar *src_path,
       goto err;
     }
 
-  job_control_set_progress (control, 1.0);
+  task_control_set_progress (control, 1.0);
   idata_init (sequence, data, NULL, NULL);
   return 0;
 
@@ -415,7 +415,7 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
 
 static gint
 microbrute_upload (struct backend *backend, const gchar *path,
-		   struct idata *sequence, struct job_control *control)
+		   struct idata *sequence, struct task_control *control)
 {
   GByteArray *input = sequence->content;
   gchar *token = (gchar *) & input->data[MICROBRUTE_SEQ_TXT_POS];
@@ -437,7 +437,7 @@ microbrute_upload (struct backend *backend, const gchar *path,
 
   g_mutex_lock (&backend->mutex);
 
-  job_control_reset (control, 1);
+  task_control_reset (control, 1);
 
   steps = microbrute_send_seq_msg (backend, seqnum, 0, &token, &pos,
 				   input->len, &control->controllable);
@@ -447,7 +447,7 @@ microbrute_upload (struct backend *backend, const gchar *path,
     }
   else if (pos < input->len)
     {
-      job_control_set_progress (control, 0.5);
+      task_control_set_progress (control, 0.5);
       steps = microbrute_send_seq_msg (backend, seqnum, 0x20, &token, &pos,
 				       input->len, &control->controllable);
       if (steps < 0)
@@ -456,7 +456,7 @@ microbrute_upload (struct backend *backend, const gchar *path,
 	}
     }
 
-  job_control_set_progress (control, 1.0);
+  task_control_set_progress (control, 1.0);
 
 end:
   g_mutex_unlock (&backend->mutex);

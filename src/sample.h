@@ -47,31 +47,32 @@
 struct backend;
 struct fs_operations;
 
-void job_control_set_sample_progress (struct job_control *control, gdouble p);
+void task_control_set_sample_progress (struct task_control *control,
+				       gdouble p);
 
 gint sample_save_to_file (const gchar * path, struct idata *sample,
-			  struct job_control *control, guint32 format);
+			  struct task_control *control, guint32 format);
 
 gint sample_load_from_memfile (struct idata *memfile, struct idata *sample,
-			       struct job_control *control,
+			       struct task_control *control,
 			       const struct sample_info *sample_info_req,
 			       struct sample_info *sample_info_src);
 
 gint sample_load_from_file (const gchar * path, struct idata *sample,
-			    struct job_control *control,
+			    struct task_control *control,
 			    const struct sample_info *sample_info_req,
 			    struct sample_info *sample_info_src);
 
 gint sample_get_memfile_from_sample (struct idata *sample,
 				     struct idata *file,
-				     struct job_control *control,
+				     struct task_control *control,
 				     guint32 format);
 
 gint sample_load_from_file_full (const gchar * path, struct idata *sample,
-				 struct job_control *control,
+				 struct task_control *control,
 				 const struct sample_info *sample_info_req,
 				 struct sample_info *sample_info_src,
-				 job_control_progress_callback cb);
+				 task_control_progress_callback cb);
 
 gint sample_load_sample_info (const gchar * path,
 			      struct sample_info *sample_info);
@@ -86,9 +87,9 @@ const gchar *sample_get_format (struct sample_info *sample_info);
 const gchar *sample_get_subtype (struct sample_info *sample_info);
 
 gint sample_reload (struct idata *input, struct idata *output,
-		    struct job_control *control,
+		    struct task_control *control,
 		    const struct sample_info *sample_info_req,
-		    job_control_progress_callback cb);
+		    task_control_progress_callback cb);
 
 guint32 sample_get_internal_format ();
 

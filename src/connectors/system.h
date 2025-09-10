@@ -39,4 +39,4 @@ gint system_delete (struct backend *, const gchar *);
 gint system_rename (struct backend *, const gchar *, const gchar *);
 
 gint system_upload (struct backend *, const gchar *, GByteArray *,
-		    struct job_control *);
+		    struct task_control *);

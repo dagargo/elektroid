@@ -809,12 +809,12 @@ editor_join_load_thread (gpointer data)
 }
 
 static void
-editor_update_on_load_cb (struct job_control *control, gdouble p)
+editor_update_on_load_cb (struct task_control *control, gdouble p)
 {
   guint32 actual_frames;
   gboolean completed, ready_to_play;
 
-  job_control_set_sample_progress (control, p);
+  task_control_set_sample_progress (control, p);
   editor_set_waveform_data_no_sync ();
   g_idle_add (editor_queue_draw, NULL);
   completed = editor_loading_completed_no_lock (&actual_frames);
@@ -1503,14 +1503,14 @@ editor_undo_clicked (GtkWidget *object, gpointer data)
 static gint
 editor_save_with_format (const gchar *dst_path, struct idata *sample,
 			 struct sample_info *sample_info_req,
-			 struct job_control *control)
+			 struct task_control *control)
 {
   gint err;
   struct idata resampled;
 
   //Not only does this perform rate conversion but also sample format conversion.
   err = sample_reload (sample, &resampled, control, sample_info_req,
-		       job_control_set_sample_progress);
+		       task_control_set_sample_progress);
   if (err)
     {
       return err;
@@ -1536,7 +1536,7 @@ editor_saving_needs_progress (struct sample_info *sample_info)
 }
 
 static void
-editor_progress_control_cb (struct job_control *control)
+editor_progress_control_cb (struct task_control *control)
 {
   progress_window_set_fraction (control->progress);
   control->controllable.active = progress_window_is_active ();
@@ -1546,7 +1546,7 @@ static void
 editor_save_runner (gpointer user_data)
 {
   struct editor_save_data *data = user_data;
-  struct job_control control;
+  struct task_control control;
 
   if (data->has_progress_window)
     {
@@ -1554,11 +1554,11 @@ editor_save_runner (gpointer user_data)
     }
   else
     {
-      //This is required because editor_progress_control_cb would call progress_window_is_active () and would cancel the job_control.
+      //This is required because editor_progress_control_cb would call progress_window_is_active () and would cancel the task_control.
       control.callback = NULL;
     }
   controllable_init (&control.controllable);
-  job_control_reset (&control, 1);
+  task_control_reset (&control, 1);
 
   editor_save_with_format (data->path, data->sample, &audio.sample_info_src,
 			   &control);
@@ -1765,7 +1765,7 @@ static void
 editor_split_runner (gpointer user_data)
 {
   gboolean *has_progress_window = user_data;
-  struct job_control control;
+  struct task_control control;
   struct sample_info *sample_info, sample_info_req;
   struct idata *idatas, *idata;
   GByteArray *content;
@@ -1799,12 +1799,12 @@ editor_split_runner (gpointer user_data)
     }
   else
     {
-      //This is required because editor_progress_control_cb would call progress_window_is_active () and would cancel the job_control.
+      //This is required because editor_progress_control_cb would call progress_window_is_active () and would cancel the task_control.
       control.callback = NULL;
     }
 
   controllable_init (&control.controllable);
-  job_control_reset (&control, channels);
+  task_control_reset (&control, channels);
 
   idatas = malloc (sizeof (struct idata) * channels);
   idata = idatas;

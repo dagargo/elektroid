@@ -87,7 +87,7 @@ struct audio
   audio_ready_callback ready_callback;
   audio_volume_change_callback volume_change_callback;
   guint32 release_frames;
-  struct job_control control;	//Used to synchronize access to sample
+  struct task_control control;	//Used to synchronize access to sample
   gchar *path;
   enum audio_status status;
   gint64 sel_start;		//Space for guint32 and -1
@@ -145,8 +145,8 @@ void audio_init_and_wait ();
 guint32 audio_get_used_frames (guint32 * bytes_per_frame);
 
 void audio_set_play_and_wait (struct idata *sample,
-			      struct job_control *control);
+			      struct task_control *control);
 
-void audio_record_and_wait (guint32 options, struct job_control *control);
+void audio_record_and_wait (guint32 options, struct task_control *control);
 
 #endif

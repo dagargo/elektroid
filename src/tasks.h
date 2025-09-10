@@ -63,7 +63,7 @@ enum task_type
 
 struct task_transfer
 {
-  struct job_control control;
+  struct task_control control;
   gchar *src;			//Contains a path to a file
   gchar *dst;			//Contains a path to a file
   enum task_status status;	//Contains the final status

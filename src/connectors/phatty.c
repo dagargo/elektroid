@@ -291,7 +291,7 @@ phatty_get_id_as_slot (struct item *item, struct backend *backend)
 
 static gint
 phatty_download (struct backend *backend, const gchar *path,
-		 struct idata *preset, struct job_control *control)
+		 struct idata *preset, struct task_control *control)
 {
   guint id;
   gint err = 0;
@@ -345,7 +345,7 @@ cleanup:
 
 static gint
 phatty_upload (struct backend *backend, const gchar *path,
-	       struct idata *preset, struct job_control *control)
+	       struct idata *preset, struct task_control *control)
 {
   gint err;
   guint id;
@@ -385,7 +385,7 @@ phatty_rename (struct backend *backend, const gchar *src, const gchar *dst)
 {
   guint id;
   gint err;
-  struct job_control control;
+  struct task_control control;
   struct sysex_transfer transfer;
   struct idata preset;
 
@@ -460,7 +460,7 @@ phatty_scale_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 phatty_scale_upload (struct backend *backend, const gchar *path,
-		     struct idata *scale, struct job_control *control)
+		     struct idata *scale, struct task_control *control)
 {
   guint id;
   GByteArray *input = scale->content;

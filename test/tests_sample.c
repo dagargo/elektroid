@@ -4,7 +4,7 @@
 #include "../src/preferences.h"
 
 static void
-test_load_sample_resampling (struct job_control *control)
+test_load_sample_resampling (struct task_control *control)
 {
   gint err;
   struct idata sample;
@@ -59,11 +59,11 @@ test_load_sample_resampling (struct job_control *control)
 static void
 test_load_sample_control_resampling ()
 {
-  struct job_control job_control;
-  controllable_init (&job_control.controllable);
-  job_control.callback = NULL;
-  test_load_sample_resampling (&job_control);
-  controllable_clear (&job_control.controllable);
+  struct task_control task_control;
+  controllable_init (&task_control.controllable);
+  task_control.callback = NULL;
+  test_load_sample_resampling (&task_control);
+  controllable_clear (&task_control.controllable);
 }
 
 static void
@@ -73,7 +73,7 @@ test_load_sample_no_control_resampling ()
 }
 
 static void
-test_load_sample_no_resampling (struct job_control *control)
+test_load_sample_no_resampling (struct task_control *control)
 {
   gint err;
   struct idata sample;
@@ -128,11 +128,11 @@ test_load_sample_no_resampling (struct job_control *control)
 static void
 test_load_sample_control_no_resampling ()
 {
-  struct job_control job_control;
-  controllable_init (&job_control.controllable);
-  job_control.callback = NULL;
-  test_load_sample_no_resampling (&job_control);
-  controllable_clear (&job_control.controllable);
+  struct task_control task_control;
+  controllable_init (&task_control.controllable);
+  task_control.callback = NULL;
+  test_load_sample_no_resampling (&task_control);
+  controllable_clear (&task_control.controllable);
 }
 
 static void

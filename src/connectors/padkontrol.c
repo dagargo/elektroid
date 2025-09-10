@@ -90,13 +90,13 @@ padkontrol_get_msg (guint8 op, guint8 payload)
 
 static gint
 padkontrol_download (struct backend *backend, const gchar *path,
-		     struct idata *scene, struct job_control *control)
+		     struct idata *scene, struct task_control *control)
 {
   guint id;
   gint err;
   GByteArray *tx_msg, *rx_msg;
 
-  job_control_reset (control, 3);
+  task_control_reset (control, 3);
 
   err = common_slot_get_id_from_path (path, &id);
   if (err)
@@ -161,13 +161,13 @@ padkontrol_download (struct backend *backend, const gchar *path,
 
 static gint
 padkontrol_upload (struct backend *backend, const gchar *path,
-		   struct idata *scene, struct job_control *control)
+		   struct idata *scene, struct task_control *control)
 {
   guint id;
   gint err;
   GByteArray *tx_msg, *rx_msg;
 
-  job_control_reset (control, 2);
+  task_control_reset (control, 2);
 
   err = common_slot_get_id_from_path (path, &id);
   if (err)

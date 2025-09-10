@@ -78,9 +78,9 @@ static const guint8 JUNK_CHUNK_DATA[] = {
 };
 
 void
-job_control_set_sample_progress (struct job_control *control, gdouble p)
+task_control_set_sample_progress (struct task_control *control, gdouble p)
 {
-  job_control_set_progress_no_sync (control, p);
+  task_control_set_progress_no_sync (control, p);
 
   if (control->callback)
     {
@@ -221,7 +221,7 @@ static SF_VIRTUAL_IO FILE_IO = {
 static gint
 sample_write_audio_file_data (struct idata *idata,
 			      struct g_byte_array_io_data *wave,
-			      struct job_control *control, guint32 format)
+			      struct task_control *control, guint32 format)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -317,7 +317,7 @@ sample_write_audio_file_data (struct idata *idata,
 
 gint
 sample_get_memfile_from_sample (struct idata *sample, struct idata *memfile,
-				struct job_control *control, guint32 format)
+				struct task_control *control, guint32 format)
 {
   gint err;
   GByteArray *content;
@@ -344,7 +344,7 @@ sample_get_memfile_from_sample (struct idata *sample, struct idata *memfile,
 
 gint
 sample_save_to_file (const gchar *path, struct idata *sample,
-		     struct job_control *control, guint32 format)
+		     struct task_control *control, guint32 format)
 {
   gint err;
   struct idata file;
@@ -566,7 +566,7 @@ end:
 
 static gint
 sample_load_microfreak (const gchar *path, struct idata *sample,
-			struct job_control *control)
+			struct task_control *control)
 {
   gint err;
   const gchar *ext = filename_get_ext (path);
@@ -601,7 +601,7 @@ sample_load_microfreak_sample_info (const gchar *path,
 {
   gint err;
   struct idata aux;
-  struct job_control control;
+  struct task_control control;
 
   controllable_init (&control.controllable);
   control.callback = NULL;
@@ -665,10 +665,10 @@ sample_info_fix_frame_values (struct sample_info *sample_info)
 
 static gint
 sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
-			struct job_control *control, struct idata *idata,
+			struct task_control *control, struct idata *idata,
 			const struct sample_info *sample_info_req,
 			struct sample_info *sample_info_src,
-			job_control_progress_callback cb, const gchar *name)
+			task_control_progress_callback cb, const gchar *name)
 {
   SF_INFO sf_info;
   SNDFILE *sndfile;
@@ -1039,7 +1039,7 @@ cleanup:
 
 gint
 sample_load_from_memfile (struct idata *memfile, struct idata *sample,
-			  struct job_control *control,
+			  struct task_control *control,
 			  const struct sample_info *sample_info_req,
 			  struct sample_info *sample_info_src)
 {
@@ -1048,7 +1048,7 @@ sample_load_from_memfile (struct idata *memfile, struct idata *sample,
   data.array = memfile->content;
   return sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, sample,
 				 sample_info_req, sample_info_src,
-				 job_control_set_sample_progress,
+				 task_control_set_sample_progress,
 				 memfile->name);
 }
 
@@ -1056,9 +1056,9 @@ sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 
 gint
 sample_reload (struct idata *input, struct idata *output,
-	       struct job_control *control,
+	       struct task_control *control,
 	       const struct sample_info *sample_info_req,
-	       job_control_progress_callback cb)
+	       task_control_progress_callback cb)
 {
   gint err;
   struct idata aux;
@@ -1085,10 +1085,10 @@ sample_reload (struct idata *input, struct idata *output,
 
 gint
 sample_load_from_file_full (const gchar *path, struct idata *sample,
-			    struct job_control *control,
+			    struct task_control *control,
 			    const struct sample_info *sample_info_req,
 			    struct sample_info *sample_info_src,
-			    job_control_progress_callback cb)
+			    task_control_progress_callback cb)
 {
   gint err;
   if (sample_microfreak_filename (path))
@@ -1127,13 +1127,13 @@ sample_load_from_file_full (const gchar *path, struct idata *sample,
 
 gint
 sample_load_from_file (const gchar *path, struct idata *sample,
-		       struct job_control *control,
+		       struct task_control *control,
 		       const struct sample_info *sample_info_req,
 		       struct sample_info *sample_info_src)
 {
   return sample_load_from_file_full (path, sample, control,
 				     sample_info_req, sample_info_src,
-				     job_control_set_sample_progress);
+				     task_control_set_sample_progress);
 }
 
 const gchar **

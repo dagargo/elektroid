@@ -45,8 +45,8 @@
 #define RETURN_IF_NULL(f) if (!(f)) {return -ENOSYS;}
 
 static struct backend backend;
-static struct job_control job_control;
-static struct controllable controllable;	//Used for CLI control for operations that do not use job_control or sysex_transfer.
+static struct task_control task_control;
+static struct controllable controllable;	//Used for CLI control for operations that do not use task_control or sysex_transfer.
 static gchar *connector, *fs, *op;
 
 const struct fs_operations *fs_ops;
@@ -63,9 +63,9 @@ complete_progress (gint err)
 }
 
 static void
-print_progress (struct job_control *job_control)
+print_progress (struct task_control *task_control)
 {
-  gint progress = job_control->progress * 100;
+  gint progress = task_control->progress * 100;
   const gchar *end = same_line_progress ? "\r" : "\n";
   fprintf (stderr, "%s: %3d %%%s", current_path_progress, progress, end);
   if (same_line_progress)
@@ -572,11 +572,11 @@ cli_download_item (const gchar *src_path, const gchar *dst_path)
   RETURN_IF_NULL (fs_ops->get_download_path);
   RETURN_IF_NULL (fs_ops->save);
 
-  controllable_set_active (&job_control.controllable, TRUE);
-  job_control.callback = print_progress;
+  controllable_set_active (&task_control.controllable, TRUE);
+  task_control.callback = print_progress;
   current_path_progress = src_path;
 
-  err = fs_ops->download (&backend, src_path, &idata, &job_control);
+  err = fs_ops->download (&backend, src_path, &idata, &task_control);
   if (err)
     {
       return err;
@@ -590,7 +590,7 @@ cli_download_item (const gchar *src_path, const gchar *dst_path)
       goto cleanup;
     }
 
-  err = fs_ops->save (download_path, &idata, &job_control);
+  err = fs_ops->save (download_path, &idata, &task_control);
   g_free (download_path);
 
 cleanup:
@@ -743,11 +743,11 @@ cli_upload_item (const gchar *src_path, const gchar *dst_path)
   RETURN_IF_NULL (fs_ops->get_upload_path);
   RETURN_IF_NULL (fs_ops->upload);
 
-  controllable_set_active (&job_control.controllable, TRUE);
-  job_control.callback = print_progress;
+  controllable_set_active (&task_control.controllable, TRUE);
+  task_control.callback = print_progress;
   current_path_progress = src_path;
 
-  err = fs_ops->load (src_path, &idata, &job_control);
+  err = fs_ops->load (src_path, &idata, &task_control);
   if (err)
     {
       return err;
@@ -756,7 +756,7 @@ cli_upload_item (const gchar *src_path, const gchar *dst_path)
   upload_path = fs_ops->get_upload_path (&backend, fs_ops, dst_path,
 					 src_path, &idata);
 
-  err = fs_ops->upload (&backend, upload_path, &idata, &job_control);
+  err = fs_ops->upload (&backend, upload_path, &idata, &task_control);
   idata_free (&idata);
 
   g_free (upload_path);
@@ -943,11 +943,11 @@ cli_play (int argc, gchar *argv[], int *optind)
       (*optind)++;
     }
 
-  controllable_set_active (&job_control.controllable, TRUE);
-  job_control.callback = print_progress;
+  controllable_set_active (&task_control.controllable, TRUE);
+  task_control.callback = print_progress;
   current_path_progress = audio_file;
 
-  job_control_reset (&job_control, 1);
+  task_control_reset (&task_control, 1);
 
   sample_info_init_load (&sample_info_req, 2, audio.rate,
 			 sample_get_internal_format ());
@@ -960,8 +960,8 @@ cli_play (int argc, gchar *argv[], int *optind)
     }
   else
     {
-      audio_set_play_and_wait (&sample, &job_control);
-      job_control.part++;
+      audio_set_play_and_wait (&sample, &task_control);
+      task_control.part++;
     }
 
   complete_progress (err);
@@ -985,15 +985,15 @@ cli_record (int argc, gchar *argv[], int *optind)
       (*optind)++;
     }
 
-  controllable_set_active (&job_control.controllable, TRUE);
-  job_control.callback = print_progress;
+  controllable_set_active (&task_control.controllable, TRUE);
+  task_control.callback = print_progress;
   current_path_progress = audio_file;
 
-  job_control_reset (&job_control, 1);
+  task_control_reset (&task_control, 1);
 
-  audio_record_and_wait (RECORD_STEREO, &job_control);
+  audio_record_and_wait (RECORD_STEREO, &task_control);
 
-  job_control.part++;
+  task_control.part++;
   complete_progress (0);
 
   sample_save_to_file (audio_file, &audio.sample, NULL,
@@ -1007,7 +1007,7 @@ static void
 cli_end (int sig)
 {
   controllable_set_active (&controllable, FALSE);
-  controllable_set_active (&job_control.controllable, FALSE);
+  controllable_set_active (&task_control.controllable, FALSE);
   audio_stop_playback ();
   audio_stop_recording ();
 }
@@ -1022,7 +1022,7 @@ main (int argc, gchar *argv[])
   gint vflg = 0, errflg = 0;
 
   controllable_init (&controllable);
-  controllable_init (&job_control.controllable);
+  controllable_init (&task_control.controllable);
 
 #if defined(__linux__)
   struct sigaction action;

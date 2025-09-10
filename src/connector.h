@@ -92,12 +92,12 @@ typedef gint (*fs_src_dst_func) (struct backend *, const gchar *,
 				 const gchar *);
 
 typedef gint (*fs_remote_file_op) (struct backend *, const gchar *,
-				   struct idata *, struct job_control *);
+				   struct idata *, struct task_control *);
 
 typedef gchar *(*fs_get_item_slot) (struct item *, struct backend *);
 
 typedef gint (*fs_local_file_op) (const gchar *, struct idata *,
-				  struct job_control *);
+				  struct task_control *);
 
 typedef const gchar **(*fs_get_exts) (struct backend *,
 				      const struct fs_operations *);
