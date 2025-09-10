@@ -969,7 +969,7 @@ static gint
 sds_sample_load_common (const gchar *path, struct idata *sample,
 			struct task_control *control, gint32 rate)
 {
-  return common_sample_load (path, sample, control, rate, SDS_SAMPLE_CHANNELS,
+  return common_sample_load (path, sample, control, SDS_SAMPLE_CHANNELS, rate,
 			     SF_FORMAT_PCM_16);
 }
 

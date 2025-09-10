@@ -281,14 +281,16 @@ system_samples_read_dir (struct backend *backend, struct item_iterator *iter,
 
 static gint
 system_load_custom (const gchar *path, struct idata *sample,
-		    struct task_control *control,
-		    const struct sample_info *sample_info_req)
+		    struct task_control *control, guint32 channels,
+		    guint32 rate, guint32 format)
 {
   struct sample_info sample_info_src;
+  struct sample_load_opts opts;
+  sample_load_opts_init (&opts, channels, rate, format);
   //Typically, control parts are set not here but in this case makes more sense.
   control->parts = 1;
   control->part = 0;
-  return sample_load_from_file (path, sample, control, sample_info_req,
+  return sample_load_from_file (path, sample, control, &opts,
 				&sample_info_src);
 }
 
@@ -296,11 +298,8 @@ static gint
 system_load_stereo_48k_16b (const gchar *path, struct idata *sample,
 			    struct task_control *control)
 {
-  struct sample_info sample_info_dst;
-  sample_info_dst.rate = 48000;
-  sample_info_dst.channels = 2;
-  sample_info_dst.format = SF_FORMAT_PCM_16;
-  return system_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, 2, 48000,
+			     SF_FORMAT_PCM_16);
 }
 
 gint
@@ -316,44 +315,32 @@ static gint
 system_load_mono_48k_16b (const gchar *path, struct idata *sample,
 			  struct task_control *control)
 {
-  struct sample_info sample_info_dst;
-  sample_info_dst.rate = 48000;
-  sample_info_dst.channels = 1;
-  sample_info_dst.format = SF_FORMAT_PCM_16;
-  return system_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, 1, 48000,
+			     SF_FORMAT_PCM_16);
 }
 
 static gint
 system_load_stereo_44k1_16b (const gchar *path, struct idata *sample,
 			     struct task_control *control)
 {
-  struct sample_info sample_info_dst;
-  sample_info_dst.rate = 44100;
-  sample_info_dst.channels = 2;
-  sample_info_dst.format = SF_FORMAT_PCM_16;
-  return system_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, 2, 44100,
+			     SF_FORMAT_PCM_16);
 }
 
 static gint
 system_load_mono_44k1_16b (const gchar *path, struct idata *sample,
 			   struct task_control *control)
 {
-  struct sample_info sample_info_dst;
-  sample_info_dst.rate = 44100;
-  sample_info_dst.channels = 1;
-  sample_info_dst.format = SF_FORMAT_PCM_16;
-  return system_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, 1, 44100,
+			     SF_FORMAT_PCM_16);
 }
 
 static gint
 system_load_stereo_44k1_24b (const gchar *path, struct idata *sample,
 			     struct task_control *control)
 {
-  struct sample_info sample_info_dst;
-  sample_info_dst.rate = 44100;
-  sample_info_dst.channels = 2;
-  sample_info_dst.format = SF_FORMAT_PCM_32;
-  return system_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, 2, 44100,
+			     SF_FORMAT_PCM_32);
 }
 
 static gint
@@ -368,22 +355,16 @@ static gint
 system_load_mono_44k1_24b (const gchar *path, struct idata *sample,
 			   struct task_control *control)
 {
-  struct sample_info sample_info_dst;
-  sample_info_dst.rate = 44100;
-  sample_info_dst.channels = 1;
-  sample_info_dst.format = SF_FORMAT_PCM_32;
-  return system_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, 1, 44100,
+			     SF_FORMAT_PCM_32);
 }
 
 static gint
 system_load_stereo_44k1_8b (const gchar *path, struct idata *sample,
 			    struct task_control *control)
 {
-  struct sample_info sample_info_dst;
-  sample_info_dst.rate = 44100;
-  sample_info_dst.channels = 2;
-  sample_info_dst.format = SF_FORMAT_PCM_16;
-  return system_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, 2, 44100,
+			     SF_FORMAT_PCM_16);
 }
 
 static gint
@@ -398,33 +379,24 @@ static gint
 system_load_mono_44k1_8b (const gchar *path, struct idata *sample,
 			  struct task_control *control)
 {
-  struct sample_info sample_info_dst;
-  sample_info_dst.rate = 44100;
-  sample_info_dst.channels = 1;
-  sample_info_dst.format = SF_FORMAT_PCM_16;
-  return system_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, 1, 44100,
+			     SF_FORMAT_PCM_16);
 }
 
 static gint
 system_load_mono_32k_16b (const gchar *path, struct idata *sample,
 			  struct task_control *control)
 {
-  struct sample_info sample_info_dst;
-  sample_info_dst.rate = 32000;
-  sample_info_dst.channels = 1;
-  sample_info_dst.format = SF_FORMAT_PCM_16;
-  return system_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, 1, 32000,
+			     SF_FORMAT_PCM_16);
 }
 
 static gint
 system_load_mono_31k25_16b (const gchar *path, struct idata *sample,
 			    struct task_control *control)
 {
-  struct sample_info sample_info_dst;
-  sample_info_dst.rate = 31250;
-  sample_info_dst.channels = 1;
-  sample_info_dst.format = SF_FORMAT_PCM_16;
-  return system_load_custom (path, sample, control, &sample_info_dst);
+  return system_load_custom (path, sample, control, 1, 31250,
+			     SF_FORMAT_PCM_16);
 }
 
 gboolean

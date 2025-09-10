@@ -930,7 +930,8 @@ cli_play (int argc, gchar *argv[], int *optind)
   gint err;
   struct idata sample;
   const gchar *audio_file;
-  struct sample_info sample_info_req, sample_info_src;
+  struct sample_info sample_info_src;
+  struct sample_load_opts sample_load_opts;
 
   if (*optind == argc)
     {
@@ -949,11 +950,11 @@ cli_play (int argc, gchar *argv[], int *optind)
 
   task_control_reset (&task_control, 1);
 
-  sample_info_init_load (&sample_info_req, 2, audio.rate,
+  sample_load_opts_init (&sample_load_opts, 2, audio.rate,
 			 sample_get_internal_format ());
 
-  err = sample_load_from_file (audio_file, &sample, NULL,
-			       &sample_info_req, &sample_info_src);
+  err = sample_load_from_file (audio_file, &sample, NULL, &sample_load_opts,
+			       &sample_info_src);
   if (err)
     {
       error_print ("Error while loading '%s'.", audio_file);

@@ -8,19 +8,16 @@ test_load_sample_resampling (struct task_control *control)
 {
   gint err;
   struct idata sample;
-  struct sample_info sample_info_req;
-  struct sample_info sample_info_src;
-  struct sample_info *sample_info;
+  struct sample_info *sample_info, sample_info_src;
+  struct sample_load_opts sample_load_opts;
 
   printf ("\n");
 
-  sample_info_req.channels = 1;
-  sample_info_req.rate = 48000;
-  sample_info_req.format = SF_FORMAT_PCM_16;
+  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16);
 
   err = sample_load_from_file (TEST_DATA_DIR
 			       "/connectors/square-wav-stereo-44k1-8b.wav",
-			       &sample, control, &sample_info_req,
+			       &sample, control, &sample_load_opts,
 			       &sample_info_src);
 
   CU_ASSERT_EQUAL (err, 0);
@@ -77,19 +74,16 @@ test_load_sample_no_resampling (struct task_control *control)
 {
   gint err;
   struct idata sample;
-  struct sample_info sample_info_req;
-  struct sample_info sample_info_src;
-  struct sample_info *sample_info;
+  struct sample_info *sample_info, sample_info_src;
+  struct sample_load_opts sample_load_opts;
 
   printf ("\n");
 
-  sample_info_req.channels = 1;
-  sample_info_req.rate = 48000;
-  sample_info_req.format = SF_FORMAT_PCM_16;
+  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16);
 
   err = sample_load_from_file (TEST_DATA_DIR
 			       "/connectors/square-wav-mono-48k-16b.wav",
-			       &sample, control, &sample_info_req,
+			       &sample, control, &sample_load_opts,
 			       &sample_info_src);
 
   CU_ASSERT_EQUAL (err, 0);
@@ -146,17 +140,14 @@ test_load_microfreak_wavetable (const gchar *path)
 {
   gint err;
   struct idata sample;
-  struct sample_info sample_info_req;
-  struct sample_info sample_info_src;
-  struct sample_info *sample_info;
+  struct sample_info *sample_info, sample_info_src;
+  struct sample_load_opts sample_load_opts;
 
   printf ("\n");
 
-  sample_info_req.channels = 1;
-  sample_info_req.rate = 48000;
-  sample_info_req.format = SF_FORMAT_PCM_16;
+  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16);
 
-  err = sample_load_from_file (path, &sample, NULL, &sample_info_req,
+  err = sample_load_from_file (path, &sample, NULL, &sample_load_opts,
 			       &sample_info_src);
 
   CU_ASSERT_EQUAL (err, 0);
@@ -211,17 +202,14 @@ test_load_microfreak_sample (const gchar *path)
 {
   gint err;
   struct idata sample;
-  struct sample_info sample_info_req;
-  struct sample_info sample_info_src;
-  struct sample_info *sample_info;
+  struct sample_info *sample_info, sample_info_src;
+  struct sample_load_opts sample_load_opts;
 
   printf ("\n");
 
-  sample_info_req.channels = 1;
-  sample_info_req.rate = 48000;
-  sample_info_req.format = SF_FORMAT_PCM_16;
+  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16);
 
-  err = sample_load_from_file (path, &sample, NULL, &sample_info_req,
+  err = sample_load_from_file (path, &sample, NULL, &sample_load_opts,
 			       &sample_info_src);
 
   CU_ASSERT_EQUAL (err, 0);

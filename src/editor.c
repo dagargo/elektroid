@@ -839,7 +839,7 @@ editor_update_on_load_cb (struct task_control *control, gdouble p)
 static gpointer
 editor_load_sample_runner (gpointer data)
 {
-  struct sample_info sample_info_req;
+  struct sample_load_opts sample_info_opts;
 
   dirty = FALSE;
   ready = FALSE;
@@ -848,13 +848,12 @@ editor_load_sample_runner (gpointer data)
   audio.sel_end = -1;
   editor_set_scrollbar (0, 0);
 
-  sample_info_req.channels = 0;	//Automatic
-  sample_info_req.format = sample_get_internal_format ();
-  sample_info_req.rate = audio.rate;
+  sample_load_opts_init (&sample_info_opts, 0, audio.rate,
+			 sample_get_internal_format ());
 
   audio.control.controllable.active = TRUE;
   sample_load_from_file_full (audio.path, &audio.sample,
-			      &audio.control, &sample_info_req,
+			      &audio.control, &sample_info_opts,
 			      &audio.sample_info_src,
 			      editor_update_on_load_cb);
   return NULL;
@@ -1502,22 +1501,21 @@ editor_undo_clicked (GtkWidget *object, gpointer data)
 
 static gint
 editor_save_with_format (const gchar *dst_path, struct idata *sample,
-			 struct sample_info *sample_info_req,
-			 struct task_control *control)
+			 struct sample_load_opts *sample_load_opts,
+			 guint32 format, struct task_control *control)
 {
   gint err;
   struct idata resampled;
 
   //Not only does this perform rate conversion but also sample format conversion.
-  err = sample_reload (sample, &resampled, control, sample_info_req,
+  err = sample_reload (sample, &resampled, control, sample_load_opts,
 		       task_control_set_sample_progress);
   if (err)
     {
       return err;
     }
 
-  err = sample_save_to_file (dst_path, &resampled, NULL,
-			     sample_info_req->format);
+  err = sample_save_to_file (dst_path, &resampled, NULL, format);
   idata_free (&resampled);
 
   browser_load_dir_if_needed (browser);
@@ -1547,6 +1545,7 @@ editor_save_runner (gpointer user_data)
 {
   struct editor_save_data *data = user_data;
   struct task_control control;
+  struct sample_load_opts sample_load_opts;
 
   if (data->has_progress_window)
     {
@@ -1560,8 +1559,10 @@ editor_save_runner (gpointer user_data)
   controllable_init (&control.controllable);
   task_control_reset (&control, 1);
 
-  editor_save_with_format (data->path, data->sample, &audio.sample_info_src,
-			   &control);
+  sample_load_opts_init_from_sample_info (&sample_load_opts,
+					  &audio.sample_info_src);
+  editor_save_with_format (data->path, data->sample, &sample_load_opts,
+			   audio.sample_info_src.format, &control);
 
   if (data->new_take)
     {
@@ -1610,6 +1611,7 @@ editor_save (const gchar *name)
   GByteArray *selection = NULL;
   struct sample_info *aux_si;
   struct sample_info *sample_info = audio.sample.info;
+  struct sample_load_opts sample_load_opts;
 
   path = browser_get_name_path (browser, name);
 
@@ -1660,6 +1662,9 @@ editor_save (const gchar *name)
 	      audio.sample.info, sizeof (struct sample_info));
       audio.sample_info_src.format |= SF_FORMAT_WAV;
 
+      sample_load_opts_init_from_sample_info (&sample_load_opts,
+					      &audio.sample_info_src);
+
       if (sel_len)
 	{
 	  //This does not set anything and leaves everything as if no sample would have been loaded.
@@ -1668,7 +1673,8 @@ editor_save (const gchar *name)
 	  debug_print (2, "Saving recorded selection to %s...", path);
 	  aux.name = g_path_get_basename (path);
 	  //This is a selection of a recording, so no resample is needed and, therefore, this is fast.
-	  editor_save_with_format (path, &aux, &audio.sample_info_src, NULL);
+	  editor_save_with_format (path, &aux, &sample_load_opts,
+				   audio.sample_info_src.format, NULL);
 	  idata_free (&aux);
 	  g_free (path);
 	}
@@ -1680,7 +1686,8 @@ editor_save (const gchar *name)
 	  audio.sample.name = g_path_get_basename (path);
 	  //This is a recording, so no resample is needed and, therefore, this is fast.
 	  editor_save_with_format (audio.path, &audio.sample,
-				   &audio.sample_info_src, NULL);
+				   &sample_load_opts,
+				   audio.sample_info_src.format, NULL);
 	}
     }
 }
@@ -1766,7 +1773,8 @@ editor_split_runner (gpointer user_data)
 {
   gboolean *has_progress_window = user_data;
   struct task_control control;
-  struct sample_info *sample_info, sample_info_req;
+  struct sample_info *sample_info;
+  struct sample_load_opts sample_load_opts;
   struct idata *idatas, *idata;
   GByteArray *content;
   gchar *basename, *dirname, *path;
@@ -1779,9 +1787,6 @@ editor_split_runner (gpointer user_data)
   g_mutex_lock (&mutex);
 
   sample_info = audio.sample.info;
-  memcpy (&sample_info_req, &audio.sample_info_src,
-	  sizeof (struct sample_info));
-  sample_info_req.channels = 1;
 
   ext = filename_get_ext (audio.path);
 
@@ -1879,7 +1884,13 @@ editor_split_runner (gpointer user_data)
 
       path = path_chain (PATH_SYSTEM, dirname, name);
       g_free (name);
-      editor_save_with_format (path, idata, &sample_info_req, &control);
+
+      sample_load_opts_init_from_sample_info (&sample_load_opts,
+					      &audio.sample_info_src);
+      sample_load_opts.channels = 1;
+
+      editor_save_with_format (path, idata, &sample_load_opts,
+			       audio.sample_info_src.format, &control);
       g_free (path);
 
       idata++;

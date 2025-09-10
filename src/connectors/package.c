@@ -875,10 +875,11 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
   for (i = 0; i < elements; i++, control->part++)
     {
-      struct sample_info sample_info_req, sample_info_src;
-      sample_info_req.rate = ELEKTRON_SAMPLE_RATE;
-      sample_info_req.channels = 0;	//Automatic
-      sample_info_req.format = SF_FORMAT_PCM_16;
+      struct sample_info sample_info_src;
+      struct sample_load_opts sample_load_opts;
+
+      sample_load_opts_init (&sample_load_opts, 0, ELEKTRON_SAMPLE_RATE,
+			     SF_FORMAT_PCM_16);
 
       json_reader_read_element (reader, i);
       json_reader_read_member (reader, PKG_TAG_FILE_NAME);
@@ -910,7 +911,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       zip_fclose (zip_file);
 
       if (sample_load_from_memfile (&sample_file, &sample, control,
-				    &sample_info_req, &sample_info_src))
+				    &sample_load_opts, &sample_info_src))
 	{
 	  error_print ("Error while loading '%s': %s",
 		       sample_path, zip_error_strerror (&zerror));

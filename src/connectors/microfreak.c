@@ -1371,7 +1371,7 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
 			   struct task_control *control)
 {
   struct idata aux;
-  gint err = common_sample_load (path, &aux, control, 0, 1,
+  gint err = common_sample_load (path, &aux, control, 1, 0,
 				 SF_FORMAT_PCM_16);
   if (err)
     {
@@ -1390,11 +1390,12 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
     {
       debug_print (1, "Resampling to get a valid wavetable...");
       struct sample_info *si = aux.info;
-      struct sample_info si_req;
+      struct sample_load_opts opts;
       GByteArray *a;
-      microfreak_init_sample_info (&si_req, MICROFREAK_WAVETABLE_LEN);
-      si_req.rate = si->rate * MICROFREAK_WAVETABLE_LEN / si->frames;
-      err = sample_reload (&aux, wavetable, NULL, &si_req,
+      sample_load_opts_init (&opts, 1, MICROFREAK_SAMPLERATE,
+			     SF_FORMAT_PCM_16);
+      opts.rate = si->rate * MICROFREAK_WAVETABLE_LEN / si->frames;
+      err = sample_reload (&aux, wavetable, NULL, &opts,
 			   task_control_set_sample_progress);
       idata_free (&aux);
       a = wavetable->content;
@@ -1895,8 +1896,8 @@ static gint
 microfreak_sample_load (const gchar *path, struct idata *sample,
 			struct task_control *control)
 {
-  return common_sample_load (path, sample, control, MICROFREAK_SAMPLERATE,
-			     1, SF_FORMAT_PCM_16);
+  return common_sample_load (path, sample, control, 1, MICROFREAK_SAMPLERATE,
+			     SF_FORMAT_PCM_16);
 }
 
 static const struct fs_operations FS_MICROFREAK_SAMPLE_OPERATIONS = {
