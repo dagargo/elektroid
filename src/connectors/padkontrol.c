@@ -27,7 +27,6 @@ enum padkontrol_fs
   FS_PADKONTROL_SCENE
 };
 
-static const guint8 KORG_ID[] = { 0x42, 0x0, 0x0 };
 static const guint8 FAMILY_ID[] = { 0x6e, 0x0 };
 static const guint8 MODEL_ID[] = { 0x8, 0x0 };
 

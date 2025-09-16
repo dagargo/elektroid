@@ -26,6 +26,12 @@
 #define COMMON_GET_MIDI_BANK(p) ((p & 0x3f80) >> 7)
 #define COMMON_GET_MIDI_PRESET(p) (p & 0x7f)
 
+static const guint8 ARTURIA_ID[] = { 0x0, 0x20, 0x6b };
+static const guint8 EVENTIDE_ID[] = { 0x1c };
+static const guint8 KORG_ID[] = { 0x42, 0x0, 0x0 };
+static const guint8 MOOG_ID[] = { 0x04 };
+static const guint8 NOVATION_ID[] = { 0x0, 0x20, 0x29 };
+
 struct common_simple_read_dir_data
 {
   guint32 next;

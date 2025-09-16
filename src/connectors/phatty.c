@@ -40,7 +40,6 @@
 
 static const gchar *PHATTY_SCALE_EXTS[] = { "scl", NULL };
 
-static const guint8 MOOG_ID[] = { 0x04 };
 static const guint8 FAMILY_ID[] = { 0x0, 0x5 };
 static const guint8 MODEL_ID[] = { 0x0, 0x1 };
 
