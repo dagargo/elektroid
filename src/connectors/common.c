@@ -403,3 +403,64 @@ common_system_get_upload_path (struct backend *backend,
   return common_system_get_download_path (backend, ops, dst_dir, src_path,
 					  content);
 }
+
+void
+common_midi_msg_to_8bit_msg (guint8 *msg_midi, guint8 *msg_8bit,
+			     guint input_size)
+{
+  guint8 *dst = msg_8bit;
+  guint8 *src = msg_midi;
+  for (guint i = 0; i < input_size; i++)
+    {
+      guint8 bits = *src;
+      src++;
+      for (guint j = 0; j < 7 && i < input_size; j++, i++, src++, dst++)
+	{
+	  *dst = *src | (bits & 0x1 ? 0x80 : 0);
+	  bits >>= 1;
+	}
+    }
+}
+
+void
+common_8bit_msg_to_midi_msg (guint8 *msg_8bit, guint8 *msg_midi,
+			     guint input_size)
+{
+  guint8 *dst = msg_midi;
+  guint8 *src = msg_8bit;
+  guint8 *bits = 0;
+  guint rem;
+  for (guint i = 0; i < input_size;)
+    {
+      bits = dst;
+      *bits = 0;
+      dst++;
+      for (guint j = 0; j < 7 && i < input_size; j++, i++, src++, dst++)
+	{
+	  *dst = *src & 0x7f;
+	  *bits |= *src & 0x80;
+	  *bits >>= 1;
+	}
+    }
+  rem = input_size % 7;
+  if (rem)
+    {
+      *bits >>= 7 - rem;
+    }
+}
+
+guint
+common_8bit_msg_to_midi_msg_size (guint size)
+{
+  guint packets = size / 7;
+  guint rem = size % 7;
+  return packets * 8 + (rem ? rem + 1 : 0);
+}
+
+guint
+common_midi_msg_to_8bit_msg_size (guint size)
+{
+  guint packets = size / 8;
+  guint rem = size % 8;
+  return packets * 7 + (rem ? rem - 1 : 0);
+}

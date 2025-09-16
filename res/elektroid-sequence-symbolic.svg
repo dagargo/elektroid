@@ -2,20 +2,20 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://creativecommons.org/ns#"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-   xmlns:svg="http://www.w3.org/2000/svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    width="16"
    height="16"
    viewBox="0 0 4.233333 4.2333333"
    version="1.1"
    id="svg924"
    sodipodi:docname="elektroid-sequence-symbolic.svg"
-   inkscape:version="0.92.4 (5da689c313, 2019-01-14)">
+   inkscape:version="1.4 (e7c3feb100, 2024-10-09)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
   <title
      id="title2309">elektroid sequence symbolic</title>
   <defs
@@ -27,21 +27,28 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="32"
-     inkscape:cx="1.6142353"
-     inkscape:cy="7.0667158"
+     inkscape:zoom="29.635468"
+     inkscape:cx="6.9848737"
+     inkscape:cy="9.7518285"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:window-width="1680"
-     inkscape:window-height="1023"
+     inkscape:window-height="1013"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
-     inkscape:pagecheckerboard="false">
+     inkscape:pagecheckerboard="false"
+     inkscape:showpageshadow="2"
+     inkscape:deskcolor="#d1d1d1">
     <inkscape:grid
        type="xygrid"
-       id="grid1511" />
+       id="grid1511"
+       originx="0"
+       originy="0"
+       spacingy="1"
+       spacingx="1"
+       units="px" />
   </sodipodi:namedview>
   <metadata
      id="metadata921">
@@ -146,7 +153,7 @@
        x="3.4395683"
        y="293.03125" />
     <rect
-       style="opacity:0.3;fill:#bebebe;fill-opacity:1;stroke:none;stroke-width:0.10001194;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"
+       style="opacity:0.4;fill:#bebebe;fill-opacity:1;stroke:none;stroke-width:0.10001194;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"
        id="rect1509-3-2-7-2-7"
        width="0.52916372"
        height="0.52917469"
@@ -167,28 +174,28 @@
        x="3.4395683"
        y="295.14792" />
     <rect
-       style="opacity:0.3;fill:#bebebe;fill-opacity:1;stroke:none;stroke-width:0.10001194;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"
+       style="opacity:0.4;fill:#bebebe;fill-opacity:1;stroke:none;stroke-width:0.10001194;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"
        id="rect1509-3-2-7-2-7-6"
        width="0.52916372"
        height="0.52917469"
        x="1.3229135"
        y="294.08957" />
     <rect
-       style="opacity:0.3;fill:#bebebe;fill-opacity:1;stroke:none;stroke-width:0.10001194;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"
+       style="opacity:0.4;fill:#bebebe;fill-opacity:1;stroke:none;stroke-width:0.10001194;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"
        id="rect1509-3-2-7-2-7-2"
        width="0.52916372"
        height="0.52917469"
        x="3.4395683"
        y="294.08957" />
     <rect
-       style="opacity:0.3;fill:#bebebe;fill-opacity:1;stroke:none;stroke-width:0.10001194;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"
+       style="opacity:0.4;fill:#bebebe;fill-opacity:1;stroke:none;stroke-width:0.10001194;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"
        id="rect1509-3-2-7-2-7-9"
        width="0.52916372"
        height="0.52917469"
        x="1.3229138"
        y="296.20621" />
     <rect
-       style="opacity:0.3;fill:#bebebe;fill-opacity:1;stroke:none;stroke-width:0.10001194;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"
+       style="opacity:0.4;fill:#bebebe;fill-opacity:1;stroke:none;stroke-width:0.10001194;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers fill stroke"
        id="rect1509-3-2-7-2-7-1"
        width="0.52916372"
        height="0.52917469"

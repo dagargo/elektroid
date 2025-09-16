@@ -74,7 +74,8 @@ connectors/volca_sample.c connectors/volca_sample.h \
 connectors/volca_sample_sdk/korg_syro_comp.c connectors/volca_sample_sdk/korg_syro_comp.h \
 connectors/volca_sample_sdk/korg_syro_func.c connectors/volca_sample_sdk/korg_syro_func.h \
 connectors/volca_sample_sdk/korg_syro_volcasample.c connectors/volca_sample_sdk/korg_syro_volcasample.h \
-connectors/volca_sample_sdk/korg_syro_type.h
+connectors/volca_sample_sdk/korg_syro_type.h \
+connectors/volca_sample_2.c connectors/volca_sample_2.h
 
 elektroid_cli_SOURCES = $(elektroid_common_sources) \
 $(elektroid_audio_sources) \

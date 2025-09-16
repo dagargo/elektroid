@@ -102,37 +102,13 @@ struct microfreak_iter_data
 void
 microfreak_midi_msg_to_8bit_msg (guint8 *msg_midi, guint8 *msg_8bit)
 {
-  guint8 *dst = msg_8bit;
-  guint8 *src = msg_midi;
-  for (gint i = 0; i < 4; i++)
-    {
-      guint8 bits = *src;
-      src++;
-      for (gint j = 0; j < 7; j++, src++, dst++)
-	{
-	  *dst = *src | (bits & 0x1 ? 0x80 : 0);
-	  bits >>= 1;
-	}
-    }
+  common_midi_msg_to_8bit_msg (msg_midi, msg_8bit, 32);
 }
 
 void
 microfreak_8bit_msg_to_midi_msg (guint8 *msg_8bit, guint8 *msg_midi)
 {
-  guint8 *dst = msg_midi;
-  guint8 *src = msg_8bit;
-  for (gint i = 0; i < 4; i++)
-    {
-      guint8 *bits = dst;
-      *bits = 0;
-      dst++;
-      for (gint j = 0; j < 7; j++, src++, dst++)
-	{
-	  *dst = *src & 0x7f;
-	  *bits |= *src & 0x80;
-	  *bits >>= 1;
-	}
-    }
+  common_8bit_msg_to_midi_msg (msg_8bit, msg_midi, 28);
 }
 
 static void

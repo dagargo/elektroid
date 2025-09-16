@@ -32,6 +32,7 @@
 #include "connectors/summit.h"
 #include "connectors/system.h"
 #include "connectors/volca_sample.h"
+#include "connectors/volca_sample_2.h"
 
 void
 regconn_register ()
@@ -39,9 +40,9 @@ regconn_register ()
   system_connector = &CONNECTOR_SYSTEM;
   gslist_fill (&connectors, &CONNECTOR_ELEKTRON, &CONNECTOR_MICROBRUTE,
 	       &CONNECTOR_MICROFREAK, &CONNECTOR_PHATTY, &CONNECTOR_SUMMIT,
-	       &CONNECTOR_CZ, &CONNECTOR_PADKONTROL, &CONNECTOR_SDS,
-	       &CONNECTOR_EFACTOR, &CONNECTOR_DEFAULT,
-	       &CONNECTOR_VOLCA_SAMPLE, NULL);
+	       &CONNECTOR_CZ, &CONNECTOR_PADKONTROL,
+	       &CONNECTOR_VOLCA_SAMPLE_2, &CONNECTOR_SDS, &CONNECTOR_EFACTOR,
+	       &CONNECTOR_DEFAULT, &CONNECTOR_VOLCA_SAMPLE, NULL);
 }
 
 void

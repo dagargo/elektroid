@@ -124,3 +124,13 @@ gchar *common_system_get_upload_path (struct backend *backend,
 				      const gchar * dst_dir,
 				      const gchar * src_path,
 				      struct idata *content);
+
+void common_midi_msg_to_8bit_msg (guint8 * msg_midi, guint8 * msg_8bit,
+				  guint input_size);
+
+void common_8bit_msg_to_midi_msg (guint8 * msg_8bit, guint8 * msg_midi,
+				  guint input_size);
+
+guint common_8bit_msg_to_midi_msg_size (guint size);
+
+guint common_midi_msg_to_8bit_msg_size (guint size);

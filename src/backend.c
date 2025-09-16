@@ -25,7 +25,7 @@
 #include "utils.h"
 
 // This can be allocated statically as the only function that uses it is synchronized.
-static guint8 tmp_buffer[BE_TMP_BUFF_SIZE];
+static guint8 tmp_buffer[BE_MAX_BUFF_SIZE];
 
 struct connector *system_connector = NULL;
 GSList *connectors = NULL;
@@ -531,7 +531,7 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer,
 	  return -ETIMEDOUT;
 	}
 
-      rx_len = backend_rx_raw (backend, tmp_buffer, BE_TMP_BUFF_SIZE);
+      rx_len = backend_rx_raw (backend, tmp_buffer, BE_MAX_BUFF_SIZE);
       if (rx_len < 0)
 	{
 	  return rx_len;
