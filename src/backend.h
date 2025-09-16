@@ -37,7 +37,7 @@
 #define BE_INT_BUFF_SIZE (128 * KI)	//Used as the default size for the GByteArray buffer.
 #define BE_DEV_RING_BUF_LEN (256 * KI)
 //This size is required by RtMidi as it needs enough space for a message. Therefore, this must be the maximum size of all the possible messages.
-#define BE_TMP_BUFF_SIZE MI
+#define BE_MAX_BUFF_SIZE MI
 
 #define BE_REST_TIME_US 50000
 #define BE_SYSEX_TIMEOUT_MS 5000

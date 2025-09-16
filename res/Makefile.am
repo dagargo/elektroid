@@ -41,6 +41,7 @@ endif
 endif
 
 elektron_DATA = elektron/devices.json
+volca_sample_2_DATA = volca_sample_2/init_pattern.vlcsplpattb
 
 # Elektroid data dirs
 resdir = $(datadir)/elektroid
@@ -52,6 +53,7 @@ svgicondir = $(datarootdir)/icons/hicolor/scalable/apps
 # Connectors data dirs
 elektrondir = $(resdir)/elektron
 microbrutedir = $(resdir)/microbrute
+volca_sample_2dir = $(resdir)/volca_sample_2
 
 gtk_update_icon_cache = gtk-update-icon-cache -f -t $(datarootdir)/icons/hicolor
 
@@ -75,5 +77,6 @@ EXTRA_DIST = \
         $(svgicon_DATA) \
         $(elektron_DATA) \
         $(microbrute_DATA) \
+        $(volca_sample_2_DATA) \
         $(ico_DATA) \
 	THANKS

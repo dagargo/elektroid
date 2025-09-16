@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
 download=true
+download_ext=
 [ "$1" == "--no-download" ] && shift && download=false
+# Used to search the download file by its extension. Needed for files that don't use the connector name, such as wav files.
+[ "$1" == "--download-ext" ] && shift && download_ext=".$1" && shift
 
 CONN=$1
 FS=$2
@@ -28,13 +31,21 @@ function exitWithError() {
   exit $1
 }
 
+function getDownloadName() {
+  if [ -z "$download_ext" ]; then
+    echo "$srcdir/$DEVICE_NAME $FS"*
+  else
+    echo "$srcdir/"*$download_ext
+  fi
+}
+
 echo "Using device $TEST_DEVICE..."
 DEVICE_NAME=$(elektroid-cli info $TEST_DEVICE | grep "Device name:" | awk -F': ' '{print $2}')
 echo "Device name: $DEVICE_NAME"
 
 echo "Cleaning up previous executions..."
-rm -f "$srcdir/$DEVICE_NAME $FS"*
-rm -f "$srcdir/$BACKUP_PREFIX$DEVICE_NAME $FS"*
+rm -f "$(getDownloadName)"
+rm -f "$srcdir/$BACKUP_PREFIX$(getDownloadName)"
 
 echo "Testing ls..."
 files=$($ecli ${CONN}:${FS}:ls $TEST_DEVICE:$DIR_PATH)
@@ -52,9 +63,10 @@ if $download; then
   echo "Testing download with path $FILE_PATH..."
   $ecli ${CONN}:${FS}:dl $TEST_DEVICE:$FILE_PATH
   [ $? -ne 0 ] && exit 1
-  FILE=$(echo "$srcdir/$DEVICE_NAME $FS"*)
+  FILE=$(getDownloadName)
+  echo "Using file $FILE as the download file..."
   [ ! -f "$FILE" ] && exit 1
-  FILE_BACKUP=$srcdir/$BACKUP_PREFIX$(basename "$FILE")
+  FILE_BACKUP=/tmp/$BACKUP_PREFIX$(basename "$FILE")
   mv "$FILE" "$FILE_BACKUP"
 fi
 
@@ -82,8 +94,9 @@ if $download; then
   echo "Testing data changes..."
   $ecli ${CONN}:${FS}:dl $TEST_DEVICE:$FILE_PATH
   [ $? -ne 0 ] && exitWithError 1
-  FILE=$(echo "$srcdir/$DEVICE_NAME $FS"*)
+  FILE=$(getDownloadName)
   [ ! -f "$FILE" ] && exitWithError 1
+  echo "Comparing $FILE to $FILE_UPLOADED_BACK..."
   cksum_act=$(cksum "$FILE" | awk '{print $1}')
   cksum_exp=$(cksum "$FILE_UPLOADED_BACK" | awk '{print $1}')
   echo "Actual cksum: $cksum_act"

@@ -23,13 +23,14 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
-#define FS_ICON_WAVE "elektroid-wave-symbolic"
-#define FS_ICON_WAVETABLE "elektroid-wavetable-symbolic"
-#define FS_ICON_SEQ "elektroid-sequence-symbolic"
-#define FS_ICON_PRJ "elektroid-project-symbolic"
-#define FS_ICON_SND "elektroid-sound-symbolic"
 #define FS_ICON_GENERIC "elektroid-file-symbolic"
 #define FS_ICON_KEYS "elektroid-keys-symbolic"
+#define FS_ICON_SLICE "elektroid-slice-symbolic"
+#define FS_ICON_SND "elektroid-sound-symbolic"
+#define FS_ICON_PRJ "elektroid-project-symbolic"
+#define FS_ICON_SEQ "elektroid-sequence-symbolic"
+#define FS_ICON_WAVE "elektroid-wave-symbolic"
+#define FS_ICON_WAVETABLE "elektroid-wavetable-symbolic"
 
 #define GET_SAVE_EXT(ops,backend) (ops->get_exts(backend, ops)[0])
 
