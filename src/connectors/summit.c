@@ -47,7 +47,6 @@
 
 static const gchar *SUMMIT_TUNING_EXTS[] = { BE_SYSEX_EXT, SCALA_EXT, NULL };
 
-static const guint8 NOVATION_ID[] = { 0x0, 0x20, 0x29 };
 static const guint8 SUMMIT_ID[] = { 0x33, 1, 0, 0 };
 
 static const guint8 SUMMIT_GENERIC_REQ[] =

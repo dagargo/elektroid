@@ -71,7 +71,6 @@
 
 static const gchar *MICROBRUTE_EXTS[] = { "mbseq", NULL };
 
-static const guint8 ARTURIA_ID[] = { 0x0, 0x20, 0x6b };
 static const guint8 FAMILY_ID[] = { 0x4, 0x0 };
 static const guint8 MODEL_ID[] = { 0x2, 0x1 };
 

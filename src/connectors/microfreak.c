@@ -79,7 +79,6 @@ static const gchar *MICROFREAK_ZWAVETABLE_EXTS[] =
 static const guint8 MICROFREAK_REQUEST_HEADER[] =
   { 0xf0, 0, 0x20, 0x6b, 7, 1 };
 
-static const guint8 ARTURIA_ID[] = { 0x0, 0x20, 0x6b };
 static const guint8 FAMILY_ID[] = { 0x6, 0x0 };
 static const guint8 MODEL_ID[] = { 0x6, 0x1 };
 

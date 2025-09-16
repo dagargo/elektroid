@@ -53,7 +53,6 @@
 #define EFACTOR_ALPHABET " 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz*+-_|}"
 #define EFACTOR_DEFAULT_CHAR '_'
 
-static const guint8 EVENTIDE_ID[] = { 0x1c };
 static const guint8 FAMILY_ID[] = { 0, 6 };	//This might not be the same value for all the Factor and H9 pedals.
 static const guint8 MODEL_ID[] = { 0x11, 0 };	//This might not be the same value for all the Factor and H9 pedals.
 
