@@ -13,6 +13,9 @@
     width: 32px;
     vertical-align: text-bottom;
   }
+  #custom-title {
+    margin-left: 8px;
+  }
 </style>
 
 <a id="fmogr" href="https://github.com/dagargo/elektroid">
@@ -25,7 +28,7 @@
     {%- assign default_paths = site.pages | sort: 'order' | map: "path" -%}
     {%- assign page_paths = site.minima.nav_pages | default: default_paths -%}
     {%- assign page_titles = site.pages | map: 'title' | compact %}
-    <a class="site-title" rel="author" href="{{ '/' | relative_url }}"><img id="custom-logo" src="{{ "/images/logo.png" | relative_url }}">{{ site.title | escape }}</a>
+    <a class="site-title" rel="author" href="{{ '/' | relative_url }}"><img id="custom-logo" src="{{ "/images/logo.png" | relative_url }}"><span id="custom-title">{{ site.title | escape }}</span></a>
 
     {%- unless page_titles == empty %}
       <nav class="site-nav">
