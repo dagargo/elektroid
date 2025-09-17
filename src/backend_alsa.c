@@ -77,10 +77,8 @@ backend_init_int (struct backend *backend, const gchar *id)
   backend->inputp = NULL;
   backend->outputp = NULL;
   backend->pfds = NULL;
-  backend->rx_len = 0;
-  backend->buffer = NULL;
 
-  backend->buffer = g_malloc (sizeof (guint8) * BE_INT_BUF_LEN);
+  backend->buffer = g_byte_array_sized_new (BE_INT_BUFF_SIZE);
 
   if ((err = snd_rawmidi_open (&backend->inputp, &backend->outputp, id,
 			       SND_RAWMIDI_NONBLOCK | SND_RAWMIDI_SYNC)) < 0)
