@@ -21,6 +21,8 @@
 #include <rtmidi_c.h>
 #include "backend.h"
 
+#define RTMIDI_TMP_BUFF_SIZE 1024
+
 #if defined(__linux__)
 #define ELEKTROID_RTMIDI_API RTMIDI_API_LINUX_ALSA
 #define FIRST_OUTPUT_PORT 1	//Skip Midi Through
@@ -119,15 +121,14 @@ backend_init_int (struct backend *backend, const gchar *id)
 	    {
 	      backend->inputp = rtmidi_in_create (ELEKTROID_RTMIDI_API,
 						  PACKAGE_NAME,
-						  BE_INT_BUF_LEN);
+						  BE_INT_BUFF_SIZE);
 	      rtmidi_in_ignore_types (backend->inputp, false, true, true);
 	      rtmidi_open_port (backend->inputp, i, PACKAGE_NAME);
 	      backend->outputp =
 		rtmidi_out_create (ELEKTROID_RTMIDI_API, PACKAGE_NAME);
 	      rtmidi_open_port (backend->outputp, j, PACKAGE_NAME);
-	      backend->rx_len = 0;
 
-	      backend->buffer = g_malloc (sizeof (guint8) * BE_INT_BUF_LEN);
+	      backend->buffer = g_byte_array_sized_new (BE_INT_BUFF_SIZE);
 	      goto cleanup_output;
 	    }
 	}
@@ -190,21 +191,26 @@ backend_tx_raw (struct backend *backend, guint8 *data, guint len)
 void
 backend_rx_drain_int (struct backend *backend)
 {
+  guint8 tmp[RTMIDI_TMP_BUFF_SIZE];
   while (1)
     {
-      size_t len = BE_INT_BUF_LEN;
-      rtmidi_in_get_message (backend->inputp, backend->buffer, &len);
-      if (len == 0)
+      size_t size = RTMIDI_TMP_BUFF_SIZE;
+      //The size is not important here. As long as there are no more data.
+      rtmidi_in_get_message (backend->inputp, tmp, &size);
+      if (size == 0)
 	{
 	  break;
 	}
     }
 }
 
+// rtmidi_in_get_message requires enough space in the buffer to store the message.
+// As this is unknown, quite a large buffer needs to be allocated for this.
+
 ssize_t
-backend_rx_raw (struct backend *backend, guint8 *buffer, guint len)
+backend_rx_raw (struct backend *backend, guint8 *buffer, guint s)
 {
-  size_t size = len;
+  size_t size = s;
   rtmidi_in_get_message (backend->inputp, buffer, &size);
   if (!backend->inputp->ok)
     {

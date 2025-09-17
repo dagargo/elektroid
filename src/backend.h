@@ -34,9 +34,10 @@
 
 #define BE_POLL_TIMEOUT_MS 20
 #define BE_MAX_TX_LEN KI	//With a higher value than 4 KB, functions behave erratically.
-#define BE_INT_BUF_LEN (32 * KI)	//Max length of a SysEx message for Elektroid
+#define BE_INT_BUFF_SIZE (128 * KI)	//Used as the default size for the GByteArray buffer.
 #define BE_DEV_RING_BUF_LEN (256 * KI)
-#define BE_TMP_BUFF_LEN (64 * KI)	//This size is required by RtMidi as it needs enough space for the messages.
+//This size is required by RtMidi as it needs enough space for a message. Therefore, this must be the maximum size of all the possible messages.
+#define BE_TMP_BUFF_SIZE MI
 
 #define BE_REST_TIME_US 50000
 #define BE_SYSEX_TIMEOUT_MS 5000
@@ -121,8 +122,7 @@ struct backend
   gint npfds;
   struct pollfd *pfds;
 #endif
-  guint8 *buffer;
-  ssize_t rx_len;
+  GByteArray *buffer;
   enum backend_type type;
   struct backend_midi_info midi_info;
   gchar name[LABEL_MAX];

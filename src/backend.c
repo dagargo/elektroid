@@ -24,6 +24,9 @@
 #include "preferences.h"
 #include "utils.h"
 
+// This can be allocated statically as the only function that uses it is synchronized.
+static guint8 tmp_buffer[BE_TMP_BUFF_SIZE];
+
 struct connector *system_connector = NULL;
 GSList *connectors = NULL;
 
@@ -461,14 +464,39 @@ backend_check (struct backend *backend)
     }
 }
 
+static guint8 *
+backend_get_sysex_start (guint8 *tmp, ssize_t *size)
+{
+  guint i, total = *size;
+  guint8 *msg_start;
+
+  //Everything is skipped until a 0xf0 is found. This includes every RT MIDI message.
+  msg_start = tmp;
+  for (i = 0; i < total; i++, msg_start++, (*size)--)
+    {
+      if (*msg_start == 0xf0)
+	{
+	  break;
+	}
+    }
+
+  if (debug_level >= 4)
+    {
+      gchar *text = debug_get_hex_data (debug_level, tmp, i);
+      debug_print (4, "Skipping non SysEx data (%d): %s", i, text);
+      g_free (text);
+    }
+
+  return msg_start;
+}
+
 static ssize_t
 backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer,
 		     struct controllable *controllable)
 {
-  ssize_t rx_len, rx_len_msg;
   gchar *text;
-  guint8 tmp[BE_TMP_BUFF_LEN];
-  guint8 *tmp_msg, *data = backend->buffer + backend->rx_len;
+  ssize_t rx_len;
+  guint8 *msg_start;
 
   if (!backend->inputp)
     {
@@ -494,15 +522,16 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer,
 	  && transfer->time >= transfer->timeout)
 	{
 	  debug_print (1, "Timeout (%d)", transfer->timeout);
-	  gchar *text = debug_get_hex_data (debug_level, backend->buffer,
-					    backend->rx_len);
-	  debug_print (4, "Internal buffer data (%zd): %s", backend->rx_len,
-		       text);
+	  gchar *text =
+	    debug_get_hex_data (debug_level, backend->buffer->data,
+				backend->buffer->len);
+	  debug_print (4, "Internal buffer data (%u): %s",
+		       backend->buffer->len, text);
 	  g_free (text);
 	  return -ETIMEDOUT;
 	}
 
-      rx_len = backend_rx_raw (backend, tmp, BE_TMP_BUFF_LEN);
+      rx_len = backend_rx_raw (backend, tmp_buffer, BE_TMP_BUFF_SIZE);
       if (rx_len < 0)
 	{
 	  return rx_len;
@@ -518,28 +547,20 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer,
 	  continue;
 	}
 
-      //Everything is skipped until a 0xf0 is found. This includes every RT MIDI message.
-      tmp_msg = tmp;
-      if (!backend->rx_len && *tmp_msg != 0xf0)
+      if (debug_level >= 4)
 	{
-	  if (debug_level >= 4)
-	    {
-	      gchar *text = debug_get_hex_data (debug_level, tmp, rx_len);
-	      debug_print (4, "Skipping non SysEx data (%zd): %s", rx_len,
-			   text);
-	      g_free (text);
-	    }
+	  gchar *text = debug_get_hex_data (debug_level, tmp_buffer, rx_len);
+	  debug_print (4, "Read data (%zd): %s", rx_len, text);
+	  g_free (text);
+	}
 
-	  tmp_msg++;
-	  rx_len_msg = 1;
-	  for (gint i = 1; i < rx_len; i++, tmp_msg++, rx_len_msg++)
-	    {
-	      if (*tmp_msg == 0xf0)
-		{
-		  break;
-		}
-	    }
-	  rx_len -= rx_len_msg;
+      if (backend->buffer->len)
+	{
+	  msg_start = tmp_buffer;
+	}
+      else
+	{
+	  msg_start = backend_get_sysex_start (tmp_buffer, &rx_len);
 	}
 
       if (rx_len == 0)
@@ -550,25 +571,19 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer,
 
       if (rx_len > 0)
 	{
-	  memcpy (backend->buffer + backend->rx_len, tmp_msg, rx_len);
-	  backend->rx_len += rx_len;
-	  break;
-	}
-
-      if (rx_len < 0)
-	{
+	  g_byte_array_append (backend->buffer, msg_start, rx_len);
+	  if (debug_level >= 3)
+	    {
+	      text = debug_get_hex_data (debug_level, msg_start, rx_len);
+	      debug_print (3, "Queued data (%zu): %s", rx_len, text);
+	      g_free (text);
+	    }
 	  break;
 	}
     }
 
-  if (debug_level >= 3)
-    {
-      text = debug_get_hex_data (debug_level, data, rx_len);
-      debug_print (3, "Queued data (%zu): %s", rx_len, text);
-      g_free (text);
-    }
 
-  return rx_len;
+  return backend->buffer->len;
 }
 
 //Access to this function must be synchronized.
@@ -583,14 +598,14 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer,
 
   transfer->err = 0;
   transfer->time = 0;
-  transfer->raw = g_byte_array_sized_new (BE_INT_BUF_LEN);
+  transfer->raw = g_byte_array_sized_new (BE_INT_BUFF_SIZE);
   sysex_transfer_set_status (transfer, controllable,
 			     SYSEX_TRANSFER_STATUS_WAITING);
 
   next_check = 0;
   while (1)
     {
-      if (backend->rx_len == next_check)
+      if (backend->buffer->len == next_check)
 	{
 	  debug_print (4, "Reading from MIDI device...");
 	  if (transfer->batch)
@@ -626,8 +641,8 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer,
       sysex_transfer_set_status (transfer, controllable,
 				 SYSEX_TRANSFER_STATUS_RECEIVING);
       len = -1;
-      b = backend->buffer + next_check;
-      for (; next_check < backend->rx_len; next_check++, b++)
+      b = backend->buffer->data + next_check;
+      for (; next_check < backend->buffer->len; next_check++, b++)
 	{
 	  if (*b == 0xf7)
 	    {
@@ -637,17 +652,17 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer,
 	    }
 	}
 
-      //We filter out whatever SysEx message not suitable for Elektroid.
+      //We filter out any SysEx message not suitable.
 
       if (len > 0)
 	{
 	  //Filter out everything until an 0xf0 is found.
-	  b = backend->buffer;
+	  b = backend->buffer->data;
 	  for (i = 0; i < len && *b != 0xf0; i++, b++);
 	  if (i > 0 && debug_level >= 4)
 	    {
-	      gchar *text = debug_get_hex_data (debug_level, backend->buffer,
-						i);
+	      gchar *text = debug_get_hex_data (debug_level,
+						backend->buffer->data, i);
 	      debug_print (4, "Skipping non SysEx data in buffer (%d): %s",
 			   i, text);
 	      g_free (text);
@@ -655,9 +670,8 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer,
 	  debug_print (3, "Copying %d bytes...", len - i);
 	  g_byte_array_append (transfer->raw, b, len - i);
 
-	  backend->rx_len -= len;
-	  memmove (backend->buffer, backend->buffer + next_check,
-		   backend->rx_len);
+	  g_byte_array_remove_range (backend->buffer, 0, len);
+
 	  transfer->err = 0;
 	  next_check = 0;
 
@@ -730,7 +744,7 @@ backend_rx_drain (struct backend *backend)
   sysex_transfer_init_rx (&transfer, 1000, FALSE);
 
   debug_print (2, "Draining buffers...");
-  backend->rx_len = 0;
+  backend->buffer->len = 0;
   backend_rx_drain_int (backend);
   while (!backend_rx_sysex (backend, &transfer, NULL))
     {
