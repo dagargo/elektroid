@@ -52,10 +52,13 @@
     } \
 }
 
-#define error_print(format, ...) { \
+#define color_print(title, color, format, ...) { \
   gboolean tty = isatty(fileno(stderr)); \
-  fprintf(stderr, "%sERROR:" __FILE__ ":%d:%s: " format "%s\n", tty ? "\x1b[31m" : "", __LINE__, __FUNCTION__, ## __VA_ARGS__, tty ? "\x1b[m" : ""); \
+  fprintf(stderr, "%s%s:" __FILE__ ":%d:%s: " format "%s\n", tty ? color : "", title, __LINE__, __FUNCTION__, ## __VA_ARGS__, tty ? "\x1b[m" : ""); \
 }
+
+#define error_print(format, ...) color_print("ERROR", "\x1b[31m", format, ##__VA_ARGS__)
+#define warn_print(format, ...) color_print("WARN", "\x1b[33m", format, ##__VA_ARGS__)
 
 struct sample_info
 {

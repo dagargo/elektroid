@@ -73,6 +73,12 @@ backend_init_int (struct backend *backend, const gchar *id)
   gchar oportname[LABEL_MAX];
   gint iportnamelen, oportnamelen;
 
+#if defined(__linux__)
+  warn_print
+    ("On Linux, using RtMidi requires setting the ALSA MIDI buffer to %d",
+     BE_TMP_BUFF_SIZE);
+#endif
+
   backend->inputp = NULL;
   backend->outputp = NULL;
   backend->buffer = NULL;
