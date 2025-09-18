@@ -571,7 +571,14 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer,
 
       if (rx_len > 0)
 	{
-	  g_byte_array_append (backend->buffer, msg_start, rx_len);
+	  guint8 *v = msg_start;
+	  for (guint i = 0; i < rx_len; i++, v++)
+	    {
+	      if (*v == 0xf0 || *v == 0xf7 || (*v & 0xf0) != 0xf0)
+		{
+		  g_byte_array_append (backend->buffer, v, 1);
+		}
+	    }
 	  if (debug_level >= 3)
 	    {
 	      text = debug_get_hex_data (debug_level, msg_start, rx_len);
