@@ -45,7 +45,9 @@
 #define EFACTOR_SINGLE_PRESET_MAX_LEN 256	//This is an empirical value. The maximum found value is 233 but we just add a few bytes just in case.
 #define EFACTOR_MAX_ID_TAG_LEN 16	//The longest value is "[100]" plus the \0.
 
-#define EFACTOR_TIMEOUT_TOTAL_PRESETS 30000	//20 s is not enough with RtMidi.
+#define EFACTOR_READ_DIR_TIMEOUT_MS 30000	//20 s is not enough with RtMidi.
+
+#define EFACTOR_WRITE_SLEEP_TIME_S 3
 
 #define EFACTOR_PEDAL_NAME(data) (data->type == EFACTOR_FACTOR ? EFACTOR_FACTOR_NAME_PREFIX : EFACTOR_H9_NAME_PREFIX)
 
@@ -164,7 +166,7 @@ efactor_read_dir (struct backend *backend, struct item_iterator *iter,
 
   tx_msg = efactor_new_op_msg (EFACTOR_OP_PRESETS_WANT);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg,
-				    EFACTOR_TIMEOUT_TOTAL_PRESETS);
+				    EFACTOR_READ_DIR_TIMEOUT_MS);
   if (!rx_msg)
     {
       return -ETIMEDOUT;
@@ -312,7 +314,7 @@ efactor_upload (struct backend *backend, const gchar *path,
   err = common_data_tx (backend, tx_msg, control);
   free_msg (tx_msg);
 end:
-  sleep (1);
+  sleep (EFACTOR_WRITE_SLEEP_TIME_S);
   return err;
 }
 
@@ -369,7 +371,7 @@ efactor_rename (struct backend *backend, const gchar *src, const gchar *dst)
       free_msg (rx_msg);
     }
 
-  sleep (1);
+  sleep (EFACTOR_WRITE_SLEEP_TIME_S);
 
 end:
   controllable_clear (&control.controllable);
