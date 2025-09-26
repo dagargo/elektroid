@@ -20,6 +20,7 @@
 
 #include <glib/gi18n.h>
 #include <string.h>
+#include "../config.h"
 #include "audio.h"
 #include "browser.h"
 #include "connectors/system.h"
@@ -27,6 +28,8 @@
 #include "maction.h"
 #include "progress_window.h"
 #include "sample.h"
+
+#define SAMPLES_DIR "samples"
 
 static struct guirecorder guirecorder;
 
@@ -60,18 +63,67 @@ struct autosampler_data
 };
 
 static void
+autosampler_get_down_up_distance (gint distance, gint *up, gint *down)
+{
+  gint additional_notes = distance - 1;
+  *up = additional_notes / 2;
+  *down = additional_notes - *up;
+}
+
+static void
 autosampler_runner (gpointer user_data)
 {
   struct autosampler_data *data = user_data;
   const gchar *note;
-  gint s, total, i;
+  gint s, total, i, up, down;
   guint32 start, length;
   GValue value = G_VALUE_INIT;
   gdouble fract;
   gchar filename[LABEL_MAX], *path;
   struct sample_info *sample_info;
+  GString *sfz;
+  gchar *dir, *samples_dir, *sfz_path, *sfz_filename;
+
+  autosampler_get_down_up_distance (data->semitones, &up, &down);
 
   progress_window_set_fraction (0.0);
+
+  dir = path_chain (PATH_SYSTEM, local_browser.dir, data->name);
+  samples_dir = path_chain (PATH_SYSTEM, dir, SAMPLES_DIR);
+  system_mkdir (NULL, samples_dir);
+
+  sfz = g_string_new_len (NULL, 64 * KI);
+
+  g_string_append_printf (sfz, "//%s SFZ v1\n", data->name);
+  g_string_append (sfz, "//Created with Elektroid " PACKAGE_VERSION "\n");
+  g_string_append (sfz, "\n");
+
+  g_string_append (sfz, "<group>\n");
+  g_string_append (sfz, "loop_mode=loop_continuous");
+  g_string_append (sfz, "\n");
+
+  g_string_append_printf (sfz, "tune=%d\n", data->tuning);
+  g_string_append (sfz, "\n");
+
+  g_string_append (sfz, "amp_veltrack=0\n");
+  g_string_append (sfz, "fil_keycenter=0\n");
+  g_string_append (sfz, "fil_keytrack=0\n");
+  g_string_append (sfz, "ampeg_attack=0\n");
+  g_string_append (sfz, "ampeg_decay=0\n");
+  g_string_append (sfz, "ampeg_sustain=100\n");
+  g_string_append (sfz, "ampeg_release=0\n");
+  g_string_append (sfz, "\n");
+
+  g_string_append_printf (sfz, "cutoff=%2d\n", audio.rate / 2);
+  g_string_append (sfz, "resonance=0\n");
+  g_string_append (sfz, "fil_veltrack=0\n");
+  g_string_append (sfz, "fil_keycenter=0\n");
+  g_string_append (sfz, "fil_keytrack=0\n");
+  g_string_append (sfz, "fileg_attack=0\n");
+  g_string_append (sfz, "fileg_decay=0\n");
+  g_string_append (sfz, "fileg_sustain=100\n");
+  g_string_append (sfz, "fileg_release=0\n");
+  g_string_append (sfz, "\n");
 
   total = ((data->end - data->start) / data->semitones) + 1;
   s = 0;
@@ -83,7 +135,7 @@ autosampler_runner (gpointer user_data)
       note = g_value_get_string (&value);
       debug_print (1, "Recording note %s (%d)...", note, i);
 
-      snprintf (filename, LABEL_MAX, "%03d %s %s.wav", s, data->name, note);
+      snprintf (filename, LABEL_MAX, "%s %03d %s.wav", data->name, i, note);
       progress_window_set_label (filename);
 
       audio_start_recording (data->channel_mask, NULL, NULL);
@@ -108,15 +160,19 @@ autosampler_runner (gpointer user_data)
       audio_delete_range (start, length);
       g_mutex_unlock (&audio.control.controllable.mutex);
 
-      gchar *dir = path_chain (PATH_SYSTEM, local_browser.dir, data->name);
-      system_mkdir (NULL, dir);
       //We add the note number to ensure lexicographical order.
-      path = path_chain (PATH_SYSTEM, dir, filename);
+      path = path_chain (PATH_SYSTEM, samples_dir, filename);
       debug_print (1, "Saving sample to %s...", path);
       sample_save_to_file (path, &audio.sample, &audio.control,
 			   SF_FORMAT_WAV | sample_get_internal_format ());
-      g_free (dir);
       g_free (path);
+
+      g_string_append (sfz, "<region>\n");
+      g_string_append_printf (sfz, "sample=%s%c%s\n", SAMPLES_DIR,
+			      G_DIR_SEPARATOR, filename);
+      g_string_append_printf (sfz, "lokey=%d hikey=%d\n", i - down, i + up);
+      g_string_append_printf (sfz, "pitch_keycenter=%d\n", i);
+      g_string_append (sfz, "\n");
 
       g_value_unset (&value);
 
@@ -132,6 +188,7 @@ autosampler_runner (gpointer user_data)
 
       if (i > data->end)
 	{
+	  usleep (250000); // Time to let the progress move to 100 %
 	  break;
 	}
 
@@ -142,6 +199,20 @@ autosampler_runner (gpointer user_data)
 
       sleep (1);
     }
+
+  sfz_filename = g_strdup_printf ("%s.sfz", data->name);
+  sfz_path = path_chain (PATH_SYSTEM, dir, sfz_filename);
+  debug_print (1, "Writing sfz file...");
+  if (file_save_data (sfz_path, (guint8 *) sfz->str, sfz->len))
+    {
+      error_print ("Error while saving sfz file to \"%s\"", sfz_path);
+    }
+  g_string_free (sfz, TRUE);
+  g_free (sfz_path);
+  g_free (sfz_filename);
+
+  g_free (samples_dir);
+  g_free (dir);
 
   audio_reset_sample ();
 
