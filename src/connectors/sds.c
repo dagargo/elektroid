@@ -214,6 +214,7 @@ sds_get_download_info (GByteArray *header, struct sample_info *sample_info,
     sds_get_bytes_value_right_just (&header->data[16], SDS_BYTES_PER_WORD);
   sample_info->loop_type = header->data[19];
   sample_info->midi_note = 0;
+  sample_info->midi_fraction = 0;
   sample_info->channels = 1;
   return 0;
 }
