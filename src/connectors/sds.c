@@ -1053,7 +1053,7 @@ static const struct fs_operations FS_SDS_SAMPLES_MONO_12B_OPERATIONS = {
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_ID_COLUMN,
   .name = "mono-12b",
-  .gui_name = "mono-12 bits",
+  .gui_name = "mono 12 bits",
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
