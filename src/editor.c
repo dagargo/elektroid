@@ -1617,8 +1617,6 @@ editor_save (const gchar *name)
 
   sel_len = AUDIO_SEL_LEN;
 
-  debug_print (2, "Saving recording to %s...", path);
-
   if (sel_len)
     {
       guint fsize = SAMPLE_INFO_FRAME_SIZE (sample_info);
@@ -1639,16 +1637,14 @@ editor_save (const gchar *name)
     {
       if (sel_len)
 	{
-	  struct idata *aux = g_malloc (sizeof (struct idata));
 	  debug_print (2, "Saving selection to %s...", path);
-	  idata_init (aux, selection, NULL, aux_si);
-	  aux->name = strdup (name);
+	  struct idata *aux = g_malloc (sizeof (struct idata));
+	  idata_init (aux, selection, strdup (name), aux_si);
 	  editor_save_with_progress (path, aux, TRUE);
 	}
       else
 	{
 	  debug_print (2, "Saving changes to %s...", path);
-
 	  g_free (audio.path);
 	  g_free (audio.sample.name);
 	  audio.path = path;
@@ -1668,10 +1664,9 @@ editor_save (const gchar *name)
       if (sel_len)
 	{
 	  //This does not set anything and leaves everything as if no sample would have been loaded.
-	  struct idata aux;
-	  idata_init (&aux, selection, NULL, aux_si);
 	  debug_print (2, "Saving recorded selection to %s...", path);
-	  aux.name = g_path_get_basename (path);
+	  struct idata aux;
+	  idata_init (&aux, selection, g_path_get_basename (path), aux_si);
 	  //This is a selection of a recording, so no resample is needed and, therefore, this is fast.
 	  editor_save_with_format (path, &aux, &sample_load_opts,
 				   audio.sample_info_src.format, NULL);
