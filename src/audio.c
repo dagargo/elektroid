@@ -531,23 +531,6 @@ audio_reset_sample ()
   g_mutex_unlock (&audio.control.controllable.mutex);
 }
 
-static void
-audio_set_sample (struct idata *sample)
-{
-  struct sample_info *sample_info;
-
-  audio_reset_sample ();
-
-  g_mutex_lock (&audio.control.controllable.mutex);
-  sample_info = sample->info;
-  sample->info = NULL;
-  idata_init (&audio.sample, idata_steal (sample), NULL, sample_info);
-  audio.control.callback = NULL;
-  audio.sel_start = -1;
-  audio.sel_end = -1;
-  g_mutex_unlock (&audio.control.controllable.mutex);
-}
-
 void
 audio_prepare (enum audio_status status)
 {
@@ -817,7 +800,16 @@ audio_set_play_and_wait (struct idata *sample, struct task_control *control)
   gboolean active = TRUE;
   struct sample_info *sample_info;
 
-  audio_set_sample (sample);
+  audio_reset_sample ();
+
+  g_mutex_lock (&audio.control.controllable.mutex);
+  sample_info = sample->info;
+  sample->info = NULL;
+  idata_init (&audio.sample, idata_steal (sample), NULL, sample_info);
+  audio.control.callback = NULL;
+  audio.sel_start = -1;
+  audio.sel_end = -1;
+  g_mutex_unlock (&audio.control.controllable.mutex);
 
   audio_start_playback (NULL);
 
