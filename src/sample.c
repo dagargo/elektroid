@@ -1232,3 +1232,39 @@ sample_load_opts_init_from_sample_info (struct sample_load_opts *opts,
   sample_load_opts_init (opts, sample_info->channels, sample_info->rate,
 			 sample_info->format & SF_FORMAT_SUBMASK);
 }
+
+// Only saving to sample formats allowing all the features is allowed.
+// If the format does not allow saving, an export should be done and the user should be informed about this.
+
+gboolean
+sample_format_is_valid_to_save (struct sample_info *sample_info)
+{
+  // The sample is a WAV file or a record buffer
+  return ((sample_info->format & SF_FORMAT_TYPEMASK) == SF_FORMAT_WAV) ||
+    ((sample_info->format & SF_FORMAT_TYPEMASK) == 0 &&
+     (sample_info->format & ELEKTROID_SAMPLE_FORMAT_MASK) == 0);
+}
+
+// The format in sample_info_src needs to be WAV regardless of the subtype as no other saving format is allowed.
+// If the subtype is not supported, SF_FORMAT_PCM_32 to provide the maximum precission.
+
+void
+sample_format_set_to_save (struct sample_info *sample_info)
+{
+  guint32 subtype = sample_info->format & SF_FORMAT_SUBMASK;
+  sample_info->format = SF_FORMAT_WAV;
+  switch (subtype)
+    {
+    case SF_FORMAT_PCM_S8:
+    case SF_FORMAT_PCM_16:
+    case SF_FORMAT_PCM_24:
+    case SF_FORMAT_PCM_32:
+    case SF_FORMAT_PCM_U8:
+    case SF_FORMAT_FLOAT:
+    case SF_FORMAT_DOUBLE:
+      sample_info->format |= subtype;
+      return;
+    default:
+      sample_info->format |= SF_FORMAT_FLOAT;
+    }
+}

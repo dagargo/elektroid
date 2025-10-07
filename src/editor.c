@@ -107,6 +107,7 @@ static GtkWidget *popover_undo_button;
 static GtkWidget *popover_normalize_button;
 static GtkWidget *popover_split_button;
 static GtkWidget *popover_save_button;
+static GtkWidget *popover_export_button;
 static gdouble zoom;
 static enum editor_operation operation;
 static gboolean dirty;
@@ -371,6 +372,24 @@ editor_start_playback ()
     }
 }
 
+static void
+editor_update_export_save_buttons ()
+{
+  if (audio.path)
+    {
+      gboolean can_save =
+	sample_format_is_valid_to_save (&audio.sample_info_src);
+      gtk_widget_set_visible (popover_save_button, can_save);
+      gtk_widget_set_visible (popover_export_button, !can_save);
+    }
+  else
+    {
+      // This is a recording
+      gtk_widget_set_visible (popover_save_button, TRUE);
+      gtk_widget_set_visible (popover_export_button, FALSE);
+    }
+}
+
 static gboolean
 editor_update_ui_on_load (gpointer data)
 {
@@ -387,6 +406,8 @@ editor_update_ui_on_load (gpointer data)
 	  editor_start_playback ();
 	}
     }
+
+  editor_update_export_save_buttons ();
 
   return FALSE;
 }
@@ -1207,6 +1228,7 @@ editor_show_popover_at (guint x, guint y, gboolean cursor_on_sel)
   gtk_widget_set_sensitive (popover_undo_button, dirty);
   gtk_widget_set_sensitive (popover_split_button, sample_info->channels > 1);
   gtk_widget_set_sensitive (popover_save_button, dirty || cursor_on_sel);
+  gtk_widget_set_sensitive (popover_export_button, dirty || cursor_on_sel);
 
   gtk_popover_popup (GTK_POPOVER (popover_menu));
 }
@@ -1604,42 +1626,47 @@ editor_save_with_progress (gchar *dst_path, struct idata *sample,
 }
 
 static void
+editor_save_selection_init_data (struct idata *selection, gchar *name,
+				 guint32 sel_len)
+{
+  struct sample_info *aux_si;
+  struct sample_info *sample_info = audio.sample.info;
+  guint fsize = SAMPLE_INFO_FRAME_SIZE (sample_info);
+  guint start = audio.sel_start * fsize;
+  guint len = sel_len * fsize;
+  GByteArray *data = g_byte_array_sized_new (len);
+  g_byte_array_append (data, &audio.sample.content->data[start], len);
+
+  aux_si = g_malloc (sizeof (struct sample_info));
+  memcpy (aux_si, audio.sample.info, sizeof (struct sample_info));
+  aux_si->frames = sel_len;
+  aux_si->loop_start = sel_len - 1;
+  aux_si->loop_end = aux_si->loop_start;
+
+  idata_init (selection, data, name, aux_si);
+}
+
+static void
 editor_save (const gchar *name)
 {
   gchar *path;
   guint32 sel_len;
-  GByteArray *selection = NULL;
-  struct sample_info *aux_si;
-  struct sample_info *sample_info = audio.sample.info;
   struct sample_load_opts sample_load_opts;
 
   path = browser_get_name_path (browser, name);
 
   sel_len = AUDIO_SEL_LEN;
 
-  if (sel_len)
-    {
-      guint fsize = SAMPLE_INFO_FRAME_SIZE (sample_info);
-      guint start = audio.sel_start * fsize;
-      guint len = sel_len * fsize;
-      selection = g_byte_array_sized_new (len);
-      g_byte_array_append (selection,
-			   &audio.sample.content->data[start], len);
-
-      aux_si = g_malloc (sizeof (struct sample_info));
-      memcpy (aux_si, audio.sample.info, sizeof (struct sample_info));
-      aux_si->frames = sel_len;
-      aux_si->loop_start = sel_len - 1;
-      aux_si->loop_end = aux_si->loop_start;
-    }
-
   if (audio.path)
     {
+      sample_format_set_to_save (&audio.sample_info_src);
+      editor_update_export_save_buttons ();
+
       if (sel_len)
 	{
 	  debug_print (2, "Saving selection to %s...", path);
 	  struct idata *aux = g_malloc (sizeof (struct idata));
-	  idata_init (aux, selection, strdup (name), aux_si);
+	  editor_save_selection_init_data (aux, strdup (name), AUDIO_SEL_LEN);
 	  editor_save_with_progress (path, aux, TRUE);
 	}
       else
@@ -1654,6 +1681,7 @@ editor_save (const gchar *name)
     }
   else
     {
+      // This is a new file so a format is needed.
       memcpy (&audio.sample_info_src,
 	      audio.sample.info, sizeof (struct sample_info));
       audio.sample_info_src.format |= SF_FORMAT_WAV;
@@ -1666,7 +1694,8 @@ editor_save (const gchar *name)
 	  //This does not set anything and leaves everything as if no sample would have been loaded.
 	  debug_print (2, "Saving recorded selection to %s...", path);
 	  struct idata aux;
-	  idata_init (&aux, selection, g_path_get_basename (path), aux_si);
+	  editor_save_selection_init_data (&aux, g_path_get_basename (path),
+					   sel_len);
 	  //This is a selection of a recording, so no resample is needed and, therefore, this is fast.
 	  editor_save_with_format (path, &aux, &sample_load_opts,
 				   audio.sample_info_src.format, NULL);
@@ -1683,6 +1712,7 @@ editor_save (const gchar *name)
 	  editor_save_with_format (audio.path, &audio.sample,
 				   &sample_load_opts,
 				   audio.sample_info_src.format, NULL);
+	  editor_update_export_save_buttons ();
 	}
     }
 }
@@ -1938,16 +1968,26 @@ editor_split_clicked (GtkWidget *object, gpointer user_data)
 }
 
 static void
-editor_save_clicked (GtkWidget *object, gpointer data)
+editor_export_save_clicked (GtkWidget *object, gpointer data)
 {
   gint name_sel_len;
   gchar name[PATH_MAX];
+  const gchar *window_title;
 
   g_mutex_lock (&audio.control.controllable.mutex);
 
   if (!editor_loading_completed_no_lock (NULL))
     {
       goto end;
+    }
+
+  if (sample_format_is_valid_to_save (&audio.sample_info_src))
+    {
+      window_title = _("Save Sample");
+    }
+  else
+    {
+      window_title = _("Export Sample");
     }
 
   if (AUDIO_SEL_LEN)
@@ -1959,7 +1999,8 @@ editor_save_clicked (GtkWidget *object, gpointer data)
       if (audio.path)
 	{
 	  gchar *basename = g_path_get_basename (audio.path);
-	  snprintf (name, PATH_MAX, "%s", basename);
+	  filename_remove_ext (basename);
+	  snprintf (name, PATH_MAX, "%s.wav", basename);
 	  g_free (basename);
 	}
       else
@@ -1974,7 +2015,7 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 
   name_sel_len = filename_get_lenght_without_ext (name);
 
-  name_window_edit_text (_("Save Sample"),
+  name_window_edit_text (window_title,
 			 browser->fs_ops->max_name_len, name, 0,
 			 name_sel_len, editor_save_accept, NULL);
 
@@ -2044,7 +2085,10 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
   else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_s &&
 	   dirty)
     {
-      editor_save_clicked (NULL, NULL);
+      if (sample_format_is_valid_to_save (&audio.sample_info_src))
+	{
+	  editor_export_save_clicked (NULL, NULL);
+	}
     }
 
   return TRUE;
@@ -2142,6 +2186,9 @@ editor_init (GtkBuilder *builder)
   popover_save_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "editor_popover_save_button"));
+  popover_export_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "editor_popover_export_button"));
 
   g_signal_connect (waveform, "draw", G_CALLBACK (editor_draw), NULL);
   gtk_widget_add_events (waveform, GDK_SCROLL_MASK);
@@ -2194,8 +2241,10 @@ editor_init (GtkBuilder *builder)
 		    G_CALLBACK (editor_normalize_clicked), NULL);
   g_signal_connect (popover_split_button, "clicked",
 		    G_CALLBACK (editor_split_clicked), NULL);
+  g_signal_connect (popover_export_button, "clicked",
+		    G_CALLBACK (editor_export_save_clicked), NULL);
   g_signal_connect (popover_save_button, "clicked",
-		    G_CALLBACK (editor_save_clicked), NULL);
+		    G_CALLBACK (editor_export_save_clicked), NULL);
 
   editor_loop_clicked (loop_button, NULL);
   gtk_switch_set_active (GTK_SWITCH (autoplay_switch),

@@ -110,4 +110,8 @@ void sample_load_opts_init_direct (struct sample_load_opts *opts);
 void sample_load_opts_init_from_sample_info (struct sample_load_opts *opts,
 					     struct sample_info *sample_info);
 
+gboolean sample_format_is_valid_to_save (struct sample_info *sample_info);
+
+void sample_format_set_to_save (struct sample_info *sample_info);
+
 #endif

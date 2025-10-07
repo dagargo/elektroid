@@ -188,7 +188,7 @@ autosampler_runner (gpointer user_data)
 
       if (i > data->end)
 	{
-	  usleep (250000); // Time to let the progress move to 100 %
+	  usleep (250000);	// Time to let the progress move to 100 %
 	  break;
 	}
 
