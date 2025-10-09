@@ -1005,7 +1005,6 @@ cleanup:
   if (!active || !sample_info->frames || err)
     {
       idata_free (idata);
-      cb (control, 0);
       g_mutex_unlock (&control->controllable.mutex);
       return -1;
     }
