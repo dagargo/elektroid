@@ -3013,6 +3013,20 @@ on remote</property>
                         <property name="position">1</property>
                       </packing>
                     </child>
+                    <child>
+                      <object class="GtkFlowBox" id="tags_box">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="max-children-per-line">100</property>
+                        <property name="selection-mode">none</property>
+                        <property name="activate-on-single-click">False</property>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">2</property>
+                      </packing>
+                    </child>
                   </object>
                   <packing>
                     <property name="resize">False</property>

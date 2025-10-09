@@ -1396,7 +1396,15 @@ sample_info_set_tag (const struct sample_info *sample_info,
 		   tag, SUBCHUNK_SIZE);
       return;
     }
-  g_hash_table_insert (sample_info->tags, strdup (tag), value);
+
+  if (value == NULL)
+    {
+      g_hash_table_remove (sample_info->tags, tag);
+    }
+  else
+    {
+      g_hash_table_insert (sample_info->tags, strdup (tag), value);
+    }
 }
 
 // Only saving to sample formats allowing all the features is allowed.

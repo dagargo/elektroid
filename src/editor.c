@@ -54,6 +54,13 @@
 #define SPLIT_DIFF_RATE_FRAMES_LIMIT_PROGRESS (audio.rate)	// 1 s
 #define SPLIT_SAME_RATE_FRAMES_LIMIT_PROGRESS (SPLIT_DIFF_RATE_FRAMES_LIMIT_PROGRESS * 10)
 
+// This uses the same separator as the IKEY in the LIST INFO chunk.
+// Structured here but will be alphabetically sorted in the editor.
+#define EDITOR_TAGS "kick; snare; clap; tom; percussion; hi-hat; cymbal; " \
+                    "loop; one-shot; " \
+                    "bass; lead; texture; chord; vocal; " \
+                    "electronic; acoustic; ambient; noisy; hard; soft; dark; bright"
+
 enum editor_operation
 {
   EDITOR_OP_NONE,
@@ -108,6 +115,7 @@ static GtkWidget *popover_normalize_button;
 static GtkWidget *popover_split_button;
 static GtkWidget *popover_save_button;
 static GtkWidget *popover_export_button;
+static GtkWidget *tags_box;
 static gdouble zoom;
 static enum editor_operation operation;
 static gboolean dirty;
@@ -190,6 +198,168 @@ editor_queue_draw (gpointer user_data)
 }
 
 static void
+editor_clear_tags_buttons ()
+{
+  GList *children;
+  children = gtk_container_get_children (GTK_CONTAINER (tags_box));
+  for (GList * iter = children; iter != NULL; iter = g_list_next (iter))
+    {
+      gtk_widget_destroy (GTK_WIDGET (iter->data));
+    }
+  g_list_free (children);
+}
+
+static gchar *
+editor_hashtable_to_ikey_format (GHashTable *set)
+{
+  gboolean first = TRUE;
+  GString *ikey = g_string_new (NULL);
+  GList *tags = g_hash_table_get_keys (set);
+
+  tags = g_list_sort (tags, (GCompareFunc) g_strcmp0);
+  for (GList * tag = tags; tag != NULL; tag = g_list_next (tag))
+    {
+      g_string_append_printf (ikey, "%s%s", first ? "" : "; ",
+			      (gchar *) tag->data);
+      first = FALSE;
+    }
+  g_list_free (tags);
+
+  return g_string_free_and_steal (ikey);
+}
+
+static GHashTable *
+editor_ikey_format_to_hashtable (const gchar *text)
+{
+  GHashTable *set = g_hash_table_new (g_str_hash, g_str_equal);
+  if (text != NULL)
+    {
+      gchar **tags = g_strsplit (text, "; ", 0);
+      gchar **tag = tags;
+      while (*tag)
+	{
+	  if (!g_hash_table_contains (set, *tag))
+	    {
+	      g_hash_table_add (set, g_strdup (*tag));
+	    }
+	  tag++;
+	}
+      g_strfreev (tags);
+    }
+  return set;
+}
+
+static GHashTable *
+editor_get_sample_tags ()
+{
+  // Sample tags are shown regardless of a sample being loaded
+  struct sample_info *sample_info = audio.sample.info;
+  if (sample_info)
+    {
+      const gchar *ikey_tags = sample_info_get_tag (sample_info,
+						    SAMPLE_INFO_TAG_IKEY);
+      return editor_ikey_format_to_hashtable (ikey_tags);
+    }
+  else
+    {
+      return g_hash_table_new (g_str_hash, g_str_equal);
+    }
+}
+
+static void
+editor_tags_union (GHashTable *set, GHashTable *other)
+{
+  GList *tags = g_hash_table_get_keys (other);
+  for (GList * tag = tags; tag != NULL; tag = g_list_next (tag))
+    {
+      if (!g_hash_table_contains (set, tag->data))
+	{
+	  g_hash_table_add (set, g_strdup (tag->data));
+	}
+    }
+  g_list_free (tags);
+}
+
+static void
+editor_tag_button_data_closure_notify (gpointer data, GClosure *closure)
+{
+  g_free (data);
+}
+
+static void
+editor_tag_button_clicked (GtkWidget *button, gpointer data)
+{
+  gchar *tag = data;
+  struct sample_info *sample_info = audio.sample.info;
+  GHashTable *sample_tags = editor_get_sample_tags ();
+  gboolean active = gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (button));
+
+  debug_print (2, "Setting tag '%s' to %d...", tag, active);
+  if (active)
+    {
+      g_hash_table_add (sample_tags, g_strdup (tag));
+    }
+  else
+    {
+      g_hash_table_remove (sample_tags, tag);
+    }
+
+  if (g_hash_table_size (sample_tags))
+    {
+      gchar *ikey = editor_hashtable_to_ikey_format (sample_tags);
+      sample_info_set_tag (sample_info, SAMPLE_INFO_TAG_IKEY, ikey);
+    }
+  else
+    {
+      sample_info_set_tag (sample_info, SAMPLE_INFO_TAG_IKEY, NULL);
+    }
+
+  g_hash_table_unref (sample_tags);
+
+  dirty = TRUE;
+}
+
+static void
+editor_update_tags_buttons ()
+{
+  editor_clear_tags_buttons ();
+
+  GHashTable *sample_tags = editor_get_sample_tags ();
+  GHashTable *editor_tags = editor_ikey_format_to_hashtable (EDITOR_TAGS);
+  GHashTable *all_tags = g_hash_table_new (g_str_hash, g_str_equal);
+
+  editor_tags_union (all_tags, sample_tags);
+  editor_tags_union (all_tags, editor_tags);
+
+  g_hash_table_unref (editor_tags);
+
+  GList *keys = g_hash_table_get_keys (all_tags);
+  keys = g_list_sort (keys, (GCompareFunc) g_strcmp0);
+
+  GList *tag = keys;
+  while (tag)
+    {
+      const gchar *tag_name = tag->data;
+      gboolean active = g_hash_table_contains (sample_tags, tag_name);
+      debug_print (2, "Adding tag button for '%s'...", tag_name);
+      GtkWidget *tag_button = gtk_toggle_button_new_with_label (tag_name);
+      gtk_widget_set_visible (tag_button, TRUE);
+      gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (tag_button), active);
+      g_signal_connect_data (tag_button, "clicked",
+			     G_CALLBACK (editor_tag_button_clicked),
+			     strdup (tag_name),
+			     editor_tag_button_data_closure_notify,
+			     G_CONNECT_DEFAULT);
+      gtk_flow_box_insert (GTK_FLOW_BOX (tags_box), tag_button, -1);
+      tag = g_list_next (tag);
+    }
+  g_list_free (keys);
+  g_hash_table_unref (all_tags);
+
+  g_hash_table_unref (sample_tags);
+}
+
+static void
 editor_clear_waveform_data_no_sync ()
 {
   debug_print (1, "Clearing waveform data...");
@@ -226,6 +396,7 @@ editor_reset_browser (gpointer data)
   gtk_widget_set_sensitive (play_button, FALSE);
   gtk_widget_set_sensitive (stop_button, FALSE);
   gtk_widget_set_sensitive (loop_button, FALSE);
+  gtk_widget_set_sensitive (tags_box, FALSE);
 
   return FALSE;
 }
@@ -241,6 +412,7 @@ editor_reset (struct browser *browser_)
 
   browser = browser_;
 
+  editor_update_tags_buttons ();
   editor_clear_waveform_data ();
 
   g_idle_add (editor_reset_browser, NULL);
@@ -401,6 +573,7 @@ editor_update_ui_on_load (gpointer data)
       gtk_widget_set_sensitive (play_button, TRUE);
       gtk_widget_set_sensitive (stop_button, TRUE);
       gtk_widget_set_sensitive (loop_button, TRUE);
+      gtk_widget_set_sensitive (tags_box, TRUE);
       if (preferences_get_boolean (PREF_KEY_AUTOPLAY))
 	{
 	  editor_start_playback ();
@@ -408,6 +581,8 @@ editor_update_ui_on_load (gpointer data)
     }
 
   editor_update_export_save_buttons ();
+
+  editor_update_tags_buttons ();
 
   return FALSE;
 }
@@ -1592,6 +1767,10 @@ editor_save_runner (gpointer user_data)
       idata_free (data->sample);
       g_free (data->sample);
     }
+  else
+    {
+      editor_update_tags_buttons ();	//This removes the tags in the sample not included in the editor
+    }
 
   controllable_clear (&control.controllable);
 
@@ -2160,6 +2339,7 @@ editor_init (GtkBuilder *builder)
     GTK_WIDGET (gtk_builder_get_object (builder, "grid_length_spin"));
   show_grid_switch =
     GTK_WIDGET (gtk_builder_get_object (builder, "show_grid_switch"));
+  tags_box = GTK_WIDGET (gtk_builder_get_object (builder, "tags_box"));
 
   notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
@@ -2261,6 +2441,8 @@ editor_init (GtkBuilder *builder)
 
   record_window_init (builder);
 
+  editor_update_tags_buttons ();
+
   g_mutex_init (&mutex);
   editor_reset (NULL);
   active = TRUE;
@@ -2291,6 +2473,7 @@ editor_destroy ()
 
   editor_clear_waveform_data ();
   editor_free_waveform_state ();
+  editor_clear_tags_buttons ();
 
   g_object_unref (G_OBJECT (notes_list_store));
 }
