@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 2.2\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2025-08-21 13:16+0200\n"
+"POT-Creation-Date: 2025-10-09 10:15+0200\n"
 "PO-Revision-Date: 2023-03-26 11:30-0300\n"
 "Last-Translator: Gustavo Costa <xfgusta@gmail.com>\n"
 "Language-Team: \n"
@@ -18,108 +18,112 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "X-Generator: Poedit 3.2.2\n"
 
-#: src/elektroid.c:182 src/elektroid.c:189 src/editor.c:1963
+#: src/elektroid.c:182 src/elektroid.c:189 src/editor.c:2006
 msgid "Audio"
 msgstr ""
 
-#: src/elektroid.c:273 src/elektroid.c:1584
+#: src/elektroid.c:273 src/elektroid.c:1591
 msgid "Not connected"
 msgstr "Não conectado"
 
-#: src/elektroid.c:649 src/editor.c:1723
+#: src/elektroid.c:656 src/editor.c:1751
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Substituir o arquivo \"%s\"?"
 
-#: src/elektroid.c:651 src/editor.c:1725 src/browser.c:612
+#: src/elektroid.c:658 src/editor.c:1753 src/browser.c:614
 #: src/mactions/backend.c:194 src/mactions/backend.c:282
-#: src/mactions/microfreak.c:68 res/elektroid.ui:1305 res/elektroid.ui:3343
-#: res/elektroid.ui:3719 res/elektroid.ui:3818 res/elektroid.ui:3960
+#: src/mactions/microfreak.c:68 res/elektroid.ui:1309 res/elektroid.ui:3384
+#: res/elektroid.ui:3760 res/elektroid.ui:3859 res/elektroid.ui:4001
 msgid "_Cancel"
 msgstr "_Cancelar"
 
-#: src/elektroid.c:652
+#: src/elektroid.c:659
 msgid "_Skip"
 msgstr "_Pular"
 
-#: src/elektroid.c:653 src/editor.c:1726
+#: src/elektroid.c:660 src/editor.c:1754
 msgid "_Replace"
 msgstr "_Substituir"
 
-#: src/elektroid.c:658
+#: src/elektroid.c:665
 msgid "Apply this action to all files"
 msgstr "Aplicar esta ação a todos os arquivos"
 
-#: src/elektroid.c:899 src/elektroid.c:1092 src/browser.c:1845
+#: src/elektroid.c:906 src/elektroid.c:1099 src/browser.c:1940
 msgid "Preparing Tasks"
 msgstr "Preparando tarefas"
 
-#: src/elektroid.c:899 src/elektroid.c:1092 src/browser.c:1846
+#: src/elektroid.c:906 src/elektroid.c:1099 src/browser.c:1941
 #: src/progress_window.c:137
 msgid "Waiting..."
 msgstr "Esperando..."
 
-#: src/elektroid.c:1178
+#: src/elektroid.c:1185
 #, c-format
 msgid "Device “%s” not recognized: %s"
 msgstr "Dispositivo \"%s\" não reconhecido: %s"
 
-#: src/elektroid.c:1267
+#: src/elektroid.c:1274
 msgid "Connecting to Device"
 msgstr "Conectando ao dispositivo"
 
-#: src/elektroid.c:1268
+#: src/elektroid.c:1275
 msgid "Connecting..."
 msgstr "Conectando..."
 
-#: src/elektroid.c:1522
+#: src/elektroid.c:1529
 msgid "Libraries"
 msgstr ""
 
-#: src/elektroid.c:1525
+#: src/elektroid.c:1532
 msgid "Acknowledgements"
 msgstr ""
 
-#: src/editor.c:1591
+#: src/editor.c:1611
 #, c-format
 msgid "Saving “%s”..."
 msgstr ""
 
-#: src/editor.c:1594
+#: src/editor.c:1614
 msgid "Saving sample"
 msgstr ""
 
-#: src/editor.c:1704 src/editor.c:1971
+#: src/editor.c:1732 src/editor.c:1982
 msgid "Save Sample"
 msgstr "Salvar amostra"
 
-#: src/editor.c:1797
+#: src/editor.c:1823
 msgid "Calculating..."
 msgstr ""
 
-#: src/editor.c:1862 src/guirecorder.c:80
+#: src/editor.c:1888 src/guirecorder.c:80
 msgctxt "Recording channels"
 msgid "Left"
 msgstr ""
 
-#: src/editor.c:1863 src/guirecorder.c:87
+#: src/editor.c:1889 src/guirecorder.c:87
 msgctxt "Recording channels"
 msgid "Right"
 msgstr ""
 
-#: src/editor.c:1868
+#: src/editor.c:1894
 #, fuzzy
 msgctxt "Audio file"
 msgid "Channel"
 msgstr "Canais"
 
-#: src/editor.c:1874
+#: src/editor.c:1900
 #, c-format
 msgid "Saving channel %d to “%s”..."
 msgstr ""
 
-#: src/editor.c:1925
+#: src/editor.c:1957
 msgid "Splitting channels"
+msgstr ""
+
+#: src/editor.c:1986
+msgid "Export Sample"
 msgstr ""
 
 #: src/tasks.c:35
@@ -154,53 +158,53 @@ msgstr "Upload"
 msgid "Download"
 msgstr "Download"
 
-#: src/browser.c:597
+#: src/browser.c:599
 msgid "Deleting Files"
 msgstr "Excluindo arquivos"
 
-#: src/browser.c:597
+#: src/browser.c:599
 msgid "Deleting..."
 msgstr "Excluindo..."
 
-#: src/browser.c:611
+#: src/browser.c:613
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Tem certeza de que deseja excluir os itens selecionados?"
 
-#: src/browser.c:613
+#: src/browser.c:615
 msgid "_Delete"
 msgstr "_Excluir"
 
-#: src/browser.c:676
+#: src/browser.c:678
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Erro ao renomear para \"%s\": %s."
 
-#: src/browser.c:710 res/elektroid.ui:1620 res/elektroid.ui:4101
+#: src/browser.c:712 res/elektroid.ui:1637 res/elektroid.ui:4142
 msgid "Rename"
 msgstr "Renomar"
 
-#: src/browser.c:812
+#: src/browser.c:866
 msgid "min."
 msgstr "min."
 
-#: src/browser.c:862
+#: src/browser.c:916
 msgid "cents"
 msgstr ""
 
-#: src/browser.c:1439
+#: src/browser.c:1534
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Erro ao criar diretório \"%s\": %s."
 
-#: src/browser.c:1455 res/elektroid.ui:1852 res/elektroid.ui:2296
+#: src/browser.c:1550 res/elektroid.ui:1869 res/elektroid.ui:2325
 msgid "Add Directory"
 msgstr "Adicionar diretório"
 
-#: src/browser.c:1832
+#: src/browser.c:1927
 msgid "Moving Files"
 msgstr "Movendo arquivos"
 
-#: src/browser.c:1833
+#: src/browser.c:1928
 msgid "Moving..."
 msgstr "Movendo..."
 
@@ -213,15 +217,15 @@ msgid "Input"
 msgstr ""
 
 #. This should only be translated if a non latin alphabet is used
-#: src/mactions/autosampler.c:234 res/elektroid.ui:787
+#: src/mactions/autosampler.c:306 res/elektroid.ui:791
 msgid "Auto Sampler"
 msgstr ""
 
-#: src/mactions/autosampler.c:235
+#: src/mactions/autosampler.c:307
 msgid "Recording..."
 msgstr ""
 
-#: src/mactions/autosampler.c:330
+#: src/mactions/autosampler.c:402
 msgid "_Auto Sampler"
 msgstr ""
 
@@ -255,7 +259,7 @@ msgstr "Erro ao salvar \"%s\": %s."
 msgid "Save SysEx"
 msgstr "Salvar SysEx"
 
-#: src/mactions/backend.c:283 res/elektroid.ui:3357 res/elektroid.ui:3733
+#: src/mactions/backend.c:283 res/elektroid.ui:3398 res/elektroid.ui:3774
 msgid "_Save"
 msgstr "_Salvar"
 
@@ -319,7 +323,7 @@ msgctxt "Recording channels"
 msgid "Stereo"
 msgstr ""
 
-#: src/connectors/sds.c:1340
+#: src/connectors/sds.c:1346
 msgid "SDS sampler"
 msgstr "Sampler SDS"
 
@@ -327,204 +331,212 @@ msgstr "Sampler SDS"
 msgid "MIDI device"
 msgstr "Dispositivo MIDI"
 
-#: src/connectors/system.c:767
+#: src/connectors/system.c:734
 msgid "System"
 msgstr "Sistema"
 
-#: res/elektroid.ui:751
+#: res/elektroid.ui:755
 msgid "Sample and MIDI device manager"
 msgstr "Gerenciador de amostras e dispositivos MIDI"
 
-#: res/elektroid.ui:754
+#: res/elektroid.ui:758
 msgid "translator-credits"
 msgstr "Gustavo Costa <xfgusta@gmail.com>"
 
-#: res/elektroid.ui:842 res/elektroid.ui:1983 res/elektroid.ui:2449
-#: res/elektroid.ui:3306
+#: res/elektroid.ui:846 res/elektroid.ui:2001 res/elektroid.ui:2479
+#: res/elektroid.ui:3347
 msgid "Name"
 msgstr "Nome"
 
 #. Audio channels
-#: res/elektroid.ui:868 res/elektroid.ui:2008 res/elektroid.ui:2476
-#: res/elektroid.ui:3871
+#: res/elektroid.ui:872 res/elektroid.ui:2037 res/elektroid.ui:2517
+#: res/elektroid.ui:3912
 msgid "Channels"
 msgstr "Canais"
 
 #. Input audio monitor
-#: res/elektroid.ui:899 res/elektroid.ui:3902
+#: res/elektroid.ui:903 res/elektroid.ui:3943
 msgid "Monitor"
 msgstr ""
 
-#: res/elektroid.ui:948
+#: res/elektroid.ui:952
 msgid "Global"
 msgstr ""
 
 #. Press key time
-#: res/elektroid.ui:1000
+#: res/elektroid.ui:1004
 msgctxt "Auto Sampler"
 msgid "Press"
 msgstr ""
 
 #. As the R in ADSR
-#: res/elektroid.ui:1013
+#: res/elektroid.ui:1017
 msgctxt "Auto Sampler"
 msgid "Release"
 msgstr ""
 
-#: res/elektroid.ui:1056 res/elektroid.ui:1997 res/elektroid.ui:2464
+#: res/elektroid.ui:1060 res/elektroid.ui:2026 res/elektroid.ui:2505
 msgid "Duration"
 msgstr "Duração"
 
 #. Start MIDI key (note)
-#: res/elektroid.ui:1102
+#: res/elektroid.ui:1106
 msgctxt "Auto Sampler"
 msgid "Start"
 msgstr "Começo"
 
 #. End MIDI key (note)
-#: res/elektroid.ui:1134
+#: res/elektroid.ui:1138
 msgctxt "Auto Sampler"
 msgid "End"
 msgstr "Fim"
 
 #. Distance between different samples
-#: res/elektroid.ui:1166
+#: res/elektroid.ui:1170
 msgctxt "Auto Sampler"
 msgid "Distance"
 msgstr ""
 
 #. As in MIDI velocity
-#: res/elektroid.ui:1179
+#: res/elektroid.ui:1183
 msgctxt "Auto Sampler"
 msgid "Velocity"
 msgstr "Velocidade"
 
 #. MIDI channel
-#: res/elektroid.ui:1222
+#: res/elektroid.ui:1226
 #, fuzzy
 msgctxt "Auto Sampler"
 msgid "Channel"
 msgstr "Canais"
 
 #. Device tuning in positive cents to be stored in the sample file
-#: res/elektroid.ui:1249
+#: res/elektroid.ui:1253
 msgctxt "Auto Sampler"
 msgid "Tuning"
 msgstr ""
 
-#: res/elektroid.ui:1319
+#: res/elektroid.ui:1323
 msgid "_Start"
 msgstr ""
 
-#: res/elektroid.ui:1359 res/elektroid.ui:1477
+#: res/elektroid.ui:1363 res/elektroid.ui:1481
 msgid "Tools"
 msgstr ""
 
-#: res/elektroid.ui:1375
+#: res/elektroid.ui:1379
 msgid "Normalize"
 msgstr ""
 
-#: res/elektroid.ui:1388
+#: res/elektroid.ui:1392
 msgid "Split Channels"
 msgstr ""
 
-#: res/elektroid.ui:1416 res/elektroid.ui:1559 res/elektroid.ui:4040
+#: res/elektroid.ui:1420 res/elektroid.ui:1576 res/elektroid.ui:4081
 msgid "Play"
 msgstr "Reproduzir"
 
-#: res/elektroid.ui:1440 res/elektroid.ui:1633 res/elektroid.ui:4114
+#: res/elektroid.ui:1444 res/elektroid.ui:1650 res/elektroid.ui:4155
 msgid "Delete"
 msgstr "Excluir"
 
-#: res/elektroid.ui:1453
+#: res/elektroid.ui:1457
 msgid "Undo"
 msgstr "Desfazer"
 
-#: res/elektroid.ui:1502
+#: res/elektroid.ui:1506
+msgid "Export"
+msgstr ""
+
+#: res/elektroid.ui:1519
 msgid "Save"
 msgstr "Salvar"
 
-#: res/elektroid.ui:1535
+#: res/elektroid.ui:1552
 msgid "Upload Selection"
 msgstr "Seleção de upload"
 
-#: res/elektroid.ui:1583 res/elektroid.ui:4064
+#: res/elektroid.ui:1600 res/elektroid.ui:4105
 msgid "Open With External Editor"
 msgstr "Abrir com um editor externo"
 
-#: res/elektroid.ui:1596 res/elektroid.ui:4077
+#: res/elektroid.ui:1613 res/elektroid.ui:4118
 msgid "Show in File Manager"
 msgstr "Mostrar no gerenciador de arquivos"
 
-#: res/elektroid.ui:1676
+#: res/elektroid.ui:1693
 msgid "Show _Remote"
 msgstr ""
 
-#: res/elektroid.ui:1700
+#: res/elektroid.ui:1717
 msgid "_Preferences "
 msgstr ""
 
-#: res/elektroid.ui:1724
+#: res/elektroid.ui:1741
 msgid "_About"
 msgstr "_Sobre"
 
-#: res/elektroid.ui:1831 res/elektroid.ui:2275
+#: res/elektroid.ui:1848 res/elektroid.ui:2304
 msgid "Go to Parent Directory"
 msgstr "Ir para o diretório pai"
 
-#: res/elektroid.ui:1873 res/elektroid.ui:2317
+#: res/elektroid.ui:1890 res/elektroid.ui:2346
 msgid "Refresh Directory"
 msgstr "Atualizar diretório"
 
-#: res/elektroid.ui:1894 res/elektroid.ui:2338
+#: res/elektroid.ui:1911 res/elektroid.ui:2367
 msgid "Search"
 msgstr ""
 
-#: res/elektroid.ui:2019 res/elektroid.ui:2488
+#: res/elektroid.ui:2015 res/elektroid.ui:2493
+msgid "Tags"
+msgstr ""
+
+#: res/elektroid.ui:2048 res/elektroid.ui:2529
 msgid "Rate"
 msgstr "Taxa"
 
-#: res/elektroid.ui:2030 res/elektroid.ui:2500
+#: res/elektroid.ui:2059 res/elektroid.ui:2541
 msgid "Format"
 msgstr ""
 
-#: res/elektroid.ui:2041 res/elektroid.ui:2512
+#: res/elektroid.ui:2070 res/elektroid.ui:2553
 msgid "MIDI Note"
 msgstr ""
 
-#: res/elektroid.ui:2052 res/elektroid.ui:2524
+#: res/elektroid.ui:2081 res/elektroid.ui:2565
 msgid "Samples"
 msgstr "Amostras"
 
-#: res/elektroid.ui:2063 res/elektroid.ui:2536
+#: res/elektroid.ui:2092 res/elektroid.ui:2577
 msgid "Information"
 msgstr ""
 
-#: res/elektroid.ui:2076 res/elektroid.ui:2551
+#: res/elektroid.ui:2105 res/elektroid.ui:2592
 msgid "Size"
 msgstr "Tamanho"
 
-#: res/elektroid.ui:2172
+#: res/elektroid.ui:2201
 msgid "Refresh Devices"
 msgstr "Atualizar dispositivos"
 
 #. It is recommended to split the text in two lines if it is too long
-#: res/elektroid.ui:2781
+#: res/elektroid.ui:2822
 msgid "Auto play"
 msgstr ""
 "Reprodução\n"
 "automática"
 
-#: res/elektroid.ui:2833
+#: res/elektroid.ui:2874
 msgid "Grid"
 msgstr ""
 
-#: res/elektroid.ui:2893
+#: res/elektroid.ui:2934
 msgid "Playing mix depends on the remote channels"
 msgstr "A reprodução da mixagem depende dos canais remotos"
 
 #. It is recommended to split the text in two lines if it is too long
-#: res/elektroid.ui:2895
+#: res/elektroid.ui:2936
 msgid ""
 "Mix depending\n"
 "on remote"
@@ -532,76 +544,76 @@ msgstr ""
 "Mixagem dependendo\n"
 "do destino"
 
-#: res/elektroid.ui:3006
+#: res/elektroid.ui:3047
 msgid "Status"
 msgstr "Status"
 
-#: res/elektroid.ui:3017
+#: res/elektroid.ui:3058
 msgid "Type"
 msgstr "Tipo"
 
-#: res/elektroid.ui:3038
+#: res/elektroid.ui:3079
 msgid "Source"
 msgstr "Origem"
 
-#: res/elektroid.ui:3052
+#: res/elektroid.ui:3093
 msgid "Destination"
 msgstr "Destino"
 
-#: res/elektroid.ui:3067
+#: res/elektroid.ui:3108
 msgid "Progress"
 msgstr "Progresso"
 
-#: res/elektroid.ui:3099
+#: res/elektroid.ui:3140
 msgid "Cancel Tasks"
 msgstr "Cancelar tarefas"
 
-#: res/elektroid.ui:3120
+#: res/elektroid.ui:3161
 msgid "Remove Queued Tasks"
 msgstr "Remover tarefas em fila"
 
-#: res/elektroid.ui:3141
+#: res/elektroid.ui:3182
 msgid "Clear Finished Tasks"
 msgstr "Limpar tarefas concluídas"
 
-#: res/elektroid.ui:3384
+#: res/elektroid.ui:3425
 msgid "Preferences"
 msgstr ""
 
-#: res/elektroid.ui:3433
+#: res/elektroid.ui:3474
 msgid "Play sample while loading"
 msgstr ""
 
-#: res/elektroid.ui:3461
+#: res/elektroid.ui:3502
 msgid "Use floating point samples"
 msgstr ""
 
-#: res/elektroid.ui:3489
+#: res/elektroid.ui:3530
 msgid "Buffer length"
 msgstr ""
 
-#: res/elektroid.ui:3523
+#: res/elektroid.ui:3564
 msgid "Show playback cursor"
 msgstr ""
 
-#: res/elektroid.ui:3593
+#: res/elektroid.ui:3634
 msgid "Stop device when connecting"
 msgstr ""
 
 #. Sound is a type of data in Elektron devices so it is better not to translate these words or quote them.
-#: res/elektroid.ui:3663
+#: res/elektroid.ui:3704
 msgid "Load sound and preset tags"
 msgstr ""
 
-#: res/elektroid.ui:3843
+#: res/elektroid.ui:3884
 msgid "Record Channels"
 msgstr ""
 
-#: res/elektroid.ui:3974
+#: res/elektroid.ui:4015
 msgid "_Record"
 msgstr ""
 
-#: res/elektroid.ui:4016
+#: res/elektroid.ui:4057
 msgid "Download Selection"
 msgstr "Seleção de download"
 
