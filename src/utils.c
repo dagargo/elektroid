@@ -727,6 +727,19 @@ sample_info_copy (struct sample_info *dst, struct sample_info *src)
     }
 }
 
+gboolean
+sample_info_equal_no_tags (struct sample_info *a, struct sample_info *b)
+{
+  return a->frames == b->frames &&
+    a->rate == b->rate &&
+    a->format == b->format &&
+    a->channels == b->channels &&
+    a->loop_start == b->loop_start &&
+    a->loop_end == b->loop_end &&
+    a->loop_type == b->loop_type &&
+    a->midi_note == b->midi_note && a->midi_fraction == b->midi_fraction;
+}
+
 GHashTable *
 sample_info_tags_new ()
 {

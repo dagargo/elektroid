@@ -200,6 +200,9 @@ void sample_info_free (gpointer sample_info);
 
 void sample_info_copy (struct sample_info *dst, struct sample_info *src);
 
+gboolean
+sample_info_equal_no_tags (struct sample_info *a, struct sample_info *b);
+
 GHashTable *sample_info_tags_new ();
 
 const gchar *sample_info_get_tag (const struct sample_info *sample_info,

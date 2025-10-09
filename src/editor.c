@@ -1711,7 +1711,8 @@ editor_undo_clicked (GtkWidget *object, gpointer data)
 static gint
 editor_save_with_format (const gchar *dst_path, struct idata *sample,
 			 struct sample_load_opts *sample_load_opts,
-			 guint32 format, struct task_control *control)
+			 guint32 format, struct task_control *control,
+			 gboolean new_take)
 {
   gint err;
   struct idata resampled;
@@ -1724,10 +1725,20 @@ editor_save_with_format (const gchar *dst_path, struct idata *sample,
       return err;
     }
 
+  // If it is an update of the currently edited sample, it requires updating audio.sample_info_src.
+  if (!new_take)
+    {
+      sample_info_copy (&audio.sample_info_src, resampled.info);
+      if (sample_load_opts->tags)
+	{
+	  g_hash_table_unref (audio.sample_info_src.tags);
+	  audio.sample_info_src.tags = NULL;
+	}
+      audio.sample_info_src.format |= format;	//This is required as reloading does not include the format
+    }
+
   err = sample_save_to_file (dst_path, &resampled, NULL, format);
   idata_free (&resampled);
-
-  browser_load_dir_if_needed (browser);
 
   return err;
 }
@@ -1771,7 +1782,8 @@ editor_save_runner (gpointer user_data)
   sample_load_opts_init_from_sample_info (&sample_load_opts,
 					  &audio.sample_info_src, TRUE);
   editor_save_with_format (data->path, data->sample, &sample_load_opts,
-			   audio.sample_info_src.format, &control);
+			   audio.sample_info_src.format, &control,
+			   data->new_take);
 
   if (data->new_take)
     {
@@ -1889,7 +1901,7 @@ editor_save (const gchar *name)
 					   sel_len);
 	  //This is a selection of a recording, so no resample is needed and, therefore, this is fast.
 	  editor_save_with_format (path, &aux, &sample_load_opts,
-				   audio.sample_info_src.format, NULL);
+				   audio.sample_info_src.format, NULL, TRUE);
 	  idata_free (&aux);
 	  g_free (path);
 	}
@@ -1902,7 +1914,7 @@ editor_save (const gchar *name)
 	  //This is a recording, so no resample is needed and, therefore, this is fast.
 	  editor_save_with_format (audio.path, &audio.sample,
 				   &sample_load_opts,
-				   audio.sample_info_src.format, NULL);
+				   audio.sample_info_src.format, NULL, FALSE);
 	  editor_update_export_save_buttons ();
 	}
     }
@@ -2106,7 +2118,7 @@ editor_split_runner (gpointer user_data)
       sample_load_opts.channels = 1;
 
       editor_save_with_format (path, idata, &sample_load_opts,
-			       audio.sample_info_src.format, &control);
+			       audio.sample_info_src.format, &control, TRUE);
       g_free (path);
 
       idata++;

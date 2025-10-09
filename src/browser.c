@@ -952,18 +952,28 @@ browser_add_dentry_item (gpointer data)
 
   if (audio.path && editor_get_browser () == browser)
     {
+      // The reload might be triggered from the GUI, some user action (i.e. saving) or by the notifier.
+      // Selecting the item is always needed but reloading is only needed when the sample in the editor is different from the one in storage.
       name = path_chain (PATH_SYSTEM, browser->dir, add_data->rel_path);
       if (!strcmp (audio.path, name))
 	{
-	  g_signal_handlers_block_by_func (selection,
-					   G_CALLBACK
-					   (browser_selection_changed),
-					   browser);
-	  gtk_tree_selection_select_iter (selection, &iter);
-	  g_signal_handlers_unblock_by_func (selection,
-					     G_CALLBACK
-					     (browser_selection_changed),
-					     browser);
+	  gboolean same = sample_info_equal_no_tags (&item->sample_info,
+						     &audio.sample_info_src);
+	  if (same)
+	    {
+	      g_signal_handlers_block_by_func (selection,
+					       G_CALLBACK
+					       (browser_selection_changed),
+					       browser);
+	    }
+	  gtk_tree_selection_select_iter (selection, &iter);	// item selection and sample reload
+	  if (same)
+	    {
+	      g_signal_handlers_unblock_by_func (selection,
+						 G_CALLBACK
+						 (browser_selection_changed),
+						 browser);
+	    }
 	}
       g_free (name);
     }
