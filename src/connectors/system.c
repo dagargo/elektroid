@@ -118,11 +118,12 @@ system_free_iterator_data (void *iter_data)
 static gint
 system_next_dentry (struct item_iterator *iter, gboolean sample_info)
 {
+  gint err;
   gchar *full_path;
   const gchar *name;
-  struct stat st;
   struct system_iterator_data *data = iter->data;
 
+  err = -ENOENT;
   while ((name = g_dir_read_name (data->dir)) != NULL)
     {
       if (name[0] == '.')
@@ -146,11 +147,16 @@ system_next_dentry (struct item_iterator *iter, gboolean sample_info)
 	  continue;
 	}
 
-      if (!stat (full_path, &st))
+      GFile *file = g_file_new_for_path (full_path);
+      GError *error = NULL;
+      GFileInfo *info = g_file_query_info (file, "standard::*",
+					   G_FILE_QUERY_INFO_NONE, NULL,
+					   &error);
+      if (error == NULL)
 	{
 	  snprintf (iter->item.name, LABEL_MAX, "%s", name);
 	  iter->item.type = type;
-	  iter->item.size = st.st_size;
+	  iter->item.size = g_file_info_get_size (info);
 	  iter->item.id = -1;
 
 	  if (item_iterator_is_dir_or_matches_exts (iter, data->extensions))
@@ -160,15 +166,22 @@ system_next_dentry (struct item_iterator *iter, gboolean sample_info)
 		  sample_load_sample_info (full_path,
 					   &iter->item.sample_info);
 		}
-	      g_free (full_path);
-	      return 0;
+	      err = 0;
 	    }
+
+	  g_object_unref (info);
 	}
 
+      g_object_unref (file);
       g_free (full_path);
+
+      if (!err)
+	{
+	  break;
+	}
     }
 
-  return -ENOENT;
+  return err;
 }
 
 static gint
