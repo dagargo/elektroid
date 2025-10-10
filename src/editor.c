@@ -176,18 +176,24 @@ editor_set_widget_source (GtkWidget *widget)
 
   if (browser == NULL)
     {
-      return;
-    }
-
-  if (GTK_IS_SWITCH (widget))
-    {
-      class = browser == &local_browser ? "local_switch" : "remote_switch";
+      if (GTK_IS_SWITCH (widget))
+	{
+	  gtk_style_context_add_class (context, "nobrowser_switch");
+	}
     }
   else
     {
-      class = browser == &local_browser ? "local" : "remote";
+      if (GTK_IS_SWITCH (widget))
+	{
+	  class = browser == &local_browser ? "local_switch" :
+	    "remote_switch";
+	}
+      else
+	{
+	  class = browser == &local_browser ? "local" : "remote";
+	}
+      gtk_style_context_add_class (context, class);
     }
-  gtk_style_context_add_class (context, class);
 }
 
 static gboolean
@@ -345,6 +351,12 @@ editor_update_tags_buttons ()
       GtkWidget *tag_button = gtk_toggle_button_new_with_label (tag_name);
       gtk_widget_set_visible (tag_button, TRUE);
       gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (tag_button), active);
+
+      GtkStyleContext *context = gtk_widget_get_style_context (tag_button);
+      const gchar *class =
+	browser == &local_browser ? "local_tag_button" : "remote_tag_button";
+      gtk_style_context_add_class (context, class);
+
       g_signal_connect_data (tag_button, "clicked",
 			     G_CALLBACK (editor_tag_button_clicked),
 			     strdup (tag_name),

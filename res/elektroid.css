@@ -2,55 +2,99 @@
 @define-color local_color_dark #255c9f;
 @define-color remote_color #e01b24;
 @define-color remote_color_dark #9d1319;
+@define-color nobrowser_color #bfbfbf;
+@define-color nobrowser_color_dark #7f7f7f;
 @define-color disabled_color #7f7f7f;
 
 .local {
-	color: @local_color;
+        color: @local_color;
 }
 
 .remote {
-	color: @remote_color;
+        color: @remote_color;
+}
+
+.nobrowser_switch {
+        border-color: transparent;
+        background-color: @nobrowser_color_dark;
+}
+
+.nobrowser_switch:checked,
+.nobrowser_switch:checked slider {
+        border-color: @nobrowser_color;
+        background-color: @nobrowser_color;
 }
 
 .local_switch {
-	background-color: @local_color_dark;
+        border-color: transparent;
+        background-color: @local_color_dark;
 }
 
-.local_switch:checked, .local_switch:checked slider {
-	border-color: @local_color_dark;
-	background-color: @local_color;
+.local_switch:checked,
+.local_switch:checked slider {
+        border-color: @local_color;
+        background-color: @local_color;
 }
 
 .remote_switch {
-	background-color: @remote_color_dark;
+        border-color: transparent;
+        background-color: @remote_color_dark;
 }
 
-.remote_switch:checked, .remote_switch:checked slider {
-	border-color: @remote_color_dark;
-	background-color: @remote_color;
+.remote_switch:checked,
+.remote_switch:checked slider {
+        border-color: @remote_color;
+        background-color: @remote_color;
 }
 
-#local_up_button, #local_add_dir_button, #local_refresh_button, #local_search_button, #upload_button {
-	color: @local_color;
+#local_up_button,
+#local_add_dir_button,
+#local_refresh_button,
+#local_search_button,
+#upload_button {
+        color: @local_color;
 }
 
-#remote_up_button, #remote_add_dir_button, #remote_refresh_button, #remote_search_button, #download_button, #refresh_devices_button {
-	color: @remote_color
+#remote_up_button,
+#remote_add_dir_button,
+#remote_refresh_button,
+#remote_search_button,
+#download_button,
+#refresh_devices_button {
+        color: @remote_color;
 }
 
 *:disabled {
-	color: @disabled_color;
+        color: @disabled_color;
 }
 
 #local_tree_view:selected {
-	background-color: @local_color;
+        background-color: @local_color;
 }
 
 #remote_tree_view:selected {
-	background-color: @remote_color;
+        background-color: @remote_color;
 }
 
 #local_name_entry {
-	border-color: transparent;
-	background-color: transparent;
+        border-color: transparent;
+        background-color: transparent;
+}
+
+.local_tag_button,
+.remote_tag_button {
+        padding: 1px;
+        background: transparent;
+        outline-color: transparent;
+        box-shadow: none;
+}
+
+.local_tag_button:checked {
+        color: #ffffff;
+        background-color: @local_color;
+}
+
+.remote_tag_button:checked {
+        color: #ffffff;
+        background-color: @remote_color;
 }
