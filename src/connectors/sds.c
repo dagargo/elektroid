@@ -214,9 +214,6 @@ sds_get_download_info (GByteArray *header, struct sample_info *sample_info,
     }
 
   sample_info->channels = 1;
-  sample_info->midi_note = 0;
-  sample_info->midi_fraction = 0;
-  sample_info->tags = NULL;
 
   *words = sds_get_bytes_value_right_just (&header->data[10],
 					   SDS_BYTES_PER_WORD);
@@ -376,7 +373,7 @@ sds_download_try (struct backend *backend, const gchar *path,
 	}
     }
 
-  sample_info = g_malloc (sizeof (struct sample_info));
+  sample_info = sample_info_new (FALSE);
   if (sds_get_download_info (rx_msg, sample_info, &bits, &words, &word_size,
 			     &bytes_per_word))
     {

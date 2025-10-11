@@ -446,17 +446,13 @@ audio_reset_record_buffer (guint record_options,
     {
       debug_print (1, "Resetting record buffer...");
 
-      si = g_malloc (sizeof (struct sample_info));
+      si = sample_info_new (TRUE);
       si->frames = audio.rate * MAX_RECORDING_TIME_S;
       si->loop_start = si->frames - 1;
       si->loop_end = si->loop_start;
-      si->loop_type = 0;
       si->rate = audio.rate;
       si->format = audio.float_mode ? SF_FORMAT_FLOAT : SF_FORMAT_PCM_16;
       si->channels = (record_options & RECORD_STEREO) == 3 ? 2 : 1;
-      si->midi_note = 0;
-      si->midi_fraction = 0;
-      si->tags = sample_info_tags_new ();
 
       size = si->frames * SAMPLE_INFO_FRAME_SIZE (si);
       content = g_byte_array_sized_new (size);

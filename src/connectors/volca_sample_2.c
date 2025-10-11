@@ -224,9 +224,7 @@ volca_sample_2_sample_read_dir (struct backend *backend,
 static struct sample_info *
 volca_sample_2_sample_info_init (guint32 frames)
 {
-  struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
-  sample_info->midi_note = 0;
-  sample_info->midi_fraction = 0;
+  struct sample_info *sample_info = sample_info_new (FALSE);
   sample_info->loop_type = 0x7f;
   sample_info->channels = 1;
   sample_info->rate = VOLCA_SAMPLE_2_RATE;
@@ -234,7 +232,6 @@ volca_sample_2_sample_info_init (guint32 frames)
   sample_info->frames = frames;
   sample_info->loop_start = sample_info->frames - 1;
   sample_info->loop_end = sample_info->loop_start;
-  sample_info->tags = NULL;
   return sample_info;
 }
 

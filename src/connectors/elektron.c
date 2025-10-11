@@ -1526,7 +1526,7 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 	  elektron_sample_header =
 	    (struct elektron_sample_header *)
 	    &rx_msg->data[FS_SAMPLES_PAD_RES];
-	  sample_info = g_malloc (sizeof (struct sample_info));
+	  sample_info = sample_info_new (FALSE);
 	  sample_info->frames = frames;
 	  sample_info->loop_start =
 	    g_ntohl (elektron_sample_header->loop_start);
@@ -1535,9 +1535,6 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 	  sample_info->rate = g_ntohl (elektron_sample_header->rate);	//In the case of the RAW filesystem is not used and it is harmless.
 	  sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
 	  sample_info->channels = elektron_sample_header->stereo + 1;
-	  sample_info->midi_note = 0;
-	  sample_info->midi_fraction = 0;
-	  sample_info->tags = NULL;
 	  debug_print (2, "Loop start at %d, loop end at %d",
 		       sample_info->loop_start, sample_info->loop_end);
 	}

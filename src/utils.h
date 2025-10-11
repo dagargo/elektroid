@@ -60,17 +60,22 @@
 #define error_print(format, ...) color_print("ERROR", "\x1b[31m", format, ##__VA_ARGS__)
 #define warn_print(format, ...) color_print("WARN", "\x1b[33m", format, ##__VA_ARGS__)
 
+#define SAMPLE_INFO_TAG_KEY_SIZE 4
+#define SAMPLE_INFO_TAG_IKEY "IKEY"
+
 struct sample_info
 {
   guint32 frames;
-  guint32 loop_start;
-  guint32 loop_end;
-  guint32 loop_type;		// 0 = forward loop
   guint32 rate;
   guint64 format;		// Use 32 lower bits as in libsndfile and upper 32 bits for extended file formats.
   guint32 channels;
+  // As in smpl chunk
+  guint32 loop_start;
+  guint32 loop_end;
+  guint32 loop_type;		// 0 = forward loop
   guint32 midi_note;
   guint32 midi_fraction;
+  // LIST INFO chunk
   GHashTable *tags;
 };
 
@@ -187,6 +192,20 @@ gboolean token_is_in_text (const gchar * token, const gchar * text);
 gint command_set_parts (const gchar * cmd, gchar ** connector, gchar ** fs,
 			gchar ** op);
 
+struct sample_info *sample_info_new (gboolean tags);
+
+void sample_info_init (struct sample_info *sample_info, gboolean tags);
+
 void sample_info_free (gpointer sample_info);
+
+void sample_info_copy (struct sample_info *dst, struct sample_info *src);
+
+GHashTable *sample_info_tags_new ();
+
+const gchar *sample_info_get_tag (const struct sample_info *sample_info,
+				  const gchar * tag);
+
+void sample_info_set_tag (const struct sample_info *sample_info,
+			  const gchar * tag, gchar * value);
 
 #endif

@@ -27,8 +27,6 @@
 #ifndef SAMPLE_H
 #define SAMPLE_H
 
-#define SAMPLE_INFO_TAG_IKEY "IKEY"
-
 #define SF_FORMAT_PCM_S8_STR "s8"
 #define SF_FORMAT_PCM_16_STR "s16"
 #define SF_FORMAT_PCM_24_STR "s24"
@@ -114,14 +112,6 @@ void sample_load_opts_init_direct (struct sample_load_opts *opts,
 void sample_load_opts_init_from_sample_info (struct sample_load_opts *opts,
 					     struct sample_info *sample_info,
 					     gboolean tags);
-
-GHashTable *sample_info_tags_new ();
-
-const gchar *sample_info_get_tag (const struct sample_info *sample_info,
-				  const gchar * tag);
-
-void sample_info_set_tag (const struct sample_info *sample_info,
-			  const gchar * tag, gchar * value);
 
 gboolean sample_format_is_valid_to_save (struct sample_info *sample_info);
 

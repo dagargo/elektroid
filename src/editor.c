@@ -1829,7 +1829,7 @@ editor_save_selection_init_data (struct idata *selection, gchar *name,
   g_byte_array_append (data, &audio.sample.content->data[start], len);
 
   aux_si = g_malloc (sizeof (struct sample_info));
-  memcpy (aux_si, audio.sample.info, sizeof (struct sample_info));
+  sample_info_copy (aux_si, audio.sample.info);
   aux_si->frames = sel_len;
   aux_si->loop_start = sel_len - 1;
   aux_si->loop_end = aux_si->loop_start;
@@ -2032,7 +2032,7 @@ editor_split_runner (gpointer user_data)
   for (guint c = 0; c < channels; c++)
     {
       struct sample_info *si = malloc (sizeof (struct sample_info));
-      memcpy (si, sample_info, sizeof (struct sample_info));
+      sample_info_copy (si, sample_info);
       si->channels = 1;
 
       content = g_byte_array_sized_new (len);

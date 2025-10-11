@@ -126,17 +126,13 @@ volca_sample_get_syro_op (SyroData *data, struct idata *syro_op,
 
   debug_print (1, "Reported %d SYRO frames", frames);
 
-  syro_si = g_malloc (sizeof (struct sample_info));
+  syro_si = sample_info_new (FALSE);
   syro_si->frames = frames;
   syro_si->loop_start = frames - 1;
   syro_si->loop_end = syro_si->loop_start;
-  syro_si->loop_type = 0;
   syro_si->rate = VOLCA_SAMPLE_SYRO_RATE;
   syro_si->format = SF_FORMAT_PCM_16;
   syro_si->channels = VOLCA_SAMPLE_SYRO_CHANNELS;
-  syro_si->midi_note = 0;
-  syro_si->midi_fraction = 0;
-  syro_si->tags = NULL;
 
   content = g_byte_array_sized_new (frames * VOLCA_SAMPLE_SYRO_CHANNELS *
 				    sizeof (gint16));

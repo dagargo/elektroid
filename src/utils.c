@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "local.h"
 #include <stdio.h>
 #if !defined(__linux__)
 #include <dirent.h>
@@ -687,6 +688,24 @@ command_set_parts (const gchar *cmd, gchar **connector, gchar **fs,
 					   connector, fs, op);
 }
 
+struct sample_info *
+sample_info_new (gboolean tags)
+{
+  struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
+  sample_info_init (sample_info, tags);
+  return sample_info;
+}
+
+void
+sample_info_init (struct sample_info *sample_info, gboolean tags)
+{
+  memset (sample_info, 0, sizeof (struct sample_info));
+  if (tags)
+    {
+      sample_info->tags = sample_info_tags_new ();
+    }
+}
+
 void
 sample_info_free (gpointer data)
 {
@@ -696,4 +715,47 @@ sample_info_free (gpointer data)
       g_hash_table_unref (sample_info->tags);
     }
   g_free (sample_info);
+}
+
+void
+sample_info_copy (struct sample_info *dst, struct sample_info *src)
+{
+  memcpy (dst, src, sizeof (struct sample_info));
+  if (dst->tags)
+    {
+      g_hash_table_ref (dst->tags);
+    }
+}
+
+GHashTable *
+sample_info_tags_new ()
+{
+  return g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
+}
+
+const gchar *
+sample_info_get_tag (const struct sample_info *sample_info, const gchar *tag)
+{
+  return g_hash_table_lookup (sample_info->tags, tag);
+}
+
+void
+sample_info_set_tag (const struct sample_info *sample_info,
+		     const gchar *tag, gchar *value)
+{
+  if (strlen (tag) != SAMPLE_INFO_TAG_KEY_SIZE)
+    {
+      error_print ("LIST chunk INFO tag '%s' is not %d B long. Skipping...",
+		   tag, SAMPLE_INFO_TAG_KEY_SIZE);
+      return;
+    }
+
+  if (value == NULL)
+    {
+      g_hash_table_remove (sample_info->tags, tag);
+    }
+  else
+    {
+      g_hash_table_insert (sample_info->tags, strdup (tag), value);
+    }
 }

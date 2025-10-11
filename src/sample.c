@@ -728,8 +728,7 @@ sample_load_microfreak_sample_info (const gchar *path,
       return err;
     }
 
-  //All microfreak format set sample_info.tags to NULL so there is no need for g_hash_table_ref.
-  memcpy (sample_info, aux.info, sizeof (struct sample_info));
+  sample_info_copy (sample_info, aux.info);
 
   idata_free (&aux);
 
@@ -753,8 +752,6 @@ gint
 sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
 {
   gint err;
-
-  memset (sample_info, 0, sizeof (struct sample_info));
 
   if (sample_microfreak_filename (path))
     {
@@ -826,7 +823,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sample_set_sample_info (sample_info_src, sndfile, &sf_info,
 			  sample_load_opts->tags);
 
-  sample_info = g_malloc (sizeof (struct sample_info));
+  sample_info = sample_info_new (FALSE);
 
   sample_info->loop_type = sample_info_src->loop_type;
   sample_info->rate = sample_load_opts->rate ? sample_load_opts->rate :
@@ -1197,11 +1194,7 @@ sample_reload (struct idata *input, struct idata *output,
   struct sample_info sample_info_src;
   struct g_byte_array_io_data data;
 
-  memcpy (&sample_info_src, input->info, sizeof (struct sample_info));
-  if (sample_info_src.tags)
-    {
-      g_hash_table_ref (sample_info_src.tags);
-    }
+  sample_info_copy (&sample_info_src, input->info);
 
   err = sample_get_memfile_from_sample (input, &aux, NULL, SF_FORMAT_WAV |
 					sample_info_src.format);
@@ -1238,7 +1231,7 @@ sample_load_from_file_full (const gchar *path, struct idata *sample,
 	  return err;
 	}
 
-      memcpy (sample_info_src, aux.info, sizeof (struct sample_info));
+      sample_info_copy (sample_info_src, aux.info);
       err = sample_reload (&aux, sample, control, sample_load_opts, cb);
       idata_free (&aux);
     }
@@ -1372,39 +1365,6 @@ sample_load_opts_init_from_sample_info (struct sample_load_opts *opts,
 {
   sample_load_opts_init (opts, sample_info->channels, sample_info->rate,
 			 sample_info->format & SF_FORMAT_SUBMASK, tags);
-}
-
-GHashTable *
-sample_info_tags_new ()
-{
-  return g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
-}
-
-const gchar *
-sample_info_get_tag (const struct sample_info *sample_info, const gchar *tag)
-{
-  return g_hash_table_lookup (sample_info->tags, tag);
-}
-
-void
-sample_info_set_tag (const struct sample_info *sample_info,
-		     const gchar *tag, gchar *value)
-{
-  if (strlen (tag) != SUBCHUNK_SIZE)
-    {
-      error_print ("LIST chunk INFO tag '%s' is not %d B long. Skipping...",
-		   tag, SUBCHUNK_SIZE);
-      return;
-    }
-
-  if (value == NULL)
-    {
-      g_hash_table_remove (sample_info->tags, tag);
-    }
-  else
-    {
-      g_hash_table_insert (sample_info->tags, strdup (tag), value);
-    }
 }
 
 // Only saving to sample formats allowing all the features is allowed.
