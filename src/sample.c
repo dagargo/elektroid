@@ -28,9 +28,10 @@
 
 #define LOAD_BUFFER_LEN (32 * KI)
 
-#define LIST_CHUNK_ID "LIST"
-#define JUNK_CHUNK_ID "JUNK"
 #define SMPL_CHUNK_ID "smpl"
+#define JUNK_CHUNK_ID "JUNK"
+#define ACID_CHUNK_ID "acid"
+#define LIST_CHUNK_ID "LIST"
 
 #define LIST_CHUNK_INFO_SECTION_ID "INFO"
 
@@ -71,10 +72,17 @@ struct smpl_chunk_data
   } sample_loop;
 };
 
-struct g_byte_array_io_data
+// Information extracted from https://github.com/libsndfile/libsndfile/blob/52b803f57a1f4d23471f5c5f77e1a21e0721ea0e/src/wav.c#L1528.
+struct acid_chunk_data
 {
-  GByteArray *array;
-  guint pos;
+  guint32 type;
+  guint16 root_note;
+  guint16 u0;
+  gfloat f0;
+  guint32 beats_num;
+  guint16 metre_num;
+  guint16 metre_den;
+  gfloat tempo;
 };
 
 struct list_info_chunk
@@ -89,6 +97,12 @@ static const guint8 JUNK_CHUNK_DATA[] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0
+};
+
+struct g_byte_array_io_data
+{
+  GByteArray *array;
+  guint pos;
 };
 
 void
@@ -242,6 +256,7 @@ sample_write_audio_file_data (struct idata *idata,
   sf_count_t frames, total;
   struct SF_CHUNK_INFO chunk_info;
   struct smpl_chunk_data smpl_chunk_data;
+  struct acid_chunk_data acid_chunk_data;
   GByteArray *sample = idata->content;
   struct sample_info *sample_info = idata->info;
 
@@ -263,6 +278,8 @@ sample_write_audio_file_data (struct idata *idata,
       return -1;
     }
 
+  // JUNK chunk
+
   strcpy (chunk_info.id, JUNK_CHUNK_ID);
   chunk_info.id_size = CHUNK_SIZE;
   chunk_info.datalen = sizeof (JUNK_CHUNK_DATA);
@@ -271,6 +288,8 @@ sample_write_audio_file_data (struct idata *idata,
     {
       error_print ("%s", sf_strerror (sndfile));
     }
+
+  // smpl chunk
 
   smpl_chunk_data.manufacturer = 0;
   smpl_chunk_data.product = 0;
@@ -296,6 +315,32 @@ sample_write_audio_file_data (struct idata *idata,
   if (sf_set_chunk (sndfile, &chunk_info) != SF_ERR_NO_ERROR)
     {
       error_print ("%s", sf_strerror (sndfile));
+    }
+
+  // acid chunk
+
+  // If there are no beats, it is not a valid acid and we do nothing.
+  if (sample_info->beats_num || sample_info->metre_num ||
+      sample_info->metre_den || sample_info->tempo)
+    {
+      guint32 type = sample_info->acid_type ? sample_info->acid_type : 0x1e;
+      acid_chunk_data.type = GUINT32_TO_LE (type);
+      acid_chunk_data.root_note = sample_info->midi_note;
+      acid_chunk_data.u0 = GUINT32_TO_LE (0x8000);
+      acid_chunk_data.f0 = 0;
+      acid_chunk_data.beats_num = GUINT32_TO_LE (sample_info->beats_num);
+      acid_chunk_data.metre_num = GUINT16_TO_LE (sample_info->metre_num);
+      acid_chunk_data.metre_den = GUINT16_TO_LE (sample_info->metre_den);
+      acid_chunk_data.tempo = sample_info->tempo;
+
+      strcpy (chunk_info.id, ACID_CHUNK_ID);
+      chunk_info.id_size = CHUNK_SIZE;
+      chunk_info.datalen = sizeof (struct acid_chunk_data);
+      chunk_info.data = &acid_chunk_data;
+      if (sf_set_chunk (sndfile, &chunk_info) != SF_ERR_NO_ERROR)
+	{
+	  error_print ("%s", sf_strerror (sndfile));
+	}
     }
 
   // If there are no tags, it's better not having the LIST chunk
@@ -535,12 +580,15 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
   struct SF_CHUNK_INFO chunk_info;
   SF_CHUNK_ITERATOR *chunk_iter;
   struct smpl_chunk_data smpl_chunk_data;
+  struct acid_chunk_data acid_chunk_data;
   gboolean disable_loop = FALSE;
 
   sample_info->channels = sf_info->channels;
   sample_info->rate = sf_info->samplerate;
   sample_info->frames = sf_info->frames;
   sample_info->format = sf_info->format;
+
+  // smpl chunk
 
   strcpy (chunk_info.id, SMPL_CHUNK_ID);
   chunk_info.id_size = CHUNK_SIZE;
@@ -549,9 +597,8 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
   if (chunk_iter)
     {
       chunk_info.datalen = sizeof (struct smpl_chunk_data);
-      memset (&smpl_chunk_data, 0, chunk_info.datalen);
-      debug_print (2, "%s chunk found (%d B)", SMPL_CHUNK_ID,
-		   chunk_info.datalen);
+      debug_print (2, "'%.*s' chunk found (%d B)", chunk_info.id_size,
+		   chunk_info.id, chunk_info.datalen);
       chunk_info.data = &smpl_chunk_data;
       sf_get_chunk_data (chunk_iter, &chunk_info);
       sample_info->loop_start =
@@ -595,6 +642,55 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
 
   debug_print (2, "Loop start at %d, loop end at %d",
 	       sample_info->loop_start, sample_info->loop_end);
+
+  // acid chunk
+
+  strcpy (chunk_info.id, ACID_CHUNK_ID);
+  chunk_info.id_size = CHUNK_SIZE;
+  chunk_iter = sf_get_chunk_iterator (sndfile, &chunk_info);
+
+  if (chunk_iter)
+    {
+      chunk_info.datalen = sizeof (struct acid_chunk_data);
+      debug_print (2, "'%.*s' chunk found (%d B)", chunk_info.id_size,
+		   chunk_info.id, chunk_info.datalen);
+
+      chunk_info.data = &acid_chunk_data;
+      sf_get_chunk_data (chunk_iter, &chunk_info);
+
+      sample_info->acid_type = GUINT32_FROM_LE (acid_chunk_data.type);
+      sample_info->beats_num = GUINT32_FROM_LE (acid_chunk_data.beats_num);
+      sample_info->metre_num = GUINT16_FROM_LE (acid_chunk_data.metre_num);
+      sample_info->metre_den = GUINT16_FROM_LE (acid_chunk_data.metre_den);
+      sample_info->tempo = acid_chunk_data.tempo;
+
+      if (acid_chunk_data.root_note != sample_info->midi_note)
+	{
+	  // Probably, the midi_note was not right or set in the smpl chunk
+	  if (sample_info->midi_note == 0 && acid_chunk_data.root_note != 0)
+	    {
+	      debug_print (2, "Fixing MIDI note to %d...",
+			   acid_chunk_data.root_note);
+	      sample_info->midi_note = acid_chunk_data.root_note;
+	    }
+	  else
+	    {
+	      error_print ("Unmatching MIDI note (%d != %d)",
+			   sample_info->midi_note, acid_chunk_data.root_note);
+	    }
+	}
+
+      debug_print (2, "Metric: %d %d; beats: %d; tempo: %.2f BPM",
+		   sample_info->metre_num, sample_info->metre_den,
+		   sample_info->beats_num, sample_info->tempo);
+
+      while (chunk_iter)
+	{
+	  chunk_iter = sf_next_chunk_iterator (chunk_iter);
+	}
+    }
+
+  // LIST INFO chunk
 
   // tags are not required to be initialized when setting the sample_info
   sample_info->tags = NULL;

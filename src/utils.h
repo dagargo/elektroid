@@ -75,6 +75,13 @@ struct sample_info
   guint32 loop_type;		// 0 = forward loop
   guint32 midi_note;
   guint32 midi_fraction;
+  // As in acid chunk
+  guint32 acid_type;
+  // key would be the same as in midi_note
+  guint32 beats_num;
+  guint16 metre_num;
+  guint16 metre_den;
+  gfloat tempo;
   // LIST INFO chunk
   GHashTable *tags;
 };
