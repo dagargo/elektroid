@@ -328,7 +328,7 @@ microbrute_init ()
 
   g_signal_connect (note_priority, "changed",
 		    G_CALLBACK (microbrute_note_priority_changed), NULL);
-  g_signal_connect (note_priority, "changed",
+  g_signal_connect (vel_response, "changed",
 		    G_CALLBACK (microbrute_vel_response_changed), NULL);
 
   g_signal_connect (lfo_key_retrigger, "state-set",
