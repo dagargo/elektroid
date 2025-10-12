@@ -103,6 +103,50 @@ static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
 static GtkWidget *editor_box;
 
+void
+elektroid_combo_box_set_value (GtkComboBox *object, guint value)
+{
+  guint v;
+  gint index = 0;
+  GtkTreeIter iter;
+  gboolean found = FALSE;
+
+  GtkTreeModel *model = gtk_combo_box_get_model (object);
+  gboolean valid = gtk_tree_model_get_iter_first (model, &iter);
+
+  while (valid)
+    {
+      gtk_tree_model_get (model, &iter, 1, &v, -1);
+      if (v == value)
+	{
+	  found = TRUE;
+	  break;
+
+	}
+      valid = gtk_tree_model_iter_next (model, &iter);
+      index += 1;
+    }
+
+  if (found)
+    {
+      gtk_combo_box_set_active (object, index);
+    }
+}
+
+guint
+elektroid_combo_box_get_value (GtkComboBox *combo)
+{
+  guint value;
+  GtkTreeIter iter;
+  GtkTreeModel *model;
+
+  model = gtk_combo_box_get_model (combo);
+  gtk_combo_box_get_active_iter (combo, &iter);
+  gtk_tree_model_get (model, &iter, 1, &value, -1);
+
+  return value;
+}
+
 static void
 elektroid_show_error_msg_response (GtkDialog *dialog, gint response_id,
 				   gpointer user_data)
@@ -1419,23 +1463,6 @@ end:
 }
 
 static void
-elektroid_set_window_size ()
-{
-  GdkRectangle geometry;
-  GdkDisplay *display = gdk_display_get_default ();
-  GdkMonitor *monitor = gdk_display_get_monitor (display, 0);
-  gdk_monitor_get_geometry (monitor, &geometry);
-  if (geometry.height >= 800)
-    {
-      gtk_window_resize (main_window, 1024, 768);
-    }
-  else
-    {
-      gtk_window_maximize (main_window);
-    }
-}
-
-static void
 elektroid_exit ()
 {
   tasks_stop_thread ();
@@ -1615,8 +1642,6 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
 
   GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (local_name_entry));
   gtk_entry_buffer_set_text (buf, g_get_host_name (), -1);
-
-  elektroid_set_window_size ();
 
   g_object_unref (builder);
 }

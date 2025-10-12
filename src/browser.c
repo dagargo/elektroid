@@ -924,8 +924,7 @@ browser_add_dentry_item (gpointer data)
 	  g_value_set_string (&v, note);
 	}
       gtk_list_store_set_value (list_store, &iter,
-				BROWSER_LIST_STORE_SAMPLE_MIDI_NOTE_FIELD,
-				&v);
+				BROWSER_LIST_STORE_SAMPLE_NOTE_FIELD, &v);
       g_value_unset (&v);
 
       gchar *tags = browser_get_tags (&item->sample_info);
@@ -2239,7 +2238,7 @@ browser_set_columns_visibility (struct browser *browser)
   gtk_tree_view_column_set_visible
     (browser->tree_view_sample_format_column, sample_columns);
   gtk_tree_view_column_set_visible
-    (browser->tree_view_sample_midi_note_column, sample_columns);
+    (browser->tree_view_sample_note_column, sample_columns);
   gtk_tree_view_column_set_visible
     (browser->tree_view_sample_tags_column, sample_columns);
   gtk_tree_view_column_set_visible
@@ -2552,10 +2551,9 @@ browser_local_init (struct browser *browser, GtkBuilder *builder)
   browser->tree_view_sample_format_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_sample_format_column"));
-  browser->tree_view_sample_midi_note_column =
+  browser->tree_view_sample_note_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder,
-			   "local_tree_view_sample_midi_note_column"));
+			  (builder, "local_tree_view_sample_note_column"));
   browser->tree_view_sample_tags_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_sample_tags_column"));
@@ -2707,10 +2705,9 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder)
   browser->tree_view_sample_format_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_sample_format_column"));
-  browser->tree_view_sample_midi_note_column =
+  browser->tree_view_sample_note_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
-			  (builder,
-			   "remote_tree_view_sample_midi_note_column"));
+			  (builder, "remote_tree_view_sample_note_column"));
   browser->tree_view_sample_tags_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_sample_tags_column"));

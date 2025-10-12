@@ -79,7 +79,7 @@ struct acid_chunk_data
   guint16 root_note;
   guint16 u0;
   gfloat f0;
-  guint32 beats_num;
+  guint32 beats;
   guint16 metre_num;
   guint16 metre_den;
   gfloat tempo;
@@ -320,7 +320,7 @@ sample_write_audio_file_data (struct idata *idata,
   // acid chunk
 
   // If there are no beats, it is not a valid acid and we do nothing.
-  if (sample_info->beats_num || sample_info->metre_num ||
+  if (sample_info->beats || sample_info->metre_num ||
       sample_info->metre_den || sample_info->tempo)
     {
       guint32 type = sample_info->acid_type ? sample_info->acid_type : 0x1e;
@@ -328,7 +328,7 @@ sample_write_audio_file_data (struct idata *idata,
       acid_chunk_data.root_note = sample_info->midi_note;
       acid_chunk_data.u0 = GUINT32_TO_LE (0x8000);
       acid_chunk_data.f0 = 0;
-      acid_chunk_data.beats_num = GUINT32_TO_LE (sample_info->beats_num);
+      acid_chunk_data.beats = GUINT32_TO_LE (sample_info->beats);
       acid_chunk_data.metre_num = GUINT16_TO_LE (sample_info->metre_num);
       acid_chunk_data.metre_den = GUINT16_TO_LE (sample_info->metre_den);
       acid_chunk_data.tempo = sample_info->tempo;
@@ -583,6 +583,8 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
   struct acid_chunk_data acid_chunk_data;
   gboolean disable_loop = FALSE;
 
+  sample_info_init (sample_info, FALSE);
+
   sample_info->channels = sf_info->channels;
   sample_info->rate = sf_info->samplerate;
   sample_info->frames = sf_info->frames;
@@ -630,9 +632,8 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
   else
     {
       disable_loop = TRUE;
-      sample_info->midi_note = 0;
-      sample_info->midi_fraction = 0;
     }
+
   if (disable_loop)
     {
       sample_info->loop_start = sample_info->frames - 1;
@@ -659,7 +660,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
       sf_get_chunk_data (chunk_iter, &chunk_info);
 
       sample_info->acid_type = GUINT32_FROM_LE (acid_chunk_data.type);
-      sample_info->beats_num = GUINT32_FROM_LE (acid_chunk_data.beats_num);
+      sample_info->beats = GUINT32_FROM_LE (acid_chunk_data.beats);
       sample_info->metre_num = GUINT16_FROM_LE (acid_chunk_data.metre_num);
       sample_info->metre_den = GUINT16_FROM_LE (acid_chunk_data.metre_den);
       sample_info->tempo = acid_chunk_data.tempo;
@@ -682,7 +683,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
 
       debug_print (2, "Metric: %d %d; beats: %d; tempo: %.2f BPM",
 		   sample_info->metre_num, sample_info->metre_den,
-		   sample_info->beats_num, sample_info->tempo);
+		   sample_info->beats, sample_info->tempo);
 
       while (chunk_iter)
 	{
@@ -693,7 +694,6 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
   // LIST INFO chunk
 
   // tags are not required to be initialized when setting the sample_info
-  sample_info->tags = NULL;
   if (tags)
     {
       strcpy (chunk_info.id, LIST_CHUNK_ID);
@@ -919,9 +919,14 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sample_set_sample_info (sample_info_src, sndfile, &sf_info,
 			  sample_load_opts->tags);
 
-  sample_info = sample_info_new (FALSE);
+  sample_info = g_malloc (sizeof (struct sample_info));
+  sample_info_copy_steal_tags (sample_info, sample_info_src);
+  // tags are required to be initialized when loading a sample
+  if (!sample_info->tags)
+    {
+      sample_info->tags = sample_info_tags_new ();
+    }
 
-  sample_info->loop_type = sample_info_src->loop_type;
   sample_info->rate = sample_load_opts->rate ? sample_load_opts->rate :
     sample_info_src->rate;
   //Only the sample format is needed. If the file format is provided, it must be ignored.
@@ -931,25 +936,11 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
       sample_info->format != SF_FORMAT_PCM_32 &&
       sample_info->format != SF_FORMAT_FLOAT)
     {
-      error_print ("Invalid sample format. Using short...");
-      sample_info->format = SF_FORMAT_PCM_16;
+      debug_print (1, "Invalid sample format. Using internal format...");
+      sample_info->format = sample_get_internal_format ();
     }
-
   sample_info->channels = sample_load_opts->channels ?
     sample_load_opts->channels : sample_info_src->channels;
-  sample_info->midi_note = sample_info_src->midi_note;
-  sample_info->midi_fraction = sample_info_src->midi_fraction;
-
-  // tags are required to be initialized when loading a sample
-  if (sample_info_src->tags)
-    {
-      sample_info->tags = sample_info_src->tags;	// Only the format is needed in sample_info_src, so it is safe to steal the tags.
-      sample_info_src->tags = NULL;
-    }
-  else
-    {
-      sample_info->tags = sample_info_tags_new ();
-    }
 
   bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
   bytes_per_sample = SAMPLE_SIZE (sample_info->format);

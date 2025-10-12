@@ -22,6 +22,7 @@
 #include "maction.h"
 #include "browser.h"
 #include "connectors/microbrute.h"
+#include "elektroid.h"
 #include "utils.h"
 
 extern GtkWindow *main_window;
@@ -48,34 +49,6 @@ static GtkWidget *persistent_changes;
 static gboolean loading;
 
 static void
-microbrute_set_combo_value (GtkWidget *combo, guint8 value)
-{
-  guint v;
-  gint index = 0;
-  GtkTreeIter iter;
-  gboolean found = FALSE;
-  GtkTreeModel *model = gtk_combo_box_get_model (GTK_COMBO_BOX (combo));
-  gboolean valid = gtk_tree_model_get_iter_first (model, &iter);
-
-  while (valid)
-    {
-      gtk_tree_model_get (model, &iter, 1, &v, -1);
-      if (v == value)
-	{
-	  found = TRUE;
-	  break;
-
-	}
-      valid = gtk_tree_model_iter_next (model, &iter);
-      index += 1;
-    }
-  if (found)
-    {
-      gtk_combo_box_set_active (GTK_COMBO_BOX (combo), index);
-    }
-}
-
-static void
 microbrute_configure_callback (GtkWidget *object, gpointer data)
 {
   guint8 v;
@@ -83,10 +56,10 @@ microbrute_configure_callback (GtkWidget *object, gpointer data)
   loading = TRUE;
   microbrute_get_parameter (remote_browser.backend, MICROBRUTE_NOTE_PRIORITY,
 			    &v);
-  microbrute_set_combo_value (note_priority, v);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (note_priority), v);
   microbrute_get_parameter (remote_browser.backend, MICROBRUTE_VEL_RESPONSE,
 			    &v);
-  microbrute_set_combo_value (vel_response, v);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (vel_response), v);
 
   microbrute_get_parameter (remote_browser.backend,
 			    MICROBRUTE_LFO_KEY_RETRIGGER, &v);
@@ -101,30 +74,30 @@ microbrute_configure_callback (GtkWidget *object, gpointer data)
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (bend_range), v);
   microbrute_get_parameter (remote_browser.backend, MICROBRUTE_STEP_LENGTH,
 			    &v);
-  microbrute_set_combo_value (step_length, v);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (step_length), v);
   microbrute_get_parameter (remote_browser.backend, MICROBRUTE_GATE_LENGTH,
 			    &v);
-  microbrute_set_combo_value (gate_length, v);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (gate_length), v);
 
   microbrute_get_parameter (remote_browser.backend, MICROBRUTE_TX_CHANNEL,
 			    &v);
-  microbrute_set_combo_value (tx_channel, v);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (tx_channel), v);
   microbrute_get_parameter (remote_browser.backend, MICROBRUTE_RX_CHANNEL,
 			    &channel);
-  microbrute_set_combo_value (rx_channel, channel);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (rx_channel), channel);
 
   microbrute_get_parameter (remote_browser.backend, MICROBRUTE_PLAY_ON, &v);
-  microbrute_set_combo_value (play, v);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (play), v);
   microbrute_get_parameter (remote_browser.backend, MICROBRUTE_RETRIGGERING,
 			    &v);
-  microbrute_set_combo_value (retriggering, v);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (retriggering), v);
   microbrute_get_parameter (remote_browser.backend, MICROBRUTE_NEXT_SEQUENCE,
 			    &v);
-  microbrute_set_combo_value (next_sequence, v);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (next_sequence), v);
   microbrute_get_parameter (remote_browser.backend, MICROBRUTE_STEP_ON, &v);
-  microbrute_set_combo_value (step_on, v);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (step_on), v);
   microbrute_get_parameter (remote_browser.backend, MICROBRUTE_SYNC, &v);
-  microbrute_set_combo_value (synchronization, v);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (synchronization), v);
   loading = FALSE;
 
   gtk_widget_show (config_window);
@@ -133,16 +106,11 @@ microbrute_configure_callback (GtkWidget *object, gpointer data)
 static void
 microbrute_combo_changed (GtkComboBox *combo, guint8 param)
 {
-  guint value;
-  GtkTreeIter iter;
   gboolean sysex;
-  GtkTreeModel *model;
   if (!loading)
     {
-      model = gtk_combo_box_get_model (combo);
       sysex = gtk_switch_get_active (GTK_SWITCH (persistent_changes));
-      gtk_combo_box_get_active_iter (combo, &iter);
-      gtk_tree_model_get (model, &iter, 1, &value, -1);
+      guint value = elektroid_combo_box_get_value (combo);
       microbrute_set_parameter (remote_browser.backend, param, value, channel,
 				sysex);
     }

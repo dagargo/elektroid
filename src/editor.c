@@ -56,10 +56,7 @@
 
 // This uses the same separator as the IKEY in the LIST INFO chunk.
 // Structured here but will be alphabetically sorted in the editor.
-#define EDITOR_TAGS "kick; snare; clap; tom; percussion; hi-hat; cymbal; " \
-                    "loop; one-shot; " \
-                    "bass; lead; texture; chord; vocal; " \
-                    "electronic; acoustic; ambient; noisy; hard; soft; dark; bright"
+#define EDITOR_TAGS "kick; snare; clap; tom; percussion; hi-hat; cymbal"
 
 enum editor_operation
 {
@@ -103,8 +100,12 @@ static GtkWidget *autoplay_switch;
 static GtkWidget *mix_switch;
 static GtkWidget *volume_button;
 static GtkWidget *mix_switch_box;
-static GtkWidget *grid_length_spin;
-static GtkWidget *show_grid_switch;
+static GtkWidget *metre_num_spin;
+static GtkWidget *metre_den_combo;
+static GtkWidget *tempo_spin;
+static GtkWidget *beats_spin;
+static GtkWidget *note_combo;
+static GtkWidget *subdivisions_spin;
 static gulong volume_changed_handler;
 static GtkListStore *notes_list_store;
 static GtkPopoverMenu *popover_menu;
@@ -116,7 +117,11 @@ static GtkWidget *popover_split_button;
 static GtkWidget *popover_save_button;
 static GtkWidget *popover_save_as_button;
 static GtkWidget *popover_export_button;
-static GtkWidget *tags_box;
+static GtkWidget *sample_box;
+static GtkWidget *filename_box;
+static GtkWidget *filename_label;
+static GtkWidget *edited_image;
+static GtkWidget *tags_flowbox;
 static gdouble zoom;
 static enum editor_operation operation;
 static gboolean dirty;
@@ -137,6 +142,25 @@ struct browser *
 editor_get_browser ()
 {
   return browser;
+}
+
+static void
+editor_set_dirty (gboolean dirty_)
+{
+  dirty = dirty_;
+  gtk_widget_set_visible (edited_image, dirty);
+}
+
+static void
+editor_set_filename ()
+{
+  if (audio.path)
+    {
+      gchar *filename = g_path_get_basename (audio.path);
+      gtk_label_set_text (GTK_LABEL (filename_label), filename);
+      g_free (filename);
+    }
+  gtk_widget_set_visible (filename_box, audio.path != NULL);
 }
 
 static void
@@ -208,7 +232,7 @@ static void
 editor_clear_tags_buttons ()
 {
   GList *children;
-  children = gtk_container_get_children (GTK_CONTAINER (tags_box));
+  children = gtk_container_get_children (GTK_CONTAINER (tags_flowbox));
   for (GList * iter = children; iter != NULL; iter = g_list_next (iter))
     {
       gtk_widget_destroy (GTK_WIDGET (iter->data));
@@ -323,7 +347,7 @@ editor_tag_button_clicked (GtkWidget *button, gpointer data)
 
   g_hash_table_unref (sample_tags);
 
-  dirty = TRUE;
+  editor_set_dirty (TRUE);
 }
 
 static void
@@ -363,7 +387,7 @@ editor_update_tags_buttons ()
 			     strdup (tag_name),
 			     editor_tag_button_data_closure_notify,
 			     G_CONNECT_DEFAULT);
-      gtk_flow_box_insert (GTK_FLOW_BOX (tags_box), tag_button, -1);
+      gtk_flow_box_insert (GTK_FLOW_BOX (tags_flowbox), tag_button, -1);
       tag = g_list_next (tag);
     }
   g_list_free (keys);
@@ -403,13 +427,14 @@ editor_reset_browser (gpointer data)
   editor_set_widget_source (loop_button);
   editor_set_widget_source (record_button);
   editor_set_widget_source (volume_button);
-  editor_set_widget_source (show_grid_switch);
   editor_set_widget_source (waveform);
 
   gtk_widget_set_sensitive (play_button, FALSE);
   gtk_widget_set_sensitive (stop_button, FALSE);
   gtk_widget_set_sensitive (loop_button, FALSE);
-  gtk_widget_set_sensitive (tags_box, FALSE);
+  gtk_widget_set_sensitive (sample_box, FALSE);
+
+  editor_set_filename ();
 
   return FALSE;
 }
@@ -422,6 +447,7 @@ editor_reset (struct browser *browser_)
   audio_stop_playback ();
   audio_stop_recording ();
   audio_reset_sample ();
+  editor_set_dirty (FALSE);
 
   browser = browser_;
 
@@ -577,9 +603,80 @@ editor_update_export_save_buttons ()
     }
 }
 
+static void
+editor_metre_num_changed (GtkSpinButton *object, gpointer data)
+{
+  struct sample_info *sample_info;
+
+  g_mutex_lock (&audio.control.controllable.mutex);
+  sample_info = audio.sample.info;
+  sample_info->metre_num = gtk_spin_button_get_value (object);
+  g_mutex_unlock (&audio.control.controllable.mutex);
+
+  editor_set_dirty (TRUE);
+}
+
+static void
+editor_metre_den_changed (GtkComboBox *combo, gpointer data)
+{
+  struct sample_info *sample_info;
+  guint metre_den = elektroid_combo_box_get_value (combo);
+
+  g_mutex_lock (&audio.control.controllable.mutex);
+  sample_info = audio.sample.info;
+  sample_info->metre_den = metre_den;
+  g_mutex_unlock (&audio.control.controllable.mutex);
+
+  editor_set_dirty (TRUE);
+}
+
+static void
+editor_tempo_changed (GtkSpinButton *object, gpointer data)
+{
+  struct sample_info *sample_info;
+
+  g_mutex_lock (&audio.control.controllable.mutex);
+  sample_info = audio.sample.info;
+  sample_info->tempo = gtk_spin_button_get_value (object);
+  g_mutex_unlock (&audio.control.controllable.mutex);
+
+  editor_set_dirty (TRUE);
+}
+
+static void
+editor_beats_changed (GtkSpinButton *object, gpointer data)
+{
+  struct sample_info *sample_info;
+
+  g_mutex_lock (&audio.control.controllable.mutex);
+  sample_info = audio.sample.info;
+  sample_info->beats = gtk_spin_button_get_value (object);
+  g_mutex_unlock (&audio.control.controllable.mutex);
+
+  editor_set_dirty (TRUE);
+
+  gtk_widget_queue_draw (waveform);
+}
+
+static void
+editor_note_changed (GtkComboBox *combo, gpointer data)
+{
+  struct sample_info *sample_info;
+  guint note = elektroid_combo_box_get_value (combo);
+
+  g_mutex_lock (&audio.control.controllable.mutex);
+  sample_info = audio.sample.info;
+  sample_info->midi_note = note;
+  g_mutex_unlock (&audio.control.controllable.mutex);
+
+  editor_set_dirty (TRUE);
+}
+
 static gboolean
 editor_update_ui_on_load (gpointer data)
 {
+  struct sample_info *sample_info = audio.sample.info;
+
   editor_set_audio_mono_mix ();
   editor_reset_waveform_width ();
 
@@ -588,12 +685,54 @@ editor_update_ui_on_load (gpointer data)
       gtk_widget_set_sensitive (play_button, TRUE);
       gtk_widget_set_sensitive (stop_button, TRUE);
       gtk_widget_set_sensitive (loop_button, TRUE);
-      gtk_widget_set_sensitive (tags_box, TRUE);
       if (preferences_get_boolean (PREF_KEY_AUTOPLAY))
 	{
 	  editor_start_playback ();
 	}
     }
+
+  editor_set_filename ();
+
+  g_signal_handlers_block_by_func (metre_num_spin,
+				   G_CALLBACK
+				   (editor_metre_num_changed), NULL);
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (metre_num_spin),
+			     sample_info->metre_num);
+  g_signal_handlers_unblock_by_func (metre_num_spin,
+				     G_CALLBACK
+				     (editor_metre_num_changed), NULL);
+
+  g_signal_handlers_block_by_func (metre_den_combo,
+				   G_CALLBACK
+				   (editor_metre_num_changed), NULL);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (metre_den_combo),
+				 sample_info->metre_den);
+  g_signal_handlers_unblock_by_func (metre_den_combo,
+				     G_CALLBACK
+				     (editor_metre_num_changed), NULL);
+
+  g_signal_handlers_block_by_func (tempo_spin,
+				   G_CALLBACK (editor_tempo_changed), NULL);
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (tempo_spin),
+			     sample_info->tempo);
+  g_signal_handlers_unblock_by_func (tempo_spin,
+				     G_CALLBACK (editor_tempo_changed), NULL);
+
+  g_signal_handlers_block_by_func (beats_spin,
+				   G_CALLBACK (editor_beats_changed), NULL);
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (beats_spin),
+			     sample_info->beats);
+  g_signal_handlers_unblock_by_func (beats_spin,
+				     G_CALLBACK (editor_beats_changed), NULL);
+
+  g_signal_handlers_block_by_func (note_combo,
+				   G_CALLBACK (editor_note_changed), NULL);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (note_combo),
+				 sample_info->midi_note);
+  g_signal_handlers_unblock_by_func (note_combo,
+				     G_CALLBACK (editor_note_changed), NULL);
+
+  gtk_widget_set_sensitive (sample_box, TRUE);
 
   editor_update_export_save_buttons ();
 
@@ -797,14 +936,17 @@ editor_draw_grid (cairo_t *cr, guint start, guint height, double x_ratio)
   gdouble value, grid_inc;
   struct sample_info *sample_info = audio.sample.info;
 
-  if (preferences_get_boolean (PREF_KEY_SHOW_GRID))
+  grid_length =
+    sample_info->beats * preferences_get_boolean (PREF_KEY_SUBDIVISIONS);
+
+  if (grid_length)
     {
       editor_set_text_color (&color);
       color.alpha = 0.25;
 
       gdk_cairo_set_source_rgba (cr, &color);
 
-      grid_length = preferences_get_int (PREF_KEY_GRID_LENGTH);
+
       grid_inc = sample_info->frames / (gdouble) grid_length;
 
       cairo_set_line_width (cr, 1);
@@ -1052,7 +1194,6 @@ editor_load_sample_runner (gpointer data)
 {
   struct sample_load_opts sample_info_opts;
 
-  dirty = FALSE;
   ready = FALSE;
   zoom = 1;
   audio.sel_start = -1;
@@ -1108,6 +1249,7 @@ editor_stop_clicked (GtkWidget *object, gpointer data)
 static void
 editor_record_window_record_cb (guint channel_mask)
 {
+  editor_set_dirty (TRUE);
   editor_clear_waveform_data ();	//Channels might have changed
   gtk_widget_set_sensitive (stop_button, TRUE);
   audio_start_recording (channel_mask, editor_update_on_record_cb, NULL);
@@ -1128,7 +1270,6 @@ editor_record_clicked (GtkWidget *object, gpointer data)
   editor_reset (&local_browser);
 
   ready = FALSE;
-  dirty = TRUE;
   zoom = 1;
   audio.sel_start = -1;
   audio.sel_end = -1;
@@ -1162,6 +1303,7 @@ editor_start_load_thread (gchar *sample_path)
 {
   debug_print (1, "Creating load thread...");
   audio.path = sample_path;
+  editor_set_dirty (FALSE);
   thread = g_thread_new ("load_sample", editor_load_sample_runner, NULL);
 }
 
@@ -1208,18 +1350,10 @@ editor_set_volume_callback (gdouble volume)
   g_idle_add (editor_set_volume_callback_bg, data);
 }
 
-static gboolean
-editor_show_grid_clicked (GtkWidget *object, gboolean state, gpointer data)
-{
-  preferences_set_boolean (PREF_KEY_SHOW_GRID, state);
-  gtk_widget_queue_draw (waveform);
-  return FALSE;
-}
-
 static void
-editor_grid_length_changed (GtkSpinButton *object, gpointer data)
+editor_subdivisions_changed (GtkSpinButton *object, gpointer data)
 {
-  preferences_set_boolean (PREF_KEY_GRID_LENGTH,
+  preferences_set_boolean (PREF_KEY_SUBDIVISIONS,
 			   gtk_spin_button_get_value (object));
   gtk_widget_queue_draw (waveform);
 }
@@ -1605,14 +1739,14 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
       sample_info->loop_start = cursor_frame;
       debug_print (2, "Setting loop to [%d, %d]...",
 		   sample_info->loop_start, sample_info->loop_end);
-      dirty = TRUE;
+      editor_set_dirty (TRUE);
     }
   else if (operation == EDITOR_OP_MOVE_LOOP_END)
     {
       sample_info->loop_end = cursor_frame;
       debug_print (2, "Setting loop to [%d, %d]...",
 		   sample_info->loop_start, sample_info->loop_end);
-      dirty = TRUE;
+      editor_set_dirty (TRUE);
     }
   else
     {
@@ -1680,7 +1814,7 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
   audio_delete_range (audio.sel_start, sel_len);
   g_mutex_unlock (&audio.control.controllable.mutex);
 
-  dirty = TRUE;
+  editor_set_dirty (TRUE);
 
   editor_set_waveform_data ();
   gtk_widget_queue_draw (waveform);
@@ -1737,6 +1871,7 @@ editor_save_with_format (const gchar *dst_path, struct idata *sample,
 	  audio.sample_info_src.tags = NULL;
 	}
       audio.sample_info_src.format |= format;	//This is required as reloading does not include the format
+      editor_set_dirty (FALSE);
     }
 
   err = sample_save_to_file (dst_path, &resampled, NULL, format);
@@ -1882,6 +2017,7 @@ editor_save (const gchar *name)
 	  audio.path = path;
 	  audio.sample.name = g_path_get_basename (path);
 	  editor_save_with_progress (audio.path, &audio.sample, FALSE);
+	  editor_set_filename ();
 	}
     }
   else
@@ -1918,6 +2054,7 @@ editor_save (const gchar *name)
 				   &sample_load_opts,
 				   audio.sample_info_src.format, NULL, FALSE);
 	  editor_update_export_save_buttons ();
+	  editor_set_filename ();
 	}
     }
 }
@@ -1995,7 +2132,7 @@ editor_normalize_clicked (GtkWidget *object, gpointer data)
   g_mutex_unlock (&audio.control.controllable.mutex);
   editor_set_waveform_data ();
   editor_queue_draw (NULL);
-  dirty = TRUE;
+  editor_set_dirty (TRUE);
 }
 
 static void
@@ -2374,11 +2511,24 @@ editor_init (GtkBuilder *builder)
     GTK_WIDGET (gtk_builder_get_object (builder, "volume_button"));
   mix_switch_box =
     GTK_WIDGET (gtk_builder_get_object (builder, "mix_switch_box"));
-  grid_length_spin =
-    GTK_WIDGET (gtk_builder_get_object (builder, "grid_length_spin"));
-  show_grid_switch =
-    GTK_WIDGET (gtk_builder_get_object (builder, "show_grid_switch"));
-  tags_box = GTK_WIDGET (gtk_builder_get_object (builder, "tags_box"));
+  metre_num_spin =
+    GTK_WIDGET (gtk_builder_get_object (builder, "metre_num_spin"));
+  metre_den_combo =
+    GTK_WIDGET (gtk_builder_get_object (builder, "metre_den_combo"));
+  tempo_spin = GTK_WIDGET (gtk_builder_get_object (builder, "tempo_spin"));
+  beats_spin = GTK_WIDGET (gtk_builder_get_object (builder, "beats_spin"));
+  subdivisions_spin =
+    GTK_WIDGET (gtk_builder_get_object (builder, "subdivisions_spin"));
+  note_combo = GTK_WIDGET (gtk_builder_get_object (builder, "note_combo"));
+  sample_box = GTK_WIDGET (gtk_builder_get_object (builder, "sample_box"));
+  filename_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "filename_box"));
+  filename_label =
+    GTK_WIDGET (gtk_builder_get_object (builder, "filename_label"));
+  edited_image =
+    GTK_WIDGET (gtk_builder_get_object (builder, "edited_image"));
+  tags_flowbox =
+    GTK_WIDGET (gtk_builder_get_object (builder, "tags_flowbox"));
 
   notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
@@ -2428,10 +2578,20 @@ editor_init (GtkBuilder *builder)
 		    G_CALLBACK (editor_autoplay_clicked), NULL);
   g_signal_connect (mix_switch, "state-set",
 		    G_CALLBACK (editor_mix_clicked), NULL);
-  g_signal_connect (grid_length_spin, "value-changed",
-		    G_CALLBACK (editor_grid_length_changed), NULL);
-  g_signal_connect (show_grid_switch, "state-set",
-		    G_CALLBACK (editor_show_grid_clicked), NULL);
+  g_signal_connect (subdivisions_spin, "value-changed",
+		    G_CALLBACK (editor_subdivisions_changed), NULL);
+
+  g_signal_connect (metre_num_spin, "value-changed",
+		    G_CALLBACK (editor_metre_num_changed), NULL);
+  g_signal_connect (metre_den_combo, "changed",
+		    G_CALLBACK (editor_metre_den_changed), NULL);
+  g_signal_connect (tempo_spin, "value-changed",
+		    G_CALLBACK (editor_tempo_changed), NULL);
+  g_signal_connect (beats_spin, "value-changed",
+		    G_CALLBACK (editor_beats_changed), NULL);
+  g_signal_connect (note_combo, "changed",
+		    G_CALLBACK (editor_note_changed), NULL);
+
   volume_changed_handler = g_signal_connect (volume_button,
 					     "value_changed",
 					     G_CALLBACK
@@ -2475,11 +2635,8 @@ editor_init (GtkBuilder *builder)
 			 preferences_get_boolean (PREF_KEY_AUTOPLAY));
   gtk_switch_set_active (GTK_SWITCH (mix_switch),
 			 preferences_get_boolean (PREF_KEY_MIX));
-  gtk_switch_set_active (GTK_SWITCH (show_grid_switch),
-			 preferences_get_boolean (PREF_KEY_SHOW_GRID));
-
-  gtk_spin_button_set_value (GTK_SPIN_BUTTON (grid_length_spin),
-			     preferences_get_int (PREF_KEY_GRID_LENGTH));
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (subdivisions_spin),
+			     preferences_get_int (PREF_KEY_SUBDIVISIONS));
 
   audio_init (editor_update_audio_status, editor_set_volume_callback);
 

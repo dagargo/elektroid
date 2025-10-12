@@ -20,20 +20,20 @@
 
 #include "regpref.h"
 
-#define PREF_DEFAULT_GRID_LENGTH 16
-#define PREF_MAX_GRID_LENGTH 64
-#define PREF_MIN_GRID_LENGTH 2
+#define PREF_DEFAULT_SUBDIVISIONS 4
+#define PREF_MAX_SUBDIVISIONS 8
+#define PREF_MIN_SUBDIVISIONS 1
 
 #define PREF_DEFAULT_AUDIO_BUF_LENGTH 256
 #define PREF_MAX_AUDIO_BUF_LENGTH 4096
 #define PREF_MIN_AUDIO_BUF_LENGTH 256
 
 static gpointer
-regpref_get_grid (const gpointer grid)
+regpref_get_subdivisions (const gpointer grid)
 {
-  return preferences_get_int_value (grid, PREF_MAX_GRID_LENGTH,
-				    PREF_MIN_GRID_LENGTH,
-				    PREF_DEFAULT_GRID_LENGTH);
+  return preferences_get_int_value (grid, PREF_MAX_SUBDIVISIONS,
+				    PREF_MIN_SUBDIVISIONS,
+				    PREF_DEFAULT_SUBDIVISIONS);
 }
 
 static gpointer
@@ -101,16 +101,10 @@ static const struct preference PREF_MIX = {
   .get_value = preferences_get_boolean_value_false
 };
 
-static const struct preference PREF_SHOW_GRID = {
-  .key = PREF_KEY_SHOW_GRID,
-  .type = PREFERENCE_TYPE_BOOLEAN,
-  .get_value = preferences_get_boolean_value_false
-};
-
-static const struct preference PREF_GRID_LENGTH = {
-  .key = PREF_KEY_GRID_LENGTH,
+static const struct preference PREF_SUBDIVISIONS = {
+  .key = PREF_KEY_SUBDIVISIONS,
   .type = PREFERENCE_TYPE_INT,
-  .get_value = regpref_get_grid
+  .get_value = regpref_get_subdivisions
 };
 
 static const struct preference PREF_PLAY_WHILE_LOADING = {
@@ -153,8 +147,8 @@ void
 regpref_register ()
 {
   gslist_fill (&preferences, &PREF_LOCAL_DIR, &PREF_REMOTE_DIR,
-	       &PREF_SHOW_REMOTE, &PREF_AUTOPLAY, &PREF_MIX, &PREF_SHOW_GRID,
-	       &PREF_GRID_LENGTH, &PREF_PLAY_WHILE_LOADING,
+	       &PREF_SHOW_REMOTE, &PREF_AUTOPLAY, &PREF_MIX,
+	       &PREF_SUBDIVISIONS, &PREF_PLAY_WHILE_LOADING,
 	       &PREF_AUDIO_BUFFER_LEN, &PREF_AUDIO_USE_FLOAT,
 	       &PREF_SHOW_PLAYBACK_CURSOR, &PREF_STOP_DEVICE_WHEN_CONNECTING,
 	       &PREF_ELEKTRON_LOAD_SOUND_TAGS, NULL);

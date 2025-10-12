@@ -62,7 +62,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
   </object>
   <object class="GtkAdjustment" id="autosampler_release_adj">
     <property name="upper">30</property>
-    <property name="step-increment">0.01000000000000001</property>
+    <property name="step-increment">0.01</property>
     <property name="page-increment">10</property>
   </object>
   <object class="GtkAdjustment" id="autosampler_semitones_adj">
@@ -89,6 +89,49 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gint"/>
     </columns>
   </object>
+  <object class="GtkAdjustment" id="beats_adj">
+    <property name="upper">256</property>
+    <property name="step-increment">1</property>
+    <property name="page-increment">4</property>
+  </object>
+  <object class="GtkListStore" id="denominator_list_store">
+    <columns>
+      <!-- column-name caption -->
+      <column type="gchararray"/>
+      <!-- column-name value -->
+      <column type="gint"/>
+    </columns>
+    <data>
+      <row>
+        <col id="0">1</col>
+        <col id="1">1</col>
+      </row>
+      <row>
+        <col id="0">2</col>
+        <col id="1">2</col>
+      </row>
+      <row>
+        <col id="0">4</col>
+        <col id="1">4</col>
+      </row>
+      <row>
+        <col id="0">8</col>
+        <col id="1">8</col>
+      </row>
+      <row>
+        <col id="0">16</col>
+        <col id="1">16</col>
+      </row>
+      <row>
+        <col id="0">32</col>
+        <col id="1">32</col>
+      </row>
+      <row>
+        <col id="0">64</col>
+        <col id="1">64</col>
+      </row>
+    </data>
+  </object>
   <object class="GtkListStore" id="devices_list_store">
     <columns>
       <!-- column-name type -->
@@ -108,13 +151,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <!-- column-name name -->
       <column type="gchararray"/>
     </columns>
-  </object>
-  <object class="GtkAdjustment" id="grid_lenght_adj">
-    <property name="lower">2</property>
-    <property name="upper">64</property>
-    <property name="value">16</property>
-    <property name="step-increment">1</property>
-    <property name="page-increment">16</property>
   </object>
   <object class="GtkListStore" id="local_list_store">
     <columns>
@@ -148,12 +184,19 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
     </columns>
   </object>
+  <object class="GtkAdjustment" id="metre_num_adj">
+    <property name="lower">1</property>
+    <property name="upper">64</property>
+    <property name="value">4</property>
+    <property name="step-increment">1</property>
+    <property name="page-increment">1</property>
+  </object>
   <object class="GtkListStore" id="notes_list_store">
     <columns>
       <!-- column-name caption -->
       <column type="gchararray"/>
       <!-- column-name value -->
-      <column type="gint"/>
+      <column type="guint"/>
     </columns>
     <data>
       <row>
@@ -712,6 +755,13 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
     </columns>
   </object>
+  <object class="GtkAdjustment" id="subdivisions_adj">
+    <property name="lower">1</property>
+    <property name="upper">8</property>
+    <property name="value">4</property>
+    <property name="step-increment">1</property>
+    <property name="page-increment">4</property>
+  </object>
   <object class="GtkListStore" id="task_list_store">
     <columns>
       <!-- column-name status -->
@@ -737,6 +787,13 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <!-- column-name mode -->
       <column type="guint"/>
     </columns>
+  </object>
+  <object class="GtkAdjustment" id="tempo_adj">
+    <property name="lower">20</property>
+    <property name="upper">240</property>
+    <property name="value">120</property>
+    <property name="step-increment">0.25</property>
+    <property name="page-increment">1</property>
   </object>
   <object class="GtkAdjustment" id="waveform_adj">
     <property name="upper">100</property>
@@ -1976,7 +2033,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                 <property name="vexpand">True</property>
                                 <child>
                                   <object class="GtkScrolledWindow" id="local_scrolled_window">
-                                    <property name="height-request">100</property>
+                                    <property name="height-request">200</property>
                                     <property name="visible">True</property>
                                     <property name="can-focus">True</property>
                                     <property name="hexpand">True</property>
@@ -2084,8 +2141,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                           </object>
                                         </child>
                                         <child>
-                                          <object class="GtkTreeViewColumn" id="local_tree_view_sample_midi_note_column">
-                                            <property name="title" translatable="yes">MIDI Note</property>
+                                          <object class="GtkTreeViewColumn" id="local_tree_view_sample_note_column">
+                                            <property name="title" translatable="yes">Note</property>
                                             <child>
                                               <object class="GtkCellRendererText"/>
                                               <attributes>
@@ -2437,7 +2494,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                 <property name="vexpand">True</property>
                                 <child>
                                   <object class="GtkScrolledWindow" id="remote_scrolled_window">
-                                    <property name="height-request">100</property>
+                                    <property name="height-request">200</property>
                                     <property name="visible">True</property>
                                     <property name="can-focus">True</property>
                                     <property name="hexpand">True</property>
@@ -2571,9 +2628,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                           </object>
                                         </child>
                                         <child>
-                                          <object class="GtkTreeViewColumn" id="remote_tree_view_sample_midi_note_column">
+                                          <object class="GtkTreeViewColumn" id="remote_tree_view_sample_note_column">
                                             <property name="visible">False</property>
-                                            <property name="title" translatable="yes">MIDI Note</property>
+                                            <property name="title" translatable="yes">Note</property>
                                             <child>
                                               <object class="GtkCellRendererText"/>
                                               <attributes>
@@ -2691,7 +2748,6 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                           <object class="GtkBox">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="valign">center</property>
                             <property name="spacing">6</property>
                             <child>
                               <object class="GtkBox">
@@ -2833,45 +2889,196 @@ audio-volume-medium-symbolic</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkBox">
+                              <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="spacing">6</property>
-                                <child>
-                                  <object class="GtkLabel">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="halign">end</property>
-                                    <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Auto play</property>
-                                    <property name="justify">right</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkSwitch" id="autoplay_switch">
-                                    <property name="name">autoplay_switch</property>
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
-                                    <property name="halign">start</property>
-                                    <property name="valign">center</property>
-                                    <property name="active">True</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
+                                <property name="halign">end</property>
+                                <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Auto play</property>
+                                <property name="justify">right</property>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
                                 <property name="fill">True</property>
                                 <property name="position">3</property>
                               </packing>
+                            </child>
+                            <child>
+                              <object class="GtkSwitch" id="autoplay_switch">
+                                <property name="name">autoplay_switch</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="halign">start</property>
+                                <property name="valign">center</property>
+                                <property name="active">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">4</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox" id="filename_box">
+                            <property name="can-focus">False</property>
+                            <property name="halign">center</property>
+                            <property name="margin-start">12</property>
+                            <property name="margin-end">12</property>
+                            <property name="hexpand">True</property>
+                            <property name="spacing">6</property>
+                            <child>
+                              <object class="GtkLabel" id="filename_label">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="halign">start</property>
+                                <property name="justify">center</property>
+                                <property name="ellipsize">middle</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkImage" id="edited_image">
+                                <property name="can-focus">False</property>
+                                <property name="tooltip-text" translatable="yes">Edited sample</property>
+                                <property name="icon-name">dialog-warning-symbolic</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkBox">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="spacing">6</property>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="tooltip-text" translatable="yes">Beat subdivisions</property>
+                                <property name="halign">end</property>
+                                <property name="label" translatable="yes">Subdivisions</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkSpinButton" id="subdivisions_spin">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="halign">start</property>
+                                <property name="adjustment">subdivisions_adj</property>
+                                <property name="value">4</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkSeparator">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="tooltip-text" translatable="yes">Playing mix depends on the remote channels</property>
+                                <property name="halign">end</property>
+                                <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Mix depending
+on remote</property>
+                                <property name="justify">right</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">3</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkSwitch" id="mix_switch">
+                                <property name="name">autoplay_switch</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="halign">start</property>
+                                <property name="valign">center</property>
+                                <property name="active">True</property>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">4</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="pack-type">end</property>
+                            <property name="position">2</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox" id="sample_box">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="hexpand">True</property>
+                        <property name="orientation">vertical</property>
+                        <property name="spacing">6</property>
+                        <child>
+                          <object class="GtkScrolledWindow" id="waveform_scrolled_window">
+                            <property name="height-request">50</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="hexpand">True</property>
+                            <property name="vexpand">True</property>
+                            <property name="hadjustment">waveform_adj</property>
+                            <property name="vscrollbar-policy">never</property>
+                            <property name="shadow-type">in</property>
+                            <child>
+                              <object class="GtkLayout" id="waveform">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="width">0</property>
+                                <property name="height">0</property>
+                              </object>
                             </child>
                           </object>
                           <packing>
@@ -2884,17 +3091,20 @@ audio-volume-medium-symbolic</property>
                           <object class="GtkBox">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
+                            <property name="vexpand">False</property>
                             <property name="spacing">6</property>
                             <child>
                               <object class="GtkBox">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
+                                <property name="valign">start</property>
                                 <property name="spacing">6</property>
                                 <child>
                                   <object class="GtkLabel">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
-                                    <property name="label" translatable="yes">Grid</property>
+                                    <property name="halign">end</property>
+                                    <property name="label" translatable="yes">Metre</property>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
@@ -2903,10 +3113,10 @@ audio-volume-medium-symbolic</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkSpinButton" id="grid_length_spin">
+                                  <object class="GtkSpinButton" id="metre_num_spin">
                                     <property name="visible">True</property>
                                     <property name="can-focus">True</property>
-                                    <property name="adjustment">grid_lenght_adj</property>
+                                    <property name="adjustment">metre_num_adj</property>
                                     <property name="value">16</property>
                                   </object>
                                   <packing>
@@ -2916,15 +3126,142 @@ audio-volume-medium-symbolic</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkSwitch" id="show_grid_switch">
+                                  <object class="GtkComboBox" id="metre_den_combo">
                                     <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
-                                    <property name="valign">center</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="model">denominator_list_store</property>
+                                    <property name="active">2</property>
+                                    <property name="id-column">1</property>
+                                    <child>
+                                      <object class="GtkCellRendererText"/>
+                                      <attributes>
+                                        <attribute name="text">1</attribute>
+                                      </attributes>
+                                    </child>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
                                     <property name="fill">True</property>
                                     <property name="position">2</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkSeparator">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">3</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="halign">end</property>
+                                    <property name="label" translatable="yes">Beats</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">4</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkSpinButton" id="beats_spin">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="adjustment">beats_adj</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">5</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkSeparator">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">6</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="halign">end</property>
+                                    <property name="label" translatable="yes">Tempo</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">7</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkSpinButton" id="tempo_spin">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="adjustment">tempo_adj</property>
+                                    <property name="digits">2</property>
+                                    <property name="value">120</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">8</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkSeparator">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">9</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="halign">end</property>
+                                    <property name="label" translatable="yes">Note</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">10</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkComboBox" id="note_combo">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="hexpand">False</property>
+                                    <property name="model">notes_list_store</property>
+                                    <property name="active">24</property>
+                                    <property name="id-column">1</property>
+                                    <child>
+                                      <object class="GtkCellRendererText"/>
+                                      <attributes>
+                                        <attribute name="text">0</attribute>
+                                      </attributes>
+                                    </child>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">11</property>
                                   </packing>
                                 </child>
                               </object>
@@ -2946,41 +3283,13 @@ audio-volume-medium-symbolic</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkBox" id="mix_switch_box">
+                              <object class="GtkFlowBox" id="tags_flowbox">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="spacing">6</property>
-                                <child>
-                                  <object class="GtkLabel">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="tooltip-text" translatable="yes">Playing mix depends on the remote channels</property>
-                                    <property name="halign">end</property>
-                                    <property name="label" translatable="yes" comments="It is recommended to split the text in two lines if it is too long">Mix depending
-on remote</property>
-                                    <property name="justify">right</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkSwitch" id="mix_switch">
-                                    <property name="name">autoplay_switch</property>
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
-                                    <property name="halign">start</property>
-                                    <property name="valign">center</property>
-                                    <property name="active">True</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
+                                <property name="hexpand">True</property>
+                                <property name="max-children-per-line">100</property>
+                                <property name="selection-mode">none</property>
+                                <property name="activate-on-single-click">False</property>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2992,32 +3301,8 @@ on remote</property>
                           <packing>
                             <property name="expand">False</property>
                             <property name="fill">True</property>
-                            <property name="pack-type">end</property>
                             <property name="position">1</property>
                           </packing>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkScrolledWindow" id="waveform_scrolled_window">
-                        <property name="height-request">100</property>
-                        <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="hexpand">True</property>
-                        <property name="vexpand">True</property>
-                        <property name="hadjustment">waveform_adj</property>
-                        <property name="vscrollbar-policy">never</property>
-                        <property name="shadow-type">in</property>
-                        <child>
-                          <object class="GtkLayout" id="waveform">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                          </object>
                         </child>
                       </object>
                       <packing>
@@ -3026,23 +3311,9 @@ on remote</property>
                         <property name="position">1</property>
                       </packing>
                     </child>
-                    <child>
-                      <object class="GtkFlowBox" id="tags_box">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="max-children-per-line">100</property>
-                        <property name="selection-mode">none</property>
-                        <property name="activate-on-single-click">False</property>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">2</property>
-                      </packing>
-                    </child>
                   </object>
                   <packing>
-                    <property name="resize">False</property>
+                    <property name="resize">True</property>
                     <property name="shrink">False</property>
                   </packing>
                 </child>

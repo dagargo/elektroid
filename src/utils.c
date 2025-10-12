@@ -727,6 +727,13 @@ sample_info_copy (struct sample_info *dst, struct sample_info *src)
     }
 }
 
+void
+sample_info_copy_steal_tags (struct sample_info *dst, struct sample_info *src)
+{
+  memcpy (dst, src, sizeof (struct sample_info));
+  src->tags = NULL;
+}
+
 gboolean
 sample_info_equal_no_tags (struct sample_info *a, struct sample_info *b)
 {

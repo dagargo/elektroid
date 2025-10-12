@@ -78,7 +78,7 @@ struct sample_info
   // As in acid chunk
   guint32 acid_type;
   // key would be the same as in midi_note
-  guint32 beats_num;
+  guint32 beats;
   guint16 metre_num;
   guint16 metre_den;
   gfloat tempo;
@@ -206,6 +206,9 @@ void sample_info_init (struct sample_info *sample_info, gboolean tags);
 void sample_info_free (gpointer sample_info);
 
 void sample_info_copy (struct sample_info *dst, struct sample_info *src);
+
+void sample_info_copy_steal_tags (struct sample_info *dst,
+				  struct sample_info *src);
 
 gboolean
 sample_info_equal_no_tags (struct sample_info *a, struct sample_info *b);

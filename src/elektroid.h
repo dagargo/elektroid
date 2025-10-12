@@ -21,6 +21,10 @@
 #ifndef ELEKTROID_H
 #define ELEKTROID_H
 
+void elektroid_combo_box_set_value (GtkComboBox * object, guint value);
+
+guint elektroid_combo_box_get_value (GtkComboBox * combo);
+
 void elektroid_add_upload_tasks (GtkWidget * object, gpointer data);
 
 void elektroid_add_download_tasks (GtkWidget * object, gpointer data);
