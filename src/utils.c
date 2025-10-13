@@ -779,3 +779,57 @@ sample_info_set_tag (const struct sample_info *sample_info,
       g_hash_table_insert (sample_info->tags, strdup (tag), value);
     }
 }
+
+gchar *
+tags_to_ikey_format (GHashTable *set)
+{
+  gboolean first = TRUE;
+  GString *ikey = g_string_new (NULL);
+  GList *tags = g_hash_table_get_keys (set);
+
+  tags = g_list_sort (tags, (GCompareFunc) g_strcmp0);
+  for (GList * tag = tags; tag != NULL; tag = g_list_next (tag))
+    {
+      g_string_append_printf (ikey, "%s%s", first ? "" : "; ",
+			      (gchar *) tag->data);
+      first = FALSE;
+    }
+  g_list_free (tags);
+
+  return g_string_free_and_steal (ikey);
+}
+
+GHashTable *
+ikey_format_to_tags (const gchar *text)
+{
+  GHashTable *set = g_hash_table_new (g_str_hash, g_str_equal);
+  if (text != NULL)
+    {
+      gchar **tags = g_strsplit (text, "; ", 0);
+      gchar **tag = tags;
+      while (*tag)
+	{
+	  if (!g_hash_table_contains (set, *tag))
+	    {
+	      g_hash_table_add (set, g_strdup (*tag));
+	    }
+	  tag++;
+	}
+      g_strfreev (tags);
+    }
+  return set;
+}
+
+void
+tags_add (GHashTable *set, GHashTable *other)
+{
+  GList *tags = g_hash_table_get_keys (other);
+  for (GList * tag = tags; tag != NULL; tag = g_list_next (tag))
+    {
+      if (!g_hash_table_contains (set, tag->data))
+	{
+	  g_hash_table_add (set, g_strdup (tag->data));
+	}
+    }
+  g_list_free (tags);
+}

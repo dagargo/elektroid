@@ -1,6 +1,6 @@
 /*
- *   editor.h
- *   Copyright (C) 2023 David García Goñi <dagargo@gmail.com>
+ *   tags_window.h
+ *   Copyright (C) 2025 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
  *
@@ -18,35 +18,26 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef EDITOR_H
-#define EDITOR_H
+#include <gtk/gtk.h>
 
-#include "browser.h"
+#ifndef TAGS_WINDOW_H
+#define TAGS_WINDOW_H
 
-struct browser *editor_get_browser ();
+enum tag_source
+{
+  TAG_SOURCE_NONE,
+  TAG_SOURCE_LOCAL,
+  TAG_SOURCE_REMOTE
+};
 
-void editor_set_dirty (gboolean dirty);
+void tags_window_init (GtkBuilder * builder);
 
-void editor_update_tags ();
+void tags_window_open (enum tag_source tag_source);
 
-void editor_reset (struct browser *browser);
+void tags_window_destroy ();
 
-void editor_play ();
+GtkWidget *tags_label_new (const gchar * name, enum tag_source tag_source);
 
-gboolean editor_is_loop_active ();
-
-void editor_start_load_thread (gchar * sample_path);
-
-void editor_stop_load_thread ();
-
-void editor_init (GtkBuilder * builder);
-
-void editor_destroy ();
-
-void editor_set_visible (gboolean visible);
-
-void editor_reset_audio ();
-
-void editor_set_active (gboolean active);
+void tags_clear_container (GtkWidget * container);
 
 #endif

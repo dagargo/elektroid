@@ -221,4 +221,10 @@ const gchar *sample_info_get_tag (const struct sample_info *sample_info,
 void sample_info_set_tag (const struct sample_info *sample_info,
 			  const gchar * tag, gchar * value);
 
+gchar *tags_to_ikey_format (GHashTable * set);
+
+GHashTable *ikey_format_to_tags (const gchar * text);
+
+void tags_add (GHashTable * set, GHashTable * other);
+
 #endif

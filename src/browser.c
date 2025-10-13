@@ -785,7 +785,7 @@ browser_get_tags (const struct sample_info *sample_info)
   while (*t)
     {
       g_string_append_printf (tagss,
-			      "<span bgcolor=\"gray\" bgalpha=\"20%%\" weight=\"bold\">%s</span>%s",
+			      "<span bgcolor=\"gray\" bgalpha=\"20%%\">%s</span>%s",
 			      *t, *(t + 1) ? "  " : "");
       t++;
     }

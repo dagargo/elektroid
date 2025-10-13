@@ -83,17 +83,32 @@
 
 .local_tag_button,
 .remote_tag_button {
-        padding: 1px;
+        padding: 0px;
         background: transparent;
         outline-color: transparent;
         box-shadow: none;
+        border-radius: 5px;
 }
 
+.none_tag_label,
+.local_tag_label,
+.remote_tag_label {
+        padding: 1px;
+        border-radius: 5px;
+}
+
+.none_tag_label {
+        color: #ffffff;
+        background-color: @nobrowser_color_dark;
+}
+
+.local_tag_label,
 .local_tag_button:checked {
         color: #ffffff;
         background-color: @local_color;
 }
 
+.remote_tag_label,
 .remote_tag_button:checked {
         color: #ffffff;
         background-color: @remote_color;

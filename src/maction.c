@@ -19,6 +19,7 @@
  */
 
 #include "maction.h"
+#include "tags_window.h"
 
 GSList *mactions = NULL;
 struct maction_context maction_context;
@@ -55,18 +56,10 @@ maction_context_build_all (struct maction_context *context)
   return actions;
 }
 
-static void
-maction_remove_widget (GtkWidget *widget, gpointer data)
-{
-  struct maction_context *context = data;
-  gtk_container_remove (GTK_CONTAINER (context->box), widget);
-}
-
 void
 maction_menu_clear (struct maction_context *context)
 {
-  gtk_container_foreach (GTK_CONTAINER (context->box), maction_remove_widget,
-			 context);
+  tags_clear_container (context->box);
 }
 
 static void
