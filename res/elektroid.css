@@ -83,7 +83,7 @@
 
 .local_tag_button,
 .remote_tag_button {
-        padding: 0px;
+        padding: 1px;
         background: transparent;
         outline-color: transparent;
         box-shadow: none;
