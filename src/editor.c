@@ -114,6 +114,7 @@ static GtkWidget *popover_undo_button;
 static GtkWidget *popover_normalize_button;
 static GtkWidget *popover_split_button;
 static GtkWidget *popover_save_button;
+static GtkWidget *popover_save_as_button;
 static GtkWidget *popover_export_button;
 static GtkWidget *tags_box;
 static gdouble zoom;
@@ -564,13 +565,15 @@ editor_update_export_save_buttons ()
       gboolean can_save =
 	sample_format_is_valid_to_save (&audio.sample_info_src);
       gtk_widget_set_visible (popover_save_button, can_save);
+      gtk_widget_set_visible (popover_save_as_button, can_save);
       gtk_widget_set_visible (popover_export_button, !can_save);
     }
   else
     {
       // This is a recording
-      gtk_widget_set_visible (popover_save_button, TRUE);
+      gtk_widget_set_visible (popover_save_button, FALSE);
       gtk_widget_set_visible (popover_export_button, FALSE);
+      gtk_widget_set_visible (popover_save_as_button, TRUE);
     }
 }
 
@@ -1415,7 +1418,6 @@ editor_show_popover_at (guint x, guint y, gboolean cursor_on_sel)
   gtk_widget_set_sensitive (popover_undo_button, dirty);
   gtk_widget_set_sensitive (popover_split_button, sample_info->channels > 1);
   gtk_widget_set_sensitive (popover_save_button, dirty || cursor_on_sel);
-  gtk_widget_set_sensitive (popover_export_button, dirty || cursor_on_sel);
 
   gtk_popover_popup (GTK_POPOVER (popover_menu));
 }
@@ -2171,7 +2173,7 @@ editor_split_clicked (GtkWidget *object, gpointer user_data)
 }
 
 static void
-editor_export_save_clicked (GtkWidget *object, gpointer data)
+editor_export_save_as_clicked (GtkWidget *object, gpointer data)
 {
   gint name_sel_len;
   gchar name[PATH_MAX];
@@ -2224,6 +2226,19 @@ editor_export_save_clicked (GtkWidget *object, gpointer data)
 
 end:
   g_mutex_unlock (&audio.control.controllable.mutex);
+}
+
+static void
+editor_save_clicked (GtkWidget *object, gpointer data)
+{
+  if (AUDIO_SEL_LEN)
+    {
+      editor_export_save_as_clicked (NULL, NULL);
+    }
+  else
+    {
+      editor_save_with_progress (audio.path, &audio.sample, FALSE);
+    }
 }
 
 static gboolean
@@ -2290,7 +2305,7 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
     {
       if (sample_format_is_valid_to_save (&audio.sample_info_src))
 	{
-	  editor_export_save_clicked (NULL, NULL);
+	  editor_save_clicked (NULL, NULL);
 	}
     }
 
@@ -2390,6 +2405,9 @@ editor_init (GtkBuilder *builder)
   popover_save_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "editor_popover_save_button"));
+  popover_save_as_button =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "editor_popover_save_as_button"));
   popover_export_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "editor_popover_export_button"));
@@ -2446,9 +2464,11 @@ editor_init (GtkBuilder *builder)
   g_signal_connect (popover_split_button, "clicked",
 		    G_CALLBACK (editor_split_clicked), NULL);
   g_signal_connect (popover_export_button, "clicked",
-		    G_CALLBACK (editor_export_save_clicked), NULL);
+		    G_CALLBACK (editor_export_save_as_clicked), NULL);
   g_signal_connect (popover_save_button, "clicked",
-		    G_CALLBACK (editor_export_save_clicked), NULL);
+		    G_CALLBACK (editor_save_clicked), NULL);
+  g_signal_connect (popover_save_as_button, "clicked",
+		    G_CALLBACK (editor_export_save_as_clicked), NULL);
 
   editor_loop_clicked (loop_button, NULL);
   gtk_switch_set_active (GTK_SWITCH (autoplay_switch),

@@ -1524,6 +1524,19 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
             <property name="position">8</property>
           </packing>
         </child>
+        <child>
+          <object class="GtkModelButton" id="editor_popover_save_as_button">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="text" translatable="yes">Save As...</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">9</property>
+          </packing>
+        </child>
       </object>
       <packing>
         <property name="submenu">main</property>
