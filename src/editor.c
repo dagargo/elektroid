@@ -2448,7 +2448,7 @@ editor_init (GtkBuilder *builder)
   gtk_widget_add_events (waveform, GDK_POINTER_MOTION_MASK);
   g_signal_connect (waveform, "motion-notify-event",
 		    G_CALLBACK (editor_motion_notify), NULL);
-  g_signal_connect (waveform_scrolled_window, "key-press-event",
+  g_signal_connect (editor_box, "key-press-event",
 		    G_CALLBACK (editor_key_press), NULL);
   g_signal_connect (waveform, "size-allocate",
 		    G_CALLBACK (editor_waveform_size_allocate), NULL);
