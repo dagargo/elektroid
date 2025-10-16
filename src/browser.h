@@ -56,6 +56,14 @@
 
 #define MSG_WARN_SAME_SRC_DST "Same source and destination path. Skipping..."
 
+struct browser_search_options
+{
+  GSList *tokens;
+  gint tempo;
+  gint note;
+  gboolean ready;
+};
+
 struct browser
 {
   const gchar *name;
@@ -90,7 +98,7 @@ struct browser
   guint pending_req;
   gboolean dirty;
   gboolean search_mode;
-  gchar **search_tokens;
+  struct browser_search_options search_options;
   gint64 last_selected_index;	//This needs space for gint and -1
   gboolean selection_active;
   //Menu

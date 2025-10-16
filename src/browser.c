@@ -45,6 +45,11 @@
 
 #define DIR_ICON "elektroid-folder-symbolic"
 
+#define SEARCH_PARAM_SEPARATOR_CHAR ':'
+#define SEARCH_TEMPO_DIFF 10
+#define SEARCH_PARAM_UNSET -1
+#define SEARCH_PARAM_NOTE_NOT_FOUND -2
+
 // ITEM_TYPE_DIR do not have an initialized sample_info.
 // The remote editor might not have tags even though the filesystem is an editor.
 #define ITEM_HAS_TAGS(i,b) ((i)->type == ITEM_TYPE_FILE && \
@@ -795,6 +800,64 @@ browser_get_tags (const struct sample_info *sample_info)
   return g_string_free_and_steal (tagss);
 }
 
+static void
+browser_get_note_name (guint32 note, GValue *v)
+{
+  GtkTreeIter note_iter;
+
+  gtk_tree_model_get_iter_first (GTK_TREE_MODEL (notes_list_store),
+				 &note_iter);
+  for (gint i = 0; i < note; i++)
+    {
+      gtk_tree_model_iter_next (GTK_TREE_MODEL (notes_list_store),
+				&note_iter);
+    }
+  gtk_tree_model_get_value (GTK_TREE_MODEL (notes_list_store),
+			    &note_iter, 0, v);
+}
+
+// Note names are not translated
+
+static gint
+browser_get_note_num (const gchar *any)
+{
+  gint i, num;
+  gchar *upper;
+  GtkTreeIter note_iter;
+  GValue v = G_VALUE_INIT;
+
+  //As note names are stored in upper case, ensuring the first letter is in upper case is enough;
+  upper = strdup (any);
+  if (upper[0] >= 0x61)
+    {
+      upper[0] -= 0x20;
+    }
+
+  i = 0;
+  num = SEARCH_PARAM_NOTE_NOT_FOUND;
+  gtk_tree_model_get_iter_first (GTK_TREE_MODEL (notes_list_store),
+				 &note_iter);
+  do
+    {
+      gtk_tree_model_get_value (GTK_TREE_MODEL (notes_list_store),
+				&note_iter, 0, &v);
+      const gchar *note = g_value_get_string (&v);
+      gint cmp = strcmp (note, upper);
+      g_value_unset (&v);
+      if (!cmp)
+	{
+	  num = i;
+	  break;
+	}
+      i++;
+    }
+  while (gtk_tree_model_iter_next (GTK_TREE_MODEL (notes_list_store),
+				   &note_iter));
+
+  g_free (upper);
+  return num;
+}
+
 static gint
 browser_add_dentry_item (gpointer data)
 {
@@ -802,7 +865,7 @@ browser_add_dentry_item (gpointer data)
   gdouble time;
   gchar *name;
   gchar label[LABEL_MAX];
-  GtkTreeIter iter, note_iter;
+  GtkTreeIter iter;
   struct browser_add_dentry_item_data *add_data = data;
   struct browser *browser = add_data->browser;
   struct item *item = &add_data->item;
@@ -896,17 +959,9 @@ browser_add_dentry_item (gpointer data)
 				BROWSER_LIST_STORE_SAMPLE_CHANNELS_FIELD, &v);
       g_value_unset (&v);
 
-      gtk_tree_model_get_iter_first (GTK_TREE_MODEL (notes_list_store),
-				     &note_iter);
       if (item->sample_info.midi_note <= 127)
 	{
-	  for (gint i = 0; i < item->sample_info.midi_note; i++)
-	    {
-	      gtk_tree_model_iter_next (GTK_TREE_MODEL (notes_list_store),
-					&note_iter);
-	    }
-	  gtk_tree_model_get_value (GTK_TREE_MODEL (notes_list_store),
-				    &note_iter, 0, &v);
+	  browser_get_note_name (item->sample_info.midi_note, &v);
 	}
       else
 	{
@@ -1099,29 +1154,64 @@ browser_load_dir_runner_update_ui (gpointer data)
 }
 
 static gboolean
-browser_values_match_filter (gchar **search_tokens, const gchar *name,
-			     const gchar *rel_path, const gchar *object_info,
+browser_values_match_filter (struct browser_search_options *search_options,
+			     const gchar *name, const gchar *rel_path,
+			     const gchar *object_info,
 			     const struct sample_info *sample_info)
 {
-  gboolean matched = TRUE;
+  gboolean matched;
 
-  for (guint i = 0; search_tokens[i]; i++)
+  // When set, tempo is always a valid number even when the user has written nothing or an invalid number in the GUI.
+  // When set, note is either valid or invalid (not found).
+
+  if (search_options->note == SEARCH_PARAM_NOTE_NOT_FOUND)
     {
-      if (token_is_in_text (search_tokens[i], name))
+      return FALSE;
+    }
+
+  if (search_options->tempo != SEARCH_PARAM_UNSET)
+    {
+      if (!sample_info)
 	{
-	  goto found;
+	  return FALSE;
+	}
+      if (sample_info->tempo > search_options->tempo + SEARCH_TEMPO_DIFF ||
+	  sample_info->tempo < search_options->tempo - SEARCH_TEMPO_DIFF)
+	{
+	  return FALSE;
+	}
+    }
+
+  if (search_options->note != SEARCH_PARAM_UNSET)
+    {
+      if (!sample_info)
+	{
+	  return FALSE;
+	}
+      if (sample_info->midi_note != search_options->note)
+	{
+	  return FALSE;
+	}
+    }
+
+  matched = TRUE;
+  for (GSList * l = search_options->tokens; l; l = l->next)
+    {
+      if (token_is_in_text (l->data, name))
+	{
+	  continue;
 	}
 
-      if (token_is_in_text (search_tokens[i], rel_path))
+      if (token_is_in_text (l->data, rel_path))
 	{
-	  goto found;
+	  continue;
 	}
 
       if (object_info)
 	{
-	  if (token_is_in_text (search_tokens[i], object_info))
+	  if (token_is_in_text (l->data, object_info))
 	    {
-	      goto found;
+	      continue;
 	    }
 	}
 
@@ -1129,17 +1219,14 @@ browser_values_match_filter (gchar **search_tokens, const gchar *name,
 	{
 	  const gchar *ikey = sample_info_get_tag (sample_info,
 						   SAMPLE_INFO_TAG_IKEY);
-	  if (ikey && token_is_in_text (search_tokens[i], ikey))
+	  if (ikey && token_is_in_text (l->data, ikey))
 	    {
-	      goto found;
+	      continue;
 	    }
 	}
 
       matched = FALSE;
       break;
-
-    found:
-      continue;
     }
 
   return matched;
@@ -1155,7 +1242,7 @@ browser_iterate_dir_add (struct browser *browser,
   const struct sample_info *sample_info;
   struct browser_add_dentry_item_data *data;
 
-  if (browser->search_tokens)
+  if (browser->search_options.ready)
     {
       if (iter->item.type == ITEM_TYPE_FILE)
 	{
@@ -1172,7 +1259,7 @@ browser_iterate_dir_add (struct browser *browser,
 	  sample_info = NULL;
 	}
 
-      if (!browser_values_match_filter (browser->search_tokens,
+      if (!browser_values_match_filter (&browser->search_options,
 					iter->item.name, rel_path,
 					object_info, sample_info))
 	{
@@ -2194,8 +2281,11 @@ browser_cancel (struct browser *browser)
 
   gtk_entry_buffer_set_text (buf, "", -1);
 
-  g_strfreev (browser->search_tokens);
-  browser->search_tokens = NULL;
+  g_slist_free_full (browser->search_options.tokens, g_free);
+  browser->search_options.tokens = NULL;
+  browser->search_options.tempo = SEARCH_PARAM_UNSET;
+  browser->search_options.note = SEARCH_PARAM_UNSET;
+  browser->search_options.ready = FALSE;
 }
 
 void
@@ -2303,6 +2393,22 @@ browser_close_search (GtkSearchEntry *entry, gpointer data)
   browser_load_dir (browser);
 }
 
+static const gchar *
+browser_search_get_param (const gchar *word, const gchar *prefix)
+{
+  const gchar *param = NULL;
+  gint prefix_len = strlen (prefix);
+  if (strncmp (word, prefix, prefix_len) == 0)
+    {
+      const gchar *next = &word[prefix_len];
+      if (*next == SEARCH_PARAM_SEPARATOR_CHAR)
+	{
+	  param = next + 1;
+	}
+    }
+  return param;
+}
+
 static void
 browser_search_changed (GtkSearchEntry *entry, gpointer data)
 {
@@ -2318,9 +2424,47 @@ browser_search_changed (GtkSearchEntry *entry, gpointer data)
 
   usleep (250000);
 
+  gchar *tempo_prefix = g_utf8_casefold (_("Tempo"), -1);
+  gchar *note_prefix = g_utf8_casefold (_("Note"), -1);
+
   if (strlen (filter))
     {
-      browser->search_tokens = g_str_tokenize_and_fold (filter, NULL, NULL);
+      gchar **words = g_strsplit_set (filter, " ", -1);
+      gchar **w = words;
+      const gchar *param;
+
+      browser->search_options.tokens = NULL;
+      browser->search_options.tempo = SEARCH_PARAM_UNSET;
+      browser->search_options.note = SEARCH_PARAM_UNSET;
+      browser->search_options.ready = TRUE;
+
+      while (*w)
+	{
+	  gchar *folded = g_utf8_casefold (*w, -1);
+
+	  if ((param = browser_search_get_param (folded, tempo_prefix)))
+	    {
+	      browser->search_options.tempo = atoi (param);
+	      g_free (folded);
+	    }
+	  else if ((param = browser_search_get_param (folded, note_prefix)))
+	    {
+	      browser->search_options.note = browser_get_note_num (param);
+	      g_free (folded);
+	    }
+	  else
+	    {
+	      browser->search_options.tokens =
+		g_slist_append (browser->search_options.tokens, folded);
+	    }
+
+	  w++;
+	}
+
+      g_free (tempo_prefix);
+      g_free (note_prefix);
+      g_strfreev (words);
+
       browser_load_dir (browser);
     }
 }
