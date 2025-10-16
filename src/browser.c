@@ -789,9 +789,11 @@ browser_get_tags (const struct sample_info *sample_info)
   t = tags;
   while (*t)
     {
+      gchar *escaped = g_markup_escape_text (*t, -1);
       g_string_append_printf (tagss,
 			      "<span bgcolor=\"gray\" bgalpha=\"20%%\">%s</span>%s",
-			      *t, *(t + 1) ? "  " : "");
+			      escaped, *(t + 1) ? "  " : "");
+      g_free (escaped);
       t++;
     }
 
