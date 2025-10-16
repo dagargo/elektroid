@@ -3211,7 +3211,6 @@ on remote</property>
                                     <property name="can-focus">True</property>
                                     <property name="adjustment">tempo_adj</property>
                                     <property name="digits">2</property>
-                                    <property name="value">120</property>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>

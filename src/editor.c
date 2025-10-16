@@ -80,6 +80,7 @@ struct editor_save_data
 
 static void editor_save_accept (gpointer source, const gchar * name);
 static void editor_set_waveform_data ();
+static void editor_update_sample_info ();
 
 extern struct browser local_browser;
 extern struct browser remote_browser;
@@ -305,6 +306,7 @@ editor_reset_browser (gpointer data)
   gtk_widget_set_sensitive (sample_box, FALSE);
 
   editor_set_filename ();
+  editor_update_sample_info ();
   editor_update_tags ();
 
   return FALSE;
@@ -542,11 +544,67 @@ editor_note_changed (GtkComboBox *combo, gpointer data)
   editor_set_dirty (TRUE);
 }
 
+static void
+editor_update_sample_info ()
+{
+  struct sample_info si;
+  struct sample_info *sample_info;
+
+  g_mutex_lock (&audio.control.controllable.mutex);
+  sample_info = audio.sample.info;
+  if (sample_info)
+    {
+      si.metre_num = sample_info->metre_num;
+      si.metre_den = sample_info->metre_den;
+      si.tempo = sample_info->tempo;
+      si.beats = sample_info->beats;
+      si.midi_note = sample_info->midi_note;
+    }
+  else
+    {
+      sample_info_init (&si, FALSE);
+    }
+  g_mutex_unlock (&audio.control.controllable.mutex);
+
+  g_signal_handlers_block_by_func (metre_num_spin,
+				   G_CALLBACK
+				   (editor_metre_num_changed), NULL);
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (metre_num_spin), si.metre_num);
+  g_signal_handlers_unblock_by_func (metre_num_spin,
+				     G_CALLBACK
+				     (editor_metre_num_changed), NULL);
+
+  g_signal_handlers_block_by_func (metre_den_combo,
+				   G_CALLBACK
+				   (editor_metre_num_changed), NULL);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (metre_den_combo),
+				 si.metre_den);
+  g_signal_handlers_unblock_by_func (metre_den_combo,
+				     G_CALLBACK
+				     (editor_metre_num_changed), NULL);
+
+  g_signal_handlers_block_by_func (tempo_spin,
+				   G_CALLBACK (editor_tempo_changed), NULL);
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (tempo_spin), si.tempo);
+  g_signal_handlers_unblock_by_func (tempo_spin,
+				     G_CALLBACK (editor_tempo_changed), NULL);
+
+  g_signal_handlers_block_by_func (beats_spin,
+				   G_CALLBACK (editor_beats_changed), NULL);
+  gtk_spin_button_set_value (GTK_SPIN_BUTTON (beats_spin), si.beats);
+  g_signal_handlers_unblock_by_func (beats_spin,
+				     G_CALLBACK (editor_beats_changed), NULL);
+
+  g_signal_handlers_block_by_func (note_combo,
+				   G_CALLBACK (editor_note_changed), NULL);
+  elektroid_combo_box_set_value (GTK_COMBO_BOX (note_combo), si.midi_note);
+  g_signal_handlers_unblock_by_func (note_combo,
+				     G_CALLBACK (editor_note_changed), NULL);
+}
+
 static gboolean
 editor_update_ui_on_load (gpointer data)
 {
-  struct sample_info *sample_info = audio.sample.info;
-
   editor_set_audio_mono_mix ();
   editor_reset_waveform_width ();
 
@@ -562,51 +620,12 @@ editor_update_ui_on_load (gpointer data)
     }
 
   editor_set_filename ();
-
-  g_signal_handlers_block_by_func (metre_num_spin,
-				   G_CALLBACK
-				   (editor_metre_num_changed), NULL);
-  gtk_spin_button_set_value (GTK_SPIN_BUTTON (metre_num_spin),
-			     sample_info->metre_num);
-  g_signal_handlers_unblock_by_func (metre_num_spin,
-				     G_CALLBACK
-				     (editor_metre_num_changed), NULL);
-
-  g_signal_handlers_block_by_func (metre_den_combo,
-				   G_CALLBACK
-				   (editor_metre_num_changed), NULL);
-  elektroid_combo_box_set_value (GTK_COMBO_BOX (metre_den_combo),
-				 sample_info->metre_den);
-  g_signal_handlers_unblock_by_func (metre_den_combo,
-				     G_CALLBACK
-				     (editor_metre_num_changed), NULL);
-
-  g_signal_handlers_block_by_func (tempo_spin,
-				   G_CALLBACK (editor_tempo_changed), NULL);
-  gtk_spin_button_set_value (GTK_SPIN_BUTTON (tempo_spin),
-			     sample_info->tempo);
-  g_signal_handlers_unblock_by_func (tempo_spin,
-				     G_CALLBACK (editor_tempo_changed), NULL);
-
-  g_signal_handlers_block_by_func (beats_spin,
-				   G_CALLBACK (editor_beats_changed), NULL);
-  gtk_spin_button_set_value (GTK_SPIN_BUTTON (beats_spin),
-			     sample_info->beats);
-  g_signal_handlers_unblock_by_func (beats_spin,
-				     G_CALLBACK (editor_beats_changed), NULL);
-
-  g_signal_handlers_block_by_func (note_combo,
-				   G_CALLBACK (editor_note_changed), NULL);
-  elektroid_combo_box_set_value (GTK_COMBO_BOX (note_combo),
-				 sample_info->midi_note);
-  g_signal_handlers_unblock_by_func (note_combo,
-				     G_CALLBACK (editor_note_changed), NULL);
+  editor_update_sample_info ();
+  editor_update_tags ();
 
   gtk_widget_set_sensitive (sample_box, TRUE);
 
   editor_update_export_save_buttons ();
-
-  editor_update_tags ();
 
   return FALSE;
 }
@@ -2520,6 +2539,7 @@ editor_init (GtkBuilder *builder)
   record_window_init (builder);
   tags_window_init (builder);
 
+  editor_update_sample_info ();
   editor_update_tags ();
 
   g_mutex_init (&mutex);
