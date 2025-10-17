@@ -1009,13 +1009,10 @@ browser_add_dentry_item (gpointer data)
   if (audio.path && editor_get_browser () == browser)
     {
       // The reload might be triggered from the GUI, some user action (i.e. saving) or by the notifier.
-      // Selecting the item is always needed but reloading is only needed when the sample in the editor is different from the one in storage.
       name = path_chain (PATH_SYSTEM, browser->dir, add_data->rel_path);
       if (!strcmp (audio.path, name))
 	{
-	  gboolean same = sample_info_equal_no_tags (&item->sample_info,
-						     &audio.sample_info_src);
-	  if (same)
+	  if (!browser->reload_item_in_editor)
 	    {
 	      g_signal_handlers_block_by_func (selection,
 					       G_CALLBACK
@@ -1023,7 +1020,7 @@ browser_add_dentry_item (gpointer data)
 					       browser);
 	    }
 	  gtk_tree_selection_select_iter (selection, &iter);	// item selection and sample reload
-	  if (same)
+	  if (!browser->reload_item_in_editor)
 	    {
 	      g_signal_handlers_unblock_by_func (selection,
 						 G_CALLBACK
@@ -2602,6 +2599,7 @@ browser_init (struct browser *browser)
 
   browser->selection_active = TRUE;
 
+  browser->reload_item_in_editor = TRUE;
   notifier_init (&browser->notifier, browser);
 }
 
@@ -2893,5 +2891,33 @@ browser_set_selection_active (struct browser *browser,
   if (selection_active)
     {
       browser_check_selection (browser);
+    }
+}
+
+static gboolean
+browser_set_reload_item_in_editor_f (gpointer data)
+{
+  struct browser *browser = data;
+  g_mutex_lock (&browser->mutex);
+  browser->reload_item_in_editor = TRUE;
+  g_mutex_unlock (&browser->mutex);
+  return G_SOURCE_REMOVE;
+}
+
+void
+browser_set_reload_item_in_editor (struct browser *browser, gboolean reload)
+{
+  // Ignoring the notifier calls needs to be immediate.
+  // Changing it back needs to be delayed as filesystem notifications are delayed.
+  if (reload)
+    {
+      // 1 s might seem much but the user is actually interacting with the application.
+      g_timeout_add (1000, browser_set_reload_item_in_editor_f, browser);
+    }
+  else
+    {
+      g_mutex_lock (&browser->mutex);
+      browser->reload_item_in_editor = FALSE;
+      g_mutex_unlock (&browser->mutex);
     }
 }

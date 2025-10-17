@@ -88,6 +88,7 @@ struct browser
   void (*set_columns_visibility) ();
   void (*set_popup_buttons_visibility) ();
   struct notifier *notifier;
+  gboolean reload_item_in_editor;
   //Background loading members
   GSList *sensitive_widgets;
   GtkWidget *list_stack;
@@ -151,10 +152,6 @@ gchar *browser_get_name_path (struct browser *browser, const gchar * name);
 
 void browser_clear_selection (struct browser *);
 
-void browser_refresh (GtkWidget *, gpointer);
-
-void browser_go_up (GtkWidget *, gpointer);
-
 const gchar *browser_get_icon (struct browser *browser);
 
 const gchar **browser_get_exts (struct browser *browser);
@@ -181,5 +178,8 @@ void browser_destroy_all ();
 
 void browser_set_selection_active (struct browser *browser,
 				   gboolean selection_active);
+
+void browser_set_reload_item_in_editor (struct browser *browser,
+					gboolean active);
 
 #endif

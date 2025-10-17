@@ -1767,11 +1767,17 @@ editor_save_with_format (const gchar *dst_path, struct idata *sample,
 	  audio.sample_info_src.tags = NULL;
 	}
       audio.sample_info_src.format |= format;	//This is required as reloading does not include the format
+
       editor_set_dirty (FALSE);
+      editor_update_export_save_buttons ();
     }
+
+  browser_set_reload_item_in_editor (browser, FALSE);
 
   err = sample_save_to_file (dst_path, &resampled, NULL, format);
   idata_free (&resampled);
+
+  browser_set_reload_item_in_editor (browser, TRUE);
 
   return err;
 }
@@ -1892,7 +1898,6 @@ editor_save (const gchar *name)
   if (audio.path)
     {
       sample_format_set_to_save (&audio.sample_info_src);
-      editor_update_export_save_buttons ();
 
       if (sel_len)
 	{
@@ -1908,8 +1913,8 @@ editor_save (const gchar *name)
 	  g_free (audio.sample.name);
 	  audio.path = path;
 	  audio.sample.name = g_path_get_basename (path);
-	  editor_save_with_progress (audio.path, &audio.sample, FALSE);
 	  editor_set_filename ();
+	  editor_save_with_progress (audio.path, &audio.sample, FALSE);
 	}
     }
   else
@@ -1941,12 +1946,11 @@ editor_save (const gchar *name)
 	  debug_print (2, "Saving recording to %s...", path);
 	  audio.path = path;
 	  audio.sample.name = g_path_get_basename (path);
+	  editor_set_filename ();
 	  //This is a recording, so no resample is needed and, therefore, this is fast.
 	  editor_save_with_format (audio.path, &audio.sample,
 				   &sample_load_opts,
 				   audio.sample_info_src.format, NULL, FALSE);
-	  editor_update_export_save_buttons ();
-	  editor_set_filename ();
 	}
     }
 }
