@@ -3295,7 +3295,7 @@ on remote</property>
                                   <object class="GtkImage">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
-                                    <property name="icon-name">insert-text</property>
+                                    <property name="icon-name">insert-text-symbolic</property>
                                   </object>
                                 </child>
                               </object>
