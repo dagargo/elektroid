@@ -299,6 +299,7 @@ editor_reset_browser (gpointer data)
   editor_set_widget_source (record_button);
   editor_set_widget_source (volume_button);
   editor_set_widget_source (waveform);
+  editor_set_widget_source (manage_tags_button);
 
   gtk_widget_set_sensitive (play_button, FALSE);
   gtk_widget_set_sensitive (stop_button, FALSE);
