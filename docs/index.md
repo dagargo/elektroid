@@ -30,9 +30,10 @@ These are the supported devices:
 
 Other interesting features are:
 
-* Autosampler
-* Sample loop points edition
+* Autosampler with SFZ file generation
 * Sample playback, recording and basic edition
+* Sample loop points edition
+* Sample tagging
 * Sample zoom
 * Search within devices
 * SysEx transmission and reception
