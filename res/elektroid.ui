@@ -2303,6 +2303,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                               <object class="GtkComboBox" id="fs_combo">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
+                                <property name="hexpand">True</property>
                                 <property name="model">fs_list_store</property>
                                 <property name="entry-text-column">1</property>
                                 <child>
@@ -2314,7 +2315,9 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                   </attributes>
                                 </child>
                                 <child>
-                                  <object class="GtkCellRendererText"/>
+                                  <object class="GtkCellRendererText">
+                                    <property name="ellipsize">end</property>
+                                  </object>
                                   <attributes>
                                     <attribute name="text">2</attribute>
                                   </attributes>
