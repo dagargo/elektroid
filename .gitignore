@@ -58,6 +58,7 @@ test/tests_utils
 test/tests_sample
 test/tests_connector
 test/tests_volca_sample
+test/tests_audio
 config.guess
 config.sub
 ltmain.sh

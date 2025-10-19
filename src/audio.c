@@ -104,11 +104,10 @@ void
 audio_write_to_output (void *buffer, gint frames)
 {
   size_t size;
-  guint8 *dst, *src;
+  guint8 *dst, *src, *data;
   guint bytes_per_frame;
   gboolean end, stopping = FALSE;
   struct sample_info *sample_info;
-  guint8 *data;
   gboolean selection_mode;
 
   g_mutex_lock (&audio.control.controllable.mutex);
@@ -539,21 +538,62 @@ audio_prepare (enum audio_status status)
   g_mutex_unlock (&audio.control.controllable.mutex);
 }
 
+gboolean
+audio_get_previous_zero (struct idata *sample, guint32 frame)
+{
+  guint8 *data, *prev_data;
+  struct sample_info *sample_info = sample->info;
+  guint frame_size = SAMPLE_INFO_FRAME_SIZE (sample_info);
+  gboolean float_mode = SAMPLE_INFO_IS_FLOAT (sample_info);
+  guint sample_size = SAMPLE_INFO_SAMPLE_SIZE (sample_info);
+
+  for (guint32 i = frame; i >= 1; i--)
+    {
+      data = sample->content->data + i * frame_size;
+      prev_data = data - frame_size;
+      for (gint j = 0; j < sample_info->channels; j++)
+	{
+	  gfloat curr, prev;
+	  if (float_mode)
+	    {
+	      curr = *((gfloat *) data);
+	      prev = *((gfloat *) prev_data);
+	    }
+	  else
+	    {
+	      curr = *((gint16 *) data);
+	      prev = *((gint16 *) prev_data);
+	    }
+	  if ((curr > 0 && prev < 0) || (curr < 0 && prev > 0))
+	    {
+	      return i - 1;
+	    }
+	  data += sample_size;
+	  prev_data += sample_size;
+	}
+    }
+
+  return frame;
+}
+
 static guint32
-audio_detect_start ()
+audio_detect_start (struct idata *sample)
 {
   guint32 start_frame = 0;
-  guint8 *data, *prev_data;
-  struct sample_info *sample_info = audio.sample.info;
+  guint8 *data;
+  struct sample_info *sample_info = sample->info;
+  guint frame_size = SAMPLE_INFO_FRAME_SIZE (sample_info);
+  gboolean float_mode = SAMPLE_INFO_IS_FLOAT (sample_info);
+  guint sample_size = SAMPLE_INFO_SAMPLE_SIZE (sample_info);
 
-//Search audio data
-  data = audio.sample.content->data;
+  // Search audio data
+  data = sample->content->data;
   for (guint32 i = 0; i < sample_info->frames; i++)
     {
       for (gint j = 0; j < sample_info->channels; j++)
 	{
 	  gboolean above_threshold;
-	  if (audio.float_mode)
+	  if (float_mode)
 	    {
 	      gfloat v = *((gfloat *) data);
 	      above_threshold = fabsf (v) >= AUDIO_SILENCE_THRESHOLD;
@@ -570,47 +610,17 @@ audio_detect_start ()
 	      debug_print (1, "Detected signal at %d", start_frame);
 	      goto search_previous_zero;
 	    }
-	  data += AUDIO_SAMPLE_SIZE;
+	  data += sample_size;
 	}
     }
 
 search_previous_zero:
-  data = audio.sample.content->data +
-    start_frame * SAMPLE_INFO_FRAME_SIZE (sample_info);
-  prev_data = data - SAMPLE_INFO_FRAME_SIZE (sample_info);
-  for (guint32 i = start_frame; i >= 1; i--)
-    {
-      for (gint j = 0; j < sample_info->channels; j++)
-	{
-	  gfloat curr, prev;
-	  if (audio.float_mode)
-	    {
-	      curr = *((gfloat *) data);
-	      prev = *((gfloat *) prev_data);
-	    }
-	  else
-	    {
-	      curr = *((gint16 *) data);
-	      prev = *((gint16 *) prev_data);
-	    }
-	  if ((curr > 0 && prev < 0) || (curr < 0 && prev > 0))
-	    {
-	      start_frame = i - 1;
-	      goto end;
-	    }
-	  data += AUDIO_SAMPLE_SIZE;
-	  prev_data += AUDIO_SAMPLE_SIZE;
-	}
-      data -= SAMPLE_INFO_FRAME_SIZE (sample_info);
-      prev_data -= SAMPLE_INFO_FRAME_SIZE (sample_info);
-    }
+  start_frame = audio_get_previous_zero (sample, start_frame);
 
-end:
-  data = audio.sample.content->data +
-    start_frame * SAMPLE_INFO_FRAME_SIZE (sample_info);
+  data = sample->content->data + start_frame * frame_size;
   for (gint j = 0; j < sample_info->channels; j++)
     {
-      if (audio.float_mode)
+      if (float_mode)
 	{
 	  *((gfloat *) data) = 0;
 	}
@@ -618,7 +628,7 @@ end:
 	{
 	  *((gint16 *) data) = 0;
 	}
-      data += AUDIO_SAMPLE_SIZE;
+      data += sample_size;
     }
 
   debug_print (1, "Detected start at frame %d", start_frame);
@@ -627,17 +637,17 @@ end:
 }
 
 void
-audio_delete_range (guint32 start, guint32 length)
+audio_delete_range (struct idata *sample, guint32 start, guint32 length)
 {
-  guint bytes_per_frame, index, len;
-  struct sample_info *sample_info = audio.sample.info;
+  guint index, len;
+  struct sample_info *sample_info = sample->info;
+  guint frame_size = SAMPLE_INFO_FRAME_SIZE (sample_info);
 
-  bytes_per_frame = SAMPLE_INFO_FRAME_SIZE (sample_info);
-  index = start * bytes_per_frame;
-  len = length * bytes_per_frame;
+  index = start * frame_size;
+  len = length * frame_size;
 
   debug_print (2, "Deleting range from %d with len %d...", index, len);
-  g_byte_array_remove_range (audio.sample.content, index, len);
+  g_byte_array_remove_range (sample->content, index, len);
 
   sample_info->frames -= length;
 
@@ -666,18 +676,19 @@ audio_delete_range (guint32 start, guint32 length)
 }
 
 void
-audio_normalize (guint32 start, guint32 length)
+audio_normalize (struct idata *sample, guint32 start, guint32 length)
 {
   guint8 *data;
   gdouble v, ratio, ratiop, ration, maxp = 0, minn = 0;
-  struct sample_info *sample_info = audio.sample.info;
-  guint32 samples = length * sample_info->channels;
+  struct sample_info *sample_info = sample->info;
+  guint samples = length * sample_info->channels;
+  guint frame_size = SAMPLE_INFO_FRAME_SIZE (sample_info);
+  gboolean float_mode = SAMPLE_INFO_IS_FLOAT (sample_info);
 
-  data = audio.sample.content->data +
-    start * AUDIO_SAMPLE_SIZE * sample_info->channels;
+  data = sample->content->data + start * frame_size;
   for (gint i = 0; i < samples; i++)
     {
-      if (audio.float_mode)
+      if (float_mode)
 	{
 	  v = *((gfloat *) data);
 	  data += sizeof (gfloat);
@@ -704,7 +715,7 @@ audio_normalize (guint32 start, guint32 length)
 	}
     }
 
-  if (audio.float_mode)
+  if (float_mode)
     {
       ratiop = 1.0 / maxp;
       ration = -1.0 / minn;
@@ -719,11 +730,10 @@ audio_normalize (guint32 start, guint32 length)
 
   debug_print (1, "Normalizing to %f...", ratio);
 
-  data = audio.sample.content->data +
-    start * AUDIO_SAMPLE_SIZE * sample_info->channels;
+  data = sample->content->data + start * frame_size;
   for (gint i = 0; i < samples; i++)
     {
-      if (audio.float_mode)
+      if (float_mode)
 	{
 	  *((gfloat *) data) = (gfloat) (*((gfloat *) data) * ratio);
 	  data += sizeof (gfloat);
@@ -755,9 +765,9 @@ audio_finish_recording ()
       debug_print (1, "Finishing recording (%d frames read)...",
 		   sample_info->frames);
 
-      audio_normalize (0, sample_info->frames);
-      start = audio_detect_start ();
-      audio_delete_range (0, start);
+      audio_normalize (&audio.sample, 0, sample_info->frames);
+      start = audio_detect_start (&audio.sample);
+      audio_delete_range (&audio.sample, 0, start);
     }
   else
     {

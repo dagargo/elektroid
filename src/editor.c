@@ -1708,7 +1708,7 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
     }
 
   g_mutex_lock (&audio.control.controllable.mutex);
-  audio_delete_range (audio.sel_start, sel_len);
+  audio_delete_range (&audio.sample, audio.sel_start, sel_len);
   g_mutex_unlock (&audio.control.controllable.mutex);
 
   editor_set_dirty (TRUE);
@@ -2025,7 +2025,7 @@ editor_normalize_clicked (GtkWidget *object, gpointer data)
   guint32 start, length;
   g_mutex_lock (&audio.control.controllable.mutex);
   editor_get_operation_range (&start, &length);
-  audio_normalize (start, length);
+  audio_normalize (&audio.sample, start, length);
   g_mutex_unlock (&audio.control.controllable.mutex);
   editor_set_waveform_data ();
   editor_queue_draw (NULL);
@@ -2046,11 +2046,13 @@ editor_split_runner (gpointer user_data)
   gchar *name, channel_name[LABEL_MAX];
   guint32 len, channels;
   guint8 *data;
+  gboolean float_mode;
 
   g_mutex_lock (&audio.control.controllable.mutex);
   g_mutex_lock (&mutex);
 
   sample_info = audio.sample.info;
+  float_mode = SAMPLE_INFO_IS_FLOAT (sample_info);
 
   ext = filename_get_ext (audio.path);
 
@@ -2058,7 +2060,7 @@ editor_split_runner (gpointer user_data)
   basename = g_path_get_basename (audio.path);
   filename_remove_ext (basename);
 
-  len = AUDIO_SAMPLE_SIZE * sample_info->frames;
+  len = SAMPLE_INFO_SAMPLE_SIZE (sample_info) * sample_info->frames;
   channels = sample_info->channels;
 
   if (*has_progress_window)
@@ -2095,7 +2097,7 @@ editor_split_runner (gpointer user_data)
       idata = idatas;
       for (guint32 c = 0; c < channels; c++)
 	{
-	  if (audio.float_mode)
+	  if (float_mode)
 	    {
 	      gfloat v = *((gfloat *) data);
 	      data += sizeof (gfloat);

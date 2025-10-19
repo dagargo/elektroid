@@ -158,7 +158,7 @@ autosampler_runner (gpointer user_data)
       //Cut off the frames after the requested time.
       start = (data->press + data->release) * audio.rate;
       length = sample_info->frames - start;
-      audio_delete_range (start, length);
+      audio_delete_range (&audio.sample, start, length);
       g_mutex_unlock (&audio.control.controllable.mutex);
 
       //We add the note number to ensure lexicographical order.

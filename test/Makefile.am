@@ -23,7 +23,7 @@ else
   AUDIO_SOURCES = ../src/audio_pa.c
 endif
 
-check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample tests_connector tests_volca_sample
+check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample tests_connector tests_volca_sample tests_audio
 
 tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip zlib $(BE_LIBS)
 
@@ -168,6 +168,28 @@ tests_volca_sample_SOURCES = \
 	../src/connectors/volca_sample_sdk/korg_syro_func.c ../src/connectors/volca_sample_sdk/korg_syro_func.h \
 	../src/connectors/volca_sample_sdk/korg_syro_volcasample.c ../src/connectors/volca_sample_sdk/korg_syro_volcasample.h \
 	../src/connectors/volca_sample_sdk/korg_syro_type.h \
+	../src/connectors/microfreak_sample.c \
+	../src/connectors/microfreak_sample.h \
+	../src/sample.c \
+        ../src/sample.h
+
+tests_audio_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS) $(AUDIO_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) $(AM_CFLAGS)
+tests_audio_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS) $(AUDIO_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
+
+tests_audio_SOURCES = \
+        tests_audio.c \
+	../src/utils.c \
+        ../src/utils.h \
+	../src/preferences.c \
+	../src/preferences.h \
+	../src/backend.c \
+        ../src/backend.h \
+	../src/connector.c \
+        ../src/connector.h \
+	$(BE_SOURCES) \
+	../src/audio.c \
+        ../src/audio.h \
+	$(AUDIO_SOURCES) \
 	../src/connectors/microfreak_sample.c \
 	../src/connectors/microfreak_sample.h \
 	../src/sample.c \

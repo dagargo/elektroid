@@ -39,9 +39,12 @@
 #define ELEKTROID_SAMPLE_FORMAT_MASK       0xffffffff00000000
 #define ELEKTROID_SAMPLE_FORMAT_MICROFREAK 0x0000000100000000
 
-#define SAMPLE_SIZE(format) ((format & SF_FORMAT_SUBMASK) == SF_FORMAT_PCM_16 ? 2 : 4)
+#define SAMPLE_IS_FLOAT(format) ((format & SF_FORMAT_SUBMASK) == SF_FORMAT_FLOAT)
+#define SAMPLE_SIZE(format) ((format & SF_FORMAT_SUBMASK) == SF_FORMAT_PCM_16 ? 2 : 4)	// 24 bits are also 4 bytes
 #define FRAME_SIZE(channels,format) ((channels) * SAMPLE_SIZE(format))
 #define SAMPLE_INFO_FRAME_SIZE(sample_info) FRAME_SIZE((sample_info)->channels, (sample_info)->format)
+#define SAMPLE_INFO_SAMPLE_SIZE(sample_info) (SAMPLE_SIZE((sample_info)->format))
+#define SAMPLE_INFO_IS_FLOAT(sample_info) (SAMPLE_IS_FLOAT((sample_info)->format))
 #define MONO_MIX_GAIN(channels) (channels == 2 ? 0.5 : 1.0 / sqrt (channels))
 
 struct sample_load_opts
