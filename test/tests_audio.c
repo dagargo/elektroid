@@ -4,11 +4,12 @@
 #include "../src/sample.h"
 
 static void
-test_audio_get_previous_zero ()
+test_audio_get_zero_crossing ()
 {
   gint err;
   guint32 zero;
   struct idata sample;
+  struct sample_info *sample_info;
   struct sample_info sample_info_src;
   struct sample_load_opts sample_load_opts;
 
@@ -28,11 +29,31 @@ test_audio_get_previous_zero ()
       return;
     }
 
-  zero = audio_get_previous_zero (&sample, 1000);
+  sample_info = sample.info;
+
+  zero = audio_get_prev_zero_crossing (&sample, 1050,
+				       AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
   CU_ASSERT_EQUAL (zero, 981);
 
-  zero = audio_get_previous_zero (&sample, 0);
+  zero = audio_get_prev_zero_crossing (&sample, 1050,
+				       AUDIO_ZERO_CROSSING_SLOPE_NEGATIVE);
+  CU_ASSERT_EQUAL (zero, 1036);
+
+  zero = audio_get_prev_zero_crossing (&sample, 0,
+				       AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
   CU_ASSERT_EQUAL (zero, 0);
+
+  zero = audio_get_next_zero_crossing (&sample, 44050,
+				       AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+  CU_ASSERT_EQUAL (zero, 44073);
+
+  zero = audio_get_next_zero_crossing (&sample, 44050,
+				       AUDIO_ZERO_CROSSING_SLOPE_NEGATIVE);
+  CU_ASSERT_EQUAL (zero, 44128);
+
+  zero = audio_get_next_zero_crossing (&sample, sample_info->frames - 1,
+				       AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+  CU_ASSERT_EQUAL (zero, sample_info->frames - 1);
 
   idata_free (&sample);
 }
@@ -54,8 +75,8 @@ main (gint argc, gchar *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test
-      (suite, "audio_get_previous_zero", test_audio_get_previous_zero))
+  if (!CU_add_test (suite, "audio_get_zero_crossing",
+		    test_audio_get_zero_crossing))
     {
       goto cleanup;
     }

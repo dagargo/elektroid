@@ -962,7 +962,7 @@ editor_draw_waveform (cairo_t *cr, guint start, guint height, double x_ratio)
   GtkStyleContext *context;
   struct sample_info *sample_info = audio.sample.info;
 
-  debug_print (1, "Drawing waveform from %d with %.2f zoom (%d)...", start,
+  debug_print (3, "Drawing waveform from %d with %.2f zoom (%d)...", start,
 	       zoom, waveform_len);
 
   context = gtk_widget_get_style_context (waveform);
@@ -1592,10 +1592,6 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
   g_mutex_lock (&audio.control.controllable.mutex);
 
   sample_info = audio.sample.info;
-  if (!sample_info)
-    {
-      goto end;
-    }
 
   sel_len = AUDIO_SEL_LEN;
 
@@ -1633,15 +1629,35 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
     }
   else if (operation == EDITOR_OP_MOVE_LOOP_START)
     {
-      sample_info->loop_start = cursor_frame;
-      debug_print (2, "Setting loop to [%d, %d]...",
+      if (event->state & GDK_SHIFT_MASK)
+	{
+	  sample_info->loop_start = cursor_frame;
+	}
+      else
+	{
+	  debug_print (2, "Searching next zero loop point...");
+	  sample_info->loop_start =
+	    audio_get_next_zero_crossing (&audio.sample, cursor_frame,
+					  AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+	}
+      debug_print (2, "Setting loop to [ %d, %d ]...",
 		   sample_info->loop_start, sample_info->loop_end);
       editor_set_dirty (TRUE);
     }
   else if (operation == EDITOR_OP_MOVE_LOOP_END)
     {
-      sample_info->loop_end = cursor_frame;
-      debug_print (2, "Setting loop to [%d, %d]...",
+      if (event->state & GDK_SHIFT_MASK)
+	{
+	  sample_info->loop_end = cursor_frame;
+	}
+      else
+	{
+	  debug_print (2, "Searching previous zero loop point...");
+	  sample_info->loop_end =
+	    audio_get_prev_zero_crossing (&audio.sample, cursor_frame,
+					  AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+	}
+      debug_print (2, "Setting loop to [ %d, %d ]...",
 		   sample_info->loop_start, sample_info->loop_end);
       editor_set_dirty (TRUE);
     }
@@ -1675,7 +1691,6 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 
   gtk_widget_queue_draw (waveform);
 
-end:
   g_mutex_unlock (&audio.control.controllable.mutex);
   return FALSE;
 }

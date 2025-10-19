@@ -59,6 +59,13 @@ enum audio_status
   AUDIO_STATUS_STOPPED
 };
 
+enum audio_zero_crossing_slope
+{
+  AUDIO_ZERO_CROSSING_SLOPE_POSITIVE,
+  AUDIO_ZERO_CROSSING_SLOPE_NEGATIVE,
+  AUDIO_ZERO_CROSSING_SLOPE_ANY,
+};
+
 struct audio
 {
 // PulseAudio or RtAudio backend
@@ -130,7 +137,11 @@ void audio_read_from_input (void *, gint);
 
 void audio_prepare (enum audio_status);
 
-gboolean audio_get_previous_zero (struct idata *sample, guint32 frame);
+guint32 audio_get_next_zero_crossing (struct idata *sample, guint32 frame,
+				      enum audio_zero_crossing_slope slope);
+
+guint32 audio_get_prev_zero_crossing (struct idata *sample, guint32 frame,
+				      enum audio_zero_crossing_slope slope);
 
 void audio_delete_range (struct idata *sample, guint32 start, guint32 length);
 

@@ -538,38 +538,107 @@ audio_prepare (enum audio_status status)
   g_mutex_unlock (&audio.control.controllable.mutex);
 }
 
-gboolean
-audio_get_previous_zero (struct idata *sample, guint32 frame)
+static gboolean
+audio_zero_crossing_slope (gfloat prev, gfloat next,
+			   enum audio_zero_crossing_slope slope)
 {
-  guint8 *data, *prev_data;
-  struct sample_info *sample_info = sample->info;
-  guint frame_size = SAMPLE_INFO_FRAME_SIZE (sample_info);
+  switch (slope)
+    {
+    case AUDIO_ZERO_CROSSING_SLOPE_POSITIVE:
+      if (prev < 0 && next > 0)
+	{
+	  return TRUE;
+	}
+      break;
+    case AUDIO_ZERO_CROSSING_SLOPE_NEGATIVE:
+      if (prev > 0 && next < 0)
+	{
+	  return TRUE;
+	}
+      break;
+    case AUDIO_ZERO_CROSSING_SLOPE_ANY:
+      if ((prev < 0 && next > 0) || (prev > 0 && next < 0))
+	{
+	  return TRUE;
+	}
+      break;
+    default:
+      error_print ("Slope not implemented");
+    }
+
+  return FALSE;
+}
+
+static gboolean
+audio_zero_crossing_any_channel (struct sample_info *sample_info,
+				 guint8 *prev_data, guint8 *next_data,
+				 enum audio_zero_crossing_slope slope)
+{
   gboolean float_mode = SAMPLE_INFO_IS_FLOAT (sample_info);
   guint sample_size = SAMPLE_INFO_SAMPLE_SIZE (sample_info);
 
+  for (gint i = 0; i < sample_info->channels; i++)
+    {
+      gfloat prev, next;
+      if (float_mode)
+	{
+	  prev = *((gfloat *) prev_data);
+	  next = *((gfloat *) next_data);
+	}
+      else
+	{
+	  prev = *((gint16 *) prev_data);
+	  next = *((gint16 *) next_data);
+	}
+      if (audio_zero_crossing_slope (prev, next, slope))
+	{
+	  return TRUE;
+	}
+      prev_data += sample_size;
+      next_data += sample_size;
+    }
+
+  return FALSE;
+}
+
+guint32
+audio_get_next_zero_crossing (struct idata *sample, guint32 frame,
+			      enum audio_zero_crossing_slope slope)
+{
+  guint8 *prev_data, *next_data;
+  struct sample_info *sample_info = sample->info;
+  guint frame_size = SAMPLE_INFO_FRAME_SIZE (sample_info);
+
+  for (guint32 i = frame; i < sample_info->frames - 1; i++)
+    {
+      prev_data = sample->content->data + i * frame_size;
+      next_data = prev_data + frame_size;
+      if (audio_zero_crossing_any_channel (sample_info, prev_data, next_data,
+					   slope))
+	{
+	  return i + 1;
+	}
+    }
+
+  return frame;
+}
+
+guint32
+audio_get_prev_zero_crossing (struct idata *sample, guint32 frame,
+			      enum audio_zero_crossing_slope slope)
+{
+  guint8 *prev_data, *next_data;
+  struct sample_info *sample_info = sample->info;
+  guint frame_size = SAMPLE_INFO_FRAME_SIZE (sample_info);
+
   for (guint32 i = frame; i >= 1; i--)
     {
-      data = sample->content->data + i * frame_size;
-      prev_data = data - frame_size;
-      for (gint j = 0; j < sample_info->channels; j++)
+      next_data = sample->content->data + i * frame_size;
+      prev_data = next_data - frame_size;
+      if (audio_zero_crossing_any_channel (sample_info, prev_data, next_data,
+					   slope))
 	{
-	  gfloat curr, prev;
-	  if (float_mode)
-	    {
-	      curr = *((gfloat *) data);
-	      prev = *((gfloat *) prev_data);
-	    }
-	  else
-	    {
-	      curr = *((gint16 *) data);
-	      prev = *((gint16 *) prev_data);
-	    }
-	  if ((curr > 0 && prev < 0) || (curr < 0 && prev > 0))
-	    {
-	      return i - 1;
-	    }
-	  data += sample_size;
-	  prev_data += sample_size;
+	  return i - 1;
 	}
     }
 
@@ -615,7 +684,8 @@ audio_detect_start (struct idata *sample)
     }
 
 search_previous_zero:
-  start_frame = audio_get_previous_zero (sample, start_frame);
+  start_frame = audio_get_prev_zero_crossing (sample, start_frame,
+					      AUDIO_ZERO_CROSSING_SLOPE_ANY);
 
   data = sample->content->data + start_frame * frame_size;
   for (gint j = 0; j < sample_info->channels; j++)
