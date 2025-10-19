@@ -190,33 +190,33 @@ editor_set_widget_source (GtkWidget *widget)
 {
   const char *class;
   GtkStyleContext *context = gtk_widget_get_style_context (widget);
-  GList *classes, *list = gtk_style_context_list_classes (context);
 
-  for (classes = list; classes != NULL; classes = g_list_next (classes))
+  if (GTK_IS_SWITCH (widget))
     {
-      gtk_style_context_remove_class (context, classes->data);
-    }
-  g_list_free (list);
+      gtk_style_context_remove_class (context, "local_switch");
+      gtk_style_context_remove_class (context, "remote_switch");
 
-  if (browser == NULL)
-    {
-      if (GTK_IS_SWITCH (widget))
+      if (browser)
+	{
+	  class = browser == &local_browser ? "local_switch" :
+	    "remote_switch";
+	  gtk_style_context_add_class (context, class);
+	}
+      else
 	{
 	  gtk_style_context_add_class (context, "nobrowser_switch");
 	}
     }
   else
     {
-      if (GTK_IS_SWITCH (widget))
-	{
-	  class = browser == &local_browser ? "local_switch" :
-	    "remote_switch";
-	}
-      else
+      gtk_style_context_remove_class (context, "local");
+      gtk_style_context_remove_class (context, "remote");
+
+      if (browser)
 	{
 	  class = browser == &local_browser ? "local" : "remote";
+	  gtk_style_context_add_class (context, class);
 	}
-      gtk_style_context_add_class (context, class);
     }
 }
 
