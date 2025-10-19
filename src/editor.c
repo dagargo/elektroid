@@ -131,7 +131,9 @@ static guint waveform_scrolled_window_width;
 static guint waveform_scrolled_window_start;
 static gdouble *waveform_data;
 static guint waveform_width;
+static guint waveform_height;
 static guint waveform_len;	//Loaded frames available in waveform_data
+static cairo_surface_t *waveform_cache;
 static double press_event_x;
 static struct waveform_state waveform_state;
 static gint64 playback_cursor;	// guint32 plus -1 (invisible)
@@ -268,6 +270,22 @@ editor_update_tags ()
 }
 
 static void
+editor_clear_waveform_cache_no_sync ()
+{
+  waveform_height = gtk_widget_get_allocated_height (waveform);
+  cairo_surface_destroy (waveform_cache);
+  waveform_cache = NULL;
+}
+
+static void
+editor_clear_waveform_cache ()
+{
+  g_mutex_lock (&mutex);
+  editor_clear_waveform_cache_no_sync ();
+  g_mutex_unlock (&mutex);
+}
+
+static void
 editor_clear_waveform_data_no_sync ()
 {
   debug_print (1, "Clearing waveform data...");
@@ -275,6 +293,7 @@ editor_clear_waveform_data_no_sync ()
   g_free (waveform_data);
   waveform_data = NULL;
   waveform_len = 0;
+  editor_clear_waveform_cache_no_sync ();
 }
 
 static void
@@ -757,7 +776,7 @@ editor_set_text_color (GdkRGBA *color)
 }
 
 static inline void
-editor_draw_loop_points (cairo_t *cr, guint start, guint height,
+editor_draw_loop_points (cairo_t *cr, guint height, guint start,
 			 double x_ratio)
 {
   gdouble value;
@@ -796,7 +815,7 @@ editor_draw_loop_points (cairo_t *cr, guint start, guint height,
 }
 
 static inline void
-editor_draw_playback_cursor (cairo_t *cr, guint start, guint height,
+editor_draw_playback_cursor (cairo_t *cr, guint height, guint start,
 			     double x_ratio)
 {
   GdkRGBA color;
@@ -819,15 +838,15 @@ editor_draw_playback_cursor (cairo_t *cr, guint start, guint height,
 }
 
 static inline void
-editor_draw_grid (cairo_t *cr, guint start, guint height, double x_ratio)
+editor_draw_grid (cairo_t *cr, guint height, guint start, double x_ratio)
 {
   GdkRGBA color;
   gint grid_length;
   gdouble value, grid_inc;
   struct sample_info *sample_info = audio.sample.info;
 
-  grid_length =
-    sample_info->beats * preferences_get_boolean (PREF_KEY_SUBDIVISIONS);
+  grid_length = sample_info->beats *
+    preferences_get_boolean (PREF_KEY_SUBDIVISIONS);
 
   if (grid_length)
     {
@@ -852,7 +871,7 @@ editor_draw_grid (cairo_t *cr, guint start, guint height, double x_ratio)
 }
 
 static inline void
-editor_draw_selection (cairo_t *cr, guint start, guint height, double x_ratio)
+editor_draw_selection (cairo_t *cr, guint height, guint start, double x_ratio)
 {
   guint32 sel_len;
   gdouble x_len, x_start;
@@ -953,7 +972,8 @@ editor_set_waveform_data ()
 }
 
 static inline void
-editor_draw_waveform (cairo_t *cr, guint start, guint height, double x_ratio)
+editor_draw_waveform_to_cache (cairo_t *cr, guint width, guint height,
+			       guint start, double x_ratio)
 {
   gdouble *v, mid_c, x;
   guint c_height, c_height_half;
@@ -961,9 +981,6 @@ editor_draw_waveform (cairo_t *cr, guint start, guint height, double x_ratio)
   GtkStateFlags state;
   GtkStyleContext *context;
   struct sample_info *sample_info = audio.sample.info;
-
-  debug_print (3, "Drawing waveform from %d with %.2f zoom (%d)...", start,
-	       zoom, waveform_len);
 
   context = gtk_widget_get_style_context (waveform);
 
@@ -976,24 +993,79 @@ editor_draw_waveform (cairo_t *cr, guint start, guint height, double x_ratio)
   c_height = height / (gdouble) sample_info->channels;
   c_height_half = c_height / 2;
 
-  if (waveform_data)
+  v = waveform_data;
+  x = -0.5;
+
+  for (gint i = 0; i < waveform_len; i++)
     {
-      v = waveform_data;
-      x = -0.5;
-      for (gint i = 0; i < waveform_len; i++)
+      mid_c = c_height_half;
+      for (gint j = 0; j < sample_info->channels; j++)
 	{
-	  mid_c = c_height_half;
-	  for (gint j = 0; j < sample_info->channels; j++)
-	    {
-	      cairo_move_to (cr, x, *v * height + mid_c);
-	      v++;
-	      cairo_line_to (cr, x, *v * height + mid_c);
-	      v++;
-	      cairo_stroke (cr);
-	      mid_c += c_height;
-	    }
-	  x += 1.0;
+	  cairo_move_to (cr, x, *v * height + mid_c);
+	  v++;
+	  cairo_line_to (cr, x, *v * height + mid_c);
+	  v++;
+	  cairo_stroke (cr);
+	  mid_c += c_height;
 	}
+      x += 1.0;
+    }
+}
+
+static inline void
+editor_draw_waveform_cache (cairo_t *cr, guint width, guint height)
+{
+  cairo_set_source_surface (cr, waveform_cache, 0, 0);
+  cairo_paint (cr);
+}
+
+static inline void
+editor_draw_waveform (cairo_t *cr, guint width, guint height, guint start,
+		      double x_ratio)
+{
+
+  debug_print (3, "Drawing waveform from %d with %.2f zoom (%d)...", start,
+	       zoom, waveform_len);
+
+  if (waveform_cache)
+    {
+      debug_print (3, "Waveform cache hit");
+      editor_draw_waveform_cache (cr, width, height);
+      return;
+    }
+
+  debug_print (3, "Waveform cache miss");
+
+  if (waveform_len == waveform_width)
+    {
+      // Draw into the cache
+      GdkRGBA color;
+      cairo_t *cr_cache;
+      GtkStateFlags state;
+      GtkStyleContext *context;
+
+      debug_print (3, "Waveform data ready to be cached. Caching...");
+      waveform_cache = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, width,
+						   height);
+      cr_cache = cairo_create (waveform_cache);
+
+      context = gtk_widget_get_style_context (waveform);
+
+      state = gtk_style_context_get_state (context);
+      gtk_style_context_get_color (context, state, &color);
+      gdk_cairo_set_source_rgba (cr_cache, &color);
+
+      editor_draw_waveform_to_cache (cr_cache, width, height, start, x_ratio);
+
+      cairo_destroy (cr_cache);
+
+      //Draw the cache in the cr
+      editor_draw_waveform_cache (cr, width, height);
+    }
+  else
+    {
+      debug_print (3, "Waveform data not ready to be cached");
+      editor_draw_waveform_to_cache (cr, width, height, start, x_ratio);
     }
 }
 
@@ -1001,9 +1073,8 @@ static gboolean
 editor_draw (GtkWidget *widget, cairo_t *cr, gpointer data)
 {
   gdouble x_ratio;
-  guint height, width;
   guint32 start;
-  GtkStyleContext *context;
+  guint height, width;
   struct sample_info *sample_info;
 
   if (!active)
@@ -1019,19 +1090,16 @@ editor_draw (GtkWidget *widget, cairo_t *cr, gpointer data)
   height = gtk_widget_get_allocated_height (waveform);
   width = gtk_widget_get_allocated_width (waveform);
 
-  context = gtk_widget_get_style_context (waveform);
-  gtk_render_background (context, cr, 0, 0, width, height);
-
   if (sample_info && waveform_data)
     {
       start = editor_get_start_frame ();
       x_ratio = editor_get_x_ratio () / zoom;
 
-      editor_draw_grid (cr, start, height, x_ratio);
-      editor_draw_selection (cr, start, height, x_ratio);
-      editor_draw_waveform (cr, start, height, x_ratio);
-      editor_draw_loop_points (cr, start, height, x_ratio);
-      editor_draw_playback_cursor (cr, start, height, x_ratio);
+      editor_draw_grid (cr, height, start, x_ratio);
+      editor_draw_selection (cr, height, start, x_ratio);
+      editor_draw_waveform (cr, width, height, start, x_ratio);
+      editor_draw_loop_points (cr, height, start, x_ratio);
+      editor_draw_playback_cursor (cr, height, start, x_ratio);
     }
 
   g_mutex_unlock (&mutex);
@@ -1393,6 +1461,7 @@ editor_scrolled_window_size_allocate (GtkWidget *self,
       editor_set_scrollbar (start, sample_info->frames);
       editor_reset_waveform_width ();
       editor_set_waveform_data_no_sync ();
+      editor_clear_waveform_cache_no_sync ();
     }
   waveform_scrolled_window_width = width;
   waveform_scrolled_window_start = start;
@@ -2378,23 +2447,30 @@ static void
 editor_waveform_size_allocate (GtkWidget *self, GtkAllocation *allocation,
 			       gpointer user_data)
 {
-  guint width;
-  gboolean needs_refresh;
+  guint width, height;
+  gboolean needs_refresh, needs_clear_cache;
 
   debug_print (1, "Allocating waveform size...");
 
   g_mutex_lock (&mutex);
   width = gtk_widget_get_allocated_width (waveform);
+  height = gtk_widget_get_allocated_width (waveform);
   needs_refresh = waveform_width != width;
-  if (needs_refresh)
+  if (!needs_refresh)
     {
-      editor_clear_waveform_data_no_sync ();
+      needs_clear_cache = waveform_height != height;
     }
   g_mutex_unlock (&mutex);
 
   if (needs_refresh)
     {
+      editor_clear_waveform_data ();
       editor_set_waveform_data ();
+      gtk_widget_queue_draw (waveform);
+    }
+  else if (needs_clear_cache)
+    {
+      editor_clear_waveform_cache ();
       gtk_widget_queue_draw (waveform);
     }
 }
