@@ -1548,6 +1548,8 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
   press_event_x = event->x;
   editor_get_frame_at_position (event->x, &cursor_frame, NULL);
 
+  gtk_widget_grab_focus (waveform_scrolled_window);
+
   if (event->button == GDK_BUTTON_PRIMARY)
     {
       debug_print (2, "Pressing at frame %d...", cursor_frame);
@@ -1587,7 +1589,6 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 	  operation = EDITOR_OP_MOVE_SEL_END;
 	  audio.sel_start = cursor_frame;
 	  audio.sel_end = cursor_frame;
-	  gtk_widget_grab_focus (waveform_scrolled_window);
 	  gtk_widget_queue_draw (waveform);
 	}
     }
