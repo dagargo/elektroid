@@ -863,7 +863,7 @@ editor_draw_grid (cairo_t *cr, guint height, guint start, double x_ratio)
 
       for (gint i = 1; i < grid_length; i++)
 	{
-	  value = ((gint) ((i * grid_inc) - start) / x_ratio) + .5;
+	  value = ((gint) (((i * grid_inc) - start) / x_ratio)) + .5;
 	  cairo_move_to (cr, value, 0);
 	  cairo_line_to (cr, value, height - 1);
 	  cairo_stroke (cr);
