@@ -2439,9 +2439,16 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
   else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_s &&
 	   dirty)
     {
-      if (sample_format_is_valid_to_save (&audio.sample_info_src))
+      if (audio.path)
 	{
-	  editor_save_clicked (NULL, NULL);
+	  if (sample_format_is_valid_to_save (&audio.sample_info_src))
+	    {
+	      editor_save_clicked (NULL, NULL);
+	    }
+	}
+      else
+	{
+	  editor_export_save_as_clicked (NULL, NULL);
 	}
     }
 

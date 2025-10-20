@@ -1467,7 +1467,7 @@ sample_format_is_valid_to_save (struct sample_info *sample_info)
 }
 
 // The format in sample_info_src needs to be WAV regardless of the subtype as no other saving format is allowed.
-// If the subtype is not supported, SF_FORMAT_PCM_32 to provide the maximum precission.
+// If the subtype is not supported, SF_FORMAT_FLOAT to provide the maximum precission.
 
 void
 sample_format_set_to_save (struct sample_info *sample_info)
