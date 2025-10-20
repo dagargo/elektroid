@@ -115,7 +115,7 @@ static GtkWidget *popover_split_button;
 static GtkWidget *popover_save_button;
 static GtkWidget *popover_save_as_button;
 static GtkWidget *popover_export_button;
-static GtkWidget *sample_box;
+static GtkWidget *sample_info_box;
 static GtkWidget *filename_box;
 static GtkWidget *filename_label;
 static GtkWidget *edited_image;
@@ -323,7 +323,8 @@ editor_reset_browser (gpointer data)
   gtk_widget_set_sensitive (play_button, FALSE);
   gtk_widget_set_sensitive (stop_button, FALSE);
   gtk_widget_set_sensitive (loop_button, FALSE);
-  gtk_widget_set_sensitive (sample_box, FALSE);
+  gtk_widget_set_sensitive (sample_info_box, FALSE);
+  gtk_widget_set_sensitive (waveform_scrolled_window, browser != NULL);
 
   editor_set_filename ();
   editor_update_sample_info ();
@@ -643,7 +644,7 @@ editor_update_ui_on_load (gpointer data)
   editor_update_sample_info ();
   editor_update_tags ();
 
-  gtk_widget_set_sensitive (sample_box, TRUE);
+  gtk_widget_set_sensitive (sample_info_box, TRUE);
 
   editor_update_export_save_buttons ();
 
@@ -2510,7 +2511,8 @@ editor_init (GtkBuilder *builder)
   subdivisions_spin =
     GTK_WIDGET (gtk_builder_get_object (builder, "subdivisions_spin"));
   note_combo = GTK_WIDGET (gtk_builder_get_object (builder, "note_combo"));
-  sample_box = GTK_WIDGET (gtk_builder_get_object (builder, "sample_box"));
+  sample_info_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "sample_info_box"));
   filename_box =
     GTK_WIDGET (gtk_builder_get_object (builder, "filename_box"));
   filename_label =

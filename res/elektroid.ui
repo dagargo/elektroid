@@ -3059,7 +3059,7 @@ on remote</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkBox" id="sample_box">
+                      <object class="GtkBox">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="hexpand">True</property>
@@ -3091,7 +3091,7 @@ on remote</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkBox">
+                          <object class="GtkBox" id="sample_info_box">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <property name="vexpand">False</property>
