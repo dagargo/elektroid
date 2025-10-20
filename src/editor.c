@@ -596,12 +596,12 @@ editor_update_sample_info ()
 
   g_signal_handlers_block_by_func (metre_den_combo,
 				   G_CALLBACK
-				   (editor_metre_num_changed), NULL);
+				   (editor_metre_den_changed), NULL);
   elektroid_combo_box_set_value (GTK_COMBO_BOX (metre_den_combo),
 				 si.metre_den);
   g_signal_handlers_unblock_by_func (metre_den_combo,
 				     G_CALLBACK
-				     (editor_metre_num_changed), NULL);
+				     (editor_metre_den_changed), NULL);
 
   g_signal_handlers_block_by_func (tempo_spin,
 				   G_CALLBACK (editor_tempo_changed), NULL);
