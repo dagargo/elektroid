@@ -1670,6 +1670,13 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 
   if (operation == EDITOR_OP_MOVE_SEL_END)
     {
+      if (!(event->state & GDK_SHIFT_MASK))
+	{
+	  cursor_frame = audio_get_prev_zero_crossing (&audio.sample,
+						       cursor_frame,
+						       AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+	}
+
       if (cursor_frame > audio.sel_start)
 	{
 	  audio.sel_end = cursor_frame;
@@ -1680,11 +1687,18 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 	  audio.sel_end = audio.sel_start;
 	  audio.sel_start = cursor_frame;
 	}
-      debug_print (2, "Setting selection to [%" PRId64 ", %" PRId64 "]...",
+      debug_print (2, "Setting selection to [ %" PRId64 ", %" PRId64 " ]...",
 		   audio.sel_start, audio.sel_end);
     }
   else if (operation == EDITOR_OP_MOVE_SEL_START)
     {
+      if (!(event->state & GDK_SHIFT_MASK))
+	{
+	  cursor_frame = audio_get_next_zero_crossing (&audio.sample,
+						       cursor_frame,
+						       AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+	}
+
       if (cursor_frame < audio.sel_end)
 	{
 	  audio.sel_start = cursor_frame;
@@ -1695,7 +1709,7 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 	  audio.sel_start = audio.sel_end;
 	  audio.sel_end = cursor_frame;
 	}
-      debug_print (2, "Setting selection to [%" PRId64 ", %" PRId64 "]...",
+      debug_print (2, "Setting selection to [ %" PRId64 ", %" PRId64 " ]...",
 		   audio.sel_start, audio.sel_end);
     }
   else if (operation == EDITOR_OP_MOVE_LOOP_START)
