@@ -2545,7 +2545,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                                             <child>
                                               <object class="GtkCellRendererText"/>
                                               <attributes>
-                                                <attribute name="text">13</attribute>
+                                                <attribute name="text">14</attribute>
                                               </attributes>
                                             </child>
                                           </object>
