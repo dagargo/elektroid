@@ -213,7 +213,9 @@ elektroid_load_devices (gboolean auto_select)
   if (device_index == -1)
     {
       browser_update_fs_options (&local_browser);
+      browser_set_reload_item_in_editor (&local_browser, FALSE);
       browser_load_dir (&local_browser);
+      browser_set_reload_item_in_editor (&local_browser, TRUE);
     }
 }
 
@@ -1160,7 +1162,9 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
 
   if (!gtk_combo_box_get_active_iter (GTK_COMBO_BOX (fs_combo), &iter))
     {
+      browser_set_reload_item_in_editor (&local_browser, FALSE);
       browser_remote_set_fs_operations (NULL);
+      browser_set_reload_item_in_editor (&local_browser, TRUE);
       return;
     }
 
@@ -1170,7 +1174,9 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
   g_value_unset (&fsv);
 
   fs_ops = backend_get_fs_operations_by_id (BACKEND, fs);
+  browser_set_reload_item_in_editor (&local_browser, FALSE);
   browser_remote_set_fs_operations (fs_ops);
+  browser_set_reload_item_in_editor (&local_browser, TRUE);
 }
 
 static gboolean
@@ -1209,7 +1215,9 @@ elektroid_fill_fs_combo_bg (gpointer data)
   if (any)
     {
       debug_print (1, "Selecting first filesystem...");
+      browser_set_reload_item_in_editor (&local_browser, FALSE);
       gtk_combo_box_set_active (GTK_COMBO_BOX (fs_combo), 0);
+      browser_set_reload_item_in_editor (&local_browser, TRUE);
     }
 
   return FALSE;
