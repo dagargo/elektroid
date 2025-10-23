@@ -21,7 +21,6 @@
 #include <math.h>
 #include "common.h"
 #include "sample.h"
-#include <asm-generic/errno-base.h>
 
 #define VOLCA_SAMPLE_2_RATE 31250
 
@@ -118,7 +117,7 @@ volca_sample_2_sample_get_header (struct backend *backend, guint id,
       gchar *text = debug_get_hex_data (debug_level, (guint8 *) header,
 					sizeof (struct
 						volca_sample_2_sample_header));
-      debug_print (1, "Message received (%lu): %s",
+      debug_print (1, "Message received (%zu): %s",
 		   sizeof (struct volca_sample_2_sample_header), text);
       g_free (text);
     }

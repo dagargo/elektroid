@@ -368,7 +368,7 @@ sample_write_audio_file_data (struct idata *idata,
 	  size = (size / sizeof (guint32)) +
 	    (size % sizeof (guint32) ? 1 : 0);
 	  size *= sizeof (guint32);
-	  sizele = htole32 (size);
+	  sizele = GUINT32_TO_LE (size);
 	  g_byte_array_append (list_info_content, (guint8 *) & sizele,
 			       sizeof (guint32));
 	  buff = g_malloc (size);
@@ -732,7 +732,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
 		  g_hash_table_insert (sample_info->tags, k, v);
 
 		  read += sizeof (struct list_info_chunk) +
-		    le32toh (subchunk->size);
+		    GUINT32_FROM_LE (subchunk->size);
 		}
 	    }
 
