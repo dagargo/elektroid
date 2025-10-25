@@ -33,13 +33,13 @@ Other interesting features are:
 
 * Autosampler with SFZ file generation
 * Sample playback, recording and basic edition
-* Sample loop points edition
+* Sample loop points edition with zero crossing detection
 * Sample tagging
 * Sample zoom
 * Search within devices
 * SysEx transmission and reception
 
-While Elektroid is already available in some GNU/Linux distributions such as Debian or Ubuntu, it can also be easily installed on other distributions via Flatpak.
+While Elektroid is already available in some GNU/Linux distributions such as Debian or Ubuntu, it can also be easily installed on other distributions via Flatpak from [here](https://flathub.org/en/apps/io.github.dagargo.Elektroid).
 
 ## License
 
