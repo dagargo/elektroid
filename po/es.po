@@ -684,7 +684,7 @@ msgstr "Géneros"
 
 #: res/elektroid.ui:4717
 msgid "_Accept"
-msgstr "_Acceptar"
+msgstr "_Aceptar"
 
 #: res/microbrute/microbrute.ui:35
 msgid "Calibration assistant"
