@@ -68,6 +68,11 @@ gint sample_save_to_file (const gchar * path, struct idata *sample,
 // Returns the actual number of frames in the data array. This is useful when loading or recording.
 guint32 sample_get_actual_frames (struct idata *sample);
 
+// This function requires synchronized access
+// Returns true if the actual number of samples equals the frames reported in the. This is useful when loading.
+gboolean sample_load_completed (struct idata *sample,
+				guint32 * actual_frames);
+
 gint sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 			       struct task_control *control,
 			       const struct sample_load_opts

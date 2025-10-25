@@ -430,31 +430,6 @@ editor_set_audio_mono_mix ()
     }
 }
 
-static gboolean
-editor_loading_completed_no_lock (guint32 *actual_frames)
-{
-  gboolean completed;
-  guint32 actual;
-  struct sample_info *sample_info = audio.sample.info;
-
-  if (!sample_info)
-    {
-      if (actual_frames)
-	{
-	  *actual_frames = 0;
-	}
-      return FALSE;
-    }
-
-  actual = sample_get_actual_frames (&audio.sample);
-  completed = actual == sample_info->frames && actual;
-  if (actual_frames)
-    {
-      *actual_frames = actual;
-    }
-  return completed;
-}
-
 static void
 editor_playback_cursor_notifier (gint64 position)
 {
@@ -1129,7 +1104,7 @@ editor_update_on_load_cb (struct task_control *control, gdouble p)
   task_control_set_sample_progress (control, p);
   editor_set_waveform_data_no_sync ();
   g_idle_add (editor_queue_draw, NULL);
-  completed = editor_loading_completed_no_lock (&actual_frames);
+  completed = sample_load_completed (&audio.sample, &actual_frames);
   if (!ready)
     {
       ready_to_play = (preferences_get_boolean (PREF_KEY_PLAY_WHILE_LOADING)
@@ -1198,7 +1173,7 @@ editor_update_on_record_cb (gpointer data, gdouble l, gdouble r)
 {
   editor_set_waveform_data_no_sync ();
   g_idle_add (editor_queue_draw, data);
-  if (!ready && editor_loading_completed_no_lock (NULL))
+  if (!ready && sample_load_completed (&audio.sample, NULL))
     {
       g_idle_add (editor_update_ui_on_record, NULL);
       ready = TRUE;
@@ -1477,7 +1452,7 @@ editor_loading_completed ()
   gboolean res;
 
   g_mutex_lock (&audio.control.controllable.mutex);
-  res = editor_loading_completed_no_lock (NULL);
+  res = sample_load_completed (&audio.sample, NULL);
   g_mutex_unlock (&audio.control.controllable.mutex);
 
   return res;
@@ -1532,7 +1507,7 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 
   g_mutex_lock (&audio.control.controllable.mutex);
 
-  if (!editor_loading_completed_no_lock (NULL))
+  if (!sample_load_completed (&audio.sample, NULL))
     {
       goto end;
     }
@@ -2317,7 +2292,7 @@ editor_export_save_as_clicked (GtkWidget *object, gpointer data)
 
   g_mutex_lock (&audio.control.controllable.mutex);
 
-  if (!editor_loading_completed_no_lock (NULL))
+  if (!sample_load_completed (&audio.sample, NULL))
     {
       goto end;
     }

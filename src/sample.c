@@ -1261,6 +1261,31 @@ sample_get_actual_frames (struct idata *sample)
   return sample->content->len / bpf;
 }
 
+gboolean
+sample_load_completed (struct idata *sample, guint32 *actual_frames)
+{
+  gboolean completed;
+  guint32 actual;
+  struct sample_info *sample_info = sample->info;
+
+  if (!sample_info)
+    {
+      if (actual_frames)
+	{
+	  *actual_frames = 0;
+	}
+      return FALSE;
+    }
+
+  actual = sample_get_actual_frames (sample);
+  completed = actual == sample_info->frames && actual;
+  if (actual_frames)
+    {
+      *actual_frames = actual;
+    }
+  return completed;
+}
+
 gint
 sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 			  struct task_control *control,
