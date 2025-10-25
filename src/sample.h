@@ -64,6 +64,10 @@ void task_control_set_sample_progress (struct task_control *control,
 gint sample_save_to_file (const gchar * path, struct idata *sample,
 			  struct task_control *control, guint32 format);
 
+// This function requires synchronized access
+// Returns the actual number of frames in the data array. This is useful when loading or recording.
+guint32 sample_get_actual_frames (struct idata *sample);
+
 gint sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 			       struct task_control *control,
 			       const struct sample_load_opts

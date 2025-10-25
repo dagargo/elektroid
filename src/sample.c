@@ -1253,6 +1253,14 @@ cleanup:
   return 0;
 }
 
+guint32
+sample_get_actual_frames (struct idata *sample)
+{
+  struct sample_info *sample_info = sample->info;
+  guint32 bpf = SAMPLE_INFO_FRAME_SIZE (sample_info);
+  return sample->content->len / bpf;
+}
+
 gint
 sample_load_from_memfile (struct idata *memfile, struct idata *sample,
 			  struct task_control *control,

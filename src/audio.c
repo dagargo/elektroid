@@ -277,19 +277,6 @@ end:
     }
 }
 
-guint32
-audio_get_used_frames (guint32 *bytes_per_frame)
-{
-  guint32 bpf;
-  struct sample_info *sample_info = audio.sample.info;
-  bpf = SAMPLE_INFO_FRAME_SIZE (sample_info);
-  if (bytes_per_frame)
-    {
-      *bytes_per_frame = bpf;
-    }
-  return audio.sample.content->len / bpf;
-}
-
 void
 audio_read_from_input (void *buffer, gint frames)
 {
@@ -298,8 +285,7 @@ audio_read_from_input (void *buffer, gint frames)
   gint16 ls16, rs16;
   gfloat lm, rm, lf32, rf32;
   static gint monitor_frames = 0;
-  guint32 recorded_frames, remaining_frames, recording_frames,
-    bytes_per_frame;
+  guint32 recorded_frames, remaining_frames, recording_frames;
   struct sample_info *sample_info;
 
   g_mutex_lock (&audio.control.controllable.mutex);
@@ -315,7 +301,7 @@ audio_read_from_input (void *buffer, gint frames)
       debug_print (2, "Reading %d frames (recording)...", frames);
 
       sample_info = audio.sample.info;
-      recorded_frames = audio_get_used_frames (&bytes_per_frame);
+      recorded_frames = sample_get_actual_frames (&audio.sample);
       remaining_frames = sample_info->frames - recorded_frames;
       if (remaining_frames <= frames)
 	{
@@ -329,7 +315,8 @@ audio_read_from_input (void *buffer, gint frames)
 	}
 
       dst = audio.sample.content->data + audio.sample.content->len;
-      audio.sample.content->len += recording_frames * bytes_per_frame;
+      audio.sample.content->len += recording_frames *
+	SAMPLE_INFO_FRAME_SIZE (sample_info);
     }
   else
     {
@@ -932,7 +919,7 @@ audio_record_and_wait (guint32 options, struct task_control *control)
       if (control)
 	{
 	  g_mutex_lock (&audio.control.controllable.mutex);
-	  frames = audio_get_used_frames (NULL);
+	  frames = sample_get_actual_frames (&audio.sample);
 	  g_mutex_unlock (&audio.control.controllable.mutex);
 	  progress = frames / (gdouble) sample_info->frames;
 	  task_control_set_progress (control, progress);

@@ -446,7 +446,7 @@ editor_loading_completed_no_lock (guint32 *actual_frames)
       return FALSE;
     }
 
-  actual = audio_get_used_frames (NULL);
+  actual = sample_get_actual_frames (&audio.sample);
   completed = actual == sample_info->frames && actual;
   if (actual_frames)
     {
