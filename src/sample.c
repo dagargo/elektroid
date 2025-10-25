@@ -862,7 +862,7 @@ sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
 }
 
 static void
-sample_info_fix_frame_values (struct sample_info *sample_info)
+sample_info_fix_loop_points (struct sample_info *sample_info)
 {
   if (sample_info->loop_start >= sample_info->frames)
     {
@@ -894,7 +894,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   gfloat *buffer_f;
   void *buffer_output;
   gint err, resampled_buffer_len, frames;
-  gboolean active, rounding_fix;
+  gboolean active, estimation_issue;
   gdouble ratio;
   guint bytes_per_sample, bytes_per_frame;
   guint32 read_frames, actual_frames;
@@ -913,7 +913,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
 
   err = 0;
   actual_frames = 0;
-  rounding_fix = FALSE;
+  estimation_issue = FALSE;
   sample = NULL;
 
   sample_set_sample_info (sample_info_src, sndfile, &sf_info,
@@ -993,7 +993,7 @@ sample_load_libsndfile (void *data, SF_VIRTUAL_IO *sf_virtual_io,
   sample_info->frames = ceil (sample_info_src->frames * ratio);	//Upper bound estimation. The actual amount is updated later.
   sample_info->loop_start = round (sample_info_src->loop_start * ratio);
   sample_info->loop_end = round (sample_info_src->loop_end * ratio);
-  sample_info_fix_frame_values (sample_info);
+  sample_info_fix_loop_points (sample_info);
 
   sample = g_byte_array_sized_new (sample_info->frames * bytes_per_frame);
   idata_init (idata, sample, name ? strdup (name) : NULL, sample_info,
@@ -1226,25 +1226,22 @@ cleanup:
       g_mutex_unlock (&control->controllable.mutex);
       return -1;
     }
-  // This removes the additional samples added by the estimation above.
+  // This fixes the estimation above.
+  // In some cases, libsamplerate generates an additional frame in stereo while it does not do that in mono.
+  // We honour whatever libsamplerate generates.
   if (sample_info->frames != actual_frames)
     {
-      // If actual_frames > sample_info->frames (upper bound), we ignore the additional generated frames as they are over the upper bound.
-      // In some cases, libsamplerate generates an additional frame in stereo while it does not do that in mono.
-      if (actual_frames < sample_info->frames)
-	{
-	  rounding_fix = TRUE;
-	  sample_info->frames = actual_frames;
-	  sample_info_fix_frame_values (sample_info);
-	}
-      sample->len = sample_info->frames * bytes_per_frame;
+      debug_print (2, "Applying frames estimation fix...");
+      estimation_issue = TRUE;
+      sample_info->frames = actual_frames;
+      sample_info_fix_loop_points (sample_info);
     }
   if (control)
     {
-      //It there was a rounding fix in the previous lines, the call is needed to detect the end of the loading process.
-      if (rounding_fix)
+      //It there was an estimation issue in the previous lines, the call is needed to detect the end of the loading process.
+      if (estimation_issue)
 	{
-	  debug_print (2, "Applying rounding fix...");
+	  debug_print (2, "Notifying because of frames estimation issue...");
 	  cb (control, 1.0);
 	}
       g_mutex_unlock (&control->controllable.mutex);
