@@ -1795,6 +1795,7 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
 
   editor_set_dirty (TRUE);
 
+  editor_clear_waveform_data ();
   editor_set_waveform_data ();
   gtk_widget_queue_draw (waveform);
 
@@ -2109,6 +2110,7 @@ editor_normalize_clicked (GtkWidget *object, gpointer data)
   editor_get_operation_range (&start, &length);
   audio_normalize (&audio.sample, start, length);
   g_mutex_unlock (&audio.control.controllable.mutex);
+  editor_clear_waveform_data ();
   editor_set_waveform_data ();
   editor_queue_draw (NULL);
   editor_set_dirty (TRUE);
