@@ -1639,6 +1639,13 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 
   sample_info = audio.sample.info;
 
+  // This is needed in case no sample could be loaded.
+  if (!sample_info)
+    {
+      g_mutex_unlock (&audio.control.controllable.mutex);
+      return FALSE;
+    }
+
   sel_len = AUDIO_SEL_LEN;
 
   editor_get_frame_at_position (event->x, &cursor_frame, NULL);
