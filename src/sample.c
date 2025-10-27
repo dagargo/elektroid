@@ -844,7 +844,9 @@ sample_microfreak_filename (const gchar *path)
     !strcmp (MICROFREAK_ZSAMPLE_EXT, ext);
 }
 
-gint
+// Calls to this function require sample_info to be initialized always.
+
+void
 sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
 {
   gint err;
@@ -858,7 +860,10 @@ sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
       err = sample_load_libsndfile_sample_info (path, sample_info);
     }
 
-  return err;
+  if (err)
+    {
+      sample_info_init (sample_info, FALSE);
+    }
 }
 
 static void
