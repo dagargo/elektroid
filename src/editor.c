@@ -55,6 +55,8 @@
 #define SPLIT_DIFF_RATE_FRAMES_LIMIT_PROGRESS (audio.rate)	// 1 s
 #define SPLIT_SAME_RATE_FRAMES_LIMIT_PROGRESS (SPLIT_DIFF_RATE_FRAMES_LIMIT_PROGRESS * 10)
 
+#define GROSS_TEMPO_ESTIMATION_BEATS 4
+
 enum editor_operation
 {
   EDITOR_OP_NONE,
@@ -540,6 +542,37 @@ editor_note_changed (GtkComboBox *combo, gpointer data)
   editor_set_dirty (TRUE);
 }
 
+static gdouble
+editor_estimate_bpm (guint32 frames, guint32 beats)
+{
+  gdouble den;
+  if (beats)
+    {
+      den = frames / (gdouble) beats;
+    }
+  else
+    {
+      return -1;
+    }
+  return den == 0 ? -1 : (audio.rate * 60.0 / den);
+}
+
+static void
+editor_update_sample_tempo_estimation (guint32 frames)
+{
+  gchar *tooltip;
+  gdouble tempo_estimation;
+
+  tempo_estimation = editor_estimate_bpm (frames,
+					  GROSS_TEMPO_ESTIMATION_BEATS);
+  tooltip =
+    g_strdup_printf (_("Gross tempo estimation for %d beats: %.2f BPM"),
+		     GROSS_TEMPO_ESTIMATION_BEATS, tempo_estimation);
+  gtk_widget_set_tooltip_text (tempo_spin, tooltip);
+  debug_print (1, "%s", tooltip);
+  g_free (tooltip);
+}
+
 static void
 editor_update_sample_info ()
 {
@@ -555,6 +588,8 @@ editor_update_sample_info ()
       si.tempo = sample_info->tempo;
       si.beats = sample_info->beats;
       si.midi_note = sample_info->midi_note;
+
+      editor_update_sample_tempo_estimation (sample_info->frames);
     }
   else
     {
@@ -1765,8 +1800,9 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 static void
 editor_delete_clicked (GtkWidget *object, gpointer data)
 {
-  enum audio_status status;
   guint32 sel_len;
+  enum audio_status status;
+  struct sample_info * sample_info;
 
   if (!editor_loading_completed ())
     {
@@ -1798,6 +1834,9 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
   editor_clear_waveform_data ();
   editor_set_waveform_data ();
   gtk_widget_queue_draw (waveform);
+
+  sample_info = audio.sample.info;
+  editor_update_sample_tempo_estimation (sample_info->frames);
 
   if (status == AUDIO_STATUS_PLAYING)
     {
