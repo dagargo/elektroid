@@ -18,18 +18,11 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "tags_window.h"
 #include "audio.h"
 #include "editor.h"
+#include "preferences.h"
+#include "tags_window.h"
 #include "utils.h"
-
-// This uses the same separator as the IKEY in the LIST INFO chunk.
-// Alphabetically sorted in the GUI.
-#define TAGS_STRUCTURES       "loop; one-shot; phrase; fill"
-#define TAGS_INSTRUMENTS      "drums; kick; snare; clap; tom; percussion; hi-hat; cymbal; keys; piano; organ; guitar; bass; guitar; object; pad; texture; voice/choir; woodwind; brass; noise; mallets"
-#define TAGS_GENRES           "blues; country; ambient; breakbeat; chill-out; drum and bass; electro; jungle; techno; trance; chiptune; folk; hip-hop; jazz; R&B/soul; rock; metal; punk"
-#define TAGS_OBJECTIVE_CHARS  "ambient; natural; percussive; electronic; acoustic; noisy; chromatic; distorted; lo-fi; industrial; hardcore; glitchy"
-#define TAGS_SUBJECTIVE_CHARS "bright; dark; peaceful; ominous; ethereal; heavy"
 
 static GtkWindow *window;
 static GtkWidget *structures_flow_box;
@@ -272,11 +265,18 @@ tags_window_open (enum tag_source tag_source_)
 
   ikey_tags = sample_info_get_tag (sample_info, SAMPLE_INFO_TAG_IKEY);
   sample_tags = ikey_format_to_tags (ikey_tags);
-  structures_tags = ikey_format_to_tags (TAGS_STRUCTURES);
-  instruments_tags = ikey_format_to_tags (TAGS_INSTRUMENTS);
-  genres_tags = ikey_format_to_tags (TAGS_GENRES);
-  objective_chars_tags = ikey_format_to_tags (TAGS_OBJECTIVE_CHARS);
-  subjective_chars_tags = ikey_format_to_tags (TAGS_SUBJECTIVE_CHARS);
+  structures_tags =
+    ikey_format_to_tags (preferences_get_string (PREF_KEY_TAGS_STRUCTURES));
+  instruments_tags =
+    ikey_format_to_tags (preferences_get_string (PREF_KEY_TAGS_INSTRUMENTS));
+  genres_tags =
+    ikey_format_to_tags (preferences_get_string (PREF_KEY_TAGS_GENRES));
+  objective_chars_tags =
+    ikey_format_to_tags (preferences_get_string
+			 (PREF_KEY_TAGS_OBJECTIVE_CHARS));
+  subjective_chars_tags =
+    ikey_format_to_tags (preferences_get_string
+			 (PREF_KEY_TAGS_SUBJECTIVE_CHARS));
 
   tags_window_add_category (structures_flow_box, structures_tags,
 			    sample_tags);

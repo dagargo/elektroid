@@ -28,6 +28,14 @@
 #define PREF_MAX_AUDIO_BUF_LENGTH 4096
 #define PREF_MIN_AUDIO_BUF_LENGTH 256
 
+// This uses the same separator as the IKEY in the LIST INFO chunk.
+// Alphabetically sorted in the GUI.
+#define PREF_DEFAULT_TAGS_STRUCTURES  "loop; one-shot; phrase; fill"
+#define PREF_DEFAULT_TAGS_INSTRUMENTS "drums; kick; snare; clap; tom; percussion; hi-hat; cymbal; keys; piano; organ; guitar; bass; guitar; object; pad; texture; voice/choir; woodwind; brass; noise; mallets"
+#define PREF_DEFAULT_TAGS_GENRES      "blues; country; ambient; breakbeat; chill-out; drum and bass; electro; jungle; techno; trance; chiptune; folk; hip-hop; jazz; R&B/soul; rock; metal; punk"
+#define PREF_DEFAULT_TAGS_OBJECTIVE   "ambient; natural; percussive; electronic; acoustic; noisy; chromatic; distorted; lo-fi; industrial; hardcore; glitchy"
+#define PREF_DEFAULT_TAGS_SUBJECTIVE  "bright; dark; peaceful; ominous; ethereal; heavy"
+
 static gpointer
 regpref_get_subdivisions (const gpointer grid)
 {
@@ -69,6 +77,41 @@ static gpointer
 regpref_get_home (const gpointer home)
 {
   return home ? g_strdup (home) : get_user_dir (NULL);
+}
+
+static gpointer
+regpref_get_tags_structures (const gpointer tags)
+{
+  return preferences_get_string_value_default (tags,
+					       PREF_DEFAULT_TAGS_STRUCTURES);
+}
+
+static gpointer
+regpref_get_tags_instruments (const gpointer tags)
+{
+  return preferences_get_string_value_default (tags,
+					       PREF_DEFAULT_TAGS_INSTRUMENTS);
+}
+
+static gpointer
+regpref_get_tags_genres (const gpointer tags)
+{
+  return preferences_get_string_value_default (tags,
+					       PREF_DEFAULT_TAGS_GENRES);
+}
+
+static gpointer
+regpref_get_tags_objective (const gpointer tags)
+{
+  return preferences_get_string_value_default (tags,
+					       PREF_DEFAULT_TAGS_OBJECTIVE);
+}
+
+static gpointer
+regpref_get_tags_subjective (const gpointer tags)
+{
+  return preferences_get_string_value_default (tags,
+					       PREF_DEFAULT_TAGS_SUBJECTIVE);
 }
 
 static const struct preference PREF_LOCAL_DIR = {
@@ -143,6 +186,36 @@ const struct preference PREF_ELEKTRON_LOAD_SOUND_TAGS = {
   .get_value = preferences_get_boolean_value_true
 };
 
+static const struct preference PREF_TAGS_STRUCTURES = {
+  .key = PREF_KEY_TAGS_STRUCTURES,
+  .type = PREFERENCE_TYPE_STRING,
+  .get_value = regpref_get_tags_structures
+};
+
+static const struct preference PREF_TAGS_INSTRUMENTS = {
+  .key = PREF_KEY_TAGS_INSTRUMENTS,
+  .type = PREFERENCE_TYPE_STRING,
+  .get_value = regpref_get_tags_instruments
+};
+
+static const struct preference PREF_TAGS_GENRES = {
+  .key = PREF_KEY_TAGS_GENRES,
+  .type = PREFERENCE_TYPE_STRING,
+  .get_value = regpref_get_tags_genres
+};
+
+const struct preference PREF_TAGS_OBJECTIVE_CHARS = {
+  .key = PREF_KEY_TAGS_OBJECTIVE_CHARS,
+  .type = PREFERENCE_TYPE_STRING,
+  .get_value = regpref_get_tags_objective
+};
+
+const struct preference PREF_TAGS_SUBJECTIVE_CHARS = {
+  .key = PREF_KEY_TAGS_SUBJECTIVE_CHARS,
+  .type = PREFERENCE_TYPE_STRING,
+  .get_value = regpref_get_tags_subjective
+};
+
 void
 regpref_register ()
 {
@@ -151,7 +224,9 @@ regpref_register ()
 	       &PREF_SUBDIVISIONS, &PREF_PLAY_WHILE_LOADING,
 	       &PREF_AUDIO_BUFFER_LEN, &PREF_AUDIO_USE_FLOAT,
 	       &PREF_SHOW_PLAYBACK_CURSOR, &PREF_STOP_DEVICE_WHEN_CONNECTING,
-	       &PREF_ELEKTRON_LOAD_SOUND_TAGS, NULL);
+	       &PREF_ELEKTRON_LOAD_SOUND_TAGS, &PREF_TAGS_STRUCTURES,
+	       &PREF_TAGS_INSTRUMENTS, &PREF_TAGS_GENRES,
+	       &PREF_TAGS_OBJECTIVE_CHARS, &PREF_TAGS_SUBJECTIVE_CHARS, NULL);
 }
 
 void

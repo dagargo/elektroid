@@ -31,6 +31,11 @@ static GtkWidget *play_sample_while_loading_switch;
 static GtkWidget *show_playback_cursor_switch;
 static GtkWidget *stop_device_when_connecting_switch;
 static GtkWidget *elektron_load_sound_tags_switch;
+static GtkWidget *tags_structures_text_view;
+static GtkWidget *tags_instruments_text_view;
+static GtkWidget *tags_genres_text_view;
+static GtkWidget *tags_subj_chars_text_view;
+static GtkWidget *tags_obj_chars_text_view;
 static GtkWidget *save_button;
 static GtkWidget *cancel_button;
 
@@ -45,6 +50,20 @@ preferences_window_delete (GtkWidget *widget, GdkEvent *event, gpointer data)
 {
   preferences_window_cancel (NULL, NULL);
   return TRUE;
+}
+
+static void
+preferences_set_key_from_text_view (const gchar *key, GtkWidget *tags_widget)
+{
+  gchar *tags;
+  GtkTextIter start, end;
+  GtkTextBuffer *buf;
+
+  buf = gtk_text_view_get_buffer (GTK_TEXT_VIEW (tags_widget));
+  gtk_text_buffer_get_start_iter (buf, &start);
+  gtk_text_buffer_get_end_iter (buf, &end);
+  tags = gtk_text_buffer_get_text (buf, &start, &end, FALSE);
+  preferences_set_string (key, tags);
 }
 
 static void
@@ -93,6 +112,17 @@ preferences_window_save (GtkWidget *object, gpointer data)
       editor_reset_audio ();
     }
 
+  preferences_set_key_from_text_view (PREF_KEY_TAGS_STRUCTURES,
+				      tags_structures_text_view);
+  preferences_set_key_from_text_view (PREF_KEY_TAGS_INSTRUMENTS,
+		 		      tags_instruments_text_view);
+  preferences_set_key_from_text_view (PREF_KEY_TAGS_GENRES,
+				      tags_genres_text_view);
+  preferences_set_key_from_text_view (PREF_KEY_TAGS_OBJECTIVE_CHARS,
+		 		      tags_obj_chars_text_view);
+  preferences_set_key_from_text_view (PREF_KEY_TAGS_SUBJECTIVE_CHARS,
+				      tags_subj_chars_text_view);
+
   preferences_window_cancel (NULL, NULL);
 }
 
@@ -113,8 +143,10 @@ preferences_window_open ()
 {
   gboolean b;
   GtkTreeIter iter;
+  const gchar *tags;
   gint i, buffer_len;
   GValue x = G_VALUE_INIT;
+  GtkTextBuffer *buf;
   GtkTreeModel *model =
     gtk_combo_box_get_model (GTK_COMBO_BOX (audio_buffer_length_combo));
 
@@ -147,6 +179,22 @@ preferences_window_open ()
     }
   while (gtk_tree_model_iter_next (model, &iter));
 
+  buf = gtk_text_view_get_buffer (GTK_TEXT_VIEW (tags_structures_text_view));
+  tags = preferences_get_string (PREF_KEY_TAGS_STRUCTURES);
+  gtk_text_buffer_set_text (buf, tags, -1);
+  buf = gtk_text_view_get_buffer (GTK_TEXT_VIEW (tags_instruments_text_view));
+  tags = preferences_get_string (PREF_KEY_TAGS_INSTRUMENTS);
+  gtk_text_buffer_set_text (buf, tags, -1);
+  buf = gtk_text_view_get_buffer (GTK_TEXT_VIEW (tags_genres_text_view));
+  tags = preferences_get_string (PREF_KEY_TAGS_GENRES);
+  gtk_text_buffer_set_text (buf, tags, -1);
+  buf = gtk_text_view_get_buffer (GTK_TEXT_VIEW (tags_obj_chars_text_view));
+  tags = preferences_get_string (PREF_KEY_TAGS_OBJECTIVE_CHARS);
+  gtk_text_buffer_set_text (buf, tags, -1);
+  buf = gtk_text_view_get_buffer (GTK_TEXT_VIEW (tags_subj_chars_text_view));
+  tags = preferences_get_string (PREF_KEY_TAGS_SUBJECTIVE_CHARS);
+  gtk_text_buffer_set_text (buf, tags, -1);
+
   gtk_widget_show (GTK_WIDGET (window));
 }
 
@@ -156,32 +204,48 @@ preferences_window_init (GtkBuilder *builder)
   window =
     GTK_WINDOW (gtk_builder_get_object (builder, "preferences_window"));
   save_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "preferences_window_save_button"));
+    GTK_WIDGET (gtk_builder_get_object (builder, "prefs_window_save_button"));
   cancel_button =
     GTK_WIDGET (gtk_builder_get_object
-		(builder, "preferences_window_cancel_button"));
+		(builder, "prefs_window_cancel_button"));
 
   audio_buffer_length_combo =
     GTK_WIDGET (gtk_builder_get_object (builder,
-					"audio_buffer_length_combo"));
+					"prefs_window_audio_buffer_length_combo"));
   audio_use_float_switch =
-    GTK_WIDGET (gtk_builder_get_object (builder, "audio_use_float_switch"));
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "prefs_window_audio_use_float_switch"));
   play_sample_while_loading_switch =
-    GTK_WIDGET (gtk_builder_get_object (builder,
-					"play_sample_while_loading_switch"));
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "prefs_window_play_sample_while_loading_switch"));
   show_playback_cursor_switch =
-    GTK_WIDGET (gtk_builder_get_object (builder,
-					"show_playback_cursor_switch"));
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "prefs_window_show_playback_cursor_switch"));
   stop_device_when_connecting_switch =
-    GTK_WIDGET (gtk_builder_get_object (builder,
-					"stop_device_when_connecting_switch"));
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "prefs_window_stop_device_when_connecting_switch"));
   elektron_load_sound_tags_switch =
-    GTK_WIDGET (gtk_builder_get_object (builder,
-					"elektron_load_sound_tags_switch"));
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "prefs_window_elektron_load_sound_tags_switch"));
 
-  g_signal_connect (save_button, "clicked",
-		    G_CALLBACK (preferences_window_save), NULL);
+  tags_structures_text_view =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "prefs_window_tags_structures_text_view"));
+  tags_instruments_text_view =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "prefs_window_tags_instruments_text_view"));
+  tags_genres_text_view =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "prefs_window_tags_genres_text_view"));
+  tags_subj_chars_text_view =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "prefs_window_tags_subj_chars_text_view"));
+  tags_obj_chars_text_view =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "prefs_window_tags_obj_chars_text_view"));
+
+  g_signal_connect (save_button,
+		    "clicked", G_CALLBACK (preferences_window_save), NULL);
   g_signal_connect (cancel_button, "clicked",
 		    G_CALLBACK (preferences_window_cancel), NULL);
   g_signal_connect (GTK_WIDGET (window), "delete-event",

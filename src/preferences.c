@@ -57,6 +57,12 @@ preferences_get_boolean_value_false (const gpointer b)
 }
 
 gpointer
+preferences_get_string_value_default (const gpointer s, const gchar *defaults)
+{
+  return s ? g_strdup (s) : g_strdup (defaults);
+}
+
+gpointer
 preferences_get_int_value (const gpointer in, gint max, gint min, gint def)
 {
   gint *out = g_malloc (sizeof (gint));
@@ -175,8 +181,8 @@ preferences_get_value (const struct preference *p, JsonReader *reader)
 	}
       else if (p->type == PREFERENCE_TYPE_STRING)
 	{
-	  gchar *s = (gchar *) json_reader_get_string_value (reader);
-	  v = p->get_value (s);
+	  const gchar *s = json_reader_get_string_value (reader);
+	  v = p->get_value ((const gpointer) s);
 	}
       else
 	{

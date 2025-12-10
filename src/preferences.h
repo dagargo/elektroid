@@ -34,6 +34,11 @@
 #define PREF_KEY_AUDIO_BUFFER_LEN "audioBufferLength"
 #define PREF_KEY_AUDIO_USE_FLOAT "audioUseFloat"
 #define PREF_KEY_SHOW_PLAYBACK_CURSOR "showPlaybackCursor"
+#define PREF_KEY_TAGS_STRUCTURES "tagsStructures"
+#define PREF_KEY_TAGS_INSTRUMENTS "tagsInstruments"
+#define PREF_KEY_TAGS_GENRES "tagsGenres"
+#define PREF_KEY_TAGS_OBJECTIVE_CHARS "tagsObjectiveCharacteristics"
+#define PREF_KEY_TAGS_SUBJECTIVE_CHARS "tagsSubjectiveCharacteristics"
 
 enum preference_type
 {
@@ -57,6 +62,9 @@ extern GHashTable *preferences_hashtable;
 gpointer preferences_get_boolean_value_true (const gpointer b);
 
 gpointer preferences_get_boolean_value_false (const gpointer b);
+
+gpointer preferences_get_string_value_default (const gpointer s,
+					       const gchar * defaults);
 
 gpointer preferences_get_int_value (const gpointer in, gint max, gint min,
 				    gint def);
