@@ -25,13 +25,18 @@
 #include "utils.h"
 
 static GtkWindow *window;
+static GtkWidget *structures_label;
+static GtkWidget *instruments_label;
+static GtkWidget *genres_label;
+static GtkWidget *objective_chars_label;
+static GtkWidget *subjective_chars_label;
+static GtkWidget *custom_label;
 static GtkWidget *structures_flow_box;
 static GtkWidget *instruments_flow_box;
 static GtkWidget *genres_flow_box;
 static GtkWidget *objective_chars_flow_box;
 static GtkWidget *subjective_chars_flow_box;
 static GtkWidget *custom_flow_box;
-static GtkWidget *custom_label;
 static GtkWidget *accept_button;
 static GtkWidget *cancel_button;
 static GHashTable *tags;
@@ -91,6 +96,24 @@ void
 tags_window_init (GtkBuilder *builder)
 {
   window = GTK_WINDOW (gtk_builder_get_object (builder, "tags_window"));
+
+  structures_label =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "tags_window_structures_label"));
+  instruments_label =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "tags_window_instruments_label"));
+  genres_label =
+    GTK_WIDGET (gtk_builder_get_object (builder, "tags_window_genres_label"));
+  objective_chars_label =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "tags_window_objective_chars_label"));
+  subjective_chars_label =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "tags_window_subjective_chars_label"));
+  custom_label =
+    GTK_WIDGET (gtk_builder_get_object (builder, "tags_window_custom_label"));
+
   structures_flow_box =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "tags_window_structures_flow_box"));
@@ -109,8 +132,7 @@ tags_window_init (GtkBuilder *builder)
   custom_flow_box =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "tags_window_custom_flow_box"));
-  custom_label =
-    GTK_WIDGET (gtk_builder_get_object (builder, "tags_window_custom_label"));
+
   accept_button =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "tags_window_accept_button"));
@@ -213,14 +235,26 @@ tags_toggle_new (const gchar *tag, enum tag_source tag_source)
 }
 
 static void
-tags_window_add_category (GtkWidget *category_flow_box,
+tags_window_add_category (GtkWidget *category_label,
+			  GtkWidget *category_flow_box,
 			  GHashTable *category_tags, GHashTable *sample_tags)
 {
   GList *tag;
-  GList *keys = g_hash_table_get_keys (category_tags);
+  GList *keys;
 
   tags_clear_container (category_flow_box);
 
+  if (g_hash_table_size (category_tags) == 0)
+    {
+      gtk_widget_set_visible (category_label, FALSE);
+      gtk_widget_set_visible (category_flow_box, FALSE);
+      return;
+    }
+
+  gtk_widget_set_visible (category_label, TRUE);
+  gtk_widget_set_visible (category_flow_box, TRUE);
+
+  keys = g_hash_table_get_keys (category_tags);
   keys = g_list_sort (keys, (GCompareFunc) g_strcmp0);
   tag = keys;
   while (tag)
@@ -278,26 +312,18 @@ tags_window_open (enum tag_source tag_source_)
     ikey_format_to_tags (preferences_get_string
 			 (PREF_KEY_TAGS_SUBJECTIVE_CHARS));
 
-  tags_window_add_category (structures_flow_box, structures_tags,
+  tags_window_add_category (structures_label, structures_flow_box,
+			    structures_tags, sample_tags);
+  tags_window_add_category (instruments_label, instruments_flow_box,
+			    instruments_tags, sample_tags);
+  tags_window_add_category (genres_label, genres_flow_box, genres_tags,
 			    sample_tags);
-  tags_window_add_category (instruments_flow_box, instruments_tags,
+  tags_window_add_category (objective_chars_label, objective_chars_flow_box,
+			    objective_chars_tags, sample_tags);
+  tags_window_add_category (subjective_chars_label, subjective_chars_flow_box,
+			    subjective_chars_tags, sample_tags);
+  tags_window_add_category (custom_label, custom_flow_box, sample_tags,
 			    sample_tags);
-  tags_window_add_category (genres_flow_box, genres_tags, sample_tags);
-  tags_window_add_category (objective_chars_flow_box, objective_chars_tags,
-			    sample_tags);
-  tags_window_add_category (subjective_chars_flow_box, subjective_chars_tags,
-			    sample_tags);
-  if (g_hash_table_size (sample_tags))
-    {
-      tags_window_add_category (custom_flow_box, sample_tags, sample_tags);
-      gtk_widget_set_visible (custom_flow_box, TRUE);
-      gtk_widget_set_visible (custom_label, TRUE);
-    }
-  else
-    {
-      gtk_widget_set_visible (custom_flow_box, FALSE);
-      gtk_widget_set_visible (custom_label, FALSE);
-    }
 
   g_hash_table_unref (structures_tags);
   g_hash_table_unref (instruments_tags);

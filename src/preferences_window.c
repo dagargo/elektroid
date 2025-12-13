@@ -115,11 +115,11 @@ preferences_window_save (GtkWidget *object, gpointer data)
   preferences_set_key_from_text_view (PREF_KEY_TAGS_STRUCTURES,
 				      tags_structures_text_view);
   preferences_set_key_from_text_view (PREF_KEY_TAGS_INSTRUMENTS,
-		 		      tags_instruments_text_view);
+				      tags_instruments_text_view);
   preferences_set_key_from_text_view (PREF_KEY_TAGS_GENRES,
 				      tags_genres_text_view);
   preferences_set_key_from_text_view (PREF_KEY_TAGS_OBJECTIVE_CHARS,
-		 		      tags_obj_chars_text_view);
+				      tags_obj_chars_text_view);
   preferences_set_key_from_text_view (PREF_KEY_TAGS_SUBJECTIVE_CHARS,
 				      tags_subj_chars_text_view);
 

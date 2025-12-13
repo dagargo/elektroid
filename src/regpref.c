@@ -29,12 +29,12 @@
 #define PREF_MIN_AUDIO_BUF_LENGTH 256
 
 // This uses the same separator as the IKEY in the LIST INFO chunk.
-// Alphabetically sorted in the GUI.
-#define PREF_DEFAULT_TAGS_STRUCTURES  "loop; one-shot; phrase; fill"
-#define PREF_DEFAULT_TAGS_INSTRUMENTS "drums; kick; snare; clap; tom; percussion; hi-hat; cymbal; keys; piano; organ; guitar; bass; guitar; object; pad; texture; voice/choir; woodwind; brass; noise; mallets"
-#define PREF_DEFAULT_TAGS_GENRES      "blues; country; ambient; breakbeat; chill-out; drum and bass; electro; jungle; techno; trance; chiptune; folk; hip-hop; jazz; R&B/soul; rock; metal; punk"
-#define PREF_DEFAULT_TAGS_OBJECTIVE   "ambient; natural; percussive; electronic; acoustic; noisy; chromatic; distorted; lo-fi; industrial; hardcore; glitchy"
-#define PREF_DEFAULT_TAGS_SUBJECTIVE  "bright; dark; peaceful; ominous; ethereal; heavy"
+// Alphabetically sorted in the tags window but listed as such in the tags tab of the preferences window.
+#define PREF_DEFAULT_TAGS_STRUCTURES  "fill; loop; one-shot; phrase"
+#define PREF_DEFAULT_TAGS_INSTRUMENTS "bass; brass; clap; cymbal; drums; FX; guitar; hi-hat; keys; kick; mallets; noise; object; organ; pad; percussion; piano; snare; strings; texture; tom; voice/choir; woodwind"
+#define PREF_DEFAULT_TAGS_GENRES      "ambient; blues; breakbeat; chill-out; chiptune; country; drum; and; bass; electro; folk; folk,; caribbean; hip-hop; jazz; jungle; metal; punk; R&B/soul; reggae; rock; techno; trance"
+#define PREF_DEFAULT_TAGS_OBJECTIVE   "acoustic; ambient; chromatic; distorted; electronic; glitchy; industrial; lo-fi; natural; noisy; percussive"
+#define PREF_DEFAULT_TAGS_SUBJECTIVE  "bright; dark; peaceful; ominous; ethereal; massive"
 
 static gpointer
 regpref_get_subdivisions (const gpointer grid)
