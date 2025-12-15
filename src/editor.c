@@ -56,6 +56,8 @@
 #define SPLIT_SAME_RATE_FRAMES_LIMIT_PROGRESS (SPLIT_DIFF_RATE_FRAMES_LIMIT_PROGRESS * 10)
 
 #define GROSS_TEMPO_ESTIMATION_BEATS 4
+#define GROSS_TEMPO_ESTIMATION_MIN 56
+#define GROSS_TEMPO_ESTIMATION_MAX 240
 
 enum editor_operation
 {
@@ -83,6 +85,8 @@ struct editor_save_data
 static void editor_save_accept (gpointer source, const gchar * name);
 static void editor_set_waveform_data ();
 static void editor_update_sample_info ();
+static void editor_update_sample_tempo_estimation (struct sample_info
+						   *sample_info);
 
 extern struct browser local_browser;
 extern struct browser remote_browser;
@@ -521,6 +525,7 @@ editor_beats_changed (GtkSpinButton *object, gpointer data)
   g_mutex_lock (&audio.control.controllable.mutex);
   sample_info = audio.sample.info;
   sample_info->beats = gtk_spin_button_get_value (object);
+  editor_update_sample_tempo_estimation (sample_info);
   g_mutex_unlock (&audio.control.controllable.mutex);
 
   editor_set_dirty (TRUE);
@@ -543,34 +548,37 @@ editor_note_changed (GtkComboBox *combo, gpointer data)
 }
 
 static gdouble
-editor_estimate_bpm (guint32 frames, guint32 beats)
+editor_get_gross_estimation_bpm (guint32 frames, guint32 beats)
 {
-  gdouble den;
-  if (beats)
-    {
-      den = frames / (gdouble) beats;
-    }
-  else
-    {
-      return -1;
-    }
-  return den == 0 ? -1 : (audio.rate * 60.0 / den);
+  gdouble den = frames / (gdouble) beats;
+  gdouble estimation = den == 0 ? -1 : (audio.rate * 60.0 / den);
+  return estimation >= GROSS_TEMPO_ESTIMATION_MIN &&
+    estimation <= GROSS_TEMPO_ESTIMATION_MAX ? estimation : -1;
 }
 
 static void
-editor_update_sample_tempo_estimation (guint32 frames)
+editor_update_sample_tempo_estimation (struct sample_info *sample_info)
 {
-  gchar *tooltip;
+  guint32 frames, beats;
   gdouble tempo_estimation;
 
-  tempo_estimation = editor_estimate_bpm (frames,
-					  GROSS_TEMPO_ESTIMATION_BEATS);
-  tooltip =
-    g_strdup_printf (_("Gross tempo estimation for %d beats: %.2f BPM"),
-		     GROSS_TEMPO_ESTIMATION_BEATS, tempo_estimation);
-  gtk_widget_set_tooltip_text (tempo_spin, tooltip);
-  debug_print (1, "%s", tooltip);
-  g_free (tooltip);
+  frames = sample_info->frames;
+  beats =
+    sample_info->beats ? sample_info->beats : GROSS_TEMPO_ESTIMATION_BEATS;
+  tempo_estimation = editor_get_gross_estimation_bpm (frames, beats);
+  if (tempo_estimation == -1)
+    {
+      gtk_widget_set_tooltip_text (tempo_spin, "");
+    }
+  else
+    {
+      gchar *tooltip =
+	g_strdup_printf (_("Gross tempo estimation for %d beats: %.2f BPM"),
+			 beats, tempo_estimation);
+      gtk_widget_set_tooltip_text (tempo_spin, tooltip);
+      debug_print (1, "%s", tooltip);
+      g_free (tooltip);
+    }
 }
 
 static void
@@ -589,7 +597,7 @@ editor_update_sample_info ()
       si.beats = sample_info->beats;
       si.midi_note = sample_info->midi_note;
 
-      editor_update_sample_tempo_estimation (sample_info->frames);
+      editor_update_sample_tempo_estimation (sample_info);
     }
   else
     {
@@ -1802,7 +1810,7 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
 {
   guint32 sel_len;
   enum audio_status status;
-  struct sample_info * sample_info;
+  struct sample_info *sample_info;
 
   if (!editor_loading_completed ())
     {
@@ -1836,7 +1844,7 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
   gtk_widget_queue_draw (waveform);
 
   sample_info = audio.sample.info;
-  editor_update_sample_tempo_estimation (sample_info->frames);
+  editor_update_sample_tempo_estimation (sample_info);
 
   if (status == AUDIO_STATUS_PLAYING)
     {
