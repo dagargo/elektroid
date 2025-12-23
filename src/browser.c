@@ -38,7 +38,6 @@
 
 #define DND_TIMEOUT 800
 
-#define TREEVIEW_SCROLL_LINES 2
 #define TREEVIEW_EDGE_SIZE 20
 
 #define PROGRESS_DELETE_THRESHOLD 25
@@ -2064,34 +2063,50 @@ end:
 static gboolean
 browser_drag_scroll_down_timeout (gpointer user_data)
 {
-  GtkTreePath *end;
+  gint visible_rows;
+  GtkTreePath *start, *end;
   struct browser *browser = user_data;
+
   debug_print (2, "Scrolling down...");
-  gtk_tree_view_get_visible_range (browser->view, NULL, &end);
-  for (guint i = 0; i < TREEVIEW_SCROLL_LINES; i++)
+
+  gtk_tree_view_get_visible_range (browser->view, &start, &end);
+  visible_rows = gtk_tree_path_get_indices (end)[0] -
+    gtk_tree_path_get_indices (start)[0];
+  for (guint i = 0; i < visible_rows / 2; i++)
     {
       gtk_tree_path_next (end);
     }
   gtk_tree_view_scroll_to_cell (browser->view, end, NULL, FALSE, .0, .0);
+  gtk_tree_path_free (start);
   gtk_tree_path_free (end);
+
   browser_set_dnd_function (browser, browser_drag_scroll_down_timeout);
+
   return TRUE;
 }
 
 static gboolean
 browser_drag_scroll_up_timeout (gpointer user_data)
 {
-  GtkTreePath *start;
+  gint visible_rows;
+  GtkTreePath *start, *end;
   struct browser *browser = user_data;
+
   debug_print (2, "Scrolling up...");
-  gtk_tree_view_get_visible_range (browser->view, &start, NULL);
-  for (guint i = 0; i < TREEVIEW_SCROLL_LINES; i++)
+
+  gtk_tree_view_get_visible_range (browser->view, &start, &end);
+  visible_rows = gtk_tree_path_get_indices (end)[0] -
+    gtk_tree_path_get_indices (start)[0];
+  for (guint i = 0; i < visible_rows / 2; i++)
     {
       gtk_tree_path_prev (start);
     }
   gtk_tree_view_scroll_to_cell (browser->view, start, NULL, FALSE, .0, .0);
   gtk_tree_path_free (start);
+  gtk_tree_path_free (end);
+
   browser_set_dnd_function (browser, browser_drag_scroll_up_timeout);
+
   return TRUE;
 }
 
