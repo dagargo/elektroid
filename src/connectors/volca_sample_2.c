@@ -192,6 +192,7 @@ volca_sample_2_sample_next_dentry (struct item_iterator *iter)
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = GUINT32_FROM_LE (header.frames) * sizeof (gint16);
+  sample_info_init (&iter->item.sample_info, FALSE);
 
   (data->next)++;
 

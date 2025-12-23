@@ -800,6 +800,8 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = GINT32_FROM_LE (header.size);
+  sample_info_init (&iter->item.sample_info, FALSE);
+
   (data->next)++;
   free_msg (rx_msg);
 
@@ -1324,6 +1326,8 @@ microfreak_next_wavetable_dentry (struct item_iterator *iter)
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = header.status0 == MICROFREAK_WAVETABLE_EMPTY ?
     0 : MICROFREAK_WAVETABLE_SIZE;
+  sample_info_init (&iter->item.sample_info, FALSE);
+
   (data->next)++;
 
 end:

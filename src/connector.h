@@ -169,7 +169,7 @@ enum fs_options
   FS_OPTION_SHOW_SLOT_COLUMN = (1 << 7),
   FS_OPTION_SHOW_INFO_COLUMN = (1 << 8),
   FS_OPTION_SHOW_SAMPLE_COLUMNS = (1 << 9),	// Filesystems indicating this must fill the sample_info struct in the item.
-  //This requires the function readdir to be relatively fast because canceling the search will block the GUI.
+  //This requires the function readdir to be relatively fast because canceling the search will block the GUI. Requires item.sample_info to be initialized if used with FS_OPTION_SAMPLE_EDITOR.
   FS_OPTION_ALLOW_SEARCH = (1 << 10),
   //This blocks the editor as the transfers are done with audio.
   FS_OPTION_AUDIO_LINK = (1 << 11)

@@ -332,6 +332,7 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
       data->pos += strlen (name_cp1252) + 1;
 
       iter->item.id = -1;
+      sample_info_init (&iter->item.sample_info, FALSE);
 
       return 0;
     }
