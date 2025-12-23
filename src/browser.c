@@ -1401,7 +1401,7 @@ browser_load_dir_runner (gpointer data)
   struct item_iterator iter;
   const gchar **exts;
   const gchar *icon;
-  gboolean search_mode;
+  gboolean search_mode, search_ready;
 
   exts = browser_get_exts (browser);
   icon = browser_get_icon (browser);
@@ -1418,10 +1418,14 @@ browser_load_dir_runner (gpointer data)
 
   g_mutex_lock (&browser->mutex);
   search_mode = browser->search_mode;
+  search_ready = browser->search_options.ready;
   g_mutex_unlock (&browser->mutex);
   if (search_mode)
     {
-      browser_iterate_dir_recursive (browser, "", &iter, icon, exts);
+      if (search_ready)
+	{
+	  browser_iterate_dir_recursive (browser, "", &iter, icon, exts);
+	}
     }
   else
     {
@@ -2427,46 +2431,44 @@ browser_search_changed (GtkSearchEntry *entry, gpointer data)
   gchar *tempo_prefix = g_utf8_casefold (_("Tempo"), -1);
   gchar *note_prefix = g_utf8_casefold (_("Note"), -1);
 
-  if (strlen (filter))
+  gchar **words = g_strsplit_set (filter, " ", -1);
+  gchar **w = words;
+  const gchar *param;
+
+  browser->search_options.tokens = NULL;
+  browser->search_options.tempo = SEARCH_PARAM_UNSET;
+  browser->search_options.note = SEARCH_PARAM_UNSET;
+  browser->search_options.ready = FALSE;
+
+  while (*w)
     {
-      gchar **words = g_strsplit_set (filter, " ", -1);
-      gchar **w = words;
-      const gchar *param;
+      gchar *folded = g_utf8_casefold (*w, -1);
 
-      browser->search_options.tokens = NULL;
-      browser->search_options.tempo = SEARCH_PARAM_UNSET;
-      browser->search_options.note = SEARCH_PARAM_UNSET;
-      browser->search_options.ready = TRUE;
-
-      while (*w)
+      if ((param = browser_search_get_param (folded, tempo_prefix)))
 	{
-	  gchar *folded = g_utf8_casefold (*w, -1);
-
-	  if ((param = browser_search_get_param (folded, tempo_prefix)))
-	    {
-	      browser->search_options.tempo = atoi (param);
-	      g_free (folded);
-	    }
-	  else if ((param = browser_search_get_param (folded, note_prefix)))
-	    {
-	      browser->search_options.note = browser_get_note_num (param);
-	      g_free (folded);
-	    }
-	  else
-	    {
-	      browser->search_options.tokens =
-		g_slist_append (browser->search_options.tokens, folded);
-	    }
-
-	  w++;
+	  browser->search_options.tempo = atoi (param);
+	  g_free (folded);
+	}
+      else if ((param = browser_search_get_param (folded, note_prefix)))
+	{
+	  browser->search_options.note = browser_get_note_num (param);
+	  g_free (folded);
+	}
+      else
+	{
+	  browser->search_options.tokens =
+	    g_slist_append (browser->search_options.tokens, folded);
 	}
 
-      g_free (tempo_prefix);
-      g_free (note_prefix);
-      g_strfreev (words);
-
-      browser_load_dir (browser);
+      browser->search_options.ready = TRUE;
+      w++;
     }
+
+  g_free (tempo_prefix);
+  g_free (note_prefix);
+  g_strfreev (words);
+
+  browser_load_dir (browser);
 }
 
 static void
