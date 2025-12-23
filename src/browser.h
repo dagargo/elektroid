@@ -164,8 +164,6 @@ void browser_update_fs_options (struct browser *);
 
 void browser_reset (struct browser *);
 
-void browser_remote_reset_dnd ();
-
 void browser_close_search (GtkSearchEntry *, gpointer);
 
 void browser_cancel (struct browser *browser);

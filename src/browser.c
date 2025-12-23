@@ -56,6 +56,8 @@
                             ((b)->fs_ops->options & FS_OPTION_SHOW_SAMPLE_COLUMNS) && \
                              (i)->sample_info.tags != NULL)
 
+static void browser_remote_reset_dnd ();
+
 enum
 {
   TARGET_STRING,
@@ -540,7 +542,6 @@ browser_remote_set_fs_operations (const struct fs_operations *fs_ops)
 
       browser_reset (&remote_browser);
       browser_update_fs_options (&remote_browser);
-
     }
 
   editor_set_visible (editor_visible);
@@ -2468,7 +2469,7 @@ browser_search_changed (GtkSearchEntry *entry, gpointer data)
     }
 }
 
-void
+static void
 browser_remote_reset_dnd ()
 {
   gtk_drag_source_unset ((GtkWidget *) remote_browser.view);
@@ -2599,6 +2600,12 @@ browser_init (struct browser *browser)
 
   browser->selection_active = TRUE;
 
+  gtk_drag_dest_set ((GtkWidget *) browser->up_button,
+		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
+		     TARGET_ENTRIES_UP_BUTTON_DST,
+		     G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST),
+		     GDK_ACTION_COPY | GDK_ACTION_MOVE);
+
   browser->reload_item_in_editor = TRUE;
   notifier_init (&browser->notifier, browser);
 }
@@ -2713,18 +2720,13 @@ browser_local_init (struct browser *browser, GtkBuilder *builder)
   g_signal_connect (browser->popover_transfer_button, "clicked",
 		    G_CALLBACK (elektroid_add_upload_tasks), NULL);
 
-  gtk_drag_source_set ((GtkWidget *) local_browser.view,
+  gtk_drag_source_set ((GtkWidget *) browser->view,
 		       GDK_BUTTON1_MASK, TARGET_ENTRIES_LOCAL_SRC,
 		       G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_SRC),
 		       GDK_ACTION_COPY | GDK_ACTION_MOVE);
-  gtk_drag_dest_set ((GtkWidget *) local_browser.view,
+  gtk_drag_dest_set ((GtkWidget *) browser->view,
 		     GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_LOCAL_DST,
 		     G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_DST),
-		     GDK_ACTION_COPY | GDK_ACTION_MOVE);
-  gtk_drag_dest_set ((GtkWidget *) local_browser.up_button,
-		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
-		     TARGET_ENTRIES_UP_BUTTON_DST,
-		     G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST),
 		     GDK_ACTION_COPY | GDK_ACTION_MOVE);
 
   browser_load_preferences_dir (browser);
@@ -2862,12 +2864,6 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder)
 
   g_signal_connect (browser->popover_transfer_button, "clicked",
 		    G_CALLBACK (elektroid_add_download_tasks), NULL);
-
-  gtk_drag_dest_set ((GtkWidget *) remote_browser.up_button,
-		     GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
-		     TARGET_ENTRIES_UP_BUTTON_DST,
-		     G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST),
-		     GDK_ACTION_COPY | GDK_ACTION_MOVE);
 
   browser_init (browser);
 }
