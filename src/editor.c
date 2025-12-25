@@ -863,17 +863,13 @@ editor_draw_grid (cairo_t *cr, guint height, guint start, double x_ratio)
   gint grid_length;
   gdouble value, grid_inc;
   struct sample_info *sample_info = audio.sample.info;
+  gint subdivisions = preferences_get_int (PREF_KEY_SUBDIVISIONS);
 
-  grid_length = sample_info->beats *
-    preferences_get_int (PREF_KEY_SUBDIVISIONS);
+  grid_length = sample_info->beats * subdivisions;
 
   if (grid_length)
     {
       editor_set_text_color (&color);
-      color.alpha = 0.25;
-
-      gdk_cairo_set_source_rgba (cr, &color);
-
 
       grid_inc = sample_info->frames / (gdouble) grid_length;
 
@@ -881,6 +877,9 @@ editor_draw_grid (cairo_t *cr, guint height, guint start, double x_ratio)
 
       for (gint i = 1; i < grid_length; i++)
 	{
+	  color.alpha = i % subdivisions == 0 ? 0.5 : 0.15;
+	  gdk_cairo_set_source_rgba (cr, &color);
+
 	  value = ((gint) (((i * grid_inc) - start) / x_ratio)) - .5;
 	  cairo_move_to (cr, value, 0);
 	  cairo_line_to (cr, value, height - 1);
