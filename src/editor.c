@@ -865,7 +865,7 @@ editor_draw_grid (cairo_t *cr, guint height, guint start, double x_ratio)
   struct sample_info *sample_info = audio.sample.info;
 
   grid_length = sample_info->beats *
-    preferences_get_boolean (PREF_KEY_SUBDIVISIONS);
+    preferences_get_int (PREF_KEY_SUBDIVISIONS);
 
   if (grid_length)
     {
@@ -1337,8 +1337,8 @@ editor_set_volume_callback (gdouble volume)
 static void
 editor_subdivisions_changed (GtkSpinButton *object, gpointer data)
 {
-  preferences_set_boolean (PREF_KEY_SUBDIVISIONS,
-			   gtk_spin_button_get_value (object));
+  preferences_set_int (PREF_KEY_SUBDIVISIONS,
+		       gtk_spin_button_get_value (object));
   gtk_widget_queue_draw (waveform);
 }
 
