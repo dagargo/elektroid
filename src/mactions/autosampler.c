@@ -76,7 +76,7 @@ autosampler_runner (gpointer user_data)
   struct autosampler_data *data = user_data;
   const gchar *note;
   gint s, total, i, up, down;
-  guint32 start, length;
+  guint32 start, duration, trail_length;
   GValue value = G_VALUE_INIT;
   gdouble fract;
   gchar filename[LABEL_MAX], *path;
@@ -155,10 +155,24 @@ autosampler_runner (gpointer user_data)
       sample_info->tags = NULL;
 
       g_mutex_lock (&audio.control.controllable.mutex);
-      //Cut off the frames after the requested time.
-      start = (data->press + data->release) * audio.rate;
-      length = sample_info->frames - start;
-      audio_delete_range (&audio.sample, start, length);
+
+      audio_normalize (&audio.sample, 0, sample_info->frames);
+
+      duration = (data->press + data->release) * audio.rate;
+      start = audio_detect_start (&audio.sample);
+
+      if (sample_info->frames - start >= duration)
+	{
+	  audio_delete_range (&audio.sample, 0, start);
+	  trail_length = sample_info->frames - duration;
+	  audio_delete_range (&audio.sample, duration, trail_length);
+	}
+      else
+	{
+	  debug_print (1,
+		       "Bad start detection due to signal being too weak. Skipping trimming sample...");
+	}
+
       g_mutex_unlock (&audio.control.controllable.mutex);
 
       //We add the note number to ensure lexicographical order.

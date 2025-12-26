@@ -634,7 +634,7 @@ audio_get_prev_zero_crossing (struct idata *sample, guint32 frame,
   return frame;
 }
 
-static guint32
+guint32
 audio_detect_start (struct idata *sample)
 {
   guint32 start_frame = 0;
@@ -808,7 +808,6 @@ audio_normalize (struct idata *sample, guint32 start, guint32 length)
 void
 audio_finish_recording ()
 {
-  guint32 start;
   struct sample_info *sample_info;
 
   g_mutex_lock (&audio.control.controllable.mutex);
@@ -823,10 +822,6 @@ audio_finish_recording ()
 
       debug_print (1, "Finishing recording (%d frames read)...",
 		   sample_info->frames);
-
-      audio_normalize (&audio.sample, 0, sample_info->frames);
-      start = audio_detect_start (&audio.sample);
-      audio_delete_range (&audio.sample, 0, start);
     }
   else
     {

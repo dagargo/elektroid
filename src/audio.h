@@ -145,6 +145,8 @@ guint32 audio_get_prev_zero_crossing (struct idata *sample, guint32 frame,
 
 void audio_delete_range (struct idata *sample, guint32 start, guint32 length);
 
+guint32 audio_detect_start (struct idata *sample);
+
 void audio_normalize (struct idata *sample, guint32 start, guint32 length);
 
 const gchar *audio_name ();
