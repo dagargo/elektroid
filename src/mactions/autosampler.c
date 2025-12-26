@@ -35,6 +35,7 @@ static struct guirecorder guirecorder;
 
 static GtkWindow *window;
 static GtkEntry *name_entry;
+static GtkWidget *normalize_switch;
 static GtkWidget *channel_spin;
 static GtkWidget *start_combo;
 static GtkWidget *end_combo;
@@ -51,6 +52,7 @@ struct autosampler_data
 {
   const gchar *name;
   guint channel_mask;
+  gboolean normalize;
   gint channel;
   gint start;
   gint end;
@@ -156,7 +158,10 @@ autosampler_runner (gpointer user_data)
 
       g_mutex_lock (&audio.control.controllable.mutex);
 
-      audio_normalize (&audio.sample, 0, sample_info->frames);
+      if (data->normalize)
+	{
+	  audio_normalize (&audio.sample, 0, sample_info->frames);
+	}
 
       duration = (data->press + data->release) * audio.rate;
       start = audio_detect_start (&audio.sample);
@@ -294,6 +299,9 @@ autosampler_start (GtkWidget *object, gpointer data)
   autosampler_data->channel_mask =
     guirecorder_get_channel_mask (&guirecorder);
   autosampler_data->name = gtk_entry_buffer_get_text (buf);
+  autosampler_data->normalize =
+    gtk_switch_get_active (GTK_SWITCH (normalize_switch));
+
   autosampler_data->channel =
     gtk_spin_button_get_value (GTK_SPIN_BUTTON (channel_spin));
   autosampler_data->velocity =
@@ -349,6 +357,9 @@ autosampler_init (GtkBuilder *builder)
   guirecorder.monitor_levelbar_r =
     GTK_LEVEL_BAR (gtk_builder_get_object
 		   (builder, "autosampler_window_monitor_levelbar_r"));
+  normalize_switch =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "autosampler_window_normalize_switch"));
 
   channel_spin =
     GTK_WIDGET (gtk_builder_get_object

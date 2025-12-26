@@ -888,7 +888,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                     <property name="label-xalign">0</property>
                     <property name="shadow-type">in</property>
                     <child>
-                      <!-- n-columns=2 n-rows=3 -->
+                      <!-- n-columns=2 n-rows=4 -->
                       <object class="GtkGrid">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
@@ -1004,6 +1004,31 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                           <packing>
                             <property name="left-attach">1</property>
                             <property name="top-attach">2</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="halign">start</property>
+                            <property name="label" translatable="yes" comments="Input audio monitor">Normalize</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">0</property>
+                            <property name="top-attach">3</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSwitch" id="autosampler_window_normalize_switch">
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="halign">start</property>
+                            <property name="valign">center</property>
+                            <property name="active">True</property>
+                          </object>
+                          <packing>
+                            <property name="left-attach">1</property>
+                            <property name="top-attach">3</property>
                           </packing>
                         </child>
                       </object>
