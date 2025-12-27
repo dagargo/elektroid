@@ -9,6 +9,7 @@ src/mactions/microbrute.c
 src/mactions/microfreak.c
 src/progress_window.c
 src/guirecorder.c
+src/connectors/elektron.c
 src/connectors/sds.c
 src/connectors/default.c
 src/connectors/system.c

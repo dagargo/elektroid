@@ -12,6 +12,7 @@ else
   res_DATA += elektroid.ui elektroid.css
   svgicon_DATA = io.github.dagargo.Elektroid.svg \
                  io.github.dagargo.Elektroid-symbolic.svg \
+                 elektroid-chip-symbolic.svg \
                  elektroid-file-symbolic.svg \
                  elektroid-folder-symbolic.svg \
                  elektroid-keys-symbolic.svg \

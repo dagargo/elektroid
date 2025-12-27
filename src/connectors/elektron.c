@@ -18,6 +18,7 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <glib/gi18n.h>
 #include <stdio.h>
 #include <math.h>
 #include <zlib.h>
@@ -33,6 +34,8 @@
 #define DEV_TAG_FILESYSTEMS "filesystems"
 #define DEV_TAG_STORAGE "storage"
 
+#define RAM_OP_DEF_DIR "/incoming"
+
 static const gchar *FS_TYPE_NAMES[] = { "+Drive", "RAM", NULL };
 
 static const gchar *FS_RAW_ANY_EXTS[] = { "raw", NULL };
@@ -47,6 +50,7 @@ static const gchar *FS_DATA_ANY_EXTS[] = { "data", NULL };
 #define FS_DATA_PST_PREFIX "/presets"
 #define FS_SAMPLES_START_POS 5
 #define FS_DATA_START_POS 18
+#define FS_RAM_START_POS 9
 #define FS_SAMPLES_SIZE_POS_W 21
 #define FS_SAMPLES_LAST_FRAME_POS_W 33
 #define FS_SAMPLES_PAD_RES 22
@@ -56,6 +60,13 @@ static const gchar *FS_DATA_ANY_EXTS[] = { "data", NULL };
 #define ELEKTRON_SAMPLE_INFO_PAD_I32_LEN 10
 #define ELEKTRON_LOOP_TYPE_FWD 0
 #define ELEKTRON_LOOP_TYPE_NO 0x7f
+
+#define PROJECT_SLOTS 128
+#define SOUND_SLOTS 256
+#define RAM_SLOTS 128
+
+#define AH_FX_SLOTS 512
+#define AH_SLOTS 128
 
 struct elektron_sample_header
 {
@@ -76,7 +87,8 @@ enum elektron_iterator_mode
   ITER_MODE_SAMPLE,
   ITER_MODE_RAW,
   ITER_MODE_DATA,
-  ITER_MODE_DATA_SND
+  ITER_MODE_DATA_SND,
+  ITER_MODE_RAM
 };
 
 struct elektron_iterator_data
@@ -159,7 +171,7 @@ static const guint8 FS_SAMPLE_CREATE_DIR_REQUEST[] = { 0x11 };
 static const guint8 FS_SAMPLE_DELETE_DIR_REQUEST[] = { 0x12 };
 static const guint8 FS_SAMPLE_DELETE_FILE_REQUEST[] = { 0x20 };
 static const guint8 FS_SAMPLE_RENAME_FILE_REQUEST[] = { 0x21 };
-static const guint8 FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST[] = { 0x22 };
+static const guint8 FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST[] = { 0x22 };	//Returns size and 4 unknown bytes
 static const guint8 FS_SAMPLE_GET_FILE_INFO_FROM_HASH_AND_SIZE_REQUEST[] =
   { 0x23, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 FS_SAMPLE_OPEN_FILE_READER_REQUEST[] = { 0x30 };
@@ -200,6 +212,15 @@ static const guint8 DATA_MOVE_REQUEST[] = { 0x5a };
 static const guint8 DATA_COPY_REQUEST[] = { 0x5b };
 static const guint8 DATA_CLEAR_REQUEST[] = { 0x5c };
 static const guint8 DATA_SWAP_REQUEST[] = { 0x5d };
+
+static const guint8 DIGITAKT_RAM_READ_DIR_REQUEST[] =
+  { 0x17, 0xff, 0xff, 0xff, 0xff };
+static const guint8 DIGITAKT_RAM_LOAD_SLOT_REQUEST[] = { 0x19, 0 };
+static const guint8 DIGITAKT_RAM_CLEAR_SLOT_REQUEST[] =
+  { 0x18, 0, 0, 1, 0, 0 };
+
+// static const guint8 DIGITAKT_GET_FILE_SIZE_HASH_FROM_PATH_REQUEST[] = { 0x28 }; //Unused. Returns size and hash. Similar to FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST.
+
 static const guint8 OS_UPGRADE_START_REQUEST[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
 static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
@@ -347,8 +368,18 @@ elektron_init_iterator (struct backend *backend, struct item_iterator *iter,
     g_malloc (sizeof (struct elektron_iterator_data));
 
   data->msg = msg;
-  data->pos = (mode == ITER_MODE_DATA || mode == ITER_MODE_DATA_SND) ?
-    FS_DATA_START_POS : FS_SAMPLES_START_POS;
+  switch (mode)
+    {
+    case ITER_MODE_DATA:
+    case ITER_MODE_DATA_SND:
+      data->pos = FS_DATA_START_POS;
+      break;
+    case ITER_MODE_RAM:
+      data->pos = FS_RAM_START_POS;
+      break;
+    default:
+      data->pos = FS_SAMPLES_START_POS;
+    }
   data->mode = mode;
   data->max_slots = max_slots;
   data->backend = backend;
@@ -1997,7 +2028,7 @@ elektron_read_data_dir_prj (struct backend *backend,
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_PRJ_PREFIX, ITER_MODE_DATA,
-					128);
+					PROJECT_SLOTS);
 }
 
 static gint
@@ -2007,7 +2038,7 @@ elektron_read_data_dir_snd (struct backend *backend,
 {
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_SND_PREFIX,
-					ITER_MODE_DATA_SND, 256);
+					ITER_MODE_DATA_SND, SOUND_SLOTS);
 }
 
 static gint
@@ -2016,7 +2047,7 @@ elektron_read_data_dir_pst (struct backend *backend,
 			    const gchar **extensions)
 {
   struct elektron_data *data = backend->data;
-  gint32 slots = data->device_desc.id == ELEKTRON_AH_FX_ID ? 512 : 128;	//Analog Heat +FX has 512 presets
+  gint32 slots = data->device_desc.id == ELEKTRON_AH_FX_ID ? AH_FX_SLOTS : AH_SLOTS;	//Analog Heat +FX has 512 presets
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_PST_PREFIX,
 					ITER_MODE_DATA, slots);
@@ -2985,6 +3016,248 @@ elektron_sample_save (const gchar *path, struct idata *sample,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
 }
 
+static gint
+elektron_ram_next_entry (struct item_iterator *iter)
+{
+  guint16 id;
+  guint8 used;
+  guint32 hash, size;
+  struct elektron_iterator_data *data = iter->data;
+
+  if (iter->item.id + 1 >= data->max_slots)
+    {
+      return -ENOENT;
+    }
+
+  memcpy (&hash, &data->msg->data[data->pos], sizeof (guint32));
+  hash = GUINT32_FROM_BE (hash);
+  data->pos += sizeof (guint32);
+  memcpy (&size, &data->msg->data[data->pos], sizeof (guint32));
+  size = GUINT32_FROM_BE (size);
+  data->pos += sizeof (guint32);
+  memcpy (&id, &data->msg->data[data->pos], sizeof (guint16));
+  id = GUINT16_FROM_BE (id);
+  data->pos += sizeof (guint16);
+  used = data->msg->data[data->pos];
+  data->pos += sizeof (guint8);
+
+  iter->item.id = id;
+  iter->item.type = ITEM_TYPE_FILE;
+  iter->item.size = size;
+  item_set_object_info (&iter->item, "%s", used ? "used" : "");
+  if (size == 0)
+    {
+      elektron_item_set_name (&iter->item, "");
+    }
+  else
+    {
+      gchar *path_cp1252;
+      path_cp1252 = elektron_get_sample_path_from_hash_size (data->backend,
+							     hash, size);
+      elektron_item_set_name (&iter->item, path_cp1252);
+    }
+
+  return 0;
+}
+
+static gint
+elektron_digitakt_ram_read_dir (struct backend *backend,
+				struct item_iterator *iter, const gchar *dir,
+				const gchar **extensions)
+{
+  gint err;
+  GByteArray *tx_msg, *rx_msg;
+
+  if (strcmp (dir, "/"))
+    {
+      return -ENOTDIR;
+    }
+
+  tx_msg = elektron_new_msg (DIGITAKT_RAM_READ_DIR_REQUEST,
+			     sizeof (DIGITAKT_RAM_READ_DIR_REQUEST));
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+
+  err = elektron_init_iterator (backend, iter, dir, rx_msg,
+				elektron_ram_next_entry, ITER_MODE_RAM,
+				RAM_SLOTS);
+  // Item 0 is always OFF and is not included in the message
+  iter->item.id = 1;
+  return err;
+}
+
+static gint
+elektron_digitakt_ram_clear_sample (struct backend *backend,
+				    const gchar *path)
+{
+  gint err;
+  guint id;
+  GByteArray *tx_msg, *rx_msg;
+
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  tx_msg = elektron_new_msg (DIGITAKT_RAM_CLEAR_SLOT_REQUEST,
+			     sizeof (DIGITAKT_RAM_CLEAR_SLOT_REQUEST));
+  tx_msg->data[9] = id;
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+
+  usleep (BE_REST_TIME_US);
+
+  return 0;
+}
+
+static gint
+elektron_digitakt_ram_download_sample (struct backend *backend,
+				       const gchar *path,
+				       struct idata *sample,
+				       struct task_control *control)
+{
+  gint err;
+  guint id;
+  struct item_iterator iter;
+  gchar sample_path[ITEM_NAME_MAX];
+
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  err = elektron_digitakt_ram_read_dir (backend, &iter, "/", NULL);
+  if (err)
+    {
+      return err;
+    }
+
+  while (!item_iterator_next (&iter))
+    {
+      if (id == iter.item.id)
+	{
+	  strncpy (sample_path, iter.item.name, ITEM_NAME_MAX);
+	  break;
+	}
+    }
+
+  item_iterator_free (&iter);
+
+  usleep (BE_REST_TIME_US);
+
+  control->parts = 1;
+  control->part = 0;
+
+  return elektron_download_sample_part (backend, sample_path, sample,
+					control);
+}
+
+static gchar *
+elektron_digitakt_ram_get_download_path (struct backend *backend,
+					 const struct fs_operations *ops,
+					 const gchar *dst_dir,
+					 const gchar *src_path,
+					 struct idata *idata)
+{
+  const gchar *ext = GET_SAVE_EXT (ops, backend);
+  gchar *name = g_path_get_basename (idata->name);
+  GString *name_with_ext = g_string_new (NULL);
+  g_string_append_printf (name_with_ext, "%s.%s", name, ext);
+  gchar *path = path_chain (PATH_SYSTEM, dst_dir, name_with_ext->str);
+  g_string_free (name_with_ext, TRUE);
+  g_free (name);
+  return path;
+}
+
+static gint
+elektron_digitakt_ram_set_sample (struct backend *backend,
+				  const gchar *path, guint8 ram_slot,
+				  guint8 track, struct task_control *control)
+{
+  GByteArray *tx_msg, *rx_msg;
+
+  tx_msg = elektron_new_msg_path (DIGITAKT_RAM_LOAD_SLOT_REQUEST,
+				  sizeof
+				  (DIGITAKT_RAM_LOAD_SLOT_REQUEST), path);
+  g_byte_array_append (tx_msg, (guint8 *) & track, 1);	// 0xff ignores the track and loads to RAM only.
+  g_byte_array_append (tx_msg, (guint8 *) "\x00", 1);
+  g_byte_array_append (tx_msg, (guint8 *) & ram_slot, 1);
+  g_byte_array_append (tx_msg, (guint8 *) "\x01", 1);	// Unknown. Required value.
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
+
+  // The response has 5 bytes.
+  // First byte is 0x01. Last byte looks like a sequence increased in every response.
+
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+
+  free_msg (rx_msg);
+
+  // It takes a while for the result to be available
+  usleep (500000);
+  task_control_set_progress (control, 0.5);
+  usleep (500000);
+  task_control_set_progress (control, 1.0);
+
+  return 0;
+}
+
+static gint
+elektron_digitakt_ram_track_upload (struct backend *backend, guint8 ram_slot,
+				    guint8 track, struct idata *sample,
+				    struct task_control *control)
+{
+  gint err;
+  gchar *upload_path;
+
+  control->parts = 2;
+  control->part = 0;
+
+  upload_path = path_chain (PATH_SYSTEM, RAM_OP_DEF_DIR, sample->name);
+  err = elektron_upload_sample_part (backend, upload_path, sample, control);
+  if (err)
+    {
+      goto end;
+    }
+
+  control->part++;
+
+  err = elektron_digitakt_ram_set_sample (backend, upload_path, ram_slot,
+					  track, control);
+
+end:
+  g_free (upload_path);
+  return err;
+}
+
+static gint
+elektron_digitakt_ram_upload_sample (struct backend *backend,
+				     const gchar *path, struct idata *sample,
+				     struct task_control *control)
+{
+  gint err;
+  guint id;
+
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  return elektron_digitakt_ram_track_upload (backend, id, 0xff, sample,
+					     control);
+}
+
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .id = FS_SAMPLES,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
@@ -3198,11 +3471,34 @@ static const struct fs_operations FS_DATA_TAKT_II_PST_OPERATIONS = {
   .get_download_path = elektron_get_download_path
 };
 
+static const struct fs_operations FS_DIGITAKT_RAM_OPERATIONS = {
+  .id = FS_DIGITAKT_RAM,
+  .options =
+    FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
+    FS_OPTION_SHOW_INFO_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .name = "ram",
+  .gui_name = "RAM",
+  .gui_icon = FS_ICON_CHIP,
+  .file_icon = FS_ICON_WAVE,
+  .readdir = elektron_digitakt_ram_read_dir,
+  .print_item = common_print_item,
+  .delete = elektron_digitakt_ram_clear_sample,
+  .download = elektron_digitakt_ram_download_sample,
+  .upload = elektron_digitakt_ram_upload_sample,
+  .load = elektron_sample_load,
+  .save = elektron_sample_save,
+  .get_exts = sample_get_sample_extensions,
+  .get_slot = elektron_get_id_as_slot,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = elektron_digitakt_ram_get_download_path
+};
+
 static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
   &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
   &FS_DATA_PST_OPERATIONS, &FS_SAMPLES_STEREO_OPERATIONS,
-  &FS_DATA_TAKT_II_PST_OPERATIONS, NULL
+  &FS_DATA_TAKT_II_PST_OPERATIONS, &FS_DIGITAKT_RAM_OPERATIONS, NULL
 };
 
 gint
@@ -3449,7 +3745,6 @@ elektron_ping (struct backend *backend)
       backend->data = NULL;
       g_free (data);
     }
-
 
   return rx_msg;
 }
