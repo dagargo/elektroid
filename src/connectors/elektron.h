@@ -35,15 +35,17 @@
 
 enum elektron_fs
 {
-  FS_SAMPLES = 0x1,
-  FS_RAW_ALL = 0x2,
-  FS_RAW_PRESETS = 0x4,
-  FS_DATA_ANY = 0x8,
-  FS_DATA_PRJ = 0x10,
-  FS_DATA_SND = 0x20,
-  FS_DATA_PST = 0x40,
-  FS_SAMPLES_STEREO = 0x80,
-  FS_DATA_TAKT_II_PST = 0x100
+  FS_SAMPLES = 1,
+  FS_RAW_ALL = (1 << 1),
+  FS_RAW_PRESETS = (1 << 2),
+  FS_DATA_ANY = (1 << 3),
+  FS_DATA_PRJ = (1 << 4),
+  FS_DATA_SND = (1 << 5),
+  FS_DATA_PST = (1 << 6),
+  FS_SAMPLES_STEREO = (1 << 7),
+  FS_DATA_TAKT_II_PST = (1 << 8),
+  FS_DIGITAKT_RAM = (1 << 9),
+  FS_DIGITAKT_TRACK = (1 << 10),
 };
 
 extern const struct connector CONNECTOR_ELEKTRON;

@@ -67,7 +67,9 @@
       ],
       "sound": [
         "dtsnd"
-      ]
+      ],
+      "ram": null,
+      "track": null
     },
     "storage": [
       "+Drive",
