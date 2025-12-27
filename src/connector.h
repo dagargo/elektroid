@@ -23,13 +23,14 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
+#define FS_ICON_CHIP "elektroid-chip-symbolic"
 #define FS_ICON_FILE "elektroid-file-symbolic"
 #define FS_ICON_KEYS "elektroid-keys-symbolic"
-#define FS_ICON_SETTINGS "elektroid-settings-symbolic"
-#define FS_ICON_SLICE "elektroid-slice-symbolic"
 #define FS_ICON_PRESET "elektroid-preset-symbolic"
 #define FS_ICON_PROJECT "elektroid-project-symbolic"
 #define FS_ICON_SEQUENCE "elektroid-sequence-symbolic"
+#define FS_ICON_SETTINGS "elektroid-settings-symbolic"
+#define FS_ICON_SLICE "elektroid-slice-symbolic"
 #define FS_ICON_WAVE "elektroid-wave-symbolic"
 #define FS_ICON_WAVETABLE "elektroid-wavetable-symbolic"
 
