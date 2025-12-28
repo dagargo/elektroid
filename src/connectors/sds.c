@@ -937,7 +937,7 @@ sds_next_sample_dentry (struct item_iterator *iter)
     {
       gchar *name = sds_get_sample_name (iterator_data->backend,
 					 iterator_data->next);
-      snprintf (iter->item.name, LABEL_MAX, "%s", name ? name : "");
+      item_set_name (&iter->item, "%s", name ? name : "");
       g_free (name);
     }
   else

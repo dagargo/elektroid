@@ -135,7 +135,7 @@ efactor_next_dentry (struct item_iterator *iter)
 
   iter->item.id = data->next + backend_data->min;
   preset_name = data->backend_data->lines[data->next * 7 + 6];
-  snprintf (iter->item.name, LABEL_MAX, "%s", preset_name);
+  item_set_name (&iter->item, "%s", preset_name);
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = -1;
   data->next++;

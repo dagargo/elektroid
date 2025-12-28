@@ -679,7 +679,7 @@ volca_sample_2_pattern_next_dentry (struct item_iterator *iter)
       return err;
     }
 
-  snprintf (iter->item.name, LABEL_MAX, "%s", pattern.name);
+  item_set_name (&iter->item, "%s", pattern.name);
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = pattern.content->len;

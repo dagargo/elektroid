@@ -40,7 +40,7 @@ default_next_dentry (struct item_iterator *iter)
     }
 
   iter->item.id = *data;
-  snprintf (iter->item.name, LABEL_MAX, "%d", *data);
+  item_set_name (&iter->item, "%d", *data);
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = -1;
   (*data)++;

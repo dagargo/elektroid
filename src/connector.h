@@ -51,10 +51,12 @@ enum item_type
 //However, the GUI must list all the items always as the slot destination is always needed and the `ls` command will list them as well.
 //If the size column is not used at all, do not use FS_OPTION_SHOW_SIZE_COLUMN.
 
+#define ITEM_NAME_MAX PATH_MAX
+
 struct item
 {
   enum item_type type;
-  gchar name[LABEL_MAX];
+  gchar name[ITEM_NAME_MAX];
   gint32 id;			// Used only by slot filesystems
   gint64 size;
   //Optionally filled up structs by filesystems.
@@ -216,6 +218,6 @@ gboolean item_iterator_is_dir_or_matches_exts (struct item_iterator
  */
 gchar *item_get_filename (struct item *item, guint32 options);
 
-void item_set_name (struct item *item, const gchar * name);
+void item_set_name (struct item *item, const gchar * format, ...);
 
 #endif

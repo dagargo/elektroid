@@ -266,7 +266,7 @@ static inline void
 elektron_item_set_name (struct item *item, const gchar *name)
 {
   gchar *aux = g_convert (name, -1, "UTF8", "CP1252", NULL, NULL, NULL);
-  item_set_name (item, aux);
+  item_set_name (item, "%s", aux);
   g_free (aux);
 }
 

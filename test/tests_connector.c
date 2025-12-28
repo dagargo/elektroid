@@ -18,7 +18,7 @@ test_item_iterator_is_dir_or_matches_exts ()
   CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_exts (&iter, exts0), TRUE);
 
   iter.item.type = ITEM_TYPE_FILE;
-  snprintf (iter.item.name, LABEL_MAX, "%s", "file.ext1");
+  item_set_name (&iter.item, "%s", "file.ext1");
   CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_exts (&iter, exts1), TRUE);
   CU_ASSERT_EQUAL (item_iterator_is_dir_or_matches_exts (&iter, exts2),
 		   FALSE);

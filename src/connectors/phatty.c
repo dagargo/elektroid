@@ -199,14 +199,14 @@ phatty_next_root_dentry (struct item_iterator *iter)
   guint *next = iter->data;
   if (*next == 0)
     {
-      snprintf (iter->item.name, LABEL_MAX, "%s", "presets");
+      item_set_name (&iter->item, "%s", "presets");
       iter->item.id = 0x1000;
       iter->item.type = ITEM_TYPE_DIR;
       iter->item.size = -1;
     }
   else if (*next == 1)
     {
-      snprintf (iter->item.name, LABEL_MAX, "%s", PHATTY_PANEL);
+      item_set_name (&iter->item, "%s", PHATTY_PANEL);
       iter->item.id = PHATTY_PANEL_ID;
       iter->item.type = ITEM_TYPE_FILE;
       iter->item.size = -1;
@@ -241,7 +241,7 @@ phatty_next_preset_dentry (struct item_iterator *iter)
     }
 
   phatty_get_preset_name (rx_msg->data, preset_name);
-  snprintf (iter->item.name, LABEL_MAX, "%s", preset_name);
+  item_set_name (&iter->item, "%s", preset_name);
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = PHATTY_PROGRAM_SIZE;

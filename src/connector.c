@@ -72,7 +72,10 @@ item_get_filename (struct item *item, guint32 fs_options)
 }
 
 void
-item_set_name (struct item *item, const gchar *name)
+item_set_name (struct item *item, const gchar *format, ...)
 {
-  snprintf (item->name, LABEL_MAX, "%s", name);
+  va_list args;
+  va_start (args, format);
+  vsnprintf (item->name, ITEM_NAME_MAX, format, args);
+  va_end (args);
 }

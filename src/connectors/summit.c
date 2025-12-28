@@ -208,7 +208,7 @@ summit_patch_next_dentry_root (struct item_iterator *iter)
   if (*next < 4)
     {
       iter->item.id = 0x10000 + *next;	//Unique id
-      snprintf (iter->item.name, LABEL_MAX, "%c", 0x41 + iter->item.id);
+      item_set_name (&iter->item, "%c", 0x41 + iter->item.id);
       iter->item.type = ITEM_TYPE_DIR;
       iter->item.size = -1;
       iter->item.object_info[0] = 0;

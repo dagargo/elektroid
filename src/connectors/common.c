@@ -173,7 +173,7 @@ common_simple_next_dentry (struct item_iterator *iter)
       return -ENOENT;
     }
 
-  snprintf (iter->item.name, LABEL_MAX, "%.*d", digits, data->next);
+  item_set_name (&iter->item, "%.*d", digits, data->next);
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = -1;

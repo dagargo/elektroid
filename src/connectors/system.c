@@ -154,7 +154,7 @@ system_next_dentry (struct item_iterator *iter, gboolean sample_info)
 					   &error);
       if (error == NULL)
 	{
-	  snprintf (iter->item.name, LABEL_MAX, "%s", name);
+	  item_set_name (&iter->item, "%s", name);
 	  iter->item.type = type;
 	  iter->item.size = g_file_info_get_size (info);
 	  iter->item.id = -1;
@@ -217,7 +217,7 @@ windows_drive_next_dentry (struct item_iterator *iter)
   GFile *gfile = g_mount_get_root (gmount);
   gchar *name = g_file_get_path (gfile);
   g_object_unref (gfile);
-  snprintf (iter->item.name, LABEL_MAX, "%s", name);
+  item_set_name (&iter->item, "%s", name);
   g_free (name);
   iter->item.type = ITEM_TYPE_DIR;
   iter->item.size = -1;

@@ -257,7 +257,7 @@ microfreak_next_preset_dentry (struct item_iterator *iter)
     }
 
   microfreak_preset_get_name (preset_name, rx_msg);
-  snprintf (iter->item.name, LABEL_MAX, "%s", preset_name);
+  item_set_name (&iter->item, "%s", preset_name);
 
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
@@ -796,7 +796,7 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
 
   microfreak_midi_msg_to_8bit_msg (MICROFREAK_GET_MSG_PAYLOAD (rx_msg),
 				   (guint8 *) & header);
-  snprintf (iter->item.name, LABEL_MAX, "%s", header.name);
+  item_set_name (&iter->item, "%s", header.name);
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = GINT32_FROM_LE (header.size);
@@ -1321,7 +1321,7 @@ microfreak_next_wavetable_dentry (struct item_iterator *iter)
 
   microfreak_midi_msg_to_8bit_msg (MICROFREAK_GET_MSG_PAYLOAD (rx_msg),
 				   (guint8 *) & header);
-  snprintf (iter->item.name, LABEL_MAX, "%s", header.name);
+  item_set_name (&iter->item, "%s", header.name);
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = header.status0 == MICROFREAK_WAVETABLE_EMPTY ?
