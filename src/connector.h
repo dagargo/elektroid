@@ -220,4 +220,6 @@ gchar *item_get_filename (struct item *item, guint32 options);
 
 void item_set_name (struct item *item, const gchar * format, ...);
 
+void item_set_object_info (struct item *item, const gchar * format, ...);
+
 #endif

@@ -1900,7 +1900,7 @@ elektron_next_data_entry (struct item_iterator *iter)
 		}
 
 	      s = g_string_free (info, FALSE);
-	      snprintf (iter->item.object_info, LABEL_MAX, "%s", s);
+	      item_set_object_info (&iter->item, "%s", s);
 	      g_free (s);
 	      g_slist_free_full (tags, g_free);
 

@@ -185,7 +185,7 @@ summit_patch_next_dentry (struct item_iterator *iter)
   if (data->fs == FS_SUMMIT_SINGLE_PATCH)
     {
       const gchar *category = summit_get_category_name (rx_msg);
-      snprintf (iter->item.object_info, LABEL_MAX, "%s", category);
+      item_set_object_info (&iter->item, "%s", category);
     }
   free_msg (rx_msg);
 

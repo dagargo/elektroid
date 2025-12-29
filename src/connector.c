@@ -79,3 +79,12 @@ item_set_name (struct item *item, const gchar *format, ...)
   vsnprintf (item->name, ITEM_NAME_MAX, format, args);
   va_end (args);
 }
+
+void
+item_set_object_info (struct item *item, const gchar *format, ...)
+{
+  va_list args;
+  va_start (args, format);
+  vsnprintf (item->object_info, LABEL_MAX, format, args);
+  va_end (args);
+}
