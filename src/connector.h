@@ -23,7 +23,7 @@
 #ifndef CONNECTOR_H
 #define CONNECTOR_H
 
-#define FS_ICON_GENERIC "elektroid-file-symbolic"
+#define FS_ICON_FILE "elektroid-file-symbolic"
 #define FS_ICON_KEYS "elektroid-keys-symbolic"
 #define FS_ICON_SLICE "elektroid-slice-symbolic"
 #define FS_ICON_SND "elektroid-sound-symbolic"
