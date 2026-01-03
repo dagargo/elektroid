@@ -25,7 +25,6 @@
 
 #define FS_ICON_FILE "elektroid-file-symbolic"
 #define FS_ICON_KEYS "elektroid-keys-symbolic"
-#define FS_ICON_SLICE "elektroid-slice-symbolic"
 #define FS_ICON_SND "elektroid-sound-symbolic"
 #define FS_ICON_PRJ "elektroid-project-symbolic"
 #define FS_ICON_SEQ "elektroid-sequence-symbolic"
