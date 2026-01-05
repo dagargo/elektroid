@@ -15,9 +15,11 @@ else
                  elektroid-file-symbolic.svg \
                  elektroid-folder-symbolic.svg \
                  elektroid-keys-symbolic.svg \
+                 elektroid-preset-symbolic.svg \
                  elektroid-project-symbolic.svg \
                  elektroid-sequence-symbolic.svg \
-                 elektroid-sound-symbolic.svg \
+                 elektroid-settings-symbolic.svg \
+                 elektroid-slice-symbolic.svg \
                  elektroid-wave-symbolic.svg \
                  elektroid-wavetable-symbolic.svg
   microbrute_DATA = microbrute/microbrute.ui

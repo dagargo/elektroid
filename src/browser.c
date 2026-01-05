@@ -1339,7 +1339,7 @@ browser_get_icon (struct browser *browser)
 
   if (browser == &remote_browser)
     {
-      icon = remote_browser.fs_ops->gui_icon;
+      icon = remote_browser.fs_ops->file_icon;
     }
   else
     {
@@ -1347,16 +1347,16 @@ browser_get_icon (struct browser *browser)
 	{
 	  if (remote_browser.fs_ops->upload)
 	    {
-	      icon = remote_browser.fs_ops->gui_icon;
+	      icon = remote_browser.fs_ops->file_icon;
 	    }
 	  else
 	    {
-	      icon = local_browser.fs_ops->gui_icon;
+	      icon = local_browser.fs_ops->file_icon;
 	    }
 	}
       else
 	{
-	  icon = local_browser.fs_ops->gui_icon;
+	  icon = local_browser.fs_ops->file_icon;
 	}
     }
 

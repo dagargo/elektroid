@@ -25,9 +25,11 @@
 
 #define FS_ICON_FILE "elektroid-file-symbolic"
 #define FS_ICON_KEYS "elektroid-keys-symbolic"
-#define FS_ICON_SND "elektroid-sound-symbolic"
-#define FS_ICON_PRJ "elektroid-project-symbolic"
-#define FS_ICON_SEQ "elektroid-sequence-symbolic"
+#define FS_ICON_SETTINGS "elektroid-settings-symbolic"
+#define FS_ICON_SLICE "elektroid-slice-symbolic"
+#define FS_ICON_PRESET "elektroid-preset-symbolic"
+#define FS_ICON_PROJECT "elektroid-project-symbolic"
+#define FS_ICON_SEQUENCE "elektroid-sequence-symbolic"
 #define FS_ICON_WAVE "elektroid-wave-symbolic"
 #define FS_ICON_WAVETABLE "elektroid-wavetable-symbolic"
 
@@ -128,6 +130,7 @@ struct fs_operations
   const gchar *name;		// This needs to be unique among all the filesystems of a given connector. Used to address filesystems. Using spaces is discouraged and hyphen is the suggested replacement.
   const gchar *gui_name;
   const gchar *gui_icon;
+  const gchar *file_icon;
   guint32 max_name_len;
   fs_init_iter_func readdir;	//This function runs on its own thread so it can take as long as needed in order to make calls to item_iterator_next not to wait for IO.
   fs_file_exists file_exists;
