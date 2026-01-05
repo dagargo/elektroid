@@ -84,7 +84,7 @@ test_elektron_configure_device_from_file ()
   elektron_configure_device_from_file (&backend, 12, TEST_DATA_DIR
 				       "/../../res/elektron/devices.json");
 
-  CU_ASSERT_EQUAL (elektron_data->device_desc.fs_descs_len, 5);
+  CU_ASSERT_EQUAL (elektron_data->device_desc.fs_descs_len, 6);
 
   ops = backend_get_fs_operations_by_name (&backend, "sample");
   exts = ops->get_exts (&backend, ops);
@@ -103,6 +103,10 @@ test_elektron_configure_device_from_file ()
   CU_ASSERT_EQUAL (compare_exts (exts, SND), 0);
 
   ops = backend_get_fs_operations_by_name (&backend, "ram");
+  exts = ops->get_exts (&backend, ops);
+  CU_ASSERT_NOT_EQUAL (exts, NULL);	//Several sample extensions
+
+  ops = backend_get_fs_operations_by_name (&backend, "track");
   exts = ops->get_exts (&backend, ops);
   CU_ASSERT_NOT_EQUAL (exts, NULL);	//Several sample extensions
 
