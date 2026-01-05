@@ -31,6 +31,7 @@
 #define FS_ICON_SEQUENCE "elektroid-sequence-symbolic"
 #define FS_ICON_SETTINGS "elektroid-settings-symbolic"
 #define FS_ICON_SLICE "elektroid-slice-symbolic"
+#define FS_ICON_TRACK "elektroid-track-symbolic"
 #define FS_ICON_WAVE "elektroid-wave-symbolic"
 #define FS_ICON_WAVETABLE "elektroid-wavetable-symbolic"
 
@@ -44,7 +45,7 @@ enum item_type
 };
 
 //name must be filled up always. If no name is available, this can be a string representation of the id without padding. See set_item_name_from_id function.
-//In slot mode, id needs to be filled up and will typically be the MIDI preset number.
+//In slot mode, id needs to be filled up. A typical values for this would be the preset number. It can start at 0 or 1 but it is recommended to mimmic the particular device.
 //As the id is used to address items, it is recommended to follow the same user naming convention as the device regardless of its internal meaning or representation.
 //In default mode (not slot mode), id can be used for any or no purpose. It's still possible to use the id as the filename by using the FS_OPTION_ID_AS_FILENAME option.
 //A -1 size (unknown) will show no size in either the GUI or the CLI.
