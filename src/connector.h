@@ -140,7 +140,6 @@ struct fs_operations
   fs_src_dst_func rename;
   fs_src_dst_func move;
   fs_src_dst_func copy;
-  fs_path_func clear;
   fs_src_dst_func swap;
   fs_remote_file_op download;	//Donload a resource from the filesystem to memory.
   fs_remote_file_op upload;	//Upload a resource from memory to the filesystem.

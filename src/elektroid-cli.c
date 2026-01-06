@@ -1156,7 +1156,7 @@ main (int argc, gchar *argv[])
       else if (!strcmp (op, "cl"))
 	{
 	  err = cli_command_path (argc, argv, &optind,
-				  GET_FS_OPS_OFFSET (clear));
+				  GET_FS_OPS_OFFSET (delete));
 	}
       else if (!strcmp (op, "cp"))
 	{

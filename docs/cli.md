@@ -18,7 +18,7 @@ These are the available commands:
 * `rmdir` or `rm` (both behave as `rm -rf`)
 * `mv` (in slot mode, the second path is just the name of the file)
 * `cp`
-* `cl`, clear item
+* `cl`, clear item (same as `rm`)
 * `sw`, swap items
 * `ul` or `upload`
 * `dl` or `download`
