@@ -1893,14 +1893,15 @@ elektron_next_data_entry (struct item_iterator *iter)
 	      while (e)
 		{
 		  gchar *tag = (gchar *) e->data;
-		  const gchar *separator = first ? "" : ", ";
+		  const gchar *separator =
+		    first ? "" : ELEKTROID_TOKEN_SEPARATOR;
 		  g_string_append_printf (info, "%s%s", separator, tag);
 		  first = FALSE;
 		  e = e->next;
 		}
 
 	      s = g_string_free (info, FALSE);
-	      item_set_object_info (&iter->item, "%s", s);
+	      item_set_object_info (&iter->item, "tags=%s", s);
 	      g_free (s);
 	      g_slist_free_full (tags, g_free);
 

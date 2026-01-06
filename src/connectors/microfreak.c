@@ -263,7 +263,7 @@ microfreak_next_preset_dentry (struct item_iterator *iter)
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = -1;
   category = microfreak_get_category_name (rx_msg);
-  item_set_object_info (&iter->item, "%s", category);
+  item_set_object_info (&iter->item, "category=%s", category);
   (data->next)++;
 
 end:
