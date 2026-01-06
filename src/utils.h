@@ -37,6 +37,8 @@
 #define TOPMOST_DIR_UNIX "/"
 #define TOPMOST_DIR_WINDOWS ""
 
+#define IKEY_TOKEN_SEPARATOR "; "
+
 #define KI 1024
 #define MI (KI * KI)
 #define GI (KI * MI)

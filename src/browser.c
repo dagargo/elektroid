@@ -783,7 +783,7 @@ browser_get_tags (const struct sample_info *sample_info)
       return NULL;
     }
 
-  tags = g_strsplit (ikey, "; ", 0);
+  tags = g_strsplit (ikey, IKEY_TOKEN_SEPARATOR, 0);
   tagss = g_string_new (NULL);
   t = tags;
   while (*t)

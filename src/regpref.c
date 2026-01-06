@@ -28,7 +28,7 @@
 #define PREF_MAX_AUDIO_BUF_LENGTH 4096
 #define PREF_MIN_AUDIO_BUF_LENGTH 256
 
-// This uses the same separator as the IKEY in the LIST INFO chunk.
+// This uses the same separator as the IKEY in the LIST INFO chunk (IKEY_TOKEN_SEPARATOR).
 // Alphabetically sorted in the tags window but listed as such in the tags tab of the preferences window.
 #define PREF_DEFAULT_TAGS_STRUCTURES  "fill; loop; one-shot; phrase"
 #define PREF_DEFAULT_TAGS_INSTRUMENTS "bass; brass; clap; cymbal; drums; FX; guitar; hi-hat; keys; kick; mallets; noise; object; organ; pad; percussion; piano; snare; strings; texture; tom; voice/choir; woodwind"

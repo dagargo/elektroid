@@ -790,7 +790,8 @@ tags_to_ikey_format (GHashTable *set)
   tags = g_list_sort (tags, (GCompareFunc) g_strcmp0);
   for (GList * tag = tags; tag != NULL; tag = g_list_next (tag))
     {
-      g_string_append_printf (ikey, "%s%s", first ? "" : "; ",
+      g_string_append_printf (ikey, "%s%s",
+			      first ? "" : IKEY_TOKEN_SEPARATOR,
 			      (gchar *) tag->data);
       first = FALSE;
     }
@@ -805,7 +806,7 @@ ikey_format_to_tags (const gchar *text)
   GHashTable *set = g_hash_table_new (g_str_hash, g_str_equal);
   if (text != NULL)
     {
-      gchar **tags = g_strsplit (text, "; ", 0);
+      gchar **tags = g_strsplit (text, IKEY_TOKEN_SEPARATOR, 0);
       gchar **tag = tags;
       while (*tag)
 	{
