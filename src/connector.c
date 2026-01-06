@@ -85,6 +85,6 @@ item_set_object_info (struct item *item, const gchar *format, ...)
 {
   va_list args;
   va_start (args, format);
-  vsnprintf (item->object_info, LABEL_MAX, format, args);
+  vsnprintf (item->object_info, ITEM_OBJECT_INFO_MAX, format, args);
   va_end (args);
 }

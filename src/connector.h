@@ -53,6 +53,7 @@ enum item_type
 //If the size column is not used at all, do not use FS_OPTION_SHOW_SIZE_COLUMN.
 
 #define ITEM_NAME_MAX PATH_MAX
+#define ITEM_OBJECT_INFO_MAX PATH_MAX
 
 struct item
 {
@@ -63,7 +64,7 @@ struct item
   //Optionally filled up structs by filesystems.
   //Filesystem options must indicate if these are in use with FS_OPTION_SHOW_SAMPLE_COLUMNS and FS_OPTION_SHOW_INFO_COLUMN.
   struct sample_info sample_info;
-  gchar object_info[LABEL_MAX];
+  gchar object_info[ITEM_OBJECT_INFO_MAX];
 };
 
 struct item_iterator;
