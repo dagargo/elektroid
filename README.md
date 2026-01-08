@@ -270,18 +270,32 @@ $ elektroid-cli system:wav-stereo-48k-16b:ul square.wav 0:/home/user/samples
 
 ### Elektron connector
 
-These are the available filesystems for the elektron connector:
+There are 3 different filesystem families depending on the underlying functionalities, each one having several filesystem implementations.
 
-* `sample`
-* `raw`
-* `preset`
-* `data`
-* `project`
-* `sound`
+* Raw and sample
+  * `raw`
+  * `preset-raw`
+  * `sample`
+  * `sample-stereo`
 
-Raw and data are intended to interface directly with the filesystems provided by the devices so the downloaded or uploaded files are **not** compatible with Elektron Transfer formats. Preset is a particular instance of raw and so are project and sound but regarding data. Thus, raw and data filesystems should be used only for testing and are **not** available in the GUI.
+* Data
+  * `data`
+  * `project`
+  * `preset`
+  * `preset-takt-ii`
+  * `sound`
 
-#### Sample, raw and preset commands
+* Memory
+  * `ram`
+  * `track`
+
+`raw` and `data` are intended to interface directly with the filesystems provided by the devices so the downloaded or uploaded files are **not** compatible with the Elektron Transfer formats. `preset-raw` is a particular instance of `raw` and so are `project` and `sound` but regarding `data`. Thus, `raw` and `data` filesystems should be used only for testing and are **not** available in the GUI.
+
+Use the command `info` to get the actual supported filesystems for a particular device.
+
+Notice that the GUI will present these filesystems to the user with the same name used in the actual machines. For instance, a Digitakt II has a "Sample" and "Preset" GUI filesystem names although these are really implemented with the names `sample-stereo` and `preset-takt-ii`.
+
+#### Sample, raw and preset-raw commands
 
 * `elektron:sample:ls`
 
@@ -330,7 +344,7 @@ $ elektroid-cli elektron:sample:mv 0:/square 0:/sample
 $ elektroid-cli elektron:sample:rm 0:/sample
 ```
 
-#### Data, sound and project commands
+#### Data, project, preset, preset-takt-ii and sound commands
 
 There are a few things to clarify first.
 
@@ -407,6 +421,52 @@ $ elektroid-cli elektron:data:dl 0:/soundbanks/D/1 dir
 
 ```
 $ elektroid-cli elektron:data:ul sound 0:/soundbanks/D
+```
+
+#### RAM and track
+
+* `elektron:ram:ls`
+
+```
+$ elektroid-cli elektron:ram:ls 3:/
+F   233.7KiB 001 /Elektron SP/2323/BD 808 B 03    [ used ]
+F   210.8KiB 002 /Elektron SP/Chromium Love/Drum Hits/Vinyl Kit A/Kit A Snare 1 [ used ]
+F         0B 003
+F   72.86KiB 004 /factory/Drums/Electronic/Adlib/BD Adlib
+F   187.6KiB 005 /factory/Drums/Electronic/Booming/BD Booming [ used ]
+[...]
+```
+
+* `elektron:ram:ul`
+
+```
+$ elektroid-cli elektron:ram:ul cymbal.wav 3:/3
+```
+
+* `elektron:ram:dl`
+
+```
+$ elektroid-cli elektron:ram:dl 3:/3
+```
+
+* `elektron:track:ls`
+
+```
+$ elektroid-cli elektron:track:ls 3:/
+F            0 1                                [ slot=5:path=/factory/Drums/Electronic/Booming/BD Booming ]
+F            1 2                                [ slot=2:path=/Elektron SP/Chromium Love/Drum Hits/Vinyl Kit A/Kit A Snare 1 ]
+F            2 3
+F            3 4                                [ slot=1:path=/Elektron SP/2323/BD 808 B 03 ]
+F            4 5                                [ slot=5:path=/factory/Drums/Electronic/Booming/BD Booming ]
+F            5 6                                [ slot=6:path=/Elektron SP/Chromium Love/Drum Hits/Vinyl Kit E/Kit E Rimshot 1 ]
+F            6 7                                [ slot=7:path=/Elektron SP/Chromium Love/Drum Hits/Vinyl Kit A/Kit A High Hat 2 ]
+F            7 8
+```
+
+* `elektron:track:ul`
+
+```
+$ elektroid-cli elektron:track:ul cymbal.wav 3:/7
 ```
 
 ## API
