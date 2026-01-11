@@ -190,6 +190,7 @@ cli_list (int argc, gchar *argv[], int *optind)
 
   RETURN_IF_NULL (fs_ops->readdir);
   RETURN_IF_NULL (fs_ops->print_item);
+  RETURN_IF_NULL (fs_ops->get_exts);
 
   path = cli_get_path (device_path);
   err = fs_ops->readdir (&backend, &iter, path,
