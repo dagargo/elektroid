@@ -73,7 +73,7 @@ struct volca_sample_2_sample_header
 };
 
 static GByteArray *
-volca_sample_2_get_msg (guint8 op, guint8 *data, guint len)
+volca_sample_2_get_msg (guint8 op, const guint8 *data, guint len)
 {
   GByteArray *msg = g_byte_array_sized_new (sizeof (MSG_HEADER) + 2 + len);
   g_byte_array_append (msg, MSG_HEADER, sizeof (MSG_HEADER));
@@ -187,8 +187,8 @@ volca_sample_2_sample_next_dentry (struct item_iterator *iter)
       return err;
     }
 
-  snprintf (iter->item.name, VOLCA_SAMPLE_2_SAMPLE_NAME_LEN + 1, "%.*s",
-	    VOLCA_SAMPLE_2_SAMPLE_NAME_LEN, header.name);
+  item_set_name (&iter->item, "%.*s", VOLCA_SAMPLE_2_SAMPLE_NAME_LEN,
+		 header.name);
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = GUINT32_FROM_LE (header.frames) * sizeof (gint16);

@@ -28,7 +28,7 @@
 
 static const guint8 ARTURIA_ID[] = { 0x0, 0x20, 0x6b };
 static const guint8 EVENTIDE_ID[] = { 0x1c };
-static const guint8 KORG_ID[] = { 0x42, 0x0, 0x0 };
+static const guint8 KORG_ID[] = { 0x42 };
 static const guint8 MOOG_ID[] = { 0x04 };
 static const guint8 NOVATION_ID[] = { 0x0, 0x20, 0x29 };
 
