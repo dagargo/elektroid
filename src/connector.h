@@ -25,7 +25,11 @@
 
 #define FS_ICON_CHIP "elektroid-chip-symbolic"
 #define FS_ICON_FILE "elektroid-file-symbolic"
+#define FS_ICON_FX_DELAY "elektroid-fx-delay-symbolic"
+#define FS_ICON_FX_MODULATION "elektroid-fx-modulation-symbolic"
+#define FS_ICON_FX_REVERB "elektroid-fx-reverb-symbolic"
 #define FS_ICON_KEYS "elektroid-keys-symbolic"
+#define FS_ICON_OSCILLATOR "elektroid-oscillator-symbolic"
 #define FS_ICON_PRESET "elektroid-preset-symbolic"
 #define FS_ICON_PROJECT "elektroid-project-symbolic"
 #define FS_ICON_SEQUENCE "elektroid-sequence-symbolic"
