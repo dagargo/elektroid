@@ -61,6 +61,7 @@ connectors/cz.c connectors/cz.h \
 connectors/default.c connectors/default.h \
 connectors/efactor.c connectors/efactor.h \
 connectors/elektron.c connectors/elektron.h \
+connectors/logue.c connectors/logue.h \
 connectors/microbrute.c connectors/microbrute.h \
 connectors/microfreak.c connectors/microfreak.h \
 connectors/microfreak_sample.c connectors/microfreak_sample.h \

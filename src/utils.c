@@ -259,8 +259,7 @@ file_load (const char *path, struct idata *idata,
     {
       gchar *name = g_path_get_basename (path);
       filename_remove_ext (name);
-      idata_init (idata, array, strdup (name), NULL, NULL);
-      g_free (name);
+      idata_init (idata, array, name, NULL, NULL);
       debug_print (1, "%zu B read", size);
     }
   else
