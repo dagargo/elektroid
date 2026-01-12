@@ -74,21 +74,21 @@ msgstr "Verbinde..."
 
 #: src/elektroid.c:1564
 msgid "Libraries"
-msgstr ""
+msgstr "Bibliotheken"
 
 #: src/elektroid.c:1567
 msgid "Acknowledgements"
-msgstr ""
+msgstr "Danksagungen"
 
 #: src/editor.c:576
 #, c-format
 msgid "Gross tempo estimation for %d beats: %.2f BPM"
-msgstr ""
+msgstr "Grobe Tempoabschätzung für %d beats: %.2f BPM"
 
 #: src/editor.c:1982
 #, c-format
 msgid "Saving “%s”..."
-msgstr ""
+msgstr "Speichere “%s”..."
 
 #: src/editor.c:1985
 #, fuzzy
@@ -101,7 +101,7 @@ msgstr "Speichere Sample"
 
 #: src/editor.c:2198
 msgid "Calculating..."
-msgstr ""
+msgstr "Berechne..."
 
 #: src/editor.c:2263 src/guirecorder.c:80
 msgctxt "Recording channels"
@@ -122,15 +122,15 @@ msgstr "Kanäle"
 #: src/editor.c:2275
 #, c-format
 msgid "Saving channel %d to “%s”..."
-msgstr ""
+msgstr Speichere Kanal %d nach “%s”..."
 
 #: src/editor.c:2332
 msgid "Splitting channels"
-msgstr ""
+msgstr "Kanäle trennen"
 
 #: src/editor.c:2361
 msgid "Export Sample"
-msgstr ""
+msgstr "Sample exportieren"
 
 #: src/tasks.c:35
 msgid "Queued"
@@ -174,7 +174,7 @@ msgstr "Lösche..."
 
 #: src/browser.c:622
 msgid "Are you sure you want to delete the selected items?"
-msgstr "Bist du sicher das du die ausgewählten Dateien löschen möchtest?"
+msgstr "Bist du sicher, das du die ausgewählten Dateien löschen möchtest?"
 
 #: src/browser.c:624
 msgid "_Delete"
@@ -263,7 +263,7 @@ msgstr "_Öffnen"
 
 #: src/mactions/backend.c:200 src/mactions/backend.c:292
 msgid "SysEx Files"
-msgstr "SysEx Dateien"
+msgstr "SysEx-Dateien"
 
 #: src/mactions/backend.c:252
 #, c-format
@@ -309,16 +309,16 @@ msgstr "_Kalibrierung"
 
 #: src/mactions/microfreak.c:53
 msgid "Defragmenting Sample Memory"
-msgstr "Defragmentiere Sample Speicher"
+msgstr "Defragmentiere Sample-Speicher"
 
 #: src/mactions/microfreak.c:67
 msgid ""
 "The defragmentation process could take several minutes and could not be "
 "canceled. Are you sure you want to defragment the sample memory?"
 msgstr ""
-"Der Defragmentierungsprozess könnte mehrere Minuten dauern und kann nicht "
-"abgebrochen werden. Sind Sie sicher, dass Sie den Sample Speicher "
-"defragmentieren möchten?"
+"Der Defragmentierungsprozess kann mehrere Minuten dauern und lässt sich "
+"nicht abbrechen. Bist du sicher, dass du den Sample-Speicher "
+"defragmentieren möchtest?"
 
 #: src/mactions/microfreak.c:69 src/mactions/microfreak.c:93
 msgid "_Defragment"
@@ -343,11 +343,11 @@ msgstr ""
 
 #: src/connectors/sds.c:1343
 msgid "SDS sampler"
-msgstr ""
+msgstr "SDS-Sampler"
 
 #: src/connectors/default.c:84
 msgid "MIDI device"
-msgstr "MIDI Gerät"
+msgstr "MIDI-Gerät"
 
 #: src/connectors/system.c:747
 msgid "System"
@@ -355,7 +355,7 @@ msgstr ""
 
 #: res/elektroid.ui:818
 msgid "Sample and MIDI device manager"
-msgstr "Sample und MIDI Gerätemanager"
+msgstr "Sample- und MIDI-Gerätemanager"
 
 #: res/elektroid.ui:821
 msgid "translator-credits"
@@ -379,7 +379,7 @@ msgstr ""
 
 #: res/elektroid.ui:1015 res/elektroid.ui:4150
 msgid "General"
-msgstr ""
+msgstr "Allgemein"
 
 #. Press key time
 #: res/elektroid.ui:1065
@@ -413,13 +413,13 @@ msgstr "Ende"
 #: res/elektroid.ui:1240
 msgctxt "Auto Sampler"
 msgid "Distance"
-msgstr "Distanz"
+msgstr "Abstand"
 
 #. As in MIDI velocity
 #: res/elektroid.ui:1253
 msgctxt "Auto Sampler"
 msgid "Velocity"
-msgstr "Geschwindigkeit"
+msgstr ""
 
 #: res/elektroid.ui:1267
 msgid "1"
@@ -443,7 +443,7 @@ msgstr ""
 #: res/elektroid.ui:1376
 msgctxt "Auto Sampler"
 msgid "Tuning"
-msgstr ""
+msgstr "Stimmung"
 
 #: res/elektroid.ui:1405
 msgid "Instrument"
@@ -455,15 +455,15 @@ msgstr ""
 
 #: res/elektroid.ui:1494 res/elektroid.ui:1612
 msgid "Tools"
-msgstr ""
+msgstr "Werkzeuge"
 
 #: res/elektroid.ui:1510
 msgid "Normalize"
-msgstr ""
+msgstr "Normalisieren"
 
 #: res/elektroid.ui:1523
 msgid "Split Channels"
-msgstr ""
+msgstr "Kanäle trennen"
 
 #: res/elektroid.ui:1551 res/elektroid.ui:1720 res/elektroid.ui:4685
 msgid "Play"
@@ -479,7 +479,7 @@ msgstr "Rückgängig"
 
 #: res/elektroid.ui:1637
 msgid "Export"
-msgstr ""
+msgstr "Exportieren"
 
 #: res/elektroid.ui:1650
 msgid "Save"
@@ -533,7 +533,7 @@ msgstr ""
 
 #: res/elektroid.ui:2197 res/elektroid.ui:2686
 msgid "Rate"
-msgstr ""
+msgstr "Abtastrate"
 
 #: res/elektroid.ui:2208 res/elektroid.ui:2698
 msgid "Format"
@@ -567,11 +567,11 @@ msgstr "Speichere Sample"
 
 #: res/elektroid.ui:3054
 msgid "Beat subdivisions"
-msgstr ""
+msgstr "Beat-Unterteilungen"
 
 #: res/elektroid.ui:3056
 msgid "Subdivisions"
-msgstr ""
+msgstr "Unterteilungen"
 
 #: res/elektroid.ui:3093
 msgid "Playing mix depends on the remote channels"
@@ -893,11 +893,11 @@ msgstr "Empfangskanal"
 
 #: res/microbrute/microbrute.ui:650
 msgid "Key Priority"
-msgstr "Key Priorität"
+msgstr "Tasten-Priorität"
 
 #: res/microbrute/microbrute.ui:662
 msgid "Velocity Response"
-msgstr "Geschwindigkeitsreaktion"
+msgstr "Velocity‑Reaktion"
 
 #: res/microbrute/microbrute.ui:715
 msgid "Keyboard Parameters"
@@ -929,19 +929,19 @@ msgstr "Sequenzersteuerung"
 
 #: res/microbrute/microbrute.ui:952
 msgid "LFO Key Retrigger"
-msgstr ""
+msgstr "LFO-Noten-Retrigger"
 
 #: res/microbrute/microbrute.ui:964
 msgid "Envelope Legato"
-msgstr ""
+msgstr "Hüllkurven-Legato"
 
 #: res/microbrute/microbrute.ui:976
 msgid "Bend Range"
-msgstr "Bend Bereich"
+msgstr "Bend‑Reichweite"
 
 #: res/microbrute/microbrute.ui:988
 msgid "Gate Length"
-msgstr "Gate Länge"
+msgstr "Gate‑Dauer"
 
 #: res/microbrute/microbrute.ui:1000
 msgid "Synchronization"
