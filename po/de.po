@@ -1,14 +1,14 @@
 # German translations for Elektroid package.
-# Copyright (C) 2020-2024 Dennis Braun
+# Copyright (C) 2020-2026 Dennis Braun
 # This file is distributed under the same license as the Elektroid package.
-# Dennis Braun <snd@debian.org>, 2024.
+# Dennis Braun <snd@debian.org>, 2026.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
 "POT-Creation-Date: 2025-12-26 12:19+0100\n"
-"PO-Revision-Date: 2024-09-22 15:18+0200\n"
+"PO-Revision-Date: 2026-01-12 20:24+0100\n"
 "Last-Translator: Dennis Braun <snd@debian.org>\n"
 "Language-Team: German\n"
 "Language: de\n"
@@ -122,7 +122,7 @@ msgstr "Kanäle"
 #: src/editor.c:2275
 #, c-format
 msgid "Saving channel %d to “%s”..."
-msgstr Speichere Kanal %d nach “%s”..."
+msgstr "Speichere Kanal %d nach “%s”..."
 
 #: src/editor.c:2332
 msgid "Splitting channels"
