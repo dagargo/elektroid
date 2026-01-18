@@ -527,6 +527,7 @@ browser_remote_set_fs_operations (const struct fs_operations *fs_ops)
 
       browser_remote_reset_dnd ();
 
+      browser_update_fs_options (&local_browser);
       browser_load_dir (&local_browser);
 
       browser_close_search (NULL, &remote_browser);	//This triggers a refresh
