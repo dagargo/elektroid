@@ -80,6 +80,19 @@ gint common_data_tx_and_rx_part (struct backend *backend, GByteArray * tx_msg,
 				 GByteArray ** rx_msg,
 				 struct task_control *control);
 
+gchar *common_slot_get_download_path_id_name_ext (struct backend *backend,
+						  const struct fs_operations
+						  *ops, const gchar * dst_dir,
+						  guint id, guint digits,
+						  const gchar * name,
+						  const gchar * ext);
+
+gchar *common_slot_get_download_path_id_name (struct backend *backend,
+					      const struct fs_operations *ops,
+					      const gchar * dst_dir,
+					      guint id, guint digits,
+					      const gchar * name);
+
 gchar *common_slot_get_download_path (struct backend *backend,
 				      const struct fs_operations *ops,
 				      const gchar * dst_dir,

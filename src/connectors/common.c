@@ -252,15 +252,15 @@ common_data_tx_and_rx (struct backend *backend, GByteArray *tx_msg,
   return common_data_tx_and_rx_part (backend, tx_msg, rx_msg, control);
 }
 
-static gchar *
-common_slot_get_download_path_id_name (struct backend *backend,
-				       const struct fs_operations *ops,
-				       const gchar *dst_dir,
-				       guint id, guint digits,
-				       const gchar *name)
+gchar *
+common_slot_get_download_path_id_name_ext (struct backend *backend,
+					   const struct fs_operations *ops,
+					   const gchar *dst_dir,
+					   guint id, guint digits,
+					   const gchar *name,
+					   const gchar *ext)
 {
   gchar *path;
-  const gchar *ext = GET_SAVE_EXT (ops, backend);
   GString *str = g_string_new (NULL);
 
   g_string_append_printf (str, "%s %s", backend->name, ops->name);
@@ -288,6 +288,18 @@ common_slot_get_download_path_id_name (struct backend *backend,
   g_string_free (str, TRUE);
 
   return path;
+}
+
+gchar *
+common_slot_get_download_path_id_name (struct backend *backend,
+				       const struct fs_operations *ops,
+				       const gchar *dst_dir,
+				       guint id, guint digits,
+				       const gchar *name)
+{
+  const gchar *ext = GET_SAVE_EXT (ops, backend);
+  return common_slot_get_download_path_id_name_ext (backend, ops, dst_dir, id,
+						    digits, name, ext);
 }
 
 gchar *
