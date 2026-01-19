@@ -585,7 +585,7 @@ msgstr ""
 
 #: res/elektroid.ui:3184
 msgid "Metre"
-msgstr ""
+msgstr "Métrique"
 
 #: res/elektroid.ui:3241
 msgid "Beats"
