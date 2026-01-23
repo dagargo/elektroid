@@ -22,7 +22,7 @@
 #include "common.h"
 #include "sample.h"
 
-static const gchar *SYSEX_EXTS[] = { "syx", NULL };
+static const gchar *SYSEX_EXTS[] = { BE_SYSEX_EXT, NULL };
 
 static void
 common_replace_chars (gchar *str, gchar x, gchar y)
