@@ -373,27 +373,11 @@ system_load_mono_44k1_24b (const gchar *path, struct idata *sample,
 }
 
 static gint
-system_load_stereo_44k1_8b (const gchar *path, struct idata *sample,
-			    struct task_control *control)
-{
-  return system_load_custom (path, sample, control, 2, 44100,
-			     SF_FORMAT_PCM_16);
-}
-
-static gint
 system_upload_8_bits (struct backend *backend, const gchar *path,
 		      struct idata *sample, struct task_control *control)
 {
   return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_U8);
-}
-
-static gint
-system_load_mono_44k1_8b (const gchar *path, struct idata *sample,
-			  struct task_control *control)
-{
-  return system_load_custom (path, sample, control, 1, 44100,
-			     SF_FORMAT_PCM_16);
 }
 
 static gint
@@ -409,6 +393,30 @@ system_load_mono_31k25_16b (const gchar *path, struct idata *sample,
 			    struct task_control *control)
 {
   return system_load_custom (path, sample, control, 1, 31250,
+			     SF_FORMAT_PCM_16);
+}
+
+static gint
+system_load_mono_22k05_16b (const gchar *path, struct idata *sample,
+			    struct task_control *control)
+{
+  return system_load_custom (path, sample, control, 1, 22050,
+			     SF_FORMAT_PCM_16);
+}
+
+static gint
+system_load_mono_16k_16b (const gchar *path, struct idata *sample,
+			  struct task_control *control)
+{
+  return system_load_custom (path, sample, control, 1, 16000,
+			     SF_FORMAT_PCM_16);
+}
+
+static gint
+system_load_mono_8k_16b (const gchar *path, struct idata *sample,
+			 struct task_control *control)
+{
+  return system_load_custom (path, sample, control, 1, 8000,
 			     SF_FORMAT_PCM_16);
 }
 
@@ -429,7 +437,12 @@ enum system_fs
   FS_SYSTEM_SAMPLES_STEREO_441K_8B,
   FS_SYSTEM_SAMPLES_MONO_44K1_8B,
   FS_SYSTEM_SAMPLES_MONO_32K_16B,
-  FS_SYSTEM_SAMPLES_MONO_31K25_16B
+  FS_SYSTEM_SAMPLES_MONO_31K25_16B,
+  FS_SYSTEM_SAMPLES_MONO_22K05_16B,
+  FS_SYSTEM_SAMPLES_MONO_16K_16B,
+  FS_SYSTEM_SAMPLES_MONO_16K_8B,
+  FS_SYSTEM_SAMPLES_MONO_8K_16B,
+  FS_SYSTEM_SAMPLES_MONO_8K_8B,
 };
 
 const struct fs_operations FS_SYSTEM_SAMPLES_STEREO_48K_16B_OPERATIONS = {
@@ -606,7 +619,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_STEREO_441K_8B_OPERATIONS = {
   .move = system_rename,
   .download = system_download,
   .upload = system_upload_8_bits,
-  .load = system_load_stereo_44k1_8b,
+  .load = system_load_stereo_44k1_16b,
   .save = file_save,
   .get_upload_path = common_system_get_upload_path,
   .get_download_path = common_system_get_download_path,
@@ -632,7 +645,7 @@ const struct fs_operations FS_SYSTEM_SAMPLES_MONO_44K1_8B_OPERATIONS = {
   .move = system_rename,
   .download = system_download,
   .upload = system_upload_8_bits,
-  .load = system_load_mono_44k1_8b,
+  .load = system_load_mono_44k1_16b,
   .save = file_save,
   .get_upload_path = common_system_get_upload_path,
   .get_download_path = common_system_get_download_path,
@@ -685,6 +698,136 @@ const struct fs_operations FS_SYSTEM_SAMPLES_MONO_31K25_16B_OPERATIONS = {
   .download = system_download,
   .upload = system_upload,
   .load = system_load_mono_31k25_16b,
+  .save = file_save,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
+  .get_exts = sample_get_sample_extensions,
+  .max_name_len = 255
+};
+
+const struct fs_operations FS_SYSTEM_SAMPLES_MONO_22K05_16B_OPERATIONS = {
+  .id = FS_SYSTEM_SAMPLES_MONO_22K05_16B,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
+    FS_OPTION_ALLOW_SEARCH,
+  .name = "wav-mono-22k05-16b",
+  .gui_name = "WAV mono 22.05 KHz 16 bits",
+  .gui_icon = FS_ICON_WAVE,
+  .file_icon = FS_ICON_WAVE,
+  .readdir = system_samples_read_dir,
+  .print_item = common_print_item,
+  .file_exists = system_file_exists,
+  .mkdir = system_mkdir,
+  .delete = system_delete,
+  .rename = system_rename,
+  .move = system_rename,
+  .download = system_download,
+  .upload = system_upload,
+  .load = system_load_mono_22k05_16b,
+  .save = file_save,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
+  .get_exts = sample_get_sample_extensions,
+  .max_name_len = 255
+};
+
+const struct fs_operations FS_SYSTEM_SAMPLES_MONO_16K_16B_OPERATIONS = {
+  .id = FS_SYSTEM_SAMPLES_MONO_16K_16B,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
+    FS_OPTION_ALLOW_SEARCH,
+  .name = "wav-mono-16k-16b",
+  .gui_name = "WAV mono 16 KHz 16 bits",
+  .gui_icon = FS_ICON_WAVE,
+  .file_icon = FS_ICON_WAVE,
+  .readdir = system_samples_read_dir,
+  .print_item = common_print_item,
+  .file_exists = system_file_exists,
+  .mkdir = system_mkdir,
+  .delete = system_delete,
+  .rename = system_rename,
+  .move = system_rename,
+  .download = system_download,
+  .upload = system_upload,
+  .load = system_load_mono_16k_16b,
+  .save = file_save,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
+  .get_exts = sample_get_sample_extensions,
+  .max_name_len = 255
+};
+
+const struct fs_operations FS_SYSTEM_SAMPLES_MONO_16K_8B_OPERATIONS = {
+  .id = FS_SYSTEM_SAMPLES_MONO_16K_8B,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
+    FS_OPTION_ALLOW_SEARCH,
+  .name = "wav-mono-16k-8b",
+  .gui_name = "WAV mono 16 KHz 8 bits",
+  .gui_icon = FS_ICON_WAVE,
+  .file_icon = FS_ICON_WAVE,
+  .readdir = system_samples_read_dir,
+  .print_item = common_print_item,
+  .file_exists = system_file_exists,
+  .mkdir = system_mkdir,
+  .delete = system_delete,
+  .rename = system_rename,
+  .move = system_rename,
+  .download = system_download,
+  .upload = system_upload_8_bits,
+  .load = system_load_mono_16k_16b,
+  .save = file_save,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
+  .get_exts = sample_get_sample_extensions,
+  .max_name_len = 255
+};
+
+const struct fs_operations FS_SYSTEM_SAMPLES_MONO_8K_16B_OPERATIONS = {
+  .id = FS_SYSTEM_SAMPLES_MONO_8K_16B,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
+    FS_OPTION_ALLOW_SEARCH,
+  .name = "wav-mono-8k-16b",
+  .gui_name = "WAV mono 8 KHz 16 bits",
+  .gui_icon = FS_ICON_WAVE,
+  .file_icon = FS_ICON_WAVE,
+  .readdir = system_samples_read_dir,
+  .print_item = common_print_item,
+  .file_exists = system_file_exists,
+  .mkdir = system_mkdir,
+  .delete = system_delete,
+  .rename = system_rename,
+  .move = system_rename,
+  .download = system_download,
+  .upload = system_upload,
+  .load = system_load_mono_8k_16b,
+  .save = file_save,
+  .get_upload_path = common_system_get_upload_path,
+  .get_download_path = common_system_get_download_path,
+  .get_exts = sample_get_sample_extensions,
+  .max_name_len = 255
+};
+
+const struct fs_operations FS_SYSTEM_SAMPLES_MONO_8K_8B_OPERATIONS = {
+  .id = FS_SYSTEM_SAMPLES_MONO_8K_8B,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SAMPLE_COLUMNS |
+    FS_OPTION_ALLOW_SEARCH,
+  .name = "wav-mono-8k-8b",
+  .gui_name = "WAV mono 8 KHz 8 bits",
+  .gui_icon = FS_ICON_WAVE,
+  .file_icon = FS_ICON_WAVE,
+  .readdir = system_samples_read_dir,
+  .print_item = common_print_item,
+  .file_exists = system_file_exists,
+  .mkdir = system_mkdir,
+  .delete = system_delete,
+  .rename = system_rename,
+  .move = system_rename,
+  .download = system_download,
+  .upload = system_upload_8_bits,
+  .load = system_load_mono_8k_16b,
   .save = file_save,
   .get_upload_path = common_system_get_upload_path,
   .get_download_path = common_system_get_download_path,
@@ -750,7 +893,12 @@ system_handshake (struct backend *backend)
 	       &FS_SYSTEM_SAMPLES_STEREO_441K_8B_OPERATIONS,
 	       &FS_SYSTEM_SAMPLES_MONO_44K1_8B_OPERATIONS,
 	       &FS_SYSTEM_SAMPLES_MONO_32K_16B_OPERATIONS,
-	       &FS_SYSTEM_SAMPLES_MONO_31K25_16B_OPERATIONS, NULL);
+	       &FS_SYSTEM_SAMPLES_MONO_31K25_16B_OPERATIONS,
+	       &FS_SYSTEM_SAMPLES_MONO_22K05_16B_OPERATIONS,
+	       &FS_SYSTEM_SAMPLES_MONO_16K_16B_OPERATIONS,
+	       &FS_SYSTEM_SAMPLES_MONO_16K_8B_OPERATIONS,
+	       &FS_SYSTEM_SAMPLES_MONO_8K_16B_OPERATIONS,
+	       &FS_SYSTEM_SAMPLES_MONO_8K_8B_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "%s", _("System"));
 
   backend->get_storage_stats =
