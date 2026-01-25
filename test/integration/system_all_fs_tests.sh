@@ -11,7 +11,7 @@ for f in $($ecli info 0 | grep Filesystems | awk -F": " '{print $2}' | sed 's/,/
   expf=$srcdir/res/connectors/square-$f.wav
   [ ! -f $expf ] && echo "$expf test file not found" && err=1 && continue
   $ecli system:$f:ul $srcdir/res/connectors/square.wav 0:$tmpdir
-  [ $? -ne 0 ] && err=1 && continue
+  [ $? -ne 0 ] && echo "Upload failed" && err=1 && continue
   cksum $actf
   cksum $expf
   ls -l $tmpdir
@@ -32,6 +32,7 @@ if [ $? -eq 0 ]; then
   exp=$(cksum $expf | awk '{print $1 " " $2}')
   [ "$act" != "$exp" ] && echo "Unexpected cksum for $f" && err=1
 else
+  echo "Upload failed"
   err=1
 fi
 
@@ -47,6 +48,7 @@ if [ $? -eq 0 ]; then
   exp=$(cksum $expf | awk '{print $1 " " $2}')
   [ "$act" != "$exp" ] && echo "Unexpected cksum for $f" && err=1
 else
+  echo "Upload failed"
   err=1
 fi
 
