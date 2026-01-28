@@ -67,6 +67,8 @@ static const gchar *FS_DATA_ANY_EXTS[] = { "data", NULL };
 #define AH_FX_SLOTS 512
 #define AH_SLOTS 128
 
+#define ELEKTRON_RAM_SLOT_USED "used"
+
 struct elektron_sample_header
 {
   guint8 type;
@@ -3046,7 +3048,8 @@ elektron_ram_slot_next_entry (struct item_iterator *iter)
   iter->item.id = id;
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = size;
-  item_set_object_info (&iter->item, "%s", used ? "used" : "");
+  item_set_object_info (&iter->item, "%s",
+			used ? ELEKTRON_RAM_SLOT_USED : "");
   if (size == 0)
     {
       elektron_item_set_name (&iter->item, "");
