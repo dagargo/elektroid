@@ -3063,9 +3063,9 @@ elektron_ram_slot_next_entry (struct item_iterator *iter)
 }
 
 static gint
-elektron_digitakt_ram_read_dir (struct backend *backend,
-				struct item_iterator *iter, const gchar *dir,
-				const gchar **extensions)
+elektron_ram_read_dir (struct backend *backend,
+		       struct item_iterator *iter, const gchar *dir,
+		       const gchar **extensions)
 {
   gint err;
   guint32 last_ram_slots;
@@ -3097,8 +3097,7 @@ elektron_digitakt_ram_read_dir (struct backend *backend,
 }
 
 static gint
-elektron_digitakt_ram_clear_sample (struct backend *backend,
-				    const gchar *path)
+elektron_ram_clear_sample (struct backend *backend, const gchar *path)
 {
   gint err;
   guint id;
@@ -3125,10 +3124,10 @@ elektron_digitakt_ram_clear_sample (struct backend *backend,
 }
 
 static gint
-elektron_digitakt_ram_download_sample (struct backend *backend,
-				       const gchar *path,
-				       struct idata *sample,
-				       struct task_control *control)
+elektron_ram_download_sample (struct backend *backend,
+			      const gchar *path,
+			      struct idata *sample,
+			      struct task_control *control)
 {
   gint err;
   guint id;
@@ -3141,7 +3140,7 @@ elektron_digitakt_ram_download_sample (struct backend *backend,
       return err;
     }
 
-  err = elektron_digitakt_ram_read_dir (backend, &iter, "/", NULL);
+  err = elektron_ram_read_dir (backend, &iter, "/", NULL);
   if (err)
     {
       return err;
@@ -3168,11 +3167,10 @@ elektron_digitakt_ram_download_sample (struct backend *backend,
 }
 
 static gchar *
-elektron_digitakt_ram_get_download_path (struct backend *backend,
-					 const struct fs_operations *ops,
-					 const gchar *dst_dir,
-					 const gchar *src_path,
-					 struct idata *idata)
+elektron_ram_get_download_path (struct backend *backend,
+				const struct fs_operations *ops,
+				const gchar *dst_dir,
+				const gchar *src_path, struct idata *idata)
 {
   const gchar *ext = GET_SAVE_EXT (ops, backend);
   gchar *name = g_path_get_basename (idata->name);
@@ -3185,9 +3183,9 @@ elektron_digitakt_ram_get_download_path (struct backend *backend,
 }
 
 static gint
-elektron_digitakt_ram_set_sample (struct backend *backend,
-				  const gchar *path, guint16 ram_slot,
-				  guint8 track, struct task_control *control)
+elektron_ram_set_sample (struct backend *backend,
+			 const gchar *path, guint16 ram_slot,
+			 guint8 track, struct task_control *control)
 {
   GByteArray *tx_msg, *rx_msg;
   guint16 ram_slot_be = GUINT16_TO_BE (ram_slot);
@@ -3220,9 +3218,9 @@ elektron_digitakt_ram_set_sample (struct backend *backend,
 }
 
 static gint
-elektron_digitakt_ram_track_upload (struct backend *backend, guint16 ram_slot,
-				    guint8 track, struct idata *sample,
-				    struct task_control *control)
+elektron_ram_track_upload (struct backend *backend, guint16 ram_slot,
+			   guint8 track, struct idata *sample,
+			   struct task_control *control)
 {
   gint err;
   gchar *upload_path;
@@ -3239,8 +3237,8 @@ elektron_digitakt_ram_track_upload (struct backend *backend, guint16 ram_slot,
 
   control->part++;
 
-  err = elektron_digitakt_ram_set_sample (backend, upload_path, ram_slot,
-					  track, control);
+  err = elektron_ram_set_sample (backend, upload_path, ram_slot,
+				 track, control);
 
 end:
   g_free (upload_path);
@@ -3248,9 +3246,9 @@ end:
 }
 
 static gint
-elektron_digitakt_ram_upload_sample (struct backend *backend,
-				     const gchar *path, struct idata *sample,
-				     struct task_control *control)
+elektron_ram_upload_sample (struct backend *backend,
+			    const gchar *path, struct idata *sample,
+			    struct task_control *control)
 {
   gint err;
   guint id;
@@ -3261,8 +3259,7 @@ elektron_digitakt_ram_upload_sample (struct backend *backend,
       return err;
     }
 
-  return elektron_digitakt_ram_track_upload (backend, id, 0xff, sample,
-					     control);
+  return elektron_ram_track_upload (backend, id, 0xff, sample, control);
 }
 
 static gint
@@ -3348,13 +3345,13 @@ elektron_digitakt_track_read_dir (struct backend *backend,
 }
 
 static gint
-elektron_digitakt_ram_get_free_slot (struct backend *backend)
+elektron_ram_get_free_slot (struct backend *backend)
 {
   gint err;
   gint free_slot = -ENOMEM;
   struct item_iterator iter;
 
-  err = elektron_digitakt_ram_read_dir (backend, &iter, "/", NULL);
+  err = elektron_ram_read_dir (backend, &iter, "/", NULL);
   if (err)
     {
       return err;
@@ -3384,7 +3381,7 @@ elektron_digitakt_track_upload_sample (struct backend *backend,
   guint id;
   gint free_slot;
 
-  free_slot = elektron_digitakt_ram_get_free_slot (backend);
+  free_slot = elektron_ram_get_free_slot (backend);
   if (free_slot < 1)
     {
       return free_slot;
@@ -3396,8 +3393,7 @@ elektron_digitakt_track_upload_sample (struct backend *backend,
       return err;
     }
 
-  return elektron_digitakt_ram_track_upload (backend, free_slot, id, sample,
-					     control);
+  return elektron_ram_track_upload (backend, free_slot, id, sample, control);
 }
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
@@ -3623,17 +3619,17 @@ static const struct fs_operations FS_DIGITAKT_RAM_OPERATIONS = {
   .gui_name = "RAM",
   .gui_icon = FS_ICON_CHIP,
   .file_icon = FS_ICON_WAVE,
-  .readdir = elektron_digitakt_ram_read_dir,
+  .readdir = elektron_ram_read_dir,
   .print_item = common_print_item,
-  .delete = elektron_digitakt_ram_clear_sample,
-  .download = elektron_digitakt_ram_download_sample,
-  .upload = elektron_digitakt_ram_upload_sample,
+  .delete = elektron_ram_clear_sample,
+  .download = elektron_ram_download_sample,
+  .upload = elektron_ram_upload_sample,
   .load = elektron_sample_load,
   .save = elektron_sample_save,
   .get_exts = sample_get_sample_extensions,
   .get_slot = elektron_get_id_as_slot,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = elektron_digitakt_ram_get_download_path
+  .get_download_path = elektron_ram_get_download_path
 };
 
 static const struct fs_operations FS_DIGITAKT_TRACK_OPERATIONS = {

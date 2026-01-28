@@ -63,4 +63,6 @@ gint elektron_download_sample_part (struct backend *backend,
 
 GByteArray *elektron_ping (struct backend *backend);
 
+gint elektron_ram_clear_unused_slots (struct backend *backend);
+
 #endif
