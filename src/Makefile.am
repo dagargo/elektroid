@@ -89,6 +89,7 @@ guirecorder.c guirecorder.h \
 maction.c maction.h \
 mactions/autosampler.c \
 mactions/backend.c \
+mactions/elektron.c \
 mactions/microbrute.c \
 mactions/microfreak.c \
 name_window.c name_window.h \

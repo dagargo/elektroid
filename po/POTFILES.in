@@ -5,6 +5,7 @@ src/browser.c
 src/audio_pa.c
 src/mactions/autosampler.c
 src/mactions/backend.c
+src/mactions/elektron.c
 src/mactions/microbrute.c
 src/mactions/microfreak.c
 src/progress_window.c
