@@ -222,6 +222,7 @@ static const guint8 DIGITAKT_RAM_CLEAR_SLOT_REQUEST[] =
   { 0x18, 0, 0, 1, 0, 0 };
 
 // static const guint8 DIGITAKT_GET_FILE_SIZE_HASH_FROM_PATH_REQUEST[] = { 0x28 }; //Unused. Returns size and hash. Similar to FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST.
+// static const guint8 DIGITAKT_GET_PATTERN_INFO[] = { 0x6 }; //Unused. It returns 5 32 bit integer. The second one is the pattern tempo * 120.
 
 static const guint8 OS_UPGRADE_START_REQUEST[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
@@ -3263,6 +3264,34 @@ elektron_ram_upload_sample (struct backend *backend,
     }
 
   return elektron_ram_track_upload (backend, id, 0xff, sample, control);
+}
+
+gint
+elektron_ram_clear_unused_slots (struct backend *backend)
+{
+  gint err;
+  struct item_iterator iter;
+  gchar path[PATH_MAX];
+
+  err = elektron_ram_read_dir (backend, &iter, "/", NULL);
+  if (err)
+    {
+      return err;
+    }
+
+  while (!item_iterator_next (&iter))
+    {
+      if (iter.item.size != 0 && !strcmp (iter.item.object_info, ""))
+	{
+	  snprintf (path, PATH_MAX, "/%d", iter.item.id);
+	  debug_print (1, "Clearing RAM slot '%s'...", path);
+	  elektron_ram_clear_sample (backend, path);
+	}
+    }
+
+  item_iterator_free (&iter);
+
+  return 0;
 }
 
 static gint
