@@ -25,7 +25,7 @@ endif
 
 check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample tests_connector tests_volca_sample tests_sample_ops
 
-tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip zlib $(BE_LIBS)
+tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip zlib $(BE_LIBS) rubberband
 
 tests_scala_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(AM_CFLAGS)
 tests_scala_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(MSYS2_LIBS)
@@ -101,6 +101,8 @@ tests_elektron_SOURCES = \
 	../src/connectors/microfreak_sample.h \
 	../src/sample.c \
         ../src/sample.h \
+	../src/sample_ops.c \
+	../src/sample_ops.h \
 	../src/connectors/package.c \
 	../src/connectors/package.h \
 	../src/connectors/elektron.c \

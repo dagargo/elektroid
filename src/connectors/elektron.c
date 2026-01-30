@@ -22,9 +22,10 @@
 #include <stdio.h>
 #include <math.h>
 #include <zlib.h>
+#include "common.h"
 #include "elektron.h"
 #include "package.h"
-#include "common.h"
+#include "sample_ops.h"
 #include "../config.h"
 
 #define DEVICES_FILE "/elektron/devices.json"
@@ -221,8 +222,9 @@ static const guint8 DIGITAKT_RAM_LOAD_SLOT_REQUEST[] = { 0x19, 0 };
 static const guint8 DIGITAKT_RAM_CLEAR_SLOT_REQUEST[] =
   { 0x18, 0, 0, 1, 0, 0 };
 
+static const guint8 DIGITAKT_GET_PATTERN_INFO[] = { 0x6 };	//Unused. It returns 5 32 bit integer. The second one is the pattern tempo * 120.
+
 // static const guint8 DIGITAKT_GET_FILE_SIZE_HASH_FROM_PATH_REQUEST[] = { 0x28 }; //Unused. Returns size and hash. Similar to FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST.
-// static const guint8 DIGITAKT_GET_PATTERN_INFO[] = { 0x6 }; //Unused. It returns 5 32 bit integer. The second one is the pattern tempo * 120.
 
 static const guint8 OS_UPGRADE_START_REQUEST[] =
   { 0x50, 0, 0, 0, 0, 's', 'y', 's', 'e', 'x', '\0', 1 };
@@ -3243,9 +3245,6 @@ elektron_ram_track_upload (struct backend *backend, guint16 ram_slot,
   gint err;
   gchar *upload_path;
 
-  control->parts = 2;
-  control->part = 0;
-
   upload_path = path_chain (PATH_SYSTEM, RAM_OP_DEF_DIR, sample->name);
   err = elektron_upload_sample_part (backend, upload_path, sample, control);
   if (err)
@@ -3276,6 +3275,9 @@ elektron_ram_upload_sample (struct backend *backend,
     {
       return err;
     }
+
+  control->parts = 2;
+  control->part = 0;
 
   return elektron_ram_track_upload (backend, id, 0xff, sample, control);
 }
@@ -3367,8 +3369,8 @@ elektron_digitakt_track_read_dir (struct backend *backend,
 				  const gchar *dir, const gchar **extensions)
 {
   gint err;
-  guint32 ram_slots, ram_tracks, ram_tracks_pos;
   GByteArray *tx_msg, *rx_msg;
+  guint32 ram_slots, ram_tracks, ram_tracks_pos;
 
   if (strcmp (dir, "/"))
     {
@@ -3426,10 +3428,10 @@ elektron_ram_get_free_slot (struct backend *backend)
 }
 
 static gint
-elektron_digitakt_track_upload_sample (struct backend *backend,
-				       const gchar *path,
-				       struct idata *sample,
-				       struct task_control *control)
+elektron_digitakt_track_upload_sample_int (struct backend *backend,
+					   const gchar *path,
+					   struct idata *sample,
+					   struct task_control *control)
 {
   gint err;
   guint id;
@@ -3448,6 +3450,92 @@ elektron_digitakt_track_upload_sample (struct backend *backend,
     }
 
   return elektron_ram_track_upload (backend, free_slot, id, sample, control);
+}
+
+static gint
+elektron_digitakt_track_upload_sample (struct backend *backend,
+				       const gchar *path,
+				       struct idata *sample,
+				       struct task_control *control)
+{
+  control->parts = 2;
+  control->part = 0;
+
+  return elektron_digitakt_track_upload_sample_int (backend, path, sample,
+						    control);
+}
+
+static gint
+elektron_digitakt_track_loop_upload_sample (struct backend *backend,
+					    const gchar *path,
+					    struct idata *sample,
+					    struct task_control *control)
+{
+  guint8 op;
+  guint32 t;
+  gdouble tempo;
+  GByteArray *tx_msg, *rx_msg;
+  struct sample_info *sample_info;
+
+  sample_info = sample->info;
+
+  tx_msg = elektron_new_msg (DIGITAKT_GET_PATTERN_INFO,
+			     sizeof (DIGITAKT_GET_PATTERN_INFO));
+  rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
+  if (!rx_msg)
+    {
+      return -EIO;
+    }
+
+  op = elektron_get_msg_status (rx_msg);
+  if (op)
+    {
+      error_print ("%s (%s)", backend_strerror (backend, -EIO),
+		   elektron_get_msg_string (rx_msg));
+      free_msg (rx_msg);
+      return -EIO;
+    }
+
+  memcpy (&t, &rx_msg->data[10], sizeof (guint32));
+  t = GUINT32_FROM_BE (t);
+  tempo = t / 120.0;
+
+  debug_print (2, "Pattern tempo: %.2f BPM", tempo);
+  if (sample_info->tempo == 0)
+    {
+      control->parts = 2;
+      control->part = 0;
+
+      debug_print (1, "No sample tempo. Performing direct upload...");
+
+      return elektron_digitakt_track_upload_sample_int (backend, path, sample,
+							control);
+    }
+  else
+    {
+      gint err;
+      gdouble ratio = sample_info->tempo / (gdouble) tempo;
+
+      debug_print (1,
+		   "Sample tempo is %.2f BPM. Performing timestretched upload...",
+		   sample_info->tempo);
+
+      control->parts = 3;
+      control->part = 0;
+
+      err = sample_ops_timestretch (sample, ratio);
+      if (err)
+	{
+	  return err;
+	}
+
+      control->part++;
+
+      err = elektron_digitakt_track_upload_sample_int (backend, path,
+						       sample, control);
+
+      return err;
+    }
 }
 
 static const struct fs_operations FS_SAMPLES_OPERATIONS = {
@@ -3702,12 +3790,29 @@ static const struct fs_operations FS_DIGITAKT_TRACK_OPERATIONS = {
   .get_upload_path = common_slot_get_upload_path
 };
 
+static const struct fs_operations FS_DIGITAKT_TRACK_LOOP_OPERATIONS = {
+  .id = FS_DIGITAKT_TRACK_LOOP,
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_INFO_COLUMN,
+  .name = "track-loop",
+  .gui_name = "Tracks (loop)",
+  .gui_icon = FS_ICON_TRACK,
+  .file_icon = FS_ICON_WAVE,
+  .readdir = elektron_digitakt_track_read_dir,
+  .print_item = common_print_item,
+  .upload = elektron_digitakt_track_loop_upload_sample,
+  .load = elektron_sample_load,
+  .get_exts = sample_get_sample_extensions,
+  .get_upload_path = common_slot_get_upload_path
+};
+
 static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
   &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
   &FS_DATA_PST_OPERATIONS, &FS_SAMPLES_STEREO_OPERATIONS,
   &FS_DATA_TAKT_II_PST_OPERATIONS, &FS_DIGITAKT_RAM_OPERATIONS,
-  &FS_DIGITAKT_TRACK_OPERATIONS, NULL
+  &FS_DIGITAKT_TRACK_OPERATIONS, &FS_DIGITAKT_TRACK_LOOP_OPERATIONS,
+  NULL
 };
 
 gint
