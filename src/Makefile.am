@@ -3,7 +3,7 @@ PKG_CONFIG ?= pkg-config
 AM_CFLAGS = -Wall -O3
 AM_CPPFLAGS = -DDATADIR='"$(datadir)/$(PACKAGE)"' -DLOCALEDIR='"$(localedir)"'
 
-CLI_LIBS_BASE = glib-2.0 zlib json-glib-1.0 libzip
+CLI_LIBS_BASE = glib-2.0 zlib json-glib-1.0 libzip rubberband
 
 if MINGW
   MSYS2_LIBS = -lws2_32
@@ -53,6 +53,7 @@ preferences.c preferences.h \
 regconn.c regconn.h\
 regpref.c regpref.h\
 sample.c sample.h \
+sample_ops.c sample_ops.h \
 utils.c utils.h \
 backend.c backend.h $(elektroid_backend_sources) \
 connectors/common.c connectors/common.h \
@@ -98,7 +99,6 @@ preferences_window.c preferences_window.h \
 progress_window.c progress_window.h \
 record_window.c record_window.h \
 regma.c regma.h \
-sample_ops.c sample_ops.h \
 tags_window.c tags_window.h \
 tasks.c tasks.h \
 elektroid.c elektroid.h

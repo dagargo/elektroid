@@ -45,3 +45,5 @@ guint32 sample_ops_detect_start (struct idata *sample);
 
 void sample_ops_normalize (struct idata *sample, guint32 start,
 			   guint32 length);
+
+gint sample_ops_timestretch (struct idata *sample, double ratio);

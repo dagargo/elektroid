@@ -1,5 +1,6 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
+#include <sndfile.h>
 #include "../src/sample.h"
 #include "../src/sample_ops.h"
 
@@ -58,6 +59,46 @@ test_sample_ops_get_zero_crossing ()
   idata_free (&sample);
 }
 
+static void
+test_sample_ops_timestretch ()
+{
+  gdouble ratio = 0.5;
+  struct idata sample;
+  struct sample_info *sample_info;
+  struct sample_info sample_info_src;
+  struct sample_load_opts sample_load_opts;
+  gint err, loaded_frames, loaded_loop_start, loaded_loop_end;
+
+  printf ("\n");
+
+  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16,
+			 FALSE);
+
+  err = sample_load_from_file (TEST_DATA_DIR
+			       "/connectors/square.wav",
+			       &sample, NULL, &sample_load_opts,
+			       &sample_info_src);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  sample_info = sample.info;
+  loaded_frames = sample_info->frames;
+  loaded_loop_start = sample_info->loop_start;
+  loaded_loop_end = sample_info->loop_end;
+  err = sample_ops_timestretch (&sample, ratio);
+
+  CU_ASSERT_EQUAL (sample_info->frames, (guint32) loaded_frames * ratio);
+  CU_ASSERT_EQUAL (sample_info->loop_start,
+		   (guint32) (loaded_loop_start * ratio));
+  CU_ASSERT_EQUAL (sample_info->loop_end,
+		   (guint32) (loaded_loop_end * ratio));
+
+  idata_free (&sample);
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -69,7 +110,7 @@ main (gint argc, gchar *argv[])
     {
       goto cleanup;
     }
-  CU_pSuite suite = CU_add_suite ("Elektroid audio tests", 0, 0);
+  CU_pSuite suite = CU_add_suite ("Elektroid sample operations tests", 0, 0);
   if (!suite)
     {
       goto cleanup;
@@ -77,6 +118,12 @@ main (gint argc, gchar *argv[])
 
   if (!CU_add_test (suite, "sample_ops_get_zero_crossing",
 		    test_sample_ops_get_zero_crossing))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "sample_ops_timestretch",
+		    test_sample_ops_timestretch))
     {
       goto cleanup;
     }

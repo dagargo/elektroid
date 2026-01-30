@@ -69,7 +69,8 @@
         "dtsnd"
       ],
       "ram": null,
-      "track": null
+      "track": null,
+      "track-loop": null
     },
     "storage": [
       "+Drive",
