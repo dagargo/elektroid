@@ -3162,6 +3162,7 @@ elektron_ram_download_sample (struct backend *backend,
       return err;
     }
 
+  sample_path[0] = 0;
   while (!item_iterator_next (&iter))
     {
       if (id == iter.item.id)
@@ -3174,6 +3175,11 @@ elektron_ram_download_sample (struct backend *backend,
   item_iterator_free (&iter);
 
   usleep (BE_REST_TIME_US);
+
+  if (sample_path[0] == 0)
+    {
+      return -EBADSLT;
+    }
 
   control->parts = 1;
   control->part = 0;
