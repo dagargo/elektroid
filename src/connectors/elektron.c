@@ -3220,6 +3220,8 @@ elektron_ram_set_sample (struct backend *backend,
   g_byte_array_append (tx_msg, (guint8 *) "\x01", 1);	// Unknown. Required value.
   rx_msg = elektron_tx_and_rx (backend, tx_msg, NULL);
 
+  // It seems elektron_get_msg_status(rx_msg) == 1.
+
   // The response has 5 bytes.
   // First byte is 0x01. Last byte looks like a sequence increased in every response.
 
