@@ -296,8 +296,8 @@ volca_sample_dump_8b (struct backend *backend, const gchar *path,
 }
 
 static gint
-volca_sample_load (const gchar *path, struct idata *sample,
-		   struct task_control *control)
+volca_sample_load (struct backend *backend, const gchar *path,
+		   struct idata *sample, struct task_control *control)
 {
   gint err;
 

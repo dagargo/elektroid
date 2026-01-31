@@ -149,7 +149,7 @@ struct fs_operations
   fs_remote_file_op download;	//Donload a resource from the filesystem to memory.
   fs_remote_file_op upload;	//Upload a resource from memory to the filesystem.
   fs_local_file_op save;	//Write a file from memory to the OS storage. Typically used after download.
-  fs_local_file_op load;	//Load a file from the OS storage into memory. Typically used before upload.
+  fs_remote_file_op load;	//Load a file from the OS storage into memory. Typically used before upload.
   fs_get_item_slot get_slot;	//Optionally used by slot filesystems to show a custom slot name column such `A01` or `[P-01]`. Needs FS_OPTION_SHOW_SLOT_COLUMN.
   fs_get_exts get_exts;		//Length must be one at least. First element will be used as file extension and all will be used as loading extensions.
   fs_get_path get_upload_path;

@@ -785,19 +785,19 @@ sample_load_microfreak (const gchar *path, struct idata *sample,
 
   if (!strcmp (MICROFREAK_PWAVETABLE_EXT, ext))
     {
-      err = microfreak_pwavetable_load (path, sample, control);
+      err = microfreak_pwavetable_load (NULL, path, sample, control);
     }
   else if (!strcmp (MICROFREAK_ZWAVETABLE_EXT, ext))
     {
-      err = microfreak_zwavetable_load (path, sample, control);
+      err = microfreak_zwavetable_load (NULL, path, sample, control);
     }
   else if (!strcmp (MICROFREAK_PSAMPLE_EXT, ext))
     {
-      err = microfreak_psample_load (path, sample, control);
+      err = microfreak_psample_load (NULL, path, sample, control);
     }
   else if (!strcmp (MICROFREAK_ZSAMPLE_EXT, ext))
     {
-      err = microfreak_zsample_load (path, sample, control);
+      err = microfreak_zsample_load (NULL, path, sample, control);
     }
   else
     {

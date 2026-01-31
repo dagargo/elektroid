@@ -302,11 +302,12 @@ volca_sample_2_get_sample_id_as_slot (struct item *item,
 }
 
 static gint
-volca_sample_2_sample_load (const gchar *path, struct idata *sample,
+volca_sample_2_sample_load (struct backend *backend, const gchar *path,
+			    struct idata *sample,
 			    struct task_control *control)
 {
-  return common_sample_load (path, sample, control, 1, VOLCA_SAMPLE_2_RATE,
-			     SF_FORMAT_PCM_16, FALSE);
+  return common_sample_load (path, sample, control, 1,
+			     VOLCA_SAMPLE_2_RATE, SF_FORMAT_PCM_16, FALSE);
 }
 
 static gint
@@ -902,7 +903,7 @@ static const struct fs_operations FS_VOLCA_SAMPLE_2_PATTERN_OPERATIONS = {
   .rename = volca_sample_2_pattern_rename,
   .download = volca_sample_2_pattern_download,
   .upload = volca_sample_2_pattern_upload,
-  .load = file_load,
+  .load = common_file_load,
   .save = file_save,
   .get_exts = volca_sample_2_pattern_get_extensions,
   .get_upload_path = common_slot_get_upload_path,

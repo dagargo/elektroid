@@ -212,7 +212,8 @@ scl_get_cksum (guint8 *b, gint len)
 }
 
 gint
-scl_load_2_byte_octave_tuning_msg_from_scala_file (const char *path,
+scl_load_2_byte_octave_tuning_msg_from_scala_file (struct backend *backend,
+						   const char *path,
 						   struct idata *idata,
 						   struct task_control
 						   *control)
@@ -282,7 +283,8 @@ end:
 }
 
 gint
-scl_load_key_based_tuning_msg_from_scala_file (const char *path,
+scl_load_key_based_tuning_msg_from_scala_file (struct backend *backend,
+					       const char *path,
 					       struct idata *scale,
 					       struct task_control *control)
 {

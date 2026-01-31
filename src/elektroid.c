@@ -771,7 +771,7 @@ elektroid_upload_task_runner (gpointer data)
       return NULL;
     }
 
-  res = tasks.transfer.fs_ops->load (tasks.transfer.src, &idata,
+  res = tasks.transfer.fs_ops->load (BACKEND, tasks.transfer.src, &idata,
 				     &tasks.transfer.control);
   if (res)
     {

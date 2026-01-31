@@ -382,8 +382,8 @@ end:
 }
 
 gint
-microfreak_zobject_load (const char *path, struct idata *zobject,
-			 struct task_control *control)
+microfreak_zobject_load (struct backend *backend, const char *path,
+			 struct idata *zobject, struct task_control *control)
 {
   gint err = 0;
   zip_t *archive;
@@ -445,13 +445,13 @@ end:
 }
 
 gint
-microfreak_zsample_load (const gchar *path, struct idata *sample,
-			 struct task_control *control)
+microfreak_zsample_load (struct backend *backend, const gchar *path,
+			 struct idata *sample, struct task_control *control)
 {
   gint err;
   struct idata aux;
 
-  err = microfreak_zobject_load (path, &aux, control);
+  err = microfreak_zobject_load (backend, path, &aux, control);
   if (err)
     {
       return err;
@@ -465,8 +465,8 @@ microfreak_zsample_load (const gchar *path, struct idata *sample,
 }
 
 gint
-microfreak_psample_load (const gchar *path, struct idata *sample,
-			 struct task_control *control)
+microfreak_psample_load (struct backend *backend, const gchar *path,
+			 struct idata *sample, struct task_control *control)
 {
   gint err;
   struct idata aux;
@@ -540,7 +540,8 @@ microfreak_deserialize_wavetable (struct idata *wavetable,
 }
 
 gint
-microfreak_pwavetable_load (const gchar *path, struct idata *wavetable,
+microfreak_pwavetable_load (struct backend *backend, const gchar *path,
+			    struct idata *wavetable,
 			    struct task_control *control)
 {
   gint err;
@@ -559,13 +560,14 @@ microfreak_pwavetable_load (const gchar *path, struct idata *wavetable,
 }
 
 gint
-microfreak_zwavetable_load (const gchar *path, struct idata *wavetable,
+microfreak_zwavetable_load (struct backend *backend, const gchar *path,
+			    struct idata *wavetable,
 			    struct task_control *control)
 {
   gint err;
   struct idata aux;
 
-  err = microfreak_zobject_load (path, &aux, control);
+  err = microfreak_zobject_load (backend, path, &aux, control);
   if (err)
     {
       return err;

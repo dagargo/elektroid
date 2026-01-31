@@ -977,36 +977,36 @@ sds_sample_load_common (const gchar *path, struct idata *sample,
 }
 
 static gint
-sds_sample_load (const gchar *path, struct idata *sample,
-		 struct task_control *control)
+sds_sample_load (struct backend *backend, const gchar *path,
+		 struct idata *sample, struct task_control *control)
 {
   return sds_sample_load_common (path, sample, control, 0);	// Any sample rate is valid.
 }
 
 static gint
-sds_sample_load_44k1 (const gchar *path, struct idata *sample,
-		      struct task_control *control)
+sds_sample_load_44k1 (struct backend *backend, const gchar *path,
+		      struct idata *sample, struct task_control *control)
 {
   return sds_sample_load_common (path, sample, control, 44100);
 }
 
 static gint
-sds_sample_load_32k_16b (const gchar *path, struct idata *sample,
-			 struct task_control *control)
+sds_sample_load_32k_16b (struct backend *backend, const gchar *path,
+			 struct idata *sample, struct task_control *control)
 {
   return sds_sample_load_common (path, sample, control, 32000);
 }
 
 static gint
-sds_sample_load_16k_16b (const gchar *path, struct idata *sample,
-			 struct task_control *control)
+sds_sample_load_16k_16b (struct backend *backend, const gchar *path,
+			 struct idata *sample, struct task_control *control)
 {
   return sds_sample_load_common (path, sample, control, 16000);
 }
 
 static gint
-sds_sample_load_8k_16b (const gchar *path, struct idata *sample,
-			struct task_control *control)
+sds_sample_load_8k_16b (struct backend *backend, const gchar *path,
+			struct idata *sample, struct task_control *control)
 {
   return sds_sample_load_common (path, sample, control, 8000);
 }

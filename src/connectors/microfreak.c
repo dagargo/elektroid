@@ -657,7 +657,7 @@ static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
   .rename = microfreak_preset_rename,
   .download = microfreak_preset_download,
   .upload = microfreak_preset_upload,
-  .load = file_load,
+  .load = common_file_load,
   .save = file_save,
   .get_exts = microfreak_ppreset_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
@@ -697,8 +697,8 @@ static const struct fs_operations FS_MICROFREAK_ZPRESET_OPERATIONS = {
 };
 
 static gint
-microfreak_preset_load (const char *path, struct idata *preset,
-			struct task_control *control)
+microfreak_preset_load (struct backend *backend, const char *path,
+			struct idata *preset, struct task_control *control)
 {
   const gchar *ext = filename_get_ext (path);
   if (strcmp (ext, MICROFREAK_ZPRESET_EXT))
@@ -707,7 +707,7 @@ microfreak_preset_load (const char *path, struct idata *preset,
     }
   else
     {
-      return microfreak_zobject_load (path, preset, control);
+      return microfreak_zobject_load (backend, path, preset, control);
     }
 }
 
@@ -1347,7 +1347,8 @@ microfreak_wavetable_read_dir (struct backend *backend,
 }
 
 static gint
-microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
+microfreak_wavetable_load (struct backend *backend, const gchar *path,
+			   struct idata *wavetable,
 			   struct task_control *control)
 {
   struct idata aux;
@@ -1875,8 +1876,8 @@ microfreak_wavetable_clear (struct backend *backend, const gchar *path)
 }
 
 static gint
-microfreak_sample_load (const gchar *path, struct idata *sample,
-			struct task_control *control)
+microfreak_sample_load (struct backend *backend, const gchar *path,
+			struct idata *sample, struct task_control *control)
 {
   return common_sample_load (path, sample, control, 1, MICROFREAK_SAMPLERATE,
 			     SF_FORMAT_PCM_16, FALSE);

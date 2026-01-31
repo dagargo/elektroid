@@ -308,7 +308,8 @@ system_load_custom (const gchar *path, struct idata *sample,
 }
 
 static gint
-system_load_stereo_48k_16b (const gchar *path, struct idata *sample,
+system_load_stereo_48k_16b (struct backend *backend, const gchar *path,
+			    struct idata *sample,
 			    struct task_control *control)
 {
   return system_load_custom (path, sample, control, 2, 48000,
@@ -325,15 +326,16 @@ system_upload (struct backend *backend, const gchar *path,
 }
 
 static gint
-system_load_mono_48k_16b (const gchar *path, struct idata *sample,
-			  struct task_control *control)
+system_load_mono_48k_16b (struct backend *backend, const gchar *path,
+			  struct idata *sample, struct task_control *control)
 {
   return system_load_custom (path, sample, control, 1, 48000,
 			     SF_FORMAT_PCM_16);
 }
 
 static gint
-system_load_stereo_44k1_16b (const gchar *path, struct idata *sample,
+system_load_stereo_44k1_16b (struct backend *backend, const gchar *path,
+			     struct idata *sample,
 			     struct task_control *control)
 {
   return system_load_custom (path, sample, control, 2, 44100,
@@ -341,15 +343,16 @@ system_load_stereo_44k1_16b (const gchar *path, struct idata *sample,
 }
 
 static gint
-system_load_mono_44k1_16b (const gchar *path, struct idata *sample,
-			   struct task_control *control)
+system_load_mono_44k1_16b (struct backend *backend, const gchar *path,
+			   struct idata *sample, struct task_control *control)
 {
   return system_load_custom (path, sample, control, 1, 44100,
 			     SF_FORMAT_PCM_16);
 }
 
 static gint
-system_load_stereo_44k1_24b (const gchar *path, struct idata *sample,
+system_load_stereo_44k1_24b (struct backend *backend, const gchar *path,
+			     struct idata *sample,
 			     struct task_control *control)
 {
   return system_load_custom (path, sample, control, 2, 44100,
@@ -365,8 +368,8 @@ system_upload_24_bits (struct backend *backend, const gchar *path,
 }
 
 static gint
-system_load_mono_44k1_24b (const gchar *path, struct idata *sample,
-			   struct task_control *control)
+system_load_mono_44k1_24b (struct backend *backend, const gchar *path,
+			   struct idata *sample, struct task_control *control)
 {
   return system_load_custom (path, sample, control, 1, 44100,
 			     SF_FORMAT_PCM_32);
@@ -381,15 +384,16 @@ system_upload_8_bits (struct backend *backend, const gchar *path,
 }
 
 static gint
-system_load_mono_32k_16b (const gchar *path, struct idata *sample,
-			  struct task_control *control)
+system_load_mono_32k_16b (struct backend *backend, const gchar *path,
+			  struct idata *sample, struct task_control *control)
 {
   return system_load_custom (path, sample, control, 1, 32000,
 			     SF_FORMAT_PCM_16);
 }
 
 static gint
-system_load_mono_31k25_16b (const gchar *path, struct idata *sample,
+system_load_mono_31k25_16b (struct backend *backend, const gchar *path,
+			    struct idata *sample,
 			    struct task_control *control)
 {
   return system_load_custom (path, sample, control, 1, 31250,
@@ -397,7 +401,8 @@ system_load_mono_31k25_16b (const gchar *path, struct idata *sample,
 }
 
 static gint
-system_load_mono_22k05_16b (const gchar *path, struct idata *sample,
+system_load_mono_22k05_16b (struct backend *backend, const gchar *path,
+			    struct idata *sample,
 			    struct task_control *control)
 {
   return system_load_custom (path, sample, control, 1, 22050,
@@ -405,16 +410,16 @@ system_load_mono_22k05_16b (const gchar *path, struct idata *sample,
 }
 
 static gint
-system_load_mono_16k_16b (const gchar *path, struct idata *sample,
-			  struct task_control *control)
+system_load_mono_16k_16b (struct backend *backend, const gchar *path,
+			  struct idata *sample, struct task_control *control)
 {
   return system_load_custom (path, sample, control, 1, 16000,
 			     SF_FORMAT_PCM_16);
 }
 
 static gint
-system_load_mono_8k_16b (const gchar *path, struct idata *sample,
-			 struct task_control *control)
+system_load_mono_8k_16b (struct backend *backend, const gchar *path,
+			 struct idata *sample, struct task_control *control)
 {
   return system_load_custom (path, sample, control, 1, 8000,
 			     SF_FORMAT_PCM_16);

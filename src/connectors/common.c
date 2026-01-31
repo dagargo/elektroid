@@ -476,3 +476,10 @@ common_midi_msg_to_8bit_msg_size (guint size)
   guint rem = size % 8;
   return packets * 7 + (rem ? rem - 1 : 0);
 }
+
+gint
+common_file_load (struct backend *backend, const char *path,
+		  struct idata *idata, struct task_control *control)
+{
+  return file_load (path, idata, control);
+}

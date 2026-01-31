@@ -536,7 +536,7 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .download = summit_single_download,
   .upload = summit_single_upload,
   .get_slot = summit_get_patch_id_as_slot,
-  .load = file_load,
+  .load = common_file_load,
   .save = file_save,
   .get_exts = common_sysex_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
@@ -560,7 +560,7 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .download = summit_multi_download,
   .upload = summit_multi_upload,
   .get_slot = summit_get_patch_id_as_slot,
-  .load = file_load,
+  .load = common_file_load,
   .save = file_save,
   .get_exts = common_sysex_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
@@ -658,8 +658,8 @@ end:
 }
 
 static gint
-summit_tuning_load (const gchar *path, struct idata *tuning,
-		    struct task_control *control)
+summit_tuning_load (struct backend *backend, const gchar *path,
+		    struct idata *tuning, struct task_control *control)
 {
   gint err;
   gchar *filename = g_path_get_basename (path);
@@ -669,8 +669,9 @@ summit_tuning_load (const gchar *path, struct idata *tuning,
     }
   else
     {
-      err = scl_load_key_based_tuning_msg_from_scala_file (path, tuning,
-							   control);
+      err =
+	scl_load_key_based_tuning_msg_from_scala_file (backend, path, tuning,
+						       control);
     }
   g_free (filename);
   return err;
@@ -938,7 +939,7 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .rename = summit_wavetable_rename,
   .download = summit_wavetable_download,
   .upload = summit_wavetable_upload,
-  .load = file_load,
+  .load = common_file_load,
   .save = file_save,
   .get_exts = common_sysex_get_extensions,
   .get_download_path = common_slot_get_download_path_n,

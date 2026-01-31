@@ -215,7 +215,7 @@ test_get_2_byte_octave_midi_message ()
 
   printf ("\n");
 
-  err = scl_load_2_byte_octave_tuning_msg_from_scala_file (TEST_DATA_DIR
+  err = scl_load_2_byte_octave_tuning_msg_from_scala_file (NULL, TEST_DATA_DIR
 							   "/scala/success.scl",
 							   &idata, NULL);
 
@@ -236,7 +236,7 @@ test_get_bulk_tuning_midi_message ()
 
   printf ("\n");
 
-  err = scl_load_key_based_tuning_msg_from_scala_file (TEST_DATA_DIR
+  err = scl_load_key_based_tuning_msg_from_scala_file (NULL, TEST_DATA_DIR
 						       "/scala/success.scl",
 						       &idata, NULL);
 
@@ -276,7 +276,7 @@ test_get_2_byte_octave_midi_message_test ()
 
   printf ("\n");
 
-  err = scl_load_2_byte_octave_tuning_msg_from_scala_file (TEST_DATA_DIR
+  err = scl_load_2_byte_octave_tuning_msg_from_scala_file (NULL, TEST_DATA_DIR
 							   "/scala/TET.scl",
 							   &idata, NULL);
 
@@ -297,7 +297,7 @@ test_get_bulk_tuning_midi_message_tet ()
 
   printf ("\n");
 
-  err = scl_load_key_based_tuning_msg_from_scala_file (TEST_DATA_DIR
+  err = scl_load_key_based_tuning_msg_from_scala_file (NULL, TEST_DATA_DIR
 						       "/scala/TET.scl",
 						       &idata, NULL);
 

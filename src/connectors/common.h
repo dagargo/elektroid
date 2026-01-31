@@ -149,3 +149,6 @@ void common_8bit_msg_to_midi_msg (guint8 * msg_8bit, guint8 * msg_midi,
 guint common_8bit_msg_to_midi_msg_size (guint size);
 
 guint common_midi_msg_to_8bit_msg_size (guint size);
+
+gint common_file_load (struct backend *backend, const char *path,
+		       struct idata *idata, struct task_control *control);

@@ -53,19 +53,24 @@ gint microfreak_zobject_save (const gchar * path, struct idata *zobject,
 			      struct task_control *control,
 			      const gchar * name);
 
-gint microfreak_zobject_load (const char *path, struct idata *zobject,
+gint microfreak_zobject_load (struct backend *backend, const char *path,
+			      struct idata *zobject,
 			      struct task_control *control);
 
-gint microfreak_zsample_load (const gchar * path, struct idata *sample,
+gint microfreak_zsample_load (struct backend *backend, const gchar * path,
+			      struct idata *sample,
 			      struct task_control *control);
 
-gint microfreak_psample_load (const gchar * path, struct idata *sample,
+gint microfreak_psample_load (struct backend *backend, const gchar * path,
+			      struct idata *sample,
 			      struct task_control *control);
 
-gint microfreak_pwavetable_load (const gchar * path, struct idata *wavetable,
+gint microfreak_pwavetable_load (struct backend *backend, const gchar * path,
+				 struct idata *wavetable,
 				 struct task_control *control);
 
-gint microfreak_zwavetable_load (const gchar * path, struct idata *wavetable,
+gint microfreak_zwavetable_load (struct backend *backend, const gchar * path,
+				 struct idata *wavetable,
 				 struct task_control *control);
 
 gint microfreak_pwavetable_save (const gchar * path, struct idata *wavetable,

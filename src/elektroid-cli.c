@@ -748,7 +748,7 @@ cli_upload_item (const gchar *src_path, const gchar *dst_path)
   task_control.callback = print_progress;
   current_path_progress = src_path;
 
-  err = fs_ops->load (src_path, &idata, &task_control);
+  err = fs_ops->load (&backend, src_path, &idata, &task_control);
   if (err)
     {
       return err;
