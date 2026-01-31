@@ -3048,19 +3048,31 @@ elektron_ram_slot_next_entry (struct item_iterator *iter)
 
   iter->item.id = id;
   iter->item.type = ITEM_TYPE_FILE;
-  iter->item.size = size;
   item_set_object_info (&iter->item, "%s",
 			used ? ELEKTRON_RAM_SLOT_USED : "");
   if (size == 0)
     {
-      elektron_item_set_name (&iter->item, "");
+      item_set_name (&iter->item, "");
+      iter->item.size = -1;
+      iter->item.type = ITEM_TYPE_NONE;
     }
   else
     {
       gchar *path_cp1252;
       path_cp1252 = elektron_get_sample_path_from_hash_size (data->backend,
 							     hash, size);
-      elektron_item_set_name (&iter->item, path_cp1252);
+      if (path_cp1252)
+	{
+	  elektron_item_set_name (&iter->item, path_cp1252);
+	  iter->item.size = size;
+	  iter->item.type = ITEM_TYPE_FILE;
+	}
+      else
+	{
+	  item_set_name (&iter->item, "");
+	  iter->item.size = -1;
+	  iter->item.type = ITEM_TYPE_NONE;
+	}
     }
 
   return 0;
@@ -3326,8 +3338,16 @@ elektron_ram_track_next_entry (struct item_iterator *iter)
       gchar *path_utf8;
       path_cp1252 = elektron_get_sample_path_from_hash_size (data->backend,
 							     hash, size);
-      path_utf8 = elektron_name_to_utf8 (path_cp1252);
-      item_set_object_info (&iter->item, "slot=%d:path=%s", slot, path_utf8);
+      if (path_cp1252)
+	{
+	  path_utf8 = elektron_name_to_utf8 (path_cp1252);
+	}
+      else
+	{
+	  path_utf8 = NULL;
+	}
+      item_set_object_info (&iter->item, "slot=%d:path=%s", slot,
+			    path_utf8 ? path_utf8 : "");
       g_free (path_cp1252);
       g_free (path_utf8);
     }
