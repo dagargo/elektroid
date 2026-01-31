@@ -467,27 +467,20 @@ static gint
 elektron_get_smplrw_info_from_msg (GByteArray *info_msg, guint32 *id,
 				   guint *size)
 {
-  // The result is 2 for factory samples.
-  if (elektron_get_msg_status (info_msg) == 1)
+  switch (elektron_get_msg_status (info_msg))
     {
-      if (id)
-	{
-	  *id = g_ntohl (*((guint32 *) & info_msg->data[6]));
-	}
+    case 1:
+      *id = g_ntohl (*((guint32 *) & info_msg->data[6]));
       if (size)
 	{
 	  *size = g_ntohl (*((guint32 *) & info_msg->data[10]));
 	}
+      return 0;
+    case 2:
+      return -EBADSLT;		// Case for for factory samples.
+    default:
+      return -EIO;
     }
-  else
-    {
-      if (id)
-	{
-	  return -EIO;
-	}
-    }
-
-  return 0;
 }
 
 static GByteArray *
