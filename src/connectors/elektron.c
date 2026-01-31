@@ -3055,7 +3055,7 @@ elektron_ram_slot_next_entry (struct item_iterator *iter)
     {
       item_set_name (&iter->item, "");
       iter->item.size = -1;
-      iter->item.type = ITEM_TYPE_NONE;
+      iter->item.type = ITEM_TYPE_FILE;
     }
   else
     {
@@ -3072,7 +3072,7 @@ elektron_ram_slot_next_entry (struct item_iterator *iter)
 	{
 	  item_set_name (&iter->item, "");
 	  iter->item.size = -1;
-	  iter->item.type = ITEM_TYPE_NONE;
+	  iter->item.type = ITEM_TYPE_FILE;
 	}
     }
 
@@ -3420,7 +3420,7 @@ elektron_ram_get_free_slot (struct backend *backend)
 
   while (!item_iterator_next (&iter))
     {
-      if (iter.item.size == 0)
+      if (iter.item.size == -1)
 	{
 	  free_slot = iter.item.id;
 	  break;
