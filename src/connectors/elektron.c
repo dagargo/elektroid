@@ -467,7 +467,8 @@ static gint
 elektron_get_smplrw_info_from_msg (GByteArray *info_msg, guint32 *id,
 				   guint *size)
 {
-  if (elektron_get_msg_status (info_msg))
+  // The result is 2 for factory samples.
+  if (elektron_get_msg_status (info_msg) == 1)
     {
       if (id)
 	{
