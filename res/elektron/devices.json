@@ -213,12 +213,12 @@
     "id": 42,
     "name": "Elektron Digitakt II",
     "filesystems": {
+      "sample": null,
       "data": null,
       "project": [
         "dt2prj",
         "dtprj"
       ],
-      "sample-stereo": null,
       "preset-takt-ii": [
         "dt2pst",
         "dtsnd"

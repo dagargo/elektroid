@@ -101,7 +101,6 @@ There are 3 different filesystem families depending on the underlying functional
   * `raw`
   * `preset-raw`
   * `sample`
-  * `sample-stereo`
 
 * Data
   * `data`
@@ -118,7 +117,7 @@ There are 3 different filesystem families depending on the underlying functional
 
 Use the command `info` to get the actual supported filesystems for a particular device.
 
-Notice that the GUI will present these filesystems to the user with the same name used in the actual machines. For instance, a Digitakt II has a "Sample" and "Preset" GUI filesystem names although these are really implemented with the names `sample-stereo` and `preset-takt-ii`.
+Notice that the GUI will present these filesystems to the user with the same name used in the actual machines. For instance, a Digitakt II has a filesystem in the GUI named as "Preset" while it is really implemented with the name `preset-takt-ii`.
 
 #### Sample, raw and preset-raw commands
 

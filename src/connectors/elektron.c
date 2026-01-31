@@ -2948,29 +2948,32 @@ gint
 elektron_sample_load (struct backend *backend, const gchar *path,
 		      struct idata *sample, struct task_control *control)
 {
-  return common_sample_load (path, sample, control, 1, ELEKTRON_SAMPLE_RATE,
-			     SF_FORMAT_PCM_16, FALSE);
-}
-
-gint
-elektron_sample_stereo_load (struct backend *backend, const gchar *path,
-			     struct idata *sample,
-			     struct task_control *control)
-{
+  gint err;
   struct sample_info *sample_info;
-  gint err = common_sample_load (path, sample, control, 0,
-				 ELEKTRON_SAMPLE_RATE, SF_FORMAT_PCM_16,
-				 FALSE);
-  if (err)
-    {
-      return err;
-    }
+  struct elektron_data *data = backend->data;
 
-  sample_info = sample->info;
-  if (sample_info->channels > 2)
+  if (data->device_desc.id == ELEKTRON_DIGITAKT_II_ID)
     {
-      idata_clear (sample);
-      err = -EINVAL;
+      err = common_sample_load (path, sample, control, 0,
+				ELEKTRON_SAMPLE_RATE, SF_FORMAT_PCM_16,
+				FALSE);
+      if (err)
+	{
+	  return err;
+	}
+
+      sample_info = sample->info;
+      if (sample_info->channels > 2)
+	{
+	  idata_free (sample);
+	  err = -EINVAL;
+	}
+    }
+  else
+    {
+      err = common_sample_load (path, sample, control, 1,
+				ELEKTRON_SAMPLE_RATE, SF_FORMAT_PCM_16,
+				FALSE);
     }
 
   return err;
@@ -3705,31 +3708,6 @@ static const struct fs_operations FS_DATA_PST_OPERATIONS = {
   .get_download_path = elektron_get_download_path
 };
 
-static const struct fs_operations FS_SAMPLES_STEREO_OPERATIONS = {
-  .id = FS_SAMPLES_STEREO,
-  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
-    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
-  .name = "sample-stereo",
-  .gui_name = "Samples",
-  .gui_icon = FS_ICON_WAVE,
-  .file_icon = FS_ICON_WAVE,
-  .max_name_len = ELEKTRON_NAME_MAX_LEN,
-  .readdir = elektron_read_samples_dir,
-  .file_exists = elektron_sample_file_exists,
-  .print_item = elektron_print_smplrw,
-  .mkdir = elektron_create_samples_dir,
-  .delete = elektron_delete_samples_item,
-  .rename = elektron_move_samples_item,
-  .move = elektron_move_samples_item,
-  .download = elektron_download_sample,
-  .upload = elektron_upload_sample,
-  .load = elektron_sample_stereo_load,
-  .save = elektron_sample_save,
-  .get_exts = sample_get_sample_extensions,
-  .get_upload_path = elektron_get_upload_path_smplrw,
-  .get_download_path = common_system_get_download_path
-};
-
 static const struct fs_operations FS_DATA_TAKT_II_PST_OPERATIONS = {
   .id = FS_DATA_TAKT_II_PST,
   .options = FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_SIZE_COLUMN |
@@ -3813,10 +3791,9 @@ static const struct fs_operations FS_DIGITAKT_TRACK_LOOP_OPERATIONS = {
 static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
   &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
-  &FS_DATA_PST_OPERATIONS, &FS_SAMPLES_STEREO_OPERATIONS,
-  &FS_DATA_TAKT_II_PST_OPERATIONS, &FS_DIGITAKT_RAM_OPERATIONS,
-  &FS_DIGITAKT_TRACK_OPERATIONS, &FS_DIGITAKT_TRACK_LOOP_OPERATIONS,
-  NULL
+  &FS_DATA_PST_OPERATIONS, &FS_DATA_TAKT_II_PST_OPERATIONS,
+  &FS_DIGITAKT_RAM_OPERATIONS, &FS_DIGITAKT_TRACK_OPERATIONS,
+  &FS_DIGITAKT_TRACK_LOOP_OPERATIONS, NULL
 };
 
 gint
