@@ -54,7 +54,7 @@ static const gchar *VOLCA_SAMPLE_2_PATTERN_EXTS[] = { "vlcsplpattb", NULL };
 enum volca_sample_2_fs
 {
   FS_VOLCA_SAMPLE_2_SAMPLE,
-  FS_VOLCA_SAMPLE_2_SLICE,	//Same as sample but with the sample size tweaked so that length reaches 100 % of the efective size
+  FS_VOLCA_SAMPLE_2_SAMPLE_LOOP,	//Same as sample but with the sample size tweaked so that length reaches 100 % of the efective size
   FS_VOLCA_SAMPLE_2_PATTERN
 };
 
@@ -485,11 +485,11 @@ static const struct fs_operations FS_VOLCA_SAMPLE_2_SAMPLE_OPERATIONS = {
 };
 
 static gint
-volca_sample_2_slice_load (const gchar *path, struct idata *sample,
-			   struct task_control *control)
+volca_sample_2_sample_loop_load (const gchar *path, struct idata *sample,
+				 struct task_control *control)
 {
   guint err;
-  guint sample_len, slice_len, sample_size, slice_size;
+  guint sample_len, loop_len, sample_size, loop_size;
 
   err = common_sample_load (path, sample, control, 1, VOLCA_SAMPLE_2_RATE,
 			    SF_FORMAT_PCM_16, FALSE);
@@ -503,31 +503,31 @@ volca_sample_2_slice_load (const gchar *path, struct idata *sample,
   // 91 % of (100 / 91) * 100 % becomes 100 % of the original length.
   sample_size = sample->content->len;
   sample_len = sample_size / sizeof (gint16);
-  slice_len = ceil (sample_len / VOLCA_SAMPLE_2_SAMPLE_START_POINT);
-  slice_size = slice_len * sizeof (gint16);
+  loop_len = ceil (sample_len / VOLCA_SAMPLE_2_SAMPLE_START_POINT);
+  loop_size = loop_len * sizeof (gint16);
 
   // sample->info can be ignored as is not used when uploading.
 
   debug_print (1, "Adjusting sample length from %u (%u B) to %u (%u B)...",
-	       sample_len, sample_size, slice_len, slice_size);
+	       sample_len, sample_size, loop_len, loop_size);
 
-  g_byte_array_set_size (sample->content, slice_size);
-  memset (&sample->content->data[sample_size], 0, slice_size - sample_size);
+  g_byte_array_set_size (sample->content, loop_size);
+  memset (&sample->content->data[sample_size], 0, loop_size - sample_size);
 
   return 0;
 }
 
 static gint
-volca_sample_2_slice_save (const gchar *path, struct idata *sample,
-			   struct task_control *control)
+volca_sample_2_sample_loop_save (const gchar *path, struct idata *sample,
+				 struct task_control *control)
 {
   struct sample_info *sample_info;
-  guint sample_len, slice_len, sample_size, slice_size;
+  guint sample_len, loop_len, sample_size, loop_size;
 
-  //See volca_sample_2_slice_load.
-  slice_size = sample->content->len;
-  slice_len = slice_size / sizeof (gint16);
-  sample_len = slice_len * VOLCA_SAMPLE_2_SAMPLE_START_POINT;
+  //See volca_sample_2_sample_loop_load.
+  loop_size = sample->content->len;
+  loop_len = loop_size / sizeof (gint16);
+  sample_len = loop_len * VOLCA_SAMPLE_2_SAMPLE_START_POINT;
   sample_size = sample_len * sizeof (gint16);
   sample->content->len = sample_size;
 
@@ -536,22 +536,22 @@ volca_sample_2_slice_save (const gchar *path, struct idata *sample,
   sample_info->loop_end = sample_info->loop_start;
 
   debug_print (1, "Adjusting sample length from %u (%u B) to %u (%u B)...",
-	       slice_len, slice_size, sample_len, sample_size);
+	       loop_len, loop_size, sample_len, sample_size);
 
   return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
 }
 
-// The only functional difference with the sample filesystem are volca_sample_2_slice_load and volca_sample_2_slice_save.
+// The only functional difference with the sample filesystem are volca_sample_2_sample_loop_load and volca_sample_2_sample_loop_save.
 
-static const struct fs_operations FS_VOLCA_SAMPLE_2_SLICE_OPERATIONS = {
-  .id = FS_VOLCA_SAMPLE_2_SLICE,
+static const struct fs_operations FS_VOLCA_SAMPLE_2_SAMPLE_LOOP_OPERATIONS = {
+  .id = FS_VOLCA_SAMPLE_2_SAMPLE_LOOP,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_SLOT_COLUMN |
     FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_ALLOW_SEARCH,
-  .name = "slice",
-  .gui_name = "Slices",
-  .gui_icon = FS_ICON_SLICE,
+  .name = "sample-loop",
+  .gui_name = "Sample (loop)",
+  .gui_icon = FS_ICON_WAVE_LOOP,
   .file_icon = FS_ICON_WAVE,
   .readdir = volca_sample_2_sample_read_dir,
   .print_item = common_print_item,
@@ -559,8 +559,8 @@ static const struct fs_operations FS_VOLCA_SAMPLE_2_SLICE_OPERATIONS = {
   .delete = volca_sample_2_sample_clear,
   .download = volca_sample_2_sample_download,
   .upload = volca_sample_2_sample_upload,
-  .load = volca_sample_2_slice_load,
-  .save = volca_sample_2_slice_save,
+  .load = volca_sample_2_sample_loop_load,
+  .save = volca_sample_2_sample_loop_save,
   .get_exts = sample_get_sample_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_system_get_download_path
@@ -958,7 +958,7 @@ volca_sample_2_handshake (struct backend *backend)
     }
 
   gslist_fill (&backend->fs_ops, &FS_VOLCA_SAMPLE_2_SAMPLE_OPERATIONS,
-	       &FS_VOLCA_SAMPLE_2_SLICE_OPERATIONS,
+	       &FS_VOLCA_SAMPLE_2_SAMPLE_LOOP_OPERATIONS,
 	       &FS_VOLCA_SAMPLE_2_PATTERN_OPERATIONS, NULL);
   snprintf (backend->name, LABEL_MAX, "KORG Volca Sample 2");
 

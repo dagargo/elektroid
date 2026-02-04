@@ -34,6 +34,7 @@
 #define FS_ICON_TRACK "elektroid-track-symbolic"
 #define FS_ICON_TRACK_LOOP "elektroid-track-loop-symbolic"
 #define FS_ICON_WAVE "elektroid-wave-symbolic"
+#define FS_ICON_WAVE_LOOP "elektroid-wave-loop-symbolic"
 #define FS_ICON_WAVETABLE "elektroid-wavetable-symbolic"
 
 #define GET_SAVE_EXT(ops,backend) (ops->get_exts(backend, ops)[0])
