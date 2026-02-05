@@ -31,6 +31,7 @@
 #include "record_window.h"
 #include "tags_window.h"
 #include "sample.h"
+#include "sample_ops.h"
 #include "utils.h"
 
 #define EDITOR_LOOP_MARKER_WIDTH 7
@@ -1696,9 +1697,9 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
     {
       if (!(event->state & GDK_SHIFT_MASK))
 	{
-	  cursor_frame = audio_get_prev_zero_crossing (&audio.sample,
-						       cursor_frame,
-						       AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+	  cursor_frame = sample_ops_get_prev_zero_crossing (&audio.sample,
+							    cursor_frame,
+							    SAMPLE_OPS_ZERO_CROSSING_SLOPE_POSITIVE);
 	}
 
       if (cursor_frame > audio.sel_start)
@@ -1718,9 +1719,9 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
     {
       if (!(event->state & GDK_SHIFT_MASK))
 	{
-	  cursor_frame = audio_get_next_zero_crossing (&audio.sample,
-						       cursor_frame,
-						       AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+	  cursor_frame = sample_ops_get_next_zero_crossing (&audio.sample,
+							    cursor_frame,
+							    SAMPLE_OPS_ZERO_CROSSING_SLOPE_POSITIVE);
 	}
 
       if (cursor_frame < audio.sel_end)
@@ -1746,8 +1747,8 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 	{
 	  debug_print (2, "Searching next zero loop point...");
 	  sample_info->loop_start =
-	    audio_get_next_zero_crossing (&audio.sample, cursor_frame,
-					  AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+	    sample_ops_get_next_zero_crossing (&audio.sample, cursor_frame,
+					       SAMPLE_OPS_ZERO_CROSSING_SLOPE_POSITIVE);
 	}
       debug_print (2, "Setting loop to [ %d, %d ]...",
 		   sample_info->loop_start, sample_info->loop_end);
@@ -1763,8 +1764,8 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 	{
 	  debug_print (2, "Searching previous zero loop point...");
 	  sample_info->loop_end =
-	    audio_get_prev_zero_crossing (&audio.sample, cursor_frame,
-					  AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+	    sample_ops_get_prev_zero_crossing (&audio.sample, cursor_frame,
+					       SAMPLE_OPS_ZERO_CROSSING_SLOPE_POSITIVE);
 	}
       debug_print (2, "Setting loop to [ %d, %d ]...",
 		   sample_info->loop_start, sample_info->loop_end);
@@ -1833,7 +1834,8 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
     }
 
   g_mutex_lock (&audio.control.controllable.mutex);
-  audio_delete_range (&audio.sample, audio.sel_start, sel_len);
+  sample_ops_delete_range (&audio.sample, audio.sel_start, sel_len,
+			   &audio.sel_start, &audio.sel_end);
   g_mutex_unlock (&audio.control.controllable.mutex);
 
   editor_set_dirty (TRUE);
@@ -2154,7 +2156,7 @@ editor_normalize_clicked (GtkWidget *object, gpointer data)
   guint32 start, length;
   g_mutex_lock (&audio.control.controllable.mutex);
   editor_get_operation_range (&start, &length);
-  audio_normalize (&audio.sample, start, length);
+  sample_ops_normalize (&audio.sample, start, length);
   g_mutex_unlock (&audio.control.controllable.mutex);
   editor_clear_waveform_data ();
   editor_set_waveform_data ();

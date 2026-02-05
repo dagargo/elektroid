@@ -1,10 +1,10 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
-#include "../src/audio.h"
 #include "../src/sample.h"
+#include "../src/sample_ops.h"
 
 static void
-test_audio_get_zero_crossing ()
+test_sample_ops_get_zero_crossing ()
 {
   gint err;
   guint32 zero;
@@ -31,28 +31,28 @@ test_audio_get_zero_crossing ()
 
   sample_info = sample.info;
 
-  zero = audio_get_prev_zero_crossing (&sample, 1050,
-				       AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+  zero = sample_ops_get_prev_zero_crossing (&sample, 1050,
+					    SAMPLE_OPS_ZERO_CROSSING_SLOPE_POSITIVE);
   CU_ASSERT_EQUAL (zero, 981);
 
-  zero = audio_get_prev_zero_crossing (&sample, 1050,
-				       AUDIO_ZERO_CROSSING_SLOPE_NEGATIVE);
+  zero = sample_ops_get_prev_zero_crossing (&sample, 1050,
+					    SAMPLE_OPS_ZERO_CROSSING_SLOPE_NEGATIVE);
   CU_ASSERT_EQUAL (zero, 1036);
 
-  zero = audio_get_prev_zero_crossing (&sample, 0,
-				       AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+  zero = sample_ops_get_prev_zero_crossing (&sample, 0,
+					    SAMPLE_OPS_ZERO_CROSSING_SLOPE_POSITIVE);
   CU_ASSERT_EQUAL (zero, 0);
 
-  zero = audio_get_next_zero_crossing (&sample, 44050,
-				       AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+  zero = sample_ops_get_next_zero_crossing (&sample, 44050,
+					    SAMPLE_OPS_ZERO_CROSSING_SLOPE_POSITIVE);
   CU_ASSERT_EQUAL (zero, 44073);
 
-  zero = audio_get_next_zero_crossing (&sample, 44050,
-				       AUDIO_ZERO_CROSSING_SLOPE_NEGATIVE);
+  zero = sample_ops_get_next_zero_crossing (&sample, 44050,
+					    SAMPLE_OPS_ZERO_CROSSING_SLOPE_NEGATIVE);
   CU_ASSERT_EQUAL (zero, 44128);
 
-  zero = audio_get_next_zero_crossing (&sample, sample_info->frames - 1,
-				       AUDIO_ZERO_CROSSING_SLOPE_POSITIVE);
+  zero = sample_ops_get_next_zero_crossing (&sample, sample_info->frames - 1,
+					    SAMPLE_OPS_ZERO_CROSSING_SLOPE_POSITIVE);
   CU_ASSERT_EQUAL (zero, sample_info->frames - 1);
 
   idata_free (&sample);
@@ -75,8 +75,8 @@ main (gint argc, gchar *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "audio_get_zero_crossing",
-		    test_audio_get_zero_crossing))
+  if (!CU_add_test (suite, "sample_ops_get_zero_crossing",
+		    test_sample_ops_get_zero_crossing))
     {
       goto cleanup;
     }
