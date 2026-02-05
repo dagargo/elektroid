@@ -28,6 +28,7 @@
 #include "maction.h"
 #include "progress_window.h"
 #include "sample.h"
+#include "sample_ops.h"
 
 #define SAMPLES_DIR "samples"
 
@@ -160,17 +161,19 @@ autosampler_runner (gpointer user_data)
 
       if (data->normalize)
 	{
-	  audio_normalize (&audio.sample, 0, sample_info->frames);
+	  sample_ops_normalize (&audio.sample, 0, sample_info->frames);
 	}
 
       duration = (data->press + data->release) * audio.rate;
-      start = audio_detect_start (&audio.sample);
+      start = sample_ops_detect_start (&audio.sample);
 
       if (sample_info->frames - start >= duration)
 	{
-	  audio_delete_range (&audio.sample, 0, start);
+	  sample_ops_delete_range (&audio.sample, 0, start, &audio.sel_start,
+				   &audio.sel_end);
 	  trail_length = sample_info->frames - duration;
-	  audio_delete_range (&audio.sample, duration, trail_length);
+	  sample_ops_delete_range (&audio.sample, duration, trail_length,
+				   &audio.sel_start, &audio.sel_end);
 	}
       else
 	{

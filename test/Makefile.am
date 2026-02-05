@@ -23,7 +23,7 @@ else
   AUDIO_SOURCES = ../src/audio_pa.c
 endif
 
-check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample tests_connector tests_volca_sample tests_audio
+check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample tests_connector tests_volca_sample tests_sample_ops
 
 tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip zlib $(BE_LIBS)
 
@@ -173,27 +173,21 @@ tests_volca_sample_SOURCES = \
 	../src/sample.c \
         ../src/sample.h
 
-tests_audio_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS) $(AUDIO_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) $(AM_CFLAGS)
-tests_audio_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS) $(AUDIO_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
+tests_sample_ops_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS) $(AUDIO_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) $(AM_CFLAGS)
+tests_sample_ops_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS) $(AUDIO_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
 
-tests_audio_SOURCES = \
-        tests_audio.c \
+tests_sample_ops_SOURCES = \
+tests_sample_ops.c \
 	../src/utils.c \
-        ../src/utils.h \
+	../src/utils.h \
 	../src/preferences.c \
 	../src/preferences.h \
-	../src/backend.c \
-        ../src/backend.h \
-	../src/connector.c \
-        ../src/connector.h \
-	$(BE_SOURCES) \
-	../src/audio.c \
-        ../src/audio.h \
-	$(AUDIO_SOURCES) \
 	../src/connectors/microfreak_sample.c \
 	../src/connectors/microfreak_sample.h \
 	../src/sample.c \
-        ../src/sample.h
+	../src/sample.h \
+	../src/sample_ops.c \
+	../src/sample_ops.h
 
 TESTS = integration/test.sh integration/system_all_fs_tests.sh $(check_PROGRAMS)
 

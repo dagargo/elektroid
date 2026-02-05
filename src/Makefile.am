@@ -98,6 +98,7 @@ preferences_window.c preferences_window.h \
 progress_window.c progress_window.h \
 record_window.c record_window.h \
 regma.c regma.h \
+sample_ops.c sample_ops.h \
 tags_window.c tags_window.h \
 tasks.c tasks.h \
 elektroid.c elektroid.h
