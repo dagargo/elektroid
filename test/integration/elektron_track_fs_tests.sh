@@ -19,6 +19,8 @@ cp $src_file $tmp_file
 $ecli elektron:track:ul $tmp_file $TEST_DEVICE:/8
 [ $? -ne 0 ] && exit 1
 rm $tmp_file
+$ecli elektron:track:dl $tmp_file $TEST_DEVICE:/8
+[ $? -eq 0 ] && exit 1
 $ecli elektron:sample:dl $TEST_DEVICE:$incoming_file
 [ $? -ne 0 ] && err=1
 [ ! -f $tmp_file ] && err=1 && exit 1
