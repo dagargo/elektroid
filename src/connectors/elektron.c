@@ -222,7 +222,7 @@ static const guint8 DIGITAKT_RAM_LOAD_SLOT_REQUEST[] = { 0x19, 0 };
 static const guint8 DIGITAKT_RAM_CLEAR_SLOT_REQUEST[] =
   { 0x18, 0, 0, 1, 0, 0 };
 
-static const guint8 DIGITAKT_GET_PATTERN_INFO[] = { 0x6 };	//Unused. It returns 5 32 bit integer. The second one is the pattern tempo * 120.
+static const guint8 DIGITAKT_GET_PATTERN_INFO[] = { 0x6 };	//Unused. It returns 5 32 bit integer. The first one is the pattern tempo * 120. The second one is the global tempo * 120.
 
 // static const guint8 DIGITAKT_GET_FILE_SIZE_HASH_FROM_PATH_REQUEST[] = { 0x28 }; //Unused. Returns size and hash. Similar to FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST.
 
@@ -3471,8 +3471,8 @@ elektron_digitakt_track_loop_upload_sample (struct backend *backend,
 					    struct idata *sample,
 					    struct task_control *control)
 {
-  guint8 op;
   guint32 t;
+  guint8 mode;
   gdouble tempo;
   GByteArray *tx_msg, *rx_msg;
   struct sample_info *sample_info;
@@ -3487,20 +3487,23 @@ elektron_digitakt_track_loop_upload_sample (struct backend *backend,
       return -EIO;
     }
 
-  op = elektron_get_msg_status (rx_msg);
-  if (op)
-    {
-      error_print ("%s (%s)", backend_strerror (backend, -EIO),
-		   elektron_get_msg_string (rx_msg));
-      free_msg (rx_msg);
-      return -EIO;
-    }
+  mode = elektron_get_msg_status (rx_msg);	// This is the tempo mode. It's not the status.
 
-  memcpy (&t, &rx_msg->data[10], sizeof (guint32));
+  if (mode)
+    {
+      memcpy (&t, &rx_msg->data[6], sizeof (guint32));
+    }
+  else
+    {
+      memcpy (&t, &rx_msg->data[10], sizeof (guint32));
+    }
   t = GUINT32_FROM_BE (t);
   tempo = t / 120.0;
 
-  debug_print (2, "Pattern tempo: %.2f BPM", tempo);
+  debug_print (2, "%s tempo: %.2f BPM", mode ? "Pattern" : "Global", tempo);
+
+  free_msg (rx_msg);
+
   if (sample_info->tempo == 0)
     {
       control->parts = 2;
