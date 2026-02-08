@@ -22,6 +22,7 @@ else
                  elektroid-settings-symbolic.svg \
                  elektroid-slice-symbolic.svg \
                  elektroid-track-symbolic.svg \
+                 elektroid-track-loop-symbolic.svg \
                  elektroid-wave-symbolic.svg \
                  elektroid-wavetable-symbolic.svg
   microbrute_DATA = microbrute/microbrute.ui

@@ -3799,7 +3799,7 @@ static const struct fs_operations FS_DIGITAKT_TRACK_LOOP_OPERATIONS = {
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_INFO_COLUMN,
   .name = "track-loop",
   .gui_name = "Tracks (loop)",
-  .gui_icon = FS_ICON_TRACK,
+  .gui_icon = FS_ICON_TRACK_LOOP,
   .file_icon = FS_ICON_WAVE,
   .readdir = elektron_digitakt_track_read_dir,
   .print_item = common_print_item,
