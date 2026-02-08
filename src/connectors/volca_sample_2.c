@@ -485,18 +485,47 @@ static const struct fs_operations FS_VOLCA_SAMPLE_2_SAMPLE_OPERATIONS = {
 };
 
 static gint
-volca_sample_2_sample_loop_load (const gchar *path, struct idata *sample,
-				 struct task_control *control)
+volca_sample_2_sample_loop_download (struct backend *backend,
+				     const gchar *path, struct idata *sample,
+				     struct task_control *control)
 {
-  guint err;
+  gint err;
+  struct sample_info *sample_info;
   guint sample_len, loop_len, sample_size, loop_size;
 
-  err = common_sample_load (path, sample, control, 1, VOLCA_SAMPLE_2_RATE,
-			    SF_FORMAT_PCM_16, FALSE);
+  err = volca_sample_2_sample_download (backend, path, sample, control);
   if (err)
     {
       return err;
     }
+
+  //See volca_sample_2_sample_loop_load.
+  loop_size = sample->content->len;
+  loop_len = loop_size / sizeof (gint16);
+  sample_len = loop_len * VOLCA_SAMPLE_2_SAMPLE_START_POINT;
+  sample_size = sample_len * sizeof (gint16);
+  sample->content->len = sample_size;
+
+  sample_info = sample->info;
+  sample_info->loop_start = sample_len - 1;
+  sample_info->loop_end = sample_info->loop_start;
+
+  debug_print (1, "Adjusting sample length from %u (%u B) to %u (%u B)...",
+	       loop_len, loop_size, sample_len, sample_size);
+
+  return 0;
+}
+
+static gint
+volca_sample_2_sample_loop_upload (struct backend *backend, const gchar *path,
+				   struct idata *sample,
+				   struct task_control *control)
+{
+  gint err;
+  guint sample_len, loop_len, sample_size, loop_size;
+
+  // If the tempo could be retrived in any way, timestretching could be applied.
+  // The tempo is not stored in the pattern and there is currently no way to get it.
 
   // Sample start point goes up to roughly 91 % of the sample length.
   // By appending a silence at the end and making the sample 100 / 91 its original size,
@@ -514,35 +543,10 @@ volca_sample_2_sample_loop_load (const gchar *path, struct idata *sample,
   g_byte_array_set_size (sample->content, loop_size);
   memset (&sample->content->data[sample_size], 0, loop_size - sample_size);
 
-  return 0;
+  return volca_sample_2_sample_upload (backend, path, sample, control);
 }
 
-static gint
-volca_sample_2_sample_loop_save (const gchar *path, struct idata *sample,
-				 struct task_control *control)
-{
-  struct sample_info *sample_info;
-  guint sample_len, loop_len, sample_size, loop_size;
-
-  //See volca_sample_2_sample_loop_load.
-  loop_size = sample->content->len;
-  loop_len = loop_size / sizeof (gint16);
-  sample_len = loop_len * VOLCA_SAMPLE_2_SAMPLE_START_POINT;
-  sample_size = sample_len * sizeof (gint16);
-  sample->content->len = sample_size;
-
-  sample_info = sample->info;
-  sample_info->loop_start = sample_len - 1;
-  sample_info->loop_end = sample_info->loop_start;
-
-  debug_print (1, "Adjusting sample length from %u (%u B) to %u (%u B)...",
-	       loop_len, loop_size, sample_len, sample_size);
-
-  return sample_save_to_file (path, sample, control,
-			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
-}
-
-// The only functional difference with the sample filesystem are volca_sample_2_sample_loop_load and volca_sample_2_sample_loop_save.
+// The only functional difference with the sample filesystem are volca_sample_2_sample_loop_download and volca_sample_2_sample_loop_upload.
 
 static const struct fs_operations FS_VOLCA_SAMPLE_2_SAMPLE_LOOP_OPERATIONS = {
   .id = FS_VOLCA_SAMPLE_2_SAMPLE_LOOP,
@@ -557,10 +561,10 @@ static const struct fs_operations FS_VOLCA_SAMPLE_2_SAMPLE_LOOP_OPERATIONS = {
   .print_item = common_print_item,
   .get_slot = volca_sample_2_get_sample_id_as_slot,
   .delete = volca_sample_2_sample_clear,
-  .download = volca_sample_2_sample_download,
-  .upload = volca_sample_2_sample_upload,
-  .load = volca_sample_2_sample_loop_load,
-  .save = volca_sample_2_sample_loop_save,
+  .download = volca_sample_2_sample_loop_download,
+  .upload = volca_sample_2_sample_loop_upload,
+  .load = volca_sample_2_sample_load,
+  .save = volca_sample_2_sample_save,
   .get_exts = sample_get_sample_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_system_get_download_path
