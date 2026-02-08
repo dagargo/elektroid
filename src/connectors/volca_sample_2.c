@@ -30,7 +30,7 @@
 #define VOLCA_SAMPLE_2_SAMPLE_MAX 200
 #define VOLCA_SAMPLE_2_SAMPLE_NAME_LEN 24
 
-#define VOLCA_SAMPLE_2_PATTERN_MAX 16
+#define VOLCA_SAMPLE_2_PATTERN_MAX (16 + 1)	// Sequences and panel
 #define VOLCA_SAMPLE_2_PATTERN_NAME_LEN 32
 #define VOLCA_SAMPLE_2_PATTERN_NAME_POS 16
 
@@ -586,6 +586,7 @@ volca_sample_2_pattern_download_by_id (struct backend *backend, guint8 id,
 				       struct task_control *control)
 {
   guint size;
+  gboolean panel;
   gchar *pattern_name;
   GByteArray *content;
   gchar name[LABEL_MAX];
@@ -596,22 +597,47 @@ volca_sample_2_pattern_download_by_id (struct backend *backend, guint8 id,
       task_control_reset (control, 1);
     }
 
-  id--;				// O based
-  if (id >= VOLCA_SAMPLE_2_PATTERN_MAX)
+  panel = id == VOLCA_SAMPLE_2_PATTERN_MAX;
+
+  if (panel)
     {
-      return -EINVAL;
+      tx_msg = volca_sample_2_get_msg (0x11, NULL, 0);	// Current pattern (panel)
+    }
+  else
+    {
+      id--;			// O based
+      if (id >= VOLCA_SAMPLE_2_PATTERN_MAX)
+	{
+	  return -EINVAL;
+	}
+
+      tx_msg = volca_sample_2_get_msg (0x1d, &id, 1);
     }
 
-  tx_msg = volca_sample_2_get_msg (0x1d, &id, 1);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
     }
-  if (VOLCA_SAMPLE_2_GET_MSG_OP (rx_msg) != 0x4d)
+  if (VOLCA_SAMPLE_2_GET_MSG_OP (rx_msg) != (panel ? 0x41 : 0x4d))
     {
       free_msg (rx_msg);
       return -EIO;
+    }
+
+  // Panel has another OP byte and lacks the ID byte.
+  // With this, we transform the message.
+  if (panel)
+    {
+      gint new_size = rx_msg->len + 1;
+      GByteArray *panel_msg = g_byte_array_sized_new (new_size);
+      panel_msg->len = new_size;
+      memcpy (panel_msg->data, rx_msg->data, 6);
+      VOLCA_SAMPLE_2_GET_MSG_OP (rx_msg) = 0x4d;
+      rx_msg->data[7] = 0;	// Any valid id will work.
+      memcpy (&panel_msg->data[8], &rx_msg->data[7], rx_msg->len - 7);
+      free_msg (rx_msg);
+      rx_msg = panel_msg;
     }
 
   size = common_midi_msg_to_8bit_msg_size (rx_msg->len - 9);
@@ -627,7 +653,15 @@ volca_sample_2_pattern_download_by_id (struct backend *backend, guint8 id,
       g_free (text);
     }
 
-  pattern_name = (gchar *) & content->data[VOLCA_SAMPLE_2_PATTERN_NAME_POS];
+  if (panel)
+    {
+      pattern_name = COMMON_PANEL_NAME;
+    }
+  else
+    {
+      pattern_name =
+	(gchar *) & content->data[VOLCA_SAMPLE_2_PATTERN_NAME_POS];
+    }
   snprintf (name, VOLCA_SAMPLE_2_PATTERN_NAME_LEN + 1, "%.*s",
 	    VOLCA_SAMPLE_2_PATTERN_NAME_LEN, pattern_name);
   idata_init (pattern, content, strdup (name), NULL, NULL);
@@ -679,14 +713,20 @@ volca_sample_2_pattern_next_dentry (struct item_iterator *iter)
       return err;
     }
 
-  item_set_name (&iter->item, "%s", pattern.name);
+  if (data->next == VOLCA_SAMPLE_2_PATTERN_MAX)
+    {
+      item_set_name (&iter->item, "%s", COMMON_PANEL_NAME);
+    }
+  else
+    {
+      item_set_name (&iter->item, "%s", pattern.name);
+    }
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = pattern.content->len;
+  idata_free (&pattern);
 
   (data->next)++;
-
-  idata_free (&pattern);
 
   return 0;
 }
@@ -719,6 +759,7 @@ volca_sample_2_pattern_upload (struct backend *backend, const gchar *path,
 			       struct task_control *control)
 {
   gint err;
+  guint8 op;
   guint8 *payload;
   guint id, payload_size;
   GByteArray *tx_msg, *rx_msg;
@@ -735,18 +776,31 @@ volca_sample_2_pattern_upload (struct backend *backend, const gchar *path,
     }
 
   id--;				// O based
-  if (id >= VOLCA_SAMPLE_2_PATTERN_MAX)
+  if (id >= VOLCA_SAMPLE_2_PATTERN_MAX - 1)	// Upload to panel is not supported.
     {
       return -EINVAL;
     }
 
-  payload_size = common_8bit_msg_to_midi_msg_size (pattern->content->len) + 1;
-  payload = g_malloc (payload_size);
-  payload[0] = id;
-  common_8bit_msg_to_midi_msg (pattern->content->data, &payload[1],
-			       pattern->content->len);
+  if (id == VOLCA_SAMPLE_2_PATTERN_MAX - 1)
+    {
+      payload_size = common_8bit_msg_to_midi_msg_size (pattern->content->len);
+      payload = g_malloc (payload_size);
+      common_8bit_msg_to_midi_msg (pattern->content->data, payload,
+				   pattern->content->len);
+      op = 0x41;
+    }
+  else
+    {
+      payload_size =
+	common_8bit_msg_to_midi_msg_size (pattern->content->len) + 1;
+      payload = g_malloc (payload_size);
+      payload[0] = id;
+      common_8bit_msg_to_midi_msg (pattern->content->data, &payload[1],
+				   pattern->content->len);
+      op = 0x4d;
+    }
 
-  tx_msg = volca_sample_2_get_msg (0x4d, payload, payload_size);
+  tx_msg = volca_sample_2_get_msg (op, payload, payload_size);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
@@ -811,6 +865,23 @@ volca_sample_2_pattern_rename (struct backend *backend, const gchar *src,
   return err;
 }
 
+static gchar *
+volca_sample_2_get_download_path (struct backend *backend,
+				  const struct fs_operations *ops,
+				  const gchar *dst_dir, const gchar *src_path,
+				  struct idata *preset)
+{
+
+  guint id = 0;
+  if (common_slot_get_id_from_path (src_path, &id))
+    {
+      return NULL;
+    }
+  guint digits = id == VOLCA_SAMPLE_2_PATTERN_MAX ? 0 : 2;
+  return common_slot_get_download_path (backend, ops, dst_dir, src_path,
+					preset, digits);
+}
+
 static const struct fs_operations FS_VOLCA_SAMPLE_2_PATTERN_OPERATIONS = {
   .id = FS_VOLCA_SAMPLE_2_PATTERN,
   .options =
@@ -832,7 +903,7 @@ static const struct fs_operations FS_VOLCA_SAMPLE_2_PATTERN_OPERATIONS = {
   .save = file_save,
   .get_exts = volca_sample_2_pattern_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = common_slot_get_download_path_nn
+  .get_download_path = volca_sample_2_get_download_path
 };
 
 static guint32
