@@ -26,6 +26,8 @@
 #define COMMON_GET_MIDI_BANK(p) ((p & 0x3f80) >> 7)
 #define COMMON_GET_MIDI_PRESET(p) (p & 0x7f)
 
+#define COMMON_PANEL_NAME "(panel)"
+
 static const guint8 ARTURIA_ID[] = { 0x0, 0x20, 0x6b };
 static const guint8 EVENTIDE_ID[] = { 0x1c };
 static const guint8 KORG_ID[] = { 0x42 };

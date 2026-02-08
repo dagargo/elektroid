@@ -25,7 +25,7 @@
 #define PHATTY_ALPHABET " ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz!#$%&()*?@"
 #define PHATTY_DEFAULT_CHAR '?'
 
-#define PHATTY_MAX_PRESETS 100
+#define PHATTY_MAX_PRESETS (100 + 1)
 #define PHATTY_PROGRAM_SIZE 193
 
 #define PHATTY_PRESET_TYPE_OFFSET 3	// 0x04 is panel; 0x05 is preset
@@ -34,7 +34,6 @@
 #define MOOG_NAME_LEN 13
 
 #define PHATTY_PRESETS_DIR "/presets"
-#define PHATTY_PANEL "panel"
 #define PHATTY_PANEL_ID 0x100
 #define PHATTY_MAX_SCALES 32
 
@@ -194,34 +193,6 @@ phatty_get_preset_dump_msg (guint8 id)
 }
 
 static gint
-phatty_next_root_dentry (struct item_iterator *iter)
-{
-  guint *next = iter->data;
-  if (*next == 0)
-    {
-      item_set_name (&iter->item, "%s", "presets");
-      iter->item.id = 0x1000;
-      iter->item.type = ITEM_TYPE_DIR;
-      iter->item.size = -1;
-    }
-  else if (*next == 1)
-    {
-      item_set_name (&iter->item, "%s", PHATTY_PANEL);
-      iter->item.id = PHATTY_PANEL_ID;
-      iter->item.type = ITEM_TYPE_FILE;
-      iter->item.size = -1;
-    }
-  else
-    {
-      return -ENOENT;
-    }
-
-  (*next)++;
-
-  return 0;
-}
-
-static gint
 phatty_next_preset_dentry (struct item_iterator *iter)
 {
   gchar preset_name[MOOG_NAME_LEN + 1];
@@ -233,21 +204,32 @@ phatty_next_preset_dentry (struct item_iterator *iter)
       return -ENOENT;
     }
 
-  tx_msg = phatty_get_preset_dump_msg (data->next);
-  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
-  if (!rx_msg)
+  if (data->next + 1 == PHATTY_MAX_PRESETS)
     {
-      return -EIO;
+      item_set_name (&iter->item, "%s", COMMON_PANEL_NAME);
+      iter->item.id = PHATTY_PANEL_ID;
+      iter->item.type = ITEM_TYPE_FILE;
+      iter->item.size = PHATTY_PROGRAM_SIZE;
+      (data->next)++;
+    }
+  else
+    {
+      tx_msg = phatty_get_preset_dump_msg (data->next);
+      rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
+      if (!rx_msg)
+	{
+	  return -EIO;
+	}
+      phatty_get_preset_name (rx_msg->data, preset_name);
+      item_set_name (&iter->item, "%s", preset_name);
+      iter->item.id = data->next;
+      iter->item.type = ITEM_TYPE_FILE;
+      iter->item.size = PHATTY_PROGRAM_SIZE;
+      (data->next)++;
+
+      free_msg (rx_msg);
     }
 
-  phatty_get_preset_name (rx_msg->data, preset_name);
-  item_set_name (&iter->item, "%s", preset_name);
-  iter->item.id = data->next;
-  iter->item.type = ITEM_TYPE_FILE;
-  iter->item.size = PHATTY_PROGRAM_SIZE;
-  (data->next)++;
-
-  free_msg (rx_msg);
   return 0;
 }
 
@@ -255,37 +237,25 @@ static gint
 phatty_read_dir (struct backend *backend, struct item_iterator *iter,
 		 const gchar *dir, const gchar **extensions)
 {
-  gint err = 0;
-
   if (!strcmp (dir, "/"))
-    {
-      guint *id = g_malloc (sizeof (guint));
-      *id = 0;
-      item_iterator_init (iter, dir, id, phatty_next_root_dentry, g_free);
-    }
-  else if (!strcmp (dir, PHATTY_PRESETS_DIR))
     {
       struct phatty_iter_data *data =
 	g_malloc (sizeof (struct phatty_iter_data));
       data->next = 0;
       data->backend = backend;
       item_iterator_init (iter, dir, data, phatty_next_preset_dentry, g_free);
+      return 0;
     }
   else
     {
-      err = -ENOTDIR;
+      return -ENOTDIR;
     }
-
-  return err;
 }
 
 static gchar *
 phatty_get_id_as_slot (struct item *item, struct backend *backend)
 {
-  gchar *slot = g_malloc (LABEL_MAX);
-  snprintf (slot, LABEL_MAX, "%0*d", item->id == PHATTY_PANEL_ID ? 4 : 2,
-	    item->id);
-  return slot;
+  return common_get_id_as_slot_padded (item, backend, 3);
 }
 
 static gint
@@ -334,7 +304,7 @@ phatty_download (struct backend *backend, const gchar *path,
     {
       phatty_get_preset_name (rx_msg->data, name);
     }
-  idata_init (preset, rx_msg, strdup (panel ? PHATTY_PANEL : name), NULL,
+  idata_init (preset, rx_msg, strdup (panel ? COMMON_PANEL_NAME : name), NULL,
 	      NULL);
   return 0;
 
