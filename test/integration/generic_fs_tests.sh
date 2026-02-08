@@ -24,10 +24,11 @@ BACKUP_PREFIX="Backup - "
 function exitWithError() {
   if [ -n "$FILE_BACKUP" ]; then
     echo "Restoring..."
-    $ecli ${CONN}:${FS}:ul "$FILE_BACKUP" $TEST_DEVICE:$FILE_PATH
+    FILE_BACKUP_ORI=$(echo "$FILE_BACKUP" | sed "s^/tmp/$BACKUP_PREFIX^^")
+    mv "$FILE_BACKUP" "$FILE_BACKUP_ORI"
+    $ecli ${CONN}:${FS}:ul "$FILE_BACKUP_ORI" $TEST_DEVICE:$FILE_PATH
   fi
-  rm -f "$FILE"
-  rm -f "$FILE_BACKUP"
+  rm -f "$FILE" "$FILE_BACKUP" "$FILE_BACKUP_ORI"
   exit $1
 }
 
