@@ -346,7 +346,7 @@ sample_ops_timestretch (struct idata *sample, double ratio)
   gfloat *input;
   GByteArray *output;
   RubberBandState rbs;
-  gint input_frames, output_frames, output_size;
+  gint input_frames, output_frames, output_size, expected_frames;
   struct sample_info *sample_info = sample->info;
   gfloat *input_non_int_buf, *output_non_int_buf;
   gboolean float_mode = SAMPLE_INFO_IS_FLOAT (sample_info);
@@ -468,8 +468,12 @@ sample_ops_timestretch (struct idata *sample, double ratio)
 
   g_free (input);
 
-  output_frames = input_frames * ratio;
-  debug_print (2, "Truncating output frames to %d...", output_frames);
+  expected_frames = input_frames * ratio;
+  if (output_frames != expected_frames)
+    {
+      debug_print (2, "Truncating output frames to %d...", expected_frames);
+      output_frames = expected_frames;
+    }
 
   output_size = SAMPLE_INFO_FRAME_SIZE (sample_info) * output_frames;
   if (float_mode)
