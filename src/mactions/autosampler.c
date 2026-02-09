@@ -98,7 +98,7 @@ autosampler_runner (gpointer user_data)
   sfz = g_string_new_len (NULL, 64 * KI);
 
   g_string_append_printf (sfz, "//%s SFZ v1\n", data->name);
-  g_string_append (sfz, "//Created with Elektroid " PACKAGE_VERSION "\n");
+  g_string_append (sfz, "// Created with Elektroid " PACKAGE_VERSION "\n");
   g_string_append (sfz, "\n");
 
   g_string_append (sfz, "<group>\n");
@@ -109,8 +109,8 @@ autosampler_runner (gpointer user_data)
   g_string_append (sfz, "\n");
 
   g_string_append (sfz, "amp_veltrack=0\n");
-  g_string_append (sfz, "fil_keycenter=0\n");
-  g_string_append (sfz, "fil_keytrack=0\n");
+  g_string_append (sfz, "amp_keycenter=0\n");
+  g_string_append (sfz, "amp_keytrack=0\n");
   g_string_append (sfz, "ampeg_attack=0\n");
   g_string_append (sfz, "ampeg_decay=0\n");
   g_string_append (sfz, "ampeg_sustain=100\n");
