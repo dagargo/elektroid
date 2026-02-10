@@ -521,7 +521,6 @@ volca_sample_2_sample_loop_upload (struct backend *backend, const gchar *path,
 				   struct idata *sample,
 				   struct task_control *control)
 {
-  gint err;
   guint sample_len, loop_len, sample_size, loop_size;
 
   // If the tempo could be retrived in any way, timestretching could be applied.
