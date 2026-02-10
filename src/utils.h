@@ -204,7 +204,7 @@ gint command_set_parts (const gchar * cmd, gchar ** connector, gchar ** fs,
 
 struct sample_info *sample_info_new (gboolean tags);
 
-void sample_info_init (struct sample_info *sample_info, gboolean tags);
+void sample_info_init (struct sample_info *sample_info);
 
 void sample_info_free (gpointer sample_info);
 

@@ -583,7 +583,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
   struct acid_chunk_data acid_chunk_data;
   gboolean disable_loop = FALSE;
 
-  sample_info_init (sample_info, FALSE);
+  sample_info_init (sample_info);
 
   sample_info->channels = sf_info->channels;
   sample_info->rate = sf_info->samplerate;
@@ -862,7 +862,7 @@ sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
 
   if (err)
     {
-      sample_info_init (sample_info, FALSE);
+      sample_info_init (sample_info);
     }
 
   return err;

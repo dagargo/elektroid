@@ -443,7 +443,7 @@ audio_reset_record_buffer (guint record_options,
       content = g_byte_array_sized_new (size);
       memset (content->data, 0, size);	//Needed for the recording drawing
 
-      sample_info_init (&audio.sample_info_src, FALSE);
+      sample_info_init (&audio.sample_info_src);
     }
   else
     {

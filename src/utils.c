@@ -688,22 +688,28 @@ command_set_parts (const gchar *cmd, gchar **connector, gchar **fs,
 					   connector, fs, op);
 }
 
-struct sample_info *
-sample_info_new (gboolean tags)
-{
-  struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
-  sample_info_init (sample_info, tags);
-  return sample_info;
-}
-
-void
-sample_info_init (struct sample_info *sample_info, gboolean tags)
+static void
+sample_info_init_int (struct sample_info *sample_info, gboolean tags)
 {
   memset (sample_info, 0, sizeof (struct sample_info));
   if (tags)
     {
       sample_info->tags = sample_info_tags_new ();
     }
+}
+
+struct sample_info *
+sample_info_new (gboolean tags)
+{
+  struct sample_info *sample_info = g_malloc (sizeof (struct sample_info));
+  sample_info_init_int (sample_info, tags);
+  return sample_info;
+}
+
+void
+sample_info_init (struct sample_info *sample_info)
+{
+  sample_info_init_int (sample_info, FALSE);
 }
 
 void

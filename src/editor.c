@@ -602,7 +602,7 @@ editor_update_sample_info ()
     }
   else
     {
-      sample_info_init (&si, FALSE);
+      sample_info_init (&si);
     }
   g_mutex_unlock (&audio.control.controllable.mutex);
 
