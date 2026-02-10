@@ -2948,35 +2948,29 @@ gint
 elektron_sample_load (struct backend *backend, const gchar *path,
 		      struct idata *sample, struct task_control *control)
 {
-  gint err;
-  struct sample_info *sample_info;
+  gint err, target_channels;
+  struct sample_info sample_info;
   struct elektron_data *data = backend->data;
 
   if (data->device_desc.id == ELEKTRON_DIGITAKT_II_ID)
     {
-      err = common_sample_load (path, sample, control, 0,
-				ELEKTRON_SAMPLE_RATE, SF_FORMAT_PCM_16,
-				FALSE);
+      sample_info_init (&sample_info);
+      err = sample_load_sample_info (path, &sample_info);
       if (err)
 	{
 	  return err;
 	}
 
-      sample_info = sample->info;
-      if (sample_info->channels > 2)
-	{
-	  idata_free (sample);
-	  err = -EINVAL;
-	}
+      target_channels = sample_info.channels == 2 ? 2 : 1;
+      sample_info_clear (&sample_info);
     }
   else
     {
-      err = common_sample_load (path, sample, control, 1,
-				ELEKTRON_SAMPLE_RATE, SF_FORMAT_PCM_16,
-				FALSE);
+      target_channels = 1;
     }
 
-  return err;
+  return common_sample_load (path, sample, control, target_channels,
+			     ELEKTRON_SAMPLE_RATE, SF_FORMAT_PCM_16, FALSE);
 }
 
 gchar *
