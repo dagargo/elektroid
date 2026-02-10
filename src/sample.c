@@ -846,7 +846,7 @@ sample_microfreak_filename (const gchar *path)
 
 // Calls to this function require sample_info to be initialized always.
 
-void
+gint
 sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
 {
   gint err;
@@ -864,6 +864,8 @@ sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
     {
       sample_info_init (sample_info, FALSE);
     }
+
+  return err;
 }
 
 static void
