@@ -155,7 +155,6 @@ autosampler_runner (gpointer user_data)
       sample_info = audio.sample.info;
       sample_info->midi_note = i;
       sample_info->midi_fraction = cents_to_midi_fraction (data->tuning);
-      sample_info->tags = NULL;
 
       g_mutex_lock (&audio.control.controllable.mutex);
 
