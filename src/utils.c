@@ -713,6 +713,16 @@ sample_info_init (struct sample_info *sample_info)
 }
 
 void
+sample_info_clear (struct sample_info *sample_info)
+{
+  if (sample_info->tags)
+    {
+      g_hash_table_unref (sample_info->tags);
+    }
+  memset (sample_info, 0, sizeof (struct sample_info));
+}
+
+void
 sample_info_free (gpointer data)
 {
   struct sample_info *sample_info = data;

@@ -202,9 +202,11 @@ gboolean token_is_in_text (const gchar * token, const gchar * text);
 gint command_set_parts (const gchar * cmd, gchar ** connector, gchar ** fs,
 			gchar ** op);
 
-struct sample_info *sample_info_new (gboolean tags);
-
 void sample_info_init (struct sample_info *sample_info);
+
+void sample_info_clear (struct sample_info *sample_info);
+
+struct sample_info *sample_info_new (gboolean tags);
 
 void sample_info_free (gpointer sample_info);
 
