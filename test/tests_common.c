@@ -111,7 +111,7 @@ test_common_slot_get_download_path ()
   CU_ASSERT_STRING_EQUAL ("/dst_dir/Dev Name fsname - name.ext", path);
   g_free (path);
 
-  idata_free (&idata);
+  idata_clear (&idata);
 
   idata_init (&idata, NULL, NULL, NULL, NULL);
 
@@ -120,7 +120,7 @@ test_common_slot_get_download_path ()
   CU_ASSERT_STRING_EQUAL ("/dst_dir/Dev Name fsname 1.ext", path);
   g_free (path);
 
-  idata_free (&idata);
+  idata_clear (&idata);
 }
 
 static void

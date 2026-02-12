@@ -672,14 +672,14 @@ package_receive_pkg_resources (struct package *pkg,
 	  continue;
 	}
 
-      idata_free (&sample_file);
+      idata_clear (&sample_file);
     }
 
 cleanup_reader:
   g_object_unref (reader);
 cleanup_parser:
   g_object_unref (parser);
-  idata_free (&metadata_file);
+  idata_clear (&metadata_file);
 get_payload:
   debug_print (1, "Getting payload from %s...", payload_path);
   ret = download_data (backend, payload_path, &payload_file, control);
@@ -941,7 +941,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       sample_file.name = NULL;
     }
 
-  idata_free (&sample_file);
+  idata_clear (&sample_file);
 
 cleanup_reader:
   g_object_unref (reader);

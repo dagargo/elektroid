@@ -56,7 +56,7 @@ test_sample_ops_get_zero_crossing ()
 					    SAMPLE_OPS_ZERO_CROSSING_SLOPE_POSITIVE);
   CU_ASSERT_EQUAL (zero, sample_info->frames - 1);
 
-  idata_free (&sample);
+  idata_clear (&sample);
 }
 
 static void
@@ -96,7 +96,7 @@ test_sample_ops_timestretch ()
   CU_ASSERT_EQUAL (sample_info->loop_end,
 		   (guint32) (loaded_loop_end * ratio));
 
-  idata_free (&sample);
+  idata_clear (&sample);
 }
 
 gint

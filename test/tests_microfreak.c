@@ -128,9 +128,9 @@ test_serialization_deserialization_wavetable ()
 		MICROFREAK_WAVETABLE_SIZE);
   CU_ASSERT_EQUAL (err, 0);
 
-  idata_free (&src);
-  idata_free (&dst);
-  idata_free (&serialized);
+  idata_clear (&src);
+  idata_clear (&dst);
+  idata_clear (&serialized);
 }
 
 void
@@ -148,7 +148,7 @@ test_bad_deserialization_wavetable ()
   err = microfreak_deserialize_wavetable (&dst, &serialized);
   CU_ASSERT_NOT_EQUAL (err, 0);
 
-  idata_free (&serialized);
+  idata_clear (&serialized);
 }
 
 void

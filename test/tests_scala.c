@@ -101,7 +101,7 @@ test_success ()
 
   file_load (TEST_DATA_DIR "/scala/success.scl", &idata, NULL);
   err = scl_init_scala_from_bytes (&scala, idata.content);
-  idata_free (&idata);
+  idata_clear (&idata);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_STRING_EQUAL (scala.desc, "5-limit just intonation");
@@ -131,7 +131,7 @@ test_success_perfect_5th ()
 
   file_load (TEST_DATA_DIR "/scala/perfect_5th.scl", &idata, NULL);
   err = scl_init_scala_from_bytes (&scala, idata.content);
-  idata_free (&idata);
+  idata_clear (&idata);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_STRING_EQUAL (scala.desc, "Perfect 5th");
@@ -170,7 +170,7 @@ test_too_many_notes ()
 
   CU_ASSERT_EQUAL (err, -ERANGE);
 
-  idata_free (&idata);
+  idata_clear (&idata);
 }
 
 void
@@ -187,7 +187,7 @@ test_no_notes ()
 
   CU_ASSERT_EQUAL (err, -ERANGE);
 
-  idata_free (&idata);
+  idata_clear (&idata);
 }
 
 void
@@ -204,7 +204,7 @@ test_unmatching_notes ()
 
   CU_ASSERT_EQUAL (err, -EINVAL);
 
-  idata_free (&idata);
+  idata_clear (&idata);
 }
 
 void
@@ -224,7 +224,7 @@ test_get_2_byte_octave_midi_message ()
   CU_ASSERT_EQUAL (memcmp (idata.content->data, SUCCESS_OCTAVE_MIDI_MSG,
 			   sizeof (SUCCESS_OCTAVE_MIDI_MSG)), 0);
 
-  idata_free (&idata);
+  idata_clear (&idata);
 }
 
 void
@@ -265,7 +265,7 @@ test_get_bulk_tuning_midi_message ()
   CU_ASSERT_EQUAL (idata.content->data[406], 0x03);
   CU_ASSERT_EQUAL (idata.content->data[407], 0xf7);
 
-  idata_free (&idata);
+  idata_clear (&idata);
 }
 
 void
@@ -285,7 +285,7 @@ test_get_2_byte_octave_midi_message_test ()
   CU_ASSERT_EQUAL (memcmp (idata.content->data, SUCCESS_OCTAVE_MIDI_MSG_TET,
 			   sizeof (SUCCESS_OCTAVE_MIDI_MSG_TET)), 0);
 
-  idata_free (&idata);
+  idata_clear (&idata);
 }
 
 void
@@ -319,7 +319,7 @@ test_get_bulk_tuning_midi_message_tet ()
   CU_ASSERT_EQUAL (idata.content->data[406], 0x6d);
   CU_ASSERT_EQUAL (idata.content->data[407], 0xf7);
 
-  idata_free (&idata);
+  idata_clear (&idata);
 }
 
 gint

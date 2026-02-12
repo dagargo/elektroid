@@ -1933,7 +1933,7 @@ elektron_next_data_entry (struct item_iterator *iter)
 	      g_free (s);
 	      g_slist_free_full (tags, g_free);
 
-	      idata_free (&output);
+	      idata_clear (&output);
 	    }
 
 	  controllable_clear (&control.controllable);
@@ -2968,7 +2968,7 @@ elektron_sample_stereo_load (const gchar *path, struct idata *sample,
   sample_info = sample->info;
   if (sample_info->channels > 2)
     {
-      idata_free (sample);
+      idata_clear (sample);
       err = -EINVAL;
     }
 

@@ -1907,7 +1907,7 @@ editor_save_with_format (const gchar *dst_path, struct idata *sample,
   browser_set_reload_item_in_editor (browser, FALSE);
 
   err = sample_save_to_file (dst_path, &resampled, NULL, format);
-  idata_free (&resampled);
+  idata_clear (&resampled);
 
   browser_set_reload_item_in_editor (browser, TRUE);
 
@@ -1959,7 +1959,7 @@ editor_save_runner (gpointer user_data)
   if (data->new_take)
     {
       g_free (data->path);
-      idata_free (data->sample);
+      idata_clear (data->sample);
       g_free (data->sample);
     }
 
@@ -2069,7 +2069,7 @@ editor_save (const gchar *name)
 	  //This is a selection of a recording, so no resample is needed and, therefore, this is fast.
 	  editor_save_with_format (path, &aux, &sample_load_opts,
 				   audio.sample_info_src.format, NULL, TRUE);
-	  idata_free (&aux);
+	  idata_clear (&aux);
 	  g_free (path);
 	}
       else
@@ -2310,7 +2310,7 @@ cleanup:
   idata = idatas;
   for (guint c = 0; c < channels; c++)
     {
-      idata_free (idata);
+      idata_clear (idata);
     }
 
   controllable_clear (&control.controllable);

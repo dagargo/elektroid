@@ -595,7 +595,7 @@ cli_download_item (const gchar *src_path, const gchar *dst_path)
   g_free (download_path);
 
 cleanup:
-  idata_free (&idata);
+  idata_clear (&idata);
 
   complete_progress (err);
 
@@ -758,7 +758,7 @@ cli_upload_item (const gchar *src_path, const gchar *dst_path)
 					 src_path, &idata);
 
   err = fs_ops->upload (&backend, upload_path, &idata, &task_control);
-  idata_free (&idata);
+  idata_clear (&idata);
 
   g_free (upload_path);
 
@@ -920,7 +920,7 @@ cli_receive (int argc, gchar *argv[], int *optind)
       idata_init (&idata, sysex_transfer_steal (&sysex_transfer), NULL, NULL,
 		  NULL);
       err = file_save (dst_file, &idata, NULL);
-      idata_free (&idata);
+      idata_clear (&idata);
     }
 
   return err;

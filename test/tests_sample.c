@@ -52,7 +52,7 @@ test_load_sample_resampling (struct task_control *control)
   CU_ASSERT_EQUAL (0, memcmp (sample.content->data,
 			      "\xa3\x03\x49\x4f\xeb\x6a\x51\x62", 8));
 
-  idata_free (&sample);
+  idata_clear (&sample);
 }
 
 static void
@@ -119,7 +119,7 @@ test_load_sample_no_resampling (struct task_control *control)
   CU_ASSERT_EQUAL (0, memcmp (sample.content->data,
 			      "\xff\xff\x8d\x53\xc8\x67\x1d\x66", 8));
 
-  idata_free (&sample);
+  idata_clear (&sample);
 }
 
 static void
@@ -185,7 +185,7 @@ test_load_microfreak_wavetable (const gchar *path)
   CU_ASSERT_EQUAL (0, memcmp (sample.content->data,
 			      "\x40\xdc\x6b\xd7\x85\xdd\xbf\xdb", 8));
 
-  idata_free (&sample);
+  idata_clear (&sample);
 }
 
 static void
@@ -248,7 +248,7 @@ test_load_microfreak_sample (const gchar *path)
   CU_ASSERT_EQUAL (0, memcmp (sample.content->data,
 			      "\xc9\x4c\xe3\x56\x61\x49\xce\x4c", 8));
 
-  idata_free (&sample);
+  idata_clear (&sample);
 }
 
 static void
@@ -318,13 +318,13 @@ test_load_and_save_no_tags ()
   CU_ASSERT_EQUAL (0, memcmp (f1.content->data, f2.content->data,
 			      f1.content->len));
 
-  idata_free (&f2);
+  idata_clear (&f2);
 unlink_dst:
   g_unlink (dst);
 free_sample:
-  idata_free (&sample);
+  idata_clear (&sample);
 free_f1:
-  idata_free (&f1);
+  idata_clear (&f1);
 }
 
 static void
@@ -378,11 +378,11 @@ test_load_save_with_tag_and_reload ()
 			  "loop; FX");
   CU_ASSERT_EQUAL (sample_info_get_tag (sample_info, "key"), NULL);
 
-  idata_free (&s2);
+  idata_clear (&s2);
 unlink_dst:
   g_unlink (dst);
 free_s1:
-  idata_free (&s1);
+  idata_clear (&s1);
 }
 
 static gint

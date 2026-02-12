@@ -554,7 +554,7 @@ idata_steal (struct idata *idata)
 }
 
 void
-idata_free (struct idata *idata)
+idata_clear (struct idata *idata)
 {
   GByteArray *content = idata_steal (idata);
   if (content)

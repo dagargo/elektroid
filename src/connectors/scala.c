@@ -277,7 +277,7 @@ scl_load_2_byte_octave_tuning_msg_from_scala_file (const char *path,
   idata_init (idata, msg, NULL, NULL, NULL);
 
 end:
-  idata_free (&input);
+  idata_clear (&input);
   return err;
 }
 
@@ -360,6 +360,6 @@ scl_load_key_based_tuning_msg_from_scala_file (const char *path,
   idata_init (scale, msg, NULL, NULL, NULL);
 
 end:
-  idata_free (&input);
+  idata_clear (&input);
   return err;
 }

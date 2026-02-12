@@ -460,7 +460,7 @@ microfreak_zsample_load (const gchar *path, struct idata *sample,
   err = microfreak_deserialize_sample (sample, &aux,
 				       MICROFREAK_SAMPLE_HEADER);
 
-  idata_free (&aux);
+  idata_clear (&aux);
   return err;
 }
 
@@ -480,7 +480,7 @@ microfreak_psample_load (const gchar *path, struct idata *sample,
   err = microfreak_deserialize_sample (sample, &aux,
 				       MICROFREAK_SAMPLE_HEADER);
 
-  idata_free (&aux);
+  idata_clear (&aux);
   return err;
 }
 
@@ -532,7 +532,7 @@ microfreak_deserialize_wavetable (struct idata *wavetable,
   sample_info = wavetable->info;
   if (sample_info->frames != MICROFREAK_WAVETABLE_LEN)
     {
-      idata_free (wavetable);
+      idata_clear (wavetable);
       return -EINVAL;
     }
 
@@ -554,7 +554,7 @@ microfreak_pwavetable_load (const gchar *path, struct idata *wavetable,
 
   err = microfreak_deserialize_wavetable (wavetable, &aux);
 
-  idata_free (&aux);
+  idata_clear (&aux);
   return err;
 }
 
@@ -573,7 +573,7 @@ microfreak_zwavetable_load (const gchar *path, struct idata *wavetable,
 
   err = microfreak_deserialize_wavetable (wavetable, &aux);
 
-  idata_free (&aux);
+  idata_clear (&aux);
   return err;
 }
 
@@ -593,7 +593,7 @@ microfreak_pwavetable_save (const gchar *path, struct idata *wavetable,
   err = file_save (path, &aux, control);
 
 cleanup:
-  idata_free (&aux);
+  idata_clear (&aux);
   return err;
 }
 
@@ -614,6 +614,6 @@ microfreak_zwavetable_save (const gchar *path, struct idata *wavetable,
   err = microfreak_zobject_save (path, &aux, control, "0_wavetable");
 
 cleanup:
-  idata_free (&aux);
+  idata_clear (&aux);
   return err;
 }

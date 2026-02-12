@@ -727,7 +727,7 @@ volca_sample_2_pattern_next_dentry (struct item_iterator *iter)
   iter->item.id = data->next;
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = pattern.content->len;
-  idata_free (&pattern);
+  idata_clear (&pattern);
 
   (data->next)++;
 
@@ -839,7 +839,7 @@ volca_sample_2_pattern_clear (struct backend *backend, const gchar *path)
     }
 
   err = volca_sample_2_pattern_upload (backend, path, &init_pattern, NULL);
-  idata_free (&init_pattern);
+  idata_clear (&init_pattern);
 
   return err;
 }
@@ -863,7 +863,7 @@ volca_sample_2_pattern_rename (struct backend *backend, const gchar *src,
   memcpy (name, dst, MIN (strlen (dst), VOLCA_SAMPLE_2_PATTERN_NAME_LEN));
   err = volca_sample_2_pattern_upload (backend, src, &pattern, NULL);
 
-  idata_free (&pattern);
+  idata_clear (&pattern);
 
   return err;
 }

@@ -444,7 +444,7 @@ sample_get_memfile_from_sample (struct idata *sample, struct idata *memfile,
   err = sample_write_audio_file_data (sample, &data, control, format);
   if (err)
     {
-      idata_free (memfile);
+      idata_clear (memfile);
     }
 
   return err;
@@ -464,7 +464,7 @@ sample_save_to_file (const gchar *path, struct idata *sample,
     }
 
   err = file_save (path, &file, control);
-  idata_free (&file);
+  idata_clear (&file);
 
   return err;
 }
@@ -826,7 +826,7 @@ sample_load_microfreak_sample_info (const gchar *path,
 
   sample_info_copy (sample_info, aux.info);
 
-  idata_free (&aux);
+  idata_clear (&aux);
 
   controllable_clear (&control.controllable);
 
@@ -1229,7 +1229,7 @@ cleanup:
     }
   if (!active || !sample_info->frames || err)
     {
-      idata_free (idata);
+      idata_clear (idata);
       g_mutex_unlock (&control->controllable.mutex);
       return -1;
     }
@@ -1332,7 +1332,7 @@ sample_reload (struct idata *input, struct idata *output,
   err = sample_load_libsndfile (&data, &G_BYTE_ARRAY_IO, control, output,
 				sample_load_opts, &sample_info_src, cb,
 				input->name);
-  idata_free (&aux);
+  idata_clear (&aux);
 
   return err;
 }
@@ -1357,7 +1357,7 @@ sample_load_from_file_full (const gchar *path, struct idata *sample,
 
       sample_info_copy (sample_info_src, aux.info);
       err = sample_reload (&aux, sample, control, sample_load_opts, cb);
-      idata_free (&aux);
+      idata_clear (&aux);
     }
   else
     {

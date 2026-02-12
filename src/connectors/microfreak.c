@@ -1378,7 +1378,7 @@ microfreak_wavetable_load (const gchar *path, struct idata *wavetable,
       opts.rate = si->rate * MICROFREAK_WAVETABLE_LEN / si->frames;
       err = sample_reload (&aux, wavetable, NULL, &opts,
 			   task_control_set_sample_progress);
-      idata_free (&aux);
+      idata_clear (&aux);
       a = wavetable->content;
       debug_print (2, "Resulting size: %d", a->len);
       if (a->len < MICROFREAK_WAVETABLE_SIZE)

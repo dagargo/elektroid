@@ -44,8 +44,8 @@ test_volca_sample_compare_to (struct idata *actual, const gchar *path)
   CU_ASSERT_EQUAL (actual_si->format,
 		   sample_info_src.format & SF_FORMAT_SUBMASK);
 
-  idata_free (&expected);
-  idata_free (actual);
+  idata_clear (&expected);
+  idata_clear (actual);
 }
 
 static void
@@ -103,7 +103,7 @@ test_volca_sample_get_update_params (const gchar *path, guint id,
 
   test_volca_sample_compare_to (&actual, path);
 
-  idata_free (&sample);
+  idata_clear (&sample);
 
 err:
   controllable_clear (&control.controllable);

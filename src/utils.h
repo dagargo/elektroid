@@ -178,7 +178,7 @@ void gslist_fill (GSList ** list, ...);
 void idata_init (struct idata *idata, GByteArray * content,
 		 gchar * name, void *info, GDestroyNotify free_info);
 
-void idata_free (struct idata *idata);
+void idata_clear (struct idata *idata);
 
 GByteArray *idata_steal (struct idata *idata);
 

@@ -825,7 +825,7 @@ elektroid_upload_task_runner (gpointer data)
   g_free (dst_dir);
 
 cleanup:
-  idata_free (&idata);
+  idata_clear (&idata);
 end:
   g_idle_add (tasks_complete_current, &tasks);
   g_idle_add (elektroid_run_next, NULL);
@@ -1010,7 +1010,7 @@ elektroid_download_task_runner (gpointer userdata)
     }
   g_free (dst_path);
 
-  idata_free (&idata);
+  idata_clear (&idata);
 
 end_with_download_error:
   g_mutex_unlock (&tasks.transfer.control.controllable.mutex);

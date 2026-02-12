@@ -253,7 +253,7 @@ backend_rx_sysex_consumer_response (GtkDialog *dialog, gint response_id,
 				    filename, g_strerror (-err));
 	}
 
-      idata_free (&idata);
+      idata_clear (&idata);
       g_free (filename);
     }
   else

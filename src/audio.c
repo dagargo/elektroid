@@ -451,7 +451,7 @@ audio_reset_record_buffer (guint record_options,
       si = NULL;
     }
   g_mutex_lock (&audio.control.controllable.mutex);
-  idata_free (&audio.sample);
+  idata_clear (&audio.sample);
   idata_init (&audio.sample, content, NULL, si,
 	      si == NULL ? NULL : sample_info_free);
   audio.pos = 0;
@@ -507,7 +507,7 @@ audio_reset_sample ()
   debug_print (1, "Resetting sample...");
 
   g_mutex_lock (&audio.control.controllable.mutex);
-  idata_free (&audio.sample);
+  idata_clear (&audio.sample);
   audio.pos = 0;
   g_free (audio.path);
   audio.path = NULL;

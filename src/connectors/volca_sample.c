@@ -102,7 +102,7 @@ volca_sample_send_syro (struct idata *syro, struct task_control *control)
       control->part++;
     }
 
-  idata_free (syro);
+  idata_clear (syro);
 
   return 0;
 }
@@ -165,7 +165,7 @@ volca_sample_get_syro_op (SyroData *data, struct idata *syro_op,
   status = SyroVolcaSample_End (handle);
   if (status != Status_Success)
     {
-      idata_free (syro_op);
+      idata_clear (syro_op);
       return -EIO;
     }
 
@@ -206,7 +206,7 @@ volca_sample_dump_syro (struct idata *syro_op, guint id,
   snprintf (name, LABEL_MAX, "%d.wav", id);
   err = sample_save_to_file (name, syro_op, control,
 			     SF_FORMAT_WAV | SF_FORMAT_PCM_16);
-  idata_free (syro_op);
+  idata_clear (syro_op);
 
   control->part += 2;
 
