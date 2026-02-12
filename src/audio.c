@@ -508,6 +508,7 @@ audio_reset_sample ()
 
   g_mutex_lock (&audio.control.controllable.mutex);
   idata_clear (&audio.sample);
+  sample_info_clear (&audio.sample_info_src);
   audio.pos = 0;
   g_free (audio.path);
   audio.path = NULL;

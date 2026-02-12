@@ -860,11 +860,6 @@ sample_load_sample_info (const gchar *path, struct sample_info *sample_info)
       err = sample_load_libsndfile_sample_info (path, sample_info);
     }
 
-  if (err)
-    {
-      sample_info_init (sample_info);
-    }
-
   return err;
 }
 

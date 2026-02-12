@@ -51,10 +51,8 @@
 #define SEARCH_PARAM_NOTE_NOT_FOUND -2
 
 // ITEM_TYPE_DIR do not have an initialized sample_info.
-// The remote editor might not have tags even though the filesystem is an editor.
-#define ITEM_HAS_TAGS(i,b) ((i)->type == ITEM_TYPE_FILE && \
-                            ((b)->fs_ops->options & FS_OPTION_SHOW_SAMPLE_COLUMNS) && \
-                             (i)->sample_info.tags != NULL)
+#define ITEM_HAS_SAMPLE_INFO(i,b) ((i)->type == ITEM_TYPE_FILE && \
+                            ((b)->fs_ops->options & FS_OPTION_SHOW_SAMPLE_COLUMNS))
 
 static void browser_remote_reset_dnd ();
 
@@ -750,20 +748,20 @@ browser_item_activated (GtkTreeView *view, GtkTreePath *path,
 }
 
 static void
-item_ref_tags_if_avail (struct item *item, struct browser *browser)
+item_sample_info_ref_tags (struct item *item, struct browser *browser)
 {
-  if (ITEM_HAS_TAGS (item, browser))
+  if (ITEM_HAS_SAMPLE_INFO (item, browser) && item->sample_info.tags)
     {
       g_hash_table_ref (item->sample_info.tags);
     }
 }
 
 static void
-item_unref_tags_if_avail (struct item *item, struct browser *browser)
+item_sample_info_clear (struct item *item, struct browser *browser)
 {
-  if (ITEM_HAS_TAGS (item, browser))
+  if (ITEM_HAS_SAMPLE_INFO (item, browser))	// The check is needed because sample_info might be uninitialized.
     {
-      g_hash_table_unref (item->sample_info.tags);
+      sample_info_clear (&item->sample_info);
     }
 }
 
@@ -1039,7 +1037,7 @@ browser_add_dentry_item (gpointer data)
       g_free (name);
     }
 
-  item_unref_tags_if_avail (item, browser);
+  item_sample_info_clear (item, browser);
 
   g_free (add_data->rel_path);
   g_free (add_data);
@@ -1270,17 +1268,21 @@ browser_iterate_dir_add (struct browser *browser,
 					iter->item.name, rel_path,
 					object_info, sample_info))
 	{
-	  return;
+	  goto cleanup;
 	}
     }
 
+  // Copy the whole item and increase the tags ref count.
   data = g_malloc (sizeof (struct browser_add_dentry_item_data));
   data->browser = browser;
   memcpy (&data->item, &iter->item, sizeof (struct item));
-  item_ref_tags_if_avail (&iter->item, browser);
+  item_sample_info_ref_tags (&iter->item, browser);
   data->icon = icon;
   data->rel_path = rel_path;
+  // Schedule the item addition.
   g_idle_add (browser_add_dentry_item, data);
+cleanup:
+  item_sample_info_clear (&iter->item, browser);
 }
 
 static void
@@ -1293,8 +1295,6 @@ browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
     {
       browser_iterate_dir_add (browser, iter, icon, &iter->item,
 			       strdup (iter->item.name));
-
-      item_unref_tags_if_avail (&iter->item, browser);
 
       g_mutex_lock (&browser->mutex);
       loading = browser->loading;

@@ -588,6 +588,8 @@ editor_update_sample_info ()
   struct sample_info si;
   struct sample_info *sample_info;
 
+  sample_info_init (&si);
+
   g_mutex_lock (&audio.control.controllable.mutex);
   sample_info = audio.sample.info;
   if (sample_info)
@@ -599,10 +601,6 @@ editor_update_sample_info ()
       si.midi_note = sample_info->midi_note;
 
       editor_update_sample_tempo_estimation (sample_info);
-    }
-  else
-    {
-      sample_info_init (&si);
     }
   g_mutex_unlock (&audio.control.controllable.mutex);
 
@@ -640,6 +638,8 @@ editor_update_sample_info ()
   elektroid_combo_box_set_value (GTK_COMBO_BOX (note_combo), si.midi_note);
   g_signal_handlers_unblock_by_func (note_combo,
 				     G_CALLBACK (editor_note_changed), NULL);
+
+  sample_info_clear (&si);
 }
 
 static gboolean
