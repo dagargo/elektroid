@@ -812,7 +812,7 @@ elektron_tx (struct backend *backend, const GByteArray *msg,
       g_free (text);
     }
 
-  sysex_transfer_free (&transfer);
+  sysex_transfer_clear (&transfer);
 
   return res;
 }
@@ -847,7 +847,7 @@ elektron_rx (struct backend *backend, gint timeout,
 		       text);
 	  g_free (text);
 	}
-      sysex_transfer_free (&transfer);
+      sysex_transfer_clear (&transfer);
     }
 
   msg = elektron_raw_to_msg (transfer.raw);
@@ -858,7 +858,7 @@ elektron_rx (struct backend *backend, gint timeout,
       g_free (text);
     }
 
-  sysex_transfer_free (&transfer);
+  sysex_transfer_clear (&transfer);
 
   return msg;
 }

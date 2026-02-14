@@ -556,7 +556,7 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
     {
       sysex_transfer_init_tx (&sysex_transfer, idata_steal (&idata));
       err = backend.upgrade_os (&backend, &sysex_transfer, &controllable);
-      sysex_transfer_free (&sysex_transfer);
+      sysex_transfer_clear (&sysex_transfer);
     }
 
   return err;
@@ -858,7 +858,7 @@ cli_send (int argc, gchar *argv[], int *optind)
     {
       sysex_transfer_init_tx (&sysex_transfer, idata_steal (&idata));
       err = backend_tx_sysex (&backend, &sysex_transfer, &controllable);
-      sysex_transfer_free (&sysex_transfer);
+      sysex_transfer_clear (&sysex_transfer);
     }
 
   return err;

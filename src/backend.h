@@ -240,6 +240,6 @@ void sysex_transfer_init_tx_and_rx (struct sysex_transfer *sysex_transfer,
 
 GByteArray *sysex_transfer_steal (struct sysex_transfer *sysex_transfer);
 
-void sysex_transfer_free (struct sysex_transfer *sysex_transfer);
+void sysex_transfer_clear (struct sysex_transfer *sysex_transfer);
 
 #endif

@@ -189,7 +189,7 @@ backend_tx_raw (struct backend *backend, guint8 *data, guint len)
 
   sysex_transfer_init_tx (&transfer, msg);
   backend_tx_sysex_int (backend, &transfer, NULL);
-  sysex_transfer_free (&transfer);
+  sysex_transfer_clear (&transfer);
 
   return transfer.err ? transfer.err : len;
 }

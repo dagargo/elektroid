@@ -119,7 +119,7 @@ sysex_transfer_steal (struct sysex_transfer *sysex_transfer)
 }
 
 void
-sysex_transfer_free (struct sysex_transfer *sysex_transfer)
+sysex_transfer_clear (struct sysex_transfer *sysex_transfer)
 {
   GByteArray *raw = sysex_transfer_steal (sysex_transfer);
   if (raw)
@@ -258,7 +258,7 @@ backend_tx (struct backend *backend, GByteArray *tx_msg)
   backend_tx_sysex (backend, &transfer, NULL);
   g_mutex_unlock (&backend->mutex);
 
-  sysex_transfer_free (&transfer);
+  sysex_transfer_clear (&transfer);
 
   return transfer.err;
 }
@@ -290,7 +290,7 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
   if (transfer->raw)
     {
       backend_tx_sysex (backend, transfer, controllable);
-      sysex_transfer_free (transfer);
+      sysex_transfer_clear (transfer);
     }
 
   if (!transfer->err)
@@ -755,7 +755,7 @@ backend_rx_drain (struct backend *backend)
   backend_rx_drain_int (backend);
   while (!backend_rx_sysex (backend, &transfer, NULL))
     {
-      sysex_transfer_free (&transfer);
+      sysex_transfer_clear (&transfer);
     }
 }
 

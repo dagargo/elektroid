@@ -77,7 +77,7 @@ backend_send_sysex_file (const gchar *filename, t_sysex_transfer f,
     {
       sysex_transfer_init_tx (&sysex_transfer, idata_steal (&idata));
       err = f (remote_browser.backend, &sysex_transfer, controllable);
-      sysex_transfer_free (&sysex_transfer);
+      sysex_transfer_clear (&sysex_transfer);
     }
   if (err && err != -ECANCELED)
     {
@@ -258,7 +258,7 @@ backend_rx_sysex_consumer_response (GtkDialog *dialog, gint response_id,
     }
   else
     {
-      sysex_transfer_free (&data->sysex_transfer);
+      sysex_transfer_clear (&data->sysex_transfer);
     }
 
   gtk_widget_destroy (GTK_WIDGET (dialog));
@@ -305,7 +305,7 @@ backend_rx_sysex_consumer (gpointer user_data)
   else
     {
       controllable_clear (&data->controllable);
-      sysex_transfer_free (&data->sysex_transfer);
+      sysex_transfer_clear (&data->sysex_transfer);
       g_free (data);
     }
 }
