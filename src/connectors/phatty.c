@@ -464,7 +464,7 @@ static const struct fs_operations FS_PHATTY_SCALE_OPERATIONS = {
   .readdir = phatty_scale_read_dir,
   .print_item = common_print_item,
   .upload = phatty_scale_upload,
-  .load = scl_load_2_byte_octave_tuning_msg_from_scala_file,
+  .load = common_load_2_byte_octave_tuning_msg,
   .get_exts = phatty_scale_get_extensions,
   .get_upload_path = common_slot_get_upload_path
 };

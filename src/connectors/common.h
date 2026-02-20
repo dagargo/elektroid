@@ -152,3 +152,13 @@ guint common_midi_msg_to_8bit_msg_size (guint size);
 
 gint common_file_load (struct backend *backend, const char *path,
 		       struct idata *idata, struct task_control *control);
+
+gint common_load_2_byte_octave_tuning_msg (struct backend *backend,
+					   const char *path,
+					   struct idata *idata,
+					   struct task_control *control);
+
+gint common_load_key_based_tuning_msg (struct backend *backend,
+				       const char *path,
+				       struct idata *idata,
+				       struct task_control *control);

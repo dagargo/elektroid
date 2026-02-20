@@ -50,11 +50,13 @@ tests_common_SOURCES = \
         ../src/backend.h \
 	../src/connector.c \
         ../src/connector.h \
+	../src/sample.c \
+        ../src/sample.h \
 	$(BE_SOURCES) \
         ../src/connectors/common.c \
 	../src/connectors/common.h \
-	../src/sample.c \
-        ../src/sample.h \
+	../src/connectors/scala.c \
+	../src/connectors/scala.h \
 	../src/connectors/microfreak_sample.c \
 	../src/connectors/microfreak_sample.h
 
@@ -71,13 +73,15 @@ tests_microfreak_SOURCES = \
         ../src/backend.h \
 	../src/connector.c \
         ../src/connector.h \
+	../src/sample.c \
+        ../src/sample.h \
 	$(BE_SOURCES) \
         ../src/connectors/common.c \
 	../src/connectors/common.h \
 	../src/connectors/microfreak_sample.c \
 	../src/connectors/microfreak_sample.h \
-	../src/sample.c \
-        ../src/sample.h \
+	../src/connectors/scala.c \
+	../src/connectors/scala.h \
 	../src/connectors/microfreak.c \
 	../src/connectors/microfreak.h
 
@@ -95,18 +99,20 @@ tests_elektron_SOURCES = \
 	../src/connector.c \
         ../src/connector.h \
 	$(BE_SOURCES) \
-        ../src/connectors/common.c \
-	../src/connectors/common.h \
-	../src/connectors/microfreak_sample.c \
-	../src/connectors/microfreak_sample.h \
 	../src/sample.c \
         ../src/sample.h \
 	../src/sample_ops.c \
 	../src/sample_ops.h \
+        ../src/connectors/common.c \
+	../src/connectors/common.h \
+	../src/connectors/elektron.c \
+	../src/connectors/elektron.h \
+	../src/connectors/microfreak_sample.c \
+	../src/connectors/microfreak_sample.h \
 	../src/connectors/package.c \
 	../src/connectors/package.h \
-	../src/connectors/elektron.c \
-	../src/connectors/elektron.h
+	../src/connectors/scala.c \
+	../src/connectors/scala.h
 
 tests_utils_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(AM_CFLAGS)
 tests_utils_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(MSYS2_LIBS)
@@ -162,18 +168,20 @@ tests_volca_sample_SOURCES = \
 	../src/audio.c \
         ../src/audio.h \
 	$(AUDIO_SOURCES) \
+	../src/sample.c \
+        ../src/sample.h \
         ../src/connectors/common.c \
 	../src/connectors/common.h \
+	../src/connectors/scala.c \
+	../src/connectors/scala.h \
 	../src/connectors/volca_sample.c \
 	../src/connectors/volca_sample.h \
+	../src/connectors/microfreak_sample.c \
+	../src/connectors/microfreak_sample.h \
 	../src/connectors/volca_sample_sdk/korg_syro_comp.c ../src/connectors/volca_sample_sdk/korg_syro_comp.h \
 	../src/connectors/volca_sample_sdk/korg_syro_func.c ../src/connectors/volca_sample_sdk/korg_syro_func.h \
 	../src/connectors/volca_sample_sdk/korg_syro_volcasample.c ../src/connectors/volca_sample_sdk/korg_syro_volcasample.h \
-	../src/connectors/volca_sample_sdk/korg_syro_type.h \
-	../src/connectors/microfreak_sample.c \
-	../src/connectors/microfreak_sample.h \
-	../src/sample.c \
-        ../src/sample.h
+	../src/connectors/volca_sample_sdk/korg_syro_type.h
 
 tests_sample_ops_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS) $(AUDIO_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) $(AM_CFLAGS)
 tests_sample_ops_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS) $(AUDIO_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)

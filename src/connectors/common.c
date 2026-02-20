@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include "common.h"
+#include "scala.h"
 #include "sample.h"
 
 static const gchar *SYSEX_EXTS[] = { BE_SYSEX_EXT, NULL };
@@ -482,4 +483,23 @@ common_file_load (struct backend *backend, const char *path,
 		  struct idata *idata, struct task_control *control)
 {
   return file_load (path, idata, control);
+}
+
+gint
+common_load_2_byte_octave_tuning_msg (struct backend
+				      *backend,
+				      const char *path,
+				      struct idata *idata,
+				      struct task_control *control)
+{
+  return scala_load_2_byte_octave_tuning_msg (path, idata, control);
+}
+
+gint
+common_load_key_based_tuning_msg (struct backend *backend,
+				  const char *path,
+				  struct idata *idata,
+				  struct task_control *control)
+{
+  return scala_load_key_based_tuning_msg (path, idata, control);
 }

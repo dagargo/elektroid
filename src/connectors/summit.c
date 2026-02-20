@@ -669,9 +669,7 @@ summit_tuning_load (struct backend *backend, const gchar *path,
     }
   else
     {
-      err =
-	scl_load_key_based_tuning_msg_from_scala_file (backend, path, tuning,
-						       control);
+      err = scala_load_key_based_tuning_msg (path, tuning, control);
     }
   g_free (filename);
   return err;

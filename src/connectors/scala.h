@@ -36,15 +36,9 @@ struct scala
   gdouble pitches[SCALA_NOTES_MAX];
 };
 
-gint scl_load_2_byte_octave_tuning_msg_from_scala_file (struct backend
-							*backend,
-							const char *path,
-							struct idata *idata,
-							struct task_control
-							*control);
+gint scala_load_2_byte_octave_tuning_msg (const char *path,
+					  struct idata *idata,
+					  struct task_control *control);
 
-gint scl_load_key_based_tuning_msg_from_scala_file (struct backend *backend,
-						    const char *path,
-						    struct idata *idata,
-						    struct task_control
-						    *control);
+gint scala_load_key_based_tuning_msg (const char *path, struct idata *idata,
+				      struct task_control *control);

@@ -36,7 +36,7 @@ static const guint8 SCALA_MIDI_BULK_TUNING_HEADER[] =
   { 0xf0, 0x7e, 0x7f, 8, 1, 0 };
 
 static gint
-scl_parser_get_pitch (gchar *line, gdouble *val)
+scala_parser_get_pitch (gchar *line, gdouble *val)
 {
   gint err = 0;
   gdouble num, den;
@@ -83,7 +83,7 @@ scl_parser_get_pitch (gchar *line, gdouble *val)
 }
 
 static gchar **
-scl_parser_get_next_line (gchar **lines)
+scala_parser_get_next_line (gchar **lines)
 {
   while (*lines && (*lines)[0] == SCALA_FILE_COMMENT_CHAR)
     {
@@ -93,7 +93,7 @@ scl_parser_get_next_line (gchar **lines)
 }
 
 gint
-scl_init_scala_from_bytes (struct scala *scala, GByteArray *input)
+scala_init_scala_from_bytes (struct scala *scala, GByteArray *input)
 {
   gint err = 0;
   gchar **line, **lines, *rem;
@@ -105,7 +105,7 @@ scl_init_scala_from_bytes (struct scala *scala, GByteArray *input)
     }
 
   lines = g_strsplit ((gchar *) input->data, SCALA_FILE_LINE_SEPARATOR, -1);
-  line = scl_parser_get_next_line (lines);
+  line = scala_parser_get_next_line (lines);
   if (!*line)
     {
       err = -EINVAL;
@@ -115,7 +115,7 @@ scl_init_scala_from_bytes (struct scala *scala, GByteArray *input)
   debug_print (2, "Scala description: %s", scala->desc);
 
   line++;
-  line = scl_parser_get_next_line (line);
+  line = scala_parser_get_next_line (line);
   if (!*line)
     {
       err = -EINVAL;
@@ -134,13 +134,13 @@ scl_init_scala_from_bytes (struct scala *scala, GByteArray *input)
   for (gint i = 0; i < scala->notes; i++)
     {
       line++;
-      line = scl_parser_get_next_line (line);
+      line = scala_parser_get_next_line (line);
       if (!*line)
 	{
 	  err = -EINVAL;
 	  goto end;
 	}
-      err = scl_parser_get_pitch (*line, &scala->pitches[i]);
+      err = scala_parser_get_pitch (*line, &scala->pitches[i]);
       if (err)
 	{
 	  goto end;
@@ -166,7 +166,7 @@ scala_get_cents_from_ratio (gdouble ratio)
 }
 
 static guint8
-scl_get_nearest_note_below (gdouble f, gdouble *note_f)
+scala_get_nearest_note_below (gdouble f, gdouble *note_f)
 {
   gdouble next;
   guint8 n;
@@ -184,7 +184,7 @@ scl_get_nearest_note_below (gdouble f, gdouble *note_f)
 }
 
 static void
-scl_append_name_to_msg (struct scala *scala, GByteArray *msg)
+scala_append_name_to_msg (struct scala *scala, GByteArray *msg)
 {
   guint len = strlen (scala->desc);
   if (len > SCALA_MIDI_TUNING_NAME_LEN)
@@ -200,7 +200,7 @@ scl_append_name_to_msg (struct scala *scala, GByteArray *msg)
 }
 
 static guint8
-scl_get_cksum (guint8 *b, gint len)
+scala_get_cksum (guint8 *b, gint len)
 {
   guint8 cksum = 0;
   for (gint i = 0; i < len; i++, b++)
@@ -212,11 +212,9 @@ scl_get_cksum (guint8 *b, gint len)
 }
 
 gint
-scl_load_2_byte_octave_tuning_msg_from_scala_file (struct backend *backend,
-						   const char *path,
-						   struct idata *idata,
-						   struct task_control
-						   *control)
+scala_load_2_byte_octave_tuning_msg (const char *path,
+				     struct idata *idata,
+				     struct task_control *control)
 {
   gint err = 0;
   struct idata input;
@@ -230,7 +228,7 @@ scl_load_2_byte_octave_tuning_msg_from_scala_file (struct backend *backend,
       return err;
     }
 
-  err = scl_init_scala_from_bytes (&scala, input.content);
+  err = scala_init_scala_from_bytes (&scala, input.content);
   if (err)
     {
       goto end;
@@ -246,7 +244,7 @@ scl_load_2_byte_octave_tuning_msg_from_scala_file (struct backend *backend,
   g_byte_array_append (msg, SCALA_MIDI_OCTAVE_TUNING_HEADER,
 		       sizeof (SCALA_MIDI_OCTAVE_TUNING_HEADER));
 
-  scl_append_name_to_msg (&scala, msg);
+  scala_append_name_to_msg (&scala, msg);
 
   for (guint8 i = 0; i < SCALA_OCTAVE_NOTES; i++)
     {
@@ -272,7 +270,7 @@ scl_load_2_byte_octave_tuning_msg_from_scala_file (struct backend *backend,
       g_byte_array_append (msg, (guint8 *) & lsb, 1);
     }
 
-  cksum = scl_get_cksum (&msg->data[1], 46);
+  cksum = scala_get_cksum (&msg->data[1], 46);
   g_byte_array_append (msg, &cksum, 1);
   g_byte_array_append (msg, (guint8 *) "\xf7", 1);
   idata_init (idata, msg, NULL, NULL, NULL);
@@ -283,10 +281,9 @@ end:
 }
 
 gint
-scl_load_key_based_tuning_msg_from_scala_file (struct backend *backend,
-					       const char *path,
-					       struct idata *scale,
-					       struct task_control *control)
+scala_load_key_based_tuning_msg (const char *path,
+				 struct idata *scale,
+				 struct task_control *control)
 {
   gint err = 0;
   guint8 cksum;
@@ -303,7 +300,7 @@ scl_load_key_based_tuning_msg_from_scala_file (struct backend *backend,
       return err;
     }
 
-  err = scl_init_scala_from_bytes (&scala, input.content);
+  err = scala_init_scala_from_bytes (&scala, input.content);
   if (err)
     {
       goto end;
@@ -319,7 +316,7 @@ scl_load_key_based_tuning_msg_from_scala_file (struct backend *backend,
   g_byte_array_append (msg, SCALA_MIDI_BULK_TUNING_HEADER,
 		       sizeof (SCALA_MIDI_BULK_TUNING_HEADER));
 
-  scl_append_name_to_msg (&scala, msg);
+  scala_append_name_to_msg (&scala, msg);
 
   //Calculate pitches only for the first octave.
   for (guint8 i = 0; i < SCALA_OCTAVE_NOTES; i++)
@@ -335,7 +332,7 @@ scl_load_key_based_tuning_msg_from_scala_file (struct backend *backend,
 	  pitch = scala.pitches[i - 1];
 	}
       f = pitch * SCALA_C0_FREQ;
-      note[i] = scl_get_nearest_note_below (f, &note_f);
+      note[i] = scala_get_nearest_note_below (f, &note_f);
       cents = scala_get_cents_from_ratio (f / note_f);
       value = cents / SCALA_BULK_STEP_SIZE;
       msb[i] = (value >> 7) & 0x7f;
@@ -356,7 +353,7 @@ scl_load_key_based_tuning_msg_from_scala_file (struct backend *backend,
       g_byte_array_append (msg, (guint8 *) & lsb[pos], 1);
     }
 
-  cksum = scl_get_cksum (&msg->data[1], 405);
+  cksum = scala_get_cksum (&msg->data[1], 405);
   g_byte_array_append (msg, &cksum, 1);
   g_byte_array_append (msg, (guint8 *) "\xf7", 1);
   idata_init (scale, msg, NULL, NULL, NULL);

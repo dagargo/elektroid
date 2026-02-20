@@ -7,7 +7,7 @@
 
 #define TEST_MAX_FILE_LEN 1024
 
-gint scl_init_scala_from_bytes (struct scala *scala, GByteArray * input);
+gint scala_init_scala_from_bytes (struct scala *scala, GByteArray * input);
 
 static const guint8 SUCCESS_OCTAVE_MIDI_MSG[] = {
   0xf0,
@@ -100,7 +100,7 @@ test_success ()
   printf ("\n");
 
   file_load (TEST_DATA_DIR "/scala/success.scl", &idata, NULL);
-  err = scl_init_scala_from_bytes (&scala, idata.content);
+  err = scala_init_scala_from_bytes (&scala, idata.content);
   idata_clear (&idata);
 
   CU_ASSERT_EQUAL (err, 0);
@@ -130,7 +130,7 @@ test_success_perfect_5th ()
   printf ("\n");
 
   file_load (TEST_DATA_DIR "/scala/perfect_5th.scl", &idata, NULL);
-  err = scl_init_scala_from_bytes (&scala, idata.content);
+  err = scala_init_scala_from_bytes (&scala, idata.content);
   idata_clear (&idata);
 
   CU_ASSERT_EQUAL (err, 0);
@@ -149,7 +149,7 @@ test_empty_file ()
   printf ("\n");
 
   data = g_byte_array_sized_new (0);
-  err = scl_init_scala_from_bytes (&scala, data);
+  err = scala_init_scala_from_bytes (&scala, data);
 
   CU_ASSERT_EQUAL (err, -EINVAL);
 
@@ -166,7 +166,7 @@ test_too_many_notes ()
   printf ("\n");
 
   file_load (TEST_DATA_DIR "/scala/too_many_notes.scl", &idata, NULL);
-  err = scl_init_scala_from_bytes (&scala, idata.content);
+  err = scala_init_scala_from_bytes (&scala, idata.content);
 
   CU_ASSERT_EQUAL (err, -ERANGE);
 
@@ -183,7 +183,7 @@ test_no_notes ()
   printf ("\n");
 
   file_load (TEST_DATA_DIR "/scala/no_notes.scl", &idata, NULL);
-  err = scl_init_scala_from_bytes (&scala, idata.content);
+  err = scala_init_scala_from_bytes (&scala, idata.content);
 
   CU_ASSERT_EQUAL (err, -ERANGE);
 
@@ -200,7 +200,7 @@ test_unmatching_notes ()
   printf ("\n");
 
   file_load (TEST_DATA_DIR "/scala/unmatching_notes.scl", &idata, NULL);
-  err = scl_init_scala_from_bytes (&scala, idata.content);
+  err = scala_init_scala_from_bytes (&scala, idata.content);
 
   CU_ASSERT_EQUAL (err, -EINVAL);
 
@@ -215,9 +215,9 @@ test_get_2_byte_octave_midi_message ()
 
   printf ("\n");
 
-  err = scl_load_2_byte_octave_tuning_msg_from_scala_file (NULL, TEST_DATA_DIR
-							   "/scala/success.scl",
-							   &idata, NULL);
+  err = scala_load_2_byte_octave_tuning_msg (TEST_DATA_DIR
+					     "/scala/success.scl",
+					     &idata, NULL);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_EQUAL (idata.content->len, sizeof (SUCCESS_OCTAVE_MIDI_MSG));
@@ -236,9 +236,8 @@ test_get_bulk_tuning_midi_message ()
 
   printf ("\n");
 
-  err = scl_load_key_based_tuning_msg_from_scala_file (NULL, TEST_DATA_DIR
-						       "/scala/success.scl",
-						       &idata, NULL);
+  err = scala_load_key_based_tuning_msg (TEST_DATA_DIR
+					 "/scala/success.scl", &idata, NULL);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_EQUAL (idata.content->len, SCALA_TUNING_BANK_SIZE);
@@ -276,9 +275,8 @@ test_get_2_byte_octave_midi_message_test ()
 
   printf ("\n");
 
-  err = scl_load_2_byte_octave_tuning_msg_from_scala_file (NULL, TEST_DATA_DIR
-							   "/scala/TET.scl",
-							   &idata, NULL);
+  err = scala_load_2_byte_octave_tuning_msg (TEST_DATA_DIR
+					     "/scala/TET.scl", &idata, NULL);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_EQUAL (idata.content->len, sizeof (SUCCESS_OCTAVE_MIDI_MSG_TET));
@@ -297,9 +295,8 @@ test_get_bulk_tuning_midi_message_tet ()
 
   printf ("\n");
 
-  err = scl_load_key_based_tuning_msg_from_scala_file (NULL, TEST_DATA_DIR
-						       "/scala/TET.scl",
-						       &idata, NULL);
+  err = scala_load_key_based_tuning_msg (TEST_DATA_DIR
+					 "/scala/TET.scl", &idata, NULL);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_EQUAL (idata.content->len, SCALA_TUNING_BANK_SIZE);
