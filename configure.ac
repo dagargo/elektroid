@@ -77,6 +77,8 @@ AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.19])
 ])
 
+PKG_CHECK_MODULES(rubberband, rubberband >= 3.3)
+
 # Checks for header files.
 AC_CHECK_HEADERS([unistd.h limits.h])
 
