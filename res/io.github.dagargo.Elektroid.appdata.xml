@@ -24,6 +24,7 @@
       <li>Elektron Syntakt</li>
       <li>Eventide ModFactor, PitchFactor, TimeFactor, Space and H9</li>
       <li>KORG padKONTROL</li>
+      <li>KORG Volca Sample and Volca Sample 2</li>
       <li>Moog Little Phatty and Slim Phatty</li>
       <li>Novation Summit and Peak</li>
       <li>Samplers implementing MIDI SDS</li>
@@ -34,6 +35,7 @@
     <binary>elektroid</binary>
   </provides>
   <releases>
+    <release version="3.3" date="2026-02-22"/>
     <release version="3.2.3" date="2025-04-24"/>
     <release version="3.2.2" date="2025-04-17"/>
     <release version="3.2" date="2025-04-13"/>
