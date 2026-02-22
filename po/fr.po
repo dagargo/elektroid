@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: elektroid 3.0\n"
 "Report-Msgid-Bugs-To: dagargo@gmail.com\n"
-"POT-Creation-Date: 2026-01-28 17:16+0100\n"
+"POT-Creation-Date: 2026-02-22 12:51+0100\n"
 "PO-Revision-Date: 2026-01-07 19:53+0100\n"
 "Last-Translator: Olivier Humbert <trebmuh@librazik.org>\n"
 "Language-Team: French\n"
@@ -17,7 +17,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
-#: src/elektroid.c:228 src/elektroid.c:235 src/editor.c:2381
+#: src/elektroid.c:228 src/elektroid.c:235 src/editor.c:2383
 msgid "Audio"
 msgstr ""
 
@@ -25,12 +25,12 @@ msgstr ""
 msgid "Not connected"
 msgstr "Non connecté"
 
-#: src/elektroid.c:702 src/editor.c:2123
+#: src/elektroid.c:702 src/editor.c:2125
 #, c-format
 msgid "Replace file “%s”?"
 msgstr "Remplacer le fichier “%s”?"
 
-#: src/elektroid.c:704 src/editor.c:2125 src/browser.c:624
+#: src/elektroid.c:704 src/editor.c:2127 src/browser.c:623
 #: src/mactions/backend.c:194 src/mactions/backend.c:282
 #: src/mactions/microfreak.c:68 res/elektroid.ui:1465 res/elektroid.ui:3804
 #: res/elektroid.ui:4378 res/elektroid.ui:4477 res/elektroid.ui:4619
@@ -42,7 +42,7 @@ msgstr "_Annuler"
 msgid "_Skip"
 msgstr "Pa_sser"
 
-#: src/elektroid.c:706 src/editor.c:2126
+#: src/elektroid.c:706 src/editor.c:2128
 msgid "_Replace"
 msgstr "_Remplacer"
 
@@ -50,11 +50,11 @@ msgstr "_Remplacer"
 msgid "Apply this action to all files"
 msgstr "Appliquer cette action à tous les fichiers"
 
-#: src/elektroid.c:952 src/elektroid.c:1145 src/browser.c:2051
+#: src/elektroid.c:952 src/elektroid.c:1145 src/browser.c:2052
 msgid "Preparing Tasks"
 msgstr "Préparation des tâches"
 
-#: src/elektroid.c:952 src/elektroid.c:1145 src/browser.c:2052
+#: src/elektroid.c:952 src/elektroid.c:1145 src/browser.c:2053
 #: src/progress_window.c:137
 msgid "Waiting..."
 msgstr "En attente..."
@@ -80,53 +80,53 @@ msgstr "Bibliothèques"
 msgid "Acknowledgements"
 msgstr "Remerciements"
 
-#: src/editor.c:576
+#: src/editor.c:577
 #, c-format
 msgid "Gross tempo estimation for %d beats: %.2f BPM"
 msgstr "Estimation brute du tempo pour %d pulsations : %.2f BPM"
 
-#: src/editor.c:1982
+#: src/editor.c:1984
 #, c-format
 msgid "Saving “%s”..."
 msgstr "Sauvegarde de “%s”..."
 
-#: src/editor.c:1985
+#: src/editor.c:1987
 msgid "Saving sample"
 msgstr "Sauvegarde de l'échantillon"
 
-#: src/editor.c:2104 src/editor.c:2357
+#: src/editor.c:2106 src/editor.c:2359
 msgid "Save Sample"
 msgstr "Sauvegarde d'échantillon"
 
-#: src/editor.c:2198
+#: src/editor.c:2200
 msgid "Calculating..."
 msgstr "Calcul en cours..."
 
-#: src/editor.c:2263 src/guirecorder.c:80
+#: src/editor.c:2265 src/guirecorder.c:80
 msgctxt "Recording channels"
 msgid "Left"
 msgstr "Gauche"
 
-#: src/editor.c:2264 src/guirecorder.c:87
+#: src/editor.c:2266 src/guirecorder.c:87
 msgctxt "Recording channels"
 msgid "Right"
 msgstr "Droite"
 
-#: src/editor.c:2269
+#: src/editor.c:2271
 msgctxt "Audio file"
 msgid "Channel"
 msgstr "Canal"
 
-#: src/editor.c:2275
+#: src/editor.c:2277
 #, c-format
 msgid "Saving channel %d to “%s”..."
 msgstr "Sauvegarde du canal %d to “%s”..."
 
-#: src/editor.c:2332
+#: src/editor.c:2334
 msgid "Splitting channels"
 msgstr "Séparation des canaux"
 
-#: src/editor.c:2361
+#: src/editor.c:2363
 msgid "Export Sample"
 msgstr "Exporter l'échantillon"
 
@@ -162,61 +162,61 @@ msgstr "Téléversement"
 msgid "Download"
 msgstr "Téléchargement"
 
-#: src/browser.c:609
+#: src/browser.c:608
 msgid "Deleting Files"
 msgstr "Suppression des fichiers"
 
-#: src/browser.c:609
+#: src/browser.c:608
 msgid "Deleting..."
 msgstr "Suppression..."
 
-#: src/browser.c:623
+#: src/browser.c:622
 msgid "Are you sure you want to delete the selected items?"
 msgstr "Souhaitez-vous vraiment supprimer les éléments sélectionnés ?"
 
-#: src/browser.c:625
+#: src/browser.c:624
 msgid "_Delete"
 msgstr "_Supprimer"
 
-#: src/browser.c:688
+#: src/browser.c:687
 #, c-format
 msgid "Error while renaming to “%s”: %s."
 msgstr "Erreur lors du renommage de « %s » : %s."
 
-#: src/browser.c:722 res/elektroid.ui:1806 res/elektroid.ui:4760
+#: src/browser.c:721 res/elektroid.ui:1806 res/elektroid.ui:4760
 msgid "Rename"
 msgstr "Renommer"
 
-#: src/browser.c:943
+#: src/browser.c:942
 msgid "min."
 msgstr "min."
 
-#: src/browser.c:985
+#: src/browser.c:984
 msgid "cents"
 msgstr ""
 
-#: src/browser.c:1645
+#: src/browser.c:1646
 #, c-format
 msgid "Error while creating dir “%s”: %s."
 msgstr "Erreur lors de la création du répertoire « %s » : %s."
 
-#: src/browser.c:1661 res/elektroid.ui:2027 res/elektroid.ui:2491
+#: src/browser.c:1662 res/elektroid.ui:2027 res/elektroid.ui:2491
 msgid "Add Directory"
 msgstr "Ajout d'un répertoire"
 
-#: src/browser.c:2038
+#: src/browser.c:2039
 msgid "Moving Files"
 msgstr "Déplacement des fichiers"
 
-#: src/browser.c:2039
+#: src/browser.c:2040
 msgid "Moving..."
 msgstr "Déplacement..."
 
-#: src/browser.c:2453 res/elektroid.ui:3291
+#: src/browser.c:2454 res/elektroid.ui:3291
 msgid "Tempo"
 msgstr ""
 
-#: src/browser.c:2454 res/elektroid.ui:2233 res/elektroid.ui:2724
+#: src/browser.c:2455 res/elektroid.ui:2233 res/elektroid.ui:2724
 #: res/elektroid.ui:3328
 msgid "Note"
 msgstr "Note"
@@ -230,15 +230,15 @@ msgid "Input"
 msgstr "Entrée"
 
 #. This should only be translated if a non latin alphabet is used
-#: src/mactions/autosampler.c:328 res/elektroid.ui:854
+#: src/mactions/autosampler.c:330 res/elektroid.ui:854
 msgid "Auto Sampler"
 msgstr ""
 
-#: src/mactions/autosampler.c:329
+#: src/mactions/autosampler.c:331
 msgid "Recording..."
 msgstr "Enregistre..."
 
-#: src/mactions/autosampler.c:427
+#: src/mactions/autosampler.c:429
 msgid "_Auto Sampler"
 msgstr "Échantillonneur _automatique"
 
@@ -354,7 +354,7 @@ msgstr "Échantillonneur SDS"
 msgid "MIDI device"
 msgstr "Périphérique MIDI"
 
-#: src/connectors/system.c:754
+#: src/connectors/system.c:907
 msgid "System"
 msgstr "Système"
 
