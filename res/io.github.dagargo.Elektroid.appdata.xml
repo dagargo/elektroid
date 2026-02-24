@@ -67,6 +67,7 @@
     <keyword>MIDI</keyword>
   </keywords>
   <url type="homepage">https://dagargo.github.io/elektroid/</url>
+  <url type="vcs-browser">https://github.com/dagargo/elektroid</url>
   <url type="donation">https://liberapay.com/dagargo</url>
   <developer id="io.github.dagargo">
     <name>David García Goñi</name>
