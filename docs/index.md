@@ -4,7 +4,7 @@ layout: home
 
 Elektroid is a sample and MIDI device manager. It includes the `elektroid` GUI application and the `elektroid-cli` CLI application.
 
-![Elektroid GUI screenshot](images/screenshot.png "Elektroid GUI")
+![Main Window](images/screenshot.png "Main Window")
 
 Elektroid started as a FLOSS Elektron Transfer alternative and it has ended up supporting other devices from different vendors in the same fashion.
 
