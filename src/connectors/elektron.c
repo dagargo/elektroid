@@ -479,7 +479,7 @@ elektron_get_smplrw_info_from_msg (GByteArray *info_msg, guint32 *id,
 	}
       return 0;
     case 2:
-      return -EBADSLT;		// Case for for factory samples.
+      return -EINVAL;		// Case for for factory samples.
     default:
       return -EIO;
     }
@@ -3172,7 +3172,7 @@ elektron_ram_download_sample (struct backend *backend,
 
   if (sample_path[0] == 0)
     {
-      return -EBADSLT;
+      return -EINVAL;
     }
 
   control->parts = 1;
