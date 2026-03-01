@@ -979,6 +979,10 @@ logue_download (struct backend *backend, const gchar *path,
       return err;
     }
 
+  // This fix is required as the received message has an additional byte at position 9.
+  memcpy (&rx_msg->data[9], &rx_msg->data[10], rx_msg->len - 11);
+  rx_msg->data[rx_msg->len - 2] = 0;	// Last data byte set as in logue_unit_load function.
+
   idata_init (data, rx_msg, NULL, NULL, NULL);
 
   usleep (LOGUE_REST_TIME_US);
