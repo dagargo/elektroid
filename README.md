@@ -206,7 +206,7 @@ Provided paths must always be prepended with the device id and a colon (e.g., `0
 
 ### Non-filesystem commands
 
-* `ld` or `ls-devices`, list all MIDI devices with input and output
+* `ld` or `list-devices`, list all MIDI devices with input and output
 
 ```
 $ elektroid-cli ld
