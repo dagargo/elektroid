@@ -43,9 +43,10 @@ enum elektron_fs
   FS_DATA_SND = (1 << 5),
   FS_DATA_PST = (1 << 6),
   FS_DATA_TAKT_II_PST = (1 << 7),
-  FS_DIGITAKT_RAM = (1 << 8),
-  FS_DIGITAKT_TRACK = (1 << 9),
-  FS_DIGITAKT_TRACK_LOOP = (1 << 10)
+  FS_DATA_SAMPLES = (1 << 8),
+  FS_DIGITAKT_RAM = (1 << 9),
+  FS_DIGITAKT_TRACK = (1 << 10),
+  FS_DIGITAKT_TRACK_LOOP = (1 << 11)
 };
 
 extern const struct connector CONNECTOR_ELEKTRON;
