@@ -3957,7 +3957,7 @@ static const struct fs_operations FS_DATA_SAMPLES_OPERATIONS = {
   .options = FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_SIZE_COLUMN |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
     FS_OPTION_ALLOW_SEARCH,
-  .name = "data-samples",
+  .name = "data-sample",
   .gui_name = "Samples",
   .gui_icon = FS_ICON_WAVE,
   .file_icon = FS_ICON_WAVE,
