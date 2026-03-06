@@ -49,6 +49,7 @@ static const gchar *FS_DATA_ANY_EXTS[] = { "data", NULL };
 #define FS_DATA_PRJ_PREFIX "/projects"
 #define FS_DATA_SND_PREFIX "/soundbanks"
 #define FS_DATA_PST_PREFIX "/presets"
+#define FS_DATA_SAMPLES_PREFIX "/samples"
 #define FS_SMPLRW_START_POS 5
 #define FS_DATA_START_POS 18
 #define FS_RAM_SLOTS_START_POS 5
@@ -57,6 +58,7 @@ static const gchar *FS_DATA_ANY_EXTS[] = { "data", NULL };
 #define FS_SAMPLES_PAD_RES 22
 
 #define ELEKTRON_NAME_MAX_LEN 32
+#define ELEKTRON_DATA_SAMPLE_MAX_LEN 16
 
 #define ELEKTRON_SAMPLE_INFO_PAD_I32_LEN 10
 #define ELEKTRON_LOOP_TYPE_FWD 0
@@ -64,6 +66,7 @@ static const gchar *FS_DATA_ANY_EXTS[] = { "data", NULL };
 
 #define PROJECT_SLOTS 128
 #define SOUND_SLOTS 256
+#define SAMPLE_SLOTS 64
 
 #define AH_FX_SLOTS 512
 #define AH_SLOTS 128
@@ -106,6 +109,43 @@ struct elektron_iterator_data
   gint32 max_slots;
   struct backend *backend;
   gboolean load_metadata;
+};
+
+// These belong to the header but have been removed to avoid alignment issues.
+struct elektron_data_header_preamble
+{
+  guint32 magic_head;		// 0xac11d303
+  guint8 header_version;
+};
+
+struct elektron_data_header
+{
+  guint16 family_id;		// 8 for Syntakt
+  guint16 device_id;		// 13 for Syntakt
+  guint32 os_version;		// OS release number
+  guint32 file_type;		// 8 for Syntakt samples
+  gint32 file_version;
+  gint32 file_index;
+  guint32 payload_size;		// uncompressed
+  guint8 is_compressed;
+  guint8 footer_size;		// Size of footer
+};
+
+struct elektron_data_sample_slot_header
+{
+  guint32 magic_head;		// 0x53414d50
+  guint8 version;		// Should be 0
+  guint8 pad[3];		// ignore
+  guint32 length;
+  gchar name[ELEKTRON_DATA_SAMPLE_MAX_LEN];
+  guint32 rsvd32[9];		// ignore
+};
+
+struct elektron_data_footer
+{
+  guint32 hash;
+  guint32 content_size;
+  guint32 magic_tail;		// 0xaaa1daaa
 };
 
 typedef GByteArray *(*elektron_msg_id_func) (guint);
@@ -2055,6 +2095,17 @@ elektron_read_data_dir_pst (struct backend *backend,
 }
 
 static gint
+elektron_read_data_dir_sample (struct backend *backend,
+			       struct item_iterator *iter, const gchar *dir,
+			       const gchar **extensions)
+{
+  return elektron_read_data_dir_prefix (backend, iter, dir,
+					FS_DATA_SAMPLES_PREFIX,
+					ITER_MODE_DATA, FS_DATA_START_POS,
+					SAMPLE_SLOTS);
+}
+
+static gint
 elektron_dst_src_data_prefix_common (struct backend *backend,
 				     const gchar *src, const gchar *dst,
 				     const char *prefix,
@@ -2112,6 +2163,13 @@ elektron_move_data_item_pst (struct backend *backend, const gchar *src,
 					 FS_DATA_PST_PREFIX);
 }
 
+static gint
+elektron_move_data_item_sample (struct backend *backend, const gchar *src,
+				const gchar *dst)
+{
+  return elektron_move_data_item_prefix (backend, src, dst,
+					 FS_DATA_SAMPLES_PREFIX);
+}
 
 static gint
 elektron_copy_data_item_prefix (struct backend *backend, const gchar *src,
@@ -2151,6 +2209,14 @@ elektron_copy_data_item_pst (struct backend *backend, const gchar *src,
 {
   return elektron_copy_data_item_prefix (backend, src, dst,
 					 FS_DATA_PST_PREFIX);
+}
+
+static gint
+elektron_copy_data_item_sample (struct backend *backend, const gchar *src,
+				const gchar *dst)
+{
+  return elektron_copy_data_item_prefix (backend, src, dst,
+					 FS_DATA_SAMPLES_PREFIX);
 }
 
 static gint
@@ -2201,6 +2267,13 @@ elektron_clear_data_item_pst (struct backend *backend, const gchar *path)
 }
 
 static gint
+elektron_clear_data_item_sample (struct backend *backend, const gchar *path)
+{
+  return elektron_clear_data_item_prefix (backend, path,
+					  FS_DATA_SAMPLES_PREFIX);
+}
+
+static gint
 elektron_swap_data_item_prefix (struct backend *backend, const gchar *src,
 				const gchar *dst, const gchar *prefix)
 {
@@ -2241,6 +2314,14 @@ elektron_swap_data_item_pst (struct backend *backend, const gchar *src,
 }
 
 static gint
+elektron_swap_data_item_sample (struct backend *backend, const gchar *src,
+				const gchar *dst)
+{
+  return elektron_swap_data_item_prefix (backend, src, dst,
+					 FS_DATA_SAMPLES_PREFIX);
+}
+
+static gint
 elektron_open_datum (struct backend *backend, const gchar *path,
 		     guint32 *jid, gint mode, guint32 size)
 {
@@ -2274,13 +2355,15 @@ elektron_open_datum (struct backend *backend, const gchar *path,
 
   path_cp1252 = elektron_get_cp1252 (path);
 
+  // Samples are the only payload type we want to actually work with.
+  compression = g_str_has_prefix (path, FS_DATA_SAMPLES_PREFIX) ? 0 : 1;
+
   if (mode == O_RDONLY)
     {
       g_byte_array_append (tx_msg, (guint8 *) path_cp1252,
 			   strlen (path_cp1252) + 1);
       chunk_size = g_htonl (DATA_TRANSF_BLOCK_BYTES);
       g_byte_array_append (tx_msg, (guint8 *) & chunk_size, sizeof (guint32));
-      compression = 1;
       g_byte_array_append (tx_msg, &compression, sizeof (guint8));
     }
 
@@ -2575,6 +2658,114 @@ elektron_download_data_pst (struct backend *backend, const gchar *path,
 {
   return elektron_download_data_prefix (backend, path, pst, control,
 					FS_DATA_PST_PREFIX);
+}
+
+gint
+elektron_set_sample_from_data_sample (struct idata *sample,
+				      struct idata *data_sample)
+{
+  guint size = data_sample->content->len -
+    sizeof (struct elektron_data_header_preamble) -
+    sizeof (struct elektron_data_header) -
+    sizeof (struct elektron_data_sample_slot_header) -
+    sizeof (struct elektron_data_footer);
+  guint sample_data_start = sizeof (struct elektron_data_header_preamble) +
+    sizeof (struct elektron_data_header) +
+    sizeof (struct elektron_data_sample_slot_header);
+  GByteArray *content = g_byte_array_sized_new (size);
+
+  content->len = size;
+  memcpy (content->data, &data_sample->content->data[sample_data_start],
+	  size);
+  idata_init (sample, content, elektron_name_to_utf8 (data_sample->name),
+	      NULL, NULL);
+
+  return 0;
+}
+
+gint
+elektron_set_data_sample_from_sample (struct idata *data_sample,
+				      struct idata *sample, guint slot)
+{
+  struct elektron_data_header_preamble preamble;
+  struct elektron_data_header header;
+  struct elektron_data_sample_slot_header slot_header;
+  struct elektron_data_footer footer;
+  guint size = sample->content->len +
+    sizeof (struct elektron_data_header_preamble) +
+    sizeof (struct elektron_data_header) +
+    sizeof (struct elektron_data_sample_slot_header) +
+    sizeof (struct elektron_data_footer);
+  GByteArray *content = g_byte_array_sized_new (size);
+
+  preamble.magic_head = GUINT32_TO_BE (0xac11d303);
+  preamble.header_version = 2;
+
+  // For now, this is only compatyble with Syntakt.
+  header.family_id = GUINT16_TO_BE (8);
+  header.device_id = GUINT16_TO_BE (13);
+  header.os_version = GUINT32_TO_BE (0x30303832);
+  header.file_type = GUINT32_TO_BE (8);
+  header.file_version = 0xffffffff;
+  header.file_index = GINT32_TO_BE (slot);
+  header.payload_size =
+    GUINT32_TO_BE (sample->content->len +
+		   sizeof (struct elektron_data_sample_slot_header));
+  header.is_compressed = 0;
+  header.footer_size = sizeof (struct elektron_data_footer);
+
+  slot_header.magic_head = GUINT32_TO_BE (0x53414d50);
+  slot_header.version = 0;
+  slot_header.length = sample->content->len / 2;
+  snprintf (slot_header.name, ELEKTRON_DATA_SAMPLE_MAX_LEN, "%.*s",
+	    ELEKTRON_DATA_SAMPLE_MAX_LEN - 1, data_sample->name);
+
+  footer.hash =
+    GUINT32_TO_BE (crc32
+		   (0xffffffff, sample->content->data, sample->content->len));
+  footer.content_size = GUINT32_TO_BE (sample->content->len);
+  footer.magic_tail = GUINT32_TO_BE (0xaaa1daaa);
+
+  g_byte_array_append (content, (guint8 *) & preamble,
+		       sizeof (struct elektron_data_header_preamble));
+  g_byte_array_append (content, (guint8 *) & header,
+		       sizeof (struct elektron_data_header));
+  g_byte_array_append (content, (guint8 *) & slot_header,
+		       sizeof (struct elektron_data_sample_slot_header));
+  g_byte_array_append (content, sample->content->data, sample->content->len);
+  g_byte_array_append (content, (guint8 *) & footer,
+		       sizeof (struct elektron_data_footer));
+
+  idata_init (data_sample, content, elektron_get_cp1252 (sample->name), NULL,
+	      NULL);
+  return 0;
+}
+
+static gint
+elektron_download_data_sample (struct backend *backend, const gchar *path,
+			       struct idata *sample,
+			       struct task_control *control)
+{
+  gint err;
+  struct idata data_sample;
+
+  control->parts = 2;
+  control->part = 0;
+
+  err = elektron_download_data_prefix (backend, path, &data_sample, control,
+				       FS_DATA_SAMPLES_PREFIX);
+  if (err)
+    {
+      return err;
+    }
+
+  err = elektron_set_sample_from_data_sample (sample, &data_sample);
+  idata_clear (&data_sample);
+
+  task_control_set_progress (control, 1.0);
+  control->part++;
+
+  return err;
 }
 
 static gchar *
@@ -2890,6 +3081,40 @@ elektron_upload_data_pst (struct backend *backend, const gchar *path,
 {
   return elektron_upload_data_prefix (backend, path, pst, control,
 				      FS_DATA_PST_PREFIX);
+}
+
+static gint
+elektron_upload_data_sample (struct backend *backend, const gchar *path,
+			     struct idata *sample,
+			     struct task_control *control)
+{
+  gint err;
+  guint id;
+  struct idata data_sample;
+
+  err = common_slot_get_id_from_path (path, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  control->parts = 2;
+  control->part = 0;
+
+  err = elektron_set_data_sample_from_sample (&data_sample, sample, id);
+  if (err)
+    {
+      return err;
+    }
+
+  task_control_set_progress (control, 1.0);
+  control->part++;
+
+  err = elektron_upload_data_prefix (backend, path, &data_sample, control,
+				     FS_DATA_SAMPLES_PREFIX);
+  idata_clear (&data_sample);
+
+  return err;
 }
 
 static gint
@@ -3727,6 +3952,31 @@ static const struct fs_operations FS_DATA_TAKT_II_PST_OPERATIONS = {
   .get_download_path = elektron_get_download_path
 };
 
+static const struct fs_operations FS_DATA_SAMPLES_OPERATIONS = {
+  .id = FS_DATA_SAMPLES,
+  .options = FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_SIZE_COLUMN |
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
+    FS_OPTION_ALLOW_SEARCH,
+  .name = "data-samples",
+  .gui_name = "Samples",
+  .gui_icon = FS_ICON_WAVE,
+  .file_icon = FS_ICON_WAVE,
+  .readdir = elektron_read_data_dir_sample,
+  .print_item = elektron_print_data,
+  .delete = elektron_clear_data_item_sample,
+  .move = elektron_move_data_item_sample,
+  .copy = elektron_copy_data_item_sample,
+  .swap = elektron_swap_data_item_sample,
+  .download = elektron_download_data_sample,
+  .upload = elektron_upload_data_sample,
+  .get_slot = elektron_get_id_as_slot,
+  .load = elektron_sample_load,
+  .save = elektron_sample_save,
+  .get_exts = sample_get_sample_extensions,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = common_system_get_download_path
+};
+
 static const struct fs_operations FS_DIGITAKT_RAM_OPERATIONS = {
   .id = FS_DIGITAKT_RAM,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
@@ -3786,8 +4036,8 @@ static const struct fs_operations *FS_OPERATIONS[] = {
   &FS_SAMPLES_OPERATIONS, &FS_RAW_ANY_OPERATIONS, &FS_RAW_PRESETS_OPERATIONS,
   &FS_DATA_ANY_OPERATIONS, &FS_DATA_PRJ_OPERATIONS, &FS_DATA_SND_OPERATIONS,
   &FS_DATA_PST_OPERATIONS, &FS_DATA_TAKT_II_PST_OPERATIONS,
-  &FS_DIGITAKT_RAM_OPERATIONS, &FS_DIGITAKT_TRACK_OPERATIONS,
-  &FS_DIGITAKT_TRACK_LOOP_OPERATIONS, NULL
+  &FS_DATA_SAMPLES_OPERATIONS, &FS_DIGITAKT_RAM_OPERATIONS,
+  &FS_DIGITAKT_TRACK_OPERATIONS, &FS_DIGITAKT_TRACK_LOOP_OPERATIONS, NULL
 };
 
 gint
