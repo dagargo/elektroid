@@ -38,6 +38,13 @@ enum logue_module
   FS_LOGUE_MODULE_OSC,
 };
 
+enum logue_platform
+{
+  LOGUE_PLATFORM_PROLOGUE = 1,
+  LOGUE_PLATFORM_MINILOGUE_XD = 2,
+  LOGUE_PLATFORM_NTS1 = 3
+};
+
 extern const struct connector CONNECTOR_LOGUE;
 
 #endif

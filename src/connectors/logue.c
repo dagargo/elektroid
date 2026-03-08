@@ -34,6 +34,10 @@
 #define LOGUE_NAME_MINILOGUE_XD "minilogue xd"
 #define LOGUE_NAME_NTS1 "NTS-1"
 
+#define LOGUE_PLATFORM_NAME_PROLOGUE "prologue"
+#define LOGUE_PLATFORM_NAME_MINILOGUE_XD "minilogue-xd"
+#define LOGUE_PLATFORM_NAME_NTS1 "nutekt-digital"
+
 #define LOGUE_SLOT_STATUS_PARAMS_MAX 24
 #define LOGUE_SLOT_STATUS_NAME_LEN 14
 #define LOGUE_SLOT_STATUS_PARAM_NAME_LEN 13
@@ -60,8 +64,7 @@ struct logue_version
 struct logue_data
 {
   guint8 device;
-  guint8 platform_id;
-  struct logue_version api_version;
+  enum logue_platform platform;
 };
 
 struct logue_iter_data
@@ -454,9 +457,17 @@ logue_get_manifest (GByteArray *manifest_content,
       goto cleanup_reader;
     }
   string = json_reader_get_string_value (reader);
-  if (!strcmp (string, "nutekt-digital"))
+  if (!strcmp (string, LOGUE_PLATFORM_NAME_PROLOGUE))
     {
-      manifest->status.platform_id = 3;
+      manifest->status.platform_id = LOGUE_PLATFORM_PROLOGUE;
+    }
+  else if (!strcmp (string, LOGUE_PLATFORM_NAME_MINILOGUE_XD))
+    {
+      manifest->status.platform_id = LOGUE_PLATFORM_MINILOGUE_XD;
+    }
+  else if (!strcmp (string, LOGUE_PLATFORM_NAME_NTS1))
+    {
+      manifest->status.platform_id = LOGUE_PLATFORM_NTS1;
     }
   else
     {
@@ -1121,6 +1132,48 @@ static const struct fs_operations FS_LOGUE_REVFX_OPERATIONS = {
   .get_download_path = common_slot_get_download_path_n
 };
 
+// This message is not really useful but it's part of what logue-cli does.
+// This does not seem to work with the Minilogue XD.
+enum logue_device
+logue_get_user_api_request_nts1 (struct backend *backend,
+				 enum logue_device device)
+{
+  GByteArray *tx_msg, *rx_msg;
+  enum logue_platform platform;
+  struct logue_version api_version;
+
+  tx_msg = logue_get_msg (device, 0x17, NULL, 0);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  if (!rx_msg)
+    {
+      return -ENODEV;
+    }
+  if (rx_msg->len != 12 || LOGUE_GET_MSG_OP (rx_msg) != 0x47)
+    {
+      free_msg (rx_msg);
+      return -EIO;
+    }
+
+  platform = rx_msg->data[7];
+
+  if (platform != LOGUE_PLATFORM_NTS1)
+    {
+      error_print ("Unexpected platform %d", platform);
+    }
+
+  api_version.major = rx_msg->data[8];
+  api_version.minor = rx_msg->data[9];
+  api_version.patch = rx_msg->data[10];
+
+  debug_print (2, "Platform ID: %d", platform);
+  debug_print (2, "Major: %d", api_version.major);
+  debug_print (2, "Minor: %d", api_version.minor);
+  debug_print (2, "Patch: %d", api_version.patch);
+
+  free_msg (rx_msg);
+  return platform;
+}
+
 static gint
 logue_handshake (struct backend *backend)
 {
@@ -1129,6 +1182,7 @@ logue_handshake (struct backend *backend)
   struct logue_data *data;
   enum logue_device device;
   GByteArray *tx_msg, *rx_msg;
+  enum logue_platform platform;
 
   if (memcmp (backend->midi_info.company, KORG_ID, sizeof (KORG_ID)))
     {
@@ -1146,18 +1200,21 @@ logue_handshake (struct backend *backend)
 
   if (logue_validate_device (rx_msg, LOGUE_DEVICE_PROLOGUE))
     {
-      device = LOGUE_DEVICE_PROLOGUE;
       name = LOGUE_NAME_PROLOGUE;
+      device = LOGUE_DEVICE_PROLOGUE;
+      platform = LOGUE_PLATFORM_PROLOGUE;
     }
   else if (logue_validate_device (rx_msg, LOGUE_DEVICE_MINILOGUE_XD))
     {
-      device = LOGUE_DEVICE_MINILOGUE_XD;
       name = LOGUE_NAME_MINILOGUE_XD;
+      device = LOGUE_DEVICE_MINILOGUE_XD;
+      platform = LOGUE_PLATFORM_MINILOGUE_XD;
     }
   else if (logue_validate_device (rx_msg, LOGUE_DEVICE_NTS1))
     {
-      device = LOGUE_DEVICE_NTS1;
       name = LOGUE_NAME_NTS1;
+      device = LOGUE_DEVICE_NTS1;
+      platform = logue_get_user_api_request_nts1 (backend, device);
     }
   else
     {
@@ -1167,32 +1224,9 @@ logue_handshake (struct backend *backend)
 
   free_msg (rx_msg);
 
-  // This message is not really used here but it's part of what logue-cli does.
-  tx_msg = logue_get_msg (device, 0x17, NULL, 0);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
-  if (!rx_msg)
-    {
-      return -ENODEV;
-    }
-  if (rx_msg->len != 12 || LOGUE_GET_MSG_OP (rx_msg) != 0x47)
-    {
-      free_msg (rx_msg);
-      return -EIO;
-    }
-
   data = g_malloc (sizeof (struct logue_data));
   data->device = device;
-  data->platform_id = rx_msg->data[7];
-  data->api_version.major = rx_msg->data[8];
-  data->api_version.minor = rx_msg->data[9];
-  data->api_version.patch = rx_msg->data[10];
-
-  debug_print (2, "Platform ID: %d", data->platform_id);
-  debug_print (2, "Major: %d", data->api_version.major);
-  debug_print (2, "Minor: %d", data->api_version.minor);
-  debug_print (2, "Patch: %d", data->api_version.patch);
-
-  free_msg (rx_msg);
+  data->platform = platform;
 
   backend->data = data;
   backend->destroy_data = backend_destroy_data;
