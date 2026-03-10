@@ -165,6 +165,7 @@ logue_get_msg_op_type_id (guint8 device, guint8 op, guint8 module,
 static gint
 logue_next_dentry (struct item_iterator *iter)
 {
+  guint rx_size, start;
   GByteArray *tx_msg, *rx_msg;
   struct logue_iter_data *iter_data = iter->data;
   struct logue_data *logue_data = iter_data->backend->data;
@@ -174,6 +175,17 @@ logue_next_dentry (struct item_iterator *iter)
       return -ENOENT;
     }
 
+  if (logue_data->device == LOGUE_DEVICE_NTS1)
+    {
+      rx_size = 53;
+      start = 10;
+    }
+  else
+    {
+      rx_size = 51;
+      start = 8;
+    }
+
   tx_msg = logue_get_msg_op_type_id (logue_data->device, 0x19,
 				     iter_data->module, iter_data->next);
   rx_msg = backend_tx_and_rx_sysex (iter_data->backend, tx_msg, -1);
@@ -181,7 +193,7 @@ logue_next_dentry (struct item_iterator *iter)
     {
       return -EIO;
     }
-  if (rx_msg->len == 53 && LOGUE_GET_MSG_OP (rx_msg) == 0x49)
+  if (rx_msg->len == rx_size && LOGUE_GET_MSG_OP (rx_msg) == 0x49)
     {
       gsize size;
       GByteArray *content;
@@ -191,7 +203,7 @@ logue_next_dentry (struct item_iterator *iter)
       size = common_midi_msg_to_8bit_msg_size (42);
       content = g_byte_array_sized_new (size);
       content->len = size;
-      common_midi_msg_to_8bit_msg (&rx_msg->data[10], content->data, 42);
+      common_midi_msg_to_8bit_msg (&rx_msg->data[start], content->data, 42);
 
       if (debug_level > 1)
 	{
@@ -1180,6 +1192,7 @@ logue_get_user_api_request_nts1 (struct backend *backend,
   debug_print (2, "Patch: %d", api_version.patch);
 
   free_msg (rx_msg);
+
   return platform;
 }
 
