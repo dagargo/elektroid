@@ -1252,5 +1252,5 @@ const struct connector CONNECTOR_LOGUE = {
   .name = "logue",
   .handshake = logue_handshake,
   .options = 0,
-  .regex = ".*(prologue|minilogue xd|NTS-1).*"
+  .regex = ".*(prologue|minilogue xd|NTS-1).*KBD/KNOB"
 };
