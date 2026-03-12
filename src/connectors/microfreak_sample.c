@@ -224,11 +224,6 @@ microfreak_deserialize_object (GByteArray *input, const gchar *header,
 
   p++;
   len = strlen (MICROFREAK_ZEROS);
-  if (memcmp (p, (guint8 *) MICROFREAK_ZEROS, len))
-    {
-      err = -EINVAL;
-      goto end;
-    }
 
   p += len + 1;
   err = microfreak_deserialize_read_value (&p, &v);
