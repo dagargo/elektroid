@@ -268,7 +268,7 @@ microfreak_next_preset_dentry (struct item_iterator *iter)
 
 end:
   free_msg (rx_msg);
-  usleep (MICROFREAK_REST_TIME_LONG_US);
+  usleep (MICROFREAK_REST_TIME_US);
   return 0;
 }
 
