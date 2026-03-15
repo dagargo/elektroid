@@ -2679,8 +2679,16 @@ elektron_set_sample_from_data_sample (struct idata *sample,
   content->len = size;
   memcpy (content->data, &data_sample->content->data[sample_data_start],
 	  size);
+
+  struct sample_info *sample_info = NULL;
+  sample_info = sample_info_new (FALSE);
+  sample_info->frames = size / 2;
+  sample_info->rate = 48000;
+  sample_info->channels = 1;
+  sample_info->format = SF_FORMAT_PCM_16;
+
   idata_init (sample, content, elektron_name_to_utf8 (data_sample->name),
-	      NULL, NULL);
+	      sample_info, sample_info_free);
 
   return 0;
 }
