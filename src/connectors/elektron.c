@@ -2617,7 +2617,9 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
   if (active)
     {
       task_control_set_progress (control, 1.0);
-      idata_init (data, content, NULL, NULL, NULL);
+      basename = g_path_get_basename (path);
+      idata_init (data, content, g_path_get_basename (path), NULL, NULL);
+      g_free (basename);
     }
   else
     {
