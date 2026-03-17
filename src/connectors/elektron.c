@@ -2767,11 +2767,6 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
   snprintf (slot_header.name, ELEKTRON_DATA_SAMPLE_MAX_LEN, "%.*s",
 	    ELEKTRON_DATA_SAMPLE_MAX_LEN - 1, data_sample->name);
 
-  footer.hash =
-    GUINT32_TO_BE (crc32
-		   (0xffffffff, sample->content->data, sample->content->len));
-  footer.content_size = GUINT32_TO_BE (sample->content->len);
-  footer.magic_tail = GUINT32_TO_BE (0xaaa1daaa);
 
   g_byte_array_append (content, (guint8 *) & preamble,
 		       sizeof (struct elektron_data_header_preamble));
@@ -2787,6 +2782,13 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
     {
       dest[i] = GINT16_TO_BE (src[i]);
     }
+  guint32 crc = crc32 (0xffffffff, (guint8 *) & slot_header,
+		       sizeof (struct elektron_data_sample_slot_header));
+  crc = crc32 (crc, (guint8 *) dest, sample->content->len);
+  footer.hash = GUINT32_TO_BE (crc);
+  footer.content_size = GUINT32_TO_BE (sample->content->len +
+				       sizeof (struct elektron_data_sample_slot_header));
+  footer.magic_tail = GUINT32_TO_BE (0xaaa1daaa);
   g_byte_array_append (content, (guint8 *) & footer,
 		       sizeof (struct elektron_data_footer));
 
