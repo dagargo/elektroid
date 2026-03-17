@@ -2748,7 +2748,7 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
 
   slot_header.magic_head = GUINT32_TO_BE (0x53414d50);
   slot_header.version = 0;
-  slot_header.length = sample->content->len / 2;
+  slot_header.length = GINT32_TO_BE (sample->content->len / 2);
   snprintf (slot_header.name, ELEKTRON_DATA_SAMPLE_MAX_LEN, "%.*s",
 	    ELEKTRON_DATA_SAMPLE_MAX_LEN - 1, data_sample->name);
 
