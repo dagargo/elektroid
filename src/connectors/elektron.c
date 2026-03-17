@@ -2617,9 +2617,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
   if (active)
     {
       task_control_set_progress (control, 1.0);
-      basename = g_path_get_basename (path);
-      idata_init (data, content, g_path_get_basename (path), NULL, NULL);
-      g_free (basename);
+      idata_init (data, content, NULL, NULL, NULL);
     }
   else
     {
@@ -2674,6 +2672,21 @@ elektron_set_sample_from_data_sample (struct idata *sample,
   guint sample_data_start = sizeof (struct elektron_data_header_preamble) +
     sizeof (struct elektron_data_header) +
     sizeof (struct elektron_data_sample_slot_header);
+  struct elektron_data_sample_slot_header *slot_header =
+    (struct elektron_data_sample_slot_header *) &data_sample->content->data
+    [sizeof (struct elektron_data_header_preamble) +
+     sizeof (struct elektron_data_header)];
+  gchar safe_name[ELEKTRON_DATA_SAMPLE_MAX_LEN];
+  gint j = 0;
+  for (gint i = 0; i < ELEKTRON_DATA_SAMPLE_MAX_LEN - 1 && slot_header->name[i] != '\0'; i++)
+    {
+      if (g_ascii_isprint (slot_header->name[i]) && slot_header->name[i] != '/' &&
+	  slot_header->name[i] != '\\')
+	{
+	  safe_name[j++] = slot_header->name[i];
+	}
+    }
+  safe_name[j] = '\0';
   GByteArray *content = g_byte_array_sized_new (size);
 
   content->len = size;
@@ -2687,7 +2700,7 @@ elektron_set_sample_from_data_sample (struct idata *sample,
   sample_info->channels = 1;
   sample_info->format = SF_FORMAT_PCM_16;
 
-  idata_init (sample, content, elektron_name_to_utf8 (data_sample->name),
+  idata_init (sample, content, elektron_name_to_utf8 (safe_name),
 	      sample_info, sample_info_free);
 
   return 0;
