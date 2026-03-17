@@ -2700,6 +2700,21 @@ elektron_set_sample_from_data_sample (struct idata *sample,
     {
       dest[i] = GINT16_FROM_BE (src[i]);
     }
+
+  guint crc_start = sizeof (struct elektron_data_header_preamble) +
+    sizeof (struct elektron_data_header);
+  guint32 crc = crc32 (0xffffffff,
+		       &data_sample->content->data[crc_start],
+		       sizeof (struct elektron_data_sample_slot_header));
+  crc = crc32 (crc, &data_sample->content->data[sample_data_start], size);
+  debug_print (1, "Sample data size: %u bytes, CRC (slot_header+data): 0x%08x\n",
+	   size, crc);
+
+  if (crc != GUINT32_FROM_BE (footer->hash))
+    {
+      error_print ("CRC mismatch: calculated 0x%08x, expected 0x%08x",
+		  crc, GUINT32_FROM_BE (footer->hash));
+      return -1;
     }
 
   struct sample_info *sample_info = NULL;
