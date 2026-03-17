@@ -112,13 +112,13 @@ struct elektron_iterator_data
 };
 
 // These belong to the header but have been removed to avoid alignment issues.
-struct elektron_data_header_preamble
+struct __attribute__((packed)) elektron_data_header_preamble
 {
   guint32 magic_head;		// 0xac11d303
   guint8 header_version;
 };
 
-struct elektron_data_header
+struct __attribute__((packed)) elektron_data_header
 {
   guint16 family_id;		// 8 for Syntakt
   guint16 device_id;		// 13 for Syntakt
@@ -131,7 +131,7 @@ struct elektron_data_header
   guint8 footer_size;		// Size of footer
 };
 
-struct elektron_data_sample_slot_header
+struct __attribute__((packed)) elektron_data_sample_slot_header
 {
   guint32 magic_head;		// 0x53414d50
   guint8 version;		// Should be 0
@@ -141,7 +141,7 @@ struct elektron_data_sample_slot_header
   guint32 rsvd32[9];		// ignore
 };
 
-struct elektron_data_footer
+struct __attribute__((packed)) elektron_data_footer
 {
   guint32 hash;
   guint32 content_size;
