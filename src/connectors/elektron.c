@@ -2676,6 +2676,9 @@ elektron_set_sample_from_data_sample (struct idata *sample,
     (struct elektron_data_sample_slot_header *) &data_sample->content->data
     [sizeof (struct elektron_data_header_preamble) +
      sizeof (struct elektron_data_header)];
+  struct elektron_data_footer *footer =
+    (struct elektron_data_footer *) &data_sample->content->data
+    [data_sample->content->len - sizeof (struct elektron_data_footer)];
   gchar safe_name[ELEKTRON_DATA_SAMPLE_MAX_LEN];
   gint j = 0;
   for (gint i = 0; i < ELEKTRON_DATA_SAMPLE_MAX_LEN - 1 && slot_header->name[i] != '\0'; i++)
@@ -2688,10 +2691,16 @@ elektron_set_sample_from_data_sample (struct idata *sample,
     }
   safe_name[j] = '\0';
   GByteArray *content = g_byte_array_sized_new (size);
+  g_byte_array_set_size (content, size);
 
-  content->len = size;
-  memcpy (content->data, &data_sample->content->data[sample_data_start],
-	  size);
+  const gint16 *src = (const gint16 *) &data_sample->content->data[sample_data_start];
+  gint16 *dest = (gint16 *) content->data;
+  guint samples_count = size / 2;
+  for (guint i = 0; i < samples_count; i++)
+    {
+      dest[i] = GINT16_FROM_BE (src[i]);
+    }
+    }
 
   struct sample_info *sample_info = NULL;
   sample_info = sample_info_new (FALSE);
@@ -2755,7 +2764,14 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
 		       sizeof (struct elektron_data_header));
   g_byte_array_append (content, (guint8 *) & slot_header,
 		       sizeof (struct elektron_data_sample_slot_header));
-  g_byte_array_append (content, sample->content->data, sample->content->len);
+  g_byte_array_set_size (content, content->len + sample->content->len);
+  const gint16 *src = (const gint16 *) sample->content->data;
+  guint samples_count = sample->content->len / 2;
+  gint16 *dest = (gint16 *) &content->data[content->len - sample->content->len];
+  for (guint i = 0; i < samples_count; i++)
+    {
+      dest[i] = GINT16_TO_BE (src[i]);
+    }
   g_byte_array_append (content, (guint8 *) & footer,
 		       sizeof (struct elektron_data_footer));
 
