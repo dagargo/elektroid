@@ -111,15 +111,10 @@ struct elektron_iterator_data
   gboolean load_metadata;
 };
 
-// These belong to the header but have been removed to avoid alignment issues.
-struct __attribute__((packed)) elektron_data_header_preamble
+struct __attribute__((packed)) elektron_data_header
 {
   guint32 magic_head;		// 0xac11d303
   guint8 header_version;
-};
-
-struct __attribute__((packed)) elektron_data_header
-{
   guint16 family_id;		// 8 for Syntakt
   guint16 device_id;		// 13 for Syntakt
   guint32 os_version;		// OS release number
@@ -2665,17 +2660,14 @@ elektron_set_sample_from_data_sample (struct idata *sample,
 				      struct idata *data_sample)
 {
   guint size = data_sample->content->len -
-    sizeof (struct elektron_data_header_preamble) -
     sizeof (struct elektron_data_header) -
     sizeof (struct elektron_data_sample_slot_header) -
     sizeof (struct elektron_data_footer);
-  guint sample_data_start = sizeof (struct elektron_data_header_preamble) +
-    sizeof (struct elektron_data_header) +
+  guint sample_data_start = sizeof (struct elektron_data_header) +
     sizeof (struct elektron_data_sample_slot_header);
   struct elektron_data_sample_slot_header *slot_header =
     (struct elektron_data_sample_slot_header *) &data_sample->content->data
-    [sizeof (struct elektron_data_header_preamble) +
-     sizeof (struct elektron_data_header)];
+    [sizeof (struct elektron_data_header)];
   struct elektron_data_footer *footer =
     (struct elektron_data_footer *) &data_sample->content->data
     [data_sample->content->len - sizeof (struct elektron_data_footer)];
@@ -2701,8 +2693,7 @@ elektron_set_sample_from_data_sample (struct idata *sample,
       dest[i] = GINT16_FROM_BE (src[i]);
     }
 
-  guint crc_start = sizeof (struct elektron_data_header_preamble) +
-    sizeof (struct elektron_data_header);
+  guint crc_start = sizeof (struct elektron_data_header);
   guint32 crc = crc32 (0xffffffff,
 		       &data_sample->content->data[crc_start],
 		       sizeof (struct elektron_data_sample_slot_header));
@@ -2734,19 +2725,17 @@ gint
 elektron_set_data_sample_from_sample (struct idata *data_sample,
 				      struct idata *sample, guint slot)
 {
-  struct elektron_data_header_preamble preamble;
   struct elektron_data_header header;
   struct elektron_data_sample_slot_header slot_header;
   struct elektron_data_footer footer;
   guint size = sample->content->len +
-    sizeof (struct elektron_data_header_preamble) +
     sizeof (struct elektron_data_header) +
     sizeof (struct elektron_data_sample_slot_header) +
     sizeof (struct elektron_data_footer);
   GByteArray *content = g_byte_array_sized_new (size);
 
-  preamble.magic_head = GUINT32_TO_BE (0xac11d303);
-  preamble.header_version = 2;
+  header.magic_head = GUINT32_TO_BE (0xac11d303);
+  header.header_version = 2;
 
   // For now, this is only compatyble with Syntakt.
   header.family_id = GUINT16_TO_BE (8);
