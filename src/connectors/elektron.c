@@ -2820,8 +2820,8 @@ elektron_download_data_sample (struct backend *backend, const gchar *path,
   err = elektron_set_sample_from_data_sample (sample, &data_sample);
   idata_clear (&data_sample);
 
-  task_control_set_progress (control, 1.0);
   control->part++;
+  task_control_set_progress (control, 1.0);
 
   return err;
 }
