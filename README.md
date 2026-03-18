@@ -105,7 +105,14 @@ sudo pacman -S base-devel autoconf libtool alsa-lib zlib libzip gtk3 libsndfile 
 For OSX (Homebrew), run this to install the build dependencies.
 
 ```
-homebrew install automake bltool pkg-config gtk+3 libsndfile libsamplerate gettext zlib json-glib libzip rtaudio rtmidi rubberband
+brew install automake bltool pkg-config gtk+3 libsndfile libsamplerate gettext zlib json-glib libzip rtaudio rtmidi rubberband
+```
+
+After building, you can create a macOS app bundle:
+
+```
+./macos-bundle.sh
+cp -r Elektroid.app /Applications/
 ```
 
 For MSYS2 (UCRT64), run this to install the build dependencies.
