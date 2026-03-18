@@ -25,6 +25,10 @@
 #endif
 #include <errno.h>
 #include <math.h>
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#include <libgen.h>
+#endif
 #include "utils.h"
 
 #define DEBUG_SHORT_HEX_LEN 64
@@ -186,6 +190,44 @@ get_user_dir (const char *rel_dir)
     {
       return strdup (home);
     }
+}
+
+const gchar *
+get_data_dir ()
+{
+#ifdef __APPLE__
+  static gchar *data_dir = NULL;
+  if (!data_dir)
+    {
+      char path[PATH_MAX];
+      uint32_t size = sizeof (path);
+      if (_NSGetExecutablePath (path, &size) == 0)
+	{
+	  char *real = realpath (path, NULL);
+	  if (real)
+	    {
+	      // Check for .app bundle: MacOS/bin -> Resources/share/elektroid
+	      char *dir = dirname (real);
+	      char *candidate = g_build_filename (dir, "..", "Resources",
+						  "share", PACKAGE, NULL);
+	      char *resolved = realpath (candidate, NULL);
+	      g_free (candidate);
+	      if (resolved)
+		{
+		  data_dir = resolved;
+		}
+	      free (real);
+	    }
+	}
+      if (!data_dir)
+	{
+	  data_dir = DATADIR;
+	}
+    }
+  return data_dir;
+#else
+  return DATADIR;
+#endif
 }
 
 char *

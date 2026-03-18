@@ -1545,11 +1545,14 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
     }
 
   builder = gtk_builder_new ();
-  gtk_builder_add_from_file (builder, DATADIR "/elektroid.ui", NULL);
+  gchar *ui_path = g_build_filename (get_data_dir (), "elektroid.ui", NULL);
+  gtk_builder_add_from_file (builder, ui_path, NULL);
+  g_free (ui_path);
 
   css_provider = gtk_css_provider_new ();
-  gtk_css_provider_load_from_path (css_provider, DATADIR "/elektroid.css",
-				   NULL);
+  gchar *css_path = g_build_filename (get_data_dir (), "elektroid.css", NULL);
+  gtk_css_provider_load_from_path (css_provider, css_path, NULL);
+  g_free (css_path);
   gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
 					     GTK_STYLE_PROVIDER
 					     (css_provider),
@@ -1561,11 +1564,14 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
     GTK_ABOUT_DIALOG (gtk_builder_get_object (builder, "about_dialog"));
   gtk_about_dialog_set_version (about_dialog, PACKAGE_VERSION);
 
-  elektroid_about_add_credit_section (_("Libraries"),
-				      DATADIR "/libraries.html");
+  gchar *libraries_path = g_build_filename (get_data_dir (),
+					    "libraries.html", NULL);
+  elektroid_about_add_credit_section (_("Libraries"), libraries_path);
+  g_free (libraries_path);
 
-  elektroid_about_add_credit_section (_("Acknowledgements"),
-				      DATADIR "/THANKS");
+  gchar *thanks_path = g_build_filename (get_data_dir (), "THANKS", NULL);
+  elektroid_about_add_credit_section (_("Acknowledgements"), thanks_path);
+  g_free (thanks_path);
 
   maction_context.box =
     GTK_WIDGET (gtk_builder_get_object (builder, "menu_actions_box"));
