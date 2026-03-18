@@ -2673,10 +2673,12 @@ elektron_set_sample_from_data_sample (struct idata *sample,
     [data_sample->content->len - sizeof (struct elektron_data_footer)];
   gchar safe_name[ELEKTRON_DATA_SAMPLE_MAX_LEN];
   gint j = 0;
-  for (gint i = 0; i < ELEKTRON_DATA_SAMPLE_MAX_LEN - 1 && slot_header->name[i] != '\0'; i++)
+  for (gint i = 0;
+       i < ELEKTRON_DATA_SAMPLE_MAX_LEN - 1 && slot_header->name[i] != '\0';
+       i++)
     {
-      if (g_ascii_isprint (slot_header->name[i]) && slot_header->name[i] != '/' &&
-	  slot_header->name[i] != '\\')
+      if (g_ascii_isprint (slot_header->name[i])
+	  && slot_header->name[i] != '/' && slot_header->name[i] != '\\')
 	{
 	  safe_name[j++] = slot_header->name[i];
 	}
@@ -2685,7 +2687,8 @@ elektron_set_sample_from_data_sample (struct idata *sample,
   GByteArray *content = g_byte_array_sized_new (size);
   g_byte_array_set_size (content, size);
 
-  const gint16 *src = (const gint16 *) &data_sample->content->data[sample_data_start];
+  const gint16 *src =
+    (const gint16 *) &data_sample->content->data[sample_data_start];
   gint16 *dest = (gint16 *) content->data;
   guint samples_count = size / 2;
   for (guint i = 0; i < samples_count; i++)
@@ -2698,13 +2701,14 @@ elektron_set_sample_from_data_sample (struct idata *sample,
 		       &data_sample->content->data[crc_start],
 		       sizeof (struct elektron_data_sample_slot_header));
   crc = crc32 (crc, &data_sample->content->data[sample_data_start], size);
-  debug_print (1, "Sample data size: %u bytes, CRC (slot_header+data): 0x%08x\n",
-	   size, crc);
+  debug_print (1,
+	       "Sample data size: %u bytes, CRC (slot_header+data): 0x%08x\n",
+	       size, crc);
 
   if (crc != GUINT32_FROM_BE (footer->hash))
     {
       error_print ("CRC mismatch: calculated 0x%08x, expected 0x%08x",
-		  crc, GUINT32_FROM_BE (footer->hash));
+		   crc, GUINT32_FROM_BE (footer->hash));
       return -1;
     }
 
@@ -2737,7 +2741,7 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
   header.magic_head = GUINT32_TO_BE (0xac11d303);
   header.header_version = 2;
 
-  // For now, this is only compatyble with Syntakt.
+  // For now, this is only compatible with Syntakt.
   header.family_id = GUINT16_TO_BE (8);
   header.device_id = GUINT16_TO_BE (13);
   header.os_version = GUINT32_TO_BE (0x30303832);
@@ -2753,38 +2757,42 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
   slot_header.magic_head = GUINT32_TO_BE (0x53414d50);
   slot_header.version = 0;
   slot_header.length = GINT32_TO_BE (sample->content->len / 2);
-  
-  gchar * basename = elektron_get_cp1252 (g_path_get_basename (sample->name));
+
+  gchar *basename = elektron_get_cp1252 (g_path_get_basename (sample->name));
   snprintf (slot_header.name, ELEKTRON_DATA_SAMPLE_MAX_LEN, "%.*s",
 	    ELEKTRON_DATA_SAMPLE_MAX_LEN - 1, basename);
-  g_free (basename);  
+  g_free (basename);
 
-  g_byte_array_append (content, (guint8 *) & preamble,
-		       sizeof (struct elektron_data_header_preamble));
   g_byte_array_append (content, (guint8 *) & header,
 		       sizeof (struct elektron_data_header));
   g_byte_array_append (content, (guint8 *) & slot_header,
 		       sizeof (struct elektron_data_sample_slot_header));
   g_byte_array_set_size (content, content->len + sample->content->len);
+
+  /* Convert sample data from host to big-endian byte order for CRC and storage */
   const gint16 *src = (const gint16 *) sample->content->data;
   guint samples_count = sample->content->len / 2;
-  gint16 *dest = (gint16 *) &content->data[content->len - sample->content->len];
+  gint16 *dest =
+    (gint16 *) & content->data[content->len - sample->content->len];
   for (guint i = 0; i < samples_count; i++)
     {
       dest[i] = GINT16_TO_BE (src[i]);
     }
+
+  /* CRC includes slot_header + big-endian sample data */
   guint32 crc = crc32 (0xffffffff, (guint8 *) & slot_header,
 		       sizeof (struct elektron_data_sample_slot_header));
   crc = crc32 (crc, (guint8 *) dest, sample->content->len);
   footer.hash = GUINT32_TO_BE (crc);
   footer.content_size = GUINT32_TO_BE (sample->content->len +
-				       sizeof (struct elektron_data_sample_slot_header));
+				       sizeof (struct
+					       elektron_data_sample_slot_header));
   footer.magic_tail = GUINT32_TO_BE (0xaaa1daaa);
+
   g_byte_array_append (content, (guint8 *) & footer,
 		       sizeof (struct elektron_data_footer));
 
-  idata_init (data_sample, content, basename, NULL,
-	      NULL);
+  idata_init (data_sample, content, basename, NULL, NULL);
   return 0;
 }
 
