@@ -2672,18 +2672,8 @@ elektron_set_sample_from_data_sample (struct idata *sample,
     (struct elektron_data_footer *) &data_sample->content->data
     [data_sample->content->len - sizeof (struct elektron_data_footer)];
   gchar safe_name[ELEKTRON_DATA_SAMPLE_MAX_LEN];
-  gint j = 0;
-  for (gint i = 0;
-       i < ELEKTRON_DATA_SAMPLE_MAX_LEN - 1 && slot_header->name[i] != '\0';
-       i++)
-    {
-      if (g_ascii_isprint (slot_header->name[i])
-	  && slot_header->name[i] != '/' && slot_header->name[i] != '\\')
-	{
-	  safe_name[j++] = slot_header->name[i];
-	}
-    }
-  safe_name[j] = '\0';
+  snprintf (safe_name, ELEKTRON_DATA_SAMPLE_MAX_LEN, "%.*s",
+	    ELEKTRON_DATA_SAMPLE_MAX_LEN - 1, slot_header->name);
   GByteArray *content = g_byte_array_sized_new (size);
   g_byte_array_set_size (content, size);
 
@@ -2758,10 +2748,9 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
   slot_header.version = 0;
   slot_header.length = GINT32_TO_BE (sample->content->len / 2);
 
-  gchar *basename = elektron_get_cp1252 (g_path_get_basename (sample->name));
+  gchar *name = elektron_get_cp1252 (sample->name);
   snprintf (slot_header.name, ELEKTRON_DATA_SAMPLE_MAX_LEN, "%.*s",
-	    ELEKTRON_DATA_SAMPLE_MAX_LEN - 1, basename);
-  g_free (basename);
+	    ELEKTRON_DATA_SAMPLE_MAX_LEN - 1, name);
 
   g_byte_array_append (content, (guint8 *) & header,
 		       sizeof (struct elektron_data_header));
@@ -2792,7 +2781,7 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
   g_byte_array_append (content, (guint8 *) & footer,
 		       sizeof (struct elektron_data_footer));
 
-  idata_init (data_sample, content, basename, NULL, NULL);
+  idata_init (data_sample, content, NULL, NULL, NULL);
   return 0;
 }
 
