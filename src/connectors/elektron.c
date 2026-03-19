@@ -1696,6 +1696,12 @@ elektron_new_msg_upgrade_os_start (guint size)
   return msg;
 }
 
+static guint32
+elektron_crc (guint8 *data, guint32 len)
+{
+  return crc32 (0xffffffff, data, len);
+}
+
 static GByteArray *
 elektron_new_msg_upgrade_os_write (GByteArray *os_data, gint *offset)
 {
@@ -1714,7 +1720,7 @@ elektron_new_msg_upgrade_os_write (GByteArray *os_data, gint *offset)
       len = os_data->len - *offset;
     }
 
-  crc = crc32 (0xffffffff, &os_data->data[*offset], len);
+  crc = elektron_crc (&os_data->data[*offset], len);
 
   debug_print (2, "CRC: %0x", crc);
 
@@ -2676,9 +2682,8 @@ elektron_set_sample_from_data_sample (struct idata *sample,
 
   guint crc_start = sizeof (struct elektron_data_header);
   guint crc_size = sizeof (struct elektron_data_sample_slot_header) + size;
-  guint32 crc = crc32 (0xffffffff,
-		       &data_sample->content->data[crc_start],
-		       crc_size);
+  guint32 crc = elektron_crc (&data_sample->content->data[crc_start],
+			      crc_size);
   debug_print (1,
 	       "Sample data size: %u bytes, CRC (slot_header+data): 0x%08x",
 	       crc_size, crc);
@@ -2783,8 +2788,8 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
   guint crc_start = sizeof (struct elektron_data_header);
   guint crc_size = sizeof (struct elektron_data_sample_slot_header) +
     sample->content->len;
-  guint32 crc = crc32 (0xffffffff, (guint8 *) & sample_content->data[crc_start],
-		       crc_size);
+  guint32 crc = elektron_crc ((guint8 *) & sample_content->data[crc_start],
+			      crc_size);
   debug_print (1,
 	       "Sample data size: %u bytes, CRC (slot_header+data): 0x%08x",
 	       crc_size, crc);
@@ -3050,7 +3055,7 @@ elektron_upload_data_list_prefix (struct backend *backend, const gchar *path,
 	      len = content->len - offset;
 	    }
 
-	  crc = crc32 (0xffffffff, &content->data[offset], len);
+	  crc = elektron_crc (&content->data[offset], len);
 	  aux32 = g_htonl (crc);
 	  g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
 
