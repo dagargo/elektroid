@@ -2987,7 +2987,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
   GByteArray *rx_msg;
   GByteArray *tx_msg;
   gchar *path_w_prefix;
-  GByteArray *array = data->content;
+  GByteArray *content = data->content;
 
   err = common_slot_get_id_from_path (path, &id);
   if (err)
@@ -2997,7 +2997,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
 
   path_w_prefix = elektron_add_prefix_to_path (path, prefix);
   err = elektron_open_datum (backend, path_w_prefix, &jid, O_WRONLY,
-			     array->len);
+			     content->len);
   g_free (path_w_prefix);
   if (err)
     {
@@ -3013,7 +3013,7 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
 
   active = controllable_is_active (&control->controllable);
 
-  while (offset < array->len && active)
+  while (offset < content->len && active)
     {
       tx_msg = elektron_new_msg (DATA_WRITE_PARTIAL_REQUEST,
 				 sizeof (DATA_WRITE_PARTIAL_REQUEST));
@@ -3021,23 +3021,23 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
       aux32 = g_htonl (seq);
       g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
 
-      if (offset + DATA_TRANSF_BLOCK_BYTES < array->len)
+      if (offset + DATA_TRANSF_BLOCK_BYTES < content->len)
 	{
 	  len = DATA_TRANSF_BLOCK_BYTES;
 	}
       else
 	{
-	  len = array->len - offset;
+	  len = content->len - offset;
 	}
 
-      crc = crc32 (0xffffffff, &array->data[offset], len);
+      crc = crc32 (0xffffffff, &content->data[offset], len);
       aux32 = g_htonl (crc);
       g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
 
       aux32 = g_htonl (len);
       g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
 
-      g_byte_array_append (tx_msg, &array->data[offset], len);
+      g_byte_array_append (tx_msg, &content->data[offset], len);
 
       rx_msg = elektron_tx_and_rx (backend, tx_msg, &control->controllable);
       if (!rx_msg)
@@ -3082,14 +3082,14 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
 	     total, offset);
 	}
 
-      task_control_set_progress (control, offset / (gdouble) array->len);
+      task_control_set_progress (control, offset / (gdouble) content->len);
 
       active = controllable_is_active (&control->controllable);
     }
 
   debug_print (2, "%d bytes sent", offset);
 
-  err = elektron_close_datum (backend, jid, O_WRONLY, array->len);
+  err = elektron_close_datum (backend, jid, O_WRONLY, content->len);
 
 end:
   return err;
