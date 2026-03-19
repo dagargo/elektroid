@@ -22,6 +22,7 @@ void elektron_destroy_data (struct backend *backend);
 gint elektron_set_sample_from_data_sample (struct idata *sample,
 					   struct idata *data_sample);
 gint elektron_set_data_sample_from_sample (struct idata *data_sample,
+					   struct idata *data_footer,
 					   struct idata *sample, guint slot);
 
 static void
@@ -195,7 +196,7 @@ static void
 test_elektron_data_sample ()
 {
   gint err;
-  struct idata sample, data_sample;
+  struct idata sample, data_sample, data_footer;
   struct task_control task_control;
   struct sample_info sample_info_src;
   struct sample_load_opts sample_load_opts;
@@ -220,7 +221,8 @@ test_elektron_data_sample ()
       return;
     }
 
-  err = elektron_set_data_sample_from_sample (&data_sample, &sample, 3);
+  err = elektron_set_data_sample_from_sample (&data_sample, &data_footer,
+					      &sample, 3);
   CU_ASSERT_EQUAL (err, 0);
   if (err)
     {
@@ -230,6 +232,8 @@ test_elektron_data_sample ()
 
   content_before = idata_steal (&sample);
 
+  g_byte_array_append (data_sample.content, data_footer.content->data,
+		       data_footer.content->len);
   err = elektron_set_sample_from_data_sample (&sample, &data_sample);
   CU_ASSERT_EQUAL (err, 0);
   if (err)
@@ -237,8 +241,8 @@ test_elektron_data_sample ()
       idata_clear (&data_sample);
       return;
     }
-
   idata_clear (&data_sample);
+  idata_clear (&data_footer);
 
   content_after = idata_steal (&sample);
 

@@ -2655,6 +2655,8 @@ elektron_download_data_pst (struct backend *backend, const gchar *path,
 					FS_DATA_PST_PREFIX);
 }
 
+// In this case, data_sample contains the footer too.
+
 gint
 elektron_set_sample_from_data_sample (struct idata *sample,
 				      struct idata *data_sample)
@@ -2671,29 +2673,15 @@ elektron_set_sample_from_data_sample (struct idata *sample,
   struct elektron_data_footer *footer =
     (struct elektron_data_footer *) &data_sample->content->data
     [data_sample->content->len - sizeof (struct elektron_data_footer)];
-  gchar safe_name[ELEKTRON_DATA_SAMPLE_MAX_LEN];
-  snprintf (safe_name, ELEKTRON_DATA_SAMPLE_MAX_LEN, "%.*s",
-	    ELEKTRON_DATA_SAMPLE_MAX_LEN - 1, slot_header->name);
-  GByteArray *content = g_byte_array_sized_new (size);
-  g_byte_array_set_size (content, size);
-
-  const gint16 *src =
-    (const gint16 *) &data_sample->content->data[sample_data_start];
-  gint16 *dest = (gint16 *) content->data;
-  guint samples_count = size / 2;
-  for (guint i = 0; i < samples_count; i++)
-    {
-      dest[i] = GINT16_FROM_BE (src[i]);
-    }
 
   guint crc_start = sizeof (struct elektron_data_header);
+  guint crc_size = sizeof (struct elektron_data_sample_slot_header) + size;
   guint32 crc = crc32 (0xffffffff,
 		       &data_sample->content->data[crc_start],
-		       sizeof (struct elektron_data_sample_slot_header));
-  crc = crc32 (crc, &data_sample->content->data[sample_data_start], size);
+		       crc_size);
   debug_print (1,
-	       "Sample data size: %u bytes, CRC (slot_header+data): 0x%08x\n",
-	       size, crc);
+	       "Sample data size: %u bytes, CRC (slot_header+data): 0x%08x",
+	       crc_size, crc);
 
   if (crc != GUINT32_FROM_BE (footer->hash))
     {
@@ -2702,9 +2690,24 @@ elektron_set_sample_from_data_sample (struct idata *sample,
       return -1;
     }
 
-  struct sample_info *sample_info = NULL;
+  gchar safe_name[ELEKTRON_DATA_SAMPLE_MAX_LEN];
+  snprintf (safe_name, ELEKTRON_DATA_SAMPLE_MAX_LEN, "%.*s",
+	    ELEKTRON_DATA_SAMPLE_MAX_LEN - 1, slot_header->name);
+  GByteArray *content = g_byte_array_sized_new (size);
+  content->len = size;
+
+  const gint16 *src =
+    (const gint16 *) &data_sample->content->data[sample_data_start];
+  gint16 *dest = (gint16 *) content->data;
+  guint frames = size / 2;
+  for (guint i = 0; i < frames; i++)
+    {
+      dest[i] = GINT16_FROM_BE (src[i]);
+    }
+
+  struct sample_info *sample_info;
   sample_info = sample_info_new (FALSE);
-  sample_info->frames = size / 2;
+  sample_info->frames = frames;
   sample_info->rate = 48000;
   sample_info->channels = 1;
   sample_info->format = SF_FORMAT_PCM_16;
@@ -2715,18 +2718,26 @@ elektron_set_sample_from_data_sample (struct idata *sample,
   return 0;
 }
 
+// Due to a firmware limitation when working with uncompressed data,
+// footer must be transferred in a different partial request.
+
 gint
 elektron_set_data_sample_from_sample (struct idata *data_sample,
+				      struct idata *data_footer,
 				      struct idata *sample, guint slot)
 {
+  guint size;
   struct elektron_data_header header;
   struct elektron_data_sample_slot_header slot_header;
   struct elektron_data_footer footer;
-  guint size = sample->content->len +
-    sizeof (struct elektron_data_header) +
-    sizeof (struct elektron_data_sample_slot_header) +
-    sizeof (struct elektron_data_footer);
-  GByteArray *content = g_byte_array_sized_new (size);
+  GByteArray *sample_content, *footer_content;
+
+  size = sizeof (struct elektron_data_header) +
+    sizeof (struct elektron_data_sample_slot_header) + sample->content->len;
+  sample_content = g_byte_array_sized_new (size);
+
+  size = sizeof (struct elektron_data_footer);
+  footer_content = g_byte_array_sized_new (size);
 
   header.magic_head = GUINT32_TO_BE (0xac11d303);
   header.header_version = 2;
@@ -2739,50 +2750,55 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
   header.file_version = 0xffffffff;
   header.file_index = GINT32_TO_BE (slot);
   header.payload_size =
-    GUINT32_TO_BE (sample->content->len +
-		   sizeof (struct elektron_data_sample_slot_header));
+    GUINT32_TO_BE (sizeof (struct elektron_data_sample_slot_header)
+		   + sample->content->len);
   header.is_compressed = 0;
   header.footer_size = sizeof (struct elektron_data_footer);
 
+  guint frames = sample->content->len / 2;
   slot_header.magic_head = GUINT32_TO_BE (0x53414d50);
   slot_header.version = 0;
-  slot_header.length = GINT32_TO_BE (sample->content->len / 2);
+  slot_header.length = GINT32_TO_BE (frames);
 
   gchar *name = elektron_get_cp1252 (sample->name);
   snprintf (slot_header.name, ELEKTRON_DATA_SAMPLE_MAX_LEN, "%.*s",
 	    ELEKTRON_DATA_SAMPLE_MAX_LEN - 1, name);
   g_free (name);
 
-  g_byte_array_append (content, (guint8 *) & header,
+  g_byte_array_append (sample_content, (guint8 *) & header,
 		       sizeof (struct elektron_data_header));
-  g_byte_array_append (content, (guint8 *) & slot_header,
+  g_byte_array_append (sample_content, (guint8 *) & slot_header,
 		       sizeof (struct elektron_data_sample_slot_header));
-  g_byte_array_set_size (content, content->len + sample->content->len);
 
   /* Convert sample data from host to big-endian byte order for CRC and storage */
   const gint16 *src = (const gint16 *) sample->content->data;
-  guint samples_count = sample->content->len / 2;
-  gint16 *dest =
-    (gint16 *) & content->data[content->len - sample->content->len];
-  for (guint i = 0; i < samples_count; i++)
+  gint16 *dest = (gint16 *) & sample_content->data[sample_content->len];
+  for (guint i = 0; i < frames; i++)
     {
       dest[i] = GINT16_TO_BE (src[i]);
     }
+  sample_content->len += sample->content->len;
 
   /* CRC includes slot_header + big-endian sample data */
-  guint32 crc = crc32 (0xffffffff, (guint8 *) & slot_header,
-		       sizeof (struct elektron_data_sample_slot_header));
-  crc = crc32 (crc, (guint8 *) dest, sample->content->len);
+  guint crc_start = sizeof (struct elektron_data_header);
+  guint crc_size = sizeof (struct elektron_data_sample_slot_header) +
+    sample->content->len;
+  guint32 crc = crc32 (0xffffffff, (guint8 *) & sample_content->data[crc_start],
+		       crc_size);
+  debug_print (1,
+	       "Sample data size: %u bytes, CRC (slot_header+data): 0x%08x",
+	       crc_size, crc);
+
   footer.hash = GUINT32_TO_BE (crc);
-  footer.content_size = GUINT32_TO_BE (sample->content->len +
-				       sizeof (struct
-					       elektron_data_sample_slot_header));
+  footer.content_size = GUINT32_TO_BE (size);
   footer.magic_tail = GUINT32_TO_BE (0xaaa1daaa);
 
-  g_byte_array_append (content, (guint8 *) & footer,
+  g_byte_array_append (footer_content, (guint8 *) & footer,
 		       sizeof (struct elektron_data_footer));
 
-  idata_init (data_sample, content, NULL, NULL, NULL);
+  idata_init (data_sample, sample_content, NULL, NULL, NULL);
+  idata_init (data_footer, footer_content, NULL, NULL, NULL);
+
   return 0;
 }
 
@@ -2965,29 +2981,19 @@ elektron_get_download_path (struct backend *backend,
 }
 
 static gint
-elektron_upload_data_prefix (struct backend *backend, const gchar *path,
-			     struct idata *data,
-			     struct task_control *control,
-			     const gchar *prefix)
+elektron_upload_data_list_prefix (struct backend *backend, const gchar *path,
+				  GSList *list, struct task_control *control,
+				  const gchar *prefix)
 {
   gint err;
   guint id;
-  guint32 seq;
-  guint32 jid;
-  guint32 crc;
-  guint32 len;
-  guint32 r_jid;
-  guint32 r_seq;
-  guint32 offset;
-  guint32 *data32;
-  guint32 jidbe;
-  guint32 aux32;
+  GSList *iter;
   gboolean active;
-  guint32 total;
-  GByteArray *rx_msg;
-  GByteArray *tx_msg;
+  struct idata *data;
   gchar *path_w_prefix;
-  GByteArray *content = data->content;
+  GByteArray *rx_msg, *tx_msg, *content;
+  guint32 seq, jid, jidbe, crc, len, r_jid, r_seq, offset, *data32,
+    aux32, total, full_content_size, full_content_sent;
 
   err = common_slot_get_id_from_path (path, &id);
   if (err)
@@ -2995,9 +3001,17 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
       return err;
     }
 
+  full_content_size = 0;
+  for (iter = list; iter != NULL; iter = iter->next)
+    {
+      data = iter->data;
+      content = data->content;
+      full_content_size += content->len;
+    }
+
   path_w_prefix = elektron_add_prefix_to_path (path, prefix);
   err = elektron_open_datum (backend, path_w_prefix, &jid, O_WRONLY,
-			     content->len);
+			     full_content_size);
   g_free (path_w_prefix);
   if (err)
     {
@@ -3009,89 +3023,120 @@ elektron_upload_data_prefix (struct backend *backend, const gchar *path,
   jidbe = g_htonl (jid);
 
   seq = 0;
-  offset = 0;
-
-  active = controllable_is_active (&control->controllable);
-
-  while (offset < content->len && active)
+  full_content_sent = 0;
+  for (iter = list; iter != NULL; iter = iter->next)
     {
-      tx_msg = elektron_new_msg (DATA_WRITE_PARTIAL_REQUEST,
-				 sizeof (DATA_WRITE_PARTIAL_REQUEST));
-      g_byte_array_append (tx_msg, (guint8 *) & jidbe, sizeof (guint32));
-      aux32 = g_htonl (seq);
-      g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
+      data = iter->data;
+      content = data->content;
 
-      if (offset + DATA_TRANSF_BLOCK_BYTES < content->len)
-	{
-	  len = DATA_TRANSF_BLOCK_BYTES;
-	}
-      else
-	{
-	  len = content->len - offset;
-	}
-
-      crc = crc32 (0xffffffff, &content->data[offset], len);
-      aux32 = g_htonl (crc);
-      g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
-
-      aux32 = g_htonl (len);
-      g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
-
-      g_byte_array_append (tx_msg, &content->data[offset], len);
-
-      rx_msg = elektron_tx_and_rx (backend, tx_msg, &control->controllable);
-      if (!rx_msg)
-	{
-	  err = -EIO;
-	  goto end;
-	}
-
-      usleep (BE_REST_TIME_US);
-
-      if (!elektron_get_msg_status (rx_msg))
-	{
-	  err = -EPERM;
-	  error_print ("%s (%s)", backend_strerror (backend, err),
-		       elektron_get_msg_string (rx_msg));
-	  free_msg (rx_msg);
-	  break;
-	}
-
-      data32 = (guint32 *) & rx_msg->data[6];
-      r_jid = g_ntohl (*data32);
-
-      data32 = (guint32 *) & rx_msg->data[10];
-      r_seq = g_ntohl (*data32);
-
-      data32 = (guint32 *) & rx_msg->data[14];
-      total = g_ntohl (*data32);
-
-      free_msg (rx_msg);
-
-      debug_print (1,
-		   "Write datum info: job id: %d; seq: %d; total: %d",
-		   r_jid, r_seq, total);
-
-      seq++;
-      offset += len;
-
-      if (total != offset)
-	{
-	  error_print
-	    ("Actual upload bytes (%d) differs from expected ones (%d)",
-	     total, offset);
-	}
-
-      task_control_set_progress (control, offset / (gdouble) content->len);
+      offset = 0;
 
       active = controllable_is_active (&control->controllable);
+
+      while (offset < content->len && active)
+	{
+	  tx_msg = elektron_new_msg (DATA_WRITE_PARTIAL_REQUEST,
+				     sizeof (DATA_WRITE_PARTIAL_REQUEST));
+	  g_byte_array_append (tx_msg, (guint8 *) & jidbe, sizeof (guint32));
+	  aux32 = g_htonl (seq);
+	  g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
+
+	  if (offset + DATA_TRANSF_BLOCK_BYTES < content->len)
+	    {
+	      len = DATA_TRANSF_BLOCK_BYTES;
+	    }
+	  else
+	    {
+	      len = content->len - offset;
+	    }
+
+	  crc = crc32 (0xffffffff, &content->data[offset], len);
+	  aux32 = g_htonl (crc);
+	  g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
+
+	  aux32 = g_htonl (len);
+	  g_byte_array_append (tx_msg, (guint8 *) & aux32, sizeof (guint32));
+
+	  g_byte_array_append (tx_msg, &content->data[offset], len);
+
+	  rx_msg = elektron_tx_and_rx (backend, tx_msg,
+				       &control->controllable);
+	  if (!rx_msg)
+	    {
+	      err = -EIO;
+	      goto end;
+	    }
+
+	  usleep (BE_REST_TIME_US);
+
+	  if (!elektron_get_msg_status (rx_msg))
+	    {
+	      err = -EPERM;
+	      error_print ("%s (%s)", backend_strerror (backend, err),
+			   elektron_get_msg_string (rx_msg));
+	      free_msg (rx_msg);
+	      break;
+	    }
+
+	  data32 = (guint32 *) & rx_msg->data[6];
+	  r_jid = g_ntohl (*data32);
+
+	  data32 = (guint32 *) & rx_msg->data[10];
+	  r_seq = g_ntohl (*data32);
+
+	  data32 = (guint32 *) & rx_msg->data[14];
+	  total = g_ntohl (*data32);
+
+	  free_msg (rx_msg);
+
+	  debug_print (1,
+		       "Write datum info: job id: %d; seq: %d; total: %d",
+		       r_jid, r_seq, total);
+
+	  seq++;
+	  offset += len;
+
+	  if (total != offset)
+	    {
+	      error_print
+		("Actual upload bytes (%d) differs from expected ones (%d)",
+		 total, offset);
+	    }
+
+	  gdouble progress = (full_content_sent + offset) /
+	    (gdouble) full_content_size;
+	  task_control_set_progress (control, progress);
+
+	  active = controllable_is_active (&control->controllable);
+	}
+
+      debug_print (2, "Partial request with %d bytes sent", offset);
+
+      full_content_sent += content->len;
     }
 
-  debug_print (2, "%d bytes sent", offset);
+  debug_print (2, "%d bytes sent", full_content_sent);
 
-  err = elektron_close_datum (backend, jid, O_WRONLY, content->len);
+  err = elektron_close_datum (backend, jid, O_WRONLY, full_content_size);
 
 end:
+  return err;
+}
+
+static gint
+elektron_upload_data_prefix (struct backend *backend, const gchar *path,
+			     struct idata *data,
+			     struct task_control *control,
+			     const gchar *prefix)
+{
+  gint err;
+  GSList *list;
+
+  list = g_slist_append (NULL, data);
+  err = elektron_upload_data_list_prefix (backend, path, list, control,
+					  prefix);
+  g_slist_free (list);
+
   return err;
 }
 
@@ -3135,7 +3180,8 @@ elektron_upload_data_sample (struct backend *backend, const gchar *path,
 {
   gint err;
   guint id;
-  struct idata data_sample;
+  GSList *list;
+  struct idata data_sample, data_footer;
 
   err = common_slot_get_id_from_path (path, &id);
   if (err)
@@ -3146,7 +3192,8 @@ elektron_upload_data_sample (struct backend *backend, const gchar *path,
   control->parts = 2;
   control->part = 0;
 
-  err = elektron_set_data_sample_from_sample (&data_sample, sample, id);
+  err = elektron_set_data_sample_from_sample (&data_sample, &data_footer,
+					      sample, id);
   if (err)
     {
       return err;
@@ -3155,9 +3202,13 @@ elektron_upload_data_sample (struct backend *backend, const gchar *path,
   task_control_set_progress (control, 1.0);
   control->part++;
 
-  err = elektron_upload_data_prefix (backend, path, &data_sample, control,
-				     FS_DATA_SAMPLES_PREFIX);
+  list = g_slist_append (NULL, &data_sample);
+  list = g_slist_append (list, &data_footer);
+  err = elektron_upload_data_list_prefix (backend, path, list, control,
+					  FS_DATA_SAMPLES_PREFIX);
+  g_slist_free (list);
   idata_clear (&data_sample);
+  idata_clear (&data_footer);
 
   return err;
 }
