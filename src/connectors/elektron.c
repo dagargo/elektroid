@@ -2751,6 +2751,7 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
   gchar *name = elektron_get_cp1252 (sample->name);
   snprintf (slot_header.name, ELEKTRON_DATA_SAMPLE_MAX_LEN, "%.*s",
 	    ELEKTRON_DATA_SAMPLE_MAX_LEN - 1, name);
+  g_free (name);
 
   g_byte_array_append (content, (guint8 *) & header,
 		       sizeof (struct elektron_data_header));
