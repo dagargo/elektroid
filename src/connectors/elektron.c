@@ -3101,24 +3101,22 @@ elektron_upload_data_list_prefix (struct backend *backend, const gchar *path,
 
 	  seq++;
 	  offset += len;
+	  full_content_sent += len;
 
-	  if (total != offset)
+	  if (total != full_content_sent)
 	    {
 	      error_print
 		("Actual upload bytes (%d) differs from expected ones (%d)",
-		 total, offset);
+		 total, full_content_sent);
 	    }
 
-	  gdouble progress = (full_content_sent + offset) /
-	    (gdouble) full_content_size;
+	  gdouble progress = full_content_sent / (gdouble) full_content_size;
 	  task_control_set_progress (control, progress);
 
 	  active = controllable_is_active (&control->controllable);
 	}
 
       debug_print (2, "Partial request with %d bytes sent", offset);
-
-      full_content_sent += content->len;
     }
 
   debug_print (2, "%d bytes sent", full_content_sent);
@@ -4056,7 +4054,8 @@ static const struct fs_operations FS_DATA_TAKT_II_PST_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_SAMPLES_OPERATIONS = {
   .id = FS_DATA_SAMPLES,
-  .options = FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_SIZE_COLUMN |
+  .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO |
+    FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_SIZE_COLUMN |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
     FS_OPTION_ALLOW_SEARCH,
   .name = "data-sample",
