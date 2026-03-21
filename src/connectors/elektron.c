@@ -2696,7 +2696,7 @@ elektron_set_sample_from_data_sample (struct idata *sample,
     }
 
   gchar safe_name[ELEKTRON_DATA_SAMPLE_MAX_LEN + 1];
-  snprintf (safe_name, ELEKTRON_DATA_SAMPLE_MAX_LEN, "%.*s",
+  snprintf (safe_name, ELEKTRON_DATA_SAMPLE_MAX_LEN + 1, "%.*s",
 	    ELEKTRON_DATA_SAMPLE_MAX_LEN, slot_header->name);
   GByteArray *content = g_byte_array_sized_new (size);
   content->len = size;
