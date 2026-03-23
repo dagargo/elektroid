@@ -73,6 +73,9 @@ static const gchar *FS_DATA_ANY_EXTS[] = { "data", NULL };
 
 #define ELEKTRON_RAM_SLOT_USED "used"
 
+#define ELEKTRON_SYNTAKT_MAX_SAMPLE_TIME_S 5
+#define ELEKTRON_SYNTAKT_MAX_SAMPLE_FRAMES (ELEKTRON_SAMPLE_RATE * ELEKTRON_SYNTAKT_MAX_SAMPLE_TIME_S)
+
 struct elektron_sample_header
 {
   guint8 type;
@@ -2713,7 +2716,7 @@ elektron_set_sample_from_data_sample (struct idata *sample,
   struct sample_info *sample_info;
   sample_info = sample_info_new (FALSE);
   sample_info->frames = frames;
-  sample_info->rate = 48000;
+  sample_info->rate = ELEKTRON_SAMPLE_RATE;
   sample_info->channels = 1;
   sample_info->format = SF_FORMAT_PCM_16;
 
@@ -2731,18 +2734,20 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
 				      struct idata *data_footer,
 				      struct idata *sample, guint slot)
 {
-  guint size;
+  struct sample_info *sample_info;
   struct elektron_data_header header;
   struct elektron_data_sample_slot_header slot_header;
   struct elektron_data_footer footer;
   GByteArray *sample_content, *footer_content;
+  guint size, samples_size, payload_size, footer_size, frames;
 
-  size = sizeof (struct elektron_data_header) +
-    sizeof (struct elektron_data_sample_slot_header) + sample->content->len;
+  sample_info = sample->info;
+  frames = MIN (ELEKTRON_SYNTAKT_MAX_SAMPLE_FRAMES, sample_info->frames);
+  samples_size = frames * sizeof (gint16);
+  payload_size = sizeof (struct elektron_data_sample_slot_header) +
+    samples_size;
+  size = sizeof (struct elektron_data_header) + payload_size;
   sample_content = g_byte_array_sized_new (size);
-
-  size = sizeof (struct elektron_data_footer);
-  footer_content = g_byte_array_sized_new (size);
 
   header.magic_head = GUINT32_TO_BE (0xac11d303);
   header.header_version = 2;
@@ -2754,13 +2759,10 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
   header.file_type = GUINT32_TO_BE (8);
   header.file_version = 0xffffffff;
   header.file_index = GINT32_TO_BE (slot);
-  header.payload_size =
-    GUINT32_TO_BE (sizeof (struct elektron_data_sample_slot_header)
-		   + sample->content->len);
+  header.payload_size = GUINT32_TO_BE (payload_size);
   header.is_compressed = 0;
   header.footer_size = sizeof (struct elektron_data_footer);
 
-  guint frames = sample->content->len / 2;
   slot_header.magic_head = GUINT32_TO_BE (0x53414d50);
   slot_header.version = 0;
   slot_header.length = GINT32_TO_BE (frames);
@@ -2783,20 +2785,21 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
     {
       dest[i] = GINT16_TO_BE (src[i]);
     }
-  sample_content->len += sample->content->len;
+  sample_content->len += samples_size;
 
   /* CRC includes slot_header + big-endian sample data */
   guint crc_start = sizeof (struct elektron_data_header);
-  guint crc_size = sizeof (struct elektron_data_sample_slot_header) +
-    sample->content->len;
   guint32 crc = elektron_crc ((guint8 *) & sample_content->data[crc_start],
-			      crc_size);
+			      payload_size);
   debug_print (1,
 	       "Sample data size: %u bytes, CRC (slot_header+data): 0x%08x",
-	       crc_size, crc);
+	       payload_size, crc);
+
+  footer_size = sizeof (struct elektron_data_footer);
+  footer_content = g_byte_array_sized_new (footer_size);
 
   footer.hash = GUINT32_TO_BE (crc);
-  footer.content_size = GUINT32_TO_BE (size);
+  footer.content_size = GUINT32_TO_BE (footer_size);
   footer.magic_tail = GUINT32_TO_BE (0xaaa1daaa);
 
   g_byte_array_append (footer_content, (guint8 *) & footer,
