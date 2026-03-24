@@ -33,6 +33,9 @@ audio_stop_playback ()
 {
   enum audio_status status;
 
+  if (!audio_check ())
+    return;
+
   g_mutex_lock (&audio.control.controllable.mutex);
   status = audio.status;
   g_mutex_unlock (&audio.control.controllable.mutex);
@@ -58,6 +61,9 @@ audio_stop_playback ()
 void
 audio_start_playback (audio_playback_cursor_notifier cursor_notifier)
 {
+  if (!audio_check ())
+    return;
+
   audio_stop_playback ();
 
   g_mutex_lock (&audio.control.controllable.mutex);
@@ -75,6 +81,9 @@ void
 audio_stop_recording ()
 {
   enum audio_status status;
+
+  if (!audio.record_rtaudio)
+    return;
 
   g_mutex_lock (&audio.control.controllable.mutex);
   status = audio.status;
@@ -99,6 +108,9 @@ audio_start_recording (guint32 options,
 		       audio_monitor_notifier monitor_notifier,
 		       void *monitor_data)
 {
+  if (!audio.record_rtaudio)
+    return;
+
   audio_stop_recording ();
   audio_reset_record_buffer (options, monitor_notifier, monitor_data);
   audio_prepare (AUDIO_STATUS_RECORDING);
@@ -266,6 +278,7 @@ audio_init_int ()
 error_record:
   rtaudio_destroy (audio.record_rtaudio);
   audio.record_rtaudio = NULL;
+  goto end;
 error_playback:
   rtaudio_destroy (audio.playback_rtaudio);
   audio.playback_rtaudio = NULL;
@@ -276,11 +289,10 @@ end:
 void
 audio_destroy_int ()
 {
-  if (audio_check ())
-    {
-      rtaudio_destroy (audio.playback_rtaudio);
-      rtaudio_destroy (audio.record_rtaudio);
-    }
+  if (audio.playback_rtaudio)
+    rtaudio_destroy (audio.playback_rtaudio);
+  if (audio.record_rtaudio)
+    rtaudio_destroy (audio.record_rtaudio);
 }
 
 gboolean
