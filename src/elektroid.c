@@ -1492,6 +1492,30 @@ elektroid_exit ()
   gtk_widget_destroy (GTK_WIDGET (main_window));
 }
 
+#if defined(__APPLE__)
+static void
+elektroid_quit_action (GSimpleAction *action, GVariant *parameter,
+		       gpointer user_data)
+{
+  elektroid_exit ();
+}
+
+static void
+elektroid_preferences_action (GSimpleAction *action, GVariant *parameter,
+			      gpointer user_data)
+{
+  preferences_window_open ();
+}
+
+static void
+elektroid_about_action (GSimpleAction *action, GVariant *parameter,
+			gpointer user_data)
+{
+  gtk_dialog_run (GTK_DIALOG (about_dialog));
+  gtk_widget_hide (GTK_WIDGET (about_dialog));
+}
+#endif
+
 static gboolean
 elektroid_delete_main_window (GtkWidget *widget, GdkEvent *event,
 			      gpointer data)
@@ -1656,6 +1680,32 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
 
   GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (local_name_entry));
   gtk_entry_buffer_set_text (buf, g_get_host_name (), -1);
+
+#if defined(__APPLE__)
+  GSimpleAction *quit_action = g_simple_action_new ("quit", NULL);
+  g_signal_connect (quit_action, "activate",
+		    G_CALLBACK (elektroid_quit_action), NULL);
+  g_action_map_add_action (G_ACTION_MAP (gapp), G_ACTION (quit_action));
+
+  GSimpleAction *preferences_action =
+    g_simple_action_new ("preferences", NULL);
+  g_signal_connect (preferences_action, "activate",
+		    G_CALLBACK (elektroid_preferences_action), NULL);
+  g_action_map_add_action (G_ACTION_MAP (gapp), G_ACTION (preferences_action));
+
+  const gchar *quit_accels[] = { "<Meta>q", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (gapp),
+					 "app.quit", quit_accels);
+
+  const gchar *prefs_accels[] = { "<Meta>comma", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (gapp),
+					 "app.preferences", prefs_accels);
+
+  GSimpleAction *about_action = g_simple_action_new ("about", NULL);
+  g_signal_connect (about_action, "activate",
+		    G_CALLBACK (elektroid_about_action), NULL);
+  g_action_map_add_action (G_ACTION_MAP (gapp), G_ACTION (about_action));
+#endif
 
   g_object_unref (builder);
 }
