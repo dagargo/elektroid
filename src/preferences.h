@@ -39,6 +39,7 @@
 #define PREF_KEY_TAGS_GENRES "tagsGenres"
 #define PREF_KEY_TAGS_OBJECTIVE_CHARS "tagsObjectiveCharacteristics"
 #define PREF_KEY_TAGS_SUBJECTIVE_CHARS "tagsSubjectiveCharacteristics"
+#define PREF_KEY_SHOW_FOLDER_SIZES "showFolderSizes"
 
 enum preference_type
 {

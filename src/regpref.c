@@ -216,6 +216,12 @@ const struct preference PREF_TAGS_SUBJECTIVE_CHARS = {
   .get_value = regpref_get_tags_subjective
 };
 
+static const struct preference PREF_SHOW_FOLDER_SIZES = {
+  .key = PREF_KEY_SHOW_FOLDER_SIZES,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_false
+};
+
 void
 regpref_register ()
 {
@@ -226,7 +232,8 @@ regpref_register ()
 	       &PREF_SHOW_PLAYBACK_CURSOR, &PREF_STOP_DEVICE_WHEN_CONNECTING,
 	       &PREF_ELEKTRON_LOAD_SOUND_TAGS, &PREF_TAGS_STRUCTURES,
 	       &PREF_TAGS_INSTRUMENTS, &PREF_TAGS_GENRES,
-	       &PREF_TAGS_OBJECTIVE_CHARS, &PREF_TAGS_SUBJECTIVE_CHARS, NULL);
+	       &PREF_TAGS_OBJECTIVE_CHARS, &PREF_TAGS_SUBJECTIVE_CHARS,
+	       &PREF_SHOW_FOLDER_SIZES, NULL);
 }
 
 void
