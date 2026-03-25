@@ -4363,7 +4363,7 @@ elektron_configure_device (struct backend *backend, guint8 id)
 
   if (err)
     {
-      filename = strdup (DATADIR DEVICES_FILE);
+      filename = g_build_filename (get_data_dir (), DEVICES_FILE, NULL);
       err = elektron_configure_device_from_file (backend, id, filename);
       g_free (filename);
     }
