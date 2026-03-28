@@ -358,7 +358,7 @@ volca_sample_2_sample_upload_params (struct backend *backend,
 				     struct task_control *control)
 {
   gint err;
-  guint id;
+  guint id, size_truncated;
   guint8 *buff;
   guint buff_size;
   guint8 header_dump[39];
@@ -384,7 +384,9 @@ volca_sample_2_sample_upload_params (struct backend *backend,
   memset (header.name, 0, VOLCA_SAMPLE_2_SAMPLE_NAME_LEN);
   memcpy (header.name, name, MIN (strlen (name),
 				  VOLCA_SAMPLE_2_SAMPLE_NAME_LEN));
-  header.frames = size / sizeof (gint16);
+  // TODO: If sample is truncated, the return value should indicate this.
+  size_truncated = volca_sample_2_sample_get_max_size_in_msg (size);
+  header.frames = size_truncated / sizeof (gint16);
   header.level = level;
   header.speed = speed;
 
@@ -412,11 +414,10 @@ volca_sample_2_sample_upload_params (struct backend *backend,
 
   usleep (VOLCA_SAMPLE_2_REST_TIME_US);
 
-  size = volca_sample_2_sample_get_max_size_in_msg (size);
-  buff_size = 2 + common_8bit_msg_to_midi_msg_size (size);
+  buff_size = 2 + common_8bit_msg_to_midi_msg_size (size_truncated);
   buff = g_malloc (buff_size);
   volca_sample_2_set_sample_id (buff, id);
-  common_8bit_msg_to_midi_msg (data, &buff[2], size);
+  common_8bit_msg_to_midi_msg (data, &buff[2], size_truncated);
 
   tx_msg = volca_sample_2_get_msg (0x4f, buff, buff_size);
   g_free (buff);
