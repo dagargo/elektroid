@@ -2743,6 +2743,11 @@ elektron_set_data_sample_from_sample (struct idata *data_sample,
 
   sample_info = sample->info;
   frames = MIN (ELEKTRON_SYNTAKT_MAX_SAMPLE_FRAMES, sample_info->frames);
+  // TODO: If sample is truncated, the return value should indicate this.
+  if (frames < sample_info->frames)
+    {
+      warn_print ("Sample truncated to %d frames", frames);
+    }
   samples_size = frames * sizeof (gint16);
   payload_size = sizeof (struct elektron_data_sample_slot_header) +
     samples_size;
