@@ -125,6 +125,7 @@ struct browser
   GtkTreeViewColumn *tree_view_id_column;
   GtkTreeViewColumn *tree_view_slot_column;
   GtkTreeViewColumn *tree_view_size_column;
+  GHashTable *folder_size_cache;
 };
 
 struct browser_drag_data_received_data

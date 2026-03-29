@@ -185,6 +185,30 @@ browser_sort_by_name (GtkTreeModel *model,
 }
 
 static gint
+browser_sort_by_size (GtkTreeModel *model,
+		      GtkTreeIter *a, GtkTreeIter *b, gpointer data)
+{
+  struct item itema;
+  struct item itemb;
+
+  browser_set_item (model, a, &itema);
+  browser_set_item (model, b, &itemb);
+
+  if (itema.type == itemb.type)
+    {
+      if (itema.size < itemb.size)
+	return -1;
+      if (itema.size > itemb.size)
+	return 1;
+      return 0;
+    }
+  else
+    {
+      return itema.type > itemb.type;
+    }
+}
+
+static gint
 browser_set_selected_row_iter (struct browser *browser, GtkTreeIter *iter)
 {
   gint index, *indices;
@@ -434,6 +458,7 @@ void
 browser_refresh (GtkWidget *object, gpointer data)
 {
   struct browser *browser = data;
+  g_hash_table_remove_all (browser->folder_size_cache);
   browser_load_dir (browser);
 }
 
@@ -1285,14 +1310,79 @@ cleanup:
   item_sample_info_clear (&iter->item, browser);
 }
 
+static gint64
+browser_sum_dir_size (struct browser *browser, const gchar *dir,
+		      const gchar **extensions)
+{
+  gint64 total = 0;
+  gboolean loading;
+  struct item_iterator child_iter;
+  enum path_type type = backend_get_path_type (browser->backend);
+
+  if (browser->fs_ops->readdir (browser->backend, &child_iter, dir,
+				extensions))
+    return 0;
+
+  while (!item_iterator_next (&child_iter))
+    {
+      g_mutex_lock (&browser->mutex);
+      loading = browser->loading;
+      g_mutex_unlock (&browser->mutex);
+
+      if (!loading
+	  || !preferences_get_boolean (PREF_KEY_SHOW_FOLDER_SIZES))
+	break;
+
+      if (child_iter.item.type == ITEM_TYPE_DIR)
+	{
+	  gchar *child_dir = path_chain (type, dir, child_iter.item.name);
+	  total += browser_sum_dir_size (browser, child_dir, extensions);
+	  g_free (child_dir);
+	}
+      else
+	{
+	  total += child_iter.item.size;
+	}
+    }
+
+  item_iterator_free (&child_iter);
+  return total;
+}
+
 static void
 browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
 		     const gchar *icon)
 {
   gboolean loading = TRUE;
+  const gchar **exts = browser_get_exts (browser);
+  enum path_type type = backend_get_path_type (browser->backend);
 
   while (loading && !item_iterator_next (iter))
     {
+      if (iter->item.type == ITEM_TYPE_DIR && iter->item.size <= 0
+	  && browser->fs_ops->readdir
+	  && preferences_get_boolean (PREF_KEY_SHOW_FOLDER_SIZES))
+	{
+	  gchar *child_dir = path_chain (type, browser->dir,
+					 iter->item.name);
+	  gint64 *cached = g_hash_table_lookup (browser->folder_size_cache,
+						child_dir);
+	  if (cached)
+	    {
+	      iter->item.size = *cached;
+	      g_free (child_dir);
+	    }
+	  else
+	    {
+	      iter->item.size =
+		browser_sum_dir_size (browser, child_dir, exts);
+	      gint64 *size_val = g_new (gint64, 1);
+	      *size_val = iter->item.size;
+	      g_hash_table_insert (browser->folder_size_cache,
+				   child_dir, size_val);
+	    }
+	}
+
       browser_iterate_dir_add (browser, iter, icon, &iter->item,
 			       strdup (iter->item.name));
 
@@ -1416,9 +1506,9 @@ browser_load_dir_runner (gpointer data)
   g_idle_add (browser_load_dir_runner_show_spinner_and_lock_browser, browser);
   err = browser->fs_ops->readdir (browser->backend, &iter, browser->dir,
 				  exts);
-  g_idle_add (browser_load_dir_runner_hide_spinner, browser);
   if (err)
     {
+      g_idle_add (browser_load_dir_runner_hide_spinner, browser);
       error_print ("Error while opening '%s' dir", browser->dir);
       goto end;
     }
@@ -1439,6 +1529,7 @@ browser_load_dir_runner (gpointer data)
       browser_iterate_dir (browser, &iter, icon);
     }
 
+  g_idle_add (browser_load_dir_runner_hide_spinner, browser);
   item_iterator_free (&iter);
 
 end:
@@ -1506,15 +1597,30 @@ browser_update_fs_sorting_options (struct browser *browser)
       gtk_tree_sortable_set_sort_func (sortable,
 				       BROWSER_LIST_STORE_NAME_FIELD,
 				       browser_sort_by_name, NULL, NULL);
+      gtk_tree_sortable_set_sort_func (sortable,
+				       BROWSER_LIST_STORE_SIZE_FIELD,
+				       browser_sort_by_size, NULL, NULL);
       gtk_tree_sortable_set_sort_column_id (sortable,
 					    BROWSER_LIST_STORE_NAME_FIELD,
-					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+					    GTK_SORT_ASCENDING);
+
+      gtk_tree_view_column_set_sort_column_id (browser->tree_view_name_column,
+					       BROWSER_LIST_STORE_NAME_FIELD);
+      if (browser->tree_view_size_column)
+	gtk_tree_view_column_set_sort_column_id
+	  (browser->tree_view_size_column, BROWSER_LIST_STORE_SIZE_FIELD);
     }
   else
     {
       gtk_tree_sortable_set_sort_column_id (sortable,
 					    GTK_TREE_SORTABLE_UNSORTED_SORT_COLUMN_ID,
 					    GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID);
+
+      gtk_tree_view_column_set_sort_column_id (browser->tree_view_name_column,
+					       -1);
+      if (browser->tree_view_size_column)
+	gtk_tree_view_column_set_sort_column_id
+	  (browser->tree_view_size_column, -1);
     }
 }
 
@@ -2280,6 +2386,7 @@ browser_destroy (struct browser *browser)
 
   notifier_destroy (browser->notifier);
   g_slist_free (browser->sensitive_widgets);
+  g_hash_table_destroy (browser->folder_size_cache);
 }
 
 void
@@ -2324,6 +2431,7 @@ browser_reset (struct browser *browser)
   browser->dir = NULL;
   browser->pending_req = 0;
   browser_clear (browser);
+  g_hash_table_remove_all (browser->folder_size_cache);
 }
 
 static void
@@ -2632,6 +2740,8 @@ browser_init (struct browser *browser)
 		     GDK_ACTION_COPY | GDK_ACTION_MOVE);
 
   browser->reload_item_in_editor = TRUE;
+  browser->folder_size_cache =
+    g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
   notifier_init (&browser->notifier, browser);
 }
 
@@ -2740,7 +2850,9 @@ browser_local_init (struct browser *browser, GtkBuilder *builder)
 
   browser->tree_view_id_column = NULL;
   browser->tree_view_slot_column = NULL;
-  browser->tree_view_size_column = NULL;
+  browser->tree_view_size_column =
+    GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
+			  (builder, "local_tree_view_size_column"));
 
   g_signal_connect (browser->popover_transfer_button, "clicked",
 		    G_CALLBACK (elektroid_add_upload_tasks), NULL);

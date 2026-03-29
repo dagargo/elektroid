@@ -27,6 +27,7 @@
 #include <mntent.h>
 #endif
 #include "local.h"
+#include "preferences.h"
 #include "sample.h"
 #include "connectors/common.h"
 
@@ -156,8 +157,33 @@ system_next_dentry (struct item_iterator *iter, gboolean sample_info)
 	{
 	  item_set_name (&iter->item, "%s", name);
 	  iter->item.type = type;
-	  iter->item.size = g_file_info_get_size (info);
 	  iter->item.id = -1;
+
+	  if (type == ITEM_TYPE_DIR
+	      && preferences_get_boolean (PREF_KEY_SHOW_FOLDER_SIZES))
+	    {
+	      guint64 disk_usage;
+	      if (g_file_measure_disk_usage (file,
+					     G_FILE_MEASURE_NONE,
+					     NULL, NULL, NULL,
+					     &disk_usage, NULL, NULL,
+					     NULL))
+		{
+		  iter->item.size = (gint64) disk_usage;
+		}
+	      else
+		{
+		  iter->item.size = -1;
+		}
+	    }
+	  else if (type == ITEM_TYPE_FILE)
+	    {
+	      iter->item.size = g_file_info_get_size (info);
+	    }
+	  else
+	    {
+	      iter->item.size = 0;
+	    }
 
 	  if (item_iterator_is_dir_or_matches_exts (iter, data->extensions))
 	    {
