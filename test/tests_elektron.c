@@ -3,6 +3,7 @@
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
 #include "../config.h"
+#include "../src/sample.h"
 #include "../src/utils.h"
 #include "../src/connectors/package.h"
 #include "../src/connectors/elektron.h"
@@ -18,7 +19,13 @@ gint elektron_configure_device_from_file (struct backend *backend, guint8 id,
 
 void elektron_destroy_data (struct backend *backend);
 
-void
+gint elektron_set_sample_from_data_sample (struct idata *sample,
+					   struct idata *data_sample);
+gint elektron_set_data_sample_from_sample (struct idata *data_sample,
+					   struct idata *data_footer,
+					   struct idata *sample, guint slot);
+
+static void
 test_elektron_get_dev_exts ()
 {
   const gchar **exts;
@@ -65,7 +72,7 @@ compare_exts (const gchar **a, const gchar **b)
   return *y != NULL;
 }
 
-void
+static void
 test_elektron_configure_device_from_file ()
 {
   const gchar **exts;
@@ -120,7 +127,7 @@ test_elektron_configure_device_from_file ()
   CU_ASSERT_EQUAL (backend.data, NULL);
 }
 
-void
+static void
 test_elektron_special_exts ()
 {
   const gchar **exts;
@@ -185,6 +192,68 @@ test_elektron_special_exts ()
   CU_ASSERT_EQUAL (backend.data, NULL);
 }
 
+static void
+test_elektron_data_sample ()
+{
+  gint err;
+  struct idata sample, data_sample, data_footer;
+  struct task_control task_control;
+  struct sample_info sample_info_src;
+  struct sample_load_opts sample_load_opts;
+  GByteArray *content_before, *content_after;
+
+  controllable_init (&task_control.controllable);
+  task_control.callback = NULL;
+
+  printf ("\n");
+
+  sample_load_opts_init (&sample_load_opts, 1, 48000, SF_FORMAT_PCM_16,
+			 FALSE);
+  err = sample_load_from_file (TEST_DATA_DIR "/connectors/square.wav",
+			       &sample, &task_control, &sample_load_opts,
+			       &sample_info_src);
+
+  controllable_clear (&task_control.controllable);
+
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  err = elektron_set_data_sample_from_sample (&data_sample, &data_footer,
+					      &sample, 3);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      idata_clear (&sample);
+      return;
+    }
+
+  content_before = idata_steal (&sample);
+
+  g_byte_array_append (data_sample.content, data_footer.content->data,
+		       data_footer.content->len);
+  err = elektron_set_sample_from_data_sample (&sample, &data_sample);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      idata_clear (&data_sample);
+      return;
+    }
+  idata_clear (&data_sample);
+  idata_clear (&data_footer);
+
+  content_after = idata_steal (&sample);
+
+  CU_ASSERT_EQUAL (content_after->len, content_before->len);
+  CU_ASSERT_EQUAL (memcmp (content_after->data, content_before->data,
+			   content_after->len), 0);
+
+  g_byte_array_free (content_before, TRUE);
+  g_byte_array_free (content_after, TRUE);
+}
+
 gint
 main (gint argc, gchar *argv[])
 {
@@ -202,6 +271,12 @@ main (gint argc, gchar *argv[])
       goto cleanup;
     }
 
+  if (!CU_add_test (suite, "elektron_get_dev_exts",
+		    test_elektron_get_dev_exts))
+    {
+      goto cleanup;
+    }
+
   if (!CU_add_test (suite, "elektron_configure_device_from_file",
 		    test_elektron_configure_device_from_file))
     {
@@ -210,6 +285,11 @@ main (gint argc, gchar *argv[])
 
   if (!CU_add_test (suite, "elektron_special_exts",
 		    test_elektron_special_exts))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "elektron_data_sample", test_elektron_data_sample))
     {
       goto cleanup;
     }

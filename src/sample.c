@@ -473,10 +473,12 @@ static void
 audio_multichannel_to_mono_short (gshort *input, gshort *output, gint size,
 				  gint channels)
 {
+  gdouble gain;
   gint32 i, j, v;
 
   debug_print (2, "Converting short values to mono...");
 
+  gain = MONO_MIX_GAIN (channels);
   for (i = 0; i < size; i++)
     {
       v = 0;
@@ -484,7 +486,7 @@ audio_multichannel_to_mono_short (gshort *input, gshort *output, gint size,
 	{
 	  v += input[i * channels + j];
 	}
-      v *= MONO_MIX_GAIN (channels);
+      v *= gain;
       output[i] = v;
     }
 }
@@ -493,11 +495,13 @@ static void
 audio_multichannel_to_mono_float (gfloat *input, gfloat *output, gint size,
 				  gint channels)
 {
+  gdouble gain;
   gfloat v;
   gint i, j;
 
   debug_print (2, "Converting float values to mono...");
 
+  gain = MONO_MIX_GAIN (channels);
   for (i = 0; i < size; i++)
     {
       v = 0;
@@ -505,7 +509,7 @@ audio_multichannel_to_mono_float (gfloat *input, gfloat *output, gint size,
 	{
 	  v += input[i * channels + j];
 	}
-      v *= MONO_MIX_GAIN (channels);
+      v *= gain;
       output[i] = v;
     }
 }
@@ -516,9 +520,11 @@ audio_multichannel_to_mono_int (gint32 *input, gint32 *output, gint size,
 {
   gint32 v;
   gint i, j;
+  gdouble gain;
 
   debug_print (2, "Converting int values to mono...");
 
+  gain = MONO_MIX_GAIN (channels);
   for (i = 0; i < size; i++)
     {
       v = 0;
@@ -526,7 +532,7 @@ audio_multichannel_to_mono_int (gint32 *input, gint32 *output, gint size,
 	{
 	  v += input[i * channels + j];
 	}
-      v *= MONO_MIX_GAIN (channels);
+      v *= gain;
       output[i] = v;
     }
 }

@@ -2,7 +2,7 @@
 
 README=../README.md
 
-$(README): index.md license.md installation.md packaging.md cli.md api.md tests.md
+$(README): index.md license.md installation.md packaging.md cli.md api.md contributing.md
 	echo '# Elektroid' > $(README)
 	echo >> $(README)
 	echo '[//]: # (Do not modify this file manually.)' >> $(README)
@@ -13,7 +13,7 @@ $(README): index.md license.md installation.md packaging.md cli.md api.md tests.
 	tail -n +7 packaging.md >> $(README)
 	tail -n +7 cli.md >> $(README)
 	tail -n +7 api.md | sed "s^https://github.com/dagargo/elektroid/tree/master/^^g" >> $(README)
-	tail -n +7 tests.md >> $(README)
+	tail -n +7 contributing.md >> $(README)
 
 license.md: license.md.in
 	cat license.md.in > license.md

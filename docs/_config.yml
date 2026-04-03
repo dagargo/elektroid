@@ -24,4 +24,4 @@ minima:
     - packaging.md
     - cli.md
     - api.md
-    - tests.md
+    - contributing.md
