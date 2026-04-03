@@ -155,7 +155,7 @@ static gboolean
 progress_window_delete (GtkWidget *widget, GdkEvent *event, gpointer data)
 {
   progress_window_cancel ();
-  return FALSE;
+  return TRUE;
 }
 
 static gboolean
