@@ -255,6 +255,18 @@ microbrute_assistant_prepare (GtkAssistant *assistant, GtkWidget *page,
     }
 }
 
+static gboolean
+microbrute_window_key_press (GtkWidget *widget, GdkEventKey *event,
+			     gpointer data)
+{
+  if (event->keyval == GDK_KEY_Escape)
+    {
+      gtk_widget_hide (widget);
+      return TRUE;
+    }
+  return FALSE;
+}
+
 void
 microbrute_init ()
 {
@@ -331,6 +343,9 @@ microbrute_init ()
 
   g_signal_connect (config_window, "delete-event",
 		    G_CALLBACK (gtk_widget_hide_on_delete), NULL);
+
+  g_signal_connect (config_window, "key_press_event",
+		    G_CALLBACK (microbrute_window_key_press), NULL);
 
   //Assistant
 
