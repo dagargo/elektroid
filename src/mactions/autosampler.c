@@ -278,7 +278,8 @@ autosampler_cancel (GtkWidget *object, gpointer data)
 }
 
 static gboolean
-name_window_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
+autosampler_window_key_press (GtkWidget *widget, GdkEventKey *event,
+			      gpointer data)
 {
   if (event->keyval == GDK_KEY_Escape)
     {
@@ -406,7 +407,7 @@ autosampler_init (GtkBuilder *builder)
 		    G_CALLBACK (autosampler_cancel), NULL);
 
   g_signal_connect (window, "key_press_event",
-		    G_CALLBACK (name_window_key_press), NULL);
+		    G_CALLBACK (autosampler_window_key_press), NULL);
 }
 
 void
