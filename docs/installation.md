@@ -5,16 +5,7 @@ permalink: /installation/
 order: 2
 ---
 
-## Installation
-
-As with other autotools project, you need to run the following commands. If you just want to compile `elektroid-cli`, pass `CLI_ONLY=yes` to `./configure`.
-
-```
-autoreconf --install
-./configure
-make
-sudo make install
-```
+## Dependencies
 
 The package dependencies for Debian-based distributions are:
 - automake
@@ -68,7 +59,27 @@ For MSYS2 (UCRT64), run this to install the build dependencies.
 pacman -S mingw-w64-x86_64-toolchain gettext gettext-devel libtool pkg-config mingw-w64-x86_64-autotools mingw-w64-x86_64-gcc mingw-w64-ucrt-x86_64-zlib mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtk3 mingw-w64-x86_64-json-glib mingw-w64-ucrt-x86_64-libsndfile mingw-w64-ucrt-x86_64-rtmidi mingw-w64-ucrt-x86_64-rtaudio mingw-w64-ucrt-x86_64-libsamplerate mingw-w64-ucrt-x86_64-rubberband
 ```
 
-#### Additional notes on MSYS2 (UCRT64)
+## Installation
+
+As with other autotools project, you need to run the following commands. If you just want to compile `elektroid-cli`, pass `CLI_ONLY=yes` to `./configure`.
+
+```
+autoreconf --install
+./configure
+make
+sudo make install
+```
+
+### macOS installation
+
+After running `make`, you can create a macOS app bundle with this. `librsvg` is required.
+
+```
+./macos-bundle.sh
+cp -r Elektroid.app /Applications/
+```
+
+### Notes on MSYS2 (UCRT64)
 
 * Repository must be cloned with `-c core.symlinks=true` option for the included symbolic links to work.
 * `LANG` environmente variable must be set as in `LANG=es_ES.UTF-8` depending on your installed locales.
