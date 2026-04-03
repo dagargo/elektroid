@@ -259,8 +259,10 @@ void
 microbrute_init ()
 {
   GtkBuilder *builder = gtk_builder_new ();
-  gtk_builder_add_from_file (builder, DATADIR "/microbrute/microbrute.ui",
-			     NULL);
+  gchar *mb_ui_path = g_build_filename (get_data_dir (), "microbrute",
+				       "microbrute.ui", NULL);
+  gtk_builder_add_from_file (builder, mb_ui_path, NULL);
+  g_free (mb_ui_path);
   config_window = GTK_WIDGET (gtk_builder_get_object (builder,
 						      "config_window"));
   gtk_window_resize (GTK_WINDOW (config_window), 1, 1);

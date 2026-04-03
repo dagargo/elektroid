@@ -139,6 +139,8 @@ gint filename_get_lenght_without_ext (const gchar * name);
 
 gchar *get_user_dir (const gchar *);
 
+const gchar *get_data_dir ();
+
 gchar *get_system_startup_path (const gchar *);
 
 void free_msg (gpointer);

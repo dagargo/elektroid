@@ -93,3 +93,4 @@ docs/.jekyll-metadata
 docs/.bundle/
 flatpak/build/
 .flatpak-builder/
+Elektroid.app/
