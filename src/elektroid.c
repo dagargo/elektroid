@@ -1691,7 +1691,8 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
     g_simple_action_new ("preferences", NULL);
   g_signal_connect (preferences_action, "activate",
 		    G_CALLBACK (elektroid_preferences_action), NULL);
-  g_action_map_add_action (G_ACTION_MAP (gapp), G_ACTION (preferences_action));
+  g_action_map_add_action (G_ACTION_MAP (gapp),
+			   G_ACTION (preferences_action));
 
   const gchar *quit_accels[] = { "<Meta>q", NULL };
   gtk_application_set_accels_for_action (GTK_APPLICATION (gapp),

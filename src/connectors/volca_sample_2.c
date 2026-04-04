@@ -836,8 +836,7 @@ volca_sample_2_pattern_clear (struct backend *backend, const gchar *path)
   gchar *pattern_path = g_build_filename (get_data_dir (),
 					  "volca_sample_2",
 					  "init_pattern.vlcsplpattb", NULL);
-  err = file_load (pattern_path,
-		   &init_pattern, NULL);
+  err = file_load (pattern_path, &init_pattern, NULL);
   g_free (pattern_path);
   if (err)
     {
