@@ -164,9 +164,7 @@ editor_set_filename ()
 {
   if (audio.path)
     {
-      gchar *filename = g_path_get_basename (audio.path);
-      gtk_label_set_text (GTK_LABEL (filename_label), filename);
-      g_free (filename);
+      gtk_label_set_text (GTK_LABEL (filename_label), audio.sample.name);
     }
   gtk_widget_set_visible (filename_box, audio.path != NULL);
 }
