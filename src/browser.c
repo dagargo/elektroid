@@ -253,6 +253,8 @@ browser_check_selection (gpointer data)
 
   if (item.type == ITEM_TYPE_DIR)
     {
+      browser->last_selected_index = index;
+      editor_reset (browser);
       return;
     }
 
