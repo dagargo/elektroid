@@ -1351,13 +1351,24 @@ browser_sum_dir_size (struct browser *browser, const gchar *dir,
 }
 
 static void
-browser_dir_set_item_dir_size (struct browser *browser, struct item *item)
+browser_dir_set_item_dir_size (struct browser *browser,
+			       const gchar *child_rel_dir, struct item *item)
 {
+  gint64 *cached;
+  gchar *child_dir;
   const gchar **exts = browser_get_exts (browser);
   enum path_type type = backend_get_path_type (browser->backend);
-  gchar *child_dir = path_chain (type, browser->dir, item->name);
-  gint64 *cached = g_hash_table_lookup (browser->folder_size_cache,
-					child_dir);
+
+  if (child_rel_dir)
+    {
+      child_dir = path_chain (type, browser->dir, child_rel_dir);
+    }
+  else
+    {
+      child_dir = path_chain (type, browser->dir, item->name);
+    }
+
+  cached = g_hash_table_lookup (browser->folder_size_cache, child_dir);
   if (cached)
     {
       item->size = *cached;
@@ -1383,7 +1394,7 @@ browser_iterate_dir (struct browser *browser, struct item_iterator *iter,
       if (iter->item.type == ITEM_TYPE_DIR
 	  && preferences_get_boolean (PREF_KEY_SHOW_FOLDER_SIZES))
 	{
-	  browser_dir_set_item_dir_size (browser, &iter->item);
+	  browser_dir_set_item_dir_size (browser, NULL, &iter->item);
 	}
 
       browser_iterate_dir_add (browser, iter, icon, &iter->item,
@@ -1410,9 +1421,6 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
     {
       child_rel_dir = path_chain (type, rel_dir, iter->item.name);
 
-      browser_iterate_dir_add (browser, iter, icon, &iter->item,
-			       strdup (child_rel_dir));
-
       if (iter->item.type == ITEM_TYPE_DIR)
 	{
 	  child_dir = path_chain (type, browser->dir, child_rel_dir);
@@ -1425,7 +1433,17 @@ browser_iterate_dir_recursive (struct browser *browser, const gchar *rel_dir,
 	      item_iterator_free (&child_iter);
 	    }
 	  g_free (child_dir);
+
+	  if (preferences_get_boolean (PREF_KEY_SHOW_FOLDER_SIZES))
+	    {
+	      browser_dir_set_item_dir_size (browser, child_rel_dir,
+					     &iter->item);
+	    }
 	}
+
+      browser_iterate_dir_add (browser, iter, icon, &iter->item,
+			       strdup (child_rel_dir));
+
       g_free (child_rel_dir);
 
       g_mutex_lock (&browser->mutex);
