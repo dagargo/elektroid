@@ -3988,9 +3988,9 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .id = FS_DATA_SND,
-  .options = FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_SIZE_COLUMN |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
-    FS_OPTION_ALLOW_SEARCH,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
+    FS_OPTION_SHOW_INFO_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "sound",
   .gui_name = "Sounds",
   .gui_icon = FS_ICON_PRESET,
@@ -4037,9 +4037,9 @@ static const struct fs_operations FS_DATA_PST_OPERATIONS = {
 
 static const struct fs_operations FS_DATA_TAKT_II_PST_OPERATIONS = {
   .id = FS_DATA_TAKT_II_PST,
-  .options = FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_SIZE_COLUMN |
-    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_INFO_COLUMN |
-    FS_OPTION_ALLOW_SEARCH,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SIZE_COLUMN | FS_OPTION_SHOW_SLOT_COLUMN |
+    FS_OPTION_SHOW_INFO_COLUMN | FS_OPTION_ALLOW_SEARCH,
   .name = "preset-takt-ii",
   .gui_name = "Presets",
   .gui_icon = FS_ICON_PRESET,
