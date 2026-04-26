@@ -14,7 +14,7 @@ AM_INIT_AUTOMAKE([subdir-objects])
 AC_PROG_CC
 
 # Define conditional prior to package checks
-AM_CONDITIONAL([ELEKTROID_CLI_ONLY], [test "${CLI_ONLY}" == yes])
+AM_CONDITIONAL([ELEKTROID_CLI_ONLY], [test "${CLI_ONLY}" = yes])
 
 # Needed to access the 'host_os' variable
 AC_CANONICAL_HOST
@@ -40,15 +40,15 @@ case "${host_os}" in
     ;;
 esac
 
-AM_CONDITIONAL([MINGW], [test "${SYSTEM}" == mingw])
-AM_CONDITIONAL([DARWIN], [test "${SYSTEM}" == darwin])
-AM_CONDITIONAL([OPENDESKTOP], [test "${SYSTEM}" == opendesktop])
+AM_CONDITIONAL([MINGW], [test "${SYSTEM}" = mingw])
+AM_CONDITIONAL([DARWIN], [test "${SYSTEM}" = darwin])
+AM_CONDITIONAL([OPENDESKTOP], [test "${SYSTEM}" = opendesktop])
 
-AM_CONDITIONAL([ELEKTROID_RTMIDI], [test "${RTMIDI}" == yes])
-AS_IF([test "${RTMIDI}" == yes], [AC_DEFINE([ELEKTROID_RTMIDI], [1], ["Use RtMidi"])])
+AM_CONDITIONAL([ELEKTROID_RTMIDI], [test "${RTMIDI}" = yes])
+AS_IF([test "${RTMIDI}" = yes], [AC_DEFINE([ELEKTROID_RTMIDI], [1], ["Use RtMidi"])])
 
-AM_CONDITIONAL([ELEKTROID_RTAUDIO], [test "${RTAUDIO}" == yes])
-AS_IF([test "${RTAUDIO}" == yes], [AC_DEFINE([ELEKTROID_RTAUDIO], [1], ["Use RtAudio"])])
+AM_CONDITIONAL([ELEKTROID_RTAUDIO], [test "${RTAUDIO}" = yes])
+AS_IF([test "${RTAUDIO}" = yes], [AC_DEFINE([ELEKTROID_RTAUDIO], [1], ["Use RtAudio"])])
 
 # Checks for libraries.
 PKG_CHECK_MODULES(zlib, zlib >= 1.1.8)
