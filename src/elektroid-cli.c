@@ -40,6 +40,7 @@
 
 #define ERR_MSG_CMD_NOT_IN_SYSTEM_FS "Command not available in system backend"
 #define ERR_MSG_REMOTE_PATH_MISSING "Remote path missing"
+#define ERR_MSG_REMOTE_PATH_SRC_MISSING "Remote path source missing"
 
 #define GET_FS_OPS_OFFSET(member) offsetof(struct fs_operations, member)
 #define GET_FS_OPS_FUNC(type,fs,offset) (*(((type *) (((gchar *) fs) + offset))))
@@ -255,7 +256,7 @@ cli_command_src_dst (int argc, gchar *argv[], int *optind,
 
   if (*optind == argc)
     {
-      error_print ("Remote path source missing");
+      error_print (ERR_MSG_REMOTE_PATH_SRC_MISSING);
       return -EINVAL;
     }
   else
@@ -307,7 +308,7 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Remote path source missing");
+      error_print (ERR_MSG_REMOTE_PATH_SRC_MISSING);
       return -EINVAL;
     }
   else
