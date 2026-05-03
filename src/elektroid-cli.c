@@ -94,7 +94,10 @@ cli_get_path (const gchar *device_path)
       path++;
       i++;
     }
-  path++;
+  if (*path == G_SEARCHPATH_SEPARATOR)
+    {
+      path++;
+    }
 
   return path;
 }
@@ -473,6 +476,7 @@ cli_df (int argc, gchar *argv[], int *optind)
   path = cli_get_path (device_path);
   if (!strlen (path))
     {
+      error_print ("Path missing");
       return -EINVAL;
     }
 
