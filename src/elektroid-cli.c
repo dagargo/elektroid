@@ -38,7 +38,7 @@
 
 #define CLI_SLEEP_US 200000
 
-#define COMMAND_NOT_IN_SYSTEM_FS "Command not available in system backend"
+#define ERR_MSG_CMD_NOT_IN_SYSTEM_FS "Command not available in system backend"
 
 #define GET_FS_OPS_OFFSET(member) offsetof(struct fs_operations, member)
 #define GET_FS_OPS_FUNC(type,fs,offset) (*(((type *) (((gchar *) fs) + offset))))
@@ -541,7 +541,7 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
     }
   if (backend.type == BE_TYPE_SYSTEM)
     {
-      error_print (COMMAND_NOT_IN_SYSTEM_FS);
+      error_print (ERR_MSG_CMD_NOT_IN_SYSTEM_FS);
       return EXIT_FAILURE;
     }
 
@@ -845,7 +845,7 @@ cli_send (int argc, gchar *argv[], int *optind)
     }
   if (backend.type == BE_TYPE_SYSTEM)
     {
-      error_print (COMMAND_NOT_IN_SYSTEM_FS);
+      error_print (ERR_MSG_CMD_NOT_IN_SYSTEM_FS);
       return EXIT_FAILURE;
     }
 
@@ -902,7 +902,7 @@ cli_receive (int argc, gchar *argv[], int *optind)
     }
   if (backend.type == BE_TYPE_SYSTEM)
     {
-      error_print (COMMAND_NOT_IN_SYSTEM_FS);
+      error_print (ERR_MSG_CMD_NOT_IN_SYSTEM_FS);
       return EXIT_FAILURE;
     }
 
