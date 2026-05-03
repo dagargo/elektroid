@@ -44,7 +44,7 @@
 
 #define GET_FS_OPS_OFFSET(member) offsetof(struct fs_operations, member)
 #define GET_FS_OPS_FUNC(type,fs,offset) (*(((type *) (((gchar *) fs) + offset))))
-#define RETURN_IF_NULL(f) if (!(f)) {return -ENOSYS;}
+#define RETURN_IF_NULL(f) if (!(f)) {error_print ("Function not implemented"); return EXIT_FAILURE;}
 
 static struct backend backend;
 static struct task_control task_control;
@@ -470,7 +470,8 @@ cli_df (int argc, gchar *argv[], int *optind)
 
   if (!backend.get_storage_stats)
     {
-      return -ENOSYS;
+      error_print ("Storage stats not implemented");
+      return EXIT_FAILURE;
     }
 
   path = cli_get_path (device_path);
