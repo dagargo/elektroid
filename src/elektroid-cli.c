@@ -39,6 +39,7 @@
 #define CLI_SLEEP_US 200000
 
 #define ERR_MSG_CMD_NOT_IN_SYSTEM_FS "Command not available in system backend"
+#define ERR_MSG_REMOTE_PATH_MISSING "Remote path missing"
 
 #define GET_FS_OPS_OFFSET(member) offsetof(struct fs_operations, member)
 #define GET_FS_OPS_FUNC(type,fs,offset) (*(((type *) (((gchar *) fs) + offset))))
@@ -173,7 +174,7 @@ cli_list (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Remote path missing");
+      error_print (ERR_MSG_REMOTE_PATH_MISSING);
       return -EINVAL;
     }
   else
@@ -221,7 +222,7 @@ cli_command_path (int argc, gchar *argv[], int *optind, ssize_t member_offset)
 
   if (*optind == argc)
     {
-      error_print ("Remote path missing");
+      error_print (ERR_MSG_REMOTE_PATH_MISSING);
       return -EINVAL;
     }
   else
@@ -525,7 +526,7 @@ cli_upgrade_os (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Remote path missing");
+      error_print (ERR_MSG_REMOTE_PATH_MISSING);
       return EXIT_FAILURE;
     }
   else
@@ -666,7 +667,7 @@ cli_download (int argc, gchar *argv[], int *optind, gint recursive)
 
   if (*optind == argc)
     {
-      error_print ("Remote path missing");
+      error_print (ERR_MSG_REMOTE_PATH_MISSING);
       return EXIT_FAILURE;
     }
   else
@@ -787,7 +788,7 @@ cli_upload (int argc, gchar *argv[], int *optind)
 
   if (*optind == argc)
     {
-      error_print ("Remote path missing");
+      error_print (ERR_MSG_REMOTE_PATH_MISSING);
       return EXIT_FAILURE;
     }
   else
