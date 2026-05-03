@@ -130,7 +130,7 @@ cli_connect (const gchar *device_path)
   if (!devices->len)
     {
       error_print ("No devices found");
-      err = -ENODEV;
+      err = EXIT_FAILURE;
       goto end;
     }
 
@@ -139,14 +139,14 @@ cli_connect (const gchar *device_path)
   if (errno || device_path == rem)
     {
       error_print ("Device not provided properly in '%s'", device_path);
-      err = -ENODEV;
+      err = EXIT_FAILURE;
       goto end;
     }
 
   if (id >= devices->len)
     {
       error_print ("Invalid device '%d'", id);
-      err = -ENODEV;
+      err = EXIT_FAILURE;
       goto end;
     }
 
@@ -660,7 +660,7 @@ cli_download_dir (const gchar *src_path, const gchar *dst_path)
 
   item_iterator_free (&iter);
 
-  return controllable_is_active (&controllable) ? err : -ECANCELED;
+  return controllable_is_active (&controllable) ? err : EXIT_FAILURE;
 }
 
 static gint
