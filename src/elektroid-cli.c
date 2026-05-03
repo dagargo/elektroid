@@ -159,7 +159,7 @@ cli_connect (const gchar *device_path)
       if (!fs_ops)
 	{
 	  error_print ("Invalid filesystem '%s'", fs);
-	  err = -EINVAL;
+	  err = EXIT_FAILURE;
 	}
     }
 
@@ -179,7 +179,7 @@ cli_list (int argc, gchar *argv[], int *optind)
   if (*optind == argc)
     {
       error_print (ERR_MSG_REMOTE_PATH_MISSING);
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -227,7 +227,7 @@ cli_command_path (int argc, gchar *argv[], int *optind, ssize_t member_offset)
   if (*optind == argc)
     {
       error_print (ERR_MSG_REMOTE_PATH_MISSING);
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -260,7 +260,7 @@ cli_command_src_dst (int argc, gchar *argv[], int *optind,
   if (*optind == argc)
     {
       error_print (ERR_MSG_REMOTE_PATH_SRC_MISSING);
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -271,7 +271,7 @@ cli_command_src_dst (int argc, gchar *argv[], int *optind,
   if (*optind == argc)
     {
       error_print ("Remote path destination missing");
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -284,7 +284,7 @@ cli_command_src_dst (int argc, gchar *argv[], int *optind,
   if (src_card != dst_card)
     {
       error_print ("Source and destination device must be the same");
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
 
   err = cli_connect (device_src_path);
@@ -312,7 +312,7 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
   if (*optind == argc)
     {
       error_print (ERR_MSG_REMOTE_PATH_SRC_MISSING);
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -323,7 +323,7 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
   if (*optind == argc)
     {
       error_print ("Remote path destination missing");
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -348,7 +348,7 @@ cli_command_mv_rename (int argc, gchar *argv[], int *optind)
       if (src_card != dst_card)
 	{
 	  error_print ("Source and destination device must be the same");
-	  return -EINVAL;
+	  return EXIT_FAILURE;
 	}
       dst_path = cli_get_path (device_dst_path);
     }
@@ -398,7 +398,7 @@ cli_info (int argc, gchar *argv[], int *optind)
   if (*optind == argc)
     {
       error_print ("Device missing");
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -454,7 +454,7 @@ cli_df (int argc, gchar *argv[], int *optind)
   if (*optind == argc)
     {
       error_print ("Device missing");
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -477,7 +477,7 @@ cli_df (int argc, gchar *argv[], int *optind)
   if (!strlen (path))
     {
       error_print ("Path missing");
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
 
   printf ("%-20.20s%16.16s%16.16s%16.16s%11.10s\n", "Storage", "Size",
@@ -593,7 +593,7 @@ cli_download_item (const gchar *src_path, const gchar *dst_path)
 					     src_path, &idata);
   if (!download_path)
     {
-      err = -EINVAL;
+      err = EXIT_FAILURE;
       goto cleanup;
     }
 
@@ -824,7 +824,7 @@ cli_send (int argc, gchar *argv[], int *optind)
   if (*optind == argc)
     {
       error_print ("Source file missing");
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -835,7 +835,7 @@ cli_send (int argc, gchar *argv[], int *optind)
   if (*optind == argc)
     {
       error_print ("Remote device missing");
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -881,7 +881,7 @@ cli_receive (int argc, gchar *argv[], int *optind)
   if (*optind == argc)
     {
       error_print ("Remote device missing");
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -892,7 +892,7 @@ cli_receive (int argc, gchar *argv[], int *optind)
   if (*optind == argc)
     {
       error_print ("Destination file missing");
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -944,7 +944,7 @@ cli_play (int argc, gchar *argv[], int *optind)
   if (*optind == argc)
     {
       error_print ("Source file missing");
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
@@ -986,7 +986,7 @@ cli_record (int argc, gchar *argv[], int *optind)
   if (*optind == argc)
     {
       error_print ("Source file missing");
-      return -EINVAL;
+      return EXIT_FAILURE;
     }
   else
     {
