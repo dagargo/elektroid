@@ -28,7 +28,7 @@ Keep in mind that not every filesystem implements all the commands. For instance
 
 Provided paths must always be prepended with the device id and a colon (e.g., `0:/incoming`).
 
-### Non-filesystem commands
+### Device commands
 
 * `ld` or `list-devices`, list all MIDI devices with input and output
 
@@ -52,7 +52,7 @@ Type: MIDI
 Device name: Elektron Digitakt
 Device version: 1.51A
 Device description: Digitakt
-Connector name: elektron
+Connector: elektron
 Filesystems: sample, data (CLI only), project, sound
 ```
 

@@ -30,6 +30,7 @@
 #include <stddef.h>
 #include <glib.h>
 #include <glib/gstdio.h>
+#include "../config.h"
 #include "backend.h"
 #include "regconn.h"
 #include "regpref.h"
@@ -416,7 +417,7 @@ cli_info (int argc, gchar *argv[], int *optind)
   printf ("Device name: %s\n", backend.name);
   printf ("Device version: %s\n", backend.version);
   printf ("Device description: %s\n", backend.description);
-  printf ("Connector name: %s\n", backend.conn_name);
+  printf ("Connector: %s\n", backend.conn_name);
   printf ("Filesystems: ");
 
   sorted = g_slist_copy (backend.fs_ops);
@@ -1023,6 +1024,65 @@ cli_end (int sig)
 }
 #endif
 
+static void
+cli_print_help_cmd (const gchar *cmd, const gchar *args, const gchar *desc)
+{
+  fprintf (stderr, "  \033[1m%s\033[0m%s%s: %s\n", cmd, args ? " " : "",
+	   args ? args : "", desc);
+}
+
+static void
+cli_print_help (const gchar *argv0)
+{
+  gchar *exec_name = g_path_get_basename (argv0);
+  fprintf (stderr, "%s\n", PACKAGE_STRING);
+  fprintf (stderr, "Usage: %s [ -v ] command\n", exec_name);
+  fprintf (stderr, "\n");
+  fprintf (stderr, "Device commands:\n");
+  cli_print_help_cmd ("ld", NULL, "List devices");
+  cli_print_help_cmd ("info", "device_number", "Show device info");
+  cli_print_help_cmd ("df", "device_number",
+		      "Show size and use of the available storages");
+  cli_print_help_cmd ("send", "file device_number",
+		      "Send MIDI data file to device");
+  cli_print_help_cmd ("receive", "device_number file",
+		      "Receive MIDI data file from device");
+  cli_print_help_cmd ("upgrade", "firmware device_number",
+		      "Upgrade the device");
+  cli_print_help_cmd ("play", "file", "Play audio file");
+  cli_print_help_cmd ("record", "file", "Record into file");
+  fprintf (stderr, "\n");
+  fprintf (stderr,
+	   "Filesystem commands take the form connector:filesystem:operation parameters\n");
+  fprintf (stderr, "Filesystem operations:\n");
+  cli_print_help_cmd ("ls", "device_number:path_to_directory",
+		      "List directory");
+  cli_print_help_cmd ("mkdir", "device_number:path_to_directory",
+		      "Create directory and its parent directories as needed");
+  cli_print_help_cmd ("rmdir", "device_number:path_to_directory",
+		      "Delete directory recursively");
+  cli_print_help_cmd ("ul", "file device_number:path_to_file_or_directory",
+		      "Upload file");
+  cli_print_help_cmd ("dl",
+		      "device_number:path_to_file_or_directory [ destination ]",
+		      "Download file");
+  cli_print_help_cmd ("rdl",
+		      "device_number:path_to_file_or_directory [ destination ]",
+		      "Download directory recursively");
+  cli_print_help_cmd ("mv",
+		      "device_number:path_to_file_or_directory device_number:path_to_file_or_directory",
+		      "Move file");
+  cli_print_help_cmd ("rm", "device_number:path_to_file", "Delete file");
+  cli_print_help_cmd ("cl", "device_number:path_to_file", "Clear file");
+  cli_print_help_cmd ("cp",
+		      "device_number:path_to_file device_number:path_to_file",
+		      "Copy file");
+  cli_print_help_cmd ("sw",
+		      "device_number:path_to_file device_number:path_to_file",
+		      "Swap files");
+  g_free (exec_name);
+}
+
 int
 main (int argc, gchar *argv[])
 {
@@ -1075,9 +1135,7 @@ main (int argc, gchar *argv[])
 
   if (errflg > 0)
     {
-      fprintf (stderr, "%s\n", PACKAGE_STRING);
-      gchar *exec_name = g_path_get_basename (argv[0]);
-      fprintf (stderr, "Usage: %s [options] command\n", exec_name);
+      cli_print_help (argv[0]);
       exit (EXIT_FAILURE);
     }
 
@@ -1200,6 +1258,7 @@ end:
   if (err && err != EXIT_FAILURE)
     {
       error_print ("Error: %s", g_strerror (-err));
+      cli_print_help (argv[0]);
     }
 
   controllable_clear (&controllable);

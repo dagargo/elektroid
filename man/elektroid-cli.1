@@ -54,13 +54,13 @@ Samplers implementing MIDI SDS
 Device commands operate over the device itself. For the commands that operate over the different types of data a device provides see the filesystem commands section.
 .TP
 [ \fBld\fR | \fBlist-devices\fR ]
-List compatible devices
-.TP
-[ \fBdf\fR | \fBinfo-storage\fR ] device_number
-Show size and use of +Drive and RAM where available
+List devices
 .TP
 \fBinfo\fR device_number
 Show device info
+.TP
+[ \fBdf\fR | \fBinfo-storage\fR ] device_number
+Show size and use of the available storages
 .TP
 \fBsend\fR file device_number
 Send MIDI data file to device
@@ -89,31 +89,31 @@ Provided paths must always be prepended with the device id and a colon (':'), e.
 These are the available operations.
 .TP
 [ \fBls\fR | \fBlist\fR ] device_number:path_to_directory
-List directory contents
+List directory
 .TP
 \fBmkdir\fR device_number:path_to_directory
-Create a directory and its parent directories as needed
+Create directory and its parent directories as needed
 .TP
 [ \fBrmdir\fR | \fBrm\fR ] device_number:path_to_directory
-Delete a directory recursively
+Delete directory recursively
 .TP
 [ \fBul\fR | \fBupload\fR ] file device_number:path_to_file_or_directory
-Upload a file. If the path does not exist it will be created.
+Upload file. If the path does not exist it will be created.
 .TP
 [ \fBdl\fR | \fBdownload\fR | \fBrdownload\fR | \fBrdl\fR | \fBbackup\fR ] device_number:path_to_file_or_directory [ destination ]
-Download a file into the destination directory or the current directory if not provided.
+Download file into the destination directory or the current directory if not provided.
 .TP
 \fBmv\fR device_number:path_to_file_or_directory device_number:path_to_file_or_directory
-Move a file. If the destination path does not exist, it will be created.
+Move file. If the destination path does not exist, it will be created.
 .TP
 \fBrm\fR device_number:path_to_file
-Delete a file
+Delete file
 .TP
 \fBcl\fR device_number:path_to_file
 Clear file
 .TP
 \fBcp\fR device_number:path_to_file device_number:path_to_file
-Copy a file
+Copy file
 .TP
 \fBsw\fR device_number:path_to_file device_number:path_to_file
 Swap files
