@@ -222,6 +222,12 @@ static const struct preference PREF_SHOW_FOLDER_SIZES = {
   .get_value = preferences_get_boolean_value_false
 };
 
+static const struct preference PREF_USE_SAFETY_QUESTIONS = {
+  .key = PREF_KEY_USE_SAFETY_QUESTIONS,
+  .type = PREFERENCE_TYPE_BOOLEAN,
+  .get_value = preferences_get_boolean_value_true
+};
+
 void
 regpref_register ()
 {
@@ -233,7 +239,7 @@ regpref_register ()
 	       &PREF_ELEKTRON_LOAD_SOUND_TAGS, &PREF_TAGS_STRUCTURES,
 	       &PREF_TAGS_INSTRUMENTS, &PREF_TAGS_GENRES,
 	       &PREF_TAGS_OBJECTIVE_CHARS, &PREF_TAGS_SUBJECTIVE_CHARS,
-	       &PREF_SHOW_FOLDER_SIZES, NULL);
+	       &PREF_SHOW_FOLDER_SIZES, &PREF_USE_SAFETY_QUESTIONS, NULL);
 }
 
 void

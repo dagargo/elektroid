@@ -40,6 +40,7 @@
 #define PREF_KEY_TAGS_OBJECTIVE_CHARS "tagsObjectiveCharacteristics"
 #define PREF_KEY_TAGS_SUBJECTIVE_CHARS "tagsSubjectiveCharacteristics"
 #define PREF_KEY_SHOW_FOLDER_SIZES "showFolderSizes"
+#define PREF_KEY_USE_SAFETY_QUESTIONS "skipSafetyQuestions"
 
 enum preference_type
 {

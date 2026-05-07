@@ -607,6 +607,29 @@ browser_no_progress_needed (struct browser *browser)
 }
 
 static void
+browser_delete_items_efectively (struct browser *browser)
+{
+  struct browser_delete_items_data *delete_data;
+
+  delete_data = g_malloc (sizeof (struct browser_delete_items_data));
+  delete_data->browser = browser;
+
+  if (browser_no_progress_needed (browser))
+    {
+      delete_data->has_progress_window = FALSE;
+      elektroid_delete_items_runner (delete_data);
+      browser_load_dir_if_needed (browser);
+    }
+  else
+    {
+      delete_data->has_progress_window = TRUE;
+      progress_window_open (elektroid_delete_items_runner, NULL, NULL,
+			    delete_data, PROGRESS_TYPE_PULSE,
+			    _("Deleting Files"), _("Deleting..."), TRUE);
+    }
+}
+
+static void
 browser_delete_items_response (GtkDialog *dialog, gint response_id,
 			       gpointer user_data)
 {
@@ -616,24 +639,7 @@ browser_delete_items_response (GtkDialog *dialog, gint response_id,
 
   if (response_id == GTK_RESPONSE_ACCEPT)
     {
-      struct browser_delete_items_data *delete_data;
-
-      delete_data = g_malloc (sizeof (struct browser_delete_items_data));
-      delete_data->browser = browser;
-
-      if (browser_no_progress_needed (browser))
-	{
-	  delete_data->has_progress_window = FALSE;
-	  elektroid_delete_items_runner (delete_data);
-	  browser_load_dir_if_needed (browser);
-	}
-      else
-	{
-	  delete_data->has_progress_window = TRUE;
-	  progress_window_open (elektroid_delete_items_runner, NULL, NULL,
-				delete_data, PROGRESS_TYPE_PULSE,
-				_("Deleting Files"), _("Deleting..."), TRUE);
-	}
+      browser_delete_items_efectively (browser);
     }
 }
 
@@ -643,19 +649,27 @@ browser_delete_items (GtkWidget *object, gpointer user_data)
   GtkWidget *dialog;
   struct browser *browser = user_data;
 
-  dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL,
-				   GTK_MESSAGE_ERROR, GTK_BUTTONS_NONE,
-				   _
-				   ("Are you sure you want to delete the selected items?"));
-  gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
-			  GTK_RESPONSE_CANCEL, _("_Delete"),
-			  GTK_RESPONSE_ACCEPT, NULL);
-  gtk_dialog_set_default_response (GTK_DIALOG (dialog), GTK_RESPONSE_ACCEPT);
+  if (preferences_get_boolean (PREF_KEY_USE_SAFETY_QUESTIONS))
+    {
+      dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL,
+				       GTK_MESSAGE_ERROR, GTK_BUTTONS_NONE,
+				       _
+				       ("Are you sure you want to delete the selected items?"));
+      gtk_dialog_add_buttons (GTK_DIALOG (dialog), _("_Cancel"),
+			      GTK_RESPONSE_CANCEL, _("_Delete"),
+			      GTK_RESPONSE_ACCEPT, NULL);
+      gtk_dialog_set_default_response (GTK_DIALOG (dialog),
+				       GTK_RESPONSE_ACCEPT);
 
-  g_signal_connect (dialog, "response",
-		    G_CALLBACK (browser_delete_items_response), browser);
+      g_signal_connect (dialog, "response",
+			G_CALLBACK (browser_delete_items_response), browser);
 
-  gtk_widget_set_visible (dialog, TRUE);
+      gtk_widget_set_visible (dialog, TRUE);
+    }
+  else
+    {
+      browser_delete_items_efectively (browser);
+    }
 }
 
 static gchar *
