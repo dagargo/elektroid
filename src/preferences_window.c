@@ -30,13 +30,14 @@ static GtkWidget *audio_use_float_switch;
 static GtkWidget *play_sample_while_loading_switch;
 static GtkWidget *show_playback_cursor_switch;
 static GtkWidget *stop_device_when_connecting_switch;
+static GtkWidget *show_folder_sizes_switch;
+static GtkWidget *use_safety_questions_switch;
 static GtkWidget *elektron_load_sound_tags_switch;
 static GtkWidget *tags_structures_text_view;
 static GtkWidget *tags_instruments_text_view;
 static GtkWidget *tags_genres_text_view;
 static GtkWidget *tags_subj_chars_text_view;
 static GtkWidget *tags_obj_chars_text_view;
-static GtkWidget *show_folder_sizes_switch;
 static GtkWidget *save_button;
 static GtkWidget *cancel_button;
 
@@ -88,10 +89,12 @@ preferences_window_save (GtkWidget *object, gpointer data)
   preferences_set_boolean (PREF_KEY_SHOW_PLAYBACK_CURSOR, b);
   b = gtk_switch_get_active (GTK_SWITCH (stop_device_when_connecting_switch));
   preferences_set_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING, b);
-  b = gtk_switch_get_active (GTK_SWITCH (elektron_load_sound_tags_switch));
-  preferences_set_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS, b);
   b = gtk_switch_get_active (GTK_SWITCH (show_folder_sizes_switch));
   preferences_set_boolean (PREF_KEY_SHOW_FOLDER_SIZES, b);
+  b = gtk_switch_get_active (GTK_SWITCH (use_safety_questions_switch));
+  preferences_set_boolean (PREF_KEY_USE_SAFETY_QUESTIONS, b);
+  b = gtk_switch_get_active (GTK_SWITCH (elektron_load_sound_tags_switch));
+  preferences_set_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS, b);
 
   i = gtk_combo_box_get_active (GTK_COMBO_BOX (audio_buffer_length_combo));
 
@@ -161,10 +164,12 @@ preferences_window_open ()
   gtk_switch_set_active (GTK_SWITCH (show_playback_cursor_switch), b);
   b = preferences_get_boolean (PREF_KEY_STOP_DEVICE_WHEN_CONNECTING);
   gtk_switch_set_active (GTK_SWITCH (stop_device_when_connecting_switch), b);
-  b = preferences_get_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS);
-  gtk_switch_set_active (GTK_SWITCH (elektron_load_sound_tags_switch), b);
   b = preferences_get_boolean (PREF_KEY_SHOW_FOLDER_SIZES);
   gtk_switch_set_active (GTK_SWITCH (show_folder_sizes_switch), b);
+  b = preferences_get_boolean (PREF_KEY_USE_SAFETY_QUESTIONS);
+  gtk_switch_set_active (GTK_SWITCH (use_safety_questions_switch), b);
+  b = preferences_get_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS);
+  gtk_switch_set_active (GTK_SWITCH (elektron_load_sound_tags_switch), b);
 
   buffer_len = preferences_get_int (PREF_KEY_AUDIO_BUFFER_LEN);
 
@@ -229,12 +234,15 @@ preferences_window_init (GtkBuilder *builder)
   stop_device_when_connecting_switch =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "prefs_window_stop_device_when_connecting_switch"));
-  elektron_load_sound_tags_switch =
+  use_safety_questions_switch =
     GTK_WIDGET (gtk_builder_get_object
-		(builder, "prefs_window_elektron_load_sound_tags_switch"));
+		(builder, "prefs_window_use_safety_questions_switch"));
   show_folder_sizes_switch =
     GTK_WIDGET (gtk_builder_get_object
 		(builder, "prefs_window_show_folder_sizes_switch"));
+  elektron_load_sound_tags_switch =
+    GTK_WIDGET (gtk_builder_get_object
+		(builder, "prefs_window_elektron_load_sound_tags_switch"));
 
   tags_structures_text_view =
     GTK_WIDGET (gtk_builder_get_object
