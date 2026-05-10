@@ -2282,7 +2282,7 @@ editor_split_runner (gpointer user_data)
       g_free (name);
 
       sample_load_opts_init_from_sample_info (&sample_load_opts,
-					      &audio.sample_info_src, FALSE);
+					      &audio.sample_info_src, TRUE);
       sample_load_opts.channels = 1;
 
       editor_save_with_format (path, idata, &sample_load_opts,
