@@ -6,8 +6,9 @@
 
 #define BYTE_COMPARISON_SIZE 16
 
-gint logue_unit_load (const char *path, struct idata *idata,
-		      struct task_control *control);
+gint logue_unit_load (const char *path, struct idata *sysex,
+		      struct task_control *control, guint8 device,
+		      guint8 channel);
 
 static void
 test_logue_unit_load (const gchar *sysex_path, const gchar *unit_path,
@@ -33,7 +34,7 @@ test_logue_unit_load (const gchar *sysex_path, const gchar *unit_path,
       return;
     }
 
-  err = logue_unit_load (unit_path, &actual, &control);
+  err = logue_unit_load (unit_path, &actual, &control, LOGUE_DEVICE_NTS1, 0);
   CU_ASSERT_EQUAL (err, 0);
   if (err)
     {
