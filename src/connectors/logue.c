@@ -64,6 +64,7 @@ struct logue_version
 struct logue_data
 {
   guint8 device;
+  guint8 channel;
   enum logue_platform platform;
 };
 
@@ -129,13 +130,15 @@ logue_validate_device (GByteArray *msg, guint8 device_id)
 }
 
 static GByteArray *
-logue_get_msg (guint8 device, guint8 op, const guint8 *data, guint len)
+logue_get_msg (struct logue_data *logue_data, guint8 op, const guint8 *data,
+	       guint len)
 {
   GByteArray *msg;
 
-  msg = g_byte_array_sized_new (sizeof (MSG_HEADER) + 4 + len);
+  msg = g_byte_array_sized_new (sizeof (MSG_HEADER) + 3 + len);
   g_byte_array_append (msg, MSG_HEADER, sizeof (MSG_HEADER));
-  g_byte_array_append (msg, &device, 1);
+  msg->data[2] |= logue_data->channel;
+  g_byte_array_append (msg, &logue_data->device, 1);
   g_byte_array_append (msg, &op, 1);
   if (data && len > 0)
     {
@@ -147,19 +150,20 @@ logue_get_msg (guint8 device, guint8 op, const guint8 *data, guint len)
 }
 
 static GByteArray *
-logue_get_msg_op_type (guint8 device, guint8 op, guint8 module)
+logue_get_msg_op_type (struct logue_data *logue_data, guint8 op,
+		       guint8 module)
 {
-  return logue_get_msg (device, op, &module, 1);
+  return logue_get_msg (logue_data, op, &module, 1);
 }
 
 static GByteArray *
-logue_get_msg_op_type_id (guint8 device, guint8 op, guint8 module,
-			  guint8 slot)
+logue_get_msg_op_type_id (struct logue_data *logue_data, guint8 op,
+			  guint8 module, guint8 slot)
 {
   guint8 data[2];
   data[0] = module;
   data[1] = slot;
-  return logue_get_msg (device, op, data, 2);
+  return logue_get_msg (logue_data, op, data, 2);
 }
 
 static gint
@@ -186,7 +190,7 @@ logue_next_dentry (struct item_iterator *iter)
       start = 8;
     }
 
-  tx_msg = logue_get_msg_op_type_id (logue_data->device, 0x19,
+  tx_msg = logue_get_msg_op_type_id (logue_data, 0x19,
 				     iter_data->module, iter_data->next);
   rx_msg = backend_tx_and_rx_sysex (iter_data->backend, tx_msg, -1);
   if (!rx_msg)
@@ -248,7 +252,7 @@ logue_read_dir (struct backend *backend,
       return -ENOTDIR;
     }
 
-  tx_msg = logue_get_msg_op_type (logue_data->device, 0x18, module);
+  tx_msg = logue_get_msg_op_type (logue_data, 0x18, module);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
@@ -384,7 +388,7 @@ logue_clear (struct backend *backend, const gchar *path,
       return err;
     }
 
-  tx_msg = logue_get_msg_op_type_id (logue_data->device, 0x1b, module, id);
+  tx_msg = logue_get_msg_op_type_id (logue_data, 0x1b, module, id);
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
@@ -731,7 +735,7 @@ cleanup_parser:
 
 gint
 logue_unit_load (const char *path, struct idata *sysex,
-		 struct task_control *control)
+		 struct task_control *control, guint8 device, guint8 channel)
 {
   gint err;
   gchar *name;
@@ -742,6 +746,7 @@ logue_unit_load (const char *path, struct idata *sysex,
   guint32 v, len, crc;
   gchar *unit_name = NULL;
   gchar entry_name[PATH_MAX];
+  struct logue_data logue_data;
   struct logue_manifest logue_manifest;
   zip_file_t *unit_payload = NULL;
   zip_file_t *unit_manifest = NULL;
@@ -884,8 +889,11 @@ logue_unit_load (const char *path, struct idata *sysex,
 			       msg_payload_8bit->len);
   msg_payload_midi->data[2 + midi_len] = 0;
 
+  logue_data.device = device;
+  logue_data.channel = channel;
+
   // first byte is the device
-  msg = logue_get_msg (0, 0x4a, msg_payload_midi->data,
+  msg = logue_get_msg (&logue_data, 0x4a, msg_payload_midi->data,
 		       msg_payload_midi->len);
   name = g_path_get_basename (path);
   filename_remove_ext (name);
@@ -995,7 +1003,7 @@ logue_download (struct backend *backend, const gchar *path,
       return err;
     }
 
-  tx_msg = logue_get_msg_op_type_id (logue_data->device, 0x1a, module, id);
+  tx_msg = logue_get_msg_op_type_id (logue_data, 0x1a, module, id);
   err = common_data_tx_and_rx (backend, tx_msg, &rx_msg, control);
   if (err)
     {
@@ -1059,11 +1067,13 @@ logue_load (struct backend *backend, const gchar *path, struct idata *sysex,
 	    struct task_control *control)
 {
   const gchar *ext;
+  struct logue_data *logue_data = backend->data;
 
   ext = filename_get_ext (path);
   if (strcmp (ext, BE_SYSEX_EXT))
     {
-      return logue_unit_load (path, sysex, control);
+      return logue_unit_load (path, sysex, control, logue_data->device,
+			      logue_data->channel);
     }
   else
     {
@@ -1154,17 +1164,16 @@ static const struct fs_operations FS_LOGUE_REVFX_OPERATIONS = {
 };
 
 // This message is not really useful but it's part of what logue-cli does.
-// This does not seem to work with the Minilogue XD.
 enum logue_device
-logue_get_user_api_request_nts1 (struct backend *backend,
-				 enum logue_device device)
+logue_get_user_api_request (struct backend *backend,
+			    struct logue_data *logue_data)
 {
   GByteArray *tx_msg, *rx_msg;
   enum logue_platform platform;
   struct logue_version api_version;
 
-  tx_msg = logue_get_msg (device, 0x17, NULL, 0);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  tx_msg = logue_get_msg (logue_data, 0x17, NULL, 0);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, 5000);
   if (!rx_msg)
     {
       return -ENODEV;
@@ -1201,10 +1210,9 @@ logue_handshake (struct backend *backend)
 {
   gint err = 0;
   const gchar *name;
-  struct logue_data *data;
   enum logue_device device;
   GByteArray *tx_msg, *rx_msg;
-  enum logue_platform platform;
+  struct logue_data *logue_data;
 
   if (memcmp (backend->midi_info.company, KORG_ID, sizeof (KORG_ID)))
     {
@@ -1224,19 +1232,16 @@ logue_handshake (struct backend *backend)
     {
       name = LOGUE_NAME_PROLOGUE;
       device = LOGUE_DEVICE_PROLOGUE;
-      platform = LOGUE_PLATFORM_PROLOGUE;
     }
   else if (logue_validate_device (rx_msg, LOGUE_DEVICE_MINILOGUE_XD))
     {
       name = LOGUE_NAME_MINILOGUE_XD;
       device = LOGUE_DEVICE_MINILOGUE_XD;
-      platform = LOGUE_PLATFORM_MINILOGUE_XD;
     }
   else if (logue_validate_device (rx_msg, LOGUE_DEVICE_NTS1))
     {
       name = LOGUE_NAME_NTS1;
       device = LOGUE_DEVICE_NTS1;
-      platform = logue_get_user_api_request_nts1 (backend, device);
     }
   else
     {
@@ -1244,13 +1249,16 @@ logue_handshake (struct backend *backend)
       return -ENODEV;
     }
 
+  logue_data = g_malloc (sizeof (struct logue_data));
+  logue_data->device = device;
+  logue_data->channel = rx_msg->data[4];
+  logue_data->platform = logue_get_user_api_request (backend, logue_data);
+
+  debug_print (2, "Logue channel: 0x%02x", logue_data->channel);
+
   free_msg (rx_msg);
 
-  data = g_malloc (sizeof (struct logue_data));
-  data->device = device;
-  data->platform = platform;
-
-  backend->data = data;
+  backend->data = logue_data;
   backend->destroy_data = backend_destroy_data;
 
   gslist_fill (&backend->fs_ops, &FS_LOGUE_OSC_OPERATIONS,
