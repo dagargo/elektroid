@@ -257,18 +257,21 @@ logue_read_dir (struct backend *backend,
     {
       return -ENODEV;
     }
-  if (rx_msg->len == 24 && LOGUE_GET_MSG_OP (rx_msg) == 0x48)
+  if (rx_msg->len >= 21 && rx_msg->len <= 24 && LOGUE_GET_MSG_OP (rx_msg) == 0x48)
     {
-      guint size;
+      guint size, data_bytes;
       guint32 storage_size, load_size, slot_count;
       GByteArray *content;
 
-      // NOTE: There are 2 unknown byte that is not in the official documentation.
+      // There are 2 unknown byte that are not in the official documentation, which go before 14 data bytes.
       // 8 bit payload length is also wrong as it is 12.
+      // In the case of the Minilogue XD, there are only 11 data bytes but the remaining bytes are 0.
+      data_bytes = rx_msg->len - 10; // 6 header + op + 2 unknown + end
       size = common_midi_msg_to_8bit_msg_size (14);
       content = g_byte_array_sized_new (size);
       content->len = size;
-      common_midi_msg_to_8bit_msg (&rx_msg->data[9], content->data, 14);
+      memset(content->data, 0, size);
+      common_midi_msg_to_8bit_msg (&rx_msg->data[9], content->data, data_bytes);
 
       if (debug_level > 1)
 	{
