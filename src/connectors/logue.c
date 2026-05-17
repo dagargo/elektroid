@@ -65,7 +65,6 @@ struct logue_data
 {
   guint8 device;
   guint8 channel;
-  enum logue_platform platform;
 };
 
 struct logue_iter_data
@@ -1164,7 +1163,7 @@ static const struct fs_operations FS_LOGUE_REVFX_OPERATIONS = {
 };
 
 // This message is not really useful but it's part of what logue-cli does.
-enum logue_device
+static void
 logue_get_user_api_request (struct backend *backend,
 			    struct logue_data *logue_data)
 {
@@ -1173,23 +1172,18 @@ logue_get_user_api_request (struct backend *backend,
   struct logue_version api_version;
 
   tx_msg = logue_get_msg (logue_data, 0x17, NULL, 0);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, 5000);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
   if (!rx_msg)
     {
-      return -ENODEV;
+      return;
     }
   if (rx_msg->len != 12 || LOGUE_GET_MSG_OP (rx_msg) != 0x47)
     {
       free_msg (rx_msg);
-      return -EIO;
+      return;
     }
 
   platform = rx_msg->data[7];
-
-  if (platform != LOGUE_PLATFORM_NTS1)
-    {
-      error_print ("Unexpected platform %d", platform);
-    }
 
   api_version.major = rx_msg->data[8];
   api_version.minor = rx_msg->data[9];
@@ -1201,8 +1195,6 @@ logue_get_user_api_request (struct backend *backend,
   debug_print (2, "Patch: %d", api_version.patch);
 
   free_msg (rx_msg);
-
-  return platform;
 }
 
 static gint
@@ -1252,7 +1244,8 @@ logue_handshake (struct backend *backend)
   logue_data = g_malloc (sizeof (struct logue_data));
   logue_data->device = device;
   logue_data->channel = rx_msg->data[4];
-  logue_data->platform = logue_get_user_api_request (backend, logue_data);
+
+  logue_get_user_api_request (backend, logue_data);
 
   debug_print (2, "Logue channel: 0x%02x", logue_data->channel);
 
