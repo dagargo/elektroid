@@ -168,7 +168,7 @@ logue_get_msg_op_type_id (struct logue_data *logue_data, guint8 op,
 static gint
 logue_next_dentry (struct item_iterator *iter)
 {
-  guint rx_size, start;
+  guint rx_msg_len;
   GByteArray *tx_msg, *rx_msg;
   struct logue_iter_data *iter_data = iter->data;
   struct logue_data *logue_data = iter_data->backend->data;
@@ -178,17 +178,6 @@ logue_next_dentry (struct item_iterator *iter)
       return -ENOENT;
     }
 
-  if (logue_data->device == LOGUE_DEVICE_NTS1)
-    {
-      rx_size = 53;
-      start = 10;
-    }
-  else
-    {
-      rx_size = 51;
-      start = 8;
-    }
-
   tx_msg = logue_get_msg_op_type_id (logue_data, 0x19,
 				     iter_data->module, iter_data->next);
   rx_msg = backend_tx_and_rx_sysex (iter_data->backend, tx_msg, -1);
@@ -196,17 +185,33 @@ logue_next_dentry (struct item_iterator *iter)
     {
       return -EIO;
     }
-  if (rx_msg->len == rx_size && LOGUE_GET_MSG_OP (rx_msg) == 0x49)
+
+  if (logue_data->device == LOGUE_DEVICE_NTS1)
+    {
+      rx_msg_len = 53;
+    }
+  else
+    {
+      rx_msg_len = 48;
+    }
+
+  if (rx_msg->len == rx_msg_len && LOGUE_GET_MSG_OP (rx_msg) == 0x49)
     {
       gsize size;
       GByteArray *content;
 
-      // NOTE: There is an unknown byte that is not in the official documentation.
-      // 8 bit payload length is also wrong as it is 36.
-      size = common_midi_msg_to_8bit_msg_size (42);
+      // USER SLOT STATUS REQUEST
+      // There is an unknown byte before the payload that is not in the official documentation.
+      // 7 bit payload is 37.
+      // 8 bit payload is 32.
+      // In the case of the NTS-1, there are 5 additional data bytes (the last 4 set to 0) at the end.
+      // logue        (53): f0 42 30 00 01 57 49 04 01 00 00 04 03 00 01 01 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00 66 6d 34 00 6f 00 00 00 00 00 00 00 00 00 00 00 06 00 00 00 00 f7
+      // Minilogue XD (48): f0 42 3b 00 01 51 49 04 01 00 00 04 01 00 00 01 00 00 00 00 00 00 00 00 00 00 00 01 00 01 00 53 6f 75 00 70 65 72 00 00 00 00 00 00 00 00 00 f7
+
+      size = common_midi_msg_to_8bit_msg_size (37);
       content = g_byte_array_sized_new (size);
       content->len = size;
-      common_midi_msg_to_8bit_msg (&rx_msg->data[start], content->data, 42);
+      common_midi_msg_to_8bit_msg (&rx_msg->data[10], content->data, 37);
 
       if (debug_level > 1)
 	{
@@ -242,6 +247,7 @@ logue_read_dir (struct backend *backend,
 		const gchar **extensions, enum logue_module module)
 {
   gint err;
+  guint rx_msg_len;
   GByteArray *tx_msg, *rx_msg;
   struct logue_iter_data *data;
   struct logue_data *logue_data = backend->data;
@@ -257,21 +263,34 @@ logue_read_dir (struct backend *backend,
     {
       return -ENODEV;
     }
-  if (rx_msg->len >= 21 && rx_msg->len <= 24 && LOGUE_GET_MSG_OP (rx_msg) == 0x48)
-    {
-      guint size, data_bytes;
-      guint32 storage_size, load_size, slot_count;
-      GByteArray *content;
 
-      // There are 2 unknown byte that are not in the official documentation, which go before 14 data bytes.
-      // 8 bit payload length is also wrong as it is 12.
-      // In the case of the Minilogue XD, there are only 11 data bytes but the remaining bytes are 0.
-      data_bytes = rx_msg->len - 10; // 6 header + op + 2 unknown + end
-      size = common_midi_msg_to_8bit_msg_size (14);
+  if (logue_data->device == LOGUE_DEVICE_NTS1)
+    {
+      rx_msg_len = 24;
+    }
+  else
+    {
+      rx_msg_len = 21;
+    }
+
+  if (rx_msg->len == rx_msg_len && LOGUE_GET_MSG_OP (rx_msg) == 0x48)
+    {
+      guint size;
+      GByteArray *content;
+      guint32 storage_size, load_size, slot_count;
+
+      // USER MODULE INFO
+      // There are 2 unknown bytes before the payload that is not in the official documentation.
+      // 7 bit payload is 11.
+      // 8 bit payload is 9.
+      // In the case of the NTS-1, there are 3 additional data bytes set to 0 at the end.
+      // logue        (24): f0 42 30 00 01 57 48 04 00 23 70 0f 00 00 00 00 00 00 00 10 00 00 00 f7
+      // Minilogue XD (21): f0 42 3b 00 01 51 48 04 00 23 70 0f 00 00 00 00 00 00 00 10 f7
+
+      size = common_midi_msg_to_8bit_msg_size (11);
       content = g_byte_array_sized_new (size);
       content->len = size;
-      memset(content->data, 0, size);
-      common_midi_msg_to_8bit_msg (&rx_msg->data[9], content->data, data_bytes);
+      common_midi_msg_to_8bit_msg (&rx_msg->data[9], content->data, 11);
 
       if (debug_level > 1)
 	{
@@ -283,7 +302,7 @@ logue_read_dir (struct backend *backend,
 
       storage_size = GUINT32_FROM_LE (*((guint32 *) (&content->data[0])));
       load_size = GUINT32_FROM_LE (*((guint32 *) (&content->data[4])));
-      slot_count = GUINT32_FROM_LE (*((guint32 *) (&content->data[8])));
+      slot_count = content->data[8];
 
       debug_print (2, "Storage size: %d B", storage_size);
       debug_print (2, "Load size: %d B", load_size);
