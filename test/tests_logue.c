@@ -6,20 +6,24 @@
 
 #define BYTE_COMPARISON_SIZE 16
 
-gint logue_unit_load (const char *path, struct idata *sysex,
-		      struct task_control *control, guint8 device,
-		      guint8 channel);
+gint logue_get_sysex_from_unit (struct idata *sysex, struct idata *unit,
+				struct task_control *control, guint8 device,
+				guint8 channel, guint8 slot);
+
+gint logue_get_unit_from_sysex (struct idata *unit, struct idata *sysex,
+				struct task_control *control);
 
 static void
-test_logue_unit_load (const gchar *sysex_path, const gchar *unit_path,
-		      enum logue_device device, guint8 slot)
+test_logue_get_sysex_from_unit (const gchar *sysex_path,
+				const gchar *unit_path,
+				enum logue_device device, guint8 slot)
 {
   gint err;
   gchar *exp_text, *act_text;
   GByteArray *exp_payload, *act_payload;
   guint exp_payload_size, act_payload_size;
   guint8 *exp_payload_data, *act_payload_data;
-  struct idata actual, expected;
+  struct idata actual, idata_unit, expected;
   struct task_control control;
 
   printf ("\n");
@@ -34,7 +38,15 @@ test_logue_unit_load (const gchar *sysex_path, const gchar *unit_path,
       return;
     }
 
-  err = logue_unit_load (unit_path, &actual, &control, LOGUE_DEVICE_NTS1, 0);
+  err = file_load (unit_path, &idata_unit, &control);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  err = logue_get_sysex_from_unit (&actual, &idata_unit, &control,
+				   LOGUE_DEVICE_NTS1, 0, slot);
   CU_ASSERT_EQUAL (err, 0);
   if (err)
     {
@@ -134,6 +146,7 @@ test_logue_unit_load (const gchar *sysex_path, const gchar *unit_path,
 
   idata_clear (&actual);
 cleanup_expected:
+  idata_clear (&idata_unit);
   idata_clear (&expected);
 
   controllable_clear (&control.controllable);
@@ -148,11 +161,12 @@ cleanup_expected:
 // size: 0x854 crc32: 8a9546d2
 
 static void
-test_logue_unit_load_1 ()
+test_logue_get_sysex_from_unit_1 ()
 {
-  test_logue_unit_load (TEST_DATA_DIR "/connectors/logue1.syx",
-			TEST_DATA_DIR "/connectors/logue1.ntkdigunit",
-			LOGUE_DEVICE_NTS1, 15);
+  test_logue_get_sysex_from_unit (TEST_DATA_DIR "/connectors/logue1.syx",
+				  TEST_DATA_DIR
+				  "/connectors/logue1.ntkdigunit",
+				  LOGUE_DEVICE_NTS1, 15);
 }
 
 // Modulation FX 3: "sola" v1.00-0 api:1.01-0 did:00000000 uid:00000000
@@ -164,11 +178,12 @@ test_logue_unit_load_1 ()
 // size: 0x97c crc32: fda2c831
 
 static void
-test_logue_unit_load_2 ()
+test_logue_get_sysex_from_unit_2 ()
 {
-  test_logue_unit_load (TEST_DATA_DIR "/connectors/logue2.syx",
-			TEST_DATA_DIR "/connectors/logue2.ntkdigunit",
-			LOGUE_DEVICE_NTS1, 3);
+  test_logue_get_sysex_from_unit (TEST_DATA_DIR "/connectors/logue2.syx",
+				  TEST_DATA_DIR
+				  "/connectors/logue2.ntkdigunit",
+				  LOGUE_DEVICE_NTS1, 3);
 }
 
 // Oscillator 10: "fm4o" v0.01-0 api:1.01-0 did:00000000 uid:00000000
@@ -180,11 +195,12 @@ test_logue_unit_load_2 ()
 // size: 0x9ac crc32: b6422e54
 
 static void
-test_logue_unit_load_3 ()
+test_logue_get_sysex_from_unit_3 ()
 {
-  test_logue_unit_load (TEST_DATA_DIR "/connectors/logue3.syx",
-			TEST_DATA_DIR "/connectors/logue3.ntkdigunit",
-			LOGUE_DEVICE_NTS1, 10);
+  test_logue_get_sysex_from_unit (TEST_DATA_DIR "/connectors/logue3.syx",
+				  TEST_DATA_DIR
+				  "/connectors/logue3.ntkdigunit",
+				  LOGUE_DEVICE_NTS1, 10);
 }
 
 // Delay FX 7: "rock" v1.00-0 api:1.01-0 did:00000000 uid:00000000
@@ -196,13 +212,103 @@ test_logue_unit_load_3 ()
 // size: 0x8a8 crc32: acfe618f
 
 static void
-test_logue_unit_load_4 ()
+test_logue_get_sysex_from_unit_4 ()
 {
-  test_logue_unit_load (TEST_DATA_DIR "/connectors/logue4.syx",
-			TEST_DATA_DIR "/connectors/logue4.ntkdigunit",
-			LOGUE_DEVICE_NTS1, 7);
+  test_logue_get_sysex_from_unit (TEST_DATA_DIR "/connectors/logue4.syx",
+				  TEST_DATA_DIR
+				  "/connectors/logue4.ntkdigunit",
+				  LOGUE_DEVICE_NTS1, 7);
 }
 
+static void
+test_logue_get_unit_from_sysex (const gchar *unit_path,
+				const gchar *sysex_path,
+				enum logue_device device)
+{
+  gint err;
+  struct task_control control;
+  struct idata actual, idata_sysex, expected;
+
+  printf ("\n");
+
+  controllable_init (&control.controllable);
+  control.callback = NULL;
+
+  err = file_load (unit_path, &expected, &control);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  err = file_load (sysex_path, &idata_sysex, &control);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  err = logue_get_unit_from_sysex (&actual, &idata_sysex, &control);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      goto cleanup_expected;
+    }
+
+  CU_ASSERT_EQUAL (actual.content->len, expected.content->len);
+  if (actual.content->len == expected.content->len)
+    {
+      CU_ASSERT_EQUAL (0, memcmp (expected.content->data,
+				  actual.content->data, actual.content->len));
+    }
+
+  idata_clear (&actual);
+cleanup_expected:
+  idata_clear (&idata_sysex);
+  idata_clear (&expected);
+
+  controllable_clear (&control.controllable);
+}
+
+static void
+test_logue_get_unit_from_sysex_1 ()
+{
+  test_logue_get_unit_from_sysex (TEST_DATA_DIR
+				  "/connectors/logue1.ntkdigunit",
+				  TEST_DATA_DIR
+				  "/connectors/logue1_back.syx",
+				  LOGUE_DEVICE_NTS1);
+}
+
+static void
+test_logue_get_unit_from_sysex_2 ()
+{
+  test_logue_get_unit_from_sysex (TEST_DATA_DIR
+				  "/connectors/logue2.ntkdigunit",
+				  TEST_DATA_DIR
+				  "/connectors/logue2_back.syx",
+				  LOGUE_DEVICE_NTS1);
+}
+
+static void
+test_logue_get_unit_from_sysex_3 ()
+{
+  test_logue_get_unit_from_sysex (TEST_DATA_DIR
+				  "/connectors/logue3.ntkdigunit",
+				  TEST_DATA_DIR
+				  "/connectors/logue3_back.syx",
+				  LOGUE_DEVICE_NTS1);
+}
+
+static void
+test_logue_get_unit_from_sysex_4 ()
+{
+  test_logue_get_unit_from_sysex (TEST_DATA_DIR
+				  "/connectors/logue4.ntkdigunit",
+				  TEST_DATA_DIR
+				  "/connectors/logue4_back.syx",
+				  LOGUE_DEVICE_NTS1);
+}
 
 gint
 main (gint argc, gchar *argv[])
@@ -221,22 +327,50 @@ main (gint argc, gchar *argv[])
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "logue_unit_load_1", test_logue_unit_load_1))
+  if (!CU_add_test (suite, "logue_load_sysex_from_unit_1",
+		    test_logue_get_sysex_from_unit_1))
     {
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "logue_unit_load_2", test_logue_unit_load_2))
+  if (!CU_add_test (suite, "logue_load_sysex_from_unit_2",
+		    test_logue_get_sysex_from_unit_2))
     {
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "logue_unit_load_3", test_logue_unit_load_3))
+  if (!CU_add_test (suite, "logue_load_sysex_from_unit_3",
+		    test_logue_get_sysex_from_unit_3))
     {
       goto cleanup;
     }
 
-  if (!CU_add_test (suite, "logue_unit_load_4", test_logue_unit_load_4))
+  if (!CU_add_test (suite, "logue_load_sysex_from_unit_4",
+		    test_logue_get_sysex_from_unit_4))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "logue_get_unit_from_sysex_1",
+		    test_logue_get_unit_from_sysex_1))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "logue_get_unit_from_sysex_2",
+		    test_logue_get_unit_from_sysex_2))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "logue_get_unit_from_sysex_3",
+		    test_logue_get_unit_from_sysex_3))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "logue_get_unit_from_sysex_4",
+		    test_logue_get_unit_from_sysex_4))
     {
       goto cleanup;
     }
