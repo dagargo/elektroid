@@ -591,7 +591,7 @@ cli_download_item (const gchar *src_path, const gchar *dst_path)
       goto cleanup;
     }
 
-  err = fs_ops->save (download_path, &idata, &task_control);
+  err = fs_ops->save (&backend, download_path, &idata, &task_control);
   g_free (download_path);
 
 cleanup:

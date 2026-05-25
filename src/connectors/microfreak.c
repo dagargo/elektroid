@@ -658,15 +658,15 @@ static const struct fs_operations FS_MICROFREAK_PPRESET_OPERATIONS = {
   .download = microfreak_preset_download,
   .upload = microfreak_preset_upload,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = microfreak_ppreset_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_nnn
 };
 
 static gint
-microfreak_zpreset_save (const gchar *path, struct idata *zpreset,
-			 struct task_control *control)
+microfreak_zpreset_save (struct backend *backend, const gchar *path,
+			 struct idata *zpreset, struct task_control *control)
 {
   return microfreak_zobject_save (path, zpreset, control, "0_preset");
 }
@@ -1963,7 +1963,8 @@ static const struct fs_operations FS_MICROFREAK_ZWAVETABLE_OPERATIONS = {
 };
 
 static gint
-microfreak_wavetable_save (const gchar *path, struct idata *wavetable,
+microfreak_wavetable_save (struct backend *backend, const gchar *path,
+			   struct idata *wavetable,
 			   struct task_control *control)
 {
   return sample_save_to_file (path, wavetable, control, SF_FORMAT_WAV |

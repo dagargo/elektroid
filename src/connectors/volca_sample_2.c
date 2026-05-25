@@ -287,7 +287,8 @@ volca_sample_2_sample_download (struct backend *backend, const gchar *path,
 }
 
 static gint
-volca_sample_2_sample_save (const gchar *path, struct idata *sample,
+volca_sample_2_sample_save (struct backend *backend, const gchar *path,
+			    struct idata *sample,
 			    struct task_control *control)
 {
   return sample_save_to_file (path, sample, control,
@@ -904,7 +905,7 @@ static const struct fs_operations FS_VOLCA_SAMPLE_2_PATTERN_OPERATIONS = {
   .download = volca_sample_2_pattern_download,
   .upload = volca_sample_2_pattern_upload,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = volca_sample_2_pattern_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = volca_sample_2_get_download_path

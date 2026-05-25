@@ -3008,8 +3008,8 @@ elektron_get_sample_path_from_hash_size (struct backend *backend,
 }
 
 static gint
-elektron_sample_save (const gchar *path, struct idata *sample,
-		      struct task_control *control)
+elektron_sample_save (struct backend *backend, const gchar *path,
+		      struct idata *sample, struct task_control *control)
 {
   return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
@@ -3579,7 +3579,7 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .download = elektron_download_raw,
   .upload = elektron_upload_raw,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_raw_any_exts,
   .get_upload_path = elektron_get_upload_path_smplrw,
   .get_download_path = elektron_get_download_path
@@ -3603,7 +3603,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .download = elektron_download_raw_pst_pkg,
   .upload = elektron_upload_raw_pst_pkg,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_dev_exts,
   .get_upload_path = elektron_get_upload_path_smplrw,
   .get_download_path = elektron_get_download_path
@@ -3623,7 +3623,7 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .upload = elektron_upload_data_any,
   .get_slot = elektron_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_data_any_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
@@ -3647,7 +3647,7 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .upload = elektron_upload_data_prj_pkg,
   .get_slot = elektron_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
@@ -3672,7 +3672,7 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .upload = elektron_upload_data_snd_pkg,
   .get_slot = elektron_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
@@ -3696,7 +3696,7 @@ static const struct fs_operations FS_DATA_PST_OPERATIONS = {
   .upload = elektron_upload_data_pst_pkg,
   .get_slot = elektron_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
@@ -3721,7 +3721,7 @@ static const struct fs_operations FS_DATA_TAKT_II_PST_OPERATIONS = {
   .upload = elektron_upload_data_snd_pkg,
   .get_slot = elektron_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path

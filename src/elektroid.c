@@ -1000,7 +1000,7 @@ elektroid_download_task_runner (gpointer userdata)
     {
       debug_print (1, "Writing %d bytes to file %s (filesystem %s)...",
 		   idata.content->len, dst_path, tasks.transfer.fs_ops->name);
-      res = tasks.transfer.fs_ops->save (dst_path, &idata,
+      res = tasks.transfer.fs_ops->save (BACKEND, dst_path, &idata,
 					 &tasks.transfer.control);
       if (!res)
 	{

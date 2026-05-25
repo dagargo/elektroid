@@ -73,10 +73,12 @@ gint microfreak_zwavetable_load (struct backend *backend, const gchar * path,
 				 struct idata *wavetable,
 				 struct task_control *control);
 
-gint microfreak_pwavetable_save (const gchar * path, struct idata *wavetable,
+gint microfreak_pwavetable_save (struct backend *backend, const gchar * path,
+				 struct idata *wavetable,
 				 struct task_control *control);
 
-gint microfreak_zwavetable_save (const gchar * path, struct idata *wavetable,
+gint microfreak_zwavetable_save (struct backend *backend, const gchar * path,
+				 struct idata *wavetable,
 				 struct task_control *control);
 
 #endif
