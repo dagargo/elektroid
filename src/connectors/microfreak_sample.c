@@ -575,7 +575,8 @@ microfreak_zwavetable_load (struct backend *backend, const gchar *path,
 }
 
 gint
-microfreak_pwavetable_save (const gchar *path, struct idata *wavetable,
+microfreak_pwavetable_save (struct backend *backend, const gchar *path,
+			    struct idata *wavetable,
 			    struct task_control *control)
 {
   gint err;
@@ -595,7 +596,8 @@ cleanup:
 }
 
 gint
-microfreak_zwavetable_save (const gchar *path, struct idata *wavetable,
+microfreak_zwavetable_save (struct backend *backend, const gchar *path,
+			    struct idata *wavetable,
 			    struct task_control *control)
 {
   gint err;

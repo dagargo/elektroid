@@ -486,6 +486,13 @@ common_file_load (struct backend *backend, const char *path,
 }
 
 gint
+common_file_save (struct backend *backend, const char *path,
+		  struct idata *idata, struct task_control *control)
+{
+  return file_save (path, idata, control);
+}
+
+gint
 common_load_2_byte_octave_tuning_msg (struct backend
 				      *backend,
 				      const char *path,
