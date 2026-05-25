@@ -1012,8 +1012,8 @@ sds_sample_load_8k_16b (struct backend *backend, const gchar *path,
 }
 
 static gint
-sds_sample_save (const gchar *path, struct idata *sample,
-		 struct task_control *control)
+sds_sample_save (struct backend *backend, const gchar *path,
+		 struct idata *sample, struct task_control *control)
 {
   return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
