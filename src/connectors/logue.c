@@ -40,6 +40,12 @@
 
 #define LOGUE_SLOT_STATUS_PARAMS_MAX 24
 #define LOGUE_SLOT_STATUS_NAME_LEN 14
+// The parameter name is 13 bytes including the null byte at the end. However, there are a few caveats.
+// * The parameter name in the manifest.json migh be longer than 12 chars.
+// * The SysEx format only has 13 usable bytes.
+// * `logue-cli` might use up to 13 chars without using the null char at the end. Both the transfer and the unit inside the NTS-1 work.
+// * The KORG NTS-1 shows up to 12 characters.
+// Considering all this, the connector always includes the null char at the end.
 #define LOGUE_SLOT_STATUS_PARAM_NAME_LEN 13
 
 #define LOGUE_MANIFEST_HEADER "header"
@@ -52,6 +58,8 @@
 #define LOGUE_MANIFEST_NAME "name"
 #define LOGUE_MANIFEST_NUM_PARAM "num_param"
 #define LOGUE_MANIFEST_PARAMS "params"
+
+#define LOGUE_MAX_UNIT_SIZE (1 * MI)
 
 struct logue_version
 {
@@ -83,10 +91,10 @@ enum logue_slot_parameter_type
 
 struct logue_slot_parameter
 {
-  guint8 min;
-  guint8 max;
+  gint8 min;
+  gint8 max;
   enum logue_slot_parameter_type type;
-  gchar name[LOGUE_SLOT_STATUS_PARAM_NAME_LEN + 1];
+  gchar name[LOGUE_SLOT_STATUS_PARAM_NAME_LEN];
 };
 
 // NOTE: PLATFORM ID and MODULE ID seem to be swapped in the official documentation.
@@ -112,14 +120,60 @@ struct logue_manifest
 #define LOGUE_GET_MSG_OP(msg) (msg->data[6])
 #define LOGUE_CHECK_STATUS_MSG_COMPLETED(msg) (msg->len == 8 && LOGUE_GET_MSG_OP(msg) == 0x23)
 
+#define FS_LOGUE_MODULE_MODFX_NAME "modfx"
+#define FS_LOGUE_MODULE_DELFX_NAME "delfx"
+#define FS_LOGUE_MODULE_REVFX_NAME "revfx"
+#define FS_LOGUE_MODULE_OSC_NAME "osc"
+
 static const guint8 MSG_HEADER[] = { 0xf0, 0x42, 0x30, 0, 1 };
 
 static const guint8 LOGUE_SEARCH_DEVICE[] =
   { 0xf0, 0x42, 0x50, 0, 0x55, 0xf7 };
 
-static const gchar *LOGUE_NTS1_EXTS[] = { "syx", "ntkdigunit", NULL };
-static const gchar *LOGUE_PROLOGUE_EXTS[] = { "syx", "prlgunit", NULL };
-static const gchar *LOGUE_MINILOGUEXD_EXTS[] = { "syx", "mnlgxdunit", NULL };
+static const gchar *LOGUE_NTS1_EXTS[] = { "ntkdigunit", NULL };
+static const gchar *LOGUE_PROLOGUE_EXTS[] = { "prlgunit", NULL };
+static const gchar *LOGUE_MINILOGUEXD_EXTS[] = { "mnlgxdunit", NULL };
+
+static const gchar *
+logue_get_platform_name (guint8 platform_id)
+{
+  switch (platform_id)
+    {
+    case LOGUE_PLATFORM_PROLOGUE:
+      return LOGUE_PLATFORM_NAME_PROLOGUE;
+    case LOGUE_PLATFORM_MINILOGUE_XD:
+      return LOGUE_PLATFORM_NAME_MINILOGUE_XD;
+    case LOGUE_PLATFORM_NTS1:
+      return LOGUE_PLATFORM_NAME_NTS1;
+    default:
+      return NULL;
+    }
+}
+
+static const gchar *
+logue_get_module_name (guint8 module_id)
+{
+  switch (module_id)
+    {
+    case FS_LOGUE_MODULE_MODFX:
+      return FS_LOGUE_MODULE_MODFX_NAME;
+    case FS_LOGUE_MODULE_DELFX:
+      return FS_LOGUE_MODULE_DELFX_NAME;
+    case FS_LOGUE_MODULE_REVFX:
+      return FS_LOGUE_MODULE_REVFX_NAME;
+    case FS_LOGUE_MODULE_OSC:
+      return FS_LOGUE_MODULE_OSC_NAME;
+    default:
+      return NULL;
+    }
+}
+
+static void
+logue_get_version (struct logue_version *version, gchar *out, guint size)
+{
+  snprintf (out, size, "%d.%d-%d", version->major, version->minor,
+	    version->patch);
+}
 
 static gboolean
 logue_validate_device (GByteArray *msg, guint8 device_id)
@@ -449,9 +503,9 @@ logue_revfx_clear (struct backend *backend, const gchar *path)
   return logue_clear (backend, path, FS_LOGUE_MODULE_REVFX);
 }
 
-gint
-logue_get_manifest (GByteArray *manifest_content,
-		    struct logue_manifest *manifest)
+static gint
+logue_get_manifest_from_json (struct logue_manifest *manifest,
+			      GByteArray *manifest_json)
 {
   gint err;
   gchar *aux;
@@ -459,13 +513,14 @@ logue_get_manifest (GByteArray *manifest_content,
   JsonParser *parser;
   JsonReader *reader;
   const gchar *string;
+  gchar version[PATH_MAX];
 
   err = 0;
 
   parser = json_parser_new ();
   error = NULL;
-  if (!json_parser_load_from_data (parser, (gchar *) manifest_content->data,
-				   manifest_content->len, &error))
+  if (!json_parser_load_from_data (parser, (gchar *) manifest_json->data,
+				   manifest_json->len, &error))
     {
       error_print ("Unable to parse stream: %s", error->message);
       g_clear_error (&error);
@@ -557,9 +612,8 @@ logue_get_manifest (GByteArray *manifest_content,
   manifest->status.api_version.minor = strtol (string, &aux, 10);
   string = aux + 1;
   manifest->status.api_version.patch = strtol (string, &aux, 10);
-  debug_print (2, "API: %d.%d-%d", manifest->status.api_version.major,
-	       manifest->status.api_version.minor,
-	       manifest->status.api_version.patch);
+  logue_get_version (&manifest->status.program_version, version, PATH_MAX);
+  debug_print (2, "API: %s", version);
   json_reader_end_element (reader);
 
   if (!json_reader_read_member (reader, LOGUE_MANIFEST_DEV_ID))
@@ -594,9 +648,8 @@ logue_get_manifest (GByteArray *manifest_content,
   manifest->status.program_version.minor = strtol (string, &aux, 10);
   string = aux + 1;
   manifest->status.program_version.patch = strtol (string, &aux, 10);
-  debug_print (2, "Version: %d.%d-%d", manifest->status.program_version.major,
-	       manifest->status.program_version.minor,
-	       manifest->status.program_version.patch);
+  logue_get_version (&manifest->status.program_version, version, PATH_MAX);
+  debug_print (2, "Version: %s", version);
   json_reader_end_element (reader);
 
   if (!json_reader_read_member (reader, LOGUE_MANIFEST_NAME))
@@ -606,7 +659,6 @@ logue_get_manifest (GByteArray *manifest_content,
       goto cleanup_reader;
     }
   string = json_reader_get_string_value (reader);
-  memset (manifest->status.name, 0, LOGUE_SLOT_STATUS_NAME_LEN);
   snprintf (manifest->status.name, LOGUE_SLOT_STATUS_NAME_LEN, "%s", string);
   debug_print (2, "Name: %s", manifest->status.name);
   json_reader_end_element (reader);
@@ -687,10 +739,8 @@ logue_get_manifest (GByteArray *manifest_content,
 
 	  json_reader_read_element (reader, 0);
 	  string = json_reader_get_string_value (reader);
-	  memset (manifest->parameters[i].name, 0,
-		  LOGUE_SLOT_STATUS_PARAM_NAME_LEN + 1);
 	  snprintf (manifest->parameters[i].name,
-		    LOGUE_SLOT_STATUS_PARAM_NAME_LEN + 1, "%s", string);
+		    LOGUE_SLOT_STATUS_PARAM_NAME_LEN, "%s", string);
 	  json_reader_end_element (reader);
 
 	  json_reader_read_element (reader, 1);
@@ -718,6 +768,10 @@ logue_get_manifest (GByteArray *manifest_content,
 	      err = -EINVAL;
 	      goto cleanup_reader;
 	    }
+
+	  debug_print (2, "Parameter '%s' read",
+		       manifest->parameters[i].name);
+
 	  json_reader_end_element (reader);
 
 	  json_reader_end_element (reader);
@@ -737,7 +791,7 @@ cleanup_parser:
   return err;
 }
 
-// Complete message: f0 42 30 00 01 57 MM SS PP .. PP 00 f7
+// Complete message: f0 42 30 00 01 57 4a MM SS PP .. PP 00 f7
 // SysEx header
 // 1 byte for the module
 // 1 byte for the slot
@@ -745,26 +799,29 @@ cleanup_parser:
 // null byte
 // SysEx end
 
-// Payload (part 1) 400 B
-// size  (u32)
-// crc32 (u32)
-// 04 03 00 01 01 00 00 00 00 00 00 00 00 00 00 01 -> module slot 0 ...0 1
-// 00 00 6d 61 73 73 00 00 00 00 00 00 00 00 00 00 -> 0 0 name(14)
-// 02 00 00 00 00 06 02 56 6f 69 63 65 73 00 00 00 -> params param1 (0 0 0 min max type name(9))
-// 00 00 00 00 00 64 00 42 65 61 74 69 6e 67 00 00 -> 0      param2 (0 0 0 min max type name(9))
-// Payload (part 2) remaining bytes
+// Decoded payload
+// manifest.json related content (400 B)
+// 00000000 54 08 00 00 d2 46 95 8a 04 03 00 01 01 00 00 00 -> total size (u32), crc (u32), module (u8), platform (u8), 0 (u8), version
+// 00000010 00 00 00 00 00 00 00 01 00 00 6d 61 73 73 00 00 -> version... At 26 (0x1a), name (14 chars),
+// 00000020 00 00 00 00 00 00 00 00 02 00 00 00 00 06 02 56 -> name... At 40 (0x28), num params. At 41, params (blocks of 0 0 0 min max type name (9 chars))
+// 00000030 6f 69 63 65 73 00 00 00 00 00 00 00 00 64 00 42
+// 00000040 65 61 74 69 6e 67 00 00 00 00 00 00 00 00 00 00
+// [...]
+// payload.bin
+// 00000400 00 00 00 00 f8 04 00 00 55 4d 4f 44 00 01 01 00 -> 0 (u32), payload size (u32), payload
 
 gint
-logue_unit_load (const char *path, struct idata *sysex,
-		 struct task_control *control, guint8 device, guint8 channel)
+logue_get_sysex_from_unit (struct idata *sysex, struct idata *unit,
+			   struct task_control *control, guint8 device,
+			   guint8 channel, guint8 slot)
 {
   gint err;
-  gchar *name;
-  zip_t *unit;
+  zip_t *zip;
   zip_stat_t zstat;
   zip_error_t zerror;
+  zip_source_t *zip_source;
   zip_int64_t entries;
-  guint32 v, len, crc;
+  guint32 v, len, crc, full_len;
   gchar *unit_name = NULL;
   gchar entry_name[PATH_MAX];
   struct logue_data logue_data;
@@ -774,17 +831,28 @@ logue_unit_load (const char *path, struct idata *sysex,
   GByteArray *msg, *manifest = NULL, *payload =
     NULL, *msg_payload_midi, *msg_payload_8bit;
 
-  unit = zip_open (path, ZIP_RDONLY, &err);
-  if (!unit)
+  zip_error_init (&zerror);
+  zip_source = zip_source_buffer_create (unit->content->data,
+					 unit->content->len, 0, &zerror);
+  if (!zip_source)
     {
-      zip_error_init_with_code (&zerror, err);
-      error_print ("Error while opening zip file: %s",
+      error_print ("Error while creating zip source: %s",
 		   zip_error_strerror (&zerror));
       zip_error_fini (&zerror);
-      return -EIO;
+      return -1;
     }
 
-  entries = zip_get_num_entries (unit, 0);
+  zip = zip_open_from_source (zip_source, ZIP_RDONLY, &zerror);
+  if (!zip)
+    {
+      error_print ("Error while creating in memory zip: %s",
+		   zip_error_strerror (&zerror));
+      zip_error_fini (&zerror);
+      zip_source_free (zip_source);
+      return -1;
+    }
+
+  entries = zip_get_num_entries (zip, 0);
   if (entries != 3)
     {
       err = -EIO;
@@ -792,7 +860,7 @@ logue_unit_load (const char *path, struct idata *sysex,
     }
   for (guint i = 0; i < 3; i++)
     {
-      if (zip_stat_index (unit, i, ZIP_FL_ENC_STRICT, &zstat))
+      if (zip_stat_index (zip, i, ZIP_FL_ENC_STRICT, &zstat))
 	{
 	  err = -EIO;
 	  goto end;
@@ -807,19 +875,19 @@ logue_unit_load (const char *path, struct idata *sysex,
     }
 
   snprintf (entry_name, PATH_MAX, "%s/%s", unit_name, UNIT_MANIFEST_FILE);
-  unit_manifest = zip_fopen (unit, entry_name, 0);
+  unit_manifest = zip_fopen (zip, entry_name, 0);
   if (!unit_manifest)
     {
       err = -EIO;
       goto end;
     }
-  if (zip_stat (unit, entry_name, ZIP_FL_ENC_STRICT, &zstat))
+  if (zip_stat (zip, entry_name, ZIP_FL_ENC_STRICT, &zstat))
     {
       err = -EIO;
       goto end;
     }
   manifest = g_byte_array_sized_new (zstat.size);
-  g_byte_array_set_size (manifest, zstat.size);
+  manifest->len = zstat.size;
   if (zip_fread (unit_manifest, manifest->data, zstat.size) != zstat.size)
     {
       err = -EIO;
@@ -827,25 +895,26 @@ logue_unit_load (const char *path, struct idata *sysex,
     }
   debug_print (1, "%s read (%d B)", UNIT_MANIFEST_FILE, manifest->len);
 
-  if ((err = logue_get_manifest (manifest, &logue_manifest)))
+  err = logue_get_manifest_from_json (&logue_manifest, manifest);
+  if (err)
     {
       goto end;
     }
 
   snprintf (entry_name, PATH_MAX, "%s/%s", unit_name, UNIT_PAYLOAD_FILE);
-  unit_payload = zip_fopen (unit, entry_name, 0);
+  unit_payload = zip_fopen (zip, entry_name, 0);
   if (!unit_payload)
     {
       err = -EIO;
       goto end;
     }
-  if (zip_stat (unit, entry_name, ZIP_FL_ENC_STRICT, &zstat))
+  if (zip_stat (zip, entry_name, ZIP_FL_ENC_STRICT, &zstat))
     {
       err = -EIO;
       goto end;
     }
   payload = g_byte_array_sized_new (zstat.size);
-  g_byte_array_set_size (payload, zstat.size);
+  payload->len = zstat.size;
   if (zip_fread (unit_payload, payload->data, zstat.size) != zstat.size)
     {
       err = -EIO;
@@ -853,15 +922,15 @@ logue_unit_load (const char *path, struct idata *sysex,
     }
   debug_print (1, "%s read (%d B)", UNIT_PAYLOAD_FILE, payload->len);
 
-  // Payload header
-  len = payload->len + 0x484;
-  msg_payload_8bit = g_byte_array_sized_new (len + 8);
-  msg_payload_8bit->len = len + 8;
-  memset (msg_payload_8bit->data, 0, len + 8);
+  len = 0x484 + payload->len;
+  full_len = 8 + len;
+  msg_payload_8bit = g_byte_array_sized_new (full_len);
+  msg_payload_8bit->len = full_len;
+  memset (msg_payload_8bit->data, 0, full_len);
   v = GUINT32_TO_LE (len);
   memcpy (&msg_payload_8bit->data[0], &v, sizeof (guint32));
 
-  //Payload-JSON related headers
+  // manifest.json related headers
   msg_payload_8bit->data[8] = logue_manifest.status.module_id;
   msg_payload_8bit->data[9] = logue_manifest.status.platform_id;
   msg_payload_8bit->data[10] = 0;	//Reserved byte
@@ -881,6 +950,8 @@ logue_unit_load (const char *path, struct idata *sysex,
   msg_payload_8bit->data[40] = logue_manifest.param_num;
   for (gint i = 0; i < logue_manifest.param_num; i++)
     {
+      debug_print (2, "Adding parameter '%s'...",
+		   logue_manifest.parameters[i].name);
       msg_payload_8bit->data[44 + i * 16] = logue_manifest.parameters[i].min;
       msg_payload_8bit->data[45 + i * 16] = logue_manifest.parameters[i].max;
       msg_payload_8bit->data[46 + i * 16] = logue_manifest.parameters[i].type;
@@ -889,7 +960,7 @@ logue_unit_load (const char *path, struct idata *sysex,
 	      LOGUE_SLOT_STATUS_PARAM_NAME_LEN);
     }
 
-  // Payload-binary data
+  // payload.bin
   v = GUINT32_TO_LE (payload->len);
   memcpy (&msg_payload_8bit->data[0x404], &v, sizeof (guint32));
   memcpy (&msg_payload_8bit->data[0x408], payload->data, payload->len);
@@ -901,14 +972,15 @@ logue_unit_load (const char *path, struct idata *sysex,
   memcpy (&msg_payload_8bit->data[4], &v, sizeof (guint32));
 
   guint midi_len = common_8bit_msg_to_midi_msg_size (msg_payload_8bit->len);
-  msg_payload_midi = g_byte_array_sized_new (2 + midi_len + 1);
+  full_len = 2 + midi_len + 1;
+  msg_payload_midi = g_byte_array_sized_new (full_len);
+  msg_payload_midi->len = full_len;
   msg_payload_midi->data[0] = logue_manifest.status.module_id;
   msg_payload_midi->data[1] = 0;	// slot
-  msg_payload_midi->len += 2 + midi_len + 1;
   common_8bit_msg_to_midi_msg (msg_payload_8bit->data,
 			       &msg_payload_midi->data[2],
 			       msg_payload_8bit->len);
-  msg_payload_midi->data[2 + midi_len] = 0;
+  msg_payload_midi->data[full_len - 1] = 0;	// null byte
 
   logue_data.device = device;
   logue_data.channel = channel;
@@ -916,11 +988,17 @@ logue_unit_load (const char *path, struct idata *sysex,
   // first byte is the device
   msg = logue_get_msg (&logue_data, 0x4a, msg_payload_midi->data,
 		       msg_payload_midi->len);
-  name = g_path_get_basename (path);
-  filename_remove_ext (name);
-  idata_init (sysex, msg, name, NULL, NULL);
+  idata_init (sysex, msg, strdup (unit_name), NULL, NULL);
   free_msg (msg_payload_midi);
   free_msg (msg_payload_8bit);
+
+  if (sysex->content->data[7] != logue_manifest.status.module_id)
+    {
+      return -EINVAL;
+    }
+
+  sysex->content->data[5] = device;
+  sysex->content->data[8] = slot;
 
 end:
   g_free (unit_name);
@@ -934,17 +1012,18 @@ end:
       zip_fclose (unit_payload);
       free_msg (payload);
     }
-  err = zip_close (unit) ? -EIO : err;
+  err = zip_close (zip) ? -EIO : err;
   return err;
 }
 
 static gint
 logue_upload (struct backend *backend, const gchar *path,
-	      struct idata *sysex, struct task_control *control,
+	      struct idata *unit, struct task_control *control,
 	      enum logue_module module)
 {
   gint err;
   guint id;
+  struct idata sysex;
   GByteArray *tx_msg, *rx_msg;
   struct logue_data *logue_data = backend->data;
 
@@ -954,19 +1033,17 @@ logue_upload (struct backend *backend, const gchar *path,
       return err;
     }
 
-  if (sysex->content->data[7] != module)
-    {
-      return -EINVAL;
-    }
-
-  tx_msg = g_byte_array_sized_new (sysex->content->len);
-  g_byte_array_append (tx_msg, sysex->content->data, sysex->content->len);
-  tx_msg->data[5] = logue_data->device;
-  tx_msg->data[8] = id;
-  err = common_data_tx_and_rx (backend, tx_msg, &rx_msg, control);
+  err = logue_get_sysex_from_unit (&sysex, unit, control, logue_data->device,
+				   logue_data->channel, id);
   if (err)
     {
       return err;
+    }
+  tx_msg = idata_steal (&sysex);
+  err = common_data_tx_and_rx (backend, tx_msg, &rx_msg, control);
+  if (err)
+    {
+      goto end;
     }
   if (!LOGUE_CHECK_STATUS_MSG_COMPLETED (rx_msg))
     {
@@ -977,6 +1054,7 @@ logue_upload (struct backend *backend, const gchar *path,
 
   usleep (LOGUE_REST_TIME_US);
 
+end:
   return err;
 }
 
@@ -1009,12 +1087,338 @@ logue_revfx_upload (struct backend *backend, const gchar *path,
 }
 
 static gint
+logue_get_json_from_manifest (GByteArray *manifest_json,
+			      struct logue_manifest *manifest)
+{
+  guint len;
+  gchar *json;
+  JsonNode *root;
+  JsonGenerator *gen;
+  JsonBuilder *builder;
+  gchar aux[PATH_MAX];
+  const gchar *platform_name, *module_name;
+
+  platform_name = logue_get_platform_name (manifest->status.platform_id);
+  if (!platform_name)
+    {
+      return -1;
+    }
+
+  module_name = logue_get_module_name (manifest->status.module_id);
+  if (!module_name)
+    {
+      return -1;
+    }
+
+  builder = json_builder_new ();
+
+  json_builder_begin_object (builder);
+
+  json_builder_set_member_name (builder, LOGUE_MANIFEST_HEADER);
+  json_builder_begin_object (builder);
+
+  json_builder_set_member_name (builder, LOGUE_MANIFEST_PLATFORM);
+  json_builder_add_string_value (builder, platform_name);
+
+  json_builder_set_member_name (builder, LOGUE_MANIFEST_MODULE);
+  json_builder_add_string_value (builder, module_name);
+
+  json_builder_set_member_name (builder, LOGUE_MANIFEST_API);
+  logue_get_version (&manifest->status.api_version, aux, PATH_MAX);
+  json_builder_add_string_value (builder, aux);
+
+  json_builder_set_member_name (builder, LOGUE_MANIFEST_DEV_ID);
+  json_builder_add_int_value (builder, manifest->status.developer_id);
+
+  json_builder_set_member_name (builder, LOGUE_MANIFEST_PROGRAM_ID);
+  json_builder_add_int_value (builder, manifest->status.program_id);
+
+  json_builder_set_member_name (builder, LOGUE_MANIFEST_VERSION);
+  logue_get_version (&manifest->status.program_version, aux, PATH_MAX);
+  json_builder_add_string_value (builder, aux);
+
+  json_builder_set_member_name (builder, LOGUE_MANIFEST_NAME);
+  json_builder_add_string_value (builder, manifest->status.name);
+
+  json_builder_set_member_name (builder, LOGUE_MANIFEST_NUM_PARAM);
+  json_builder_add_int_value (builder, manifest->param_num);
+
+  json_builder_set_member_name (builder, LOGUE_MANIFEST_PARAMS);
+  json_builder_begin_array (builder);
+
+  for (gint i = 0; i < manifest->param_num; i++)
+    {
+      debug_print (2, "Adding parameter '%s'...",
+		   manifest->parameters[i].name);
+      json_builder_begin_array (builder);
+      json_builder_add_string_value (builder, manifest->parameters[i].name);
+      json_builder_add_int_value (builder, manifest->parameters[i].min);
+      json_builder_add_int_value (builder, manifest->parameters[i].max);
+      json_builder_add_string_value (builder,
+				     manifest->parameters[i].type ==
+				     LOGUE_SLOT_PARAMETER_TYPE_PERCENT ? "%" :
+				     "");
+      json_builder_end_array (builder);
+    }
+
+  json_builder_end_array (builder);
+
+  json_builder_end_object (builder);
+
+  json_builder_end_object (builder);
+
+  gen = json_generator_new ();
+  g_object_set (gen, "pretty", TRUE, NULL);
+  root = json_builder_get_root (builder);
+  json_generator_set_root (gen, root);
+  json = json_generator_to_data (gen, NULL);
+
+  len = strlen (json);
+  g_byte_array_append (manifest_json, (guint8 *) json, len);
+  g_free (json);
+
+  json_node_free (root);
+  g_object_unref (gen);
+  g_object_unref (builder);
+
+  return 0;
+}
+
+static gint
+logue_unit_add_file (zip_t *zip, const gchar *dir, const gchar *name,
+		     GByteArray *content)
+{
+  zip_int64_t index;
+  zip_error_t zerror;
+  zip_source_t *source;
+  gchar entry_name[PATH_MAX];
+
+  debug_print (1, "Adding '%s' to zip...", name);
+
+  zip_error_init (&zerror);
+  source = zip_source_buffer_create (content->data, content->len, 0, &zerror);
+  if (!source)
+    {
+      error_print ("Error while creating '%s' source: %s",
+		   name, zip_error_strerror (&zerror));
+      zip_error_fini (&zerror);
+      return -1;
+    }
+
+  snprintf (entry_name, PATH_MAX, "%s/%s", dir, name);
+  index = zip_file_add (zip, entry_name, source,
+			ZIP_FL_OVERWRITE | ZIP_FL_ENC_UTF_8);
+  if (index < 0)
+    {
+      error_print ("Error while adding '%s': %s", name,
+		   zip_error_strerror (zip_get_error (zip)));
+      zip_source_free (source);
+      return -1;
+    }
+
+  zip_file_set_mtime (zip, index, 0, 0);
+
+  return 0;
+}
+
+// Complete message: f0 42 30 00 01 57 4a MM SS 00 PP .. PP f7. null byte at 9th byte instead of at len - 2 like in the sent message.
+// SysEx header
+// 1 byte for the module
+// 1 byte for the slot
+// 1 null byte
+// MIDI encoded payload
+// null byte
+// SysEx end
+
+gint
+logue_get_unit_from_sysex (struct idata *unit, struct idata *sysex,
+			   struct task_control *control)
+{
+  gint err;
+  guint32 v;
+  zip_t *zip;
+  gchar *buff;
+  zip_stat_t zstat;
+  zip_int64_t index;
+  zip_error_t zerror;
+  gchar name[PATH_MAX];
+  const gchar *module_name;
+  zip_source_t *zip_source;
+  guint size, input_size, expected_size;
+  struct logue_manifest logue_manifest;
+  GByteArray *msg_payload_8bit = NULL, *payload = NULL, *manifest =
+    NULL, *content;
+
+  // We can extract the data in just one pass.
+  input_size = sysex->content->len - 11;
+  size = common_midi_msg_to_8bit_msg_size (input_size);
+  msg_payload_8bit = g_byte_array_sized_new (size);
+  msg_payload_8bit->len = size;
+  common_midi_msg_to_8bit_msg (&sysex->content->data[10],
+			       msg_payload_8bit->data, input_size);
+
+  if (debug_level > 1)
+    {
+      gchar *text = debug_get_hex_data (debug_level, msg_payload_8bit->data,
+					msg_payload_8bit->len);
+      debug_print (2, "8 bit message (%u): %s", msg_payload_8bit->len, text);
+      g_free (text);
+    }
+
+  memcpy (&v, &msg_payload_8bit->data[0], sizeof (guint32));
+  expected_size = GUINT32_FROM_LE (v);
+  size = msg_payload_8bit->len - 8;
+  if (size != expected_size)
+    {
+      error_print ("Unexpected 8 bit payload size (%d != %d)", size,
+		   expected_size);
+      err = -1;
+      goto end;
+    }
+
+  // The CRC value seems to be different than the one calculated in logue_get_sysex_from_unit.
+  // We skip the check of the CRC entirely.
+
+  // manifest.json related headers
+  logue_manifest.status.module_id = msg_payload_8bit->data[8];
+  logue_manifest.status.platform_id = msg_payload_8bit->data[9];
+
+  logue_manifest.status.api_version.major = msg_payload_8bit->data[11];
+  logue_manifest.status.api_version.minor = msg_payload_8bit->data[12];
+  logue_manifest.status.api_version.patch = msg_payload_8bit->data[13];
+  memcpy (&v, &msg_payload_8bit->data[14], sizeof (guint32));
+  logue_manifest.status.developer_id = GUINT32_FROM_LE (v);
+  memcpy (&v, &msg_payload_8bit->data[18], sizeof (guint32));
+  logue_manifest.status.program_id = GUINT32_FROM_LE (v);
+
+  logue_manifest.status.program_version.patch = msg_payload_8bit->data[22];
+  logue_manifest.status.program_version.minor = msg_payload_8bit->data[23];
+  logue_manifest.status.program_version.major = msg_payload_8bit->data[24];
+  memcpy (logue_manifest.status.name, &msg_payload_8bit->data[26],
+	  LOGUE_SLOT_STATUS_NAME_LEN);
+  logue_manifest.param_num = msg_payload_8bit->data[40];
+  for (gint i = 0; i < logue_manifest.param_num; i++)
+    {
+      logue_manifest.parameters[i].min = msg_payload_8bit->data[44 + i * 16];
+      logue_manifest.parameters[i].max = msg_payload_8bit->data[45 + i * 16];
+      logue_manifest.parameters[i].type = msg_payload_8bit->data[46 + i * 16];
+      snprintf (logue_manifest.parameters[i].name,
+		LOGUE_SLOT_STATUS_PARAM_NAME_LEN,
+		(gchar *) & msg_payload_8bit->data[47 + i * 16]);
+
+      debug_print (2, "Parameter '%s' read",
+		   logue_manifest.parameters[i].name);
+    }
+
+  module_name = logue_get_module_name (logue_manifest.status.module_id);
+  if (!module_name)
+    {
+      err = -1;
+      goto end;
+    }
+
+  manifest = g_byte_array_new ();
+  err = logue_get_json_from_manifest (manifest, &logue_manifest);
+  if (err)
+    {
+      free_msg (manifest);
+      goto end;
+    }
+
+  // payload.bin
+  memcpy (&v, &msg_payload_8bit->data[0x404], sizeof (guint32));
+  size = GUINT32_FROM_LE (v);
+  payload = g_byte_array_sized_new (size);
+  payload->len = size;
+  memcpy (payload->data, &msg_payload_8bit->data[0x408], size);
+
+  if (debug_level > 1)
+    {
+      gchar *text = debug_get_hex_data (debug_level, payload->data,
+					payload->len);
+      debug_print (2, "Payload (%u): %s", payload->len, text);
+      g_free (text);
+    }
+
+  zip_error_init (&zerror);
+  buff = g_malloc (LOGUE_MAX_UNIT_SIZE);
+  zip_source = zip_source_buffer_create (buff, LOGUE_MAX_UNIT_SIZE, 0,
+					 &zerror);
+  if (!zip_source)
+    {
+      error_print ("Error while creating zip source: %s",
+		   zip_error_strerror (&zerror));
+      zip_error_fini (&zerror);
+      g_free (buff);
+      err = -1;
+      goto end;
+    }
+
+  zip = zip_open_from_source (zip_source, ZIP_TRUNCATE, &zerror);
+  if (!zip)
+    {
+      error_print ("Error while creating in memory zip: %s",
+		   zip_error_strerror (&zerror));
+      zip_error_fini (&zerror);
+      zip_source_free (zip_source);
+      g_free (buff);
+      err = -1;
+      goto end;
+    }
+
+  snprintf (name, PATH_MAX, "%s_%s", module_name, logue_manifest.status.name);
+  index = zip_dir_add (zip, name, ZIP_FL_ENC_UTF_8);
+  if (index < 0)
+    {
+      error_print ("Error while adding directory '%s': %s", name,
+		   zip_error_strerror (zip_get_error (zip)));
+      err = -1;
+      goto end;
+    }
+
+  zip_file_set_mtime (zip, index, 0, 0);
+
+  zip_source_keep (zip_source);
+
+  logue_unit_add_file (zip, name, UNIT_MANIFEST_FILE, manifest);
+  logue_unit_add_file (zip, name, UNIT_PAYLOAD_FILE, payload);
+
+  zip_close (zip);
+
+  zip_source_stat (zip_source, &zstat);
+  debug_print (1, "%" PRIu64 " B written to unit", zstat.comp_size);
+
+  zip_source_open (zip_source);
+  content = g_byte_array_sized_new (zstat.comp_size);
+  content->len = zstat.comp_size;
+  zip_source_read (zip_source, content->data, zstat.comp_size);
+
+  idata_init (unit, content, strdup (name), NULL, NULL);
+
+  zip_source_close (zip_source);
+
+end:
+  if (payload)
+    {
+      free_msg (payload);
+    }
+  if (manifest)
+    {
+      free_msg (manifest);
+    }
+  free_msg (msg_payload_8bit);
+
+  return err;
+}
+
+static gint
 logue_download (struct backend *backend, const gchar *path,
-		struct idata *data, struct task_control *control,
+		struct idata *unit, struct task_control *control,
 		enum logue_module module)
 {
   guint id;
   gint err;
+  struct idata sysex;
   GByteArray *tx_msg, *rx_msg;
   struct logue_data *logue_data = backend->data;
 
@@ -1039,11 +1443,9 @@ logue_download (struct backend *backend, const gchar *path,
     }
   else
     {
-      // This fix is required as the received message has an additional byte at position 9.
-      memcpy (&rx_msg->data[9], &rx_msg->data[10], rx_msg->len - 11);
-      rx_msg->data[rx_msg->len - 2] = 0;	// Last data byte set as in logue_unit_load function.
-
-      idata_init (data, rx_msg, NULL, NULL, NULL);
+      idata_init (&sysex, rx_msg, NULL, NULL, NULL);
+      err = logue_get_unit_from_sysex (unit, &sysex, control);
+      idata_clear (&sysex);
     }
 
   usleep (LOGUE_REST_TIME_US);
@@ -1083,30 +1485,11 @@ logue_revfx_download (struct backend *backend, const gchar *path,
 			 FS_LOGUE_MODULE_REVFX);
 }
 
-static gint
-logue_load (struct backend *backend, const gchar *path, struct idata *sysex,
-	    struct task_control *control)
-{
-  const gchar *ext;
-  struct logue_data *logue_data = backend->data;
-
-  ext = filename_get_ext (path);
-  if (strcmp (ext, BE_SYSEX_EXT))
-    {
-      return logue_unit_load (path, sysex, control, logue_data->device,
-			      logue_data->channel);
-    }
-  else
-    {
-      return file_load (path, sysex, control);
-    }
-}
-
 static const struct fs_operations FS_LOGUE_OSC_OPERATIONS = {
   .id = FS_LOGUE_MODULE_OSC,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
-  .name = "oscillator",
+  .name = FS_LOGUE_MODULE_OSC_NAME,
   .gui_name = "Oscillators",
   .gui_icon = FS_ICON_OSCILLATOR,
   .file_icon = FS_ICON_OSCILLATOR,
@@ -1115,19 +1498,19 @@ static const struct fs_operations FS_LOGUE_OSC_OPERATIONS = {
   .delete = logue_osc_clear,
   .download = logue_osc_download,
   .upload = logue_osc_upload,
-  .load = logue_load,
+  .load = common_file_load,
   .save = common_file_save,
   .get_slot = logue_get_id_as_slot,
   .get_exts = logue_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = common_slot_get_download_path_nn
+  .get_download_path = common_system_get_download_path
 };
 
 static const struct fs_operations FS_LOGUE_MODFX_OPERATIONS = {
   .id = FS_LOGUE_MODULE_MODFX,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
-  .name = "modulation",
+  .name = FS_LOGUE_MODULE_MODFX_NAME,
   .gui_name = "Modulation FX",
   .gui_icon = FS_ICON_FX_MODULATION,
   .file_icon = FS_ICON_FX_MODULATION,
@@ -1136,19 +1519,19 @@ static const struct fs_operations FS_LOGUE_MODFX_OPERATIONS = {
   .delete = logue_modfx_clear,
   .download = logue_modfx_download,
   .upload = logue_modfx_upload,
-  .load = logue_load,
+  .load = common_file_load,
   .save = common_file_save,
   .get_slot = logue_get_id_as_slot,
   .get_exts = logue_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = common_slot_get_download_path_nn
+  .get_download_path = common_system_get_download_path
 };
 
 static const struct fs_operations FS_LOGUE_DELFX_OPERATIONS = {
   .id = FS_LOGUE_MODULE_DELFX,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
-  .name = "delay",
+  .name = FS_LOGUE_MODULE_DELFX_NAME,
   .gui_name = "Delay FX",
   .gui_icon = FS_ICON_FX_DELAY,
   .file_icon = FS_ICON_FX_DELAY,
@@ -1157,18 +1540,18 @@ static const struct fs_operations FS_LOGUE_DELFX_OPERATIONS = {
   .delete = logue_delfx_clear,
   .download = logue_delfx_download,
   .upload = logue_delfx_upload,
-  .load = logue_load,
+  .load = common_file_load,
   .save = common_file_save,
   .get_exts = logue_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = common_slot_get_download_path_n
+  .get_download_path = common_system_get_download_path
 };
 
 static const struct fs_operations FS_LOGUE_REVFX_OPERATIONS = {
   .id = FS_LOGUE_MODULE_REVFX,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
     FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
-  .name = "reverb",
+  .name = FS_LOGUE_MODULE_REVFX_NAME,
   .gui_name = "Reverb FX",
   .gui_icon = FS_ICON_FX_REVERB,
   .file_icon = FS_ICON_FX_REVERB,
@@ -1177,11 +1560,11 @@ static const struct fs_operations FS_LOGUE_REVFX_OPERATIONS = {
   .delete = logue_revfx_clear,
   .download = logue_revfx_download,
   .upload = logue_revfx_upload,
-  .load = logue_load,
+  .load = common_file_load,
   .save = common_file_save,
   .get_exts = logue_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
-  .get_download_path = common_slot_get_download_path_n
+  .get_download_path = common_system_get_download_path
 };
 
 // This message is not really useful but it's part of what logue-cli does.
