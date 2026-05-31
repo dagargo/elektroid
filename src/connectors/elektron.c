@@ -24,7 +24,7 @@
 #include <zlib.h>
 #include "common.h"
 #include "elektron.h"
-#include "package.h"
+#include "elektron_pkg.h"
 #include "sample_ops.h"
 #include "../config.h"
 
@@ -1825,7 +1825,7 @@ elektron_get_storage_stats (struct backend *backend, guint8 type,
   guint8 fsid;
   struct elektron_data *data = backend->data;
 
-  if (!(type & data->device_desc.storage))
+  if (!(type & data->dev_desc.storage))
     {
       return -EINVAL;
     }
@@ -1857,7 +1857,7 @@ elektron_get_storage_stats (struct backend *backend, guint8 type,
 
   free_msg (rx_msg);
 
-  return res ? res : type << 1 < data->device_desc.storage;
+  return res ? res : type << 1 < data->dev_desc.storage;
 }
 
 static gint
@@ -1959,7 +1959,7 @@ elektron_next_data_entry (struct item_iterator *iter)
 	      gboolean first = TRUE;
 	      GString *info = g_string_new (NULL);
 	      GSList *tags =
-		package_get_tags_from_snd_metadata (output.content);
+		elektron_pkg_get_tags_from_snd_metadata (output.content);
 	      GSList *e = tags;
 
 	      while (e)
@@ -2091,7 +2091,7 @@ elektron_read_data_dir_pst (struct backend *backend,
 			    const gchar **extensions)
 {
   struct elektron_data *data = backend->data;
-  gint32 slots = data->device_desc.id == ELEKTRON_AH_FX_ID ? AH_FX_SLOTS : AH_SLOTS;	//Analog Heat +FX has 512 presets
+  gint32 slots = data->dev_desc.id == ELEKTRON_AH_FX_ID ? AH_FX_SLOTS : AH_SLOTS;	//Analog Heat +FX has 512 presets
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_PST_PREFIX,
 					ITER_MODE_DATA, FS_DATA_START_POS,
@@ -2891,13 +2891,13 @@ elektron_get_download_name (struct backend *backend,
 static gint
 elektron_download_pkg (struct backend *backend, const gchar *path,
 		       struct idata *output, struct task_control *control,
-		       enum package_type type,
+		       enum elektron_pkg_type type,
 		       const struct fs_operations *ops,
 		       fs_remote_file_op download)
 {
   gint ret;
   gchar *pkg_name;
-  struct package pkg;
+  struct elektron_pkg pkg;
   struct elektron_data *data = backend->data;
 
   pkg_name = elektron_get_download_name (backend, ops, path);
@@ -2906,18 +2906,19 @@ elektron_download_pkg (struct backend *backend, const gchar *path,
       return -1;
     }
 
-  if (package_begin (&pkg, pkg_name, backend->version, &data->device_desc,
-		     type))
+  if (elektron_pkg_begin
+      (&pkg, pkg_name, backend->version, &data->dev_desc, type))
     {
       g_free (pkg_name);
       return -1;
     }
 
-  ret = package_receive_pkg_resources (&pkg, path, control, backend, download,
-				       type);
-  ret = ret || package_end (&pkg, output);
+  ret =
+    elektron_pkg_receive_pkg_resources (&pkg, path, control, backend,
+					download, type);
+  ret = ret || elektron_pkg_end (&pkg, output);
 
-  package_destroy (&pkg);
+  elektron_pkg_destroy (&pkg);
   return ret;
 }
 
@@ -3232,14 +3233,16 @@ elektron_upload_pkg (struct backend *backend, const gchar *path,
 		     fs_remote_file_op upload)
 {
   gint ret;
-  struct package pkg;
+  struct elektron_pkg pkg;
   struct elektron_data *data = backend->data;
 
-  ret = package_open (&pkg, input, &data->device_desc);
+  ret = elektron_pkg_open (&pkg, input, &data->dev_desc);
   if (!ret)
     {
-      ret = package_send_pkg_resources (&pkg, path, control, backend, upload);
-      package_close (&pkg);
+      ret =
+	elektron_pkg_send_pkg_resources (&pkg, path, control, backend,
+					 upload);
+      elektron_pkg_close (&pkg);
     }
   return ret;
 }
@@ -3249,9 +3252,9 @@ elektron_get_dev_exts (struct backend *backend,
 		       const struct fs_operations *ops)
 {
   struct elektron_data *data = backend->data;
-  struct fs_desc *fs_desc = data->device_desc.fs_descs;
+  struct elektron_fs_desc *fs_desc = data->dev_desc.fs_descs;
 
-  for (guint i = 0; i < data->device_desc.fs_descs_len; i++)
+  for (guint i = 0; i < data->dev_desc.fs_descs_len; i++)
     {
       if (!strcmp (fs_desc->name, ops->name))
 	{
@@ -3285,7 +3288,7 @@ elektron_sample_load (struct backend *backend, const gchar *path,
   struct sample_info sample_info;
   struct elektron_data *data = backend->data;
 
-  if (data->device_desc.id == ELEKTRON_DIGITAKT_II_ID)
+  if (data->dev_desc.id == ELEKTRON_DIGITAKT_II_ID)
     {
       sample_info_init (&sample_info);
       err = sample_load_sample_info (path, &sample_info);
@@ -4210,10 +4213,10 @@ elektron_configure_device_from_file (struct backend *backend, guint8 id,
 	  error_print ("Cannot read member '%s'. Continuing...", DEV_TAG_ID);
 	  continue;
 	}
-      data->device_desc.id = json_reader_get_int_value (reader);
+      data->dev_desc.id = json_reader_get_int_value (reader);
       json_reader_end_member (reader);
 
-      if (data->device_desc.id != id)
+      if (data->dev_desc.id != id)
 	{
 	  json_reader_end_element (reader);
 	  continue;
@@ -4243,7 +4246,7 @@ elektron_configure_device_from_file (struct backend *backend, guint8 id,
 	}
       members = json_reader_list_members (reader);
       name = members;
-      data->device_desc.fs_descs_len = 0;
+      data->dev_desc.fs_descs_len = 0;
       backend->fs_ops = NULL;
       while (*name)
 	{
@@ -4263,15 +4266,15 @@ elektron_configure_device_from_file (struct backend *backend, guint8 id,
 
 	  if (*fs_ops)
 	    {
-	      if (data->device_desc.fs_descs_len == ELEKTRON_MAX_FS)
+	      if (data->dev_desc.fs_descs_len == ELEKTRON_MAX_FS)
 		{
 		  error_print ("Too many filesystems");
 		  break;
 		}
-	      struct fs_desc *fs_desc =
-		&data->device_desc.fs_descs[data->device_desc.fs_descs_len];
+	      struct elektron_fs_desc *fs_desc =
+		&data->dev_desc.fs_descs[data->dev_desc.fs_descs_len];
 	      snprintf (fs_desc->name, LABEL_MAX, "%s", *name);
-	      data->device_desc.fs_descs_len++;
+	      data->dev_desc.fs_descs_len++;
 
 	      json_reader_read_member (reader, *name);
 
@@ -4317,7 +4320,7 @@ elektron_configure_device_from_file (struct backend *backend, guint8 id,
 	  err = -ENODEV;
 	  break;
 	}
-      data->device_desc.storage = 0;
+      data->dev_desc.storage = 0;
       storage = json_reader_count_elements (reader);
       if (storage > ELEKTRON_MAX_STORAGE)
 	{
@@ -4334,7 +4337,7 @@ elektron_configure_device_from_file (struct backend *backend, guint8 id,
 	    {
 	      if (strcmp (*stname, storage_name) == 0)
 		{
-		  data->device_desc.storage |= id;
+		  data->dev_desc.storage |= id;
 		  break;
 		}
 	      stname++;
@@ -4353,7 +4356,7 @@ cleanup_parser:
   g_object_unref (parser);
   if (err)
     {
-      data->device_desc.id = -1;
+      data->dev_desc.id = -1;
     }
   return err;
 }
@@ -4401,13 +4404,13 @@ void
 elektron_destroy_data (struct backend *backend)
 {
   struct elektron_data *data = backend->data;
-  struct device_desc *device_desc = &data->device_desc;
-  struct fs_desc *fs_desc = device_desc->fs_descs;
+  struct elektron_dev_desc *dev_desc = &data->dev_desc;
+  struct elektron_fs_desc *fs_desc = dev_desc->fs_descs;
 
   debug_print (1, "Destroying backend elektron data...");
 
 
-  for (guint i = 0; i < device_desc->fs_descs_len; i++)
+  for (guint i = 0; i < dev_desc->fs_descs_len; i++)
     {
       gchar **ext = fs_desc->extensions;
       for (guint j = 0; j < ELEKTRON_MAX_EXTENSIONS; j++)
@@ -4493,7 +4496,7 @@ elektron_handshake (struct backend *backend)
   backend->destroy_data = elektron_destroy_data;
   backend->upgrade_os = elektron_upgrade_os;
   backend->get_storage_stats =
-    data->device_desc.storage ? elektron_get_storage_stats : NULL;
+    data->dev_desc.storage ? elektron_get_storage_stats : NULL;
 
   return 0;
 }

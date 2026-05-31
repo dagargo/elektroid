@@ -1,5 +1,5 @@
 /*
- *   package.c
+ *   elektron_pkg.c
  *   Copyright (C) 2021 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <json-glib/json-glib.h>
-#include "package.h"
+#include "elektron_pkg.h"
 #include "utils.h"
 #include "sample.h"
 #include "elektron.h"
@@ -53,7 +53,7 @@
 #define MANIFEST_FILENAME "manifest.json"
 
 static GSList *
-package_get_tags_from_snd_metadata_int (JsonReader *reader)
+elektron_pkg_get_tags_from_snd_metadata_int (JsonReader *reader)
 {
   gint elements;
   GSList *tags = NULL;
@@ -100,7 +100,7 @@ end:
 }
 
 GSList *
-package_get_tags_from_snd_metadata (GByteArray *metadata)
+elektron_pkg_get_tags_from_snd_metadata (GByteArray *metadata)
 {
   JsonParser *parser;
   JsonReader *reader;
@@ -124,7 +124,7 @@ package_get_tags_from_snd_metadata (GByteArray *metadata)
       goto cleanup_parser;
     }
 
-  tags = package_get_tags_from_snd_metadata_int (reader);
+  tags = elektron_pkg_get_tags_from_snd_metadata_int (reader);
 
   g_object_unref (reader);
 
@@ -135,8 +135,9 @@ cleanup_parser:
 }
 
 static gint
-package_add_resource (struct package *pkg,
-		      struct package_resource *pkg_resource, gboolean new)
+elektron_pkg_add_resource (struct elektron_pkg *pkg,
+			   struct elektron_pkg_resource *pkg_resource,
+			   gboolean new)
 {
   zip_source_t *sample_source;
   zip_int64_t index;
@@ -175,15 +176,17 @@ package_add_resource (struct package *pkg,
 
 
 gint
-package_begin (struct package *pkg, gchar *name, const gchar *fw_version,
-	       const struct device_desc *device_desc, enum package_type type)
+elektron_pkg_begin (struct elektron_pkg *pkg, gchar *name,
+		    const gchar *fw_version,
+		    const struct elektron_dev_desc *dev_desc,
+		    enum elektron_pkg_type type)
 {
   zip_error_t zerror;
   pkg->resources = NULL;
   pkg->buff = g_malloc (MAX_PACKAGE_LEN);
   pkg->name = name;
   pkg->fw_version = strdup (fw_version);
-  pkg->device_desc = device_desc;
+  pkg->dev_desc = dev_desc;
   pkg->type = type;
 
   debug_print (1, "Creating zip buffer...");
@@ -213,17 +216,17 @@ package_begin (struct package *pkg, gchar *name, const gchar *fw_version,
 
   zip_source_keep (pkg->zip_source);
 
-  pkg->manifest = g_malloc (sizeof (struct package_resource));
+  pkg->manifest = g_malloc (sizeof (struct elektron_pkg_resource));
   pkg->manifest->type = PKG_RES_TYPE_MANIFEST;
   pkg->manifest->data = g_byte_array_sized_new (MAX_MANIFEST_LEN);	//We need this because we can not resize later.
   pkg->manifest->path = strdup (MANIFEST_FILENAME);
-  package_add_resource (pkg, pkg->manifest, TRUE);
+  elektron_pkg_add_resource (pkg, pkg->manifest, TRUE);
 
   return 0;
 }
 
 static const gchar *
-package_get_file_type (enum package_type type)
+elektron_pkg_get_file_type (enum elektron_pkg_type type)
 {
   if (type & PKG_FILE_TYPE_DATA_PROJECT)
     {
@@ -244,7 +247,7 @@ package_get_file_type (enum package_type type)
 }
 
 static gint
-package_add_manifest (struct package *pkg)
+elektron_pkg_add_manifest (struct elektron_pkg *pkg)
 {
   JsonBuilder *builder;
   JsonGenerator *gen;
@@ -254,7 +257,7 @@ package_add_manifest (struct package *pkg)
   gchar *val = g_malloc (LABEL_MAX);
   GList *resource;
   gboolean samples_found = FALSE;
-  struct package_resource *pkg_resource;
+  struct elektron_pkg_resource *pkg_resource;
 
   builder = json_builder_new ();
 
@@ -265,7 +268,7 @@ package_add_manifest (struct package *pkg)
 
   json_builder_set_member_name (builder, PKG_TAG_PRODUCT_TYPE);
   json_builder_begin_array (builder);
-  snprintf (val, LABEL_MAX, "%d", pkg->device_desc->id);
+  snprintf (val, LABEL_MAX, "%d", pkg->dev_desc->id);
   json_builder_add_string_value (builder, val);
   json_builder_end_array (builder);
 
@@ -273,7 +276,8 @@ package_add_manifest (struct package *pkg)
   json_builder_add_string_value (builder, pkg->name);
 
   json_builder_set_member_name (builder, PKG_TAG_FILE_TYPE);
-  json_builder_add_string_value (builder, package_get_file_type (pkg->type));
+  json_builder_add_string_value (builder,
+				 elektron_pkg_get_file_type (pkg->type));
 
   if (pkg->type != PKG_FILE_TYPE_RAW_PRESET)
     {
@@ -349,7 +353,7 @@ package_add_manifest (struct package *pkg)
   len = strlen (json);
   memcpy (pkg->manifest->data->data, json, len);
   pkg->manifest->data->len = len;
-  package_add_resource (pkg, pkg->manifest, FALSE);
+  elektron_pkg_add_resource (pkg, pkg->manifest, FALSE);
 
   g_free (json);
   json_node_free (root);
@@ -361,13 +365,13 @@ package_add_manifest (struct package *pkg)
 }
 
 gint
-package_end (struct package *pkg, struct idata *out)
+elektron_pkg_end (struct elektron_pkg *pkg, struct idata *out)
 {
   int ret = 0;
   zip_stat_t zstat;
   GByteArray *content;
 
-  ret = package_add_manifest (pkg);
+  ret = elektron_pkg_add_manifest (pkg);
   if (ret)
     {
       error_print ("Error while formatting %s", MANIFEST_FILENAME);
@@ -397,26 +401,26 @@ package_end (struct package *pkg, struct idata *out)
 }
 
 void
-package_free_package_resource (gpointer data)
+elektron_pkg_free_elektron_pkg_resource (gpointer data)
 {
-  struct package_resource *pkg_resource = data;
+  struct elektron_pkg_resource *pkg_resource = data;
   g_byte_array_free (pkg_resource->data, TRUE);
   g_free (pkg_resource);
 }
 
 void
-package_destroy (struct package *pkg)
+elektron_pkg_destroy (struct elektron_pkg *pkg)
 {
   zip_source_free (pkg->zip_source);
   g_free (pkg->buff);
   g_free (pkg->name);
   g_free (pkg->fw_version);
-  g_list_free_full (pkg->resources, package_free_package_resource);
+  g_list_free_full (pkg->resources, elektron_pkg_free_elektron_pkg_resource);
 }
 
 gint
-package_open (struct package *pkg, struct idata *idata,
-	      const struct device_desc *device_desc)
+elektron_pkg_open (struct elektron_pkg *pkg, struct idata *idata,
+		   const struct elektron_dev_desc *dev_desc)
 {
   gint err;
   zip_error_t zerror;
@@ -458,7 +462,7 @@ package_open (struct package *pkg, struct idata *idata,
       return -1;
     }
 
-  pkg->manifest = g_malloc (sizeof (struct package_resource));
+  pkg->manifest = g_malloc (sizeof (struct elektron_pkg_resource));
   pkg->manifest->type = PKG_RES_TYPE_MANIFEST;
   pkg->manifest->data = g_byte_array_sized_new (zstat.size);
   pkg->manifest->path = strdup (MANIFEST_FILENAME);
@@ -472,36 +476,36 @@ package_open (struct package *pkg, struct idata *idata,
   pkg->buff = NULL;
   pkg->name = NULL;
   pkg->fw_version = NULL;
-  pkg->device_desc = device_desc;
+  pkg->dev_desc = dev_desc;
 
   return 0;
 }
 
 void
-package_close (struct package *pkg)
+elektron_pkg_close (struct elektron_pkg *pkg)
 {
   zip_source_close (pkg->zip_source);
-  package_destroy (pkg);
+  elektron_pkg_destroy (pkg);
 }
 
 //This function is just used as the upper bound estimation.
 static gint
-package_get_max_sample_slots (struct backend *backend)
+elektron_pkg_get_max_sample_slots (struct backend *backend)
 {
   struct elektron_data *data = backend->data;
   // Slot 0 is never used.
   // Digitakt and similar devices have 128 slots.
   // Digitakt II has 8 banks (1024).
-  return data->device_desc.id == ELEKTRON_DIGITAKT_II_ID ? 1023 : 127;
+  return data->dev_desc.id == ELEKTRON_DIGITAKT_II_ID ? 1023 : 127;
 }
 
 gint
-package_receive_pkg_resources (struct package *pkg,
-			       const gchar *payload_path,
-			       struct task_control *control,
-			       struct backend *backend,
-			       fs_remote_file_op download_data,
-			       enum package_type type)
+elektron_pkg_receive_pkg_resources (struct elektron_pkg *pkg,
+				    const gchar *payload_path,
+				    struct task_control *control,
+				    struct backend *backend,
+				    fs_remote_file_op download_data,
+				    enum elektron_pkg_type type)
 {
   gint ret, i, elements;
   JsonParser *parser;
@@ -509,8 +513,8 @@ package_receive_pkg_resources (struct package *pkg,
   gint64 hash, size;
   GError *error = NULL;
   gchar *sample_path, *metadata_path;
-  struct package_resource *pkg_resource;
-  GString *package_resource_path;
+  struct elektron_pkg_resource *pkg_resource;
+  GString *elektron_pkg_resource_path;
   struct idata metadata_file, payload_file, sample_file, file;
   struct elektron_data *data = backend->data;
 
@@ -519,17 +523,17 @@ package_receive_pkg_resources (struct package *pkg,
   task_control_reset (control, 1);	//payload
 
   if ((type == PKG_FILE_TYPE_DATA_PROJECT &&
-       data->device_desc.id != ELEKTRON_ANALOG_RYTM_ID &&
-       data->device_desc.id != ELEKTRON_DIGITAKT_ID &&
-       data->device_desc.id != ELEKTRON_ANALOG_RYTM_MKII_ID &&
-       data->device_desc.id != ELEKTRON_MODEL_SAMPLES_ID &&
-       data->device_desc.id != ELEKTRON_DIGITAKT_II_ID) ||
+       data->dev_desc.id != ELEKTRON_ANALOG_RYTM_ID &&
+       data->dev_desc.id != ELEKTRON_DIGITAKT_ID &&
+       data->dev_desc.id != ELEKTRON_ANALOG_RYTM_MKII_ID &&
+       data->dev_desc.id != ELEKTRON_MODEL_SAMPLES_ID &&
+       data->dev_desc.id != ELEKTRON_DIGITAKT_II_ID) ||
       type == PKG_FILE_TYPE_DATA_PRESET)
     {
       goto get_payload;
     }
 
-  control->parts += 1 + package_get_max_sample_slots (backend);	// ... plus metadata and sample slots.
+  control->parts += 1 + elektron_pkg_get_max_sample_slots (backend);	// ... plus metadata and sample slots.
 
   metadata_path = path_chain (PATH_INTERNAL, payload_path,
 			      FS_DATA_METADATA_FILE);
@@ -567,7 +571,8 @@ package_receive_pkg_resources (struct package *pkg,
 
   if (type == PKG_FILE_TYPE_DATA_SOUND)
     {
-      pkg->manifest->tags = package_get_tags_from_snd_metadata_int (reader);
+      pkg->manifest->tags =
+	elektron_pkg_get_tags_from_snd_metadata_int (reader);
     }
   else
     {
@@ -656,18 +661,18 @@ package_receive_pkg_resources (struct package *pkg,
 	  continue;
 	}
 
-      pkg_resource = g_malloc (sizeof (struct package_resource));
+      pkg_resource = g_malloc (sizeof (struct elektron_pkg_resource));
       pkg_resource->type = PKG_RES_TYPE_SAMPLE;
       pkg_resource->data = idata_steal (&file);
       pkg_resource->hash = hash;
       pkg_resource->size = size;
-      package_resource_path = g_string_new (NULL);
-      g_string_append_printf (package_resource_path, "%s%s.wav",
+      elektron_pkg_resource_path = g_string_new (NULL);
+      g_string_append_printf (elektron_pkg_resource_path, "%s%s.wav",
 			      PKG_TAG_SAMPLES, sample_path);
-      pkg_resource->path = g_string_free (package_resource_path, FALSE);
-      if (package_add_resource (pkg, pkg_resource, TRUE))
+      pkg_resource->path = g_string_free (elektron_pkg_resource_path, FALSE);
+      if (elektron_pkg_add_resource (pkg, pkg_resource, TRUE))
 	{
-	  package_free_package_resource (pkg_resource);
+	  elektron_pkg_free_elektron_pkg_resource (pkg_resource);
 	  error_print ("Error while packaging sample");
 	  continue;
 	}
@@ -689,13 +694,13 @@ get_payload:
     }
   else
     {
-      pkg_resource = g_malloc (sizeof (struct package_resource));
+      pkg_resource = g_malloc (sizeof (struct elektron_pkg_resource));
       pkg_resource->type = PKG_RES_TYPE_PAYLOAD;
       pkg_resource->data = idata_steal (&payload_file);
       pkg_resource->path = strdup (pkg->name);
-      if (package_add_resource (pkg, pkg_resource, TRUE))
+      if (elektron_pkg_add_resource (pkg, pkg_resource, TRUE))
 	{
-	  package_free_package_resource (pkg_resource);
+	  elektron_pkg_free_elektron_pkg_resource (pkg_resource);
 	  ret = -1;
 	}
     }
@@ -704,10 +709,11 @@ get_payload:
 }
 
 gint
-package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
-			    struct task_control *control,
-			    struct backend *backend,
-			    fs_remote_file_op upload_data)
+elektron_pkg_send_pkg_resources (struct elektron_pkg *pkg,
+				 const gchar *payload_path,
+				 struct task_control *control,
+				 struct backend *backend,
+				 fs_remote_file_op upload_data)
 {
   gint elements, i, ret = 0;
   const gchar *file_type, *sample_path;
@@ -719,7 +725,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
   zip_stat_t zstat;
   zip_error_t zerror;
   zip_file_t *zip_file;
-  struct package_resource *pkg_resource;
+  struct elektron_pkg_resource *pkg_resource;
   struct idata file, sample, sample_file;
 
   zip_error_init (&zerror);
@@ -760,7 +766,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
       goto cleanup_reader;
     }
 
-  pkg_resource = g_malloc (sizeof (struct package_resource));
+  pkg_resource = g_malloc (sizeof (struct elektron_pkg_resource));
   pkg_resource->type = PKG_RES_TYPE_PAYLOAD;
   pkg_resource->data = g_byte_array_sized_new (zstat.size);
   pkg_resource->path = strdup (pkg->name);
@@ -771,7 +777,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 
   pkg->resources = g_list_append (pkg->resources, pkg_resource);
 
-  control->parts = 1 + package_get_max_sample_slots (backend);	// main and sample slots
+  control->parts = 1 + elektron_pkg_get_max_sample_slots (backend);	// main and sample slots
   control->part = 0;
   idata_init (&file, pkg_resource->data, NULL, NULL, NULL);
   ret = upload_data (backend, payload_path, &file, control);
@@ -843,7 +849,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
     }
   product_type = atoi (json_reader_get_string_value (reader));
   debug_print (1, "ProductType: %" PRId64 "", product_type);
-  if (pkg->device_desc->id != product_type)
+  if (pkg->dev_desc->id != product_type)
     {
       debug_print (1, "Incompatible product type. Continuing...");
     }
@@ -928,7 +934,7 @@ package_send_pkg_resources (struct package *pkg, const gchar *payload_path,
 			   &sample_path[7]);
 	    }
 
-	  pkg_resource = g_malloc (sizeof (struct package_resource));
+	  pkg_resource = g_malloc (sizeof (struct elektron_pkg_resource));
 	  pkg_resource->type = PKG_RES_TYPE_SAMPLE;
 	  pkg_resource->data = idata_steal (&sample);
 	  pkg_resource->path = strdup (sample_path);

@@ -107,10 +107,10 @@ tests_elektron_SOURCES = \
 	../src/connectors/common.h \
 	../src/connectors/elektron.c \
 	../src/connectors/elektron.h \
+	../src/connectors/elektron_pkg.c \
+	../src/connectors/elektron_pkg.h \
 	../src/connectors/microfreak_sample.c \
 	../src/connectors/microfreak_sample.h \
-	../src/connectors/package.c \
-	../src/connectors/package.h \
 	../src/connectors/scala.c \
 	../src/connectors/scala.h
 
