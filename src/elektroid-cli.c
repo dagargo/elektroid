@@ -1244,6 +1244,7 @@ main (int argc, gchar *argv[])
       else
 	{
 	  error_print ("Command '%s' not recognized", command);
+	  cli_print_help (argv[0]);
 	  err = EXIT_FAILURE;
 	}
 
@@ -1261,7 +1262,6 @@ end:
   if (err && err != EXIT_FAILURE)
     {
       error_print ("Error: %s", g_strerror (-err));
-      cli_print_help (argv[0]);
     }
 
   controllable_clear (&controllable);
