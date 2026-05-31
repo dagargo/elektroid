@@ -69,6 +69,12 @@ struct logue_version
   guint8 patch;
 };
 
+union logue_version_bin
+{
+  struct logue_version version;
+  guint32 bin;
+};
+
 struct logue_data
 {
   guint8 device;
@@ -97,16 +103,17 @@ struct logue_slot_parameter
   gchar name[LOGUE_SLOT_STATUS_PARAM_NAME_LEN];
 };
 
-// NOTE: PLATFORM ID and MODULE ID seem to be swapped in the official documentation.
-// NOTE: The reserved bytes in API and program version seem to not be in the position explained in the official documentation.
+// PLATFORM ID and MODULE ID seem to be swapped in the official documentation.
+// The reserved bytes in API and program version seem to not be in the position explained in the official documentation.
+// api_version and program_version have different byte order.
 struct logue_slot_status
 {
   guint8 module_id;
   guint8 platform_id;
-  struct logue_version api_version;
+  union logue_version_bin api_version;
   guint32 developer_id;
   guint32 program_id;
-  struct logue_version program_version;
+  union logue_version_bin program_version;
   gchar name[LOGUE_SLOT_STATUS_NAME_LEN];
 };
 
@@ -607,12 +614,13 @@ logue_get_manifest_from_json (struct logue_manifest *manifest,
       goto cleanup_reader;
     }
   string = json_reader_get_string_value (reader);
-  manifest->status.api_version.major = strtol (string, &aux, 10);
+  manifest->status.api_version.version.major = strtol (string, &aux, 10);
   string = aux + 1;
-  manifest->status.api_version.minor = strtol (string, &aux, 10);
+  manifest->status.api_version.version.minor = strtol (string, &aux, 10);
   string = aux + 1;
-  manifest->status.api_version.patch = strtol (string, &aux, 10);
-  logue_get_version (&manifest->status.program_version, version, PATH_MAX);
+  manifest->status.api_version.version.patch = strtol (string, &aux, 10);
+  logue_get_version (&manifest->status.api_version.version, version,
+		     PATH_MAX);
   debug_print (2, "API: %s", version);
   json_reader_end_element (reader);
 
@@ -643,12 +651,13 @@ logue_get_manifest_from_json (struct logue_manifest *manifest,
       goto cleanup_reader;
     }
   string = json_reader_get_string_value (reader);
-  manifest->status.program_version.major = strtol (string, &aux, 10);
+  manifest->status.program_version.version.major = strtol (string, &aux, 10);
   string = aux + 1;
-  manifest->status.program_version.minor = strtol (string, &aux, 10);
+  manifest->status.program_version.version.minor = strtol (string, &aux, 10);
   string = aux + 1;
-  manifest->status.program_version.patch = strtol (string, &aux, 10);
-  logue_get_version (&manifest->status.program_version, version, PATH_MAX);
+  manifest->status.program_version.version.patch = strtol (string, &aux, 10);
+  logue_get_version (&manifest->status.program_version.version, version,
+		     PATH_MAX);
   debug_print (2, "Version: %s", version);
   json_reader_end_element (reader);
 
@@ -927,26 +936,29 @@ logue_get_sysex_from_unit (struct idata *sysex, struct idata *unit,
   msg_payload_8bit = g_byte_array_sized_new (full_len);
   msg_payload_8bit->len = full_len;
   memset (msg_payload_8bit->data, 0, full_len);
+
   v = GUINT32_TO_LE (len);
   memcpy (&msg_payload_8bit->data[0], &v, sizeof (guint32));
 
   // manifest.json related headers
   msg_payload_8bit->data[8] = logue_manifest.status.module_id;
   msg_payload_8bit->data[9] = logue_manifest.status.platform_id;
-  msg_payload_8bit->data[10] = 0;	//Reserved byte
-  msg_payload_8bit->data[11] = logue_manifest.status.api_version.major;
-  msg_payload_8bit->data[12] = logue_manifest.status.api_version.minor;
-  msg_payload_8bit->data[13] = logue_manifest.status.api_version.patch;
+
+  memcpy (&msg_payload_8bit->data[10], &logue_manifest.status.api_version.bin,
+	  sizeof (union logue_version_bin));
+
   v = GUINT32_TO_LE (logue_manifest.status.developer_id);
   memcpy (&msg_payload_8bit->data[14], &v, sizeof (guint32));
+
   v = GUINT32_TO_LE (logue_manifest.status.program_id);
   memcpy (&msg_payload_8bit->data[18], &v, sizeof (guint32));
-  msg_payload_8bit->data[22] = 0;	//Reserved byte
-  msg_payload_8bit->data[22] = logue_manifest.status.program_version.patch;
-  msg_payload_8bit->data[23] = logue_manifest.status.program_version.minor;
-  msg_payload_8bit->data[24] = logue_manifest.status.program_version.major;
+
+  v = GUINT32_SWAP_LE_BE (logue_manifest.status.program_version.bin);
+  memcpy (&msg_payload_8bit->data[22], &v, sizeof (union logue_version_bin));
+
   memcpy (&msg_payload_8bit->data[26], logue_manifest.status.name,
 	  LOGUE_SLOT_STATUS_NAME_LEN);
+
   msg_payload_8bit->data[40] = logue_manifest.param_num;
   for (gint i = 0; i < logue_manifest.param_num; i++)
     {
@@ -1124,7 +1136,7 @@ logue_get_json_from_manifest (GByteArray *manifest_json,
   json_builder_add_string_value (builder, module_name);
 
   json_builder_set_member_name (builder, LOGUE_MANIFEST_API);
-  logue_get_version (&manifest->status.api_version, aux, PATH_MAX);
+  logue_get_version (&manifest->status.api_version.version, aux, PATH_MAX);
   json_builder_add_string_value (builder, aux);
 
   json_builder_set_member_name (builder, LOGUE_MANIFEST_DEV_ID);
@@ -1134,7 +1146,8 @@ logue_get_json_from_manifest (GByteArray *manifest_json,
   json_builder_add_int_value (builder, manifest->status.program_id);
 
   json_builder_set_member_name (builder, LOGUE_MANIFEST_VERSION);
-  logue_get_version (&manifest->status.program_version, aux, PATH_MAX);
+  logue_get_version (&manifest->status.program_version.version, aux,
+		     PATH_MAX);
   json_builder_add_string_value (builder, aux);
 
   json_builder_set_member_name (builder, LOGUE_MANIFEST_NAME);
@@ -1283,19 +1296,21 @@ logue_get_unit_from_sysex (struct idata *unit, struct idata *sysex,
   logue_manifest.status.module_id = msg_payload_8bit->data[8];
   logue_manifest.status.platform_id = msg_payload_8bit->data[9];
 
-  logue_manifest.status.api_version.major = msg_payload_8bit->data[11];
-  logue_manifest.status.api_version.minor = msg_payload_8bit->data[12];
-  logue_manifest.status.api_version.patch = msg_payload_8bit->data[13];
+  memcpy (&logue_manifest.status.api_version, &msg_payload_8bit->data[10],
+	  sizeof (union logue_version_bin));
+
   memcpy (&v, &msg_payload_8bit->data[14], sizeof (guint32));
   logue_manifest.status.developer_id = GUINT32_FROM_LE (v);
+
   memcpy (&v, &msg_payload_8bit->data[18], sizeof (guint32));
   logue_manifest.status.program_id = GUINT32_FROM_LE (v);
 
-  logue_manifest.status.program_version.patch = msg_payload_8bit->data[22];
-  logue_manifest.status.program_version.minor = msg_payload_8bit->data[23];
-  logue_manifest.status.program_version.major = msg_payload_8bit->data[24];
+  memcpy (&v, &msg_payload_8bit->data[22], sizeof (union logue_version_bin));
+  logue_manifest.status.program_version.bin = GUINT32_SWAP_LE_BE (v);
+
   memcpy (logue_manifest.status.name, &msg_payload_8bit->data[26],
 	  LOGUE_SLOT_STATUS_NAME_LEN);
+
   logue_manifest.param_num = msg_payload_8bit->data[40];
   for (gint i = 0; i < logue_manifest.param_num; i++)
     {
