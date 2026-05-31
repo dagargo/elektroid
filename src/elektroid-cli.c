@@ -54,6 +54,7 @@ static gchar *connector, *fs, *op;
 
 const struct fs_operations *fs_ops;
 const gchar *current_path_progress;
+gboolean connected_to_tty;
 gboolean same_line_progress;
 
 static void
@@ -78,9 +79,10 @@ print_progress (struct task_control *task_control)
 }
 
 static void
-set_progress_type ()
+setup ()
 {
-  same_line_progress = !debug_level && isatty (fileno (stderr));
+  connected_to_tty = isatty (fileno (stderr));
+  same_line_progress = !debug_level && connected_to_tty;
 }
 
 static const gchar *
@@ -1027,7 +1029,8 @@ cli_end (int sig)
 static void
 cli_print_help_cmd (const gchar *cmd, const gchar *args, const gchar *desc)
 {
-  fprintf (stderr, "  \033[1m%s\033[0m%s%s: %s\n", cmd, args ? " " : "",
+  fprintf (stderr, "  %s%s%s%s%s: %s\n", connected_to_tty ? "\033[1m" : "",
+	   cmd, connected_to_tty ? "\033[0m" : "", args ? " " : "",
 	   args ? args : "", desc);
 }
 
@@ -1091,6 +1094,8 @@ main (int argc, gchar *argv[])
   gchar *command;
   gint vflg = 0, errflg = 0;
 
+  setup ();
+
   controllable_init (&controllable);
   controllable_init (&task_control.controllable);
 
@@ -1138,8 +1143,6 @@ main (int argc, gchar *argv[])
       cli_print_help (argv[0]);
       exit (EXIT_FAILURE);
     }
-
-  set_progress_type ();
 
   regconn_register ();
   regpref_register ();
