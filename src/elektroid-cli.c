@@ -52,10 +52,10 @@ static struct task_control task_control;
 static struct controllable controllable;	//Used for CLI control for operations that do not use task_control or sysex_transfer.
 static gchar *connector, *fs, *op;
 
-const struct fs_operations *fs_ops;
-const gchar *current_path_progress;
-gboolean connected_to_tty;
-gboolean same_line_progress;
+static const struct fs_operations *fs_ops;
+static const gchar *current_path_progress;
+static gboolean connected_to_tty;
+static gboolean same_line_progress;
 
 static void
 complete_progress (gint err)
