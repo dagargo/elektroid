@@ -56,6 +56,7 @@ static const struct fs_operations *fs_ops;
 static const gchar *current_path_progress;
 static gboolean connected_to_tty;
 static gboolean same_line_progress;
+static gboolean use_audio;
 
 static void
 complete_progress (gint err)
@@ -973,7 +974,10 @@ cli_play (int argc, gchar *argv[], int *optind)
     }
   else
     {
+      audio_init_and_wait ();
+      use_audio = TRUE;
       audio_set_play_and_wait (&sample, &task_control);
+      audio_destroy ();
       task_control.part++;
     }
 
@@ -1004,7 +1008,10 @@ cli_record (int argc, gchar *argv[], int *optind)
 
   task_control_reset (&task_control, 1);
 
+  audio_init_and_wait ();
+  use_audio = TRUE;
   audio_record_and_wait (RECORD_STEREO, &task_control);
+  audio_destroy ();
 
   task_control.part++;
   complete_progress (0);
@@ -1021,8 +1028,11 @@ cli_end (int sig)
 {
   controllable_set_active (&controllable, FALSE);
   controllable_set_active (&task_control.controllable, FALSE);
-  audio_stop_playback ();
-  audio_stop_recording ();
+  if (use_audio)
+    {
+      audio_stop_playback ();
+      audio_stop_recording ();
+    }
 }
 #endif
 
@@ -1149,8 +1159,6 @@ main (int argc, gchar *argv[])
   preferences_load ();
   preferences_set_boolean (PREF_KEY_MIX, FALSE);	//This might be required by devices using the audio link.
 
-  audio_init_and_wait ();
-
   if (!strcmp (command, "ld") || !strcmp (command, "list-devices"))
     {
       err = cli_ld ();
@@ -1265,8 +1273,6 @@ end:
     }
 
   controllable_clear (&controllable);
-
-  audio_destroy ();
 
   regconn_unregister ();
   regpref_unregister ();
