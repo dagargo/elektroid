@@ -23,6 +23,7 @@ These are the supported devices:
 * Elektron Syntakt
 * Eventide ModFactor, PitchFactor, TimeFactor, Space and H9
 * KORG padKONTROL
+* KORG prologue, minilogue xd and NTS-1 (units only)
 * KORG Volca Sample and Volca Sample 2
 * Moog Little Phatty and Slim Phatty
 * Novation Summit and Peak
