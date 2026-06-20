@@ -1318,7 +1318,7 @@ logue_get_unit_from_sysex (struct idata *unit, struct idata *sysex,
       logue_manifest.parameters[i].max = msg_payload_8bit->data[45 + i * 16];
       logue_manifest.parameters[i].type = msg_payload_8bit->data[46 + i * 16];
       snprintf (logue_manifest.parameters[i].name,
-		LOGUE_SLOT_STATUS_PARAM_NAME_LEN,
+		LOGUE_SLOT_STATUS_PARAM_NAME_LEN, "%s",
 		(gchar *) & msg_payload_8bit->data[47 + i * 16]);
 
       debug_print (2, "Parameter '%s' read",
