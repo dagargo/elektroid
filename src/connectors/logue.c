@@ -520,7 +520,7 @@ logue_get_manifest_from_json (struct logue_manifest *manifest,
   JsonParser *parser;
   JsonReader *reader;
   const gchar *string;
-  gchar version[PATH_MAX];
+  gchar version[LABEL_MAX];
 
   err = 0;
 
@@ -620,7 +620,7 @@ logue_get_manifest_from_json (struct logue_manifest *manifest,
   string = aux + 1;
   manifest->status.api_version.version.patch = strtol (string, &aux, 10);
   logue_set_version_str (&manifest->status.api_version.version, version,
-			 PATH_MAX);
+			 LABEL_MAX);
   debug_print (2, "API: %s", version);
   json_reader_end_element (reader);
 
@@ -657,7 +657,7 @@ logue_get_manifest_from_json (struct logue_manifest *manifest,
   string = aux + 1;
   manifest->status.program_version.version.patch = strtol (string, &aux, 10);
   logue_set_version_str (&manifest->status.program_version.version, version,
-			 PATH_MAX);
+			 LABEL_MAX);
   debug_print (2, "Version: %s", version);
   json_reader_end_element (reader);
 
@@ -1107,7 +1107,7 @@ logue_get_json_from_manifest (GByteArray *manifest_json,
   JsonNode *root;
   JsonGenerator *gen;
   JsonBuilder *builder;
-  gchar aux[PATH_MAX];
+  gchar version[LABEL_MAX];
   const gchar *platform_name, *module_name;
 
   platform_name = logue_get_platform_name (manifest->status.platform_id);
@@ -1136,9 +1136,9 @@ logue_get_json_from_manifest (GByteArray *manifest_json,
   json_builder_add_string_value (builder, module_name);
 
   json_builder_set_member_name (builder, LOGUE_MANIFEST_API);
-  logue_set_version_str (&manifest->status.api_version.version, aux,
-			 PATH_MAX);
-  json_builder_add_string_value (builder, aux);
+  logue_set_version_str (&manifest->status.api_version.version, version,
+			 LABEL_MAX);
+  json_builder_add_string_value (builder, version);
 
   json_builder_set_member_name (builder, LOGUE_MANIFEST_DEV_ID);
   json_builder_add_int_value (builder, manifest->status.developer_id);
@@ -1147,9 +1147,9 @@ logue_get_json_from_manifest (GByteArray *manifest_json,
   json_builder_add_int_value (builder, manifest->status.program_id);
 
   json_builder_set_member_name (builder, LOGUE_MANIFEST_VERSION);
-  logue_set_version_str (&manifest->status.program_version.version, aux,
-			 PATH_MAX);
-  json_builder_add_string_value (builder, aux);
+  logue_set_version_str (&manifest->status.program_version.version, version,
+			 LABEL_MAX);
+  json_builder_add_string_value (builder, version);
 
   json_builder_set_member_name (builder, LOGUE_MANIFEST_NAME);
   json_builder_add_string_value (builder, manifest->status.name);
@@ -1255,7 +1255,7 @@ logue_get_unit_from_sysex (struct idata *unit, struct idata *sysex,
   zip_stat_t zstat;
   zip_int64_t index;
   zip_error_t zerror;
-  gchar name[PATH_MAX];
+  gchar name[LABEL_MAX];
   const gchar *module_name;
   zip_source_t *zip_source;
   guint size, input_size, expected_size;
@@ -1382,7 +1382,8 @@ logue_get_unit_from_sysex (struct idata *unit, struct idata *sysex,
       goto end;
     }
 
-  snprintf (name, PATH_MAX, "%s_%s", module_name, logue_manifest.status.name);
+  snprintf (name, LABEL_MAX, "%s_%s", module_name,
+	    logue_manifest.status.name);
   index = zip_dir_add (zip, name, ZIP_FL_ENC_UTF_8);
   if (index < 0)
     {
