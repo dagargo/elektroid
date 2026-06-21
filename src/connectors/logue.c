@@ -614,6 +614,7 @@ logue_get_manifest_from_json (struct logue_manifest *manifest,
       goto cleanup_reader;
     }
   string = json_reader_get_string_value (reader);
+  manifest->status.api_version.bin = 0;
   manifest->status.api_version.version.major = strtol (string, &aux, 10);
   string = aux + 1;
   manifest->status.api_version.version.minor = strtol (string, &aux, 10);
@@ -651,6 +652,7 @@ logue_get_manifest_from_json (struct logue_manifest *manifest,
       goto cleanup_reader;
     }
   string = json_reader_get_string_value (reader);
+  manifest->status.program_version.bin = 0;
   manifest->status.program_version.version.major = strtol (string, &aux, 10);
   string = aux + 1;
   manifest->status.program_version.version.minor = strtol (string, &aux, 10);
