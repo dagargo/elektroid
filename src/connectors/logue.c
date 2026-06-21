@@ -176,7 +176,7 @@ logue_get_module_name (guint8 module_id)
 }
 
 static void
-logue_get_version (struct logue_version *version, gchar *out, guint size)
+logue_set_version_str (struct logue_version *version, gchar *out, guint size)
 {
   snprintf (out, size, "%d.%d-%d", version->major, version->minor,
 	    version->patch);
@@ -619,8 +619,8 @@ logue_get_manifest_from_json (struct logue_manifest *manifest,
   manifest->status.api_version.version.minor = strtol (string, &aux, 10);
   string = aux + 1;
   manifest->status.api_version.version.patch = strtol (string, &aux, 10);
-  logue_get_version (&manifest->status.api_version.version, version,
-		     PATH_MAX);
+  logue_set_version_str (&manifest->status.api_version.version, version,
+			 PATH_MAX);
   debug_print (2, "API: %s", version);
   json_reader_end_element (reader);
 
@@ -656,8 +656,8 @@ logue_get_manifest_from_json (struct logue_manifest *manifest,
   manifest->status.program_version.version.minor = strtol (string, &aux, 10);
   string = aux + 1;
   manifest->status.program_version.version.patch = strtol (string, &aux, 10);
-  logue_get_version (&manifest->status.program_version.version, version,
-		     PATH_MAX);
+  logue_set_version_str (&manifest->status.program_version.version, version,
+			 PATH_MAX);
   debug_print (2, "Version: %s", version);
   json_reader_end_element (reader);
 
@@ -1136,7 +1136,8 @@ logue_get_json_from_manifest (GByteArray *manifest_json,
   json_builder_add_string_value (builder, module_name);
 
   json_builder_set_member_name (builder, LOGUE_MANIFEST_API);
-  logue_get_version (&manifest->status.api_version.version, aux, PATH_MAX);
+  logue_set_version_str (&manifest->status.api_version.version, aux,
+			 PATH_MAX);
   json_builder_add_string_value (builder, aux);
 
   json_builder_set_member_name (builder, LOGUE_MANIFEST_DEV_ID);
@@ -1146,8 +1147,8 @@ logue_get_json_from_manifest (GByteArray *manifest_json,
   json_builder_add_int_value (builder, manifest->status.program_id);
 
   json_builder_set_member_name (builder, LOGUE_MANIFEST_VERSION);
-  logue_get_version (&manifest->status.program_version.version, aux,
-		     PATH_MAX);
+  logue_set_version_str (&manifest->status.program_version.version, aux,
+			 PATH_MAX);
   json_builder_add_string_value (builder, aux);
 
   json_builder_set_member_name (builder, LOGUE_MANIFEST_NAME);
