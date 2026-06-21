@@ -668,6 +668,7 @@ logue_get_manifest_from_json (struct logue_manifest *manifest,
       goto cleanup_reader;
     }
   string = json_reader_get_string_value (reader);
+  memset (manifest->status.name, 0, LOGUE_SLOT_STATUS_NAME_LEN);
   snprintf (manifest->status.name, LOGUE_SLOT_STATUS_NAME_LEN, "%s", string);
   debug_print (2, "Name: %s", manifest->status.name);
   json_reader_end_element (reader);
@@ -748,6 +749,8 @@ logue_get_manifest_from_json (struct logue_manifest *manifest,
 
 	  json_reader_read_element (reader, 0);
 	  string = json_reader_get_string_value (reader);
+	  memset (manifest->parameters[i].name, 0,
+		  LOGUE_SLOT_STATUS_PARAM_NAME_LEN);
 	  snprintf (manifest->parameters[i].name,
 		    LOGUE_SLOT_STATUS_PARAM_NAME_LEN, "%s", string);
 	  json_reader_end_element (reader);
