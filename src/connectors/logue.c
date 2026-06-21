@@ -1588,6 +1588,7 @@ static void
 logue_get_user_api_request (struct backend *backend,
 			    struct logue_data *logue_data)
 {
+  gchar version[LABEL_MAX];
   GByteArray *tx_msg, *rx_msg;
   enum logue_platform platform;
   struct logue_version api_version;
@@ -1611,9 +1612,8 @@ logue_get_user_api_request (struct backend *backend,
   api_version.patch = rx_msg->data[10];
 
   debug_print (2, "Platform ID: %d", platform);
-  debug_print (2, "Major: %d", api_version.major);
-  debug_print (2, "Minor: %d", api_version.minor);
-  debug_print (2, "Patch: %d", api_version.patch);
+  logue_set_version_str (&api_version, version, LABEL_MAX);
+  debug_print (2, "Version: %s", version);
 
   free_msg (rx_msg);
 }
