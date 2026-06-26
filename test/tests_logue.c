@@ -14,43 +14,24 @@ gint logue_get_unit_from_sysex (struct idata *unit, struct idata *sysex,
 				struct task_control *control);
 
 static void
-test_logue_get_sysex_from_unit (const gchar *sysex_path,
-				const gchar *unit_path,
-				enum logue_device device, guint8 slot)
+test_logue_get_sysex_from_unit_idata (struct idata *expected_sysex,
+				      struct idata *idata_unit,
+				      enum logue_device device, guint8 slot,
+				      struct task_control *control)
 {
   gint err;
+  struct idata actual;
   gchar *exp_text, *act_text;
   GByteArray *exp_payload, *act_payload;
   guint exp_payload_size, act_payload_size;
   guint8 *exp_payload_data, *act_payload_data;
-  struct idata actual, idata_unit, expected;
-  struct task_control control;
 
-  printf ("\n");
-
-  controllable_init (&control.controllable);
-  control.callback = NULL;
-
-  err = file_load (sysex_path, &expected, &control);
-  CU_ASSERT_EQUAL (err, 0);
-  if (err)
-    {
-      return;
-    }
-
-  err = file_load (unit_path, &idata_unit, &control);
-  CU_ASSERT_EQUAL (err, 0);
-  if (err)
-    {
-      return;
-    }
-
-  err = logue_get_sysex_from_unit (&actual, &idata_unit, &control,
+  err = logue_get_sysex_from_unit (&actual, idata_unit, control,
 				   LOGUE_DEVICE_NTS1, 0, slot);
   CU_ASSERT_EQUAL (err, 0);
   if (err)
     {
-      goto cleanup_expected;
+      return;
     }
 
   actual.content->data[5] = device;
@@ -58,13 +39,15 @@ test_logue_get_sysex_from_unit (const gchar *sysex_path,
 
   // Full message
 
-  CU_ASSERT_EQUAL (expected.content->len, actual.content->len);
+  CU_ASSERT_EQUAL (expected_sysex->content->len, actual.content->len);
 
-  if (expected.content->len == actual.content->len)
+  if (expected_sysex->content->len == actual.content->len)
     {
-      exp_text = debug_get_hex_data (debug_level, expected.content->data,
-				     expected.content->len);
-      debug_print (1, "expected (%u): %s", expected.content->len, exp_text);
+      exp_text =
+	debug_get_hex_data (debug_level, expected_sysex->content->data,
+			    expected_sysex->content->len);
+      debug_print (1, "expected (%u): %s", expected_sysex->content->len,
+		   exp_text);
       g_free (exp_text);
 
       act_text = debug_get_hex_data (debug_level, actual.content->data,
@@ -75,12 +58,12 @@ test_logue_get_sysex_from_unit (const gchar *sysex_path,
       // Payload
 
       exp_payload_size =
-	common_midi_msg_to_8bit_msg_size (expected.content->len - 11);
+	common_midi_msg_to_8bit_msg_size (expected_sysex->content->len - 11);
       exp_payload = g_byte_array_sized_new (exp_payload_size);
       exp_payload->len = exp_payload_size;
-      common_midi_msg_to_8bit_msg (&expected.content->data[9],
+      common_midi_msg_to_8bit_msg (&expected_sysex->content->data[9],
 				   exp_payload->data,
-				   expected.content->len - 11);
+				   expected_sysex->content->len - 11);
 
       exp_text = debug_get_hex_data (debug_level, exp_payload->data,
 				     exp_payload->len);
@@ -104,7 +87,7 @@ test_logue_get_sysex_from_unit (const gchar *sysex_path,
 
       CU_ASSERT_EQUAL (exp_payload->len, act_payload->len);
 
-      CU_ASSERT_EQUAL (0, memcmp (expected.content->data,
+      CU_ASSERT_EQUAL (0, memcmp (expected_sysex->content->data,
 				  actual.content->data, actual.content->len));
 
       // 16 B payload comparison
@@ -145,9 +128,41 @@ test_logue_get_sysex_from_unit (const gchar *sysex_path,
     }
 
   idata_clear (&actual);
-cleanup_expected:
+}
+
+static void
+test_logue_get_sysex_from_unit (const gchar *sysex_path,
+				const gchar *unit_path,
+				enum logue_device device, guint8 slot)
+{
+  gint err;
+  struct task_control control;
+  struct idata expected_sysex, idata_unit;
+
+  printf ("\n");
+
+  controllable_init (&control.controllable);
+  control.callback = NULL;
+
+  err = file_load (sysex_path, &expected_sysex, &control);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  err = file_load (unit_path, &idata_unit, &control);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  test_logue_get_sysex_from_unit_idata (&expected_sysex, &idata_unit, device,
+					slot, &control);
+
   idata_clear (&idata_unit);
-  idata_clear (&expected);
+  idata_clear (&expected_sysex);
 
   controllable_clear (&control.controllable);
 }
@@ -221,25 +236,18 @@ test_logue_get_sysex_from_unit_4 ()
 }
 
 static void
-test_logue_get_unit_from_sysex (const gchar *unit_path,
-				const gchar *sysex_path,
-				enum logue_device device)
+test_logue_get_unit_from_sysex (const gchar *sysex_path,
+				const gchar *sysex_back_path,
+				enum logue_device device, guint8 slot)
 {
   gint err;
   struct task_control control;
-  struct idata actual, idata_sysex, expected;
+  struct idata idata_unit, idata_sysex, idata_sysex_back;
 
   printf ("\n");
 
   controllable_init (&control.controllable);
   control.callback = NULL;
-
-  err = file_load (unit_path, &expected, &control);
-  CU_ASSERT_EQUAL (err, 0);
-  if (err)
-    {
-      return;
-    }
 
   err = file_load (sysex_path, &idata_sysex, &control);
   CU_ASSERT_EQUAL (err, 0);
@@ -248,24 +256,27 @@ test_logue_get_unit_from_sysex (const gchar *unit_path,
       return;
     }
 
-  err = logue_get_unit_from_sysex (&actual, &idata_sysex, &control);
+  err = file_load (sysex_back_path, &idata_sysex_back, &control);
   CU_ASSERT_EQUAL (err, 0);
   if (err)
     {
-      goto cleanup_expected;
+      goto cleanup_sysex;
     }
 
-  CU_ASSERT_EQUAL (actual.content->len, expected.content->len);
-  if (actual.content->len == expected.content->len)
+  err = logue_get_unit_from_sysex (&idata_unit, &idata_sysex_back, &control);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
     {
-      CU_ASSERT_EQUAL (0, memcmp (expected.content->data,
-				  actual.content->data, actual.content->len));
+      goto cleanup_sysex;
     }
 
-  idata_clear (&actual);
-cleanup_expected:
+  test_logue_get_sysex_from_unit_idata (&idata_sysex, &idata_unit, device,
+					slot, &control);
+
+  idata_clear (&idata_unit);
+cleanup_sysex:
   idata_clear (&idata_sysex);
-  idata_clear (&expected);
+  idata_clear (&idata_sysex_back);
 
   controllable_clear (&control.controllable);
 }
@@ -274,40 +285,40 @@ static void
 test_logue_get_unit_from_sysex_1 ()
 {
   test_logue_get_unit_from_sysex (TEST_DATA_DIR
-				  "/connectors/logue1.ntkdigunit",
+				  "/connectors/logue1.syx",
 				  TEST_DATA_DIR
 				  "/connectors/logue1_back.syx",
-				  LOGUE_DEVICE_NTS1);
+				  LOGUE_DEVICE_NTS1, 15);
 }
 
 static void
 test_logue_get_unit_from_sysex_2 ()
 {
   test_logue_get_unit_from_sysex (TEST_DATA_DIR
-				  "/connectors/logue2.ntkdigunit",
+				  "/connectors/logue2.syx",
 				  TEST_DATA_DIR
 				  "/connectors/logue2_back.syx",
-				  LOGUE_DEVICE_NTS1);
+				  LOGUE_DEVICE_NTS1, 3);
 }
 
 static void
 test_logue_get_unit_from_sysex_3 ()
 {
   test_logue_get_unit_from_sysex (TEST_DATA_DIR
-				  "/connectors/logue3.ntkdigunit",
+				  "/connectors/logue3.syx",
 				  TEST_DATA_DIR
 				  "/connectors/logue3_back.syx",
-				  LOGUE_DEVICE_NTS1);
+				  LOGUE_DEVICE_NTS1, 10);
 }
 
 static void
 test_logue_get_unit_from_sysex_4 ()
 {
   test_logue_get_unit_from_sysex (TEST_DATA_DIR
-				  "/connectors/logue4.ntkdigunit",
+				  "/connectors/logue4.syx",
 				  TEST_DATA_DIR
 				  "/connectors/logue4_back.syx",
-				  LOGUE_DEVICE_NTS1);
+				  LOGUE_DEVICE_NTS1, 7);
 }
 
 gint
