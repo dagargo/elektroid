@@ -97,3 +97,9 @@ docs/.bundle/
 flatpak/build/
 .flatpak-builder/
 Elektroid.app/
+
+# CMake
+/build/
+CMakeCache.txt
+CMakeFiles/
+CMakeUserPresets.json
