@@ -85,6 +85,48 @@ cp -r Elektroid.app /Applications/
 * `LANG` environmente variable must be set as in `LANG=es_ES.UTF-8` depending on your installed locales.
 * A shortcut could be manually created and use the `ico` file included in the installation for this purpose. It is recommended to set the `target` property to `C:\msys64\usr\bin\mintty.exe -w hide /bin/env MSYSTEM=UCRT64 LANG=es_ES.UTF-8 /bin/bash -l -i -c /ucrt64/bin/elektroid.exe` and the `start in` property to `C:\msys64\usr\bin` or the equivalent directories in your installation.
 
+### Building with CMake
+
+Besides the autotools build above, there is a CMake build. Its main purpose is to compile the GUI on Windows without MSYS2, but it works on Linux and macOS as well and produces the same binaries, data files and translations. It lives alongside the autotools files and does not replace them.
+
+The steps are the same on every platform.
+
+```
+cmake -S . -B build
+cmake --build build -j
+cmake --install build
+```
+
+Run the tests with this.
+
+```
+ctest --test-dir build --output-on-failure
+```
+
+The options map to the `./configure` switches.
+
+| CMake option | configure equivalent |
+| --- | --- |
+| `-DELEKTROID_CLI_ONLY=ON` | `CLI_ONLY=yes` |
+| `-DELEKTROID_RTMIDI=ON` | `RTMIDI=yes` |
+| `-DELEKTROID_RTAUDIO=ON` | `RTAUDIO=yes` |
+| `-DELEKTROID_NLS=OFF` | build without gettext catalogs |
+| `-DELEKTROID_BUILD_TESTS=OFF` | do not build the tests |
+
+As with autotools, RtMidi and RtAudio are the defaults everywhere except Linux, where ALSA and PulseAudio are used instead. Dependencies are located with `pkg-config`, so any prefix that ships `.pc` files is picked up.
+
+#### Windows without MSYS2
+
+Install the dependencies with vcpkg and configure against its toolchain file. The `gtk3` port pulls in `glib`, and vcpkg provides the `pkgconf` the build uses to find everything.
+
+```
+vcpkg install gtk3 rtmidi rtaudio libsndfile libsamplerate libzip zlib json-glib rubberband gettext
+cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=C:/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake --build build --config Release
+```
+
+RtMidi and RtAudio are already the defaults on Windows, so no ALSA or PulseAudio package is needed.
+
 ### MIDI backend
 
 By default, Elektroid uses ALSA as the MIDI backend on Linux and RtMidi on other OSs. To use RtMidi on Linux, pass `RTMIDI=yes` to `./configure`. In this case, the RtMidi development package will be needed (`librtmidi-dev` on Debian).
