@@ -19,7 +19,6 @@
  */
 
 #include <stdio.h>
-#include <unistd.h>
 #include <json-glib/json-glib.h>
 #include "elektron_pkg.h"
 #include "utils.h"

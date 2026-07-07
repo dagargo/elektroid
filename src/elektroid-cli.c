@@ -21,7 +21,6 @@
 #include "audio.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #if defined(__linux__)
 #include <signal.h>
 #endif

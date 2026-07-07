@@ -133,7 +133,6 @@ endif()
 
 # --- config.h -----------------------------------------------------------------
 include(CheckIncludeFile)
-check_include_file(unistd.h HAVE_UNISTD_H)
 check_include_file(limits.h HAVE_LIMITS_H)
 
 configure_file(
