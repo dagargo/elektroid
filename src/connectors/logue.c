@@ -840,7 +840,7 @@ logue_get_sysex_from_unit (struct idata *sysex, struct idata *unit,
   zip_int64_t entries;
   guint32 v, len, crc, full_len;
   gchar *unit_name = NULL;
-  gchar entry_name[PATH_MAX];
+  gchar entry_name[BLOB_MAX];
   struct logue_data logue_data;
   struct logue_manifest logue_manifest;
   zip_file_t *unit_payload = NULL;
@@ -891,7 +891,7 @@ logue_get_sysex_from_unit (struct idata *sysex, struct idata *unit,
 	}
     }
 
-  snprintf (entry_name, PATH_MAX, "%s/%s", unit_name, UNIT_MANIFEST_FILE);
+  snprintf (entry_name, BLOB_MAX, "%s/%s", unit_name, UNIT_MANIFEST_FILE);
   unit_manifest = zip_fopen (zip, entry_name, 0);
   if (!unit_manifest)
     {
@@ -918,7 +918,7 @@ logue_get_sysex_from_unit (struct idata *sysex, struct idata *unit,
       goto end;
     }
 
-  snprintf (entry_name, PATH_MAX, "%s/%s", unit_name, UNIT_PAYLOAD_FILE);
+  snprintf (entry_name, BLOB_MAX, "%s/%s", unit_name, UNIT_PAYLOAD_FILE);
   unit_payload = zip_fopen (zip, entry_name, 0);
   if (!unit_payload)
     {
@@ -1217,7 +1217,7 @@ logue_unit_add_file (zip_t *zip, const gchar *dir, const gchar *name,
   zip_int64_t index;
   zip_error_t zerror;
   zip_source_t *source;
-  gchar entry_name[PATH_MAX];
+  gchar entry_name[BLOB_MAX];
 
   debug_print (1, "Adding '%s' to zip...", name);
 
@@ -1231,7 +1231,7 @@ logue_unit_add_file (zip_t *zip, const gchar *dir, const gchar *name,
       return -1;
     }
 
-  snprintf (entry_name, PATH_MAX, "%s/%s", dir, name);
+  snprintf (entry_name, BLOB_MAX, "%s/%s", dir, name);
   index = zip_file_add (zip, entry_name, source,
 			ZIP_FL_OVERWRITE | ZIP_FL_ENC_UTF_8);
   if (index < 0)

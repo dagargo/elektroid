@@ -60,9 +60,9 @@ enum item_type
 //However, the GUI must list all the items always as the slot destination is always needed and the `ls` command will list them as well.
 //If the size column is not used at all, do not use FS_OPTION_SHOW_SIZE_COLUMN.
 
-#define ITEM_NAME_MAX PATH_MAX
+#define ITEM_NAME_MAX BLOB_MAX
 #define ITEM_SLOT_MAX 32
-#define ITEM_OBJECT_INFO_MAX PATH_MAX
+#define ITEM_OBJECT_INFO_MAX BLOB_MAX
 
 #define DEFAULT_PRINT_COL_SIZE_LEN 10
 #define DEFAULT_PRINT_COL_ID_LEN 10

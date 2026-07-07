@@ -1949,14 +1949,14 @@ elektron_next_data_entry (struct item_iterator *iter)
 	  data->mode == ITER_MODE_DATA_SND &&
 	  preferences_get_boolean (PREF_KEY_ELEKTRON_LOAD_SOUND_TAGS))
 	{
-	  gchar metadata_path[PATH_MAX];
+	  gchar metadata_path[BLOB_MAX];
 	  struct idata output;
 	  struct task_control control;
 
 	  controllable_init (&control.controllable);
 	  control.callback = NULL;
 
-	  snprintf (metadata_path, PATH_MAX, "%s/%d/%s", iter->dir,
+	  snprintf (metadata_path, BLOB_MAX, "%s/%d/%s", iter->dir,
 		    iter->item.id, FS_DATA_METADATA_FILE);
 	  debug_print (2, "Reading metadata from %s...", metadata_path);
 	  if (!elektron_download_data_snd (data->backend, metadata_path,
@@ -3632,7 +3632,7 @@ elektron_ram_clear_unused_slots (struct backend *backend)
 {
   gint err;
   struct item_iterator iter;
-  gchar path[PATH_MAX];
+  gchar path[BLOB_MAX];
 
   err = elektron_ram_read_dir (backend, &iter, "/", NULL);
   if (err)
@@ -3644,7 +3644,7 @@ elektron_ram_clear_unused_slots (struct backend *backend)
     {
       if (iter.item.size != 0 && !strcmp (iter.item.object_info, ""))
 	{
-	  snprintf (path, PATH_MAX, "/%d", iter.item.id);
+	  snprintf (path, BLOB_MAX, "/%d", iter.item.id);
 	  debug_print (1, "Clearing RAM slot '%s'...", path);
 	  elektron_ram_clear_sample (backend, path);
 	}

@@ -2383,7 +2383,7 @@ static void
 editor_export_save_as_clicked (GtkWidget *object, gpointer data)
 {
   gint name_sel_len;
-  gchar name[PATH_MAX];
+  gchar name[BLOB_MAX];
   const gchar *window_title;
 
   g_mutex_lock (&audio.control.controllable.mutex);
@@ -2404,7 +2404,7 @@ editor_export_save_as_clicked (GtkWidget *object, gpointer data)
 
   if (AUDIO_SEL_LEN)
     {
-      snprintf (name, PATH_MAX, "%s", "Sample.wav");
+      snprintf (name, BLOB_MAX, "%s", "Sample.wav");
     }
   else
     {
@@ -2412,14 +2412,14 @@ editor_export_save_as_clicked (GtkWidget *object, gpointer data)
 	{
 	  gchar *basename = g_path_get_basename (audio.path);
 	  filename_remove_ext (basename);
-	  snprintf (name, PATH_MAX, "%s.wav", basename);
+	  snprintf (name, BLOB_MAX, "%s.wav", basename);
 	  g_free (basename);
 	}
       else
 	{
 	  GDateTime *dt = g_date_time_new_now_local ();
 	  gchar *s = g_date_time_format (dt, DATE_TIME_FILENAME_FORMAT);
-	  snprintf (name, PATH_MAX, "%s %s.wav", _("Audio"), s);
+	  snprintf (name, BLOB_MAX, "%s %s.wav", _("Audio"), s);
 	  g_free (s);
 	  g_date_time_unref (dt);
 	}
