@@ -199,7 +199,7 @@ get_data_dir ()
   static gchar *data_dir = NULL;
   if (!data_dir)
     {
-      char path[PATH_MAX];
+      char path[BLOB_MAX];
       uint32_t size = sizeof (path);
       if (_NSGetExecutablePath (path, &size) == 0)
 	{

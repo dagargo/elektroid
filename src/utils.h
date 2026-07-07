@@ -44,6 +44,7 @@
 #define GI (KI * MI)
 
 #define LABEL_MAX 256
+#define BLOB_MAX (4 * KI)
 
 #define CONTROLLABLE_IS_NULL_OR_ACTIVE(c) (!c || controllable_is_active(c))
 
