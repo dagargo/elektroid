@@ -17,11 +17,22 @@ AM_INIT_AUTOMAKE([subdir-objects])
 # Checks for programs.
 AC_PROG_CC
 
-# Define conditional prior to package checks
-AM_CONDITIONAL([ELEKTROID_CLI_ONLY], [test "${CLI_ONLY}" = yes])
-
 # Needed to access the 'host_os' variable
 AC_CANONICAL_HOST
+
+AC_ARG_VAR([BUILD_CLI], [Build CLI (yes/no) [default: yes]])
+if test -z "$BUILD_CLI"; then
+    BUILD_CLI="yes"
+fi
+
+AC_ARG_VAR([BUILD_GUI], [Build GUI (yes/no) [default: yes]])
+if test -z "$BUILD_GUI"; then
+    BUILD_GUI="yes"
+fi
+# Define conditional prior to package checks
+AM_CONDITIONAL([ELEKTROID_BUILD_CLI], [test "${BUILD_CLI}" = yes])
+AM_CONDITIONAL([ELEKTROID_BUILD_GUI], [test "${BUILD_GUI}" = yes])
+AS_IF([test "${BUILD_CLI}" != yes && test "${BUILD_GUI}" != yes], [AC_MSG_ERROR(Nothing to build.)])
 
 case "${host_os}" in
   linux*)
@@ -57,7 +68,7 @@ AS_IF([test "${RTAUDIO}" = yes], [AC_DEFINE([ELEKTROID_RTAUDIO], [1], ["Use RtAu
 # Checks for libraries.
 PKG_CHECK_MODULES(zlib, zlib >= 1.1.8)
 PKG_CHECK_MODULES(libzip, libzip >= 1.1.2)
-AM_COND_IF(ELEKTROID_CLI_ONLY, [], [PKG_CHECK_MODULES([GTK], [gtk+-3.0])])
+AM_COND_IF(ELEKTROID_BUILD_GUI, [], [PKG_CHECK_MODULES([GTK], [gtk+-3.0])])
 
 PKG_CHECK_MODULES(SNDFILE, sndfile >= 1.0.2)
 PKG_CHECK_MODULES(SNDFILE_MP3, sndfile >= 1.1.0, ac_cv_sndfile_mp3=1, ac_cv_sndfile_mp3=0)
@@ -70,16 +81,15 @@ AC_SUBST(SAMPLERATE_CFLAGS)
 AC_SUBST(SAMPLERATE_LIBS)
 
 AM_COND_IF(ELEKTROID_RTMIDI, [PKG_CHECK_MODULES([RTMIDI], [rtmidi >= 5.0.0])], [PKG_CHECK_MODULES([ALSA], [alsa >= 1.1.3])])
-
-AM_COND_IF(ELEKTROID_CLI_ONLY, [], [AM_COND_IF(ELEKTROID_RTAUDIO, [PKG_CHECK_MODULES([RTAUDIO], [rtaudio >= 5.2.0])], [PKG_CHECK_MODULES([ALSA], [alsa >= 1.1.3])])])
+AM_COND_IF(ELEKTROID_RTAUDIO, [PKG_CHECK_MODULES([RTAUDIO], [rtaudio >= 5.2.0])], [PKG_CHECK_MODULES([ALSA], [alsa >= 1.1.3])])
 
 AC_SUBST(PULSEAUDIO_CFLAGS)
 AC_SUBST(PULSEAUDIO_LIBS)
 
-AM_COND_IF(ELEKTROID_CLI_ONLY, [], [
+AM_COND_IF(ELEKTROID_BUILD_GUI, [
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.19])
-])
+], [])
 
 PKG_CHECK_MODULES(rubberband, rubberband >= 3.3)
 

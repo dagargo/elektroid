@@ -28,10 +28,14 @@ elektroid_LDFLAGS = `$(PKG_CONFIG) --libs $(GUI_LIBS)` $(SNDFILE_LIBS) $(SAMPLER
 elektroid_cli_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(CLI_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -D_GNU_SOURCE $(AM_CFLAGS)
 elektroid_cli_LDFLAGS = `$(PKG_CONFIG) --libs $(CLI_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
 
-if ELEKTROID_CLI_ONLY
-bin_PROGRAMS = elektroid-cli
-else
-bin_PROGRAMS = elektroid elektroid-cli
+bin_PROGRAMS =
+
+if ELEKTROID_BUILD_CLI
+bin_PROGRAMS += elektroid-cli
+endif
+
+if ELEKTROID_BUILD_GUI
+bin_PROGRAMS += elektroid
 endif
 
 if ELEKTROID_RTMIDI
