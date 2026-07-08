@@ -117,7 +117,7 @@ struct elektron_iterator_data
   gboolean load_metadata;
 };
 
-struct __attribute__((packed)) elektron_data_header
+PACKED_STRUCT_START struct elektron_data_header
 {
   guint32 magic_head;		// 0xac11d303
   guint8 header_version;
@@ -130,9 +130,8 @@ struct __attribute__((packed)) elektron_data_header
   guint32 payload_size;		// uncompressed
   guint8 is_compressed;
   guint8 footer_size;		// Size of footer
-};
-
-struct __attribute__((packed)) elektron_data_sample_slot_header
+} PACKED_ATTR;
+PACKED_STRUCT_END PACKED_STRUCT_START struct elektron_data_sample_slot_header
 {
   guint32 magic_head;		// 0x53414d50
   guint8 version;		// Should be 0
@@ -140,16 +139,14 @@ struct __attribute__((packed)) elektron_data_sample_slot_header
   guint32 length;
   gchar name[ELEKTRON_DATA_SAMPLE_MAX_LEN];
   guint32 rsvd32[9];		// ignore
-};
-
-struct __attribute__((packed)) elektron_data_footer
+} PACKED_ATTR;
+PACKED_STRUCT_END PACKED_STRUCT_START struct elektron_data_footer
 {
   guint32 hash;
   guint32 content_size;
   guint32 magic_tail;		// 0xaaa1daaa
-};
-
-typedef GByteArray *(*elektron_msg_id_func) (guint);
+} PACKED_ATTR;
+PACKED_STRUCT_END typedef GByteArray *(*elektron_msg_id_func) (guint);
 
 typedef GByteArray *(*elektron_msg_id_len_func) (guint, guint);
 

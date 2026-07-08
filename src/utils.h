@@ -27,6 +27,23 @@
 #include <inttypes.h>
 #include "../config.h"
 
+// Macro solution for portable packed structs.
+// See connectors/elektron.c for an example.
+#if defined(_MSC_VER)
+#define PACKED_STRUCT_START __pragma(pack(push, 1))
+#define PACKED_STRUCT_END   __pragma(pack(pop))
+#define PACKED_ATTR
+#elif defined(__GNUC__) || defined(__clang__)
+#define PACKED_STRUCT_START
+#define PACKED_STRUCT_END
+#define PACKED_ATTR __attribute__((packed))
+#else
+#define PACKED_STRUCT_START
+#define PACKED_STRUCT_END
+#define PACKED_ATTR
+#warning "Structure packing might not be supported on this compiler"
+#endif
+
 #define CONF_DIR "/.config/" PACKAGE
 
 #define APP_NAME "Elektroid"
