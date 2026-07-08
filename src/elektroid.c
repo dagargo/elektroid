@@ -26,7 +26,6 @@
 #endif
 #include <glib/gi18n.h>
 #include <glib/gprintf.h>
-#include <getopt.h>
 #include "browser.h"
 #include "editor.h"
 #include "local.h"
