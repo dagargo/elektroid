@@ -91,13 +91,15 @@ if(NOT WIN32)
 endif()
 
 # elektroid_cli_SOURCES = common + audio + elektroid-cli.c
+if(ELEKTROID_BUILD_CLI)
 add_executable(elektroid-cli
   ${ELEKTROID_COMMON_SOURCES}
   ${ELEKTROID_AUDIO_SOURCES}
   elektroid-cli.c)
+endif()
 
 # elektroid_SOURCES = common + audio + GUI sources
-if(NOT ELEKTROID_CLI_ONLY)
+if(ELEKTROID_BUILD_GUI)
   add_executable(elektroid
     ${ELEKTROID_COMMON_SOURCES}
     ${ELEKTROID_AUDIO_SOURCES}
@@ -140,8 +142,9 @@ if(TARGET elektroid)
   target_link_libraries(elektroid PRIVATE PkgConfig::GTK)
 endif()
 
-if(ELEKTROID_CLI_ONLY)
+if(ELEKTROID_BUILD_CLI)
   install(TARGETS elektroid-cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
-else()
-  install(TARGETS elektroid elektroid-cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+endif()
+if(ELEKTROID_BUILD_GUI)
+  install(TARGETS elektroid RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 endif()

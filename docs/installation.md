@@ -61,7 +61,7 @@ pacman -S mingw-w64-x86_64-toolchain gettext gettext-devel libtool pkg-config mi
 
 ## Installation
 
-As with other autotools project, you need to run the following commands. If you just want to compile `elektroid-cli`, pass `CLI_ONLY=yes` to `./configure`.
+As with other autotools project, you need to run the following commands. If you want to skip the build of either the CLI or the GUI, pass `BUILD_CLI=no` or `BUILD_GUI=no` to `./configure`.
 
 ```
 autoreconf --install

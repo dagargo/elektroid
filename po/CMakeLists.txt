@@ -1,6 +1,6 @@
 #
 # po/CMakeLists.txt - gettext message catalogs (GUI only, like the autotools
-# AM_GNU_GETTEXT handling gated on !ELEKTROID_CLI_ONLY).
+# AM_GNU_GETTEXT handling gated on ELEKTROID_BUILD_GUI).
 #
 # For each language in LINGUAS, compile <lang>.po -> <lang>.gmo and install it
 # as $(localedir)/<lang>/LC_MESSAGES/$(PACKAGE).mo, matching what the gettext

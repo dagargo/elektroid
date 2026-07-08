@@ -1,9 +1,9 @@
-ACLOCAL_AMFLAGS=-I m4
+ACLOCAL_AMFLAGS = -I m4
 
-if ELEKTROID_CLI_ONLY
-SUBDIRS=src res test man
-else
-SUBDIRS=src res test po man
+SUBDIRS = src res test man
+
+if ELEKTROID_BUILD_GUI
+SUBDIRS += po
 endif
 
 format:

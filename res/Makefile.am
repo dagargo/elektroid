@@ -3,13 +3,7 @@ res_DATA = libraries.html \
 	THANKS \
 	volca_sample_sdk-COPYING
 
-if ELEKTROID_CLI_ONLY
-  desktop_DATA =
-  metainfo_DATA =
-  svgicon_DATA =
-  microbrute_DATA =
-  ico_DATA =
-else
+if ELEKTROID_BUILD_GUI
   res_DATA += elektroid.ui elektroid.css
   svgicon_DATA = io.github.dagargo.Elektroid.svg \
                  io.github.dagargo.Elektroid-symbolic.svg \
@@ -49,6 +43,12 @@ else
     metainfo_DATA =
 endif
 
+else
+  desktop_DATA =
+  metainfo_DATA =
+  svgicon_DATA =
+  microbrute_DATA =
+  ico_DATA =
 endif
 
 elektron_DATA = elektron/devices.json

@@ -34,7 +34,7 @@ install(FILES elektron/devices.json
 install(FILES volca_sample_2/init_pattern.vlcsplpattb
   DESTINATION "${ELEKTROID_RESDIR}/volca_sample_2")
 
-if(NOT ELEKTROID_CLI_ONLY)
+if(ELEKTROID_BUILD_GUI)
   # res_DATA += elektroid.ui elektroid.css
   install(FILES elektroid.ui elektroid.css
     DESTINATION "${ELEKTROID_RESDIR}")

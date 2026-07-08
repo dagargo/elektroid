@@ -14,7 +14,8 @@
 #   cmake --install build --prefix /usr/local
 #
 # Options (map to the ./configure switches):
-#   -DELEKTROID_CLI_ONLY=ON    build only elektroid-cli   (configure CLI_ONLY=yes)
+#   -DELEKTROID_BUILD_CLI=ON   build CLI (configure BUILD_CLI=yes)
+#   -DELEKTROID_BUILD_GUI=ON   build GUI (configure BUILD_GUI=yes)
 #   -DELEKTROID_RTMIDI=ON/OFF  RtMidi vs ALSA MIDI backend (configure RTMIDI=yes)
 #   -DELEKTROID_RTAUDIO=ON/OFF RtAudio vs PulseAudio audio (configure RTAUDIO=yes)
 #   -DELEKTROID_NLS=ON/OFF     compile/install gettext catalogs (GUI only)
@@ -76,11 +77,12 @@ else()
   set(_rt_forced FALSE)
 endif()
 
-option(ELEKTROID_CLI_ONLY   "Build only elektroid-cli (no GUI)"             OFF)
-option(ELEKTROID_RTMIDI     "Use the RtMidi MIDI backend (else ALSA)"       ${_rt_default})
-option(ELEKTROID_RTAUDIO    "Use the RtAudio audio backend (else PulseAudio)" ${_rt_default})
+option(ELEKTROID_BUILD_CLI  "Build CLI"                                           ON)
+option(ELEKTROID_BUILD_GUI  "Build GUI"                                           ON)
+option(ELEKTROID_RTMIDI     "Use the RtMidi MIDI backend (else ALSA)"             ${_rt_default})
+option(ELEKTROID_RTAUDIO    "Use the RtAudio audio backend (else PulseAudio)"     ${_rt_default})
 option(ELEKTROID_NLS        "Compile and install gettext translations (GUI only)" ON)
-option(ELEKTROID_BUILD_TESTS "Build the CUnit test programs"                ON)
+option(ELEKTROID_BUILD_TESTS "Build the CUnit test programs"                      ON)
 
 if(_rt_forced)
   # On Windows the ALSA/PulseAudio backends are not available.
@@ -108,7 +110,7 @@ else()
 endif()
 
 # GUI toolkit.
-if(NOT ELEKTROID_CLI_ONLY)
+if(ELEKTROID_BUILD_GUI)
   pkg_check_modules(GTK REQUIRED IMPORTED_TARGET gtk+-3.0)
 endif()
 
@@ -147,7 +149,7 @@ set(ELEKTROID_LOCALEDIR "${CMAKE_INSTALL_FULL_LOCALEDIR}")
 
 add_subdirectory(src)
 add_subdirectory(res)
-if(NOT ELEKTROID_CLI_ONLY AND ELEKTROID_NLS)
+if(ELEKTROID_BUILD_GUI AND ELEKTROID_NLS)
   add_subdirectory(po)
 endif()
 add_subdirectory(man)
@@ -159,7 +161,8 @@ endif()
 
 message(STATUS "Elektroid ${PACKAGE_VERSION} configured:")
 message(STATUS "  system          : ${ELEKTROID_SYSTEM}")
-message(STATUS "  CLI only        : ${ELEKTROID_CLI_ONLY}")
+message(STATUS "  build CLI       : ${ELEKTROID_BUILD_CLI}")
+message(STATUS "  build GUI       : ${ELEKTROID_BUILD_GUI}")
 message(STATUS "  MIDI backend    : ${ELEKTROID_MIDI_TARGET}")
 message(STATUS "  audio backend   : ${ELEKTROID_AUDIO_TARGET}")
 message(STATUS "  sndfile MP3     : ${HAVE_SNDFILE_MP3}")
