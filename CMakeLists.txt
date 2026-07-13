@@ -77,11 +77,18 @@ else()
   set(_rt_forced FALSE)
 endif()
 
-option(ELEKTROID_CLI_ONLY   "Build only elektroid-cli (no GUI)"             OFF)
-option(ELEKTROID_RTMIDI     "Use the RtMidi MIDI backend (else ALSA)"       ${_rt_default})
-option(ELEKTROID_RTAUDIO    "Use the RtAudio audio backend (else PulseAudio)" ${_rt_default})
-option(ELEKTROID_NLS        "Compile and install gettext translations (GUI only)" ON)
-option(ELEKTROID_BUILD_TESTS "Build the CUnit test programs"                ON)
+if(WIN32)
+  set(_cli_default OFF)
+else()
+  set(_cli_default ON)
+endif()
+
+option(ELEKTROID_BUILD_CLI   "Build CLI"                                           ${_cli_default})
+option(ELEKTROID_BUILD_GUI   "Build GUI"                                           ON)
+option(ELEKTROID_RTMIDI      "Use the RtMidi MIDI backend (else ALSA)"             ${_rt_default})
+option(ELEKTROID_RTAUDIO     "Use the RtAudio audio backend (else PulseAudio)"     ${_rt_default})
+option(ELEKTROID_NLS         "Compile and install gettext translations (GUI only)" ON)
+option(ELEKTROID_BUILD_TESTS "Build the CUnit test programs"                       ON)
 
 if(_rt_forced)
   # On Windows the ALSA/PulseAudio backends are not available.
