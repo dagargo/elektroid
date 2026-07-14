@@ -99,6 +99,16 @@ endif()
 # --- Dependencies (pkg-config, modern IMPORTED_TARGET form) -------------------
 find_package(PkgConfig REQUIRED)
 
+# Required to fix a linking issue against pthread.lib.
+if(WIN32)
+  find_package(PThreads4W REQUIRED)
+
+  if(TARGET PThreads4W::PThreads4W AND NOT TARGET pthread)
+    add_library(pthread INTERFACE IMPORTED)
+    target_link_libraries(pthread INTERFACE PThreads4W::PThreads4W)
+  endif()
+endif()
+
 # Always required (CLI_LIBS_BASE + sndfile + samplerate).
 pkg_check_modules(GLIB       REQUIRED IMPORTED_TARGET glib-2.0)
 pkg_check_modules(JSONGLIB   REQUIRED IMPORTED_TARGET json-glib-1.0)
