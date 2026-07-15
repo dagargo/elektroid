@@ -99,8 +99,8 @@ endif()
 # --- Dependencies (pkg-config, modern IMPORTED_TARGET form) -------------------
 find_package(PkgConfig REQUIRED)
 
-# Required to fix a linking issue against pthread.lib.
 if(WIN32)
+  # Required to fix a linking issue against pthread.lib.
   find_package(PThreads4W REQUIRED)
 
   if(TARGET PThreads4W::PThreads4W AND NOT TARGET pthread)

@@ -120,7 +120,7 @@ As with autotools, RtMidi and RtAudio are the defaults everywhere except Linux, 
 Install the dependencies with vcpkg and configure against its toolchain file. The `gtk3` port pulls in `glib`, and vcpkg provides the `pkgconf` the build uses to find everything.
 
 ```
-vcpkg install gtk3 rtmidi rtaudio libsndfile libsamplerate libzip zlib json-glib rubberband gettext
+vcpkg install gtk3 rtmidi rtaudio libsndfile libsamplerate libzip zlib json-glib rubberband gettext pthreads
 cmake -S . -B build -DCMAKE_TOOLCHAIN_FILE=C:/path/to/vcpkg/scripts/buildsystems/vcpkg.cmake
 cmake --build build --config Release
 ```
