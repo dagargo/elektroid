@@ -60,6 +60,10 @@
 
 #define LOGUE_MAX_UNIT_SIZE (1 * MI)
 
+#define MINILOGUE_XD_MAX_PROGRAMS 500
+#define MINILOGUE_XD_PROGRAM_NAME_LEN 13	// This includes the NULL byte
+#define MINILOGUE_XD_PROGRAM_SIZE 394
+
 struct logue_version
 {
   guint8 reserved;
@@ -121,6 +125,12 @@ struct logue_manifest
   struct logue_slot_status status;
   guint32 param_num;
   struct logue_slot_parameter parameters[LOGUE_SLOT_STATUS_PARAMS_MAX];
+};
+
+struct logue_minilogue_xd_program_iter_data
+{
+  guint next;
+  struct backend *backend;
 };
 
 #define LOGUE_GET_MSG_OP(msg) (msg->data[6])
@@ -433,6 +443,168 @@ logue_revfx_read_dir (struct backend *backend,
 {
   return logue_read_dir (backend, iter, dir, extensions,
 			 FS_LOGUE_MODULE_REVFX);
+}
+
+static gint
+logue_minilogue_xd_program_download_by_id (struct backend *backend,
+					   guint program_num,
+					   struct idata *program)
+{
+  guint8 data[2];
+  guint8 program_data[336];
+  GByteArray *tx_msg, *rx_msg;
+  gchar name[MINILOGUE_XD_PROGRAM_NAME_LEN];
+  struct logue_data *logue_data = backend->data;
+
+  data[0] = 0x7f & program_num;
+  data[1] = 0x7f & (program_num >> 7);
+  tx_msg = logue_get_msg (logue_data, 0x1C, data, 2);
+  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  if (!rx_msg)
+    {
+      return -ENODEV;
+    }
+
+  if (rx_msg->len != MINILOGUE_XD_PROGRAM_SIZE)
+    {
+      free_msg (rx_msg);
+      return -EIO;
+    }
+
+  name[MINILOGUE_XD_PROGRAM_NAME_LEN - 1] = 0;
+  common_midi_msg_to_8bit_msg (&rx_msg->data[8], program_data, 384);
+  memcpy (name, &rx_msg->data[6], MINILOGUE_XD_PROGRAM_NAME_LEN - 1);
+  g_strchomp (name);
+  idata_init (program, rx_msg, strdup (name), NULL, NULL);
+
+  g_usleep (LOGUE_REST_TIME_US);
+
+  return 0;
+}
+
+static gint
+logue_minilogue_xd_program_download (struct backend *backend,
+				     const gchar *src_path,
+				     struct idata *program,
+				     struct task_control *control)
+{
+  gint err;
+  guint id;
+
+  err = common_slot_get_id_from_path (src_path, &id);
+  if (err)
+    {
+      return err;
+    }
+
+  if (id >= MINILOGUE_XD_MAX_PROGRAMS)
+    {
+      return -EINVAL;
+    }
+
+  task_control_reset (control, 1);
+  err = logue_minilogue_xd_program_download_by_id (backend, id, program);
+  task_control_set_progress (control, 1.0);
+
+  return err;
+}
+
+static gint
+logue_minilogue_xd_program_upload (struct backend *backend, const gchar *path,
+				   struct idata *program,
+				   struct task_control *control)
+{
+  gint err;
+  guint id;
+  GByteArray *rx_msg, *tx_msg;
+
+  if (common_slot_get_id_from_path (path, &id))
+    {
+      return -EINVAL;
+    }
+  if (id >= MINILOGUE_XD_MAX_PROGRAMS)
+    {
+      return -EINVAL;
+    }
+
+  // It's OK to steal the data here because consecutive calls to idata_free work.
+  tx_msg = idata_steal (program);
+  if (tx_msg->len != MINILOGUE_XD_PROGRAM_SIZE)
+    {
+      return -EINVAL;
+    }
+
+  tx_msg->data[7] = 0xf7 & id;
+  tx_msg->data[8] = 0xf7 & (id >> 7);
+
+  err = common_data_tx_and_rx (backend, tx_msg, &rx_msg, control);
+  if (err)
+    {
+      return err;
+    }
+  if (rx_msg->len != 8 || LOGUE_GET_MSG_OP (rx_msg) != 0x23)
+    {
+      err = -EIO;
+    }
+  free_msg (rx_msg);
+
+  g_usleep (LOGUE_REST_TIME_US);
+
+  return err;
+}
+
+static gint
+logue_minilogue_xd_program_next_dentry (struct item_iterator *iter)
+{
+  gint err;
+  struct idata program;
+  struct logue_minilogue_xd_program_iter_data *data = iter->data;
+
+  if (data->next >= MINILOGUE_XD_MAX_PROGRAMS)
+    {
+      return -ENOENT;
+    }
+
+  err = logue_minilogue_xd_program_download_by_id (data->backend,
+						   data->next, &program);
+  if (err)
+    {
+      return err;
+    }
+
+  item_set_name (&iter->item, program.name);
+  iter->item.id = data->next;
+  common_slot_set_slot_padded (&iter->item, 3);
+  iter->item.type = ITEM_TYPE_FILE;
+  iter->item.size = MINILOGUE_XD_PROGRAM_SIZE;
+
+  data->next++;
+  idata_clear (&program);
+
+  return err;
+}
+
+static gint
+logue_minilogue_xd_program_read_dir (struct backend *backend,
+				     struct item_iterator *iter,
+				     const gchar *dir,
+				     const gchar **extensions)
+{
+  struct logue_minilogue_xd_program_iter_data *data;
+
+  if (strcmp (dir, "/"))
+    {
+      return -ENOTDIR;
+    }
+
+  data = g_malloc (sizeof (struct logue_minilogue_xd_program_iter_data));
+  data->next = 0;
+  data->backend = backend;
+
+  item_iterator_init (iter, dir, data, logue_minilogue_xd_program_next_dentry,
+		      g_free);
+
+  return 0;
 }
 
 static const gchar **
@@ -1590,6 +1762,24 @@ static const struct fs_operations FS_LOGUE_REVFX_OPERATIONS = {
   .get_download_path = common_system_get_download_path
 };
 
+static const struct fs_operations FS_LOGUE_PROGRAM_OPERATIONS = {
+  .id = FS_LOGUE_MODULE_PROGRAM,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_ALLOW_SEARCH,
+  .name = "program",
+  .gui_name = "Programs",
+  .gui_icon = FS_ICON_PRESET,
+  .file_icon = FS_ICON_PRESET,
+  .readdir = logue_minilogue_xd_program_read_dir,
+  .download = logue_minilogue_xd_program_download,
+  .upload = logue_minilogue_xd_program_upload,
+  .load = common_file_load,
+  .save = common_file_save,
+  .get_exts = common_sysex_get_extensions,
+  .get_upload_path = common_slot_get_upload_path,
+  .get_download_path = common_slot_get_download_path_nnn,
+};
+
 // This message is not really useful but it's part of what logue-cli does.
 static void
 logue_get_user_api_request (struct backend *backend,
@@ -1683,8 +1873,16 @@ logue_handshake (struct backend *backend)
   backend->destroy_data = backend_destroy_data;
 
   gslist_fill (&backend->fs_ops, &FS_LOGUE_OSC_OPERATIONS,
-	       &FS_LOGUE_MODFX_OPERATIONS,
-	       &FS_LOGUE_DELFX_OPERATIONS, &FS_LOGUE_REVFX_OPERATIONS, NULL);
+	       &FS_LOGUE_MODFX_OPERATIONS, &FS_LOGUE_DELFX_OPERATIONS,
+	       &FS_LOGUE_REVFX_OPERATIONS, NULL);
+
+  if (logue_data->device == LOGUE_DEVICE_MINILOGUE_XD)
+    {
+      backend->fs_ops = g_slist_append (backend->fs_ops,
+					(gpointer) &
+					FS_LOGUE_PROGRAM_OPERATIONS);
+    }
+
   snprintf (backend->name, LABEL_MAX, "KORG %s", name);
 
   return err;

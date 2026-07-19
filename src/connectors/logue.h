@@ -36,6 +36,9 @@ enum logue_module
   FS_LOGUE_MODULE_DELFX,
   FS_LOGUE_MODULE_REVFX,
   FS_LOGUE_MODULE_OSC,
+  // The following modules are NOT part of the logue system (modfx, delfx, revfx and osc).
+  // These might represent other types of data such as programs or tunings.
+  FS_LOGUE_MODULE_PROGRAM = 1024
 };
 
 enum logue_platform

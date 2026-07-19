@@ -163,6 +163,7 @@ test_common_8bit_msg_to_midi_msg_size ()
   CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (0), 0);
   CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (32), 37);
   CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (119), 136);
+  CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (336), 384);
   CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (6977), 7974);
   CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (14420), 16480);
   CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (917494), 1048565);
@@ -174,6 +175,7 @@ test_common_midi_msg_to_8bit_msg_size ()
   CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (0), 0);
   CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (37), 32);
   CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (136), 119);
+  CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (384), 336);
   CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (7974), 6977);
   CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (16480), 14420);
   CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (1048565), 917494);
