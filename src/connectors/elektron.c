@@ -1110,9 +1110,15 @@ static gint
 elektron_rename_raw_file (struct backend *backend, const gchar *src,
 			  const gchar *dst)
 {
-  return elektron_src_dst_common (backend, src, dst,
-				  FS_RAW_RENAME_FILE_REQUEST,
-				  sizeof (FS_RAW_RENAME_FILE_REQUEST));
+  gint err;
+  gchar *src_with_ext = elektron_add_ext_to_mc_snd (src);
+  gchar *dst_with_ext = elektron_add_ext_to_mc_snd (dst);
+  err = elektron_src_dst_common (backend, src_with_ext, dst_with_ext,
+				 FS_RAW_RENAME_FILE_REQUEST,
+				 sizeof (FS_RAW_RENAME_FILE_REQUEST));
+  g_free (src_with_ext);
+  g_free (dst_with_ext);
+  return err;
 }
 
 static gint
@@ -1293,15 +1299,11 @@ static gint
 elektron_move_raw_item (struct backend *backend, const gchar *src,
 			const gchar *dst)
 {
-  gint ret;
-  gchar *src_with_ext = elektron_add_ext_to_mc_snd (src);
-  ret = elektron_move_common_item (backend, src_with_ext, dst,
-				   elektron_read_raw_dir,
-				   elektron_rename_raw_file,
-				   elektron_create_raw_dir,
-				   elektron_delete_raw_dir);
-  g_free (src_with_ext);
-  return ret;
+  return elektron_move_common_item (backend, src, dst,
+				    elektron_read_raw_dir,
+				    elektron_rename_raw_file,
+				    elektron_create_raw_dir,
+				    elektron_delete_raw_dir);
 }
 
 static gint
