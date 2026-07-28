@@ -76,6 +76,9 @@ static const gchar *FS_DATA_ANY_EXTS[] = { "data", NULL };
 #define ELEKTRON_SYNTAKT_MAX_SAMPLE_TIME_S 5
 #define ELEKTRON_SYNTAKT_MAX_SAMPLE_FRAMES (ELEKTRON_SAMPLE_RATE * ELEKTRON_SYNTAKT_MAX_SAMPLE_TIME_S)
 
+#define ELEKTRON_MC_SOUND_EXTENSION "mc-snd"
+#define ELEKTRON_MC_SOUND_EXTENSION_WITH_DOT ("." ELEKTRON_MC_SOUND_EXTENSION)
+
 struct elektron_sample_header
 {
   guint8 type;
@@ -362,6 +365,23 @@ elektron_get_msg_string (const GByteArray *msg)
   return (gchar *) & msg->data[6];
 }
 
+// This adds back the extension "mc-snd" that the device provides.
+static gchar *
+elektron_mc_add_snd_ext (const gchar *path)
+{
+  gchar *path_with_ext;
+  GString *str = g_string_new (path);
+  g_string_append (str, ELEKTRON_MC_SOUND_EXTENSION_WITH_DOT);
+  path_with_ext = g_string_free (str, FALSE);
+  return path_with_ext;
+}
+
+static void
+elektron_mc_remove_snd_ext (gchar *name)
+{
+  name[strlen (name) - strlen (ELEKTRON_MC_SOUND_EXTENSION_WITH_DOT)] = 0;
+}
+
 static gint
 elektron_next_smplrw_entry (struct item_iterator *iter)
 {
@@ -392,8 +412,7 @@ elektron_next_smplrw_entry (struct item_iterator *iter)
       elektron_item_set_name (&iter->item, name_cp1252);
       if (data->mode == ITER_MODE_RAW && iter->item.type == ITEM_TYPE_FILE)
 	{
-	  //This eliminates the extension ".mc-snd" that the device provides.
-	  iter->item.name[strlen (iter->item.name) - 7] = 0;
+	  elektron_mc_remove_snd_ext (iter->item.name);
 	}
       data->pos += strlen (name_cp1252) + 1;
 
@@ -1111,8 +1130,8 @@ elektron_rename_raw_file (struct backend *backend, const gchar *src,
 			  const gchar *dst)
 {
   gint err;
-  gchar *src_with_ext = elektron_add_ext_to_mc_snd (src);
-  gchar *dst_with_ext = elektron_add_ext_to_mc_snd (dst);
+  gchar *src_with_ext = elektron_mc_add_snd_ext (src);
+  gchar *dst_with_ext = elektron_mc_add_snd_ext (dst);
   err = elektron_src_dst_common (backend, src_with_ext, dst_with_ext,
 				 FS_RAW_RENAME_FILE_REQUEST,
 				 sizeof (FS_RAW_RENAME_FILE_REQUEST));
@@ -1218,17 +1237,6 @@ elektron_delete_samples_dir (struct backend *backend, const gchar *path)
 			       sizeof (FS_SAMPLE_DELETE_DIR_REQUEST));
 }
 
-//This adds back the extension ".mc-snd" that the device provides.
-static gchar *
-elektron_add_ext_to_mc_snd (const gchar *path)
-{
-  gchar *path_with_ext;
-  GString *str = g_string_new (path);
-  g_string_append (str, ".mc-snd");
-  path_with_ext = g_string_free (str, FALSE);
-  return path_with_ext;
-}
-
 static gboolean
 elektron_sample_file_exists (struct backend *backend, const gchar *path)
 {
@@ -1242,7 +1250,7 @@ elektron_sample_file_exists (struct backend *backend, const gchar *path)
 static gboolean
 elektron_raw_file_exists (struct backend *backend, const gchar *path)
 {
-  gchar *name_with_ext = elektron_add_ext_to_mc_snd (path);
+  gchar *name_with_ext = elektron_mc_add_snd_ext (path);
   gint res = elektron_path_common (backend, path,
 				   FS_RAW_GET_FILE_INFO_FROM_PATH_REQUEST,
 				   sizeof
@@ -1255,7 +1263,7 @@ static gint
 elektron_delete_raw (struct backend *backend, const gchar *path)
 {
   gint ret;
-  gchar *path_with_ext = elektron_add_ext_to_mc_snd (path);
+  gchar *path_with_ext = elektron_mc_add_snd_ext (path);
   ret = elektron_path_common (backend, path_with_ext,
 			      FS_RAW_DELETE_FILE_REQUEST,
 			      sizeof (FS_RAW_DELETE_FILE_REQUEST));
@@ -1676,7 +1684,7 @@ elektron_download_raw (struct backend *backend, const gchar *path,
 		       struct idata *file, struct task_control *control)
 {
   gint ret;
-  gchar *path_with_ext = elektron_add_ext_to_mc_snd (path);
+  gchar *path_with_ext = elektron_mc_add_snd_ext (path);
   ret = elektron_download_smplrw (backend, path_with_ext, file, control,
 				  elektron_new_msg_open_raw_read,
 				  0, elektron_new_msg_read_raw_blk,
@@ -2938,7 +2946,7 @@ elektron_get_upload_path_smplrw (struct backend *backend,
 
   if (ops->id == FS_RAW_ALL || ops->id == FS_RAW_PRESETS)
     {
-      path = elektron_add_ext_to_mc_snd (aux);
+      path = elektron_mc_add_snd_ext (aux);
       g_free (aux);
     }
   else
