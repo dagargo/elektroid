@@ -21,6 +21,7 @@ These are the supported devices:
 * Elektron MachineDrum
 * Elektron Model:Cycles
 * Elektron Model:Samples
+* Elektron Monomachine MKII
 * Elektron Syntakt
 * Eventide ModFactor, PitchFactor, TimeFactor, Space and H9
 * KORG padKONTROL
