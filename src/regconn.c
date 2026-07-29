@@ -27,6 +27,7 @@
 #include "connectors/logue.h"
 #include "connectors/microbrute.h"
 #include "connectors/microfreak.h"
+#include "connectors/monomachine.h"
 #include "connectors/padkontrol.h"
 #include "connectors/phatty.h"
 #include "connectors/sds.h"
@@ -44,7 +45,7 @@ regconn_register ()
 	       &CONNECTOR_CZ, &CONNECTOR_PADKONTROL,
 	       &CONNECTOR_VOLCA_SAMPLE_2, &CONNECTOR_LOGUE, &CONNECTOR_SDS,
 	       &CONNECTOR_EFACTOR, &CONNECTOR_DEFAULT,
-	       &CONNECTOR_VOLCA_SAMPLE, NULL);
+	       &CONNECTOR_VOLCA_SAMPLE, &CONNECTOR_MONOMACHINE, NULL);
 }
 
 void

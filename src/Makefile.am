@@ -66,6 +66,7 @@ connectors/logue.c connectors/logue.h \
 connectors/microbrute.c connectors/microbrute.h \
 connectors/microfreak.c connectors/microfreak.h \
 connectors/microfreak_sample.c connectors/microfreak_sample.h \
+connectors/monomachine.c connectors/monomachine.h \
 connectors/padkontrol.c connectors/padkontrol.h \
 connectors/phatty.c connectors/phatty.h \
 connectors/scala.c connectors/scala.h \
