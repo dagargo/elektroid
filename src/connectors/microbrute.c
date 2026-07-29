@@ -471,17 +471,17 @@ microbrute_get_extensions (struct backend *backend,
 
 static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .id = FS_MICROBRUTE_SEQUENCE,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SLOT_COLUMN,
   .name = "sequence",
   .gui_name = "Sequences",
   .gui_icon = FS_ICON_SEQUENCE,
   .file_icon = FS_ICON_SEQUENCE,
   .readdir = microbrute_read_dir,
-  .print_item = common_print_item,
   .download = microbrute_download,
   .upload = microbrute_upload,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = microbrute_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_n

@@ -73,6 +73,13 @@ cz_get_program_dump_msg (guint8 id)
   return tx_msg;
 }
 
+static void
+cz_set_slot (struct item *item)
+{
+  snprintf (item->slot, ITEM_SLOT_MAX, "%0*d",
+	    item->id == CZ_PANEL_ID + 1 ? 4 : 2, item->id);
+}
+
 static gint
 cz_next_dentry_root (struct item_iterator *iter)
 {
@@ -82,6 +89,7 @@ cz_next_dentry_root (struct item_iterator *iter)
   if (data->next < 3)
     {
       iter->item.id = 0x1000 + data->next;	//Unique id
+      iter->item.slot[0] = 0;
       item_set_name (&iter->item, "%s", CZ_MEM_TYPES[data->next]);
       iter->item.type = ITEM_TYPE_DIR;
       iter->item.size = -1;
@@ -108,6 +116,7 @@ cz_next_dentry_root (struct item_iterator *iter)
   if (data->next == 3)
     {
       iter->item.id = CZ_PANEL_ID + 1;	//1 based
+      cz_set_slot (&iter->item);
       item_set_name (&iter->item, "%s", CZ_PANEL);
       iter->item.type = ITEM_TYPE_FILE;
       iter->item.size = CZ_PROGRAM_LEN_FIXED;
@@ -289,30 +298,19 @@ cz_upload (struct backend *backend, const gchar *path, struct idata *program,
   return err;
 }
 
-static gchar *
-cz_get_id_as_slot (struct item *item, struct backend *backend)
-{
-  gchar *slot = g_malloc (LABEL_MAX);
-  snprintf (slot, LABEL_MAX, "%0*d", item->id == CZ_PANEL_ID + 1 ? 4 : 2,
-	    item->id);
-  return slot;
-}
-
 static const struct fs_operations FS_PROGRAM_CZ_OPERATIONS = {
   .id = FS_PROGRAM_CZ,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SHOW_SIZE_COLUMN,
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "program",
   .gui_name = "Programs",
   .gui_icon = FS_ICON_PRESET,
   .file_icon = FS_ICON_PRESET,
   .readdir = cz_read_dir,
-  .print_item = common_print_item,
   .download = cz_download,
   .upload = cz_upload,
-  .get_slot = cz_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = common_sysex_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = cz_get_download_path,

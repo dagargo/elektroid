@@ -18,7 +18,6 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/stat.h>
 #include <glib.h>
 #include <json-glib/json-glib.h>
 #include "preferences.h"
@@ -117,9 +116,7 @@ preferences_save ()
   GSList *l;
 
   preferences_path = get_user_dir (CONF_DIR);
-  if (g_mkdir_with_parents (preferences_path,
-			    S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH |
-			    S_IXOTH))
+  if (g_mkdir_with_parents (preferences_path, 0755))
     {
       error_print ("Error wile creating directory `%s'", preferences_path);
       return 1;

@@ -94,54 +94,10 @@ end:
   return err;
 }
 
-gchar *
-common_get_id_as_slot_padded (struct item *item, struct backend *backend,
-			      gint digits)
-{
-  gchar *slot = g_malloc (LABEL_MAX);
-  snprintf (slot, LABEL_MAX, "%.*d", digits, item->id);
-  return slot;
-}
-
-gchar *
-common_get_id_as_slot (struct item *item, struct backend *backend)
-{
-  gchar *slot = g_malloc (LABEL_MAX);
-  snprintf (slot, LABEL_MAX, "%d", item->id);
-  return slot;
-}
-
 void
-common_print_item (struct item_iterator *iter, struct backend *backend,
-		   const struct fs_operations *fs_ops)
+common_slot_set_slot_padded (struct item *item, gint digits)
 {
-  gchar *slot = NULL;
-  gchar *hsize = get_human_size (iter->item.size, FALSE);
-  gint max_name_len = fs_ops->max_name_len ? fs_ops->max_name_len :
-    DEFAULT_MAX_NAME_LEN;
-  gboolean info = (fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN) &&
-    *iter->item.object_info;
-
-  if (fs_ops->options & FS_OPTION_SLOT_STORAGE)
-    {
-      if (fs_ops->get_slot)
-	{
-	  slot = fs_ops->get_slot (&iter->item, backend);
-	}
-      else
-	{
-	  slot = common_get_id_as_slot (&iter->item, backend);
-	}
-    }
-
-  printf ("%c %10s %.*s%s%-*s%s%s%s\n", iter->item.type, hsize,
-	  slot ? 10 : 0, slot, slot ? " " : "",
-	  info ? max_name_len : (gint) strlen (iter->item.name),
-	  iter->item.name, info ? " [ " : "",
-	  info ? iter->item.object_info : "", info ? " ]" : "");
-
-  g_free (hsize);
-  g_free (slot);
+  snprintf (item->slot, ITEM_SLOT_MAX, "%.*d", digits, item->id);
 }
 
 void
@@ -174,8 +130,9 @@ common_simple_next_dentry (struct item_iterator *iter)
       return -ENOENT;
     }
 
-  item_set_name (&iter->item, "%.*d", digits, data->next);
+  item_set_name (&iter->item, "");
   iter->item.id = data->next;
+  common_slot_set_slot_padded (&iter->item, digits);
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = -1;
   data->next++;
@@ -417,38 +374,44 @@ common_system_get_upload_path (struct backend *backend,
 					  content);
 }
 
-void
+guint
 common_midi_msg_to_8bit_msg (guint8 *msg_midi, guint8 *msg_8bit,
 			     guint input_size)
 {
   guint8 *dst = msg_8bit;
   guint8 *src = msg_midi;
-  for (guint i = 0; i < input_size; i++)
+  guint output_size = 0;
+  for (guint i = 0; i < input_size;)
     {
       guint8 bits = *src;
       src++;
-      for (guint j = 0; j < 7 && i < input_size; j++, i++, src++, dst++)
+      i++;
+      for (guint j = 0; j < 7 && i < input_size;
+	   j++, i++, src++, dst++, output_size++)
 	{
 	  *dst = *src | (bits & 0x1 ? 0x80 : 0);
 	  bits >>= 1;
 	}
     }
+  return output_size;
 }
 
-void
+guint
 common_8bit_msg_to_midi_msg (guint8 *msg_8bit, guint8 *msg_midi,
 			     guint input_size)
 {
   guint8 *dst = msg_midi;
   guint8 *src = msg_8bit;
   guint8 *bits = 0;
-  guint rem;
+  guint rem, output_size = 0;
   for (guint i = 0; i < input_size;)
     {
       bits = dst;
       *bits = 0;
       dst++;
-      for (guint j = 0; j < 7 && i < input_size; j++, i++, src++, dst++)
+      output_size++;
+      for (guint j = 0; j < 7 && i < input_size;
+	   j++, i++, src++, dst++, output_size++)
 	{
 	  *dst = *src & 0x7f;
 	  *bits |= *src & 0x80;
@@ -460,6 +423,7 @@ common_8bit_msg_to_midi_msg (guint8 *msg_8bit, guint8 *msg_midi,
     {
       *bits >>= 7 - rem;
     }
+  return output_size;
 }
 
 guint
@@ -483,6 +447,13 @@ common_file_load (struct backend *backend, const char *path,
 		  struct idata *idata, struct task_control *control)
 {
   return file_load (path, idata, control);
+}
+
+gint
+common_file_save (struct backend *backend, const char *path,
+		  struct idata *idata, struct task_control *control)
+{
+  return file_save (path, idata, control);
 }
 
 gint

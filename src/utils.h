@@ -151,9 +151,10 @@ gint file_load (const char *path, struct idata *idata,
 gint file_save (const char *path, struct idata *idata,
 		struct task_control *control);
 
-gint file_save_data (const gchar * path, const guint8 * data, ssize_t len);
+gint file_save_data (const gchar * path, const guint8 * data, gssize len);
 
-gchar *get_human_size (gint64, gboolean);
+void get_human_size (gint64 size, gboolean with_space, gchar * buffer,
+		     guint len);
 
 void task_control_set_progress_no_sync (struct task_control *control,
 					gdouble p);

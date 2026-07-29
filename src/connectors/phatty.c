@@ -208,6 +208,7 @@ phatty_next_preset_dentry (struct item_iterator *iter)
     {
       item_set_name (&iter->item, "%s", COMMON_PANEL_NAME);
       iter->item.id = PHATTY_PANEL_ID;
+      iter->item.slot[0] = 0;
       iter->item.type = ITEM_TYPE_FILE;
       iter->item.size = PHATTY_PROGRAM_SIZE;
       (data->next)++;
@@ -223,6 +224,7 @@ phatty_next_preset_dentry (struct item_iterator *iter)
       phatty_get_preset_name (rx_msg->data, preset_name);
       item_set_name (&iter->item, "%s", preset_name);
       iter->item.id = data->next;
+      common_slot_set_slot_padded (&iter->item, 2);
       iter->item.type = ITEM_TYPE_FILE;
       iter->item.size = PHATTY_PROGRAM_SIZE;
       (data->next)++;
@@ -250,12 +252,6 @@ phatty_read_dir (struct backend *backend, struct item_iterator *iter,
     {
       return -ENOTDIR;
     }
-}
-
-static gchar *
-phatty_get_id_as_slot (struct item *item, struct backend *backend)
-{
-  return common_get_id_as_slot_padded (item, backend, 3);
 }
 
 static gint
@@ -396,13 +392,11 @@ static const struct fs_operations FS_PHATTY_PRESET_OPERATIONS = {
   .file_icon = FS_ICON_PRESET,
   .max_name_len = MOOG_NAME_LEN,
   .readdir = phatty_read_dir,
-  .print_item = common_print_item,
   .rename = phatty_rename,
   .download = phatty_download,
   .upload = phatty_upload,
-  .get_slot = phatty_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = common_sysex_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = phatty_get_download_path,
@@ -456,13 +450,13 @@ phatty_scale_get_extensions (struct backend *backend,
 
 static const struct fs_operations FS_PHATTY_SCALE_OPERATIONS = {
   .id = FS_PHATTY_SCALE,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SLOT_COLUMN,
   .name = "scale",
   .gui_name = "Scales",
   .gui_icon = FS_ICON_KEYS,
   .file_icon = FS_ICON_KEYS,
   .readdir = phatty_scale_read_dir,
-  .print_item = common_print_item,
   .upload = phatty_scale_upload,
   .load = common_load_2_byte_octave_tuning_msg,
   .get_exts = phatty_scale_get_extensions,

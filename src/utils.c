@@ -242,12 +242,12 @@ get_system_startup_path (const gchar *local_dir)
       if (dir)
 	{
 	  startup_path = strdup (local_dir);
+	  closedir (dir);
 	}
       else
 	{
 	  error_print ("Unable to open dir '%s'", local_dir);
 	}
-      closedir (dir);
     }
 
   if (!startup_path)
@@ -271,7 +271,7 @@ file_load (const char *path, struct idata *idata,
 	   struct task_control *control)
 {
   FILE *f;
-  size_t size;
+  gsize size;
   gint res;
   GByteArray *array;
 
@@ -301,8 +301,7 @@ file_load (const char *path, struct idata *idata,
     {
       gchar *name = g_path_get_basename (path);
       filename_remove_ext (name);
-      idata_init (idata, array, strdup (name), NULL, NULL);
-      g_free (name);
+      idata_init (idata, array, name, NULL, NULL);
       debug_print (1, "%zu B read", size);
     }
   else
@@ -318,10 +317,10 @@ end:
 }
 
 gint
-file_save_data (const gchar *path, const guint8 *data, ssize_t len)
+file_save_data (const gchar *path, const guint8 *data, gssize len)
 {
   gint res;
-  size_t bytes;
+  gsize bytes;
   FILE *file;
 
   file = fopen (path, "wb");
@@ -357,34 +356,31 @@ file_save (const gchar *path, struct idata *idata,
   return file_save_data (path, idata->content->data, idata->content->len);
 }
 
-gchar *
-get_human_size (gint64 size, gboolean with_space)
+void
+get_human_size (gint64 size, gboolean with_space, gchar *buffer, guint len)
 {
-  gchar *label = g_malloc (LABEL_MAX);
   gchar *space = with_space ? " " : "";
 
   if (size < 0)
     {
-      *label = 0;
+      *buffer = 0;
     }
   else if (size < KI)
     {
-      snprintf (label, LABEL_MAX, "%" PRId64 "%sB", size, space);
+      snprintf (buffer, len, "%" PRId64 "%sB", size, space);
     }
   else if (size < MI)
     {
-      snprintf (label, LABEL_MAX, "%.4g%sKiB", size / (double) KI, space);
+      snprintf (buffer, len, "%.4g%sKiB", size / (double) KI, space);
     }
   else if (size < GI)
     {
-      snprintf (label, LABEL_MAX, "%.4g%sMiB", size / (double) MI, space);
+      snprintf (buffer, len, "%.4g%sMiB", size / (double) MI, space);
     }
   else
     {
-      snprintf (label, LABEL_MAX, "%.4g%sGiB", size / (double) GI, space);
+      snprintf (buffer, len, "%.4g%sGiB", size / (double) GI, space);
     }
-
-  return label;
 }
 
 void
@@ -439,7 +435,7 @@ filename_matches_exts (const gchar *name, const gchar **exts)
 
   while (*e)
     {
-      if (!strcasecmp (ext, *e))
+      if (!g_ascii_strcasecmp (ext, *e))
 	{
 	  return TRUE;
 	}

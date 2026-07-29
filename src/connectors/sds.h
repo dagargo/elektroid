@@ -55,8 +55,8 @@ gint sds_upload (struct backend *backend, const gchar * path,
 gint sds_sample_load (struct backend *backend, const gchar * path,
 		      struct idata *sample, struct task_control *control);
 
-gint sds_sample_save (const gchar * path, struct idata *sample,
-		      struct task_control *control);
+gint sds_sample_save (struct backend *backend, const gchar * path,
+		      struct idata *sample, struct task_control *control);
 
 gint sds_rename_by_id (struct backend *backend, guint id, const gchar * dst);
 

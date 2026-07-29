@@ -102,7 +102,7 @@ audio_is_stopped ()
 void
 audio_write_to_output (void *buffer, gint frames)
 {
-  size_t size;
+  gsize size;
   guint8 *dst, *src, *data;
   guint bytes_per_frame;
   gboolean end, stopping = FALSE;
@@ -570,7 +570,7 @@ audio_init_and_wait ()
   audio_init (audio_init_ready_callback, NULL);
   while (controllable_is_active (&audio_initializing_controllable))
     {
-      usleep (AUDIO_SLEEP_US);
+      g_usleep (AUDIO_SLEEP_US);
     }
   controllable_clear (&audio_initializing_controllable);
   debug_print (1, "Audio initialized");
@@ -607,7 +607,7 @@ audio_set_play_and_wait (struct idata *sample, struct task_control *control)
   sample_info = audio.sample.info;
   while (!audio_is_stopped () && active)
     {
-      usleep (AUDIO_SLEEP_US);
+      g_usleep (AUDIO_SLEEP_US);
       if (control)
 	{
 	  g_mutex_lock (&audio.control.controllable.mutex);
@@ -632,7 +632,7 @@ audio_record_and_wait (guint32 options, struct task_control *control)
   sample_info = audio.sample.info;
   while (!audio_is_stopped ())
     {
-      usleep (AUDIO_SLEEP_US);
+      g_usleep (AUDIO_SLEEP_US);
       if (control)
 	{
 	  g_mutex_lock (&audio.control.controllable.mutex);

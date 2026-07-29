@@ -101,24 +101,6 @@ summit_get_patch_dump_msg (gint bank, gint id, enum summit_fs fs)
   return tx_msg;
 }
 
-//This function truncates the name to the last useful char ignoring the trailing spaces.
-
-static void
-summit_truncate_name (gchar *c)
-{
-  for (int i = SUMMIT_PATCH_NAME_LEN - 1; i >= 0; i--, c--)
-    {
-      if (*c == ' ')
-	{
-	  *c = 0;
-	}
-      else
-	{
-	  break;
-	}
-    }
-}
-
 static const gchar *
 summit_get_category_name (GByteArray *rx_msg)
 {
@@ -159,6 +141,19 @@ summit_get_category_name (GByteArray *rx_msg)
     }
 }
 
+static void
+summit_set_slot (struct item *item)
+{
+  if (item->id < BE_MAX_MIDI_PROGRAMS)
+    {
+      common_slot_set_slot_padded (item, 3);
+    }
+  else
+    {
+      item->slot[0] = 0;
+    }
+}
+
 static gint
 summit_patch_next_dentry (struct item_iterator *iter)
 {
@@ -180,8 +175,7 @@ summit_patch_next_dentry (struct item_iterator *iter)
   memcpy (iter->item.name, SUMMIT_GET_NAME_FROM_MSG (rx_msg, data->fs),
 	  SUMMIT_PATCH_NAME_LEN);
   iter->item.name[SUMMIT_PATCH_NAME_LEN] = 0;
-  gchar *c = &iter->item.name[SUMMIT_PATCH_NAME_LEN - 1];
-  summit_truncate_name (c);
+  g_strchomp (iter->item.name);
   if (data->fs == FS_SUMMIT_SINGLE_PATCH)
     {
       const gchar *category = summit_get_category_name (rx_msg);
@@ -190,12 +184,13 @@ summit_patch_next_dentry (struct item_iterator *iter)
   free_msg (rx_msg);
 
   iter->item.id = data->next;
+  summit_set_slot (&iter->item);
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size =
     data->fs == FS_SUMMIT_SINGLE_PATCH ? SUMMIT_SINGLE_LEN : SUMMIT_MULTI_LEN;
   data->next++;
 
-  usleep (SUMMIT_REST_TIME_US);
+  g_usleep (SUMMIT_REST_TIME_US);
 
   return 0;
 }
@@ -208,6 +203,7 @@ summit_patch_next_dentry_root (struct item_iterator *iter)
   if (*next < 4)
     {
       iter->item.id = 0x10000 + *next;	//Unique id
+      summit_set_slot (&iter->item);
       item_set_name (&iter->item, "%c", 0x41 + iter->item.id);
       iter->item.type = ITEM_TYPE_DIR;
       iter->item.size = -1;
@@ -314,7 +310,7 @@ summit_patch_download (struct backend *backend, const gchar *path,
 
   memcpy (name, SUMMIT_GET_NAME_FROM_MSG (rx_msg, fs), SUMMIT_PATCH_NAME_LEN);
   name[SUMMIT_PATCH_NAME_LEN] = 0;
-  summit_truncate_name (&name[SUMMIT_PATCH_NAME_LEN - 1]);
+  g_strchomp (name);
 
   idata_init (patch, rx_msg, strdup (name), NULL, NULL);
   goto end;
@@ -322,7 +318,7 @@ summit_patch_download (struct backend *backend, const gchar *path,
 cleanup:
   free_msg (rx_msg);
 end:
-  usleep (SUMMIT_REST_TIME_US);
+  g_usleep (SUMMIT_REST_TIME_US);
   return err;
 }
 
@@ -370,7 +366,7 @@ summit_patch_upload (struct backend *backend, const gchar *path,
 cleanup:
   free_msg (msg);
 end:
-  usleep (SUMMIT_REST_TIME_US);
+  g_usleep (SUMMIT_REST_TIME_US);
   return err;
 }
 
@@ -419,7 +415,7 @@ summit_patch_rename (struct backend *backend, const gchar *src,
       goto end;
     }
 
-  usleep (SUMMIT_REST_TIME_US);
+  g_usleep (SUMMIT_REST_TIME_US);
 
   name = SUMMIT_GET_NAME_FROM_MSG (preset.content, fs);
   sanitized = common_get_sanitized_name (dst, SUMMIT_ALPHABET,
@@ -437,7 +433,7 @@ summit_patch_rename (struct backend *backend, const gchar *src,
       free_msg (rx_msg);
     }
 
-  usleep (SUMMIT_REST_TIME_US);
+  g_usleep (SUMMIT_REST_TIME_US);
 
 end:
   controllable_clear (&control.controllable);
@@ -456,28 +452,6 @@ summit_multi_rename (struct backend *backend, const gchar *src,
 		     const gchar *dst)
 {
   return summit_patch_rename (backend, src, dst, FS_SUMMIT_MULTI_PATCH);
-}
-
-static gchar *
-summit_get_id_as_slot (struct item *item, struct backend *backend,
-		       gint digits)
-{
-  gchar *slot = g_malloc (LABEL_MAX);
-  if (item->id < BE_MAX_MIDI_PROGRAMS)
-    {
-      snprintf (slot, LABEL_MAX, "%.*d", digits, item->id);
-    }
-  else
-    {
-      slot[0] = 0;
-    }
-  return slot;
-}
-
-static gchar *
-summit_get_patch_id_as_slot (struct item *item, struct backend *backend)
-{
-  return summit_get_id_as_slot (item, backend, 3);
 }
 
 static void
@@ -531,13 +505,11 @@ static const struct fs_operations FS_SUMMIT_SINGLE_OPERATIONS = {
   .file_icon = FS_ICON_PRESET,
   .max_name_len = SUMMIT_PATCH_NAME_LEN,
   .readdir = summit_single_read_dir,
-  .print_item = common_print_item,
   .rename = summit_single_rename,
   .download = summit_single_download,
   .upload = summit_single_upload,
-  .get_slot = summit_get_patch_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = common_sysex_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_nnn,
@@ -555,13 +527,11 @@ static const struct fs_operations FS_SUMMIT_MULTI_OPERATIONS = {
   .file_icon = FS_ICON_PRESET,
   .max_name_len = SUMMIT_PATCH_NAME_LEN,
   .readdir = summit_multi_read_dir,
-  .print_item = common_print_item,
   .rename = summit_multi_rename,
   .download = summit_multi_download,
   .upload = summit_multi_upload,
-  .get_slot = summit_get_patch_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = common_sysex_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_nnn,
@@ -653,7 +623,7 @@ summit_tuning_download (struct backend *backend, const gchar *path,
 cleanup:
   free_msg (rx_msg);
 end:
-  usleep (SUMMIT_REST_TIME_US);
+  g_usleep (SUMMIT_REST_TIME_US);
   return err;
 }
 
@@ -684,17 +654,17 @@ summit_tuning_get_extensions (struct backend *backend,
 
 static const struct fs_operations FS_SUMMIT_BULK_TUNING_OPERATIONS = {
   .id = FS_SUMMIT_BULK_TUNING,
-  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE,
+  .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
+    FS_OPTION_SHOW_SLOT_COLUMN,
   .name = "tuning",
   .gui_name = "Tuning Tables",
   .gui_icon = FS_ICON_KEYS,
   .file_icon = FS_ICON_KEYS,
   .readdir = summit_tuning_read_dir,
-  .print_item = common_print_item,
   .download = summit_tuning_download,
   .upload = summit_tuning_upload,
   .load = summit_tuning_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = summit_tuning_get_extensions,
   .get_download_path = common_slot_get_download_path_nn,
   .get_upload_path = common_slot_get_upload_path
@@ -743,8 +713,7 @@ summit_wavetable_next_dentry (struct item_iterator *iter)
 
   memcpy (iter->item.name, &rx_msg->data[15], SUMMIT_WAVETABLE_NAME_LEN);
   iter->item.name[SUMMIT_WAVETABLE_NAME_LEN] = 0;
-  gchar *c = &iter->item.name[SUMMIT_WAVETABLE_NAME_LEN - 1];
-  summit_truncate_name (c);
+  g_strchomp (iter->item.name);
   free_msg (rx_msg);
 
   iter->item.id = data->next;
@@ -752,7 +721,7 @@ summit_wavetable_next_dentry (struct item_iterator *iter)
   iter->item.size = 2678;
   data->next++;
 
-  usleep (SUMMIT_REST_TIME_US * 10);
+  g_usleep (SUMMIT_REST_TIME_US * 10);
 
   return 0;
 }
@@ -816,7 +785,7 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
   g_byte_array_append (output, rx_msg->data, rx_msg->len);
   free_msg (rx_msg);
 
-  usleep (SUMMIT_REST_TIME_US);
+  g_usleep (SUMMIT_REST_TIME_US);
 
   //Waves
   for (gint8 i = 0; i < SUMMIT_WAVETABLE_WAVES; i++)
@@ -836,12 +805,12 @@ summit_wavetable_download (struct backend *backend, const gchar *path,
       g_byte_array_append (output, rx_msg->data, rx_msg->len);
       free_msg (rx_msg);
 
-      usleep (SUMMIT_REST_TIME_US);
+      g_usleep (SUMMIT_REST_TIME_US);
     }
 
   memcpy (name, &output->data[15], SUMMIT_WAVETABLE_NAME_LEN);
   name[SUMMIT_WAVETABLE_NAME_LEN] = 0;
-  summit_truncate_name (&name[SUMMIT_WAVETABLE_NAME_LEN - 1]);
+  g_strchomp (name);
 
   idata_init (wavetable, output, strdup (name), NULL, NULL);
   goto end;
@@ -850,7 +819,7 @@ err:
   g_byte_array_free (output, TRUE);
   free_msg (rx_msg);
 end:
-  usleep (SUMMIT_REST_TIME_US);
+  g_usleep (SUMMIT_REST_TIME_US);
   return err;
 }
 
@@ -933,12 +902,11 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
   .file_icon = FS_ICON_WAVETABLE,
   .max_name_len = SUMMIT_WAVETABLE_NAME_LEN,
   .readdir = summit_wavetable_read_dir,
-  .print_item = common_print_item,
   .rename = summit_wavetable_rename,
   .download = summit_wavetable_download,
   .upload = summit_wavetable_upload,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = common_sysex_get_extensions,
   .get_download_path = common_slot_get_download_path_n,
   .get_upload_path = common_slot_get_upload_path

@@ -24,6 +24,7 @@
 #include "connectors/default.h"
 #include "connectors/efactor.h"
 #include "connectors/elektron.h"
+#include "connectors/logue.h"
 #include "connectors/machinedrum.h"
 #include "connectors/microbrute.h"
 #include "connectors/microfreak.h"
@@ -43,9 +44,10 @@ regconn_register ()
   gslist_fill (&connectors, &CONNECTOR_ELEKTRON, &CONNECTOR_MICROBRUTE,
 	       &CONNECTOR_MICROFREAK, &CONNECTOR_PHATTY, &CONNECTOR_SUMMIT,
 	       &CONNECTOR_CZ, &CONNECTOR_PADKONTROL,
-	       &CONNECTOR_VOLCA_SAMPLE_2, &CONNECTOR_SDS, &CONNECTOR_EFACTOR,
-	       &CONNECTOR_DEFAULT, &CONNECTOR_VOLCA_SAMPLE,
-	       &CONNECTOR_MACHINEDRUM, &CONNECTOR_MONOMACHINE, NULL);
+	       &CONNECTOR_VOLCA_SAMPLE_2, &CONNECTOR_LOGUE, &CONNECTOR_SDS,
+	       &CONNECTOR_EFACTOR, &CONNECTOR_DEFAULT,
+	       &CONNECTOR_VOLCA_SAMPLE, &CONNECTOR_MACHINEDRUM,
+	       &CONNECTOR_MONOMACHINE, NULL);
 }
 
 void

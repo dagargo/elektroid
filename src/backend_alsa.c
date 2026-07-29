@@ -139,10 +139,10 @@ cleanup:
   return err;
 }
 
-ssize_t
+gssize
 backend_tx_raw (struct backend *backend, guint8 *data, guint len)
 {
-  ssize_t tx_len;
+  gssize tx_len;
 
   if (!backend->outputp)
     {
@@ -166,7 +166,7 @@ backend_tx_sysex_int (struct backend *backend,
 		      struct sysex_transfer *transfer,
 		      struct controllable *controllable)
 {
-  ssize_t tx_len;
+  gssize tx_len;
   guint total;
   guint len;
   guchar *b;
@@ -221,11 +221,11 @@ backend_rx_drain_int (struct backend *backend)
   snd_rawmidi_drain (backend->inputp);
 }
 
-ssize_t
+gssize
 backend_rx_raw (struct backend *backend, guint8 *buffer, guint len)
 {
   gint err;
-  ssize_t rx_len;
+  gssize rx_len;
   unsigned short revents;
 
   debug_print (6, "Polling...");
@@ -287,7 +287,7 @@ backend_check_int (struct backend *backend)
 }
 
 static void
-backend_get_system_subdevices (snd_ctl_t *ctl, int card, int device,
+backend_get_system_subdevices (snd_ctl_t *ctl, int card_id, int device_id,
 			       GArray *devices)
 {
   snd_rawmidi_info_t *info;
@@ -296,10 +296,10 @@ backend_get_system_subdevices (snd_ctl_t *ctl, int card, int device,
   int subs, subs_in, subs_out;
   int sub;
   int err;
-  struct backend_device *backend_device;
+  struct backend_device backend_device;
 
   snd_rawmidi_info_alloca (&info);
-  snd_rawmidi_info_set_device (info, device);
+  snd_rawmidi_info_set_device (info, device_id);
   snd_rawmidi_info_set_stream (info, SND_RAWMIDI_STREAM_INPUT);
   err = snd_ctl_rawmidi_info (ctl, info);
   if (err)
@@ -347,7 +347,7 @@ backend_get_system_subdevices (snd_ctl_t *ctl, int card, int device,
       if (err < 0)
 	{
 	  debug_print (1, "Cannot get rawmidi input information %d:%d:%d: %s",
-		       card, device, sub, snd_strerror (err));
+		       card_id, device_id, sub, snd_strerror (err));
 	  continue;
 	}
 
@@ -359,33 +359,34 @@ backend_get_system_subdevices (snd_ctl_t *ctl, int card, int device,
 	{
 	  debug_print (1,
 		       "Cannot get rawmidi output information %d:%d:%d: %s",
-		       card, device, sub, snd_strerror (err));
+		       card_id, device_id, sub, snd_strerror (err));
 	  continue;
 	}
 
       name = snd_rawmidi_info_get_name (info);
       sub_name = snd_rawmidi_info_get_subdevice_name (info);
 
-      debug_print (1, "Adding hw:%d (name '%s', subname '%s')...", card,
+      debug_print (1, "Adding hw:%d (name '%s', subname '%s')...", card_id,
 		   name, sub_name);
-      backend_device = g_malloc (sizeof (struct backend_device));
-      backend_device->type = BE_TYPE_MIDI;
+
+      backend_device.type = BE_TYPE_MIDI;
       if (sub == 0 && !*sub_name)
 	{
-	  snprintf (backend_device->id, LABEL_MAX, BE_DEVICE_NAME, card,
-		    device);
-	  snprintf (backend_device->name, LABEL_MAX, BE_DEVICE_NAME ": %s",
-		    card, device, name);
+	  snprintf (backend_device.id, LABEL_MAX, BE_DEVICE_NAME, card_id,
+		    device_id);
+	  snprintf (backend_device.name, LABEL_MAX, BE_DEVICE_NAME ": %s",
+		    card_id, device_id, name);
 	}
       else
 	{
-	  snprintf (backend_device->id, LABEL_MAX, BE_DEVICE_NAME_SUB, card,
-		    device, sub);
-	  snprintf (backend_device->name, LABEL_MAX,
-		    BE_DEVICE_NAME_SUB ": %s", card, device, sub, sub_name);
+	  snprintf (backend_device.id, LABEL_MAX, BE_DEVICE_NAME_SUB, card_id,
+		    device_id, sub);
+	  snprintf (backend_device.name, LABEL_MAX,
+		    BE_DEVICE_NAME_SUB ": %s", card_id, device_id, sub,
+		    sub_name);
 	}
 
-      g_array_append_vals (devices, backend_device, 1);
+      g_array_append_vals (devices, &backend_device, 1);
 
       if (sub == 0 && !*sub_name)
 	{
@@ -395,28 +396,29 @@ backend_get_system_subdevices (snd_ctl_t *ctl, int card, int device,
 }
 
 static void
-backend_fill_card_devices (gint card, GArray *devices)
+backend_fill_card_devices (gint card_id, GArray *devices)
 {
   snd_ctl_t *ctl;
   gchar name[32];
-  gint device;
+  gint device_id;
   gint err;
 
-  sprintf (name, "hw:%d", card);
+  sprintf (name, "hw:%d", card_id);
   if ((err = snd_ctl_open (&ctl, name, 0)) < 0)
     {
       error_print ("Cannot open control for card %d: %s",
-		   card, snd_strerror (err));
+		   card_id, snd_strerror (err));
       return;
     }
-  device = -1;
-  while (!(err = snd_ctl_rawmidi_next_device (ctl, &device)) && device >= 0)
+  device_id = -1;
+  while (!(err = snd_ctl_rawmidi_next_device (ctl, &device_id))
+	 && device_id >= 0)
     {
-      backend_get_system_subdevices (ctl, card, device, devices);
+      backend_get_system_subdevices (ctl, card_id, device_id, devices);
     }
-  if (device >= 0 && err < 0)
+  if (device_id >= 0 && err < 0)
     {
-      error_print ("Cannot determine device number %d: %s", device,
+      error_print ("Cannot determine device %d: %s", device_id,
 		   snd_strerror (err));
     }
   snd_ctl_close (ctl);
@@ -425,15 +427,15 @@ backend_fill_card_devices (gint card, GArray *devices)
 void
 backend_fill_devices_array (GArray *devices)
 {
-  gint card, err;
-  card = -1;
-  while (!(err = snd_card_next (&card)) && card >= 0)
+  gint card_id, err;
+  card_id = -1;
+  while (!(err = snd_card_next (&card_id)) && card_id >= 0)
     {
-      backend_fill_card_devices (card, devices);
+      backend_fill_card_devices (card_id, devices);
     }
-  if (card >= 0 && err < 0)
+  if (card_id >= 0 && err < 0)
     {
-      error_print ("Cannot determine card number %d: %s", card,
+      error_print ("Cannot determine card %d: %s", card_id,
 		   snd_strerror (err));
     }
 }

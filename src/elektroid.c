@@ -413,7 +413,7 @@ elektroid_cancel_all_tasks_and_wait ()
   //In this case, the active waiting can not be avoided as the user has canceled the operation.
   while (tasks.transfer.status == TASK_STATUS_RUNNING)
     {
-      usleep (50000);
+      g_usleep (50000);
     }
 }
 
@@ -1069,7 +1069,7 @@ elektroid_download_task_runner (gpointer userdata)
     {
       debug_print (1, "Writing %d bytes to file %s (filesystem %s)...",
 		   idata.content->len, dst_path, tasks.transfer.fs_ops->name);
-      err = tasks.transfer.fs_ops->save (dst_path, &idata,
+      err = tasks.transfer.fs_ops->save (BACKEND, dst_path, &idata,
 					 &tasks.transfer.control);
       if (!err)
 	{

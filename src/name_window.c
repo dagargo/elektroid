@@ -90,7 +90,7 @@ name_window_entry_changed (GtkWidget *object, gpointer data)
 {
   GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (entry));
   const gchar *text = gtk_entry_buffer_get_text (buf);
-  size_t len = strlen (text);
+  gsize len = strlen (text);
   gtk_widget_set_sensitive (accept_button, len > 0);
 }
 

@@ -24,7 +24,7 @@
 #include <zlib.h>
 #include "common.h"
 #include "elektron.h"
-#include "package.h"
+#include "elektron_pkg.h"
 #include "sample_ops.h"
 #include "../config.h"
 
@@ -269,19 +269,17 @@ static const guint8 OS_UPGRADE_START_REQUEST[] =
 static const guint8 OS_UPGRADE_WRITE_RESPONSE[] =
   { 0x51, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-static gchar *
-elektron_get_id_as_slot (struct item *item, struct backend *backend)
+static void
+elektron_set_slot (struct item *item)
 {
-  gchar *slot = g_malloc (LABEL_MAX);
   if (item->id >= 0)
     {
-      snprintf (slot, LABEL_MAX, "%03d", item->id);
+      snprintf (item->slot, ITEM_SLOT_MAX, "%03d", item->id);
     }
   else
     {
-      slot[0] = 0;
+      item->slot[0] = 0;
     }
-  return slot;
 }
 
 static void
@@ -289,12 +287,12 @@ elektron_print_smplrw (struct item_iterator *iter,
 		       struct backend *backend,
 		       const struct fs_operations *fs_ops)
 {
-  gchar *hsize = get_human_size (iter->item.size, FALSE);
+  gchar hsize[LABEL_MAX];
   struct elektron_iterator_data *data = iter->data;
 
+  get_human_size (iter->item.size, FALSE, hsize, LABEL_MAX);
   printf ("%c %10s %08x %s\n", iter->item.type,
 	  hsize, data->hash, iter->item.name);
-  g_free (hsize);
 }
 
 static void
@@ -302,20 +300,18 @@ elektron_print_data (struct item_iterator *iter,
 		     struct backend *backend,
 		     const struct fs_operations *fs_ops)
 {
+  gchar hsize[LABEL_MAX];
   struct elektron_iterator_data *data = iter->data;
-  gchar *hsize = get_human_size (iter->item.size, FALSE);
-  gchar *slot = iter->item.id > 0 ?
-    elektron_get_id_as_slot (&iter->item, backend) : strdup (" -1");
   gboolean info = (fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN) &&
     *iter->item.object_info;
 
-  printf ("%c %04x %d %d %10s %s %-*s%s%s%s\n", iter->item.type,
+  get_human_size (iter->item.size, FALSE, hsize, LABEL_MAX);
+  printf ("%c %04x %d %d %*s %*s %-*s%s%s%s\n", iter->item.type,
 	  data->operations, data->has_valid_data, data->has_metadata,
-	  hsize, slot, DEFAULT_MAX_NAME_LEN, iter->item.name,
+	  DEFAULT_PRINT_COL_SIZE_LEN, hsize,
+	  DEFAULT_PRINT_COL_SLOT_LEN, iter->item.slot,
+	  DEFAULT_PRINT_COL_NAME_LEN, iter->item.name,
 	  info ? " [ " : "", iter->item.object_info, info ? " ]" : "");
-
-  g_free (hsize);
-  g_free (slot);
 }
 
 static void
@@ -908,7 +904,7 @@ elektron_tx_and_rx_timeout (struct backend *backend,
 			    GByteArray *tx_msg, gint timeout,
 			    struct controllable *controllable)
 {
-  ssize_t len;
+  gssize len;
   guint16 seq;
   GByteArray *rx_msg;
   guint msg_type = tx_msg->data[4] | 0x80;
@@ -1010,7 +1006,7 @@ elektron_read_common_dir (struct backend *backend,
   GByteArray *tx_msg, *rx_msg = NULL;
   gboolean is_file = file_exists (backend, dir);
 
-  usleep (BE_REST_TIME_US);
+  g_usleep (BE_REST_TIME_US);
 
   if (is_file)
     {
@@ -1432,7 +1428,7 @@ elektron_upload_smplrw (struct backend *backend, const gchar *path,
 
       active = controllable_is_active (&control->controllable);
 
-      usleep (BE_REST_TIME_US);
+      g_usleep (BE_REST_TIME_US);
     }
 
   debug_print (2, "%d bytes sent", transferred);
@@ -1612,7 +1608,7 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 
       active = controllable_is_active (&control->controllable);
 
-      usleep (BE_REST_TIME_US);
+      g_usleep (BE_REST_TIME_US);
     }
 
   debug_print (2, "%d bytes received", next_block_start);
@@ -1800,7 +1796,7 @@ elektron_upgrade_os (struct backend *backend, struct sysex_transfer *transfer,
 
       free_msg (rx_msg);
 
-      usleep (BE_REST_TIME_US);
+      g_usleep (BE_REST_TIME_US);
 
       if (!controllable_is_active (controllable))
 	{
@@ -1825,7 +1821,7 @@ elektron_get_storage_stats (struct backend *backend, guint8 type,
   guint8 fsid;
   struct elektron_data *data = backend->data;
 
-  if (!(type & data->device_desc.storage))
+  if (!(type & data->dev_desc.storage))
     {
       return -EINVAL;
     }
@@ -1857,7 +1853,7 @@ elektron_get_storage_stats (struct backend *backend, guint8 type,
 
   free_msg (rx_msg);
 
-  return res ? res : type << 1 < data->device_desc.storage;
+  return res ? res : type << 1 < data->dev_desc.storage;
 }
 
 static gint
@@ -1959,7 +1955,7 @@ elektron_next_data_entry (struct item_iterator *iter)
 	      gboolean first = TRUE;
 	      GString *info = g_string_new (NULL);
 	      GSList *tags =
-		package_get_tags_from_snd_metadata (output.content);
+		elektron_pkg_get_tags_from_snd_metadata (output.content);
 	      GSList *e = tags;
 
 	      while (e)
@@ -1983,6 +1979,8 @@ elektron_next_data_entry (struct item_iterator *iter)
 	  controllable_clear (&control.controllable);
 	}
 
+      elektron_set_slot (&iter->item);
+
       break;
     default:
       error_print ("Unrecognized data entry: %d", iter->item.type);
@@ -1996,6 +1994,7 @@ not_found:
   iter->item.name[0] = 0;
   iter->item.size = 0;
   iter->item.id++;
+  elektron_set_slot (&iter->item);
   data->operations = 0;
   data->has_valid_data = 0;
   data->has_metadata = 0;
@@ -2091,7 +2090,7 @@ elektron_read_data_dir_pst (struct backend *backend,
 			    const gchar **extensions)
 {
   struct elektron_data *data = backend->data;
-  gint32 slots = data->device_desc.id == ELEKTRON_AH_FX_ID ? AH_FX_SLOTS : AH_SLOTS;	//Analog Heat +FX has 512 presets
+  gint32 slots = data->dev_desc.id == ELEKTRON_AH_FX_ID ? AH_FX_SLOTS : AH_SLOTS;	//Analog Heat +FX has 512 presets
   return elektron_read_data_dir_prefix (backend, iter, dir,
 					FS_DATA_PST_PREFIX,
 					ITER_MODE_DATA, FS_DATA_START_POS,
@@ -2540,7 +2539,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
       return -EIO;
     }
 
-  usleep (BE_REST_TIME_US);
+  g_usleep (BE_REST_TIME_US);
 
   content = g_byte_array_sized_new (4 * MI);
 
@@ -2615,7 +2614,7 @@ elektron_download_data_prefix (struct backend *backend, const gchar *path,
 
       active = controllable_is_active (&control->controllable);
 
-      usleep (BE_REST_TIME_US);
+      g_usleep (BE_REST_TIME_US);
     }
 
   if (active)
@@ -2891,13 +2890,13 @@ elektron_get_download_name (struct backend *backend,
 static gint
 elektron_download_pkg (struct backend *backend, const gchar *path,
 		       struct idata *output, struct task_control *control,
-		       enum package_type type,
+		       enum elektron_pkg_type type,
 		       const struct fs_operations *ops,
 		       fs_remote_file_op download)
 {
   gint ret;
   gchar *pkg_name;
-  struct package pkg;
+  struct elektron_pkg pkg;
   struct elektron_data *data = backend->data;
 
   pkg_name = elektron_get_download_name (backend, ops, path);
@@ -2906,18 +2905,19 @@ elektron_download_pkg (struct backend *backend, const gchar *path,
       return -1;
     }
 
-  if (package_begin (&pkg, pkg_name, backend->version, &data->device_desc,
-		     type))
+  if (elektron_pkg_begin
+      (&pkg, pkg_name, backend->version, &data->dev_desc, type))
     {
       g_free (pkg_name);
       return -1;
     }
 
-  ret = package_receive_pkg_resources (&pkg, path, control, backend, download,
-				       type);
-  ret = ret || package_end (&pkg, output);
+  ret =
+    elektron_pkg_receive_pkg_resources (&pkg, path, control, backend,
+					download, type);
+  ret = ret || elektron_pkg_end (&pkg, output);
 
-  package_destroy (&pkg);
+  elektron_pkg_destroy (&pkg);
   return ret;
 }
 
@@ -3032,7 +3032,7 @@ elektron_upload_data_list_prefix (struct backend *backend, const gchar *path,
       goto end;
     }
 
-  usleep (BE_REST_TIME_US);
+  g_usleep (BE_REST_TIME_US);
 
   jidbe = g_htonl (jid);
 
@@ -3081,7 +3081,7 @@ elektron_upload_data_list_prefix (struct backend *backend, const gchar *path,
 	      goto end;
 	    }
 
-	  usleep (BE_REST_TIME_US);
+	  g_usleep (BE_REST_TIME_US);
 
 	  if (!elektron_get_msg_status (rx_msg))
 	    {
@@ -3232,14 +3232,16 @@ elektron_upload_pkg (struct backend *backend, const gchar *path,
 		     fs_remote_file_op upload)
 {
   gint ret;
-  struct package pkg;
+  struct elektron_pkg pkg;
   struct elektron_data *data = backend->data;
 
-  ret = package_open (&pkg, input, &data->device_desc);
+  ret = elektron_pkg_open (&pkg, input, &data->dev_desc);
   if (!ret)
     {
-      ret = package_send_pkg_resources (&pkg, path, control, backend, upload);
-      package_close (&pkg);
+      ret =
+	elektron_pkg_send_pkg_resources (&pkg, path, control, backend,
+					 upload);
+      elektron_pkg_close (&pkg);
     }
   return ret;
 }
@@ -3249,9 +3251,9 @@ elektron_get_dev_exts (struct backend *backend,
 		       const struct fs_operations *ops)
 {
   struct elektron_data *data = backend->data;
-  struct fs_desc *fs_desc = data->device_desc.fs_descs;
+  struct elektron_fs_desc *fs_desc = data->dev_desc.fs_descs;
 
-  for (guint i = 0; i < data->device_desc.fs_descs_len; i++)
+  for (guint i = 0; i < data->dev_desc.fs_descs_len; i++)
     {
       if (!strcmp (fs_desc->name, ops->name))
 	{
@@ -3285,7 +3287,7 @@ elektron_sample_load (struct backend *backend, const gchar *path,
   struct sample_info sample_info;
   struct elektron_data *data = backend->data;
 
-  if (data->device_desc.id == ELEKTRON_DIGITAKT_II_ID)
+  if (data->dev_desc.id == ELEKTRON_DIGITAKT_II_ID)
     {
       sample_info_init (&sample_info);
       err = sample_load_sample_info (path, &sample_info);
@@ -3341,8 +3343,8 @@ elektron_get_sample_path_from_hash_size (struct backend *backend,
 }
 
 static gint
-elektron_sample_save (const gchar *path, struct idata *sample,
-		      struct task_control *control)
+elektron_sample_save (struct backend *backend, const gchar *path,
+		      struct idata *sample, struct task_control *control)
 {
   return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
@@ -3374,6 +3376,7 @@ elektron_ram_slot_next_entry (struct item_iterator *iter)
   data->pos += sizeof (guint8);
 
   iter->item.id = id;
+  elektron_set_slot (&iter->item);
   iter->item.type = ITEM_TYPE_FILE;
   item_set_object_info (&iter->item, "%s",
 			used ? ELEKTRON_RAM_SLOT_USED : "");
@@ -3436,6 +3439,7 @@ elektron_ram_read_dir (struct backend *backend,
 				last_ram_slots + 1);
   // Item 0 is always OFF and is not included in the message
   iter->item.id = 1;
+
   return err;
 }
 
@@ -3461,7 +3465,7 @@ elektron_ram_clear_sample (struct backend *backend, const gchar *path)
       return -EIO;
     }
 
-  usleep (BE_REST_TIME_US);
+  g_usleep (BE_REST_TIME_US);
 
   return 0;
 }
@@ -3501,7 +3505,7 @@ elektron_ram_download_sample (struct backend *backend,
 
   item_iterator_free (&iter);
 
-  usleep (BE_REST_TIME_US);
+  g_usleep (BE_REST_TIME_US);
 
   if (sample_path[0] == 0)
     {
@@ -3560,9 +3564,9 @@ elektron_ram_set_sample (struct backend *backend,
   free_msg (rx_msg);
 
   // It takes a while for the result to be available
-  usleep (500000);
+  g_usleep (500000);
   task_control_set_progress (control, 0.5);
-  usleep (500000);
+  g_usleep (500000);
   task_control_set_progress (control, 1.0);
 
   return 0;
@@ -3664,6 +3668,7 @@ elektron_ram_track_next_entry (struct item_iterator *iter)
   data->pos += sizeof (guint16);
 
   iter->item.id++;
+  elektron_set_slot (&iter->item);
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = -1;
   item_set_name (&iter->item, "%d", iter->item.id + 1);
@@ -3728,6 +3733,7 @@ elektron_digitakt_track_read_dir (struct backend *backend,
 				ram_tracks_pos + sizeof (guint32),
 				ram_tracks);
   iter->item.id = -1;
+
   return err;
 }
 
@@ -3912,7 +3918,7 @@ static const struct fs_operations FS_RAW_ANY_OPERATIONS = {
   .download = elektron_download_raw,
   .upload = elektron_upload_raw,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_raw_any_exts,
   .get_upload_path = elektron_get_upload_path_smplrw,
   .get_download_path = elektron_get_download_path
@@ -3936,7 +3942,7 @@ static const struct fs_operations FS_RAW_PRESETS_OPERATIONS = {
   .download = elektron_download_raw_pst_pkg,
   .upload = elektron_upload_raw_pst_pkg,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_dev_exts,
   .get_upload_path = elektron_get_upload_path_smplrw,
   .get_download_path = elektron_get_download_path
@@ -3954,9 +3960,8 @@ static const struct fs_operations FS_DATA_ANY_OPERATIONS = {
   .swap = elektron_swap_data_item_any,
   .download = elektron_download_data_any,
   .upload = elektron_upload_data_any,
-  .get_slot = elektron_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_data_any_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
@@ -3978,9 +3983,8 @@ static const struct fs_operations FS_DATA_PRJ_OPERATIONS = {
   .swap = elektron_swap_data_item_prj,
   .download = elektron_download_data_prj_pkg,
   .upload = elektron_upload_data_prj_pkg,
-  .get_slot = elektron_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
@@ -4003,9 +4007,8 @@ static const struct fs_operations FS_DATA_SND_OPERATIONS = {
   .swap = elektron_swap_data_item_snd,
   .download = elektron_download_data_snd_pkg,
   .upload = elektron_upload_data_snd_pkg,
-  .get_slot = elektron_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
@@ -4027,9 +4030,8 @@ static const struct fs_operations FS_DATA_PST_OPERATIONS = {
   .swap = elektron_swap_data_item_pst,
   .download = elektron_download_data_pst_pkg,
   .upload = elektron_upload_data_pst_pkg,
-  .get_slot = elektron_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
@@ -4052,9 +4054,8 @@ static const struct fs_operations FS_DATA_TAKT_II_PST_OPERATIONS = {
   .swap = elektron_swap_data_item_snd,
   .download = elektron_download_data_snd_pkg,
   .upload = elektron_upload_data_snd_pkg,
-  .get_slot = elektron_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = elektron_get_dev_exts,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_get_download_path
@@ -4078,7 +4079,6 @@ static const struct fs_operations FS_DATA_SAMPLES_OPERATIONS = {
   .swap = elektron_swap_data_item_sample,
   .download = elektron_download_data_sample,
   .upload = elektron_upload_data_sample,
-  .get_slot = elektron_get_id_as_slot,
   .load = elektron_sample_load,
   .save = elektron_sample_save,
   .get_exts = sample_get_sample_extensions,
@@ -4097,14 +4097,12 @@ static const struct fs_operations FS_DIGITAKT_RAM_OPERATIONS = {
   .gui_icon = FS_ICON_CHIP,
   .file_icon = FS_ICON_WAVE,
   .readdir = elektron_ram_read_dir,
-  .print_item = common_print_item,
   .delete = elektron_ram_clear_sample,
   .download = elektron_ram_download_sample,
   .upload = elektron_ram_upload_sample,
   .load = elektron_sample_load,
   .save = elektron_sample_save,
   .get_exts = sample_get_sample_extensions,
-  .get_slot = elektron_get_id_as_slot,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = elektron_ram_get_download_path
 };
@@ -4118,7 +4116,6 @@ static const struct fs_operations FS_DIGITAKT_TRACK_OPERATIONS = {
   .gui_icon = FS_ICON_TRACK,
   .file_icon = FS_ICON_WAVE,
   .readdir = elektron_digitakt_track_read_dir,
-  .print_item = common_print_item,
   .upload = elektron_digitakt_track_upload_sample,
   .load = elektron_sample_load,
   .get_exts = sample_get_sample_extensions,
@@ -4134,7 +4131,6 @@ static const struct fs_operations FS_DIGITAKT_TRACK_LOOP_OPERATIONS = {
   .gui_icon = FS_ICON_TRACK_LOOP,
   .file_icon = FS_ICON_WAVE,
   .readdir = elektron_digitakt_track_read_dir,
-  .print_item = common_print_item,
   .upload = elektron_digitakt_track_loop_upload_sample,
   .load = elektron_sample_load,
   .get_exts = sample_get_sample_extensions,
@@ -4210,10 +4206,10 @@ elektron_configure_device_from_file (struct backend *backend, guint8 id,
 	  error_print ("Cannot read member '%s'. Continuing...", DEV_TAG_ID);
 	  continue;
 	}
-      data->device_desc.id = json_reader_get_int_value (reader);
+      data->dev_desc.id = json_reader_get_int_value (reader);
       json_reader_end_member (reader);
 
-      if (data->device_desc.id != id)
+      if (data->dev_desc.id != id)
 	{
 	  json_reader_end_element (reader);
 	  continue;
@@ -4243,7 +4239,7 @@ elektron_configure_device_from_file (struct backend *backend, guint8 id,
 	}
       members = json_reader_list_members (reader);
       name = members;
-      data->device_desc.fs_descs_len = 0;
+      data->dev_desc.fs_descs_len = 0;
       backend->fs_ops = NULL;
       while (*name)
 	{
@@ -4263,15 +4259,15 @@ elektron_configure_device_from_file (struct backend *backend, guint8 id,
 
 	  if (*fs_ops)
 	    {
-	      if (data->device_desc.fs_descs_len == ELEKTRON_MAX_FS)
+	      if (data->dev_desc.fs_descs_len == ELEKTRON_MAX_FS)
 		{
 		  error_print ("Too many filesystems");
 		  break;
 		}
-	      struct fs_desc *fs_desc =
-		&data->device_desc.fs_descs[data->device_desc.fs_descs_len];
+	      struct elektron_fs_desc *fs_desc =
+		&data->dev_desc.fs_descs[data->dev_desc.fs_descs_len];
 	      snprintf (fs_desc->name, LABEL_MAX, "%s", *name);
-	      data->device_desc.fs_descs_len++;
+	      data->dev_desc.fs_descs_len++;
 
 	      json_reader_read_member (reader, *name);
 
@@ -4317,7 +4313,7 @@ elektron_configure_device_from_file (struct backend *backend, guint8 id,
 	  err = -ENODEV;
 	  break;
 	}
-      data->device_desc.storage = 0;
+      data->dev_desc.storage = 0;
       storage = json_reader_count_elements (reader);
       if (storage > ELEKTRON_MAX_STORAGE)
 	{
@@ -4334,7 +4330,7 @@ elektron_configure_device_from_file (struct backend *backend, guint8 id,
 	    {
 	      if (strcmp (*stname, storage_name) == 0)
 		{
-		  data->device_desc.storage |= id;
+		  data->dev_desc.storage |= id;
 		  break;
 		}
 	      stname++;
@@ -4353,7 +4349,7 @@ cleanup_parser:
   g_object_unref (parser);
   if (err)
     {
-      data->device_desc.id = -1;
+      data->dev_desc.id = -1;
     }
   return err;
 }
@@ -4401,13 +4397,13 @@ void
 elektron_destroy_data (struct backend *backend)
 {
   struct elektron_data *data = backend->data;
-  struct device_desc *device_desc = &data->device_desc;
-  struct fs_desc *fs_desc = device_desc->fs_descs;
+  struct elektron_dev_desc *dev_desc = &data->dev_desc;
+  struct elektron_fs_desc *fs_desc = dev_desc->fs_descs;
 
   debug_print (1, "Destroying backend elektron data...");
 
 
-  for (guint i = 0; i < device_desc->fs_descs_len; i++)
+  for (guint i = 0; i < dev_desc->fs_descs_len; i++)
     {
       gchar **ext = fs_desc->extensions;
       for (guint j = 0; j < ELEKTRON_MAX_EXTENSIONS; j++)
@@ -4455,7 +4451,7 @@ elektron_handshake (struct backend *backend)
       return -ENODEV;
     }
 
-  usleep (BE_REST_TIME_US);
+  g_usleep (BE_REST_TIME_US);
 
   tx_msg = elektron_new_msg (SOFTWARE_VERSION_REQUEST,
 			     sizeof (SOFTWARE_VERSION_REQUEST));
@@ -4470,7 +4466,7 @@ elektron_handshake (struct backend *backend)
   snprintf (backend->version, LABEL_MAX, "%s", (gchar *) & rx_msg->data[10]);
   free_msg (rx_msg);
 
-  usleep (BE_REST_TIME_US);
+  g_usleep (BE_REST_TIME_US);
 
   if (debug_level > 1)
     {
@@ -4483,7 +4479,7 @@ elektron_handshake (struct backend *backend)
 	  free_msg (rx_msg);
 	}
 
-      usleep (BE_REST_TIME_US);
+      g_usleep (BE_REST_TIME_US);
     }
 
   snprintf (backend->description, LABEL_MAX, "%s", overbridge_name);
@@ -4493,7 +4489,7 @@ elektron_handshake (struct backend *backend)
   backend->destroy_data = elektron_destroy_data;
   backend->upgrade_os = elektron_upgrade_os;
   backend->get_storage_stats =
-    data->device_desc.storage ? elektron_get_storage_stats : NULL;
+    data->dev_desc.storage ? elektron_get_storage_stats : NULL;
 
   return 0;
 }

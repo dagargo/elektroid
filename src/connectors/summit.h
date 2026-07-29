@@ -18,8 +18,8 @@
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PEAK_H
-#define PEAK_H
+#ifndef SUMMIT_H
+#define SUMMIT_H
 
 #include "connector.h"
 

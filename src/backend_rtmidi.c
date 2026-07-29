@@ -178,7 +178,7 @@ backend_tx_sysex_int (struct backend *backend,
   return transfer->err;
 }
 
-ssize_t
+gssize
 backend_tx_raw (struct backend *backend, guint8 *data, guint len)
 {
   GByteArray *msg;
@@ -200,7 +200,7 @@ backend_rx_drain_int (struct backend *backend)
   guint8 tmp[RTMIDI_TMP_BUFF_SIZE];
   while (1)
     {
-      size_t size = RTMIDI_TMP_BUFF_SIZE;
+      gsize size = RTMIDI_TMP_BUFF_SIZE;
       //The size is not important here. As long as there are no more data.
       rtmidi_in_get_message (backend->inputp, tmp, &size);
       if (size == 0)
@@ -213,10 +213,10 @@ backend_rx_drain_int (struct backend *backend)
 // rtmidi_in_get_message requires enough space in the buffer to store the message.
 // As this is unknown, quite a large buffer needs to be allocated for this.
 
-ssize_t
+gssize
 backend_rx_raw (struct backend *backend, guint8 *buffer, guint s)
 {
-  size_t size = s;
+  gsize size = s;
   rtmidi_in_get_message (backend->inputp, buffer, &size);
   if (!backend->inputp->ok)
     {
@@ -225,7 +225,7 @@ backend_rx_raw (struct backend *backend, guint8 *buffer, guint s)
 
   if (!size)
     {
-      usleep (BE_POLL_TIMEOUT_MS * 1000);
+      g_usleep (BE_POLL_TIMEOUT_MS * 1000);
     }
 
   return size;

@@ -101,7 +101,7 @@ progress_window_cancel ()
   if (active)
     {
       debug_print (1, "Cancelling progress window...");
-      usleep (PROGRESS_WAIT_TO_END_REFRESH_TIME_US);	//Needed to ensure refresh has ended and will not interfere with the cancelling label.
+      g_usleep (PROGRESS_WAIT_TO_END_REFRESH_TIME_US);	//Needed to ensure refresh has ended and will not interfere with the cancelling label.
       gtk_label_set_text (GTK_LABEL (label), _("Cancelling..."));
       if (cancel_cb)
 	{
@@ -196,7 +196,7 @@ progress_window_sleep_until_min_time ()
   gint64 diff = g_get_monotonic_time () - start;
   if (diff < MIN_TIME_UNTIL_DIALOG_RESPONSE_US)
     {
-      usleep (MIN_TIME_UNTIL_DIALOG_RESPONSE_US - diff);
+      g_usleep (MIN_TIME_UNTIL_DIALOG_RESPONSE_US - diff);
     }
 }
 

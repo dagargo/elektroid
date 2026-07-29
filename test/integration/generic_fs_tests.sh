@@ -2,9 +2,12 @@
 
 download=true
 download_ext=
+download_fail_empty=false
 [ "$1" == "--no-download" ] && shift && download=false
 # Used to search the download file by its extension. Needed for files that don't use the connector name, such as wav files.
 [ "$1" == "--download-ext" ] && shift && download_ext=".$1" && shift
+# Some filesystems can not download from an empty slot
+[ "$1" == "--download-fail-empty" ] && shift && download_fail_empty=true
 
 CONN=$1
 FS=$2
@@ -27,6 +30,11 @@ function exitWithError() {
     FILE_BACKUP_ORI=$(echo "$FILE_BACKUP" | sed "s^/tmp/$BACKUP_PREFIX^^")
     mv "$FILE_BACKUP" "$FILE_BACKUP_ORI"
     $ecli ${CONN}:${FS}:ul "$FILE_BACKUP_ORI" $TEST_DEVICE:$FILE_PATH
+  else
+    if $download_fail_empty; then
+      echo "Clearing path as downloading an empty path fails..."
+      $ecli ${CONN}:${FS}:cl $TEST_DEVICE:$FILE_PATH
+    fi
   fi
   rm -f "$FILE" "$FILE_BACKUP" "$FILE_BACKUP_ORI"
   exit $1
@@ -63,12 +71,19 @@ if $download; then
 
   echo "Testing download with path $FILE_PATH..."
   $ecli ${CONN}:${FS}:dl $TEST_DEVICE:$FILE_PATH
-  [ $? -ne 0 ] && exit 1
-  FILE=$(getDownloadName)
-  echo "Using file $FILE as the download file..."
-  [ ! -f "$FILE" ] && exit 1
-  FILE_BACKUP=/tmp/$BACKUP_PREFIX$(basename "$FILE")
-  mv "$FILE" "$FILE_BACKUP"
+  if [ $? -eq 0 ]; then
+    FILE=$(getDownloadName)
+    echo "Using file $FILE as the download file..."
+    [ ! -f "$FILE" ] && exit 1
+    FILE_BACKUP=/tmp/$BACKUP_PREFIX$(basename "$FILE")
+    mv "$FILE" "$FILE_BACKUP"
+  else
+    if $download_fail_empty; then
+      FILE_BACKUP=
+    else
+      exit 1
+    fi
+  fi
 fi
 
 for p in $BAD_FILE_PATHS; do
@@ -96,7 +111,7 @@ if $download; then
   $ecli ${CONN}:${FS}:dl $TEST_DEVICE:$FILE_PATH
   [ $? -ne 0 ] && exitWithError 1
   FILE=$(getDownloadName)
-  [ ! -f "$FILE" ] && exitWithError 1
+  [ ! -f "$FILE" ] && echo "File $FILE does not exist" && exitWithError 1
   echo "Comparing $FILE to $FILE_UPLOADED_BACK..."
   cksum_act=$(cksum "$FILE" | awk '{print $1}')
   cksum_exp=$(cksum "$FILE_UPLOADED_BACK" | awk '{print $1}')

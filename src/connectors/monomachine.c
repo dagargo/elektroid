@@ -389,8 +389,8 @@ monomachine_sample_load (struct backend *backend, const gchar *path,
 }
 
 static gint
-monomachine_sample_save (const gchar *path, struct idata *sample,
-			 struct task_control *control)
+monomachine_sample_save (struct backend *backend, const gchar *path,
+			 struct idata *sample, struct task_control *control)
 {
   return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
@@ -405,7 +405,6 @@ static const struct fs_operations FS_MONOMACHINE_SAMPLE_OPERATIONS = {
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = MONOMACHINE_SAMPLE_NAME_LEN,
   .readdir = monomachine_read_dir,
-  .print_item = common_print_item,
   .download = monomachine_download,
   .upload = monomachine_ask_upload,
   .load = monomachine_sample_load,

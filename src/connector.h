@@ -25,7 +25,11 @@
 
 #define FS_ICON_CHIP "elektroid-chip-symbolic"
 #define FS_ICON_FILE "elektroid-file-symbolic"
+#define FS_ICON_FX_DELAY "elektroid-fx-delay-symbolic"
+#define FS_ICON_FX_MODULATION "elektroid-fx-modulation-symbolic"
+#define FS_ICON_FX_REVERB "elektroid-fx-reverb-symbolic"
 #define FS_ICON_KEYS "elektroid-keys-symbolic"
+#define FS_ICON_OSCILLATOR "elektroid-oscillator-symbolic"
 #define FS_ICON_PRESET "elektroid-preset-symbolic"
 #define FS_ICON_PROJECT "elektroid-project-symbolic"
 #define FS_ICON_SEQUENCE "elektroid-sequence-symbolic"
@@ -57,13 +61,27 @@ enum item_type
 //If the size column is not used at all, do not use FS_OPTION_SHOW_SIZE_COLUMN.
 
 #define ITEM_NAME_MAX PATH_MAX
+#define ITEM_SLOT_MAX 32
 #define ITEM_OBJECT_INFO_MAX PATH_MAX
+
+#define DEFAULT_PRINT_COL_SIZE_LEN 10
+#define DEFAULT_PRINT_COL_ID_LEN 10
+#define DEFAULT_PRINT_COL_SLOT_LEN 10
+#define DEFAULT_PRINT_COL_NAME_LEN 32
 
 struct item
 {
   enum item_type type;
   gchar name[ITEM_NAME_MAX];
-  gint32 id;			// Used only by slot filesystems
+  // Used only by slot filesystems
+  gint32 id;
+  // A FS_OPTION_SLOT_STORAGE might fill the slot.
+  // The slot will be shown on the GUI if FS_OPTION_SHOW_SLOT_COLUMN is used.
+  // If the filesystem uses the default print_item, it will be used by the CLI.
+  // In these both cases, the slot must be filled.
+  // If a filesystem has a custom print_item and is not using FS_OPTION_SHOW_SLOT_COLUMN, it might be left unfilled.
+  // A slot must have the same length and format of the hardware. A63 or 031 are valid values.
+  gchar slot[ITEM_SLOT_MAX];
   gint64 size;
   //Optionally filled up structs by filesystems.
   //Filesystem options must indicate if these are in use with FS_OPTION_SHOW_SAMPLE_COLUMNS and FS_OPTION_SHOW_INFO_COLUMN.
@@ -105,9 +123,6 @@ typedef gint (*fs_remote_file_op) (struct backend *, const gchar *,
 
 typedef gchar *(*fs_get_item_slot) (struct item *, struct backend *);
 
-typedef gint (*fs_local_file_op) (const gchar *, struct idata *,
-				  struct task_control *);
-
 typedef const gchar **(*fs_get_exts) (struct backend *,
 				      const struct fs_operations *);
 
@@ -139,7 +154,7 @@ struct fs_operations
   guint32 max_name_len;
   fs_init_iter_func readdir;	//This function runs on its own thread so it can take as long as needed in order to make calls to item_iterator_next not to wait for IO.
   fs_file_exists file_exists;
-  fs_print_item print_item;
+  fs_print_item print_item;	// Optional. If not used, the default printing will be used.
   fs_path_func mkdir;
   fs_path_func delete;
   fs_src_dst_func rename;
@@ -148,9 +163,8 @@ struct fs_operations
   fs_src_dst_func swap;
   fs_remote_file_op download;	//Donload a resource from the filesystem to memory.
   fs_remote_file_op upload;	//Upload a resource from memory to the filesystem.
-  fs_local_file_op save;	//Write a file from memory to the OS storage. Typically used after download.
+  fs_remote_file_op save;	//Write a file from memory to the OS storage. Typically used after download.
   fs_remote_file_op load;	//Load a file from the OS storage into memory. Typically used before upload.
-  fs_get_item_slot get_slot;	//Optionally used by slot filesystems to show a custom slot name column such `A01` or `[P-01]`. Needs FS_OPTION_SHOW_SLOT_COLUMN.
   fs_get_exts get_exts;		//Length must be one at least. First element will be used as file extension and all will be used as loading extensions.
   fs_get_path get_upload_path;
   fs_get_path get_download_path;
@@ -172,7 +186,7 @@ enum fs_options
   //A DND operation of several items over a slot will behave as dropping the first item over the destination slot and the rest over the following ones.
   FS_OPTION_SLOT_STORAGE = (1 << 4),
   //Show column options. Name column is always showed.
-  FS_OPTION_SHOW_ID_COLUMN = (1 << 5),	// Not 0 padded. For a 0 padded value use FS_OPTION_SHOW_SLOT_COLUMN and a custom get_slot function.
+  FS_OPTION_SHOW_ID_COLUMN = (1 << 5),	// Numeric value; not 0 padded. For a custom string value use FS_OPTION_SHOW_SLOT_COLUMN and set slot accordingly.
   FS_OPTION_SHOW_SIZE_COLUMN = (1 << 6),
   FS_OPTION_SHOW_SLOT_COLUMN = (1 << 7),
   FS_OPTION_SHOW_INFO_COLUMN = (1 << 8),

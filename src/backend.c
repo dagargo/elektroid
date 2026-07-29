@@ -233,7 +233,7 @@ backend_midi_handshake (struct backend *backend)
 
   free_msg (rx_msg);
 
-  usleep (BE_REST_TIME_US);
+  g_usleep (BE_REST_TIME_US);
 }
 
 //Not synchronized
@@ -329,7 +329,7 @@ gint
 backend_program_change (struct backend *backend, guint8 channel,
 			guint8 program)
 {
-  ssize_t size;
+  gssize size;
   guint8 msg[2];
 
   msg[0] = 0xc0 | (channel & 0xf);
@@ -348,7 +348,7 @@ gint
 backend_send_3_byte_message (struct backend *backend, guint8 msg_type,
 			     guint8 channel, guint8 d1, guint8 d2)
 {
-  ssize_t size;
+  gssize size;
   guint8 msg[3];
 
   msg[0] = msg_type | (channel & 0xf);
@@ -421,7 +421,7 @@ backend_init_midi (struct backend *backend, const gchar *id)
 	{
 	  error_print ("Error while stopping device");
 	}
-      usleep (BE_REST_TIME_US);
+      g_usleep (BE_REST_TIME_US);
     }
 
   return err;
@@ -465,7 +465,7 @@ backend_check (struct backend *backend)
 }
 
 static guint8 *
-backend_get_sysex_start (guint8 *tmp, ssize_t *size)
+backend_get_sysex_start (guint8 *tmp, gssize *size)
 {
   guint i, total = *size;
   guint8 *msg_start;
@@ -490,12 +490,12 @@ backend_get_sysex_start (guint8 *tmp, ssize_t *size)
   return msg_start;
 }
 
-static ssize_t
+static gssize
 backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer,
 		     struct controllable *controllable)
 {
   gchar *text;
-  ssize_t rx_len;
+  gssize rx_len;
   guint8 *msg_start;
 
   if (!backend->inputp)
@@ -601,7 +601,7 @@ backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer,
 {
   gint next_check, len, i;
   guint8 *b;
-  ssize_t rx_len;
+  gssize rx_len;
 
   transfer->err = 0;
   transfer->time = 0;

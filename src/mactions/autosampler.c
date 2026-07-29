@@ -145,10 +145,10 @@ autosampler_runner (gpointer user_data)
       backend_send_note_on (remote_browser.backend, data->channel, i,
 			    data->velocity);
       //Add some extra time to deal with runtime delays.
-      usleep ((data->press + 0.25) * 1000000);
+      g_usleep ((data->press + 0.25) * 1000000);
       backend_send_note_off (remote_browser.backend, data->channel, i,
 			     data->velocity);
-      usleep (data->release * 1000000);
+      g_usleep (data->release * 1000000);
 
       audio_stop_recording ();
 
@@ -210,7 +210,7 @@ autosampler_runner (gpointer user_data)
 
       if (i > data->end)
 	{
-	  usleep (250000);	// Time to let the progress move to 100 %
+	  g_usleep (250000);	// Time to let the progress move to 100 %
 	  break;
 	}
 
@@ -219,7 +219,7 @@ autosampler_runner (gpointer user_data)
 	  break;
 	}
 
-      sleep (1);
+      g_usleep (1000000);
     }
 
   sfz_filename = g_strdup_printf ("%s.sfz", data->name);
@@ -336,7 +336,7 @@ static void
 name_changed (GtkWidget *object, gpointer data)
 {
   GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (name_entry));
-  size_t len = strlen (gtk_entry_buffer_get_text (buf));
+  gsize len = strlen (gtk_entry_buffer_get_text (buf));
   gtk_widget_set_sensitive (start_button, len > 0);
 }
 

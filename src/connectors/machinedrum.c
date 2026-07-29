@@ -171,7 +171,6 @@ static const struct fs_operations FS_MACHINEDRUM_SAMPLE_OPERATIONS = {
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = MACHINEDRUM_SAMPLE_NAME_MAX_LEN,
   .readdir = machinedrum_read_dir,
-  .print_item = common_print_item,
   .rename = machinedrum_rename,
   .download = machinedrum_ask_download,
   .upload = machinedrum_ask_upload,

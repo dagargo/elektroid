@@ -52,9 +52,11 @@ static struct task_control task_control;
 static struct controllable controllable;	//Used for CLI control for operations that do not use task_control or sysex_transfer.
 static gchar *connector, *fs, *op;
 
-const struct fs_operations *fs_ops;
-const gchar *current_path_progress;
-gboolean same_line_progress;
+static const struct fs_operations *fs_ops;
+static const gchar *current_path_progress;
+static gboolean connected_to_tty;
+static gboolean same_line_progress;
+static gboolean use_audio;
 
 gboolean
 elektroid_ask_user_to_continue (const gchar *msg,
@@ -105,9 +107,10 @@ print_progress (struct task_control *task_control)
 }
 
 static void
-set_progress_type ()
+setup ()
 {
-  same_line_progress = !debug_level && isatty (fileno (stderr));
+  connected_to_tty = isatty (fileno (stderr));
+  same_line_progress = !debug_level && connected_to_tty;
 }
 
 static const gchar *
@@ -196,6 +199,38 @@ end:
   return err;
 }
 
+static void
+cli_print_item (struct item_iterator *iter, struct backend *backend,
+		const struct fs_operations *fs_ops)
+{
+  gchar id[LABEL_MAX];
+  gchar hsize[LABEL_MAX];
+  gboolean slot = fs_ops->options & FS_OPTION_SLOT_STORAGE;
+  gboolean info = (fs_ops->options & FS_OPTION_SHOW_INFO_COLUMN) &&
+    *iter->item.object_info;
+
+  if (iter->item.size > -1)
+    {
+      get_human_size (iter->item.size, FALSE, hsize, LABEL_MAX);
+    }
+  else
+    {
+      snprintf (hsize, LABEL_MAX, "?B");
+    }
+  snprintf (id, LABEL_MAX, "%d ", iter->item.id);
+  printf ("%c %*s %s%*s%*s%s%-*s%s%s%s\n", iter->item.type,
+	  DEFAULT_PRINT_COL_SIZE_LEN, hsize,
+	  slot ? " " : "",
+	  slot ? DEFAULT_PRINT_COL_ID_LEN : 0,
+	  slot ? id : "",
+	  slot ? DEFAULT_PRINT_COL_SLOT_LEN : 0,
+	  slot ? iter->item.slot : "",
+	  slot ? " " : "",
+	  DEFAULT_PRINT_COL_NAME_LEN, iter->item.name,
+	  info ? " [ " : "",
+	  info ? iter->item.object_info : "", info ? " ]" : "");
+}
+
 static gint
 cli_list (int argc, gchar *argv[], int *optind)
 {
@@ -222,7 +257,6 @@ cli_list (int argc, gchar *argv[], int *optind)
     }
 
   RETURN_IF_NULL (fs_ops->readdir);
-  RETURN_IF_NULL (fs_ops->print_item);
   RETURN_IF_NULL (fs_ops->get_exts);
 
   path = cli_get_path (device_path);
@@ -236,7 +270,14 @@ cli_list (int argc, gchar *argv[], int *optind)
   while (!item_iterator_next (&iter) &&
 	 controllable_is_active (&controllable))
     {
-      fs_ops->print_item (&iter, &backend, fs_ops);
+      if (fs_ops->print_item)
+	{
+	  fs_ops->print_item (&iter, &backend, fs_ops);
+	}
+      else
+	{
+	  cli_print_item (&iter, &backend, fs_ops);
+	}
     }
 
   item_iterator_free (&iter);
@@ -245,7 +286,7 @@ cli_list (int argc, gchar *argv[], int *optind)
 }
 
 static gint
-cli_command_path (int argc, gchar *argv[], int *optind, ssize_t member_offset)
+cli_command_path (int argc, gchar *argv[], int *optind, gssize member_offset)
 {
   const gchar *path;
   const gchar *device_path;
@@ -278,7 +319,7 @@ cli_command_path (int argc, gchar *argv[], int *optind, ssize_t member_offset)
 
 static gint
 cli_command_src_dst (int argc, gchar *argv[], int *optind,
-		     ssize_t member_offset)
+		     gssize member_offset)
 {
   const gchar *src_path, *dst_path;
   gchar *device_src_path, *device_dst_path;
@@ -473,9 +514,9 @@ cli_df (int argc, gchar *argv[], int *optind)
 {
   const gchar *device_path;
   const gchar *path;
-  gchar *size;
-  gchar *diff;
-  gchar *free;
+  gchar size[LABEL_MAX];
+  gchar diff[LABEL_MAX];
+  gchar free[LABEL_MAX];
   gint err;
   struct backend_storage_stats statfs;
 
@@ -518,15 +559,13 @@ cli_df (int argc, gchar *argv[], int *optind)
       gint v = backend.get_storage_stats (&backend, i, &statfs, path);
       if (v >= 0)
 	{
-	  size = get_human_size (statfs.bsize, FALSE);
-	  diff = get_human_size (statfs.bsize - statfs.bfree, FALSE);
-	  free = get_human_size (statfs.bfree, FALSE);
+	  get_human_size (statfs.bsize, FALSE, size, LABEL_MAX);
+	  get_human_size (statfs.bsize - statfs.bfree, FALSE, diff,
+			  LABEL_MAX);
+	  get_human_size (statfs.bfree, FALSE, free, LABEL_MAX);
 	  printf ("%-20.20s%16s%16s%16s%10.2f%%\n",
 		  statfs.name, size, diff, free,
 		  backend_get_storage_stats_percent (&statfs));
-	  g_free (size);
-	  g_free (diff);
-	  g_free (free);
 	}
 
       if (!v)
@@ -626,7 +665,7 @@ cli_download_item (const gchar *src_path, const gchar *dst_path)
       goto cleanup;
     }
 
-  err = fs_ops->save (download_path, &idata, &task_control);
+  err = fs_ops->save (&backend, download_path, &idata, &task_control);
   g_free (download_path);
 
 cleanup:
@@ -998,7 +1037,10 @@ cli_play (int argc, gchar *argv[], int *optind)
     }
   else
     {
+      audio_init_and_wait ();
+      use_audio = TRUE;
       audio_set_play_and_wait (&sample, &task_control);
+      audio_destroy ();
       task_control.part++;
     }
 
@@ -1029,7 +1071,10 @@ cli_record (int argc, gchar *argv[], int *optind)
 
   task_control_reset (&task_control, 1);
 
+  audio_init_and_wait ();
+  use_audio = TRUE;
   audio_record_and_wait (RECORD_STEREO, &task_control);
+  audio_destroy ();
 
   task_control.part++;
   complete_progress (0);
@@ -1046,15 +1091,19 @@ cli_end (int sig)
 {
   controllable_set_active (&controllable, FALSE);
   controllable_set_active (&task_control.controllable, FALSE);
-  audio_stop_playback ();
-  audio_stop_recording ();
+  if (use_audio)
+    {
+      audio_stop_playback ();
+      audio_stop_recording ();
+    }
 }
 #endif
 
 static void
 cli_print_help_cmd (const gchar *cmd, const gchar *args, const gchar *desc)
 {
-  fprintf (stderr, "  \033[1m%s\033[0m%s%s: %s\n", cmd, args ? " " : "",
+  fprintf (stderr, "  %s%s%s%s%s: %s\n", connected_to_tty ? "\033[1m" : "",
+	   cmd, connected_to_tty ? "\033[0m" : "", args ? " " : "",
 	   args ? args : "", desc);
 }
 
@@ -1118,6 +1167,8 @@ main (int argc, gchar *argv[])
   gchar *command;
   gint vflg = 0, errflg = 0;
 
+  setup ();
+
   controllable_init (&controllable);
   controllable_init (&task_control.controllable);
 
@@ -1166,14 +1217,10 @@ main (int argc, gchar *argv[])
       exit (EXIT_FAILURE);
     }
 
-  set_progress_type ();
-
   regconn_register ();
   regpref_register ();
   preferences_load ();
   preferences_set_boolean (PREF_KEY_MIX, FALSE);	//This might be required by devices using the audio link.
-
-  audio_init_and_wait ();
 
   if (!strcmp (command, "ld") || !strcmp (command, "list-devices"))
     {
@@ -1268,6 +1315,7 @@ main (int argc, gchar *argv[])
       else
 	{
 	  error_print ("Command '%s' not recognized", command);
+	  cli_print_help (argv[0]);
 	  err = EXIT_FAILURE;
 	}
 
@@ -1285,16 +1333,13 @@ end:
   if (err && err != EXIT_FAILURE && err != -ECANCELED)
     {
       error_print ("Error: %s", g_strerror (-err));
-      cli_print_help (argv[0]);
     }
 
   controllable_clear (&controllable);
 
-  audio_destroy ();
-
   regconn_unregister ();
   regpref_unregister ();
 
-  usleep (BE_REST_TIME_US * 2);
+  g_usleep (BE_REST_TIME_US * 2);
   return err ? EXIT_FAILURE : EXIT_SUCCESS;
 }

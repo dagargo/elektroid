@@ -47,7 +47,7 @@
 
 #define EFACTOR_READ_DIR_TIMEOUT_MS 30000	//20 s is not enough with RtMidi.
 
-#define EFACTOR_WRITE_SLEEP_TIME_S 3
+#define EFACTOR_WRITE_SLEEP_TIME_US 3000000
 
 #define EFACTOR_PEDAL_NAME(data) (data->type == EFACTOR_FACTOR ? EFACTOR_FACTOR_NAME_PREFIX : EFACTOR_H9_NAME_PREFIX)
 
@@ -121,6 +121,21 @@ efactor_new_get_msg (guint8 type, const gchar *key)
   return tx_msg;
 }
 
+static void
+efactor_set_slot (struct item *item, struct efactor_data *data)
+{
+  if (data->type == EFACTOR_FACTOR)
+    {
+      //This is a bit of a hack since not only are we showing the ID but also the bank-preset pair.
+      snprintf (item->slot, ITEM_SLOT_MAX, "%02d [%d:%d]", item->id,
+		(item->id / 2) + 1, (item->id % 2) + 1);
+    }
+  else
+    {
+      snprintf (item->slot, ITEM_SLOT_MAX, "%02d", item->id + 1);
+    }
+}
+
 static gint
 efactor_next_dentry (struct item_iterator *iter)
 {
@@ -134,6 +149,7 @@ efactor_next_dentry (struct item_iterator *iter)
     }
 
   iter->item.id = data->next + backend_data->min;
+  efactor_set_slot (&iter->item, backend_data);
   preset_name = data->backend_data->lines[data->next * 7 + 6];
   item_set_name (&iter->item, "%s", preset_name);
   iter->item.type = ITEM_TYPE_FILE;
@@ -161,7 +177,7 @@ efactor_read_dir (struct backend *backend, struct item_iterator *iter,
     {
       //Reading from the device switches off and on the internal relays.
       //In case we call this function again just after calling it, we give the device some time to do it.
-      sleep (1);
+      g_usleep (1000000);
     }
 
   tx_msg = efactor_new_op_msg (EFACTOR_OP_PRESETS_WANT);
@@ -244,7 +260,7 @@ efactor_download (struct backend *backend, const gchar *path,
 
   idata_init (preset, output, strdup (name), NULL, NULL);
 
-  sleep (1);
+  g_usleep (1000000);
 
   return err;
 }
@@ -314,7 +330,7 @@ efactor_upload (struct backend *backend, const gchar *path,
   err = common_data_tx (backend, tx_msg, control);
   free_msg (tx_msg);
 end:
-  sleep (EFACTOR_WRITE_SLEEP_TIME_S);
+  g_usleep (EFACTOR_WRITE_SLEEP_TIME_US);
   return err;
 }
 
@@ -371,29 +387,11 @@ efactor_rename (struct backend *backend, const gchar *src, const gchar *dst)
       free_msg (rx_msg);
     }
 
-  sleep (EFACTOR_WRITE_SLEEP_TIME_S);
+  g_usleep (EFACTOR_WRITE_SLEEP_TIME_US);
 
 end:
   controllable_clear (&control.controllable);
   return err;
-}
-
-static gchar *
-efactor_get_slot (struct item *item, struct backend *backend)
-{
-  gchar *slot = g_malloc (LABEL_MAX);
-  struct efactor_data *data = backend->data;
-  if (data->type == EFACTOR_FACTOR)
-    {
-      //This is a bit of a hack since not only are we showing the ID but also the bank-preset pair.
-      snprintf (slot, LABEL_MAX, "%02d [%d:%d]", item->id,
-		(item->id / 2) + 1, (item->id % 2) + 1);
-    }
-  else
-    {
-      snprintf (slot, LABEL_MAX, "%02d", item->id + 1);
-    }
-  return slot;
 }
 
 static const struct fs_operations FS_EFACTOR_OPERATIONS = {
@@ -406,13 +404,11 @@ static const struct fs_operations FS_EFACTOR_OPERATIONS = {
   .file_icon = FS_ICON_PRESET,
   .max_name_len = EFACTOR_MAX_NAME_LEN,
   .readdir = efactor_read_dir,
-  .print_item = common_print_item,
   .rename = efactor_rename,
   .download = efactor_download,
   .upload = efactor_upload,
-  .get_slot = efactor_get_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = common_sysex_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_nn,

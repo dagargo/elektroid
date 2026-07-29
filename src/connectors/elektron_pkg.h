@@ -1,5 +1,5 @@
 /*
- *   package.h
+ *   elektron_pkg.h
  *   Copyright (C) 2021 David García Goñi <dagargo@gmail.com>
  *
  *   This file is part of Elektroid.
@@ -22,8 +22,8 @@
 #include <zip.h>
 #include "connector.h"
 
-#ifndef PACKAGE_H
-#define PACKAGE_H
+#ifndef ELEKTRON_PKG_H
+#define ELEKTRON_PKG_H
 
 #define ELEKTRON_SAMPLE_RATE 48000
 
@@ -34,7 +34,7 @@
 #define FS_DATA_METADATA_EXT "metadata"
 #define FS_DATA_METADATA_FILE "." FS_DATA_METADATA_EXT
 
-enum package_resource_type
+enum elektron_pkg_resource_type
 {
   PKG_RES_TYPE_NONE,
   PKG_RES_TYPE_PAYLOAD,
@@ -42,9 +42,9 @@ enum package_resource_type
   PKG_RES_TYPE_SAMPLE
 };
 
-struct package_resource
+struct elektron_pkg_resource
 {
-  enum package_resource_type type;
+  enum elektron_pkg_resource_type type;
   guint32 hash;
   guint32 size;
   gchar *path;
@@ -52,7 +52,7 @@ struct package_resource
   GSList *tags;			//Used for PKG_RES_TYPE_MANIFEST only
 };
 
-enum package_type
+enum elektron_pkg_type
 {
   PKG_FILE_TYPE_NONE,
   PKG_FILE_TYPE_DATA_SOUND,
@@ -61,67 +61,67 @@ enum package_type
   PKG_FILE_TYPE_RAW_PRESET
 };
 
-struct fs_desc
+struct elektron_fs_desc
 {
   gchar name[LABEL_MAX];
   gchar *extensions[ELEKTRON_MAX_EXTENSIONS];
 };
 
-struct device_desc
+struct elektron_dev_desc
 {
   guint32 id;
   gchar name[LABEL_MAX];
   guint8 storage;
   guint fs_descs_len;
-  struct fs_desc fs_descs[ELEKTRON_MAX_FS];
+  struct elektron_fs_desc fs_descs[ELEKTRON_MAX_FS];
 };
 
 struct elektron_data
 {
   guint16 seq;
-  struct device_desc device_desc;
+  struct elektron_dev_desc dev_desc;
 };
 
-struct package
+struct elektron_pkg
 {
   gchar *name;
-  enum package_type type;
+  enum elektron_pkg_type type;
   gchar *fw_version;
-  const struct device_desc *device_desc;
+  const struct elektron_dev_desc *dev_desc;
   gchar *buff;
   zip_source_t *zip_source;
   zip_t *zip;
   GList *resources;
-  struct package_resource *manifest;
+  struct elektron_pkg_resource *manifest;
 };
 
-GSList *package_get_tags_from_snd_metadata (GByteArray * metadata);
+GSList *elektron_pkg_get_tags_from_snd_metadata (GByteArray * metadata);
 
-gint package_begin (struct package *pkg, gchar * name,
-		    const gchar * fw_version,
-		    const struct device_desc *device_desc,
-		    enum package_type type);
+gint elektron_pkg_begin (struct elektron_pkg *pkg, gchar * name,
+			 const gchar * fw_version,
+			 const struct elektron_dev_desc *dev_desc,
+			 enum elektron_pkg_type type);
 
-gint package_receive_pkg_resources (struct package *pkg,
-				    const gchar * payload_path,
-				    struct task_control *control,
-				    struct backend *backend,
-				    fs_remote_file_op download_data,
-				    enum package_type type);
+gint elektron_pkg_receive_pkg_resources (struct elektron_pkg *pkg,
+					 const gchar * payload_path,
+					 struct task_control *control,
+					 struct backend *backend,
+					 fs_remote_file_op download_data,
+					 enum elektron_pkg_type type);
 
-gint package_end (struct package *pkg, struct idata *idata);
+gint elektron_pkg_end (struct elektron_pkg *pkg, struct idata *idata);
 
-void package_destroy (struct package *pkg);
+void elektron_pkg_destroy (struct elektron_pkg *pkg);
 
-gint package_open (struct package *pkg, struct idata *idata,
-		   const struct device_desc *device_desc);
+gint elektron_pkg_open (struct elektron_pkg *pkg, struct idata *idata,
+			const struct elektron_dev_desc *dev_desc);
 
-gint package_send_pkg_resources (struct package *pkg,
-				 const gchar * payload_path,
-				 struct task_control *control,
-				 struct backend *backend,
-				 fs_remote_file_op upload_data);
+gint elektron_pkg_send_pkg_resources (struct elektron_pkg *pkg,
+				      const gchar * payload_path,
+				      struct task_control *control,
+				      struct backend *backend,
+				      fs_remote_file_op upload_data);
 
-void package_close (struct package *pkg);
+void elektron_pkg_close (struct elektron_pkg *pkg);
 
 #endif

@@ -106,7 +106,7 @@ backend_tx_sysex_files_runner (gpointer user_data)
       filename = filename->next;
       //The device may have sent some messages in response so we skip all these.
       backend_rx_drain (remote_browser.backend);
-      usleep (BE_REST_TIME_US);
+      g_usleep (BE_REST_TIME_US);
     }
 }
 

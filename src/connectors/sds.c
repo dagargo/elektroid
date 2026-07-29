@@ -72,7 +72,7 @@ sds_get_sample_name (struct backend *backend, gint index)
   rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
   if (rx_msg)
     {
-      size_t n = rx_msg->data[9];
+      gsize n = rx_msg->data[9];
       name = g_malloc (sizeof (gchar) * (SDS_SAMPLE_NAME_MAX_LEN + 1));
       memcpy (name, (gchar *) & rx_msg->data[10], n);
       memset (name + n, 0, SDS_SAMPLE_NAME_MAX_LEN + 1 - n);
@@ -442,9 +442,9 @@ sds_download_by_id (struct backend *backend, guint id,
 	      rx_packets++;
 
 	      //We cancel the upload.
-	      usleep (sds_data->rest_time);
+	      g_usleep (sds_data->rest_time);
 	      sds_tx_handshake (backend, SDS_CANCEL, packet % 0x80);
-	      usleep (sds_data->rest_time);
+	      g_usleep (sds_data->rest_time);
 
 	      err = 0;
 	      goto end;
@@ -510,7 +510,7 @@ sds_download_by_id (struct backend *backend, guint id,
 	  free_msg (rx_msg);
 	}
       last_packet_ack = FALSE;
-      usleep (sds_data->rest_time);
+      g_usleep (sds_data->rest_time);
       retries++;
       continue;
     }
@@ -539,7 +539,7 @@ end:
       g_byte_array_free (output, TRUE);
     }
 
-  usleep (sds_data->rest_time);
+  g_usleep (sds_data->rest_time);
 
   return err;
 }
@@ -683,7 +683,7 @@ sds_get_rename_sample_msg (guint id, const gchar *name)
 {
   GByteArray *tx_msg;
   gchar *sanitized = common_get_sanitized_name (name, NULL, 0);
-  size_t len = strlen (sanitized);
+  gsize len = strlen (sanitized);
   guint8 total;
 
   len = len > SDS_SAMPLE_NAME_MAX_LEN ? SDS_SAMPLE_NAME_MAX_LEN : len;
@@ -800,7 +800,7 @@ sds_upload_by_id_name (struct backend *backend, guint id,
     {
       if (retries)
 	{
-	  usleep (sds_data->rest_time);
+	  g_usleep (sds_data->rest_time);
 	}
 
       if (retries == SDS_MAX_RETRIES)
@@ -816,7 +816,7 @@ sds_upload_by_id_name (struct backend *backend, guint id,
       if (open_loop)
 	{
 	  err = backend_tx (backend, tx_msg);
-	  usleep (SDS_NO_SPEC_OPEN_LOOP_REST_TIME);
+	  g_usleep (SDS_NO_SPEC_OPEN_LOOP_REST_TIME);
 	}
       else
 	{
@@ -873,7 +873,7 @@ sds_upload_by_id_name (struct backend *backend, guint id,
       retries = 0;
       err = 0;
 
-      usleep (sds_data->rest_time);
+      g_usleep (sds_data->rest_time);
     }
 
   if (active && sds_data->name_extension)
@@ -1036,8 +1036,8 @@ sds_sample_load_8k_16b (struct backend *backend, const gchar *path,
 }
 
 gint
-sds_sample_save (const gchar *path, struct idata *sample,
-		 struct task_control *control)
+sds_sample_save (struct backend *backend, const gchar *path,
+		 struct idata *sample, struct task_control *control)
 {
   return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
@@ -1065,7 +1065,6 @@ static const struct fs_operations FS_SDS_SAMPLES_MONO_8B_OPERATIONS = {
   .file_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
-  .print_item = common_print_item,
   .rename = sds_rename,
   .download = sds_download_with_retry,
   .upload = sds_upload_8b,
@@ -1086,7 +1085,6 @@ static const struct fs_operations FS_SDS_SAMPLES_MONO_12B_OPERATIONS = {
   .file_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
-  .print_item = common_print_item,
   .rename = sds_rename,
   .download = sds_download_with_retry,
   .upload = sds_upload_12b,
@@ -1107,7 +1105,6 @@ static const struct fs_operations FS_SDS_SAMPLES_MONO_14B_OPERATIONS = {
   .file_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
-  .print_item = common_print_item,
   .rename = sds_rename,
   .download = sds_download_with_retry,
   .upload = sds_upload_14b,
@@ -1128,7 +1125,6 @@ static const struct fs_operations FS_SDS_SAMPLES_MONO_16B_OPERATIONS = {
   .file_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
-  .print_item = common_print_item,
   .rename = sds_rename,
   .download = sds_download_with_retry,
   .upload = sds_upload_16b,
@@ -1149,7 +1145,6 @@ static const struct fs_operations FS_SDS_SAMPLES_MONO_44K1_16B_OPERATIONS = {
   .file_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
-  .print_item = common_print_item,
   .rename = sds_rename,
   .download = sds_download_with_retry,
   .upload = sds_upload_16b,
@@ -1170,7 +1165,6 @@ static const struct fs_operations FS_SDS_SAMPLES_MONO_32K_16B_OPERATIONS = {
   .file_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
-  .print_item = common_print_item,
   .rename = sds_rename,
   .download = sds_download_with_retry,
   .upload = sds_upload_16b,
@@ -1191,7 +1185,6 @@ static const struct fs_operations FS_SDS_SAMPLES_MONO_16K_16B_OPERATIONS = {
   .file_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
-  .print_item = common_print_item,
   .rename = sds_rename,
   .download = sds_download_with_retry,
   .upload = sds_upload_16b,
@@ -1212,7 +1205,6 @@ static const struct fs_operations FS_SDS_SAMPLES_MONO_8K_16B_OPERATIONS = {
   .file_icon = FS_ICON_WAVE,
   .max_name_len = SDS_SAMPLE_NAME_MAX_LEN,
   .readdir = sds_read_dir,
-  .print_item = common_print_item,
   .rename = sds_rename,
   .download = sds_download_with_retry,
   .upload = sds_upload_16b,
@@ -1301,9 +1293,9 @@ sds_handshake_esi_2000 (struct backend *backend)
     }
 
   //We cancel the upload.
-  usleep (SDS_REST_TIME_DEFAULT);
+  g_usleep (SDS_REST_TIME_DEFAULT);
   sds_tx_handshake (backend, SDS_CANCEL, 0);
-  usleep (SDS_REST_TIME_DEFAULT);
+  g_usleep (SDS_REST_TIME_DEFAULT);
 
   return 0;
 }
@@ -1316,9 +1308,9 @@ sds_handshake (struct backend *backend)
   struct sds_data *sds_data;
 
   //We cancel anything that might be running.
-  usleep (SDS_REST_TIME_DEFAULT);
+  g_usleep (SDS_REST_TIME_DEFAULT);
   sds_tx_handshake (backend, SDS_CANCEL, 0);
-  usleep (SDS_REST_TIME_DEFAULT);
+  g_usleep (SDS_REST_TIME_DEFAULT);
 
   err = sds_handshake_elektron (backend);
   if (err)

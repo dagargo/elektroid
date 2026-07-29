@@ -5,7 +5,7 @@
 #include "../config.h"
 #include "../src/sample.h"
 #include "../src/utils.h"
-#include "../src/connectors/package.h"
+#include "../src/connectors/elektron_pkg.h"
 #include "../src/connectors/elektron.h"
 
 gchar *elektron_get_dev_ext (struct backend *backend,
@@ -37,17 +37,16 @@ test_elektron_get_dev_exts ()
 
   backend.data = &elektron_data;
 
-  elektron_data.device_desc.fs_descs_len = 1;
-  snprintf (elektron_data.device_desc.fs_descs[0].name, LABEL_MAX,
-	    "%s", "fs0");
-  elektron_data.device_desc.fs_descs[0].extensions[0] = "ext0";
-  elektron_data.device_desc.fs_descs[0].extensions[1] = NULL;
+  elektron_data.dev_desc.fs_descs_len = 1;
+  snprintf (elektron_data.dev_desc.fs_descs[0].name, LABEL_MAX, "%s", "fs0");
+  elektron_data.dev_desc.fs_descs[0].extensions[0] = "ext0";
+  elektron_data.dev_desc.fs_descs[0].extensions[1] = NULL;
 
   printf ("\n");
 
   exts = elektron_get_dev_exts (&backend, &ops);
 
-  CU_ASSERT_EQUAL (exts, elektron_data.device_desc.fs_descs[0].extensions);
+  CU_ASSERT_EQUAL (exts, elektron_data.dev_desc.fs_descs[0].extensions);
   CU_ASSERT_EQUAL (strcmp (exts[0], "ext0"), 0);
   CU_ASSERT_EQUAL (exts[1], NULL);
 }
@@ -91,7 +90,7 @@ test_elektron_configure_device_from_file ()
   elektron_configure_device_from_file (&backend, 12, TEST_DATA_DIR
 				       "/../../res/elektron/devices.json");
 
-  CU_ASSERT_EQUAL (elektron_data->device_desc.fs_descs_len, 7);
+  CU_ASSERT_EQUAL (elektron_data->dev_desc.fs_descs_len, 7);
 
   ops = backend_get_fs_operations_by_name (&backend, "sample");
   exts = ops->get_exts (&backend, ops);
@@ -121,7 +120,7 @@ test_elektron_configure_device_from_file ()
   exts = ops->get_exts (&backend, ops);
   CU_ASSERT_NOT_EQUAL (exts, NULL);	//Several sample extensions
 
-  CU_ASSERT_EQUAL (elektron_data->device_desc.storage, 3);
+  CU_ASSERT_EQUAL (elektron_data->dev_desc.storage, 3);
 
   elektron_destroy_data (&backend);
   CU_ASSERT_EQUAL (backend.data, NULL);

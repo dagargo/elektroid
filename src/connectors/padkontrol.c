@@ -137,7 +137,7 @@ padkontrol_download (struct backend *backend, const gchar *path,
 
   free_msg (rx_msg);
 
-  usleep (PADKONTROL_REST_TIME_US);
+  g_usleep (PADKONTROL_REST_TIME_US);
 
   tx_msg = padkontrol_get_msg (PADKONTROL_FUNC_CURRENT_SCENE_DUMP_OP, 0);
   err = common_data_tx_and_rx_part (backend, tx_msg, &rx_msg, control);
@@ -153,7 +153,7 @@ padkontrol_download (struct backend *backend, const gchar *path,
 
   idata_init (scene, rx_msg, NULL, NULL, NULL);
 
-  usleep (PADKONTROL_REST_TIME_US);
+  g_usleep (PADKONTROL_REST_TIME_US);
 
   return 0;
 }
@@ -192,7 +192,7 @@ padkontrol_upload (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  usleep (PADKONTROL_REST_TIME_US);
+  g_usleep (PADKONTROL_REST_TIME_US);
 
   id--;				// O based
   tx_msg = padkontrol_get_msg (PADKONTROL_FUNC_SCENE_WRITE_OP, id);
@@ -210,34 +210,24 @@ padkontrol_upload (struct backend *backend, const gchar *path,
 
   free_msg (rx_msg);
 
-  usleep (PADKONTROL_REST_TIME_US);
+  g_usleep (PADKONTROL_REST_TIME_US);
 
   return 0;
-}
-
-static gchar *
-padkontrol_get_id_as_slot (struct item *item, struct backend *backend)
-{
-  gchar *slot = g_malloc (LABEL_MAX);
-  snprintf (slot, LABEL_MAX, "%02d", item->id);
-  return slot;
 }
 
 static const struct fs_operations FS_PADKONTROL_SCENE_OPERATIONS = {
   .id = FS_PADKONTROL_SCENE,
   .options = FS_OPTION_SINGLE_OP | FS_OPTION_SLOT_STORAGE |
-    FS_OPTION_SHOW_SIZE_COLUMN,
+    FS_OPTION_SHOW_SLOT_COLUMN | FS_OPTION_SHOW_SIZE_COLUMN,
   .name = "scene",
   .gui_name = "Scenes",
   .gui_icon = FS_ICON_SETTINGS,
   .file_icon = FS_ICON_SETTINGS,
   .readdir = padkontrol_read_dir,
-  .print_item = common_print_item,
   .download = padkontrol_download,
   .upload = padkontrol_upload,
-  .get_slot = padkontrol_get_id_as_slot,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = common_sysex_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_slot_get_download_path_nn

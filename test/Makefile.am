@@ -1,6 +1,6 @@
 PKG_CONFIG ?= pkg-config
 
-AM_CFLAGS = -Wall
+AM_CFLAGS = -Wall -O3
 AM_CPPFLAGS = -DTEST_DATA_DIR='"$(srcdir)/res"' -DDATADIR='"../res"'
 
 if MINGW
@@ -23,7 +23,7 @@ else
   AUDIO_SOURCES = ../src/audio_pa.c
 endif
 
-check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample tests_connector tests_volca_sample tests_sample_ops tests_monomachine
+check_PROGRAMS = tests_scala tests_common tests_microfreak tests_elektron tests_utils tests_sample tests_connector tests_volca_sample tests_sample_ops tests_logue tests_monomachine
 
 tests_LIBS = glib-2.0 json-glib-1.0 cunit libzip zlib $(BE_LIBS) rubberband
 
@@ -107,10 +107,10 @@ tests_elektron_SOURCES = \
 	../src/connectors/common.h \
 	../src/connectors/elektron.c \
 	../src/connectors/elektron.h \
+	../src/connectors/elektron_pkg.c \
+	../src/connectors/elektron_pkg.h \
 	../src/connectors/microfreak_sample.c \
 	../src/connectors/microfreak_sample.h \
-	../src/connectors/package.c \
-	../src/connectors/package.h \
 	../src/connectors/scala.c \
 	../src/connectors/scala.h
 
@@ -225,6 +225,30 @@ tests_sample_ops.c \
 	../src/sample.h \
 	../src/sample_ops.c \
 	../src/sample_ops.h
+
+tests_logue_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(tests_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) $(AM_CFLAGS)
+tests_logue_LDFLAGS = `$(PKG_CONFIG) --libs $(tests_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
+
+tests_logue_SOURCES = \
+        tests_logue.c \
+	../src/utils.c \
+        ../src/utils.h \
+	../src/preferences.c \
+	../src/preferences.h \
+	../src/backend.c \
+        ../src/backend.h \
+	../src/connector.c \
+        ../src/connector.h \
+	$(BE_SOURCES) \
+	../src/sample.c \
+	../src/sample.h \
+        ../src/connectors/common.c \
+	../src/connectors/common.h \
+        ../src/connectors/logue.c \
+	../src/connectors/microfreak_sample.c \
+	../src/connectors/microfreak_sample.h \
+	../src/connectors/scala.c \
+	../src/connectors/scala.h
 
 TESTS = integration/test.sh integration/system_all_fs_tests.sh $(check_PROGRAMS)
 

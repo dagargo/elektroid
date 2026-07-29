@@ -15,7 +15,11 @@ else
                  elektroid-chip-symbolic.svg \
                  elektroid-file-symbolic.svg \
                  elektroid-folder-symbolic.svg \
+                 elektroid-fx-delay-symbolic.svg \
+                 elektroid-fx-modulation-symbolic.svg \
+                 elektroid-fx-reverb-symbolic.svg \
                  elektroid-keys-symbolic.svg \
+                 elektroid-oscillator-symbolic.svg \
                  elektroid-preset-symbolic.svg \
                  elektroid-project-symbolic.svg \
                  elektroid-sequence-symbolic.svg \

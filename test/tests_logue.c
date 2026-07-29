@@ -1,0 +1,397 @@
+#include <CUnit/CUnit.h>
+#include <CUnit/Basic.h>
+#include "../src/utils.h"
+#include "../src/connectors/common.h"
+#include "../src/connectors/logue.h"
+
+#define BYTE_COMPARISON_SIZE 16
+
+gint logue_get_sysex_from_unit (struct idata *sysex, struct idata *unit,
+				struct task_control *control, guint8 device,
+				guint8 channel, guint8 slot);
+
+gint logue_get_unit_from_sysex (struct idata *unit, struct idata *sysex,
+				struct task_control *control);
+
+static void
+test_logue_get_sysex_from_unit_idata (struct idata *expected_sysex,
+				      struct idata *idata_unit,
+				      enum logue_device device, guint8 slot,
+				      struct task_control *control)
+{
+  gint err;
+  struct idata actual;
+  gchar *exp_text, *act_text;
+  GByteArray *exp_payload, *act_payload;
+  guint exp_payload_size, act_payload_size;
+  guint8 *exp_payload_data, *act_payload_data;
+
+  err = logue_get_sysex_from_unit (&actual, idata_unit, control,
+				   LOGUE_DEVICE_NTS1, 0, slot);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  actual.content->data[5] = device;
+  actual.content->data[8] = slot;
+
+  // Full message
+
+  CU_ASSERT_EQUAL (expected_sysex->content->len, actual.content->len);
+
+  if (expected_sysex->content->len == actual.content->len)
+    {
+      exp_text =
+	debug_get_hex_data (debug_level, expected_sysex->content->data,
+			    expected_sysex->content->len);
+      debug_print (1, "expected (%u): %s", expected_sysex->content->len,
+		   exp_text);
+      g_free (exp_text);
+
+      act_text = debug_get_hex_data (debug_level, actual.content->data,
+				     actual.content->len);
+      debug_print (1, "actual   (%u): %s", actual.content->len, act_text);
+      g_free (act_text);
+
+      // Payload
+
+      exp_payload_size =
+	common_midi_msg_to_8bit_msg_size (expected_sysex->content->len - 11);
+      exp_payload = g_byte_array_sized_new (exp_payload_size);
+      exp_payload->len = exp_payload_size;
+      common_midi_msg_to_8bit_msg (&expected_sysex->content->data[9],
+				   exp_payload->data,
+				   expected_sysex->content->len - 11);
+
+      exp_text = debug_get_hex_data (debug_level, exp_payload->data,
+				     exp_payload->len);
+      debug_print (1, "expected payload (%u): %s", exp_payload->len,
+		   exp_text);
+      g_free (exp_text);
+
+      act_payload_size =
+	common_midi_msg_to_8bit_msg_size (actual.content->len - 11);
+      act_payload = g_byte_array_sized_new (act_payload_size);
+      act_payload->len = act_payload_size;
+      common_midi_msg_to_8bit_msg (&actual.content->data[9],
+				   act_payload->data,
+				   actual.content->len - 11);
+
+      act_text = debug_get_hex_data (debug_level, act_payload->data,
+				     act_payload->len);
+      debug_print (1, "actual payload   (%u): %s", act_payload->len,
+		   act_text);
+      g_free (act_text);
+
+      CU_ASSERT_EQUAL (exp_payload->len, act_payload->len);
+
+      CU_ASSERT_EQUAL (0, memcmp (expected_sysex->content->data,
+				  actual.content->data, actual.content->len));
+
+      // 16 B payload comparison
+
+      if (exp_payload->len == act_payload->len)
+	{
+	  exp_payload_data = exp_payload->data;
+	  act_payload_data = act_payload->data;
+	  exp_payload_size = exp_payload->len;
+	  guint32 addr = 0;
+	  guint line_len =
+	    -(BYTE_COMPARISON_SIZE * 2 + BYTE_COMPARISON_SIZE - 1);
+	  while (exp_payload_size > 0)
+	    {
+	      guint size = exp_payload_size >=
+		BYTE_COMPARISON_SIZE ? BYTE_COMPARISON_SIZE :
+		exp_payload_size;
+	      exp_text = debug_get_hex_data (debug_level,
+					     exp_payload_data, size);
+	      act_text = debug_get_hex_data (debug_level,
+					     act_payload_data, size);
+	      printf ("%08x %*s | %*s -> %d\n", addr, line_len, exp_text,
+		      line_len, act_text, strcmp (exp_text, act_text) == 0);
+	      g_free (exp_text);
+	      g_free (act_text);
+
+	      exp_payload_size -= size;
+
+	      exp_payload_data += size;
+	      act_payload_data += size;
+
+	      addr += BYTE_COMPARISON_SIZE;
+	    }
+	}
+
+      free_msg (act_payload);
+      free_msg (exp_payload);
+    }
+
+  idata_clear (&actual);
+}
+
+static void
+test_logue_get_sysex_from_unit (const gchar *sysex_path,
+				const gchar *unit_path,
+				enum logue_device device, guint8 slot)
+{
+  gint err;
+  struct task_control control;
+  struct idata expected_sysex, idata_unit;
+
+  printf ("\n");
+
+  controllable_init (&control.controllable);
+  control.callback = NULL;
+
+  err = file_load (sysex_path, &expected_sysex, &control);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  err = file_load (unit_path, &idata_unit, &control);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  test_logue_get_sysex_from_unit_idata (&expected_sysex, &idata_unit, device,
+					slot, &control);
+
+  idata_clear (&idata_unit);
+  idata_clear (&expected_sysex);
+
+  controllable_clear (&control.controllable);
+}
+
+// Oscillator 15: "mass" v0.01-0 api:1.01-0 did:00000000 uid:00000000
+
+// > Target platform: "nutekt digital"
+// > Target module: "Oscillator"
+// > Loading "Oscillator" unit "mass" into slot #15
+
+// size: 0x854 crc32: 8a9546d2
+
+static void
+test_logue_get_sysex_from_unit_1 ()
+{
+  test_logue_get_sysex_from_unit (TEST_DATA_DIR "/connectors/logue1.syx",
+				  TEST_DATA_DIR
+				  "/connectors/logue1.ntkdigunit",
+				  LOGUE_DEVICE_NTS1, 15);
+}
+
+// Modulation FX 3: "sola" v1.00-0 api:1.01-0 did:00000000 uid:00000000
+
+// > Target platform: "nutekt digital"
+// > Target module: "Modulation FX"
+// > Loading "Modulation FX" unit "sola" into slot #3
+
+// size: 0x97c crc32: fda2c831
+
+static void
+test_logue_get_sysex_from_unit_2 ()
+{
+  test_logue_get_sysex_from_unit (TEST_DATA_DIR "/connectors/logue2.syx",
+				  TEST_DATA_DIR
+				  "/connectors/logue2.ntkdigunit",
+				  LOGUE_DEVICE_NTS1, 3);
+}
+
+// Oscillator 10: "fm4o" v0.01-0 api:1.01-0 did:00000000 uid:00000000
+
+// > Target platform: "nutekt digital"
+// > Target module: "Oscillator"
+// > Loading "Oscillator" unit "fm4o" into slot #10
+
+// size: 0x9ac crc32: b6422e54
+
+static void
+test_logue_get_sysex_from_unit_3 ()
+{
+  test_logue_get_sysex_from_unit (TEST_DATA_DIR "/connectors/logue3.syx",
+				  TEST_DATA_DIR
+				  "/connectors/logue3.ntkdigunit",
+				  LOGUE_DEVICE_NTS1, 10);
+}
+
+// Delay FX 7: "rock" v1.00-0 api:1.01-0 did:00000000 uid:00000000
+
+// > Target platform: "nutekt digital"
+// > Target module: "Delay FX"
+// > Loading "Delay FX" unit "rock" into slot #7
+
+// size: 0x8a8 crc32: acfe618f
+
+static void
+test_logue_get_sysex_from_unit_4 ()
+{
+  test_logue_get_sysex_from_unit (TEST_DATA_DIR "/connectors/logue4.syx",
+				  TEST_DATA_DIR
+				  "/connectors/logue4.ntkdigunit",
+				  LOGUE_DEVICE_NTS1, 7);
+}
+
+static void
+test_logue_get_unit_from_sysex (const gchar *sysex_path,
+				const gchar *sysex_back_path,
+				enum logue_device device, guint8 slot)
+{
+  gint err;
+  struct task_control control;
+  struct idata idata_unit, idata_sysex, idata_sysex_back;
+
+  printf ("\n");
+
+  controllable_init (&control.controllable);
+  control.callback = NULL;
+
+  err = file_load (sysex_path, &idata_sysex, &control);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      return;
+    }
+
+  err = file_load (sysex_back_path, &idata_sysex_back, &control);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      goto cleanup_sysex;
+    }
+
+  err = logue_get_unit_from_sysex (&idata_unit, &idata_sysex_back, &control);
+  CU_ASSERT_EQUAL (err, 0);
+  if (err)
+    {
+      goto cleanup_sysex;
+    }
+
+  test_logue_get_sysex_from_unit_idata (&idata_sysex, &idata_unit, device,
+					slot, &control);
+
+  idata_clear (&idata_unit);
+cleanup_sysex:
+  idata_clear (&idata_sysex);
+  idata_clear (&idata_sysex_back);
+
+  controllable_clear (&control.controllable);
+}
+
+static void
+test_logue_get_unit_from_sysex_1 ()
+{
+  test_logue_get_unit_from_sysex (TEST_DATA_DIR
+				  "/connectors/logue1.syx",
+				  TEST_DATA_DIR
+				  "/connectors/logue1_back.syx",
+				  LOGUE_DEVICE_NTS1, 15);
+}
+
+static void
+test_logue_get_unit_from_sysex_2 ()
+{
+  test_logue_get_unit_from_sysex (TEST_DATA_DIR
+				  "/connectors/logue2.syx",
+				  TEST_DATA_DIR
+				  "/connectors/logue2_back.syx",
+				  LOGUE_DEVICE_NTS1, 3);
+}
+
+static void
+test_logue_get_unit_from_sysex_3 ()
+{
+  test_logue_get_unit_from_sysex (TEST_DATA_DIR
+				  "/connectors/logue3.syx",
+				  TEST_DATA_DIR
+				  "/connectors/logue3_back.syx",
+				  LOGUE_DEVICE_NTS1, 10);
+}
+
+static void
+test_logue_get_unit_from_sysex_4 ()
+{
+  test_logue_get_unit_from_sysex (TEST_DATA_DIR
+				  "/connectors/logue4.syx",
+				  TEST_DATA_DIR
+				  "/connectors/logue4_back.syx",
+				  LOGUE_DEVICE_NTS1, 7);
+}
+
+gint
+main (gint argc, gchar *argv[])
+{
+  gint err = 0;
+
+  debug_level = 5;
+
+  if (CU_initialize_registry () != CUE_SUCCESS)
+    {
+      goto cleanup;
+    }
+  CU_pSuite suite = CU_add_suite ("Elektroid logue tests", 0, 0);
+  if (!suite)
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "logue_load_sysex_from_unit_1",
+		    test_logue_get_sysex_from_unit_1))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "logue_load_sysex_from_unit_2",
+		    test_logue_get_sysex_from_unit_2))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "logue_load_sysex_from_unit_3",
+		    test_logue_get_sysex_from_unit_3))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "logue_load_sysex_from_unit_4",
+		    test_logue_get_sysex_from_unit_4))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "logue_get_unit_from_sysex_1",
+		    test_logue_get_unit_from_sysex_1))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "logue_get_unit_from_sysex_2",
+		    test_logue_get_unit_from_sysex_2))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "logue_get_unit_from_sysex_3",
+		    test_logue_get_unit_from_sysex_3))
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "logue_get_unit_from_sysex_4",
+		    test_logue_get_unit_from_sysex_4))
+    {
+      goto cleanup;
+    }
+
+  CU_basic_set_mode (CU_BRM_VERBOSE);
+
+  CU_basic_run_tests ();
+  err = CU_get_number_of_tests_failed ();
+
+cleanup:
+  CU_cleanup_registry ();
+  return err || CU_get_error ();
+}

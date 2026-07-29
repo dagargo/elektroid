@@ -248,7 +248,7 @@ microbrute_assistant_prepare (GtkAssistant *assistant, GtkWidget *page,
     case 4:
       microbrute_set_parameter (remote_browser.backend,
 				MICROBRUTE_CALIB_BOTH_TOP, 0, channel, TRUE);
-      sleep (1);
+      g_usleep (1000000);
       microbrute_set_parameter (remote_browser.backend, MICROBRUTE_CALIB_END,
 				0, channel, TRUE);
       break;

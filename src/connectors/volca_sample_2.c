@@ -124,7 +124,7 @@ volca_sample_2_sample_get_header (struct backend *backend, guint id,
 
   free_msg (rx_msg);
 
-  usleep (VOLCA_SAMPLE_2_REST_TIME_US);
+  g_usleep (VOLCA_SAMPLE_2_REST_TIME_US);
 
   return 0;
 }
@@ -164,7 +164,7 @@ volca_sample_2_sample_get_data (struct backend *backend, guint id,
   common_midi_msg_to_8bit_msg (&rx_msg->data[9], data->data, dump_size);
   free_msg (rx_msg);
 
-  usleep (VOLCA_SAMPLE_2_REST_TIME_US);
+  g_usleep (VOLCA_SAMPLE_2_REST_TIME_US);
 
   return data;
 }
@@ -190,6 +190,7 @@ volca_sample_2_sample_next_dentry (struct item_iterator *iter)
   item_set_name (&iter->item, "%.*s", VOLCA_SAMPLE_2_SAMPLE_NAME_LEN,
 		 header.name);
   iter->item.id = data->next;
+  common_slot_set_slot_padded (&iter->item, 3);
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = GUINT32_FROM_LE (header.frames) * sizeof (gint16);
   sample_info_init (&iter->item.sample_info);
@@ -287,18 +288,12 @@ volca_sample_2_sample_download (struct backend *backend, const gchar *path,
 }
 
 static gint
-volca_sample_2_sample_save (const gchar *path, struct idata *sample,
+volca_sample_2_sample_save (struct backend *backend, const gchar *path,
+			    struct idata *sample,
 			    struct task_control *control)
 {
   return sample_save_to_file (path, sample, control,
 			      SF_FORMAT_WAV | SF_FORMAT_PCM_16);
-}
-
-static gchar *
-volca_sample_2_get_sample_id_as_slot (struct item *item,
-				      struct backend *backend)
-{
-  return common_get_id_as_slot_padded (item, backend, 3);
 }
 
 static gint
@@ -358,7 +353,7 @@ volca_sample_2_sample_upload_params (struct backend *backend,
 				     struct task_control *control)
 {
   gint err;
-  guint id, size_truncated;
+  guint id, gsizeruncated;
   guint8 *buff;
   guint buff_size;
   guint8 header_dump[39];
@@ -385,8 +380,8 @@ volca_sample_2_sample_upload_params (struct backend *backend,
   memcpy (header.name, name, MIN (strlen (name),
 				  VOLCA_SAMPLE_2_SAMPLE_NAME_LEN));
   // TODO: If sample is truncated, the return value should indicate this.
-  size_truncated = volca_sample_2_sample_get_max_size_in_msg (size);
-  header.frames = size_truncated / sizeof (gint16);
+  gsizeruncated = volca_sample_2_sample_get_max_size_in_msg (size);
+  header.frames = gsizeruncated / sizeof (gint16);
   header.level = level;
   header.speed = speed;
 
@@ -412,12 +407,12 @@ volca_sample_2_sample_upload_params (struct backend *backend,
       control->part++;
     }
 
-  usleep (VOLCA_SAMPLE_2_REST_TIME_US);
+  g_usleep (VOLCA_SAMPLE_2_REST_TIME_US);
 
-  buff_size = 2 + common_8bit_msg_to_midi_msg_size (size_truncated);
+  buff_size = 2 + common_8bit_msg_to_midi_msg_size (gsizeruncated);
   buff = g_malloc (buff_size);
   volca_sample_2_set_sample_id (buff, id);
-  common_8bit_msg_to_midi_msg (data, &buff[2], size_truncated);
+  common_8bit_msg_to_midi_msg (data, &buff[2], gsizeruncated);
 
   tx_msg = volca_sample_2_get_msg (0x4f, buff, buff_size);
   g_free (buff);
@@ -439,7 +434,7 @@ volca_sample_2_sample_upload_params (struct backend *backend,
       control->part++;
     }
 
-  usleep (VOLCA_SAMPLE_2_REST_TIME_US);
+  g_usleep (VOLCA_SAMPLE_2_REST_TIME_US);
 
   return 0;
 }
@@ -474,8 +469,6 @@ static const struct fs_operations FS_VOLCA_SAMPLE_2_SAMPLE_OPERATIONS = {
   .gui_icon = FS_ICON_WAVE,
   .file_icon = FS_ICON_WAVE,
   .readdir = volca_sample_2_sample_read_dir,
-  .print_item = common_print_item,
-  .get_slot = volca_sample_2_get_sample_id_as_slot,
   .delete = volca_sample_2_sample_clear,
   .download = volca_sample_2_sample_download,
   .upload = volca_sample_2_sample_upload,
@@ -559,8 +552,6 @@ static const struct fs_operations FS_VOLCA_SAMPLE_2_SAMPLE_LOOP_OPERATIONS = {
   .gui_icon = FS_ICON_WAVE_LOOP,
   .file_icon = FS_ICON_WAVE,
   .readdir = volca_sample_2_sample_read_dir,
-  .print_item = common_print_item,
-  .get_slot = volca_sample_2_get_sample_id_as_slot,
   .delete = volca_sample_2_sample_clear,
   .download = volca_sample_2_sample_loop_download,
   .upload = volca_sample_2_sample_loop_upload,
@@ -570,13 +561,6 @@ static const struct fs_operations FS_VOLCA_SAMPLE_2_SAMPLE_LOOP_OPERATIONS = {
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = common_system_get_download_path
 };
-
-static gchar *
-volca_sample_2_get_pattern_id_as_slot (struct item *item,
-				       struct backend *backend)
-{
-  return common_get_id_as_slot_padded (item, backend, 2);
-}
 
 static const gchar **
 volca_sample_2_pattern_get_extensions (struct backend *backend,
@@ -727,6 +711,7 @@ volca_sample_2_pattern_next_dentry (struct item_iterator *iter)
       item_set_name (&iter->item, "%s", pattern.name);
     }
   iter->item.id = data->next;
+  common_slot_set_slot_padded (&iter->item, 2);
   iter->item.type = ITEM_TYPE_FILE;
   iter->item.size = pattern.content->len;
   idata_clear (&pattern);
@@ -901,14 +886,12 @@ static const struct fs_operations FS_VOLCA_SAMPLE_2_PATTERN_OPERATIONS = {
   .file_icon = FS_ICON_SEQUENCE,
   .max_name_len = VOLCA_SAMPLE_2_PATTERN_NAME_LEN,
   .readdir = volca_sample_2_pattern_read_dir,
-  .print_item = common_print_item,
-  .get_slot = volca_sample_2_get_pattern_id_as_slot,
   .delete = volca_sample_2_pattern_clear,
   .rename = volca_sample_2_pattern_rename,
   .download = volca_sample_2_pattern_download,
   .upload = volca_sample_2_pattern_upload,
   .load = common_file_load,
-  .save = file_save,
+  .save = common_file_save,
   .get_exts = volca_sample_2_pattern_get_extensions,
   .get_upload_path = common_slot_get_upload_path,
   .get_download_path = volca_sample_2_get_download_path
@@ -951,7 +934,7 @@ volca_sample_2_get_storage_stats (struct backend *backend, guint8 type,
 
 err:
   free_msg (rx_msg);
-  usleep (VOLCA_SAMPLE_2_REST_TIME_US);
+  g_usleep (VOLCA_SAMPLE_2_REST_TIME_US);
   return err;
 }
 

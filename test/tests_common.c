@@ -124,36 +124,37 @@ test_common_slot_get_download_path ()
 }
 
 static void
+test_8bit_conversions_set_data (guint8 *v, guint len)
+{
+  for (gint i = 0; i < len; i++, v++)
+    {
+      *v = g_random_int () & 0xff;
+      if (i == 0 || i == len - 1)
+	{
+	  *v |= 0x80;		//Ensures MSB at 1.
+	}
+    }
+}
+
+static void
 test_8bit_conversions ()
 {
-  guint8 *v;
-  guint8 src[119], dst[136], bak[119];
+  guint8 src[6977], dst[7974], bak[6977];
 
   printf ("\n");
 
-  v = src;
-  for (gint i = 0; i < 32; i++, v++)
+  test_8bit_conversions_set_data (src, 6977);
+
+  for (guint size = 1; size <= 6977; size++)
     {
-      *v = g_random_int () & 0xff;
+      guint midi_msg_size, output_size;
+      midi_msg_size = common_8bit_msg_to_midi_msg_size (size);
+      output_size = common_8bit_msg_to_midi_msg (src, dst, size);
+      CU_ASSERT_EQUAL (midi_msg_size, output_size);
+      output_size = common_midi_msg_to_8bit_msg (dst, bak, midi_msg_size);
+      CU_ASSERT_EQUAL (size, output_size);
+      CU_ASSERT_EQUAL (memcmp (src, bak, size), 0);
     }
-  src[0] |= 0x80;		//Ensures MSB at 1.
-  src[31] |= 0x80;		//Ensures MSB at 1.
-
-  common_8bit_msg_to_midi_msg (src, dst, 32);
-  common_midi_msg_to_8bit_msg (dst, bak, 37);
-  CU_ASSERT_EQUAL (memcmp (src, bak, 32), 0);
-
-  v = src;
-  for (gint i = 0; i < 119; i++, v++)
-    {
-      *v = g_random_int () & 0xff;
-    }
-  src[0] |= 0x80;		//Ensures MSB at 1.
-  src[118] |= 0x80;		//Ensures MSB at 1.
-
-  common_8bit_msg_to_midi_msg (src, dst, 119);
-  common_midi_msg_to_8bit_msg (dst, bak, 136);
-  CU_ASSERT_EQUAL (memcmp (src, bak, 119), 0);
 }
 
 static void
@@ -162,6 +163,7 @@ test_common_8bit_msg_to_midi_msg_size ()
   CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (0), 0);
   CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (32), 37);
   CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (119), 136);
+  CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (6977), 7974);
   CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (14420), 16480);
   CU_ASSERT_EQUAL (common_8bit_msg_to_midi_msg_size (917494), 1048565);
 }
@@ -172,6 +174,7 @@ test_common_midi_msg_to_8bit_msg_size ()
   CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (0), 0);
   CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (37), 32);
   CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (136), 119);
+  CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (7974), 6977);
   CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (16480), 14420);
   CU_ASSERT_EQUAL (common_midi_msg_to_8bit_msg_size (1048565), 917494);
 }
