@@ -1590,29 +1590,52 @@ elektroid_delete_main_window (GtkWidget *widget, GdkEvent *event,
   return FALSE;
 }
 
-static void
-elektroid_about_add_credit_section (const gchar *section_name,
-				    const gchar *file)
+static gchar **
+elektroid_get_file_as_lines (const gchar *file)
 {
-  gchar *thanks;
+  gchar *content;
 
-  if (g_file_get_contents (file, &thanks, NULL, NULL))
+  if (g_file_get_contents (file, &content, NULL, NULL))
     {
       gchar **lines;
-      gchar *last_new_line = strrchr (thanks, '\n');
+      gchar *last_new_line = strrchr (content, '\n');
 
       if (last_new_line != NULL)
 	{
 	  *last_new_line = 0;
 	}
+      lines = g_strsplit (content, "\n", 0);
+      g_free (content);
 
-      lines = g_strsplit (thanks, "\n", 0);
+      return lines;
+    }
+  else
+    {
+      return NULL;
+    }
+}
 
+static void
+elektroid_about_set_authors (const gchar *section_name, const gchar *file)
+{
+  gchar **lines = elektroid_get_file_as_lines (file);
+  if (lines)
+    {
+      gtk_about_dialog_set_authors (about_dialog, (const gchar **) lines);
+      g_strfreev (lines);
+    }
+}
+
+static void
+elektroid_about_add_credit_section (const gchar *section_name,
+				    const gchar *file)
+{
+  gchar **lines = elektroid_get_file_as_lines (file);
+  if (lines)
+    {
       gtk_about_dialog_add_credit_section (about_dialog,
 					   section_name,
 					   (const gchar **) lines);
-
-      g_free (thanks);
       g_strfreev (lines);
     }
 }
@@ -1653,6 +1676,11 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   about_dialog =
     GTK_ABOUT_DIALOG (gtk_builder_get_object (builder, "about_dialog"));
   gtk_about_dialog_set_version (about_dialog, PACKAGE_VERSION);
+
+  gchar *authors_path = g_build_filename (get_data_dir (),
+					  "AUTHORS", NULL);
+  elektroid_about_set_authors (_("Authors"), authors_path);
+  g_free (authors_path);
 
   gchar *libraries_path = g_build_filename (get_data_dir (),
 					    "libraries.html", NULL);
