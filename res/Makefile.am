@@ -1,4 +1,5 @@
 res_DATA = libraries.html \
+	AUTHORS \
 	THANKS \
 	volca_sample_sdk-COPYING
 
@@ -89,4 +90,5 @@ EXTRA_DIST = \
         $(microbrute_DATA) \
         $(volca_sample_2_DATA) \
         $(ico_DATA) \
+	AUTHORS \
 	THANKS
