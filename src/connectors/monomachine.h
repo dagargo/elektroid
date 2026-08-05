@@ -1,6 +1,6 @@
 /*
  *   monomachine.h
- *   Copyright (C) 2026 Ian Hundere <138915+ianhundere@users.noreply.github.com>
+ *   Copyright (C) 2026 Ian Hundere
  *
  *   This file is part of Elektroid.
  *
