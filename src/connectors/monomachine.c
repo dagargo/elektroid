@@ -1,6 +1,6 @@
 /*
  *   monomachine.c
- *   Copyright (C) 2024 David García Goñi <dagargo@gmail.com>
+ *   Copyright (C) 2026 Ian Hundere <138915+ianhundere@users.noreply.github.com>
  *
  *   This file is part of Elektroid.
  *
@@ -75,7 +75,7 @@ static const guint8 MONOMACHINE_WAVEFORM_DUMP_HEADER[] =
 
 enum monomachine_fs
 {
-  FS_SAMPLE_MONOMACHINE = 1
+  FS_WAVEFORM_MONOMACHINE = 1
 };
 
 //Checks the SysEx start, the manufacturer ID, the product ID (bytes 0 to 4)
@@ -397,10 +397,10 @@ monomachine_sample_save (struct backend *backend, const gchar *path,
 }
 
 static const struct fs_operations FS_MONOMACHINE_SAMPLE_OPERATIONS = {
-  .id = FS_SAMPLE_MONOMACHINE,
+  .id = FS_WAVEFORM_MONOMACHINE,
   .options = FS_OPTION_SAMPLE_EDITOR | FS_OPTION_MONO | FS_OPTION_SINGLE_OP |
     FS_OPTION_SLOT_STORAGE | FS_OPTION_SHOW_ID_COLUMN,
-  .name = "sample",
+  .name = "waveforms",
   .gui_name = "Waveforms",
   .gui_icon = FS_ICON_WAVE,
   .max_name_len = MONOMACHINE_SAMPLE_NAME_LEN,
