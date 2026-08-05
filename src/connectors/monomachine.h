@@ -1,6 +1,6 @@
 /*
  *   monomachine.h
- *   Copyright (C) 2024 David García Goñi <dagargo@gmail.com>
+ *   Copyright (C) 2026 Ian Hundere <138915+ianhundere@users.noreply.github.com>
  *
  *   This file is part of Elektroid.
  *
