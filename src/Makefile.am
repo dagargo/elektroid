@@ -73,6 +73,7 @@ connectors/scala.c connectors/scala.h \
 connectors/sds.c connectors/sds.h \
 connectors/summit.c connectors/summit.h \
 connectors/system.c connectors/system.h \
+connectors/tanzmaus.c connectors/tanzmaus.h \
 connectors/volca_sample.c connectors/volca_sample.h \
 connectors/volca_sample_sdk/korg_syro_comp.c connectors/volca_sample_sdk/korg_syro_comp.h \
 connectors/volca_sample_sdk/korg_syro_func.c connectors/volca_sample_sdk/korg_syro_func.h \
