@@ -33,6 +33,7 @@
 #include "connectors/sds.h"
 #include "connectors/summit.h"
 #include "connectors/system.h"
+#include "connectors/tanzmaus.h"
 #include "connectors/volca_sample.h"
 #include "connectors/volca_sample_2.h"
 
@@ -47,6 +48,7 @@ regconn_register ()
   // USB devices including a MIDI DIN port will be checked first when using the MIDI DIN port. No solution for this case.
   gslist_fill (&connectors,
 	       // Fast and simple MIDI connectors go first.
+	       &CONNECTOR_TANZMAUS,	// TODO
 	       &CONNECTOR_CZ,
 	       &CONNECTOR_ELEKTRON,
 	       &CONNECTOR_LOGUE,
