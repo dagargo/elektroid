@@ -1652,7 +1652,7 @@ cleanup:
   else
     {
       idata_init (smplrw, output, g_path_get_basename (path), sample_info,
-		  sample_info_free);
+		  sample_info ? sample_info_free : NULL);
     }
   return res;
 }
