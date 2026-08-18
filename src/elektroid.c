@@ -202,7 +202,7 @@ elektroid_ask_user_to_continue_show (gpointer user_data)
 
   data->dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL,
 					 GTK_MESSAGE_WARNING,
-					 GTK_BUTTONS_NONE, data->msg);
+					 GTK_BUTTONS_NONE, "%s", data->msg);
   gtk_dialog_add_buttons (GTK_DIALOG (data->dialog), _("_Cancel"),
 			  GTK_RESPONSE_CANCEL, _("_Continue"),
 			  GTK_RESPONSE_ACCEPT, NULL);
