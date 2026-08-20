@@ -40,6 +40,7 @@ set(ELEKTROID_COMMON_SOURCES
   connectors/microbrute.c
   connectors/microfreak.c
   connectors/microfreak_sample.c
+  connectors/monomachine.c
   connectors/padkontrol.c
   connectors/phatty.c
   connectors/scala.c
