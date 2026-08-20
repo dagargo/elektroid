@@ -68,7 +68,7 @@ if(ELEKTROID_BUILD_GUI)
     DESTINATION "${ELEKTROID_RESDIR}/microbrute")
 
   # System dependent resources.
-  if(ELEKTROID_SYSTEM STREQUAL "mingw")
+  if(ELEKTROID_SYSTEM STREQUAL "windows")
     # ico_DATA
     install(FILES elektroid.ico DESTINATION "${ELEKTROID_RESDIR}")
   elseif(ELEKTROID_SYSTEM STREQUAL "opendesktop")

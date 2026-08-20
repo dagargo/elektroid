@@ -458,7 +458,7 @@ path_get_separator (enum path_type type)
   const gchar *sep;
   if (type == PATH_SYSTEM)
     {
-#if defined(__MINGW32__) | defined(__MINGW64__)
+#if defined(__MINGW32__) | defined(__MINGW64__) | defined(_WIN32)
       sep = "\\";
 #else
       sep = "/";

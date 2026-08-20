@@ -56,11 +56,11 @@ endif()
 
 # --- Platform detection, mirroring the case "${host_os}" block in configure.ac.
 #   linux   -> opendesktop, ALSA + PulseAudio by default
-#   mingw   -> RtMidi + RtAudio (forced)
+#   windows -> RtMidi + RtAudio (forced)
 #   darwin  -> RtMidi + RtAudio by default
 #   other   -> RtMidi + RtAudio by default
 if(WIN32)
-  set(ELEKTROID_SYSTEM "mingw")
+  set(ELEKTROID_SYSTEM "windows")
   set(_rt_default ON)
   set(_rt_forced TRUE)
 elseif(APPLE)

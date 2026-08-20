@@ -100,10 +100,19 @@ endif()
 
 # elektroid_SOURCES = common + audio + GUI sources
 if(ELEKTROID_BUILD_GUI)
-  add_executable(elektroid
-    ${ELEKTROID_COMMON_SOURCES}
-    ${ELEKTROID_AUDIO_SOURCES}
-    ${ELEKTROID_GUI_SOURCES})
+  if (WIN32)
+    add_executable(elektroid WIN32
+      ${ELEKTROID_COMMON_SOURCES}
+      ${ELEKTROID_AUDIO_SOURCES}
+      ${ELEKTROID_GUI_SOURCES})
+
+    target_link_options(elektroid PRIVATE "/ENTRY:mainCRTStartup")
+  else()
+    add_executable(elektroid
+      ${ELEKTROID_COMMON_SOURCES}
+      ${ELEKTROID_AUDIO_SOURCES}
+      ${ELEKTROID_GUI_SOURCES})
+  endif()
 endif()
 
 # Shared per-target configuration.
