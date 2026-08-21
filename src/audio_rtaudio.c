@@ -173,7 +173,8 @@ audio_init_int ()
 	  break;
 	}
 #elif defined(_WIN32)
-      if (apis[i] == RTAUDIO_API_WINDOWS_DS)
+      if (apis[i] == RTAUDIO_API_WINDOWS_DS ||
+	  apis[i] == RTAUDIO_API_WINDOWS_WASAPI)
 	{
 	  break;
 	}
