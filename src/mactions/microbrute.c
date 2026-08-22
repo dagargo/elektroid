@@ -277,7 +277,6 @@ microbrute_init ()
   g_free (mb_ui_path);
   config_window = GTK_WIDGET (gtk_builder_get_object (builder,
 						      "config_window"));
-  gtk_window_resize (GTK_WINDOW (config_window), 1, 1);
   gtk_window_set_transient_for (GTK_WINDOW (config_window), main_window);
 
   note_priority =
