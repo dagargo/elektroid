@@ -528,16 +528,16 @@ msgid "Show in File Manager"
 msgstr "Mostrar en gestor de archivos"
 
 #: res/elektroid.ui:1861
-msgid "Show _Remote"
-msgstr "Mostrar _remoto"
+msgid "Show Remote"
+msgstr "Mostrar remoto"
 
 #: res/elektroid.ui:1874
-msgid "_Preferences "
-msgstr "_Preferencias"
+msgid "Preferences"
+msgstr "Preferencias"
 
 #: res/elektroid.ui:1898
-msgid "_About"
-msgstr "_Acerca de"
+msgid "About"
+msgstr "Acerca de"
 
 #: res/elektroid.ui:2005 res/elektroid.ui:2469
 msgid "Go to Parent Directory"
@@ -655,10 +655,6 @@ msgstr "Eliminar tareas encoladas"
 #: res/elektroid.ui:3601
 msgid "Clear Finished Tasks"
 msgstr "Limpiar tareas terminadas"
-
-#: res/elektroid.ui:3844
-msgid "Preferences"
-msgstr "Preferencias"
 
 #: res/elektroid.ui:3896
 msgid "Play sample while loading"

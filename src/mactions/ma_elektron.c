@@ -29,13 +29,13 @@ extern GtkWindow *main_window;
 extern struct browser remote_browser;
 
 static void
-elektron_ram_purge_runner (gpointer data)
+ma_elektron_ram_purge_runner (gpointer data)
 {
   elektron_ram_clear_unused_slots (remote_browser.backend);
 }
 
 static void
-elektron_ram_purge_consumer (gpointer data)
+ma_elektron_ram_purge_consumer (gpointer data)
 {
   if (remote_browser.fs_ops->id == FS_DIGITAKT_RAM)
     {
@@ -44,16 +44,28 @@ elektron_ram_purge_consumer (gpointer data)
 }
 
 static void
-elektron_ram_purge_callback (GtkWidget *object, gpointer data)
+ma_elektron_ram_purge (GSimpleAction *simple_action, GVariant *parameter,
+		       gpointer user_data)
 {
-  progress_window_open (elektron_ram_purge_runner,
-			elektron_ram_purge_consumer, NULL, NULL,
+  progress_window_open (ma_elektron_ram_purge_runner,
+			ma_elektron_ram_purge_consumer, NULL, NULL,
 			PROGRESS_TYPE_PULSE,
 			_("Purging Unused RAM Slots"), "", FALSE);
 }
 
+static const GActionEntry ELEKTRON_ENTRIES[] = {
+  {"elektron_ram_purge", ma_elektron_ram_purge, NULL, NULL, NULL}
+};
+
+void
+ma_elektron_init (GtkApplication *app)
+{
+  g_action_map_add_action_entries (G_ACTION_MAP (app), ELEKTRON_ENTRIES,
+				   G_N_ELEMENTS (ELEKTRON_ENTRIES), app);
+}
+
 struct maction *
-elektron_ram_purge_builder (struct maction_context *context)
+ma_elektron_ram_purge_builder ()
 {
   GSList *list;
   struct maction *ma;
@@ -75,10 +87,8 @@ elektron_ram_purge_builder (struct maction_context *context)
   if (ram_found)
     {
       ma = g_malloc (sizeof (struct maction));
-      ma->type = MACTION_BUTTON;
       ma->name = _("_Purge Unused RAM Slots");
-      ma->sensitive = TRUE;
-      ma->callback = G_CALLBACK (elektron_ram_purge_callback);
+      ma->action_name = "app.elektron_ram_purge";
 
       return ma;
     }
