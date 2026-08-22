@@ -78,10 +78,13 @@ static gpointer elektroid_upload_task_runner (gpointer);
 static gpointer elektroid_download_task_runner (gpointer);
 static void elektroid_update_progress (struct task_control *);
 
-void autosampler_destroy ();
-void autosampler_init (GtkBuilder * builder);
-void microbrute_destroy ();
-void microbrute_init ();
+void ma_autosampler_init (GtkBuilder * builder, GtkApplication * gapp);
+void ma_autosampler_destroy ();
+void ma_backend_init (GtkApplication * gapp);
+void ma_elektron_init (GtkApplication * gapp);
+void ma_microbrute_init (GtkApplication * gapp);
+void ma_microbrute_destroy ();
+void ma_microfreak_init (GtkApplication * gapp);
 
 static gchar *local_dir;
 static guint batch_id;
@@ -90,12 +93,10 @@ extern struct maction_context maction_context;
 
 #define BACKEND (remote_browser.backend)
 
+static GtkApplication *app;
+
 GtkWindow *main_window;
 static GtkAboutDialog *about_dialog;
-static GtkPopover *main_popover;
-static GtkWidget *show_remote_button;
-static GtkWidget *preferences_button;
-static GtkWidget *about_button;
 static GtkWidget *local_name_entry;
 static GtkWidget *local_box;
 static GtkWidget *remote_box;
@@ -110,6 +111,33 @@ static GtkWidget *devices_combo;
 static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
 static GtkWidget *editor_box;
+
+void
+elektroid_controller_add_accel (GtkEventController *controller,
+				const gchar *trigger_str,
+				const gchar *action_str)
+{
+  GtkShortcutTrigger *trigger =
+    gtk_shortcut_trigger_parse_string (trigger_str);
+  GtkShortcutAction *action = gtk_shortcut_action_parse_string (action_str);
+  GtkShortcut *shortcut = gtk_shortcut_new (trigger, action);
+  gtk_shortcut_controller_add_shortcut (GTK_SHORTCUT_CONTROLLER (controller),
+					shortcut);
+}
+
+void
+elektroid_set_action_enabled (GActionMap *action_map, const gchar *name,
+			      gboolean active)
+{
+  GAction *action = g_action_map_lookup_action (action_map, name);
+  g_simple_action_set_enabled (G_SIMPLE_ACTION (action), active);
+}
+
+void
+elektroid_app_set_action_enabled (const gchar *name, gboolean active)
+{
+  elektroid_set_action_enabled (G_ACTION_MAP (app), name, active);
+}
 
 void
 elektroid_combo_box_set_value (GtkComboBox *object, guint value)
@@ -159,7 +187,7 @@ static void
 elektroid_show_error_msg_response (GtkDialog *dialog, gint response_id,
 				   gpointer user_data)
 {
-  gtk_widget_destroy (GTK_WIDGET (dialog));
+  gtk_window_destroy (GTK_WINDOW (dialog));
 }
 
 void
@@ -190,7 +218,7 @@ elektroid_ask_user_to_continue_response (GtkDialog *dialog, gint response_id,
   struct common_ask_user_data *data = user_data;
   controllable_set_active (data->controllable,
 			   response_id == GTK_RESPONSE_ACCEPT);
-  gtk_widget_destroy (data->dialog);
+  gtk_window_destroy (GTK_WINDOW (data->dialog));
   g_main_loop_quit (data->loop);
 }
 
@@ -459,7 +487,7 @@ elektroid_refresh_devices_int (gboolean startup)
     {
       elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (BACKEND);
-      maction_menu_clear (&maction_context);
+      maction_menu_clear ();
       browser_reset (&remote_browser);
     }
   elektroid_check_backend_int (startup);	//This triggers the actual devices refresh if there is no backend
@@ -478,7 +506,7 @@ elektroid_refresh_devices_clicked (GtkWidget *widget, gpointer data)
 }
 
 static void
-elektroid_show_remote (gboolean active)
+elektroid_enable_remote (gboolean active)
 {
   elektroid_refresh_devices_int (TRUE);
   gtk_widget_set_visible (local_name_entry, active);
@@ -488,31 +516,27 @@ elektroid_show_remote (gboolean active)
 }
 
 static void
-elektroid_show_remote_clicked (GtkWidget *object, gpointer data)
+elektroid_show_remote (GSimpleAction *simple_action, GVariant *parameter,
+		       gpointer data)
 {
-  gboolean active;
-
-  g_object_get (G_OBJECT (show_remote_button), "active", &active, NULL);
-  active = !active;
-  preferences_set_boolean (PREF_KEY_SHOW_REMOTE, active);
-  g_object_set (G_OBJECT (show_remote_button), "active", active, NULL);
-
-  gtk_widget_hide (GTK_WIDGET (main_popover));
-
-  elektroid_show_remote (active);
+  gboolean show_remote = g_variant_get_boolean (parameter);
+  g_simple_action_set_state (simple_action, parameter);
+  elektroid_enable_remote (show_remote);
+  preferences_set_boolean (PREF_KEY_SHOW_REMOTE, show_remote);
 }
 
 static void
-elektroid_open_preferences (GtkWidget *object, gpointer data)
+elektroid_open_preferences (GSimpleAction *simple_action, GVariant *parameter,
+			    gpointer data)
 {
   preferences_window_open ();
 }
 
 static void
-elektroid_show_about (GtkWidget *object, gpointer data)
+elektroid_open_about (GSimpleAction *simple_action, GVariant *parameter,
+		      gpointer data)
 {
-  gtk_dialog_run (GTK_DIALOG (about_dialog));
-  gtk_widget_hide (GTK_WIDGET (about_dialog));
+  gtk_widget_set_visible (GTK_WIDGET (about_dialog), TRUE);
 }
 
 static gint
@@ -671,8 +695,6 @@ elektroid_run_next (gpointer data)
 	  audio.loop = FALSE;
 	}
 
-      gtk_widget_set_sensitive (maction_context.box, FALSE);
-
       gtk_list_store_set (tasks.list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, TASK_STATUS_RUNNING,
 			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status_human,
@@ -737,8 +759,6 @@ elektroid_run_next (gpointer data)
 	  browser_set_selection_active (&local_browser, TRUE);
 	  audio.loop = editor_is_loop_active ();
 	}
-
-      gtk_widget_set_sensitive (maction_context.box, TRUE);
     }
 
   tasks_check_buttons ();
@@ -753,7 +773,7 @@ elektroid_show_task_overwrite_dialog_response (GtkDialog *dialog,
 {
   GtkWidget *checkbutton = user_data;
   gboolean apply_to_all =
-    gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (checkbutton));
+    gtk_check_button_get_active (GTK_CHECK_BUTTON (checkbutton));
   switch (response_id)
     {
     case GTK_RESPONSE_CANCEL:
@@ -780,7 +800,7 @@ elektroid_show_task_overwrite_dialog_response (GtkDialog *dialog,
       break;
     }
 
-  gtk_widget_destroy (GTK_WIDGET (dialog));
+  gtk_window_destroy (GTK_WINDOW (dialog));
 
   g_mutex_lock (&tasks.transfer.control.controllable.mutex);
   g_cond_signal (&tasks.transfer.control.cond);
@@ -791,6 +811,7 @@ static gboolean
 elektroid_show_task_overwrite_dialog (gpointer data)
 {
   GtkWidget *dialog;
+  GtkWidget *message_area;
   GtkWidget *container, *checkbutton;
 
   dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL |
@@ -808,8 +829,10 @@ elektroid_show_task_overwrite_dialog (gpointer data)
     gtk_check_button_new_with_label (_("Apply this action to all files"));
   gtk_widget_set_hexpand (checkbutton, TRUE);
   gtk_widget_set_halign (checkbutton, GTK_ALIGN_CENTER);
-  gtk_widget_show (checkbutton);
-  gtk_container_add (GTK_CONTAINER (container), checkbutton);
+  gtk_widget_set_visible (checkbutton, TRUE);
+  message_area =
+    gtk_message_dialog_get_message_area (GTK_MESSAGE_DIALOG (dialog));
+  gtk_box_append (GTK_BOX (container), checkbutton);
 
   gtk_widget_set_visible (dialog, TRUE);
   g_signal_connect (dialog, "response",
@@ -1032,7 +1055,8 @@ elektroid_add_upload_tasks_runner (gpointer data)
 }
 
 void
-elektroid_add_upload_tasks (GtkWidget *object, gpointer data)
+elektroid_add_upload_tasks (GSimpleAction *simple_action, GVariant *parameter,
+			    gpointer data)
 {
   GtkTreeSelection *sel = gtk_tree_view_get_selection (local_browser.view);
   gboolean *has_progress_window = g_malloc (sizeof (gboolean));
@@ -1042,17 +1066,17 @@ elektroid_add_upload_tasks (GtkWidget *object, gpointer data)
       return;
     }
 
-  if (browser_no_progress_needed (&local_browser))
-    {
-      *has_progress_window = FALSE;
-      elektroid_add_upload_tasks_runner (has_progress_window);
-    }
-  else
+  if (browser_progress_needed (&local_browser))
     {
       *has_progress_window = TRUE;
       progress_window_open (elektroid_add_upload_tasks_runner, NULL, NULL,
 			    has_progress_window, PROGRESS_TYPE_PULSE,
 			    _("Preparing Tasks"), _("Waiting..."), TRUE);
+    }
+  else
+    {
+      *has_progress_window = FALSE;
+      elektroid_add_upload_tasks_runner (has_progress_window);
     }
 }
 
@@ -1224,7 +1248,8 @@ elektroid_add_download_tasks_runner (gpointer data)
 }
 
 void
-elektroid_add_download_tasks (GtkWidget *object, gpointer data)
+elektroid_add_download_tasks (GSimpleAction *simple_action,
+			      GVariant *parameter, gpointer data)
 {
   GtkTreeSelection *sel = gtk_tree_view_get_selection (remote_browser.view);
   gboolean *has_progress_window = g_malloc (sizeof (gboolean));
@@ -1234,17 +1259,17 @@ elektroid_add_download_tasks (GtkWidget *object, gpointer data)
       return;
     }
 
-  if (browser_no_progress_needed (&remote_browser))
-    {
-      *has_progress_window = FALSE;
-      elektroid_add_download_tasks_runner (has_progress_window);
-    }
-  else
+  if (browser_progress_needed (&remote_browser))
     {
       *has_progress_window = TRUE;
       progress_window_open (elektroid_add_download_tasks_runner, NULL, NULL,
 			    has_progress_window, PROGRESS_TYPE_PULSE,
 			    _("Preparing Tasks"), _("Waiting..."), TRUE);
+    }
+  else
+    {
+      *has_progress_window = FALSE;
+      elektroid_add_download_tasks_runner (has_progress_window);
     }
 }
 
@@ -1356,7 +1381,7 @@ elektroid_set_device_consumer (gpointer data)
   else
     {
       elektroid_fill_fs_combo_bg (NULL);
-      maction_menu_setup (&maction_context);
+      maction_menu_setup ();
     }
 
   controllable_clear (&set_device_data->controllable);
@@ -1414,7 +1439,7 @@ elektroid_set_device (GtkWidget *object, gpointer data)
   strcpy (set_device_data->backend_device.id, id);
   strcpy (set_device_data->backend_device.name, name);
 
-  maction_menu_clear (&maction_context);
+  maction_menu_clear ();
 
   if (set_device_data->backend_device.type == BE_TYPE_SYSTEM ||
       set_device_data->backend_device.type == BE_TYPE_NO_MIDI ||
@@ -1424,7 +1449,7 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 			      connector_name, NULL);
       elektroid_update_midi_status ();
       elektroid_fill_fs_combo_bg (NULL);
-      maction_menu_setup (&maction_context);
+      maction_menu_setup ();
       g_free (set_device_data);
     }
   else
@@ -1509,9 +1534,8 @@ elektroid_browser_drag_data_received_runner (gpointer user_data)
 {
   GtkTreeIter iter;
   gboolean queued_before, queued_after;
-  struct browser_drag_data_received_data *data = user_data;
+  struct browser_dnd_data *data = user_data;
   gboolean has_progress_window = data->has_progress_window;
-  GtkWidget *widget = data->widget;
 
   queued_before = tasks_get_next_queued (&iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
@@ -1523,32 +1547,35 @@ elektroid_browser_drag_data_received_runner (gpointer user_data)
 	  goto end;
 	}
 
-      enum path_type type = PATH_TYPE_FROM_DND_TYPE (data->type_name);
-      gchar *src_path = path_filename_from_uri (type, data->uris[i]);
+      const gchar *uri = data->uris[i];
+      debug_print (1, "Processing file '%s' from DND...", uri);
+
+      enum path_type type = PATH_TYPE_FROM_DND_DATA (data);
+      gchar *src_path = path_filename_from_uri (type, uri);
       gchar *name = g_path_get_basename (src_path);
       gchar *dir = g_path_get_dirname (src_path);
 
-      if (widget == GTK_WIDGET (local_browser.view))
+      if (data->dst_widget == GTK_WIDGET (local_browser.view))
 	{
-	  if (!strcmp (data->type_name, TEXT_URI_LIST_STD))
+	  if (!strcmp (data->mime, TEXT_URI_LIST_STD))
 	    {
 	      elektroid_dnd_received_browser (dir, name, src_path,
 					      &local_browser);
 	    }
-	  else if (!strcmp (data->type_name, TEXT_URI_LIST_ELEKTROID))
+	  else if (!strcmp (data->mime, TEXT_URI_LIST_ELEKTROID))
 	    {
 	      elektroid_add_download_task_path (name, dir, local_browser.dir,
 						has_progress_window);
 	    }
 	}
-      else if (widget == GTK_WIDGET (remote_browser.view))
+      else if (data->dst_widget == GTK_WIDGET (remote_browser.view))
 	{
-	  if (!strcmp (data->type_name, TEXT_URI_LIST_ELEKTROID))
+	  if (!strcmp (data->mime, TEXT_URI_LIST_ELEKTROID))
 	    {
 	      elektroid_dnd_received_browser (dir, name, src_path,
 					      &remote_browser);
 	    }
-	  else if (!strcmp (data->type_name, TEXT_URI_LIST_STD))
+	  else if (!strcmp (data->mime, TEXT_URI_LIST_STD))
 	    {
 	      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 		{
@@ -1576,7 +1603,6 @@ end:
       g_idle_add (elektroid_run_next, NULL);
     }
 
-  g_free (data->type_name);
   g_strfreev (data->uris);
   g_free (data);
 
@@ -1589,8 +1615,8 @@ elektroid_exit ()
   tasks_stop_thread ();
 
   progress_window_destroy ();
-  microbrute_destroy ();
-  autosampler_destroy ();
+  ma_microbrute_destroy ();
+  ma_autosampler_destroy ();
   preferences_window_destroy ();
   name_window_destroy ();
 
@@ -1602,7 +1628,7 @@ elektroid_exit ()
       backend_destroy (BACKEND);
     }
 
-  gtk_widget_destroy (GTK_WIDGET (main_window));
+  gtk_window_destroy (GTK_WINDOW (main_window));
 }
 
 #if defined(__APPLE__)
@@ -1624,17 +1650,77 @@ static void
 elektroid_about_action (GSimpleAction *action, GVariant *parameter,
 			gpointer user_data)
 {
-  gtk_dialog_run (GTK_DIALOG (about_dialog));
-  gtk_widget_hide (GTK_WIDGET (about_dialog));
+  gtk_widget_set_visible (GTK_WIDGET (about_dialog), TRUE);
 }
 #endif
 
 static gboolean
-elektroid_delete_main_window (GtkWidget *widget, GdkEvent *event,
-			      gpointer data)
+elektroid_close_main_window (GtkWindow *widget, gpointer data)
 {
   elektroid_exit ();
   return FALSE;
+}
+
+static void
+elektroid_deserialize_text_uri_list_elektroid (GdkContentDeserializer
+					       *deserializer)
+{
+  gsize size;
+  GError *error;
+  GBytes *bytes;
+  const char *data;
+  GInputStream *stream;
+
+  stream = gdk_content_deserializer_get_input_stream (deserializer);
+
+  error = NULL;
+  bytes = g_input_stream_read_bytes (stream, MI, NULL, &error);
+  if (error != NULL)
+    {
+      gdk_content_deserializer_return_error (deserializer, error);
+      return;
+    }
+
+  data = g_bytes_get_data (bytes, &size);
+  if (size > 0 && data != NULL)
+    {
+      GValue *value;
+      GPtrArray *array;
+      GdkFileList *list;
+
+      array = g_ptr_array_new_with_free_func (g_object_unref);
+
+      char *data_copy = g_strndup (data, size);
+      char **uris = g_strsplit_set (data_copy, "\r\n", -1);
+
+      for (int i = 0; uris[i] != NULL; i++)
+	{
+	  if (strlen (uris[i]) == 0 || uris[i][0] == '#')
+	    {
+	      continue;
+	    }
+
+	  GFile *file = g_file_new_for_uri (uris[i]);
+	  if (file != NULL)
+	    {
+	      g_ptr_array_add (array, file);
+	    }
+	}
+
+      g_strfreev (uris);
+      g_free (data_copy);
+
+      list = gdk_file_list_new_from_array ((GFile **) array->pdata,
+					   array->len);
+      g_ptr_array_free (array, TRUE);
+
+      value = gdk_content_deserializer_get_value (deserializer);
+      g_value_take_boxed (value, list);
+    }
+
+  g_bytes_unref (bytes);
+
+  gdk_content_deserializer_return_success (deserializer);
 }
 
 static gchar **
@@ -1687,12 +1773,19 @@ elektroid_about_add_credit_section (const gchar *section_name,
     }
 }
 
+static const GActionEntry APP_ENTRIES[] = {
+  {"show_remote", NULL, NULL, "false", elektroid_show_remote},
+  {"open_preferences", elektroid_open_preferences, NULL, NULL, NULL},
+  {"open_about", elektroid_open_about, NULL, NULL, NULL}
+};
+
 static void
 elektroid_startup (GApplication *gapp, gpointer *user_data)
 {
+  GError *error;
+  GtkBuilder *builder;
   GtkCssProvider *css_provider;
   GtkWidget *refresh_devices_button;
-  GtkBuilder *builder;
 
   if (local_dir)
     {
@@ -1706,19 +1799,28 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
 
   builder = gtk_builder_new ();
   gchar *ui_path = g_build_filename (get_data_dir (), "elektroid.ui", NULL);
-  gtk_builder_add_from_file (builder, ui_path, NULL);
+  error = NULL;
+  gtk_builder_add_from_file (builder, ui_path, &error);
   g_free (ui_path);
+  if (error)
+    {
+      error_print ("%s\n", error->message);
+      g_error_free (error);
+      exit (1);
+    }
 
   css_provider = gtk_css_provider_new ();
   gchar *css_path = g_build_filename (get_data_dir (), "elektroid.css", NULL);
-  gtk_css_provider_load_from_path (css_provider, css_path, NULL);
+  gtk_css_provider_load_from_path (css_provider, css_path);
   g_free (css_path);
-  gtk_style_context_add_provider_for_screen (gdk_screen_get_default (),
-					     GTK_STYLE_PROVIDER
-					     (css_provider),
-					     GTK_STYLE_PROVIDER_PRIORITY_USER);
+  gtk_style_context_add_provider_for_display (gdk_display_get_default (),
+					      GTK_STYLE_PROVIDER
+					      (css_provider),
+					      GTK_STYLE_PROVIDER_PRIORITY_USER);
 
   main_window = GTK_WINDOW (gtk_builder_get_object (builder, "main_window"));
+  gtk_application_add_window (GTK_APPLICATION (gapp),
+			      GTK_WINDOW (main_window));
 
   about_dialog =
     GTK_ABOUT_DIALOG (gtk_builder_get_object (builder, "about_dialog"));
@@ -1738,20 +1840,7 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   elektroid_about_add_credit_section (_("Acknowledgements"), thanks_path);
   g_free (thanks_path);
 
-  maction_context.box =
-    GTK_WIDGET (gtk_builder_get_object (builder, "menu_actions_box"));
-
-  main_popover =
-    GTK_POPOVER (gtk_builder_get_object (builder, "main_popover"));
-  gtk_popover_set_constrain_to (main_popover, GTK_POPOVER_CONSTRAINT_NONE);
-  show_remote_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "show_remote_button"));
-  g_object_set (G_OBJECT (show_remote_button), "role",
-		GTK_BUTTON_ROLE_CHECK, NULL);
-  preferences_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "preferences_button"));
-  about_button =
-    GTK_WIDGET (gtk_builder_get_object (builder, "about_button"));
+  mactions_menu = G_MENU (gtk_builder_get_object (builder, "mactions_menu"));
 
   local_name_entry =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_name_entry"));
@@ -1767,17 +1856,8 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   host_midi_status_label =
     GTK_LABEL (gtk_builder_get_object (builder, "host_midi_status_label"));
 
-  g_signal_connect (GTK_WIDGET (main_window), "delete-event",
-		    G_CALLBACK (elektroid_delete_main_window), NULL);
-
-  g_signal_connect (show_remote_button, "clicked",
-		    G_CALLBACK (elektroid_show_remote_clicked), NULL);
-
-  g_signal_connect (preferences_button, "clicked",
-		    G_CALLBACK (elektroid_open_preferences), NULL);
-
-  g_signal_connect (about_button, "clicked",
-		    G_CALLBACK (elektroid_show_about), NULL);
+  g_signal_connect (GTK_WIDGET (main_window), "close-request",
+		    G_CALLBACK (elektroid_close_main_window), NULL);
 
   devices_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "devices_list_store"));
@@ -1799,26 +1879,25 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   fs_combo = GTK_WIDGET (gtk_builder_get_object (builder, "fs_combo"));
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
 
-  browser_init_all (builder);
+  browser_init_all (builder, app);
   name_window_init (builder);
   preferences_window_init (builder);
-  editor_init (builder);
+  editor_init (builder, app);
   elektroid_update_midi_status ();
   tasks_init (builder);
   progress_window_init (builder);
 
-  microbrute_init ();
-  autosampler_init (builder);
-
-  g_object_set (G_OBJECT (show_remote_button), "active",
-		preferences_get_boolean (PREF_KEY_SHOW_REMOTE), NULL);
-
   gtk_widget_set_sensitive (remote_box, FALSE);
 
-  elektroid_show_remote (preferences_get_boolean (PREF_KEY_SHOW_REMOTE));	//This triggers both browsers initializations.
+  g_action_map_add_action_entries (G_ACTION_MAP (app), APP_ENTRIES,
+				   G_N_ELEMENTS (APP_ENTRIES), NULL);
 
-  GtkEntryBuffer *buf = gtk_entry_get_buffer (GTK_ENTRY (local_name_entry));
-  gtk_entry_buffer_set_text (buf, g_get_host_name (), -1);
+  GAction *a = g_action_map_lookup_action (G_ACTION_MAP (app), "show_remote");
+  GVariant *v =
+    g_variant_new_boolean (preferences_get_boolean (PREF_KEY_SHOW_REMOTE));
+  g_action_change_state (a, v);	// This triggers both browsers initializations.
+
+  gtk_editable_set_text (GTK_EDITABLE (local_name_entry), g_get_host_name ());
 
 #if defined(__APPLE__)
   GSimpleAction *quit_action = g_simple_action_new ("quit", NULL);
@@ -1847,7 +1926,18 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   g_action_map_add_action (G_ACTION_MAP (gapp), G_ACTION (about_action));
 #endif
 
+  ma_autosampler_init (builder, app);
+  ma_backend_init (app);
+  ma_elektron_init (app);
+  ma_microbrute_init (app);
+  ma_microfreak_init (app);
+
   g_object_unref (builder);
+
+  gdk_content_register_deserializer (TEXT_URI_LIST_ELEKTROID,
+				     GDK_TYPE_FILE_LIST,
+				     elektroid_deserialize_text_uri_list_elektroid,
+				     NULL, NULL);
 }
 
 #if defined(__linux__)
@@ -1862,8 +1952,6 @@ elektroid_signal_handler (gpointer data)
 static void
 elektroid_activate (GApplication *gapp, gpointer *user_data)
 {
-  gtk_application_add_window (GTK_APPLICATION (gapp),
-			      GTK_WINDOW (main_window));
   gtk_window_present (GTK_WINDOW (main_window));
 }
 
@@ -1903,7 +1991,6 @@ int
 main (int argc, char *argv[])
 {
   gint err;
-  GtkApplication *app;
 
 #if defined(__linux__)
   g_unix_signal_add (SIGHUP, elektroid_signal_handler, NULL);

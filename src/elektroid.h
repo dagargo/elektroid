@@ -25,9 +25,11 @@ void elektroid_combo_box_set_value (GtkComboBox * object, guint value);
 
 guint elektroid_combo_box_get_value (GtkComboBox * combo);
 
-void elektroid_add_upload_tasks (GtkWidget * object, gpointer data);
+void elektroid_add_upload_tasks (GSimpleAction * simple_action,
+				 GVariant * parameter, gpointer data);
 
-void elektroid_add_download_tasks (GtkWidget * object, gpointer data);
+void elektroid_add_download_tasks (GSimpleAction * simple_action,
+				   GVariant * parameter, gpointer data);
 
 void elektroid_browser_drag_data_received_runner (gpointer data);
 
@@ -40,5 +42,14 @@ void elektroid_refresh_devices ();
 void elektroid_update_audio_status (gboolean status);
 
 void elektroid_show_error_msg (const char *format, ...);
+
+void elektroid_set_action_enabled (GActionMap * action_map,
+				   const gchar * name, gboolean active);
+
+void elektroid_app_set_action_enabled (const gchar * name, gboolean active);
+
+void elektroid_controller_add_accel (GtkEventController * controller,
+				     const gchar * trigger_str,
+				     const gchar * action_str);
 
 #endif

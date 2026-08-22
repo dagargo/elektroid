@@ -21,9 +21,9 @@ else
 CLI_LIBS += libpulse libpulse-mainloop-glib
 endif
 
-GUI_LIBS = $(CLI_LIBS) gtk+-3.0
+GUI_LIBS = $(CLI_LIBS) gtk4
 
-elektroid_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(GUI_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -D_GNU_SOURCE $(AM_CFLAGS)
+elektroid_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(GUI_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -D_GNU_SOURCE $(AM_CFLAGS) -DGDK_DISABLE_DEPRECATED -DGTK_DISABLE_DEPRECATED
 elektroid_LDFLAGS = `$(PKG_CONFIG) --libs $(GUI_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
 elektroid_cli_CFLAGS = -I$(top_srcdir)/src `$(PKG_CONFIG) --cflags $(CLI_LIBS)` $(SNDFILE_CFLAGS) $(SAMPLERATE_CFLAGS) -D_GNU_SOURCE $(AM_CFLAGS)
 elektroid_cli_LDFLAGS = `$(PKG_CONFIG) --libs $(CLI_LIBS)` $(SNDFILE_LIBS) $(SAMPLERATE_LIBS) $(MSYS2_LIBS)
@@ -95,11 +95,11 @@ browser.c browser.h \
 editor.c editor.h \
 guirecorder.c guirecorder.h \
 maction.c maction.h \
-mactions/autosampler.c \
-mactions/backend.c \
-mactions/elektron.c \
-mactions/microbrute.c \
-mactions/microfreak.c \
+mactions/ma_autosampler.c \
+mactions/ma_backend.c \
+mactions/ma_elektron.c \
+mactions/ma_microbrute.c \
+mactions/ma_microfreak.c \
 name_window.c name_window.h \
 notifier.c notifier.h \
 preferences_window.c preferences_window.h \

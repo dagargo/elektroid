@@ -19,10 +19,11 @@
  */
 
 #include <gtk/gtk.h>
-#include "utils.h"
+#include "connector.h"
+#include "maction.h"
 #include "notifier.h"
 #include "preferences.h"
-#include "connector.h"
+#include "utils.h"
 
 #ifndef BROWSER_H
 #define BROWSER_H
@@ -49,7 +50,7 @@
 
 #define BROWSER_IS_SYSTEM(b) (!(b)->backend || (b)->backend->type == BE_TYPE_SYSTEM)
 
-#define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : backend_get_path_type (remote_browser.backend))
+#define PATH_TYPE_FROM_DND_DATA(dnd) (strcmp (dnd->mime, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : backend_get_path_type (remote_browser.backend))
 
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
@@ -68,6 +69,7 @@ struct browser
 {
   const gchar *name;
   GtkTreeView *view;
+  GtkWidget *list_box;
   GtkWidget *buttons_stack;
   GtkWidget *up_button;
   GtkWidget *add_dir_button;
@@ -77,11 +79,9 @@ struct browser
   GtkEntry *dir_entry;
   const gchar *pref_key_dir;
   gchar *dir;
-  GtkPopover *popover;
-  gboolean dnd;
+  GtkWidget *popovermenu;
   GtkTreePath *dnd_motion_path;
   guint dnd_timeout_function_id;
-  GString *dnd_data;
   const struct fs_operations *fs_ops;
   struct backend *backend;
     gboolean (*check_callback) ();
@@ -102,16 +102,9 @@ struct browser
   struct browser_search_options search_options;
   gint64 last_selected_index;	//This needs space for gint and -1
   gboolean selection_active;
-  //Menu
-  GtkWidget *popover_transfer_button;
-  GtkWidget *popover_play_separator;
-  GtkWidget *popover_play_button;
-  GtkWidget *popover_options_separator;
-  GtkWidget *popover_open_button;
-  GtkWidget *popover_show_button;
-  GtkWidget *popover_actions_separator;
-  GtkWidget *popover_rename_button;
-  GtkWidget *popover_delete_button;
+  GHashTable *folder_size_cache;
+  GSimpleActionGroup *action_group;
+  GtkEventController *shortcut_controller;
   GtkTreeViewColumn *tree_view_name_column;
   GtkTreeViewColumn *tree_view_info_column;
   GtkTreeViewColumn *tree_view_sample_frames_column;
@@ -125,14 +118,13 @@ struct browser
   GtkTreeViewColumn *tree_view_id_column;
   GtkTreeViewColumn *tree_view_slot_column;
   GtkTreeViewColumn *tree_view_size_column;
-  GHashTable *folder_size_cache;
 };
 
-struct browser_drag_data_received_data
+struct browser_dnd_data
 {
-  GtkWidget *widget;
+  const gchar *mime;
   gchar **uris;
-  gchar *type_name;
+  GtkWidget *dst_widget;
   gboolean has_progress_window;
 };
 
@@ -169,9 +161,9 @@ void browser_close_search (GtkSearchEntry *, gpointer);
 
 void browser_cancel (struct browser *browser);
 
-gboolean browser_no_progress_needed (struct browser *browser);
+gboolean browser_progress_needed (struct browser *browser);
 
-void browser_init_all (GtkBuilder *);
+void browser_init_all (GtkBuilder * builder, GtkApplication * app);
 
 void browser_destroy_all ();
 

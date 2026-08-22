@@ -49,8 +49,6 @@
 
 #define MAX_FRAMES_PER_PIXEL 300
 
-#define WAVEFORM_SCROLLED_BORDER_SIZE 2
-
 #define X_BORDER_SELECTION 3
 
 #define SPLIT_DIFF_RATE_FRAMES_LIMIT_PROGRESS (audio.rate)	// 1 s
@@ -85,9 +83,11 @@ struct editor_save_data
 
 static void editor_save_accept (gpointer source, const gchar * name);
 static void editor_set_waveform_data ();
-static void editor_set_from_sample_info ();
+static void editor_update_sample_info ();
 static void editor_update_sample_tempo_estimation (struct sample_info
 						   *sample_info);
+static void waveform_scroll_adj_change (GtkAdjustment * adj,
+					gpointer user_data);
 
 extern struct browser local_browser;
 extern struct browser remote_browser;
@@ -95,8 +95,10 @@ extern GtkWindow *main_window;
 
 static GThread *thread;
 static GtkWidget *editor_box;
-static GtkWidget *waveform_scrolled_window;
+static GtkWidget *waveform_box;
 static GtkWidget *waveform;
+static GtkWidget *waveform_scrollbar;
+static GtkAdjustment *waveform_adj;
 static GtkWidget *play_button;
 static GtkWidget *stop_button;
 static GtkWidget *loop_button;
@@ -113,15 +115,7 @@ static GtkWidget *note_combo;
 static GtkWidget *subdivisions_spin;
 static gulong volume_changed_handler;
 static GtkListStore *notes_list_store;
-static GtkPopoverMenu *popover_menu;
-static GtkWidget *popover_play_button;
-static GtkWidget *popover_delete_button;
-static GtkWidget *popover_undo_button;
-static GtkWidget *popover_normalize_button;
-static GtkWidget *popover_split_button;
-static GtkWidget *popover_save_button;
-static GtkWidget *popover_save_as_button;
-static GtkWidget *popover_export_button;
+static GtkWidget *popovermenu;
 static GtkWidget *sample_info_box;
 static GtkWidget *filename_box;
 static GtkWidget *filename_label;
@@ -132,16 +126,19 @@ static gdouble zoom;
 static enum editor_operation operation;
 static gboolean dirty;
 static gboolean ready;
+static GSimpleActionGroup *action_group;
 static struct browser *browser;
 static GMutex mutex;
-static guint waveform_scrolled_window_width;
-static guint waveform_scrolled_window_start;
+static guint waveform_scroll_width;
+static guint waveform_scroll_start;
 static gdouble *waveform_data;
 static guint waveform_width;
 static guint waveform_height;
-static guint waveform_len;	//Loaded frames available in waveform_data
+static guint waveform_len;	// Loaded frames available in waveform_data
 static cairo_surface_t *waveform_cache;
 static double press_event_x;
+static double last_x;
+static double last_y;
 static struct waveform_state waveform_state;
 static gint64 playback_cursor;	// guint32 plus -1 (invisible)
 static gboolean active;
@@ -152,11 +149,46 @@ editor_get_browser ()
   return browser;
 }
 
+static void
+editor_set_action_enabled (const gchar *name, gboolean active)
+{
+  elektroid_set_action_enabled (G_ACTION_MAP (action_group), name, active);
+}
+
+static void
+editor_set_actions_enabled ()
+{
+  editor_set_action_enabled ("play", TRUE);
+  editor_set_action_enabled ("normalize", TRUE);
+  editor_set_action_enabled ("split_channels",
+			     audio.sample_info_src.channels > 1);
+
+  if (audio.path)
+    {
+      gboolean can_save =
+	sample_format_is_valid_to_save (&audio.sample_info_src);
+
+      editor_set_action_enabled ("undo", dirty);
+      editor_set_action_enabled ("export", !can_save);
+      editor_set_action_enabled ("save", can_save && dirty);
+      editor_set_action_enabled ("save_as", can_save);
+    }
+  else
+    {
+      // This is a recording
+      editor_set_action_enabled ("undo", FALSE);
+      editor_set_action_enabled ("export", FALSE);
+      editor_set_action_enabled ("save", FALSE);
+      editor_set_action_enabled ("save_as", TRUE);
+    }
+}
+
 void
 editor_set_dirty (gboolean dirty_)
 {
   dirty = dirty_;
   gtk_widget_set_visible (edited_image, dirty);
+  editor_set_actions_enabled ();
 }
 
 static void
@@ -167,29 +199,6 @@ editor_set_filename ()
       gtk_label_set_text (GTK_LABEL (filename_label), audio.sample.name);
     }
   gtk_widget_set_visible (filename_box, audio.path != NULL);
-}
-
-static void
-editor_update_waveform_width (guint width)
-{
-  guint prev_width, height;
-  gtk_layout_get_size (GTK_LAYOUT (waveform), &prev_width, &height);
-  if (width != prev_width)
-    {
-      gtk_layout_set_size (GTK_LAYOUT (waveform), width, height);
-    }
-}
-
-static void
-editor_reset_waveform_width ()
-{
-  guint width = gtk_widget_get_allocated_width (waveform_scrolled_window);
-  width *= zoom;
-  if (width >= WAVEFORM_SCROLLED_BORDER_SIZE)
-    {
-      width -= WAVEFORM_SCROLLED_BORDER_SIZE;
-    }
-  editor_update_waveform_width (width);
 }
 
 static void
@@ -241,7 +250,7 @@ editor_set_tags_from_sample_info ()
   GHashTable *sample_tags;
   struct sample_info *sample_info = audio.sample.info;
 
-  tags_clear_container (tags_flow_box);
+  gtk_flow_box_remove_all (GTK_FLOW_BOX (tags_flow_box));
 
   if (!sample_info)
     {
@@ -310,9 +319,8 @@ editor_clear_waveform_data ()
 }
 
 static gboolean
-editor_reset_browser (gpointer data)
+editor_reset_widgets (gpointer data)
 {
-  editor_reset_waveform_width ();
   gtk_widget_queue_draw (waveform);
 
   editor_set_widget_source (autoplay_switch);
@@ -329,10 +337,19 @@ editor_reset_browser (gpointer data)
   gtk_widget_set_sensitive (stop_button, FALSE);
   gtk_widget_set_sensitive (loop_button, FALSE);
   gtk_widget_set_sensitive (sample_info_box, FALSE);
-  gtk_widget_set_sensitive (waveform_scrolled_window, browser != NULL);
+  gtk_widget_set_sensitive (waveform, browser != NULL);
+
+  editor_set_action_enabled ("play", FALSE);
+  editor_set_action_enabled ("delete", FALSE);
+  editor_set_action_enabled ("normalize", FALSE);
+  editor_set_action_enabled ("split_channels", FALSE);
+  editor_set_action_enabled ("undo", FALSE);
+  editor_set_action_enabled ("export", FALSE);
+  editor_set_action_enabled ("save", FALSE);
+  editor_set_action_enabled ("save_as", FALSE);
 
   editor_set_filename ();
-  editor_set_from_sample_info ();
+  editor_update_sample_info ();
 
   return FALSE;
 }
@@ -351,31 +368,35 @@ editor_reset (struct browser *browser_)
 
   editor_clear_waveform_data ();
 
-  g_idle_add (editor_reset_browser, NULL);
+  g_idle_add (editor_reset_widgets, NULL);
 }
 
 static void
 editor_set_scrollbar (guint32 start, guint32 frames)
 {
-  GtkAdjustment *adj;
-  gdouble widget_w, upper, lower, value;
   gint max = frames - 1;
+  gdouble widget_w, upper, lower, value, page_size;
 
   start = start < 0 ? 0 : start;
   start = start > max ? max : start;
 
-  widget_w = gtk_widget_get_allocated_width (waveform_scrolled_window);
-  adj = gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW
-					     (waveform_scrolled_window));
-  upper = widget_w * zoom - WAVEFORM_SCROLLED_BORDER_SIZE;
+  widget_w = gtk_widget_get_allocated_width (waveform);
+  upper = widget_w * zoom;
   lower = 0;
   value = frames ? upper * start / (double) frames : 0;
+  page_size = widget_w;
 
   debug_print (1, "Setting waveform scrollbar to %f [%f, %f]...", value,
 	       lower, upper);
-  gtk_adjustment_set_lower (adj, 0);
-  gtk_adjustment_set_upper (adj, upper);
-  gtk_adjustment_set_value (adj, value);
+  gtk_widget_set_visible (waveform_scrollbar, zoom > 1);
+  g_signal_handlers_block_by_func (waveform_adj,
+				   G_CALLBACK
+				   (waveform_scroll_adj_change), NULL);
+  gtk_adjustment_configure (waveform_adj, value, 0, upper, 1, page_size,
+			    page_size);
+  g_signal_handlers_unblock_by_func (waveform_adj,
+				     G_CALLBACK (waveform_scroll_adj_change),
+				     NULL);
 }
 
 static gdouble
@@ -395,11 +416,8 @@ static guint32
 editor_get_start_frame ()
 {
   struct sample_info *sample_info = audio.sample.info;
-  GtkAdjustment *adj =
-    gtk_scrolled_window_get_hadjustment (GTK_SCROLLED_WINDOW
-					 (waveform_scrolled_window));
-  return sample_info->frames * gtk_adjustment_get_value (adj) /
-    (gdouble) gtk_adjustment_get_upper (adj);
+  return sample_info->frames * gtk_adjustment_get_value (waveform_adj) /
+    (gdouble) gtk_adjustment_get_upper (waveform_adj);
 }
 
 static inline guint32
@@ -472,26 +490,6 @@ editor_autoplay_clicked (GtkWidget *object, gboolean state, gpointer data)
 {
   preferences_set_boolean (PREF_KEY_AUTOPLAY, state);
   return FALSE;
-}
-
-static void
-editor_update_export_save_buttons ()
-{
-  if (audio.path)
-    {
-      gboolean can_save =
-	sample_format_is_valid_to_save (&audio.sample_info_src);
-      gtk_widget_set_visible (popover_save_button, can_save);
-      gtk_widget_set_visible (popover_save_as_button, can_save);
-      gtk_widget_set_visible (popover_export_button, !can_save);
-    }
-  else
-    {
-      // This is a recording
-      gtk_widget_set_visible (popover_save_button, FALSE);
-      gtk_widget_set_visible (popover_export_button, FALSE);
-      gtk_widget_set_visible (popover_save_as_button, TRUE);
-    }
 }
 
 static void
@@ -599,12 +597,13 @@ editor_update_sample_tempo_estimation (struct sample_info *sample_info)
 }
 
 static void
-editor_set_from_sample_info ()
+editor_update_sample_info ()
 {
   struct sample_info si;
   struct sample_info *sample_info;
 
   sample_info_init (&si);
+
   sample_info = audio.sample.info;
   if (sample_info)
     {
@@ -614,6 +613,7 @@ editor_set_from_sample_info ()
       si.beats = sample_info->beats;
       si.midi_note = sample_info->midi_note;
       si.loop_count = sample_info->loop_count;
+
       editor_update_sample_tempo_estimation (sample_info);
     }
   else
@@ -673,14 +673,6 @@ static gboolean
 editor_update_ui_on_load (gpointer data)
 {
   editor_set_audio_mono_mix ();
-  editor_reset_waveform_width ();
-
-  editor_set_filename ();
-  editor_set_from_sample_info ();
-
-  gtk_widget_set_sensitive (sample_info_box, TRUE);
-
-  editor_update_export_save_buttons ();
 
   if (audio_check ())
     {
@@ -692,6 +684,13 @@ editor_update_ui_on_load (gpointer data)
 	  editor_start_playback ();
 	}
     }
+
+  editor_set_filename ();
+  editor_update_sample_info ();
+
+  gtk_widget_set_sensitive (sample_info_box, TRUE);
+
+  editor_set_actions_enabled ();
 
   return FALSE;
 }
@@ -816,9 +815,8 @@ static void
 editor_set_text_color (GdkRGBA *color)
 {
   GtkStyleContext *context;
-
-  context = gtk_widget_get_style_context (popover_play_button);	//Any text widget is valid
-  gtk_style_context_get_color (context, GTK_STATE_FLAG_NORMAL, color);
+  context = gtk_widget_get_style_context (filename_label);	//Any text widget is valid
+  gtk_style_context_get_color (context, color);
 }
 
 static inline void
@@ -921,12 +919,10 @@ editor_draw_selection (cairo_t *cr, guint height, guint start, double x_ratio)
   guint32 sel_len;
   gdouble x_len, x_start;
   GdkRGBA color;
-  GtkStateFlags state;
   GtkStyleContext *context;
 
   context = gtk_widget_get_style_context (waveform);
-  state = gtk_style_context_get_state (context);
-  gtk_style_context_get_color (context, state, &color);
+  gtk_style_context_get_color (context, &color);
 
   sel_len = AUDIO_SEL_LEN;
   if (sel_len)
@@ -935,7 +931,7 @@ editor_draw_selection (cairo_t *cr, guint height, guint start, double x_ratio)
       x_len = x_len < 1 ? 1 : x_len;
       x_start = (audio.sel_start - (gdouble) start) / x_ratio;
 
-      gtk_style_context_get_color (context, state, &color);
+      gtk_style_context_get_color (context, &color);
       color.alpha = 0.25;
       gdk_cairo_set_source_rgba (cr, &color);
 
@@ -1023,14 +1019,12 @@ editor_draw_waveform_to_cache (cairo_t *cr, guint width, guint height,
   gdouble *v, mid_c, x;
   guint c_height, c_height_half;
   GdkRGBA color;
-  GtkStateFlags state;
   GtkStyleContext *context;
   struct sample_info *sample_info = audio.sample.info;
 
   context = gtk_widget_get_style_context (waveform);
 
-  state = gtk_style_context_get_state (context);
-  gtk_style_context_get_color (context, state, &color);
+  gtk_style_context_get_color (context, &color);
   gdk_cairo_set_source_rgba (cr, &color);
 
   cairo_set_line_width (cr, 1);
@@ -1068,7 +1062,6 @@ static inline void
 editor_draw_waveform (cairo_t *cr, guint width, guint height, guint start,
 		      double x_ratio)
 {
-
   debug_print (3, "Drawing waveform from %d with %.2f zoom (%d)...", start,
 	       zoom, waveform_len);
 
@@ -1086,7 +1079,6 @@ editor_draw_waveform (cairo_t *cr, guint width, guint height, guint start,
       // Draw into the cache
       GdkRGBA color;
       cairo_t *cr_cache;
-      GtkStateFlags state;
       GtkStyleContext *context;
 
       debug_print (3, "Waveform data ready to be cached. Caching...");
@@ -1096,8 +1088,7 @@ editor_draw_waveform (cairo_t *cr, guint width, guint height, guint start,
 
       context = gtk_widget_get_style_context (waveform);
 
-      state = gtk_style_context_get_state (context);
-      gtk_style_context_get_color (context, state, &color);
+      gtk_style_context_get_color (context, &color);
       gdk_cairo_set_source_rgba (cr_cache, &color);
 
       editor_draw_waveform_to_cache (cr_cache, width, height, start, x_ratio);
@@ -1114,26 +1105,23 @@ editor_draw_waveform (cairo_t *cr, guint width, guint height, guint start,
     }
 }
 
-static gboolean
-editor_draw (GtkWidget *widget, cairo_t *cr, gpointer data)
+static void
+editor_draw (GtkDrawingArea *drawing_area, cairo_t *cr, gint width,
+	     gint height, gpointer data)
 {
   gdouble x_ratio;
   guint32 start;
-  guint height, width;
   struct sample_info *sample_info;
 
   if (!active)
     {
-      return FALSE;
+      return;
     }
 
   g_mutex_lock (&audio.control.controllable.mutex);
   g_mutex_lock (&mutex);
 
   sample_info = audio.sample.info;
-
-  height = gtk_widget_get_allocated_height (waveform);
-  width = gtk_widget_get_allocated_width (waveform);
 
   if (sample_info && waveform_data)
     {
@@ -1149,8 +1137,6 @@ editor_draw (GtkWidget *widget, cairo_t *cr, gpointer data)
 
   g_mutex_unlock (&mutex);
   g_mutex_unlock (&audio.control.controllable.mutex);
-
-  return FALSE;
 }
 
 static gboolean
@@ -1184,11 +1170,11 @@ editor_update_on_load_cb (struct task_control *control, gdouble p)
 	  ready = TRUE;
 	}
     }
-  //If the call to sample_load_from_file_full fails, we reset the browser.
+  //If the call to sample_load_from_file_full fails, we reset the widgets.
   if (!completed && !actual_frames)
     {
       browser = NULL;
-      g_idle_add (editor_reset_browser, NULL);
+      g_idle_add (editor_reset_widgets, NULL);
     }
 }
 
@@ -1232,7 +1218,8 @@ editor_manage_tags_button_click (GtkWidget *object, gpointer data)
 }
 
 static void
-editor_play_clicked (GtkWidget *object, gpointer data)
+editor_waveform_play (GSimpleAction *simple_action, GVariant *parameter,
+		      gpointer data)
 {
   editor_play ();
 }
@@ -1359,13 +1346,14 @@ static void
 editor_get_frame_at_position (gdouble x, guint *cursor_frame,
 			      gdouble *rel_pos)
 {
-  guint width;
+  gint width;
   guint32 start = editor_get_start_frame ();
   struct sample_info *sample_info = audio.sample.info;
 
-  gtk_layout_get_size (GTK_LAYOUT (waveform), &width, NULL);
+  width = gtk_widget_get_width (waveform);
   x = x > width ? width : x < 0.0 ? 0.0 : x;
-  *cursor_frame = (sample_info->frames - 1) * (x / (gdouble) width);
+  *cursor_frame =
+    start + ((sample_info->frames / zoom) - 1) * (x / (gdouble) width);
   if (rel_pos)
     {
       *rel_pos = (*cursor_frame - start) /
@@ -1377,28 +1365,23 @@ static gdouble
 editor_get_max_zoom ()
 {
   struct sample_info *sample_info = audio.sample.info;
-  guint w = gtk_widget_get_allocated_width (waveform_scrolled_window);
+  guint w = gtk_widget_get_allocated_width (waveform);
   gdouble max_zoom = sample_info->frames / (double) w;
   return max_zoom < 1 ? 1 : max_zoom;
 }
 
-static gboolean
-editor_zoom (GdkEventScroll *event, gdouble dy)
+static void
+editor_zoom (GdkEvent *event, GdkModifierType state, gdouble dy)
 {
+  gboolean redraw = TRUE;
   gdouble rel_pos;
-  gboolean err = TRUE;
   guint start, cursor_frame;
   struct sample_info *sample_info;
-  gboolean ctrl = ((event->state) & GDK_CONTROL_MASK) != 0;
+  gboolean ctrl = (state & GDK_CONTROL_MASK) != 0;
 
-  if (!ctrl)
+  if (!ctrl || dy == 0.0)
     {
-      return FALSE;
-    }
-
-  if (dy == 0.0)
-    {
-      return FALSE;
+      return;
     }
 
   g_mutex_lock (&audio.control.controllable.mutex);
@@ -1406,11 +1389,11 @@ editor_zoom (GdkEventScroll *event, gdouble dy)
   sample_info = audio.sample.info;
   if (!sample_info)
     {
-      err = FALSE;
+      redraw = FALSE;
       goto end;
     }
 
-  editor_get_frame_at_position (event->x, &cursor_frame, &rel_pos);
+  editor_get_frame_at_position (last_x, &cursor_frame, &rel_pos);
   debug_print (1, "Zooming at frame %d...", cursor_frame);
 
   if (dy == -1.0)
@@ -1443,77 +1426,94 @@ editor_zoom (GdkEventScroll *event, gdouble dy)
 
   start = cursor_frame - rel_pos * sample_info->frames / (gdouble) zoom;
   editor_set_scrollbar (start, sample_info->frames);
-  editor_reset_waveform_width ();
 
 end:
   g_mutex_unlock (&audio.control.controllable.mutex);
 
-  return err;
+  if (redraw)
+    {
+      editor_clear_waveform_data ();
+      editor_set_waveform_data ();
+      gtk_widget_queue_draw (waveform);
+    }
+}
+
+static void
+editor_move (gdouble dx)
+{
+  gint64 start;
+  guint32 max;
+  gboolean redraw = TRUE;
+  struct sample_info *sample_info;
+
+  if (dx == 0.0)
+    {
+      return;
+    }
+
+  g_mutex_lock (&audio.control.controllable.mutex);
+
+  sample_info = audio.sample.info;
+  if (!sample_info)
+    {
+      redraw = FALSE;
+      goto end;
+    }
+
+  debug_print (1, "Scrolling %.2f...", dx);
+  start = editor_get_start_frame () +
+    gtk_adjustment_get_page_size (waveform_adj) * dx;
+  max = sample_info->frames - 1;
+  start = start < 0 ? 0 : start > max ? max : start;
+  editor_set_scrollbar (start, sample_info->frames);
+
+end:
+  g_mutex_unlock (&audio.control.controllable.mutex);
+
+  if (redraw)
+    {
+      editor_clear_waveform_data ();
+      editor_set_waveform_data ();
+      gtk_widget_queue_draw (waveform);
+    }
 }
 
 static gboolean
-editor_waveform_scroll (GtkWidget *widget, GdkEventScroll *event,
-			gpointer data)
+editor_waveform_scroll (GtkEventControllerScroll *controller, gdouble dx,
+			gdouble dy, gpointer user_data)
 {
-  gdouble dx, dy;
   static gdouble acc_y;
+  GdkScrollDirection dir;
   gboolean detected = FALSE;
+  GdkEvent *event =
+    gtk_event_controller_get_current_event (GTK_EVENT_CONTROLLER
+					    (controller));
+  GdkModifierType state =
+    gtk_event_controller_get_current_event_state (GTK_EVENT_CONTROLLER
+						  (controller));
 
-  if (gdk_event_get_scroll_deltas ((GdkEvent *) event, &dx, &dy))
-    {
-      debug_print (2, "Smooth scroll: %.2f", dy);
-      acc_y += dy;
+  debug_print (2, "Processing scroll %.2f, %.2f...", dx, dy);
 
-      if (acc_y >= 1)
-	{
-	  dy = 1;
-	  acc_y -= 1;
-	  detected = TRUE;
-	}
-      else if (acc_y < -1.0)
-	{
-	  dy = -1;
-	  acc_y += 1;
-	  detected = TRUE;
-	}
-    }
-  else
+  if (state & GDK_SHIFT_MASK)
     {
-      GdkScrollDirection direction;
-      if (gdk_event_get_scroll_direction ((GdkEvent *) event, &direction))
-	{
-	  if (direction == GDK_SCROLL_UP)
-	    {
-	      dy = -1;
-	    }
-	  else if (direction == GDK_SCROLL_DOWN)
-	    {
-	      dy = 1;
-	    }
-	  debug_print (2, "Discrete scroll: %.2f", dy);
-	}
-      detected = TRUE;
+      dx = dy;
     }
 
-  if (detected)
+  if (dx)
     {
-      debug_print (2, "Scrolling with %.2f...", dy);
+      editor_move (dx);
+    }
 
-      if (editor_zoom (event, dy))
-	{
-	  editor_clear_waveform_data ();
-	  editor_set_waveform_data ();
-	  gtk_widget_queue_draw (waveform);
-	}
+  if (dy)
+    {
+      editor_zoom (event, state, dy);
     }
 
   return FALSE;
 }
 
 static void
-editor_scrolled_window_size_allocate (GtkWidget *self,
-				      GtkAllocation *allocation,
-				      gpointer data)
+waveform_scroll_adj_change (GtkAdjustment *adj, gpointer user_data)
 {
   struct sample_info *sample_info;
   guint32 start;
@@ -1526,18 +1526,17 @@ editor_scrolled_window_size_allocate (GtkWidget *self,
       goto end;
     }
 
-  width = gtk_widget_get_allocated_width (waveform_scrolled_window);
+  width = gtk_widget_get_allocated_width (waveform);
   start = editor_get_start_frame ();
-  if (width != waveform_scrolled_window_width ||
-      start != waveform_scrolled_window_start)
+  if (width != waveform_scroll_width || start != waveform_scroll_start)
     {
-      editor_set_scrollbar (start, sample_info->frames);
-      editor_reset_waveform_width ();
       editor_set_waveform_data_no_sync ();
       editor_clear_waveform_cache_no_sync ();
     }
-  waveform_scrolled_window_width = width;
-  waveform_scrolled_window_start = start;
+  waveform_scroll_width = width;
+  waveform_scroll_start = start;
+
+  gtk_widget_queue_draw (waveform);
 
 end:
   g_mutex_unlock (&audio.control.controllable.mutex);
@@ -1567,10 +1566,8 @@ editor_cursor_frame_over_frame (guint cursor_frame, guint frame)
 static void
 editor_set_cursor (const gchar *cursor_name)
 {
-  GdkDisplay *display = gdk_display_get_default ();
-  GdkCursor *cursor = gdk_cursor_new_from_name (display,
-						cursor_name);
-  gdk_window_set_cursor (gtk_widget_get_window (waveform), cursor);
+  GdkCursor *cursor = gdk_cursor_new_from_name (cursor_name, NULL);
+  gtk_widget_set_cursor (waveform, cursor);
   g_object_unref (cursor);
 }
 
@@ -1578,27 +1575,19 @@ static void
 editor_show_popover_at (guint x, guint y, gboolean cursor_on_sel)
 {
   GdkRectangle r;
-  guint32 sel_len = AUDIO_SEL_LEN;
-  struct sample_info *sample_info = audio.sample.info;
-
   r.width = 1;
   r.height = 1;
   r.x = x;
   r.y = y;
-  gtk_popover_set_pointing_to (GTK_POPOVER (popover_menu), &r);
-
-  gtk_widget_set_sensitive (popover_delete_button, sel_len > 0);
-  gtk_widget_set_sensitive (popover_undo_button, dirty);
-  gtk_widget_set_sensitive (popover_split_button, sample_info->channels > 1);
-  gtk_widget_set_sensitive (popover_save_button, dirty || cursor_on_sel);
-
-  gtk_popover_popup (GTK_POPOVER (popover_menu));
+  gtk_popover_set_pointing_to (GTK_POPOVER (popovermenu), &r);
+  gtk_popover_popup (GTK_POPOVER (popovermenu));
 }
 
-static gboolean
-editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
+static void
+editor_button_pressed (GtkGestureClick *gesture, int n_press, double x,
+		       double y, gpointer data)
 {
-  guint cursor_frame;
+  guint cursor_frame, button;
   guint32 sel_len;
   struct sample_info *sample_info;
 
@@ -1617,12 +1606,15 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 
   sel_len = AUDIO_SEL_LEN;
 
-  press_event_x = event->x;
-  editor_get_frame_at_position (event->x, &cursor_frame, NULL);
+  press_event_x = x;
+  debug_print (2, "Pressed button at %.2f %.2f.", x, y);
+  editor_get_frame_at_position (x, &cursor_frame, NULL);
 
-  gtk_widget_grab_focus (waveform_scrolled_window);
+  gtk_widget_grab_focus (waveform);
 
-  if (event->button == GDK_BUTTON_PRIMARY)
+  button =
+    gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture));
+  if (button == GDK_BUTTON_PRIMARY)
     {
       debug_print (2, "Pressing at frame %d...", cursor_frame);
       if (editor_cursor_frame_over_frame (cursor_frame,
@@ -1664,7 +1656,7 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 	  gtk_widget_queue_draw (waveform);
 	}
     }
-  else if (event->button == GDK_BUTTON_SECONDARY)
+  else if (button == GDK_BUTTON_SECONDARY)
     {
       gboolean cursor_on_sel = sel_len > 0 &&
 	cursor_frame >= audio.sel_start && cursor_frame < audio.sel_end;
@@ -1673,43 +1665,43 @@ editor_button_press (GtkWidget *widget, GdkEventButton *event, gpointer data)
 	  audio.sel_start = -1;
 	  audio.sel_end = -1;
 	}
-      guint x = editor_frame_to_waveform_coord (cursor_frame -
-						editor_get_start_frame ());
-      editor_show_popover_at (x, event->y, cursor_on_sel);
+      editor_show_popover_at (x, y, cursor_on_sel);
     }
 
 end:
   g_mutex_unlock (&audio.control.controllable.mutex);
-  return FALSE;
 }
 
-static gboolean
-editor_button_release (GtkWidget *widget, GdkEventButton *event,
-		       gpointer data)
+static void
+editor_button_released (GtkGestureClick *gesture, int n_press, double x,
+			double y, gpointer data)
 {
   if (!operation)
     {
-      return FALSE;
+      return;
     }
 
+  debug_print (2, "Released button at %.2f %.2f.", x, y);
   if (operation == EDITOR_OP_MOVE_SEL_START ||
       operation == EDITOR_OP_MOVE_SEL_END)
     {
-      gtk_widget_grab_focus (waveform_scrolled_window);
+      gtk_widget_grab_focus (waveform);
 
-      if (press_event_x == event->x)
+      if (press_event_x == x)
 	{
 	  debug_print (2, "Cleaning selection...");
 	  audio.sel_start = -1;
 	  audio.sel_end = -1;
 	  gtk_widget_queue_draw (waveform);
+
+	  editor_set_action_enabled ("delete", FALSE);
 	}
       else
 	{
 	  debug_print (2, "Selected range: [%" PRId64 " to %" PRId64 "]...",
 		       audio.sel_start, audio.sel_end);
-
-	  if (AUDIO_SEL_LEN)
+	  guint32 sel_len = AUDIO_SEL_LEN;
+	  if (sel_len)
 	    {
 	      if (preferences_get_boolean (PREF_KEY_AUTOPLAY) &&
 		  audio_is_stopped ())
@@ -1717,20 +1709,25 @@ editor_button_release (GtkWidget *widget, GdkEventButton *event,
 		  editor_start_playback ();
 		}
 	    }
+
+	  editor_set_action_enabled ("delete", sel_len > 0);
 	}
     }
 
   operation = EDITOR_OP_NONE;
-
-  return FALSE;
 }
 
 static gboolean
-editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
+editor_motion (GtkEventControllerMotion *controller, double x, double y,
+	       gpointer user_data)
 {
   guint cursor_frame;
   guint32 sel_len;
+  GdkModifierType state;
   struct sample_info *sample_info;
+
+  last_x = x;
+  last_y = y;
 
   g_mutex_lock (&audio.control.controllable.mutex);
 
@@ -1745,11 +1742,14 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 
   sel_len = AUDIO_SEL_LEN;
 
-  editor_get_frame_at_position (event->x, &cursor_frame, NULL);
+  editor_get_frame_at_position (x, &cursor_frame, NULL);
+  state =
+    gtk_event_controller_get_current_event_state (GTK_EVENT_CONTROLLER
+						  (controller));
 
   if (operation == EDITOR_OP_MOVE_SEL_END)
     {
-      if (event->state & GDK_SHIFT_MASK)
+      if (!(state & GDK_SHIFT_MASK))
 	{
 	  cursor_frame = sample_ops_get_prev_zero_crossing (&audio.sample,
 							    cursor_frame,
@@ -1771,7 +1771,7 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
     }
   else if (operation == EDITOR_OP_MOVE_SEL_START)
     {
-      if (event->state & GDK_SHIFT_MASK)
+      if (!(state & GDK_SHIFT_MASK))
 	{
 	  cursor_frame = sample_ops_get_next_zero_crossing (&audio.sample,
 							    cursor_frame,
@@ -1793,7 +1793,7 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
     }
   else if (operation == EDITOR_OP_MOVE_LOOP_START)
     {
-      if (event->state & GDK_SHIFT_MASK)
+      if (state & GDK_SHIFT_MASK)
 	{
 	  sample_info->loop_start = cursor_frame;
 	}
@@ -1810,7 +1810,7 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
     }
   else if (operation == EDITOR_OP_MOVE_LOOP_END)
     {
-      if (event->state & GDK_SHIFT_MASK)
+      if (state & GDK_SHIFT_MASK)
 	{
 	  sample_info->loop_end = cursor_frame;
 	}
@@ -1860,7 +1860,8 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 }
 
 static void
-editor_delete_clicked (GtkWidget *object, gpointer data)
+editor_waveform_delete (GSimpleAction *simple_action, GVariant *parameter,
+			gpointer data)
 {
   guint32 sel_len;
   enum audio_status status;
@@ -1908,7 +1909,8 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
 }
 
 static void
-editor_undo_clicked (GtkWidget *object, gpointer data)
+editor_waveform_undo (GSimpleAction *simple_action, GVariant *parameter,
+		      gpointer data)
 {
   if (audio.path)
     {
@@ -1955,7 +1957,8 @@ editor_save_with_format (const gchar *dst_path, struct idata *sample,
       audio.sample_info_src.format |= format;	//This is required as reloading does not include the format
 
       editor_set_dirty (FALSE);
-      editor_update_export_save_buttons ();
+
+      editor_set_actions_enabled ();
     }
 
   browser_set_reload_item_in_editor (browser, FALSE);
@@ -2147,7 +2150,7 @@ editor_save_accept_response (GtkDialog *dialog, gint response_id,
 {
   const gchar *name = user_data;
 
-  gtk_widget_destroy (GTK_WIDGET (dialog));
+  gtk_window_destroy (GTK_WINDOW (dialog));
 
   if (response_id == GTK_RESPONSE_ACCEPT)
     {
@@ -2205,7 +2208,8 @@ editor_get_operation_range (guint32 *start, guint32 *length)
 }
 
 static void
-editor_normalize_clicked (GtkWidget *object, gpointer data)
+editor_waveform_normalize (GSimpleAction *simple_action, GVariant *parameter,
+			   gpointer data)
 {
   guint32 start, length;
   g_mutex_lock (&audio.control.controllable.mutex);
@@ -2376,7 +2380,8 @@ cleanup:
 }
 
 static void
-editor_split_clicked (GtkWidget *object, gpointer user_data)
+editor_waveform_split_channels (GSimpleAction *simple_action,
+				GVariant *parameter, gpointer data)
 {
   gboolean *has_progress_window = g_malloc (sizeof (gboolean));
 
@@ -2395,7 +2400,8 @@ editor_split_clicked (GtkWidget *object, gpointer user_data)
 }
 
 static void
-editor_export_save_as_clicked (GtkWidget *object, gpointer data)
+editor_waveform_save_as (GSimpleAction *simple_action, GVariant *parameter,
+			 gpointer data)
 {
   gint name_sel_len;
   gchar name[BLOB_MAX];
@@ -2451,11 +2457,12 @@ end:
 }
 
 static void
-editor_save_clicked (GtkWidget *object, gpointer data)
+editor_waveform_save (GSimpleAction *simple_action, GVariant *parameter,
+		      gpointer data)
 {
   if (AUDIO_SEL_LEN)
     {
-      editor_export_save_as_clicked (NULL, NULL);
+      editor_waveform_save_as (NULL, NULL, NULL);
     }
   else
     {
@@ -2464,17 +2471,14 @@ editor_save_clicked (GtkWidget *object, gpointer data)
 }
 
 static gboolean
-editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
+editor_waveform_on_key_pressed (GtkEventControllerKey *controller,
+				guint keyval, guint keycode,
+				GdkModifierType state, gpointer user_data)
 {
-  if (event->type != GDK_KEY_PRESS)
-    {
-      return FALSE;
-    }
-
-  if (event->keyval == GDK_KEY_Menu)
+  if (keyval == GDK_KEY_Menu ||
+      (keyval == GDK_KEY_F10 && (state & GDK_SHIFT_MASK)))
     {
       guint x, y;
-
       g_mutex_lock (&audio.control.controllable.mutex);
 
       y = gtk_widget_get_allocated_height (waveform) / 2;
@@ -2508,37 +2512,11 @@ editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
       editor_show_popover_at (x, y, AUDIO_SEL_LEN > 0);
 
       g_mutex_unlock (&audio.control.controllable.mutex);
-    }
-  else if (event->keyval == GDK_KEY_space)
-    {
-      editor_play_clicked (NULL, NULL);
-    }
-  else if (event->keyval == GDK_KEY_Delete)
-    {
-      editor_delete_clicked (NULL, NULL);
-    }
-  else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_z &&
-	   dirty)
-    {
-      editor_undo_clicked (NULL, NULL);
-    }
-  else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_s &&
-	   dirty)
-    {
-      if (audio.path)
-	{
-	  if (sample_format_is_valid_to_save (&audio.sample_info_src))
-	    {
-	      editor_save_clicked (NULL, NULL);
-	    }
-	}
-      else
-	{
-	  editor_export_save_as_clicked (NULL, NULL);
-	}
+
+      return GDK_EVENT_STOP;
     }
 
-  return TRUE;
+  return GDK_EVENT_PROPAGATE;
 }
 
 static void
@@ -2553,17 +2531,14 @@ editor_update_audio_status ()
 }
 
 static void
-editor_waveform_size_allocate (GtkWidget *self, GtkAllocation *allocation,
-			       gpointer user_data)
+editor_waveform_resize (GtkDrawingArea *drawing_area,
+			gint width, gint height, gpointer user_data)
 {
-  guint width, height;
   gboolean needs_refresh, needs_clear_cache;
 
   debug_print (1, "Allocating waveform size...");
 
   g_mutex_lock (&mutex);
-  width = gtk_widget_get_allocated_width (waveform);
-  height = gtk_widget_get_allocated_width (waveform);
   needs_refresh = waveform_width != width;
   if (!needs_refresh)
     {
@@ -2592,12 +2567,14 @@ editor_set_visible (gboolean visible)
 }
 
 void
-editor_init (GtkBuilder *builder)
+editor_init (GtkBuilder *builder, GtkApplication *app)
 {
   editor_box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
-  waveform_scrolled_window =
-    GTK_WIDGET (gtk_builder_get_object (builder, "waveform_scrolled_window"));
+  waveform_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "waveform_box"));
   waveform = GTK_WIDGET (gtk_builder_get_object (builder, "waveform"));
+  waveform_scrollbar =
+    GTK_WIDGET (gtk_builder_get_object (builder, "waveform_scrollbar"));
   play_button = GTK_WIDGET (gtk_builder_get_object (builder, "play_button"));
   stop_button = GTK_WIDGET (gtk_builder_get_object (builder, "stop_button"));
   loop_button = GTK_WIDGET (gtk_builder_get_object (builder, "loop_button"));
@@ -2636,40 +2613,23 @@ editor_init (GtkBuilder *builder)
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
   g_object_ref (G_OBJECT (notes_list_store));
 
-  popover_menu =
-    GTK_POPOVER_MENU (gtk_builder_get_object
-		      (builder, "editor_popover_menu"));
-  popover_play_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_play_button"));
-  popover_delete_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_delete_button"));
-  popover_undo_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_undo_button"));
-  popover_normalize_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_normalize_button"));
-  popover_split_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_split_button"));
-  popover_save_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_save_button"));
-  popover_save_as_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_save_as_button"));
-  popover_export_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_export_button"));
+  popovermenu =
+    GTK_WIDGET (gtk_builder_get_object (builder, "editor_popovermenu"));
 
-  g_signal_connect (waveform, "draw", G_CALLBACK (editor_draw), NULL);
-  gtk_widget_add_events (waveform, GDK_SCROLL_MASK);
-  g_signal_connect (waveform, "scroll-event",
+  gtk_drawing_area_set_draw_func (GTK_DRAWING_AREA (waveform), editor_draw,
+				  NULL, NULL);
+  g_signal_connect (waveform, "resize", G_CALLBACK (editor_waveform_resize),
+		    NULL);
+
+  GtkEventController *zoom_controller =
+    gtk_event_controller_scroll_new (GTK_EVENT_CONTROLLER_SCROLL_BOTH_AXES |
+				     GTK_EVENT_CONTROLLER_SCROLL_DISCRETE);
+  g_signal_connect (zoom_controller, "scroll",
 		    G_CALLBACK (editor_waveform_scroll), NULL);
+  gtk_widget_add_controller (waveform, zoom_controller);
+
   g_signal_connect (play_button, "clicked",
-		    G_CALLBACK (editor_play_clicked), NULL);
+		    G_CALLBACK (editor_waveform_play), NULL);
   g_signal_connect (stop_button, "clicked",
 		    G_CALLBACK (editor_stop_clicked), NULL);
   g_signal_connect (loop_button, "clicked",
@@ -2695,46 +2655,36 @@ editor_init (GtkBuilder *builder)
 		    G_CALLBACK (editor_note_changed), NULL);
 
   volume_changed_handler = g_signal_connect (volume_button,
-					     "value_changed",
+					     "value-changed",
 					     G_CALLBACK
 					     (editor_set_volume), NULL);
 
-  g_signal_connect (waveform_scrolled_window, "size-allocate",
-		    G_CALLBACK (editor_scrolled_window_size_allocate), NULL);
-  gtk_widget_add_events (waveform, GDK_BUTTON_PRESS_MASK);
-  g_signal_connect (waveform, "button-press-event",
-		    G_CALLBACK (editor_button_press), NULL);
-  gtk_widget_add_events (waveform, GDK_BUTTON_RELEASE_MASK);
-  g_signal_connect (waveform, "button-release-event",
-		    G_CALLBACK (editor_button_release), NULL);
-  gtk_widget_add_events (waveform, GDK_POINTER_MOTION_MASK);
-  g_signal_connect (waveform, "motion-notify-event",
-		    G_CALLBACK (editor_motion_notify), NULL);
-  g_signal_connect (editor_box, "key-press-event",
-		    G_CALLBACK (editor_key_press), NULL);
-  g_signal_connect (waveform, "size-allocate",
-		    G_CALLBACK (editor_waveform_size_allocate), NULL);
+  waveform_adj = GTK_ADJUSTMENT (gtk_builder_get_object
+				 (builder, "waveform_adj"));
+  g_signal_connect (waveform_adj, "value-changed",
+		    G_CALLBACK (waveform_scroll_adj_change), NULL);
+
+  GtkGesture *gesture = gtk_gesture_click_new ();
+  gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 0);
+  g_signal_connect (gesture, "pressed", G_CALLBACK (editor_button_pressed),
+		    NULL);
+  g_signal_connect (gesture, "released", G_CALLBACK (editor_button_released),
+		    NULL);
+  gtk_widget_add_controller (waveform, GTK_EVENT_CONTROLLER (gesture));
+
+  GtkEventController *motion_controller = gtk_event_controller_motion_new ();
+  g_signal_connect (motion_controller, "motion", G_CALLBACK (editor_motion),
+		    NULL);
+  gtk_widget_add_controller (waveform, motion_controller);
+
+  GtkEventController *key_controller = gtk_event_controller_key_new ();
+  g_signal_connect (key_controller, "key-pressed",
+		    G_CALLBACK (editor_waveform_on_key_pressed), NULL);
+  gtk_widget_add_controller (GTK_WIDGET (waveform_box), key_controller);
+
   g_signal_connect (manage_tags_button, "clicked",
 		    G_CALLBACK (editor_manage_tags_button_click), NULL);
 
-  g_signal_connect (popover_play_button, "clicked",
-		    G_CALLBACK (editor_play_clicked), NULL);
-  g_signal_connect (popover_delete_button, "clicked",
-		    G_CALLBACK (editor_delete_clicked), NULL);
-  g_signal_connect (popover_undo_button, "clicked",
-		    G_CALLBACK (editor_undo_clicked), NULL);
-  g_signal_connect (popover_normalize_button, "clicked",
-		    G_CALLBACK (editor_normalize_clicked), NULL);
-  g_signal_connect (popover_split_button, "clicked",
-		    G_CALLBACK (editor_split_clicked), NULL);
-  g_signal_connect (popover_export_button, "clicked",
-		    G_CALLBACK (editor_export_save_as_clicked), NULL);
-  g_signal_connect (popover_save_button, "clicked",
-		    G_CALLBACK (editor_save_clicked), NULL);
-  g_signal_connect (popover_save_as_button, "clicked",
-		    G_CALLBACK (editor_export_save_as_clicked), NULL);
-
-  editor_loop_clicked (loop_button, NULL);
   gtk_switch_set_active (GTK_SWITCH (autoplay_switch),
 			 preferences_get_boolean (PREF_KEY_AUTOPLAY));
   gtk_switch_set_active (GTK_SWITCH (mix_switch),
@@ -2742,14 +2692,49 @@ editor_init (GtkBuilder *builder)
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (subdivisions_spin),
 			     preferences_get_int (PREF_KEY_SUBDIVISIONS));
 
+  static const GActionEntry actions[] = {
+    {"play", editor_waveform_play, NULL, NULL, NULL},
+    {"delete", editor_waveform_delete, NULL, NULL, NULL},
+    {"undo", editor_waveform_undo, NULL, NULL, NULL},
+    {"normalize", editor_waveform_normalize, NULL, NULL, NULL},
+    {"split_channels", editor_waveform_split_channels, NULL, NULL, NULL},
+    {"export", editor_waveform_save_as, NULL, NULL, NULL},
+    {"save", editor_waveform_save, NULL, NULL, NULL},
+    {"save_as", editor_waveform_save_as, NULL, NULL, NULL},
+  };
+
+  action_group = g_simple_action_group_new ();
+  g_action_map_add_action_entries (G_ACTION_MAP (action_group), actions,
+				   G_N_ELEMENTS (actions), NULL);
+  gtk_widget_insert_action_group (GTK_WIDGET (waveform_box), "editor",
+				  G_ACTION_GROUP (action_group));
+
+  GtkEventController *controller = gtk_shortcut_controller_new ();
+  gtk_shortcut_controller_set_scope (GTK_SHORTCUT_CONTROLLER
+				     (controller), GTK_SHORTCUT_SCOPE_LOCAL);
+  gtk_widget_add_controller (GTK_WIDGET (waveform_box), controller);
+
+  elektroid_controller_add_accel (controller, "space", "action(editor.play)");
+  elektroid_controller_add_accel (controller, "Delete",
+				  "action(editor.delete)");
+  elektroid_controller_add_accel (controller, "<Ctrl>z",
+				  "action(editor.undo)");
+  elektroid_controller_add_accel (controller, "<Ctrl>e",
+				  "action(editor.export)");
+  elektroid_controller_add_accel (controller, "<Ctrl>s",
+				  "action(editor.save)");
+  elektroid_controller_add_accel (controller, "<Shift><Ctrl>s",
+				  "action(editor.save_as)");
+
   audio_init (editor_update_audio_status, editor_set_volume_callback);
 
   record_window_init (builder);
   tags_window_init (builder);
 
-  editor_set_from_sample_info ();
+  editor_set_tags_from_sample_info ();
 
   g_mutex_init (&mutex);
+
   editor_reset (NULL);
   active = TRUE;
 }
@@ -2772,17 +2757,18 @@ editor_destroy ()
   audio_destroy ();
   if (wait)
     {
-      while (gtk_events_pending ())
+      while (g_main_context_pending (NULL))
 	{
-	  gtk_main_iteration_do (TRUE);	//Wait for drawings
+	  g_main_context_iteration (NULL, TRUE);	//Wait for drawings
 	}
     }
 
   editor_clear_waveform_data ();
   editor_free_waveform_state ();
-  tags_clear_container (tags_flow_box);
+  gtk_flow_box_remove_all (GTK_FLOW_BOX (tags_flow_box));
 
   g_object_unref (G_OBJECT (notes_list_store));
+  g_object_unref (action_group);
 }
 
 void
