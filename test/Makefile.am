@@ -1,7 +1,7 @@
 PKG_CONFIG ?= pkg-config
 
 AM_CFLAGS = -Wall -O3
-AM_CPPFLAGS = -DTEST_DATA_DIR='"$(srcdir)/res"' -DDATADIR='"../res"'
+AM_CPPFLAGS = -DTEST_DATA_DIR='"$(srcdir)/res"' -DDATADIR='"$(top_srcdir)/res"'
 
 if MINGW
   MSYS2_LIBS = -lws2_32
