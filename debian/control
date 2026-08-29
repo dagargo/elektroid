@@ -1,9 +1,8 @@
 Source: elektroid
 Section: sound
-Priority: optional
 Maintainer: Debian Multimedia Maintainers <debian-multimedia@lists.debian.org>
 Uploaders: Dennis Braun <snd@debian.org>
-Build-Depends: debhelper-compat (= 13),
+Build-Depends: debhelper-compat (= 14),
                libasound2-dev [linux-any],
                libjson-glib-dev,
                libgtk-3-dev,
@@ -12,13 +11,12 @@ Build-Depends: debhelper-compat (= 13),
                libsndfile1-dev,
                libsamplerate0-dev,
                libzip-dev,
-               pkg-config,
+               pkgconf,
                zlib1g-dev
 Homepage: https://github.com/dagargo/elektroid
 Vcs-Browser: https://salsa.debian.org/multimedia-team/elektroid
 Vcs-Git: https://salsa.debian.org/multimedia-team/elektroid.git
-Standards-Version: 4.6.2
-Rules-Requires-Root: no
+Standards-Version: 4.7.4
 
 Package: elektroid
 Architecture: linux-any

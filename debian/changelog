@@ -1,3 +1,95 @@
+elektroid (3.4-2) unstable; urgency=medium
+
+  * Fix installation (Closes: #1145842)
+
+ -- Dennis Braun <snd@debian.org>  Thu, 27 Aug 2026 17:49:11 +0200
+
+elektroid (3.4-1) unstable; urgency=medium
+
+  * New upstream version 3.4
+  * Bump Standards-Version to 4.7.4
+  * Update d/watch to version 5
+  * Bump dh-compat to 14
+
+ -- Dennis Braun <snd@debian.org>  Wed, 26 Aug 2026 17:50:53 +0200
+
+elektroid (3.3.2-1) unstable; urgency=medium
+
+  * New upstream version 3.3.2
+  * Add librubberband-dev to B-Ds
+  * Bump Standards-Version to 4.7.3
+  * Remove redundant-priority-optional-field
+  * Remove redundant-rules-requires-root-no-field
+  * Remove upstream patches
+  * Bump d/copyright years
+
+ -- Dennis Braun <snd@debian.org>  Sun, 01 Mar 2026 16:21:39 +0100
+
+elektroid (3.2.3-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Backport upstream fix for FTBFS with GCC 15. (Closes: #1114097)
+
+ -- Adrian Bunk <bunk@debian.org>  Sat, 04 Oct 2025 22:23:49 +0300
+
+elektroid (3.2.3-1) unstable; urgency=medium
+
+  * New upstream version 3.2.3
+
+ -- Dennis Braun <snd@debian.org>  Fri, 25 Apr 2025 20:49:25 +0200
+
+elektroid (3.2-1) unstable; urgency=medium
+
+  * New upstream version 3.2
+    + Fix ftbfs with GCC-15 (Closes: #1096570)
+  * Bump Standards-Version to 4.7.2
+  * d/copyright: New appdata file
+  * Bump d/copyright years
+
+ -- Dennis Braun <snd@debian.org>  Mon, 14 Apr 2025 11:20:41 +0200
+
+elektroid (3.1-1) unstable; urgency=medium
+
+  * New upstream version 3.1
+  * Drop FTBFS patch applied by upstream
+
+ -- Dennis Braun <snd@debian.org>  Sun, 10 Nov 2024 18:44:52 +0100
+
+elektroid (3.0.1-2) unstable; urgency=medium
+
+  * Fix FTBFS by adding the gstdio header (Closes: #1066566)
+  * debian/control: pkg-config -> pkgconf
+
+ -- Dennis Braun <snd@debian.org>  Fri, 22 Mar 2024 21:23:48 +0100
+
+elektroid (3.0.1-1) unstable; urgency=medium
+
+  * New upstream version 3.0.1
+  * Bump d/copyright years and address all svg files
+
+ -- Dennis Braun <snd@debian.org>  Sun, 28 Jan 2024 20:31:10 +0100
+
+elektroid (2.5.2-2) unstable; urgency=medium
+
+  * Clean modified files after successful build (Closes: #1044825)
+
+ -- Dennis Braun <snd@debian.org>  Fri, 22 Sep 2023 10:22:53 +0200
+
+elektroid (2.5.2-1) unstable; urgency=medium
+
+  * New upstream version 2.5.2
+  * Update description
+
+ -- Dennis Braun <snd@debian.org>  Sun, 18 Jun 2023 17:38:08 +0200
+
+elektroid (2.4.1-1) unstable; urgency=medium
+
+  * New upstream version 2.4.1
+  * Bump Standards-Version to 4.6.2
+  * Bump d/copyright years
+
+ -- Dennis Braun <snd@debian.org>  Sat, 11 Feb 2023 18:54:15 +0100
+
 elektroid (2.3-1) unstable; urgency=medium
 
   [ Johannes Schauer Marin Rodrigues ]
