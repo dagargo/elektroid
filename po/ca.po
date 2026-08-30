@@ -1,5 +1,5 @@
 # Catalan translations for Elektroid package.
-# Copyright (C) 2019 David García Goñi
+# Copyright (C) 2019-2026 David García Goñi
 # This file is distributed under the same license as the Elektroid package.
 # David García Goñi <dagargo@gmail.com>, 2020.
 #

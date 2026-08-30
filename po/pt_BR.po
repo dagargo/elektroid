@@ -1,5 +1,5 @@
 # elektroid Brazilian Portuguese translation
-# Copyright (C) 2021 David García Goñi
+# Copyright (C) 2021-2023 Gustavo Costa
 # This file is distributed under the same license as the elektroid package.
 # Gustavo Costa <xfgusta@gmail.com>, 2021.
 #

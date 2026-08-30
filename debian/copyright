@@ -11,18 +11,20 @@ Copyright:
  2019-2026 David García Goñi <dagargo@gmail.com>
  2019-2026 Olivier Humbert <trebmuh@tuxfamily.org>
  2020-2026 Dennis Braun <snd@debian.org>
+ 2021-2023 Gustavo Costa <xfgusta@gmail.com>
+ 2026 Ian Hundere
 License: GPL-3+
 
 Files: debian/*
 Copyright: 2020-2026 Dennis Braun <snd@debian.org>
 License: GPL-3+
 
-Files: res/elektroid*.svg
+Files: res/*.svg
 Copyright: 2020-2023 David García Goñi <dagargo@gmail.com>
 License: CC-BY-SA-4.0
 
 Files:
-  res/io.github.dagargo.Elektroid.appdata.xml
+ res/io.github.dagargo.Elektroid.appdata.xml
 Copyright:
  2020 Dennis Braun <snd@debian.org>
  2025 David García Goñi <dagargo@gmail.com>
