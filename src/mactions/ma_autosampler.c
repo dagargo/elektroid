@@ -49,7 +49,7 @@ static GtkWidget *start_button;
 static GtkWidget *cancel_button;
 static GtkListStore *notes_list_store;
 
-struct autosampler_data
+struct ma_autosampler_data
 {
   const gchar *name;
   guint channel_mask;
@@ -66,7 +66,7 @@ struct autosampler_data
 };
 
 static void
-autosampler_get_down_up_distance (gint distance, gint *up, gint *down)
+ma_autosampler_get_down_up_distance (gint distance, gint *up, gint *down)
 {
   gint additional_notes = distance - 1;
   *up = additional_notes / 2;
@@ -74,9 +74,9 @@ autosampler_get_down_up_distance (gint distance, gint *up, gint *down)
 }
 
 static void
-autosampler_runner (gpointer user_data)
+ma_autosampler_runner (gpointer user_data)
 {
-  struct autosampler_data *data = user_data;
+  struct ma_autosampler_data *data = user_data;
   const gchar *note;
   gint s, total, i, up, down;
   guint32 start, duration, trail_length;
@@ -87,7 +87,7 @@ autosampler_runner (gpointer user_data)
   GString *sfz;
   gchar *dir, *samples_dir, *sfz_path, *sfz_filename;
 
-  autosampler_get_down_up_distance (data->semitones, &up, &down);
+  ma_autosampler_get_down_up_distance (data->semitones, &up, &down);
 
   progress_window_set_fraction (0.0);
 
@@ -242,7 +242,8 @@ autosampler_runner (gpointer user_data)
 }
 
 static void
-autosampler_callback (GtkWidget *object, gpointer user_data)
+ma_autosampler_open (GSimpleAction *simple_action, GVariant *parameter,
+		     gpointer data)
 {
   guint options;
 
@@ -263,7 +264,7 @@ autosampler_callback (GtkWidget *object, gpointer user_data)
 }
 
 static void
-autosampler_cancel (GtkWidget *object, gpointer data)
+ma_autosampler_cancel (GtkWidget *object, gpointer data)
 {
   if (gtk_widget_get_visible (GTK_WIDGET (window)))
     {
@@ -276,26 +277,28 @@ autosampler_cancel (GtkWidget *object, gpointer data)
   gtk_widget_set_visible (GTK_WIDGET (window), FALSE);
 }
 
-// static gboolean
-// autosampler_window_key_press (GtkWidget *widget, GdkEventKey *event,
-//                            gpointer data)
-// {
-//   if (event->keyval == GDK_KEY_Escape)
-//     {
-//       autosampler_cancel (NULL, NULL);
-//       return TRUE;
-//     }
-//   return FALSE;
-// }
+static gboolean
+ma_autosampler_on_key_pressed (GtkEventControllerKey *controller,
+			       guint keyval, guint keycode,
+			       GdkModifierType state, gpointer user_data)
+{
+  if (keyval == GDK_KEY_Escape)
+    {
+      ma_autosampler_cancel (NULL, NULL);
+      return TRUE;
+    }
+
+  return FALSE;
+}
 
 static void
-autosampler_start (GtkWidget *object, gpointer data)
+ma_autosampler_start (GtkWidget *object, gpointer data)
 {
-  struct autosampler_data *autosampler_data;
+  struct ma_autosampler_data *autosampler_data;
 
-  autosampler_cancel (NULL, NULL);
+  ma_autosampler_cancel (NULL, NULL);
 
-  autosampler_data = g_malloc (sizeof (struct autosampler_data));
+  autosampler_data = g_malloc (sizeof (struct ma_autosampler_data));
 
   autosampler_data->channel_mask =
     guirecorder_get_channel_mask (&guirecorder);
@@ -325,21 +328,32 @@ autosampler_start (GtkWidget *object, gpointer data)
   gtk_combo_box_get_active_iter (GTK_COMBO_BOX
 				 (start_combo), &autosampler_data->iter);
 
-  progress_window_open (autosampler_runner, NULL, NULL, autosampler_data,
+  progress_window_open (ma_autosampler_runner, NULL, NULL, autosampler_data,
 			PROGRESS_TYPE_NO_AUTO, _("Auto Sampler"),
 			_("Recording..."), TRUE);
 }
 
 static void
-name_changed (GtkWidget *object, gpointer data)
+ma_autosampler_name_changed (GtkWidget *object, gpointer data)
 {
   const gchar *text = gtk_editable_get_text (GTK_EDITABLE (name_entry));
   gsize len = strlen (text);
   gtk_widget_set_sensitive (start_button, len > 0);
 }
 
+static gboolean
+ma_autosampler_window_close (GtkWindow *window, gpointer data)
+{
+  ma_autosampler_cancel (NULL, NULL);
+  return TRUE;
+}
+
+static const GActionEntry AUTOSAMPLER_ENTRIES[] = {
+  {"autosampler_open", ma_autosampler_open, NULL, NULL, NULL}
+};
+
 void
-autosampler_init (GtkBuilder *builder)
+ma_autosampler_init (GtkBuilder *builder, GtkApplication *app)
 {
   window =
     GTK_WINDOW (gtk_builder_get_object (builder, "autosampler_window"));
@@ -395,39 +409,47 @@ autosampler_init (GtkBuilder *builder)
   notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
 
-  g_signal_connect (name_entry, "changed", G_CALLBACK (name_changed), NULL);
+  g_signal_connect (name_entry, "changed",
+		    G_CALLBACK (ma_autosampler_name_changed), NULL);
   g_signal_connect (guirecorder.channels_combo, "changed",
 		    G_CALLBACK (guirecorder_channels_changed), &guirecorder);
 
   g_signal_connect (start_button, "clicked",
-		    G_CALLBACK (autosampler_start), NULL);
+		    G_CALLBACK (ma_autosampler_start), NULL);
   g_signal_connect (cancel_button, "clicked",
-		    G_CALLBACK (autosampler_cancel), NULL);
+		    G_CALLBACK (ma_autosampler_cancel), NULL);
 
-  // g_signal_connect (window, "key_press_event",
-  //     G_CALLBACK (autosampler_window_key_press), NULL);
+  g_signal_connect (GTK_WIDGET (window), "close-request",
+		    G_CALLBACK (ma_autosampler_window_close), NULL);
+
+  GtkEventController *key_controller = gtk_event_controller_key_new ();
+  g_signal_connect (key_controller, "key-pressed",
+		    G_CALLBACK (ma_autosampler_on_key_pressed), NULL);
+  gtk_widget_add_controller (GTK_WIDGET (window), key_controller);
+
+  g_action_map_add_action_entries (G_ACTION_MAP (app), AUTOSAMPLER_ENTRIES,
+				   G_N_ELEMENTS (AUTOSAMPLER_ENTRIES), app);
 }
 
 void
-autosampler_destroy ()
+ma_autosampler_destroy ()
 {
   debug_print (1, "Destroying autosampler...");
-  autosampler_cancel (NULL, NULL);
-  gtk_window_destroy (GTK_WINDOW (window));
+  ma_autosampler_cancel (NULL, NULL);
+  gtk_window_destroy (window);
 }
 
 struct maction *
-autosampler_maction_builder (struct maction_context *context)
+ma_autosampler_builder ()
 {
   struct maction *ma = NULL;
 
-  if (remote_browser.backend && remote_browser.backend->type == BE_TYPE_MIDI)
+  if (remote_browser.backend && remote_browser.backend->type == BE_TYPE_MIDI
+      && audio_check ())
     {
       ma = g_malloc (sizeof (struct maction));
-      ma->type = MACTION_BUTTON;
       ma->name = _("_Auto Sampler");
-      ma->sensitive = audio_check ();
-      ma->callback = G_CALLBACK (autosampler_callback);
+      ma->action_name = "app.autosampler_open";
     }
 
   return ma;
