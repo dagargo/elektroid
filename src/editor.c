@@ -241,7 +241,7 @@ editor_update_tags ()
   GHashTable *sample_tags;
   struct sample_info *sample_info = audio.sample.info;
 
-  gtk_flow_box_remove_all (GTK_FLOW_BOX(tags_flow_box));
+  gtk_flow_box_remove_all (GTK_FLOW_BOX (tags_flow_box));
 
   if (!sample_info)
     {
@@ -2752,7 +2752,7 @@ editor_destroy ()
 
   editor_clear_waveform_data ();
   editor_free_waveform_state ();
-  gtk_flow_box_remove_all (GTK_FLOW_BOX(tags_flow_box));
+  gtk_flow_box_remove_all (GTK_FLOW_BOX (tags_flow_box));
 
   g_object_unref (G_OBJECT (notes_list_store));
 }
