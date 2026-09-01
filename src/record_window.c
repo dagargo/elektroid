@@ -132,7 +132,7 @@ record_window_init (GtkBuilder *builder)
 
   GtkEventController *key_controller = gtk_event_controller_key_new ();
   g_signal_connect (key_controller, "key-pressed",
-		    G_CALLBACK (record_window_on_key_pressed), window);
+		    G_CALLBACK (record_window_on_key_pressed), NULL);
   gtk_widget_add_controller (GTK_WIDGET (window), key_controller);
 }
 

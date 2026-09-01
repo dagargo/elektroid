@@ -22,18 +22,10 @@
 #include "tags_window.h"
 
 GSList *mactions = NULL;
-struct maction_context maction_context;
-
-struct maction *
-maction_separator_builder (struct maction_context *context)
-{
-  struct maction *ma = g_malloc (sizeof (struct maction));
-  ma->type = MACTION_SEPARATOR;
-  return ma;
-}
+GMenu *mactions_menu;
 
 static GSList *
-maction_context_build_all (struct maction_context *context)
+maction_context_build_all ()
 {
   GSList *actions = NULL;
   GSList *i = mactions;
@@ -42,7 +34,7 @@ maction_context_build_all (struct maction_context *context)
   while (i)
     {
       t_maction_builder builder = i->data;
-      ma = builder (context);
+      ma = builder (mactions_menu);
       if (ma)
 	{
 	  actions = g_slist_append (actions, ma);
@@ -50,51 +42,26 @@ maction_context_build_all (struct maction_context *context)
       i = i->next;
     }
 
-  ma = maction_separator_builder (context);
-  actions = g_slist_append (actions, ma);
-
   return actions;
 }
 
 void
-maction_menu_clear (struct maction_context *context)
+maction_menu_clear ()
 {
-//  tags_clear_container (context->box); //TODO
+  g_menu_remove_all (mactions_menu);
 }
 
 static void
 maction_add (gpointer data, gpointer user_data)
 {
   struct maction *ma = data;
-  struct maction_context *context = user_data;
-  if (ma->type == MACTION_BUTTON)
-    {
-      context->separator = TRUE;
-      GtkWidget *button = gtk_button_new ();
-      g_object_set (button, "label", ma->name, NULL);
-      gtk_widget_set_sensitive (button, ma->sensitive);
-      gtk_widget_set_visible (button, TRUE);
-      gtk_box_append (GTK_BOX (context->box), button);
-      g_signal_connect (button, "clicked", ma->callback, context);
-    }
-  else
-    {
-      if (context->separator)
-	{
-	  GtkWidget *separator =
-	    gtk_separator_new (GTK_ORIENTATION_HORIZONTAL);
-	  gtk_box_append (GTK_BOX (context->box), separator);
-	  gtk_widget_set_visible (separator, TRUE);
-	}
-      context->separator = FALSE;
-    }
+  g_menu_append (mactions_menu, ma->name, ma->action_name);
 }
 
 void
-maction_menu_setup (struct maction_context *context)
+maction_menu_setup ()
 {
-  GSList *src = maction_context_build_all (context);
-  context->separator = FALSE;
-  g_slist_foreach (src, maction_add, context);
+  GSList *src = maction_context_build_all ();
+  g_slist_foreach (src, maction_add, NULL);
   g_slist_free_full (src, g_free);
 }

@@ -3511,7 +3511,7 @@ Characteristics</property>
     <property name="website">https://dagargo.github.io/elektroid/</property>
   </object>
   <menu id="main_popover_model">
-    <section id="mactions_box"/>
+    <section id="mactions_menu"/>
     <section>
       <item>
         <attribute name="action">app.show_remote</attribute>
