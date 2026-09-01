@@ -152,7 +152,7 @@ tags_window_init (GtkBuilder *builder)
 
   GtkEventController *key_controller = gtk_event_controller_key_new ();
   g_signal_connect (key_controller, "key-pressed",
-		    G_CALLBACK (tags_window_on_key_pressed), window);
+		    G_CALLBACK (tags_window_on_key_pressed), NULL);
   gtk_widget_add_controller (GTK_WIDGET (window), key_controller);
 }
 
@@ -248,7 +248,7 @@ tags_window_add_category (GtkWidget *category_label,
   GList *tag;
   GList *keys;
 
-  gtk_flow_box_remove_all (GTK_FLOW_BOX(category_flow_box));
+  gtk_flow_box_remove_all (GTK_FLOW_BOX (category_flow_box));
 
   if (g_hash_table_size (category_tags) == 0)
     {

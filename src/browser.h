@@ -19,10 +19,11 @@
  */
 
 #include <gtk/gtk.h>
-#include "utils.h"
+#include "connector.h"
+#include "maction.h"
 #include "notifier.h"
 #include "preferences.h"
-#include "connector.h"
+#include "utils.h"
 
 #ifndef BROWSER_H
 #define BROWSER_H

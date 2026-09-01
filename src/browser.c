@@ -1094,6 +1094,10 @@ browser_load_dir_runner_show_spinner_and_lock_browser (gpointer data)
   struct browser *browser = data;
   g_slist_foreach (browser->sensitive_widgets, browser_widget_set_insensitive,
 		   NULL);
+  if (!BROWSER_IS_SYSTEM (browser))
+    {
+      maction_disable_all ();
+    }
   gtk_stack_set_visible_child_name (GTK_STACK (browser->list_stack),
 				    "spinner");
   gtk_spinner_start (GTK_SPINNER (browser->spinner));
@@ -1141,6 +1145,10 @@ browser_load_dir_runner_update_ui (gpointer data)
   //Unlock browser
   g_slist_foreach (browser->sensitive_widgets, browser_widget_set_sensitive,
 		   NULL);
+  if (!BROWSER_IS_SYSTEM (browser))
+    {
+      maction_enable_all ();
+    }
 
   if (browser_get_selected_items_count (browser))
     {
@@ -2981,9 +2989,6 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder)
     g_slist_append (browser->sensitive_widgets, browser->refresh_button);
   browser->sensitive_widgets =
     g_slist_append (browser->sensitive_widgets, browser->search_button);
-  // TODO: This needs to be done at action level and disabled and enabled from elektroid.c.
-  // browser->sensitive_widgets =
-  //   g_slist_append (browser->sensitive_widgets, maction_context.box);
 
   browser->tree_view_id_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
