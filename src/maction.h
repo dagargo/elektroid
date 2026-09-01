@@ -25,37 +25,19 @@
 #include "backend.h"
 #include "audio.h"
 
-enum maction_type
-{
-  MACTION_BUTTON,
-  MACTION_SEPARATOR
-};
-
 struct maction
 {
-  enum maction_type type;
   const gchar *name;
-  gboolean sensitive;
-  GCallback callback;
-};
-
-struct maction_context
-{
-  GtkWidget *box;
-  gboolean separator;		//This does not need to be initialized as it's used internally.
+  const gchar *action_name;
 };
 
 extern GSList *mactions;
-extern struct maction_context maction_context;
+extern GMenu *mactions_menu;
 
-typedef struct maction *(*t_maction_builder) (struct maction_context *
-					      context);
+typedef struct maction *(*t_maction_builder) (GMenu * menu);
 
-void maction_menu_clear (struct maction_context *context);
+void maction_menu_clear ();
 
-void maction_menu_setup (struct maction_context *context);
-
-struct maction *maction_separator_builder (struct maction_context *context);
-
+void maction_menu_setup ();
 
 #endif

@@ -91,11 +91,11 @@ browser.c browser.h \
 editor.c editor.h \
 guirecorder.c guirecorder.h \
 maction.c maction.h \
-mactions/autosampler.c \
-mactions/backend.c \
-mactions/elektron.c \
-mactions/microbrute.c \
-mactions/microfreak.c \
+mactions/ma_autosampler.c \
+mactions/ma_backend.c \
+mactions/ma_elektron.c \
+mactions/ma_microbrute.c \
+mactions/ma_microfreak.c \
 name_window.c name_window.h \
 notifier.c notifier.h \
 preferences_window.c preferences_window.h \

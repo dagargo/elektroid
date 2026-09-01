@@ -29,7 +29,7 @@ extern GtkWindow *main_window;
 extern struct browser remote_browser;
 
 static guint8 channel;
-static GtkWidget *config_window;
+static GtkWindow *config_window;
 static GtkWidget *calibration_assistant;
 static GtkWidget *note_priority;
 static GtkWidget *vel_response;
@@ -49,7 +49,8 @@ static GtkWidget *persistent_changes;
 static gboolean loading;
 
 static void
-microbrute_configure_callback (GtkWidget *object, gpointer data)
+ma_microbrute_open_configuration (GSimpleAction *simple_action,
+				  GVariant *parameter, gpointer user_data)
 {
   guint8 v;
 
@@ -100,7 +101,7 @@ microbrute_configure_callback (GtkWidget *object, gpointer data)
   elektroid_combo_box_set_value (GTK_COMBO_BOX (synchronization), v);
   loading = FALSE;
 
-  gtk_widget_set_visible (config_window, TRUE);
+  gtk_widget_set_visible (GTK_WIDGET (config_window), TRUE);
 }
 
 static void
@@ -232,7 +233,7 @@ microbrute_assistant_close (GtkWidget *assistant, gpointer data)
 static gboolean
 microbrute_close (GtkWindow *window, gpointer data)
 {
-  gtk_widget_set_visible (config_window, FALSE);
+  gtk_widget_set_visible (GTK_WIDGET (config_window), FALSE);
   return TRUE;
 }
 
@@ -262,20 +263,36 @@ microbrute_assistant_prepare (GtkAssistant *assistant, GtkWidget *page,
     }
 }
 
-// static gboolean
-// microbrute_window_key_press (GtkWidget *widget, GdkEventKey *event,
-//                           gpointer data)
-// {
-//   if (event->keyval == GDK_KEY_Escape)
-//     {
-//       gtk_widget_set_visible (widget, FALSE);
-//       return TRUE;
-//     }
-//   return FALSE;
-// }
+static void
+ma_microbrute_open_calibration (GSimpleAction *simple_action,
+				GVariant *parameter, gpointer user_data)
+{
+  gtk_widget_set_visible (calibration_assistant, TRUE);
+}
+
+static gboolean
+ma_microbrute_on_key_pressed (GtkEventControllerKey *controller,
+			      guint keyval, guint keycode,
+			      GdkModifierType state, gpointer user_data)
+{
+  if (keyval == GDK_KEY_Escape)
+    {
+      gtk_window_close (config_window);
+      return TRUE;
+    }
+
+  return FALSE;
+}
+
+static const GActionEntry MICROBRUTE_ENTRIES[] = {
+  {"microbrute_open_configuration", ma_microbrute_open_configuration, NULL,
+   NULL, NULL},
+  {"microbrute_open_calibration", ma_microbrute_open_calibration, NULL, NULL,
+   NULL},
+};
 
 void
-microbrute_init ()
+ma_microbrute_init (GtkApplication *app)
 {
   GError *error;
   GtkBuilder *builder = gtk_builder_new ();
@@ -291,7 +308,7 @@ microbrute_init ()
       exit (1);
     }
 
-  config_window = GTK_WIDGET (gtk_builder_get_object (builder,
+  config_window = GTK_WINDOW (gtk_builder_get_object (builder,
 						      "config_window"));
   gtk_window_set_transient_for (GTK_WINDOW (config_window), main_window);	//TODO
 
@@ -359,8 +376,10 @@ microbrute_init ()
   g_signal_connect (config_window, "close-request",
 		    G_CALLBACK (microbrute_close), NULL);
 
-  // g_signal_connect (config_window, "key_press_event",
-  //     G_CALLBACK (microbrute_window_key_press), NULL);
+  GtkEventController *key_controller = gtk_event_controller_key_new ();
+  g_signal_connect (key_controller, "key-pressed",
+		    G_CALLBACK (ma_microbrute_on_key_pressed), NULL);
+  gtk_widget_add_controller (GTK_WIDGET (config_window), key_controller);
 
   //Assistant
 
@@ -379,10 +398,13 @@ microbrute_init ()
 		    G_CALLBACK (microbrute_assistant_prepare), NULL);
 
   g_object_unref (G_OBJECT (builder));
+
+  g_action_map_add_action_entries (G_ACTION_MAP (app), MICROBRUTE_ENTRIES,
+				   G_N_ELEMENTS (MICROBRUTE_ENTRIES), app);
 }
 
 void
-microbrute_destroy ()
+ma_microbrute_destroy ()
 {
   debug_print (1, "Destroying microbrute...");
   gtk_window_destroy (GTK_WINDOW (calibration_assistant));
@@ -390,7 +412,7 @@ microbrute_destroy ()
 }
 
 struct maction *
-microbrute_maction_conf_builder (struct maction_context *context)
+ma_microbrute_conf_builder ()
 {
   struct maction *ma;
 
@@ -401,22 +423,14 @@ microbrute_maction_conf_builder (struct maction_context *context)
     }
 
   ma = g_malloc (sizeof (struct maction));
-  ma->type = MACTION_BUTTON;
   ma->name = _("_Configuration");
-  ma->sensitive = TRUE;
-  ma->callback = G_CALLBACK (microbrute_configure_callback);
+  ma->action_name = "app.microbrute_open_configuration";
 
   return ma;
 }
 
-static void
-microbrute_calibration_callback (GtkWidget *object, gpointer data)
-{
-  gtk_widget_set_visible (calibration_assistant, TRUE);
-}
-
 struct maction *
-microbrute_maction_cal_builder (struct maction_context *context)
+ma_microbrute_cal_builder ()
 {
   struct maction *ma;
 
@@ -427,10 +441,8 @@ microbrute_maction_cal_builder (struct maction_context *context)
     }
 
   ma = g_malloc (sizeof (struct maction));
-  ma->type = MACTION_BUTTON;
   ma->name = _("_Calibration");
-  ma->sensitive = TRUE;
-  ma->callback = G_CALLBACK (microbrute_calibration_callback);
+  ma->action_name = "app.microbrute_open_calibration";
 
   return ma;
 }

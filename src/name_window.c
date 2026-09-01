@@ -94,8 +94,7 @@ name_window_entry_changed (GtkWidget *object, gpointer data)
 
 static gboolean
 name_window_on_key_pressed (GtkEventControllerKey *controller,
-			    guint keyval,
-			    guint keycode,
+			    guint keyval, guint keycode,
 			    GdkModifierType state, gpointer user_data)
 {
   if (keyval == GDK_KEY_Escape)
@@ -128,7 +127,7 @@ name_window_init (GtkBuilder *builder)
 
   GtkEventController *key_controller = gtk_event_controller_key_new ();
   g_signal_connect (key_controller, "key-pressed",
-		    G_CALLBACK (name_window_on_key_pressed), window);
+		    G_CALLBACK (name_window_on_key_pressed), NULL);
   gtk_widget_add_controller (GTK_WIDGET (window), key_controller);
 }
 

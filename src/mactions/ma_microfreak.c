@@ -29,41 +29,42 @@ extern GtkWindow *main_window;
 extern struct browser remote_browser;
 
 static void
-microfreak_defragment_runner (gpointer data)
+ma_microfreak_defragment_runner (gpointer data)
 {
   microfreak_sample_defragment (remote_browser.backend);
 }
 
 static void
-microfreak_defragment_consumer (gpointer data)
+ma_microfreak_defragment_consumer (gpointer data)
 {
   //Some operations fail unless everything is initiated again.
   elektroid_refresh_devices ();
 }
 
 static void
-microfreak_defragment_window_open ()
+ma_microfreak_defragment_window_open ()
 {
-  progress_window_open (microfreak_defragment_runner,
-			microfreak_defragment_consumer, NULL, NULL,
+  progress_window_open (ma_microfreak_defragment_runner,
+			ma_microfreak_defragment_consumer, NULL, NULL,
 			PROGRESS_TYPE_PULSE,
 			_("Defragmenting Sample Memory"), "", FALSE);
 }
 
 static void
-microfreak_defragment_callback_response (GtkDialog *dialog, gint response_id,
-					 gpointer user_data)
+ma_microfreak_defragment_response (GtkDialog *dialog, gint response_id,
+				   gpointer user_data)
 {
   if (response_id == GTK_RESPONSE_ACCEPT)
     {
-      microfreak_defragment_window_open ();
+      ma_microfreak_defragment_window_open ();
     }
 
   gtk_window_destroy (GTK_WINDOW (dialog));
 }
 
 static void
-microfreak_defragment_callback (GtkWidget *object, gpointer data)
+ma_microfreak_defragment (GSimpleAction *simple_action, GVariant *parameter,
+			  gpointer user_data)
 {
   if (preferences_get_boolean (PREF_KEY_USE_SAFETY_QUESTIONS))
     {
@@ -80,19 +81,29 @@ microfreak_defragment_callback (GtkWidget *object, gpointer data)
 				       GTK_RESPONSE_CANCEL);
 
       g_signal_connect (dialog, "response",
-			G_CALLBACK (microfreak_defragment_callback_response),
-			NULL);
+			G_CALLBACK (ma_microfreak_defragment_response), NULL);
 
       gtk_widget_set_visible (dialog, TRUE);
     }
   else
     {
-      microfreak_defragment_window_open ();
+      ma_microfreak_defragment_window_open ();
     }
 }
 
+static const GActionEntry MICROFREAK_ENTRIES[] = {
+  {"microfreak_defragment", ma_microfreak_defragment, NULL, NULL, NULL}
+};
+
+void
+ma_microfreak_init (GtkApplication *app)
+{
+  g_action_map_add_action_entries (G_ACTION_MAP (app), MICROFREAK_ENTRIES,
+				   G_N_ELEMENTS (MICROFREAK_ENTRIES), app);
+}
+
 struct maction *
-microfreak_maction_defrag_builder (struct maction_context *context)
+ma_microfreak_defrag_builder ()
 {
   struct maction *ma;
 
@@ -103,10 +114,8 @@ microfreak_maction_defrag_builder (struct maction_context *context)
     }
 
   ma = g_malloc (sizeof (struct maction));
-  ma->type = MACTION_BUTTON;
   ma->name = _("_Defragment");
-  ma->sensitive = TRUE;
-  ma->callback = G_CALLBACK (microfreak_defragment_callback);
+  ma->action_name = "app.microfreak_defragment";
 
   return ma;
 }

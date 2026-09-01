@@ -79,10 +79,13 @@ static gpointer elektroid_upload_task_runner (gpointer);
 static gpointer elektroid_download_task_runner (gpointer);
 static void elektroid_update_progress (struct task_control *);
 
-void autosampler_destroy ();
-void autosampler_init (GtkBuilder * builder);
-void microbrute_destroy ();
-void microbrute_init ();
+void ma_autosampler_init (GtkBuilder * builder, GtkApplication * gapp);
+void ma_autosampler_destroy ();
+void ma_backend_init (GtkApplication * gapp);
+void ma_elektron_init (GtkApplication * gapp);
+void ma_microbrute_init (GtkApplication * gapp);
+void ma_microbrute_destroy ();
+void ma_microfreak_init (GtkApplication * gapp);
 
 static gchar *local_dir;
 static guint batch_id;
@@ -459,7 +462,7 @@ elektroid_refresh_devices_int (gboolean startup)
     {
       elektroid_cancel_all_tasks_and_wait ();
       backend_destroy (BACKEND);
-      maction_menu_clear (&maction_context);
+      maction_menu_clear ();
       browser_reset (&remote_browser);
     }
   elektroid_check_backend_int (startup);	//This triggers the actual devices refresh if there is no backend
@@ -667,8 +670,6 @@ elektroid_run_next (gpointer data)
 	  audio.loop = FALSE;
 	}
 
-      gtk_widget_set_sensitive (maction_context.box, FALSE);
-
       gtk_list_store_set (tasks.list_store, &iter,
 			  TASK_LIST_STORE_STATUS_FIELD, TASK_STATUS_RUNNING,
 			  TASK_LIST_STORE_STATUS_HUMAN_FIELD, status_human,
@@ -733,8 +734,6 @@ elektroid_run_next (gpointer data)
 	  browser_set_selection_active (&local_browser, TRUE);
 	  audio.loop = editor_is_loop_active ();
 	}
-
-      gtk_widget_set_sensitive (maction_context.box, TRUE);
     }
 
   tasks_check_buttons ();
@@ -1346,7 +1345,7 @@ elektroid_set_device_consumer (gpointer data)
   else
     {
       elektroid_fill_fs_combo_bg (NULL);
-      maction_menu_setup (&maction_context);
+      maction_menu_setup ();
     }
 
   controllable_clear (&set_device_data->controllable);
@@ -1404,7 +1403,7 @@ elektroid_set_device (GtkWidget *object, gpointer data)
   strcpy (set_device_data->backend_device.id, id);
   strcpy (set_device_data->backend_device.name, name);
 
-  maction_menu_clear (&maction_context);
+  maction_menu_clear ();
 
   if (set_device_data->backend_device.type == BE_TYPE_SYSTEM ||
       set_device_data->backend_device.type == BE_TYPE_NO_MIDI ||
@@ -1414,7 +1413,7 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 			      connector_name, NULL);
       elektroid_update_midi_status ();
       elektroid_fill_fs_combo_bg (NULL);
-      maction_menu_setup (&maction_context);
+      maction_menu_setup ();
       g_free (set_device_data);
     }
   else
@@ -1579,8 +1578,8 @@ elektroid_exit ()
   tasks_stop_thread ();
 
   progress_window_destroy ();
-  microbrute_destroy ();
-  autosampler_destroy ();
+  ma_microbrute_destroy ();
+  ma_autosampler_destroy ();
   preferences_window_destroy ();
   name_window_destroy ();
 
@@ -1675,7 +1674,7 @@ elektroid_about_add_credit_section (const gchar *section_name,
     }
 }
 
-const GActionEntry APP_ENTRIES[] = {
+static const GActionEntry APP_ENTRIES[] = {
   {"show_remote", NULL, NULL, "false", elektroid_show_remote},
   {"open_preferences", elektroid_open_preferences, NULL, NULL, NULL},
   {"open_about", elektroid_open_about, NULL, NULL, NULL}
@@ -1741,6 +1740,8 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   gchar *thanks_path = g_build_filename (get_data_dir (), "THANKS", NULL);
   elektroid_about_add_credit_section (_("Acknowledgements"), thanks_path);
   g_free (thanks_path);
+
+  mactions_menu = G_MENU (gtk_builder_get_object (builder, "mactions_menu"));
 
   main_popover =
     GTK_POPOVER (gtk_builder_get_object (builder, "main_popover"));
@@ -1832,8 +1833,11 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   g_action_map_add_action (G_ACTION_MAP (gapp), G_ACTION (about_action));
 #endif
 
-  microbrute_init ();
-  autosampler_init (builder);
+  ma_autosampler_init (builder, app);
+  ma_backend_init (app);
+  ma_elektron_init (app);
+  ma_microbrute_init (app);
+  ma_microfreak_init (app);
 
   g_object_unref (builder);
 }
