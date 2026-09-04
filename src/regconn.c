@@ -48,7 +48,7 @@ regconn_register ()
   // USB devices including a MIDI DIN port will be checked first when using the MIDI DIN port. No solution for this case.
   gslist_fill (&connectors,
 	       // Fast and simple MIDI connectors go first.
-	       &CONNECTOR_TANZMAUS,	// TODO
+	       &CONNECTOR_TANZMAUS,
 	       &CONNECTOR_CZ,
 	       &CONNECTOR_ELEKTRON,
 	       &CONNECTOR_LOGUE,
