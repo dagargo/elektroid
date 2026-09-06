@@ -199,11 +199,11 @@ enum fs_options
 
 typedef gint (*connector_handshake) (struct backend * backend);
 
-// This mimics enum backend_type.
 enum connector_type
 {
   CONNECTOR_TYPE_SYSTEM = 1,
   CONNECTOR_TYPE_MIDI,
+  CONNECTOR_TYPE_MIDI_NO_HANDSHAKE,
   CONNECTOR_TYPE_NO_MIDI
 };
 

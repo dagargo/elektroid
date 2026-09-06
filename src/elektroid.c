@@ -49,7 +49,8 @@ enum device_list_store_columns
 {
   DEVICES_LIST_STORE_TYPE_FIELD,
   DEVICES_LIST_STORE_ID_FIELD,
-  DEVICES_LIST_STORE_NAME_FIELD
+  DEVICES_LIST_STORE_NAME_FIELD,
+  DEVICES_LIST_STORE_CONNECTOR_NAME_FIELD
 };
 
 enum fs_list_store_columns
@@ -238,9 +239,32 @@ elektroid_ask_user_to_continue (const gchar *msg,
 }
 
 static void
+elektroid_add_device_to_list (struct backend_device *device,
+			      const gchar *connector_name)
+{
+  gchar name[LABEL_MAX];
+  if (connector_name)
+    {
+      g_snprintf (name, LABEL_MAX, "[%s] %s", connector_name, device->name);
+    }
+  else
+    {
+      g_snprintf (name, LABEL_MAX, "%s", device->name);
+    }
+  gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
+				     DEVICES_LIST_STORE_TYPE_FIELD,
+				     device->type,
+				     DEVICES_LIST_STORE_ID_FIELD,
+				     device->id,
+				     DEVICES_LIST_STORE_NAME_FIELD,
+				     name,
+				     DEVICES_LIST_STORE_CONNECTOR_NAME_FIELD,
+				     connector_name, -1);
+}
+
+static void
 elektroid_load_devices (gboolean auto_select)
 {
-  gint i;
   gint device_index;
   GArray *devices = backend_get_devices ();
   struct backend_device device;
@@ -255,21 +279,33 @@ elektroid_load_devices (gboolean auto_select)
   gtk_list_store_clear (fs_list_store);
   gtk_list_store_clear (devices_list_store);
 
-  for (i = 0; i < devices->len; i++)
+  // Devices
+  for (guint i = 0; i < devices->len; i++)
     {
       device = g_array_index (devices, struct backend_device, i);
-      gtk_list_store_insert_with_values (devices_list_store, NULL, -1,
-					 DEVICES_LIST_STORE_TYPE_FIELD,
-					 device.type,
-					 DEVICES_LIST_STORE_ID_FIELD,
-					 device.id,
-					 DEVICES_LIST_STORE_NAME_FIELD,
-					 device.name, -1);
+      elektroid_add_device_to_list (&device, NULL);
+    }
+
+  // Entries for the cartesian product of no-handshake connectors and MIDI devices
+  for (GSList * c = connectors; c != NULL; c = c->next)
+    {
+      const struct connector *connector = c->data;
+      if (connector->type == CONNECTOR_TYPE_MIDI_NO_HANDSHAKE)
+	{
+	  for (guint i = 0; i < devices->len; i++)
+	    {
+	      device = g_array_index (devices, struct backend_device, i);
+	      if (device.type == BE_TYPE_MIDI)
+		{
+		  elektroid_add_device_to_list (&device, connector->name);
+		}
+	    }
+	}
     }
 
   g_array_free (devices, TRUE);
 
-  device_index = auto_select && i == 1 ? 0 : -1;
+  device_index = auto_select && devices->len == 1 ? 0 : -1;
   debug_print (1, "Selecting device %d...", device_index);
   gtk_combo_box_set_active (GTK_COMBO_BOX (devices_combo), device_index);
   if (device_index == -1)
@@ -1345,7 +1381,7 @@ static void
 elektroid_set_device (GtkWidget *object, gpointer data)
 {
   GtkTreeIter iter;
-  gchar *id, *name;
+  gchar *id, *name, *connector_name;
   struct elektroid_set_device_data *set_device_data;
 
   elektroid_cancel_all_tasks_and_wait ();
@@ -1366,20 +1402,21 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 		      DEVICES_LIST_STORE_TYPE_FIELD,
 		      &set_device_data->backend_device.type,
 		      DEVICES_LIST_STORE_ID_FIELD, &id,
-		      DEVICES_LIST_STORE_NAME_FIELD, &name, -1);
+		      DEVICES_LIST_STORE_NAME_FIELD, &name,
+		      DEVICES_LIST_STORE_CONNECTOR_NAME_FIELD,
+		      &connector_name, -1);
 
   strcpy (set_device_data->backend_device.id, id);
   strcpy (set_device_data->backend_device.name, name);
-  g_free (id);
-  g_free (name);
 
   maction_menu_clear (&maction_context);
 
   if (set_device_data->backend_device.type == BE_TYPE_SYSTEM ||
-      set_device_data->backend_device.type == BE_TYPE_NO_MIDI)
+      set_device_data->backend_device.type == BE_TYPE_NO_MIDI ||
+      connector_name)
     {
-      backend_init_connector (BACKEND, &set_device_data->backend_device, NULL,
-			      NULL);
+      backend_init_connector (BACKEND, &set_device_data->backend_device,
+			      connector_name, NULL);
       elektroid_update_midi_status ();
       elektroid_fill_fs_combo_bg (NULL);
       maction_menu_setup (&maction_context);
@@ -1394,6 +1431,10 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 			    PROGRESS_TYPE_PULSE, _("Connecting to Device"),
 			    _("Connecting..."), TRUE);
     }
+
+  g_free (id);
+  g_free (name);
+  g_free (connector_name);
 }
 
 static void

@@ -146,6 +146,8 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
       <column type="gchararray"/>
       <!-- column-name name -->
       <column type="gchararray"/>
+      <!-- column-name connector_name -->
+      <column type="gchararray"/>
     </columns>
   </object>
   <object class="GtkListStore" id="fs_list_store">

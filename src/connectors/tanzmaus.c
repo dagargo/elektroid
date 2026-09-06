@@ -418,5 +418,5 @@ tanzmaus_handshake (struct backend *backend)
 const struct connector CONNECTOR_TANZMAUS = {
   .name = "tanzmaus",
   .handshake = tanzmaus_handshake,
-  .type = CONNECTOR_TYPE_MIDI
+  .type = CONNECTOR_TYPE_MIDI_NO_HANDSHAKE
 };

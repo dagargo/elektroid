@@ -165,13 +165,9 @@ backend_get_fs_operations_by_name (struct backend *backend, const gchar *name)
   return e ? e->data : NULL;
 }
 
-void
-backend_midi_handshake (struct backend *backend)
+static void
+backend_clear_connector_info (struct backend *backend)
 {
-  GByteArray *tx_msg;
-  GByteArray *rx_msg;
-  gint offset;
-
   backend->name[0] = 0;
   backend->version[0] = 0;
   backend->description[0] = 0;
@@ -179,6 +175,16 @@ backend_midi_handshake (struct backend *backend)
   backend->upgrade_os = NULL;
   backend->get_storage_stats = NULL;
   memset (&backend->midi_info, 0, sizeof (struct backend_midi_info));
+}
+
+void
+backend_midi_handshake (struct backend *backend)
+{
+  GByteArray *tx_msg;
+  GByteArray *rx_msg;
+  gint offset;
+
+  backend_clear_connector_info (backend);
 
   tx_msg = g_byte_array_sized_new (sizeof (BE_MIDI_IDENTITY_REQUEST));
   g_byte_array_append (tx_msg, (guchar *) BE_MIDI_IDENTITY_REQUEST,
@@ -792,17 +798,17 @@ backend_get_devices ()
 
   devices = g_array_new (FALSE, FALSE, sizeof (struct backend_device));
 
-  //System
+  // System device
   backend_device = g_malloc (sizeof (struct backend_device));
   backend_device->type = BE_TYPE_SYSTEM;
   snprintf (backend_device->id, LABEL_MAX, "%s", BE_SYSTEM_ID);
   snprintf (backend_device->name, LABEL_MAX, "%s", g_get_host_name ());
   g_array_append_vals (devices, backend_device, 1);
 
-  //Actually present devices
+  // Actually present devices
   backend_fill_devices_array (devices);
 
-  //Devices that need a manual handshake. These may or may not be a present device.
+  // Devices not using MIDI
   id = 0;
   c = connectors;
   while (c)
@@ -847,6 +853,9 @@ backend_init_connector (struct backend *backend,
 	{
 	  const struct connector *c = iterator->data;
 
+	  debug_print (1, "Testing %s connector (type %d)...", c->name,
+		       c->type);
+
 	  if (device->type == BE_TYPE_SYSTEM &&
 	      c->type == CONNECTOR_TYPE_SYSTEM)
 	    {
@@ -880,8 +889,35 @@ backend_init_connector (struct backend *backend,
       return err;
     }
 
-  // For the MIDI connectors, we sort them by regex as containing a regex allows for a quicker name check.
-  // If the regex check fails, it needs to be added in the end.
+  // First, we try the no-hanshake connectors. This takes no time as the handshake function always succeeds.
+  if (conn_name)
+    {
+      for (iterator = connectors; iterator; iterator = iterator->next)
+	{
+	  struct connector *c = iterator->data;
+
+	  if (c->type != CONNECTOR_TYPE_MIDI_NO_HANDSHAKE)
+	    {
+	      continue;
+	    }
+
+	  debug_print (1, "Testing %s MIDI connector (type %d)...", c->name,
+		       c->type);
+
+	  if (!strcmp (c->name, conn_name))
+	    {
+	      backend->conn_name = c->name;
+	      backend->type = BE_TYPE_MIDI;
+	      backend_clear_connector_info (backend);
+	      return c->handshake (backend);
+	    }
+	}
+    }
+
+  // Then, we sort the remaining MIDI connectors by regex as containing a regex allows for a quicker name check.
+  // If the regex check fails, it needs to be added at the end.
+  debug_print (2, "Building connector priority list...");
+
   for (iterator = connectors; iterator; iterator = iterator->next)
     {
       struct connector *c = iterator->data;
@@ -897,7 +933,7 @@ backend_init_connector (struct backend *backend,
 				       0, NULL);
 	  if (g_regex_match (regex, device->name, 0, NULL))
 	    {
-	      debug_print (1, "Connector %s matches the device", c->name);
+	      debug_print (2, "Connector %s matches the device", c->name);
 	      list = g_slist_prepend (list, (void *) c);
 	    }
 	  else
@@ -942,7 +978,8 @@ backend_init_connector (struct backend *backend,
 	  goto end;
 	}
 
-      debug_print (1, "Testing %s connector (type %d)...", c->name, c->type);
+      debug_print (1, "Testing %s MIDI connector (type %d)...", c->name,
+		   c->type);
 
       if (conn_name)
 	{
