@@ -29,10 +29,10 @@
    - a sample (audio data) is uploaded into a slot
 
    The user-visible directory tree uses
-   - the hardware labels `/sp1` and `/sp2`, alias to banks 0 and 1
+   - the hardware labels `/SP1` and `/SP2`, alias to banks 0 and 1
    - slot numbers are received / displayed 1-based
 
-   Example: the path /sp1/13 refers to bank 0, slot 12 in the code.
+   Example: the path /SP1/13 refers to bank 0, slot 12 in the code.
 */
 #define MAX_SLOTS_PER_BANK 16
 
@@ -47,7 +47,7 @@
 #define TANZMAUS_SLOT_HALF_SECOND 3
 #define TANZMAUS_SLOT_ONE_SECOND 11
 
-#define TANZMAUS_BANK_NAME "sp"
+#define TANZMAUS_BANK_NAME "SP"
 
 enum default_fs
 {
