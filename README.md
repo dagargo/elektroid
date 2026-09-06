@@ -27,6 +27,7 @@ These are the supported devices:
 * KORG padKONTROL
 * KORG prologue, minilogue xd and NTS-1 (units only)
 * KORG Volca Sample and Volca Sample 2
+* MFB Tanzmaus
 * Moog Little Phatty and Slim Phatty
 * Novation Summit and Peak
 * Samplers implementing MIDI SDS
