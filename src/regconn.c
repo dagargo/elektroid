@@ -48,7 +48,6 @@ regconn_register ()
   // USB devices including a MIDI DIN port will be checked first when using the MIDI DIN port. No solution for this case.
   gslist_fill (&connectors,
 	       // Fast and simple MIDI connectors go first.
-	       &CONNECTOR_TANZMAUS,
 	       &CONNECTOR_CZ,
 	       &CONNECTOR_ELEKTRON,
 	       &CONNECTOR_LOGUE,
@@ -62,8 +61,10 @@ regconn_register ()
 	       &CONNECTOR_SDS,
 	       // But efactor is even slower even though it is USB.
 	       &CONNECTOR_EFACTOR,
-	       // default connector needs need to the last of the MIDI connectors as the handshake always succeeds.
+	       // default connector needs to be the last of the MIDI connectors as the handshake always succeeds.
 	       &CONNECTOR_DEFAULT,
+	       // tanzmaus has no verifying handshake, so it goes last: the default connector takes precedence in the GUI while the CLI can still select it explicitly.
+	       &CONNECTOR_TANZMAUS,
 	       // Non MIDI connectors can go anywhere but let's add it to the end.
 	       &CONNECTOR_SYSTEM, &CONNECTOR_VOLCA_SAMPLE, NULL);
 }
