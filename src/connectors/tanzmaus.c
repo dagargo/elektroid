@@ -44,8 +44,8 @@
 #define TANZMAUS_SUBFRAMES_PER_PAGE 11
 #define TANZMAUS_SAMPLES_PER_SUBFRAME 24
 
-#define TANZMAUS_SLOT_HALF_SECOND 4
-#define TANZMAUS_SLOT_ONE_SECOND 12
+#define TANZMAUS_SLOT_HALF_SECOND 3
+#define TANZMAUS_SLOT_ONE_SECOND 11
 
 #define TANZMAUS_BANK_NAME "sp"
 
@@ -232,7 +232,7 @@ tanzmaus_next_dentry_bank (struct item_iterator *iter)
     {
       iter->item.id = data->next;
       snprintf (iter->item.slot, ITEM_SLOT_MAX, "%d", data->next);
-      guint len = tanzmaus_slot_capacity (data->next);
+      guint len = tanzmaus_slot_capacity (data->next - 1);
       gdouble s = len / (double) TANZMAUS_SAMPLE_RATE;
       item_set_name (&iter->item, "%d (%.1f s)", data->next, s);
       iter->item.type = ITEM_TYPE_FILE;
