@@ -21,18 +21,18 @@
 
 #include "common.h"
 
-/* 
+/*
    The Tanzmaus stores 2 banks of 16 slots each.
 
-   The code uses the terms bank and slot, both 0-based, where 
-   - a slot is a storage location on the machine 
+   The code uses the terms bank and slot, both 0-based, where
+   - a slot is a storage location on the machine
    - a sample (audio data) is uploaded into a slot
 
-   The user-visible directory tree uses 
+   The user-visible directory tree uses
    - the hardware labels `/sp1` and `/sp2`, alias to banks 0 and 1
    - slot numbers are received / displayed 1-based
- 
-   Example: the path /sp1/13 refers to bank 0, slot 12 in the code.  
+
+   Example: the path /sp1/13 refers to bank 0, slot 12 in the code.
 */
 #define MAX_SLOTS_PER_BANK 16
 
@@ -44,8 +44,10 @@
 #define TANZMAUS_SUBFRAMES_PER_PAGE 11
 #define TANZMAUS_SAMPLES_PER_SUBFRAME 24
 
-#define TANZMAUS_SLOT_HALF_SECOND 3
-#define TANZMAUS_SLOT_ONE_SECOND 11
+#define TANZMAUS_SLOT_HALF_SECOND 4
+#define TANZMAUS_SLOT_ONE_SECOND 12
+
+#define TANZMAUS_BANK_NAME "sp"
 
 enum default_fs
 {
@@ -113,41 +115,42 @@ tanzmaus_crc7 (const guint8 *data, gsize len)
 static gint
 tanzmaus_bank_from_path (const gchar *path)
 {
-  if (!strncmp (path, "/sp1", 4) && (path[4] == '/' || path[4] == '\0'))
+  gsize len = strlen ("/" TANZMAUS_BANK_NAME "x");
+  if (!strncmp (path, "/" TANZMAUS_BANK_NAME "1", len) &&
+      (path[4] == '/' || path[4] == '\0'))
     {
       return 0;
     }
-  else if (!strncmp (path, "/sp2", 4) && (path[4] == '/' || path[4] == '\0'))
+  else if (!strncmp (path, "/" TANZMAUS_BANK_NAME "2", len) &&
+	   (path[4] == '/' || path[4] == '\0'))
     {
       return 1;
     }
   else
     {
-      return -EINVAL;
+      return -ENOTDIR;
     }
-}
-
-static const gchar *
-tanzmaus_dir_from_bank (guint bank)
-{
-  return bank == 0 ? "sp1" : "sp2";
 }
 
 static gint
-tanzmaus_parse_path (const gchar *path, guint *slot)
+tanzmaus_get_bank_id_from_path (const gchar *path, guint *bank, guint *id)
 {
-  guint usernum;
-  const gchar *p = strrchr (path, '/');
-  if (!p || *(p + 1) == '\0')
+  gint err;
+
+  err = common_slot_get_id_from_path (path, id);
+  if (err)
     {
-      return -EINVAL;
+      return err;
     }
-  usernum = (guint) strtol (p + 1, NULL, 10);
-  if (usernum < 1 || usernum > MAX_SLOTS_PER_BANK)
+
+  *bank = tanzmaus_bank_from_path (path);
+  if (*bank < 0)
     {
-      return -EINVAL;
+      return *bank;
     }
-  *slot = usernum - 1;
+
+  (*id)--;
+
   return 0;
 }
 
@@ -203,11 +206,11 @@ tanzmaus_next_dentry_root (struct item_iterator *iter)
 {
   struct tanzmaus_iterator_data *data = iter->data;
 
-  if (data->next < 2)
+  if (data->next <= 2)
     {
       iter->item.id = 0x1000 + data->next;
       iter->item.slot[0] = 0;
-      item_set_name (&iter->item, "%s", tanzmaus_dir_from_bank (data->next));
+      item_set_name (&iter->item, "%s%d", TANZMAUS_BANK_NAME, data->next);
       iter->item.type = ITEM_TYPE_DIR;
       iter->item.size = -1;
 
@@ -225,14 +228,13 @@ tanzmaus_next_dentry_bank (struct item_iterator *iter)
 {
   struct tanzmaus_iterator_data *data = iter->data;
 
-  if (data->next < MAX_SLOTS_PER_BANK)
+  if (data->next <= MAX_SLOTS_PER_BANK)
     {
-      iter->item.id = data->bank * MAX_SLOTS_PER_BANK + data->next;
-      guint usernum = data->next + 1;
-      snprintf (iter->item.slot, ITEM_SLOT_MAX, "%d", usernum);
+      iter->item.id = data->next;
+      snprintf (iter->item.slot, ITEM_SLOT_MAX, "%d", data->next);
       guint len = tanzmaus_slot_capacity (data->next);
       gdouble s = len / (double) TANZMAUS_SAMPLE_RATE;
-      item_set_name (&iter->item, "%d (%.1f s)", usernum, s);
+      item_set_name (&iter->item, "%d (%.1f s)", data->next, s);
       iter->item.type = ITEM_TYPE_FILE;
       iter->item.size = len * 2;
 
@@ -253,7 +255,7 @@ tanzmaus_read_dir (struct backend *backend, struct item_iterator *iter,
     {
       struct tanzmaus_iterator_data *data =
 	g_malloc (sizeof (struct tanzmaus_iterator_data));
-      data->next = 0;
+      data->next = 1;
       data->bank = -1;
       item_iterator_init (iter, dir, data, tanzmaus_next_dentry_root, g_free);
       return 0;
@@ -268,7 +270,7 @@ tanzmaus_read_dir (struct backend *backend, struct item_iterator *iter,
 
       struct tanzmaus_iterator_data *data =
 	g_malloc (sizeof (struct tanzmaus_iterator_data));
-      data->next = 0;
+      data->next = 1;
       data->bank = bank;
       item_iterator_init (iter, dir, data, tanzmaus_next_dentry_bank, g_free);
       return 0;
@@ -279,25 +281,18 @@ static gint
 tanzmaus_sample_upload (struct backend *backend, const gchar *path,
 			struct idata *sample, struct task_control *control)
 {
-  guint bank, slot_idx;
+  guint bank, id;
   gint err;
   GByteArray *input = sample->content;
   GByteArray *msg;
 
-  err = tanzmaus_bank_from_path (path);
-  if (err < 0)
-    {
-      return err;
-    }
-  bank = err;
-
-  err = tanzmaus_parse_path (path, &slot_idx);
+  err = tanzmaus_get_bank_id_from_path (path, &bank, &id);
   if (err)
     {
       return err;
     }
 
-  guint capacity = tanzmaus_slot_capacity (slot_idx);
+  guint capacity = tanzmaus_slot_capacity (id);
   guint num_samples = input->len / 2;
   if (num_samples > capacity)
     {
@@ -308,7 +303,7 @@ tanzmaus_sample_upload (struct backend *backend, const gchar *path,
     ((num_samples + TANZMAUS_SAMPLES_PER_PAGE -
       1) / TANZMAUS_SAMPLES_PER_PAGE) * TANZMAUS_SAMPLES_PER_PAGE;
   guint num_pages = padded_samples / TANZMAUS_SAMPLES_PER_PAGE;
-  guint page_start = tanzmaus_page_start_addr (bank, slot_idx);
+  guint page_start = tanzmaus_page_start_addr (bank, id);
   guint total_subframes = num_pages * TANZMAUS_SUBFRAMES_PER_PAGE;
   guint subframe_count = 0;
 
@@ -318,7 +313,7 @@ tanzmaus_sample_upload (struct backend *backend, const gchar *path,
 
   task_control_reset (control, 1);
 
-  msg = tanzmaus_sysex_slot_select (slot_idx);
+  msg = tanzmaus_sysex_slot_select (id);
   err = backend_tx (backend, msg);
   if (err)
     {
