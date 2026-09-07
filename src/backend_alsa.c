@@ -135,7 +135,6 @@ cleanup_params:
   snd_rawmidi_params_free (params);
 cleanup:
   backend_destroy (backend);
-  g_free (backend->buffer);
   return err;
 }
 
