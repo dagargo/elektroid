@@ -1346,8 +1346,7 @@ elektroid_set_device (GtkWidget *object, gpointer data)
 {
   GtkTreeIter iter;
   gchar *id, *name;
-  struct elektroid_set_device_data *set_device_data =
-    g_malloc (sizeof (struct elektroid_set_device_data));
+  struct elektroid_set_device_data *set_device_data;
 
   elektroid_cancel_all_tasks_and_wait ();
 
@@ -1360,6 +1359,8 @@ elektroid_set_device (GtkWidget *object, gpointer data)
     {
       backend_destroy (BACKEND);
     }
+
+  set_device_data = g_malloc (sizeof (struct elektroid_set_device_data));
 
   gtk_tree_model_get (GTK_TREE_MODEL (devices_list_store), &iter,
 		      DEVICES_LIST_STORE_TYPE_FIELD,
