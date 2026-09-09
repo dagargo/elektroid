@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.71])
-AC_INIT([elektroid],[3.4],[dagargo@gmail.com])
+AC_INIT([elektroid],[3.5],[dagargo@gmail.com])
 
 # Needed to override the default value of CFLAGS, which is `-g -O2`
 : ${CFLAGS="-g"}
