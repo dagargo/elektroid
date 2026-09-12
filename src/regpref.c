@@ -32,7 +32,7 @@
 // Alphabetically sorted in the tags window but listed as such in the tags tab of the preferences window.
 #define PREF_DEFAULT_TAGS_STRUCTURES  "fill; loop; one-shot; phrase"
 #define PREF_DEFAULT_TAGS_INSTRUMENTS "bass; brass; clap; cymbal; drums; FX; guitar; hi-hat; keys; kick; mallets; noise; object; organ; pad; percussion; piano; snare; strings; texture; tom; voice/choir; woodwind"
-#define PREF_DEFAULT_TAGS_GENRES      "ambient; blues; breakbeat; chill-out; chiptune; country; drum; and; bass; electro; folk; folk,; caribbean; hip-hop; jazz; jungle; metal; punk; R&B/soul; reggae; rock; techno; trance"
+#define PREF_DEFAULT_TAGS_GENRES      "ambient; blues; breakbeat; chill-out; chiptune; country; drum and bass; electro; folk; caribbean; hip-hop; jazz; jungle; metal; punk; R&B/soul; reggae; rock; techno; trance"
 #define PREF_DEFAULT_TAGS_OBJECTIVE   "acoustic; ambient; chromatic; distorted; electronic; glitchy; industrial; lo-fi; natural; noisy; percussive"
 #define PREF_DEFAULT_TAGS_SUBJECTIVE  "bright; dark; peaceful; ominous; ethereal; massive"
 
