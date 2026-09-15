@@ -68,6 +68,7 @@ AS_IF([test "${RTAUDIO}" = yes], [AC_DEFINE([ELEKTROID_RTAUDIO], [1], ["Use RtAu
 # Checks for libraries.
 PKG_CHECK_MODULES(zlib, zlib >= 1.1.8)
 PKG_CHECK_MODULES(libzip, libzip >= 1.1.2)
+PKG_CHECK_MODULES([JSON_GLIB], [json-glib-1.0 >= 1.10])
 AM_COND_IF(ELEKTROID_BUILD_GUI, [], [PKG_CHECK_MODULES([GTK], [gtk+-3.0])])
 
 PKG_CHECK_MODULES(SNDFILE, sndfile >= 1.0.2)
