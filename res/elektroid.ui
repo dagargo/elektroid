@@ -1670,16 +1670,27 @@ audio-volume-medium-symbolic</property>
                         <property name="orientation">vertical</property>
                         <property name="spacing">6</property>
                         <child>
-                          <object class="GtkScrolledWindow" id="waveform_scrolled_window">
-                            <property name="focusable">1</property>
-                            <property name="hadjustment">waveform_adj</property>
-                            <property name="has-frame">True</property>
-                            <property name="height-request">50</property>
-                            <property name="hexpand">1</property>
-                            <property name="vexpand">1</property>
-                            <property name="vscrollbar-policy">never</property>
+                          <object class="GtkFrame">
+                            <property name="css-classes">squared</property>
                             <child>
-                              <object class="GtkDrawingArea" id="waveform"/>
+                              <object class="GtkOverlay">
+                                <property name="focusable">True</property>
+                                <property name="height-request">50</property>
+                                <property name="hexpand">True</property>
+                                <property name="vexpand">True</property>
+                                <child>
+                                  <object class="GtkDrawingArea" id="waveform"/>
+                                </child>
+                                <child type="overlay">
+                                  <object class="GtkScrollbar" id="waveform_scrollbar">
+                                    <property name="adjustment">waveform_adj</property>
+                                    <property name="css-classes">transparent-scroll</property>
+                                    <property name="valign">end</property>
+                                    <property name="vexpand">True</property>
+                                    <property name="visible">False</property>
+                                  </object>
+                                </child>
+                              </object>
                             </child>
                           </object>
                         </child>
@@ -2555,6 +2566,7 @@ audio-volume-medium-symbolic</property>
     </property>
     <property name="height-request">600</property>
     <property name="icon-name">io.github.dagargo.Elektroid</property>
+    <property name="title">Elektroid</property>
     <property name="width-request">800</property>
     <child type="titlebar">
       <object class="GtkHeaderBar">
