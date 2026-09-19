@@ -41,4 +41,6 @@ void elektroid_update_audio_status (gboolean status);
 
 void elektroid_show_error_msg (const char *format, ...);
 
+void elektroid_set_action_enabled (const gchar * name, gboolean active);
+
 #endif
