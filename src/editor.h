@@ -39,7 +39,7 @@ void editor_start_load_thread (gchar * sample_path);
 
 void editor_stop_load_thread ();
 
-void editor_init (GtkBuilder * builder);
+void editor_init (GtkBuilder * builder, GtkApplication * app);
 
 void editor_destroy ();
 

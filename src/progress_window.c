@@ -166,10 +166,10 @@ progress_window_on_key_pressed (GtkEventControllerKey *controller,
   if (keyval == GDK_KEY_Escape)
     {
       progress_window_cancel ();
-      return TRUE;
+      return GDK_EVENT_STOP;
     }
 
-  return FALSE;
+  return GDK_EVENT_PROPAGATE;
 }
 
 void

@@ -1199,117 +1199,6 @@
     <property name="title" translatable="yes" comments="This should only be translated if a non latin alphabet is used">Auto Sampler</property>
     <property name="transient-for">main_window</property>
   </object>
-  <!-- object class="GtkPopoverMenu" id="editor_popover_menu">
-    <property name="child">
-      <object class="GtkBox">
-        <property name="margin-bottom">9</property>
-        <property name="margin-end">9</property>
-        <property name="margin-start">9</property>
-        <property name="margin-top">9</property>
-        <property name="orientation">vertical</property>
-        <child>
-          <object class="GtkModelButton">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="text" translatable="1">Tools</property>
-            <property name="menu-name">main</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="editor_popover_normalize_button">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="text" translatable="1">Normalize</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="editor_popover_split_button">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="text" translatable="1">Split Channels</property>
-          </object>
-        </child>
-      </object>
-    </property>
-    <child>
-      <object class="GtkBox">
-        <property name="margin-bottom">9</property>
-        <property name="margin-end">9</property>
-        <property name="margin-start">9</property>
-        <property name="margin-top">9</property>
-        <property name="orientation">vertical</property>
-        <child>
-          <object class="GtkModelButton" id="editor_popover_play_button">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="text" translatable="1">Play</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkSeparator"/>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="editor_popover_delete_button">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="text" translatable="1">Delete</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="editor_popover_undo_button">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="text" translatable="1">Undo</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkSeparator"/>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="editor_popover_tools_button">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="text" translatable="1">Tools</property>
-            <property name="menu-name">tools</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkSeparator"/>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="editor_popover_export_button">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="text" translatable="1">Export</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="editor_popover_save_button">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="text" translatable="1">Save</property>
-          </object>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="editor_popover_save_as_button">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="text" translatable="1">Save As...</property>
-          </object>
-        </child>
-      </object>
-    </child>
-  </object -->
   <object class="GtkWindow" id="main_window">
     <property name="child">
       <object class="GtkBox">
@@ -1668,7 +1557,9 @@ audio-volume-medium-symbolic</property>
                                 <property name="hexpand">True</property>
                                 <property name="vexpand">True</property>
                                 <child>
-                                  <object class="GtkDrawingArea" id="waveform"/>
+                                  <object class="GtkDrawingArea" id="waveform">
+                                    <property name="focusable">True</property>
+                                  </object>
                                 </child>
                                 <child type="overlay">
                                   <object class="GtkScrollbar" id="waveform_scrollbar">
@@ -1800,6 +1691,12 @@ audio-volume-medium-symbolic</property>
                                 <property name="width-request">150</property>
                               </object>
                             </child>
+                          </object>
+                        </child>
+                        <child>
+                          <object class="GtkPopoverMenu" id="editor_popovermenu">
+                            <property name="menu-model">editor_popover_model</property>
+                            <property name="position">top</property>
                           </object>
                         </child>
                       </object>
@@ -2565,6 +2462,7 @@ audio-volume-medium-symbolic</property>
             <property name="focusable">1</property>
             <property name="icon-name">open-menu-symbolic</property>
             <property name="menu-model">main_popover_model</property>
+            <property name="primary">True</property>
             <property name="receives-default">1</property>
           </object>
         </child>
@@ -3534,47 +3432,104 @@ Characteristics</property>
     <property name="menu-model">remote_popover_model</property>
   </object>
   <menu id="remote_popover_model">
-    <item>
-      <attribute name="label" translatable="yes">Download Selection</attribute>
-    </item>
-    <item>
-      <attribute name="label" translatable="yes">Play</attribute>
-    </item>
-    <item>
-      <attribute name="label" translatable="yes">Open With External Editor</attribute>
-    </item>
-    <item>
-      <attribute name="label" translatable="yes">Show in File Manager</attribute>
-    </item>
-    <item>
-      <attribute name="label" translatable="yes">Rename</attribute>
-    </item>
-    <item>
-      <attribute name="label" translatable="yes">Delete</attribute>
-    </item>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Download Selection</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Rename</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Delete</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Play</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Open With External Editor</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Show in File Manager</attribute>
+      </item>
+    </section>
   </menu>
   <object class="GtkPopoverMenu" id="local_popover">
     <property name="menu-model">local_popover_model</property>
   </object>
   <menu id="local_popover_model">
-    <item>
-      <attribute name="label" translatable="yes">Upload Selection</attribute>
-    </item>
-    <item>
-      <attribute name="label" translatable="yes">Play</attribute>
-    </item>
-    <item>
-      <attribute name="label" translatable="yes">Open With External Editor</attribute>
-    </item>
-    <item>
-      <attribute name="label" translatable="yes">Show in File Manager</attribute>
-    </item>
-    <item>
-      <attribute name="label" translatable="yes">Rename</attribute>
-    </item>
-    <item>
-      <attribute name="label" translatable="yes">Delete</attribute>
-    </item>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Upload Selection</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Rename</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Delete</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="label" translatable="yes">Play</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Open With External Editor</attribute>
+      </item>
+      <item>
+        <attribute name="label" translatable="yes">Show in File Manager</attribute>
+      </item>
+    </section>
+  </menu>
+  <menu id="editor_popover_model">
+    <section>
+      <item>
+        <attribute name="action">app.waveform_play</attribute>
+        <attribute name="label" translatable="yes">Play</attribute>
+      </item>
+    </section>
+    <section>
+      <item>
+        <attribute name="action">app.waveform_delete</attribute>
+        <attribute name="label" translatable="yes">Delete</attribute>
+      </item>
+      <item>
+        <attribute name="action">app.waveform_undo</attribute>
+        <attribute name="label" translatable="yes">Undo</attribute>
+      </item>
+    </section>
+    <section>
+      <submenu>
+        <attribute name="label" translatable="yes">Tools</attribute>
+        <item>
+          <attribute name="action">app.waveform_normalize</attribute>
+          <attribute name="label" translatable="yes">Normalize</attribute>
+        </item>
+        <item>
+          <attribute name="action">app.waveform_split_channels</attribute>
+          <attribute name="label" translatable="yes">Split Channels</attribute>
+        </item>
+      </submenu>
+    </section>
+    <section>
+      <item>
+        <attribute name="action">app.waveform_export</attribute>
+        <attribute name="label" translatable="yes">Export</attribute>
+      </item>
+      <item>
+        <attribute name="action">app.waveform_save</attribute>
+        <attribute name="label" translatable="yes">Save</attribute>
+      </item>
+      <item>
+        <attribute name="action">app.waveform_save_as</attribute>
+        <attribute name="label" translatable="yes">Save As...</attribute>
+      </item>
+    </section>
   </menu>
   <object class="GtkAdjustment" id="volume_adj">
     <property name="page-increment">0.25</property>

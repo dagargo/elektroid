@@ -114,15 +114,7 @@ static GtkWidget *note_combo;
 static GtkWidget *subdivisions_spin;
 static gulong volume_changed_handler;
 static GtkListStore *notes_list_store;
-static GtkPopoverMenu *popover_menu;
-static GtkWidget *popover_play_button;
-static GtkWidget *popover_delete_button;
-static GtkWidget *popover_undo_button;
-static GtkWidget *popover_normalize_button;
-static GtkWidget *popover_split_button;
-static GtkWidget *popover_save_button;
-static GtkWidget *popover_save_as_button;
-static GtkWidget *popover_export_button;
+static GtkWidget *popovermenu;
 static GtkWidget *sample_info_box;
 static GtkWidget *filename_box;
 static GtkWidget *filename_label;
@@ -140,7 +132,7 @@ static guint waveform_scroll_start;
 static gdouble *waveform_data;
 static guint waveform_width;
 static guint waveform_height;
-static guint waveform_len;	//Loaded frames available in waveform_data
+static guint waveform_len;	// Loaded frames available in waveform_data
 static cairo_surface_t *waveform_cache;
 static double press_event_x;
 static double last_x;
@@ -155,11 +147,37 @@ editor_get_browser ()
   return browser;
 }
 
+static void
+editor_set_actions_enabled ()
+{
+  elektroid_set_action_enabled ("waveform_split_channels",
+				audio.sample_info_src.channels > 1);
+  if (audio.path)
+    {
+      gboolean can_save =
+	sample_format_is_valid_to_save (&audio.sample_info_src);
+
+      elektroid_set_action_enabled ("waveform_undo", dirty);
+      elektroid_set_action_enabled ("waveform_export", !can_save);
+      elektroid_set_action_enabled ("waveform_save", can_save && dirty);
+      elektroid_set_action_enabled ("waveform_save_as", can_save);
+    }
+  else
+    {
+      // This is a recording
+      elektroid_set_action_enabled ("waveform_undo", FALSE);
+      elektroid_set_action_enabled ("waveform_export", FALSE);
+      elektroid_set_action_enabled ("waveform_save", FALSE);
+      elektroid_set_action_enabled ("waveform_save_as", TRUE);
+    }
+}
+
 void
 editor_set_dirty (gboolean dirty_)
 {
   dirty = dirty_;
   gtk_widget_set_visible (edited_image, dirty);
+  editor_set_actions_enabled ();
 }
 
 static void
@@ -310,6 +328,13 @@ editor_reset_widgets (gpointer data)
   gtk_widget_set_sensitive (sample_info_box, FALSE);
   gtk_widget_set_sensitive (waveform, browser != NULL);
 
+  elektroid_set_action_enabled ("waveform_delete", FALSE);
+  elektroid_set_action_enabled ("waveform_split_channels", FALSE);
+  elektroid_set_action_enabled ("waveform_undo", FALSE);
+  elektroid_set_action_enabled ("waveform_export", FALSE);
+  elektroid_set_action_enabled ("waveform_save", FALSE);
+  elektroid_set_action_enabled ("waveform_save_as", FALSE);
+
   editor_set_filename ();
   editor_update_sample_info ();
   editor_update_tags ();
@@ -433,27 +458,6 @@ editor_start_playback ()
   else
     {
       audio_start_playback (NULL);
-    }
-}
-
-static void
-editor_update_export_save_buttons ()
-{
-  if (audio.path)
-    {
-      gboolean can_save =
-	sample_format_is_valid_to_save (&audio.sample_info_src);
-      return;			//TODO
-      gtk_widget_set_visible (popover_save_button, can_save);
-      gtk_widget_set_visible (popover_save_as_button, can_save);
-      gtk_widget_set_visible (popover_export_button, !can_save);
-    }
-  else
-    {
-      // This is a recording
-      gtk_widget_set_visible (popover_save_button, FALSE);
-      gtk_widget_set_visible (popover_export_button, FALSE);
-      gtk_widget_set_visible (popover_save_as_button, TRUE);
     }
 }
 
@@ -643,7 +647,7 @@ editor_update_ui_on_load (gpointer data)
 
   gtk_widget_set_sensitive (sample_info_box, TRUE);
 
-  editor_update_export_save_buttons ();
+  editor_set_actions_enabled ();
 
   return FALSE;
 }
@@ -1171,7 +1175,8 @@ editor_manage_tags_button_click (GtkWidget *object, gpointer data)
 }
 
 static void
-editor_play_clicked (GtkWidget *object, gpointer data)
+editor_waveform_play (GSimpleAction *simple_action, GVariant *parameter,
+		      gpointer data)
 {
   editor_play ();
 }
@@ -1540,21 +1545,12 @@ static void
 editor_show_popover_at (guint x, guint y, gboolean cursor_on_sel)
 {
   GdkRectangle r;
-  guint32 sel_len = AUDIO_SEL_LEN;
-  struct sample_info *sample_info = audio.sample.info;
-
   r.width = 1;
   r.height = 1;
   r.x = x;
   r.y = y;
-  gtk_popover_set_pointing_to (GTK_POPOVER (popover_menu), &r);
-
-  gtk_widget_set_sensitive (popover_delete_button, sel_len > 0);
-  gtk_widget_set_sensitive (popover_undo_button, dirty);
-  gtk_widget_set_sensitive (popover_split_button, sample_info->channels > 1);
-  gtk_widget_set_sensitive (popover_save_button, dirty || cursor_on_sel);
-
-  gtk_popover_popup (GTK_POPOVER (popover_menu));
+  gtk_popover_set_pointing_to (GTK_POPOVER (popovermenu), &r);
+  gtk_popover_popup (GTK_POPOVER (popovermenu));
 }
 
 static gboolean
@@ -1639,8 +1635,6 @@ editor_button_pressed (GtkGestureClick *gesture, int n_press, double x,
 	  audio.sel_start = -1;
 	  audio.sel_end = -1;
 	}
-      guint x = editor_frame_to_waveform_coord (cursor_frame -
-						editor_get_start_frame ());
       editor_show_popover_at (x, y, cursor_on_sel);
     }
 
@@ -1670,13 +1664,15 @@ editor_button_released (GtkGestureClick *gesture, int n_press, double x,
 	  audio.sel_start = -1;
 	  audio.sel_end = -1;
 	  gtk_widget_queue_draw (waveform);
+
+	  elektroid_set_action_enabled ("waveform_delete", FALSE);
 	}
       else
 	{
 	  debug_print (2, "Selected range: [%" PRId64 " to %" PRId64 "]...",
 		       audio.sel_start, audio.sel_end);
-
-	  if (AUDIO_SEL_LEN)
+	  guint32 sel_len = AUDIO_SEL_LEN;
+	  if (sel_len)
 	    {
 	      if (preferences_get_boolean (PREF_KEY_AUTOPLAY) &&
 		  audio_is_stopped ())
@@ -1684,6 +1680,8 @@ editor_button_released (GtkGestureClick *gesture, int n_press, double x,
 		  editor_start_playback ();
 		}
 	    }
+
+	  elektroid_set_action_enabled ("waveform_delete", sel_len > 0);
 	}
     }
 
@@ -1835,7 +1833,8 @@ editor_motion (GtkEventControllerMotion *controller, double x, double y,
 }
 
 static void
-editor_delete_clicked (GtkWidget *object, gpointer data)
+editor_waveform_delete (GSimpleAction *simple_action, GVariant *parameter,
+			gpointer data)
 {
   guint32 sel_len;
   enum audio_status status;
@@ -1883,7 +1882,8 @@ editor_delete_clicked (GtkWidget *object, gpointer data)
 }
 
 static void
-editor_undo_clicked (GtkWidget *object, gpointer data)
+editor_waveform_undo (GSimpleAction *simple_action, GVariant *parameter,
+		      gpointer data)
 {
   if (audio.path)
     {
@@ -1930,7 +1930,8 @@ editor_save_with_format (const gchar *dst_path, struct idata *sample,
       audio.sample_info_src.format |= format;	//This is required as reloading does not include the format
 
       editor_set_dirty (FALSE);
-      editor_update_export_save_buttons ();
+
+      editor_set_actions_enabled ();
     }
 
   browser_set_reload_item_in_editor (browser, FALSE);
@@ -2180,7 +2181,8 @@ editor_get_operation_range (guint32 *start, guint32 *length)
 }
 
 static void
-editor_normalize_clicked (GtkWidget *object, gpointer data)
+editor_waveform_normalize (GSimpleAction *simple_action, GVariant *parameter,
+			   gpointer data)
 {
   guint32 start, length;
   g_mutex_lock (&audio.control.controllable.mutex);
@@ -2351,7 +2353,8 @@ cleanup:
 }
 
 static void
-editor_split_clicked (GtkWidget *object, gpointer user_data)
+editor_waveform_split_channels (GSimpleAction *simple_action,
+				GVariant *parameter, gpointer data)
 {
   gboolean *has_progress_window = g_malloc (sizeof (gboolean));
 
@@ -2370,7 +2373,8 @@ editor_split_clicked (GtkWidget *object, gpointer user_data)
 }
 
 static void
-editor_export_save_as_clicked (GtkWidget *object, gpointer data)
+editor_waveform_save_as (GSimpleAction *simple_action, GVariant *parameter,
+			 gpointer data)
 {
   gint name_sel_len;
   gchar name[BLOB_MAX];
@@ -2426,11 +2430,12 @@ end:
 }
 
 static void
-editor_save_clicked (GtkWidget *object, gpointer data)
+editor_waveform_save (GSimpleAction *simple_action, GVariant *parameter,
+		      gpointer data)
 {
   if (AUDIO_SEL_LEN)
     {
-      editor_export_save_as_clicked (NULL, NULL);
+      editor_waveform_save_as (NULL, NULL, NULL);
     }
   else
     {
@@ -2438,83 +2443,54 @@ editor_save_clicked (GtkWidget *object, gpointer data)
     }
 }
 
-// static gboolean
-// editor_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
-// {
-//   if (event->type != GDK_KEY_PRESS)
-//     {
-//       return FALSE;
-//     }
+static gboolean
+editor_waveform_on_key_pressed (GtkEventControllerKey *controller,
+				guint keyval, guint keycode,
+				GdkModifierType state, gpointer user_data)
+{
+  if (keyval == GDK_KEY_Menu ||
+      (keyval == GDK_KEY_F10 && (state & GDK_SHIFT_MASK)))
+    {
+      guint x, y;
+      g_mutex_lock (&audio.control.controllable.mutex);
 
-//   if (event->keyval == GDK_KEY_Menu)
-//     {
-//       guint x, y;
+      y = gtk_widget_get_allocated_height (waveform) / 2;
 
-//       g_mutex_lock (&audio.control.controllable.mutex);
+      if (AUDIO_SEL_LEN)
+	{
 
-//       y = gtk_widget_get_allocated_height (waveform) / 2;
+	  guint32 f = editor_get_selection_middle_frame ();
+	  guint32 start_frame = editor_get_start_frame ();
+	  guint32 last_frame = editor_get_last_frame ();
 
-//       if (AUDIO_SEL_LEN)
-//      {
+	  x = editor_frame_to_waveform_coord (f);
 
-//        guint32 f = editor_get_selection_middle_frame ();
-//        guint32 start_frame = editor_get_start_frame ();
-//        guint32 last_frame = editor_get_last_frame ();
+	  //If the popover is outside the waveform, reset the view.
+	  if (x < editor_frame_to_waveform_coord (start_frame) ||
+	      x > editor_frame_to_waveform_coord (last_frame))
+	    {
+	      struct sample_info *sample_info = audio.sample.info;
+	      zoom = 1.0;
+	      editor_set_scrollbar (0, sample_info->frames);
+	      f = editor_get_selection_middle_frame ();
+	    }
 
-//        x = editor_frame_to_waveform_coord (f);
+	  x = editor_frame_to_waveform_coord (f);
+	}
+      else
+	{
+	  x = gtk_widget_get_allocated_width (waveform) / 2;
+	}
 
-//        //If the popover is outside the waveform, reset the view.
-//        if (x < editor_frame_to_waveform_coord (start_frame) ||
-//            x > editor_frame_to_waveform_coord (last_frame))
-//          {
-//            struct sample_info *sample_info = audio.sample.info;
-//            zoom = 1.0;
-//            editor_set_scrollbar (0, sample_info->frames);
-//            f = editor_get_selection_middle_frame ();
-//          }
+      editor_show_popover_at (x, y, AUDIO_SEL_LEN > 0);
 
-//        x = editor_frame_to_waveform_coord (f);
-//      }
-//       else
-//      {
-//        x = gtk_widget_get_allocated_width (waveform) / 2;
-//      }
+      g_mutex_unlock (&audio.control.controllable.mutex);
 
-//       editor_show_popover_at (x, y, AUDIO_SEL_LEN > 0);
+      return GDK_EVENT_STOP;
+    }
 
-//       g_mutex_unlock (&audio.control.controllable.mutex);
-//     }
-//   else if (event->keyval == GDK_KEY_space)
-//     {
-//       editor_play_clicked (NULL, NULL);
-//     }
-//   else if (event->keyval == GDK_KEY_Delete)
-//     {
-//       editor_delete_clicked (NULL, NULL);
-//     }
-//   else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_z &&
-//         dirty)
-//     {
-//       editor_undo_clicked (NULL, NULL);
-//     }
-//   else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_s &&
-//         dirty)
-//     {
-//       if (audio.path)
-//      {
-//        if (sample_format_is_valid_to_save (&audio.sample_info_src))
-//          {
-//            editor_save_clicked (NULL, NULL);
-//          }
-//      }
-//       else
-//      {
-//        editor_export_save_as_clicked (NULL, NULL);
-//      }
-//     }
-
-//   return TRUE;
-// }
+  return GDK_EVENT_PROPAGATE;
+}
 
 static void
 editor_update_audio_status ()
@@ -2563,8 +2539,20 @@ editor_set_visible (gboolean visible)
   editor_set_audio_mono_mix ();
 }
 
+static const GActionEntry EDITOR_ENTRIES[] = {
+  {"waveform_play", editor_waveform_play, NULL, NULL, NULL},
+  {"waveform_delete", editor_waveform_delete, NULL, NULL, NULL},
+  {"waveform_undo", editor_waveform_undo, NULL, NULL, NULL},
+  {"waveform_normalize", editor_waveform_normalize, NULL, NULL, NULL},
+  {"waveform_split_channels", editor_waveform_split_channels, NULL, NULL,
+   NULL},
+  {"waveform_export", editor_waveform_save_as, NULL, NULL, NULL},
+  {"waveform_save", editor_waveform_save, NULL, NULL, NULL},
+  {"waveform_save_as", editor_waveform_save_as, NULL, NULL, NULL},
+};
+
 void
-editor_init (GtkBuilder *builder)
+editor_init (GtkBuilder *builder, GtkApplication *app)
 {
   editor_box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
   waveform = GTK_WIDGET (gtk_builder_get_object (builder, "waveform"));
@@ -2608,33 +2596,8 @@ editor_init (GtkBuilder *builder)
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));
   g_object_ref (G_OBJECT (notes_list_store));
 
-  popover_menu =
-    GTK_POPOVER_MENU (gtk_builder_get_object
-		      (builder, "editor_popover_menu"));
-  popover_play_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_play_button"));
-  popover_delete_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_delete_button"));
-  popover_undo_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_undo_button"));
-  popover_normalize_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_normalize_button"));
-  popover_split_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_split_button"));
-  popover_save_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_save_button"));
-  popover_save_as_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_save_as_button"));
-  popover_export_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "editor_popover_export_button"));
+  popovermenu =
+    GTK_WIDGET (gtk_builder_get_object (builder, "editor_popovermenu"));
 
   gtk_drawing_area_set_draw_func (GTK_DRAWING_AREA (waveform), editor_draw,
 				  NULL, NULL);
@@ -2649,7 +2612,7 @@ editor_init (GtkBuilder *builder)
   gtk_widget_add_controller (waveform, zoom_controller);
 
   g_signal_connect (play_button, "clicked",
-		    G_CALLBACK (editor_play_clicked), NULL);
+		    G_CALLBACK (editor_waveform_play), NULL);
   g_signal_connect (stop_button, "clicked",
 		    G_CALLBACK (editor_stop_clicked), NULL);
   g_signal_connect (loop_button, "clicked",
@@ -2685,6 +2648,7 @@ editor_init (GtkBuilder *builder)
 		    G_CALLBACK (waveform_scroll_adj_change), NULL);
 
   GtkGesture *gesture = gtk_gesture_click_new ();
+  gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 0);
   g_signal_connect (gesture, "pressed", G_CALLBACK (editor_button_pressed),
 		    NULL);
   g_signal_connect (gesture, "released", G_CALLBACK (editor_button_released),
@@ -2696,28 +2660,13 @@ editor_init (GtkBuilder *builder)
 		    NULL);
   gtk_widget_add_controller (waveform, motion_controller);
 
-  // g_signal_connect (editor_box, "key-press-event",
-  //     G_CALLBACK (editor_key_press), NULL);
+  GtkEventController *key_controller = gtk_event_controller_key_new ();
+  g_signal_connect (key_controller, "key-pressed",
+		    G_CALLBACK (editor_waveform_on_key_pressed), NULL);
+  gtk_widget_add_controller (GTK_WIDGET (waveform), key_controller);
 
   g_signal_connect (manage_tags_button, "clicked",
 		    G_CALLBACK (editor_manage_tags_button_click), NULL);
-
-  // g_signal_connect (popover_play_button, "clicked",
-  //     G_CALLBACK (editor_play_clicked), NULL);
-  // g_signal_connect (popover_delete_button, "clicked",
-  //     G_CALLBACK (editor_delete_clicked), NULL);
-  // g_signal_connect (popover_undo_button, "clicked",
-  //     G_CALLBACK (editor_undo_clicked), NULL);
-  // g_signal_connect (popover_normalize_button, "clicked",
-  //     G_CALLBACK (editor_normalize_clicked), NULL);
-  // g_signal_connect (popover_split_button, "clicked",
-  //     G_CALLBACK (editor_split_clicked), NULL);
-  // g_signal_connect (popover_export_button, "clicked",
-  //     G_CALLBACK (editor_export_save_as_clicked), NULL);
-  // g_signal_connect (popover_save_button, "clicked",
-  //     G_CALLBACK (editor_save_clicked), NULL);
-  // g_signal_connect (popover_save_as_button, "clicked",
-  //     G_CALLBACK (editor_export_save_as_clicked), NULL);
 
   editor_loop_clicked (loop_button, NULL);
   gtk_switch_set_active (GTK_SWITCH (autoplay_switch),
@@ -2736,6 +2685,28 @@ editor_init (GtkBuilder *builder)
   editor_update_tags ();
 
   g_mutex_init (&mutex);
+
+  g_action_map_add_action_entries (G_ACTION_MAP (app), EDITOR_ENTRIES,
+				   G_N_ELEMENTS (EDITOR_ENTRIES), app);
+
+  const gchar *play_accels[] = { "space", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.waveform_play", play_accels);
+  const gchar *delete_accels[] = { "Delete", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.waveform_delete",
+					 delete_accels);
+  const gchar *undo_accels[] = { "<Ctrl>z", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.waveform_undo", undo_accels);
+  const gchar *save_accels[] = { "<Ctrl>s", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.waveform_save", save_accels);
+  const gchar *save_as_accels[] = { "<Shift><Ctrl>s", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.waveform_save_as",
+					 save_as_accels);
+
   editor_reset (NULL);
   active = TRUE;
 }

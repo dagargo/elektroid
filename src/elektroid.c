@@ -97,7 +97,6 @@ static GtkApplication *app;
 
 GtkWindow *main_window;
 static GtkAboutDialog *about_dialog;
-static GtkPopover *main_popover;
 static GtkWidget *local_name_entry;
 static GtkWidget *local_box;
 static GtkWidget *remote_devices_box;
@@ -113,6 +112,13 @@ static GtkWidget *devices_combo;
 static GtkListStore *fs_list_store;
 static GtkWidget *fs_combo;
 static GtkWidget *editor_box;
+
+void
+elektroid_set_action_enabled (const gchar *name, gboolean active)
+{
+  GAction *accion = g_action_map_lookup_action (G_ACTION_MAP (app), name);
+  g_simple_action_set_enabled (G_SIMPLE_ACTION (accion), active);
+}
 
 void
 elektroid_combo_box_set_value (GtkComboBox *object, guint value)
@@ -1742,9 +1748,6 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
 
   mactions_menu = G_MENU (gtk_builder_get_object (builder, "mactions_menu"));
 
-  main_popover =
-    GTK_POPOVER (gtk_builder_get_object (builder, "main_popover"));
-
   local_name_entry =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_name_entry"));
   remote_devices_box =
@@ -1787,7 +1790,7 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   browser_init_all (builder);
   name_window_init (builder);
   preferences_window_init (builder);
-  editor_init (builder);
+  editor_init (builder, app);
   elektroid_update_midi_status ();
   tasks_init (builder);
   progress_window_init (builder);
