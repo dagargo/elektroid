@@ -1553,7 +1553,7 @@ editor_show_popover_at (guint x, guint y, gboolean cursor_on_sel)
   gtk_popover_popup (GTK_POPOVER (popovermenu));
 }
 
-static gboolean
+static void
 editor_button_pressed (GtkGestureClick *gesture, int n_press, double x,
 		       double y, gpointer data)
 {
@@ -1640,16 +1640,15 @@ editor_button_pressed (GtkGestureClick *gesture, int n_press, double x,
 
 end:
   g_mutex_unlock (&audio.control.controllable.mutex);
-  return FALSE;
 }
 
-static gboolean
+static void
 editor_button_released (GtkGestureClick *gesture, int n_press, double x,
 			double y, gpointer data)
 {
   if (!operation)
     {
-      return FALSE;
+      return;
     }
 
   debug_print (2, "Released button at %.2f %.2f.", x, y);
@@ -1686,8 +1685,6 @@ editor_button_released (GtkGestureClick *gesture, int n_press, double x,
     }
 
   operation = EDITOR_OP_NONE;
-
-  return FALSE;
 }
 
 static gboolean
@@ -2687,7 +2684,7 @@ editor_init (GtkBuilder *builder, GtkApplication *app)
   g_mutex_init (&mutex);
 
   g_action_map_add_action_entries (G_ACTION_MAP (app), EDITOR_ENTRIES,
-				   G_N_ELEMENTS (EDITOR_ENTRIES), app);
+				   G_N_ELEMENTS (EDITOR_ENTRIES), NULL);
 
   const gchar *play_accels[] = { "space", NULL };
   gtk_application_set_accels_for_action (GTK_APPLICATION (app),

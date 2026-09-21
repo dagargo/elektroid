@@ -25,9 +25,11 @@ void elektroid_combo_box_set_value (GtkComboBox * object, guint value);
 
 guint elektroid_combo_box_get_value (GtkComboBox * combo);
 
-void elektroid_add_upload_tasks (GtkWidget * object, gpointer data);
+void elektroid_add_upload_tasks (GSimpleAction * simple_action,
+				 GVariant * parameter, gpointer data);
 
-void elektroid_add_download_tasks (GtkWidget * object, gpointer data);
+void elektroid_add_download_tasks (GSimpleAction * simple_action,
+				   GVariant * parameter, gpointer data);
 
 void elektroid_browser_drag_data_received_runner (gpointer data);
 
