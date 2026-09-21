@@ -753,7 +753,7 @@ elektroid_show_task_overwrite_dialog_response (GtkDialog *dialog,
 {
   GtkWidget *checkbutton = user_data;
   gboolean apply_to_all =
-    gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (checkbutton));
+    gtk_check_button_get_active (GTK_CHECK_BUTTON (checkbutton));
   switch (response_id)
     {
     case GTK_RESPONSE_CANCEL:
@@ -791,6 +791,7 @@ static gboolean
 elektroid_show_task_overwrite_dialog (gpointer data)
 {
   GtkWidget *dialog;
+  GtkWidget *message_area;
   GtkWidget *container, *checkbutton;
 
   dialog = gtk_message_dialog_new (main_window, GTK_DIALOG_MODAL |
@@ -809,7 +810,9 @@ elektroid_show_task_overwrite_dialog (gpointer data)
   gtk_widget_set_hexpand (checkbutton, TRUE);
   gtk_widget_set_halign (checkbutton, GTK_ALIGN_CENTER);
   gtk_widget_set_visible (checkbutton, TRUE);
-  // gtk_container_add (GTK_CONTAINER (container), checkbutton);
+  message_area =
+    gtk_message_dialog_get_message_area (GTK_MESSAGE_DIALOG (dialog));
+  gtk_box_append (GTK_BOX (container), checkbutton);
 
   gtk_widget_set_visible (dialog, TRUE);
   g_signal_connect (dialog, "response",
@@ -1032,7 +1035,8 @@ elektroid_add_upload_tasks_runner (gpointer data)
 }
 
 void
-elektroid_add_upload_tasks (GtkWidget *object, gpointer data)
+elektroid_add_upload_tasks (GSimpleAction *simple_action, GVariant *parameter,
+			    gpointer data)
 {
   GtkTreeSelection *sel = gtk_tree_view_get_selection (local_browser.view);
   gboolean *has_progress_window = g_malloc (sizeof (gboolean));
@@ -1224,7 +1228,8 @@ elektroid_add_download_tasks_runner (gpointer data)
 }
 
 void
-elektroid_add_download_tasks (GtkWidget *object, gpointer data)
+elektroid_add_download_tasks (GSimpleAction *simple_action,
+			      GVariant *parameter, gpointer data)
 {
   GtkTreeSelection *sel = gtk_tree_view_get_selection (remote_browser.view);
   gboolean *has_progress_window = g_malloc (sizeof (gboolean));
@@ -1787,7 +1792,7 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   fs_combo = GTK_WIDGET (gtk_builder_get_object (builder, "fs_combo"));
   g_signal_connect (fs_combo, "changed", G_CALLBACK (elektroid_set_fs), NULL);
 
-  browser_init_all (builder);
+  browser_init_all (builder, app);
   name_window_init (builder);
   preferences_window_init (builder);
   editor_init (builder, app);
@@ -1798,7 +1803,7 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   gtk_widget_set_sensitive (remote_box, FALSE);
 
   g_action_map_add_action_entries (G_ACTION_MAP (app), APP_ENTRIES,
-				   G_N_ELEMENTS (APP_ENTRIES), app);
+				   G_N_ELEMENTS (APP_ENTRIES), NULL);
 
   GAction *a = g_action_map_lookup_action (G_ACTION_MAP (app), "show_remote");
   GVariant *v =

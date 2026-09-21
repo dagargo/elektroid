@@ -2,5 +2,5 @@
 <!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
 <!-- Created with Cambalache 1.0.3 -->
 <cambalache-project version="1.0.0" target_tk="gtk-4.0" depends="casilda-1.0,libadwaita-1,webkitgtk-6.0">
-  <ui filename="elektroid.ui" sha256="ce2c11b93e693fbc2b2205daa61b4b5b7d66d78b195ebd5e465ad15fed7c4999"/>
+  <ui filename="elektroid.ui" sha256="ca35d23c9ecf274429736a9d4c1bb3eb950e6c67fb51ffdc9a5ea6c15cb06b19"/>
 </cambalache-project>

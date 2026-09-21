@@ -1695,6 +1695,7 @@ audio-volume-medium-symbolic</property>
                         </child>
                         <child>
                           <object class="GtkPopoverMenu" id="editor_popovermenu">
+                            <property name="has-arrow">False</property>
                             <property name="menu-model">editor_popover_model</property>
                             <property name="position">top</property>
                           </object>
@@ -1873,224 +1874,234 @@ audio-volume-medium-symbolic</property>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkStack" id="remote_list_stack">
-                                <property name="hexpand">1</property>
-                                <property name="vexpand">1</property>
+                              <object class="GtkBox">
                                 <child>
-                                  <object class="GtkStackPage">
-                                    <property name="child">
-                                      <object class="GtkScrolledWindow" id="remote_scrolled_window">
+                                  <object class="GtkStack" id="remote_list_stack">
+                                    <property name="hexpand">1</property>
+                                    <property name="vexpand">1</property>
+                                    <child>
+                                      <object class="GtkStackPage">
                                         <property name="child">
-                                          <object class="GtkTreeView" id="remote_tree_view">
-                                            <property name="enable-search">0</property>
+                                          <object class="GtkScrolledWindow" id="remote_scrolled_window">
+                                            <property name="child">
+                                              <object class="GtkTreeView" id="remote_tree_view">
+                                                <property name="enable-search">0</property>
+                                                <property name="focusable">1</property>
+                                                <property name="hexpand">1</property>
+                                                <property name="model">remote_list_store</property>
+                                                <property name="name">remote_tree_view</property>
+                                                <property name="search-column">1</property>
+                                                <property name="vexpand">1</property>
+                                                <child internal-child="selection">
+                                                  <object class="GtkTreeSelection">
+                                                    <property name="mode">multiple</property>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn">
+                                                    <child>
+                                                      <object class="GtkCellRendererPixbuf"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="icon-name">0</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="remote_tree_view_id_column">
+                                                    <property name="visible">0</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">5</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="remote_tree_view_slot_column">
+                                                    <property name="visible">0</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">14</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="remote_tree_view_name_column">
+                                                    <property name="expand">1</property>
+                                                    <property name="min-width">100</property>
+                                                    <property name="resizable">1</property>
+                                                    <property name="title" translatable="yes">Name</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText" id="remote_name_cell_renderer_text">
+                                                        <property name="ellipsize">middle</property>
+                                                      </object>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">1</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="remote_tree_view_sample_tags_column">
+                                                    <property name="expand">1</property>
+                                                    <property name="min-width">100</property>
+                                                    <property name="resizable">1</property>
+                                                    <property name="title" translatable="yes">Tags</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText">
+                                                        <property name="ellipsize">end</property>
+                                                      </object>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="markup">13</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="remote_tree_view_sample_duration_column">
+                                                    <property name="title" translatable="yes">Duration</property>
+                                                    <property name="visible">0</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">9</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="remote_tree_view_sample_channels_column">
+                                                    <property name="title" translatable="yes">Channels</property>
+                                                    <property name="visible">0</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">11</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="remote_tree_view_sample_rate_column">
+                                                    <property name="title" translatable="yes">Rate</property>
+                                                    <property name="visible">0</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">8</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="remote_tree_view_sample_format_column">
+                                                    <property name="title" translatable="yes">Format</property>
+                                                    <property name="visible">0</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">10</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="remote_tree_view_sample_note_column">
+                                                    <property name="title" translatable="yes">Note</property>
+                                                    <property name="visible">0</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">12</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="remote_tree_view_sample_frames_column">
+                                                    <property name="title" translatable="yes">Samples</property>
+                                                    <property name="visible">0</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">7</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="remote_tree_view_info_column">
+                                                    <property name="expand">1</property>
+                                                    <property name="title" translatable="yes">Information</property>
+                                                    <property name="visible">0</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText">
+                                                        <property name="ellipsize">middle</property>
+                                                      </object>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">6</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="remote_tree_view_size_column">
+                                                    <property name="title" translatable="yes">Size</property>
+                                                    <property name="visible">0</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">3</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                              </object>
+                                            </property>
                                             <property name="focusable">1</property>
+                                            <property name="height-request">200</property>
                                             <property name="hexpand">1</property>
-                                            <property name="model">remote_list_store</property>
-                                            <property name="name">remote_tree_view</property>
-                                            <property name="search-column">1</property>
                                             <property name="vexpand">1</property>
-                                            <child internal-child="selection">
-                                              <object class="GtkTreeSelection">
-                                                <property name="mode">multiple</property>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn">
-                                                <child>
-                                                  <object class="GtkCellRendererPixbuf"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="icon-name">0</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="remote_tree_view_id_column">
-                                                <property name="visible">0</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">5</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="remote_tree_view_slot_column">
-                                                <property name="visible">0</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">14</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="remote_tree_view_name_column">
-                                                <property name="expand">1</property>
-                                                <property name="min-width">100</property>
-                                                <property name="resizable">1</property>
-                                                <property name="title" translatable="yes">Name</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText" id="remote_name_cell_renderer_text">
-                                                    <property name="ellipsize">middle</property>
-                                                  </object>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">1</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="remote_tree_view_sample_tags_column">
-                                                <property name="expand">1</property>
-                                                <property name="min-width">100</property>
-                                                <property name="resizable">1</property>
-                                                <property name="title" translatable="yes">Tags</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText">
-                                                    <property name="ellipsize">end</property>
-                                                  </object>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="markup">13</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="remote_tree_view_sample_duration_column">
-                                                <property name="title" translatable="yes">Duration</property>
-                                                <property name="visible">0</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">9</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="remote_tree_view_sample_channels_column">
-                                                <property name="title" translatable="yes">Channels</property>
-                                                <property name="visible">0</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">11</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="remote_tree_view_sample_rate_column">
-                                                <property name="title" translatable="yes">Rate</property>
-                                                <property name="visible">0</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">8</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="remote_tree_view_sample_format_column">
-                                                <property name="title" translatable="yes">Format</property>
-                                                <property name="visible">0</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">10</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="remote_tree_view_sample_note_column">
-                                                <property name="title" translatable="yes">Note</property>
-                                                <property name="visible">0</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">12</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="remote_tree_view_sample_frames_column">
-                                                <property name="title" translatable="yes">Samples</property>
-                                                <property name="visible">0</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">7</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="remote_tree_view_info_column">
-                                                <property name="expand">1</property>
-                                                <property name="title" translatable="yes">Information</property>
-                                                <property name="visible">0</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText">
-                                                    <property name="ellipsize">middle</property>
-                                                  </object>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">6</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="remote_tree_view_size_column">
-                                                <property name="title" translatable="yes">Size</property>
-                                                <property name="visible">0</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">3</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
                                           </object>
                                         </property>
-                                        <property name="focusable">1</property>
-                                        <property name="height-request">200</property>
-                                        <property name="hexpand">1</property>
-                                        <property name="vexpand">1</property>
+                                        <property name="name">list</property>
                                       </object>
-                                    </property>
-                                    <property name="name">list</property>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStackPage">
+                                        <property name="child">
+                                          <object class="GtkFrame">
+                                            <property name="child">
+                                              <object class="GtkSpinner" id="remote_spinner"/>
+                                            </property>
+                                          </object>
+                                        </property>
+                                        <property name="name">spinner</property>
+                                      </object>
+                                    </child>
                                   </object>
                                 </child>
                                 <child>
-                                  <object class="GtkStackPage">
-                                    <property name="child">
-                                      <object class="GtkFrame">
-                                        <property name="child">
-                                          <object class="GtkSpinner" id="remote_spinner"/>
-                                        </property>
-                                      </object>
-                                    </property>
-                                    <property name="name">spinner</property>
+                                  <object class="GtkPopoverMenu" id="remote_popovermenu">
+                                    <property name="has-arrow">False</property>
+                                    <property name="menu-model">remote_popover_model</property>
                                   </object>
                                 </child>
                               </object>
@@ -2212,191 +2223,201 @@ audio-volume-medium-symbolic</property>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkStack" id="local_list_stack">
-                                <property name="hexpand">1</property>
-                                <property name="vexpand">1</property>
+                              <object class="GtkBox">
                                 <child>
-                                  <object class="GtkStackPage">
-                                    <property name="child">
-                                      <object class="GtkScrolledWindow" id="local_scrolled_window">
+                                  <object class="GtkStack" id="local_list_stack">
+                                    <property name="hexpand">1</property>
+                                    <property name="vexpand">1</property>
+                                    <child>
+                                      <object class="GtkStackPage">
                                         <property name="child">
-                                          <object class="GtkTreeView" id="local_tree_view">
-                                            <property name="enable-search">0</property>
+                                          <object class="GtkScrolledWindow" id="local_scrolled_window">
+                                            <property name="child">
+                                              <object class="GtkTreeView" id="local_tree_view">
+                                                <property name="enable-search">0</property>
+                                                <property name="focusable">1</property>
+                                                <property name="hexpand">1</property>
+                                                <property name="model">local_list_store</property>
+                                                <property name="name">local_tree_view</property>
+                                                <property name="search-column">1</property>
+                                                <property name="vexpand">1</property>
+                                                <child internal-child="selection">
+                                                  <object class="GtkTreeSelection">
+                                                    <property name="mode">multiple</property>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn">
+                                                    <child>
+                                                      <object class="GtkCellRendererPixbuf"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="icon-name">0</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="local_tree_view_name_column">
+                                                    <property name="expand">1</property>
+                                                    <property name="min-width">100</property>
+                                                    <property name="resizable">1</property>
+                                                    <property name="title" translatable="yes">Name</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText">
+                                                        <property name="ellipsize">middle</property>
+                                                      </object>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">1</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="local_tree_view_sample_tags_column">
+                                                    <property name="expand">1</property>
+                                                    <property name="min-width">100</property>
+                                                    <property name="resizable">1</property>
+                                                    <property name="title" translatable="yes">Tags</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText">
+                                                        <property name="ellipsize">end</property>
+                                                      </object>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="markup">13</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="local_tree_view_sample_duration_column">
+                                                    <property name="title" translatable="yes">Duration</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">9</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="local_tree_view_sample_channels_column">
+                                                    <property name="title" translatable="yes">Channels</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">11</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="local_tree_view_sample_rate_column">
+                                                    <property name="title" translatable="yes">Rate</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">8</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="local_tree_view_sample_format_column">
+                                                    <property name="title" translatable="yes">Format</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">10</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="local_tree_view_sample_note_column">
+                                                    <property name="title" translatable="yes">Note</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">12</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="local_tree_view_sample_frames_column">
+                                                    <property name="title" translatable="yes">Samples</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">7</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="local_tree_view_info_column">
+                                                    <property name="title" translatable="yes">Information</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText">
+                                                        <property name="ellipsize">middle</property>
+                                                      </object>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">6</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="local_tree_view_size_column">
+                                                    <property name="title" translatable="yes">Size</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText"/>
+                                                      <!-- Custom child fragments -->
+                                                      <attributes>
+                                                        <attribute name="text">3</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                              </object>
+                                            </property>
                                             <property name="focusable">1</property>
+                                            <property name="height-request">200</property>
                                             <property name="hexpand">1</property>
-                                            <property name="model">local_list_store</property>
-                                            <property name="name">local_tree_view</property>
-                                            <property name="search-column">1</property>
                                             <property name="vexpand">1</property>
-                                            <child internal-child="selection">
-                                              <object class="GtkTreeSelection">
-                                                <property name="mode">multiple</property>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn">
-                                                <child>
-                                                  <object class="GtkCellRendererPixbuf"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="icon-name">0</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="local_tree_view_name_column">
-                                                <property name="expand">1</property>
-                                                <property name="min-width">100</property>
-                                                <property name="resizable">1</property>
-                                                <property name="title" translatable="yes">Name</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText">
-                                                    <property name="ellipsize">middle</property>
-                                                  </object>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">1</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="local_tree_view_sample_tags_column">
-                                                <property name="expand">1</property>
-                                                <property name="min-width">100</property>
-                                                <property name="resizable">1</property>
-                                                <property name="title" translatable="yes">Tags</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText">
-                                                    <property name="ellipsize">end</property>
-                                                  </object>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="markup">13</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="local_tree_view_sample_duration_column">
-                                                <property name="title" translatable="yes">Duration</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">9</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="local_tree_view_sample_channels_column">
-                                                <property name="title" translatable="yes">Channels</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">11</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="local_tree_view_sample_rate_column">
-                                                <property name="title" translatable="yes">Rate</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">8</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="local_tree_view_sample_format_column">
-                                                <property name="title" translatable="yes">Format</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">10</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="local_tree_view_sample_note_column">
-                                                <property name="title" translatable="yes">Note</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">12</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="local_tree_view_sample_frames_column">
-                                                <property name="title" translatable="yes">Samples</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">7</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="local_tree_view_info_column">
-                                                <property name="title" translatable="yes">Information</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText">
-                                                    <property name="ellipsize">middle</property>
-                                                  </object>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">6</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="local_tree_view_size_column">
-                                                <property name="title" translatable="yes">Size</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText"/>
-                                                  <!-- Custom child fragments -->
-                                                  <attributes>
-                                                    <attribute name="text">3</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
                                           </object>
                                         </property>
-                                        <property name="focusable">1</property>
-                                        <property name="height-request">200</property>
-                                        <property name="hexpand">1</property>
-                                        <property name="vexpand">1</property>
+                                        <property name="name">list</property>
                                       </object>
-                                    </property>
-                                    <property name="name">list</property>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStackPage">
+                                        <property name="child">
+                                          <object class="GtkFrame">
+                                            <property name="child">
+                                              <object class="GtkSpinner" id="local_spinner"/>
+                                            </property>
+                                          </object>
+                                        </property>
+                                        <property name="name">spinner</property>
+                                      </object>
+                                    </child>
                                   </object>
                                 </child>
                                 <child>
-                                  <object class="GtkStackPage">
-                                    <property name="child">
-                                      <object class="GtkFrame">
-                                        <property name="child">
-                                          <object class="GtkSpinner" id="local_spinner"/>
-                                        </property>
-                                      </object>
-                                    </property>
-                                    <property name="name">spinner</property>
+                                  <object class="GtkPopoverMenu" id="local_popovermenu">
+                                    <property name="has-arrow">False</property>
+                                    <property name="menu-model">local_popover_model</property>
                                   </object>
                                 </child>
                               </object>
@@ -3428,60 +3449,66 @@ Characteristics</property>
       </item>
     </section>
   </menu>
-  <object class="GtkPopoverMenu" id="remote_popover">
-    <property name="menu-model">remote_popover_model</property>
-  </object>
   <menu id="remote_popover_model">
     <section>
       <item>
+        <attribute name="action">app.remote_browser_download</attribute>
         <attribute name="label" translatable="yes">Download Selection</attribute>
       </item>
     </section>
     <section>
       <item>
+        <attribute name="action">app.remote_browser_rename</attribute>
         <attribute name="label" translatable="yes">Rename</attribute>
       </item>
       <item>
+        <attribute name="action">app.remote_browser_delete</attribute>
         <attribute name="label" translatable="yes">Delete</attribute>
       </item>
     </section>
     <section>
       <item>
+        <attribute name="action">app.remote_browser_play</attribute>
         <attribute name="label" translatable="yes">Play</attribute>
       </item>
       <item>
+        <attribute name="action">app.remote_browser_open_ext_editor</attribute>
         <attribute name="label" translatable="yes">Open With External Editor</attribute>
       </item>
       <item>
+        <attribute name="action">app.remote_browser_show_in_file_manager</attribute>
         <attribute name="label" translatable="yes">Show in File Manager</attribute>
       </item>
     </section>
   </menu>
-  <object class="GtkPopoverMenu" id="local_popover">
-    <property name="menu-model">local_popover_model</property>
-  </object>
   <menu id="local_popover_model">
     <section>
       <item>
+        <attribute name="action">app.local_browser_upload</attribute>
         <attribute name="label" translatable="yes">Upload Selection</attribute>
       </item>
     </section>
     <section>
       <item>
+        <attribute name="action">app.local_browser_rename</attribute>
         <attribute name="label" translatable="yes">Rename</attribute>
       </item>
       <item>
+        <attribute name="action">app.local_browser_delete</attribute>
         <attribute name="label" translatable="yes">Delete</attribute>
       </item>
     </section>
     <section>
       <item>
+        <attribute name="action">app.local_browser_play</attribute>
         <attribute name="label" translatable="yes">Play</attribute>
       </item>
       <item>
+        <attribute name="action">app.local_browser_open_ext_editor</attribute>
         <attribute name="label" translatable="yes">Open With External Editor</attribute>
       </item>
       <item>
+        <attribute name="action">app.local_browser_show_in_file_manager</attribute>
         <attribute name="label" translatable="yes">Show in File Manager</attribute>
       </item>
     </section>
