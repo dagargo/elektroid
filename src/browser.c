@@ -246,133 +246,26 @@ browser_clear_other_browser_selection_if_system (struct browser *browser)
 }
 
 static void
-browser_check_selection (gpointer data)
+browser_local_set_actions_enabled (gint count, gboolean file)
 {
-  gint index;
-  struct item item;
-  GtkTreeIter iter;
-  GtkTreeModel *model;
-  struct browser *browser = data;
-  gint count = browser_get_selected_items_count (browser);
-  gboolean sel_impl = browser->fs_ops
-    && browser->fs_ops->select_item ? TRUE : FALSE;
-
-  if (!browser->selection_active)
-    {
-      return;
-    }
-
-  if (count != 1)
-    {
-      if (EDITOR_IS_AVAILABLE && BROWSER_IS_SYSTEM (browser))
-	{
-	  browser_clear_other_browser_selection_if_system (browser);
-	  editor_reset (NULL);
-	}
-      browser->last_selected_index = -1;
-      return;
-    }
-
-  index = browser_set_selected_row_iter (browser, &iter);
-  model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
-  browser_set_item (model, &iter, &item);
-
-  if (item.type == ITEM_TYPE_DIR)
-    {
-      browser->last_selected_index = index;
-      editor_reset (browser);
-      return;
-    }
-
-  if (index == browser->last_selected_index)
-    {
-      return;
-    }
-
-  browser->last_selected_index = index;
-
-  if (EDITOR_IS_AVAILABLE && BROWSER_IS_SYSTEM (browser))
-    {
-      enum path_type type = backend_get_path_type (browser->backend);
-      gchar *sample_path = path_chain (type, browser->dir, item.name);
-
-      browser_clear_other_browser_selection_if_system (browser);
-      editor_reset (browser);
-      editor_start_load_thread (sample_path);
-    }
-
-  if (!sel_impl)
-    {
-      return;
-    }
-
-  remote_browser.fs_ops->select_item (browser->backend, browser->dir, &item);
-}
-
-static void
-browser_local_set_popup_visibility ()
-{
-  return;			//TODO
-  gboolean ul_avail = remote_browser.fs_ops &&
-    !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
-    && remote_browser.fs_ops->upload;
-  gboolean edit_avail =
-    local_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR;
-
-  gtk_widget_set_visible (local_browser.popover_transfer_button, ul_avail);
-  gtk_widget_set_visible (local_browser.popover_play_separator, ul_avail);
-  gtk_widget_set_visible (local_browser.popover_play_button, edit_avail);
-  gtk_widget_set_visible (local_browser.popover_options_separator,
-			  edit_avail);
-}
-
-static void
-browser_local_set_popup_sensitivity (gint count, gboolean file)
-{
-  return;			//TODO
   gboolean ul_avail = remote_browser.fs_ops &&
     !(remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
     && remote_browser.fs_ops->upload;
   gboolean editing = editor_get_browser () == &local_browser;
 
-  gtk_widget_set_sensitive (local_browser.popover_transfer_button, count > 0
-			    && ul_avail);
-  gtk_widget_set_sensitive (local_browser.popover_play_button, file
-			    && editing);
-  gtk_widget_set_sensitive (local_browser.popover_open_button, file);
-  gtk_widget_set_sensitive (local_browser.popover_show_button, count <= 1);
-  gtk_widget_set_sensitive (local_browser.popover_rename_button, count == 1);
-  gtk_widget_set_sensitive (local_browser.popover_delete_button, count > 0);
+  elektroid_set_action_enabled ("local_browser_upload", count > 0
+				&& ul_avail);
+  elektroid_set_action_enabled ("local_browser_rename", count == 1);
+  elektroid_set_action_enabled ("local_browser_delete", count > 0);
+  elektroid_set_action_enabled ("local_browser_play", file && editing);
+  elektroid_set_action_enabled ("local_browser_open_ext_editor", file);
+  elektroid_set_action_enabled ("local_browser_show_in_file_manager",
+				count <= 1);
 }
 
 static void
-browser_remote_set_popup_visibility ()
+browser_remote_set_actions_enabled (gint count, gboolean file)
 {
-  return;			// TODO
-
-  gboolean dl_impl = remote_browser.fs_ops
-    && remote_browser.fs_ops->download ? TRUE : FALSE;
-  gboolean edit_avail = remote_browser.fs_ops
-    && remote_browser.fs_ops->options & FS_OPTION_SAMPLE_EDITOR;
-  gboolean system = remote_browser.fs_ops
-    && remote_browser.backend->type == BE_TYPE_SYSTEM;
-
-  gtk_widget_set_visible (remote_browser.popover_transfer_button, dl_impl);
-  gtk_widget_set_visible (remote_browser.popover_play_separator, dl_impl);
-  gtk_widget_set_visible (remote_browser.popover_play_button, system
-			  && edit_avail);
-  gtk_widget_set_visible (remote_browser.popover_options_separator, system
-			  && edit_avail);
-  gtk_widget_set_visible (remote_browser.popover_open_button, system);
-  gtk_widget_set_visible (remote_browser.popover_show_button, system);
-  gtk_widget_set_visible (remote_browser.popover_actions_separator, system);
-}
-
-static void
-browser_remote_set_popup_sensitivity (gint count, gboolean file)
-{
-  return;			// TODO
-
   gboolean dl_impl = remote_browser.fs_ops
     && remote_browser.fs_ops->download ? TRUE : FALSE;
   gboolean ren_impl = remote_browser.fs_ops
@@ -383,21 +276,20 @@ browser_remote_set_popup_sensitivity (gint count, gboolean file)
   gboolean system = remote_browser.fs_ops
     && remote_browser.backend->type == BE_TYPE_SYSTEM;
 
-  gtk_widget_set_sensitive (remote_browser.popover_transfer_button, count > 0
-			    && dl_impl);
-  gtk_widget_set_sensitive (remote_browser.popover_play_button, file
-			    && editing);
-  gtk_widget_set_sensitive (remote_browser.popover_open_button, file);
-  gtk_widget_set_sensitive (remote_browser.popover_show_button, count <= 1
-			    && system);
-  gtk_widget_set_sensitive (remote_browser.popover_rename_button, count == 1
-			    && ren_impl);
-  gtk_widget_set_sensitive (remote_browser.popover_delete_button, count > 0
-			    && del_impl);
+  elektroid_set_action_enabled ("remote_browser_download", count > 0
+				&& dl_impl);
+  elektroid_set_action_enabled ("remote_browser_rename", count == 1
+				&& ren_impl);
+  elektroid_set_action_enabled ("remote_browser_delete", count > 0
+				&& del_impl);
+  elektroid_set_action_enabled ("remote_browser_play", file && editing);
+  elektroid_set_action_enabled ("remote_browser_open_ext_editor", file);
+  elektroid_set_action_enabled ("remote_browser_show_in_file_manager",
+				count <= 1 && system);
 }
 
 static void
-browser_set_popup_sensitivity (struct browser *browser)
+browser_set_actions_enabled (struct browser *browser)
 {
   struct item item;
   GtkTreeIter iter;
@@ -415,12 +307,79 @@ browser_set_popup_sensitivity (struct browser *browser)
 
   if (browser == &local_browser)
     {
-      browser_local_set_popup_sensitivity (count, file);
+      browser_local_set_actions_enabled (count, file);
     }
   else
     {
-      browser_remote_set_popup_sensitivity (count, file);
+      browser_remote_set_actions_enabled (count, file);
     }
+}
+
+static void
+browser_check_selection (gpointer data)
+{
+  gint index;
+  struct item item;
+  GtkTreeIter iter;
+  GtkTreeModel *model;
+  struct browser *browser = data;
+  gint count = browser_get_selected_items_count (browser);
+  gboolean sel_impl = browser->fs_ops
+    && browser->fs_ops->select_item ? TRUE : FALSE;
+
+  if (!browser->selection_active)
+    {
+      goto end;
+    }
+
+  if (count != 1)
+    {
+      if (EDITOR_IS_AVAILABLE && BROWSER_IS_SYSTEM (browser))
+	{
+	  browser_clear_other_browser_selection_if_system (browser);
+	  editor_reset (NULL);
+	}
+      browser->last_selected_index = -1;
+      goto end;
+    }
+
+  index = browser_set_selected_row_iter (browser, &iter);
+  model = GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
+  browser_set_item (model, &iter, &item);
+
+  if (item.type == ITEM_TYPE_DIR)
+    {
+      browser->last_selected_index = index;
+      editor_reset (browser);
+      goto end;
+    }
+
+  if (index == browser->last_selected_index)
+    {
+      goto end;
+    }
+
+  browser->last_selected_index = index;
+
+  if (EDITOR_IS_AVAILABLE && BROWSER_IS_SYSTEM (browser))
+    {
+      enum path_type type = backend_get_path_type (browser->backend);
+      gchar *sample_path = path_chain (type, browser->dir, item.name);
+
+      browser_clear_other_browser_selection_if_system (browser);
+      editor_reset (browser);
+      editor_start_load_thread (sample_path);
+    }
+
+  if (!sel_impl)
+    {
+      goto end;
+    }
+
+  remote_browser.fs_ops->select_item (browser->backend, browser->dir, &item);
+
+end:
+  browser_set_actions_enabled (browser);
 }
 
 static void
@@ -652,10 +611,11 @@ browser_delete_items_response (GtkDialog *dialog, gint response_id,
 }
 
 static void
-browser_delete_items (GtkWidget *object, gpointer user_data)
+browser_delete_items (GSimpleAction *simple_action,
+		      GVariant *parameter, gpointer data)
 {
   GtkWidget *dialog;
-  struct browser *browser = user_data;
+  struct browser *browser = data;
 
   if (preferences_get_boolean (PREF_KEY_USE_SAFETY_QUESTIONS))
     {
@@ -746,7 +706,8 @@ browser_rename_accept (gpointer source, const gchar *name)
 }
 
 static void
-browser_rename_item (GtkWidget *object, gpointer data)
+browser_rename_item (GSimpleAction *simple_action,
+		     GVariant *parameter, gpointer data)
 {
   const gchar *ext;
   gint sel_len, ext_len;
@@ -1674,11 +1635,12 @@ browser_update_fs_options (struct browser *browser)
 
   browser_update_fs_sorting_options (browser);
   browser->set_columns_visibility ();
-  browser->set_popup_buttons_visibility ();
+  browser_set_actions_enabled (browser);
 }
 
 static void
-browser_show_clicked (GtkWidget *object, gpointer data)
+browser_show_in_file_manager (GSimpleAction *simple_action,
+			      GVariant *parameter, gpointer data)
 {
   GtkTreeIter iter;
   GtkTreeModel *model;
@@ -1752,13 +1714,15 @@ browser_show_clicked (GtkWidget *object, gpointer data)
 }
 
 static void
-browser_play_clicked (GtkWidget *object, gpointer data)
+browser_play (GSimpleAction *simple_action,
+	      GVariant *parameter, gpointer data)
 {
   editor_play ();
 }
 
 static void
-browser_open_clicked (GtkWidget *object, gpointer data)
+browser_open_in_ext_editor (GSimpleAction *simple_action,
+			    GVariant *parameter, gpointer data)
 {
   gchar *path;
   gchar *uri;
@@ -1825,118 +1789,126 @@ browser_selection_function_false (GtkTreeSelection *selection,
   return FALSE;
 }
 
-// static gboolean
-// browser_button_press (GtkWidget *treeview, GdkEventButton *event,
-//                    gpointer data)
-// {
-//   GtkTreePath *path;
-//   GtkTreeSelection *selection;
-//   struct browser *browser = data;
-//   gboolean val = FALSE;
+static void
+browser_button_pressed (GtkGestureClick *gesture, int n_press, double x,
+			double y, gpointer data)
+{
+  GtkTreePath *path;
+  GtkTreeSelection *selection;
+  struct browser *browser = data;
+  GdkModifierType state =
+    gtk_event_controller_get_current_event_state (GTK_EVENT_CONTROLLER
+						  (gesture));
+  guint button =
+    gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture));
 
-//   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
 
-//   gtk_tree_selection_set_select_function (selection,
-//                                        browser_selection_function_true,
-//                                        NULL, NULL);
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
 
-//   if (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
-//     {
-//       return FALSE;
-//     }
+  gtk_tree_selection_set_select_function (selection,
+					  browser_selection_function_true,
+					  NULL, NULL);
 
-//   if (event->button == GDK_BUTTON_PRIMARY
-//       || event->button == GDK_BUTTON_SECONDARY)
-//     {
-//       gtk_tree_view_get_path_at_pos (browser->view, event->x, event->y, &path,
-//                                   NULL, NULL, NULL);
+  if (state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
+    {
+      return;
+    }
 
-//       if (path)
-//      {
+  if (button == GDK_BUTTON_PRIMARY || button == GDK_BUTTON_SECONDARY)
+    {
+      gtk_tree_view_get_path_at_pos (browser->view, x, y, &path,
+				     NULL, NULL, NULL);
 
-//        if (gtk_tree_selection_path_is_selected (selection, path))
-//          {
-//            if (event->button == GDK_BUTTON_PRIMARY)
-//              {
-//                gtk_tree_selection_set_select_function (selection,
-//                                                        browser_selection_function_false,
-//                                                        NULL, NULL);
-//              }
-//            else if (event->button == GDK_BUTTON_SECONDARY)
-//              {
-//                val = TRUE;
-//              }
-//          }
-//        else
-//          {
-//            gtk_tree_selection_unselect_all (selection);
-//            gtk_tree_selection_select_path (selection, path);
-//          }
+      if (path)
+	{
+	  if (gtk_tree_selection_path_is_selected (selection, path))
+	    {
+	      if (button == GDK_BUTTON_PRIMARY)
+		{
+		  gtk_tree_selection_set_select_function (selection,
+							  browser_selection_function_false,
+							  NULL, NULL);
+		}
+	      else if (button == GDK_BUTTON_SECONDARY)
+		{
+		  GdkEventSequence *sequence =
+		    gtk_gesture_single_get_current_sequence
+		    (GTK_GESTURE_SINGLE (gesture));
+		  gtk_gesture_set_sequence_state (GTK_GESTURE (gesture),
+						  sequence,
+						  GTK_EVENT_SEQUENCE_CLAIMED);
+		}
+	    }
+	  else
+	    {
+	      gtk_tree_selection_unselect_all (selection);
+	      gtk_tree_selection_select_path (selection, path);
+	    }
 
-//        gtk_tree_path_free (path);
-//      }
-//       else
-//      {
-//        gtk_tree_selection_unselect_all (selection);
-//      }
+	  gtk_tree_path_free (path);
+	}
+      else
+	{
+	  gtk_tree_selection_unselect_all (selection);
+	}
 
-//       if (event->button == GDK_BUTTON_SECONDARY)
-//      {
-//        GdkRectangle r;
-//        browser_set_popup_sensitivity (browser);
-//        r.width = 1;
-//        r.height = 1;
-//        gtk_tree_view_convert_bin_window_to_widget_coords (browser->view,
-//                                                           event->x,
-//                                                           event->y, &r.x,
-//                                                           &r.y);
-//        gtk_popover_set_pointing_to (GTK_POPOVER (browser->popover), &r);
-//        gtk_popover_popup (GTK_POPOVER (browser->popover));
-//      }
-//     }
+      if (button == GDK_BUTTON_SECONDARY)
+	{
+	  GdkRectangle r;
+	  r.x = x;
+	  r.y = y;
+	  r.width = 1;
+	  r.height = 1;
+	  gtk_popover_set_pointing_to (GTK_POPOVER (browser->popovermenu),
+				       &r);
+	  gtk_popover_popup (GTK_POPOVER (browser->popovermenu));
+	}
+    }
 
-//   return val;
-// }
+}
 
-// static gboolean
-// browser_button_release (GtkWidget *treeview, GdkEventButton *event,
-//                      gpointer data)
-// {
-//   GtkTreePath *path;
-//   GtkTreeSelection *selection;
-//   struct browser *browser = data;
+static void
+browser_button_released (GtkGestureClick *gesture, int n_press, double x,
+			 double y, gpointer data)
+{
+  GtkTreePath *path;
+  GtkTreeSelection *selection;
+  struct browser *browser = data;
+  GdkModifierType state =
+    gtk_event_controller_get_current_event_state (GTK_EVENT_CONTROLLER
+						  (gesture));
+  guint button =
+    gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture));
 
-//   if (event->state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
-//     {
-//       return FALSE;
-//     }
+  if (state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
+    {
+      return;
+    }
 
-//   if (event->button == GDK_BUTTON_PRIMARY)
-//     {
-//       gtk_tree_view_get_path_at_pos (browser->view, event->x, event->y,
-//                                   &path, NULL, NULL, NULL);
+  if (button == GDK_BUTTON_PRIMARY)
+    {
+      gtk_tree_view_get_path_at_pos (browser->view, x, y, &path, NULL, NULL,
+				     NULL);
 
-//       if (path)
-//      {
-//        selection = gtk_tree_view_get_selection (browser->view);
+      if (path)
+	{
+	  selection = gtk_tree_view_get_selection (browser->view);
 
-//        if (gtk_tree_selection_path_is_selected (selection, path))
-//          {
-//            gtk_tree_selection_set_select_function (selection,
-//                                                    browser_selection_function_true,
-//                                                    NULL, NULL);
-//            if (browser_get_selected_items_count (browser) != 1)
-//              {
-//                gtk_tree_selection_unselect_all (selection);
-//                gtk_tree_selection_select_path (selection, path);
-//              }
-//          }
-//        gtk_tree_path_free (path);
-//      }
-//     }
-
-//   return FALSE;
-// }
+	  if (gtk_tree_selection_path_is_selected (selection, path))
+	    {
+	      gtk_tree_selection_set_select_function (selection,
+						      browser_selection_function_true,
+						      NULL, NULL);
+	      if (browser_get_selected_items_count (browser) != 1)
+		{
+		  gtk_tree_selection_unselect_all (selection);
+		  gtk_tree_selection_select_path (selection, path);
+		}
+	    }
+	  gtk_tree_path_free (path);
+	}
+    }
+}
 
 // static gboolean
 // browser_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
@@ -1950,7 +1922,6 @@ browser_selection_function_false (GtkTreeSelection *selection,
 
 //   if (event->keyval == GDK_KEY_Menu)
 //     {
-//       browser_set_popup_sensitivity (browser);
 //       gtk_popover_popup (GTK_POPOVER (browser->popover));
 //       return TRUE;
 //     }
@@ -2711,17 +2682,6 @@ browser_remote_reset_dnd ()
 static void
 browser_init (struct browser *browser)
 {
-  // g_signal_connect (browser->popover_play_button, "clicked",
-  //     G_CALLBACK (browser_play_clicked), NULL);
-  // g_signal_connect (browser->popover_open_button, "clicked",
-  //     G_CALLBACK (browser_open_clicked), browser);
-  // g_signal_connect (browser->popover_show_button, "clicked",
-  //     G_CALLBACK (browser_show_clicked), browser);
-  // g_signal_connect (browser->popover_rename_button, "clicked",
-  //     G_CALLBACK (browser_rename_item), browser);
-  // g_signal_connect (browser->popover_delete_button, "clicked",
-  //     G_CALLBACK (browser_delete_items), browser);
-
   g_signal_connect (gtk_tree_view_get_selection (browser->view),
 		    "changed", G_CALLBACK (browser_selection_changed),
 		    browser);
@@ -2739,10 +2699,18 @@ browser_init (struct browser *browser)
 		    G_CALLBACK (browser_close_search), browser);
   g_signal_connect (browser->search_entry, "search-changed",
 		    G_CALLBACK (browser_search_changed), browser);
-  // g_signal_connect (browser->view, "button-press-event",
-  //     G_CALLBACK (browser_button_press), browser);
-  // g_signal_connect (browser->view, "button-release-event",
-  //     G_CALLBACK (browser_button_release), browser);
+
+  GtkGesture *gesture = gtk_gesture_click_new ();
+  gtk_event_controller_set_propagation_phase (GTK_EVENT_CONTROLLER (gesture),
+					      GTK_PHASE_CAPTURE);
+  gtk_gesture_single_set_button (GTK_GESTURE_SINGLE (gesture), 0);
+  g_signal_connect (gesture, "pressed", G_CALLBACK (browser_button_pressed),
+		    browser);
+  g_signal_connect (gesture, "released", G_CALLBACK (browser_button_released),
+		    browser);
+  gtk_widget_add_controller (GTK_WIDGET (browser->view),
+			     GTK_EVENT_CONTROLLER (gesture));
+
   // g_signal_connect (browser->view, "key-press-event",
   //     G_CALLBACK (browser_key_press), browser);
   // g_signal_connect (browser->view, "drag-begin",
@@ -2776,8 +2744,20 @@ browser_init (struct browser *browser)
   notifier_init (&browser->notifier, browser);
 }
 
+static const GActionEntry BROWSER_LOCAL_ENTRIES[] = {
+  {"local_browser_upload", elektroid_add_upload_tasks, NULL, NULL, NULL},
+  {"local_browser_rename", browser_rename_item, NULL, NULL, NULL},
+  {"local_browser_delete", browser_delete_items, NULL, NULL, NULL},
+  {"local_browser_play", browser_play, NULL, NULL, NULL},
+  {"local_browser_open_ext_editor", browser_open_in_ext_editor, NULL, NULL,
+   NULL},
+  {"local_browser_show_in_file_manager", browser_show_in_file_manager, NULL,
+   NULL, NULL}
+};
+
 static void
-browser_local_init (struct browser *browser, GtkBuilder *builder)
+browser_local_init (struct browser *browser, GtkBuilder *builder,
+		    GtkApplication *app)
 {
   browser->name = "local";
   browser->view =
@@ -2796,46 +2776,18 @@ browser_local_init (struct browser *browser, GtkBuilder *builder)
     GTK_WIDGET (gtk_builder_get_object (builder, "local_search_entry"));
   browser->dir_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "local_dir_entry"));
-  browser->popover =
-    GTK_POPOVER (gtk_builder_get_object (builder, "local_popover"));
+  browser->popovermenu =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_popovermenu"));
   browser->pref_key_dir = PREF_KEY_LOCAL_DIR;
   browser->fs_ops = &FS_LOCAL_SAMPLE_OPERATIONS;
   browser->backend = NULL;
   browser->check_callback = NULL;
-  browser->set_popup_buttons_visibility = browser_local_set_popup_visibility;
   browser->set_columns_visibility = browser_local_set_columns_visibility;
   browser->sensitive_widgets = NULL;
   browser->list_stack =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_list_stack"));
   browser->spinner =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_spinner"));
-  browser->popover_transfer_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "local_popover_upload_button"));
-  browser->popover_play_separator =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "local_popover_play_separator"));
-  browser->popover_play_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "local_popover_play_button"));
-  browser->popover_options_separator =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "local_popover_options_separator"));
-  browser->popover_open_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "local_popover_open_button"));
-  browser->popover_show_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "local_popover_show_button"));
-  browser->popover_actions_separator =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "local_popover_actions_separator"));
-  browser->popover_rename_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "local_popover_rename_button"));
-  browser->popover_delete_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "local_popover_delete_button"));
   browser->tree_view_name_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_name_column"));
@@ -2885,9 +2837,6 @@ browser_local_init (struct browser *browser, GtkBuilder *builder)
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_size_column"));
 
-  // g_signal_connect (browser->popover_transfer_button, "clicked",
-  //     G_CALLBACK (elektroid_add_upload_tasks), NULL);
-
   // gtk_drag_source_set ((GtkWidget *) browser->view,
   //        GDK_BUTTON1_MASK, TARGET_ENTRIES_LOCAL_SRC,
   //        G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_SRC),
@@ -2900,10 +2849,51 @@ browser_local_init (struct browser *browser, GtkBuilder *builder)
   browser_load_preferences_dir (browser);
 
   browser_init (browser);
+
+  g_action_map_add_action_entries (G_ACTION_MAP (app), BROWSER_LOCAL_ENTRIES,
+				   G_N_ELEMENTS (BROWSER_LOCAL_ENTRIES),
+				   browser);
+
+  const gchar *upload_accels[] = { "<Ctrl>Right", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.local_browser_upload",
+					 upload_accels);
+  const gchar *rename_accels[] = { "F2", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.local_browser_rename",
+					 rename_accels);
+  const gchar *delete_accels[] = { "Delete", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.local_browser_delete",
+					 delete_accels);
+  const gchar *play_accels[] = { "space", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.local_browser_play",
+					 play_accels);
+  const gchar *edit_accels[] = { "<Ctrl>e", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.local_browser_open_ext_editor",
+					 edit_accels);
+  const gchar *show_accels[] = { "<Ctrl>f", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.local_browser_show_in_file_manager",
+					 show_accels);
 }
 
+static const GActionEntry BROWSER_REMOTE_ENTRIES[] = {
+  {"remote_browser_download", elektroid_add_download_tasks, NULL, NULL, NULL},
+  {"remote_browser_rename", browser_rename_item, NULL, NULL, NULL},
+  {"remote_browser_delete", browser_delete_items, NULL, NULL, NULL},
+  {"remote_browser_play", browser_play, NULL, NULL, NULL},
+  {"remote_browser_open_ext_editor", browser_open_in_ext_editor, NULL, NULL,
+   NULL},
+  {"remote_browser_show_in_file_manager", browser_show_in_file_manager, NULL,
+   NULL, NULL}
+};
+
 static void
-browser_remote_init (struct browser *browser, GtkBuilder *builder)
+browser_remote_init (struct browser *browser, GtkBuilder *builder,
+		     GtkApplication *app)
 {
   browser->name = "remote";
   browser->view =
@@ -2922,47 +2912,19 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder)
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_search_entry"));
   browser->dir_entry =
     GTK_ENTRY (gtk_builder_get_object (builder, "remote_dir_entry"));
-  browser->popover =
-    GTK_POPOVER (gtk_builder_get_object (builder, "remote_popover"));
+  browser->popovermenu =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_popovermenu"));
   browser->pref_key_dir = PREF_KEY_REMOTE_DIR;
   browser->dir = NULL;
   browser->fs_ops = NULL;
   browser->backend = &backend;
   browser->check_callback = elektroid_check_backend;
-  browser->set_popup_buttons_visibility = browser_remote_set_popup_visibility;
   browser->set_columns_visibility = browser_remote_set_columns_visibility;
   browser->sensitive_widgets = NULL;
   browser->list_stack =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_list_stack"));
   browser->spinner =
     GTK_WIDGET (gtk_builder_get_object (builder, "remote_spinner"));
-  browser->popover_transfer_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "remote_popover_download_button"));
-  browser->popover_play_separator =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "remote_popover_play_separator"));
-  browser->popover_play_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "remote_popover_play_button"));
-  browser->popover_options_separator =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "remote_popover_options_separator"));
-  browser->popover_open_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "remote_popover_open_button"));
-  browser->popover_show_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "remote_popover_show_button"));
-  browser->popover_actions_separator =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "remote_popover_actions_separator"));
-  browser->popover_rename_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "remote_popover_rename_button"));
-  browser->popover_delete_button =
-    GTK_WIDGET (gtk_builder_get_object
-		(builder, "remote_popover_delete_button"));
   browser->tree_view_name_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_name_column"));
@@ -3028,17 +2990,43 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder)
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_info_column"));
 
-  // g_signal_connect (browser->popover_transfer_button, "clicked",
-  //     G_CALLBACK (elektroid_add_download_tasks), NULL);
-
   browser_init (browser);
+
+  g_action_map_add_action_entries (G_ACTION_MAP (app), BROWSER_REMOTE_ENTRIES,
+				   G_N_ELEMENTS (BROWSER_REMOTE_ENTRIES),
+				   browser);
+
+  const gchar *upload_accels[] = { "<Ctrl>Left", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.remote_browser_download",
+					 upload_accels);
+  const gchar *rename_accels[] = { "F2", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.remote_browser_rename",
+					 rename_accels);
+  const gchar *delete_accels[] = { "Delete", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.remote_browser_delete",
+					 delete_accels);
+  const gchar *play_accels[] = { "space", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.remote_browser_play",
+					 play_accels);
+  const gchar *edit_accels[] = { "<Ctrl>e", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.remote_browser_open_ext_editor",
+					 edit_accels);
+  const gchar *show_accels[] = { "<Ctrl>f", NULL };
+  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
+					 "app.remote_browser_show_in_file_manager",
+					 show_accels);
 }
 
 void
-browser_init_all (GtkBuilder *builder)
+browser_init_all (GtkBuilder *builder, GtkApplication *app)
 {
-  browser_local_init (&local_browser, builder);
-  browser_remote_init (&remote_browser, builder);
+  browser_local_init (&local_browser, builder, app);
+  browser_remote_init (&remote_browser, builder, app);
 
   notes_list_store =
     GTK_LIST_STORE (gtk_builder_get_object (builder, "notes_list_store"));

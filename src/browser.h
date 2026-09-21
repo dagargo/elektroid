@@ -78,7 +78,7 @@ struct browser
   GtkEntry *dir_entry;
   const gchar *pref_key_dir;
   gchar *dir;
-  GtkPopover *popover;
+  GtkWidget *popovermenu;
   gboolean dnd;
   GtkTreePath *dnd_motion_path;
   guint dnd_timeout_function_id;
@@ -103,16 +103,6 @@ struct browser
   struct browser_search_options search_options;
   gint64 last_selected_index;	//This needs space for gint and -1
   gboolean selection_active;
-  //Menu
-  GtkWidget *popover_transfer_button;
-  GtkWidget *popover_play_separator;
-  GtkWidget *popover_play_button;
-  GtkWidget *popover_options_separator;
-  GtkWidget *popover_open_button;
-  GtkWidget *popover_show_button;
-  GtkWidget *popover_actions_separator;
-  GtkWidget *popover_rename_button;
-  GtkWidget *popover_delete_button;
   GtkTreeViewColumn *tree_view_name_column;
   GtkTreeViewColumn *tree_view_info_column;
   GtkTreeViewColumn *tree_view_sample_frames_column;
@@ -172,7 +162,7 @@ void browser_cancel (struct browser *browser);
 
 gboolean browser_no_progress_needed (struct browser *browser);
 
-void browser_init_all (GtkBuilder *);
+void browser_init_all (GtkBuilder * builder, GtkApplication * app);
 
 void browser_destroy_all ();
 
