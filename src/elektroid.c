@@ -1859,8 +1859,39 @@ elektroid_signal_handler (gpointer data)
 #endif
 
 static void
+elektroid_on_color_scheme_changed (GSettings *gnome_interface,
+				   gchar *key, gpointer user_data)
+{
+  GtkSettings *gtk_settings = gtk_settings_get_default ();
+  g_autofree gchar *color_scheme =
+    g_settings_get_string (gnome_interface, "color-scheme");
+  if (g_strcmp0 (color_scheme, "prefer-dark"))
+    {
+      debug_print (1, "Changing to default theme...");
+      g_object_set (gtk_settings,
+		    "gtk-theme-name", "Adwaita",
+		    "gtk-application-prefer-dark-theme", FALSE, NULL);
+    }
+  else
+    {
+      debug_print (1, "Changing to dark theme...");
+      g_object_set (gtk_settings,
+		    "gtk-theme-name", "Adwaita-dark",
+		    "gtk-application-prefer-dark-theme", TRUE, NULL);
+    }
+}
+
+static void
 elektroid_activate (GApplication *gapp, gpointer *user_data)
 {
+  GSettings *gnome_interface = g_settings_new ("org.gnome.desktop.interface");
+  elektroid_on_color_scheme_changed (gnome_interface, "color-scheme", NULL);
+  g_signal_connect (gnome_interface,
+		    "changed::color-scheme",
+		    G_CALLBACK (elektroid_on_color_scheme_changed), NULL);
+  g_object_set_data_full (G_OBJECT (main_window), "gnome-settings",
+			  gnome_interface, g_object_unref);
+
   gtk_window_present (GTK_WINDOW (main_window));
 }
 
