@@ -487,7 +487,7 @@ static const struct fs_operations FS_MICROBRUTE_OPERATIONS = {
   .get_download_path = common_slot_get_download_path_n
 };
 
-gint
+static gint
 microbrute_handshake (struct backend *backend)
 {
   guint8 *seq;

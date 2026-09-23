@@ -23,8 +23,6 @@
 
 #include "connector.h"
 
-gint padkontrol_handshake (struct backend *);
-
 extern const struct connector CONNECTOR_PADKONTROL;
 
 #endif

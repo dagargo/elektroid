@@ -47,8 +47,6 @@ enum microbrute_param
   MICROBRUTE_CALIB_END
 };
 
-gint microbrute_handshake (struct backend *);
-
 gint microbrute_get_parameter (struct backend *, enum microbrute_param,
 			       guint8 *);
 

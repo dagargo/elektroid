@@ -1235,7 +1235,7 @@ sds_handshake_elektron (struct backend *backend)
   return 0;
 }
 
-gint
+static gint
 sds_handshake_name (struct backend *backend)
 {
   GByteArray *tx_msg =
@@ -1255,7 +1255,7 @@ sds_handshake_name (struct backend *backend)
   return -ENODEV;
 }
 
-gint
+static gint
 sds_handshake_loop_point (struct backend *backend)
 {
   GByteArray *tx_msg =
@@ -1277,7 +1277,7 @@ sds_handshake_loop_point (struct backend *backend)
   return -ENODEV;
 }
 
-gint
+static gint
 sds_handshake_esi_2000 (struct backend *backend)
 {
   //An upload to a real sample will erase the sample even if cancelled, so a sample id of a non existing slot is need.
@@ -1301,7 +1301,7 @@ sds_handshake_esi_2000 (struct backend *backend)
   return 0;
 }
 
-gint
+static gint
 sds_handshake (struct backend *backend)
 {
   gint err;
