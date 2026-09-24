@@ -379,11 +379,14 @@ volca_sample_2_sample_upload_params (struct backend *backend,
   memset (header.name, 0, VOLCA_SAMPLE_2_SAMPLE_NAME_LEN);
   memcpy (header.name, name, MIN (strlen (name),
 				  VOLCA_SAMPLE_2_SAMPLE_NAME_LEN));
-  // TODO: If sample is truncated, the return value should indicate this.
   size_truncated = volca_sample_2_sample_get_max_size_in_msg (size);
   header.frames = size_truncated / sizeof (gint16);
   header.level = level;
   header.speed = speed;
+  if (size_truncated < size)
+    {
+      warn_print ("Sample truncated to %d frames", header.frames);
+    }
 
   volca_sample_2_set_sample_id (header_dump, id);
   common_8bit_msg_to_midi_msg ((guint8 *) & header, &header_dump[2],
