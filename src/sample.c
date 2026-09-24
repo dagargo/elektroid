@@ -759,7 +759,7 @@ sample_load_libsndfile_sample_info (const gchar *path,
   SF_INFO sf_info;
   SNDFILE *sndfile;
   FILE *file;
-  gint err = 0;
+  gint err;
 
   file = fopen (path, "rb");
   if (!file)
@@ -768,19 +768,23 @@ sample_load_libsndfile_sample_info (const gchar *path,
     }
 
   sndfile = sf_open_virtual (&FILE_IO, SFM_READ, &sf_info, file);
-  if (!sndfile)
+  if (sndfile)
     {
-      error_print ("Error while reading %s: %s", path, sf_strerror (sndfile));
+      sample_set_sample_info (sample_info, sndfile, &sf_info, TRUE);
+      err = 0;
+    }
+  else
+    {
+      error_print ("Error while reading \"%s\": %s", path,
+		   sf_strerror (sndfile));
+      sample_info_init (sample_info);
       err = -1;
-      goto end;
     }
 
-  sample_set_sample_info (sample_info, sndfile, &sf_info, TRUE);
-
-end:
   fclose (file);
   return err;
 }
+
 
 static gint
 sample_load_microfreak (const gchar *path, struct idata *sample,
