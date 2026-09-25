@@ -57,19 +57,10 @@
 static void browser_remote_reset_dnd ();
 
 /*
-enum
-{
-  TARGET_STRING,
-};
-
 static const GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
   {TEXT_URI_LIST_STD, 0, TARGET_STRING},
   {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
    TARGET_STRING}
-};
-
-static const GtkTargetEntry TARGET_ENTRIES_LOCAL_SRC[] = {
-  {TEXT_URI_LIST_STD, 0, TARGET_STRING}
 };
 
 static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SYSTEM_DST[] = {
@@ -566,10 +557,10 @@ browser_go_up (GtkWidget *object, gpointer data)
 }
 
 gboolean
-browser_no_progress_needed (struct browser *browser)
+browser_progress_needed (struct browser *browser)
 {
-  return (BROWSER_IS_SYSTEM (browser) &&
-	  browser_get_selected_items_count (browser) <=
+  return (!BROWSER_IS_SYSTEM (browser) ||
+	  browser_get_selected_items_count (browser) >
 	  PROGRESS_DELETE_THRESHOLD);
 }
 
@@ -581,18 +572,18 @@ browser_delete_items_efectively (struct browser *browser)
   delete_data = g_malloc (sizeof (struct browser_delete_items_data));
   delete_data->browser = browser;
 
-  if (browser_no_progress_needed (browser))
-    {
-      delete_data->has_progress_window = FALSE;
-      elektroid_delete_items_runner (delete_data);
-      browser_load_dir_if_needed (browser);
-    }
-  else
+  if (browser_progress_needed (browser))
     {
       delete_data->has_progress_window = TRUE;
       progress_window_open (elektroid_delete_items_runner, NULL, NULL,
 			    delete_data, PROGRESS_TYPE_PULSE,
 			    _("Deleting Files"), _("Deleting..."), TRUE);
+    }
+  else
+    {
+      delete_data->has_progress_window = FALSE;
+      elektroid_delete_items_runner (delete_data);
+      browser_load_dir_if_needed (browser);
     }
 }
 
@@ -1794,16 +1785,14 @@ browser_button_pressed (GtkGestureClick *gesture, int n_press, double x,
 			double y, gpointer data)
 {
   GtkTreePath *path;
-  GtkTreeSelection *selection;
   struct browser *browser = data;
   GdkModifierType state =
     gtk_event_controller_get_current_event_state (GTK_EVENT_CONTROLLER
 						  (gesture));
   guint button =
     gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture));
-
-
-  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
+  GtkTreeSelection *selection =
+    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
 
   gtk_tree_selection_set_select_function (selection,
 					  browser_selection_function_true,
@@ -2005,41 +1994,174 @@ browser_button_released (GtkGestureClick *gesture, int n_press, double x,
 //     }
 // }
 
-// static gboolean
-// browser_drag_begin (GtkWidget *widget, GdkDragContext *context, gpointer data)
-// {
-//   GtkTreeIter iter;
-//   GList *tree_path_list;
-//   GList *list;
-//   gchar *uri, *path;
-//   struct item item;
-//   struct browser *browser = data;
-//   enum path_type type = backend_get_path_type (browser->backend);
-//   GtkTreeView *view = GTK_TREE_VIEW (widget);
-//   GtkTreeModel *model = gtk_tree_view_get_model (view);
-//   GtkTreeSelection *selection = gtk_tree_view_get_selection (view);
+static GdkContentProvider *
+browser_on_drag_prepare (GtkDragSource *source,
+			 double x, double y, gpointer user_data)
+{
+  GtkTreeIter iter;
+  GList *tree_path_list;
+  GList *list;
+  gchar *uri, *path;
+  struct item item;
+  GString *uri_list;
+  const gchar *mime;
+  GdkContentProvider *provider;
+  struct browser *browser = user_data;
+  enum path_type type = backend_get_path_type (browser->backend);
+  GtkTreeView *view = GTK_TREE_VIEW (browser->view);
+  GtkTreeModel *model = gtk_tree_view_get_model (view);
+  GtkTreeSelection *selection = gtk_tree_view_get_selection (view);
 
-//   tree_path_list = gtk_tree_selection_get_selected_rows (selection, &model);
+  uri_list = g_string_new ("");
+  tree_path_list = gtk_tree_selection_get_selected_rows (selection, &model);
+  for (list = tree_path_list; list != NULL; list = g_list_next (list))
+    {
+      gtk_tree_model_get_iter (model, &iter, list->data);
+      browser_set_item (model, &iter, &item);
+      path = browser_get_item_path (browser, &item);
+      uri = path_filename_to_uri (type, path);
+      g_free (path);
+      debug_print (1, "Adding URI '%s' to DND...", uri);
+      g_string_append (uri_list, uri);
+      g_free (uri);
+      g_string_append (uri_list, "\n");
+    }
+  g_list_free_full (tree_path_list, (GDestroyNotify) gtk_tree_path_free);
 
-//   browser->dnd_data = g_string_new ("");
-//   for (list = tree_path_list; list != NULL; list = g_list_next (list))
-//     {
-//       gtk_tree_model_get_iter (model, &iter, list->data);
-//       browser_set_item (model, &iter, &item);
-//       path = browser_get_item_path (browser, &item);
-//       uri = path_filename_to_uri (type, path);
-//       g_free (path);
-//       g_string_append (browser->dnd_data, uri);
-//       g_free (uri);
-//       g_string_append (browser->dnd_data, "\n");
-//     }
-//   g_list_free_full (tree_path_list, (GDestroyNotify) gtk_tree_path_free);
-//   browser->dnd = TRUE;
+  if (browser == &local_browser)
+    {
+      mime = TEXT_URI_LIST_STD;
+    }
+  else
+    {
+      mime = TEXT_URI_LIST_ELEKTROID;
+    }
+  GBytes *bytes = g_bytes_new (uri_list->str, strlen (uri_list->str) + 1);
+  provider = gdk_content_provider_new_for_bytes (mime, bytes);
+  g_bytes_unref (bytes);
+  g_string_free (uri_list, TRUE);
 
-//   debug_print (1, "Drag begin data:\n%s", browser->dnd_data->str);
+  return provider;
+}
 
-//   return FALSE;
-// }
+static void
+browser_on_drop_async (GObject *source_object, GAsyncResult *result,
+		       gpointer user_data)
+{
+  struct browser *browser = user_data;
+  GdkDrop *drop = GDK_DROP (source_object);
+  GError *error = NULL;
+
+  const GValue *value = gdk_drop_read_value_finish (drop, result, &error);
+
+  if (error != NULL)
+    {
+      error_print ("Error reading value: %s", error->message);
+      g_error_free (error);
+      gdk_drop_finish (drop, 0);
+      return;
+    }
+
+  const gchar *title, *text;
+  struct browser_dnd_data *dnd_data;
+  struct browser *other = OTHER_BROWSER (browser);
+  GdkContentFormats *formats = gdk_drop_get_formats (drop);
+
+  dnd_data = g_malloc (sizeof (struct browser_dnd_data));
+
+  if (gdk_content_formats_contain_mime_type (formats, TEXT_URI_LIST_STD))
+    {
+      dnd_data->mime = TEXT_URI_LIST_STD;
+    }
+  else
+    if (gdk_content_formats_contain_mime_type (formats,
+					       TEXT_URI_LIST_ELEKTROID))
+    {
+      dnd_data->mime = TEXT_URI_LIST_ELEKTROID;
+    }
+
+  GdkFileList *file_list = g_value_get_boxed (value);
+  GSList *files = gdk_file_list_get_files (file_list);
+  guint len = g_slist_length (files);
+  gchar **array = g_new (gchar *, len + 1);
+  guint i = 0;
+  for (GSList * l = files; l != NULL; l = l->next, i++)
+    {
+      gchar *uri = g_file_get_uri (G_FILE (l->data));
+      array[i] = uri;
+    }
+  dnd_data->uris = array;
+
+  dnd_data->dst_widget = GTK_WIDGET (browser->view);
+  if (browser == &local_browser)
+    {
+      if (strcmp (dnd_data->mime, TEXT_URI_LIST_STD) == 0)
+	{
+	  // move
+	  dnd_data->has_progress_window = FALSE;
+	  title = _("Moving Files");
+	  text = _("Moving...");
+	}
+      else
+	{
+	  // download
+	  dnd_data->has_progress_window = browser_progress_needed (other);
+	  title = _("Preparing Tasks");
+	  text = _("Waiting...");
+	}
+    }
+  else
+    {
+      if (strcmp (dnd_data->mime, TEXT_URI_LIST_STD) == 0)
+	{
+	  // upload
+	  dnd_data->has_progress_window = browser_progress_needed (other);
+	  title = _("Preparing Tasks");
+	  text = _("Waiting...");
+	}
+      else
+	{
+	  // move
+	  dnd_data->has_progress_window = FALSE;
+	  title = _("Moving Files");
+	  text = _("Moving...");
+	}
+    }
+
+  if (dnd_data->has_progress_window)
+    {
+      progress_window_open (elektroid_browser_drag_data_received_runner,
+			    NULL, NULL, dnd_data, PROGRESS_TYPE_PULSE,
+			    title, text, TRUE);
+    }
+  else
+    {
+      elektroid_browser_drag_data_received_runner (dnd_data);
+    }
+
+  gdk_drop_finish (drop, gdk_drop_get_actions (drop));
+}
+
+static gboolean
+browser_on_drop (GtkDropTargetAsync *target, GdkDrop *drop, double x,
+		 double y, gpointer user_data)
+{
+  struct browser_dnd_data *dnd_data;
+
+  GdkContentFormats *formats = gdk_drop_get_formats (drop);
+  if (gdk_content_formats_contain_mime_type (formats, TEXT_URI_LIST_STD) ||
+      gdk_content_formats_contain_mime_type (formats,
+					     TEXT_URI_LIST_ELEKTROID))
+    {
+      gdk_drop_read_value_async (drop, GDK_TYPE_FILE_LIST, G_PRIORITY_DEFAULT,
+				 NULL, browser_on_drop_async, user_data);
+      return TRUE;
+    }
+  else
+    {
+      return FALSE;
+    }
+}
 
 // static gboolean
 // browser_drag_end (GtkWidget *widget, GdkDragContext *context, gpointer data)
@@ -2079,7 +2201,7 @@ browser_button_released (GtkGestureClick *gesture, int n_press, double x,
 // }
 
 // static void
-// browser_drag_data_received_data (GtkWidget *widget, GdkDragContext *context,
+// browser_dnd_data (GtkWidget *widget, GdkDragContext *context,
 //                               gint x, gint y,
 //                               GtkSelectionData *selection_data,
 //                               guint info, guint time, gpointer user_data)
@@ -2090,7 +2212,7 @@ browser_button_released (GtkGestureClick *gesture, int n_press, double x,
 //   struct browser *browser = user_data;
 //   struct browser *other = OTHER_BROWSER (browser);
 //   gchar *filename, *src_dir, *dst_dir = NULL;
-//   struct browser_drag_data_received_data *drag_data;
+//   struct browser_dnd_data *drag_data;
 
 //   if (!gtk_selection_data_get_length (selection_data))
 //     {
@@ -2108,8 +2230,8 @@ browser_button_released (GtkGestureClick *gesture, int n_press, double x,
 //       return;
 //     }
 
-//   drag_data = g_malloc (sizeof (struct browser_drag_data_received_data));
-//   drag_data->has_progress_window = !browser_no_progress_needed (other);
+//   drag_data = g_malloc (sizeof (struct browser_dnd_data));
+//   drag_data->has_progress_window = browser_progress_needed (other);
 //   drag_data->widget = widget;
 
 //   type = gtk_selection_data_get_data_type (selection_data);
@@ -2567,7 +2689,7 @@ browser_search_changed (GtkSearchEntry *entry, gpointer data)
   gchar *tempo_prefix = g_utf8_casefold (_("Tempo"), -1);
   gchar *note_prefix = g_utf8_casefold (_("Note"), -1);
 
-  gchar **words = g_strsplit_set (filter, " ", -1);
+  gchar **words = g_strsplit (filter, " ", -1);
   gchar **w = words;
   const gchar *param;
 
@@ -2717,13 +2839,13 @@ browser_init (struct browser *browser)
   // g_signal_connect (browser->view, "key-press-event",
   //     G_CALLBACK (browser_key_press), browser);
   // g_signal_connect (browser->view, "drag-begin",
-  //     G_CALLBACK (browser_drag_begin), browser);
+  //     G_CALLBACK (browser_drag_begin), browser); // -> browser_on_drag_prepare
   // g_signal_connect (browser->view, "drag-end",
   //     G_CALLBACK (browser_drag_end), browser);
   // g_signal_connect (browser->view, "drag-data-get",
   //     G_CALLBACK (browser_dnd_get), browser);
   // g_signal_connect (browser->view, "drag-data-received",
-  //     G_CALLBACK (browser_drag_data_received_data), browser);
+  //     G_CALLBACK (browser_dnd_data), browser); -> browser_on_drop
   // g_signal_connect (browser->view, "drag-motion",
   //     G_CALLBACK (browser_drag_motion_list), browser);
   // g_signal_connect (browser->view, "drag-leave",
@@ -2733,13 +2855,30 @@ browser_init (struct browser *browser)
   // g_signal_connect (browser->up_button, "drag-leave",
   //     G_CALLBACK (browser_drag_leave_up), browser);
 
-  browser->selection_active = TRUE;
+  GtkDragSource *drag_source = gtk_drag_source_new ();
+  gtk_drag_source_set_actions (drag_source,
+			       GDK_ACTION_COPY | GDK_ACTION_MOVE);
+  g_signal_connect (drag_source, "prepare",
+		    G_CALLBACK (browser_on_drag_prepare), browser);
+  gtk_widget_add_controller (GTK_WIDGET (browser->view),
+			     GTK_EVENT_CONTROLLER (drag_source));
 
-  // gtk_drag_dest_set ((GtkWidget *) browser->up_button,
-  //      GTK_DEST_DEFAULT_MOTION | GTK_DEST_DEFAULT_HIGHLIGHT,
-  //      TARGET_ENTRIES_UP_BUTTON_DST,
-  //      G_N_ELEMENTS (TARGET_ENTRIES_UP_BUTTON_DST),
-  //      GDK_ACTION_COPY | GDK_ACTION_MOVE);
+  const char *mime_types[] = {
+    TEXT_URI_LIST_STD,
+    TEXT_URI_LIST_ELEKTROID
+  };
+  GdkContentFormats *formats =
+    gdk_content_formats_new (mime_types, G_N_ELEMENTS (mime_types));
+  GtkDropTargetAsync *drop_target = gtk_drop_target_async_new (formats,
+							       GDK_ACTION_COPY
+							       |
+							       GDK_ACTION_MOVE);
+  g_signal_connect (drop_target, "drop", G_CALLBACK (browser_on_drop),
+		    browser);
+  gtk_widget_add_controller (GTK_WIDGET (browser->view),
+			     GTK_EVENT_CONTROLLER (drop_target));
+
+  browser->selection_active = TRUE;
 
   browser->reload_item_in_editor = TRUE;
   browser->folder_size_cache =
@@ -2839,15 +2978,6 @@ browser_local_init (struct browser *browser, GtkBuilder *builder,
   browser->tree_view_size_column =
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "local_tree_view_size_column"));
-
-  // gtk_drag_source_set ((GtkWidget *) browser->view,
-  //        GDK_BUTTON1_MASK, TARGET_ENTRIES_LOCAL_SRC,
-  //        G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_SRC),
-  //        GDK_ACTION_COPY | GDK_ACTION_MOVE);
-  // gtk_drag_dest_set ((GtkWidget *) browser->view,
-  //      GTK_DEST_DEFAULT_ALL, TARGET_ENTRIES_LOCAL_DST,
-  //      G_N_ELEMENTS (TARGET_ENTRIES_LOCAL_DST),
-  //      GDK_ACTION_COPY | GDK_ACTION_MOVE);
 
   browser_load_preferences_dir (browser);
 
