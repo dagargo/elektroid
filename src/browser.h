@@ -50,7 +50,7 @@
 
 #define BROWSER_IS_SYSTEM(b) (!(b)->backend || (b)->backend->type == BE_TYPE_SYSTEM)
 
-#define PATH_TYPE_FROM_DND_TYPE(dnd) (strcmp (dnd, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : backend_get_path_type (remote_browser.backend))
+#define PATH_TYPE_FROM_DND_DATA(dnd) (strcmp (dnd->mime, TEXT_URI_LIST_ELEKTROID) ? PATH_SYSTEM : backend_get_path_type (remote_browser.backend))
 
 #define TEXT_URI_LIST_STD "text/uri-list"
 #define TEXT_URI_LIST_ELEKTROID "text/uri-list-elektroid"
@@ -79,10 +79,8 @@ struct browser
   const gchar *pref_key_dir;
   gchar *dir;
   GtkWidget *popovermenu;
-  gboolean dnd;
   GtkTreePath *dnd_motion_path;
   guint dnd_timeout_function_id;
-  GString *dnd_data;
   const struct fs_operations *fs_ops;
   struct backend *backend;
     gboolean (*check_callback) ();
@@ -119,11 +117,11 @@ struct browser
   GHashTable *folder_size_cache;
 };
 
-struct browser_drag_data_received_data
+struct browser_dnd_data
 {
-  GtkWidget *widget;
+  const gchar *mime;
   gchar **uris;
-  gchar *type_name;
+  GtkWidget *dst_widget;
   gboolean has_progress_window;
 };
 
@@ -160,7 +158,7 @@ void browser_close_search (GtkSearchEntry *, gpointer);
 
 void browser_cancel (struct browser *browser);
 
-gboolean browser_no_progress_needed (struct browser *browser);
+gboolean browser_progress_needed (struct browser *browser);
 
 void browser_init_all (GtkBuilder * builder, GtkApplication * app);
 

@@ -1046,17 +1046,17 @@ elektroid_add_upload_tasks (GSimpleAction *simple_action, GVariant *parameter,
       return;
     }
 
-  if (browser_no_progress_needed (&local_browser))
-    {
-      *has_progress_window = FALSE;
-      elektroid_add_upload_tasks_runner (has_progress_window);
-    }
-  else
+  if (browser_progress_needed (&local_browser))
     {
       *has_progress_window = TRUE;
       progress_window_open (elektroid_add_upload_tasks_runner, NULL, NULL,
 			    has_progress_window, PROGRESS_TYPE_PULSE,
 			    _("Preparing Tasks"), _("Waiting..."), TRUE);
+    }
+  else
+    {
+      *has_progress_window = FALSE;
+      elektroid_add_upload_tasks_runner (has_progress_window);
     }
 }
 
@@ -1239,17 +1239,17 @@ elektroid_add_download_tasks (GSimpleAction *simple_action,
       return;
     }
 
-  if (browser_no_progress_needed (&remote_browser))
-    {
-      *has_progress_window = FALSE;
-      elektroid_add_download_tasks_runner (has_progress_window);
-    }
-  else
+  if (browser_progress_needed (&remote_browser))
     {
       *has_progress_window = TRUE;
       progress_window_open (elektroid_add_download_tasks_runner, NULL, NULL,
 			    has_progress_window, PROGRESS_TYPE_PULSE,
 			    _("Preparing Tasks"), _("Waiting..."), TRUE);
+    }
+  else
+    {
+      *has_progress_window = FALSE;
+      elektroid_add_download_tasks_runner (has_progress_window);
     }
 }
 
@@ -1514,9 +1514,8 @@ elektroid_browser_drag_data_received_runner (gpointer user_data)
 {
   GtkTreeIter iter;
   gboolean queued_before, queued_after;
-  struct browser_drag_data_received_data *data = user_data;
+  struct browser_dnd_data *data = user_data;
   gboolean has_progress_window = data->has_progress_window;
-  GtkWidget *widget = data->widget;
 
   queued_before = tasks_get_next_queued (&iter, NULL, NULL, NULL,
 					 NULL, NULL, NULL);
@@ -1528,32 +1527,35 @@ elektroid_browser_drag_data_received_runner (gpointer user_data)
 	  goto end;
 	}
 
-      enum path_type type = PATH_TYPE_FROM_DND_TYPE (data->type_name);
-      gchar *src_path = path_filename_from_uri (type, data->uris[i]);
+      const gchar *uri = data->uris[i];
+      debug_print (1, "Processing file '%s' from DND...", uri);
+
+      enum path_type type = PATH_TYPE_FROM_DND_DATA (data);
+      gchar *src_path = path_filename_from_uri (type, uri);
       gchar *name = g_path_get_basename (src_path);
       gchar *dir = g_path_get_dirname (src_path);
 
-      if (widget == GTK_WIDGET (local_browser.view))
+      if (data->dst_widget == GTK_WIDGET (local_browser.view))
 	{
-	  if (!strcmp (data->type_name, TEXT_URI_LIST_STD))
+	  if (!strcmp (data->mime, TEXT_URI_LIST_STD))
 	    {
 	      elektroid_dnd_received_browser (dir, name, src_path,
 					      &local_browser);
 	    }
-	  else if (!strcmp (data->type_name, TEXT_URI_LIST_ELEKTROID))
+	  else if (!strcmp (data->mime, TEXT_URI_LIST_ELEKTROID))
 	    {
 	      elektroid_add_download_task_path (name, dir, local_browser.dir,
 						has_progress_window);
 	    }
 	}
-      else if (widget == GTK_WIDGET (remote_browser.view))
+      else if (data->dst_widget == GTK_WIDGET (remote_browser.view))
 	{
-	  if (!strcmp (data->type_name, TEXT_URI_LIST_ELEKTROID))
+	  if (!strcmp (data->mime, TEXT_URI_LIST_ELEKTROID))
 	    {
 	      elektroid_dnd_received_browser (dir, name, src_path,
 					      &remote_browser);
 	    }
-	  else if (!strcmp (data->type_name, TEXT_URI_LIST_STD))
+	  else if (!strcmp (data->mime, TEXT_URI_LIST_STD))
 	    {
 	      if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
 		{
@@ -1581,7 +1583,6 @@ end:
       g_idle_add (elektroid_run_next, NULL);
     }
 
-  g_free (data->type_name);
   g_strfreev (data->uris);
   g_free (data);
 
@@ -1638,6 +1639,68 @@ elektroid_close_main_window (GtkWindow *widget, gpointer data)
 {
   elektroid_exit ();
   return FALSE;
+}
+
+static void
+elektroid_deserialize_text_uri_list_elektroid (GdkContentDeserializer
+					       *deserializer)
+{
+  gsize size;
+  GError *error;
+  GBytes *bytes;
+  const char *data;
+  GInputStream *stream;
+
+  stream = gdk_content_deserializer_get_input_stream (deserializer);
+
+  error = NULL;
+  bytes = g_input_stream_read_bytes (stream, MI, NULL, &error);
+  if (error != NULL)
+    {
+      gdk_content_deserializer_return_error (deserializer, error);
+      return;
+    }
+
+  data = g_bytes_get_data (bytes, &size);
+  if (size > 0 && data != NULL)
+    {
+      GValue *value;
+      GPtrArray *array;
+      GdkFileList *list;
+
+      array = g_ptr_array_new_with_free_func (g_object_unref);
+
+      char *data_copy = g_strndup (data, size);
+      char **uris = g_strsplit_set (data_copy, "\r\n", -1);
+
+      for (int i = 0; uris[i] != NULL; i++)
+	{
+	  if (strlen (uris[i]) == 0 || uris[i][0] == '#')
+	    {
+	      continue;
+	    }
+
+	  GFile *file = g_file_new_for_uri (uris[i]);
+	  if (file != NULL)
+	    {
+	      g_ptr_array_add (array, file);
+	    }
+	}
+
+      g_strfreev (uris);
+      g_free (data_copy);
+
+      list = gdk_file_list_new_from_array ((GFile **) array->pdata,
+					   array->len);
+      g_ptr_array_free (array, TRUE);
+
+      value = gdk_content_deserializer_get_value (deserializer);
+      g_value_take_boxed (value, list);
+    }
+
+  g_bytes_unref (bytes);
+
+  gdk_content_deserializer_return_success (deserializer);
 }
 
 static gchar **
@@ -1850,6 +1913,11 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   ma_microfreak_init (app);
 
   g_object_unref (builder);
+
+  gdk_content_register_deserializer (TEXT_URI_LIST_ELEKTROID,
+				     GDK_TYPE_FILE_LIST,
+				     elektroid_deserialize_text_uri_list_elektroid,
+				     NULL, NULL);
 }
 
 #if defined(__linux__)
