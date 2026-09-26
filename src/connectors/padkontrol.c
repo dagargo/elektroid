@@ -17,7 +17,7 @@
  *   You should have received a copy of the GNU General Public License
  *   along with Elektroid. If not, see <http://www.gnu.org/licenses/>.
  */
-#include "microbrute.h"
+
 #include "common.h"
 
 #define PADKONTROL_MAX_SCENES 16
