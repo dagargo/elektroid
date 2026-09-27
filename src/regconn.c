@@ -34,6 +34,7 @@
 #include "connectors/summit.h"
 #include "connectors/system.h"
 #include "connectors/tanzmaus.h"
+#include "connectors/teep.h"
 #include "connectors/volca_sample.h"
 #include "connectors/volca_sample_2.h"
 
@@ -57,7 +58,7 @@ regconn_register ()
 	       &CONNECTOR_MONOMACHINE,
 	       &CONNECTOR_PADKONTROL,
 	       &CONNECTOR_PHATTY,
-	       &CONNECTOR_SUMMIT, &CONNECTOR_VOLCA_SAMPLE_2,
+	       &CONNECTOR_SUMMIT, &CONNECTOR_TEEP, &CONNECTOR_VOLCA_SAMPLE_2,
 	       // sds is only tested on an E-mu ESI-2000, which is slow.
 	       &CONNECTOR_SDS,
 	       // But efactor is even slower even though it is USB.
