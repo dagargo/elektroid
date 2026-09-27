@@ -1262,20 +1262,20 @@ elektroid_set_fs (GtkWidget *object, gpointer data)
   gint fs;
   const struct fs_operations *fs_ops;
 
-  if (!gtk_combo_box_get_active_iter (GTK_COMBO_BOX (fs_combo), &iter))
+  if (gtk_combo_box_get_active_iter (GTK_COMBO_BOX (fs_combo), &iter))
     {
-      browser_set_reload_item_in_editor (&local_browser, FALSE);
-      browser_remote_set_fs_operations (NULL);
-      browser_set_reload_item_in_editor (&local_browser, TRUE);
-      return;
+      gtk_tree_model_get_value (GTK_TREE_MODEL (fs_list_store),
+				&iter, FS_LIST_STORE_ID_FIELD, &fsv);
+      fs = g_value_get_uint (&fsv);
+      g_value_unset (&fsv);
+
+      fs_ops = backend_get_fs_operations_by_id (BACKEND, fs);
+    }
+  else
+    {
+      fs_ops = NULL;
     }
 
-  gtk_tree_model_get_value (GTK_TREE_MODEL (fs_list_store),
-			    &iter, FS_LIST_STORE_ID_FIELD, &fsv);
-  fs = g_value_get_uint (&fsv);
-  g_value_unset (&fsv);
-
-  fs_ops = backend_get_fs_operations_by_id (BACKEND, fs);
   browser_set_reload_item_in_editor (&local_browser, FALSE);
   browser_remote_set_fs_operations (fs_ops);
   browser_set_reload_item_in_editor (&local_browser, TRUE);
