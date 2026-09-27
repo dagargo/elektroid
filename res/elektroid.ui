@@ -2331,7 +2331,7 @@ along with Elektroid.  If not, see <http://www.gnu.org/licenses/>.
                         <property name="orientation">vertical</property>
                         <property name="spacing">6</property>
                         <child>
-                          <object class="GtkBox" id="remote_devices_box">
+                          <object class="GtkBox">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <property name="spacing">6</property>

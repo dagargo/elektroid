@@ -98,7 +98,6 @@ static GtkWidget *preferences_button;
 static GtkWidget *about_button;
 static GtkWidget *local_name_entry;
 static GtkWidget *local_box;
-static GtkWidget *remote_devices_box;
 static GtkWidget *remote_box;
 static GtkWidget *local_side;
 static GtkWidget *remote_side;
@@ -1749,8 +1748,6 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
 
   local_name_entry =
     GTK_WIDGET (gtk_builder_get_object (builder, "local_name_entry"));
-  remote_devices_box =
-    GTK_WIDGET (gtk_builder_get_object (builder, "remote_devices_box"));
   local_box = GTK_WIDGET (gtk_builder_get_object (builder, "local_box"));
   remote_box = GTK_WIDGET (gtk_builder_get_object (builder, "remote_box"));
   local_side = GTK_WIDGET (gtk_builder_get_object (builder, "local_side"));
