@@ -420,8 +420,9 @@ static gboolean
 elektroid_check_backend_int (gboolean startup)
 {
   gboolean connected = backend_check (BACKEND);
+  guint fss = g_slist_length (BACKEND->fs_ops);
 
-  gtk_widget_set_sensitive (remote_box, connected);
+  gtk_widget_set_sensitive (remote_box, connected && fss);
 
   if (!connected)
     {
@@ -1313,13 +1314,19 @@ elektroid_fill_fs_combo_bg (gpointer data)
   g_signal_handlers_unblock_by_func (fs_combo, G_CALLBACK (elektroid_set_fs),
 				     NULL);
 
+  browser_set_reload_item_in_editor (&local_browser, FALSE);
   if (any)
     {
       debug_print (1, "Selecting first filesystem...");
-      browser_set_reload_item_in_editor (&local_browser, FALSE);
       gtk_combo_box_set_active (GTK_COMBO_BOX (fs_combo), 0);
-      browser_set_reload_item_in_editor (&local_browser, TRUE);
     }
+  else
+    {
+      debug_print (1, "No filesystems. Unsetting the remote browser...");
+      browser_reset (&remote_browser);
+      elektroid_check_backend ();
+    }
+  browser_set_reload_item_in_editor (&local_browser, TRUE);
 
   return FALSE;
 }
