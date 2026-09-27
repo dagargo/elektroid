@@ -31,6 +31,7 @@ static const guint8 EVENTIDE_ID[] = { 0x1c };
 static const guint8 KORG_ID[] = { 0x42 };
 static const guint8 MOOG_ID[] = { 0x04 };
 static const guint8 NOVATION_ID[] = { 0x0, 0x20, 0x29 };
+static const guint8 TE_ID[] = { 0x0, 0x20, 0x76 };
 
 struct common_simple_read_dir_data
 {
