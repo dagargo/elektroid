@@ -47,7 +47,8 @@
 
 static const gchar *SUMMIT_TUNING_EXTS[] = { BE_SYSEX_EXT, SCALA_EXT, NULL };
 
-static const guint8 SUMMIT_ID[] = { 0x33, 1, 0, 0 };
+static const guint8 FAMILY_ID[] = { 0x33, 1 };
+static const guint8 SUMMIT_ID[] = { 0, 0 };
 
 static const guint8 SUMMIT_GENERIC_REQ[] =
   { 0xf0, 0, 0x20, 0x29, 0x01, 0x11, 0x01, 0x33, 0, 0, 0, 0, 0, 0, 0xf7 };
@@ -916,19 +917,25 @@ static const struct fs_operations FS_SUMMIT_WAVETABLE_OPERATIONS = {
 static gint
 summit_handshake (struct backend *backend)
 {
-  if (memcmp (backend->midi_info.company, NOVATION_ID, sizeof (NOVATION_ID))
-      || memcmp (backend->midi_info.family, SUMMIT_ID, sizeof (SUMMIT_ID)))
+  if (memcmp (backend->midi_info.company, NOVATION_ID, sizeof (NOVATION_ID)))
     {
       return -ENODEV;
     }
 
-  gslist_fill (&backend->fs_ops, &FS_SUMMIT_SINGLE_OPERATIONS,
-	       &FS_SUMMIT_MULTI_OPERATIONS,
-	       &FS_SUMMIT_WAVETABLE_OPERATIONS,
-	       &FS_SUMMIT_BULK_TUNING_OPERATIONS, NULL);
-  snprintf (backend->name, LABEL_MAX, "Novation Summit");
-
-  return 0;
+  if (!memcmp (backend->midi_info.family, FAMILY_ID, sizeof (FAMILY_ID)) &&
+      !memcmp (backend->midi_info.model, SUMMIT_ID, sizeof (SUMMIT_ID)))
+    {
+      gslist_fill (&backend->fs_ops, &FS_SUMMIT_SINGLE_OPERATIONS,
+		   &FS_SUMMIT_MULTI_OPERATIONS,
+		   &FS_SUMMIT_WAVETABLE_OPERATIONS,
+		   &FS_SUMMIT_BULK_TUNING_OPERATIONS, NULL);
+      snprintf (backend->name, LABEL_MAX, "Novation Summit");
+      return 0;
+    }
+  else
+    {
+      return -ENODEV;
+    }
 }
 
 const struct connector CONNECTOR_SUMMIT = {
