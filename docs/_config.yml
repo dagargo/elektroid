@@ -25,3 +25,9 @@ minima:
     - cli.md
     - api.md
     - contributing.md
+
+sass:
+  quiet_deps: true
+  silence_deprecations:
+    - import
+    - global-builtin
