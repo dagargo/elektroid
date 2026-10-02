@@ -1796,7 +1796,6 @@ audio-volume-medium-symbolic</property>
                                 </child>
                                 <child>
                                   <object class="GtkStack" id="remote_buttons_stack">
-                                    <property name="hhomogeneous">0</property>
                                     <child>
                                       <object class="GtkStackPage">
                                         <property name="child">
@@ -1864,6 +1863,8 @@ audio-volume-medium-symbolic</property>
                                         <property name="child">
                                           <object class="GtkSearchEntry" id="remote_search_entry">
                                             <property name="focusable">1</property>
+                                            <property name="max-width-chars">10</property>
+                                            <property name="width-chars">10</property>
                                           </object>
                                         </property>
                                         <property name="name">search</property>
@@ -2145,7 +2146,6 @@ audio-volume-medium-symbolic</property>
                                 </child>
                                 <child>
                                   <object class="GtkStack" id="local_buttons_stack">
-                                    <property name="hhomogeneous">0</property>
                                     <child>
                                       <object class="GtkStackPage">
                                         <property name="child">
@@ -2213,6 +2213,8 @@ audio-volume-medium-symbolic</property>
                                         <property name="child">
                                           <object class="GtkSearchEntry" id="local_search_entry">
                                             <property name="focusable">1</property>
+                                            <property name="max-width-chars">10</property>
+                                            <property name="width-chars">10</property>
                                           </object>
                                         </property>
                                         <property name="name">search</property>
