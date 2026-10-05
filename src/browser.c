@@ -1816,7 +1816,10 @@ browser_button_pressed (GtkGestureClick *gesture, int n_press, double x,
 
   if (button == GDK_BUTTON_PRIMARY || button == GDK_BUTTON_SECONDARY)
     {
-      gtk_tree_view_get_path_at_pos (browser->view, x, y, &path,
+      gint wx, wy;
+      gtk_tree_view_convert_tree_to_widget_coords (browser->view, x, y, &wx,
+						   &wy);
+      gtk_tree_view_get_path_at_pos (browser->view, wx, wy, &path,
 				     NULL, NULL, NULL);
 
       if (path)
