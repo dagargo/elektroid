@@ -54,43 +54,6 @@
 #define ITEM_HAS_SAMPLE_INFO(i,b) ((i)->type == ITEM_TYPE_FILE && \
                             ((b)->fs_ops->options & FS_OPTION_SHOW_SAMPLE_COLUMNS))
 
-static void browser_remote_reset_dnd ();
-
-/*
-static const GtkTargetEntry TARGET_ENTRIES_LOCAL_DST[] = {
-  {TEXT_URI_LIST_STD, 0, TARGET_STRING},
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP | GTK_TARGET_OTHER_WIDGET,
-   TARGET_STRING}
-};
-
-static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SYSTEM_DST[] = {
-  {TEXT_URI_LIST_STD, 0, TARGET_STRING},
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING}
-};
-
-static const GtkTargetEntry TARGET_ENTRIES_REMOTE_SYSTEM_SRC[] = {
-  {TEXT_URI_LIST_ELEKTROID, 0, TARGET_STRING}
-};
-
-static const GtkTargetEntry TARGET_ENTRIES_REMOTE_MIDI_DST[] = {
-  {TEXT_URI_LIST_STD, 0, TARGET_STRING},
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING}
-};
-
-static const GtkTargetEntry TARGET_ENTRIES_REMOTE_MIDI_DST_SLOT[] = {
-  {TEXT_URI_LIST_STD, 0, TARGET_STRING}
-};
-
-static const GtkTargetEntry TARGET_ENTRIES_REMOTE_MIDI_SRC[] = {
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING}
-};
-
-static const GtkTargetEntry TARGET_ENTRIES_UP_BUTTON_DST[] = {
-  {TEXT_URI_LIST_STD, 0, TARGET_STRING},
-  {TEXT_URI_LIST_ELEKTROID, GTK_TARGET_SAME_APP, TARGET_STRING}
-};
-*/
-
 extern guint batch_id;
 extern GtkWindow *main_window;
 
@@ -237,6 +200,15 @@ browser_clear_other_browser_selection_if_system (struct browser *browser)
 }
 
 static void
+browser_set_action_enabled (struct browser *browser, const gchar *name,
+			    gboolean active)
+{
+  GAction *action =
+    g_action_map_lookup_action (G_ACTION_MAP (browser->action_group), name);
+  g_simple_action_set_enabled (G_SIMPLE_ACTION (action), active);
+}
+
+static void
 browser_local_set_actions_enabled (gint count, gboolean file)
 {
   gboolean ul_avail = remote_browser.fs_ops &&
@@ -244,14 +216,14 @@ browser_local_set_actions_enabled (gint count, gboolean file)
     && remote_browser.fs_ops->upload;
   gboolean editing = editor_get_browser () == &local_browser;
 
-  elektroid_set_action_enabled ("local_browser_upload", count > 0
-				&& ul_avail);
-  elektroid_set_action_enabled ("local_browser_rename", count == 1);
-  elektroid_set_action_enabled ("local_browser_delete", count > 0);
-  elektroid_set_action_enabled ("local_browser_play", file && editing);
-  elektroid_set_action_enabled ("local_browser_open_ext_editor", file);
-  elektroid_set_action_enabled ("local_browser_show_in_file_manager",
-				count <= 1);
+  browser_set_action_enabled (&local_browser, "upload", count > 0
+			      && ul_avail);
+  browser_set_action_enabled (&local_browser, "rename", count == 1);
+  browser_set_action_enabled (&local_browser, "delete", count > 0);
+  browser_set_action_enabled (&local_browser, "play", file && editing);
+  browser_set_action_enabled (&local_browser, "open_ext_editor", file);
+  browser_set_action_enabled (&local_browser, "show_in_file_manager",
+			      count <= 1);
 }
 
 static void
@@ -267,16 +239,16 @@ browser_remote_set_actions_enabled (gint count, gboolean file)
   gboolean system = remote_browser.fs_ops
     && remote_browser.backend->type == BE_TYPE_SYSTEM;
 
-  elektroid_set_action_enabled ("remote_browser_download", count > 0
-				&& dl_impl);
-  elektroid_set_action_enabled ("remote_browser_rename", count == 1
-				&& ren_impl);
-  elektroid_set_action_enabled ("remote_browser_delete", count > 0
-				&& del_impl);
-  elektroid_set_action_enabled ("remote_browser_play", file && editing);
-  elektroid_set_action_enabled ("remote_browser_open_ext_editor", file);
-  elektroid_set_action_enabled ("remote_browser_show_in_file_manager",
-				count <= 1 && system);
+  browser_set_action_enabled (&remote_browser, "download", count > 0
+			      && dl_impl);
+  browser_set_action_enabled (&remote_browser, "rename", count == 1
+			      && ren_impl);
+  browser_set_action_enabled (&remote_browser, "delete", count > 0
+			      && del_impl);
+  browser_set_action_enabled (&remote_browser, "play", file && editing);
+  browser_set_action_enabled (&remote_browser, "open_ext_editor", file);
+  browser_set_action_enabled (&remote_browser, "show_in_file_manager",
+			      count <= 1 && system);
 }
 
 static void
@@ -327,7 +299,7 @@ browser_check_selection (gpointer data)
     {
       if (EDITOR_IS_AVAILABLE && BROWSER_IS_SYSTEM (browser))
 	{
-	  browser_clear_other_browser_selection_if_system (browser);
+          browser_clear_other_browser_selection_if_system (browser);
 	  editor_reset (NULL);
 	}
       browser->last_selected_index = -1;
@@ -362,12 +334,10 @@ browser_check_selection (gpointer data)
       editor_start_load_thread (sample_path);
     }
 
-  if (!sel_impl)
+  if (sel_impl)
     {
-      goto end;
+      remote_browser.fs_ops->select_item (browser->backend, browser->dir, &item);
     }
-
-  remote_browser.fs_ops->select_item (browser->backend, browser->dir, &item);
 
 end:
   browser_set_actions_enabled (browser);
@@ -508,8 +478,6 @@ browser_remote_set_fs_operations (const struct fs_operations *fs_ops)
 	  remote_browser.dir = strdup ("/");
 	}
 
-      browser_remote_reset_dnd ();
-
       browser_update_fs_options (&local_browser);
       browser_load_dir (&local_browser);
 
@@ -568,6 +536,12 @@ static void
 browser_delete_items_efectively (struct browser *browser)
 {
   struct browser_delete_items_data *delete_data;
+  gint count = browser_get_selected_items_count (browser);
+
+  if (count == 0)
+    {
+      return;
+    }
 
   delete_data = g_malloc (sizeof (struct browser_delete_items_data));
   delete_data->browser = browser;
@@ -705,8 +679,14 @@ browser_rename_item (GSimpleAction *simple_action,
   GtkTreeIter iter;
   struct item item;
   struct browser *browser = data;
+  gint count = browser_get_selected_items_count (browser);
   GtkTreeModel *model =
     GTK_TREE_MODEL (gtk_tree_view_get_model (browser->view));
+
+  if (count != 1)
+    {
+      return;
+    }
 
   browser_set_selected_row_iter (browser, &iter);
   browser_set_item (model, &iter, &item);
@@ -2504,6 +2484,7 @@ browser_destroy (struct browser *browser)
   notifier_destroy (browser->notifier);
   g_slist_free (browser->sensitive_widgets);
   g_hash_table_destroy (browser->folder_size_cache);
+  g_object_unref (browser->action_group);
 }
 
 void
@@ -2717,82 +2698,21 @@ browser_search_changed (GtkSearchEntry *entry, gpointer data)
 }
 
 static void
-browser_remote_reset_dnd ()
+browser_add_accel (struct browser *browser, const gchar *trigger_str,
+		   const gchar *action_str)
 {
-  //  gtk_drag_source_unset ((GtkWidget *) remote_browser.view);
-  //  gtk_drag_dest_unset ((GtkWidget *) remote_browser.view);
-
-  //  if (remote_browser.fs_ops->upload)
-  //    {
-  //      if (remote_browser.backend->type == BE_TYPE_SYSTEM)
-  // {
-  //   gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
-  //                   GTK_DEST_DEFAULT_ALL,
-  //                   TARGET_ENTRIES_REMOTE_SYSTEM_DST,
-  //                   G_N_ELEMENTS
-  //                   (TARGET_ENTRIES_REMOTE_SYSTEM_DST),
-  //                   GDK_ACTION_COPY | GDK_ACTION_MOVE);
-  // }
-  //      else
-  // {
-  //   if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
-  //     {
-  //       gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
-  //                       GTK_DEST_DEFAULT_ALL,
-  //                       TARGET_ENTRIES_REMOTE_MIDI_DST_SLOT,
-  //                       G_N_ELEMENTS
-  //                       (TARGET_ENTRIES_REMOTE_MIDI_DST_SLOT),
-  //                       GDK_ACTION_COPY);
-  //     }
-  //   else
-  //     {
-  //       gtk_drag_dest_set ((GtkWidget *) remote_browser.view,
-  //                       GTK_DEST_DEFAULT_ALL,
-  //                       TARGET_ENTRIES_REMOTE_MIDI_DST,
-  //                       G_N_ELEMENTS
-  //                       (TARGET_ENTRIES_REMOTE_MIDI_DST),
-  //                       GDK_ACTION_COPY);
-  //     }
-  // }
-  //    }
-
-  //  if (remote_browser.fs_ops->download)
-  //    {
-  //      if (remote_browser.backend->type == BE_TYPE_SYSTEM)
-  // {
-  //   gtk_drag_source_set ((GtkWidget *) remote_browser.view,
-  //                     GDK_BUTTON1_MASK,
-  //                     TARGET_ENTRIES_REMOTE_SYSTEM_SRC,
-  //                     G_N_ELEMENTS
-  //                     (TARGET_ENTRIES_REMOTE_SYSTEM_SRC),
-  //                     GDK_ACTION_COPY | GDK_ACTION_MOVE);
-  // }
-  //      else
-  // {
-  //   if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
-  //     {
-  //       gtk_drag_source_set ((GtkWidget *) remote_browser.view,
-  //                         GDK_BUTTON1_MASK,
-  //                         TARGET_ENTRIES_REMOTE_MIDI_SRC,
-  //                         G_N_ELEMENTS
-  //                         (TARGET_ENTRIES_REMOTE_MIDI_SRC),
-  //                         GDK_ACTION_COPY);
-  //     }
-  //   else
-  //     {
-  //       gtk_drag_source_set ((GtkWidget *) remote_browser.view,
-  //                         GDK_BUTTON1_MASK,
-  //                         TARGET_ENTRIES_REMOTE_MIDI_SRC,
-  //                         G_N_ELEMENTS
-  //                         (TARGET_ENTRIES_REMOTE_MIDI_SRC),
-  //                         GDK_ACTION_COPY);
-  //     }
-  // }
-  //    }
+  GtkShortcutTrigger *trigger =
+    gtk_shortcut_trigger_parse_string (trigger_str);
+  GtkShortcutAction *action = gtk_shortcut_action_parse_string (action_str);
+  GtkShortcut *shortcut = gtk_shortcut_new (trigger, action);
+  gtk_shortcut_controller_add_shortcut (GTK_SHORTCUT_CONTROLLER
+					(browser->shortcut_controller),
+					shortcut);
 }
 
 static void
-browser_init (struct browser *browser)
+browser_init (struct browser *browser, const GActionEntry *entries,
+	      gint n_entries)
 {
   g_signal_connect (gtk_tree_view_get_selection (browser->view),
 		    "changed", G_CALLBACK (browser_selection_changed),
@@ -2854,8 +2774,9 @@ browser_init (struct browser *browser)
     TEXT_URI_LIST_STD,
     TEXT_URI_LIST_ELEKTROID
   };
-  GdkContentFormats *formats =
-    gdk_content_formats_new (mime_types, G_N_ELEMENTS (mime_types));
+  GdkContentFormats *formats = gdk_content_formats_new (mime_types,
+							G_N_ELEMENTS
+							(mime_types));
   GtkDropTargetAsync *drop_target = gtk_drop_target_async_new (formats,
 							       GDK_ACTION_COPY
 							       |
@@ -2871,24 +2792,29 @@ browser_init (struct browser *browser)
   browser->folder_size_cache =
     g_hash_table_new_full (g_str_hash, g_str_equal, g_free, g_free);
   notifier_init (&browser->notifier, browser);
-}
 
-static const GActionEntry BROWSER_LOCAL_ENTRIES[] = {
-  {"local_browser_upload", elektroid_add_upload_tasks, NULL, NULL, NULL},
-  {"local_browser_rename", browser_rename_item, NULL, NULL, NULL},
-  {"local_browser_delete", browser_delete_items, NULL, NULL, NULL},
-  {"local_browser_play", browser_play, NULL, NULL, NULL},
-  {"local_browser_open_ext_editor", browser_open_in_ext_editor, NULL, NULL,
-   NULL},
-  {"local_browser_show_in_file_manager", browser_show_in_file_manager, NULL,
-   NULL, NULL}
-};
+  browser->action_group = g_simple_action_group_new ();
+  g_action_map_add_action_entries (G_ACTION_MAP (browser->action_group),
+				   entries, n_entries, browser);
+  gtk_widget_insert_action_group (GTK_WIDGET (browser->list_box),
+				  browser->name,
+				  G_ACTION_GROUP (browser->action_group));
+
+  browser->shortcut_controller = gtk_shortcut_controller_new ();
+  gtk_shortcut_controller_set_scope (GTK_SHORTCUT_CONTROLLER
+				     (browser->shortcut_controller),
+				     GTK_SHORTCUT_SCOPE_LOCAL);
+  gtk_widget_add_controller (GTK_WIDGET (browser->list_box),
+			     browser->shortcut_controller);
+}
 
 static void
 browser_local_init (struct browser *browser, GtkBuilder *builder,
 		    GtkApplication *app)
 {
-  browser->name = "local";
+  browser->name = "local_browser";
+  browser->list_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "local_list_box"));
   browser->view =
     GTK_TREE_VIEW (gtk_builder_get_object (builder, "local_tree_view"));
   browser->buttons_stack =
@@ -2968,54 +2894,34 @@ browser_local_init (struct browser *browser, GtkBuilder *builder,
 
   browser_load_preferences_dir (browser);
 
-  browser_init (browser);
+  static const GActionEntry action_entries[] = {
+    {"upload", elektroid_add_upload_tasks, NULL, NULL, NULL},
+    {"rename", browser_rename_item, NULL, NULL, NULL},
+    {"delete", browser_delete_items, NULL, NULL, NULL},
+    {"play", browser_play, NULL, NULL, NULL},
+    {"open_ext_editor", browser_open_in_ext_editor, NULL, NULL, NULL},
+    {"show_in_file_manager", browser_show_in_file_manager, NULL, NULL, NULL}
+  };
 
-  g_action_map_add_action_entries (G_ACTION_MAP (app), BROWSER_LOCAL_ENTRIES,
-				   G_N_ELEMENTS (BROWSER_LOCAL_ENTRIES),
-				   browser);
+  browser_init (browser, action_entries, G_N_ELEMENTS (action_entries));
 
-  const gchar *upload_accels[] = { "<Ctrl>Right", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.local_browser_upload",
-					 upload_accels);
-  const gchar *rename_accels[] = { "F2", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.local_browser_rename",
-					 rename_accels);
-  const gchar *delete_accels[] = { "Delete", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.local_browser_delete",
-					 delete_accels);
-  const gchar *play_accels[] = { "space", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.local_browser_play",
-					 play_accels);
-  const gchar *edit_accels[] = { "<Ctrl>e", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.local_browser_open_ext_editor",
-					 edit_accels);
-  const gchar *show_accels[] = { "<Ctrl>f", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.local_browser_show_in_file_manager",
-					 show_accels);
+  browser_add_accel (browser, "<Ctrl>Right", "action(local_browser.upload)");
+  browser_add_accel (browser, "F2", "action(local_browser.rename)");
+  browser_add_accel (browser, "Delete", "action(local_browser.delete)");
+  browser_add_accel (browser, "space", "action(local_browser.play)");
+  browser_add_accel (browser, "<Ctrl>e",
+		     "action(local_browser.open_ext_editor)");
+  browser_add_accel (browser, "<Ctrl>f",
+		     "action(local_browser.show_in_file_manager)");
 }
-
-static const GActionEntry BROWSER_REMOTE_ENTRIES[] = {
-  {"remote_browser_download", elektroid_add_download_tasks, NULL, NULL, NULL},
-  {"remote_browser_rename", browser_rename_item, NULL, NULL, NULL},
-  {"remote_browser_delete", browser_delete_items, NULL, NULL, NULL},
-  {"remote_browser_play", browser_play, NULL, NULL, NULL},
-  {"remote_browser_open_ext_editor", browser_open_in_ext_editor, NULL, NULL,
-   NULL},
-  {"remote_browser_show_in_file_manager", browser_show_in_file_manager, NULL,
-   NULL, NULL}
-};
 
 static void
 browser_remote_init (struct browser *browser, GtkBuilder *builder,
 		     GtkApplication *app)
 {
-  browser->name = "remote";
+  browser->name = "remote_browser";
+  browser->list_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "remote_list_box"));
   browser->view =
     GTK_TREE_VIEW (gtk_builder_get_object (builder, "remote_tree_view"));
   browser->buttons_stack =
@@ -3110,36 +3016,25 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder,
     GTK_TREE_VIEW_COLUMN (gtk_builder_get_object
 			  (builder, "remote_tree_view_info_column"));
 
-  browser_init (browser);
+  static const GActionEntry action_entries[] = {
+    {"download", elektroid_add_download_tasks, NULL, NULL, NULL},
+    {"rename", browser_rename_item, NULL, NULL, NULL},
+    {"delete", browser_delete_items, NULL, NULL, NULL},
+    {"play", browser_play, NULL, NULL, NULL},
+    {"open_ext_editor", browser_open_in_ext_editor, NULL, NULL, NULL},
+    {"show_in_file_manager", browser_show_in_file_manager, NULL, NULL, NULL}
+  };
 
-  g_action_map_add_action_entries (G_ACTION_MAP (app), BROWSER_REMOTE_ENTRIES,
-				   G_N_ELEMENTS (BROWSER_REMOTE_ENTRIES),
-				   browser);
+  browser_init (browser, action_entries, G_N_ELEMENTS (action_entries));
 
-  const gchar *upload_accels[] = { "<Ctrl>Left", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.remote_browser_download",
-					 upload_accels);
-  const gchar *rename_accels[] = { "F2", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.remote_browser_rename",
-					 rename_accels);
-  const gchar *delete_accels[] = { "Delete", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.remote_browser_delete",
-					 delete_accels);
-  const gchar *play_accels[] = { "space", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.remote_browser_play",
-					 play_accels);
-  const gchar *edit_accels[] = { "<Ctrl>e", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.remote_browser_open_ext_editor",
-					 edit_accels);
-  const gchar *show_accels[] = { "<Ctrl>f", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.remote_browser_show_in_file_manager",
-					 show_accels);
+  browser_add_accel (browser, "<Ctrl>Right", "action(remote_browser.upload)");
+  browser_add_accel (browser, "F2", "action(remote_browser.rename)");
+  browser_add_accel (browser, "Delete", "action(remote_browser.delete)");
+  browser_add_accel (browser, "space", "action(remote_browser.play)");
+  browser_add_accel (browser, "<Ctrl>e",
+		     "action(remote_browser.open_ext_editor)");
+  browser_add_accel (browser, "<Ctrl>f",
+		     "action(remote_browser.show_in_file_manager)");
 }
 
 void
