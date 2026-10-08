@@ -1784,109 +1784,95 @@ static void
 browser_button_pressed (GtkGestureClick *gesture, int n_press, double x,
 			double y, gpointer data)
 {
+  gint tx, ty;
+  guint button;
+  GdkRectangle r;
   GtkTreePath *path;
+  GdkModifierType state;
+  GtkTreeSelection *selection;
   struct browser *browser = data;
-  GdkModifierType state =
-    gtk_event_controller_get_current_event_state (GTK_EVENT_CONTROLLER
-						  (gesture));
-  guint button =
-    gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture));
-  GtkTreeSelection *selection =
-    gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
 
+  selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
   gtk_tree_selection_set_select_function (selection,
 					  browser_selection_function_true,
 					  NULL, NULL);
 
+  state =
+    gtk_event_controller_get_current_event_state (GTK_EVENT_CONTROLLER
+						  (gesture));
   if (state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
     {
       return;
     }
 
-  if (button == GDK_BUTTON_PRIMARY || button == GDK_BUTTON_SECONDARY)
+  button =
+    gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture));
+
+  gtk_tree_view_convert_widget_to_tree_coords (browser->view, x, y, &tx, &ty);
+  if (gtk_tree_view_get_path_at_pos (browser->view, tx, ty, &path, NULL, NULL,
+				     NULL))
     {
-      gint wx, wy;
-      gtk_tree_view_convert_tree_to_widget_coords (browser->view, x, y, &wx,
-						   &wy);
-      gtk_tree_view_get_path_at_pos (browser->view, wx, wy, &path,
-				     NULL, NULL, NULL);
-
-      if (path)
+      if (gtk_tree_selection_path_is_selected (selection, path))
 	{
-	  if (gtk_tree_selection_path_is_selected (selection, path))
+	  if (button == GDK_BUTTON_PRIMARY)
 	    {
-	      if (button == GDK_BUTTON_PRIMARY)
-		{
-		  gtk_tree_selection_set_select_function (selection,
-							  browser_selection_function_false,
-							  NULL, NULL);
-		}
-	      else if (button == GDK_BUTTON_SECONDARY)
-		{
-		  GdkEventSequence *sequence =
-		    gtk_gesture_single_get_current_sequence
-		    (GTK_GESTURE_SINGLE (gesture));
-		  gtk_gesture_set_sequence_state (GTK_GESTURE (gesture),
-						  sequence,
-						  GTK_EVENT_SEQUENCE_CLAIMED);
-		}
+	      gtk_tree_selection_set_select_function (selection,
+						      browser_selection_function_false,
+						      NULL, NULL);
 	    }
-	  else
-	    {
-	      gtk_tree_selection_unselect_all (selection);
-	      gtk_tree_selection_select_path (selection, path);
-	    }
-
-	  gtk_tree_path_free (path);
 	}
       else
 	{
 	  gtk_tree_selection_unselect_all (selection);
+	  gtk_tree_selection_select_path (selection, path);
 	}
 
-      if (button == GDK_BUTTON_SECONDARY)
-	{
-	  GdkRectangle r;
-	  r.x = x;
-	  r.y = y;
-	  r.width = 1;
-	  r.height = 1;
-	  gtk_popover_set_pointing_to (GTK_POPOVER (browser->popovermenu),
-				       &r);
-	  gtk_popover_popup (GTK_POPOVER (browser->popovermenu));
-	}
+      gtk_tree_path_free (path);
+    }
+  else
+    {
+      gtk_tree_selection_unselect_all (selection);
     }
 
+  if (button == GDK_BUTTON_SECONDARY)
+    {
+      r.x = x;
+      r.y = y;
+      r.width = 1;
+      r.height = 1;
+      gtk_popover_set_pointing_to (GTK_POPOVER (browser->popovermenu), &r);
+      gtk_popover_popup (GTK_POPOVER (browser->popovermenu));
+    }
 }
 
 static void
 browser_button_released (GtkGestureClick *gesture, int n_press, double x,
 			 double y, gpointer data)
 {
+  gint tx, ty;
+  guint button;
   GtkTreePath *path;
+  GdkModifierType state;
   GtkTreeSelection *selection;
   struct browser *browser = data;
-  GdkModifierType state =
-    gtk_event_controller_get_current_event_state (GTK_EVENT_CONTROLLER
-						  (gesture));
-  guint button =
-    gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture));
 
+  state = gtk_event_controller_get_current_event_state (GTK_EVENT_CONTROLLER
+							(gesture));
   if (state & (GDK_SHIFT_MASK | GDK_CONTROL_MASK))
     {
       return;
     }
 
-  if (button == GDK_BUTTON_PRIMARY)
+  button =
+    gtk_gesture_single_get_current_button (GTK_GESTURE_SINGLE (gesture));
+  gtk_tree_view_convert_widget_to_tree_coords (browser->view, x, y, &tx, &ty);
+  if (gtk_tree_view_get_path_at_pos (browser->view, tx, ty, &path, NULL,
+				     NULL, NULL))
     {
-      gtk_tree_view_get_path_at_pos (browser->view, x, y, &path, NULL, NULL,
-				     NULL);
-
-      if (path)
+      selection = gtk_tree_view_get_selection (browser->view);
+      if (gtk_tree_selection_path_is_selected (selection, path))
 	{
-	  selection = gtk_tree_view_get_selection (browser->view);
-
-	  if (gtk_tree_selection_path_is_selected (selection, path))
+	  if (button == GDK_BUTTON_PRIMARY)
 	    {
 	      gtk_tree_selection_set_select_function (selection,
 						      browser_selection_function_true,
@@ -2090,6 +2076,7 @@ browser_on_drop_async (GObject *source_object, GAsyncResult *result,
       gchar *uri = g_file_get_uri (G_FILE (l->data));
       array[i] = uri;
     }
+  array[i] = NULL;
   dnd_data->uris = array;
 
   dnd_data->dst_widget = GTK_WIDGET (browser->view);
