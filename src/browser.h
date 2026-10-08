@@ -69,6 +69,7 @@ struct browser
 {
   const gchar *name;
   GtkTreeView *view;
+  GtkWidget *list_box;
   GtkWidget *buttons_stack;
   GtkWidget *up_button;
   GtkWidget *add_dir_button;
@@ -115,6 +116,8 @@ struct browser
   GtkTreeViewColumn *tree_view_slot_column;
   GtkTreeViewColumn *tree_view_size_column;
   GHashTable *folder_size_cache;
+  GSimpleActionGroup *action_group;
+  GtkEventController *shortcut_controller;
 };
 
 struct browser_dnd_data

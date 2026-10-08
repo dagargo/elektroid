@@ -1875,7 +1875,7 @@ audio-volume-medium-symbolic</property>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkBox">
+                              <object class="GtkBox" id="remote_list_box">
                                 <child>
                                   <object class="GtkStack" id="remote_list_stack">
                                     <property name="hexpand">1</property>
@@ -2225,7 +2225,7 @@ audio-volume-medium-symbolic</property>
                               </object>
                             </child>
                             <child>
-                              <object class="GtkBox">
+                              <object class="GtkBox" id="local_list_box">
                                 <child>
                                   <object class="GtkStack" id="local_list_stack">
                                     <property name="hexpand">1</property>
@@ -3454,31 +3454,31 @@ Characteristics</property>
   <menu id="remote_popover_model">
     <section>
       <item>
-        <attribute name="action">app.remote_browser_download</attribute>
+        <attribute name="action">remote_browser.download</attribute>
         <attribute name="label" translatable="yes">Download Selection</attribute>
       </item>
     </section>
     <section>
       <item>
-        <attribute name="action">app.remote_browser_rename</attribute>
+        <attribute name="action">remote_browser.rename</attribute>
         <attribute name="label" translatable="yes">Rename</attribute>
       </item>
       <item>
-        <attribute name="action">app.remote_browser_delete</attribute>
+        <attribute name="action">remote_browser.delete</attribute>
         <attribute name="label" translatable="yes">Delete</attribute>
       </item>
     </section>
     <section>
       <item>
-        <attribute name="action">app.remote_browser_play</attribute>
+        <attribute name="action">remote_browser.play</attribute>
         <attribute name="label" translatable="yes">Play</attribute>
       </item>
       <item>
-        <attribute name="action">app.remote_browser_open_ext_editor</attribute>
+        <attribute name="action">remote_browser.open_ext_editor</attribute>
         <attribute name="label" translatable="yes">Open With External Editor</attribute>
       </item>
       <item>
-        <attribute name="action">app.remote_browser_show_in_file_manager</attribute>
+        <attribute name="action">remote_browser.show_in_file_manager</attribute>
         <attribute name="label" translatable="yes">Show in File Manager</attribute>
       </item>
     </section>
@@ -3486,31 +3486,31 @@ Characteristics</property>
   <menu id="local_popover_model">
     <section>
       <item>
-        <attribute name="action">app.local_browser_upload</attribute>
+        <attribute name="action">local_browser.upload</attribute>
         <attribute name="label" translatable="yes">Upload Selection</attribute>
       </item>
     </section>
     <section>
       <item>
-        <attribute name="action">app.local_browser_rename</attribute>
+        <attribute name="action">local_browser.rename</attribute>
         <attribute name="label" translatable="yes">Rename</attribute>
       </item>
       <item>
-        <attribute name="action">app.local_browser_delete</attribute>
+        <attribute name="action">local_browser.delete</attribute>
         <attribute name="label" translatable="yes">Delete</attribute>
       </item>
     </section>
     <section>
       <item>
-        <attribute name="action">app.local_browser_play</attribute>
+        <attribute name="action">local_browser.play</attribute>
         <attribute name="label" translatable="yes">Play</attribute>
       </item>
       <item>
-        <attribute name="action">app.local_browser_open_ext_editor</attribute>
+        <attribute name="action">local_browser.open_ext_editor</attribute>
         <attribute name="label" translatable="yes">Open With External Editor</attribute>
       </item>
       <item>
-        <attribute name="action">app.local_browser_show_in_file_manager</attribute>
+        <attribute name="action">local_browser.show_in_file_manager</attribute>
         <attribute name="label" translatable="yes">Show in File Manager</attribute>
       </item>
     </section>
