@@ -1803,8 +1803,7 @@ elektroid_startup (GApplication *gapp, gpointer *user_data)
   GAction *a = g_action_map_lookup_action (G_ACTION_MAP (app), "show_remote");
   GVariant *v =
     g_variant_new_boolean (preferences_get_boolean (PREF_KEY_SHOW_REMOTE));
-  g_action_change_state (a, v);
-  elektroid_enable_remote (preferences_get_boolean (PREF_KEY_SHOW_REMOTE));	//This triggers both browsers initializations.
+  g_action_change_state (a, v);	// This triggers both browsers initializations.
 
   gtk_editable_set_text (GTK_EDITABLE (local_name_entry), g_get_host_name ());
 
