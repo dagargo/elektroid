@@ -282,11 +282,12 @@ end:
 }
 
 struct sample_info *
-microfreak_new_sample_info (guint32 frames)
+microfreak_wavetable_new_sample_info (guint32 frames)
 {
   struct sample_info *sample_info = sample_info_new (FALSE);
   sample_info->frames = frames;
   sample_info->loop_end = sample_info->frames - 1;
+  sample_info->loop_type = SAMPLE_LOOP_TYPE_NO;
   sample_info->rate = MICROFREAK_SAMPLERATE;
   sample_info->format = ELEKTROID_SAMPLE_FORMAT_MICROFREAK | SF_FORMAT_PCM_16;
   sample_info->channels = 1;
@@ -314,7 +315,7 @@ microfreak_deserialize_sample (struct idata *sample, struct idata *serialized,
 
   data->len = datalen;
 
-  sample_info = microfreak_new_sample_info (datalen / 2);
+  sample_info = microfreak_wavetable_new_sample_info (datalen / 2);
   idata_init (sample, data, strdup (name), sample_info, sample_info_free);
 
   return 0;
