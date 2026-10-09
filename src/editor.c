@@ -235,7 +235,7 @@ editor_queue_draw (gpointer user_data)
 }
 
 void
-editor_update_tags ()
+editor_set_tags_from_sample_info ()
 {
   const gchar *ikey_tags;
   GHashTable *sample_tags;
@@ -456,6 +456,26 @@ editor_start_playback ()
 }
 
 static void
+editor_loop_clicked (GtkWidget *object, gpointer data)
+{
+  struct sample_info *sample_info = audio.sample.info;
+  audio.loop = editor_is_loop_active ();
+  if (sample_info)
+    {
+      sample_info->loop_type =
+	audio.loop ? SAMPLE_LOOP_TYPE_FWD : SAMPLE_LOOP_TYPE_NO;
+    }
+  editor_set_dirty (TRUE);
+}
+
+static gboolean
+editor_autoplay_clicked (GtkWidget *object, gboolean state, gpointer data)
+{
+  preferences_set_boolean (PREF_KEY_AUTOPLAY, state);
+  return FALSE;
+}
+
+static void
 editor_update_export_save_buttons ()
 {
   if (audio.path)
@@ -594,7 +614,12 @@ editor_set_from_sample_info ()
       si.tempo = sample_info->tempo;
       si.beats = sample_info->beats;
       si.midi_note = sample_info->midi_note;
+      si.loop_type = sample_info->loop_type;
       editor_update_sample_tempo_estimation (sample_info);
+    }
+  else
+    {
+      si.loop_type = SAMPLE_LOOP_TYPE_NO;
     }
 
   g_signal_handlers_block_by_func (metre_num_spin,
@@ -632,9 +657,16 @@ editor_set_from_sample_info ()
   g_signal_handlers_unblock_by_func (note_combo,
 				     G_CALLBACK (editor_note_changed), NULL);
 
-  sample_info_clear (&si);
+  g_signal_handlers_block_by_func (loop_button,
+				   G_CALLBACK (editor_loop_clicked), NULL);
+  gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (loop_button),
+				si.loop_type != SAMPLE_LOOP_TYPE_NO);
+  g_signal_handlers_unblock_by_func (loop_button,
+				     G_CALLBACK (editor_loop_clicked), NULL);
 
-  editor_update_tags ();
+  editor_set_tags_from_sample_info ();
+
+  sample_info_clear (&si);
 }
 
 static gboolean
@@ -642,6 +674,13 @@ editor_update_ui_on_load (gpointer data)
 {
   editor_set_audio_mono_mix ();
   editor_reset_waveform_width ();
+
+  editor_set_filename ();
+  editor_set_from_sample_info ();
+
+  gtk_widget_set_sensitive (sample_info_box, TRUE);
+
+  editor_update_export_save_buttons ();
 
   if (audio_check ())
     {
@@ -653,13 +692,6 @@ editor_update_ui_on_load (gpointer data)
 	  editor_start_playback ();
 	}
     }
-
-  editor_set_filename ();
-  editor_set_from_sample_info ();
-
-  gtk_widget_set_sensitive (sample_info_box, TRUE);
-
-  editor_update_export_save_buttons ();
 
   return FALSE;
 }
@@ -1261,19 +1293,6 @@ gboolean
 editor_is_loop_active ()
 {
   return gtk_toggle_button_get_active (GTK_TOGGLE_BUTTON (loop_button));
-}
-
-static void
-editor_loop_clicked (GtkWidget *object, gpointer data)
-{
-  audio.loop = editor_is_loop_active ();
-}
-
-static gboolean
-editor_autoplay_clicked (GtkWidget *object, gboolean state, gpointer data)
-{
-  preferences_set_boolean (PREF_KEY_AUTOPLAY, state);
-  return FALSE;
 }
 
 void

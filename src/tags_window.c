@@ -69,7 +69,7 @@ tags_window_save (GtkWidget *object, gpointer data)
     }
 
   editor_set_dirty (TRUE);
-  editor_update_tags ();
+  editor_set_tags_from_sample_info ();
 
   tags_window_cancel (NULL, NULL);
 }

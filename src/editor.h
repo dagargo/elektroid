@@ -27,7 +27,7 @@ struct browser *editor_get_browser ();
 
 void editor_set_dirty (gboolean dirty);
 
-void editor_update_tags ();
+void editor_set_tags_from_sample_info ();
 
 void editor_reset (struct browser *browser);
 
