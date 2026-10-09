@@ -43,6 +43,10 @@
 #define SDS_SAMPLE_CHANNELS 1
 #define SDS_SAMPLE_NAME_MAX_LEN 127
 
+#define SDS_LOOP_TYPE_FWD SAMPLE_LOOP_TYPE_FWD
+#define SDS_LOOP_TYPE_FWD_BWD 1
+#define SDS_LOOP_TYPE_NO SAMPLE_LOOP_TYPE_NO
+
 static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
 static const guint8 SDS_ACK[] = { 0xf0, 0x7e, 0, 0x7f, 0, 0xf7 };
 static const guint8 SDS_NAK[] = { 0xf0, 0x7e, 0, 0x7e, 0, 0xf7 };
@@ -253,9 +257,16 @@ sds_get_dump_msg (guint id, guint frames, struct sample_info *sample_info,
 				      sample_info->loop_start);
       sds_set_bytes_value_right_just (&tx_msg->data[16], SDS_BYTES_PER_WORD,
 				      sample_info->loop_end);
-      tx_msg->data[19] = (sample_info->loop_start == sample_info->loop_end
-			  && sample_info->loop_start ==
-			  frames - 1) ? 0x7f : sample_info->loop_type;
+      // More mapping values should be added here.
+      if (sample_info->loop_type == SDS_LOOP_TYPE_FWD ||
+	  sample_info->loop_type == SDS_LOOP_TYPE_FWD_BWD)
+	{
+	  tx_msg->data[19] = sample_info->loop_type;
+	}
+      else
+	{
+	  tx_msg->data[19] = SDS_LOOP_TYPE_NO;
+	}
     }
 
   return tx_msg;

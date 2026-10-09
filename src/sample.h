@@ -47,6 +47,12 @@
 #define SAMPLE_INFO_IS_FLOAT(sample_info) (SAMPLE_IS_FLOAT((sample_info)->format))
 #define MONO_MIX_GAIN(channels) (channels == 2 ? 0.5 : 1.0 / sqrt (channels))
 
+// 0 for forward loop is used by MIDI SDS, Elektron and the smpl chunk.
+// 0x7f for no loop is used by MIDI SDS and Elektron, but it has no specific meaning for the smpl chunk.
+
+#define SAMPLE_LOOP_TYPE_FWD 0
+#define SAMPLE_LOOP_TYPE_NO  0x7f
+
 struct sample_load_opts
 {
   guint32 channels;
