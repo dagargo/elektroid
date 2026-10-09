@@ -85,7 +85,7 @@ struct editor_save_data
 
 static void editor_save_accept (gpointer source, const gchar * name);
 static void editor_set_waveform_data ();
-static void editor_update_sample_info ();
+static void editor_set_from_sample_info ();
 static void editor_update_sample_tempo_estimation (struct sample_info
 						   *sample_info);
 
@@ -332,8 +332,7 @@ editor_reset_browser (gpointer data)
   gtk_widget_set_sensitive (waveform_scrolled_window, browser != NULL);
 
   editor_set_filename ();
-  editor_update_sample_info ();
-  editor_update_tags ();
+  editor_set_from_sample_info ();
 
   return FALSE;
 }
@@ -581,14 +580,12 @@ editor_update_sample_tempo_estimation (struct sample_info *sample_info)
 }
 
 static void
-editor_update_sample_info ()
+editor_set_from_sample_info ()
 {
   struct sample_info si;
   struct sample_info *sample_info;
 
   sample_info_init (&si);
-
-  g_mutex_lock (&audio.control.controllable.mutex);
   sample_info = audio.sample.info;
   if (sample_info)
     {
@@ -597,10 +594,8 @@ editor_update_sample_info ()
       si.tempo = sample_info->tempo;
       si.beats = sample_info->beats;
       si.midi_note = sample_info->midi_note;
-
       editor_update_sample_tempo_estimation (sample_info);
     }
-  g_mutex_unlock (&audio.control.controllable.mutex);
 
   g_signal_handlers_block_by_func (metre_num_spin,
 				   G_CALLBACK
@@ -638,6 +633,8 @@ editor_update_sample_info ()
 				     G_CALLBACK (editor_note_changed), NULL);
 
   sample_info_clear (&si);
+
+  editor_update_tags ();
 }
 
 static gboolean
@@ -658,8 +655,7 @@ editor_update_ui_on_load (gpointer data)
     }
 
   editor_set_filename ();
-  editor_update_sample_info ();
-  editor_update_tags ();
+  editor_set_from_sample_info ();
 
   gtk_widget_set_sensitive (sample_info_box, TRUE);
 
@@ -2732,8 +2728,7 @@ editor_init (GtkBuilder *builder)
   record_window_init (builder);
   tags_window_init (builder);
 
-  editor_update_sample_info ();
-  editor_update_tags ();
+  editor_set_from_sample_info ();
 
   g_mutex_init (&mutex);
   editor_reset (NULL);
