@@ -1353,7 +1353,7 @@ microfreak_wavetable_load (struct backend *backend, const gchar *path,
   if (aux.content->len == MICROFREAK_WAVETABLE_SIZE)
     {
       struct sample_info *sample_info =
-	microfreak_new_sample_info (MICROFREAK_WAVETABLE_LEN);
+	microfreak_wavetable_new_sample_info (MICROFREAK_WAVETABLE_LEN);
       gchar *name = strdup (aux.name);
       idata_init (wavetable, idata_steal (&aux), name, sample_info,
 		  sample_info_free);
@@ -1519,7 +1519,8 @@ microfreak_wavetable_download (struct backend *backend, const gchar *path,
       return -EINVAL;
     }
 
-  sample_info = microfreak_new_sample_info (MICROFREAK_WAVETABLE_LEN);
+  sample_info =
+    microfreak_wavetable_new_sample_info (MICROFREAK_WAVETABLE_LEN);
 
   content = g_byte_array_sized_new (MICROFREAK_WAVETABLE_SIZE);
   content->len = MICROFREAK_WAVETABLE_SIZE;
