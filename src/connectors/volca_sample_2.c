@@ -226,7 +226,7 @@ static struct sample_info *
 volca_sample_2_sample_info_init (guint32 frames)
 {
   struct sample_info *sample_info = sample_info_new (FALSE);
-  sample_info->loop_type = 0x7f;
+  sample_info->loop_type = SAMPLE_LOOP_TYPE_NO;
   sample_info->channels = 1;
   sample_info->rate = VOLCA_SAMPLE_2_RATE;
   sample_info->format = SF_FORMAT_PCM_16;

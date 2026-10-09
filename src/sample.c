@@ -644,7 +644,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
     {
       sample_info->loop_start = sample_info->frames - 1;
       sample_info->loop_end = sample_info->loop_start;
-      sample_info->loop_type = 0x7f; // No loop
+      sample_info->loop_type = SAMPLE_LOOP_TYPE_NO;
     }
 
   debug_print (2, "Loop start at %d, loop end at %d",

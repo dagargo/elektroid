@@ -61,8 +61,9 @@ static const gchar *FS_DATA_ANY_EXTS[] = { "data", NULL };
 #define ELEKTRON_DATA_SAMPLE_MAX_LEN 16
 
 #define ELEKTRON_SAMPLE_INFO_PAD_I32_LEN 10
-#define ELEKTRON_LOOP_TYPE_FWD 0
-#define ELEKTRON_LOOP_TYPE_NO 0x7f
+
+#define ELEKTRON_LOOP_TYPE_FWD SAMPLE_LOOP_TYPE_FWD
+#define ELEKTRON_LOOP_TYPE_NO SAMPLE_LOOP_TYPE_NO
 
 #define PROJECT_SLOTS 128
 #define SOUND_SLOTS 256
@@ -684,9 +685,6 @@ elektron_new_msg_write_sample_blk (guint id, GByteArray *sample,
 
   if (seq == 0)
     {
-      //See comment in elektron_sample_header struct.
-      guint8 loop_type = sample_info->loop_type ? ELEKTRON_LOOP_TYPE_NO :
-	ELEKTRON_LOOP_TYPE_FWD;
       elektron_sample_header.type = 0;
       elektron_sample_header.stereo = sample_info->channels - 1;
       memset (&elektron_sample_header.rsvd0, 0, 2);
@@ -694,7 +692,16 @@ elektron_new_msg_write_sample_blk (guint id, GByteArray *sample,
       elektron_sample_header.rate = g_htonl (ELEKTRON_SAMPLE_RATE);
       elektron_sample_header.loop_start = g_htonl (sample_info->loop_start);
       elektron_sample_header.loop_end = g_htonl (sample_info->loop_end);
-      elektron_sample_header.loop_type = loop_type;
+      // See comment in elektron_sample_header struct.
+      // More mapping values should be added here.
+      if (sample_info->loop_type == ELEKTRON_LOOP_TYPE_FWD)
+	{
+	  elektron_sample_header.loop_type = sample_info->loop_type;
+	}
+      else
+	{
+	  elektron_sample_header.loop_type = ELEKTRON_LOOP_TYPE_NO;
+	}
       memset (&elektron_sample_header.rsvd1, 0, 3);
       memset (&elektron_sample_header.padding, 0,
 	      sizeof (guint32) * ELEKTRON_SAMPLE_INFO_PAD_I32_LEN);
