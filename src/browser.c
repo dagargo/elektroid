@@ -299,7 +299,7 @@ browser_check_selection (gpointer data)
     {
       if (EDITOR_IS_AVAILABLE && BROWSER_IS_SYSTEM (browser))
 	{
-          browser_clear_other_browser_selection_if_system (browser);
+	  browser_clear_other_browser_selection_if_system (browser);
 	  editor_reset (NULL);
 	}
       browser->last_selected_index = -1;
@@ -336,7 +336,8 @@ browser_check_selection (gpointer data)
 
   if (sel_impl)
     {
-      remote_browser.fs_ops->select_item (browser->backend, browser->dir, &item);
+      remote_browser.fs_ops->select_item (browser->backend, browser->dir,
+					  &item);
     }
 
 end:
@@ -1868,97 +1869,22 @@ browser_button_released (GtkGestureClick *gesture, int n_press, double x,
     }
 }
 
-// static gboolean
-// browser_key_press (GtkWidget *widget, GdkEventKey *event, gpointer data)
-// {
-//   struct browser *browser = data;
+static gboolean
+browser_on_key_press (GtkEventControllerKey *controller,
+		      guint keyval, guint keycode,
+		      GdkModifierType state, gpointer user_data)
+{
+  struct browser *browser = user_data;
 
-//   if (event->type != GDK_KEY_PRESS)
-//     {
-//       return FALSE;
-//     }
+  if (keyval == GDK_KEY_Menu ||
+      (keyval == GDK_KEY_F10 && (state & GDK_SHIFT_MASK)))
+    {
+      gtk_popover_popup (GTK_POPOVER (browser->popovermenu));
+      return GDK_EVENT_STOP;
+    }
 
-//   if (event->keyval == GDK_KEY_Menu)
-//     {
-//       gtk_popover_popup (GTK_POPOVER (browser->popover));
-//       return TRUE;
-//     }
-//   else if (event->keyval == GDK_KEY_space)
-//     {
-//       editor_play ();
-//       return TRUE;
-//     }
-//   else if (event->keyval == GDK_KEY_F2)
-//     {
-//       if (browser_get_selected_items_count (browser) == 1 &&
-//        browser->fs_ops->rename)
-//      {
-//        browser_rename_item (NULL, browser);
-//      }
-//       return TRUE;
-//     }
-//   else if (event->keyval == GDK_KEY_Delete)
-//     {
-//       if (browser_get_selected_items_count (browser) > 0
-//        && browser->fs_ops->delete)
-//      {
-//        browser_delete_items (NULL, browser);
-//      }
-//       return TRUE;
-//     }
-//   else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_r)
-//     {
-//       browser_load_dir (browser);
-//       return TRUE;
-//     }
-//   else if (event->state & GDK_CONTROL_MASK
-//         && (event->keyval == GDK_KEY_U || event->keyval == GDK_KEY_u))
-//     {
-//       browser_go_up (NULL, browser);
-//       return TRUE;
-//     }
-//   else if (event->state & GDK_CONTROL_MASK
-//         && event->state & GDK_SHIFT_MASK && (event->keyval == GDK_KEY_N
-//                                              || event->keyval ==
-//                                              GDK_KEY_n))
-//     {
-//       browser_add_dir (NULL, browser);
-//       return TRUE;
-//     }
-//   else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_Right)
-//     {
-//       if (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE)
-//      {
-//        //Slot mode needs a slot destination.
-//        return FALSE;
-//      }
-
-//       if (!remote_browser.fs_ops->upload)
-//      {
-//        return FALSE;
-//      }
-
-//       elektroid_add_upload_tasks (NULL, NULL);
-
-//       return TRUE;
-//     }
-//   else if (event->state & GDK_CONTROL_MASK && event->keyval == GDK_KEY_Left)
-//     {
-
-//       if (!remote_browser.fs_ops->download)
-//      {
-//        return FALSE;
-//      }
-
-//       elektroid_add_download_tasks (NULL, NULL);
-
-//       return TRUE;
-//     }
-//   else
-//     {
-//       return FALSE;
-//     }
-// }
+  return GDK_EVENT_PROPAGATE;
+}
 
 static GdkContentProvider *
 browser_on_drag_prepare (GtkDragSource *source,
@@ -2743,8 +2669,6 @@ browser_init (struct browser *browser, const GActionEntry *entries,
   gtk_widget_add_controller (GTK_WIDGET (browser->view),
 			     GTK_EVENT_CONTROLLER (gesture));
 
-  // g_signal_connect (browser->view, "key-press-event",
-  //     G_CALLBACK (browser_key_press), browser);
   // g_signal_connect (browser->view, "drag-begin",
   //     G_CALLBACK (browser_drag_begin), browser); // -> browser_on_drag_prepare
   // g_signal_connect (browser->view, "drag-end",
@@ -2806,6 +2730,11 @@ browser_init (struct browser *browser, const GActionEntry *entries,
 				     GTK_SHORTCUT_SCOPE_LOCAL);
   gtk_widget_add_controller (GTK_WIDGET (browser->list_box),
 			     browser->shortcut_controller);
+
+  GtkEventController *key_controller = gtk_event_controller_key_new ();
+  g_signal_connect (key_controller, "key-pressed",
+		    G_CALLBACK (browser_on_key_press), browser);
+  gtk_widget_add_controller (GTK_WIDGET (browser->view), key_controller);
 }
 
 static void
