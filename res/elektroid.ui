@@ -1548,28 +1548,39 @@ audio-volume-medium-symbolic</property>
                         <property name="orientation">vertical</property>
                         <property name="spacing">6</property>
                         <child>
-                          <object class="GtkFrame">
-                            <property name="css-classes">squared</property>
+                          <object class="GtkBox" id="waveform_box">
                             <child>
-                              <object class="GtkOverlay">
-                                <property name="focusable">True</property>
-                                <property name="height-request">50</property>
-                                <property name="hexpand">True</property>
-                                <property name="vexpand">True</property>
+                              <object class="GtkFrame">
+                                <property name="css-classes">squared</property>
                                 <child>
-                                  <object class="GtkDrawingArea" id="waveform">
+                                  <object class="GtkOverlay">
                                     <property name="focusable">True</property>
-                                  </object>
-                                </child>
-                                <child type="overlay">
-                                  <object class="GtkScrollbar" id="waveform_scrollbar">
-                                    <property name="adjustment">waveform_adj</property>
-                                    <property name="css-classes">waveform-scroll</property>
-                                    <property name="valign">end</property>
+                                    <property name="height-request">50</property>
+                                    <property name="hexpand">True</property>
                                     <property name="vexpand">True</property>
-                                    <property name="visible">False</property>
+                                    <child>
+                                      <object class="GtkDrawingArea" id="waveform">
+                                        <property name="focusable">True</property>
+                                      </object>
+                                    </child>
+                                    <child type="overlay">
+                                      <object class="GtkScrollbar" id="waveform_scrollbar">
+                                        <property name="adjustment">waveform_adj</property>
+                                        <property name="css-classes">waveform-scroll</property>
+                                        <property name="valign">end</property>
+                                        <property name="vexpand">True</property>
+                                        <property name="visible">False</property>
+                                      </object>
+                                    </child>
                                   </object>
                                 </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkPopoverMenu" id="editor_popovermenu">
+                                <property name="has-arrow">False</property>
+                                <property name="menu-model">editor_popover_model</property>
+                                <property name="position">top</property>
                               </object>
                             </child>
                           </object>
@@ -1691,13 +1702,6 @@ audio-volume-medium-symbolic</property>
                                 <property name="width-request">150</property>
                               </object>
                             </child>
-                          </object>
-                        </child>
-                        <child>
-                          <object class="GtkPopoverMenu" id="editor_popovermenu">
-                            <property name="has-arrow">False</property>
-                            <property name="menu-model">editor_popover_model</property>
-                            <property name="position">top</property>
                           </object>
                         </child>
                       </object>
@@ -3518,17 +3522,17 @@ Characteristics</property>
   <menu id="editor_popover_model">
     <section>
       <item>
-        <attribute name="action">app.waveform_play</attribute>
+        <attribute name="action">editor.play</attribute>
         <attribute name="label" translatable="yes">Play</attribute>
       </item>
     </section>
     <section>
       <item>
-        <attribute name="action">app.waveform_delete</attribute>
+        <attribute name="action">editor.delete</attribute>
         <attribute name="label" translatable="yes">Delete</attribute>
       </item>
       <item>
-        <attribute name="action">app.waveform_undo</attribute>
+        <attribute name="action">editor.undo</attribute>
         <attribute name="label" translatable="yes">Undo</attribute>
       </item>
     </section>
@@ -3536,26 +3540,26 @@ Characteristics</property>
       <submenu>
         <attribute name="label" translatable="yes">Tools</attribute>
         <item>
-          <attribute name="action">app.waveform_normalize</attribute>
+          <attribute name="action">editor.normalize</attribute>
           <attribute name="label" translatable="yes">Normalize</attribute>
         </item>
         <item>
-          <attribute name="action">app.waveform_split_channels</attribute>
+          <attribute name="action">editor.split_channels</attribute>
           <attribute name="label" translatable="yes">Split Channels</attribute>
         </item>
       </submenu>
     </section>
     <section>
       <item>
-        <attribute name="action">app.waveform_export</attribute>
+        <attribute name="action">editor.export</attribute>
         <attribute name="label" translatable="yes">Export</attribute>
       </item>
       <item>
-        <attribute name="action">app.waveform_save</attribute>
+        <attribute name="action">editor.save</attribute>
         <attribute name="label" translatable="yes">Save</attribute>
       </item>
       <item>
-        <attribute name="action">app.waveform_save_as</attribute>
+        <attribute name="action">editor.save_as</attribute>
         <attribute name="label" translatable="yes">Save As...</attribute>
       </item>
     </section>

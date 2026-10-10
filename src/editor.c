@@ -95,6 +95,7 @@ extern GtkWindow *main_window;
 
 static GThread *thread;
 static GtkWidget *editor_box;
+static GtkWidget *waveform_box;
 static GtkWidget *waveform;
 static GtkWidget *waveform_scrollbar;
 static GtkAdjustment *waveform_adj;
@@ -125,6 +126,7 @@ static gdouble zoom;
 static enum editor_operation operation;
 static gboolean dirty;
 static gboolean ready;
+static GSimpleActionGroup *action_group;
 static struct browser *browser;
 static GMutex mutex;
 static guint waveform_scroll_width;
@@ -148,27 +150,36 @@ editor_get_browser ()
 }
 
 static void
+editor_set_action_enabled (const gchar *name, gboolean active)
+{
+  elektroid_set_action_enabled (G_ACTION_MAP (action_group), name, active);
+}
+
+static void
 editor_set_actions_enabled ()
 {
-  elektroid_set_action_enabled ("waveform_split_channels",
-				audio.sample_info_src.channels > 1);
+  editor_set_action_enabled ("play", TRUE);
+  editor_set_action_enabled ("normalize", TRUE);
+  editor_set_action_enabled ("split_channels",
+			     audio.sample_info_src.channels > 1);
+
   if (audio.path)
     {
       gboolean can_save =
 	sample_format_is_valid_to_save (&audio.sample_info_src);
 
-      elektroid_set_action_enabled ("waveform_undo", dirty);
-      elektroid_set_action_enabled ("waveform_export", !can_save);
-      elektroid_set_action_enabled ("waveform_save", can_save && dirty);
-      elektroid_set_action_enabled ("waveform_save_as", can_save);
+      editor_set_action_enabled ("undo", dirty);
+      editor_set_action_enabled ("export", !can_save);
+      editor_set_action_enabled ("save", can_save && dirty);
+      editor_set_action_enabled ("save_as", can_save);
     }
   else
     {
       // This is a recording
-      elektroid_set_action_enabled ("waveform_undo", FALSE);
-      elektroid_set_action_enabled ("waveform_export", FALSE);
-      elektroid_set_action_enabled ("waveform_save", FALSE);
-      elektroid_set_action_enabled ("waveform_save_as", TRUE);
+      editor_set_action_enabled ("undo", FALSE);
+      editor_set_action_enabled ("export", FALSE);
+      editor_set_action_enabled ("save", FALSE);
+      editor_set_action_enabled ("save_as", TRUE);
     }
 }
 
@@ -328,12 +339,14 @@ editor_reset_widgets (gpointer data)
   gtk_widget_set_sensitive (sample_info_box, FALSE);
   gtk_widget_set_sensitive (waveform, browser != NULL);
 
-  elektroid_set_action_enabled ("waveform_delete", FALSE);
-  elektroid_set_action_enabled ("waveform_split_channels", FALSE);
-  elektroid_set_action_enabled ("waveform_undo", FALSE);
-  elektroid_set_action_enabled ("waveform_export", FALSE);
-  elektroid_set_action_enabled ("waveform_save", FALSE);
-  elektroid_set_action_enabled ("waveform_save_as", FALSE);
+  editor_set_action_enabled ("play", FALSE);
+  editor_set_action_enabled ("delete", FALSE);
+  editor_set_action_enabled ("normalize", FALSE);
+  editor_set_action_enabled ("split_channels", FALSE);
+  editor_set_action_enabled ("undo", FALSE);
+  editor_set_action_enabled ("export", FALSE);
+  editor_set_action_enabled ("save", FALSE);
+  editor_set_action_enabled ("save_as", FALSE);
 
   editor_set_filename ();
   editor_update_sample_info ();
@@ -1664,7 +1677,7 @@ editor_button_released (GtkGestureClick *gesture, int n_press, double x,
 	  audio.sel_end = -1;
 	  gtk_widget_queue_draw (waveform);
 
-	  elektroid_set_action_enabled ("waveform_delete", FALSE);
+	  editor_set_action_enabled ("delete", FALSE);
 	}
       else
 	{
@@ -1680,7 +1693,7 @@ editor_button_released (GtkGestureClick *gesture, int n_press, double x,
 		}
 	    }
 
-	  elektroid_set_action_enabled ("waveform_delete", sel_len > 0);
+	  editor_set_action_enabled ("delete", sel_len > 0);
 	}
     }
 
@@ -2536,22 +2549,12 @@ editor_set_visible (gboolean visible)
   editor_set_audio_mono_mix ();
 }
 
-static const GActionEntry EDITOR_ENTRIES[] = {
-  {"waveform_play", editor_waveform_play, NULL, NULL, NULL},
-  {"waveform_delete", editor_waveform_delete, NULL, NULL, NULL},
-  {"waveform_undo", editor_waveform_undo, NULL, NULL, NULL},
-  {"waveform_normalize", editor_waveform_normalize, NULL, NULL, NULL},
-  {"waveform_split_channels", editor_waveform_split_channels, NULL, NULL,
-   NULL},
-  {"waveform_export", editor_waveform_save_as, NULL, NULL, NULL},
-  {"waveform_save", editor_waveform_save, NULL, NULL, NULL},
-  {"waveform_save_as", editor_waveform_save_as, NULL, NULL, NULL},
-};
-
 void
 editor_init (GtkBuilder *builder, GtkApplication *app)
 {
   editor_box = GTK_WIDGET (gtk_builder_get_object (builder, "editor_box"));
+  waveform_box =
+    GTK_WIDGET (gtk_builder_get_object (builder, "waveform_box"));
   waveform = GTK_WIDGET (gtk_builder_get_object (builder, "waveform"));
   waveform_scrollbar =
     GTK_WIDGET (gtk_builder_get_object (builder, "waveform_scrollbar"));
@@ -2660,7 +2663,7 @@ editor_init (GtkBuilder *builder, GtkApplication *app)
   GtkEventController *key_controller = gtk_event_controller_key_new ();
   g_signal_connect (key_controller, "key-pressed",
 		    G_CALLBACK (editor_waveform_on_key_pressed), NULL);
-  gtk_widget_add_controller (GTK_WIDGET (waveform), key_controller);
+  gtk_widget_add_controller (GTK_WIDGET (waveform_box), key_controller);
 
   g_signal_connect (manage_tags_button, "clicked",
 		    G_CALLBACK (editor_manage_tags_button_click), NULL);
@@ -2673,6 +2676,40 @@ editor_init (GtkBuilder *builder, GtkApplication *app)
   gtk_spin_button_set_value (GTK_SPIN_BUTTON (subdivisions_spin),
 			     preferences_get_int (PREF_KEY_SUBDIVISIONS));
 
+  static const GActionEntry actions[] = {
+    {"play", editor_waveform_play, NULL, NULL, NULL},
+    {"delete", editor_waveform_delete, NULL, NULL, NULL},
+    {"undo", editor_waveform_undo, NULL, NULL, NULL},
+    {"normalize", editor_waveform_normalize, NULL, NULL, NULL},
+    {"split_channels", editor_waveform_split_channels, NULL, NULL, NULL},
+    {"export", editor_waveform_save_as, NULL, NULL, NULL},
+    {"save", editor_waveform_save, NULL, NULL, NULL},
+    {"save_as", editor_waveform_save_as, NULL, NULL, NULL},
+  };
+
+  action_group = g_simple_action_group_new ();
+  g_action_map_add_action_entries (G_ACTION_MAP (action_group), actions,
+				   G_N_ELEMENTS (actions), NULL);
+  gtk_widget_insert_action_group (GTK_WIDGET (waveform_box), "editor",
+				  G_ACTION_GROUP (action_group));
+
+  GtkEventController *controller = gtk_shortcut_controller_new ();
+  gtk_shortcut_controller_set_scope (GTK_SHORTCUT_CONTROLLER
+				     (controller), GTK_SHORTCUT_SCOPE_LOCAL);
+  gtk_widget_add_controller (GTK_WIDGET (waveform_box), controller);
+
+  elektroid_controller_add_accel (controller, "space", "action(editor.play)");
+  elektroid_controller_add_accel (controller, "Delete",
+				  "action(editor.delete)");
+  elektroid_controller_add_accel (controller, "<Ctrl>z",
+				  "action(editor.undo)");
+  elektroid_controller_add_accel (controller, "<Ctrl>e",
+				  "action(editor.export)");
+  elektroid_controller_add_accel (controller, "<Ctrl>s",
+				  "action(editor.save)");
+  elektroid_controller_add_accel (controller, "<Shift><Ctrl>s",
+				  "action(editor.save_as)");
+
   audio_init (editor_update_audio_status, editor_set_volume_callback);
 
   record_window_init (builder);
@@ -2682,27 +2719,6 @@ editor_init (GtkBuilder *builder, GtkApplication *app)
   editor_update_tags ();
 
   g_mutex_init (&mutex);
-
-  g_action_map_add_action_entries (G_ACTION_MAP (app), EDITOR_ENTRIES,
-				   G_N_ELEMENTS (EDITOR_ENTRIES), NULL);
-
-  const gchar *play_accels[] = { "space", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.waveform_play", play_accels);
-  const gchar *delete_accels[] = { "Delete", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.waveform_delete",
-					 delete_accels);
-  const gchar *undo_accels[] = { "<Ctrl>z", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.waveform_undo", undo_accels);
-  const gchar *save_accels[] = { "<Ctrl>s", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.waveform_save", save_accels);
-  const gchar *save_as_accels[] = { "<Shift><Ctrl>s", NULL };
-  gtk_application_set_accels_for_action (GTK_APPLICATION (app),
-					 "app.waveform_save_as",
-					 save_as_accels);
 
   editor_reset (NULL);
   active = TRUE;
@@ -2737,6 +2753,7 @@ editor_destroy ()
   gtk_flow_box_remove_all (GTK_FLOW_BOX (tags_flow_box));
 
   g_object_unref (G_OBJECT (notes_list_store));
+  g_object_unref (action_group);
 }
 
 void
