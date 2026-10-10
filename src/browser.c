@@ -203,9 +203,8 @@ static void
 browser_set_action_enabled (struct browser *browser, const gchar *name,
 			    gboolean active)
 {
-  GAction *action =
-    g_action_map_lookup_action (G_ACTION_MAP (browser->action_group), name);
-  g_simple_action_set_enabled (G_SIMPLE_ACTION (action), active);
+  elektroid_set_action_enabled (G_ACTION_MAP (browser->action_group), name,
+				active);
 }
 
 static void
@@ -2627,13 +2626,8 @@ static void
 browser_add_accel (struct browser *browser, const gchar *trigger_str,
 		   const gchar *action_str)
 {
-  GtkShortcutTrigger *trigger =
-    gtk_shortcut_trigger_parse_string (trigger_str);
-  GtkShortcutAction *action = gtk_shortcut_action_parse_string (action_str);
-  GtkShortcut *shortcut = gtk_shortcut_new (trigger, action);
-  gtk_shortcut_controller_add_shortcut (GTK_SHORTCUT_CONTROLLER
-					(browser->shortcut_controller),
-					shortcut);
+  elektroid_controller_add_accel (browser->shortcut_controller, trigger_str,
+				  action_str);
 }
 
 static void

@@ -77,7 +77,7 @@ maction_set_action_enable_all (gboolean enable)
 					   "action", "s", &action))
 	{
 	  const gchar *action_name = filename_get_ext (action);	// A little hack to get the action_name from "app.action_name".
-	  elektroid_set_action_enabled (action_name, enable);
+	  elektroid_app_set_action_enabled (action_name, enable);
 	  g_free (action);
 	}
     }

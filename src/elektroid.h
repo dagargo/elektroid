@@ -43,6 +43,13 @@ void elektroid_update_audio_status (gboolean status);
 
 void elektroid_show_error_msg (const char *format, ...);
 
-void elektroid_set_action_enabled (const gchar * name, gboolean active);
+void elektroid_set_action_enabled (GActionMap * action_map,
+				   const gchar * name, gboolean active);
+
+void elektroid_app_set_action_enabled (const gchar * name, gboolean active);
+
+void elektroid_controller_add_accel (GtkEventController * controller,
+				     const gchar * trigger_str,
+				     const gchar * action_str);
 
 #endif
