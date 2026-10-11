@@ -1166,8 +1166,6 @@ main (int argc, gchar *argv[])
   gchar *command;
   gint vflg = 0, errflg = 0;
 
-  setup ();
-
   controllable_init (&controllable);
   controllable_init (&task_control.controllable);
 
@@ -1215,6 +1213,8 @@ main (int argc, gchar *argv[])
       cli_print_help (argv[0]);
       exit (EXIT_FAILURE);
     }
+
+  setup ();
 
   regconn_register ();
   regpref_register ();
