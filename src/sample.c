@@ -645,8 +645,8 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
 
   if (disable_loop)
     {
-      sample_info->loop_start = sample_info->frames - 1;
-      sample_info->loop_end = sample_info->loop_start;
+      sample_info->loop_start = 0;
+      sample_info->loop_end = sample_info->frames - 1;
       sample_info->loop_type = SAMPLE_LOOP_TYPE_FWD;
       sample_info->loop_count = 1;
     }
