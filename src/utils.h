@@ -66,6 +66,15 @@
 #define SAMPLE_INFO_TAG_KEY_SIZE 4
 #define SAMPLE_INFO_TAG_IKEY "IKEY"
 
+// This values reflect the allowed values of the loop_type in the smpl chunk.
+// Other values have no precise meaning.
+enum sample_info_loop_type
+{
+  SAMPLE_LOOP_TYPE_FWD = 0,
+  SAMPLE_LOOP_TYPE_FWD_BWD = 1,
+  SAMPLE_LOOP_TYPE_BWD = 2
+};
+
 struct sample_info
 {
   guint32 frames;
@@ -75,7 +84,8 @@ struct sample_info
   // As in smpl chunk
   guint32 loop_start;
   guint32 loop_end;
-  guint32 loop_type;		// 0 = forward loop
+  enum sample_info_loop_type loop_type;
+  guint32 loop_count;		// O = infinite (loop enabled)
   guint32 midi_note;
   guint32 midi_fraction;
   // As in acid chunk
@@ -85,7 +95,7 @@ struct sample_info
   guint16 metre_num;
   guint16 metre_den;
   gfloat tempo;
-  // LIST INFO chunk
+  // LIST INFO chunk. This must be at the end. See sample_info_equal_no_tags().
   GHashTable *tags;
 };
 

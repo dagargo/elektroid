@@ -306,7 +306,8 @@ sample_write_audio_file_data (struct idata *idata,
   smpl_chunk_data.sample_loop.start = GUINT32_TO_LE (sample_info->loop_start);
   smpl_chunk_data.sample_loop.end = GUINT32_TO_LE (sample_info->loop_end);
   smpl_chunk_data.sample_loop.fraction = 0;
-  smpl_chunk_data.sample_loop.play_count = 0;
+  smpl_chunk_data.sample_loop.play_count =
+    GUINT32_TO_LE (sample_info->loop_count);
 
   strcpy (chunk_info.id, SMPL_CHUNK_ID);
   chunk_info.id_size = CHUNK_SIZE;
@@ -615,6 +616,8 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
 	GUINT32_FROM_LE (smpl_chunk_data.sample_loop.end);
       sample_info->loop_type =
 	GUINT32_FROM_LE (smpl_chunk_data.sample_loop.type);
+      sample_info->loop_count =
+	GUINT32_FROM_LE (smpl_chunk_data.sample_loop.play_count);
       sample_info->midi_note =
 	GUINT32_FROM_LE (smpl_chunk_data.midi_unity_note);
       sample_info->midi_fraction =
@@ -645,6 +648,7 @@ sample_set_sample_info (struct sample_info *sample_info, SNDFILE *sndfile,
       sample_info->loop_start = sample_info->frames - 1;
       sample_info->loop_end = sample_info->loop_start;
       sample_info->loop_type = SAMPLE_LOOP_TYPE_FWD;
+      sample_info->loop_count = 1;
     }
 
   debug_print (2, "Loop start at %d, loop end at %d",

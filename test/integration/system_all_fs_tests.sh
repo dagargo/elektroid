@@ -8,6 +8,7 @@ echo "Runnning tests on $tmpdir..."
 
 actf=$tmpdir/square.wav
 for f in $($ecli info 0 | grep Filesystems | awk -F": " '{print $2}' | sed 's/,/ /g'); do
+  echo "Runnning tests on $tmpdir for filesystem $f..."
   expf=$srcdir/res/connectors/square-$f.wav
   [ ! -f $expf ] && echo "$expf test file not found" && err=1 && continue
   $ecli system:$f:ul $srcdir/res/connectors/square.wav 0:$tmpdir
@@ -22,9 +23,10 @@ done
 
 echo "Runnning test from 1 to 2 channels on $tmpdir..."
 
+f=wav-stereo-48k-16b
 actf=$tmpdir/square-wav-mono-48k-16b.wav
 expf=$srcdir/res/connectors/square-wav-stereo-48k-16b.wav
-$ecli system:wav-stereo-48k-16b:ul $srcdir/res/connectors/square-wav-mono-48k-16b.wav 0:$tmpdir
+$ecli system:$f:ul $srcdir/res/connectors/square-wav-mono-48k-16b.wav 0:$tmpdir
 if [ $? -eq 0 ]; then
   cksum $actf
   cksum $expf
@@ -38,9 +40,10 @@ fi
 
 echo "Runnning test from 2 to 1 channels on $tmpdir..."
 
-act=$tmpdir/square-wav-stereo-48k-16b.wav
-exp=$srcdir/res/connectors/square-wav-mono-48k-16b.wav
-$ecli system:wav-mono-48k-16b:ul $srcdir/res/connectors/square-wav-stereo-48k-16b.wav 0:$tmpdir
+f=wav-mono-48k-16b
+actf=$tmpdir/square-wav-stereo-48k-16b.wav
+expf=$srcdir/res/connectors/square-wav-mono-48k-16b.wav
+$ecli system:$f:ul $srcdir/res/connectors/square-wav-stereo-48k-16b.wav 0:$tmpdir
 if [ $? -eq 0 ]; then
   cksum $actf
   cksum $expf
