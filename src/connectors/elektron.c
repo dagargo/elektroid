@@ -63,7 +63,7 @@ static const gchar *FS_DATA_ANY_EXTS[] = { "data", NULL };
 #define ELEKTRON_SAMPLE_INFO_PAD_I32_LEN 10
 
 #define ELEKTRON_LOOP_TYPE_FWD SAMPLE_LOOP_TYPE_FWD
-#define ELEKTRON_LOOP_TYPE_NO SAMPLE_LOOP_TYPE_NO
+#define ELEKTRON_LOOP_TYPE_NO 0x7f
 
 #define PROJECT_SLOTS 128
 #define SOUND_SLOTS 256
@@ -692,9 +692,9 @@ elektron_new_msg_write_sample_blk (guint id, GByteArray *sample,
       elektron_sample_header.rate = g_htonl (ELEKTRON_SAMPLE_RATE);
       elektron_sample_header.loop_start = g_htonl (sample_info->loop_start);
       elektron_sample_header.loop_end = g_htonl (sample_info->loop_end);
-      // See comment in elektron_sample_header struct.
       // More mapping values should be added here.
-      if (sample_info->loop_type == ELEKTRON_LOOP_TYPE_FWD)
+      if (sample_info->loop_count == 0 &&
+	  sample_info->loop_type == ELEKTRON_LOOP_TYPE_FWD)
 	{
 	  elektron_sample_header.loop_type = sample_info->loop_type;
 	}
@@ -1614,7 +1614,15 @@ elektron_download_smplrw (struct backend *backend, const gchar *path,
 	  sample_info->loop_start =
 	    g_ntohl (elektron_sample_header->loop_start);
 	  sample_info->loop_end = g_ntohl (elektron_sample_header->loop_end);
-	  sample_info->loop_type = elektron_sample_header->loop_type;
+	  sample_info->loop_type = SAMPLE_LOOP_TYPE_FWD;
+	  if (elektron_sample_header->loop_type == ELEKTRON_LOOP_TYPE_FWD)
+	    {
+	      sample_info->loop_count = 0;
+	    }
+	  else
+	    {
+	      sample_info->loop_count = 1;
+	    }
 	  sample_info->rate = g_ntohl (elektron_sample_header->rate);	//In the case of the RAW filesystem is not used and it is harmless.
 	  sample_info->format = SF_FORMAT_WAV | SF_FORMAT_PCM_16;
 	  sample_info->channels = elektron_sample_header->stereo + 1;
