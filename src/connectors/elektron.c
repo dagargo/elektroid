@@ -1239,6 +1239,66 @@ elektron_delete_samples_dir (struct backend *backend, const gchar *path)
 			       sizeof (FS_SAMPLE_DELETE_DIR_REQUEST));
 }
 
+/*
+ * Decode the sample metadata returned by Elektron requests 0x22 and 0x28.
+ *
+ * Response layout:
+ *   byte 5:    status (1 = success)
+ *   bytes 6-9: sample size, big-endian
+ *   bytes 10-13:
+ *     0x22: sample ID, big-endian
+ *     0x28: sample hash, big-endian
+ *
+ * Return 0 on success, -EINVAL for invalid arguments,
+ * -ENOENT when 0x22 reports a missing sample, or -EIO
+ * for malformed or inconsistent responses.
+ */
+gint
+elektron_parse_sample_metadata (const GByteArray *info_response,
+                               const GByteArray *hash_response,
+                               struct sample_metadata *metadata)
+{
+  struct sample_metadata result;
+  guint32 value;
+  guint32 hash_size;
+
+  if (!info_response || !hash_response || !metadata)
+    return -EINVAL;
+
+  /* Check lengths before accessing status or payload bytes. */
+  if (info_response->len < 6 || hash_response->len < 6)
+    return -EIO;
+
+  if (info_response->data[5] != 1)
+    return -ENOENT;
+
+  if (hash_response->data[5] != 1)
+    return -EIO;
+
+  if (info_response->len < 14 || hash_response->len < 14)
+    return -EIO;
+
+  memcpy (&value, &info_response->data[6], sizeof (value));
+  result.size = g_ntohl (value);
+
+  memcpy (&value, &info_response->data[10], sizeof (value));
+  result.id = g_ntohl (value);
+
+  memcpy (&value, &hash_response->data[6], sizeof (value));
+  hash_size = g_ntohl (value);
+
+  memcpy (&value, &hash_response->data[10], sizeof (value));
+  result.hash = g_ntohl (value);
+
+  if (result.size != hash_size)
+    return -EIO;
+
+  /* Publish the result only after all validations succeed. */
+  *metadata = result;
+
+  return 0;
+}
+
 static gboolean
 elektron_sample_file_exists (struct backend *backend, const gchar *path)
 {
