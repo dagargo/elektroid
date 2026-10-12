@@ -462,8 +462,7 @@ editor_loop_clicked (GtkWidget *object, gpointer data)
   audio.loop = editor_is_loop_active ();
   if (sample_info)
     {
-      sample_info->loop_type =
-	audio.loop ? SAMPLE_LOOP_TYPE_FWD : SAMPLE_LOOP_TYPE_NO;
+      sample_info->loop_count = audio.loop ? 0 : 1;
     }
   editor_set_dirty (TRUE);
 }
@@ -614,12 +613,12 @@ editor_set_from_sample_info ()
       si.tempo = sample_info->tempo;
       si.beats = sample_info->beats;
       si.midi_note = sample_info->midi_note;
-      si.loop_type = sample_info->loop_type;
+      si.loop_count = sample_info->loop_count;
       editor_update_sample_tempo_estimation (sample_info);
     }
   else
     {
-      si.loop_type = SAMPLE_LOOP_TYPE_NO;
+      si.loop_count = 1;
     }
 
   g_signal_handlers_block_by_func (metre_num_spin,
@@ -661,7 +660,7 @@ editor_set_from_sample_info ()
   g_signal_handlers_block_by_func (loop_button,
 				   G_CALLBACK (editor_loop_clicked), NULL);
   gtk_toggle_button_set_active (GTK_TOGGLE_BUTTON (loop_button),
-				si.loop_type != SAMPLE_LOOP_TYPE_NO);
+				si.loop_count == 0);
   g_signal_handlers_unblock_by_func (loop_button,
 				     G_CALLBACK (editor_loop_clicked), NULL);
 

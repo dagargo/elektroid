@@ -31,7 +31,8 @@ test_load_sample_resampling (struct task_control *control)
   CU_ASSERT_EQUAL (sample_info_src.frames, 44100);
   CU_ASSERT_EQUAL (sample_info_src.loop_start, 5817);
   CU_ASSERT_EQUAL (sample_info_src.loop_end, 39793);
-  CU_ASSERT_EQUAL (sample_info_src.loop_type, 0x7f);
+  CU_ASSERT_EQUAL (sample_info_src.loop_type, 0);
+  CU_ASSERT_EQUAL (sample_info_src.loop_count, 1);
   CU_ASSERT_EQUAL (sample_info_src.rate, 44100);
   CU_ASSERT_EQUAL (sample_info_src.format, SF_FORMAT_WAV | SF_FORMAT_PCM_U8);
   CU_ASSERT_EQUAL (sample_info_src.channels, 2);
@@ -41,7 +42,8 @@ test_load_sample_resampling (struct task_control *control)
   CU_ASSERT_EQUAL (sample_info->frames, 48000);
   CU_ASSERT_EQUAL (sample_info->loop_start, 6331);
   CU_ASSERT_EQUAL (sample_info->loop_end, 43312);
-  CU_ASSERT_EQUAL (sample_info->loop_type, 0x7f);
+  CU_ASSERT_EQUAL (sample_info->loop_type, 0);
+  CU_ASSERT_EQUAL (sample_info->loop_count, 1);
   CU_ASSERT_EQUAL (sample_info->rate, 48000);
   CU_ASSERT_EQUAL (sample_info->format, SF_FORMAT_PCM_16);
   CU_ASSERT_EQUAL (sample_info->channels, 1);
@@ -98,7 +100,8 @@ test_load_sample_no_resampling (struct task_control *control)
   CU_ASSERT_EQUAL (sample_info_src.frames, 48000);
   CU_ASSERT_EQUAL (sample_info_src.loop_start, 6331);
   CU_ASSERT_EQUAL (sample_info_src.loop_end, 43312);
-  CU_ASSERT_EQUAL (sample_info_src.loop_type, 0x7f);
+  CU_ASSERT_EQUAL (sample_info_src.loop_type, 0);
+  CU_ASSERT_EQUAL (sample_info_src.loop_count, 1);
   CU_ASSERT_EQUAL (sample_info_src.rate, 48000);
   CU_ASSERT_EQUAL (sample_info_src.format, SF_FORMAT_WAV | SF_FORMAT_PCM_16);
   CU_ASSERT_EQUAL (sample_info_src.channels, 1);
@@ -108,7 +111,8 @@ test_load_sample_no_resampling (struct task_control *control)
   CU_ASSERT_EQUAL (sample_info->frames, 48000);
   CU_ASSERT_EQUAL (sample_info->loop_start, 6331);
   CU_ASSERT_EQUAL (sample_info->loop_end, 43312);
-  CU_ASSERT_EQUAL (sample_info->loop_type, 0x7f);
+  CU_ASSERT_EQUAL (sample_info->loop_type, 0);
+  CU_ASSERT_EQUAL (sample_info->loop_count, 1);
   CU_ASSERT_EQUAL (sample_info->rate, 48000);
   CU_ASSERT_EQUAL (sample_info->format, SF_FORMAT_PCM_16);
   CU_ASSERT_EQUAL (sample_info->channels, 1);
@@ -164,6 +168,7 @@ test_load_microfreak_wavetable (const gchar *path)
   CU_ASSERT_EQUAL (sample_info_src.loop_start, 0);
   CU_ASSERT_EQUAL (sample_info_src.loop_end, 8191);
   CU_ASSERT_EQUAL (sample_info_src.loop_type, 0);
+  CU_ASSERT_EQUAL (sample_info_src.loop_count, 1);
   CU_ASSERT_EQUAL (sample_info_src.rate, 32000);
   CU_ASSERT_EQUAL (sample_info_src.format,
 		   ELEKTROID_SAMPLE_FORMAT_MICROFREAK | SF_FORMAT_PCM_16);
@@ -175,6 +180,7 @@ test_load_microfreak_wavetable (const gchar *path)
   CU_ASSERT_EQUAL (sample_info->loop_start, 0);
   CU_ASSERT_EQUAL (sample_info->loop_end, 12287);
   CU_ASSERT_EQUAL (sample_info->loop_type, 0);
+  CU_ASSERT_EQUAL (sample_info->loop_count, 1);
   CU_ASSERT_EQUAL (sample_info->rate, 48000);
   CU_ASSERT_EQUAL (sample_info->format, SF_FORMAT_PCM_16);
   CU_ASSERT_EQUAL (sample_info->channels, 1);
@@ -227,6 +233,7 @@ test_load_microfreak_sample (const gchar *path)
   CU_ASSERT_EQUAL (sample_info_src.loop_start, 0);
   CU_ASSERT_EQUAL (sample_info_src.loop_end, 799);
   CU_ASSERT_EQUAL (sample_info_src.loop_type, 0);
+  CU_ASSERT_EQUAL (sample_info_src.loop_count, 1);
   CU_ASSERT_EQUAL (sample_info_src.rate, 32000);
   CU_ASSERT_EQUAL (sample_info_src.format,
 		   ELEKTROID_SAMPLE_FORMAT_MICROFREAK | SF_FORMAT_PCM_16);
@@ -238,6 +245,7 @@ test_load_microfreak_sample (const gchar *path)
   CU_ASSERT_EQUAL (sample_info->loop_start, 0);
   CU_ASSERT_EQUAL (sample_info->loop_end, 1199);
   CU_ASSERT_EQUAL (sample_info->loop_type, 0);
+  CU_ASSERT_EQUAL (sample_info->loop_count, 1);
   CU_ASSERT_EQUAL (sample_info->rate, 48000);
   CU_ASSERT_EQUAL (sample_info->format, SF_FORMAT_PCM_16);
   CU_ASSERT_EQUAL (sample_info->channels, 1);

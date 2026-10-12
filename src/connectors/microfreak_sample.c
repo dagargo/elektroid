@@ -287,7 +287,8 @@ microfreak_wavetable_new_sample_info (guint32 frames)
   struct sample_info *sample_info = sample_info_new (FALSE);
   sample_info->frames = frames;
   sample_info->loop_end = sample_info->frames - 1;
-  sample_info->loop_type = SAMPLE_LOOP_TYPE_NO;
+  sample_info->loop_type = SAMPLE_LOOP_TYPE_FWD;
+  sample_info->loop_count = 1;
   sample_info->rate = MICROFREAK_SAMPLERATE;
   sample_info->format = ELEKTROID_SAMPLE_FORMAT_MICROFREAK | SF_FORMAT_PCM_16;
   sample_info->channels = 1;

@@ -44,8 +44,8 @@
 #define SDS_SAMPLE_NAME_MAX_LEN 127
 
 #define SDS_LOOP_TYPE_FWD SAMPLE_LOOP_TYPE_FWD
-#define SDS_LOOP_TYPE_FWD_BWD 1
-#define SDS_LOOP_TYPE_NO SAMPLE_LOOP_TYPE_NO
+#define SDS_LOOP_TYPE_FWD_BWD SAMPLE_LOOP_TYPE_FWD_BWD
+#define SDS_LOOP_TYPE_NO 0x7f
 
 static const guint8 SDS_SAMPLE_REQUEST[] = { 0xf0, 0x7e, 0, 0x3, 0, 0, 0xf7 };
 static const guint8 SDS_ACK[] = { 0xf0, 0x7e, 0, 0x7f, 0, 0xf7 };
@@ -193,7 +193,17 @@ sds_get_download_info (GByteArray *header, struct sample_info *sample_info,
     sds_get_bytes_value_right_just (&header->data[13], SDS_BYTES_PER_WORD);
   sample_info->loop_end =
     sds_get_bytes_value_right_just (&header->data[16], SDS_BYTES_PER_WORD);
-  sample_info->loop_type = header->data[19];
+  if (header->data[19] == SDS_LOOP_TYPE_FWD ||
+      header->data[19] == SDS_LOOP_TYPE_FWD_BWD)
+    {
+      sample_info->loop_type = header->data[19];
+      sample_info->loop_count = 0;
+    }
+  else
+    {
+      sample_info->loop_type = SAMPLE_LOOP_TYPE_FWD;
+      sample_info->loop_count = 1;
+    }
   sample_info->rate = 1.0e9 /
     sds_get_bytes_value_right_just (&header->data[7], SDS_BYTES_PER_WORD);
   if (*bits == 8)
@@ -253,18 +263,28 @@ sds_get_dump_msg (guint id, guint frames, struct sample_info *sample_info,
 				      period);
       sds_set_bytes_value_right_just (&tx_msg->data[10], SDS_BYTES_PER_WORD,
 				      frames);
-      sds_set_bytes_value_right_just (&tx_msg->data[13], SDS_BYTES_PER_WORD,
-				      sample_info->loop_start);
-      sds_set_bytes_value_right_just (&tx_msg->data[16], SDS_BYTES_PER_WORD,
-				      sample_info->loop_end);
       // More mapping values should be added here.
-      if (sample_info->loop_type == SDS_LOOP_TYPE_FWD ||
-	  sample_info->loop_type == SDS_LOOP_TYPE_FWD_BWD)
+      if (sample_info->loop_count == 0 &&
+	  (sample_info->loop_type == SDS_LOOP_TYPE_FWD ||
+	   sample_info->loop_type == SDS_LOOP_TYPE_FWD_BWD))
 	{
+	  sds_set_bytes_value_right_just (&tx_msg->data[13],
+					  SDS_BYTES_PER_WORD,
+					  sample_info->loop_start);
+	  sds_set_bytes_value_right_just (&tx_msg->data[16],
+					  SDS_BYTES_PER_WORD,
+					  sample_info->loop_end);
 	  tx_msg->data[19] = sample_info->loop_type;
 	}
       else
 	{
+          guint32 loop_end = sample_info->frames - 1;
+	  sds_set_bytes_value_right_just (&tx_msg->data[13],
+					  SDS_BYTES_PER_WORD,
+					  loop_end);
+	  sds_set_bytes_value_right_just (&tx_msg->data[16],
+					  SDS_BYTES_PER_WORD,
+					  loop_end);
 	  tx_msg->data[19] = SDS_LOOP_TYPE_NO;
 	}
     }
