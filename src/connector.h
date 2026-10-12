@@ -136,6 +136,13 @@ typedef void (*fs_select_item) (struct backend *, const gchar *,
 
 typedef gboolean (*fs_file_exists) (struct backend *, const gchar *);
 
+struct sample_metadata
+{
+  guint32 id;
+  guint32 size;
+  guint32 hash;
+};
+
 // All the function members that return gint should return 0 if no error and a negative number in case of error.
 // errno values are recommended as will provide the user with a meaningful message. In particular,
 // ENOSYS could be used when a particular device does not support a feature that other devices implementing the same filesystem do.
