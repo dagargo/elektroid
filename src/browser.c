@@ -532,21 +532,18 @@ browser_remote_set_fs_operations (const struct fs_operations *fs_ops)
 	  editor_reset (NULL);
 	}
 
+      if (remote_browser.dir)
+	{
+	  g_free (remote_browser.dir);
+	}
       if (remote_browser.backend->type == BE_TYPE_SYSTEM)
 	{
-	  if (!remote_browser.dir)
-	    {
-	      remote_browser.dir =
-		strdup (get_system_startup_path
-			(preferences_get_string (PREF_KEY_REMOTE_DIR)));
-	    }
+	  remote_browser.dir =
+	    strdup (get_system_startup_path
+		    (preferences_get_string (PREF_KEY_REMOTE_DIR)));
 	}
       else
 	{
-	  if (remote_browser.dir)
-	    {
-	      g_free (remote_browser.dir);
-	    }
 	  remote_browser.dir = strdup ("/");
 	}
 
