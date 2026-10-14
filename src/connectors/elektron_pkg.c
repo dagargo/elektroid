@@ -51,7 +51,7 @@
 #define MAX_MANIFEST_LEN (128 * 1024)
 #define MANIFEST_FILENAME "manifest.json"
 
-static GSList *
+GSList *
 elektron_pkg_get_tags_from_snd_metadata_int (JsonReader *reader)
 {
   gint elements;
