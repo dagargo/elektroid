@@ -74,7 +74,7 @@ elektron_pkg_get_tags_from_snd_metadata_int (JsonReader *reader)
   if (!elements)
     {
       debug_print (1, "No tags found");
-      return NULL;
+      goto end;
     }
 
   for (gint i = 0; i < elements; i++)
