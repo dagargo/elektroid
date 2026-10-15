@@ -136,6 +136,16 @@ typedef void (*fs_select_item) (struct backend *, const gchar *,
 
 typedef gboolean (*fs_file_exists) (struct backend *, const gchar *);
 
+struct sample_metadata
+{
+  guint32 id;
+  guint32 size;
+  guint32 hash;
+};
+
+typedef gint (*fs_get_sample_metadata) (struct backend *, const gchar *,
+                                        struct sample_metadata *);
+
 // All the function members that return gint should return 0 if no error and a negative number in case of error.
 // errno values are recommended as will provide the user with a meaningful message. In particular,
 // ENOSYS could be used when a particular device does not support a feature that other devices implementing the same filesystem do.
@@ -154,6 +164,7 @@ struct fs_operations
   guint32 max_name_len;
   fs_init_iter_func readdir;	//This function runs on its own thread so it can take as long as needed in order to make calls to item_iterator_next not to wait for IO.
   fs_file_exists file_exists;
+  fs_get_sample_metadata get_sample_metadata;
   fs_print_item print_item;	// Optional. If not used, the default printing will be used.
   fs_path_func mkdir;
   fs_path_func delete;

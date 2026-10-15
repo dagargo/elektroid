@@ -217,7 +217,8 @@ static const guint8 FS_SAMPLE_CREATE_DIR_REQUEST[] = { 0x11 };
 static const guint8 FS_SAMPLE_DELETE_DIR_REQUEST[] = { 0x12 };
 static const guint8 FS_SAMPLE_DELETE_FILE_REQUEST[] = { 0x20 };
 static const guint8 FS_SAMPLE_RENAME_FILE_REQUEST[] = { 0x21 };
-static const guint8 FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST[] = { 0x22 };	//Returns size and 4 unknown bytes
+static const guint8 FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST[] = { 0x22 };
+static const guint8 FS_SAMPLE_GET_FILE_HASH_FROM_PATH_REQUEST[] = { 0x28 };	//Returns size and 4 unknown bytes
 static const guint8 FS_SAMPLE_GET_FILE_INFO_FROM_HASH_AND_SIZE_REQUEST[] =
   { 0x23, 0, 0, 0, 0, 0, 0, 0, 0 };
 static const guint8 FS_SAMPLE_OPEN_FILE_READER_REQUEST[] = { 0x30 };
@@ -1237,6 +1238,156 @@ elektron_delete_samples_dir (struct backend *backend, const gchar *path)
 {
   return elektron_path_common (backend, path, FS_SAMPLE_DELETE_DIR_REQUEST,
 			       sizeof (FS_SAMPLE_DELETE_DIR_REQUEST));
+}
+
+/*
+ * Decode the sample metadata returned by Elektron requests 0x22 and 0x28.
+ *
+ * Response layout:
+ *   byte 5:    status (1 = success)
+ *   bytes 6-9: sample size, big-endian
+ *   bytes 10-13:
+ *     0x22: sample ID, big-endian
+ *     0x28: sample hash, big-endian
+ *
+ * Return 0 on success, -EINVAL for invalid arguments,
+ * -ENOENT when 0x22 reports a missing sample, or -EIO
+ * for malformed or inconsistent responses.
+ */
+gint
+elektron_parse_sample_metadata (const GByteArray *info_response,
+                               const GByteArray *hash_response,
+                               struct sample_metadata *metadata)
+{
+  struct sample_metadata result;
+  guint32 value;
+  guint32 hash_size;
+
+  if (!info_response || !hash_response || !metadata)
+    return -EINVAL;
+
+  /* Check lengths before accessing status or payload bytes. */
+  if (info_response->len < 6 || hash_response->len < 6)
+    return -EIO;
+
+  if (info_response->data[5] != 1)
+    return -ENOENT;
+
+  if (hash_response->data[5] != 1)
+    return -EIO;
+
+  if (info_response->len < 14 || hash_response->len < 14)
+    return -EIO;
+
+  memcpy (&value, &info_response->data[6], sizeof (value));
+  result.size = g_ntohl (value);
+
+  memcpy (&value, &info_response->data[10], sizeof (value));
+  result.id = g_ntohl (value);
+
+  memcpy (&value, &hash_response->data[6], sizeof (value));
+  hash_size = g_ntohl (value);
+
+  memcpy (&value, &hash_response->data[10], sizeof (value));
+  result.hash = g_ntohl (value);
+
+  if (result.size != hash_size)
+    return -EIO;
+
+  /* Publish the result only after all validations succeed. */
+  *metadata = result;
+
+  return 0;
+}
+
+
+/*
+ * Fetch sample metadata using two requests.
+ *
+ * 0x22 returns the sample size and ID.
+ * 0x28 returns the sample size and hash.
+ *
+ * The transport owns each request and returns a response owned by
+ * the caller. Production uses elektron_tx_and_rx; tests inject a mock.
+ */
+typedef GByteArray *(*elektron_metadata_transport) (
+    struct backend *, GByteArray *, struct controllable *);
+
+gint
+elektron_get_sample_metadata_with_transport (
+    struct backend *backend, const gchar *path,
+    struct sample_metadata *metadata,
+    elektron_metadata_transport transport)
+{
+  GByteArray *info_response = NULL;
+  GByteArray *hash_response = NULL;
+  GByteArray *request;
+  gint err;
+
+  if (!backend || !path || !*path || !metadata || !transport)
+    {
+      return -EINVAL;
+    }
+
+  request = elektron_new_msg_path (
+      FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST,
+      sizeof (FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST),
+      path);
+
+  info_response = transport (backend, request, NULL);
+  if (!info_response)
+    {
+      return -EIO;
+    }
+
+  /*
+   * Check the first response before sending the second request.
+   * In particular, a missing sample must not trigger a hash lookup.
+   */
+  if (info_response->len < 14)
+    {
+      err = -EIO;
+      goto cleanup;
+    }
+
+  if (!info_response->data[5])
+    {
+      err = -ENOENT;
+      goto cleanup;
+    }
+
+  request = elektron_new_msg_path (
+      FS_SAMPLE_GET_FILE_HASH_FROM_PATH_REQUEST,
+      sizeof (FS_SAMPLE_GET_FILE_HASH_FROM_PATH_REQUEST),
+      path);
+
+  hash_response = transport (backend, request, NULL);
+  if (!hash_response)
+    {
+      err = -EIO;
+      goto cleanup;
+    }
+
+  err = elektron_parse_sample_metadata (
+      info_response, hash_response, metadata);
+
+cleanup:
+  if (hash_response)
+    {
+      free_msg (hash_response);
+    }
+
+  free_msg (info_response);
+
+  return err;
+}
+
+static gint
+elektron_get_sample_metadata (struct backend *backend, const gchar *path,
+                             struct sample_metadata *metadata)
+{
+  return elektron_get_sample_metadata_with_transport (
+      backend, path, metadata, elektron_tx_and_rx);
 }
 
 static gboolean
@@ -3900,6 +4051,7 @@ static const struct fs_operations FS_SAMPLES_OPERATIONS = {
   .max_name_len = ELEKTRON_NAME_MAX_LEN,
   .readdir = elektron_read_samples_dir,
   .file_exists = elektron_sample_file_exists,
+  .get_sample_metadata = elektron_get_sample_metadata,
   .print_item = elektron_print_smplrw,
   .mkdir = elektron_create_samples_dir,
   .delete = elektron_delete_samples_item,

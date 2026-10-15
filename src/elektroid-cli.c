@@ -198,6 +198,86 @@ end:
   return err;
 }
 
+
+/*
+ * Print Elektron sample metadata in a script-friendly format.
+ *
+ * Syntax:
+ *   elektron:sample:sample-info device_number:path_to_file
+ */
+static gint
+cli_sample_info (int argc, gchar *argv[], int *optind)
+{
+  const gchar *device_path;
+  const gchar *sample_path;
+  const gchar *separator;
+  const gchar *p;
+  struct sample_metadata metadata;
+  gint err;
+
+  if (*optind >= argc)
+    {
+      error_print ("Missing sample path");
+      return EXIT_FAILURE;
+    }
+
+  if (*optind + 1 != argc)
+    {
+      error_print ("Expected exactly one sample path");
+      return EXIT_FAILURE;
+    }
+
+  device_path = argv[*optind];
+  separator = strchr (device_path, ':');
+
+  if (!separator || separator == device_path || !separator[1])
+    {
+      error_print ("Expected device_number:path_to_file");
+      return EXIT_FAILURE;
+    }
+
+  for (p = device_path; p < separator; p++)
+    {
+      if (!g_ascii_isdigit (*p))
+        {
+          error_print ("Expected device_number:path_to_file");
+          return EXIT_FAILURE;
+        }
+    }
+
+  sample_path = cli_get_path (device_path);
+
+  if (!*sample_path)
+    {
+      error_print ("Missing sample path");
+      return EXIT_FAILURE;
+    }
+
+  err = cli_connect (device_path);
+  if (err)
+    {
+      return err;
+    }
+
+  if (!fs_ops || !fs_ops->get_sample_metadata)
+    {
+      error_print ("Sample metadata not supported by this filesystem");
+      return -ENOSYS;
+    }
+
+  err = fs_ops->get_sample_metadata (&backend, sample_path, &metadata);
+  if (err)
+    {
+      return err;
+    }
+
+  printf ("id=%" G_GUINT32_FORMAT "\n", metadata.id);
+  printf ("size=%" G_GUINT32_FORMAT "\n", metadata.size);
+  printf ("hash=%08x\n", (guint) metadata.hash);
+
+  return EXIT_SUCCESS;
+}
+
 static void
 cli_print_item (struct item_iterator *iter, struct backend *backend,
 		const struct fs_operations *fs_ops)
@@ -1132,6 +1212,8 @@ cli_print_help (const gchar *argv0)
   fprintf (stderr, "Filesystem operations:\n");
   cli_print_help_cmd ("ls", "device_number:path_to_directory",
 		      "List directory");
+  cli_print_help_cmd ("sample-info", "device_number:path_to_file",
+                      "Show sample ID, size and hash");
   cli_print_help_cmd ("mkdir", "device_number:path_to_directory",
 		      "Create directory and its parent directories as needed");
   cli_print_help_cmd ("rmdir", "device_number:path_to_directory",
@@ -1268,6 +1350,10 @@ main (int argc, gchar *argv[])
       if (!strcmp (op, "ls") || !strcmp (op, "list"))
 	{
 	  err = cli_list (argc, argv, &optind);
+	}
+      else if (!strcmp (op, "sample-info"))
+	{
+	  err = cli_sample_info (argc, argv, &optind);
 	}
       else if (!strcmp (op, "mkdir"))
 	{
