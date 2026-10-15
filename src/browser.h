@@ -102,6 +102,9 @@ struct browser
   struct browser_search_options search_options;
   gint64 last_selected_index;	//This needs space for gint and -1
   gboolean selection_active;
+  GHashTable *folder_size_cache;
+  GSimpleActionGroup *action_group;
+  GtkEventController *shortcut_controller;
   GtkTreeViewColumn *tree_view_name_column;
   GtkTreeViewColumn *tree_view_info_column;
   GtkTreeViewColumn *tree_view_sample_frames_column;
@@ -115,9 +118,6 @@ struct browser
   GtkTreeViewColumn *tree_view_id_column;
   GtkTreeViewColumn *tree_view_slot_column;
   GtkTreeViewColumn *tree_view_size_column;
-  GHashTable *folder_size_cache;
-  GSimpleActionGroup *action_group;
-  GtkEventController *shortcut_controller;
 };
 
 struct browser_dnd_data

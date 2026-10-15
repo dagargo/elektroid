@@ -2368,31 +2368,29 @@ browser_on_drop (GtkDropTargetAsync *target, GdkDrop *drop, double x,
 //   browser_clear_dnd_function (user_data);
 // }
 
-// static gboolean
-// browser_drag_up_timeout (gpointer user_data)
-// {
-//   struct browser *browser = user_data;
-//   browser_go_up (NULL, browser);
-//   return TRUE;
-// }
+static gboolean
+browser_up_button_drag_motion_timeout (gpointer user_data)
+{
+  struct browser *browser = user_data;
+  browser_go_up (NULL, browser);
+  return TRUE;
+}
 
-// static gboolean
-// browser_drag_motion_up (GtkWidget *widget,
-//                      GdkDragContext *context,
-//                      gint wx, gint wy, guint time, gpointer user_data)
-// {
-//   struct browser *browser = user_data;
-//   browser_set_dnd_function (browser, browser_drag_up_timeout);
-//   return TRUE;
-// }
+static GdkDragAction
+browser_up_button_drag_enter (GtkDropTargetAsync *target, GdkDrop *drop,
+			      double x, double y, gpointer user_data)
+{
+  struct browser *browser = user_data;
+  browser_set_dnd_function (browser, browser_up_button_drag_motion_timeout);
+  return 0;			// This should be GDK_ACTION_NONE on GTK4 4.20+.
+}
 
-// static void
-// browser_drag_leave_up (GtkWidget *widget,
-//                     GdkDragContext *context,
-//                     guint time, gpointer user_data)
-// {
-//   browser_clear_dnd_function (user_data);
-// }
+static void
+browser_up_button_drag_leave (GtkDropTargetAsync *self, GdkDrop *drop,
+			      gpointer user_data)
+{
+  browser_clear_dnd_function (user_data);
+}
 
 static void
 browser_destroy (struct browser *browser)
@@ -2660,22 +2658,10 @@ browser_init (struct browser *browser, const GActionEntry *entries,
   gtk_widget_add_controller (GTK_WIDGET (browser->view),
 			     GTK_EVENT_CONTROLLER (gesture));
 
-  // g_signal_connect (browser->view, "drag-begin",
-  //     G_CALLBACK (browser_drag_begin), browser); // -> browser_on_drag_prepare
-  // g_signal_connect (browser->view, "drag-end",
-  //     G_CALLBACK (browser_drag_end), browser);
-  // g_signal_connect (browser->view, "drag-data-get",
-  //     G_CALLBACK (browser_dnd_get), browser);
-  // g_signal_connect (browser->view, "drag-data-received",
-  //     G_CALLBACK (browser_dnd_data), browser); -> browser_on_drop
   // g_signal_connect (browser->view, "drag-motion",
   //     G_CALLBACK (browser_drag_motion_list), browser);
   // g_signal_connect (browser->view, "drag-leave",
   //     G_CALLBACK (browser_drag_leave_list), browser);
-  // g_signal_connect (browser->up_button, "drag-motion",
-  //     G_CALLBACK (browser_drag_motion_up), browser);
-  // g_signal_connect (browser->up_button, "drag-leave",
-  //     G_CALLBACK (browser_drag_leave_up), browser);
 
   GtkDragSource *drag_source = gtk_drag_source_new ();
   gtk_drag_source_set_actions (drag_source,
@@ -2689,17 +2675,30 @@ browser_init (struct browser *browser, const GActionEntry *entries,
     TEXT_URI_LIST_STD,
     TEXT_URI_LIST_ELEKTROID
   };
-  GdkContentFormats *formats = gdk_content_formats_new (mime_types,
-							G_N_ELEMENTS
-							(mime_types));
-  GtkDropTargetAsync *drop_target = gtk_drop_target_async_new (formats,
-							       GDK_ACTION_COPY
-							       |
-							       GDK_ACTION_MOVE);
-  g_signal_connect (drop_target, "drop", G_CALLBACK (browser_on_drop),
+  GdkContentFormats *list_formats = gdk_content_formats_new (mime_types,
+							     G_N_ELEMENTS
+							     (mime_types));
+  GtkDropTargetAsync *drop_target_list =
+    gtk_drop_target_async_new (list_formats,
+			       GDK_ACTION_COPY | GDK_ACTION_MOVE);
+  g_signal_connect (drop_target_list, "drop", G_CALLBACK (browser_on_drop),
 		    browser);
   gtk_widget_add_controller (GTK_WIDGET (browser->view),
-			     GTK_EVENT_CONTROLLER (drop_target));
+			     GTK_EVENT_CONTROLLER (drop_target_list));
+
+  browser->dnd_timeout_function_id = 0;
+  GdkContentFormats *button_formats = gdk_content_formats_new (mime_types,
+							       G_N_ELEMENTS
+							       (mime_types));
+  GtkDropTargetAsync *drop_target_up_button =
+    gtk_drop_target_async_new (button_formats,
+			       GDK_ACTION_COPY | GDK_ACTION_MOVE);
+  g_signal_connect (drop_target_up_button, "drag-enter",
+		    G_CALLBACK (browser_up_button_drag_enter), browser);
+  g_signal_connect (drop_target_up_button, "drag-leave",
+		    G_CALLBACK (browser_up_button_drag_leave), browser);
+  gtk_widget_add_controller (GTK_WIDGET (browser->up_button),
+			     GTK_EVENT_CONTROLLER (drop_target_up_button));
 
   browser->selection_active = TRUE;
 
