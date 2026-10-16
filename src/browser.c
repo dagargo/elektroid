@@ -2052,321 +2052,181 @@ browser_on_drop (GtkDropTargetAsync *target, GdkDrop *drop, double x,
     }
 }
 
-// static gboolean
-// browser_drag_end (GtkWidget *widget, GdkDragContext *context, gpointer data)
-// {
-//   GtkTreeSelection *selection;
-//   struct browser *browser = data;
+static void
+browser_drag_scroll_up_down_timeout (struct browser *browser, gboolean up)
+{
+  gint visible_rows;
+  GtkTreePath *start, *end;
 
-//   debug_print (1, "Drag end");
+  debug_print (2, "Scrolling %s...", up ? "up" : "down");
 
-//   g_string_free (browser->dnd_data, TRUE);
-//   browser->dnd = FALSE;
+  gtk_tree_view_get_visible_range (browser->view, &start, &end);
+  visible_rows = gtk_tree_path_get_indices (end)[0] -
+    gtk_tree_path_get_indices (start)[0];
+  for (guint i = 0; i < visible_rows / 2; i++)
+    {
+      if (up)
+	{
+	  gtk_tree_path_prev (start);
+	}
+      else
+	{
+	  gtk_tree_path_next (end);
+	}
+    }
+  if (up)
+    {
+      gtk_tree_view_scroll_to_cell (browser->view, start, NULL, FALSE, 0, 0);
+    }
+  else
+    {
+      gtk_tree_view_scroll_to_cell (browser->view, end, NULL, FALSE, 0, 0);
+    }
+  gtk_tree_path_free (start);
+  gtk_tree_path_free (end);
+}
 
-//   //Performing a DND that was ending in the same browser and directory has no
-//   //effect. But the selection function was disabled on the button press and
-//   //never enabled again as there is no button release signal.
-//   selection = gtk_tree_view_get_selection (GTK_TREE_VIEW (browser->view));
-//   gtk_tree_selection_set_select_function (selection,
-//                                        browser_selection_function_true,
-//                                        NULL, NULL);
+static gboolean
+browser_drag_scroll_down_timeout (gpointer user_data)
+{
+  browser_drag_scroll_up_down_timeout (user_data, FALSE);
+  browser_set_dnd_function (user_data, browser_drag_scroll_down_timeout);
+  return TRUE;
+}
 
-//   return FALSE;
-// }
+static gboolean
+browser_drag_scroll_up_timeout (gpointer user_data)
+{
+  browser_drag_scroll_up_down_timeout (user_data, TRUE);
+  browser_set_dnd_function (user_data, browser_drag_scroll_up_timeout);
+  return TRUE;
+}
 
-// static void
-// browser_dnd_get (GtkWidget *widget,
-//               GdkDragContext *context,
-//               GtkSelectionData *selection_data,
-//               guint info, guint time, gpointer user_data)
-// {
-//   struct browser *browser = user_data;
-//   debug_print (1, "Creating DND data...");
-//   gtk_selection_data_set (selection_data,
-//                        gtk_selection_data_get_target
-//                        (selection_data), 8,
-//                        (guchar *) browser->dnd_data->str,
-//                        browser->dnd_data->len);
-// }
+static gboolean
+browser_list_drag_timeout (gpointer user_data)
+{
+  struct browser *browser = user_data;
+  gchar *spath;
 
-// static void
-// browser_dnd_data (GtkWidget *widget, GdkDragContext *context,
-//                               gint x, gint y,
-//                               GtkSelectionData *selection_data,
-//                               guint info, guint time, gpointer user_data)
-// {
-//   gchar *data;
-//   GdkAtom type;
-//   const gchar *title, *text;
-//   struct browser *browser = user_data;
-//   struct browser *other = OTHER_BROWSER (browser);
-//   gchar *filename, *src_dir, *dst_dir = NULL;
-//   struct browser_dnd_data *drag_data;
+  spath = gtk_tree_path_to_string (browser->dnd_motion_path);
+  debug_print (2, "Getting into path: %s...", spath);
+  g_free (spath);
 
-//   if (!gtk_selection_data_get_length (selection_data))
-//     {
-//       gtk_drag_finish (context, TRUE, TRUE, time);
-//       error_print ("DND invalid data");
-//       return;
-//     }
+  browser_item_activated (browser->view, browser->dnd_motion_path, NULL,
+			  browser);
 
-//   if (browser == &remote_browser &&
-//       (remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE) &&
-//       remote_browser.dnd_motion_path == NULL)
-//     {
-//       gtk_drag_finish (context, TRUE, TRUE, time);
-//       error_print ("DND destination needs a slot");
-//       return;
-//     }
+  gtk_tree_path_free (browser->dnd_motion_path);
+  browser_clear_dnd_function (browser);
+  browser->dnd_motion_path = NULL;
+  return FALSE;
+}
 
-//   drag_data = g_malloc (sizeof (struct browser_dnd_data));
-//   drag_data->has_progress_window = browser_progress_needed (other);
-//   drag_data->widget = widget;
+static GdkDragAction
+browser_list_drag_motion (GtkDropTargetAsync *target, GdkDrop *drop,
+			  double x, double y, gpointer user_data)
+{
+  GtkTreePath *path;
+  GtkTreeModel *model;
+  GtkTreeIter iter;
+  gchar *spath;
+  gint bx, by;
+  gint tx, ty;
+  gboolean slot;
+  GtkTreeViewColumn *column;
+  GtkTreeSelection *selection;
+  struct item item;
+  struct browser *browser = user_data;
 
-//   type = gtk_selection_data_get_data_type (selection_data);
-//   drag_data->type_name = gdk_atom_name (type);
+  slot = GTK_TREE_VIEW (browser->view) == remote_browser.view &&
+    remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE;
 
-//   data = (gchar *) gtk_selection_data_get_data (selection_data);
-//   debug_print (1, "DND received data (%s):\n%s", drag_data->type_name, data);
+  gtk_tree_view_convert_widget_to_bin_window_coords (browser->view, x, y, &bx,
+						     &by);
+  gtk_tree_view_convert_widget_to_tree_coords (browser->view, x, y, &tx, &ty);
+  if (gtk_tree_view_get_path_at_pos (browser->view, tx, ty, &path, &column,
+				     NULL, NULL))
+    {
+      GtkAllocation allocation;
+      gtk_widget_get_allocation (GTK_WIDGET (browser->view), &allocation);
 
-//   drag_data->uris = g_uri_list_extract_uris (data);
+      spath = gtk_tree_path_to_string (path);
+      debug_print (2, "Drag motion path: %s", spath);
+      g_free (spath);
 
-//   gtk_drag_finish (context, TRUE, TRUE, time);
+      if (slot)
+	{
+	  gtk_tree_view_set_drag_dest_row (browser->view, path,
+					   GTK_TREE_VIEW_DROP_INTO_OR_BEFORE);
+	}
+      else
+	{
+	  selection = gtk_tree_view_get_selection (browser->view);
+	  if (gtk_tree_selection_path_is_selected (selection, path))
+	    {
+	      browser_clear_dnd_function (browser);
+	      return TRUE;
+	    }
+	}
 
-//   enum path_type path_type = PATH_TYPE_FROM_DND_TYPE (drag_data->type_name);
-//   filename = path_filename_from_uri (path_type, drag_data->uris[0]);
-//   src_dir = g_path_get_dirname (filename);
+      model = gtk_tree_view_get_model (browser->view);
+      gtk_tree_model_get_iter (model, &iter, path);
+      browser_set_item (model, &iter, &item);
 
-//   //Checking if it's a local move.
-//   if (browser == &local_browser &&
-//       !strcmp (drag_data->type_name, TEXT_URI_LIST_STD))
-//     {
-//       dst_dir = local_browser.dir;   //Move
-//     }
+      if (column == browser->tree_view_name_column)
+	{
+	  if (item.type == ITEM_TYPE_DIR && (!browser->dnd_motion_path ||
+					     (browser->dnd_motion_path &&
+					      gtk_tree_path_compare
+					      (browser->dnd_motion_path,
+					       path))))
+	    {
+	      browser_set_dnd_function (browser, browser_list_drag_timeout);
+	    }
+	}
+      else
+	{
+	  if (by < TREEVIEW_EDGE_SIZE)
+	    {
+	      browser_set_dnd_function (browser,
+					browser_drag_scroll_up_timeout);
+	    }
+	  else if (y > allocation.height - TREEVIEW_EDGE_SIZE)
+	    {
+	      browser_set_dnd_function (browser,
+					browser_drag_scroll_down_timeout);
+	    }
+	  else
+	    {
+	      browser_clear_dnd_function (browser);
+	    }
+	}
+    }
+  else
+    {
+      browser_clear_dnd_function (browser);
+      if (slot)
+	{
+	  gtk_tree_view_set_drag_dest_row (browser->view, NULL,
+					   GTK_TREE_VIEW_DROP_INTO_OR_BEFORE);
+	}
+    }
 
-//   //Checking if it's a remote move.
-//   if (browser == &remote_browser &&
-//       !strcmp (drag_data->type_name, TEXT_URI_LIST_ELEKTROID))
-//     {
-//       dst_dir = remote_browser.dir;  //Move
-//     }
+  if (browser->dnd_motion_path)
+    {
+      gtk_tree_path_free (browser->dnd_motion_path);
+      browser->dnd_motion_path = NULL;
+    }
+  browser->dnd_motion_path = path;
 
-//   if (dst_dir)
-//     {
-//       // If we are moving a file (source and destination is the same browser) and the
-//       // basedir of the first URI (every URI will share the same basename), equals
-//       // the browser directory, there's nothing to do.
-//       if (!strcmp (src_dir, dst_dir))
-//      {
-//        debug_print (1, MSG_WARN_SAME_SRC_DST);
-//        goto end;
-//      }
+  return GDK_ACTION_COPY;
+}
 
-//       title = _("Moving Files");
-//       text = _("Moving...");
-
-//       if (!strcmp (drag_data->type_name, TEXT_URI_LIST_STD) ||
-//        (!strcmp (drag_data->type_name, TEXT_URI_LIST_ELEKTROID) &&
-//         remote_browser.backend->type == BE_TYPE_SYSTEM))
-//      {
-//        //Moving inside the local browser takes no time.
-//        drag_data->has_progress_window = FALSE;
-//      }
-//     }
-//   else
-//     {
-//       title = _("Preparing Tasks");
-//       text = _("Waiting...");
-//     }
-
-//   if (drag_data->has_progress_window)
-//     {
-//       progress_window_open (elektroid_browser_drag_data_received_runner,
-//                          NULL, NULL, drag_data, PROGRESS_TYPE_PULSE, title,
-//                          text, TRUE);
-//     }
-//   else
-//     {
-//       elektroid_browser_drag_data_received_runner (drag_data);
-//     }
-
-// end:
-//   g_free (filename);
-//   g_free (src_dir);
-// }
-
-// static gboolean
-// browser_drag_scroll_down_timeout (gpointer user_data)
-// {
-//   gint visible_rows;
-//   GtkTreePath *start, *end;
-//   struct browser *browser = user_data;
-
-//   debug_print (2, "Scrolling down...");
-
-//   gtk_tree_view_get_visible_range (browser->view, &start, &end);
-//   visible_rows = gtk_tree_path_get_indices (end)[0] -
-//     gtk_tree_path_get_indices (start)[0];
-//   for (guint i = 0; i < visible_rows / 2; i++)
-//     {
-//       gtk_tree_path_next (end);
-//     }
-//   gtk_tree_view_scroll_to_cell (browser->view, end, NULL, FALSE, .0, .0);
-//   gtk_tree_path_free (start);
-//   gtk_tree_path_free (end);
-
-//   browser_set_dnd_function (browser, browser_drag_scroll_down_timeout);
-
-//   return TRUE;
-// }
-
-// static gboolean
-// browser_drag_scroll_up_timeout (gpointer user_data)
-// {
-//   gint visible_rows;
-//   GtkTreePath *start, *end;
-//   struct browser *browser = user_data;
-
-//   debug_print (2, "Scrolling up...");
-
-//   gtk_tree_view_get_visible_range (browser->view, &start, &end);
-//   visible_rows = gtk_tree_path_get_indices (end)[0] -
-//     gtk_tree_path_get_indices (start)[0];
-//   for (guint i = 0; i < visible_rows / 2; i++)
-//     {
-//       gtk_tree_path_prev (start);
-//     }
-//   gtk_tree_view_scroll_to_cell (browser->view, start, NULL, FALSE, .0, .0);
-//   gtk_tree_path_free (start);
-//   gtk_tree_path_free (end);
-
-//   browser_set_dnd_function (browser, browser_drag_scroll_up_timeout);
-
-//   return TRUE;
-// }
-
-// static gboolean
-// browser_drag_list_timeout (gpointer user_data)
-// {
-//   struct browser *browser = user_data;
-//   gchar *spath;
-
-//   spath = gtk_tree_path_to_string (browser->dnd_motion_path);
-//   debug_print (2, "Getting into path: %s...", spath);
-//   g_free (spath);
-
-//   browser_item_activated (browser->view, browser->dnd_motion_path, NULL,
-//                        browser);
-
-//   gtk_tree_path_free (browser->dnd_motion_path);
-//   browser_clear_dnd_function (browser);
-//   browser->dnd_motion_path = NULL;
-//   return FALSE;
-// }
-
-// static gboolean
-// browser_drag_motion_list (GtkWidget *widget,
-//                        GdkDragContext *context,
-//                        gint wx, gint wy, guint time, gpointer user_data)
-// {
-//   GtkTreePath *path;
-//   GtkTreeModel *model;
-//   GtkTreeIter iter;
-//   gchar *spath;
-//   gint tx, ty;
-//   gboolean slot;
-//   GtkTreeViewColumn *column;
-//   GtkTreeSelection *selection;
-//   struct item item;
-//   struct browser *browser = user_data;
-
-//   slot = GTK_TREE_VIEW (widget) == remote_browser.view &&
-//     remote_browser.fs_ops->options & FS_OPTION_SLOT_STORAGE;
-
-//   gtk_tree_view_convert_widget_to_bin_window_coords (browser->view, wx, wy,
-//                                                   &tx, &ty);
-
-//   if (gtk_tree_view_get_path_at_pos (browser->view, tx, ty, &path, &column,
-//                                   NULL, NULL))
-//     {
-//       GtkAllocation allocation;
-//       gtk_widget_get_allocation (widget, &allocation);
-
-//       spath = gtk_tree_path_to_string (path);
-//       debug_print (2, "Drag motion path: %s", spath);
-//       g_free (spath);
-
-//       if (slot)
-//      {
-//        gtk_tree_view_set_drag_dest_row (browser->view, path,
-//                                         GTK_TREE_VIEW_DROP_INTO_OR_BEFORE);
-//      }
-//       else
-//      {
-//        selection = gtk_tree_view_get_selection (browser->view);
-//        if (gtk_tree_selection_path_is_selected (selection, path))
-//          {
-//            browser_clear_dnd_function (browser);
-//            return TRUE;
-//          }
-//      }
-
-//       model = gtk_tree_view_get_model (browser->view);
-//       gtk_tree_model_get_iter (model, &iter, path);
-//       browser_set_item (model, &iter, &item);
-
-//       if (column == browser->tree_view_name_column)
-//      {
-//        if (item.type == ITEM_TYPE_DIR && (!browser->dnd_motion_path ||
-//                                           (browser->dnd_motion_path &&
-//                                            gtk_tree_path_compare
-//                                            (browser->dnd_motion_path,
-//                                             path))))
-//          {
-//            browser_set_dnd_function (browser, browser_drag_list_timeout);
-//          }
-//      }
-//       else
-//      {
-//        if (ty < TREEVIEW_EDGE_SIZE)
-//          {
-//            browser_set_dnd_function (browser,
-//                                      browser_drag_scroll_up_timeout);
-//          }
-//        else if (wy > allocation.height - TREEVIEW_EDGE_SIZE)
-//          {
-//            browser_set_dnd_function (browser,
-//                                      browser_drag_scroll_down_timeout);
-//          }
-//      }
-//     }
-//   else
-//     {
-//       browser_clear_dnd_function (browser);
-//       if (slot)
-//      {
-//        gtk_tree_view_set_drag_dest_row (browser->view, NULL,
-//                                         GTK_TREE_VIEW_DROP_INTO_OR_BEFORE);
-//      }
-//     }
-
-//   if (browser->dnd_motion_path)
-//     {
-//       gtk_tree_path_free (browser->dnd_motion_path);
-//       browser->dnd_motion_path = NULL;
-//     }
-//   browser->dnd_motion_path = path;
-
-//   return TRUE;
-// }
-
-// static void
-// browser_drag_leave_list (GtkWidget *widget,
-//                       GdkDragContext *context,
-//                       guint time, gpointer user_data)
-// {
-//   browser_clear_dnd_function (user_data);
-// }
+static void
+browser_list_drag_leave (GtkDropTargetAsync *self, GdkDrop *drop,
+			 gpointer user_data)
+{
+  browser_clear_dnd_function (user_data);
+}
 
 static gboolean
 browser_up_button_drag_motion_timeout (gpointer user_data)
@@ -2658,11 +2518,6 @@ browser_init (struct browser *browser, const GActionEntry *entries,
   gtk_widget_add_controller (GTK_WIDGET (browser->view),
 			     GTK_EVENT_CONTROLLER (gesture));
 
-  // g_signal_connect (browser->view, "drag-motion",
-  //     G_CALLBACK (browser_drag_motion_list), browser);
-  // g_signal_connect (browser->view, "drag-leave",
-  //     G_CALLBACK (browser_drag_leave_list), browser);
-
   GtkDragSource *drag_source = gtk_drag_source_new ();
   gtk_drag_source_set_actions (drag_source,
 			       GDK_ACTION_COPY | GDK_ACTION_MOVE);
@@ -2685,6 +2540,10 @@ browser_init (struct browser *browser, const GActionEntry *entries,
 		    browser);
   gtk_widget_add_controller (GTK_WIDGET (browser->view),
 			     GTK_EVENT_CONTROLLER (drop_target_list));
+  g_signal_connect (drop_target_list, "drag-motion",
+		    G_CALLBACK (browser_list_drag_motion), browser);
+  g_signal_connect (drop_target_list, "drag-leave",
+		    G_CALLBACK (browser_list_drag_leave), browser);
 
   browser->dnd_timeout_function_id = 0;
   GdkContentFormats *button_formats = gdk_content_formats_new (mime_types,
