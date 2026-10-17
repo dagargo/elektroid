@@ -1776,7 +1776,7 @@ editor_motion (GtkEventControllerMotion *controller, double x, double y,
     }
   else if (operation == EDITOR_OP_MOVE_LOOP_START)
     {
-      if (!(state & GDK_SHIFT_MASK))
+      if (state & GDK_SHIFT_MASK)
 	{
 	  sample_info->loop_start = cursor_frame;
 	}
@@ -1793,7 +1793,7 @@ editor_motion (GtkEventControllerMotion *controller, double x, double y,
     }
   else if (operation == EDITOR_OP_MOVE_LOOP_END)
     {
-      if (!(state & GDK_SHIFT_MASK))
+      if (state & GDK_SHIFT_MASK)
 	{
 	  sample_info->loop_end = cursor_frame;
 	}
