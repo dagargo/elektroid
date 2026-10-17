@@ -1734,7 +1734,7 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
 
   if (operation == EDITOR_OP_MOVE_SEL_END)
     {
-      if (!(event->state & GDK_SHIFT_MASK))
+      if (event->state & GDK_SHIFT_MASK)
 	{
 	  cursor_frame = sample_ops_get_prev_zero_crossing (&audio.sample,
 							    cursor_frame,
@@ -1756,7 +1756,7 @@ editor_motion_notify (GtkWidget *widget, GdkEventMotion *event, gpointer data)
     }
   else if (operation == EDITOR_OP_MOVE_SEL_START)
     {
-      if (!(event->state & GDK_SHIFT_MASK))
+      if (event->state & GDK_SHIFT_MASK)
 	{
 	  cursor_frame = sample_ops_get_next_zero_crossing (&audio.sample,
 							    cursor_frame,
