@@ -2335,6 +2335,10 @@ browser_drag_motion_list (GtkWidget *widget,
 	      browser_set_dnd_function (browser,
 					browser_drag_scroll_down_timeout);
 	    }
+	  else
+	    {
+	      browser_clear_dnd_function (browser);
+	    }
 	}
     }
   else
