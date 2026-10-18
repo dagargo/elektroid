@@ -373,7 +373,7 @@ phatty_rename (struct backend *backend, const gchar *src, const gchar *dst)
 
   phatty_set_preset_name (preset.content->data, dst);
   sysex_transfer_init_tx (&transfer, idata_steal (&preset));
-  err = backend_tx_sysex (backend, &transfer, NULL);
+  err = backend_tx_sysex_transfer (backend, &transfer, NULL);
   sysex_transfer_clear (&transfer);
 
 end:

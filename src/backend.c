@@ -245,8 +245,9 @@ backend_midi_handshake (struct backend *backend)
 //Not synchronized
 
 gint
-backend_tx_sysex (struct backend *backend, struct sysex_transfer *transfer,
-		  struct controllable *controllable)
+backend_tx_sysex_transfer (struct backend *backend,
+			   struct sysex_transfer *transfer,
+			   struct controllable *controllable)
 {
   return backend_tx_sysex_int (backend, transfer, controllable);
 }
@@ -261,7 +262,7 @@ backend_tx (struct backend *backend, GByteArray *tx_msg)
   sysex_transfer_init_tx (&transfer, tx_msg);
 
   g_mutex_lock (&backend->mutex);
-  backend_tx_sysex (backend, &transfer, NULL);
+  backend_tx_sysex_transfer (backend, &transfer, NULL);
   g_mutex_unlock (&backend->mutex);
 
   sysex_transfer_clear (&transfer);
@@ -295,7 +296,7 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
 
   if (transfer->raw)
     {
-      backend_tx_sysex (backend, transfer, controllable);
+      backend_tx_sysex_transfer (backend, transfer, controllable);
       sysex_transfer_clear (transfer);
     }
 

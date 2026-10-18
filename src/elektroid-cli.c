@@ -930,7 +930,8 @@ cli_send (int argc, gchar *argv[], int *optind)
   else
     {
       sysex_transfer_init_tx (&sysex_transfer, idata_steal (&idata));
-      err = backend_tx_sysex (&backend, &sysex_transfer, &controllable);
+      err = backend_tx_sysex_transfer (&backend, &sysex_transfer,
+				       &controllable);
       sysex_transfer_clear (&sysex_transfer);
     }
 

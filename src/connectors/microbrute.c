@@ -404,7 +404,7 @@ microbrute_send_seq_msg (struct backend *backend, guint8 seqnum,
   sysex_transfer_init_tx (&transfer, msg);
 
   //This doesn't need synchronized access as the caller provices this already.
-  err = backend_tx_sysex (backend, &transfer, controllable);
+  err = backend_tx_sysex_transfer (backend, &transfer, controllable);
   sysex_transfer_clear (&transfer);
 
   *tokens = token;
@@ -590,7 +590,7 @@ microbrute_set_parameter (struct backend *backend,
       struct sysex_transfer transfer;
       GByteArray *msg = microbrute_set_parameter_msg (backend, param, value);
       sysex_transfer_init_tx (&transfer, msg);
-      err = backend_tx_sysex (backend, &transfer, NULL);
+      err = backend_tx_sysex_transfer (backend, &transfer, NULL);
       sysex_transfer_clear (&transfer);
     }
   else

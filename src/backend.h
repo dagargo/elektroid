@@ -151,9 +151,9 @@ gssize backend_rx_raw (struct backend *, guint8 *, guint);
 
 gssize backend_tx_raw (struct backend *, guint8 *, guint);
 
-gint backend_tx_sysex (struct backend *backend,
-		       struct sysex_transfer *sysex_transfer,
-		       struct controllable *controllable);
+gint backend_tx_sysex_transfer (struct backend *backend,
+				struct sysex_transfer *sysex_transfer,
+				struct controllable *controllable);
 
 gint backend_rx_sysex (struct backend *backend,
 		       struct sysex_transfer *sysex_transfer,

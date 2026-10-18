@@ -859,7 +859,7 @@ elektron_tx (struct backend *backend, const GByteArray *msg,
 
   sysex_transfer_init_tx (&transfer, elektron_msg_to_raw (msg));
 
-  res = backend_tx_sysex (backend, &transfer, controllable);
+  res = backend_tx_sysex_transfer (backend, &transfer, controllable);
   if (!res)
     {
       text = debug_get_hex_msg (msg);

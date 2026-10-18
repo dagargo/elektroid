@@ -101,7 +101,8 @@ backend_tx_sysex_files_runner (gpointer user_data)
   filename = data->filenames;
   while (err != -ECANCELED && filename)
     {
-      err = backend_send_sysex_file (filename->data, backend_tx_sysex,
+      err = backend_send_sysex_file (filename->data,
+				     backend_tx_sysex_transfer,
 				     &data->controllable);
       filename = filename->next;
       //The device may have sent some messages in response so we skip all these.
