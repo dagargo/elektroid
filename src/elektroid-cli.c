@@ -984,7 +984,7 @@ cli_receive (int argc, gchar *argv[], int *optind)
 
   //This doesn't need to be synchronized because the CLI is not multithreaded.
   sysex_transfer_init_rx (&sysex_transfer, BE_SYSEX_TIMEOUT_MS, TRUE);
-  err = backend_rx_sysex (&backend, &sysex_transfer, &controllable);
+  err = backend_rx_sysex_transfer (&backend, &sysex_transfer, &controllable);
   if (err)
     {
       error_print ("Error while downloading.");

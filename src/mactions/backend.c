@@ -321,8 +321,9 @@ backend_rx_sysex_runner (gpointer user_data)
   //This doesn't need to be synchronized because the GUI doesn't allow concurrent access when receiving SysEx in batch mode.
   backend_rx_drain (remote_browser.backend);
 
-  err = backend_rx_sysex (remote_browser.backend, &data->sysex_transfer,
-			  &data->controllable);
+  err = backend_rx_sysex_transfer (remote_browser.backend,
+				   &data->sysex_transfer,
+				   &data->controllable);
   if (err)
     {
       elektroid_check_backend ();

@@ -279,7 +279,7 @@ backend_rx (struct backend *backend, gint timeout,
   sysex_transfer_init_rx (&transfer, timeout, FALSE);
 
   g_mutex_lock (&backend->mutex);
-  backend_rx_sysex (backend, &transfer, controllable);
+  backend_rx_sysex_transfer (backend, &transfer, controllable);
   g_mutex_unlock (&backend->mutex);
 
   return sysex_transfer_steal (&transfer);
@@ -302,7 +302,7 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
 
   if (!transfer->err)
     {
-      backend_rx_sysex (backend, transfer, controllable);
+      backend_rx_sysex_transfer (backend, transfer, controllable);
     }
 
   g_mutex_unlock (&backend->mutex);
@@ -602,8 +602,9 @@ backend_rx_raw_loop (struct backend *backend, struct sysex_transfer *transfer,
 //Access to this function must be synchronized.
 
 gint
-backend_rx_sysex (struct backend *backend, struct sysex_transfer *transfer,
-		  struct controllable *controllable)
+backend_rx_sysex_transfer (struct backend *backend,
+			   struct sysex_transfer *transfer,
+			   struct controllable *controllable)
 {
   gint next_check, len, i;
   guint8 *b;
@@ -759,7 +760,7 @@ backend_rx_drain (struct backend *backend)
   debug_print (2, "Draining buffers...");
   backend->buffer->len = 0;
   backend_rx_drain_int (backend);
-  while (!backend_rx_sysex (backend, &transfer, NULL))
+  while (!backend_rx_sysex_transfer (backend, &transfer, NULL))
     {
       sysex_transfer_clear (&transfer);
     }

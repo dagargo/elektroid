@@ -884,7 +884,7 @@ elektron_rx (struct backend *backend, gint timeout,
 
   while (1)
     {
-      if (backend_rx_sysex (backend, &transfer, controllable))
+      if (backend_rx_sysex_transfer (backend, &transfer, controllable))
 	{
 	  return NULL;
 	}
