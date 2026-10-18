@@ -216,7 +216,7 @@ phatty_next_preset_dentry (struct item_iterator *iter)
   else
     {
       tx_msg = phatty_get_preset_dump_msg (data->next);
-      rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
+      rx_msg = backend_tx_and_rx (data->backend, tx_msg, -1);
       if (!rx_msg)
 	{
 	  return -EIO;

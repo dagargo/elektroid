@@ -240,7 +240,7 @@ logue_next_dentry (struct item_iterator *iter)
 
   tx_msg = logue_get_msg_op_type_id (logue_data, 0x19,
 				     iter_data->module, iter_data->next);
-  rx_msg = backend_tx_and_rx_sysex (iter_data->backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (iter_data->backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -328,7 +328,7 @@ logue_read_dir (struct backend *backend,
     }
 
   tx_msg = logue_get_msg_op_type (logue_data, 0x18, module);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -ENODEV;
@@ -474,7 +474,7 @@ logue_clear (struct backend *backend, const gchar *path,
     }
 
   tx_msg = logue_get_msg_op_type_id (logue_data, 0x1b, module, id);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -1601,7 +1601,7 @@ logue_get_user_api_request (struct backend *backend,
   struct logue_version api_version;
 
   tx_msg = logue_get_msg (logue_data, 0x17, NULL, 0);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return;
@@ -1642,7 +1642,7 @@ logue_handshake (struct backend *backend)
   tx_msg = g_byte_array_sized_new (sizeof (LOGUE_SEARCH_DEVICE));
   g_byte_array_append (tx_msg, LOGUE_SEARCH_DEVICE,
 		       sizeof (LOGUE_SEARCH_DEVICE));
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -ENODEV;

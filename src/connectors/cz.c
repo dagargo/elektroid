@@ -99,8 +99,7 @@ cz_next_dentry_root (struct item_iterator *iter)
       if (data->next == 2)
 	{
 	  tx_msg = cz_get_program_dump_msg (CZ_FIRST_CARTRIDGE_ID);
-	  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg,
-					    CZ_TIMEOUT_MS);
+	  rx_msg = backend_tx_and_rx (data->backend, tx_msg, CZ_TIMEOUT_MS);
 	  data->next++;
 	  if (rx_msg)
 	    {
@@ -326,7 +325,7 @@ cz_handshake (struct backend *backend)
   GByteArray *tx_msg, *rx_msg;
 
   tx_msg = cz_get_program_dump_msg (CZ_PANEL_ID);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, CZ_TIMEOUT_MS);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, CZ_TIMEOUT_MS);
   if (!rx_msg)
     {
       return -ENODEV;

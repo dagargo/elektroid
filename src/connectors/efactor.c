@@ -181,8 +181,7 @@ efactor_read_dir (struct backend *backend, struct item_iterator *iter,
     }
 
   tx_msg = efactor_new_op_msg (EFACTOR_OP_PRESETS_WANT);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg,
-				    EFACTOR_READ_DIR_TIMEOUT_MS);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, EFACTOR_READ_DIR_TIMEOUT_MS);
   if (!rx_msg)
     {
       return -ETIMEDOUT;
@@ -380,7 +379,7 @@ efactor_rename (struct backend *backend, const gchar *src, const gchar *dst)
   g_free (sanitized);
   g_strfreev (lines);
 
-  rx_msg = backend_tx_and_rx_sysex (backend, preset, 100);	//There must be no response.
+  rx_msg = backend_tx_and_rx (backend, preset, 100);	//There must be no response.
   if (rx_msg)
     {
       err = -EIO;
@@ -439,7 +438,7 @@ efactor_handshake (struct backend *backend)
   tx_msg = g_byte_array_sized_new (sizeof (MIDI_IDENTITY_REQUEST));
   g_byte_array_append (tx_msg, (guchar *) MIDI_IDENTITY_REQUEST,
 		       sizeof (MIDI_IDENTITY_REQUEST));
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -ENODEV;
@@ -491,25 +490,25 @@ efactor_handshake (struct backend *backend)
     }
 
   tx_msg = efactor_new_get_msg (EFACTOR_MSG_TYPE_OBJECT, "0000");	//tj_version_key
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   id = rx_msg->data[sizeof (EFACTOR_REQUEST_HEADER) - 1];
   debug_print (1, "Version: %s", &rx_msg->data[7]);
   free_msg (rx_msg);
 
   tx_msg = efactor_new_get_msg (EFACTOR_MSG_TYPE_VALUE, "0001");	//tj_switch_key
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   debug_print (1, "Switches: %s", &rx_msg->data[7]);
   swlen = strlen ((gchar *) & rx_msg->data[7]) - 2;	//Remove single quotes
   free_msg (rx_msg);
 
   tx_msg = efactor_new_get_msg (EFACTOR_MSG_TYPE_OBJECT, "0206");	//sp_num_banks_lo
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   debug_print (1, "Minimum value: %s", &rx_msg->data[7]);
   min = atoi ((gchar *) & rx_msg->data[9]);
   free_msg (rx_msg);
 
   tx_msg = efactor_new_get_msg (EFACTOR_MSG_TYPE_OBJECT, "020A");	//sp_num_banks
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   debug_print (1, "Maximum value: %s", &rx_msg->data[7]);
   max = atoi ((gchar *) & rx_msg->data[9]);
   free_msg (rx_msg);

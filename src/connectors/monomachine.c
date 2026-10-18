@@ -300,7 +300,7 @@ monomachine_download (struct backend *backend, const gchar *path,
   g_byte_array_append (tx_msg, MONOMACHINE_WAVEFORM_REQUEST,
 		       sizeof (MONOMACHINE_WAVEFORM_REQUEST));
   tx_msg->data[7] = id - 1;
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, BE_SYSEX_TIMEOUT_MS);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, BE_SYSEX_TIMEOUT_MS);
   if (!rx_msg)
     {
       //Empty slots do not answer.
@@ -424,8 +424,8 @@ monomachine_handshake (struct backend *backend)
     g_byte_array_sized_new (sizeof (MONOMACHINE_GLOBAL_SETTINGS_REQUEST));
   g_byte_array_append (tx_msg, MONOMACHINE_GLOBAL_SETTINGS_REQUEST,
 		       sizeof (MONOMACHINE_GLOBAL_SETTINGS_REQUEST));
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg,
-				    MONOMACHINE_HANDSHAKE_TIMEOUT_MS);
+  rx_msg = backend_tx_and_rx (backend, tx_msg,
+			      MONOMACHINE_HANDSHAKE_TIMEOUT_MS);
   if (!rx_msg)
     {
       return -ENODEV;

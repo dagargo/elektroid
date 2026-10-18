@@ -99,7 +99,7 @@ volca_sample_2_sample_get_header (struct backend *backend, guint id,
 
   volca_sample_2_set_sample_id (payload, id);
   tx_msg = volca_sample_2_get_msg (0x1e, payload, 2);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -140,7 +140,7 @@ volca_sample_2_sample_get_data (struct backend *backend, guint id,
 
   volca_sample_2_set_sample_id (payload, id);
   tx_msg = volca_sample_2_get_msg (0x1f, payload, 2);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return NULL;
@@ -392,7 +392,7 @@ volca_sample_2_sample_upload_params (struct backend *backend,
   common_8bit_msg_to_midi_msg ((guint8 *) & header, &header_dump[2],
 			       sizeof (struct volca_sample_2_sample_header));
   tx_msg = volca_sample_2_get_msg (0x4e, header_dump, 39);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -419,7 +419,7 @@ volca_sample_2_sample_upload_params (struct backend *backend,
 
   tx_msg = volca_sample_2_get_msg (0x4f, buff, buff_size);
   g_free (buff);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -606,7 +606,7 @@ volca_sample_2_pattern_download_by_id (struct backend *backend, guint8 id,
       tx_msg = volca_sample_2_get_msg (0x1d, &id, 1);
     }
 
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -794,7 +794,7 @@ volca_sample_2_pattern_upload (struct backend *backend, const gchar *path,
     }
 
   tx_msg = volca_sample_2_get_msg (op, payload, payload_size);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -919,7 +919,7 @@ volca_sample_2_get_storage_stats (struct backend *backend, guint8 type,
   GByteArray *tx_msg, *rx_msg;
 
   tx_msg = volca_sample_2_get_msg (0x1b, NULL, 0);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;

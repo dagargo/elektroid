@@ -244,7 +244,7 @@ microfreak_next_preset_dentry (struct item_iterator *iter)
     }
 
   tx_msg = microfreak_get_preset_op_msg (data->backend, 0x19, id, 0);
-  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -582,7 +582,7 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
     }
 
   tx_msg = microfreak_get_preset_op_msg (backend, 0x19, id, 0);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -610,7 +610,7 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
   tx_msg = microfreak_get_msg (backend, 0x52, header_payload,
 			       MICROFREAK_PRESET_HEADER_MSG_LEN);
   free_msg (rx_msg);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -620,7 +620,7 @@ microfreak_preset_rename (struct backend *backend, const gchar *src,
   g_usleep (MICROFREAK_REST_TIME_US);
 
   tx_msg = microfreak_get_preset_op_msg (backend, 0x52, id, 1);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -757,7 +757,7 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
 
   tx_msg = microfreak_get_wave_op_msg (data->backend, 0x5b, data->next - 1,
 				       0, 0);
-  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
       err = -EIO;
@@ -771,7 +771,7 @@ microfreak_next_sample_dentry (struct item_iterator *iter)
     }
 
   tx_msg = microfreak_get_msg (data->backend, 0x18, "\x00", 1);
-  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
       err = -EIO;
@@ -818,7 +818,7 @@ microfreak_sample_reset (struct backend *backend, guint id,
   GByteArray *tx_msg, *rx_msg;
 
   tx_msg = microfreak_get_wave_op_msg (backend, 0x5a, id, 0, 0);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -833,7 +833,7 @@ microfreak_sample_reset (struct backend *backend, guint id,
   g_usleep (MICROFREAK_REST_TIME_US);
 
   tx_msg = microfreak_get_msg (backend, 0x15, NULL, 0);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -849,7 +849,7 @@ microfreak_sample_reset (struct backend *backend, guint id,
 
   tx_msg = microfreak_get_msg_from_8bit_msg (backend, 0x17,
 					     (guint8 *) header);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -929,7 +929,7 @@ microfreak_get_storage_stats (struct backend *backend, guint8 type,
   GByteArray *tx_msg, *rx_msg;
 
   tx_msg = microfreak_get_msg (backend, 0x47, "\x0a", 1);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -974,7 +974,7 @@ microfreak_sample_upload_tx_and_rx (struct backend *backend,
       while (seq != (*rx_msg)->data[sizeof (MICROFREAK_REQUEST_HEADER)])
 	{
 	  free_msg (*rx_msg);
-	  *rx_msg = backend_tx_and_rx_sysex (backend, NULL, -1);
+	  *rx_msg = backend_tx_and_rx (backend, NULL, -1);
 	  if (!*rx_msg)
 	    {
 	      err = -EIO;
@@ -1286,7 +1286,7 @@ microfreak_next_wavetable_dentry (struct item_iterator *iter)
     }
 
   tx_msg = microfreak_get_wave_op_msg (data->backend, 0x57, id, 0, 0);	//Last byte is 1 in MIDI Control Center
-  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -1299,7 +1299,7 @@ microfreak_next_wavetable_dentry (struct item_iterator *iter)
     }
 
   tx_msg = microfreak_get_msg (data->backend, 0x18, "\x01", 1);
-  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -1560,7 +1560,7 @@ microfreak_wavetable_upload_part (struct backend *backend, GByteArray *input,
   guint8 msg_8bit[MICROFREAK_WAVE_BLK_SIZE];
 
   tx_msg = microfreak_get_wave_op_msg (backend, 0x54, id, part, 1);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -1575,7 +1575,7 @@ microfreak_wavetable_upload_part (struct backend *backend, GByteArray *input,
   g_usleep (MICROFREAK_REST_TIME_US);
 
   tx_msg = microfreak_get_msg (backend, 0x15, NULL, 0);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -1617,7 +1617,7 @@ microfreak_wavetable_upload_part (struct backend *backend, GByteArray *input,
 
       tx_msg = microfreak_get_msg_from_8bit_msg (backend, op,
 						 (guint8 *) & msg_8bit);
-      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+      rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
       if (!rx_msg)
 	{
 	  return -EIO;
@@ -1643,7 +1643,7 @@ microfreak_wavetable_reset (struct backend *backend, guint id,
   GByteArray *tx_msg, *rx_msg;
 
   tx_msg = microfreak_get_wave_op_msg (backend, 0x56, id, 0, 0);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -1658,7 +1658,7 @@ microfreak_wavetable_reset (struct backend *backend, guint id,
   g_usleep (MICROFREAK_REST_TIME_US);
 
   tx_msg = microfreak_get_msg (backend, 0x15, NULL, 0);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -1674,7 +1674,7 @@ microfreak_wavetable_reset (struct backend *backend, guint id,
 
   tx_msg = microfreak_get_msg_from_8bit_msg (backend, 0x16,
 					     (guint8 *) header);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -1690,7 +1690,7 @@ microfreak_wavetable_reset (struct backend *backend, guint id,
 
   tx_msg = microfreak_get_msg (backend, 0x17,
 			       "\x00\x00\x00\x00\x00\x00\x00\x00", 8);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -1997,7 +1997,7 @@ microfreak_sample_defragment (struct backend *backend)
   GByteArray *tx_msg, *rx_msg;
 
   tx_msg = microfreak_get_msg (backend, 0x49, "\x09\x7f\x00", 3);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, 3600000);	// 1 hour
+  rx_msg = backend_tx_and_rx (backend, tx_msg, 3600000);	// 1 hour
   if (!rx_msg)
     {
       return -EIO;
@@ -2028,7 +2028,7 @@ microfreak_handshake (struct backend *backend)
     {
       //After booting, the MicroFreak needs this message to start responding.
       tx_msg = microfreak_get_preset_op_msg (backend, 0x19, 0, 0);
-      rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+      rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
       if (!rx_msg)
 	{
 	  g_free (backend->data);

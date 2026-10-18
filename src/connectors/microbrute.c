@@ -249,7 +249,7 @@ microbrute_download_seq_data (struct backend *backend, guint seqnum,
     }
 
   tx_msg = microbrute_get_sequence_request_msg (backend, seqnum, offset);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -535,7 +535,7 @@ microbrute_get_parameter (struct backend *backend,
   guint8 op = MICROBRUTE_PARAMS[param].sysex;
 
   tx_msg = microbrute_get_parameter_msg (backend, op + 1);
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;

@@ -167,7 +167,7 @@ summit_patch_next_dentry (struct item_iterator *iter)
     }
 
   tx_msg = summit_get_patch_dump_msg (data->bank, data->next, data->fs);
-  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;
@@ -427,7 +427,7 @@ summit_patch_rename (struct backend *backend, const gchar *src,
   g_free (sanitized);
   memset (name + len, ' ', SUMMIT_PATCH_NAME_LEN - len);
 
-  rx_msg = backend_tx_and_rx_sysex (backend, preset.content, 100);	//There must be no response.
+  rx_msg = backend_tx_and_rx (backend, preset.content, 100);	//There must be no response.
   if (rx_msg)
     {
       err = -EIO;
@@ -706,7 +706,7 @@ summit_wavetable_next_dentry (struct item_iterator *iter)
     }
 
   tx_msg = summit_get_wavetable_header_dump_msg (data->next + 64);
-  rx_msg = backend_tx_and_rx_sysex (data->backend, tx_msg, -1);
+  rx_msg = backend_tx_and_rx (data->backend, tx_msg, -1);
   if (!rx_msg)
     {
       return -EIO;

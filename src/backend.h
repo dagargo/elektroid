@@ -168,7 +168,7 @@ gint backend_tx_and_rx_sysex_transfer (struct backend *backend,
 				       struct sysex_transfer *sysex_transfer,
 				       struct controllable *controllable);
 
-GByteArray *backend_tx_and_rx_sysex (struct backend *, GByteArray *, gint);
+GByteArray *backend_tx_and_rx (struct backend *, GByteArray *, gint);
 
 void backend_rx_drain (struct backend *);
 

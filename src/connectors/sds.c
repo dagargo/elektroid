@@ -69,7 +69,7 @@ sds_get_sample_name (struct backend *backend, gint index)
 		       sizeof (SDS_SAMPLE_NAME_REQUEST));
   tx_msg->data[5] = index % 0x80;
   tx_msg->data[6] = index / 0x80;
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
   if (rx_msg)
     {
       gsize n = rx_msg->data[9];
@@ -295,7 +295,7 @@ sds_download_get_header (struct backend *backend, guint id)
   tx_msg = sds_get_request_msg (id);
   g_byte_array_append (tx_msg, SDS_WAIT, sizeof (SDS_WAIT));	//We add a WAIT packet.
   tx_msg->data[11] = 0;
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
 
   if (rx_msg && rx_msg->len == sizeof (SDS_DUMP_HEADER)
       && !memcmp (rx_msg->data, SDS_DUMP_HEADER, 4)
@@ -593,7 +593,7 @@ sds_tx_and_wait_ack (struct backend *backend, GByteArray *tx_msg,
   guint rx_packet;
   GByteArray *rx_msg;
   gboolean waiting = FALSE;
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, timeout);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, timeout);
   if (!rx_msg)
     {
       return -ETIMEDOUT;	//Nothing was received
@@ -715,7 +715,7 @@ sds_rename_by_id (struct backend *backend, guint id, const gchar *dst)
 
   tx_msg = sds_get_rename_sample_msg (id, dst);
   err = -ENOSYS;
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, SDS_NO_SPEC_TIMEOUT);
   if (rx_msg)
     {
       err = 0;
@@ -1245,7 +1245,7 @@ sds_handshake_name (struct backend *backend)
   tx_msg->data[5] = 1;
   tx_msg->data[6] = 0;
   GByteArray *rx_msg =
-    backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT_TRY);
+    backend_tx_and_rx (backend, tx_msg, SDS_NO_SPEC_TIMEOUT_TRY);
   if (rx_msg)
     {
       free_msg (rx_msg);
@@ -1267,7 +1267,7 @@ sds_handshake_loop_point (struct backend *backend)
   tx_msg->data[7] = 1;
   tx_msg->data[8] = 0;
   GByteArray *rx_msg =
-    backend_tx_and_rx_sysex (backend, tx_msg, SDS_NO_SPEC_TIMEOUT_TRY);
+    backend_tx_and_rx (backend, tx_msg, SDS_NO_SPEC_TIMEOUT_TRY);
   if (rx_msg)
     {
       free_msg (rx_msg);

@@ -189,7 +189,7 @@ backend_midi_handshake (struct backend *backend)
   tx_msg = g_byte_array_sized_new (sizeof (BE_MIDI_IDENTITY_REQUEST));
   g_byte_array_append (tx_msg, (guchar *) BE_MIDI_IDENTITY_REQUEST,
 		       sizeof (BE_MIDI_IDENTITY_REQUEST));
-  rx_msg = backend_tx_and_rx_sysex (backend, tx_msg, BE_HANDSHAKE_TIMEOUT_MS);
+  rx_msg = backend_tx_and_rx (backend, tx_msg, BE_HANDSHAKE_TIMEOUT_MS);
   if (!rx_msg)
     {
       debug_print (1, "No MIDI identity reply");
@@ -313,8 +313,7 @@ backend_tx_and_rx_sysex_transfer (struct backend *backend,
 //A timeout of 0 means infinity; a timeout of -1 means the default timeout.
 
 GByteArray *
-backend_tx_and_rx_sysex (struct backend *backend, GByteArray *tx_msg,
-			 gint timeout)
+backend_tx_and_rx (struct backend *backend, GByteArray *tx_msg, gint timeout)
 {
   struct sysex_transfer transfer;
   gint t = timeout == -1 ? BE_SYSEX_TIMEOUT_MS : timeout;
