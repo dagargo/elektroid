@@ -1,11 +1,17 @@
-# Elektron sample metadata
+---
+layout: base
+title: Elektron sample metadata
+permalink: /elektron-sample-metadata/
+---
+
+## Elektron sample metadata
 
 Elektroid can retrieve metadata for samples stored on supported
 Elektron devices through a MIDI connection.
 
 The CLI operation is named `sample-info`.
 
-## Requirements
+### Requirements
 
 The device must expose the Elektron `sample` filesystem and support
 the metadata requests used by the connector.
@@ -14,7 +20,7 @@ This feature has been validated on a Digitakt I running firmware 1.53.
 Compatibility with other Elektron models and firmware versions has
 not been established by this validation.
 
-## Find the device
+### Find the device
 
 List available devices:
 
@@ -27,7 +33,7 @@ Identify the number corresponding to your Elektron instrument.
 The following examples use device number `13`. This number depends
 on the connected devices and may be different on your system.
 
-## Find a sample
+### Find a sample
 
 List the root of the sample filesystem:
 
@@ -43,7 +49,7 @@ elektroid-cli elektron:sample:ls '13:/01_KICKS'
 
 Use the exact path reported by the device.
 
-## Retrieve metadata
+### Retrieve metadata
 
 Command syntax:
 
@@ -78,7 +84,7 @@ The hash algorithm is not specified by this interface.
 The values above belong to the sample used for validation.
 Other samples will return different values.
 
-## Shell scripting
+### Shell scripting
 
 The output can be captured and processed by shell scripts:
 
@@ -91,7 +97,7 @@ printf '%s\n' "$metadata"
 
 Check the exit status before processing the output.
 
-## Error handling
+### Error handling
 
 The command returns a nonzero exit status if the operation fails.
 
@@ -111,7 +117,7 @@ Error: No such file or directory
 
 Errors are printed to standard error.
 
-## Protocol
+### Protocol
 
 The Elektron connector retrieves metadata using two requests:
 
@@ -123,7 +129,7 @@ through the filesystem operation `get_sample_metadata`.
 
 The CLI does not implement the MIDI protocol directly.
 
-## Compatibility
+### Compatibility
 
 A successful retrieval has been observed on a Digitakt I
 running firmware 1.53.
