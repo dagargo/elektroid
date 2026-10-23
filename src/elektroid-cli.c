@@ -31,6 +31,7 @@
 #include <glib/gstdio.h>
 #include "../config.h"
 #include "backend.h"
+#include "cli_dt_session.h"
 #include "regconn.h"
 #include "regpref.h"
 #include "sample.h"
@@ -1206,6 +1207,8 @@ cli_print_help (const gchar *argv0)
 		      "Upgrade the device");
   cli_print_help_cmd ("play", "file", "Play audio file");
   cli_print_help_cmd ("record", "file", "Record into file");
+  cli_print_help_cmd ("dt-session", "device_number",
+                     "Run an experimental persistent Digitakt session");
   fprintf (stderr, "\n");
   fprintf (stderr,
 	   "Filesystem commands take the form connector:filesystem:operation parameters\n");
@@ -1238,6 +1241,105 @@ cli_print_help (const gchar *argv0)
 		      "device_number:path_to_file device_number:path_to_file",
 		      "Swap files");
   g_free (exec_name);
+}
+
+/* Experimental line protocol for external Digitakt clients. The backend
+ * stays open; metadata uses the public filesystem operation. */
+static gint
+cli_dt_session (int argc, gchar *argv[], int *optind)
+{
+  gchar line[16384];
+  gint err;
+
+  if (*optind + 1 != argc)
+    {
+      error_print ("Exactly one device is required");
+      return EXIT_FAILURE;
+    }
+
+  connector = "elektron";
+  fs = "sample";
+  err = cli_connect (argv[(*optind)++]);
+  if (err)
+    return err;
+
+  puts ("DT_SESSION_READY");
+  fflush (stdout);
+  while (fgets (line, sizeof (line), stdin))
+    {
+      gchar **parts;
+      const gchar *command;
+      guint count;
+
+      if (!strchr (line, '\n') && !feof (stdin))
+        {
+          puts ("DT_ERROR\tINPUT\tline-too-long");
+          fflush (stdout);
+          err = EXIT_FAILURE;
+          break;
+        }
+      g_strchomp (line);
+      if (!*line)
+        continue;
+      if (!strcmp (line, "QUIT"))
+        {
+          puts ("DT_SESSION_BYE");
+          fflush (stdout);
+          break;
+        }
+
+      parts = g_strsplit (line, "\t", 4);
+      count = g_strv_length (parts);
+      command = parts[0];
+      err = -EINVAL;
+
+      if (!strcmp (command, "META") && count == 2 && *parts[1])
+        {
+          struct sample_metadata metadata;
+
+          fs_ops = backend_get_fs_operations_by_name (&backend, "sample");
+          if (fs_ops && fs_ops->get_sample_metadata)
+            {
+              err = fs_ops->get_sample_metadata (&backend, parts[1], &metadata);
+              if (!err)
+                printf ("SAMPLE_INFO id=%08x size=%u hash=%08x\n",
+                        (guint) metadata.id, (guint) metadata.size,
+                        (guint) metadata.hash);
+            }
+        }
+      else if (!strcmp (command, "SAMPLE_UL") && count == 3 &&
+               *parts[1] && *parts[2])
+        {
+          fs_ops = backend_get_fs_operations_by_name (&backend, "sample");
+          if (fs_ops)
+            err = cli_upload_item (parts[1], parts[2]);
+        }
+      else if (!strcmp (command, "DATA_CL") && count == 2 &&
+               cli_dt_sound_slot_path_valid (parts[1]))
+        {
+          fs_ops = backend_get_fs_operations_by_name (&backend, "data");
+          if (fs_ops && fs_ops->delete)
+            err = fs_ops->delete (&backend, parts[1]);
+        }
+      else if (!strcmp (command, "DATA_UL") && count == 3 &&
+               *parts[1] && cli_dt_sound_slot_path_valid (parts[2]))
+        {
+          fs_ops = backend_get_fs_operations_by_name (&backend, "data");
+          if (fs_ops)
+            err = cli_upload_item (parts[1], parts[2]);
+        }
+
+      if (err)
+        printf ("DT_ERROR\t%s\t%d\n", command, err);
+      else
+        printf ("DT_OK\t%s\n", command);
+      fflush (stdout);
+      g_strfreev (parts);
+    }
+
+  if (backend_check (&backend))
+    backend_destroy (&backend);
+  return err ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
 int
@@ -1303,7 +1405,11 @@ main (int argc, gchar *argv[])
   preferences_load ();
   preferences_set_boolean (PREF_KEY_MIX, FALSE);	//This might be required by devices using the audio link.
 
-  if (!strcmp (command, "ld") || !strcmp (command, "list-devices"))
+  if (!strcmp (command, "dt-session"))
+    {
+      err = cli_dt_session (argc, argv, &optind);
+    }
+  else if (!strcmp (command, "ld") || !strcmp (command, "list-devices"))
     {
       err = cli_ld ();
     }

@@ -87,7 +87,7 @@ connectors/volca_sample_2.c connectors/volca_sample_2.h
 
 elektroid_cli_SOURCES = $(elektroid_common_sources) \
 $(elektroid_audio_sources) \
-elektroid-cli.c
+elektroid-cli.c cli_dt_session.h
 
 elektroid_SOURCES = $(elektroid_common_sources) \
 $(elektroid_audio_sources) \
