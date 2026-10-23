@@ -26,16 +26,18 @@ gint elektron_set_data_sample_from_sample (struct idata *data_sample,
 					   struct idata *data_footer,
 					   struct idata *sample, guint slot);
 
-typedef GByteArray *(*elektron_metadata_transport) (
-    struct backend *, GByteArray *, struct controllable *);
+typedef GByteArray *(*elektron_metadata_transport) (struct backend *,
+						    GByteArray *,
+						    struct controllable *);
 
-gint elektron_get_sample_metadata_with_transport (
-    struct backend *, const gchar *, struct sample_metadata *,
-    elektron_metadata_transport);
+gint elektron_get_sample_metadata_with_transport (struct backend *,
+						  const gchar *,
+						  struct sample_metadata *,
+						  elektron_metadata_transport);
 
-gint elektron_parse_sample_metadata (const GByteArray *info_response,
-                                    const GByteArray *hash_response,
-                                    struct sample_metadata *metadata);
+gint elektron_parse_sample_metadata (const GByteArray * info_response,
+				     const GByteArray * hash_response,
+				     struct sample_metadata *metadata);
 
 static void
 test_elektron_get_dev_exts ()
@@ -114,13 +116,11 @@ test_elektron_configure_device_from_file ()
     {
       struct sample_metadata metadata;
 
-      CU_ASSERT_EQUAL (
-          ops->get_sample_metadata (&backend, NULL, &metadata),
-          -EINVAL);
+      CU_ASSERT_EQUAL (ops->get_sample_metadata (&backend, NULL, &metadata),
+		       -EINVAL);
 
-      CU_ASSERT_EQUAL (
-          ops->get_sample_metadata (&backend, "/test.wav", NULL),
-          -EINVAL);
+      CU_ASSERT_EQUAL (ops->get_sample_metadata (&backend, "/test.wav", NULL),
+		       -EINVAL);
     }
   exts = ops->get_exts (&backend, ops);
   CU_ASSERT_NOT_EQUAL (exts, NULL);	//Several sample extensions
@@ -288,7 +288,7 @@ static gint metadata_mock_calls;
 
 static GByteArray *
 metadata_mock_transport (struct backend *backend, GByteArray *request,
-                         struct controllable *controllable)
+			 struct controllable *controllable)
 {
   static const guint8 info_ok[] = {
     0, 0, 0, 0, 0, 1,
@@ -320,8 +320,7 @@ metadata_mock_transport (struct backend *backend, GByteArray *request,
   if (request->len >= 15)
     {
       CU_ASSERT_EQUAL (request->data[4], expected_command);
-      CU_ASSERT_STRING_EQUAL ((const gchar *) &request->data[5],
-                              "/test.wav");
+      CU_ASSERT_STRING_EQUAL ((const gchar *) &request->data[5], "/test.wav");
     }
 
   metadata_mock_calls++;
@@ -334,22 +333,21 @@ metadata_mock_transport (struct backend *backend, GByteArray *request,
       return NULL;
     }
 
-  memcpy (data, metadata_mock_calls == 1 ? info_ok : hash_ok,
-          sizeof (data));
+  memcpy (data, metadata_mock_calls == 1 ? info_ok : hash_ok, sizeof (data));
 
   if (metadata_mock_mode == 1 && metadata_mock_calls == 1)
-    data[5] = 0;                 /* Sample not found. */
+    data[5] = 0;		/* Sample not found. */
 
   if (metadata_mock_mode == 4 && metadata_mock_calls == 2)
-    data[9] = 99;                /* Inconsistent size. */
+    data[9] = 99;		/* Inconsistent size. */
 
   if (metadata_mock_mode == 5 && metadata_mock_calls == 2)
-    data[5] = 0;                 /* Hash request failed. */
+    data[5] = 0;		/* Hash request failed. */
 
   response = g_byte_array_new ();
 
   if (metadata_mock_mode == 3 && metadata_mock_calls == 1)
-    g_byte_array_append (response, data, 5); /* Truncated reply. */
+    g_byte_array_append (response, data, 5);	/* Truncated reply. */
   else
     g_byte_array_append (response, data, sizeof (data));
 
@@ -367,8 +365,10 @@ test_elektron_sample_metadata_transport ()
   metadata_mock_mode = 0;
   metadata_mock_calls = 0;
 
-  err = elektron_get_sample_metadata_with_transport (
-      &backend, "/test.wav", &metadata, metadata_mock_transport);
+  err =
+    elektron_get_sample_metadata_with_transport (&backend, "/test.wav",
+						 &metadata,
+						 metadata_mock_transport);
 
   CU_ASSERT_EQUAL (err, 0);
   CU_ASSERT_EQUAL (metadata_mock_calls, 2);
@@ -385,12 +385,14 @@ test_elektron_sample_metadata_transport ()
       metadata.size = 0xdeadbeef;
       metadata.hash = 0xdeadbeef;
 
-      err = elektron_get_sample_metadata_with_transport (
-          &backend, "/test.wav", &metadata, metadata_mock_transport);
+      err =
+	elektron_get_sample_metadata_with_transport (&backend, "/test.wav",
+						     &metadata,
+						     metadata_mock_transport);
 
       CU_ASSERT_EQUAL (err, mode == 1 ? -ENOENT : -EIO);
       CU_ASSERT_EQUAL (metadata_mock_calls,
-                       mode == 1 || mode == 3 || mode == 6 ? 1 : 2);
+		       mode == 1 || mode == 3 || mode == 6 ? 1 : 2);
 
       /* Failed operations must not publish partial metadata. */
       CU_ASSERT_EQUAL (metadata.id, 0xdeadbeef);
@@ -498,13 +500,13 @@ main (gint argc, gchar *argv[])
     }
 
   if (!CU_add_test (suite, "elektron_sample_metadata_transport",
-                    test_elektron_sample_metadata_transport))
+		    test_elektron_sample_metadata_transport))
     {
       goto cleanup;
     }
 
   if (!CU_add_test (suite, "elektron_sample_metadata",
-                    test_elektron_sample_metadata))
+		    test_elektron_sample_metadata))
     {
       CU_cleanup_registry ();
       return CU_get_error ();

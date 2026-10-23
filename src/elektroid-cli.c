@@ -239,10 +239,10 @@ cli_sample_info (int argc, gchar *argv[], int *optind)
   for (p = device_path; p < separator; p++)
     {
       if (!g_ascii_isdigit (*p))
-        {
-          error_print ("Expected device_number:path_to_file");
-          return EXIT_FAILURE;
-        }
+	{
+	  error_print ("Expected device_number:path_to_file");
+	  return EXIT_FAILURE;
+	}
     }
 
   sample_path = cli_get_path (device_path);
@@ -1213,7 +1213,7 @@ cli_print_help (const gchar *argv0)
   cli_print_help_cmd ("ls", "device_number:path_to_directory",
 		      "List directory");
   cli_print_help_cmd ("sample-info", "device_number:path_to_file",
-                      "Show sample ID, size and hash");
+		      "Show sample ID, size and hash");
   cli_print_help_cmd ("mkdir", "device_number:path_to_directory",
 		      "Create directory and its parent directories as needed");
   cli_print_help_cmd ("rmdir", "device_number:path_to_directory",

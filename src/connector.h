@@ -144,7 +144,7 @@ struct sample_metadata
 };
 
 typedef gint (*fs_get_sample_metadata) (struct backend *, const gchar *,
-                                        struct sample_metadata *);
+					struct sample_metadata *);
 
 // All the function members that return gint should return 0 if no error and a negative number in case of error.
 // errno values are recommended as will provide the user with a meaningful message. In particular,
