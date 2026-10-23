@@ -26,7 +26,7 @@ gint elektron_set_data_sample_from_sample (struct idata *data_sample,
 					   struct idata *data_footer,
 					   struct idata *sample, guint slot);
 
-GSList *elektron_pkg_get_tags_from_snd_metadata_int (JsonReader *reader);
+GSList *elektron_pkg_get_tags_from_snd_metadata_int (JsonReader * reader);
 
 static void
 test_elektron_pkg_tags_reader ()
@@ -43,7 +43,7 @@ test_elektron_pkg_tags_reader ()
       GSList *tags;
 
       CU_ASSERT_TRUE (json_parser_load_from_data (parser, metadata[i], -1,
-						 NULL));
+						  NULL));
       reader = json_reader_new (json_parser_get_root (parser));
       tags = elektron_pkg_get_tags_from_snd_metadata_int (reader);
       CU_ASSERT_EQUAL (g_slist_length (tags), i);
