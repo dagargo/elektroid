@@ -1,4 +1,10 @@
-# Elektron sound package export
+---
+layout: base
+title: Elektron sound package export
+permalink: /elektron-sound-export/
+---
+
+## Elektron sound package export
 
 Sound tags are optional. An empty `sound_tags` array must not prevent reading
 `sample_references` from the device metadata. Referenced samples are still
