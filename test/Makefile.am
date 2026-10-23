@@ -251,8 +251,10 @@ tests_logue_SOURCES = \
 	../src/connectors/scala.h
 
 TESTS = integration/test.sh integration/system_all_fs_tests.sh $(check_PROGRAMS)
+TESTS += cli_dt_session_smoke.sh cli_dt_session_paths.sh
 
 EXTRA_DIST = integration res
+EXTRA_DIST += cli_dt_session_smoke.sh cli_dt_session_paths.sh test_cli_dt_session_paths.py
 
 AM_TESTS_ENVIRONMENT = \
 	ecli='$(abs_top_builddir)/src/elektroid-cli -vv'; \
