@@ -22,10 +22,10 @@ cli_dt_sound_slot_path_valid (const char *path)
   while (*slot)
     {
       if (*slot < '0' || *slot > '9')
-        return 0;
+	return 0;
       id = id * 10 + (*slot++ - '0');
       if (id > 256)
-        return 0;
+	return 0;
     }
   return id >= 1;
 }
