@@ -1,0 +1,31 @@
+[env]
+_.path = ["{{ config_root }}/.local/bin"]
+
+[tasks.deps]
+description = "Install the native build dependencies"
+run = "mise bootstrap packages apply --yes"
+
+[tasks.build]
+description = "Build and install only the CLI into .local/"
+depends = ["deps"]
+run = [
+  "autoreconf --install",
+  './configure BUILD_GUI=no --prefix="$PWD/.local"',
+  'make -j"{{ num_cpus() }}"',
+  "make install",
+]
+
+[tasks.check]
+description = "Check the CLI by listing MIDI devices without sending data"
+run = "elektroid-cli ld"
+
+[tasks.ci]
+description = "Run the Ubuntu CI build, tests and distribution checks"
+depends = ["deps"]
+run = [
+  "autoreconf --install",
+  "./configure",
+  "make",
+  "make check || (cat test/*.log; exit 1)",
+  "make clean distcheck",
+]

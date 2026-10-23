@@ -59,6 +59,30 @@ For MSYS2 (UCRT64), run this to install the build dependencies.
 pacman -S mingw-w64-x86_64-toolchain gettext gettext-devel libtool pkg-config mingw-w64-x86_64-autotools mingw-w64-x86_64-gcc mingw-w64-ucrt-x86_64-zlib mingw-w64-ucrt-x86_64-libzip mingw-w64-ucrt-x86_64-gtk3 mingw-w64-x86_64-json-glib mingw-w64-ucrt-x86_64-libsndfile mingw-w64-ucrt-x86_64-rtmidi mingw-w64-ucrt-x86_64-rtaudio mingw-w64-ucrt-x86_64-libsamplerate mingw-w64-ucrt-x86_64-rubberband
 ```
 
+## Mise
+
+[Mise](https://mise.jdx.dev/installing-mise.html) provides an optional way to install dependencies and run common development commands. The existing manual dependency and installation commands still work.
+
+After installing mise, run these commands from the repository root:
+
+```
+mise bootstrap
+mise run build
+mise run check
+```
+
+The configuration automatically selects native packages for Debian/Ubuntu (apt), Fedora (dnf) and Arch Linux (pacman), or Homebrew packages on Apple Silicon macOS. Linuxbrew is not required.
+
+`mise run build` builds only `elektroid-cli` and installs it into `.local/bin`. `mise run check` lists MIDI devices without sending data.
+
+To run the Ubuntu CI build, tests and distribution checks locally:
+
+```
+mise run ci
+```
+
+This task builds both the GUI and CLI and runs the same checks as GitHub Actions.
+
 ## Installation
 
 As with other autotools project, you need to run the following commands. If you want to skip the build of either the CLI or the GUI, pass `BUILD_CLI=no` or `BUILD_GUI=no` to `./configure`.

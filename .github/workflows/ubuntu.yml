@@ -12,19 +12,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: install dependencies
-      run: |
-          sudo apt-get update
-          sudo apt-get -y --no-install-recommends install automake libtool build-essential libasound2-dev libgtk-3-dev libpulse-dev libsndfile1-dev libsamplerate0-dev autopoint gettext zlib1g-dev libjson-glib-dev libzip-dev librubberband-dev
-          sudo apt-get -y --no-install-recommends install libcunit1-dev
-    - name: autoreconf
-      run: autoreconf --install
-    - name: configure
-      run: ./configure
-    - name: make
-      run: make
-    - name: make check
-      run: make check || (cat test/*.log; exit 1)
-    - name: make distcheck
-      run: make clean distcheck
+    - uses: actions/checkout@v6
+    - uses: jdx/mise-action@v4
+      with:
+        version: 2026.10.3
+        bootstrap: true
+    - name: build and test
+      run: mise run ci
