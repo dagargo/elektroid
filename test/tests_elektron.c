@@ -2,6 +2,7 @@
 #include <math.h>
 #include <CUnit/CUnit.h>
 #include <CUnit/Basic.h>
+#include <json-glib/json-glib.h>
 #include "../config.h"
 #include "../src/sample.h"
 #include "../src/utils.h"
@@ -24,6 +25,46 @@ gint elektron_set_sample_from_data_sample (struct idata *sample,
 gint elektron_set_data_sample_from_sample (struct idata *data_sample,
 					   struct idata *data_footer,
 					   struct idata *sample, guint slot);
+
+GSList *elektron_pkg_get_tags_from_snd_metadata_int (JsonReader * reader);
+
+static void
+test_elektron_pkg_tags_reader ()
+{
+  const gchar *metadata[] = {
+    "{\"sound_tags\":[],\"sample_references\":[{\"hash\":123,\"size\":100}]}",
+    "{\"sound_tags\":[\"SNARE\"],\"sample_references\":[{\"hash\":123,\"size\":100}]}"
+  };
+
+  for (guint i = 0; i < G_N_ELEMENTS (metadata); i++)
+    {
+      JsonParser *parser = json_parser_new ();
+      JsonReader *reader;
+      GSList *tags;
+
+      CU_ASSERT_TRUE (json_parser_load_from_data (parser, metadata[i], -1,
+						  NULL));
+      reader = json_reader_new (json_parser_get_root (parser));
+      tags = elektron_pkg_get_tags_from_snd_metadata_int (reader);
+      CU_ASSERT_EQUAL (g_slist_length (tags), i);
+      if (tags)
+	{
+	  CU_ASSERT_STRING_EQUAL (tags->data, "SNARE");
+	}
+      /* Export reads sample references using this same reader. */
+      CU_ASSERT_TRUE (json_reader_read_member (reader, "sample_references"));
+      CU_ASSERT_TRUE (json_reader_is_array (reader));
+      CU_ASSERT_EQUAL (json_reader_count_elements (reader), 1);
+      if (json_reader_read_element (reader, 0))
+	{
+	  CU_ASSERT_TRUE (json_reader_read_member (reader, "hash"));
+	  CU_ASSERT_EQUAL (json_reader_get_int_value (reader), 123);
+	}
+      g_slist_free_full (tags, g_free);
+      g_object_unref (reader);
+      g_object_unref (parser);
+    }
+}
 
 static void
 test_elektron_get_dev_exts ()
@@ -266,6 +307,12 @@ main (gint argc, gchar *argv[])
     }
   CU_pSuite suite = CU_add_suite ("Elektroid elektron tests", 0, 0);
   if (!suite)
+    {
+      goto cleanup;
+    }
+
+  if (!CU_add_test (suite, "elektron_pkg_tags_reader",
+		    test_elektron_pkg_tags_reader))
     {
       goto cleanup;
     }
