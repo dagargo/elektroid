@@ -1256,8 +1256,8 @@ elektron_delete_samples_dir (struct backend *backend, const gchar *path)
  */
 gint
 elektron_parse_sample_metadata (const GByteArray *info_response,
-                               const GByteArray *hash_response,
-                               struct sample_metadata *metadata)
+				const GByteArray *hash_response,
+				struct sample_metadata *metadata)
 {
   struct sample_metadata result;
   guint32 value;
@@ -1310,14 +1310,16 @@ elektron_parse_sample_metadata (const GByteArray *info_response,
  * The transport owns each request and returns a response owned by
  * the caller. Production uses elektron_tx_and_rx; tests inject a mock.
  */
-typedef GByteArray *(*elektron_metadata_transport) (
-    struct backend *, GByteArray *, struct controllable *);
+typedef GByteArray *(*elektron_metadata_transport) (struct backend *,
+						    GByteArray *,
+						    struct controllable *);
 
 gint
-elektron_get_sample_metadata_with_transport (
-    struct backend *backend, const gchar *path,
-    struct sample_metadata *metadata,
-    elektron_metadata_transport transport)
+elektron_get_sample_metadata_with_transport (struct backend *backend,
+					     const gchar *path,
+					     struct sample_metadata *metadata,
+					     elektron_metadata_transport
+					     transport)
 {
   GByteArray *info_response = NULL;
   GByteArray *hash_response = NULL;
@@ -1329,10 +1331,10 @@ elektron_get_sample_metadata_with_transport (
       return -EINVAL;
     }
 
-  request = elektron_new_msg_path (
-      FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST,
-      sizeof (FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST),
-      path);
+  request = elektron_new_msg_path (FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST,
+				   sizeof
+				   (FS_SAMPLE_GET_FILE_INFO_FROM_PATH_REQUEST),
+				   path);
 
   info_response = transport (backend, request, NULL);
   if (!info_response)
@@ -1356,10 +1358,10 @@ elektron_get_sample_metadata_with_transport (
       goto cleanup;
     }
 
-  request = elektron_new_msg_path (
-      FS_SAMPLE_GET_FILE_HASH_FROM_PATH_REQUEST,
-      sizeof (FS_SAMPLE_GET_FILE_HASH_FROM_PATH_REQUEST),
-      path);
+  request = elektron_new_msg_path (FS_SAMPLE_GET_FILE_HASH_FROM_PATH_REQUEST,
+				   sizeof
+				   (FS_SAMPLE_GET_FILE_HASH_FROM_PATH_REQUEST),
+				   path);
 
   hash_response = transport (backend, request, NULL);
   if (!hash_response)
@@ -1368,8 +1370,8 @@ elektron_get_sample_metadata_with_transport (
       goto cleanup;
     }
 
-  err = elektron_parse_sample_metadata (
-      info_response, hash_response, metadata);
+  err =
+    elektron_parse_sample_metadata (info_response, hash_response, metadata);
 
 cleanup:
   if (hash_response)
@@ -1384,10 +1386,10 @@ cleanup:
 
 static gint
 elektron_get_sample_metadata (struct backend *backend, const gchar *path,
-                             struct sample_metadata *metadata)
+			      struct sample_metadata *metadata)
 {
-  return elektron_get_sample_metadata_with_transport (
-      backend, path, metadata, elektron_tx_and_rx);
+  return elektron_get_sample_metadata_with_transport (backend, path, metadata,
+						      elektron_tx_and_rx);
 }
 
 static gboolean
