@@ -278,13 +278,11 @@ sds_get_dump_msg (guint id, guint frames, struct sample_info *sample_info,
 	}
       else
 	{
-          guint32 loop_end = sample_info->frames - 1;
+	  guint32 loop_end = sample_info->frames - 1;
 	  sds_set_bytes_value_right_just (&tx_msg->data[13],
-					  SDS_BYTES_PER_WORD,
-					  loop_end);
+					  SDS_BYTES_PER_WORD, loop_end);
 	  sds_set_bytes_value_right_just (&tx_msg->data[16],
-					  SDS_BYTES_PER_WORD,
-					  loop_end);
+					  SDS_BYTES_PER_WORD, loop_end);
 	  tx_msg->data[19] = SDS_LOOP_TYPE_NO;
 	}
     }
