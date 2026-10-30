@@ -1,0 +1,23 @@
+[bootstrap.packages]
+"brew:autoconf" = "latest"
+"brew:automake" = "latest"
+"brew:libtool" = "latest"
+"brew:pkgconf" = "latest"
+"brew:gettext" = "latest"
+"brew:glib" = "latest"
+"brew:json-glib" = "latest"
+"brew:libsndfile" = "latest"
+"brew:libsamplerate" = "latest"
+"brew:libzip" = "latest"
+"brew:zlib" = "latest"
+"brew:rtmidi" = "latest"
+"brew:rtaudio" = "latest"
+"brew:rubberband" = "latest"
+# Upstream configure.ac checks GTK when BUILD_GUI=no.
+"brew:gtk+3" = "latest"
+
+[env]
+_.path = ["{{ config_root }}/.local/bin", "/opt/homebrew/opt/gettext/bin", "/opt/homebrew/bin"]
+CC = "/usr/bin/clang"
+PKG_CONFIG_PATH = "/opt/homebrew/opt/zlib/lib/pkgconfig:/opt/homebrew/opt/gettext/lib/pkgconfig:/opt/homebrew/lib/pkgconfig:/opt/homebrew/share/pkgconfig"
+ACLOCAL_PATH = "/opt/homebrew/opt/gettext/share/aclocal:/opt/homebrew/share/aclocal"
