@@ -7,11 +7,11 @@ tmpdir=$(mktemp -d)
 echo "Runnning tests on $tmpdir..."
 
 actf=$tmpdir/square.wav
-for f in $(elektroid-cli info 0 | grep Filesystems | awk -F": " '{print $2}' | sed 's/,/ /g'); do
+for f in $($BINDIR/elektroid-cli info 0 | grep Filesystems | awk -F": " '{print $2}' | sed 's/,/ /g'); do
   echo "Runnning tests on $tmpdir for filesystem $f..."
   expf=$SRCDIR/res/connectors/square-$f.wav
   [ ! -f $expf ] && echo "$expf test file not found" && err=1 && continue
-  elektroid-cli system:$f:ul $SRCDIR/res/connectors/square.wav 0:$tmpdir
+  $BINDIR/elektroid-cli system:$f:ul $SRCDIR/res/connectors/square.wav 0:$tmpdir
   [ $? -ne 0 ] && echo "Upload failed" && err=1 && continue
   cksum $actf
   cksum $expf
@@ -26,7 +26,7 @@ echo "Runnning test from 1 to 2 channels on $tmpdir..."
 f=wav-stereo-48k-16b
 actf=$tmpdir/square-wav-mono-48k-16b.wav
 expf=$SRCDIR/res/connectors/square-wav-stereo-48k-16b.wav
-elektroid-cli system:$f:ul $SRCDIR/res/connectors/square-wav-mono-48k-16b.wav 0:$tmpdir
+$BINDIR/elektroid-cli system:$f:ul $SRCDIR/res/connectors/square-wav-mono-48k-16b.wav 0:$tmpdir
 if [ $? -eq 0 ]; then
   cksum $actf
   cksum $expf
@@ -43,7 +43,7 @@ echo "Runnning test from 2 to 1 channels on $tmpdir..."
 f=wav-mono-48k-16b
 actf=$tmpdir/square-wav-stereo-48k-16b.wav
 expf=$SRCDIR/res/connectors/square-wav-mono-48k-16b.wav
-elektroid-cli system:$f:ul $SRCDIR/res/connectors/square-wav-stereo-48k-16b.wav 0:$tmpdir
+$BINDIR/elektroid-cli system:$f:ul $SRCDIR/res/connectors/square-wav-stereo-48k-16b.wav 0:$tmpdir
 if [ $? -eq 0 ]; then
   cksum $actf
   cksum $expf

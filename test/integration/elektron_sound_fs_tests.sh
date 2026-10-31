@@ -3,12 +3,12 @@
 err=0
 
 echo "Cleaning up sample..."
-elektroid-cli elektron:sample:rm $TEST_DEVICE:/auto-test/square
-elektroid-cli elektron:sample:rmdir $TEST_DEVICE:/auto-test
+$BINDIR/elektroid-cli elektron:sample:rm $TEST_DEVICE:/auto-test/square
+$BINDIR/elektroid-cli elektron:sample:rmdir $TEST_DEVICE:/auto-test
 
 echo "Preparing tests..."
-elektroid-cli elektron:sound:ul $SRCDIR/res/connectors/elektron_sound.data $TEST_DEVICE:/H/256
-elektroid-cli elektron:sound:dl $TEST_DEVICE:/H/256
+$BINDIR/elektroid-cli elektron:sound:ul $SRCDIR/res/connectors/elektron_sound.data $TEST_DEVICE:/H/256
+$BINDIR/elektroid-cli elektron:sound:dl $TEST_DEVICE:/H/256
 
 src_content=$(unzip -l $SRCDIR/res/connectors/elektron_sound.data | tail -n +4 | head -n -2 | awk '{print $1" "$4}')
 dst_content=$(unzip -l $SRCDIR/SOUND.dtsnd | tail -n +4 | head -n -2 | awk '{print $1" "$4}')
@@ -32,7 +32,7 @@ echo "$dst_manifest_content"
 
 if [ $err -eq 0 ]; then
   echo "Looking for sample..."
-  elektroid-cli elektron:sample:dl $TEST_DEVICE:/auto-test/square
+  $BINDIR/elektroid-cli elektron:sample:dl $TEST_DEVICE:/auto-test/square
   [ $? -ne 0 ] && err=1
 fi
 
@@ -44,8 +44,8 @@ fi
 echo "Cleaning up..."
 rm -f $SRCDIR/SOUND.dtsnd
 rm -f $SRCDIR/square.wav
-elektroid-cli elektron:sound:rm $TEST_DEVICE:/H/256
-elektroid-cli elektron:sample:rm $TEST_DEVICE:/auto-test/square
-elektroid-cli elektron:sample:rmdir $TEST_DEVICE:/auto-test
+$BINDIR/elektroid-cli elektron:sound:rm $TEST_DEVICE:/H/256
+$BINDIR/elektroid-cli elektron:sample:rm $TEST_DEVICE:/auto-test/square
+$BINDIR/elektroid-cli elektron:sample:rmdir $TEST_DEVICE:/auto-test
 
 exit $err

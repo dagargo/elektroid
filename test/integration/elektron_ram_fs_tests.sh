@@ -5,7 +5,7 @@
 err=0
 
 echo "Testing ls..."
-files=$(elektroid-cli elektron:ram:ls $TEST_DEVICE:/)
+files=$($BINDIR/elektroid-cli elektron:ram:ls $TEST_DEVICE:/)
 [ $? -ne 0 ] && exit 1
 echo "$files" | head
 [ $(echo "$files" | wc -l) -ne 127 ] && exit 1
@@ -15,10 +15,10 @@ src_file=$SRCDIR/res/connectors/square.wav
 name=$(mktemp -u sample-test-XXXX.wav)
 tmp_file=$SRCDIR/$name
 cp $src_file $tmp_file
-elektroid-cli elektron:ram:ul $tmp_file $TEST_DEVICE:/127
+$BINDIR/elektroid-cli elektron:ram:ul $tmp_file $TEST_DEVICE:/127
 [ $? -ne 0 ] && exit 1
 rm $tmp_file
-elektroid-cli elektron:ram:dl $TEST_DEVICE:/127
+$BINDIR/elektroid-cli elektron:ram:dl $TEST_DEVICE:/127
 [ $? -ne 0 ] && err=1
 [ ! -f $tmp_file ] && err=1 && exit 1
 echo "Testing cksum..."
@@ -29,13 +29,13 @@ cksum2=$(cksum $tmp_file | awk '{print $1}')
 rm $tmp_file
 
 echo "Testing clear..."
-elektroid-cli elektron:ram:cl $TEST_DEVICE:/127
+$BINDIR/elektroid-cli elektron:ram:cl $TEST_DEVICE:/127
 [ $? -ne 0 ] && err=1
 
 # Beware that uploading the same sample file with different names might cause issues with the file hash.
 
 echo "Deleting uploaded sample..."
-elektroid-cli elektron:sample:rm $TEST_DEVICE:/incoming/${name:0:-4}
+$BINDIR/elektroid-cli elektron:sample:rm $TEST_DEVICE:/incoming/${name:0:-4}
 [ $? -ne 0 ] && err=1
 
 exit $err
