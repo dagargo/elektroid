@@ -1890,12 +1890,11 @@ audio-volume-medium-symbolic</property>
                                           <object class="GtkScrolledWindow" id="remote_scrolled_window">
                                             <property name="child">
                                               <object class="GtkTreeView" id="remote_tree_view">
-                                                <property name="enable-search">0</property>
+                                                <property name="enable-search">False</property>
                                                 <property name="focusable">1</property>
                                                 <property name="hexpand">1</property>
                                                 <property name="model">remote_list_store</property>
                                                 <property name="name">remote_tree_view</property>
-                                                <property name="search-column">1</property>
                                                 <property name="vexpand">1</property>
                                                 <child internal-child="selection">
                                                   <object class="GtkTreeSelection">
@@ -2240,12 +2239,11 @@ audio-volume-medium-symbolic</property>
                                           <object class="GtkScrolledWindow" id="local_scrolled_window">
                                             <property name="child">
                                               <object class="GtkTreeView" id="local_tree_view">
-                                                <property name="enable-search">0</property>
+                                                <property name="enable-search">False</property>
                                                 <property name="focusable">1</property>
                                                 <property name="hexpand">1</property>
                                                 <property name="model">local_list_store</property>
                                                 <property name="name">local_tree_view</property>
-                                                <property name="search-column">1</property>
                                                 <property name="vexpand">1</property>
                                                 <child internal-child="selection">
                                                   <object class="GtkTreeSelection">

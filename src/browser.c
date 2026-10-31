@@ -392,6 +392,13 @@ browser_refresh (GtkWidget *object, gpointer data)
   browser_load_dir (browser);
 }
 
+static void
+browser_refresh_action (GSimpleAction *simple_action,
+			GVariant *parameter, gpointer data)
+{
+  browser_refresh (NULL, data);
+}
+
 static gchar *
 path_dir_get_parent (const gchar *dir)
 {
@@ -519,6 +526,13 @@ browser_go_up (GtkWidget *object, gpointer data)
     {
       browser_load_dir (browser);
     }
+}
+
+static void
+browser_go_up_action (GSimpleAction *simple_action,
+		      GVariant *parameter, gpointer data)
+{
+  browser_go_up (NULL, data);
 }
 
 gboolean
@@ -1737,6 +1751,14 @@ browser_add_dir (GtkWidget *object, gpointer data)
 			browser_add_dir_accept, browser);
 }
 
+
+static void
+browser_add_dir_action (GSimpleAction *simple_action,
+			GVariant *parameter, gpointer data)
+{
+  browser_add_dir (NULL, data);
+}
+
 static gboolean
 browser_selection_function_true (GtkTreeSelection *selection,
 				 GtkTreeModel *model,
@@ -2678,7 +2700,11 @@ browser_local_init (struct browser *browser, GtkBuilder *builder,
     {"delete", browser_delete_items, NULL, NULL, NULL},
     {"play", browser_play, NULL, NULL, NULL},
     {"open_ext_editor", browser_open_in_ext_editor, NULL, NULL, NULL},
-    {"show_in_file_manager", browser_show_in_file_manager, NULL, NULL, NULL}
+    {"show_in_file_manager", browser_show_in_file_manager, NULL, NULL, NULL},
+    // Directory buttons. Not in the menu.
+    {"go_up", browser_go_up_action, NULL, NULL, NULL},
+    {"add_dir", browser_add_dir_action, NULL, NULL, NULL},
+    {"refresh", browser_refresh_action, NULL, NULL, NULL}
   };
 
   browser_init (browser, action_entries, G_N_ELEMENTS (action_entries));
@@ -2691,6 +2717,10 @@ browser_local_init (struct browser *browser, GtkBuilder *builder,
 		     "action(local_browser.open_ext_editor)");
   browser_add_accel (browser, "<Ctrl>f",
 		     "action(local_browser.show_in_file_manager)");
+  browser_add_accel (browser, "<Ctrl>u", "action(local_browser.go_up)");
+  browser_add_accel (browser, "<Ctrl><Shift>n",
+		     "action(local_browser.add_dir)");
+  browser_add_accel (browser, "<Ctrl>r", "action(local_browser.refresh)");
 }
 
 static void
@@ -2800,7 +2830,11 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder,
     {"delete", browser_delete_items, NULL, NULL, NULL},
     {"play", browser_play, NULL, NULL, NULL},
     {"open_ext_editor", browser_open_in_ext_editor, NULL, NULL, NULL},
-    {"show_in_file_manager", browser_show_in_file_manager, NULL, NULL, NULL}
+    {"show_in_file_manager", browser_show_in_file_manager, NULL, NULL, NULL},
+    // Directory buttons. Not in the menu.
+    {"go_up", browser_go_up_action, NULL, NULL, NULL},
+    {"add_dir", browser_add_dir_action, NULL, NULL, NULL},
+    {"refresh", browser_refresh_action, NULL, NULL, NULL}
   };
 
   browser_init (browser, action_entries, G_N_ELEMENTS (action_entries));
@@ -2813,6 +2847,10 @@ browser_remote_init (struct browser *browser, GtkBuilder *builder,
 		     "action(remote_browser.open_ext_editor)");
   browser_add_accel (browser, "<Ctrl>f",
 		     "action(remote_browser.show_in_file_manager)");
+  browser_add_accel (browser, "<Ctrl>u", "action(remote_browser.go_up)");
+  browser_add_accel (browser, "<Ctrl><Shift>n",
+		     "action(remote_browser.add_dir)");
+  browser_add_accel (browser, "<Ctrl>r", "action(remote_browser.refresh)");
 }
 
 void
