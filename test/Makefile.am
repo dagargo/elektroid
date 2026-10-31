@@ -250,10 +250,16 @@ tests_logue_SOURCES = \
 	../src/connectors/scala.c \
 	../src/connectors/scala.h
 
-TESTS = integration/test.sh integration/system_all_fs_tests.sh $(check_PROGRAMS)
+TESTS = $(check_PROGRAMS)
 
-EXTRA_DIST = integration res
+INTEGRATION_TESTS = \
+	integration/system_all_fs_tests.sh \
+	integration/test.sh
 
-AM_TESTS_ENVIRONMENT = \
-	ecli='$(abs_top_builddir)/src/elektroid-cli -vv'; \
-	export ecli;
+EXTRA_DIST = integration res $(INTEGRATION_TESTS)
+
+installcheck-local:
+	for t in $(INTEGRATION_TESTS); do \
+		echo "Running test '$$t'..."; \
+		SRCDIR='$(srcdir)' BINDIR=$(bindir) $(srcdir)/$$t || exit 1; \
+	done

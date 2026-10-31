@@ -16,7 +16,7 @@ LS_ROWS=$4
 BAD_FILE_PATHS=$5
 FILE_PATH=$6
 FILE_NEW_NAME=$7
-FILE_TO_UPLOAD=$srcdir/res/connectors/${CONN}_${FS}.data
+FILE_TO_UPLOAD=$SRCDIR/res/connectors/${CONN}_${FS}.data
 FILE_UPLOADED_BACK="$FILE_TO_UPLOAD.back"
 if [ ! -f "$FILE_UPLOADED_BACK" ]; then
   FILE_UPLOADED_BACK="$FILE_TO_UPLOAD"
@@ -29,11 +29,11 @@ function exitWithError() {
     echo "Restoring..."
     FILE_BACKUP_ORI=$(echo "$FILE_BACKUP" | sed "s^/tmp/$BACKUP_PREFIX^^")
     mv "$FILE_BACKUP" "$FILE_BACKUP_ORI"
-    $ecli ${CONN}:${FS}:ul "$FILE_BACKUP_ORI" $TEST_DEVICE:$FILE_PATH
+    elektroid-cli ${CONN}:${FS}:ul "$FILE_BACKUP_ORI" $TEST_DEVICE:$FILE_PATH
   else
     if $download_fail_empty; then
       echo "Clearing path as downloading an empty path fails..."
-      $ecli ${CONN}:${FS}:cl $TEST_DEVICE:$FILE_PATH
+      elektroid-cli ${CONN}:${FS}:cl $TEST_DEVICE:$FILE_PATH
     fi
   fi
   rm -f "$FILE" "$FILE_BACKUP" "$FILE_BACKUP_ORI"
@@ -42,9 +42,9 @@ function exitWithError() {
 
 function getDownloadName() {
   if [ -z "$download_ext" ]; then
-    echo "$srcdir/$DEVICE_NAME $FS"*
+    echo "$SRCDIR/$DEVICE_NAME $FS"*
   else
-    echo "$srcdir/"*$download_ext
+    echo "$SRCDIR/"*$download_ext
   fi
 }
 
@@ -54,10 +54,10 @@ echo "Device name: $DEVICE_NAME"
 
 echo "Cleaning up previous executions..."
 rm -f "$(getDownloadName)"
-rm -f "$srcdir/$BACKUP_PREFIX$(getDownloadName)"
+rm -f "$SRCDIR/$BACKUP_PREFIX$(getDownloadName)"
 
 echo "Testing ls..."
-files=$($ecli ${CONN}:${FS}:ls $TEST_DEVICE:$DIR_PATH)
+files=$(elektroid-cli ${CONN}:${FS}:ls $TEST_DEVICE:$DIR_PATH)
 [ $? -ne 0 ] && exit 1
 echo "$files" | head
 [ $(echo "$files" | wc -l) -ne $LS_ROWS ] && exit 1
@@ -65,12 +65,12 @@ echo "$files" | head
 if $download; then
   for p in $BAD_FILE_PATHS; do
     echo "Testing download with bad path $p..."
-    $ecli ${CONN}:${FS}:dl $TEST_DEVICE:$p
+    elektroid-cli ${CONN}:${FS}:dl $TEST_DEVICE:$p
     [ $? -eq 0 ] && exit 1
   done
 
   echo "Testing download with path $FILE_PATH..."
-  $ecli ${CONN}:${FS}:dl $TEST_DEVICE:$FILE_PATH
+  elektroid-cli ${CONN}:${FS}:dl $TEST_DEVICE:$FILE_PATH
   if [ $? -eq 0 ]; then
     FILE=$(getDownloadName)
     echo "Using file $FILE as the download file..."
@@ -88,27 +88,27 @@ fi
 
 for p in $BAD_FILE_PATHS; do
   echo "Testing upload with bad path $p..."
-  $ecli ${CONN}:${FS}:ul $FILE_TO_UPLOAD $TEST_DEVICE:$p
+  elektroid-cli ${CONN}:${FS}:ul $FILE_TO_UPLOAD $TEST_DEVICE:$p
   [ $? -eq 0 ] && exitWithError 1
 done
 
 echo "Testing upload with non existing file to $FILE_PATH..."
-$ecli ${CONN}:${FS}:ul foo $TEST_DEVICE:$FILE_PATH
+elektroid-cli ${CONN}:${FS}:ul foo $TEST_DEVICE:$FILE_PATH
 [ $? -eq 0 ] && exitWithError 1
 
 echo "Testing upload with path $FILE_PATH..."
-$ecli ${CONN}:${FS}:ul $FILE_TO_UPLOAD $TEST_DEVICE:$FILE_PATH
+elektroid-cli ${CONN}:${FS}:ul $FILE_TO_UPLOAD $TEST_DEVICE:$FILE_PATH
 [ $? -ne 0 ] && exitWithError 1
 
 if [ -n "$FILE_NEW_NAME" ]; then
   echo "Testing mv of $FILE_PATH to $FILE_NEW_NAME..."
-  $ecli ${CONN}:${FS}:mv $TEST_DEVICE:$FILE_PATH "$FILE_NEW_NAME"
+  elektroid-cli ${CONN}:${FS}:mv $TEST_DEVICE:$FILE_PATH "$FILE_NEW_NAME"
   [ $? -ne 0 ] && exitWithError 1
 fi
 
 if $download; then
   echo "Testing data changes..."
-  $ecli ${CONN}:${FS}:dl $TEST_DEVICE:$FILE_PATH
+  elektroid-cli ${CONN}:${FS}:dl $TEST_DEVICE:$FILE_PATH
   [ $? -ne 0 ] && exitWithError 1
   FILE=$(getDownloadName)
   [ ! -f "$FILE" ] && echo "File $FILE does not exist" && exitWithError 1

@@ -11,17 +11,21 @@ order: 6
 
 Elektroid uses the default indenting style provided by `indent`, which is the GNU style. It should be applied when submitting contributions by running `make format`.
 
-### Tests
+### Unit tests
 
-Elektroid includes automated integration tests for the supported devices and filesystems that ideally should be implemented when new devices are added.
+Running `make check` will run some unit tests. The more unit tests, the better.
 
-In order to run a test, proceed as follows. The variable `TEST_DEVICE` must contain the device id and variable `TEST_CONNECTOR_FILESYSTEM` must contain the connector name, an underscore char (`_`) and the filesystem name.
+### Integration tests
+
+After running `sudo make install`, running `make installcheck` will run some integration tests. Some of these are run over the `system` filesystem but others are run over specific filesystems that require the actual devices to be connected.
+
+Ideally, new integration tests should be implemented when new devices are added.
+
+In order to run one of these tests, proceed as follows. The variable `TEST_DEVICE` must contain the device id and variable `TEST_CONNECTOR_FILESYSTEM` must contain the connector name, an underscore char (`_`) and the filesystem name.
 
 ```
-$ TEST_DEVICE=0 TEST_CONNECTOR_FILESYSTEM=efactor_preset make check
+$ TEST_DEVICE=1 TEST_CONNECTOR_FILESYSTEM=efactor_preset make installcheck
 ```
-
-Running `make check` without setting any of these variables will run some system integration tests together with a few unit tests.
 
 ### Documentation
 
