@@ -1219,8 +1219,21 @@ editor_play ()
 {
   if (audio_check ())
     {
+      enum audio_status status;
+
       audio_stop_recording ();
-      editor_start_playback ();
+
+      g_mutex_lock (&audio.control.controllable.mutex);
+      status = audio.status;
+      g_mutex_unlock (&audio.control.controllable.mutex);
+      if (status == AUDIO_STATUS_PLAYING)
+	{
+	  audio_stop_playback ();
+	}
+      else
+	{
+	  editor_start_playback ();
+	}
     }
 }
 
