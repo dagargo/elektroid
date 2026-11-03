@@ -73,7 +73,7 @@ mise run check
 
 The configuration automatically selects native packages for Debian/Ubuntu (apt), Fedora (dnf) and Arch Linux (pacman), or Homebrew packages on Apple Silicon macOS. Linuxbrew is not required.
 
-`mise run build` builds only `elektroid-cli` and installs it into `.local/bin`. `mise run check` lists MIDI devices without sending data.
+`mise run build` builds the GUI and CLI and installs them into `~/.local`, without requiring root. `mise run check` lists MIDI devices without sending data.
 
 To run the Ubuntu CI build, tests and distribution checks locally:
 

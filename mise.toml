@@ -1,16 +1,16 @@
 [env]
-_.path = ["{{ config_root }}/.local/bin"]
+_.path = ["{{ env.HOME }}/.local/bin"]
 
 [tasks.deps]
 description = "Install the native build dependencies"
 run = "mise bootstrap packages apply --yes"
 
 [tasks.build]
-description = "Build and install only the CLI into .local/"
+description = "Build and install the GUI and CLI into ~/.local/"
 depends = ["deps"]
 run = [
   "autoreconf --install",
-  './configure BUILD_GUI=no --prefix="$PWD/.local"',
+  './configure --prefix="$HOME/.local"',
   'make -j"{{ num_cpus() }}"',
   "make install",
 ]
