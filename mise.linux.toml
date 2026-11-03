@@ -1,5 +1,4 @@
 # mise skips package managers unavailable on the host.
-# Upstream configure.ac checks GTK when BUILD_GUI=no.
 [bootstrap.packages]
 "apt:autoconf" = "latest"
 "apt:automake" = "latest"
