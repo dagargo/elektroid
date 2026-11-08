@@ -45,7 +45,7 @@
 #define MAN_TAG_HASH "hash"
 #define MAN_TAG_SIZE "size"
 
-#define METADATA_TAG_SAMPLE_REFS "sound_tags"
+#define MAN_TAG_SOUND_TAGS "sound_tags"
 
 #define MAX_PACKAGE_LEN (512 * 1024 * 1024)
 #define MAX_MANIFEST_LEN (128 * 1024)
@@ -57,16 +57,16 @@ elektron_pkg_get_tags_from_snd_metadata_int (JsonReader *reader)
   gint elements;
   GSList *tags = NULL;
 
-  if (!json_reader_read_member (reader, METADATA_TAG_SAMPLE_REFS))
+  if (!json_reader_read_member (reader, MAN_TAG_SOUND_TAGS))
     {
-      debug_print (1, "Member '%s' not found", METADATA_TAG_SAMPLE_REFS);
+      debug_print (1, "Member '%s' not found", MAN_TAG_SOUND_TAGS);
       return NULL;
     }
 
   if (!json_reader_is_array (reader))
     {
       error_print ("Member '%s' is not an array. Continuing...",
-		   METADATA_TAG_SAMPLE_REFS);
+		   MAN_TAG_SOUND_TAGS);
       goto end;
     }
 
